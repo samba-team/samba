@@ -557,7 +557,6 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 BOOL check_lanman_password(char *user, uchar * pass1,
 			   uchar * pass2, SAM_ACCOUNT **hnd)
 {
-	static uchar null_pw[16];
 	uchar unenc_new_pw[16];
 	uchar unenc_old_pw[16];
 	SAM_ACCOUNT *sampass = NULL;
@@ -571,7 +570,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 
 	if (ret == False) {
 		DEBUG(0,("check_lanman_password: getsampwnam returned NULL\n"));
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return False;
 	}
 	
@@ -580,20 +579,20 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return False;
 	}
 
-	if ((lanman_pw == NULL) && (acct_ctrl & ACB_PWNOTREQ)) {
-		uchar no_pw[14];
-		memset(no_pw, '\0', 14);
-		E_P16(no_pw, null_pw);
-		pdb_set_lanman_passwd (sampass, null_pw);
-	}
-	else if (lanman_pw == NULL) {
-		DEBUG(0, ("check_lanman_password: no lanman password !\n"));
-		pdb_free_sam(sampass);
-		return False;
+	if (lanman_pw == NULL) {
+		if (acct_ctrl & ACB_PWNOTREQ) {
+			/* this saves the pointer for the caller */
+			*hnd = sampass;
+			return True;
+		} else {
+			DEBUG(0, ("check_lanman_password: no lanman password !\n"));
+			pdb_free_sam(&sampass);
+			return False;
+		}
 	}
 
 	/* Get the new lanman hash. */
@@ -605,13 +604,12 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	/* Check that the two old passwords match. */
 	if (memcmp(lanman_pw, unenc_old_pw, 16)) {
 		DEBUG(0,("check_lanman_password: old password doesn't match.\n"));
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return False;
 	}
 
 	/* this saves the pointer for the caller */
 	*hnd = sampass;
-	
 	return True;
 }
 
@@ -644,22 +642,30 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 		return False;
 	}
 
-	if ((pwd == NULL) && (acct_ctrl & ACB_PWNOTREQ)) {
-		uchar no_pw[14];
-		memset(no_pw, '\0', 14);
-		E_P16(no_pw, null_pw);
-		pdb_set_lanman_passwd(sampass, null_pw);
+	if (pwd == NULL) { 
+		if (acct_ctrl & ACB_PWNOTREQ) {
+			uchar no_pw[14];
+			memset(no_pw, '\0', 14);
+			E_P16(no_pw, null_pw);
+
+			/* Get the new lanman hash. */
+			D_P16(null_pw, pass2, unenc_new_pw);
+		} else {
+			DEBUG(0,("change_lanman_password: no lanman password !\n"));
+			return False;
+		}
+	} else {
+		/* Get the new lanman hash. */
+		D_P16(pwd, pass2, unenc_new_pw);
 	}
-	else if (pwd == NULL) {
-		DEBUG(0,("change_lanman_password: no lanman password !\n"));
+
+	if (!pdb_set_lanman_passwd(sampass, unenc_new_pw)) {
 		return False;
 	}
 
-	/* Get the new lanman hash. */
-	D_P16(pwd, pass2, unenc_new_pw);
-
-	pdb_set_lanman_passwd(sampass, unenc_new_pw);
-	pdb_set_nt_passwd    (sampass, NULL);	/* We lose the NT hash. Sorry. */
+	if (!pdb_set_nt_passwd    (sampass, NULL)) {
+		return False;	/* We lose the NT hash. Sorry. */
+	}
 
 	/* Now flush the sam_passwd struct to persistent storage */
 	become_root();
@@ -690,15 +696,15 @@ BOOL pass_oem_change(char *user,
 	 * available. JRA.
 	 */
 
-	if (ret && lp_unix_password_sync())
+	if ((ret) && lp_unix_password_sync())
 		ret = chgpasswd(user, "", new_passwd, True);
 
 	if (ret)
-		ret = change_oem_password(sampass, new_passwd, False);
+		ret = change_oem_password(sampass, new_passwd);
 
 	memset(new_passwd, 0, sizeof(new_passwd));
 
-	pdb_free_sam(sampass);
+	pdb_free_sam(&sampass);
 
 	return ret;
 }
@@ -762,23 +768,19 @@ static BOOL check_oem_password(char *user,
 
 	/* check for null passwords */
 	if (lanman_pw == NULL) {
-		if (acct_ctrl & ACB_PWNOTREQ)
-			pdb_set_lanman_passwd(sampass, null_pw);
-		else {
+		if (!(acct_ctrl & ACB_PWNOTREQ)) {
 			DEBUG(0,("check_oem_password: no lanman password !\n"));
 			return False;
 		}
 	}
-
+	
 	if (pdb_get_nt_passwd(sampass) == NULL && nt_pass_set) {
-		if (acct_ctrl & ACB_PWNOTREQ)
-			pdb_set_nt_passwd(sampass, null_pw);
-		else {
+		if (!(acct_ctrl & ACB_PWNOTREQ)) {
 			DEBUG(0,("check_oem_password: no ntlm password !\n"));
 			return False;
 		}
 	}
-
+	
 	/* 
 	 * Call the hash function to get the new password.
 	 */
@@ -862,23 +864,20 @@ static BOOL check_oem_password(char *user,
 /***********************************************************
  Code to change the oem password. Changes both the lanman
  and NT hashes.
- override = False, normal
- override = True, override XXXXXXXXXX'd password
 ************************************************************/
 
-BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd,
-			 BOOL override)
+BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd)
 {
-	int ret;
+	BOOL ret;
 
-	pdb_set_plaintext_passwd (hnd, new_passwd);
+	if (!pdb_set_plaintext_passwd (hnd, new_passwd)) {
+		return False;
+	}
 
 	/* Now write it into the file. */
 	become_root();
-	ret = pdb_update_sam_account (hnd, override);
+	ret = pdb_update_sam_account (hnd, False);
 	unbecome_root();
-
-	memset(new_passwd, '\0', strlen(new_passwd));
 
 	return ret;
 }

@@ -385,7 +385,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 		if(!pdb_getsampwnam(sampass, pipe_user_name)) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
 				pipe_user_name));
-			pdb_free_sam(sampass);
+			pdb_free_sam(&sampass);
 			unbecome_root();
 			return False;
 		}
@@ -394,7 +394,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 
 		if(!pdb_get_nt_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
-			pdb_free_sam(sampass);
+			pdb_free_sam(&sampass);
 			return False;
 	        }
  
@@ -463,7 +463,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 
 	p->ntlmssp_auth_validated = True;
 
-	pdb_free_sam(sampass);
+	pdb_free_sam(&sampass);
 	return True;
 }
 

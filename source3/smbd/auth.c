@@ -189,6 +189,10 @@ NTSTATUS pass_check_smb_with_chal(char *smb_user, char *unix_user,
 			user_info.lm_resp.buffer = (uint8 *)local_lm_response;
 			user_info.lm_resp.len = 24;
 
+
+			/* WATCH OUT. This doesn't work if the incoming password is incorrectly cased. 
+			   We might want to add a check here and only do an LM in that case */
+
 			/* This encrypts the lm_pwd feild, which actualy contains the password
 			   rather than the nt_pwd field becouse that contains nothing */
 			SMBNTencrypt((uchar *)lm_pwd, user_info.chal, local_nt_response);

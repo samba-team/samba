@@ -274,12 +274,12 @@ NTSTATUS local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 	if (ret == True) {
 		fstrcpy(user_name, pdb_get_username(sampwd) );
 		DEBUG(5,(" = %s\n", user_name));
-		pdb_free_sam(sampwd);
+		pdb_free_sam(&sampwd);
 		return NT_STATUS_OK;
 	}
 
 	DEBUG(5,(" none mapped\n"));
-	pdb_free_sam(sampwd);
+	pdb_free_sam(&sampwd);
 	return NT_STATUS_NONE_MAPPED;
 }
 
@@ -340,10 +340,10 @@ NTSTATUS local_lookup_user_rid(char *user_name, uint32 *rid)
 
 	if (ret == True) {
 		(*rid) = pdb_get_user_rid(sampass);
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return NT_STATUS_OK;
 	}
 
-	pdb_free_sam(sampass);
+	pdb_free_sam(&sampass);
 	return NT_STATUS_NONE_MAPPED;
 }

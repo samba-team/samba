@@ -31,7 +31,7 @@ this ugly hack needs to die, but not quite yet...
 static BOOL update_smbpassword_file(char *user, char *password)
 {
 	SAM_ACCOUNT 	*sampass = NULL;
-	BOOL 		ret;
+	BOOL            ret;
 	
 	pdb_init_sam(&sampass);
 	
@@ -41,7 +41,7 @@ static BOOL update_smbpassword_file(char *user, char *password)
 
 	if(ret == False) {
 		DEBUG(0,("pdb_getsampwnam returned NULL\n"));
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return False;
 	}
 
@@ -49,16 +49,32 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	 * Remove the account disabled flag - we are updating the
 	 * users password from a login.
 	 */
-	pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED);
-
-	/* Here, the flag is one, because we want to ignore the
-           XXXXXXX'd out password */
-	ret = change_oem_password( sampass, password, True);
-	if (ret == False) {
-		DEBUG(3,("change_oem_password returned False\n"));
+	if (!pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED)) {
+		pdb_free_sam(&sampass);
+		return False;
 	}
 
-	pdb_free_sam(sampass);
+	if (!pdb_set_plaintext_passwd (sampass, password)) {
+		pdb_free_sam(&sampass);
+		return False;
+	}
+
+	/* Now write it into the file. */
+	become_root();
+
+	/* Here, the override flag is True, because we want to ignore the
+           XXXXXXX'd out password */
+	ret = pdb_update_sam_account (sampass, True);
+
+	unbecome_root();
+
+	if (ret) {
+		DEBUG(3,("pdb_update_sam_account returned %d\n",ret));
+	}
+
+	memset(password, '\0', strlen(password));
+
+	pdb_free_sam(&sampass);
 	return ret;
 }
 
