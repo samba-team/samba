@@ -125,7 +125,6 @@ struct cli_state {
 	 */
 
 	uint32 nt_error;                   /* NT RPC error code. */
-	uint16 nt_pipe_fnum;               /* Pipe handle. */
 	unsigned char sess_key[16];        /* Current session key. */
 	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
 	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */

@@ -275,6 +275,7 @@ BOOL do_random_rpc(struct cli_state *cli, int max_len)
 static void random_rpc_pipe_enc(char *pipe_name, struct client_info *cli_info,
 		int numops)
 {
+	uint16 nt_pipe_fnum;
 	int i;
 
 	DEBUG(0,("starting random rpc test on %s (encryped)\n", pipe_name));
@@ -300,7 +301,7 @@ static void random_rpc_pipe_enc(char *pipe_name, struct client_info *cli_info,
 	for (i = 1; i <= numops * 100; i++)
 	{
 		/* open session.  */
-		cli_nt_session_open(smb_cli, pipe_name);
+		cli_nt_session_open(smb_cli, pipe_name, &nt_pipe_fnum);
 
 		do_random_rpc(smb_cli, 1024);
 		if (i % 500 == 0)
@@ -309,7 +310,7 @@ static void random_rpc_pipe_enc(char *pipe_name, struct client_info *cli_info,
 		}
 
 		/* close the session */
-		cli_nt_session_close(smb_cli);
+		cli_nt_session_close(smb_cli, nt_pipe_fnum);
 	}
 
 	/* close the rpc pipe */
@@ -322,6 +323,7 @@ static void random_rpc_pipe_enc(char *pipe_name, struct client_info *cli_info,
 static void random_rpc_pipe(char *pipe_name, struct client_info *cli_info,
 		int numops)
 {
+	uint16 nt_pipe_fnum;
 	int i;
 
 	DEBUG(0,("starting random rpc test on %s\n", pipe_name));
@@ -334,7 +336,7 @@ static void random_rpc_pipe(char *pipe_name, struct client_info *cli_info,
 	}
 
 	/* open session.  */
-	if (!cli_nt_session_open(smb_cli, pipe_name))
+	if (!cli_nt_session_open(smb_cli, pipe_name, &nt_pipe_fnum))
 	{
 		DEBUG(0,("random rpc test: session open failed\n"));
 		return;
@@ -350,7 +352,7 @@ static void random_rpc_pipe(char *pipe_name, struct client_info *cli_info,
 	}
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	/* close the rpc pipe */
 	rpcclient_stop();
@@ -388,6 +390,7 @@ static void run_randomrpc(int numops, struct client_info *cli_info)
 
 static void run_samhandles(int numops, struct client_info *cli_info)
 {
+	uint16 nt_pipe_fnum;
 	int i;
 	int count = 0;
 	int failed = 0;
@@ -412,7 +415,7 @@ static void run_samhandles(int numops, struct client_info *cli_info)
 	}
 
 	/* open session.  */
-	if (!cli_nt_session_open(smb_cli, PIPE_SAMR))
+	if (!cli_nt_session_open(smb_cli, PIPE_SAMR, &nt_pipe_fnum))
 	{
 		DEBUG(0,("samhandle test: session open failed\n"));
 		return;
@@ -440,7 +443,7 @@ static void run_samhandles(int numops, struct client_info *cli_info)
 	}
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	/* close the rpc pipe */
 	rpcclient_stop();
@@ -451,6 +454,7 @@ static void run_samhandles(int numops, struct client_info *cli_info)
 
 static void run_lsahandles(int numops, struct client_info *cli_info)
 {
+	uint16 nt_pipe_fnum;
 	int i;
 	int count = 0;
 	int failed = 0;
@@ -474,7 +478,7 @@ static void run_lsahandles(int numops, struct client_info *cli_info)
 		return;
 	}
 	/* open session.  */
-	if (!cli_nt_session_open(smb_cli, PIPE_LSARPC))
+	if (!cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum))
 	{
 		DEBUG(0,("lsahandle test: session open failed\n"));
 		return;
@@ -495,7 +499,7 @@ static void run_lsahandles(int numops, struct client_info *cli_info)
 	}
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	/* close the rpc pipe */
 	rpcclient_stop();
@@ -506,6 +510,7 @@ static void run_lsahandles(int numops, struct client_info *cli_info)
 
 static void run_pipegobble(int numops, struct client_info *cli_info, char *pipe_name)
 {
+	uint16 nt_pipe_fnum;
 	int i;
 	int count = 0;
 	int failed = 0;
@@ -531,7 +536,7 @@ static void run_pipegobble(int numops, struct client_info *cli_info, char *pipe_
 	for (i = 1; i <= numops * 100; i++)
 	{
 		/* open session.  */
-		if (!cli_nt_session_open(smb_cli, pipe_name))
+		if (!cli_nt_session_open(smb_cli, pipe_name, &nt_pipe_fnum))
 		{
 			DEBUG(0,("pipe gobble test: session open failed\n"));
 		}

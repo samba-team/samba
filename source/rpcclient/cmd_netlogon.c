@@ -43,6 +43,7 @@ experimental nt login.
 ****************************************************************************/
 void cmd_netlogon_login_test(struct client_info *info)
 {
+	uint16 nt_pipe_fnum;
 	extern BOOL global_machine_password_needs_changing;
 
 	fstring nt_user_name;
@@ -89,16 +90,16 @@ void cmd_netlogon_login_test(struct client_info *info)
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
 
-	res = res ? cli_nt_setup_creds(smb_cli, trust_passwd) : False;
+	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum, trust_passwd) : False;
 
 	/* change the machine password? */
 	if (global_machine_password_needs_changing)
 	{
 		unsigned char new_trust_passwd[16];
 		generate_random_buffer(new_trust_passwd, 16, True);
-		res = res ? cli_nt_srv_pwset(smb_cli, new_trust_passwd) : False;
+		res = res ? cli_nt_srv_pwset(smb_cli, nt_pipe_fnum, new_trust_passwd) : False;
 
 		if (res)
 		{
@@ -111,7 +112,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 	memset(trust_passwd, 0, 16);
 
 	/* do an NT login */
-	res = res ? cli_nt_login_interactive(smb_cli,
+	res = res ? cli_nt_login_interactive(smb_cli, nt_pipe_fnum,
 	                 smb_cli->domain, nt_user_name,
 	                 getuid(), nt_password,
 	                 &info->dom.ctr, &info->dom.user_info3) : False;
@@ -122,10 +123,10 @@ void cmd_netlogon_login_test(struct client_info *info)
 	/* ok!  you're logged in!  do anything you like, then... */
 
 	/* do an NT logout */
-	res = res ? cli_nt_logoff(smb_cli, &info->dom.ctr) : False;
+	res = res ? cli_nt_logoff(smb_cli, nt_pipe_fnum, &info->dom.ctr) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	fprintf(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
 		nt_user_name, BOOLSTR(res));

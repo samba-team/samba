@@ -29,7 +29,7 @@ extern int DEBUGLEVEL;
 Initialize domain session credentials.
 ****************************************************************************/
 
-BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
+BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum, unsigned char mach_pwd[16])
 {
   DOM_CHAL clnt_chal;
   DOM_CHAL srv_chal;
@@ -41,7 +41,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
   generate_random_buffer( clnt_chal.data, 8, False);
 	
   /* send a client challenge; receive a server challenge */
-  if (!cli_net_req_chal(cli, &clnt_chal, &srv_chal))
+  if (!cli_net_req_chal(cli, fnum, &clnt_chal, &srv_chal))
   {
     DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
     return False;
@@ -64,7 +64,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
    * Receive an auth-2 challenge response and check it.
    */
 
-  if (!cli_net_auth2(cli, SEC_CHAN_WKSTA, 0x000001ff, &srv_chal))
+  if (!cli_net_auth2(cli, fnum, SEC_CHAN_WKSTA, 0x000001ff, &srv_chal))
   {
     DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
     return False;
@@ -77,7 +77,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
  Set machine password.
  ****************************************************************************/
 
-BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
+BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_hashof_mach_pwd)
 {
   unsigned char processed_new_pwd[16];
 
@@ -91,7 +91,7 @@ BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
   cred_hash3( processed_new_pwd, new_hashof_mach_pwd, cli->sess_key, 1);
 
   /* send client srv_pwset challenge */
-  return cli_net_srv_pwset(cli, processed_new_pwd);
+  return cli_net_srv_pwset(cli, fnum, processed_new_pwd);
 }
 
 /****************************************************************************
@@ -100,7 +100,7 @@ NT login - interactive.
 password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
-BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
+BOOL cli_nt_login_interactive(struct cli_state *cli, uint16 fnum, char *domain, char *username, 
                               uint32 luid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
@@ -139,7 +139,7 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
   memset(nt_owf_user_pwd, '\0', sizeof(nt_owf_user_pwd));
 
   /* Send client sam-logon request - update credentials on success. */
-  ret = cli_net_sam_logon(cli, ctr, user_info3);
+  ret = cli_net_sam_logon(cli, fnum, ctr, user_info3);
 
   memset(ctr->auth.id1.lm_owf.data, '\0', sizeof(lm_owf_user_pwd));
   memset(ctr->auth.id1.nt_owf.data, '\0', sizeof(nt_owf_user_pwd));
@@ -153,7 +153,7 @@ NT login - network.
 password equivalents over the network. JRA.
 ****************************************************************************/
 
-BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
+BOOL cli_nt_login_network(struct cli_state *cli, uint16 fnum, char *domain, char *username, 
                           uint32 luid_low, char lm_chal[8], char lm_chal_resp[24],
                           char nt_chal_resp[24],
                           NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
@@ -170,16 +170,16 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
                 (uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
 
   /* Send client sam-logon request - update credentials on success. */
-  return cli_net_sam_logon(cli, ctr, user_info3);
+  return cli_net_sam_logon(cli, fnum, ctr, user_info3);
 }
 
 /****************************************************************************
 NT Logoff.
 ****************************************************************************/
-BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
+BOOL cli_nt_logoff(struct cli_state *cli, uint16 fnum, NET_ID_INFO_CTR *ctr)
 {
   DEBUG(5,("cli_nt_logoff: %d\n", __LINE__));
 
   /* Send client sam-logoff request - update credentials on success. */
-  return cli_net_sam_logoff(cli, ctr);
+  return cli_net_sam_logoff(cli, fnum, ctr);
 }

@@ -180,6 +180,7 @@ BOOL get_member_domain_sid(void)
 ****************************************************************************/
 BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5, char *servers)
 {
+	uint16 nt_pipe_fnum;
 	POLICY_HND pol;
 	fstring srv_name;
 	struct cli_state cli;
@@ -220,28 +221,28 @@ BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5, char *servers)
 	strupper(srv_name);
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(&cli, PIPE_LSARPC) : False;
+	res = res ? cli_nt_session_open(&cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(&cli, srv_name, &pol, False) : False;
+	res = res ? lsa_open_policy(&cli, nt_pipe_fnum, srv_name, &pol, False) : False;
 
 	if (sid3 != NULL)
 	{
 		/* send client info query, level 3.  receive domain name and sid */
-		res = res ? lsa_query_info_pol(&cli, &pol, 3, dom3, sid3) : False;
+		res = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 3, dom3, sid3) : False;
 	}
 
 	if (sid5 != NULL)
 	{
 		/* send client info query, level 5.  receive domain name and sid */
-		res = res ? lsa_query_info_pol(&cli, &pol, 5, dom5, sid5) : False;
+		res = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 5, dom5, sid5) : False;
 	}
 
 	/* close policy handle */
-	res = res ? lsa_close(&cli, &pol) : False;
+	res = res ? lsa_close(&cli, nt_pipe_fnum, &pol) : False;
 
 	/* close the session */
-	cli_nt_session_close(&cli);
+	cli_nt_session_close(&cli, nt_pipe_fnum);
 	cli_ulogoff(&cli);
 	cli_shutdown(&cli);
 

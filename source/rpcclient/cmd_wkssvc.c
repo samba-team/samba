@@ -43,6 +43,7 @@ workstation get info query
 ****************************************************************************/
 void cmd_wks_query_info(struct client_info *info)
 {
+	uint16 nt_pipe_fnum;
 	fstring dest_wks;
 	fstring tmp;
 	WKS_INFO_100 ctr;
@@ -67,14 +68,14 @@ void cmd_wks_query_info(struct client_info *info)
 	DEBUG(5, ("cmd_wks_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WKSSVC) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WKSSVC, &nt_pipe_fnum) : False;
 
 	/* send info level: receive requested info.  hopefully. */
-	res = res ? do_wks_query_info(smb_cli, 
+	res = res ? do_wks_query_info(smb_cli, nt_pipe_fnum,
 				dest_wks, info_level, &ctr) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	if (res)
 	{
