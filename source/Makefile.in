@@ -221,25 +221,14 @@ CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ)
 
-SMBTORTURE_RAW_OBJ = torture/raw/qfsinfo.o torture/raw/qfileinfo.o torture/raw/setfileinfo.o \
-		torture/raw/search.o torture/raw/close.o torture/raw/open.o torture/raw/mkdir.o \
-		torture/raw/oplock.o torture/raw/notify.o torture/raw/mux.o torture/raw/ioctl.o \
-		torture/raw/chkpath.o torture/raw/unlink.o torture/raw/read.o torture/raw/context.o \
-		torture/raw/write.o torture/raw/lock.o torture/raw/rename.o torture/raw/seek.o 
+TORTURE_RAW_OBJS = @TORTURE_RAW_OBJS@
 
-SMBTORTURE_RPC_OBJ = torture/rpc/lsa.o torture/rpc/echo.o torture/rpc/dfs.o \
-		torture/rpc/spoolss.o torture/rpc/samr.o torture/rpc/wkssvc.o \
-		torture/rpc/srvsvc.o torture/rpc/atsvc.o torture/rpc/eventlog.o \
-		torture/rpc/epmapper.o torture/rpc/winreg.o torture/rpc/mgmt.o \
-		torture/rpc/scanner.o torture/rpc/autoidl.o torture/rpc/netlogon.o
+TORTURE_RPC_OBJS = @TORTURE_RPC_OBJS@
 
-SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o torture/scanner.o \
-		torture/utable.o torture/denytest.o torture/mangle_test.o \
-		torture/aliases.o libcli/raw/clirewrite.o $(SMBTORTURE_RAW_OBJ) \
-		$(SMBTORTURE_RPC_OBJ)
+TORTURE_OBJS = @TORTURE_OBJS@
 
-SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(SECRETS_OBJ) \
-		$(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
+SMBTORTURE_OBJS = $(TORTURE_OBJS) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
+SMBTORTURE_LIBS = $(LIBS)
 
 GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 		$(LIB_OBJ) libcli/raw/clirewrite.o
@@ -256,7 +245,7 @@ NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
 PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJS) \
 	    $(LIBSMB_OBJ) \
-	    $(SMBTORTURE_OBJ1) \
+	    $(TORTURE_OBJS) \
 	    $(PARAM_OBJ) $(SECRETS_OBJ) \
 	    $(READLINE_OBJ) $(CLIENT_OBJ1) \
 	    $(LIB_OBJ) $(POPT_LIB_OBJ)
@@ -385,10 +374,9 @@ bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
 
-
-bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
+bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJS) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJS) $(LDFLAGS) $(SMBTORTURE_LIBS)
 
 bin/ndrdump@EXEEXT@: $(NDRDUMP_OBJ) bin/.dummy
 	@echo Linking $@
