@@ -129,6 +129,15 @@
 		[case(7)] spoolss_PrinterInfo7 info7;
 	} spoolss_PrinterInfo;
 
+	const int PRINTER_ENUM_DEFAULT     = 0x00000001;
+	const int PRINTER_ENUM_LOCAL       = 0x00000002;
+	const int PRINTER_ENUM_CONNECTIONS = 0x00000004;
+	const int PRINTER_ENUM_FAVORITE    = 0x00000004;
+	const int PRINTER_ENUM_NAME        = 0x00000008;
+	const int PRINTER_ENUM_REMOTE      = 0x00000010;
+	const int PRINTER_ENUM_SHARED      = 0x00000020;
+	const int PRINTER_ENUM_NETWORK     = 0x00000040;
+
 	/******************/
 	/* Function: 0x00 */
 	WERROR spoolss_EnumPrinters(
