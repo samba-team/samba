@@ -548,7 +548,7 @@ interface netlogon
 		NETR_DELTA_RENAME_USER      = 7,
 		NETR_DELTA_GROUP_MEMBER     = 8,
 		NETR_DELTA_ALIAS            = 9,
-		NETR_DELTA_UNKNOWN1         = 10,  /* maybe delete alias? */
+		NETR_DELTA_DELETE_ALIAS     = 10,
 		NETR_DELTA_RENAME_ALIAS     = 11,
 		NETR_DELTA_ALIAS_MEMBER     = 12,
 		NETR_DELTA_POLICY           = 13,
@@ -573,6 +573,7 @@ interface netlogon
 		[case(NETR_DELTA_RENAME_USER)]     netr_DELTA_RENAME          *rename_user;
 		[case(NETR_DELTA_GROUP_MEMBER)]    netr_DELTA_GROUP_MEMBER    *group_member;
 		[case(NETR_DELTA_ALIAS)]           netr_DELTA_ALIAS           *alias;
+		[case(NETR_DELTA_DELETE_ALIAS)]    ; /* rid only */
 		[case(NETR_DELTA_RENAME_ALIAS)]    netr_DELTA_RENAME          *rename_alias;
 		[case(NETR_DELTA_ALIAS_MEMBER)]    netr_DELTA_ALIAS_MEMBER    *alias_member;
 		[case(NETR_DELTA_POLICY)]          netr_DELTA_POLICY          *policy;
@@ -597,7 +598,7 @@ interface netlogon
 		[case(NETR_DELTA_RENAME_USER)]     uint32 rid;
 		[case(NETR_DELTA_GROUP_MEMBER)]    uint32 rid;
 		[case(NETR_DELTA_ALIAS)]           uint32 rid;
-		[case(NETR_DELTA_UNKNOWN1)]        uint32 rid;
+		[case(NETR_DELTA_DELETE_ALIAS)]    uint32 rid;
 		[case(NETR_DELTA_RENAME_ALIAS)]    uint32 rid;
 		[case(NETR_DELTA_ALIAS_MEMBER)]    uint32 rid;
 		[case(NETR_DELTA_POLICY)]          dom_sid2 *sid;
@@ -607,9 +608,9 @@ interface netlogon
 		[case(NETR_DELTA_DELETE_ACCOUNT)]  dom_sid2 *sid;
 		[case(NETR_DELTA_SECRET)]          unistr *name;
 		[case(NETR_DELTA_DELETE_SECRET)]   unistr *name;
-		[case(NETR_DELTA_DELETE_GROUP2)]   unistr *name;
+		[case(NETR_DELTA_DELETE_GROUP2)]   uint32 rid;
 		[case(NETR_DELTA_DELETE_USER2)]    uint32 rid;
-		[case(NETR_DELTA_MODIFY_COUNT)]    uint32 rid;
+		[case(NETR_DELTA_MODIFY_COUNT)]    ;
 	} netr_DELTA_ID_UNION;
 
 	typedef struct {
