@@ -29,7 +29,8 @@
  Core of smb password checking routine.
 ****************************************************************************/
 
-static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
+static BOOL smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
+				 const DATA_BLOB *nt_response,
 				 const uint8_t *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 DATA_BLOB *user_sess_key)
@@ -57,7 +58,7 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 
 	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
 	if (user_sess_key != NULL) {
-		*user_sess_key = data_blob(NULL, 16);
+		*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 		SMBsesskeygen_ntv1(part_passwd, user_sess_key->data);
 	}
 	
@@ -80,7 +81,8 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
  Note:  The same code works with both NTLMv2 and LMv2.
 ****************************************************************************/
 
-static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
+static BOOL smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
+				 const DATA_BLOB *ntv2_response,
 				 const uint8_t *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 const char *user, const char *domain,
@@ -114,7 +116,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 		return False;
 	}
 
-	client_key_data = data_blob(ntv2_response->data+16, ntv2_response->length-16);
+	client_key_data = data_blob_talloc(mem_ctx, ntv2_response->data+16, ntv2_response->length-16);
 	/* 
 	   todo:  should we be checking this for anything?  We can't for LMv2, 
 	   but for NTLMv2 it is meant to contain the current time etc.
@@ -128,7 +130,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 
 	SMBOWFencrypt_ntv2(kr, sec_blob, &client_key_data, value_from_encryption);
 	if (user_sess_key != NULL) {
-		*user_sess_key = data_blob(NULL, 16);
+		*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 		SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key->data);
 	}
 
@@ -193,7 +195,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 
 		if (memcmp(nt_interactive_password->data, nt_pw, 16) == 0) {
 			if (user_sess_key) {
-				*user_sess_key = data_blob(NULL, 16);
+				*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 				SMBsesskeygen_ntv1(nt_pw, user_sess_key->data);
 			}
 			return NT_STATUS_OK;
@@ -281,32 +283,35 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			   use it 
 			*/
 			DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with domain [%s]\n", client_domain));
-			if (smb_pwd_check_ntlmv2( nt_response, 
-						  nt_pw, challenge, 
-						  client_username, 
-						  client_domain,
-						  False,
-						  user_sess_key)) {
+			if (smb_pwd_check_ntlmv2(mem_ctx,
+						 nt_response, 
+						 nt_pw, challenge, 
+						 client_username, 
+						 client_domain,
+						 False,
+						 user_sess_key)) {
 				return NT_STATUS_OK;
 			}
 			
 			DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with uppercased version of domain [%s]\n", client_domain));
-			if (smb_pwd_check_ntlmv2( nt_response, 
-						  nt_pw, challenge, 
-						  client_username, 
-						  client_domain,
-						  True,
-						  user_sess_key)) {
+			if (smb_pwd_check_ntlmv2(mem_ctx,
+						 nt_response, 
+						 nt_pw, challenge, 
+						 client_username, 
+						 client_domain,
+						 True,
+						 user_sess_key)) {
 				return NT_STATUS_OK;
 			}
 			
 			DEBUG(4,("ntlm_password_check: Checking NTLMv2 password without a domain\n"));
-			if (smb_pwd_check_ntlmv2( nt_response, 
-						  nt_pw, challenge, 
-						  client_username, 
-						  "",
-						  False,
-						  user_sess_key)) {
+			if (smb_pwd_check_ntlmv2(mem_ctx,
+						 nt_response, 
+						 nt_pw, challenge, 
+						 client_username, 
+						 "",
+						 False,
+						 user_sess_key)) {
 				return NT_STATUS_OK;
 			} else {
 				DEBUG(3,("ntlm_password_check: NTLMv2 password check failed\n"));
@@ -319,14 +324,15 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			   use it (ie. does it exist in the smbpasswd file).
 			*/
 			DEBUG(4,("ntlm_password_check: Checking NT MD4 password\n"));
-			if (smb_pwd_check_ntlmv1(nt_response, 
+			if (smb_pwd_check_ntlmv1(mem_ctx, 
+						 nt_response, 
 						 nt_pw, challenge,
 						 user_sess_key)) {
 				/* The LM session key for this response is not very secure, 
 				   so use it only if we otherwise allow LM authentication */
 
 				if (lp_lanman_auth() && lm_pw) {
-					*lm_sess_key = data_blob(lm_pw, 8);
+					*lm_sess_key = data_blob_talloc(mem_ctx, lm_pw, 8);
 				}
 				return NT_STATUS_OK;
 			} else {
@@ -361,7 +367,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 username));
 	} else {
 		DEBUG(4,("ntlm_password_check: Checking LM password\n"));
-		if (smb_pwd_check_ntlmv1(lm_response, 
+		if (smb_pwd_check_ntlmv1(mem_ctx,
+					 lm_response, 
 					 lm_pw, challenge,
 					 NULL)) {
 			/* The session key for this response is still very odd.  
@@ -372,8 +379,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				uint8_t first_8_lm_hash[16];
 				memcpy(first_8_lm_hash, lm_pw, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
-				*user_sess_key = data_blob(first_8_lm_hash, 16);
-				*lm_sess_key = data_blob(lm_pw, 8);
+				*user_sess_key = data_blob_talloc(mem_ctx, first_8_lm_hash, 16);
+				*lm_sess_key = data_blob_talloc(mem_ctx, lm_pw, 8);
 			}
 			return NT_STATUS_OK;
 		}
@@ -388,32 +395,35 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	   - related to Win9X, legacy NAS pass-though authentication
 	*/
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password with domain %s\n", client_domain));
-	if (smb_pwd_check_ntlmv2( lm_response, 
-				  nt_pw, challenge, 
-				  client_username,
-				  client_domain,
-				  False,
-				  NULL)) {
+	if (smb_pwd_check_ntlmv2(mem_ctx,
+				 lm_response, 
+				 nt_pw, challenge, 
+				 client_username,
+				 client_domain,
+				 False,
+				 NULL)) {
 		return NT_STATUS_OK;
 	}
 	
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password with upper-cased version of domain %s\n", client_domain));
-	if (smb_pwd_check_ntlmv2( lm_response, 
-				  nt_pw, challenge, 
-				  client_username,
-				  client_domain,
-				  True,
-				  NULL)) {
+	if (smb_pwd_check_ntlmv2(mem_ctx,
+				 lm_response, 
+				 nt_pw, challenge, 
+				 client_username,
+				 client_domain,
+				 True,
+				 NULL)) {
 		return NT_STATUS_OK;
 	}
 	
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password without a domain\n"));
-	if (smb_pwd_check_ntlmv2( lm_response, 
-				  nt_pw, challenge, 
-				  client_username,
-				  "",
-				  False,
-				  NULL)) {
+	if (smb_pwd_check_ntlmv2(mem_ctx,
+				 lm_response, 
+				 nt_pw, challenge, 
+				 client_username,
+				 "",
+				 False,
+				 NULL)) {
 		return NT_STATUS_OK;
 	}
 
@@ -422,7 +432,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	*/
 	DEBUG(4,("ntlm_password_check: Checking NT MD4 password in LM field\n"));
 	if (lp_ntlm_auth()) {
-		if (smb_pwd_check_ntlmv1(lm_response, 
+		if (smb_pwd_check_ntlmv1(mem_ctx, 
+					 lm_response, 
 					 nt_pw, challenge,
 					 NULL)) {
 			/* The session key for this response is still very odd.  
@@ -433,8 +444,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				uint8_t first_8_lm_hash[16];
 				memcpy(first_8_lm_hash, lm_pw, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
-				*user_sess_key = data_blob(first_8_lm_hash, 16);
-				*lm_sess_key = data_blob(lm_pw, 8);
+				*user_sess_key = data_blob_talloc(mem_ctx, first_8_lm_hash, 16);
+				*lm_sess_key = data_blob_talloc(mem_ctx, lm_pw, 8);
 			}
 			return NT_STATUS_OK;
 		}
