@@ -146,6 +146,8 @@ DCERPC_LIBS = @DCERPC_LIBS@
 
 REG_OBJS = @REG_OBJS@
 REG_LIBS = @REG_LIBS@
+
+GTK_OBJS =
 GTK_LIBS = @GTK_LIBS@
 
 LIBLDB_OBJS = @LIBLDB_OBJS@
@@ -217,11 +219,25 @@ NDRDUMP_OBJS = utils/ndrdump.o utils/rewrite.o \
 		$(LIBSMB_OBJS) $(CONFIG_OBJS) $(LIBBASIC_OBJS)
 NDRDUMP_LIBS =	$(LIBSMB_LIBS) $(CONFIG_LIBS) $(LIBBASIC_LIBS)
 
-REGTREE_OBJ = $(REG_OBJS) lib/registry/tools/regtree.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
-GREGEDIT_OBJ = $(REG_OBJS) lib/registry/tools/gregedit.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
-REGSHELL_OBJ = $(REG_OBJS) lib/registry/tools/regshell.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
-REGPATCH_OBJ = $(REG_OBJS) lib/registry/tools/regpatch.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
-REGDIFF_OBJ = $(REG_OBJS) lib/registry/tools/regdiff.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
+REGTREE_OBJS = lib/registry/tools/regtree.o \
+		$(REG_OBJS) $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
+REGTREE_LIBS = 	$(REG_LIBS) $(LIBBASIC_LIBS) $(CONFIG_LIBS) $(LIBSMB_LIBS)
+
+GREGEDIT_OBJS = lib/registry/tools/gregedit.o \
+		$(REG_OBJS) $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS) $(GTK_OBJS)
+GREGEDIT_LIBS = $(REG_LIBS) $(LIBBASIC_LIBS) $(CONFIG_LIBS) $(LIBSMB_LIBS) $(GTK_LIBS)
+
+REGSHELL_OBJS = lib/registry/tools/regshell.o \
+		$(REG_OBJS) $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
+REGSHELL_LIBS = $(REG_LIBS) $(LIBBASIC_LIBS) $(CONFIG_LIBS) $(LIBCMDLINE_LIBS) $(LIBSMB_LIBS)
+
+REGPATCH_OBJS = lib/registry/tools/regpatch.o \
+		$(REG_OBJS)  $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
+REGPATCH_LIBS = $(REG_LIBS)  $(LIBBASIC_LIBS) $(CONFIG_LIBS) $(LIBCMDLINE_LIBS) $(LIBSMB_LIBS)
+
+REGDIFF_OBJS = lib/registry/tools/regdiff.o \
+		$(REG_OBJS) $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
+REGDIFF_LIBS =	$(REG_LIBS) $(LIBBASIC_LIBS) $(CONFIG_LIBS) $(LIBCMDLINE_LIBS) $(LIBSMB_LIBS)
 
 PROTO_OBJ = 	$(SERVER_OBJS) $(PROCESS_MODEL_OBJS) $(CLIENT_OBJS) $(TORTURE_OBJS) \
 		$(DCERPC_OBJS) $(SMB_OBJS) $(AUTH_OBJS) $(PASSDB_OBJS) $(NTVFS_OBJS) \
@@ -412,25 +428,25 @@ bin/locktest@EXEEXT@: $(LOCKTEST_OBJS) bin/.dummy
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJS) $(LDFLAGS) $(LOCKTEST_LIBS)
 
 
-bin/regshell@EXEEXT@: $(REGSHELL_OBJ) bin/.dummy
+bin/regshell@EXEEXT@: $(REGSHELL_OBJS) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(REGSHELL_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS) $(LIBCMDLINE_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(REGSHELL_OBJS) $(LDFLAGS) $(REGSHELL_LIBS)
 
-bin/regtree@EXEEXT@: $(REGTREE_OBJ) bin/.dummy
+bin/regtree@EXEEXT@: $(REGTREE_OBJS) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(REGTREE_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(REGTREE_OBJS) $(LDFLAGS) $(REGTREE_LIBS)
 
-bin/gregedit@EXEEXT@: $(GREGEDIT_OBJ) bin/.dummy
+bin/gregedit@EXEEXT@: $(GREGEDIT_OBJS) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLGS) -o $@ $(GREGEDIT_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS) $(GTK_LIBS)
+	@$(CC) $(FLGS) -o $@ $(GREGEDIT_OBJS) $(LDFLAGS) $(GREGEDIT_LIBS)
 
-bin/regpatch@EXEEXT@: $(REGPATCH_OBJ) bin/.dummy
+bin/regpatch@EXEEXT@: $(REGPATCH_OBJS) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(REGPATCH_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(REGPATCH_OBJS) $(LDFLAGS) $(REGPATCH_LIBS)
 
-bin/regdiff@EXEEXT@: $(REGDIFF_OBJ) bin/.dummy
+bin/regdiff@EXEEXT@: $(REGDIFF_OBJS) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(REGDIFF_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(REGDIFF_OBJS) $(LDFLAGS) $(REGDIFF_LIBS)
 
 install: installbin installtorture installldb installreg installdat 
 
