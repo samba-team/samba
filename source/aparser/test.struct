@@ -1,0 +1,23 @@
+module spool
+struct PRINTER_DRIVER_INFO_LEVEL_6 {
+  uint32   dummy1; 
+  uint32   version; 
+  UNISTR2  name;       
+  UNISTR2  environment;
+  UNISTR2  driverpath;
+  UNISTR2  datafile;
+  UNISTR2  configfile;
+  UNISTR2  helpfile;
+  UNISTR2  monitorname;
+  UNISTR2  defaultdatatype;
+  BUFFER5  dependentfiles;
+  BUFFER5  previousnames;
+  NTTIME   driverdate; 
+  UINT64_S driverversion; 
+  uint32   dummy4;
+  UNISTR2  mfgname; 
+  UNISTR2  oemurl; 
+  UNISTR2  hardwareid; 
+  UNISTR2  provider; 
+};
+
