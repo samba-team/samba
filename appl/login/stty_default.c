@@ -1,5 +1,7 @@
 #include "bsd_locl.h"
 
+RCSID("$Id$");
+
 #include <termios.h>
 
 /* HP-UX 9.0 termios doesn't define these */

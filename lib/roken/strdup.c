@@ -1,6 +1,6 @@
 #include "bsd_locl.h"
 
-RCSID("$Header$");
+RCSID("$Id$");
 
 #ifndef HAVE_STRDUP
 char *
