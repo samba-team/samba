@@ -229,48 +229,48 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	pdb_set_logon_time(u, xatol(row[0]), FALSE);
 	pdb_set_logoff_time(u, xatol(row[1]), FALSE);
 	pdb_set_kickoff_time(u, xatol(row[2]), FALSE);
-	pdb_set_pass_last_set_time(u, xatol(row[3]));
+	pdb_set_pass_last_set_time(u, xatol(row[3]), PDB_SET);
 	pdb_set_pass_can_change_time(u, xatol(row[4]), FALSE);
 	pdb_set_pass_must_change_time(u, xatol(row[5]), FALSE);
-	pdb_set_username(u, row[6]);
-	pdb_set_domain(u, row[7]);
-	pdb_set_nt_username(u, row[8]);
-	pdb_set_fullname(u, row[9]);
+	pdb_set_username(u, row[6], PDB_SET);
+	pdb_set_domain(u, row[7], PDB_SET);
+	pdb_set_nt_username(u, row[8], PDB_SET);
+	pdb_set_fullname(u, row[9], PDB_SET);
 	pdb_set_homedir(u, row[10], True);
 	pdb_set_dir_drive(u, row[11], True);
 	pdb_set_logon_script(u, row[12], True);
 	pdb_set_profile_path(u, row[13], True);
-	pdb_set_acct_desc(u, row[14]);
-	pdb_set_workstations(u, row[15]);
-	pdb_set_unknown_str(u, row[16]);
-	pdb_set_munged_dial(u, row[17]);
+	pdb_set_acct_desc(u, row[14], PDB_SET);
+	pdb_set_workstations(u, row[15], PDB_SET);
+	pdb_set_unknown_str(u, row[16], PDB_SET);
+	pdb_set_munged_dial(u, row[17], PDB_SET);
 
 	if (row[18])
-		pdb_set_uid(u, xatol(row[18]));
+		pdb_set_uid(u, xatol(row[18]), PDB_SET);
 	if (row[19])
-		pdb_set_gid(u, xatol(row[19]));
+		pdb_set_gid(u, xatol(row[19]), PDB_SET);
 
 	string_to_sid(&sid, row[20]);
-	pdb_set_user_sid(u, &sid);
+	pdb_set_user_sid(u, &sid, PDB_SET);
 	string_to_sid(&sid, row[21]);
-	pdb_set_group_sid(u, &sid);
+	pdb_set_group_sid(u, &sid, PDB_SET);
 
-	if (pdb_gethexpwd(row[22], temp))
-		pdb_set_lanman_passwd(u, temp);
-	if (pdb_gethexpwd(row[23], temp))
-		pdb_set_nt_passwd(u, temp);
+	if (pdb_gethexpwd(row[22], temp), PDB_SET)
+		pdb_set_lanman_passwd(u, temp, PDB_SET);
+	if (pdb_gethexpwd(row[23], temp), PDB_SET)
+		pdb_set_nt_passwd(u, temp, PDB_SET);
 
 	/* Only use plaintext password storage when lanman and nt are
 	 * NOT used */
 	if (!row[22] || !row[23])
 		pdb_set_plaintext_passwd(u, row[24]);
 
-	pdb_set_acct_ctrl(u, xatol(row[25]));
-	pdb_set_unknown_3(u, xatol(row[26]));
-	pdb_set_logon_divs(u, xatol(row[27]));
-	pdb_set_hours_len(u, xatol(row[28]));
-	pdb_set_unknown_5(u, xatol(row[29]));
-	pdb_set_unknown_6(u, xatol(row[30]));
+	pdb_set_acct_ctrl(u, xatol(row[25]), PDB_SET);
+	pdb_set_unknown_3(u, xatol(row[26]), PDB_SET);
+	pdb_set_logon_divs(u, xatol(row[27]), PDB_SET);
+	pdb_set_hours_len(u, xatol(row[28]), PDB_SET);
+	pdb_set_unknown_5(u, xatol(row[29]), PDB_SET);
+	pdb_set_unknown_6(u, xatol(row[30]), PDB_SET);
 
 	return NT_STATUS_OK;
 }
@@ -695,7 +695,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 										   CONFIG_ACCT_CTRL_DEFAULT),
 						pdb_get_acct_ctrl(newpwd));
 
-	if (store & FLAG_SAM_LOGONTIME) {
+	if (store & PDB_LOGONTIME) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "logon time column",
@@ -703,7 +703,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_logon_time(newpwd));
 	}
 
-	if (store & FLAG_SAM_LOGOFFTIME) {
+	if (store & PDB_LOGOFFTIME) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "logoff time column",
@@ -711,7 +711,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_logoff_time(newpwd));
 	}
 
-	if (store & FLAG_SAM_KICKOFFTIME) {
+	if (store & PDB_KICKOFFTIME) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "kickoff time column",
@@ -719,7 +719,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_kickoff_time(newpwd));
 	}
 
-	if (store & FLAG_SAM_CANCHANGETIME) {
+	if (store & PDB_CANCHANGETIME) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "pass can change time column",
@@ -727,7 +727,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_pass_can_change_time(newpwd));
 	}
 
-	if (store & FLAG_SAM_MUSTCHANGETIME) {
+	if (store & PDB_MUSTCHANGETIME) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "pass must change time column",
@@ -759,14 +759,14 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_logon_divs(newpwd));
 	}
 
-	if (store & FLAG_SAM_UID) {
+	if (store & PDB_UID) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data, "uid column",
 											   CONFIG_UID_DEFAULT),
 							pdb_get_uid(newpwd));
 	}
 
-	if (store & FLAG_SAM_GID) {
+	if (store & PDB_GID) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data, "gid column",
 											   CONFIG_GID_DEFAULT),

@@ -55,12 +55,12 @@ BOOL parsePass(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 				&&
 				pdb_gethexpwd(xmlNodeListGetString
 							  (doc, cur->xmlChildrenNode, 1), temp))
-				pdb_set_nt_passwd(u, temp);
+				pdb_set_nt_passwd(u, temp, PDB_SET);
 			else if (!strcmp(xmlGetProp(cur, "type"), "lanman")
 					 &&
 					 pdb_gethexpwd(xmlNodeListGetString
 								   (doc, cur->xmlChildrenNode, 1), temp))
-				pdb_set_lanman_passwd(u, temp);
+				pdb_set_lanman_passwd(u, temp, PDB_SET);
 			else
 				DEBUG(0,
 					  ("Unknown crypt type: %s\n",
@@ -79,42 +79,42 @@ BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 	tmp = xmlGetProp(cur, "sid");
 	if (tmp){
 		string_to_sid(&sid, tmp);
-		pdb_set_user_sid(u, &sid);
+		pdb_set_user_sid(u, &sid, PDB_SET);
 	}
 	tmp = xmlGetProp(cur, "uid");
 	if (tmp)
-		pdb_set_uid(u, atol(tmp));
-	pdb_set_username(u, xmlGetProp(cur, "name"));
+		pdb_set_uid(u, atol(tmp), PDB_SET);
+	pdb_set_username(u, xmlGetProp(cur, "name"), PDB_SET);
 	/* We don't care what the top level element name is */
 	cur = cur->xmlChildrenNode;
 	while (cur != NULL) {
 		if ((!strcmp(cur->name, "group")) && (cur->ns == ns)) {
 			tmp = xmlGetProp(cur, "gid");
 			if (tmp)
-				pdb_set_gid(u, atol(tmp));
+				pdb_set_gid(u, atol(tmp), PDB_SET);
 			tmp = xmlGetProp(cur, "sid");
 			if (tmp){
 				string_to_sid(&sid, tmp);
-				pdb_set_group_sid(u, &sid);
+				pdb_set_group_sid(u, &sid, PDB_SET);
 			}
 		}
 
 		else if ((!strcmp(cur->name, "domain")) && (cur->ns == ns))
 			pdb_set_domain(u,
 						   xmlNodeListGetString(doc, cur->xmlChildrenNode,
-												1));
+												1), PDB_SET);
 
 		else if (!strcmp(cur->name, "fullname") && cur->ns == ns)
 			pdb_set_fullname(u,
 							 xmlNodeListGetString(doc,
 												  cur->xmlChildrenNode,
-												  1));
+												  1), PDB_SET);
 
 		else if (!strcmp(cur->name, "nt_username") && cur->ns == ns)
 			pdb_set_nt_username(u,
 								xmlNodeListGetString(doc,
 													 cur->xmlChildrenNode,
-													 1));
+													 1), PDB_SET);
 
 		else if (!strcmp(cur->name, "logon_script") && cur->ns == ns)
 			pdb_set_logon_script(u,
@@ -148,27 +148,27 @@ BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 		else if (!strcmp(cur->name, "logon_divs") && cur->ns == ns)
 			pdb_set_logon_divs(u,
 							   atol(xmlNodeListGetString
-									(doc, cur->xmlChildrenNode, 1)));
+									(doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
 		else if (!strcmp(cur->name, "hours_len") && cur->ns == ns)
 			pdb_set_hours_len(u,
 							  atol(xmlNodeListGetString
-								   (doc, cur->xmlChildrenNode, 1)));
+								   (doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
 		else if (!strcmp(cur->name, "unknown_3") && cur->ns == ns)
 			pdb_set_unknown_3(u,
 							  atol(xmlNodeListGetString
-								   (doc, cur->xmlChildrenNode, 1)));
+								   (doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
 		else if (!strcmp(cur->name, "unknown_5") && cur->ns == ns)
 			pdb_set_unknown_5(u,
 							  atol(xmlNodeListGetString
-								   (doc, cur->xmlChildrenNode, 1)));
+								   (doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
 		else if (!strcmp(cur->name, "unknown_6") && cur->ns == ns)
 			pdb_set_unknown_6(u,
 							  atol(xmlNodeListGetString
-								   (doc, cur->xmlChildrenNode, 1)));
+								   (doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
 		else if (!strcmp(cur->name, "homedir") && cur->ns == ns)
 			pdb_set_homedir(u,
@@ -179,7 +179,7 @@ BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 			pdb_set_unknown_str(u,
 								xmlNodeListGetString(doc,
 													 cur->xmlChildrenNode,
-													 1));
+													 1), PDB_SET);
 
 		else if (!strcmp(cur->name, "dir_drive") && cur->ns == ns)
 			pdb_set_dir_drive(u,
@@ -191,29 +191,29 @@ BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 			pdb_set_munged_dial(u,
 								xmlNodeListGetString(doc,
 													 cur->xmlChildrenNode,
-													 1));
+													 1), PDB_SET);
 
 		else if (!strcmp(cur->name, "acct_desc") && cur->ns == ns)
 			pdb_set_acct_desc(u,
 							  xmlNodeListGetString(doc,
 												   cur->xmlChildrenNode,
-												   1));
+												   1), PDB_SET);
 
 		else if (!strcmp(cur->name, "acct_ctrl") && cur->ns == ns)
 			pdb_set_acct_ctrl(u,
 							  atol(xmlNodeListGetString
-								   (doc, cur->xmlChildrenNode, 1)));
+								   (doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
 		else if (!strcmp(cur->name, "workstations") && cur->ns == ns)
 			pdb_set_workstations(u,
 								 xmlNodeListGetString(doc,
 													  cur->xmlChildrenNode,
-													  1));
+													  1), PDB_SET);
 
 		else if ((!strcmp(cur->name, "password")) && (cur->ns == ns)) {
 			tmp = xmlGetProp(cur, "last_set");
 			if (tmp)
-				pdb_set_pass_last_set_time(u, atol(tmp));
+				pdb_set_pass_last_set_time(u, atol(tmp), PDB_SET);
 			tmp = xmlGetProp(cur, "must_change");
 			if (tmp)
 				pdb_set_pass_must_change_time(u, atol(tmp), True);
@@ -402,7 +402,7 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	user = xmlNewChild(data->users, data->ns, "user", NULL);
 	xmlNewProp(user, "sid",
 			   sid_to_string(sid_str, pdb_get_user_sid(u)));
-	if (store & FLAG_SAM_UID)
+	if (store & PDB_UID)
 		xmlNewProp(user, "uid", iota(pdb_get_uid(u)));
 
 	if (pdb_get_username(u) && strcmp(pdb_get_username(u), ""))
@@ -412,18 +412,18 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	
 	xmlNewProp(cur, "sid",
 			   sid_to_string(sid_str, pdb_get_group_sid(u)));
-	if (store & FLAG_SAM_GID)
+	if (store & PDB_GID)
 		xmlNewProp(cur, "gid", iota(pdb_get_gid(u)));
 
-	if (store & FLAG_SAM_LOGONTIME)
+	if (store & PDB_LOGONTIME)
 		xmlNewChild(user, data->ns, "login_time",
 					iota(pdb_get_logon_time(u)));
 
-	if (store & FLAG_SAM_LOGOFFTIME)
+	if (store & PDB_LOGOFFTIME)
 		xmlNewChild(user, data->ns, "logoff_time",
 					iota(pdb_get_logoff_time(u)));
 
-	if (store & FLAG_SAM_KICKOFFTIME)
+	if (store & PDB_KICKOFFTIME)
 		xmlNewChild(user, data->ns, "kickoff_time",
 					iota(pdb_get_kickoff_time(u)));
 
@@ -468,11 +468,11 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	pass = xmlNewChild(user, data->ns, "password", NULL);
 	if (pdb_get_pass_last_set_time(u))
 		xmlNewProp(pass, "last_set", iota(pdb_get_pass_last_set_time(u)));
-	if (store & FLAG_SAM_CANCHANGETIME)
+	if (store & PDB_CANCHANGETIME)
 		xmlNewProp(pass, "can_change",
 				   iota(pdb_get_pass_can_change_time(u)));
 
-	if (store & FLAG_SAM_MUSTCHANGETIME)
+	if (store & PDB_MUSTCHANGETIME)
 		xmlNewProp(pass, "must_change",
 				   iota(pdb_get_pass_must_change_time(u)));
 
