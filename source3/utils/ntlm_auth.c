@@ -410,6 +410,9 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	NTSTATUS status;
 	ssize_t len;
 
+	char *user = NULL;
+	char *domain = NULL;
+
 	const char *reply_code;
 	char       *reply_base64;
 	pstring     reply_argument;
@@ -470,39 +473,35 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 			return;
 		}
 
-		if ( strcmp(request.negTokenInit.mechTypes[0], OID_NTLMSSP) != 0 ) {
-			DEBUG(1, ("Client did not choose NTLMSSP but %s\n",
-				  request.negTokenInit.mechTypes[0]));
-			x_fprintf(x_stdout, "BH\n");
-			return;
+		if (strcmp(request.negTokenInit.mechTypes[0], OID_NTLMSSP) == 0) {
+
+			if ( request.negTokenInit.mechToken.data == NULL ) {
+				DEBUG(1, ("Client did not provide  NTLMSSP data\n"));
+				x_fprintf(x_stdout, "BH\n");
+				return;
+			}
+
+			if ( ntlmssp_state != NULL ) {
+				DEBUG(1, ("Client wants a new NTLMSSP challenge, but "
+					  "already got one\n"));
+				x_fprintf(x_stdout, "BH\n");
+				ntlmssp_server_end(&ntlmssp_state);
+				return;
+			}
+
+			ntlmssp_server_start(&ntlmssp_state);
+			ntlmssp_state->check_password = winbind_pw_check;
+			ntlmssp_state->get_domain = get_winbind_domain;
+			ntlmssp_state->get_global_myname = get_winbind_netbios_name;
+
+			DEBUG(10, ("got NTLMSSP packet:\n"));
+			dump_data(10, request.negTokenInit.mechToken.data,
+				  request.negTokenInit.mechToken.length);
+
+			status = ntlmssp_server_update(ntlmssp_state,
+						       request.negTokenInit.mechToken,
+						       &response.negTokenTarg.responseToken);
 		}
-
-		if ( request.negTokenInit.mechToken.data == NULL ) {
-			DEBUG(1, ("Client did not provide  NTLMSSP data\n"));
-			x_fprintf(x_stdout, "BH\n");
-			return;
-		}
-
-		if ( ntlmssp_state != NULL ) {
-			DEBUG(1, ("Client wants a new NTLMSSP challenge, but "
-				  "already got one\n"));
-			x_fprintf(x_stdout, "BH\n");
-			ntlmssp_server_end(&ntlmssp_state);
-			return;
-		}
-
-		ntlmssp_server_start(&ntlmssp_state);
-		ntlmssp_state->check_password = winbind_pw_check;
-		ntlmssp_state->get_domain = get_winbind_domain;
-		ntlmssp_state->get_global_myname = get_winbind_netbios_name;
-
-		DEBUG(10, ("got NTLMSSP packet:\n"));
-		dump_data(10, request.negTokenInit.mechToken.data,
-			  request.negTokenInit.mechToken.length);
-
-		status = ntlmssp_server_update(ntlmssp_state,
-					       request.negTokenInit.mechToken,
-					       &response.negTokenTarg.responseToken);
 
 	} else {
 
@@ -517,6 +516,12 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		status = ntlmssp_server_update(ntlmssp_state,
 					       request.negTokenTarg.responseToken,
 					       &response.negTokenTarg.responseToken);
+
+		if (NT_STATUS_IS_OK(status)) {
+			user = strdup(ntlmssp_state->user);
+			domain = strdup(ntlmssp_state->domain);
+			ntlmssp_server_end(&ntlmssp_state);
+		}
 	}
 
 	free_spnego_data(&request);
@@ -528,8 +533,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	if (NT_STATUS_IS_OK(status)) {
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
 		reply_code = "AF";
-		pstr_sprintf(reply_argument, "%s\\%s",
-			     ntlmssp_state->domain, ntlmssp_state->user);
+		pstr_sprintf(reply_argument, "%s\\%s", domain, user);
 	} else if (NT_STATUS_EQUAL(status,
 				   NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
@@ -540,6 +544,9 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		reply_code = "NA";
 		pstrcpy(reply_argument, nt_errstr(status));
 	}
+
+	SAFE_FREE(user);
+	SAFE_FREE(domain);
 
 	len = write_spnego_data(&token, &response);
 	free_spnego_data(&response);
@@ -557,10 +564,6 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 
 	SAFE_FREE(reply_base64);
 	data_blob_free(&token);
-
-	if (NT_STATUS_IS_OK(status)) {
-		ntlmssp_server_end(&ntlmssp_state);
-	}
 
 	return;
 }
