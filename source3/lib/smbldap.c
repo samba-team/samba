@@ -102,9 +102,11 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 
 ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
 	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
+	{ LDAP_ATTR_NEXT_RID,	        "sambaNextRid"	        },
 	{ LDAP_ATTR_NEXT_USERRID,	"sambaNextUserRid"	},
 	{ LDAP_ATTR_NEXT_GROUPRID,	"sambaNextGroupRid"	},
 	{ LDAP_ATTR_DOM_SID,		LDAP_ATTRIBUTE_SID	},
+	{ LDAP_ATTR_ALGORITHMIC_RID_BASE,"sambaAlgorithmicRidBase"},
 	{ LDAP_ATTR_LIST_END,		NULL			},
 };
 
@@ -268,6 +270,40 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 		*pw = smb_xstrdup(old_style_pw);		
 	}
 	
+	return True;
+}
+
+/*******************************************************************
+search an attribute and return the first value found.
+******************************************************************/
+ BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
+				   const char *attribute, pstring value)
+{
+	char **values;
+	
+	if ( !attribute )
+		return False;
+		
+	value[0] = '\0';
+
+	if ((values = ldap_get_values (ldap_struct, entry, attribute)) == NULL) {
+		DEBUG (10, ("smbldap_get_single_attribute: [%s] = [<does not exist>]\n", attribute));
+		
+		return False;
+	}
+	
+	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, sizeof(pstring)) == (size_t)-1)
+	{
+		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
+			  attribute, values[0]));
+		ldap_value_free(values);
+		return False;
+	}
+	
+	ldap_value_free(values);
+#ifdef DEBUG_PASSWORDS
+	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n", attribute, value));
+#endif	
 	return True;
 }
 
@@ -819,7 +855,7 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 	return NT_STATUS_OK;
 }
 
-static int smbldap_retry_open(struct smbldap_state *ldap_state, int *attempts)
+int smbldap_retry_open(struct smbldap_state *ldap_state, int *attempts)
 {
 	int rc;
 

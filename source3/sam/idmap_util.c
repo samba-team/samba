@@ -132,7 +132,6 @@ BOOL idmap_get_free_ugid_range(uint32 *low, uint32 *high)
  *THE CANONICAL* convert uid_t to SID function.
  check idmap if uid is in idmap range, otherwise falls back to
  the legacy algorithmic mapping.
- A special cache is used for uids that maps to Wellknown SIDs
  Returns SID pointer.
 *****************************************************************/  
 
@@ -204,7 +203,6 @@ NTSTATUS gid_to_sid(DOM_SID *sid, gid_t gid)
  *THE CANONICAL* convert SID to uid function.
  if it is a foreign sid or it is in idmap rid range check idmap,
  otherwise falls back to the legacy algorithmic mapping.
- A special cache is used for uids that maps to Wellknown SIDs
  Returns True if this name is a user sid and the conversion
  was done correctly, False if not.
 *****************************************************************/  
@@ -351,6 +349,7 @@ BOOL idmap_init_wellknown_sids(void)
 	int num_entries=0;
 	DOM_SID sid;
 	unid_t id;
+	fstring sid_string;
 
 	if (!(guest_account && *guest_account)) {
 		DEBUG(1, ("NULL guest account!?!?\n"));
@@ -368,6 +367,8 @@ BOOL idmap_init_wellknown_sids(void)
 	sid_append_rid(&sid, DOMAIN_USER_RID_GUEST);
 
 	if (!NT_STATUS_IS_OK(wellknown_id_init(&sid, id, ID_USERID))) {
+		DEBUG(0, ("Failed to setup UID mapping for GUEST (%s) to (%u)\n", 
+			  sid_to_string(sid_string, &sid), (unsigned int)id.uid));
 		passwd_free(&pass);
 		return False;
 	}
@@ -378,6 +379,8 @@ BOOL idmap_init_wellknown_sids(void)
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, DOMAIN_GROUP_RID_GUESTS);
 	if (!NT_STATUS_IS_OK(wellknown_id_init(&sid, id, ID_GROUPID))) {
+		DEBUG(0, ("Failed to setup GID mapping for Group DOMAIN GUESTS (%s) to (%u)\n", 
+			  sid_to_string(sid_string, &sid), (unsigned int)id.gid));
 		passwd_free(&pass);
 		return False;
 	}
