@@ -44,15 +44,15 @@ static double end_timer()
 }
 
 
-static BOOL open_connection(struct cli_state *c)
+static BOOL open_connection(struct cli_state *c, t_idx,int *t_idx)
 {
-	if (!cli_initialise(c) || !cli_connect(c, host, NULL))
+	if (!cli_initialise(c) || !cli_connect(c, t_idx,host, NULL))
 	{
 		printf("Failed to connect with %s\n", host);
 		return False;
 	}
 
-	if (!cli_session_request(c, host, 0x20, myname, 0x0))
+	if (!cli_session_request(c, t_idx,host, 0x20, myname, 0x0))
 	{
 		printf("%s rejected the session\n",host);
 		cli_shutdown(c);
@@ -65,14 +65,14 @@ static BOOL open_connection(struct cli_state *c)
 		return False;
 	}
 
-	if (!cli_session_setup(c, username, password, strlen(password),
+	if (!cli_session_setup(c, t_idx,username, password, strlen(password),
 			       "", 0, workgroup)) {
 		printf("%s rejected the sessionsetup (%s)\n", host, cli_errstr(c));
 		cli_shutdown(c);
 		return False;
 	}
 
-	if (!cli_send_tconX(c, share, "A:", password, strlen(password)+1)) {
+	if (!cli_send_tconX(c, t_idx,t_idx, share, "A:", password, strlen(password)+1)) {
 		printf("%s refused tree connect (%s)\n", host, cli_errstr(c));
 		cli_shutdown(c);
 		return False;
@@ -93,11 +93,11 @@ static void close_connection(struct cli_state *c)
 }
 
 
-static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
+static BOOL wait_lock(struct cli_state *c, t_idx,int fnum, uint32 offset, uint32 len)
 {
-	while (!cli_lock(c, fnum, offset, len, -1)) {
+	while (!cli_lock(c, t_idx,fnum, offset, len, -1)) {
 		int eclass, num;
-		cli_error(c, &eclass, &num);
+		cli_error(c, t_idx,&eclass, &num);
 		if (eclass != ERRDOS || num != ERRlock) {
 			printf("lock failed (%s)\n", 
 			       cli_errstr(c));
@@ -108,7 +108,7 @@ static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 }
 
 
-static BOOL rw_torture(struct cli_state *c, int numops)
+static BOOL rw_torture(struct cli_state *c, t_idx,int t_idx, int numops)
 {
 	char *lockfname = "\\torture.lck";
 	fstring fname;
@@ -117,10 +117,10 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 	int pid2, pid = getpid();
 	int i;
 
-	fnum2 = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
+	fnum2 = cli_open(c, t_idx,lockfname, O_RDWR | O_CREAT | O_EXCL, 
 			 DENY_NONE);
 	if (fnum2 == -1)
-		fnum2 = cli_open(c, lockfname, O_RDWR, DENY_NONE);
+		fnum2 = cli_open(c, t_idx,t_idx, lockfname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
 		printf("open of %s failed (%s)\n", lockfname, cli_errstr(c));
 		return False;
@@ -134,23 +134,23 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 		}
 		sprintf(fname,"\\torture.%u", n);
 
-		if (!wait_lock(c, fnum2, n*sizeof(int), sizeof(int))) {
+		if (!wait_lock(c, t_idx,fnum2, n*sizeof(int), sizeof(int))) {
 			return False;
 		}
 
-		fnum = cli_open(c, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
+		fnum = cli_open(c, t_idx,fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
 		if (fnum == -1) {
 			printf("open failed (%s)\n", cli_errstr(c));
 			break;
 		}
 
-		if (cli_write_x(c, fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
+		if (cli_write_x(c, t_idx,fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("write failed (%s)\n", cli_errstr(c));
 		}
 
 		pid2 = 0;
 
-		if (cli_read(c, fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
+		if (cli_read(c, t_idx,fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("read failed (%s)\n", cli_errstr(c));
 		}
 
@@ -158,15 +158,15 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 			printf("data corruption!\n");
 		}
 
-		if (!cli_close(c, fnum, 0)) {
+		if (!cli_close(c, t_idx,fnum, 0)) {
 			printf("close failed (%s)\n", cli_errstr(c));
 		}
 
-		if (!cli_unlink(c, fname)) {
+		if (!cli_unlink(c, t_idx,fname)) {
 			printf("unlink failed (%s)\n", cli_errstr(c));
 		}
 
-		if (!cli_unlock(c, fnum2, n*sizeof(int), sizeof(int), -1)) {
+		if (!cli_unlock(c, t_idx,fnum2, n*sizeof(int), sizeof(int), -1)) {
 			printf("unlock failed (%s)\n", cli_errstr(c));
 		}
 	}
@@ -196,13 +196,15 @@ static void usage(void)
 static void run_torture(int numops)
 {
 	static struct cli_state cli;
+	int t_idx;
 
-	if (open_connection(&cli)) {
+	if (open_connection(&cli, &t_idx))
+	{
 		cli_sockopt(&cli, sockops);
 
 		printf("pid %d OK\n", getpid());
 
-		rw_torture(&cli, numops);
+		rw_torture(&cli, t_idx, numops);
 
 		close_connection(&cli);
 	}

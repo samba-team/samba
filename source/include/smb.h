@@ -53,8 +53,10 @@
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
 #define BITSETB(ptr,bit) ((((char *)ptr)[0] & (1<<(bit)))!=0)
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
-#define IS_BITS_SET(var,bit) (((var)&(bit))==(bit))
-#define IS_BITS_CLR(var,bit) (((var)&(~(bit)))==0)
+
+#define IS_BITS_SET_ALL(var,bit) (((var)&(bit))==(bit))
+#define IS_BITS_SET_SOME(var,bit) (((var)&(bit))!=0)
+#define IS_BITS_CLR_ALL(var,bit) (((var)&(~(bit)))==0)
 
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((char *)(p1)) - (char *)(p2)))
 
@@ -438,6 +440,7 @@ struct client_info
 	struct in_addr dest_ip;
 	fstring dest_host;
 	fstring query_host;
+	uint8 name_type;
 
 	fstring myhostname;
 	fstring username;
@@ -447,6 +450,11 @@ struct client_info
 	pstring cur_dir;
 	pstring base_dir;
 	pstring file_sel;
+
+	fstring service;
+	fstring share;
+	fstring svc_type;
+
 	time_t newer_than;
 	int archive_level;
 	int dir_total;

@@ -34,10 +34,19 @@ extern int DEBUGLEVEL;
 
 #ifdef NTDOMAIN
 
+static struct cli_state nt_cli;
+static int nt_tidx;
+
+extern struct cli_state ipc_cli;
+static int ipc_tidx;
+
+
 /****************************************************************************
-experimental nt login.
+nt lsa query
+
+use the anon IPC$ for this one
 ****************************************************************************/
-void cmd_lsa_query_info(struct cli_state *cli, struct client_info *info)
+void cmd_lsa_query_info(struct client_info *info)
 {
 	fstring srv_name;
 
@@ -61,30 +70,30 @@ void cmd_lsa_query_info(struct cli_state *cli, struct client_info *info)
 	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
 
 	/* open LSARPC session. */
-	res = res ? do_lsa_session_open(cli, info) : False;
+	res = res ? do_lsa_session_open(&ipc_cli, ipc_tidx, info) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_lsa_open_policy(cli, info->dom.lsarpc_fnum,
+	res = res ? do_lsa_open_policy(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 				srv_name,
 				&info->dom.lsa_info_pol) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(cli, info->dom.lsarpc_fnum,
+	res = res ? do_lsa_query_info_pol(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	            &info->dom.lsa_info_pol, 0x03,
 				info->dom.level3_dom,
 	            info->dom.level3_sid) : False;
 
 	/* send client info query, level 5.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(cli, info->dom.lsarpc_fnum,
+	res = res ? do_lsa_query_info_pol(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	            &info->dom.lsa_info_pol, 0x05,
 				info->dom.level5_dom,
 	            info->dom.level5_sid) : False;
 
-	res = res ? do_lsa_close(cli, info->dom.lsarpc_fnum,
+	res = res ? do_lsa_close(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 				&info->dom.lsa_info_pol) : False;
 
 	/* close the session */
-	do_lsa_session_close(cli, info);
+	do_lsa_session_close(&ipc_cli, ipc_tidx, info);
 
 	if (res)
 	{
@@ -106,8 +115,10 @@ void cmd_lsa_query_info(struct cli_state *cli, struct client_info *info)
 
 /****************************************************************************
 experimental SAM user query.
+
+use the nt IPC$ connection for this one.
 ****************************************************************************/
-void cmd_sam_query_users(struct cli_state *cli, struct client_info *info)
+void cmd_sam_query_users(struct client_info *info)
 {
 	fstring srv_name;
 	fstring sid;
@@ -135,14 +146,14 @@ void cmd_sam_query_users(struct cli_state *cli, struct client_info *info)
 	DEBUG(0,("Account Information for %s, SID: %s\n", srv_name, sid));
 
 	/* open SAMR session.  negotiate credentials */
-	res = res ? do_samr_session_open(cli, info) : False;
+	res = res ? do_samr_session_open(&nt_cli, nt_tidx, info) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_samr_open_policy(cli, info->dom.samr_fnum,
+	res = res ? do_samr_open_policy(&nt_cli, nt_tidx, info->dom.samr_fnum,
 				srv_name, 0x00000020,
 				&info->dom.samr_pol_open) : False;
 
-	res = res ? do_samr_enum_sam_db(cli, info->dom.samr_fnum,
+	res = res ? do_samr_enum_sam_db(&nt_cli, nt_tidx, info->dom.samr_fnum,
 				&info->dom.samr_pol_open, 0xffff,
 				info->dom.sam, &info->dom.num_sam_entries) : False;
 
@@ -161,7 +172,7 @@ void cmd_sam_query_users(struct cli_state *cli, struct client_info *info)
 		          info->dom.sam[user_idx].acct_name));
 
 		/* send client open secret; receive a client policy handle */
-		res = res ? do_samr_open_secret(cli, info->dom.samr_fnum,
+		res = res ? do_samr_open_secret(&nt_cli, nt_tidx, info->dom.samr_fnum,
 					&info->dom.samr_pol_open,
 					info->dom.sam[user_idx].smb_userid, sid,
 					&(info->dom.sam[user_idx].acct_pol)) : False;
@@ -169,7 +180,7 @@ void cmd_sam_query_users(struct cli_state *cli, struct client_info *info)
 	}
 
 	/* close the session */
-	do_samr_session_close(cli, info);
+	do_samr_session_close(&nt_cli, nt_tidx, info);
 
 	if (res)
 	{
@@ -184,8 +195,10 @@ void cmd_sam_query_users(struct cli_state *cli, struct client_info *info)
 
 /****************************************************************************
 experimental nt login.
+
+use the anon IPC$ for this one
 ****************************************************************************/
-void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
+void cmd_nt_login_test(struct client_info *info)
 {
 	fstring username;
 
@@ -212,7 +225,7 @@ void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? do_nt_session_open(cli, &info->dom.lsarpc_fnum,
+	res = res ? do_nt_session_open(&ipc_cli, ipc_tidx, &info->dom.lsarpc_fnum,
 	                          info->dest_host, info->myhostname,
 	                          info->mach_acct,
 	                          username, info->workgroup,
@@ -221,7 +234,7 @@ void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
 	/* change the machine password? */
 	if (new_mach_pwd != NULL && new_mach_pwd[0] != 0)
 	{
-		res = res ? do_nt_srv_pwset(cli, info->dom.lsarpc_fnum,
+		res = res ? do_nt_srv_pwset(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 		                   info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 		                   new_mach_pwd,
 		                   info->dest_host, info->mach_acct, info->myhostname) : False;
@@ -234,34 +247,36 @@ void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
 	                 getuid(), username);
 
 	/* do an NT login */
-	res = res ? do_nt_login(cli, info->dom.lsarpc_fnum,
+	res = res ? do_nt_login(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	                        info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 	                        &info->dom.id1, info->dest_host, info->myhostname, &info->dom.user_info1) : False;
 
 	/* ok!  you're logged in!  do anything you like, then... */
 	   
 	/* do an NT logout */
-	res = res ? do_nt_logoff(cli, info->dom.lsarpc_fnum,
+	res = res ? do_nt_logoff(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	                         info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 	                         &info->dom.id1, info->dest_host, info->myhostname) : False;
 
 	/* close the session */
-	do_nt_session_close(cli, info->dom.lsarpc_fnum);
+	do_nt_session_close(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum);
 
 	if (res)
 	{
-		DEBUG(5,("cmd_nt_login_test: login test succeeded\n"));
+		DEBUG(5,("cmd_nt_login: login test succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_nt_login_test: login test failed\n"));
+		DEBUG(5,("cmd_nt_login: login test failed\n"));
 	}
 }
 
 /****************************************************************************
 experimental net login test.
+
+use the nt IPC$ connection for this one.
 ****************************************************************************/
-void cmd_nltest(struct cli_state *cli, struct client_info *info)
+void cmd_nltest(struct client_info *info)
 {
 	BOOL res = True;
 	fstring username;
@@ -275,7 +290,7 @@ void cmd_nltest(struct cli_state *cli, struct client_info *info)
 	DEBUG(5,("do_nltest: %d\n", __LINE__));
 
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? do_nt_session_open(cli, &info->dom.lsarpc_fnum,
+	res = res ? do_nt_session_open(&nt_cli, nt_tidx, &info->dom.lsarpc_fnum,
 	                          info->dest_host, info->myhostname,
 	                          info->mach_acct,
 	                          username, info->workgroup,
@@ -283,16 +298,54 @@ void cmd_nltest(struct cli_state *cli, struct client_info *info)
 	                          &info->dom.clnt_cred) : False;
 
 	/* close the session */
-	do_nt_session_close(cli, info->dom.lsarpc_fnum);
+	do_nt_session_close(&nt_cli, nt_tidx, info->dom.lsarpc_fnum);
 
 	if (res)
 	{
-		DEBUG(5,("cmd_nt_login_test: nltest succeeded\n"));
+		DEBUG(5,("cmd_nltest: nltest succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_nt_login_test: nltest failed\n"));
+		DEBUG(5,("cmd_nltest: nltest failed\n"));
 	}
+}
+
+/****************************************************************************
+initialise nt client structure
+****************************************************************************/
+void client_nt_init(void)
+{
+	bzero(&nt_cli, sizeof(nt_cli));
+}
+
+/****************************************************************************
+make nt client connection 
+****************************************************************************/
+void client_nt_connect(struct client_info *info,
+				char *username, char *password, char *workgroup)
+{
+	BOOL anonymous = !username || username[0] == 0;
+	BOOL got_pass = password && password[0] == 0;
+
+	if (!cli_establish_connection(&nt_cli, &nt_tidx,
+			info->dest_host, 0x20, &info->dest_ip,
+		     info->myhostname,
+		   (got_pass || anonymous) ? NULL : "Enter Password:",
+		   username, !anonymous ? password : NULL, workgroup,
+	       "IPC$", "IPC",
+	       False, True, !anonymous))
+	{
+		DEBUG(0,("client_nt_connect: connection failed\n"));
+		cli_shutdown(&nt_cli);
+	}
+}
+
+/****************************************************************************
+stop the nt connection(s?)
+****************************************************************************/
+void client_nt_stop(void)
+{
+	cli_shutdown(&nt_cli);
 }
 
 #endif /* NTDOMAIN */

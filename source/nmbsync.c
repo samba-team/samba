@@ -61,6 +61,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 {
 	extern fstring local_machine;
 	static struct cli_state cli;
+	int t_idx;
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
 	bzero(&cli, sizeof(cli));
@@ -99,7 +100,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 		return;
 	}
 
-	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+	if (!cli_send_tconX(&cli, &t_idx, "IPC$", "IPC", "", 1)) {
 		DEBUG(1,("%s refused browse sync IPC$ connect\n", name));
 		cli_shutdown(&cli);
 		return;
@@ -108,11 +109,11 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 	call_w = work;
 	call_d = d;
 	
-	cli_NetServerEnum(&cli, work->work_group, 
+	cli_NetServerEnum(&cli, t_idx, work->work_group, 
 			  local_type|SV_TYPE_DOMAIN_ENUM,
 			  callback);
 
-	cli_NetServerEnum(&cli, work->work_group, 
+	cli_NetServerEnum(&cli, t_idx, work->work_group, 
 			  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
 			  callback);
 

@@ -3783,7 +3783,7 @@ int reply_nt1(char *outbuf)
   if (lp_security() == SEC_SERVER && server_cryptkey(&pwd_srv, local_machine))
   {
 	  DEBUG(3,("using password server validation\n"));
-	  doencrypt = IS_BITS_SET(pwd_srv.sec_mode, USE_CHALLENGE_RESPONSE);
+	  doencrypt = IS_BITS_SET_ALL(pwd_srv.sec_mode, USE_CHALLENGE_RESPONSE);
   }
 
   if (doencrypt)

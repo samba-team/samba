@@ -25,34 +25,42 @@
 
 #include "includes.h"
 
-#ifndef REGISTER
-#define REGISTER 0
-#endif
-
-pstring cd_path = "";
-extern pstring myname;
-extern pstring scope;
-
-extern pstring user_socket_options;
-
 
 extern pstring debugf;
 extern int DEBUGLEVEL;
 
-
-#define SEPARATORS " \t\n\r"
-
 extern file_info def_finfo;
 
-#define USENMB
+static pstring cd_path="";
+
+struct cli_state smb_cli;
+int smb_tidx = -1;
 
 #define CNV_LANG(s) dos2unix_format(s,False)
 #define CNV_INPUT(s) unix2dos_format(s,True)
 
 
 /***************************************************************************
-  write a file
-  ****************************************************************************/
+ checks that the smb connection is still open
+ ****************************************************************************/
+void client_check_connection(void)
+{
+#ifdef CLIX
+	static int delay = 0;
+	delay++;
+	if (delay > 100000)
+	{
+	  delay = 0;
+	  cli_chkpath(&smb_cli, smb_tidx, "\\");
+	}
+#else
+      cli_chkpath(&smb_cli, smb_tidx, "\\");
+#endif
+}
+
+/***************************************************************************
+ write a file
+ ****************************************************************************/
 static int write_trans_file(struct client_info *info,
 				int f, char *b, int n)
 {
@@ -60,8 +68,8 @@ static int write_trans_file(struct client_info *info,
 }
 
 /***************************************************************************
-  read a file
-  ****************************************************************************/
+ read a file
+ ****************************************************************************/
 static int read_trans_file(struct client_info *info,
 				char *b, int size, int n, FILE *f)
 {
@@ -70,8 +78,8 @@ static int read_trans_file(struct client_info *info,
 
 
 /****************************************************************************
-send a message
-****************************************************************************/
+ send a message
+ ****************************************************************************/
 void client_send_message(struct cli_state *cli, int t_idx,
 				char *username, char *dest_host)
 {
@@ -104,126 +112,9 @@ void client_send_message(struct cli_state *cli, int t_idx,
 
 
 /****************************************************************************
-print browse connection on a host
-****************************************************************************/
-static void print_server(char *sname, uint32 type, char *comment)
-{
-	fstring typestr;
-	*typestr=0;
-
-	if (type == SV_TYPE_ALL)
-	{
-		strcpy(typestr, "All");
-	}
-	else
-	{
-		int i;
-		typestr[0] = 0;
-		for (i = 0; i < 32; i++)
-		{
-			if (IS_BITS_SET(type, 1 << i))
-			{
-				switch (1 << i)
-				{
-					case SV_TYPE_WORKSTATION      : strcat(typestr, "Wk " ); break;
-					case SV_TYPE_SERVER           : strcat(typestr, "Sv " ); break;
-					case SV_TYPE_SQLSERVER        : strcat(typestr, "Sql "); break;
-					case SV_TYPE_DOMAIN_CTRL      : strcat(typestr, "PDC "); break;
-					case SV_TYPE_DOMAIN_BAKCTRL   : strcat(typestr, "BDC "); break;
-					case SV_TYPE_TIME_SOURCE      : strcat(typestr, "Tim "); break;
-					case SV_TYPE_AFP              : strcat(typestr, "AFP "); break;
-					case SV_TYPE_NOVELL           : strcat(typestr, "Nov "); break;
-					case SV_TYPE_DOMAIN_MEMBER    : strcat(typestr, "Dom "); break;
-					case SV_TYPE_PRINTQ_SERVER    : strcat(typestr, "PrQ "); break;
-					case SV_TYPE_DIALIN_SERVER    : strcat(typestr, "Din "); break;
-					case SV_TYPE_SERVER_UNIX      : strcat(typestr, "Unx "); break;
-					case SV_TYPE_NT               : strcat(typestr, "NT " ); break;
-					case SV_TYPE_WFW              : strcat(typestr, "Wfw "); break;
-					case SV_TYPE_SERVER_MFPN      : strcat(typestr, "Mfp "); break;
-					case SV_TYPE_SERVER_NT        : strcat(typestr, "SNT "); break;
-					case SV_TYPE_POTENTIAL_BROWSER: strcat(typestr, "PtB "); break;
-					case SV_TYPE_BACKUP_BROWSER   : strcat(typestr, "BMB "); break;
-					case SV_TYPE_MASTER_BROWSER   : strcat(typestr, "LMB "); break;
-					case SV_TYPE_DOMAIN_MASTER    : strcat(typestr, "DMB "); break;
-					case SV_TYPE_SERVER_OSF       : strcat(typestr, "OSF "); break;
-					case SV_TYPE_SERVER_VMS       : strcat(typestr, "VMS "); break;
-					case SV_TYPE_WIN95_PLUS       : strcat(typestr, "W95 "); break;
-					case SV_TYPE_ALTERNATE_XPORT  : strcat(typestr, "Xpt "); break;
-					case SV_TYPE_LOCAL_LIST_ONLY  : strcat(typestr, "Dom "); break;
-					case SV_TYPE_DOMAIN_ENUM      : strcat(typestr, "Loc "); break;
-				}
-			}
-		}
-		i = strlen(typestr)-1;
-		if (typestr[i] == ' ') typestr[i] = 0;
-
-	}
-
-	printf("\t%-15.15s%-20s %s\n", sname, typestr, comment);
-}
-
-
-/****************************************************************************
-print browse connection on a host
-****************************************************************************/
-static void print_share(char *sname, uint32 type, char *comment)
-{
-	fstring typestr;
-	*typestr=0;
-
-	switch (type)
-	{
-		case STYPE_DISKTREE: strcpy(typestr,"Disk"); break;
-		case STYPE_PRINTQ  : strcpy(typestr,"Printer"); break;	      
-		case STYPE_DEVICE  : strcpy(typestr,"Device"); break;
-		case STYPE_IPC     : strcpy(typestr,"IPC"); break;      
-		default            : strcpy(typestr,"????"); break;      
-	}
-
-	printf("\t%-15.15s%-10.10s%s\n", sname, typestr, comment);
-}
-
-
-/****************************************************************************
-try and browse available connections on a host
-****************************************************************************/
-void client_browse_host(struct cli_state *cli, int t_idx, char *workgroup, BOOL sort)
-{
-	int count = 0;
-	BOOL long_share_name = False;
-	
-	printf("\n\tSharename      Type      Comment\n");
-	printf(  "\t---------      ----      -------\n");
-
-	count = cli_NetShareEnum(cli, t_idx, sort, &long_share_name, print_share);
-
-	if (count == 0)
-	{
-		printf("\tNo shares available on this host\n");
-	}
-
-	if (long_share_name)
-	{
-		printf("\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
-	}
-
-	printf("\n");
-	printf("\tWorkgroup      Type                 Master\n");
-	printf("\t---------      ----                 ------\n");
-
-	cli_NetServerEnum(cli, t_idx, workgroup, SV_TYPE_DOMAIN_ENUM, print_server);
-
-	printf("\n");
-	printf("\tServer         Type                 Comment\n");
-	printf("\t------         ----                 -------\n");
-	
-	cli_NetServerEnum(cli, t_idx, workgroup, SV_TYPE_ALL, print_server);
-}
-
-/****************************************************************************
 send message
 ****************************************************************************/
-void cmd_send_message(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_send_message(struct client_info *info)
 {
 	fstring username;
 
@@ -232,94 +123,7 @@ void cmd_send_message(struct cli_state *cli, int t_idx, struct client_info*info)
 		DEBUG(0,("message <username/workgroup>\n"));
 	}
 
-	client_send_message(cli, t_idx, username, info->dest_host);
-}
-
-
-/****************************************************************************
-show shares
-****************************************************************************/
-void cmd_list_shares(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-	int count = 0;
-	BOOL long_share_name = False;
-	
-	printf("\n\tSharename      Type      Comment\n");
-	printf(  "\t---------      ----      -------\n");
-
-	count = cli_NetShareEnum(cli, t_idx, True, &long_share_name, print_share);
-
-	if (count == 0)
-	{
-		printf("\tNo shares available on this host\n");
-	}
-
-	if (long_share_name)
-	{
-		printf("\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
-	}
-}
-
-
-/****************************************************************************
-show browse workgroup
-****************************************************************************/
-void cmd_list_wgps(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-	fstring workgroup;
-	fstring type;
-	uint32 svc_type = 0;
-
-	if (!next_token(NULL, workgroup,NULL))
-	{
-		fstrcpy(workgroup, info->workgroup);
-	}
-
-	if (next_token(NULL, type,NULL))
-	{
-		svc_type = strtoul(type, (char**)NULL, 16);
-	}
-	else
-	{
-		svc_type = SV_TYPE_ALL;
-	}
-
-	printf("\n");
-	printf("\tServer         Type                 Comment\n");
-	printf("\t------         ----                 -------\n");
-
-	cli_NetServerEnum(cli, t_idx, workgroup, svc_type, print_server);
-}
-
-
-/****************************************************************************
-show browse servers
-****************************************************************************/
-void cmd_list_servers(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-	fstring workgroup;
-	fstring type;
-	uint32 svc_type = 0;
-
-	if (!next_token(NULL, workgroup,NULL))
-	{
-		fstrcpy(workgroup, info->workgroup);
-	}
-
-	if (next_token(NULL, type,NULL))
-	{
-		svc_type = strtoul(type, (char**)NULL, 16);
-	}
-	else
-	{
-		svc_type = SV_TYPE_DOMAIN_ENUM;
-	}
-
-	printf("\n");
-	printf("\tWorkgroup      Type                 Master\n");
-	printf("\t---------      ----                 ------\n");
-
-	cli_NetServerEnum(cli, t_idx, workgroup, svc_type, print_server);
+	client_send_message(&smb_cli, smb_tidx, username, info->dest_host);
 }
 
 
@@ -341,17 +145,6 @@ static void do_dskattr(struct cli_state *cli, int t_idx)
   		DEBUG(0,("\n\t\t%d blocks of size %d. %d blocks available\n",
 		          num_blocks, block_size, free_blocks));
 	}
-}
-
-
-/****************************************************************************
-show cd/pwd
-****************************************************************************/
-void cmd_pwd(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-  DEBUG(0,("Current directory for connection %d is %s",
-		CNV_LANG(cli->con[t_idx].full_share)));
-  DEBUG(0,("%s\n", CNV_LANG(info->cur_dir)));
 }
 
 
@@ -392,12 +185,12 @@ void do_cd(struct cli_state *cli, int t_idx, struct client_info*info, char *newd
 /****************************************************************************
 change directory
 ****************************************************************************/
-void cmd_cd(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_cd(struct client_info*info)
 {
   fstring buf;
 
   if (next_token(NULL,buf,NULL))
-    do_cd(cli, t_idx, info, buf);
+    do_cd(&smb_cli, smb_tidx, info, buf);
   else
     DEBUG(0,("Current directory is %s\n", CNV_LANG(info->cur_dir)));
 }
@@ -407,7 +200,7 @@ void cmd_cd(struct cli_state *cli, int t_idx, struct client_info*info)
 /****************************************************************************
   get a directory listing
   ****************************************************************************/
-void cmd_dir(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_dir(struct client_info*info)
 {
   int attribute = aDIR | aSYSTEM | aHIDDEN;
   pstring mask;
@@ -430,9 +223,9 @@ void cmd_dir(struct cli_state *cli, int t_idx, struct client_info*info)
     strcat(mask,"*");
   }
 
-  cli_do_dir(cli, t_idx, info, mask, attribute, info->recurse_dir, NULL);
+  cli_do_dir(&smb_cli, smb_tidx, info, mask, attribute, info->recurse_dir, NULL);
 
-  do_dskattr(cli, t_idx);
+  do_dskattr(&smb_cli, smb_tidx);
 
   DEBUG(3, ("Total bytes listed: %d\n", info->dir_total));
 }
@@ -443,7 +236,7 @@ void cmd_dir(struct cli_state *cli, int t_idx, struct client_info*info)
 /****************************************************************************
   get a file
   ****************************************************************************/
-void cmd_get(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_get(struct client_info*info)
 {
   pstring lname;
   pstring rname;
@@ -484,7 +277,7 @@ void cmd_get(struct cli_state *cli, int t_idx, struct client_info*info)
       return;
   }
 
-  cli_get(cli, t_idx, info, rname,lname, NULL, handle,
+  cli_get(&smb_cli, smb_tidx, info, rname,lname, NULL, handle,
 		NULL, write_trans_file, NULL);
 
   if(newhandle)
@@ -578,7 +371,7 @@ static void do_mget(struct cli_state *cli, int t_idx, struct client_info*info,
 /****************************************************************************
 view the file using the pager
 ****************************************************************************/
-void cmd_more(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_more(struct client_info*info)
 {
   fstring rname,lname,tmpname,pager_cmd;
   char *pager;
@@ -603,7 +396,7 @@ void cmd_more(struct cli_state *cli, int t_idx, struct client_info*info)
 	  return;
   }
 
-  cli_get(cli, t_idx, info, rname,lname, NULL, handle,
+  cli_get(&smb_cli, smb_tidx, info, rname,lname, NULL, handle,
 			NULL, write_trans_file, NULL);
 
   pager=getenv("PAGER");
@@ -617,7 +410,7 @@ void cmd_more(struct cli_state *cli, int t_idx, struct client_info*info)
 /****************************************************************************
 do a mget command
 ****************************************************************************/
-void cmd_mget(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_mget(struct client_info*info)
 {
   int attribute = aSYSTEM | aHIDDEN;
   pstring mget_mask;
@@ -641,7 +434,7 @@ void cmd_mget(struct cli_state *cli, int t_idx, struct client_info*info)
 	strcpy(mget_mask,p);
       else
 	strcat(mget_mask,p);
-      cli_do_dir(cli, t_idx, info, mget_mask, attribute, False, do_mget);
+      cli_do_dir(&smb_cli, smb_tidx, info, mget_mask, attribute, False, do_mget);
     }
 
   if (! *mget_mask)
@@ -650,14 +443,14 @@ void cmd_mget(struct cli_state *cli, int t_idx, struct client_info*info)
       if(mget_mask[strlen(mget_mask)-1]!='\\')
 	strcat(mget_mask,"\\");
       strcat(mget_mask,"*");
-      cli_do_dir(cli, t_idx, info, mget_mask, attribute, False, do_mget);
+      cli_do_dir(&smb_cli, smb_tidx, info, mget_mask, attribute, False, do_mget);
     }
 }
 
 /****************************************************************************
   make a directory
   ****************************************************************************/
-void cmd_mkdir(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_mkdir(struct client_info*info)
 {
   pstring mask;
   fstring buf;
@@ -685,23 +478,23 @@ void cmd_mkdir(struct cli_state *cli, int t_idx, struct client_info*info)
       while (p)
 	{
 	  strcat(ddir2,p);
-	  if (!cli_chkpath(cli, t_idx, ddir2))
+	  if (!cli_chkpath(&smb_cli, smb_tidx, ddir2))
 	    {		  
-	      cli_mkdir(cli, t_idx, ddir2);
+	      cli_mkdir(&smb_cli, smb_tidx, ddir2);
 	    }
 	  strcat(ddir2,"\\");
 	  p = strtok(NULL,"/\\");
 	}	 
     }
   else
-    cli_mkdir(cli, t_idx, mask);
+    cli_mkdir(&smb_cli, smb_tidx, mask);
 }
 
 
 /****************************************************************************
   put a file
   ****************************************************************************/
-void cmd_put(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_put(struct client_info*info)
 {
   pstring lname;
   pstring rname;
@@ -743,11 +536,11 @@ void cmd_put(struct cli_state *cli, int t_idx, struct client_info*info)
 
     GetTimeOfDay(&tp_start);
 
-  nread = cli_put(cli, t_idx, info, rname, lname, &finfo, read_trans_file);
+  nread = cli_put(&smb_cli, smb_tidx, info, rname, lname, &finfo, read_trans_file);
 
   if (info->archive_level >= 2 && (finfo.mode & aARCH))
   {
-    if (!cli_setatr(cli, t_idx, rname, finfo.mode & ~(aARCH), 0)) return;
+    if (!cli_setatr(&smb_cli, smb_tidx, rname, finfo.mode & ~(aARCH), 0)) return;
   }
 
   {
@@ -790,19 +583,9 @@ static BOOL seek_list(FILE *f,char *name)
 
 
 /****************************************************************************
-  set the file selection mask
-  ****************************************************************************/
-void cmd_select(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-  strcpy(info->file_sel,"");
-  next_token(NULL,info->file_sel,NULL);
-}
-
-
-/****************************************************************************
   mput some files
   ****************************************************************************/
-void cmd_mput(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_mput(struct client_info*info)
 {
   pstring lname;
   pstring rname;
@@ -854,7 +637,7 @@ void cmd_mput(struct cli_state *cli, int t_idx, struct client_info*info)
 	      
 	      strcpy(rname,info->cur_dir);
 	      strcat(rname,lname);
-	      if (!cli_chkpath(cli, t_idx, rname) && !cli_mkdir(cli, t_idx, rname)) {
+	      if (!cli_chkpath(&smb_cli, smb_tidx, rname) && !cli_mkdir(&smb_cli, smb_tidx, rname)) {
 		strcat(lname,"/");
 		if (!seek_list(f,lname))
 		  break;
@@ -879,7 +662,7 @@ void cmd_mput(struct cli_state *cli, int t_idx, struct client_info*info)
 	  /* set the date on the file */
 	  finfo.mtime = st.st_mtime;
 
-	  cli_put(cli, t_idx, info, rname,lname,&finfo, read_trans_file);
+	  cli_put(&smb_cli, smb_tidx, info, rname,lname,&finfo, read_trans_file);
 	}
       fclose(f);
       unlink(tmpname);
@@ -887,46 +670,9 @@ void cmd_mput(struct cli_state *cli, int t_idx, struct client_info*info)
 }
 
 /****************************************************************************
-  cancel a print job
-  ****************************************************************************/
-void cmd_cancel(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-  fstring buf;
-  int job; 
-
-  if (!strequal(cli->con[t_idx].dev,"LPT1:"))
-    {
-      DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
-      DEBUG(0,("Trying to cancel print jobs without -P may fail\n"));
-    }
-
-  if (!next_token(NULL,buf,NULL))
-  {
-    printf("cancel <jobid> ...\n");
-    return;
-  }
-
-  do
-  {
-    uint16 cancelled_job;
-    job = atoi(buf);
-    if (cli_cancel(cli, t_idx, (uint16)job, &cancelled_job))
-    {
-	    DEBUG(0, ("Job %d cancelled\n", cancelled_job));
-    }
-    else
-    {
-      DEBUG(0, ("Server refused cancel request\n"));
-    }
-
-  } while (next_token(NULL,buf,NULL));
-}
-
-
-/****************************************************************************
   get info on a file
   ****************************************************************************/
-void cmd_stat(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_stat(struct client_info*info)
 {
 	fstring buf;
 	fstring fname;
@@ -940,172 +686,9 @@ void cmd_stat(struct cli_state *cli, int t_idx, struct client_info*info)
 	strcpy(fname, info->cur_dir);
 	strcat(fname, buf);
 
-	cli_stat(cli, t_idx, fname);
+	cli_stat(&smb_cli, smb_tidx, fname);
 }
 
-
-/****************************************************************************
-  print a file
-  ****************************************************************************/
-void cmd_print(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-  FILE *f = NULL;
-  pstring lname;
-  pstring rname;
-  char *p;
-
-  if (!strequal(cli->con[t_idx].dev,"LPT1:"))
-    {
-      DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
-      DEBUG(0,("Trying to print without -P may fail\n"));
-    }
-
-  if (!next_token(NULL,lname,NULL))
-    {
-      DEBUG(0,("print <filename>\n"));
-      return;
-    }
-
-  strcpy(rname,lname);
-  p = strrchr(rname,'/');
-  if (p)
-    {
-      pstring tname;
-      strcpy(tname,p+1);
-      strcpy(rname,tname);
-    }
-
-  if ((int)strlen(rname) > 14)
-    rname[14] = 0;
-
-  if (strequal(lname,"-"))
-    {
-      f = stdin;
-      strcpy(rname,"stdin");
-    }
-  
-  dos_clean_name(rname);
-
-  cli_print(cli, t_idx, info, f, lname, rname);
-}
-
-/****************************************************************************
-display print_q info
-****************************************************************************/
-static void print_q(uint16 job, char *name, uint32 size, uint8 status)
-{
-	fstring status_str;
-
-	switch (status)
-	  {
-	  case 0x01: sprintf(status_str,"held or stopped"); break;
-	  case 0x02: sprintf(status_str,"printing"); break;
-	  case 0x03: sprintf(status_str,"awaiting print"); break;
-	  case 0x04: sprintf(status_str,"in intercept"); break;
-	  case 0x05: sprintf(status_str,"file had error"); break;
-	  case 0x06: sprintf(status_str,"printer error"); break;
-	  default: sprintf(status_str,"unknown"); break;
-	  }
-
-	DEBUG(0,("%-6d   %-16.16s  %-9d    %s\n", job, name, size, status_str));
-}
-
-
-/****************************************************************************
-show a print queue - this is deprecated as it uses the old smb that
-has limited support - the correct call is the cmd_p_queue_2() after this.
-****************************************************************************/
-void cmd_queue(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-	int count;
-
-	if (!strequal(cli->con[t_idx].dev,"LPT1:"))
-	{
-		DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
-		DEBUG(0,("Trying to print without -P may fail\n"));
-	}
-
-    DEBUG(0,("Job      Name              Size         Status\n"));
-
-	count = cli_queue(cli, t_idx, info, print_q);
-
-	if (count <= 0)
-	{
-		DEBUG(0,("No entries in the print queue\n"));
-		return;
-	}  
-}
-
-/****************************************************************************
-display print_queue_2 info
-****************************************************************************/
-static void print_q2( char *PrinterName, uint16 JobId, uint16 Priority,
-          char *UserName, time_t JobTime, uint32 Size, char *JobName)
-{
-	char *JobTimeStr;
-
-
-	JobTimeStr = asctime(LocalTime( &JobTime));
-
-	printf("%s-%u    %s    priority %u   %s    %s   %u bytes\n", 
-	            PrinterName, JobId, UserName,
-	            Priority, JobTimeStr, JobName, Size);
-}
-
-/****************************************************************************
-show information about a print queue
-****************************************************************************/
-void cmd_p_queue_2(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-	if (!strequal(cli->con[t_idx].dev,"LPT1:"))
-	{
-		DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
-		DEBUG(0,("Trying to print without -P may fail\n"));
-	}
-	cli_pqueue_2(cli, t_idx, info, print_q2);
-}
-
-/****************************************************************************
-show information about a print queue
-****************************************************************************/
-void cmd_qinfo(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-	fstring params, comment, printers, driver_name;
-	fstring name, separator_file, print_processor;
-	uint16 priority, start_time, until_time, status, jobs;
-	int driver_count;
-	char *driver_data;
-
-	if (!cli_printq_info(cli, t_idx, info,
-	                    name, &priority,
-	                    &start_time, &until_time,
-	                    separator_file, print_processor,
-	                    params, comment,
-	                    &status, &jobs,
-	                    printers, driver_name,
-	                    &driver_data, &driver_count))
-	{
-		return;
-	}
-
-	DEBUG(0, ("Name: \"%s\"\n", name));
-	DEBUG(0, ("Priority: %u\n", priority));
-	DEBUG(0, ("Start time: %u\n", start_time));
-	DEBUG(0, ("Until time: %u\n", until_time));
-	DEBUG(0, ("Separator file: \"%s\"\n", separator_file));
-	DEBUG(0, ("Print processor: \"%s\"\n", print_processor));
-	DEBUG(0, ("Parameters: \"%s\"\n", params));
-	DEBUG(0, ("Comment: \"%s\"\n", comment));
-	DEBUG(0, ("Status: %u\n", status));
-	DEBUG(0, ("Jobs: %u\n", jobs));
-	DEBUG(0, ("Printers: \"%s\"\n", printers));
-	DEBUG(0, ("Drivername: \"%s\"\n", driver_name));
-
-	DEBUG(0, ("Driverdata: size=%d, version=%u\n",
-			driver_count, IVAL(driver_data,4) ));
-
-	dump_data(0, driver_data, driver_count);
-}
 
 /****************************************************************************
 delete some files
@@ -1129,7 +712,7 @@ static void do_del(struct cli_state *cli, int t_idx, struct client_info*info,
 /****************************************************************************
 delete some files
 ****************************************************************************/
-void cmd_del(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_del(struct client_info*info)
 {
   pstring mask;
   fstring buf;
@@ -1147,14 +730,14 @@ void cmd_del(struct cli_state *cli, int t_idx, struct client_info*info)
     }
   strcat(mask,buf);
 
-  cli_do_dir(cli, t_idx, info, mask, attribute, info->recurse_dir, do_del);
+  cli_do_dir(&smb_cli, smb_tidx, info, mask, attribute, info->recurse_dir, do_del);
 }
 
 
 /****************************************************************************
 remove a directory
 ****************************************************************************/
-void cmd_rmdir(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_rmdir(struct client_info*info)
 {
 	pstring mask;
 	fstring buf;
@@ -1168,9 +751,9 @@ void cmd_rmdir(struct cli_state *cli, int t_idx, struct client_info*info)
 	}
 	strcat(mask,buf);
 
-	if (!cli_rmdir(cli, t_idx, mask))
+	if (!cli_rmdir(&smb_cli, smb_tidx, mask))
     {
-		DEBUG(0,("%s removing remote directory file %s\n", cli_errstr(cli), CNV_LANG(mask)));
+		DEBUG(0,("%s removing remote directory file %s\n", cli_errstr(&smb_cli), CNV_LANG(mask)));
 		return;
     }
 }
@@ -1178,7 +761,7 @@ void cmd_rmdir(struct cli_state *cli, int t_idx, struct client_info*info)
 /****************************************************************************
 rename some files
 ****************************************************************************/
-void cmd_rename(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_rename(struct client_info*info)
 {
   pstring src,dest;
   fstring buf,buf2;
@@ -1194,144 +777,55 @@ void cmd_rename(struct cli_state *cli, int t_idx, struct client_info*info)
   strcat(src,buf);
   strcat(dest,buf2);
 
-	cli_move(cli, t_idx, src, dest);
+	cli_move(&smb_cli, smb_tidx, src, dest);
 }
 
 
 /****************************************************************************
-toggle the prompt flag
+show cd/pwd
 ****************************************************************************/
-void cmd_prompt(struct cli_state *cli, int t_idx, struct client_info*info)
+void cmd_pwd(struct client_info *info)
 {
-  info->prompt = !info->prompt;
-  DEBUG(2,("prompting is now %s\n", BOOLSTR(info->prompt)));
+  DEBUG(0,("Current directory for SMB connection %d is %s",
+		CNV_LANG(smb_cli.con[smb_tidx].full_share)));
+  DEBUG(0,("%s\n", CNV_LANG(info->cur_dir)));
 }
 
 
 /****************************************************************************
-set the newer than time
+initialise smb client structure
 ****************************************************************************/
-void cmd_newer(struct cli_state *cli, int t_idx, struct client_info*info)
+void client_smb_init(void)
 {
-  fstring buf;
-  BOOL ok;
-  struct stat sbuf;
-
-  ok = next_token(NULL,buf,NULL);
-  if (ok && (sys_stat(buf,&sbuf) == 0))
-    {
-      info->newer_than = sbuf.st_mtime;
-      DEBUG(1,("Getting files newer than %s",
-	       asctime(LocalTime(&info->newer_than))));
-    }
-  else
-    info->newer_than = 0;
-
-  if (ok && info->newer_than == 0)
-    DEBUG(0,("Error setting newer-than time\n"));
+	bzero(&smb_cli, sizeof(smb_cli));
 }
 
 /****************************************************************************
-set the archive level
+make smb client connection
 ****************************************************************************/
-void cmd_archive(struct cli_state *cli, int t_idx, struct client_info*info)
+void client_smb_connect(struct client_info *info,
+				char *username, char *password, char *workgroup)
 {
-  fstring buf;
+	BOOL anonymous = !username || username[0] == 0;
+	BOOL got_pass = password && password[0] != 0;
 
-  if (next_token(NULL,buf,NULL)) {
-    info->archive_level = atoi(buf);
-  } else
-    DEBUG(0,("Archive level is %d\n",info->archive_level));
-}
-
-/****************************************************************************
-toggle the info->lowercaseflag
-****************************************************************************/
-void cmd_lowercase(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-  info->lowercase = !info->lowercase;
-  DEBUG(2,("filename lowercasing is now %s\n",info->lowercase?"on":"off"));
-}
-
-
-
-
-/****************************************************************************
-toggle the info->recurse flag
-****************************************************************************/
-void cmd_recurse(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-  info->recurse_dir = !info->recurse_dir;
-  DEBUG(2,("directory recursion is now %s\n", BOOLSTR(info->recurse_dir)));
-}
-
-/****************************************************************************
-toggle the translate flag
-****************************************************************************/
-void cmd_translate(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-  info->translation = !info->translation;
-  DEBUG(2,("CR/LF<->LF and print text info->translation now %s\n",
-	info->translation?"on":"off"));
-}
-
-
-/****************************************************************************
-do a print_mode command
-****************************************************************************/
-void cmd_printmode(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-  fstring buf;
-  fstring mode;
-
-  if (next_token(NULL,buf,NULL))
-    {
-      if (strequal(buf,"text"))
-	info->print_mode = 0;      
-      else
+	if (!cli_establish_connection(&smb_cli, &smb_tidx,
+			info->dest_host, info->name_type, &info->dest_ip,
+		     info->myhostname,
+		   (got_pass || anonymous) ? NULL : "Enter Password:",
+		   username, !anonymous ? password : NULL, workgroup,
+	       info->share, info->svc_type,
+	       False, True, !anonymous))
 	{
-	  if (strequal(buf,"graphics"))
-	    info->print_mode = 1;
-	  else
-	    info->print_mode = atoi(buf);
+		DEBUG(0,("client_smb_init: connection failed\n"));
+		cli_shutdown(&smb_cli);
 	}
-    }
-
-  switch(info->print_mode)
-    {
-    case 0: 
-      strcpy(mode,"text");
-      break;
-    case 1: 
-      strcpy(mode,"graphics");
-      break;
-    default: 
-      sprintf(mode,"%d", info->print_mode);
-      break;
-    }
-
-  DEBUG(2,("the print_mode is now %s\n",mode));
 }
 
 /****************************************************************************
-do the lcd command
+stop the smb connection(s?)
 ****************************************************************************/
-void cmd_lcd(struct cli_state *cli, int t_idx, struct client_info*info)
+void client_smb_stop(void)
 {
-  fstring buf;
-  pstring d;
-
-  if (next_token(NULL,buf,NULL))
-    sys_chdir(buf);
-  DEBUG(2,("the local directory is now %s\n",GetWd(d)));
+	cli_shutdown(&smb_cli);
 }
-
-/****************************************************************************
-do a (presumably graceful) quit...
-****************************************************************************/
-void cmd_quit(struct cli_state *cli, int t_idx, struct client_info*info)
-{
-	cli_shutdown(cli);
-	exit(0);
-}
-

@@ -409,19 +409,19 @@ static int session_trust_account(char *inbuf, char *outbuf, char *user,
 			return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
 		}
 
-		if (IS_BITS_SET(smb_trust_acct->acct_ctrl, ACB_DOMTRUST))
+		if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_DOMTRUST))
 		{
 			DEBUG(4,("Domain trust account %s denied by server\n",user));
 			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 			return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)); 
 		}
-		if (IS_BITS_SET(smb_trust_acct->acct_ctrl, ACB_SVRTRUST))
+		if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_SVRTRUST))
 		{
 			DEBUG(4,("Server trust account %s denied by server\n",user));
 			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 			return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT)); 
 		}
-		if (IS_BITS_SET(smb_trust_acct->acct_ctrl, ACB_WSTRUST))
+		if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_WSTRUST))
 		{
 			DEBUG(4,("Wksta trust account %s denied by server\n", user));
 			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);

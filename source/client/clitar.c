@@ -33,6 +33,9 @@ extern int DEBUGLEVEL;
 
 extern file_info def_finfo;
 
+extern struct cli_state smb_cli;
+extern int smb_tidx;
+
 
 /****************************************************************************
 Convert from UNIX to DOS file names
@@ -297,7 +300,7 @@ static void write_tar_hdr(struct client_info *info,
 /****************************************************************************
 Read a tar header into a hblock structure, and validate
 ***************************************************************************/
-static long read_tar_hdr(struct cli_state *cli, int t_idx, struct client_info *info,
+static long read_tar_hdr(struct cli_state *cli, int smb_tidx, struct client_info *info,
 				union hblock *hb, file_info *finfo, char *prefix)
 {
   long chk, fchk;
@@ -581,7 +584,8 @@ append one remote file to the tar file
 static void do_atar(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *rname,char *lname,file_info *finfo1)
 {
-	uint32 nread = cli_get(cli, t_idx, info, rname, lname, finfo1, info->tar.handle,
+	cli_get(cli, t_idx, info,
+	            rname, lname, finfo1, info->tar.handle,
 				tar_write_check, do_tar_buf, tar_pad_check);
 
 	/* reset the archive bit */
@@ -819,58 +823,9 @@ static void do_tarput(struct cli_state *cli, int t_idx, struct client_info *info
  */
 
 /****************************************************************************
-Blocksize command
-***************************************************************************/
-void cmd_block(struct cli_state *cli, int t_idx, struct client_info *info)
-{
-  fstring buf;
-  int block;
-
-  if (!next_token(NULL,buf,NULL))
-    {
-      DEBUG(0, ("blocksize <n>\n"));
-      return;
-    }
-
-  block=atoi(buf);
-  if (block < 0 || block > 65535)
-    {
-      DEBUG(0, ("blocksize out of range"));
-      return;
-    }
-
-  info->tar.blocksize=block;
-  DEBUG(1,("blocksize is now %d\n", info->tar.blocksize));
-}
-
-/****************************************************************************
-command to set incremental / reset mode
-***************************************************************************/
-void cmd_tarmode(struct cli_state *cli, int t_idx, struct client_info *info)
-{
-  fstring buf;
-
-  while (next_token(NULL,buf,NULL)) {
-    if (strequal(buf, "full"))
-      info->tar.inc=False;
-    else if (strequal(buf, "inc"))
-      info->tar.inc=True;
-    else if (strequal(buf, "reset"))
-      info->tar.reset=True;
-    else if (strequal(buf, "noreset"))
-      info->tar.reset=False;
-    else DEBUG(0, ("tarmode: unrecognised option %s\n", buf));
-  }
-
-  DEBUG(0, ("tarmode is now %s, %s\n",
-	    info->tar.inc ? "incremental" : "full",
-	    info->tar.reset ? "reset" : "noreset"));
-}
-
-/****************************************************************************
 Feeble attrib command
 ***************************************************************************/
-void cmd_setmode(struct cli_state *cli, int t_idx, struct client_info *info)
+void cmd_setmode(struct client_info *info)
 {
   char *q;
   fstring buf;
@@ -918,14 +873,14 @@ void cmd_setmode(struct cli_state *cli, int t_idx, struct client_info *info)
     }
 
   DEBUG(1, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
-  do_setrattr(cli, t_idx, info, fname, attra[ATTRSET], ATTRSET);
-  do_setrattr(cli, t_idx, info, fname, attra[ATTRRESET], ATTRRESET);
+  do_setrattr(&smb_cli, smb_tidx, info, fname, attra[ATTRSET], ATTRSET);
+  do_setrattr(&smb_cli, smb_tidx, info, fname, attra[ATTRRESET], ATTRRESET);
 }
 
 /****************************************************************************
 Principal command for creating / extracting
 ***************************************************************************/
-void cmd_tar(struct cli_state *cli, int t_idx, struct client_info *info)
+void cmd_tar(struct client_info *info)
 {
   fstring buf;
   char **argl;
@@ -943,7 +898,7 @@ void cmd_tar(struct cli_state *cli, int t_idx, struct client_info *info)
     return;
   }
 
-  process_tar(cli, t_idx, info);
+  process_tar(info);
 
   free(argl);
 }
@@ -951,67 +906,90 @@ void cmd_tar(struct cli_state *cli, int t_idx, struct client_info *info)
 /****************************************************************************
 Command line (option) version
 ***************************************************************************/
-int process_tar(struct cli_state *cli, int t_idx, struct client_info *info)
+int process_tar(struct client_info *info)
 {
-  init_tar_buf(info);
-  switch(info->tar.type) {
-  case 'x':
-    do_tarput(cli, t_idx, info);
-    free(info->tar.buf);
-    close(info->tar.handle);
-    break;
-  case 'r':
-  case 'c':
-    if (info->tar.clipn && info->tar.excl) {
-      int i;
-      pstring tarmac;
+	init_tar_buf(info);
 
-      for (i=0; i<info->tar.clipn; i++) {
-	DEBUG(0,("arg %d = %s\n", i, info->tar.cliplist[i]));
+	switch(info->tar.type)
+	{
+		case 'x':
+		{
+			do_tarput(&smb_cli, smb_tidx, info);
+			free(info->tar.buf);
+			close(info->tar.handle);
+			break;
+		}
 
-	if (*(info->tar.cliplist[i]+strlen(info->tar.cliplist[i])-1)=='\\') {
-	  *(info->tar.cliplist[i]+strlen(info->tar.cliplist[i])-1)='\0';
+		case 'r':
+		case 'c':
+		{
+			if (info->tar.clipn && info->tar.excl)
+			{
+				int i;
+				pstring tarmac;
+
+				for (i = 0; i < info->tar.clipn; i++)
+				{
+					DEBUG(0,("arg %d = %s\n", i, info->tar.cliplist[i]));
+
+					if (*(info->tar.cliplist[i]+strlen(info->tar.cliplist[i])-1)=='\\')
+					{
+						*(info->tar.cliplist[i]+strlen(info->tar.cliplist[i])-1)='\0';
+					}
+
+					if (strrchr(info->tar.cliplist[i], '\\'))
+					{
+						pstring saved_dir;
+
+						strcpy(saved_dir, info->cur_dir);
+
+						if (*info->tar.cliplist[i]=='\\')
+						{
+							strcpy(tarmac, info->tar.cliplist[i]);
+						}
+						else
+						{
+							strcpy(tarmac, info->cur_dir);
+							strcat(tarmac, info->tar.cliplist[i]);
+						}
+
+						strcpy(info->cur_dir, tarmac);
+						*(strrchr(info->cur_dir, '\\')+1)='\0';
+
+						cli_dir(&smb_cli, smb_tidx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
+						strcpy(info->cur_dir,saved_dir);
+					}
+					else
+					{
+						strcpy(tarmac, info->cur_dir);
+						strcat(tarmac, info->tar.cliplist[i]);
+						cli_dir(&smb_cli, smb_tidx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
+					}
+				}
+			}
+			else
+			{
+				pstring mask;
+				strcpy(mask,info->cur_dir);
+				strcat(mask,"\\*");
+				cli_dir(&smb_cli, smb_tidx, info, mask, info->tar.attrib, info->recurse_dir, do_tar);
+			}
+
+			if (info->tar.num_files)
+			{
+				do_tar_eof(info, info->tar.handle);
+			}
+
+			close(info->tar.handle);
+			free(info->tar.buf);
+
+			DEBUG(0, ("tar: dumped %d tar files\n", info->tar.num_files));
+			DEBUG(0, ("Total bytes written: %d\n", info->tar.bytes_written));
+			break;
+		}
 	}
-	
-	if (strrchr(info->tar.cliplist[i], '\\')) {
-	  pstring saved_dir;
-	  
-	  strcpy(saved_dir, info->cur_dir);
-	  
-	  if (*info->tar.cliplist[i]=='\\') {
-	    strcpy(tarmac, info->tar.cliplist[i]);
-	  } else {
-	    strcpy(tarmac, info->cur_dir);
-	    strcat(tarmac, info->tar.cliplist[i]);
-	  }
-	  strcpy(info->cur_dir, tarmac);
-	  *(strrchr(info->cur_dir, '\\')+1)='\0';
 
-	  cli_dir(cli, t_idx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
-	  strcpy(info->cur_dir,saved_dir);
-	} else {
-	  strcpy(tarmac, info->cur_dir);
-	  strcat(tarmac, info->tar.cliplist[i]);
-	  cli_dir(cli, t_idx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
-	}
-      }
-    } else {
-      pstring mask;
-      strcpy(mask,info->cur_dir);
-      strcat(mask,"\\*");
-	  cli_dir(cli, t_idx, info, mask, info->tar.attrib, info->recurse_dir, do_tar);
-    }
-    
-    if (info->tar.num_files) do_tar_eof(info, info->tar.handle);
-    close(info->tar.handle);
-    free(info->tar.buf);
-    
-    DEBUG(0, ("tar: dumped %d tar files\n", info->tar.num_files));
-    DEBUG(0, ("Total bytes written: %d\n", info->tar.bytes_written));
-    break;
-  }
-
-  return(0);
+	return(0);
 }
 
 /****************************************************************************
@@ -1042,7 +1020,7 @@ Parse tar arguments. Sets info->tar.type, info->tar.excl, etc.
 int tar_parseargs(struct client_info *info,
 				int argc, char *argv[], char *Optarg, int Optind)
 {
-  char tar_clipfl='\0';
+  char smb_clipfl='\0';
 
   /* Reset back to defaults - could be from interactive version 
    * reset mode and archive mode left as they are though
@@ -1096,18 +1074,18 @@ int tar_parseargs(struct client_info *info,
       info->tar.reset=True;
       break;
     case 'I':
-      if (tar_clipfl) {
+      if (smb_clipfl) {
 	DEBUG(0,("Only one of I,X must be specified\n"));
 	return 0;
       }
-      tar_clipfl='I';
+      smb_clipfl='I';
       break;
     case 'X':
-      if (tar_clipfl) {
+      if (smb_clipfl) {
 	DEBUG(0,("Only one of I,X must be specified\n"));
 	return 0;
       }
-      tar_clipfl='X';
+      smb_clipfl='X';
       break;
     default:
       DEBUG(0,("Unknown tar option\n"));
@@ -1119,7 +1097,7 @@ int tar_parseargs(struct client_info *info,
     return 0;
   }
 
-  info->tar.excl=tar_clipfl!='X';
+  info->tar.excl=smb_clipfl!='X';
   if (Optind+1<argc) {
     info->tar.cliplist=argv+Optind+1;
     info->tar.clipn=argc-Optind-1;

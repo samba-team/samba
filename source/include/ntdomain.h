@@ -59,16 +59,67 @@ enum RPC_PKT_TYPE
 #define REG_INFO            0x11
 #define REG_CLOSE           0x05
 
+/*******************************************************************
+ the following information comes from a QuickView on samsrv.dll,
+ and gives an idea of exactly what is needed:
+ 
+SamrAddMemberToAlias
+SamrAddMemberToGroup
+SamrAddMultipleMembersToAlias
+SamrChangePasswordUser
+SamrCloseHandle
+SamrConnect
+SamrCreateAliasInDomain
+SamrCreateGroupInDomain
+SamrCreateUserInDomain
+SamrDeleteAlias
+SamrDeleteGroup
+SamrDeleteUser
+SamrEnumerateAliasesInDomain
+SamrEnumerateDomainsInSamServer
+SamrEnumerateGroupsInDomain
+SamrEnumerateUsersInDomain
+SamrGetUserDomainPasswordInformation
+SamrLookupDomainInSamServer
+SamrLookupIdsInDomain
+SamrLookupNamesInDomain
+SamrOpenAlias
+SamrOpenDomain
+SamrOpenGroup
+SamrOpenUser
+SamrQueryDisplayInformation
+SamrQUeryInformationAlias
+SamrQueryInformationDomain
+SamrQueryInformationUser
+SamrQuerySecurityObject
+SamrRemoveMemberFromAlias
+SamrRemoveMemberFromForiegnDomain
+SamrRemoveMemberFromGroup
+SamrRemoveMultipleMembersFromAlias
+SamrSetInformationAlias
+SamrSetInformationDOmain
+SamrSetInformationGroup
+SamrSetInformationUser
+SamrSetMemberAttributesOfGroup
+SamrSetSecurityObject
+SamrShutdownSamServer
+SamrTestPrivateFunctionsDomain
+SamrTestPrivateFunctionsUser
+
+********************************************************************/
+
 #define SAMR_CLOSE          0x01
 #define SAMR_OPEN_SECRET    0x07
 #define SAMR_LOOKUP_RIDS    0x11
 #define SAMR_UNKNOWN_3      0x03
+#define SAMR_QUERY_DISPINFO 0x28
 #define SAMR_ENUM_SAM_DB    0x0d
 #define SAMR_UNKNOWN_22     0x22
 #define SAMR_UNKNOWN_24     0x24
 #define SAMR_UNKNOWN_32     0x32
 #define SAMR_UNKNOWN_34     0x34
 #define SAMR_OPEN_POLICY    0x39
+#define SAMR_ENUM_DOM_GRPS  0x0f
 
 #define LSA_OPENPOLICY             0x2c
 #define LSA_QUERYINFOPOLICY        0x07
@@ -1062,6 +1113,15 @@ typedef struct r_samr_open_secret_info
 } SAMR_R_OPEN_SECRET;
 
 
+#define MAX_SAM_ENTRIES 250
+
+typedef struct samr_entry_info
+{
+	uint32 rid;
+	UNIHDR hdr_acct_name;
+
+} SAM_ENTRY;
+
 /* SAMR_Q_ENUM_SAM_DB - SAM rids and names */
 typedef struct q_samr_sam_db_info
 {
@@ -1074,15 +1134,6 @@ typedef struct q_samr_sam_db_info
 	uint32 max_size;              /* 0x0000 ffff */
 
 } SAMR_Q_ENUM_SAM_DB;
-
-#define MAX_SAM_ENTRIES 250
-
-typedef struct samr_entry_info
-{
-	uint32 rid;
-	UNIHDR hdr_acct_name;
-
-} SAM_ENTRY;
 
 /* SAMR_R_ENUM_SAM_DB - SAM rids and names */
 typedef struct q_samr_unknown_d_info
@@ -1101,6 +1152,63 @@ typedef struct q_samr_unknown_d_info
 	uint32 status;
 
 } SAMR_R_ENUM_SAM_DB;
+
+
+
+/* SAMR_Q_QUERY_DISPINFO - SAM rids, names and descriptions */
+typedef struct q_samr_enum_dom_user_info
+{
+	LSA_POL_HND pol;        /* policy handle */
+
+	uint16 switch_level;    /* 0x0001 */
+	uint16 unknown_0;       /* 0x0000 and 0x2000 seen */
+	uint32 start_idx;       /* presumably the start enumeration index */
+	uint32 unknown_1;       /* 0x0000 07d0, 0x0000 0400 and 0x0000 0200 seen */
+
+	uint32 max_size;        /* 0x0000 7fff, 0x0000 7ffe and 0x0000 3fff seen*/
+
+} SAMR_Q_QUERY_DISPINFO;
+
+typedef struct samr_entry_info2
+{
+	uint32 user_idx;
+
+	uint32 rid_user;
+	uint16 acb_info;
+	uint16 pad;
+
+	UNIHDR hdr_acct_name;
+	UNIHDR hdr_user_name;
+	UNIHDR hdr_user_desc;
+
+} SAM_ENTRY2;
+
+typedef struct samr_str_entry_info2
+{
+	UNISTR2 uni_acct_name;
+	UNISTR2 uni_full_name;
+	UNISTR2 uni_acct_desc;
+
+} SAM_STR2;
+
+/* SAMR_R_QUERY_DISPINFO - SAM rids, names and descriptions */
+typedef struct r_samr_query_dispinfo_info
+{
+	uint32 unknown_0;        /* 0x0000 0492 */
+	uint32 unknown_1;        /* 0x0000 049a */
+	uint32 switch_level;     /* 0x0000 0001 */
+
+	uint32 num_entries;
+	uint32 ptr_entries;
+
+	uint32 num_entries2;
+
+	SAM_ENTRY2 sam[MAX_SAM_ENTRIES];
+	SAM_STR2   str[MAX_SAM_ENTRIES];
+
+	uint32 status;
+
+} SAMR_R_QUERY_DISPINFO;
 
 
 

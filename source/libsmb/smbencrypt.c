@@ -202,13 +202,13 @@ BOOL obfuscate_pwd(unsigned char pwd[16], unsigned char sess_key[16], uint8 mode
 
 		if (mode == 0)
 		{
-			des_encrypt(sess_key  , pwd_c  , pwd);
-			des_encrypt(sess_key+8, pwd_c+8, pwd);
+			des_encrypt8(sess_key  , pwd_c  , pwd);
+			des_encrypt8(sess_key+8, pwd_c+8, pwd);
 		}
 		else
 		{
-			des_decrypt(sess_key  , pwd_c  , pwd, 8);
-			des_decrypt(sess_key+8, pwd_c+8, pwd, 8);
+			des_decrypt8(sess_key  , pwd_c  , pwd);
+			des_decrypt8(sess_key+8, pwd_c+8, pwd);
 		}
 
 #else
