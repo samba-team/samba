@@ -387,10 +387,10 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 			    p - 32, 8, 
 			    token->Confounder, sizeof(token->Confounder),
 			    p, 
-			    input_message_buffer->length + 1);
+			    datalen);
     if (ret) {
 	*minor_status = ret;
-	gss_release_buffer(minor_status, input_message_buffer);
+	gss_release_buffer(minor_status, output_message_buffer);
 	return GSS_S_FAILURE;
     }
 
@@ -596,7 +596,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 
     cmp = memcmp(cksum_data, token->SGN_CKSUM, 8);
     if (cmp) {
-	gss_release_buffer(minor_status, input_message_buffer);
+	gss_release_buffer(minor_status, output_message_buffer);
 	*minor_status = 0;
 	return GSS_S_BAD_MIC;
     }
