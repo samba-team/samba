@@ -40,9 +40,6 @@
 
 RCSID("$Id$");
 
-#include <des.h>
-#include <krb.h>
-
 static KTEXT_ST krb4_adat;
 
 static des_cblock key;

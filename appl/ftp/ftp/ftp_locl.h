@@ -49,7 +49,6 @@
 #include <socks.h>
 #endif
 
-#include <sys/bitypes.h>
 #include <sys/cdefs.h>
 
 #ifdef HAVE_PWD_H

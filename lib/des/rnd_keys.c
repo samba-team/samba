@@ -45,9 +45,9 @@ RCSID("$Id$");
 
 #include <des.h>
 #include <des_locl.h>
+#include <ktypes.h>
 
 #include <string.h>
-#include <sys/bitypes.h>
 
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>

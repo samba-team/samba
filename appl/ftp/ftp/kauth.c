@@ -39,8 +39,6 @@
 #include "ftp_locl.h"
 RCSID("$Id$");
 
-#include <krb.h>
-
 void kauth(int argc, char **argv)
 {
     int ret;
