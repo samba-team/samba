@@ -433,6 +433,10 @@ static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 				    transport->recv_buffer.header + 
 				    transport->recv_buffer.received,
 				    NBT_HDR_SIZE - transport->recv_buffer.received);
+		if (ret == 0) {
+			smbcli_transport_dead(transport);
+			return;
+		}
 		if (ret == -1) {
 			if (errno == EINTR || errno == EAGAIN) {
 				return;
