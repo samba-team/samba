@@ -1,3 +1,12 @@
+2004-04-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/copy_cred_cache.{c,1}: add cred cache copy tool
+	
+	* configure.in: use rk_SYS_LARGEFILE
+	
+	* lib/krb5/{krb5.h,store.c,fcache.c}: Fix the cache flags bitorder
+	issue with a storage flag instead of a separate function.
+	
 2004-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: move out the oid check from get_reply_key
