@@ -2081,10 +2081,10 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			break;
 		case 0x0c:
 			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
-			u_lock_duration = account_policy_temp;
+			u_lock_duration = account_policy_temp * 60;
 
 			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
-			u_reset_time = account_policy_temp;
+			u_reset_time = account_policy_temp * 60;
 
 			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 			lockout = account_policy_temp;
