@@ -549,6 +549,7 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	strlower(name);
 
 	get_private_directory(tdbfile);
+	pstrcat(tdbfile, "/");
 	pstrcat(tdbfile, PASSDB_FILE_NAME);
 	
 	/* set search key */
