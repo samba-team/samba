@@ -356,9 +356,9 @@ int pull_ascii(char *dest, const void *src, int dest_len, int src_len, int flags
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == -1) {
-			src_len = strlen(src)+1;
+			src_len = strlen(src);
 		} else {
-			src_len = strnlen(src, src_len) + 1;
+			src_len = strnlen(src, src_len);
 		}
 	}
 
@@ -551,9 +551,9 @@ int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, i
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == -1) {
-			src_len = strlen_w(src)*2+2;
+			src_len = strlen_w(src)*2;
 		} else {
-			src_len = strnlen_w(src, src_len/2)*2+2;
+			src_len = strnlen_w(src, src_len/2)*2;
 		}
 	}
 
@@ -623,9 +623,9 @@ int pull_utf8(char *dest, const void *src, int dest_len, int src_len, int flags)
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == -1) {
-			src_len = strlen(src)+1;
+			src_len = strlen(src);
 		} else {
-			src_len = strnlen(src, src_len) + 1;
+			src_len = strnlen(src, src_len);
 		}
 	}
 
