@@ -1797,3 +1797,22 @@ BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
 
 	return True;
 }
+
+/*******************************************************************
+return the length of a UNISTR string.
+********************************************************************/  
+
+uint32 str_len_uni(UNISTR *source)
+{
+ 	uint32 i=0;
+
+	if (!source->buffer)
+		return 0;
+
+	while (source->buffer[i])
+		i++;
+
+	return i;
+}
+
+

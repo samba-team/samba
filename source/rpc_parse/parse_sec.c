@@ -133,7 +133,7 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	 * Note that the size is always a multiple of 4 bytes due to the
 	 * nature of the data structure.  Therefore the prs_align() calls
 	 * have been removed as they through us off when doing two-layer
-	 * marshalling such as in the printing code (NEW_BUFFER).  --jerry
+	 * marshalling such as in the printing code (RPC_BUFFER).  --jerry
 	 */
 
 	if (ppsa == NULL)

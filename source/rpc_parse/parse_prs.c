@@ -647,6 +647,34 @@ BOOL prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 }
 
 /*******************************************************************
+ Stream a uint32* (allocate memory if unmarshalling)
+ ********************************************************************/
+
+BOOL prs_uint32_p(const char *name, prs_struct *ps, int depth, uint32 **data32)
+{
+	uint32 data_p;
+
+	/* caputure the pointer value to stream */
+
+	data_p = (uint32) *data32;
+
+	if ( !prs_uint32("ptr", ps, depth, &data_p ))
+		return False;
+
+	/* we're done if there is no data */
+
+	if ( !data_p )
+		return True;
+
+	if (UNMARSHALLING(ps)) {
+		if ( !(*data32 = PRS_ALLOC_MEM(ps, uint32, 1)) )
+			return False;
+	}
+
+	return prs_uint32(name, ps, depth, *data32);
+}
+
+/*******************************************************************
  Stream a NTSTATUS
  ********************************************************************/
 

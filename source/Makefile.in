@@ -298,7 +298,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_wks.o rpc_parse/parse_ds.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_echo.o rpc_parse/parse_shutdown.o \
-		$(REGOBJS_OBJ)
+                rpc_parse/parse_buffer.o $(REGOBJS_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
