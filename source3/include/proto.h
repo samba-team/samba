@@ -1697,6 +1697,7 @@ unsigned long getsmbpwpos(void *vp);
 BOOL setsmbpwpos(void *vp, unsigned long tok);
 struct smb_passwd *getsmbpwnam(char *name);
 struct smb_passwd *getsmbpwuid(unsigned int uid);
+char *encode_acct_ctrl(uint16 acct_ctrl);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd);
 
