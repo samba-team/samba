@@ -19,6 +19,7 @@ libgssapi_la_SOURCES =		\
 	add_cred.c		\
 	add_oid_set_member.c	\
 	canonicalize_name.c	\
+	cfx.c			\
 	compare_name.c		\
 	compat.c		\
 	context_time.c		\
