@@ -1,5 +1,9 @@
 2000-12-15  Assar Westerlund  <assar@sics.se>
 
+	* roken-frag.m4 (inet_ntoa, inet_ntop, inet_pton): add necessary
+	includes when testing
+	* broken2.m4: new variant of broken, with includes and arguments
+
 	* test-package.m4: s/ifval/m4_ifval/ to keep in sync with
  	autoconf.  from Ake Sandgren <ake@cs.umu.se>
 	* check-var.m4: s/ifval/m4_ifval/ to keep in sync with autoconf.
