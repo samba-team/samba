@@ -177,6 +177,11 @@ Documented in the smb.conf man pages :
 	"delete veto files"
 	"oplocks"
 
+Nascent web interface for configuration.
+----------------------------------------
+
+source/wsmbconf.c is a cgi-bin program for editing smb.conf. It can
+also be run standalone. This is in a very early stage of development.
 
 Reporting bugs.
 ---------------
