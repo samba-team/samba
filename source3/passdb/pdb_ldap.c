@@ -425,9 +425,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	uint32 hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
-	struct passwd	*pw = NULL;
-	uid_t		uid = -1;
-	gid_t		gid = -1;
 
 	/*
 	 * do a little initialization
@@ -461,14 +458,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	DEBUG(2, ("init_sam_from_ldap: Entry found for user: %s\n", username));
-
-	/* I'm not going to fail here, since there are checks 
-	   higher up the cal stack to do this   --jerry */
-
-	if ( (pw=Get_Pwnam(username)) != NULL ) {
-		uid = pw->pw_uid;
-		gid = pw->pw_gid;
-	}
 
 	pstrcpy(nt_username, username);
 
@@ -615,47 +604,48 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
-			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_DRIVE), dir_drive)) {
-		pdb_set_dir_drive(sampass, talloc_sub_specified(sampass->mem_ctx, 
-								  lp_logon_drive(),
-								  username, domain, 
-								  uid, gid), PDB_DEFAULT);
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_DRIVE), dir_drive)) 
+	{
+		pdb_set_dir_drive( sampass, 
+			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_drive()),
+			PDB_DEFAULT );
 	} else {
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	}
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_PATH), homedir)) {
-		pdb_set_homedir(sampass, talloc_sub_specified(sampass->mem_ctx, 
-								  lp_logon_home(),
-								  username, domain, 
-								  uid, gid), PDB_DEFAULT);
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_PATH), homedir)) 
+	{
+		pdb_set_homedir( sampass, 
+			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
+			PDB_DEFAULT );
 	} else {
 		pdb_set_homedir(sampass, homedir, PDB_SET);
 	}
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_SCRIPT), logon_script)) {
-		pdb_set_logon_script(sampass, talloc_sub_specified(sampass->mem_ctx, 
-								     lp_logon_script(),
-								     username, domain, 
-								     uid, gid), PDB_DEFAULT);
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_SCRIPT), logon_script)) 
+	{
+		pdb_set_logon_script( sampass, 
+			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()), 
+			PDB_DEFAULT );
 	} else {
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	}
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PROFILE_PATH), profile_path)) {
-		pdb_set_profile_path(sampass, talloc_sub_specified(sampass->mem_ctx, 
-								     lp_logon_path(),
-								     username, domain, 
-								     uid, gid), PDB_DEFAULT);
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PROFILE_PATH), profile_path)) 
+	{
+		pdb_set_profile_path( sampass, 
+			talloc_sub_basic( sampass->mem_ctx, username, lp_logon_path()),
+			PDB_DEFAULT );
 	} else {
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	}
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
-		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_DESC), acct_desc)) {
+		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_DESC), acct_desc)) 
+	{
 		/* leave as default */
 	} else {
 		pdb_set_acct_desc(sampass, acct_desc, PDB_SET);
