@@ -29,44 +29,35 @@
 static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 				 enum smb_search_level level,
 				 const char *unix_path,
-				 const char *name, 
+				 const char *fname, 
 				 uint16_t search_attrib,
 				 uint32_t dir_index,
 				 union smb_search_data *file)
 {
-	struct pvfs_file_info *finfo;
+	struct pvfs_filename *name;
 	NTSTATUS status;
 
-	finfo = talloc_p((TALLOC_CTX *)file, struct pvfs_file_info);
-	if (!finfo) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = pvfs_relative_file_info_cs(pvfs, unix_path, name, finfo);
+	status = pvfs_resolve_partial(pvfs, file, unix_path, fname, &name);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(finfo);
 		return status;
 	}
-	
+
 	switch (level) {
 
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
 		file->both_directory_info.file_index   = dir_index;
-		file->both_directory_info.create_time  = finfo->create_time;
-		file->both_directory_info.access_time  = finfo->access_time;
-		file->both_directory_info.write_time   = finfo->write_time;
-		file->both_directory_info.change_time  = finfo->change_time;
-		file->both_directory_info.size         = finfo->size;
-		file->both_directory_info.alloc_size   = finfo->alloc_size;
-		file->both_directory_info.attrib       = finfo->attrib;
-		file->both_directory_info.ea_size      = finfo->ea_size;
-		file->both_directory_info.short_name.s = pvfs_short_name(pvfs, (TALLOC_CTX *)file, 
-									 unix_path, name);
-		file->both_directory_info.name.s       = name;
+		file->both_directory_info.create_time  = name->dos.create_time;
+		file->both_directory_info.access_time  = name->dos.access_time;
+		file->both_directory_info.write_time   = name->dos.write_time;
+		file->both_directory_info.change_time  = name->dos.change_time;
+		file->both_directory_info.size         = name->st.st_size;
+		file->both_directory_info.alloc_size   = name->dos.alloc_size;
+		file->both_directory_info.attrib       = name->dos.attrib;
+		file->both_directory_info.ea_size      = name->dos.ea_size;
+		file->both_directory_info.short_name.s = pvfs_short_name(pvfs, name);
+		file->both_directory_info.name.s       = fname;
 		break;
 	}
-
-	talloc_free(finfo);
 
 	return NT_STATUS_OK;
 }
@@ -104,7 +95,6 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 	struct pvfs_dir *dir;
 	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
 	struct pvfs_search_state *search;
-	union smb_search_data *file;
 	uint16_t max_count, reply_count;
 	uint16_t search_attrib;
 	const char *pattern;
@@ -183,17 +173,19 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 		max_count = dir->count;
 	}
 
-	file = talloc_p(req, union smb_search_data);
-	if (!file) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* note that fill_search_info() can fail, if for example a
 	   file disappears during a search or we don't have sufficient
 	   permissions to stat() it, or the search_attrib does not
 	   match the files attribute. In that case the name is ignored
 	   and the search continues. */
 	for (i=reply_count=0; i < dir->count && reply_count < max_count;i++) {
+		union smb_search_data *file;
+
+		file = talloc_p(req, union smb_search_data);
+		if (!file) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		status = fill_search_info(pvfs, io->generic.level, dir->unix_path, dir->names[i], 
 					  search_attrib, i, file);
 		if (NT_STATUS_IS_OK(status)) {
@@ -202,6 +194,7 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 			}
 			reply_count++;
 		}
+		talloc_free(file);
 	}
 
 	/* not matching any entries is an error */

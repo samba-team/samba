@@ -87,42 +87,54 @@ static uint32_t unix_filetype(mode_t mode)
 }
 
 
-/*
-  return all basic information about a file. This call is case-sensitive (it assumes that the 
-  pathnames given have already had case conversion)
-*/
-NTSTATUS pvfs_relative_file_info_cs(struct pvfs_state *pvfs, const char *dir_path, 
-				    const char *name, struct pvfs_file_info *finfo)
+/****************************************************************************
+ Change a unix mode to a dos mode.
+****************************************************************************/
+static uint32_t dos_mode_from_stat(struct pvfs_state *pvfs, struct stat *st)
 {
-	char *full_name = NULL;
-	struct stat st;
+	int result = 0;
 
-	asprintf(&full_name, "%s/%s", dir_path, name);
-	if (full_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if ((st->st_mode & S_IWUSR) == 0)
+		result |= FILE_ATTRIBUTE_READONLY;
+	
+	if ((pvfs->flags & PVFS_FLAG_MAP_ARCHIVE) && ((st->st_mode & S_IXUSR) != 0))
+		result |= FILE_ATTRIBUTE_ARCHIVE;
+
+	if ((pvfs->flags & PVFS_FLAG_MAP_SYSTEM) && ((st->st_mode & S_IXGRP) != 0))
+		result |= FILE_ATTRIBUTE_SYSTEM;
+	
+	if ((pvfs->flags & PVFS_FLAG_MAP_HIDDEN) && ((st->st_mode & S_IXOTH) != 0))
+		result |= FILE_ATTRIBUTE_HIDDEN;
+  
+	if (S_ISDIR(st->st_mode))
+		result = FILE_ATTRIBUTE_DIRECTORY | (result & FILE_ATTRIBUTE_READONLY);
+
+#if defined (HAVE_STAT_ST_BLOCKS) && defined (HAVE_STAT_ST_BLKSIZE)
+	if (st->st_size > st->st_blocks * (off_t)st->st_blksize) {
+		result |= FILE_ATTRIBUTE_SPARSE;
 	}
+#endif
+ 
+	return result;
+}
 
-	if (stat(full_name, &st) == -1) {
-		free(full_name);
-		return pvfs_map_errno(pvfs, errno);
-	}
 
-	unix_to_nt_time(&finfo->create_time, st.st_ctime);
-	unix_to_nt_time(&finfo->access_time, st.st_atime);
-	unix_to_nt_time(&finfo->write_time, st.st_mtime);
-	unix_to_nt_time(&finfo->change_time, st.st_mtime);
-	finfo->attrib      = 0;
-	finfo->alloc_size  = st.st_size;
-	finfo->size        = st.st_size;
-	finfo->nlink       = st.st_nlink;
-	finfo->ea_size     = 0;
-	finfo->file_id     = st.st_ino;
-	finfo->unix_uid    = st.st_uid;
-	finfo->unix_gid    = st.st_gid;
-	finfo->unix_file_type = unix_filetype(st.st_mode);
-	finfo->unix_dev_major = unix_dev_major(st.st_rdev);
-	finfo->unix_dev_minor = unix_dev_minor(st.st_rdev);
-	finfo->unix_permissions = unix_perms_to_wire(st.st_mode);
+
+/*
+  fill in the dos file attributes for a file
+*/
+NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name)
+{
+	/* for now just use the simple samba mapping */
+	unix_to_nt_time(&name->dos.create_time, name->st.st_ctime);
+	unix_to_nt_time(&name->dos.access_time, name->st.st_atime);
+	unix_to_nt_time(&name->dos.write_time, name->st.st_mtime);
+	unix_to_nt_time(&name->dos.change_time, name->st.st_mtime);
+	name->dos.attrib = dos_mode_from_stat(pvfs, &name->st);
+	name->dos.alloc_size = name->st.st_size;
+	name->dos.nlink = name->st.st_nlink;
+	name->dos.ea_size = 0;
+	name->dos.file_id = (((uint64_t)name->st.st_dev)<<32) | name->st.st_ino;
 
 	return NT_STATUS_OK;
 }
