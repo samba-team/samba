@@ -38,6 +38,21 @@ sub DebugElement($)
     return $result;
 }
 
+sub ArrayFromPython($$)
+{
+    my($e) = shift;
+    my($prefix) = shift;
+    my($result) = "";
+
+    if ($e->{POINTERS} != 0) {
+	$result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, PyString_Size(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))));\n";
+    }
+
+    $result .= "\tmemcpy(s->$prefix$e->{NAME}, PyString_AsString(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))), PyString_Size(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))));\n";
+
+    return $result;
+}
+
 sub XFromPython($$)
 {
     my($e) = shift;
@@ -47,13 +62,8 @@ sub XFromPython($$)
 
     # Special cases
 
-    if (($e->{TYPE} eq "policy_handle" || $e->{TYPE} eq "string") && $e->{POINTERS} == 1) {
-	$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj);\n";
-	return $result;
-    }
-
     if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
-	$result .= "\ts->$prefix$e->{NAME} = policy_handle_ptr_from_python(mem_ctx, $obj);\n";
+	$result .= "\ts->$prefix$e->{NAME} = string_ptr_from_python(mem_ctx, $obj);\n";
 	return $result;
     }
 
@@ -62,26 +72,41 @@ sub XFromPython($$)
     if (util::is_scalar_type($e->{TYPE})) {
 	if ($e->{POINTERS} == 0) {
 	    if ($e->{ARRAY_LEN}) {
-		# pointer to scalar with array len property
-		$result .= DebugElement($e);
+		$result .= ArrayFromPython($e, $prefix);
 	    } else {
 		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj);\n";
 	    }
 	} else {
-	    # Pointer to scalar
+	    $result .= "\t// Pointer to scalar\n";
 	    $result .= DebugElement($e);
 	}
     } else {
 	if ($e->{POINTERS} == 0) {
-	    # Non-scalar type, no pointer
-	    $result .= DebugElement($e);
+	    $result .= "\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj);\n";
 	} elsif ($e->{POINTERS} == 1) {
 	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj);\n";
 	} else {
-	    # Non-scalar type, multiple pointers
+	    $result .= "\t// Non-scalar type, multiple pointers\n";
 	    $result .= DebugElement($e);
 	}
     }
+
+    return $result;
+}
+
+sub ArrayToPython($$)
+{
+    my($e) = shift;
+    my($prefix) = shift;
+    my($result) = "";
+
+    my($array_len) = $e->{ARRAY_LEN};
+
+    if (!util::is_constant($array_len)) {
+	$array_len = "s->$prefix$array_len";
+    }
+
+    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), PyString_FromStringAndSize((char *)s->$prefix$e->{NAME}, $array_len * sizeof($e->{TYPE})));\n";
 
     return $result;
 }
@@ -94,11 +119,6 @@ sub XToPython($$)
 
     # Special cases
 
-    if ($e->{TYPE} eq "policy_handle" && $e->{POINTERS} == 1) {
-	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), policy_handle_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
-	return $result;
-    }
-
     if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
 	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), string_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	return $result;
@@ -109,23 +129,21 @@ sub XToPython($$)
     if (util::is_scalar_type($e->{TYPE})) {
 	if ($e->{POINTERS} == 0) {
 	    if ($e->{ARRAY_LEN}) {
-		# pointer to scalar with array len property
-		$result .= DebugElement($e);
+		$result .= ArrayToPython($e, $prefix);
 	    } else {
 		$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_to_python(s->$prefix$e->{NAME}));\n";
 	    }
 	} else {
-	    # Pointer to scalar
+	    $result .= "\t// Pointer to scalar\n";
 	    $result .= DebugElement($e);
 	}
     } else {
 	if ($e->{POINTERS} == 0) {
-	    # Non-scalar type, no pointer
-	    $result .= DebugElement($e);
+	    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}));\n";
 	} elsif ($e->{POINTERS} == 1) {
 	    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	} else {
-	    # Non-scalar type, multiple pointers
+	    $result .= "\t// Non-scalar type, multiple pointers\n";
 	    $result .= DebugElement($e);
 	}
     }
@@ -234,7 +252,7 @@ sub ParseStruct($)
 
     $res .= "}\n\n";
 
-    $res .= "/* Convert struct $s->{NAME} to Python dict */\n\n";
+    $res .= "/* Convert struct $s->{NAME} pointer to Python dict */\n\n";
 
     $res .= "PyObject *$s->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s)\n";
     $res .= "{\n";
@@ -257,7 +275,7 @@ sub ParseUnion($)
     my($u) = shift;
 
     $res .= "%{\n\n";
-    $res .= "/* Convert Python dict to union $u->{NAME} */\n\n";
+    $res .= "/* Convert Python dict to union $u->{NAME} pointer */\n\n";
 
     $res .= "union $u->{NAME} *$u->{NAME}_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
     $res .= "{\n";
@@ -283,12 +301,32 @@ sub ParseUnion($)
     $res .= "\treturn NULL;\n";
     $res .= "}\n\n";
 
-    $res .= "/* Convert union $u->{NAME} to Python dict */\n\n";
+    $res .= "/* Convert union $u->{NAME} pointer to Python dict */\n\n";
 
     $res .= "PyObject *$u->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u)\n";
     $res .= "{\n";
     $res .= "\treturn PyDict_New();\n";
     $res .= "}\n\n";
+
+    $res .= "/* Convert Python dict to union $u->{NAME} */\n\n";
+
+    $res .= "void $u->{NAME}_from_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u, PyObject *obj)\n";
+    $res .= "{\n";
+    $res .= "\tPyObject *dict;\n\n";
+    for my $e (@{$u->{DATA}{DATA}}) {
+	$res .= "\tif ((dict = PyDict_GetItem(obj, PyString_FromString(\"$e->{DATA}{NAME}\")))) {\n";
+	if ($e->{DATA}{POINTERS} == 0) {
+	    $res .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict);\n";
+	} elsif ($e->{DATA}{POINTERS} == 1) {
+	    $res .= "\t\tu->$e->{DATA}{NAME} = $e->{DATA}{TYPE}_ptr_from_python(mem_ctx, dict);\n";
+	} else {
+	    $res .= "\t\t// $e->{DATA}{TYPE} pointers=$e->{DATA}{POINTERS}\n";
+	}
+
+	$res .= "\t\treturn;\n";
+	$res .= "\t}\n\n";
+    }
+    $res .= "}\n";
 
     $res .= "\n%}\n\n";    
 }
@@ -317,11 +355,13 @@ sub ParseHeader($)
 {
     my($hdr) = shift;
 
-    $name = $hdr->{NAME};
-    $res .= "#define DCERPC_" . uc($name) . "_UUID \"$hdr->{PROPERTIES}->{uuid}\"\n";
-    $res .= "const int DCERPC_" . uc($name) . "_VERSION = " . $hdr->{PROPERTIES}->{version} . ";\n";
-    $res .= "#define DCERPC_" . uc($name) . "_NAME \"" . $name . "\"\n";
-    $res .= "\n";
+    if ($hdr->{PROPERTIES}{uuid}) {
+	$name = $hdr->{NAME};
+	$res .= "#define DCERPC_" . uc($name) . "_UUID \"$hdr->{PROPERTIES}->{uuid}\"\n";
+	$res .= "const int DCERPC_" . uc($name) . "_VERSION = " . $hdr->{PROPERTIES}->{version} . ";\n";
+	$res .= "#define DCERPC_" . uc($name) . "_NAME \"" . $name . "\"\n";
+	$res .= "\n";
+    }
 
     ParseInheritedData($hdr->{INHERITED_DATA});    
 }
