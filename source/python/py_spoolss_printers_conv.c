@@ -163,7 +163,8 @@ BOOL py_to_DEVICEMODE(DEVICEMODE *devmode, PyObject *dict)
 {
 	PyObject *obj;
 
-	to_struct(devmode, dict, py_DEVICEMODE);
+	if (!to_struct(devmode, dict, py_DEVICEMODE))
+		return False;
 
 	if (!(obj = PyDict_GetItemString(dict, "private")))
 		return False;
@@ -203,7 +204,14 @@ BOOL py_from_PRINTER_INFO_1(PyObject **dict, PRINTER_INFO_1 *info)
 
 BOOL py_to_PRINTER_INFO_1(PRINTER_INFO_1 *info, PyObject *dict)
 {
-	return False;
+	PyObject *dict_copy = PyDict_Copy(dict);
+	BOOL result;
+
+	PyDict_DelItemString(dict_copy, "level");
+	result = to_struct(info, dict_copy, py_PRINTER_INFO_1);
+
+	Py_DECREF(dict_copy);
+	return result;
 }
 
 /*
@@ -232,7 +240,8 @@ BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict,
 {
 	PyObject *obj;
 
-	to_struct(info, dict, py_PRINTER_INFO_2);
+	if (!to_struct(info, dict, py_PRINTER_INFO_2))
+		return False;
 
 	if (!(obj = PyDict_GetItemString(dict, "security_descriptor")))
 		return False;
@@ -274,7 +283,8 @@ BOOL py_to_PRINTER_INFO_3(PRINTER_INFO_3 *info, PyObject *dict,
 {
 	PyObject *obj;
 
-	to_struct(info, dict, py_PRINTER_INFO_3);
+	if (!to_struct(info, dict, py_PRINTER_INFO_3))
+		return False;
 
 	if (!(obj = PyDict_GetItemString(dict, "security_descriptor")))
 		return False;
