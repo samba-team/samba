@@ -80,8 +80,10 @@ import_hostbased_name (OM_uint32 *minor_status,
     char local_hostname[MAXHOSTNAMELEN];
 
     tmp = malloc (input_name_buffer->length + 1);
-    if (tmp == NULL)
+    if (tmp == NULL) {
+	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
+    }
     memcpy (tmp,
 	    input_name_buffer->value,
 	    input_name_buffer->length);
@@ -93,6 +95,7 @@ import_hostbased_name (OM_uint32 *minor_status,
 	host = p + 1;
     } else {
 	if (gethostname(local_hostname, sizeof(local_hostname)) < 0) {
+	    *minor_status = errno;
 	    free (tmp);
 	    return GSS_S_FAILURE;
 	}
@@ -105,9 +108,10 @@ import_hostbased_name (OM_uint32 *minor_status,
 				    KRB5_NT_SRV_HST,
 				    output_name);
     free (tmp);
+    *minor_status = kerr;
     if (kerr == 0)
 	return GSS_S_COMPLETE;
-    else if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED)
+    else if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED) 
 	return GSS_S_BAD_NAME;
     else
 	return GSS_S_FAILURE;
