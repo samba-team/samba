@@ -104,9 +104,8 @@ destructors.
 
 If this pointer has an additional reference when talloc_free() is
 called then the memory is not actually released, but instead the
-reference is destroyed and the memory becomes a child of the
-referrer. See talloc_reference() for details on establishing
-additional references.
+reference is destroyed. See talloc_reference() for details on
+establishing additional references.
 
 talloc_free() operates recursively on its children.
 
@@ -129,7 +128,8 @@ ways:
     destroy the reference and make the pointer a child of "context".
 
   - you can talloc_free() the pointer itself. That will destroy the
-    reference and make the pointer a child of "context".
+    most recently established reference to the pointer and leave the
+    pointer as a child of its current parent.
 
   - you can talloc_free() the context where you placed the
     reference. That will destroy the reference, and leave the pointer
@@ -284,6 +284,22 @@ off_t talloc_total_size(const void *ptr);
 The talloc_total_size() function returns the total size in bytes used
 by this pointer and all child pointers. Mostly useful for debugging.
 
+Passing NULL is allowed, but it will only give a meaningful result if
+talloc_enable_leak_report() or talloc_enable_leak_report_full() has
+been called.
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+off_t talloc_total_blocks(const void *ptr);
+
+The talloc_total_blocks() function returns the total memory block
+count used by this pointer and all child pointers. Mostly useful for
+debugging.
+
+Passing NULL is allowed, but it will only give a meaningful result if
+talloc_enable_leak_report() or talloc_enable_leak_report_full() has
+been called.
+
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_report(const void *ptr, FILE *f);
@@ -293,7 +309,9 @@ used by ptr. One line of report is printed for each immediate child of
 ptr, showing the total memory and number of blocks used by that child.
 
 You can pass NULL for the pointer, in which case a report is printed
-for the top level memory context.
+for the top level memory context, but only if
+talloc_enable_leak_report() or talloc_enable_leak_report_full() has
+been called.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -305,7 +323,9 @@ pointer. References in the tree are shown by giving the name of the
 pointer that is referenced.
 
 You can pass NULL for the pointer, in which case a report is printed
-for the top level memory context.
+for the top level memory context, but only if
+talloc_enable_leak_report() or talloc_enable_leak_report_full() has
+been called.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -315,6 +335,12 @@ This enables calling of talloc_report(NULL, stderr) when the program
 exits. In Samba4 this is enabled by using the --leak-report command
 line option.
 
+For it to be useful, this function must be called before any other
+talloc function as it establishes a "null context" that acts as the
+top of the tree. If you don't call this function first then passing
+NULL to talloc_report() or talloc_report_full() won't give you the
+full tree printout.
+
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_enable_leak_report_full(void);
@@ -322,6 +348,12 @@ void talloc_enable_leak_report_full(void);
 This enables calling of talloc_report_full(NULL, stderr) when the
 program exits. In Samba4 this is enabled by using the
 --leak-report-full command line option.
+
+For it to be useful, this function must be called before any other
+talloc function as it establishes a "null context" that acts as the
+top of the tree. If you don't call this function first then passing
+NULL to talloc_report() or talloc_report_full() won't give you the
+full tree printout.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
