@@ -321,13 +321,28 @@ if test x"$with_krb5_support" != x"no"; then
 	AC_CHECK_FUNC_EXT(krb5_free_unparsed_name, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_free_keytab_entry_contents, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_kt_free_entry, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(krb5_krbhst_get_addrinfo, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_verify_checksum, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_c_verify_checksum, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_ticket_get_authorization_data_type, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_krbhst_get_addrinfo, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(krb5_c_enctype_compare, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(krb5_enctypes_compatible_keys, $KRB5_LIBS)
 
 	LIBS="$LIBS $KRB5_LIBS"
   
+	AC_CACHE_CHECK([for krb5_encrypt_block type],
+                samba_cv_HAVE_KRB5_ENCRYPT_BLOCK,[
+	AC_TRY_COMPILE([#include <krb5.h>],
+		[krb5_encrypt_block block;],
+		samba_cv_HAVE_KRB5_ENCRYPT_BLOCK=yes,
+		samba_cv_HAVE_KRB5_ENCRYPT_BLOCK=no)])
+
+	if test x"$samba_cv_HAVE_KRB5_ENCRYPT_BLOCK" = x"yes"; then
+		AC_DEFINE(HAVE_KRB5_ENCRYPT_BLOCK,1,
+		[Whether the type krb5_encrypt_block exists])
+	fi
+
 	AC_CACHE_CHECK([for addrtype in krb5_address],
 		samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS,[
 		AC_TRY_COMPILE([#include <krb5.h>],
@@ -359,6 +374,30 @@ if test x"$with_krb5_support" != x"no"; then
 	if test x"$samba_cv_HAVE_KRB5_TKT_ENC_PART2" = x"yes"; then
 		AC_DEFINE(HAVE_KRB5_TKT_ENC_PART2,1,
 		[Whether the krb5_ticket struct has a enc_part2 property])
+	fi
+
+	AC_CACHE_CHECK([for keyblock in krb5_creds],
+                 samba_cv_HAVE_KRB5_KEYBLOCK_IN_CREDS,[
+	AC_TRY_COMPILE([#include <krb5.h>],
+		[krb5_creds creds; krb5_keyblock kb; creds.keyblock = kb;],
+		samba_cv_HAVE_KRB5_KEYBLOCK_IN_CREDS=yes,
+		samba_cv_HAVE_KRB5_KEYBLOCK_IN_CREDS=no)])
+
+	if test x"$samba_cv_HAVE_KRB5_KEYBLOCK_IN_CREDS" = x"yes"; then
+		AC_DEFINE(HAVE_KRB5_KEYBLOCK_IN_CREDS,1,
+		[Whether the krb5_creds struct has a keyblock property])
+	fi
+
+	AC_CACHE_CHECK([for session in krb5_creds],
+                 samba_cv_HAVE_KRB5_SESSION_IN_CREDS,[
+	AC_TRY_COMPILE([#include <krb5.h>],
+		[krb5_creds creds; krb5_keyblock kb; creds.session = kb;],
+		samba_cv_HAVE_KRB5_SESSION_IN_CREDS=yes,
+		samba_cv_HAVE_KRB5_SESSION_IN_CREDS=no)])
+
+	if test x"$samba_cv_HAVE_KRB5_SESSION_IN_CREDS" = x"yes"; then
+		AC_DEFINE(HAVE_KRB5_SESSION_IN_CREDS,1,
+		[Whether the krb5_creds struct has a session property])
 	fi
 
 	AC_CACHE_CHECK([for keyvalue in krb5_keyblock],

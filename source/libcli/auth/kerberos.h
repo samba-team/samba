@@ -61,6 +61,7 @@ const krb5_data *krb5_princ_component(krb5_context context, krb5_principal princ
 /* Samba wrapper function for krb5 functionality. */
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
+int create_kerberos_key_from_string_direct(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
@@ -74,13 +75,23 @@ krb5_error_code ads_krb5_mk_req(krb5_context context,
 				krb5_data *outbuf);
 DATA_BLOB get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
 				 krb5_ticket *tkt);
+
 NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
 			   krb5_context context,
 			   krb5_auth_context auth_context,
-			   const char *realm, const DATA_BLOB *ticket, 
+			   const char *realm, const char *service, 
+			   const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
 			   DATA_BLOB *ap_rep,
 			   krb5_keyblock *keyblock);
-int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, const char *principal, const char *password, time_t *expire_time, time_t *kdc_time);
+int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
+			       const char *principal, const char *password, 
+			       time_t *expire_time, time_t *kdc_time);
+krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
+							krb5_principal host_princ,
+							int enctype);
+void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
+BOOL kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
+void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 #endif /* HAVE_KRB5 */
 

@@ -29,6 +29,9 @@
 
 #ifdef HAVE_KRB5
 
+#if !defined(HAVE_KRB5_PRINC_COMPONENT)
+const krb5_data *krb5_princ_component(krb5_context, krb5_principal, int );
+#endif
 static DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
 {
 	DATA_BLOB out;
@@ -65,21 +68,23 @@ static DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
  ads_keytab_add_entry function for details.
 ***********************************************************************************/
 
-static krb5_error_code ads_keytab_verify_ticket(krb5_context context, krb5_auth_context auth_context,
-			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt,
-			krb5_keyblock *keyblock)
+static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_context context, 
+						krb5_auth_context auth_context,
+						const char *service,
+						const DATA_BLOB *ticket, krb5_data *p_packet, 
+						krb5_ticket **pp_tkt,
+						krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
-
+	BOOL auth_ok = False;
 	krb5_keytab keytab = NULL;
-	krb5_kt_cursor cursor;
-	krb5_keytab_entry kt_entry;
-	char *princ_name = NULL;
-
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(cursor);
-
-	ZERO_STRUCTP(keyblock);
+	char *my_fqdn;
+	fstring my_name;
+	fstring my_Fqdn, my_NAME;
+	char *p_fqdn;
+	char *host_princ_s[18];
+	krb5_principal host_princ;
+	int i;
 
 	ret = krb5_kt_default(context, &keytab);
 	if (ret) {
@@ -87,73 +92,74 @@ static krb5_error_code ads_keytab_verify_ticket(krb5_context context, krb5_auth_
 		goto out;
 	}
 
-	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-	if (ret) {
-		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_start_seq_get failed (%s)\n", error_message(ret)));
-		goto out;
+	/* Generate the list of principal names which we expect clients might
+	 * want to use for authenticating to the file service. */
+
+	fstrcpy(my_name, lp_netbios_name());
+	strlower_m(my_name);
+
+	fstrcpy(my_NAME, lp_netbios_name());
+	strupper_m(my_NAME);
+
+	my_fqdn = name_to_fqdn(mem_ctx, lp_netbios_name());
+	strlower_m(my_fqdn);
+
+	p_fqdn = strchr_m(my_fqdn, '.');
+	fstrcpy(my_Fqdn, my_NAME);
+	if (p_fqdn) {
+		fstrcat(my_Fqdn, p_fqdn);
 	}
 
-	while (!(ret = krb5_kt_next_entry(context, keytab, &kt_entry, &cursor))) {
-		ret = krb5_unparse_name(context, kt_entry.principal, &princ_name);
+        asprintf(&host_princ_s[0], "%s$@%s", my_name, lp_realm());
+        asprintf(&host_princ_s[1], "%s$@%s", my_NAME, lp_realm());
+        asprintf(&host_princ_s[2], "host/%s@%s", my_name, lp_realm());
+        asprintf(&host_princ_s[3], "host/%s@%s", my_NAME, lp_realm());
+        asprintf(&host_princ_s[4], "host/%s@%s", my_fqdn, lp_realm());
+        asprintf(&host_princ_s[5], "host/%s@%s", my_Fqdn, lp_realm());
+        asprintf(&host_princ_s[6], "HOST/%s@%s", my_name, lp_realm());
+        asprintf(&host_princ_s[7], "HOST/%s@%s", my_NAME, lp_realm());
+        asprintf(&host_princ_s[8], "HOST/%s@%s", my_fqdn, lp_realm());
+        asprintf(&host_princ_s[9], "HOST/%s@%s", my_Fqdn, lp_realm());
+        asprintf(&host_princ_s[10], "%s/%s@%s", service, my_name, lp_realm());
+        asprintf(&host_princ_s[11], "%s/%s@%s", service, my_NAME, lp_realm());
+        asprintf(&host_princ_s[12], "%s/%s@%s", service, my_fqdn, lp_realm());
+        asprintf(&host_princ_s[13], "%s/%s@%s", service, my_Fqdn, lp_realm());
+        asprintf(&host_princ_s[14], "%s/%s@%s", strupper_talloc(mem_ctx, service), my_name, lp_realm());
+        asprintf(&host_princ_s[15], "%s/%s@%s", strupper_talloc(mem_ctx, service), my_NAME, lp_realm());
+        asprintf(&host_princ_s[16], "%s/%s@%s", strupper_talloc(mem_ctx, service), my_fqdn, lp_realm());
+        asprintf(&host_princ_s[17], "%s/%s@%s", strupper_talloc(mem_ctx, service), my_Fqdn, lp_realm());
+
+	/* Now try to verify the ticket using the key associated with each of
+	 * the principals which we think clients will expect us to be
+	 * participating as. */
+	for (i = 0; i < sizeof(host_princ_s) / sizeof(host_princ_s[0]); i++) {
+		host_princ = NULL;
+		ret = krb5_parse_name(context, host_princ_s[i], &host_princ);
 		if (ret) {
-			DEBUG(1, ("ads_keytab_verify_ticket: krb5_unparse_name failed (%s)\n", error_message(ret)));
+			DEBUG(1, ("ads_keytab_verify_ticket: krb5_parse_name(%s) failed (%s)\n",
+				host_princ_s[i], error_message(ret)));
 			goto out;
 		}
-		DEBUG(10, ("Checking principal: %s\n", princ_name));
-		/* Look for a CIFS ticket */
-		if (!strncasecmp(princ_name, "cifs/", 5) || 
-		    !strncasecmp(princ_name, "host/", 5) ||
-		    !strncasecmp(princ_name, "ldap/", 5)) {
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
-			krb5_auth_con_setuseruserkey(context, auth_context, &kt_entry.keyblock);
-#else
-			krb5_auth_con_setuseruserkey(context, auth_context, &kt_entry.key);
-#endif
-
-			p_packet->length = ticket->length;
-			p_packet->data = (krb5_pointer)ticket->data;
-
-			ret = krb5_rd_req(context, &auth_context, p_packet, NULL, NULL, NULL, pp_tkt);
-			if (!ret) {
-				unsigned int keytype;
-				krb5_free_unparsed_name(context, princ_name);
-				princ_name = NULL;
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
-				keytype = (unsigned int) kt_entry.keyblock.keytype;
-				copy_EncryptionKey(&kt_entry.keyblock, keyblock);
-#else
-				keytype = (unsigned int) kt_entry.key.enctype;
-				/* TODO: copy the keyblock on MIT krb5*/
-#endif
-				DEBUG(10,("ads_keytab_verify_ticket: enc type [%u] decrypted message !\n",
-					  keytype));
-				
-				break;
-			}
-		}
-		krb5_free_unparsed_name(context, princ_name);
-		princ_name = NULL;
+		p_packet->length = ticket->length;
+		p_packet->data = (krb5_pointer)ticket->data;
+		*pp_tkt = NULL;
+		ret = krb5_rd_req(context, &auth_context, p_packet, host_princ, keytab, NULL, pp_tkt);
+		krb5_free_principal(context, host_princ);
+		if (ret) {
+			DEBUG(0, ("krb5_rd_req(%s) failed: %s\n", host_princ_s[i], error_message(ret)));
+		} else {
+			DEBUG(10,("krb5_rd_req succeeded for principal %s\n", host_princ_s[i]));
+			auth_ok = True;
+			break;
+                }
 	}
-	if (ret && ret != KRB5_KT_END) {
-		/* This failed because something went wrong, not because the keytab file was empty. */
-		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_next_entry failed (%s)\n", error_message(ret)));
-	} else if (ret == KRB5_KT_END) {
-		DEBUG(10, ("ads_keytab_verify_ticket: no keytab entry found: %s\n", error_message(ret)));
-	} else {
-		DEBUG(10, ("ads_keytab_verify_ticket: keytab entry found: %s\n", princ_name));
+
+	for (i = 0; i < sizeof(host_princ_s) / sizeof(host_princ_s[0]); i++) {
+		SAFE_FREE(host_princ_s[i]);
 	}
+
   out:
 
-	if (princ_name) {
-		krb5_free_unparsed_name(context, princ_name);
-	}
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(context, keytab, &cursor);
-		}
-	}
 	if (keytab) {
 		krb5_kt_close(context, keytab);
 	}
@@ -165,10 +171,12 @@ static krb5_error_code ads_keytab_verify_ticket(krb5_context context, krb5_auth_
  Try to verify a ticket using the secrets.tdb.
 ***********************************************************************************/
 
-static krb5_error_code ads_secrets_verify_ticket(krb5_context context, krb5_auth_context auth_context,
-			krb5_principal host_princ,
-			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt,
-			krb5_keyblock *keyblock)
+static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_context context, 
+						 krb5_auth_context auth_context,
+						 krb5_principal host_princ,
+						 const DATA_BLOB *ticket, krb5_data *p_packet, 
+						 krb5_ticket **pp_tkt,
+						 krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
 	char *password_s = NULL;
@@ -250,12 +258,13 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context, krb5_auth
 ***********************************************************************************/
 
  NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
-			   krb5_context context,
-			   krb5_auth_context auth_context,
-			   const char *realm, const DATA_BLOB *ticket, 
-			   char **principal, DATA_BLOB *auth_data,
-			   DATA_BLOB *ap_rep,
-			   krb5_keyblock *keyblock)
+			    krb5_context context,
+			    krb5_auth_context auth_context,
+			    const char *realm, const char *service, 
+			    const DATA_BLOB *ticket, 
+			    char **principal, DATA_BLOB *auth_data,
+			    DATA_BLOB *ap_rep,
+			    krb5_keyblock *keyblock)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
 	krb5_data packet;
@@ -267,8 +276,6 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context, krb5_auth
 	char *host_princ_s = NULL;
 	BOOL got_replay_mutex = False;
 
-	char *myname;
-
 	char *malloc_principal;
 
 	ZERO_STRUCT(packet);
@@ -279,9 +286,8 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context, krb5_auth
            like. We have to go through all this to allow us to store
            the secret internally, instead of using /etc/krb5.keytab */
 
-	myname = name_to_fqdn(mem_ctx, lp_netbios_name());
-	strlower_m(myname);
-	asprintf(&host_princ_s, "host/%s@%s", myname, lp_realm());
+	asprintf(&host_princ_s, "%s$", lp_netbios_name());
+	strlower_m(host_princ_s);
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);
 	if (ret) {
 		DEBUG(1,("ads_verify_ticket: krb5_parse_name(%s) failed (%s)\n",
@@ -316,11 +322,13 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context, krb5_auth
 		goto out;
 	}
 
-	ret = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt, keyblock);
+	ret = ads_keytab_verify_ticket(mem_ctx, context, auth_context, 
+				       service, ticket, &packet, &tkt, keyblock);
 	if (ret) {
 		DEBUG(10, ("ads_secrets_verify_ticket: using host principal: [%s]\n", host_princ_s));
-		ret = ads_secrets_verify_ticket(context, auth_context, host_princ,
-							ticket, &packet, &tkt, keyblock);
+		ret = ads_secrets_verify_ticket(mem_ctx, context, auth_context,
+						host_princ, ticket, 
+						&packet, &tkt, keyblock);
 	}
 
 	release_server_mutex();

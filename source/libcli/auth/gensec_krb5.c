@@ -229,9 +229,9 @@ static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static void gensec_krb5_end(struct gensec_security *gensec_security)
+static int gensec_krb5_destory(void *ptr) 
 {
-	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	struct gensec_krb5_state *gensec_krb5_state = ptr;
 
 	if (gensec_krb5_state->ticket.length) { 
 	/* Hmm, early heimdal dooesn't have this - correct call would be krb5_data_free */
@@ -255,11 +255,8 @@ static void gensec_krb5_end(struct gensec_security *gensec_security)
 	if (gensec_krb5_state->krb5_context) {
 		krb5_free_context(gensec_krb5_state->krb5_context);
 	}
-
-	talloc_free(gensec_krb5_state);
-	gensec_security->private_data = NULL;
+	return 0;
 }
-
 
 static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 {
@@ -281,6 +278,8 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	ZERO_STRUCT(gensec_krb5_state->krb5_keyblock);
 	gensec_krb5_state->session_key = data_blob(NULL, 0);
 	gensec_krb5_state->pac = data_blob(NULL, 0);
+
+	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destory); 
 
 	ret = krb5_init_context(&gensec_krb5_state->krb5_context);
 	if (ret) {
@@ -401,8 +400,8 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 			}
 
 			ret = kerberos_kinit_password_cc(gensec_krb5_state->krb5_context, gensec_krb5_state->krb5_ccache, 
-							 gensec_get_client_principal(gensec_security, gensec_security), 
-							 password, NULL, &kdc_time);
+						      gensec_get_client_principal(gensec_security, gensec_security), 
+						      password, NULL, &kdc_time);
 
 			/* cope with ticket being in the future due to clock skew */
 			if ((unsigned)kdc_time > time(NULL)) {
@@ -439,8 +438,9 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
  *                or NT_STATUS_OK if the user is authenticated. 
  */
 
-static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
-				      const DATA_BLOB in, DATA_BLOB *out) 
+static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, 
+				   TALLOC_CTX *out_mem_ctx, 
+				   const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
 	krb5_error_code ret = 0;
@@ -524,7 +524,8 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 			nt_status = ads_verify_ticket(out_mem_ctx, 
 						      gensec_krb5_state->krb5_context, 
 						      gensec_krb5_state->krb5_auth_context, 
-						      lp_realm(), &in, 
+						      lp_realm(), 
+						      gensec_get_target_service(gensec_security), &in, 
 						      &principal, &pac, &unwrapped_out,
 						      &gensec_krb5_state->krb5_keyblock);
 		} else {
@@ -532,7 +533,9 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 			nt_status = ads_verify_ticket(out_mem_ctx, 
 						      gensec_krb5_state->krb5_context, 
 						      gensec_krb5_state->krb5_auth_context, 
-						      lp_realm(), &unwrapped_in, 
+						      lp_realm(), 
+						      gensec_get_target_service(gensec_security), 
+						      &unwrapped_in, 
 						      &principal, &pac, &unwrapped_out,
 						      &gensec_krb5_state->krb5_keyblock);
 		}
@@ -683,7 +686,6 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.update 	= gensec_krb5_update,
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,
-	.end		= gensec_krb5_end
 };
 
 static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
@@ -695,7 +697,6 @@ static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
 	.update 	= gensec_krb5_update,
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,
-	.end		= gensec_krb5_end
 };
 
 

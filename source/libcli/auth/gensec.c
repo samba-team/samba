@@ -147,10 +147,11 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
  * @note Used by SPENGO in particular, for the actual implementation mechanism
  */
 
-NTSTATUS gensec_subcontext_start(struct gensec_security *parent, 
+NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx, 
+				 struct gensec_security *parent, 
 				 struct gensec_security **gensec_security)
 {
-	(*gensec_security) = talloc_p(parent, struct gensec_security);
+	(*gensec_security) = talloc_p(mem_ctx, struct gensec_security);
 	if (!(*gensec_security)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -444,10 +445,6 @@ void gensec_end(struct gensec_security **gensec_security)
 	if (!*gensec_security) {
 		return;
 	}
-	if ((*gensec_security)->ops) {
-		(*gensec_security)->ops->end(*gensec_security);
-	}
-	(*gensec_security)->private_data = NULL;
 
 	talloc_free(*gensec_security);
 	*gensec_security = NULL;
@@ -646,7 +643,7 @@ NTSTATUS gensec_set_password(struct gensec_security *gensec_security,
 			     const char *password) 
 {
 	gensec_security->user.password = talloc_strdup(gensec_security, password);
-	if (!gensec_security->user.password) {
+	if (password && !gensec_security->user.password) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
@@ -713,6 +710,20 @@ const char *gensec_get_target_service(struct gensec_security *gensec_security)
 	return "host";
 }
 
+const char *gensec_get_target_principal(struct gensec_security *gensec_security) 
+{
+	const char *mechListMIC;
+	
+	if (gensec_security->target.principal) {
+		return gensec_security->target.principal;
+	}
+
+	mechListMIC = talloc_asprintf(gensec_security,"%s$@%s",
+				      lp_netbios_name(),
+				      lp_realm());
+	return mechListMIC;
+}
+
 /** 
  * Set a password callback, if the gensec module we use demands a password
  */
@@ -741,7 +752,8 @@ NTSTATUS gensec_get_password(struct gensec_security *gensec_security,
 		}
 	}
 	if (!gensec_security->password_callback) {
-		return NT_STATUS_INVALID_PARAMETER;
+		*password = NULL;
+		return NT_STATUS_OK;
 	}
 	return gensec_security->password_callback(gensec_security, mem_ctx, password);
 }

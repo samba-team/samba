@@ -142,6 +142,23 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	return nt_status;
 }
 
+static int gensec_ntlmssp_destroy(void *ptr)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ptr;
+
+	if (gensec_ntlmssp_state->ntlmssp_state) {
+		ntlmssp_end(&gensec_ntlmssp_state->ntlmssp_state);
+	}
+
+	if (gensec_ntlmssp_state->auth_context) {
+		free_auth_context(&gensec_ntlmssp_state->auth_context);
+	}
+	if (gensec_ntlmssp_state->server_info) {
+		free_server_info(&gensec_ntlmssp_state->server_info);
+	}
+	return 0;
+}
+
 static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
@@ -154,6 +171,8 @@ static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->ntlmssp_state = NULL;
 	gensec_ntlmssp_state->auth_context = NULL;
 	gensec_ntlmssp_state->server_info = NULL;
+
+	talloc_set_destructor(gensec_ntlmssp_state, gensec_ntlmssp_destroy); 
 
 	gensec_security->private_data = gensec_ntlmssp_state;
 	return NT_STATUS_OK;
@@ -173,7 +192,7 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 
 	gensec_ntlmssp_state = gensec_security->private_data;
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_start(gensec_security,
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_start(gensec_ntlmssp_state,
 							      &gensec_ntlmssp_state->ntlmssp_state))) {
 		return nt_status;
 	}
@@ -186,7 +205,7 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 	}
 
 	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
-	nt_status = make_auth_context_subsystem(gensec_security, &gensec_ntlmssp_state->auth_context);
+	nt_status = make_auth_context_subsystem(gensec_ntlmssp_state, &gensec_ntlmssp_state->auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -213,7 +232,7 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 	}
 
 	gensec_ntlmssp_state = gensec_security->private_data;
-	status = ntlmssp_client_start(gensec_security, 
+	status = ntlmssp_client_start(gensec_ntlmssp_state,
 				      &gensec_ntlmssp_state->ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -250,9 +269,11 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 		return status;
 	}
 
-	status = gensec_get_password(gensec_security, gensec_ntlmssp_state, &password);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (gensec_security->user.name) {
+		status = gensec_get_password(gensec_security, gensec_ntlmssp_state, &password);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	if (password) {
@@ -397,24 +418,6 @@ static NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_secur
 	return NT_STATUS_OK;
 }
 
-static void gensec_ntlmssp_end(struct gensec_security *gensec_security)
-{
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-
-	if (gensec_ntlmssp_state->ntlmssp_state) {
-		ntlmssp_end(&gensec_ntlmssp_state->ntlmssp_state);
-	}
-
-	if (gensec_ntlmssp_state->auth_context) {
-		free_auth_context(&gensec_ntlmssp_state->auth_context);
-	}
-	if (gensec_ntlmssp_state->server_info) {
-		free_server_info(&gensec_ntlmssp_state->server_info);
-	}
-	talloc_free(gensec_ntlmssp_state);
-	gensec_security->private_data = NULL;
-}
-
 static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.name		= "ntlmssp",
 	.sasl_name	= "NTLM",
@@ -430,7 +433,6 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.unseal_packet	= gensec_ntlmssp_unseal_packet,
 	.session_key	= gensec_ntlmssp_session_key,
 	.session_info   = gensec_ntlmssp_session_info,
-	.end		= gensec_ntlmssp_end
 };
 
 

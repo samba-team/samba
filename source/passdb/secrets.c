@@ -88,7 +88,7 @@ BOOL secrets_init(void)
 /* read a entry from the secrets database - the caller must free the result
    if size is non-null then the size of the entry is put in there
  */
-static void *secrets_fetch(const char *key, size_t *size)
+void *secrets_fetch(const char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
 	secrets_init();

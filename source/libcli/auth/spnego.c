@@ -44,6 +44,17 @@ struct spnego_state {
 	struct gensec_security *sub_sec_security;
 };
 
+
+static int gensec_spnego_destroy(void *ptr)
+{
+	struct spnego_state *spnego_state = ptr;
+
+	if (spnego_state->sub_sec_security) {
+		gensec_end(&spnego_state->sub_sec_security);
+	}
+	return 0;
+}
+
 static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 {
 	struct spnego_state *spnego_state;
@@ -56,6 +67,8 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_CLIENT_START;
 	spnego_state->sub_sec_security = NULL;
+
+	talloc_set_destructor(spnego_state, gensec_spnego_destroy);
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -73,6 +86,8 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_SERVER_START;
 	spnego_state->sub_sec_security = NULL;
+
+	talloc_set_destructor(spnego_state, gensec_spnego_destroy);
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -221,7 +236,8 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 			continue;
 		}
 
-		nt_status = gensec_subcontext_start(gensec_security, 
+		nt_status = gensec_subcontext_start(spnego_state, 
+						    gensec_security, 
 						    &spnego_state->sub_sec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
@@ -257,7 +273,8 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	DATA_BLOB null_data_blob = data_blob(NULL,0);
 
 	for (i=0; mechType && mechType[i]; i++) {
-		nt_status = gensec_subcontext_start(gensec_security,
+		nt_status = gensec_subcontext_start(spnego_state,
+						    gensec_security,
 						    &spnego_state->sub_sec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			break;
@@ -317,7 +334,8 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	nt_status = gensec_subcontext_start(gensec_security, 
+	nt_status = gensec_subcontext_start(spnego_state, 
+					    gensec_security, 
 					    &spnego_state->sub_sec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -467,19 +485,12 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return nt_status;
 		} else {
 			const char **mechlist = gensec_security_oids(out_mem_ctx, GENSEC_OID_SPNEGO);
-			const char *mechListMIC;
-
-			mechListMIC = talloc_asprintf(out_mem_ctx,"%s$@%s",
-							lp_netbios_name(),
-							lp_realm());
-			if (!mechListMIC) {
-				return NT_STATUS_NO_MEMORY;
-			}
 
 			spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
 			spnego_out.negTokenInit.mechTypes = mechlist;
 			spnego_out.negTokenInit.reqFlags = 0;
-			spnego_out.negTokenInit.mechListMIC = data_blob_string_const(mechListMIC);
+			spnego_out.negTokenInit.mechListMIC
+				= data_blob_string_const(gensec_get_target_principal(gensec_security));
 			spnego_out.negTokenInit.mechToken = unwrapped_out;
 			
 			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
@@ -694,19 +705,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
-static void gensec_spnego_end(struct gensec_security *gensec_security)
-{
-	struct spnego_state *spnego_state = gensec_security->private_data;
-
-	if (spnego_state->sub_sec_security) {
-		gensec_end(&spnego_state->sub_sec_security);
-	}
-
-	talloc_free(spnego_state);
-
-	gensec_security->private_data = NULL;
-}
-
 static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.name		= "spnego",
 	.sasl_name	= "GSS-SPNEGO",
@@ -722,7 +720,6 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.unseal_packet	= gensec_spnego_unseal_packet,
 	.session_key	= gensec_spnego_session_key,
 	.session_info   = gensec_spnego_session_info,
-	.end		= gensec_spnego_end
 };
 
 NTSTATUS gensec_spnego_init(void)

@@ -84,7 +84,6 @@ struct gensec_security_ops {
 	NTSTATUS (*session_key)(struct gensec_security *gensec_security, DATA_BLOB *session_key);
 	NTSTATUS (*session_info)(struct gensec_security *gensec_security, 
 				 struct auth_session_info **session_info); 
-	void (*end)(struct gensec_security *gensec_security);
 };
 	
 #define GENSEC_INTERFACE_VERSION 0
