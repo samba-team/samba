@@ -364,8 +364,8 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 				goto done;
 			}
 		}
-	done:
 	}
+	done:
 
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
