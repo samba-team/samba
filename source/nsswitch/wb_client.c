@@ -171,7 +171,7 @@ BOOL winbind_sid_to_gid(gid_t *pgid, DOM_SID *sid)
 	
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_SID_TO_UID, &request, &response);
+	result = winbindd_request(WINBINDD_SID_TO_GID, &request, &response);
 
 	/* Copy out result */
 
