@@ -396,6 +396,9 @@ getreply (int expecteof)
 			if (p) {
 			    p++;
 			    strlcpy(pasv, p, sizeof(pasv));
+			    p = strrchr(pasv, ')');
+			    if (p)
+				*p = '\0';
 			}
 		    }
 		    return code / 100;
