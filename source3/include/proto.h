@@ -1750,6 +1750,7 @@ void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 				char nt_newpass[516], char nt_oldhash[16],
 				char lm_newpass[516], char lm_oldhash[16]);
 void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
+void make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status);
 void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */

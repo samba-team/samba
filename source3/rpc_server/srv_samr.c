@@ -719,6 +719,80 @@ static void api_samr_lookup_names( uint16 vuid, prs_struct *data, prs_struct *rd
 	samr_reply_lookup_names(&q_u, rdata);
 }
 
+/*******************************************************************
+ samr_reply_chgpasswd_user
+ ********************************************************************/
+static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
+				prs_struct *rdata)
+{
+	SAMR_R_CHGPASSWD_USER r_u;
+	uint32 status = 0x0;
+	fstring user_name;
+	fstring wks;
+
+	fstrcpy(user_name, unistrn2(q_u->uni_user_name.buffer, q_u->uni_user_name.uni_str_len));
+	fstrcpy(wks      , unistrn2(q_u->uni_dest_host.buffer, q_u->uni_dest_host.uni_str_len));
+
+	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
+
+	/* oops! */
+	status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+
+	make_samr_r_chgpasswd_user(&r_u, status);
+
+	/* store the response in the SMB stream */
+	samr_io_r_chgpasswd_user("", &r_u, rdata, 0);
+
+	DEBUG(5,("samr_chgpasswd_user: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ api_samr_chgpasswd_user
+ ********************************************************************/
+static void api_samr_chgpasswd_user( uint16 vuid, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_CHGPASSWD_USER q_u;
+
+	/* unknown 38 command */
+	samr_io_q_chgpasswd_user("", &q_u, data, 0);
+
+	/* construct reply. */
+	samr_reply_chgpasswd_user(&q_u, rdata);
+}
+
+
+/*******************************************************************
+ samr_reply_unknown_38
+ ********************************************************************/
+static void samr_reply_unknown_38(SAMR_Q_UNKNOWN_38 *q_u,
+				prs_struct *rdata)
+{
+	SAMR_R_UNKNOWN_38 r_u;
+
+	DEBUG(5,("samr_unknown_38: %d\n", __LINE__));
+
+	make_samr_r_unknown_38(&r_u);
+
+	/* store the response in the SMB stream */
+	samr_io_r_unknown_38("", &r_u, rdata, 0);
+
+	DEBUG(5,("samr_unknown_38: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ api_samr_unknown_38
+ ********************************************************************/
+static void api_samr_unknown_38( uint16 vuid, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_UNKNOWN_38 q_u;
+
+	/* unknown 38 command */
+	samr_io_q_unknown_38("", &q_u, data, 0);
+
+	/* construct reply.  always indicate success */
+	samr_reply_unknown_38(&q_u, rdata);
+}
+
 
 /*******************************************************************
  samr_reply_unknown_12
@@ -1356,6 +1430,8 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
 	{ "SAMR_0x32"             , 0x32                  , api_samr_unknown_32       },
 	{ "SAMR_UNKNOWN_12"       , SAMR_UNKNOWN_12       , api_samr_unknown_12       },
+	{ "SAMR_UNKNOWN_38"       , SAMR_UNKNOWN_38       , api_samr_unknown_38       },
+	{ "SAMR_CHGPASSWD_USER"   , SAMR_CHGPASSWD_USER   , api_samr_chgpasswd_user   },
 	{ "SAMR_OPEN_ALIAS"       , SAMR_OPEN_ALIAS       , api_samr_open_alias       },
 	{ "SAMR_OPEN_DOMAIN"      , SAMR_OPEN_DOMAIN      , api_samr_open_domain      },
 	{ "SAMR_UNKNOWN_3"        , SAMR_UNKNOWN_3        , api_samr_unknown_3        },

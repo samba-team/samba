@@ -248,11 +248,12 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	dump_data(100, lm_owf, sizeof(lm_owf));
 	dump_data(100, nt_owf, sizeof(nt_owf));
 #endif
-	return True;
-#if 0
-	return pass_check_smb(p->user_name, p->domain,
-	                      p->ntplssp_chal.challenge, lm_owf, nt_owf);
-#endif
+	become_root(True);
+	p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
+	                      p->ntlmssp_chal.challenge, lm_owf, nt_owf, NULL);
+	unbecome_root(True);
+
+	return p->ntlmssp_validated;
 }
 
 static BOOL api_pipe_ntlmssp(pipes_struct *p, prs_struct *pd)
@@ -486,9 +487,25 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	return True;
 }
 
+
+static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
+{
+	return True;
+}
+
 static BOOL api_pipe_request(pipes_struct *p, prs_struct *pd)
 {
 	int i = 0;
+
+	if (p->ntlmssp_auth && p->ntlmssp_validated)
+	{
+		if (!api_pipe_auth_process(p)) return False;
+
+		DEBUG(0,("api_pipe_request: **** MUST CALL become_user() HERE **** \n"));
+#if 0
+		become_user();
+#endif
+	}
 
 	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++)
 	{

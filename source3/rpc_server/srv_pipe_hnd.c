@@ -137,6 +137,9 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	p->frag_len_left   = 0;
 	p->next_frag_start = 0;
 	
+	p->ntlmssp_validated = False;
+	p->ntlmssp_auth      = False;
+	
 	fstrcpy(p->name, pipe_name);
 	
 	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
