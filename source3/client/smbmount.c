@@ -255,6 +255,7 @@ static void
 send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 {
 	int fd, closed = 0, res = 1;
+	int first_time = 1;
 
 	while (1)
 	{
@@ -289,6 +290,15 @@ send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 			close_our_files();
 		}
 #endif
+
+		if( first_time ) {
+	/*
+	 * Create the background process after trying the mount.
+	 * to avoid race conditions with automount and other processes.
+	 */
+			first_time = 0;
+			daemonize();
+		}
 
 		/*
 		 * Wait for a signal from smbfs ...
@@ -364,15 +374,6 @@ static void cmd_mount(char *inbuf,char *outbuf)
 		exit(1);
 	}
 
-	/*
-	 * Create the background process after trying the mount.
-	 * to avoid race conditions with automount and other processes.
-	 */
-	daemonize();
-
-	/* The parent has exited here, leave the daemon to deal with
-	 * disconnects and reconnects
-         */
 	send_fs_socket(mount_point, inbuf, outbuf);
 }	
 
