@@ -193,6 +193,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 {
 	int i;
 	void *ptr = parm->ptr;
+	char *utf8_s1, *utf8_s2;
 
 	if (parm->class == P_LOCAL && snum >= 0) {
 		ptr = lp_local_ptr(snum, ptr);
@@ -214,10 +215,17 @@ static void show_parameter(int snum, struct parm_struct *parm)
 			char **list = *(char ***)ptr;
 			for (;*list;list++) {
 				/* enclose in quotes if the string contains a space */
-				if ( strchr_m(*list, ' ') ) 
-					printf("\'%s\'%s", *list, ((*(list+1))?", ":""));
-				else
-					printf("%s%s", *list, ((*(list+1))?", ":""));
+				if ( strchr_m(*list, ' ') ) {
+					push_utf8_allocate(&utf8_s1, *list);
+					push_utf8_allocate(&utf8_s2, ((*(list+1))?", ":""));
+					printf("\'%s\'%s", utf8_s1, utf8_s2);
+				} else {
+					push_utf8_allocate(&utf8_s1, *list);
+					push_utf8_allocate(&utf8_s2, ((*(list+1))?", ":""));
+					printf("%s%s", utf8_s1, utf8_s2);
+				}
+				SAFE_FREE(utf8_s1);
+				SAFE_FREE(utf8_s2);
 			}
 		}
 		printf("\">");
@@ -238,16 +246,20 @@ static void show_parameter(int snum, struct parm_struct *parm)
 
 	case P_STRING:
 	case P_USTRING:
+		push_utf8_allocate(&utf8_s1, *(char **)ptr);
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), *(char **)ptr);
+		       make_parm_name(parm->label), utf8_s1);
+		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			_("Set Default"), make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
 
 	case P_GSTRING:
 	case P_UGSTRING:
+		push_utf8_allocate(&utf8_s1, (char *)ptr);
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), (char *)ptr);
+		       make_parm_name(parm->label), utf8_s1);
+		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			_("Set Default"), make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
