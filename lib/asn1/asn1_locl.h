@@ -13,10 +13,10 @@
 #include <limits.h>
 #include <ctype.h>
 #include <time.h>
+#include <roken.h>
 #include "gen.h"
 #include "hash.h"
 #include "symbol.h"
-
 
 void generate_type (Symbol *);
 void generate_constant (Symbol *);
