@@ -210,9 +210,9 @@ group:          files winbind
 		<listitem><para><ulink url="smb.conf.5.html#WINBINDSEPARATOR">
 		<parameter>winbind separator</parameter></ulink></para></listitem>
 		<listitem><para><ulink url="smb.conf.5.html#WINBINDUID">
-		<parameter>winbind uid</parameter></ulink></para></listitem>
+		<parameter>idmap uid</parameter></ulink></para></listitem>
 		<listitem><para><ulink url="smb.conf.5.html#WINBINDGID">
-		<parameter>winbind gid</parameter></ulink></para></listitem>
+		<parameter>idmap gid</parameter></ulink></para></listitem>
 		<listitem><para><ulink url="smb.conf.5.html#WINBINDCACHETIME">
 		<parameter>winbind cache time</parameter></ulink></para></listitem>
 		<listitem><para><ulink url="smb.conf.5.html#WINBINDENUMUSERS">
@@ -287,8 +287,8 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
         winbind cache time = 10
         template shell = /bin/bash
         template homedir = /home/%D/%U
-        winbind uid = 10000-20000
-        winbind gid = 10000-20000
+        idmap uid = 10000-20000
+        idmap gid = 10000-20000
         workgroup = DOMAIN
         security = domain
         password server = *
