@@ -134,7 +134,7 @@ test_mcache(krb5_context context)
 
     ret = krb5_cc_get_principal(context, id2, &p2);
     if (ret == 0)
-	krb5_err(context, 1, ret, "krb5_cc_get_principal");
+	krb5_errx(context, 1, "krb5_cc_get_principal");
 
     krb5_cc_destroy(context, id2);
 }
