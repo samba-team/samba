@@ -53,7 +53,7 @@ strsep_copy(const char **stringp, const char *delim, char *buf, size_t len)
 	return -1;
     *stringp = *stringp + strcspn(*stringp, delim);
     l = MIN(len, *stringp - save);
-    strncpy(buf, save, l);
+    memcpy(buf, save, l);
     buf[l] = '\0';
 
     l = *stringp - save;
