@@ -274,7 +274,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		/* if client ntlmv2 auth is set, then don't use it on a
 		   connection without extended security.  This isn't a very
 		   good check, but it is a start */
-		if (lp_client_ntlmv2_auth()) {
+		if ((cli->capabilities & CAP_EXTENDED_SECURITY) && lp_client_ntlmv2_auth()) {
 			DATA_BLOB server_chal;
 			DATA_BLOB names_blob;
 			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
@@ -357,7 +357,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		goto end;
 	}
 
-	show_msg(cli->inbuf);
+	/* show_msg(cli->inbuf); */
 
 	if (cli_is_error(cli)) {
 		ret = False;
