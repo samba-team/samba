@@ -196,7 +196,8 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
     free(buf);
     krb5_crypto_destroy(context, crypto);
     if(ret) {
-	kdc_log(0, "Failed to encrypt data", krb5_get_err_text(context, ret));
+	kdc_log(0, "Failed to encrypt data: %s",
+		krb5_get_err_text(context, ret));
 	return ret;
     }
     
