@@ -1,3 +1,28 @@
+2005-02-02  Luke Howard  <lukeh@padl.com>
+
+	* configure.in: add --enable-kcm option for Kerberos
+	  Credentials Manager (KCM)
+
+	* lib/krb5/Makefile.am: add kcm.c
+
+	* lib/krb5/cache.c: use cc_retrieve_cred if present rather
+	  than enumerating ccache
+
+	* lib/krb5/context.c: register KCM cc_ops
+
+	* lib/krb5/get_cred.c: pass all options to cc_retrieve_cred
+
+	* lib/krb5/init_creds_pw.c: add krb5_get_init_creds_keyblock
+
+	* lib/krb5/kcm.[ch]: add initial implementation of KCM
+	  client library
+
+	* lib/krb5/krb5.h: fix cc_retrieve prototype, add KCM cc_ops
+
+	* lib/krb5/send_to_kdc.c: add _krb5_send_and_recv_tcp
+
+	* lib/krb5/store.c: add krb5_store_creds_tag, krb5_ret_creds_tag
+
 2005-01-24  Luke Howard  <lukeh@padl.com>
 
 	* lib/krb5/init_creds_pw.c: allow NULL in_options to be passed
