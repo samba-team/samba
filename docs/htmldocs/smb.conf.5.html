@@ -2781,6 +2781,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#USEMMAP"
+><TT
+CLASS="PARAMETER"
+><I
+>use mmap</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#USERHOSTS"
 ><TT
 CLASS="PARAMETER"
@@ -2999,7 +3011,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN970"
+NAME="AEN974"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4176,6 +4188,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#STRICTALLOCATE"
+><TT
+CLASS="PARAMETER"
+><I
+>strict allocate</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#STRICTLOCKING"
 ><TT
 CLASS="PARAMETER"
@@ -4406,7 +4430,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1438"
+NAME="AEN1446"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -17301,6 +17325,43 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="STRICTALLOCATE"
+></A
+>strict allocate (S)</DT
+><DD
+><P
+>This is a boolean that controls the handling of 
+		disk space allocation in the server. When this is set to <TT
+CLASS="CONSTANT"
+>yes</TT
+> 
+		the server will change from UNIX behaviour of not committing real
+		disk storage blocks when a file is extended to the Windows behaviour
+		of actually forcing the disk system to allocate real storage blocks
+		when a file is created or extended to be a given size. In UNIX
+		terminology this means that Samba will stop creating sparse files.
+		This can be slow on some systems.</P
+><P
+>When strict allocate is <TT
+CLASS="CONSTANT"
+>no</TT
+> the server does sparse
+		disk block allocation when a file is extended.</P
+><P
+>Setting this to <TT
+CLASS="CONSTANT"
+>yes</TT
+> can help Samba return
+		out of quota messages on systems that are restricting the disk quota
+		of users.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>strict allocate = no</B
+></P
+></DD
+><DT
+><A
 NAME="STRICTLOCKING"
 ></A
 >strict locking (S)</DT
@@ -17800,6 +17861,30 @@ HREF="#DISABLESPOOLSS"
 >Default: <B
 CLASS="COMMAND"
 >use client driver = no</B
+></P
+></DD
+><DT
+><A
+NAME="USEMMAP"
+></A
+>use mmap (G)</DT
+><DD
+><P
+>This global parameter determines if the tdb internals of Samba can
+		depend on mmap working correctly on the running system. Samba requires a coherent
+		mmap/read-write system memory cache. Currently only HPUX does not have such a
+		coherent cache, and so this parameter is set to <TT
+CLASS="CONSTANT"
+>false</TT
+> by
+		default on HPUX. On all other systems this parameter should be left alone. This
+		parameter is provided to help the Samba developers track down problems with
+		the tdb internal code.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>use mmap = yes</B
 ></P
 ></DD
 ><DT
@@ -19229,7 +19314,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6058"
+NAME="AEN6086"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19259,7 +19344,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6064"
+NAME="AEN6092"
 ></A
 ><H2
 >VERSION</H2
@@ -19270,7 +19355,7 @@ NAME="AEN6064"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6067"
+NAME="AEN6095"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19349,7 +19434,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6087"
+NAME="AEN6115"
 ></A
 ><H2
 >AUTHOR</H2

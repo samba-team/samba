@@ -1,0 +1,40 @@
+.TH SAMBACONFIG 8 06-Apr-1998
+.SH NAME
+sambaconfig \- configure Samba for Debian systems
+.SH SYNOPSIS
+sambaconfig [--run-from-inetd|--run-as-daemons] [--no-reload]
+.SH DESCRIPTION
+.B sambaconfig
+is used to simplify the configuration of samba(8) for use on Debian
+systems.
+.PP
+You may run this program to (re)configure samba for your Debian system 
+at any time.
+.PP
+Normally
+.B sambaconfig
+will ask if you want to reload the Samba daemons after making changes to its
+configuration. The --no-reload option will avoid this question. Note
+that if Samba is running from inetd and --no-reload is not supplied no
+questions is asked because Samba will start automatically from inetd
+when there is traffic on the NetBIOS ports.
+.SH FILES
+.TP
+/etc/inetd.conf
+If the lines that start the NetBIOS daemons nmbd and smbd are
+commented out then Samba will start as daemons from /etc/init.d/start
+.TP
+/etc/init.d/samba
+Script that will start/stop/restart Samba when running as daemons
+.TP
+/etc/samba/smbpasswd
+Encrypted passwords file for the Samba daemons
+.TP
+/etc/samba/debian_config
+Debian specific configuration information, it holds the mode in which
+Samba is running (from inetd or as daemons).
+.SH SEE ALSO
+samba(7), nmbd(8), smbd(8)
+.SH AUTHOR
+Eloy A. Paris <peloy@debian.org> (man page based on sendmailconfig's man page
+by Robert Leslie <rob@mars.org>)

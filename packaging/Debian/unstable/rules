@@ -1,0 +1,229 @@
+#!/usr/bin/make -f
+# 
+# Important modifications (introduction of a saved config.cache to
+#	solve build problems) we introduced in Samba 2.2.1a-5. These
+#	modification were made by Steve Langasek <vorlon@netexpress.net>.
+#
+
+# Uncomment this to turn on verbose mode. 
+#export DH_VERBOSE=1
+
+# This is the debhelper compatability version to use.
+export DH_COMPAT=2
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+# Set the host and build architectures for use with config.cache loading,
+# cross-building, etc.
+DEB_HOST_GNU_TYPE	:= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE	:= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+export DEB_HOST_GNU_TYPE
+export DEB_BUILD_GNU_TYPE
+
+BVARS = SMBLOGFILE=/var/log/smb NMBLOGFILE=/var/log/nmb
+
+DESTDIR=`pwd`/debian/samba
+SWATDIR=`pwd`/debian/swat
+SAMBABOOK=`pwd`/debian/swat
+
+IVARS = BASEDIR=$(DESTDIR)/usr \
+		BINDIR=$(DESTDIR)/usr/bin \
+		SBINDIR=$(DESTDIR)/usr/sbin \
+		MANDIR=$(DESTDIR)/usr/share/man \
+		LIBDIR=$(DESTDIR)/etc/samba \
+		VARDIR=$(DESTDIR)/var/state/samba \
+		SWATDIR=$(SWATDIR)/usr/share/samba/swat \
+		SAMBABOOK=$(SAMBABOOK)/usr/share/samba/swat/using_samba \
+		CODEPAGEDIR=$(DESTDIR)/usr/share/samba/codepages
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+
+	# Add here commands to configure the package.
+# > 
+# > Does the --with-fhs option work in configure? I tried it with
+# > alpha3, but everything was stored in /usr/local. Is that correct?
+# > ...
+#
+# Yes - the default prefix is still /usr/local; --with-fhs just
+# changes the default paths for the config, etc. files to match
+# the GNU/FHS specs.  To get a complete FHS directory spec, use:
+#
+#     ./configure --with-fhs --prefix=/usr --sysconfdir=/etc \
+#        --localstatedir=/var
+
+	if [ -f debian/config.cache ]; then \
+		cp -f debian/config.cache source/config.cache; \
+	fi
+
+#	[ -f source/Makefile ] || (cd source && ./configure --with-fhs --prefix=/usr --exec-prefix=/usr --with-netatalk --with-smbmount --with-pam --with-syslog --with-sambabook --with-utmp)
+	[ -f source/Makefile ] || (cd source && ./configure --host=$(DEB_HOST_GNU_TYPE)-gnu --build=$(DEB_BUILD_GNU_TYPE)-gnu --with-fhs --prefix=/usr --sysconfdir=/etc --with-privatedir=/etc/samba --with-lockdir=/var/state/samba --localstatedir=/var --with-netatalk --with-smbmount --with-pam --with-syslog --with-sambabook --with-utmp --with-readline --with-pam_smbpass)
+
+	touch configure-stamp
+
+build: configure-stamp build-stamp
+build-stamp:
+	dh_testdir
+
+	# Compile the Samba package first
+#	$(MAKE) -C source $(BVARS) all smbtorture rpctorture debug2html
+	$(MAKE) -C source all smbtorture
+
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+
+	# Clean first the Samba package
+#	-$(MAKE) -C source realclean
+#	-$(MAKE) -C source clean
+	-$(MAKE) -C source distclean
+	rm -f source/bin/rpctorture
+	rm -f source/bin/smbtorture
+	rm -f source/bin/debug2html
+
+	dh_clean
+
+install: DH_OPTIONS=
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	# Add here commands to install the package into debian/tmp.
+	$(MAKE) -C source install $(IVARS)
+
+	# Install other stuff not installed by "make install"
+	install -m 0755 debian/mksmbpasswd.awk $(DESTDIR)/usr/sbin/mksmbpasswd
+	install -m 0755 source/bin/smbtorture $(DESTDIR)/usr/bin/
+	install -m 0755 debian/sambaconfig $(DESTDIR)/usr/sbin/
+	install -m 0755 source/bin/pam_smbpass.so $(DESTDIR)/lib/security/
+
+	# Create the symlink that will allow us to do "mount -t smbfs ...".
+	#	Create also a symlink that will allow "mount -t smb ..." to
+	#	work too. The symlink is created in $(DESTDIR)/sbin/ but 
+	#	will be moved by dh_movefiles to the smbfs package later on.
+	ln -s /usr/bin/smbmount $(DESTDIR)/sbin/mount.smbfs
+	ln -s /usr/bin/smbmount $(DESTDIR)/sbin/mount.smb
+
+	# For CUPS to support printing to samba printers, it's necessary
+	#	to make the following symlink (according to
+	#	Erich Schubert <debian@vitavonni.de> in #109509):
+	ln -s /usr/bin/smbspool $(DESTDIR)/usr/lib/cups/backend/smb
+
+	# To avoid duplication of a large number of files, the swat package
+	#	does not contain the "Using Samba" book nor the HTML docs.
+	#	Instead, these are provided by the samba-doc package and
+	#	are accessed through symlinks provided in the swat package.
+	#	Here we create the symlink for the book, and the symlinks
+	#	for the HTML files are created by the script installswat.sh.
+	ln -s ../../../doc/samba-doc/htmldocs/using_samba $(SAMBABOOK)/usr/share/samba/swat/using_samba
+
+	# Install man pages for files without man pages in the upstream sources
+	install -m 0644 debian/sambaconfig.8 $(DESTDIR)/usr/share/man/man8/sambaconfig.8
+	install -m 0644 debian/mksmbpasswd.8 $(DESTDIR)/usr/share/man/man8/mksmbpasswd.8
+
+	# Delete unwanted stuff leftover from "make install"
+
+	# smbrun is not longer needed by smbd, so delete its man page
+	rm $(DESTDIR)/usr/share/man/man1/smbrun.1
+
+	# The smbwrapper package is not being generated anymore, so we must
+	#	delete the related man pages.
+	rm $(DESTDIR)/usr/share/man/man1/smbsh.1
+
+	# These files are not part of the main samba package, move to where they
+	#	belong...
+	#mv $(DESTDIR)/usr/bin/smbwrapper.so debian/smbwrapper/usr/share/samba/
+
+	# Install samba-common's conffiles - they'll get moved later to their
+	#	correct place by dh_movefiles.
+	cp debian/smb.conf $(DESTDIR)/etc/samba/
+	cp debian/samba.pamd $(DESTDIR)/etc/pam.d/samba
+
+	dh_movefiles --sourcedir=debian/samba/
+
+	# Remove empty directories that will never be used.
+	rmdir $(DESTDIR)/sbin
+
+# Build architecture-independent files here.
+# Pass -i to all debhelper commands in this target to reduce clutter.
+binary-indep: DH_OPTIONS=-i
+binary-indep: build install
+	# Need this version of debhelper for DH_OPTIONS to work.
+	dh_testversion 1.1.17
+	dh_testdir
+	dh_testroot
+#	dh_installdebconf
+	dh_installdocs -A docs/textdocs/DIAGNOSIS.txt debian/README.build
+	dh_installexamples
+#	dh_installmenu
+#	dh_installemacsen
+#	dh_installpam
+#	dh_installinit
+#	dh_installcron
+#	dh_installmanpages
+#	dh_installinfo
+#	dh_undocumented
+	dh_installchangelogs 
+	dh_link
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+#	dh_perl
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+# Build architecture-dependent files here.
+# Pass -a to all debhelper commands in this target to reduce clutter.
+binary-arch: DH_OPTIONS=-a
+binary-arch: build install
+	# Need this version of debhelper for DH_OPTIONS to work.
+	dh_testversion 1.1.17
+	dh_testdir
+	dh_testroot
+#	dh_installdebconf
+	dh_installdocs -A docs/textdocs/DIAGNOSIS.txt debian/README.build
+	dh_installexamples
+#	dh_installmenu
+	dh_installlogrotate
+#	dh_installemacsen
+#	dh_installpam
+	dh_installinit
+	dh_installcron
+#	dh_installmanpages
+#	dh_installinfo
+	dh_undocumented
+	dh_installchangelogs 
+	dh_strip
+	dh_link
+	dh_compress
+	dh_fixperms
+
+	# You may want to make some executables suid here.
+	# The smbmnt, smbmount and smbumount binaries must be setuid-root.
+	chmod u+s debian/smbfs/usr/bin/smbmnt
+	chmod u+s debian/smbfs/usr/bin/smbmount
+	chmod u+s debian/smbfs/usr/bin/smbumount
+
+	# Set some reasonable default perms for the samba logdir.
+	chmod 0750 $(DESTDIR)/var/log/samba/
+	chown root.adm $(DESTDIR)/var/log/samba/
+
+	dh_installdeb
+#	dh_makeshlibs
+#	dh_perl
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install configure
