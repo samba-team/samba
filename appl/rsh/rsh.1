@@ -31,7 +31,7 @@
 .\" 
 .\"	$Id$
 .\"
-.Dd April 22, 2003
+.Dd September 4, 2003
 .Dt RSH 1
 .Os HEIMDAL
 .Sh NAME
@@ -85,9 +85,9 @@ option.
 .Xc
 The
 .Fl K
-option turns off all Kerberos authentication. The long name implies
-that this is more or less totally unsecure. The security in this mode
-relies on reserved ports, which is not very secure.
+option turns off all Kerberos authentication. The security in this
+mode relies on reserved ports. The long name is an indication of how
+good this is.
 .It Xo
 .Fl n ,
 .Fl -no-input
@@ -99,6 +99,10 @@ option directs the input from the
 device (see the
 .Sx BUGS
 section of this manual page).
+.It Fl d
+Enable
+.Xr setsockopt 2
+socket debugging.
 .It Xo
 .Fl e ,
 .Fl -no-stderr
@@ -120,19 +124,21 @@ section for limitations).
 .Xc
 The opposite of
 .Fl x .
-This is the default, but encryption can be enabled when using
-Kerberos 5, by setting the
-.Li libdefaults/encrypt
-option in
-.Xr krb5.conf 5 .
+This is the default, and is mainly useful if encryption has been
+enabled by default, for instance in the
+.Li appdefaults
+section of 
+.Pa /etc/krb5.conf
+when using Kerberos 5.
 .It Xo
 .Fl f ,
 .Fl -forward
 .Xc
-Forward Kerberos 5 credentials to the remote host. Also controlled by
-.Li libdefaults/forward
-in
-.Xr krb5.conf 5 .
+Forward Kerberos 5 credentials to the remote host.
+Also settable via
+.Li appdefaults
+(see
+.Xr krb5.conf ) .
 .It Xo
 .Fl G
 .Xc
@@ -142,10 +148,11 @@ The opposite of
 .Fl F ,
 .Fl -forwardable
 .Xc
-Make the forwarded credentials re-forwardable. Also controlled by
-.Li libdefaults/forwardable
-in
-.Xr krb5.conf 5 .
+Make the forwarded credentials re-forwardable. 
+Also settable via
+.Li appdefaults
+(see
+.Xr krb5.conf ) .
 .It Xo
 .Fl u ,
 .Fl -unique
