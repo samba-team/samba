@@ -189,6 +189,7 @@ static NTSTATUS do_cmd(struct sam_context *sam, struct cmd_set *cmd_entry, char 
 {
 	char *p = cmd, **argv = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *mem_ctx;
 	pstring buf;
 	int argc = 0, i;
 
@@ -327,18 +328,6 @@ BOOL reload_services(BOOL test)
 	return True;
 }
 
-/* Print usage information */
-static void usage(void)
-{
-	printf("Usage: samtest [options]\n");
-
-	printf("\t-c or --command \"command string\"   execute semicolon separated cmds\n");
-	printf("\t-d or --debug debuglevel	   set the debuglevel\n");
-	printf("\t-l or --logfile logfile	    logfile to use instead of stdout\n");
-	printf("\t-h or --help		       Print this help message.\n");
-	printf("\n");
-}
-
 /* Main function */
 
 int main(int argc, char *argv[])
@@ -382,32 +371,6 @@ int main(int argc, char *argv[])
 			lp_set_logfile(logfile);
 			interactive = False;
 			break;
-			
-		case 'd':
-			DEBUGLEVEL = opt_debuglevel;
-			break;
-			
-			/*
-		case 'U': {
-			char *lp;
-
-			pstrcpy(username,opt_username);
-
-			if ((lp=strchr_m(username,'%'))) {
-				*lp = 0;
-				pstrcpy(password,lp+1);
-				got_pass = 1;
-				memset(strchr_m(opt_username,'%') + 1, 'X',
-				       strlen(password));
-			}
-			break;
-		}
-		*/
-			
-		case 'h':
-		default:
-			usage();
-			exit(1);
 		}
 	}
 
