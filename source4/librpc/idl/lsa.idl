@@ -117,9 +117,15 @@
 		lsa_AuditSettings *settings;
 	} lsa_AuditEventsInfo;
 
+	typedef struct {
+		lsa_Name name;
+		dom_sid2 *sid;
+	} lsa_PrimaryDomainInfo;
+
 	typedef union {
 		case(1) lsa_AuditLogInfo audit_log;
 		case(2) lsa_AuditEventsInfo audit_events;
+		case(3) lsa_PrimaryDomainInfo domain;
 	} lsa_PolicyInformation;
 
 	NTSTATUS lsa_QueryInfoPolicy (
