@@ -11,7 +11,7 @@
 [
 	uuid(18f70770-8e64-11cf-9af1-0020af6e72f4),
 	version(0.0)
-] interface dcom_Uknown
+] interface dcom_Unknown
 {
 	void dcomu_UseProtSeq();
 	void dcomu_GetCustomProtseqInfo();
@@ -88,6 +88,16 @@ interface ObjectRpcBaseTypes
 		uint16 MinorVersion; // Minor version number
 	} COMVERSION;
 
+	typedef [public] struct 
+	{
+		uint32 reserved1;
+		uint32 reserved2;
+	} COSERVERINFO;
+
+	typedef [public] struct
+	{
+		uint32 FIXME;
+	} MULTI_QI;
 
 	// enumeration of additional information present in the call packet.
 	// Should be an enum but DCE IDL does not support sparse enumerators.
@@ -258,12 +268,15 @@ interface ObjectRpcBaseTypes
 
 [
 	object,
-	uuid(00000000-0000-0000-C000-000000000046)
+	uuid(00000000-0000-0000-C000-000000000046),
+	helpstring("Base interface for most COM interfaces")
 ]
 interface IUnknown
 {
 	/*****************/
 	/* Function 0x00 */
+	/* Returns the interface with the specified IID 
+	   if implemented by this object */
 	HRESULT QueryInterface([in] IID *riid
 						   /*FIXME, [out] void **data*/);
 
@@ -294,7 +307,7 @@ interface IUnknown
 
 //////////////////////////////////////////////////////////////////
 
-// The remote version of Iunknown. This interface exists on every
+// The remote version of IUnknown. This interface exists on every
 // OXID (whether an OXID represents either a thread or a process is
 // implementation specific). It is used by clients to query for new
 // interfaces, get additional references (for marshaling), and release
@@ -304,7 +317,8 @@ interface IUnknown
 [
 	uuid(00000131-0000-0000-C000-000000000046),
 	object,
-	version(0.0)
+	version(0.0),
+	helpstring("Remote version of IUnknown")
 ]
 interface IRemUnknown : IUnknown
 {
@@ -349,9 +363,9 @@ interface IRemUnknown : IUnknown
 // for objects that supply additional data beyond the STDOBJREF in their
 // marshaled interface packets.
 [
-object,
-uuid(00000143-0000-0000-C000-000000000046),
-version(0.0)
+	object,
+	uuid(00000143-0000-0000-C000-000000000046),
+	version(0.0)
 ]
 
 interface IRemUnknown2 : IRemUnknown
@@ -365,7 +379,9 @@ interface IRemUnknown2 : IRemUnknown
 		);
 }
 
-[ uuid(99fcfec4-5260-101b-bbcb-00aa0021347a),
+[ 
+	uuid(99fcfec4-5260-101b-bbcb-00aa0021347a),
+	helpstring("Object Exporter ID Resolver"),
 	pointer_default(unique)
 ]
 interface IOXIDResolver
@@ -378,7 +394,6 @@ interface IOXIDResolver
 	} ppdsaOxidBindingsArray;
 
 	[idempotent] WERROR ResolveOxid (
-		 [in,ref] policy_handle *hRpc,
 		 [in] OXID *pOxid,
 		 [in] uint16 cRequestedProtseqs,
 		 [in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
@@ -393,7 +408,6 @@ interface IOXIDResolver
 	// Returns S_TRUE if the SetId is known by the object exporter,
 	// S_FALSE if not.
 	[idempotent] WERROR SimplePing (
-		 [in,ref] policy_handle *hRpc,
 		 [in] SETID *pSetId // Must not be zero
 		);
 	
@@ -401,7 +415,6 @@ interface IOXIDResolver
 	// whole set can subsequently be pinged using SimplePing,
 	// thus reducing network traffic.
 	[idempotent] WERROR ComplexPing (
-		 [in,ref] policy_handle *hRpc,
 		 [in, out] SETID *pSetId, // In of 0 on first call for new set.
 		 [in] uint16 SequenceNum,
 		 [in] uint16 cAddToSet,
@@ -417,15 +430,13 @@ interface IOXIDResolver
 	// bindings have more then one TCP/IP binding) This call
 	// can be used to validate the binding
 	// from the client.
-	[idempotent] WERROR ServerAlive (
-									 [in,ref] policy_handle *hRpc
-									);
+	[idempotent] WERROR ServerAlive ();
+
 	// Method to get the protocol sequences, string bindings,
 	// RemoteUnknown IPID and COM version for an object server
 	// given its OXID. Supported by DCOM
 	// version 5.2 and above.
 	[idempotent] WERROR ResolveOxid2 (
-											  [in,ref] policy_handle *hRpc,
 											  [in] OXID *pOxid,
 											  [in] uint16 cRequestedProtseqs,
 											  [in, size_is(cRequestedProtseqs)]
@@ -445,8 +456,9 @@ interface IOXIDResolver
 }
 
 [
-uuid(4d9f4ab8-7d1c-11cf-861e-0020af6e7c57),
+	uuid(4d9f4ab8-7d1c-11cf-861e-0020af6e7c57),
 	version(0.0),
+	object,
 	pointer_default(unique)
 ]
 interface IRemoteActivation
@@ -459,24 +471,29 @@ interface IRemoteActivation
 		DUALSTRINGARRAY *dualstringarray;
 	} REF_DUALSTRINGARRAY;
 
+	typedef struct {
+		/* Looks very much like a protocol tower to me, but it appears 
+		   to be aligned differently then it is in epmapper -jelmer
+		  */
+		uint8 FIXME[12];
+	} floor_tmp;
+
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
 	HRESULT RemoteActivation (
-							  [in] ORPCTHIS ORPCthis,
-							  [out] ORPCTHAT ORPCthat,
 							  [in] GUID Clsid,
 							  [in, unique] unistr *pwszObjectName,
 							  [in, unique] MInterfacePointer *pObjectStorage,
 							  [in] uint32 ClientImpLevel,
 							  [in] uint32 Mode,
 							  [in] uint32 Interfaces,
-							  [in,unique,size_is(Interfaces)] IID *pIIDs,
-							  [in] uint16 cRequestedProtseqs,
-							  [in, size_is(cRequestedProtseqs)] uint16 RequestedProtseqs[],
+							  [in, unique,size_is(Interfaces)] IID *pIIDs,
+							  [in] uint16 num_protseqs,
+							  [in, size_is(num_protseqs)] floor_tmp protseq[],
 							  [out] OXID pOxid,
 							  [out] DUALSTRINGARRAY *pdsaOxidBindings,
 							  [out] IPID ipidRemUnknown,
-							  [out] uint32 *pAuthnHint,
-							  [out] COMVERSION *pServerVersion,
+							  [out] uint32 pAuthnHint,
+							  [out] COMVERSION pServerVersion,
 							  [out] HRESULT *phr,
 							  [out,size_is(Interfaces)] ppInterfaceDataArray *ppInterfaceData,
 							  [out,size_is(Interfaces)] HRESULT *pResults

@@ -4,7 +4,8 @@
 
 [
   uuid(8d9f4e40-a03d-11ce-8f69-08003e30051b),
-  version(1.0)
+  version(1.0),
+  helpstring("Plug and Play services")
 ]
 interface ntsvcs
 {

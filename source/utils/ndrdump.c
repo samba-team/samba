@@ -107,7 +107,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 
 	DEBUGLEVEL = 10;
 
-	setup_logging("smbtorture", DEBUG_STDOUT);
+	setup_logging("ndrdump", DEBUG_STDOUT);
 
 	if (argc < 2) {
 		show_pipes();

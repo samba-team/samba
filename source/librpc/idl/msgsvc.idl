@@ -1,6 +1,9 @@
+/* Works over UDP */
+
 [
 	uuid(17fdd703-1827-4e34-79d4-24a55c53bb37),
-	version(1.0)
+	version(1.0),
+	helpstring("Messaging Service")
 ] interface msgsvc
 {
 	void NetrMessageNameAdd();

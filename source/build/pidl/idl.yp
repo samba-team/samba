@@ -322,13 +322,13 @@ sub parse_idl($$)
 				if($e->{TYPE} eq "FUNCTION") {
 					unshift(@{$e->{DATA}}, 
                         { 'NAME' => 'ORPCthis',
-                          'POINTERS' => 1,
+                          'POINTERS' => 0,
                           'PROPERTIES' => { 'in' => '1' },
                           'TYPE' => 'ORPCTHIS'
                         });
 					unshift(@{$e->{DATA}},
                         { 'NAME' => 'ORPCthat',
-                          'POINTERS' => 1,
+                          'POINTERS' => 0,
                           'PROPERTIES' => { 'out' => '1' },
 						  'TYPE' => 'ORPCTHAT'
                         });

@@ -1,6 +1,7 @@
 [
 	uuid(ecec0d70-a603-11d0-96b1-00a0c91ece30),
-	version(1.0)
+	version(1.0),
+	helpstring("Backup support for Active Directory")
 ] interface ad_backup
 {
 	void HrRBackupPrepare();
@@ -16,7 +17,8 @@
 
 [
 	uuid(16e0cf3a-a604-11d0-96b1-00a0c91ece30),
-	version(1.0)
+	version(1.0),
+	helpstring("Restoring Active Directory backups")
 ] interface ad_restore
 {
 	void HrRIsNTDSOnline();
