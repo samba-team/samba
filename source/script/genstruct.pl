@@ -136,7 +136,7 @@ sub parse_elements($$)
 
 	print OFILE "static const struct parse_struct pinfo_" . $name . "[] = {\n";
 
-	while ($elements =~ /^.*?([a-z].*?);\s*?(\S*?)\s*?$(.*)/msi) {
+	while ($elements =~ /^.*?([a-z].*?);\s*?(\S*?)\s*?\$(.*)/msi) {
 		my($element) = $1;
 		my($flags) = $2;
 		$elements = $3;
