@@ -229,6 +229,8 @@ BOOL msrpc_lsa_set_secret(const char* srv_name,
 	POLICY_HND lsa_pol;
 	STRING2 secret;
 
+	ZERO_STRUCT(secret);
+
 	secret.str_max_len = len+8;
 	secret.undoc       = 0;
 	secret.str_str_len = len+8;

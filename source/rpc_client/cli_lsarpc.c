@@ -578,14 +578,14 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 			p = False;
 		}
 
-		if (p && (r_q.info.ptr_value != 0) &&
-		    (r_q.info.value.ptr_secret != 0) &&
-		    (r_q.info.ptr_update != 0))
+		if (p && (r_q.sec.curinfo.ptr_value != 0) &&
+		    (r_q.sec.curinfo.value.ptr_secret != 0) &&
+		    (r_q.sec.curinfo.ptr_update != 0))
 		{
 			uchar sess_key[16];
 			STRING2 enc_secret;
-			memcpy(&enc_secret,  &(r_q.info.value.enc_secret), sizeof(STRING2));
-			memcpy(last_update, &(r_q.info.last_update),      sizeof(NTTIME));
+			memcpy(&enc_secret,  &(r_q.sec.curinfo.value.enc_secret), sizeof(STRING2));
+			memcpy(last_update, &(r_q.sec.curinfo.last_update),      sizeof(NTTIME));
 			if (!cli_get_usr_sesskey(hnd, sess_key))
 			{
 				return False;

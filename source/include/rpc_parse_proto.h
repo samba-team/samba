@@ -115,6 +115,7 @@ BOOL lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_o, prs_struct *ps, in
 BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_o, prs_struct *ps, int depth);
 BOOL lsa_io_secret_value(char *desc, LSA_SECRET_VALUE *value, prs_struct *ps, int depth);
 BOOL lsa_io_secret_info(char *desc, LSA_SECRET_INFO *info, prs_struct *ps, int depth);
+BOOL lsa_io_secret(char *desc, LSA_SECRET *q_q, prs_struct *ps, int depth);
 BOOL make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol);
 BOOL lsa_io_q_query_secret(char *desc, LSA_Q_QUERY_SECRET *q_q, prs_struct *ps, int depth);
 BOOL lsa_io_r_query_secret(char *desc, LSA_R_QUERY_SECRET *r_q, prs_struct *ps, int depth);

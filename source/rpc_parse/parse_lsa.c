@@ -617,6 +617,8 @@ BOOL lsa_io_secret_value(char *desc, LSA_SECRET_VALUE *value, prs_struct *ps, in
 			       value->hdr_secret.buffer, ps, depth);
 	}
 
+	prs_align(ps);
+
 	return True;
 }
 
@@ -650,6 +652,24 @@ BOOL lsa_io_secret_info(char *desc, LSA_SECRET_INFO *info, prs_struct *ps, int d
 		smb_io_time("last_update", &(info->last_update), ps, depth);
 	}
 
+	prs_align(ps);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an LSA_SECRET structure.
+********************************************************************/
+BOOL lsa_io_secret(char *desc, LSA_SECRET *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL) return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_secret");
+	depth++;
+
+	lsa_io_secret_info("", &(q_q->curinfo), ps, depth);
+	lsa_io_secret_info("", &(q_q->oldinfo), ps, depth);
+
 	return True;
 }
 
@@ -665,15 +685,15 @@ BOOL make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol)
 	memcpy(&(q_q->pol), pol, sizeof(q_q->pol));
 
 	/* Want secret */
-	q_q->info.ptr_value = 1;
-	q_q->info.value.ptr_secret = 0;
+	q_q->sec.curinfo.ptr_value = 1;
+	q_q->sec.curinfo.value.ptr_secret = 0;
 
 	/* Want last change time */
-	q_q->info.ptr_update = 1;
+	q_q->sec.curinfo.ptr_update = 1;
 
 	/* Don't care about old info */
-	q_q->oldinfo.ptr_value = 0;
-	q_q->oldinfo.ptr_update = 0;
+	q_q->sec.oldinfo.ptr_value = 0;
+	q_q->sec.oldinfo.ptr_update = 0;
 
 	return True;
 }
@@ -689,9 +709,7 @@ BOOL lsa_io_q_query_secret(char *desc, LSA_Q_QUERY_SECRET *q_q, prs_struct *ps, 
 	depth++;
 
 	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
-
-	lsa_io_secret_info("", &(q_q->info   ), ps, depth);
-	lsa_io_secret_info("", &(q_q->oldinfo), ps, depth);
+	lsa_io_secret("", &(q_q->sec), ps, depth);
 
 	return True;
 }
@@ -706,9 +724,7 @@ BOOL lsa_io_r_query_secret(char *desc, LSA_R_QUERY_SECRET *r_q, prs_struct *ps, 
 	prs_debug(ps, depth, desc, "lsa_io_r_query_secret");
 	depth++;
 
-	lsa_io_secret_info("", &(r_q->info   ), ps, depth);
-	lsa_io_secret_info("", &(r_q->oldinfo), ps, depth);
-
+	lsa_io_secret("", &(r_q->sec), ps, depth);
 	prs_align(ps);
 	prs_uint32("status", ps, depth, &(r_q->status));
 

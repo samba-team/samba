@@ -443,6 +443,16 @@ uint32 _lsa_close(POLICY_HND *hnd)
 }
 
 /***************************************************************************
+ _lsa_create_secret
+ ***************************************************************************/
+uint32 _lsa_create_secret(const POLICY_HND *hnd,
+			const UNISTR2 *secret_name, uint32 des_access,
+			POLICY_HND *hnd_secret)
+{
+	return 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+/***************************************************************************
  _lsa_open_secret
  ***************************************************************************/
 uint32 _lsa_open_secret(const POLICY_HND *hnd,

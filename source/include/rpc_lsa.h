@@ -211,21 +211,27 @@ typedef struct lsa_secret_info_info
 
 } LSA_SECRET_INFO;
 
+/* LSA_SECRET - LSA Secret */
+typedef struct lsa_q_secret_info
+{
+	LSA_SECRET_INFO curinfo;
+	LSA_SECRET_INFO oldinfo;
+
+} LSA_SECRET;
+
 /* LSA_Q_QUERY_SECRET - LSA Query Secret */
 typedef struct lsa_q_query_secret_info
 {
 	POLICY_HND pol;
 
-	LSA_SECRET_INFO info;    /* [in, out] */
-	LSA_SECRET_INFO oldinfo;
+	LSA_SECRET sec;
 
 } LSA_Q_QUERY_SECRET;
 
 /* LSA_R_QUERY_SECRET - response to LSA Query Secret */
 typedef struct lsa_r_query_secret_info
 {
-	LSA_SECRET_INFO info;
-	LSA_SECRET_INFO oldinfo;
+	LSA_SECRET sec;
 
 	uint32 status;
 

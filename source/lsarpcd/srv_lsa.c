@@ -453,6 +453,25 @@ static void api_lsa_close( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
+ api_lsa_create_secret
+ ***************************************************************************/
+static void api_lsa_create_secret( rpcsrv_struct *p, prs_struct *data,
+                                  prs_struct *rdata)
+{
+	LSA_R_CREATE_SECRET r_o;
+	LSA_Q_CREATE_SECRET q_o;
+
+	ZERO_STRUCT(q_o);
+	ZERO_STRUCT(r_o);
+
+	lsa_io_q_create_secret("", &q_o, data, 0);
+	r_o.status = _lsa_create_secret(&q_o.pol,
+				      &q_o.uni_secret, q_o.des_access,
+				      &r_o.pol);
+	lsa_io_r_create_secret("", &r_o, rdata, 0);
+}
+
+/***************************************************************************
  api_lsa_open_secret
  ***************************************************************************/
 static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
@@ -461,14 +480,13 @@ static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
 	LSA_R_OPEN_SECRET r_o;
 	LSA_Q_OPEN_SECRET q_o;
 
-	lsa_io_q_open_secret("", &q_o, data, 0);
-
 	ZERO_STRUCT(r_o);
+	ZERO_STRUCT(q_o);
+
+	lsa_io_q_open_secret("", &q_o, data, 0);
 	r_o.status = _lsa_open_secret(&q_o.pol,
 				      &q_o.uni_secret, q_o.des_access,
 				      &r_o.pol);
-
-	/* store the response in the SMB stream */
 	lsa_io_r_open_secret("", &r_o, rdata, 0);
 }
 
@@ -483,6 +501,7 @@ static const struct api_struct api_lsa_cmds[] =
 	{ "LSA_ENUMTRUSTDOM"   , LSA_ENUMTRUSTDOM   , api_lsa_enum_trust_dom },
 	{ "LSA_CLOSE"          , LSA_CLOSE          , api_lsa_close          },
 	{ "LSA_OPENSECRET"     , LSA_OPENSECRET     , api_lsa_open_secret    },
+	{ "LSA_CREATESECRET"   , LSA_CREATESECRET   , api_lsa_create_secret  },
 	{ "LSA_LOOKUPSIDS"     , LSA_LOOKUPSIDS     , api_lsa_lookup_sids    },
 	{ "LSA_LOOKUPNAMES"    , LSA_LOOKUPNAMES    , api_lsa_lookup_names   },
 	{ NULL                 , 0                  , NULL                   }
