@@ -992,7 +992,7 @@ tt( 	hosts deny = pirate)
 
 Note that access still requires suitable user-level passwords.
 
-See utl(bf(testparm (1)))(testparm.1.html) for a way of testing your
+See url(bf(testparm (1)))(testparm.1.html) for a way of testing your
 host access to see if it does what you expect.
 
   bf(Default:)
@@ -1696,7 +1696,7 @@ Synonym for link(bf(directory mask))(directorymask).
 label(dnsproxy)
 dit(bf(dns proxy (G)))
 
-Specifies that link(bf(nmbd))(nmbd.8.html) when acting as a WINS
+Specifies that url(bf(nmbd))(nmbd.8.html) when acting as a WINS
 server and finding that a NetBIOS name has not been registered, should
 treat the NetBIOS name word-for-word as a DNS name and do a lookup
 with the DNS server for that name on behalf of the name-querying
@@ -1706,7 +1706,7 @@ Note that the maximum length for a NetBIOS name is 15 characters, so
 the DNS name (or DNS alias) can likewise only be 15 characters,
 maximum.
 
-link(bf(nmbd))(nmbd.8.html) spawns a second copy of itself to do the
+url(bf(nmbd))(nmbd.8.html) spawns a second copy of itself to do the
 DNS name lookup requests, as doing a name lookup is a blocking action.
 
 See also the parameter link(bf(wins support))(winssupport).
@@ -1791,14 +1791,14 @@ also.
 label(domainmaster)
 dit(bf(domain master (G)))
 
-Tell link(bf(nmbd))(nmbd.8.html) to enable WAN-wide browse list
-collation.Setting this option causes link(bf(nmbd))(nmbd.8.html) to
+Tell url(bf(nmbd))(nmbd.8.html) to enable WAN-wide browse list
+collation.Setting this option causes url(bf(nmbd))(nmbd.8.html) to
 claim a special domain specific NetBIOS name that identifies it as a
 domain master browser for its given
 link(bf(workgroup))(workgroup). Local master browsers in the same
 link(bf(workgroup))(workgroup) on broadcast-isolated subnets will give
-this link(bf(nmbd))(nmbd.8.html) their local browse lists, and then
-ask link(bf(smbd))(smbd.8.html) for a complete copy of the browse list
+this url(bf(nmbd))(nmbd.8.html) their local browse lists, and then
+ask url(bf(smbd))(smbd.8.html) for a complete copy of the browse list
 for the whole wide area network.  Browser clients will then contact
 their local master browser, and will receive the domain-wide browse
 list, instead of just the list for their broadcast-isolated subnet.
@@ -1808,7 +1808,7 @@ claim this link(bf(workgroup))(workgroup) specific special NetBIOS
 name that identifies them as domain master browsers for that
 link(bf(workgroup))(workgroup) by default (ie. there is no way to
 prevent a Windows NT PDC from attempting to do this). This means that
-if this parameter is set and link(bf(nmbd))(nmbd.8.html) claims the
+if this parameter is set and url(bf(nmbd))(nmbd.8.html) claims the
 special name for a link(bf(workgroup))(workgroup) before a Windows NT
 PDC is able to do so then cross subnet browsing will behave strangely
 and may fail.
@@ -1842,7 +1842,7 @@ Under the DOS and Windows FAT filesystem, the finest granulatity on
 time resolution is two seconds. Setting this parameter for a share
 causes Samba to round the reported time down to the nearest two second
 boundary when a query call that requires one second resolution is made
-to link(bf(smbd))(smbd.8.html).
+to url(bf(smbd))(smbd.8.html).
 
 This option is mainly used as a compatibility option for Visual C++
 when used against Samba shares. If oplocks are enabled on a share,
@@ -1889,12 +1889,12 @@ file ENCRYPTION.txt in the Samba documentation directory tt(docs/)
 shipped with the source code.
 
 In order for encrypted passwords to work correctly
-link(bf(smbd))(smbd.8.html) must either have access to a local
-link(bf(smbpasswd (5)))(smbpasswd.5.html) file (see the
-link(bf(smbpasswd (8)))(smbpasswd.8.html) program for information on
+url(bf(smbd))(smbd.8.html) must either have access to a local
+url(bf(smbpasswd (5)))(smbpasswd.5.html) file (see the
+url(bf(smbpasswd (8)))(smbpasswd.8.html) program for information on
 how to set up and maintain this file), or set the
 link(bf(security=))(security) parameter to either em("server") or
-em("domain") which causes link(bf(smbd))(smbd.8.html) to authenticate
+em("domain") which causes url(bf(smbd))(smbd.8.html) to authenticate
 against another server.
 
 label(exec)
@@ -1946,7 +1946,7 @@ only one accessing the file and it will aggressively cache file
 data. With some oplock types the client may even cache file open/close
 operations. This can give enormous performance benefits.
 
-When you set tt("fake oplocks = yes") link(bf(smbd))(smbd.8.html) will
+When you set tt("fake oplocks = yes") url(bf(smbd))(smbd.8.html) will
 always grant oplock requests no matter how many clients are using the
 file.
 
@@ -1966,14 +1966,14 @@ label(followsymlinks)
 dit(bf(follow symlinks (S)))
 
 This parameter allows the Samba administrator to stop
-link(bf(smbd))(smbd.8.html) from following symbolic links in a
+url(bf(smbd))(smbd.8.html) from following symbolic links in a
 particular share. Setting this parameter to em("No") prevents any file
 or directory that is a symbolic link from being followed (the user
 will get an error).  This option is very useful to stop users from
 adding a symbolic link to tt(/etc/pasword) in their home directory for
 instance.  However it will slow filename lookups down slightly.
 
-This option is enabled (ie. link(bf(smbd))(smbd.8.html) will follow
+This option is enabled (ie. url(bf(smbd))(smbd.8.html) will follow
 symbolic links) by default.
 
 label(forcecreatemode)
@@ -2066,7 +2066,7 @@ dit(bf(fstype (S)))
 
 This parameter allows the administrator to configure the string that
 specifies the type of filesystem a share is using that is reported by
-link(bf(smbd))(smbd.8.html) when a client queries the filesystem type
+url(bf(smbd))(smbd.8.html) when a client queries the filesystem type
 for a share. The default type is bf("NTFS") for compatibility with
 Windows NT but this can be changed to other strings such as "Samba" or
 "FAT" if required.
@@ -2203,7 +2203,7 @@ label(homedirmap)
 dit(bf(homedir map (G)))
 
 If link(bf("nis homedir"))(nishomedir) is true, and
-link(bf(smbd))(smbd.8.html) is also acting as a Win95/98 link(bf(logon
+url(bf(smbd))(smbd.8.html) is also acting as a Win95/98 link(bf(logon
 server))(domainlogons) then this parameter specifies the NIS (or YP)
 map from which the server for the user's home directory should be
 extracted.  At present, only the Sun auto.home map format is
@@ -2359,7 +2359,7 @@ of them to be turned on or off.
 
 Kernel oplocks support allows Samba oplocks to be broken whenever a
 local UNIX process or NFS operation accesses a file that
-link(bf(smbd))(smbd.8.html) has oplocked. This allows complete data
+url(bf(smbd))(smbd.8.html) has oplocked. This allows complete data
 consistancy between SMB/CIFS, NFS and local file access (and is a 
 em(very) cool feature :-).
 
@@ -2458,7 +2458,7 @@ are only available if your version of Samba was configured with
 the bf(--with-ldap) option.
 
 This parameter specifies the tt("dn") or LDAP em("distinguished name")
-that tells link(bf(smbd))(smbd.8.html) to start from when searching
+that tells url(bf(smbd))(smbd.8.html) to start from when searching
 for an entry in the LDAP password database.
 
   bf(Default:)
@@ -2467,7 +2467,7 @@ for an entry in the LDAP password database.
 label(lmannounce)
 dit(bf(lm announce (G)))
 
-This parameter determines if link(bf(nmbd))(nmbd.8.html) will produce
+This parameter determines if url(bf(nmbd))(nmbd.8.html) will produce
 Lanman announce broadcasts that are needed by bf(OS/2) clients in order
 for them to see the Samba server in their browse list. This parameter
 can have three values, tt("true"), tt("false"), or tt("auto"). The
@@ -2521,16 +2521,16 @@ link(bf("printers"))(printers) section for more details.
 label(localmaster)
 dit(bf(local master (G)))
 
-This option allows link(bf(nmbd))(nmbd.8.html) to try and become a
+This option allows url(bf(nmbd))(nmbd.8.html) to try and become a
 local master browser on a subnet. If set to False then
-link(bf(nmbd))(nmbd.8.html) will not attempt to become a local master
+url(bf(nmbd))(nmbd.8.html) will not attempt to become a local master
 browser on a subnet and will also lose in all browsing elections. By
 default this value is set to true. Setting this value to true doesn't
 mean that Samba will em(become) the local master browser on a subnet,
-just that link(bf(nmbd))(nmbd.8.html) will em(participate) in
+just that url(bf(nmbd))(nmbd.8.html) will em(participate) in
 elections for local master browser.
 
-Setting this value to False will cause link(bf(nmbd))(nmbd.8.html)
+Setting this value to False will cause url(bf(nmbd))(nmbd.8.html)
 em(never) to become a local master browser.
 
   bf(Default:)
@@ -2874,6 +2874,27 @@ tt( 	lprm command = /usr/bin/lprm -P%p %j)
   bf(Example 2:)
 tt( 	lprm command = /usr/bin/cancel %p-%j)
 
+label(machinepasswordtimeout)
+dit(bf(machine password timeout (G)))
+
+If a Samba server is a member of an Windows NT Domain (see the
+link(bf("security=domain"))(security)) parameter) then periodically a
+running url(bf(smbd))(smbd.8.html) process will try and change the
+bf(MACHINE ACCOUNT PASWORD) stored in the file called
+tt(<Domain>.<Machine>.mac) where tt(<Domain>) is the name of the
+Domain we are a member of and tt<Machine> is the primary
+link(bf("NetBIOS name"))(netbiosname) of the machine
+url(bf(smbd))(smbd.8.html) is running on. This parameter specifies
+how often this password will be changed, in seconds. The default
+is one week (expressed in seconds), the same as a Windows NT
+Domain member server.
+
+See also url(bf(smbpasswd (8)))(smbpasswd.8.html), and the
+link(bf("security=domain"))(security)) parameter.
+
+  bf(Default:)
+	machine password timeout = 604800
+
 label(magicoutput)
 dit(bf(magic output (S)))
 
@@ -2891,202 +2912,241 @@ is undefined.
   bf(Example:)
  	magic output = myfile.txt
 
-.SS magic script (S)
+label(magicscript)
+dit(bf(magic script (S)))
+
 This parameter specifies the name of a file which, if opened, will be
-executed by the server when the file is closed. This allows a UNIX script
-to be sent to the Samba host and executed on behalf of the connected user.
+executed by the server when the file is closed. This allows a UNIX
+script to be sent to the Samba host and executed on behalf of the
+connected user.
 
-Scripts executed in this way will be deleted upon completion, permissions
-permitting.
+Scripts executed in this way will be deleted upon completion,
+permissions permitting.
 
-If the script generates output, output will be sent to the file specified by
-the
-.I magic output
-parameter (see above).
+If the script generates output, output will be sent to the file
+specified by the link(bf("magic output"))(magicoutput) parameter (see
+above).
 
 Note that some shells are unable to interpret scripts containing
 carriage-return-linefeed instead of linefeed as the end-of-line
-marker. Magic scripts must be executable "as is" on the host, which
-for some hosts and some shells will require filtering at the DOS end.
+marker. Magic scripts must be executable em("as is") on the host,
+which for some hosts and some shells will require filtering at the DOS
+end.
 
-Magic scripts are EXPERIMENTAL and should NOT be relied upon.
+Magic scripts are em(EXPERIMENTAL) and should em(NOT) be relied upon.
 
-.B Default:
- 	None. Magic scripts disabled.
+  bf(Default:)
+	None. Magic scripts disabled.
 
-.B Example:
+  bf(Example:)
  	magic script = user.csh
 
-.SS mangle case (S)
+label(manglecase)
+dit(bf(mangle case (S)))
 
-See the section on "NAME MANGLING"
+See the section on link(bf("NAME MANGLING"))(NAMEMANGLING).
 
-.SS mangled map (S)
+label(mangledmap)
+dit(bf(mangled map (S)))
+
 This is for those who want to directly map UNIX file names which are
-not representable on DOS.  The mangling of names is not always what is
-needed.  In particular you may have documents with file extensions
-that differ between DOS and UNIX. For example, under UNIX it is common
-to use .html for HTML files, whereas under DOS .htm is more commonly
-used.
+not representable on Windows/DOS.  The mangling of names is not always
+what is needed.  In particular you may have documents with file
+extensions that differ between DOS and UNIX. For example, under UNIX
+it is common to use tt(".html") for HTML files, whereas under
+Windows/DOS tt(".htm") is more commonly used.
 
-So to map 'html' to 'htm' you put:
+So to map tt("html") to tt("htm") you would use:
 
-  mangled map = (*.html *.htm)
+tt(  mangled map = (*.html *.htm))
 
-One very useful case is to remove the annoying ;1 off the ends of
-filenames on some CDROMS (only visible under some UNIXes). To do this
-use a map of (*;1 *)
+One very useful case is to remove the annoying tt(";1") off the ends
+of filenames on some CDROMS (only visible under some UNIXes). To do
+this use a map of (*;1 *).
 
-.B default:
+  bf(default:)
 	no mangled map
 
-.B Example:
-	mangled map = (*;1 *)
+  bf(Example:)
+tt(	mangled map = (*;1 *))
 
-.SS mangled names (S)
+label(manglednames)
+dit(bf(mangled names (S)))
+
 This controls whether non-DOS names under UNIX should be mapped to
-DOS-compatible names ("mangled") and made visible, or whether non-DOS names
-should simply be ignored.
+DOS-compatible names ("mangled") and made visible, or whether non-DOS
+names should simply be ignored.
 
-See the section on "NAME MANGLING" for details on how to control the
-mangling process.
+See the section on link(bf("NAME MANGLING"))(NAMEMANGLING) for details
+on how to control the mangling process.
 
 If mangling is used then the mangling algorithm is as follows:
-.RS
-- the first (up to) five alphanumeric characters before the rightmost dot of
-the filename are preserved, forced to upper case, and appear as the first (up
-to) five characters of the mangled name.
 
-- a tilde ("~") is appended to the first part of the mangled name, followed
-by a two-character unique sequence, based on the original root name 
-(i.e., the original filename minus its final extension). The final
-extension is included in the hash calculation only if it contains any upper
-case characters or is longer than three characters.
+startit()
 
-Note that the character to use may be specified using the "mangling
-char" option, if you don't like ~.
+it() The first (up to) five alphanumeric characters before the
+rightmost dot of the filename are preserved, forced to upper case, and
+appear as the first (up to) five characters of the mangled name.
 
-- the first three alphanumeric characters of the final extension are preserved,
-forced to upper case and appear as the extension of the mangled name. The 
-final extension is defined as that part of the original filename after the
-rightmost dot. If there are no dots in the filename, the mangled name will
-have no extension (except in the case of hidden files - see below).
+it() A tilde tt("~") is appended to the first part of the mangled
+name, followed by a two-character unique sequence, based on the
+original root name (i.e., the original filename minus its final
+extension). The final extension is included in the hash calculation
+only if it contains any upper case characters or is longer than three
+characters.
 
-- files whose UNIX name begins with a dot will be presented as DOS hidden
-files. The mangled name will be created as for other filenames, but with the
-leading dot removed and "___" as its extension regardless of actual original
-extension (that's three underscores).
-.RE
+Note that the character to use may be specified using the
+link(bf("mangling char"))(manglingchar) option, if you don't like
+tt('~').
 
-The two-digit hash value consists of upper case alphanumeric characters.
+it() The first three alphanumeric characters of the final extension
+are preserved, forced to upper case and appear as the extension of the
+mangled name. The final extension is defined as that part of the
+original filename after the rightmost dot. If there are no dots in the
+filename, the mangled name will have no extension (except in the case
+of link(bf("hidden files"))(hidefiles) - see below).
 
-This algorithm can cause name collisions only if files in a directory share
-the same first five alphanumeric characters. The probability of such a clash 
-is 1/1300.
+it() Files whose UNIX name begins with a dot will be presented as DOS
+hidden files. The mangled name will be created as for other filenames,
+but with the leading dot removed and tt("___") as its extension regardless
+of actual original extension (that's three underscores).
+
+endit()
+
+The two-digit hash value consists of upper case alphanumeric
+characters.
+
+This algorithm can cause name collisions only if files in a directory
+share the same first five alphanumeric characters. The probability of
+such a clash is 1/1300.
 
 The name mangling (if enabled) allows a file to be copied between UNIX
-directories from DOS while retaining the long UNIX filename. UNIX files can
-be renamed to a new extension from DOS and will retain the same basename. 
-Mangled names do not change between sessions.
+directories from Windows/DOS while retaining the long UNIX
+filename. UNIX files can be renamed to a new extension from
+Windows/DOS and will retain the same basename. Mangled names do not
+change between sessions.
 
-.B Default:
+  bf(Default:)
  	mangled names = yes
 
-.B Example:
+  bf(Example:)
  	mangled names = no
-.SS mangling char (S)
-This controls what character is used as the "magic" character in name
-mangling. The default is a ~ but this may interfere with some
-software. Use this option to set it to whatever you prefer.
 
-.B Default:
+label(manglingchar)
+dit(bf(mangling char (S)))
+
+This controls what character is used as the em("magic") character in
+link(bf(name mangling))(manglednames). The default is a tt('~') but
+this may interfere with some software. Use this option to set it to
+whatever you prefer.
+
+  bf(Default:)
  	mangling char = ~
 
-.B Example:
+  bf(Example:)
  	mangling char = ^
 
-.SS mangled stack (G)
-This parameter controls the number of mangled names that should be cached in
-the Samba server.
+label(mangledstack)
+dit(bf(mangled stack (G)))
 
-This stack is a list of recently mangled base names (extensions are only
-maintained if they are longer than 3 characters or contains upper case
-characters).
+This parameter controls the number of mangled names that should be
+cached in the Samba server url(bf(smbd))(smbd.8.html).
+
+This stack is a list of recently mangled base names (extensions are
+only maintained if they are longer than 3 characters or contains upper
+case characters).
 
 The larger this value, the more likely it is that mangled names can be
-successfully converted to correct long UNIX names. However, large stack
-sizes will slow most directory access. Smaller stacks save memory in the
-server (each stack element costs 256 bytes).
+successfully converted to correct long UNIX names. However, large
+stack sizes will slow most directory access. Smaller stacks save
+memory in the server (each stack element costs 256 bytes).
 
 It is not possible to absolutely guarantee correct long file names, so
 be prepared for some surprises!
 
-.B Default:
+  bf(Default:)
  	mangled stack = 50
 
-.B Example:
+  bf(Example:)
  	mangled stack = 100
 
-.SS map archive (S)
-This controls whether the DOS archive attribute should be mapped to the
-UNIX owner execute bit.  The DOS archive bit is set when a file has been modified
-since its last backup.  One motivation for this option it to keep Samba/your
-PC from making any file it touches from becoming executable under UNIX.
-This can be quite annoying for shared source code, documents,  etc...
+label(maparchive)
+dit(bf(map archive (S)))
 
-Note that this requires the 'create mask' to be set such that owner
-execute bit is not masked out (ie. it must include 100). See the 
-parameter "create mask" for details.
+This controls whether the DOS archive attribute should be mapped to
+the UNIX owner execute bit.  The DOS archive bit is set when a file
+has been modified since its last backup.  One motivation for this
+option it to keep Samba/your PC from making any file it touches from
+becoming executable under UNIX.  This can be quite annoying for shared
+source code, documents, etc...
 
-.B Default:
+Note that this requires the link(bf("create mask"))(createmask)
+parameter to be set such that owner execute bit is not masked out
+(ie. it must include 100). See the parameter link(bf("create
+mask"))(createmask) for details.
+
+  bf(Default:)
       map archive = yes
 
-.B Example:
+  bf(Example:)
       map archive = no
 
-.SS map hidden (S)
+label(maphidden)
+dit(bf(map hidden (S)))
+
 This controls whether DOS style hidden files should be mapped to the
 UNIX world execute bit.
 
-Note that this requires the 'create mask' to be set such that the world
-execute bit is not masked out (ie. it must include 001). 
-See the parameter "create mask" for details.
+Note that this requires the link(bf("create mask"))(createmask) to be
+set such that the world execute bit is not masked out (ie. it must
+include 001). See the parameter link(bf("create mask"))(createmask)
+for details.
 
-.B Default:
+  bf(Default:)
  	map hidden = no
 
-.B Example:
+  bf(Example:)
  	map hidden = yes
-.SS map system (S)
+
+label(mapsystem)
+dit(bf(map system (S)))
+
 This controls whether DOS style system files should be mapped to the
 UNIX group execute bit.
 
-Note that this requires the 'create mask' to be set such that the group
-execute bit is not masked out (ie. it must include 010). See the parameter 
-"create mask" for details.
+Note that this requires the link(bf("create mask"))(createmask) to be
+set such that the group execute bit is not masked out (ie. it must
+include 010). See the parameter link(bf("create mask"))(createmask)
+for details.
 
-.B Default:
+  bf(Default:)
  	map system = no
 
-.B Example:
+  bf(Example:)
  	map system = yes
-.SS max connections (S)
-This option allows the number of simultaneous connections to a
-service to be limited. If "max connections" is greater than 0 then
+
+label(maxconnections)
+dit(bf(max connections (S)))
+
+This option allows the number of simultaneous connections to a service
+to be limited. If bf("max connections") is greater than 0 then
 connections will be refused if this number of connections to the
 service are already open. A value of zero mean an unlimited number of
 connections may be made.
 
 Record lock files are used to implement this feature. The lock files
-will be stored in the directory specified by the "lock directory" option.
+will be stored in the directory specified by the link(bf("lock
+directory"))(lockdirectory) option.
 
-.B Default:
+  bf(Default:)
 	max connections = 0
 
-.B Example:
+  bf(Example:)
 	max connections = 10
 
-.SS max disk size (G)
+label(maxdisksize)
+dit(bf(max disk size (G)))
+
 This option allows you to put an upper limit on the apparent size of
 disks. If you set this option to 100 then all shares will appear to be
 not larger than 100 MB in size.
@@ -3095,81 +3155,107 @@ Note that this option does not limit the amount of data you can put on
 the disk. In the above case you could still store much more than 100
 MB on the disk, but if a client ever asks for the amount of free disk
 space or the total disk size then the result will be bounded by the
-amount specified in "max disk size".
+amount specified in bf("max disk size").
 
 This option is primarily useful to work around bugs in some pieces of
 software that can't handle very large disks, particularly disks over
 1GB in size.
 
-A "max disk size" of 0 means no limit.
+A bf("max disk size") of 0 means no limit.
 
-.B Default:
+  bf(Default:)
 	max disk size = 0
 
-.B Example:
+  bf(Example:)
 	max disk size = 1000
 
-.SS max log size (G)
+label(maxlogsize)
+dit(bf(max log size (G)))
 
 This option (an integer in kilobytes) specifies the max size the log
 file should grow to. Samba periodically checks the size and if it is
-exceeded it will rename the file, adding a .old extension.
+exceeded it will rename the file, adding a tt(".old") extension.
 
 A size of 0 means no limit.
 
-.B Default:
+  bf(Default:)
 	max log size = 5000
 
-.B Example:
+  bf(Example:)
  	max log size = 1000
 
-.SS max mux (G)
+label(maxmux)
+dit(bf(max mux (G)))
 
-This option controls the maximum number of outstanding simultaneous SMB 
-operations that samba tells the client it will allow. You should never need 
-to set this parameter.
+This option controls the maximum number of outstanding simultaneous
+SMB operations that samba tells the client it will allow. You should
+never need to set this parameter.
 
-.B Default:
+  bf(Default:)
 	max mux = 50
 
-.SS max packet (G)
+label(maxopenfiles)
+dit(bf(maxopenfiles (G)))
 
-A synonym for this parameter is 'packet size'.
+This parameter limits the maximum number of open files that one
+url(bf(smbd))(smbd.8.html) file serving process may have open for
+a client at any one time. The default for this parameter is set
+very high (10,000) as Samba uses only one bit per un-opened file.
 
-.SS max ttl (G)
+The limit of the number of open files is usually set by the
+UNIX per-process file descriptor limit rather than this parameter
+so you should never need to touch this parameter.
 
-This option tells nmbd what the default 'time to live' of NetBIOS
-names should be (in seconds) when nmbd is requesting a name using
-either a broadcast or from a WINS server. You should never need to 
-change this parameter.
+  bf(Default:)
+	max open files = 10000
 
-.B Default:
-	max ttl = 14400
+label(maxpacket)
+dit(bf(max packet (G)))
 
-.SS max wins ttl (G)
+Synonym for label(bf("packet size"))(packetsize).
 
-This option tells nmbd when acting as a WINS server (wins support = true)
-what the maximum 'time to live' of NetBIOS names that nmbd will grant will
-be (in seconds). You should never need to change this parameter.     
-The default is 3 days (259200 seconds).
+label(maxttl)
+dit(bf(max ttl (G)))
 
-.B Default:
-        max wins ttl = 259200
+This option tells url(bf(nmbd))(nmbd.8.html) what the default 'time
+to live' of NetBIOS names should be (in seconds) when
+url(bf(nmbd))(nmbd.8.html) is requesting a name using either a
+broadcast packet or from a WINS server. You should never need to
+change this parameter. The default is 3 days.
 
-.SS max xmit (G)
+  bf(Default:)
+	max ttl = 259200
+
+label(maxwinsttl)
+dit(bf(max wins ttl (G)))
+
+This option tells url(bf(nmbd))(nmbd.8.html) when acting as a WINS
+server link(bf((wins support =true)))(winssupport) what the maximum
+'time to live' of NetBIOS names that url(bf(nmbd))(nmbd.8.html) will
+grant will be (in seconds). You should never need to change this
+parameter.  The default is 6 days (518400 seconds).
+
+See also the link(bf("min wins ttl"))(minwinsttl) parameter.
+
+  bf(Default:)
+        max wins ttl = 518400
+
+label(maxxmit)
+dit(bf(max xmit (G)))
 
 This option controls the maximum packet size that will be negotiated
 by Samba. The default is 65535, which is the maximum. In some cases
 you may find you get better performance with a smaller value. A value
 below 2048 is likely to cause problems.
 
-.B Default:
+  bf(Default:)
 	max xmit = 65535
 
-.B Example:
+  bf(Example:)
  	max xmit = 8192
 
-.SS message command (G)
+label(messagecommand)
+dit(bf(message command (G)))
 
 This specifies what command to run when the server receives a WinPopup
 style message.
@@ -3179,190 +3265,212 @@ somehow. How this is to be done is up to your imagination.
 
 What I use is:
 
-   message command = csh -c 'xedit %s;rm %s' &
+tt(   message command = csh -c 'xedit %s;rm %s' &)
 
-This delivers the message using xedit, then removes it
-afterwards. NOTE THAT IT IS VERY IMPORTANT THAT THIS COMMAND RETURN
-IMMEDIATELY. That's why I have the & on the end. If it doesn't return
-immediately then your PCs may freeze when sending messages (they
-should recover after 30secs, hopefully).
+This delivers the message using bf(xedit), then removes it
+afterwards. em(NOTE THAT IT IS VERY IMPORTANT THAT THIS COMMAND RETURN
+IMMEDIATELY). That's why I have the tt('&') on the end. If it doesn't
+return immediately then your PCs may freeze when sending messages
+(they should recover after 30secs, hopefully).
 
 All messages are delivered as the global guest user. The command takes
-the standard substitutions, although %u won't work (%U may be better
-in this case).
+the standard substitutions, although link(bf(%u))(percentu) won't work
+(link(bf(%U))(percentU) may be better in this case).
 
 Apart from the standard substitutions, some additional ones apply. In
 particular:
 
-%s = the filename containing the message
+startit()
 
-%t = the destination that the message was sent to (probably the server
+it() %s = the filename containing the message
+
+it() %t = the destination that the message was sent to (probably the server
 name)
 
-%f = who the message is from
+it() %f = who the message is from
+
+endit()
 
 You could make this command send mail, or whatever else takes your
-fancy. Please let me know of any really interesting ideas you have.
+fancy. Please let us know of any really interesting ideas you have.
 
 Here's a way of sending the messages as mail to root:
 
-message command = /bin/mail -s 'message from %f on %m' root < %s; rm %s
+tt(message command = /bin/mail -s 'message from %f on %m' root < %s; rm %s)
 
 If you don't have a message command then the message won't be
 delivered and Samba will tell the sender there was an
 error. Unfortunately WfWg totally ignores the error code and carries
 on regardless, saying that the message was delivered.
 
-If you want to silently delete it then try "message command = rm %s".
+If you want to silently delete it then try:
+
+ tt("message command = rm %s").
 
 For the really adventurous, try something like this:
 
-message command = csh -c 'csh < %s |& /usr/local/samba/bin/smbclient \e
-                  -M %m; rm %s' &
+tt(message command = csh -c 'csh < %s |& /usr/local/samba/bin/smbclient -M %m; rm %s' &)
 
 this would execute the command as a script on the server, then give
 them the result in a WinPopup message. Note that this could cause a
 loop if you send a message from the server using smbclient! You better
 wrap the above in a script that checks for this :-)
 
-.B Default:
+  bf(Default:)
 	no message command
 
-.B Example:
-        message command = csh -c 'xedit %s;rm %s' &
+  bf(Example:)
+tt(        message command = csh -c 'xedit %s;rm %s' &)
 
-.SS min print space (S)
+label(minprintspace)
+dit(bf(min print space (S)))
 
 This sets the minimum amount of free disk space that must be available
 before a user will be able to spool a print job. It is specified in
-kilobytes. The default is 0, which means no limit.
+kilobytes. The default is 0, which means a user can always spool a print
+job.
 
-.B Default:
+See also the link(bf(printing))(printing) parameter.
+
+  bf(Default:)
 	min print space = 0
 
-.B Example:
+  bf(Example:)
 	min print space = 2000
 
-.SS min wins ttl (G)
+label(minwinsttl)
+dit(bf(min wins ttl (G)))
 
-This option tells nmbd when acting as a WINS server (wins support = true)
-what the minimum 'time to live' of NetBIOS names that nmbd will grant will
-be (in seconds). You should never need to change this parameter.
-The default is 6 hours (21600 seconds).
+This option tells url(bf(nmbd))(nmbd.8.html) when acting as a WINS
+server link(bf((wins support = true)))(winssupport) what the minimum
+'time to live' of NetBIOS names that url(bf(nmbd))(nmbd.8.html) will
+grant will be (in seconds). You should never need to change this
+parameter.  The default is 6 hours (21600 seconds).
 
-.B Default:
-        min wins ttl = 21600
+  bf(Default:)
+	min wins ttl = 21600
 
-.SS name resolve order (G)
 
-This option is used by the programs smbd, nmbd and smbclient to determine
-what naming services and in what order to resolve host names to IP addresses.
-This option is most useful in smbclient. The option takes a space separated
-string of different name resolution options. These are "lmhosts", "host",
-"wins" and "bcast". They cause names to be resolved as follows :
+label(nameresolveorder)
+dit(bf(name resolve order (G)))
 
-lmhosts : Lookup an IP address in the Samba lmhosts file.
-host    : Do a standard host name to IP address resolution, using the
-          system /etc/hosts, NIS, or DNS lookups. This method of name
-          resolution is operating system depended (for instance on Solaris
-          this may be controlled by the /etc/nsswitch.conf file).
-wins    : Query a name with the IP address listed in the "wins server ="
-          parameter. If no WINS server has been specified this method will
-          be ignored.
-bcast   : Do a broadcast on each of the known local interfaces listed in
-          the "interfaces =" parameter. This is the least reliable of the
-          name resolution methods as it depends on the target host being
-          on a locally connected subnet.
+This option is used by the programs in the Samba suite to determine
+what naming services and in what order to resolve host names to IP
+addresses. The option takes a space separated string of different name
+resolution options.
 
-The default order is lmhosts, host, wins, bcast and these name resolution
-methods will be attempted in this order.
+The options are :"lmhosts", "host", "wins" and "bcast". They cause
+names to be resolved as follows :
 
-This option was first introduced in Samba 1.9.18p4.
+startit()
 
-.B Default:
-        name resolve order = lmhosts host wins bcast
+it() bf(lmhosts) : Lookup an IP address in the Samba lmhosts file.
 
-.Example:
-        name resolve order = lmhosts bcast host
+it() bf(host) : Do a standard host name to IP address resolution,
+using the system /etc/hosts, NIS, or DNS lookups. This method of name
+resolution is operating system depended for instance on IRIX or
+Solaris this may be controlled by the em(/etc/nsswitch.conf) file).
+
+it() bf(wins) : Query a name with the IP address listed in the
+link(bf(wins server))(winsserver) parameter. If no WINS server has
+been specified this method will be ignored.
+
+it() bf(bcast) : Do a broadcast on each of the known local interfaces
+listed in the link(bf(interfaces))(interfaces) parameter. This is the
+least reliable of the name resolution methods as it depends on the
+target host being on a locally connected subnet.
+
+endit()
+
+  bf(Default:)
+	name resolve order = lmhosts host wins bcast
+
+  bf(Example:)
+	name resolve order = lmhosts bcast host
 
 This will cause the local lmhosts file to be examined first, followed
 by a broadcast attempt, followed by a normal system hostname lookup.
 
-.SS netbios aliases (G)
+label(netbiosaliases)
+dit(bf(netbios aliases (G)))
 
-This is a list of names that nmbd will advertise as additional
-names by which the Samba server is known. This allows one machine
-to appear in browse lists under multiple names. If a machine is
-acting as a browse server or logon server none of these names
-will be advertised as either browse server or logon servers, only
-the primary name of the machine will be advertised with these
-capabilities.
+This is a list of NetBIOS names that url(bf(nmbd))(nmbd.8.html) will
+advertise as additional names by which the Samba server is known. This
+allows one machine to appear in browse lists under multiple names. If
+a machine is acting as a link(bf(browse server))(localmaster) or
+link(bf(logon server))(domainlogons) none of these names will be
+advertised as either browse server or logon servers, only the primary
+name of the machine will be advertised with these capabilities.
 
-See also 'netbios name'.
+See also link(bf("netbios name"))(netbiosname).
 
-.B Example:
-   netbios aliases = TEST TEST1 TEST2
+  bf(Default:)
+	empty string (no additional names)
 
-.SS netbios name (G)
+  bf(Example:)
+	netbios aliases = TEST TEST1 TEST2
+
+label(netbiosname)
+dit(bf(netbios name (G)))
 
 This sets the NetBIOS name by which a Samba server is known. By
 default it is the same as the first component of the host's DNS name.
-If a machine is a browse server or logon server this name (or the
-first component of the hosts DNS name) will be the name that these
-services are advertised under.
+If a machine is a link(bf(browse server))(localmaster) or
+link(bf(logon server))(domainlogons) this name (or the first component
+of the hosts DNS name) will be the name that these services are
+advertised under.
 
-See also 'netbios aliases'.
+See also link(bf("netbios aliases"))(netbiosaliases).
 
-.B Example:
-   netbios name = MYNAME
+  bf(Default:)
+	Machine DNS name.
 
-.SS nis homedir (G)
-Get the home share server from a NIS (or YP) map. For unix systems that
-use an automounter, the user's home directory will often be mounted on
-a workstation on demand from a remote server. When the Samba logon server
-is not the actual home directory server, two network hops are required
-to access the home directory and this can be very slow especially with 
-writing via Samba to an NFS mounted directory. This option allows samba
-to return the home share as being on a different server to the logon
-server and as long as a samba daemon is running on the home directory 
-server, it will be mounted on the Samba client directly from the directory
-server. When Samba is returning the home share to the client, it will
-consult the NIS (or YP) map specified in "homedir map" and return the
-server listed there.
+  bf(Example:)
+	netbios name = MYNAME
 
-.B Default:
+label(nishomedir)
+dit(bf(nis homedir (G)))
+
+Get the home share server from a NIS map. For UNIX systems that use an
+automounter, the user's home directory will often be mounted on a
+workstation on demand from a remote server. 
+
+When the Samba logon server is not the actual home directory server,
+but is mounting the home directories via NFS then two network hops
+would be required to access the users home directory if the logon
+server told the client to use itself as the SMB server for home
+directories (one over SMB and one over NFS). This can be very
+slow.
+
+This option allows Samba to return the home share as being on a
+different server to the logon server and as long as a Samba daemon is
+running on the home directory server, it will be mounted on the Samba
+client directly from the directory server. When Samba is returning the
+home share to the client, it will consult the NIS map specified in
+link(bf("homedir map"))(homedirmap) and return the server listed
+there.
+
+Note that for this option to work there must be a working NIS
+system and the Samba server with this option must also be a
+link(bf(logon server))(domainlogons).
+
+  bf(Default:)
 	nis homedir = false
 
-.B Example:
+  bf(Example:)
 	nis homedir = true
 
-.SS networkstation user login (G)
-This global parameter (new for 1.9.18p3) affects server level security.
-With this set (recommended) samba will do a full NetWkstaUserLogon to
-confirm that the client really should have login rights. This can cause
-problems with machines in trust relationships in which case you can
-disable it here, but be warned, we have heard that some NT machines
-will then allow anyone in with any password! Make sure you test it.
+label(nullpasswords)
+dit(bf(null passwords (G)))
 
-In Samba 1.9.18p5 this parameter is of limited use, as smbd now
-explicitly tests for this NT bug and will refuse to use a password
-server that has the problem. The parameter now defaults to off,
-and it should not be neccessary to set this parameter to on. It will
-be removed in a future Samba release.
+Allow or disallow client access to accounts that have null passwords. 
 
-.B Default:
-	networkstation user login = no
+See also url(bf(smbpasswd (5)))(smbpasswd.5.html).
 
-.B Example:
-	networkstation user login = yes
-
-.SS null passwords (G)
-Allow or disallow access to accounts that have null passwords. 
-
-.B Default:
+  bf(Default:)
 	null passwords = no
 
-.B Example:
+  bf(Example:)
 	null passwords = yes
 
 .SS ole locking compatibility (G)
