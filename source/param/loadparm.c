@@ -133,6 +133,7 @@ typedef struct
   char *szWINSserver;
   char *szInterfaces;
   char *szRemoteAnnounce;
+  char *szRemoteBrowseSync;
   char *szSocketAddress;
   char *szNISHomeMapName;
   char *szAnnounceVersion; /* This is initialised in init_globals */
@@ -438,6 +439,7 @@ struct parm_struct
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
   {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL},
   {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL},
+  {"remote browse sync",  P_STRING,  P_GLOBAL, &Globals.szRemoteBrowseSync,  NULL},
   {"socket address",   P_STRING,  P_GLOBAL, &Globals.szSocketAddress,   NULL},
   {"homedir map",      P_STRING,  P_GLOBAL, &Globals.szNISHomeMapName,  NULL},
   {"announce version", P_STRING,  P_GLOBAL, &Globals.szAnnounceVersion, NULL},
@@ -835,6 +837,7 @@ FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet)
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
+FN_GLOBAL_STRING(lp_remote_browse_sync,&Globals.szRemoteBrowseSync) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
