@@ -539,103 +539,108 @@ trim the specified elements off the front and back of a string
 
 BOOL trim_string(char *s,const char *front,const char *back)
 {
-  BOOL ret = False;
-  size_t front_len = (front && *front) ? strlen(front) : 0;
-  size_t back_len = (back && *back) ? strlen(back) : 0;
-  size_t s_len;
+    BOOL ret = False;
+    size_t s_len;
+    size_t front_len;
+    size_t back_len;
+    char	*sP;
 
-  while (front_len && strncmp(s, front, front_len) == 0)
-  {
-    char *p = s;
-    ret = True;
-    while (1)
-    {
-      if (!(*p = p[front_len]))
-        break;
-      p++;
+    if ( !s ) {
+        return False;
     }
-  }
+    sP	= s;
+    s_len	= strlen( s ) + 1;
+    front_len	= (front) ? strlen( front ) + 1 : 0;
+    back_len	= (back) ? strlen( back ) + 1 : 0;
 
-  /*
-   * We split out the multibyte code page
-   * case here for speed purposes. Under a
-   * multibyte code page we need to walk the
-   * string forwards only and multiple times.
-   * Thanks to John Blair for finding this
-   * one. JRA.
-   */
-
-  if(back_len)
-  {
-    if(!global_is_multibyte_codepage)
-    {
-      s_len = strlen(s);
-      while ((s_len >= back_len) && 
-             (strncmp(s + s_len - back_len, back, back_len)==0))  
-      {
-        ret = True;
-        s[s_len - back_len] = '\0';
-        s_len = strlen(s);
-      }
+    /*
+     * remove "front" string from given "s", if it matches front part,
+     * repeatedly.
+     */
+    if ( front && front_len > 1 ) {
+        while (( s_len >= front_len )&&
+               ( memcmp( sP, front, front_len - 1 )) == 0 ) {
+            ret		= True;
+            sP		+= ( front_len - 1 );
+            s_len	-= ( front_len - 1 );
+        }
     }
-    else
-    {
 
-      /*
-       * Multibyte code page case.
-       * Keep going through the string, trying
-       * to match the 'back' string with the end
-       * of the string. If we get a match, truncate
-       * 'back' off the end of the string and
-       * go through the string again from the
-       * start. Keep doing this until we have
-       * gone through the string with no match
-       * at the string end.
-       */
+    /*
+     * we'll memmove sP to s later, after we're done with
+     * back part removal, for minimizing copy.
+     */
 
-      size_t mb_back_len = str_charnum(back);
-      size_t mb_s_len = str_charnum(s);
 
-      while(mb_s_len >= mb_back_len)
-      {
-        size_t charcount = 0;
-        char *mbp = s;
+    /*
+     * We split out the multibyte code page
+     * case here for speed purposes. Under a
+     * multibyte code page we need to walk the
+     * string forwards only and multiple times.
+     * Thanks to John Blair for finding this
+     * one. JRA.
+     */
+    /*
+     * This JRA's comment is partly correct, but partly wrong.
+     * You can always check from "end" part, and if it did not match,
+     * it means there is no possibility of finding one.
+     * If you found matching point, mark them, then look from front
+     * if marking point suits multi-byte string rule.
+     * Kenichi Okuyama.
+     */
 
-        /*
-         * sbcs optimization.
-         */
-        if(!global_is_multibyte_codepage) {
-          while(charcount < (mb_s_len - mb_back_len)) {
-            mbp += 1;
-            charcount++;
-          }
-        } else {
-          while(charcount < (mb_s_len - mb_back_len)) {
-            size_t skip = skip_multibyte_char(*mbp);
-            mbp += (skip ? skip : 1);
-            charcount++;
-          }
+    if ( back && back_len > 1 ) {
+        char	*bP	= sP + s_len - back_len;
+        long	b_len	= s_len;
+
+        while (( b_len >= back_len )&&
+               ( memcmp( bP, back, back_len - 1 ) == 0 )) {
+            bP		-= ( back_len - 1 );
+            b_len	-= ( back_len - 1 );
         }
 
         /*
-         * mbp now points at mb_back_len multibyte
-         * characters from the end of s.
+         * You're here, means you ether have found match multiple times,
+         * or you found none. If you've found match, then bP should be
+         * moving.
          */
+        if ( bP != sP + s_len - back_len ) {
+            bP	+= ( back_len - 1 ); /* slide bP to first matching point. */
 
-        if(strcmp(mbp, back) == 0)
-        {
-          ret = True;
-          *mbp = '\0';
-          mb_s_len = str_charnum(s);
-          mbp = s;
+            if( !global_is_multibyte_codepage ) {
+                /* simply terminate */
+                (*bP)	= '\0';
+                s_len	= b_len;
+                ret	= True;
+            } else {
+                /* trace string from start. */
+                char	*cP	= sP;
+                while ( cP < sP + s_len - back_len ) {
+                    size_t	skip;
+                    skip	= skip_multibyte_char( *cP );
+                    cP	+= ( skip ? skip : 1 );
+                    if ( cP == bP ) {
+                        /* you found the match */
+                        (*bP)	= '\0';
+                        ret	= True;
+                        s_len	= b_len;
+                        break;
+                    }
+                    while (( cP > bP )&&( bP < sP + s_len - back_len )) {
+                        bP	+= ( back_len - 1 );
+                        b_len	+= ( back_len - 1 );
+                    }
+                }
+            }
         }
-        else
-          break;
-      } /* end while mb_s_len... */
-    } /* end else .. */
-  } /* end if back_len .. */
+    }
 
-  return(ret);
+    /* if front found matching point */
+    if ( sP != s ) {
+        /* slide string to buffer top */
+        memmove( s, sP, s_len );
+    }
+    return ret;
 }
 
 
