@@ -1841,7 +1841,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
          be extended to level II oplocks (multiple reader
          oplocks). */
 
-      if(oplock_request && (num_share_modes == 0))
+      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(cnum)))
       {
         fs_p->granted_oplock = True;
         global_oplocks_open++;
@@ -2412,11 +2412,26 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 static void process_smb(char *inbuf, char *outbuf)
 {
   extern int Client;
-  static int trans_num = 0;
-
+  static int trans_num;
   int msg_type = CVAL(inbuf,0);
-  int32 len = smb_len(outbuf);
+  int32 len = smb_len(inbuf);
   int nread = len + 4;
+
+  if (trans_num == 0) {
+	  /* on the first packet, check the global hosts allow/ hosts
+	     deny parameters before doing any parsing of the packet
+	     passed to us by the client.  This prevents attacks on our
+	     parsing code from hosts not in the hosts allow list */
+	  if (!check_access(-1)) {
+		  /* send a negative session response "not listining on calling
+		   name" */
+		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
+		  DEBUG(1,("%s Connection denied from %s\n",
+			   timestring(),client_addr()));
+		  send_smb(Client,buf);
+		  exit_server("connection denied");
+	  }
+  }
 
   DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
   DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));

@@ -257,6 +257,7 @@ typedef struct
   BOOL bLocking;
   BOOL bStrictLocking;
   BOOL bShareModes;
+  BOOL bOpLocks;
   BOOL bOnlyUser;
   BOOL bMangledNames;
   BOOL bWidelinks;
@@ -338,6 +339,7 @@ static service sDefault =
   True,  /* bLocking */
   False,  /* bStrictLocking */
   True,  /* bShareModes */
+  True,  /* bOpLocks */
   False, /* bOnlyUser */
   True,  /* bMangledNames */
   True,  /* bWidelinks */
@@ -541,6 +543,7 @@ struct parm_struct
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL},
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL},
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL},
+  {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL},
   {"only user",        P_BOOL,    P_LOCAL,  &sDefault.bOnlyUser,        NULL},
   {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL},
   {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL},
@@ -935,6 +938,7 @@ FN_LOCAL_BOOL(lp_map_archive,bMap_archive)
 FN_LOCAL_BOOL(lp_locking,bLocking)
 FN_LOCAL_BOOL(lp_strict_locking,bStrictLocking)
 FN_LOCAL_BOOL(lp_share_modes,bShareModes)
+FN_LOCAL_BOOL(lp_oplocks,bOpLocks)
 FN_LOCAL_BOOL(lp_onlyuser,bOnlyUser)
 FN_LOCAL_BOOL(lp_manglednames,bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks,bWidelinks)
@@ -1138,6 +1142,8 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
   iSERVICE(i).bRead_only = False;
   /* No share modes on printer services. */
   iSERVICE(i).bShareModes = False;
+  /* No oplocks on printer services. */
+  iSERVICE(i).bOpLocks = False;
   /* Printer services must be printable. */
   iSERVICE(i).bPrint_ok = True;
   
