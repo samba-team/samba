@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -114,7 +114,7 @@ krb5_mk_rep(krb5_context context,
   free_AP_REP (&ap);
 
   if(len != buf_size)
-      abort();
+      krb5_abortx(context, "krb5_mk_rep: encoded length != calculated length");
   outbuf->data = buf;
   outbuf->length = len;
   return 0;

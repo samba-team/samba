@@ -338,7 +338,7 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
 #endif /* HAVE_NETINFO_NI_H */
 
 static void
-free_binding (krb5_config_binding *b)
+free_binding (krb5_context context, krb5_config_binding *b)
 {
     krb5_config_binding *next_b;
 
@@ -347,9 +347,10 @@ free_binding (krb5_config_binding *b)
 	if (b->type == krb5_config_string)
 	    free (b->u.string);
 	else if (b->type == krb5_config_list)
-	    free_binding (b->u.list);
+	    free_binding (context, b->u.list);
 	else
-	    abort ();
+	    krb5_abortx(context, "unknown binding type (%d) in free_binding", 
+			b->type);
 	next_b = b->next;
 	free (b);
 	b = next_b;
@@ -357,9 +358,9 @@ free_binding (krb5_config_binding *b)
 }
 
 krb5_error_code
-krb5_config_file_free (krb5_config_section *s)
+krb5_config_file_free (krb5_context context, krb5_config_section *s)
 {
-    free_binding (s);
+    free_binding (context, s);
     return 0;
 }
 
@@ -725,10 +726,14 @@ krb5_config_get_int (krb5_context context,
 
 #ifdef TEST
 
-static int print_list (FILE *f, krb5_config_binding *l, unsigned level);
-static int print_binding (FILE *f, krb5_config_binding *b, unsigned level);
-static int print_section (FILE *f, krb5_config_section *s, unsigned level);
-static int print_config (FILE *f, krb5_config_section *c);
+static int print_list (krb5_context context, FILE *f, 
+		       krb5_config_binding *l, unsigned level);
+static int print_binding (krb5_context context, FILE *f, 
+			  krb5_config_binding *b, unsigned level);
+static int print_section (krb5_context context, FILE *f, 
+			  krb5_config_section *s, unsigned level);
+static int print_config (krb5_context context, FILE *f, 
+			 krb5_config_section *c);
 
 static void
 tab (FILE *f, unsigned count)
@@ -738,17 +743,23 @@ tab (FILE *f, unsigned count)
 }
 
 static int
-print_list (FILE *f, krb5_config_binding *l, unsigned level)
+print_list (krb5_context context, 
+	    FILE *f, 
+	    krb5_config_binding *l, 
+	    unsigned level)
 {
     while(l) {
-	print_binding (f, l, level);
+	print_binding (context, f, l, level);
 	l = l->next;
     }
     return 0;
 }
 
 static int
-print_binding (FILE *f, krb5_config_binding *b, unsigned level)
+print_binding (krb5_context context, 
+	       FILE *f, 
+	       krb5_config_binding *b, 
+	       unsigned level)
 {
     tab (f, level);
     fprintf (f, "%s = ", b->name);
@@ -760,7 +771,8 @@ print_binding (FILE *f, krb5_config_binding *b, unsigned level)
 	tab (f, level);
 	fprintf (f, "}\n");
     } else
-	abort ();
+	krb5_abortx(context, "unknown binding type (%d) in print_binding", 
+		    b->type);
     return 0;
 }
 

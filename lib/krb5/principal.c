@@ -284,8 +284,7 @@ krb5_unparse_name_ext(krb5_context context,
 		      char **name,
 		      size_t *size)
 {
-    fprintf(stderr, "krb5_unparse_name_ext: not implemented\n");
-    abort();
+    krb5_abortx(context, "unimplemented krb5_unparse_name_ext called");
 }
 
 #endif
