@@ -354,8 +354,7 @@ doit_active (char *host, char *user,
     u_char msg[1024], *p;
     int len = strlen(user);
     void *ret;
-    u_int32_t tmp;
-    int tmp2;
+    int tmp, tmp2;
     char *s;
     int i;
     size_t rem;
