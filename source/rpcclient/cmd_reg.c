@@ -134,10 +134,10 @@ BOOL msrpc_reg_enum_key(const char* srv_name, const char* full_keyname,
 
 	fstring key_class;
 	uint32 max_class_len = 0;
-	uint32 num_subkeys;
+	uint32 num_subkeys = 0;
 	uint32 max_subkeylen;
 	uint32 max_subkeysize; 
-	uint32 num_values;
+	uint32 num_values = 0;
 	uint32 max_valnamelen;
 	uint32 max_valbufsize;
 	uint32 sec_desc;
