@@ -116,6 +116,7 @@ setup(
 
     Extension(name = "samr",
               sources = [samba_srcdir + "python/py_samr.c",
+                         samba_srcdir + "python/py_conv.c",
                          samba_srcdir + "python/py_samr_conv.c",
                          samba_srcdir + "python/py_common.c"],
               libraries = lib_list,

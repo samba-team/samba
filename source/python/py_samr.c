@@ -31,6 +31,272 @@ PyObject *samr_ntstatus;	/* This exception is raised when a RPC call
 				   returns a status code other than
 				   NT_STATUS_OK */
 
+/* SAMR group handle object */
+
+static void py_samr_group_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyMethodDef samr_group_methods[] = {
+	{ NULL }
+};
+
+static PyObject *py_samr_group_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(samr_group_methods, self, attrname);
+}
+
+PyTypeObject samr_group_hnd_type = {
+	PyObject_HEAD_INIT(NULL)
+	0,
+	"SAMR Group Handle",
+	sizeof(samr_group_hnd_object),
+	0,
+	py_samr_group_hnd_dealloc, /*tp_dealloc*/
+	0,          /*tp_print*/
+	py_samr_group_hnd_getattr,          /*tp_getattr*/
+	0,          /*tp_setattr*/
+	0,          /*tp_compare*/
+	0,          /*tp_repr*/
+	0,          /*tp_as_number*/
+	0,          /*tp_as_sequence*/
+	0,          /*tp_as_mapping*/
+	0,          /*tp_hash */
+};
+
+PyObject *new_samr_group_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol)
+{
+	samr_group_hnd_object *o;
+
+	o = PyObject_New(samr_group_hnd_object, &samr_group_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->group_pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+
+/* Alias handle object */
+
+static void py_samr_alias_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyMethodDef samr_alias_methods[] = {
+	{ NULL }
+};
+
+static PyObject *py_samr_alias_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(samr_alias_methods, self, attrname);
+}
+
+PyTypeObject samr_alias_hnd_type = {
+	PyObject_HEAD_INIT(NULL)
+	0,
+	"SAMR Alias Handle",
+	sizeof(samr_alias_hnd_object),
+	0,
+	py_samr_alias_hnd_dealloc, /*tp_dealloc*/
+	0,          /*tp_print*/
+	py_samr_alias_hnd_getattr,          /*tp_getattr*/
+	0,          /*tp_setattr*/
+	0,          /*tp_compare*/
+	0,          /*tp_repr*/
+	0,          /*tp_as_number*/
+	0,          /*tp_as_sequence*/
+	0,          /*tp_as_mapping*/
+	0,          /*tp_hash */
+};
+
+PyObject *new_samr_alias_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol)
+{
+	samr_alias_hnd_object *o;
+
+	o = PyObject_New(samr_alias_hnd_object, &samr_alias_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->alias_pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+
+/* SAMR user handle object */
+
+static void py_samr_user_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyObject *samr_set_user_info2(PyObject *self, PyObject *args, 
+				     PyObject *kw)
+{
+	samr_user_hnd_object *user_hnd = (samr_user_hnd_object *)self;
+	static char *kwlist[] = { "dict", NULL };
+	PyObject *info, *result = NULL;
+	SAM_USERINFO_CTR ctr;
+	TALLOC_CTX *mem_ctx;
+	uchar sess_key[16];
+	NTSTATUS ntstatus;
+	int level;
+	union {
+		SAM_USER_INFO_10 id10;
+		SAM_USER_INFO_21 id21;
+	} pinfo;
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "O!", kwlist, &PyDict_Type, &info))
+		return NULL;
+
+	if (!get_level_value(info, &level)) {
+		PyErr_SetString(samr_error, "invalid info level");
+		return NULL;
+	}	
+
+	ZERO_STRUCT(ctr);
+
+	ctr.switch_value = level;
+
+	switch(level) {
+	case 0x10:
+		ctr.info.id10 = &pinfo.id10;
+		
+		if (!py_to_SAM_USER_INFO_10(ctr.info.id10, info)) {
+			PyErr_SetString(
+				samr_error, "error converting user info");
+			goto done;
+		}
+		
+		break;
+	case 21:
+		ctr.info.id21 = &pinfo.id21;
+
+		if (!py_to_SAM_USER_INFO_21(ctr.info.id21, info)) {
+			PyErr_SetString(
+				samr_error, "error converting user info");
+			goto done;
+		}
+
+		break;
+	default:
+		PyErr_SetString(samr_error, "unsupported info level");
+		goto done;
+	}
+
+	/* Call RPC function */
+
+	if (!(mem_ctx = talloc_init("samr_set_user_info2"))) {
+		PyErr_SetString(
+			samr_error, "unable to init talloc context\n");
+		goto done;
+	}
+
+	ntstatus = cli_samr_set_userinfo2(
+		user_hnd->cli, mem_ctx, &user_hnd->user_pol, level,
+		sess_key, &ctr);
+
+	talloc_destroy(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		PyErr_SetObject(samr_ntstatus, py_ntstatus_tuple(ntstatus));
+		goto done;
+	}
+
+	Py_INCREF(Py_None);
+	result = Py_None;
+	
+done:
+	return result;
+}
+
+static PyObject *samr_delete_dom_user(PyObject *self, PyObject *args, 
+				      PyObject *kw)
+{
+	samr_user_hnd_object *user_hnd = (samr_user_hnd_object *)self;
+	static char *kwlist[] = { NULL };
+	NTSTATUS ntstatus;
+	TALLOC_CTX *mem_ctx;
+	PyObject *result = NULL;
+	
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "", kwlist))
+		return NULL;
+
+	if (!(mem_ctx = talloc_init("samr_delete_dom_user"))) {
+		PyErr_SetString(samr_error, "unable to init talloc context");
+		return NULL;
+	}
+
+	ntstatus = cli_samr_delete_dom_user(
+		user_hnd->cli, mem_ctx, &user_hnd->user_pol);
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		PyErr_SetObject(samr_ntstatus, py_ntstatus_tuple(ntstatus));
+		goto done;
+	}
+
+	Py_INCREF(Py_None);
+	result = Py_None;
+
+done:
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
+static PyMethodDef samr_user_methods[] = {
+	{ "delete_domain_user", (PyCFunction)samr_delete_dom_user,
+	  METH_VARARGS | METH_KEYWORDS,
+	  "Delete domain user." },
+	{ "set_user_info2", (PyCFunction)samr_set_user_info2,
+	  METH_VARARGS | METH_KEYWORDS,
+	  "Set user info 2" },
+	{ NULL }
+};
+
+static PyObject *py_samr_user_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(samr_user_methods, self, attrname);
+}
+
+PyTypeObject samr_user_hnd_type = {
+	PyObject_HEAD_INIT(NULL)
+	0,
+	"SAMR User Handle",
+	sizeof(samr_user_hnd_object),
+	0,
+	py_samr_user_hnd_dealloc, /*tp_dealloc*/
+	0,          /*tp_print*/
+	py_samr_user_hnd_getattr,          /*tp_getattr*/
+	0,          /*tp_setattr*/
+	0,          /*tp_compare*/
+	0,          /*tp_repr*/
+	0,          /*tp_as_number*/
+	0,          /*tp_as_sequence*/
+	0,          /*tp_as_mapping*/
+	0,          /*tp_hash */
+};
+
+PyObject *new_samr_user_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *pol)
+{
+	samr_user_hnd_object *o;
+
+	o = PyObject_New(samr_user_hnd_object, &samr_user_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->user_pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+
 /* SAMR connect handle object */
 
 static void py_samr_connect_hnd_dealloc(PyObject* self)
@@ -163,8 +429,7 @@ static PyObject *samr_enum_dom_groups(PyObject *self, PyObject *args,
 	NTSTATUS result;
 	PyObject *py_result = NULL;
 	
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "", kwlist))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "", kwlist))
 		return NULL;
 
 	if (!(mem_ctx = talloc_init("samr_enum_dom_groups"))) {
@@ -191,9 +456,52 @@ static PyObject *samr_enum_dom_groups(PyObject *self, PyObject *args,
 	return py_result;
 }	
 
+static PyObject *samr_create_dom_user(PyObject *self, PyObject *args, 
+				      PyObject *kw)
+{
+	samr_domain_hnd_object *domain_hnd = (samr_domain_hnd_object *)self;
+	static char *kwlist[] = { "account_name", "acb_info", NULL };
+	char *account_name;
+	NTSTATUS ntstatus;
+	uint32 unknown = 0xe005000b; /* Access mask? */
+	uint32 user_rid;
+	PyObject *result = NULL;
+	TALLOC_CTX *mem_ctx;
+	uint16 acb_info = ACB_NORMAL;
+	POLICY_HND user_pol;
+	
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s|i", kwlist, &account_name, &acb_info))
+		return NULL;
+
+	if (!(mem_ctx = talloc_init("samr_create_dom_user"))) {
+		PyErr_SetString(samr_error, "unable to init talloc context");
+		return NULL;
+	}
+
+	ntstatus = cli_samr_create_dom_user(
+		domain_hnd->cli, mem_ctx, &domain_hnd->domain_pol,
+		account_name, acb_info, unknown, &user_pol, &user_rid);
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		PyErr_SetObject(samr_ntstatus, py_ntstatus_tuple(ntstatus));
+		talloc_destroy(mem_ctx);
+		goto done;
+	}
+
+	result = new_samr_user_hnd_object(
+		domain_hnd->cli, mem_ctx, &user_pol);
+
+done:
+
+	return result;
+}
+
 static PyMethodDef samr_domain_methods[] = {
 	{ "enum_domain_groups", (PyCFunction)samr_enum_dom_groups,
 	  METH_VARARGS | METH_KEYWORDS, "Enumerate domain groups" },
+	{ "create_domain_user", (PyCFunction)samr_create_dom_user,
+	  METH_VARARGS | METH_KEYWORDS, "Create domain user" },
   	{ NULL }
 };
 
@@ -219,150 +527,6 @@ PyTypeObject samr_domain_hnd_type = {
 	0,          /*tp_as_mapping*/
 	0,          /*tp_hash */
 };
-
-/* SAMR user handle object */
-
-static void py_samr_user_hnd_dealloc(PyObject* self)
-{
-	PyObject_Del(self);
-}
-
-static PyMethodDef samr_user_methods[] = {
-	{ NULL }
-};
-
-static PyObject *py_samr_user_hnd_getattr(PyObject *self, char *attrname)
-{
-	return Py_FindMethod(samr_user_methods, self, attrname);
-}
-
-PyTypeObject samr_user_hnd_type = {
-	PyObject_HEAD_INIT(NULL)
-	0,
-	"SAMR User Handle",
-	sizeof(samr_user_hnd_object),
-	0,
-	py_samr_user_hnd_dealloc, /*tp_dealloc*/
-	0,          /*tp_print*/
-	py_samr_user_hnd_getattr,          /*tp_getattr*/
-	0,          /*tp_setattr*/
-	0,          /*tp_compare*/
-	0,          /*tp_repr*/
-	0,          /*tp_as_number*/
-	0,          /*tp_as_sequence*/
-	0,          /*tp_as_mapping*/
-	0,          /*tp_hash */
-};
-
-PyObject *new_samr_user_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				      POLICY_HND *pol)
-{
-	samr_user_hnd_object *o;
-
-	o = PyObject_New(samr_user_hnd_object, &samr_user_hnd_type);
-
-	o->cli = cli;
-	o->mem_ctx = mem_ctx;
-	memcpy(&o->user_pol, pol, sizeof(POLICY_HND));
-
-	return (PyObject*)o;
-}
-
-/* SAMR group handle object */
-
-static void py_samr_group_hnd_dealloc(PyObject* self)
-{
-	PyObject_Del(self);
-}
-
-static PyMethodDef samr_group_methods[] = {
-	{ NULL }
-};
-
-static PyObject *py_samr_group_hnd_getattr(PyObject *self, char *attrname)
-{
-	return Py_FindMethod(samr_group_methods, self, attrname);
-}
-
-PyTypeObject samr_group_hnd_type = {
-	PyObject_HEAD_INIT(NULL)
-	0,
-	"SAMR Group Handle",
-	sizeof(samr_group_hnd_object),
-	0,
-	py_samr_group_hnd_dealloc, /*tp_dealloc*/
-	0,          /*tp_print*/
-	py_samr_group_hnd_getattr,          /*tp_getattr*/
-	0,          /*tp_setattr*/
-	0,          /*tp_compare*/
-	0,          /*tp_repr*/
-	0,          /*tp_as_number*/
-	0,          /*tp_as_sequence*/
-	0,          /*tp_as_mapping*/
-	0,          /*tp_hash */
-};
-
-PyObject *new_samr_group_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				      POLICY_HND *pol)
-{
-	samr_group_hnd_object *o;
-
-	o = PyObject_New(samr_group_hnd_object, &samr_group_hnd_type);
-
-	o->cli = cli;
-	o->mem_ctx = mem_ctx;
-	memcpy(&o->group_pol, pol, sizeof(POLICY_HND));
-
-	return (PyObject*)o;
-}
-
-/* Alias handle object */
-
-static void py_samr_alias_hnd_dealloc(PyObject* self)
-{
-	PyObject_Del(self);
-}
-
-static PyMethodDef samr_alias_methods[] = {
-	{ NULL }
-};
-
-static PyObject *py_samr_alias_hnd_getattr(PyObject *self, char *attrname)
-{
-	return Py_FindMethod(samr_alias_methods, self, attrname);
-}
-
-PyTypeObject samr_alias_hnd_type = {
-	PyObject_HEAD_INIT(NULL)
-	0,
-	"SAMR Alias Handle",
-	sizeof(samr_alias_hnd_object),
-	0,
-	py_samr_alias_hnd_dealloc, /*tp_dealloc*/
-	0,          /*tp_print*/
-	py_samr_alias_hnd_getattr,          /*tp_getattr*/
-	0,          /*tp_setattr*/
-	0,          /*tp_compare*/
-	0,          /*tp_repr*/
-	0,          /*tp_as_number*/
-	0,          /*tp_as_sequence*/
-	0,          /*tp_as_mapping*/
-	0,          /*tp_hash */
-};
-
-PyObject *new_samr_alias_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				      POLICY_HND *pol)
-{
-	samr_alias_hnd_object *o;
-
-	o = PyObject_New(samr_alias_hnd_object, &samr_alias_hnd_type);
-
-	o->cli = cli;
-	o->mem_ctx = mem_ctx;
-	memcpy(&o->alias_pol, pol, sizeof(POLICY_HND));
-
-	return (PyObject*)o;
-}
 
 static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 {
@@ -446,6 +610,21 @@ static struct const_vals {
 	char *name;
 	uint32 value;
 } module_const_vals[] = {
+
+	/* Account control bits */
+
+	{ "ACB_DISABLED", 0x0001 },
+	{ "ACB_HOMDIRREQ", 0x0002 },
+	{ "ACB_PWNOTREQ", 0x0004 },
+	{ "ACB_TEMPDUP", 0x0008 },
+	{ "ACB_NORMAL", 0x0010 },
+	{ "ACB_MNS", 0x0020 },
+	{ "ACB_DOMTRUST", 0x0040 },
+	{ "ACB_WSTRUST", 0x0080 },
+	{ "ACB_SVRTRUST", 0x0100 },
+	{ "ACB_PWNOEXP", 0x0200 },
+	{ "ACB_AUTOLOCK", 0x0400 },
+
 	{ NULL }
 };
 
