@@ -53,6 +53,8 @@ extern char *keyfile;
 extern size_t max_request;
 extern time_t kdc_warn_pwexpire;
 extern char *database;
+extern char *port_str;
+extern int enable_http;
 
 #ifdef KRB4
 extern char *v4_realm;
@@ -61,24 +63,32 @@ extern char *v4_realm;
 extern struct timeval now;
 #define kdc_time (now.tv_sec)
 
-hdb_entry *db_fetch (krb5_principal);
-
-krb5_error_code mk_des_keyblock (EncryptionKey *);
-
-krb5_error_code tgs_rep(KDC_REQ *, krb5_data *, const char*);
-krb5_error_code as_rep(KDC_REQ *, krb5_data *, const char*);
-
-int maybe_version4(unsigned char*, int);
-krb5_error_code do_version4(unsigned char*, size_t, krb5_data*, 
-			    const char*, struct sockaddr_in*);
-
+krb5_error_code as_rep (KDC_REQ*, krb5_data*, const char*);
+void configure (int, char**);
+hdb_entry* db_fetch (krb5_principal);
+void kdc_log (int, const char*, ...);
+char* kdc_log_msg (int, const char*, ...);
+char* kdc_log_msg_va (int, const char*, va_list);
+void kdc_openlog (krb5_config_section*);
 void loop (void);
+void set_master_key (EncryptionKey*);
+krb5_error_code tgs_rep (KDC_REQ*, krb5_data*, const char*);
+Key* unseal_key (Key*);
 
-void kdc_openlog(krb5_config_section *cf);
-void kdc_log(int, const char *fmt, ...);
-char* kdc_log_msg_va(int, const char*, va_list);
-char* kdc_log_msg(int, const char*, ...);
+#ifdef KRB4
+hdb_entry* db_fetch4 (const char*, const char*, const char*);
+void do_524 (Ticket*, krb5_data*, const char*);
+krb5_error_code do_version4 (unsigned char*, size_t, krb5_data*, const char*, 
+			     struct sockaddr_in*);
+krb5_error_code encode_v4_ticket (void*, size_t, EncTicketPart*, 
+				  PrincipalName*, size_t*);
+krb5_error_code encrypt_v4_ticket (void*, size_t, des_cblock*, EncryptedData*);
+int maybe_version4 (unsigned char*, int);
+#endif
 
-Key *unseal_key(Key *key);
+#ifdef KASERVER
+krb5_error_code do_kaserver (unsigned char*, size_t, krb5_data*, const char*, 
+			     struct sockaddr_in*);
+#endif
 
 #endif /* __KDC_LOCL_H__ */
