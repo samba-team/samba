@@ -230,7 +230,7 @@ static struct chat_struct *make_pw_chat(char *p)
 		special_char_sub(prompt);
 		fstrcpy(t->prompt, prompt);
 		strlower_m(t->prompt);
-		trim_string(t->prompt, " ", " ");
+		trim_char(t->prompt, ' ', ' ');
 
 		if (!next_token(&p, reply, NULL, sizeof(fstring)))
 			break;
@@ -241,7 +241,7 @@ static struct chat_struct *make_pw_chat(char *p)
 		special_char_sub(reply);
 		fstrcpy(t->reply, reply);
 		strlower_m(t->reply);
-		trim_string(t->reply, " ", " ");
+		trim_char(t->reply, ' ', ' ');
 
 	}
 	return list;
@@ -304,7 +304,7 @@ static int smb_pam_passchange_conv(int num_msg,
 		case PAM_PROMPT_ECHO_ON:
 			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: PAM said: %s\n", msg[replies]->msg));
 			fstrcpy(current_prompt, msg[replies]->msg);
-			trim_string(current_prompt, " ", " ");
+			trim_char(current_prompt, ' ', ' ');
 			for (t=pw_chat; t; t=t->next) {
 
 				DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: trying to match |%s| to |%s|\n",
@@ -335,7 +335,7 @@ static int smb_pam_passchange_conv(int num_msg,
 		case PAM_PROMPT_ECHO_OFF:
 			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: PAM said: %s\n", msg[replies]->msg));
 			fstrcpy(current_prompt, msg[replies]->msg);
-			trim_string(current_prompt, " ", " ");
+			trim_char(current_prompt, ' ', ' ');
 			for (t=pw_chat; t; t=t->next) {
 
 				DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: trying to match |%s| to |%s|\n",

@@ -2026,7 +2026,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	if (info->servername[0]!='\0') {
 		trim_string(info->printername, info->servername, NULL);
-		trim_string(info->printername, "\\", NULL);
+		trim_char(info->printername, '\\', '\0');
 		info->servername[0]='\0';
 	}
 

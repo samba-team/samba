@@ -364,9 +364,27 @@ BOOL strisnormal(const char *s)
 
 void string_replace(pstring s,char oldc,char newc)
 {
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	unsigned char *p;
+
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	for (p = (unsigned char *)s; *p; p++) {
+		if (*p & 0x80) /* mb string - slow path. */
+			break;
+		if (*p == oldc)
+			*p = newc;
+	}
+
+	if (!*p)
+		return;
+
+	/* Slow (mb) path. */
+	push_ucs2(NULL, tmpbuf, p, sizeof(tmpbuf), STR_TERMINATE);
 	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
-	pull_ucs2(NULL, s, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
+	pull_ucs2(NULL, p, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
 }
 
 /**
@@ -404,6 +422,59 @@ size_t str_ascii_charnum(const char *s)
 	pstring tmpbuf2;
 	push_ascii(tmpbuf2, s, sizeof(tmpbuf2), STR_TERMINATE);
 	return strlen(tmpbuf2);
+}
+
+BOOL trim_char(char *s,char cfront,char cback)
+{
+	BOOL ret = False;
+	char *ep;
+	char *fp = s;
+
+	/* Ignore null or empty strings. */
+	if (!s || (s[0] == '\0'))
+		return False;
+
+	if (cfront) {
+		while (*fp && *fp == cfront)
+			fp++;
+		if (!*fp) {
+			/* We ate the string. */
+			s[0] = '\0';
+			return True;
+		}
+		if (fp != s)
+			ret = True;
+	}
+
+	ep = fp + strlen(fp) - 1;
+	if (cback) {
+		/* Attempt ascii only. Bail for mb strings. */
+		while ((ep >= fp) && (*ep == cback)) {
+			ret = True;
+			if ((ep > fp) && (((unsigned char)ep[-1]) & 0x80)) {
+				/* Could be mb... bail back to tim_string. */
+				char fs[2], bs[2];
+				if (cfront) {
+					fs[0] = cfront;
+					fs[1] = '\0';
+				}
+				bs[0] = cback;
+				bs[1] = '\0';
+				return trim_string(s, cfront ? fs : NULL, bs);
+			} else {
+				ep--;
+			}
+		}
+		if (ep < fp) {
+			/* We ate the string. */
+			s[0] = '\0';
+			return True;
+		}
+	}
+
+	ep[1] = '\0';
+	memmove(s, fp, ep-fp+2);
+	return ret;
 }
 
 /**
