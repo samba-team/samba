@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -79,6 +79,7 @@
 #include <getarg.h>
 #include <base64.h>
 #include <parse_units.h>
+#include <des.h>
 #include <krb5.h>
 #include <hdb.h>
 #include <hdb_err.h>
