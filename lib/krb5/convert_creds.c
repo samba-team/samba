@@ -132,21 +132,6 @@ krb524_convert_creds_kdc(krb5_context context,
     char realm[REALM_SZ];
     krb5_creds *v5_creds = in_cred;
 
-    if (v5_creds->session.keytype != ENCTYPE_DES_CBC_CRC) {
-	char *enctype;
-	ret = krb5_enctype_to_string(context, v5_creds->session.keytype, 
-				     &enctype);
-	if(ret == 0) {
-	    krb5_set_error_string(context, "attempt to 524-convert ticket "
-				  "of type `%s'", enctype);
-	    free(enctype);
-	} else {
-	    krb5_set_error_string(context, "attempt to 524-convert ticket "
-				  "of type `%d'", v5_creds->session.keytype);
-	}
-	return KRB524_BADKEY;
-    }
-
     ret = check_ticket_flags(v5_creds->flags.b);
     if(ret)
 	goto out2;
@@ -207,6 +192,9 @@ krb524_convert_creds_kdc(krb5_context context,
 	if(ret)
 	    goto out;
 	memcpy(v4creds->session, v5_creds->session.keyvalue.data, 8);
+    } else {
+	krb5_set_error_string(context, "converting credentials: %s", 
+			      krb5_get_err_text(context, ret);
     }
 out:
     krb5_storage_free(sp);
