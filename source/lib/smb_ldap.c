@@ -970,7 +970,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_ModifyDNResponse: {
-/*		struct ldap_Result *r = &msg->r.ModifyDNResponse; */
+		struct ldap_Result *r = &msg->r.ModifyDNResponse;
+		ldap_encode_response(msg->type, r, &data);
 		break;
 	}
 	case LDAP_TAG_CompareRequest: {
@@ -1060,10 +1061,13 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	asn1_read_enumerated(data, &result->resultcode);
 	asn1_read_OctetString_talloc(mem_ctx, data, &result->dn);
 	asn1_read_OctetString_talloc(mem_ctx, data, &result->errormessage);
-	if (asn1_peek_tag(data, ASN1_OCTET_STRING))
+	if (asn1_tag_remaining(data) > 0) {
+		asn1_start_tag(data, ASN1_CONTEXT(3));
 		asn1_read_OctetString_talloc(mem_ctx, data, &result->referral);
-	else
+		asn1_end_tag(data);
+	} else {
 		result->referral = NULL;
+	}
 	asn1_end_tag(data);
 }
 
@@ -1422,8 +1426,28 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_ModifyDNRequest): {
-/*		struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest; */
+		struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest;
 		msg->type = LDAP_TAG_ModifyDNRequest;
+		asn1_start_tag(data,
+			       ASN1_APPLICATION(LDAP_TAG_ModifyDNRequest));
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->dn);
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->newrdn);
+		asn1_read_BOOLEAN2(data, &r->deleteolddn);
+		r->newsuperior = NULL;
+		if (asn1_tag_remaining(data) > 0) {
+			int len;
+			char *newsup;
+			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0));
+			len = asn1_tag_remaining(data);
+			newsup = talloc(msg->mem_ctx, len+1);
+			if (newsup == NULL)
+				break;
+			asn1_read(data, newsup, len);
+			newsup[len] = '\0';
+			r->newsuperior = newsup;
+			asn1_end_tag(data);
+		}
+		asn1_end_tag(data);
 		break;
 	}
 

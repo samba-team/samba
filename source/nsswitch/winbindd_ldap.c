@@ -60,7 +60,7 @@ static struct winbind_ldap_server *ldap_servers;
 
 struct pending_ldap_message {
 	struct pending_ldap_message *next, *prev;
-	int client_msgid;	/* The messageid the client sent us */
+	struct ldap_message *msg; /* The message the client sent us */
 	int our_msgid;		/* The messageid we used */
 	struct winbind_ldap_client *client;
 };
@@ -318,6 +318,123 @@ static BOOL handled_locally(struct ldap_message *msg,
 	return True;
 }
 
+static void client_has_data(struct winbind_ldap_client *client)
+{
+			
+	struct ldap_message *msg;
+
+	if (!read_into_buf(client->sock, &client->in_buffer)) {
+		client->finished = True;
+		return;
+	}
+
+	while ((msg = get_msg_from_buf(&client->in_buffer,
+				       &client->finished))) {
+		struct pending_ldap_message *pending;
+
+		if (msg->type == LDAP_TAG_BindRequest) {
+			fake_bind_response(client, msg->messageid);
+			destroy_ldap_message(msg);
+			continue;
+		}
+
+		if (msg->type == LDAP_TAG_UnbindRequest) {
+			destroy_ldap_message(msg);
+			client->finished = True;
+			break;
+		}
+
+		pending = malloc(sizeof(*pending));
+		if (pending == NULL)
+			continue;
+
+		pending->msg = msg;
+		pending->client = client;
+		pending->our_msgid = send_msg(msg);
+
+		if (pending->our_msgid < 0) {
+			/* could not send */
+			client->finished = True;
+			free(pending);
+		}
+		DLIST_ADD(pending_messages, pending);
+	}
+}
+
+static struct ldap_Result *ldap_msg2result(struct ldap_message *msg)
+{
+	switch(msg->type) {
+	case LDAP_TAG_BindResponse:
+		return &msg->r.BindResponse.response;
+	case LDAP_TAG_SearchResultDone:
+		return &msg->r.SearchResultDone;
+	case LDAP_TAG_ModifyResponse:
+		return &msg->r.ModifyResponse;
+	case LDAP_TAG_AddResponse:
+		return &msg->r.AddResponse;
+	case LDAP_TAG_DelResponse:
+		return &msg->r.DelResponse;
+	case LDAP_TAG_ModifyDNResponse:
+		return &msg->r.ModifyDNResponse;
+	case LDAP_TAG_CompareResponse:
+		return &msg->r.CompareResponse;
+	case LDAP_TAG_ExtendedResponse:
+		return &msg->r.ExtendedResponse.response;
+	}
+	return NULL;
+}
+
+static void server_has_data(struct winbind_ldap_server *server)
+{
+	struct ldap_message *msg;
+
+	if (!read_into_buf(server->sock, &server->in_buffer)) {
+		server->finished = True;
+		return;
+	}
+
+	while ((msg = get_msg_from_buf(&server->in_buffer,
+				       &server->finished))) {
+		struct pending_ldap_message *pending;
+		struct rw_buffer *buf;
+		struct ldap_Result *res;
+
+		if (handled_locally(msg, server))
+			continue;
+
+		res = ldap_msg2result(msg);
+
+		if ( (res != NULL) && (res->resultcode == 10) )
+			DEBUG(5, ("Got Referral %s\n", res->referral));
+
+		for (pending = pending_messages;
+		     pending != NULL;
+		     pending = pending->next) {
+			if (pending->our_msgid == msg->messageid)
+				break;
+		}
+
+		if (pending == NULL) {
+			talloc_destroy(msg->mem_ctx);
+			continue;
+		}
+
+		msg->messageid = pending->msg->messageid;
+
+		buf = &pending->client->out_buffer;
+		ldap_append_to_buf(msg, buf);
+
+		if ( (msg->type != LDAP_TAG_SearchResultEntry) &&
+		     (msg->type != LDAP_TAG_SearchResultReference) ) {
+			destroy_ldap_message(pending->msg);
+			DLIST_REMOVE(pending_messages,
+				     pending);
+			SAFE_FREE(pending);
+		}
+		destroy_ldap_message(msg);
+	}
+}
+
 static void process_ldap_loop(void)
 {
 	struct winbind_ldap_client *client;
@@ -425,49 +542,8 @@ static void process_ldap_loop(void)
 
 	for (client = ldap_clients; client != NULL; client = client->next) {
 
-		if (FD_ISSET(client->sock, &r_fds)) {
-			struct ldap_message *msg;
-
-			if (!read_into_buf(client->sock, &client->in_buffer)) {
-				client->finished = True;
-				continue;
-			}
-
-			while ((msg = get_msg_from_buf(&client->in_buffer,
-						       &client->finished))) {
-				struct pending_ldap_message *pending;
-
-				if (msg->type == LDAP_TAG_BindRequest) {
-					fake_bind_response(client,
-							   msg->messageid);
-					destroy_ldap_message(msg);
-					continue;
-				}
-
-				if (msg->type == LDAP_TAG_UnbindRequest) {
-					destroy_ldap_message(msg);
-					client->finished = True;
-					break;
-				}
-
-				pending = malloc(sizeof(*pending));
-				if (pending == NULL)
-					continue;
-
-				pending->client_msgid = msg->messageid;
-				pending->client = client;
-
-				pending->our_msgid = send_msg(msg);
-				destroy_ldap_message(msg);
-
-				if (pending->our_msgid < 0) {
-					/* could not send */
-					client->finished = True;
-					free(pending);
-				}
-				DLIST_ADD(pending_messages, pending);
-			}
-		}
+		if (FD_ISSET(client->sock, &r_fds))
+			client_has_data(client);
 
 		if ((!client->finished) && FD_ISSET(client->sock, &w_fds))
 			write_out_of_buf(client->sock, &client->out_buffer);
@@ -475,50 +551,10 @@ static void process_ldap_loop(void)
 
 	for (server = ldap_servers; server != NULL; server = server->next) {
 
-		if (FD_ISSET(server->sock, &r_fds)) {
-			struct ldap_message *msg;
+		if (FD_ISSET(server->sock, &r_fds))
+			server_has_data(server);
 
-			if (!read_into_buf(server->sock, &server->in_buffer)) {
-				server->finished = True;
-				continue;
-			}
-
-			while ((msg = get_msg_from_buf(&server->in_buffer,
-						       &server->finished))) {
-				struct pending_ldap_message *pending;
-				struct rw_buffer *buf;
-
-				if (handled_locally(msg, server))
-					continue;
-
-				for (pending = pending_messages;
-				     pending != NULL;
-				     pending = pending->next) {
-					if (pending->our_msgid ==
-					    msg->messageid)
-						break;
-				}
-
-				if (pending == NULL) {
-					talloc_destroy(msg->mem_ctx);
-					continue;
-				}
-
-				msg->messageid = pending->client_msgid;
-
-				buf = &pending->client->out_buffer;
-				ldap_append_to_buf(msg, buf);
-
-				if (msg->type != LDAP_TAG_SearchResultEntry) {
-					DLIST_REMOVE(pending_messages,
-						     pending);
-					SAFE_FREE(pending);
-				}
-				destroy_ldap_message(msg);
-			}
-		}
-
-		if (FD_ISSET(server->sock, &w_fds))
+		if (!server->finished && FD_ISSET(server->sock, &w_fds))
 			write_out_of_buf(server->sock, &server->out_buffer);
 	}
 }
@@ -539,7 +575,7 @@ static BOOL setup_ldap_serverconn(void)
 	if ((ldap_servers == NULL) || (mem_ctx == NULL))
 		return False;
 
-	if (!ldap_parse_basic_url(mem_ctx, "ldap://localhost/",
+	if (!ldap_parse_basic_url(mem_ctx, "ldap://192.168.234.1:3899/",
 				  &host, &port, &ldaps))
 		return False;
 	
@@ -558,6 +594,9 @@ static BOOL setup_ldap_serverconn(void)
 		return False;
 
 	msg = new_ldap_simple_bind_msg(dn, pw);
+
+	SAFE_FREE(dn);
+	SAFE_FREE(pw);
 
 	if (msg == NULL)
 		return False;
