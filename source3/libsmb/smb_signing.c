@@ -25,7 +25,6 @@
 struct outstanding_packet_lookup {
 	uint16 mid;
 	uint32 reply_seq_num;
-	BOOL deferred_packet;
 	struct outstanding_packet_lookup *prev, *next;
 };
 
@@ -44,7 +43,7 @@ struct smb_basic_signing_context {
 };
 
 static void store_sequence_for_reply(struct outstanding_packet_lookup **list, 
-				     uint16 mid, uint32 reply_seq_num, BOOL deferred_pkt) 
+				     uint16 mid, uint32 reply_seq_num)
 {
 	struct outstanding_packet_lookup *t;
 	struct outstanding_packet_lookup *tmp;
@@ -55,47 +54,26 @@ static void store_sequence_for_reply(struct outstanding_packet_lookup **list,
 	DLIST_ADD_END(*list, t, tmp);
 	t->mid = mid;
 	t->reply_seq_num = reply_seq_num;
-	t->deferred_packet = deferred_pkt;
 
-	DEBUG(10,("store_sequence_for_reply: stored %sseq = %u mid = %u\n",
-			deferred_pkt ? "deferred " : "",
+	DEBUG(10,("store_sequence_for_reply: stored seq = %u mid = %u\n",
 			(unsigned int)reply_seq_num, (unsigned int)mid ));
 }
 
 static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
-				   uint16 mid, uint32 *reply_seq_num, BOOL *def) 
+				   uint16 mid, uint32 *reply_seq_num)
 {
 	struct outstanding_packet_lookup *t;
 
 	for (t = *list; t; t = t->next) {
 		if (t->mid == mid) {
 			*reply_seq_num = t->reply_seq_num;
-			if (def)
-				*def = t->deferred_packet;
-			DEBUG(10,("get_sequence_for_reply: found %sseq = %u mid = %u\n",
-				(t->deferred_packet) ? "deferred " : "",
+			DEBUG(10,("get_sequence_for_reply: found seq = %u mid = %u\n",
 				(unsigned int)t->reply_seq_num, (unsigned int)t->mid ));
 			DLIST_REMOVE(*list, t);
 			SAFE_FREE(t);
 			return True;
 		}
 	}
-	return False;
-}
-
-/***********************************************************
- A reply is pending if there is a non-deferred packet on the queue.
-************************************************************/
-
-static BOOL is_reply_pending(struct outstanding_packet_lookup *list)
-{
-	for (; list; list = list->next) {
-		if (!list->deferred_packet) {
-			DEBUG(10,("is_reply_pending: True.\n"));
-			return True;
-		}
-	}
-	DEBUG(10,("is_reply_pending: False.\n"));
 	return False;
 }
 
@@ -329,8 +307,7 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 
 	data->send_seq_num++;
 	store_sequence_for_reply(&data->outstanding_packet_list, 
-				 SVAL(outbuf,smb_mid),
-				 data->send_seq_num, False);
+				 SVAL(outbuf,smb_mid), data->send_seq_num);
 	data->send_seq_num++;
 }
 
@@ -359,8 +336,7 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 	if (data->trans_info) {
 		reply_seq_number = data->trans_info->reply_seq_num;
 	} else if (!get_sequence_for_reply(&data->outstanding_packet_list, 
-				    SVAL(inbuf, smb_mid), 
-				    &reply_seq_number, NULL)) {
+				    SVAL(inbuf, smb_mid), &reply_seq_number)) {
 		DEBUG(1, ("client_check_incoming_message: failed to get sequence number %u for reply.\n",
 					(unsigned int) SVAL(inbuf, smb_mid) ));
 		return False;
@@ -639,7 +615,7 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	mid = SVAL(outbuf, smb_mid);
 
 	/* See if this is a reply for a deferred packet. */
-	get_sequence_for_reply(&data->outstanding_packet_list, mid, &send_seq_number, &was_deferred_packet);
+	was_deferred_packet = get_sequence_for_reply(&data->outstanding_packet_list, mid, &send_seq_number);
 
 	if (data->trans_info && (data->trans_info->mid == mid)) {
 		/* This is a reply in a trans stream. Use the sequence
@@ -655,18 +631,21 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
 
 /*	cli->outbuf[smb_ss_field+2]=0; 
-	Uncomment this to test if the remote server actually verifies signatures...*/
+	Uncomment this to test if the remote client actually verifies signatures...*/
 
-	if (!was_deferred_packet) {
-       		if (!data->trans_info) {
-			/* Always increment if not in a trans stream. */
-			data->send_seq_num++;
-		} else if ((data->trans_info->send_seq_num == data->send_seq_num) || (data->trans_info->mid != mid)) {
-			/* Increment if this is the first reply in a trans stream or a
-			 * packet that doesn't belong to this stream (different mid). */
-			data->send_seq_num++;
-		}
-	} 
+	/* Don't mess with the sequence number for a deferred packet. */
+	if (was_deferred_packet) {
+		return;
+	}
+
+	if (!data->trans_info) {
+		/* Always increment if not in a trans stream. */
+		data->send_seq_num++;
+	} else if ((data->trans_info->send_seq_num == data->send_seq_num) || (data->trans_info->mid != mid)) {
+		/* Increment if this is the first reply in a trans stream or a
+		 * packet that doesn't belong to this stream (different mid). */
+		data->send_seq_num++;
+	}
 }
 
 /***********************************************************
@@ -721,8 +700,10 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		 * isn't a reply pending we need to re-sync the sequence
 		 * number.
 		 */
-		if (is_oplock_break(inbuf) && !is_reply_pending(data->outstanding_packet_list))
+		if (is_oplock_break(inbuf)) {
+			DEBUG(10,("srv_check_incoming_message: oplock break at seq num %u\n", data->send_seq_num));
 			data->send_seq_num++;
+		}
 	}
 
 	saved_seq = reply_seq_number;
@@ -820,7 +801,7 @@ void srv_calculate_sign_mac(char *outbuf)
  Called by server to defer an outgoing packet.
 ************************************************************/
 
-void srv_defer_sign_response(uint16 mid, BOOL deferred_packet)
+void srv_defer_sign_response(uint16 mid)
 {
 	struct smb_basic_signing_context *data;
 
@@ -833,7 +814,7 @@ void srv_defer_sign_response(uint16 mid, BOOL deferred_packet)
 		return;
 
 	store_sequence_for_reply(&data->outstanding_packet_list, 
-				 mid, data->send_seq_num, deferred_packet);
+				 mid, data->send_seq_num);
 	data->send_seq_num++;
 }
 
@@ -857,7 +838,7 @@ void srv_cancel_sign_response(uint16 mid)
 
 	DEBUG(10,("srv_cancel_sign_response: for mid %u\n", (unsigned int)mid ));
 
-	while (get_sequence_for_reply(&data->outstanding_packet_list, mid, &dummy_seq,NULL))
+	while (get_sequence_for_reply(&data->outstanding_packet_list, mid, &dummy_seq))
 		;
 }
 
