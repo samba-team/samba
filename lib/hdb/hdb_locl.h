@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -65,7 +65,9 @@
 #include <hdb.h>
 #include <hdb_asn1.h>
 
-#ifdef HAVE_DB_H
+#if defined(HAVE_DB_185_H)
+#include <db_185.h>
+#elif defined(HAVE_DB_H)
 #include <db.h>
 #endif
 
