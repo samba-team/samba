@@ -28,6 +28,161 @@ their creation, retransmission, and eventual removal.
 
 
 /*************************************************************************
+  send_mailslot_reply()
+  *************************************************************************/
+
+this function is responsible for sending a MAILSLOT packet.
+
+it will _not_ send packets to the pseudo WINS subnet's address of 
+255.255.255.255: this would be disastrous.
+
+each packet sent out has a unique transaction identifier. this is done
+so that responses can be matched with the original purpose for the packet
+being sent out in the first place.
+
+
+/*************************************************************************
+  interpret_node_status()
+  *************************************************************************/
+
+this function is responsible for interpreting the raw data that comes in
+from a node status reply. in the process, it identifies both the server
+name and the workgroup name in the node status reply.
+
+it also updates information in the WINS name database if the names 
+received are not already in samba's records.
+
+
+/*************************************************************************
+  listen_for_packets()
+  *************************************************************************/
+
+this function is responsible for reading NMB and DGRAM packets, and then
+queueing them. it will normally time-out for NMBD_SELECT_LOOP seconds, but
+if there is an election currently running or we are expecting a response
+then this time is reduced to 1 second.
+
+note: the time-out period needs refining to the millisecond level.
+
+
+/*************************************************************************
+  queue_packet()
+  *************************************************************************/
+
+this function is responsible for queueing any NMB and DGRAM packets passed
+to it. these packets will be removed from the queue in run_packet_queue().
+
+
+/*************************************************************************
+  run_packet_queue()
+  *************************************************************************/
+
+this function is responsible for taking a packet off the queue, 
+identifying whether it is an NMB or a DGRAM packet, processing
+it accordingly and deleting it. this process continues until
+there are no more packets on the queue.
+
+
+/*************************************************************************
+  find_response_record()
+  *************************************************************************/
+
+this function is responsible for matching the unique response transaction
+id with an expected response record. as a side-effect of this search,
+it will find the subnet (or the WINS pseudo-subnet) that samba expected
+the response to come from.
+
+
+/*************************************************************************
+  queue_netbios_packet()
+  *************************************************************************/
+
+this function is responsible for sending out a netbios packet, and then
+making a record of the information that was sent out. a response will
+be expected later (or not, as the case may be).
+
+if a response is received, response_netbios_packet() will deal with it.
+otherwise, it will be dealt with in expire_netbios_response_entries().
+
+
+/*************************************************************************
+  make_response_queue_record()
+  *************************************************************************/
+
+this function is responsible for creating a response record, which will
+be queued awaiting a response.
+
+the number of retries is set to 4, and the retry period set to 1 second.
+if no response is received, then the packet is re-transmitted, which is
+why so much information is stored in the response record.
+
+the number of expected responses queued is kept, so listen_for_packets()
+knows it must time-out after 1 second if one or more responses are
+expected.
+
+
+/*************************************************************************
+  queue_netbios_pkt_wins()
+  *************************************************************************/
+
+this function is a wrapper around queue_netbios_packet(). there is
+some confusion about B, M and P nodes (see rfc1001.txt section 10) -
+confusion introduced by luke :-) - which needs sorting out.
+
+for example, rfc1001.txt 15.2.3 - an M node must attempt to register a
+name first as a B node, then attempt to register as an M node. negative
+responses on either of these attempts is a failure to register the
+name.
+
+this is NOT the case with a P node.
+
+
+/*************************************************************************
+  reply_netbios_packet()
+  *************************************************************************/
+
+this function is responsible for sending a reply to another NetBIOS
+packet from another host. it can be used to send a reply to a name
+registration, name release, name query or name status request.
+
+the reply can be either a positive or a negative one.
+
+
+/*************************************************************************
+  expire_netbios_response_entries()
+  *************************************************************************/
+
+this function is responsible for dealing with queued response records
+that have not received a response packet matching their unique
+transaction id.
+
+if the retry count for any record is non-zero, and its time-out period
+has expired, the retry count is reduced, the time-out period is stepped
+forward and the packet is re-transmitted (from the information stored
+in the queued response record) with the same unique transaction id of
+the initial attempt at soliciting a response.
+
+if the retry count is zero, then the packet is assumed to have expired.
+dead_netbios_entry() is called to deal with the possibility of an error
+or a problem (or in certain instances, no answer is an implicit
+positive response!).
+
+the expected response record is then deleted, and the number of expected
+responses reduced. when this count gets to zero, listen_for_packets()
+will no longer time-out for 1 second on account of expecting response
+packets.
+
+
+/*************************************************************************
+  initiate_netbios_packet()
+  *************************************************************************/
+
+this function is responsible for construction a netbios packet and sending
+it. if the packet has not had a unique transaction id allocated to it,
+then initiate_netbios_packet() will give it one.
+
+
+/*************************************************************************
   dead_netbios_entry()
   *************************************************************************/
 
@@ -39,40 +194,40 @@ or more hosts.
 
 - NAME_QUERY_CONFIRM
 
-when a samba 'command' of type NAME_QUERY_CONFIRM is sent, a response
+when a samba 'state' of type NAME_QUERY_CONFIRM is sent, a response
 may or may not be forthcoming. if no response is received to a unique
 name, then the record is removed from samba's WINS database. non-unique
 names are simply expected to die off on a time-to-live basis (see
 rfc1001.txt 15.1.3.4)
 
-query_refresh_names() issues this samba 'command'
+query_refresh_names() issues this samba 'state'
 response_name_query_sync() deals with responses to NAME_QUERY_CONFIRM.
 
 - NAME_QUERY_MST_CHK
 
-when a samba 'command' of type NAME_QUERY_MST_CHK is sent, and a response
+when a samba 'state' of type NAME_QUERY_MST_CHK is sent, and a response
 is not received, this implies that a master browser will have failed.
 remedial action may need to be taken, for example if samba is a member
 of that workgroup and it is also a potential master browser it could
 force an election.
 
-check_master_browser() issues this samba 'command'.
+check_master_browser() issues this samba 'state'.
 response_process() does nothing if a response is received. this is normal.
 
 - NAME_RELEASE
 
-when a samba 'command' of type NAME_RELEASE is sent, and a response is
+when a samba 'state' of type NAME_RELEASE is sent, and a response is
 not received, it is assumed to be acceptable to release the name. if the
 original response was sent to another WINS server, then that WINS server
 may be inaccessible or may have failed. if so, then at a later date
 samba should take this into account (see rfc1001.txt 10.3).
 
-remove_name_entry() issues this samba 'command'
+remove_name_entry() issues this samba 'state'
 response_name_rel() deals with responses to NAME_RELEASE.
 
 - NAME_REGISTER
 
-when a samba 'command' of type NAME_REGISTER is sent, and a response is
+when a samba 'state' of type NAME_REGISTER is sent, and a response is
 not received, if the registration was done by broadcast, it is assumed
 that there are no objections to the registration of this name, and samba
 adds the name to the appropriate subnet record name database. if the
@@ -80,9 +235,27 @@ registration was point-to-point (i.e with another WINS server) then that
 WINS server may be inaccessible or may have failed. if so, then at a later
 date samba should take this into account (see rfc1001.txt 10.3).
 
-add_my_name_entry() issues this samba 'command'
+add_my_name_entry() issues this samba 'state'
 response_name_reg() deals with responses to NAME_REGISTER.
 
-no action is taken for any other kinds of samba 'commands' if a response
+no action is taken for any other kinds of samba 'states' if a response
 is not received. this is not to say that action may not be appropriate,
 just that it's not been looked at yet :-)
+
+
+/*************************************************************************
+  add_response_record()
+  *************************************************************************/
+
+this function is responsible for adding the response record created by
+make_response_queue_record() into the appropriate response record queue.
+
+
+/*************************************************************************
+  update_name_trn_id()
+  *************************************************************************/
+
+this function is responsible for allocating unique transaction identifiers
+for each new packet sent on the network.
+
+

@@ -35,7 +35,7 @@ after debug information is reported, and validation of the netbios
 packet (e.g only one response from one machine is expected for some
 functions) has occurred, the packet is processed. when the initial
 request was sent out, the expected response record was flagged with,
-for lack of a better word, a samba 'command' type. whenever a
+for lack of a better word, a samba 'state' type. whenever a
 response is received, the appropriate function is called to carry on
 where the program control flow was interrupted while awaiting exactly
 such a response.
@@ -48,7 +48,7 @@ area of code - expire_netbios_response_entries().
   response_name_query_sync()
   *************************************************************************/
 
-this function receives responses to samba 'commands' NAME_QUERY_SYNC and
+this function receives responses to samba 'states' NAME_QUERY_SYNC and
 NAME_QUERY_CONFIRM.
 
 NAME_QUERY_SYNC: name query a server before synchronising browse lists.
@@ -72,7 +72,7 @@ entry should be removed if we receive a negative response.
   response_name_status_check()
   *************************************************************************/
 
-this function receives responses to samba 'commands' NAME_STATUS_CHECK
+this function receives responses to samba 'states' NAME_STATUS_CHECK
 and NAME_STATUS_MASTER_CHECK
 
 NAME_STATUS_MASTER_CHECK: name status a primary domain controller, 
@@ -94,7 +94,7 @@ correct part of samba's workgroup - server database.
   response_server_check()
   *************************************************************************/
 
-this function receives responses to samba 'commands' NAME_QUERY_MST_SRV_CHK,
+this function receives responses to samba 'states' NAME_QUERY_MST_SRV_CHK,
 NAME_QUERY_SRV_CHK and NAME_QUERY_FIND_MST.
 
 NAME_QUERY_FIND_MST: issued as a broadcast when we wish to find out all
@@ -109,11 +109,15 @@ NAME_QUERY_MST_SRV_CHK: same as a NAME_QUERY_FIND_MST except this is sent
 NAME_QUERY_SRV_CHK: same as a NAME_QUERY_MST_SRV_CHK except this is sent to
                     a master browser.
                         
-the purpose of each of these commands is to do a broadcast name query, or
+the purpose of each of these states is to do a broadcast name query, or
 a name query directed at a WINS server, then to all hosts that respond,
 we issue a name status check, which will confirm for us the workgroup
 or domain name, and then initiate issuing a sync browse list call with
 that server.
+
+a NAME_QUERY_SRV_CHK is sent when samba receives a list of backup
+browsers. it checks to see if that server is alive (by doing a
+name query on a server) and then syncs browse lists with it.
 
 
 /*************************************************************************
@@ -186,7 +190,7 @@ of samba's NetBIOS name database. if the name cannot be found, then it
 should look the name up using DNS. later modifications will be to
 forward the request on to another WINS server, should samba not be able
 to find out about the requested name (this will be implemented through
-issuing a new type of samba 'command').
+issuing a new type of samba 'state').
 
 the name is first searched for in the NetBIOS cache. if it cannot be
 found, then it if the name looks like it's a server-type name (0x20
