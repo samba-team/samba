@@ -40,7 +40,7 @@ x SamrCloseHandle
 x SamrConnect
 x SamrCreateAliasInDomain
 x SamrCreateGroupInDomain
-SamrCreateUserInDomain
+x SamrCreateUserInDomain
 ? SamrDeleteAlias
 SamrDeleteGroup
 SamrDeleteUser
@@ -113,6 +113,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_ALIASMEM    0x21
 
 #define SAMR_OPEN_USER         0x22
+#define SAMR_CREATE_USER       0x32
 
 #define SAMR_QUERY_USERINFO    0x24
 #define SAMR_QUERY_USERGROUPS  0x27
@@ -1202,11 +1203,37 @@ typedef struct r_samr_open_user_info
 } SAMR_R_OPEN_USER;
 
 
+/* SAMR_Q_CREATE_USER - probably a create */
+typedef struct q_samr_create_user_info
+{
+	POLICY_HND domain_pol;       /* policy handle */
+
+	UNIHDR  hdr_name;       /* unicode account name header */
+	UNISTR2 uni_name;       /* unicode account name */
+
+	uint16 acb_info;      /* account control info */
+	uint32 unknown_1;     /* 0xe005 00b0 */
+
+} SAMR_Q_CREATE_USER;
+
+
+/* SAMR_R_CREATE_USER - probably a create */
+typedef struct r_samr_create_user_info
+{
+	POLICY_HND user_pol;       /* policy handle associated with user */
+
+	uint32 unknown_0;     /* 0x0007 03ff */
+	uint32 user_rid;      /* user RID */
+	uint32 status;         /* return status */
+
+} SAMR_R_CREATE_USER;
+
+
 
 /* SAMR_Q_UNKNOWN_32 - probably a "create SAM entry" */
 typedef struct q_samr_unknown_32_info
 {
-    POLICY_HND pol;             /* policy handle */
+	POLICY_HND pol;             /* policy handle */
 
 	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
 	UNISTR2 uni_mach_acct;       /* unicode machine account name */

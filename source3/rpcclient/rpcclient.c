@@ -132,6 +132,7 @@ struct
   {"addaliasmem",cmd_sam_add_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member"},
   {"creategroup",cmd_sam_create_dom_group,"SAM Create Domain Group"},
   {"createalias",cmd_sam_create_dom_alias,"SAM Create Domain Alias"},
+  {"createuser", cmd_sam_create_dom_user,"<username> SAM Create Domain User"},
   {"delgroup",   cmd_sam_delete_dom_group,"SAM Delete Domain Group"},
   {"delalias",   cmd_sam_delete_dom_alias,"SAM Delete Domain Alias"},
   {"ntpass",     cmd_sam_ntchange_pwd, "NT SAM Password Change"},
