@@ -712,8 +712,8 @@ static BOOL api_spoolss_enumprinterdrivers(pipes_struct *p)
 
 	r_u.status = _spoolss_enumprinterdrivers(p, &q_u, &r_u);
 
-	if (!new_spoolss_io_r_enumprinterdrivers("",&r_u,rdata,0)) {
-		DEBUG(0,("new_spoolss_io_r_enumprinterdrivers: unable to marshall SPOOL_R_ENUMPRINTERDRIVERS.\n"));
+	if (!spoolss_io_r_enumprinterdrivers("",&r_u,rdata,0)) {
+		DEBUG(0,("spoolss_io_r_enumprinterdrivers: unable to marshall SPOOL_R_ENUMPRINTERDRIVERS.\n"));
 		return False;
 	}
 
