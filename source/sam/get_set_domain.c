@@ -1,7 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
    SAM_DOMAIN access routines
-   Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
    Copyright (C) Andrew Bartlett			2002
    Copyright (C) Stefan (metze) Metzmacher	2002
    Copyright (C) Jelmer Vernooij 			2002
