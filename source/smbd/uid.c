@@ -465,19 +465,19 @@ BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 			switch (lp_server_role()) {
 				case ROLE_DOMAIN_PDC:
 				case ROLE_DOMAIN_BDC:
-					if (strequal(domain, lp_workgroup_dos())) {
-						fstrcpy(domain, global_myname_dos());
+					if (strequal_unix(domain, lp_workgroup_unix())) {
+						fstrcpy(domain, global_myname_unix());
 						ret = local_lookup_name(domain, username, psid, name_type);
 					}
 					/* No break is deliberate here. JRA. */
 				default:
-					if (strcasecmp(global_myname_dos(), domain) != 0) {
+					if (!strequal_unix(global_myname_unix(), domain)) {
 						DEBUG(5, ("lookup_name: domain %s is not local\n", domain));
-						ret = local_lookup_name(global_myname_dos(), username, psid, name_type);
+						ret = local_lookup_name(global_myname_unix(), username, psid, name_type);
 					}
 			}
 		} else {
-			ret = local_lookup_name(global_myname_dos(), name, psid, name_type);
+			ret = local_lookup_name(global_myname_unix(), name, psid, name_type);
 		}
 
 		if (ret) {
