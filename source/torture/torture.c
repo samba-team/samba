@@ -2248,68 +2248,6 @@ error_exit:
 	return correct;
 }
 
-static void list_fn(file_info *finfo, const char *name, void *state)
-{
-	
-}
-
-/*
-  test directory listing speed
- */
-static BOOL run_dirtest(int dummy)
-{
-	int i;
-	struct smbcli_state *cli;
-	int fnum;
-	double t1;
-	BOOL correct = True;
-
-	printf("starting directory test\n");
-
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
-
-	printf("Creating %d random filenames\n", torture_numops);
-
-	srandom(0);
-	for (i=0;i<torture_numops;i++) {
-		char *fname;
-		asprintf(&fname, "\\%x", (int)random());
-		fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
-		if (fnum == -1) {
-			fprintf(stderr,"Failed to open %s\n", fname);
-			return False;
-		}
-		smbcli_close(cli->tree, fnum);
-		free(fname);
-	}
-
-	t1 = end_timer();
-
-	printf("Matched %d\n", smbcli_list(cli->tree, "a*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", smbcli_list(cli->tree, "b*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", smbcli_list(cli->tree, "xyzabc", 0, list_fn, NULL));
-
-	printf("dirtest core %g seconds\n", end_timer() - t1);
-
-	srandom(0);
-	for (i=0;i<torture_numops;i++) {
-		char *fname;
-		asprintf(&fname, "\\%x", (int)random());
-		smbcli_unlink(cli->tree, fname);
-		free(fname);
-	}
-
-	if (!torture_close_connection(cli)) {
-		correct = False;
-	}
-
-	printf("finished dirtest\n");
-
-	return correct;
-}
-
 /*
   sees what IOCTLs are supported
  */
@@ -2450,152 +2388,6 @@ BOOL torture_chkpath_test(int dummy)
 	return ret;
 }
 
-static BOOL run_dirtest1(int dummy)
-{
-	int i;
-	struct smbcli_state *cli;
-	int fnum, num_seen;
-	BOOL correct = True;
-
-	printf("starting directory test\n");
-
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
-
-	if (smbcli_deltree(cli->tree, "\\LISTDIR") == -1) {
-		fprintf(stderr,"Failed to deltree %s, error=%s\n", "\\LISTDIR", smbcli_errstr(cli->tree));
-		return False;
-	}
-	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\LISTDIR"))) {
-		fprintf(stderr,"Failed to mkdir %s, error=%s\n", "\\LISTDIR", smbcli_errstr(cli->tree));
-		return False;
-	}
-
-	printf("Creating %d files\n", torture_entries);
-
-	/* Create torture_entries files and torture_entries directories. */
-	for (i=0;i<torture_entries;i++) {
-		char *fname;
-		asprintf(&fname, "\\LISTDIR\\f%d", i);
-		fnum = smbcli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
-				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
-		if (fnum == -1) {
-			fprintf(stderr,"Failed to open %s, error=%s\n", fname, smbcli_errstr(cli->tree));
-			return False;
-		}
-		free(fname);
-		smbcli_close(cli->tree, fnum);
-	}
-	for (i=0;i<torture_entries;i++) {
-		char *fname;
-		asprintf(&fname, "\\LISTDIR\\d%d", i);
-		if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, fname))) {
-			fprintf(stderr,"Failed to open %s, error=%s\n", fname, smbcli_errstr(cli->tree));
-			return False;
-		}
-		free(fname);
-	}
-
-	/* Now ensure that doing an old list sees both files and directories. */
-	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
-	printf("num_seen = %d\n", num_seen );
-	/* We should see (torture_entries) each of files & directories + . and .. */
-	if (num_seen != (2*torture_entries)+2) {
-		correct = False;
-		fprintf(stderr,"entry count mismatch, should be %d, was %d\n",
-			(2*torture_entries)+2, num_seen);
-	}
-		
-
-	/* Ensure if we have the "must have" bits we only see the
-	 * relevant entries.
-	 */
-	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", (FILE_ATTRIBUTE_DIRECTORY<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
-	printf("num_seen = %d\n", num_seen );
-	if (num_seen != torture_entries+2) {
-		correct = False;
-		fprintf(stderr,"entry count mismatch, should be %d, was %d\n",
-			torture_entries+2, num_seen);
-	}
-
-	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", (FILE_ATTRIBUTE_ARCHIVE<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
-	printf("num_seen = %d\n", num_seen );
-	if (num_seen != torture_entries) {
-		correct = False;
-		fprintf(stderr,"entry count mismatch, should be %d, was %d\n",
-			torture_entries, num_seen);
-	}
-
-	/* Delete everything. */
-	if (smbcli_deltree(cli->tree, "\\LISTDIR") == -1) {
-		fprintf(stderr,"Failed to deltree %s, error=%s\n", "\\LISTDIR", smbcli_errstr(cli->tree));
-		return False;
-	}
-
-#if 0
-	printf("Matched %d\n", smbcli_list(cli->tree, "a*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", smbcli_list(cli->tree, "b*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", smbcli_list(cli->tree, "xyzabc", 0, list_fn, NULL));
-#endif
-
-	if (!torture_close_connection(cli)) {
-		correct = False;
-	}
-
-	printf("finished dirtest1\n");
-
-	return correct;
-}
-
-
-/*
-   simple test harness for playing with deny modes
- */
-static BOOL run_deny3test(int dummy)
-{
-	struct smbcli_state *cli1, *cli2;
-	int fnum1, fnum2;
-	const char *fname;
-
-	printf("starting deny3 test\n");
-
-	printf("Testing simple deny modes\n");
-	
-	if (!torture_open_connection(&cli1)) {
-		return False;
-	}
-	if (!torture_open_connection(&cli2)) {
-		return False;
-	}
-
-	fname = "\\deny_dos1.dat";
-
-	smbcli_unlink(cli1->tree, fname);
-	fnum1 = smbcli_open(cli1->tree, fname, O_CREAT|O_TRUNC|O_WRONLY, DENY_DOS);
-	fnum2 = smbcli_open(cli1->tree, fname, O_CREAT|O_TRUNC|O_WRONLY, DENY_DOS);
-	if (fnum1 != -1) smbcli_close(cli1->tree, fnum1);
-	if (fnum2 != -1) smbcli_close(cli1->tree, fnum2);
-	smbcli_unlink(cli1->tree, fname);
-	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
-
-
-	fname = "\\deny_dos2.dat";
-
-	smbcli_unlink(cli1->tree, fname);
-	fnum1 = smbcli_open(cli1->tree, fname, O_CREAT|O_TRUNC|O_WRONLY, DENY_DOS);
-	fnum2 = smbcli_open(cli2->tree, fname, O_CREAT|O_TRUNC|O_WRONLY, DENY_DOS);
-	if (fnum1 != -1) smbcli_close(cli1->tree, fnum1);
-	if (fnum2 != -1) smbcli_close(cli2->tree, fnum2);
-	smbcli_unlink(cli1->tree, fname);
-	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
-
-
-	torture_close_connection(cli1);
-	torture_close_connection(cli2);
-
-	return True;
-}
 
 /*
   parse a //server/share type UNC name
@@ -2788,17 +2580,17 @@ static struct {
 	{"BASE-ATTR",   run_attrtest,   0},
 	{"BASE-TRANS2", run_trans2test, 0},
 	{"BASE-NEGNOWAIT", run_negprot_nowait, 0},
-	{"BASE-DIR",  run_dirtest, 0},
-	{"BASE-DIR1",  run_dirtest1, 0},
+	{"BASE-DIR1",  torture_dirtest1, 0},
+	{"BASE-DIR2",  torture_dirtest2, 0},
 	{"BASE-DENY1",  torture_denytest1, 0},
 	{"BASE-DENY2",  torture_denytest2, 0},
+	{"BASE-DENY3",  torture_denytest3, 0},
 	{"BASE-TCON",  run_tcon_test, 0},
 	{"BASE-TCONDEV",  run_tcon_devtype_test, 0},
 	{"BASE-VUID", run_vuidtest, 0},
 	{"BASE-RW1",  run_readwritetest, 0},
 	{"BASE-RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"BASE-OPEN", run_opentest, 0},
-	{"BASE-DENY3", run_deny3test, 0},
 	{"BASE-DEFER_OPEN", run_deferopen, FLAG_MULTIPROC},
 	{"BASE-XCOPY", run_xcopy, 0},
 	{"BASE-RENAME", torture_test_rename, 0},
