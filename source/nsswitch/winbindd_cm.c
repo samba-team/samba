@@ -78,15 +78,20 @@ static struct winbindd_cm_conn *cm_conns = NULL;
 
 static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
-	struct in_addr *ip_list, dc_ip;
+	struct in_addr *ip_list = NULL, dc_ip, exclude_ip;
 	int count, i;
 
+	zero_ip(&exclude_ip);
 	/* Lookup domain controller name. Try the real PDC first to avoid
 	   SAM sync delays */
-	if (get_dc_list(True, domain, &ip_list, &count) &&
-	    name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
-		dc_ip = ip_list[0];
-		goto done;
+	if (get_dc_list(True, domain, &ip_list, &count)) {
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
+			dc_ip = ip_list[0];
+			goto done;
+		}
+		/* Didn't get name, remember not to talk to this DC. */
+		exclude_ip = ip_list[0];
+		SAFE_FREE(ip_list);
 	}
 
 	if (!get_dc_list(False, domain, &ip_list, &count)) {
@@ -94,10 +99,20 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 		return False;
 	}
 
+	/* Remove the entry we've already failed with (should be the PDC). */
+
+	for (i = 0; i < count; i++) {
+		if (ip_equal( exclude_ip, ip_list[i]))
+			zero_ip(&ip_list[i]);
+	}
+
 	/* Pick a nice close server */
 	/* Look for DC on local net */
 
 	for (i = 0; i < count; i++) {
+		if (is_zero_ip(ip_list[i]))
+			continue;
+
 		if (!is_local_net(ip_list[i]))
 			continue;
 		
