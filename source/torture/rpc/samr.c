@@ -857,7 +857,9 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_Connect r;
+	struct samr_Connect2 r2;
 	struct samr_Connect4 r4;
+	BOOL ret = True;
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -866,7 +868,17 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Connect(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect failed - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
+	}
+
+	r2.in.system_name = "";
+	r2.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r2.out.handle = handle;
+
+	status = dcerpc_samr_Connect2(p, mem_ctx, &r2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Connect2 failed - %s\n", nt_errstr(status));
+		ret = False;
 	}
 
 	r4.in.system_name = "";
@@ -877,10 +889,10 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Connect4(p, mem_ctx, &r4);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect4 failed - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
 	}
 
-	return True;
+	return ret;
 }
 
 
