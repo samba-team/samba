@@ -50,11 +50,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			/* we own this ADS_STRUCT so make sure it goes away */
 			ads->is_mine = True;
 			ads_destroy( &ads );
-			
-			/* we should always be NULL here */
-			SMB_ASSERT( ads == NULL );
-		}
-		
+			domain->private = NULL;
+		}	
 	}
 
 	/* we don't want this to affect the users ccache */
