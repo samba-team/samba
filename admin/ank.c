@@ -66,7 +66,9 @@ doit(char *principal, int mod)
     while(mod){
 	fprintf(stderr, "Change password? (y/n) ");
 	fgets(buf, sizeof(buf), stdin);
-	if(buf[0] != 'n' || buf[0] != 'y'){
+	if(buf[0] == 'n' || buf[0] == 'y')
+	    break;
+	else {
 	    fprintf(stderr, "Please answer yes or no.\n");
 	    continue;
 	}
