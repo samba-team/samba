@@ -1331,3 +1331,51 @@ NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+/**********************************************************************
+ no ops for passdb backends that don't implement group mapping
+ *********************************************************************/
+
+NTSTATUS pdb_nop_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+				 DOM_SID sid, BOOL with_priv)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_nop_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+				 gid_t gid, BOOL with_priv)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_nop_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+				 char *name, BOOL with_priv)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_nop_add_group_mapping_entry(struct pdb_methods *methods,
+						GROUP_MAP *map)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_nop_update_group_mapping_entry(struct pdb_methods *methods,
+						   GROUP_MAP *map)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_nop_delete_group_mapping_entry(struct pdb_methods *methods,
+						   DOM_SID sid)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
+					   enum SID_NAME_USE sid_name_use,
+					   GROUP_MAP **rmap, int *num_entries,
+					   BOOL unix_only, BOOL with_priv)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
