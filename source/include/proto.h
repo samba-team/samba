@@ -1942,7 +1942,7 @@ BOOL spoolss_open_printer_ex(  const char *printername,
                          const char *datatype, uint32 access_required,
                          const char *station,  const char *username,
                         POLICY_HND *hnd);
-BOOL spoolss_addprinterex(POLICY_HND *hnd, PRINTER_INFO_2 *info2);
+uint32 spoolss_addprinterex(POLICY_HND *hnd,const char* srv_name, PRINTER_INFO_2 *info2);
 BOOL spoolss_closeprinter(POLICY_HND *hnd);
 uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
                         uint32 in_size,
@@ -2197,6 +2197,7 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from);
 void init_string2(STRING2 *str, char *buf, int len);
 BOOL smb_io_string2(char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 void init_unistr2(UNISTR2 *str, const char *buf, size_t len);
+void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from);
 BOOL smb_io_unistr2(char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
 void init_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx);
 BOOL smb_io_dom_rid2(char *desc, DOM_RID2 *rid2, prs_struct *ps, int depth);
@@ -2701,6 +2702,11 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		uint32 access_required,
 		const fstring clientname,
 		const fstring user_name);
+BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name,
+				 const char* clientname, const char* user_name,
+				 uint32 level, PRINTER_INFO_2 *info);
+BOOL make_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+			       PRINTER_INFO_2 *info);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 void free_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
@@ -2823,7 +2829,8 @@ BOOL spool_io_printer_info_level_3(char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, p
 BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth);
 BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_struct *ps, int depth);
 BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *ps, int depth);
-BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, 
+			       prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
                                           prs_struct *ps, int depth);
 void free_spool_printer_driver_info_level_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u);
@@ -3545,7 +3552,7 @@ user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
-int initialize_groups(char *user, uid_t uid, gid_t gid);
+BOOL initialize_groups(char *user, uid_t uid, gid_t gid);
 NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
 		     char *domain,BOOL guest);
