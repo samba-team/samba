@@ -375,3 +375,10 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return (acc);
 }
 #endif /* HAVE_STRTOUL */
+
+#ifndef HAVE_SETLINEBUF
+void setlinebuf(FILE *stream)
+{
+	setvbuf(stream, (char *)NULL, _IOLBF, 0);
+}
+#endif /* HAVE_SETLINEBUF */
