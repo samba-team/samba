@@ -69,10 +69,9 @@ krb5_get_credentials (krb5_context context,
 	return ret;
     a.req_body.etype.len = 1;
 
-
     a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
 
-    ret = krb5_get_all_client_addrs ((krb5_addresses*)a.req_body.addresses);
+    ret = krb5_get_all_client_addrs (a.req_body.addresses);
     if (ret)
 	return ret;
 
@@ -157,20 +156,11 @@ krb5_get_credentials (krb5_context context,
     encode_TGS_REQ  (buf + sizeof (buf) - 1, sizeof(buf), &a, &req.length);
     req.data = buf + sizeof(buf) - req.length;
 
-    for (i = 0; i < a.req_body.addresses->len; ++i)
-	krb5_data_free (&a.req_body.addresses->val[i].address);
-    free (a.req_body.addresses->val);
+    free_TGS_REQ (&a);
 
     /*
      * Send and receive
      */
-
-    {
-	TGS_REQ xx;
-	size_t size;
-	decode_TGS_REQ (req.data, req.length, &xx, &size);
-	req.length = req.length;
-    }
 
     ret = krb5_sendto_kdc (context, &req, &in_creds->server->realm, &resp);
     if (ret) {
