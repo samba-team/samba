@@ -151,7 +151,6 @@ void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16])
 
 	/* Calculate the SMB (lanman) hash functions of the password */
 
-	memset(p16, '\0', 16);
 	E_P16((uchar *) pwrd, (uchar *) p16);
 
 #ifdef DEBUG_PASSWORD
@@ -180,7 +179,6 @@ void lm_owf_gen(const char *pwd, uchar p16[16])
 
 	/* Calculate the SMB (lanman) hash functions of the password */
 
-	memset(p16, '\0', 16);
 	E_P16((uchar *) pwrd, (uchar *) p16);
 
 #ifdef DEBUG_PASSWORD
@@ -204,7 +202,6 @@ void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16])
 	}
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
-	memset(nt_p16, '\0', 16);
 	mdfour(nt_p16, (uchar *) pwrd.buffer, pwrd.uni_str_len * 2);
 
 #ifdef DEBUG_PASSWORD
