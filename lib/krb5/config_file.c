@@ -670,10 +670,14 @@ krb5_config_vget_time_default (krb5_context context,
 			       va_list args)
 {
     const char *str;
+    krb5_deltat t;
+
     str = krb5_config_vget_string (context, c, args);
     if(str == NULL)
 	return def_value;
-    return parse_time (str, NULL);
+    if (krb5_string_to_deltat(str, &t))
+	return def_value;
+    return t;
 }
 
 int KRB5_LIB_FUNCTION
