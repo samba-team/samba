@@ -506,6 +506,7 @@ static void api_spoolss_enumprinters(rpcsrv_struct *p, prs_struct *data,
 	/* lkclXXX DAMN DAMN DAMN!  MICROSOFT @#$%S IT UP, AGAIN, AND WE
 	   HAVE TO DEAL WITH IT!  AGH!
 	 */
+	r_u.level = q_u.level;
 	r_u.status = _spoolss_enumprinters(
 				q_u.flags,
 				&q_u.servername,
@@ -846,6 +847,7 @@ static void api_spoolss_enumjobs(rpcsrv_struct *p, prs_struct *data,
 	
 	spoolss_io_q_enumjobs("", &q_u, data, 0);
 	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
 	r_u.status = _spoolss_enumjobs(&q_u.handle,
 				q_u.firstjob, q_u.numofjobs, q_u.level,
 				&r_u.ctr, &r_u.offered, &r_u.numofjobs);
@@ -902,6 +904,7 @@ static void api_spoolss_enumprinterdrivers(rpcsrv_struct *p, prs_struct *data,
 	spoolss_io_q_enumprinterdrivers("", &q_u, data, 0);
 
 	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
 	r_u.status = _spoolss_enumprinterdrivers(&q_u.name,
 				&q_u.environment, q_u. level,
 				&r_u.ctr, &r_u.offered, &r_u.numofdrivers);
@@ -914,78 +917,27 @@ static void api_spoolss_enumprinterdrivers(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void fill_form_1(FORM_1 *form, nt_forms_struct *list, int position)
-{
-	form->flag=list->flag;
-	make_unistr(&(form->name), list->name);
-	form->width=list->width;
-	form->length=list->length;
-	form->left=list->left;
-	form->top=list->top;
-	form->right=list->right;
-	form->bottom=list->bottom;	
-}
-
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_enumforms(SPOOL_Q_ENUMFORMS *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENUMFORMS r_u;
-	int count;
-	int i;
-	nt_forms_struct *list=NULL;
-	FORM_1 *forms_1=NULL;
-
-	DEBUG(4,("spoolss_reply_enumforms\n"));
-	
-	count=get_ntforms(&list);
-	r_u.offered=q_u->buf_size;
-	r_u.numofforms=count;
-	r_u.level=q_u->level;
-	r_u.status=0x0;
-
-	DEBUGADD(5,("Offered buffer size [%d]\n", r_u.offered));
-	DEBUGADD(5,("Number of forms [%d]\n",     r_u.numofforms));
-	DEBUGADD(5,("Info level [%d]\n",          r_u.level));
-		
-	switch (r_u.level)
-	{
-		case 1:
-		{
-			forms_1=(FORM_1 *)malloc(count*sizeof(FORM_1));
-			for (i=0; i<count; i++)
-			{
-				DEBUGADD(6,("Filling form number [%d]\n",i));
-				fill_form_1(&(forms_1[i]), &(list[i]), i);
-			}
-   			r_u.forms_1=forms_1;
-   			break;
-   		}
-	}
-	spoolss_io_r_enumforms("",&r_u,rdata,0);
-	switch (r_u.level)
-	{
-		case 1:
-		{
-			free(forms_1);
-			break;
-		}
-	}
-	free(list);
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_enumforms(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ENUMFORMS q_u;
+	SPOOL_R_ENUMFORMS r_u;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_enumforms("", &q_u, data, 0);
 
-	spoolss_reply_enumforms(&q_u, rdata);
-	
-	spoolss_io_free_buffer(&(q_u.buffer));
+	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
+	r_u.status = _spoolss_enumforms(&q_u.handle,
+				q_u. level,
+				&r_u.forms_1,
+				&r_u.offered,
+				&r_u.numofforms);
+	spoolss_io_free_buffer(&q_u.buffer);
+	spoolss_io_r_enumforms("",&r_u,rdata,0);
+	spoolss_free_r_enumforms(&r_u);
 }
 
 /****************************************************************************

@@ -3129,6 +3129,20 @@ BOOL spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, 
 
 /*******************************************************************
 ********************************************************************/  
+void spoolss_free_r_enumforms(SPOOL_R_ENUMFORMS *r_u)
+{
+	switch (r_u->level)
+	{
+		case 1:
+		{
+			free(r_u->forms_1);
+			break;
+		}
+	}
+}
+
+/*******************************************************************
+********************************************************************/  
 BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth)
 {
 
