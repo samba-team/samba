@@ -944,6 +944,31 @@ bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ) @MYSQL_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
+bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.o
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_ldap.o \
+		@SONAMEFLAG@`basename $@`
+
+bin/tdbsam.@SHLIBEXT@: passdb/pdb_tdb.o
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_tdb.o \
+		@SONAMEFLAG@`basename $@`
+
+bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.o
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.o \
+		@SONAMEFLAG@`basename $@`
+
+bin/unixsam.@SHLIBEXT@: passdb/pdb_unix.o
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_unix.o \
+		@SONAMEFLAG@`basename $@`
+
+bin/nisplussam.@SHLIBEXT@: passdb/pdb_nisplus.o
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_nisplus.o \
+		@SONAMEFLAG@`basename $@`
+
 bin/developer.@SHLIBEXT@: $(DEVEL_HELP_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_OBJ) \
