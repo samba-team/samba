@@ -89,6 +89,8 @@ typedef struct gss_OID_set_desc_struct  {
 
 struct krb5_keytab_data;
 
+struct krb5_ccache_data;
+
 typedef int gss_cred_usage_t;
 
 typedef struct gss_cred_id_t_desc_struct {
@@ -97,6 +99,7 @@ typedef struct gss_cred_id_t_desc_struct {
   OM_uint32 lifetime;
   gss_cred_usage_t usage;
   gss_OID_set mechanisms;
+  struct krb5_ccache_data *ccache;
 } gss_cred_id_t_desc;
 
 typedef gss_cred_id_t_desc *gss_cred_id_t;

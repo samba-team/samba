@@ -47,13 +47,15 @@ krb5_error_code
 gssapi_krb5_create_8003_checksum (
 		      const gss_channel_bindings_t input_chan_bindings,
 		      OM_uint32 flags,
+                      krb5_data *fwd_data,
 		      Checksum *result);
 
 krb5_error_code
 gssapi_krb5_verify_8003_checksum (
 		      const gss_channel_bindings_t input_chan_bindings,
 		      Checksum *cksum,
-		      OM_uint32 *flags);
+		      OM_uint32 *flags,
+                      krb5_data *fwd_data);
 
 OM_uint32
 gssapi_krb5_encapsulate(
@@ -85,6 +87,12 @@ gssapi_krb5_verify_header(u_char **str,
 OM_uint32
 gss_krb5_getsomekey(const gss_ctx_id_t context_handle,
 		    des_cblock *key);
+
+krb5_error_code
+gss_address_to_krb5addr(OM_uint32 gss_addr_type,
+                        gss_buffer_desc *gss_addr,
+                        int16_t port,
+                        krb5_address *address);
 
 /* sec_context flags */
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,75 +31,43 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id$ */
-
-#ifndef GSSAPI_LOCL_H
-#define GSSAPI_LOCL_H
-
-#include <krb5_locl.h>
-#include <gssapi.h>
-
-extern krb5_context gssapi_krb5_context;
-
-void gssapi_krb5_init (void);
-
-krb5_error_code
-gssapi_krb5_create_8003_checksum (
-		      const gss_channel_bindings_t input_chan_bindings,
-		      OM_uint32 flags,
-                      krb5_data *fwd_data,
-		      Checksum *result);
-
-krb5_error_code
-gssapi_krb5_verify_8003_checksum (
-		      const gss_channel_bindings_t input_chan_bindings,
-		      Checksum *cksum,
-		      OM_uint32 *flags,
-                      krb5_data *fwd_data);
-
-OM_uint32
-gssapi_krb5_encapsulate(
-			krb5_data *in_data,
-			gss_buffer_t output_token,
-			u_char *type);
-
-OM_uint32
-gssapi_krb5_decapsulate(
-			gss_buffer_t input_token_buffer,
-			krb5_data *out_data,
-			char *type);
-
-void
-gssapi_krb5_encap_length (size_t data_len,
-			  size_t *len,
-			  size_t *total_len);
-
-u_char *
-gssapi_krb5_make_header (u_char *p,
-			 size_t len,
-			 u_char *type);
-
-OM_uint32
-gssapi_krb5_verify_header(u_char **str,
-			  size_t total_len,
-			  char *type);
-
-OM_uint32
-gss_krb5_getsomekey(const gss_ctx_id_t context_handle,
-		    des_cblock *key);
+#include "gssapi_locl.h"
 
 krb5_error_code
 gss_address_to_krb5addr(OM_uint32 gss_addr_type,
                         gss_buffer_desc *gss_addr,
                         int16_t port,
-                        krb5_address *address);
+                        krb5_address *address)
+{
+   sa_family_t addr_type;
+   struct sockaddr sa;
+   int sa_len = sizeof(sa);
+   krb5_error_code problem;
+   
+   if (gss_addr == NULL)
+      return GSS_S_FAILURE; 
+   
+   switch (gss_addr_type) {
+#ifdef HAVE_IPV6
+      case GSS_C_AF_INET6: addr_type = AF_INET6;
+                           break;
+#endif /* HAVE_IPV6 */
+                           
+      case GSS_C_AF_INET:  addr_type = AF_INET;
+                           break;
+      default:
+                           return GSS_S_FAILURE;
+   }
+                      
+   problem = krb5_h_addr2sockaddr (addr_type,
+                                   gss_addr->value, 
+                                   &sa, 
+                                   &sa_len, 
+                                   port);
+   if (problem)
+      return GSS_S_FAILURE;
 
-/* sec_context flags */
+   problem = krb5_sockaddr2address (&sa, address);
 
-#define SC_LOCAL_ADDRESS  0x01
-#define SC_REMOTE_ADDRESS 0x02
-#define SC_KEYBLOCK	  0x04
-#define SC_LOCAL_SUBKEY	  0x08
-#define SC_REMOTE_SUBKEY  0x10
-
-#endif
+   return problem;  
+}

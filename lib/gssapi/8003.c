@@ -90,12 +90,20 @@ krb5_error_code
 gssapi_krb5_create_8003_checksum (
 		      const gss_channel_bindings_t input_chan_bindings,
 		      OM_uint32 flags,
+		      krb5_data *fwd_data,
 		      Checksum *result)
 {
   u_char *p;
 
+  /* 
+   * see rfc1964 (section 1.1.1 (Initial Token), and the checksum value 
+   * field's format)
+   */
   result->cksumtype = 0x8003;
-  result->checksum.length = 24;
+  if (fwd_data->length > 0 && (flags & GSS_C_DELEG_FLAG))
+    result->checksum.length = 24 + 4 + fwd_data->length;
+  else 
+    result->checksum.length = 24;
   result->checksum.data   = malloc (result->checksum.length);
   if (result->checksum.data == NULL)
     return ENOMEM;
@@ -111,8 +119,31 @@ gssapi_krb5_create_8003_checksum (
   p += 16;
   encode_om_uint32 (flags, p);
   p += 4;
+
+  if (fwd_data->length > 0 && (flags & GSS_C_DELEG_FLAG)) {
+#if 0
+     u_char *tmp;
+
+     result->checksum.length = 28 + fwd_data->length;
+     tmp = realloc(result->checksum.data, result->checksum.length);
+     if (tmp == NULL)
+        return ENOMEM;
+     result->checksum.data = tmp;
+
+     p = (u_char*)result->checksum.data + 24;  
+#endif
+     *p++ = (1 >> 0) & 0xFF;                   /* DlgOpt */ /* == 1 */
+     *p++ = (1 >> 8) & 0xFF;                   /* DlgOpt */ /* == 0 */
+     *p++ = (fwd_data->length >> 0) & 0xFF;    /* Dlgth  */
+     *p++ = (fwd_data->length >> 8) & 0xFF;    /* Dlgth  */
+     memcpy(p, (unsigned char *) fwd_data->data, fwd_data->length);
+
+     p += fwd_data->length;
+     
   if (p - (u_char *)result->checksum.data != result->checksum.length)
-    abort ();
+        abort();
+  }
+  
   return 0;
 }
 
@@ -120,14 +151,16 @@ krb5_error_code
 gssapi_krb5_verify_8003_checksum(
 		      const gss_channel_bindings_t input_chan_bindings,
 		      Checksum *cksum,
-		      OM_uint32 *flags)
+		      OM_uint32 *flags,
+		      krb5_data *fwd_data)
 {
     unsigned char hash[16];
     unsigned char *p;
     OM_uint32 length;
+    int DlgOpt;
 
     /* XXX should handle checksums > 24 bytes */
-    if(cksum->cksumtype != 0x8003 || cksum->checksum.length != 24)
+    if(cksum->cksumtype != 0x8003)
 	return GSS_S_BAD_BINDINGS;
     
     p = cksum->checksum.data;
@@ -147,6 +180,24 @@ gssapi_krb5_verify_8003_checksum(
     p += sizeof(hash);
     
     decode_om_uint32(p, flags);
+
+    if (cksum->checksum.length > 24 && (*flags & GSS_C_DELEG_FLAG)) {
+    
+      p += 4;
+    
+      DlgOpt = (p[0] << 0) | (p[1] << 8 );
+      if (DlgOpt != 1)
+         return GSS_S_BAD_BINDINGS;
+      
+      p += 2;
+      fwd_data->length = (p[0] << 0) | (p[1] << 8);
+      fwd_data->data = malloc(fwd_data->length);
+      if (fwd_data->data == NULL)
+         return ENOMEM;
+
+      p += 2;
+      memcpy(fwd_data->data, p, fwd_data->length);
+    }
     
     return 0;
 }

@@ -45,4 +45,5 @@ libgssapi_la_SOURCES =		\
 	unwrap.c		\
 	v1.c			\
 	verify_mic.c		\
-	wrap.c
+        wrap.c                  \
+        address_to_krb5addr.c
