@@ -502,7 +502,7 @@ void reply_name_query(struct packet_struct *p)
   char rdata[6];
   struct subnet_record *d = NULL;
   BOOL success = True;
-  struct name_record *n;
+  struct name_record *n = NULL;
 
   /* directed queries are for WINS server: broadcasts are local SELF queries.
      the exception is Domain Master names.  */
@@ -546,7 +546,7 @@ void reply_name_query(struct packet_struct *p)
   if (success)
   {
     /* look up the name in the cache */
-    n = find_name_search(&d, question, p->ip, search));
+    n = find_name_search(&d, question, search, p->ip);
 
     /* it is a name that already failed DNS lookup or it's expired */
     if (n->source == DNSFAIL ||

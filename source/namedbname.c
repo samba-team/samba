@@ -515,59 +515,39 @@ void expire_names(time_t t)
 struct name_record *dns_name_search(struct nmb_name *question,
 				    int Time, int search)
 {
-  struct subnet_record *d = find_subnet(ipgrp);
-  int name_type = question->name_type;
-  char *qname = question->name;
-  BOOL dns_type = (name_type == 0x20 || name_type == 0);
-  struct name_record *n;
-  
-  if (d == NULL) return NULL;
+	int name_type = question->name_type;
+	char *qname = question->name;
+	BOOL dns_type = (name_type == 0x20 || name_type == 0);
+	struct in_addr dns_ip;
+	struct subnet_record *d = find_subnet(ipgrp);
 
-  DEBUG(3,("Search for %s from %s - ", namestr(question), inet_ntoa(ip)));
-  
-  if (!n && (search & FIND_SELF))
-  {
-    if (!lp_wins_proxy())
-      DEBUG(3,("wins proxy not enabled - failing lookup\n"));
-    else
-      DEBUG(3,("FIND_SELF set - failing lookup\n"));
-    return NULL;
-  }
+	if (d == NULL) return NULL;
 
-  /* now try DNS lookup. */
-  if (!n)
-    {
-      struct in_addr dns_ip;
-      
-      /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
-      if (!dns_type && name_type != 0x1b)
+	DEBUG(3,("Search for %s - ", namestr(question)));
+
+	/* only do DNS lookups if the query is for type 0x20 or type 0x0 */
+	if (!dns_type && name_type != 0x1b)
 	{
-	  DEBUG(3,("types 0x20 0x1b 0x0 only: name not found\n"));
-	  return NULL;
+		DEBUG(3,("types 0x20 0x1b 0x0 only: name not found\n"));
+		return NULL;
 	}
-      
-      /* look it up with DNS */      
-      dns_ip.s_addr = interpret_addr(qname);
-      
-      if (dns_ip.s_addr)
+
+	/* look it up with DNS */      
+	dns_ip.s_addr = interpret_addr(qname);
+
+	if (!dns_ip.s_addr)
 	{
-	  /* no luck with DNS. We could possibly recurse here XXXX */
-	  DEBUG(3,("no recursion.\n"));
-      /* add the fail to our WINS cache of names. give it 1 hour in the cache */
-	  add_netbios_entry(*d,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,dns_ip,
-						True, True);
-	  return NULL;
+		/* no luck with DNS. We could possibly recurse here XXXX */
+		DEBUG(3,("not found. no recursion.\n"));
+		/* add the fail to WINS cache of names. give it 1 hour in the cache */
+		add_netbios_entry(d,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,dns_ip,
+		                  True, True);
+		return NULL;
 	}
-      
-      /* add it to our WINS cache of names. give it 2 hours in the cache */
-      n = add_netbios_entry(*d,qname,name_type,NB_ACTIVE,2*60*60,DNS,dns_ip,
-						True,True);
-      
-      /* failed to add it? yikes! */
-      if (!n) return NULL;
-    }
-  
-  return n;
+
+	DEBUG(3,("found with DNS: %s\n", inet_ntoa(dns_ip)));
+
+	/* add it to our WINS cache of names. give it 2 hours in the cache */
+	return add_netbios_entry(d,qname,name_type,NB_ACTIVE,2*60*60,DNS,dns_ip,
+	                         True,True);
 }
-
-
