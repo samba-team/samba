@@ -81,8 +81,9 @@ static void find_fill_info(struct smbsrv_request *req,
 	SCVAL(p, 21, file->search.attrib);
 	srv_push_dos_date(req->smb_conn, p, 22, file->search.write_time);
 	SIVAL(p, 26, file->search.size);
-	memset(p+30, ' ', 13);
-	memcpy(p+30, file->search.name, MIN(strlen(file->search.name)+1, 13));
+	memset(p+30, ' ', 12);
+	memcpy(p+30, file->search.name, MIN(strlen(file->search.name)+1, 12));
+	SCVAL(p,42,0);
 }
 
 /* callback function for search first/next */
