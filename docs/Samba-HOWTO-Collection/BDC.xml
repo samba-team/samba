@@ -181,7 +181,8 @@ in all versions of MS Windows NT (3.10, 3.50, 3.51, 4.0).
 <indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
 The account information (user and machine) on Domain Controllers is stored in two files,
 one containing the Security information and the other the SAM. These are stored in files
-by the same name in the <filename>C:\Windows NT\System32\config</filename> directory. These
+by the same name in the <filename>%SystemRoot%\System32\config</filename> directory. 
+This normally translates to the path <filename>C:\WinNT\System32\config</filename>. These
 are the files that are involved in replication of the SAM database where Backup Domain
 Controllers are present on the network.
 </para>
