@@ -1,5 +1,8 @@
 2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi.h: add gss_krb5_nt_general_name as an mit compat glue
+	(same as GSS_KRB5_NT_PRINCIPAL_NAME)
+
 	* unwrap.c: hook in arcfour unwrap
 	
 	* wrap.c: hook in arcfour wrap
