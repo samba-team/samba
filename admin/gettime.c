@@ -61,3 +61,13 @@ gettime(const char *prompt, const char *def)
 	printf("Unrecognised time.\n");
     }
 }
+
+size_t
+puttime (time_t t, char *s, size_t len)
+{
+    if (t == 0) {
+	strncpy (s, "infinite", len);
+	return strlen(s);
+    } else
+	return unparse_time (t, s, len);
+}
