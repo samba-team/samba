@@ -156,7 +156,7 @@ void set_werror_exception(int status)
 NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
                              const char *binding,
                              const char *pipe_uuid,
-                             uint32 pipe_version,
+                             uint32_t pipe_version,
                              const char *domain,
                              const char *username,
                              const char *password);
@@ -171,9 +171,8 @@ const char *dcerpc_server_name(struct dcerpc_pipe *p);
 
 %{
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
-#include "librpc/gen_ndr/ndr_spoolss.h"
 %}
 
+%include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/samr.i"
