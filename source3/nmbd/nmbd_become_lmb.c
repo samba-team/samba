@@ -563,7 +563,7 @@ in workgroup %s on subnet %s\n",
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
   userdata->userdata_len = strlen(work->work_group)+1;
-  pstrcpy(userdata->data, work->work_group);
+  fstrcpy(userdata->data, work->work_group);
 
   /* Register the special browser group name. */
   register_name(subrec, MSBROWSE, 0x01, samba_nb_type|NB_GROUP,
