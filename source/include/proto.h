@@ -1270,13 +1270,13 @@ void set_workgroup_local_master_browser_name( struct work_record *work, char *ne
 
 /*The following definitions come from  nmbd_browserdb.c  */
 
-void remove_lmb_browser_entry(struct browse_cache_record *browc);
-void update_browser_death_time(struct browse_cache_record *browc);
-struct browse_cache_record *create_browser_in_lmb_cache(char *work_name, char *browser_name, 
-                                                        struct in_addr ip);
+void update_browser_death_time( struct browse_cache_record *browc );
+struct browse_cache_record *create_browser_in_lmb_cache( char *work_name, 
+                                                         char *browser_name, 
+                                                         struct in_addr ip );
 struct browse_cache_record *find_browser_in_lmb_cache( char *browser_name );
-void expire_lmb_browsers(time_t t);
-void remove_workgroup_lmb_browsers(char *work_group);
+void expire_lmb_browsers( time_t t );
+void remove_workgroup_lmb_browsers( char *work_group );
 
 /*The following definitions come from  nmbd_browsesync.c  */
 
