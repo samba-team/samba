@@ -691,7 +691,9 @@ TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(SNPRINTF_OBJ) $(TDBBASE_OBJ)
 
 TDBDUMP_OBJ = tdb/tdbdump.o $(TDBBASE_OBJ)
 
-NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
+NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o 
+
+NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
 		libads/authdata.o $(RPC_PARSE_OBJ0) \
@@ -1423,7 +1425,7 @@ clean: delheaders python_clean
 # afterwards.
 proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
 	nsswitch/winbindd_proto.h web/swat_proto.h \
-	client/client_proto.h utils/net_proto.h smbd/build_options.c
+	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
 
 delheaders:
 	@echo Removing prototype headers
@@ -1471,6 +1473,11 @@ utils/net_proto.h:
 	  -h _NET_PROTO_H_ $(builddir)/utils/net_proto.h \
 	  $(NET_OBJ1)
 
+utils/ntlm_auth_proto.h: 
+	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
+	  -h _NTLM_AUTH_PROTO_H_ $(builddir)/utils/ntlm_auth_proto.h \
+	  $(NTLM_AUTH_OBJ1)
+
 include/tdbsam2_parse_info.h:
 	@if test -n "$(PERL)"; then \
 		cd $(srcdir) && @PERL@ -w script/genstruct.pl \
@@ -1492,6 +1499,7 @@ headers:
 	$(MAKE) nsswitch/winbindd_proto.h; \
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
+	$(MAKE) utils/ntlm_auth_proto.h; \
 	$(MAKE) utils/net_proto.h;
 
 prebuiltheaders:
