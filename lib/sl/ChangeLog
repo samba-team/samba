@@ -1,3 +1,8 @@
+Sat Mar 21 00:46:51 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* sl.c (sl_loop): check that there is at least one argument before
+ 	calling sl_command
+
 Sun Mar  1 05:14:37 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* sl.c (sl_loop): Fix general broken-ness.
