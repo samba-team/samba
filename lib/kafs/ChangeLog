@@ -1,3 +1,7 @@
+2001-10-22  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (ROKEN_SRCS): add strlcpy.c
+
 2001-10-09  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (ROKEN_SRCS): add strtok_r.c
