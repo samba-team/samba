@@ -386,7 +386,9 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_CreateSecret r;
-	struct policy_handle sec_handle;
+	struct lsa_OpenSecret r2;
+	struct policy_handle sec_handle, sec_handle2;
+	struct lsa_Delete d;
 
 	printf("Testing CreateSecret\n");
 
@@ -402,7 +404,27 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		return False;
 	}
 
+	r2.in.handle = handle;
+	r2.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	init_lsa_Name(&r2.in.name, "torturesecret");
+	r2.out.sec_handle = &sec_handle2;
+
+	printf("Testing OpenSecret\n");
+
+	status = dcerpc_lsa_OpenSecret(p, mem_ctx, &r2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenSecret failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
 	if (!test_Delete(p, mem_ctx, &sec_handle)) {
+		return False;
+	}
+
+	d.in.handle = &sec_handle2;
+	status = dcerpc_lsa_Delete(p, mem_ctx, &d);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
 		return False;
 	}
 

@@ -401,8 +401,15 @@
 	NTSTATUS QUERYTRUSTDOM ();
 	/* Function:     0x1b */
 	NTSTATUS SETINFOTRUSTDOM ();
+
 	/* Function:          0x1c */
-	NTSTATUS OPENSECRET ();
+	NTSTATUS lsa_OpenSecret(
+		[in,ref]     policy_handle *handle,
+		[in]         lsa_Name       name,
+		[in]         uint32         desired_access,
+		[out,ref]    policy_handle *sec_handle
+		);
+
 	/* Function:           0x1d */
 	NTSTATUS SETSECRET ();
 	/* Function:         0x1e */
