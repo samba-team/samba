@@ -133,7 +133,7 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 		cname[2*i]   = 'A' + (name[i]>>4);
 		cname[1+2*i] = 'A' + (name[i]&0xF);
 	}
-	if (name[0] == '*') {
+	if (strcmp(name, "*") == 0) {
 		pad_char = 0;
 	} else {
 		pad_char = ' ';
