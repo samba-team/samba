@@ -38,7 +38,7 @@ extern int  sslFd;
 
 pstring scope = "";
 
-int DEBUGLEVEL = 1;
+extern int DEBUGLEVEL;
 
 BOOL passive = False;
 
@@ -46,9 +46,6 @@ int Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */
 file_info def_finfo = {-1,0,0,0,0,0,0,""};
-
-/* these are some file handles where debug info will be stored */
-FILE *dbf = NULL;
 
 /* the client file descriptor */
 int Client = -1;
@@ -68,9 +65,6 @@ int trans_num = 0;
    case handling on filenames 
 */
 int case_default = CASE_LOWER;
-
-pstring debugf = "";
-int syslog_level = 0;
 
 /* the following control case operations - they are put here so the
    client can link easily */
@@ -99,280 +93,9 @@ char **my_netbios_names;
 
 int smb_read_error = 0;
 
-static BOOL stdout_logging = False;
-
 static char *filename_dos(char *path,char *buf);
 
-#if defined(SIGUSR2)
-/******************************************************************************
- catch a sigusr2 - decrease the debug log level.
- *****************************************************************************/
-int sig_usr2(void)
-{  
-  BlockSignals( True, SIGUSR2);
- 
-  DEBUGLEVEL--; 
-   
-  if(DEBUGLEVEL < 0) 
-    DEBUGLEVEL = 0; 
 
-  DEBUG( 0, ( "Got SIGUSR2 set debug level to %d.\n", DEBUGLEVEL ) );
-   
-  BlockSignals( False, SIGUSR2);
-  CatchSignal(SIGUSR2, SIGNAL_CAST sig_usr2);
-
-  return(0);
-}  
-#endif /* SIGUSR1 */
-   
-#if defined(SIGUSR1)
-/******************************************************************************
- catch a sigusr1 - increase the debug log level. 
- *****************************************************************************/
-int sig_usr1(void)
-{
-  BlockSignals( True, SIGUSR1);
- 
-  DEBUGLEVEL++;
-
-  if(DEBUGLEVEL > 10)
-    DEBUGLEVEL = 10;
-
-  DEBUG( 0, ( "Got SIGUSR1 set debug level to %d.\n", DEBUGLEVEL ) );
-
-  BlockSignals( False, SIGUSR1);
-  CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
-  return(0);
-}
-#endif /* SIGUSR1 */
-
-
-/*******************************************************************
-  get ready for syslog stuff
-  ******************************************************************/
-void setup_logging(char *pname,BOOL interactive)
-{
-#ifdef WITH_SYSLOG
-  if (!interactive) {
-    char *p = strrchr(pname,'/');
-    if (p) pname = p+1;
-#ifdef LOG_DAEMON
-    openlog(pname, LOG_PID, SYSLOG_FACILITY);
-#else /* for old systems that have no facility codes. */
-    openlog(pname, LOG_PID);
-#endif
-  }
-#endif
-  if (interactive) {
-    stdout_logging = True;
-    dbf = stdout;
-  }
-}
-
-
-BOOL append_log=False;
-
-
-/****************************************************************************
-reopen the log files
-****************************************************************************/
-void reopen_logs(void)
-{
-  pstring fname;
-  
-  if (DEBUGLEVEL > 0)
-  {
-    pstrcpy(fname,debugf);
-    if (lp_loaded() && (*lp_logfile()))
-      pstrcpy(fname,lp_logfile());
-
-    if (!strcsequal(fname,debugf) || !dbf || !file_exist(debugf,NULL))
-    {
-      int oldumask = umask(022);
-      pstrcpy(debugf,fname);
-      if (dbf)
-        fclose(dbf);
-      if (append_log)
-        dbf = fopen(debugf,"a");
-      else
-        dbf = fopen(debugf,"w");
-      /*
-       * Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
-       * to fix problem where smbd's that generate less
-       * than 100 messages keep growing the log.
-       */
-      force_check_log_size();
-      if (dbf)
-        setbuf(dbf,NULL);
-      umask(oldumask);
-    }
-  }
-  else
-  {
-    if (dbf)
-    {
-      fclose(dbf);
-      dbf = NULL;
-    }
-  }
-}
-
-/*******************************************************************
- Number of debug messages that have been output. 
- Used to check log size.
-********************************************************************/
-
-static int debug_count=0;
-
-/*******************************************************************
- Force a check of the log size.
-********************************************************************/
-
-void force_check_log_size(void)
-{
-  debug_count = 100;
-}
-
-/*******************************************************************
- Check if the log has grown too big
-********************************************************************/
-
-static void check_log_size(void)
-{
-  int maxlog;
-  struct stat st;
-
-  if (debug_count++ < 100 || getuid() != 0)
-    return;
-
-  maxlog = lp_max_log_size() * 1024;
-  if (!dbf || maxlog <= 0)
-    return;
-
-  if (fstat(fileno(dbf),&st) == 0 && st.st_size > maxlog) {
-    fclose(dbf);
-    dbf = NULL;
-    reopen_logs();
-    if (dbf && file_size(debugf) > maxlog) {
-      pstring name;
-      fclose(dbf);
-      dbf = NULL;
-      slprintf(name,sizeof(name)-1,"%s.old",debugf);
-      rename(debugf,name);
-      reopen_logs();
-    }
-  }
-  debug_count=0;
-}
-
-
-/*******************************************************************
-write an debug message on the debugfile. This is called by the DEBUG
-macro
-********************************************************************/
-#ifdef HAVE_STDARG_H
- int Debug1(char *format_str, ...)
-{
-#else
- int Debug1(va_alist)
-va_dcl
-{  
-  char *format_str;
-#endif
-  va_list ap;  
-  int old_errno = errno;
-
-  if (stdout_logging) {
-#ifdef HAVE_STDARG_H
-    va_start(ap, format_str);
-#else
-    va_start(ap);
-    format_str = va_arg(ap,char *);
-#endif
-    vfprintf(dbf,format_str,ap);
-    va_end(ap);
-    errno = old_errno;
-    return(0);
-  }
-  
-#ifdef WITH_SYSLOG
-  if (!lp_syslog_only())
-#endif  
-    {
-      if (!dbf) {
-	      int oldumask = umask(022);
-              if(append_log)
-                dbf = fopen(debugf,"a");
-              else
-                dbf = fopen(debugf,"w");
-	      umask(oldumask);
-	      if (dbf) {
-		      setbuf(dbf,NULL);
-	      } else {
-		      errno = old_errno;
-		      return(0);
-	      }
-      }
-    }
-
-#ifdef WITH_SYSLOG
-  if (syslog_level < lp_syslog())
-    {
-      /* 
-       * map debug levels to syslog() priorities
-       * note that not all DEBUG(0, ...) calls are
-       * necessarily errors
-       */
-      static int priority_map[] = { 
-	LOG_ERR,     /* 0 */
-	LOG_WARNING, /* 1 */
-	LOG_NOTICE,  /* 2 */
-	LOG_INFO,    /* 3 */
-      };
-      int priority;
-      pstring msgbuf;
-      
-      if (syslog_level >= sizeof(priority_map) / sizeof(priority_map[0]) ||
-	  syslog_level < 0)
-	priority = LOG_DEBUG;
-      else
-	priority = priority_map[syslog_level];
-      
-#ifdef HAVE_STDARG_H
-      va_start(ap, format_str);
-#else
-      va_start(ap);
-      format_str = va_arg(ap,char *);
-#endif
-      vslprintf(msgbuf, sizeof(msgbuf)-1,format_str, ap);
-      va_end(ap);
-      
-      msgbuf[255] = '\0';
-      syslog(priority, "%s", msgbuf);
-    }
-#endif
-  
-#ifdef WITH_SYSLOG
-  if (!lp_syslog_only())
-#endif
-    {
-#ifdef HAVE_STDARG_H
-      va_start(ap, format_str);
-#else
-      va_start(ap);
-      format_str = va_arg(ap,char *);
-#endif
-      vfprintf(dbf,format_str,ap);
-      va_end(ap);
-      fflush(dbf);
-    }
-
-  check_log_size();
-
-  errno = old_errno;
-
-  return(0);
-}
 
 /****************************************************************************
   find a suitable temporary directory. The result should be copied immediately

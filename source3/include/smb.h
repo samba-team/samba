@@ -90,16 +90,68 @@ typedef unsigned short uint16;
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
 
-/* debugging code */
-#if !defined(WITH_SYSLOG) || defined(NO_SYSLOG)
-#define DEBUG(level,body) ((DEBUGLEVEL>=(level))?(Debug1 body):0)
-#define DEBUGLVL(level) (DEBUGLEVEL>=(level))
-#else
-extern int syslog_level;
+/* -------------------------------------------------------------------------- **
+ * Debugging code.  See also debug.c
+ */
 
-#define DEBUG(level,body) ((DEBUGLEVEL>=(level))? (syslog_level = (level), Debug1 body):0)
-#define DEBUGLVL(level) ( DEBUGLEVEL >= (syslog_level=(level)) )
+/* mkproto.awk has trouble with ifdef'd function definitions (it ignores
+ * the #ifdef directive and will read both definitions, thus creating two
+ * diffferent prototype declarations), so we must do these by hand.
+ */
+#ifdef HAVE_STDARG_H
+int  Debug1( char *, ... );
+BOOL dbgtext( char *, ... );
+#else
+int  Debug1();
+BOOL dbgtext();
 #endif
+
+/* If we have these macros, we can add additional info to the header. */
+#ifdef HAVE_FILE_MACRO
+#define FILE_MACRO (__FILE__)
+#else
+#define FILE_MACRO ("")
+#endif
+
+#ifdef HAVE_FUNCTION_MACRO
+#define FUNCTION_MACRO  (__FUNCTION__)
+#else
+#define FUNCTION_MACRO  ("")
+#endif
+
+/* Debugging macros. 
+ *  DEBUGLVL() - If level is <= the system-wide DEBUGLEVEL then generate a
+ *               header using the default macros for file, line, and
+ *               function name.
+ *               Returns True if the debug level was <= DEBUGLEVEL.
+ *               Example usage:
+ *                 if( DEBUGLVL( 2 ) )
+ *                   dbgtext( "Some text.\n" );
+ *  DEGUG()    - Good old DEBUG().  Each call to DEBUG() will generate a new
+ *               header *unless* the previous debug output was unterminated
+ *               (i.e., no '\n').  See debug.c:dbghdr() for more info.
+ *               Example usage:
+ *                 DEBUG( 2, ("Some text.\n") );
+ *  DEBUGADD() - If level <= DEBUGLEVEL, then the text is appended to the
+ *               current message (i.e., no header).
+ *               Usage:
+ *                 DEBUGADD( 2, ("Some additional text.\n") );
+ */
+#define DEBUGLVL( level ) \
+  ( (DEBUGLEVEL>=(level)) \
+   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
+
+#define DEBUG( level, body ) \
+  if( (DEBUGLEVEL>=(level))  \
+   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) ) \
+    (void)dbgtext body
+
+#define DEBUGADD( level, body ) \
+  if( DEBUGLEVEL>=(level) ) (void)dbgtext body
+
+/* End Debugging code section.
+ * -------------------------------------------------------------------------- **
+ */
 
 /* this defines the error codes that receive_smb can put in smb_read_error */
 #define READ_TIMEOUT 1
@@ -1154,10 +1206,8 @@ struct parm_struct
 #define ERRCMD 0xFF  /* Command was not in the "SMB" format. */
 
 #ifdef HAVE_STDARG_H
-int Debug1(char *, ...); 
 int slprintf(char *str, int n, char *format, ...);
 #else
-int Debug1(); 
 int slprintf();
 #endif
 
