@@ -227,7 +227,11 @@ struct acct_info
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
 #include "rpc_reg.h"
+#if OLD_NTDOMAIN
+#include "rpc_samr_old.h"
+#else
 #include "rpc_samr.h"
+#endif
 #include "rpc_srvsvc.h"
 #include "rpc_wkssvc.h"
 #include "rpc_spoolss.h"

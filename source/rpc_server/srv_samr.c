@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -1948,3 +1950,6 @@ BOOL api_samr_rpc(pipes_struct *p, prs_struct *data)
 {
     return api_rpcTNP(p, "api_samr_rpc", api_samr_cmds, data);
 }
+
+#undef OLD_NTDOMAIN
+

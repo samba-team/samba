@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -821,3 +822,5 @@ BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	return True;
 }
+
+#undef OLD_NTDOMAIN

@@ -601,7 +601,7 @@ extern int errno;
 #define NGROUPS_MAX 32 /* Guess... */
 #endif
 
-/* Lists, trees, caching, datbase... */
+/* Lists, trees, caching, database... */
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
@@ -612,12 +612,6 @@ extern int errno;
 #include "trans2.h"
 #include "nterr.h"
 #include "secrets.h"
-
-#ifdef HAVE_FNMATCH
-#include <fnmatch.h>
-#else
-#include "fnmatch.h"
-#endif
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
@@ -635,7 +629,7 @@ extern int errno;
 #include "kanji.h"
 #include "charset.h"
 
-#include "nterr.h"
+#include "ntdomain.h"
 
 #include "msdfs.h"
 
