@@ -126,6 +126,6 @@ NTSTATUS gums_unload(void)
 
 	ret = module_finalize();
 	sys_dlclose(dl_handle);
-3
+
 	return ret;
 }
