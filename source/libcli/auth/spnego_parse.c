@@ -250,6 +250,11 @@ ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 
 	ZERO_STRUCTP(token);
 	ZERO_STRUCT(asn1);
+
+	if (data.length == 0) {
+		return ret;
+	}
+
 	asn1_load(&asn1, data);
 
 	switch (asn1.data[asn1.ofs]) {
