@@ -110,7 +110,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 #define O_DIRECTORY 0
 #endif
 
-	if (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) {
+	if ((io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) &&
+	    !(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
+	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		flags = O_RDONLY | O_DIRECTORY;
 		if (pvfs->flags & PVFS_FLAG_READONLY) {
 			goto do_open;
