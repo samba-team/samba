@@ -135,6 +135,7 @@ void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
 	pwd->cleartext = True;
 	pwd->null_pwd  = False;
 	pwd->crypted   = False;
+	pwd_make_lm_nt_16(pwd, clr);
 }
 
 /****************************************************************************
@@ -147,6 +148,7 @@ void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
 		fstrcpy(clr, pwd->password);
 	else
 		clr[0] = 0;
+
 }
 
 /****************************************************************************
