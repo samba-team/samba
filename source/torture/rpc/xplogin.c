@@ -392,13 +392,13 @@ static NTSTATUS test_lookupnames(struct smbcli_transport *transport,
 	{
 		struct lsa_LookupNames l;
 		struct lsa_TransSidArray sids;
-		struct lsa_Name lsaname;
+		struct lsa_String lsaname;
 		uint32_t count = 0;
 
 		sids.count = 0;
 		sids.sids = NULL;
 
-		lsaname.name = name;
+		lsaname.string = name;
 
 		l.in.handle = &handle;
 		l.in.num_names = 1;
