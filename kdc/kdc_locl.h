@@ -57,6 +57,8 @@ extern HDB *db;
 extern char *port_str;
 extern int enable_http;
 extern krb5_boolean encode_as_rep_as_tgs_rep;
+extern krb5_boolean check_ticket_addresses;
+extern krb5_boolean allow_null_ticket_addresses;
 
 #ifdef KRB4
 extern char *v4_realm;
@@ -65,7 +67,7 @@ extern char *v4_realm;
 extern struct timeval now;
 #define kdc_time (now.tv_sec)
 
-krb5_error_code as_rep (KDC_REQ*, krb5_data*, const char*);
+krb5_error_code as_rep (KDC_REQ*, krb5_data*, const char*, struct sockaddr*);
 void configure (int, char**);
 hdb_entry* db_fetch (krb5_principal);
 void kdc_log (int, const char*, ...);
@@ -74,7 +76,7 @@ char* kdc_log_msg_va (int, const char*, va_list);
 void kdc_openlog (krb5_config_section*);
 void loop (void);
 void set_master_key (EncryptionKey);
-krb5_error_code tgs_rep (KDC_REQ*, krb5_data*, const char*);
+krb5_error_code tgs_rep (KDC_REQ*, krb5_data*, const char*, struct sockaddr *);
 Key* unseal_key (Key*);
 
 #ifdef KRB4
