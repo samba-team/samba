@@ -1837,7 +1837,7 @@ static void spoolss_notify_username(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, queue->user, 
+	len = (uint32)dos_PutUniCode(temp, queue->fs_user, 
 				     sizeof(temp) - 2, True);
 
 	data->notify_data.data.length = len / 2 - 1;
@@ -1876,7 +1876,7 @@ static void spoolss_notify_job_name(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, queue->file, sizeof(temp) - 2, 
+	len = (uint32)dos_PutUniCode(temp, queue->fs_file, sizeof(temp) - 2, 
 				     True);
 
 	data->notify_data.data.length = len / 2 - 1;
@@ -4867,8 +4867,8 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	job_info->jobid=queue->job;	
 	init_unistr(&job_info->printername, lp_servicename(snum));
 	init_unistr(&job_info->machinename, temp_name);
-	init_unistr(&job_info->username, queue->user);
-	init_unistr(&job_info->document, queue->file);
+	init_unistr(&job_info->username, queue->fs_user);
+	init_unistr(&job_info->document, queue->fs_file);
 	init_unistr(&job_info->datatype, "RAW");
 	init_unistr(&job_info->text_status, "");
 	job_info->status=nt_printj_status(queue->status);
@@ -4901,9 +4901,9 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	init_unistr(&job_info->printername, chaine);
 	
 	init_unistr(&job_info->machinename, temp_name);
-	init_unistr(&job_info->username, queue->user);
-	init_unistr(&job_info->document, queue->file);
-	init_unistr(&job_info->notifyname, queue->user);
+	init_unistr(&job_info->username, queue->fs_user);
+	init_unistr(&job_info->document, queue->fs_file);
+	init_unistr(&job_info->notifyname, queue->fs_user);
 	init_unistr(&job_info->datatype, "RAW");
 	init_unistr(&job_info->printprocessor, "winprint");
 	init_unistr(&job_info->parameters, "");

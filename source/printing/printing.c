@@ -166,8 +166,8 @@ static void print_unix_job(int snum, print_queue_struct *q)
 	pj.spooled = True;
 	pj.smbjob = False;
 	fstrcpy(pj.filename, "");
-	fstrcpy(pj.jobname, q->file);
-	fstrcpy(pj.user, q->user);
+	fstrcpy(pj.jobname, q->fs_file);
+	fstrcpy(pj.user, q->fs_user);
 	pj.snum = snum;
 
 	print_job_store(jobid, &pj);
@@ -222,7 +222,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	}
 
 	for (i=0;i<ts->qcount;i++) {
-		int qid = print_parse_jobid(ts->queue[i].file);
+		int qid = print_parse_jobid(ts->queue[i].fs_file);
 		if (jobid == qid) break;
 	}
 	
@@ -406,7 +406,7 @@ static void print_queue_update(int snum)
 	  fill in any system job numbers as we go
 	*/
 	for (i=0; i<qcount; i++) {
-		int jobid = print_parse_jobid(queue[i].file);
+		int jobid = print_parse_jobid(queue[i].fs_file);
 
 		if (jobid == -1) {
 			/* assume its a unix print job */
@@ -1083,8 +1083,8 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	ts->queue[i].status = pjob.status;
 	ts->queue[i].priority = 1;
 	ts->queue[i].time = pjob.starttime;
-	fstrcpy(ts->queue[i].user, pjob.user);
-	fstrcpy(ts->queue[i].file, pjob.jobname);
+	fstrcpy(ts->queue[i].fs_user, pjob.user);
+	fstrcpy(ts->queue[i].fs_file, pjob.jobname);
 
 	ts->qcount++;
 

@@ -518,8 +518,8 @@ typedef struct _print_queue_struct
   int status;
   int priority;
   time_t time;
-  fstring user;
-  fstring file;
+  fstring fs_user;
+  fstring fs_file;
 } print_queue_struct;
 
 enum {LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR};
