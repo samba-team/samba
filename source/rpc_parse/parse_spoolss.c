@@ -3890,8 +3890,6 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 	if(!smb_io_unistr2("provider", &il->provider, il->provider_ptr, ps, depth))
 		return False;
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
