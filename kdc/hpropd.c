@@ -165,7 +165,6 @@ static int version_flag;
 static int print_dump;
 static char *database = HDB_DEFAULT_DB;
 static int from_stdin;
-static char *local_realm=NULL;
 #ifdef KRB4
 static int v4dump;
 #endif
@@ -181,7 +180,6 @@ struct getargs args[] = {
 #ifdef KRB4
     { "v4dump",       '4',  arg_flag, &v4dump, "create v4 type DB" },
 #endif
-    { "realm", 'R', arg_string, &local_realm, "realm", "realm" },
     { "version",    0, arg_flag, &version_flag, NULL, NULL },
     { "help",    'h',  arg_flag, &help_flag, NULL, NULL}
 };
@@ -201,13 +199,11 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     krb5_auth_context ac = NULL;
-    krb5_principal server;
     krb5_principal c1, c2;
     krb5_authenticator authent;
     krb5_keytab keytab;
     int fd;
     HDB *db;
-    char hostname[128];
     int optind = 0;
     char *tmp_db;
     krb5_log_facility *fac;
@@ -243,9 +239,6 @@ main(int argc, char **argv)
 	exit(0);
     }
     
-    if(local_realm)
-      krb5_set_default_realm(context,local_realm); 
-
     argc -= optind;
     argv += optind;
 
@@ -284,19 +277,6 @@ main(int argc, char **argv)
 
 	krb5_log(context, fac, 0, "Connection from %s", addr_name);
     
-	gethostname(hostname, sizeof(hostname));
-	ret = krb5_sname_to_principal(context, hostname, HPROP_NAME,
-				      KRB5_NT_SRV_HST, &server);
-	if(ret)
-	    krb5_err(context, 1, ret, "krb5_sname_to_principal");
-    
-        if (local_realm) {
-           krb5_realm my_realm;
-           krb5_get_default_realm(context,&my_realm);
-
-           krb5_princ_set_realm(context,server,&my_realm);
-        }
-
 	ret = krb5_kt_register(context, &hdb_kt_ops);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_kt_register");
@@ -311,8 +291,8 @@ main(int argc, char **argv)
 		krb5_err (context, 1, ret, "krb5_kt_default");
 	}
 
-	ret = krb5_recvauth(context, &ac, &fd, HPROP_VERSION,
-			    server, 0, keytab, NULL);
+	ret = krb5_recvauth(context, &ac, &fd, HPROP_VERSION, NULL,
+			    0, keytab, NULL);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_recvauth");
 	
