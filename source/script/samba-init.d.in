@@ -1,0 +1,60 @@
+#! /bin/sh
+#
+# Start/stop script for Samba TNG
+#
+# This is from a Solaris box.  Proper links need to be made to it from the
+# rcX.d directories.  For Linux, it goes into /etc/rc.d/init.d
+# 
+# Lonnie
+#
+# Heavily modified and integrated with autoconf by Elrond
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+
+bindir=@bindir@
+sbindir=@sbindir@
+VARDIR=@localstatedir@
+lockdir=@lockdir@
+
+daemons="smbd nmbd netlogond samrd browserd lsarpcd srvsvcd winregd wkssvcd"
+daemons="$daemons spoolssd svcctld"
+
+cd /
+unset TMPDIR
+
+case "$1" in
+	'start')
+		echo -n "Starting SMB services:"
+		PATH="${sbindir}:${bindir}:${PATH}"
+		export PATH
+		for i in $daemons
+		do
+			echo -n " $i"
+			$i -D
+		done
+		echo "."
+		;;
+	'restart')
+		$0 stop
+		$0 start
+		;;
+	'stop')
+	        echo -n "Stopping SMB services:"
+	        for file in ${lockdir}/*.pid
+	        do
+	                if [ -r $file ]
+	                then
+	                	d=`echo $file | sed -e 's,^.*/\(.*\)\.pid$,\1,'`
+	                	echo -n " $d"
+	                        kill `cat $file`
+	                        rm $file
+	                fi
+	        done
+		echo "."
+	        ;;
+	*)
+	        echo "Usage: $0 { start | stop | restart }"
+	        ;;
+esac
+exit 0
