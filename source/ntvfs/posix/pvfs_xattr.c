@@ -35,12 +35,24 @@ static NTSTATUS pull_xattr_blob(struct pvfs_state *pvfs,
 				size_t estimated_size,
 				DATA_BLOB *blob)
 {
+	NTSTATUS status;
+
 	if (pvfs->ea_db) {
 		return pull_xattr_blob_tdb(pvfs, mem_ctx, attr_name, fname, 
 					   fd, estimated_size, blob);
 	}
-	return pull_xattr_blob_system(pvfs, mem_ctx, attr_name, fname, 
-				      fd, estimated_size, blob);
+
+	status = pull_xattr_blob_system(pvfs, mem_ctx, attr_name, fname, 
+					fd, estimated_size, blob);
+
+	/* if the filesystem doesn't support them, then tell pvfs not to try again */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		DEBUG(5,("pvfs_xattr: xattr not supported in filesystem\n"));
+		pvfs->flags &= ~PVFS_FLAG_XATTR_ENABLE;
+		status = NT_STATUS_NOT_FOUND;
+	}
+
+	return status;
 }
 
 /*
@@ -157,14 +169,6 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 				     fd, XATTR_DOSATTRIB_NAME,
 				     &attrib, 
 				     (ndr_pull_flags_fn_t)ndr_pull_xattr_DosAttrib);
-
-	/* if the filesystem doesn't support them, then tell pvfs not to try again */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-		DEBUG(5,("pvfs_xattr: xattr not supported in filesystem\n"));
-		pvfs->flags &= ~PVFS_FLAG_XATTR_ENABLE;
-		talloc_free(mem_ctx);
-		return NT_STATUS_OK;
-	}
 
 	/* not having a DosAttrib is not an error */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
@@ -341,7 +345,7 @@ NTSTATUS pvfs_acl_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int 
 	NTSTATUS status;
 	ZERO_STRUCTP(acl);
 	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
-		return NT_STATUS_OK;
+		return NT_STATUS_NOT_FOUND;
 	}
 	status = pvfs_xattr_ndr_load(pvfs, acl, name->full_name, fd, 
 				     XATTR_NTACL_NAME,
