@@ -1940,6 +1940,52 @@ static void run_trans2test(int dummy)
 	printf("trans2 test finished\n");
 }
 
+/*
+  This checks new W2K calls.
+*/
+
+void new_trans(struct cli_state *pcli, int fnum, int level)
+{
+	char buf[4096];
+
+	memset(buf, 0xff, sizeof(buf));
+
+	if (!cli_qfileinfo_test(pcli, fnum, level, buf)) {
+		printf("ERROR: qfileinfo (%d) failed (%s)\n", level, cli_errstr(pcli));
+	} else {
+		printf("qfileinfo: level %d\n", level);
+		dump_data(0, buf, 256);
+		printf("\n");
+	}
+}
+
+static void run_w2ktest(int dummy)
+{
+	static struct cli_state cli;
+	int fnum;
+	char *fname = "\\w2ktest\\w2k.tst";
+	int level;
+
+	printf("starting w2k test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT , DENY_NONE);
+
+	for (level = 1004; level < 1040; level++)
+		new_trans(&cli, fnum, level);
+
+	cli_close(&cli, fnum);
+
+
+	close_connection(&cli);
+
+	printf("w2k test finished\n");
+}
+
 
 /*
   this is a harness for some oplock tests
@@ -2784,6 +2830,7 @@ static struct {
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
 	{"DELETE", run_deletetest, 0},
+	{"W2K", run_w2ktest, 0},
 	{NULL, NULL, 0}};
 
 
