@@ -954,7 +954,7 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 	void *info = NULL;
 
 	uint32 status = 0x0;
-	uint32 rid;
+	uint32 rid = 0x0;
 	int obj_idx;
 
 	DEBUG(5,("samr_reply_query_userinfo: %d\n", __LINE__));

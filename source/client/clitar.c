@@ -106,7 +106,7 @@ BOOL tar_system=True;
 BOOL tar_hidden=True;
 /* Be noisy - make a catalogue */
 BOOL tar_noisy=True;
-BOOL tar_real_noisy=True;
+BOOL tar_real_noisy=False;  /* Don't want to be really noisy by default */
 
 char tar_type='\0';
 static char **cliplist=NULL;
@@ -1723,9 +1723,10 @@ static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
 
   if (!do_setrtime(finfo.name, finfo.mtime, True)) {
 
-    DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
-    /*return(False); */ /* Ignore, as Win95 does not allow changes */
-
+    if (tar_real_noisy) {
+      DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
+      /*return(False); */ /* Ignore, as Win95 does not allow changes */
+    }
   }
 
   ntarf++;

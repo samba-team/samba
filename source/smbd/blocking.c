@@ -195,7 +195,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
   files_struct *fsp = blr->fsp;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
-  SMB_OFF_T count, offset;
+  SMB_OFF_T count = (SMB_OFF_T) 0, offset = (SMB_OFF_T) 0;
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
   char *data;
@@ -329,7 +329,7 @@ static BOOL process_lock(blocking_lock_record *blr)
   char *outbuf = OutBuffer;
   char *inbuf = blr->inbuf;
   int outsize;
-  SMB_OFF_T count,offset;
+  SMB_OFF_T count = 0, offset = 0;
   int eclass;
   uint32 ecode;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
@@ -387,7 +387,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
-  SMB_OFF_T count, offset;
+  SMB_OFF_T count = 0, offset = 0;
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
   char *data;
   int eclass=0;
