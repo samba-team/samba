@@ -27,11 +27,12 @@
 #define MAX_FILES 100
 
 extern int nbench_line_count;
-static int nbio_id;
+static int nbio_id = -1;
 static int nprocs;
 static BOOL bypass_io;
-static int warmup;
-static struct timeval tv;
+static struct timeval tv_start, tv_end;
+static int warmup, timelimit;
+static int in_cleanup;
 
 struct ftable {
 	struct ftable *next, *prev;
@@ -42,67 +43,90 @@ struct ftable {
 static struct ftable *ftable;
 
 static struct {
-	double bytes_in, bytes_out;
+	double bytes, warmup_bytes;
 	int line;
 	int done;
 } *children;
 
-double nbio_total(void)
+double nbio_result(void)
 {
 	int i;
 	double total = 0;
 	for (i=0;i<nprocs;i++) {
-		total += children[i].bytes_out + children[i].bytes_in;
+		total += children[i].bytes - children[i].warmup_bytes;
 	}
-	return total;
+	return 1.0e-6 * total / timeval_elapsed2(&tv_start, &tv_end);
 }
 
-void nb_warmup_done(void)
+BOOL nb_tick(void)
 {
-	children[nbio_id].bytes_out = 0;
-	children[nbio_id].bytes_in = 0;
+	return children[nbio_id].done;
 }
 
 
 void nb_alarm(int sig)
 {
 	int i;
-	int lines=0, num_clients=0;
+	int lines=0;
 	double t;
+	int in_warmup = 0;
 
 	if (nbio_id != -1) return;
 
 	for (i=0;i<nprocs;i++) {
+		if (children[i].bytes == 0) {
+			in_warmup = 1;
+		}
 		lines += children[i].line;
-		if (!children[i].done) num_clients++;
 	}
 
-	t = timeval_elapsed(&tv);
+	t = timeval_elapsed(&tv_start);
 
-	if (warmup) {
+	if (!in_warmup && warmup>0 && t > warmup) {
+		tv_start = timeval_current();
+		warmup = 0;
+		for (i=0;i<nprocs;i++) {
+			children[i].warmup_bytes = children[i].bytes;
+		}
+		goto next;
+	}
+	if (t < warmup) {
+		in_warmup = 1;
+	} else if (!in_warmup && !in_cleanup && t > timelimit) {
+		for (i=0;i<nprocs;i++) {
+			children[i].done = 1;
+		}
+		tv_end = timeval_current();
+		in_cleanup = 1;
+	}
+	if (t < 1) {
+		goto next;
+	}
+	if (!in_cleanup) {
+		tv_end = timeval_current();
+	}
+
+	if (in_warmup) {
 		printf("%4d  %8d  %.2f MB/sec  warmup %.0f sec   \n", 
-		       num_clients, lines/nprocs, 
-		       1.0e-6 * nbio_total() / t, 
-		       t);
+		       nprocs, lines/nprocs, 
+		       nbio_result(), t);
+	} else if (in_cleanup) {
+		printf("%4d  %8d  %.2f MB/sec  cleanup %.0f sec   \n", 
+		       nprocs, lines/nprocs, 
+		       nbio_result(), t);
 	} else {
 		printf("%4d  %8d  %.2f MB/sec  execute %.0f sec   \n", 
-		       num_clients, lines/nprocs, 
-		       1.0e-6 * nbio_total() / t, 
-		       t);
-	}
-
-	if (warmup && t >= warmup) {
-		tv = timeval_current();
-		warmup = 0;
+		       nprocs, lines/nprocs, 
+		       nbio_result(), t);
 	}
 
 	fflush(stdout);
-
+next:
 	signal(SIGALRM, nb_alarm);
 	alarm(1);	
 }
 
-void nbio_shmem(int n)
+void nbio_shmem(int n, int t_timelimit, int t_warmup)
 {
 	nprocs = n;
 	children = shm_setup(sizeof(*children) * nprocs);
@@ -110,6 +134,11 @@ void nbio_shmem(int n)
 		printf("Failed to setup shared memory!\n");
 		exit(1);
 	}
+	memset(children, 0, sizeof(*children) * nprocs);
+	timelimit = t_timelimit;
+	warmup = t_warmup;
+	in_cleanup = 0;
+	tv_start = timeval_current();
 }
 
 static struct ftable *find_ftable(int handle)
@@ -152,15 +181,10 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 	return smbcli_oplock_ack(tree, fnum, level);
 }
 
-void nb_setup(struct smbcli_state *cli, int id, int warmupt)
+void nb_setup(struct smbcli_state *cli, int id)
 {
-	warmup = warmupt;
 	nbio_id = id;
 	c = cli;
-	tv = timeval_current();
-	if (children) {
-		children[nbio_id].done = 0;
-	}
 	if (bypass_io)
 		printf("skipping I/O\n");
 
@@ -297,7 +321,7 @@ void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
 		       io.writex.out.nwritten, ret_size);
 	}	
 
-	children[nbio_id].bytes_out += ret_size;
+	children[nbio_id].bytes += ret_size;
 }
 
 void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
@@ -334,7 +358,7 @@ void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
 		       io.write.out.nwritten, ret_size);
 	}	
 
-	children[nbio_id].bytes_out += ret_size;
+	children[nbio_id].bytes += ret_size;
 }
 
 
@@ -424,7 +448,7 @@ void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
 		exit(1);
 	}	
 
-	children[nbio_id].bytes_in += ret_size;
+	children[nbio_id].bytes += ret_size;
 }
 
 void nb_close(int handle, NTSTATUS status)
@@ -649,12 +673,3 @@ void nb_deltree(const char *dname)
 	smbcli_rmdir(c->tree, dname);
 }
 
-void nb_cleanup(const char *cname)
-{
-	char *dname = NULL;
-	asprintf(&dname, "\\clients\\%s", cname);
-	nb_deltree(dname);
-	free(dname);
-	smbcli_rmdir(c->tree, "clients");
-	children[nbio_id].done = 1;
-}
