@@ -431,7 +431,7 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
       continue;
     }
 
-    if (!strncasecmp((char *) p, "NO PASSWORD", 11)) {
+    if (strnequal((char *) p, "NO PASSWORD", 11)) {
       pw_buf->smb_passwd = NULL;
       pw_buf->acct_ctrl |= ACB_PWNOTREQ;
     } else {

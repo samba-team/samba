@@ -56,7 +56,7 @@ static const char *charset_name(charset_t ch)
 	else if (ch == CH_UTF8) ret = "UTF8";
 
 #if defined(HAVE_NL_LANGINFO) && defined(CODESET)
-	if (ret && strcasecmp(ret, "LOCALE") == 0) {
+	if (ret && !strcmp(ret, "LOCALE")) {
 		const char *ln = NULL;
 
 #ifdef HAVE_SETLOCALE

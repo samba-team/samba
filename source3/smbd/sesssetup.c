@@ -186,7 +186,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	*p = 0;
-	if (strcasecmp(p+1, lp_realm()) != 0) {
+	if (!strequal(p+1, lp_realm())) {
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
 			data_blob_free(&ap_rep);

@@ -2025,7 +2025,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 	}
 	
 	for (i=0; _enum[i].name; i++) {
-		if (strcasecmp(_enum[i].name,s)==0)
+		if (strequal(_enum[i].name,s))
 			return _enum[i].value;
 	}
 

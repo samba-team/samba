@@ -84,14 +84,14 @@ uint32 get_sec_channel_type(const char *param)
 	if (!(param && *param)) {
 		return get_default_sec_channel();
 	} else {
-		if (strcasecmp(param, "PDC")==0) {
+		if (strequal(param, "PDC")) {
 			return SEC_CHAN_BDC;
-		} else if (strcasecmp(param, "BDC")==0) {
+		} else if (strequal(param, "BDC")) {
 			return SEC_CHAN_BDC;
-		} else if (strcasecmp(param, "MEMBER")==0) {
+		} else if (strequal(param, "MEMBER")) {
 			return SEC_CHAN_WKSTA;
 #if 0			
-		} else if (strcasecmp(param, "DOMAIN")==0) {
+		} else if (strequal(param, "DOMAIN")) {
 			return SEC_CHAN_DOMAIN;
 #endif
 		} else {
