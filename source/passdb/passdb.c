@@ -46,19 +46,6 @@ const char *get_default_sam_name(void)
 	return lp_workgroup();
 }
 
-/******************************************************************
- get the default domain/netbios name to be used when dealing 
- with our passdb list of accounts
-******************************************************************/
-
-const char *get_global_sam_name(void) 
-{
-	if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
-		return lp_workgroup();
-	}
-	return global_myname();
-}
-
 /************************************************************
  Fill the SAM_ACCOUNT with default values.
  ***********************************************************/
