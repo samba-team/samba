@@ -442,7 +442,7 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
 		  work->dom_state = DOMAIN_WAIT;
 
 		  /* XXXX the 0x1b is domain master browser name */
-		  add_my_name_entry(d, myworkgroup,0x1b,nb_type|NB_ACTIVE|NB_GROUP);
+		  add_my_name_entry(d, work->work_group,0x1b,nb_type|NB_ACTIVE|NB_GROUP);
 
 		  /* DON'T do anything else after calling add_my_name_entry() */
 		  break;
