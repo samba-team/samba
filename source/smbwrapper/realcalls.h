@@ -201,6 +201,8 @@
 #define real_llseek(fd,ofs,whence)            	(_llseek(fd,ofs,whence))
 #elif HAVE___LLSEEK
 #define real_llseek(fd,ofs,whence)            	(__llseek(fd,ofs,whence))
+#elif HAVE___SYS_LLSEEK
+#define real_llseek(fd,ofs,whence)            	(__sys_llseek(fd,ofs,whence))
 #endif
 
 
