@@ -31,11 +31,7 @@ NSS_STATUS winbindd_request(int req_type,
 
 BOOL winbindd_running(void)
 {
-
-	if (winbindd_request(WINBINDD_PING, NULL, NULL))
-		return False;
-
-	return True;
+	return winbind_ping();
 }	
 #endif
 
