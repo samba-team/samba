@@ -115,7 +115,7 @@ static void process_options(int argc, char **argv, BOOL amroot)
 	while ((ch = getopt(argc, argv, "c:axdehmnj:r:sw:R:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
-			local_mode = True;
+			local_mode = amroot = True;
 			break;
 		case 'c':
 			pstrcpy(servicesf,optarg);
