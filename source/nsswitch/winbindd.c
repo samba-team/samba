@@ -23,6 +23,8 @@
 
 #include "winbindd.h"
 
+extern pstring debugf;
+
 /* List of all connected clients */
 
 struct winbindd_cli_state *client_list;
@@ -51,6 +53,57 @@ static BOOL reload_services_file(BOOL test)
 	load_interfaces();
 
 	return(ret);
+}
+
+#if DUMP_CORE
+
+/**************************************************************************** **
+ Prepare to dump a core file - carefully!
+ **************************************************************************** */
+
+static BOOL dump_core(void)
+{
+	char *p;
+	pstring dname;
+	pstrcpy( dname, debugf );
+	if ((p=strrchr(dname,'/')))
+		*p=0;
+	pstrcat( dname, "/corefiles" );
+	mkdir( dname, 0700 );
+	sys_chown( dname, getuid(), getgid() );
+	chmod( dname, 0700 );
+	if ( chdir(dname) )
+		return( False );
+	umask( ~(0700) );
+ 
+#ifdef HAVE_GETRLIMIT
+#ifdef RLIMIT_CORE
+	{
+		struct rlimit rlp;
+		getrlimit( RLIMIT_CORE, &rlp );
+		rlp.rlim_cur = MAX( 4*1024*1024, rlp.rlim_cur );
+		setrlimit( RLIMIT_CORE, &rlp );
+		getrlimit( RLIMIT_CORE, &rlp );
+		DEBUG( 3, ( "Core limits now %d %d\n", (int)rlp.rlim_cur, (int)rlp.rlim_max ) );
+	}
+#endif
+#endif
+ 
+	DEBUG(0,("Dumping core in %s\n",dname));
+	abort();
+	return( True );
+} /* dump_core */
+#endif
+
+/**************************************************************************** **
+ Handle a fault..
+ **************************************************************************** */
+
+static void fault_quit(void)
+{
+#if DUMP_CORE
+	dump_core();
+#endif
 }
 
 static void winbindd_status(void)
@@ -672,7 +725,6 @@ struct winbindd_state server_state;   /* Server state information */
 int main(int argc, char **argv)
 {
 	extern pstring global_myname;
-	extern pstring debugf;
 	int accept_sock;
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
@@ -682,6 +734,7 @@ int main(int argc, char **argv)
 
  	CatchSignal(SIGUSR1, SIG_IGN);
 
+	fault_setup((void (*)(void *))fault_quit );
 	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", dyn_LOGFILEBASE);
 
 	/* Initialise for running in non-root mode */
@@ -734,6 +787,10 @@ int main(int argc, char **argv)
 		if (p)
 			*p = 0;
 	}
+
+
+	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
+	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
 
 	if (!reload_services_file(False)) {
 		DEBUG(0, ("error opening config file\n"));
