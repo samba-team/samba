@@ -543,7 +543,11 @@ static void validate_my_share_entries(share_mode_entry *share_entry)
 
 	fsp = file_find_dif(share_entry->dev, share_entry->inode, share_entry->share_file_id);
 	if (!fsp) {
-		smb_panic("validate_my_share_entries: Cannot match a share entry with an open file\n");
+		pstring str;
+		slprintf(str, sizeof(str)-1, "validate_my_share_entries: Cannot match a share entry with an open file \
+dev = %x, inode = %.0f file_id = %u\n", (unsigned int)share_entry->dev, (double)share_entry->inode,
+					(unsigned int)share_entry->share_file_id );
+		smb_panic(str);
 	}
 
 	if (((uint16)fsp->oplock_type) != share_entry->op_type) {
