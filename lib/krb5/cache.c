@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -177,6 +177,16 @@ krb5_cc_get_type(krb5_context context,
 		 krb5_ccache id)
 {
     return id->ops->prefix;
+}
+
+/*
+ * Return krb5_cc_ops of a the ccache `id'.
+ */
+
+const krb5_cc_ops *
+krb5_cc_get_ops(krb5_context context, krb5_ccache id)
+{
+    return id->ops;
 }
 
 /*
