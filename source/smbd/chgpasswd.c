@@ -67,7 +67,7 @@ static int findpty(char **slave)
   if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 0) {
     grantpt(master);
     unlockpt(master);
-    *slave = ptsname(master);
+    *slave = (char *)ptsname(master);
     if (*slave == NULL) {
       DEBUG(0,("findpty: Unable to create master/slave pty pair.\n"));
       /* Stop fd leak on error. */
