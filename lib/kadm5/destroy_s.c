@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,6 +35,34 @@
 
 RCSID("$Id$");
 
+/*
+ * dealloc a `kadm5_config_params'
+ */
+
+static void
+destroy_config (kadm5_config_params *c)
+{
+    free (c->realm);
+    free (c->dbname);
+    free (c->acl_file);
+    free (c->stash_file);
+}
+
+/*
+ * dealloc a kadm5_log_context
+ */
+
+static void
+destroy_kadm5_log_context (kadm5_log_context *c)
+{
+    free (c->log_file);
+    close (c->socket_fd);
+}
+
+/*
+ * destroy a kadm5 handle
+ */
+
 kadm5_ret_t 
 kadm5_s_destroy(void *server_handle)
 {
@@ -43,8 +71,11 @@ kadm5_s_destroy(void *server_handle)
     krb5_context kcontext = context->context;
 
     ret = context->db->destroy(kcontext, context->db);
+    destroy_kadm5_log_context (&context->log_context);
+    destroy_config (&context->config);
+    krb5_free_principal (kcontext, context->caller);
     if(context->my_context)
 	krb5_free_context(kcontext);
+    free (context);
     return ret;
 }
-
