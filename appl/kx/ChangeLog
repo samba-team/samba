@@ -1,3 +1,7 @@
+Wed Mar 10 19:33:39 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* kxd.c: openlog -> roken_openlog
+
 Wed Feb  3 22:01:55 1999  Assar Westerlund  <assar@sics.se>
 
 	* rxtelnet.in: print out what telnet program we are running.  From
