@@ -165,6 +165,8 @@ int psec_getsec(char *printer)
 	prs_struct ps;
 	int result = 0, i;
 
+	ZERO_STRUCT(ps);
+
 	/* Open tdb for reading */
 
 	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", LOCKDIR);
@@ -242,6 +244,7 @@ int psec_getsec(char *printer)
 	if (tdb) tdb_close(tdb);
 	if (mem_ctx) talloc_destroy(mem_ctx);
 	if (secdesc_ctr) free_sec_desc_buf(&secdesc_ctr);
+	prs_mem_free(&ps);
 
 	return result;
 }
@@ -252,7 +255,7 @@ int psec_setsec(char *printer)
 {
 	DOM_SID user_sid, group_sid;
 	SEC_ACE *ace_list = NULL;
-	SEC_ACL *dacl;
+	SEC_ACL *dacl = NULL;
 	SEC_DESC *sd;
 	SEC_DESC_BUF *sdb = NULL;
 	int result = 0, num_aces = 0;
@@ -261,6 +264,8 @@ int psec_setsec(char *printer)
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
 	BOOL has_user_sid = False, has_group_sid = False;
+
+	ZERO_STRUCT(ps);
 
 	/* Open tdb for reading */
 
@@ -327,6 +332,8 @@ int psec_setsec(char *printer)
 			   dacl, /* Discretionary ACL */
 			   &size);
 
+	free_sec_acl(&dacl);
+
 	sdb = make_sec_desc_buf(size, sd);
 
 	free_sec_desc(&sd);
@@ -360,6 +367,7 @@ int psec_setsec(char *printer)
 	if (tdb) tdb_close(tdb);
 	if (sdb) free_sec_desc_buf(&sdb);
 	if (mem_ctx) talloc_destroy(mem_ctx);
+	prs_mem_free(&ps);
 
 	return result;
 }
