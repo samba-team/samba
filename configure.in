@@ -73,6 +73,14 @@ if test "$enableval" != no; then
 fi
 ])
 
+AC_ARG_ENABLE(kaserver-db,
+[  --enable-kaserver-db	  if you want support for reading kaserver databases in hprop],
+[
+if test "$enableval" != "no"; then
+	AC_DEFINE(KASERVER_DB, 1)
+fi
+])
+
 otp=yes
 AC_ARG_ENABLE(otp,
 [  --disable-otp	  if you don't want OTP support],
