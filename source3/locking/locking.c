@@ -668,8 +668,7 @@ record due to old locking version %d for file dev %d, inode %d hash bucket %d\n"
   while(entry_scanner_p)
   {
     if( (pid == entry_scanner_p->pid) && 
-        (entry_scanner_p->op_port != 0) &&
-        (entry_scanner_p->op_type != 0) && 
+        (entry_scanner_p->share_mode == Files[fnum].share_mode) &&
         (memcmp(&entry_scanner_p->time, 
                 &Files[fnum].open_time,sizeof(struct timeval)) == 0) )
     {
@@ -1463,9 +1462,7 @@ for share file %d\n", num_entries, fname));
     if((IVAL(p,SME_SEC_OFFSET) != fs_p->open_time.tv_sec) || 
        (IVAL(p,SME_USEC_OFFSET) != fs_p->open_time.tv_usec) ||
        (IVAL(p,SME_SHAREMODE_OFFSET) != fs_p->share_mode) || 
-       (IVAL(p,SME_PID_OFFSET) != pid) ||
-       (SVAL(p,SME_PORT_OFFSET) == 0) ||
-       (SVAL(p,SME_OPLOCK_TYPE_OFFSET) == 0))
+       (IVAL(p,SME_PID_OFFSET) != pid))
       continue;
 
     DEBUG(5,("remove_share_oplock: clearing oplock on entry number %d (of %d) \
