@@ -47,4 +47,8 @@ int inet_aton(char *cp, struct in_addr *adr);
 #endif
 #endif
 
+#if !defined(HAVE_GETCWD) || defined(BROKEN_GETCWD)
+char* getcwd(char *path, int size)
+#endif
+
 #endif /*  __ROKEN_H__ */
