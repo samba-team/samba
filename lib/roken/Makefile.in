@@ -22,7 +22,7 @@ MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
-
+EXECSUFFIX = @EXECSUFFIX@
 PICFLAGS = # @PICFLAGS@
  
 LIBNAME = $(LIBPREFIX)roken
@@ -131,7 +131,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o *.a roken.h make-roken make-roken.c
+	rm -f $(LIB) *.o *.a roken.h make-roken$(EXECSUFFIX) make-roken.c
 
 mostlyclean: clean
 
@@ -156,13 +156,13 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS)
 
-roken.h: make-roken
+roken.h: make-roken$(EXECSUFFIX)
 	@./make-roken > tmp.h ;\
 	if [ -f roken.h ] && cmp -s tmp.h roken.h ; then rm -f tmp.h ; \
 	else rm -f roken.h; mv tmp.h roken.h; fi
 
-make-roken: make-roken.o
-	$(CC) -o make-roken make-roken.o
+make-roken$(EXECSUFFIX): make-roken.o
+	$(CC) -o $@ make-roken.o
 
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
