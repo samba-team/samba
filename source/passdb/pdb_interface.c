@@ -36,18 +36,28 @@ static void lazy_initialize_passdb(void)
 
 static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name);
 
-BOOL smb_register_passdb(const char *name, pdb_init_function init, int version) 
+NTSTATUS smb_register_passdb(uint16 version, const char *name, pdb_init_function init) 
 {
 	struct pdb_init_function_entry *entry = backends;
 
-	if(version != PASSDB_INTERFACE_VERSION)
-		return False;
+	if(version != PASSDB_INTERFACE_VERSION) {
+		DEBUG(0,("Can't register passdb backend!\n"
+			 "You tried to register a passdb module with PASSDB_INTERFACE_VERSION %d, "
+			 "while this version of samba uses version %d\n", 
+			 version,PASSDB_INTERFACE_VERSION));
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+	}
+
+	if (!name || !init) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	DEBUG(5,("Attempting to register passdb backend %s\n", name));
 
+	/* Check for duplicates */
 	if (pdb_find_backend_entry(name)) {
 		DEBUG(0,("There already is a passdb backend registered with the name %s!\n", name));
-		return False;
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
 	entry = smb_xmalloc(sizeof(struct pdb_init_function_entry));
@@ -56,7 +66,7 @@ BOOL smb_register_passdb(const char *name, pdb_init_function init, int version)
 
 	DLIST_ADD(backends, entry);
 	DEBUG(5,("Successfully added passdb backend '%s'\n", name));
-	return True;
+	return NT_STATUS_OK;
 }
 
 static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
@@ -426,7 +436,7 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 	/* Try to find a module that contains this module */
 	if (!entry) { 
 		DEBUG(2,("No builtin backend found, trying to load plugin\n"));
-		if(smb_probe_module("pdb", module_name) && !(entry = pdb_find_backend_entry(module_name))) {
+		if(NT_STATUS_IS_OK(smb_probe_module("pdb", module_name)) && !(entry = pdb_find_backend_entry(module_name))) {
 			DEBUG(0,("Plugin is available, but doesn't register passdb backend %s\n", module_name));
 			SAFE_FREE(module_name);
 			return NT_STATUS_UNSUCCESSFUL;
@@ -439,7 +449,7 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 		SAFE_FREE(module_name);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	DEBUG(5,("Found pdb backend %s\n", module_name));
 	nt_status = entry->init(context, methods, module_location);
 	if (NT_STATUS_IS_OK(nt_status)) {

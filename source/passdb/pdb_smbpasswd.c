@@ -1580,9 +1580,9 @@ NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	return NT_STATUS_OK;
 }
 
-int pdb_smbpasswd_init(void) 
+NTSTATUS pdb_smbpasswd_init(void) 
 {
-	smb_register_passdb("smbpasswd", pdb_init_smbpasswd, PASSDB_INTERFACE_VERSION);
-	smb_register_passdb("smbpasswd_nua", pdb_init_smbpasswd_nua, PASSDB_INTERFACE_VERSION);
-	return True;
+	smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd", pdb_init_smbpasswd);
+	smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd_nua", pdb_init_smbpasswd_nua);
+	return NT_STATUS_OK;
 }

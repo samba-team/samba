@@ -421,7 +421,7 @@ static vfs_op_tuple *netatalk_init(const struct vfs_ops *def_vfs_ops,
 	return atalk_ops;
 }
 
-int vfs_netatalk_init(void)
+NTSTATUS vfs_netatalk_init(void)
 {
-	return smb_register_vfs("netatalk", netatalk_init, SMB_VFS_INTERFACE_VERSION);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "netatalk", netatalk_init);
 }

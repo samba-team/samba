@@ -163,12 +163,12 @@ static NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, con
 }
 #endif /* DEVELOPER */
 
-int auth_builtin_init(void)
+NTSTATUS auth_builtin_init(void)
 {
-	smb_register_auth("guest", auth_init_guest, AUTH_INTERFACE_VERSION);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "guest", auth_init_guest);
 #ifdef DEVELOPER
-	smb_register_auth("fixed_challenge", auth_init_fixed_challenge, AUTH_INTERFACE_VERSION);
-	smb_register_auth("name_to_ntstatus", auth_init_name_to_ntstatus, AUTH_INTERFACE_VERSION);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "fixed_challenge", auth_init_fixed_challenge);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "name_to_ntstatus", auth_init_name_to_ntstatus);
 #endif
-	return True;
+	return NT_STATUS_OK;
 }

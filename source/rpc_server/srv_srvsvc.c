@@ -526,7 +526,7 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 \PIPE\srvsvc commands
 ********************************************************************/
 
-int rpc_srv_init(void)
+NTSTATUS rpc_srv_init(void)
 {
   static const struct api_struct api_srv_cmds[] =
     {
@@ -548,6 +548,6 @@ int rpc_srv_init(void)
       { "SRV_NET_FILE_QUERY_SECDESC", SRV_NET_FILE_QUERY_SECDESC, api_srv_net_file_query_secdesc },
       { "SRV_NET_FILE_SET_SECDESC"  , SRV_NET_FILE_SET_SECDESC  , api_srv_net_file_set_secdesc   }
     };
-  return rpc_pipe_register_commands("srvsvc", "ntsvcs", api_srv_cmds,
+  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "srvsvc", "ntsvcs", api_srv_cmds,
 				    sizeof(api_srv_cmds) / sizeof(struct api_struct));
 }

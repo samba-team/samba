@@ -603,7 +603,7 @@ done:
 	return rc;
 }
 
-int vfs_recycle_init(void)
-{
-	return smb_register_vfs("recycle", recycle_init, SMB_VFS_INTERFACE_VERSION);
+NTSTATUS vfs_recycle_init(void)
+{  
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "recycle", recycle_init);
 }

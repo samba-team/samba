@@ -1553,7 +1553,7 @@ NTSTATUS pdb_init_nisplussam (PDB_CONTEXT * pdb_context,
 	return NT_STATUS_OK;
 }
 
-int pdb_nisplus_init(void)
+NTSTATUS pdb_nisplus_init(void)
 {
-	return smb_register_passdb("nisplussam", pdb_init_nisplussam, PASSDB_INTERFACE_VERSION);
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "nisplussam", pdb_init_nisplussam);
 }

@@ -120,7 +120,7 @@ static BOOL api_sink_data(pipes_struct *p)
 \pipe\rpcecho commands
 ********************************************************************/
 
-int rpc_echo_init(void)
+NTSTATUS rpc_echo_init(void)
 {
 	struct api_struct api_echo_cmds[] = {
 		{"ADD_ONE",       ECHO_ADD_ONE,     api_add_one },
@@ -129,7 +129,7 @@ int rpc_echo_init(void)
 		{"SINK_DATA",     ECHO_SINK_DATA,   api_sink_data },
 	};
 
-	return rpc_pipe_register_commands(
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION,
 		"rpcecho", "rpcecho", api_echo_cmds,
 		sizeof(api_echo_cmds) / sizeof(struct api_struct));
 }

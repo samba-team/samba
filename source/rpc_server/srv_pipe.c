@@ -781,10 +781,28 @@ BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
 /*******************************************************************
  Register commands to an RPC pipe
 *******************************************************************/
-int rpc_pipe_register_commands(const char *clnt, const char *srv, const struct api_struct *cmds, int size)
+NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *srv, const struct api_struct *cmds, int size)
 {
         struct rpc_table *rpc_entry;
 
+	if (!clnt || !srv || !cmds) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (version != SMB_RPC_INTERFACE_VERSION) {
+		DEBUG(0,("Can't register rpc commands!\n"
+			 "You tried to register a rpc module with SMB_RPC_INTERFACE_VERSION %d"
+			 ", while this version of samba uses version %d!\n", 
+			 version,SMB_RPC_INTERFACE_VERSION));
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+	}
+
+	/* TODO: 
+	 *
+	 * we still need to make sure that don't register the same commands twice!!!
+	 * 
+	 * --metze
+	 */
 
         /* We use a temporary variable because this call can fail and 
            rpc_lookup will still be valid afterwards.  It could then succeed if
@@ -794,7 +812,7 @@ int rpc_pipe_register_commands(const char *clnt, const char *srv, const struct a
         if (NULL == rpc_entry) {
                 rpc_lookup_size--;
                 DEBUG(0, ("rpc_pipe_register_commands: memory allocation failed\n"));
-                return 0;
+                return NT_STATUS_NO_MEMORY;
         } else {
                 rpc_lookup = rpc_entry;
         }
@@ -810,7 +828,7 @@ int rpc_pipe_register_commands(const char *clnt, const char *srv, const struct a
                size * sizeof(struct api_struct));
         rpc_entry->n_cmds += size;
         
-        return size;
+        return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -852,7 +870,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	}
 
 	if (i == rpc_lookup_size) {
-				if (!smb_probe_module("rpc", p->name)) {
+				if (NT_STATUS_IS_ERR(smb_probe_module("rpc", p->name))) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 p->name ));
                        if(!setup_bind_nak(p))

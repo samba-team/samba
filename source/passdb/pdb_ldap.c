@@ -3239,8 +3239,8 @@ static NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb
 
 int pdb_ldap_init(void)
 {
-	smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
-	smb_register_passdb("ldapsam_compat", pdb_init_ldapsam_compat, PASSDB_INTERFACE_VERSION);
-	smb_register_passdb("ldapsam_nua", pdb_init_ldapsam_nua, PASSDB_INTERFACE_VERSION);
+	smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam", pdb_init_ldapsam);
+	smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_compat", pdb_init_ldapsam_compat);
+	smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_nua", pdb_init_ldapsam_nua);
 	return True;
 }
