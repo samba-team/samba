@@ -1,3 +1,7 @@
+2002-05-31  Assar Westerlund  <assar@pdc.kth.se>
+
+	* Makefile.am: *_LDADD: add LDADD, so that libroken is used
+
 2002-05-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* xdbm.h: remove old dbm part

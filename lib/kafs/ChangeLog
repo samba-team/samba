@@ -1,3 +1,8 @@
+2002-05-31  Assar Westerlund  <assar@pdc.kth.se>
+
+	* common.c: remove the trial of afs@REALM for cell != realm, it
+	tries to use the wrong key for foreign cells
+
 2002-05-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: version number
