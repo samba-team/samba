@@ -56,6 +56,16 @@ case "$host_os" in
 		esac
 		;;
 #
+# Defines needed for HPUX large file support..
+#
+	*hpux*)
+		case `uname =r` in
+			*10*|*11*)
+				CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
+				;;
+		esac
+		;;
+#
 # Tests needed for SINIX large file support.
 #
     *sysv4*)
