@@ -109,6 +109,8 @@ ENCTYPE ::= INTEGER {
 
 UNSIGNED ::= INTEGER (0..4294967295)
 
+KerberosString  ::= GeneralString
+
 Realm ::= GeneralString
 PrincipalName ::= SEQUENCE {
 	name-type[0]		NAME-TYPE,
@@ -278,7 +280,7 @@ ETYPE-INFO ::= SEQUENCE OF ETYPE-INFO-ENTRY
 
 ETYPE-INFO2-ENTRY ::= SEQUENCE {
 	etype[0]		ENCTYPE,
-	salt[1]			OCTET STRING OPTIONAL, -- KerberosString
+	salt[1]			KerberosString OPTIONAL,
 	s2kparams[2]		OCTET STRING OPTIONAL
 }
 
