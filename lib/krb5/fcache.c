@@ -58,9 +58,9 @@ typedef struct krb5_fcache{
 
 #define FCC_TAG_DELTATIME 1
 
-#define FILENAME(X) (((krb5_fcache*)(X)->data.data)->filename)
-
 #define FCACHE(X) ((krb5_fcache*)(X)->data.data)
+
+#define FILENAME(X) (FCACHE(X)->filename)
 
 static char*
 fcc_get_name(krb5_context context,
