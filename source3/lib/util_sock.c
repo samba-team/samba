@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #ifdef WITH_SSL
-#include <ssl.h>
+#include <openssl/ssl.h>
 #undef Realloc  /* SSLeay defines this and samba has a function of this name */
 extern SSL  *ssl;
 extern int  sslFd;

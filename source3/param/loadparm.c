@@ -215,6 +215,9 @@ typedef struct
 	char *sslClientCert;
 	char *sslClientPrivKey;
 	char *sslCiphers;
+	char *sslEgdSocket;
+	char *sslEntropyFile;
+	int  sslEntropyBytes;
 	BOOL sslEnabled;
 	BOOL sslReqClientCert;
 	BOOL sslReqServerCert;
@@ -744,6 +747,9 @@ static struct parm_struct parm_table[] = {
 	{N_("ssl server key"), P_STRING, P_GLOBAL, &Globals.sslPrivKey, NULL, NULL, 0},
 	{N_("ssl client cert"), P_STRING, P_GLOBAL, &Globals.sslClientCert, NULL, NULL, 0},
 	{N_("ssl client key"), P_STRING, P_GLOBAL, &Globals.sslClientPrivKey, NULL, NULL, 0},
+	{N_("ssl egd socket"), P_STRING, P_GLOBAL, &Globals.sslEgdSocket, NULL, NULL, 0},
+	{N_("ssl entropy file"), P_STRING, P_GLOBAL, &Globals.sslEntropyFile, NULL, NULL, 0},
+	{N_("ssl entropy bytes"), P_INTEGER, P_GLOBAL, &Globals.sslEntropyBytes, NULL, NULL, 0},
 	{N_("ssl require clientcert"), P_BOOL, P_GLOBAL, &Globals.sslReqClientCert, NULL, NULL, 0},
 	{N_("ssl require servercert"), P_BOOL, P_GLOBAL, &Globals.sslReqServerCert, NULL, NULL, 0},
 	{N_("ssl ciphers"), P_STRING, P_GLOBAL, &Globals.sslCiphers, NULL, NULL, 0},
@@ -1311,6 +1317,9 @@ static void init_globals(void)
 	string_set(&Globals.sslClientCert, "");
 	string_set(&Globals.sslClientPrivKey, "");
 	string_set(&Globals.sslCiphers, "");
+	string_set(&Globals.sslEgdSocket, "");
+	string_set(&Globals.sslEntropyFile, "");
+	Globals.sslEntropyBytes = 256;
 	Globals.sslEnabled = False;
 	Globals.sslReqClientCert = False;
 	Globals.sslReqServerCert = False;
@@ -1519,6 +1528,9 @@ FN_GLOBAL_STRING(lp_ssl_privkey, &Globals.sslPrivKey)
 FN_GLOBAL_STRING(lp_ssl_client_cert, &Globals.sslClientCert)
 FN_GLOBAL_STRING(lp_ssl_client_privkey, &Globals.sslClientPrivKey)
 FN_GLOBAL_STRING(lp_ssl_ciphers, &Globals.sslCiphers)
+FN_GLOBAL_STRING(lp_ssl_egdsocket, &Globals.sslEgdSocket)
+FN_GLOBAL_STRING(lp_ssl_entropyfile, &Globals.sslEntropyFile)
+FN_GLOBAL_INTEGER(lp_ssl_entropybytes, &Globals.sslEntropyBytes)
 FN_GLOBAL_BOOL(lp_ssl_enabled, &Globals.sslEnabled)
 FN_GLOBAL_BOOL(lp_ssl_reqClientCert, &Globals.sslReqClientCert)
 FN_GLOBAL_BOOL(lp_ssl_reqServerCert, &Globals.sslReqServerCert)
