@@ -139,7 +139,7 @@ static struct key_data *_new_derived_key(krb5_crypto crypto, unsigned usage);
  ************************************************************/
 
 static void
-DES_random_key(krb5_context context,
+krb5_DES_random_key(krb5_context context,
 	       krb5_keyblock *key)
 {
     des_cblock *k = key->keyvalue.data;
@@ -150,7 +150,7 @@ DES_random_key(krb5_context context,
 }
 
 static void
-DES_schedule(krb5_context context,
+krb5_DES_schedule(krb5_context context,
 	     struct key_data *key)
 {
     des_set_key(key->key->keyvalue.data, key->schedule->data);
@@ -188,7 +188,7 @@ DES_string_to_key_int(unsigned char *data, size_t length, des_cblock *key)
 }
 
 static krb5_error_code
-DES_string_to_key(krb5_context context,
+krb5_DES_string_to_key(krb5_context context,
 		  krb5_enctype enctype,
 		  krb5_data password,
 		  krb5_salt salt,
@@ -225,7 +225,7 @@ DES_string_to_key(krb5_context context,
  * Short passwords, i.e 8 characters or less.
  */
 static void
-DES_AFS3_CMU_string_to_key (krb5_data pw,
+krb5_DES_AFS3_CMU_string_to_key (krb5_data pw,
 			    krb5_data cell,
 			    des_cblock *key)
 {
@@ -254,7 +254,7 @@ DES_AFS3_CMU_string_to_key (krb5_data pw,
  * Long passwords, i.e 9 characters or more.
  */
 static void
-DES_AFS3_Transarc_string_to_key (krb5_data pw,
+krb5_DES_AFS3_Transarc_string_to_key (krb5_data pw,
 				 krb5_data cell,
 				 des_cblock *key)
 {
@@ -301,9 +301,9 @@ DES_AFS3_string_to_key(krb5_context context,
 {
     des_cblock tmp;
     if(password.length > 8)
-	DES_AFS3_Transarc_string_to_key(password, salt.saltvalue, &tmp);
+	krb5_DES_AFS3_Transarc_string_to_key(password, salt.saltvalue, &tmp);
     else
-	DES_AFS3_CMU_string_to_key(password, salt.saltvalue, &tmp);
+	krb5_DES_AFS3_CMU_string_to_key(password, salt.saltvalue, &tmp);
     key->keytype = enctype;
     krb5_data_copy(&key->keyvalue, tmp, sizeof(tmp));
     memset(&key, 0, sizeof(key));
@@ -508,8 +508,8 @@ struct key_type keytype_des = {
     56,
     sizeof(des_cblock),
     sizeof(des_key_schedule),
-    DES_random_key,
-    DES_schedule,
+    krb5_DES_random_key,
+    krb5_DES_schedule,
     des_salt
 };
 
@@ -571,7 +571,7 @@ struct salt_type des_salt[] = {
     {
 	KRB5_PW_SALT,
 	"pw-salt",
-	DES_string_to_key
+	krb5_DES_string_to_key
     },
     {
 	KRB5_AFS3_SALT,
