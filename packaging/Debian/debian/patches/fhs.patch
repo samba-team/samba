@@ -1,7 +1,7 @@
 diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makefile.in
 --- samba-3.0alpha23.orig/source/Makefile.in	2003-03-30 20:28:28.000000000 -0600
 +++ samba-3.0alpha23/source/Makefile.in	2003-04-04 21:04:05.000000000 -0600
-@@ -67,6 +67,7 @@
+@@ -68,6 +68,7 @@
  CONFIGDIR = @configdir@
  VARDIR = @localstatedir@
  MANDIR = @mandir@
@@ -9,7 +9,7 @@ diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makef
  
  # The permissions to give the executables
  INSTALLPERMS = 0755
-@@ -90,6 +91,13 @@
+@@ -91,6 +92,13 @@
  # the directory where lock files go
  LOCKDIR = @lockdir@
  
@@ -23,7 +23,7 @@ diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makef
  # the directory where pid files go
  PIDDIR = @piddir@
  # man pages language(s)
-@@ -114,7 +122,7 @@
+@@ -115,7 +123,7 @@
  PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
  PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
  	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
@@ -32,7 +32,7 @@ diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makef
  PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
  
  # Note that all executable programs now provide for an optional executable suffix.
-@@ -1128,7 +1136,7 @@
+@@ -1129,7 +1137,7 @@
  	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
  
  installdat: installdirs
@@ -131,7 +131,7 @@ diff -uNr samba-3.0alpha23.orig/source/dynconfig.c samba-3.0alpha23/source/dynco
 diff -uNr samba-3.0alpha23.orig/source/groupdb/mapping.c samba-3.0alpha23/source/groupdb/mapping.c
 --- samba-3.0alpha23.orig/source/groupdb/mapping.c	2003-03-30 20:28:28.000000000 -0600
 +++ samba-3.0alpha23/source/groupdb/mapping.c	2003-04-04 21:04:05.000000000 -0600
-@@ -214,7 +214,7 @@
+@@ -134,7 +134,7 @@
  	
  	if (tdb && local_pid == sys_getpid())
  		return True;
@@ -277,27 +277,6 @@ diff -uNr samba-3.0alpha23.orig/source/lib/util_unistr.c samba-3.0alpha23/source
  	if (valid_file) {
  		valid_table = valid_file;
  		mapped_file = 1;
-diff -uNr samba-3.0alpha23.orig/source/libsmb/netlogon_unigrp.c samba-3.0alpha23/source/libsmb/netlogon_unigrp.c
---- samba-3.0alpha23.orig/source/libsmb/netlogon_unigrp.c	2003-01-02 10:22:58.000000000 -0600
-+++ samba-3.0alpha23/source/libsmb/netlogon_unigrp.c	2003-04-04 21:04:06.000000000 -0600
-@@ -41,7 +41,7 @@
- BOOL uni_group_cache_init(void)
- {
- 	if (!netlogon_unigrp_tdb) {
--		netlogon_unigrp_tdb = tdb_open_log(lock_path("netlogon_unigrp.tdb"), 0,
-+		netlogon_unigrp_tdb = tdb_open_log(state_path("netlogon_unigrp.tdb"), 0,
- 						   TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
- 	}
- 
-@@ -119,7 +119,7 @@
- 		return NULL;
- 	}
- 	if (!netlogon_unigrp_tdb) {
--		netlogon_unigrp_tdb = tdb_open_log(lock_path("netlogon_unigrp.tdb"), 0,
-+		netlogon_unigrp_tdb = tdb_open_log(state_path("netlogon_unigrp.tdb"), 0,
-                 				    TDB_DEFAULT, O_RDWR, 0644);
- 	}
- 	if (!netlogon_unigrp_tdb) {
 diff -uNr samba-3.0alpha23.orig/source/nmbd/nmbd_serverlistdb.c samba-3.0alpha23/source/nmbd/nmbd_serverlistdb.c
 --- samba-3.0alpha23.orig/source/nmbd/nmbd_serverlistdb.c	2002-12-12 09:07:32.000000000 -0600
 +++ samba-3.0alpha23/source/nmbd/nmbd_serverlistdb.c	2003-04-04 21:04:06.000000000 -0600
@@ -310,12 +289,11 @@ diff -uNr samba-3.0alpha23.orig/source/nmbd/nmbd_serverlistdb.c samba-3.0alpha23
    trim_string(fname,NULL,"/");
    pstrcat(fname,"/");
    pstrcat(fname,SERVER_LIST);
-diff -uNr samba-3.0alpha23.orig/source/nsswitch/winbindd_cache.c samba-3.0alpha23/source/nsswitch/winbindd_cache.c
---- samba-3.0alpha23.orig/source/nsswitch/winbindd_cache.c	2002-10-16 12:52:31.000000000 -0500
-+++ samba-3.0alpha23/source/nsswitch/winbindd_cache.c	2003-04-04 21:04:06.000000000 -0600
-@@ -53,7 +53,7 @@
- 	}
- 	if (opt_nocache) return;
+--- samba/source/nsswitch/winbindd_cache.c.orig	2003-07-02 22:37:40.000000000 -0400
++++ samba/source/nsswitch/winbindd_cache.c	2003-07-02 22:39:05.000000000 -0400
+@@ -56,7 +56,7 @@
+ 	if (opt_nocache)
+ 		return;
  
 -	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
 +	wcache->tdb = tdb_open_log(cache_path("winbindd_cache.tdb"), 5000, 
@@ -335,7 +313,7 @@ diff -uNr samba-3.0alpha23.orig/source/param/loadparm.c samba-3.0alpha23/source/
  	char *szLockDir;
  	char *szPidDir;
  	char *szRootdir;
-@@ -1051,8 +1054,13 @@
+@@ -1055,8 +1058,13 @@
  	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
  	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
  	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -501,7 +479,7 @@ diff -uNr samba-3.0alpha23.orig/source/wrepld/process.c samba-3.0alpha23/source/
 diff -uNr samba-3.0alpha23.orig/source/passdb/pdb_tdb.c samba-3.0alpha23/source/passdb/pdb_tdb.c
 --- samba-3.0alpha23.orig/source/passdb/pdb_tdb.c	2003-03-30 20:28:29.000000000 -0600
 +++ samba-3.0alpha23/source/passdb/pdb_tdb.c	2003-04-30 13:51:43.000000000 -0500
-@@ -943,10 +943,7 @@
+@@ -956,10 +956,7 @@
  	if (location) {
  		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, location);
  	} else {
