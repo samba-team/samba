@@ -915,12 +915,10 @@ case "$host_os" in
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
 			DYNEXP="-Wl,-brtl,-bexpall"
-			if test "${GCC}" = "yes"; then
 				PICFLAG="-O2"
-			else
-				PICFLAG="-O2 -qmaxmem=6000"
+			if test "${GCC}" = "no"; then
 				## for funky AIX compiler using strncpy()
-				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT"
+				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
 			fi
 
 			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE)

@@ -174,14 +174,6 @@ void sys_select_signal(void);
 int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
 int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
 
-/* The following definitions come from lib/sendfile.c  */
-
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-
 /* The following definitions come from lib/signal.c  */
 
 void BlockSignals(BOOL block,int signum);
