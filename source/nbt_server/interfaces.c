@@ -191,7 +191,7 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 		   for non-WINS queries not made on a specific
 		   interface */
 		if (num_interfaces > 0) {
-			primary_address = sys_inet_ntoa(*iface_n_ip(0));
+			primary_address = iface_n_ip(0);
 		} else {
 			primary_address = sys_inet_ntoa(interpret_addr2(
 								lp_netbios_name()));
@@ -208,9 +208,9 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 	}
 
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, sys_inet_ntoa(*iface_n_ip(i)));
-		const char *bcast   = talloc_strdup(tmp_ctx, sys_inet_ntoa(*iface_n_bcast(i)));
-		const char *netmask = talloc_strdup(tmp_ctx, sys_inet_ntoa(*iface_n_netmask(i)));
+		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
+		const char *bcast   = talloc_strdup(tmp_ctx, iface_n_bcast(i));
+		const char *netmask = talloc_strdup(tmp_ctx, iface_n_netmask(i));
 
 		status = nbtd_add_socket(nbtsrv, address, address, bcast, netmask);
 		NT_STATUS_NOT_OK_RETURN(status);
