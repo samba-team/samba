@@ -3862,7 +3862,8 @@ BOOL api_netlog_rpc(rpcsrv_struct *p);
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
 BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
-		char **rdata, int *rlen);
+		char **rdata, int *rlen,
+		BOOL *pipe_outstanding);
 ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
 int read_pipe(pipes_struct *p, char *data, int n);
 
@@ -4377,7 +4378,8 @@ void file_chain_restore(void);
 void send_trans_reply(char *outbuf,
 				prs_struct *rdata,
 				prs_struct *rparam,
-				uint16 *setup, int lsetup, int max_data_ret);
+				uint16 *setup, int lsetup, int max_data_ret,
+				BOOL pipe_data_outstanding);
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize);
 
 /*The following definitions come from  smbd/lanman.c  */

@@ -3147,7 +3147,7 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
   prs_create(&rparam_buf, rparam, rparam_len, 0, False);
 
   /* now send the reply */
-  send_trans_reply(outbuf, &rdata_buf, &rparam_buf, NULL, 0, 0);
+  send_trans_reply(outbuf, &rdata_buf, &rparam_buf, NULL, 0, 0, False);
 
   prs_free_data(&rdata_buf );
   prs_free_data(&rparam_buf);

@@ -33,8 +33,13 @@ extern int DEBUGLEVEL;
  case of the RPC_BINDCONT pdu).
  ********************************************************************/
 BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
-		char **rdata, int *rlen)
+		char **rdata, int *rlen,
+		BOOL *pipe_outstanding)
 {
+	fd_set fds;
+	int selrtn;
+	struct timeval timeout;
+
 	DEBUG(10,("rpc_to_smb_readwrite: len %d\n", len));
 
 	if (write(p->m->fd, data, len) != len)
@@ -65,16 +70,42 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 	{
 		return False;
 	}
+
+	/* now check whether there is outstanding data on the pipe.
+	 * this is needed to as to report a STATUS message back to
+	 * the NT client.  yes, NT clients fail to operate if you
+	 * don't set a STATUS_BUFFER_OVERFLOW warning on the SMBtrans
+	 * response.  *dur*!  what's msrpc got to do with smb, ANYWAY!!
+	 */
+
+	FD_ZERO(&fds);
+	FD_SET(p->m->fd,&fds);
+
+	/* Set initial timeout to zero */
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+
+	selrtn = sys_select(p->m->fd+1,&fds,NULL, &timeout);
+
+	/* Check if error */
+	if (selrtn == -1)
+	{
+		/* something is wrong. Maybe the socket is dead? */
+		return -1;
+	}
+
+	*pipe_outstanding = FD_ISSET(p->m->fd, &fds);
+
 	return True;
 }
 
 /****************************************************************************
- writes data to a pipe.
- ****************************************************************************/
+writes data to a pipe.
+****************************************************************************/
 ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
 {
-	DEBUG(6,("write_pipe: %x", p->pnum));
-	DEBUG(6,("name: %s open: %s len: %d",
+DEBUG(6,("write_pipe: %x", p->pnum));
+DEBUG(6,("name: %s open: %s len: %d",
 		 p->name, BOOLSTR(p->open), n));
 
 	dump_data(50, data, n);
@@ -102,6 +133,7 @@ int read_pipe(pipes_struct *p, char *data, int n)
 		return -1;		
 	}
 
-	return read_with_timeout(p->m->fd, data, 16, n, 10000);
+	/* read a minimum of 1 byte! :-) */
+	return read_with_timeout(p->m->fd, data, 1, n, 10000);
 }
 

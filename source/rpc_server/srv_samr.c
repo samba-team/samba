@@ -788,6 +788,8 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	DOM_SID sid;
 	fstring sid_str;
 
+	ZERO_STRUCT(r_e);
+
 	r_e.status = 0x0;
 	r_e.num_entries2 = 0;
 

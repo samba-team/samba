@@ -72,7 +72,8 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 void send_trans_reply(char *outbuf,
 				prs_struct *rdata,
 				prs_struct *rparam,
-				uint16 *setup, int lsetup, int max_data_ret)
+				uint16 *setup, int lsetup, int max_data_ret,
+				BOOL pipe_data_outstanding)
 {
 	int i;
 	int this_ldata,this_lparam;
@@ -100,7 +101,7 @@ void send_trans_reply(char *outbuf,
 
 	set_message(outbuf,10+lsetup,1+align+this_ldata+this_lparam,True);
 
-	if (buffer_too_large)
+	if (buffer_too_large || pipe_data_outstanding)
 	{
 		if (global_client_caps & CAP_STATUS32)
 		{
@@ -169,12 +170,14 @@ void send_trans_reply(char *outbuf,
 	}
 }
 
-static void api_rpc_trans_reply(char *outbuf, char *rdata, int rlen)
+static void api_rpc_trans_reply(char *outbuf, char *rdata, int rlen,
+				BOOL pipe_data_outstanding)
 {
 	prs_struct ps;
 	prs_create(&ps, rdata, rlen, 0, False);
 	prs_debug_out(&ps, "api_rpc_trans_reply", 200);
-	send_trans_reply(outbuf, &ps, NULL, NULL, 0, rlen);
+	send_trans_reply(outbuf, &ps, NULL, NULL, 0, rlen,
+	                 pipe_data_outstanding);
 }
 
 /****************************************************************************
@@ -192,7 +195,7 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param, int mdrcnt)
 	if (wait_rpc_pipe_hnd_state(p, priority))
 	{
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, mdrcnt);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, mdrcnt, False);
 
 		return True;
 	}
@@ -215,7 +218,7 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param, int mdrcnt)
 	if (set_rpc_pipe_hnd_state(p, id))
 	{
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, mdrcnt);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, mdrcnt, False);
 
 		return True;
 	}
@@ -242,7 +245,7 @@ static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply(outbuf, NULL, &rparam, NULL, 0, max_rdata_len);
+	send_trans_reply(outbuf, NULL, &rparam, NULL, 0, max_rdata_len, False);
 
 	prs_free_data(&rparam);
 
@@ -288,13 +291,16 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		{
 			case 0x26:
 			{
+				BOOL pipe_outstanding = False;
 				char *rdata = NULL;
 				int rlen = mdrcnt;
 				reply = readwrite_pipe(p, data, tdscnt,
-				                       &rdata, &rlen);
+				                       &rdata, &rlen,
+				                       &pipe_outstanding);
 				if (reply)
 				{
-					api_rpc_trans_reply(outbuf, rdata, rlen);
+					api_rpc_trans_reply(outbuf, rdata, rlen,
+					                    pipe_outstanding);
 				}
 				break;
 			}
