@@ -22,13 +22,15 @@
 */
 
 #include "winbindd.h"
+#include "sids.h"
 
 /* Convert a string  */
 
 enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 {
 	enum SID_NAME_USE type;
-	DOM_SID sid;
+	DOM_SID sid, tmp_sid;
+	uint32 rid;
 	fstring name;
 
 	DEBUG(3, ("[%5d]: lookupsid %s\n", state->pid, 
@@ -37,6 +39,17 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	/* Lookup sid from PDC using lsa_lookup_sids() */
 
 	string_to_sid(&sid, state->request.data.sid);
+
+	/* Don't look up BUILTIN sids */
+
+	sid_copy(&tmp_sid, &sid);
+	sid_split_rid(&tmp_sid, &rid);
+
+	if (sid_equal(&tmp_sid, global_sid_builtin)) {
+		return WINBINDD_ERROR;
+	}
+
+	/* Lookup the sid */
 
 	if (!winbindd_lookup_name_by_sid(&sid, name, &type)) {
 		return WINBINDD_ERROR;
