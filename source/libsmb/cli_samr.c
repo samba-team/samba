@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 2.2
    RPC pipe client
-   Copyright (C) Tim Potter                             2000,
+   Copyright (C) Tim Potter                        2000-2001,
    Copyright (C) Andrew Tridgell              1992-1997,2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000,
    Copyright (C) Paul Ashton                       1997,2000,
@@ -84,18 +84,14 @@ void cli_samr_shutdown(struct cli_state *cli)
 
 /* Connect to SAMR database */
 
-uint32 cli_samr_connect(
-	struct cli_state *cli,
-	TALLOC_CTX *mem_ctx, 
-	char *srv_name,
-	uint32 access_mask, 
-	POLICY_HND *connect_pol
-)
+uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			char *srv_name, uint32 access_mask, 
+			POLICY_HND *connect_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_CONNECT q;
 	SAMR_R_CONNECT r;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -111,14 +107,12 @@ uint32 cli_samr_connect(
 
 	if (!samr_io_q_connect("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_CONNECT, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!samr_io_r_connect("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -137,16 +131,13 @@ uint32 cli_samr_connect(
 
 /* Close SAMR handle */
 
-uint32 cli_samr_close(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *connect_pol
-)
+uint32 cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		      POLICY_HND *connect_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_CLOSE_HND q;
 	SAMR_R_CLOSE_HND r;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -162,14 +153,12 @@ uint32 cli_samr_close(
 
 	if (!samr_io_q_close_hnd("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_CLOSE_HND, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!samr_io_r_close_hnd("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -188,19 +177,14 @@ uint32 cli_samr_close(
 
 /* Open handle on a domain */
 
-uint32 cli_samr_open_domain(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *connect_pol,
-	uint32 access_mask, 
-	DOM_SID *domain_sid,
-	POLICY_HND *domain_pol
-)
+uint32 cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    POLICY_HND *connect_pol, uint32 access_mask, 
+			    DOM_SID *domain_sid, POLICY_HND *domain_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_OPEN_DOMAIN q;
 	SAMR_R_OPEN_DOMAIN r;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -216,14 +200,12 @@ uint32 cli_samr_open_domain(
 
 	if (!samr_io_q_open_domain("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_OPEN_DOMAIN, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!samr_io_r_open_domain("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -242,19 +224,14 @@ uint32 cli_samr_open_domain(
 
 /* Open handle on a user */
 
-uint32 cli_samr_open_user(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *domain_pol,
-	uint32 access_mask, 
-	uint32 user_rid,
-	POLICY_HND *user_pol
-)
+uint32 cli_samr_open_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  POLICY_HND *domain_pol, uint32 access_mask, 
+			  uint32 user_rid, POLICY_HND *user_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_OPEN_USER q;
 	SAMR_R_OPEN_USER r;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -270,14 +247,12 @@ uint32 cli_samr_open_user(
 
 	if (!samr_io_q_open_user("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_OPEN_USER, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!samr_io_r_open_user("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -296,19 +271,14 @@ uint32 cli_samr_open_user(
 
 /* Open handle on a group */
 
-uint32 cli_samr_open_group(
-	struct cli_state *cli,
-	TALLOC_CTX *mem_ctx, 
-	POLICY_HND *domain_pol,
-	uint32 access_mask, 
-	uint32 group_rid,
-	POLICY_HND *group_pol
-)
+uint32 cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   POLICY_HND *domain_pol, uint32 access_mask, 
+			   uint32 group_rid, POLICY_HND *group_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_OPEN_GROUP q;
 	SAMR_R_OPEN_GROUP r;
-	uint32 result;
+	uint32 result =  NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -324,14 +294,12 @@ uint32 cli_samr_open_group(
 
 	if (!samr_io_q_open_group("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_OPEN_GROUP, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!samr_io_r_open_group("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -350,18 +318,14 @@ uint32 cli_samr_open_group(
 
 /* Query user info */
 
-uint32 cli_samr_query_userinfo(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *user_pol, 
-	uint16 switch_value, 
-	SAM_USERINFO_CTR *ctr
-)
+uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *user_pol, uint16 switch_value, 
+			       SAM_USERINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_USERINFO q;
 	SAMR_R_QUERY_USERINFO r;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -377,7 +341,6 @@ uint32 cli_samr_query_userinfo(
 
 	if (!samr_io_q_query_userinfo("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_QUERY_USERINFO, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -386,7 +349,6 @@ uint32 cli_samr_query_userinfo(
 	r.ctr = ctr;
 
 	if (!samr_io_r_query_userinfo("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -403,18 +365,14 @@ uint32 cli_samr_query_userinfo(
 
 /* Query group info */
 
-uint32 cli_samr_query_groupinfo(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *group_pol,
-	uint32 info_level, 
-	GROUP_INFO_CTR *ctr
-)
+uint32 cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *group_pol, uint32 info_level, 
+				GROUP_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_GROUPINFO q;
 	SAMR_R_QUERY_GROUPINFO r;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -430,7 +388,6 @@ uint32 cli_samr_query_groupinfo(
 
 	if (!samr_io_q_query_groupinfo("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_QUERY_GROUPINFO, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -439,7 +396,6 @@ uint32 cli_samr_query_groupinfo(
 	r.ctr = ctr;
 
 	if (!samr_io_r_query_groupinfo("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -456,18 +412,14 @@ uint32 cli_samr_query_groupinfo(
 
 /* Query user groups */
 
-uint32 cli_samr_query_usergroups(
-	struct cli_state *cli,
-	TALLOC_CTX *mem_ctx, 
-	POLICY_HND *user_pol,
-	uint32 *num_groups, 
-	DOM_GID **gid
-)
+uint32 cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				 POLICY_HND *user_pol, uint32 *num_groups, 
+				 DOM_GID **gid)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_USERGROUPS q;
 	SAMR_R_QUERY_USERGROUPS r;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -483,14 +435,12 @@ uint32 cli_samr_query_usergroups(
 
 	if (!samr_io_q_query_usergroups("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_QUERY_USERGROUPS, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!samr_io_r_query_usergroups("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -510,19 +460,14 @@ uint32 cli_samr_query_usergroups(
 
 /* Query user groups */
 
-uint32 cli_samr_query_groupmem(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *group_pol,
-	uint32 *num_mem, 
-	uint32 **rid, 
-	uint32 **attr
-)
+uint32 cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *group_pol, uint32 *num_mem, 
+			       uint32 **rid, uint32 **attr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_GROUPMEM q;
 	SAMR_R_QUERY_GROUPMEM r;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -538,14 +483,12 @@ uint32 cli_samr_query_groupmem(
 
 	if (!samr_io_q_query_groupmem("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_QUERY_GROUPMEM, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!samr_io_r_query_groupmem("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -740,6 +683,107 @@ uint32 cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
 		*alias_pol = r.pol;
 	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Query domain info */
+
+uint32 cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *domain_pol, uint16 switch_value,
+			       SAM_UNK_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_DOMAIN_INFO q;
+	SAMR_R_QUERY_DOMAIN_INFO r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_dom_info(&q, domain_pol, switch_value);
+
+	if (!samr_io_q_query_dom_info("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_QUERY_DOMAIN_INFO, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	r.ctr = ctr;
+
+	if (!samr_io_r_query_dom_info("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Query display info */
+
+uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *domain_pol, uint32 *start_idx,
+			       uint16 switch_value, uint32 *num_entries,
+			       uint32 max_entries, SAM_DISPINFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_DISPINFO q;
+	SAMR_R_QUERY_DISPINFO r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_dispinfo(&q, domain_pol, switch_value,
+				   *start_idx, max_entries);
+
+	if (!samr_io_q_query_dispinfo("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_QUERY_DISPINFO, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_query_dispinfo("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	*num_entries = r.num_entries;
+	*start_idx += r.num_entries;  /* No next_idx in this structure! */
 
  done:
 	prs_mem_free(&qbuf);
