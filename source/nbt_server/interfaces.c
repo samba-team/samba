@@ -91,7 +91,7 @@ static NTSTATUS nbt_add_socket(struct nbt_server *nbtsrv,
 
 	if (strcmp(netmask, "0.0.0.0") != 0) {
 		bcast_nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
-		NT_STATUS_HAVE_NO_MEMORY(iface->ip_address);
+		NT_STATUS_HAVE_NO_MEMORY(bcast_nbtsock);
 
 		status = socket_listen(bcast_nbtsock->sock, bcast, lp_nbt_port(), 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
