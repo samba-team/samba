@@ -611,6 +611,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		fstring domain_group_name;
 		uint32 result;
 		gid_t group_gid;
+		int gr_mem_len;
+		char *gr_mem, *new_gr_mem_list;
 		
 		/* Do we need to fetch another chunk of groups? */
 
@@ -675,8 +677,6 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		/* Fill in group membership entry */
 
 		if (result) {
-			int gr_mem_len;
-			char *gr_mem, *new_gr_mem_list;
 
 			/* Get group membership */
 
@@ -686,7 +686,9 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 				SID_NAME_DOM_GRP,
 				&group_list[group_list_ndx].num_gr_mem, 
 				&gr_mem, &gr_mem_len);
+		}
 
+		if (result) {
 			/* Append to group membership list */
 
 			new_gr_mem_list = Realloc(
