@@ -39,8 +39,8 @@ typedef struct {
 } ADS_STRUCT;
 
 /* there are 5 possible types of errors the ads subsystem can produce */
-enum ads_error_type {ADS_ERROR_KRB5, ADS_ERROR_GSS, 
-		     ADS_ERROR_LDAP, ADS_ERROR_SYSTEM, ADS_ERROR_NT};
+enum ads_error_type {ENUM_ADS_ERROR_KRB5, ENUM_ADS_ERROR_GSS, 
+		     ENUM_ADS_ERROR_LDAP, ENUM_ADS_ERROR_SYSTEM, ENUM_ADS_ERROR_NT};
 
 typedef struct {
 	enum ads_error_type error_type;
@@ -48,7 +48,7 @@ typedef struct {
 		int rc;
 		NTSTATUS nt_status;
 	} err;
-	/* For error_type = ADS_ERROR_GSS minor_status describe GSS API error */
+	/* For error_type = ENUM_ADS_ERROR_GSS minor_status describe GSS API error */
 	/* Where rc represents major_status of GSS API error */
 	int minor_status;
 } ADS_STATUS;
@@ -61,13 +61,13 @@ typedef void **ADS_MODLIST;
 
 /* macros to simplify error returning */
 #define ADS_ERROR(rc) ADS_ERROR_LDAP(rc)
-#define ADS_ERROR_LDAP(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0)
-#define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc?rc:EINVAL, 0)
-#define ADS_ERROR_KRB5(rc) ads_build_error(ADS_ERROR_KRB5, rc, 0)
-#define ADS_ERROR_GSS(rc, minor) ads_build_error(ADS_ERROR_GSS, rc, minor)
-#define ADS_ERROR_NT(rc) ads_build_nt_error(ADS_ERROR_NT,rc)
+#define ADS_ERROR_LDAP(rc) ads_build_error(ENUM_ADS_ERROR_LDAP, rc, 0)
+#define ADS_ERROR_SYSTEM(rc) ads_build_error(ENUM_ADS_ERROR_SYSTEM, rc?rc:EINVAL, 0)
+#define ADS_ERROR_KRB5(rc) ads_build_error(ENUM_ADS_ERROR_KRB5, rc, 0)
+#define ADS_ERROR_GSS(rc, minor) ads_build_error(ENUM_ADS_ERROR_GSS, rc, minor)
+#define ADS_ERROR_NT(rc) ads_build_nt_error(ENUM_ADS_ERROR_NT,rc)
 
-#define ADS_ERR_OK(status) ((status.error_type == ADS_ERROR_NT) ? NT_STATUS_IS_OK(status.err.nt_status):(status.err.rc == 0))
+#define ADS_ERR_OK(status) ((status.error_type == ENUM_ADS_ERROR_NT) ? NT_STATUS_IS_OK(status.err.nt_status):(status.err.rc == 0))
 #define ADS_SUCCESS ADS_ERROR(0)
 
 /* time between reconnect attempts */

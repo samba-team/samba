@@ -4277,7 +4277,7 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
 	   
 	if ( is_user ) {
 		GROUP_MAP	*mappings = NULL;
-		uint32		num_groups, i;
+		int		num_groups, i;
 		struct group	*grp2;
 		
 		if ( pdb_enum_group_mapping(type, &mappings, &num_groups, False) && num_groups>0 ) {

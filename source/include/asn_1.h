@@ -60,10 +60,10 @@ typedef struct {
 #define SPNEGO_NEG_RESULT_REJECT 2
 
 /* not really ASN.1, but RFC 1964 */
-#define TOK_ID_KRB_AP_REQ	"\x01\x00"
-#define TOK_ID_KRB_AP_REP	"\x02\x00"
-#define TOK_ID_KRB_ERROR	"\x03\x00"
-#define TOK_ID_GSS_GETMIC	"\x01\x01"
-#define TOK_ID_GSS_WRAP		"\x02\x01"
+#define TOK_ID_KRB_AP_REQ	(uchar*)"\x01\x00"
+#define TOK_ID_KRB_AP_REP	(uchar*)"\x02\x00"
+#define TOK_ID_KRB_ERROR	(uchar*)"\x03\x00"
+#define TOK_ID_GSS_GETMIC	(uchar*)"\x01\x01"
+#define TOK_ID_GSS_WRAP		(uchar*)"\x02\x01"
 
 #endif /* _ASN_1_H */
