@@ -133,8 +133,24 @@ krb5_recvauth(krb5_context context,
 		     &ap_options,
 		     ticket);
   krb5_data_free (&data);
-  if (ret)
-    return ret;
+  if (ret) {
+      krb5_data error_data;
+      krb5_error_code ret2;
+
+      ret2 = krb5_mk_error (context,
+			    ret,
+			    NULL,
+			    NULL,
+			    NULL,
+			    server,
+			    0,
+			    &error_data);
+      if (ret2 == 0) {
+	  krb5_write_message (context, p_fd, &error_data);
+	  krb5_data_free (&error_data);
+      }
+      return ret;
+  }      
 
   len = 0;
   if (krb5_net_write (context, fd, &len, 4) != 4)
