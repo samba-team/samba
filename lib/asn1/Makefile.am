@@ -48,6 +48,7 @@ gen_files =					\
 	asn1_KerberosTime.x			\
 	asn1_KrbCredInfo.x			\
 	asn1_LastReq.x				\
+	asn1_LR_TYPE.x				\
 	asn1_MESSAGE_TYPE.x			\
 	asn1_METHOD_DATA.x			\
 	asn1_NAME_TYPE.x			\
@@ -69,17 +70,27 @@ noinst_PROGRAMS = asn1_compile asn1_print
 check_PROGRAMS = check-der
 TESTS = check-der
 
-asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c \
-	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c \
-	gen_glue.c
+asn1_compile_SOURCES = 				\
+	gen.c					\
+	gen_copy.c				\
+	gen_decode.c				\
+	gen_encode.c				\
+	gen_free.c				\
+	gen_glue.c				\
+	gen_length.c				\
+	hash.c					\
+	lex.l					\
+	main.c					\
+	parse.y					\
+	symbol.c
 
-libasn1_la_SOURCES = \
-	der_get.c \
-	der_put.c \
-	der_free.c \
-	der_length.c \
-	der_copy.c \
-	timegm.c \
+libasn1_la_SOURCES =				\
+	der_get.c				\
+	der_put.c				\
+	der_free.c				\
+	der_length.c				\
+	der_copy.c				\
+	timegm.c				\
 	$(BUILT_SOURCES)
 
 asn1_compile_LDADD = \
