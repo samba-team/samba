@@ -179,6 +179,83 @@ static PyObject *py_smb_nt_create_andx(PyObject *self, PyObject *args,
 	return PyInt_FromLong(result);
 }
 
+static PyObject *py_smb_open(PyObject *self, PyObject *args, PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "filename", "flags", 
+				  "share_mode", NULL };
+	char *filename;
+	uint32 flags, share_mode = DENY_NONE;
+	int result;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "si|i", kwlist, &filename, &flags, &share_mode))
+		return NULL;
+
+	result = cli_open(cli->cli, filename, flags, share_mode);
+
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "open failed");
+		return NULL;
+	}
+
+	/* Return FID */
+
+	return PyInt_FromLong(result);
+}
+
+static PyObject *py_smb_read(PyObject *self, PyObject *args, PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "fnum", "offset", "size", NULL };
+	int fnum, offset=0, size=0;
+	ssize_t result;
+	size_t fsize;
+	char *data;
+	PyObject *ret;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "i|ii", kwlist, &fnum, &offset, &size))
+		return NULL;
+
+	if (!cli_qfileinfo(cli->cli, fnum, NULL, &fsize, NULL, NULL,
+		    NULL, NULL, NULL) &&
+	    !cli_getattrE(cli->cli, fnum, NULL, &fsize, NULL, NULL, NULL)) {
+		PyErr_SetString(PyExc_RuntimeError, "getattrib failed");
+		return NULL;
+	}
+
+	if (offset < 0)
+		offset = 0;
+
+	if (size < 1 || size > fsize - offset)
+		size = fsize - offset;
+
+	if (!(data = (char *) malloc((size_t) size))) {
+		PyErr_SetString(PyExc_RuntimeError, "malloc failed");
+		return NULL;
+	}
+
+	result = cli_read(cli->cli, fnum, data, (off_t) offset, (size_t) size);
+
+	if (result==-1 || cli_is_error(cli->cli)) {
+		SAFE_FREE(data);
+		PyErr_SetString(PyExc_RuntimeError, "read failed");
+		return NULL;
+	}
+
+	/* Return a python string */
+
+	ret = Py_BuildValue("s#", data, result);
+	SAFE_FREE(data);
+
+	return ret;
+}
+
 static PyObject *py_smb_close(PyObject *self, PyObject *args,
 			      PyObject *kw)
 {
@@ -322,6 +399,33 @@ static PyMethodDef smb_hnd_methods[] = {
 
 	{ "nt_create_andx", (PyCFunction)py_smb_nt_create_andx,
 	  METH_VARARGS | METH_KEYWORDS, "NT Create&X" },
+
+	{ "open", (PyCFunction)py_smb_open,
+	  METH_VARARGS | METH_KEYWORDS,
+	  "Open a file\n"
+"\n"
+"This function returns a fnum handle to an open file.  The file is\n"
+"opened with flags and optional share mode.  If unspecified, the\n"
+"default share mode is DENY_NONE\n"
+"\n"
+"Example:\n"
+"\n"
+">>> fnum=conn.open(filename, os.O_RDONLY)" },
+
+	{ "read", (PyCFunction)py_smb_read,
+	  METH_VARARGS | METH_KEYWORDS,
+	  "Read from an open file\n"
+"\n"
+"This function returns a string read from an open file starting at\n"
+"offset for size bytes (until EOF is reached).  If unspecified, the\n"
+"default offset is 0, and default size is the remainder of the file.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> conn.read(fnum)           # read entire file\n"
+">>> conn.read(fnum,5)         # read entire file from offset 5\n"
+">>> conn.read(fnum,size=64)   # read 64 bytes from start of file\n"
+">>> conn.read(fnum,4096,1024) # read 1024 bytes from offset 4096\n" },
 
 	{ "close", (PyCFunction)py_smb_close,
 	  METH_VARARGS | METH_KEYWORDS, "Close" },
