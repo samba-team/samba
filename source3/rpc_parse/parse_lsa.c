@@ -2356,3 +2356,64 @@ BOOL lsa_io_r_add_acct_rights(const char *desc, LSA_R_ADD_ACCT_RIGHTS *r_c, prs_
 
 	return True;
 }
+
+
+/*******************************************************************
+ Inits an LSA_Q_REMOVE_ACCT_RIGHTS structure.
+********************************************************************/
+void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *q_q, 
+			       POLICY_HND *hnd, 
+			       DOM_SID *sid,
+			       uint32 removeall,
+			       uint32 count, 
+			       const char **rights)
+{
+	DEBUG(5, ("init_q_remove_acct_rights\n"));
+
+	q_q->pol = *hnd;
+	init_dom_sid2(&q_q->sid, sid);
+	q_q->removeall = removeall;
+	init_unistr2_array(&q_q->rights, count, rights);
+	q_q->count = 5;
+}
+
+
+/*******************************************************************
+reads or writes a LSA_Q_REMOVE_ACCT_RIGHTS structure.
+********************************************************************/
+BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *q_q, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_remove_acct_rights");
+	depth++;
+
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("sid", &q_q->sid, ps, depth))
+		return False;
+
+	if(!prs_uint32("removeall", ps, depth, &q_q->removeall))
+		return False;
+
+	if(!prs_uint32("count", ps, depth, &q_q->rights.count))
+		return False;
+
+	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a LSA_R_ENUM_ACCT_RIGHTS structure.
+********************************************************************/
+BOOL lsa_io_r_remove_acct_rights(const char *desc, LSA_R_REMOVE_ACCT_RIGHTS *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_remove_acct_rights");
+	depth++;
+
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
