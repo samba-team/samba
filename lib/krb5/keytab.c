@@ -44,6 +44,10 @@ RCSID("$Id$");
 #define O_BINARY 0
 #endif
 
+#define KRB5_KT_VNO_1 1
+#define KRB5_KT_VNO_2 2
+#define KRB5_KT_VNO   KRB5_KT_VNO_2
+
 static struct krb5_keytab_data *kt_types;
 static int num_kt_types;
 
@@ -376,7 +380,8 @@ krb5_kt_ret_principal(krb5_storage *sp,
     ret = krb5_ret_int16(sp, &tmp);
     if(ret)
 	return ret;
-    p->name.name_type = KRB5_NT_SRV_HST;
+    if (sp->flags & KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS)
+	tmp--;
     p->name.name_string.len = tmp;
     ret = krb5_kt_ret_string(sp, &p->realm);
     if(ret) return ret;
@@ -387,6 +392,15 @@ krb5_kt_ret_principal(krb5_storage *sp,
     for(i = 0; i < p->name.name_string.len; i++){
 	ret = krb5_kt_ret_string(sp, p->name.name_string.val + i);
 	if(ret) return ret;
+    }
+    if (krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE))
+	p->name.name_type = KRB5_NT_UNKNOWN;
+    else {
+	int32_t tmp32;
+	ret = krb5_ret_int32(sp, &tmp32);
+	p->name.name_type = tmp32;
+	if (ret)
+	    return ret;
     }
     *princ = p;
     return 0;
@@ -460,7 +474,10 @@ krb5_kt_store_principal(krb5_storage *sp,
     int i;
     int ret;
     
-    ret = krb5_store_int16(sp, p->name.name_string.len);
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS))
+	ret = krb5_store_int16(sp, p->name.name_string.len + 1);
+    else
+	ret = krb5_store_int16(sp, p->name.name_string.len);
     if(ret) return ret;
     ret = krb5_kt_store_string(sp, p->realm);
     if(ret) return ret;
@@ -468,6 +485,12 @@ krb5_kt_store_principal(krb5_storage *sp,
 	ret = krb5_kt_store_string(sp, p->name.name_string.val[i]);
 	if(ret) return ret;
     }
+    if(!krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE)) {
+	ret = krb5_store_int32(sp, p->name.name_type);
+	if(ret)
+	    return ret;
+    }
+
     return 0;
 }
 
@@ -521,8 +544,27 @@ fkt_get_name(krb5_context context,
 {
     /* This function is XXX */
     struct fkt_data *d = id->data;
-    strncpy(name, d->filename, namesize);
+    strcpy_truncate(name, d->filename, namesize);
     return 0;
+}
+
+static void
+storage_set_flags(krb5_context context, krb5_storage *sp, int vno)
+{
+    int flags = 0;
+    switch(vno) {
+    case KRB5_KT_VNO_1:
+	flags |= KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS;
+	flags |= KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE;
+	flags |= KRB5_STORAGE_HOST_BYTEORDER;
+	break;
+    case KRB5_KT_VNO_2:
+	break;
+    default:
+	krb5_abortx(context, 
+		    "storage_set_flags called with bad vno (%x)", vno);
+    }
+    krb5_storage_set_flags(sp, flags);
 }
 
 static krb5_error_code
@@ -531,7 +573,7 @@ fkt_start_seq_get_int(krb5_context context,
 		      int flags,
 		      krb5_kt_cursor *c)
 {
-    int16_t tag;
+    int8_t pvno, tag;
     krb5_error_code ret;
     struct fkt_data *d = id->data;
     
@@ -539,17 +581,25 @@ fkt_start_seq_get_int(krb5_context context,
     if (c->fd < 0)
 	return errno;
     c->sp = krb5_storage_from_fd(c->fd);
-    ret = krb5_ret_int16(c->sp, &tag);
-    if (ret) {
+    ret = krb5_ret_int8(c->sp, &pvno);
+    if(ret) {
+	krb5_storage_free(c->sp);
 	close(c->fd);
 	return ret;
     }
-    if (tag != 0x0502) {
+    if(pvno != 5) {
 	krb5_storage_free(c->sp);
 	close(c->fd);
-	return KRB5_KT_UNKNOWN_TYPE;
+	return KRB5_KEYTAB_BADVNO;
     }
-    c->offset = c->sp->seek(c->sp, 0, SEEK_CUR);
+    ret = krb5_ret_int8(c->sp, &tag);
+    if (ret) {
+	krb5_storage_free(c->sp);
+	close(c->fd);
+	return ret;
+    }
+    id->version = tag;
+    storage_set_flags(context, c->sp, id->version);
     return 0;
 }
 
@@ -569,48 +619,41 @@ fkt_next_entry_int(krb5_context context,
 		   off_t *start,
 		   off_t *end)
 {
-    u_int32_t len;
+    int32_t len;
     u_int32_t timestamp;
     int ret;
     int8_t tmp8;
     int32_t tmp32;
+    off_t pos;
 
+    pos = cursor->sp->seek(cursor->sp, 0, SEEK_CUR);
 loop:
-    cursor->sp->seek(cursor->sp, cursor->offset, SEEK_SET);
-    ret = krb5_ret_int32(cursor->sp, &tmp32);
+    ret = krb5_ret_int32(cursor->sp, &len);
     if (ret)
 	return ret;
-    if(tmp32 < 0) {
-	cursor->offset += 4 + -tmp32;
+    if(len < 0) {
+	pos = cursor->sp->seek(cursor->sp, -len, SEEK_CUR);
 	goto loop;
     }
-    if(start) *start = cursor->offset;
-    len = tmp32;
-    cursor->offset += 4 + len;
     ret = krb5_kt_ret_principal (cursor->sp, &entry->principal);
     if (ret)
-	return ret;
-    ret = krb5_ret_int32(cursor->sp, &tmp32);
-    entry->principal->name.name_type = tmp32;
-    if (ret)
-	return ret;
+	goto out;
     ret = krb5_ret_int32(cursor->sp, &tmp32);
     timestamp = tmp32;
     if (ret)
-	return ret;
+	goto out;
     ret = krb5_ret_int8(cursor->sp, &tmp8);
     if (ret)
-	return ret;
+	goto out;
     entry->vno = tmp8;
     ret = krb5_kt_ret_keyblock (cursor->sp, &entry->keyblock);
     if (ret)
-	return ret;
-    /* backwards compatibility with Heimdal <= 0.0n */
-    if(len == 4711)
-	cursor->offset = cursor->sp->seek(cursor->sp, 0, SEEK_CUR);
-    if(end) *end = cursor->offset;
-    
-    return 0;
+	goto out;
+    if(start) *start = pos;
+    if(end) *end = *start + 4 + len;
+ out:
+    cursor->sp->seek(cursor->sp, pos + 4 + len, SEEK_SET);
+    return ret;
 }
 
 static krb5_error_code
@@ -641,43 +684,110 @@ fkt_add_entry(krb5_context context,
     int fd;
     krb5_storage *sp;
     struct fkt_data *d = id->data;
-    off_t pos_start, pos_end;
+    krb5_data keytab;
+    int32_t len;
     
-    fd = open (d->filename, O_WRONLY | O_BINARY);
+    fd = open (d->filename, O_RDWR | O_BINARY);
     if (fd < 0) {
-	fd = open (d->filename, O_WRONLY | O_CREAT | O_BINARY, 0600);
+	fd = open (d->filename, O_RDWR | O_CREAT | O_BINARY, 0600);
 	if (fd < 0)
 	    return errno;
 	sp = krb5_storage_from_fd(fd);
-	ret = krb5_store_int16 (sp, 0x0502);
-	if (ret) {
+	ret = krb5_store_int8(sp, 5);
+	if(ret) {
+	    krb5_storage_free(sp);
 	    close(fd);
 	    return ret;
 	}
+	if(id->version == 0)
+	    id->version = KRB5_KT_VNO;
+	ret = krb5_store_int8 (sp, id->version);
+	if (ret) {
+	    krb5_storage_free(sp);
+	    close(fd);
+	    return ret;
+	}
+	storage_set_flags(context, sp, id->version);
     } else {
+	int8_t pvno, tag;
 	sp = krb5_storage_from_fd(fd);
+	ret = krb5_ret_int8(sp, &pvno);
+	if(ret) {
+	    krb5_storage_free(sp);
+	    close(fd);
+	    return ret;
+	}
+	if(pvno != 5) {
+	    krb5_storage_free(sp);
+	    close(fd);
+	    return KRB5_KEYTAB_BADVNO;
+	}
+	ret = krb5_ret_int8 (sp, &tag);
+	if (ret) {
+	    krb5_storage_free(sp);
+	    close(fd);
+	    return ret;
+	}
+	id->version = tag;
+	storage_set_flags(context, sp, id->version);
     }
 
-    pos_start = sp->seek(sp, 0, SEEK_END);
-    ret = krb5_store_int32 (sp, 0); /* store real size at end */
-    if (ret) goto out;
-    ret = krb5_kt_store_principal (sp, entry->principal);
-    if (ret) goto out;
-    ret = krb5_store_int32 (sp, entry->principal->name.name_type);
-    if (ret) goto out;
-    ret = krb5_store_int32 (sp, time(NULL));
-    if (ret) goto out;
-    ret = krb5_store_int8 (sp, entry->vno);
-    if (ret) goto out;
-    ret = krb5_kt_store_keyblock (sp, &entry->keyblock);
-    if (ret) goto out;
-    pos_end = sp->seek(sp, 0, SEEK_CUR);
-    sp->seek(sp, pos_start, SEEK_SET);
-    ret = krb5_store_int32 (sp, pos_end - pos_start - 4);
-    if (ret) goto out;
-    krb5_storage_free (sp);
-out:
-    close (fd);
+    {
+	krb5_storage *emem;
+	emem = krb5_storage_emem();
+	if(emem == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	ret = krb5_kt_store_principal(emem, entry->principal);
+	if(ret) {
+	    krb5_storage_free(emem);
+	    goto out;
+	}
+	ret = krb5_store_int32 (emem, time(NULL));
+	if(ret) {
+	    krb5_storage_free(emem);
+	    goto out;
+	}
+	ret = krb5_store_int8 (emem, entry->vno);
+	if(ret) {
+	    krb5_storage_free(emem);
+	    goto out;
+	}
+	ret = krb5_kt_store_keyblock (emem, &entry->keyblock);
+	if(ret) {
+	    krb5_storage_free(emem);
+	    goto out;
+	}
+	ret = krb5_storage_to_data(emem, &keytab);
+	krb5_storage_free(emem);
+	if(ret)
+	    goto out;
+    }
+    
+    while(1) {
+	ret = krb5_ret_int32(sp, &len);
+	if(ret == KRB5_CC_END) {
+	    len = keytab.length;
+	    break;
+	}
+	if(len < 0) {
+	    len = -len;
+	    if(len >= keytab.length) {
+		sp->seek(sp, -4, SEEK_CUR);
+		break;
+	    }
+	}
+	sp->seek(sp, len, SEEK_CUR);
+    }
+    ret = krb5_store_int32(sp, len);
+    if(sp->store(sp, keytab.data, keytab.length) < 0)
+	ret = errno;
+    memset(keytab.data, 0, keytab.length);
+    krb5_data_free(&keytab);
+ out:
+    krb5_storage_free(sp);
+    close(fd);
     return ret;
 }
 
@@ -700,10 +810,7 @@ fkt_remove_entry(krb5_context context,
 	    unsigned char buf[128];
 	    found = 1;
 	    cursor.sp->seek(cursor.sp, pos_start, SEEK_SET);
-	    krb5_ret_int32(cursor.sp, &len);
-	    cursor.sp->seek(cursor.sp, pos_start, SEEK_SET);
-	    if(len == 4711)
-		len = pos_end - pos_start;
+	    len = pos_end - pos_start - 4;
 	    krb5_store_int32(cursor.sp, -len);
 	    memset(buf, 0, sizeof(buf));
 	    while(len > 0) {
