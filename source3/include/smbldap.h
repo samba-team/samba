@@ -88,6 +88,8 @@
 #define LDAP_ATTR_SID			32
 #define LDAP_ATTR_ALGORITHMIC_RID_BASE  33
 #define LDAP_ATTR_NEXT_RID              34
+#define LDAP_ATTR_BAD_PASSWORD_COUNT	35
+#define LDAP_ATTR_LOGON_COUNT		36
 
 typedef struct _attrib_map_entry {
 	int		attrib;

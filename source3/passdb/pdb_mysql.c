@@ -49,7 +49,8 @@
 #define CONFIG_UNKNOWN_3_DEFAULT			"unknown_3"
 #define CONFIG_LOGON_DIVS_DEFAULT			"logon_divs"
 #define CONFIG_HOURS_LEN_DEFAULT			"hours_len"
-#define CONFIG_UNKNOWN_5_DEFAULT			"unknown_5"
+#define CONFIG_BAD_PASSWORD_COUNT_DEFAULT		"bad_password_count"
+#define CONFIG_LOGON_COUNT_DEFAULT			"logon_count"
 #define CONFIG_UNKNOWN_6_DEFAULT			"unknown_6"
 #define CONFIG_HOST_DEFAULT				"localhost"
 #define CONFIG_USER_DEFAULT				"samba"
@@ -259,8 +260,9 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	pdb_set_unknown_3(u, xatol(row[24]), PDB_SET);
 	pdb_set_logon_divs(u, xatol(row[25]), PDB_SET);
 	pdb_set_hours_len(u, xatol(row[26]), PDB_SET);
-	pdb_set_unknown_5(u, xatol(row[27]), PDB_SET);
-	pdb_set_unknown_6(u, xatol(row[28]), PDB_SET);
+	pdb_set_bad_password_count(u, xatol(row[27]), PDB_SET);
+	pdb_set_logon_count(u, xatol(row[28]), PDB_SET);
+	pdb_set_unknown_6(u, xatol(row[29]), PDB_SET);
 
 	return NT_STATUS_OK;
 }
@@ -278,7 +280,7 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 	}
 
 	asprintf(&query,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s",
+			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s",
 			 config_value_read(data, "logon time column",
 							   CONFIG_LOGON_TIME_DEFAULT),
 			 config_value_read(data, "logoff time column",
@@ -333,8 +335,10 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 							   CONFIG_LOGON_DIVS_DEFAULT),
 			 config_value_read(data, "hours len column",
 							   CONFIG_HOURS_LEN_DEFAULT),
-			 config_value_read(data, "unknown 5 column",
-							   CONFIG_UNKNOWN_5_DEFAULT),
+			 config_value_read(data, "bad_password_count column",
+							   CONFIG_BAD_PASSWORD_COUNT_DEFAULT),
+			 config_value_read(data, "logon_count column",
+							   CONFIG_LOGON_COUNT_DEFAULT),
 			 config_value_read(data, "unknown 6 column",
 							   CONFIG_UNKNOWN_6_DEFAULT),
 			 config_value(data, "table", CONFIG_TABLE_DEFAULT)
