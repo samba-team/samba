@@ -257,15 +257,15 @@ static void get_credentials_file(const char *file, struct cmdline_auth_info *inf
 		while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
 			val++;
 
-		if (strwicmp("password", param) == 0)
-		{
+		if (strwicmp("password", param) == 0) {
 			pstrcpy(info->password, val);
 			info->got_pass = True;
-		}
-		else if (strwicmp("username", param) == 0)
+		} else if (strwicmp("username", param) == 0) {
 			pstrcpy(info->username, val);
-		else if (strwicmp("domain", param) == 0)
+		} else if (strwicmp("domain", param) == 0) {
 			pstrcpy(info->domain,val);
+			info->got_domain = True;
+		}
 		memset(buf, 0, sizeof(buf));
 	}
 	x_fclose(auth);
@@ -398,12 +398,13 @@ static void popt_common_credentials_callback(poptContext con,
 				 "%s$", lp_netbios_name());
 			pstrcpy(cmdline_auth_info.password,opt_password);
 			SAFE_FREE(opt_password);
+			cmdline_auth_info.got_pass = True;
 
-			pstrcpy(cmdline_auth_info.password, lp_workgroup());
-
+			pstrcpy(cmdline_auth_info.domain, lp_workgroup());
+			cmdline_auth_info.domain = True;
+			
 			/* machine accounts only work with kerberos */
 			cmdline_auth_info.use_kerberos = True;
-			cmdline_auth_info.got_pass = True;
 		}
 		break;
 	}
