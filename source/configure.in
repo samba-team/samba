@@ -216,6 +216,9 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 
+# we need libdl for PAM and the new VFS code
+AC_CHECK_LIB(dl,main)
+
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
 #include <sys/types.h>
@@ -1101,7 +1104,7 @@ AC_ARG_WITH(pam,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_PAM)
-    LIBS="$LIBS -lpam -ldl"
+    LIBS="$LIBS -lpam"
     ;;
   *)
     AC_MSG_RESULT(no)
