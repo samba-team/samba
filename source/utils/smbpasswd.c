@@ -900,7 +900,9 @@ static int process_root(void)
 		goto done;
 	} 
 
-	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) {
+	if(remote_machine) {
+		printf("Password changed for user %s on %s.\n", user_name, remote_machine );
+	} else if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) {
 		SAM_ACCOUNT *sampass = NULL;
 		uint16 acct_ctrl;
 		
