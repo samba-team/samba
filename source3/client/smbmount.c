@@ -687,6 +687,17 @@ static void parse_mount_smb(int argc, char **argv)
 	int val;
 	char *p;
 
+	/* FIXME: This function can silently fail if the arguments are
+	 * not in the expected order.
+
+	> The arguments syntax of smbmount 2.2.3a (smbfs of Debian stable)
+	> requires that one gives "-o" before further options like username=...
+	> . Without -o, the username=.. setting is *silently* ignored. I've
+	> spent about an hour trying to find out why I couldn't log in now..
+
+	*/
+
+
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();
 		exit(1);
