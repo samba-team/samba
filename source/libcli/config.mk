@@ -29,7 +29,8 @@ ADD_OBJ_FILES = \
 	libcli/nbt/nbtname.o \
 	libcli/nbt/nbtsocket.o \
 	libcli/nbt/namequery.o \
-	libcli/nbt/nameregister.o
+	libcli/nbt/nameregister.o \
+	libcli/nbt/namerefresh.o
 REQUIRED_SUBSYSTEMS = LIBNDR_RAW NDR_NBT SOCKET LIBCLI_COMPOSITE_BASE
 
 [SUBSYSTEM::LIBCLI_RESOLVE]

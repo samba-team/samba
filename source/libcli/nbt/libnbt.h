@@ -169,3 +169,23 @@ struct nbt_name_register_bcast {
 		uint32_t ttl;
 	} in;
 };
+
+
+/* a name refresh request */
+struct nbt_name_refresh {
+	struct {
+		struct nbt_name name;
+		const char *dest_addr;
+		const char *address;
+		uint16_t nb_flags;
+		BOOL broadcast;
+		uint32_t ttl;
+		int timeout; /* in seconds */
+	} in;
+	struct {
+		const char *reply_from;
+		struct nbt_name name;
+		const char *reply_addr;
+		uint8_t rcode;
+	} out;
+};

@@ -73,8 +73,7 @@ struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 				    timeval_current_ofs(io->in.timeout, 0), False);
 	if (req == NULL) goto failed;
 
-	talloc_steal(req, packet);
-
+	talloc_free(packet);
 	return req;
 
 failed:
