@@ -25,9 +25,9 @@ Mon Sep  8 01:24:42 1997  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kstash.c: default to HDB_DB_DIR "/m-key"
 
-	* kdc/config.c (configure): add `--help'.  check the number of
- 	arguments. handle the case of there being to speicification of
- 	port numbers
+	* kdc/config.c (configure): add `--version'.  Check the number of
+ 	arguments. Handle the case of there being no specification of port
+ 	numbers.
 
 	* admin/util.c: seal and unseal key at appropriate places
 
