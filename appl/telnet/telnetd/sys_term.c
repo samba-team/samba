@@ -1262,7 +1262,7 @@ scrub_env(void)
 struct arg_val {
     int size;
     int argc;
-    const char **argv;
+    char **argv;
 };
 
 static void addarg(struct arg_val*, const char*);
@@ -1390,7 +1390,8 @@ addarg(struct arg_val *argv, const char *val)
 	    fatal (net, "realloc: out of memory");
 	argv->size+=10;
     }
-    argv->argv[argv->argc++] = val;
+    if((argv->argv[argv->argc++] = strdup(val)) == NULL)
+	fatal (net, "strdup: out of memory");
     argv->argv[argv->argc]   = NULL;
 }
 
