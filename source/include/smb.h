@@ -173,6 +173,7 @@ implemented */
 #define ERRunknownipc 2142
 #define ERRbuftoosmall 2123
 
+#define ERROR_SUCCESS                     (0)
 #define ERROR_INVALID_FUNCTION		  (1)
 #define ERROR_ACCESS_DENIED		  (5)
 #define ERROR_INVALID_HANDLE		  (6)
