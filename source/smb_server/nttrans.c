@@ -39,7 +39,7 @@ static void nttrans_setup_reply(struct smbsrv_request *req,
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count != 0) {
-		trans->out.setup = talloc_zero(req, sizeof(uint16_t) * setup_count);
+		trans->out.setup = talloc_zero_array_p(req, uint16_t, setup_count);
 	}
 	trans->out.params = data_blob_talloc(req, NULL, param_size);
 	trans->out.data = data_blob_talloc(req, NULL, data_size);
