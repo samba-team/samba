@@ -865,9 +865,11 @@ typedef struct share_info_ctr
 {
 	uint32 num_entries_read;                     /* EntriesRead */
 	uint32 ptr_share_info;                       /* Buffer */
+	uint32 num_entries_read2;                    /* EntriesRead */
 	SH_INFO_1     info_1    [MAX_SHARE_ENTRIES]; /* share entry pointers */
 	SH_INFO_1_STR info_1_str[MAX_SHARE_ENTRIES]; /* share entry strings */
-	uint32 num_entries_read2;                    /* EntriesRead2 */
+	uint32 num_entries_read3;                    /* EntriesRead2 */
+	uint32 padding;                              /* padding */
 
 } SHARE_INFO_1_CTR;
 

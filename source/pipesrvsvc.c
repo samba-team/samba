@@ -37,8 +37,8 @@ static void make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *r
 
 	DEBUG(5,("make_srv_share_info1_str: %s %s\n", net_name, remark));
 
-	make_unistr2(&(sh1->uni_netname), net_name, strlen(net_name));
-	make_unistr2(&(sh1->uni_remark ), remark  , strlen(remark  ));
+	make_unistr2(&(sh1->uni_netname), net_name, strlen(net_name)+1);
+	make_unistr2(&(sh1->uni_remark ), remark  , strlen(remark  )+1);
 }
 
 /*******************************************************************
@@ -103,8 +103,10 @@ static void make_srv_share_1_ctr(SHARE_INFO_1_CTR *ctr)
 	}
 
 	ctr->num_entries_read  = num_entries;
-	ctr->ptr_share_info = num_entries > 0 ? 1 : 0;
+	ctr->ptr_share_info    = num_entries > 0 ? 1 : 0;
 	ctr->num_entries_read2 = num_entries;
+	ctr->num_entries_read3 = num_entries;
+	ctr->padding           = 0;
 }
 
 /*******************************************************************

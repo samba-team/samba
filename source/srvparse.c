@@ -85,6 +85,8 @@ char* srv_io_share_1_ctr(BOOL io, SHARE_INFO_1_CTR *ctr, char *q, char *base, in
 			num_entries = MAX_SHARE_ENTRIES; /* report this! */
 		}
 
+		DBG_RW_IVAL("num_entries_read2", depth, base, io, q, ctr->num_entries_read2); q += 4;
+
 		for (i = 0; i < num_entries; i++)
 		{
 			q = srv_io_share_info1(io, &(ctr->info_1[i]), q, base, align, depth); 
@@ -95,7 +97,9 @@ char* srv_io_share_1_ctr(BOOL io, SHARE_INFO_1_CTR *ctr, char *q, char *base, in
 			q = srv_io_share_info1_str(io, &(ctr->info_1_str[i]), q, base, align, depth); 
 		}
 
-		DBG_RW_IVAL("num_entries_read2", depth, base, io, q, ctr->num_entries_read); q += 4;
+		q = align_offset(q, base, align);
+		DBG_RW_IVAL("num_entries_read3", depth, base, io, q, ctr->num_entries_read3); q += 4;
+		DBG_RW_IVAL("padding          ", depth, base, io, q, ctr->padding); q += 4;
 	}
 
 	return q;
