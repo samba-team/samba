@@ -538,7 +538,7 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	*dom_users = NULL;
 	*rids = NULL;
-	*num_dom_users = NULL;
+	*num_dom_users = 0;
 
 	/* Initialise parse structures */
 

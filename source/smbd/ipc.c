@@ -368,52 +368,66 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	uint16 *setup=NULL;
 	int outsize = 0;
 	uint16 vuid = SVAL(inbuf,smb_uid);
-	int tpscnt = SVAL(inbuf,smb_vwv0);
-	int tdscnt = SVAL(inbuf,smb_vwv1);
-	int mprcnt = SVAL(inbuf,smb_vwv2);
-	int mdrcnt = SVAL(inbuf,smb_vwv3);
-	int msrcnt = CVAL(inbuf,smb_vwv4);
+	unsigned int tpscnt = SVAL(inbuf,smb_vwv0);
+	unsigned int tdscnt = SVAL(inbuf,smb_vwv1);
+	unsigned int mprcnt = SVAL(inbuf,smb_vwv2);
+	unsigned int mdrcnt = SVAL(inbuf,smb_vwv3);
+	unsigned int msrcnt = CVAL(inbuf,smb_vwv4);
 	BOOL close_on_completion = BITSETW(inbuf+smb_vwv5,0);
 	BOOL one_way = BITSETW(inbuf+smb_vwv5,1);
-	int pscnt = SVAL(inbuf,smb_vwv9);
-	int psoff = SVAL(inbuf,smb_vwv10);
-	int dscnt = SVAL(inbuf,smb_vwv11);
-	int dsoff = SVAL(inbuf,smb_vwv12);
-	int suwcnt = CVAL(inbuf,smb_vwv13);
+	unsigned int pscnt = SVAL(inbuf,smb_vwv9);
+	unsigned int psoff = SVAL(inbuf,smb_vwv10);
+	unsigned int dscnt = SVAL(inbuf,smb_vwv11);
+	unsigned int dsoff = SVAL(inbuf,smb_vwv12);
+	unsigned int suwcnt = CVAL(inbuf,smb_vwv13);
 	START_PROFILE(SMBtrans);
 
 	memset(name, '\0',sizeof(name));
 	fstrcpy(name,smb_buf(inbuf));
 
-	if (dscnt > tdscnt || pscnt > tpscnt) {
-		exit_server("invalid trans parameters\n");
-	}
+	if (dscnt > tdscnt || pscnt > tpscnt)
+		goto bad_param;
   
 	if (tdscnt)  {
 		if((data = (char *)malloc(tdscnt)) == NULL) {
-			DEBUG(0,("reply_trans: data malloc fail for %d bytes !\n", tdscnt));
+			DEBUG(0,("reply_trans: data malloc fail for %u bytes !\n", tdscnt));
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
+		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
+			goto bad_param;
+		if (smb_base(inbuf)+dsoff+dscnt > inbuf + size)
+			goto bad_param;
+
 		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
 	}
 
 	if (tpscnt) {
 		if((params = (char *)malloc(tpscnt)) == NULL) {
-			DEBUG(0,("reply_trans: param malloc fail for %d bytes !\n", tpscnt));
+			DEBUG(0,("reply_trans: param malloc fail for %u bytes !\n", tpscnt));
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
+		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
+			goto bad_param;
+		if (smb_base(inbuf)+psoff+pscnt > inbuf + size)
+			goto bad_param;
+
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
 	}
 
 	if (suwcnt) {
 		int i;
 		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
-          DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", (int)(suwcnt * sizeof(uint16))));
-		  END_PROFILE(SMBtrans);
-		  return(ERROR_DOS(ERRDOS,ERRnomem));
-        } 
+			DEBUG(0,("reply_trans: setup malloc fail for %u bytes !\n", (unsigned int)(suwcnt * sizeof(uint16))));
+			END_PROFILE(SMBtrans);
+			return(ERROR_DOS(ERRDOS,ERRnomem));
+		} 
+		if (inbuf+smb_vwv14+(suwcnt*SIZEOFWORD) > inbuf + size)
+			goto bad_param;
+		if (inbuf+smb_vwv14+(suwcnt*SIZEOFWORD) > inbuf + size)
+			goto bad_param;
+
 		for (i=0;i<suwcnt;i++)
 			setup[i] = SVAL(inbuf,smb_vwv14+i*SIZEOFWORD);
 	}
@@ -425,13 +439,13 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		outsize = set_message(outbuf,0,0,True);
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_trans: send_smb failed.\n");
+			exit_server("reply_trans: send_smb failed.");
 	}
 
 	/* receive the rest of the trans packet */
 	while (pscnt < tpscnt || dscnt < tdscnt) {
 		BOOL ret;
-		int pcnt,poff,dcnt,doff,pdisp,ddisp;
+		unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
       
 		ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 
@@ -451,8 +465,11 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
 		show_msg(inbuf);
       
-		tpscnt = SVAL(inbuf,smb_vwv0);
-		tdscnt = SVAL(inbuf,smb_vwv1);
+		/* Revise total_params and total_data in case they have changed downwards */
+		if (SVAL(inbuf,smb_vwv0) < tpscnt)
+			tpscnt = SVAL(inbuf,smb_vwv0);
+		if (SVAL(inbuf,smb_vwv1) < tdscnt)
+			tdscnt = SVAL(inbuf,smb_vwv1);
 
 		pcnt = SVAL(inbuf,smb_vwv2);
 		poff = SVAL(inbuf,smb_vwv3);
@@ -465,14 +482,34 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		pscnt += pcnt;
 		dscnt += dcnt;
 		
-		if (dscnt > tdscnt || pscnt > tpscnt) {
-			exit_server("invalid trans parameters\n");
-		}
+		if (dscnt > tdscnt || pscnt > tpscnt)
+			goto bad_param;
 		
-		if (pcnt)
+		if (pcnt) {
+			if (pdisp+pcnt >= tpscnt)
+				goto bad_param;
+			if ((pdisp+pcnt < pdisp) || (pdisp+pcnt < pcnt))
+				goto bad_param;
+			if (smb_base(inbuf) + poff + pcnt >= inbuf + bufsize)
+				goto bad_param;
+			if (params + pdisp < params)
+				goto bad_param;
+
 			memcpy(params+pdisp,smb_base(inbuf)+poff,pcnt);
-		if (dcnt)
+		}
+
+		if (dcnt) {
+			if (ddisp+dcnt >= tdscnt)
+				goto bad_param;
+			if ((ddisp+dcnt < ddisp) || (ddisp+dcnt < dcnt))
+				goto bad_param;
+			if (smb_base(inbuf) + doff + dcnt >= inbuf + bufsize)
+				goto bad_param;
+			if (data + ddisp < data)
+				goto bad_param;
+
 			memcpy(data+ddisp,smb_base(inbuf)+doff,dcnt);      
+		}
 	}
 	
 	
@@ -525,4 +562,14 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	
 	END_PROFILE(SMBtrans);
 	return(outsize);
+
+
+  bad_param:
+
+	DEBUG(0,("reply_trans: invalid trans parameters\n"));
+	SAFE_FREE(data);
+	SAFE_FREE(params);
+	SAFE_FREE(setup);
+	END_PROFILE(SMBtrans);
+	return ERROR_DOS(ERRDOS,ERRinvalidparam);
 }
