@@ -183,8 +183,6 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	return result;
 }
 
-#if 0
-
 /* Return a group structure from a group name */
 
 enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state 
@@ -212,19 +210,14 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 	/* Reject names that don't have a domain - i.e name_domain contains 
 	   the entire name. */
 
-	if (strequal(name_group, "")) {
+	if (strequal(name_group, ""))
 		return WINBINDD_ERROR;
-	}    
 
 	/* Get info for the domain */
 
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("getgrname_from_group(): could not get domain "
 			  "sid for domain %s\n", name_domain));
-		return WINBINDD_ERROR;
-	}
-
-	if (!domain_handles_open(domain)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -267,9 +260,8 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 			state->request.data.groupname, gid) ||
 	    !fill_grent_mem(domain, group_rid, name_type,
 			    &state->response.data.gr.num_gr_mem,
-			    &gr_mem, &gr_mem_len)) {
+			    &gr_mem, &gr_mem_len))
 		return WINBINDD_ERROR;
-	}
 
 	/* Group membership lives at start of extra data */
 
@@ -301,15 +293,14 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 	int extra_data_len, gr_mem_len;
 	char *gr_mem;
 
+	DEBUG(3, ("[%5d]: getgrgid %d\n", state->pid, 
+		  state->request.data.gid));
+
 	/* Bug out if the gid isn't in the winbind range */
 
 	if ((state->request.data.gid < server_state.gid_low) ||
-	    (state->request.data.gid > server_state.gid_high)) {
+	    (state->request.data.gid > server_state.gid_high))
 		return WINBINDD_ERROR;
-	}
-
-	DEBUG(3, ("[%5d]: getgrgid %d\n", state->pid, 
-		  state->request.data.gid));
 
 	/* Get rid from gid */
 
@@ -317,10 +308,6 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 					     &group_rid, &domain)) {
 		DEBUG(1, ("Could not convert gid %d to rid\n", 
 			  state->request.data.gid));
-		return WINBINDD_ERROR;
-	}
-
-	if (!domain_handles_open(domain)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -345,10 +332,9 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 		return WINBINDD_ERROR;
 	}
 
-	if (strcmp(lp_winbind_separator(),"\\")) {
+	if (strcmp(lp_winbind_separator(),"\\"))
 		string_sub(group_name, "\\", lp_winbind_separator(), 
 			   sizeof(fstring));
-	}
 
 	if (!((name_type == SID_NAME_ALIAS) || 
 	      (name_type == SID_NAME_DOM_GRP))) {
@@ -363,10 +349,8 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 			state->request.data.gid) ||
 	    !fill_grent_mem(domain, group_rid, name_type,
 			    &state->response.data.gr.num_gr_mem,
-			    &gr_mem, &gr_mem_len)) {
+			    &gr_mem, &gr_mem_len))
 		return WINBINDD_ERROR;
-	}
-
 
 	/* Group membership lives at start of extra data */
 
@@ -384,8 +368,6 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 
 	return WINBINDD_OK;
 }
-
-#endif
 
 /*
  * set/get/endgrent functions
@@ -445,8 +427,6 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5d]: endgrent\n", state->pid));
-
-	if (state == NULL) return WINBINDD_ERROR;
 
 	free_getent_state(state->getgrent_state);
 	state->getgrent_state = NULL;

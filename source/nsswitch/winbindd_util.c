@@ -29,34 +29,35 @@
 static struct winbindd_domain *add_trusted_domain(char *domain_name,
                                                   DOM_SID *domain_sid)
 {
-    struct winbindd_domain *domain, *tmp;
+        struct winbindd_domain *domain, *tmp;
+        
+        for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+                if (strcmp(domain_name, tmp->name) == 0) {
+                        DEBUG(3, ("domain %s already in domain list\n",
+                                  domain_name));
+                        return tmp;
+                }
+        }
+        
+        DEBUG(1, ("adding domain %s\n", domain_name));
+        
+        /* Create new domain entry */
+        
+        if ((domain = (struct winbindd_domain *)
+             malloc(sizeof(*domain))) == NULL)
+                return NULL;
 
-    for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-	    if (strcmp(domain_name, tmp->name) == 0) {
-		    DEBUG(3, ("domain %s already in domain list\n",
-			      domain_name));
-		    return tmp;
-	    }
-    }
-
-    DEBUG(1, ("adding domain %s\n", domain_name));
-
-    /* Create new domain entry */
-
-    if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL)
-        return NULL;
-
-    /* Fill in fields */
-
-    ZERO_STRUCTP(domain);
-    fstrcpy(domain->name, domain_name);
-    sid_copy(&domain->sid, domain_sid);
-
-    /* Link to domain list */
-
-    DLIST_ADD(domain_list, domain);
-
-    return domain;
+        /* Fill in fields */
+        
+        ZERO_STRUCTP(domain);
+        fstrcpy(domain->name, domain_name);
+        sid_copy(&domain->sid, domain_sid);
+        
+        /* Link to domain list */
+        
+        DLIST_ADD(domain_list, domain);
+        
+        return domain;
 }
 
 /* Look up global info for the winbind daemon */
@@ -674,11 +675,8 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 	/* Search through list */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (sid_equal(sid, &tmp->sid)) {
-			if (!tmp->got_domain_info) 
-                                return NULL;
+		if (sid_equal(sid, &tmp->sid))
                         return tmp;
-                }
         }
 
 	/* Not found */
