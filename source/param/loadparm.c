@@ -371,6 +371,8 @@ static BOOL handle_announce_as(char *pszParmValue, int *val);
 static BOOL handle_coding_system(char *pszParmValue,int *val);
 #endif /* KANJI */
 
+static void set_default_server_announce_type(void);
+
 struct parm_struct
 {
   char *label;
@@ -1992,7 +1994,6 @@ BOOL lp_load(char *pszFname,BOOL global_only)
 {
   pstring n2;
   BOOL bRetval;
-  static void set_default_server_announce_type(void);
  
   add_to_file_list(pszFname);
 

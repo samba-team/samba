@@ -138,11 +138,22 @@ void reply_name_release(struct packet_struct *p)
   if (n && (n->source != SELF) && (NAME_GROUP(n->ip_flgs[0].nb_flags) == NAME_GROUP(nb_flags)))
     {
       success = True;
-     
-      DEBUG(5, ("reply_name_release: Removing name %s on subnet %s\n",
+  
+      /* If it's a group name not ending in 1c (not an internet name)
+         then just allow it to fade out of existance by timing out. */  
+      if(NAME_GROUP(nb_flags) && (n->name.name_type != 0x1c))
+      {
+        DEBUG(5, ("reply_name_release: Allow group name %s(%d) to fade out on \
+subnet %s\n", namestr(&nmb->question.question_name), n->name.name_type,
+            inet_ntoa(d->bcast_ip)));
+      }
+      else
+      {
+        DEBUG(5, ("reply_name_release: Removing name %s on subnet %s\n",
                 namestr(&nmb->question.question_name), inet_ntoa(d->bcast_ip)));
-      remove_name(d,n);
-      n = NULL;
+        remove_name(d,n);
+        n = NULL;
+      }
     }
   
   if (bcast) return;
