@@ -95,95 +95,24 @@ MODULES = $(CHARSET_MODULES) $(DCERPC_MODULES) $(NTVFS_MODULES)
 # object file lists
 ######################################################################
 
-TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
-TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o 
-
 CHARSET_OBJS = @CHARSET_OBJS@
 
-LIB_OBJ = lib/version.o lib/debug.o lib/fault.o \
-          lib/getsmbpass.o lib/interface.o lib/md4.o \
-          lib/interfaces.o lib/pidfile.o lib/replace.o \
-          lib/signal.o lib/system.o lib/sendfile.o lib/time.o \
-	  lib/genrand.o lib/username.o \
-	  lib/util_getent.o lib/util_pw.o lib/smbrun.o \
-	  lib/bitmap.o lib/crc32.o lib/snprintf.o lib/dprintf.o \
-	  lib/xfile.o lib/wins_srv.o \
-	  lib/util_str.o lib/util_sid.o lib/util_uuid.o \
-	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
-	  lib/util.o lib/util_sock.o \
-	  lib/talloc.o lib/substitute.o lib/fsusage.o \
-	  lib/ms_fnmatch.o lib/select.o lib/messages.o \
-	  lib/tallocmsg.o lib/dmallocmsg.o \
-	  lib/md5.o lib/hmacmd5.o lib/smbpasswd.o \
-	  nsswitch/wb_client.o nsswitch/wb_common.o \
-	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
-	  lib/gencache.o $(TDB_OBJ) \
-	  lib/module.o \
-	  lib/ldap_escape.o lib/events.o lib/mutex.o $(CHARSET_OBJS)
+LIBBASIC_OBJS = @LIBBASIC_OBJS@
 
-READLINE_OBJ = lib/readline.o
+LIBCLI_RAW_OBJS = @LIBCLI_RAW_OBJS@
+LIBCLI_UTILS_OBJS = @LIBCLI_UTILS_OBJS@
+LIBCLI_NMB_OBJS = @LIBCLI_NMB_OBJS@
+LIBCLI_AUTH_OBJS = @LIBCLI_AUTH_OBJS@
+LIBCLI_OBJS = @LIBCLI_OBJS@
 
-POPT_LIB_OBJ = lib/popt_common.o 
+LIBNDR_RAW_OBJS = @LIBNDR_RAW_OBJS@
+LIBRPC_RAW_OBJS = @LIBRPC_RAW_OBJS@
+LIBRPC_OBJS = @LIBRPC_OBJS@
 
-PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
+LIBSMB_OBJS = @LIBSMB_OBJS@
 
-SECRETS_OBJ = passdb/secrets.o
-
-LIBNMB_OBJ =	libcli/unexpected.o libcli/namecache.o libcli/nmblib.o \
-		libcli/namequery.o 
-
-LIBCLIUTIL_OBJ = libcli/util/asn1.o \
-		libcli/util/smberr.o \
-		libcli/util/doserr.o libcli/util/errormap.o \
-		libcli/util/pwd_cache.o libcli/util/clierror.o libcli/util/cliutil.o \
-		libcli/util/nterr.o libcli/util/smbdes.o libcli/util/smbencrypt.o
-
-LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
-		librpc/ndr/ndr_spoolss_buf.o \
-		librpc/gen_ndr/tables.o librpc/gen_ndr/ndr_dcerpc.o \
-		librpc/gen_ndr/ndr_echo.o librpc/gen_ndr/ndr_misc.o \
-		librpc/gen_ndr/ndr_lsa.o librpc/gen_ndr/ndr_dfs.o \
-		librpc/gen_ndr/ndr_samr.o librpc/gen_ndr/ndr_spoolss.o \
-		librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_srvsvc.o \
-		librpc/gen_ndr/ndr_atsvc.o librpc/gen_ndr/ndr_eventlog.o \
-		librpc/gen_ndr/ndr_epmapper.o librpc/gen_ndr/ndr_winreg.o \
-		librpc/gen_ndr/ndr_mgmt.o librpc/gen_ndr/ndr_protected_storage.o \
-		librpc/gen_ndr/ndr_dcom.o librpc/gen_ndr/ndr_wzcsvc.o \
-		librpc/gen_ndr/ndr_browser.o librpc/gen_ndr/ndr_w32time.o \
-		librpc/gen_ndr/ndr_scerpc.o librpc/gen_ndr/ndr_ntsvcs.o \
-		librpc/gen_ndr/ndr_netlogon.o librpc/gen_ndr/ndr_trkwks.o \
-		librpc/gen_ndr/ndr_keysvc.o
-
-LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_auth.o \
-		librpc/rpc/dcerpc_util.o \
-		librpc/rpc/dcerpc_schannel.o librpc/rpc/dcerpc_ntlm.o \
-		librpc/rpc/dcerpc_smb.o librpc/rpc/dcerpc_tcp.o
-
-LIBNTLMSSP_OBJ = libcli/auth/ntlmssp.o libcli/auth/ntlmssp_parse.o \
-		libcli/auth/ntlmssp_sign.o libcli/auth/schannel.o
-
-LIBCLIAUTH_OBJ = $(LIBNTLMSSP_OBJ) libcli/auth/credentials.o
-
-LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
-	     libcli/raw/clisocket.o libcli/raw/clitransport.o \
-	     libcli/raw/clisession.o libcli/raw/clitree.o \
-	     libcli/raw/clikrb5.o libcli/raw/clispnego.o libcli/raw/rawrequest.o \
-	     libcli/raw/rawreadwrite.o \
-	     libcli/raw/rawsearch.o libcli/raw/rawsetfileinfo.o libcli/raw/raweas.o \
-	     libcli/raw/rawtrans.o libcli/raw/clioplock.o \
-	     libcli/raw/rawnegotiate.o libcli/raw/rawfsinfo.o \
-	     libcli/raw/rawfileinfo.o libcli/raw/rawnotify.o \
-	     libcli/raw/rawioctl.o libcli/raw/rawacl.o \
-	     $(LIBRAW_NDR_OBJ) $(LIBRAW_RPC_OBJ) $(LIBCLIUTIL_OBJ) \
-	     $(LIBNMB_OBJ) $(LIBCLIAUTH_OBJ) 
-
-LIBSMB_OBJ = libcli/clireadwrite.o libcli/cliconnect.o \
-	     libcli/clifile.o libcli/clilist.o libcli/clitrans2.o  \
-	     libcli/climessage.o \
-	     libcli/clideltree.o \
-	     $(LIBRAW_OBJ)
-
-SMBD_OBJ_MAIN = smbd/server.o
+PROCESS_MODEL_OBJS = @PROCESS_MODEL_OBJS@
+PROCESS_MODEL_LIBS = @PROCESS_MODEL_LIBS@
 
 SMB_OBJS = @SMB_OBJS@
 SMB_LIBS = @SMB_LIBS@
@@ -200,56 +129,66 @@ NTVFS_LIBS = @NTVFS_LIBS@
 DCERPC_OBJS = @DCERPC_OBJS@
 DCERPC_LIBS = @DCERPC_LIBS@
 
-SMBD_OBJ_SRV =	smbd/process.o \
-		lib/server_mutex.o \
-		smbd/build_options.o \
-		smbd/rewrite.o \
-		$(DCERPC_OBJS) $(SMB_OBJS) $(AUTH_OBJS) $(PASSDB_OBJS) $(NTVFS_OBJS) @SMBD_EXTRA_OBJS@
-
-PROCESS_MODEL_OBJS = @PROCESS_MODEL_OBJS@
-PROCESS_MODEL_LIBS = @PROCESS_MODEL_LIBS@
-
-SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJS) $(SMBD_OBJ_SRV) \
-		$(PARAM_OBJ) $(SECRETS_OBJ)  \
-		$(LIB_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_OBJ)
-
-SMBD_OBJS = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE) @BUILD_POPT@
-SMBD_LIBS = $(LIBS) $(SMB_LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS)
-
-CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
-
-CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
-	     $(LIB_OBJ) \
-             $(READLINE_OBJ) $(POPT_LIB_OBJ)
-
 TORTURE_RAW_OBJS = @TORTURE_RAW_OBJS@
 
 TORTURE_RPC_OBJS = @TORTURE_RPC_OBJS@
 
 TORTURE_OBJS = @TORTURE_OBJS@
 
-SMBTORTURE_OBJS = $(TORTURE_OBJS) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
+
+READLINE_OBJ = lib/readline.o
+
+POPT_LIB_OBJ = lib/popt_common.o 
+
+PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
+
+SECRETS_OBJ = passdb/secrets.o
+
+SMBD_OBJ_MAIN = smbd/server.o
+
+SMBD_OBJ_SRV =	smbd/process.o \
+		lib/server_mutex.o \
+		smbd/build_options.o \
+		smbd/rewrite.o \
+		$(DCERPC_OBJS) $(SMB_OBJS) $(AUTH_OBJS) $(PASSDB_OBJS) $(NTVFS_OBJS) @SMBD_EXTRA_OBJS@
+
+
+
+SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJS) $(SMBD_OBJ_SRV) \
+		$(PARAM_OBJ) $(SECRETS_OBJ)  \
+		$(LIBBASIC_OBJS) $(POPT_LIB_OBJ) $(LIBSMB_OBJS)
+
+SMBD_OBJS = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE) @BUILD_POPT@
+SMBD_LIBS = $(LIBS) $(SMB_LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS)
+
+CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
+
+CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJS) $(SECRETS_OBJ) \
+	     $(LIBBASIC_OBJS) \
+             $(READLINE_OBJ) $(POPT_LIB_OBJ)
+
+SMBTORTURE_OBJS = $(TORTURE_OBJS) $(SECRETS_OBJ) $(LIBSMB_OBJS) $(PARAM_OBJ) $(LIBBASIC_OBJS)
 SMBTORTURE_LIBS = $(LIBS)
 
-GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-		$(LIB_OBJ) $(SECRETS_OBJ) libcli/raw/clirewrite.o
+GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LIBSMB_OBJS) $(PARAM_OBJ) \
+		$(LIBBASIC_OBJS) $(SECRETS_OBJ) libcli/raw/clirewrite.o
 
-MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-		$(LIB_OBJ) $(SECRETS_OBJ) libcli/raw/clirewrite.o
+MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJS) $(PARAM_OBJ) \
+		$(LIBBASIC_OBJS) $(SECRETS_OBJ) libcli/raw/clirewrite.o
 
-LOCKTEST_OBJ = torture/locktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-		$(LIB_OBJ) $(SECRETS_OBJ) libcli/raw/clirewrite.o
+LOCKTEST_OBJ = torture/locktest.o $(LIBSMB_OBJS) $(PARAM_OBJ) \
+		$(LIBBASIC_OBJS) $(SECRETS_OBJ) libcli/raw/clirewrite.o
 
 NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
-		$(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(SECRETS_OBJ)
+		$(LIBSMB_OBJS) $(PARAM_OBJ) $(LIBBASIC_OBJS) $(SECRETS_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJS) \
-	    $(LIBSMB_OBJ) \
+	    $(LIBSMB_OBJS) \
 	    $(TORTURE_OBJS) \
 	    $(PARAM_OBJ) $(SECRETS_OBJ) \
 	    $(READLINE_OBJ) $(CLIENT_OBJ1) \
-	    $(LIB_OBJ) $(POPT_LIB_OBJ)
+	    $(LIBBASIC_OBJS) $(POPT_LIB_OBJ)
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o

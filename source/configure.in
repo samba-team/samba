@@ -1984,6 +1984,10 @@ AC_ARG_WITH(static-modules,
 fi ])
 
 sinclude(lib/iconv.m4)
+sinclude(lib/basic.m4)
+sinclude(libcli/config.m4)
+sinclude(librpc/config.m4)
+sinclude(libcli/libsmb.m4)
 sinclude(smbd/process_model.m4)
 sinclude(smb_server/config.m4)
 sinclude(auth/config.m4)
