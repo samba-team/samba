@@ -2405,8 +2405,6 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	{
 		case 2:
 		{
-			NT_PRINTER_INFO_LEVEL_2 *info = printer.info_2;
-
 			/*
 			 * Update the changestamp.
 			 * Note we must *not* do this in mod_a_printer().
