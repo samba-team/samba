@@ -278,6 +278,8 @@ static NTSTATUS gums_getsampwsid(struct pdb_methods *methods, SAM_ACCOUNT *accou
   Search by rid
  **************************************************************************/
 
+#if 0
+
 static NTSTATUS gums_getsampwrid (struct pdb_methods *methods, 
 				 SAM_ACCOUNT *account, uint32 rid)
 {
@@ -290,6 +292,7 @@ static NTSTATUS gums_getsampwrid (struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
+#endif
 
 /***************************************************************************
   Updates a SAM_ACCOUNT
