@@ -542,7 +542,7 @@ static void usage(char *pname)
 /**************************************************************************** **
  main program
  **************************************************************************** */
-int main(int argc,char *argv[])
+ int main(int argc,char *argv[])
 {
   int opt;
   extern FILE *dbf;

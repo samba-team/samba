@@ -521,7 +521,6 @@ void kill_async_dns_child(void);
 /*The following definitions come from  nmbd/nmbd.c  */
 
 BOOL reload_services(BOOL test);
-int main(int argc,char *argv[]);
 
 /*The following definitions come from  nmbd/nmbd_become_dmb.c  */
 
@@ -2013,5 +2012,4 @@ void status_page(void);
 
 /*The following definitions come from  web/swat.c  */
 
-int main(int argc, char *argv[]);
 #endif /* _PROTO_H_ */

@@ -21,7 +21,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef NO_CONFIG_H /* for some tests */
 #include "config.h"
+#endif
 #include "local.h"
 
 #ifdef AIX
@@ -37,13 +39,8 @@
 #endif
 
 #ifdef SUNOS4
-#define REPLACE_GETPASS
 /* on SUNOS4 termios.h conflicts with sys/ioctl.h */
 #undef HAVE_TERMIOS_H
-#endif
-
-#ifdef SUNOS5
-#define REPLACE_GETPASS
 #endif
 
 
@@ -659,6 +656,10 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
 #define bzero(a,b) memset((a),'\0',(b))
+#endif
+
+#ifdef REPLACE_GETPASS
+#define getpass(prompt) getsmbpass((prompt))
 #endif
 
 #endif /* _INCLUDES_H */
