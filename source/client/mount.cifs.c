@@ -231,7 +231,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	return rc;
 }
 
-static int parse_options(char * options, int filesys_flags)
+static int parse_options(char * options, int * filesys_flags)
 {
 	char * data;
 	char * percent_char = 0;
@@ -421,21 +421,21 @@ static int parse_options(char * options, int filesys_flags)
 			and could generate spurious warnings depending on the
 			level of the corresponding cifs vfs kernel code */
 		} else if (strncmp(data, "nosuid", 6) == 0) {
-			filesys_flags |= MS_NOSUID;
+			*filesys_flags |= MS_NOSUID;
 		} else if (strncmp(data, "suid", 4) == 0) {
-			filesys_flags &= ~MS_NOSUID;
+			*filesys_flags &= ~MS_NOSUID;
 		} else if (strncmp(data, "nodev", 5) == 0) {
-			filesys_flags |= MS_NODEV;
+			*filesys_flags |= MS_NODEV;
 		} else if (strncmp(data, "dev", 3) == 0) {
-			filesys_flags &= ~MS_NODEV;
+			*filesys_flags &= ~MS_NODEV;
 		} else if (strncmp(data, "noexec", 6) == 0) {
-			filesys_flags |= MS_NOEXEC;
+			*filesys_flags |= MS_NOEXEC;
 		} else if (strncmp(data, "exec", 4) == 0) {
-			filesys_flags &= ~MS_NOEXEC;
+			*filesys_flags &= ~MS_NOEXEC;
 		} else if (strncmp(data, "ro", 3) == 0) {
-			filesys_flags |= MS_RDONLY;
+			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
-			filesys_flags &= ~MS_RDONLY;
+			*filesys_flags &= ~MS_RDONLY;
 		} /* else if (strnicmp(data, "port", 4) == 0) {
 		if (value && *value) {
 			vol->port =
@@ -727,7 +727,7 @@ int main(int argc, char ** argv)
 
 	ipaddr = parse_server(share_name);
 	
-	if (orgoptions && parse_options(orgoptions, flags))
+	if (orgoptions && parse_options(orgoptions, &flags))
 		return 1;
 
 	/* BB save off path and pop after mount returns? */
