@@ -328,6 +328,16 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 
 #define CVAL(buf) ((unsigned char)*((unsigned char *)(buf)))
 
+#define SIVAL(buf, val) \
+                    ((unsigned char)buf[0]=(unsigned char)((val)&0xFF),\
+                     (unsigned char)buf[1]=(unsigned char)(((val)>>8)&0xFF),\
+                     (unsigned char)buf[2]=(unsigned char)(((val)>>16)&0xFF),\
+                     (unsigned char)buf[3]=(unsigned char)((val)>>24))
+
+#define SSVAL(buf, val) \
+                    ((unsigned char)buf[0]=(unsigned char)((val)&0xFF),\
+                     (unsigned char)buf[1]=(unsigned char)(((val)>>8)&0xFF))
+
 static int verbose = 0;
 static int print_security = 0;
 static int full_print = 0;
@@ -2403,15 +2413,29 @@ int nt_load_registry(REGF *regf)
 typedef struct hbin_blk_s {
   struct hbin_blk_s *next;
   unsigned int file_offset;  /* Offset in file                */
-  unsigned int free_space;    /* Amount of free space in block */
+  unsigned int free_space;   /* Amount of free space in block */
   unsigned int fsp_off;      /* Start of free space in block  */
+  int complete, stored;
 } HBIN_BLK;
 
 /*
+ * Allocate a new hbin block and link it to the others.
+ */
+int nt_create_hbin_blk(REGF *regf)
+{
+
+  return 0;
+}
+
+/*
  * Store a KEY in the file ...
+ *
+ * We store this depth first, and defer storing the lf struct until
+ * all the sub-keys have been stored.
  */
 int nt_store_reg_key(REGF *regf, REG_KEY *key)
 {
+  NK_HDR *nk_hdr; 
 
   return 0;
 }
@@ -2429,9 +2453,11 @@ int nt_store_reg_header(REGF *regf){
  * We write out the header and then each of the keys etc into the file
  * We have to flatten the data structure ...
  *
- * The structures are stored in a breadth-first fashion, with all records
+ * The structures are stored in a depth-first fashion, with all records
  * aligned on 8-byte boundaries, with sub-keys and values layed down before
  * the lists that contain them. SK records are layed down first, however.
+ * The lf fields are layed down after all sub-keys have been layed down, it
+ * seems, including the whole tree associated with each sub-key.
  */
 int nt_store_registry(REGF *regf)
 {
