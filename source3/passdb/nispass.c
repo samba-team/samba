@@ -198,17 +198,17 @@ static BOOL setnisppwpos(void *vp, unsigned long tok)
 /*************************************************************************
  sets a NIS+ attribute
  *************************************************************************/
-static void set_single_attribute(nis_object *newobj, int col,
+static void set_single_attribute(nis_object *new_obj, int col,
 				char *val, int len, int flags)
 {
-	if (newobj == NULL) return;
+	if (new_obj == NULL) return;
 
-	ENTRY_VAL(newobj, col) = val;
-	ENTRY_LEN(newobj, col) = strlen(len);
+	ENTRY_VAL(new_obj, col) = val;
+	ENTRY_LEN(new_obj, col) = len;
 
 	if (flags != 0)
 	{
-		newobj->EN_data.en_cols.en_cols_val[col].ec_flags = flags;
+		new_obj->EN_data.en_cols.en_cols_val[col].ec_flags = flags;
 	}
 }
 
@@ -226,7 +226,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	nis_result *result = NULL,
 	*tblresult = NULL, 
 	*addresult = NULL;
-	nis_object newobj, *obj, *user_obj;
+	nis_object new_obj, *obj;
 
     fstring uid;
 	fstring user_rid;
@@ -241,35 +241,16 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	fstring pwdlchg_t;
 	fstring pwdmchg_t;
 
-	bzero(logon_t  , sizeof(logon_t  );
-	bzero(logoff_t , sizeof(logoff_t );
-	bzero(kick_t   , sizeof(kick_t   );
-	bzero(pwdlset_t, sizeof(pwdlset_t);
-	bzero(pwdlchg_t, sizeof(pwdlchg_t);
-	bzero(pwdmchg_t, sizeof(pwdmchg_t);
+	bzero(logon_t  , sizeof(logon_t  ));
+	bzero(logoff_t , sizeof(logoff_t ));
+	bzero(kick_t   , sizeof(kick_t   ));
+	bzero(pwdlset_t, sizeof(pwdlset_t));
+	bzero(pwdlchg_t, sizeof(pwdlchg_t));
+	bzero(pwdmchg_t, sizeof(pwdmchg_t));
 
 	pfile = lp_smb_passwd_file();
 
-#if 0
-	/* checks user in unix password database.  don't want to do that, here. */
-	nisname = make_nisname_from_name(newpwd->smb_name, "passwd.org_dir");
-
-	nis_user = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
-
-	if (nis_user->status != NIS_SUCCESS || NIS_RES_NUMOBJ(nis_user) <= 0)
-	{
-		DEBUG(3, ("add_nisppwd_entry: Unable to get NIS+ passwd entry for user: %s.\n",
-		        nis_sperrno(nis_user->status)));
-		return False;
-	}
-
-	user_obj = NIS_RES_OBJECT(nis_user);
-#endif
-
 	nisname = make_nisname_from_name(newpwd->smb_name, pfile);
-/*
-	make_nisname_from_name(ENTRY_VAL(user_obj,0), pfile);
-*/
 	result = nis_list(nisname, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP,NULL,NULL);
 	if (result->status != NIS_SUCCESS && result->status != NIS_NOTFOUND)
 	{
@@ -313,91 +294,62 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 		return False;
 	}
 
-	newobj.zo_name   = NIS_RES_OBJECT(tblresult)->zo_name;
-	newobj.zo_domain = NIS_RES_OBJECT(tblresult)->zo_domain;
-	newobj.zo_owner  = NIS_RES_OBJECT(nis_user)->zo_owner;
-	newobj.zo_group  = NIS_RES_OBJECT(tblresult)->zo_group;
-	newobj.zo_access = NIS_RES_OBJECT(tblresult)->zo_access;
-	newobj.zo_ttl    = NIS_RES_OBJECT(tblresult)->zo_ttl;
+	new_obj.zo_name   = NIS_RES_OBJECT(tblresult)->zo_name;
+	new_obj.zo_domain = NIS_RES_OBJECT(tblresult)->zo_domain;
+	new_obj.zo_owner  = NIS_RES_OBJECT(nis_user)->zo_owner;
+	new_obj.zo_group  = NIS_RES_OBJECT(tblresult)->zo_group;
+	new_obj.zo_access = NIS_RES_OBJECT(tblresult)->zo_access;
+	new_obj.zo_ttl    = NIS_RES_OBJECT(tblresult)->zo_ttl;
 
-	newobj.zo_data.zo_type = ENTRY_OBJ;
+	new_obj.zo_data.zo_type = ENTRY_OBJ;
 
-	newobj.zo_data.objdata_u.en_data.en_type = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_type;
-	newobj.zo_data.objdata_u.en_data.en_cols.en_cols_len = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_maxcol;
-	newobj.zo_data.objdata_u.en_data.en_cols.en_cols_val = calloc(newobj.zo_data.objdata_u.en_data.en_cols.en_cols_len, sizeof(entry_col));
+	new_obj.zo_data.objdata_u.en_data.en_type = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_type;
+	new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_len = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_maxcol;
+	new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_val = calloc(new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_len, sizeof(entry_col));
 
-/*
-	time_t logon_time;            /* logon time */
-	time_t logoff_time;           /* logoff time */
-	time_t kickoff_time;          /* kickoff time */
-	time_t pass_last_set_time;    /* password last set time */
-	time_t pass_can_change_time;  /* password can change time */
-	time_t pass_must_change_time; /* password must change time */
+#if 0
+	pdb_set_logon_time      (logon_t  , sizeof(logon_t  ), newpwd->logon_time           );
+	pdb_set_logoff_time     (logoff_t , sizeof(logoff_t ), newpwd->logoff_time          );
+	pdb_set_kickoff_time    (kickoff_t, sizeof(kickoff_t), newpwd->kickoff_time         );
+#endif
+	pdb_set_last_set_time   (pwdlset_t, sizeof(pwdlset_t), newpwd->pass_last_set_time   ); 
+#if 0
+	pdb_set_can_change_time (pwdlchg_t, sizeof(pwdlchg_t), newpwd->pass_can_change_time ); 
+	pdb_set_must_change_time(pwdmchg_t, sizeof(pwdmchg_t), newpwd->pass_must_change_time); 
+#endif
 
 	slprintf(uid, sizeof(uid), "%u", newpwd->smb_userid);
 	slprintf(user_rid, sizeof(user_rid), "0x%x", newpwd->user_rid);
 	slprintf(smb_grpid, sizeof(smb_grpid), "%u", newpwd->smb_grpid);
 	slprintf(group_rid, sizeof(group_rid), "0x%x", newpwd->group_rid);
 
-	unsigned char *smb_passwd; /* Null if no password */
-	unsigned char *smb_nt_passwd; /* Null if no password */
+	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl), sizeof(acb)); 
 
-	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-	uint32 unknown_3; /* 0x00ff ffff */
-
-	uint16 logon_divs; /* 168 - number of hours in a week */
-	uint32 hours_len; /* normally 21 bytes */
-	uint8 hours[MAX_HOURS_LEN];
-*/
-
-	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)             , 0);
-	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                          , 0);
-	set_single_attribute(&new_obj, NPF_USER_RID      , user_rid             , strlen(user_rid)                     , 0);
-	set_single_attribute(&new_obj, NPF_SMB_GRPID     , smb_grpid            , strlen(smb_grpid)                    , 0);
-	set_single_attribute(&new_obj, NPF_GROUP_RID     , group_rid            , strlen(group_rid)                    , 0);
-	set_single_attribute(&new_obj, NPF_ACB           , acb                  , strlen(acb)                          , 0);
-	set_single_attribute(&new_obj, NPF_LMPWD         , newpwd->smb_passwd   , newpwd->smb_passwd   != NULL ? 16 : 0, EN_CRYPT);
-	set_single_attribute(&new_obj, NPF_NTPWD         , newpwd->smb_ntpasswd , newpwd->smb_ntpasswd != NULL ? 16 : 0, EN_CRYPT);
-	set_single_attribute(&new_obj, NPF_LOGON_T       , logon_t              , strlen(logon_t)                      , 0);
-	set_single_attribute(&new_obj, NPF_LOGOFF_T      , logoff_t             , strlen(logoff_t)                     , 0);
-	set_single_attribute(&new_obj, NPF_KICK_T        , kick_t               , strlen(kick_t)                       , 0);
-	set_single_attribute(&new_obj, NPF_PWDLSET_T     , pwdlset_t            , strlen(pwdlset_t)                    , 0);
-	set_single_attribute(&new_obj, NPF_PWDLCHG_T     , pwdlchg_t            , strlen(pwdlchg_t)                    , 0);
-	set_single_attribute(&new_obj, NPF_PWDMCHG_T     , pwdmchg_t            , strlen(pwdmchg_t)                    , 0);
-	set_single_attribute(&new_obj, NPF_FULL_NAME     , newpwd->full_name    , strlen(newpwd->full_name)            , 0);
-	set_single_attribute(&new_obj, NPF_HOME_DIR      , newpwd->home_dir     , strlen(newpwd->home_dir)             , 0);
-	set_single_attribute(&new_obj, NPF_DIR_DRIVE     , newpwd->dir_drive    , strlen(newpwd->dir_drive)            , 0);
-	set_single_attribute(&new_obj, NPF_LOGON_SCRIPT  , newpwd->logon_script , strlen(newpwd->logon_script)         , 0);
-	set_single_attribute(&new_obj, NPF_PROFILE_PATH  , newpwd->profile_path , strlen(newpwd->profile_path)         , 0);
-	set_single_attribute(&new_obj, NPF_ACCT_DESC     , newpwd->acct_desc    , strlen(newpwd->acct_desc)            , 0);
-	set_single_attribute(&new_obj, NPF_WORKSTATIONS  , newpwd->workstations , strlen(newpwd->workstations)         , 0);
-	set_single_attribute(&new_obj, NPF_HOURS         , newpwd->hours        , newpwd->hours_len                    , 0);
+	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)              , 0);
+	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                           , 0);
+	set_single_attribute(&new_obj, NPF_USER_RID      , user_rid             , strlen(user_rid)                      , 0);
+	set_single_attribute(&new_obj, NPF_SMB_GRPID     , smb_grpid            , strlen(smb_grpid)                     , 0);
+	set_single_attribute(&new_obj, NPF_GROUP_RID     , group_rid            , strlen(group_rid)                     , 0);
+	set_single_attribute(&new_obj, NPF_ACB           , acb                  , strlen(acb)                           , 0);
+	set_single_attribute(&new_obj, NPF_LMPWD         , newpwd->smb_passwd   , newpwd->smb_passwd   != NULL ? 16 : 0 , EN_CRYPT);
+	set_single_attribute(&new_obj, NPF_NTPWD         , newpwd->smb_nt_passwd, newpwd->smb_nt_passwd != NULL ? 16 : 0, EN_CRYPT);
+	set_single_attribute(&new_obj, NPF_LOGON_T       , logon_t              , strlen(logon_t)                       , 0);
+	set_single_attribute(&new_obj, NPF_LOGOFF_T      , logoff_t             , strlen(logoff_t)                      , 0);
+	set_single_attribute(&new_obj, NPF_KICK_T        , kick_t               , strlen(kick_t)                        , 0);
+	set_single_attribute(&new_obj, NPF_PWDLSET_T     , pwdlset_t            , strlen(pwdlset_t)                     , 0);
+	set_single_attribute(&new_obj, NPF_PWDLCHG_T     , pwdlchg_t            , strlen(pwdlchg_t)                     , 0);
+	set_single_attribute(&new_obj, NPF_PWDMCHG_T     , pwdmchg_t            , strlen(pwdmchg_t)                     , 0);
+	set_single_attribute(&new_obj, NPF_FULL_NAME     , newpwd->full_name    , strlen(newpwd->full_name)             , 0);
+	set_single_attribute(&new_obj, NPF_HOME_DIR      , newpwd->home_dir     , strlen(newpwd->home_dir)              , 0);
+	set_single_attribute(&new_obj, NPF_DIR_DRIVE     , newpwd->dir_drive    , strlen(newpwd->dir_drive)             , 0);
+	set_single_attribute(&new_obj, NPF_LOGON_SCRIPT  , newpwd->logon_script , strlen(newpwd->logon_script)          , 0);
+	set_single_attribute(&new_obj, NPF_PROFILE_PATH  , newpwd->profile_path , strlen(newpwd->profile_path)          , 0);
+	set_single_attribute(&new_obj, NPF_ACCT_DESC     , newpwd->acct_desc    , strlen(newpwd->acct_desc)             , 0);
+	set_single_attribute(&new_obj, NPF_WORKSTATIONS  , newpwd->workstations , strlen(newpwd->workstations)          , 0);
+	set_single_attribute(&new_obj, NPF_HOURS         , newpwd->hours        , newpwd->hours_len                     , 0);
 
 
-	ENTRY_VAL(&newobj, 0) = ENTRY_VAL(user_obj, 0);
-	ENTRY_LEN(&newobj, 0) = ENTRY_LEN(user_obj, 0);
-
-	ENTRY_VAL(&newobj, 1) = ENTRY_VAL(user_obj, 2);
-	ENTRY_LEN(&newobj, 1) = ENTRY_LEN(user_obj, 2);
-
-	ENTRY_VAL(&newobj, 2) = lmpwd;
-	ENTRY_LEN(&newobj, 2) = strlen(lmpwd);
-	newobj.EN_data.en_cols.en_cols_val[2].ec_flags = EN_CRYPT;
-
-	ENTRY_VAL(&newobj, 3) = ntpwd;
-	ENTRY_LEN(&newobj, 3) = strlen(ntpwd);
-	newobj.EN_data.en_cols.en_cols_val[3].ec_flags = EN_CRYPT;
-
-	ENTRY_VAL(&newobj, 4) = ENTRY_VAL(user_obj, 4);
-	ENTRY_LEN(&newobj, 4) = ENTRY_LEN(user_obj, 4);
-
-	ENTRY_VAL(&newobj, 5) = ENTRY_VAL(user_obj, 5);
-	ENTRY_LEN(&newobj, 5) = ENTRY_LEN(user_obj, 5);
-
-	ENTRY_VAL(&newobj, 6) = ENTRY_VAL(user_obj, 6);
-	ENTRY_LEN(&newobj, 6) = ENTRY_LEN(user_obj, 6);
-
-	obj = &newobj;
+	obj = &new_obj;
 
 	addresult = nis_add_entry(pfile, obj, ADD_OVERWRITE | FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP);
 
@@ -671,3 +623,21 @@ struct passdb_ops *nisplus_initialize_password_db(void)
 #else
  void nisplus_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_NISPLUS_DB */
+
+/* useful code i can't bring myself to delete */
+#if 0
+	/* checks user in unix password database.  don't want to do that, here. */
+	nisname = make_nisname_from_name(newpwd->smb_name, "passwd.org_dir");
+
+	nis_user = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
+
+	if (nis_user->status != NIS_SUCCESS || NIS_RES_NUMOBJ(nis_user) <= 0)
+	{
+		DEBUG(3, ("add_nisppwd_entry: Unable to get NIS+ passwd entry for user: %s.\n",
+		        nis_sperrno(nis_user->status)));
+		return False;
+	}
+
+	user_obj = NIS_RES_OBJECT(nis_user);
+	make_nisname_from_name(ENTRY_VAL(user_obj,0), pfile);
+#endif
