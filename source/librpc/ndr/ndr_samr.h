@@ -294,11 +294,17 @@ struct samr_CREATE_DOM_ALIAS {
 
 };
 
-struct samr_ENUM_DOM_ALIASES {
+struct samr_EnumDomainAliases {
 	struct {
+		struct policy_handle *handle;
+		uint32 *resume_handle;
+		uint32 max_size;
 	} in;
 
 	struct {
+		uint32 *resume_handle;
+		struct samr_SamArray *sam;
+		uint32 num_entries;
 		NTSTATUS result;
 	} out;
 
@@ -484,11 +490,15 @@ struct samr_GET_MEMBERS_IN_ALIAS {
 
 };
 
-struct samr_OPEN_USER {
+struct samr_OpenUser {
 	struct {
+		struct policy_handle *handle;
+		uint32 access_mask;
+		uint32 rid;
 	} in;
 
 	struct {
+		struct policy_handle *acct_handle;
 		NTSTATUS result;
 	} out;
 
@@ -504,11 +514,26 @@ struct samr_DELETE_DOM_USER {
 
 };
 
-struct samr_QUERY_USERINFO {
+struct samr_UserInfo1 {
+	struct samr_Name username;
+	struct samr_Name full_name;
+	uint32 primary_group_rid;
+	struct samr_Name description;
+	struct samr_Name comment;
+};
+
+union samr_UserInfo {
+/* [case(1)] */ struct samr_UserInfo1 info1;
+};
+
+struct samr_QueryUserInfo {
 	struct {
+		struct policy_handle *handle;
+		uint16 level;
 	} in;
 
 	struct {
+		union samr_UserInfo *info;
 		NTSTATUS result;
 	} out;
 
@@ -843,7 +868,7 @@ struct samr_VALIDATE_PASSWORD {
 #define DCERPC_SAMR_CREATE_USER_IN_DOMAIN 12
 #define DCERPC_SAMR_ENUMDOMAINUSERS 13
 #define DCERPC_SAMR_CREATE_DOM_ALIAS 14
-#define DCERPC_SAMR_ENUM_DOM_ALIASES 15
+#define DCERPC_SAMR_ENUMDOMAINALIASES 15
 #define DCERPC_SAMR_GET_ALIAS_MEMBERSHIP 16
 #define DCERPC_SAMR_LOOKUP_NAMES 17
 #define DCERPC_SAMR_LOOKUP_RIDS 18
@@ -862,9 +887,9 @@ struct samr_VALIDATE_PASSWORD {
 #define DCERPC_SAMR_ADD_ALIASMEM 31
 #define DCERPC_SAMR_DEL_ALIASMEM 32
 #define DCERPC_SAMR_GET_MEMBERS_IN_ALIAS 33
-#define DCERPC_SAMR_OPEN_USER 34
+#define DCERPC_SAMR_OPENUSER 34
 #define DCERPC_SAMR_DELETE_DOM_USER 35
-#define DCERPC_SAMR_QUERY_USERINFO 36
+#define DCERPC_SAMR_QUERYUSERINFO 36
 #define DCERPC_SAMR_SET_USERINFO 37
 #define DCERPC_SAMR_CHANGE_PASSWORD_USER 38
 #define DCERPC_SAMR_GET_GROUPS_FOR_USER 39
