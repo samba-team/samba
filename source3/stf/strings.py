@@ -62,10 +62,10 @@ class PushUCS2_Tests(comfychair.TestCase):
             self.assert_equal(out, "0\n")
     
 
-class StrCaseCmp_Ascii_Tests(comfychair.TestCase):
+class StrCaseCmp(comfychair.TestCase):
     """String comparisons in simple ASCII""" 
     def run_strcmp(self, a, b, expect):
-        out, err = self.runcmd('t_strcmp \"%s\" \"%s\"' % (a, b))
+        out, err = self.runcmd('t_strcmp \"%s\" \"%s\"' % (a.encode('utf-8'), b.encode('utf-8')))
         if signum(int(out)) != expect:
             self.fail("comparison failed:\n"
                       "  a=%s\n"
@@ -88,12 +88,14 @@ class StrCaseCmp_Ascii_Tests(comfychair.TestCase):
                  ('longstring ' * 100, 'longstring ' * 100, 0),
                  ('longstring ' * 100, 'longstring ' * 100 + 'a', -1),
                  ('longstring ' * 100 + 'a', 'longstring ' * 100, +1),
+                 (KATAKANA_LETTER_A, KATAKANA_LETTER_A, 0),
+                 (KATAKANA_LETTER_A, 'a', 1),
                  ]
         for a, b, expect in cases:
             self.run_strcmp(a, b, expect)
         
 # Define the tests exported by this module
-tests = [StrCaseCmp_Ascii_Tests,
+tests = [StrCaseCmp,
          PushUCS2_Tests]
 
 # Handle execution of this file as a main program
