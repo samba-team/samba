@@ -102,10 +102,16 @@ static PyObject *from_dependentfiles(uint16 *dependentfiles)
 	return list;
 }
 
+static uint16 *to_dependentfiles(PyObject *dict)
+{
+	return (uint16 *)"abcd\0";
+}
+
 BOOL py_from_DRIVER_INFO_1(PyObject **dict, DRIVER_INFO_1 *info)
 {
 	*dict = from_struct(info, py_DRIVER_INFO_1);
 	PyDict_SetItemString(*dict, "level", PyInt_FromLong(1));
+
 	return True;
 }
 
@@ -118,6 +124,7 @@ BOOL py_from_DRIVER_INFO_2(PyObject **dict, DRIVER_INFO_2 *info)
 {
 	*dict = from_struct(info, py_DRIVER_INFO_2);
 	PyDict_SetItemString(*dict, "level", PyInt_FromLong(2));
+
 	return True;
 }
 
@@ -129,7 +136,9 @@ BOOL py_to_DRIVER_INFO_2(DRIVER_INFO_2 *info, PyObject *dict)
 BOOL py_from_DRIVER_INFO_3(PyObject **dict, DRIVER_INFO_3 *info)
 {
 	*dict = from_struct(info, py_DRIVER_INFO_3);
+
 	PyDict_SetItemString(*dict, "level", PyInt_FromLong(3));
+
 	PyDict_SetItemString(
 		*dict, "dependent_files", 
 		from_dependentfiles(info->dependentfiles));
@@ -139,12 +148,29 @@ BOOL py_from_DRIVER_INFO_3(PyObject **dict, DRIVER_INFO_3 *info)
 
 BOOL py_to_DRIVER_INFO_3(DRIVER_INFO_3 *info, PyObject *dict)
 {
-	PyObject *dict_copy = PyDict_Copy(dict);
-	BOOL result;
+	PyObject *obj, *dict_copy = PyDict_Copy(dict);
+	BOOL result = False;
+
+	if (!(obj = PyDict_GetItemString(dict_copy, "dependent_files")) ||
+	    !PyList_Check(obj))
+		goto done;
+
+	info->dependentfiles = to_dependentfiles(obj);
+
+	PyDict_DelItemString(dict_copy, "dependent_files");
+
+	if (!(obj = PyDict_GetItemString(dict_copy, "level")) ||
+	    !PyInt_Check(obj))
+		goto done;
 
 	PyDict_DelItemString(dict_copy, "level");
-	result = to_struct(info, dict_copy, py_DRIVER_INFO_3);
 
+	if (!to_struct(info, dict_copy, py_DRIVER_INFO_3))
+	    goto done;
+
+	result = True;
+
+done:
 	Py_DECREF(dict_copy);
 	return result;
 }
