@@ -157,10 +157,6 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 }
 
 
-/****************************************************************************
-gethostbyname() - we ignore any domain portion of the name and only
-handle names that are at most 15 characters long
-  **************************************************************************/
 #ifdef HAVE_NS_API_H
 /* IRIX version */
 
@@ -201,6 +197,10 @@ int lookup(nsd_file_t *rq)
 	response[0] = '\0';
 	len = sizeof(response) - 2;
 
+	/* 
+	 * response needs to be a string of the following format
+	 * ip_address[ ip_address]*\tname[ alias]*
+	 */
 	if (strcasecmp(map,"hosts.byaddr") == 0) {
 		if ( status = lookup_byaddr_backend(key, &count)) {
 		    size = strlen(key) + 1;
@@ -261,11 +261,16 @@ int lookup(nsd_file_t *rq)
 	    nsd_set_result(rq,NS_SUCCESS,response,strlen(response),VOLATILE);
 	    return NSD_OK;
 	}
+	nsd_logprintf(NSD_LOG_LOW, "lookup (wins) not found\n");
 	rq->f_status = NS_NOTFOUND;
 	return NSD_NEXT;
 }
 
 #else
+/****************************************************************************
+gethostbyname() - we ignore any domain portion of the name and only
+handle names that are at most 15 characters long
+  **************************************************************************/
 NSS_STATUS
 _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 			  char *buffer, size_t buflen, int *errnop,
