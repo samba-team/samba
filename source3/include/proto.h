@@ -507,6 +507,11 @@ void sort_query_replies(char *data, int n, struct in_addr ip);
 
 char *get_nt_error_msg(uint32 nt_code);
 
+/*The following definitions come from  libsmb/passchange.c  */
+
+BOOL remote_password_change(const char *remote_machine, const char *user_name, 
+			    const char *old_passwd, const char *new_passwd);
+
 /*The following definitions come from  libsmb/pwd_cache.c  */
 
 void pwd_init(struct pwd_info *pwd);
@@ -1211,6 +1216,12 @@ BOOL pdb_rid_is_user(uint32 rid);
 /*The following definitions come from  passdb/smbpass.c  */
 
 struct passdb_ops *file_initialize_password_db(void);
+
+/*The following definitions come from  passdb/smbpasschange.c  */
+
+BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
+			   BOOL enable_user, BOOL disable_user, BOOL set_no_password,
+			   char *new_passwd);
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 

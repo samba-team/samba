@@ -33,20 +33,18 @@ static pstring servicesf = CONFIGFILE;
 /*
  * Password Management Globals
  */
-char user[] = "username";
-char old_pswd[] = "old_passwd";
-char new_pswd[] = "new_passwd";
-char new2_pswd[] = "new2_passwd";
-char chg_passwd_flag[] = "chg_passwd_flag";
-char add_user_flag[] = "add_user_flag";
-char disable_user_flag[] = "disable_user_flag";
-char enable_user_flag[] = "enable_user_flag";
+#define USER "username"
+#define OLD_PSWD "old_passwd"
+#define NEW_PSWD "new_passwd"
+#define NEW2_PSWD "new2_passwd"
+#define CHG_PASSWD_FLAG "chg_passwd_flag"
+#define ADD_USER_FLAG "add_user_flag"
+#define DISABLE_USER_FLAG "disable_user_flag"
+#define ENABLE_USER_FLAG "enable_user_flag"
 
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
  void unbecome_root(BOOL restore_dir) {}
-/* We need this because we link to password.o */
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override) {return False;}
 
 /****************************************************************************
 ****************************************************************************/
@@ -87,8 +85,8 @@ char *p = newstring;
 
 static char *make_parm_name(char *label)
 {
-static char parmname[1024];
-char *p = parmname;
+	static char parmname[1024];
+	char *p = parmname;
 
 	while (*label) {
 		if (*label == ' ') *p++ = '_';
@@ -576,257 +574,24 @@ static void shares_page(void)
 	printf("</FORM>\n");
 }
 
-/****************************************************************************
-****************************************************************************/
-static void sig_pipe ( int signo)
+/*************************************************************
+change a password either locally or remotely
+*************************************************************/
+static BOOL change_password(const char *remote_machine, char *user_name, 
+			    char *old_passwd, char *new_passwd, 
+			    BOOL add_user, BOOL enable_user, BOOL disable_user)
 {
-	printf("<p> SIGPIPE caught\n");
-}
-
-/****************************************************************************
-  create 2 pipes and use them to feed the smbpasswd program 
-****************************************************************************/
-static BOOL talk_to_smbpasswd(char *old, char *new)
-{
-	int 	i, n, fd1[2], fd2[2];
-	pid_t	pid;
-	BOOL	rslt;
-	char	line[MAX_STRINGLEN + 2]; /* one for newline, one for null */
-
-	if (signal(SIGPIPE, sig_pipe) == SIG_ERR) {
-		printf("<p> signal error");
+	if (remote_machine != NULL) {
+		return remote_password_change(remote_machine, user_name, old_passwd, new_passwd);
 	}
 
-	if ((pipe(fd1) < 0) || (pipe(fd2) < 0)) {
-		printf("<p> pipe error");
+	if(!initialize_password_db()) {
+		printf("Can't setup password database vectors.\n");
+		return False;
 	}
-
-	if ((pid = fork()) < 0) {
-		printf("<p> fork error");
-	}
-
-	/*
-	 * Create this relationship with the pipes between the parent and 
-	 * the child as detailed below.
-	 *
-	 * parent -> fd1[1] -- fd1[0] -> child 
-	 * parent <- fd2[0] -- fd2[1] <- child 
-	 *
-	 * fd1[0] is turned into child's stdin
-	 * fd2[1] is turned into child's stdout
-	 * fd2[1] is also turned into child's stderr
-	 *
-	 */
-	else if (pid > 0) {			/* parent */
-
-		int	to_child    = fd1[1];
-		int	from_child  = fd2[0];
-		int	wstat;
-
-		close(fd1[0]); /* parent doesn't need input  side of pipe fd1 */
-		close(fd2[1]); /* parent doesn't need output side of pipe fd2 */
-
-		/*
-		 * smbpasswd doesn't require any input to disable or enable a user 
-		 */
-		if (!cgi_variable(disable_user_flag) && !cgi_variable(enable_user_flag)) {
-			/*
-			 * smbpasswd requires a regular old user to send their old password 
-			 */
-			if (am_root() == False) {
-				n = (strlen(old) <= (MAX_STRINGLEN)) ? strlen(old) : (MAX_STRINGLEN);
-				strncpy( line, old, n);
-				line[n] = '\n'; n++; /* add carriage return */
-				line[n] =    0;      /* add null terminator, for debug */
-				if (write( to_child, line, n) != n) {
-					printf("<p> error on write to child");
-				}
-			}
-
-			/*
-			 * smbpasswd requires that the new password be sent to it twice
-			 */
-			for( i=0; i<2; i++) {
-				n = (strlen(new) <= (MAX_STRINGLEN)) ? strlen(new) : (MAX_STRINGLEN);
-				strncpy( line, new, n);
-				line[n] = '\n'; n++; /* add carriage return */
-				line[n] =    0;      /* add null terminator, for debug */
-				if (write( to_child, line, n) != n) {
-					printf("<p> error on write to child");
-					break;
-				}
-			}
-		}
-
-		/*
-		 * Wait for smbpasswd to finish
-		 */
-		if (sys_waitpid(pid, &wstat, 0) < 0) {
-			printf("<p> problem waiting");
-		}
-
-		/* 
-		 * Read the answer from the add program
-		 */
-		memset( line, '\0', sizeof(line));
-		if ((n = read( from_child, line, MAX_STRINGLEN)) < 0) {
-			printf("<p> error on read from child");
-		}
-
-		/*
-		 * Write the response from smbpasswd to user, if all is well
-		 * line[] should be just a null terminated line. We could 
-		 * check for the null line and not print anything, but we 
-		 * really should be checking the exit code if we want to be 
-		 * sure.
-		 */
-		line[n] = 0;    /* null terminate */
-		printf("<p> %s\n",line);
 	
-		close(to_child); 
-		close(from_child); 
-	
-		if (line[0] == '\0') {
-			rslt = True;   /* All ok */
-		} else {
-			rslt = False;  /* Something didn't work */
-		}
-		
-	} else {				/* child  */
-
-		int	from_parent  = fd1[0];
-		int	to_parent    = fd2[1];
-
-		close(fd1[1]); /* child  doesn't need output side of pipe fd1 */
-		close(fd2[0]); /* child  doesn't need input  side of pipe fd2 */
-
-		/*
-		 * Turn the from_parent pipe into the childs stdin 
-		 */
-		if (from_parent != STDIN_FILENO) {
-			if (dup2( from_parent, STDIN_FILENO) != STDIN_FILENO) {
-				printf("<p> dup2 error of stdin");
-			}
-			close( from_parent);
-		}
-
-		/*
-		 * Turn the to_parent pipe into the childs stdout
-		 */
-		if (to_parent != STDOUT_FILENO) {
-			if (dup2( to_parent, STDOUT_FILENO) != STDOUT_FILENO) {
-				printf("<p> dup2 error of stdout");
-			}
-			close( to_parent);
-		}
-		/*
-		 * Make the childs stderr the to_parent pipe also
-		 */
-		if (dup2( STDOUT_FILENO, STDERR_FILENO) != STDERR_FILENO) {
-			printf("<p> dup2 error of stdout");
-		}
-
-		
-		/* Root can do more */
-		if (am_root() == True) {
-			if (cgi_variable(add_user_flag)) {
-				/* 
-				 * Add a user 
-				 */
-				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", "-a", cgi_variable(user), (char *) 0) < 0) {
-					printf("<p> execl error of smbpasswd");
-				}
-			} else if (cgi_variable(disable_user_flag)) {
-				/* 
-				 * Disable a user 
-				 */
-				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", "-d", cgi_variable(user), (char *) 0) < 0) {
-					printf("<p> execl error of smbpasswd");
-				}
-			} else if (cgi_variable(enable_user_flag)) {
-				/* 
-				 * Enable a user 
-				 */
-				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", "-e", cgi_variable(user), (char *) 0) < 0) {
-					printf("<p> execl error of smbpasswd");
-				}
-			} else {
-				/* 
-			 	 * Change a users password 
-				 */
-				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", cgi_variable(user), (char *) 0) < 0) {
-					printf("<p> execl error of smbpasswd");
-				}
-			}
-		} else {
-			/* 
-		 	 * Ordinary users can change any users passwd if they know the old passwd
-			 */
-			if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", (char *) 0) < 0) {
-				printf("<p> execl error of smbpasswd");
-			}
-		}
-	}
-	return(rslt);  
-}
-
-/****************************************************************************
-  become the specified uid - permanently !
-****************************************************************************/
-
-BOOL become_user_permanently(uid_t uid, gid_t gid)
-{
-
-    if (geteuid() != 0) {
-        return(True);
-    }
-
-    /* now completely lose our privilages. This is a fairly paranoid
-    way of doing it, but it does work on all systems that I know of */
-
-#ifdef HAVE_SETRESUID
-	/*
-	 * Firstly ensure all our uids are set to root.
-	 */
-    setresgid(0,0,0);
-    setresuid(0,0,0);
-
-	/*
-	 * Now ensure we change all our gids.
-	 */
-    setresgid(gid,gid,gid);
-
-	/*
-	 * Now ensure all the uids are the user.
-	 */
-    setresuid(uid,uid,uid);
-#else
-	/*
-	 * Firstly ensure all our uids are set to root.
-	 */
-    setuid(0);
-    seteuid(0);
-
-	/*
-	 * Now ensure we change all our gids.
-	 */
-    setgid(gid);
-    setegid(gid);
-
-	/*
-	 * Now ensure all the uids are the user.
-	 */
-    setuid(uid);
-    seteuid(uid);
-#endif
-
-    if (getuid() != uid || geteuid() != uid ||
-        getgid() != gid || getegid() != gid) {
-        /* We failed to lose our privilages. */
-        return False;
-    }
-
-	return(True);
+	return local_password_change(user_name, False, add_user, enable_user, 
+				     disable_user, False, new_passwd);
 }
 
 /****************************************************************************
@@ -834,11 +599,10 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 ****************************************************************************/
 static void chg_passwd(void)
 {
-	struct passwd *pass = NULL;
 	BOOL rslt;
 
 	/* Make sure users name has been specified */
-	if (strlen(cgi_variable(user)) == 0) {
+	if (strlen(cgi_variable(USER)) == 0) {
 		printf("<p> Must specify \"User Name\" \n");
 		return;
 	}
@@ -847,50 +611,40 @@ static void chg_passwd(void)
 	 * smbpasswd doesn't require anything but the users name to disable or enable the user,
 	 * so if that's what we're doing, skip the rest of the checks
 	 */
-	if (!cgi_variable(disable_user_flag) && !cgi_variable(enable_user_flag)) {
+	if (!cgi_variable(DISABLE_USER_FLAG) && !cgi_variable(ENABLE_USER_FLAG)) {
 
 		/* If current user is not root, make sure old password has been specified */
-		if ((am_root() == False) &&  (strlen( cgi_variable(old_pswd)) <= 0)) {
+		if ((am_root() == False) &&  (strlen( cgi_variable(OLD_PSWD)) <= 0)) {
 			printf("<p> Must specify \"Old Password\" \n");
 			return;
 		}
 
 		/* Make sure new passwords have been specified */
-		if ((strlen( cgi_variable(new_pswd )) <= 0) ||
-		    (strlen( cgi_variable(new2_pswd)) <= 0)) {
+		if ((strlen( cgi_variable(NEW_PSWD)) <= 0) ||
+		    (strlen( cgi_variable(NEW2_PSWD)) <= 0)) {
 			printf("<p> Must specify \"New, and Re-typed Passwords\" \n");
 			return;
 		}
 
 		/* Make sure new passwords was typed correctly twice */
-		if (strcmp(cgi_variable(new_pswd), cgi_variable(new2_pswd)) != 0) {
+		if (strcmp(cgi_variable(NEW_PSWD), cgi_variable(NEW2_PSWD)) != 0) {
 			printf("<p> Re-typed password didn't match new password\n");
 			return;
 		}
 	}
 
-#ifdef SWAT_DEBUG
-	if (pass) printf("<p> User uid %d  gid %d \n", pass->pw_uid, pass->pw_gid);
-	printf("<p> Processes uid %d, euid %d, gid %d, egid %d \n",getuid(),geteuid(),getgid(),getegid());
-	printf("<p> User Name %s     \n", cgi_variable(user));
-	printf("<p> Old passwd %s    \n", cgi_variable(old_pswd) ? cgi_variable(old_pswd):"");
-	printf("<p> New passwd %s    \n", cgi_variable(new_pswd));
-	printf("<p> Re-typed New passwd %s    \n", cgi_variable(new2_pswd));
-	printf("<p> flags '%s', '%s', '%s'   \n", 
-		(cgi_variable( chg_passwd_flag) ? cgi_variable( chg_passwd_flag) : ""),
-		(cgi_variable( add_user_flag) ? cgi_variable( add_user_flag) : ""),
-		(cgi_variable( disable_user_flag) ? cgi_variable( disable_user_flag) : ""));
-		(cgi_variable( enable_user_flag) ? cgi_variable( enable_user_flag) : ""));
-#endif /* SWAT_DEBUG */
+	rslt = change_password(am_root() ? NULL : "127.0.0.1",
+			       cgi_variable(USER),
+			       cgi_variable(OLD_PSWD), cgi_variable(NEW_PSWD),
+			       cgi_variable(ADD_USER_FLAG)? True : False,
+			       cgi_variable(ENABLE_USER_FLAG)? True : False,
+			       cgi_variable(DISABLE_USER_FLAG)? True : False);
 
 
-	rslt = talk_to_smbpasswd( cgi_variable(old_pswd), cgi_variable(new_pswd));
-	if (am_root() == False) {
-		if (rslt == True) {
-			printf("<p> The passwd for '%s' has been changed. \n",cgi_variable(user));
-		} else {
-			printf("<p> The passwd for '%s' has NOT been changed. \n",cgi_variable(user));
-		}
+	if (rslt == True) {
+		printf("<p> The passwd for '%s' has been changed. \n", cgi_variable(USER));
+	} else {
+		printf("<p> The passwd for '%s' has NOT been changed. \n",cgi_variable(USER));
 	}
 	
 	return;
@@ -913,29 +667,30 @@ static void passwd_page(void)
 	 * After the first time through here be nice. If the user
 	 * changed the User box text to another users name, remember it.
 	 */
-	if ( cgi_variable(user) && 
-	    (strcmp(cgi_variable(user), get_user_name()))) {
+	if (cgi_variable(USER) && 
+	    (strcmp(cgi_variable(USER), get_user_name()))) {
 		/* User is changing another accounts passwd */
-		new_name = cgi_variable(user);
+		new_name = cgi_variable(USER);
 	} else {
 		/* User is changing there own passwd */
 		new_name = get_user_name();
 	}
 
-	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", user, new_name);
+	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", 
+	       USER, new_name);
 	if (am_root() == False) {
-		printf("<p> Old Password: <input type=password size=30 name=%s>\n",old_pswd);
+		printf("<p> Old Password: <input type=password size=30 name=%s>\n",OLD_PSWD);
 	}
-	printf("<p> New Password: <input type=password size=30 name=%s>\n",new_pswd);
-	printf("<p> Re-type New Password: <input type=password size=30 name=%s>\n",new2_pswd);
+	printf("<p> New Password: <input type=password size=30 name=%s>\n",NEW_PSWD);
+	printf("<p> Re-type New Password: <input type=password size=30 name=%s>\n",NEW2_PSWD);
 
 	printf("</select></td></tr><p>");
 	printf("<tr><td>");
-	printf("<input type=submit name=%s value=\"Change Password\">", chg_passwd_flag);
+	printf("<input type=submit name=%s value=\"Change Password\">", CHG_PASSWD_FLAG);
 	if (am_root() == True) {
-		printf("<input type=submit name=%s value=\"Add New User\">", add_user_flag);
-		printf("<input type=submit name=%s value=\"Disable User\">", disable_user_flag);
-		printf("<input type=submit name=%s value=\"Enable User\">", enable_user_flag);
+		printf("<input type=submit name=%s value=\"Add New User\">", ADD_USER_FLAG);
+		printf("<input type=submit name=%s value=\"Disable User\">", DISABLE_USER_FLAG);
+		printf("<input type=submit name=%s value=\"Enable User\">", ENABLE_USER_FLAG);
 	}
 	printf("</td>\n");
 
@@ -943,7 +698,7 @@ static void passwd_page(void)
 	 * If we don't have user information then there's nothing to do. It's probably
 	 * the first time through this code.
 	 */
-	if (cgi_variable(user)) {
+	if (cgi_variable(USER)) {
 		chg_passwd();		
 	}
 
