@@ -100,7 +100,7 @@ static int open_server_socket(int port, uint32 ipaddr)
 {
 	int s;
 
-	s = open_socket_in(SOCK_STREAM, port, 0, ipaddr);
+	s = open_socket_in(SOCK_STREAM, port, 0, ipaddr, True);
 	if(s == -1)
 		return -1;
 		/* ready to listen */

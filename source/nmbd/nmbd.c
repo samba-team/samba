@@ -412,11 +412,11 @@ static BOOL open_sockets(BOOL isdaemon, int port)
    */
 
   if ( isdaemon )
-    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0);
+    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0,True);
   else
     ClientNMB = 0;
   
-  ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,0);
+  ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,0,True);
 
   if ( ClientNMB == -1 )
     return( False );

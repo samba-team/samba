@@ -159,7 +159,7 @@ static void start_filter(char *desthost)
 	CatchChild();
 
 	/* start listening on port 139 locally */
-	s = open_socket_in(SOCK_STREAM, 139, 0, 0);
+	s = open_socket_in(SOCK_STREAM, 139, 0, 0, True);
 	
 	if (s == -1) {
 		DEBUG(0,("bind failed\n"));

@@ -32,7 +32,7 @@ BOOL nmbd_running(void)
 	struct in_addr *ip_list;
 
 	if ((fd = open_socket_in(SOCK_DGRAM, 0, 3,
-				 interpret_addr("127.0.0.1"))) != -1) {
+				 interpret_addr("127.0.0.1"),True)) != -1) {
 		if ((ip_list = name_query(fd, "__SAMBA__", 0, 
 					  True, True, loopback_ip,
 					  &count,0)) != NULL) {

@@ -220,7 +220,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
    */
 
   if ( isdaemon )
-    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0);
+    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0,True);
   else
     ClientNMB = 0;
   

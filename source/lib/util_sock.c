@@ -631,7 +631,8 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
 /****************************************************************************
 open a socket of the specified type, port and address for incoming data
 ****************************************************************************/
-int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
+int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, 
+                   BOOL rebind)
 {
   struct hostent *hp;
   struct sockaddr_in sock;
@@ -663,8 +664,12 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
     { DEBUG(0,("socket failed\n")); return -1; }
 
   {
-    int one=1;
-    setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+    int val=1;
+	if(rebind)
+		val=1;
+	else
+		val=0;
+    setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val));
   }
 
   /* now we've got a socket - we need to bind it */
@@ -680,7 +685,7 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
 	  port = 7999;
 
 	if (port >= 1000 && port < 9000)
-	  return(open_socket_in(type,port+1,dlevel,socket_addr));
+	  return(open_socket_in(type,port+1,dlevel,socket_addr,rebind));
       }
 
       return(-1); 

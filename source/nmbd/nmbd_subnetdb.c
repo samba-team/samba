@@ -130,7 +130,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
      * Fail the subnet creation if this fails.
      */
 
-    if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, myip.s_addr)) == -1)
+    if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, myip.s_addr,True)) == -1)
     {
       if( DEBUGLVL( 0 ) )
       {
@@ -142,7 +142,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
       return NULL;
     }
 
-    if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, myip.s_addr)) == -1)
+    if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, myip.s_addr,True)) == -1)
     {
       if( DEBUGLVL( 0 ) )
       {
