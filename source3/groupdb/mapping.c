@@ -714,8 +714,10 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 int smb_create_group(char *unix_group, gid_t *new_gid)
 {
 	pstring add_script;
-	int ret;
-	int fd = 0;
+	int 	ret = -1;
+	int 	fd = 0;
+	
+	*new_gid = 0;
 
 	/* defer to scripts */
 	
@@ -734,22 +736,9 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
 			if (read(fd, output, sizeof(output)) > 0) {
 				*new_gid = (gid_t)strtoul(output, NULL, 10);
 			}
+			
 			close(fd);
-
-			if (*new_gid == 0) {
-				/* The output was garbage. We assume nobody
-	       	                    will create group 0 via smbd. Now we try to
-	                           get the group via getgrnam. */
-
-				struct group *grp = getgrnam(unix_group);
-				if (grp != NULL)
-					*new_gid = grp->gr_gid;
-				else
-					return 1;
-			}
 		}
-		
-		return 0;
 	}
 
 	/* Try winbindd */
@@ -757,10 +746,17 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
 	if ( winbind_create_group( unix_group, NULL ) ) {
 		DEBUG(3,("smb_create_group: winbindd created the group (%s)\n",
 			unix_group));
-		return 0;
+		ret = 0;
+	}
+	
+	if (*new_gid == 0) {
+		struct group *grp = getgrnam(unix_group);
+
+		if (grp != NULL)
+			*new_gid = grp->gr_gid;
 	}
 			
-	return -1;	
+	return ret;	
 }
 
 /****************************************************************************

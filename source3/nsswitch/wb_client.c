@@ -315,6 +315,9 @@ BOOL winbind_create_user( const char *name, uint32 *rid )
 		
 	DEBUG(10,("winbind_create_user: %s\n", name));
 	
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+	
 	/* see if the caller wants a new RID returned */
 	
 	if ( rid ) 
@@ -322,8 +325,6 @@ BOOL winbind_create_user( const char *name, uint32 *rid )
 
 	fstrcpy( request.data.acct_mgt.username, name );
 	fstrcpy( request.data.acct_mgt.groupname, "" );
-	
-	ZERO_STRUCT(response);
 	
 	result = winbindd_request( WINBINDD_CREATE_USER, &request, &response);
 	
@@ -351,6 +352,9 @@ BOOL winbind_create_group( const char *name, uint32 *rid )
 		
 	DEBUG(10,("winbind_create_group: %s\n", name));
 
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+	
 	/* see if the caller wants a new RID returned */
 	
 	if ( rid ) 
@@ -358,7 +362,6 @@ BOOL winbind_create_group( const char *name, uint32 *rid )
 		
 	fstrcpy( request.data.acct_mgt.groupname, name );
 	
-	ZERO_STRUCT(response);
 	
 	result = winbindd_request( WINBINDD_CREATE_GROUP, &request, &response);
 	
@@ -384,13 +387,14 @@ BOOL winbind_add_user_to_group( const char *user, const char *group )
 	if ( !user || !group )
 		return False;
 		
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+	
 	DEBUG(10,("winbind_add_user_to_group: user(%s), group(%s) \n", 
 		user, group));
 		
 	fstrcpy( request.data.acct_mgt.username, user );
 	fstrcpy( request.data.acct_mgt.groupname, group );
-	
-	ZERO_STRUCT(response);
 	
 	result = winbindd_request( WINBINDD_ADD_USER_TO_GROUP, &request, &response);
 	
@@ -413,12 +417,12 @@ BOOL winbind_remove_user_from_group( const char *user, const char *group )
 	if ( !user || !group )
 		return False;
 		
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+	
 	DEBUG(10,("winbind_remove_user_from_group: user(%s), group(%s) \n", 
 		user, group));
 		
-	fstrcpy( request.data.acct_mgt.username, user );
-	fstrcpy( request.data.acct_mgt.groupname, group );
-	
 	ZERO_STRUCT(response);
 	
 	result = winbindd_request( WINBINDD_REMOVE_USER_FROM_GROUP, &request, &response);
@@ -442,13 +446,14 @@ BOOL winbind_set_user_primary_group( const char *user, const char *group )
 	if ( !user || !group )
 		return False;
 		
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+	
 	DEBUG(10,("winbind_set_user_primary_group: user(%s), group(%s) \n", 
 		user, group));
 
 	fstrcpy( request.data.acct_mgt.username, user );
 	fstrcpy( request.data.acct_mgt.groupname, group );
-	
-	ZERO_STRUCT(response);
 	
 	result = winbindd_request( WINBINDD_SET_USER_PRIMARY_GROUP, &request, &response);
 	
@@ -472,11 +477,12 @@ BOOL winbind_delete_user( const char *user )
 	if ( !user )
 		return False;
 		
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+	
 	DEBUG(10,("winbind_delete_user: user (%s)\n", user));
 
 	fstrcpy( request.data.acct_mgt.username, user );
-	
-	ZERO_STRUCT(response);
 	
 	result = winbindd_request( WINBINDD_DELETE_USER, &request, &response);
 	
@@ -499,11 +505,12 @@ BOOL winbind_delete_group( const char *group )
 	if ( !group )
 		return False;
 		
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+	
 	DEBUG(10,("winbind_delete_group: group (%s)\n", group));
 
 	fstrcpy( request.data.acct_mgt.groupname, group );
-	
-	ZERO_STRUCT(response);
 	
 	result = winbindd_request( WINBINDD_DELETE_GROUP, &request, &response);
 	
