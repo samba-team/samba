@@ -30,9 +30,9 @@ LIBPREFIX = @LIBPREFIX@
 SHARED = @SHARED@
 LIB = $(LIBNAME).$(LIBEXT) $(AFS_EXTRA_LIBS)
 
-SOURCES = editline.c complete.c sysunix.c
+SOURCES = edit_compat.c editline.c complete.c sysunix.c
 
-OBJECTS = editline.o complete.o sysunix.o
+OBJECTS = @editline_OBJS@
 
 all: $(LIB)
 
