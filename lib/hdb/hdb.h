@@ -46,13 +46,14 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_DECRYPT	1 /* decrypt keys */
 #define HDB_F_REPLACE	2 /* replace entry */
 
+typedef struct hdb_master_key_data *hdb_master_key;
+
 typedef struct HDB{
     void *db;
     void *dbc;
     char *name;
     int master_key_set;
-    krb5_data master_key;
-    int master_key_version;
+    hdb_master_key master_key;
     int openp;
 
     krb5_error_code (*open)(krb5_context, struct HDB*, int, mode_t);
