@@ -114,9 +114,6 @@ done:
 	if (cli) 
 		cli_shutdown(cli);
 
-	if (mem_ctx) 
-		talloc_destroy(mem_ctx);
-	
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, get_nt_error_msg(result));
 	fstrcpy(state->response.data.auth.error_string, get_nt_error_msg(result));
@@ -127,6 +124,9 @@ done:
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
 
+	if (mem_ctx) 
+		talloc_destroy(mem_ctx);
+	
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 	
@@ -147,7 +147,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	extern pstring global_myname;
 
 	DEBUG(3, ("[%5d]: pam auth crap domain: %s user: %s\n", state->pid,
-		  state->request.data.auth_crap.user, state->request.data.auth_crap.user));
+		  state->request.data.auth_crap.domain, state->request.data.auth_crap.user));
 
 	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for %s", state->request.data.auth.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
@@ -206,8 +206,6 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 done:
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
 
 	if (cli)
 		cli_shutdown(cli);
@@ -217,11 +215,15 @@ done:
 	fstrcpy(state->response.data.auth.error_string, get_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	DEBUG(2, ("NTLM CRAP authenticaion for user %s returned %s (PAM: %d)\n", 
-	      state->request.data.auth.user, 
+	DEBUG(2, ("NTLM CRAP authenticaion for user [%s]\\[%s] returned %s (PAM: %d)\n", 
+	      state->request.data.auth_crap.domain, 
+	      state->request.data.auth_crap.user, 
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
 
+	if (mem_ctx) 
+		talloc_destroy(mem_ctx);
+	
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
