@@ -1,5 +1,8 @@
 2003-04-16  Love  <lha@stacken.kth.se>
 
+	* parse_units.h: remove typedef for units to avoid problems with
+	shadowing
+
 	* resolve.c: use strlcpy, from openbsd
 	
 	* getcap.c: use strlcpy, from openbsd
