@@ -219,22 +219,6 @@ that it will take time to establish a browse list and it can take up to 45
 minutes to stabilize, particularly across network segments.
 </para>
 
-</sect2>
-
-<sect2>
-<title>TCP/IP without NetBIOS</title>
-
-<para>
-<indexterm><primary>NetBIOS</primary></indexterm>
-<indexterm><primary>NetBIOS-less</primary></indexterm>
-<indexterm><primary>DNS</primary></indexterm>
-All TCP/IP-enabled systems use various forms of host name resolution. The primary
-methods for TCP/IP hostname resolution involve either a static file (<filename>/etc/hosts</filename>)
-or the Domain Name System (DNS). DNS is the technology that makes
-the Internet usable. DNS-based host name resolution is supported by nearly all
-TCP/IP-enabled systems. Only a few embedded TCP/IP systems do not support DNS.
-</para>
-
 <para>
 When an MS Windows 200x/XP system attempts to resolve a host name to an IP address
 it follows a defined path:
@@ -243,7 +227,7 @@ it follows a defined path:
 <orderedlist>
 	<listitem><para>
 	Checks the <filename>hosts</filename> file. It is located in
-	<filename>C:\Windows NT\System32\Drivers\etc</filename>.
+	<filename>%SystemRoot%\System32\Drivers\etc</filename>.
 	</para></listitem>
 
 	<listitem><para>
@@ -264,10 +248,25 @@ it follows a defined path:
 
         <listitem><para>
 	Looks up entries in LMHOSTS, located in
-        <filename>C:\Windows NT\System32\Drivers\etc</filename>.
+        <filename>%SystemRoot%\System32\Drivers\etc</filename>.
         </para></listitem>
 </orderedlist>
 
+</sect2>
+
+<sect2>
+<title>TCP/IP without NetBIOS</title>
+
+<para>
+<indexterm><primary>NetBIOS</primary></indexterm>
+<indexterm><primary>NetBIOS-less</primary></indexterm>
+<indexterm><primary>DNS</primary></indexterm>
+All TCP/IP-enabled systems use various forms of host name resolution. The primary
+methods for TCP/IP hostname resolution involve either a static file (<filename>/etc/hosts</filename>)
+or the Domain Name System (DNS). DNS is the technology that makes
+the Internet usable. DNS-based host name resolution is supported by nearly all
+TCP/IP-enabled systems. Only a few embedded TCP/IP systems do not support DNS.
+</para>
 
 <para>
 <indexterm><primary>DNS</primary></indexterm>
