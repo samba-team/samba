@@ -1227,7 +1227,7 @@ rootdn		"cn=Manager,dc=abmas,dc=biz"
 # rootpw = not24get
 rootpw          {SSHA}86kTavd9Dw3FAz6qzWTrCOKX/c0Qe+UV
 
-directory	/var/lib/ldap
+directory	/data/ldap
 
 # Indices to maintain
 index objectClass           eq
