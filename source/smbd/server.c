@@ -326,7 +326,7 @@ static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
   void *cur_dir;
   char *dname;
   BOOL mangled;
-  fstring name2;
+  pstring name2;
 
   mangled = is_mangled(name);
 
@@ -524,251 +524,6 @@ BOOL unix_convert(char *name,int cnum)
   DEBUG(5,("conversion finished %s\n",name));
   return(True);
 }
-
-
-
-
-#ifdef QUOTAS
-#ifdef LINUX
-/****************************************************************************
-try to get the disk space from disk quotas (LINUX version)
-****************************************************************************/
-/*
-If you didn't make the symlink to the quota package, too bad :(
-*/
-#include "quota/quotactl.c"
-#include "quota/hasquota.c"
-static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
-{
-  uid_t euser_id;
-  struct dqblk D;
-  struct stat S;
-  dev_t devno ;
-  struct mntent *mnt;
-  FILE *fp;
-  int found ;
-  int qcmd, fd ;
-  char *qfpathname;
-  
-  /* find the block device file */
-  
-  if ( stat(path, &S) == -1 )
-    return(False) ;
-
-  devno = S.st_dev ;
-  
-  fp = setmntent(MOUNTED,"r");
-  found = False ;
-  
-  while ((mnt = getmntent(fp)) != (struct mntent *) 0) {
-    if ( stat(mnt->mnt_dir,&S) == -1 )
-      continue ;
-    if (S.st_dev == devno) {
-      found = True ;
-      break ;
-    }
-  }
-  endmntent(fp) ;
-  
-  if ( ! found )
-    return(False) ;
-  
-  qcmd = QCMD(Q_GETQUOTA, USRQUOTA);
-  
-  if (hasmntopt(mnt, MNTOPT_NOAUTO) || hasmntopt(mnt, MNTOPT_NOQUOTA))
-    return(False) ;
-  
-  if (!hasquota(mnt, USRQUOTA, &qfpathname))
-    return(False) ;
-  
-  euser_id = geteuid();
-  seteuid(0);
-  
-  if (quotactl(qcmd, mnt->mnt_fsname, euser_id, (caddr_t)&D) != 0) {
-    if ((fd = open(qfpathname, O_RDONLY)) < 0) {
-      seteuid(euser_id);
-      return(False);
-    }
-    lseek(fd, (long) dqoff(euser_id), L_SET);
-    switch (read(fd, &D, sizeof(struct dqblk))) {
-    case 0:/* EOF */
-      memset((caddr_t)&D, 0, sizeof(struct dqblk));
-      break;
-    case sizeof(struct dqblk):   /* OK */
-      break;
-    default:   /* ERROR */
-      close(fd);
-      seteuid(euser_id);
-      return(False);
-    }
-  }
-  seteuid(euser_id);
-  *bsize=1024;
-
-  if (D.dqb_bsoftlimit==0)
-    return(False);
-  if ((D.dqb_curblocks>D.dqb_bsoftlimit)||(D.dqb_curinodes>D.dqb_isoftlimit))
-    {
-      *dfree = 0;
-      *dsize = D.dqb_curblocks;
-    }
-  else {
-    *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
-    *dsize = D.dqb_bsoftlimit;
-  }
-  return (True);
-}
-#else
-#ifndef CRAY
-/****************************************************************************
-try to get the disk space from disk quotas
-****************************************************************************/
-static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
-{
-  uid_t user_id, euser_id;
-  int r;
-  char dev_disk[256];
-  struct dqblk D;
-  struct stat S;
-  /* find the block device file */
-  if ((stat(path, &S)<0) ||
-      (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) return (False);
-
-  euser_id = geteuid();
-
-#ifdef USE_SETRES
-  /* for HPUX, real uid must be same as euid to execute quotactl for euid */
-  user_id = getuid();
-  setresuid(euser_id,-1,-1);
-#endif
-  r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-  #ifdef USE_SETRES
-  if (setresuid(user_id,-1,-1))
-    DEBUG(5,("Unable to reset uid to %d\n", user_id));
-  #endif
-  /* Use softlimit to determine disk space, except when it has been exceeded */
-  *bsize = 1024;
-  if (r)
-    {
-      if (errno == EDQUOT) 
-	{
- 	  *dfree =0;
- 	  *dsize =D.dqb_curblocks;
- 	  return (True);
-	}
-      else return(False);
-    }
-  /* Use softlimit to determine disk space, except when it has been exceeded */
-  if ((D.dqb_curblocks>D.dqb_bsoftlimit)||(D.dqb_curfiles>D.dqb_fsoftlimit)) 
-    {
-      *dfree = 0;
-      *dsize = D.dqb_curblocks;
-    }
-  else {
-    *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
-    *dsize = D.dqb_bsoftlimit;
-  }
-  return (True);
-}
-#else
-/****************************************************************************
-try to get the disk space from disk quotas (CRAY VERSION)
-****************************************************************************/
-static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
-{
-  struct mntent *mnt;
-  FILE *fd;
-  struct stat sbuf;
-  dev_t devno ;
-  static dev_t devno_cached = 0 ;
-  static char name[MNTMAXSTR] ;
-  struct q_request request ;
-  struct qf_header header ;
-  static int quota_default = 0 ;
-  int found ;
-  
-  if ( stat(path,&sbuf) == -1 )
-    return(False) ;
-  
-  devno = sbuf.st_dev ;
-  
-  if ( devno != devno_cached ) {
-    
-    devno_cached = devno ;
-    
-    if ((fd = setmntent(KMTAB)) == NULL)
-      return(False) ;
-    
-    found = False ;
-    
-    while ((mnt = getmntent(fd)) != NULL) {
-      
-      if ( stat(mnt->mnt_dir,&sbuf) == -1 )
-	continue ;
-      
-      if (sbuf.st_dev == devno) {
-	
-	found = True ;
-	break ;
-	
-      }
-      
-    }
-    
-    strcpy(name,mnt->mnt_dir) ;
-    endmntent(fd) ;
-    
-    if ( ! found )
-      return(False) ;
-  }
-  
-  request.qf_magic = QF_MAGIC ;
-  request.qf_entry.id = geteuid() ;
-  
-  if (quotactl(name, Q_GETQUOTA, &request) == -1)
-    return(False) ;
-  
-  if ( ! request.user )
-    return(False) ;
-  
-  if ( request.qf_entry.user_q.f_quota == QFV_DEFAULT ) {
-    
-    if ( ! quota_default ) {
-      
-      if ( quotactl(name, Q_GETHEADER, &header) == -1 )
-	return(False) ;
-      else
-	quota_default = header.user_h.def_fq ;
-    }
-    
-    *dfree = quota_default ;
-    
-  }else if ( request.qf_entry.user_q.f_quota == QFV_PREVENT ) {
-    
-    *dfree = 0 ;
-    
-  }else{
-    
-    *dfree = request.qf_entry.user_q.f_quota ;
-    
-  }
-  
-  *dsize = request.qf_entry.user_q.f_use ;
-  
-  if ( *dfree )
-    *dfree -= *dsize ;
-  
-  if ( *dfree < 0 )
-    *dfree = 0 ;
-  
-  *bsize = 4096 ;  /* Cray blocksize */
-  
-  return(True) ;
-  
-}
-#endif /* CRAY */
-#endif /* LINUX */
-#endif /* QUOTAS */
 
 
 /****************************************************************************
@@ -3995,10 +3750,15 @@ void process(void )
 	  }
 
 	  if (keepalive && (counter-last_keepalive)>keepalive) {
+	    extern int password_client;
 	    if (!send_keepalive(Client)) {
 	      DEBUG(2,("%s Keepalive failed - exiting\n",timestring()));
 	      return;
-	    }
+	    }	    
+	    /* also send a keepalive to the password server if its still
+	       connected */
+	    if (password_client != -1)
+	      send_keepalive(password_client);
 	    last_keepalive = counter;
 	  }
 
