@@ -357,12 +357,12 @@ share. The secondary tar flags that can be given to this option are :
 	dit(bf(I)) Include files and directories. Is the default
 	behavior when filenames are specified above. Causes tar files to
 	be included in an extract or create (and therefore everything else to
-	be excluded). See example below.  Filename globbing does not work for
-	included files for extractions (yet).
+	be excluded). See example below.  Filename globbing works 
+	in one of two ways.  See bf(r) below.
 
 	dit(bf(X)) Exclude files and directories. Causes tar files to
 	be excluded from an extract or create. See example below.  Filename
-	globbing does not work for excluded files (yet).
+	globbing works in one of two ways now. See bf(r) below.
 
 	dit(bf(b)) Blocksize. Must be followed by a valid (greater than
 	zero) blocksize.  Causes tar file to be written out in
@@ -373,6 +373,12 @@ share. The secondary tar flags that can be given to this option are :
 
 	dit(bf(q)) Quiet. Keeps tar from printing diagnostics as it
 	works.  This is the same as tarmode quiet.
+
+	dit(bf(r)) Regular expression include or exclude.  Uses regular 
+	regular expression matching for excluding or excluding files if 
+	compiled with HAVE_REGEX_H. However this mode can be very slow. If 
+	not compiled with HAVE_REGEX_H, does a limited wildcard match on * and 
+	?.
 
 	dit(bf(N)) Newer than. Must be followed by the name of a file
 	whose date is compared against files found on the share during a
