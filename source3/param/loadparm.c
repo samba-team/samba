@@ -1834,7 +1834,9 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 
 	/* the printer name is set to the service name. */
 	string_set(&iSERVICE(i).szPrintername, pszPrintername);
+	unix_to_dos(iSERVICE(i).szPrintername, True);
 	string_set(&iSERVICE(i).comment, comment);
+	unix_to_dos(iSERVICE(i).comment, True);
 	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
 	iSERVICE(i).bRead_only = False;
