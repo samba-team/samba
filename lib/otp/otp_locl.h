@@ -53,9 +53,6 @@
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
-#ifdef HAVE_NDBM_H
-#include <ndbm.h>
-#endif
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
@@ -67,6 +64,8 @@
 #endif
 
 #include <otp.h>
+
+#include <xdbm.h>
 
 #define OTPKEYS "/.otpkeys"
 
