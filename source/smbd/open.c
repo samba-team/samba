@@ -244,6 +244,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open + 1));
 
+	errno = 0;
 	return True;
 }
 
