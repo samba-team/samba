@@ -170,7 +170,7 @@ typedef struct rpc_hdr_auth_info
 	uint8 stub_type_len; /* don't know */
 	uint8 padding; /* padding */
 
-	uint32 unknown; /* 0x0014a0c0 */
+	uint32 unknown; /* pointer */
 
 } RPC_HDR_AUTH;
 

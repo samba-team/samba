@@ -462,7 +462,8 @@ creates an RPC_HDR_AUTH structure.
 ********************************************************************/
 void make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
-				uint8 stub_type_len)
+				uint8 stub_type_len,
+				uint32 ptr)
 {
 	if (rai == NULL) return;
 
@@ -471,7 +472,7 @@ void make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 	rai->stub_type_len = stub_type_len; /* 0x00 */
 	rai->padding       = 0; /* padding 0x00 */
 
-	rai->unknown       = 0x0014a0c0; /* non-zero pointer to something */
+	rai->unknown       = ptr; /* non-zero pointer to something */
 }
 
 /*******************************************************************
@@ -532,8 +533,8 @@ void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 
 	neg->neg_flgs = neg_flgs ; /* 0x00b2b3 */
 
-	make_str_hdr(&neg->hdr_myname, len_myname+1, len_myname+1, 0x20); 
-	make_str_hdr(&neg->hdr_domain, len_domain+1, len_domain+1, 0x20 + len_myname+1); 
+	make_str_hdr(&neg->hdr_domain, len_domain, len_domain, 0x20 + len_myname); 
+	make_str_hdr(&neg->hdr_myname, len_myname, len_myname, 0x20); 
 
 	fstrcpy(neg->myname, myname);
 	fstrcpy(neg->domain, domain);
@@ -551,11 +552,38 @@ void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_stru
 
 	prs_uint32("neg_flgs ", ps, depth, &(neg->neg_flgs));
 
-	smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
-	smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
+	if (ps->io)
+	{
+		uint32 old_offset;
 
-	prs_string("domain", ps, depth, neg->domain, neg->hdr_domain.str_str_len-1, sizeof(neg->domain)); 
-	prs_string("myname", ps, depth, neg->myname, neg->hdr_myname.str_str_len-1, sizeof(neg->myname)); 
+		/* reading */
+
+		ZERO_STRUCTP(neg);
+
+		smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
+		smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
+
+		old_offset = ps->offset;
+
+		ps->offset = neg->hdr_myname  .buffer + 0x1c;
+		prs_uint8s(True , "myname", ps, depth, (uint8*)neg->myname  , MIN(neg->hdr_myname  .str_str_len, sizeof(neg->myname  ))); 
+		old_offset += neg->hdr_myname  .str_str_len;
+
+		ps->offset = neg->hdr_domain  .buffer + 0x1c;
+		prs_uint8s(True , "domain", ps, depth, (uint8*)neg->domain  , MIN(neg->hdr_domain  .str_str_len, sizeof(neg->domain  ))); 
+		old_offset += neg->hdr_domain  .str_str_len;
+
+		ps->offset = old_offset;
+	}
+	else
+	{
+		/* writing */
+		smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
+		smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
+
+		prs_uint8s(True , "myname", ps, depth, (uint8*)neg->myname  , MIN(neg->hdr_myname  .str_str_len, sizeof(neg->myname  ))); 
+		prs_uint8s(True , "domain", ps, depth, (uint8*)neg->domain  , MIN(neg->hdr_domain  .str_str_len, sizeof(neg->domain  ))); 
+	}
 }
 
 /*******************************************************************
