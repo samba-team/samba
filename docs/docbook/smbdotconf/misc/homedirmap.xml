@@ -15,8 +15,8 @@
 		that copes with different map formats and also Amd (another 
 		automounter) maps.</para>
 		
-		<para><emphasis>NOTE :</emphasis>A working NIS client is required on 
-		the system for this option to work.</para>
+		<note><para>A working NIS client is required on 
+				the system for this option to work.</para></note>
 
 		<para>See also <link linkend="NISHOMEDIR"><parameter moreinfo="none">nis homedir</parameter>
 		</link>, <link linkend="DOMAINLOGONS"><parameter moreinfo="none">domain logons</parameter>

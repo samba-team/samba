@@ -8,9 +8,9 @@
 		<para>You should point this at your WINS server if you have a
 		multi-subnetted network.</para>
 
-		<para><emphasis>NOTE</emphasis>. You need to set up Samba to point 
+		<note><para>You need to set up Samba to point 
 		to a WINS server if you have multiple subnets and wish cross-subnet 
-		browsing to work correctly.</para>
+		browsing to work correctly.</para></note>
 
 		<para>See the documentation file <ulink url="improved-browsing.html">BROWSING</ulink> 
 		in the docs/ directory of your Samba source distribution.</para>
