@@ -13,12 +13,14 @@ fi
 
 if [ "$2" != "" ]; then
 	rev="-r $2"
+elif [ -f CVS/Tag ]; then
+	rev="-r `cat CVS/Tag | sed 's/^T//'`"
 fi
 
 HV="$1" emacs -batch -q -no-site-file -l ./make-release.el || exit
 
 echo cvs ci -m \"Release $1\" configure.in ChangeLog
 cvs ci -m "Release $1" configure.in ChangeLog || exit 1
-v=`echo $1 | sed 's/\([0-9]\)\./\1-/g'`
-echo cvs rtag $rev heimdal-$v heimdal
-cvs rtag $rev heimdal-$v heimdal || exit 1
+v=`echo $1 | sed 's/\([0-9][0-9]*\)\./\1-/g'`
+echo cvs -q rtag -F $rev heimdal-$v heimdal
+cvs -q rtag -F $rev heimdal-$v heimdal || exit 1
