@@ -200,7 +200,6 @@ static int event_timed_destructor(void *ptr)
 {
 	struct timed_event *te = talloc_get_type(ptr, struct timed_event);
 	DLIST_REMOVE(te->event_ctx->timed_events, te);
-	te->event_ctx->destruction_count++;
 	return 0;
 }
 
@@ -213,19 +212,32 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 				    event_timed_handler_t handler, 
 				    void *private) 
 {
-	struct timed_event *e = talloc(ev, struct timed_event);
-	if (!e) return NULL;
+	struct timed_event *te, *e;
+
+	e = talloc(mem_ctx?mem_ctx:ev, struct timed_event);
+	if (e == NULL) return NULL;
 
 	e->event_ctx  = ev;
 	e->next_event = next_event;
 	e->handler    = handler;
 	e->private    = private;
 
-	DLIST_ADD(ev->timed_events, e);
-	talloc_set_destructor(e, event_timed_destructor);
-	if (mem_ctx) {
-		talloc_steal(mem_ctx, e);
+	/* keep the list ordered */
+	if (ev->timed_events == NULL || 
+	    timeval_compare(&e->next_event, &ev->timed_events->next_event) > 0) {
+		DLIST_ADD(ev->timed_events, e);
+	} else {
+		for (te=ev->timed_events;te && te->next;te=te->next) {
+			if (!timeval_is_zero(&te->next_event) &&
+			    timeval_compare(&te->next_event, &e->next_event) < 0) {
+				break;
+			}
+		}
+		DLIST_ADD_AFTER(ev->timed_events, e, te);
 	}
+
+	talloc_set_destructor(e, event_timed_destructor);
+
 	return e;
 }
 
@@ -236,9 +248,8 @@ int event_loop_once(struct event_context *ev)
 {
 	fd_set r_fds, w_fds;
 	struct fd_event *fe;
-	struct timed_event *te, *te_next;
 	int selrtn;
-	struct timeval tval, t, *tvalp;
+	struct timeval tval, *tvalp;
 	uint32_t destruction_count = ev->destruction_count;
 
 	FD_ZERO(&r_fds);
@@ -257,88 +268,65 @@ int event_loop_once(struct event_context *ev)
 	}
 
 	tvalp = NULL;
-	t = timeval_current();
 		
 	/* work out the right timeout for all timed events */
-	for (te=ev->timed_events;te;te=te_next) {
-		struct timeval tv;
-		te_next = te->next;
-		if (timeval_is_zero(&te->next_event)) {
-			talloc_free(te);
-			continue;
-		}
-		tv = timeval_diff(&te->next_event, &t);
-		if (tvalp == NULL) {
-			tval = tv;
-		} else {
-			tval = timeval_min(&tv, &tval);
-		}
+	if (ev->timed_events) {
+		struct timeval t = timeval_current();
+		tval = timeval_diff(&ev->timed_events->next_event, &t);
 		tvalp = &tval;
 	}
 
-	/* only do a select() if there're fd_events
-	 * otherwise we would block for a the time in tval,
-	 * and if there're no fd_events present anymore we want to
-	 * leave the event loop directly
-	 */
-	if (ev->fd_events) {
-		/* we maybe need to recalculate the maxfd */
-		if (ev->maxfd == EVENT_INVALID_MAXFD) {
-			calc_maxfd(ev);
+	/* we maybe need to recalculate the maxfd */
+	if (ev->maxfd == EVENT_INVALID_MAXFD) {
+		calc_maxfd(ev);
+	}
+		
+	selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
+		
+	if (selrtn == -1 && errno == EBADF) {
+		/* the socket is dead! this should never
+		   happen as the socket should have first been
+		   made readable and that should have removed
+		   the event, so this must be a bug. This is a
+		   fatal error. */
+		DEBUG(0,("ERROR: EBADF on event_loop_once\n"));
+		ev->exit_code = EBADF;
+		return -1;
+	}
+		
+	if (selrtn == 0) {
+		struct timeval t = timeval_current();
+		struct timed_event *te = ev->timed_events;
+
+		te->next_event = timeval_zero();
+
+		te->handler(ev, te, t, te->private);
+
+		/* note the care taken to prevent referencing a event
+		   that could have been freed by the handler */
+		if (ev->timed_events && timeval_is_zero(&ev->timed_events->next_event)) {
+			talloc_free(ev->timed_events);
 		}
-		
-		/* TODO:
-		 * we don't use sys_select() as it isn't thread
-		 * safe. We need to replace the magic pipe handling in
-		 * sys_select() with something in the events
-		 * structure - for now just use select() 
-		 */
-		selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
-		
-		t = timeval_current();
-		
-		if (selrtn == -1 && errno == EBADF) {
-			/* the socket is dead! this should never
-			   happen as the socket should have first been
-			   made readable and that should have removed
-			   the event, so this must be a bug. This is a
-			   fatal error. */
-			DEBUG(0,("EBADF on event_loop_once - exiting\n"));
-			ev->exit_code = EBADF;
-			return -1;
-		}
-		
-		if (selrtn > 0) {
-			/* at least one file descriptor is ready - check
-			   which ones and call the handler, being careful to allow
-			   the handler to remove itself when called */
-			for (fe=ev->fd_events; fe; fe=fe->next) {
-				uint16_t flags = 0;
-				if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
-				if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
-				if (flags) {
-					fe->handler(ev, fe, t, flags, fe->private);
-					if (destruction_count != ev->destruction_count) {
-						break;
-					}
+	}
+	
+	if (selrtn > 0) {
+		struct timeval t = timeval_current();
+		/* at least one file descriptor is ready - check
+		   which ones and call the handler, being careful to allow
+		   the handler to remove itself when called */
+		for (fe=ev->fd_events; fe; fe=fe->next) {
+			uint16_t flags = 0;
+			if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
+			if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
+			if (flags) {
+				fe->handler(ev, fe, t, flags, fe->private);
+				if (destruction_count != ev->destruction_count) {
+					break;
 				}
 			}
 		}
 	}
 
-	/* call any timed events that are now due */
-	for (te=ev->timed_events;te;) {
-		struct timed_event *next = te->next;
-		if (timeval_compare(&te->next_event, &t) >= 0) {
-			te->next_event = timeval_zero();
-			te->handler(ev, te, t, te->private);
-			if (destruction_count != ev->destruction_count) {
-				break;
-			}
-		}
-		te = next;
-	}
-	
 	return 0;
 }
 
