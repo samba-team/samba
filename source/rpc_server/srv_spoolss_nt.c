@@ -8435,3 +8435,24 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	return result;
 }
+
+#if 0
+
+WERROR _spoolss_replyopenprinter(pipes_struct *p, SPOOL_Q_REPLYOPENPRINTER *q_u, 
+				 SPOOL_R_REPLYOPENPRINTER *r_u)
+{
+ 	DEBUG(5,("_spoolss_replyopenprinter\n"));
+
+	DEBUG(10, ("replyopenprinter for localprinter %d\n", q_u->printer));
+
+	return WERR_OK;
+}
+
+WERROR _spoolss_replycloseprinter(pipes_struct *p, SPOOL_Q_REPLYCLOSEPRINTER *q_u, 
+				  SPOOL_R_REPLYCLOSEPRINTER *r_u)
+{
+ 	DEBUG(5,("_spoolss_replycloseprinter\n"));
+	return WERR_OK;
+}
+
+#endif
