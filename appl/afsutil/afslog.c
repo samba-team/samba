@@ -80,17 +80,17 @@ expand_cell_name(const char *cell)
 	return cell;
     while (fgets (buf, sizeof(buf), f) != NULL) {
 	if(buf[0] == '>'){
-	    for(p=buf; *p && !isspace(*p) && *p != '#'; p++)
+	    for(p=buf; *p && !isspace((unsigned char)*p) && *p != '#'; p++)
 		;
 	    *p = '\0';
 	    if(strstr(buf, cell)){
-		fclose(F);
+		fclose(f);
 		return buf + 1;
 	    }
 	}
 	buf[0] = 0;
     }
-    fclose(F);
+    fclose(f);
     return cell;
 }
 
