@@ -3411,15 +3411,6 @@ If you want to silently delete it then try:
 
 tt("message command = rm %s").
 
-For the really adventurous, try something like this:
-
-tt(message command = csh -c 'csh < %s |& /usr/local/samba/bin/smbclient -M %m; rm %s' &)
-
-this would execute the command as a script on the server, then give
-them the result in a WinPopup message. Note that this could cause a
-loop if you send a message from the server using smbclient! You better
-wrap the above in a script that checks for this :-)
-
   bf(Default:)
 tt(	no message command)
 
@@ -5967,10 +5958,10 @@ tt(	wins proxy = no)
 label(winsserver)
 dit(bf(wins server (G)))
 
-This specifies the DNS name (or IP address) of the WINS server that
-url(bf(nmbd))(nmbd.8.html) should register with. If you have a WINS
-server on your network then you should set this to the WINS servers
-name.
+This specifies the IP address (or DNS name: IP address for preference)
+of the WINS server that url(bf(nmbd))(nmbd.8.html) should register with.
+If you have a WINS server on your network then you should set this to
+the WINS server's IP.        
 
 You should point this at your WINS server if you have a
 multi-subnetted network.
