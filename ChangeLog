@@ -1,3 +1,19 @@
+2000-06-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* admin/purge.c: use parse_time to parse age
+
+	* lib/krb5/log.c (krb5_vlog_msg): use krb5_format_time
+
+	* admin/list.c: add printing of timestamp and key data; some
+	cleanup
+
+	* lib/krb5/time.c (krb5_format_time): new function to format time
+
+	* lib/krb5/context.c (init_context_from_config_file): init
+	date_fmt, also do some cleanup
+
+	* lib/krb5/krb5.h: add date_fmt to context
+
 2000-06-28  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/{kerberos4,kaserver,524}.c (get_des_key): change to return
