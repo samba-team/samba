@@ -930,7 +930,7 @@ static void init_globals(void)
 	string_set(&sDefault.fstype, FSTYPE_STRING);
 	string_set(&sDefault.ntvfs_handler, "default");
 
-	Globals.dcerpc_ep_servers = str_list_make("epmapper rpcecho", NULL);
+	Globals.dcerpc_ep_servers = str_list_make("epmapper srvsvc wkssvc rpcecho", NULL);
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
