@@ -19,6 +19,14 @@ and parses it, thereby verifying that the syntax is not correctly wrong.
 If the file is syntactically correct,
 .Nm
 tries to verify that the contents of the file is of relevant nature.
+.Sh ENVIRONMENT
+.Ev KRB5_CONFIG
+points to the configuration file to read.
+.Sh FILES
+.Bl -tag -width /etc/krb5.conf -compact
+.It Pa /etc/krb5.conf
+Kerberos 5 configuration file
+.El
 .Sh DIAGNOSTICS
 Possible output from
 .Nm
@@ -41,14 +49,6 @@ is confused.
 .It <path>: unknown entry
 Means that <string> is not known by
 .Nm "" .
-.El
-.Sh ENVIRONMENT
-.Ev KRB5_CONFIG
-points to the configuration file to read.
-.Sh FILES
-.Bl -tag -width /etc/krb5.conf -compact
-.It Pa /etc/krb5.conf
-Kerberos 5 configuration file
 .El
 .Sh SEE ALSO
 .Xr krb5.conf 5
