@@ -3857,6 +3857,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	struct samr_info *info;
 	PRIVILEGE_SET priv_set;
 	uint32 acc_granted;
+	gid_t gid;
 
 	init_privilege(&priv_set);
 
@@ -3880,10 +3881,11 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 		return NT_STATUS_GROUP_EXISTS;
 
 	/* we can create the UNIX group */
-	smb_create_group(name);
+	if (smb_create_group(name, &gid) != 0)
+		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */
-	if ((grp=getgrnam(name)) == NULL)
+	if ((grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
 	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
@@ -3920,6 +3922,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	struct samr_info *info;
 	PRIVILEGE_SET priv_set;
 	uint32 acc_granted;
+	gid_t gid;
 
 	init_privilege(&priv_set);
 
@@ -3943,10 +3946,11 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		return NT_STATUS_GROUP_EXISTS;
 
 	/* we can create the UNIX group */
-	smb_create_group(name);
+	if (smb_create_group(name, &gid) != 0)
+		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */
-	if ((grp=getgrnam(name)) == NULL)
+	if ((grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
 	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);

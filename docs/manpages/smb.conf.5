@@ -1616,8 +1616,13 @@ Example: \fBadd user script = /usr/local/samba/bin/add_user
 %u\fR
 .TP
 \fBadd group script (G)\fR
-This is the full pathname to a script that will 
-be run \fBAS ROOT\fR by smbd(8) when a new group is requested. It will expand any \fI%g\fR to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
+This is the full pathname to a script that will be run \fBAS ROOT\fR
+by smbd(8) when a new group is requested. It will expand any \fI%g\fR
+to the group name passed.  This script is only useful for
+installations using the Windows NT domain administration tools. The
+script is free to create a group with an arbitrary name to circumvent
+unix group name restrictions. In that case the script must print the
+numeric gid of the created group on stdout.
 .TP
 \fBadmin users (S)\fR
 This is a list of users who will be granted 
