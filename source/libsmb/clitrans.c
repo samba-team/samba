@@ -85,8 +85,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 		memcpy(outparam,param,this_lparam);
 	if (this_ldata)			/* data[] */
 		memcpy(outdata,data,this_ldata);
-	set_message(cli->outbuf,14+lsetup,		/* wcnt, bcc */
-		    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
+	cli_setup_bcc(cli, outdata+this_ldata);
 
 	show_msg(cli->outbuf);
 	cli_send_smb(cli);
@@ -126,8 +125,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 				memcpy(outparam,param+tot_param,this_lparam);
 			if (this_ldata)			/* data[] */
 				memcpy(outdata,data+tot_data,this_ldata);
-			set_message(cli->outbuf,trans==SMBtrans?8:9, /* wcnt, bcc */
-				    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
+			cli_setup_bcc(cli, outdata+this_ldata);
 			
 			show_msg(cli->outbuf);
 			cli_send_smb(cli);
@@ -295,8 +293,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 	if (this_ldata)			/* data[] */
 		memcpy(outdata,data,this_ldata);
 
-	set_message(cli->outbuf,19+lsetup,		/* wcnt, bcc */
-		    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
+	cli_setup_bcc(cli, outdata+this_ldata);
 
 	show_msg(cli->outbuf);
 	cli_send_smb(cli);
@@ -335,8 +332,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 				memcpy(outparam,param+tot_param,this_lparam);
 			if (this_ldata)			/* data[] */
 				memcpy(outdata,data+tot_data,this_ldata);
-			set_message(cli->outbuf,18,
-				    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
+			cli_setup_bcc(cli, outdata+this_ldata);
 			
 			show_msg(cli->outbuf);
 			cli_send_smb(cli);
