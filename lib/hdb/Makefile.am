@@ -17,7 +17,8 @@ LDADD = libhdb.la \
 	../krb5/libkrb5.la \
 	../asn1/libasn1.la \
 	$(LIB_des) \
-	$(LIB_roken)
+	$(LIB_roken) \
+	$(LIB_ldopen)
 
 lib_LTLIBRARIES = libhdb.la
 libhdb_la_LDFLAGS = -version-info 7:5:0
