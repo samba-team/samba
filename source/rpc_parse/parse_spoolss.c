@@ -326,8 +326,7 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 	depth++;
 
 	how_many_words=data->size;	
-	if (how_many_words==POINTER)
-	{
+	if (how_many_words==POINTER) {
 		how_many_words=TWO_VALUE;
 	}
 	
@@ -335,30 +334,26 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint16("type",           ps, depth, &(data->type)))
+	if(!prs_uint16("type",           ps, depth, &data->type))
 		return False;
-	if(!prs_uint16("field",          ps, depth, &(data->field)))
+	if(!prs_uint16("field",          ps, depth, &data->field))
 		return False;
 	/*prs_align(ps);*/
 
 	if(!prs_uint32("how many words", ps, depth, &how_many_words))
 		return False;
-	if(!prs_uint32("id",             ps, depth, &(data->id)))
+	if(!prs_uint32("id",             ps, depth, &data->id))
 		return False;
-	if(!prs_uint32("how many words", ps, depth, &how_many_words))
-		return False;
+
 	/*prs_align(ps);*/
 
-	if (isvalue==True)
-	{
-		if(!prs_uint32("value[0]", ps, depth, &(data->notify_data.value[0])))
+	if (isvalue==True) {
+		if(!prs_uint32("value[0]", ps, depth, &data->notify_data.value[0]))
 			return False;
-		if(!prs_uint32("value[1]", ps, depth, &(data->notify_data.value[1])))
+		if(!prs_uint32("value[1]", ps, depth, &data->notify_data.value[1]))
 			return False;
 		/*prs_align(ps);*/
-	}
-	else
-	{
+	} else {
 		/* it's a string */
 		/* length in ascii including \0 */
 		x=2*(data->notify_data.data.length+1);
@@ -389,8 +384,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 
 	isvalue=data->enc_type;
 
-	if (isvalue==False)
-	{
+	if (isvalue==False) {
 		/* length of string in unicode include \0 */
 		x=data->notify_data.data.length+1;
 		if(!prs_uint32("string length", ps, depth, &x ))
@@ -417,25 +411,23 @@ static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info, prs_struct *
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("count", ps, depth, &(info->count)))
+	if(!prs_uint32("count", ps, depth, &info->count))
 		return False;
-	if(!prs_uint32("version", ps, depth, &(info->version)))
+	if(!prs_uint32("version", ps, depth, &info->version))
 		return False;
-	if(!prs_uint32("flags", ps, depth, &(info->flags)))
+	if(!prs_uint32("flags", ps, depth, &info->flags))
 		return False;
-	if(!prs_uint32("count", ps, depth, &(info->count)))
+	if(!prs_uint32("count", ps, depth, &info->count))
 		return False;
 
-	for (i=0;i<info->count;i++)
-	{
-		if(!smb_io_notify_info_data(desc, &(info->data[i]), ps, depth))
+	for (i=0;i<info->count;i++) {
+		if(!smb_io_notify_info_data(desc, &info->data[i], ps, depth))
 			return False;
 	}
 
 	/* now do the strings at the end of the stream */	
-	for (i=0;i<info->count;i++)
-	{
-		if(!smb_io_notify_info_data_strings(desc, &(info->data[i]), ps, depth))
+	for (i=0;i<info->count;i++) {
+		if(!smb_io_notify_info_data_strings(desc, &info->data[i], ps, depth))
 			return False;
 	}
 
@@ -1361,13 +1353,15 @@ static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR 
 		uint32 relative_offset;
 		
 		buffer->string_at_end -= 2*(str_len_uni(string)+1);
-		prs_set_offset(ps, buffer->string_at_end);
+		if(!prs_set_offset(ps, buffer->string_at_end))
+			return False;
 		
 		/* write the string */
 		if (!spoolss_smb_io_unistr(desc, string, ps, depth))
 			return False;
 
-		prs_set_offset(ps, struct_offset);
+		if(!prs_set_offset(ps, struct_offset))
+			return False;
 		
 		relative_offset=buffer->string_at_end - buffer->struct_start;
 		/* write its offset */
@@ -1382,13 +1376,15 @@ static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR 
 			return False;
 
 		old_offset = prs_offset(ps);
-		prs_set_offset(ps, buffer->string_at_end+buffer->struct_start);
+		if(!prs_set_offset(ps, buffer->string_at_end+buffer->struct_start))
+			return False;
 
 		/* read the string */
 		if (!spoolss_smb_io_unistr(desc, string, ps, depth))
 			return False;
 
-		prs_set_offset(ps, old_offset);
+		if(!prs_set_offset(ps, old_offset))
+			return False;
 	}
 	return True;
 }
@@ -1402,7 +1398,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 {
 	UNISTR chaine;
 	
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 	
 	if (MARSHALLING(ps)) {
 		uint32 struct_offset = prs_offset(ps);
@@ -1412,13 +1408,30 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		uint16 zero=0;
 		p=*string;
 		q=*string;
+
+#if 0 /* JRATEST */
+		if (p == NULL) {
+			relative_offset = 0;
+			if (!prs_uint32("offset", ps, depth, &relative_offset))
+				return False;
+			return True;
+		}
+#endif
 		
 		/* first write the last 0 */
 		buffer->string_at_end -= 2;
-		prs_set_offset(ps, buffer->string_at_end);
+		if(!prs_set_offset(ps, buffer->string_at_end))
+			return False;
 
 		if(!prs_uint16("leading zero", ps, depth, &zero))
 			return False;
+
+#if 0 /* JRATEST */
+		if (p == NULL)
+			p = &zero;
+		if (q == NULL)
+			q = &zero;
+#endif /* JRATEST */
 
 		while (p && (*p!=0)) {	
 			while (*q!=0)
@@ -1428,7 +1441,8 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 
 			buffer->string_at_end -= (q-p+1)*sizeof(uint16);
 
-			prs_set_offset(ps, buffer->string_at_end);
+			if(!prs_set_offset(ps, buffer->string_at_end))
+				return False;
 
 			/* write the string */
 			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth))
@@ -1438,7 +1452,8 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 
 		}
 		
-		prs_set_offset(ps, struct_offset);
+		if(!prs_set_offset(ps, struct_offset))
+			return False;
 		
 		relative_offset=buffer->string_at_end - buffer->struct_start;
 		/* write its offset */
@@ -1454,11 +1469,12 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		*string=NULL;
 				
 		/* read the offset */
-		if (!prs_uint32("offset", ps, depth, &(buffer->string_at_end)))
+		if (!prs_uint32("offset", ps, depth, &buffer->string_at_end))
 			return False;
 
 		old_offset = prs_offset(ps);
-		prs_set_offset(ps, buffer->string_at_end + buffer->struct_start);
+		if(!prs_set_offset(ps, buffer->string_at_end + buffer->struct_start))
+			return False;
 	
 		do {
 			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth))
@@ -1474,7 +1490,8 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		
 		*string=chaine2;
 
-		prs_set_offset(ps, old_offset);
+		if(!prs_set_offset(ps, old_offset))
+			return False;
 	}
 	return True;
 }
@@ -1505,13 +1522,15 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		if (*secdesc != NULL) {
 			buffer->string_at_end -= sec_desc_size(*secdesc);
 
-			prs_set_offset(ps, buffer->string_at_end);
+			if(!prs_set_offset(ps, buffer->string_at_end))
+				return False;
 			
 			/* write the secdesc */
 			if (!sec_io_desc(desc, secdesc, ps, depth))
 				return False;
 
-			prs_set_offset(ps, struct_offset);
+			if(!prs_set_offset(ps, struct_offset))
+				return False;
 		}
 
 		relative_offset=buffer->string_at_end - buffer->struct_start;
@@ -1522,17 +1541,19 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		uint32 old_offset;
 		
 		/* read the offset */
-		if (!prs_uint32("offset", ps, depth, &(buffer->string_at_end)))
+		if (!prs_uint32("offset", ps, depth, &buffer->string_at_end))
 			return False;
 
 		old_offset = prs_offset(ps);
-		prs_set_offset(ps, buffer->string_at_end + buffer->struct_start);
+		if(!prs_set_offset(ps, buffer->string_at_end + buffer->struct_start))
+			return False;
 
 		/* read the sd */
 		if (!sec_io_desc(desc, secdesc, ps, depth))
 			return False;
 
-		prs_set_offset(ps, old_offset);
+		if(!prs_set_offset(ps, old_offset))
+			return False;
 	}
 	return True;
 }
@@ -1553,13 +1574,15 @@ static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEV
 		
 		buffer->string_at_end -= ((*devmode)->size + (*devmode)->driverextra);
 		
-		prs_set_offset(ps, buffer->string_at_end);
+		if(!prs_set_offset(ps, buffer->string_at_end))
+			return False;
 		
 		/* write the DEVMODE */
 		if (!spoolss_io_devmode(desc, ps, depth, *devmode))
 			return False;
 
-		prs_set_offset(ps, struct_offset);
+		if(!prs_set_offset(ps, struct_offset))
+			return False;
 		
 		relative_offset=buffer->string_at_end - buffer->struct_start;
 		/* write its offset */
@@ -1574,7 +1597,8 @@ static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEV
 			return False;
 
 		old_offset = prs_offset(ps);
-		prs_set_offset(ps, buffer->string_at_end + buffer->struct_start);
+		if(!prs_set_offset(ps, buffer->string_at_end + buffer->struct_start))
+			return False;
 
 		/* read the string */
 		if((*devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL)
@@ -1582,7 +1606,8 @@ static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEV
 		if (!spoolss_io_devmode(desc, ps, depth, *devmode))
 			return False;
 
-		prs_set_offset(ps, old_offset);
+		if(!prs_set_offset(ps, old_offset))
+			return False;
 	}
 	return True;
 }
@@ -2087,8 +2112,9 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 ********************************************************************/  
 void new_spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest)
 {
-	prs_switch_type(&(src->prs), MARSHALL);
-	prs_set_offset(&(src->prs), 0);
+	prs_switch_type(&src->prs, MARSHALL);
+	if(!prs_set_offset(&src->prs, 0))
+		return;
 	prs_force_dynamic(&(src->prs));
 
 	*dest=src;
@@ -2122,7 +2148,7 @@ void new_spoolss_free_buffer(NEW_BUFFER *buffer)
 	if (buffer==NULL)
 		return;
 		
-	prs_mem_free(&(buffer->prs));
+	prs_mem_free(&buffer->prs);
 	buffer->ptr=0x0;
 	buffer->size=0;
 	buffer->string_at_end=0;
