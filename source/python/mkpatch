@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+# Make samba-head.patch.  Must be run from samba source directory.
+#
+
+cvs -z3 diff -u Makefile.in configure.in > python/samba-head.patch
