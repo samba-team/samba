@@ -423,6 +423,11 @@ static int process_root(int argc, char *argv[])
 
 		if(!new_passwd)
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
+
+		if(!new_passwd) {
+			fprintf(stderr, "Unable to get new password.\n");
+			exit(1);
+		}
 	}
 	
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
@@ -520,8 +525,8 @@ static int process_nonroot(int argc, char *argv[])
 	}
 	
 	if (!new_passwd) {
-		printf("Unable to get new password.\n");
-		exit(0);
+		fprintf(stderr, "Unable to get new password.\n");
+		exit(1);
 	}
 
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
