@@ -859,7 +859,7 @@ int cli_printjob_del(struct cli_state *cli, int job);
 
 /*The following definitions come from  libsmb/clirap.c  */
 
-BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
+BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, 
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
                   char *data, uint32 data_count, uint32 max_data_count,
@@ -906,7 +906,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
 /*The following definitions come from  libsmb/clistr.c  */
 
 int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int flags);
-int clistr_push_size(struct cli_state *cli, char *src, int dest_len, int flags);
+int clistr_push_size(struct cli_state *cli, void *dest, char *src, int dest_len, int flags);
 int clistr_pull(struct cli_state *cli, char *dest, void *src, int dest_len, int src_len, int flags);
 int clistr_pull_size(struct cli_state *cli, void *src, int src_len);
 int clistr_align(struct cli_state *cli, int offset);
@@ -914,7 +914,7 @@ int clistr_align(struct cli_state *cli, int offset);
 /*The following definitions come from  libsmb/clitrans.c  */
 
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
-		    char *name, int pipe_name_len, 
+		    char *pipe_name, 
 		    int fid, int flags,
 		    uint16 *setup, int lsetup, int msetup,
 		    char *param, int lparam, int mparam,
