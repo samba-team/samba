@@ -244,12 +244,11 @@ uint32 check_domain_security(const char *orig_user, const char *domain,
 		domain = global_myworkgroup;
 	}
 
-	if (lp_security() == SEC_USER ||
-	    (lp_security() == SEC_DOMAIN &&
-	     strequal(domain, global_myworkgroup)))
+	if (strequal(domain, global_myworkgroup) ||
+	    strequal(domain, global_myname))
 	{
 		/*
-		 * security = user (pdc, bdc) or security = domain
+		 * local
 		 */
 		fstrcpy(acct_name, global_myname);
 		acct_type = SEC_CHAN_WKSTA;

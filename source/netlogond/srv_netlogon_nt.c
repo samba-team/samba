@@ -248,7 +248,6 @@ static uint32 remote_interactive(const NET_ID_INFO_1 * id1,
 
 	DEBUG(5, ("END remote_interactive: %x\n", status));
 
-	status = check_domain_security(user, domain,
 	if (status != 0x0)
 	{
 		return status;
