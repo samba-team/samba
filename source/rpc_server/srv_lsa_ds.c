@@ -58,7 +58,7 @@ static BOOL api_dsrole_get_primary_dominfo(pipes_struct *p)
 
 static BOOL api_dsrole_stub( pipes_struct *p )
 {
-	DEBUG(0,("api_dsrole_stub:  Hmmm....didn't know this RPC existsed?!??!\n"));
+	DEBUG(0,("api_dsrole_stub:  Hmmm....didn't know this RPC existed...\n"));
 
 	return False;
 }
