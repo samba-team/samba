@@ -1441,7 +1441,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 		ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
 		goto out;
 	    }
-	    ret = krb5_decrypt_ticket(context, t, &tkey->key, 0, &adtkt);
+	    ret = krb5_decrypt_ticket(context, t, &tkey->key, &adtkt, 0);
 
 	    if(ret)
 		goto out;
