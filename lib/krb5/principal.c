@@ -601,7 +601,7 @@ name_convert(krb5_context context, const char *name, const char *realm,
 				  NULL);
     
     while(l){
-	if (l->type != STRING)
+	if (l->type != krb5_config_string)
 	    continue;
 	if(strcmp(name, l->u.string) == 0)
 	    return l->name;

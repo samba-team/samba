@@ -212,7 +212,7 @@ typedef struct krb5_cc_ops{
 struct krb5_log_facility;
 
 struct krb5_config_binding {
-    enum { STRING, LIST } type;
+    enum { krb5_config_string, krb5_config_list } type;
     char *name;
     struct krb5_config_binding *next;
     union {

@@ -64,7 +64,7 @@ krb5_get_krbhst (krb5_context context,
     for(done = FALSE; !done;) {
 	char *h = (char *)krb5_config_get_next (context->cf,
 						&pointer,
-						STRING,
+						krb5_config_string,
 						"realms",
 						r,
 						"kdc",

@@ -91,7 +91,7 @@ krb5_get_host_realm(krb5_context context,
 				  NULL);
 	l;
 	l = l->next) {
-	if (l->type != STRING)
+	if (l->type != krb5_config_string)
 	    continue;
 	if (exact_match (host, l->name)) {
 	    res = l->u.string;

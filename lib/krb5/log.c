@@ -324,7 +324,7 @@ krb5_openlog(krb5_context context,
 	return ret;
     
 
-    while(p = krb5_config_get_next(context->cf, &binding, STRING, 
+    while(p = krb5_config_get_next(context->cf, &binding, krb5_config_string, 
 				   "logging",
 				   program,
 				   NULL)){
@@ -332,7 +332,8 @@ krb5_openlog(krb5_context context,
 	done = 1;
     }
     if(!done){
-	while(p = krb5_config_get_next(context->cf, &binding, STRING, 
+	while(p = krb5_config_get_next(context->cf, &binding, 
+				       krb5_config_string, 
 				       "logging",
 				       "default",
 				       NULL)){

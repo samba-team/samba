@@ -63,7 +63,7 @@ ni_proplist2binding(ni_proplist *pl, krb5_config_section **ret)
 		return NI_FAILED;
 	
 	    b->next = NULL;
-	    b->type = STRING;
+	    b->type = krb5_config_string;
 	    b->name = ni_name_dup(pl->nipl_val[i].nip_name);
 	    b->u.string = ni_name_dup(pl->nipl_val[i].nip_val.ninl_val[j]);
 
@@ -110,7 +110,7 @@ ni_idlist2binding(void *ni, ni_idlist *idlist, krb5_config_section **ret)
 	    *next = b;
 	}
 
-	b->type = LIST;
+	b->type = krb5_config_list;
 	b->name = ni_name_dup(pl.nipl_val[index].nip_val.ninl_val[0]);
 	b->next = NULL;
 	b->u.list = NULL;
@@ -210,7 +210,7 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent)
     tmp->name = strdup(p+1);
     if (tmp->name == NULL)
 	return -1;
-    tmp->type = LIST;
+    tmp->type = krb5_config_list;
     tmp->u.list = NULL;
     tmp->next = NULL;
     return 0;
@@ -275,13 +275,13 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
     while(isspace(*p))
 	++p;
     if (*p == '{') {
-	tmp->type = LIST;
+	tmp->type = krb5_config_list;
 	tmp->u.list = NULL;
 	ret = parse_list (f, lineno, &tmp->u.list);
 	if (ret)
 	    return ret;
     } else {
-	tmp->type = STRING;
+	tmp->type = krb5_config_string;
 	tmp->u.string = strdup(p);
     }
     return 0;
@@ -339,9 +339,9 @@ free_binding (krb5_config_binding *b)
 
     while (b) {
 	free (b->name);
-	if (b->type == STRING)
+	if (b->type == krb5_config_string)
 	    free (b->u.string);
-	else if (b->type == LIST)
+	else if (b->type == krb5_config_list)
 	    free_binding (b->u.list);
 	else
 	    abort ();
@@ -385,9 +385,9 @@ print_binding (FILE *f, krb5_config_binding *b, unsigned level)
 {
     tab (f, level);
     fprintf (f, "%s = ", b->name);
-    if (b->type == STRING)
+    if (b->type == krb5_config_string)
 	fprintf (f, "%s\n", b->u.string);
-    else if (b->type == LIST) {
+    else if (b->type == krb5_config_list) {
 	fprintf (f, "{\n");
 	print_list (f, b->u.list, level + 1);
 	tab (f, level);
@@ -462,7 +462,7 @@ krb5_config_vget_next (krb5_config_section *c,
 	    if (type == b->type && p == NULL) {
 		*pointer = b;
 		return b->u.generic;
-	    } else if(b->type == LIST && p != NULL) {
+	    } else if(b->type == krb5_config_list && p != NULL) {
 		b = b->u.list;
 	    } else {
 		return NULL;
@@ -515,7 +515,7 @@ const krb5_config_binding *
 krb5_config_vget_list (krb5_config_section *c,
 		       va_list args)
 {
-    return krb5_config_vget (c, LIST, args);
+    return krb5_config_vget (c, krb5_config_list, args);
 }
 
 const char *
@@ -535,7 +535,7 @@ const char *
 krb5_config_vget_string (krb5_config_section *c,
 			 va_list args)
 {
-    return krb5_config_vget (c, STRING, args);
+    return krb5_config_vget (c, krb5_config_string, args);
 }
 
 char **
@@ -546,7 +546,7 @@ krb5_config_vget_strings(krb5_config_section *c,
     int nstr = 0;
     krb5_config_binding *b = NULL;
     const char *p;
-    while((p = krb5_config_vget_next(c, &b, STRING, args))){
+    while((p = krb5_config_vget_next(c, &b, krb5_config_string, args))){
 	char *tmp = strdup(p);
 	char *pos = NULL;
 	char *s;
