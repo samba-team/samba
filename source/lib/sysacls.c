@@ -442,7 +442,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 				break;
 
 			case SMB_ACL_USER:
-				if ((pw = getpwuid(ap->a_id)) == NULL) {
+				if ((pw = sys_getpwuid(ap->a_id)) == NULL) {
 					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
 						(long)ap->a_id);
 					id = idbuf;
@@ -979,7 +979,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 				break;
 
 			case SMB_ACL_USER:
-				if ((pw = getpwuid(ap->a_id)) == NULL) {
+				if ((pw = sys_getpwuid(ap->a_id)) == NULL) {
 					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
 						(long)ap->a_id);
 					id = idbuf;
