@@ -329,18 +329,35 @@ pytdbpack_calc_reqd_len(char *format_str,
 }
 
 
+static PyObject *pytdbpack_bad_type(char ch,
+				    const char *expected,
+				    PyObject *val_obj)
+{
+	PyObject *r = PyObject_Repr(val_obj);
+	if (!r)
+		return NULL;
+	PyErr_Format(PyExc_TypeError,
+		     "tdbpack: format '%c' requires %s, not %s",
+		     ch, expected, PyString_AS_STRING(r));
+	Py_DECREF(r);
+	return val_obj;
+}
+
+
 /*
-  Calculate the number of bytes required to pack a single value.
-*/
+ * Calculate the number of bytes required to pack a single value.  While doing
+ * this, also conduct some initial checks that the argument types are
+ * reasonable.
+ *
+ * Returns -1 on exception.
+ */
 static int
 pytdbpack_calc_item_len(char ch,
 			PyObject *val_obj)
 {
 	if (ch == 'd' || ch == 'w') {
 		if (!PyInt_Check(val_obj)) {
-			PyErr_Format(PyExc_TypeError,
-				     "tdbpack: format '%c' requires an Int",
-				     ch);
+			pytdbpack_bad_type(ch, "Int", val_obj);
 			return -1;
 		}
 		if (ch == 'w')
@@ -353,10 +370,7 @@ pytdbpack_calc_item_len(char ch,
 	else if (ch == 'f' || ch == 'P' || ch == 'B') {
 		/* nul-terminated 8-bit string */
 		if (!PyString_Check(val_obj)) {
-			PyErr_Format(PyExc_TypeError,
-				     "tdbpack: format '%c' requires a String",
-				     ch);
-			return -1;
+			pytdbpack_bad_type(ch, "String", val_obj);
 		}
 		
 		if (ch == 'B') {
@@ -371,7 +385,7 @@ pytdbpack_calc_item_len(char ch,
 	}
 	else {	
 		PyErr_Format(PyExc_ValueError,
-			     __FUNCTION__ ": format character '%c' is not supported",
+			     "tdbpack: format character '%c' is not supported",
 			     ch);
 		
 		return -1;

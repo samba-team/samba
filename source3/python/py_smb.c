@@ -97,12 +97,12 @@ static PyObject *py_smb_session_setup(PyObject *self, PyObject *args,
 				      PyObject *kw)
 {
 	cli_state_object *cli = (cli_state_object *)self;
-	static char *kwlist[] = { "creds" };
+	static char *kwlist[] = { "creds", NULL };
 	PyObject *creds;
 	char *username, *domain, *password, *errstr;
 	BOOL result;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O", kwlist, &creds))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "|O", kwlist, &creds))
 		return NULL;
 
 	if (!py_parse_creds(creds, &username, &domain, &password, &errstr)) {
@@ -114,34 +114,191 @@ static PyObject *py_smb_session_setup(PyObject *self, PyObject *args,
 		cli->cli, username, password, strlen(password) + 1,
 		password, strlen(password) + 1, domain);
 
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "session setup failed");
+		return NULL;
+	}
+
 	return Py_BuildValue("i", result);
 }
 
 static PyObject *py_smb_tconx(PyObject *self, PyObject *args, PyObject *kw)
 {
 	cli_state_object *cli = (cli_state_object *)self;
-	static char *kwlist[] = { "service", "creds" };
-	PyObject *creds;
-	char *service, *username, *domain, *password, *errstr;
+	static char *kwlist[] = { "service", NULL };
+	char *service;
 	BOOL result;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "sO", kwlist, &service, 
-					 &creds))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &service))
 		return NULL;
-
-	if (!py_parse_creds(creds, &username, &domain, &password, &errstr)) {
-		free(errstr);
-		return NULL;
-	}
 
 	result = cli_send_tconX(
-		cli->cli, service, strequal(service, "IPC$") ? "IPC" : "?????", 
-		password, strlen(password) + 1);
+		cli->cli, service, strequal(service, "IPC$") ? "IPC" : 
+		"?????", "", 1);
+
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "tconx failed");
+		return NULL;
+	}
 
 	return Py_BuildValue("i", result);
 }
 
+static PyObject *py_smb_nt_create_andx(PyObject *self, PyObject *args,
+				       PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "filename", "desired_access", 
+				  "file_attributes", "share_access",
+				  "create_disposition", NULL };
+	char *filename;
+	uint32 desired_access, file_attributes = 0, 
+		share_access = FILE_SHARE_READ | FILE_SHARE_WRITE,
+		create_disposition = FILE_EXISTS_OPEN, create_options = 0;
+	int result;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "si|iii", kwlist, &filename, &desired_access,
+		    &file_attributes, &share_access, &create_disposition,
+		    &create_options))
+		return NULL;
+
+	result = cli_nt_create_full(
+		cli->cli, filename, desired_access, file_attributes,
+		share_access, create_disposition, create_options);
+
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "nt_create_andx failed");
+		return NULL;
+	}
+
+	/* Return FID */
+
+	return PyInt_FromLong(result);
+}
+
+static PyObject *py_smb_close(PyObject *self, PyObject *args,
+			      PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "fnum", NULL };
+	BOOL result;
+	int fnum;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "i", kwlist, &fnum))
+		return NULL;
+
+	result = cli_close(cli->cli, fnum);
+
+	return PyInt_FromLong(result);
+}
+
+static PyObject *py_smb_unlink(PyObject *self, PyObject *args,
+			       PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "filename", NULL };
+	char *filename;
+	BOOL result;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s", kwlist, &filename))
+		return NULL;
+
+	result = cli_unlink(cli->cli, filename);
+
+	return PyInt_FromLong(result);
+}
+
+static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
+				      PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "fnum", NULL };
+	PyObject *result;
+	SEC_DESC *secdesc = NULL;
+	int fnum;
+	TALLOC_CTX *mem_ctx;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "i", kwlist, &fnum))
+		return NULL;
+
+	mem_ctx = talloc_init();
+
+	secdesc = cli_query_secdesc(cli->cli, fnum, mem_ctx);
+
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "query_secdesc failed");
+		return NULL;
+	}
+
+	if (!secdesc) {
+		Py_INCREF(Py_None);
+		result = Py_None;
+		goto done;
+	}
+
+	if (!py_from_SECDESC(&result, secdesc)) {
+		PyErr_SetString(
+			PyExc_TypeError,
+			"Invalid security descriptor returned");
+		result = NULL;
+		goto done;
+	}
+
+ done:
+	talloc_destroy(mem_ctx);
+
+	return result;
+	
+}
+
+static PyObject *py_smb_set_secdesc(PyObject *self, PyObject *args,
+				    PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "fnum", "security_descriptor", NULL };
+	PyObject *py_secdesc;
+	SEC_DESC *secdesc;
+	TALLOC_CTX *mem_ctx = talloc_init();
+	int fnum;
+	BOOL result;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "iO", kwlist, &fnum, &py_secdesc))
+		return NULL;
+
+	if (!py_to_SECDESC(&secdesc, py_secdesc, mem_ctx)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"Invalid security descriptor");
+		return NULL;
+	}
+
+	result = cli_set_secdesc(cli->cli, fnum, secdesc);
+
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "set_secdesc failed");
+		return NULL;
+	}
+
+	return PyInt_FromLong(result);
+}
+
 static PyMethodDef smb_hnd_methods[] = {
+
+	/* Session and connection handling */
 
 	{ "session_request", (PyCFunction)py_smb_session_request, 
 	  METH_VARARGS | METH_KEYWORDS, "Request a session" },
@@ -154,6 +311,25 @@ static PyMethodDef smb_hnd_methods[] = {
 
 	{ "tconx", (PyCFunction)py_smb_tconx,
 	  METH_VARARGS | METH_KEYWORDS, "Tree connect" },
+
+	/* File operations */
+
+	{ "nt_create_andx", (PyCFunction)py_smb_nt_create_andx,
+	  METH_VARARGS | METH_KEYWORDS, "NT Create&X" },
+
+	{ "close", (PyCFunction)py_smb_close,
+	  METH_VARARGS | METH_KEYWORDS, "Close" },
+
+	{ "unlink", (PyCFunction)py_smb_unlink,
+	  METH_VARARGS | METH_KEYWORDS, "Unlink" },
+
+	/* Security descriptors */
+
+	{ "query_secdesc", (PyCFunction)py_smb_query_secdesc,
+	  METH_VARARGS | METH_KEYWORDS, "Query security descriptor" },
+
+	{ "set_secdesc", (PyCFunction)py_smb_set_secdesc,
+	  METH_VARARGS | METH_KEYWORDS, "Set security descriptor" },
 
 	{ NULL }
 };

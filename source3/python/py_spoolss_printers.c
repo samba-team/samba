@@ -56,7 +56,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PI_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -304,7 +304,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PI_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -439,7 +439,7 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 		    &PyDict_Type, &info, &PyDict_Type, &creds))
 		return NULL;
 
-	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PI_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;

@@ -57,7 +57,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 
 	/* Call rpc function */
 	
-	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PI_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -261,7 +261,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 
 	/* Call rpc function */
 
-	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PI_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -341,7 +341,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PI_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
