@@ -4684,7 +4684,7 @@ struct smb_message_struct
    {SMBmove,"SMBmove",NULL,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
    
    {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
-   {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER},
+   {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER | CAN_IPC },
    {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER},
    {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER},
    
