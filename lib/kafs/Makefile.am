@@ -6,7 +6,6 @@ INCLUDES += $(INCLUDE_krb4) $(AFS_EXTRA_DEFS)
 
 if KRB4
 AFSLIBS = libkafs.la
-else
 
 if AIX
 AFSL_EXP = $(srcdir)/afsl.exp
@@ -36,6 +35,7 @@ AFSL_EXP =
 AIX_SRC =
 endif # AIX
 
+else
 AFSLIBS = 
 endif # KRB4
 
