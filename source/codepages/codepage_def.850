@@ -52,3 +52,4 @@
   0xEC     0xED    True                  True
   0xE7     0xE8    True                  True
   0x9C     0       False                 False
+  0xFC     0xDC    True                  True
