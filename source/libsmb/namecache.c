@@ -161,7 +161,7 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 		     int *num_names)
 {
 	TDB_DATA key, value;
-	struct nc_value *data;
+	struct nc_value *data = NULL;
 	time_t now;
 	int i;
 
@@ -196,6 +196,7 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 
 		tdb_delete(namecache_tdb, key);
 
+		SAFE_FREE(value.dptr);
 		value = tdb_null;
 
 		goto done;
@@ -210,6 +211,7 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 
 		tdb_delete(namecache_tdb, key);
 
+		SAFE_FREE(value.dptr);
 		value = tdb_null;
 
 		goto done;
