@@ -197,8 +197,31 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_EnumValue *r)
 {
+	struct dcesrv_handle *h;
+	struct registry_key *key;
+	struct registry_value *value;
+	WERROR result;
 
-	return WERR_NOT_SUPPORTED;
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	DCESRV_CHECK_HANDLE(h);
+
+	key = h->data;
+
+	result = reg_key_get_value_by_index(mem_ctx, key, r->in.enum_index, &value);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+	
+	r->out.type = &value->data_type;
+	r->out.name_out.name = value->name;
+	r->out.value_out = talloc_p(mem_ctx, struct EnumValueOut);
+	r->out.value_out->offset = 0;
+	r->out.value_out->buffer = data_blob_talloc(mem_ctx, value->data_blk, value->data_len);
+	r->out.value_len1 = r->in.value_len1;
+	r->out.value_len2 = r->in.value_len2;
+	
+
+	return WERR_OK;
 }
 
 
@@ -280,7 +303,41 @@ static WERROR winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 static WERROR winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryInfoKey *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct dcesrv_handle *h;
+	struct registry_key *k;
+	WERROR ret;
+
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	DCESRV_CHECK_HANDLE(h);
+	k = h->data;
+
+	ret = reg_key_num_subkeys(k, &r->out.num_subkeys);
+	if (!W_ERROR_IS_OK(ret)) { 
+		return ret;
+	}
+
+	ret = reg_key_num_values(k, &r->out.num_values);
+	if (!W_ERROR_IS_OK(ret)) { 
+		return ret;
+	}
+
+	ret = reg_key_subkeysizes(k, &r->out.max_subkeysize, &r->out.max_subkeylen);
+	if (!W_ERROR_IS_OK(ret)) { 
+		return ret;
+	}
+
+	ret = reg_key_valuesizes(k, &r->out.max_valnamelen, &r->out.max_valbufsize);
+	if (!W_ERROR_IS_OK(ret)) { 
+		return ret;
+	}
+
+	r->out.secdescsize = 0; /* FIXME */
+	ZERO_STRUCT(r->out.last_changed_time); /* FIXME */	if (!W_ERROR_IS_OK(ret)) { 
+		return ret;
+	}
+
+
+	return WERR_OK;
 }
 
 
@@ -380,7 +437,8 @@ static WERROR winreg_AbortSystemShutdown(struct dcesrv_call_state *dce_call, TAL
 static WERROR winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_GetVersion *r)
 {
-	return WERR_NOT_SUPPORTED;
+	r->out.version = 5;
+	return WERR_OK;
 }
 
 
