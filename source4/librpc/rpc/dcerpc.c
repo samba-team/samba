@@ -820,6 +820,16 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 
 
 /*
+  make sure requests are cleaned up 
+ */
+static int dcerpc_req_destructor(void *ptr)
+{
+	struct rpc_request *req = ptr;
+	DLIST_REMOVE(req->p->pending, req);
+	return 0;
+}
+
+/*
   perform the send size of a async dcerpc request
 */
 struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
@@ -902,6 +912,8 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 
 		remaining -= chunk;
 	}
+
+	talloc_set_destructor(req, dcerpc_req_destructor);
 
 	return req;
 }
