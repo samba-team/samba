@@ -1019,15 +1019,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (group_rid == 0 && pdb_get_init_flags(sampass,PDB_GID) != PDB_DEFAULT) {
-		GROUP_MAP map;
 		gid = pdb_get_gid(sampass);
 		/* call the mapping code here */
-		if(pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
-			pdb_set_group_sid(sampass, &map.sid, PDB_SET);
-		} 
-		else {
-			pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
-		}
+		pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_state->ldap_struct, entry, "pwdLastSet", temp)) {

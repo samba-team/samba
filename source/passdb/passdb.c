@@ -163,8 +163,6 @@ NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
 
 NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 {
-	GROUP_MAP map;
-
 	const char *guest_account = lp_guestaccount();
 	if (!(guest_account && *guest_account)) {
 		DEBUG(1, ("NULL guest account!?!?\n"));
@@ -214,18 +212,9 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
-		/* call the mapping code here */
-		if(pdb_getgrgid(&map, pwd->pw_gid, MAPPING_WITHOUT_PRIV)) {
-			if (!pdb_set_group_sid(sam_account,&map.sid, PDB_SET)){
-				DEBUG(0,("Can't set Group SID!\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-		} 
-		else {
-			if (!pdb_set_group_sid_from_rid(sam_account,pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
-				DEBUG(0,("Can't set Group SID\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
+		if (!pdb_set_group_sid_from_rid(sam_account,pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
+			DEBUG(0,("Can't set Group SID\n"));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 
@@ -611,7 +600,6 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 {
 	uint32 rid;
 	SAM_ACCOUNT *sam_account = NULL;
-	GROUP_MAP map;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("local_lookup_sid");
@@ -620,8 +608,6 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 		return False;
 	}
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid)){
-		DEBUG(0,("local_sid_to_gid: sid_peek_check_rid return False! SID: %s\n",
-			sid_string_talloc(mem_ctx, &map.sid)));
 		return False;
 	}
 	talloc_destroy(mem_ctx);	
@@ -667,18 +653,6 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 
 	pdb_free_sam(&sam_account);
 		
-	if (pdb_getgrsid(&map, *sid, MAPPING_WITHOUT_PRIV)) {
-		if (map.gid!=(gid_t)-1) {
-			DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
-		} else {
-			DEBUG(5,("local_lookup_sid: mapped group %s to no unix gid.  Returning name.\n", map.nt_name));
-		}
-
-		fstrcpy(name, map.nt_name);
-		*psid_name_use = map.sid_name_use;
-		return True;
-	}
-
 	if (pdb_rid_is_user(rid)) {
 		uid_t uid;
 
@@ -726,7 +700,6 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	fstring user;
 	SAM_ACCOUNT *sam_account = NULL;
 	struct group *grp;
-	GROUP_MAP map;
 		
 	*psid_name_use = SID_NAME_UNKNOWN;
 
@@ -774,12 +747,7 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	 * Maybe it was a group ?
 	 */
 
-	/* check if it's a mapped group */
-	if (pdb_getgrnam(&map, user, MAPPING_WITHOUT_PRIV)) {
-		/* yes it's a mapped group */
-		sid_copy(&local_sid, &map.sid);
-		*psid_name_use = map.sid_name_use;
-	} else {
+	{
 		/* it's not a mapped group */
 		grp = getgrnam(user);
 		if(!grp)
@@ -796,10 +764,6 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		 * for NT. For NT only ng exists.
 		 * JFM, 30/11/2001
 		 */
-		
-		if (pdb_getgrgid(&map, grp->gr_gid, MAPPING_WITHOUT_PRIV)){
-			return False;
-		}
 		
 		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
 		*psid_name_use = SID_NAME_ALIAS;
