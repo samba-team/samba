@@ -736,31 +736,61 @@ uint16 pdb_decode_acct_ctrl(char *p)
 }
 
 /*************************************************************
- Routine to get the next 32 hex characters and turn them
+ Routine to get the 32 hex characters and turn them
  into a 16 byte array.
 **************************************************************/
-
-int pdb_gethexpwd(char *p, char *pwd)
+BOOL pdb_gethexpwd(char *p, char *pwd)
 {
-  int i;
-  unsigned char   lonybble, hinybble;
-  char           *hexchars = "0123456789ABCDEF";
-  char           *p1, *p2;
+	int i;
+	unsigned char   lonybble, hinybble;
+	char           *hexchars = "0123456789ABCDEF";
+	char           *p1, *p2;
 
-  for (i = 0; i < 32; i += 2) {
-    hinybble = toupper(p[i]);
-    lonybble = toupper(p[i + 1]);
- 
-    p1 = strchr(hexchars, hinybble);
-    p2 = strchr(hexchars, lonybble);
-    if (!p1 || !p2)
-      return (False);
-    hinybble = PTR_DIFF(p1, hexchars);
-    lonybble = PTR_DIFF(p2, hexchars);
- 
-    pwd[i / 2] = (hinybble << 4) | lonybble;
-  }
-  return (True);
+	for (i = 0; i < 32; i += 2)
+	{
+		hinybble = toupper(p[i]);
+		lonybble = toupper(p[i + 1]);
+
+		p1 = strchr(hexchars, hinybble);
+		p2 = strchr(hexchars, lonybble);
+
+		if (!p1 || !p2)
+		{
+			return (False);
+		}
+
+		hinybble = PTR_DIFF(p1, hexchars);
+		lonybble = PTR_DIFF(p2, hexchars);
+
+		pwd[i / 2] = (hinybble << 4) | lonybble;
+	}
+	return (True);
+}
+
+/*************************************************************
+ Routine to set 32 hex password characters from a 16 byte array.
+**************************************************************/
+void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
+{
+	if (pwd != NULL)
+	{
+		int i;
+		for (i = 0; i < 16; i++)
+		{
+			slprintf(&p[i*2], 33, "%02X", pwd[i]);
+		}
+	}
+	else
+	{
+		if (IS_BITS_SET_ALL(acct_ctrl, ACB_PWNOTREQ))
+		{
+			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
+		}
+		else
+		{
+			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
+		}
+	}
 }
 
 /*******************************************************************

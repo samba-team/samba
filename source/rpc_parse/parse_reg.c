@@ -142,12 +142,12 @@ void make_reg_q_info(REG_Q_INFO *r_q,
 	memcpy(&(r_q->time), prod_time, sizeof(r_q->time));
 	r_q->major_version1 = major_version;
 	r_q->minor_version1 = minor_version;
-	bzero(&(r_q->pad1), sizeof(r_q->pad1));
+	bzero(r_q->pad1, sizeof(r_q->pad1));
 
 	r_q->ptr2 = 1;
 	r_q->major_version2 = major_version;
 	r_q->minor_version2 = minor_version;
-	bzero(&(r_q->pad2), sizeof(r_q->pad2));
+	bzero(r_q->pad2, sizeof(r_q->pad2));
 
 	r_q->ptr3 = 1;
 	r_q->unknown = unknown;
