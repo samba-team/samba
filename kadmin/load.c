@@ -324,6 +324,13 @@ doit(const char *filename, int merge)
 	krb5_warn(context, errno, "fopen(%s)", filename);
 	return 1;
     }
+    ret = kadm5_log_truncate (kadm_handle);
+    if (ret) {
+	fclose (f);
+	krb5_warn(context, ret, "kadm5_log_truncate");
+	return 1;
+    }
+
     if(!merge)
 	flags |= O_CREAT | O_TRUNC;
     ret = db->open(context, db, flags, 0600);
