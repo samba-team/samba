@@ -240,4 +240,5 @@ Still having troubles?
 Try the mailing list or newsgroup, or use the tcpdump-smb utility to
 sniff the problem.
 
+Also look at the other docs in the Samba package!
 
