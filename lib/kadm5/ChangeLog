@@ -1,3 +1,12 @@
+1999-10-17  Assar Westerlund  <assar@sics.se>
+
+	* randkey_s.c (kadm5_s_randkey_principal): use
+ 	_kadm5_set_keys_randomly
+
+	* set_keys.c (free_keys): free more memory
+	(_kadm5_set_keys): a little bit more generic
+	(_kadm5_set_keys_randomly): new function for setting random keys.
+
 1999-10-14  Assar Westerlund  <assar@sics.se>
 
 	* set_keys.c (_kadm5_set_keys): ignore old keys when setting new
