@@ -115,8 +115,8 @@ static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
 	create_rpc_request(call_id, LSA_OPENPOLICY, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
-	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
-	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
+	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
+	setup[2] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
 
 	/* send the data on \PIPE\ */
 	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
@@ -162,7 +162,7 @@ static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("LSA_REQ_CHAL: nt_status error %lx\n", r_o.status));
+			DEBUG(0,("LSA_OPENPOLICY: nt_status error %lx\n", r_o.status));
 			p = NULL;
 		}
 
@@ -178,6 +178,101 @@ static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
 	if (rdata) free(rdata);
 
 	return valid_pol;
+}
+
+/****************************************************************************
+do a LSA Query Info Policy
+****************************************************************************/
+static BOOL do_lsa_query_info_pol(uint16 fnum, LSA_POL_HND *hnd, uint16 info_class)
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	char *p;
+	int rdrcnt,rprcnt;
+	pstring data; /* only 1024 bytes */
+	uint16 setup[2]; /* only need 2 uint16 setup parameters */
+	LSA_Q_QUERY_INFO q_q;
+	int call_id = 0x1;
+    BOOL valid_response = False;
+
+	if (hnd == NULL) return False;
+
+	/* create and send a MSRPC command with api LSA_QUERYINFOPOLICY */
+
+	DEBUG(4,("LSA Query Info Policy\n"));
+
+	/* store the parameters */
+	make_q_query(&q_q, hnd, info_class);
+
+	/* turn parameters into data stream */
+	p = lsa_io_q_query(False, &q_q, data + 0x18, data, 4, 0);
+
+	/* create the request RPC_HDR with no data */
+	create_rpc_request(call_id, LSA_QUERYINFOPOLICY, data, PTR_DIFF(p, data));
+
+	/* create setup parameters. */
+	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
+	setup[2] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
+
+	/* send the data on \PIPE\ */
+	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
+                BUFFER_SIZE,
+				&rprcnt, &rdrcnt,
+				NULL, data, setup,
+				&rparam, &rdata))
+	{
+		LSA_R_QUERY_INFO r_q;
+		RPC_HDR hdr;
+		int hdr_len;
+		int pkt_len;
+
+		DEBUG(5, ("cli_call_api: return OK\n"));
+
+		p = rdata;
+
+		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
+
+		hdr_len = PTR_DIFF(p, rdata);
+
+		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		{
+			/* header length not same as calculated header length */
+			DEBUG(2,("do_lsa_query_info: hdr_len %x != frag_len-alloc_hint\n",
+			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			p = NULL;
+		}
+
+		if (p) p = lsa_io_r_query(True, &r_q, p, rdata, 4, 0);
+		
+		pkt_len = PTR_DIFF(p, rdata);
+
+		if (p && pkt_len != hdr.frag_len)
+		{
+			/* packet data size not same as reported fragment length */
+			DEBUG(2,("do_lsa_query_info: pkt_len %x != frag_len \n",
+			                           pkt_len, hdr.frag_len));
+			p = NULL;
+		}
+
+		if (p && r_q.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_QUERYINFOPOLICY: nt_status error %lx\n", r_q.status));
+			p = NULL;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. */
+			valid_response = True;
+		}
+	}
+
+	if (rparam) free(rparam);
+	if (rdata) free(rdata);
+
+	return valid_response;
 }
 
 /****************************************************************************
@@ -215,8 +310,8 @@ static BOOL do_lsa_req_chal(uint16 fnum,
 	create_rpc_request(call_id, LSA_REQCHAL, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
-	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
-	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
+	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
+	setup[2] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
 
 	/* send the data on \PIPE\ */
 	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
@@ -316,8 +411,8 @@ static BOOL do_lsa_auth2(uint16 fnum,
 	create_rpc_request(call_id, LSA_AUTH2, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
-	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
-	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
+	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
+	setup[2] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
 
 	/* send the data on \PIPE\ */
 	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
@@ -430,8 +525,8 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt
 	create_rpc_request(call_id, LSA_SAMLOGON, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
-	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
-	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
+	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
+	setup[2] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
 
 	/* send the data on \PIPE\ */
 	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
@@ -554,8 +649,8 @@ static BOOL do_lsa_sam_logoff(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_cln
 	create_rpc_request(call_id, LSA_SAMLOGOFF, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
-	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
-	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
+	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
+	setup[2] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
 
 	/* send the data on \PIPE\ */
 	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
@@ -689,6 +784,16 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/* send an open policy request; receive a policy handle */
 	if (!do_lsa_open_policy(fnum, server_name, &pol))
+	{
+		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
+	/******************* Query Info Policy ********************/
+
+	/* send a query info policy at level 5; receive an info policy */
+	if (!do_lsa_query_info_pol(fnum, &pol, 0x5))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
 		free(inbuf); free(outbuf);

@@ -206,35 +206,35 @@ it also defines lots of intermediate macros, just ignore those :-)
 	RW_PCVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (uint8)((outbuf)[idx]))); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", CVAL(&((outbuf)[idx]), 0))); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_PSVAL(string,depth,base,read,inbuf,outbuf,len) \
 	RW_PSVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", (uint16)((outbuf)[idx]))); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", SVAL(&((outbuf)[idx]), 0))); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_PIVAL(string,depth,base,read,inbuf,outbuf,len) \
 	RW_PIVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", (uint32)((outbuf)[idx]))); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", IVAL(&((outbuf)[idx]), 0))); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_CVAL(read,inbuf,outbuf,0) \
 	DEBUG(5,("%s%04x %s: %02x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string, CVAL(inbuf, 0)));
+             tab_depth(depth), PTR_DIFF(inbuf,base), string, outbuf));
 
 #define DBG_RW_SVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_SVAL(read,inbuf,outbuf,0) \
 	DEBUG(5,("%s%04x %s: %04x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string, SVAL(inbuf, 0)));
+             tab_depth(depth), PTR_DIFF(inbuf,base), string, outbuf));
 
 #define DBG_RW_IVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_IVAL(read,inbuf,outbuf,0) \
 	DEBUG(5,("%s%04x %s: %08x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string, IVAL(inbuf, 0)));
+             tab_depth(depth), PTR_DIFF(inbuf,base), string, outbuf));
 
