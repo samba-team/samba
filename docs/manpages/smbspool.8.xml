@@ -47,10 +47,10 @@
 	a number of forms:</para>
 
 	<itemizedlist>
-		<listitem><para>smb://server/printer</para></listitem>
-		<listitem><para>smb://workgroup/server/printer</para></listitem>
-		<listitem><para>smb://username:password@server/printer</para></listitem>
-		<listitem><para>smb://username:password@workgroup/server/printer</para></listitem>
+		<listitem><para>smb://server[:port]/printer</para></listitem>
+		<listitem><para>smb://workgroup/server[:port]/printer</para></listitem>
+		<listitem><para>smb://username:password@server[:port]/printer</para></listitem>
+		<listitem><para>smb://username:password@workgroup/server[:port]/printer</para></listitem>
 	</itemizedlist>
 
 	<para>smbspool tries to get the URI from argv[0]. If argv[0] 
