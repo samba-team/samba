@@ -1,3 +1,8 @@
+2001-09-01  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am.common (AUTOMAKE_OPTIONS): set 1.4b here so that
+	users are warned if using earlier automake versions
+
 2001-08-30  Assar Westerlund  <assar@sics.se>
 
 	* db.m4: check for ndbm functions in db3 library too
