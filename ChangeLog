@@ -1,3 +1,8 @@
+2005-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/apps.texi: Texinfo fixes. Text about irix 6.5 using
+	PAM. From: Dave Love <d.love@dl.ac.uk>
+
 2005-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/verify_krb5_conf.c: cast argument to isdigit to
