@@ -3654,12 +3654,13 @@ static BOOL process(char *base_directory)
 #ifdef HAVE_LIBREADLINE
 
       {
-	pstring prompt;
+	pstring promptline;
 	
 	/* Read input using GNU Readline */
 
-	slprintf(prompt, sizeof(prompt) - 1, "smb: %s> ", CNV_LANG(cur_dir));
-	if (!readline(prompt))
+	slprintf(promptline, 
+		 sizeof(promptline) - 1, "smb: %s> ", CNV_LANG(cur_dir));
+	if (!readline(promptline))
 	  break;
 
 	/* Copy read line to samba buffer */
