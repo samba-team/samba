@@ -88,12 +88,15 @@ Step 2: Setup your /etc/krb5.conf
   NOTE: The realm must be uppercase. 
 
   You also must ensure that you can do a reverse DNS lookup on the IP
-  address of your KDC. This usually either involves setting up a PTR
-  record in your DNS server or adding your KDC to /etc/hosts.
+  address of your KDC. Also, the name that this reverse lookup maps to
+  must either be the netbios name of the KDC (ie. the hostname with no
+  domain attached) or it can alternatively be the netbios name
+  followed by the realm. 
 
-  Your KDC DNS name must be be in a domain that matches the realm,
-  e.g. realm EXAMPLE.COM, kdc server.example.com.  At least for now.
-
+  The easiest way to ensure you get this right is to add a /etc/hosts
+  entry mapping the IP address of your KDC to its netbios name. If you
+  don't get this right then you will get a "local error" when you try
+  to join the realm.
 
 * If all you want is kerberos support in smbclient then you can skip
 * straight to step 5 now. Step 3 is only needed if you want kerberos
