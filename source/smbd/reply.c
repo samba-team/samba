@@ -4129,7 +4129,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   else
     {
       SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
-      SIVAL(outbuf,smb_vwv8,ROUNDUP(sbuf.st_size,1024));
+      SIVAL(outbuf,smb_vwv8,SMB_ROUNDUP(sbuf.st_size,1024));
     }
   SSVAL(outbuf,smb_vwv10, mode);
   
