@@ -494,6 +494,9 @@ krb5_copy_principal(krb5_context context,
     return 0;
 }
 
+/*
+ * return TRUE iff princ1 == princ2 (without considering the realm)
+ */
 
 krb5_boolean
 krb5_principal_compare_any_realm(krb5_context context,
@@ -510,6 +513,10 @@ krb5_principal_compare_any_realm(krb5_context context,
     return TRUE;
 }
 
+/*
+ * return TRUE iff princ1 == princ2
+ */
+
 krb5_boolean
 krb5_principal_compare(krb5_context context,
 		       krb5_const_principal princ1,
@@ -520,6 +527,9 @@ krb5_principal_compare(krb5_context context,
     return krb5_principal_compare_any_realm(context, princ1, princ2);
 }
 
+/*
+ * return TRUE iff realm(princ1) == realm(princ2)
+ */
 
 krb5_boolean
 krb5_realm_compare(krb5_context context,
