@@ -1186,6 +1186,18 @@ static int call_nt_transact_rename(connection_struct *conn,
 }
    
 /****************************************************************************
+ This is the structure to keep the information needed to
+ determine if a directory has changed.
+*****************************************************************************/
+
+typedef struct {
+  time_t modify_time; /* Info from the directory we're monitoring. */ 
+  time_t status_time; /* Info from the directory we're monitoring. */
+  time_t total_time; /* Total time of all directory entries - don't care if it wraps. */
+  unsigned int num_entries; /* Zero or the number of files in the directory. */
+} change_hash_data;
+
+/****************************************************************************
  This is the structure to queue to implement NT change
  notify. It consists of smb_size bytes stored from the
  transact command (to keep the mid, tid etc around).
@@ -1196,9 +1208,9 @@ typedef struct {
   ubi_slNode msg_next;
   files_struct *fsp;
   connection_struct *conn;
+  uint32 flags;
   time_t next_check_time;
-  time_t modify_time; /* Info from the directory we're monitoring. */ 
-  time_t status_time; /* Info from the directory we're monitoring. */
+  change_hash_data change_data;
   char request_buf[smb_size];
 } change_notify_buf;
 
@@ -1239,8 +1251,93 @@ static void change_notify_reply_packet(char *inbuf, int error_class, uint32 erro
 }
 
 /****************************************************************************
+ Create the hash we will use to determine if the contents changed.
+*****************************************************************************/
+
+static BOOL create_directory_notify_hash( change_notify_buf *cnbp, change_hash_data *change_data)
+{
+  SMB_STRUCT_STAT st;
+  files_struct *fsp = cnbp->fsp;
+
+  memset((char *)change_data, '\0', sizeof(change_data));
+
+  /* 
+   * Store the current timestamp on the directory we are monitoring.
+   */
+
+  if(dos_stat(fsp->fsp_name, &st) < 0) {
+    DEBUG(0,("create_directory_notify_hash: Unable to stat name = %s. \
+Error was %s\n", fsp->fsp_name, strerror(errno) ));
+    return False;
+  }
+ 
+  change_data->modify_time = st.st_mtime;
+  change_data->status_time = st.st_ctime;
+
+  /*
+   * If we are to watch for changes that are only stored
+   * in inodes of files, not in the directory inode, we must
+   * scan the directory and produce a unique identifier with
+   * which we can determine if anything changed. We use the
+   * modify and change times from all the files in the
+   * directory, added together (ignoring wrapping if it's
+   * larger than the max time_t value).
+   */
+
+  if(cnbp->flags & (FILE_NOTIFY_CHANGE_SIZE|FILE_NOTIFY_CHANGE_LAST_WRITE)) {
+    pstring full_name;
+    char *p;
+    char *fname;
+    char *fname_off;
+    size_t remaining_len;
+    size_t fullname_len;
+    void *dp = OpenDir(cnbp->conn, fsp->fsp_name, True);
+
+    if(dp == NULL) {
+      DEBUG(0,("create_directory_notify_hash: Unable to open directory = %s. \
+Error was %s\n", fsp->fsp_name, strerror(errno) ));
+      return False;
+    }
+
+    change_data->num_entries = 0;
+
+    pstrcpy(full_name, fsp->fsp_name);
+    pstrcat(full_name, "/");
+
+    fullname_len = strlen(full_name);
+    remaining_len = sizeof(full_name) - fullname_len - 1;
+    p = &full_name[fullname_len];
+
+    while(fname = ReadDirName( dp )) {
+      if(strequal(fname, ".") || strequal(fname, ".."))
+        continue;
+
+      change_data->num_entries++;
+      safe_strcpy( p, fname, remaining_len);
+
+      memset(&st, '\0', sizeof(st));
+
+      /*
+       * Do the stat - but ignore errors.
+       */
+
+      if(dos_stat(full_name, &st) < 0) {
+        DEBUG(5,("create_directory_notify_hash: Unable to stat content file = %s. \
+Error was %s\n", fsp->fsp_name, strerror(errno) ));
+      }
+      change_data->total_time += (st.st_mtime + st.st_ctime);
+    }
+
+    CloseDir(dp);
+  }
+
+  return True;
+}
+
+/****************************************************************************
  Delete entries by fnum from the change notify pending queue.
 *****************************************************************************/
+
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp)
 {
   change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
@@ -1301,8 +1398,7 @@ void process_pending_change_notify_queue(time_t t)
    */
 
   while((cnbp != NULL) && (cnbp->next_check_time <= t)) {
-    SMB_STRUCT_STAT st;
-    files_struct *fsp = cnbp->fsp;
+    change_hash_data change_data;
     connection_struct *conn = cnbp->conn;
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
                   SVAL(cnbp->request_buf,smb_uid);
@@ -1338,9 +1434,9 @@ void process_pending_change_notify_queue(time_t t)
       continue;
     }
 
-    if(dos_stat(fsp->fsp_name, &st) < 0) {
-      DEBUG(0,("process_pending_change_notify_queue: Unable to stat directory %s. \
-Error was %s.\n", fsp->fsp_name, strerror(errno) ));
+    if(!create_directory_notify_hash( cnbp, &change_data)) {
+      DEBUG(0,("process_pending_change_notify_queue: Unable to create change data for \
+directory %s\n", cnbp->fsp->fsp_name ));
       /*
        * Remove the entry and return an error to the client.
        */
@@ -1351,13 +1447,12 @@ Error was %s.\n", fsp->fsp_name, strerror(errno) ));
       continue;
     }
 
-    if(cnbp->modify_time != st.st_mtime ||
-       cnbp->status_time != st.st_ctime) {
+    if(memcmp( (char *)&cnbp->change_data, (char *)&change_data, sizeof(change_data))) {
       /*
        * Remove the entry and return a change notify to the client.
        */
-      DEBUG(5,("process_pending_change_notify_queue: directory name = %s changed\n",
-            fsp->fsp_name ));
+      DEBUG(5,("process_pending_change_notify_queue: directory name = %s changed.\n",
+            cnbp->fsp->fsp_name ));
       change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_NOTIFY_ENUM_DIR);
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
@@ -1379,16 +1474,16 @@ Error was %s.\n", fsp->fsp_name, strerror(errno) ));
  Reply to a notify change - queue the request and 
  don't allow a directory to be opened.
 ****************************************************************************/
+
 static int call_nt_transact_notify_change(connection_struct *conn,
-					  char *inbuf, char *outbuf, int length,
+                                          char *inbuf, char *outbuf, int length,
                                           int bufsize, 
                                           char **ppsetup, 
-					  char **ppparams, char **ppdata)
+                                          char **ppparams, char **ppdata)
 {
   char *setup = *ppsetup;
   files_struct *fsp;
   change_notify_buf *cnbp;
-  SMB_STRUCT_STAT st;
 
   fsp = file_fsp(setup,4);
 
@@ -1409,28 +1504,22 @@ static int call_nt_transact_notify_change(connection_struct *conn,
    */
 
   if((cnbp = (change_notify_buf *)malloc(sizeof(change_notify_buf))) == NULL) {
-    DEBUG(0,("call_nt_transact_notify_change: Malloc fail (2) !\n" ));
+    DEBUG(0,("call_nt_transact_notify_change: malloc fail !\n" ));
     return -1;
   }
 
-  /* 
-   * Store the current timestamp on the directory we are monitoring.
-   */
+  memset((char *)cnbp, '\0', sizeof(change_notify_buf));
 
-  if(dos_stat(fsp->fsp_name, &st) < 0) {
-    DEBUG(0,("call_nt_transact_notify_change: Unable to stat name = %s. \
-Error was %s\n", fsp->fsp_name, strerror(errno) ));
-    free((char *)cnbp);
-    return(UNIXERROR(ERRDOS,ERRbadfid));
-  }
- 
   memcpy(cnbp->request_buf, inbuf, smb_size);
   cnbp->fsp = fsp;
   cnbp->conn = conn;
-  cnbp->modify_time = st.st_mtime;
-  cnbp->status_time = st.st_ctime;
-
   cnbp->next_check_time = time(NULL) + lp_change_notify_timeout();
+  cnbp->flags = IVAL(setup, 0);
+
+  if(!create_directory_notify_hash( cnbp, &cnbp->change_data )) {
+    free((char *)cnbp);
+    return(UNIXERROR(ERRDOS,ERRbadfid));
+  }
 
   /*
    * Adding to the tail enables us to check only
@@ -1450,6 +1539,7 @@ name = %s\n", fsp->fsp_name ));
  Reply to query a security descriptor - currently this is not implemented (it
  is planned to be though).
 ****************************************************************************/
+
 static int call_nt_transact_query_security_desc(connection_struct *conn,
 						char *inbuf, char *outbuf, 
 						int length, 
