@@ -35,6 +35,8 @@
 
 RCSID("$Id$");
 
+static krb5_log_facility *log_facility;
+
 static int
 make_signal_socket (krb5_context context)
 {
@@ -157,7 +159,7 @@ add_slave (krb5_context context, krb5_keytab keytab, slave **root, int fd)
 	goto error;
     }
     krb5_free_ticket (context, ticket);
-    printf ("connection from %s\n", s->name);
+    krb5_warnx (context, "connection from %s", s->name);
 
     s->version = 0;
     s->next = *root;
@@ -306,11 +308,9 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 
     sp = kadm5_log_goto_end (log_fd);
     right = sp->seek(sp, 0, SEEK_CUR);
-    printf ("%ld, looking for %d\n", (long)right, s->version);
     for (;;) {
 	if (kadm5_log_previous (sp, &ver, &timestamp, &op, &len))
 	    abort ();
-	printf ("version = %d\n", ver);
 	left = sp->seek(sp, -16, SEEK_CUR);
 	if (ver == s->version)
 	    return 0;
@@ -355,7 +355,7 @@ process_msg (krb5_context context, slave *s, int log_fd,
 	return 1;
 
     if(in.length == 0) {
-	krb5_warnx(context, "process_msg: short message");
+	krb5_warnx (context, "connection from %s closed", s->name);
 	return 1;
     }
 
@@ -423,6 +423,9 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    krb5_openlog (context, "ipropd-master", &log_facility);
+    krb5_set_warn_dest(context, log_facility);
 
     ret = krb5_kt_register(context, &hdb_kt_ops);
     if(ret)
@@ -501,7 +504,6 @@ main(int argc, char **argv)
 		krb5_warn (context, errno, "recvfrom");
 		continue;
 	    }
-	    printf ("signal: %u\n", vers);
 	    --ret;
 	    old_version = current_version;
 	    kadm5_log_get_version (log_fd, &current_version);
