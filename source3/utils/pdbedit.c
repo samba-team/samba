@@ -258,7 +258,8 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 static int set_user_info (struct pdb_context *in, const char *username, 
 			  const char *fullname, const char *homedir, 
 			  const char *drive, const char *script, 
-			  const char *profile, const char *account_control)
+			  const char *profile, const char *account_control,
+			  const char *user_sid, const char *group_sid)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
@@ -299,6 +300,36 @@ static int set_user_info (struct pdb_context *in, const char *username,
 				  (pdb_get_acct_ctrl(sam_pwent) & not_settable) | newflag,
 				  PDB_CHANGED);
 	}
+	if (user_sid) {
+		DOM_SID u_sid;
+		if (!string_to_sid(&u_sid, user_sid)) {
+			/* not a complete sid, may be a RID, try building a SID */
+			int u_rid;
+			
+			if (sscanf(user_sid, "%d", &u_rid) != 1) {
+				fprintf(stderr, "Error passed string is not a complete user SID or RID!\n");
+				return -1;
+			}
+			sid_copy(&u_sid, get_global_sam_sid());
+			sid_append_rid(&u_sid, u_rid);
+		}
+		pdb_set_user_sid (sam_pwent, &u_sid, PDB_CHANGED);
+	}
+	if (group_sid) {
+		DOM_SID g_sid;
+		if (!string_to_sid(&g_sid, group_sid)) {
+			/* not a complete sid, may be a RID, try building a SID */
+			int g_rid;
+			
+			if (sscanf(group_sid, "%d", &g_rid) != 1) {
+				fprintf(stderr, "Error passed string is not a complete group SID or RID!\n");
+				return -1;
+			}
+			sid_copy(&g_sid, get_global_sam_sid());
+			sid_append_rid(&g_sid, g_rid);
+		}
+		pdb_set_group_sid (sam_pwent, &g_sid, PDB_CHANGED);
+	}
 	
 	if (NT_STATUS_IS_OK(in->pdb_update_sam_account (in, sam_pwent)))
 		print_user_info (in, username, True, False);
@@ -314,7 +345,10 @@ static int set_user_info (struct pdb_context *in, const char *username,
 /*********************************************************
  Add New User
 **********************************************************/
-static int new_user (struct pdb_context *in, const char *username, const char *fullname, const char *homedir, const char *drive, const char *script, const char *profile)
+static int new_user (struct pdb_context *in, const char *username,
+			const char *fullname, const char *homedir,
+			const char *drive, const char *script,
+			const char *profile, char *user_sid, char *group_sid)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	struct passwd  *pwd = NULL;
@@ -329,7 +363,7 @@ static int new_user (struct pdb_context *in, const char *username, const char *f
 		fprintf (stderr, "WARNING: user %s does not exist in system passwd\n", username);
 		pdb_init_sam(&sam_pwent);
 		if (!pdb_set_username(sam_pwent, username, PDB_CHANGED)) {
-			return False;
+			return -1;
 		}
 	}
 
@@ -365,6 +399,36 @@ static int new_user (struct pdb_context *in, const char *username, const char *f
 		pdb_set_logon_script(sam_pwent, script, PDB_CHANGED);
 	if (profile)
 		pdb_set_profile_path (sam_pwent, profile, PDB_CHANGED);
+	if (user_sid) {
+		DOM_SID u_sid;
+		if (!string_to_sid(&u_sid, user_sid)) {
+			/* not a complete sid, may be a RID, try building a SID */
+			int u_rid;
+			
+			if (sscanf(user_sid, "%d", &u_rid) != 1) {
+				fprintf(stderr, "Error passed string is not a complete user SID or RID!\n");
+				return -1;
+			}
+			sid_copy(&u_sid, get_global_sam_sid());
+			sid_append_rid(&u_sid, u_rid);
+		}
+		pdb_set_user_sid (sam_pwent, &u_sid, PDB_CHANGED);
+	}
+	if (group_sid) {
+		DOM_SID g_sid;
+		if (!string_to_sid(&g_sid, group_sid)) {
+			/* not a complete sid, may be a RID, try building a SID */
+			int g_rid;
+			
+			if (sscanf(group_sid, "%d", &g_rid) != 1) {
+				fprintf(stderr, "Error passed string is not a complete group SID or RID!\n");
+				return -1;
+			}
+			sid_copy(&g_sid, get_global_sam_sid());
+			sid_append_rid(&g_sid, g_rid);
+		}
+		pdb_set_group_sid (sam_pwent, &g_sid, PDB_CHANGED);
+	}
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL, PDB_CHANGED);
 	
@@ -507,6 +571,8 @@ int main (int argc, char **argv)
 	static char *profile_path = NULL;
 	static char *account_control = NULL;
 	static char *account_policy = NULL;
+	static char *user_sid = NULL;
+	static char *group_sid = NULL;
 	static long int account_policy_value = 0;
 	BOOL account_policy_value_set = False;
 
@@ -525,6 +591,8 @@ int main (int argc, char **argv)
 		{"drive",	'D', POPT_ARG_STRING, &home_drive, 0, "set home drive", NULL},
 		{"script",	'S', POPT_ARG_STRING, &logon_script, 0, "set logon script", NULL},
 		{"profile",	'p', POPT_ARG_STRING, &profile_path, 0, "set profile path", NULL},
+		{"user SID",	'U', POPT_ARG_STRING, &user_sid, 0, "set user SID or RID", NULL},
+		{"group SID",	'G', POPT_ARG_STRING, &group_sid, 0, "set group SID or RID", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
 		{"modify",	'r', POPT_ARG_NONE, &modify_user, 0, "modify user", NULL},
 		{"machine",	'm', POPT_ARG_NONE, &machine, 0, "account is a machine account", NULL},
@@ -693,7 +761,7 @@ int main (int argc, char **argv)
 			} else {
 				return new_user (bdef, user_name, full_name, home_dir, 
 						 home_drive, logon_script, 
-						 profile_path);
+						 profile_path, user_sid, group_sid);
 			}
 		}
 
@@ -712,7 +780,8 @@ int main (int argc, char **argv)
 					      home_dir,
 					      home_drive,
 					      logon_script,
-					      profile_path, account_control);
+					      profile_path, account_control,
+					      user_sid, group_sid);
 		}
 	}
 
