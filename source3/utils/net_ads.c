@@ -171,7 +171,7 @@ static int ads_user_add(int argc, const char **argv)
 	status = ads_find_user_acct(ads, &res, argv[0]);
 
 	if (!ADS_ERR_OK(status)) {
-		d_printf("ads_user_add: %s\n", ads_err2string(status));
+		d_printf("ads_user_add: %s\n", ads_errstr(status));
 		goto done;
 	}
 	
@@ -188,7 +188,7 @@ static int ads_user_add(int argc, const char **argv)
 		rc = 0;
 	} else {
 		d_printf("Could not add user %s: %s\n", argv[0],
-			 ads_err2string(status));
+			 ads_errstr(status));
 	}
 
  done:
@@ -264,7 +264,7 @@ static int ads_user_delete(int argc, const char **argv)
 		return 0;
 	}
 	d_printf("Error deleting user %s: %s\n", argv[0], 
-		 ldap_err2string(rc.rc));
+		 ads_errstr(rc));
 	return -1;
 }
 
