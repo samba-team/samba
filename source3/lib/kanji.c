@@ -411,7 +411,7 @@ static char *sj_to_euc(char *from, BOOL overwrite)
 	    *out++ = code;
 	    from += 2;
 	} else if (is_kana (*from)) {
-	    *out++ = euc_kana;
+	    *out++ = (char)euc_kana;
 	    *out++ = *from++;
 	} else {
 	    *out++ = *from++;
