@@ -597,6 +597,8 @@ verify_krb5(const char *password)
 				"krbtgt",
 				client->realm,
 				NULL);
+	    mcred.client = client;
+
 	    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
 	    if(ret == 0) {
 		ret = krb524_convert_creds_kdc_ccache(context, id, &cred, &c);
