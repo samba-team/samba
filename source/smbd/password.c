@@ -23,6 +23,7 @@
 
 extern int DEBUGLEVEL;
 extern int Protocol;
+extern struct in_addr ipzero;
 
 /* users from session setup */
 static pstring session_users="";
@@ -1208,6 +1209,27 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 }
 
 /***********************************************************************
+ Utility function to attempt a connection to an IP address of a DC.
+************************************************************************/
+
+static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip)
+{
+  fstring dc_name;
+
+  /*
+   * Ignore addresses we have already tried.
+   */
+
+  if(ip_equal(ipzero, *ip))
+    return False;
+
+  if(!lookup_pdc_name(global_myname, lp_workgroup(), ip, dc_name))
+    return False;
+
+  return connect_to_domain_password_server(pcli, dc_name);
+}
+
+/***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
  key from the machine password.
 ************************************************************************/
@@ -1316,17 +1338,46 @@ BOOL domain_client_validate( char *user, char *domain,
         continue;
 
       /*
-       * Try and connect to the PDC/BDC list in turn as an IP
-       * address used as a string.
+       * Firstly try and contact a PDC/BDC who has the same
+       * network address as any of our interfaces.
        */
 
       for(i = 0; i < count; i++) {
-        fstring dc_name;
-        if(!lookup_pdc_name(global_myname, lp_workgroup(), &ip_list[i], dc_name))
+        if(!is_local_net(ip_list[i]))
           continue;
 
-        if((connected_ok = connect_to_domain_password_server(&cli, dc_name)))
+        if((connected_ok = attempt_connect_to_dc(&cli, &ip_list[i])))
           break;
+
+        ip_list[i] = ipzero; /* Tried and failed. */
+      }
+
+      /*
+       * Secondly try and contact a random PDC/BDC.
+       */
+
+      if(!connected_ok) {
+        i = (sys_random() % count);
+
+        if(!(connected_ok = attempt_connect_to_dc(&cli, &ip_list[i])))
+          ip_list[i] = ipzero; /* Tried and failed. */
+      }
+
+      /*
+       * Finally go through the IP list in turn, ignoring any addresses
+       * we have already tried.
+       */
+
+      if(!connected_ok) {
+
+        /*
+         * Try and connect to any of the other IP addresses in the PDC/BDC list.
+         */
+
+        for(i = 0; i < count; i++) {
+          if((connected_ok = attempt_connect_to_dc(&cli, &ip_list[i])))
+            break;
+        }
       }
 
       if(ip_list != NULL)

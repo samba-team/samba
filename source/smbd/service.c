@@ -533,8 +533,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	 */
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
-		extern int Client;
-		
 		dbgtext( "%s (%s) ", remote_machine, conn->client_address );
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "as user %s ", user );
@@ -561,7 +559,6 @@ close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
-	extern int Client;
 	DirCacheFlush(SNUM(conn));
 
 	unbecome_user();

@@ -1099,6 +1099,9 @@ struct bitmap {
 #define NT_TRANSACT_RENAME                5
 #define NT_TRANSACT_QUERY_SECURITY_DESC   6
 
+/* Relevant IOCTL codes */
+#define IOCTL_QUERY_JOB_INFO      0x530060
+
 /* these are the trans2 sub fields for primary requests */
 #define smb_tpscnt smb_vwv0
 #define smb_tdscnt smb_vwv1
