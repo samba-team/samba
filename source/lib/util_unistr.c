@@ -54,16 +54,16 @@ static void load_case_tables(void)
 ********************************************************************/
 codepoint_t toupper_w(codepoint_t val)
 {
-	if (val & 0xFFFF0000) {
-		return val;
-	}
 	if (val < 128) {
 		return toupper(val);
+	}
+	if (upcase_table == (void *)-1) {
+		return val;
 	}
 	if (upcase_table == NULL) {
 		load_case_tables();
 	}
-	if (upcase_table == (void *)-1) {
+	if (val & 0xFFFF0000) {
 		return val;
 	}
 	return SVAL(upcase_table, val*2);
@@ -74,16 +74,16 @@ codepoint_t toupper_w(codepoint_t val)
 ********************************************************************/
 codepoint_t tolower_w(codepoint_t val)
 {
-	if (val & 0xFFFF0000) {
-		return val;
-	}
 	if (val < 128) {
 		return tolower(val);
+	}
+	if (lowcase_table == (void *)-1) {
+		return val;
 	}
 	if (lowcase_table == NULL) {
 		load_case_tables();
 	}
-	if (lowcase_table == (void *)-1) {
+	if (val & 0xFFFF0000) {
 		return val;
 	}
 	return SVAL(lowcase_table, val*2);
