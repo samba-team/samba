@@ -157,6 +157,12 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 {
 	GROUP_MAP map;
 
+	const char *guest_account = lp_guestaccount();
+	if (!(guest_account && *guest_account)) {
+		DEBUG(1, ("NULL guest account!?!?\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	if (!pwd) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -183,23 +189,35 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	   -- abartlet 11-May-02
 	*/
 
-	if (!pdb_set_user_sid_from_rid(sam_account, 
-				       fallback_pdb_uid_to_user_rid(pwd->pw_uid))) {
-		DEBUG(0,("Can't set User SID from RID!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
-	/* call the mapping code here */
-	if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
-		if (!pdb_set_group_sid(sam_account,&map.sid)){
-			DEBUG(0,("Can't set Group SID!\n"));
+	/* Ensure this *must* be set right */
+	if (strcmp(pwd->pw_name, guest_account) == 0) {
+		if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		if (!pdb_set_group_sid_from_rid(sam_account, DOMAIN_GROUP_RID_GUESTS)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+
+		if (!pdb_set_user_sid_from_rid(sam_account, 
+					       fallback_pdb_uid_to_user_rid(pwd->pw_uid))) {
+			DEBUG(0,("Can't set User SID from RID!\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-	} 
-	else {
-		if (!pdb_set_group_sid_from_rid(sam_account,pdb_gid_to_group_rid(pwd->pw_gid))) {
-			DEBUG(0,("Can't set Group SID\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+		
+		/* call the mapping code here */
+		if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
+			if (!pdb_set_group_sid(sam_account,&map.sid)){
+				DEBUG(0,("Can't set Group SID!\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		} 
+		else {
+			if (!pdb_set_group_sid_from_rid(sam_account,pdb_gid_to_group_rid(pwd->pw_gid))) {
+				DEBUG(0,("Can't set Group SID\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 		}
 	}
 
@@ -574,14 +592,6 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			fstrcpy(name, "Administrator");
 		}
 		return True;
-
-	} else if (rid == DOMAIN_USER_RID_GUEST) {
-		char *p = lp_guestaccount();
-		*psid_name_use = SID_NAME_USER;
-		if(!next_token(&p, name, NULL, sizeof(fstring)))
-			fstrcpy(name, "Guest");
-		return True;
-
 	}
 
 	/*
@@ -597,6 +607,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	}
 		
 	/* This now does the 'generic' mapping in pdb_unix */
+	/* 'guest' is also handled there */
 	if (pdb_getsampwsid(sam_account, sid)) {
 		fstrcpy(name, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
@@ -845,23 +856,10 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 			return False;
 		}
 		
-		if (rid == DOMAIN_USER_RID_GUEST) {
-			struct passwd *pw = getpwnam_alloc(lp_guestaccount());
-			if (!pw) {
-				DEBUG(1, ("getpwnam on guest account '%s' failed!\n", lp_guestaccount())); 
-				return False;
-			}
-			*puid = pw->pw_uid;
-			passwd_free(&pw);
-			DEBUG(5,("local_sid_to_uid: Guest account (SID %s) mapped to guest account id %ld.\n", 
-				 sid_to_string(str, psid), (signed long int)(*puid)));
-		} else {
-			
-			*puid = fallback_pdb_user_rid_to_uid(rid);
-			
-			DEBUG(5,("local_sid_to_uid: SID %s algorithmicly mapped to %ld mapped becouse SID was not found in passdb.\n", 
-				 sid_to_string(str, psid), (signed long int)(*puid)));
-		}
+		*puid = fallback_pdb_user_rid_to_uid(rid);
+		
+		DEBUG(5,("local_sid_to_uid: SID %s algorithmicly mapped to %ld mapped becouse SID was not found in passdb.\n", 
+			 sid_to_string(str, psid), (signed long int)(*puid)));
 	}
 
 	*name_type = SID_NAME_USER;

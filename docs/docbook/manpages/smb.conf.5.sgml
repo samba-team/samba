@@ -2769,6 +2769,10 @@
 		<command>su -</command> command) and trying to print using the 
 		system print command such as <command>lpr(1)</command> or <command>
 		lp(1)</command>.</para>
+
+	        <para>This paramater does not accept % marcos, becouse
+	        many parts of the system require this value to be
+	        constant for correct operation</para>
 		
 		<para>Default: <emphasis>specified at compile time, usually 
 		"nobody"</emphasis></para>

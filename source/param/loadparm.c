@@ -1525,7 +1525,7 @@ FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
 
-FN_GLOBAL_STRING(lp_guestaccount, &Globals.szGuestaccount)
+FN_GLOBAL_CONST_STRING(lp_guestaccount, &Globals.szGuestaccount)
 FN_GLOBAL_STRING(lp_addgroup_script, &Globals.szAddGroupScript)
 FN_GLOBAL_STRING(lp_delgroup_script, &Globals.szDelGroupScript)
 FN_GLOBAL_STRING(lp_addusertogroup_script, &Globals.szAddUserToGroupScript)
