@@ -574,7 +574,7 @@ char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_
 	size_t len;
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
+		DEBUG(0,("ERROR: NULL dest in safe_strcpy, called from [%s][%d]\n", fn, line));
 		return NULL;
 	}
 
@@ -610,7 +610,7 @@ char *safe_strcat_fn(const char *fn, int line, char *dest, const char *src, size
 	size_t src_len, dest_len;
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
+		DEBUG(0,("ERROR: NULL dest in safe_strcat, called from [%s][%d]\n", fn, line));
 		return NULL;
 	}
 
@@ -654,7 +654,7 @@ char *alpha_strcpy_fn(const char *fn, int line, char *dest, const char *src, con
 #endif
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
+		DEBUG(0,("ERROR: NULL dest in alpha_strcpy, called from [%s][%d]\n", fn, line));
 		return NULL;
 	}
 
@@ -696,7 +696,7 @@ char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
 #endif
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in StrnCpy\n"));
+		DEBUG(0,("ERROR: NULL dest in StrnCpy, called from [%s][%d]\n", fn, line));
 		return(NULL);
 	}
 
