@@ -460,7 +460,7 @@ static void cmd_torture_set(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
   runs n simultaneous functions.
 ****************************************************************************/
-static void create_procs(int num_procs,
+static void create_procs(
 		struct client_info *info, int argc, char *argv[],
 		void (*fn)(struct client_info *, int, char *[]))
 {
@@ -468,7 +468,7 @@ static void create_procs(int num_procs,
 
 	run_torture_set(info, &argc, &argv);
 
-	for (i=0;i<num_procs;i++)
+	for (i=0;i<nprocs;i++)
 	{
 		if (fork() == 0)
 		{
@@ -489,7 +489,7 @@ static void create_procs(int num_procs,
 #define CMD_PROC_WRAP(cmd_fn_name, run_fn_name) \
 static void cmd_fn_name(struct client_info *info, int argc, char *argv[]) \
 { \
-	create_procs(nprocs, info, argc, argv, run_fn_name); \
+	create_procs(info, argc, argv, run_fn_name); \
 }
 
 CMD_PROC_WRAP(cmd_enums_test, run_enums_test)
