@@ -77,7 +77,6 @@ static BOOL read_sam_sid(void)
 BOOL pdb_generate_sam_sid(void)
 {
 	char *fname = NULL;
-	char *domain_name;
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
 	BOOL is_dc = False;
