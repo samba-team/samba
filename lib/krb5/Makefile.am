@@ -69,6 +69,7 @@ libkrb5_la_SOURCES = \
 	keytab_file.c \
 	keytab_memory.c \
 	$(keytab_krb4_c) \
+	keytab_keyfile.c \
 	krbhst.c \
 	kuserok.c \
 	log.c \
