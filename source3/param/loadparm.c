@@ -1243,6 +1243,9 @@ static void init_globals(void)
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 	string_set(&Globals.szPassdbBackend, "smbpasswd");
 
+	/* use the new 'hash2' method by default */
+	string_set(&Globals.szManglingMethod, "hash2");
+
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 
 	/* using UTF8 by default allows us to support all chars */
