@@ -63,22 +63,29 @@ static struct getargs args[] = {
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 static SL_cmd commands[] = {
-    { "add_new_key",	add_new_key, "add_new_key principal",	"" },
-    { "ank", 		NULL, NULL, 			NULL },
-    { "modify_entry",	mod_entry, "modify_entry principal", "" },
-    { "dump",		dump, "dump [file]",		""  },
-    { "load",		load, "load file",		"" },
-    { "merge",		merge, "merge file",		"" }, 
-    { "help",		help, "help",			"" }, 
-    { "?",		NULL, NULL,			NULL },
-    { "init",		init, "init realm...",		"" },
-    { "get_entry",	get_entry, "get_entry principal","" },
-    { "delete",		del_entry, "delete principal", 	"" },
-    { "ext_keytab",	ext_keytab, "ext_keytab principal", "" },
-    { "exit",		exit_kdb_edit, "exit", "" },
-    { "database",	set_db, "database [database]", "" },
+    { "add_new_key",	add_new_key, "add_new_key principal"},
+    { "ank"},
+    { "add_random_key",	add_random_key, "add_random_key principal"},
+    { "ark"},
+    { "cpw",		passwd,   "passwd principal"},
+    { "change_password"},
+    { "passwd"},
+    { "change_random_key", change_random_key, "change_random_key principal"},
+    { "crk"},
+    { "modify_entry",	mod_entry, "modify_entry principal"},
+    { "dump",		dump, "dump [file]"},
+    { "load",		load, "load file"},
+    { "merge",		merge, "merge file"},
+    { "help",		help, "help"},
+    { "?"},
+    { "init",		init, "init realm..."},
+    { "get_entry",	get_entry, "get_entry principal"},
+    { "delete",		del_entry, "delete principal"},
+    { "ext_keytab",	ext_keytab, "ext_keytab principal"},
+    { "exit",		exit_kdb_edit, "exit"},
+    { "database",	set_db, "database [database]"},
     { "db" },
-    { NULL,		NULL, NULL,			NULL }
+    { NULL}
 };
 
 krb5_context context;
