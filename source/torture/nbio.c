@@ -148,12 +148,12 @@ void nb_createx(char *fname,
 		desired_access = FILE_READ_DATA | FILE_WRITE_DATA;
 	}
 
-	fd = cli_nt_create_full(c, fname, 
+	fd = cli_nt_create_full(c, fname, 0, 
 				desired_access,
 				0x0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, 
 				create_disposition, 
-				create_options);
+				create_options, 0);
 	if (fd == -1 && handle != -1) {
 		printf("ERROR: cli_nt_create_full failed for %s - %s\n",
 		       fname, cli_errstr(c));
