@@ -1600,10 +1600,7 @@ int addarg(struct arg_val*, char*);
  * function will turn us into the login process.
  */
 
-void start_login(host, autologin, name)
-	char *host;
-	int autologin;
-	char *name;
+void start_login(char *host, int autologin, char *name)
 {
 	register char *cp;
 	struct arg_val argv;
