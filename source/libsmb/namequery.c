@@ -525,13 +525,21 @@ static BOOL resolve_wins(const char *name, int name_type,
 
 	DEBUG(3,("resolve_wins: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
 
-	if( wins_srv_count() < 1 ) {
+	if (lp_wins_support()) {
+		/*
+		 * We're providing WINS support. Call ourselves so
+		 * long as we're not nmbd.
+		 */
+		extern struct in_addr loopback_ip;
+		wins_ip = loopback_ip;
+		wins_ismyip = True;
+	} else if( wins_srv_count() < 1 ) {
 		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS servers listed.\n"));
 		return False;
+	} else {
+		wins_ip     = wins_srv_ip();
+		wins_ismyip = ismyip(wins_ip);
 	}
-
-	wins_ip     = wins_srv_ip();
-	wins_ismyip = ismyip(wins_ip);
 
 	DEBUG(3, ("resolve_wins: WINS server == <%s>\n", inet_ntoa(wins_ip)) );
 	if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
