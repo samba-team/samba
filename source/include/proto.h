@@ -166,10 +166,7 @@ void pidfile_create(char *name);
 
 /*The following definitions come from  lib/readline.c  */
 
-void smb_rl_read_char (void);
-void init_smb_readline(char *prg_name, char *cline_ptr, int *event_ptr);
-void smb_readline_prompt(char *prompt);
-void smb_readline_remove_handler(void);
+char *smb_readline(char *prompt, void (*callback)(void));
 void cmd_history(void);
 
 /*The following definitions come from  lib/replace.c  */

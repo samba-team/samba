@@ -616,8 +616,6 @@ extern int errno;
 #include "messages.h"
 #include "util_list.h"
 
-#include "smb_readline.h" /* SSS: samba readline support */
-
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
