@@ -302,10 +302,12 @@ BOOL name_register(int fd, const char *name, int name_type,
  Do a netbios name query to find someones IP.
  Returns an array of IP addresses or NULL if none.
  *count will be set to the number of addresses returned.
+ *timed_out is set if we failed by timing out
 ****************************************************************************/
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count, int *flags)
+			   struct in_addr to_ip, int *count, int *flags,
+			   BOOL *timed_out)
 {
 	BOOL found=False;
 	int i, retries = 3;
@@ -315,6 +317,10 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
 	struct in_addr *ip_list = NULL;
+
+	if (timed_out) {
+		*timed_out = False;
+	}
 	
 	memset((char *)&p,'\0',sizeof(p));
 	(*count) = 0;
@@ -465,10 +471,8 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 		}
 	}
 
-	/* Reach here if we've timed out waiting for replies.. */
-	if (!bcast && !found) {
-		/* Timed out wating for WINS server to respond.  Mark it dead. */
-		wins_srv_died( to_ip );
+	if (timed_out) {
+		*timed_out = True;
 	}
 
 	return ip_list;
@@ -619,7 +623,7 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_n_bcast(i);
 		*return_ip_list = name_query(sock, name, name_type, True, 
-				    True, sendto_ip, return_count, &flags);
+				    True, sendto_ip, return_count, &flags, NULL);
 		if(*return_ip_list != NULL) {
 			close(sock);
 			return True;
@@ -637,59 +641,80 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 static BOOL resolve_wins(const char *name, int name_type,
                          struct in_addr **return_iplist, int *return_count)
 {
-	int sock;
-	struct in_addr wins_ip;
-	BOOL wins_ismyip;
+	int sock, t, i;
+	char **wins_tags;
 
 	*return_iplist = NULL;
 	*return_count = 0;
 	
-	/*
-	 * "wins" means do a unicast lookup to the WINS server.
-	 * Ignore if there is no WINS server specified or if the
-	 * WINS server is one of our interfaces (if we're being
-	 * called from within nmbd - we can't do this call as we
-	 * would then block).
-	 */
-
 	DEBUG(3,("resolve_wins: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
 
-	if (lp_wins_support()) {
-		/*
-		 * We're providing WINS support. Call ourselves so
-		 * long as we're not nmbd.
-		 */
-		extern struct in_addr loopback_ip;
-		wins_ip = loopback_ip;
-		wins_ismyip = True;
-	} else if( wins_srv_count() < 1 ) {
+	if (wins_srv_count() < 1) {
 		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS servers listed.\n"));
 		return False;
-	} else {
-		wins_ip     = wins_srv_ip();
-		wins_ismyip = ismyip(wins_ip);
 	}
 
-	DEBUG(3, ("resolve_wins: WINS server == <%s>\n", inet_ntoa(wins_ip)) );
-	if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
-	        int flags;
-		sock = open_socket_in(  SOCK_DGRAM, 0, 3,
-					interpret_addr(lp_socket_address()),
-					True );
-		if (sock != -1) {
-			*return_iplist = name_query( sock,      name,
-						     name_type, False, 
-						     True,      wins_ip,
-						     return_count, &flags);
-			if(*return_iplist != NULL) {
-				close(sock);
-				return True;
+	/* we try a lookup on each of the WINS tags in turn */
+	wins_tags = wins_srv_tags();
+
+	if (!wins_tags) {
+		/* huh? no tags?? give up in disgust */
+		return False;
+	}
+
+	/* in the worst case we will try every wins server with every
+	   tag! */
+	for (t=0; wins_tags && wins_tags[t]; t++) {
+		for (i=0; i<wins_srv_count_tag(wins_tags[t]); i++) {
+			struct in_addr wins_ip;
+			int flags;
+			BOOL timed_out;
+
+			wins_ip = wins_srv_ip_tag(wins_tags[t]);
+
+			if (global_in_nmbd && ismyip(wins_ip)) {
+				/* yikes! we'll loop forever */
+				continue;
+			}
+
+			/* skip any that have been unresponsive lately */
+			if (wins_srv_is_dead(wins_ip)) {
+				continue;
+			}
+
+			DEBUG(3,("resolve_wins: using WINS server %s and tag '%s'\n", inet_ntoa(wins_ip), wins_tags[t]));
+
+			sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
+			if (sock == -1) {
+				continue;
+			}
+
+			*return_iplist = name_query(sock,name,name_type, False, 
+						    True, wins_ip, return_count, &flags, 
+						    &timed_out);
+			if (*return_iplist != NULL) {
+				goto success;
 			}
 			close(sock);
+
+			if (timed_out) {
+				/* Timed out wating for WINS server to respond.  Mark it dead. */
+				wins_srv_died(wins_ip);
+			} else {
+				/* The name definately isn't in this
+				   group of WINS servers. goto the next group  */
+				break;
+			}
 		}
 	}
 
+	wins_srv_tags_free(wins_tags);
 	return False;
+
+success:
+	wins_srv_tags_free(wins_tags);
+	close(sock);
+	return True;
 }
 
 /********************************************************

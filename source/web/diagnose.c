@@ -34,7 +34,7 @@ BOOL nmbd_running(void)
 				 interpret_addr("127.0.0.1"), True)) != -1) {
 		if ((ip_list = name_query(fd, "__SAMBA__", 0, 
 					  True, True, loopback_ip,
-					  &count, &flags)) != NULL) {
+					  &count, &flags, NULL)) != NULL) {
 			SAFE_FREE(ip_list);
 			close(fd);
 			return True;

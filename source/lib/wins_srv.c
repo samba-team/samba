@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   Samba utility functions
+   Samba wins server helper functions
    Copyright (C) Andrew Tridgell 1992-2002
    Copyright (C) Christopher R. Hertel 2000
 
@@ -21,6 +21,41 @@
 
 #include "includes.h"
 
+/*
+  this is pretty much a complete rewrite of the earlier code. The main
+  aim of the rewrite is to add support for having multiple wins server
+  lists, so Samba can register with multiple groups of wins servers
+  and each group has a failover list of wins servers.
+
+  Central to the way it all works is the idea of a wins server
+  'tag'. A wins tag is a label for a group of wins servers. For
+  example if you use
+
+      wins server = fred:192.168.2.10 mary:192.168.3.199 fred:192.168.2.61
+
+  then you would have two groups of wins servers, one tagged with the
+  name 'fred' and the other with the name 'mary'. I would usually
+  recommend using interface names instead of 'fred' and 'mary' but
+  they can be any alpha string.
+
+  Now, how does it all work. Well, nmbd needs to register each of its
+  IPs with each of its names once with each group of wins servers. So
+  it tries registering with the first one mentioned in the list, then
+  if that fails it marks that WINS server dead and moves onto the next
+  one. 
+
+  In the client code things are a bit different. As each of the groups
+  of wins servers is a separate name space we need to try each of the
+  groups until we either succeed or we run out of wins servers to
+  try. If we get a negative response from a wins server then that
+  means the name doesn't exist in that group, so we give up on that
+  group and move to the next group. If we don't get a response at all
+  then maybe the wins server is down, in which case we need to
+  failover to the next one for that group.
+
+  confused yet? (tridge)
+*/
+
 
 /* how long a server is marked dead for */
 #define DEATH_TIME 600
@@ -33,10 +68,17 @@ static struct wins_dead {
 } *dead_servers;
 
 
+/* an internal convenience structure for an IP with a short string tag
+   attached */
+struct tagged_ip {
+	fstring tag;
+	struct in_addr ip;
+};
+
 /*
   see if an ip is on the dead list
 */
-static int wins_is_dead(struct in_addr ip)
+BOOL wins_srv_is_dead(struct in_addr ip)
 {
 	struct wins_dead *d;
 	for (d=dead_servers; d; d=d->next) {
@@ -46,12 +88,12 @@ static int wins_is_dead(struct in_addr ip)
 				DEBUG(4,("Reviving wins server %s\n", inet_ntoa(ip)));
 				DLIST_REMOVE(dead_servers, d);
 				free(d);
-				return 0;
+				return False;
 			}
-			return 1;
+			return True;
 		}
 	}
-	return 0;
+	return False;
 }
 
 /*
@@ -61,7 +103,7 @@ void wins_srv_died(struct in_addr ip)
 {
 	struct wins_dead *d;
 
-	if (is_zero_ip(ip) || wins_is_dead(ip)) {
+	if (is_zero_ip(ip) || wins_srv_is_dead(ip)) {
 		return;
 	}
 
@@ -79,10 +121,15 @@ void wins_srv_died(struct in_addr ip)
 /*
   return the total number of wins servers, dead or not
 */
-unsigned long wins_srv_count(void)
+unsigned wins_srv_count(void)
 {
 	char **list;
 	int count = 0;
+
+	if (lp_wins_support()) {
+		/* simple - just talk to ourselves */
+		return 1;
+	}
 
 	list = lp_wins_server_list();
 	for (count=0; list && list[count]; count++) /* nop */ ;
@@ -92,31 +139,213 @@ unsigned long wins_srv_count(void)
 }
 
 /*
+  parse an IP string that might be in tagged format
+  the result is a tagged_ip structure containing the tag
+  and the ip in in_addr format. If there is no tag then
+  use the tag '*'
+*/
+static void parse_ip(struct tagged_ip *ip, const char *str)
+{
+	char *s = strchr(str, ':');
+	if (!s) {
+		fstrcpy(ip->tag, "*");
+		ip->ip = *interpret_addr2(str);
+		return;
+	} 
+
+	ip->ip = *interpret_addr2(s+1);
+	fstrcpy(ip->tag, str);
+	s = strchr(ip->tag, ':');
+	if (s) *s = 0;
+}
+
+
+/*
   return the IP of the currently active wins server, or the zero IP otherwise
 */
 struct in_addr wins_srv_ip(void)
 {
 	char **list;
-	struct in_addr ip;
 	int i;
+	struct tagged_ip t_ip;
+
+	/* if we are a wins server then we always just talk to ourselves */
+	if (lp_wins_support()) {
+		extern struct in_addr loopback_ip;
+		return loopback_ip;
+	}
 
 	list = lp_wins_server_list();
 	if (!list || !list[0]) {
-		zero_ip(&ip);
-		return ip;
+		zero_ip(&t_ip.ip);
+		return t_ip.ip;
 	}
 
 	/* find the first live one */
 	for (i=0; list[i]; i++) {
-		ip = *interpret_addr2(list[i]);
-		if (!wins_is_dead(ip)) {
-			DEBUG(6,("Current wins server is %s\n", inet_ntoa(ip)));
-			return ip;
+		parse_ip(&t_ip, list[i]);
+		if (!wins_srv_is_dead(t_ip.ip)) {
+			DEBUG(6,("Current wins server is %s\n", inet_ntoa(t_ip.ip)));
+			return t_ip.ip;
 		}
 	}
 
 	/* damn, they are all dead. Keep trying the primary until they revive */
-	ip = *interpret_addr2(list[0]);
+	parse_ip(&t_ip, list[0]);
 
-	return ip;
+	return t_ip.ip;
+}
+
+
+/*
+  return the list of wins server tags. A 'tag' is used to distinguish
+  wins server as either belonging to the same name space or a separate
+  name space. Usually you would setup your 'wins server' option to
+  list one or more wins server per interface and use the interface
+  name as your tag, but you are free to use any tag you like.
+*/
+char **wins_srv_tags(void)
+{
+	char **ret = NULL;
+	int count=0, i, j;
+	char **list;
+
+	if (lp_wins_support()) {
+		/* give the caller something to chew on. This makes
+		   the rest of the logic simpler (ie. less special cases) */
+		ret = (char **)malloc(sizeof(char *)*2);
+		if (!ret) return NULL;
+		ret[0] = strdup("*");
+		ret[1] = NULL;
+		return ret;
+	}
+
+	list = lp_wins_server_list();
+	if (!list) return NULL;
+
+	/* yes, this is O(n^2) but n is very small */
+	for (i=0;list[i];i++) {
+		struct tagged_ip t_ip;
+		
+		parse_ip(&t_ip, list[i]);
+
+		/* see if we already have it */
+		for (j=0;j<count;j++) {
+			if (strcmp(ret[j], t_ip.tag) == 0) {
+				break;
+			}
+		}
+
+		if (j != count) {
+			/* we already have it. Move along */
+			continue;
+		}
+
+		/* add it to the list */
+		ret = (char **)Realloc(ret, (count+1) * sizeof(char *));
+		ret[count] = strdup(t_ip.tag);
+		if (!ret[count]) break;
+		count++;
+	}
+
+	if (count) {
+		/* make sure we null terminate */
+		ret[count] = NULL;
+	}
+
+	return ret;
+}
+
+/* free a list of wins server tags given by wins_srv_tags */
+void wins_srv_tags_free(char **list)
+{
+	int i;
+	if (!list) return;
+	for (i=0; list[i]; i++) {
+		free(list[i]);
+	}
+	free(list);
+}
+
+
+/*
+  return the IP of the currently active wins server for the given tag,
+  or the zero IP otherwise
+*/
+struct in_addr wins_srv_ip_tag(const char *tag)
+{
+	char **list;
+	int i;
+	struct tagged_ip t_ip;
+
+	/* if we are a wins server then we always just talk to ourselves */
+	if (lp_wins_support()) {
+		extern struct in_addr loopback_ip;
+		return loopback_ip;
+	}
+
+	list = lp_wins_server_list();
+	if (!list || !list[0]) {
+		struct in_addr ip;
+		zero_ip(&ip);
+		return ip;
+	}
+
+	/* find the first live one for this tag */
+	for (i=0; list[i]; i++) {
+		parse_ip(&t_ip, list[i]);
+		if (strcmp(tag, t_ip.tag) != 0) {
+			/* not for the right tag. Move along */
+			continue;
+		}
+		if (!wins_srv_is_dead(t_ip.ip)) {
+			DEBUG(6,("Current wins server for tag '%s' is %s\n", tag, inet_ntoa(t_ip.ip)));
+			return t_ip.ip;
+		}
+	}
+	
+	/* they're all dead - try the first one until they revive */
+	for (i=0; list[i]; i++) {
+		parse_ip(&t_ip, list[i]);
+		if (strcmp(tag, t_ip.tag) != 0) {
+			continue;
+		}
+		return t_ip.ip;
+	}
+
+	/* this can't happen?? */
+	zero_ip(&t_ip.ip);
+	return t_ip.ip;
+}
+
+
+/*
+  return a count of the number of IPs for a particular tag, including
+  dead ones
+*/
+unsigned wins_srv_count_tag(const char *tag)
+{
+	char **list;
+	int i, count=0;
+
+	/* if we are a wins server then we always just talk to ourselves */
+	if (lp_wins_support()) {
+		return 1;
+	}
+
+	list = lp_wins_server_list();
+	if (!list || !list[0]) {
+		return 0;
+	}
+
+	/* find the first live one for this tag */
+	for (i=0; list[i]; i++) {
+		struct tagged_ip t_ip;
+		parse_ip(&t_ip, list[i]);
+		if (strcmp(tag, t_ip.tag) == 0) {
+			count++;
+		}
+	}
+
+	return count;
 }
