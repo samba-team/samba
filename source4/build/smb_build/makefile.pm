@@ -356,7 +356,7 @@ LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
 LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
 #
 
-# Shared $ctx->{LIBRARY_REALNAME}
+# Shared $ctx->{LIBRARY_NAME}
 $ctx->{OUTPUT}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\

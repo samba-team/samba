@@ -64,7 +64,8 @@ sub _prepare_smb_build_h($)
 		next if $key->{OUTPUT_TYPE} ne "SHARED_LIBRARY";
 
 		my $name = $key->{NAME};
-		my $func = $key->{INIT_FUNCTION};
+		next if not defined($key->{INIT_FUNCTION});
+		my $func = join(' ', @{$key->{INIT_FUNCTION}});
 		next if $func eq "";
 
 		my $DEFINE = ();

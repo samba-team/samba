@@ -17,6 +17,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::auth_builtin]
 INIT_FUNCTION = auth_builtin_init
 SUBSYSTEM = AUTH
+REQUIRED_SUBSYSTEMS = LIBCLI_UTILS
 INIT_OBJ_FILES = \
 		auth/auth_builtin.o
 # End MODULE auth_builtin
