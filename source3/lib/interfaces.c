@@ -39,6 +39,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #include <net/if.h>
 
 #ifndef SIOCGIFCONF

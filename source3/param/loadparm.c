@@ -357,6 +357,7 @@ typedef struct
   BOOL bDosFiletimeResolution;
   BOOL bFakeDirCreateTimes;
   BOOL bBlockingLocks;
+  BOOL bInheritPerms; 
   char dummy[3]; /* for alignment */
 } service;
 
@@ -462,6 +463,7 @@ static service sDefault =
   False, /* bDosFiletimeResolution */
   False, /* bFakeDirCreateTimes */
   True,  /* bBlockingLocks */
+  False, /* bInheritPerms */
   ""     /* dummy */
 };
 
@@ -609,6 +611,7 @@ static struct parm_struct parm_table[] =
   {"force directory mode",   P_OCTAL,P_LOCAL,&sDefault.iDir_force_mode, NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"directory security mask",P_OCTAL,P_LOCAL,&sDefault.iDir_Security_mask,NULL, NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"force directory security mode",P_OCTAL, P_LOCAL,  &sDefault.iDir_Security_force_mode,NULL,NULL,FLAG_GLOBAL|FLAG_SHARE},
+  {"inherit permissions",P_BOOL,  P_LOCAL,  &sDefault.bInheritPerms,    NULL,   NULL,  FLAG_SHARE},
   {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  FLAG_SHARE},
   {"only guest",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  0},
   {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
@@ -1397,6 +1400,7 @@ FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution,bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times,bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks,bBlockingLocks)
+FN_LOCAL_BOOL(lp_inherit_perms,bInheritPerms)
 
 FN_LOCAL_INTEGER(lp_create_mask,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
