@@ -1,27 +1,230 @@
-            What's new in Samba 2.2.8pre2 - 28th February 2003
-            ==================================================
+            What's new in Samba 2.2.8 - 14th March 2003
+            ===========================================
 
-This is a non-production, preview release of the upcoming Samba
-2.2.8 distribution.  This preview release is for testing purposes
-only and should not be installed in production environments.
+This is the latest stable release of Samba. This is the version that
+all production Samba servers should be running for all current
+bug-fixes.
 
-The purpose of this preview release to make numerous bugs fixes
-for Samba 2.2.7a available to the Samba community.  Please report
-testing results of this release to the Samba mailing list
-<samba@samba.org>.
+            ****************************************
+            * IMPORTANT: Security bugfix for Samba *
+            ****************************************
+
+Summary
+-------
+
+The SuSE security audit team, in particular Sebastian Krahmer
+<krahmer@suse.de>, has found an flaw in the Samba main smbd code which
+could allow an external attacker to remotely and anonymously gain
+Super User (root) privileges on a server running a Samba server.
+
+This flaw exists in previous versions of Samba from 2.0.x to 2.2.7a
+inclusive.  This is serious problem and all sites should either
+upgrade to Samba 2.2.8 immediately or prohibit access to TCP ports 139
+and 445. Advice on how to protect an unpatched Samba server created by
+Andrew Tridgell, the leader of the Samba Team, is given at the end of
+this section.
+
+The SMB/CIFS protocol implemented by Samba is vulnerable to many
+attacks, even without specific security holes.  The TCP ports 139 and
+the new port 445 (used by Win2k and the Samba 3.0 alpha code in
+particular) should never be exposed to untrusted networks.
+
+Description
+-----------
+
+A buffer overrun condition exists in the SMB/CIFS packet fragment
+re-assembly code in smbd which would allow an attacker to cause smbd
+to overwrite arbitrary areas of memory in its own process address
+space. This could allow a skilled attacker to inject binary specific
+exploit code into smbd.
+
+This version of Samba adds explicit overrun and overflow checks on
+fragment re-assembly of SMB/CIFS packets to ensure that only valid
+re-assembly is performed by smbd.
+
+In addition, the same checks have been added to the re-assembly
+functions in the client code, making it safe for use in other
+services.
+
+Credit
+------
+
+This security flaw was discovered and reported to the Samba Team by
+Sebastian Krahmer <krahmer@suse.de> of the SuSE Security Audit Team.  
+The fix was prepared by Jeremy Allison and reviewed by engineers from
+the Samba Team, SuSE, HP, SGI, Apple, and the Linux vendor engineers
+on the Linux Vendor security mailing list.
+
+The Samba Team would like to thank SuSE and Sebastian Krahmer for
+their excellent auditing work and for drawing attention to this flaw.
+
+Patch Availability
+-----------------
+
+As this is a security issue, patches for this flaw specific to earlier
+versions of Samba will be and posted on the samba-technical@samba.org
+mailing list as requested.
 
 
-Changes since 2.2.8pre1
------------------------
+************************************
+Protecting an unpatched Samba server
+************************************
+
+  Samba Team, March 2003
+
+  This is a note on how to provide your Samba server some
+  protection against the recently discovered remote security
+  hole if you are unable to upgrade to the fixed version
+  immediately. Even if you do upgrade you might like to think
+  about the suggestions in this note to provide you with
+  additional levels of protection.
+
+
+  Using host based protection
+  ---------------------------
+
+  In many installations of Samba the greatest threat comes for
+  outside your immediate network. By default Samba will accept
+  connections from any host, which means that if you run an
+  insecure version of Samba on a host that is directly
+  connected to the Internet you can be especially vulnerable.
+
+  One of the simplest fixes in this case is to use the 'hosts
+  allow' and 'hosts deny' options in the Samba smb.conf
+  configuration file to only allow access to your server from a
+  specific range of hosts. An example might be:
+
+    hosts allow = 127.0.0.1 192.168.2.0/24 192.168.3.0/24
+    hosts deny = 0.0.0.0/0
+
+  The above will only allow SMB connections from 'localhost'
+  (your own computer) and from the two private networks
+  192.168.2 and 192.168.3. All other connections will be
+  refused connections as soon as the client sends its first
+  packet. The refusal will be marked as a 'not listening on
+  called name' error.
+
+
+  Using interface protection
+  --------------------------
+
+  By default Samba will accept connections on any network
+  interface that it finds on your system. That means if you
+  have a ISDN line or a PPP connection to the Internet then
+  Samba will accept connections on those links. This may not be
+  what you want.
+
+  You can change this behavior using options like the
+  following:
+
+    interfaces = eth* lo
+    bind interfaces only = yes
+
+  that tells Samba to only listen for connections on interfaces
+  with a name starting with 'eth' such as eth0, eth1, plus on
+  the loopback interface called 'lo'. The name you will need to
+  use depends on what OS you are using, in the above I used the
+  common name for ethernet adapters on Linux.
+
+  If you use the above and someone tries to make a SMB
+  connection to your host over a PPP interface called 'ppp0'
+  then they will get a TCP connection refused reply. In that
+  case no Samba code is run at all as the operating system has
+  been told not to pass connections from that interface to any
+  process.
+
+
+  Using a firewall
+  ----------------
+
+  Many people use a firewall to deny access to services that
+  they don't want exposed outside their network. This can be a
+  very good idea, although I would recommend using it in
+  conjunction with the above methods so that you are protected
+  even if your firewall is not active for some reason.
+
+  If you are setting up a firewall then you need to know what
+  TCP and UDP ports to allow and block. Samba uses the
+  following:
+
+    UDP/137    - used by nmbd
+    UDP/138    - used by nmbd
+    TCP/139    - used by smbd
+    TCP/445    - used by smbd
+
+  The last one is important as many older firewall setups may
+  not be aware of it, given that this port was only added to
+  the protocol in recent years.
+
+
+  Using a IPC$ share deny
+  -----------------------
+
+  If the above methods are not suitable, then you could also
+  place a more specific deny on the IPC$ share that is used in
+  the recently discovered security hole. This allows you to
+  offer access to other shares while denying access to IPC$
+  from potentially untrustworthy hosts.
+
+  To do that you could use:
+
+    [ipc$]
+        hosts allow = 192.168.115.0/24 127.0.0.1
+        hosts deny = 0.0.0.0/0
+
+  this would tell Samba that IPC$ connections are not allowed
+  from anywhere but the two listed places (localhost and a
+  local subnet). Connections to other shares would still be
+  allowed. As the IPC$ share is the only share that is always
+  accessible anonymously this provides some level of protection
+  against attackers that do not know a username/password for
+  your host.
+
+  If you use this method then clients will be given a 'access
+  denied' reply when they try to access the IPC$ share. That
+  means that those clients will not be able to browse shares,
+  and may also be unable to access some other resources.
+
+  I don't recommend this method unless you cannot use one of
+  the other methods listed above for some reason.
+
+
+  Upgrading Samba
+  ---------------
+
+  Of course the best solution is to upgrade Samba to a version
+  where the bug has been fixed. If you wish to also use one of
+  the additional measures above then that would certainly be a
+  good idea.
+
+  Please check regularly on http://www.samba.org/ for updates
+  and important announcements.
+
+
+            ****************************************
+            ****************************************
+
+-----------------------------------------------------------------
+
+Changes since 2.2.7a
+---------------------
+
+New Parameters
+
+    * acl compatibility
+
+Additional Changes:
+    See the cvs log for SAMBA_2_2 for more details
+
 1)  smbumount lazy patch from Mandrake
 2)  Check for too many processes *before* the fork.
 3)  make sure we don't run over the end of 'name' in unix_convert()
 4)  set umask to 0 before creating socket directory.
-5)  Fix the LARGE_SMB_OFF_T problems and allow smbd to do the right thing 
-    in interactive mode when a log file dir is also specified.
+5)  Fix the LARGE_SMB_OFF_T problems and allow smbd to do the right 
+    thing in interactive mode when a log file dir is also specified.
 6)  Fix delete on close semantics to match W2K.
-7)  Correctly return access denied on share mode deny when we can't open 
-    the file.
+7)  Correctly return access denied on share mode deny when we can't 
+    open the file.
 8)  Always use safe_strcpy not pstrcpy for malloc()'d strings
 9)  Fixes for HP-UX only having limited POSIX lock range
 10) Added uid/gid caching code. Reduces load on winbindd.
@@ -42,8 +245,8 @@ Changes since 2.2.8pre1
 22) When checking is_locked() new WRITE locks conflict with existing
     READ locks even if the context is the same.
 23) Merge off-by-one crash fixes from HEAD
-24) Move off-by-one buggy malloc()/safe_strcpy() combination to strdup()
-    instead.
+24) Move off-by-one buggy malloc()/safe_strcpy() combination to 
+    strdup() instead.
 25) Merge from HEAD. Use pstrcpy not safe_strcpy.
 26) Fix to allow blocking lock notification to be done rapidly (no wait
     for smb -> smb lock release). Adds new PENDING_LOCK type to lockdb
@@ -54,60 +257,62 @@ Changes since 2.2.8pre1
     the oldest idle connection once the number of open connections goes
     over WINBINDD_MAX_SIMULTANEOUS_CLIENTS (defined in local.h as 200
     currently)
-29) Fix a couple of string handling errors in smbd/dir.c that would 
+29) Fix a couple of string handling errors in smbd/dir.c that would
     cause smbd to crash
-
-
-Changes since 2.2.7a
----------------------
-
-See the cvs log for SAMBA_2_2 for more details
-
-1)  Fix seg fault in smbpasswd when specifying the new password
+30) Fix seg fault in smbpasswd when specifying the new password
     as a command line argument
-2)  Correct 64-but file sizes issues with smbtar and smbclient
-3)  Add batch mode option to pdbedit
-4)  Add protection in nmbd against malformed reply packets
-5)  Fix bug with sendfile profiling support in smbstatus output
-6)  Correct bug in "hide unreadable" smb.conf parameter that 
-    resulted in incorrect directory listings 
-7)  Fix bug in group enumeration in winbindd
-8)  Correct build issues with libsmbclient on Solaris
-9)  Fix memory leak and bad pointer dereference in password
+31) Correct 64-but file sizes issues with smbtar and smbclient
+32) Add batch mode option to pdbedit
+33) Add protection in nmbd against malformed reply packets
+34) Fix bug with sendfile profiling support in smbstatus output
+35) Correct bug in "hide unreadable" smb.conf parameter that
+    resulted in incorrect directory listings
+36) Fix bug in group enumeration in winbindd
+37) Correct build issues with libsmbclient on Solaris
+38) Fix memory leak and bad pointer dereference in password
     changing code in smbd
-10) Fix for changing attributes on a file truncate
-11) Ensure smbd process count never gets to -1 if limiting number 
+39) Fix for changing attributes on a file truncate
+40) Ensure smbd process count never gets to -1 if limiting number
     of processes
-12) Ensure we return disk full by default on short writes
-13) Don't delete jobs submitted after the lpq time
-14) Fix reference count bug where smbds would not terminate 
+41) Ensure we return disk full by default on short writes
+42) Don't delete jobs submitted after the lpq time
+43) Fix reference count bug where smbds would not terminate
     with no open resources
-15) Performance fix when using quota support on HP-UX
-16) Fixes for --with-ldapsam
+44) Performance fix when using quota support on HP-UX
+45) Fixes for --with-ldapsam
     * Default to port 389 when "ldap ssl != on"
     * add support for rebinding to the master directory server
-      for password changes when "ldap server" points to a read-only 
+      for password changes when "ldap server" points to a read-only
       slave
-17) Add -W and -X command line flags to smbpasswd for extracting and
-    setting the machine/domain SID in secrets.tdb.  See the 
+46) Add -W and -X command line flags to smbpasswd for extracting and
+    setting the machine/domain SID in secrets.tdb.  See the
     smbpasswd(8) man page for details.
-18) Added (c) Luke Howard to winbind_nss_solaris.c for coded 
+47) Added (c) Luke Howard to winbind_nss_solaris.c for coded
     obtained from PADL's nss_ldap library.
-19) Fix bug in samr_dispinfo query in winbindd
-20) Fix segfault in NTLMSSP password changing code for 
+48) Fix bug in samr_dispinfo query in winbindd
+49) Fix segfault in NTLMSSP password changing code for
     guest connections
-21) Correct pstring/fstring mismatches
-22) Send level II oplock break requests synchronously to prevent 
+50) Correct pstring/fstring mismatches
+51) Send level II oplock break requests synchronously to prevent
     condition where one smbd would continually lock a share entry
     in locking.tdb
-23) Miscellaneous cleanups for tdb error conditions and appending 
+52) Miscellaneous cleanups for tdb error conditions and appending
     data in a record
-24) Implement correct open file truncate semantics with DOS 
+53) Implement correct open file truncate semantics with DOS
     attributes
-25) Enforce wide links = no on files as well as directories
-26) Include shared library checks for Stratus VOS
-27) Include support for CUPS printer classes and logging the remote 
+54) Enforce wide links = no on files as well as directories
+55) Include shared library checks for Stratus VOS
+56) Include support for CUPS printer classes and logging the remote
     client name
+57) Include  "WinXP" (Windows XP) and "Win2K3" (Windows .NET) values
+    for %a
+58) Increase the max PDU size to deal with some troublesome printer 
+    drivers and Windows NT 4.0 clients
+59) increment the process counter immediately after the fork   
+    (not just when we receive the first smb packet)
+60) Ensure rename sets errno correctly
+61) Unify ACL code (back-port from 3.0)
+62) Fix some further issues around off_t and large offsets
 
 
 Changes since 2.2.7
@@ -132,7 +337,7 @@ See the cvs log for SAMBA_2_2 for more details
 
 Older releases notes for 2.2.x distributions follow
 
------------------------------------------------------------------------------
+-----------------------------------------------------------------
 The release notes for 2.2.7 follow :
 
 IMPORTANT: Security bugfix for Samba
@@ -151,7 +356,7 @@ this immediate 2.2.7 release.
 In addition to addressing this security issue, Samba 2.2.7 also includes
 thirteen unrelated improvements. These improvements result from our
 process of continuous quality assurance and code review, and are part of
-the Samba team's committment to excellence.
+the Samba team's commitment to excellence.
 
 Details
 -------
@@ -219,20 +424,21 @@ See the cvs log for SAMBA_2_2 for more details
     not exist
 7)  Ensure can_delete() returns correct error code
 8)  correctly return NT_STATUS_DELETE_PENDING from open code
-9)  fix bug that assumed dos_unistr2 length was in ucs2 units, not bytes
-10) check the long_archi name is not null when deleting a printer driver.
-    fixes core dump in smbd when using rpcclient's deldriver
+9)  fix bug that assumed dos_unistr2 length was in ucs2 units, not 
+    bytes
+10) check the long_archi name is not null when deleting a printer 
+    driver.  fixes core dump in smbd when using rpcclient's deldriver
 11) fix fd leak with kernel change notify on Linux 2.4 kernels
 12) must add one to the extra_data size to transfer the 0 string
-    terminator.  This was causing "wbinfo --sequence" to access past the
-    end of malloced memory
+    terminator.  This was causing "wbinfo --sequence" to access past 
+    the end of malloced memory
 13) fix for large systems allowing more than 65536 files open in
     NTcreate&X
 14) Fix bug in %U expansion
 
 
 
------------------------------------------------------------------------------
+----------------------------------------------------------------------
 The release notes for 2.2.6 follow :
 
 There have been several fixes and internal enhancements which include:
@@ -247,7 +453,8 @@ There have been several fixes and internal enhancements which include:
 New Parameters
 --------------
 
-Refer to the smb.conf(5) man page for complete descriptions of new parameters.
+Refer to the smb.conf(5) man page for complete descriptions of new 
+parameters.
 
   * profile acls (S)		workaround for issue with WinXP SP1
 				and roaming user profiles
