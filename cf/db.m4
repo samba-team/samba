@@ -190,7 +190,15 @@ AM_CONDITIONAL(HAVE_DB1, test "$db_type" = db1)dnl
 AM_CONDITIONAL(HAVE_DB3, test "$db_type" = db3)dnl
 AM_CONDITIONAL(HAVE_NDBM, test "$db_type" = ndbm)dnl
 
-DBLIB="$LDFLAGS $DBLIB"
+## it's probably not correct to include LDFLAGS here, but we might
+## need it, for now just add any possible -L
+z=""
+for i in $LDFLAGS; do
+	case "$i" in
+	-L*) z="$z $i";;
+	esac
+done
+DBLIB="$z $DBLIB"
 AC_SUBST(DBLIB)dnl
 AC_SUBST(LIB_NDBM)dnl
 ])
