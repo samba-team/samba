@@ -466,6 +466,9 @@ typedef struct vfs_handle_struct {
 	} \
 }
 
+/* Check whether module-specific data handle was already allocated or not */
+#define SMB_VFS_HANDLE_TEST_DATA(handle)  ( !(handle) || !(handle)->data ? False : True )
+
 #define SMB_VFS_OP(x) ((void *) x)
 
 
