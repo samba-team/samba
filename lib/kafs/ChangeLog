@@ -1,4 +1,4 @@
-2003-03-18  Love  <lha@stacken.kth.se>
+2003-03-18  Love Hörquist Åstrand <lha@it.su.se>
 
 	* Makefile.am: always build the libkafs library now that the
 	kerberos 5 can stand on their own
