@@ -621,10 +621,10 @@ static void construct_reply(struct smbsrv_request *req)
 		return;
 	}
 
-
-	req->smbpid = SVAL(req->in.hdr,HDR_PID);	
 	req->flags = CVAL(req->in.hdr, HDR_FLG);
 	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
+	req->smbpid = SVAL(req->in.hdr,HDR_PID);
+	req->mid = SVAL(req->in.hdr,HDR_MID);
 
 	if (!req_signing_check_incoming(req)) {
 		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
@@ -694,8 +694,7 @@ void chain_reply(struct smbsrv_request *req)
 
 	/* the current request in the chain might have used an async reply,
 	   but that doesn't mean the next element needs to */
-	ZERO_STRUCT(req->async);
-	req->control_flags &= ~REQ_CONTROL_ASYNC;
+	ZERO_STRUCTP(req->async_states);
 
 	switch_message(chain_cmd, req);
 	return;

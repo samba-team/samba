@@ -26,8 +26,8 @@
 
 /* check req->async.status and if not OK then send an error reply */
 #define CHECK_ASYNC_STATUS do { \
-	if (!NT_STATUS_IS_OK(req->async.status)) { \
-		req_reply_error(req, req->async.status); \
+	if (!NT_STATUS_IS_OK(req->async_states->status)) { \
+		req_reply_error(req, req->async_states->status); \
 		return; \
 	}} while (0)
 	
@@ -37,8 +37,8 @@
    immediately
 */
 #define REQ_ASYNC_TAIL do { \
-	if (!(req->control_flags & REQ_CONTROL_ASYNC)) { \
-		req->async.send_fn(req); \
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) { \
+		req->async_states->send_fn(req); \
 	}} while (0)
 
 /* useful wrapper for talloc with NO_MEMORY reply */
@@ -268,12 +268,12 @@ void reply_fclose(struct smbsrv_request *req)
 	sc->fclose.in.id.client_cookie = IVAL(p, 17);
 
 	/* do a search close operation */
-	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
-	req->async.send_fn = reply_fclose_send;
-	req->async.private = sc;
+	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
+	req->async_states->send_fn = reply_fclose_send;
+	req->async_states->private_data = sc;
 
 	/* call backend */
-	req->async.status = ntvfs_search_close(req, sc);
+	req->async_states->status = ntvfs_search_close(req, sc);
 
 	REQ_ASYNC_TAIL;
 }

@@ -71,6 +71,9 @@ struct smbsrv_tcon {
 	char *dev_type;
 };
 
+/* a set of flags to control handling of request structures */
+#define REQ_CONTROL_LARGE     (1<<1) /* allow replies larger than max_xmit */
+
 /* the context for a single SMB request. This is passed to any request-context 
    functions */
 struct smbsrv_request {
@@ -85,6 +88,9 @@ struct smbsrv_request {
 
 	/* the session context is derived from the vuid */
 	struct smbsrv_session *session;
+
+	/* the mid of this packet - used to match replies */
+	uint16_t mid;
 
 	/* a set of flags to control usage of the request. See REQ_CONTROL_* */
 	unsigned control_flags;
@@ -108,26 +114,8 @@ struct smbsrv_request {
 	/* the sequence number for signing */
 	uint64_t seq_num;
 
-	/* the async structure allows backend functions to delay
-	   replying to requests. To use this, the front end must set
-	   async.send_fn to a function to be called by the backend
-	   when the reply is finally ready to be sent. The backend
-	   must set async.status to the status it wants in the
-	   reply. The backend must set the REQ_CONTROL_ASYNC
-	   control_flag on the request to indicate that it wishes to
-	   delay the reply
-
-	   If REQ_CONTROL_MAY_ASYNC is not set then the backend cannot
-	   ask for a delayed reply for this request
-
-	   note that the async.private pointer is private to the front
-	   end not the backend. The backend must not change it.
-	*/
-	struct {
-		void (*send_fn)(struct smbsrv_request *);
-		void *private;
-		NTSTATUS status;
-	} async;
+	/* ntvfs per request async states */
+	struct ntvfs_async_state *async_states;
 
 	struct request_buffer in;
 	struct request_buffer out;

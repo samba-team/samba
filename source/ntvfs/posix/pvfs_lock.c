@@ -77,8 +77,8 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
 			   locks[i].count);
 		f->lock_count--;
 	}
-	req->async.status = status;
-	req->async.send_fn(req);
+	req->async_states->status = status;
+	req->async_states->send_fn(req);
 }
 
 
@@ -192,8 +192,8 @@ static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 	}
 
 	/* we've managed to get all the locks. Tell the client */
-	req->async.status = NT_STATUS_OK;
-	req->async.send_fn(req);
+	req->async_states->status = NT_STATUS_OK;
+	req->async_states->send_fn(req);
 }
 
 
@@ -217,8 +217,8 @@ void pvfs_lock_close(struct pvfs_state *pvfs, struct pvfs_file *f)
 		next = p->next;
 		DLIST_REMOVE(f->pending_list, p);
 		talloc_free(p->wait_handle);
-		p->req->async.status = NT_STATUS_RANGE_NOT_LOCKED;
-		p->req->async.send_fn(p->req);
+		p->req->async_states->status = NT_STATUS_RANGE_NOT_LOCKED;
+		p->req->async_states->send_fn(p->req);
 	}
 }
 
@@ -287,7 +287,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (lck->lockx.in.timeout != 0 && 
-	    (req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		pending = talloc_p(req, struct pvfs_pending_lock);
 		if (pending == NULL) {
 			return NT_STATUS_NO_MEMORY;
