@@ -826,8 +826,6 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 		
 		if (pdb_getsampwnam(sam_user, pass->pw_name)) {
 			sid_copy(psid, pdb_get_user_sid(sam_user));
-		} else if (strcmp(pass->pw_name, lp_guestaccount()) == 0) {
-			sid_append_rid(psid, DOMAIN_USER_RID_GUEST);
 		} else {
 			sid_append_rid(psid, fallback_pdb_uid_to_user_rid(uid));
 		}
@@ -989,23 +987,6 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	}
 	
 	return True;
-}
-
-/** 
- * Quick hack to do an easy ucs2 -> mulitbyte conversion 
- * @return static buffer containing the converted string
- **/
-
-const char *pdb_unistr2_convert(const UNISTR2 *from)
-{
-	static pstring convert_buffer;
-	*convert_buffer = 0;
-	if (!from) {
-		return NULL;
-	}
-
-	unistr2_to_ascii(convert_buffer, from, sizeof(pstring));
-	return convert_buffer;
 }
 
 /*************************************************************

@@ -91,7 +91,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	/* Backend should check this for sainity */
 	if (from->hdr_user_name.buffer) {
 		old_string = pdb_get_username(to);
-		new_string = pdb_unistr2_convert(&from->uni_user_name);
+		new_string = unistr2_static(&from->uni_user_name);
 		DEBUG(10,("INFO_21 UNI_USER_NAME: %s -> %s\n", old_string, new_string));
 		if (STRING_CHANGED)
 		    pdb_set_username(to      , new_string, PDB_CHANGED);
@@ -99,7 +99,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 
 	if (from->hdr_full_name.buffer) {
 		old_string = pdb_get_fullname(to);
-		new_string = pdb_unistr2_convert(&from->uni_full_name);
+		new_string = unistr2_static(&from->uni_full_name);
 		DEBUG(10,("INFO_21 UNI_FULL_NAME: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_fullname(to      , new_string, PDB_CHANGED);
@@ -107,7 +107,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	
 	if (from->hdr_home_dir.buffer) {
 		old_string = pdb_get_homedir(to);
-		new_string = pdb_unistr2_convert(&from->uni_home_dir);
+		new_string = unistr2_static(&from->uni_home_dir);
 		DEBUG(10,("INFO_21 UNI_HOME_DIR: %s -> %s\n",old_string,new_string));
 		if (STRING_CHANGED)
 			pdb_set_homedir(to       , new_string, PDB_CHANGED);
@@ -115,7 +115,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 
 	if (from->hdr_dir_drive.buffer) {
 		old_string = pdb_get_dir_drive(to);
-		new_string = pdb_unistr2_convert(&from->uni_dir_drive);
+		new_string = unistr2_static(&from->uni_dir_drive);
 		DEBUG(10,("INFO_21 UNI_DIR_DRIVE: %s -> %s\n",old_string,new_string));
 		if (STRING_CHANGED)
 			pdb_set_dir_drive(to     , new_string, PDB_CHANGED);
@@ -123,7 +123,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 
 	if (from->hdr_logon_script.buffer) {
 		old_string = pdb_get_logon_script(to);
-		new_string = pdb_unistr2_convert(&from->uni_logon_script);
+		new_string = unistr2_static(&from->uni_logon_script);
 		DEBUG(10,("INFO_21 UNI_LOGON_SCRIPT: %s -> %s\n",old_string,new_string));
 		if (STRING_CHANGED)
 			pdb_set_logon_script(to  , new_string, PDB_CHANGED);
@@ -131,7 +131,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 
 	if (from->hdr_profile_path.buffer) {
 		old_string = pdb_get_profile_path(to);
-		new_string = pdb_unistr2_convert(&from->uni_profile_path);
+		new_string = unistr2_static(&from->uni_profile_path);
 		DEBUG(10,("INFO_21 UNI_PROFILE_PATH: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_profile_path(to  , new_string, PDB_CHANGED);
@@ -139,7 +139,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	
 	if (from->hdr_acct_desc.buffer) {
 		old_string = pdb_get_acct_desc(to);
-		new_string = pdb_unistr2_convert(&from->uni_acct_desc);
+		new_string = unistr2_static(&from->uni_acct_desc);
 		DEBUG(10,("INFO_21 UNI_ACCT_DESC: %s -> %s\n",old_string,new_string));
 		if (STRING_CHANGED)
 			pdb_set_acct_desc(to     , new_string, PDB_CHANGED);
@@ -147,7 +147,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	
 	if (from->hdr_workstations.buffer) {
 		old_string = pdb_get_workstations(to);
-		new_string = pdb_unistr2_convert(&from->uni_workstations);
+		new_string = unistr2_static(&from->uni_workstations);
 		DEBUG(10,("INFO_21 UNI_WORKSTATIONS: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
@@ -155,7 +155,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 
 	if (from->hdr_unknown_str.buffer) {
 		old_string = pdb_get_unknown_str(to);
-		new_string = pdb_unistr2_convert(&from->uni_unknown_str);
+		new_string = unistr2_static(&from->uni_unknown_str);
 		DEBUG(10,("INFO_21 UNI_UNKNOWN_STR: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_unknown_str(to   , new_string, PDB_CHANGED);
@@ -163,7 +163,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	
 	if (from->hdr_munged_dial.buffer) {
 		old_string = pdb_get_munged_dial(to);
-		new_string = pdb_unistr2_convert(&from->uni_munged_dial);
+		new_string = unistr2_static(&from->uni_munged_dial);
 		DEBUG(10,("INFO_21 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_munged_dial(to   , new_string, PDB_CHANGED);
@@ -293,7 +293,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	/* Backend should check this for sainity */
 	if (from->hdr_user_name.buffer) {
 		old_string = pdb_get_username(to);
-		new_string = pdb_unistr2_convert(&from->uni_user_name);
+		new_string = unistr2_static(&from->uni_user_name);
 		DEBUG(10,("INFO_23 UNI_USER_NAME: %s -> %s\n", old_string, new_string));
 		if (STRING_CHANGED)
 		    pdb_set_username(to      , new_string, PDB_CHANGED);
@@ -301,7 +301,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 
 	if (from->hdr_full_name.buffer) {
 		old_string = pdb_get_fullname(to);
-		new_string = pdb_unistr2_convert(&from->uni_full_name);
+		new_string = unistr2_static(&from->uni_full_name);
 		DEBUG(10,("INFO_23 UNI_FULL_NAME: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_fullname(to      , new_string, PDB_CHANGED);
@@ -309,7 +309,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	
 	if (from->hdr_home_dir.buffer) {
 		old_string = pdb_get_homedir(to);
-		new_string = pdb_unistr2_convert(&from->uni_home_dir);
+		new_string = unistr2_static(&from->uni_home_dir);
 		DEBUG(10,("INFO_23 UNI_HOME_DIR: %s -> %s\n",old_string,new_string));
 		if (STRING_CHANGED)
 			pdb_set_homedir(to       , new_string, PDB_CHANGED);
@@ -317,7 +317,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 
 	if (from->hdr_dir_drive.buffer) {
 		old_string = pdb_get_dir_drive(to);
-		new_string = pdb_unistr2_convert(&from->uni_dir_drive);
+		new_string = unistr2_static(&from->uni_dir_drive);
 		DEBUG(10,("INFO_23 UNI_DIR_DRIVE: %s -> %s\n",old_string,new_string));
 		if (STRING_CHANGED)
 			pdb_set_dir_drive(to     , new_string, PDB_CHANGED);
@@ -325,7 +325,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 
 	if (from->hdr_logon_script.buffer) {
 		old_string = pdb_get_logon_script(to);
-		new_string = pdb_unistr2_convert(&from->uni_logon_script);
+		new_string = unistr2_static(&from->uni_logon_script);
 		DEBUG(10,("INFO_23 UNI_LOGON_SCRIPT: %s -> %s\n",old_string,new_string));
 		if (STRING_CHANGED)
 			pdb_set_logon_script(to  , new_string, PDB_CHANGED);
@@ -333,7 +333,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 
 	if (from->hdr_profile_path.buffer) {
 		old_string = pdb_get_profile_path(to);
-		new_string = pdb_unistr2_convert(&from->uni_profile_path);
+		new_string = unistr2_static(&from->uni_profile_path);
 		DEBUG(10,("INFO_23 UNI_PROFILE_PATH: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_profile_path(to  , new_string, PDB_CHANGED);
@@ -341,7 +341,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	
 	if (from->hdr_acct_desc.buffer) {
 		old_string = pdb_get_acct_desc(to);
-		new_string = pdb_unistr2_convert(&from->uni_acct_desc);
+		new_string = unistr2_static(&from->uni_acct_desc);
 		DEBUG(10,("INFO_23 UNI_ACCT_DESC: %s -> %s\n",old_string,new_string));
 		if (STRING_CHANGED)
 			pdb_set_acct_desc(to     , new_string, PDB_CHANGED);
@@ -349,7 +349,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	
 	if (from->hdr_workstations.buffer) {
 		old_string = pdb_get_workstations(to);
-		new_string = pdb_unistr2_convert(&from->uni_workstations);
+		new_string = unistr2_static(&from->uni_workstations);
 		DEBUG(10,("INFO_23 UNI_WORKSTATIONS: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
@@ -357,7 +357,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 
 	if (from->hdr_unknown_str.buffer) {
 		old_string = pdb_get_unknown_str(to);
-		new_string = pdb_unistr2_convert(&from->uni_unknown_str);
+		new_string = unistr2_static(&from->uni_unknown_str);
 		DEBUG(10,("INFO_23 UNI_UNKNOWN_STR: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_unknown_str(to   , new_string, PDB_CHANGED);
@@ -365,7 +365,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	
 	if (from->hdr_munged_dial.buffer) {
 		old_string = pdb_get_munged_dial(to);
-		new_string = pdb_unistr2_convert(&from->uni_munged_dial);
+		new_string = unistr2_static(&from->uni_munged_dial);
 		DEBUG(10,("INFO_23 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_munged_dial(to   , new_string, PDB_CHANGED);

@@ -953,27 +953,27 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_fullname(sam_account, pdb_unistr2_convert(&(info3->uni_full_name)), PDB_CHANGED)) {
+	if (!pdb_set_fullname(sam_account, unistr2_static(&(info3->uni_full_name)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_logon_script(sam_account, pdb_unistr2_convert(&(info3->uni_logon_script)), PDB_CHANGED)) {
+	if (!pdb_set_logon_script(sam_account, unistr2_static(&(info3->uni_logon_script)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_profile_path(sam_account, pdb_unistr2_convert(&(info3->uni_profile_path)), PDB_CHANGED)) {
+	if (!pdb_set_profile_path(sam_account, unistr2_static(&(info3->uni_profile_path)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_homedir(sam_account, pdb_unistr2_convert(&(info3->uni_home_dir)), PDB_CHANGED)) {
+	if (!pdb_set_homedir(sam_account, unistr2_static(&(info3->uni_home_dir)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_dir_drive(sam_account, pdb_unistr2_convert(&(info3->uni_dir_drive)), PDB_CHANGED)) {
+	if (!pdb_set_dir_drive(sam_account, unistr2_static(&(info3->uni_dir_drive)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
