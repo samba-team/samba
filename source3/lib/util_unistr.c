@@ -137,6 +137,16 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 	*dest = 0;
 }
 
+/* from TNG - should be fixed */
+char *skip_unibuf(char *src, int len)
+{
+	char *srcend = src + len;
+
+	while (src < srcend && SVAL(src,0)) src += 2;
+
+	return src;
+}
+
 
 /*******************************************************************
  Skip past some unicode strings in a buffer.
