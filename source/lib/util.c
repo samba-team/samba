@@ -4508,3 +4508,31 @@ char *tab_depth(int depth)
 	spaces[depth * 4] = 0;
 	return spaces;
 }
+
+int make_domain_gids(char *gids_str, DOM_GID *gids)
+{
+	char *ptr;
+	pstring s2;
+	int count;
+
+	DEBUG(4,("make_domain_gids: %s\n", gids_str));
+
+	if (gids_str == NULL || *gids_str == 0) return 0;
+
+	for (count = 0, ptr = gids_str; next_token(&ptr, s2, NULL) && count < LSA_MAX_GROUPS; count++) 
+	{
+		/* the entries are of the form GID/ATTR, ATTR being optional.*/
+		char *attr;
+
+		attr = strchr(s2,'/');
+		if (attr) *attr++ = 0;
+		if (!attr || !*attr) attr = "7"; /* default value for attribute is 7 */
+
+		gids[count].gid = atoi(s2);
+		gids[count].attr = atoi(attr);
+
+		DEBUG(5,("group id: %d attr: %d\n", gids[count].gid, gids[count].attr));
+	}
+
+	return count;
+}
