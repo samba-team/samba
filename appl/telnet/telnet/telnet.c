@@ -685,7 +685,8 @@ mklist(buf, name)
 		 * Skip entries with spaces or non-ascii values.
 		 * Convert lower case letters to upper case.
 		 */
-		if ((c == ' ') || !isascii(c))
+#define ISASCII(c) (0 <= (c) && (c) < 0200)
+		if ((c == ' ') || !ISASCII(c))
 			n = 1;
 		else if (islower(c))
 			*cp = toupper(c);

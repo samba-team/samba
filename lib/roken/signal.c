@@ -3,6 +3,11 @@
 RCSID("$Id$");
 
 /*
+ * We would like to always use this signal but there is a link error
+ * on NEXTSTEP
+ */
+#ifndef NeXT
+/*
  * Bugs:
  *
  * Do we need any extra hacks for SIGCLD and/or SIGCHLD?
@@ -38,3 +43,4 @@ signal(int iSig, SigAction pAction)
 
     return(saOld.sa_handler);
 }
+#endif

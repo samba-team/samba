@@ -517,6 +517,60 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
+echo $ac_n "checking how to run the C preprocessor""... $ac_c" 1>&6
+# On Suns, sometimes $CPP names a directory.
+if test -n "$CPP" && test -d "$CPP"; then
+  CPP=
+fi
+if test -z "$CPP"; then
+if eval "test \"`echo '$''{'ac_cv_prog_CPP'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+    # This must be in double quotes, not single quotes, because CPP may get
+  # substituted into the Makefile and "${CC-cc}" will confuse make.
+  CPP="${CC-cc} -E"
+  # On the NeXT, cc -E runs the code through the compiler's parser,
+  # not just through cpp.
+  cat > conftest.$ac_ext <<EOF
+#line 536 "configure"
+#include "confdefs.h"
+#include <assert.h>
+Syntax Error
+EOF
+eval "$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+ac_err=`grep -v '^ *+' conftest.out`
+if test -z "$ac_err"; then
+  :
+else
+  echo "$ac_err" >&5
+  rm -rf conftest*
+  CPP="${CC-cc} -E -traditional-cpp"
+  cat > conftest.$ac_ext <<EOF
+#line 550 "configure"
+#include "confdefs.h"
+#include <assert.h>
+Syntax Error
+EOF
+eval "$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+ac_err=`grep -v '^ *+' conftest.out`
+if test -z "$ac_err"; then
+  :
+else
+  echo "$ac_err" >&5
+  rm -rf conftest*
+  CPP=/lib/cpp
+fi
+rm -f conftest*
+fi
+rm -f conftest*
+  ac_cv_prog_CPP="$CPP"
+fi
+  CPP="$ac_cv_prog_CPP"
+else
+  ac_cv_prog_CPP="$CPP"
+fi
+echo "$ac_t""$CPP" 1>&6
+
 
 # If we're using gcc and the user hasn't specified CFLAGS, add -O to CFLAGS.
 test -n "$GCC" && test -n "$auto_cflags" && CFLAGS="$CFLAGS -O"
@@ -593,6 +647,34 @@ test -z "$INSTALL_PROGRAM" && INSTALL_PROGRAM='${INSTALL}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
+
+echo $ac_n "checking for NEXTSTEP""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'krb_cv_sys_nextstep'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  cat > conftest.$ac_ext <<EOF
+#line 657 "configure"
+#include "confdefs.h"
+#ifdef NeXT
+	yes
+#endif 
+
+EOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  egrep "yes" >/dev/null 2>&1; then
+  rm -rf conftest*
+  krb_cv_sys_nextstep=yes
+else
+  rm -rf conftest*
+  krb_cv_sys_nextstep=no
+fi
+rm -f conftest*
+ 
+fi
+
+test $krb_cv_sys_nextstep = "yes" && CFLAGS="$CFLAGS -posix"
+test $krb_cv_sys_nextstep = "yes" && LIBS="$LIBS -posix"
+echo "$ac_t""$krb_cv_sys_nextstep" 1>&6
 
 #
 # authentication
@@ -845,7 +927,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 849 "configure"
+#line 931 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -895,7 +977,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 899 "configure"
+#line 981 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -947,7 +1029,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 951 "configure"
+#line 1033 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1002,7 +1084,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-l$lib  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1006 "configure"
+#line 1088 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1045,7 +1127,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-l$lib  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1049 "configure"
+#line 1131 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1087,7 +1169,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1091 "configure"
+#line 1173 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1139,7 +1221,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lsocket  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1143 "configure"
+#line 1225 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1179,7 +1261,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1183 "configure"
+#line 1265 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1231,7 +1313,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lnsl  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1235 "configure"
+#line 1317 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1272,7 +1354,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lutil  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1276 "configure"
+#line 1358 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1307,60 +1389,6 @@ fi
 
 
 
-echo $ac_n "checking how to run the C preprocessor""... $ac_c" 1>&6
-# On Suns, sometimes $CPP names a directory.
-if test -n "$CPP" && test -d "$CPP"; then
-  CPP=
-fi
-if test -z "$CPP"; then
-if eval "test \"`echo '$''{'ac_cv_prog_CPP'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-    # This must be in double quotes, not single quotes, because CPP may get
-  # substituted into the Makefile and "${CC-cc}" will confuse make.
-  CPP="${CC-cc} -E"
-  # On the NeXT, cc -E runs the code through the compiler's parser,
-  # not just through cpp.
-  cat > conftest.$ac_ext <<EOF
-#line 1326 "configure"
-#include "confdefs.h"
-#include <assert.h>
-Syntax Error
-EOF
-eval "$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-ac_err=`grep -v '^ *+' conftest.out`
-if test -z "$ac_err"; then
-  :
-else
-  echo "$ac_err" >&5
-  rm -rf conftest*
-  CPP="${CC-cc} -E -traditional-cpp"
-  cat > conftest.$ac_ext <<EOF
-#line 1340 "configure"
-#include "confdefs.h"
-#include <assert.h>
-Syntax Error
-EOF
-eval "$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-ac_err=`grep -v '^ *+' conftest.out`
-if test -z "$ac_err"; then
-  :
-else
-  echo "$ac_err" >&5
-  rm -rf conftest*
-  CPP=/lib/cpp
-fi
-rm -f conftest*
-fi
-rm -f conftest*
-  ac_cv_prog_CPP="$CPP"
-fi
-  CPP="$ac_cv_prog_CPP"
-else
-  ac_cv_prog_CPP="$CPP"
-fi
-echo "$ac_t""$CPP" 1>&6
-
 for ac_hdr in termios.h termio.h sys/select.h sys/resource.h sys/tty.h utmpx.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
@@ -1369,7 +1397,7 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1373 "configure"
+#line 1401 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
@@ -1409,7 +1437,7 @@ if eval "test \"`echo '$''{'krb_cv_sys_streamspty'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1413 "configure"
+#line 1441 "configure"
 #include "confdefs.h"
 #include <sac.h>
 EOF
@@ -1548,6 +1576,7 @@ s%@prefix@%$prefix%g
 s%@program_transform_name@%$program_transform_name%g
 s%@CC@%$CC%g
 s%@RANLIB@%$RANLIB%g
+s%@CPP@%$CPP%g
 s%@INSTALL_PROGRAM@%$INSTALL_PROGRAM%g
 s%@INSTALL_DATA@%$INSTALL_DATA%g
 s%@AUTHENTICATION@%$AUTHENTICATION%g
@@ -1568,7 +1597,6 @@ s%@ENV_HACK@%$ENV_HACK%g
 s%@OLD_ENVIRON@%$OLD_ENVIRON%g
 s%@LIBOBJS@%$LIBOBJS%g
 s%@HAVE_LIBTERMCAP@%$HAVE_LIBTERMCAP%g
-s%@CPP@%$CPP%g
 s%@STREAMSPTY@%$STREAMSPTY%g
 
 CEOF
