@@ -97,11 +97,8 @@ static BOOL api_samr_get_usrdom_pwinfo(prs_struct *data,
 
 
 	r_u.status = _samr_get_usrdom_pwinfo(&q_u.user_pol,
-					     &r_u.unknown_0, &r_u.unknown_1
-#if 0
-					     , &r_u.unknown_2
-#endif
-					     );
+					     &r_u.unknown_0, &r_u.unknown_1,
+					     &r_u.unknown_2);
 
 	return samr_io_r_get_usrdom_pwinfo("", &r_u, rdata, 0);
 }
@@ -739,7 +736,7 @@ static BOOL api_samr_get_dom_pwinfo(prs_struct *data,
 	}
 
 	r_u.status = _samr_get_dom_pwinfo(&q_u.uni_srv_name,
-					  &r_u.unk_0, &r_u.unk_1, &r_u.unk_2);
+					  &r_u.unk_0, &r_u.unk_1);
 	return samr_io_r_get_dom_pwinfo("", &r_u, rdata, 0);
 }
 
