@@ -78,14 +78,15 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 /*
   return info on a pathname
 */
-NTSTATUS pvfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
+NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
+		        struct smbsrv_request *req, union smb_fileinfo *info)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_filename *name;
 	NTSTATUS status;
 
 	if (info->generic.level != RAW_FILEINFO_GENERIC) {
-		return ntvfs_map_qpathinfo(req, info, pvfs->ops);
+		return ntvfs_map_qpathinfo(req, info, ntvfs);
 	}
 	
 	/* resolve the cifs name to a posix name */
@@ -104,17 +105,18 @@ NTSTATUS pvfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 /*
   query info on a open file
 */
-NTSTATUS pvfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
+NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
+		        struct smbsrv_request *req, union smb_fileinfo *info)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
 	NTSTATUS status;
 
 	if (info->generic.level != RAW_FILEINFO_GENERIC) {
-		return ntvfs_map_qfileinfo(req, info, pvfs->ops);
+		return ntvfs_map_qfileinfo(req, info, ntvfs);
 	}
 
-	f = pvfs_find_fd(req, info->generic.in.fnum);
+	f = pvfs_find_fd(pvfs, req, info->generic.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

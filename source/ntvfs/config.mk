@@ -55,6 +55,7 @@ INIT_OBJ_FILES = \
 		ntvfs/ntvfs_base.o
 ADD_OBJ_FILES = \
 		ntvfs/ntvfs_generic.o \
+		ntvfs/ntvfs_interface.o \
 		ntvfs/ntvfs_util.o
 #
 # End SUBSYSTEM NTVFS

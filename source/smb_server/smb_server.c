@@ -512,7 +512,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	}
 	
 	/* ipc services are limited */
-	if (req->tcon && req->tcon->type == NTVFS_IPC && (flags & AS_USER) && !(flags & CAN_IPC)) {
+	if (req->tcon && req->tcon->ntvfs_ctx->type == NTVFS_IPC && (flags & AS_USER) && !(flags & CAN_IPC)) {
 		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}

@@ -27,9 +27,9 @@
 /*
   find open file handle given fnum
 */
-struct pvfs_file *pvfs_find_fd(struct smbsrv_request *req, uint16_t fnum)
+struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
+			       struct smbsrv_request *req, uint16_t fnum)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	struct pvfs_file *f;
 	for (f=pvfs->open_files;f;f=f->next) {
 		if (f->fnum == fnum) {
@@ -63,16 +63,17 @@ static int pvfs_fd_destructor(void *p)
   TODO: this is a temporary implementation derived from the simple backend
   its purpose is to allow other tests to run 
 */
-NTSTATUS pvfs_open(struct smbsrv_request *req, union smb_open *io)
+NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
+		   struct smbsrv_request *req, union smb_open *io)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	int fd, flags;
 	struct pvfs_filename *name;
 	struct pvfs_file *f;
 	NTSTATUS status;
 
 	if (io->generic.level != RAW_OPEN_GENERIC) {
-		return ntvfs_map_open(req, io, pvfs->ops);
+		return ntvfs_map_open(req, io, ntvfs);
 	}
 
 	/* resolve the cifs name to a posix name */
@@ -179,9 +180,10 @@ do_open:
 /*
   close a file
 */
-NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
+NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
+		    struct smbsrv_request *req, union smb_close *io)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
 	NTSTATUS status;
 
@@ -190,7 +192,7 @@ NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	f = pvfs_find_fd(req, io->close.in.fnum);
+	f = pvfs_find_fd(pvfs, req, io->close.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -213,9 +215,10 @@ NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 /*
   logoff - close all file descriptors open by a vuid
 */
-NTSTATUS pvfs_logoff(struct smbsrv_request *req)
+NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
+		     struct smbsrv_request *req)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f, *next;
 
 	for (f=pvfs->open_files;f;f=next) {
@@ -234,9 +237,10 @@ NTSTATUS pvfs_logoff(struct smbsrv_request *req)
 /*
   exit - close files for the current pid
 */
-NTSTATUS pvfs_exit(struct smbsrv_request *req)
+NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
+		   struct smbsrv_request *req)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f, *next;
 
 	for (f=pvfs->open_files;f;f=next) {
@@ -250,4 +254,3 @@ NTSTATUS pvfs_exit(struct smbsrv_request *req)
 
 	return NT_STATUS_OK;
 }
-

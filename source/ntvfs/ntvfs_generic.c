@@ -58,7 +58,7 @@ static BOOL is_exe_file(const char *fname)
    NTVFS open generic to any mapper
 */
 NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io, 
-			const struct ntvfs_ops *ops)
+			struct ntvfs_module_context *ntvfs)
 {
 	NTSTATUS status;
 	union smb_open io2;
@@ -146,7 +146,7 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2.generic.in.file_attr = io->openx.in.file_attrs;
 		io2.generic.in.fname = io->openx.in.fname;
 
-		status = ops->open(req, &io2);
+		status = ntvfs->ops->open(ntvfs, req, &io2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -228,7 +228,7 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		DEBUG(9,("ntvfs_map_open(OPEN): mapped flags=0x%x to access_mask=0x%x and share_access=0x%x\n",
 			io->open.in.flags, io2.generic.in.access_mask, io2.generic.in.share_access));
 
-		status = ops->open(req, &io2);
+		status = ntvfs->ops->open(ntvfs, req, &io2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -251,7 +251,7 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
    NTVFS fsinfo generic to any mapper
 */
 NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs, 
-			  const struct ntvfs_ops *ops)
+			  struct ntvfs_module_context *ntvfs)
 {
 	NTSTATUS status;
 	union smb_fsinfo fs2;
@@ -263,7 +263,7 @@ NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs,
 	/* ask the backend for the generic info */
 	fs2.generic.level = RAW_QFS_GENERIC;
 
-	status = ops->fsinfo(req, &fs2);
+	status = ntvfs->ops->fsinfo(ntvfs, req, &fs2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -593,7 +593,7 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
    NTVFS fileinfo generic to any mapper
 */
 NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
-			     const struct ntvfs_ops *ops)
+			     struct ntvfs_module_context *ntvfs)
 {
 	NTSTATUS status;
 	union smb_fileinfo info2;
@@ -606,7 +606,7 @@ NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *inf
 	info2.generic.level = RAW_FILEINFO_GENERIC;
 	info2.generic.in.fnum = info->generic.in.fnum;
 
-	status = ops->qfileinfo(req, &info2);
+	status = ntvfs->ops->qfileinfo(ntvfs, req, &info2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -617,7 +617,7 @@ NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *inf
    NTVFS pathinfo generic to any mapper
 */
 NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
-			     const struct ntvfs_ops *ops)
+			     struct ntvfs_module_context *ntvfs)
 {
 	NTSTATUS status;
 	union smb_fileinfo info2;
@@ -630,7 +630,7 @@ NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *inf
 	info2.generic.level = RAW_FILEINFO_GENERIC;
 	info2.generic.in.fname = info->generic.in.fname;
 
-	status = ops->qpathinfo(req, &info2);
+	status = ntvfs->ops->qpathinfo(ntvfs, req, &info2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

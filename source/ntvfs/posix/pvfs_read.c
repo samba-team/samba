@@ -26,9 +26,10 @@
 /*
   read from a file
 */
-NTSTATUS pvfs_read(struct smbsrv_request *req, union smb_read *rd)
+NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
+		   struct smbsrv_request *req, union smb_read *rd)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	ssize_t ret;
 	struct pvfs_file *f;
 
@@ -37,7 +38,7 @@ NTSTATUS pvfs_read(struct smbsrv_request *req, union smb_read *rd)
 	}
 
 
-	f = pvfs_find_fd(req, rd->readx.in.fnum);
+	f = pvfs_find_fd(pvfs, req, rd->readx.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

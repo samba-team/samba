@@ -26,9 +26,10 @@
 /*
   create a directory
 */
-NTSTATUS pvfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
+NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
+		    struct smbsrv_request *req, union smb_mkdir *md)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name;
 
@@ -60,9 +61,10 @@ NTSTATUS pvfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 /*
   remove a directory
 */
-NTSTATUS pvfs_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
+NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
+		    struct smbsrv_request *req, struct smb_rmdir *rd)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name;
 

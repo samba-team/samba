@@ -26,14 +26,15 @@
 /*
   set info on a open file
 */
-NTSTATUS pvfs_setfileinfo(struct smbsrv_request *req, 
+NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
+			  struct smbsrv_request *req, 
 			  union smb_setfileinfo *info)
 {
-	NTVFS_GET_PRIVATE(pvfs_private, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct utimbuf unix_times;
 	struct pvfs_file *f;
 
-	f = pvfs_find_fd(req, info->generic.file.fnum);
+	f = pvfs_find_fd(pvfs, req, info->generic.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

@@ -158,7 +158,6 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	req->tcon = tcon;
 
 	tcon->service = snum;
-	tcon->type = type;
 
 	/*
 	 * New code to check if there's a share security descripter
@@ -180,7 +179,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	}
 
 	/* init ntvfs function pointers */
-	status = ntvfs_init_connection(req);
+	status = ntvfs_init_connection(req, type);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", lp_servicename(SNUM(tcon))));
 		conn_free(req->smb_conn, tcon);
@@ -188,13 +187,11 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	}
 	
 	/* Invoke NTVFS connection hook */
-	if (tcon->ntvfs_ops->connect) {
-		status = tcon->ntvfs_ops->connect(req, lp_servicename(snum), 0);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
-			conn_free(req->smb_conn, tcon);
-			return status;
-		}
+	status = ntvfs_connect(req, lp_servicename(snum));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
+		conn_free(req->smb_conn, tcon);
+		return status;
 	}
 	
 	return NT_STATUS_OK;
@@ -259,7 +256,7 @@ void close_cnum(struct smbsrv_tcon *tcon)
 		 lp_servicename(SNUM(tcon))));
 
 	/* tell the ntvfs backend that we are disconnecting */
-	tcon->ntvfs_ops->disconnect(tcon, 0);
+	ntvfs_disconnect(tcon);
 
 	conn_free(tcon->smb_conn, tcon);
 }

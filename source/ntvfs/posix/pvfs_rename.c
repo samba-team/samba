@@ -26,9 +26,10 @@
 /*
   rename a set of files
 */
-NTSTATUS pvfs_rename(struct smbsrv_request *req, union smb_rename *ren)
+NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
+		     struct smbsrv_request *req, union smb_rename *ren)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
 

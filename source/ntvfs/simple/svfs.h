@@ -10,8 +10,6 @@ struct svfs_private {
 	uint16_t next_search_handle;
 
 	struct svfs_file *open_files;
-
-	const struct ntvfs_ops *ops;
 };
 
 struct svfs_dir {

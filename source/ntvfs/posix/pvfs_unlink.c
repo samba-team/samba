@@ -61,9 +61,10 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
   delete a file - the dirtype specifies the file types to include in the search. 
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
-NTSTATUS pvfs_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
+NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
+		     struct smbsrv_request *req, struct smb_unlink *unl)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_dir *dir;
 	NTSTATUS status;
 	uint32_t i, total_deleted=0;

@@ -50,7 +50,8 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
   directory exists (tho it doesn't need to be accessible by the user,
   that comes later)
 */
-static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename, int depth)
+static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
+			     struct smbsrv_request *req, const char *sharename)
 {
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct pvfs_state *pvfs;
@@ -71,7 +72,6 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename, 
 
 	pvfs->tcon = tcon;
 	pvfs->base_directory = base_directory;
-	pvfs->ops = ntvfs_backend_byname("posix", NTVFS_DISK);
 
 	/* the directory must exist. Note that we deliberately don't
 	   check that it is readable */
@@ -84,7 +84,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename, 
 	tcon->fs_type = talloc_strdup(tcon, "NTFS");
 	tcon->dev_type = talloc_strdup(tcon, "A:");
 
-	ntvfs_set_private(tcon, depth, pvfs);
+	ntvfs->private_data = pvfs;
 
 	pvfs_setup_options(pvfs);
 
@@ -94,7 +94,8 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename, 
 /*
   disconnect from a share
 */
-static NTSTATUS pvfs_disconnect(struct smbsrv_tcon *tcon, int depth)
+static NTSTATUS pvfs_disconnect(struct ntvfs_module_context *ntvfs,
+				struct smbsrv_tcon *tcon)
 {
 	return NT_STATUS_OK;
 }
@@ -102,7 +103,8 @@ static NTSTATUS pvfs_disconnect(struct smbsrv_tcon *tcon, int depth)
 /*
   ioctl interface - we don't do any
 */
-static NTSTATUS pvfs_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
+static NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
+			   struct smbsrv_request *req, union smb_ioctl *io)
 {
 	return NT_STATUS_INVALID_PARAMETER;
 }
@@ -110,9 +112,10 @@ static NTSTATUS pvfs_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 /*
   check if a directory exists
 */
-static NTSTATUS pvfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
+static NTSTATUS pvfs_chkpath(struct ntvfs_module_context *ntvfs,
+			     struct smbsrv_request *req, struct smb_chkpath *cp)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_filename *name;
 	NTSTATUS status;
 
@@ -136,7 +139,8 @@ static NTSTATUS pvfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 /*
   copy a set of files
 */
-static NTSTATUS pvfs_copy(struct smbsrv_request *req, struct smb_copy *cp)
+static NTSTATUS pvfs_copy(struct ntvfs_module_context *ntvfs,
+			  struct smbsrv_request *req, struct smb_copy *cp)
 {
 	DEBUG(0,("pvfs_copy not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
@@ -145,7 +149,8 @@ static NTSTATUS pvfs_copy(struct smbsrv_request *req, struct smb_copy *cp)
 /*
   seek in a file
 */
-static NTSTATUS pvfs_seek(struct smbsrv_request *req, struct smb_seek *io)
+static NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
+			  struct smbsrv_request *req, struct smb_seek *io)
 {
 	DEBUG(0,("pvfs_seek not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
@@ -154,7 +159,8 @@ static NTSTATUS pvfs_seek(struct smbsrv_request *req, struct smb_seek *io)
 /*
   flush a file
 */
-static NTSTATUS pvfs_flush(struct smbsrv_request *req, struct smb_flush *io)
+static NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
+			   struct smbsrv_request *req, struct smb_flush *io)
 {
 	DEBUG(0,("pvfs_flush not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -163,7 +169,8 @@ static NTSTATUS pvfs_flush(struct smbsrv_request *req, struct smb_flush *io)
 /*
   lock a byte range
 */
-static NTSTATUS pvfs_lock(struct smbsrv_request *req, union smb_lock *lck)
+static NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
+			  struct smbsrv_request *req, union smb_lock *lck)
 {
 	DEBUG(0,("pvfs_lock not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -172,7 +179,8 @@ static NTSTATUS pvfs_lock(struct smbsrv_request *req, union smb_lock *lck)
 /*
   set info on a pathname
 */
-static NTSTATUS pvfs_setpathinfo(struct smbsrv_request *req, union smb_setfileinfo *st)
+static NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
+				 struct smbsrv_request *req, union smb_setfileinfo *st)
 {
 	DEBUG(0,("pvfs_setpathinfo not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
@@ -181,13 +189,15 @@ static NTSTATUS pvfs_setpathinfo(struct smbsrv_request *req, union smb_setfilein
 /*
   return print queue info
 */
-static NTSTATUS pvfs_lpq(struct smbsrv_request *req, union smb_lpq *lpq)
+static NTSTATUS pvfs_lpq(struct ntvfs_module_context *ntvfs,
+			 struct smbsrv_request *req, union smb_lpq *lpq)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
 /* SMBtrans - not used on file shares */
-static NTSTATUS pvfs_trans(struct smbsrv_request *req, struct smb_trans2 *trans2)
+static NTSTATUS pvfs_trans(struct ntvfs_module_context *ntvfs,
+			   struct smbsrv_request *req, struct smb_trans2 *trans2)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }

@@ -250,12 +250,13 @@ again:
 /* 
    list files in a directory matching a wildcard pattern - old SMBsearch interface
 */
-static NTSTATUS pvfs_search_first_old(struct smbsrv_request *req, union smb_search_first *io, 
+static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
+				      struct smbsrv_request *req, union smb_search_first *io, 
 				      void *search_private, 
 				      BOOL (*callback)(void *, union smb_search_data *))
 {
 	struct pvfs_dir *dir;
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
 	uint_t reply_count;
 	uint16_t search_attrib;
@@ -327,11 +328,12 @@ static NTSTATUS pvfs_search_first_old(struct smbsrv_request *req, union smb_sear
 }
 
 /* continue a old style search */
-static NTSTATUS pvfs_search_next_old(struct smbsrv_request *req, union smb_search_next *io, 
+static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
+				     struct smbsrv_request *req, union smb_search_next *io, 
 				     void *search_private, 
 				     BOOL (*callback)(void *, union smb_search_data *))
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
 	struct pvfs_dir *dir;
 	uint_t reply_count, max_count;
@@ -374,12 +376,13 @@ static NTSTATUS pvfs_search_next_old(struct smbsrv_request *req, union smb_searc
 /* 
    list files in a directory matching a wildcard pattern
 */
-NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *io, 
+NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
+			   struct smbsrv_request *req, union smb_search_first *io, 
 			   void *search_private, 
 			   BOOL (*callback)(void *, union smb_search_data *))
 {
 	struct pvfs_dir *dir;
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
 	uint_t reply_count;
 	uint16_t search_attrib, max_count;
@@ -388,7 +391,7 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 	struct pvfs_filename *name;
 
 	if (io->generic.level >= RAW_SEARCH_SEARCH) {
-		return pvfs_search_first_old(req, io, search_private, callback);
+		return pvfs_search_first_old(ntvfs, req, io, search_private, callback);
 	}
 
 	search_attrib = io->t2ffirst.in.search_attrib;
@@ -466,11 +469,12 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 }
 
 /* continue a search */
-NTSTATUS pvfs_search_next(struct smbsrv_request *req, union smb_search_next *io, 
+NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
+			  struct smbsrv_request *req, union smb_search_next *io, 
 			  void *search_private, 
 			  BOOL (*callback)(void *, union smb_search_data *))
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
 	struct pvfs_dir *dir;
 	uint_t reply_count;
@@ -479,7 +483,7 @@ NTSTATUS pvfs_search_next(struct smbsrv_request *req, union smb_search_next *io,
 	int i;
 
 	if (io->generic.level >= RAW_SEARCH_SEARCH) {
-		return pvfs_search_next_old(req, io, search_private, callback);
+		return pvfs_search_next_old(ntvfs, req, io, search_private, callback);
 	}
 
 	handle = io->t2fnext.in.handle;
@@ -545,9 +549,10 @@ found:
 }
 
 /* close a search */
-NTSTATUS pvfs_search_close(struct smbsrv_request *req, union smb_search_close *io)
+NTSTATUS pvfs_search_close(struct ntvfs_module_context *ntvfs,
+			   struct smbsrv_request *req, union smb_search_close *io)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
 	uint16_t handle;
 

@@ -100,8 +100,9 @@ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 {
 	static const struct ntvfs_critical_sizes critical_sizes = {
 		NTVFS_INTERFACE_VERSION,
+		sizeof(struct ntvfs_context),
+		sizeof(struct ntvfs_module_context),
 		sizeof(struct ntvfs_ops),
-		sizeof(SMB_OFF_T),
 		sizeof(struct smbsrv_tcon),
 		sizeof(struct smbsrv_request),
 	};
@@ -133,28 +134,47 @@ BOOL ntvfs_init(void)
 /*
   initialise a connection structure to point at a NTVFS backend
 */
-NTSTATUS ntvfs_init_connection(struct smbsrv_request *req)
+NTSTATUS ntvfs_init_connection(struct smbsrv_request *req, enum ntvfs_type type)
 {
 	const char **handlers = lp_ntvfs_handler(req->tcon->service);
+	int i;
+	struct ntvfs_context *ctx;
 
-	req->tcon->ntvfs_ops = ntvfs_backend_byname(handlers[0], req->tcon->type);
-
-	if (!req->tcon->ntvfs_ops) {
-		DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n", handlers[0], req->tcon->type));
-		return NT_STATUS_UNSUCCESSFUL;
+	if (!handlers) {
+		return NT_STATUS_FOOBAR;
 	}
 
+	ctx = talloc_p(req->tcon, struct ntvfs_context);
+	if (!ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ctx->type = type;
+	ctx->modules = NULL;
+
+	for (i=0; handlers[i]; i++) {
+		struct ntvfs_module_context *ntvfs;
+
+		ntvfs = talloc_p(ctx, struct ntvfs_module_context);
+		if (!ntvfs) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ntvfs->ops = ntvfs_backend_byname(handlers[i], ctx->type);
+		if (!ntvfs->ops) {
+			DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n",
+				handlers[i], ctx->type));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		ntvfs->depth = i;
+		DLIST_ADD_END(ctx->modules, ntvfs, struct ntvfs_module_context *);
+	}
+
+	if (!ctx->modules) {
+		talloc_free(ctx);
+		return NT_STATUS_FOOBAR;
+	}
+
+	req->tcon->ntvfs_ctx = ctx;
+
 	return NT_STATUS_OK;
-}
-
-
-/*
-  set the private pointer for a backend
-*/
-void ntvfs_set_private(struct smbsrv_tcon *tcon, int depth, void *value)
-{
-	tcon->ntvfs_private_list = talloc_realloc_p(tcon, 
-						    tcon->ntvfs_private_list, 
-						    void *, depth+1);
-	tcon->ntvfs_private_list[depth] = value;
 }
