@@ -19,6 +19,11 @@
     The security advantage of using restrict anonymous = 1 is dubious,
     as user and group list information can be obtained using other
     means.
+
+    The security advantage of using restrict anonymous = 2 is removed
+    by setting <link linkend="GUESTOK"><parameter moreinfo="none">guest
+    ok</parameter></link> = yes</para> on any share.
+
     </para>
 
     <para>Default: <command moreinfo="none">restrict anonymous = 0</command></para>
