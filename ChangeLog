@@ -1,5 +1,8 @@
 2001-05-15  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/rd_error.c (krb5_error_from_rd_error): use correct
+	parenthesis
+
 	* lib/krb5/eai_to_heim_errno.c (krb5_eai_to_heim_errno): add
 	`errno' (called system_error) to allow callers to make sure they
 	pass the current and relevant value.  update callers
