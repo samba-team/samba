@@ -1,3 +1,7 @@
+2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* otp_parse.c: cast argument to tolower to unsigned char
+	
 2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken_rename.h: rename strlcat, strlcpy
