@@ -1,9 +1,13 @@
 Sat Jul 19 04:07:39 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kdc/string2key.c: Add flags to output version 5 (DES only),
+ 	version 4, and AFS string-to-key of a password.
+
 	* lib/asn1/gen_copy.c: copy_* functions now returns an int (0 or
  	ENOMEM).
 
 Fri Jul 18 02:54:58 1997  Assar Westerlund  <assar@sics.se>
+
 	* lib/krb5/get_host_realm.c (krb5_get_host_realm): do the
  	name2name thing
 
