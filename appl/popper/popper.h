@@ -33,22 +33,48 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <ctype.h>
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 #include "version.h"
 
 #include <roken.h>
@@ -245,5 +271,5 @@ state_table *pop_get_command(POP *p, char *mp);
 void pop_lower(char *buf);
 xtnd_table *pop_get_subcommand(POP *p);
 
-int pop_log __P((POP *p, int stat, char *format, ...));
-int pop_msg __P((POP *p, int stat, char *format, ...));
+int pop_log(POP *p, int stat, char *format, ...);
+int pop_msg(POP *p, int stat, char *format, ...);
