@@ -67,18 +67,10 @@ CODEPAGEDIR = $(LIBDIR)/codepages
 # The current codepage definition list.
 CODEPAGELIST= 437 737 775 850 852 861 932 866 949 950 936 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R 857 ISO8859-9 ISO8859-13 ISO8859-15
 
-# where you are going to have the smbrun binary. This defaults to the 
-# install directory. This binary is needed for correct printing
-# and magic script execution. This should be an absolute path!
-# Also not that this should include the name "smbrun" on the end (the
-# name of the executable)
-SMBRUN = $(BINDIR)/smbrun
-
-
 PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
 FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
-FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
+FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
 FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" -DFORMSFILE=\"$(FORMSFILE)\" -DNTDRIVERSDIR=\"$(NTDRIVERSDIR)\"
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
 FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
@@ -231,8 +223,6 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
            $(PARAM_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(UBIQX_OBJ) $(LIB_OBJ) 
-
-SMBRUN_OBJ = utils/smbrun.o lib/util_sec.o
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -490,10 +480,6 @@ bin/nmbd: $(NMBD_OBJ) bin/.dummy
 bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
-
-bin/smbrun: $(SMBRUN_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/rpcclient: $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
