@@ -33,6 +33,8 @@ BOOL session_claim(user_struct *vuser)
 {
 	int i = 0;
 	TDB_DATA data;
+	struct sockaddr sa;
+	struct in_addr *client_ip;
 	struct sessionid sessionid;
 	uint32 pid = (uint32)sys_getpid();
 	TDB_DATA key;		
@@ -117,6 +119,8 @@ BOOL session_claim(user_struct *vuser)
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
 	fstrcpy(sessionid.ip_addr, client_addr());
 
+	client_ip = client_inaddr(&sa);
+
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str, sessionid.hostname)) {
 		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
 				sessionid.username, sessionid.id_str));
@@ -136,6 +140,7 @@ BOOL session_claim(user_struct *vuser)
 #if WITH_UTMP	
 	if (lp_utmp()) {
 		sys_utmp_claim(sessionid.username, sessionid.hostname, 
+			       client_ip,
 			       sessionid.id_str, sessionid.id_num);
 	}
 #endif
@@ -153,7 +158,8 @@ void session_yield(user_struct *vuser)
 {
 	TDB_DATA dbuf;
 	struct sessionid sessionid;
-	TDB_DATA key;		
+	struct in_addr client_ip;
+	TDB_DATA key;
 
 	if (!tdb) return;
 
@@ -171,11 +177,14 @@ void session_yield(user_struct *vuser)
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
+	inet_pton(AF_INET, sessionid.ip_addr, &client_ip);
+
 	SAFE_FREE(dbuf.dptr);
 
 #if WITH_UTMP	
 	if (lp_utmp()) {
 		sys_utmp_yield(sessionid.username, sessionid.hostname, 
+			       &client_ip,
 			       sessionid.id_str, sessionid.id_num);
 	}
 #endif

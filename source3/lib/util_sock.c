@@ -764,6 +764,19 @@ char *client_addr(void)
 	return get_socket_addr(client_fd);
 }
 
+struct in_addr *client_inaddr(struct sockaddr *sa)
+{
+	struct sockaddr_in *sockin = (struct sockaddr_in *) (sa);
+	int     length = sizeof(*sa);
+	
+	if (getpeername(client_fd, sa, &length) < 0) {
+		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
+		return NULL;
+	}
+	
+	return &sockin->sin_addr;
+}
+
 /*******************************************************************
  matchname - determine if host name matches IP address. Used to
  confirm a hostname lookup to prevent spoof attacks
