@@ -45,13 +45,8 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
 	gain_root_group_privilege();
   }
 
-  if(sys_stat(outfile, &st) == 0) {
-    /* Check we're not deleting a device file. */ 
-    if(st.st_mode & S_IFREG)
-      unlink(outfile);
-    else
-      flags = O_RDWR;
-  }
+  unlink(outfile);
+
   /* now create the file */
   fd = sys_open(outfile,flags,mode);
 
