@@ -2,13 +2,15 @@
 #include <config.h>
 #endif
 
-
-#include <sys/time.h>
-#include <sys/types.h>
+RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <time.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #include <des.h>
 #include <krb.h>
