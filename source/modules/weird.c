@@ -31,7 +31,7 @@ static struct {
 	{0, NULL}
 };
 
-static size_t weird_pull(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t weird_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
@@ -74,7 +74,7 @@ static size_t weird_pull(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t weird_push(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t weird_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int ir_count=0;

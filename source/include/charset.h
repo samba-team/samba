@@ -31,9 +31,9 @@ typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t
 
 struct charset_functions {
 	const char *name;
-	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
+	size_t (*pull)(void *, const char **inbuf, size_t *inbytesleft,
 				   char **outbuf, size_t *outbytesleft);
-	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
+	size_t (*push)(void *, const char **inbuf, size_t *inbytesleft,
 				   char **outbuf, size_t *outbytesleft);
 	struct charset_functions *prev, *next;
 };
@@ -57,7 +57,7 @@ struct charset_gap_table {
  *
  *     */
 #define SMB_GENERATE_CHARSET_MODULE_8_BIT_GAP(CHARSETNAME) 					\
-static size_t CHARSETNAME ## _push(void *cd, char **inbuf, size_t *inbytesleft,			\
+static size_t CHARSETNAME ## _push(void *cd, const char **inbuf, size_t *inbytesleft,			\
 			 char **outbuf, size_t *outbytesleft) 					\
 { 												\
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) { 					\
@@ -97,7 +97,7 @@ static size_t CHARSETNAME ## _push(void *cd, char **inbuf, size_t *inbytesleft,	
 	return 0;										\
 }												\
 												\
-static size_t CHARSETNAME ## _pull(void *cd, char **inbuf, size_t *inbytesleft,				\
+static size_t CHARSETNAME ## _pull(void *cd, const char **inbuf, size_t *inbytesleft,				\
 			 char **outbuf, size_t *outbytesleft)					\
 {												\
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {					\
@@ -123,5 +123,4 @@ NTSTATUS charset_ ## CHARSETNAME ## _init(void)							\
 {												\
 	return smb_register_charset(& CHARSETNAME ## _functions);				\
 }												\
-
 

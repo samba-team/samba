@@ -51,18 +51,25 @@
  * @sa Samba Developers Guide
  **/
 
-static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
-static size_t ascii_push(void *,char **, size_t *, char **, size_t *);
-static size_t latin1_push(void *,char **, size_t *, char **, size_t *);
-static size_t  utf8_pull(void *,char **, size_t *, char **, size_t *);
-static size_t  utf8_push(void *,char **, size_t *, char **, size_t *);
-static size_t ucs2hex_pull(void *,char **, size_t *, char **, size_t *);
-static size_t ucs2hex_push(void *,char **, size_t *, char **, size_t *);
-static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
+static size_t ascii_pull(void *,const char **, size_t *, char **, size_t *);
+static size_t ascii_push(void *,const char **, size_t *, char **, size_t *);
+static size_t latin1_push(void *,const char **, size_t *, char **, size_t *);
+static size_t  utf8_pull(void *,const char **, size_t *, char **, size_t *);
+static size_t  utf8_push(void *,const char **, size_t *, char **, size_t *);
+static size_t ucs2hex_pull(void *,const char **, size_t *, char **, size_t *);
+static size_t ucs2hex_push(void *,const char **, size_t *, char **, size_t *);
+static size_t iconv_copy(void *,const char **, size_t *, char **, size_t *);
+static size_t iconv_swab  (void *,const char **, size_t *, char **, size_t *);
 
 static struct charset_functions builtin_functions[] = {
+	/* windows is really neither UCS-2 not UTF-16 */
 	{"UCS-2LE",  iconv_copy, iconv_copy},
+	{"UTF-16LE",  iconv_copy, iconv_copy},
+	{"UCS-2BE",  iconv_swab, iconv_swab},
+
+	/* we include the UTF-8 alias to cope with differing locale settings */
 	{"UTF8",   utf8_pull,  utf8_push},
+	{"UTF-8",   utf8_pull,  utf8_push},
 	{"ASCII", ascii_pull, ascii_push},
 	{"646", ascii_pull, ascii_push},
 	{"ISO-8859-1", ascii_pull, latin1_push},
@@ -122,12 +129,12 @@ static void lazy_initialize_iconv(void)
    this ensures that we don't have a shift state remaining for
    character sets like SJIS */
 static size_t sys_iconv(void *cd, 
-			char **inbuf, size_t *inbytesleft,
+			const char **inbuf, size_t *inbytesleft,
 			char **outbuf, size_t *outbytesleft)
 {
 #ifdef HAVE_NATIVE_ICONV
 	size_t ret = iconv((iconv_t)cd, 
-			   inbuf, inbytesleft, 
+			   (char **)inbuf, inbytesleft, 
 			   outbuf, outbytesleft);
 	if (ret == (size_t)-1) {
 		int saved_errno = errno;
@@ -148,7 +155,7 @@ static size_t sys_iconv(void *cd,
  * enough that Samba works on systems that don't have iconv.
  **/
 size_t smb_iconv(smb_iconv_t cd, 
-		 char **inbuf, size_t *inbytesleft,
+		 const char **inbuf, size_t *inbytesleft,
 		 char **outbuf, size_t *outbytesleft)
 {
 	char cvtbuf[2048];
@@ -158,7 +165,7 @@ size_t smb_iconv(smb_iconv_t cd,
 	/* in many cases we can go direct */
 	if (cd->direct) {
 		return cd->direct(cd->cd_direct, 
-				  (char **)inbuf, inbytesleft, outbuf, outbytesleft);
+				  inbuf, inbytesleft, outbuf, outbytesleft);
 	}
 
 
@@ -168,14 +175,14 @@ size_t smb_iconv(smb_iconv_t cd,
 		bufsize = sizeof(cvtbuf);
 		
 		if (cd->pull(cd->cd_pull, 
-			     (char **)inbuf, inbytesleft, &bufp, &bufsize) == -1
+			     inbuf, inbytesleft, &bufp, &bufsize) == -1
 		    && errno != E2BIG) return -1;
 
 		bufp = cvtbuf;
 		bufsize = sizeof(cvtbuf) - bufsize;
 
 		if (cd->push(cd->cd_push, 
-			     &bufp, &bufsize, 
+			     (const char **)&bufp, &bufsize, 
 			     outbuf, outbytesleft) == -1) return -1;
 	}
 
@@ -313,7 +320,7 @@ int smb_iconv_close (smb_iconv_t cd)
  multi-byte character set support for english users
 ***********************************************************************/
 
-static size_t ascii_pull(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t ascii_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
@@ -333,7 +340,7 @@ static size_t ascii_pull(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t ascii_push(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t ascii_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int ir_count=0;
@@ -360,7 +367,7 @@ static size_t ascii_push(void *cd, char **inbuf, size_t *inbytesleft,
 	return ir_count;
 }
 
-static size_t latin1_push(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t latin1_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int ir_count=0;
@@ -387,7 +394,7 @@ static size_t latin1_push(void *cd, char **inbuf, size_t *inbytesleft,
 	return ir_count;
 }
 
-static size_t ucs2hex_pull(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
@@ -430,7 +437,7 @@ static size_t ucs2hex_pull(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t ucs2hex_push(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t ucs2hex_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			   char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
@@ -471,8 +478,32 @@ static size_t ucs2hex_push(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
+static size_t iconv_swab(void *cd, const char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft)
+{
+	int n;
 
-static size_t iconv_copy(void *cd, char **inbuf, size_t *inbytesleft,
+	n = MIN(*inbytesleft, *outbytesleft);
+
+	swab(*inbuf, *outbuf, (n&~1));
+	if (n&1) {
+		(*outbuf)[n-1] = 0;
+	}
+
+	(*inbytesleft) -= n;
+	(*outbytesleft) -= n;
+	(*inbuf) += n;
+	(*outbuf) += n;
+
+	if (*inbytesleft > 0) {
+		errno = E2BIG;
+		return -1;
+	}
+
+	return 0;
+}
+
+static size_t iconv_copy(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int n;
@@ -494,11 +525,11 @@ static size_t iconv_copy(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t utf8_pull(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		unsigned char *c = (unsigned char *)*inbuf;
+		const unsigned char *c = (const unsigned char *)*inbuf;
 		unsigned char *uc = (unsigned char *)*outbuf;
 		int len = 1;
 
@@ -541,12 +572,12 @@ badseq:
 	return -1;
 }
 
-static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
 		unsigned char *c = (unsigned char *)*outbuf;
-		unsigned char *uc = (unsigned char *)*inbuf;
+		const unsigned char *uc = (const unsigned char *)*inbuf;
 		int len=1;
 
 		if (uc[1] & 0xf8) {
