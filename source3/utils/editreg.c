@@ -939,6 +939,24 @@ int nt_delete_reg_key(REG_KEY *key, int delete_name)
   return 1;
 }
 
+/*
+ * Add a value to the key specified ...
+ */
+REG_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
+{
+
+  return NULL;
+}
+
+/*
+ * Delete a value. Should perhaps return the value ...
+ */
+REG_KEY *nt_delete_reg_valye(REG_KEY *key, char *name)
+{
+
+  return NULL;
+}
+
 /* 
  * Add a key to the tree ... We walk down the components matching until
  * we don't find any. There must be a match on the first component ...
@@ -2200,6 +2218,9 @@ struct cmd_line *get_cmd_line(int fd)
  *
  * If it parsed OK, return the <value-name> as a string, and the
  * value type and value-string in parameters.
+ *
+ * The value name can be empty. There can only be one empty name in 
+ * a list of values. A value of - removes the value entirely.  
  */
 
 char *dup_str(char *s, int len) 
