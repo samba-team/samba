@@ -51,7 +51,7 @@ static void api_net_req_chal( rpcsrv_struct *p,
 	net_io_q_req_chal("", &q_r, data, 0);
 	r_c.status = _net_req_chal(&q_r.uni_logon_srv, &q_r.uni_logon_clnt, 
 					   &q_r.clnt_chal, &r_c.srv_chal,
-					   p->remote_pid); /* strikerXXXX have to pass this parameter */
+					   p->key.pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
 	net_io_r_req_chal("", &r_c, rdata, 0);
@@ -75,7 +75,7 @@ static void api_net_auth( rpcsrv_struct *p,
 	r_a.status = _net_auth(&q_a.clnt_id,
 				     &q_a.clnt_chal,
 				     &r_a.srv_chal,
-				     p->remote_pid); /* strikerXXXX have to pass this parameter */
+				     p->key.pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
 	net_io_r_auth("", &r_a, rdata, 0);
@@ -101,7 +101,7 @@ static void api_net_auth_2( rpcsrv_struct *p,
 					&q_a.clnt_flgs,
 					&r_a.srv_chal,
 					&r_a.srv_flgs,
-					p->remote_pid); /* strikerXXXX have to pass this parameter */
+					p->key.pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
 	net_io_r_auth_2("", &r_a, rdata, 0);
@@ -125,7 +125,7 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 	r_s.status = _net_srv_pwset(&q_a.clnt_id,
 					    q_a.pwd,
 					    &r_s.srv_cred,
-					    p->remote_pid); /* strikerXXXX have to pass this parameter */
+					    p->key.pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
 	net_io_r_srv_pwset("", &r_s, rdata, 0);
@@ -155,7 +155,7 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	net_io_q_sam_logoff("", &q_l, data, 0);
 	status = _net_sam_logoff(&q_l.sam_id,
 					 &srv_cred,
-					 p->remote_pid); /* strikerXXXX have to pass this parameter */
+					 p->key.pid); /* strikerXXXX have to pass this parameter */
 	make_r_sam_logoff(&r_s, &srv_cred, status);
 
 	/* store the response in the SMB stream */
@@ -216,7 +216,7 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 	/* grab the challenge... */
 	net_io_q_sam_sync("", &q_s, data, 0);
 
-	status = net_update_creds(p->remote_pid,
+	status = net_update_creds(p->key.pid,
 	                             &dc, &q_s.uni_cli_name,
 			   	     &q_s.cli_creds,
 			   	     &q_s.ret_creds,
@@ -261,9 +261,9 @@ static void api_net_sam_logon( rpcsrv_struct *p,
 	DOM_CRED srv_creds;
 	uint16 switch_value;
 	NET_USER_INFO_3 info_3;
-	uint32 auth_resp;
 	uint32 status;
 
+	ZERO_STRUCT(info_3);
 	ZERO_STRUCT(q_l);
 	ZERO_STRUCT(r_s);
 
@@ -274,10 +274,10 @@ static void api_net_sam_logon( rpcsrv_struct *p,
 					&srv_creds,
 					&switch_value,
 					&info_3,
-					&auth_resp,
-					p->remote_pid); 
-	make_r_sam_logon(&r_s, &srv_creds, switch_value, &info_3,
-	                 auth_resp, status);
+					p->key.pid); 
+	make_r_sam_logon(&r_s, &srv_creds, switch_value,
+			status == NT_STATUS_NOPROBLEMO ? &info_3 : NULL,
+	                 status);
 
 	/* store the response in the SMB stream */
 	net_io_r_sam_logon("", &r_s, rdata, 0);

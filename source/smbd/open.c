@@ -501,7 +501,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     conn->num_files_open++;
     fsp->mode = sbuf->st_mode;
     GetTimeOfDay(&fsp->open_time);
-    fsp->vuid = current_user.vuid;
+    fsp->vuid = current_user.key.vuid;
     fsp->size = 0;
     fsp->pos = -1;
     fsp->open = True;
@@ -1063,7 +1063,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	conn->num_files_open++;
 	fsp->mode = 0;
 	GetTimeOfDay(&fsp->open_time);
-	fsp->vuid = current_user.vuid;
+	fsp->vuid = current_user.key.vuid;
 	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->open = True;

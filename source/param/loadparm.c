@@ -1151,7 +1151,7 @@ convenience routine to grab string parameters into a rotating buffer,
 and run standard_sub_basic on them. The buffers can be written to by
 callers without affecting the source string.
 ********************************************************************/
-static char *lp_user_string(uint16 vuid, char *s)
+static char *lp_user_string(const vuser_key *key, char *s)
 {
   static char *bufs[10];
   static int buflen[10];
@@ -1159,6 +1159,7 @@ static char *lp_user_string(uint16 vuid, char *s)
   char *ret;
   int i;
   int len = s?strlen(s):0;
+  user_struct *vuser;
 
   if (next == -1) {
     /* initialisation */
@@ -1192,7 +1193,12 @@ static char *lp_user_string(uint16 vuid, char *s)
 
   trim_string(ret, "\"", "\"");
 
-  standard_sub_vuser(get_valid_user_struct(vuid), ret);
+  vuser = get_valid_user_struct(key);
+
+  standard_sub_vuser(vuser, ret);
+
+  vuid_free_user_struct(vuser);
+  safe_free(vuser);
   return(ret);
 }
 
@@ -1271,7 +1277,7 @@ static char *lp_string(char *s)
  int fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
 
 #define FN_VUSER_STRING(fn_name,ptr) \
- char *fn_name(uint16 vuid) {return(lp_user_string(vuid, *(char **)(ptr) ? *(char **)(ptr) : ""));}
+ char *fn_name(const vuser_key *key) {return(lp_user_string(key, *(char **)(ptr) ? *(char **)(ptr) : ""));}
 
 struct vfs_options *lp_vfsoptions(int i) 
 { return(LP_SNUM_OK(i) ? pSERVICE(i)->vfsOptions : sDefault.vfsOptions); }

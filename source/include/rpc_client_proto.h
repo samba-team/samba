@@ -189,7 +189,8 @@ BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
-BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, uint8 flags,
+BOOL create_rpc_request(prs_struct *rhdr, uint16 vuid,
+				uint8 op_num, uint8 flags,
 				int data_len,
 				int auth_len);
 BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,

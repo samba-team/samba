@@ -1,12 +1,14 @@
-/* 
+  /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
    Inter-process communication and named pipe handling
-   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Tridgell 1992-2000
 
    SMB Version handling
-   Copyright (C) John H Terpstra 1995-1998
-   
+   Copyright (C) John H Terpstra 1995-2000
+
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -73,17 +75,21 @@ static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *
 			 int *rdata_len,int *rparam_len);
 
 
-static int CopyExpanded(connection_struct *conn,  uint16 vuid,
+static int CopyExpanded(connection_struct *conn,  const vuser_key *key,
 			int snum, char** dst, char* src, int* n)
 {
 	pstring buf;
 	int l;
+	user_struct *vuser;
 
 	if (!src || !dst || !n || !(*dst)) return(0);
 
 	StrnCpy(buf,src,sizeof(buf)/2);
 	string_sub(buf,"%S",lp_servicename(snum));
-	standard_sub(conn,get_valid_user_struct(vuid), buf);
+	vuser = get_valid_user_struct(key);
+	standard_sub(conn,vuser, buf);
+	vuid_free_user_struct(vuser);
+	safe_free(vuser);
 	StrnCpy(*dst,buf,*n);
 	l = strlen(*dst) + 1;
 	(*dst) += l;
@@ -103,23 +109,29 @@ static int CopyAndAdvance(char** dst, char* src, int* n)
 }
 
 static int StrlenExpanded(connection_struct *conn,
-				uint16 vuid, int snum, char* s)
+				const vuser_key *key, int snum, char* s)
 {
+	user_struct *vuser;
 	pstring buf;
 	if (!s) return(0);
 	StrnCpy(buf,s,sizeof(buf)/2);
 	string_sub(buf,"%S",lp_servicename(snum));
-	standard_sub(conn,get_valid_user_struct(vuid), buf);
+	vuser = get_valid_user_struct(key);
+	standard_sub(conn,vuser, buf);
+	vuid_free_user_struct(vuser);
+	safe_free(vuser);
 	return strlen(buf) + 1;
 }
 
-static char* Expand(connection_struct *conn, uint16 vuid, int snum, char* s)
+static char* Expand(connection_struct *conn, const vuser_key *key, int snum, char* s)
 {
+	user_struct *vuser;
 	static pstring buf;
 	if (!s) return(NULL);
 	StrnCpy(buf,s,sizeof(buf)/2);
 	string_sub(buf,"%S",lp_servicename(snum));
-	standard_sub(conn,get_valid_user_struct(vuid), buf);
+	vuser = get_valid_user_struct(key);
+	standard_sub(conn,vuser, buf);
 	return &buf[0];
 }
 
@@ -446,7 +458,7 @@ static void fill_printjob_info(connection_struct *conn,
   }
 }
 
-static void fill_printq_info(connection_struct *conn, uint16 vuid,
+static void fill_printq_info(connection_struct *conn, const vuser_key *key,
 				int snum, int uLevel,
  			     struct pack_desc* desc,
  			     int count, print_queue_struct* queue,
@@ -460,7 +472,7 @@ static void fill_printq_info(connection_struct *conn, uint16 vuid,
     case 3:
     case 4:
     case 5:
-      PACKS(desc,"z",Expand(conn,vuid, snum,SERVICE(snum)));
+      PACKS(desc,"z",Expand(conn,key, snum,SERVICE(snum)));
       break;
   }
 
@@ -478,7 +490,7 @@ static void fill_printq_info(connection_struct *conn, uint16 vuid,
       PACKI(desc,"W",LPSTAT_ERROR);
     }
     else if (!status || !status->message[0]) {
-      PACKS(desc,"z",Expand(conn,vuid, snum,lp_comment(snum)));
+      PACKS(desc,"z",Expand(conn,key, snum,lp_comment(snum)));
       PACKI(desc,"W",LPSTAT_OK); /* status */
     } else {
       PACKS(desc,"z",status->message);
@@ -495,7 +507,7 @@ static void fill_printq_info(connection_struct *conn, uint16 vuid,
     PACKS(desc,"z","WinPrint");	/* pszPrProc */
     PACKS(desc,"z","");		/* pszParms */
     if (!status || !status->message[0]) {
-      PACKS(desc,"z",Expand(conn,vuid, snum,lp_comment(snum))); /* pszComment */
+      PACKS(desc,"z",Expand(conn,key, snum,lp_comment(snum))); /* pszComment */
       PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
     } else {
       PACKS(desc,"z",status->message); /* pszComment */
@@ -686,6 +698,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
+	vuser_key key = { conn->smbd_pid, vuid };
   
   bzero(&status,sizeof(status));
   bzero(&desc,sizeof(desc));
@@ -718,7 +731,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	  count = get_printerdrivernumber(snum);
 	  DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
   } else {
-	  count = get_printqueue(snum, conn,vuid,&queue,&status);
+	  count = get_printqueue(snum, conn,&key,&queue,&status);
   }
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
@@ -726,7 +739,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   desc.buflen = mdrcnt;
   if (init_package(&desc,1,count)) {
 	  desc.subcount = count;
-	  fill_printq_info(conn,vuid,snum,uLevel,&desc,count,queue,&status);
+	  fill_printq_info(conn,&key,snum,uLevel,&desc,count,queue,&status);
   } else if (uLevel == 0) {
 	/*
 	 * This is a *disgusting* hack.
@@ -785,6 +798,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   print_status_struct *status = NULL;
   int* subcntarr = NULL;
   int queuecnt, subcnt=0, succnt=0;
+	vuser_key key = { conn->smbd_pid, vuid };
  
   bzero(&desc,sizeof(desc));
 
@@ -816,7 +830,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     n = 0;
     for (i = 0; i < services; i++)
       if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
- 	subcntarr[n] = get_printqueue(i, conn, vuid, &queue[n],&status[n]);
+ 	subcntarr[n] = get_printqueue(i, conn, &key, &queue[n],&status[n]);
  	subcnt += subcntarr[n];
  	n++;
       }
@@ -830,7 +844,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     succnt = 0;
     for (i = 0; i < services; i++)
       if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-	fill_printq_info(conn,vuid, i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
+	fill_printq_info(conn,&key, i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
 	n++;
 	if (desc.errcode == NERR_Success) succnt = n;
       }
@@ -1269,7 +1283,7 @@ static BOOL check_share_info(int uLevel, char* id)
   return True;
 }
 
-static int fill_share_info(connection_struct *conn, uint16 vuid,
+static int fill_share_info(connection_struct *conn, const vuser_key *key,
 				int snum, int uLevel,
  			   char** buf, int* buflen,
  			   char** stringbuf, int* stringspace, char* baseaddr)
@@ -1292,7 +1306,7 @@ static int fill_share_info(connection_struct *conn, uint16 vuid,
   if (!buf)
     {
       len = 0;
-      if (uLevel > 0) len += StrlenExpanded(conn,vuid,snum,lp_comment(snum));
+      if (uLevel > 0) len += StrlenExpanded(conn,key,snum,lp_comment(snum));
       if (uLevel > 1) len += strlen(lp_pathname(snum)) + 1;
       if (buflen) *buflen = struct_len;
       if (stringspace) *stringspace = len;
@@ -1325,7 +1339,7 @@ static int fill_share_info(connection_struct *conn, uint16 vuid,
       if (strequal("IPC$",lp_servicename(snum))) type = STYPE_IPC;
       SSVAL(p,14,type);		/* device type */
       SIVAL(p,16,PTR_DIFF(p2,baseaddr));
-      len += CopyExpanded(conn,vuid, snum,&p2,lp_comment(snum),&l2);
+      len += CopyExpanded(conn,key, snum,&p2,lp_comment(snum),&l2);
     }
   
   if (uLevel > 1)
@@ -1376,6 +1390,7 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
   char *p = skip_string(netname,1);
   int uLevel = SVAL(p,0);
   int snum = find_service(netname);
+	vuser_key key = { conn->smbd_pid, vuid };
   
   if (snum < 0) return False;
   
@@ -1385,7 +1400,7 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
  
   *rdata = REALLOC(*rdata,mdrcnt);
   p = *rdata;
-  *rdata_len = fill_share_info(conn,vuid,snum,uLevel,&p,&mdrcnt,0,0,0);
+  *rdata_len = fill_share_info(conn,&key,snum,uLevel,&p,&mdrcnt,0,0,0);
   if (*rdata_len < 0) return False;
  
   *rparam_len = 6;
@@ -1417,6 +1432,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
   int i;
   int data_len, fixed_len, string_len;
   int f_len = 0, s_len = 0;
+	vuser_key key = { conn->smbd_pid, vuid };
  
   if (!prefix_ok(str1,"WrLeh")) return False;
   if (!check_share_info(uLevel,str2)) return False;
@@ -1426,7 +1442,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
     if (lp_browseable(i) && lp_snum_ok(i))
     {
       total++;
-      data_len += fill_share_info(conn,vuid,i,uLevel,0,&f_len,0,&s_len,0);
+      data_len += fill_share_info(conn,&key,i,uLevel,0,&f_len,0,&s_len,0);
       if (data_len <= buf_len)
       {
         counted++;
@@ -1446,7 +1462,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
   s_len = string_len;
   for (i = 0; i < count;i++)
     if (lp_browseable(i) && lp_snum_ok(i))
-      if (fill_share_info(conn,vuid,i,uLevel,&p,&f_len,&p2,&s_len,*rdata) < 0)
+      if (fill_share_info(conn,&key,i,uLevel,&p,&f_len,&p2,&s_len,*rdata) < 0)
  	break;
   
   *rparam_len = 8;
@@ -1659,6 +1675,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
   char *p = skip_string(str2,1);
   int jobid, snum;
   int i, count;
+	vuser_key key = { conn->smbd_pid, vuid };
 
   printjob_decode(SVAL(p,0), &snum, &jobid);
 
@@ -1677,7 +1694,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
     {
       print_queue_struct *queue=NULL;
       lpq_reset(snum);
-      count = get_printqueue(snum,conn,vuid,&queue,NULL);
+      count = get_printqueue(snum,conn,&key,&queue,NULL);
   
       for (i=0;i<count;i++)
   	if ((queue[i].job&0xFF) == jobid)
@@ -1685,13 +1702,13 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
  	    switch (function) {
 	    case 81:		/* delete */ 
 	      DEBUG(3,("Deleting queue entry %d\n",queue[i].job));
-	      del_printqueue(conn,vuid,snum,queue[i].job);
+	      del_printqueue(conn,&key,snum,queue[i].job);
 	      break;
 	    case 82:		/* pause */
 	    case 83:		/* resume */
 	      DEBUG(3,("%s queue entry %d\n",
 		       (function==82?"pausing":"resuming"),queue[i].job));
-	      status_printjob(conn,vuid,snum,queue[i].job,
+	      status_printjob(conn,&key,snum,queue[i].job,
 			      (function==82?LPQ_PAUSED:LPQ_QUEUED));
 	      break;
  	    }
@@ -1722,6 +1739,7 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
   char *str2 = skip_string(str1,1);
   char *QueueName = skip_string(str2,1);
   int snum;
+	vuser_key key = { conn->smbd_pid, vuid };
 
   /* check it's a supported varient */
   if (!(strcsequal(str1,"z") && strcsequal(str2,"")))
@@ -1750,17 +1768,19 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
     switch (function) {
     case 74: /* Pause queue */
     case 75: /* Resume queue */
-      status_printqueue(conn,vuid,snum,(function==74?LPSTAT_STOPPED:LPSTAT_OK));
+    {
+      status_printqueue(conn,&key,snum,(function==74?LPSTAT_STOPPED:LPSTAT_OK));
       DEBUG(3,("Print queue %s, queue=%s\n",
             (function==74?"pause":"resume"),QueueName));
       break;
+      }
     case 103: /* Purge */
       {
         print_queue_struct *queue=NULL;
         int i, count;
-        count = get_printqueue(snum,conn,vuid,&queue,NULL);
+        count = get_printqueue(snum,conn,&key,&queue,NULL);
         for (i = 0; i < count; i++)
-          del_printqueue(conn,vuid,snum,queue[i].job);
+          del_printqueue(conn,&key,snum,queue[i].job);
  
         if (queue) free(queue);
         DEBUG(3,("Print queue purge, queue=%s\n",QueueName));
@@ -1810,6 +1830,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	int i;
 	char *s = data;
 	files_struct *fsp;
+	vuser_key key = { conn->smbd_pid, vuid };
 
 	printjob_decode(SVAL(p,0), &snum, &jobid);
    
@@ -1831,7 +1852,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 			int count;
   
 			lpq_reset(snum);
-			count = get_printqueue(snum,conn,vuid,&queue,NULL);
+			count = get_printqueue(snum,conn,&key,&queue,NULL);
 			for (i=0;i<count;i++)	/* find job */
 				if ((queue[i].job&0xFF) == jobid) break;
  	    
@@ -1916,6 +1937,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
   int uLevel = SVAL(p,0);
   char *p2;
   int struct_len;
+	vuser_key key = { conn->smbd_pid, vuid };
 
   DEBUG(4,("NetServerGetInfo level %d\n",uLevel));
 
@@ -1987,10 +2009,14 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
       if (mdrcnt == struct_len) {
 	SIVAL(p,6,0);
       } else {
+        user_struct *vuser = get_valid_user_struct(&key);
 	SIVAL(p,6,PTR_DIFF(p2,*rdata));
-	standard_sub(conn,get_valid_user_struct(vuid), comment);
+	standard_sub(conn,vuser, comment);
 	StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 	p2 = skip_string(p2,1);
+	vuid_free_user_struct(vuser);
+	safe_free(vuser);
+
       }
     }
   if (uLevel > 1)
@@ -2261,11 +2287,12 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(UserName,1);
 	int uLevel = SVAL(p,0);
 	char *p2;
+	vuser_key key = { conn->smbd_pid, vuid };
 
     /* get NIS home of a previously validated user - simeon */
     /* With share level security vuid will always be zero.
        Don't depend on vuser being non-null !!. JRA */
-    user_struct *vuser = get_valid_user_struct(vuid);
+    user_struct *vuser = get_valid_user_struct(&key);
     if (vuser != NULL)
       DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, vuser->name));
 
@@ -2283,10 +2310,20 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		case 2: p2 = "B21BB16DWzzWzDzzzzDDDDWb21WWzWW"; break;
 		case 10: p2 = "B21Bzzz"; break;
 		case 11: p2 = "B21BzzzWDDzzDDWWzWzDWb21W"; break;
-		default: return False;
+		default:
+		{
+			vuid_free_user_struct(vuser);
+			safe_free(vuser);
+			return False;
+		}
 	}
 
-	if (strcmp(p2,str2) != 0) return False;
+	if (strcmp(p2,str2) != 0)
+	{
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
+		return False;
+	}
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = REALLOC(*rdata,*rdata_len);
@@ -2327,7 +2364,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, lp_logon_path(vuid));
+		pstrcpy(p2, lp_logon_path(&key));
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2363,7 +2400,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2,lp_logon_path(vuid));
+		pstrcpy(p2,lp_logon_path(&key));
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
@@ -2402,6 +2439,9 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	*rdata_len = PTR_DIFF(p2,*rdata);
 
 	SSVAL(*rparam,4,*rdata_len);	/* is this right?? */
+
+	vuid_free_user_struct(vuser);
+	safe_free(vuser);
 
 	return(True);
 }
@@ -2468,6 +2508,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   struct pack_desc desc;
   char* name;
   char* logon_script;
+  vuser_key key = { conn->smbd_pid, vuid };
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2487,6 +2528,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   
   if (init_package(&desc,1,0))
   {
+    user_struct *vuser = get_valid_user_struct(&key);
     PACKI(&desc,"W",0);		/* code */
     PACKS(&desc,"B21",name);	/* eff. name */
     PACKS(&desc,"B","");		/* pad */
@@ -2513,8 +2555,10 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
 
 /* JHT - By calling lp_logon_script() and standard_sub() we have */
 /* made sure all macros are fully substituted and available */
-    logon_script = lp_logon_script(vuid);
-    standard_sub( conn, get_valid_user_struct(vuid), logon_script );
+    logon_script = lp_logon_script(&key);
+    standard_sub( conn, vuser, logon_script );
+	vuid_free_user_struct(vuser);
+	safe_free(vuser);
     PACKS(&desc,"z", logon_script);		/* script path */
 /* End of JHT mods */
 
@@ -2580,6 +2624,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
+	vuser_key key = { conn->smbd_pid, vuid };
 
   uLevel = SVAL(p,2);
 
@@ -2596,7 +2641,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,conn,vuid,&queue,&status);
+  count = get_printqueue(snum,conn,&key,&queue,&status);
   for (i = 0; i < count; i++) {
     if ((queue[i].job & 0xFF) == job) break;
   }
@@ -2643,6 +2688,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
+	vuser_key key = { conn->smbd_pid, vuid };
 
   bzero(&desc,sizeof(desc));
   bzero(&status,sizeof(status));
@@ -2668,7 +2714,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,conn,vuid,&queue,&status);
+  count = get_printqueue(snum,conn,&key,&queue,&status);
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
   desc.buflen = mdrcnt;

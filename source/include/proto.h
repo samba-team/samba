@@ -298,20 +298,22 @@ void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);
 void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
-				uint32 pid,
+				const vuser_key *key,
 				const char* pipename,
 				const struct user_creds *usr);
-struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc, uint32 pid);
+struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
+				const vuser_key *key);
 void msrpc_shutdown(struct msrpc_state *msrpc);
 BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
-		const char *pipe_name);
+				const vuser_key *key,
+				const char *pipe_name);
 
 /*The following definitions come from  lib/msrpc_use.c  */
 
 void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
-				uint32 pid,
+				const vuser_key *key,
 				const struct user_creds *usr_creds,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,
@@ -351,7 +353,7 @@ BOOL become_uid(uid_t uid);
 BOOL become_gid(gid_t gid);
 BOOL unbecome_to_initial_uid(void);
 BOOL become_id(uid_t uid,gid_t gid);
-BOOL become_unix_sec_ctx(uint16 vuid, connection_struct *conn,
+BOOL become_unix_sec_ctx(const vuser_key *k, connection_struct *conn,
 				uid_t new_uid, gid_t new_gid,
 				int n_groups, gid_t* groups);
 BOOL become_guest(void);
@@ -361,7 +363,7 @@ void unbecome_root(BOOL restore_dir);
 /*The following definitions come from  lib/set_vuid.c  */
 
 void init_vuid(void);
-BOOL become_vuser(uint16 vuid);
+BOOL become_vuser(const vuser_key *k);
 BOOL unbecome_vuser(void);
 
 /*The following definitions come from  lib/sids.c  */
@@ -536,7 +538,7 @@ void standard_sub(connection_struct *conn, user_struct *vuser, char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(int pid);
-int get_unixgroups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
+int get_unixgroups(const char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
 BOOL get_unix_grps(int *p_ngroups, struct group **p_groups);
 void free_unix_grps(int ngroups, struct group *p_groups);
 char *gidtoname(gid_t gid);
@@ -775,15 +777,29 @@ void start_agent(struct vagent_ops *va);
 
 /*The following definitions come from  lib/vuser.c  */
 
-user_struct *get_valid_user_struct(uint16 vuid);
-void invalidate_vuid(uint16 vuid);
-char *validated_username(uint16 vuid);
-uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
-				char *unix_name, char *requested_name,
-				char *real_name,
+user_struct *get_valid_user_struct(const vuser_key *key);
+void invalidate_vuid(vuser_key *key);
+BOOL validated_username(vuser_key *key, char *name, size_t len);
+uint16 create_vuid(pid_t pid,
+				uid_t uid, gid_t gid,
+				int n_groups, gid_t *groups,
+				const char *unix_name,
+				const char *requested_name,
+				const char *real_name,
 				BOOL guest, const NET_USER_INFO_3 *info3);
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, const NET_USER_INFO_3 *info3);
+uint16 register_vuid(pid_t pid,
+				uid_t uid,gid_t gid,
+				const char *unix_name,
+				const char *requested_name,
+				BOOL guest,
+				const NET_USER_INFO_3 *info3);
 BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum);
+
+/*The following definitions come from  lib/vuser_db.c  */
+
+BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct *usr);
+BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
+BOOL vuid_init_db(void);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -1114,7 +1130,7 @@ void exit_server(char *reason);
 
 /*The following definitions come from  msrpc/msrpcd_process.c  */
 
-BOOL get_user_creds(int c, struct user_creds *usr, uint32 *pid);
+BOOL get_user_creds(int c, struct user_creds *usr, vuser_key *uk);
 void close_srv_auth_array(rpcsrv_struct *l);
 void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn);
 BOOL msrpcd_init(int c, msrpc_pipes_struct *p);
@@ -1165,7 +1181,6 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 				    DOM_CRED *srv_creds,
 				    uint16 *switch_value,
 				    NET_USER_INFO_3 *user,
-				    uint32 *auth_resp,
 				    uint16 remote_pid);
 uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
 			     DOM_CRED *srv_creds,
@@ -1644,10 +1659,10 @@ int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
 int lp_ldap_port(void);
 int lp_ldap_protocol_version(void);
-char *lp_logon_script(uint16 );
-char *lp_logon_path(uint16 );
-char *lp_logon_drive(uint16 );
-char *lp_logon_home(uint16 );
+char *lp_logon_script(const vuser_key* );
+char *lp_logon_path(const vuser_key* );
+char *lp_logon_drive(const vuser_key* );
+char *lp_logon_home(const vuser_key* );
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
@@ -1947,7 +1962,7 @@ BOOL local_password_change(char *user_name,
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 
-BOOL trust_password_lock( char *domain, char *name, BOOL update);
+BOOL trust_password_lock( const char *domain, const char *name, BOOL update);
 BOOL trust_password_unlock(void);
 BOOL trust_password_delete( char *domain, char *name );
 BOOL get_trust_account_password( uchar *ret_pwd, time_t *pass_last_set_time);
@@ -2004,18 +2019,18 @@ int sysv_printername_ok(char *name);
 /*The following definitions come from  printing/printing.c  */
 
 void lpq_reset(int snum);
-void print_file(connection_struct *conn, uint16 vuid,
+void print_file(connection_struct *conn, const vuser_key *key,
 				int snum, files_struct *file);
-int get_printqueue(int snum, connection_struct *conn, uint16 vuid,
+int get_printqueue(int snum, connection_struct *conn, const vuser_key *key,
 				print_queue_struct **queue,
 		   print_status_struct *status);
-void del_printqueue(connection_struct *conn,uint16 vuid,
+void del_printqueue(connection_struct *conn,const vuser_key *key,
 				int snum,int jobid);
-void status_printjob(connection_struct *conn,uint16 vuid,
+void status_printjob(connection_struct *conn,const vuser_key *key,
 				int snum,int jobid,int status);
 int printjob_encode(int snum, int job);
 void printjob_decode(int jobid, int *snum, int *job);
-uint32 status_printqueue(connection_struct *conn,uint16 vuid,
+uint32 status_printqueue(connection_struct *conn,const vuser_key *key,
 				int snum,int status);
 void load_printers(void);
 
@@ -2213,7 +2228,8 @@ BOOL synchronise_passdb(void);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
-BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, uint8 flags,
+BOOL create_rpc_request(prs_struct *rhdr, uint16 vuid,
+				uint8 op_num, uint8 flags,
 				int data_len,
 				int auth_len);
 BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
@@ -2728,13 +2744,13 @@ BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth);
 BOOL create_ntuser_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
-				uint32 pid,
+				const vuser_key *key,
 				const struct ntuser_creds *ntu,
 				BOOL reuse);
 BOOL create_user_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
-				uint32 pid,
+				const vuser_key *key,
 				const struct user_creds *usr);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
@@ -2954,7 +2970,6 @@ BOOL make_r_sam_logon(NET_R_SAM_LOGON *r_s,
 			    const DOM_CRED *srv_creds,
 			    uint16 switch_value,
 			    NET_USER_INFO_3 *user_info,
-			    uint32 auth_resp,
 			    uint32 status);
 BOOL net_io_r_sam_logon(char *desc,  NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
 BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth);
@@ -3098,7 +3113,8 @@ BOOL make_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer);
 BOOL smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth);
-BOOL make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum);
+BOOL make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 vuid,
+				uint16 opnum);
 BOOL smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
 BOOL smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
@@ -3133,6 +3149,20 @@ void free_sec_desc(SEC_DESC *t);
 BOOL make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data);
 void free_sec_desc_buf(SEC_DESC_BUF *buf);
 BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
+
+/*The following definitions come from  rpc_parse/parse_vuid.c  */
+
+BOOL vuid_io_key(char *desc, vuser_key *r_u, prs_struct *ps, int depth);
+BOOL make_vuid_user_struct(user_struct *r_u,
+				uid_t uid, gid_t gid,
+				const char* name,
+				const char* requested_name,
+				const char* real_name,
+				BOOL guest,
+				uint32 n_groups, const gid_t *groups,
+				const NET_USER_INFO_3 *usr);
+BOOL vuid_io_user_struct(char *desc, user_struct *r_u, prs_struct *ps, int depth);
+void vuid_free_user_struct(user_struct *r_u);
 
 /*The following definitions come from  rpc_server/srv_brs.c  */
 
@@ -4149,9 +4179,10 @@ BOOL password_ok(const char *orig_user, const char *domain,
 				const char *smb_ntpasswd, int smb_ntpasslen,
 				struct passwd *pwd,
 				NET_USER_INFO_3 *info3);
-BOOL authorise_login(int snum,char *user, char *domain,
+BOOL authorise_login(int snum, char *user, char *domain,
 				char *password, int pwlen, 
-		     BOOL *guest,BOOL *force,uint16 vuid);
+				BOOL *guest,BOOL *force,
+				const vuser_key *key);
 BOOL check_hosts_equiv(char *user);
 
 /*The following definitions come from  smbd/pipes.c  */
@@ -4285,6 +4316,7 @@ int reply_trans2(connection_struct *conn,
 /*The following definitions come from  smbd/uid.c  */
 
 BOOL become_user(connection_struct *conn, uint16 vuid);
+BOOL become_userk(connection_struct *conn, const vuser_key *key);
 BOOL unbecome_user(void );
 
 /*The following definitions come from  smbd/vfs-wrap.c  */

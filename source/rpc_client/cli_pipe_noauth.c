@@ -49,6 +49,7 @@ static BOOL create_noauth_pdu(struct cli_connection *con,
 	int frag_len;
 	char *d = prs_data(data, data_start);
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
+
 	*flags = 0;
 
 	data_len = data->offset - data_start;
@@ -79,7 +80,7 @@ static BOOL create_noauth_pdu(struct cli_connection *con,
 	data_t.end = data_t.data_size;
 	data_t.offset = data_t.data_size;
 
-	create_rpc_request(&hdr, op_num, (*flags), frag_len, 0);
+	create_rpc_request(&hdr, nt->key.vuid, op_num, (*flags), frag_len, 0);
 
 	prs_link(NULL, &hdr   , &data_t);
 	prs_link(&hdr, &data_t, NULL   );

@@ -26,6 +26,7 @@
 #include "rpc_parse.h"
 
 struct user_creds *usr_creds = NULL;
+vuser_key *key = NULL;
 
 extern int DEBUGLEVEL;
 extern pstring scope;
@@ -101,6 +102,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 				BOOL reuse)
 {
 	struct cli_connection *con = NULL;
+	vuser_key con_key;
 
 	con = (struct cli_connection*)malloc(sizeof(*con));
 
@@ -111,6 +113,16 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 
 	memset(con, 0, sizeof(*con));
 	con->type = MSRPC_NONE;
+
+	if (key != NULL)
+	{
+		con_key = *key;
+	}
+	else
+	{
+		con_key.pid = getpid();
+		con_key.vuid = 1;
+	}
 
 	copy_user_creds(&con->usr_creds, usr_creds);
 	con->usr_creds.reuse = reuse;
@@ -142,7 +154,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		become_root(False);
 		con->type = MSRPC_LOCAL;
 		con->usr_creds.reuse = False;
-		con->msrpc.local = msrpc_use_add(&pipe_name[6], getpid(),
+		con->msrpc.local = msrpc_use_add(&pipe_name[6], &con_key,
 		                                  &con->usr_creds,
 		                                  False);
 		unbecome_root(False);
@@ -435,7 +447,11 @@ BOOL cli_set_con_usr_sesskey(struct cli_connection *con,
 		return False;
 	}
 	nt = cli_conn_get_ntinfo(con);
-	memcpy(nt->usr_sess_key, usr_sess_key, sizeof(nt->usr_sess_key));
+	if (nt != NULL)
+	{
+		memcpy(nt->usr_sess_key, usr_sess_key, sizeof(nt->usr_sess_key));
+	}
+
 
 	return True;
 }
@@ -526,6 +542,10 @@ struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con)
 ****************************************************************************/
 struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con)
 {
+	if (con == NULL)
+	{
+		return NULL;
+	}
 	if (con->msrpc.cli == NULL)
 	{
 		DEBUG(1,("cli_conn_get_ntinfo: NULL msrpc (closed)\n"));

@@ -24,7 +24,6 @@
 extern int DEBUGLEVEL;
 
 /* this holds info on user ids that are already validated for this VC */
-static user_struct *validated_users = NULL;
 static int num_validated_users = 0;
 
 /****************************************************************************
@@ -32,50 +31,73 @@ check if a uid has been validated, and return an pointer to the user_struct
 if it has. NULL if not. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-user_struct *get_valid_user_struct(uint16 vuid)
+user_struct *get_valid_user_struct(const vuser_key *key)
 {
-  if (vuid == UID_FIELD_INVALID)
-    return NULL;
-  vuid -= VUID_OFFSET;
-  if ((vuid >= (uint16)num_validated_users) || 
-     (validated_users[vuid].uid == (uid_t)-1) || (validated_users[vuid].gid == (gid_t)-1))
-    return NULL;
-  return &validated_users[vuid];
+	user_struct *usr;
+	if (key == NULL)
+	{
+		return NULL;
+	}
+
+	if (key->vuid == UID_FIELD_INVALID)
+	{
+		return NULL;
+	}
+	usr = (user_struct *)malloc(sizeof(*usr));
+	if (usr == NULL)
+	{
+		return NULL;
+	}
+	if (!tdb_lookup_vuid(key, usr))
+	{
+		vuid_free_user_struct(usr);
+		safe_free(usr);
+		return NULL;
+	}
+	if (usr->uid == (uid_t)-1 || usr->gid == (gid_t)-1)
+	{
+		vuid_free_user_struct(usr);
+		safe_free(usr);
+	}
+	return usr;
 }
 
 /****************************************************************************
 invalidate a uid
 ****************************************************************************/
-void invalidate_vuid(uint16 vuid)
+void invalidate_vuid(vuser_key *key)
 {
-  user_struct *vuser = get_valid_user_struct(vuid);
+	user_struct *vuser = get_valid_user_struct(key);
 
-  if (vuser == NULL) return;
+	if (vuser == NULL) return;
 
-  vuser->uid = (uid_t)-1;
-  vuser->gid = (gid_t)-1;
+	vuser->uid = (uid_t)-1;
+	vuser->gid = (gid_t)-1;
 
-  /* same number of igroups as groups */
-  vuser->n_groups = 0;
+	vuser->n_groups = 0;
+	safe_free(vuser->groups);
+	vuser->groups  = NULL;
 
-  if (vuser->groups)
-    free((char *)vuser->groups);
+	tdb_store_vuid(key, vuser);
 
-  vuser->groups  = NULL;
+	vuid_free_user_struct(vuser);
+	safe_free(vuser);
 }
 
 
 /****************************************************************************
 return a validated username
 ****************************************************************************/
-char *validated_username(uint16 vuid)
+BOOL validated_username(vuser_key *key, char *name, size_t len)
 {
-  user_struct *vuser = get_valid_user_struct(vuid);
-  if (vuser == NULL)
-    return 0;
-  return(vuser->name);
+	user_struct *vuser = get_valid_user_struct(key);
+	if (vuser == NULL)
+	{
+		return False;
+	}
+	safe_strcpy(name, vuser->name, len-1);
+	return True;
 }
-
 
 
 /****************************************************************************
@@ -83,45 +105,46 @@ register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
-				char *unix_name, char *requested_name,
-				char *real_name,
+uint16 create_vuid(pid_t pid,
+				uid_t uid, gid_t gid,
+				int n_groups, gid_t *groups,
+				const char *unix_name,
+				const char *requested_name,
+				const char *real_name,
 				BOOL guest, const NET_USER_INFO_3 *info3)
 {
-  user_struct *vuser;
+	user_struct vuser;
+	vuser_key key;
 	uint16 vuid;
 
-  validated_users = (user_struct *)Realloc(validated_users,
-			   sizeof(user_struct)*
-			   (num_validated_users+1));
-  
-  if (!validated_users)
-    {
-      DEBUG(0,("Failed to realloc users struct!\n"));
-      num_validated_users = 0;
-      return UID_FIELD_INVALID;
-    }
+	vuser.uid = uid;
+	vuser.gid = gid;
+	vuser.guest = guest;
+	fstrcpy(vuser.name,unix_name);
+	fstrcpy(vuser.requested_name,requested_name);
+	fstrcpy(vuser.real_name,real_name);
+	memcpy(&vuser.usr, info3, sizeof(vuser.usr));
 
-  vuser = &validated_users[num_validated_users];
-  num_validated_users++;
+	vuser.n_groups = n_groups;
+	vuser.groups = groups;
 
-  vuser->uid = uid;
-  vuser->gid = gid;
-  vuser->guest = guest;
-  fstrcpy(vuser->name,unix_name);
-  fstrcpy(vuser->requested_name,requested_name);
-  fstrcpy(vuser->real_name,real_name);
-  memcpy(&vuser->usr, info3, sizeof(vuser->usr));
+	num_validated_users++;
+	vuid = (uint16)((num_validated_users - 1) + VUID_OFFSET);
 
-  vuser->n_groups = n_groups;
-	vuser->groups = groups;
+	DEBUG(3,("uid %d vuid %d registered to unix name %s\n",
+	               (int)uid, vuid, unix_name));
+	dump_data_pw("vuid usr sess key:\n", vuser.usr.user_sess_key,
+	       sizeof(vuser.usr.user_sess_key));
 
-  vuid = (uint16)((num_validated_users - 1) + VUID_OFFSET);
-  DEBUG(3,("uid %d vuid %d registered to name %s\n",(int)uid, vuid, unix_name));
-  dump_data_pw("vuid usr sess key:\n", vuser->usr.user_sess_key,
-               sizeof(vuser->usr.user_sess_key));
+	key.pid = (uint32)pid;
+	key.vuid = vuid;
 
-  return vuid;
+	if (!tdb_store_vuid(&key, &vuser))
+	{
+		return UID_FIELD_INVALID;
+	}
+
+	return vuid;
 }
 
 /****************************************************************************
@@ -129,7 +152,12 @@ register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, const NET_USER_INFO_3 *info3)
+uint16 register_vuid(pid_t pid,
+				uid_t uid,gid_t gid,
+				const char *unix_name,
+				const char *requested_name,
+				BOOL guest,
+				const NET_USER_INFO_3 *info3)
 {
 	int n_groups = 0;
 	gid_t *groups = NULL;
@@ -139,38 +167,6 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   /* Ensure no vuid gets registered in share level security. */
   if(lp_security() == SEC_SHARE)
     return UID_FIELD_INVALID;
-
-#if 0
-  /*
-   * After observing MS-Exchange services writing to a Samba share
-   * I belive this code is incorrect. Each service does its own
-   * sessionsetup_and_X for the same user, and as each service shuts
-   * down, it does a user_logoff_and_X. As we are consolidating multiple
-   * sessionsetup_and_X's onto the same vuid here, when the first service
-   * shuts down, it invalidates all the open files for the other services.
-   * Hence I am removing this code and forcing each sessionsetup_and_X
-   * to get a new vuid.
-   * Jeremy Allison. (jallison@whistle.com).
-   */
-
-  int i;
-  for(i = 0; i < num_validated_users; i++) {
-    vuser = &validated_users[i];
-    if ( vuser->uid == uid )
-      return (uint16)(i + VUID_OFFSET); /* User already validated */
-  }
-#endif
-
-  validated_users = (user_struct *)Realloc(validated_users,
-			   sizeof(user_struct)*
-			   (num_validated_users+1));
-  
-  if (!validated_users)
-    {
-      DEBUG(0,("Failed to realloc users struct!\n"));
-      num_validated_users = 0;
-      return UID_FIELD_INVALID;
-    }
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
@@ -191,7 +187,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
       }
   }
 
-  return create_vuid(uid, gid, n_groups, groups,
+  return create_vuid(pid, uid, gid, n_groups, groups,
 				unix_name, requested_name,
 				real_name,
 				guest, info3);

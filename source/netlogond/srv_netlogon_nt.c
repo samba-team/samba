@@ -794,7 +794,6 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 				    DOM_CRED *srv_creds,
 				    uint16 *switch_value,
 				    NET_USER_INFO_3 *user,
-				    uint32 *auth_resp,
 				    uint16 remote_pid)
 {
 	UNISTR2 *uni_samusr = NULL;
@@ -833,8 +832,6 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 
 	UNISTR2 uni_myname;
 	UNISTR2 uni_sam_name;
-
-	*auth_resp = 1; /* authoritative response */
 
 	unistr2_to_ascii(trust_name, &(sam_id->client.login.uni_comp_name),
 	                             sizeof(trust_name)-1);
@@ -1012,9 +1009,6 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	*/
 
 	/* return the profile plus other bits :-) */
-
-	/* set up pointer indicating user/password failed to be found */
-	user->ptr_user_info = 0;
 
 	make_unistr2(&uni_myname, global_myname, strlen(global_myname));
 	make_unistr2(&uni_sam_name, global_sam_name, strlen(global_sam_name));

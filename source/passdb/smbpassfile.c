@@ -29,7 +29,8 @@ static FILE *mach_passwd_fp = NULL;
  Routine to get the name for a trust account file.
 ************************************************************************/
 
-static void get_trust_account_file_name( char *domain, char *name, char *mac_file)
+static void get_trust_account_file_name( const char *domain, const char *name,
+				char *mac_file)
 {
   unsigned int mac_file_len;
   char *p;
@@ -67,7 +68,7 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
  Routine to lock the trust account password file for a domain.
 ************************************************************************/
 
-BOOL trust_password_lock( char *domain, char *name, BOOL update)
+BOOL trust_password_lock( const char *domain, const char *name, BOOL update)
 {
   pstring mac_file;
 

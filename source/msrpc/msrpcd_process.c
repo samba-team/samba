@@ -211,7 +211,7 @@ static void process_msrpc(msrpc_pipes_struct *p, int c)
 /****************************************************************************
  reads user credentials from the socket
 ****************************************************************************/
-BOOL get_user_creds(int c, struct user_creds *usr, uint32 *pid)
+BOOL get_user_creds(int c, struct user_creds *usr, vuser_key *uk)
 {
 	pstring buf;
 	int rl;
@@ -292,8 +292,8 @@ BOOL get_user_creds(int c, struct user_creds *usr, uint32 *pid)
 		}
 	}
 
-	/* obtain the remote process id */
-	*pid = cmd.pid;
+	/* obtain the remote process id and vuid */
+	(*uk) = cmd.key;
 
 	status = new_con ? 0x0 : 0x1;
 
@@ -335,48 +335,31 @@ void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn)
 BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 {
 	struct user_creds usr;
-	gid_t *groups = NULL;
-	char *user;
-	uint16 vuid;
-	uint32 remote_pid;
+	vuser_key uk;
+	user_struct *vuser;
 
-	if (!get_user_creds(c, &usr, &remote_pid))
+	if (!get_user_creds(c, &usr, &uk))
 	{
 		DEBUG(0,("authentication failed\n"));
 		free_user_creds(&usr);
 		return False;
 	}
 
-	if (usr.uxs.num_grps != 0)
+	if (uk.vuid == UID_FIELD_INVALID)
 	{
-		int i;
-		groups = malloc(usr.uxs.num_grps * sizeof(groups[0]));
-		if (groups == NULL)
-		{
-			return False;
-		}
-		for (i = 0; i < usr.uxs.num_grps; i++)
-		{
-			groups[i] = (gid_t)usr.uxs.grps[i];
-		}
-	}
-		
-	vuid = create_vuid(usr.uxs.uid, usr.uxs.gid,
-	                               usr.uxs.num_grps, groups,
-	                               usr.uxc.user_name,
-	                               usr.uxc.requested_name,
-	                               usr.uxc.real_name,
-	                               usr.uxc.guest,
-	                               &usr.nts);
-
-	if (vuid == UID_FIELD_INVALID)
-	{
+		free_user_creds(&usr);
 		return False;
 	}
 
 	free_user_creds(&usr);
 
-	if (!become_vuser(vuid))
+	if (!become_vuser(&uk))
+	{
+		return False;
+	}
+
+	vuser = get_valid_user_struct(&uk);
+	if (vuser == NULL)
 	{
 		return False;
 	}
@@ -384,17 +367,18 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 	p->l = malloc(sizeof(*p->l));
 	if (p->l == NULL)
 	{
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
 		return False;
 	}
 
 	ZERO_STRUCTP(p->l);
 
-	p->l->vuid = vuid;
-	p->l->remote_pid = remote_pid;
+	p->l->key = uk;
 
-	if (!usr.uxc.guest)
+	if (!vuser->guest)
 	{
-		user = usr.uxc.user_name;
+		char *user = vuser->name;
 		if (!strequal(user,lp_guestaccount(-1)) &&
 		     lp_servicenumber(user) < 0)      
 		{
@@ -408,6 +392,10 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 			}
 		}
 	}
+
+	vuid_free_user_struct(vuser);
+	safe_free(vuser);
+
 	return True;
 }
 

@@ -79,7 +79,8 @@ typedef struct cred_command
 {
 	uint16 version;
 	uint16 command;
-	uint32 pid; /* unique process id */
+
+	vuser_key key;
 
 	fstring name;
 

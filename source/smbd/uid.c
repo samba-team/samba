@@ -30,7 +30,17 @@ extern struct current_user current_user;
 ****************************************************************************/
 BOOL become_user(connection_struct *conn, uint16 vuid)
 {
-	user_struct *vuser = get_valid_user_struct(vuid);
+	vuser_key key;
+	key.pid = getpid();
+	key.vuid = vuid;
+	return become_userk(conn, &key);
+}
+/****************************************************************************
+ Become the user of a connection number.
+****************************************************************************/
+BOOL become_userk(connection_struct *conn, const vuser_key *key)
+{
+	user_struct *vuser = NULL;
 	int snum;
 	gid_t gid = -1;
 	uid_t uid = -1;
@@ -55,13 +65,21 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	   (current_user.uid == conn->uid))
 	{
 		DEBUG(4,("Skipping become_user - already user\n"));
+
 		return(True);
 	}
-	else if ((current_user.conn == conn) && 
-		   (vuser != NULL) && (current_user.vuid == vuid) && 
+
+	vuser = get_valid_user_struct(key);
+
+	if ((current_user.conn == conn) && 
+		   (vuser != NULL) &&
+		   (current_user.key.vuid == key->vuid) && 
+		   (current_user.key.pid == key->pid) && 
 		   (current_user.uid == vuser->uid))
 	{
 		DEBUG(4,("Skipping become_user - already user\n"));
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
 		return(True);
 	}
 
@@ -70,7 +88,11 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	snum = SNUM(conn);
 
 	if((vuser != NULL) && !check_vuser_ok(&conn->uid_cache, vuser, snum))
+	{
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
 		return False;
+	}
 
 	if (conn->force_user || 
 	    lp_security() == SEC_SHARE ||
@@ -81,7 +103,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		ngroups = conn->ngroups;
 	} else {
 		if (!vuser) {
-			DEBUG(2,("Invalid vuid used %d\n",vuid));
+			DEBUG(2,("Invalid vuid used %d\n",key->vuid));
 			return(False);
 		}
 		uid = vuser->uid;
@@ -118,7 +140,10 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		}
 	}
 	
-	return become_unix_sec_ctx(vuid, conn, uid, gid, ngroups, groups);
+	vuid_free_user_struct(vuser);
+	safe_free(vuser);
+
+	return become_unix_sec_ctx(key, conn, uid, gid, ngroups, groups);
 }
 
 /****************************************************************************

@@ -51,7 +51,7 @@ Build the print command in the supplied buffer. This means getting the
 print command for the service and inserting the printer name and the
 print file name. Return NULL on error, else the passed buffer pointer.
 ****************************************************************************/
-static char *build_print_command(connection_struct *conn, uint16 vuid,
+static char *build_print_command(connection_struct *conn, const vuser_key *key,
 				int snum,
 				 char *command, 
 				 char *syscmd, char *filename1)
@@ -95,7 +95,12 @@ static char *build_print_command(connection_struct *conn, uint16 vuid,
   
 	string_sub(syscmd, "%p", tstr);
   
-	standard_sub(conn, get_valid_user_struct(vuid), syscmd);
+  	{
+  		user_struct *vuser = get_valid_user_struct(key);
+		standard_sub(conn, vuser, syscmd);
+  		vuid_free_user_struct(vuser);
+  		safe_free(vuser);
+  	}
 
 	return (syscmd);
 }
@@ -104,7 +109,7 @@ static char *build_print_command(connection_struct *conn, uint16 vuid,
 /****************************************************************************
 print a file - called on closing the file
 ****************************************************************************/
-void print_file(connection_struct *conn, uint16 vuid,
+void print_file(connection_struct *conn, const vuser_key *key,
 				int snum, files_struct *file)
 {
 	pstring syscmd;
@@ -118,7 +123,7 @@ void print_file(connection_struct *conn, uint16 vuid,
 		return;
 	}
 
-	tempstr = build_print_command(conn, vuid, snum,
+	tempstr = build_print_command(conn, key, snum,
 				      PRINTCOMMAND(snum), 
 				      syscmd, file->fsp_name);
 	if (tempstr != NULL) {
@@ -961,7 +966,7 @@ static BOOL parse_lpq_entry(int snum,char *line,
 /****************************************************************************
 get a printer queue
 ****************************************************************************/
-int get_printqueue(int snum, connection_struct *conn, uint16 vuid,
+int get_printqueue(int snum, connection_struct *conn, const vuser_key *key,
 				print_queue_struct **queue,
 		   print_status_struct *status)
 {
@@ -993,7 +998,12 @@ int get_printqueue(int snum, connection_struct *conn, uint16 vuid,
 	pstrcpy(syscmd,lpq_command);
 	string_sub(syscmd,"%p",printername);
 
-	standard_sub(conn, get_valid_user_struct(vuid), syscmd);
+  	{
+  		user_struct *vuser = get_valid_user_struct(key);
+		standard_sub(conn, vuser, syscmd);
+  		vuid_free_user_struct(vuser);
+  		safe_free(vuser);
+  	}
 
 	slprintf(outfile,sizeof(outfile)-1, "%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
   
@@ -1056,7 +1066,7 @@ int get_printqueue(int snum, connection_struct *conn, uint16 vuid,
 /****************************************************************************
 delete a printer queue entry
 ****************************************************************************/
-void del_printqueue(connection_struct *conn,uint16 vuid,
+void del_printqueue(connection_struct *conn,const vuser_key *key,
 				int snum,int jobid)
 {
   char *lprm_command = lp_lprmcommand(snum);
@@ -1083,7 +1093,12 @@ void del_printqueue(connection_struct *conn,uint16 vuid,
   pstrcpy(syscmd,lprm_command);
   string_sub(syscmd,"%p",printername);
   string_sub(syscmd,"%j",jobstr);
-	standard_sub(conn, get_valid_user_struct(vuid), syscmd);
+  	{
+  		user_struct *vuser = get_valid_user_struct(key);
+		standard_sub(conn, vuser, syscmd);
+  		vuid_free_user_struct(vuser);
+  		safe_free(vuser);
+  	}
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
@@ -1093,7 +1108,7 @@ void del_printqueue(connection_struct *conn,uint16 vuid,
 /****************************************************************************
 change status of a printer queue entry
 ****************************************************************************/
-void status_printjob(connection_struct *conn,uint16 vuid,
+void status_printjob(connection_struct *conn,const vuser_key *key,
 				int snum,int jobid,int status)
 {
   char *lpstatus_command = 
@@ -1122,7 +1137,12 @@ void status_printjob(connection_struct *conn,uint16 vuid,
   pstrcpy(syscmd,lpstatus_command);
   string_sub(syscmd,"%p",printername);
   string_sub(syscmd,"%j",jobstr);
-	standard_sub(conn, get_valid_user_struct(vuid), syscmd);
+  	{
+  		user_struct *vuser = get_valid_user_struct(key);
+		standard_sub(conn, vuser, syscmd);
+  		vuid_free_user_struct(vuser);
+  		safe_free(vuser);
+  	}
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
@@ -1154,7 +1174,7 @@ void printjob_decode(int jobid, int *snum, int *job)
 /****************************************************************************
  Change status of a printer queue
 ****************************************************************************/
-uint32 status_printqueue(connection_struct *conn,uint16 vuid,
+uint32 status_printqueue(connection_struct *conn,const vuser_key *key,
 				int snum,int status)
 {
   char *queuestatus_command = (status==LPSTAT_STOPPED ? 
@@ -1177,7 +1197,14 @@ uint32 status_printqueue(connection_struct *conn,uint16 vuid,
 
   pstrcpy(syscmd,queuestatus_command);
   string_sub(syscmd,"%p",printername);
-	standard_sub(conn, get_valid_user_struct(vuid), syscmd);
+  	{
+  		user_struct *vuser = get_valid_user_struct(key);
+		standard_sub(conn, vuser, syscmd);
+  		vuid_free_user_struct(vuser);
+  		safe_free(vuser);
+  	}
+
+
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));

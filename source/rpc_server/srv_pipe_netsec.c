@@ -178,7 +178,7 @@ static BOOL api_netsec_verify(rpcsrv_struct *l)
 	/*
 	 * obtain the session key
 	 */
-	if (!cred_get(l->remote_pid,
+	if (!cred_get(l->key.pid,
 	              a->netsec_neg.domain, a->netsec_neg.myname, &dc))
 	{
 		return False;

@@ -305,16 +305,17 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	if (l->auth_validated)
 	{
 		become_root(False);
-		l->vuid = register_vuid(pw->pw_uid, pw->pw_gid,
+		l->key.pid = getpid();
+		l->key.vuid = register_vuid(l->key.pid, pw->pw_uid, pw->pw_gid,
 					unix_user, nt_user,
 					guest, &info3);
 		unbecome_root(False);
-		l->auth_validated = l->vuid != UID_FIELD_INVALID;
+		l->auth_validated = l->key.vuid != UID_FIELD_INVALID;
 	}
 
 	if (l->auth_validated)
 	{
-		l->auth_validated = become_vuser(l->vuid);
+		l->auth_validated = become_vuser(&l->key);
 	}
 
 	if (l->auth_validated)

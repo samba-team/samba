@@ -245,7 +245,7 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 
-BOOL trust_password_lock( char *domain, char *name, BOOL update);
+BOOL trust_password_lock( const char *domain, const char *name, BOOL update);
 BOOL trust_password_unlock(void);
 BOOL trust_password_delete( char *domain, char *name );
 BOOL get_trust_account_password( uchar *ret_pwd, time_t *pass_last_set_time);
@@ -281,13 +281,13 @@ BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth);
 BOOL create_ntuser_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
-				uint32 pid,
+				const vuser_key *key,
 				const struct ntuser_creds *ntu,
 				BOOL reuse);
 BOOL create_user_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
-				uint32 pid,
+				const vuser_key *key,
 				const struct user_creds *usr);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
@@ -507,7 +507,6 @@ BOOL make_r_sam_logon(NET_R_SAM_LOGON *r_s,
 			    const DOM_CRED *srv_creds,
 			    uint16 switch_value,
 			    NET_USER_INFO_3 *user_info,
-			    uint32 auth_resp,
 			    uint32 status);
 BOOL net_io_r_sam_logon(char *desc,  NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
 BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth);
@@ -609,4 +608,18 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size);
 int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd);
 void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd);
+
+/*The following definitions come from  rpc_parse/parse_vuid.c  */
+
+BOOL vuid_io_key(char *desc, vuser_key *r_u, prs_struct *ps, int depth);
+BOOL make_vuid_user_struct(user_struct *r_u,
+				uid_t uid, gid_t gid,
+				const char* name,
+				const char* requested_name,
+				const char* real_name,
+				BOOL guest,
+				uint32 n_groups, const gid_t *groups,
+				const NET_USER_INFO_3 *usr);
+BOOL vuid_io_user_struct(char *desc, user_struct *r_u, prs_struct *ps, int depth);
+void vuid_free_user_struct(user_struct *r_u);
 #endif /* _LIB_SMB_PROTO_H_ */

@@ -192,16 +192,18 @@ static char *validate_group(char *group,char *password,int pwlen,int snum,
 /****************************************************************************
 check for authority to login to a service with a given username/password
 ****************************************************************************/
-BOOL authorise_login(int snum,char *user, char *domain,
+BOOL authorise_login(int snum, char *user, char *domain,
 				char *password, int pwlen, 
-		     BOOL *guest,BOOL *force,uint16 vuid)
+				BOOL *guest,BOOL *force,
+				const vuser_key *key)
 {
-  BOOL ok = False;
-  
-  *guest = False;
-  
+	BOOL ok = False;
+
+	DEBUG(0,("authorise_login: TODO. split function, it's 6 levels!\n"));
+	*guest = False;
+
 #if DEBUG_PASSWORD
-  DEBUG(100,("checking authorisation on user=%s pass=%s\n",user,password));
+	DEBUG(100,("checking authorisation on user=%s pass=%s\n",user,password));
 #endif
 
   /* there are several possibilities:
@@ -216,136 +218,154 @@ BOOL authorise_login(int snum,char *user, char *domain,
      if the service is guest_only then steps 1 to 5 are skipped
   */
 
-  if (GUEST_ONLY(snum)) *force = True;
+	if (GUEST_ONLY(snum)) *force = True;
 
-  if (!(GUEST_ONLY(snum) && GUEST_OK(snum)))
-    {
-
-      user_struct *vuser = get_valid_user_struct(vuid);
-
-      /* check the given username and password */
-      if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user,domain, password, pwlen, NULL, 0, NULL, &vuser->usr);
-	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
-      }
-
-      /* check for a previously registered guest username */
-      if (!ok && (vuser != 0) && vuser->guest) {	  
-	if (user_ok(vuser->name,snum) &&
-	    password_ok(vuser->name, domain, password, pwlen, NULL, 0, NULL, &vuser->usr)) {
-	  fstrcpy(user, vuser->name);
-	  vuser->guest = False;
-	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
-	  ok = True;
-	}
-      }
-
-
-      /* now check the list of session users */
-    if (!ok)
-    {
-      char *auser;
-      char *user_list = strdup(session_users);
-      if (!user_list) return False;
-
-      for (auser=strtok(user_list,LIST_SEP); 
-           !ok && auser; 
-           auser = strtok(NULL,LIST_SEP))
-      {
-        fstring user2;
-        fstrcpy(user2,auser);
-        if (!user_ok(user2,snum)) continue;
-		  
-        if (password_ok(user2, domain, password, pwlen, NULL, 0, NULL,
-                        &vuser->usr))
-        {
-          ok = True;
-          fstrcpy(user,user2);
-          DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
-        }
-      }
-      free(user_list);
-    }
-
-    /* check for a previously validated username/password pair */
-    if (!ok && (!lp_revalidate(snum) || lp_security() > SEC_SHARE) &&
-        (vuser != 0) && !vuser->guest &&
-        user_ok(vuser->name,snum)) {
-      fstrcpy(user,vuser->name);
-      *guest = False;
-      DEBUG(3,("ACCEPTED: validated uid ok as non-guest\n"));
-      ok = True;
-    }
-
-      /* check for a rhosts entry */
-      if (!ok && user_ok(user,snum) && check_hosts_equiv(user)) {
-	ok = True;
-	DEBUG(3,("ACCEPTED: hosts equiv or rhosts entry\n"));
-      }
-
-      /* check the user= fields and the given password */
-      if (!ok && lp_username(snum)) {
-	char *auser;
-	pstring user_list;
-	StrnCpy(user_list,lp_username(snum),sizeof(pstring));
-
-	string_sub(user_list,"%S",lp_servicename(snum));
-	  
-	for (auser=strtok(user_list,LIST_SEP);
-	     auser && !ok;
-	     auser = strtok(NULL,LIST_SEP))
-	  {
-	    if (*auser == '@')
-	      {
-		auser = validate_group(auser+1,password,pwlen,snum, &vuser->usr);
-		if (auser)
-		  {
-		    ok = True;
-		    fstrcpy(user,auser);
-		    DEBUG(3,("ACCEPTED: group username and given password ok\n"));
-		  }
-	      }
-	    else
-	      {
-		fstring user2;
-		fstrcpy(user2,auser);
-		if (user_ok(user2,snum) && 
-		    password_ok(user2,domain,password,pwlen,NULL, 0,
-		                NULL, &vuser->usr))
-		  {
-		    ok = True;
-		    fstrcpy(user,user2);
-		    DEBUG(3,("ACCEPTED: user list username and given password ok\n"));
-		  }
-	      }
-	  }
-      }      
-    } /* not guest only */
-
-  /* check for a normal guest connection */
-  if (!ok && GUEST_OK(snum))
-    {
-      fstring guestname;
-      StrnCpy(guestname,lp_guestaccount(snum),sizeof(guestname)-1);
-      if (Get_Pwnam(guestname,True))
+	if (!(GUEST_ONLY(snum) && GUEST_OK(snum)))
 	{
-	  fstrcpy(user,guestname);
-	  ok = True;
-	  DEBUG(3,("ACCEPTED: guest account and guest ok\n"));
+		user_struct *vuser = get_valid_user_struct(key);
+
+		/* check the given username and password */
+		if (!ok && (*user) && user_ok(user,snum))
+		{
+			ok = password_ok(user,domain, password, pwlen, NULL, 0, NULL, &vuser->usr);
+			if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
+		}
+
+		/* check for a previously registered guest username */
+		if (!ok && (vuser != 0) && vuser->guest)
+		{	  
+			if (user_ok(vuser->name,snum) &&
+			    password_ok(vuser->name, domain, password, pwlen, NULL, 0, NULL, &vuser->usr))
+			{
+				fstrcpy(user, vuser->name);
+				vuser->guest = False;
+				DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
+				ok = True;
+			}
+		}
+
+
+		/* now check the list of session users */
+		if (!ok)
+		{
+			char *auser;
+			char *user_list = strdup(session_users);
+			if (!user_list)
+			{
+				vuid_free_user_struct(vuser);
+				safe_free(vuser);
+				return False;
+			}
+
+			for (auser=strtok(user_list,LIST_SEP); 
+			!ok && auser; 
+			auser = strtok(NULL,LIST_SEP))
+			{
+				fstring user2;
+				fstrcpy(user2,auser);
+				if (!user_ok(user2,snum)) continue;
+
+				if (password_ok(user2, domain, password, pwlen, NULL, 0, NULL,
+				&vuser->usr))
+				{
+					ok = True;
+					fstrcpy(user,user2);
+					DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
+				}
+			}
+			free(user_list);
+		}
+
+		/* check for a previously validated username/password pair */
+		if (!ok && (!lp_revalidate(snum) || lp_security() > SEC_SHARE) &&
+			(vuser != 0) && !vuser->guest &&
+			user_ok(vuser->name,snum))
+		{
+			fstrcpy(user,vuser->name);
+			*guest = False;
+			DEBUG(3,("ACCEPTED: validated uid ok as non-guest\n"));
+			ok = True;
+		}
+
+		/* check for a rhosts entry */
+		if (!ok && user_ok(user,snum) && check_hosts_equiv(user))
+		{
+			ok = True;
+			DEBUG(3,("ACCEPTED: hosts equiv or rhosts entry\n"));
+		}
+
+		/* check the user= fields and the given password */
+		if (!ok && lp_username(snum))
+		{
+			char *auser;
+			pstring user_list;
+			StrnCpy(user_list,lp_username(snum),sizeof(pstring));
+
+			string_sub(user_list,"%S",lp_servicename(snum));
+
+			for (auser=strtok(user_list,LIST_SEP);
+				auser && !ok;
+				auser = strtok(NULL,LIST_SEP))
+			{
+				if (*auser == '@')
+				{
+					auser = validate_group(auser+1,password,pwlen,snum, &vuser->usr);
+					if (auser)
+					{
+						ok = True;
+						fstrcpy(user,auser);
+						DEBUG(3,("ACCEPTED: group username and given password ok\n"));
+					}
+				}
+				else
+				{
+					fstring user2;
+					fstrcpy(user2,auser);
+					if (user_ok(user2,snum) && 
+					password_ok(user2,domain,password,pwlen,NULL, 0,
+					NULL, &vuser->usr))
+					{
+						ok = True;
+						fstrcpy(user,user2);
+						DEBUG(3,("ACCEPTED: user list username and given password ok\n"));
+					}
+				}
+			}
+		}      
+
+		if (vuser != NULL)
+		{
+			tdb_store_vuid(key, vuser);
+		}
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
+
+	} /* not guest only */
+
+	/* check for a normal guest connection */
+	if (!ok && GUEST_OK(snum))
+	{
+		fstring guestname;
+		StrnCpy(guestname,lp_guestaccount(snum),sizeof(guestname)-1);
+		if (Get_Pwnam(guestname,True))
+		{
+			fstrcpy(user,guestname);
+			ok = True;
+			DEBUG(3,("ACCEPTED: guest account and guest ok\n"));
+		}
+		else
+			DEBUG(0,("Invalid guest account %s??\n",guestname));
+		*guest = True;
+		*force = True;
 	}
-      else
-	DEBUG(0,("Invalid guest account %s??\n",guestname));
-      *guest = True;
-      *force = True;
-    }
 
-  if (ok && !user_ok(user,snum))
-    {
-      DEBUG(0,("rejected invalid user %s\n",user));
-      ok = False;
-    }
+	if (ok && !user_ok(user,snum))
+	{
+		DEBUG(0,("rejected invalid user %s\n",user));
+		ok = False;
+	}
 
-  return(ok);
+	return(ok);
 }
 
 

@@ -29,4 +29,3 @@ void become_root(BOOL save_dir)
 void unbecome_root(BOOL restore_dir)
 {
 }
-

@@ -17,20 +17,22 @@ void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);
 void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
-				uint32 pid,
+				const vuser_key *key,
 				const char* pipename,
 				const struct user_creds *usr);
-struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc, uint32 pid);
+struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
+				const vuser_key *key);
 void msrpc_shutdown(struct msrpc_state *msrpc);
 BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
-		const char *pipe_name);
+				const vuser_key *key,
+				const char *pipe_name);
 
 /*The following definitions come from  lib/msrpc_use.c  */
 
 void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
-				uint32 pid,
+				const vuser_key *key,
 				const struct user_creds *usr_creds,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,
@@ -265,7 +267,8 @@ BOOL make_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer);
 BOOL smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth);
-BOOL make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum);
+BOOL make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 vuid,
+				uint16 opnum);
 BOOL smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
 BOOL smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,

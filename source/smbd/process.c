@@ -435,14 +435,20 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
        * move it unless you know what you're doing... :-).
        * JRA.
        */
-      if (session_tag != last_session_tag) {
+      if (session_tag != last_session_tag)
+      {
         user_struct *vuser = NULL;
+        vuser_key key = { pid, session_tag };
 
         last_session_tag = session_tag;
         if(session_tag != UID_FIELD_INVALID)
-          vuser = get_valid_user_struct(session_tag);           
+          vuser = get_valid_user_struct(&key);           
         if(vuser != NULL)
+        {
           pstrcpy( sesssetup_user, vuser->requested_name);
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
+	}
       }
 
       /* does this protocol need to be run as root? */

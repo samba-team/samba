@@ -202,6 +202,10 @@ connection_struct *make_connection(char *service,char *user,
 	BOOL force = False;
 	extern int Client;
 	connection_struct *conn;
+	vuser_key key;
+
+	key.pid = getpid();
+	key.vuid = vuid;
 
 	strlower(service);
 
@@ -224,9 +228,12 @@ connection_struct *make_connection(char *service,char *user,
 			return(make_connection(user,user,domain,password,
 					       pwlen,dev,vuid,ecode));
 
-		if(lp_security() != SEC_SHARE) {
-			if (validated_username(vuid)) {
-				pstrcpy(user,validated_username(vuid));
+		if(lp_security() != SEC_SHARE)
+		{
+			fstring user_name;
+			if (validated_username(&key, user_name, sizeof(user_name)))
+			{
+				pstrcpy(user, user_name);
 				return(make_connection(user,user,domain,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
@@ -273,7 +280,7 @@ connection_struct *make_connection(char *service,char *user,
 	add_session_user(service);
 
 	/* shall we let them in? */
-	if (!authorise_login(snum,user,domain,password,pwlen,&guest,&force,vuid))
+	if (!authorise_login(snum,user,domain,password,pwlen,&guest,&force,&key))
 	{
 		DEBUG( 2, ( "Invalid username/password for %s\n", service ) );
 		*ecode = ERRbadpw;
@@ -411,8 +418,11 @@ connection_struct *make_connection(char *service,char *user,
 
 	{
 		pstring s;
+		user_struct *vuser = get_valid_user_struct(&key);
 		pstrcpy(s,lp_pathname(snum));
-		standard_sub(conn,get_valid_user_struct(vuid), s);
+		standard_sub(conn,vuser, s);
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
 		string_set(&conn->connectpath,s);
 		DEBUG(3,("Connect path is %s\n",s));
 	}
@@ -444,10 +454,14 @@ connection_struct *make_connection(char *service,char *user,
 	} /* IS_IPC */
 	
 	/* execute any "root preexec = " line */
-	if (*lp_rootpreexec(SNUM(conn))) {
+	if (*lp_rootpreexec(SNUM(conn)))
+	{
 		pstring cmd;
+		user_struct *vuser = get_valid_user_struct(&key);
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
-		standard_sub(conn,get_valid_user_struct(vuid), cmd);
+		standard_sub(conn,vuser, cmd);
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
 		DEBUG(5,("cmd=%s\n",cmd));
 		smbrun(cmd,NULL,False);
 	}
@@ -499,10 +513,14 @@ connection_struct *make_connection(char *service,char *user,
 	add_session_user(user);
 		
 	/* execute any "preexec = " line */
-	if (*lp_preexec(SNUM(conn))) {
+	if (*lp_preexec(SNUM(conn)))
+	{
 		pstring cmd;
+		user_struct *vuser = get_valid_user_struct(&key);
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
-		standard_sub(conn,get_valid_user_struct(vuid), cmd);
+		standard_sub(conn,vuser, cmd);
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
 		smbrun(cmd,NULL,False);
 	}
 	
@@ -522,7 +540,7 @@ connection_struct *make_connection(char *service,char *user,
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)));
 		dbgtext( "as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)conn->uid, (int)conn->gid );
-		dbgtext( "(pid %d)\n", (int)getpid() );
+		dbgtext( "(pid %d)\n", (int)key.pid );
 	}
 
 	/* Invoke make connection hook */
@@ -576,6 +594,8 @@ close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
+	vuser_key key = { conn->smbd_pid, vuid };
+
 	DirCacheFlush(SNUM(conn));
 
 	unbecome_user();
@@ -612,20 +632,28 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(SNUM(conn)) && 
-	    become_user(conn, vuid))  {
+	    become_user(conn, vuid))
+	{
+		user_struct *vuser = get_valid_user_struct(&key);
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
-		standard_sub(conn,get_valid_user_struct(vuid), cmd);
+		standard_sub(conn,vuser, cmd);
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
 		smbrun(cmd,NULL,False);
 		unbecome_user();
 	}
 
 	unbecome_user();
 	/* execute any "root postexec = " line */
-	if (*lp_rootpostexec(SNUM(conn)))  {
+	if (*lp_rootpostexec(SNUM(conn)))
+	{
+		user_struct *vuser = get_valid_user_struct(&key);
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
-		standard_sub(conn,get_valid_user_struct(vuid), cmd);
+		standard_sub(conn,vuser, cmd);
+		vuid_free_user_struct(vuser);
+		safe_free(vuser);
 		smbrun(cmd,NULL,False);
 	}
 	

@@ -151,7 +151,8 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	data_t.end = data_t.data_size;
 	data_t.offset = data_t.data_size;
 
-	create_rpc_request(&hdr, op_num, (*flags), frag_len, auth_len);
+	create_rpc_request(&hdr, nt->key.vuid, op_num, (*flags),
+	                                      frag_len, auth_len);
 
 	DEBUG(5,("create_netsec_reply: data %d auth %d\n",
 		 data_len, auth_len));

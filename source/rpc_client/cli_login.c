@@ -100,14 +100,6 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 		struct cli_connection *con = NULL;
 		struct netsec_creds creds;
 
-#if 0
-		if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con))
-		{
-			return NT_STATUS_ACCESS_DENIED | 0xC0000000;
-		}
-		cli_connection_unlink(con);
-#endif
-
 		safe_strcpy(creds.domain, domain    , sizeof(creds.myname)-1);
 		safe_strcpy(creds.myname, myhostname, sizeof(creds.myname)-1);
 		memcpy(creds.sess_key, sess_key, sizeof(creds.sess_key));

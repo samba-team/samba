@@ -137,7 +137,8 @@ static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR *rhdr,
  - caller is expected to free the header data structure once used.
 
  ********************************************************************/
-BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, uint8 flags,
+BOOL create_rpc_request(prs_struct *rhdr, uint16 vuid,
+				uint8 op_num, uint8 flags,
 				int data_len,
 				int auth_len)
 {
@@ -165,7 +166,7 @@ BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, uint8 flags,
 	           data_len, auth_len, alloc_hint));
 
 	/* create the rpc request RPC_HDR_REQ */
-	make_rpc_hdr_req(&hdr_req, alloc_hint, op_num);
+	make_rpc_hdr_req(&hdr_req, alloc_hint, vuid, op_num);
 
 	/* stream-time... */
 	smb_io_rpc_hdr    ("hdr    ", &hdr    , rhdr, 0);

@@ -171,7 +171,7 @@ static struct msrpc_use *msrpc_find(const char* pipe_name,
 create a new client state from user credentials
 ****************************************************************************/
 static struct msrpc_use *msrpc_use_get(const char* pipe_name,
-				uint32 pid,
+				const vuser_key *key,
 				const struct user_creds *usr_creds)
 {
 	struct msrpc_use *cli = (struct msrpc_use*)malloc(sizeof(*cli));
@@ -183,7 +183,7 @@ static struct msrpc_use *msrpc_use_get(const char* pipe_name,
 
 	memset(cli, 0, sizeof(*cli));
 
-	cli->cli = msrpc_initialise(NULL, pid);
+	cli->cli = msrpc_initialise(NULL, key);
 
 	if (cli->cli == NULL)
 	{
@@ -199,7 +199,7 @@ static struct msrpc_use *msrpc_use_get(const char* pipe_name,
 init client state
 ****************************************************************************/
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
-				uint32 pid,
+				const vuser_key *key,
 				const struct user_creds *usr_creds,
 				BOOL redir)
 {
@@ -225,10 +225,10 @@ struct msrpc_state *msrpc_use_add(const char* pipe_name,
 	 * allocate
 	 */
 
-	cli = msrpc_use_get(pipe_name, pid, usr_creds);
+	cli = msrpc_use_get(pipe_name, key, usr_creds);
 	cli->cli->redirect = redir;
 
-	if (!msrpc_establish_connection(cli->cli, pipe_name))
+	if (!msrpc_establish_connection(cli->cli, key, pipe_name))
 	{
 		DEBUG(0,("msrpc_use_add: connection failed\n"));
 		cli->cli = NULL;

@@ -596,16 +596,6 @@ typedef struct connection_struct
 
 } connection_struct;
 
-struct current_user
-{
-	connection_struct *conn;
-	uint16 vuid;
-	uid_t uid;
-	gid_t gid;
-	int ngroups;
-	gid_t *groups;
-};
-
 /* Domain controller authentication protocol info */
 struct dcinfo
 {
@@ -1683,6 +1673,14 @@ extern int unix_ERR_code;
 #include "smb_macros.h"
 
 #include "nt_printing.h"
+
+typedef struct
+{
+	uint32 pid;
+	uint16 vuid;
+
+} vuser_key;
+
 #include "ntdomain.h"
 
 typedef struct
@@ -1703,6 +1701,16 @@ typedef struct
 	NET_USER_INFO_3 usr;
 
 } user_struct;
+
+struct current_user
+{
+	connection_struct *conn;
+	vuser_key key;
+	uid_t uid;
+	gid_t gid;
+	int ngroups;
+	gid_t *groups;
+};
 
 /* A netbios name structure. */
 struct nmb_name {
@@ -1811,6 +1819,8 @@ struct ntdom_info
 
 	int max_recv_frag;
 	int max_xmit_frag;
+
+	vuser_key key;
 };
 
 struct msrpc_state
@@ -1826,14 +1836,10 @@ struct msrpc_state
 	BOOL initialised;
 	char *inbuf;
 	char *outbuf;
-
-	uint32 pid;
 };
 
 typedef struct netsec_creds
 {
-	uint32 pid;
-
 	fstring domain;
 	fstring myname;
 

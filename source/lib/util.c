@@ -1936,7 +1936,7 @@ BOOL process_exists(int pid)
 /****************************************************************************
 Setup the groups a user belongs to.
 ****************************************************************************/
-int get_unixgroups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
+int get_unixgroups(const char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
 {
 	int i,ngroups;
 	gid_t grp = 0;

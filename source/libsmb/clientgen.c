@@ -2979,6 +2979,7 @@ static BOOL cli_init_redirect(struct cli_state *cli,
 	fstring ip_name;
 	struct cli_state cli_redir;
 	fstring path;
+	vuser_key key;
 
 	uint32 len;
 	char *data;
@@ -2986,6 +2987,9 @@ static BOOL cli_init_redirect(struct cli_state *cli,
 	char *out = cli->outbuf;
 	prs_struct ps;
 	uint16 command;
+
+	key.pid = getpid();
+	key.vuid = UID_FIELD_INVALID;
 
 	slprintf(path, sizeof(path)-1, "/tmp/.smb.%d/agent", getuid());
 
@@ -3006,7 +3010,7 @@ static BOOL cli_init_redirect(struct cli_state *cli,
 	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
 
 	if (!create_ntuser_creds(&ps, srv_name, 0x0, command,
-	                         getpid(), usr,
+	                         &key, usr,
 	                         cli->reuse))
 	{
 		DEBUG(0,("could not parse credentials\n"));

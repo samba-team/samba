@@ -85,7 +85,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	pipes_struct *p;
 	static int next_pipe;
 	struct msrpc_state *m = NULL;
-	user_struct *vuser = get_valid_user_struct(vuid);
+	vuser_key key = { conn->smbd_pid, vuid };
+	user_struct *vuser = get_valid_user_struct(&key);
 	struct user_creds usr;
 
 	ZERO_STRUCT(usr);
@@ -139,7 +140,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	}
 
 	become_root(False); /* to make pipe connection */
-	m = msrpc_use_add(pipe_name, getpid(), &usr, False);
+	m = msrpc_use_add(pipe_name, &key, &usr, False);
 	unbecome_root(False);
 
 	if (m == NULL)

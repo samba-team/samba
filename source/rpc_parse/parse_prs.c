@@ -903,14 +903,17 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
 {
 	int i = -1; /* start off at zero after 1st i++ */
+	BOOL len_limited;
+
 	CHECK_STRUCT(ps);
 	if (ps->error) return False;
+
+	len_limited = len == 0 || !ps->io;
 
 	DEBUG(200,("_prs_string: string %s len %d max %d\n",
 			str, len, max_buf_size));
 
 	DEBUG(10,("%s%04x %s: ", tab_depth(depth), ps->offset, name != NULL ? name : ""));
-
 	do
 	{
 		char *q;
@@ -926,7 +929,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 			return False;
 		}
 
-		if (i < len || len == 0)
+		if (i < len || len_limited)
 		{
 			RW_CVAL(ps->io, q, str[i], 0);
 		}
@@ -936,7 +939,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 			RW_CVAL(ps->io, q, dummy,0);
 		}
 
-	} while (i < max_buf_size && (len == 0 ? str[i] != 0 : i < len) );
+	} while (i < max_buf_size && (len_limited ? str[i] != 0 : i < len) );
 
 	ps->offset += i+1;
 

@@ -384,6 +384,7 @@ static int session_trust_account(connection_struct *conn,
 	if (last_challenge(last_chal))
 	{
 		NET_USER_INFO_3 info3;
+		ZERO_STRUCT(info3);
 		status = check_domain_security(user, domain,
 	                            last_chal, 
 	                            (uchar *)smb_passwd, smb_passlen,
@@ -425,6 +426,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
+
+  ZERO_STRUCT(info3);
 
   *smb_apasswd = 0;
   *smb_ntpasswd = 0;
@@ -693,7 +696,7 @@ user %s attempted down-level SMB connection\n", user));
 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
-  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest,&info3);
+  sess_vuid = register_vuid(getpid(), uid,gid,user,sesssetup_user,guest,&info3);
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);
@@ -1450,9 +1453,14 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   uint16 vuid = SVAL(inbuf,smb_uid);
-  user_struct *vuser = get_valid_user_struct(vuid);
+  vuser_key key;
+  user_struct *vuser  = NULL;
+  key.pid = conn != NULL ? conn->smbd_pid : getpid();
+  key.vuid  = vuid;
+  vuser = get_valid_user_struct(&key);
 
-  if(vuser == 0) {
+  if (vuser == 0)
+  {
     DEBUG(3,("ulogoff, vuser id %d does not map to user.\n", vuid));
   }
 
@@ -1462,7 +1470,7 @@ int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	  file_close_user(vuid);
   }
 
-  invalidate_vuid(vuid);
+  invalidate_vuid(&key);
 
   set_message(outbuf,2,0,True);
 
@@ -2764,6 +2772,7 @@ int reply_printqueue(connection_struct *conn,
 	int max_count = SVAL(inbuf,smb_vwv0);
 	int start_index = SVAL(inbuf,smb_vwv1);
 	uint16 vuid = SVAL(inbuf,smb_uid);
+	vuser_key key = { conn->smbd_pid, vuid };
 
 	/* we used to allow the client to get the cnum wrong, but that
 	   is really quite gross and only worked when there was only
@@ -2783,7 +2792,7 @@ int reply_printqueue(connection_struct *conn,
 	{
 		print_queue_struct *queue = NULL;
 		char *p = smb_buf(outbuf) + 3;
-		int count = get_printqueue(SNUM(conn), conn, vuid, &queue,NULL);
+		int count = get_printqueue(SNUM(conn), conn, &key, &queue,NULL);
 		int num_to_get = ABS(max_count);
 		int first = (max_count>0?start_index:start_index+max_count+1);
 		int i;

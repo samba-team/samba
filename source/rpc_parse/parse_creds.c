@@ -412,7 +412,8 @@ BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth)
 
 	prs_uint16("version", ps, depth, &(r_u->version));
 	prs_uint16("command", ps, depth, &(r_u->command));
-	prs_uint32("pid    ", ps, depth, &(r_u->pid    ));
+
+	vuid_io_key("key", &r_u->key, ps, 0);
 
 	prs_string("name   ", ps, depth,   r_u->name, strlen(r_u->name), sizeof(r_u->name));
 	prs_align(ps);
@@ -434,7 +435,7 @@ BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth)
 BOOL create_ntuser_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
-				uint32 pid,
+				const vuser_key *key,
 				const struct ntuser_creds *ntu,
 				BOOL reuse)
 {
@@ -452,7 +453,7 @@ BOOL create_ntuser_creds( prs_struct *ps,
 	fstrcpy(cmd.name, name);
 	cmd.version = version;
 	cmd.command = command;
-	cmd.pid   = pid  ;
+	cmd.key   = *key  ;
 	cmd.ptr_creds = ntu != NULL ? 1 : 0;
 	cmd.cred = &usr;
 
@@ -475,7 +476,7 @@ BOOL create_ntuser_creds( prs_struct *ps,
 BOOL create_user_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
-				uint32 pid,
+				const vuser_key *key,
 				const struct user_creds *usr)
 {
 	CREDS_CMD cmd;
@@ -488,7 +489,7 @@ BOOL create_user_creds( prs_struct *ps,
 	fstrcpy(cmd.name, name);
 	cmd.version = version;
 	cmd.command = command;
-	cmd.pid     = pid  ;
+	cmd.key     = *key;
 	cmd.ptr_creds = usr != NULL ? 1 : 0;
 	cmd.cred = usr;
 

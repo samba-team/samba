@@ -697,7 +697,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
    * user, then unbecome the user whilst we're doing this.
    */
   saved_conn = fsp->conn;
-  saved_vuid = current_user.vuid;
+  saved_vuid = current_user.key.vuid;
   dos_GetWd(saved_dir);
   unbecome_user();
   /* Save the chain fnum. */

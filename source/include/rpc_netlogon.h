@@ -47,8 +47,6 @@
 /* NET_USER_INFO_3 */
 typedef struct net_user_info_3
 {
-	uint32 ptr_user_info;
-
 	NTTIME logon_time;            /* logon time */
 	NTTIME logoff_time;           /* logoff time */
 	NTTIME kickoff_time;          /* kickoff time */
@@ -98,6 +96,8 @@ typedef struct net_user_info_3
 
 	DOM_SID2 dom_sid;           /* domain SID */
 	DOM_SID2 other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
+
+	uint32 auth_resp; /* 1 - Authoritative response */
 
 } NET_USER_INFO_3;
 
@@ -385,9 +385,9 @@ typedef struct net_r_sam_logon_info
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
 	uint16 switch_value; /* 3 - indicates type of USER INFO */
-    NET_USER_INFO_3 *user;
+	uint32 ptr_user_info;
 
-    uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
+    NET_USER_INFO_3 *user;
 
   uint32 status; /* return code */
 

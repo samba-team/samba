@@ -34,16 +34,16 @@ void init_vuid(void)
 /****************************************************************************
   become the user of a connection number
 ****************************************************************************/
-BOOL become_vuser(uint16 vuid)
+BOOL become_vuser(const vuser_key *k)
 {
-	user_struct *vuser = get_valid_user_struct(vuid);
+	user_struct *vuser = get_valid_user_struct(k);
 
 	unbecome_vuser();
 
 	if((vuser != NULL) && !check_vuser_ok(&vcache, vuser, -1))
 		return False;
 
-	return become_unix_sec_ctx(vuid, NULL, vuser->uid, vuser->gid,
+	return become_unix_sec_ctx(k, NULL, vuser->uid, vuser->gid,
 	                           vuser->n_groups, vuser->groups);
 }
 

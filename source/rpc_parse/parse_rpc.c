@@ -501,12 +501,13 @@ BOOL smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth)
 /*******************************************************************
 creates an RPC_HDR_REQ structure.
 ********************************************************************/
-BOOL make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum)
+BOOL make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 vuid,
+				uint16 opnum)
 {
 	if (hdr == NULL) return False;
 
 	hdr->alloc_hint   = alloc_hint; /* allocation hint */
-	hdr->context_id   = 0;         /* presentation context identifier */
+	hdr->context_id   = vuid;         /* presentation context identifier */
 	hdr->opnum        = opnum;     /* opnum */
 
 	return True;

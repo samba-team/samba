@@ -52,7 +52,7 @@ void init_uid(void)
 	initial_gid = getegid();
 
 	current_user.conn = NULL;
-	current_user.vuid = UID_FIELD_INVALID;
+	current_user.key.vuid = UID_FIELD_INVALID;
 	
 	current_user.ngroups = 0;
 	current_user.groups = NULL;
@@ -196,7 +196,7 @@ BOOL unbecome_to_initial_uid(void)
 	(int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
 
   current_user.conn = NULL;
-  current_user.vuid = UID_FIELD_INVALID;
+  current_user.key.vuid = UID_FIELD_INVALID;
 
   return(True);
 }
@@ -212,7 +212,7 @@ BOOL become_id(uid_t uid,gid_t gid)
 /****************************************************************************
   become the user of a connection number
 ****************************************************************************/
-BOOL become_unix_sec_ctx(uint16 vuid, connection_struct *conn,
+BOOL become_unix_sec_ctx(const vuser_key *k, connection_struct *conn,
 				uid_t new_uid, gid_t new_gid,
 				int n_groups, gid_t* groups)
 {
@@ -223,7 +223,7 @@ BOOL become_unix_sec_ctx(uint16 vuid, connection_struct *conn,
 
 	if (current_user.uid == new_uid)
 	{
-		DEBUG(4,("Skipping become_vuser - already user\n"));
+		DEBUG(4,("Skipping become_unix_sec_ctx - already user\n"));
 		return(True);
 	}
 
@@ -261,7 +261,7 @@ BOOL become_unix_sec_ctx(uint16 vuid, connection_struct *conn,
 	}
 	
 	current_user.conn = conn;
-	current_user.vuid = vuid;
+	current_user.key = *k;
 
 	DEBUG(5,("become_unix_sec_ctx uid=(%d,%d) gid=(%d,%d)\n",
 		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
@@ -296,7 +296,7 @@ BOOL become_guest(void)
   }
 
   current_user.conn = NULL;
-  current_user.vuid = UID_FIELD_INVALID;
+  current_user.key.vuid = UID_FIELD_INVALID;
 
   return(ret);
 }
