@@ -831,18 +831,6 @@ ntPassword: 878D8014606CDA29677A44EFA1353FC7
 <title>MySQL</title>
 
 <sect2>
-<title>Building</title>
-
-<para>To build the plugin, run <command>make bin/pdb_mysql.so</command>
-in the <filename>source/</filename> directory of samba distribution. 
-</para>
-
-<para>Next, copy pdb_mysql.so to any location you want. I 
-strongly recommend installing it in $PREFIX/lib or /usr/lib/samba/</para>
-
-</sect2>
-
-<sect2>
 <title>Creating the database</title>
 
 <para>
@@ -862,7 +850,7 @@ contains the correct queries to create the required tables. Use the command :
 
 <para>Add a the following to the <command>passdb backend</command> variable in your <filename>smb.conf</filename>:
 <programlisting>
-passdb backend = [other-plugins] plugin:/location/to/pdb_mysql.so:identifier [other-plugins]
+passdb backend = [other-plugins] mysql:identifier [other-plugins]
 </programlisting>
 </para>
 
@@ -978,35 +966,23 @@ Or, set 'identifier:workstations column' to :
 </sect1>
 
 <sect1>
-<title>Passdb XML plugin</title>
-
-<sect2>
-<title>Building</title>
+<title>XML</title>
 
 <para>This module requires libxml2 to be installed.</para>
 
-<para>To build pdb_xml, run: <command>make bin/pdb_xml.so</command> in 
-the directory <filename>source/</filename>. </para>
-
-</sect2>
-
-<sect2>
-<title>Usage</title>
-
 <para>The usage of pdb_xml is pretty straightforward. To export data, use:
 
-<command>pdbedit -e plugin:/usr/lib/samba/pdb_xml.so:filename</command>
+<command>pdbedit -e xml:filename</command>
 
 (where filename is the name of the file to put the data in)
 </para>
 
 <para>
 To import data, use:
-<command>pdbedit -i plugin:/usr/lib/samba/pdb_xml.so:filename -e current-pdb</command>
+<command>pdbedit -i xml:filename -e current-pdb</command>
 
 Where filename is the name to read the data from and current-pdb to put it in.
 </para>
-</sect2>
 </sect1>
 
 </chapter>
