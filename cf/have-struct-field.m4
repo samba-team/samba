@@ -13,7 +13,7 @@ cache_val=no)])
 if test "$cache_val" = yes; then
 	define(foo, translit(HAVE_$1_$2, [a-z ], [A-Z_]))
 	AC_DEFINE(foo, 1, [Define if $1 has field $2.])
-	undefine(foo)
+	undefine([foo])
 fi
-undefine(cache_val)
+undefine([cache_val])
 ])
