@@ -1,0 +1,10 @@
+# $Id$
+
+AUTOHEADER_FLAGS = no-dependencies foreign
+
+INCLUDES = -I$(top_builddir)/include -I$(srcdir)/..
+
+noinst_LIBRARIES = libtelnet.a
+
+libtelnet_a_SOURCES = auth.c encrypt.c genget.c enc_des.c misc.c kerberos.c \
+		      kerberos5.c read_password.c

@@ -1999,7 +1999,8 @@ telnet(char *user)
 	static char local_host[256] = { 0 };
 
 	if (!local_host[0]) {
-		k_gethostname(local_host, sizeof(local_host));
+		/* XXX - should be k_gethostname? */
+		gethostname(local_host, sizeof(local_host));
 		local_host[sizeof(local_host)-1] = 0;
 	}
 	auth_encrypt_init(local_host, hostname, "TELNET", 0);

@@ -151,8 +151,6 @@
 #include <paths.h>
 #endif
 
-#include <protos.h>
-
 #ifdef SOCKS
 #include <socks.h>
 #endif
@@ -173,6 +171,12 @@
 #include <roken.h>
 
 /* Don't use the system login, use our version instead */
+
+/* BINDIR should be defined somewhere else... */
+
+#ifndef BINDIR
+#define BINDIR "/usr/athena"
+#endif
 
 #undef _PATH_LOGIN
 #define _PATH_LOGIN	BINDIR "/login"

@@ -1554,7 +1554,8 @@ env_init(void)
 		char hbuf[256+1];
 		char *cp2 = strchr((char *)ep->value, ':');
 
-		k_gethostname(hbuf, 256);
+		/* XXX - should be k_gethostname? */
+		gethostname(hbuf, 256);
 		hbuf[256] = '\0';
 
 		/* If this is not the full name, try to get it via DNS */

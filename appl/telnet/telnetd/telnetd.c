@@ -346,7 +346,7 @@ int main(int argc, char **argv)
 	    else
 		port = htons(atoi(*argv));
 	} else {
-	    port = k_getportbyname ("telnet", "tcp", htons(23));
+	    port = krb5_getportbyname ("telnet", "tcp", htons(23));
 	}
 	mini_inetd (port);
     } else if (argc > 0) {
@@ -727,7 +727,8 @@ Please contact your net administrator");
     remote_host_name[sizeof(remote_host_name)-1] = 0;
     host = remote_host_name;
 
-    k_gethostname(host_name, sizeof (host_name));
+    /* XXX - should be k_gethostname? */
+    gethostname(host_name, sizeof (host_name));
     hostname = host_name;
 
 #ifndef abs

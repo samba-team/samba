@@ -136,7 +136,6 @@
 #endif
 
 #include <roken.h>
-#include <krb.h>
 
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
 #include <libtelnet/auth.h>
