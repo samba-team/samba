@@ -1,3 +1,12 @@
+2003-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: add cross realm text
+	
+2003-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_crypto_init.3: document krb5_enctype_to_string and
+	krb5_string_to_enctype
+
 2003-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/v4_dump.c (v4_prop_dump): limit strings length, from openbsd
