@@ -27,6 +27,23 @@ extern int DEBUGLEVEL;
 static int num_validated_users = 0;
 
 /****************************************************************************
+check if a uid has been validated.
+****************************************************************************/
+BOOL is_valid_user_struct(const vuser_key *key)
+{
+	if (key == NULL)
+	{
+		return False;
+	}
+
+	if (key->vuid == UID_FIELD_INVALID)
+	{
+		return False;
+	}
+	return tdb_lookup_vuid(key, NULL);
+}
+
+/****************************************************************************
 check if a uid has been validated, and return an pointer to the user_struct
 if it has. NULL if not. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.

@@ -35,7 +35,7 @@ static void free_sock(void *sock)
 	if (sock != NULL)
 	{
 		struct msrpc_state *n = (struct msrpc_state*)sock;
-		msrpc_use_del(n->pipe_name, &n->usr, False, NULL);
+		msrpc_use_del(n->pipe_name, False, NULL);
 	}
 }
 
@@ -43,7 +43,6 @@ static struct msrpc_state *init_client_connection(int c)
 {
 	pstring buf;
 	fstring pipe_name;
-	struct user_creds usr;
 	int rl;
 	uint32 len;
 	BOOL new_con = False;
@@ -52,9 +51,7 @@ static struct msrpc_state *init_client_connection(int c)
 	CREDS_CMD cmd;
 	prs_struct ps;
 
-	ZERO_STRUCT(usr);
 	ZERO_STRUCT(cmd);
-	cmd.cred = &usr;
 
 	DEBUG(10,("init_client_connection: first request\n"));
 
@@ -128,7 +125,7 @@ static struct msrpc_state *init_client_connection(int c)
 	if (new_con)
 	{
 		uint32 status = 0;
-		n = msrpc_use_add(pipe_name, &cmd.key, &usr, False);
+		n = msrpc_use_add(pipe_name, &cmd.key, False);
 
 		if (n == NULL)
 		{
@@ -138,7 +135,6 @@ static struct msrpc_state *init_client_connection(int c)
 		else
 		{
 			fstrcpy(n->pipe_name, pipe_name);
-			copy_user_creds(&n->usr, &usr);
 		}
 		
 		if (write(c, &status, sizeof(status)) != sizeof(status))
@@ -146,12 +142,11 @@ static struct msrpc_state *init_client_connection(int c)
 			DEBUG(0,("Could not write connection down pipe.\n"));
 			if (n != NULL)
 			{
-				msrpc_use_del(pipe_name, &usr, False, NULL);
+				msrpc_use_del(pipe_name, False, NULL);
 				n = NULL;
 			}
 		}
 	}
-	free_user_creds(&usr);
 	return n;
 }
 

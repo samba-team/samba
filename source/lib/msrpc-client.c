@@ -169,17 +169,6 @@ BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name)
 
 
 /****************************************************************************
-initialise a msrpcent structure
-****************************************************************************/
-void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr)
-{
-	copy_user_creds(&msrpc->usr, usr);
-#if 0
-	msrpc->nt.ntlmssp_cli_flgs = usr->ntc.ntlmssp_flags;
-#endif
-}
-
-/****************************************************************************
 close the socket descriptor
 ****************************************************************************/
 void msrpc_close_socket(struct msrpc_state *msrpc)
@@ -202,8 +191,7 @@ void msrpc_sockopt(struct msrpc_state *msrpc, char *options)
 
 
 static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
-				const vuser_key *key,
-				const struct user_creds *usr)
+				const vuser_key *key)
 {
 	int sock = msrpc->fd;
 	uint32 len;
@@ -217,10 +205,10 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 
 	msrpc->nt.key = *key;
 
-	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
+	command = AGENT_CMD_CON;
 
 	if (!create_user_creds(&ps, msrpc->pipe_name, 0x0, command,
-	                        key, usr))
+	                        key, NULL))
 	{
 		DEBUG(0,("could not parse credentials\n"));
 		close(sock);
@@ -257,7 +245,6 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 		msrpc->inbuf = in;
 		msrpc->outbuf = out;
 		msrpc->fd = sock;
-		msrpc->usr.reuse = False;
 	}
 	else
 	{
@@ -271,8 +258,7 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 
 static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 				const vuser_key *key,
-				const char* pipe_name,
-				const struct user_creds *usr)
+				const char* pipe_name)
 {
 	int sock;
 	fstring path;
@@ -288,7 +274,7 @@ static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 
 	msrpc->fd = sock;
 
-	if (!msrpc_authenticate(msrpc, key, NULL))
+	if (!msrpc_authenticate(msrpc, key))
 	{
 		DEBUG(0,("authenticate failed\n"));
 		close(msrpc->fd);
@@ -301,8 +287,7 @@ static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 				const vuser_key *key,
-				const char* pipename,
-				const struct user_creds *usr)
+				const char* pipename)
 {
 	ZERO_STRUCTP(msrpc);
 	if (!msrpc_initialise(msrpc, key))
@@ -310,8 +295,6 @@ BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 		DEBUG(0,("unable to initialise msrpcent connection.\n"));
 		return False;
 	}
-
-	msrpc_init_creds(msrpc, usr);
 
 	if (!msrpc_establish_connection(msrpc, key, pipename))
 	{
@@ -350,7 +333,6 @@ struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
 	}
 
 	msrpc->initialised = 1;
-	msrpc_init_creds(msrpc, NULL);
 	msrpc->nt.key.vuid = UID_FIELD_INVALID;
 
 	return msrpc;
@@ -382,20 +364,19 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 				const vuser_key *key,
 				const char *pipe_name)
 {
-	DEBUG(5,("msrpc_establish_connection: connecting to %s (%s) - %s\n",
-		          pipe_name,
-	              msrpc->usr.ntc.user_name, msrpc->usr.ntc.domain));
+	DEBUG(5,("msrpc_establish_connection: connecting to %s\n",
+	          pipe_name));
 
 	/* establish connection */
 
-	if ((!msrpc->initialised))
+	if (!msrpc->initialised)
 	{
 		return False;
 	}
 
 	if (msrpc->fd == -1 && msrpc->redirect)
 	{
-		if (msrpc_init_redirect(msrpc, key, pipe_name, &msrpc->usr))
+		if (msrpc_init_redirect(msrpc, key, pipe_name))
 		{
 			DEBUG(10,("msrpc_establish_connection: redirected OK\n"));
 			return True;
@@ -417,7 +398,7 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 		}
 	}
 
-	if (!msrpc_authenticate(msrpc, key, NULL))
+	if (!msrpc_authenticate(msrpc, key))
 	{
 		DEBUG(0,("authenticate failed\n"));
 		close(msrpc->fd);

@@ -13,13 +13,11 @@ BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout);
 BOOL msrpc_send(int fd, prs_struct *ps);
 BOOL msrpc_receive(int fd, prs_struct *ps);
 BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
-void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);
 void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 				const vuser_key *key,
-				const char* pipename,
-				const struct user_creds *usr);
+				const char* pipename);
 struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
 				const vuser_key *key);
 void msrpc_shutdown(struct msrpc_state *msrpc);
@@ -33,10 +31,8 @@ void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
 				const vuser_key *key,
-				const struct user_creds *usr_creds,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,
-				const struct user_creds *usr_creds,
 				BOOL force_close,
 				BOOL *connection_closed);
 void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use);

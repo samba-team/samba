@@ -51,6 +51,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	int smb_ofun = SVAL(inbuf,smb_vwv8);
 	int size=0,fmode=0,mtime=0,rmode=0;
 	int i;
+	vuser_key key;
 
 	/* XXXX we need to handle passed times, sattr and flags */
 	pstrcpy(fname,smb_buf(inbuf));
@@ -79,7 +80,9 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	DEBUG(3,("Known pipe %s opening.\n",fname));
 	smb_ofun |= 0x10;		/* Add Create it not exists flag */
 
-	p = open_rpc_pipe_p(fname, conn, vuid);
+	key.pid = getpid();
+	key.vuid = vuid;
+	p = open_rpc_pipe_p(fname, &key, NULL);
 	if (!p) return(ERROR(ERRSRV,ERRnofids));
 
 	/* Prepare the reply */
@@ -248,7 +251,7 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 
 	DEBUG(5,("reply_pipe_close: pnum:%x\n", p->pnum));
 
-	if (!close_rpc_pipe_hnd(p, conn)) return(ERROR(ERRDOS,ERRbadfid));
+	if (!close_rpc_pipe_hnd(p)) return(ERROR(ERRDOS,ERRbadfid));
 
 	return(outsize);
 }

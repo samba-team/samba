@@ -143,7 +143,7 @@ static prs_struct pdu;
   process an smb from the client - split out from the process() code so
   it can be used by the oplock break code.
 ****************************************************************************/
-static void process_msrpc(msrpc_pipes_struct *p, int c)
+static void process_msrpc(rpcsrv_struct *l, const char* name)
 {
   static int trans_num;
   int32 len = prs_buf_len(&pdu);
@@ -160,12 +160,12 @@ static void process_msrpc(msrpc_pipes_struct *p, int c)
   }
 #endif
 
-	if (rpc_local(p->l, pdu.data, len, p->name) &&
-	    msrpc_send(c, &p->l->rsmb_pdu))
+	if (rpc_local(l, pdu.data, len, name) &&
+	    msrpc_send(l->c, &l->rsmb_pdu))
 	{
-		prs_free_data(&p->l->rsmb_pdu);
+		prs_free_data(&l->rsmb_pdu);
 
-		while (rpc_local(p->l, NULL, 0, p->name))
+		while (rpc_local(l, NULL, 0, name))
 		{
 			fd_set fds;
 			int selrtn;
@@ -176,13 +176,13 @@ static void process_msrpc(msrpc_pipes_struct *p, int c)
 			smb_read_error = 0;
 
 			FD_ZERO(&fds);
-			FD_SET(c,&fds);
+			FD_SET(l->c,&fds);
 			maxfd = 0;
 
 			to.tv_sec = timeout / 1000;
 			to.tv_usec = (timeout % 1000) * 1000;
 
-			selrtn = sys_select(MAX(maxfd,c)+1,NULL,&fds, timeout>0?&to:NULL);
+			selrtn = sys_select(MAX(maxfd,l->c)+1,NULL,&fds, timeout>0?&to:NULL);
 
 			/* Check if error */
 			if(selrtn == -1) {
@@ -196,13 +196,13 @@ static void process_msrpc(msrpc_pipes_struct *p, int c)
 				return;
 			}
 
-			if (FD_ISSET(c,&fds))
+			if (FD_ISSET(l->c,&fds))
 			{
-				if (!msrpc_send(c, &p->l->rsmb_pdu))
-				prs_free_data(&p->l->rsmb_pdu);
+				if (!msrpc_send(l->c, &l->rsmb_pdu))
+				prs_free_data(&l->rsmb_pdu);
 				break;
 			}
-			prs_free_data(&p->l->rsmb_pdu);
+			prs_free_data(&l->rsmb_pdu);
 		}
 	}
   trans_num++;
@@ -211,7 +211,7 @@ static void process_msrpc(msrpc_pipes_struct *p, int c)
 /****************************************************************************
  reads user credentials from the socket
 ****************************************************************************/
-BOOL get_user_creds(int c, struct user_creds *usr, vuser_key *uk)
+BOOL get_user_creds(int c, vuser_key *uk)
 {
 	pstring buf;
 	int rl;
@@ -222,9 +222,7 @@ BOOL get_user_creds(int c, struct user_creds *usr, vuser_key *uk)
 	CREDS_CMD cmd;
 	prs_struct ps;
 
-	ZERO_STRUCTP(usr);
 	ZERO_STRUCT(cmd);
-	cmd.cred = usr;
 
 	DEBUG(10,("get_user_creds: first request\n"));
 
@@ -332,26 +330,21 @@ void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn)
 /****************************************************************************
   initialise from pipe
 ****************************************************************************/
-BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
+BOOL msrpcd_init(int c, rpcsrv_struct **l)
 {
-	struct user_creds usr;
 	vuser_key uk;
 	user_struct *vuser;
 
-	if (!get_user_creds(c, &usr, &uk))
+	if (!get_user_creds(c, &uk))
 	{
 		DEBUG(0,("authentication failed\n"));
-		free_user_creds(&usr);
 		return False;
 	}
 
 	if (uk.vuid == UID_FIELD_INVALID)
 	{
-		free_user_creds(&usr);
 		return False;
 	}
-
-	free_user_creds(&usr);
 
 	if (!become_vuser(&uk))
 	{
@@ -364,17 +357,18 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 		return False;
 	}
 
-	p->l = malloc(sizeof(*p->l));
-	if (p->l == NULL)
+	(*l) = malloc(sizeof(*(*l)));
+	if ((*l) == NULL)
 	{
 		vuid_free_user_struct(vuser);
 		safe_free(vuser);
 		return False;
 	}
 
-	ZERO_STRUCTP(p->l);
+	ZERO_STRUCTP((*l));
 
-	p->l->key = uk;
+	(*l)->key = uk;
+	(*l)->c = c;
 
 	if (!vuser->guest)
 	{
@@ -402,7 +396,7 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-void msrpcd_process(msrpc_service_fns *fn, int c, msrpc_pipes_struct *p)
+void msrpcd_process(msrpc_service_fns *fn, rpcsrv_struct *l, const char* name)
 {
     extern fstring remote_machine;
     extern fstring local_machine;
@@ -413,7 +407,7 @@ void msrpcd_process(msrpc_service_fns *fn, int c, msrpc_pipes_struct *p)
   /* re-initialise the timezone */
   TimeInit();
 
-    fstrcpy(remote_machine, p->name);
+    fstrcpy(remote_machine, name);
     fstrcpy(local_machine, global_myname);
     local_machine[15] = 0;
     strlower(local_machine);
@@ -433,7 +427,7 @@ void msrpcd_process(msrpc_service_fns *fn, int c, msrpc_pipes_struct *p)
     errno = 0;      
 
     for (counter=SMBD_SELECT_LOOP; 
-          !receive_message_or_msrpc(c, &pdu, 
+          !receive_message_or_msrpc(l->c, &pdu, 
                                   SMBD_SELECT_LOOP*1000,&got_msrpc); 
           counter += SMBD_SELECT_LOOP)
     {
@@ -494,6 +488,8 @@ void msrpcd_process(msrpc_service_fns *fn, int c, msrpc_pipes_struct *p)
     }
 
     if(got_msrpc)
-      process_msrpc(p, c);
+    {
+      process_msrpc(l, name);
+    }
   }
 }

@@ -91,11 +91,14 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct *usr)
 
 	prs_tdb_fetch(tdb, &key, &data);
 
-	if (!vuid_io_user_struct("usr", usr, &data, 0))
+	if (usr != NULL)
 	{
-		prs_free_data(&key);
-		prs_free_data(&data);
-		return False;
+		if (!vuid_io_user_struct("usr", usr, &data, 0))
+		{
+			prs_free_data(&key);
+			prs_free_data(&data);
+			return False;
+		}
 	}
 
 	prs_free_data(&key);

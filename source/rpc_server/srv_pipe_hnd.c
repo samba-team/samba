@@ -78,50 +78,29 @@ void init_rpc_pipe_hnd(void)
 /****************************************************************************
   find first available file slot
 ****************************************************************************/
-pipes_struct *open_rpc_pipe_p(char *pipe_name, 
-			      connection_struct *conn, uint16 vuid)
+pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key *key,
+				rpcsrv_struct *l)
 {
 	int i;
 	pipes_struct *p;
 	static int next_pipe;
 	struct msrpc_state *m = NULL;
-	vuser_key key = { conn->smbd_pid, vuid };
-	user_struct *vuser = get_valid_user_struct(&key);
-	struct user_creds usr;
 
-	ZERO_STRUCT(usr);
-
-	DEBUG(4,("Open pipe requested %s by vuid %d (pipes_open=%d)\n",
-		 pipe_name, vuid, pipes_open));
+	DEBUG(4,("Open pipe requested %s by [%x,%d] (pipes_open=%d)\n",
+		 pipe_name, key->pid, key->vuid, pipes_open));
 	
-	if (vuser == NULL)
+	if (!is_valid_user_struct(key))
 	{
-		DEBUG(4,("invalid vuid %d\n", vuid));
+		DEBUG(4,("invalid vuid\n"));
 		return NULL;
 	}
-
-	/* set up unix credentials from the smb side, to feed over the pipe */
-	usr.ptr_uxc = 1;
-	make_creds_unix(&usr.uxc, vuser->name, vuser->requested_name,
-	                              vuser->real_name, vuser->guest);
-	usr.ptr_uxs = 1;
-	make_creds_unix_sec(&usr.uxs, vuser->uid, vuser->gid,
-	                              vuser->n_groups, vuser->groups);
-	usr.ptr_nts = 1;
-	memcpy(&usr.nts, &vuser->usr, sizeof(usr.nts));
-
-	/* set up nt credentials from the smb side, to feed over the pipe */
-	/* lkclXXXX todo!
-	make_creds_nt(&usr.ntc);
-	make_creds_nt_sec(&usr.nts);
-	*/
 
 	/* not repeating pipe numbers makes it easier to track things in 
 	   log files and prevents client bugs where pipe numbers are reused
 	   over connection restarts */
 	if (next_pipe == 0)
 	{
-		next_pipe = (getpid() ^ time(NULL)) % MAX_OPEN_PIPES;
+		next_pipe = (key->pid ^ time(NULL)) % MAX_OPEN_PIPES;
 	}
 
 	i = bitmap_find(bmap, next_pipe);
@@ -139,14 +118,17 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
 	}
 
-	become_root(False); /* to make pipe connection */
-	m = msrpc_use_add(pipe_name, &key, &usr, False);
-	unbecome_root(False);
-
-	if (m == NULL)
+	if (l == NULL)
 	{
-		DEBUG(5,("open pipes: msrpc redirect failed\n"));
-		return NULL;
+		become_root(False); /* to make pipe connection */
+		m = msrpc_use_add(pipe_name, key, False);
+		unbecome_root(False);
+
+		if (m == NULL)
+		{
+			DEBUG(5,("open pipes: msrpc redirect failed\n"));
+			return NULL;
+		}
 	}
 
 	p = (pipes_struct *)malloc(sizeof(*p));
@@ -162,12 +144,11 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	p->pnum = i;
 	p->m = m;
+	p->l = l;
 
-	p->open = True;
 	p->device_state = 0;
 	p->priority = 0;
-	p->conn = conn;
-	p->vuid  = vuid;
+	p->key = *key;
 	
 	fstrcpy(p->name, pipe_name);
 
@@ -194,19 +175,11 @@ BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority)
 {
 	if (p == NULL) return False;
 
-	if (p->open)
-	{
-		DEBUG(3,("%s Setting pipe wait state priority=%x on pipe (name=%s)\n",
-		         timestring(), priority, p->name));
+	DEBUG(3,("%s Setting pipe wait state priority=%x on pipe (name=%s)\n",
+	         timestring(), priority, p->name));
 
-		p->priority = priority;
-		
-		return True;
-	} 
-
-	DEBUG(3,("%s Error setting pipe wait state priority=%x (name=%s)\n",
-		 timestring(), priority, p->name));
-	return False;
+	p->priority = priority;
+	return True;
 }
 
 
@@ -217,24 +190,17 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)
 {
 	if (p == NULL) return False;
 
-	if (p->open) {
-		DEBUG(3,("%s Setting pipe device state=%x on pipe (name=%s)\n",
+	DEBUG(3,("%s Setting pipe device state=%x on pipe (name=%s)\n",
 		         timestring(), device_state, p->name));
 
-		p->device_state = device_state;
-		
-		return True;
-	} 
-
-	DEBUG(3,("%s Error setting pipe device state=%x (name=%s)\n",
-		 timestring(), device_state, p->name));
-	return False;
+	p->device_state = device_state;
+	return True;
 }
 
 /****************************************************************************
   close an rpc pipe
 ****************************************************************************/
-BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
+BOOL close_rpc_pipe_hnd(pipes_struct *p)
 {
 	if (!p) {
 		DEBUG(0,("Invalid pipe in close_rpc_pipe_hnd\n"));
@@ -253,7 +219,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	if (p->m != NULL)
 	{
 		DEBUG(4,("closed msrpc redirect: "));
-		if (msrpc_use_del(p->m->pipe_name, &p->m->usr, False, NULL))
+		if (msrpc_use_del(p->m->pipe_name, False, NULL))
 		{
 			DEBUG(4,("OK\n"));
 		}
@@ -270,7 +236,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 }
 
 /****************************************************************************
-  close an rpc pipe
+ get an rpc pipe 
 ****************************************************************************/
 pipes_struct *get_rpc_pipe_p(char *buf, int where)
 {
@@ -279,6 +245,32 @@ pipes_struct *get_rpc_pipe_p(char *buf, int where)
 	if (chain_p) return chain_p;
 
 	return get_rpc_pipe(pnum);
+}
+
+/****************************************************************************
+  get an rpc pipe
+****************************************************************************/
+pipes_struct *get_rpc_vuser(const vuser_key *key)
+{
+	pipes_struct *p;
+
+	DEBUG(4,("search for pipe vuser [%d,%x]\n", key->pid, key->vuid));
+
+	for (p=Pipes;p;p=p->next)
+	{
+		DEBUG(5,("pipe name %s [%d,%x] (pipes_open=%d)\n", 
+		          p->name, p->key.pid, p->key.vuid, pipes_open));  
+	}
+
+	for (p=Pipes;p;p=p->next)
+	{
+		if (p->key.pid == key->pid && p->key.vuid == key->vuid)
+		{
+			return p;
+		}
+	}
+
+	return NULL;
 }
 
 /****************************************************************************
@@ -292,8 +284,8 @@ pipes_struct *get_rpc_pipe(int pnum)
 
 	for (p=Pipes;p;p=p->next)
 	{
-		DEBUG(5,("pipe name %s pnum=%x (pipes_open=%d) (open=%s)\n", 
-		          p->name, p->pnum, pipes_open, BOOLSTR(p->open)));  
+		DEBUG(5,("pipe name %s pnum=%x (pipes_open=%d)\n", 
+		          p->name, p->pnum, pipes_open));  
 	}
 
 	for (p=Pipes;p;p=p->next)

@@ -107,6 +107,7 @@ static struct use_info *use_info_dup(const struct use_info *from)
 		{
 			ZERO_STRUCTP(copy);
 			copy->connected = from->connected;
+			copy->key = from->key;
 			if (from->srv_name != NULL)
 			{
 				copy->srv_name  = strdup(from->srv_name );

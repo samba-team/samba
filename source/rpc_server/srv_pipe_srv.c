@@ -640,7 +640,7 @@ BOOL api_rpcTNP(rpcsrv_struct *l, const char *rpc_name,
  pdu; hands pdu off to msrpc, which gets a pdu back (except in the
  case of the RPC_BINDCONT pdu).
  ********************************************************************/
-BOOL rpc_local(rpcsrv_struct *l, char *data, int len, char *name)
+BOOL rpc_local(rpcsrv_struct *l, char *data, int len, const char *name)
 {
 	BOOL reply = False;
 

@@ -359,7 +359,7 @@ static void usage(char *pname)
 	int opt;
 	extern char *optarg;
 	int ClientMSRPC = -1;
-	msrpc_pipes_struct p;
+	pipes_struct p;
 	fstring service_name;
 
 	if (fn == NULL)
@@ -560,11 +560,11 @@ static void usage(char *pname)
 
 	ZERO_STRUCT(p);
 	fstrcpy(p.name, pipe_name);
-	if (msrpcd_init(ClientMSRPC, &p))
+	if (msrpcd_init(ClientMSRPC, &p.l))
 	{
 		fn->auth_init(p.l);
 		fn->reload_services(True);
-		msrpcd_process(fn, ClientMSRPC, &p);
+		msrpcd_process(fn, p.l, p.name);
 	}
 	if (ClientMSRPC != -1)
 	{

@@ -165,7 +165,6 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con->type = MSRPC_LOCAL;
 		con->usr_creds.reuse = False;
 		con->msrpc.local = msrpc_use_add(&pipe_name[6], &con_key,
-		                                  &con->usr_creds,
 		                                  False);
 		unbecome_root(False);
 	}
@@ -242,7 +241,7 @@ void cli_connection_free(struct cli_connection *con)
 			case MSRPC_LOCAL:
 			{
 				DEBUG(10,("msrpc local connection\n"));
-				msrpc_use_del(con->srv_name, NULL, False, &closed);
+				msrpc_use_del(con->srv_name, False, &closed);
 				oldcli = con->msrpc.local;
 				con->msrpc.local = NULL;
 				break;
@@ -543,34 +542,9 @@ BOOL cli_conn_set_auth_info(struct cli_connection *con, void *auth_info)
 }
 
 /****************************************************************************
- get nt creds associated with an msrpc session.
-****************************************************************************/
-struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con)
-{
-	if (con->msrpc.cli == NULL)
-	{
-		DEBUG(1,("cli_conn_get_usercreds: NULL msrpc (closed)\n"));
-		return NULL;
-	}
-
-	switch (con->type)
-	{
-		case MSRPC_LOCAL:
-		{
-			return &con->msrpc.local->usr.ntc;
-		}
-		case MSRPC_SMB:
-		{
-			return &con->msrpc.smb->cli->usr;
-		}
-	}
-	return NULL;
-}
-
-/****************************************************************************
  get nt creds (HACK ALERT!) associated with an msrpc session.
 ****************************************************************************/
-struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con)
+struct ntdom_info *cli_conn_get_ntinfo(struct cli_connection *con)
 {
 	if (con == NULL)
 	{

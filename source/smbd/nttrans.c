@@ -475,6 +475,7 @@ void fail_next_srvsvc_open(void)
 static int nt_open_pipe(char *fname, connection_struct *conn,
 			char *inbuf, char *outbuf, int *ppnum)
 {
+	vuser_key key;
 	pipes_struct *p = NULL;
 
 	uint16 vuid = SVAL(inbuf, smb_uid);
@@ -515,7 +516,9 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
     
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
-	p = open_rpc_pipe_p(fname, conn, vuid);
+	key.pid = getpid();
+	key.vuid = vuid;
+	p = open_rpc_pipe_p(fname, &key, NULL);
 	if (!p)
 		return(ERROR(ERRSRV,ERRnofids));
 

@@ -352,14 +352,6 @@ struct sam_disp_info
 	char *full_name;      /* user's full name string */
 };
 
-struct use_info
-{
-	BOOL connected;
-	char *srv_name;
-	char *user_name;
-	char *domain;
-};
-
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 
 /* DOM_SID - security id */
@@ -1681,6 +1673,15 @@ typedef struct
 
 } vuser_key;
 
+struct use_info
+{
+	BOOL connected;
+	char *srv_name;
+	vuser_key key;
+	char *user_name;
+	char *domain;
+};
+
 #include "ntdomain.h"
 
 typedef struct
@@ -1826,7 +1827,6 @@ struct ntdom_info
 struct msrpc_state
 {
 	fstring pipe_name;
-	struct user_creds usr;
 	struct ntdom_info nt;
 	cli_auth_fns *auth;
 	void *auth_info;

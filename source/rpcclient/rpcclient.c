@@ -1492,6 +1492,9 @@ static void cmd_net(struct client_info *info, int argc, char *argv[])
 				{
 					report(out_hnd, "Server:\t%s\t",
 					                 use[i]->srv_name);
+					report(out_hnd, "Key:\t[%d,%x]\t",
+					                 use[i]->key.pid,
+					                 use[i]->key.vuid);
 					report(out_hnd, "User:\t%s\t",
 					                 use[i]->user_name);
 					report(out_hnd, "Domain:\t%s\n",

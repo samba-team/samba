@@ -294,13 +294,11 @@ BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout);
 BOOL msrpc_send(int fd, prs_struct *ps);
 BOOL msrpc_receive(int fd, prs_struct *ps);
 BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
-void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);
 void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 				const vuser_key *key,
-				const char* pipename,
-				const struct user_creds *usr);
+				const char* pipename);
 struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
 				const vuser_key *key);
 void msrpc_shutdown(struct msrpc_state *msrpc);
@@ -314,10 +312,8 @@ void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
 				const vuser_key *key,
-				const struct user_creds *usr_creds,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,
-				const struct user_creds *usr_creds,
 				BOOL force_close,
 				BOOL *connection_closed);
 void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use);
@@ -795,6 +791,7 @@ void start_agent(struct vagent_ops *va);
 
 /*The following definitions come from  lib/vuser.c  */
 
+BOOL is_valid_user_struct(const vuser_key *key);
 user_struct *get_valid_user_struct(const vuser_key *key);
 void invalidate_vuid(vuser_key *key);
 BOOL validated_username(vuser_key *key, char *name, size_t len);
@@ -1149,11 +1146,11 @@ void exit_server(char *reason);
 
 /*The following definitions come from  msrpc/msrpcd_process.c  */
 
-BOOL get_user_creds(int c, struct user_creds *usr, vuser_key *uk);
+BOOL get_user_creds(int c, vuser_key *uk);
 void close_srv_auth_array(rpcsrv_struct *l);
 void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn);
-BOOL msrpcd_init(int c, msrpc_pipes_struct *p);
-void msrpcd_process(msrpc_service_fns *fn, int c, msrpc_pipes_struct *p);
+BOOL msrpcd_init(int c, rpcsrv_struct **l);
+void msrpcd_process(msrpc_service_fns *fn, rpcsrv_struct *l, const char* name);
 
 /*The following definitions come from  netlogond/creds_db.c  */
 
@@ -2097,8 +2094,7 @@ struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con);
 void *cli_conn_get_auth_creds(struct cli_connection *con);
 void *cli_conn_get_auth_info(struct cli_connection *con);
 BOOL cli_conn_set_auth_info(struct cli_connection *con, void *auth_info);
-struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con);
-struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con);
+struct ntdom_info *cli_conn_get_ntinfo(struct cli_connection *con);
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name);
 BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
@@ -3214,12 +3210,13 @@ int read_pipe(pipes_struct *p, char *data, int n);
 void set_pipe_handle_offset(int max_open_files);
 void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
-pipes_struct *open_rpc_pipe_p(char *pipe_name, 
-			      connection_struct *conn, uint16 vuid);
+pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key *key,
+				rpcsrv_struct *l);
 BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
-BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
+BOOL close_rpc_pipe_hnd(pipes_struct *p);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
+pipes_struct *get_rpc_vuser(const vuser_key *key);
 pipes_struct *get_rpc_pipe(int pnum);
 
 /*The following definitions come from  rpc_server/srv_pipe_netsec.c  */
@@ -3239,7 +3236,7 @@ void add_msrpc_command_processor(char* pipe_name,
 				BOOL (*fn) (rpcsrv_struct *));
 BOOL api_rpcTNP(rpcsrv_struct *l, const char *rpc_name,
 		const struct api_struct *api_rpc_cmds);
-BOOL rpc_local(rpcsrv_struct *l, char *data, int len, char *name);
+BOOL rpc_local(rpcsrv_struct *l, char *data, int len, const char *name);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 

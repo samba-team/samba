@@ -137,6 +137,8 @@ typedef struct rpcsrv_struct
 
 	vuser_key key;
 
+	int c; /* socket */
+
 } rpcsrv_struct;
 
 struct cli_connection;
@@ -174,23 +176,11 @@ typedef struct srv_auth_fns
 
 } srv_auth_fns;
 
-typedef struct msrpc_pipes_struct
-{
-	fstring name;
-	fstring pipe_srv_name;
-
-	/* local, server-side rpc state processing */
-	rpcsrv_struct *l;
-
-} msrpc_pipes_struct;
-
 typedef struct pipes_struct
 {
 	struct pipes_struct *next, *prev;
 	int pnum;
-	connection_struct *conn;
-	uint16 vuid;
-	BOOL open; /* open connection */
+	vuser_key key;
 	uint16 device_state;
 	uint16 priority;
 	fstring name;
@@ -198,6 +188,9 @@ typedef struct pipes_struct
 
 	/* remote, server-side rpc redirection */
 	struct msrpc_state *m;
+
+	/* local, server-side rpc state processing */
+	rpcsrv_struct *l;
 
 } pipes_struct;
 

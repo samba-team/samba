@@ -105,8 +105,7 @@ writes data to a pipe.
 ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
 {
 	DEBUG(6,("write_pipe: %x", p->pnum));
-	DEBUG(6,("name: %s open: %s len: %d",
-			 p->name, BOOLSTR(p->open), n));
+	DEBUG(6,("name: %s len: %d", p->name, n));
 
 	dump_data(50, data, n);
 
@@ -124,10 +123,9 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
  ****************************************************************************/
 int read_pipe(pipes_struct *p, char *data, int n)
 {
-	DEBUG(6,("read_pipe: %x name: %s open: %s len: %d",
-		 p->pnum, p->name, BOOLSTR(p->open), n));
+	DEBUG(6,("read_pipe: %x name: %s len: %d", p->pnum, p->name, n));
 
-	if (!p || !p->open)
+	if (!p)
 	{
 		DEBUG(6,("pipe not open\n"));
 		return -1;		

@@ -374,6 +374,7 @@ void cli_net_use_enum(uint32 *num_cons, struct use_info ***use)
 		{
 			item.srv_name = clis[i]->cli->desthost;
 			item.user_name = clis[i]->cli->usr.user_name;
+			item.key = clis[i]->cli->nt.key;
 			item.domain    = clis[i]->cli->usr.domain;
 		}
 
