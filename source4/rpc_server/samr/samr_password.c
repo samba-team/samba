@@ -39,7 +39,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	NTSTATUS status = NT_STATUS_OK;
 	const char * const attrs[] = { "lmPwdHash", "ntPwdHash" , "unicodePwd", NULL };
 
-	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
+	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
 	a_state = h->data;
 

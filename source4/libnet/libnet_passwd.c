@@ -338,7 +338,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ZERO_STRUCT(p_handle);
 	sc.in.system_name = NULL;
 	sc.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	sc.out.handle = &p_handle;
+	sc.out.connect_handle = &p_handle;
 
 	/* 2. do a samr_Connect to get a policy handle */
 	status = dcerpc_samr_Connect(c.pdc.out.dcerpc_pipe, mem_ctx, &sc);
@@ -360,7 +360,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 
 	/* prepare samr_LookupDomain */
 	d_name.name = r->samr.in.domain_name;
-	ld.in.handle = &p_handle;
+	ld.in.connect_handle = &p_handle;
 	ld.in.domain = &d_name;
 
 	/* 3. do a samr_LookupDomain to get the domain sid */
@@ -383,7 +383,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 
 	/* prepare samr_OpenDomain */
 	ZERO_STRUCT(d_handle);
-	od.in.handle = &p_handle;
+	od.in.connect_handle = &p_handle;
 	od.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	od.in.sid = ld.out.sid;
 	od.out.domain_handle = &d_handle;
@@ -407,7 +407,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	}
 
 	/* prepare samr_LookupNames */
-	ln.in.handle = &d_handle;
+	ln.in.domain_handle = &d_handle;
 	ln.in.num_names = 1;
 	ln.in.names = talloc_array_p(mem_ctx, struct samr_Name, 1);
 	if (!ln.in.names) {
@@ -445,10 +445,10 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 
 	/* prepare samr_OpenUser */
 	ZERO_STRUCT(u_handle);
-	ou.in.handle = &d_handle;
+	ou.in.domain_handle = &d_handle;
 	ou.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	ou.in.rid = ln.out.rids.ids[0];
-	ou.out.acct_handle = &u_handle;
+	ou.out.user_handle = &u_handle;
 
 	/* 6. do a samr_OpenUser to get a user handle */
 	status = dcerpc_samr_OpenUser(c.pdc.out.dcerpc_pipe, mem_ctx, &ou);
@@ -491,7 +491,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	arcfour_crypt_blob(u_info.info26.password.data, 516, &confounded_session_key);
 	memcpy(&u_info.info26.password.data[516], confounder, 16);
 
-	sui.in.handle = &u_handle;
+	sui.in.user_handle = &u_handle;
 	sui.in.info = &u_info;
 	sui.in.level = 26;
 
@@ -542,7 +542,7 @@ UserInfo25:
 	arcfour_crypt_blob(u_info.info25.password.data, 516, &confounded_session_key);
 	memcpy(&u_info.info25.password.data[516], confounder, 16);
 
-	sui.in.handle = &u_handle;
+	sui.in.user_handle = &u_handle;
 	sui.in.info = &u_info;
 	sui.in.level = 25;
 
@@ -586,7 +586,7 @@ UserInfo24:
 
 	arcfour_crypt_blob(u_info.info24.password.data, 516, &session_key);
 
-	sui.in.handle = &u_handle;
+	sui.in.user_handle = &u_handle;
 	sui.in.info = &u_info;
 	sui.in.level = 24;
 
@@ -629,7 +629,7 @@ UserInfo23:
 
 	arcfour_crypt_blob(u_info.info23.password.data, 516, &session_key);
 
-	sui.in.handle = &u_handle;
+	sui.in.user_handle = &u_handle;
 	sui.in.info = &u_info;
 	sui.in.level = 23;
 
