@@ -25,7 +25,10 @@ pop_user (POP *p)
     } else
 #endif
     if (p->auth_level != AUTH_NONE) {
-	char *s = otp_error(&p->otp_ctx);
+	char *s = NULL;
+#ifdef OTP
+	s = otp_error(&p->otp_ctx);
+#endif
 	return pop_msg(p, POP_FAILURE, "Permission denied%s%s",
 		       s ? ":" : "", s ? s : "");
     } else
