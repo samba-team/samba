@@ -321,9 +321,20 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 static void free_auth_context(struct auth_context **auth_context)
 {
-	if (*auth_context != NULL)
+	auth_methods *auth_method;
+
+	if (*auth_context) {
+		/* Free private data of context's authentication methods */
+		for (auth_method = (*auth_context)->auth_method_list; auth_method; auth_method = auth_method->next) {
+			if (auth_method->free_private_data) {
+				auth_method->free_private_data (&auth_method->private_data);
+				auth_method->private_data = NULL;
+			}
+		}
+
 		talloc_destroy((*auth_context)->mem_ctx);
-	*auth_context = NULL;
+		*auth_context = NULL;
+	}
 }
 
 /***************************************************************************
