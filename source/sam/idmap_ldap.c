@@ -397,7 +397,7 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 	int rc = -1;
 	int ldap_op;
 	fstring sid_string;
-	char **values;
+	char **values = NULL;
 	int i;
 
 	sid_to_string( sid_string, sid );
@@ -424,7 +424,9 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 
 	snprintf(id_str, sizeof(id_str), "%u", ((id_type & ID_USERID) ? id.uid : id.gid));	
 	
-	values = ldap_get_values(ldap_state.smbldap_state->ldap_struct, entry, "objectClass");
+	if (entry) 
+		values = ldap_get_values(ldap_state.smbldap_state->ldap_struct, entry, "objectClass");
+
 	if (values) {
 		BOOL found_idmap = False;
 		for (i=0; values[i]; i++) {

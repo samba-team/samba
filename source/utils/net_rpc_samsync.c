@@ -414,6 +414,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	struct passwd *passwd;
 	unid_t id;
 	int u_type = ID_USERID | ID_QUERY_ONLY;
+	fstring sid_string;
 
 	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
 	d_printf("Creating account: %s\n", account);
@@ -449,8 +450,11 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, delta->user_rid);
 
+	DEBUG(3, ("Attempting to find SID %s for user %s in the passdb\n", sid_to_string(sid_string, &user_sid), account));
 	if (!pdb_getsampwsid(sam_account, &user_sid)) {
 		sam_account_from_delta(sam_account, delta);
+		DEBUG(3, ("Attempting to add user SID %s for user %s in the passdb\n", 
+			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
 		if (!pdb_add_sam_account(sam_account)) {
 			DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
 				  account));
@@ -458,6 +462,8 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		}
 	} else {
 		sam_account_from_delta(sam_account, delta);
+		DEBUG(3, ("Attempting to update user SID %s for user %s in the passdb\n", 
+			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
 		if (!pdb_update_sam_account(sam_account)) {
 			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
 				  account));
