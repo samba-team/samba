@@ -26,7 +26,7 @@
 
 extern struct client_info cli_info;
 
-char *complete_svcenum(char *text, int state)
+static char *complete_svcenum(char *text, int state)
 {
 	static uint32 i = 0;
 	static uint32 num_svcs = 0;

@@ -180,14 +180,7 @@ struct command_set *add_cmd_set_to_array(uint32 *len,
 					 struct command_set ***array,
 					 const struct command_set *cmd);
 void add_command_set(const struct command_set *cmds);
-char *complete_samenum_usr(char *text, int state);
-char *complete_samenum_als(char *text, int state);
-char *complete_samenum_grp(char *text, int state);
-char *complete_samenum_usr(char *text, int state);
-char *complete_samenum_als(char *text, int state);
-char *complete_samenum_grp(char *text, int state);
 void cmd_set_no_autoconnect(void);
-void readline_init(void);
 int command_main(int argc, char *argv[]);
 
 /*The following definitions come from  lib/crc32.c  */
@@ -3307,7 +3300,6 @@ int main(int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/svcctrl_cmds.c  */
 
-char *complete_svcenum(char *text, int state);
 void add_svc_commands(void);
 
 /*The following definitions come from  samrd/samr_util.c  */
@@ -4467,8 +4459,6 @@ int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 
 /*The following definitions come from  utils/rpctorture.c  */
 
-void run_enums_test(struct client_info *info, int argc, char *argv[]);
-void run_ntlogin_test(struct client_info *info, int argc, char *argv[]);
 BOOL do_random_rpc(struct cli_state *cli, uint16 nt_pipe_fnum, int max_len);
 
 /*The following definitions come from  utils/smbpasswd.c  */

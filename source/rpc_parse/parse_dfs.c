@@ -367,6 +367,3 @@ BOOL smb_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
     }
   return True;
 }
-      
-
-  

@@ -30,12 +30,11 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 add a job to the scheduler
 ****************************************************************************/
-BOOL at_add_job(
-		char *srv_name, AT_JOB_INFO *info, char *command,
+BOOL at_add_job(char *srv_name, AT_JOB_INFO *info, char *command,
 		uint32 *jobid)
 {
 	prs_struct rbuf;
-	prs_struct buf; 
+	prs_struct buf;
 	AT_Q_ADD_JOB q_a;
 	BOOL p = False;
 
@@ -51,7 +50,7 @@ BOOL at_add_job(
 
 	/* create and send a MSRPC command with api AT_ADD_JOB */
 
-	DEBUG(4,("Scheduler Add Job\n"));
+	DEBUG(4, ("Scheduler Add Job\n"));
 
 	/* store the parameters */
 	make_at_q_add_job(&q_a, srv_name, info, command);
@@ -68,7 +67,8 @@ BOOL at_add_job(
 		if (p && r_a.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("AT_R_ADD_JOB: %s\n", get_nt_error_msg(r_a.status)));
+			DEBUG(0, ("AT_R_ADD_JOB: %s\n",
+				  get_nt_error_msg(r_a.status)));
 			p = False;
 		}
 
@@ -89,10 +89,10 @@ BOOL at_add_job(
 /****************************************************************************
 dequeue a job
 ****************************************************************************/
-BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid)
+BOOL at_del_job(char *srv_name, uint32 min_jobid, uint32 max_jobid)
 {
 	prs_struct rbuf;
-	prs_struct buf; 
+	prs_struct buf;
 	AT_Q_DEL_JOB q_d;
 	BOOL p = False;
 
@@ -108,7 +108,7 @@ BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid)
 
 	/* create and send a MSRPC command with api AT_DEL_JOB */
 
-	DEBUG(4,("Scheduler Delete Job\n"));
+	DEBUG(4, ("Scheduler Delete Job\n"));
 
 	/* store the parameters */
 	make_at_q_del_job(&q_d, srv_name, min_jobid, max_jobid);
@@ -125,7 +125,8 @@ BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid)
 		if (p && r_d.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("AT_R_DEL_JOB: %s\n", get_nt_error_msg(r_d.status)));
+			DEBUG(0, ("AT_R_DEL_JOB: %s\n",
+				  get_nt_error_msg(r_d.status)));
 			p = False;
 		}
 	}
@@ -141,11 +142,11 @@ BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid)
 /****************************************************************************
 enumerate scheduled jobs
 ****************************************************************************/
-BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
+BOOL at_enum_jobs(char *srv_name, uint32 *num_jobs,
 		  AT_ENUM_INFO *jobs, char ***commands)
 {
 	prs_struct rbuf;
-	prs_struct buf; 
+	prs_struct buf;
 	AT_Q_ENUM_JOBS q_e;
 	BOOL p = False;
 
@@ -161,7 +162,7 @@ BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
 
 	/* create and send a MSRPC command with api AT_DEL_JOB */
 
-	DEBUG(4,("Scheduler Enumerate Jobs\n"));
+	DEBUG(4, ("Scheduler Enumerate Jobs\n"));
 
 	/* store the parameters */
 	make_at_q_enum_jobs(&q_e, srv_name);
@@ -178,7 +179,8 @@ BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("AT_R_ENUM_JOBS: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(0, ("AT_R_ENUM_JOBS: %s\n",
+				  get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 
@@ -187,12 +189,14 @@ BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
 			int i;
 
 			*num_jobs = 0;
-			memcpy(jobs, &r_e.info, r_e.num_entries * sizeof(AT_ENUM_INFO));
+			memcpy(jobs, &r_e.info,
+			       r_e.num_entries * sizeof(AT_ENUM_INFO));
 
 			for (i = 0; i < r_e.num_entries; i++)
 			{
 				fstring cmd;
-				unistr2_to_ascii(cmd, &r_e.command[i], sizeof(cmd));
+				unistr2_to_ascii(cmd, &r_e.command[i],
+						 sizeof(cmd));
 				add_chars_to_array(num_jobs, commands, cmd);
 			}
 			if ((*num_jobs) != r_e.num_entries)
@@ -217,7 +221,7 @@ BOOL at_query_job(char *srv_name,
 		  uint32 jobid, AT_JOB_INFO *job, fstring command)
 {
 	prs_struct rbuf;
-	prs_struct buf; 
+	prs_struct buf;
 	AT_Q_QUERY_JOB q_q;
 	BOOL p = False;
 
@@ -233,7 +237,7 @@ BOOL at_query_job(char *srv_name,
 
 	/* create and send a MSRPC command with api AT_QUERY_JOB */
 
-	DEBUG(4,("Scheduler Query Job\n"));
+	DEBUG(4, ("Scheduler Query Job\n"));
 
 	/* store the parameters */
 	make_at_q_query_job(&q_q, srv_name, jobid);
@@ -250,7 +254,8 @@ BOOL at_query_job(char *srv_name,
 		if (p && r_q.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("AT_R_QUERY_JOB: %s\n", get_nt_error_msg(r_q.status)));
+			DEBUG(0, ("AT_R_QUERY_JOB: %s\n",
+				  get_nt_error_msg(r_q.status)));
 			p = False;
 		}
 

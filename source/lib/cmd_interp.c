@@ -538,173 +538,6 @@ static void usage(char *pname)
 GNU readline completion functions
 ****************************************************************************/
 
-
-char *complete_samenum_usr(char *text, int state)
-{
-	static uint32 i = 0;
-	static uint32 num_usrs = 0;
-	static struct acct_info *sam = NULL;
-
-	if (state == 0)
-	{
-		fstring srv_name;
-		fstring domain;
-		fstring sid;
-		DOM_SID sid1;
-		sid_copy(&sid1, &cli_info.dom.level5_sid);
-		sid_to_string(sid, &sid1);
-		fstrcpy(domain, cli_info.dom.level5_dom);
-
-		if (sid1.num_auths == 0)
-		{
-			return NULL;
-		}
-
-		fstrcpy(srv_name, "\\\\");
-		fstrcat(srv_name, cli_info.dest_host);
-		strupper(srv_name);
-
-		free(sam);
-		sam = NULL;
-		num_usrs = 0;
-
-		/* Iterate all users */
-		if (msrpc_sam_enum_users(srv_name, domain, &sid1,
-					 &sam, &num_usrs,
-					 NULL, NULL, NULL, NULL) == 0)
-		{
-			return NULL;
-		}
-
-		i = 0;
-	}
-
-	for (; i < num_usrs; i++)
-	{
-		char *usr_name = sam[i].acct_name;
-		if (text == NULL || text[0] == 0 ||
-		    strnequal(text, usr_name, strlen(text)))
-		{
-			char *name = strdup(usr_name);
-			i++;
-			return name;
-		}
-	}
-
-	return NULL;
-}
-
-char *complete_samenum_als(char *text, int state)
-{
-	static uint32 i = 0;
-	static uint32 num_als = 0;
-	static struct acct_info *sam = NULL;
-
-	if (state == 0)
-	{
-		fstring srv_name;
-		fstring domain;
-		fstring sid;
-		DOM_SID sid1;
-		sid_copy(&sid1, &cli_info.dom.level5_sid);
-		sid_to_string(sid, &sid1);
-		fstrcpy(domain, cli_info.dom.level5_dom);
-
-		if (sid1.num_auths == 0)
-		{
-			return NULL;
-		}
-
-		fstrcpy(srv_name, "\\\\");
-		fstrcat(srv_name, cli_info.dest_host);
-		strupper(srv_name);
-
-		free(sam);
-		sam = NULL;
-		num_als = 0;
-
-		/* Iterate all aliases */
-		if (msrpc_sam_enum_aliases(srv_name, domain, &sid1,
-					   &sam, &num_als,
-					   NULL, NULL, NULL) == 0)
-		{
-			return NULL;
-		}
-
-		i = 0;
-	}
-
-	for (; i < num_als; i++)
-	{
-		char *als_name = sam[i].acct_name;
-		if (text == NULL || text[0] == 0 ||
-		    strnequal(text, als_name, strlen(text)))
-		{
-			char *name = strdup(als_name);
-			i++;
-			return name;
-		}
-	}
-
-	return NULL;
-}
-
-char *complete_samenum_grp(char *text, int state)
-{
-	static uint32 i = 0;
-	static uint32 num_grps = 0;
-	static struct acct_info *sam = NULL;
-
-	if (state == 0)
-	{
-		fstring srv_name;
-		fstring domain;
-		fstring sid;
-		DOM_SID sid1;
-		sid_copy(&sid1, &cli_info.dom.level5_sid);
-		sid_to_string(sid, &sid1);
-		fstrcpy(domain, cli_info.dom.level5_dom);
-
-		if (sid1.num_auths == 0)
-		{
-			return NULL;
-		}
-
-		fstrcpy(srv_name, "\\\\");
-		fstrcat(srv_name, cli_info.dest_host);
-		strupper(srv_name);
-
-		free(sam);
-		sam = NULL;
-		num_grps = 0;
-
-		/* Iterate all groups */
-		if (msrpc_sam_enum_groups(srv_name,
-					  domain, &sid1,
-					  &sam, &num_grps,
-					  NULL, NULL, NULL) == 0)
-		{
-			return NULL;
-		}
-
-		i = 0;
-	}
-
-	for (; i < num_grps; i++)
-	{
-		char *grp_name = sam[i].acct_name;
-		if (text == NULL || text[0] == 0 ||
-		    strnequal(text, grp_name, strlen(text)))
-		{
-			char *name = strdup(grp_name);
-			i++;
-			return name;
-		}
-	}
-
-	return NULL;
-}
-
 /* Complete an rpcclient command */
 
 static char *complete_cmd(char *text, int state)
@@ -808,21 +641,6 @@ static char **completion_fn(char *text, int start, int end)
    to the rl_completion_entry_function variable. */
 
 static char *complete_cmd_null(char *text, int state)
-{
-	return NULL;
-}
-
-#else
-
-char *complete_samenum_usr(char *text, int state)
-{
-	return NULL;
-}
-char *complete_samenum_als(char *text, int state)
-{
-	return NULL;
-}
-char *complete_samenum_grp(char *text, int state)
 {
 	return NULL;
 }
@@ -1417,7 +1235,7 @@ static void read_user_env(struct ntuser_creds *u)
 	ZERO_STRUCT(password);
 }
 
-void readline_init(void)
+static void readline_init(void)
 {
 #ifdef HAVE_READLINE
 	/* Initialise GNU Readline */ rl_readline_name = "rpcclient";

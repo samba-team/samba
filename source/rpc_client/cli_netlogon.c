@@ -237,8 +237,7 @@ uint32 cli_net_auth2(const char *srv_name,
 				/*
 				 * Server replied with bad credential. Fail.
 				 */
-				DEBUG(5, ("cli_net_auth2: server %s replied \
-with bad credential (bad trust account password ?).\n", srv_name));
+				DEBUG(5, ("cli_net_auth2: server %s replied with bad credential (bad trust account password ?).\n", srv_name));
 				status = NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
 			}
 		}

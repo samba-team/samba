@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "rpc_client.h"
+#include "rpcclient.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -41,7 +42,7 @@ extern FILE* out_hnd;
 /****************************************************************************
   log in as an nt user, log out again. 
 ****************************************************************************/
-void run_enums_test(struct client_info *info, int argc, char *argv[])
+static void run_enums_test(struct client_info *info, int argc, char *argv[])
 {
 	int i;
 
@@ -58,7 +59,7 @@ void run_enums_test(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
   log in as an nt user, log out again. 
 ****************************************************************************/
-void run_ntlogin_test(struct client_info *info, int argc, char *argv[])
+static void run_ntlogin_test(struct client_info *info, int argc, char *argv[])
 {
 	int i;
 
@@ -499,7 +500,7 @@ CMD_PROC_WRAP(cmd_lsa_handles_test, run_lsahandles)
 CMD_PROC_WRAP(cmd_sam_handles_test, run_samhandles)
 CMD_PROC_WRAP(cmd_login_test, run_ntlogin_test)
 
-struct command_set tor_commands[] =
+static const struct command_set tor_commands[] =
 {
 	{
 		"setenv",

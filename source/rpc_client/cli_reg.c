@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL reg_connect( const char* srv_name,
+BOOL reg_connect(const char *srv_name,
 				const char *full_keyname,
 				char *key_name,
 				uint32 access_mask,
@@ -98,10 +98,11 @@ BOOL reg_connect( const char* srv_name,
 
 	if (res)
 	{
-		if (!register_policy_hnd(get_global_hnd_cache(), cli_con_sec_ctx(con),
-		                         reg_hnd, access_mask) ||
-		    !set_policy_con(get_global_hnd_cache(), reg_hnd, con, 
-						 cli_connection_unlink))
+		if (!register_policy_hnd(get_global_hnd_cache(),
+					 cli_con_sec_ctx(con),
+		                         reg_hnd, access_mask)
+		    || !set_policy_con(get_global_hnd_cache(), reg_hnd, con, 
+				       cli_connection_unlink))
 		{
 			cli_connection_unlink(con);
 			return False;
@@ -114,9 +115,8 @@ BOOL reg_connect( const char* srv_name,
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL reg_open_hkcr( struct cli_connection *con,
-				uint16 unknown_0, uint32 level,
-				POLICY_HND *hnd)
+BOOL reg_open_hkcr(struct cli_connection *con,
+		   uint16 unknown_0, uint32 level, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -149,7 +149,8 @@ BOOL reg_open_hkcr( struct cli_connection *con,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_OPEN_HKCR: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_OPEN_HKCR: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -170,7 +171,7 @@ BOOL reg_open_hkcr( struct cli_connection *con,
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL reg_open_hklm( struct cli_connection *con,
+BOOL reg_open_hklm(struct cli_connection *con,
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
@@ -205,7 +206,8 @@ BOOL reg_open_hklm( struct cli_connection *con,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_OPEN_HKLM: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_OPEN_HKLM: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -226,7 +228,7 @@ BOOL reg_open_hklm( struct cli_connection *con,
 /****************************************************************************
 do a REG Open HKU
 ****************************************************************************/
-BOOL reg_open_hku( struct cli_connection *con, 
+BOOL reg_open_hku(struct cli_connection *con, 
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
@@ -261,7 +263,8 @@ BOOL reg_open_hku( struct cli_connection *con,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_OPEN_HKU: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_OPEN_HKU: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -284,7 +287,7 @@ do a REG Unknown 0xB command.  sent after a create key or create value.
 this might be some sort of "sync" or "refresh" command, sent after
 modification of the registry...
 ****************************************************************************/
-BOOL reg_flush_key( POLICY_HND *hnd)
+BOOL reg_flush_key(POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -317,7 +320,8 @@ BOOL reg_flush_key( POLICY_HND *hnd)
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_FLUSH_KEY: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_FLUSH_KEY: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -336,7 +340,7 @@ BOOL reg_flush_key( POLICY_HND *hnd)
 /****************************************************************************
 do a REG Query Key
 ****************************************************************************/
-BOOL reg_query_key( POLICY_HND *hnd,
+BOOL reg_query_key(POLICY_HND *hnd,
 				char *key_class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
 				uint32 *max_subkeysize, uint32 *num_values,
@@ -374,7 +378,8 @@ BOOL reg_query_key( POLICY_HND *hnd,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_QUERY_KEY: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_QUERY_KEY: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -404,7 +409,7 @@ BOOL reg_query_key( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Unknown 1A
 ****************************************************************************/
-BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
+BOOL reg_unknown_1a(POLICY_HND *hnd, uint32 *unk)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -437,7 +442,8 @@ BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_UNK_1A: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_UNK_1A: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -457,9 +463,8 @@ BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 /****************************************************************************
 do a REG Query Info
 ****************************************************************************/
-BOOL reg_query_info( POLICY_HND *hnd,
-				const char* val_name,
-				uint32 *type, BUFFER2 *buffer)
+BOOL reg_query_info(POLICY_HND *hnd, const char *val_name,
+		    uint32 *type, BUFFER2 *buffer)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -495,7 +500,8 @@ BOOL reg_query_info( POLICY_HND *hnd,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_INFO: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -514,7 +520,7 @@ BOOL reg_query_info( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Set Key Security 
 ****************************************************************************/
-BOOL reg_set_key_sec( POLICY_HND *hnd,
+BOOL reg_set_key_sec(POLICY_HND *hnd,
 				uint32 sec_info,
 				uint32 sec_buf_size, SEC_DESC *sec_buf)
 {
@@ -562,7 +568,7 @@ BOOL reg_set_key_sec( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Query Key Security 
 ****************************************************************************/
-BOOL reg_get_key_sec( POLICY_HND *hnd,
+BOOL reg_get_key_sec(POLICY_HND *hnd,
 				uint32 sec_info,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf)
 {
@@ -605,13 +611,15 @@ BOOL reg_get_key_sec( POLICY_HND *hnd,
 			 * get the maximum buffer size: it was too small
 			 */
 			(*sec_buf_size) = r_o.hdr_sec.buf_max_len;
-			DEBUG(5,("sec_buf_size too small.  use %d\n", *sec_buf_size));
+			DEBUG(5, ("sec_buf_size too small.  use %d\n",
+				  *sec_buf_size));
 			valid_query = True;
 		}
 		else if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_GET_KEY_SEC: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_GET_KEY_SEC: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 		else
@@ -630,7 +638,7 @@ BOOL reg_get_key_sec( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Delete Value
 ****************************************************************************/
-BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
+BOOL reg_delete_val(POLICY_HND *hnd, char *val_name)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -663,7 +671,8 @@ BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_DELETE_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_DELETE_VALUE: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -682,7 +691,7 @@ BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 /****************************************************************************
 do a REG Delete Key
 ****************************************************************************/
-BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
+BOOL reg_delete_key(POLICY_HND *hnd, char *key_name)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -715,7 +724,8 @@ BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_DELETE_KEY: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_DELETE_KEY: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -734,7 +744,7 @@ BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 /****************************************************************************
 do a REG Create Key
 ****************************************************************************/
-BOOL reg_create_key( POLICY_HND *hnd,
+BOOL reg_create_key(POLICY_HND *hnd,
 				char *key_name, char *key_class,
 				SEC_ACCESS *sam_access,
 				POLICY_HND *key)
@@ -784,7 +794,8 @@ BOOL reg_create_key( POLICY_HND *hnd,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_CREATE_KEY: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_CREATE_KEY: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -806,7 +817,7 @@ BOOL reg_create_key( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Enum Key
 ****************************************************************************/
-BOOL reg_enum_key( POLICY_HND *hnd,
+BOOL reg_enum_key(POLICY_HND *hnd,
 				int key_index, char *key_name,
 				uint32 *unk_1, uint32 *unk_2,
 				time_t *mod_time)
@@ -842,7 +853,8 @@ BOOL reg_enum_key( POLICY_HND *hnd,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_ENUM_KEY: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_ENUM_KEY: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -866,7 +878,7 @@ BOOL reg_enum_key( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Create Value
 ****************************************************************************/
-BOOL reg_create_val( POLICY_HND *hnd,
+BOOL reg_create_val(POLICY_HND *hnd,
 				char *val_name, uint32 type, BUFFER3 *data)
 {
 	prs_struct rbuf;
@@ -900,7 +912,8 @@ BOOL reg_create_val( POLICY_HND *hnd,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_CREATE_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_CREATE_VALUE: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -919,7 +932,7 @@ BOOL reg_create_val( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Enum Value
 ****************************************************************************/
-BOOL reg_enum_val( POLICY_HND *hnd,
+BOOL reg_enum_val(POLICY_HND *hnd,
 				int val_index, int max_valnamelen, int max_valbufsize,
 				fstring val_name,
 				uint32 *val_type, BUFFER2 *value)
@@ -956,7 +969,8 @@ BOOL reg_enum_val( POLICY_HND *hnd,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_ENUM_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_ENUM_VALUE: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -977,7 +991,7 @@ BOOL reg_enum_val( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Open Key
 ****************************************************************************/
-BOOL reg_open_entry( POLICY_HND *hnd,
+BOOL reg_open_entry(POLICY_HND *hnd,
 				char *key_name, uint32 unk_0,
 				POLICY_HND *key_hnd)
 {
@@ -1012,7 +1026,8 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_OPEN_ENTRY: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_OPEN_ENTRY: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1039,7 +1054,7 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 /****************************************************************************
 do a REG Close
 ****************************************************************************/
-BOOL reg_close( POLICY_HND *hnd)
+BOOL reg_close(POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -1073,7 +1088,8 @@ BOOL reg_close( POLICY_HND *hnd)
 		if (p && r_c.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_CLOSE: %s\n", get_nt_error_msg(r_c.status)));
+			DEBUG(0, ("REG_CLOSE: %s\n",
+				  get_nt_error_msg(r_c.status)));
 			p = False;
 		}
 
@@ -1135,7 +1151,8 @@ BOOL reg_shutdown(const char *srv_name,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_SHUTDOWN: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0, ("REG_SHUTDOWN: %s\n",
+				  get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 

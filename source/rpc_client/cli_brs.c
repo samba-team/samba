@@ -29,8 +29,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a BRS Query 
 ****************************************************************************/
-BOOL brs_query_info( const char *srv_name, uint32 switch_value,
-			void *id)
+BOOL brs_query_info(const char *srv_name, uint32 switch_value, void *id)
 {
 	prs_struct rbuf;
 	prs_struct buf; 

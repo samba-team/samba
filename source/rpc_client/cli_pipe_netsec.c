@@ -30,8 +30,7 @@ extern int DEBUGLEVEL;
  decrypt data on an rpc pipe
  ****************************************************************************/
 static BOOL decode_netsec_pdu(struct cli_connection *con,
-				prs_struct *rdata,
-				int len, int auth_len)
+			      prs_struct *rdata, int len, int auth_len)
 {
 	RPC_AUTH_NETSEC_CHK chk;
 	RPC_HDR_AUTH auth_info;
