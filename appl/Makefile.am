@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS = afsutil ftp login @OTP_dir@ popper push rsh telnet test
-DIST_SUBDIRS = afsutil ftp login otp popper push rsh telnet test
+if OTP
+dir_otp = otp
+endif
+SUBDIRS = afsutil ftp login $(dir_otp) popper push rsh telnet test
 # kauth kx
