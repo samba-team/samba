@@ -155,6 +155,31 @@ struct smbldap_state {
 	struct timeval last_rebind;
 };
 
+/* struct used by both pdb_ldap.c and pdb_nds.c */
+
+struct ldapsam_privates {
+	struct smbldap_state *smbldap_state;
+
+	/* Former statics */
+	LDAPMessage *result;
+	LDAPMessage *entry;
+	int index;
+
+	const char *domain_name;
+	DOM_SID domain_sid;
+
+	/* configuration items */
+	int schema_ver;
+
+	char *domain_dn;
+
+	/* Is this NDS ldap? */
+	int is_nds_ldap;
+
+	/* ldap server location parameter */
+	char *location;
+};
+
 #endif 	/* HAVE_LDAP */
 
 struct smbldap_state;
