@@ -94,7 +94,7 @@ static inline int __spin_trylock(spinlock_t *lock)
 	: "r"(lock)
 	: "cr0", "memory");
 
-	return (result == 0) ? 0 : EBUSY;
+	return (result == 1) ? 0 : EBUSY;
 }
 
 static inline void __spin_unlock(spinlock_t *lock)
