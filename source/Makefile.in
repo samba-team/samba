@@ -221,7 +221,7 @@ SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
 	    $(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ)
 
-PICOBJS = $(SMBWRAPPER_OBJ:%.o=%.po)
+PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 
 ######################################################################
 # now the rules...
@@ -338,7 +338,7 @@ bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 
 smbwrapper/smbwrapper.so: $(PICOBJS)
 	@echo Linking shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS)
+	$(LD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS)
 
 smbwrapper/smbsh: smbwrapper/smbsh.in config.status
 	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
