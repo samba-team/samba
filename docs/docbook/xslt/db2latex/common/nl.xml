@@ -1,0 +1,105 @@
+<localization language="nl">
+
+<!-- Updated by Frederik Fouvry, fouvry@essex.ac.uk -->
+<!--            Vincent Partington, vincent.partington@graddelt.com -->
+<!-- Updated by Erwin Bolwidt, ejb@tryllian.com, august 2000 -->
+
+<gentext key="abstract"                 text="Overzicht"/>
+<gentext key="answer"                   text="A:"/>
+<gentext key="appendix"                 text="Aanhangsel"/>
+<gentext key="article"                  text="Artikel"/>
+<gentext key="bibliography"             text="Bibliografie"/>
+<gentext key="book"                     text="Boek"/>
+<gentext key="caution"                  text="Waarschuwing"/>
+<gentext key="chapter"                  text="Hoofdstuk"/>
+<gentext key="colophon"                 text="Colofon"/>
+<gentext key="copyright"                text="Copyright"/>
+<gentext key="dedication"               text="Opdracht"/>
+<gentext key="edition"                  text="Uitgave"/>
+<gentext key="equation"                 text="Vergelijking"/>
+<gentext key="example"                  text="Voorbeeld"/>
+<gentext key="figure"                   text="Figuur"/>
+<gentext key="glossary"                 text="Woordenlijst"/>
+<gentext key="glosssee"                 text="Zie"/>
+<gentext key="glossseealso"             text="Zie ook"/>
+<gentext key="important"                text="Belangrijk"/>
+<gentext key="index"                    text="Index"/>
+<gentext key="isbn"                     text="ISBN"/>
+<gentext key="legalnotice"              text="Juridische mededeling"/>
+<gentext key="msgaud"                   text="Doelgroep"/>
+<gentext key="msglevel"                 text="Ernst"/>
+<gentext key="msgorig"                  text="Afkomst"/>
+<gentext key="note"                     text="N.B."/>
+<gentext key="part"                     text="Deel"/>
+<gentext key="preface"                  text="Inleiding"/>
+<gentext key="procedure"                text="Procedure"/>
+<gentext key="published"                text="Gepubliceerd"/>
+<gentext key="pubdate"                  text="Gepubliceerd"/>
+<gentext key="question"                 text="V:"/>
+<gentext key="refentry"                 text="Referentielemma"/>
+<gentext key="reference"                text="Referentie"/>
+<gentext key="refname"                  text="Referentienaam"/>
+<gentext key="refsection"               text="Referentieparagraaf"/>
+<gentext key="refsynopsisdiv"           text="Samenvatting"/>
+<gentext key="revhistory"               text="Revisie verloop"/>
+<gentext key="revision"                 text="Revisie"/>
+<gentext key="section"                  text="Sectie"/>
+<gentext key="sect1"                    text="Sectie"/>
+<gentext key="sect2"                    text="Sectie"/>
+<gentext key="sect3"                    text="Sectie"/>
+<gentext key="sect4"                    text="Sectie"/>
+<gentext key="sect5"                    text="Sectie"/>
+<gentext key="see"                      text="Zie"/>
+<gentext key="seealso"                  text="Zie ook"/>
+<gentext key="set"                      text="Verzameling"/>
+<gentext key="setindex"                 text="Hoofdindex"/>
+<gentext key="sidebar"                  text="Excursie"/>
+<gentext key="step"                     text="Stap"/>
+<gentext key="table"                    text="Tabel"/>
+<gentext key="tip"                      text="Tip"/>
+<gentext key="warning"                  text="Waarschuwing"/>
+
+<gentext key="TableofContents"          text="Inhoudsopgave"/>
+<gentext key="in"                       text="in"/>
+<gentext key="by"                       text="door"/>
+<gentext key="Edited"                   text="Redactie"/>
+<gentext key="Editedby"                 text="Redactie door"/>
+<gentext key="and"                      text="en"/>
+<gentext key="Notes"                    text="Opmerkingen"/>
+<gentext key="TableNotes"               text="Opmerkingen"/>
+<gentext key="nonexistantelement"       text="niet-bestaand element"/>
+<gentext key="Pgs"                      text="blz."/>
+<gentext key="unsupported"              text="niet ondersteund"/>
+<gentext key="xrefto"                   text="verwijzing naar"/>
+<gentext key="unexpectedelementname"    text="Onverwachte naam van element"/>
+<gentext key="Revisedby"                text="Herzien door:"/>
+
+<gentext key="ListofTables"             text="Lijst van Tabellen"/>
+<gentext key="ListofExamples"           text="Lijst van Voorbeelden"/>
+<gentext key="ListofFigures"            text="Lijst van Figuren"/>
+<gentext key="ListofEquations"          text="Lijst van Vergelijkingen"/>
+<gentext key="ListofUnknown"            text="Lijst van Onbekends"/>
+
+<gentext key="nav-prev"                 text="Vorige"/>
+<gentext key="nav-prev-sibling"         text="Snel terug"/>
+<gentext key="nav-next-sibling"         text="Snel vooruit"/>
+<gentext key="nav-next"                 text="Volgende"/>
+<gentext key="nav-up"                   text="Omhoog"/>
+<gentext key="nav-home"                 text="Begin"/>
+
+<gentext key="the section called"       text="de sectie genaamd"/>
+
+<dingbat key="startquote" text="&#x201C;"/>
+<dingbat key="endquote" text="&#x201D;"/>
+<dingbat key="nestedstartquote" text="&#x2018;"/>
+<dingbat key="nestedendquote" text="&#x2019;"/>
+<dingbat key="bullet" text="&#2022;"/>
+
+<xref element="chapter" text="%g %n, %t"/>
+<xref element="dedication" text="%t"/>
+<xref element="preface" text="%t"/>
+<xref element="bibliography" text="%t"/>
+<xref element="glossary" text="%t"/>
+<xref element="index" text="%t"/>
+
+</localization>

@@ -1,0 +1,25 @@
+<!ELEMENT internationalization (localization+)>
+
+<!ELEMENT localization (gentext|dingbat|xref)*>
+<!ATTLIST localization
+	language	CDATA	#REQUIRED
+>
+
+<!ELEMENT gentext EMPTY>
+<!ATTLIST gentext
+	key		CDATA	#REQUIRED
+	text		CDATA	#REQUIRED
+>
+
+<!ELEMENT dingbat EMPTY>
+<!ATTLIST dingbat
+	key		CDATA	#REQUIRED
+	text		CDATA	#REQUIRED
+>
+
+<!ELEMENT xref EMPTY>
+<!ATTLIST xref
+	element		CDATA	#REQUIRED
+	text		CDATA	#REQUIRED
+>
+

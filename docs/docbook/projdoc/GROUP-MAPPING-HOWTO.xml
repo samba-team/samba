@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="iso8859-1"?>
+<chapter id="groupmapping">
+<chapterinfo>
+	<author>
+		<firstname>Jean François</firstname><surname>Micouleau</surname>
+	</author>
+	&author.jerry;
+</chapterinfo>
+
+<title>Configuring Group Mapping</title>
+
+<para>
+Starting with Samba 3.0 alpha 2, new group mapping functionality
+is available to create associations between Windows SIDs and UNIX
+groups. The <parameter>groupmap</parameter> subcommand included with
+the <command>net</command> tool can be used to manage these associations.
+</para>
+
+<para>
+The first immediate reason to use the group mapping on a Samba PDC, is that
+the <parameter>domain admin group</parameter> &smb.conf; has been removed.
+This parameter was used to give the listed users membership in the "Domain Admins"
+Windows group which gave local admin rights on their workstations (in
+default configurations).
+</para>
+
+<para>
+When installing NT/W2K on a computer, the installer program creates some users
+and groups. Notably the 'Administrators' group, and gives to that group some
+privileges like the ability to change the date and time or to kill any process
+(or close too) running on the local machine. The 'Administrator' user is a
+member of the 'Administrators' group, and thus 'inherit' the 'Administrators'
+group privileges. If a 'joe' user is created and become a member of the
+'Administrator' group, 'joe' has exactly the same rights as 'Administrator'.
+</para>
+
+<para>
+When a NT/W2K machine is joined to a domain, the "Domain Adminis" group of the
+PDC is added to the local 'Administrators' group of the workstation. Every
+member of the 'Domain Administrators' group 'inherit' the
+rights of the local 'Administrators' group when logging on the workstation.
+</para>
+
+<para>
+The following steps describe how to make samba PDC users members of the
+'Domain Admins' group?
+</para>
+
+<orderedlist>
+<listitem><para>create a unix group (usually in <filename>/etc/group</filename>),
+  let's call it domadm</para></listitem>
+<listitem><para>add to this group the users that must be Administrators. For example
+  if you want joe,john and mary, your entry in <filename>/etc/group</filename> will
+  look like:</para>
+
+  <para><programlisting>
+  domadm:x:502:joe,john,mary
+  </programlisting></para>
+
+  </listitem>
+
+<listitem><para>Map this domadm group to the "Domain Admins" group
+  by running the command:</para>
+
+  <para><prompt>root# </prompt><userinput>net groupmap add ntgroup="Domain Admins" unixgroup=domadm</userinput></para>
+  
+  <para>The quotes around "Domain Admins" are necessary due to the space in the group name.  Also make
+  sure to leave no whitespace surrounding the equal character (=).</para>
+  </listitem>
+
+</orderedlist>
+
+<para>Now joe, john and mary are domain administrators!</para>
+
+<para>
+It is possible to map any arbitrary UNIX group to any Windows NT
+group as well as making any UNIX group a Windows domain group.
+For example, if you wanted to include a UNIX group (e.g. acct) in a ACL on a
+local file or printer on a domain member machine, you would flag
+that group as a domain group by running the following on the Samba PDC:
+</para>
+
+<para><prompt>root# </prompt><userinput>net groupmap add rid=1000 ntgroup="Accounting" unixgroup=acct</userinput></para>
+
+<para>Be aware that the rid parmeter is a unsigned 32 bit integer that should
+normally start at 1000.  However, this rid must not overlap with any RID assigned
+to a user.  Verifying this is done differently depending on on the passdb backend 
+you are using.  Future versions of the tools may perform the verification automatically,
+but for now the burden in on you.</para>
+
+<para>You can list the various groups in the mapping database by executing 
+<command>net groupmap list</command>.  Here is an example:</para>
+
+<para><programlisting><prompt>root# </prompt>net groupmap list
+System Administrators (S-1-5-21-2547222302-1596225915-2414751004-1002) -> sysadmin
+Domain Admins (S-1-5-21-2547222302-1596225915-2414751004-512) -> domadmin
+Domain Users (S-1-5-21-2547222302-1596225915-2414751004-513) -> domuser
+Domain Guests (S-1-5-21-2547222302-1596225915-2414751004-514) -> domguest
+</programlisting></para>
+
+<para>For complete details on <command>net groupmap</command>, refer to the 
+net(8) man page.</para>
+
+</chapter>

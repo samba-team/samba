@@ -1,0 +1,396 @@
+<chapter id="locking">
+<chapterinfo>
+	&author.jeremy;
+	&author.jelmer;
+	&author.jht;
+</chapterinfo>
+<title>File and Record Locking</title>
+
+<sect1>
+<title>Discussion</title>
+
+<para>
+One area which sometimes causes trouble is locking.
+</para>
+
+<para>
+There are two types of locking which need to be performed by a SMB server.
+The first is <emphasis>record locking</emphasis> which allows a client to lock
+a range of bytes in a open file.  The second is the <emphasis>deny modes</emphasis>
+that are specified when a file is open.
+</para>
+
+<para>
+Record locking semantics under Unix is very different from record locking under
+Windows. Versions of Samba before 2.2 have tried to use the native fcntl() unix
+system call to implement proper record locking between different Samba clients.
+This can not be fully correct due to several reasons. The simplest is the fact
+that a Windows client is allowed to lock a byte range up to 2^32 or 2^64,
+depending on the client OS. The unix locking only supports byte ranges up to 2^31.
+So it is not possible to correctly satisfy a lock request above 2^31. There are
+many more differences, too many to be listed here.
+</para>
+
+<para>
+Samba 2.2 and above implements record locking completely independent of the
+underlying unix system. If a byte range lock that the client requests happens
+to fall into the range 0-2^31, Samba hands this request down to the Unix system.
+All other locks can not be seen by unix anyway.
+</para>
+
+<para>
+Strictly a SMB server should check for locks before every read and write call on
+a file. Unfortunately with the way fcntl() works this can be slow and may overstress
+the rpc.lockd. It is also almost always unnecessary as clients are supposed to
+independently make locking calls before reads and writes anyway if locking is
+important to them. By default Samba only makes locking calls when explicitly asked
+to by a client, but if you set <emphasis>strict locking = yes</emphasis> then it
+will make lock checking calls on every read and write.
+</para>
+
+<para>
+You can also disable by range locking completely using <emphasis>locking = no</emphasis>.
+This is useful for those shares that don't support locking or don't need it
+(such as cdroms). In this case Samba fakes the return codes of locking calls to
+tell clients that everything is OK.
+</para>
+
+<para>
+The second class of locking is the <emphasis>deny modes</emphasis>. These 
+are set by an application when it opens a file to determine what types of
+access should be allowed simultaneously with its open. A client may ask for
+DENY_NONE, DENY_READ, DENY_WRITE or DENY_ALL. There are also special compatibility
+modes called DENY_FCB and  DENY_DOS.
+</para>
+</sect1>
+
+<sect1>
+<title>Samba Opportunistic Locking Control</title>
+
+<para>
+Opportunistic locking essentially means that the client is allowed to download and cache
+a file on their hard drive while making changes; if a second client wants to access the
+file, the first client receives a break and must synchronise the file back to the server.
+This can give significant performance gains in some cases; some programs insist on
+synchronising the contents of the entire file back to the server for a single change.
+</para>
+
+<para>
+Level1 Oplocks (aka just plain "oplocks") is another term for opportunistic locking.
+</para>
+
+<para>
+Level2 Oplocks provids opportunistic locking for a file that will be treated as
+<emphasis>read only</emphasis>. Typically this is used on files that are read-only or
+on files that the client has no initial intention to write to at time of opening the file.
+</para>
+
+<para>
+Kernel Oplocks are essentially a method that allows the Linux kernel to co-exist with
+Samba's oplocked files, although this has provided better integration of MS Windows network
+file locking with the under lying OS, SGI IRIX and Linux are the only two OS's that are
+oplock aware at this time.
+</para>
+
+<para>
+Unless your system supports kernel oplocks, you should disable oplocks if you are
+accessing the same files from both Unix/Linux and SMB clients. Regardless, oplocks should
+always be disabled if you are sharing a database file (e.g., Microsoft Access) between
+multiple clients, as any break the first client receives will affect synchronisation of
+the entire file (not just the single record), which will result in a noticable performance
+impairment and, more likely, problems accessing the database in the first place. Notably,
+Microsoft Outlook's personal folders (*.pst) react very badly to oplocks. If in doubt,
+disable oplocks and tune your system from that point.
+</para>
+
+<para>
+If client-side caching is desirable and reliable on your network, you will benefit from
+turning on oplocks. If your network is slow and/or unreliable, or you are sharing your
+files among other file sharing mechanisms (e.g., NFS) or across a WAN, or multiple people
+will be accessing the same files frequently, you probably will not benefit from the overhead
+of your client sending oplock breaks and will instead want to disable oplocks for the share.
+</para>
+
+<para>
+Another factor to consider is the perceived performance of file access. If oplocks provide no
+measurable speed benefit on your network, it might not be worth the hassle of dealing with them.
+</para>
+
+<para>
+You can disable oplocks on a per-share basis with the following:
+
+<programlisting>
+	oplocks = False
+	level2 oplocks = False
+</programlisting>
+
+Alternately, you could disable oplocks on a per-file basis within the share:
+
+<programlisting>
+	veto oplock files = /*.mdb/*.MDB/*.dbf/*.DBF/
+</programlisting>
+</para>
+
+<para>
+If you are experiencing problems with oplocks as apparent from Samba's log entries,
+you may want to play it safe and disable oplocks and level2 oplocks.
+</para>
+
+</sect1>
+
+<sect1>
+<title>MS Windows Opportunistic Locking and Caching Controls</title>
+
+<para>
+There is a known issue when running applications (like Norton Anti-Virus) on a Windows 2000/ XP
+workstation computer that can affect any application attempting to access shared database files
+across a network. This is a result of a default setting configured in the Windows 2000/XP
+operating system known as <emphasis>Opportunistic Locking</emphasis>. When a workstation
+attempts to access shared data files located on another Windows 2000/XP computer,
+the Windows 2000/XP operating system will attempt to increase performance by locking the
+files and caching information locally. When this occurs, the application is unable to
+properly function, which results in an <emphasis>Access Denied</emphasis>
+ error message being displayed during network operations.
+</para>
+
+<para>
+All Windows operating systems in the NT family that act as database servers for data files
+(meaning that data files are stored there and accessed by other Windows PCs) may need to
+have opportunistic locking disabled in order to minimize the risk of data file corruption.
+This includes Windows 9x/Me, Windows NT, Windows 200x and Windows XP.
+</para>
+
+<para>
+If you are using a Windows NT family workstation in place of a server, you must also
+disable opportunistic locking (oplocks) on that workstation. For example, if you use a
+PC with the Windows NT Workstation operating system instead of Windows NT Server, and you
+have data files located on it that are accessed from other Windows PCs, you may need to
+disable oplocks on that system.
+</para>
+
+<para>
+The major difference is the location in the Windows registry where the values for disabling
+oplocks are entered. Instead of the LanManServer location, the LanManWorkstation location
+may be used.
+</para>
+
+<para>
+You can verify (or change or add, if necessary) this Registry value using the Windows
+Registry Editor. When you change this registry value, you will have to reboot the PC
+to ensure that the new setting goes into effect.
+</para>
+
+<para>
+The location of the client registry entry for opportunistic locking has changed in
+Windows 2000 from the earlier location in Microsoft Windows NT.
+</para>
+
+<note><para>
+Windows 2000 will still respect the EnableOplocks registry value used to disable oplocks
+in earlier versions of Windows.
+</para></note>
+
+<para>
+You can also deny the granting of opportunistic locks by changing the following registry entries:
+</para>
+
+<para>
+<programlisting>
+	HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\MRXSmb\Parameters\
+
+		OplocksDisabled REG_DWORD 0 or 1
+		Default: 0 (not disabled)
+</programlisting>
+</para>
+
+<note><para>
+The OplocksDisabled registry value configures Windows clients to either request or not
+request opportunistic locks on a remote file. To disable oplocks, the value of
+ OplocksDisabled must be set to 1.
+</para></note>
+
+<para>
+<programlisting>
+	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+
+		EnableOplocks REG_DWORD 0 or 1
+		Default: 1 (Enabled by Default)
+
+		EnableOpLockForceClose REG_DWORD 0 or 1
+		Default: 0 (Disabled by Default)
+</programlisting>
+</para>
+
+<note><para>
+The EnableOplocks value configures Windows-based servers (including Workstations sharing
+files) to allow or deny opportunistic locks on local files.
+</para></note>
+
+<para>
+To force closure of open oplocks on close or program exit EnableOpLockForceClose must be set to 1.
+</para>
+
+<para>
+An illustration of how level II oplocks work:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	Station 1 opens the file, requesting oplock.
+	</para></listitem>
+	<listitem><para>
+	Since no other station has the file open, the server grants station 1 exclusive oplock.
+	</para></listitem>
+	<listitem><para>
+	Station 2 opens the file, requesting oplock.
+	</para></listitem>
+	<listitem><para>
+	Since station 1 has not yet written to the file, the server asks station 1 to Break
+	to Level II Oplock.
+	</para></listitem>
+	<listitem><para>
+	Station 1 complies by flushing locally buffered lock information to the server.
+	</para></listitem>
+	<listitem><para>
+	Station 1 informs the server that it has Broken to Level II Oplock (alternatively,
+	station 1 could have closed the file).
+	</para></listitem>
+	<listitem><para>
+	The server responds to station 2's open request, granting it level II oplock.
+	Other stations can likewise open the file and obtain level II oplock.
+	</para></listitem>
+	<listitem><para>
+	Station 2 (or any station that has the file open) sends a write request SMB.
+	The server returns the write response.
+	</para></listitem>
+	<listitem><para>
+	The server asks all stations that have the file open to Break to None, meaning no
+	station holds any oplock on the file. Because the workstations can have no cached
+	writes or locks at this point, they need not respond to the break-to-none advisory;
+	all they need do is invalidate locally cashed read-ahead data.
+	</para></listitem>
+</itemizedlist>
+
+<sect2>
+<title>Workstation Service Entries</title>
+
+<para><programlisting>
+	\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters
+
+	UseOpportunisticLocking   REG_DWORD   0 or 1
+	Default: 1 (true)
+</programlisting></para>
+
+<para>
+Indicates whether the redirector should use opportunistic-locking (oplock) performance
+enhancement. This parameter should be disabled only to isolate problems.
+</para>
+
+</sect2>
+<sect2>
+<title>Server Service Entries</title>
+
+<para><programlisting>
+	\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+
+	EnableOplocks   REG_DWORD   0 or 1
+	Default: 1 (true)
+</programlisting></para>
+
+<para>
+Specifies whether the server allows clients to use oplocks on files. Oplocks are a
+significant performance enhancement, but have the potential to cause lost cached
+data on some networks, particularly wide-area networks.
+</para>
+
+<para><programlisting>
+	MinLinkThroughput   REG_DWORD   0 to infinite bytes per second
+	Default: 0
+</programlisting></para>
+
+<para>
+Specifies the minimum link throughput allowed by the server before it disables
+raw and opportunistic locks for this connection.
+</para>
+
+<para><programlisting>
+	MaxLinkDelay   REG_DWORD   0 to 100,000 seconds
+	Default: 60
+</programlisting></para>
+
+<para>
+Specifies the maximum time allowed for a link delay. If delays exceed this number,
+the server disables raw I/O and opportunistic locking for this connection.
+</para>
+
+<para><programlisting>
+	OplockBreakWait   REG_DWORD   10 to 180 seconds
+	Default: 35
+</programlisting></para>
+
+<para>
+Specifies the time that the server waits for a client to respond to an oplock break
+request. Smaller values can allow detection of crashed clients more quickly but can
+potentially cause loss of cached data.
+</para>
+
+</sect2>
+</sect1>
+
+<sect1>
+<title>Persistent Data Corruption</title>
+
+<para>
+If you have applied all of the settings discussed in this paper but data corruption problems
+and other symptoms persist, here are some additional things to check out:
+</para>
+
+<para>
+We have credible reports from developers that faulty network hardware, such as a single
+faulty network card, can cause symptoms similar to read caching and data corruption.
+If you see persistent data corruption even after repeated reindexing, you may have to
+rebuild the data files in question. This involves creating a new data file with the
+same definition as the file to be rebuilt and transferring the data from the old file
+to the new one. There are several known methods for doing this that can be found in
+our Knowledge Base.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Additional Reading</title>
+
+<para>
+You may want to check for an updated version of this white paper on our Web site from
+time to time. Many of our white papers are updated as information changes. For those papers,
+the Last Edited date is always at the top of the paper.
+</para>
+
+<para>
+Section of the Microsoft MSDN Library on opportunistic locking: 
+</para>
+
+<para>
+Opportunistic Locks, Microsoft Developer Network (MSDN), Windows Development &gt;
+Windows Base Services &gt; Files and I/O &gt; SDK Documentation &gt; File Storage &gt; File Systems
+&gt; About File Systems &gt; Opportunistic Locks, Microsoft Corporation.
+<ulink url="http://msdn.microsoft.com/library/en-us/fileio/storage_5yk3.asp">http://msdn.microsoft.com/library/en-us/fileio/storage_5yk3.asp</ulink>
+</para>
+
+<para>
+Microsoft Knowledge Base Article Q224992 "Maintaining Transactional Integrity with OPLOCKS",
+Microsoft Corporation, April 1999, <ulink url="=http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992</ulink>.
+</para>
+
+<para>
+Microsoft Knowledge Base Article Q296264 "Configuring Opportunistic Locking in Windows 2000",
+Microsoft Corporation, April 2001, <ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q296264">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q296264</ulink>.
+</para>
+
+<para>
+Microsoft Knowledge Base Article Q129202 "PC Ext: Explanation of Opportunistic Locking on Windows NT",
+ Microsoft Corporation, April 1995, <ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q129202">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q129202</ulink>.
+</para>
+
+</sect1>
+</chapter>

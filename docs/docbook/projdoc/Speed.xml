@@ -1,0 +1,211 @@
+<chapter id="speed">
+
+<chapterinfo>
+	<author>
+		<firstname>Paul</firstname><surname>Cochrane</surname>
+		<affiliation>
+			<orgname>Dundee Limb Fitting Centre</orgname>
+			<address><email>paulc@dth.scot.nhs.uk</email></address>
+		</affiliation>
+	</author>
+	&author.jelmer;
+</chapterinfo>
+
+<title>Samba performance issues</title>
+
+<sect1>
+<title>Comparisons</title>
+
+<para>
+The Samba server uses TCP to talk to the client. Thus if you are
+trying to see if it performs well you should really compare it to
+programs that use the same protocol. The most readily available
+programs for file transfer that use TCP are ftp or another TCP based
+SMB server.
+</para>
+
+<para>
+If you want to test against something like a NT or WfWg server then
+you will have to disable all but TCP on either the client or
+server. Otherwise you may well be using a totally different protocol
+(such as Netbeui) and comparisons may not be valid.
+</para>
+
+<para>
+Generally you should find that Samba performs similarly to ftp at raw
+transfer speed. It should perform quite a bit faster than NFS,
+although this very much depends on your system.
+</para>
+
+<para>
+Several people have done comparisons between Samba and Novell, NFS or
+WinNT. In some cases Samba performed the best, in others the worst. I
+suspect the biggest factor is not Samba vs some other system but the
+hardware and drivers used on the various systems. Given similar
+hardware Samba should certainly be competitive in speed with other
+systems.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Socket options</title>
+
+<para>
+There are a number of socket options that can greatly affect the
+performance of a TCP based server like Samba.
+</para>
+
+<para>
+The socket options that Samba uses are settable both on the command
+line with the -O option, or in the smb.conf file.
+</para>
+
+<para>
+The <command>socket options</command> section of the &smb.conf; manual page describes how
+to set these and gives recommendations.
+</para>
+
+<para>
+Getting the socket options right can make a big difference to your
+performance, but getting them wrong can degrade it by just as
+much. The correct settings are very dependent on your local network.
+</para>
+
+<para>
+The socket option TCP_NODELAY is the one that seems to make the
+biggest single difference for most networks. Many people report that
+adding <command>socket options = TCP_NODELAY</command> doubles the read 
+performance of a Samba drive. The best explanation I have seen for this is
+that the Microsoft TCP/IP stack is slow in sending tcp ACKs.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Read size</title>
+
+<para>
+The option <command>read size</command> affects the overlap of disk
+reads/writes with network reads/writes. If the amount of data being
+transferred in several of the SMB commands (currently SMBwrite, SMBwriteX and
+SMBreadbraw) is larger than this value then the server begins writing
+the data before it has received the whole packet from the network, or
+in the case of SMBreadbraw, it begins writing to the network before
+all the data has been read from disk.
+</para>
+
+<para>
+This overlapping works best when the speeds of disk and network access
+are similar, having very little effect when the speed of one is much
+greater than the other.
+</para>
+
+<para>
+The default value is 16384, but very little experimentation has been
+done yet to determine the optimal value, and it is likely that the best
+value will vary greatly between systems anyway. A value over 65536 is
+pointless and will cause you to allocate memory unnecessarily.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Max xmit</title>
+
+<para>
+At startup the client and server negotiate a <command>maximum transmit</command> size,
+which limits the size of nearly all SMB commands. You can set the
+maximum size that Samba will negotiate using the <command>max xmit = </command> option
+in &smb.conf;. Note that this is the maximum size of SMB requests that 
+Samba will accept, but not the maximum size that the *client* will accept.
+The client maximum receive size is sent to Samba by the client and Samba
+honours this limit.
+</para>
+
+<para>
+It defaults to 65536 bytes (the maximum), but it is possible that some
+clients may perform better with a smaller transmit unit. Trying values
+of less than 2048 is likely to cause severe problems.
+</para>
+
+<para>
+In most cases the default is the best option.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Log level</title>
+
+<para>
+If you set the log level (also known as <command>debug level</command>) higher than 2
+then you may suffer a large drop in performance. This is because the
+server flushes the log file after each operation, which can be very
+expensive. 
+</para>
+</sect1>
+
+<sect1>
+<title>Read raw</title>
+
+<para>
+The <command>read raw</command> operation is designed to be an optimised, low-latency
+file read operation. A server may choose to not support it,
+however. and Samba makes support for <command>read raw</command> optional, with it
+being enabled by default.
+</para>
+
+<para>
+In some cases clients don't handle <command>read raw</command> very well and actually
+get lower performance using it than they get using the conventional
+read operations. 
+</para>
+
+<para>
+So you might like to try <command>read raw = no</command> and see what happens on your
+network. It might lower, raise or not affect your performance. Only
+testing can really tell.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Write raw</title>
+
+<para>
+The <command>write raw</command> operation is designed to be an optimised, low-latency
+file write operation. A server may choose to not support it,
+however. and Samba makes support for <command>write raw</command> optional, with it
+being enabled by default.
+</para>
+
+<para>
+Some machines may find <command>write raw</command> slower than normal write, in which
+case you may wish to change this option.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Slow Logins</title>
+
+<para>
+Slow logins are almost always due to the password checking time. Using
+the lowest practical <command>password level</command> will improve things. 
+</para>
+
+</sect1>
+
+<sect1>
+<title>Client tuning</title>
+
+<para>
+Often a speed problem can be traced to the client. The client (for
+example Windows for Workgroups) can often be tuned for better TCP
+performance. Check the sections on the various clients in 
+<link linkend="Other-Clients">Samba and Other Clients</link>.
+</para>
+
+</sect1>
+</chapter>
