@@ -181,14 +181,17 @@ static uint32 jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 		int user_name_len;
 		int full_name_len;
 
-		if (acb_mask != 0 && !(pdb_get_acct_ctrl(pwd) & acb_mask))
+		if (acb_mask != 0 && !(pdb_get_acct_ctrl(pwd) & acb_mask)) {
+			pdb_reset_sam(pwd);
 			continue;
+		}
 
 		if (start_idx > 0) {
 			/* skip the requested number of entries.
 			   not very efficient, but hey...
 			*/
 			start_idx--;
+			pdb_reset_sam(pwd);
 			continue;
 		}
 
@@ -671,6 +674,9 @@ static void make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR
 		return;
 	}
 
+	ZERO_STRUCTP(sam);
+	ZERO_STRUCTP(uni_name);
+
 	for (i = 0; i < num_sam_entries; i++) {
 		int len = pass[i].uni_user_name.uni_str_len;
 
@@ -793,7 +799,7 @@ static BOOL get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID
 	/* well-known aliases */
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
-		enum_group_mapping(SID_NAME_WKN_GRP, &map, &num_entries, ENUM_ONLY_MAPPED);
+		enum_group_mapping(SID_NAME_WKN_GRP, &map, &num_entries, ENUM_ALL_MAPPED);
 	
 		*d_grp=(DOMAIN_GRP *)talloc(ctx, num_entries*sizeof(DOMAIN_GRP));
 		if (*d_grp==NULL)
@@ -877,6 +883,7 @@ static BOOL get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID
 			fstrcpy((*d_grp)[num_entries].name, smap.nt_name);
 			(*d_grp)[num_entries].rid = trid;
 			num_entries++;
+			DEBUG(10,("get_group_alias_entries: added entry %d, rid:%d\n", num_entries, trid));
 		}
 
 		grent_free(glist);
@@ -884,32 +891,45 @@ static BOOL get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID
 
 	*p_num_entries = num_entries;
 
-	return True;
+	DEBUG(10,("get_group_alias_entries: returning %d entries\n", *p_num_entries));
+
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*******************************************************************
  Get the group entries - similar to get_sampwd_entries().
  ********************************************************************/
 
-static BOOL get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
+static uint32 get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
 				     uint32 *p_num_entries, uint32 max_entries)
 {
 	GROUP_MAP *map=NULL;
 	int i;
+	uint32 group_entries = 0;
 	uint32 num_entries = 0;
 
 	*p_num_entries = 0;
 
-	enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED);
+	enum_group_mapping(SID_NAME_DOM_GRP, &map, &group_entries, ENUM_ONLY_MAPPED);
+
+	num_entries=group_entries-start_idx;
+
+	/* limit the number of entries */
+	if (num_entries>max_entries) {
+		DEBUG(5,("Limiting to %d entries\n", max_entries));
+		num_entries=max_entries;
+	}
 
 	*d_grp=(DOMAIN_GRP *)talloc(ctx, num_entries*sizeof(DOMAIN_GRP));
-	if (*d_grp==NULL)
-		return False;
+	if (num_entries!=0 && *d_grp==NULL){
+		safe_free(map);
+		return NT_STATUS_NO_MEMORY;
+	}
 	
 	for (i=0; i<num_entries; i++) {
-		fstrcpy((*d_grp)[i].name, map[i].nt_name);
-		fstrcpy((*d_grp)[i].comment, map[i].comment);
-		sid_split_rid(&map[i].sid, &(*d_grp)[i].rid);
+		fstrcpy((*d_grp)[i].name, map[i+start_idx].nt_name);
+		fstrcpy((*d_grp)[i].comment, map[i+start_idx].comment);
+		sid_split_rid(&map[i+start_idx].sid, &(*d_grp)[i].rid);
 		(*d_grp)[i].attr=SID_NAME_DOM_GRP;
 	}
 
@@ -917,7 +937,7 @@ static BOOL get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SI
 
 	*p_num_entries = num_entries;
 
-	return True;
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*******************************************************************
@@ -943,8 +963,6 @@ uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_
 	get_group_domain_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
 
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
-
-	safe_free(grp);
 
 	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries);
 
@@ -973,12 +991,12 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
 	sid_to_string(sid_str, &sid);
 	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
-	if (!get_group_alias_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))
+	if (get_group_alias_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES)!=NT_STATUS_NO_PROBLEMO)
 		return NT_STATUS_ACCESS_DENIED;
 
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
 
-	safe_free(grp);
+	/*safe_free(grp);*/
 
 	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx, num_entries);
 
@@ -1014,8 +1032,12 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	/* decide how many entries to get depending on the max_entries
 	   and max_size passed by client */
 
+	DEBUG(5, ("samr_reply_query_dispinfo: max_entries before %d\n", q_u->max_entries));
+
 	if(q_u->max_entries > MAX_SAM_ENTRIES)
 		q_u->max_entries = MAX_SAM_ENTRIES;
+
+	DEBUG(5, ("samr_reply_query_dispinfo: max_entries after %d\n", q_u->max_entries));
 
 	/* Get what we need from the password database */
 	switch (q_u->switch_level) {
@@ -1095,7 +1117,6 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_3))))
 			return NT_STATUS_NO_MEMORY;
 		disp_ret = init_sam_dispinfo_3(p->mem_ctx, ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
-		safe_free(grps);
 		if (disp_ret != NT_STATUS_NO_PROBLEMO)
 			return disp_ret;
 		break;
@@ -1110,7 +1131,6 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_5))))
 			return NT_STATUS_NO_MEMORY;
 		disp_ret = init_sam_dispinfo_5(p->mem_ctx, ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
-		safe_free(grps);
 		if (disp_ret != NT_STATUS_NO_PROBLEMO)
 			return disp_ret;
 		break;
@@ -1371,7 +1391,7 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
 	fstring group_names[MAX_SAM_ENTRIES];
-	uint32 group_attrs[MAX_SAM_ENTRIES];
+	uint32 *group_attrs = NULL;
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
@@ -1391,6 +1411,11 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 		DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_rids));
 	}
 
+	if (num_rids) {
+		if ((group_attrs = (uint32 *)talloc(p->mem_ctx, num_rids * sizeof(uint32))) == NULL)
+			return NT_STATUS_NO_MEMORY;
+ 	}
+ 
 	r_u->status = NT_STATUS_NONE_MAPPED;
 
 	for (i = 0; i < num_rids; i++) {
@@ -1410,6 +1435,7 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 				r_u->status = NT_STATUS_NOPROBLEMO;
 				group_attrs[i] = (uint32)type;
 				fstrcpy(group_names[i],tmpname);
+				DEBUG(5,("_samr_lookup_rids: %s:%d\n", group_names[i], group_attrs[i]));
 			}
 		}
 	}
@@ -1509,6 +1535,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 
 	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
 
+	ZERO_STRUCTP(id10);
 	init_sam_user_info10(id10, pdb_get_acct_ctrl(smbpass) );
 
 	samr_clear_sam_passwd(smbpass);
@@ -1554,11 +1581,50 @@ static uint32 get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, uint32 
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
+	ZERO_STRUCTP(id12);
 	init_sam_user_info12(id12, pdb_get_lanman_passwd(smbpass), pdb_get_nt_passwd(smbpass));
 	
 	pdb_free_sam(smbpass);
 
 	return NT_STATUS_NOPROBLEMO;
+}
+
+/*************************************************************************
+ get_user_info_20
+ *************************************************************************/
+
+static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, uint32 user_rid)
+{
+	SAM_ACCOUNT *sampass=NULL;
+	BOOL ret;
+
+	if (!pdb_rid_is_user(user_rid)) {
+		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
+		return False;
+	}
+
+	pdb_init_sam(&sampass);
+
+	become_root();
+	ret = pdb_getsampwrid(sampass, user_rid);
+	unbecome_root();
+
+	if (ret == False) {
+		DEBUG(4,("User 0x%x not found\n", user_rid));
+		pdb_free_sam(sampass);
+		return False;
+	}
+
+	samr_clear_sam_passwd(sampass);
+
+	DEBUG(3,("User:[%s]\n",  pdb_get_username(sampass) ));
+
+	ZERO_STRUCTP(id20);
+	init_sam_user_info20A(id20, sampass);
+	
+	pdb_free_sam(sampass);
+
+	return True;
 }
 
 /*************************************************************************
@@ -1591,6 +1657,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 
 	DEBUG(3,("User:[%s]\n",  pdb_get_username(sampass) ));
 
+	ZERO_STRUCTP(id21);
 	init_sam_user_info21A(id21, sampass);
 	
 	pdb_free_sam(sampass);
@@ -1654,6 +1721,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
                                     (*ctr->
                                      info.
                                      id11));
+	    ZERO_STRUCTP(ctr->info.id11);
             init_sam_user_info11(ctr->info.id11, &expire,
                          "BROOKFIELDS$",    /* name */
                          0x03ef,    /* user rid */
@@ -1671,6 +1739,14 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 
 		if ((r_u->status = get_user_info_12(p, ctr->info.id12, rid)) != NT_STATUS_NOPROBLEMO)
 			return r_u->status;
+		break;
+
+	case 20:
+		ctr->info.id20 = (SAM_USER_INFO_20 *)talloc(p->mem_ctx,sizeof(SAM_USER_INFO_20));
+		if (ctr->info.id20 == NULL)
+			return NT_STATUS_NO_MEMORY;
+		if (!get_user_info_20(ctr->info.id20, rid))
+			return NT_STATUS_NO_SUCH_USER;
 		break;
 
 	case 21:
@@ -1774,6 +1850,9 @@ uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR
             break;
         case 0x03:
             init_unk_info3(&ctr->info.inf3);
+            break;
+        case 0x05:
+            init_unk_info5(&ctr->info.inf5, global_myname);
             break;
         case 0x06:
             init_unk_info6(&ctr->info.inf6);
@@ -2819,8 +2898,55 @@ uint32 _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAMR_
 
 uint32 _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, SAMR_R_DELETE_DOM_GROUP *r_u)
 {
-  DEBUG(0,("_samr_delete_dom_group: Not yet implemented.\n"));
-  return False;
+	DOM_SID group_sid;
+	DOM_SID dom_sid;
+	uint32 group_rid;
+	fstring group_sid_str;
+	gid_t gid;
+	struct group *grp;
+	GROUP_MAP map;
+
+	DEBUG(5, ("samr_delete_dom_group: %d\n", __LINE__));
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_copy(&dom_sid, &group_sid);
+	sid_to_string(group_sid_str, &dom_sid);
+	sid_split_rid(&dom_sid, &group_rid);
+
+	DEBUG(10, ("sid is %s\n", group_sid_str));
+
+	/* we check if it's our SID before deleting */
+	if (!sid_equal(&dom_sid, &global_sam_sid))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	DEBUG(10, ("lookup on Domain SID\n"));
+
+	if(!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	gid=map.gid;
+
+	/* check if group really exists */
+	if ( (grp=getgrgid(gid)) == NULL)
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	/* we can delete the UNIX group */
+	smb_delete_group(grp->gr_name);
+
+	/* check if the group has been successfully deleted */
+	if ( (grp=getgrgid(gid)) != NULL)
+		return NT_STATUS_ACCESS_DENIED;
+
+	if(!group_map_remove(group_sid))
+		return NT_STATUS_ACCESS_DENIED;
+
+	if (!close_policy_hnd(p, &q_u->group_pol))
+		return NT_STATUS_OBJECT_NAME_INVALID;
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
@@ -2829,8 +2955,55 @@ uint32 _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, SAM
 
 uint32 _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, SAMR_R_DELETE_DOM_ALIAS *r_u)
 {
-  DEBUG(0,("_samr_delete_dom_alias: Not yet implemented.\n"));
-  return False;
+	DOM_SID alias_sid;
+	DOM_SID dom_sid;
+	uint32 alias_rid;
+	fstring alias_sid_str;
+	gid_t gid;
+	struct group *grp;
+	GROUP_MAP map;
+
+	DEBUG(5, ("_samr_delete_dom_alias: %d\n", __LINE__));
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_copy(&dom_sid, &alias_sid);
+	sid_to_string(alias_sid_str, &dom_sid);
+	sid_split_rid(&dom_sid, &alias_rid);
+
+	DEBUG(10, ("sid is %s\n", alias_sid_str));
+
+	/* we check if it's our SID before deleting */
+	if (!sid_equal(&dom_sid, &global_sam_sid))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	DEBUG(10, ("lookup on Local SID\n"));
+
+	if(!get_local_group_from_sid(alias_sid, &map))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	gid=map.gid;
+
+	/* check if group really exists */
+	if ( (grp=getgrgid(gid)) == NULL)
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	/* we can delete the UNIX group */
+	smb_delete_group(grp->gr_name);
+
+	/* check if the group has been successfully deleted */
+	if ( (grp=getgrgid(gid)) != NULL)
+		return NT_STATUS_ACCESS_DENIED;
+
+	/* don't check if we removed it as it could be an un-mapped group */
+	group_map_remove(alias_sid);
+
+	if (!close_policy_hnd(p, &q_u->alias_pol))
+		return NT_STATUS_OBJECT_NAME_INVALID;
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
