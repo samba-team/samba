@@ -40,6 +40,29 @@ extern int smb_read_error;
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
 
 /****************************************************************************
+ Setup the kernel level oplock backchannel for this process.
+****************************************************************************/
+
+BOOL setup_kernel_oplock_pipe(void)
+{
+#if defined(HAVE_KERNEL_OPLOCKS)
+  if(lp_kernel_oplocks()) {
+    int pfd[2];
+
+    if(pipe(pfd) != 0) {
+      DEBUG(0,("setup_kernel_oplock_pipe: Unable to create pipe. Error was %s\n",
+            strerror(errno) ));
+      return False;
+    }
+
+    oplock_pipe_read = pfd[0];
+    oplock_pipe_write = pfd[1];
+  }
+#endif /* HAVE_KERNEL_OPLOCKS */
+  return True;
+}
+
+/****************************************************************************
   open the oplock IPC socket communication
 ****************************************************************************/
 BOOL open_oplock_ipc(void)
@@ -70,6 +93,9 @@ address %lx. Error was %s\n", (long)htonl(INADDR_LOOPBACK), strerror(errno)));
     return False;
   }
   global_oplock_port = ntohs(sock_name.sin_port);
+
+  if(!setup_kernel_oplock_pipe())
+    return False;
 
   DEBUG(3,("open_oplock ipc: pid = %d, global_oplock_port = %u\n", 
             (int)getpid(), global_oplock_port));
@@ -158,6 +184,13 @@ Error was %s.\n", strerror(errno) ));
     if(fcntl(oplock_pipe_read, F_OPLKSTAT, &os) < 0) {
       DEBUG(0,("receive_local_message: fcntl of kernel notification failed. \
 Error was %s.\n", strerror(errno) ));
+      if(errno == EAGAIN) {
+        /*
+         * Duplicate kernel break message - ignore.
+         */
+        memset(buffer, '\0', KERNEL_OPLOCK_BREAK_MSG_LEN);
+        return True;
+      }
       smb_read_error = READ_ERROR;
       return False;
     }
@@ -1085,13 +1118,13 @@ Disabling kernel oplock support.\n", strerror(errno) ));
       return;
     }
 
-    oplock_pipe_read = pfd[0];
-    oplock_pipe_write = pfd[1];
+    close(pfd[0]);
+    close(pfd[1]);
     close(fd);
 
     lp_set_kernel_oplocks(True);
 
-    DEBUG(3,("check_kernel_oplocks: Kernel oplocks available and set to %s.\n",
+    DEBUG(0,("check_kernel_oplocks: Kernel oplocks available and set to %s.\n",
           lp_kernel_oplocks() ? "True" : "False" ));
 
   }
