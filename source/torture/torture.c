@@ -2247,7 +2247,7 @@ static BOOL parse_unc(const char *unc_name, char **hostname, char **sharename)
 
 
 
-static void sigcont(void)
+static void sigcont(int sig)
 {
 }
 
