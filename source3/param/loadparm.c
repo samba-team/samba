@@ -2756,9 +2756,9 @@ int lp_server_role(void)
 		{
 			if (lp_domain_logons())
 			{
-				return ROLE_DOMAIN_BDC;
+				return ROLE_DOMAIN_PDC;
 			}
-			return ROLE_DOMAIN_PDC;
+			return ROLE_DOMAIN_NONE;
 		}
 		default:
 		{
