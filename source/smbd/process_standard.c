@@ -91,8 +91,19 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 static void standard_terminate_connection(struct server_connection *conn, const char *reason) 
 {
 	DEBUG(0,("single_terminate_connection: reason[%s]\n",reason));
-	conn->service->ops->close_connection(conn,reason);
-	server_destroy_connection(conn);
+
+	if (conn) {
+		if (conn->service) {
+			conn->service->ops->close_connection(conn,reason);
+		}
+
+		if (conn->server_socket) {
+			DLIST_REMOVE(conn->server_socket->connection_list,conn);
+		}
+
+		server_destroy_connection(conn);
+	}
+
 	/* terminate this process */
 	exit(0);
 }

@@ -108,8 +108,21 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 static void thread_terminate_connection(struct server_connection *conn, const char *reason) 
 {
 	DEBUG(0,("thread_terminate_connection: reason[%s]\n",reason));
-	conn->service->ops->close_connection(conn,reason);
-	server_destroy_connection(conn);
+
+	if (conn) {
+		if (conn->service) {
+			conn->service->ops->close_connection(conn,reason);
+		}
+
+		if (conn->server_socket) {
+			MUTEX_LOCK_BY_ID(MUTEX_SMBD);
+			DLIST_REMOVE(conn->server_socket->connection_list,conn);
+			MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
+		}
+
+		server_destroy_connection(conn);
+	}
+
 	/* terminate this thread */
 	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
 }
