@@ -43,6 +43,61 @@ char *standard_files[] = {"abc", "abc.", ".abc",
 			  NULL};
 
 
+#include <regex.h>
+
+static char *reg_test(char *pattern, char *file)
+{
+	static fstring ret;
+	pstring rpattern;
+	regex_t preg;
+
+	pattern = 1+strrchr(pattern,'\\');
+	file = 1+strrchr(file,'\\');
+
+	fstrcpy(ret,"---");
+
+	if (strcmp(file,"..") == 0) file = ".";
+	if (strcmp(pattern,".") == 0) return ret;
+
+	if (strcmp(pattern,"") == 0) {
+		ret[2] = '+';
+		return ret;
+	}
+
+	pstrcpy(rpattern,"^");
+	pstrcat(rpattern, pattern);
+
+	all_string_sub(rpattern,".", "[.]", 0);
+	all_string_sub(rpattern,"?", ".{1}", 0);
+	all_string_sub(rpattern,"*", ".*", 0);
+	all_string_sub(rpattern+strlen(rpattern)-1,">", "([^.]?|[.]?$)", 0);
+	all_string_sub(rpattern,">", "[^.]?", 0);
+
+	all_string_sub(rpattern,"<[.]", ".*[.]", 0);
+	all_string_sub(rpattern,"<\"", "(.*[.]|.*$)", 0);
+	all_string_sub(rpattern,"<", "([^.]*|[^.]*[.]|[.][^.]*|[.].*[.])", 0);
+	if (strlen(pattern)>1) {
+		all_string_sub(rpattern+strlen(rpattern)-1,"\"", "[.]?", 0);
+	}
+	all_string_sub(rpattern,"\"", "([.]|$)", 0);
+	pstrcat(rpattern,"$");
+
+	/* printf("pattern=[%s] rpattern=[%s]\n", pattern, rpattern); */
+
+	regcomp(&preg, rpattern, REG_ICASE|REG_NOSUB|REG_EXTENDED);
+	if (regexec(&preg, ".", 0, NULL, 0) == 0) {
+		ret[0] = '+';
+		ret[1] = '+';
+	}
+	if (regexec(&preg, file, 0, NULL, 0) == 0) {
+		ret[2] = '+';
+	}
+	regfree(&preg);
+
+	return ret;
+}
+
+
 /***************************************************** 
 return a connection to a server
 *******************************************************/
@@ -156,6 +211,10 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 {
 	int fnum;
 	fstring res1, res2;
+	char *res3;
+	static int count;
+
+	count++;
 
 	fstrcpy(res1, "---");
 	fstrcpy(res2, "---");
@@ -177,19 +236,22 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 	resultp = res1;
 	cli_list(cli1, mask, aHIDDEN | aDIR, listfn);
 
+	res3 = reg_test(mask, file);
+
 	resultp = res2;
 	cli_list(cli2, mask, aHIDDEN | aDIR, listfn);
 
 	if (showall || strcmp(res1, res2)) {
-		DEBUG(0,("%s %s mask=[%s] file=[%s]\n",
-			 res1, res2, mask, file));
+		DEBUG(0,("%s %s %s %d mask=[%s] file=[%s]\n",
+			 res1, res2, res3, count, mask, file));
 	}
 
 	cli_unlink(cli1, file);
 	cli_unlink(cli2, file);
 }
 
-static void test_mask(struct cli_state *cli1, struct cli_state *cli2)
+static void test_mask(int argc, char *argv[], 
+		      struct cli_state *cli1, struct cli_state *cli2)
 {
 	pstring mask, file;
 	int l1, l2, i, j, l;
@@ -201,6 +263,19 @@ static void test_mask(struct cli_state *cli1, struct cli_state *cli2)
 
 	cli_unlink(cli1, "\\masktest\\*");
 	cli_unlink(cli2, "\\masktest\\*");
+
+	if (argc >= 2) {
+		while (argc >= 2) {
+			pstrcpy(mask,"\\masktest\\");
+			pstrcpy(file,"\\masktest\\");
+			pstrcat(mask, argv[0]);
+			pstrcat(file, argv[1]);
+			testpair(cli1, cli2, mask, file);
+			argv += 2;
+			argc -= 2;
+		}
+		goto finished;
+	}
 
 	for (i=0; standard_masks[i]; i++) {
 		for (j=0; standard_files[j]; j++) {
@@ -229,11 +304,15 @@ static void test_mask(struct cli_state *cli1, struct cli_state *cli2)
 		file[l+l2] = 0;
 
 		if (strcmp(file+l,".") == 0 || 
-		    strcmp(file+l,"..") == 0) continue;
+		    strcmp(file+l,"..") == 0 ||
+		    strcmp(mask+l,"..") == 0) continue;
 
 		testpair(cli1, cli2, mask, file);
 	}
-	
+
+ finished:
+	cli_rmdir(cli1, "\\masktest");
+	cli_rmdir(cli2, "\\masktest");
 }
 
 
@@ -331,6 +410,8 @@ static void usage(void)
 		}
 	}
 
+	argc -= optind;
+	argv += optind;
 
 	DEBUG(0,("seed=%d\n", seed));
 	srandom(seed);
@@ -348,7 +429,7 @@ static void usage(void)
 	}
 
 
-	test_mask(cli1, cli2);
+	test_mask(argc, argv, cli1, cli2);
 
 	return(0);
 }
