@@ -28,7 +28,6 @@
 /* Global variables.  These are effectively the client state information */
 
 static int established_socket = -1;           /* fd for winbindd socket */
-static int pwent_ndx, grent_ndx;              /* get{pw,gr}ent() state */
 
 /*
  * Utility and helper functions
@@ -111,8 +110,8 @@ static int open_root_pipe_sock(void)
         return -1;
     }
 
-#define WINBINDD_MAX_RETRIES    10
-#define WINBINDD_RETRY_TIMEOUT  2
+#define WINBINDD_MAX_RETRIES    15
+#define WINBINDD_RETRY_TIMEOUT  1
 
     retries = 0;
     
@@ -516,11 +515,22 @@ _nss_ntdom_setpwent(void)
 {
     struct winbindd_request request;
     struct winbindd_response response;
+    char *domain_env;
     
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_SETPWENT;
     request.pid = getpid();
+    request.data.domain[0] = '\0';
+
+    if ((domain_env = getenv(WINBINDD_DOMAIN_ENV))) {
+
+        /* Copy across contents of environment variable */
+
+        strncpy(request.data.domain, domain_env,
+                sizeof(request.data.domain) - 1);
+        request.data.domain[sizeof(request.data.domain) - 1] = '\0';
+    }
 
     if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -537,8 +547,6 @@ _nss_ntdom_setpwent(void)
     if (response.result != WINBINDD_OK) {
         return NSS_STATUS_NOTFOUND;
     }
-
-    pwent_ndx = 0;
 
     return NSS_STATUS_SUCCESS;
 }
@@ -550,11 +558,22 @@ _nss_ntdom_endpwent(void)
 {
     struct winbindd_request request;
     struct winbindd_response response;
+    char *domain_env;
     
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_ENDPWENT;
     request.pid = getpid();
+    request.data.domain[0] = '\0';
+
+    if ((domain_env = getenv(WINBINDD_DOMAIN_ENV))) {
+
+        /* Copy across contents of environment variable */
+
+        strncpy(request.data.domain, domain_env,
+                sizeof(request.data.domain) - 1);
+        request.data.domain[sizeof(request.data.domain) - 1] = '\0';
+    }
 
     if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -571,8 +590,6 @@ _nss_ntdom_endpwent(void)
     if (response.result != WINBINDD_OK) {
         return NSS_STATUS_NOTFOUND;
     }
-
-    pwent_ndx = 0;
 
     return NSS_STATUS_SUCCESS;
 }
@@ -585,12 +602,22 @@ _nss_ntdom_getpwent_r(struct passwd *result, char *buffer,
 {
     struct winbindd_request request;
     struct winbindd_response response;
+    char *domain_env;
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETPWENT;
     request.pid = getpid();
-    request.data.pwent_ndx = pwent_ndx;
+    request.data.domain[0] = '\0';
+
+    if ((domain_env = getenv(WINBINDD_DOMAIN_ENV))) {
+
+        /* Copy across contents of environment variable */
+
+        strncpy(request.data.domain, domain_env,
+                sizeof(request.data.domain) - 1);
+        request.data.domain[sizeof(request.data.domain) - 1] = '\0';
+    }
 
     if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -607,8 +634,6 @@ _nss_ntdom_getpwent_r(struct passwd *result, char *buffer,
     if (response.result != WINBINDD_OK) {
         return NSS_STATUS_NOTFOUND;
     }
-
-    pwent_ndx = response.data.pw.pwent_ndx;
 
     return fill_pwent(result, &response, &buffer, &buflen, errnop);
 }
@@ -694,11 +719,22 @@ _nss_ntdom_setgrent(void)
 {
     struct winbindd_request request;
     struct winbindd_response response;
+    char *domain_env;
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_SETGRENT;
     request.pid = getpid();
+    request.data.domain[0] = '\0';
+
+    if ((domain_env = getenv(WINBINDD_DOMAIN_ENV))) {
+
+        /* Copy across contents of environment variable */
+
+        strncpy(request.data.domain, domain_env,
+                sizeof(request.data.domain) - 1);
+        request.data.domain[sizeof(request.data.domain) - 1] = '\0';
+    }
 
     if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -715,8 +751,6 @@ _nss_ntdom_setgrent(void)
     if (response.result != WINBINDD_OK) {
         return NSS_STATUS_NOTFOUND;
     }
-
-    grent_ndx = 0;
 
     return NSS_STATUS_SUCCESS;
 }
@@ -728,11 +762,22 @@ _nss_ntdom_endgrent(void)
 {
     struct winbindd_request request;
     struct winbindd_response response;
+    char *domain_env;
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_ENDGRENT;
     request.pid = getpid();
+    request.data.domain[0] = '\0';
+
+    if ((domain_env = getenv(WINBINDD_DOMAIN_ENV))) {
+
+        /* Copy across contents of environment variable */
+        
+        strncpy(request.data.domain, domain_env,
+                sizeof(request.data.domain) - 1);
+        request.data.domain[sizeof(request.data.domain) - 1] = '\0';
+    }
 
     if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -749,8 +794,6 @@ _nss_ntdom_endgrent(void)
     if (response.result != WINBINDD_OK) {
         return NSS_STATUS_NOTFOUND;
     }
-
-    grent_ndx = 0;
 
     return NSS_STATUS_SUCCESS;
 }
@@ -763,12 +806,22 @@ _nss_ntdom_getgrent_r(struct group *result,
 {
     struct winbindd_request request;
     struct winbindd_response response;
+    char *domain_env;
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETGRENT;
     request.pid = getpid();
-    request.data.grent_ndx = grent_ndx;
+    request.data.domain[0] = '\0';
+
+    if ((domain_env = getenv(WINBINDD_DOMAIN_ENV))) {
+
+        /* Copy across contents of environment variable */
+
+        strncpy(request.data.domain, domain_env, 
+                sizeof(request.data.domain) - 1);
+        request.data.domain[sizeof(request.data.domain) - 1] = '\0';
+    }
 
     if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -785,8 +838,6 @@ _nss_ntdom_getgrent_r(struct group *result,
     if (response.result != WINBINDD_OK) {
         return NSS_STATUS_UNAVAIL;
     }
-
-    grent_ndx = response.data.gr.grent_ndx;
 
     return fill_grent(result, &response, &buffer, &buflen, errnop);
 }
