@@ -43,6 +43,10 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Mon May 6 2002 Gerald Carter <jerry@samba.org>
+  - moved findsmb to a standard component in samba's
+    "make install".  Removed from specfile.
+
 * Sun Oct 14 2001 Andrew Bartlett <abartlet@samba.org>
  - Set SBINDIR for codepage/manpage install, cope with 
     broken Makefile
@@ -198,7 +202,7 @@ for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 do
 install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
-for i in mksmbpasswd.sh smbtar 
+for i in mksmbpasswd.sh smbtar findsmb
 do
 install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -260,7 +264,6 @@ done
 # Install the miscellany
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
-install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
