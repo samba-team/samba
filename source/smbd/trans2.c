@@ -1173,9 +1173,10 @@ static int call_trans2qfsinfo(connection_struct *conn,
             (lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
+      SIVAL(pdata,0,0x700FF);
 #endif /* Old code. */
 
-      SIVAL(pdata,4,128); /* Max filename component length */
+      SIVAL(pdata,4,255); /* Max filename component length */
       fstype_len = dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring), False);
       SIVAL(pdata,8,fstype_len);
       data_len = 12 + fstype_len;

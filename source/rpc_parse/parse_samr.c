@@ -2047,29 +2047,32 @@ BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4,
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr,
+static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR **ctr,
 				prs_struct *ps, int depth)
 {
-	if (ctr == NULL)
+	if (UNMARSHALLING(ps))
+		*ctr = (GROUP_INFO_CTR *)prs_alloc_mem(ps,sizeof(GROUP_INFO_CTR));
+
+	if (*ctr == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "samr_group_info_ctr");
 	depth++;
 
-	if(!prs_uint16("switch_value1", ps, depth, &ctr->switch_value1))
+	if(!prs_uint16("switch_value1", ps, depth, &(*ctr)->switch_value1))
 		return False;
-	if(!prs_uint16("switch_value2", ps, depth, &ctr->switch_value2))
+	if(!prs_uint16("switch_value2", ps, depth, &(*ctr)->switch_value2))
 		return False;
 
-	switch (ctr->switch_value1) {
+	switch ((*ctr)->switch_value1) {
 	case 1:
 		if(!samr_io_group_info1("group_info1",
-				  &ctr->group.info1, ps, depth))
+				  &(*ctr)->group.info1, ps, depth))
 			return False;
 		break;
 	case 4:
 		if(!samr_io_group_info4("group_info4",
-				  &ctr->group.info4, ps, depth))
+				  &(*ctr)->group.info4, ps, depth))
 			return False;
 		break;
 	default:
@@ -2395,7 +2398,7 @@ BOOL samr_io_q_set_groupinfo(char *desc, SAMR_Q_SET_GROUPINFO * q_e,
 	if(!smb_io_pol_hnd("pol", &q_e->pol, ps, depth))
 		return False;
 	
-	if(!samr_group_info_ctr("ctr", q_e->ctr, ps, depth))
+	if(!samr_group_info_ctr("ctr", &q_e->ctr, ps, depth))
 		return False;
 
 	return True;
@@ -2507,7 +2510,7 @@ BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
 		return False;
 
 	if (r_u->ptr != 0) {
-		if(!samr_group_info_ctr("ctr", r_u->ctr, ps, depth))
+		if(!samr_group_info_ctr("ctr", &r_u->ctr, ps, depth))
 			return False;
 	}
 
@@ -3594,15 +3597,12 @@ inits a SAMR_Q_OPEN_ALIAS structure.
 ********************************************************************/
 
 void init_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, POLICY_HND *pol,
-			    uint32 unknown_0, uint32 rid)
+			    uint32 access_mask, uint32 rid)
 {
 	DEBUG(5, ("init_samr_q_open_alias\n"));
 
 	q_u->dom_pol = *pol;
-
-	/* example values: 0x0000 0008 */
-	q_u->unknown_0 = unknown_0;
-
+	q_u->access_mask = access_mask;
 	q_u->rid_alias = rid;
 }
 
@@ -3625,7 +3625,7 @@ BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
 	if(!smb_io_pol_hnd("domain_pol", &q_u->dom_pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("unknown_0", ps, depth, &q_u->unknown_0))
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
 	if(!prs_uint32("rid_alias", ps, depth, &q_u->rid_alias))
 		return False;
@@ -3678,6 +3678,8 @@ void init_samr_q_lookup_rids(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_RIDS * q_u,
 	if (q_u->rid == NULL) {
 		q_u->num_rids1 = 0;
 		q_u->num_rids2 = 0;
+	} else {
+		memcpy(q_u->rid, rid, num_rids * sizeof(q_u->rid[0]));
 	}
 }
 
@@ -4289,7 +4291,7 @@ BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 inits a SAMR_Q_LOOKUP_NAMES structure.
 ********************************************************************/
 
-void init_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
+void init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
 			      uint32 num_names, char **name)
 {
@@ -4303,6 +4305,9 @@ void init_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
 	q_u->flags = flags;
 	q_u->ptr = 0;
 	q_u->num_names2 = num_names;
+
+	q_u->hdr_name = (UNIHDR *)talloc_zero(ctx, num_names * sizeof(UNIHDR));
+	q_u->uni_name = (UNISTR2 *)talloc_zero(ctx, num_names * sizeof(UNISTR2));
 
 	for (i = 0; i < num_names; i++) {
 		int len_name = name[i] != NULL ? strlen(name[i]) : 0;
@@ -4344,7 +4349,14 @@ BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 	if(!prs_uint32("num_names2", ps, depth, &q_u->num_names2))
 		return False;
 
-	SMB_ASSERT_ARRAY(q_u->hdr_name, q_u->num_names2);
+	if (UNMARSHALLING(ps) && (q_u->num_names2 != 0)) {
+		q_u->hdr_name = (UNIHDR *)prs_alloc_mem(ps, sizeof(UNIHDR) *
+							q_u->num_names2);
+		q_u->uni_name = (UNISTR2 *)prs_alloc_mem(ps, sizeof(UNISTR2) *
+							 q_u->num_names2);
+		if (!q_u->hdr_name || q_u->uni_name)
+			return False;
+	}
 
 	for (i = 0; i < q_u->num_names2; i++) {
 		if(!smb_io_unihdr("", &q_u->hdr_name[i], ps, depth))

@@ -1249,8 +1249,8 @@ typedef struct q_samr_lookup_names_info
 	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
 	uint32 num_names2;      /* number of names being looked up */
 
-	UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
-	UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
+	UNIHDR  *hdr_name; /* unicode account name header */
+	UNISTR2 *uni_name; /* unicode account name string */
 
 } SAMR_Q_LOOKUP_NAMES;
 
@@ -1530,8 +1530,8 @@ typedef struct q_samr_open_alias_info
 {
 	POLICY_HND dom_pol;
 
-	uint32 unknown_0;         /* 0x0000 0008 */
-	uint32 rid_alias;        /* rid */
+	uint32 access_mask;         
+	uint32 rid_alias;
 
 } SAMR_Q_OPEN_ALIAS;
 

@@ -2954,7 +2954,7 @@ BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid,
 BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
 				 prs_struct *ps, int depth);
 void init_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, POLICY_HND *pol,
-			    uint32 unknown_0, uint32 rid);
+			    uint32 access_mask, uint32 rid);
 BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
 			  prs_struct *ps, int depth);
 BOOL samr_io_r_open_alias(char *desc, SAMR_R_OPEN_ALIAS * r_u,
@@ -3009,7 +3009,7 @@ void init_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM * r_u,
 				uint32 status);
 BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 			      prs_struct *ps, int depth);
-void init_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
+void init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
 			      uint32 num_names, char **name);
 BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,

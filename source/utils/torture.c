@@ -520,14 +520,25 @@ static void run_readwritelarge(int dummy)
 	}
 
 	if (fsize == sizeof(buf))
-		printf("readwritelarge test succeeded (size = %x)\n", fsize);
+		printf("readwritelarge test 1 succeeded (size = %x)\n", fsize);
 	else
-		printf("readwritelarge test failed (size = %x)\n", fsize);
+		printf("readwritelarge test 1 failed (size = %x)\n", fsize);
 
 	if (!cli_unlink(&cli1, lockfname)) {
 		printf("unlink failed (%s)\n", cli_errstr(&cli1));
 	}
 
+	fnum1 = cli_open(&cli1, lockfname, O_RDWR | O_CREAT | O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open read/write of %s failed (%s)\n", lockfname, cli_errstr(&cli1));
+		return;
+	}
+
+	cli_smbwrite(&cli1, fnum1, buf, 0, sizeof(buf));
+   
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close failed (%s)\n", cli_errstr(&cli1));
+	}
     close_connection(&cli1);
 }
 
