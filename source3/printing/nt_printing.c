@@ -775,6 +775,17 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 	get_short_archi(architecture, in_arch);
 
+	/*
+	 * Note - the version sent here for Win2k is probably (3). Due to the
+	 * hack done in clean_up_driver_struct_level_3() we need to
+	 * do the same hack so we can find the correctly stored driver. JRA.
+	 */
+
+	if (StrCaseCmp(in_arch, "Windows 4.0")==0)
+		version=0;
+	else
+		version=2;
+
 	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, in_prt));
 
 	slprintf(key, sizeof(key), "%s%s/%d/%s", DRIVERS_PREFIX, architecture, version, in_prt);
