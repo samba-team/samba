@@ -115,18 +115,14 @@ struct
   {"srvfiles",   cmd_srv_enum_files,   "DCE/RPC - List files on a server"},
 #endif
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
-#if 0
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
   {"samuser",    cmd_sam_query_user,   "<username> SAM User Query (experimental!)"},
   {"samtest",    cmd_sam_test      ,   "SAM User Encrypted RPC test (experimental!)"},
   {"enumaliases",cmd_sam_enum_aliases, "SAM Aliases Database Query (experimental!)"},
-#endif
 #if 0
   {"enumgroups", cmd_sam_enum_groups,  "SAM Group Database Query (experimental!)"},
 #endif
-#if 0
   {"samgroups",  cmd_sam_query_groups, "SAM Group Database Query (experimental!)"},
-#endif
   {"quit",       cmd_quit,        "logoff the server"},
   {"q",          cmd_quit,        "logoff the server"},
   {"exit",       cmd_quit,        "logoff the server"},

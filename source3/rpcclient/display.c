@@ -32,20 +32,20 @@ char *get_file_mode_str(uint32 share_mode)
 
 	switch ((share_mode>>4)&0xF)
 	{
-		case DENY_NONE : strcpy(mode, "DENY_NONE  "); break;
-		case DENY_ALL  : strcpy(mode, "DENY_ALL   "); break;
-		case DENY_DOS  : strcpy(mode, "DENY_DOS   "); break;
-		case DENY_READ : strcpy(mode, "DENY_READ  "); break;
-		case DENY_WRITE: strcpy(mode, "DENY_WRITE "); break;
-		default        : strcpy(mode, "DENY_????  "); break;
+		case DENY_NONE : fstrcpy(mode, "DENY_NONE  "); break;
+		case DENY_ALL  : fstrcpy(mode, "DENY_ALL   "); break;
+		case DENY_DOS  : fstrcpy(mode, "DENY_DOS   "); break;
+		case DENY_READ : fstrcpy(mode, "DENY_READ  "); break;
+		case DENY_WRITE: fstrcpy(mode, "DENY_WRITE "); break;
+		default        : fstrcpy(mode, "DENY_????  "); break;
 	}
 
 	switch (share_mode & 0xF)
 	{
-		case 0 : strcat(mode, "RDONLY"); break;
-		case 1 : strcat(mode, "WRONLY"); break;
-		case 2 : strcat(mode, "RDWR  "); break;
-		default: strcat(mode, "R??W??"); break;
+		case 0 : fstrcat(mode, "RDONLY"); break;
+		case 1 : fstrcat(mode, "WRONLY"); break;
+		case 2 : fstrcat(mode, "RDWR  "); break;
+		default: fstrcat(mode, "R??W??"); break;
 	}
 
 	return mode;
@@ -62,10 +62,10 @@ char *get_file_oplock_str(uint32 op_type)
 
 	oplock[0] = 0;
 
-	if (excl           ) strcat(oplock, "EXCLUSIVE");
-	if (excl  &&  batch) strcat(oplock, "+");
-	if (          batch) strcat(oplock, "BATCH");
-	if (!excl && !batch) strcat(oplock, "NONE");
+	if (excl           ) fstrcat(oplock, "EXCLUSIVE");
+	if (excl  &&  batch) fstrcat(oplock, "+");
+	if (          batch) fstrcat(oplock, "BATCH");
+	if (!excl && !batch) fstrcat(oplock, "NONE");
 
 	return oplock;
 }
@@ -79,11 +79,11 @@ char *get_share_type_str(uint32 type)
 
 	switch (type)
 	{
-		case STYPE_DISKTREE: strcpy(typestr, "Disk"   ); break;
-		case STYPE_PRINTQ  : strcpy(typestr, "Printer"); break;	      
-		case STYPE_DEVICE  : strcpy(typestr, "Device" ); break;
-		case STYPE_IPC     : strcpy(typestr, "IPC"    ); break;      
-		default            : strcpy(typestr, "????"   ); break;      
+		case STYPE_DISKTREE: fstrcpy(typestr, "Disk"   ); break;
+		case STYPE_PRINTQ  : fstrcpy(typestr, "Printer"); break;	      
+		case STYPE_DEVICE  : fstrcpy(typestr, "Device" ); break;
+		case STYPE_IPC     : fstrcpy(typestr, "IPC"    ); break;      
+		default            : fstrcpy(typestr, "????"   ); break;      
 	}
 	return typestr;
 }
@@ -97,7 +97,7 @@ char *get_server_type_str(uint32 type)
 
 	if (type == SV_TYPE_ALL)
 	{
-		strcpy(typestr, "All");
+		fstrcpy(typestr, "All");
 	}
 	else
 	{
@@ -109,32 +109,32 @@ char *get_server_type_str(uint32 type)
 			{
 				switch (1 << i)
 				{
-					case SV_TYPE_WORKSTATION      : strcat(typestr, "Wk " ); break;
-					case SV_TYPE_SERVER           : strcat(typestr, "Sv " ); break;
-					case SV_TYPE_SQLSERVER        : strcat(typestr, "Sql "); break;
-					case SV_TYPE_DOMAIN_CTRL      : strcat(typestr, "PDC "); break;
-					case SV_TYPE_DOMAIN_BAKCTRL   : strcat(typestr, "BDC "); break;
-					case SV_TYPE_TIME_SOURCE      : strcat(typestr, "Tim "); break;
-					case SV_TYPE_AFP              : strcat(typestr, "AFP "); break;
-					case SV_TYPE_NOVELL           : strcat(typestr, "Nov "); break;
-					case SV_TYPE_DOMAIN_MEMBER    : strcat(typestr, "Dom "); break;
-					case SV_TYPE_PRINTQ_SERVER    : strcat(typestr, "PrQ "); break;
-					case SV_TYPE_DIALIN_SERVER    : strcat(typestr, "Din "); break;
-					case SV_TYPE_SERVER_UNIX      : strcat(typestr, "Unx "); break;
-					case SV_TYPE_NT               : strcat(typestr, "NT " ); break;
-					case SV_TYPE_WFW              : strcat(typestr, "Wfw "); break;
-					case SV_TYPE_SERVER_MFPN      : strcat(typestr, "Mfp "); break;
-					case SV_TYPE_SERVER_NT        : strcat(typestr, "SNT "); break;
-					case SV_TYPE_POTENTIAL_BROWSER: strcat(typestr, "PtB "); break;
-					case SV_TYPE_BACKUP_BROWSER   : strcat(typestr, "BMB "); break;
-					case SV_TYPE_MASTER_BROWSER   : strcat(typestr, "LMB "); break;
-					case SV_TYPE_DOMAIN_MASTER    : strcat(typestr, "DMB "); break;
-					case SV_TYPE_SERVER_OSF       : strcat(typestr, "OSF "); break;
-					case SV_TYPE_SERVER_VMS       : strcat(typestr, "VMS "); break;
-					case SV_TYPE_WIN95_PLUS       : strcat(typestr, "W95 "); break;
-					case SV_TYPE_ALTERNATE_XPORT  : strcat(typestr, "Xpt "); break;
-					case SV_TYPE_LOCAL_LIST_ONLY  : strcat(typestr, "Dom "); break;
-					case SV_TYPE_DOMAIN_ENUM      : strcat(typestr, "Loc "); break;
+					case SV_TYPE_WORKSTATION      : fstrcat(typestr, "Wk " ); break;
+					case SV_TYPE_SERVER           : fstrcat(typestr, "Sv " ); break;
+					case SV_TYPE_SQLSERVER        : fstrcat(typestr, "Sql "); break;
+					case SV_TYPE_DOMAIN_CTRL      : fstrcat(typestr, "PDC "); break;
+					case SV_TYPE_DOMAIN_BAKCTRL   : fstrcat(typestr, "BDC "); break;
+					case SV_TYPE_TIME_SOURCE      : fstrcat(typestr, "Tim "); break;
+					case SV_TYPE_AFP              : fstrcat(typestr, "AFP "); break;
+					case SV_TYPE_NOVELL           : fstrcat(typestr, "Nov "); break;
+					case SV_TYPE_DOMAIN_MEMBER    : fstrcat(typestr, "Dom "); break;
+					case SV_TYPE_PRINTQ_SERVER    : fstrcat(typestr, "PrQ "); break;
+					case SV_TYPE_DIALIN_SERVER    : fstrcat(typestr, "Din "); break;
+					case SV_TYPE_SERVER_UNIX      : fstrcat(typestr, "Unx "); break;
+					case SV_TYPE_NT               : fstrcat(typestr, "NT " ); break;
+					case SV_TYPE_WFW              : fstrcat(typestr, "Wfw "); break;
+					case SV_TYPE_SERVER_MFPN      : fstrcat(typestr, "Mfp "); break;
+					case SV_TYPE_SERVER_NT        : fstrcat(typestr, "SNT "); break;
+					case SV_TYPE_POTENTIAL_BROWSER: fstrcat(typestr, "PtB "); break;
+					case SV_TYPE_BACKUP_BROWSER   : fstrcat(typestr, "BMB "); break;
+					case SV_TYPE_MASTER_BROWSER   : fstrcat(typestr, "LMB "); break;
+					case SV_TYPE_DOMAIN_MASTER    : fstrcat(typestr, "DMB "); break;
+					case SV_TYPE_SERVER_OSF       : fstrcat(typestr, "OSF "); break;
+					case SV_TYPE_SERVER_VMS       : fstrcat(typestr, "VMS "); break;
+					case SV_TYPE_WIN95_PLUS       : fstrcat(typestr, "W95 "); break;
+					case SV_TYPE_ALTERNATE_XPORT  : fstrcat(typestr, "Xpt "); break;
+					case SV_TYPE_LOCAL_LIST_ONLY  : fstrcat(typestr, "Dom "); break;
+					case SV_TYPE_DOMAIN_ENUM      : fstrcat(typestr, "Loc "); break;
 				}
 			}
 		}
@@ -977,12 +977,12 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 			fprintf(out_hnd, "\t\tUnknown Str : %s\n", unistrn2(usr->uni_unknown_str .buffer, usr->uni_unknown_str .uni_str_len)); /* unknown string unicode string */
 			fprintf(out_hnd, "\t\tRemote Dial : %s\n", unistrn2(usr->uni_munged_dial .buffer, usr->uni_munged_dial .uni_str_len)); /* munged remote access unicode string */
 
-			fprintf(out_hnd, "\t\tLogon Time               : %s\n", time_to_string(interpret_nt_time(&(usr->logon_time           ))));
-			fprintf(out_hnd, "\t\tLogoff Time              : %s\n", time_to_string(interpret_nt_time(&(usr->logoff_time          ))));
-			fprintf(out_hnd, "\t\tKickoff Time             : %s\n", time_to_string(interpret_nt_time(&(usr->kickoff_time         ))));
-			fprintf(out_hnd, "\t\tPassword last set Time   : %s\n", time_to_string(interpret_nt_time(&(usr->pass_last_set_time   ))));
-			fprintf(out_hnd, "\t\tPassword can change Time : %s\n", time_to_string(interpret_nt_time(&(usr->pass_can_change_time ))));
-			fprintf(out_hnd, "\t\tPassword must change Time: %s\n", time_to_string(interpret_nt_time(&(usr->pass_must_change_time))));
+			fprintf(out_hnd, "\t\tLogon Time               : %s\n", http_timestring(interpret_nt_time(&(usr->logon_time           ))));
+			fprintf(out_hnd, "\t\tLogoff Time              : %s\n", http_timestring(interpret_nt_time(&(usr->logoff_time          ))));
+			fprintf(out_hnd, "\t\tKickoff Time             : %s\n", http_timestring(interpret_nt_time(&(usr->kickoff_time         ))));
+			fprintf(out_hnd, "\t\tPassword last set Time   : %s\n", http_timestring(interpret_nt_time(&(usr->pass_last_set_time   ))));
+			fprintf(out_hnd, "\t\tPassword can change Time : %s\n", http_timestring(interpret_nt_time(&(usr->pass_can_change_time ))));
+			fprintf(out_hnd, "\t\tPassword must change Time: %s\n", http_timestring(interpret_nt_time(&(usr->pass_must_change_time))));
 			
 			fprintf(out_hnd, "\t\tunknown_2[0..31]...\n"); /* user passwords? */
 
