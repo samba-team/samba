@@ -31,7 +31,7 @@ static BOOL try_failed_login(struct smbcli_state *cli)
 	struct smb_composite_sesssetup setup;
 	struct smbcli_session *session;
 
-	session = smbcli_session_init(cli->transport);
+	session = smbcli_session_init(cli->transport, cli, False);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.password = "INVALID-PASSWORD";

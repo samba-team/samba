@@ -81,7 +81,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	domain = lp_parm_string(-1, "torture", "userdomain");
 
 	printf("create a second security context on the same transport\n");
-	session = smbcli_session_init(cli->transport);
+	session = smbcli_session_init(cli->transport, mem_ctx, False);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
@@ -95,7 +95,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session->vuid = setup.out.vuid;
 
 	printf("create a third security context on the same transport, with vuid set\n");
-	session2 = smbcli_session_init(cli->transport);
+	session2 = smbcli_session_init(cli->transport, mem_ctx, False);
 
 	session2->vuid = session->vuid;
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -115,7 +115,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
 		printf("create a fourth security context on the same transport, without extended security\n");
-		session3 = smbcli_session_init(cli->transport);
+		session3 = smbcli_session_init(cli->transport, mem_ctx, False);
 
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -131,7 +131,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 		
 	printf("use the same tree as the existing connection\n");
-	tree = smbcli_tree_init(session);
+	tree = smbcli_tree_init(session, mem_ctx, False);
 	tree->tid = cli->tree->tid;
 
 	printf("create a file using the new vuid\n");
@@ -217,7 +217,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	share = lp_parm_string(-1, "torture", "share");
 	
 	printf("create a second tree context on the same session\n");
-	tree = smbcli_tree_init(cli->session);
+	tree = smbcli_tree_init(cli->session, mem_ctx, False);
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;

@@ -58,7 +58,7 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	lsa->ipc_tree = smbcli_tree_init(cli->session);
+	lsa->ipc_tree = smbcli_tree_init(cli->session, lsa, False);
 	if (lsa->ipc_tree == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

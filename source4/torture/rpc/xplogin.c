@@ -28,13 +28,6 @@
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "libcli/composite/composite.h"
 
-static int destroy_transport(void *ptr)
-{
-	struct smbcli_transport *trans = ptr;
-	talloc_free(trans->socket);
-	return 0;
-}
-
 static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
 			      const char *dest_host, uint16_t port,
 			      const char *my_name)
@@ -54,12 +47,9 @@ static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	transport = smbcli_transport_init(sock);
-	talloc_free(sock);
+	transport = smbcli_transport_init(sock, NULL, True);
 	if (transport == NULL)
 		return NT_STATUS_NO_MEMORY;
-
-	talloc_set_destructor(transport, destroy_transport);
 
 	{
 		struct nbt_name calling;
@@ -115,7 +105,7 @@ static NTSTATUS anon_ipc(struct smbcli_transport *transport,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
-	session = smbcli_session_init(transport);
+	session = smbcli_session_init(transport, NULL, True);
 	if (session == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -144,8 +134,7 @@ static NTSTATUS anon_ipc(struct smbcli_transport *transport,
 
 	talloc_set_destructor(session, destroy_session);
 
-	tree = smbcli_tree_init(session);
-	talloc_free(session);
+	tree = smbcli_tree_init(session, NULL, True);
 	if (tree == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
