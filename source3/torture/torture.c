@@ -1499,7 +1499,8 @@ static BOOL run_locktest5(int dummy)
 static BOOL run_locktest6(int dummy)
 {
 	static struct cli_state cli;
-	char *fname = "\\lockt6.lck";
+	char *fname[2] = { "\\lock6.txt", "\\pipe\\lsarpc"};
+	int i;
 	int fnum;
 	NTSTATUS status;
 
@@ -1511,19 +1512,24 @@ static BOOL run_locktest6(int dummy)
 
 	printf("starting locktest6\n");
 
-	cli_unlink(&cli, fname);
+	for (i=0;i<2;i++) {
+		printf("Testing %s\n", fname[i]);
 
-	fnum = cli_open(&cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
-	status = cli_locktype(&cli, fnum, 0, 8, 0, LOCKING_ANDX_CHANGE_LOCKTYPE);
-        cli_close(&cli, fnum);
-	printf("CHANGE_LOCKTYPE gave %s\n", get_nt_error_msg(status));
+		cli_unlink(&cli, fname[i]);
 
-	fnum = cli_open(&cli, fname, O_RDWR, DENY_NONE);
-	status = cli_locktype(&cli, fnum, 0, 8, 0, LOCKING_ANDX_CANCEL_LOCK);
-        cli_close(&cli, fnum);
-	printf("CANCEL_LOCK gave %s\n", get_nt_error_msg(status));
+		fnum = cli_open(&cli, fname[i], O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+		status = cli_locktype(&cli, fnum, 0, 8, 0, LOCKING_ANDX_CHANGE_LOCKTYPE);
+		cli_close(&cli, fnum);
+		printf("CHANGE_LOCKTYPE gave %s\n", get_nt_error_msg(status));
 
-	cli_unlink(&cli, fname);
+		fnum = cli_open(&cli, fname[i], O_RDWR, DENY_NONE);
+		status = cli_locktype(&cli, fnum, 0, 8, 0, LOCKING_ANDX_CANCEL_LOCK);
+		cli_close(&cli, fnum);
+		printf("CANCEL_LOCK gave %s\n", get_nt_error_msg(status));
+
+		cli_unlink(&cli, fname[i]);
+	}
+
 	torture_close_connection(&cli);
 
 	printf("finished locktest6\n");
