@@ -919,7 +919,7 @@ int enum_msdfs_links(struct junction_map* jn)
 	if(!lp_host_msdfs())
 		return 0;
 
-	for(i=0;*lp_servicename(i);i++) {
+	for(i=0;i < lp_numservices();i++) {
 		if(lp_msdfs_root(i)) 
 			form_junctions(i,jn,&jn_count);
 	}
