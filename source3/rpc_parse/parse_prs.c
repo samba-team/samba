@@ -209,6 +209,8 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 				(unsigned int)new_size));
 			return False;
 		}
+
+		memset(&new_data[ps->buffer_size], '\0', new_size - ps->buffer_size);
 	}
 	ps->buffer_size = new_size;
 	ps->data_p = new_data;
@@ -238,6 +240,8 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 			(unsigned int)new_size));
 		return False;
 	}
+
+	memset(&new_data[ps->buffer_size], '\0', new_size - ps->buffer_size);
 
 	ps->buffer_size = new_size;
 	ps->data_p = new_data;
@@ -296,7 +300,7 @@ BOOL prs_set_offset(prs_struct *ps, uint32 offset)
 
 BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src)
 {
-	if(!prs_grow(dst, prs_offset(src)))
+	if(!prs_force_grow(dst, prs_offset(src)))
 		return False;
 
 	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src), (size_t)prs_offset(src));
@@ -311,7 +315,7 @@ BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src)
 
 BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len)
 {	
-	if(!prs_grow(dst, len))
+	if(!prs_force_grow(dst, len))
 		return False;
 	
 	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src)+start, (size_t)len);
@@ -326,7 +330,7 @@ BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uin
 
 BOOL prs_append_data(prs_struct *dst, char *src, uint32 len)
 {
-	if(!prs_grow(dst, len))
+	if(!prs_force_grow(dst, len))
 		return False;
 
 	memcpy(&dst->data_p[dst->data_offset], src, (size_t)len);

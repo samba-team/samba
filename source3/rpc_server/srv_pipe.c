@@ -110,7 +110,7 @@ BOOL create_next_pdu(pipes_struct *p)
 		p->hdr.flags = 0;
 
 	/*
-	 * Work out how much we can fit in a sigle PDU.
+	 * Work out how much we can fit in a single PDU.
 	 */
 
 	data_space_available = sizeof(p->out_data.current_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
