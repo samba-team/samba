@@ -193,6 +193,7 @@ Error was %s.\n", unixname, strerror(errno) ));
       if(new_ep->unix_name != NULL)
         free(new_ep->unix_name);
       free((char *)new_ep);
+      file_lines_free(lines);
       return;
     }
     memset((char *)&new_ep->next, '\0', sizeof(new_ep->next) );
