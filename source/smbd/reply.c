@@ -2394,6 +2394,9 @@ int reply_exit(connection_struct *conn,
 {
 	int outsize;
 	START_PROFILE(SMBexit);
+
+	file_close_pid(SVAL(inbuf,smb_pid));
+
 	outsize = set_message(outbuf,0,0,True);
 
 	DEBUG(3,("exit\n"));
