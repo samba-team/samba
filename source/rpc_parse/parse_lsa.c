@@ -1660,12 +1660,12 @@ BOOL lsa_io_r_unk_get_connuser(char *desc, LSA_R_UNK_GET_CONNUSER *r_c, prs_stru
 	return True;
 }
 
-void init_lsa_q_open_account(LSA_Q_OPENACCOUNT *trn, POLICY_HND *hnd, DOM_SID *sid, uint32 access)
+void init_lsa_q_open_account(LSA_Q_OPENACCOUNT *trn, POLICY_HND *hnd, DOM_SID *sid, uint32 desired_access)
 {
 	memcpy(&trn->pol, hnd, sizeof(trn->pol));
 
 	init_dom_sid2(&trn->sid, sid);
-	trn->access = access;
+	trn->access = desired_access;
 }
 
 /*******************************************************************
