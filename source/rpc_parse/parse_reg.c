@@ -518,7 +518,7 @@ void reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "reg_io_q_unknown_1");
+	prs_debug(ps, depth, desc, "reg_io_q_close");
 	depth++;
 
 	prs_align(ps);
@@ -534,7 +534,7 @@ void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "reg_io_r_unknown_1");
+	prs_debug(ps, depth, desc, "reg_io_r_close");
 	depth++;
 
 	prs_align(ps);
