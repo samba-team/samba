@@ -214,28 +214,31 @@ append_string (struct state *state,
 	       int prec,
 	       int flags)
 {
-  if(prec != -1)
-    width -= prec;
-  else
-    width -= strlen((char *)arg);
-  if(!(flags & minus_flag))
-    while(width-- > 0)
-      if((*state->append_char) (state, ' '))
-	return 1;
-  if (prec != -1) {
-    while (*arg && prec--)
-      if ((*state->append_char) (state, *arg++))
-	return 1;
-  } else {
-    while (*arg)
-      if ((*state->append_char) (state, *arg++))
-	return 1;
-  }
-  if(flags & minus_flag)
-    while(width-- > 0)
-      if((*state->append_char) (state, ' '))
-	return 1;
-  return 0;
+    if(arg == NULL)
+	arg = (unsigned char*)"(null)";
+
+    if(prec != -1)
+	width -= prec;
+    else
+	width -= strlen((char *)arg);
+    if(!(flags & minus_flag))
+	while(width-- > 0)
+	    if((*state->append_char) (state, ' '))
+		return 1;
+    if (prec != -1) {
+	while (*arg && prec--)
+	    if ((*state->append_char) (state, *arg++))
+		return 1;
+    } else {
+	while (*arg)
+	    if ((*state->append_char) (state, *arg++))
+		return 1;
+    }
+    if(flags & minus_flag)
+	while(width-- > 0)
+	    if((*state->append_char) (state, ' '))
+		return 1;
+    return 0;
 }
 
 static int
