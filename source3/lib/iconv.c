@@ -66,6 +66,7 @@ static struct charset_functions builtin_functions[] = {
 	{"UCS-2LE",  iconv_copy, iconv_copy},
 	{"UTF-16LE",  iconv_copy, iconv_copy},
 	{"UCS-2BE",  iconv_swab, iconv_swab},
+	{"UTF-16BE",  iconv_swab, iconv_swab},
 
 	/* we include the UTF-8 alias to cope with differing locale settings */
 	{"UTF8",   utf8_pull,  utf8_push},
@@ -189,6 +190,13 @@ size_t smb_iconv(smb_iconv_t cd,
 	return 0;
 }
 
+
+static BOOL is_utf16(const char *name)
+{
+	return strcasecmp(name, "UCS-2LE") == 0 ||
+		strcasecmp(name, "UTF-16LE") == 0;
+}
+
 /*
   simple iconv_open() wrapper
  */
@@ -227,13 +235,17 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	/* check if we can use iconv for this conversion */
 #ifdef HAVE_NATIVE_ICONV
 	if (!ret->pull) {
-		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
+		ret->cd_pull = iconv_open("UTF-16LE", fromcode);
+		if (ret->cd_pull == (iconv_t)-1)
+			ret->cd_pull = iconv_open("UCS-2LE", fromcode);
 		if (ret->cd_pull != (iconv_t)-1)
 			ret->pull = sys_iconv;
 	}
 
 	if (!ret->push) {
-		ret->cd_push = iconv_open(tocode, "UCS-2LE");
+		ret->cd_push = iconv_open(tocode, "UTF-16LE");
+		if (ret->cd_push == (iconv_t)-1)
+			ret->cd_push = iconv_open(tocode, "UCS-2LE");
 		if (ret->cd_push != (iconv_t)-1)
 			ret->push = sys_iconv;
 	}
@@ -263,13 +275,13 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 
 	/* check for conversion to/from ucs2 */
-	if (strcasecmp(fromcode, "UCS-2LE") == 0 && to) {
+	if (is_utf16(fromcode) && to) {
 		ret->direct = to->push;
 		ret->push = ret->pull = NULL;
 		return ret;
 	}
 
-	if (strcasecmp(tocode, "UCS-2LE") == 0 && from) {
+	if (is_utf16(tocode) && from) {
 		ret->direct = from->pull;
 		ret->push = ret->pull = NULL;
 		return ret;
@@ -277,13 +289,13 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 
 	/* Check if we can do the conversion direct */
 #ifdef HAVE_NATIVE_ICONV
-	if (strcasecmp(fromcode, "UCS-2LE") == 0) {
+	if (is_utf16(fromcode)) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_push;
 		ret->cd_push = NULL;
 		return ret;
 	}
-	if (strcasecmp(tocode, "UCS-2LE") == 0) {
+	if (is_utf16(tocode)) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_pull;
 		ret->cd_pull = NULL;
@@ -528,99 +540,231 @@ static size_t iconv_copy(void *cd, const char **inbuf, size_t *inbytesleft,
 static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
-	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		const unsigned char *c = (const unsigned char *)*inbuf;
-		unsigned char *uc = (unsigned char *)*outbuf;
-		int len = 1;
+	size_t in_left=*inbytesleft, out_left=*outbytesleft;
+	const uint8_t *c = (const uint8_t *)*inbuf;
+	uint8_t *uc = (uint8_t *)*outbuf;
 
+	while (in_left >= 1 && out_left >= 2) {
 		if ((c[0] & 0x80) == 0) {
 			uc[0] = c[0];
 			uc[1] = 0;
-		} else if ((c[0] & 0xf0) == 0xe0) {
-			if (*inbytesleft < 3) {
-				DEBUG(0,("short utf8 char\n"));
-				goto badseq;
-			}
-			uc[1] = ((c[0]&0xF)<<4) | ((c[1]>>2)&0xF);
-			uc[0] = (c[1]<<6) | (c[2]&0x3f);
-			len = 3;
-		} else if ((c[0] & 0xe0) == 0xc0) {
-			if (*inbytesleft < 2) {
-				DEBUG(0,("short utf8 char\n"));
-				goto badseq;
+			c  += 1;
+			in_left  -= 1;
+			out_left -= 2;
+			uc += 2;
+			continue;
+		}
+
+		if ((c[0] & 0xe0) == 0xc0) {
+			if (in_left < 2 ||
+			    (c[1] & 0xc0) != 0x80) {
+				errno = EILSEQ;
+				goto error;
 			}
 			uc[1] = (c[0]>>2) & 0x7;
 			uc[0] = (c[0]<<6) | (c[1]&0x3f);
-			len = 2;
+			c  += 2;
+			in_left  -= 2;
+			out_left -= 2;
+			uc += 2;
+			continue;
 		}
 
-		(*inbuf)  += len;
-		(*inbytesleft)  -= len;
-		(*outbytesleft) -= 2;
-		(*outbuf) += 2;
+		if ((c[0] & 0xf0) == 0xe0) {
+			if (in_left < 3 ||
+			    (c[1] & 0xc0) != 0x80 || 
+			    (c[2] & 0xc0) != 0x80) {
+				errno = EILSEQ;
+				goto error;
+			}
+			uc[1] = ((c[0]&0xF)<<4) | ((c[1]>>2)&0xF);
+			uc[0] = (c[1]<<6) | (c[2]&0x3f);
+			c  += 3;
+			in_left  -= 3;
+			out_left -= 2;
+			uc += 2;
+			continue;
+		}
+
+		if ((c[0] & 0xf8) == 0xf0) {
+			unsigned int codepoint;
+			if (in_left < 4 ||
+			    (c[1] & 0xc0) != 0x80 || 
+			    (c[2] & 0xc0) != 0x80 ||
+			    (c[3] & 0xc0) != 0x80) {
+				errno = EILSEQ;
+				goto error;
+			}
+			codepoint = 
+				(c[3]&0x3f) | 
+				((c[2]&0x3f)<<6) | 
+				((c[1]&0x3f)<<12) |
+				((c[0]&0x7)<<18);
+			if (codepoint < 0x10000) {
+				/* accept UTF-8 characters that are not
+				   minimally packed, but pack the result */
+				uc[0] = (codepoint & 0xFF);
+				uc[1] = (codepoint >> 8);
+				c += 4;
+				in_left -= 4;
+				out_left -= 2;
+				uc += 2;
+				continue;
+			}
+
+			codepoint -= 0x10000;
+
+			if (out_left < 4) {
+				errno = E2BIG;
+				goto error;
+			}
+
+			uc[0] = (codepoint>>10) & 0xFF;
+			uc[1] = (codepoint>>18) | 0xd8;
+			uc[2] = codepoint & 0xFF;
+			uc[3] = ((codepoint>>8) & 0x3) | 0xdc;
+			c  += 4;
+			in_left  -= 4;
+			out_left -= 4;
+			uc += 4;
+			continue;
+		}
+
+		/* we don't handle 5 byte sequences */
+		errno = EINVAL;
+		goto error;
 	}
 
-	if (*inbytesleft > 0) {
+	if (in_left > 0) {
 		errno = E2BIG;
-		return -1;
+		goto error;
 	}
-	
+
+	*inbytesleft = in_left;
+	*outbytesleft = out_left;
+	*inbuf = c;
+	*outbuf = uc;	
 	return 0;
 
-badseq:
-	errno = EINVAL;
+error:
+	*inbytesleft = in_left;
+	*outbytesleft = out_left;
+	*inbuf = c;
+	*outbuf = uc;
 	return -1;
 }
 
 static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft)
+			char **outbuf, size_t *outbytesleft)
 {
-	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		unsigned char *c = (unsigned char *)*outbuf;
-		const unsigned char *uc = (const unsigned char *)*inbuf;
-		int len=1;
+	size_t in_left=*inbytesleft, out_left=*outbytesleft;
+	uint8_t *c = (uint8_t *)*outbuf;
+	const uint8_t *uc = (const uint8_t *)*inbuf;
 
-		if (uc[1] & 0xf8) {
-			if (*outbytesleft < 3) {
-				DEBUG(0,("short utf8 write\n"));
-				goto toobig;
-			}
-			c[0] = 0xe0 | (uc[1]>>4);
-			c[1] = 0x80 | ((uc[1]&0xF)<<2) | (uc[0]>>6);
-			c[2] = 0x80 | (uc[0]&0x3f);
-			len = 3;
-		} else if (uc[1] | (uc[0] & 0x80)) {
-			if (*outbytesleft < 2) {
-				DEBUG(0,("short utf8 write\n"));
-				goto toobig;
-			}
-			c[0] = 0xc0 | (uc[1]<<2) | (uc[0]>>6);
-			c[1] = 0x80 | (uc[0]&0x3f);
-			len = 2;
-		} else {
+	while (in_left >= 2 && out_left >= 1) {
+		unsigned int codepoint;
+
+		if (uc[1] == 0 && !(uc[0] & 0x80)) {
+			/* simplest case */
 			c[0] = uc[0];
+			in_left  -= 2;
+			out_left -= 1;
+			uc += 2;
+			c  += 1;
+			continue;
 		}
 
+		if ((uc[1]&0xf8) == 0) {
+			/* next simplest case */
+			if (out_left < 2) {
+				errno = E2BIG;
+				goto error;
+			}
+			c[0] = 0xc0 | (uc[0]>>6) | (uc[1]<<2);
+			c[1] = 0x80 | (uc[0] & 0x3f);
+			in_left  -= 2;
+			out_left -= 2;
+			uc += 2;
+			c  += 2;
+			continue;
+		}
 
-		(*inbytesleft)  -= 2;
-		(*outbytesleft) -= len;
-		(*inbuf)  += 2;
-		(*outbuf) += len;
+		if ((uc[1] & 0xfc) == 0xdc) {
+			/* its the second part of a 4 byte sequence. Illegal */
+			if (in_left < 4) {
+				errno = EINVAL;
+			} else {
+				errno = EILSEQ;
+			}
+			goto error;
+		}
+
+		if ((uc[1] & 0xfc) != 0xd8) {
+			codepoint = uc[0] | (uc[1]<<8);
+			if (out_left < 3) {
+				errno = E2BIG;
+				goto error;
+			}
+			c[0] = 0xe0 | (codepoint >> 12);
+			c[1] = 0x80 | ((codepoint >> 6) & 0x3f);
+			c[2] = 0x80 | (codepoint & 0x3f);
+			
+			in_left  -= 2;
+			out_left -= 3;
+			uc  += 2;
+			c   += 3;
+			continue;
+		}
+
+		/* its the first part of a 4 byte sequence */
+		if (in_left < 4) {
+			errno = EINVAL;
+			goto error;
+		}
+		if ((uc[3] & 0xfc) != 0xdc) {
+			errno = EILSEQ;
+			goto error;
+		}
+		codepoint = 0x10000 + (uc[2] | ((uc[3] & 0x3)<<8) | 
+				       (uc[0]<<10) | ((uc[1] & 0x3)<<18));
+		
+		if (out_left < 4) {
+			errno = E2BIG;
+			goto error;
+		}
+		c[0] = 0xf0 | (codepoint >> 18);
+		c[1] = 0x80 | ((codepoint >> 12) & 0x3f);
+		c[2] = 0x80 | ((codepoint >> 6) & 0x3f);
+		c[3] = 0x80 | (codepoint & 0x3f);
+		
+		in_left  -= 4;
+		out_left -= 4;
+		uc       += 4;
+		c        += 4;
 	}
 
-	if (*inbytesleft == 1) {
+	if (in_left == 1) {
 		errno = EINVAL;
-		return -1;
+		goto error;
 	}
 
-	if (*inbytesleft > 1) {
+	if (in_left > 1) {
 		errno = E2BIG;
-		return -1;
+		goto error;
 	}
+
+	*inbytesleft = in_left;
+	*outbytesleft = out_left;
+	*inbuf  = uc;
+	*outbuf = c;
 	
 	return 0;
 
-toobig:
-	errno = E2BIG;
+error:
+	*inbytesleft = in_left;
+	*outbytesleft = out_left;
+	*inbuf  = uc;
+	*outbuf = c;
 	return -1;
 }
+
