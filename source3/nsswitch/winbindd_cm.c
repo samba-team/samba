@@ -86,7 +86,7 @@ struct get_dc_name_cache {
 	struct get_dc_name_cache *prev, *next;
 };
 
-static BOOL cm_get_dc_name(char *domain, fstring srv_name)
+static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
 	static struct get_dc_name_cache *get_dc_name_cache;
 	struct get_dc_name_cache *dcc;
@@ -204,61 +204,94 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	DEBUG(3, ("Returning DC %s (%s) for domain %s\n", srv_name,
 		  inet_ntoa(dc_ip), domain));
 
+	*ip_out = dc_ip;
+
+	SAFE_FREE(ip_list);
+
 	return True;
 }
 
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
    entry set > 0, or the "Additional restrictions for anonymous
-   connections" set in the win2k Local Security Policy. */
+   connections" set in the win2k Local Security Policy. 
+   
+   Caller to free() result in domain, username, password
+*/
 
-void cm_init_creds(struct ntuser_creds *creds)
+static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 {
-	char *username, *password;
-
-	ZERO_STRUCTP(creds);
-
-	creds->pwd.null_pwd = True; /* anonymoose */
-
-	username = secrets_fetch(SECRETS_AUTH_USER, NULL);
-	password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
-
-	if (username && *username) {
-		pwd_set_cleartext(&creds->pwd, password);
-
-		fstrcpy(creds->user_name, username);
-		fstrcpy(creds->domain, lp_workgroup());
-
-		DEBUG(3, ("IPC$ connections done %s\\%s\n", creds->domain,
-			  creds->user_name));
-	} else 
+	*username = secrets_fetch(SECRETS_AUTH_USER, NULL);
+	*domain = secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
+	*password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
+	
+	if (*username && **username) {
+		if (!*domain || !**domain) {
+			*domain = smb_xstrdup(lp_workgroup());
+		}
+		
+		DEBUG(3, ("IPC$ connections done by user %s\\%s\n", *domain, *username));
+	} else {
 		DEBUG(3, ("IPC$ connections done anonymously\n"));
+		*username = smb_xstrdup("");
+		*domain = smb_xstrdup("");
+		*password = smb_xstrdup("");
+	}
 }
 
 /* Open a new smb pipe connection to a DC on a given domain.  Cache
    negative creation attempts so we don't try and connect to broken
    machines too often. */
 
-#define OPEN_CONNECTION_CACHE_TIMEOUT 30 /* Seconds between attempts */
+#define FAILED_CONNECTION_CACHE_TIMEOUT 30 /* Seconds between attempts */
 
-struct open_connection_cache {
+struct failed_connection_cache {
 	fstring domain_name;
 	fstring controller;
 	time_t lookup_time;
-	struct open_connection_cache *prev, *next;
+	NTSTATUS nt_status;
+	struct failed_connection_cache *prev, *next;
 };
 
-static BOOL cm_open_connection(char *domain, char *pipe_name,
+static struct failed_connection_cache *failed_connection_cache;
+
+/* Add an entry to the failed conneciton cache */
+
+static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn, NTSTATUS result) {
+	struct failed_connection_cache *fcc;
+
+	SMB_ASSERT(!NT_STATUS_IS_OK(result));
+
+	/* Create negative lookup cache entry for this domain and controller */
+
+	if (!(fcc = (struct failed_connection_cache *)
+	      malloc(sizeof(struct failed_connection_cache)))) {
+		DEBUG(0, ("malloc failed in add_failed_connection_entry!\n"));
+		return;
+	}
+	
+	ZERO_STRUCTP(fcc);
+	
+	fstrcpy(fcc->domain_name, new_conn->domain);
+	fstrcpy(fcc->controller, new_conn->controller);
+	fcc->lookup_time = time(NULL);
+	fcc->nt_status = result;
+	
+	DLIST_ADD(failed_connection_cache, fcc);
+}
+	
+/* Open a connction to the remote server, cache failures for 30 seconds */
+
+static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 			       struct winbindd_cm_conn *new_conn)
 {
-	static struct open_connection_cache *open_connection_cache;
-	struct open_connection_cache *occ;
-	struct nmb_name calling, called;
+	struct failed_connection_cache *fcc;
 	extern pstring global_myname;
-	fstring dest_host;
-	struct in_addr dest_ip;
-	BOOL result = False;
-	struct ntuser_creds creds;
+	NTSTATUS result;
+	char *ipc_username, *ipc_domain, *ipc_password;
+	struct in_addr dc_ip;
+
+	ZERO_STRUCT(dc_ip);
 
 	fstrcpy(new_conn->domain, domain);
 	fstrcpy(new_conn->pipe_name, pipe_name);
@@ -267,27 +300,30 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 	   are cached so don't bother applying the caching for this
 	   function just yet.  */
 
-	if (!cm_get_dc_name(domain, new_conn->controller))
-		goto done;
-
+	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		add_failed_connection_entry(new_conn, result);
+		return result;
+	}
+		
 	/* Return false if we have tried to look up this domain and netbios
 	   name before and failed. */
 
-	for (occ = open_connection_cache; occ; occ = occ->next) {
+	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
 		
-		if (!(strequal(domain, occ->domain_name) &&
-		      strequal(new_conn->controller, occ->controller)))
+		if (!(strequal(domain, fcc->domain_name) &&
+		      strequal(new_conn->controller, fcc->controller)))
 			continue; /* Not our domain */
 
-		if ((time(NULL) - occ->lookup_time) > 
-		    OPEN_CONNECTION_CACHE_TIMEOUT) {
+		if ((time(NULL) - fcc->lookup_time) > 
+		    FAILED_CONNECTION_CACHE_TIMEOUT) {
 
 			/* Cache entry has expired, delete it */
 
 			DEBUG(10, ("cm_open_connection cache entry expired for %s, %s\n", domain, new_conn->controller));
 
-			DLIST_REMOVE(open_connection_cache, occ);
-			free(occ);
+			DLIST_REMOVE(failed_connection_cache, fcc);
+			free(fcc);
 
 			break;
 		}
@@ -296,63 +332,52 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 
 		DEBUG(10, ("returning negative open_connection_cache entry for %s, %s\n", domain, new_conn->controller));
 
-		goto done;
+		result = fcc->nt_status;
+		SMB_ASSERT(!NT_STATUS_IS_OK(result));
+		return result;
 	}
 
 	/* Initialise SMB connection */
 
-	if (!(new_conn->cli = cli_initialise(NULL)))
-		goto done;
+	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
-	if (!resolve_srv_name(new_conn->controller, dest_host, &dest_ip))
-		goto done;
+	DEBUG(5, ("connecting to %s from %s with username [%s]\\[%s]\n", 
+	      new_conn->controller, global_myname, ipc_domain, ipc_username));
 
-	make_nmb_name(&called, dns_to_netbios_name(new_conn->controller), 0x20);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
+	result = cli_full_connection(&(new_conn->cli), global_myname, new_conn->controller, 
+				     &dc_ip, 0, "IPC$", 
+				     "IPC", ipc_username, ipc_domain, 
+				     ipc_password, strlen(ipc_password));
 
-	cm_init_creds(&creds);
+	SAFE_FREE(ipc_username);
+	SAFE_FREE(ipc_domain);
+	SAFE_FREE(ipc_password);
 
-	cli_init_creds(new_conn->cli, &creds);
-
-	if (!cli_establish_connection(new_conn->cli, new_conn->controller, 
-				      &dest_ip, &calling, &called, "IPC$", 
-				      "IPC", False, True))
-		goto done;
-
-	if (!cli_nt_session_open (new_conn->cli, pipe_name))
-		goto done;
-
-	result = True;
-
- done:
-
-	/* Create negative lookup cache entry for this domain and controller */
-
-	if (!result) {
-		if (!(occ = (struct open_connection_cache *)
-		      malloc(sizeof(struct open_connection_cache))))
-			return False;
-
-		ZERO_STRUCTP(occ);
-
-		fstrcpy(occ->domain_name, domain);
-		fstrcpy(occ->controller, new_conn->controller);
-		occ->lookup_time = time(NULL);
-		
-		DLIST_ADD(open_connection_cache, occ);
+	if (!NT_STATUS_IS_OK(result)) {
+		add_failed_connection_entry(new_conn, result);
+		return result;
+	}
+	
+	if (!cli_nt_session_open (new_conn->cli, pipe_name)) {
+		result = NT_STATUS_PIPE_NOT_AVAILABLE;
+		add_failed_connection_entry(new_conn, result);
+		cli_shutdown(new_conn->cli);
+		return result;
 	}
 
-	if (!result && new_conn->cli)
-		cli_shutdown(new_conn->cli);
-
-	return result;
+	return NT_STATUS_OK;
 }
 
 /* Return true if a connection is still alive */
 
 static BOOL connection_ok(struct winbindd_cm_conn *conn)
 {
-	if (!conn->cli->initialised) {
+	if (!conn) {
+		smb_panic("Invalid paramater passed to conneciton_ok():  conn was NULL!\n");
+		return False;
+	}
+
+	if (!conn->cli || !conn->cli->initialised) {
 		DEBUG(3, ("Connection to %s for domain %s (pipe %s) was never initialised!\n", 
 			  conn->controller, conn->domain, conn->pipe_name));
 		return False;
@@ -367,6 +392,49 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 	return True;
 }
 
+/* Get a connection to the remote DC and open the pipe.  If there is already a connection, use that */
+
+static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_name, struct winbindd_cm_conn **conn_out) 
+{
+	struct winbindd_cm_conn *conn, conn_temp;
+	NTSTATUS result;
+
+	for (conn = cm_conns; conn; conn = conn->next) {
+		if (strequal(conn->domain, domain) && 
+		    strequal(conn->pipe_name, pipe_name)) {
+			if (!connection_ok(conn)) {
+				if (conn->cli) {
+					cli_shutdown(conn->cli);
+				}
+				conn_temp.next = conn->next;
+				DLIST_REMOVE(cm_conns, conn);
+				SAFE_FREE(conn);
+				conn = &conn_temp;  /* Just to keep the loop moving */
+			} else {
+				break;
+			}
+		}
+	}
+	
+	if (!conn) {
+		if (!(conn = (struct winbindd_cm_conn *) malloc(sizeof(struct winbindd_cm_conn))))
+			return NT_STATUS_NO_MEMORY;
+		
+		ZERO_STRUCTP(conn);
+		
+		if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, pipe_name, conn))) {
+			DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
+				  domain, pipe_name, get_nt_error_msg(result)));
+		        SAFE_FREE(conn);
+			return result;
+		}
+		DLIST_ADD(cm_conns, conn);		
+	}
+	
+	*conn_out = conn;
+	return NT_STATUS_OK;
+}
+
 /* Return a LSA policy handle on a domain */
 
 CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
@@ -378,43 +446,32 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 
 	/* Look for existing connections */
 
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) && 
-		    strequal(conn->pipe_name, PIPE_LSARPC)) {
-
-			if (!connection_ok(conn)) {
-				cli_shutdown(conn->cli);
-				DLIST_REMOVE(cm_conns, conn);
-				SAFE_FREE(conn);
-			}
-
-			goto ok;
-		}
-	}
-
-	/* Create a new one */
-
-	if (!(conn = (struct winbindd_cm_conn *) malloc(sizeof(struct winbindd_cm_conn))))
-		return NULL;
-
-	ZERO_STRUCTP(conn);
-
-	if (!cm_open_connection(domain, PIPE_LSARPC, conn)) {
-		DEBUG(3, ("Could not connect to a dc for domain %s\n", domain));
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn))) {
 		return NULL;
 	}
-
+	
 	result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
 				     des_access, &conn->pol);
 
-	if (!NT_STATUS_IS_OK(result))
-		return NULL;
+	if (!NT_STATUS_IS_OK(result)) {
+		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
+		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn))) {
+				return NULL;
+			}
 
-	/* Add to list */
+			result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
+						     des_access, &conn->pol);
+		}
 
-	DLIST_ADD(cm_conns, conn);
+		if (!NT_STATUS_IS_OK(result)) {
+			cli_shutdown(conn->cli);
+			DLIST_REMOVE(cm_conns, conn);
+			SAFE_FREE(conn);
+			return NULL;
+		}
+	}	
 
- ok:
 	hnd.pol = conn->pol;
 	hnd.cli = conn->cli;
 
@@ -432,50 +489,39 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 
 	/* Look for existing connections */
 
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) && strequal(conn->pipe_name, PIPE_SAMR)) {
-
-			if (!connection_ok(conn)) {
-				cli_shutdown(conn->cli);
-				DLIST_REMOVE(cm_conns, conn);
-				SAFE_FREE(conn);
-			}
-
-			goto ok;
-		}
-	}
-
-	/* Create a new one */
-
-	if (!(conn = (struct winbindd_cm_conn *) 
-	      malloc(sizeof(struct winbindd_cm_conn))))
-		return NULL;
-
-	ZERO_STRUCTP(conn);
-
-	if (!cm_open_connection(domain, PIPE_SAMR, conn)) {
-		DEBUG(3, ("Could not connect to a dc for domain %s\n", domain));
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn))) {
 		return NULL;
 	}
-
+	
 	result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 				  des_access, &conn->pol);
 
-	if (!NT_STATUS_IS_OK(result))
-		return NULL;
+	if (!NT_STATUS_IS_OK(result)) {
+		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
+		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn))) {
+				return NULL;
+			}
 
-	/* Add to list */
+			result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
+						  des_access, &conn->pol);
+		}
 
-	DLIST_ADD(cm_conns, conn);
+		if (!NT_STATUS_IS_OK(result)) {
+			cli_shutdown(conn->cli);
+			DLIST_REMOVE(cm_conns, conn);
+			SAFE_FREE(conn);
+			return NULL;
+		}
+	}	
 
- ok:
 	hnd.pol = conn->pol;
 	hnd.cli = conn->cli;
 
-	return &hnd;	    
+	return &hnd;
 }
 
-#if 0
+#if 0  /* This code now *well* out of date */
 
 /* Return a SAM domain policy handle on a domain */
 
@@ -708,59 +754,44 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			     struct cli_state **cli)
 {
-	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-	BOOL new_conn = False; /* Is this a new connection, to add to the list? */
+	struct winbindd_cm_conn *conn;
+
+	if (!cli) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* Open an initial conection */
 
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) && 
-		    strequal(conn->pipe_name, PIPE_NETLOGON)) {
-			if (!connection_ok(conn)) {
-				cli_shutdown(conn->cli);
-				DLIST_REMOVE(cm_conns, conn);
-				SAFE_FREE(conn);
-			} else {
-				break;
-			}
-		}
-	}
-
-	if (!conn) {
-		if (!(conn = (struct winbindd_cm_conn *) malloc(sizeof(struct winbindd_cm_conn))))
-			return NT_STATUS_NO_MEMORY;
-
-		ZERO_STRUCTP(conn);
-		
-		if (!cm_open_connection(domain, PIPE_NETLOGON, conn)) {
-			DEBUG(3, ("Could not open a connection to %s\n", domain));
-			free(conn);
-			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		}
-		
-		new_conn = True;
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn))) {
+		return result;
 	}
 	
 	result = new_cli_nt_setup_creds(conn->cli, trust_passwd);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
-			get_nt_error_msg(result)));
+			  get_nt_error_msg(result)));
+		
+		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
+		if (conn->cli->fd == -1) {
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn))) {
+				return result;
+			}
+			
+			/* Try again */
+			result = new_cli_nt_setup_creds(conn->cli, trust_passwd);
+		}
+		
+		if (!NT_STATUS_IS_OK(result)) {
 			cli_shutdown(conn->cli);
 			DLIST_REMOVE(cm_conns, conn);
 			SAFE_FREE(conn);
 			return result;
+		}
 	}
 
-	/* Add to list */
-
-	if (new_conn) {
-		DLIST_ADD(cm_conns, conn);
-	}
-
-	if (cli)
-		*cli = conn->cli;
+	*cli = conn->cli;
 
 	return result;
 }

@@ -43,14 +43,16 @@ static char get_winbind_separator(void)
 	if (winbindd_request(WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		printf("could not obtain winbind seperator!\n");
-		exit(1);
+		/* HACK: (this module should not call lp_ funtions) */
+		return *lp_winbind_separator();
 	}
 
 	winbind_separator = response.data.info.winbind_separator;
 
 	if (!winbind_separator) {
 		printf("winbind separator was NULL!\n");
-		exit(1);
+		/* HACK: (this module should not call lp_ funtions) */
+		return *lp_winbind_separator();
 	}
 	
 	return winbind_separator;
@@ -69,7 +71,9 @@ static char *get_winbind_domain(void)
 	if (winbindd_request(WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		printf("could not obtain winbind domain name!\n");
-		exit(1);
+		
+		/* HACK: (this module should not call lp_ funtions) */
+		return lp_workgroup();
 	}
 
 	fstrcpy(winbind_domain, response.data.domain_name);
@@ -514,10 +518,13 @@ static BOOL print_domain_groups(void)
 static BOOL wbinfo_set_auth_user(char *username)
 {
 	char *password;
+	fstring user, domain;
 
 	/* Separate into user and password */
 
-	password = strchr(username, '%');
+	parse_wbinfo_domain_user(username, domain, user);
+
+	password = strchr(user, '%');
 
 	if (password) {
 		*password = 0;
@@ -528,7 +535,8 @@ static BOOL wbinfo_set_auth_user(char *username)
 	/* Store in secrets.tdb */
 
 	if (!secrets_store(SECRETS_AUTH_USER, username, strlen(username) + 1) ||
-	    !secrets_store(SECRETS_AUTH_PASSWORD, password, strlen(password) + 1)) {
+	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, strlen(domain) + 1) ||
+		!secrets_store(SECRETS_AUTH_PASSWORD, password, strlen(password) + 1)) {
 		fprintf(stderr, "error storing authenticated user info\n");
 		return False;
 	}
