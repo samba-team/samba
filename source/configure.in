@@ -729,7 +729,7 @@ if test x"$ac_cv_func_connect" = x"no"; then
 fi
 
 ###############################################
-# test for where we get get_yp_default_domain() from
+# test for where we get yp_get_default_domain() from
 AC_CHECK_FUNCS(yp_get_default_domain)
 if test x"$ac_cv_func_yp_get_default_domain" = x"no"; then
 	AC_CHECK_LIB(nsl, yp_get_default_domain, [LIBS="$LIBS -lnsl";
