@@ -542,7 +542,6 @@ static int check_printq_info(struct pack_desc* desc,
 #define QUEUE_STATUS_ERROR 2
 
 /* turn a print job status into a on the wire status 
-   right now these are complete guesses - need to fill them in (tridge)
 */
 static int printj_status(int v)
 {
@@ -560,7 +559,6 @@ static int printj_status(int v)
 }
 
 /* turn a print queue status into a on the wire status 
-   right now these are complete guesses - need to fill them in (tridge)
 */
 static int printq_status(int v)
 {
