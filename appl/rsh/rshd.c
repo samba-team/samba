@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -606,8 +606,10 @@ doit (int do_kerberos, int check_rhosts)
 	    syslog_and_die ("socket: %m");
 	if (connect (errsock,
 		     erraddr,
-		     socket_sockaddr_size (erraddr)) < 0)
-	    syslog_and_die ("connect: %m");
+		     socket_sockaddr_size (erraddr)) < 0) {
+	    syslog (LOG_WARNING, "connect: %m");
+	    close (errsock);
+	}
     }
     
     if(do_kerberos) {
