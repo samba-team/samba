@@ -548,12 +548,6 @@ int main(int argc, char **argv)
 	
 	charset_initialise();
 	
-	if(!pwdb_initialise())
-	{
-		fprintf(stderr, "Can't setup password database vectors.\n");
-		exit(1);
-	}
-
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			servicesf);
@@ -579,6 +573,12 @@ int main(int argc, char **argv)
 	strupper(global_myname);
 
 	codepage_initialise(lp_client_code_page());
+
+	if(!pwdb_initialise())
+	{
+		fprintf(stderr, "Can't setup password database vectors.\n");
+		exit(1);
+	}
 
 	/* Check the effective uid - make sure we are not setuid */
 	if ((geteuid() == (uid_t)0) && (getuid() != (uid_t)0)) {
