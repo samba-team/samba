@@ -1984,6 +1984,14 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				continue;
 			}
 		}
+
+		status = dcerpc_samr_QueryDomainInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryDomainInfo level %u failed - %s\n", 
+			       r.in.level, nt_errstr(status));
+			ret = False;
+			continue;
+		}
 	}
 
 	return True;	
