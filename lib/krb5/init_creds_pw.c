@@ -96,8 +96,10 @@ init_cred (krb5_context context,
 	tmp = 10 * 60 * 60;
     cred->times.endtime = now + tmp;
 
-    if (options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE)
-	cred->times.renew_till = tmp;
+    if ((options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE) &&
+	options->renew_life > 0) {
+	cred->times.renew_till = now + options->renew_life;
+    }
 
     if (in_tkt_service) {
 	krb5_realm server_realm;
