@@ -75,14 +75,21 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth
 	status = gensec_update(p->conn->security_state.generic_state, tmp_ctx,
 			       null_data_blob,
 			       &credentials);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		goto done;
-	}
 
 	p->conn->security_state.auth_info->credentials = credentials;
 
-	status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		/* We are demanding a reply, so use a request that will get us one */
+		status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	} else if (NT_STATUS_IS_OK(status)) {
+		/* We don't care for the reply, so jump to the end */
+		status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
+		goto done;
+	} else {
+		/* Something broke in GENSEC - bail */
 		goto done;
 	}
 
@@ -90,7 +97,8 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth
 		status = gensec_update(p->conn->security_state.generic_state, tmp_ctx,
 				       p->conn->security_state.auth_info->credentials,
 				       &credentials);
-		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (!NT_STATUS_IS_OK(status) 
+		    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			break;
 		}
 
