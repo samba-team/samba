@@ -442,13 +442,19 @@ static BOOL pam_auth(char *this_user,char *password)
   PAM_username = this_user;
   pam_error = pam_start("samba", this_user, &PAM_conversation, &pamh);
   PAM_BAIL;
-  pam_error = pam_authenticate(pamh, 0);
+/* Setting PAM_SILENT stops generation of error messages to syslog
+ * to enable debugging on Red Hat Linux set:
+ * /etc/pam.d/samba:
+ *	auth required /lib/security/pam_pwdb.so nullok shadow audit
+ * _OR_ change PAM_SILENT to 0 to force detailed reporting (logging)
+ */
+  pam_error = pam_authenticate(pamh, PAM_SILENT);
   PAM_BAIL;
   /* It is not clear to me that account management is the right thing
    * to do, but it is not clear that it isn't, either.  This can be
    * removed if no account management should be done.  Alternately,
    * put a pam_allow.so entry in /etc/pam.conf for account handling. */
-  pam_error = pam_acct_mgmt(pamh, 0);
+  pam_error = pam_acct_mgmt(pamh, PAM_SILENT);
   PAM_BAIL;
   pam_end(pamh, PAM_SUCCESS);
   /* If this point is reached, the user has been authenticated. */
