@@ -317,9 +317,23 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* ensure that schannel uses the right domain */
 	fstrcpy(cli->domain, domain);
-	CHECK_RPC_ERR(cli_nt_establish_netlogon(cli, sec_channel_type, 
-						md4_trust_password),
-		      "Error in domain join verfication\n");
+
+	result = cli_nt_establish_netlogon(cli, sec_channel_type, 
+					   md4_trust_password);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Error domain join verification: %s\n\n",
+			  nt_errstr(result)));
+
+		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
+		     (sec_channel_type == SEC_CHAN_BDC) ) {
+			d_printf("Please make sure that no computer account\n"
+				 "named like this machine (%s) exists in the domain\n",
+				 global_myname());
+		}
+
+		goto done;
+	}
 
 	/* Now store the secret in the secrets database */
 
