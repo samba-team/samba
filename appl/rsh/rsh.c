@@ -672,8 +672,15 @@ doit (const char *hostname,
 	}
 	if (do_errsock) {
 	    struct addrinfo *ea;
+	    struct addrinfo hints;
 
-	    error = getaddrinfo (NULL, "0", a, &ea);
+	    memset (&hints, 0, sizeof(hints));
+	    hints.ai_socktype = a->ai_socktype;
+	    hints.ai_protocol = a->ai_protocol;
+	    hints.ai_family   = a->ai_family;
+	    hints.ai_flags    = AI_PASSIVE;
+
+	    error = getaddrinfo (NULL, "0", &hints, &ea);
 	    if (error)
 		errx (1, "getaddrinfo: %s", gai_strerror(error));
 	    errsock = socket (ea->ai_family, ea->ai_socktype, ea->ai_protocol);
