@@ -1087,7 +1087,7 @@ uint32 cli_spoolss_deleteprinterdriver (
 	/* Marshall data and send request */
 	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_q_deleteprinterdriver ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTEREX, &qbuf, &rbuf)) 
+	    !rpc_api_pipe_req (cli,SPOOLSS_DELETEPRINTERDRIVER , &qbuf, &rbuf)) 
 	{
 		goto done;
 	}
