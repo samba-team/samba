@@ -1257,7 +1257,7 @@ again:
 	if (!cli_negprot(cli))
 	{
 		DEBUG(1,("failed negprot\n"));
-		nt_status = cli_nt_error(cli);
+		nt_status = NT_STATUS_UNSUCCESSFUL;
 		cli_shutdown(cli);
 		return nt_status;
 	}

@@ -321,8 +321,13 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org
 
 	status = ads_find_machine_acct(ads, (void **)&res, host);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
-		DEBUG(0, ("Host account for %s already exists\n", host));
-		return ADS_SUCCESS;
+		DEBUG(0, ("Host account for %s already exists - deleting for readd\n", host));
+		status = ads_leave_realm(ads, host);
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(0, ("Failed to delete host '%s' from the '%s' realm.\n", 
+				  host, ads->realm));
+			return status;
+		}
 	}
 
 	status = ads_add_machine_acct(ads, host, org_unit);
