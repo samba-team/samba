@@ -47,12 +47,11 @@ Please report any problems to the samba-bugs alias.
 2). Experimental Primary Domain controller code.
 ------------------------------------------------
 
-Samba now contains a *VERY* experimental
+Samba now contains a *VERY* experimental client and
 server implementation of part of the Windows NT
 4.x Domain Controller specification, as
 published by Paul Ashton (now a Samba Team
-member).  It also contains work-in-progress in
-implementing the client-side.
+member).
 
 This code is not enabled in the Makefile by default,
 and to work on this code you must read the file :
@@ -60,9 +59,9 @@ and to work on this code you must read the file :
    docs/NTDOMAIN.txt
 
 Please note that as this code is not complete,
-it is being made available as part of this
-release to allow interested parties to contribute
-and help the Samba Team in documenting and implementing
+it is being made available as part of this release
+to allow interested parties to contribute and help
+the Samba Team in documenting and implementing
 this important feature.
 
 Please do not expect to be able to replace your
@@ -113,9 +112,27 @@ The WINS client and WINS server capabilities in nmbd
 are also being restructured, to make it easier to
 understand and maintain.
 
+Samba supports the NT 4.0 Domain Authentication Protocol
+to a degree sufficient to download Profiles to an NT
+Workstation ("Welcome to the SAMBA Domain").
+
+There is also code in smbclient to generate the same
+requests as an NT Workstation would when doing an NT
+Domain Logon.  This has only been tested against a Samba
+"Experimental" PDC so far.
+
 Some of the new parameters for NT Domain Logons and
 Profile support are now also used by the Win95 Domain
 Logons and Profile support.
+
+The Automount code has been slightly reshuffled, such
+that the home directory (and profile location) can be
+specified by \\%N\homes and \\%N\homes\profiles
+respectively, which are the defaults for these values.
+If -DAUTOMOUNT is enabled, then %N is the server
+component of the user's NIS auto.home entry.  Obviously,
+you will need to be running Samba on the user's home
+server as well as the one they just logged in on.
 
 
 New parameters in smb.conf.
