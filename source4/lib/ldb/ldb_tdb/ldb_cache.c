@@ -205,14 +205,14 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	char *s = NULL;
 	int ret;
 
-	s = talloc_asprintf(ldb, "%.0f", ltdb->sequence_number+1);
-	if (!s) {
+	msg = talloc_p(ltdb, struct ldb_message);
+	if (msg == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
 
-	msg = talloc_p(ltdb, struct ldb_message);
-	if (msg == NULL) {
+	s = talloc_asprintf(msg, "%.0f", ltdb->sequence_number+1);
+	if (!s) {
 		errno = ENOMEM;
 		return -1;
 	}
