@@ -346,8 +346,6 @@ ssize_t net_write (int fd, const void *buf, size_t nbytes);
 
 ssize_t net_read (int fd, void *buf, size_t nbytes);
 
-int netgroup_match(char*, char*, char*);
-
 int issuid(void);
 
 #ifndef HAVE_STRUCT_WINSIZE
