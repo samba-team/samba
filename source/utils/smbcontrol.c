@@ -34,6 +34,7 @@ static struct {
 	{"profilelevel", MSG_REQ_PROFILELEVEL},
 	{"debuglevel", MSG_REQ_DEBUGLEVEL},
 	{"close-share", MSG_SMB_FORCE_TDIS},
+	{"printnotify", MSG_PRINTER_NOTIFY2 },
 	{NULL, -1}
 };
 
@@ -314,9 +315,109 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		}
 		break;
 
+		/* Send a notification message to a printer */
+
+	case MSG_PRINTER_NOTIFY2: {
+		char *cmd;
+
+		/* Read subcommand */
+
+		if (!params || !params[0]) {
+			fprintf(stderr, "Must specify subcommand:\n");
+			fprintf(stderr, "\tqueuepause <printername>\n");
+			fprintf(stderr, "\tqueueresume <printername>\n");
+			return False;
+		}
+
+		cmd = params[0];
+
+		/* Pause a print queue */
+
+		if (strequal(cmd, "queuepause")) {
+
+			if (!params[1]) {
+				fprintf(stderr, "queuepause command requires a printer name\n");
+				return False;
+			}
+
+			notify_printer_status_byname(params[1], PRINTER_STATUS_PAUSED);
+			break;
+		}
+
+		/* Resume a print queue */
+
+		if (strequal(cmd, "queueresume")) {
+
+			if (!params[1]) {
+				fprintf(stderr, "queueresume command requires a printer name\n");
+				return False;
+			}
+
+			notify_printer_status_byname(params[1], PRINTER_STATUS_OK);
+			break;
+		}
+
+		/* Pause a print job */
+
+		if (strequal(cmd, "jobpause")) {
+			int jobid;
+
+			if (!params[1] || !params[2]) {
+				fprintf(stderr, "jobpause command requires a printer name and a jobid\n");
+				return False;
+			}
+
+			jobid = atoi(params[2]);
+
+			notify_job_status_byname(
+				params[1], jobid, JOB_STATUS_PAUSED, 
+				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+		}
+
+		/* Resume a print job */
+
+		if (strequal(cmd, "jobresume")) {
+			int jobid;
+
+			if (!params[1] || !params[2]) {
+				fprintf(stderr, "jobresume command requires a printer name and a jobid\n");
+				return False;
+			}
+
+			jobid = atoi(params[2]);
+
+			notify_job_status_byname(
+				params[1], jobid, JOB_STATUS_QUEUED,
+				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+		}
+
+		/* Delete a print job */
+
+		if (strequal(cmd, "jobdelete")) {
+			int jobid;
+
+			if (!params[1] || !params[2]) {
+				fprintf(stderr, "jobdelete command requires a printer name and a jobid\n");
+				return False;
+			}
+
+			jobid = atoi(params[2]);
+
+			notify_job_status_byname(
+				params[1], jobid, JOB_STATUS_DELETING,
+				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+
+			notify_job_status_byname(
+				params[1], jobid, JOB_STATUS_DELETING|
+				JOB_STATUS_DELETED,
+				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+		}
+
+		break;
 	}
-	
-	return (True);
+	}
+		
+		return (True);
 }
 
  int main(int argc, char *argv[])
