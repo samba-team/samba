@@ -55,12 +55,10 @@ void invalidate_vuid(struct server_context *smb, uint16_t vuid)
 
 	if (vuser == NULL)
 		return;
-	
-	data_blob_free(&vuser->session_key);
 
 	session_yield(vuser);
 
-	free_server_info(&vuser->server_info);
+	talloc_destroy(vuser->session_info->mem_ctx);
 
 	DLIST_REMOVE(smb->users.validated_users, vuser);
 
@@ -101,8 +99,7 @@ void invalidate_all_vuids(struct server_context *smb)
  */
 
 int register_vuid(struct server_context *smb,
-		  struct auth_serversupplied_info *server_info, 
-		  DATA_BLOB *session_key,
+		  struct auth_session_info *session_info,
 		  const char *smb_name)
 {
 	user_struct *vuser = NULL;
@@ -135,18 +132,8 @@ int register_vuid(struct server_context *smb,
 
 	vuser->vuid = smb->users.next_vuid;
 
-	vuser->session_key = *session_key;
-
- 	if (!server_info->ptok) {
-		DEBUG(1, ("server_info does not contain a user_token - cannot continue\n"));
-		free_server_info(&server_info);
-
-		SAFE_FREE(vuser);
-		return UID_FIELD_INVALID;
-	}
-
 	/* use this to keep tabs on all our info from the authentication */
-	vuser->server_info = server_info;
+	vuser->session_info = session_info;
 
 	smb->users.next_vuid++;
 	smb->users.num_validated_vuids++;
@@ -156,7 +143,7 @@ int register_vuid(struct server_context *smb,
 	if (!session_claim(smb, vuser)) {
 		DEBUG(1,("Failed to claim session for vuid=%d\n", vuser->vuid));
 		invalidate_vuid(smb, vuser->vuid);
-		return -1;
+		return UID_FIELD_INVALID;
 	}
 
 	return vuser->vuid;

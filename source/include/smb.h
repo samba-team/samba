@@ -873,13 +873,11 @@ typedef struct user_struct
 	struct user_struct *next, *prev;
 	uint16_t vuid; /* Tag for this entry. */
 
-	DATA_BLOB session_key;
-
 	char *session_keystr; /* used by utmp and pam session code.  
 				 TDB key string */
 	int homes_snum;
 
-	struct auth_serversupplied_info *server_info;
+	struct auth_session_info *session_info;
 
 } user_struct;
 

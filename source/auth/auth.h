@@ -37,7 +37,7 @@ typedef struct auth_str
 	char *str;
 } AUTH_STR;
 
-typedef struct auth_usersupplied_info
+struct auth_usersupplied_info
 {
 	
  	DATA_BLOB lm_resp;
@@ -54,7 +54,7 @@ typedef struct auth_usersupplied_info
 	AUTH_STR           smb_name;        /* username before mapping */
 	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
 	
-} auth_usersupplied_info;
+};
 
 #define SAM_FILL_NAME  0x01
 #define SAM_FILL_INFO3 0x02
@@ -62,20 +62,34 @@ typedef struct auth_usersupplied_info
 #define SAM_FILL_UNIX  0x08
 #define SAM_FILL_ALL (SAM_FILL_NAME | SAM_FILL_INFO3 | SAM_FILL_SAM | SAM_FILL_UNIX)
 
-typedef struct auth_serversupplied_info 
+struct auth_serversupplied_info 
 {
 	TALLOC_CTX *mem_ctx;
 
 	BOOL guest;
 	
-	/* NT group information taken from the info3 structure */
-	
-	NT_USER_TOKEN *ptok;
+	struct dom_sid *user_sid;
+	struct dom_sid *primary_group_sid;
+
+	size_t n_domain_groups;
+	struct dom_sid **domain_groups;
 	
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 	
-} auth_serversupplied_info;
+};
+
+struct auth_session_info 
+{
+	TALLOC_CTX *mem_ctx;
+	/* NT group information taken from the info3 structure */
+	
+	NT_USER_TOKEN *nt_user_token;
+
+	struct auth_serversupplied_info *server_info;
+
+	DATA_BLOB session_key;
+};
 
 struct auth_context {
 	DATA_BLOB challenge; 
@@ -98,7 +112,7 @@ struct auth_context {
 	void (*free)(struct auth_context **auth_context);
 };
 
-typedef struct auth_methods
+struct auth_methods
 {
 	struct auth_methods *prev, *next;
 	const char *name; /* What name got this module */
@@ -107,7 +121,7 @@ typedef struct auth_methods
 			 void *my_private_data, 
 			 TALLOC_CTX *mem_ctx,
 			 const struct auth_usersupplied_info *user_info, 
-			 auth_serversupplied_info **server_info);
+			 struct auth_serversupplied_info **server_info);
 
 	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
 			      void **my_private_data, 
@@ -122,7 +136,7 @@ typedef struct auth_methods
 	/* Function to send a keepalive message on the above structure */
 	void (*send_keepalive)(void **private_data);
 
-} auth_methods;
+};
 
 typedef NTSTATUS (*auth_init_function)(struct auth_context *, const char *, struct auth_methods **);
 

@@ -78,7 +78,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	struct auth_ntlmssp_state *auth_ntlmssp_state = ntlmssp_state->auth_context;
-	auth_usersupplied_info *user_info = NULL;
+	struct auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
 
 #if 0
