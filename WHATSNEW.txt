@@ -23,11 +23,12 @@ Changes since 3.0.1rc1
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details:
 
-1)  Correct version string in smbldap-tools Makefile.
+1)  Update version string in smbldap-tools Makefile to 0.8.2.
 2)  Correct a problem with "net rpc vampire" mis-parsing the 
     alias member info reply.
-3)  Ensure the libdir is created by the installclientlib script.
-4)  Fix detection of Windows 2003 in smb.conf %a variable.
+3)  Ensure the ${libdir} is created by the installclientlib script.
+4)  Fix detection of Windows 2003 client architecture in the smb.conf
+    %a variable.
 5)  Ensure that smbd calls the add user script for a missing UNIX 
     user on kerberos auth call  (bug 445).
 6)  Fix bugs in hosts allow/deny when using a mismatched 
@@ -37,8 +38,8 @@ details:
 8)  Fix spinlocks on IRIX.
 9)  Corrected some bad destination paths when running "configure 
     --with-fhs".
-10) Add packaging for Fedora Core 1.
-11) Correct bug in SWAT install script for non=english languages.
+10) Add packaging files for Fedora Core 1.
+11) Correct bug in SWAT install script for non-english languages.
 12) Support character set ISO-8859-1 internally (bug 558).
 13) Fixed more LDAP access errors when looking up group mappings 
     (bug 281).
