@@ -61,6 +61,9 @@ static struct stot{
     DECL(TXT),
     DECL(AFSDB),
     DECL(SRV),
+    DECL(SIG),
+    DECL(KEY),
+    DECL(NAPTR),
     {NULL, 	0}
 };
 
