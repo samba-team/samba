@@ -340,7 +340,7 @@ static BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, con
 	if (transport->oplock.handler) {
 		uint16 tid = SVAL(hdr, HDR_TID);
 		uint16 fnum = SVAL(vwv,VWV(2));
-		uint8 level = CVAL(vwv,VWV(3));
+		uint8 level = CVAL(vwv,VWV(3)+1);
 		transport->oplock.handler(transport, tid, fnum, level, transport->oplock.private);
 	}
 

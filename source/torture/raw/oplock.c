@@ -54,7 +54,7 @@ static BOOL oplock_handler_ack(struct cli_transport *transport, uint16 tid, uint
 
 	printf("Acking in oplock handler\n");
 
-	return cli_oplock_ack(tree, fnum, level == 1? 0x102 : 2);
+	return cli_oplock_ack(tree, fnum, level);
 }
 
 /*

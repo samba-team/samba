@@ -33,7 +33,8 @@ BOOL cli_oplock_ack(struct cli_tree *tree, uint16 fnum, uint16 ack_level)
 	SSVAL(req->out.vwv,VWV(0),0xFF);
 	SSVAL(req->out.vwv,VWV(1),0);
 	SSVAL(req->out.vwv,VWV(2),fnum);
-	SSVAL(req->out.vwv,VWV(3),ack_level);
+	SCVAL(req->out.vwv,VWV(3),LOCKING_ANDX_OPLOCK_RELEASE);
+	SCVAL(req->out.vwv,VWV(3)+1,ack_level);
 	SIVAL(req->out.vwv,VWV(4),0);
 	SSVAL(req->out.vwv,VWV(6),0);
 	SSVAL(req->out.vwv,VWV(7),0);
