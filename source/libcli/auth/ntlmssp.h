@@ -166,10 +166,10 @@ struct ntlmssp_state
 	uint32_t ntlmssp_seq_num;
 
 	/* ntlmv2 */
-	char send_sign_key[16];
-	char send_seal_key[16];
-	char recv_sign_key[16];
-	char recv_seal_key[16];
+	DATA_BLOB send_sign_key;
+	DATA_BLOB send_seal_key;
+	DATA_BLOB recv_sign_key;
+	DATA_BLOB recv_seal_key;
 
 	uint8_t send_seal_hash[258];
 	uint8_t recv_seal_hash[258];
