@@ -1338,6 +1338,7 @@ time_t make_unix_date(void *date_ptr);
 time_t make_unix_date2(void *date_ptr);
 time_t make_unix_date3(void *date_ptr);
 char *timestring(void );
+time_t get_create_time(struct stat *st);
 
 /*The following definitions come from  trans2.c  */
 
