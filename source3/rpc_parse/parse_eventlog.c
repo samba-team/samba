@@ -27,21 +27,21 @@ extern int DEBUGLEVEL;
 
 /*******************************************************************
 ********************************************************************/  
-void make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal)
+void make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal, char *unk)
 {
-	q_u->ptr0=0x1;
+	int len_journal = journal != NULL ? strlen(journal) : 0;
+	int len_unk = unk != NULL ? strlen(unk) : 0;
 
+	q_u->ptr0=0x1;
 	q_u->unk0=0x5c;
 	q_u->unk1=0x01;
 
-	q_u->unk2=2*(strlen(journal)+1);
-	q_u->unk3=2*(strlen(journal)+1);
-
-	q_u->ptr_source=0x01;	
-	make_buf_unistr2(&(q_u->source), &(q_u->ptr_source), journal);
+	make_uni_hdr(&(q_u->hdr_source), len_journal);
+	make_unistr2(&(q_u->uni_source), journal, len_journal);
 	
-	q_u->unk4=0x00;
-	q_u->unk5=0x00;
+	make_uni_hdr(&(q_u->hdr_unk), len_unk);
+	make_unistr2(&(q_u->uni_unk), unk, len_unk);
+	
 	q_u->unk6=0x01;
 	q_u->unk7=0x01;
 }
@@ -59,16 +59,17 @@ void eventlog_io_q_open(char *desc, EVENTLOG_Q_OPEN *q_u, prs_struct *ps, int de
 
 	prs_uint16("unk0", ps, depth, &(q_u->unk0));
 	prs_uint16("unk1", ps, depth, &(q_u->unk1));
-	prs_uint16("unk2", ps, depth, &(q_u->unk2));
-	prs_uint16("unk3", ps, depth, &(q_u->unk3));
 
-	prs_uint32("ptr_source", ps, depth, &(q_u->ptr_source));	
-
-	smb_io_unistr2("", &(q_u->source), q_u->ptr_source, ps, depth);
+	smb_io_unihdr("hdr_source", &(q_u->hdr_source), ps, depth);
+	smb_io_unistr2("uni_source", &(q_u->uni_source),
+		       q_u->hdr_source.buffer, ps, depth);
 	prs_align(ps);
 
-	prs_uint32("unk4", ps, depth, &(q_u->unk4));	
-	prs_uint32("unk5", ps, depth, &(q_u->unk5));
+	smb_io_unihdr("hdr_unk", &(q_u->hdr_unk), ps, depth);
+	smb_io_unistr2("uni_unk", &(q_u->uni_unk),
+		       q_u->hdr_unk.buffer, ps, depth);
+	prs_align(ps);
+
 	prs_uint32("unk6", ps, depth, &(q_u->unk6));
 	prs_uint32("unk7", ps, depth, &(q_u->unk7));
 }
@@ -90,7 +91,6 @@ void eventlog_io_r_open(char *desc, EVENTLOG_R_OPEN *r_u, prs_struct *ps, int de
 void make_eventlog_q_close(EVENTLOG_Q_CLOSE *q_u, POLICY_HND *pol)
 {
 	memcpy(&(q_u->pol.data), pol->data, sizeof(q_u->pol.data));
-
 }
 
 /*******************************************************************
@@ -102,7 +102,6 @@ void eventlog_io_q_close(char *desc, EVENTLOG_Q_CLOSE *q_u, prs_struct *ps, int 
 
 	prs_align(ps);
 	smb_io_pol_hnd("", &(q_u->pol), ps, depth);
-
 }
 
 /*******************************************************************

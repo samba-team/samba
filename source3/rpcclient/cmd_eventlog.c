@@ -41,9 +41,10 @@ extern FILE* out_hnd;
 void cmd_eventlog(struct client_info *info)
 {
 	uint16 nt_pipe_fnum;
-	BOOL res = True;
+	BOOL res  = True;
+	BOOL res1 = True;
 	POLICY_HND hnd;
-	uint32 number;
+	uint32 number = 0;
 	uint32 flags;
 	uint32 offset;
 	uint32 num_of_bytes;
@@ -60,17 +61,17 @@ void cmd_eventlog(struct client_info *info)
 	}
 
 	/* open scheduler session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_EVENTLOG, &nt_pipe_fnum) : False;
+	res1 = res1 ? cli_nt_session_open(smb_cli, PIPE_EVENTLOG, &nt_pipe_fnum) : False;
 
-	res = res ? do_event_open(smb_cli, nt_pipe_fnum, journal, &hnd) : False;
+	res1 = res1 ? do_event_open(smb_cli, nt_pipe_fnum, journal, &hnd) : False;
 
-	res = res ? do_event_numofeventlogrec(smb_cli, nt_pipe_fnum, &hnd, &number) : False;
+	res = res1 ? do_event_numofeventlogrec(smb_cli, nt_pipe_fnum, &hnd, &number) : False;
 	
 	fprintf(out_hnd, "Number of events: %d\n", number);
 
 	display_eventlog_eventrecord(out_hnd, ACTION_HEADER, &ev);
 
-	for (offset=0; offset<number; offset++)
+	for (offset = 0; offset < number && res; offset++)
 	{
 		num_of_bytes=0;
 	
@@ -87,7 +88,7 @@ void cmd_eventlog(struct client_info *info)
 
 	display_eventlog_eventrecord(out_hnd, ACTION_FOOTER, &ev);
 			
-	res = res ? do_event_close(smb_cli, nt_pipe_fnum, &hnd): False;
+	res1 = res1 ? do_event_close(smb_cli, nt_pipe_fnum, &hnd): False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);

@@ -39,7 +39,7 @@ BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hn
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_eventlog_q_open(&q, log);
+	make_eventlog_q_open(&q, log, NULL);
 
 	/* turn parameters into data stream */
 	eventlog_io_q_open("", &q, &buf, 0);
