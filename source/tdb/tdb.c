@@ -478,7 +478,8 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	int i;
 
 	/* create the header */
-	strcpy(header.magic_food, TDB_MAGIC_FOOD);
+	memset(&header, 0, sizeof(header));
+	memcpy(header.magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
 	header.version = TDB_VERSION;
 	header.hash_size = hash_size;
 	lseek(tdb->fd, 0, SEEK_SET);
