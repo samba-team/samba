@@ -22,7 +22,7 @@
 
 #include "md5.h"
 
-void MD5Transform(uint32 buf[4], uint32 const in[16]);
+static void MD5Transform(uint32 buf[4], uint32 const in[16]);
 
 /*
  * Note: this code is harmless on little-endian machines.
