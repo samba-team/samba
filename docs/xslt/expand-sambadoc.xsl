@@ -87,7 +87,6 @@
 
 	<!-- This is needed to copy content unchanged -->
 	<xsl:template match="@*|node()">
-
 		<xsl:copy>
 			<xsl:apply-templates select="@*|node()"/>
 		</xsl:copy>
