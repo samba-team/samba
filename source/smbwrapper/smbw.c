@@ -437,6 +437,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	ip = ipzero;
 	ZERO_STRUCT(c);
+	
+	get_auth_data_fn(server, share, &workgroup, &username, &password);
 
 	/* try to use an existing connection */
 	for (srv=smbw_srvs;srv;srv=srv->next) {
@@ -454,8 +456,6 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , server, 0x20);
-
-	get_auth_data_fn(server, share, &workgroup, &username, &password);
 
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
 
