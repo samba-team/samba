@@ -1,4 +1,6 @@
-.Dd June  7, 2000
+.\" $Id$
+.\"
+.Dd March 5, 2002
 .Dt KADMIND 8
 .Os HEIMDAL
 .Sh NAME
@@ -51,7 +53,7 @@ This daemon should only be run on ther master server, and not on any
 slaves.
 .Pp
 Principals are always allowed to change their own password and list
-their own principals.  Apart from that, doing any operation requires
+their own principal.  Apart from that, doing any operation requires
 permission explicitly added in the ACL file
 .Pa /var/heimdal/kadmind.acl .
 The format of this file is:
@@ -61,10 +63,10 @@ The format of this file is:
 .Op Va principal-pattern
 .Ed
 .Pp
-Where rights is any combination of:
-.Bl -bullet
+Where rights is any (comma separated) combination of:
+.Bl -bullet -compact
 .It
-change-password | cpw
+change-password or cpw
 .It
 list
 .It
@@ -81,7 +83,8 @@ all
 .Pp
 And the optional
 .Ar principal-pattern
-restricts the rights to principals that match the glob-style pattern.
+restricts the rights to operations on principals that match the
+glob-style pattern.
 .Pp
 Supported options:
 .Bl -tag -width Ds
@@ -130,6 +133,13 @@ to listen to port 4711 in addition to any
 compiled in defaults:
 .Pp
 .D1 Nm Fl -ports Ns Li "=\*[q]+ 4711\*[q] &"
+.Pp
+This acl file will grant Joe all rights, and allow Mallory to view and
+add host principals.
+.Bd -literal -offset indent
+joe/admin@EXAMPLE.COM      all
+mallory/admin@EXAMPLE.COM  add,get  host/*@EXAMPLE.COM
+.Ed
 .\".Sh DIAGNOSTICS
 .Sh SEE ALSO
 .Xr kadmin 1 ,
