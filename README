@@ -1,9 +1,12 @@
-This is version 2.0.0alphaX of Samba, the free SMB and CIFS client and
+This is version 2.0.X of Samba, the free SMB and CIFS client and
 server for unix and other operating systems. Samba is maintained by
 the Samba Team, who support the original author, Andrew Tridgell.
 
 >>>> Please read THE WHOLE of this file as it gives important information
 >>>> about the configuration and use of Samba.
+
+Installation instructions may be found in the docs/textdocs/UNIX-INSTALL
+file.
 
 This software is freely distributable under the GNU public license, a
 copy of which you should have received with this software (in a file
