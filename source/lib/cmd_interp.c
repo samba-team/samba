@@ -1077,7 +1077,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 
 			case 'c':
 			{
-				cmd_set_options |= CMD_STR | CMD_PASS;
+				cmd_set_options |= CMD_STR;
 				cmd_str = optarg;
 				break;
 			}
