@@ -6,8 +6,11 @@
  * "xnlock" is the X11 version of the program.
  * Original sunview version written by Dan Heller 1985 (not included here).
  */
-#define random rand
-#define srandom srand
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#include "protos.h"
+#endif
+
 #include <stdio.h>
 #include <X11/StringDefs.h>
 #include <X11/Intrinsic.h>
@@ -17,10 +20,9 @@
 #include <ctype.h>
 #include <pwd.h>
 
-#define KERBEROS
-
 #ifdef KERBEROS
 #include <krb.h>
+#include <kafs.h>
 #endif
 
 char STRING[] = "****************";
@@ -110,6 +112,7 @@ static XrmOptionDescRec options[] = {
     { "-noar", "acceptRootPasswd", XrmoptionNoArg, "False" },
 };
 
+int
 main (argc, argv)
 int argc;
 char *argv[];
@@ -120,7 +123,7 @@ char *argv[];
     XGCValues gcvalues;
     char **list;
 
-    if (ProgName = rindex(*argv, '/'))
+    if ((ProgName = rindex(*argv, '/')) != 0)
 	ProgName++;
     else
 	ProgName = *argv;
@@ -169,7 +172,7 @@ char *argv[];
     if (!(font = Resrcs.font)) {
 	list = XListFonts(dpy, FONT_NAME, 32767, &foo);
 	for (i = 0; i < foo; i++)
-	    if (font = XLoadQueryFont(dpy, list[i]))
+	    if ((font = XLoadQueryFont(dpy, list[i])) != 0)
 		break;
 	if (!font)
 	  {
@@ -188,7 +191,7 @@ char *argv[];
 
     x = Width / 2;
     y = Height / 2;
-    srandom (time(0));
+    srand (time(0));
     state = IS_MOVING;
 
     {
@@ -215,8 +218,10 @@ char *argv[];
 #endif
     ScreenSaver(1);
     XtAppMainLoop(app);
+    exit(0);
 }
 
+static void
 leave()
 {
 #if 0
@@ -229,6 +234,7 @@ leave()
     exit(0);
 }
 
+static void
 ScreenSaver(save)
 {
     static int timeout, interval, prefer_blank, allow_exp;
@@ -240,7 +246,7 @@ ScreenSaver(save)
 	XSetScreenSaver(dpy, timeout, interval, prefer_blank, allow_exp);
 }
 
-void
+static void
 ClearWindow(w, event)
 Widget w;
 XExposeEvent *event;
@@ -264,7 +270,7 @@ XExposeEvent *event;
     }
 }
 
-void
+static void
 Visibility(w, client_data, event)
 Widget w;
 XtPointer client_data;
@@ -273,6 +279,7 @@ XVisibilityEvent *event;
     XRaiseWindow(dpy, XtWindow(w));
 }
 
+static void
 init_words (argc, argv)
 int argc;
 char *argv[];
@@ -324,7 +331,7 @@ char *argv[];
     words = get_words(argv); /* if getwordsfrom != FROM_ARGV, argv is a nop */
 }
 
-char *
+static char *
 get_words(argv)
 char **argv;
 {
@@ -372,7 +379,7 @@ char **argv;
 #define PROMPT	    "Password: "
 #define FAIL_MSG    "Sorry, try again"
 
-void
+static void
 GetPasswd(w, event)
 Widget w;
 XKeyEvent *event;
@@ -403,7 +410,6 @@ XKeyEvent *event;
     if (!XLookupString(event, &c, 1, &keysym, 0))
 	return;
     if (keysym == XK_Return || keysym == XK_Linefeed) {
-	XExposeEvent event;
 	passwd[cnt] = 0;
 	XtRemoveTimeOut(timeout_id);
 	/*
@@ -472,11 +478,11 @@ XKeyEvent *event;
 	prompt_y, "           ", 11-cnt);
 }
 
-void
+static void
 post_prompt_box(window)
 Window window;
 {
-    char *pass = NULL, s[32];
+    char s[32];
     int width = (Width / 3);
     int height = font_height(font) * 6;
     int box_x, box_y;
@@ -517,7 +523,7 @@ Window window;
     time_y += 2*font_height(font);
 }
 
-void
+static void
 countdown(timeout)
 int *timeout;
 {
@@ -548,7 +554,7 @@ int *timeout;
 #include "nose.front"
 #include "nose.down"
 
-void
+static void
 init_images()
 {
     static Pixmap *images[] = {
@@ -577,7 +583,7 @@ init_images()
 #define X_INCR 3
 #define Y_INCR 2
 
-void
+static void
 move()
 {
     static int length, dir;
@@ -585,21 +591,21 @@ move()
     if (!length) {
 	register int tries = 0;
 	dir = 0;
-	if ((random() & 1) && think()) {
+	if ((rand() & 1) && think()) {
 	    talk(0); /* sets timeout to itself */
 	    return;
 	}
-	if (!(random() % 3) && (interval = look())) {
+	if (!(rand() % 3) && (interval = look())) {
 	    timeout_id = XtAppAddTimeOut(app, interval, move, NULL);
 	    return;
 	}
-	interval = 20 + random() % 100;
+	interval = 20 + rand() % 100;
 	do  {
 	    if (!tries)
-		length = Width/100 + random() % 90, tries = 8;
+		length = Width/100 + rand() % 90, tries = 8;
 	    else
 		tries--;
-	    switch (random() % 8) {
+	    switch (rand() % 8) {
 		case 0:
 		    if (x - X_INCR*length >= 5)
 			dir = LEFT;
@@ -635,6 +641,7 @@ move()
     timeout_id = XtAppAddTimeOut(app, interval, move, NULL);
 }
 
+static void
 walk(dir)
 register int dir;
 {
@@ -698,11 +705,12 @@ register int dir;
     lastdir = dir;
 }
 
+static int
 think()
 {
-    if (random() & 1)
+    if (rand() & 1)
 	walk(FRONT);
-    if (random() & 1) {
+    if (rand() & 1) {
 	if (getwordsfrom > 1)
 	    words = get_words((char **)NULL);
 	return 1;
@@ -711,6 +719,7 @@ think()
 }
 
 #define MAXLINES 40
+static void
 talk(force_erase)
 int force_erase;
 {
@@ -828,24 +837,24 @@ int force_erase;
 				 (XtTimerCallbackProc)talk, NULL);
 }
 
-unsigned long
+static unsigned long
 look()
 {
-    if (random() % 3) {
-	XCopyPlane(dpy, (random() & 1)? down : front, XtWindow(widget), gc,
+    if (rand() % 3) {
+	XCopyPlane(dpy, (rand() & 1)? down : front, XtWindow(widget), gc,
 	    0, 0, 64,64, x, y, 1L);
 	return 1000L;
     }
-    if (!(random() % 5))
+    if (!(rand() % 5))
 	return 0;
-    if (random() % 3) {
-	XCopyPlane(dpy, (random() & 1)? left_front : right_front,
+    if (rand() % 3) {
+	XCopyPlane(dpy, (rand() & 1)? left_front : right_front,
 	    XtWindow(widget), gc, 0, 0, 64,64, x, y, 1L);
 	return 1000L;
     }
-    if (!(random() % 5))
+    if (!(rand() % 5))
 	return 0;
-    XCopyPlane(dpy, (random() & 1)? left0 : right0, XtWindow(widget), gc,
+    XCopyPlane(dpy, (rand() & 1)? left0 : right0, XtWindow(widget), gc,
 	0, 0, 64,64, x, y, 1L);
     return 1000L;
 }
