@@ -69,6 +69,12 @@ static int export_database (struct pdb_context *in, struct pdb_context *out) {
 	}
 
 	while (NT_STATUS_IS_OK(in->pdb_getsampwent(in, user))) {
+		int i;
+
+		for (i=0; i<PDB_COUNT; i++) {
+			pdb_set_init_flags(user, i, PDB_CHANGED);
+		}
+
 		out->pdb_add_sam_account(out, user);
 		if (!NT_STATUS_IS_OK(pdb_reset_sam(user))){
 			fprintf(stderr, "Can't reset SAM_ACCOUNT!\n");
@@ -77,6 +83,30 @@ static int export_database (struct pdb_context *in, struct pdb_context *out) {
 	}
 
 	in->pdb_endsampwent(in);
+
+	return 0;
+}
+
+/*********************************************************
+ Add all currently available group mappings to another db
+ ********************************************************/
+
+static int export_groups (struct pdb_context *in, struct pdb_context *out) {
+	GROUP_MAP *maps = NULL;
+	int i, entries = 0;
+
+	if (NT_STATUS_IS_ERR(in->pdb_enum_group_mapping(in, SID_NAME_UNKNOWN,
+							&maps, &entries,
+							False, False))) {
+		fprintf(stderr, "Can't get group mappings!\n");
+		return 1;
+	}
+
+	for (i=0; i<entries; i++) {
+		out->pdb_add_group_mapping_entry(out, &(maps[i]));
+	}
+
+	SAFE_FREE(maps);
 
 	return 0;
 }
@@ -478,6 +508,7 @@ int main (int argc, char **argv)
 	static char *backend = NULL;
 	static char *backend_in = NULL;
 	static char *backend_out = NULL;
+	static BOOL transfer_groups = False;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
 	static char *account_control = NULL;
@@ -507,6 +538,7 @@ int main (int argc, char **argv)
 		{"backend",	'b', POPT_ARG_STRING, &backend, 0, "use different passdb backend as default backend", NULL},
 		{"import",	'i', POPT_ARG_STRING, &backend_in, 0, "import user accounts from this backend", NULL},
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
+		{"group",	'g', POPT_ARG_NONE, &transfer_groups, 0, "use -i and -e for groups", NULL},
 		{"account-policy",	'P', POPT_ARG_STRING, &account_policy, 0,"value of an account policy (like maximum password age)",NULL},
 		{"value",       'V', POPT_ARG_LONG, &account_policy_value, 'V',"set the account policy to this value", NULL},
 		{"account-control",	'c', POPT_ARG_STRING, &account_control, 0, "Values of account control", NULL},
@@ -621,7 +653,11 @@ int main (int argc, char **argv)
 		} else {
 			bout = bdef;
 		}
-		return export_database(bin, bout);
+		if (transfer_groups) {
+			return export_groups(bin, bout);
+		} else {
+			return export_database(bin, bout);
+		}
 	}
 
 	/* if BIT_USER is defined but nothing else then threat it as -l -u for compatibility */
