@@ -757,6 +757,9 @@ BOOL winbind_setup_common(void)
 	if (!idmap_init())
 		return False;
 
+	if (!idmap_init_wellknown_sids())
+		return False;
+
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
 
