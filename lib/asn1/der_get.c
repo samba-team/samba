@@ -160,7 +160,7 @@ der_get_oid (const unsigned char *p, size_t len,
 
 	do {
 	    --len;
-	    u = u * 128 + (*p % 128);
+	    u = u * 128 + (*p++ % 128);
 	} while (len > 0 && p[-1] & 0x80);
 	data->components[n] = u;
     }
@@ -168,6 +168,7 @@ der_get_oid (const unsigned char *p, size_t len,
 	free_oid (data);
 	return ASN1_OVERRUN;
     }
+    data->length = n;
     if (size)
 	*size = oldlen;
     return 0;
