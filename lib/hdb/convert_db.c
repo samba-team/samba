@@ -84,7 +84,7 @@ func(krb5_context context, HDB *db, hdb_entry *entry, void *data)
     entry->keys.len = save_len;
     entry->keys.val = save_val;
     for(i = 0; i < n; i++) 
-	free_Key(&k[n]);
+	free_Key(&k[i]);
     free(k);
     return 0;
 }
