@@ -17,7 +17,8 @@ case "$host_os" in
         *solaris*) AC_DEFINE(SUNOS5)
                    LDSHFLAGS="-G";;
         *sunos*) AC_DEFINE(SUNOS4);;
-        *irix*) AC_DEFINE(IRIX);;
+        *irix*) AC_DEFINE(IRIX)
+                LDSHFLAGS="-shared";;
         *aix*) AC_DEFINE(AIX);;
         *hpux*) AC_DEFINE(HPUX);;
         *qnx*) AC_DEFINE(QNX);;
