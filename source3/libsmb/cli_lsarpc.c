@@ -1122,7 +1122,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
  
-	if (!(cli.sec_mode & 1)) {
+	if (!(cli.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(0,("fetch_domain_sid: machine %s isn't in user level security mode\n",
 			remote_machine));
 		goto done;

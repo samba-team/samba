@@ -123,7 +123,7 @@ BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine)
 		return False;
 	}
     
-	if (!(cli->sec_mode & 1)) {
+	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(0,("connect_to_client: machine %s isn't in user level security mode\n", remote_machine));
 		cli_shutdown(cli);
 		return False;
