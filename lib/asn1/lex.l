@@ -71,6 +71,7 @@ OPTIONAL		{ return OPTIONAL; }
 BEGIN			{ return TBEGIN; }
 END			{ return END; }
 DEFINITIONS		{ return DEFINITIONS; }
+EXTERNAL		{ return EXTERNAL; }
 [,{}()|]		{ return *yytext; }
 "["			{ return *yytext; }
 "]"			{ return *yytext; }
