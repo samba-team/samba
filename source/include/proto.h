@@ -566,8 +566,8 @@ void split_at_last_component(char *path, char *front, char sep, char *back);
 
 int PutUniCode(char *dst,char *src);
 char *skip_unicode_string(char *buf,int n);
-char *unistrn2(uint16 *src, int len);
-char *unistr2(uint16 *src);
+char *unistrn2(char *src, int len);
+char *unistr2(char *src);
 char *unistr2_to_str(UNISTR2 *str);
 uint32 buffer2_to_uint32(BUFFER2 *str);
 char *buffer2_to_str(BUFFER2 *str);
