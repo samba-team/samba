@@ -421,7 +421,6 @@ AC_CHECK_FUNCS([				\
 	_getpty					\
 	_scrsize				\
 	fcntl					\
-	getmsg					\
 	gettimeofday				\
 	getuid					\
 	grantpt					\
@@ -578,7 +577,28 @@ fi
 #
 # And also something wierd has happend with dec-osf1, fallback to bsd-ptys
 
-if test "$ac_cv_func_getmsg" = yes; then
+AC_CHECK_FUNC(getmsg)
+
+AC_CACHE_CHECK(for working getmsg, ac_cv_func_getmsg_work,
+AC_TRY_RUN(
+[
+#include <stdio.h>
+#include <errno.h>
+
+int main()
+{
+  int ret;
+  ret = getmsg(open("/dev/null", 0), NULL, NULL, NULL);
+  if(ret < 0 && errno == ENOSYS)
+    return 1;
+  return 0;
+}
+], ac_cv_func_getmsg_work=yes, ac_cv_func_getmsg_work=no,
+ac_cv_func_getmsg_work=no))
+test "$ac_cv_func_getmsg_work" = "yes" &&
+AC_DEFINE(HAVE_GETMSG, 1, [Define if you have a working getmsg.])
+
+if test "$ac_cv_func_getmsg_work" = yes; then
 AC_MSG_CHECKING(for streamspty)
 case "$host" in
 *-*-aix3*|*-*-sunos4*|*-*-osf*|*-*-hpux1[[01]]*)
