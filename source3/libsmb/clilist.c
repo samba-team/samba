@@ -178,6 +178,10 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int param_len, data_len;	
 	uint16 setup;
 	pstring param;
+
+	if (cli->protocol <= PROTOCOL_LANMAN1) {
+		return cli_list_old(cli, Mask, attribute, fn, state);
+	}
 	
 	pstrcpy(mask,Mask);
 	
