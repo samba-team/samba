@@ -1,3 +1,7 @@
+2001-08-28  Assar Westerlund  <assar@assaris.sics.se>
+
+	* Release 0.4e
+
 2001-08-28  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): set versoin to 18:2:1
