@@ -29,6 +29,7 @@
 
 extern int DEBUGLEVEL;
 
+#if 0
 static BOOL tdb_lookup_user_als(TDB_CONTEXT *tdb,
 				const DOM_SID *sid,
 				uint32 *num_rids,
@@ -89,15 +90,15 @@ static BOOL tdb_lookup_user_grps(TDB_CONTEXT *tdb,
 	return True;
 }
 
-static BOOL tdb_lookup_user(TDB_CONTEXT *tdb,
-				uint32 rid,
-				SAM_USER_INFO_21 *usr)
+#endif
+BOOL tdb_lookup_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr)
 {
 	prs_struct key;
 	prs_struct data;
+	uint8 k = 0;
 
 	prs_init(&key, 0, 4, False);
-	if (!_prs_uint32("rid", &key, 0, &rid))
+	if (!_prs_uint8("usr", &key, 0, &k))
 	{
 		return False;
 	}
@@ -117,6 +118,7 @@ static BOOL tdb_lookup_user(TDB_CONTEXT *tdb,
 	return True;
 }
 
+#if 0
 static BOOL tdb_store_user_grps(TDB_CONTEXT *tdb,
 				uint32 rid, uint32 num_gids,
 				DOM_GID *gids)
@@ -177,17 +179,18 @@ static BOOL tdb_store_user_als(TDB_CONTEXT *tdb,
 	return True;
 }
 
-static BOOL tdb_store_user(TDB_CONTEXT *tdb, uint32 rid, SAM_USER_INFO_21 *usr)
+#endif
+
+static BOOL tdb_store_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr)
 {
 	prs_struct key;
 	prs_struct data;
-
-	DEBUG(10,("storing user %x\n", rid));
+	uint8 k = 0;
 
 	prs_init(&key, 0, 4, False);
 	prs_init(&data, 0, 4, False);
 
-	if (!_prs_uint32("rid", &key, 0, &rid) ||
+	if (!_prs_uint8("usr", &key, 0, &k) ||
 	    !sam_io_user_info21("usr", usr, &data, 0) ||
 	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
 	{
@@ -201,8 +204,7 @@ static BOOL tdb_store_user(TDB_CONTEXT *tdb, uint32 rid, SAM_USER_INFO_21 *usr)
 	return True;
 }
 
-static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint32 rid,
-				uint16 acb_info)
+static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint16 acb_info)
 {
 	SAM_USER_INFO_21 usr;
 
@@ -211,7 +213,7 @@ static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint32 rid,
 		return False;
 	}
 
-	if (!tdb_lookup_user(tdb, rid, &usr))
+	if (!tdb_lookup_user(tdb, &usr))
 	{
 		tdb_writeunlock(tdb);
 		return False;
@@ -219,7 +221,7 @@ static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint32 rid,
 
 	usr.acb_info = acb_info;
 
-	if (!tdb_store_user(tdb, rid, &usr))
+	if (!tdb_store_user(tdb, &usr))
 	{
 		tdb_writeunlock(tdb);
 		return False;
@@ -229,7 +231,7 @@ static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint32 rid,
 	return True;
 }
 
-static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb, uint32 rid,
+static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb, 
 				const uchar lm_pwd[16], const uchar nt_pwd[16])
 {
 	SAM_USER_INFO_21 usr;
@@ -240,7 +242,7 @@ static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb, uint32 rid,
 		return False;
 	}
 
-	if (!tdb_lookup_user(tdb, rid, &usr))
+	if (!tdb_lookup_user(tdb, &usr))
 	{
 		tdb_writeunlock(tdb);
 		return False;
@@ -249,7 +251,7 @@ static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb, uint32 rid,
 	memcpy(usr.lm_pwd, lm_pwd, sizeof(usr.lm_pwd));
 	memcpy(usr.nt_pwd, nt_pwd, sizeof(usr.nt_pwd));
 
-	if (!tdb_store_user(tdb, rid, &usr))
+	if (!tdb_store_user(tdb, &usr))
 	{
 		tdb_writeunlock(tdb);
 		return False;
@@ -259,7 +261,7 @@ static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb, uint32 rid,
 	return True;
 }
 
-static BOOL tdb_set_userinfo_23(TDB_CONTEXT *tdb, uint32 rid,
+static BOOL tdb_set_userinfo_23(TDB_CONTEXT *tdb, 
 				const SAM_USER_INFO_23 *usr23,
 				const uchar lm_pwd[16], const uchar nt_pwd[16])
 {
@@ -270,7 +272,7 @@ static BOOL tdb_set_userinfo_23(TDB_CONTEXT *tdb, uint32 rid,
 		return False;
 	}
 
-	if (!tdb_lookup_user(tdb, rid, &usr))
+	if (!tdb_lookup_user(tdb, &usr))
 	{
 		tdb_writeunlock(tdb);
 		return False;
@@ -311,7 +313,7 @@ static BOOL tdb_set_userinfo_23(TDB_CONTEXT *tdb, uint32 rid,
 		return False;
 	}
 
-	if (!tdb_store_user(tdb, rid, &usr))
+	if (!tdb_store_user(tdb, &usr))
 	{
 		tdb_writeunlock(tdb);
 		return False;
@@ -353,9 +355,10 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				uint32 *num_groups,
 				DOM_GID **gids)
 {
+#if 0
 	uint32 rid;
+#endif
 	TDB_CONTEXT *usr_tdb = NULL;
-	TDB_CONTEXT *usg_tdb = NULL;
 
 	(*gids) = NULL;
 	(*num_groups) = 0;
@@ -363,16 +366,17 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbrid(get_global_hnd_cache(), pol, &usr_tdb, 
-	                                       &usg_tdb, NULL, &rid))
+	if (!get_tdbsam(get_global_hnd_cache(), pol, &usr_tdb))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+#if 0
 	if (!tdb_lookup_user_grps(usg_tdb, rid, num_groups, gids))
 	{
 		return NT_STATUS_NO_SUCH_USER;
 	}
+#endif
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -383,8 +387,10 @@ uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,
 				const uint32 *ptr_sid, const DOM_SID2 *sid,
 				uint32 *num_aliases, uint32 **rid)
 {
+#if 0
 	TDB_CONTEXT *tdb = NULL;
 	DOM_SID dom_sid;
+#endif
 
 	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
 
@@ -396,14 +402,14 @@ uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+#if 0
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
+	if (!get_tdbsam(get_global_hnd_cache(), domain_pol,
 	                     NULL, NULL, &tdb, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-#if 0
 	if (!tdb_lookup_user_als(tdb, &sid->sid, num_aliases, rid))
 	{
 		return NT_STATUS_NO_SUCH_USER;
@@ -419,26 +425,16 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 					uint32 access_mask, uint32 user_rid, 
 					POLICY_HND *user_pol)
 {
-	TDB_CONTEXT *tdb_usr = NULL;
-	TDB_CONTEXT *tdb_usg = NULL;
-	TDB_CONTEXT *tdb_usa = NULL;
 	DOM_SID dom_sid;
-	SAM_USER_INFO_21 usr;
 
 	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
-					&tdb_usr, &tdb_usg, &tdb_usa, 
+					NULL, NULL, NULL,
 					NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!tdb_lookup_user(tdb_usr, user_rid, &usr))
-	{
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	return samr_open_by_tdbrid(domain_pol,
-	                           tdb_usr, tdb_usg, tdb_usa, 
+	return samr_open_user_tdb(domain_pol, &dom_sid, NULL,
 	                           user_pol, access_mask, user_rid);
 }
 
@@ -449,21 +445,19 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr)
 {
 	TDB_CONTEXT *tdb_usr = NULL;
-	uint32 rid = 0x0;
 	SAM_USER_INFO_21 usr;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbrid(get_global_hnd_cache(), pol, &tdb_usr, 
-	                                             NULL, NULL, &rid))
+	if (!get_tdbsam(get_global_hnd_cache(), pol, &tdb_usr))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	if (!tdb_lookup_user(tdb_usr, rid, &usr))
+	if (!tdb_lookup_user(tdb_usr, &usr))
 	{
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	DEBUG(5,("samr_reply_query_userinfo: rid:0x%x\n", rid));
+	DEBUG(5,("samr_reply_query_userinfo\n"));
 
 	return make_samr_userinfo_ctr_usr21(ctr, switch_value, &usr);
 }
@@ -471,7 +465,7 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 /*******************************************************************
  set_user_info_24
  ********************************************************************/
-static BOOL set_user_info_24(TDB_CONTEXT *usr_tdb, uint32 rid,
+static BOOL set_user_info_24(TDB_CONTEXT *usr_tdb, 
 				const SAM_USER_INFO_24 *id24)
 {
 	static uchar nt_hash[16];
@@ -489,22 +483,22 @@ static BOOL set_user_info_24(TDB_CONTEXT *usr_tdb, uint32 rid,
 
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
 
-	return tdb_set_userinfo_pwds(usr_tdb, rid, lm_hash, nt_hash);
+	return tdb_set_userinfo_pwds(usr_tdb, lm_hash, nt_hash);
 }
 
 /*******************************************************************
  set_user_info_12
  ********************************************************************/
-static BOOL set_user_info_12(TDB_CONTEXT *usr_tdb, uint32 rid,
+static BOOL set_user_info_12(TDB_CONTEXT *usr_tdb, 
 				const SAM_USER_INFO_12 *id12)
 {
-	return tdb_set_userinfo_pwds(usr_tdb, rid, id12->lm_pwd, id12->nt_pwd);
+	return tdb_set_userinfo_pwds(usr_tdb, id12->lm_pwd, id12->nt_pwd);
 }
 
 /*******************************************************************
  set_user_info_23
  ********************************************************************/
-static BOOL set_user_info_23(TDB_CONTEXT *usr_tdb, uint32 rid,
+static BOOL set_user_info_23(TDB_CONTEXT *usr_tdb, 
 				const SAM_USER_INFO_23 *id23)
 {
 	static uchar nt_hash[16];
@@ -528,7 +522,7 @@ static BOOL set_user_info_23(TDB_CONTEXT *usr_tdb, uint32 rid,
 
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
 
-	return tdb_set_userinfo_23(usr_tdb, rid, id23, lm_hash, nt_hash);
+	return tdb_set_userinfo_23(usr_tdb, id23, lm_hash, nt_hash);
 }
 
 /*******************************************************************
@@ -539,18 +533,14 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 {
 	TDB_CONTEXT *tdb_usr = NULL;
 	uchar user_sess_key[16];
-	uint32 rid = 0x0;
 
 	DEBUG(5,("samr_reply_set_userinfo: %d\n", __LINE__));
 
 	/* find the domain rid associated with the policy handle */
-	if (!get_tdbrid(get_global_hnd_cache(), pol, &tdb_usr, 
-	                                       NULL, NULL, &rid))
+	if (!get_tdbsam(get_global_hnd_cache(), pol, &tdb_usr))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
-
-	DEBUG(5,("samr_reply_set_userinfo: rid:0x%x\n", rid));
 
 	if (!pol_get_usr_sesskey(get_global_hnd_cache(), pol, user_sess_key))
 	{
@@ -569,7 +559,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		case 0x12:
 		{
 			SAM_USER_INFO_12 *id12 = ctr->info.id12;
-			if (!set_user_info_12(tdb_usr, rid, id12))
+			if (!set_user_info_12(tdb_usr, id12))
 			{
 				DEBUG(10,("_samr_set_userinfo 0x12 failed\n"));
 				return NT_STATUS_ACCESS_DENIED;
@@ -581,7 +571,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		{
 			SAM_USER_INFO_24 *id24 = ctr->info.id24;
 			SamOEMhash(id24->pass, user_sess_key, True);
-			if (!set_user_info_24(tdb_usr, rid, id24))
+			if (!set_user_info_24(tdb_usr, id24))
 			{
 				DEBUG(10,("_samr_set_userinfo 0x18 failed\n"));
 				return NT_STATUS_ACCESS_DENIED;
@@ -597,7 +587,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			              id23->pass, sizeof(id23->pass));
 			dbgflush();
 
-			if (!set_user_info_23(tdb_usr, rid, id23))
+			if (!set_user_info_23(tdb_usr, id23))
 			{
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -616,10 +606,10 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 /*******************************************************************
  set_user_info_10
  ********************************************************************/
-static BOOL set_user_info_10(TDB_CONTEXT *usr_tdb, uint32 rid,
+static BOOL set_user_info_10(TDB_CONTEXT *usr_tdb, 
 				const SAM_USER_INFO_10 *id16)
 {
-	return tdb_set_userinfo_10(usr_tdb, rid, id16->acb_info);
+	return tdb_set_userinfo_10(usr_tdb, id16->acb_info);
 }
 
 /*******************************************************************
@@ -629,16 +619,14 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr)
 {
 	TDB_CONTEXT *tdb_usr = NULL;
-	uint32 rid = 0x0;
 
 	/* find the domain sid associated with the policy handle */
-	if (!get_tdbrid(get_global_hnd_cache(), pol, &tdb_usr, 
-	                                       NULL, NULL, &rid))
+	if (!get_tdbsam(get_global_hnd_cache(), pol, &tdb_usr))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(5,("samr_reply_set_userinfo2: rid:0x%x\n", rid));
+	DEBUG(5,("samr_reply_set_userinfo2\n"));
 
 	if (ctr == NULL)
 	{
@@ -654,7 +642,7 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 		case 16:
 		{
 			SAM_USER_INFO_10 *id10 = ctr->info.id10;
-			if (!set_user_info_10(tdb_usr, rid, id10))
+			if (!set_user_info_10(tdb_usr, id10))
 			{
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -736,8 +724,6 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	DOM_SID sid;
 	DOM_SID grp_sid;
 	TDB_CONTEXT *tdb_usr = NULL;
-	TDB_CONTEXT *tdb_usg = NULL;
-	TDB_CONTEXT *tdb_usa = NULL;
 
 	SAM_USER_INFO_21 usr;
 	uint32 status1;
@@ -749,11 +735,13 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	struct passwd *pass = NULL;
 	uint32 group_rid;
 
+#if 0
 	uint32 num_gids = 0;
 	DOM_GID *gids = NULL;
 
 	uint32 num_alss = 0;
 	uint32 *als_rids = NULL;
+#endif
 
 	(*unknown_0) = 0x30;
 	(*user_rid) = 0x0;
@@ -766,7 +754,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
-					&tdb_usr, &tdb_usg, &tdb_usa,
+					NULL, NULL, NULL,
 					NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
@@ -797,9 +785,11 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	}
 
 	{
+#if 0
 		int i;
 		int n_groups = 0;
 		gid_t *groups = NULL;
+#endif
 		fstring user_name;
 		unistr2_to_ascii(user_name, uni_username, sizeof(user_name)-1);
 		pass = Get_Pwnam(user_name, False);
@@ -810,6 +800,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 			          user_name));
 			return NT_STATUS_ACCESS_DENIED;
 		}
+#if 0
 		get_unixgroups(user_name,pass->pw_uid,pass->pw_gid,
 				&n_groups,
 		       		&groups);
@@ -852,6 +843,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				}
 			}
 		}
+#endif
 	}
 
 	/* create a User SID for the unix user */
@@ -895,13 +887,18 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	create_user_info_21(&usr, uni_username, acb_info,
 	                    (*user_rid), group_rid);
 
-	if (!tdb_store_user(tdb_usr, usr.user_rid, &usr))
+	tdb_usr = open_usr_db(&dom_sid, (*user_rid), O_RDWR | O_CREAT);
+
+	if (tdb_usr == NULL)
 	{
-		/* account doesn't exist: say so */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-
+	if (!tdb_store_user(tdb_usr, &usr))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+#if 0
 	if (!tdb_store_user_grps(tdb_usg, usr.user_rid, num_gids, gids))
 	{
 		/* account doesn't exist: say so */
@@ -913,11 +910,11 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 		/* account doesn't exist: say so */
 		return NT_STATUS_ACCESS_DENIED;
 	}
+#endif
 
 	*unknown_0 = 0x000703ff;
 
-	return samr_open_by_tdbrid(domain_pol, tdb_usr, tdb_usg,
-	                           tdb_usa, 
+	return samr_open_user_tdb(domain_pol, &dom_sid, tdb_usr,
 	                           user_pol, access_mask, *user_rid);
 }
 

@@ -36,24 +36,22 @@ typedef struct sam_data21_info
 	uint32 start_idx;
 	uint32 current_idx;;
 
-} SAM_DATA_21;
+}
+SAM_DATA_21;
 
 /******************************************************************
 makes a SAMR_R_ENUM_USERS structure.
 ********************************************************************/
-static int tdb_user21_traverse(TDB_CONTEXT *tdb,
-				TDB_DATA kbuf,
-				TDB_DATA dbuf,
-				void *state)
+static int tdb_user21_traverse(TDB_CONTEXT * tdb,
+			       TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	prs_struct ps;
 	SAM_USER_INFO_21 *usr;
-	SAM_DATA_21 *data = (SAM_DATA_21*)state;
+	SAM_DATA_21 *data = (SAM_DATA_21 *) state;
 	uint32 num_sam_entries = data->num_sam_entries + 1;
 
-	DEBUG(5,("tdb_user21_traverse: idx: %d %d\n",
-					data->current_idx,
-					num_sam_entries));
+	DEBUG(5, ("tdb_user21_traverse: idx: %d %d\n",
+		  data->current_idx, num_sam_entries));
 
 	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
 	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
@@ -65,12 +63,13 @@ static int tdb_user21_traverse(TDB_CONTEXT *tdb,
 		return 0;
 	}
 
-	data->usr = (SAM_USER_INFO_21*)Realloc(data->usr,
-	                    num_sam_entries * sizeof(data->usr[0]));
+	data->usr = (SAM_USER_INFO_21 *) Realloc(data->usr,
+						 num_sam_entries *
+						 sizeof(data->usr[0]));
 
 	if (data->usr == NULL)
 	{
-		DEBUG(0,("NULL pointers in tdb_user21_traverse\n"));
+		DEBUG(0, ("NULL pointers in tdb_user21_traverse\n"));
 		return -1;
 	}
 
@@ -85,141 +84,35 @@ static int tdb_user21_traverse(TDB_CONTEXT *tdb,
 	return 0;
 }
 
-static uint32 open_dom_dbs(const DOM_SID *sid, int perms,
-			TDB_CONTEXT **usr_tdb,
-			TDB_CONTEXT **usg_tdb,
-			TDB_CONTEXT **usa_tdb,
-			TDB_CONTEXT **grp_tdb,
-			TDB_CONTEXT **als_tdb)
-{
-	fstring usr;
-	fstring usg;
-	fstring usa;
-	fstring grp;
-	fstring als;
-	fstring tmp;
-
-	sid_to_string(tmp, sid);
-
-	slprintf(usr, sizeof(usr)-1, "%s.usr.tdb", tmp);
-	slprintf(usg, sizeof(usg)-1, "%s.usg.tdb", tmp);
-	slprintf(usa, sizeof(usa)-1, "%s.usa.tdb", tmp);
-	slprintf(als, sizeof(als)-1, "%s.als.tdb", tmp);
-	slprintf(grp, sizeof(grp)-1, "%s.grp.tdb", tmp);
-
-	DEBUG(10,("opening domain %s with ", tmp));
-	DEBUGADD(10, ("rdonly: %s ", BOOLSTR(IS_BITS_SET_ALL(perms, O_RDONLY))));
-	DEBUGADD(10, ("wronly: %s", BOOLSTR(IS_BITS_SET_ALL(perms, O_WRONLY))));
-	DEBUGADD(10, ("rdwr: %s", BOOLSTR(IS_BITS_SET_ALL(perms, O_RDWR))));
-	DEBUGADD(10, ("\n"));
-
-	(*usr_tdb) = tdb_open(passdb_path(usr),0,0,perms, 0644);
-	(*usg_tdb) = tdb_open(passdb_path(usg),0,0,perms, 0644);
-	(*usa_tdb) = tdb_open(passdb_path(usa),0,0,perms, 0644);
-	(*grp_tdb) = tdb_open(passdb_path(grp),0,0,perms, 0644);
-	(*als_tdb) = tdb_open(passdb_path(als),0,0,perms, 0644);
-	if ((*usr_tdb) == NULL ||
-	    (*usg_tdb) == NULL || 
-	    (*usa_tdb) == NULL || 
-	    (*grp_tdb) == NULL || 
-	    (*als_tdb) == NULL)
-	{
-		tdb_close(*usr_tdb);
-		tdb_close(*usg_tdb);
-		tdb_close(*usa_tdb);
-		tdb_close(*grp_tdb);
-		tdb_close(*als_tdb);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	return NT_STATUS_NOPROBLEMO;
-}
-
 /*******************************************************************
  samr_reply_open_domain
  ********************************************************************/
 uint32 _samr_open_domain(const POLICY_HND *connect_pol,
-				uint32 ace_perms,
-				const DOM_SID *sid,
-				POLICY_HND *domain_pol)
+			 uint32 ace_perms,
+			 const DOM_SID * sid, POLICY_HND *domain_pol)
 {
-	TDB_CONTEXT *dom_tdb = NULL;
-	TDB_CONTEXT *usr_tdb = NULL;
-	TDB_CONTEXT *usg_tdb = NULL;
-	TDB_CONTEXT *usa_tdb = NULL;
-	TDB_CONTEXT *grp_tdb = NULL;
-	TDB_CONTEXT *als_tdb = NULL;
-
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsam(get_global_hnd_cache(), connect_pol, &dom_tdb))
+	if (!get_tdbsam(get_global_hnd_cache(), connect_pol, NULL))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd_link(get_global_hnd_cache(),
-		connect_pol, domain_pol, ace_perms))
+				  connect_pol, domain_pol, ace_perms))
 	{
 		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (ace_perms == SEC_RIGHTS_MAXIMUM_ALLOWED)
-	{
-		uint32 status;
-
-		DEBUG(10,("_samr_open_domain: max perms requested\n"));
-
-		status = open_dom_dbs(sid, O_RDWR,
-		                      &usr_tdb, &usg_tdb, &usa_tdb,
-		                      &grp_tdb, &als_tdb);
-		if (status != 0x0)
-		{
-			status = open_dom_dbs(sid, O_RDONLY,
-			              &usr_tdb, &usg_tdb, &usa_tdb,
-		                      &grp_tdb, &als_tdb);
-		}
-		if (status != 0x0)
-		{
-			return status;
-		}
-	}
-	else
-	{
-		int perms = 0;
-		BOOL perms_read;
-		BOOL perms_write;
-		uint32 status;
-
-		perms_write = IS_BITS_SET_SOME(ace_perms,
-		                SEC_RIGHTS_WRITE_OWNER|SEC_RIGHTS_WRITE_DAC);
-		perms_read = IS_BITS_SET_ALL(ace_perms, SEC_RIGHTS_READ);
-
-		if (perms_write              ) perms = O_WRONLY;
-		if (perms_read               ) perms = O_RDONLY;
-		if (perms_write && perms_read) perms = O_RDWR;
-
-		status = open_dom_dbs(sid, perms,
-		                      &usr_tdb, &usg_tdb, &usa_tdb,
-		                      &grp_tdb, &als_tdb);
-		if (status != 0x0)
-		{
-			return status;
-		}
 	}
 
 	/* associate the domain SID with the (unique) handle. */
 	if (!set_tdbdomsid(get_global_hnd_cache(), domain_pol,
-	                   usr_tdb, usg_tdb, usa_tdb, grp_tdb, als_tdb, sid))
+			   NULL, NULL, NULL, NULL, NULL, sid))
 	{
-		tdb_close(usr_tdb);
-		tdb_close(usg_tdb);
-		tdb_close(usa_tdb);
-		tdb_close(grp_tdb);
-		tdb_close(als_tdb);
 		close_policy_hnd(get_global_hnd_cache(), domain_pol);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	DEBUG(5,("_samr_open_domain: %d\n", __LINE__));
+	DEBUG(5, ("_samr_open_domain: %d\n", __LINE__));
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -232,26 +125,24 @@ typedef struct sam_data_info
 	uint32 start_idx;
 	uint32 current_idx;;
 
-} SAM_DATA;
+}
+SAM_DATA;
 
 /******************************************************************
 makes a SAMR_R_ENUM_USERS structure.
 ********************************************************************/
-static int tdb_user_traverse(TDB_CONTEXT *tdb,
-				TDB_DATA kbuf,
-				TDB_DATA dbuf,
-				void *state)
+static int tdb_user_traverse(TDB_CONTEXT * tdb,
+			     TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	prs_struct ps;
 	SAM_USER_INFO_21 usr;
-	SAM_DATA *data = (SAM_DATA*)state;
+	SAM_DATA *data = (SAM_DATA *) state;
 	uint32 num_sam_entries = data->num_sam_entries + 1;
 	SAM_ENTRY *sam;
 	UNISTR2 *str;
 
-	DEBUG(5,("tdb_user_traverse: idx: %d %d\n",
-					data->current_idx,
-					num_sam_entries));
+	DEBUG(5, ("tdb_user_traverse: idx: %d %d\n",
+		  data->current_idx, num_sam_entries));
 
 	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
 	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
@@ -263,14 +154,17 @@ static int tdb_user_traverse(TDB_CONTEXT *tdb,
 		return 0;
 	}
 
-	data->sam = (SAM_ENTRY*)Realloc(data->sam,
-	                    num_sam_entries * sizeof(data->sam[0]));
-	data->uni_name = (UNISTR2*)Realloc(data->uni_name,
-	                    num_sam_entries * sizeof(data->uni_name[0]));
+	data->sam = (SAM_ENTRY *) Realloc(data->sam,
+					  num_sam_entries *
+					  sizeof(data->sam[0]));
+	data->uni_name =
+		(UNISTR2 *) Realloc(data->uni_name,
+				    num_sam_entries *
+				    sizeof(data->uni_name[0]));
 
 	if (data->sam == NULL || data->uni_name == NULL)
 	{
-		DEBUG(0,("NULL pointers in tdb_user_traverse\n"));
+		DEBUG(0, ("NULL pointers in tdb_user_traverse\n"));
 		return -1;
 	}
 
@@ -297,28 +191,27 @@ static int tdb_user_traverse(TDB_CONTEXT *tdb,
 /*******************************************************************
  samr_reply_enum_dom_users
  ********************************************************************/
-uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
-				uint16 acb_mask, uint16 unk_1, uint32 size,
-				SAM_ENTRY **sam,
-				UNISTR2 **uni_acct_name,
-				uint32 *num_sam_users)
+uint32 _samr_enum_dom_users(const POLICY_HND *pol, uint32 * start_idx,
+			    uint16 acb_mask, uint16 unk_1, uint32 size,
+			    SAM_ENTRY ** sam,
+			    UNISTR2 ** uni_acct_name, uint32 * num_sam_users)
 {
 	TDB_CONTEXT *sam_tdb = NULL;
 	SAM_DATA state;
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), pol, &sam_tdb,
-					NULL, NULL, NULL, NULL, NULL))
+			   NULL, NULL, NULL, NULL, NULL))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(5,("samr_reply_enum_users:\n"));
+	DEBUG(5, ("samr_reply_enum_users:\n"));
 
 	ZERO_STRUCT(state);
 
 	state.start_idx = (*start_idx);
-	tdb_traverse(sam_tdb, tdb_user_traverse, (void*)&state);
+	tdb_traverse(sam_tdb, tdb_user_traverse, (void *)&state);
 
 	(*sam) = state.sam;
 	(*uni_acct_name) = state.uni_name;
@@ -331,12 +224,12 @@ uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx,
 /*******************************************************************
 makes a SAMR_R_ENUM_DOM_GROUPS structure.
 ********************************************************************/
-static void make_samr_dom_groups(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
-		uint32 num_sam_entries, DOMAIN_GRP *grps)
+static void make_samr_dom_groups(SAM_ENTRY ** sam, UNISTR2 ** uni_grp_name,
+				 uint32 num_sam_entries, DOMAIN_GRP * grps)
 {
 	uint32 i;
 
-	DEBUG(5,("make_samr_dom_groups\n"));
+	DEBUG(5, ("make_samr_dom_groups\n"));
 
 	(*sam) = NULL;
 	(*uni_grp_name) = NULL;
@@ -346,12 +239,16 @@ static void make_samr_dom_groups(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
 		return;
 	}
 
-	(*sam) = (SAM_ENTRY*)Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
-	(*uni_grp_name) = (UNISTR2*)Realloc(NULL, num_sam_entries * sizeof((*uni_grp_name)[0]));
+	(*sam) = (SAM_ENTRY *) Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
+
+	(*uni_grp_name) =
+		(UNISTR2 *) Realloc(NULL,
+				    num_sam_entries *
+				    sizeof((*uni_grp_name)[0]));
 
 	if ((*sam) == NULL || (*uni_grp_name) == NULL)
 	{
-		DEBUG(0,("NULL pointers in SAMR_R_ENUM_DOM_GROUPS\n"));
+		DEBUG(0, ("NULL pointers in SAMR_R_ENUM_DOM_GROUPS\n"));
 		return;
 	}
 
@@ -368,10 +265,10 @@ static void make_samr_dom_groups(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
  samr_reply_enum_dom_groups
  ********************************************************************/
 uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
-				uint32 *start_idx, uint32 size,
-				SAM_ENTRY **sam,
-				UNISTR2 **uni_acct_name,
-				uint32 *num_sam_groups)
+			     uint32 * start_idx, uint32 size,
+			     SAM_ENTRY ** sam,
+			     UNISTR2 ** uni_acct_name,
+			     uint32 * num_sam_groups)
 {
 	DOMAIN_GRP *grps = NULL;
 	int num_entries = 0;
@@ -388,7 +285,7 @@ uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
 
 	sid_to_string(sid_str, &sid);
 
-	DEBUG(5,("samr_reply_enum_dom_groups: sid %s\n", sid_str));
+	DEBUG(5, ("samr_reply_enum_dom_groups: sid %s\n", sid_str));
 
 	if (!sid_equal(&sid, &global_sam_sid))
 	{
@@ -418,12 +315,12 @@ uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
 /*******************************************************************
 makes a SAMR_R_ENUM_DOM_ALIASES structure.
 ********************************************************************/
-static void make_samr_dom_aliases(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
-		uint32 num_sam_entries, LOCAL_GRP *alss)
+static void make_samr_dom_aliases(SAM_ENTRY ** sam, UNISTR2 ** uni_grp_name,
+				  uint32 num_sam_entries, LOCAL_GRP * alss)
 {
 	uint32 i;
 
-	DEBUG(5,("make_samr_r_enum_dom_aliases\n"));
+	DEBUG(5, ("make_samr_r_enum_dom_aliases\n"));
 
 	(*sam) = NULL;
 	(*uni_grp_name) = NULL;
@@ -433,12 +330,16 @@ static void make_samr_dom_aliases(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
 		return;
 	}
 
-	(*sam) = (SAM_ENTRY*)Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
-	(*uni_grp_name) = (UNISTR2*)Realloc(NULL, num_sam_entries * sizeof((*uni_grp_name)[0]));
+	(*sam) = (SAM_ENTRY *) Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
+
+	(*uni_grp_name) =
+		(UNISTR2 *) Realloc(NULL,
+				    num_sam_entries *
+				    sizeof((*uni_grp_name)[0]));
 
 	if ((*sam) == NULL || (*uni_grp_name) == NULL)
 	{
-		DEBUG(0,("NULL pointers in SAMR_R_ENUM_DOM_ALIASES\n"));
+		DEBUG(0, ("NULL pointers in SAMR_R_ENUM_DOM_ALIASES\n"));
 		return;
 	}
 
@@ -446,7 +347,7 @@ static void make_samr_dom_aliases(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
 	{
 		int len = strlen(alss[i].name);
 
-		make_sam_entry(&((*sam)[i]), len, alss[i].rid); 
+		make_sam_entry(&((*sam)[i]), len, alss[i].rid);
 		make_unistr2(&((*uni_grp_name)[i]), alss[i].name, len);
 	}
 }
@@ -455,10 +356,10 @@ static void make_samr_dom_aliases(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
  samr_reply_enum_dom_aliases
  ********************************************************************/
 uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
-					uint32 *start_idx, uint32 size,
-					SAM_ENTRY **sam,
-					UNISTR2 **uni_acct_name,
-					uint32 *num_sam_aliases)
+			      uint32 * start_idx, uint32 size,
+			      SAM_ENTRY ** sam,
+			      UNISTR2 ** uni_acct_name,
+			      uint32 * num_sam_aliases)
 {
 	LOCAL_GRP *alss = NULL;
 	int num_entries = 0;
@@ -468,14 +369,14 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_tdbdomsid(get_global_hnd_cache(), pol,
-	                   NULL, NULL, NULL, NULL, &als_tdb, &sid))
+			   NULL, NULL, NULL, NULL, &als_tdb, &sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	sid_to_string(sid_str, &sid);
 
-	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
+	DEBUG(5, ("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
 	/* well-known aliases */
 	if (sid_equal(&sid, &global_sid_S_1_5_20))
@@ -508,7 +409,7 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
-		
+
 	(*start_idx) += num_entries;
 	(*num_sam_aliases) = num_entries;
 
@@ -522,13 +423,12 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 /*******************************************************************
  samr_reply_query_dispinfo
  ********************************************************************/
-uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
-					uint32 start_idx,
-					uint32 max_entries,
-					uint32 max_size,
-					uint32 *data_size,
-					uint32 *num_entries,
-					SAM_DISPINFO_CTR *ctr)
+uint32 _samr_query_dispinfo(const POLICY_HND *domain_pol, uint16 level,
+			    uint32 start_idx,
+			    uint32 max_entries,
+			    uint32 max_size,
+			    uint32 * data_size,
+			    uint32 * num_entries, SAM_DISPINFO_CTR * ctr)
 {
 	SAM_USER_INFO_21 *pass = NULL;
 	DOMAIN_GRP *grps = NULL;
@@ -541,12 +441,12 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol, &sam_tdb,
-					NULL, NULL, NULL, NULL, NULL))
+			   NULL, NULL, NULL, NULL, NULL))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
+	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
 
 	(*num_entries) = 0;
 	(*data_size) = 0;
@@ -554,7 +454,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 	/* find the policy handle.  open a policy on it. */
 	if (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1)
 	{
-		DEBUG(5,("samr_reply_query_dispinfo: invalid handle\n"));
+		DEBUG(5, ("samr_reply_query_dispinfo: invalid handle\n"));
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -574,8 +474,8 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 
 			state.start_idx = start_idx;
 			total_entries = tdb_traverse(sam_tdb,
-			                             tdb_user21_traverse,
-			                             (void*)&state);
+						     tdb_user21_traverse,
+						     (void *)&state);
 
 			pass = state.usr;
 			start_idx += state.num_sam_entries;
@@ -598,10 +498,13 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
-			if (start_idx < num_sam_entries) {
+			if (start_idx < num_sam_entries)
+			{
 				grps = sam_grps + start_idx;
 				num_sam_entries -= start_idx;
-			} else {
+			}
+			else
+			{
 				num_sam_entries = 0;
 			}
 			break;
@@ -670,7 +573,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 		}
 	}
 
-	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
+	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
 
 	safe_free(sam_grps);
 	safe_free(grps);
@@ -692,38 +595,23 @@ typedef struct tdb_name_info
 	uint32 num_names;
 	BOOL found_one;
 
-} TDB_NAME_INFO;
+}
+TDB_NAME_INFO;
 
 /******************************************************************
 tdb_userlookup_names
 ********************************************************************/
-static int tdb_userlookup_names(TDB_CONTEXT *tdb,
-				TDB_DATA kbuf,
-				TDB_DATA dbuf,
-				void *state)
+static int tdb_userlookup_names(TDB_CONTEXT * tdb, void *state)
 {
-	prs_struct ps;
 	SAM_USER_INFO_21 usr;
-	TDB_NAME_INFO *data = (TDB_NAME_INFO*)state;
-	uint32 rid;
+	TDB_NAME_INFO *data = (TDB_NAME_INFO *) state;
 	int i;
 
-	DEBUG(5,("tdb_userlookup_names\n"));
+	DEBUG(5, ("tdb_userlookup_names\n"));
 
-	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
-	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
-
-	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
-	if (!sam_io_user_info21("usr", &usr, &ps, 0))
+	if (!tdb_lookup_user(tdb, &usr))
 	{
-		DEBUG(5,("tdb_userlookup_names: user convert failed\n"));
-		return 0;
-	}
-	prs_create(&ps, kbuf.dptr, kbuf.dsize, 4, True);
-	if (!_prs_uint32("rid", &ps, 0, &rid))
-	{
-		DEBUG(5,("tdb_userlookup_names: rid convert failed\n"));
-		return 0;
+		return -1;
 	}
 
 	for (i = 0; i < data->num_names; i++)
@@ -731,10 +619,10 @@ static int tdb_userlookup_names(TDB_CONTEXT *tdb,
 		const UNISTR2 *str = &data->uni_name[i];
 		if (unistr2equal(str, &usr.uni_user_name))
 		{
-			DEBUG(10,("found user rid[i]: %d\n", i));
+			DEBUG(10, ("found user rid[i]: %d\n", i));
 
 			data->types[i] = SID_NAME_USER;
-			data->rids[i] = rid;
+			data->rids[i] = usr.user_rid;
 			data->found_one = True;
 
 			return 0;
@@ -744,29 +632,68 @@ static int tdb_userlookup_names(TDB_CONTEXT *tdb,
 	return 0;
 }
 
+BOOL dom_user_traverse(const DOM_SID * dom_sid,
+		       int (*fn) (TDB_CONTEXT *, void *), void *state)
+{
+	DIR *dirp;
+	char *dpname;
+	pstring tmp;
+	pstring dirname;
+
+	sid_to_string(tmp, dom_sid);
+	slprintf(dirname, sizeof(dirname) - 1, "%s/usr", tmp);
+
+	dirp = opendir(passdb_path(dirname));
+
+	if (dirp == NULL)
+	{
+		DEBUG(2, ("Error opening directory [%s]\n", dirname));
+		return False;
+	}
+
+	while ((dpname = readdirname(dirp)) != NULL)
+	{
+		TDB_CONTEXT *usr_tdb;
+		uint32 rid = strtoul(dpname, (char **)NULL, 16);
+
+		DEBUG(10,("dom_user_traverse: %s\n", dpname));
+
+		if (rid == 0)
+		{
+			continue;
+		}
+		usr_tdb = open_usr_db(dom_sid, rid, O_RDONLY);
+		if (usr_tdb != NULL && fn(usr_tdb, state) != 0)
+		{
+			tdb_close(usr_tdb);
+			break;
+		}
+		tdb_close(usr_tdb);
+	}
+	closedir(dirp);
+
+	return True;
+}
+
 /*******************************************************************
  samr_reply_lookup_names
  ********************************************************************/
 uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
-				
-			uint32 num_names,
-			uint32 flags,
-			uint32 ptr,
-			const UNISTR2 *uni_name,
-
-			uint32 *num_rids,
-			uint32 rid[MAX_SAM_ENTRIES],
-			uint32 *num_types,
-			uint32 type[MAX_SAM_ENTRIES])
+			  uint32 num_names,
+			  uint32 flags,
+			  uint32 ptr,
+			  const UNISTR2 * uni_name,
+			  uint32 * num_rids,
+			  uint32 rid[MAX_SAM_ENTRIES],
+			  uint32 * num_types, uint32 type[MAX_SAM_ENTRIES])
 {
-	TDB_CONTEXT *usr_tdb = NULL;
 	DOM_SID dom_sid;
 	TDB_NAME_INFO state;
 
-	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
+	DEBUG(5, ("samr_lookup_names: %d\n", __LINE__));
 
 	if (!get_tdbdomsid(get_global_hnd_cache(), dom_pol,
-	                   &usr_tdb, NULL, NULL, NULL, NULL, &dom_sid))
+			   NULL, NULL, NULL, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -785,14 +712,17 @@ uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
 	state.uni_name = uni_name;
 
 	if (state.rids == NULL ||
-	    state.types == NULL ||
-	    state.uni_name == NULL)
+	    state.types == NULL || state.uni_name == NULL)
 	{
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* lookups */
-	tdb_traverse(usr_tdb, tdb_userlookup_names, (void*)&state);
+	if (!dom_user_traverse
+	    (&dom_sid, tdb_userlookup_names, (void *)&state))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if (!state.found_one)
 	{
@@ -801,7 +731,6 @@ uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
 
 	(*num_types) = num_names;
 	(*num_rids) = num_names;
-
 	return NT_STATUS_NOPROBLEMO;
 }
 
@@ -813,38 +742,31 @@ typedef struct tdb_rid_info
 	UNISTR2 *uni_name;
 	uint32 num_rids;
 	BOOL found_one;
-
 } TDB_RID_INFO;
-
 /******************************************************************
 tdb_userlookup_rids
 ********************************************************************/
-static int tdb_userlookup_rids(TDB_CONTEXT *tdb,
-				TDB_DATA kbuf,
-				TDB_DATA dbuf,
-				void *state)
+static int tdb_userlookup_rids(TDB_CONTEXT * tdb,
+			       TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	prs_struct ps;
 	SAM_USER_INFO_21 usr;
-	TDB_RID_INFO *data = (TDB_RID_INFO*)state;
+	TDB_RID_INFO *data = (TDB_RID_INFO *) state;
 	uint32 rid;
 	int i;
-
-	DEBUG(5,("tdb_userlookup_rids\n"));
-
+	DEBUG(5, ("tdb_userlookup_rids\n"));
 	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
 	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
-
 	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
 	if (!sam_io_user_info21("usr", &usr, &ps, 0))
 	{
-		DEBUG(5,("tdb_userlookup_rids: user convert failed\n"));
+		DEBUG(5, ("tdb_userlookup_rids: user convert failed\n"));
 		return 0;
 	}
 	prs_create(&ps, kbuf.dptr, kbuf.dsize, 4, True);
 	if (!_prs_uint32("rid", &ps, 0, &rid))
 	{
-		DEBUG(5,("tdb_userlookup_rids: rid convert failed\n"));
+		DEBUG(5, ("tdb_userlookup_rids: rid convert failed\n"));
 		return 0;
 	}
 
@@ -853,40 +775,35 @@ static int tdb_userlookup_rids(TDB_CONTEXT *tdb,
 		if (rid == data->rids[i])
 		{
 			UNISTR2 *str = &data->uni_name[i];
-			UNIHDR  *hdr = &data->hdr_name[i];
-
-			DEBUG(10,("found user rid[i]: %d\n", i));
-
+			UNIHDR *hdr = &data->hdr_name[i];
+			DEBUG(10, ("found user rid[i]: %d\n", i));
 			data->types[i] = SID_NAME_USER;
 			copy_unistr2(str, &usr.uni_user_name);
 			make_uni_hdr(hdr, str->uni_str_len);
-
 			data->found_one = True;
-
 			return 0;
 		}
 	}
 
 	return 0;
 }
+
 /*******************************************************************
  samr_reply_lookup_rids
  ********************************************************************/
 uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
-				uint32 num_rids, uint32 flags,
-				const uint32 *rids,
-				uint32 *num_names,
-				UNIHDR **hdr_name, UNISTR2** uni_name,
-				uint32 **types)
+			 uint32 num_rids, uint32 flags,
+			 const uint32 * rids,
+			 uint32 * num_names,
+			 UNIHDR ** hdr_name, UNISTR2 ** uni_name,
+			 uint32 ** types)
 {
 	TDB_CONTEXT *usr_tdb = NULL;
 	DOM_SID dom_sid;
 	TDB_RID_INFO state;
-
-	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
-
+	DEBUG(5, ("samr_lookup_rids: %d\n", __LINE__));
 	if (!get_tdbdomsid(get_global_hnd_cache(), dom_pol,
-	                   &usr_tdb, NULL, NULL, NULL, NULL, &dom_sid))
+			   &usr_tdb, NULL, NULL, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -897,29 +814,26 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 	state.num_rids = num_rids;
 	state.rids = rids;
 	state.types = malloc(num_rids * sizeof(*state.types));
-	state.hdr_name = (UNIHDR*)malloc(num_rids * sizeof(*state.hdr_name));
-	state.uni_name = (UNISTR2*)malloc(num_rids * sizeof(*state.uni_name));
-
-	if (state.types == NULL ||
-	    state.hdr_name == NULL ||
-	    state.uni_name == NULL)
+	state.hdr_name =
+		(UNIHDR *) malloc(num_rids * sizeof(*state.hdr_name));
+	state.uni_name =
+		(UNISTR2 *) malloc(num_rids * sizeof(*state.uni_name));
+	if (state.types == NULL || state.hdr_name == NULL
+	    || state.uni_name == NULL)
 	{
 		safe_free(state.types);
 		safe_free(state.hdr_name);
 		safe_free(state.uni_name);
-
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* lookups */
-	tdb_traverse(usr_tdb, tdb_userlookup_rids, (void*)&state);
-
+	tdb_traverse(usr_tdb, tdb_userlookup_rids, (void *)&state);
 	if (!state.found_one)
 	{
 		safe_free(state.types);
 		safe_free(state.hdr_name);
 		safe_free(state.uni_name);
-
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -927,7 +841,6 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 	(*types) = state.types;
 	(*hdr_name) = state.hdr_name;
 	(*uni_name) = state.uni_name;
-
 	return NT_STATUS_NOPROBLEMO;
 }
 
@@ -935,13 +848,12 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
  _samr_query_dom_info
  ********************************************************************/
 uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
-				uint16 switch_value,
-				SAM_UNK_CTR *ctr)
+			    uint16 switch_value, SAM_UNK_CTR * ctr)
 {
 	/* find the policy handle.  open a policy on it. */
 	if (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1)
 	{
-		DEBUG(5,("samr_reply_query_dom_info: invalid handle\n"));
+		DEBUG(5, ("samr_reply_query_dom_info: invalid handle\n"));
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -966,7 +878,8 @@ uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 		{
 			extern fstring global_sam_name;
 			extern pstring global_myname;
-			make_unk_info2(&(ctr->info.inf2), global_sam_name, global_myname);
+			make_unk_info2(&(ctr->info.inf2), global_sam_name,
+				       global_myname);
 			break;
 		}
 		case 0x01:
@@ -987,8 +900,8 @@ uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 /*******************************************************************
  samr_reply_unknown_2d
  ********************************************************************/
-uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid)
+uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID * sid)
 {
-	DEBUG(0,("_samr_unknown_2d: not implemented, returning OK\n"));
+	DEBUG(0, ("_samr_unknown_2d: not implemented, returning OK\n"));
 	return NT_STATUS_NOPROBLEMO;
 }

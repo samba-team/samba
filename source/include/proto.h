@@ -4054,12 +4054,12 @@ BOOL set_tdbsid(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb, const DOM_SID *sid);
 BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 				TDB_CONTEXT **tdb, DOM_SID *sid);
-uint32 samr_open_by_tdbrid( const POLICY_HND *parent_pol,
+TDB_CONTEXT *open_usr_db(const DOM_SID *sid, uint32 rid, int perms);
+uint32 samr_open_user_tdb( const POLICY_HND *parent_pol,
+				const DOM_SID *sid,
 				TDB_CONTEXT *usr_tdb,
-				TDB_CONTEXT *grp_tdb,
-				TDB_CONTEXT *als_tdb,
 				POLICY_HND *pol,
-				uint32 access_mask, uint32 rid);
+				uint32 ace_perms, uint32 rid);
 
 /*The following definitions come from  samrd/srv_samr_tdb_init.c  */
 
@@ -4097,6 +4097,7 @@ uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 
 /*The following definitions come from  samrd/srv_samr_usr_tdb.c  */
 
+BOOL tdb_lookup_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr);
 uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 				uint32 *unknown_0,
 				uint32 *unknown_1);

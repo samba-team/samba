@@ -509,6 +509,7 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	return NT_STATUS_ACCESS_DENIED;
 #if 0
 	if (!tdb_store_group_mem(tdb_usg, (*group_rid), 0, NULL, 0, NULL))
 	{
@@ -516,9 +517,9 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-#endif
 	return samr_open_by_tdbrid(domain_pol, NULL, tdb_grp, NULL,
 	                           group_pol, access_mask, *group_rid);
+#endif
 }
 
 /*******************************************************************
@@ -544,9 +545,12 @@ uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
+	return NT_STATUS_NO_SUCH_GROUP;
+#if 0
 	return samr_open_by_tdbrid(domain_pol,
 	                           NULL, tdb_grp, NULL, 
 	                           group_pol, access_mask, group_rid);
+#endif
 }
 
 

@@ -390,26 +390,69 @@ BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 	return False;
 }
 
+TDB_CONTEXT *open_usr_db(const DOM_SID *sid, uint32 rid, int perms)
+{
+	pstring tmp;
+	pstring usr;
+
+	sid_to_string(tmp, sid);
+	slprintf(usr, sizeof(usr)-1, "%s/usr/%x", tmp, rid);
+
+	return tdb_open(passdb_path(usr),0,0,perms, 0644);
+}
+
 /*******************************************************************
  opens a samr entiry by rid, returns a policy handle.
  ********************************************************************/
-uint32 samr_open_by_tdbrid( const POLICY_HND *parent_pol,
+uint32 samr_open_user_tdb( const POLICY_HND *parent_pol,
+				const DOM_SID *sid,
 				TDB_CONTEXT *usr_tdb,
-				TDB_CONTEXT *grp_tdb,
-				TDB_CONTEXT *als_tdb,
 				POLICY_HND *pol,
-				uint32 access_mask, uint32 rid)
+				uint32 ace_perms, uint32 rid)
 {
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd_link(get_global_hnd_cache(),
-		parent_pol, pol, access_mask))
+		parent_pol, pol, ace_perms))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* associate a RID with the (unique) handle. */
-	if (!set_tdbrid(get_global_hnd_cache(), pol,
-	                usr_tdb, grp_tdb, als_tdb, rid))
+	if (usr_tdb == NULL && ace_perms == SEC_RIGHTS_MAXIMUM_ALLOWED)
+	{
+		DEBUG(10,("samr_open_user_tdb: max perms requested\n"));
+
+		usr_tdb = open_usr_db(sid, rid, O_RDWR);
+		if (usr_tdb == NULL)
+		{
+			usr_tdb = open_usr_db(sid, rid, O_RDONLY);
+		}
+	}
+
+	if (usr_tdb == NULL)
+	{
+		int perms = 0;
+		BOOL perms_read;
+		BOOL perms_write;
+
+		perms_write = IS_BITS_SET_SOME(ace_perms,
+		                SEC_RIGHTS_WRITE_OWNER|SEC_RIGHTS_WRITE_DAC);
+		perms_read = IS_BITS_SET_ALL(ace_perms, SEC_RIGHTS_READ);
+
+		if (perms_write              ) perms = O_WRONLY;
+		if (perms_read               ) perms = O_RDONLY;
+		if (perms_write && perms_read) perms = O_RDWR;
+
+		usr_tdb = open_usr_db(sid, rid, O_RDWR);
+	}
+
+	if (usr_tdb == NULL)
+	{
+		close_policy_hnd(get_global_hnd_cache(), pol);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* associate a SID with the (unique) handle. */
+	if (!set_tdbsam(get_global_hnd_cache(), pol, usr_tdb))
 	{
 		/* close the policy in case we can't associate a group SID */
 		close_policy_hnd(get_global_hnd_cache(), pol);
