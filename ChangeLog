@@ -1,3 +1,11 @@
+Wed Mar 12 17:41:14 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kdc/kdc.c: Rewritten AS, and somewhat more working TGS support.
+
+	* lib/asn1/gen.c: Generate free functions.
+
+	* Some specific free functions.
+
 Wed Mar 12 12:30:13 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5_mk_req_ext.c: new file
