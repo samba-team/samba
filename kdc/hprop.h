@@ -59,7 +59,7 @@ int mit_prop_dump(void*, const char*);
 struct v4_principal {
     char name[64];
     char instance[64];
-    des_cblock key;
+    DES_cblock key;
     int kvno;
     int mkvno;
     time_t exp_date;
