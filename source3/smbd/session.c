@@ -163,16 +163,54 @@ void session_yield(user_struct *vuser)
 	tdb_delete(tdb, key);
 }
 
-BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *), void *state)
+static BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *), void *state)
 {
-  if (!tdb) {
-    DEBUG(3, ("No tdb opened\n"));
-    return False;
-  }
+	if (!tdb) {
+		DEBUG(3, ("No tdb opened\n"));
+		return False;
+	}
 
-  tdb_traverse(tdb, fn, state);
-  return True;
+	tdb_traverse(tdb, fn, state);
+	return True;
 }
 
+struct session_list {
+	int count;
+	struct sessionid *sessions;
+};
 
+static int gather_sessioninfo(TDB_CONTEXT *stdb, TDB_DATA kbuf, TDB_DATA dbuf,
+			      void *state)
+{
+	struct session_list *sesslist = (struct session_list *) state;
+	const struct sessionid *current = (const struct sessionid *) dbuf.dptr;
 
+	sesslist->count += 1;
+	sesslist->sessions = REALLOC(sesslist->sessions, sesslist->count * 
+				      sizeof(struct sessionid));
+
+	memcpy(&sesslist->sessions[sesslist->count - 1], current, 
+	       sizeof(struct sessionid));
+	DEBUG(7,("gather_sessioninfo session from %s@%s\n", 
+		 current->username, current->remote_machine));
+	return 0;
+}
+
+int list_sessions(struct sessionid **session_list)
+{
+	struct session_list sesslist;
+
+	sesslist.count = 0;
+	sesslist.sessions = NULL;
+	
+	if (!session_traverse(gather_sessioninfo, (void *) &sesslist)) {
+		DEBUG(3, ("Session traverse failed\n"));
+		SAFE_FREE(sesslist.sessions);
+		*session_list = NULL;
+		return 0;
+	}
+
+	*session_list = sesslist.sessions;
+	return sesslist.count;
+}
+		

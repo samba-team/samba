@@ -3436,38 +3436,6 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   return(True);
 }
 
-struct session_info {
-  char machine[31];
-  char username[24];
-  char clitype[24];
-  int opens;
-  int time;
-};
-
-struct sessions_info {
-  int count;
-  struct session_info *session_list;
-};
-
-static int gather_sessioninfo(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
-{
-  struct sessions_info *sinfo = state;
-  struct session_info *curinfo = NULL;
-  const struct sessionid *sessid = (const struct sessionid *) dbuf.dptr;
-
-  sinfo->count += 1;
-  sinfo->session_list = REALLOC(sinfo->session_list, sinfo->count * sizeof(struct session_info));
-
-  curinfo = &(sinfo->session_list[sinfo->count - 1]);
-
-  safe_strcpy(curinfo->machine, sessid->remote_machine, 
-	      sizeof(curinfo->machine));
-  safe_strcpy(curinfo->username, uidtoname(sessid->uid), 
-	  sizeof(curinfo->username));
-  DEBUG(7,("gather_sessioninfo session from %s@%s\n", 
-	   curinfo->username, curinfo->machine));
-  return 0;
-}
 
 /****************************************************************************
  List open sessions
@@ -3483,8 +3451,8 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
   char *p = skip_string(str2,1);
   int uLevel;
   struct pack_desc desc;
-  struct sessions_info sinfo;
-  int i;
+  struct sessionid *session_list;
+  int i, num_sessions;
 
   memset((char *)&desc,'\0',sizeof(desc));
 
@@ -3498,26 +3466,20 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
   if (strcmp(str1,RAP_NetSessionEnum_REQ) != 0) return False;
   if (uLevel != 2 || strcmp(str2,RAP_SESSION_INFO_L2) != 0) return False;
 
-  sinfo.count = 0;
-  sinfo.session_list = NULL;
-
-  if (!session_traverse(gather_sessioninfo, &sinfo)) {
-    DEBUG(4,("RNetSessionEnum session_traverse failed\n"));
-    return False;
-  }
+  num_sessions = list_sessions(&session_list);
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   memset((char *)&desc,'\0',sizeof(desc));
   desc.base = *rdata;
   desc.buflen = mdrcnt;
   desc.format = str2;
-  if (!init_package(&desc,sinfo.count,0)) {
+  if (!init_package(&desc,num_sessions,0)) {
     return False;
   }
 
-  for(i=0; i<sinfo.count; i++) {
-    PACKS(&desc, "z", sinfo.session_list[i].machine);
-    PACKS(&desc, "z", sinfo.session_list[i].username);
+  for(i=0; i<num_sessions; i++) {
+    PACKS(&desc, "z", session_list[i].remote_machine);
+    PACKS(&desc, "z", session_list[i].username);
     PACKI(&desc, "W", 1); /* num conns */
     PACKI(&desc, "W", 0); /* num opens */
     PACKI(&desc, "W", 1); /* num users */
@@ -3533,7 +3495,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
   *rparam = REALLOC(*rparam,*rparam_len);
   SSVALS(*rparam,0,desc.errcode);
   SSVAL(*rparam,2,0); /* converter */
-  SSVAL(*rparam,4,sinfo.count); /* count */
+  SSVAL(*rparam,4,num_sessions); /* count */
 
   DEBUG(4,("RNetSessionEnum: errorcode %d\n",desc.errcode));
   return True;
