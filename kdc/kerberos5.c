@@ -825,6 +825,7 @@ static krb5_error_code
 tgs_make_reply(KDC_REQ_BODY *b, 
 	       EncTicketPart *tgt, 
 	       EncTicketPart *adtkt, 
+	       AuthorizationData *auth_data,
 	       hdb_entry *server, 
 	       hdb_entry *client, 
 	       krb5_principal client_principal, 
@@ -938,6 +939,7 @@ tgs_make_reply(KDC_REQ_BODY *b,
     et.flags.hw_authent = tgt->flags.hw_authent;
 	    
     /* XXX Check enc-authorization-data */
+    et.authorization_data = auth_data;
 
     krb5_generate_random_keyblock(context, sess_ktype, &et.key);
     et.crealm = tgt->crealm;
@@ -1057,7 +1059,7 @@ find_rpath(Realm r)
 
 static krb5_error_code
 tgs_rep2(KDC_REQ_BODY *b,
-	 PA_DATA *pa_data,
+	 PA_DATA *tgs_req,
 	 krb5_data *reply,
 	 const char *from)
 {
@@ -1075,9 +1077,10 @@ tgs_rep2(KDC_REQ_BODY *b,
     krb5_enctype cetype;
     krb5_principal cp = NULL;
     krb5_principal sp = NULL;
+    AuthorizationData *auth_data = NULL;
 
     memset(&ap_req, 0, sizeof(ap_req));
-    ret = krb5_decode_ap_req(context, &pa_data->padata_value, &ap_req);
+    ret = krb5_decode_ap_req(context, &tgs_req->padata_value, &ap_req);
     if(ret){
 	kdc_log(0, "Failed to decode AP-REQ: %s", 
 		krb5_get_err_text(context, ret));
@@ -1085,6 +1088,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     }
     
     if(!is_krbtgt(&ap_req.ticket.sname)){
+	/* XXX check for ticket.sname == req.sname */
 	kdc_log(0, "PA-DATA is not a ticket-granting ticket");
 	ret = KRB5KDC_ERR_POLICY; /* ? */
 	goto out2;
@@ -1097,6 +1101,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     krbtgt = db_fetch(princ);
 
     if(krbtgt == NULL) {
+	/* XXX find intermediate realm */
 	char *p;
 	krb5_unparse_name(context, princ, &p);
 	kdc_log(0, "Ticket-granting ticket not found in database: %s", p);
@@ -1144,6 +1149,51 @@ tgs_rep2(KDC_REQ_BODY *b,
     tgt = &ticket->ticket;
 
     ret = tgs_check_authenticator(ac, b, &tgt->key);
+
+    if (b->enc_authorization_data) {
+	krb5_keyblock *subkey;
+	krb5_data ad;
+	ret = krb5_auth_con_getremotesubkey(context,
+					    ac,
+					    &subkey);
+	if(ret){
+	    kdc_log(0, "Failed to get remote subkey: %s", 
+		    krb5_get_err_text(context, ret));
+	    goto out2;
+	}
+	if(subkey == NULL){
+	    ret = krb5_auth_con_getkey(context, ac, &subkey);
+	    if(ret) {
+		kdc_log(0, "Failed to get session key: %s", 
+			krb5_get_err_text(context, ret));
+		goto out2;
+	    }
+	}
+	if(subkey == NULL){
+	    kdc_log(0, "Failed to get key for enc-authorization-data");
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
+	    goto out2;
+	}
+	ret = krb5_decrypt_EncryptedData (context,
+					  b->enc_authorization_data,
+					  subkey,
+					  &ad);
+	if(ret){
+	    kdc_log(0, "Failed to decrypt enc-authorization-data");
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
+	    goto out2;
+	}
+	krb5_free_keyblock(context, subkey);
+	ALLOC(auth_data);
+	ret = decode_AuthorizationData(ad.data, ad.length, auth_data, NULL);
+	if(ret){
+	    free(auth_data);
+	    auth_data = NULL;
+	    kdc_log(0, "Failed to decode authorization data");
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
+	    goto out2;
+	}
+    }
 
     krb5_auth_con_free(context, ac);
 
@@ -1259,9 +1309,16 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    goto out;
 	}
 	
-	ret = tgs_make_reply(b, tgt, 
+	ret = tgs_make_reply(b, 
+			     tgt, 
 			     b->kdc_options.enc_tkt_in_skey ? &adtkt : NULL, 
-			     server, client, cp, krbtgt, cetype, reply);
+			     auth_data,
+			     server, 
+			     client, 
+			     cp, 
+			     krbtgt, 
+			     cetype, 
+			     reply);
 	
     out:
 	free(spn);
@@ -1294,6 +1351,10 @@ out2:
 	free(ticket);
     }
     free_AP_REQ(&ap_req);
+    if(auth_data){
+	free_AuthorizationData(auth_data);
+	free(auth_data);
+    }
 
     if(krbtgt){
 	hdb_free_entry(context, krbtgt);
@@ -1310,7 +1371,7 @@ tgs_rep(KDC_REQ *req,
 {
     krb5_error_code ret;
     int i;
-    PA_DATA *pa_data = NULL;
+    PA_DATA *tgs_req = NULL;
 
     if(req->padata == NULL){
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED; /* XXX ??? */
@@ -1318,18 +1379,15 @@ tgs_rep(KDC_REQ *req,
 	goto out;
     }
     
-    for(i = 0; i < req->padata->len; i++)
-	if(req->padata->val[i].padata_type == pa_tgs_req){
-	    pa_data = &req->padata->val[i];
-	    break;
-	}
-    if(pa_data == NULL){
+    tgs_req = find_padata(req, &i, pa_tgs_req);
+
+    if(tgs_req == NULL){
 	ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
 	
 	kdc_log(0, "TGS-REQ from %s without PA-TGS-REQ", from);
 	goto out;
     }
-    ret = tgs_rep2(&req->req_body, pa_data, data, from);
+    ret = tgs_rep2(&req->req_body, tgs_req, data, from);
 out:
     if(ret && data->data == NULL){
 	krb5_mk_error(context,
