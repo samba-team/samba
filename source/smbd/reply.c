@@ -3005,6 +3005,10 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 	
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 
+	if( strchr_m(directory, ':')) {
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
 	if (ms_has_wild(directory)) {
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
