@@ -383,14 +383,14 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 /****************************************************************************
 do a spnego/kerberos encrypted session setup
 ****************************************************************************/
-static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principle, char *workgroup)
+static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principal, char *workgroup)
 {
 	DATA_BLOB blob2, negTokenTarg;
 
 	d_printf("Doing kerberos session setup\n");
 
 	/* generate the encapsulated kerberos5 ticket */
-	negTokenTarg = spnego_gen_negTokenTarg(cli, principle);
+	negTokenTarg = spnego_gen_negTokenTarg(cli, principal);
 
 	if (!negTokenTarg.data) return False;
 
@@ -505,7 +505,7 @@ do a spnego encrypted session setup
 static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user, 
 				     char *pass, char *workgroup)
 {
-	char *principle;
+	char *principal;
 	char *OIDs[ASN1_MAX_OIDS];
 	uint8 guid[16];
 	int i;
@@ -525,7 +525,7 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 
 	/* the server sent us the first part of the SPNEGO exchange in the negprot 
 	   reply */
-	if (!spnego_parse_negTokenInit(cli->secblob, guid, OIDs, &principle)) {
+	if (!spnego_parse_negTokenInit(cli->secblob, guid, OIDs, &principal)) {
 		return False;
 	}
 
@@ -538,17 +538,17 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 		}
 		free(OIDs[i]);
 	}
-	DEBUG(3,("got principle=%s\n", principle));
+	DEBUG(3,("got principal=%s\n", principal));
 
 	fstrcpy(cli->user_name, user);
 
 #if HAVE_KRB5
 	if (got_kerberos_mechanism && cli->use_kerberos) {
-		return cli_session_setup_kerberos(cli, principle, workgroup);
+		return cli_session_setup_kerberos(cli, principal, workgroup);
 	}
 #endif
 
-	free(principle);
+	free(principal);
 
 ntlmssp:
 

@@ -23,11 +23,11 @@
 
 /*
   generate a negTokenInit packet given a GUID, a list of supported
-  OIDs (the mechanisms) and a principle name string 
+  OIDs (the mechanisms) and a principal name string 
 */
 DATA_BLOB spnego_gen_negTokenInit(uint8 guid[16], 
 				  const char *OIDs[], 
-				  const char *principle)
+				  const char *principal)
 {
 	int i;
 	ASN1_DATA data;
@@ -52,7 +52,7 @@ DATA_BLOB spnego_gen_negTokenInit(uint8 guid[16],
 	asn1_push_tag(&data, ASN1_CONTEXT(3));
 	asn1_push_tag(&data, ASN1_SEQUENCE(0));
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_write_GeneralString(&data,principle);
+	asn1_write_GeneralString(&data,principal);
 	asn1_pop_tag(&data);
 	asn1_pop_tag(&data);
 	asn1_pop_tag(&data);
@@ -76,12 +76,12 @@ DATA_BLOB spnego_gen_negTokenInit(uint8 guid[16],
 
 /*
   parse a negTokenInit packet giving a GUID, a list of supported
-  OIDs (the mechanisms) and a principle name string 
+  OIDs (the mechanisms) and a principal name string 
 */
 BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
 			       uint8 guid[16], 
 			       char *OIDs[ASN1_MAX_OIDS], 
-			       char **principle)
+			       char **principal)
 {
 	int i;
 	BOOL ret;
@@ -109,7 +109,7 @@ BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
 	asn1_start_tag(&data, ASN1_CONTEXT(3));
 	asn1_start_tag(&data, ASN1_SEQUENCE(0));
 	asn1_start_tag(&data, ASN1_CONTEXT(0));
-	asn1_read_GeneralString(&data,principle);
+	asn1_read_GeneralString(&data,principal);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
@@ -269,13 +269,13 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
    generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
    kerberos session setup 
 */
-DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli, char *principle)
+DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli, char *principal)
 {
 	DATA_BLOB tkt, tkt_wrapped, targ;
 	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};
 
 	/* get a kerberos ticket for the service */
-	tkt = krb5_get_ticket(principle);
+	tkt = krb5_get_ticket(principal);
 
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt);

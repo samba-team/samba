@@ -41,7 +41,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	int ret;
 	char *realm, *client, *p;
 	fstring hostname;
-	char *principle;
+	char *principal;
 	extern pstring global_myname;
 	const struct passwd *pw;
 	char *user;
@@ -58,7 +58,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	fstrcpy(hostname, global_myname);
 	strlower(hostname);
-	asprintf(&principle, "HOST/%s@%s", hostname, realm);
+	asprintf(&principal, "HOST/%s@%s", hostname, realm);
 	
 	ret = krb5_init_context(&context);
 	if (ret) {
@@ -66,14 +66,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ret = krb5_parse_name(context, principle, &server);
+	ret = krb5_parse_name(context, principal, &server);
 	if (ret) {
 		DEBUG(1,("krb5_parse_name(%s) failed (%s)\n", 
-			 principle, error_message(ret)));
+			 principal, error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	free(principle);
+	free(principal);
 
 	packet.length = ticket.length;
 	packet.data = (krb5_pointer)ticket.data;
@@ -96,7 +96,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	p = strchr_m(client, '@');
 	if (!p) {
-		DEBUG(3,("Doesn't look like a valid principle\n"));
+		DEBUG(3,("Doesn't look like a valid principal\n"));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 

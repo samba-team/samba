@@ -166,7 +166,7 @@ static int negprot_spnego(char *p, uint8 cryptkey[8])
 	const char *OIDs[] = {OID_NTLMSSP,
 			      OID_KERBEROS5,
 			      NULL};
-	char *principle;
+	char *principal;
 	int len;
 
 	memset(guid, 0, 16);
@@ -175,9 +175,9 @@ static int negprot_spnego(char *p, uint8 cryptkey[8])
 
 	/* win2000 uses host$@REALM, which we will probably use eventually,
 	   but for now this works */
-	asprintf(&principle, "HOST/%s@%s", guid, lp_realm());
-	blob = spnego_gen_negTokenInit(guid, OIDs, principle);
-	free(principle);
+	asprintf(&principal, "HOST/%s@%s", guid, lp_realm());
+	blob = spnego_gen_negTokenInit(guid, OIDs, principal);
+	free(principal);
 
 	memcpy(p, blob.data, blob.length);
 	len = blob.length;
