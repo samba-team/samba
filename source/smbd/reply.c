@@ -3659,13 +3659,13 @@ static BOOL resolve_wildcards(char *name1,char *name2)
 
 static NTSTATUS can_rename(char *fname,connection_struct *conn)
 {
-  if (!CAN_WRITE(conn))
-	return NT_STATUS_ACCESS_DENIED;
+	if (!CAN_WRITE(conn))
+		return NT_STATUS_ACCESS_DENIED;
 
-  if (!check_file_sharing(conn,fname,True))
-	return NT_STATUS_SHARING_VIOLATION;
+	if (!check_file_sharing(conn,fname,True))
+		return NT_STATUS_SHARING_VIOLATION;
 
-  return NT_STATUS_OK;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3824,6 +3824,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 		if (!NT_STATUS_IS_OK(error)) {
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
 				get_nt_error_msg(error), directory,newname));
+			return error;
 		}
 
                	pstrcpy(zdirectory, dos_to_unix(directory, False));
