@@ -777,7 +777,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		struct policy_handle trustdom_handle;
 		struct policy_handle handle2;
 		struct lsa_Close c;
-		int levels [] = {1, 3, 6};
+		int levels [] = {1, 3, 6, 8, 12};
 		
 		trust.in.handle = handle;
 		trust.in.sid = domains.domains[i].sid;
