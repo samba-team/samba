@@ -723,17 +723,24 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 
 
 /*
-  determine if a file is open - used to prevent some operations on open files
+  determine if a file can be deleted, or if it is prevented by an
+  already open file
 */
-BOOL pvfs_is_open(struct pvfs_state *pvfs, struct pvfs_filename *name)
+NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs, struct pvfs_filename *name)
 {
 	NTSTATUS status;
 	DATA_BLOB key;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	return odb_is_open(pvfs->odb_context, &key);
+	status = odb_can_open(pvfs->odb_context, &key, 
+			      NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE | 
+			      NTCREATEX_SHARE_ACCESS_DELETE, 
+			      0, STD_RIGHT_DELETE_ACCESS);
+
+	return status;
 }
