@@ -12,5 +12,6 @@ prefix HEIM_ERR
 error_code LOG_PARSE,		"Error parsing log destination"
 error_code V4_PRINC_NO_CONV,	"Failed to convert v4 principal"
 error_code SALTTYPE_NOSUPP,	"Salt type is not supported by enctype"
+error_code NOHOST,		"Host not found"
 
 end
