@@ -54,7 +54,7 @@ db_fetch(krb5_context context, krb5_principal principal)
 	return NULL;
     }
     ALLOC(ent);
-    krb5_copy_principal(context, principal, &ent->principal);
+    ent->principal = principal;
     ret = db->fetch(context, db, ent);
     db->close(context, db);
     if(ret){

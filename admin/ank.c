@@ -40,7 +40,6 @@
 
 RCSID("$Id$");
 
-
 static void
 doit2(HDB *db, hdb_entry *ent, int mod)
 {
@@ -48,6 +47,7 @@ doit2(HDB *db, hdb_entry *ent, int mod)
     hdb_entry def;
     int32_t tmp;
     char buf[1024];
+    int i;
     
     ret = db->fetch(context, db, ent);
     
@@ -58,15 +58,19 @@ doit2(HDB *db, hdb_entry *ent, int mod)
 	    return;
 	}else{
 	    krb5_realm *realm;
+	    krb5_principal def_principal;
+
 	    realm = krb5_princ_realm(context, ent->principal);
-	    krb5_build_principal(context, &def.principal, 
+	    krb5_build_principal(context, &def_principal, 
 				 strlen(*realm),
 				 *realm,
 				 "default",
 				 NULL);
+	    def.principal = def_principal;
 	    if(db->fetch(context, db, &def)){
 		/* XXX */
 	    }
+	    krb5_free_principal (context, def_principal);
 	    memset(&ent->flags, 0, sizeof(ent->flags));
 	    ent->flags.client = 1;
 	    ent->flags.server = 1;
@@ -135,6 +139,9 @@ doit2(HDB *db, hdb_entry *ent, int mod)
     if(mod == 0 || buf[0] == 'y'){
 	krb5_data salt;
 	des_read_pw_string(buf, sizeof(buf), "Password:", 1);
+	for (i = 0; i < ent->keys.len; ++i)
+	    free_Key (&ent->keys.val[i]);
+	free (ent->keys.val);
 	if(strcasecmp(buf, "random") == 0) {
 	    ent->keys.len = 0;
 	    ent->keys.val = NULL;
