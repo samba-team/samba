@@ -29,8 +29,6 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-char *crypt(const char *, const char *);
-
 char inst[100];
 char name[100];
 char realm[REALM_SZ + 1];
@@ -270,6 +268,7 @@ leave(void)
     XUngrabPointer(dpy, CurrentTime);
     XUngrabKeyboard(dpy, CurrentTime);
     ScreenSaver(0);
+    XCloseDisplay(dpy);
     zrefresh();
     exit(0);
 }
