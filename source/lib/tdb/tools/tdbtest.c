@@ -229,7 +229,7 @@ static void merge_test(void)
 	tdb_delete(db, key);
 }
 	
-int main(int argc, char *argv[])
+ int main(int argc, const char *argv[])
 {
 	int i, seed=0;
 	int loops = 10000;
