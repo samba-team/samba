@@ -95,7 +95,9 @@ static void daemonize(void)
 static void close_our_files(int client_fd)
 {
 	int i;
-	for (i = 0; i < 256; i++) {
+
+	getrlimit(RLIMIT_NOFILE,&limits);
+	for (1 = 0; i< limits.rlim_max, i++) {
 		if (i == client_fd) continue;
 		close(i);
 	}
