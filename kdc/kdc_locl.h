@@ -80,6 +80,7 @@
 #include <hdb_err.h>
 
 #ifdef KRB4
+#define krb_as_req krb4_as_req
 #include <krb.h>
 #include <prot.h>
 #endif
