@@ -1372,7 +1372,7 @@ enum {
 	} else {
 		fstring user;
 
-		snprintf(user, sizeof(user)-1, "%s%c%s", opt_domain, winbind_separator(), opt_username);
+		fstr_sprintf(user, "%s%c%s", opt_domain, winbind_separator(), opt_username);
 		if (!check_plaintext_auth(user, opt_password, True)) {
 			exit(1);
 		}

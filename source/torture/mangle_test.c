@@ -54,7 +54,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 		return False;
 	}
 
-	snprintf(name2, sizeof(name2), "\\mangle_test\\%s", shortname);
+	fstr_sprintf(name2, "\\mangle_test\\%s", shortname);
 	if (!cli_unlink(cli, name2)) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
 		       name2, name, cli_errstr(cli));

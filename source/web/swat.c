@@ -164,12 +164,12 @@ static const char* get_parm_translated(
 	static pstring output;
 	if(strcmp(pLabel, pTranslated) != 0)
 	{
-		snprintf(output, sizeof(output),
+		pstr_sprintf(output,
 		  "<A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s <br><span class=\"i18n_translated_parm\">%s</span>",
 		   pAnchor, pHelp, pLabel, pTranslated);
 		return output;
 	}
-	snprintf(output, sizeof(output), 
+	pstr_sprintf(output, 
 	  "<A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s",
 	  pAnchor, pHelp, pLabel);
 	return output;

@@ -2247,7 +2247,7 @@ char *pid_path(const char *name)
 char *lib_path(const char *name)
 {
 	static pstring fname;
-	snprintf(fname, sizeof(fname), "%s/%s", dyn_LIBDIR, name);
+	fstr_sprintf(fname, "%s/%s", dyn_LIBDIR, name);
 	return fname;
 }
 

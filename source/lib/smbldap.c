@@ -1197,7 +1197,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	DEBUG(3,("Adding new domain\n"));
 	ldap_op = LDAP_MOD_ADD;
 
-	snprintf(dn, sizeof(dn), "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+	pstr_sprintf(dn, "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
 		domain_name, lp_ldap_suffix());
 
 	/* Free original search */
@@ -1262,7 +1262,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 	char **attr_list;
 	int count;
 
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%s))",
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))",
 		LDAP_OBJ_DOMINFO,
 		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
 		domain_name);

@@ -190,7 +190,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	char *p;
 	fstring lanman;
 	
-	snprintf( lanman, sizeof(lanman), "Samba %s", VERSION );
+	fstr_sprintf( lanman, "Samba %s", VERSION );
 
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);

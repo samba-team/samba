@@ -4366,7 +4366,7 @@ static BOOL run_error_map_extract(int dummy) {
 	}
 
 	for (error=(0xc0000000 | 0x1); error < (0xc0000000| 0xFFF); error++) {
-		snprintf(user, sizeof(user), "%X", error);
+		fstr_sprintf(user, "%X", error);
 
 		if (cli_session_setup(&c_nt, user, 
 				       password, strlen(password),
@@ -4586,7 +4586,7 @@ static BOOL run_test(const char *name)
 	}
 	
 	for (i=0;torture_ops[i].name;i++) {
-		snprintf(randomfname, sizeof(randomfname), "\\XX%x", 
+		fstr_sprintf(randomfname, "\\XX%x", 
 			 (unsigned)random());
 
 		if (strequal(name, torture_ops[i].name)) {

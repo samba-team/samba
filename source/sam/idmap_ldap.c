@@ -361,7 +361,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 		get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER ) : 
 		get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
 
-	snprintf(filter, sizeof(filter)-1, "(objectClass=%s)", LDAP_OBJ_IDPOOL);
+	pstr_sprintf(filter, "(objectClass=%s)", LDAP_OBJ_IDPOOL);
 
 	attr_list = get_attr_list( idpool_attr_list );
 	
@@ -414,7 +414,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 		}
 	}
 	
-	snprintf(new_id_str, sizeof(new_id_str), "%lu", 
+	pstr_sprintf(new_id_str, "%lu", 
 		 ((id_type & ID_USERID) ? (unsigned long)id->uid : 
 		  (unsigned long)id->gid) + 1);
 		 
@@ -461,18 +461,18 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	if ( id_type & ID_USERID ) {
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
 		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
-		snprintf(id_str, sizeof(id_str), "%lu", (unsigned long)id.uid );	
+		fstr_sprintf(id_str, "%lu", (unsigned long)id.uid );	
 		pstrcpy( suffix, lp_ldap_suffix());
 	}
 	else {
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
 		obj_class = LDAP_OBJ_GROUPMAP;
-		snprintf(id_str, sizeof(id_str), "%lu", (unsigned long)id.gid );	
+		fstr_sprintf(id_str, "%lu", (unsigned long)id.gid );	
 		pstrcpy( suffix, lp_ldap_group_suffix() );
 	}
 		 
 	attr_list = get_attr_list( sidmap_attr_list );
-	snprintf(filter, sizeof(filter), "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
+	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
 		 LDAP_OBJ_IDMAP_ENTRY, obj_class, type, id_str);
 
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
@@ -490,7 +490,7 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 		ldap_msgfree(result);
 		result = NULL;
 		
-		snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%lu))",
+		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
 			LDAP_OBJ_IDMAP_ENTRY, type,  
 			 ((id_type & ID_USERID) ? (unsigned long)id.uid : 
 			  (unsigned long)id.gid));
@@ -560,8 +560,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
 		posix_obj_class = LDAP_OBJ_POSIXACCOUNT;
 		suffix = lp_ldap_suffix();
-		snprintf(filter, sizeof(filter), 
-			 "(&(|(&(objectClass=%s)(objectClass=%s))(objectClass=%s))(%s=%s))", 
+		pstr_sprintf(filter, "(&(|(&(objectClass=%s)(objectClass=%s))(objectClass=%s))(%s=%s))", 
 			 obj_class, posix_obj_class, LDAP_OBJ_IDMAP_ENTRY, 
 			 get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
 			 sid_str);
@@ -571,8 +570,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 		obj_class = LDAP_OBJ_GROUPMAP;
 		posix_obj_class = LDAP_OBJ_POSIXGROUP;
 		suffix = lp_ldap_group_suffix();
-		snprintf(filter, sizeof(filter), 
-			 "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
+		pstr_sprintf(filter, "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
 			 obj_class, LDAP_OBJ_IDMAP_ENTRY, 
 			 get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
 			 sid_str);
@@ -593,7 +591,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	if (count == 0) {
 		ldap_msgfree(result);
 		
-		snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%s))", 
+		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", 
 			LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_SID, sid_str);
 
 		suffix = lp_ldap_idmap_suffix();
@@ -676,7 +674,7 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 					   int id_type, const char *ldap_dn, 
 					   LDAPMessage *entry)
 {
-	char *dn = NULL;
+	pstring dn; 
 	pstring id_str;
 	fstring type;
 	LDAPMod **mods = NULL;
@@ -691,24 +689,19 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 	if (ldap_dn) {
 		DEBUG(10, ("Adding new IDMAP mapping on DN: %s", ldap_dn));
 		ldap_op = LDAP_MOD_REPLACE;
-		dn = strdup(ldap_dn);
+		pstrcpy( dn, ldap_dn );
 	} else {
 		ldap_op = LDAP_MOD_ADD;
-		asprintf(&dn, "%s=%s,%s", get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID), 
+		pstr_sprintf(dn, "%s=%s,%s", get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID), 
 			 sid_string, lp_ldap_idmap_suffix());
 	}
 	
-	if (!dn) {
-		DEBUG(0, ("ldap_set_mapping_internals: out of memory allocating DN!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	if ( id_type & ID_USERID ) 
 		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER ) );
 	else
 		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER ) );
 
-	snprintf(id_str, sizeof(id_str), "%lu", ((id_type & ID_USERID) ? (unsigned long)id.uid : 
+	pstr_sprintf(id_str, "%lu", ((id_type & ID_USERID) ? (unsigned long)id.uid : 
 						 (unsigned long)id.gid));	
 	
 	if (entry) 
@@ -802,18 +795,18 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 		suffix = lp_ldap_suffix();
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
 		posix_obj_class = LDAP_OBJ_POSIXACCOUNT;
-		snprintf(id_str, sizeof(id_str), "%u", id.uid );	
+		fstr_sprintf(id_str, "%u", id.uid );	
 	}
 	else {
 		obj_class = LDAP_OBJ_GROUPMAP;
 		suffix = lp_ldap_group_suffix();
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
 		posix_obj_class = LDAP_OBJ_POSIXGROUP;
-		snprintf(id_str, sizeof(id_str), "%u", id.gid );	
+		fstr_sprintf(id_str, "%u", id.gid );	
 	}
 	
 	sid_to_string(sid_str, sid);
-	snprintf(filter, sizeof(filter), 
+	pstr_sprintf(filter, 
 		 "(|"
 		 "(&(|(objectClass=%s)(|(objectClass=%s)(objectClass=%s)))(%s=%s))"
 		 "(&(objectClass=%s)(%s=%s))"
@@ -895,7 +888,7 @@ static NTSTATUS ldap_idmap_init( char *params )
 
 	/* see if the idmap suffix and sub entries exists */
 	
-	snprintf( filter, sizeof(filter), "(objectclass=%s)", LDAP_OBJ_IDPOOL );
+	fstr_sprintf( filter, "(objectclass=%s)", LDAP_OBJ_IDPOOL );
 	
 	attr_list = get_attr_list( idpool_attr_list );
 	rc = smbldap_search(ldap_state.smbldap_state, lp_ldap_idmap_suffix(), 
@@ -922,8 +915,8 @@ static NTSTATUS ldap_idmap_init( char *params )
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		snprintf( uid_str, sizeof(uid_str), "%d", luid );
-		snprintf( gid_str, sizeof(gid_str), "%d", lgid );
+		fstr_sprintf( uid_str, "%d", luid );
+		fstr_sprintf( gid_str, "%d", lgid );
 
 		smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDPOOL );
 		smbldap_set_mod( &mods, LDAP_MOD_ADD, 

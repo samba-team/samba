@@ -161,7 +161,7 @@ static char* passwd2string( const WINBINDD_PW *pw )
 	DEBUG(10,("passwd2string: converting passwd struct for %s\n", 
 		pw->pw_name));
 
-	ret = snprintf( string, sizeof(string), "%s:%s:%lu:%lu:%s:%s:%s",
+	ret = pstr_sprintf( string, "%s:%s:%lu:%lu:%s:%s:%s",
 		pw->pw_name, 
 		pw->pw_passwd ? pw->pw_passwd : "x",
 		(unsigned long)pw->pw_uid,
@@ -171,7 +171,7 @@ static char* passwd2string( const WINBINDD_PW *pw )
 		pw->pw_shell );
 		
 	if ( ret < 0 ) {
-		DEBUG(0,("passwd2string: snprintf() failed!\n"));
+		DEBUG(0,("passwd2string: pstr_sprintf() failed!\n"));
 		return NULL;
 	}
 		
@@ -303,7 +303,7 @@ static char* group2string( const WINBINDD_GR *grp )
 		fstrcpy( gr_mem_str, "" );
 	}
 
-	ret = snprintf( string, sizeof(string)-1, "%s:%s:%lu:%s",
+	ret = pstr_sprintf( string, "%s:%s:%lu:%s",
 		grp->gr_name, 
 		grp->gr_passwd ? grp->gr_passwd : "*",
 		(unsigned long)grp->gr_gid,
@@ -312,7 +312,7 @@ static char* group2string( const WINBINDD_GR *grp )
 	SAFE_FREE( gr_mem_str );
 		
 	if ( ret < 0 ) {
-		DEBUG(0,("group2string: snprintf() failed!\n"));
+		DEBUG(0,("group2string: pstr_sprintf() failed!\n"));
 		return NULL;
 	}
 		
@@ -326,7 +326,7 @@ static char* acct_userkey_byname( const char *name )
 {
 	static fstring key;
 	
-	snprintf( key, sizeof(key), "%s/NAME/%s", WBKEY_PASSWD, name );
+	fstr_sprintf( key, "%s/NAME/%s", WBKEY_PASSWD, name );
 	
 	return key;		
 }
@@ -338,7 +338,7 @@ static char* acct_userkey_byuid( uid_t uid )
 {
 	static fstring key;
 	
-	snprintf( key, sizeof(key), "%s/UID/%lu", WBKEY_PASSWD, (unsigned long)uid );
+	fstr_sprintf( key, "%s/UID/%lu", WBKEY_PASSWD, (unsigned long)uid );
 	
 	return key;		
 }
@@ -350,7 +350,7 @@ static char* acct_groupkey_byname( const char *name )
 {
 	static fstring key;
 	
-	snprintf( key, sizeof(key), "%s/NAME/%s", WBKEY_GROUP, name );
+	fstr_sprintf( key, "%s/NAME/%s", WBKEY_GROUP, name );
 	
 	return key;		
 }
@@ -362,7 +362,7 @@ static char* acct_groupkey_bygid( gid_t gid )
 {
 	static fstring key;
 	
-	snprintf( key, sizeof(key), "%s/GID/%lu", WBKEY_GROUP, (unsigned long)gid );
+	fstr_sprintf( key, "%s/GID/%lu", WBKEY_GROUP, (unsigned long)gid );
 	
 	return key;		
 }
@@ -698,7 +698,7 @@ static int cleangroups_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA
 	fstring key;
 	char *name = (char*)state;
 	
-	snprintf( key, sizeof(key), "%s/NAME", WBKEY_GROUP );
+	fstr_sprintf( key, "%s/NAME", WBKEY_GROUP );
 	len = strlen(key);
 	
 	/* if this is a group entry then, check the members */
@@ -777,7 +777,7 @@ static int isprimarygroup_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 	fstring key;
 	struct _check_primary_grp *check = (struct _check_primary_grp*)params;
 	
-	snprintf( key, sizeof(key), "%s/NAME", WBKEY_PASSWD );
+	fstr_sprintf( key, "%s/NAME", WBKEY_PASSWD );
 	len = strlen(key);
 	
 	/* if this is a group entry then, check the members */

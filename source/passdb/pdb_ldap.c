@@ -161,10 +161,10 @@ static const char* get_objclass_filter( int schema_ver )
 	switch( schema_ver ) 
 	{
 		case SCHEMAVER_SAMBAACCOUNT:
-			snprintf( objclass_filter, sizeof(objclass_filter)-1, "(objectclass=%s)", LDAP_OBJ_SAMBAACCOUNT );
+			fstr_sprintf( objclass_filter, "(objectclass=%s)", LDAP_OBJ_SAMBAACCOUNT );
 			break;
 		case SCHEMAVER_SAMBASAMACCOUNT:
-			snprintf( objclass_filter, sizeof(objclass_filter)-1, "(objectclass=%s)", LDAP_OBJ_SAMBASAMACCOUNT );
+			fstr_sprintf( objclass_filter, "(objectclass=%s)", LDAP_OBJ_SAMBASAMACCOUNT );
 			break;
 		default:
 			DEBUG(0,("pdb_ldapsam: get_objclass_filter(): Invalid schema version specified!\n"));
@@ -192,7 +192,7 @@ static int ldapsam_search_suffix_by_name (struct ldapsam_privates *ldap_state,
 	 * in the filter expression, replace %u with the real name
 	 * so in ldap filter, %u MUST exist :-)
 	 */
-	snprintf(filter, sizeof(filter)-1, "(&%s%s)", lp_ldap_filter(), 
+	pstr_sprintf(filter, "(&%s%s)", lp_ldap_filter(), 
 		get_objclass_filter(ldap_state->schema_ver));
 
 	/* 
@@ -217,7 +217,7 @@ static int ldapsam_search_suffix_by_rid (struct ldapsam_privates *ldap_state,
 	pstring filter;
 	int rc;
 
-	snprintf(filter, sizeof(filter)-1, "(&(rid=%i)%s)", rid, 
+	pstr_sprintf(filter, "(&(rid=%i)%s)", rid, 
 		get_objclass_filter(ldap_state->schema_ver));
 	
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, attr, result);
@@ -236,7 +236,7 @@ static int ldapsam_search_suffix_by_sid (struct ldapsam_privates *ldap_state,
 	int rc;
 	fstring sid_string;
 
-	snprintf(filter, sizeof(filter)-1, "(&(%s=%s)%s)", 
+	pstr_sprintf(filter, "(&(%s=%s)%s)", 
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID),
 		sid_to_string(sid_string, sid), 
 		get_objclass_filter(ldap_state->schema_ver));
@@ -956,7 +956,7 @@ static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 	pstring filter;
 	char **attr_list;
 
-	snprintf( filter, sizeof(filter)-1, "(&%s%s)", lp_ldap_filter(), 
+	pstr_sprintf( filter, "(&%s%s)", lp_ldap_filter(), 
 		get_objclass_filter(ldap_state->schema_ver));
 	all_string_sub(filter, "%u", "*", sizeof(pstring));
 
@@ -1519,7 +1519,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 
 		/* There might be a SID for this account already - say an idmap entry */
 
-		snprintf(filter, sizeof(filter)-1, "(&(%s=%s)(|(objectClass=%s)(objectClass=%s)))", 
+		pstr_sprintf(filter, "(&(%s=%s)(|(objectClass=%s)(objectClass=%s)))", 
 			 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID),
 			 sid_to_string(sid_string, sid),
 			 LDAP_OBJ_IDMAP_ENTRY,
@@ -1737,7 +1737,7 @@ static BOOL init_ldap_from_group(LDAP *ldap_struct,
 	sid_to_string(tmp, &map->sid);
 	smbldap_make_mod(ldap_struct, existing, mods, 
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_SID), tmp);
-	snprintf(tmp, sizeof(tmp)-1, "%i", map->sid_name_use);
+	pstr_sprintf(tmp, "%i", map->sid_name_use);
 	smbldap_make_mod(ldap_struct, existing, mods, 
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_TYPE), tmp);
 
@@ -1808,7 +1808,7 @@ static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
 {
 	pstring filter;
 
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%s))",
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))",
 		LDAP_OBJ_GROUPMAP, 
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_SID),
 		sid_string_static(&sid));
@@ -1824,7 +1824,7 @@ static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 {
 	pstring filter;
 
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%lu))",
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
 		LDAP_OBJ_GROUPMAP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
 		(unsigned long)gid);
@@ -1845,7 +1845,7 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(|(%s=%s)(%s=%s)))",
+	pstr_sprintf(filter, "(&(objectClass=%s)(|(%s=%s)(%s=%s)))",
 		LDAP_OBJ_GROUPMAP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_DISPLAY_NAME), escape_name,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_CN), escape_name);
@@ -1864,7 +1864,7 @@ static int ldapsam_search_one_group_by_gid(struct ldapsam_privates *ldap_state,
 {
 	pstring filter;
 
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%lu))", 
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))", 
 		LDAP_OBJ_POSIXGROUP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
 		(unsigned long)gid);
@@ -2032,7 +2032,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 
 	sid_to_string(sidstring, &sid);
 	
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%s))", 
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", 
 		LDAP_OBJ_GROUPMAP, LDAP_ATTRIBUTE_SID, sidstring);
 
 	rc = ldapsam_search_one_group(ldap_state, filter, &result);
@@ -2060,7 +2060,7 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
 	int rc;
 	char **attr_list;
 
-	snprintf( filter, sizeof(filter)-1, "(objectclass=%s)", LDAP_OBJ_GROUPMAP);
+	pstr_sprintf( filter, "(objectclass=%s)", LDAP_OBJ_GROUPMAP);
 	attr_list = get_attr_list( groupmap_attr_list );
 	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter,

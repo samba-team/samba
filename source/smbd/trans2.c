@@ -1912,7 +1912,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	if (strequal(base_name,".")) {
 		pstrcpy(dos_fname, "\\");
 	} else {
-		snprintf(dos_fname, sizeof(dos_fname), "\\%s", fname);
+		pstr_sprintf(dos_fname, "\\%s", fname);
 		string_replace(dos_fname, '/', '\\');
 	}
 
