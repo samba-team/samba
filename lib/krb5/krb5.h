@@ -798,6 +798,10 @@ krb5_recvauth(krb5_context context,
 	      krb5_keytab keytab,
 	      krb5_ticket **ticket);
 
+krb5_error_code
+krb5_free_ticket(krb5_context context,
+		 krb5_ticket *ticket);
+
 #define KRB5_SENDAUTH_VERSION "KRB5_SENDAUTH_V1.0"
 
 krb5_error_code
