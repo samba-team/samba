@@ -295,15 +295,15 @@
 /* EA operations. */
 #define SMB_VFS_NEXT_GETXATTR(handle,conn,path,name,value,size) ((handle)->vfs_next.ops.getxattr((handle)->vfs_next.handles.getxattr,(conn),(path),(name),(value),(size)))
 #define SMB_VFS_NEXT_LGETXATTR(handle,conn,path,name,value,size) ((handle)->vfs_next.ops.lgetxattr((handle)->vfs_next.handles.lgetxattr,(conn),(path),(name),(value),(size)))
-#define SMB_VFS_NEXT_FGETXATTR(handle,fsp,fd,name,value,size) ((handle)->vfs_next.ops.fgetxattr((handle)->conn->vfs_next.handles.fgetxattr,(fsp),(fd),(value),(size)))
+#define SMB_VFS_NEXT_FGETXATTR(handle,fsp,fd,name,value,size) ((handle)->vfs_next.ops.fgetxattr((handle)->vfs_next.handles.fgetxattr,(fsp),(fd),(value),(size)))
 #define SMB_VFS_NEXT_LISTXATTR(handle,conn,path,list,size) ((handle)->vfs_next.ops.listxattr((handle)->vfs_next.handles.listxattr,(conn),(path),(list),(size)))
 #define SMB_VFS_NEXT_LLISTXATTR(handle,conn,path,list,size) ((handle)->vfs_next.ops.llistxattr((handle)->vfs_next.handles.llistxattr,(conn),(path),(list),(size)))
-#define SMB_VFS_NEXT_FLISTXATTR(handle,fsp,fd,list,size) ((handle)->vfs_next.ops.flistxattr((handle)->conn->vfs_next.handles.flistxattr,(fsp),(fd),(list),(size)))
+#define SMB_VFS_NEXT_FLISTXATTR(handle,fsp,fd,list,size) ((handle)->vfs_next.ops.flistxattr((handle)->vfs_next.handles.flistxattr,(fsp),(fd),(list),(size)))
 #define SMB_VFS_NEXT_REMOVEXATTR(handle,conn,path,name) (((handle)->vfs_next.ops.removexattr((handle)->vfs_next.handles.removeattr,(conn),(path),(name)))
 #define SMB_VFS_NEXT_LREMOVEXATTR(handle,conn,path,name) (((handle)->vfs_next.ops.lremovexattr((handle)->vfs_next.handles.lremoveattr,(conn),(path),(name)))
-#define SMB_VFS_NEXT_FREMOVEXATTR(handle,fsp,fd,name) ((handle)->vfs_next.ops.fremovexattr((handle)->conn->vfs_next.handles.fremovexattr,(fsp),(fd),(name)))
+#define SMB_VFS_NEXT_FREMOVEXATTR(handle,fsp,fd,name) ((handle)->vfs_next.ops.fremovexattr((handle)->vfs_next.handles.fremovexattr,(fsp),(fd),(name)))
 #define SMB_VFS_NEXT_SETXATTR(handle,conn,path,name,value,size,flags) ((handle)->vfs_next.ops.setxattr((handle)->vfs_next.handles.setxattr,(conn),(path),(name),(value),(size),(flags)))
 #define SMB_VFS_NEXT_LSETXATTR(handle,conn,path,name,value,size,flags) ((handle)->vfs_next.ops.lsetxattr((handle)->vfs_next.handles.lsetxattr,(conn),(path),(name),(value),(size),(flags)))
-#define SMB_VFS_NEXT_FSETXATTR(handle,fsp,fd,name,value,size,flags) ((handle)->vfs_next.ops.fsetxattr((handle)->conn->vfs_next.handles.fsetxattr,(fsp),(fd),(name),(value),(size),(flags)))
+#define SMB_VFS_NEXT_FSETXATTR(handle,fsp,fd,name,value,size,flags) ((handle)->vfs_next.ops.fsetxattr((handle)->vfs_next.handles.fsetxattr,(fsp),(fd),(name),(value),(size),(flags)))
 
 #endif /* _VFS_MACROS_H */
