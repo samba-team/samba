@@ -200,7 +200,7 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 /****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
-BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
+BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 			BOOL sec_qos, uint32 des_access)
 {
 	prs_struct rbuf;
@@ -210,7 +210,7 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 	BOOL valid_pol = False;
 	struct cli_connection *con = NULL;
 
-	if (!cli_connection_init(server_name, PIPE_LSARPC, &con))
+	if (!cli_connection_init(system_name, PIPE_LSARPC, &con))
 	{
 		return False;
 	}
@@ -276,7 +276,7 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 /****************************************************************************
 do a LSA Open Policy2
 ****************************************************************************/
-BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
+BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 			BOOL sec_qos, uint32 des_access)
 {
 	prs_struct rbuf;
@@ -287,7 +287,7 @@ BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 
 	struct cli_connection *con = NULL;
 
-	if (!cli_connection_init(server_name, PIPE_LSARPC, &con))
+	if (!cli_connection_init(system_name, PIPE_LSARPC, &con))
 	{
 		return False;
 	}
@@ -305,11 +305,11 @@ BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 	if (sec_qos)
 	{
 		make_lsa_sec_qos(&qos, 2, 1, 0, des_access);
-		make_q_open_pol2(&q_o, server_name, 0, des_access, &qos);
+		make_q_open_pol2(&q_o, system_name, 0, des_access, &qos);
 	}
 	else
 	{
-		make_q_open_pol2(&q_o, server_name, 0, des_access, NULL);
+		make_q_open_pol2(&q_o, system_name, 0, des_access, NULL);
 	}
 
 	/* turn parameters into data stream */
