@@ -350,7 +350,7 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
  */
 
 SMBCSRV *smbc_server(SMBCCTX *context,
-		     char *server, char *share, 
+		     const char *server, const char *share, 
 		     char *workgroup, char *username, 
 		     char *password)
 {
@@ -358,7 +358,8 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	int auth_called = 0;
 	struct cli_state c;
 	struct nmb_name called, calling;
-	char *p, *server_n = server;
+	char *p;
+	const char *server_n = server;
 	fstring group;
 	pstring ipenv;
 	struct in_addr ip;
@@ -1524,27 +1525,27 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
 
-	    fprintf(stderr, "no valid context\n");
+	    DEBUG(4, ("no valid context\n"));
 		errno = EINVAL;
 		return NULL;
 
 	}
 
 	if (!fname) {
-	    fprintf(stderr, "no valid fname\n");
+		DEBUG(4, ("no valid fname\n"));
 		errno = EINVAL;
 		return NULL;
 
 	}
 
 	if (smbc_parse_path(context, fname, server, share, path, user, password)) {
-	    fprintf(stderr, "no valid path\n");
+	    DEBUG(4, ("no valid path\n"));
 		errno = EINVAL;
 		return NULL;
 
 	}
 
-	fprintf(stderr, "parsed path: fname='%s' server='%s' share='%s' path='%s'\n", fname, server, share, path);
+	DEBUG(4, ("parsed path: fname='%s' server='%s' share='%s' path='%s'\n", fname, server, share, path));
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -1571,10 +1572,10 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	if (server[0] == (char)0) {
 	    struct in_addr server_ip;
 
-	    fprintf(stderr, "empty server\n");
+	    DEBUG(4, ("empty server\n"));
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
-		    fprintf(stderr, "share %d path %d\n", share[0], path[0]);
+		    DEBUG(4,("share %d path %d\n", share[0], path[0]));
 			errno = EINVAL;
 			if (dir) {
 				SAFE_FREE(dir->fname);
@@ -2759,7 +2760,7 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 			slprintf(context->netbios_name, 16, "smbc%s%d", context->user, pid);
 		}
 	}
-	DEBUG(0,("Using netbios name %s.\n", context->netbios_name));
+	DEBUG(1,("Using netbios name %s.\n", context->netbios_name));
 	
 
 	if (!context->workgroup) {
@@ -2771,7 +2772,7 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 			context->workgroup = strdup("samba");
 		}
 	}
-	DEBUG(0,("Using workgroup %s.\n", context->workgroup));
+	DEBUG(1,("Using workgroup %s.\n", context->workgroup));
 					
 	/* shortest timeout is 1 second */
 	if (context->timeout > 0 && context->timeout < 1000) 
