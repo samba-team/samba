@@ -161,7 +161,6 @@ struct composite_context* rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 						      struct rpc_composite_userinfo *io)
 {	
 
-  /* dom_sid_parse_talloc call */
 	struct composite_context *c;
 	struct userinfo_state *s;
 	struct samr_OpenUser *r;
