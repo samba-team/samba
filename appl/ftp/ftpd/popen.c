@@ -77,6 +77,28 @@ RCSID("$Id$");
 static int *pids;
 static int fds;
 
+extern int dochroot;
+
+/* return path prepended with ~ftp if that file exists, otherwise
+ * return path unchanged
+ */
+
+const char *
+ftp_rooted(const char *path)
+{
+    static char home[MaxPathLen] = "";
+    static char newpath[MaxPathLen];
+    struct passwd *pwd;
+    if(!home[0])
+	if((pwd = getpwnam("ftp")))
+	    strcpy(home, pwd->pw_dir);
+    sprintf(newpath, "%s/%s", home, path);
+    if(access(newpath, X_OK))
+	strcpy(newpath, path);
+    return newpath;
+}
+
+
 FILE *
 ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 {
@@ -108,8 +130,8 @@ ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 		if (!(argv[argc++] = strtok(cp, " \t\n")))
 			break;
 
+	gargv[0] = (char*)ftp_rooted(argv[0]);
 	/* glob each piece */
-	gargv[0] = argv[0];
 	for (gargc = argc = 1; argv[argc]; argc++) {
 		glob_t gl;
 		int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
@@ -159,9 +181,11 @@ ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 		close(pdes[0]);
 	}
 	pids[fileno(iop)] = pid;
+	
+pfree:	
+	for (argc = 1; gargv[argc] != NULL; argc++)
+	    free(gargv[argc]);
 
-pfree:	for (argc = 1; gargv[argc] != NULL; argc++)
-		free(gargv[argc]);
 
 	return (iop);
 }
