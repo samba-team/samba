@@ -429,6 +429,7 @@ smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
 	smb_ucs2_t *p, *r, *t;
 
 	DEBUG(3, ("unix_clean_path\n")); /*  [%unicode]\n")); */
+	if(!s) return NULL;
 
 	/* convert '\' to '/' */
 	ns = strdup_w(s);
@@ -461,8 +462,8 @@ smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
 		}
 	}
 
-	/* remove any trailing /. */
-	trim_string_wa(ns, NULL, "/.");
+	/* remove any leading ./ trailing /. */
+	trim_string_wa(ns, "./", "/.");
 
 	/* remove any leading and trailing / */
 	trim_string_wa(ns, "/", "/");
@@ -1916,6 +1917,7 @@ BOOL ms_has_wild(char *s)
 BOOL ms_has_wild_w(const smb_ucs2_t *s)
 {
 	smb_ucs2_t c;
+	if (!s) return False;
 	while ((c = *s++)) {
 		switch (c) {
 		case UCS2_CHAR('*'):
