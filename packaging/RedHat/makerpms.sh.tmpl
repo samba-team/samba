@@ -79,11 +79,11 @@ if [ z$1 = "zdevel" ]; then
 	( cd ../../.. ; mv samba-${VERSION} samba )
 	echo Getting Ready to build Developmental Build
 	cd ${SPECDIR}
-	rpm -ba -v samba-devel.spec
+	${RPM} -ba -v samba-devel.spec
 else
 	echo Getting Ready to build release package
 	cd ${SPECDIR}
-	rpm -ba -v --clean --rmsource samba.spec
+	${RPM} -ba -v --clean --rmsource samba.spec
 fi
 
 echo Done.
