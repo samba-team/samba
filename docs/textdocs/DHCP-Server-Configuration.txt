@@ -1,5 +1,5 @@
 !==
-!== DHCP-Server-Configuration.txt for Samba release TNG-prealpha 04 Apr 2000
+!== DHCP-Server-Configuration.txt for Samba release TNG-prealpha 07 Apr 2000
 !==
 Subject:	DHCP Server Configuration for SMB Clients
 Date:		March 1, 1998

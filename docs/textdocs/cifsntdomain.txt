@@ -1,5 +1,5 @@
 !==
-!== cifsntdomain.txt for Samba release TNG-prealpha 04 Apr 2000
+!== cifsntdomain.txt for Samba release TNG-prealpha 07 Apr 2000
 !==
 NT Domain Authentication
 ------------------------
