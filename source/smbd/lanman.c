@@ -201,7 +201,17 @@ static BOOL init_package(struct pack_desc* p, int count, int subcount)
   if (i > n) {
     p->neededlen = i;
     i = n = 0;
+#if 0
+    /*
+     * This is the old error code we used. Aparently
+     * WinNT/2k systems return ERRbuftoosmall (2123) and
+     * OS/2 needs this. I'm leaving this here so we can revert
+     * if needed. JRA.
+     */
     p->errcode = ERRmoredata;
+#else
+	p->errcode = ERRbuftoosmall;
+#endif
   }
   else
     p->errcode = NERR_Success;
