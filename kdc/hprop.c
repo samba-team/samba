@@ -404,9 +404,7 @@ struct getargs args[] = {
     { "database", 'd',	arg_string, &database, "database", "file" },
     { "source",   0,	arg_string, &source_type, "type of database to read", 
       "heimdal"
-#if 0
       "|mit-dump"
-#endif
 #ifdef KRB4
       "|krb4-db|krb4-dump"
 #ifdef KASERVER_DB
@@ -547,11 +545,9 @@ iterate (krb5_context context,
     }
 #endif
 #endif /* KRB4 */
-#if 0
     case HPROP_MIT_DUMP:
 	mit_prop_dump(pd, database);
 	break;
-#endif
     case HPROP_HEIMDAL: {
 	krb5_error_code ret = hdb_foreach(context, db, HDB_F_DECRYPT,
 					  v5_prop, pd);
@@ -733,11 +729,11 @@ main(int argc, char **argv)
     if(!to_stdout)
 	get_creds(context, &ccache);
     
-    ret = hdb_read_master_key(context, mkeyfile, &mkey5);
-    if(ret && ret != ENOENT)
-	krb5_err(context, 1, ret, "hdb_read_master_key");
-    if(ret) {
-	if(encrypt_flag || decrypt_flag)
+    if(decrypt_flag || encrypt_flag) {
+	ret = hdb_read_master_key(context, mkeyfile, &mkey5);
+	if(ret && ret != ENOENT)
+	    krb5_err(context, 1, ret, "hdb_read_master_key");
+	if(ret)
 	    krb5_errx(context, 1, "No master key file found");
     }
     
@@ -783,10 +779,8 @@ main(int argc, char **argv)
 	break;
 #endif
 #endif /* KRB4 */
-#if 0
     case HPROP_MIT_DUMP:
 	break;
-#endif
     case HPROP_HEIMDAL:
 	ret = hdb_create (context, &db, database);
 	if(ret)
