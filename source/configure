@@ -917,7 +917,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
-for ac_prog in gawk mawk nawk awk
+for ac_prog in mawk gawk nawk awk
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -10254,8 +10254,8 @@ fi
 #################################################
 # check for MS Dfs support
 
-echo $ac_n "checking whether to support MS Dfs""... $ac_c" 1>&6
-echo "configure:10259: checking whether to support MS Dfs" >&5
+echo $ac_n "checking whether to support Microsoft Dfs""... $ac_c" 1>&6
+echo "configure:10259: checking whether to support Microsoft Dfs" >&5
 # Check whether --with-msdfs or --without-msdfs was given.
 if test "${with_msdfs+set}" = set; then
   withval="$with_msdfs"
@@ -10263,7 +10263,7 @@ if test "${with_msdfs+set}" = set; then
   yes)
      echo "$ac_t""yes" 1>&6
      cat >> confdefs.h <<\EOF
-#define MS_DFS 1
+#define WITH_MSDFS 1
 EOF
 
      ;;

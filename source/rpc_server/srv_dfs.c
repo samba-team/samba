@@ -30,7 +30,7 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
-#ifdef MS_DFS
+#ifdef WITH_MSDFS
 
 /**********************************************************************
  api_dfs_exist
@@ -329,7 +329,7 @@ static uint32 init_reply_dfs_enum(uint32 level, DFS_R_DFS_ENUM *q_r)
   int num_jn = 0;
   int i=0;
 
-  num_jn = enum_msdfs_junctions(jn);
+  num_jn = enum_msdfs_links(jn);
   
   DEBUG(5,("make_reply_dfs_enum: %d junctions found in Dfs, doing level %d\n",
 	   num_jn, level));

@@ -1421,14 +1421,14 @@ AC_ARG_WITH(utmp,
 #################################################
 # check for MS Dfs support
 
-AC_MSG_CHECKING(whether to support MS Dfs)
+AC_MSG_CHECKING(whether to support Microsoft Dfs)
 AC_ARG_WITH(msdfs,
 [  --with-msdfs		Include MS Dfs support
   --without-msdfs	Don't include MS Dfs support (default)],
 [ case "$withval" in
   yes)
      AC_MSG_RESULT(yes)
-     AC_DEFINE(MS_DFS)
+     AC_DEFINE(WITH_MSDFS)
      ;;
   *)
     AC_MSG_RESULT(no)

@@ -357,7 +357,7 @@ char *myhostname(void);
 char *lock_path(char *name);
 char *parent_dirname(const char *path);
 BOOL ms_has_wild(char *s);
-BOOL mask_match(char *string, char *pattern, BOOL case_sensitive);
+BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive);
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
 /*The following definitions come from  lib/util_array.c  */
@@ -873,20 +873,20 @@ BOOL posix_locking_end(void);
 
 /*The following definitions come from  msdfs/msdfs.c  */
 
-BOOL remove_msdfs_link(struct junction_map* jn);
-BOOL create_msdfs_link(struct junction_map* jn, BOOL exists);
-BOOL is_msdfs_volume(connection_struct* conn, char* path);
+BOOL create_junction(char* pathname, struct junction_map* jn);
+BOOL is_msdfs_link(connection_struct* conn, char* path);
 BOOL get_referred_path(struct junction_map* junction);
 BOOL dfs_redirect(char* pathname, connection_struct* conn);
 BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn);
-BOOL create_junction(char* pathname, struct junction_map* jn);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 			char** ppdata);
-int enum_msdfs_junctions(struct junction_map* jn);
 int dfs_path_error(char* inbuf, char* outbuf);
+BOOL create_msdfs_link(struct junction_map* jn, BOOL exists);
+BOOL remove_msdfs_link(struct junction_map* jn);
+int enum_msdfs_links(struct junction_map* jn);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata);
-BOOL is_msdfs_volume(connection_struct* conn, char* path);
+BOOL is_msdfs_link(connection_struct* conn, char* path);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
