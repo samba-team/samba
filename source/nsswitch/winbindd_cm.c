@@ -454,8 +454,8 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, unsigned char *trust_passwd,
 		secrets_named_mutex_release(conn->controller, &conn->mutex_ref_count);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("error connecting to domain password server: %s\n",
-			  nt_errstr(result)));
+		DEBUG(0, ("cm_get_netlogon_cli: error connecting to domain password server %s for domain %s: %s\n",
+			conn->controller, domain, nt_errstr(result)));
 		
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) {
