@@ -38,7 +38,7 @@ static struct smb_conn_opt conn_options;
 #endif
 
 /* Uncomment this to allow debug the smbmount daemon */
-#define SMBFS_DEBUG 1
+/* #define SMBFS_DEBUG 1 */
 
 pstring cur_dir = "\\";
 pstring cd_path = "";
@@ -70,7 +70,6 @@ extern int name_type;
 
 extern int max_protocol;
 int port = SMB_PORT;
-
 
 time_t newer_than = 0;
 int archive_level = 0;
@@ -182,19 +181,50 @@ static BOOL chkpath(char *path,BOOL report)
 }
 
 static void
+exit_parent( int sig )
+{
+	/* parent simply exits when child says go... */
+	exit(0);
+}
+
+static void
 daemonize(void)
 {
-	int i;
-	if ((i = fork()) < 0)
+	int j, status;
+	pid_t child_pid;
+
+	signal( SIGTERM, exit_parent );
+
+	if ((child_pid = fork()) < 0)
 	{
 		DEBUG(0, ("could not fork\n"));
 	}
-	if (i > 0)
+	if (child_pid > 0)
 	{
-		/* parent simply exits */
-		exit(0);
+		while( 1 ) {
+			j = waitpid( child_pid, &status, 0 );
+			if( j < 0 ) {
+				if( EINTR == errno ) {
+					continue;
+				}
+				status = errno;
+			}
+			break;
+		}
+		/* If we get here - the child exited with some error status */
+		exit(status);
 	}
-	setsid();
+	/* Programmers Note:
+		Danger Will Robinson!  Danger!
+
+		There use to be a call to setsid() here.  This does no
+		harm to normal mount operations, but it broke automounting.
+		The setsid call has been moved to just before the child
+		sends the SIGTERM to the parent.  All of our deadly embrace
+		conditions with autofs will have been cleared by then...
+		-mhw-
+	*/
+	signal( SIGTERM, SIG_DFL );
 	chdir("/");
 }
 
@@ -255,7 +285,8 @@ static void
 send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 {
 	int fd, closed = 0, res = 1;
-	int first_time = 1;
+
+	pid_t parentpid = getppid();
 
 	while (1)
 	{
@@ -278,6 +309,15 @@ send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 			DEBUG(0, ("smbmount: ioctl failed, res=%d\n", res));
 		}
 
+		if( parentpid ) {
+			/* Ok...  We are going to kill the parent.  Now
+				is the time to break the process group... */
+			setsid();
+			/* Send a signal to the parent to terminate */
+			kill( parentpid, SIGTERM );
+			parentpid = 0;
+		}
+
 		close_sockets();
 		close(fd);
 		/*
@@ -290,15 +330,6 @@ send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 			close_our_files();
 		}
 #endif
-
-		if( first_time ) {
-	/*
-	 * Create the background process after trying the mount.
-	 * to avoid race conditions with automount and other processes.
-	 */
-			first_time = 0;
-			daemonize();
-		}
 
 		/*
 		 * Wait for a signal from smbfs ...
@@ -367,6 +398,12 @@ static void cmd_mount(char *inbuf,char *outbuf)
 	}
 
 	DEBUG(3, ("mount command: %s\n", mount_command));
+
+	/*
+		Set up to return as a daemon child and wait in the parent
+		until the child say it's ready...
+	*/
+	daemonize();
 
 	if ((retval = system(mount_command)) != 0)
 	{
