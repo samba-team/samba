@@ -73,13 +73,13 @@ void dptr_closecnum(int cnum);
 void dptr_idlecnum(int cnum);
 void dptr_closepath(char *path,int pid);
 int dptr_create(int cnum,char *path, BOOL expect_close,int pid);
-BOOL dptr_fill(int cnum, char *buf1,unsigned int key);
+BOOL dptr_fill(char *buf1,unsigned int key);
 BOOL dptr_zero(char *buf);
-void *dptr_fetch(int cnum, char *buf,int *num);
-void *dptr_fetch_lanman2(int cnum, char *params,int dptr_num);
+void *dptr_fetch(char *buf,int *num);
+void *dptr_fetch_lanman2(char *params,int dptr_num);
 BOOL dir_check_ftype(int cnum,int mode,struct stat *st,int dirtype);
 BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend);
-void *OpenDir(int cnum, char *name);
+void *OpenDir(char *name);
 void CloseDir(void *p);
 char *ReadDirName(void *p);
 BOOL SeekDir(void *p,int pos);
@@ -141,6 +141,7 @@ char *lp_username_map(void);
 char *lp_character_set(void);
 char *lp_logon_script(void);
 char *lp_logon_path(void);
+char *lp_veto_files(void);
 char *lp_remote_announce(void);
 char *lp_wins_server(void);
 char *lp_interfaces(void);
@@ -217,8 +218,6 @@ char *lp_readlist(int );
 char *lp_writelist(int );
 char *lp_volume(int );
 char *lp_mangled_map(int );
-char *lp_veto_files(int );
-char *lp_hide_files(int );
 BOOL lp_alternate_permissions(int );
 BOOL lp_revalidate(int );
 BOOL lp_casesensitive(int );
@@ -274,18 +273,12 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ec
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL start_share_mode_mgmt(void);
 BOOL stop_share_mode_mgmt(void);
-BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
-BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
+BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *);
+BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token);
 int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
                     min_share_mode_entry **old_shares);
 void del_share_mode(share_lock_token token, int fnum);
 BOOL set_share_mode(share_lock_token token, int fnum);
-BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
-BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
-int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
-                    min_share_mode_entry **old_shares);
-void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token,int fnum);
 
 /*The following definitions come from  mangle.c  */
 
@@ -309,6 +302,7 @@ int reply_sendend(char *inbuf,char *outbuf);
 
 /*The following definitions come from  nameannounce.c  */
 
+void reset_announce_timer();
 void announce_request(struct work_record *work, struct in_addr ip);
 void do_announce_request(char *info, char *to_name, int announce_type, 
 			 int from,
@@ -326,7 +320,6 @@ void announce_my_servers_removed(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
 		     char *name, char *comment, time_t ttl, int server_type);
 void announce_host(time_t t);
-void reset_announce_timer();
 void announce_master(time_t t);
 void announce_remote(time_t t);
 
@@ -334,7 +327,8 @@ void announce_remote(time_t t);
 
 void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, struct subnet_record *d,
+					      time_t ttl, 
+                                              struct subnet_record *d,
                                               struct in_addr ip, BOOL local);
 void do_browser_lists(time_t t);
 
@@ -724,12 +718,16 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
-BOOL smb_shm_create_hash_table( unsigned int size );
 BOOL smb_shm_open( char *file_name, int size);
 BOOL smb_shm_close( void );
 BOOL smb_shm_free(smb_shm_offset_t offset);
 BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
 void * smb_shm_offset2addr(smb_shm_offset_t offset);
+BOOL smb_shm_lock(void);
+BOOL smb_shm_unlock(void);
+smb_shm_offset_t smb_shm_alloc(int size);
+smb_shm_offset_t smb_shm_addr2offset(void *addr);
+smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_lock_hash_entry( unsigned int entry);
 BOOL smb_shm_unlock_hash_entry( unsigned int entry );
 BOOL smb_shm_get_usage(int *bytes_free,
@@ -948,9 +946,8 @@ char *gidtoname(int gid);
 void BlockSignals(BOOL block,int signum);
 void ajt_panic(void);
 char *readdirname(void *p);
-BOOL is_vetoed_name(int snum, char *name);
-BOOL is_hidden_path(int cnum, char *path);
-BOOL is_vetoed_path(int cnum, char *path);
+BOOL is_vetoed_name(char *name);
+BOOL is_vetoed_path(char *name);
 BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
 int file_lock(char *name,int timeout);
 void file_unlock(int fd);

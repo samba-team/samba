@@ -222,11 +222,6 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
 	result |= aHIDDEN;
     }
 
-  if (is_hidden_path(SNUM(cnum), path))
-  {
-    result |= aHIDDEN;
-  }
-
   return(result);
 }
 
@@ -366,7 +361,7 @@ static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
     check_mangled_stack(name);
 
   /* open the directory */
-  if (!(cur_dir = OpenDir(snum, path))) 
+  if (!(cur_dir = OpenDir(path))) 
     {
       DEBUG(3,("scan dir didn't open dir [%s]\n",path));
       return(False);
@@ -796,7 +791,7 @@ BOOL check_name(char *name,int cnum)
 
   errno = 0;
 
-  if( is_vetoed_path(SNUM(cnum), name)) 
+  if( is_vetoed_path(name)) 
     {
       DEBUG(5,("file path name %s vetoed\n",name));
       return(0);

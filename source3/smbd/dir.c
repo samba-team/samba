@@ -108,7 +108,7 @@ static void dptr_idleoldest(void)
 /****************************************************************************
 get the dir ptr for a dir index
 ****************************************************************************/
-static void *dptr_get(int cnum, int key,uint32 lastused)
+static void *dptr_get(int key,uint32 lastused)
 {
   if (dirptrs[key].valid) {
     if (lastused) dirptrs[key].lastused = lastused;
@@ -116,7 +116,7 @@ static void *dptr_get(int cnum, int key,uint32 lastused)
       if (dptrs_open >= MAXDIR)
 	dptr_idleoldest();
       DEBUG(4,("Reopening dptr key %d\n",key));
-      if ((dirptrs[key].ptr = OpenDir(cnum, dirptrs[key].path)))
+      if ((dirptrs[key].ptr = OpenDir(dirptrs[key].path)))
 	dptrs_open++;
     }
     return(dirptrs[key].ptr);
@@ -259,7 +259,7 @@ static BOOL start_dir(int cnum,char *directory)
   if (! *directory)
     directory = ".";
 
-  Connections[cnum].dirptr = OpenDir(cnum, directory);
+  Connections[cnum].dirptr = OpenDir(directory);
   if (Connections[cnum].dirptr) {    
     dptrs_open++;
     string_set(&Connections[cnum].dirpath,directory);
@@ -345,10 +345,10 @@ int dptr_create(int cnum,char *path, BOOL expect_close,int pid)
 /****************************************************************************
 fill the 5 byte server reserved dptr field
 ****************************************************************************/
-BOOL dptr_fill(int cnum, char *buf1,unsigned int key)
+BOOL dptr_fill(char *buf1,unsigned int key)
 {
   unsigned char *buf = (unsigned char *)buf1;
-  void *p = dptr_get(cnum, key,0);
+  void *p = dptr_get(key,0);
   uint32 offset;
   if (!p) {
     DEBUG(1,("filling null dirptr %d\n",key));
@@ -373,10 +373,10 @@ BOOL dptr_zero(char *buf)
 /****************************************************************************
 fetch the dir ptr and seek it given the 5 byte server field
 ****************************************************************************/
-void *dptr_fetch(int cnum, char *buf,int *num)
+void *dptr_fetch(char *buf,int *num)
 {
   unsigned int key = *(unsigned char *)buf;
-  void *p = dptr_get(cnum, key,dircounter++);
+  void *p = dptr_get(key,dircounter++);
   uint32 offset;
   if (!p) {
     DEBUG(3,("fetched null dirptr %d\n",key));
@@ -393,9 +393,9 @@ void *dptr_fetch(int cnum, char *buf,int *num)
 /****************************************************************************
 fetch the dir ptr and seek it given the lanman2 parameter block
 ****************************************************************************/
-void *dptr_fetch_lanman2(int cnum, char *params,int dptr_num)
+void *dptr_fetch_lanman2(char *params,int dptr_num)
 {
-  void *p = dptr_get(cnum, dptr_num,dircounter++);
+  void *p = dptr_get(dptr_num,dircounter++);
   uint32 resume_key = SVAL(params,6);
   BOOL uses_resume_key = BITSETW(params+10,2);
   BOOL continue_bit = BITSETW(params+10,3);
@@ -520,7 +520,7 @@ typedef struct
 /*******************************************************************
 open a directory
 ********************************************************************/
-void *OpenDir(int cnum, char *name)
+void *OpenDir(char *name)
 {
   Dir *dirp;
   char *n;
@@ -539,7 +539,7 @@ void *OpenDir(int cnum, char *name)
   while ((n = readdirname(p))) {
     int l = strlen(n)+1;
     /* If it's a vetoed file, pretend it doesn't even exist */
-    if(is_vetoed_name(cnum, n))
+    if(is_vetoed_name(n))
       continue;
     if (used + l > dirp->mallocsize) {
       int s = MAX(used+l,used+2000);
