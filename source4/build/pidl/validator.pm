@@ -40,9 +40,6 @@ sub el_name($)
 sub ValidElement($)
 {
 	my $e = shift;
-	if ($e->{POINTERS} && $e->{ARRAY_LEN}) {
-		fatal(el_name($e) . " : pidl cannot handle pointers to arrays. Use a substructure instead\n");
-	}
 	
 	if (util::has_property($e, "ptr")) {
 		fatal(el_name($e) . " : pidl does not support full NDR pointers yet\n");
