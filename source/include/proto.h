@@ -1657,20 +1657,18 @@ void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  nsswitch/wb_client.c  */
 
-BOOL winbind_lookup_name(const char *name, DOM_SID *sid, 
-                         enum SID_NAME_USE *name_type);
-BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
-                        enum SID_NAME_USE *name_type);
+BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name_type);
+BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 BOOL winbind_sid_to_uid(uid_t *puid, DOM_SID *sid);
 BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
 BOOL winbind_sid_to_gid(gid_t *pgid, DOM_SID *sid);
 BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid);
 int winbind_initgroups(char *user, gid_t gid);
-int winbind_getgroups(const char *user, int size, gid_t *list);
+int winbind_getgroups(char *user, int size, gid_t *list);
 BOOL winbind_uidtoname(fstring name, uid_t uid);
 BOOL winbind_gidtoname(fstring name, gid_t gid);
-BOOL winbind_nametouid(uid_t *puid, const char *name);
-BOOL winbind_nametogid(gid_t *pgid, const char *gname);
+BOOL winbind_nametouid(uid_t *puid, char *name);
+BOOL winbind_nametogid(gid_t *pgid, char *gname);
 
 /*The following definitions come from  nsswitch/wb_common.c  */
 
@@ -1681,6 +1679,43 @@ void close_sock(void);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
+
+/*The following definitions come from  nsswitch/winbindd_glue.c  */
+
+BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
+		     CLI_POLICY_HND *pol);
+BOOL wb_lsa_enum_trust_dom(CLI_POLICY_HND *hnd, uint32 *enum_ctx,
+			   uint32 * num_doms, char ***names, DOM_SID **sids);
+BOOL wb_lsa_query_info_pol(CLI_POLICY_HND *hnd, uint16 info_class,
+			   fstring domain_name, DOM_SID *domain_sid);
+BOOL wb_lsa_lookup_names(CLI_POLICY_HND *hnd, int num_names, char **names,
+			 DOM_SID **sids, uint32 **types, int *num_sids);
+BOOL wb_lsa_lookup_sids(CLI_POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+			char ***names, uint32 **types, int *num_names);
+BOOL wb_lsa_close(CLI_POLICY_HND *hnd);
+BOOL wb_samr_close(CLI_POLICY_HND *hnd);
+BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol);
+BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
+			 DOM_SID *sid, CLI_POLICY_HND *domain_pol);
+uint32 wb_samr_enum_dom_groups(CLI_POLICY_HND *pol, uint32 *start_idx, 
+			       uint32 size, struct acct_info **sam,
+			       uint32 *num_sam_groups);
+BOOL wb_get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
+				uint32 user_rid, SAM_USERINFO_CTR **ctr);
+BOOL wb_samr_open_user(CLI_POLICY_HND *pol, uint32 access_mask, uint32 rid,
+		       POLICY_HND *user_pol);
+BOOL wb_samr_query_usergroups(CLI_POLICY_HND *pol, uint32 *num_groups,
+			      DOM_GID **gid);
+BOOL wb_get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
+			      uint32 group_rid, GROUP_INFO_CTR *ctr);
+BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
+			   uint32 *num_names, uint32 **rid_mem, 
+			   char ***names, uint32 **name_types);
+BOOL wb_samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
+			    SAM_UNK_CTR *ctr);
+uint32 wb_samr_query_dispinfo(CLI_POLICY_HND *pol, uint32 *start_ndx, 
+                              uint16 info_level, uint32 *num_entries,
+                              SAM_DISPINFO_CTR *ctr);
 
 /*The following definitions come from  param/loadparm.c  */
 
