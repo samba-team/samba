@@ -124,7 +124,7 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	
 		/* don't really know what to return here */
 		
-		result = NT_STATUS_ACCESS_DENIED;
+		result = NT_STATUS_NO_SUCH_FILE;
 	}
 	else {
 		/* 

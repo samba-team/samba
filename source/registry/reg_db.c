@@ -249,8 +249,8 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 	buflen = dbuf.dsize;
 	
 	if ( !buf ) {
-		DEBUG(5,("regdb_fetch_reg_keys: Failed to fetch any subkeys for [%s]\n", key));
-		return 0;
+		DEBUG(5,("regdb_fetch_reg_keys: tdb lookup failed to locate key [%s]\n", key));
+		return -1;
 	}
 	
 	len = tdb_unpack( buf, buflen, "d", &num_items);
