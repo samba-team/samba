@@ -1,3 +1,8 @@
+2002-12-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/mk_rep.c: free allocated storage; reported by Howard
+	Chu
+
 2002-12-02  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kpasswd/kpasswdd.c (doit): initialise sa_size to size of
