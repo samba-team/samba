@@ -18,6 +18,7 @@ static char *symlist[] = {
     "_nss_winbind_getpwuid_r",
     "_nss_winbind_setgrent",
     "_nss_winbind_setpwent",
+    "_nss_winbind_initgroups",
     NULL
 };
 
