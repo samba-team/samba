@@ -627,10 +627,8 @@ struct current_user
  */
 
 #define NUM_FLUSH_REASONS 8	/* Keep this in sync with the enum below. */
-enum flush_reason_enum
-{ SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
-	OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH
-};
+enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
+                         OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };     
 
 /* Defines for the sent_oplock_break field above. */
 #define NO_BREAK_SENT 0
@@ -648,6 +646,7 @@ struct dcinfo
 	uchar sess_key[8];	/* Session key */
 	uchar md4pw[16];	/* md4(machine password) */
 };
+
 
 enum {LPQ_QUEUED,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING};
 
@@ -1949,14 +1948,21 @@ policy_cache;
 
 #include "ntdomain.h"
 
+typedef struct {
+	fstring smb_name; /* user name from the client */
+	fstring unix_name; /* unix user name of a validated user */
+	fstring full_name; /* to store real name from password file - simeon */
+	fstring domain; /* domain that the client specified */
+} userdom_struct;
+
 typedef struct
 {
 	uid_t uid;		/* uid of a validated user */
 	gid_t gid;		/* gid of a validated user */
 
-	fstring requested_name;	/* user name from the client */
-	fstring name;		/* unix user name of a validated user */
-	fstring real_name;	/* to store real name from password file - simeon */
+	fstring requested_name; /* user name from the client */
+	fstring unix_name; /* unix user name of a validated user */
+	fstring real_name; /* to store real name from password file - simeon */
 	BOOL guest;
 
 	/* following groups stuff added by ih */

@@ -241,6 +241,9 @@ AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
 
+AC_CHECK_LIB(curses,tputs)
+AC_CHECK_LIB(readline,readline)
+
 # we need libcups for CUPS support...
 AC_CHECK_LIB(cups,httpConnect)
 
@@ -316,12 +319,6 @@ if test x"$ac_cv_func_crypt" = x"no"; then
 fi
 
 
-###############################################
-# test for where we get readline() from
-if test "$ac_cv_header_readline_h" = "yes" ||
-   test "$ac_cv_header_readline_readline_h" = "yes"; then
-  AC_CHECK_LIB(readline,readline)
-fi
 
 AC_CACHE_CHECK([for readline],samba_cv_HAVE_READLINE,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/readline.c"],

@@ -39,7 +39,6 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state);
 
 BOOL winbindd_surs_sam_sid_to_unixid(struct winbindd_domain *domain,
                                      DOM_SID *sid, 
-                                     enum SID_NAME_USE name_type,
                                      POSIX_ID *id);
 BOOL winbindd_surs_unixid_to_sam_sid(struct winbindd_domain *domain,
                                      POSIX_ID *id, DOM_SID *sid);
