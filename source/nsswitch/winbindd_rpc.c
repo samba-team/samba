@@ -513,9 +513,40 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 #ifdef WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK
 #include <ldap.h>
 
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+
+static LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
+{
+	LDAP *ldp = NULL;
+
+	/* Setup timeout */
+	gotalarm = 0;
+	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	alarm(to);
+	/* End setup timeout. */
+
+	ldp = ldap_open(server, port);
+
+	/* Teardown timeout. */
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	alarm(0);
+
+	return ldp;
+}
+
 int get_ldap_seq(const char *server, uint32 *seq)
 {
 	int ret = -1;
+	struct timeval to;
 	char *attrs[] = {"highestCommittedUSN", NULL};
 	LDAPMessage *res = NULL;
 	char **values = NULL;
@@ -523,7 +554,12 @@ int get_ldap_seq(const char *server, uint32 *seq)
 
 	*seq = DOM_SEQUENCE_NONE;
 
-	if ((ldp = ldap_open(server, LDAP_PORT)) == NULL)
+	/*
+	 * 10 second timeout on open. This is needed as the search timeout
+	 * doesn't seem to apply to doing an open as well. JRA.
+	 */
+
+	if ((ldp = ldap_open_with_timeout(server, LDAP_PORT, 10)) == NULL)
 		return -1;
 
 #if 0
@@ -532,7 +568,11 @@ int get_ldap_seq(const char *server, uint32 *seq)
 		goto done;
 #endif
 
-	if (ldap_search_s(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)", &attrs[0], 0, &res))
+	/* Timeout if no response within 20 seconds. */
+	to.tv_sec = 10;
+	to.tv_usec = 0;
+
+	if (ldap_search_st(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)", &attrs[0], 0, &to, &res))
 		goto done;
 
 	if (ldap_count_entries(ldp, res) != 1)
@@ -583,8 +623,14 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	if (get_ldap_seq( inet_ntoa(hnd->cli->dest_ip), seq) == 0) {
 		result = NT_STATUS_OK;
 		seqnum = *seq;
+		DEBUG(10,("domain_sequence_number: LDAP for domain %s is %u\n",
+					domain->name, (unsigned)seqnum ));
 		goto done;
 	}
+
+	DEBUG(10,("domain_sequence_number: failed to get LDAP sequence number (%u) for domain %s\n",
+		(unsigned)seqnum, domain->name ));
+
 #endif /* WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK */
 
 	/* Get domain handle */
