@@ -210,7 +210,8 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 {
 	DOM_SID user_sid, group_sid;
 	DOM_SID **group_sids = NULL;
-	int i, j, ngroup_sids = 0;
+	int i, j;
+	uint ngroup_sids = 0;
 	SEC_ACL *acl;
 	uint8 check_ace_type;
 

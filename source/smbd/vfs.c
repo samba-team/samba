@@ -83,6 +83,7 @@ int vfs_init_default(connection_struct *conn)
 /****************************************************************************
   initialise custom vfs hooks
 ****************************************************************************/
+
 #ifdef HAVE_LIBDL
 BOOL vfs_init_custom(connection_struct *conn)
 {
@@ -105,7 +106,8 @@ BOOL vfs_init_custom(connection_struct *conn)
 
     /* Get handle on vfs_init() symbol */
 
-    fptr = dlsym(handle, "vfs_init");
+    fptr = (struct vfs_ops *(*)(struct vfs_options *))
+	    dlsym(handle, "vfs_init");
 
     if (fptr == NULL) {
 	DEBUG(0, ("No vfs_init() symbol found in %s\n", 

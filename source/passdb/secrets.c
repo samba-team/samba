@@ -101,7 +101,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 {
 	DOM_SID *dyn_sid;
 	fstring key;
-	int size;
+	size_t size;
 
 	slprintf(key, sizeof(key), "%s/%s", SECRETS_DOMAIN_SID, domain);
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
