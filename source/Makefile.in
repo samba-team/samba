@@ -69,7 +69,7 @@ LOCKDIR = @lockdir@
 # man pages language(s)
 man_langs = "@manlangs@"
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -I. -I$(srcdir)
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper -I$(srcdir)/nsswitch $(CPPFLAGS) -I. -I$(srcdir)
 FLAGS2 = 
 FLAGS3 = 
 FLAGS4 = 
@@ -679,11 +679,11 @@ bin/smbw_sample: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
 
 bin/smbwrapper.@SHLIBEXT@: $(PICOBJS)
 	@echo Linking shared library $@
-	@$(LD) $(LDSHFLAGS) -o $@ $(PICOBJS) $(LIBS)
+	@$(LINK) $(LDSHFLAGS) -o $@ $(PICOBJS) $(LIBS)
 
 bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library $@
-	@$(LD) -32 $(LDSHFLAGS) -o $@ $(PICOBJS32) $(LIBS)
+	@$(LINK) -32 $(LDSHFLAGS) -o $@ $(PICOBJS32) $(LIBS)
 
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
 	echo Linking libsmbclient shared library $@
@@ -701,7 +701,7 @@ bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
 	@echo "Linking $@"
-	@$(LD) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc
+	@$(LINK) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc
 
 bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -723,7 +723,7 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
-	$(LD) $(LDSHFLAGS) -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(LIBS) -lc
+	$(LINK) $(LDSHFLAGS) -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(LIBS) -lc
 
 bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 	-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
