@@ -126,7 +126,7 @@ BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	}
 
 	/* ok, at last: we're happy. return the policy handle */
-	memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+	*hnd = r_o.pol;
 
 	prs_mem_free(&rbuf);
 
@@ -187,7 +187,7 @@ BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	}
 
 	/* ok, at last: we're happy. return the policy handle */
-	memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+	*hnd = r_o.pol;
 
 	prs_mem_free(&rbuf);
 
@@ -755,7 +755,7 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	memcpy(key, r_o.key_pol.data, sizeof(key->data));
+	*key = r_o.key_pol;
 
 	prs_mem_free(&rbuf);
 
@@ -1003,7 +1003,7 @@ BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	memcpy(key_hnd, r_o.pol.data, sizeof(key_hnd->data));
+	*key_hnd = r_o.pol;
 
 	prs_mem_free(&rbuf);
 
@@ -1019,7 +1019,6 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
 	prs_struct buf; 
 	REG_Q_CLOSE q_c;
 	REG_R_CLOSE r_c;
-	int i;
 
 	if (hnd == NULL)
 		return False;
@@ -1066,12 +1065,11 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	/* check that the returned policy handle is all zeros */
 
-	for (i = 0; i < sizeof(r_c.pol.data); i++) {
-		if (r_c.pol.data[i] != 0) {
+	if (IVAL(&r_c.pol.data1,0) || IVAL(&r_c.pol.data2,0) || SVAL(&r_c.pol.data3,0) ||
+		SVAL(&r_c.pol.data4,0) || IVAL(r_c.pol.data5,0) || IVAL(r_c.pol.data5,4) ) {
 			prs_mem_free(&rbuf);
 			DEBUG(0,("REG_CLOSE: non-zero handle returned\n"));
 			return False;
-		}
 	}	
 
 	prs_mem_free(&rbuf);

@@ -357,7 +357,7 @@ static BOOL samr_reply_close_hnd(SAMR_Q_CLOSE_HND *q_u,
 	SAMR_R_CLOSE_HND r_u;
 
 	/* set up the SAMR unknown_1 response */
-	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+	ZERO_STRUCT(r_u.pol);
 
 	/* close the policy handle */
 	if (close_lsa_policy_hnd(&(q_u->pol)))
