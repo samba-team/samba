@@ -81,6 +81,7 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 	uint32 status;
 	fstring trust_acct;
 	fstring srv_name;
+	fstring sec_name;
 	BOOL cleartext = smb_apasslen != 0 && smb_apasslen != 24 &&
 		smb_ntpasslen == 0;
 
@@ -105,7 +106,17 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!msrpc_lsa_query_trust_passwd("\\\\.", "$MACHINE.ACC",
+	if (acct_type == SEC_CHAN_DOMAIN)
+	{
+		fstrcpy(sec_name, "G$$");
+		fstrcat(sec_name, domain);
+	}
+	else
+	{
+		fstrcpy(sec_name, "$MACHINE.ACC");
+	}
+
+	if (!msrpc_lsa_query_trust_passwd("\\\\.", sec_name,
 					  trust_passwd, NULL))
 	{
 		return NT_STATUS_ACCESS_DENIED;

@@ -954,12 +954,14 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 {
 	fstring domain;
 	fstring acct_name;
+	fstring sec_name;
 	fstring name;
 	fstring sid;
 	DOM_SID sid1;
 	uint32 user_rid; 
 	uint16 acb_info = ACB_NORMAL;
 	BOOL join_domain = False;
+	fstring join_dom_name;
 	int opt;
 	char *password = NULL;
 	pstring upwb;
@@ -992,7 +994,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "createuser: <acct name> [-i] [-s] [-j] [-p password]\n");
+		report(out_hnd, "createuser: <acct name> [-i] [-s] [-j] domain_name [-p password]\n");
 		return;
 	}
 
@@ -1008,7 +1010,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		acb_info = ACB_WSTRUST;
 	}
 
-	while ((opt = getopt(argc, argv,"isjp:w:")) != EOF)
+	while ((opt = getopt(argc, argv,"isj:p:w:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -1025,6 +1027,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			case 'j':
 			{
 				join_domain = True;
+				fstrcpy(join_dom_name, optarg);
 				break;
 			}
 			case 'p':
@@ -1041,6 +1044,25 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
+	switch (acb_info)
+	{
+		case ACB_DOMTRUST:
+		{
+			fstrcpy(sec_name, "G$$");
+			fstrcat(sec_name, join_dom_name);
+			break;
+		}
+		case ACB_SVRTRUST:
+		case ACB_WSTRUST:
+		{
+			fstrcpy(sec_name, "$MACHINE.ACC");
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
 	/*
 	 * sort out the workstation name.  if it's ourselves, and we're
 	 * on MSRPC local loopback, must _also_ connect to workstation
@@ -1061,13 +1083,13 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	}
 	strupper(wks_name);
 
+	report(out_hnd, "SAM Create Domain User\n");
 	if (join_domain && acb_info == ACB_NORMAL)
 	{
 		report(out_hnd, "can only join trust accounts to a domain\n");
 		return;
 	}
 
-	report(out_hnd, "SAM Create Domain User\n");
 	report(out_hnd, "Domain: %s Name: %s ACB: %s\n",
 	                  domain, acct_name,
 	    pwdb_encode_acct_ctrl(acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
