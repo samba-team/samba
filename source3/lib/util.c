@@ -2334,21 +2334,21 @@ int name_extract(char *buf,int ofs,char *name)
 /****************************************************************************
 return the total storage length of a mangled name
 ****************************************************************************/
-int name_len( char *s )
+int name_len(unsigned char *s)
 {
   int len;
 
   /* If the two high bits of the byte are set, return 2. */
-  if( 0xC0 == (*(unsigned char *)s & 0xC0) )
+  if (0xC0 == (*s & 0xC0))
     return(2);
 
   /* Add up the length bytes. */
-  for( len = 1; (*s); s += (*s) + 1 )
-    {
-    len += *s + 1;
-    }
+  for (len = 1; (*s); s += (*s) + 1) {
+	  len += *s + 1;
+	  SMB_ASSERT(len < 80);
+  }
 
-  return( len );
+  return(len);
 } /* name_len */
 
 /****************************************************************************
