@@ -10,20 +10,6 @@ AC_SUBST(RUNPROG)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(HOST_OS)
-AC_SUBST(LIBMSRPC)
-AC_SUBST(LIBMSRPC32)
-AC_SUBST(LIBNMB)
-AC_SUBST(LIBNMB32)
-AC_SUBST(LIBSMB)
-AC_SUBST(LIBSURS)
-AC_SUBST(LIBSMBPW)
-AC_SUBST(LIBSMB32)
-AC_SUBST(LIBSURS32)
-AC_SUBST(LIBSMBPW32)
-AC_SUBST(LIBUBIQX)
-AC_SUBST(LIBUBIQX32)
-AC_SUBST(LIBSAMBA)
-AC_SUBST(LIBSAMBA32)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
@@ -73,7 +59,7 @@ case "$host_os" in
       fi
       ;;
 #
-# AIX4.x is *so* broken. It doesn't even admit to having large
+# AIX4.x doesn't even admit to having large
 # files *at all* unless the -D_LARGE_FILE or -D_LARGE_FILE_API flags are set.
 #
     *aix4*)
@@ -86,7 +72,7 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
+AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h )
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/route.h net/if.h)
 AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h sys/param.h ctype.h )
@@ -328,16 +314,10 @@ case "$host_os" in
 		;;
 		*irix*) AC_DEFINE(IRIX)
 			ATTEMPT_WRAP32_BUILD=yes
-			ATTEMPT_LIBSMB32_BUILD=yes
-			ATTEMPT_LIBSURS32_BUILD=yes
-			ATTEMPT_LIBSMBPW32_BUILD=yes
-			ATTEMPT_LIBNMB32_BUILD=yes
-			ATTEMPT_LIBSAMBA32_BUILD=yes
-			ATTEMPT_LIBUBIQX32_BUILD=yes
-			ATTEMPT_LIBMSRPC32_BUILD=yes
 		;;
 		*aix*) AC_DEFINE(AIX);;
-		*hpux*) AC_DEFINE(HPUX);;
+		*hpux*) AC_DEFINE(HPUX)
+		;;
 		*qnx*) AC_DEFINE(QNX);;
 		*osf*) AC_DEFINE(OSF1);;
 		*sco*) AC_DEFINE(SCO);;
@@ -355,13 +335,13 @@ if test x$PICFLAG = x; then
   AC_PROG_CC_FLAG(Kpic)
   if test $ac_cv_prog_cc_Kpic = yes; then
     PICFLAG="-Kpic";
-  fi 
+  fi
 fi
 if test x$PICFLAG = x; then
   AC_PROG_CC_FLAG(KPIC)
   if test $ac_cv_prog_cc_KPIC = yes; then
     PICFLAG="-KPIC";
-  fi 
+  fi
 fi
 
 ################
@@ -806,232 +786,6 @@ AC_SUBST(SAM_PWDB_LIB)
 
 
 #################################################
-# check for libmsrpc support
-AC_MSG_CHECKING(whether to use libmsrpc)
-AC_ARG_WITH(libmsrpc,
-[  --with-libmsrpc     Include libmsrpc support (default)
-  --without-libmsrpc  Don't include libmsrpc support ],
-[ case "$withval" in
-  no)
-    AC_MSG_RESULT(yes)
-	LIBMSRPC="bin/libmsrpc.so"
-
-	if test x$ATTEMPT_LIBMSRPC32_BUILD = x; then
-		LIBMSRPC32=""
-	else
-			LIBMSRPC32=bin/libmsrpc.32.so
-	fi
-
-# Conditions under which libmsrpc should not be built.
-
-	if test x$PICFLAG = x; then
-	   echo No support for PIC code - disabling libmsrpc
-	   LIBMSRPC=""
-	   LIBMSRPC32=""
-	fi
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-)
-
-#################################################
-# check for libubiqx support
-AC_MSG_CHECKING(whether to use libubiqx)
-AC_ARG_WITH(libubiqx,
-[  --with-libubiqx     Include SMB libubiqx support (default)
-  --without-libubiqx  Don't include SMB libubiqx support ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-	LIBUBIQX="bin/libubiqx.so"
-
-	if test x$ATTEMPT_LIBUBIQX32_BUILD = x; then
-		LIBUBIQX32=""
-	else
-			LIBUBIQX32=bin/libubiqx.32.so
-	fi
-
-# Conditions under which libubiqx should not be built.
-
-	if test x$PICFLAG = x; then
-	   echo No support for PIC code - disabling libubiqx
-	   LIBUBIQX=""
-	   LIBUBIQX32=""
-	fi
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-)
-
-#################################################
-# check for libsamba support
-AC_MSG_CHECKING(whether to use libsamba)
-AC_ARG_WITH(libsamba,
-[  --with-libsamba     Include SMB libsamba support (default)
-  --without-libsamba  Don't include SMB libsamba support ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-	LIBSAMBA="bin/libsamba.so"
-
-	if test x$ATTEMPT_LIBSAMBA32_BUILD = x; then
-		LIBSAMBA32=""
-	else
-			LIBSAMBA32=bin/libsamba.32.so
-	fi
-
-# Conditions under which libsamba should not be built.
-
-	if test x$PICFLAG = x; then
-	   echo No support for PIC code - disabling libsamba
-	   LIBSAMBA=""
-	   LIBSAMBA32=""
-	fi
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-)
-
-#################################################
-# check for libnmb support
-AC_MSG_CHECKING(whether to use libnmb)
-AC_ARG_WITH(libnmb,
-[  --with-libnmb     Include NMB libnmb support (default)
-  --without-libnmb  Don't include NMB libnmb support ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-	LIBNMB="bin/libnmb.so"
-
-	if test x$ATTEMPT_LIBNMB32_BUILD = x; then
-		LIBNMB32=""
-	else
-			LIBNMB32=bin/libnmb.32.so
-	fi
-
-# Conditions under which libnmb should not be built.
-
-	if test x$PICFLAG = x; then
-	   echo No support for PIC code - disabling libnmb
-	   LIBNMB=""
-	   LIBNMB32=""
-	fi
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-)
-
-#################################################
-# check for libsurs support
-AC_MSG_CHECKING(whether to use libsurs)
-AC_ARG_WITH(libsurs,
-[  --with-libsurs     Include SMB libsurs support (default)
-  --without-libsurs  Don't include SMB libsurs support ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-	LIBSURS="bin/libsurs.so"
-
-	if test x$ATTEMPT_LIBSURS32_BUILD = x; then
-		LIBSURS32=""
-	else
-			LIBSURS32=bin/libsurs.32.so
-	fi
-
-# Conditions under which libsurs should not be built.
-
-	if test x$PICFLAG = x; then
-	   echo No support for PIC code - disabling libsurs
-	   LIBSURS=""
-	   LIBSURS32=""
-	fi
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-)
-
-#################################################
-# check for libsmbpw support
-AC_MSG_CHECKING(whether to use libsmbpw)
-AC_ARG_WITH(libsmbpw,
-[  --with-libsmbpw     Include SMB libsmbpw support (default)
-  --without-libsmbpw  Don't include SMB libsmbpw support ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-	LIBSMBPW="bin/libsmbpw.so"
-
-	if test x$ATTEMPT_LIBSMBPW32_BUILD = x; then
-		LIBSMBPW32=""
-	else
-			LIBSMBPW32=bin/libsmbpw.32.so
-	fi
-
-# Conditions under which libsmbpw should not be built.
-
-	if test x$PICFLAG = x; then
-	   echo No support for PIC code - disabling libsmbpw
-	   LIBSMBPW=""
-	   LIBSMBPW32=""
-	fi
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-)
-
-
-#################################################
-# check for libsmb support
-AC_MSG_CHECKING(whether to use libsmb)
-AC_ARG_WITH(libsmb,
-[  --with-libsmb     Include SMB libsmb support (default)
-  --without-libsmb  Don't include SMB libsmb support ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-	LIBSMB="bin/libsmb.so"
-
-	if test x$ATTEMPT_LIBSMB32_BUILD = x; then
-		LIBSMB32=""
-	else
-			LIBSMB32=bin/libsmb.32.so
-	fi
-
-# Conditions under which libsmb should not be built.
-
-	if test x$PICFLAG = x; then
-	   echo No support for PIC code - disabling libsmb
-	   LIBSMB=""
-	   LIBSMB32=""
-	fi
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-)
-
-
-#################################################
 # check for smbwrapper support
 AC_MSG_CHECKING(whether to use smbwrapper)
 AC_ARG_WITH(smbwrapper,
@@ -1391,6 +1145,24 @@ AC_SUBST(QUOTAOBJS)
 
 #################################################
 # set private directory location
+AC_ARG_WITH(privatedir,
+[  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-privatedir called without argument - will use default])
+    privatedir='${prefix}/private'
+  ;;
+  * )
+    privatedir="$withval"
+    ;;
+  esac
+  AC_SUBST(privatedir)],
+  [privatedir='${prefix}/private'
+   AC_SUBST(privatedir)]
+)
 
 #################################################
 # set lock directory location

@@ -2,8 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Samba utility functions
-   Copyright (C) Andrew Tridgell 1992-1999
-   Copyright (C) Luke Kenneth Casson Leighton 1996 - 1999
+   Copyright (C) Andrew Tridgell              1992-2000,
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+   Copyright (C) Elrond                            2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "rpcclient.h"
 
 /****************************************************************************
  display alias members
@@ -157,8 +159,8 @@ void display_group_members(FILE *out_hnd, enum action_type action,
 /****************************************************************************
  display group info
  ****************************************************************************/
-void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *const info1)
-				
+static void display_group_info1(FILE *out_hnd, enum action_type action,
+				GROUP_INFO1 *const info1)
 {
 	switch (action)
 	{
@@ -188,8 +190,8 @@ void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *co
 /****************************************************************************
  display group info
  ****************************************************************************/
-void display_group_info4(FILE *out_hnd, enum action_type action, GROUP_INFO4 *const info4)
-				
+static void display_group_info4(FILE *out_hnd, enum action_type action,
+				GROUP_INFO4 *const info4)
 {
 	switch (action)
 	{
@@ -343,8 +345,7 @@ void display_alias_name_info(FILE *out_hnd, enum action_type action,
 /****************************************************************************
  display alias info
  ****************************************************************************/
-void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *const info3)
-				
+static void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *const info3)
 {
 	switch (action)
 	{
@@ -491,7 +492,7 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 /****************************************************************************
  display sam sync structure
  ****************************************************************************/
-void display_sam_unk_info_2(FILE *out_hnd, enum action_type action, 
+static void display_sam_unk_info_2(FILE *out_hnd, enum action_type action, 
 				SAM_UNK_INFO_2 *const info2)
 {
 	switch (action)
@@ -573,7 +574,7 @@ void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 sam info level 1 display function
 ****************************************************************************/
-void display_sam_info_1(FILE *out_hnd, enum action_type action, 
+static void display_sam_info_1(FILE *out_hnd, enum action_type action, 
 		SAM_ENTRY1 *const e1, SAM_STR1 *const s1)
 {
 	if (e1 == NULL)
@@ -620,7 +621,7 @@ void display_sam_info_1(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 connection info level 1 container display function
 ****************************************************************************/
-void display_sam_info_1_ctr(FILE *out_hnd, enum action_type action, 
+static void display_sam_info_1_ctr(FILE *out_hnd, enum action_type action, 
 				uint32 count, SAM_DISPINFO_1 *const ctr)
 {
 	if (ctr == NULL)

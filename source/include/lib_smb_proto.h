@@ -23,74 +23,6 @@ void MD5Update(struct MD5Context *ctx, uchar const *buf, unsigned len);
 void MD5Final(uchar digest[16], struct MD5Context *ctx);
 void MD5Transform(uint32 buf[4], const uchar inext[64]);
 
-/*The following definitions come from  lib/util_hnd.c  */
-
-struct policy_cache *get_global_hnd_cache(void);
-struct policy_cache *init_policy_cache(int num_pol_hnds);
-void free_policy_cache(struct policy_cache *cache);
-BOOL policy_hnd_set_name(struct policy_cache *cache,
-			 POLICY_HND *hnd, const char *name);
-const char *policy_hnd_get_name(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL dup_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd,
-				const POLICY_HND *from);
-BOOL register_policy_hnd(struct policy_cache *cache,
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd(struct policy_cache *cache, 
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd_link(struct policy_cache *cache, 
-				const POLICY_HND *parent_hnd,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
-				void(*fn)(void*), void *dev);
-void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL policy_hnd_set_state_type(struct policy_cache *cache,
-			       POLICY_HND *hnd, int type);
-int policy_hnd_get_state_type(struct policy_cache *cache,
-			      const POLICY_HND *hnd);
-BOOL policy_hnd_check_state_type(struct policy_cache *cache,
-				 const POLICY_HND *hnd, int type);
-BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
-BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
-				POLICY_HND *to);
-const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
-				uchar usr_sess_key[16]);
-
-/*The following definitions come from  lib/vuser.c  */
-
-BOOL is_valid_user_struct(const vuser_key * key);
-user_struct *get_valid_user_struct(const vuser_key * key);
-void invalidate_vuid(vuser_key * key);
-BOOL validated_username(vuser_key * key, char *name, size_t len);
-uint16 create_vuid(pid_t pid,
-		   uid_t uid, gid_t gid,
-		   int n_groups, gid_t * groups,
-		   const char *unix_name,
-		   const char *requested_name,
-		   const char *real_name,
-		   BOOL guest, const NET_USER_INFO_3 * info3);
-uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
-		     const char *unix_name,
-		     const char *requested_name,
-		     BOOL guest, const NET_USER_INFO_3 * info3);
-BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
-
-/*The following definitions come from  lib/vuser_db.c  */
-
-BOOL tdb_delete_vuid( const vuser_key *uk);
-BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
-BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
-BOOL vuid_init_db(void);
-
 /*The following definitions come from  libsmb/clientgen.c  */
 
 int cli_set_port(struct cli_state *cli, int port);
@@ -308,6 +240,74 @@ BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len);
 BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len);
 char *smb_errstr(char *inbuf);
 
+/*The following definitions come from  lib/util_hnd.c  */
+
+struct policy_cache *get_global_hnd_cache(void);
+struct policy_cache *init_policy_cache(int num_pol_hnds);
+void free_policy_cache(struct policy_cache *cache);
+BOOL policy_hnd_set_name(struct policy_cache *cache,
+			 POLICY_HND *hnd, const char *name);
+const char *policy_hnd_get_name(struct policy_cache *cache,
+				const POLICY_HND *hnd);
+BOOL dup_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd,
+				const POLICY_HND *from);
+BOOL register_policy_hnd(struct policy_cache *cache,
+				const vuser_key *key,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+BOOL open_policy_hnd(struct policy_cache *cache, 
+				const vuser_key *key,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+BOOL open_policy_hnd_link(struct policy_cache *cache, 
+				const POLICY_HND *parent_hnd,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
+				void(*fn)(void*), void *dev);
+void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL policy_hnd_set_state_type(struct policy_cache *cache,
+			       POLICY_HND *hnd, int type);
+int policy_hnd_get_state_type(struct policy_cache *cache,
+			      const POLICY_HND *hnd);
+BOOL policy_hnd_check_state_type(struct policy_cache *cache,
+				 const POLICY_HND *hnd, int type);
+BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
+BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
+				POLICY_HND *to);
+const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
+				const POLICY_HND *hnd);
+BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
+				uchar usr_sess_key[16]);
+
+/*The following definitions come from  lib/vuser.c  */
+
+BOOL is_valid_user_struct(const vuser_key * key);
+user_struct *get_valid_user_struct(const vuser_key * key);
+void invalidate_vuid(vuser_key * key);
+BOOL validated_username(vuser_key * key, char *name, size_t len);
+uint16 create_vuid(pid_t pid,
+		   uid_t uid, gid_t gid,
+		   int n_groups, gid_t * groups,
+		   const char *unix_name,
+		   const char *requested_name,
+		   const char *real_name,
+		   BOOL guest, const NET_USER_INFO_3 * info3);
+uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
+		     const char *unix_name,
+		     const char *requested_name,
+		     BOOL guest, const NET_USER_INFO_3 * info3);
+BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
+
+/*The following definitions come from  lib/vuser_db.c  */
+
+BOOL tdb_delete_vuid( const vuser_key *uk);
+BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
+BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
+BOOL vuid_init_db(void);
+
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
 BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name,
@@ -343,83 +343,6 @@ BOOL create_user_creds( prs_struct *ps,
 				uint16 version, uint16 command,
 				const vuser_key *key,
 				const struct user_creds *usr);
-
-/*The following definitions come from  rpc_parse/parse_misc.c  */
-
-BOOL smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth);
-BOOL smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth);
-BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth);
-uint32 get_enum_hnd(ENUM_HND *enh);
-BOOL make_enum_hnd(ENUM_HND *enh, uint32 hnd);
-BOOL smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth);
-BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth);
-BOOL make_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid);
-BOOL smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth);
-BOOL make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
-BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
-BOOL make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer);
-BOOL smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth);
-BOOL make_uni_hdr(UNIHDR *hdr, int len);
-BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
-BOOL make_buf_hdr(BUFHDR *hdr, int max_len, int len);
-BOOL smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
-BOOL smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
-				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
-BOOL smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
-BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer);
-BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
-BOOL make_uni_hdr2(UNIHDR2 *hdr, int len);
-BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
-BOOL make_unistr(UNISTR *str, char *buf);
-BOOL smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth);
-BOOL make_buffer3_uint32(BUFFER3 *str, uint32 val);
-BOOL make_buffer3_str(BUFFER3 *str, const char *buf, int len);
-BOOL make_buffer3_hex(BUFFER3 *str, char *buf);
-BOOL make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
-BOOL smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth);
-BOOL make_buffer4_str(BUFFER4 *str, const char *buf, int len);
-BOOL smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth);
-BOOL init_buffer5(BUFFER5 **str);
-BOOL clear_buffer5(BUFFER5 **str);
-BOOL make_buffer5(BUFFER5 *str, char *buf, int len);
-BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
-BOOL make_buffer2_multi(BUFFER2 *str, char *const* const buf, uint32 num);
-BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
-BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
-BOOL make_string2(STRING2 *str, const char *buf, int len);
-BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
-BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
-BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx);
-BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
-BOOL make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
-BOOL smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);
-BOOL make_log_info(DOM_LOG_INFO *log,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name);
-BOOL smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth);
-BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
-BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
-BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				const char *logon_srv, const char *comp_name,
-				DOM_CRED *clnt_cred);
-BOOL smb_io_clnt_info2(char *desc,  DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth);
-BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-				DOM_CRED *cred);
-BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
-BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16]);
-BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
-BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
-BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
-BOOL smb_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-BOOL smb_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 

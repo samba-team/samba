@@ -84,6 +84,11 @@ static void update_trust_account(void)
 		s1 = _lsa_open_secret(&lsa_pol, &uni_sec_name, 0x02000000,
 				      &pol_sec);
 	}
+	else
+	{
+		DEBUG(0, ("_lsa_open_policy2 failed with 0x%x\n", s));
+		return;
+	}
 
 	if (s1 == NT_STATUS_NOPROBLEMO)
 	{
@@ -93,6 +98,13 @@ static void update_trust_account(void)
 			s2 = NT_STATUS_INVALID_HANDLE;
 		}
 	}
+	else
+	{
+		DEBUG(0, ("_lsa_open_secret failed with 0x%x\n", s1));
+		_lsa_close(&lsa_pol);
+		return;
+	}
+
 	if (s2 == NT_STATUS_NOPROBLEMO)
 	{
 		s2 = _lsa_query_secret(&pol_sec, &encsec, &ntlct, NULL, NULL);

@@ -719,6 +719,9 @@ uint32 _lsa_open_secret(const POLICY_HND *hnd,
 	tdb = open_secret_db(O_RDWR);
 	if (tdb == NULL)
 	{
+		DEBUG(0, ("_lsa_open_secret: couldn't open secret_db. Possible attack?"));
+		DEBUG(0, ("\nuid=%d, gid=%d, euid=%d, egid=%d\n",
+			  getuid(), getgid(), geteuid(), getegid()));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

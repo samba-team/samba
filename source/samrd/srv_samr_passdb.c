@@ -241,6 +241,9 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	policy_hnd_set_name(get_global_hnd_cache(),
+			    domain_pol, "sam_domain");
+
 	/* associate the domain SID with the (unique) handle. */
 	if (!set_policy_samr_sid(get_global_hnd_cache(), domain_pol, sid))
 	{
@@ -1247,12 +1250,12 @@ uint32 _samr_query_useraliases(const POLICY_HND *pol,
 	}
 	else
 	{
-		return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_NO_SUCH_USER; /* no user (in domain) */
 	}
 
 	if (num_rids > 0)
 	{
-		(*rid) = malloc(num_rids * sizeof(uint32));
+		(*rid) = g_new(uint32, num_rids);
 		if (mem_grp != NULL && (*rid) != NULL)
 		{
 			int i;
@@ -1884,6 +1887,11 @@ static BOOL set_user_info_12(const SAM_USER_INFO_12 *id12, uint32 rid)
 	{
 		return False;
 	}
+	if (id12 == NULL)
+	{
+		DEBUG(2, ("set_user_info_12: id12 is NULL\n"));
+		return False;
+	}
 
 	pwdb_init_sam(&new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
@@ -2434,6 +2442,9 @@ uint32 _samr_connect_anon(const UNISTR2 *srv_name, uint32 access_mask,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	policy_hnd_set_name(get_global_hnd_cache(),
+			    connect_pol, "sam_connect_anon");
+
 	return NT_STATUS_NOPROBLEMO;
 }
 
@@ -2449,6 +2460,9 @@ uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	policy_hnd_set_name(get_global_hnd_cache(),
+			    connect_pol, "sam_connect");
 
 	return NT_STATUS_NOPROBLEMO;
 }

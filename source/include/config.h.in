@@ -33,6 +33,9 @@
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef mode_t
 
+/* Define if your C compiler doesn't accept -c and -o together.  */
+#undef NO_MINUS_C_MINUS_O
+
 /* Define to `long' if <sys/types.h> doesn't define.  */
 #undef off_t
 
@@ -71,6 +74,7 @@
 #undef loff_t
 #undef offset_t
 #undef aclent_t
+#undef wchar_t
 #undef HAVE_CONNECT
 #undef HAVE_SHORT_INO_T
 #undef WITH_SMBWRAPPER
@@ -156,6 +160,8 @@
 #undef USE_SETUIDX
 
 #undef WITH_NT5LDAP
+
+#undef HAVE_VOLATILE
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -625,6 +631,9 @@
 /* Define if you have the yp_get_default_domain function.  */
 #undef HAVE_YP_GET_DEFAULT_DOMAIN
 
+/* Define if you have the <arpa/inet.h> header file.  */
+#undef HAVE_ARPA_INET_H
+
 /* Define if you have the <compat.h> header file.  */
 #undef HAVE_COMPAT_H
 
@@ -808,8 +817,20 @@
 /* Define if you have the <utime.h> header file.  */
 #undef HAVE_UTIME_H
 
+/* Define if you have the <utmp.h> header file.  */
+#undef HAVE_UTMP_H
+
+/* Define if you have the <utmpx.h> header file.  */
+#undef HAVE_UTMPX_H
+
+/* Define if you have the cups library (-lcups).  */
+#undef HAVE_LIBCUPS
+
 /* Define if you have the dl library (-ldl).  */
 #undef HAVE_LIBDL
+
+/* Define if you have the gen library (-lgen).  */
+#undef HAVE_LIBGEN
 
 /* Define if you have the inet library (-linet).  */
 #undef HAVE_LIBINET

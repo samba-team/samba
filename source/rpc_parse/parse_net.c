@@ -1664,24 +1664,24 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 	if (usr == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "net_io_lsa_user_info3");
+	prs_debug(ps, depth, desc, "net_io_user_info3");
 	depth++;
 
 	prs_align(ps);
 
-	smb_io_time("time", &(usr->logon_time), ps, depth);	/* logon time */
-	smb_io_time("time", &(usr->logoff_time), ps, depth);	/* logoff time */
-	smb_io_time("time", &(usr->kickoff_time), ps, depth);	/* kickoff time */
-	smb_io_time("time", &(usr->pass_last_set_time), ps, depth);	/* password last set time */
-	smb_io_time("time", &(usr->pass_can_change_time), ps, depth);	/* password can change time */
-	smb_io_time("time", &(usr->pass_must_change_time), ps, depth);	/* password must change time */
+	smb_io_time("logon_time", &(usr->logon_time), ps, depth);	/* logon time */
+	smb_io_time("logoff_time", &(usr->logoff_time), ps, depth);	/* logoff time */
+	smb_io_time("kickoff_time", &(usr->kickoff_time), ps, depth);	/* kickoff time */
+	smb_io_time("pass_last_set_time", &(usr->pass_last_set_time), ps, depth);	/* password last set time */
+	smb_io_time("pass_can_change_time", &(usr->pass_can_change_time), ps, depth);	/* password can change time */
+	smb_io_time("pass_must_change_time", &(usr->pass_must_change_time), ps, depth);	/* password must change time */
 
-	smb_io_unihdr("unihdr", &(usr->hdr_user_name), ps, depth);	/* username unicode string header */
-	smb_io_unihdr("unihdr", &(usr->hdr_full_name), ps, depth);	/* user's full name unicode string header */
-	smb_io_unihdr("unihdr", &(usr->hdr_logon_script), ps, depth);	/* logon script unicode string header */
-	smb_io_unihdr("unihdr", &(usr->hdr_profile_path), ps, depth);	/* profile path unicode string header */
-	smb_io_unihdr("unihdr", &(usr->hdr_home_dir), ps, depth);	/* home directory unicode string header */
-	smb_io_unihdr("unihdr", &(usr->hdr_dir_drive), ps, depth);	/* home directory drive unicode string header */
+	smb_io_unihdr("hdr_user_name", &(usr->hdr_user_name), ps, depth);	/* username unicode string header */
+	smb_io_unihdr("hdr_full_name", &(usr->hdr_full_name), ps, depth);	/* user's full name unicode string header */
+	smb_io_unihdr("hdr_logon_script", &(usr->hdr_logon_script), ps, depth);	/* logon script unicode string header */
+	smb_io_unihdr("hdr_profile_path", &(usr->hdr_profile_path), ps, depth);	/* profile path unicode string header */
+	smb_io_unihdr("hdr_home_dir", &(usr->hdr_home_dir), ps, depth);	/* home directory unicode string header */
+	smb_io_unihdr("hdr_dir_drive", &(usr->hdr_dir_drive), ps, depth);	/* home directory drive unicode string header */
 
 	prs_uint16("logon_count   ", ps, depth, &(usr->logon_count));	/* logon count */
 	prs_uint16("bad_pw_count  ", ps, depth, &(usr->bad_pw_count));	/* bad password count */
@@ -1694,8 +1694,8 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 
 	prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16);	/* unused user session key */
 
-	smb_io_unihdr("unihdr", &(usr->hdr_logon_srv), ps, depth);	/* logon server unicode string header */
-	smb_io_unihdr("unihdr", &(usr->hdr_logon_dom), ps, depth);	/* logon domain unicode string header */
+	smb_io_unihdr("hdr_logon_srv", &(usr->hdr_logon_srv), ps, depth);	/* logon server unicode string header */
+	smb_io_unihdr("hdr_logon_dom", &(usr->hdr_logon_dom), ps, depth);	/* logon domain unicode string header */
 
 	prs_uint32("buffer_dom_id ", ps, depth, &(usr->buffer_dom_id));	/* undocumented logon domain id pointer */
 	prs_uint8s(False, "padding       ", ps, depth, usr->padding, 40);	/* unused padding bytes? */
@@ -1703,20 +1703,20 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 	prs_uint32("num_other_sids", ps, depth, &(usr->num_other_sids));	/* 0 - num_sids */
 	prs_uint32("buffer_other_sids", ps, depth, &(usr->buffer_other_sids));	/* NULL - undocumented pointer to SIDs. */
 
-	smb_io_unistr2("unistr2", &(usr->uni_user_name),
+	smb_io_unistr2("user_name", &(usr->uni_user_name),
 		       usr->hdr_user_name.buffer, ps, depth);	/* username unicode string */
-	smb_io_unistr2("unistr2", &(usr->uni_full_name),
+	smb_io_unistr2("full_name", &(usr->uni_full_name),
 		       usr->hdr_full_name.buffer, ps, depth);	/* user's full name unicode string */
-	smb_io_unistr2("unistr2", &(usr->uni_logon_script),
+	smb_io_unistr2("logon_script", &(usr->uni_logon_script),
 		       usr->hdr_logon_script.buffer, ps, depth);	/* logon script unicode string */
-	smb_io_unistr2("unistr2", &(usr->uni_profile_path),
+	smb_io_unistr2("profile_path", &(usr->uni_profile_path),
 		       usr->hdr_profile_path.buffer, ps, depth);	/* profile path unicode string */
-	smb_io_unistr2("unistr2", &(usr->uni_home_dir),
+	smb_io_unistr2("home_dir", &(usr->uni_home_dir),
 		       usr->hdr_home_dir.buffer, ps, depth);	/* home directory unicode string */
-	smb_io_unistr2("unistr2", &(usr->uni_dir_drive),
+	smb_io_unistr2("dir_drive", &(usr->uni_dir_drive),
 		       usr->hdr_dir_drive.buffer, ps, depth);	/* home directory drive unicode string */
-
 	prs_align(ps);
+
 	prs_uint32("num_groups2   ", ps, depth, &(usr->num_groups2));	/* num groups */
 	SMB_ASSERT_ARRAY(usr->gids, usr->num_groups2);
 	for (i = 0; i < usr->num_groups2; i++)
@@ -1724,12 +1724,12 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 		smb_io_gid("", &(usr->gids[i]), ps, depth);	/* group info */
 	}
 
-	smb_io_unistr2("unistr2", &(usr->uni_logon_srv),
+	smb_io_unistr2("logon_srv", &(usr->uni_logon_srv),
 		       usr->hdr_logon_srv.buffer, ps, depth);	/* logon server unicode string */
-	smb_io_unistr2("unistr2", &(usr->uni_logon_dom),
+	smb_io_unistr2("logon_dom", &(usr->uni_logon_dom),
 		       usr->hdr_logon_srv.buffer, ps, depth);	/* logon domain unicode string */
 
-	smb_io_dom_sid2("sid", &(usr->dom_sid), ps, depth);	/* domain SID */
+	smb_io_dom_sid2("dom_sid", &(usr->dom_sid), ps, depth);	/* domain SID */
 
 	SMB_ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
 

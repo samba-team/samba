@@ -26,7 +26,7 @@
 /****************************************************************************
 convert a share mode to a string
 ****************************************************************************/
-char *get_file_mode_str(uint32 share_mode)
+static char *get_file_mode_str(uint32 share_mode)
 {
 	static fstring mode;
 
@@ -88,7 +88,7 @@ static const char *get_share_type_str(uint32 type)
 /****************************************************************************
 convert a server type enum to a string
 ****************************************************************************/
-char *get_server_type_str(uint32 type)
+static char *get_server_type_str(uint32 type)
 {
 	static fstring typestr;
 
@@ -269,7 +269,7 @@ void display_srv_info_ctr(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 connection info level 0 display function
 ****************************************************************************/
-void display_conn_info_0(FILE *out_hnd, enum action_type action, 
+static void display_conn_info_0(FILE *out_hnd, enum action_type action, 
 		CONN_INFO_0 *const info0)
 {
 	if (info0 == NULL)
@@ -303,7 +303,7 @@ void display_conn_info_0(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 connection info level 1 display function
 ****************************************************************************/
-void display_conn_info_1(FILE *out_hnd, enum action_type action, 
+static void display_conn_info_1(FILE *out_hnd, enum action_type action, 
 		CONN_INFO_1 *const info1, CONN_INFO_1_STR *const str1)
 {
 	if (info1 == NULL || str1 == NULL)
@@ -350,7 +350,7 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 connection info level 0 container display function
 ****************************************************************************/
-void display_srv_conn_info_0_ctr(FILE *out_hnd, enum action_type action, 
+static void display_srv_conn_info_0_ctr(FILE *out_hnd, enum action_type action, 
 				SRV_CONN_INFO_0 *const ctr)
 {
 	if (ctr == NULL)
@@ -387,7 +387,7 @@ void display_srv_conn_info_0_ctr(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 connection info level 1 container display function
 ****************************************************************************/
-void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action, 
+static void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action, 
 				SRV_CONN_INFO_1 *const ctr)
 {
 	if (ctr == NULL)
@@ -878,7 +878,7 @@ void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 sess info level 0 display function
 ****************************************************************************/
-void display_sess_info_0(FILE *out_hnd, enum action_type action, 
+static void display_sess_info_0(FILE *out_hnd, enum action_type action, 
 		SESS_INFO_0 *const info0, SESS_INFO_0_STR *const str0)
 {
 	if (info0 == NULL || str0 == NULL)
@@ -917,7 +917,7 @@ void display_sess_info_0(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 sess info level 1 display function
 ****************************************************************************/
-void display_sess_info_1(FILE *out_hnd, enum action_type action, 
+static void display_sess_info_1(FILE *out_hnd, enum action_type action, 
 		SESS_INFO_1 *const info1, SESS_INFO_1_STR *const str1)
 {
 	if (info1 == NULL || str1 == NULL)

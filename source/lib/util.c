@@ -2779,6 +2779,11 @@ void dump_data(int level, const char *buf1, int len)
 {
 	uchar const *buf = (uchar const *)buf1;
 	int i = 0;
+	if (buf == NULL)
+	{
+		DEBUG(level, ("dump_data: NULL, len=%d\n", len));
+		return;
+	}
 	if (len < 0)
 		return;
 	if (len == 0)
