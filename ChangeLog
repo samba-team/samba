@@ -1,3 +1,11 @@
+2005-02-02  Luke Howard  <lukeh@padl.com>
+
+	* configure.in: generate kcm/Makefile
+
+	* Makefile.am: recurse into kcm/ if KCM defined
+
+	* kcm: add KCM daemon
+
 2005-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/send_to_kdc.c (send_and_recv_udp): make private again
