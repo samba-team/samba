@@ -2996,88 +2996,6 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 	return False;
 }
 
-static BOOL cli_init_redirect(struct cli_state *cli,
-				const char* srv_name, struct in_addr *destip,
-				const struct ntuser_creds *usr)
-{
-	int sock;
-	fstring ip_name;
-	struct cli_state cli_redir;
-	fstring path;
-	vuser_key key;
-
-	uint32 len;
-	char *data;
-	char *in = cli->inbuf;
-	char *out = cli->outbuf;
-	prs_struct ps;
-	uint16 command;
-
-	key.pid = getpid();
-	key.vuid = UID_FIELD_INVALID;
-
-	slprintf(path, sizeof(path)-1, "/tmp/.smb.%d/agent", (int)getuid());
-
-	if (strequal(srv_name, "*SMBSERVER"))
-	{
-		fstrcpy(ip_name, "\\\\");
-		fstrcpy(&ip_name[2], inet_ntoa(*destip));
-		srv_name = ip_name;
-	}
-
-	sock = open_pipe_sock(path);
-
-	if (sock < 0)
-	{
-		return False;
-	}
-
-	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
-
-	if (!create_ntuser_creds(&ps, srv_name, 0x0, command,
-	                         &key, usr,
-	                         cli->reuse))
-	{
-		DEBUG(0,("could not parse credentials\n"));
-		close(sock);
-		return False;
-	}
-
-	len = ps.offset;
-	data = prs_data(&ps, 0);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("data len: %d\n", len));
-	dump_data(100, data, len);
-#endif
-
-	SIVAL(data, 0, len);
-
-	if (write(sock, data, len) <= 0)
-	{
-		DEBUG(0,("write failed\n"));
-		close(sock);
-		return False;
-	}
-
-	len = read(sock, &cli_redir, sizeof(cli_redir));
-
-	if (len != sizeof(cli_redir))
-	{
-		DEBUG(0,("read failed\n"));
-		close(sock);
-		return False;
-	}
-	
-	memcpy(cli, &cli_redir, sizeof(cli_redir));
-	cli->inbuf = in;
-	cli->outbuf = out;
-	cli->fd = sock;
-	cli->reuse = False;
-
-	return sock;
-}
-
 /****************************************************************************
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
@@ -3106,18 +3024,6 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		return False;
 	}
 
-	if (cli->fd == -1 && cli->redirect)
-	{
-		if (cli_init_redirect(cli, dest_host, dest_ip, &cli->usr))
-		{
-			DEBUG(10,("cli_establish_connection: redirected OK\n"));
-			return True;
-		}
-		else
-		{
-			DEBUG(10,("redirect FAILED, make direct connection\n"));
-		}
-	}
 	if (cli->fd == -1)
 	{
 		if (!cli_connect(cli, dest_host, dest_ip))
@@ -3920,51 +3826,6 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	*total = SVAL(cli->inbuf,smb_vwv0);
 	*avail = SVAL(cli->inbuf,smb_vwv3);
 	
-	return True;
-}
-
-BOOL get_any_dc_name(const char *domain, char *srv_name)
-{
-	extern pstring global_myname;
-	struct cli_state cli;
-	char *servers;
-
-	DEBUG(10,("get_any_dc_name: domain %s\n", domain));
-
-	if (strequal(domain, global_myname)
-	    || strequal(domain, "Builtin"))
-	{
-		DEBUG(10,("get_any_dc_name: our own server!\n"));
-		fstrcpy(srv_name, "\\\\.");
-		return True;
-	}
-
-	servers = get_trusted_serverlist(domain);
-
-	if (servers == NULL)
-	{
-		/* no domain found, not even our own domain. */
-		return False;
-	}
-
-	if (servers[0] == 0)
-	{
-		/* empty list: return our own name */
-		fstrcpy(srv_name, "\\\\.");
-		return True;
-	}
-
-	if (!cli_connect_servers_auth(&cli, servers, NULL))
-	{
-		return False;
-	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, cli.desthost);
-	strupper(srv_name);
-
-	cli_shutdown(&cli);
-
 	return True;
 }
 
