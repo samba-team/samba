@@ -419,7 +419,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
         BOOL got_dom_pol = False, got_group_pol = False;
 
-	DEBUG(3,("rpc: lookup_groupmem rid=%u\n", group_rid));
+	DEBUG(10,("rpc: lookup_groupmem %s rid=%u\n", domain->name, group_rid));
 
 	*num_names = 0;
 
@@ -523,7 +523,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 
-	DEBUG(3,("rpc: sequence_number\n"));
+	DEBUG(10,("rpc: fetch sequence_number for %s\n", domain->name));
 
 	*seq = DOM_SEQUENCE_NONE;
 
