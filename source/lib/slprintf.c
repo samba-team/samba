@@ -61,12 +61,8 @@ int vslprintf(char *str, int n, char *format, va_list ap)
 		}
 	}
 
-	ret = vsprintf(buf, format, ap);
-
-	if (ret < 0) {
-		str[0] = 0;
-		return -1;
-	}
+	vsprintf(buf, format, ap);
+	ret = strlen(buf);
 
 	if (ret < n) {
 		n = ret;
