@@ -25,6 +25,8 @@
 
 #include "includes.h"
 
+#include "module_dummy.h"
+
 /* Default timeout value when waiting for replies (in seconds) */
 
 #define DEFAULT_TIMEOUT 10

@@ -297,6 +297,8 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 #include <unistd.h>
 #include <sys/mman.h>
 
+#include "module_dummy.h"
+
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
 

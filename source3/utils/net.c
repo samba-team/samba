@@ -40,6 +40,10 @@
 #include "includes.h"
 #include "../utils/net.h"
 
+#define HAVE_SMB_REGISTER_PASSDB
+#include "module_dummy.h"
+
+
 /***********************************************************************/
 /* Beginning of internationalization section.  Translatable constants  */
 /* should be kept in this area and referenced in the rest of the code. */
