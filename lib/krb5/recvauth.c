@@ -2,6 +2,10 @@
 
 RCSID("$Id$");
 
+/*
+ *
+ */
+
 krb5_error_code
 krb5_recvauth(krb5_context context,
 	      krb5_auth_context *auth_context,
