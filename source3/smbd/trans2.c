@@ -786,9 +786,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	if (open_ofun == 0) {
 		if (GET_OPEN_MODE(open_mode) == DOS_OPEN_EXEC) {
 			open_ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
-		} else {
-			END_PROFILE(SMBopenX);
-			return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
 		}
 	}
 
