@@ -13,11 +13,6 @@ main()
 	printf("WARNING: No automated network interface determination\n");
 #endif
 
-#if !(defined(USE_SETEUID) || defined(USE_SETREUID) || defined(USE_SETRESUID) || defined(USE_SETUIDX))
-	printf("ERROR: no seteuid method available\n");
-	/* REWRITE: exit(1); */
-#endif
-
 #if !(defined(STAT_STATVFS) || defined(STAT_STATVFS64) || defined(STAT_STATFS3_OSF1) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS4) || defined(STAT_STATFS2_FSIZE) || defined(STAT_STATFS2_FS_DATA))
 	printf("ERROR: No disk free routine!\n");
 	exit(1);
