@@ -222,12 +222,13 @@
 #define WERR_PRINTER_HAS_JOBS_QUEUED W_ERROR(ERRprinterhasjobsqueued)
 
 
-/* DFS errors */
-
 #ifndef NERR_BASE
 #define NERR_BASE (2100)
 #endif
 
+#define WERR_NET_NAME_NOT_FOUND		W_ERROR(NERR_BASE+210)
+
+/* DFS errors */
 #define WERR_DFS_NO_SUCH_VOL            W_ERROR(NERR_BASE+562)
 #define WERR_DFS_NO_SUCH_SHARE          W_ERROR(NERR_BASE+565)
 #define WERR_DFS_NO_SUCH_SERVER         W_ERROR(NERR_BASE+573)
