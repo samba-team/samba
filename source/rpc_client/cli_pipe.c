@@ -357,11 +357,10 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, &rpdu, 0);
 	}
 
-        SMB_ASSERT(auth->cli_decode_pdu != NULL);
-
-	if (rhdr.auth_len != 0 &&
-	    !auth->cli_decode_pdu(con, &rpdu, rhdr.frag_len,
-                                  rhdr.auth_len))
+	if (rhdr.auth_len != 0
+	    && (auth->cli_decode_pdu != NULL)
+	    && !auth->cli_decode_pdu(con, &rpdu, rhdr.frag_len,
+				     rhdr.auth_len))
 	{
 		DEBUG(10, ("auth->cli_decode_pdu: failed\n"));
 		return False;
@@ -1006,10 +1005,8 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 			nt->max_recv_frag = hdr_ba.bba.max_rsize;
 		}
 
-		if (valid_ack)
+		if (valid_ack && auth->decode_bind_resp != NULL)
 		{
-                        SMB_ASSERT(auth->decode_bind_resp != NULL);
-
 			valid_ack = auth->decode_bind_resp(con, &rdata);
 
 			if (valid_ack)
