@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,11 +44,23 @@
 #ifndef HAVE_STRDUP
 #define strdup _editline_strdup
 #endif
-#ifndef HAVE_ASPRINTF
+#ifndef HAVE_SNPRINTF
 #define snprintf _editline_snprintf
+#endif
+#ifndef HAVE_VSNPRINTF
+#define vsnprintf _editline_vsnprintf
 #endif
 #ifndef HAVE_ASPRINTF
 #define asprintf _editline_asprintf
+#endif
+#ifndef HAVE_ASNPRINTF
+#define asnprintf _editline_asnprintf
+#endif
+#ifndef HAVE_VASPRINTF
+#define vasprintf _editline_vasprintf
+#endif
+#ifndef HAVE_VASNPRINTF
+#define vasnprintf _editline_vasnprintf
 #endif
 
 #endif /* __roken_rename_h__ */
