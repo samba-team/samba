@@ -19,12 +19,15 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_remact.h"
+#include "librpc/gen_ndr/ndr_oxidresolver.h"
+#include "librpc/gen_ndr/ndr_dcom.h"
 
 #define DCOM_NEGOTIATED_PROTOCOLS { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NCALRPC }
 
-static NTSTATUS dcom_connect(struct dcerpc_pipe **p, const char *server, const char *domain, const char *user, const char *pass)
+static NTSTATUS dcom_connect_host(struct dcom_context *ctx, struct dcerpc_pipe **p, const char *server)
 {
 	struct dcerpc_binding bd;
 	enum dcerpc_transport_t available_transports[] = { NCACN_IP_TCP, NCACN_NP };
@@ -34,7 +37,7 @@ static NTSTATUS dcom_connect(struct dcerpc_pipe **p, const char *server, const c
 
 	/* Allow server name to contain a binding string */
 	if (NT_STATUS_IS_OK(dcerpc_parse_binding(mem_ctx, server, &bd))) {
-		status = dcerpc_pipe_connect_b(p, &bd, DCERPC_IREMOTEACTIVATION_UUID, DCERPC_IREMOTEACTIVATION_VERSION, domain, user, pass);
+		status = dcerpc_pipe_connect_b(p, &bd, DCERPC_IREMOTEACTIVATION_UUID, DCERPC_IREMOTEACTIVATION_VERSION, ctx->domain, ctx->user, ctx->password);
 		talloc_destroy(mem_ctx);
 		return status;
 	}
@@ -45,14 +48,14 @@ static NTSTATUS dcom_connect(struct dcerpc_pipe **p, const char *server, const c
 	
 	if (server == NULL) { 
 		bd.transport = NCALRPC; 
-		return dcerpc_pipe_connect_b(p, &bd, DCERPC_IREMOTEACTIVATION_UUID, DCERPC_IREMOTEACTIVATION_VERSION, domain, user, pass);
+		return dcerpc_pipe_connect_b(p, &bd, DCERPC_IREMOTEACTIVATION_UUID, DCERPC_IREMOTEACTIVATION_VERSION, ctx->domain, ctx->user, ctx->password);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(available_transports); i++)
 	{
 		bd.transport = available_transports[i];
 		
-		status = dcerpc_pipe_connect_b(p, &bd, DCERPC_IREMOTEACTIVATION_UUID, DCERPC_IREMOTEACTIVATION_VERSION, domain, user, pass);
+		status = dcerpc_pipe_connect_b(p, &bd, DCERPC_IREMOTEACTIVATION_UUID, DCERPC_IREMOTEACTIVATION_VERSION, ctx->domain, ctx->user, ctx->password);
 
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
@@ -62,34 +65,73 @@ static NTSTATUS dcom_connect(struct dcerpc_pipe **p, const char *server, const c
 	return status;
 }
 
-#if 0
-static WERROR dcom_connect_oxid(TALLOC_CTX *mem_ctx, struct dcerpc_pipe **p, HYPER_T oxid)
+static NTSTATUS dcom_connect_STRINGBINDINGARRAY(struct dcom_context *ctx, struct dcerpc_pipe **p, DATA_BLOB *stringbindingarray)
 {
-	/* FIXME */
-	return WERR_NOT_SUPPORTED;
-}
-#endif
-
-NTSTATUS dcerpc_IUnknown_AddRef(struct dcerpc_pipe *p, struct GUID *o, TALLOC_CTX *mem_ctx, struct IUnknown_AddRef *r) 
-{
-	/* FIXME: Tell local server we're adding a reference to this interface on this object. Local server can then call RemAddRef() if necessary */
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-NTSTATUS dcerpc_IUnknown_Release(struct dcerpc_pipe *p, struct GUID *o, TALLOC_CTX *mem_ctx, struct IUnknown_Release *r)
+static NTSTATUS dcom_connect_DUALSTRINGBINDINGARRAY(struct dcom_context *ctx, struct dcerpc_pipe **p, struct DUALSTRINGARRAY *array)
 {
-	/* FIXME: Tell local server we're releasing a reference to this interface on this object. Local server can then call RemRelease() if necessary */
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-NTSTATUS dcerpc_IUnknown_QueryInterface(struct dcerpc_pipe *p, struct GUID *o, TALLOC_CTX *mem_ctx, struct IUnknown_QueryInterface *r)
+NTSTATUS dcerpc_IUnknown_AddRef(struct dcom_interface *p, TALLOC_CTX *mem_ctx, struct IUnknown_AddRef *rr) 
+{
+	struct RemAddRef r;
+	struct REMINTERFACEREF ref;
+	
+	/* This is rather inefficient, but we'll patch it up later */
+	r.in.cInterfaceRefs = 1;
+	r.in.InterfaceRefs = &ref;
+
+	return dcerpc_RemAddRef(p, mem_ctx, &r);
+}
+
+NTSTATUS dcerpc_IUnknown_Release(struct dcom_interface *p, TALLOC_CTX *mem_ctx, struct IUnknown_Release *rr)
+{
+	struct RemRelease r;
+	struct REMINTERFACEREF ref;
+
+	p->private_references--;
+
+	/* Only do the remote version of this call when all local references have 
+	 * been released */
+	if (p->private_references == 0) {
+		NTSTATUS status;
+		r.in.cInterfaceRefs = 1;
+		r.in.InterfaceRefs = &ref;
+
+		status = dcerpc_RemRelease(p, mem_ctx, &r);
+		
+		if (NT_STATUS_IS_OK(status)) {
+			talloc_destroy(p);	
+		}
+
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS dcerpc_IUnknown_QueryInterface(struct dcom_interface *o, TALLOC_CTX *mem_ctx, struct IUnknown_QueryInterface *rr)
 {
 	/* FIXME: Ask local server for interface pointer. Local server can then 
 	 * call RemQueryInterface if necessary */
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-WERROR dcom_create_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface **ip, const char *domain, const char *user, const char *pass)
+WERROR dcom_init(struct dcom_context **ctx, const char *domain, const char *user, const char *pass)
+{
+	*ctx = talloc_p(NULL, struct dcom_context);
+	(*ctx)->oxids = NULL;
+	(*ctx)->domain = talloc_strdup(*ctx, domain);
+	(*ctx)->user = talloc_strdup(*ctx, user);
+	(*ctx)->password = talloc_strdup(*ctx, pass);
+	
+	return WERR_OK;
+}
+
+WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface **ip, WERROR *results)
 {
 	struct RemoteActivation r;
 	int i;
@@ -97,7 +139,7 @@ WERROR dcom_create_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *s
 	NTSTATUS status;
 	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 
-	status = dcom_connect(&p, server, domain, user, pass);
+	status = dcom_connect_host(ctx, &p, server);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Unable to connect to %s - %s\n", server, nt_errstr(status)));
 		return ntstatus_to_werror(status);
@@ -113,28 +155,35 @@ WERROR dcom_create_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *s
 	r.in.protseq = protseq;
 	r.in.Interfaces = num_ifaces;
 	r.in.pIIDs = iid;
-	r.out.ifaces = talloc_array_p(mem_ctx, struct pMInterfacePointer, num_ifaces);
+	r.out.ifaces = talloc_array_p(ctx, struct pMInterfacePointer, num_ifaces);
 	
-	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
+	status = dcerpc_RemoteActivation(p, ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Error while running RemoteActivation %s\n", nt_errstr(status)));
 		return ntstatus_to_werror(status);
 	}
 
-	if(!W_ERROR_IS_OK(r.out.result)) { return r.out.result; }
-	if(!W_ERROR_IS_OK(r.out.hr)) { return r.out.hr; }
-	if(!W_ERROR_IS_OK(r.out.results[0])) { return r.out.results[0]; }
+	if(!W_ERROR_IS_OK(r.out.result)) {
+		return r.out.result; 
+	}
+	
+	if(!W_ERROR_IS_OK(r.out.hr)) { 
+		return r.out.hr; 
+	}
 
-	*ip = talloc_array_p(mem_ctx, struct dcom_interface, num_ifaces);
+	*ip = talloc_array_p(ctx, struct dcom_interface, num_ifaces);
 	for (i = 0; i < num_ifaces; i++) {
-		(*ip)[i].object = r.out.ifaces[i].p->obj;
-		(*ip)[i].pipe = NULL; /* FIXME */
+		results[i] = r.out.results[i];
+		(*ip)[i].private_references = 1;
+		(*ip)[i].objref = &r.out.ifaces[i].p->obj;
+		(*ip)[i].pipe = NULL;
+		(*ip)[i].ctx = ctx;
 	}
 
 	return WERR_OK;
 }
 
-WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface *ip, const char *domain, const char *user, const char *pass)
+WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface *ip)
 {
 	struct RemoteActivation r;
 	struct dcerpc_pipe *p;
@@ -142,7 +191,7 @@ WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char
 	struct pMInterfacePointer pm;
 	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 
-	status = dcom_connect(&p, server, domain, user, pass);
+	status = dcom_connect_host(ctx, &p, server);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Unable to connect to %s - %s\n", server, nt_errstr(status)));
 		return ntstatus_to_werror(status);
@@ -161,7 +210,7 @@ WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char
 	r.in.Mode = MODE_GET_CLASS_OBJECT;
 	r.out.ifaces = &pm;
 
-	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
+	status = dcerpc_RemoteActivation(p, ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Error while running RemoteActivation - %s\n", nt_errstr(status)));
 		return ntstatus_to_werror(status);
@@ -170,9 +219,105 @@ WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char
 	if(!W_ERROR_IS_OK(r.out.result)) { return r.out.result; }
 	if(!W_ERROR_IS_OK(r.out.hr)) { return r.out.hr; }
 	if(!W_ERROR_IS_OK(r.out.results[0])) { return r.out.results[0]; }
-
-	ip->pipe = NULL; /* FIXME */
-	ip->object = pm.p->obj;
+	
+	ip->private_references = 1;
+	ip->pipe = NULL;
+	ip->objref = &pm.p->obj;
+	ip->ctx = ctx;
 
 	return WERR_OK;
+}
+
+struct dcom_oxid_mapping {
+	struct dcom_oxid_mapping *prev, *next;	
+	struct DUALSTRINGARRAY bindings;
+	HYPER_T oxid;
+	struct dcerpc_pipe *pipe;
+};
+
+static struct dcom_oxid_mapping *oxid_mapping_by_oxid (struct dcom_context *ctx, HYPER_T oxid)
+{
+	struct dcom_oxid_mapping *m;
+	
+	for (m = ctx->oxids;m;m = m->next) {
+		if (m->oxid	== oxid) {
+			return m;
+		}
+	}
+
+	return NULL;
+}
+
+NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
+{
+	struct dcom_oxid_mapping *m;
+	HYPER_T oxid;
+	NTSTATUS status;
+	
+	SMB_ASSERT(iface->objref->signature == OBJREF_SIGNATURE);
+
+	if (iface->objref->flags & OBJREF_HANDLER) {
+		DEBUG(0, ("dcom_get_pipe: OBJREF_HANDLER not supported!\n"));
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (iface->objref->flags & OBJREF_CUSTOM) {
+		DEBUG(0, ("dcom_get_pipe: OBJREF_CUSTOM not supported!\n"));
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	DEBUG(1, ("DCOM: Connecting to %s\n", GUID_string(NULL, &iface->objref->iid)));
+
+	oxid = iface->objref->u_objref.u_standard.std.oxid;
+
+	m = oxid_mapping_by_oxid(iface->ctx, oxid);
+
+	/* Add OXID mapping if none present yet */
+	if (!m) {
+		struct dcerpc_pipe *po;
+		struct ResolveOxid r;
+		uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
+
+		DEBUG(3, ("No binding data present yet, resolving OXID %llu\n", oxid));
+
+		m = talloc_zero_p(iface->ctx, struct dcom_oxid_mapping);
+		m->oxid = oxid;	
+
+		status = dcom_connect_STRINGBINDINGARRAY(iface->ctx, &po, &iface->objref->u_objref.u_standard.saResAddr);
+
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, ("Error while connecting to OXID Resolver : %s\n", nt_errstr(status)));
+			return status;
+		}
+
+		r.in.pOxid = oxid;
+		r.in.cRequestedProtseqs = ARRAY_SIZE(protseq);
+		r.in.arRequestedProtseqs = protseq;
+		r.out.ppdsaOxidBindings = &m->bindings;
+
+		status = dcerpc_ResolveOxid(po, iface->ctx, &r);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, ("Error while resolving OXID: %s\n", nt_errstr(status)));
+			return status;
+		}
+
+		dcerpc_pipe_close(po);
+
+		DLIST_ADD(iface->ctx->oxids, m);
+	}
+
+	if (m->pipe) {
+		*p = m->pipe;
+		/* FIXME: Switch to correct IID using an alter context call */
+		return NT_STATUS_OK;
+	}
+	
+	status = dcom_connect_DUALSTRINGBINDINGARRAY(iface->ctx, &m->pipe, &m->bindings);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+	
+	*p = m->pipe;
+	return NT_STATUS_OK;
 }
