@@ -1696,7 +1696,12 @@ typedef struct
 	int n_groups;
 	gid_t *groups;
 
-	NET_USER_INFO_3 usr;
+#if 0
+	NET_USER_INFO_3 usr; /* This should not be here. */
+#else
+	DOM_SID user_sid;
+	DOM_SID *group_sids;
+#endif
 
 	/* per-user authentication information on NT RPCs */
 	/* lkclXXXX - THIS SHOULD NOT BE HERE! */

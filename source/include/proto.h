@@ -3304,8 +3304,7 @@ char *validated_domain(uint16 vuid);
 int setup_groups(char *user, char *domain, 
 		 uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		     char *domain,BOOL guest,
-		     NET_USER_INFO_3 *usr);
+		     char *domain,BOOL guest);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
