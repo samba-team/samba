@@ -337,12 +337,12 @@ static BOOL proc_pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL fla
 /*
  * PAM Externally accessible Session handler
  */
-BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty)
+BOOL pam_session(BOOL flag, const char *in_user, char *tty)
 {
 	pam_handle_t *pamh = NULL;
 	char * user;
 
-	user = malloc(strlen(conn->user)+1);
+	user = malloc(strlen(in_user)+1);
 	if ( user == NULL )
 	{
 		DEBUG(0, ("PAM: PAM_session Malloc Failed!\n"));
@@ -350,7 +350,7 @@ BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty)
 	}
 
 	/* This is freed by PAM */
-	StrnCpy(user, conn->user, strlen(conn->user)+1);
+	StrnCpy(user, in_user, strlen(in_user)+1);
 
 	if (!proc_pam_start(&pamh, user))
 	{

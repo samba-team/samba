@@ -1285,11 +1285,7 @@ static BOOL build_sam_account (SAM_ACCOUNT *sam_pass,
         	standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
 		pdb_set_homedir(sam_pass, str);
         
-		if (lp_unix_realname())
-			pdb_set_fullname(sam_pass, pwfile->pw_gecos);
-		else
-			pdb_set_fullname(sam_pass, "<Full Name>");
-		
+		pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
 
 		/* set other user information that we have */
 		pdb_set_group_rid     (sam_pass, pdb_gid_to_group_rid(pdb_get_gid(&global_sam_pass)) ); 

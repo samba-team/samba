@@ -441,12 +441,14 @@ void exit_server(char *reason)
 
 	conn_close_all();
 
+	invalidate_all_vuids();
+
 	/* delete our entry in the connections database. */
 	if (lp_status(-1)) {
 		yield_connection(NULL,"",MAXSTATUS);
 	}
 
-    respond_to_all_remaining_local_messages();
+	respond_to_all_remaining_local_messages();
 	decrement_smbd_process_count();
 
 #ifdef WITH_DFS
