@@ -432,8 +432,8 @@ interface drsuapi
 		GUID source_dsa_obj_guid;
 		GUID source_dsa_invocation_id;
 		GUID transport_obj_guid;
-		HYPER_T tmp_highest_usn;
-		HYPER_T highest_usn;
+		hyper tmp_highest_usn;
+		hyper highest_usn;
 		NTTIME last_success;
 		NTTIME last_attempt;
 		WERROR result_last_attempt;
@@ -448,7 +448,7 @@ interface drsuapi
 
 	typedef struct {
 		GUID source_dsa_invocation_id;
-		HYPER_T highest_usn;
+		hyper highest_usn;
 	} drsuapi_DsReplicaCoursor;
 
 	typedef struct {
@@ -462,8 +462,8 @@ interface drsuapi
 		uint32 version;
 		NTTIME originating_last_changed;
 		GUID originating_dsa_invocation_id;
-		HYPER_T originating_usn;
-		HYPER_T local_usn;
+		hyper originating_usn;
+		hyper local_usn;
 	} drsuapi_DsReplicaObjMetaData;
 
 	typedef struct {
@@ -515,8 +515,8 @@ interface drsuapi
 		uint32 version;
 		NTTIME originating_last_changed;
 		GUID originating_dsa_invocation_id;
-		HYPER_T originating_usn;
-		HYPER_T local_usn;
+		hyper originating_usn;
+		hyper local_usn;
 	} drsuapi_DsReplicaAttrValMetaData;
 
 	typedef struct {
@@ -527,7 +527,7 @@ interface drsuapi
 
 	typedef struct {
 		GUID source_dsa_invocation_id;
-		HYPER_T highest_usn;
+		hyper highest_usn;
 		NTTIME last_sync_success;
 	} drsuapi_DsReplicaCoursor2;
 
@@ -539,7 +539,7 @@ interface drsuapi
 
 	typedef struct {
 		GUID source_dsa_invocation_id;
-		HYPER_T highest_usn;
+		hyper highest_usn;
 		NTTIME last_sync_success;
 		unistr *source_dsa_obj_dn;
 	} drsuapi_DsReplicaCoursor3;
@@ -555,8 +555,8 @@ interface drsuapi
 		uint32 version;
 		NTTIME originating_last_changed;
 		GUID originating_dsa_invocation_id;
-		HYPER_T originating_usn;
-		HYPER_T local_usn;
+		hyper originating_usn;
+		hyper local_usn;
 		unistr *originating_dsa_obj_dn;
 	} drsuapi_DsReplicaObjMetaData2;
 
@@ -576,8 +576,8 @@ interface drsuapi
 		uint32 version;
 		NTTIME originating_last_changed;
 		GUID originating_dsa_invocation_id;
-		HYPER_T originating_usn;
-		HYPER_T local_usn;
+		hyper originating_usn;
+		hyper local_usn;
 		unistr *originating_dsa_obj_dn;
 	} drsuapi_DsReplicaAttrValMetaData2;
 
@@ -588,7 +588,7 @@ interface drsuapi
 	} drsuapi_DsReplicaAttrValMetaData2Ctr;
 
 	typedef struct {
-		HYPER_T u1; /* session number? */
+		hyper u1; /* session number? */
 		uint32 u2;
 		uint32 u3;
 		GUID bind_guid;
@@ -618,7 +618,7 @@ interface drsuapi
 		uint32 u3;
 		uint32 u4;
 		uint32 u5;
-		HYPER_T u6;
+		hyper u6;
 		uint32 u7;
 	} drsuapi_DsReplica06;
 

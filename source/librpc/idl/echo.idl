@@ -52,12 +52,12 @@ interface rpcecho
 	} echo_info3;
 
 	typedef struct {
-		HYPER_T v;
+		hyper v;
 	} echo_info4;
 
 	typedef struct {
 		uint8 v1;
-		HYPER_T v2;
+		hyper v2;
 	} echo_info5;
 
 	typedef struct {

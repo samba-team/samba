@@ -141,7 +141,7 @@ NTSTATUS ndr_pull_dlong(struct ndr_pull *ndr, int64_t *v)
 /*
   parse a hyper
 */
-NTSTATUS ndr_pull_HYPER_T(struct ndr_pull *ndr, uint64_t *v)
+NTSTATUS ndr_pull_hyper(struct ndr_pull *ndr, uint64_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 8);
 	return ndr_pull_udlong(ndr, v);
@@ -249,16 +249,16 @@ NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *da
 }
 
 /*
-  pull a const array of HYPER_T
+  pull a const array of hyper
 */
-NTSTATUS ndr_pull_array_HYPER_T(struct ndr_pull *ndr, int ndr_flags, uint64_t *data, uint32_t n)
+NTSTATUS ndr_pull_array_hyper(struct ndr_pull *ndr, int ndr_flags, uint64_t *data, uint32_t n)
 {
 	uint32_t i;
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_pull_HYPER_T(ndr, &data[i]));
+		NDR_CHECK(ndr_pull_hyper(ndr, &data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -349,9 +349,9 @@ NTSTATUS ndr_push_dlong(struct ndr_push *ndr, int64_t v)
 }
 
 /*
-  push a HYPER_T
+  push a hyper
 */
-NTSTATUS ndr_push_HYPER_T(struct ndr_push *ndr, uint64_t v)
+NTSTATUS ndr_push_hyper(struct ndr_push *ndr, uint64_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 8);
 	return ndr_push_udlong(ndr, v);
@@ -433,22 +433,22 @@ NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, int ndr_flags, const uint32
 }
 
 /*
-  push an array of HYPER_T
+  push an array of hyper
 */
-NTSTATUS ndr_push_array_HYPER_T(struct ndr_push *ndr, int ndr_flags, const uint64_t *data, uint32_t n)
+NTSTATUS ndr_push_array_hyper(struct ndr_push *ndr, int ndr_flags, const uint64_t *data, uint32_t n)
 {
 	int i;
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_push_HYPER_T(ndr, data[i]));
+		NDR_CHECK(ndr_push_hyper(ndr, data[i]));
 	}
 	return NT_STATUS_OK;
 }
 
 /*
-  push an array of HYPER_T
+  push an array of hyper
 */
 NTSTATUS ndr_push_array_WERROR(struct ndr_push *ndr, int ndr_flags, const WERROR *data, uint32_t n)
 {
@@ -965,7 +965,7 @@ NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, NTTIME *t)
 NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, NTTIME t)
 {
 	t /= 10000000;
-	NDR_CHECK(ndr_push_HYPER_T(ndr, t));
+	NDR_CHECK(ndr_push_hyper(ndr, t));
 	return NT_STATUS_OK;
 }
 
@@ -974,7 +974,7 @@ NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, NTTIME t)
 */
 NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, NTTIME *t)
 {
-	NDR_CHECK(ndr_pull_HYPER_T(ndr, t));
+	NDR_CHECK(ndr_pull_hyper(ndr, t));
 	(*t) *= 10000000;
 	return NT_STATUS_OK;
 }
@@ -984,7 +984,7 @@ NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, NTTIME *t)
 */
 NTSTATUS ndr_pull_NTTIME_hyper(struct ndr_pull *ndr, NTTIME *t)
 {
-	NDR_CHECK(ndr_pull_HYPER_T(ndr, t));
+	NDR_CHECK(ndr_pull_hyper(ndr, t));
 	return NT_STATUS_OK;
 }
 
@@ -993,7 +993,7 @@ NTSTATUS ndr_pull_NTTIME_hyper(struct ndr_pull *ndr, NTTIME *t)
 */
 NTSTATUS ndr_push_NTTIME_hyper(struct ndr_push *ndr, NTTIME t)
 {
-	NDR_CHECK(ndr_push_HYPER_T(ndr, t));
+	NDR_CHECK(ndr_push_hyper(ndr, t));
 	return NT_STATUS_OK;
 }
 
@@ -1084,7 +1084,7 @@ void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v)
 		   v);
 }
 
-void ndr_print_HYPER_T(struct ndr_print *ndr, const char *name, uint64_t v)
+void ndr_print_hyper(struct ndr_print *ndr, const char *name, uint64_t v)
 {
 	ndr_print_dlong(ndr, name, v);
 }
@@ -1162,7 +1162,7 @@ void ndr_print_array_WERROR(struct ndr_print *ndr, const char *name,
 	ndr->depth--;	
 }
 
-void ndr_print_array_HYPER_T(struct ndr_print *ndr, const char *name, 
+void ndr_print_array_hyper(struct ndr_print *ndr, const char *name, 
 			    const uint64_t *data, uint32_t count)
 {
 	int i;
@@ -1173,7 +1173,7 @@ void ndr_print_array_HYPER_T(struct ndr_print *ndr, const char *name,
 		char *idx=NULL;
 		asprintf(&idx, "[%d]", i);
 		if (idx) {
-			ndr_print_HYPER_T(ndr, idx, data[i]);
+			ndr_print_hyper(ndr, idx, data[i]);
 			free(idx);
 		}
 	}
