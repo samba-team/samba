@@ -1,3 +1,8 @@
+2003-09-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afskrb5.c (afslog_uid_int): just belive that realm hint the user
+	passed us
+
 2003-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: always include v4 symbols
