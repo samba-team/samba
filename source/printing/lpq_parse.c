@@ -821,16 +821,6 @@ BOOL parse_lpq_entry(int snum,char *line,
       break;
     }
 
-#ifdef LPQ_GUEST_TO_USER
-  if (ret) {
-    extern pstring sesssetup_user;
-    /* change guest entries to the current logged in user to make
-       them appear deletable to windows */
-    if (sesssetup_user[0] && strequal(buf->user,lp_guestaccount(snum)))
-      pstrcpy(buf->user,sesssetup_user);
-  }
-#endif
-
   /* We don't want the newline in the status message. */
   {
     char *p = strchr(line,'\n');
