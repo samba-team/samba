@@ -938,15 +938,6 @@ BOOL cli_session_request(struct cli_state *cli,
 	int len = 4;
 	extern pstring user_socket_options;
 
-	/* 445 doesn't have session request */
-	if (cli->port == 445) return True;
-
-	if (cli->sign_info.use_smb_signing) {
-		DEBUG(0, ("Cannot send session resquest again, particularly after setting up SMB Signing\n"));
-		return False;
-	}
-
-	/* send a session request (RFC 1002) */
 	memcpy(&(cli->calling), calling, sizeof(*calling));
 	memcpy(&(cli->called ), called , sizeof(*called ));
   
@@ -960,6 +951,15 @@ BOOL cli_session_request(struct cli_state *cli,
 	name_mangle(cli->calling.name, p, cli->calling.name_type);
 	len += name_len(p);
 
+	/* 445 doesn't have session request */
+	if (cli->port == 445) return True;
+
+	if (cli->sign_info.use_smb_signing) {
+		DEBUG(0, ("Cannot send session resquest again, particularly after setting up SMB Signing\n"));
+		return False;
+	}
+
+	/* send a session request (RFC 1002) */
 	/* setup the packet length
          * Remove four bytes from the length count, since the length
          * field in the NBT Session Service header counts the number
