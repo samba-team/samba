@@ -34,11 +34,36 @@ int net_ads_usage(int argc, const char **argv)
 "\n\tlist users in the realm\n"\
 "\nnet ads group"\
 "\n\tlist groups in the realm\n"\
+"\nnet ads info"\
+"\n\tshows some info on the server\n"\
 "\nnet ads status"\
 "\n\tdump the machine account details to stdout\n"
 		);
 	return -1;
 }
+
+
+static int net_ads_info(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+
+	ads = ads_init(NULL, NULL, NULL, NULL);
+	ads_connect(ads);
+
+	if (!ads) {
+		d_printf("Didn't find the ldap server!\n");
+		return -1;
+	}
+
+	d_printf("LDAP server: %s\n", ads->ldap_server);
+	d_printf("LDAP server name: %s\n", ads->ldap_server_name);
+	d_printf("Realm: %s\n", ads->realm);
+	d_printf("Bind Path: %s\n", ads->bind_path);
+	d_printf("LDAP port: %d\n", ads->ldap_port);
+
+	return 0;
+}
+
 
 static ADS_STRUCT *ads_startup(void)
 {
@@ -214,6 +239,7 @@ static int net_ads_join(int argc, const char **argv)
 int net_ads(int argc, const char **argv)
 {
 	struct functable func[] = {
+		{"INFO", net_ads_info},
 		{"JOIN", net_ads_join},
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
