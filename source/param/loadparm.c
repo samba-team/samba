@@ -3813,8 +3813,11 @@ static void set_server_role(void)
 			server_role = ROLE_DOMAIN_MEMBER;
 			break;
 		case SEC_DOMAIN:
-			if (lp_domain_logons())
-				DEBUG(0, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
+			if (lp_domain_logons()) {
+				DEBUG(1, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
+				server_role = ROLE_DOMAIN_BDC;
+				break;
+			}
 			server_role = ROLE_DOMAIN_MEMBER;
 			break;
 		case SEC_ADS:
