@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,10 +39,10 @@
 int
 parse_bytes (const char *s, const char *def_unit);
 
-size_t
+int
 unparse_bytes (int t, char *s, size_t len);
 
-size_t
+int
 unparse_bytes_short (int t, char *s, size_t len);
 
 #endif /* __PARSE_BYTES_H__ */
