@@ -6,7 +6,7 @@ This is a preview release of the Samba 3.0.1 code base and is
 provided for testing only.  This release is *not* intended for
 production servers.  Use at your own risk.
 
-There have been several bug fixes since the 3.0.0 releaser that
+There have been several bug fixes since the 3.0.0 release that
 we feel are important to make available to the Samba community
 for wider testings.  See the "Changes" section for details on
 exact updates.
@@ -26,10 +26,11 @@ details:
     matching an AD user when not running winbindd (bug 698).
 2)  Fix a problem with configure on *BSD systems. Make sure
     we add -liconv etc to LDFLAGS.
-3)  Fix core dump bug when security=server and the server goes
-    away.
+3)  Fix core dump bug when "security = server" and the authentication
+    server goes away.
 4)  Correct crash bug due to an empty munged dial string.
-5)  Show locked files for -u <user> (bug 590).
+5)  Show files locked by a specific user (smbstatus -u 'user') 
+    (bug 590).
 6)  Fix bug preventing print jobs from display in the queue
     monitor used by Windows NT and later clients (bug 660).
 7)  Fix several reported problems with point-n-print from
