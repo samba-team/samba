@@ -1,5 +1,15 @@
 #include "krb5_locl.h"
 
+/* XXX shouldn't be here */
+
+void krb5_free_ccache(krb5_context context,
+		      krb5_ccache val)
+{
+  free(((krb5_fcache*)(val->data))->filename);
+  free(val->data);
+  free(val);
+}
+
 
 krb5_error_code
 krb5_cc_resolve(krb5_context context,
