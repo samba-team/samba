@@ -104,6 +104,7 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
  This also checks that this RID is actually free - in case the admin
  manually stole it :-).
 *********************************************************************/
+
 static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid, 
                               int rid_type)
 {
@@ -121,11 +122,9 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 	int attempts = 0;
 	char *ld_error = NULL;
 
-	while (attempts < 10) 
-	{
+	while (attempts < 10) {
 		if (!NT_STATUS_IS_OK(ret = smbldap_search_domain_info(state->smbldap_state, 
-			&domain_result, get_global_sam_name(), True))) 
-		{
+				&domain_result, get_global_sam_name(), True))) {
 			return ret;
 		}
 	
@@ -136,7 +135,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			return ret;
 		}
 
-		if ((dn = ldap_get_dn(state->smbldap_state->ldap_struct, entry)) == NULL) {
+		if ((dn = smbldap_get_dn(state->smbldap_state->ldap_struct, entry)) == NULL) {
 			DEBUG(0, ("Could not get domain info DN\n"));
 			ldap_msgfree(domain_result);
 			return ret;
@@ -148,8 +147,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 		
 		if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
 					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE),
-					 algorithmic_rid_base_string)) 
-		{
+					 algorithmic_rid_base_string)) {
 			
 			alg_rid_base = (uint32)atol(algorithmic_rid_base_string);
 		} else {
@@ -169,8 +167,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			   can allocate to new users */
 			if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
 						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_RID),
-						 old_rid_string)) 
-			{
+						 old_rid_string)) {
 				*rid = (uint32)atol(old_rid_string);
 			} else {
 				*rid = BASE_RID;
@@ -195,16 +192,14 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			case USER_RID_TYPE:
 				if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
 							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID),
-							 old_rid_string)) 
-				{
+							 old_rid_string)) {
 					*rid = (uint32)atol(old_rid_string);					
 				}
 				break;
 			case GROUP_RID_TYPE:
 				if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry, 
 							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
-							 old_rid_string)) 
-				{
+							 old_rid_string)) {
 					*rid = (uint32)atol(old_rid_string);
 				}
 				break;
@@ -236,32 +231,31 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			}
 		}
 
-		if ((rc = ldap_modify_s(state->smbldap_state->ldap_struct, dn, mods)) == LDAP_SUCCESS) {
+		if ((rc = smbldap_modify(state->smbldap_state, dn, mods)) == LDAP_SUCCESS) {
 			DOM_SID dom_sid;
 			DOM_SID sid;
 			pstring domain_sid_string;
 			int error = 0;
 
 			if (!smbldap_get_single_attribute(state->smbldap_state->ldap_struct, domain_result,
-				get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID),
-				domain_sid_string)) 
-			{
+					get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID),
+					domain_sid_string)) {
 				ldap_mods_free(mods, True);
-				ldap_memfree(dn);
+				SAFE_FREE(dn);
 				ldap_msgfree(domain_result);
 				return ret;
 			}
 
 			if (!string_to_sid(&dom_sid, domain_sid_string)) { 
 				ldap_mods_free(mods, True);
-				ldap_memfree(dn);
+				SAFE_FREE(dn);
 				ldap_msgfree(domain_result);
 				return ret;
 			}
 
 			ldap_mods_free(mods, True);
 			mods = NULL;
-			ldap_memfree(dn);
+			SAFE_FREE(dn);
 			ldap_msgfree(domain_result);
 
 			sid_copy(&sid, &dom_sid);
@@ -286,8 +280,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 		ldap_mods_free(mods, True);
 		mods = NULL;
 
-		ldap_memfree(dn);
-		dn = NULL;
+		SAFE_FREE(dn);
 
 		ldap_msgfree(domain_result);
 		domain_result = NULL;
@@ -361,7 +354,10 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 		goto out;
 	}
 
-	dn = ldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+	dn = smbldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+	if (!dn) {
+		goto out;
+	}
 	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 
 	if (!smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, type, id_str)) {
@@ -401,9 +397,9 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	smbldap_set_mod( &mods, LDAP_MOD_DELETE, type, id_str );		 
 	smbldap_set_mod( &mods, LDAP_MOD_ADD, type, new_id_str );
 	
-	rc = ldap_modify_s(ldap_state.smbldap_state->ldap_struct, dn, mods);
+	rc = smbldap_modify(ldap_state.smbldap_state, dn, mods);
 
-	ldap_memfree(dn);
+	SAFE_FREE(dn);
 	ldap_mods_free( mods, True );
 	
 	if (rc != LDAP_SUCCESS) {
@@ -663,12 +659,13 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 
 	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 	
-	dn = ldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+	dn = smbldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+	if (!dn)
+		goto out;
 
 	DEBUG(10, ("Found mapping entry at dn=%s, looking for %s\n", dn, type));
 		
-	if ( smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, type, id_str) ) 
-	{
+	if ( smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, type, id_str) ) {
 		if ( (*id_type & ID_USERID) )
 			id->uid = strtoul(id_str, NULL, 10);
 		else
@@ -682,8 +679,7 @@ out:
 	free_attr_list( attr_list );
 	if (result)
 		ldap_msgfree(result);
-	if (dn)
-		ldap_memfree(dn);
+	SAFE_FREE(dn);
 	
 	return ret;
 }
@@ -864,7 +860,9 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	if (count == 1) {
 		entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 	
-		dn = ldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+		dn = smbldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+		if (!dn)
+			goto out;
 		DEBUG(10, ("Found partial mapping entry at dn=%s, looking for %s\n", dn, type));
 
 		ret = ldap_set_mapping_internals(sid, id, id_type, dn, entry);
@@ -880,8 +878,7 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 out:
 	if (result)
 		ldap_msgfree(result);
-	if (dn)
-		ldap_memfree(dn);
+	SAFE_FREE(dn);
 	
 	return ret;
 }
@@ -945,6 +942,7 @@ static NTSTATUS verify_idpool( void )
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
+
 static NTSTATUS ldap_idmap_init( char *params )
 {
 	NTSTATUS nt_status;
