@@ -4072,9 +4072,9 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 }
 
 /*********************************************************************
- _samr_set_groupinfo
+ _samr_set_aliasinfo
  
- update a domain group's comment.
+ update an alias's comment.
 *********************************************************************/
 
 NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_SET_ALIASINFO *r_u)
