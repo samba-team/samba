@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #define BITSIZE(TYPE)						\
 {								\
-    int b = 0; TYPE x = 1, zero = 0; char *pre = "u";		\
+    int b = 0; TYPE x = 1, zero = 0; const char *pre = "u";	\
     char tmp[128], tmp2[128];					\
     while(x){ x <<= 1; b++; if(x < zero) pre=""; }		\
     if(b >= len){						\
@@ -135,11 +135,11 @@ int main(int argc, char **argv)
     fprintf(f, "#ifndef %s\n", hb);
     fprintf(f, "#define %s\n", hb);
     fprintf(f, "\n");
-#ifdef HAVE_SYS_TYPES_H
-    fprintf(f, "#include <sys/types.h>\n");
-#endif
 #ifdef HAVE_INTTYPES_H
     fprintf(f, "#include <inttypes.h>\n");
+#endif
+#ifdef HAVE_SYS_TYPES_H
+    fprintf(f, "#include <sys/types.h>\n");
 #endif
 #ifdef HAVE_SYS_BITYPES_H
     fprintf(f, "#include <sys/bitypes.h>\n");
@@ -149,6 +149,9 @@ int main(int argc, char **argv)
 #endif
 #ifdef HAVE_NETINET_IN6_MACHTYPES_H
     fprintf(f, "#include <netinet/in6_machtypes.h>\n");
+#endif
+#ifdef HAVE_SOCKLEN_T
+    fprintf(f, "#include <sys/socket.h>\n");
 #endif
     fprintf(f, "\n");
 
