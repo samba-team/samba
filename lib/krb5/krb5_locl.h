@@ -169,8 +169,7 @@ krb5_build_authenticator (krb5_context context,
 void
 krb5_generate_random_block(void *buf, size_t len);
 
-#define ALLOC(N, X) ((X*)malloc((N) * sizeof(X)))
-#define FREE(X) do{if(X)free(X);}while(0)
+#define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 
 int
 extract_ticket(krb5_context context, 
