@@ -164,7 +164,7 @@ static uint32_t make_dos_date(time_t unixdate, int zone_offset)
 put a dos date into a buffer (time/date format)
 This takes GMT time and puts local time in the buffer
 ********************************************************************/
-void push_dos_date(char *buf, int offset, time_t unixdate, int zone_offset)
+void push_dos_date(uint8_t *buf, int offset, time_t unixdate, int zone_offset)
 {
 	uint32_t x = make_dos_date(unixdate, zone_offset);
 	SIVAL(buf,offset,x);
@@ -174,7 +174,7 @@ void push_dos_date(char *buf, int offset, time_t unixdate, int zone_offset)
 put a dos date into a buffer (date/time format)
 This takes GMT time and puts local time in the buffer
 ********************************************************************/
-void push_dos_date2(char *buf,int offset,time_t unixdate, int zone_offset)
+void push_dos_date2(uint8_t *buf,int offset,time_t unixdate, int zone_offset)
 {
 	uint32_t x;
 	x = make_dos_date(unixdate, zone_offset);
@@ -187,7 +187,7 @@ put a dos 32 bit "unix like" date into a buffer. This routine takes
 GMT and converts it to LOCAL time before putting it (most SMBs assume
 localtime for this sort of date)
 ********************************************************************/
-void push_dos_date3(char *buf,int offset,time_t unixdate, int zone_offset)
+void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_offset)
 {
 	if (!null_time(unixdate)) {
 		unixdate -= zone_offset;
@@ -354,7 +354,7 @@ const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
 /*
   put a NTTIME into a packet
 */
-void push_nttime(void *base, uint16_t offset, NTTIME t)
+void push_nttime(uint8_t *base, uint16_t offset, NTTIME t)
 {
 	SBVAL(base, offset,   t);
 }
@@ -362,7 +362,7 @@ void push_nttime(void *base, uint16_t offset, NTTIME t)
 /*
   pull a NTTIME from a packet
 */
-NTTIME pull_nttime(void *base, uint16_t offset)
+NTTIME pull_nttime(uint8_t *base, uint16_t offset)
 {
 	NTTIME ret = BVAL(base, offset);
 	return ret;

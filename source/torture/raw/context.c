@@ -67,7 +67,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_close cl;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
-	char c = 1;
+	uint8_t c = 1;
 
 	printf("TESTING SESSION HANDLING\n");
 
@@ -208,7 +208,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_close cl;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
-	char c = 1;
+	uint8_t c = 1;
 
 	printf("TESTING TREE HANDLING\n");
 
@@ -307,7 +307,7 @@ static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_close cl;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
-	char c = 1;
+	uint8_t c = 1;
 	uint16_t pid1, pid2;
 
 	printf("TESTING PID HANDLING\n");

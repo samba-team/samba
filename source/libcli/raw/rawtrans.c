@@ -29,7 +29,7 @@
 static BOOL raw_trans_oob(struct smbcli_request *req,
 			  uint_t offset, uint_t count)
 {
-	char *ptr;
+	uint8_t *ptr;
 
 	if (count == 0) {
 		return False;
@@ -208,7 +208,7 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 {
 	int wct = 14 + parms->in.setup_count;
 	struct smbcli_request *req; 
-	char *outdata,*outparam;
+	uint8_t *outdata,*outparam;
 	int i;
 	int padding;
 	size_t namelen = 0;
@@ -460,7 +460,7 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 					 struct smb_nttrans *parms)
 {
 	struct smbcli_request *req; 
-	char *outdata, *outparam;
+	uint8_t *outdata, *outparam;
 	int i;
 	int align = 0;
 

@@ -702,7 +702,7 @@ struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_loc
 		/* copy in all the locks */
 		lockp = &parms->lockx.in.locks[0];
 		for (i = 0; i < lock_count; i++) {
-			char *p = req->out.data + lck_size * i;
+			uint8_t *p = req->out.data + lck_size * i;
 			SSVAL(p, 0, lockp[i].pid);
 			if (parms->lockx.in.mode & LOCKING_ANDX_LARGE_FILES) {
 				SSVAL(p,  2, 0); /* reserved */

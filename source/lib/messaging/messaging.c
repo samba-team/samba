@@ -285,7 +285,7 @@ static void messaging_send_handler(struct event_context *ev, struct fd_event *fd
 		size_t nsent;
 		DATA_BLOB blob;
 
-		blob.data = rec->ndone + (char *)&rec->header;
+		blob.data = rec->ndone + (uint8_t *)&rec->header;
 		blob.length = sizeof(rec->header) - rec->ndone;
 
 		status = socket_send(rec->sock, &blob, &nsent, 0);

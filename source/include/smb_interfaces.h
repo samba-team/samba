@@ -1275,7 +1275,7 @@ union smb_read {
 			uint16_t remaining;
 		} in;
 		struct {
-			char *data;
+			uint8_t *data;
 			uint16_t remaining;
 			uint16_t compaction_mode;
 			uint16_t nread;
@@ -1294,7 +1294,7 @@ union smb_read {
 			uint32_t  timeout;
 		} in;
 		struct {
-			char *data;
+			uint8_t *data;
 			uint32_t nread;
 		} out;
 	} readbraw;
@@ -1311,7 +1311,7 @@ union smb_read {
 			uint16_t remaining;
 		} in;
 		struct {
-			char *data;
+			uint8_t *data;
 			uint16_t nread;
 		} out;
 	} lockread;
@@ -1327,7 +1327,7 @@ union smb_read {
 			uint16_t remaining;
 		} in;
 		struct {
-			char *data;
+			uint8_t *data;
 			uint16_t nread;
 		} out;
 	} read;
@@ -1353,7 +1353,7 @@ union smb_write {
 			uint16_t wmode;
 			uint16_t remaining;
 			uint32_t count;
-			const char *data;
+			const uint8_t *data;
 		} in;
 		struct {
 			uint32_t nwritten;
@@ -1370,7 +1370,7 @@ union smb_write {
 			uint16_t count;
 			uint32_t offset;
 			uint16_t remaining;
-			const char *data;
+			const uint8_t *data;
 		} in;
 		struct {
 			uint32_t nwritten;
@@ -1386,7 +1386,7 @@ union smb_write {
 			uint16_t count;
 			uint32_t offset;
 			uint16_t remaining;
-			const char *data;
+			const uint8_t *data;
 		} in;
 		struct {
 			uint16_t nwritten;
@@ -1402,7 +1402,7 @@ union smb_write {
 			uint16_t count;
 			uint32_t offset;
 			time_t mtime;
-			const char *data;
+			const uint8_t *data;
 		} in;
 		struct {
 			uint16_t nwritten;
@@ -1416,7 +1416,7 @@ union smb_write {
 		struct {
 			uint16_t fnum;
 			uint16_t count;
-			const char *data;
+			const uint8_t *data;
 		} in;
 	} splwrite;
 };

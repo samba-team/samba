@@ -464,7 +464,7 @@ BOOL torture_locktest4(void)
 	const char *fname = "\\lockt4.lck";
 	int fnum1, fnum2, f;
 	BOOL ret;
-	char buf[1000];
+	uint8_t buf[1000];
 	BOOL correct = True;
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
@@ -632,7 +632,7 @@ BOOL torture_locktest5(void)
 	const char *fname = "\\lockt5.lck";
 	int fnum1, fnum2, fnum3;
 	BOOL ret;
-	char buf[1000];
+	uint8_t buf[1000];
 	BOOL correct = True;
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
@@ -792,7 +792,7 @@ BOOL torture_locktest7(void)
 	int fnum1;
 	int fnum2 = -1;
 	size_t size;
-	char buf[200];
+	uint8_t buf[200];
 	BOOL correct = False;
 
 	if (!torture_open_connection(&cli1)) {

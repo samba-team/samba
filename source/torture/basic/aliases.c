@@ -125,7 +125,7 @@ static void qfileinfo_aliases(struct smbcli_state *cli)
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_write(cli->tree, fnum, 0, &t2, 0, sizeof(t2));
 
 	SSVAL(t2.in.params.data, 0, fnum);
 
@@ -165,7 +165,7 @@ static void qpathinfo_aliases(struct smbcli_state *cli)
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_write(cli->tree, fnum, 0, &t2, 0, sizeof(t2));
 	smbcli_close(cli->tree, fnum);
 
 	SIVAL(t2.in.params.data, 2, 0);
@@ -209,7 +209,7 @@ static void findfirst_aliases(struct smbcli_state *cli)
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_write(cli->tree, fnum, 0, &t2, 0, sizeof(t2));
 	smbcli_close(cli->tree, fnum);
 
 	SSVAL(t2.in.params.data, 0, 0);
@@ -321,7 +321,7 @@ static void setfileinfo_aliases(struct smbcli_state *cli)
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_write(cli->tree, fnum, 0, &t2, 0, sizeof(t2));
 
 	SSVAL(t2.in.params.data, 0, fnum);
 	SSVAL(t2.in.params.data, 4, 0);
@@ -362,7 +362,7 @@ static void setpathinfo_aliases(struct smbcli_state *cli)
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_write(cli->tree, fnum, 0, &t2, 0, sizeof(t2));
 	smbcli_close(cli->tree, fnum);
 
 	SSVAL(t2.in.params.data, 2, 0);

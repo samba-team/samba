@@ -92,7 +92,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	io->ntcreatex.in.ea_list          = NULL;
 
 	req_pull_string(req, &io->ntcreatex.in.fname, 
-			(const char *)(params + 54), 
+			params + 54, 
 			trans->in.params.length - 54,
 			STR_NO_RANGE_CHECK | STR_TERMINATE);
 	if (!io->ntcreatex.in.fname) {

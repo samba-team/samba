@@ -293,7 +293,7 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 {
 	uint8_t client_chal[8];
 	DATA_BLOB response = data_blob(NULL, 0);
-	char long_date[8];
+	uint8_t long_date[8];
 	NTTIME nttime;
 
 	unix_to_nt_time(&nttime, time(NULL));

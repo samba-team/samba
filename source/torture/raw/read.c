@@ -50,7 +50,7 @@
 /*
   setup a random buffer based on a seed
 */
-static void setup_buffer(char *buf, uint_t seed, int len)
+static void setup_buffer(uint8_t *buf, uint_t seed, int len)
 {
 	int i;
 	srandom(seed);
@@ -60,12 +60,12 @@ static void setup_buffer(char *buf, uint_t seed, int len)
 /*
   check a random buffer based on a seed
 */
-static BOOL check_buffer(char *buf, uint_t seed, int len, int line)
+static BOOL check_buffer(uint8_t *buf, uint_t seed, int len, int line)
 {
 	int i;
 	srandom(seed);
 	for (i=0;i<len;i++) {
-		char v = random();
+		uint8_t v = random();
 		if (buf[i] != v) {
 			printf("Buffer incorrect at line %d! ofs=%d v1=0x%x v2=0x%x\n", 
 			       line, i, buf[i], v);
@@ -84,7 +84,7 @@ static BOOL test_read(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
-	char *buf;
+	uint8_t *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
@@ -208,7 +208,7 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
-	char *buf;
+	uint8_t *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
@@ -351,7 +351,7 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
-	char *buf;
+	uint8_t *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
@@ -545,7 +545,7 @@ static BOOL test_readbraw(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
-	char *buf;
+	uint8_t *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";

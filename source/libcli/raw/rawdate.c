@@ -38,7 +38,7 @@ put a dos date into a buffer (date/time format)
 This takes GMT time and puts local time in the buffer
 ********************************************************************/
 void raw_push_dos_date2(struct smbcli_transport *transport,
-		       char *buf, int offset, time_t unixdate)
+		       uint8_t *buf, int offset, time_t unixdate)
 {
 	push_dos_date2(buf, offset, unixdate, transport->negotiate.server_zone);
 }
@@ -48,7 +48,7 @@ put a dos 32 bit "unix like" date into a buffer. This routine takes
 GMT and converts it to LOCAL time in zone_offset before putting it
 ********************************************************************/
 void raw_push_dos_date3(struct smbcli_transport *transport,
-		       char *buf, int offset, time_t unixdate)
+		       uint8_t *buf, int offset, time_t unixdate)
 {
 	push_dos_date3(buf, offset, unixdate, transport->negotiate.server_zone);
 }

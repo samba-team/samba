@@ -50,7 +50,7 @@ static BOOL check_stream(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 {
 	int fnum;
 	const char *full_name;
-	char *buf;
+	uint8_t *buf;
 	ssize_t ret;
 
 	full_name = talloc_asprintf(mem_ctx, "%s:%s", fname, sname);

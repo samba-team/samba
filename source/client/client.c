@@ -138,8 +138,9 @@ void dos_clean_name(char *s)
 write to a local file with CR/LF->LF translation if appropriate. return the 
 number taken from the buffer. This may not equal the number written.
 ****************************************************************************/
-static int writefile(int f, char *b, int n)
+static int writefile(int f, const void *_b, int n)
 {
+	const uint8_t *b = _b;
 	int i;
 
 	if (!translation) {
@@ -165,8 +166,9 @@ static int writefile(int f, char *b, int n)
   read from a file with LF->CR/LF translation if appropriate. return the 
   number read. read approx n bytes.
 ****************************************************************************/
-static int readfile(char *b, int n, XFILE *f)
+static int readfile(void *_b, int n, XFILE *f)
 {
+	uint8_t *b = _b;
 	int i;
 	int c;
 
@@ -719,7 +721,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 {  
 	int handle = 0, fnum;
 	BOOL newhandle = False;
-	char *data;
+	uint8_t *data;
 	struct timeval tp_start;
 	int read_size = io_bufsize;
 	uint16_t attr;
@@ -775,7 +777,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	DEBUG(2,("getting file %s of size %.0f as %s ", 
 		 rname, (double)size, lname));
 
-	if(!(data = (char *)malloc(read_size))) { 
+	if(!(data = (uint8_t *)malloc(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
 		smbcli_close(cli->tree, fnum);
 		return 1;
@@ -1149,7 +1151,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	XFILE *f;
 	size_t start = 0;
 	off_t nread = 0;
-	char *buf = NULL;
+	uint8_t *buf = NULL;
 	int maxwrite = io_bufsize;
 	int rc = 0;
 	
@@ -1202,7 +1204,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	DEBUG(1,("putting file %s as %s ",lname,
 		 rname));
   
-	buf = (char *)malloc(maxwrite);
+	buf = (uint8_t *)malloc(maxwrite);
 	if (!buf) {
 		d_printf("ERROR: Not enough memory!\n");
 		return 1;

@@ -85,7 +85,7 @@ struct smbcli_request *smb_tree_connect_send(struct smbcli_tree *tree, union smb
 ****************************************************************************/
 NTSTATUS smb_tree_connect_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_tcon *parms)
 {
-	char *p;
+	uint8_t *p;
 
 	if (!smbcli_request_receive(req) ||
 	    smbcli_request_is_error(req)) {

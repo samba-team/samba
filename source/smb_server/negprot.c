@@ -25,7 +25,7 @@
 
 
 /* initialise the auth_context for this server and return the cryptkey */
-static void get_challenge(struct smbsrv_connection *smb_conn, char buff[8]) 
+static void get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8]) 
 {
 	NTSTATUS nt_status;
 	const uint8_t *cryptkey;
@@ -386,7 +386,7 @@ void reply_negprot(struct smbsrv_request *req)
 	int Index=0;
 	int choice = -1;
 	int protocol;
-	char *p;
+	uint8_t *p;
 
 	if (req->smb_conn->negotiate.done_negprot) {
 		smbsrv_terminate_connection(req->smb_conn, "multiple negprot's are not permitted");
@@ -398,8 +398,8 @@ void reply_negprot(struct smbsrv_request *req)
 
 	while (p < req->in.data + req->in.data_size) { 
 		Index++;
-		DEBUG(3,("Requested protocol [%s]\n",p));
-		p += strlen(p) + 2;
+		DEBUG(3,("Requested protocol [%s]\n",(const char *)p));
+		p += strlen((const char *)p) + 2;
 	}
     
 	/* Check for protocols, most desirable first */
@@ -409,10 +409,10 @@ void reply_negprot(struct smbsrv_request *req)
 		if ((supported_protocols[protocol].protocol_level <= lp_maxprotocol()) &&
 				(supported_protocols[protocol].protocol_level >= lp_minprotocol()))
 			while (p < (req->in.data + req->in.data_size)) { 
-				if (strequal(p,supported_protocols[protocol].proto_name))
+				if (strequal((const char *)p,supported_protocols[protocol].proto_name))
 					choice = Index;
 				Index++;
-				p += strlen(p) + 2;
+				p += strlen((const char *)p) + 2;
 			}
 		if(choice != -1)
 			break;

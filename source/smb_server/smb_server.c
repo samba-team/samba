@@ -80,7 +80,7 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn, struct t
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		req->in.buffer = talloc_array_p(req, char, NBT_HDR_SIZE);
+		req->in.buffer = talloc_array_p(req, uint8_t, NBT_HDR_SIZE);
 		if (req->in.buffer == NULL) {
 			talloc_free(req);
 			return NT_STATUS_NO_MEMORY;
@@ -576,7 +576,7 @@ static void construct_reply(struct smbsrv_request *req)
 void chain_reply(struct smbsrv_request *req)
 {
 	uint16_t chain_cmd, chain_offset;
-	char *vwv, *data;
+	uint8_t *vwv, *data;
 	uint16_t wct;
 	uint16_t data_size;
 

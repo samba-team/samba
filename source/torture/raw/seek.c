@@ -50,7 +50,7 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int fnum, fnum2;
 	const char *fname = BASEDIR "\\test.txt";
-	char c[2];
+	uint8_t c[2];
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;

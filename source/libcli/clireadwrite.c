@@ -25,9 +25,10 @@
 /****************************************************************************
   Read size bytes at offset offset using SMBreadX.
 ****************************************************************************/
-ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, char *buf, off_t offset, 
+ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, void *_buf, off_t offset, 
 		 size_t size)
 {
+	uint8_t *buf = _buf;
 	union smb_read parms;
 	int readsize;
 	ssize_t total = 0;
@@ -84,8 +85,9 @@ ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, char *buf, off_t offset,
 ****************************************************************************/
 ssize_t smbcli_write(struct smbcli_tree *tree,
 		     int fnum, uint16_t write_mode,
-		     const uint8_t *buf, off_t offset, size_t size)
+		     const void *_buf, off_t offset, size_t size)
 {
+	const uint8_t *buf = _buf;
 	union smb_write parms;
 	int block = (tree->session->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32));
 	ssize_t total = 0;
@@ -129,8 +131,9 @@ ssize_t smbcli_write(struct smbcli_tree *tree,
   write to a file using a SMBwrite and not bypassing 0 byte writes
 ****************************************************************************/
 ssize_t smbcli_smbwrite(struct smbcli_tree *tree,
-		     int fnum, char *buf, off_t offset, size_t size1)
+		     int fnum, const void *_buf, off_t offset, size_t size1)
 {
+	const uint8_t *buf = _buf;
 	union smb_write parms;
 	ssize_t total = 0;
 

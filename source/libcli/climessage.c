@@ -58,7 +58,7 @@ BOOL smbcli_message_text(struct smbcli_tree *tree, char *msg, int len, int grp)
 	req = smbcli_request_setup(tree, SMBsendtxt, 1, 0);
 	SSVAL(req->out.vwv, VWV(0), grp);
 
-	smbcli_req_append_bytes(req, msg, len);
+	smbcli_req_append_bytes(req, (const uint8_t *)msg, len);
 
 	if (!smbcli_request_send(req) || 
 	    !smbcli_request_receive(req) ||

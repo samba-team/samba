@@ -39,7 +39,7 @@ put a dos date into a buffer (date/time format)
 This takes GMT time and puts local time in the buffer
 ********************************************************************/
 void srv_push_dos_date2(struct smbsrv_connection *smb_server,
-		       char *buf, int offset, time_t unixdate)
+		       uint8_t *buf, int offset, time_t unixdate)
 {
 	push_dos_date2(buf, offset, unixdate, smb_server->negotiate.zone_offset);
 }
@@ -49,7 +49,7 @@ put a dos 32 bit "unix like" date into a buffer. This routine takes
 GMT and converts it to LOCAL time in zone_offset before putting it
 ********************************************************************/
 void srv_push_dos_date3(struct smbsrv_connection *smb_server,
-		       char *buf, int offset, time_t unixdate)
+		       uint8_t *buf, int offset, time_t unixdate)
 {
 	push_dos_date3(buf, offset, unixdate, smb_server->negotiate.zone_offset);
 }

@@ -267,7 +267,7 @@ static BOOL rw_torture(struct smbcli_state *c)
 	int fnum2;
 	pid_t pid2, pid = getpid();
 	int i, j;
-	char buf[1024];
+	uint8_t buf[1024];
 	BOOL correct = True;
 
 	fnum2 = smbcli_open(c->tree, lockfname, O_RDWR | O_CREAT | O_EXCL, 
@@ -298,13 +298,13 @@ static BOOL rw_torture(struct smbcli_state *c)
 			break;
 		}
 
-		if (smbcli_write(c->tree, fnum, 0, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
+		if (smbcli_write(c->tree, fnum, 0, &pid, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("write failed (%s)\n", smbcli_errstr(c->tree));
 			correct = False;
 		}
 
 		for (j=0;j<50;j++) {
-			if (smbcli_write(c->tree, fnum, 0, (char *)buf, 
+			if (smbcli_write(c->tree, fnum, 0, buf, 
 				      sizeof(pid)+(j*sizeof(buf)), 
 				      sizeof(buf)) != sizeof(buf)) {
 				printf("write failed (%s)\n", smbcli_errstr(c->tree));
@@ -314,7 +314,7 @@ static BOOL rw_torture(struct smbcli_state *c)
 
 		pid2 = 0;
 
-		if (smbcli_read(c->tree, fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
+		if (smbcli_read(c->tree, fnum, &pid2, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("read failed (%s)\n", smbcli_errstr(c->tree));
 			correct = False;
 		}
@@ -366,8 +366,8 @@ static BOOL rw_torture3(struct smbcli_state *c, const char *lockfname)
 {
 	int fnum = -1;
 	uint_t i = 0;
-	char buf[131072];
-	char buf_rd[131072];
+	uint8_t buf[131072];
+	uint8_t buf_rd[131072];
 	uint_t count;
 	uint_t countprev = 0;
 	ssize_t sent = 0;
@@ -597,7 +597,7 @@ static BOOL run_tcon_test(void)
 	int fnum1;
 	uint16_t cnum1, cnum2, cnum3;
 	uint16_t vuid1, vuid2;
-	char buf[4];
+	uint8_t buf[4];
 	BOOL ret = True;
 	struct smbcli_tree *tree1;
 	const char *host = lp_parm_string(-1, "torture", "host");
@@ -818,7 +818,7 @@ static BOOL run_fdpasstest(void)
 	struct smbcli_state *cli1, *cli2;
 	const char *fname = "\\fdpass.tst";
 	int fnum1, oldtid;
-	pstring buf;
+	uint8_t buf[1024];
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -1284,7 +1284,7 @@ static BOOL run_trans2test(void)
 
 	fnum = smbcli_open(cli->tree, fname2, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
-	smbcli_write(cli->tree, fnum,  0, (char *)&fnum, 0, sizeof(fnum));
+	smbcli_write(cli->tree, fnum,  0, &fnum, 0, sizeof(fnum));
 	smbcli_close(cli->tree, fnum);
 	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, "\\trans2\\", &c_time, &a_time, &m_time2, &w_time, &size, NULL, NULL))) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", smbcli_errstr(cli->tree));
@@ -1536,7 +1536,7 @@ static BOOL run_vuidtest(void)
 	static struct smbcli_state *cli2;
 	const char *fname = "\\readonly.file";
 	int fnum1, fnum2;
-	char buf[20];
+	uint8_t buf[20];
 	size_t fsize;
 	BOOL correct = True;
 	char *tmp_path;

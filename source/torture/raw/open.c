@@ -33,7 +33,7 @@ enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};
 */
 static enum rdwr_mode check_rdwr(struct smbcli_tree *tree, int fnum)
 {
-	char c = 1;
+	uint8_t c = 1;
 	BOOL can_read  = (smbcli_read(tree, fnum, &c, 0, 1) == 1);
 	BOOL can_write = (smbcli_write(tree, fnum, 0, &c, 0, 1) == 1);
 	if ( can_read &&  can_write) return RDWR_RDWR;

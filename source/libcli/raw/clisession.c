@@ -156,7 +156,7 @@ NTSTATUS smb_raw_session_setup_recv(struct smbcli_request *req,
 				    union smb_sesssetup *parms) 
 {
 	uint16_t len;
-	char *p;
+	uint8_t *p;
 
 	if (!smbcli_request_receive(req)) {
 		return smbcli_request_destroy(req);
