@@ -8,7 +8,7 @@ bin_PROGRAMS = string2key
 
 sbin_PROGRAMS = kstash
 
-libexec_PROGRAMS = kdc
+libexec_PROGRAMS = hprop hpropd kdc
 
 kdc_SOURCES = connect.c config.c kerberos4.c kerberos5.c log.c main.c misc.c
 
