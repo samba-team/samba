@@ -315,23 +315,14 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 static BIGNUM *
 integer_to_BN(krb5_context context, const char *field, heim_integer *f)
 {
-    unsigned char *p = f->data;
-    ASN1_INTEGER *i;
     BIGNUM *bn;
 
-    i = d2i_ASN1_INTEGER(NULL, &p, f->length);
-    if (i == NULL) {
-	krb5_set_error_string(context, "PKINIT: failed to decode %s", field);
-	return NULL;
-    }
-    bn = ASN1_INTEGER_to_BN(i, NULL);
-    ASN1_INTEGER_free(i);
+    bn = BN_bin2bn((const unsigned char *)f->data, f->length, NULL);
     if (bn == NULL) {
-	krb5_set_error_string(context,
-			      "PKINIT: failed to convert %s to bignum",
-			      field);
+	krb5_set_error_string(context, "PKINIT: parsing BN failed %s", field);
 	return NULL;
     }
+    bn->neg = f->negative;
     return bn;
 }
 
