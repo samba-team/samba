@@ -412,8 +412,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				}
 
 				/* Load DSO's */
-				if(lp_modules()) 
-					smb_load_modules(lp_modules());
+				init_modules();
 
 				return True; 
 			}

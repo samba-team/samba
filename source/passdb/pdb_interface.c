@@ -86,6 +86,18 @@ BOOL smb_register_passdb(const char *name, pdb_init_function init, int version)
 	return True;
 }
 
+struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
+{
+	struct pdb_init_function_entry *entry = backends;
+
+	while(entry) {
+		if (strequal(entry->name, name)) return entry;
+		entry = entry->next;
+	}
+
+	return NULL;
+}
+
 static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -423,8 +435,6 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 
 	lazy_initialize_passdb();
 
-	entry = backends;
-
 	p = strchr(module_name, ':');
 
 	if (p) {
@@ -435,27 +445,32 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 
 	trim_string(module_name, " ", " ");
 
-	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
-	while(entry) {
-		if (strequal(entry->name, module_name))
-		{
-			DEBUG(5,("Found pdb backend %s\n", module_name));
-			nt_status = entry->init(context, methods, module_location);
-			if (NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(5,("pdb backend %s has a valid init\n", selected));
-			} else {
-				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
-			}
-			SAFE_FREE(module_name);
-			return nt_status;
-			break; /* unreached */
-		}
-		entry = entry->next;
-	}
 
+	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
+
+	entry = pdb_find_backend_entry(module_name);
+	
+	/* Try to find a module that contains this module */
+	if(!entry) { 
+		smb_probe_module("passdb", module_name);
+		entry = pdb_find_backend_entry(module_name);
+	}
+	
 	/* No such backend found */
+	if(!entry) { 
+		SAFE_FREE(module_name);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	DEBUG(5,("Found pdb backend %s\n", module_name));
+	nt_status = entry->init(context, methods, module_location);
+	if (NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(5,("pdb backend %s has a valid init\n", selected));
+	} else {
+		DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
+	}
 	SAFE_FREE(module_name);
-	return NT_STATUS_INVALID_PARAMETER;
+	return nt_status;
 }
 
 /******************************************************************

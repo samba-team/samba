@@ -75,18 +75,47 @@ int smb_load_modules(const char **modules)
 	return success;
 }
 
+int smb_probe_module(const char *subsystem, const char *module)
+{
+	pstring full_path;
+	
+	/* Check for absolute path */
+	if(module[0] == '/')return smb_load_module(module);
+	
+	pstrcpy(full_path, lib_path(subsystem));
+	pstrcat(full_path, "/");
+	pstrcat(full_path, module);
+	pstrcat(full_path, ".");
+	pstrcat(full_path, shlib_ext());
+	
+	return smb_load_module(full_path);
+}
+
 #else /* HAVE_DLOPEN */
 
 int smb_load_module(const char *module_name)
 {
-	DEBUG(0,("This samba executable has not been build with plugin support"));
+	DEBUG(0,("This samba executable has not been built with plugin support"));
 	return False;
 }
 
 int smb_load_modules(const char **modules)
 {
-	DEBUG(0,("This samba executable has not been build with plugin support"));
-	return -1;
+	DEBUG(0,("This samba executable has not been built with plugin support"));
+	return False;
+}
+
+int smb_probe_module(const char *subsystem, const char *module)
+{
+	DEBUG(0,("This samba executable has not been built with plugin support, not probing")); 
+	return False;
 }
 
 #endif /* HAVE_DLOPEN */
+
+void init_modules(void)
+{
+	if(lp_preload_modules()) 
+		smb_load_modules(lp_preload_modules());
+	/* FIXME: load static modules */
+}
