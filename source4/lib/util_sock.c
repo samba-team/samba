@@ -162,7 +162,7 @@ ssize_t read_udp_socket(int fd, char *buf, size_t len,
 	struct sockaddr_in sock;
 	socklen_t socklen = sizeof(sock);
 
-	ret = (ssize_t)sys_recvfrom(fd,buf,len, 0, (struct sockaddr *)&sock, &socklen);
+	ret = recvfrom(fd,buf,len, 0, (struct sockaddr *)&sock, &socklen);
 	if (ret <= 0) {
 		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
 		return 0;

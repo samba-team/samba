@@ -175,7 +175,7 @@ static void get_password_file(struct cmdline_auth_info *a)
 		sscanf(p, "%d", &fd);
 		close_it = False;
 	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
-		fd = sys_open(p, O_RDONLY, 0);
+		fd = open(p, O_RDONLY, 0);
 		pstrcpy(spec, p);
 		if (fd < 0) {
 			fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",

@@ -20,96 +20,6 @@
 
 #include "includes.h"
 
-static int gotalarm;
-
-/***************************************************************
- Signal function to tell us we timed out.
-****************************************************************/
-
-static void gotalarm_sig(void)
-{
-  gotalarm = 1;
-}
-
-/***************************************************************
- Lock or unlock a fd for a known lock type. Abandon after waitsecs 
- seconds.
-****************************************************************/
-
-BOOL do_file_lock(int fd, int waitsecs, int type)
-{
-  SMB_STRUCT_FLOCK lock;
-  int             ret;
-  void (*oldsig_handler)(int);
-
-  gotalarm = 0;
-  oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
-
-  lock.l_type = type;
-  lock.l_whence = SEEK_SET;
-  lock.l_start = 0;
-  lock.l_len = 1;
-  lock.l_pid = 0;
-
-  alarm(waitsecs);
-  /* Note we must *NOT* use sys_fcntl here ! JRA */
-  ret = fcntl(fd, SMB_F_SETLKW, &lock);
-  alarm(0);
-  CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
-
-  if (gotalarm) {
-    DEBUG(0, ("do_file_lock: failed to %s file.\n",
-                type == F_UNLCK ? "unlock" : "lock"));
-    return False;
-  }
-
-  return (ret == 0);
-}
-
-
-/***************************************************************
- Lock an fd. Abandon after waitsecs seconds.
-****************************************************************/
-
-BOOL file_lock(int fd, int type, int secs, int *plock_depth)
-{
-  if (fd < 0)
-    return False;
-
-  (*plock_depth)++;
-
-  if ((*plock_depth) == 0)
-  {
-    if (!do_file_lock(fd, secs, type)) {
-      DEBUG(10,("file_lock: locking file failed, error = %s.\n",
-                 strerror(errno)));
-      return False;
-    }
-  }
-
-  return True;
-}
-
-/***************************************************************
- Unlock an fd. Abandon after waitsecs seconds.
-****************************************************************/
-
-BOOL file_unlock(int fd, int *plock_depth)
-{
-  BOOL ret=True;
-
-  if(*plock_depth == 1)
-    ret = do_file_lock(fd, 5, F_UNLCK);
-
-  (*plock_depth)--;
-
-  if(!ret)
-    DEBUG(10,("file_unlock: unlocking file failed, error = %s.\n",
-                 strerror(errno)));
-  return ret;
-}
-
-
 /*************************************************************************
  gets a line out of a file.
  line is of format "xxxx:xxxxxx:xxxxx:".
@@ -280,10 +190,10 @@ load a file into memory from a fd.
 
 char *fd_load(int fd, size_t *size)
 {
-	SMB_STRUCT_STAT sbuf;
+	struct stat sbuf;
 	char *p;
 
-	if (sys_fstat(fd, &sbuf) != 0) return NULL;
+	if (fstat(fd, &sbuf) != 0) return NULL;
 
 	p = (char *)malloc(sbuf.st_size+1);
 	if (!p) return NULL;

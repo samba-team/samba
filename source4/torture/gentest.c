@@ -504,7 +504,7 @@ static uint16_t gen_pid(void)
 /*
   generate a lock count
 */
-static SMB_OFF_T gen_lock_count(void)
+static off_t gen_lock_count(void)
 {
 	return gen_int_range(0, 3);
 }

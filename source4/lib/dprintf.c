@@ -31,7 +31,7 @@
 
 #include "includes.h"
 
- int d_vfprintf(FILE *f, const char *format, va_list ap)
+int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
 	char *p, *p2;
 	int ret, maxlen, clen;
@@ -77,7 +77,7 @@ again:
 }
 
 
- int d_fprintf(FILE *f, const char *format, ...)
+int d_fprintf(FILE *f, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	int ret;
 	va_list ap;
@@ -91,7 +91,7 @@ again:
 
 static FILE *outfile;
 
- int d_printf(const char *format, ...)
+int d_printf(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 {
 	int ret;
 	va_list ap;
