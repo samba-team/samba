@@ -320,7 +320,6 @@ gss_auth(void *app_data, char *host)
 {
     
     OM_uint32 maj_stat, min_stat;
-    gss_buffer_desc name;
     gss_name_t target_name;
     gss_buffer_desc input, output_token;
     int context_established = 0;
