@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,10 +39,9 @@
 
 RCSID("$Id$");
 
-
 /* XXX should we fetch these for each open ? */
-
-static void *cc_handle;
+static HEIMDAL_MUTEX acc_mutex = HEIMDAL_MUTEX_INITIALIZER;
+static void *cc_handle; 
 static cc_initialize_func init_func;
 
 typedef struct krb5_acc {
@@ -50,6 +49,8 @@ typedef struct krb5_acc {
     cc_context_t context;
     cc_ccache_t ccache;
 } krb5_acc;
+
+static krb5_error_code acc_close(krb5_context, krb5_ccache);
 
 #define ACACHE(X) ((krb5_acc *)(X)->data.data)
 
@@ -65,6 +66,7 @@ static const struct {
     { ccErrContextNotFound,	KRB5_CC_NOTFOUND },
     { ccIteratorEnd,		KRB5_CC_END },
     { ccErrNoMem,		KRB5_CC_NOMEM },
+    { ccErrServerUnavailable,	KRB5_CC_BADNAME },
     { ccNoError,		0 }
 };
 
@@ -84,7 +86,9 @@ init_ccapi(krb5_context context)
 {
     const char *lib;
 
+    HEIMDAL_MUTEX_lock(&acc_mutex);
     if (init_func) {
+	HEIMDAL_MUTEX_unlock(&acc_mutex);
 	krb5_clear_error_string(context);
 	return 0;
     }
@@ -103,23 +107,26 @@ init_ccapi(krb5_context context)
 #ifdef HAVE_DLOPEN
     cc_handle = dlopen(lib, 0);
     if (cc_handle == NULL) {
+	HEIMDAL_MUTEX_unlock(&acc_mutex);
 	krb5_set_error_string(context, "Failed to load %s", lib);
-	return ENOENT;
+	return ccErrServerUnavailable;
     }
 
     init_func = dlsym(cc_handle, "cc_initialize");
+    HEIMDAL_MUTEX_unlock(&acc_mutex);
     if (init_func == NULL) {
 	krb5_set_error_string(context, "Failed to find cc_initialize"
 			      "in %s: %s", lib, dlerror());
 	dlclose(cc_handle);
-	return ENOENT;
+	return ccErrServerUnavailable;
     }
-#else
-    krb5_set_error_string(context, "no support for shared object");
-    return ENOENT;
-#endif
 
     return 0;
+#else
+    HEIMDAL_MUTEX_unlock(&acc_mutex);
+    krb5_set_error_string(context, "no support for shared object");
+    return ccErrServerUnavailable;
+#endif
 }    
 
 static krb5_error_code
@@ -222,12 +229,33 @@ fail:
     return ret;
 }
 
+static void
+free_ccred(cc_credentials_v5_t *cred)
+{
+    int i;
+
+    if (cred->addresses) {
+	for (i = 0; cred->addresses[i] != 0; i++) {
+	    if (cred->addresses[i]->data)
+		free(cred->addresses[i]->data);
+	    free(cred->addresses[i]);
+	}
+	free(cred->addresses);
+    }
+    if (cred->server)
+	free(cred->server);
+    if (cred->client)
+	free(cred->client);
+    memset(cred, 0, sizeof(*cred));
+}
+
 static krb5_error_code
 make_ccred_from_cred(krb5_context context,
 		     const krb5_creds *incred,
 		     cc_credentials_v5_t *cred)
 {
     krb5_error_code ret;
+    int i;
 
     memset(cred, 0, sizeof(*cred));
 
@@ -236,10 +264,8 @@ make_ccred_from_cred(krb5_context context,
 	goto fail;
 
     ret = krb5_unparse_name(context, incred->server, &cred->server);
-    if (ret) {
-	free(cred->client);
+    if (ret)
 	goto fail;
-    }
 
     cred->keyblock.type = incred->session.keytype;
     cred->keyblock.length = incred->session.keyvalue.length;
@@ -260,10 +286,36 @@ make_ccred_from_cred(krb5_context context,
     cred->authdata = NULL;
     cred->addresses = NULL;
     
+    cred->addresses = calloc(incred->addresses.len + 1, 
+			     sizeof(cred->addresses[0]));
+    if (cred->addresses == NULL) {
+
+	ret = ENOMEM;
+	goto fail;
+    }
+
+    for (i = 0; i < incred->addresses.len; i++) {
+	cc_data *addr;
+	addr = malloc(sizeof(*addr));
+	addr->type = incred->addresses.val[i].addr_type;
+	addr->length = incred->addresses.val[i].address.length;
+	addr->data = malloc(addr->length);
+	if (addr->data == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
+	memcpy(addr->data, incred->addresses.val[i].address.data, 
+	       addr->length);
+	cred->addresses[i] = addr;
+    }
+    cred->addresses[i] = NULL;
+
     cred->ticket_flags = TicketFlags2int(incred->flags.b); /* XXX */
     return 0;
 
 fail:    
+    free_ccred(cred);
+
     krb5_clear_error_string(context);
     return ret;
 }
@@ -289,26 +341,29 @@ acc_get_name(krb5_context context,
     return n;
 }
 
-static cc_int32
+static krb5_error_code
 acc_alloc(krb5_context context, krb5_ccache *id)
 {
-    krb5_acc *a;
+    krb5_error_code ret;
     cc_int32 error;
+    krb5_acc *a;
 
-    error = init_ccapi(context);
-    if (error)
-	return error;
+    ret = init_ccapi(context);
+    if (ret)
+	return ret;
 
-    error = krb5_data_alloc(&(*id)->data, sizeof(*a));
-    if (error)
-	return error;
+    ret = krb5_data_alloc(&(*id)->data, sizeof(*a));
+    if (ret) {
+	krb5_clear_error_string(context);
+	return ret;
+    }
     
     a = ACACHE(*id);
 
     error = (*init_func)(&a->context, ccapi_version_3, NULL, NULL);
     if (error) {
 	krb5_data_free(&(*id)->data);
-	return error;
+	return translate_cc_error(context, error);
     }
 
     a->name = NULL;
@@ -319,12 +374,13 @@ acc_alloc(krb5_context context, krb5_ccache *id)
 static krb5_error_code
 acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 {
-    krb5_acc *a;
+    krb5_error_code ret;
     cc_int32 error;
+    krb5_acc *a;
 
-    error = acc_alloc(context, id);
-    if (error)
-	return translate_cc_error(context, error);
+    ret = acc_alloc(context, id);
+    if (ret)
+	return ret;
 
     a = ACACHE(*id);
 
@@ -345,12 +401,13 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 static krb5_error_code
 acc_gen_new(krb5_context context, krb5_ccache *id)
 {
-    krb5_acc *a;
+    krb5_error_code ret;
     cc_int32 error;
+    krb5_acc *a;
 
-    error = acc_alloc(context, id);
-    if (error)
-	return translate_cc_error(context, error);
+    ret = acc_alloc(context, id);
+    if (ret)
+	return ret;
 
     a = ACACHE(*id);
 
@@ -365,6 +422,7 @@ acc_gen_new(krb5_context context, krb5_ccache *id)
 							   &a->ccache);
 	a->name = strdup(default_acc_name);
     }
+
     return translate_cc_error(context, error);
 }
 
@@ -474,9 +532,10 @@ acc_store_cred(krb5_context context,
 	return ret;
 
     error = (*a->ccache->func->store_credentials)(a->ccache, &cred);
+    if (error)
+	ret = translate_cc_error(context, error);
 
-    free(v5cred.server);
-    free(v5cred.client);
+    free_ccred(&v5cred);
 
     return ret;
 }
