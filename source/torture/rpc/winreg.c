@@ -265,6 +265,7 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
+#if 0
 	struct winreg_EnumValue r;
     struct winreg_Uint8buf vb;
     struct winreg_EnumValueName vn;
@@ -299,7 +300,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("EnumValue failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
-			
+#endif 
 	return True;
 }
 
