@@ -191,6 +191,7 @@ typedef struct
   BOOL bTimeServer;
   BOOL bBindInterfacesOnly;
   BOOL bNetWkstaUserLogon;
+  BOOL bUnixPasswdSync;
 } global;
 
 static global Globals;
@@ -445,6 +446,7 @@ static struct parm_struct parm_table[] =
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL,   NULL,  0},
   {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL,   NULL,  0},
   {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL,  0},
+  {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL,  0},
   {"alternate permissions",P_BOOL,P_LOCAL,  &sDefault.bAlternatePerm,   NULL,   NULL,  FLAG_GLOBAL},
   {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL,  FLAG_GLOBAL},
   {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  FLAG_GLOBAL},
@@ -743,6 +745,7 @@ static void init_globals(void)
   Globals.bTimeServer = False;
   Globals.bBindInterfacesOnly = False;
   Globals.bNetWkstaUserLogon = True;
+  Globals.bUnixPasswdSync = False;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -965,6 +968,7 @@ FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
 FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_net_wksta_user_logon,&Globals.bNetWkstaUserLogon)
+FN_GLOBAL_BOOL(lp_unix_password_sync,&Globals.bUnixPasswdSync)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
