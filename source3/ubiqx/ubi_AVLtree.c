@@ -1,7 +1,7 @@
 /* ========================================================================== **
  *                              ubi_AVLtree.c
  *
- *  Copyright (C) 1991-1997 by Christopher R. Hertel
+ *  Copyright (C) 1991-1998 by Christopher R. Hertel
  *
  *  Email: crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
@@ -32,6 +32,14 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_AVLtree.c,v
+ * Revision 4.0  1998/03/10 03:37:09  crh
+ * Major changes.
+ * By adding the AVL balance field to the base ubi_btNode structure, I no
+ * longer need AVL-specific ReplaceNode(), SwapNodes(), and InitNode()
+ * functions.  The Remove() function is also simplified.  It's all much
+ * cleaner.
+ * This is rev. 4.0.  The 3.x series was dropped.
+ *
  * Revision 2.5  1997/12/23 04:00:42  crh
  * In this version, all constants & macros defined in the header file have
  * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
@@ -92,10 +100,9 @@
  *
  * To further complicate matters, only those portions of the base module
  * (ubi_BinTree) that were superceeded in the new module had the new names.
- * For example, if you were using ubi_AVLtree, the AVL node structure was
- * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
- * SplayTree, the locate function was called "ubi_sptLocate", but the next
- * and previous functions remained "ubi_btNext" and "ubi_btPrev".
+ * For example, if you were using ubi_SplayTree, the locate function was
+ * called "ubi_sptLocate", but the next and previous functions remained
+ * "ubi_btNext" and "ubi_btPrev".
  *
  * This was not too terrible if you were familiar with the modules and knew
  * exactly which tree model you wanted to use.  If you wanted to be able to
@@ -129,8 +136,8 @@
  */
 
 static char ModuleID[] = "ubi_AVLtree\n\
-\tRevision: 2.5\n\
-\tDate: 1997/12/23 04:00:42\n\
+\tRevision: 4.0\n\
+\tDate: 1998/03/10 03:37:09\n\
 \tAuthor: crh\n";
 
 /* ========================================================================== **
@@ -147,7 +154,7 @@ static char ModuleID[] = "ubi_AVLtree\n\
  * -------------------------------------------------------------------------- **
  */
 
-static ubi_avlNodePtr L1( ubi_avlNodePtr p )
+static ubi_btNodePtr L1( ubi_btNodePtr p )
   /* ------------------------------------------------------------------------ **
    * Single rotate left.
    *
@@ -157,7 +164,7 @@ static ubi_avlNodePtr L1( ubi_avlNodePtr p )
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_avlNodePtr tmp;
+  ubi_btNodePtr tmp;
 
   tmp                      = p->Link[ubi_trRIGHT];
   p->Link[ubi_trRIGHT]     = tmp->Link[ubi_trLEFT];
@@ -179,7 +186,7 @@ static ubi_avlNodePtr L1( ubi_avlNodePtr p )
   return( tmp );
   } /* L1 */
 
-static ubi_avlNodePtr R1( ubi_avlNodePtr p )
+static ubi_btNodePtr R1( ubi_btNodePtr p )
   /* ------------------------------------------------------------------------ **
    * Single rotate right.
    *
@@ -189,7 +196,7 @@ static ubi_avlNodePtr R1( ubi_avlNodePtr p )
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_avlNodePtr tmp;
+  ubi_btNodePtr tmp;
 
   tmp                      = p->Link[ubi_trLEFT];
   p->Link[ubi_trLEFT]      = tmp->Link[ubi_trRIGHT];
@@ -211,7 +218,7 @@ static ubi_avlNodePtr R1( ubi_avlNodePtr p )
   return( tmp );
   } /* R1 */
 
-static ubi_avlNodePtr L2( ubi_avlNodePtr tree )
+static ubi_btNodePtr L2( ubi_btNodePtr tree )
   /* ------------------------------------------------------------------------ **
    * Double rotate left.
    *
@@ -221,7 +228,7 @@ static ubi_avlNodePtr L2( ubi_avlNodePtr tree )
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_avlNodePtr tmp, newroot;
+  ubi_btNodePtr tmp, newroot;
 
   tmp                         = tree->Link[ubi_trRIGHT];
   newroot                     = tmp->Link[ubi_trLEFT];
@@ -263,7 +270,7 @@ static ubi_avlNodePtr L2( ubi_avlNodePtr tree )
   return( newroot );
   } /* L2 */
 
-static ubi_avlNodePtr R2( ubi_avlNodePtr tree )
+static ubi_btNodePtr R2( ubi_btNodePtr tree )
   /* ------------------------------------------------------------------------ **
    * Double rotate right.
    *
@@ -273,7 +280,7 @@ static ubi_avlNodePtr R2( ubi_avlNodePtr tree )
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_avlNodePtr tmp, newroot;
+  ubi_btNodePtr tmp, newroot;
 
   tmp                         = tree->Link[ubi_trLEFT];
   newroot                     = tmp->Link[ubi_trRIGHT];
@@ -316,7 +323,7 @@ static ubi_avlNodePtr R2( ubi_avlNodePtr tree )
   } /* R2 */
 
 
-static ubi_avlNodePtr Adjust( ubi_avlNodePtr p, char LorR )
+static ubi_btNodePtr Adjust( ubi_btNodePtr p, char LorR )
   /* ------------------------------------------------------------------------ **
    * Adjust the balance value at node *p.  If necessary, rotate the subtree
    * rooted at p.
@@ -349,9 +356,9 @@ static ubi_avlNodePtr Adjust( ubi_avlNodePtr p, char LorR )
   return( p );
   } /* Adjust */
 
-static ubi_avlNodePtr Rebalance( ubi_avlNodePtr Root,
-                                 ubi_avlNodePtr subtree,
-                                 char           LorR )
+static ubi_btNodePtr Rebalance( ubi_btNodePtr Root,
+                                ubi_btNodePtr subtree,
+                                char          LorR )
   /* ------------------------------------------------------------------------ **
    * Rebalance the tree following an insertion.
    *
@@ -387,9 +394,9 @@ static ubi_avlNodePtr Rebalance( ubi_avlNodePtr Root,
   return( Root );
   } /* Rebalance */
 
-static ubi_avlNodePtr Debalance( ubi_avlNodePtr Root,
-                                 ubi_avlNodePtr subtree,
-                                 char           LorR )
+static ubi_btNodePtr Debalance( ubi_btNodePtr Root,
+                                ubi_btNodePtr subtree,
+                                char          LorR )
   /* ------------------------------------------------------------------------ **
    * Rebalance the tree following a deletion.
    *
@@ -428,125 +435,22 @@ static ubi_avlNodePtr Debalance( ubi_avlNodePtr Root,
   return( Root );
   } /* Debalance */
 
-
-/* -------------------------------------------------------------------------- **
- * The next two functions are used for general tree manipulation.  They are
- * each slightly different from their ubi_BinTree counterparts.
- * -------------------------------------------------------------------------- **
- */
-
-static void ReplaceNode( ubi_avlNodePtr *parent,
-                         ubi_avlNodePtr  oldnode,
-                         ubi_avlNodePtr  newnode )
-  /* ------------------------------------------------------------------------ **
-   * Remove node oldnode from the tree, replacing it with node newnode.
-   *
-   * Input:
-   *  parent   - A pointer to he parent pointer of the node to be
-   *             replaced.  <parent> may point to the Link[] field of
-   *             a parent node, or it may indicate the root pointer at
-   *             the top of the tree.
-   *  oldnode  - A pointer to the node that is to be replaced.
-   *  newnode  - A pointer to the node that is to be installed in the
-   *             place of <*oldnode>.
-   *
-   * Notes:    Don't forget to free oldnode.
-   *           The only difference between this function and the ubi_bt
-   *           version is that the node size is sizeof( ubi_avlNode ), not
-   *           sizeof( ubi_btNode ).
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  register int i;
-  register int avlNodeSize = sizeof( ubi_avlNode );
-
-  for( i = 0; i < avlNodeSize; i++ )
-    ((unsigned char *)newnode)[i] = ((unsigned char *)oldnode)[i];
-  (*parent) = newnode;
-
-  if(oldnode->Link[ubi_trLEFT ] )
-    (oldnode->Link[ubi_trLEFT ])->Link[ubi_trPARENT] = newnode;
-  if(oldnode->Link[ubi_trRIGHT] )
-    (oldnode->Link[ubi_trRIGHT])->Link[ubi_trPARENT] = newnode;
-  } /* ReplaceNode */
-
-static void SwapNodes( ubi_btRootPtr  RootPtr,
-                       ubi_avlNodePtr Node1,
-                       ubi_avlNodePtr Node2 )
-  /* ------------------------------------------------------------------------ **
-   * This function swaps two nodes in the tree.  Node1 will take the place of
-   * Node2, and Node2 will fill in the space left vacant by Node 1.
-   *
-   * Input:
-   *  RootPtr  - pointer to the tree header structure for this tree.
-   *  Node1    - \
-   *              > These are the two nodes which are to be swapped.
-   *  Node2    - /
-   *
-   * Notes:
-   *  This function does a three step swap, using a dummy node as a place
-   *  holder.  This function is used by ubi_avlRemove().
-   *  The only difference between this function and its ubi_bt counterpart
-   *  is that the nodes are ubi_avlNodes, not ubi_btNodes.
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  ubi_avlNodePtr *Parent;
-  ubi_avlNode     dummy;
-  ubi_avlNodePtr  dummy_p = &dummy;
-
-  if( Node1->Link[ubi_trPARENT] )
-    Parent = &((Node1->Link[ubi_trPARENT])->Link[(int)(Node1->gender)]);
-  else
-    Parent = (ubi_avlNodePtr *)&(RootPtr->root);
-  ReplaceNode( Parent, Node1, dummy_p );
-
-  if( Node2->Link[ubi_trPARENT] )
-    Parent = &((Node2->Link[ubi_trPARENT])->Link[(int)(Node2->gender)]);
-  else
-    Parent = (ubi_avlNodePtr *)&(RootPtr->root);
-  ReplaceNode( Parent, Node2, Node1 );
-
-  if( dummy_p->Link[ubi_trPARENT] )
-    Parent = &((dummy_p->Link[ubi_trPARENT])->Link[(int)(dummy_p->gender)]);
-  else
-    Parent = (ubi_avlNodePtr *)&(RootPtr->root);
-  ReplaceNode( Parent, dummy_p, Node2 );
-  } /* SwapNodes */
-
-
 /* ========================================================================== **
  *         Public, exported (ie. not static-ly declared) functions...
  * -------------------------------------------------------------------------- **
  */
 
-ubi_avlNodePtr ubi_avlInitNode( ubi_avlNodePtr NodePtr )
-  /* ------------------------------------------------------------------------ **
-   * Initialize a tree node.
-   *
-   *  Input:   NodePtr  - pointer to a ubi_btNode structure to be
-   *                      initialized.
-   *  Output:  a pointer to the initialized ubi_avlNode structure (ie. the
-   *           same as the input pointer).
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  (void)ubi_btInitNode( (ubi_btNodePtr)NodePtr );
-  NodePtr->balance = ubi_trEQUAL;
-  return( NodePtr );
-  } /* ubi_avlInitNode */
-
-ubi_trBool ubi_avlInsert( ubi_btRootPtr   RootPtr,
-                          ubi_avlNodePtr  NewNode,
-                          ubi_btItemPtr   ItemPtr,
-                          ubi_avlNodePtr *OldNode )
+ubi_trBool ubi_avlInsert( ubi_btRootPtr  RootPtr,
+                          ubi_btNodePtr  NewNode,
+                          ubi_btItemPtr  ItemPtr,
+                          ubi_btNodePtr *OldNode )
   /* ------------------------------------------------------------------------ **
    * This function uses a non-recursive algorithm to add a new element to
    * the tree.
    *
    *  Input:   RootPtr  -  a pointer to the ubi_btRoot structure that indicates
    *                       the root of the tree to which NewNode is to be added.
-   *           NewNode  -  a pointer to an ubi_avlNode structure that is NOT
+   *           NewNode  -  a pointer to an ubi_btNode structure that is NOT
    *                       part of any tree.
    *           ItemPtr  -  A pointer to the sort key that is stored within
    *                       *NewNode.  ItemPtr MUST point to information stored
@@ -585,9 +489,10 @@ ubi_trBool ubi_avlInsert( ubi_btRootPtr   RootPtr,
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_avlNodePtr OtherP;
+  ubi_btNodePtr OtherP;
 
-  if( !(OldNode) ) OldNode = &OtherP;
+  if( !(OldNode) )
+    OldNode = &OtherP;
   if( ubi_btInsert( RootPtr,
                     (ubi_btNodePtr)NewNode,
                     ItemPtr,
@@ -598,7 +503,7 @@ ubi_trBool ubi_avlInsert( ubi_btRootPtr   RootPtr,
     else
       {
       NewNode->balance = ubi_trEQUAL;
-      RootPtr->root = (ubi_btNodePtr)Rebalance( (ubi_avlNodePtr)RootPtr->root,
+      RootPtr->root = (ubi_btNodePtr)Rebalance( (ubi_btNodePtr)RootPtr->root,
                                                 NewNode->Link[ubi_trPARENT],
                                                 NewNode->gender );
       }
@@ -607,8 +512,8 @@ ubi_trBool ubi_avlInsert( ubi_btRootPtr   RootPtr,
   return( ubi_trFALSE );      /* Failure: could not replace an existing node. */
   } /* ubi_avlInsert */
 
-ubi_avlNodePtr ubi_avlRemove( ubi_btRootPtr  RootPtr,
-                              ubi_avlNodePtr DeadNode )
+ubi_btNodePtr ubi_avlRemove( ubi_btRootPtr  RootPtr,
+                             ubi_btNodePtr  DeadNode )
   /* ------------------------------------------------------------------------ **
    * This function removes the indicated node from the tree, after which the
    * tree is rebalanced.
@@ -622,45 +527,15 @@ ubi_avlNodePtr ubi_avlRemove( ubi_btRootPtr  RootPtr,
    *
    *  Note:   The node MUST be in the tree indicated by RootPtr.  If not,
    *          strange and evil things will happen to your trees.
+   *
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_btNodePtr p,
-               *parentp;
-
-  /* if the node has both left and right subtrees, then we have to swap
-   * it with another node.
-   */
-  if( (DeadNode->Link[ubi_trLEFT]) && (DeadNode->Link[ubi_trRIGHT]) )
-    SwapNodes( RootPtr, DeadNode, ubi_trPrev( DeadNode ) );
-
-  /* The parent of the node to be deleted may be another node, or it may be
-   * the root of the tree.  Since we're not sure, it's best just to have
-   * a pointer to the parent pointer, whatever it is.
-   */
-  if( DeadNode->Link[ubi_trPARENT] )
-    parentp = (ubi_btNodePtr *)
-              &((DeadNode->Link[ubi_trPARENT])->Link[(int)(DeadNode->gender)]);
-  else
-    parentp = &( RootPtr->root );
-
-  /* Now link the parent to the only grand-child.  Patch up the gender and
-   * such, and rebalance.
-   */
-  if( ubi_trEQUAL == DeadNode->balance )
-    (*parentp) = NULL;
-  else
-    {
-    p = (ubi_btNodePtr)(DeadNode->Link[(int)(DeadNode->balance)]);
-    p->Link[ubi_trPARENT] = (ubi_btNodePtr)DeadNode->Link[ubi_trPARENT];
-    p->gender  = DeadNode->gender;
-    (*parentp) = p;
-    }
-  RootPtr->root = (ubi_btNodePtr)Debalance( (ubi_avlNodePtr)RootPtr->root,
-                                            DeadNode->Link[ubi_trPARENT],
-                                            DeadNode->gender );
-
-  (RootPtr->count)--;
+  /* Let the base binary tree module do the removal, then rebalance. */
+  if( ubi_btRemove( RootPtr, DeadNode ) )
+    RootPtr->root = Debalance( RootPtr->root,
+                               DeadNode->Link[ubi_trPARENT],
+                               DeadNode->gender );
   return( DeadNode );
   } /* ubi_avlRemove */
 
