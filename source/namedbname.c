@@ -230,17 +230,14 @@ void dump_names(void)
     {
       if (f && ip_equal(d->bcast_ip, ipgrp) && n->source == REGISTER)
       {
-        fstring data;
+	/* XXXX i have little imagination as to how to output nb_flags as
+	   anything other than as a hexadecimal number :-) */
 
-      /* XXXX i have little imagination as to how to output nb_flags as
-         anything other than as a hexadecimal number :-) */
-
-        sprintf(data, "%s#%02x %s %2x %ld",
-	       n->name.name,n->name.name_type, /* XXXX ignore scope for now */
-	       inet_ntoa(n->ip),
-	       n->nb_flags,
-	       n->death_time);
-	    fprintf(f, "%s\n", data);
+        fprintf(f, "%s#%02x %s %2x %ld\n",
+		n->name.name,n->name.name_type, /* XXXX ignore scope for now */
+		inet_ntoa(n->ip),
+		n->nb_flags,
+		n->death_time);
       }
 
 	  DEBUG(3,("%15s ", inet_ntoa(d->bcast_ip)));
@@ -294,12 +291,12 @@ void load_netbios_names(void)
       int type = 0;
       int nb_flags;
       time_t ttd;
-	  struct in_addr ipaddr;
+      struct in_addr ipaddr;
 
-	  enum name_source source;
+      enum name_source source;
 
       char *ptr;
-	  int count = 0;
+      int count = 0;
 
       char *p;
 
@@ -307,24 +304,24 @@ void load_netbios_names(void)
 
       if (*line == '#') continue;
 
-	ptr = line;
+      ptr = line;
 
-	if (next_token(&ptr,name_str    ,NULL)) ++count;
-	if (next_token(&ptr,ip_str      ,NULL)) ++count;
-	if (next_token(&ptr,ttd_str     ,NULL)) ++count;
-	if (next_token(&ptr,nb_flags_str,NULL)) ++count;
-
-	if (count <= 0) continue;
-
-	if (count != 4) {
-	  DEBUG(0,("Ill formed wins line"));
-	  DEBUG(0,("[%s]: name#type ip nb_flags abs_time\n",line));
-	  continue;
-	}
-
+      if (next_token(&ptr,name_str    ,NULL)) ++count;
+      if (next_token(&ptr,ip_str      ,NULL)) ++count;
+      if (next_token(&ptr,nb_flags_str,NULL)) ++count;
+      if (next_token(&ptr,ttd_str     ,NULL)) ++count;
+      
+      if (count <= 0) continue;
+      
+      if (count != 4) {
+	DEBUG(0,("Ill formed wins line"));
+	DEBUG(0,("[%s]: name#type ip nb_flags abs_time\n",line));
+	continue;
+      }
+      
       /* netbios name. # divides the name from the type (hex): netbios#xx */
       strcpy(name,name_str);
-
+      
       p = strchr(name,'#');
 
       if (p) {

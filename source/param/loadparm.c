@@ -1920,19 +1920,6 @@ int lp_servicenumber(char *pszServiceName)
    return (iService);
 }
 
-
-
-
-/*******************************************************************
-  get a workgroup - but map to standalone if '*'
-  ******************************************************************/
-char *my_workgroup(void)
-{
-  char *res = lp_workgroup();
-  if (*res == '*') return("STANDALONE");
-  return(res);
-}
-
 /*******************************************************************
   a useful volume label function
   ******************************************************************/

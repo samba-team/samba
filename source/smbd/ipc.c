@@ -748,78 +748,22 @@ static BOOL check_server_info(int uLevel, char* id)
   return True;
 }
 
-/* used for server information: client, nameserv and ipc */
 struct srv_info_struct
 {
   fstring name;
   uint32 type;
   fstring comment;
-  fstring domain; /* used ONLY in ipc.c NOT namework.c */
-  BOOL server_added; /* used ONLY in ipc.c NOT namework.c */
+  fstring domain;
+  BOOL server_added;
 };
 
-/*******************************************************************
-  filter out unwanted server info 
-  ******************************************************************/
-static BOOL filter_server_info(struct srv_info_struct *server, 
-			       BOOL domains,
-			       char *domain, uint32 request)
-{
-  if (*domain == 0)
-    {
-      if (strequal(lp_workgroup(), server->domain)) {
-	return True;
-      }
-      else if (domains)
-	{
-	  DEBUG(4,("primary domain:reject %8x %s %s\n",request,server->name,server->domain));
-	  return False;
-	}
-      else if ((request & SV_TYPE_DOMAIN_ENUM) &&
-	       (server->type & SV_TYPE_DOMAIN_ENUM))
-	{
-	  DEBUG(4,("rej:DOM %8x: %s %s\n",server->type,server->name,server->domain));
-	  return False;
-	}
-      
-      return True;
-    }
-  else
-    {
-      if (strequal(domain, server->domain))
-	{
-	  /*
-	    if (request     == SV_TYPE_LOCAL_LIST_ONLY &&
-	    !(server->type & SV_TYPE_LOCAL_LIST_ONLY))
-	    {
-	    DEBUG(4,("rej:LOC %8x: ok %s %s\n",request,server->name,server->domain));
-	    return False;
-	    }
-	    */
-	  if ((request == (SV_TYPE_LOCAL_LIST_ONLY|SV_TYPE_DOMAIN_ENUM)) &&
-				!(server->type&SV_TYPE_DOMAIN_ENUM))
-	    {
-	      DEBUG(4,("rej:LOCDOM %8x: ok %s %s\n",request,server->name,server->domain));
-	      return False;
-	    }
-	  
-	  return True;
-	}
-      else if (!domains)
-	{
-	  DEBUG(4,("domain:%s %s %s\n",domain,server->name,server->domain));
-	  return False;
-	}
-      return True;
-    }
-}
 
 /*******************************************************************
   get server info lists from the files saved by nmbd. Return the
   number of entries
   ******************************************************************/
 static int get_server_info(uint32 servertype, 
-			   struct srv_info_struct **servers, BOOL domains, 
+			   struct srv_info_struct **servers,
 			   char *domain)
 {
   FILE *f;
@@ -843,7 +787,7 @@ static int get_server_info(uint32 servertype,
   /* request for everything is code for request all servers */
   if (servertype == SV_TYPE_ALL) servertype &= ~SV_TYPE_DOMAIN_ENUM;
 
-  DEBUG(4,("Servertype search: %8x domains:%s\n",servertype,BOOLSTR(domains)));
+  DEBUG(4,("Servertype search: %8x\n",servertype));
 
   while (!feof(f))
   {
@@ -870,7 +814,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->comment, NULL)) continue;
     if (!next_token(&ptr,s->domain , NULL)) {
       /* this allows us to cope with an old nmbd */
-      strcpy(s->domain,my_workgroup()); 
+      strcpy(s->domain,lp_workgroup()); 
     }
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
@@ -884,20 +828,16 @@ static int get_server_info(uint32 servertype,
       ok = False; 
     }
     
-    if ((servertype == ~SV_TYPE_DOMAIN_ENUM) &&
+    if ((servertype & SV_TYPE_DOMAIN_ENUM) != 
 	(s->type & SV_TYPE_DOMAIN_ENUM))
       {
-	DEBUG(4,("s:all x dom  "));
+	DEBUG(4,("s: dom mismatch "));
 	ok = False;
       }
     
-    if (domains && !(domain && *domain && strequal(domain, s->domain)))
+    if (!strequal(domain, s->domain) && !(servertype & SV_TYPE_DOMAIN_ENUM))
       {
-	if (!(s->type & SV_TYPE_DOMAIN_ENUM))
-	  {
-	    DEBUG(4,("r:dom enum  "));
-	    ok = False;
-	  }
+	ok = False;
       }
     
     if (ok)
@@ -905,7 +845,6 @@ static int get_server_info(uint32 servertype,
     	DEBUG(4,("**SV** %20s %8x %25s %15s\n",
 		 s->name, s->type, s->comment, s->domain));
 	
-	s->type |= SV_TYPE_LOCAL_LIST_ONLY;
     	s->server_added = True;
     	count++;
       }
@@ -1026,16 +965,13 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
   int counted=0,total=0;
   int i;
   fstring domain;
-  BOOL domains;
   BOOL domain_request;
   BOOL local_request = servertype & SV_TYPE_LOCAL_LIST_ONLY;
 
-  /*if (servertype == SV_TYPE_ALL) servertype &= ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY);*/
   if (servertype == SV_TYPE_ALL) servertype &= ~SV_TYPE_DOMAIN_ENUM;
 
-  domain_request = servertype & SV_TYPE_DOMAIN_ENUM;
+  domain_request = ((servertype & SV_TYPE_DOMAIN_ENUM) != 0);
 
-  domain[0] = 0;
   p += 8;
 
   if (!prefix_ok(str1,"WrLehD")) return False;
@@ -1045,20 +981,14 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
   DEBUG(4, ("domains_req:%s ", BOOLSTR(domain_request)));
   DEBUG(4, ("local_only:%s\n", BOOLSTR(local_request)));
 
-  if (strcmp(str1, "WrLehDO") == 0)
-  {
-	domains = False;
-  }
-  else if (strcmp(str1, "WrLehDz") == 0)
-  {
-	domains = True;
+  if (strcmp(str1, "WrLehDz") == 0) {
     StrnCpy(domain, p, sizeof(fstring)-1);
+  } else {
+    StrnCpy(domain, lp_workgroup(), sizeof(fstring)-1);    
   }
 
   if (lp_browse_list())
-  {
-    total = get_server_info(servertype,&servers,domains,domain);
-  }
+    total = get_server_info(servertype,&servers,domain);
 
   data_len = fixed_len = string_len = 0;
 
@@ -1070,21 +1000,17 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
     for (i=0;i<total;i++)
     {
       struct srv_info_struct *s = &servers[i];
-      if (filter_server_info(s,domains,domain,
-			     local_request|domain_request))
+      if (lastname && strequal(lastname,s->name)) continue;
+      lastname = s->name;
+      data_len += fill_srv_info(s,uLevel,0,&f_len,0,&s_len,0);
+      DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
+	       s->name, s->type, s->comment, s->domain));
+      
+      if (data_len <= buf_len)
 	{
-	  if (lastname && strequal(lastname,s->name)) continue;
-	  lastname = s->name;
-	  data_len += fill_srv_info(s,uLevel,0,&f_len,0,&s_len,0);
-	  DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
-		   s->name, s->type, s->comment, s->domain));
-	  
-	  if (data_len <= buf_len)
-	    {
-	      counted++;
-	      fixed_len += f_len;
-	      string_len += s_len;
-	    }
+	  counted++;
+	  fixed_len += f_len;
+	  string_len += s_len;
 	}
     }
   }
@@ -1104,15 +1030,12 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
     for (i = 0; i < total && count2;i++)
       {
 	struct srv_info_struct *s = &servers[i];
-	if (filter_server_info(s,domains,domain,local_request|domain_request))
-	  {
-	    if (lastname && strequal(lastname,s->name)) continue;
-	    lastname = s->name;
-	    fill_srv_info(s,uLevel,&p,&f_len,&p2,&s_len,*rdata);
-	    DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
-		     s->name, s->type, s->comment, s->domain));
-	    count2--;
-	  }
+	if (lastname && strequal(lastname,s->name)) continue;
+	lastname = s->name;
+	fill_srv_info(s,uLevel,&p,&f_len,&p2,&s_len,*rdata);
+	DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
+		 s->name, s->type, s->comment, s->domain));
+	count2--;
       }
   }
   
@@ -1746,7 +1669,7 @@ static BOOL api_RNetServerGetInfo(int cnum,int uid, char *param,char *data,
 
       strcpy(comment,lp_serverstring());
 
-      if ((count=get_server_info(SV_TYPE_ALL,&servers,False,NULL))>0) {
+      if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
 	for (i=0;i<count;i++)
 	  if (strequal(servers[i].name,local_machine)) {
 	    servertype = servers[i].type;
@@ -1829,7 +1752,7 @@ static BOOL api_NetWkstaGetInfo(int cnum,int uid, char *param,char *data,
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  strcpy(p2,my_workgroup());
+  strcpy(p2,lp_workgroup());
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -1838,7 +1761,7 @@ static BOOL api_NetWkstaGetInfo(int cnum,int uid, char *param,char *data,
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  strcpy(p2,my_workgroup());	/* login domain?? */
+  strcpy(p2,lp_workgroup());	/* login domain?? */
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2103,7 +2026,7 @@ static BOOL api_WWkstaUserLogon(int cnum,int uid, char *param,char *data,
       strupper(mypath);
       PACKS(&desc,"z",mypath); /* computer */
     }
-    PACKS(&desc,"z",my_workgroup());/* domain */
+    PACKS(&desc,"z",lp_workgroup());/* domain */
     PACKS(&desc,"z",lp_logon_script());		/* script path */
     PACKI(&desc,"D",0);		/* reserved */
   }

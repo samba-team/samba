@@ -631,6 +631,7 @@ add an entry to the directory cache
 ********************************************************************/
 void DirCacheAdd(char *path,char *name,char *dname,int snum)
 {
+  int count;
   struct dir_cache *entry = (struct dir_cache *)malloc(sizeof(*entry));
   if (!entry) return;
   entry->path = strdup(path);
@@ -647,7 +648,12 @@ void DirCacheAdd(char *path,char *name,char *dname,int snum)
   DEBUG(4,("Added dir cache entry %s %s -> %s\n",path,name,dname));
   
   if (dir_cache_size == DIRCACHESIZE) {
-    for (entry=dir_cache; entry->next; entry=entry->next) ;
+    for (entry=dir_cache, count=1; 
+	 entry->next && count < dir_cache_size; 
+	 entry=entry->next, count++) ;
+    if (entry->next || count != dir_cache_size) {
+      DEBUG(0,("DirCache bug - please report\n"));
+    }
     free(entry->path);
     free(entry->name);
     free(entry->dname);
@@ -695,6 +701,7 @@ void DirCacheFlush(int snum)
       if (entry->next) entry->next->prev = entry->prev;
       if (dir_cache == entry) dir_cache = entry->next; 
       free(entry);
+      dir_cache_size--;
     } else {
       next = entry->next;
     }

@@ -11,8 +11,8 @@ case $0 in
     # when called by absolute path, assume smbclient is in the same directory
     /*)
 	SMBCLIENT="`dirname $0`/smbclient";;
-    *)  # edit this to show where your smbclient is
-	SMBCLIENT="./smbclient";;
+    *)  # you may need to edit this to show where your smbclient is
+	SMBCLIENT="smbclient";;
 esac
 
 # These are the default values. You could fill them in if you know what

@@ -431,7 +431,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     p = smb_buf(outbuf);
     strcpy(p,"Unix"); p = skip_string(p,1);
     strcpy(p,"Samba "); strcat(p,VERSION); p = skip_string(p,1);
-    strcpy(p,my_workgroup()); p = skip_string(p,1);
+    strcpy(p,lp_workgroup()); p = skip_string(p,1);
     outsize = set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }

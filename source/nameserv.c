@@ -198,7 +198,7 @@ void add_my_names(void)
 
 	if (lp_domain_logons()) {
 	  /* 0x1c is used to find logon servers for a domain */
-	  add_my_name_entry(d, my_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
+	  add_my_name_entry(d, lp_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
 	}
   }
   if (lp_domain_master() && (d = find_subnet(ipgrp)))
