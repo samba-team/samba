@@ -47,12 +47,16 @@ OM_uint32 gss_indicate_mechs
       return ret;
 
   ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM, mech_set);
-  if (ret)
+  if (ret) {
+      gss_release_oid_set(NULL, mech_set);
       return ret;
+  }
 
   ret = gss_add_oid_set_member(minor_status, GSS_SPNEGO_MECHANISM, mech_set);
-  if (ret)
+  if (ret) {
+      gss_release_oid_set(NULL, mech_set);
       return ret;
+  }
 
   *minor_status = 0;
   return GSS_S_COMPLETE;
