@@ -497,12 +497,10 @@ static NTSTATUS cmd_spoolss_setprinter(struct cli_state *cli,
 		goto done;
 	}
 
-#if 0
 	/* Modify the comment. */
 	init_unistr(&ctr.printers_2->comment, comment);
-#else
-	ctr.printers_2->priority++;
-#endif
+	ctr.printers_2->devmode = NULL;
+	ctr.printers_2->secdesc = NULL;
 
 	result =  cli_spoolss_setprinter(cli, mem_ctx, &pol, info_level, &ctr, 0);
 	if (NT_STATUS_IS_OK(result))
