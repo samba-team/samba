@@ -439,7 +439,11 @@ static void init_mount(void)
 	}
 
 	if (fork() == 0) {
-		exit(execvp("smbmnt", args));
+		if (file_exist(BINDIR "/smbmnt", NULL)) {
+			exit(execv("smbmnt", args));
+		} else {
+			exit(execvp("smbmnt", args));
+		}
 	}
 	retval = -1;
 	waitpid(-1, &retval, 0);
