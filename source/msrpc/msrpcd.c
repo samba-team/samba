@@ -137,7 +137,7 @@ static int open_sockets(BOOL is_daemon)
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(256,&lfds,NULL, NULL);
+		num = sys_select(256,&lfds,NULL);
 		
 		if (num == -1 && errno == EINTR)
 			continue;
@@ -399,15 +399,8 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "i:l:s:d:Dh?Paof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "i:l:s:d:Dh?aof:")) )
 		switch (opt)  {
-		case 'P':
-			{
-				extern BOOL passive;
-				passive = True;
-			}
-			break;	
-
 		case 's':
 			pstrcpy(servicesf,optarg);
 			break;

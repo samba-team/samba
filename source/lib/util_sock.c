@@ -30,8 +30,6 @@ extern int sslFd;
 
 extern int DEBUGLEVEL;
 
-BOOL passive = False;
-
 /* the port, where client connected */
 int ClientPort = 0;
 
@@ -210,31 +208,6 @@ void set_socket_options(int fd, char *options)
 
 
 /*******************************************************************
- checks if write data is outstanding.
- ********************************************************************/
-int write_data_outstanding(int fd, unsigned int time_out, BOOL *more)
-{
-	int selrtn;
-	fd_set fds;
-	struct timeval timeout;
-
-	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
-
-	timeout.tv_sec = (time_t) (time_out / 1000);
-	timeout.tv_usec = (long)(1000 * (time_out % 1000));
-
-	selrtn = sys_select(fd + 1, NULL, &fds, &timeout);
-
-	if (selrtn <= 0)
-	{
-		return selrtn;
-	}
-	(*more) = FD_ISSET(fd, &fds);
-	return selrtn;
-}
-
-/*******************************************************************
  checks if read data is outstanding.
  ********************************************************************/
 int read_data_outstanding(int fd, unsigned int time_out)
@@ -249,7 +222,7 @@ int read_data_outstanding(int fd, unsigned int time_out)
 	timeout.tv_sec = (time_t) (time_out / 1000);
 	timeout.tv_usec = (long)(1000 * (time_out % 1000));
 
-	selrtn = sys_select(fd + 1, &fds, NULL, &timeout);
+	selrtn = sys_select(fd + 1, &fds, &timeout);
 
 	if (selrtn <= 0)
 	{
@@ -697,8 +670,6 @@ ssize_t write_socket(int fd, char *buf, size_t len)
 {
 	ssize_t ret = 0;
 
-	if (passive)
-		return (len);
 	DEBUG(6, ("write_socket(%d,%d)\n", fd, (int)len));
 	ret = write_socket_data(fd, buf, len);
 
@@ -926,9 +897,6 @@ BOOL send_one_packet(char *buf, int len, struct in_addr ip, int port,
 	BOOL ret;
 	int out_fd;
 	struct sockaddr_in sock_out;
-
-	if (passive)
-		return (True);
 
 	/* create a socket to write to */
 	out_fd = socket(AF_INET, type, 0);

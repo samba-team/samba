@@ -146,7 +146,7 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
     to.tv_sec = timeout / 1000;
     to.tv_usec = (timeout % 1000) * 1000;
 
-    selrtn = sys_select(maxfd+1,fds,NULL,&to);
+    selrtn = sys_select(maxfd+1,fds,&to);
 
     /* Check if error */
     if(selrtn == -1) {

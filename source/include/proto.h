@@ -454,8 +454,8 @@ BOOL surs_tdb_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID * sid,
 
 /*The following definitions come from  lib/system.c  */
 
-int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval);
-int sys_select(int maxfd, fd_set *r_fds, fd_set *w_fds, struct timeval *tval);
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_usleep(long usecs);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
@@ -764,7 +764,6 @@ BOOL create_new_sid(DOM_SID *sid);
 
 BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
-int write_data_outstanding(int fd, unsigned int time_out, BOOL *more);
 int read_data_outstanding(int fd, unsigned int time_out);
 ssize_t read_udp_socket(int fd, char *buf, size_t len);
 ssize_t read_socket_with_timeout(int fd, char *buf, size_t mincnt,
@@ -941,12 +940,6 @@ void all_string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *
 void split_at_last_component_w(smb_ucs2_t *path, smb_ucs2_t *front, smb_ucs2_t sep, smb_ucs2_t *back);
 smb_ucs2_t *octal_string_w(int i);
 smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
-
-/*The following definitions come from  lib/vagent.c  */
-
-void init_sock_redir(struct vagent_ops*va);
-void free_sock_redir(struct vagent_ops*va);
-void start_agent(struct vagent_ops *va);
 
 /*The following definitions come from  lib/vuser.c  */
 
@@ -1804,6 +1797,7 @@ int winbindd_lookup_aliasmem(char *system_name, DOM_SID *dom_sid,
                              char ***names, uint32 **name_types);
 int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *dom_sid,
                               uint32 alias_rid, ALIAS_INFO_CTR *info);
+int create_sock(void);
 int main(int argc, char **argv);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
@@ -1819,11 +1813,8 @@ enum winbindd_result winbindd_getgrent(pid_t pid, struct winbindd_gr *gr);
 
 /*The following definitions come from  nsswitch/winbindd_sock.c  */
 
-int connect_sock(void);
-int create_sock(void);
 int write_sock(int sock, void *buffer, int count);
 int read_sock(int sock, void *buffer, int count);
-void remove_sock(void);
 
 /*The following definitions come from  nsswitch/winbindd_surs.c  */
 

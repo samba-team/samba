@@ -60,7 +60,7 @@ static int pollfd(int fd)
   return(r);
 }
 
-int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval)
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
   fd_set fds2;
   int counter=0;
@@ -90,7 +90,7 @@ int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval)
 }
 
 #else /* !NO_SELECT */
-int sys_select(int maxfd, fd_set *r_fds, fd_set *w_fds, struct timeval *tval)
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
 #ifdef USE_POLL
   struct pollfd pfd[256];
@@ -131,8 +131,7 @@ int sys_select(int maxfd, fd_set *r_fds, fd_set *w_fds, struct timeval *tval)
   do {
     if (tval) memcpy((void *)&t2,(void *)tval,sizeof(t2));
     errno = 0;
-    selrtn = select(maxfd,SELECT_CAST r_fds,SELECT_CAST w_fds,
-                    NULL,tval?&t2:NULL);
+    selrtn = select(maxfd,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
   } while (selrtn<0 && errno == EINTR);
 
   return(selrtn);

@@ -116,62 +116,18 @@ force write permissions on print services.
 static void process_msrpc(rpcsrv_struct * l, const char *name,
 			  prs_struct * pdu)
 {
-	static int trans_num;
 	int32 len = prs_buf_len(pdu);
-
+	BOOL more;
 	DEBUG(6, ("got message of len 0x%x\n", len));
 
 	dump_data(10, pdu->data, len);
 
-#ifdef WITH_VTP
-	if (trans_num == 1 && VT_Check(pdu->data))
-	{
-		VT_Process();
-		return;
-	}
-#endif
-
-	if (rpc_local(l, pdu->data, len, name) &&
-	    msrpc_send(l->c, &l->rsmb_pdu))
-	{
+	more = rpc_local(l, pdu->data, len, name); 
+	while (more) {
+		msrpc_send(l->c, &l->rsmb_pdu);
 		prs_free_data(&l->rsmb_pdu);
-
-		while (rpc_local(l, NULL, 0, name))
-		{
-			int selrtn;
-			int timeout = SMBD_SELECT_TIMEOUT * 1000;
-			BOOL more;
-
-			smb_read_error = 0;
-
-			selrtn = write_data_outstanding(l->c, timeout, &more);
-
-			/* Check if error */
-			if (selrtn == -1)
-			{
-				smb_read_error = READ_ERROR;
-				return;
-			}
-
-			/* Did we timeout ? */
-			if (selrtn == 0)
-			{
-				smb_read_error = READ_TIMEOUT;
-				return;
-			}
-
-			if (more)
-			{
-				if (!msrpc_send(l->c, &l->rsmb_pdu))
-				{
-					prs_free_data(&l->rsmb_pdu);
-				}
-				break;
-			}
-			prs_free_data(&l->rsmb_pdu);
-		}
+		more = rpc_local(l, NULL, 0, name);
 	}
-	trans_num++;
 }
 
 /****************************************************************************

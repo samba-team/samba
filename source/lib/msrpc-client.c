@@ -87,30 +87,25 @@ BOOL receive_msrpc(int fd, prs_struct * data, unsigned int timeout)
 ****************************************************************************/
 BOOL msrpc_send(int fd, prs_struct * ps)
 {
-	size_t len = ps != NULL ? prs_buf_len(ps) : 0;
+	size_t len;
 	ssize_t ret;
-	char *outbuf = (ps != NULL ? ps->data : NULL);
+	char *outbuf;
+
+	/* if there is no data then say success */
+	if (!ps || !ps->data) return True;
 
 	DEBUG(10, ("ncalrpc_l_send_prs: data: %p len %d\n", outbuf, len));
 	dbgflush();
 
-	if (outbuf == NULL)
-	{
-		return True;
-	}
+	len = prs_buf_len(ps);
+	outbuf = ps->data;
+
 	dump_data(10, outbuf, len);
 
 	ret = write_socket(fd, outbuf, len);
-	if (ret <= 0 || ret != len)
-	{
-		DEBUG(0, ("Error writing %d msrpc bytes. %d.\n",
-			  len, ret));
-		prs_free_data(ps);
-		return False;
-	}
-
 	prs_free_data(ps);
-	return True;
+
+	return (ret == len);
 }
 
 /****************************************************************************

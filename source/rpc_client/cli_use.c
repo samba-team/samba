@@ -428,7 +428,7 @@ void cli_use_wait_keyboard(void)
 
 		timeout.tv_sec = 20;
 		timeout.tv_usec = 0;
-		sys_select(maxfd + 1, NULL, &fds, &timeout);
+		sys_select(maxfd + 1, &fds, &timeout);
 
 		if (FD_ISSET(fileno(stdin), &fds))
 			return;
