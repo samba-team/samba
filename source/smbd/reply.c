@@ -54,7 +54,7 @@ report a possible attack via the password buffer overflow bug
 static void overflow_attack(int len)
 {
 	DEBUG(0,("ERROR: Invalid password length %d\n", len));
-	DEBUG(0,("you're machine may be under attack by a user exploiting an old bug\n"));
+	DEBUG(0,("your machine may be under attack by a user exploiting an old bug\n"));
 	DEBUG(0,("Attack was from IP=%s\n", client_addr()));
 	exit_server("possible attack");
 }
