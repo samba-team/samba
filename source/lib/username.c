@@ -238,7 +238,7 @@ BOOL map_username(char *user)
  *   - using lp_usernamelevel() for permutations.
 ****************************************************************************/
 
-struct passwd *Get_Pwnam_internals(const char *user, char *user2)
+static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 {
 	struct passwd *ret = NULL;
 
