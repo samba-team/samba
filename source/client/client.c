@@ -4765,6 +4765,7 @@ err_code_struct dos_msgs[] = {
   {"ERRnofiles",18,"A File Search command can find no more files matching the specified criteria."},
   {"ERRbadshare",32,"The sharing mode specified for an Open conflicts with existing  FIDs  on the file."},
   {"ERRlock",33,"A Lock request conflicted with an existing lock or specified an  invalid mode,  or an Unlock requested attempted to remove a lock held by another process."},
+  {"ERRnosuchshare", 67, "You specified an invalid share name"},
   {"ERRfilexists",80,"The file named in a Create Directory, Make  New  File  or  Link  request already exists."},
   {"ERRbadpipe",230,"Pipe invalid."},
   {"ERRpipebusy",231,"All instances of the requested pipe are busy."},
