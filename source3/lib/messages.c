@@ -475,6 +475,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 {
 	TDB_DATA key;
 	int ret;
+	void (*oldsig_handler)(int);
 
 	if (!message_init())
 		return False;
@@ -484,7 +485,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 
 	if (timeout) {
 		gotalarm = 0;
-		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 		alarm(timeout);
 	}
 
@@ -492,7 +493,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 
 	if (timeout) {
 		alarm(0);
-		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
 		if (gotalarm)
 			return False;
 	}
