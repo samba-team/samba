@@ -1089,22 +1089,17 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 
 BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	DOM_SID dom_sid;
-	uint32 rid;
 	SAM_ACCOUNT *sampw = NULL;	
 	struct passwd *unix_pw;
 	const char *user_name;
 
 	*name_type = SID_NAME_UNKNOWN;
 
-	sid_copy(&dom_sid, psid);
-	sid_split_rid(&dom_sid, &rid);
-
 	/*
 	 * We can only convert to a uid if this is our local
 	 * Domain SID (ie. we are the controling authority).
 	 */
-	if ( !sid_equal(get_global_sam_sid(), &dom_sid) )
+	if ( !sid_compare_domain(get_global_sam_sid(), psid) )
 		return False;
 
 
