@@ -70,8 +70,10 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
       return 0;
     }
 
-  /* when sending params and data ensure that both are nicely aligned */
-  if ((params_to_send % 4) != 0)
+  /* When sending params and data ensure that both are nicely aligned */
+  /* Only do this alignment when there is also data to send - else
+     can cause NT redirector problems. */
+  if (((params_to_send % 4) != 0) && (data_to_send != 0))
 	  data_alignment_offset = 4 - (params_to_send % 4);
 
   /* Space is bufsize minus Netbios over TCP header minus SMB header */
