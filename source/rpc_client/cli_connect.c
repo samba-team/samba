@@ -377,31 +377,13 @@ BOOL cli_connection_getsrv(const char *srv_name, const char *pipe_name,
 				&& (*con)->msrpc.smb->smb
 				&& (*con)->msrpc.smb->smb->fd == -1)
 			{
-				struct cli_state *cli = (*con)->msrpc.smb->smb;
-				int j;
-
 				/* remove this connection and force us to reestablish */
-				DEBUG(3,("cli_connection_getsrv: fd == -1 ! Closing cli_connection to [%s:%s]!\n",
+				DEBUG(2,("cli_connection_getsrv: fd == -1 ! Closing cli_connection to [%s:%s]!\n",
 					(*con)->srv_name, (*con)->pipe_name));
 				con_list[i] = NULL;
 				cli_connection_free(*con);
 				*con = NULL;
 				
-				/* Sanity check for dangling pointers */
-
-				for (j = 0; j < num_cons; j++) 
-				{
-					if (con_list[j] 
-						&& (con_list[j]->type == MSRPC_SMB)
-						&& (con_list[j]->msrpc.smb) 
-						&& (con_list[j]->msrpc.smb->smb == cli)) 
-					{
-						DEBUG(3,("cli_connection_getsrv: cli_state pointer reused on [%s:%s]!\n",
-							con_list[j]->srv_name, con_list[j]->pipe_name));
-						con_list[j]->msrpc.smb->smb = NULL;
-					}
-				}
-
 				return False;
 			}
 		}

@@ -236,6 +236,8 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 
 void winbindd_kill_connections(struct winbindd_domain *domain)
 {
+	struct cli_connection *con = NULL;
+
         /* Kill all connections */
 
         if (!domain) {
@@ -259,10 +261,18 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 
 	debug_conn_state();
 
+	/* Kill NETLOGON connection as well */
+	
+	if (cli_connection_getsrv(domain->controller, PIPE_NETLOGON, &con)) {
+		DEBUG(2,("Closing NETLOGON pipe...\n"));
+		cli_connection_free(con);
+	}
+
         /* Close LSA connections if we are killing connections to the dc
            that has them open. */
 
 	if (strequal(domain->name, lp_workgroup())) {
+		DEBUG(2,("closing LSARPC pipe....\n"));
 		server_state.pwdb_initialised = False;
 		server_state.lsa_handle_open = False;
 		lsa_close(&server_state.lsa_handle);
@@ -273,11 +283,13 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 	   will be reopened later. */
 
 	if (domain->sam_dom_handle_open) {
+		DEBUG(2,("closing sam_dom_handle_open...\n"));
 		samr_close(&domain->sam_dom_handle);
 		domain->sam_dom_handle_open = False;
 	}
 	
 	if (domain->sam_handle_open) {
+		DEBUG(2,("closing sam_handle_open...\n"));
 		samr_close(&domain->sam_handle);
 		domain->sam_handle_open = False;
 	}
@@ -344,6 +356,7 @@ void establish_connections(BOOL force_reestablish)
 	if (server_state.pwdb_initialised &&
 	    server_state.lsa_handle_open &&
 	    !rpc_hnd_ok(&server_state.lsa_handle)) {
+		DEBUG(2,("establish_connections: Killiong old connections first!\n"));
 		winbindd_kill_connections(NULL);
 	}
 
