@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-static void
+static krb5_error_code
 change_entry (krb5_context context, krb5_keytab keytab,
 	      krb5_principal principal, krb5_kvno kvno,
 	      const char *realm, const char *admin_server, int server_port)
@@ -51,7 +51,7 @@ change_entry (krb5_context context, krb5_keytab keytab,
     ret = krb5_unparse_name (context, principal, &client_name);
     if (ret) {
 	krb5_warn (context, ret, "krb5_unparse_name");
-	return;
+	return ret;
     }
 
     memset (&conf, 0, sizeof(conf));
@@ -59,7 +59,7 @@ change_entry (krb5_context context, krb5_keytab keytab,
     if(realm)
 	conf.realm = (char *)realm;
     else
-	conf.realm = *krb5_princ_realm (context, principal);
+	conf.realm = (char*)krb5_principal_get_realm(context, principal);
     conf.mask |= KADM5_CONFIG_REALM;
     
     if (admin_server) {
@@ -81,13 +81,13 @@ change_entry (krb5_context context, krb5_keytab keytab,
     free (client_name);
     if (ret) {
 	krb5_warn (context, ret, "kadm5_c_init_with_skey_ctx");
-	return;
+	return ret;
     }
     ret = kadm5_randkey_principal (kadm_handle, principal, &keys, &num_keys);
     kadm5_destroy (kadm_handle);
     if (ret) {
 	krb5_warn(context, ret, "kadm5_randkey_principal");
-	return;
+	return ret;
     }
     for (i = 0; i < num_keys; ++i) {
 	krb5_keytab_entry new_entry;
@@ -102,6 +102,7 @@ change_entry (krb5_context context, krb5_keytab keytab,
 	    krb5_warn (context, ret, "krb5_kt_add_entry");
 	krb5_free_keyblock_contents (context, &keys[i]);
     }
+    return ret;
 }
 
 /*
@@ -115,44 +116,14 @@ struct change_set {
 };
 
 int
-kt_change (int argc, char **argv)
+kt_change (struct change_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_keytab keytab;
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
-    char *realm = NULL;
-    char *admin_server = NULL;
-    int server_port = 0;
-    int help_flag = 0;
-    int optind = 0;
     int i, j, max;
     struct change_set *changeset;
-    
-    struct getargs args[] = {
-	{ "realm",	'r',	arg_string,   NULL, 
-	  "realm to use", "realm" 
-	},
-	{ "admin-server",	'a',	arg_string, NULL,
-	  "server to contact", "host" 
-	},
-	{ "server-port",	's',	arg_integer, NULL,
-	  "port to contact", "port number" 
-	},
-	{ "help",		'h',	arg_flag,    NULL }
-    };
-
-    args[0].value = &realm;
-    args[1].value = &admin_server;
-    args[2].value = &server_port;
-    args[3].value = &help_flag;
-
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind)
-       || help_flag) {
-	arg_printusage(args, sizeof(args) / sizeof(args[0]), 
-		       "ktutil change", "principal...");
-	return 1;
-    }
     
     if((keytab = ktutil_open_keytab()) == NULL)
 	return 1;
@@ -163,7 +134,7 @@ kt_change (int argc, char **argv)
 
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
-	krb5_warn(context, ret, "krb5_kt_start_seq_get %s", keytab_string);
+	krb5_warn(context, ret, "%s", keytab_string);
 	goto out;
     }
 
@@ -181,15 +152,15 @@ kt_change (int argc, char **argv)
 	if (i < j)
 	    continue;
 
-	if (optind == argc) {
+	if (argc == 0) {
 	    add = 1;
 	} else {
-	    for (i = optind; i < argc; ++i) {
+	    for (i = 0; i < argc; ++i) {
 		krb5_principal princ;
 
 		ret = krb5_parse_name (context, argv[i], &princ);
 		if (ret) {
-		    krb5_warn (context, ret, "krb5_parse_name %s", argv[i]);
+		    krb5_warn (context, ret, "%s", argv[i]);
 		    continue;
 		}
 		if (krb5_principal_compare (context, princ, entry.principal))
@@ -243,7 +214,9 @@ kt_change (int argc, char **argv)
 	    }
 	    change_entry (context, keytab, 
 			  changeset[i].principal, changeset[i].kvno,
-			  realm, admin_server, server_port);
+			  opt->realm_string, 
+			  opt->admin_server_string, 
+			  opt->server_port_integer);
 	}
     }
     for (i = 0; i < j; i++)
@@ -253,5 +226,5 @@ kt_change (int argc, char **argv)
     ret = krb5_kt_end_seq_get(context, keytab, &cursor);
  out:
     krb5_kt_close(context, keytab);
-    return 0;
+    return ret != 0;
 }
