@@ -104,6 +104,13 @@ void pdb_fill_default_sam(SAM_ACCOUNT *user)
 
 	user->private.plaintext_pw = NULL;
 
+	/* 
+	   Unless we know otherwise have a Account Control Bit
+	   value of 'normal user'.  This helps User Manager, which
+	   asks for a filtered list of users.
+	*/
+
+	user->private.acct_ctrl = ACB_NORMAL;
 }	
 
 static void destroy_pdb_talloc(SAM_ACCOUNT **user) 
