@@ -1,7 +1,8 @@
-There are Five (5) Extracts here from mail in the Samba Mailing List.
+There are Six (6) Extracts here from mail in the Samba Mailing List.
 The key contribution here is from Kurt Pfeifle.
 
 I added them to this repository in the hope that someone would find the information helpful.
+
 John T. <jht@samba.org>
 
 ==============================================================================
@@ -1090,4 +1091,111 @@ more CPU and RAM than for the mere "raw spooling" task
 your current setup is solving... It all depends on the
 avarage and peak printing load the server should be
 able to handle....
+
+==============================================================================
+<<< EXTANT 6 >>>
+==============================================================================
+Subject: Deletion of CUPS spool files
+=====================================
+
+From samba-technical-admin@lists.samba.org  Thu Dec  5 17:18:48 2002
+Zdenek Niederle wrote on Samba-digest:
+
+> Message: 1
+> From: Zdenek Niederle <zniederle@collicutt.com>
+> Organization: Collicutt Hanover
+> To: samba-technical@lists.samba.org
+> Subject: Clean up of spool files
+> Date: Wed, 4 Dec 2002 15:13:15 -0700
+> 
+> I'm using Samba 2.2.5 and CUPS to handle printing on our network.  
+> Unfortunately, the smbprn.xxxxxx spool files are not being cleaned up and 
+> instead are quickly filling the spool directory.  Is their a setting or 
+> option to ensure the files are cleaned up once sent to the printer?  I am 
+> aware that using a cron job would work but this can't be the best solution.
+> 
+> Thanks.
+
+
+Hi, Zdenek,
+
+you need to be aware, that the Samba print files pass thru 2
+different "spool" directories. Once the incoming directory
+managed by Samba, (set f.e. in the "path = /var/spool/samba"
+directive in the [printers] section of "smb.conf"). Second is
+the spool directory of your UNIX print subsystem. For CUPS it is
+normally "/var/spool/cups/", as set by the cupsd.conf directive
+"RequestRoot /var/spool/cups".
+
+I am not sure, which one of your directories keeps the files.
+ From what you say, it is most likely the Samba part.
+
+For the CUPS part, you may want to consult:
+
+   http://localhost:631/sam.html#PreserveJobFiles and
+   http://localhost:631/sam.html#PreserveJobHistory and
+   http://localhost:631/sam.html#MaxJobs
+
+There are the settings described for your CUPS daemon, which
+could lead to completed job files not being deleted.
+
+"PreserveJobHistory Yes" -- keeps some details of jobs in
+cupsd's mind (well it keeps the "c12345", "c12346" etc. files
+in the CUPS spool directory, which do a similar job as the
+old-fashioned BSD-LPD control files). This is set to "Yes"
+as a default.
+
+"PreserveJobFiles Yes" -- keeps the job files themselves in
+cupsd's mind (well it keeps the "d12345", "d12346" etc. files
+in the CUPS spool directory...). This is set to "No" as the
+CUPS default.
+
+"MaxJobs 500" -- this directive controls the maximum number
+of jobs that are kept in memory. Once the number of jobs
+reaches the limit, the oldest completed job is automatically
+purged from the system to make room for the new one. If all
+of the known jobs are still pending or active then the new
+job will be rejected. Setting the maximum to 0 disables this
+functionality. The default setting is 0.
+
+(There are also additional settings for "MaxJobsPerUser" and
+"MaxJobsPerPrinter"...)
+
+For everything to work as announced, you need to have three
+things:
+
+   * a Samba-smbd which is compiled against "libcups" (Check
+     on Linux by running "ldd `which smbd`")
+
+   * a Samba-smb.conf setting of "printing = cups"
+
+   * another Samba-smb.conf setting of "printcap = cups"
+
+Note, that in this case all other manually set printing-related
+commands (like "print command", "lpq command", "lprm command",
+"lppause command" or "lpresume command") are ignored and they
+should normally have no influence what-so-ever on your printing.
+
+If you want to do things manually, replace the "printing = cups"
+by "printing = bsd". Then your manually set commands may work
+(haven't tested this), and a "print command = lp -d %P %s; rm %s"
+may do what you need.
+
+You forgot to mention the CUPS version you're using. If you did
+set things up as described in the man pages, then the Samba
+spool files should be deleted. Otherwise it may be a bug. On
+the CUPS side, you can control the behaviour as described
+above.
+
+If you have more problems, post the output of these commands:
+
+   grep -v ^# /etc/cups/cupsd.conf | grep -v ^$
+   grep -v ^# /etc/samba/smb.conf | grep -v ^$ | grep -v "^;"
+
+(adapt paths as needed). These commands sanitize the files
+and cut out the empty lines and lines with comments, providing
+the "naked settings" in a compact way.
+
+Cheers,
+Kurt
 
