@@ -434,6 +434,11 @@ the guest user.
 
 Complain to your OS vendor and ask them to fix their system.
 
+Note: the reason why 65535 is a VERY bad choice of uid and gid is that
+it casts to -1 as a uid, and the setreuid() system call ignores (with
+no error) uid changes to -1. This means any daemon attempting to run
+as uid 65535 will actually run as root. This is not good!
+
 ===============================================================================
 SECTION FOUR: Specific client problems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
