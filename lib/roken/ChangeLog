@@ -1,3 +1,7 @@
+Wed Nov 12 01:09:17 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* verr.c, verrx.c: Fix warnings by moving exit from.
+
 Tue Nov 11 21:12:09 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* parse_units.c: Change the list of separating characters (between
