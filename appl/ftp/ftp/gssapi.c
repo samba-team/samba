@@ -300,6 +300,9 @@ gss_auth(void *app_data, char *host)
 			     &bindings->acceptor_addrtype,
 			     &bindings->acceptor_address);
 
+    bindings->application_data.length = 0;
+    bindings->application_data.value = NULL;
+
     while(!context_established) {
 	maj_stat = gss_init_sec_context(&min_stat,
 					GSS_C_NO_CREDENTIAL,
