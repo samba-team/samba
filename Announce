@@ -1,0 +1,38 @@
+The Samba-Team is pleased to announce the final production release of
+Samba-1.9.17p5.
+
+Please note that this release is bein made purely for those who like
+the comfort of knowing that the code is stable and has been in use for
+a significant period. We ALL know that the next product is always
+__BETTER__, just like we know that it will without doubt have some
+not quite expected features too. The Samba-Team listens to it's users.
+You want stability, reliability and you want us to keep rolling out new
+features, improved ease of use, and so on.
+
+Samba-1.9.18 is now in final beta testing and unless any major bugs are
+reported within the next two weeks will ship early in 1998. We regret the
+delay but we also know that the new features were worth waiting for.
+
+This release of Samba-1.9.17p5 integrates all fixes that have been made to
+the Samba-1.9.17 source code tree and that have been included in Samba-1.9.18.
+This release is for use in mission critical sites that do NOT like to
+be early adopters.
+
+There are several key fixes in this update release:
+	- When Samba won the role of master browser it would NOT give it up
+	- Added feature of "remote browse sync" which helps those sites
+	  that have multi-workgroup / multi-segmented networks.
+	- Some minor file-name handling fixes
+
+Should any problems be experienced with this release please mail your bug
+report to: samba-bugs@samba.anu.edu.au with the subject: BUGS17P5: XXXXXX
+
+As always, functionality afforded by Samba is for your pleasure, the bugs
+(we know there MUST be some) are our responsibility - so please report them
+to samba-bugs@samba.anu.edu.au
+
+Seasons Greetings.
+The Samba-Team
+
+---
+jht@samba.anu.edu.au				Sat Dec 20 11:43:25 EST 1997
