@@ -78,7 +78,8 @@ uint32 crc32_calc_buffer( char *buffer, uint32 count);
 
 char* debug_classname_from_index(int ndx);
 int debug_lookup_classname(char* classname);
-BOOL debug_parse_params(char **params, int *debuglevel_class);
+BOOL debug_parse_params(char **params, int *debuglevel_class,
+			BOOL *debuglevel_class_isset);
 BOOL debug_parse_levels(char *params_str);
 void debug_message(int msg_type, pid_t src, void *buf, size_t len);
 void debug_message_send(pid_t pid, int level);
@@ -805,6 +806,7 @@ struct cli_state *cli_netlogon_initialise(struct cli_state *cli,
 void cli_netlogon_shutdown(struct cli_state *cli);
 uint32 cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				uint32 query_level);
+uint32 cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from libsmb/cli_samr.c  */
 
@@ -2597,6 +2599,10 @@ BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
 void init_unistr3(UNISTR3 *str, const char *buf);
 BOOL smb_io_unistr3(char *desc, UNISTR3 *name, prs_struct *ps, int depth);
 BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
+BOOL smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth);
+BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
+BOOL smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, 
+		    prs_struct *ps, int depth);
 
 /* The following definitions come from rpc_parse/parse_net.c  */
 
@@ -2661,6 +2667,13 @@ BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, int de
 BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
 BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth);
 BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth);
+BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, char *srv_name,
+			char *cli_name, DOM_CRED *cli_creds, 
+			uint32 database_id);
+BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC *q_s, prs_struct *ps,
+		       int depth);
+BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
+		       NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth);
 
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
@@ -2711,6 +2724,7 @@ BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size);
 int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
 int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *mem_ctx);
+BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16]);
 
 /* The following definitions come from rpc_parse/parse_reg.c  */
 
