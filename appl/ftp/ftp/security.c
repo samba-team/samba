@@ -292,6 +292,32 @@ sec_write(int fd, char *data, int length)
 }
 
 int
+sec_vfprintf2(FILE *f, const char *fmt, va_list ap)
+{
+    char *buf;
+    int ret;
+    if(data_prot == prot_clear)
+	return vfprintf(f, fmt, ap);
+    else {
+	vasprintf(&buf, fmt, ap);
+	ret = buffer_write(&out_buffer, buf, strlen(buf));
+	free(buf);
+	return ret;
+    }
+}
+
+int
+sec_fprintf2(FILE *f, const char *fmt, ...)
+{
+    int ret;
+    va_list ap;
+    va_start(ap, fmt);
+    ret = sec_vfprintf2(f, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+int
 sec_putc(int c, FILE *F)
 {
     char ch = c;
