@@ -96,6 +96,7 @@ static int ldb_msg_find_idx(const struct ldb_message *msg, const char *attr,
 	return -1;
 }
 
+
 /*
   return a list of dn's that might match a simple indexed search or
  */
@@ -167,6 +168,68 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 
 	return 1;
 }
+
+/*
+  return a list of dn's that might match a simple indexed search on
+  the special objectclass attribute
+ */
+static int ltdb_index_dn_objectclass(struct ldb_context *ldb, 
+				     struct ldb_parse_tree *tree,
+				     const struct ldb_message *index_list,
+				     struct dn_list *list)
+{
+	struct ltdb_private *ltdb = ldb->private_data;
+	int i;
+	int ret;
+	const char *target = tree->u.simple.value.data;
+	static int list_union(struct dn_list *, const struct dn_list *);
+
+	list->count = 0;
+	list->dn = NULL;
+
+	ret = ltdb_index_dn_simple(ldb, tree, index_list, list);
+
+	for (i=0;i<ltdb->cache.subclasses.num_elements;i++) {
+		struct ldb_message_element *el = &ltdb->cache.subclasses.elements[i];
+		if (ldb_attr_cmp(el->name, target) == 0) {
+			int j;
+			for (j=0;j<el->num_values;j++) {
+				struct ldb_parse_tree tree2;
+				struct dn_list list2;
+				tree2.operation = LDB_OP_SIMPLE;
+				tree2.u.simple.attr = LTDB_OBJECTCLASS;
+				tree2.u.simple.value = el->values[j];
+				if (ltdb_index_dn_objectclass(ldb, &tree2, 
+							      index_list, &list2) == 1) {
+					if (list->count == 0) {
+						*list = list2;
+						ret = 1;
+					} else {
+						list_union(list, &list2);
+						dn_list_free(&list2);
+					}
+				}
+			}
+		}
+	}
+
+	return ret;
+}
+
+/*
+  return a list of dn's that might match a leaf indexed search
+ */
+static int ltdb_index_dn_leaf(struct ldb_context *ldb, 
+			      struct ldb_parse_tree *tree,
+			      const struct ldb_message *index_list,
+			      struct dn_list *list)
+{
+	if (ldb_attr_cmp(tree->u.simple.attr, LTDB_OBJECTCLASS) == 0) {
+		return ltdb_index_dn_objectclass(ldb, tree, index_list, list);
+	}
+	return ltdb_index_dn_simple(ldb, tree, index_list, list);
+}
+
 
 /*
   list intersection
@@ -393,7 +456,7 @@ static int ltdb_index_dn(struct ldb_context *ldb,
 
 	switch (tree->operation) {
 	case LDB_OP_SIMPLE:
-		ret = ltdb_index_dn_simple(ldb, tree, index_list, list);
+		ret = ltdb_index_dn_leaf(ldb, tree, index_list, list);
 		break;
 
 	case LDB_OP_AND:
