@@ -2930,6 +2930,104 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 	return False;
 }
 
+static int cli_init_redirect(struct cli_state *cli,
+				const char* srv_name, struct in_addr *destip,
+				const struct user_credentials *usr)
+{
+	int sock;
+	struct sockaddr_un sa;
+	fstring ip_name;
+	struct cli_state cli_redir;
+
+	pstring data;
+	uint32 len;
+	char *p;
+	char *in = cli->inbuf;
+	char *out = cli->outbuf;
+
+	if (strequal(srv_name, "*SMBSERVER"))
+	{
+		fstrcpy(ip_name, "\\\\");
+		inet_aton(&ip_name[2], destip);
+		srv_name = ip_name;
+	}
+
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+
+	if (sock < 0)
+	{
+		DEBUG(0, ("unix socket open failed\n"));
+		return sock;
+	}
+
+	ZERO_STRUCT(sa);
+	sa.sun_family = AF_UNIX;
+	safe_strcpy(sa.sun_path, "/tmp/smb-agent/smb.sock",
+	            sizeof(sa.sun_path)-1);
+
+	DEBUG(10, ("socket open succeeded.  file name: %s\n", sa.sun_path));
+
+	if (connect(sock, (struct sockaddr*) &sa, sizeof(sa)) < 0)
+	{
+		DEBUG(0,("socket connect to %s failed\n", sa.sun_path));
+		close(sock);
+		return False;
+	}
+
+	DEBUG(10,("connect succeeded\n"));
+
+	ZERO_STRUCT(data);
+
+	p = &data[4];
+	safe_strcpy(p, srv_name, 16);
+	p = skip_string(p, 1);
+	safe_strcpy(p, usr != NULL ? usr->user_name : "", 16);
+	p = skip_string(p, 1);
+	safe_strcpy(p, usr != NULL ? usr->domain : "", 16);
+	p = skip_string(p, 1);
+
+	if (usr != NULL && !pwd_is_nullpwd(&usr->pwd))
+	{
+		uchar lm16[16];
+		uchar nt16[16];
+
+		pwd_get_lm_nt_16(&usr->pwd, lm16, nt16);
+		memcpy(p, lm16, 16);
+		p += 16;
+		memcpy(p, nt16, 16);
+		p += 16;
+	}
+
+	len = PTR_DIFF(p, data);
+	SIVAL(data, 0, len);
+
+	printf("data len: %d\n", len);
+	out_data(stdout, data, len, 80);
+
+	if (write(sock, data, len) <= 0)
+	{
+		DEBUG(0,("write failed\n"));
+		close(sock);
+		return False;
+	}
+
+	len = read(sock, &cli_redir, sizeof(cli_redir));
+
+	if (len != sizeof(cli_redir))
+	{
+		DEBUG(0,("read failed\n"));
+		close(sock);
+		return False;
+	}
+	
+	memcpy(cli, &cli_redir, sizeof(cli_redir));
+	cli->inbuf = in;
+	cli->outbuf = out;
+	cli->fd = sock;
+
+	return sock;
+}
+
 /****************************************************************************
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
@@ -2957,6 +3055,19 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		return False;
 	}
 
+	if (cli->fd == -1 && cli->redirect)
+	{
+		if (cli_init_redirect(cli, dest_host, dest_ip, &cli->usr))
+		{
+			DEBUG(10,("cli_establish_connection: redirected OK\n"));
+			return True;
+		}
+		else
+		{
+			DEBUG(10,("redirect FAILED\n"));
+			return False;
+		}
+	}
 	if (cli->fd == -1)
 	{
 		if (!cli_connect(cli, dest_host, dest_ip))

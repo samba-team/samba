@@ -676,7 +676,8 @@ void unistr2_free(UNISTR2 *name);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
-void copy_user_creds(struct user_credentials *to, const struct user_credentials *from);
+void copy_user_creds(struct user_credentials *to,
+				const struct user_credentials *from);
 int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
 void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
@@ -852,6 +853,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 /*The following definitions come from  libsmb/pwd_cache.c  */
 
 void pwd_init(struct pwd_info *pwd);
+BOOL pwd_is_nullpwd(const struct pwd_info *pwd);
 void pwd_obfuscate_key(struct pwd_info *pwd, uint32 int_key, char *str_key);
 BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2);
 void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt);
@@ -2184,7 +2186,8 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 void init_cli_use(void);
 void free_cli_use(void);
 struct cli_state *cli_net_use_add(const char* srv_name,
-				const struct user_credentials *usr_creds);
+				const struct user_credentials *usr_creds,
+				BOOL redir);
 BOOL cli_net_use_del(const char* srv_name,
 				const struct user_credentials *usr_creds,
 				BOOL force_close,

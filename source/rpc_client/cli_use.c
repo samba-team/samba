@@ -204,7 +204,8 @@ static struct cli_use *cli_use_get(const char* srv_name,
 init client state
 ****************************************************************************/
 struct cli_state *cli_net_use_add(const char* srv_name,
-				const struct user_credentials *usr_creds)
+				const struct user_credentials *usr_creds,
+				BOOL redir)
 {
 	struct nmb_name calling;
 	struct nmb_name called;
@@ -225,6 +226,7 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 	 */
 
 	cli = cli_use_get(srv_name, usr_creds);
+	cli->cli->redirect = redir;
 
 	if (resolve_srv_name(srv_name, dest_host, &ip))
 	{

@@ -302,7 +302,8 @@ NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
 
 DEBUG2HTML_OBJ = utils/debug2html.o $(PARAM_OBJ) $(LIB_OBJ)
 
-SMB_AGENT_OBJ = smb-agent.o $(PARAM_OBJ) $(LIB_OBJ)
+SMB_AGENT_OBJ = utils/smb-agent.o $(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+			$(RPC_PARSE_OBJ2) rpc_client/cli_use.o
 
 SMB_CLIENT_OBJ = smb-client.o $(PARAM_OBJ) $(LIB_OBJ)
 
@@ -480,6 +481,14 @@ bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 bin/rpctorture: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/smb-client: $(SMB_CLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMB_CLIENT_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/smb-agent: $(SMB_AGENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMB_AGENT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbfilter: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@

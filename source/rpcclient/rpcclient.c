@@ -1493,7 +1493,7 @@ static void cmd_net(struct client_info *info, int argc, char *argv[])
 		                 srv_name, u.user_name, u.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (cli_net_use_add(srv_name, &u) != NULL)
+		if (cli_net_use_add(srv_name, &u, True) != NULL)
 		{
 			report(out_hnd, "OK\n");
 		}
