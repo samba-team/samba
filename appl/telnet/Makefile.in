@@ -20,18 +20,18 @@ SUBDIRS=libtelnet telnet telnetd
 
 all:
 	for i in $(SUBDIRS); \
-	do (cd $$i; $(MAKE) $(MFLAGS) all); done
+	do (cd $$i && $(MAKE) $(MFLAGS) all); done
 
 install:
 	for i in $(SUBDIRS); \
-	do (cd $$i; $(MAKE) $(MFLAGS) install); done
+	do (cd $$i && $(MAKE) $(MFLAGS) install); done
 
 clean cleandir:
 	for i in $(SUBDIRS); \
-	do (cd $$i; $(MAKE) $(MFLAGS) clean); done
+	do (cd $$i && $(MAKE) $(MFLAGS) clean); done
 
 distclean: 
 	for i in $(SUBDIRS); \
-	do (cd $$i; $(MAKE) $(MFLAGS) distclean); done
+	do (cd $$i && $(MAKE) $(MFLAGS) distclean); done
 	rm -f Makefile config.status config.cache config.log config.h *~
 	rm -rf CVS

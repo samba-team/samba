@@ -13,9 +13,6 @@ RCSID("$Id$");
  * Do we need any extra hacks for SIGCLD and/or SIGCHLD?
  */
 
-typedef RETSIGTYPE (*SigAction)(/* int??? */);
-
-
 SigAction
 signal(int iSig, SigAction pAction)
 {

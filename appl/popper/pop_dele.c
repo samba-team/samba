@@ -17,8 +17,7 @@ static char SccsId[] = "@(#)@(#)pop_dele.c	2.1  2.1 3/18/91";
 /* 
  *  dele:   Delete a message from the POP maildrop
  */
-pop_dele (p)
-POP     *   p;
+int pop_dele (POP *p)
 {
     MsgInfoList     *   mp;         /*  Pointer to message info list */
     int                 msg_num;
