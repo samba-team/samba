@@ -1,3 +1,7 @@
+2004-05-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rcp.c: add -e (passed to rsh)
+	
 2003-04-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rcp.1: add a HISTORY section
