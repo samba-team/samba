@@ -429,6 +429,21 @@ BOOL name_map_mangle(char *OutName,BOOL need83,int snum);
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
 
+/*The following definitions come from  mem_man/mem_man.c  */
+
+void *mem_malloc(size_t size,char *file,int line);
+char *mem_strdup(char *s, char *file, int line);
+int mem_free(void *ptr,char *file,int line);
+void mem_write_info(void *ptr,FILE *outfile);
+char *mem_query_file(void *ptr);
+int mem_query_line(void *ptr);
+int mem_test(void *ptr);
+void mem_write_status(FILE *outfile);
+void mem_write_verbose(FILE *outfile);
+void mem_write_errors(FILE *outfile);
+void mem_set_multiplier(int multiplier);
+void *mem_resize(void *ptr,size_t newsize);
+
 /*The following definitions come from  message.c  */
 
 int reply_sends(char *inbuf,char *outbuf);
@@ -710,6 +725,11 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 int read_predict(int fd,int offset,char *buf,char **ptr,int num);
 void do_read_prediction();
 void invalidate_read_prediction(int fd);
+
+/*The following definitions come from  print_svid.c  */
+
+void sysv_printer_fn(void (*fn)());
+int sysv_printername_ok(char *name);
 
 /*The following definitions come from  printing.c  */
 
