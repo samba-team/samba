@@ -43,8 +43,6 @@ ADD_OBJ_FILES = \
 		lib/tallocmsg.o \
 		lib/dmallocmsg.o \
 		lib/smbpasswd.o \
-		nsswitch/wb_client.o \
-		nsswitch/wb_common.o \
 		lib/pam_errors.o \
 		intl/lang_tdb.o \
 		lib/account_pol.o \

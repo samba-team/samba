@@ -169,82 +169,6 @@ struct passwd *Get_Pwnam(const char *user)
 }
 
 /****************************************************************************
- Check if a user is in a winbind group.
-****************************************************************************/
-  
-static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL *winbind_answered)
-{
-	int num_groups;
-	int i;
- 	gid_t *groups = NULL;
- 	gid_t gid, gid_low, gid_high;
- 	BOOL ret = False;
- 
- 	*winbind_answered = False;
- 
-	if ((gid = nametogid(gname)) == (gid_t)-1) {
- 		DEBUG(0,("user_in_winbind_group_list: nametogid for group %s failed.\n",
- 			gname ));
- 		goto err;
- 	}
-
-	if (!lp_winbind_gid(&gid_low, &gid_high)) {
-		DEBUG(4, ("winbind gid range not configured, therefore %s cannot be a winbind group\n", gname));
- 		goto err;
-	}
-
-	if (gid < gid_low || gid > gid_high) {
-		DEBUG(4, ("group %s is not a winbind group\n", gname));
- 		goto err;
-	}
- 
- 	/*
- 	 * Get the gid's that this user belongs to.
- 	 */
- 
- 	if ((num_groups = winbind_getgroups(user, 0, NULL)) == -1)
- 		return False;
- 
- 	if (num_groups == 0) {
- 		*winbind_answered = True;
- 		return False;
- 	}
- 
- 	if ((groups = (gid_t *)malloc(sizeof(gid_t) * num_groups )) == NULL) {
- 		DEBUG(0,("user_in_winbind_group_list: malloc fail.\n"));
- 		goto err;
- 	}
- 
- 	if ((num_groups = winbind_getgroups(user, num_groups, groups)) == -1) {
- 		DEBUG(0,("user_in_winbind_group_list: second winbind_getgroups call \
-failed with error %s\n", strerror(errno) ));
- 		goto err;
-	}
- 
-	/*
-	 * Now we have the gid list for this user - convert the gname
-	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
-	 */
- 
- 	for (i = 0; i < num_groups; i++) {
- 		if (gid == groups[i]) {
- 			ret = True;
- 			break;
- 		}
- 	}
- 
- 	*winbind_answered = True;
- 	SAFE_FREE(groups);
- 	return ret;
- 
-   err:
- 
- 	*winbind_answered = False;
- 	SAFE_FREE(groups);
- 	return False;
-}	      
- 
-/****************************************************************************
  Check if a user is in a UNIX group.
 ****************************************************************************/
 static BOOL user_in_unix_group_list(const char *user,const char *gname)
@@ -298,7 +222,6 @@ exit:
 ****************************************************************************/
 static BOOL user_in_group_list(const char *user, const char *gname, gid_t *groups, size_t n_groups)
 {
-	BOOL winbind_answered = False;
 	BOOL ret;
 	gid_t gid;
 	unsigned i;
@@ -317,11 +240,7 @@ static BOOL user_in_group_list(const char *user, const char *gname, gid_t *group
 	}
 
 	/* fallback if we don't yet have the group list */
-
-	ret = user_in_winbind_group_list(user, gname, &winbind_answered);
-	if (!winbind_answered)
-		ret = user_in_unix_group_list(user, gname);
-
+	ret = user_in_unix_group_list(user, gname);
 	if (ret)
 		DEBUG(10,("user_in_group_list: user |%s| is in group |%s|\n", user, gname));
 	return ret;

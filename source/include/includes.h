@@ -723,8 +723,6 @@ extern int errno;
 
 #include "mangle.h"
 
-#include "nsswitch/winbind_client.h"
-
 #include "mutex.h"
 
 #include "librpc/rpc/dcerpc.h"
@@ -749,8 +747,6 @@ struct functable {
 #ifndef HAVE_COMPARISON_FN_T
 typedef int (*comparison_fn_t)(const void *, const void *);
 #endif
-
-#include "nsswitch/nss.h"
 
 /***** automatically generated prototypes *****/
 #include "proto.h"
