@@ -7,7 +7,9 @@ Subject:     Windows NT Domain Control & Samba
              =================================
 
 Windows NT Server can be installed as either a plain file and print server
-or as a server that participates in Domain Control.
+or as a server that participates in Domain Control. The same is true for 
+OS/2 Warp Server, Digital Pathworks and other similar products, all of which
+can participate in Domain Control along with Windows NT.
 
 To many people these terms can be confusing, so let's try to clear the air.
 
