@@ -13,7 +13,7 @@
 Starting with Samba 3.0 alpha 2, new group mapping functionality
 is available to create associations between Windows SIDs and UNIX
 groups. The <parameter>groupmap</parameter> subcommand included with
-the &net; tool can be used to manage these associations.
+the <command>net</command> tool can be used to manage these associations.
 </para>
 
 <para>
