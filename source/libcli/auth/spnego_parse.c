@@ -95,9 +95,7 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token
 				asn1_pop_tag(asn1);
 				asn1_pop_tag(asn1);
 
-				token->mechListMIC =
-					data_blob(mechListMIC, strlen(mechListMIC));
-				SAFE_FREE(mechListMIC);
+				token->targetPrincipal = mechListMIC;
 			}
 			asn1_end_tag(asn1);
 			break;
@@ -355,6 +353,7 @@ BOOL spnego_free_data(struct spnego_data *spnego)
 		}
 		data_blob_free(&spnego->negTokenInit.mechToken);
 		data_blob_free(&spnego->negTokenInit.mechListMIC);
+		SAFE_FREE(spnego->negTokenInit.targetPrincipal);
 		break;
 	case SPNEGO_NEG_TOKEN_TARG:
 		if (spnego->negTokenTarg.supportedMech) {
