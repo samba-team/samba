@@ -1,3 +1,11 @@
+1999-09-02  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (childhandler): watch for child `wait_on_pid' to die.
+	(recv_conn): set `wait_on_pid' instead of looping on waitpid here
+	also.  This should solve the problem of kxd looping which was
+ 	caused by the signal handler getting invoked before this waitpid
+ 	and reaping the child leaving this poor loop without any child
+
 1999-08-19  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c (recv_conn): give better error message
