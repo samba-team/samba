@@ -2201,6 +2201,7 @@ static int do_message_op(void)
 	extern FILE *dbf;
 	extern char *optarg;
 	extern int optind;
+	int old_debug;
 	pstring query_host;
 	BOOL message = False;
 	extern char tar_type;
@@ -2253,9 +2254,11 @@ static int do_message_op(void)
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
+	old_debug = DEBUGLEVEL;
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
 	}
+	DEBUGLEVEL = old_debug;
 	
 	codepage_initialise(lp_client_code_page());
 
