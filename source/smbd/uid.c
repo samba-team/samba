@@ -127,8 +127,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 
 	if (conn->force_user || 
 		conn->admin_user ||
-	    lp_security() == SEC_SHARE ||
-	    !(vuser) || (vuser->guest)) {
+	    (lp_security() == SEC_SHARE)) {
 		uid = conn->uid;
 		gid = conn->gid;
 		current_user.groups = conn->groups;
