@@ -551,5 +551,5 @@ const char *get_nt_error_msg(uint32 nt_code)
 	{
 		return msg;
 	}
-	return "";
+	return "unknown error";
 }
