@@ -2465,9 +2465,9 @@ static void map_dword_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 }
 
 static void map_bool_into_ctr(REGVAL_CTR *ctr, const char *val_name,
-			      BOOL bool)
+			      BOOL b)
 {
-	uint8 bin_bool = (bool ? 1 : 0);
+	uint8 bin_bool = (b ? 1 : 0);
 	regval_ctr_delvalue(ctr, val_name);
 	regval_ctr_addvalue(ctr, val_name, REG_BINARY, 
 			    (char *) &bin_bool, sizeof(bin_bool));
