@@ -102,9 +102,9 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	    printf("unknown\n");
 	free_Ticket(&t);
     }
-    printf("Session key: type = %d, length = %d\n", 
-	   cred->session.keytype, 
-	   cred->session.keyvalue.length);
+    krb5_key_to_string(context, cred->session, 0, &str);
+    printf("Session key: %s\n", str);
+    free(str);
     printf("Auth time:  %s\n", printable_time(cred->times.authtime));
     if(cred->times.authtime != cred->times.starttime)
 	printf("Start time: %s\n", printable_time(cred->times.starttime));
