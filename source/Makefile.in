@@ -1401,7 +1401,7 @@ client/client_proto.h:
 
 utils/net_proto.h: 
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _CLIENT_PROTO_H_ $(builddir)/utils/net_proto.h \
+	  -h _NET_PROTO_H_ $(builddir)/utils/net_proto.h \
 	  $(NET_OBJ1)
 
 # "make headers" or "make proto" calls a subshell because we need to
