@@ -4244,6 +4244,7 @@ static struct {
         {"RPC-MGMT", torture_rpc_mgmt, 0},
         {"RPC-SCANNER", torture_rpc_scanner, 0},
         {"RPC-AUTOIDL", torture_rpc_autoidl, 0},
+        {"RPC-COUNTCALLS", torture_rpc_countcalls, 0},
 	{"RPC-MULTIBIND", torture_multi_bind, 0},
 	{"RPC-DRSUAPI", torture_rpc_drsuapi, 0},
 
