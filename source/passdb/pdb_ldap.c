@@ -1252,8 +1252,14 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 						     LDAP_EXOP_MODIFY_PASSWD,
 						     bv, NULL, NULL, &retoid, 
 						     &retdata)) != LDAP_SUCCESS) {
-			DEBUG(0,("ldapsam_modify_entry: LDAP Password could not be changed for user %s: %s\n",
-				pdb_get_username(newpwd),ldap_err2string(rc)));
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+					&ld_error);
+			DEBUG(0,("ldapsam_modify_entry: LDAP Password could not be changed for user %s: %s\n\t%s\n",
+				pdb_get_username(newpwd), ldap_err2string(rc), ld_error?ld_error:"unknown"));
+			SAFE_FREE(ld_error);
+			ber_bvfree(bv);
+			return NT_STATUS_UNSUCCESSFUL;
 		} else {
 			DEBUG(3,("ldapsam_modify_entry: LDAP Password changed for user %s\n",pdb_get_username(newpwd)));
 #ifdef DEBUG_PASSWORD
