@@ -433,6 +433,7 @@ krb5_cc_store_cred(krb5_context context,
   store_ticket(fd, creds->ticket);
   store_ticket(fd, creds->second_ticket);
   close(fd);
+  return 0;
 }
 
 static krb5_error_code

@@ -17,7 +17,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
+#include <sys/filio.h>
 #include <des.h>
 
 #include "krb5.h"

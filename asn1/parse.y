@@ -14,6 +14,9 @@ static Type *new_type (Typetype t);
 void yyerror (char *);
 
 char *strdup(char *);
+
+static void append (Member *l, Member *r);
+
 %}
 
 %union {

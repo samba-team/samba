@@ -221,6 +221,8 @@ krb5_principal_set_component(krb5_principal p, int n, void *data, size_t len)
 	p->comp = tmp;
 	p->ncomp = s;
     }
+    p->comp[n].length = 0;
+    p->comp[n].data = NULL;
     krb5_data_copy(&p->comp[n], data, len);
     return 0;
 }
