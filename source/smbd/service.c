@@ -497,6 +497,17 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	   store them. Used by change_to_user() */
 	initialise_groups(conn->user, conn->uid, conn->gid); 
 	get_current_groups(&conn->ngroups,&conn->groups);
+
+#ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
+	/*
+	 * Some OSes, like FreeBSD return EGID as group 0 from getgroups
+	 * and ignore group 0 on setgroups.
+	 * get_current_groups returns group 0 as 0, which is wrong.
+	 * We set it to gid here to prevent the token creation below
+	 * from creating an incorrect token (SID for local group 0).
+	 */
+	if (conn->ngroups) conn->groups[0] = conn->gid;
+#endif /* HAVE_GETGROUPS_TOO_MANY_EGIDS */
 		
 	/* check number of connections */
 	if (!claim_connection(conn,

@@ -313,6 +313,15 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	initialise_groups(unix_name, uid, gid);
 	get_current_groups( &vuser->n_groups, &vuser->groups);
 
+#ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
+	/*
+	 * Under OSes to which this applies, we get GID 0 as the first
+	 * element of vuser->groups, so we put GID back in there.
+	 * It is ignored by setgroups
+	 */
+	if (vuser->n_groups) vuser->groups[0] = gid;
+#endif /* HAVE_GETGROUPS_TOO_MANY_EGIDS */
+
 	if (*pptok)
 		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, pptok);
 
