@@ -22,19 +22,19 @@ THIS IS A WORK IN PROGRESS - it is a preparation for the release of Samba-3.0.8.
 <para>
 The Microsoft Windows operating system has a number of features that impose specific challenges
 to interoperability with operating system on which Samba is implemented. This chapter deals
-explicitly with the mechanisms Samba-3 (version 3.0.8 and later) has to overcome one of the
+explicitly with the mechanisms Samba-3 (version 3.0.8 and later) uses to overcome one of the
 key challenges in the integration of Samba servers into an MS Windows networking environment.
 This chapter deals with IDentity MAPping (IDMAP) of Windows Security IDentifiers (SIDs)
 to UNIX UIDs and GIDs.
 </para>
 
 <para>
-So that this area is covered sufficiently, each possible Samba deployment type will be discussed.
+To ensure good sufficient coverage each possible Samba deployment type will be discussed.
 This is followed by an overview of how the IDMAP facility may be implemented.
 </para>
 
 <para>
-The IDMAP facility is usually of concern where more than one Samba server or Samba network client
+The IDMAP facility is usually of concern where more than one Samba server (or Samba network client)
 is installed in the one Domain. Where there is a single Samba server do not be too concerned regarding
 the IDMAP infrastructure - the default behavior of Samba is nearly always sufficient.
 </para>
@@ -79,15 +79,19 @@ on Server Types and Security Modes</link>.
 
 	<para>
 	Samba-3 can act as a Windows NT4 PDC or BDC thereby providing domain control protocols that
-	are based on Windows NT4. Thus, where Samba-3 is a Domain Member server or client the matter
-	of SID to UID/GID resolution is equivalent to configuration with a Windows NT4 or earlier 	
-	domain environment. When Samba-3 is acting as a Domain Member of an Active Directory (ADS)
-	domain it will also be necessary to resolve domain user and group identities (SIDs) to UNIX
-	UIDs and GIDs.
+	are compatible with Windows NT4. Samba-3 file and print sharing protocols are compatible with
+	all version of Microsoft Windows products. Windows NT4, as with Microsoft Active Directory, i
+	extensively makes use of Windows security identifiers (SIDs).
 	</para>
 
 	<para>
-	A Samba member of a Windows networking domain (NT4-style or ADS)  can be configured to handle 
+	Samba-3 Domain Member servers and clients must interact correctly with MS Windows SIDs. Incoming
+	Windows SIDs must be translated to local UNIX UIDs and GIDs. Outgoing information from the Samba
+	server must provide to MS Windows clients and servers appropriate SIDs.
+	</para>
+
+	<para>
+	A Samba member of a Windows networking domain (NT4-style or ADS) can be configured to handle 
 	identity mapping in a variety of ways. The mechanism is will use depends on whether or not
 	the <command>winbindd</command> daemon is used, and how the winbind functionality is configured.
 	The configuration options are briefly described here:
@@ -97,7 +101,27 @@ on Server Types and Security Modes</link>.
 		<varlistentry><term>Winbind is not used, users and groups are local: &smbmdash; </term>
 			<listitem>
 				<para>
-				
+				Where <command>winbindd</command> is not used Samba (<command>smbd</command>)
+				uses the underlying UNIX/Linux mechanisms to resolve the identity of incoming
+				network traffic. This will be done using the LoginID (account name) in the
+				session setup request and passing it to the getpwnam() system function call.
+				This call is implemented using the name service switch (NSS) mechanism on
+				modern UNIX/Linux systems. By saying <quote>users and groups are local</quote>
+				we are implying that they are stored only on the local system, in the
+				<filename>/etc/passwd</filename> and <filename>/etc/group</filename> respectively.
+				</para>
+
+				<para>
+				For example, if an incoming SessionSetupAndX request is owned by the user
+				<constant>BERYLIUM\WambatW</constant>, a system call will be made to look up
+				the user <constant>WambatW</constant> in the <filename>/etc/paswwd</filename>
+				file.
+				</para>
+
+				<para>
+				This configuration may be used with stand-alone Samba servers, Domain Member
+				servers (NT4 or ADS), and may be used for a PDC that uses either an smbpasswd
+				or a tdbsam based Samba passdb backend.
 				</para>
 			</listitem>
 		</varlistentry>
@@ -105,34 +129,119 @@ on Server Types and Security Modes</link>.
 		<varlistentry><term>Winbind is not used, users and groups resolved via NSS: &smbmdash; </term>
 			<listitem>
 				<para>
+				In this situation user and group accounts are treated as if they are local
+				accounts, the only way in which this differs from having local accounts is
+				that the accounts are stored in a repository that can be shared. In practice
+				this means that they will reside in either a NIS type database or else in LDAP.
+				</para>
+
+				<para>
+				This configuration may be used with stand-alone Samba servers, Domain Member
+				servers (NT4 or ADS), and may be used for a PDC that uses either an smbpasswd
+				or a tdbsam based Samba passdb backend.
 				</para>
 			</listitem>
 		</varlistentry>
 
-		<varlistentry><term>Winbind maintains local IDMAP table: &smbmdash; </term>
+		<varlistentry><term>Winbind/NSS with the default local IDMAP table: &smbmdash; </term>
 			<listitem>
 				<para>
+				There are many sites that require only a simple Samba server, or a single Samba
+				server that is a member of a Windows NT4 Domain or an ADS Domain. A typical example
+				is an appliance like file server on which no local accounts are configured and
+				winbind is used to obtain account credentials from the domain controllers for the
+				domain. The domain control can be provided by Samba-3, MS Windows NT4 or MS Windows
+				Active Directory.
+				</para>
+
+				<para>
+				Winbind is a great convenience in this situation. All that is needed is a range of
+				UID numbers and GID numbers that can be defined in the &smb.conf; file, the
+				<filename>/etc/nsswitch.conf</filename> file is configued to use <command>winbind</command>
+				which does all the difficult work of mapping incoming SIDs to appropriate UIDs and GIDs.
+				The SIDs are allocated a UID/GID in the order in which winbind receives them.
+				</para>
+
+				<para>
+				This configuration is not convenient or practical in sites that have more than one
+				Samba server and that require the same UID or GID for the same user or group across
+				all servers. One of the hazards of this method is that in the event that the winbind
+				IDMAP file may become corrupted or lost, the repaired or rebuilt IDMAP file may allocate
+				UIDs and GIDs to differing users and groups from what was there previously with the
+				result that MS Windows files that are stored on the Samba server may now not belong to
+				to rightful owner.
 				</para>
 			</listitem>
 		</varlistentry>
 
-		<varlistentry><term>Winbind uses LDAP backend based IDMAP: &smbmdash; </term>
+		<varlistentry><term>Winbind with an NSS/LDAP backend based IDMAP facility: &smbmdash; </term>
 			<listitem>
 				<para>
+				In this configuration <command>winbind</command> resolved SIDs to UIDs and GIDs from
+				the <parameter>idmap uid</parameter> and <parameter>idmap gid</parameter> ranges specified
+				in the &smb.conf; file, but instead of using a local winbind IDMAP table it is stored
+				in an LDAP directory so that all Domain Member machines (clients and servers) can share
+				a common IDMAP table.
+				</para>
+
+				<para>
+				It is important that all LDAP IDMAP clients use only the master LDAP server as the
+				<parameter>idmap backend</parameter> facility in the &smb.conf; file does not correctly
+				handle LDAP redirects.
 				</para>
 			</listitem>
 		</varlistentry>
 
-		<varlistentry><term>Winbind uses NSS to  resolve UNIX/Linux user and group IDs: &smbmdash; </term>
+		<varlistentry><term>Winbind with NSS to resolve UNIX/Linux user and group IDs: &smbmdash; </term>
 			<listitem>
 				<para>
+				When Samba is being used as the PDC and BDC the of an LDAP passdb backend is a smart
+				solution, certainly for the domain controllers, but also for Domain Member servers.
+				It is a neat method for assuring that UIDs, GIDs and the matching SIDs will be consistent
+				across all servers.
+				</para>
+
+				<para>
+				The use of the LDAP based passdb backend requires use of the PADL nss_ldap utility, or
+				an equivalent. In this situation winbind is used to handle foreign SIDs; ie: SIDs from
+				stand-alone Windows clients (i.e.: not a member of our domain) as well as SIDs from 
+				another domain. The foreign UID/GID is mapped from allocated ranges (idmap uid and idmap gid)
+				in precisely the same manner as when using winbind with a local IDMAP table.
+				</para>
+
+				<para>
+				The nss_ldap tool set can be used to access UIDs and GIDs via LDAP as well as via Active
+				Directory. In order to use Active Directory it is necessary to modify the ADS schema by
+				installing either the AD4UNIX schema extension or else use the Microsoft Services for UNIX
+				version 3.5 of later to extend the ADS schema so it maintains UNIX account credentials.
+				Where the ADS schema is extended a Microsoft Management Console (MMC) snap-in in also
+				installed to permit the UNIX credentials to be set and managed from the ADS User and Computer
+				managment tool. Each account must be separately UNIX enabled before the UID and GID data can
+				be used by Samba.`
 				</para>
 			</listitem>
 		</varlistentry>
 
-		<varlistentry><term>Winbind uses RID based IDMAP: &smbmdash; </term>
+		<varlistentry><term>Winbind/NSS uses RID based IDMAP: &smbmdash; </term>
 			<listitem>
 				<para>
+				The IDMAP_RID facility is new to Samba version 3.0.8. It was added to make life easier
+				for a number of sites that are committed to use of MS ADS, who do not want to apply
+				an ADS schema extension, and who do not wish to install an LDAP directory server just for
+				the purpose of maintaining an IDMAP table. If you have a single ADS domain (not a forest of
+				domains, and not mutiple domain trees) and you want a simple cookie-cutter solution to the
+				IDMAP table problem, then IDMAP_RID is an obvious choice.
+				</para>
+
+				<para>
+				This facility requires the allocation of the <parameter>idmap uid</parameter> and the
+				<parameter>idmap gid</parameter> ranges, and within the <parameter>idmap uid</parameter>
+				it is possible to allocate a sub-set of this range for automatic mapping of the relative
+				identifier (RID) portion of the SID directly to the base of the UID plus the RID value.
+				For example, if the <parameter>idmap uid</parameter> range is <constant>1000-100000000</constant>
+				and the <parameter>idmap backend = idmap_rid:DOMAIN_NAME=1000-50000000</parameter>, and
+				a SID is encountered that has the value <constant>S-1-5-21-34567898-12529001-32973135-1234</constant>,
+				the resulting UID will be <constant>1000 + 1234 = 2234</constant>.
 				</para>
 			</listitem>
 		</varlistentry>
