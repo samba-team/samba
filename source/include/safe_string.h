@@ -48,10 +48,13 @@
 
 #endif /* !_SPLINT_ */
 
-
+/* We need a number of different prototypes for our 
+   non-existant fuctions */
 char * __unsafe_string_function_usage_here__(void);
 
-size_t __unsafe_string_function_usage_here2__(void);
+size_t __unsafe_string_function_usage_here_size_t__(void);
+
+size_t __unsafe_string_function_usage_here_char__(void);
 
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
@@ -62,10 +65,10 @@ size_t __unsafe_string_function_usage_here2__(void);
 #define CHECK_STRING_SIZE(d, len) (sizeof(d) != (len) && sizeof(d) != sizeof(char *))
 
 #define fstrterminate(d) (CHECK_STRING_SIZE(d, sizeof(fstring)) \
-    ? __unsafe_string_function_usage_here__() \
+    ? __unsafe_string_function_usage_here_char__() \
     : (((d)[sizeof(fstring)-1]) = '\0'))
 #define pstrterminate(d) (CHECK_STRING_SIZE(d, sizeof(pstring)) \
-    ? __unsafe_string_function_usage_here__() \
+    ? __unsafe_string_function_usage_here_char__() \
     : (((d)[sizeof(pstring)-1]) = '\0'))
 
 #define wpstrcpy(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
@@ -83,7 +86,7 @@ size_t __unsafe_string_function_usage_here2__(void);
 
 #define push_pstring_base(dest, src, pstring_base) \
     (CHECK_STRING_SIZE(pstring_base, sizeof(pstring)) \
-    ? __unsafe_string_function_usage_here2__() \
+    ? __unsafe_string_function_usage_here_size_t__() \
     : push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE))
 
 #else /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
@@ -175,22 +178,22 @@ size_t __unsafe_string_function_usage_here2__(void);
 
 #define push_string_fn2(fn_name, fn_line, base_ptr, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
-    ? __unsafe_string_function_usage_here2__() \
+    ? __unsafe_string_function_usage_here_size_t__() \
     : push_string_fn(fn_name, fn_line, base_ptr, dest, src, dest_len, flags))
 
 #define pull_string_fn2(fn_name, fn_line, base_ptr, dest, src, dest_len, src_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
-    ? __unsafe_string_function_usage_here2__() \
+    ? __unsafe_string_function_usage_here_size_t__() \
     : pull_string_fn(fn_name, fn_line, base_ptr, dest, src, dest_len, src_len, flags))
 
 #define clistr_push_fn2(fn_name, fn_line, cli, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
-    ? __unsafe_string_function_usage_here2__() \
+    ? __unsafe_string_function_usage_here_size_t__() \
     : clistr_push_fn(fn_name, fn_line, cli, dest, src, dest_len, flags))
 
 #define clistr_pull_fn2(fn_name, fn_line, cli, dest, src, dest_len, srclen, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
-    ? __unsafe_string_function_usage_here2__() \
+    ? __unsafe_string_function_usage_here_size_t__() \
     : clistr_pull_fn(fn_name, fn_line, cli, dest, src, dest_len, srclen, flags))
 
 #else
