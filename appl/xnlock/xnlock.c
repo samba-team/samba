@@ -233,7 +233,7 @@ ScreenSaver(save)
 
 /* XXX */
 static void talk(int force_erase);
-static unsigned long look();
+static unsigned long look(void);
 
 
 static void
