@@ -189,11 +189,10 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 /************************************************************************
  Routine to get account password to trusted domain
 ************************************************************************/
-BOOL secrets_fetch_trusted_domain_password(char *domain, char* pwd,
-				DOM_SID sid, time_t *pass_last_set_time)
+BOOL secrets_fetch_trusted_domain_password(char *domain, char** pwd,
+				DOM_SID *sid, time_t *pass_last_set_time)
 {
 	struct trusted_dom_pass *pass;
-	int pass_len;
 	size_t size;
 
 	if (!(pass = secrets_fetch(trustdom_keystr(domain), &size))) {
@@ -206,13 +205,12 @@ BOOL secrets_fetch_trusted_domain_password(char *domain, char* pwd,
 		return False;
 	}
 	
-	memcpy(&pass_len, &(pass->pass_len), sizeof(pass_len));
-	
-	if (pwd)
-		safe_free(pwd);
-	else
-		pwd = (char*)malloc(pass_len + 1);
-	safe_strcpy(pwd, pass->pass, pass_len);
+	if (pwd) {
+		*pwd = strdup(pass->pass);
+		if (!*pwd) {
+			return False;
+		}
+	}
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 
@@ -249,12 +247,12 @@ BOOL secrets_store_trusted_domain_password(char* domain, char* pwd,
 					   DOM_SID sid)
 {
 	struct trusted_dom_pass pass;
+	ZERO_STRUCT(pass);
 
 	pass.mod_time = time(NULL);
 
 	pass.pass_len = strlen(pwd);
-	pass.pass = (char*)malloc(strlen(pwd) + 1);
-	safe_strcpy(pass.pass, pwd, strlen(pwd));
+	fstrcpy(pass.pass, pwd);
 
 	memcpy(&(pass.domain_sid), &sid, sizeof(sid));
 	
