@@ -524,7 +524,7 @@ getarg(struct getargs *args, size_t num_args,
 #if defined(HAVE_SRANDOMDEV)
     srandomdev();
 #elif defined(HAVE_RANDOM)
-    srandom(time(NULL);
+    srandom(time(NULL));
 #else
     srand (time(NULL));
 #endif
