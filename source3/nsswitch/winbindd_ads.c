@@ -186,6 +186,24 @@ static enum SID_NAME_USE ads_atype_map(uint32 atype)
 	return SID_NAME_UNKNOWN;
 }
 
+/* 
+   in order to support usernames longer than 21 characters we need to 
+   use both the sAMAccountName and the userPrincipalName attributes 
+   It seems that not all users have the userPrincipalName attribute set
+*/
+char *pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
+{
+	char *ret, *p;
+
+	ret = ads_pull_string(ads, mem_ctx, msg, "userPrincipalName");
+	if (ret && (p = strchr(ret, '@'))) {
+		*p = 0;
+		return ret;
+	}
+	return ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+}
+
+
 /* Query display info for a realm. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
@@ -193,7 +211,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       WINBIND_USERINFO **info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
+	const char *attrs[] = {"userPrincipalName",
+			       "sAMAccountName",
+			       "name", "objectSid", "primaryGroupID", 
 			       "sAMAccountType", NULL};
 	int i, count;
 	ADS_STATUS rc;
@@ -240,7 +260,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+		name = pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
@@ -281,7 +301,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				struct acct_info **info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", 
+	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
+			       "name", "objectSid", 
 			       "sAMAccountType", NULL};
 	int i, count;
 	ADS_STATUS rc;
@@ -326,7 +347,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				     &account_type) ||
 		    !(account_type & ATYPE_GROUP)) continue;
 
-		name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+		name = pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
@@ -377,7 +398,14 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	asprintf(&exp, "(sAMAccountName=%s)", name);
+	/* when a name is longer than 20 characters, the sAMAccountName can
+	   be long or short! */
+	if (strlen(name) > 20) {
+		asprintf(&exp, "(|(sAMAccountName=%s)(sAMAccountName=%.20s))", 
+			 name, name);
+	} else {
+		asprintf(&exp, "(sAMAccountName=%s)", name);
+	}
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
 	if (!ADS_ERR_OK(rc)) {
@@ -421,7 +449,9 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    enum SID_NAME_USE *type)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "sAMAccountType", NULL};
+	const char *attrs[] = {"userPrincipalName", 
+			       "sAMAccountName",
+			       "sAMAccountType", NULL};
 	ADS_STATUS rc;
 	void *msg = NULL;
 	char *exp;
@@ -448,7 +478,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	*name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+	*name = pull_username(ads, mem_ctx, msg);
 	*type = ads_atype_map(atype);
 
 	status = NT_STATUS_OK;
@@ -511,7 +541,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			   WINBIND_USERINFO *info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", 
+	const char *attrs[] = {"userPrincipalName", 
+			       "sAMAccountName",
+			       "name", "objectSid", 
 			       "primaryGroupID", NULL};
 	ADS_STATUS rc;
 	int count;
@@ -544,7 +576,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	info->acct_name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+	info->acct_name = pull_username(ads, mem_ctx, msg);
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 	if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 		DEBUG(1,("No sid for %d !?\n", user_rid));
@@ -654,7 +686,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				uint32 **name_types)
 {
 	DOM_SID group_sid;
-	const char *attrs[] = {"sAMAccountName", "objectSid", "sAMAccountType", NULL};
+	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
+			       "objectSid", "sAMAccountType", NULL};
 	ADS_STATUS rc;
 	int count;
 	void *res=NULL, *msg=NULL;
@@ -698,7 +731,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		uint32 atype, rid;
 		DOM_SID sid;
 
-		(*names)[*num_names] = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+		(*names)[*num_names] = pull_username(ads, mem_ctx, msg);
 		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype)) {
 			continue;
 		}
