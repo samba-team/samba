@@ -1,6 +1,6 @@
-This is version 1.9.16 of Samba, the free SMB client and server for unix
+This is version 1.9.17 of Samba, the free SMB client and server for unix
 and other operating systems. Samba is maintained by the Samba Team,
-who support the original author and principal maintainer, Andrew Tridgell.
+who support the original author, Andrew Tridgell.
 
 >>>> Please read THE WHOLE of this file as it gives important information
 >>>> about the configuration and use of Samba.

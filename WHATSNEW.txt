@@ -1,0 +1,61 @@
+              WHATS NEW IN 1.9.17alpha1 - May 21st 1997.
+              ==========================================
+
+Improved browsing support. 
+--------------------------
+
+Samba now should support propagation of browse lists 
+across subnets correctly. Look in the file docs/BROWSING.txt 
+as it has been largely re-written to explain how to do this.
+
+Thanks to Silicon Graphics for allowing us to test the new 
+code on their corporate network.
+
+Improved share mode handling
+----------------------------
+
+The handling of share modes has been completely rewritten.
+Samba can now run agressive PC Benchmarks (Ziff-Davis
+NetBench) correctly with many hundreds of concurrent PC's.
+The confidence level on share mode handling in Samba
+is now much higher than it was previously. PC database
+packages should be much safer when run against a
+Samba share. Thanks to Silicon Graphics for testing
+this code for us.
+
+If at all possible compile Samba to use the new share
+mode handling with shared memory (set the flags 
+FAST_SHARE_MODES in the Makefile). This will be *much* faster
+than old file-based share modes. FAST_SHARE_MODES have
+been turned on by default on the following platforms in
+the Makefile :
+
+	Linux
+	Solaris
+	BSDI
+	IRIX 5.x.x
+	FreeBSD
+
+Updated smb.conf documentation
+------------------------------
+
+All options are now documented we believe.
+
+Many small bugfixes and improvements
+------------------------------------
+From around the 'net around the world. Many
+thanks to everyone who contributed.
+
+Remember - this is new code so there may be
+bugs or problems.
+
+As always, all bugs are our responsibility - 
+please report them to :
+
+samba-bugs@samba.anu.edu.au
+
+
+Regards,
+
+	The Samba Team.
+
