@@ -160,6 +160,11 @@ Scan all network interfaces for addresses, as opposed to simply using
 the address associated with the system's host name.
 .It Li fcache_version = Va int
 Use file credential cache format version specified.
+.It Li krb4_get_tickets = Va boolean
+Also get Kerberos 4 tickets in
+.Nm kinit
+and other programs.
+This option is also valid in the [realms] section.
 .El
 .It Li [domain_realm]
 This is a list of mappings from DNS domain to Kerberos realm. Each
@@ -341,4 +346,5 @@ actually used and thus cannot warn about unknown or misspelt ones.
 .Xr krb5_openlog 3 ,
 .Xr krb5_425_conv_principal 3 ,
 .Xr strftime 3 ,
+.Xr kinit 1 ,
 .Xr Source tm
