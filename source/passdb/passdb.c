@@ -1487,6 +1487,9 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	sid_copy(&dom_sid, psid);
 	sid_split_rid(&dom_sid, &rid);
 
+	if (!pdb_rid_is_user(rid))
+		return False;
+
 	/*
 	 * We can only convert to a uid if this is our local
 	 * Domain SID (ie. we are the controling authority).
@@ -1547,6 +1550,9 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	 */
 
 	if (!sid_equal(&global_sam_sid, &dom_sid))
+		return False;
+
+	if (pdb_rid_is_user(rid))
 		return False;
 
 	*pgid = pdb_user_rid_to_gid(rid);
