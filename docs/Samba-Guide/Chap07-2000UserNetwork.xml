@@ -1014,12 +1014,12 @@ added: "cn=PIOps,ou=Groups,dc=abmas,dc=biz" (00000013)
 		</para></step>
 
 	<step><para><indexterm>
-	      <primary>smbldap-useradd.pl</primary>
+	      <primary>smbldap-useradd</primary>
 	    </indexterm>
 		On the master ldap server you may now add an account to validate that replication
 		is working. Assuming the configuration shown in Chapter 6, execute:
 <screen>
-&rootprompt; /var/lib/samba/sbin/smbldap-useradd.pl -a fruitloop
+&rootprompt; /var/lib/samba/sbin/smbldap-useradd -a fruitloop
 </screen>
 		</para></step>
 
@@ -1164,18 +1164,18 @@ index default               sub
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="time server">Yes</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
-<smbconfoption name="add user script">/var/lib/samba/sbin/smbldap-useradd.pl -m '%u'</smbconfoption>
-<smbconfoption name="delete user script">/var/lib/samba/sbin/smbldap-userdel.pl '%u'</smbconfoption>
-<smbconfoption name="add group script">/var/lib/samba/sbin/smbldap-groupadd.pl -p '%g'</smbconfoption>
-<smbconfoption name="delete group script">/var/lib/samba/sbin/smbldap-groupdel.pl '%g'</smbconfoption>
-<smbconfoption name="add user to group script">/var/lib/samba/sbin/</smbconfoption>
-<member><parameter>smbldap-groupmod.pl -m '%g' '%u'</parameter></member>
-<smbconfoption name="delete user from group script">/var/lib/samba/sbin/</smbconfoption>
-<member><parameter>smbldap-groupmod.pl -x '%g' '%u'</parameter></member>
-<smbconfoption name="set primary group script">/var/lib/samba/sbin/</smbconfoption>
-<member><parameter>smbldap-usermod.pl -g '%g' '%u'</parameter></member>
-<smbconfoption name="add machine script">/var/lib/samba/sbin/</smbconfoption>
-<member><parameter>smbldap-useradd.pl -w '%u'</parameter></member>
+<smbconfoption name="add user script">/opt/IDEALX/sbin/smbldap-useradd -m '%u'</smbconfoption>
+<smbconfoption name="delete user script">/opt/IDEALX/sbin/smbldap-userdel '%u'</smbconfoption>
+<smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd -p '%g'</smbconfoption>
+<smbconfoption name="delete group script">/opt/IDEALX/sbin/smbldap-groupdel '%g'</smbconfoption>
+<smbconfoption name="add user to group script">/opt/IDEALX/sbin/</smbconfoption>
+<member><parameter>smbldap-groupmod -m '%g' '%u'</parameter></member>
+<smbconfoption name="delete user from group script">/opt/IDEALX/sbin/</smbconfoption>
+<member><parameter>smbldap-groupmod -x '%g' '%u'</parameter></member>
+<smbconfoption name="set primary group script">/opt/IDEALX/sbin/</smbconfoption>
+<member><parameter>smbldap-usermod -g '%g' '%u'</parameter></member>
+<smbconfoption name="add machine script">/opt/IDEALX/sbin/</smbconfoption>
+<member><parameter>smbldap-useradd -w '%u'</parameter></member>
 <smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
 <smbconfoption name="abort shutdown script">/sbin/shutdown -c</smbconfoption>
 <smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
