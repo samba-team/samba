@@ -239,3 +239,29 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 	sid->num_auths++;
 	return sid;
 }
+
+
+/*
+  return True if the 2nd sid is in the domain given by the first sid
+*/
+BOOL dom_sid_in_domain(const struct dom_sid *domain_sid, 
+		       const struct dom_sid *sid)
+{
+	int i;
+
+	if (!domain_sid || !sid) {
+		return False;
+	}
+
+	if (domain_sid->num_auths > sid->num_auths) {
+		return False;
+	}
+
+	for (i = domain_sid->num_auths-1; i >= 0; --i) {
+		if (domain_sid->sub_auths[i] != sid->sub_auths[i]) {
+			return False;
+		}
+	}
+
+	return dom_sid_compare_auth(domain_sid, sid) == 0;
+}
