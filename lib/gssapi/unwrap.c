@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,6 +40,30 @@
 
 RCSID("$Id$");
 
+OM_uint32
+gss_krb5_getsomekey(const gss_ctx_id_t context_handle,
+		    des_cblock *key)
+{
+    /* XXX this is ugly, and probably incorrect... */
+    krb5_keyblock *skey;
+    krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
+				 context_handle->auth_context, 
+				 &skey);
+    if(skey == NULL)
+	krb5_auth_con_getremotesubkey(gssapi_krb5_context,
+				      context_handle->auth_context, 
+				      &skey);
+    if(skey == NULL)
+	krb5_auth_con_getkey(gssapi_krb5_context,
+			     context_handle->auth_context, 
+			     &skey);
+    if(skey == NULL)
+	return GSS_S_FAILURE;
+    memcpy(key, skey->keyvalue.data, sizeof(*key));
+    krb5_free_keyblock(gssapi_krb5_context, skey);
+    return 0;
+}
+
 OM_uint32 gss_unwrap
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
@@ -60,6 +84,7 @@ OM_uint32 gss_unwrap
   int32_t seq_number;
   size_t padlength;
   OM_uint32 ret;
+  int cstate;
 
   p = input_message_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
@@ -71,9 +96,15 @@ OM_uint32 gss_unwrap
   if (memcmp (p, "\x00\x00", 2) != 0)
     return GSS_S_BAD_SIG;
   p += 2;
-  if (memcmp (p, "\x00\x00", 2) != 0)
-    return GSS_S_BAD_MIC;
+  if (memcmp (p, "\x00\x00", 2) == 0) {
+      cstate = 1;
+  } else if (memcmp (p, "\xFF\xFF", 2) == 0) {
+      cstate = 0;
+  } else
+      return GSS_S_BAD_MIC;
   p += 2;
+  if(conf_state != NULL)
+      *conf_state = cstate;
   if (memcmp (p, "\xff\xff", 2) != 0)
     return GSS_S_DEFECTIVE_TOKEN;
   p += 2;
@@ -81,34 +112,29 @@ OM_uint32 gss_unwrap
 
   len = p - (u_char *)input_message_buffer->value;
 
-  /* decrypt data */
-
-  memset (&zero, 0, sizeof(zero));
-#if 0
-  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
-	  sizeof(key));
-#endif
-  memcpy (&key, context_handle->auth_context->remote_subkey->keyvalue.data,
-	  sizeof(key));
-  for (i = 0; i < sizeof(key); ++i)
-    key[i] ^= 0xf0;
-  des_set_key (&key, schedule);
-  des_cbc_encrypt ((des_cblock *)p,
-		   (des_cblock *)p,
-		   input_message_buffer->length - len,
-		   schedule,
-		   &zero,
-		   DES_DECRYPT);
-
-  memset (key, 0, sizeof(key));
-  memset (schedule, 0, sizeof(schedule));
-
+  if(cstate) {
+      /* decrypt data */
+      gss_krb5_getsomekey(context_handle, &key);
+      for (i = 0; i < sizeof(key); ++i)
+	  key[i] ^= 0xf0;
+      des_set_key (&key, schedule);
+      memset (&zero, 0, sizeof(zero));
+      des_cbc_encrypt ((des_cblock *)p,
+		       (des_cblock *)p,
+		       input_message_buffer->length - len,
+		       schedule,
+		       &zero,
+		       DES_DECRYPT);
+      
+      memset (key, 0, sizeof(key));
+      memset (schedule, 0, sizeof(schedule));
+  }
   /* check pad */
 
   pad = (u_char *)input_message_buffer->value + input_message_buffer->length - 1;
   padlength = *pad;
 
-  for (i = padlength; i >= 0 && *pad == padlength; i--, pad--)
+  for (i = padlength; i > 0 && *pad == padlength; i--, pad--)
     ;
   if (i != 0)
     return GSS_S_BAD_MIC;
@@ -119,12 +145,7 @@ OM_uint32 gss_unwrap
   md5_finito (&md5, hash);
 
   memset (&zero, 0, sizeof(zero));
-#if 0
-  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
-	  sizeof(key));
-#endif
-  memcpy (&key, context_handle->auth_context->remote_subkey->keyvalue.data,
-	  sizeof(key));
+  gss_krb5_getsomekey(context_handle, &key);
   des_set_key (&key, schedule);
   des_cbc_cksum ((des_cblock *)hash,
 		 (des_cblock *)hash, sizeof(hash), schedule, &zero);
@@ -165,8 +186,8 @@ OM_uint32 gss_unwrap
   output_message_buffer->length = input_message_buffer->length
     - len - 8 - padlength;
   output_message_buffer->value  = malloc(output_message_buffer->length);
-  if(output_message_buffer->value == NULL)
-    return GSS_S_FAILURE;
+  if(output_message_buffer->length != 0 && output_message_buffer->value == NULL)
+      return GSS_S_FAILURE;
   memcpy (output_message_buffer->value,
 	  p + 24,
 	  output_message_buffer->length);
