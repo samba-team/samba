@@ -1,3 +1,26 @@
+2004-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/pkinit.c: always send both win2k compat version and the
+	ietf draft one, this is possible since microsoft use
+	wrong/diffrent PA number.  Make the configuration flag boolean
+	configuring if NOT to send the win2k compat glue.
+	
+	* lib/krb5/krb5_encrypt.3: document krb5_{de,en}crypt_ivec
+
+	* kuser/copy_cred_cache.1: pacify mdoclint
+	
+	* kdc/pkinit.c: use IV for envelopeddata encryption, patch
+	originally from Luke Howard <lukeh@padl.com>, tweeked by me.
+	
+	* lib/krb5/krb5_storage.3: document
+	KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER
+
+	* lib/krb5/krb5_data.3: document that krb5_data_free cleans the
+	structure too
+
+	* lib/krb5/pkinit.c: use IV for envelopeddata encryption, patch
+	originally from Luke Howard <lukeh@padl.com>, tweeked by me.
+	
 2004-04-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/copy_cred_cache.{c,1}: add cred cache copy tool
