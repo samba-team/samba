@@ -417,14 +417,20 @@ static NTSTATUS nbench_copy(struct ntvfs_module_context *ntvfs,
 static void nbench_read_send(struct smbsrv_request *req)
 {
 	union smb_read *rd = req->async_states->private_data;
-
+	uint32_t nread;
+	
 	switch (rd->generic.level) {
 	case RAW_READ_READX:
+		if (NT_STATUS_IS_OK(req->async_states->status)) {
+			nread = rd->readx.out.nread;
+		} else {
+			nread = 0;
+		}
 		nbench_log(req, "ReadX %d %d %d %d %s\n", 
 			   rd->readx.in.fnum, 
 			   (int)rd->readx.in.offset,
 			   rd->readx.in.maxcnt,
-			   rd->readx.out.nread,
+			   nread,
 			   get_nt_error_c_code(req->async_states->status));
 		break;
 	default:
