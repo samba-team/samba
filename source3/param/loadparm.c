@@ -3683,12 +3683,11 @@ char **lp_list_make(char *string)
 	
 	if (!string || !*string) return NULL;
 	s = strdup(string);
-	if (!str || !*str) return NULL;
-	str = s;
+	if (!s || !*s) return NULL;
 	
 	list = (char**)malloc(((sizeof(char**)) * P_LIST_ABS));
 	if (!list) {
-		free (str);
+		free (s);
 		return NULL;
 	}
 	memset (list, 0, ((sizeof(char**)) * P_LIST_ABS));
@@ -3696,6 +3695,7 @@ char **lp_list_make(char *string)
 	
 	num = 0;
 	
+	str = s;
 	while (*str)
 	{
 		if (!next_token(&str, tok, LIST_SEP, sizeof(pstring))) continue;
@@ -3705,7 +3705,7 @@ char **lp_list_make(char *string)
 			rlist = (char **)realloc(list, ((sizeof(char **)) * lsize));
 			if (!rlist) {
 				lp_list_free (list);
-				free (str);
+				free (s);
 				return NULL;
 			}
 			else list = rlist;
@@ -3715,7 +3715,7 @@ char **lp_list_make(char *string)
 		list[num] = strdup(tok);
 		if (!list[num]) {
 			lp_list_free (list);
-			free (str);
+			free (s);
 			return NULL;
 		}
 	
