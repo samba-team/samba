@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/wait.h"
 
  void replace_dummy(void);
  void replace_dummy(void) {}
@@ -546,3 +547,12 @@ int get_time_zone(time_t t)
 	return i;
 }
 #endif
+
+int sys_waitpid(pid_t pid,int *status,int options)
+{
+#ifdef HAVE_WAITPID
+  return waitpid(pid,status,options);
+#else /* USE_WAITPID */
+  return wait4(pid, status, options, NULL);
+#endif /* USE_WAITPID */
+}

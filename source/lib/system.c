@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "system/wait.h"
 
 /*
    The idea is that this file will eventually have wrappers around all
@@ -555,3 +556,4 @@ struct ipv4_addr sys_inet_makeaddr(int net, int host)
 	in2.s_addr = in.s_addr;
 	return in2;
 }
+

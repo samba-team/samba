@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 
 struct policy_handle sam_handle;
@@ -157,12 +158,12 @@ static void connect_sam(void)
 
 }
 
-void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
+static void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	connect_sam();
 }
 
-void on_disconnect_activate (GtkMenuItem *menuitem, gpointer user_data)
+static void on_disconnect_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	gtk_widget_set_sensitive (mnu_disconnect, FALSE);
 	gtk_window_set_title (GTK_WINDOW (mainwin), "User Manager");

@@ -21,7 +21,8 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
-#include "gtk-smb.h"
+#include "gtk/common/select.h"
+#include "gtk/common/gtk-smb.h"
 
 /* GtkSelectDomainDialog */
 

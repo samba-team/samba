@@ -59,4 +59,23 @@ struct _GtkRpcBindingDialogClass
 
 #endif
 
+/* subsystem prototypes */
+GtkWidget *create_gtk_samba_about_dialog (const char *appname);
+void gtk_show_ntstatus(GtkWidget *win, NTSTATUS status);
+GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_pipe);
+GType gtk_rpc_binding_dialog_get_type (void);
+struct dcerpc_binding *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, TALLOC_CTX *mem_ctx);
+GtkWidget *gtk_select_host_dialog_new (struct sam_pipe *sam_pipe, BOOL nocredentials);
+const char *gtk_select_host_dialog_get_host (GtkSelectHostDialog *d);
+GType gtk_select_host_dialog_get_type (void);
+void gtk_show_werror(GtkWidget *win, WERROR err);
+const char *gtk_rpc_binding_dialog_get_binding_string(GtkRpcBindingDialog *d, TALLOC_CTX *mem_ctx);
+const char *gtk_rpc_binding_dialog_get_username(GtkRpcBindingDialog *d);
+const char *gtk_rpc_binding_dialog_get_password(GtkRpcBindingDialog *d);
+const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d);
+GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe);
+GType gtk_select_domain_dialog_get_type (void);
+struct policy_handle gtk_select_domain_dialog_get_handle(GtkSelectDomainDialog *d);
+
+
 #endif

@@ -217,7 +217,7 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
 	if (getpid() == pids[0]) {
 		for (i=0;i<NPROC-1;i++) {
 			int status;
-			if (waitpid(pids[i+1], &status, 0) != pids[i+1]) {
+			if (sys_waitpid(pids[i+1], &status, 0) != pids[i+1]) {
 				printf("failed to wait for %d\n",
 				       (int)pids[i+1]);
 				exit(1);
