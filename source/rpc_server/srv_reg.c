@@ -129,12 +129,12 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 
 	if (status == 0 && find_lsa_policy_by_hnd(&(q_u->pol)) == -1)
 	{
-		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (status == 0x0 && !open_lsa_policy_hnd(&pol))
 	{
-		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
 	fstrcpy(name, dos_unistrn2(q_u->uni_name.buffer, q_u->uni_name.uni_str_len));
@@ -145,13 +145,13 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 		/* lkcl XXXX do a check on the name, here */
 		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
 		{
-			status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
+			status = NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
 	if (status == 0x0 && !set_lsa_policy_reg_name(&pol, name))
 	{
-		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
 	init_reg_r_open_entry(&r_u, &pol, status);
@@ -198,7 +198,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 
 	if (status == 0 && find_lsa_policy_by_hnd(&(q_u->pol)) == -1)
 	{
-		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* This makes the server look like a member server to clients */
