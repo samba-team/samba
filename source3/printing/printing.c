@@ -263,8 +263,8 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
     bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
 
     for (i = (FILETOK + 1); i < TOTALTOK; i++) {
-      strncat(buf->file," ",bufsize);
-      strncat(buf->file,tok[i],bufsize - 1);
+      safe_strcat(buf->file," ",bufsize);
+      safe_strcat(buf->file,tok[i],bufsize - 1);
       bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
       if (bufsize <= 0) {
         break;
@@ -378,8 +378,8 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
     bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
 
     for (i = (LPRNG_FILETOK + 1); i < LPRNG_TOTALTOK; i++) {
-      strncat(buf->file," ",bufsize);
-      strncat(buf->file,tokarr[i],bufsize - 1);
+      safe_strcat(buf->file," ",bufsize);
+      safe_strcat(buf->file,tokarr[i],bufsize - 1);
       bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
       if (bufsize <= 0) {
         break;
