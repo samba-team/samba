@@ -1,36 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >Storing Samba's User/Machine Account information in an LDAP Directory</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="PREVIOUS"
+TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
+HREF="samba-bdc.html"><LINK
+REL="NEXT"
+TITLE="Improved browsing in samba"
+HREF="improved-browsing.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
 ><A
-NAME="SAMBA-LDAP-HOWTO"
->Storing Samba's User/Machine Account information in an LDAP Directory</A
-></H1
-><HR></DIV
+HREF="samba-bdc.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="improved-browsing.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="SAMBA-LDAP-HOWTO">Chapter 14. Storing Samba's User/Machine Account information in an LDAP Directory</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Purpose</A
-></H1
+NAME="AEN2350">14.1. Purpose</H1
 ><P
 >This document describes how to use an LDAP directory for storing Samba user
 account information traditionally stored in the smbpasswd(5) file.  It is
@@ -93,12 +139,10 @@ TARGET="_top"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN23"
->Introduction</A
-></H1
+NAME="AEN2370">14.2. Introduction</H1
 ><P
 >Traditionally, when configuring <A
 HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
@@ -210,12 +254,10 @@ the details of configuring these packages are beyond the scope of this document.
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN52"
->Supported LDAP Servers</A
-></H1
+NAME="AEN2399">14.3. Supported LDAP Servers</H1
 ><P
 >The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
 2.0 server and client libraries.  The same code should be able to work with
@@ -235,12 +277,10 @@ TARGET="_top"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN57"
->Schema and Relationship to the RFC 2307 posixAccount</A
-></H1
+NAME="AEN2404">14.4. Schema and Relationship to the RFC 2307 posixAccount</H1
 ><P
 >Samba 2.2.3 includes the necessary schema file for OpenLDAP 2.0 in
 <TT
@@ -294,20 +334,16 @@ information in NIS while the network is transitioning to a full LDAP infrastruct
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN69"
->Configuring Samba with LDAP</A
-></H1
+NAME="AEN2416">14.5. Configuring Samba with LDAP</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN71"
->OpenLDAP configuration</A
-></H2
+NAME="AEN2418">14.5.1. OpenLDAP configuration</H2
 ><P
 >To include support for the sambaAccount object in an OpenLDAP directory
 server, first copy the samba.schema file to slapd's configuration directory.</P
@@ -384,12 +420,10 @@ index rid           eq
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN88"
->Configuring Samba</A
-></H2
+NAME="AEN2435">14.5.2. Configuring Samba</H2
 ><P
 >The following parameters are available in smb.conf only with <TT
 CLASS="PARAMETER"
@@ -504,12 +538,10 @@ CLASS="REPLACEABLE"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN116"
->Accounts and Groups management</A
-></H1
+NAME="AEN2463">14.6. Accounts and Groups management</H1
 ><P
 >As users accounts are managed thru the sambaAccount objectclass, you should
 modify you existing administration tools to deal with sambaAccount attributes.</P
@@ -529,12 +561,10 @@ groups).</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN121"
->Security and sambaAccount</A
-></H1
+NAME="AEN2468">14.7. Security and sambaAccount</H1
 ><P
 >There are two important points to remember when discussing the security
 of sambaAccount entries in the directory.</P
@@ -543,17 +573,23 @@ of sambaAccount entries in the directory.</P
 ><UL
 ><LI
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Never</I
+></SPAN
 > retrieve the lmPassword or
 	ntPassword attribute values over an unencrypted LDAP session.</P
 ></LI
 ><LI
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Never</I
+></SPAN
 > allow non-admin users to
 	view the lmPassword or ntPassword attribute values.</P
 ></LI
@@ -602,12 +638,10 @@ access to attrs=lmPassword,ntPassword
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN141"
->LDAP specials attributes for sambaAccounts</A
-></H1
+NAME="AEN2488">14.8. LDAP specials attributes for sambaAccounts</H1
 ><P
 >The sambaAccount objectclass is composed of the following attributes:</P
 ><P
@@ -813,12 +847,10 @@ something other than the default (e.g. \\MOBY\becky).</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN211"
->Example LDIF Entries for a sambaAccount</A
-></H1
+NAME="AEN2558">14.9. Example LDIF Entries for a sambaAccount</H1
 ><P
 >The following is a working LDIF with the inclusion of the posixAccount objectclass:</P
 ><P
@@ -871,12 +903,10 @@ ntPassword: 878D8014606CDA29677A44EFA1353FC7</PRE
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN219"
->Comments</A
-></H1
+NAME="AEN2566">14.10. Comments</H1
 ><P
 >Please mail all comments regarding this HOWTO to <A
 HREF="mailto:jerry@samba.org"
@@ -885,6 +915,64 @@ TARGET="_top"
 >.  This documents was
 last updated to reflect the Samba 2.2.3 release.&#13;</P
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="samba-bdc.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="improved-browsing.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Improved browsing in samba</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML

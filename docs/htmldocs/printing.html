@@ -1,36 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >Printing Support in Samba 2.2.x</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="PREVIOUS"
+TITLE="UNIX Permission Bits and Windows NT Access Control Lists"
+HREF="unix-permissions.html"><LINK
+REL="NEXT"
+TITLE="Debugging Printing Problems"
+HREF="printingdebug.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
 ><A
-NAME="PRINTING"
->Printing Support in Samba 2.2.x</A
-></H1
-><HR></DIV
+HREF="unix-permissions.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="printingdebug.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="PRINTING">Chapter 7. Printing Support in Samba 2.2.x</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Introduction</A
-></H1
+NAME="AEN902">7.1. Introduction</H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
 the native Windows NT printing mechanisms implemented via 
@@ -96,10 +142,13 @@ As a side note, Samba does not use these drivers in any way to process
 spooled files.  They are utilized entirely by the clients.</P
 ><P
 >The following MS KB article, may be of some help if you are dealing with
-Windows 2000 clients:  <I
+Windows 2000 clients:  <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >How to Add Printers with No User 
 Interaction in Windows 2000</I
+></SPAN
 ></P
 ><P
 ><A
@@ -110,30 +159,40 @@ TARGET="_top"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN25"
->Configuration</A
-></H1
+NAME="AEN924">7.2. Configuration</H1
 ><DIV
 CLASS="WARNING"
 ><P
 ></P
 ><TABLE
 CLASS="WARNING"
-BORDER="1"
 WIDTH="100%"
+BORDER="0"
 ><TR
 ><TD
+WIDTH="25"
 ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="CENTER"
 ><B
 >[print$] vs. [printer$]</B
-></TD
+></TH
 ></TR
 ><TR
 ><TD
+>&nbsp;</TD
+><TD
 ALIGN="LEFT"
+VALIGN="TOP"
 ><P
 >Previous versions of Samba recommended using a share named [printer$].  
 This name was taken from the printer$ service created by Windows 9x 
@@ -168,7 +227,7 @@ file</I
 > parameter, are being deprecated and should not 
 be used in new installations.  For more information on this change, 
 you should refer to the <A
-HREF="#MIGRATION"
+HREF="printing.html#MIGRATION"
 >Migration section</A
 >
 of this document.</P
@@ -178,12 +237,10 @@ of this document.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN36"
->Creating [print$]</A
-></H2
+NAME="AEN935">7.2.1. Creating [print$]</H2
 ><P
 >In order to support the uploading of printer driver 
 files, you must first configure a file share named [print$].  
@@ -250,11 +307,35 @@ site is configured.  If users will be guaranteed to have
 an account on the Samba host, then this is a non-issue.</P
 ><DIV
 CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
 ><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="CENTER"
 ><B
->Author's Note: </B
+>Author's Note</B
+></TH
+></TR
+><TR
+><TD
+>&nbsp;</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 >The non-issue is that if all your Windows NT users are guaranteed to be 
 authenticated by the Samba server (such as a domain member server and the NT 
 user has already been validated by the Domain Controller in 
@@ -272,7 +353,9 @@ CLASS="COMMAND"
 > in the [global] section as well.  Make sure 
 you understand what this parameter does before using it 
 though. --jerry</P
-></BLOCKQUOTE
+></TD
+></TR
+></TABLE
 ></DIV
 ><P
 >In order for a Windows NT print server to support 
@@ -299,18 +382,30 @@ CLASS="WARNING"
 ></P
 ><TABLE
 CLASS="WARNING"
-BORDER="1"
 WIDTH="100%"
+BORDER="0"
 ><TR
 ><TD
+WIDTH="25"
 ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="CENTER"
 ><B
 >ATTENTION!  REQUIRED PERMISSIONS</B
-></TD
+></TH
 ></TR
 ><TR
 ><TD
+>&nbsp;</TD
+><TD
 ALIGN="LEFT"
+VALIGN="TOP"
 ><P
 >In order to currently add a new driver to you Samba host, 
 one of two conditions must hold true:</P
@@ -363,19 +458,20 @@ that matches the printer shares defined on your Samba host.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN71"
->Setting Drivers for Existing Printers</A
-></H2
+NAME="AEN970">7.2.2. Setting Drivers for Existing Printers</H2
 ><P
 >The initial listing of printers in the Samba host's 
 Printers folder will have no real printer driver assigned 
 to them.  By default, in Samba 2.2.0 this driver name was set to 
-<I
+<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >NO PRINTER DRIVER AVAILABLE FOR THIS PRINTER</I
+></SPAN
 >.
 Later versions changed this to a NULL string to allow the use
 tof the local Add Printer Wizard on NT/2000 clients.
@@ -383,16 +479,19 @@ Attempting to view the printer properties for a printer
 which has this default driver assigned will result in 
 the error message:</P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Device settings cannot be displayed.  The driver 
 for the specified printer is not installed, only spooler 
 properties will be displayed.  Do you want to install the 
 driver now?</I
+></SPAN
 ></P
 ><P
 >Click "No" in the error dialog and you will be presented with
-the printer properties window.  The way assign a driver to a 
+the printer properties window.  The way to assign a driver to a 
 printer is to either</P
 ><P
 ></P
@@ -437,17 +536,15 @@ permissions to the "Everyone" well-known group.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN88"
->Support a large number of printers</A
-></H2
+NAME="AEN987">7.2.3. Support a large number of printers</H2
 ><P
 >One issue that has arisen during the development
 phase of Samba 2.2 is the need to support driver downloads for
 100's of printers.  Using the Windows NT APW is somewhat 
-awkward to say the least.  If more than one printer is using the 
+awkward to say the list.  If more than one printer are using the 
 same driver, the <A
 HREF="rpcclient.1.html"
 TARGET="_top"
@@ -457,7 +554,7 @@ CLASS="COMMAND"
 setdriver command</B
 ></A
 > can be used to set the driver
-associated with an installed driver.  The following is an example
+associated with an installed driver.  The following is example
 of how this could be accomplished:</P
 ><P
 ><PRE
@@ -503,18 +600,16 @@ Successfully set hp-print to driver HP LaserJet 4000 Series PS.</PRE
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN99"
->Adding New Printers via the Windows NT APW</A
-></H2
+NAME="AEN998">7.2.4. Adding New Printers via the Windows NT APW</H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
 CLASS="FILENAME"
 >smb.conf</TT
 >
-in the "Printers..." folder.  Also in this folder is the Windows NT 
+in the "Printers..." folder.  Also existing in this folder is the Windows NT 
 Add Printer Wizard icon.  The APW will be show only if</P
 ><P
 ></P
@@ -580,7 +675,7 @@ CLASS="PARAMETER"
 >add printer 
 command</I
 ></TT
-> and reparse the <TT
+> and reparse to the <TT
 CLASS="FILENAME"
 >smb.conf</TT
 >
@@ -606,20 +701,81 @@ printer command</I
 ></A
 > for removing entries from the "Printers..."
 folder.</P
+><P
+>The following is an example <A
+HREF="smb.conf.5.html#ADDPRINTERCOMMAN"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>add printer command</I
+></TT
+></A
+> script. It adds the appropriate entries to <TT
+CLASS="FILENAME"
+>/etc/printcap.local</TT
+> (change that to what you need) and returns a line of 'Done' which is needed for the whole process to work.</P
+><PRE
+CLASS="PROGRAMLISTING"
+>#!/bin/sh
+
+# Script to insert a new printer entry into printcap.local
+#
+# $1, printer name, used as the descriptive name
+# $2, share name, used as the printer name for Linux
+# $3, port name
+# $4, driver name
+# $5, location, used for the device file of the printer
+# $6, win9x location
+
+#
+# Make sure we use the location that RedHat uses for local printer defs
+PRINTCAP=/etc/printcap.local
+DATE=`date +%Y%m%d-%H%M%S`
+LP=lp
+RESTART="service lpd restart"
+
+# Keep a copy
+cp $PRINTCAP $PRINTCAP.$DATE
+# Add the printer to $PRINTCAP
+echo ""				 			&#62;&#62; $PRINTCAP
+echo "$2|$1:\\" 					&#62;&#62; $PRINTCAP
+echo "  :sd=/var/spool/lpd/$2:\\" 			&#62;&#62; $PRINTCAP
+echo "  :mx=0:ml=0:sh:\\" 				&#62;&#62; $PRINTCAP
+echo "  :lp=/usr/local/samba/var/print/$5.prn:" 	&#62;&#62; $PRINTCAP
+
+touch "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&#38;1
+chown $LP "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&#38;1
+
+mkdir /var/spool/lpd/$2
+chmod 700 /var/spool/lpd/$2
+chown $LP /var/spool/lpd/$2
+#echo $1 &#62;&#62; "/usr/local/samba/var/print/$5.prn"
+#echo $2 &#62;&#62; "/usr/local/samba/var/print/$5.prn"
+#echo $3 &#62;&#62; "/usr/local/samba/var/print/$5.prn"
+#echo $4 &#62;&#62; "/usr/local/samba/var/print/$5.prn"
+#echo $5 &#62;&#62; "/usr/local/samba/var/print/$5.prn"
+#echo $6 &#62;&#62; "/usr/local/samba/var/print/$5.prn"
+$RESTART &#62;&#62; "/usr/local/samba/var/print/$5.prn"
+# Not sure if this is needed
+touch /usr/local/samba/lib/smb.conf
+#
+# You need to return a value, but I am not sure what it means.
+#
+echo "Done"
+exit 0</PRE
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN124"
->Samba and Printer Ports</A
-></H2
+NAME="AEN1028">7.2.5. Samba and Printer Ports</H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
 take the form of LPT1:, COM1:, FILE:, etc...  Samba must also support the
 concept of ports associated with a printer.  By default, only one printer port,
-named "Samba Printer Port", exists on a system.  Samba does not really need a port in
+named "Samba Printer Port", exists on a system.  Samba does not really a port in
 order to print, rather it is a requirement of Windows clients.  </P
 ><P
 >Note that Samba does not support the concept of "Printer Pooling" internally 
@@ -646,12 +802,10 @@ that generates a listing of ports on a system.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN132"
->The Imprints Toolset</A
-></H1
+NAME="AEN1036">7.3. The Imprints Toolset</H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
 	Windows NT Add Printer Wizard.  For complete information, please 
@@ -664,12 +818,10 @@ TARGET="_top"
 	only provide a brief introduction to the features of Imprints.</P
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN136"
->What is Imprints?</A
-></H2
+NAME="AEN1040">7.3.1. What is Imprints?</H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
 		of</P
@@ -696,12 +848,10 @@ NAME="AEN136"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN146"
->Creating Printer Driver Packages</A
-></H2
+NAME="AEN1050">7.3.2. Creating Printer Driver Packages</H2
 ><P
 >The process of creating printer driver packages is beyond
 		the scope of this document (refer to Imprints.txt also included
@@ -712,12 +862,10 @@ NAME="AEN146"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN149"
->The Imprints server</A
-></H2
+NAME="AEN1053">7.3.3. The Imprints server</H2
 ><P
 >The Imprints server is really a database server that 
 		may be queried via standard HTTP mechanisms.  Each printer 
@@ -725,20 +873,21 @@ NAME="AEN149"
 		downloading of the package.  Each package is digitally signed
 		via GnuPG which can be used to verify that package downloaded
 		is actually the one referred in the Imprints database.  It is 
-		<I
+		<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >not</I
+></SPAN
 > recommended that this security check 
 		be disabled.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN153"
->The Installation Client</A
-></H2
+NAME="AEN1057">7.3.4. The Installation Client</H2
 ><P
 >More information regarding the Imprints installation client 
 		is available in the <TT
@@ -827,15 +976,13 @@ CLASS="FILENAME"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN175"
-><A
+NAME="AEN1079">7.4. <A
 NAME="MIGRATION"
 ></A
->Migration to from Samba 2.0.x to 2.2.x</A
-></H1
+>Migration to from Samba 2.0.x to 2.2.x</H1
 ><P
 >Given that printer driver management has changed (we hope improved) in 
 2.2 over prior releases, migration from an existing setup to 2.2 can 
@@ -906,18 +1053,30 @@ CLASS="WARNING"
 ></P
 ><TABLE
 CLASS="WARNING"
-BORDER="1"
 WIDTH="100%"
+BORDER="0"
 ><TR
 ><TD
+WIDTH="25"
 ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="CENTER"
 ><B
 >Achtung!</B
-></TD
+></TH
 ></TR
 ><TR
 ><TD
+>&nbsp;</TD
+><TD
 ALIGN="LEFT"
+VALIGN="TOP"
 ><P
 >The following <TT
 CLASS="FILENAME"
@@ -978,9 +1137,67 @@ CLASS="PARAMETER"
 >use client driver</I
 ></TT
 >). Both of 
-these options are described in the smb.conf(5) man page and are 
+these options are described in the smb.coinf(5) man page and are 
 disabled by default.</P
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="unix-permissions.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="printingdebug.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>UNIX Permission Bits and Windows NT Access Control Lists</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Debugging Printing Problems</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML

@@ -1,36 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >security = domain in Samba 2.x</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="PREVIOUS"
+TITLE="Security levels"
+HREF="securitylevels.html"><LINK
+REL="NEXT"
+TITLE="Unified Logons between Windows NT and UNIX using Winbind"
+HREF="winbind.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
 ><A
-NAME="DOMAIN-SECURITY"
->security = domain in Samba 2.x</A
-></H1
-><HR></DIV
+HREF="securitylevels.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="winbind.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="DOMAIN-SECURITY">Chapter 10. security = domain in Samba 2.x</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Joining an NT Domain with Samba 2.2</A
-></H1
+NAME="AEN1272">10.1. Joining an NT Domain with Samba 2.2</H1
 ><P
 >Assume you have a Samba 2.x server with a NetBIOS name of 
 	<TT
@@ -256,12 +302,10 @@ CLASS="COMMAND"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN67"
->Samba and Windows 2000 Domains</A
-></H1
+NAME="AEN1336">10.2. Samba and Windows 2000 Domains</H1
 ><P
 >Many people have asked regarding the state of Samba's ability to participate in
 a Windows 2000 Domain.  Samba 2.2 is able to act as a member server of a Windows
@@ -281,12 +325,10 @@ Computers" MMC (Microsoft Management Console) plugin.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN72"
->Why is this better than security = server?</A
-></H1
+NAME="AEN1341">10.3. Why is this better than security = server?</H1
 ><P
 >Currently, domain security in Samba doesn't free you from 
 	having to create local Unix users to represent the users attaching 
@@ -350,9 +392,12 @@ CLASS="COMMAND"
 	user is authenticated, making a Samba server truly plug and play 
 	in an NT domain environment. Watch for this code soon.</P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE:</I
+></SPAN
 > Much of the text of this document 
 	was first published in the Web magazine <A
 HREF="http://www.linuxworld.com"
@@ -366,6 +411,64 @@ TARGET="_top"
 	the NIS/NT Samba</A
 >.</P
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="securitylevels.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="winbind.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Security levels</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Unified Logons between Windows NT and UNIX using Winbind</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML

@@ -1,3 +1,4 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
@@ -5,34 +6,79 @@
 managed authentication</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="PREVIOUS"
+TITLE="Integrating MS Windows networks with Samba"
+HREF="integrate-ms-networks.html"><LINK
+REL="NEXT"
+TITLE="Hosting a Microsoft Distributed File System tree on Samba"
+HREF="msdfs.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
 ><A
-NAME="PAM"
->Configuring PAM for distributed but centrally 
-managed authentication</A
-></H1
-><HR></DIV
+HREF="integrate-ms-networks.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="msdfs.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="PAM">Chapter 4. Configuring PAM for distributed but centrally 
+managed authentication</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Samba and PAM</A
-></H1
+NAME="AEN593">4.1. Samba and PAM</H1
 ><P
 >A number of Unix systems (eg: Sun Solaris), as well as the 
 xxxxBSD family and Linux, now utilize the Pluggable Authentication 
@@ -222,7 +268,7 @@ password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.
 ></P
 ><P
 >Note: PAM allows stacking of authentication mechanisms. It is 
-also possible to pass information obtained within on PAM module through 
+also possible to pass information obtained within one PAM module through 
 to the next module in the PAM stack. Please refer to the documentation for 
 your particular system implementation for details regarding the specific 
 capabilities of PAM in this environment. Some Linux implmentations also 
@@ -241,12 +287,10 @@ PAM documentation for further helpful information.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN47"
->Distributed Authentication</A
-></H1
+NAME="AEN637">4.2. Distributed Authentication</H1
 ><P
 >The astute administrator will realize from this that the 
 combination of <TT
@@ -274,12 +318,10 @@ reduction of wide area network authentication traffic.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN54"
->PAM Configuration in smb.conf</A
-></H1
+NAME="AEN644">4.3. PAM Configuration in smb.conf</H1
 ><P
 >There is an option in smb.conf called <A
 HREF="smb.conf.5.html#OBEYPAMRESTRICTIONS"
@@ -312,6 +354,64 @@ CLASS="COMMAND"
 >obey pam restrictions = no</B
 ></P
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="integrate-ms-networks.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="msdfs.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Integrating MS Windows networks with Samba</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Hosting a Microsoft Distributed File System tree on Samba</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML

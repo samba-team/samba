@@ -1,36 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >Security levels</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="PREVIOUS"
+TITLE="Debugging Printing Problems"
+HREF="printingdebug.html"><LINK
+REL="NEXT"
+TITLE="security = domain in Samba 2.x"
+HREF="domain-security.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
 ><A
-NAME="SECURITY_LEVELS"
->Security levels</A
-></H1
-><HR></DIV
+HREF="printingdebug.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="domain-security.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="SECURITYLEVELS">Chapter 9. Security levels</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Introduction</A
-></H1
+NAME="AEN1228">9.1. Introduction</H1
 ><P
 >Samba supports the following options to the global smb.conf parameter</P
 ><P
@@ -71,12 +117,10 @@ Windows NT server, the later natively capable of encrypted password support.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN14"
->More complete description of security levels</A
-></H1
+NAME="AEN1239">9.2. More complete description of security levels</H1
 ><P
 >A SMB server tells the client at startup what "security level" it is
 running. There are two options "share level" and "user level". Which
@@ -163,6 +207,64 @@ cryptographically impossible to translate from unix style encryption
 to SMB style encryption, although there are some fairly simple management
 schemes by which the two could be kept in sync.</P
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="printingdebug.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="domain-security.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Debugging Printing Problems</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>security = domain in Samba 2.x</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML

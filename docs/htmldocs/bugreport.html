@@ -1,36 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >Reporting Bugs</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="PREVIOUS"
+TITLE="HOWTO Access Samba source code via CVS"
+HREF="cvs-access.html"><LINK
+REL="NEXT"
+TITLE="Group mapping HOWTO"
+HREF="groupmapping.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
 ><A
-NAME="BUGREPORT"
->Reporting Bugs</A
-></H1
-><HR></DIV
+HREF="cvs-access.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="groupmapping.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="BUGREPORT">Chapter 19. Reporting Bugs</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Introduction</A
-></H1
+NAME="AEN3029">19.1. Introduction</H1
 ><P
 >The email address for bug reports is samba@samba.org</P
 ><P
@@ -57,12 +103,10 @@ at http://samba.org/samba/ </P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN10"
->General info</A
-></H1
+NAME="AEN3036">19.2. General info</H1
 ><P
 >Before submitting a bug report check your config for silly
 errors. Look in your log files for obvious messages that tell you that
@@ -82,12 +126,10 @@ time, and exactly what the results were.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN16"
->Debug levels</A
-></H1
+NAME="AEN3042">19.3. Debug levels</H1
 ><P
 >If the bug has anything to do with Samba behaving incorrectly as a
 server (like refusing to open a file) then the log files will probably
@@ -152,12 +194,10 @@ large volume of log data.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN33"
->Internal errors</A
-></H1
+NAME="AEN3059">19.4. Internal errors</H1
 ><P
 >If you get a "INTERNAL ERROR" message in your log files it means that
 Samba got an unexpected signal while running. It is probably a
@@ -196,12 +236,10 @@ useful. </P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN43"
->Attaching to a running process</A
-></H1
+NAME="AEN3069">19.5. Attaching to a running process</H1
 ><P
 >Unfortunately some unixes (in particular some recent linux kernels)
 refuse to dump a core file if the task has changed uid (which smbd
@@ -213,12 +251,10 @@ where it occurred.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN46"
->Patches</A
-></H1
+NAME="AEN3072">19.6. Patches</H1
 ><P
 >The best sort of bug report is one that includes a fix! If you send us
 patches please use <B
@@ -232,6 +268,64 @@ CLASS="COMMAND"
 your do the diff against a clean version of the source and let me know 
 exactly what version you used. </P
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="cvs-access.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="groupmapping.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>HOWTO Access Samba source code via CVS</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Group mapping HOWTO</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML
