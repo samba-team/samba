@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    
    Copyright (C) Stefan Metzmacher	2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -544,15 +545,6 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		goto disconnect;
 	}
 
-	/* check result of samr_Connect */
-	if (!NT_STATUS_IS_OK(sc.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_Connect failed: %s\n", 
-						nt_errstr(sc.out.result));
-		status = sc.out.result;
-		goto disconnect;
-	}
-
 	/* prepare samr_LookupDomain */
 	d_name.string = r->samr.in.domain_name;
 	ld.in.connect_handle = &p_handle;
@@ -564,15 +556,6 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupDomain for [%s] failed: %s\n",
 						r->samr.in.domain_name, nt_errstr(status));
-		goto disconnect;
-	}
-
-	/* check result of samr_LookupDomain */
-	if (!NT_STATUS_IS_OK(ld.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_LookupDomain for [%s] failed: %s\n",
-						r->samr.in.domain_name, nt_errstr(ld.out.result));
-		status = ld.out.result;
 		goto disconnect;
 	}
 
@@ -589,15 +572,6 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenDomain for [%s] failed: %s\n",
 						r->samr.in.domain_name, nt_errstr(status));
-		goto disconnect;
-	}
-
-	/* check result of samr_OpenDomain */
-	if (!NT_STATUS_IS_OK(od.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_OpenDomain for [%s] failed: %s\n",
-						r->samr.in.domain_name, nt_errstr(od.out.result));
-		status = od.out.result;
 		goto disconnect;
 	}
 
@@ -619,15 +593,6 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 						r->samr.in.account_name, nt_errstr(status));
 		goto disconnect;
 	}
-
-	/* check result of samr_LookupNames */
-	if (!NT_STATUS_IS_OK(ln.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_LookupNames for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(ln.out.result));
-		status = ln.out.result;
-		goto disconnect;
-}
 
 	/* check if we got one RID for the user */
 	if (ln.out.rids.count != 1) {
@@ -651,15 +616,6 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenUser for [%s] failed: %s\n",
 						r->samr.in.account_name, nt_errstr(status));
-		goto disconnect;
-	}
-
-	/* check result of samr_OpenUser */
-	if (!NT_STATUS_IS_OK(ou.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_OpenUser for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(ou.out.result));
-		status = ou.out.result;
 		goto disconnect;
 	}
 
