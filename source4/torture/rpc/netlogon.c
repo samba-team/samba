@@ -25,172 +25,9 @@
 #include "includes.h"
 
 
+static const char *machine_password;
+
 #define TEST_MACHINE_NAME "torturetest"
-
-static struct {
-	struct dcerpc_pipe *p;
-	const char *machine_password;
-	struct policy_handle acct_handle;
-} join;
-
-/*
-  join the domain as a BDC
-*/
-static BOOL join_domain_bdc(TALLOC_CTX *mem_ctx)
-{
-	NTSTATUS status;
-	struct samr_Connect c;
-	struct samr_CreateUser2 r;
-	struct samr_OpenDomain o;
-	struct samr_LookupDomain l;
-	struct samr_GetUserPwInfo pwp;
-	struct samr_SetUserInfo s;
-	union samr_UserInfo u;
-	struct policy_handle handle;
-	struct policy_handle domain_handle;
-	uint32_t access_granted;
-	uint32_t rid;
-	BOOL ret = True;
-	DATA_BLOB session_key;
-	struct samr_Name name;
-	int policy_min_pw_len = 0;
-
-	printf("Connecting to SAMR\n");
-
-	status = torture_rpc_connection(&join.p, 
-					DCERPC_SAMR_NAME,
-					DCERPC_SAMR_UUID,
-					DCERPC_SAMR_VERSION);
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
-
-	c.in.system_name = NULL;
-	c.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	c.out.handle = &handle;
-
-	status = dcerpc_samr_Connect(join.p, mem_ctx, &c);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("samr_Connect failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	printf("Opening domain %s\n", lp_workgroup());
-
-	name.name = lp_workgroup();
-	l.in.handle = &handle;
-	l.in.domain = &name;
-
-	status = dcerpc_samr_LookupDomain(join.p, mem_ctx, &l);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupDomain failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	o.in.handle = &handle;
-	o.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
-	o.out.domain_handle = &domain_handle;
-
-	status = dcerpc_samr_OpenDomain(join.p, mem_ctx, &o);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	printf("Creating machine account %s\n", TEST_MACHINE_NAME);
-
-again:
-	name.name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
-	r.in.handle = &domain_handle;
-	r.in.account_name = &name;
-	r.in.acct_flags = ACB_SVRTRUST;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.out.acct_handle = &join.acct_handle;
-	r.out.access_granted = &access_granted;
-	r.out.rid = &rid;
-
-	status = dcerpc_samr_CreateUser2(join.p, mem_ctx, &r);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS) &&
-	    test_DeleteUser_byname(join.p, mem_ctx, &domain_handle, name.name)) {
-		goto again;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateUser2 failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	pwp.in.handle = &join.acct_handle;
-
-	status = dcerpc_samr_GetUserPwInfo(join.p, mem_ctx, &pwp);
-	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_len;
-	}
-
-	join.machine_password = generate_random_str(mem_ctx, MAX(8, policy_min_pw_len));
-
-	printf("Setting machine account password '%s'\n", join.machine_password);
-
-	s.in.handle = &join.acct_handle;
-	s.in.info = &u;
-	s.in.level = 24;
-
-	encode_pw_buffer(u.info24.password.data, join.machine_password, STR_UNICODE);
-	u.info24.pw_len = strlen(join.machine_password);
-
-	status = dcerpc_fetch_session_key(join.p, &session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo level %u - no session key - %s\n",
-		       s.in.level, nt_errstr(status));
-		return False;
-	}
-
-	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
-
-	status = dcerpc_samr_SetUserInfo(join.p, mem_ctx, &s);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	s.in.handle = &join.acct_handle;
-	s.in.info = &u;
-	s.in.level = 16;
-
-	u.info16.acct_flags = ACB_SVRTRUST;
-
-	printf("Resetting ACB flags\n");
-
-	status = dcerpc_samr_SetUserInfo(join.p, mem_ctx, &s);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	return ret;
-}
-
-/*
-  leave the domain as a BDC
-*/
-static BOOL leave_domain_bdc(TALLOC_CTX *mem_ctx)
-{
-	struct samr_DeleteUser d;
-	NTSTATUS status;
-
-	d.in.handle = &join.acct_handle;
-	d.out.handle = &join.acct_handle;
-
-	status = dcerpc_samr_DeleteUser(join.p, mem_ctx, &d);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Delete of machine account failed\n");
-		return False;
-	}
-
-	return True;
-}
 
 static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
@@ -259,7 +96,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	plain_pass = join.machine_password;
+	plain_pass = machine_password;
 	if (!plain_pass) {
 		printf("Unable to fetch machine password!\n");
 		return False;
@@ -319,7 +156,7 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	plain_pass = join.machine_password;
+	plain_pass = machine_password;
 	if (!plain_pass) {
 		printf("Unable to fetch machine password!\n");
 		return False;
@@ -385,7 +222,7 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	plain_pass = join.machine_password;
+	plain_pass = machine_password;
 	if (!plain_pass) {
 		printf("Unable to fetch machine password!\n");
 		return False;
@@ -1157,7 +994,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		printf("Credential chaining failed\n");
 	}
 
-	join.machine_password = password;
+	machine_password = password;
 
 	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
 		printf("ServerPasswordSet failed to actually change the password\n");
@@ -1679,10 +1516,13 @@ BOOL torture_rpc_netlogon(int dummy)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
+	void *join_ctx;
 
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 
-	if (!join_domain_bdc(mem_ctx)) {
+	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), ACB_SVRTRUST, 
+				       &machine_password);
+	if (!join_ctx) {
 		printf("Failed to join as BDC\n");
 		return False;
 	}
@@ -1757,10 +1597,7 @@ BOOL torture_rpc_netlogon(int dummy)
 
         torture_rpc_close(p);
 
-	if (!leave_domain_bdc(mem_ctx)) {
-		printf("Failed to delete BDC machine account\n");
-		return False;
-	}
+	torture_leave_domain(join_ctx);
 
 	return ret;
 }

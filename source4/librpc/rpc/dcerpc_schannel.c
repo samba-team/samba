@@ -81,7 +81,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 			     const char *username,
 			     const char *password,
 			     int chan_type,
-			     uint8_t new_session_key[8])
+			     uint8_t new_session_key[16])
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;
@@ -91,7 +91,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	struct samr_Password mach_pwd;
 	struct creds_CredentialState creds;
 	const char *workgroup, *workstation;
-	uint32_t negotiate_flags = 0;
+	uint32_t negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
 	workstation = username;
 	workgroup = domain;
@@ -99,10 +99,10 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	/*
 	  step 1 - establish a netlogon connection, with no authentication
 	*/
-	status = dcerpc_secondary_smb(p, &p2, 
-				      DCERPC_NETLOGON_NAME, 
-				      DCERPC_NETLOGON_UUID, 
-				      DCERPC_NETLOGON_VERSION);
+	status = dcerpc_secondary_connection(p, &p2, 
+					     DCERPC_NETLOGON_NAME, 
+					     DCERPC_NETLOGON_UUID, 
+					     DCERPC_NETLOGON_VERSION);
 
 
 	/*
@@ -152,7 +152,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	*/
 	dcerpc_pipe_close(p2);
 
-	memcpy(new_session_key, creds.session_key, 8);
+	memcpy(new_session_key, creds.session_key, 16);
 
 	return NT_STATUS_OK;
 }
@@ -167,16 +167,12 @@ NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
 				       const char *uuid, uint_t version,
 				       const char *domain,
 				       const char *username,
-				       const uint8_t session_key[8])
+				       const uint8_t session_key[16])
 {
 	NTSTATUS status;
-	uint8_t full_session_key[16];
 	struct schannel_state *schannel_state;
 	const char *workgroup, *workstation;
 	struct dcerpc_bind_schannel bind_schannel;
-
-	memcpy(full_session_key, session_key, 8);
-	memset(full_session_key+8, 0, 8);
 
 	workstation = username;
 	workgroup = domain;
@@ -234,7 +230,7 @@ NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
 		goto done;
 	}
 
-	status = schannel_start(&schannel_state, full_session_key, True);
+	status = schannel_start(&schannel_state, session_key, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -265,11 +261,19 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 				   const char *password)
 {
 	NTSTATUS status;
-	uint8_t session_key[8];
+	uint8_t session_key[16];
+	int chan_type = 0;
+
+	if (p->flags & DCERPC_SCHANNEL_BDC) {
+		chan_type = SEC_CHAN_BDC;
+	} else if (p->flags & DCERPC_SCHANNEL_WORKSTATION) {
+		chan_type = SEC_CHAN_WKSTA;
+	} else if (p->flags & DCERPC_SCHANNEL_DOMAIN) {
+		chan_type = SEC_CHAN_DOMAIN;
+	} 
 
 	status = dcerpc_schannel_key(p, domain, username, password, 
-				     lp_server_role() == ROLE_DOMAIN_BDC? SEC_CHAN_BDC:SEC_CHAN_WKSTA,
-				     session_key);
+				     chan_type, session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

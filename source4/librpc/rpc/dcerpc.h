@@ -71,21 +71,28 @@ struct dcerpc_pipe {
 };
 
 /* dcerpc pipe flags */
-#define DCERPC_DEBUG_PRINT_IN  (1<<0)
-#define DCERPC_DEBUG_PRINT_OUT (1<<1)
+#define DCERPC_DEBUG_PRINT_IN          (1<<0)
+#define DCERPC_DEBUG_PRINT_OUT         (1<<1)
 #define DCERPC_DEBUG_PRINT_BOTH (DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT)
 
-#define DCERPC_DEBUG_VALIDATE_IN  4
-#define DCERPC_DEBUG_VALIDATE_OUT 8
+#define DCERPC_DEBUG_VALIDATE_IN       (1<<2)
+#define DCERPC_DEBUG_VALIDATE_OUT      (1<<3)
 #define DCERPC_DEBUG_VALIDATE_BOTH (DCERPC_DEBUG_VALIDATE_IN | DCERPC_DEBUG_VALIDATE_OUT)
 
-#define DCERPC_SIGN            16
-#define DCERPC_SEAL            32
+#define DCERPC_SIGN                    (1<<4)
+#define DCERPC_SEAL                    (1<<5)
 
-#define DCERPC_PUSH_BIGENDIAN   64
-#define DCERPC_PULL_BIGENDIAN  128
+#define DCERPC_PUSH_BIGENDIAN          (1<<6)
+#define DCERPC_PULL_BIGENDIAN          (1<<7)
 
-#define DCERPC_SCHANNEL        256
+#define DCERPC_SCHANNEL_BDC            (1<<8)
+#define DCERPC_SCHANNEL_WORKSTATION    (1<<9)
+#define DCERPC_SCHANNEL_DOMAIN         (1<<10)
+#define DCERPC_SCHANNEL_ANY            (DCERPC_SCHANNEL_BDC| \
+					DCERPC_SCHANNEL_DOMAIN| \
+					DCERPC_SCHANNEL_WORKSTATION)
+
+#define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL_ANY)
 
 /*
   this is used to find pointers to calls
