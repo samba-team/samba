@@ -976,7 +976,7 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		creds_des_encrypt(creds, &pinfo.ntpassword);
 	}
 
-	printf("Testing netr_LogonSamLogonWithFlags\n");
+	printf("Testing netr_LogonSamLogonWithFlags (Interactive Logon)\n");
 
 	status = dcerpc_netr_LogonSamLogonWithFlags(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1002,6 +1002,14 @@ BOOL torture_rpc_samlogon(void)
 	BOOL ret = True;
 	void *join_ctx;
 	const char *machine_pass;
+	int i;
+	
+	unsigned int credential_flags[] = {
+		0, 
+		NETLOGON_NEG_AUTH2_FLAGS,
+		NETLOGON_NEG_ARCFOUR,
+		NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT,
+		NETLOGON_NEG_AUTH2_ADS_FLAGS};
 
 	struct creds_CredentialState creds;
 
@@ -1035,69 +1043,35 @@ BOOL torture_rpc_samlogon(void)
 		ret = False;
 	}
 
-	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS,
-				    TEST_MACHINE_NAME, machine_pass, &creds)) {
-		return False;
+	for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
+		
+		if (!test_SetupCredentials2(p, mem_ctx, credential_flags[i],
+					    TEST_MACHINE_NAME, machine_pass, &creds)) {
+			return False;
+		}
+		
+		if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+			ret = False;
+		}
+		
+		if (!test_SamLogon(p, mem_ctx, &creds)) {
+			ret = False;
+		}
 	}
 
-	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_ARCFOUR,
-				    TEST_MACHINE_NAME, machine_pass, &creds)) {
-		return False;
-	}
-
-	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT,
-				    TEST_MACHINE_NAME, machine_pass, &creds)) {
-		return False;
-	}
-
-	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS,
-				    TEST_MACHINE_NAME, machine_pass, &creds)) {
-		return False;
-	}
-
-	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
-				    TEST_MACHINE_NAME, machine_pass, &creds)) {
-		return False;
-	}
-
-	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, &creds)) {
-		ret = False;
+	for (i=0; i < 32; i++) {
+		if (!test_SetupCredentials2(p, mem_ctx, 1 << i,
+					    TEST_MACHINE_NAME, machine_pass, &creds)) {
+			return False;
+		}
+		
+		if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+			ret = False;
+		}
+		
+		if (!test_SamLogon(p, mem_ctx, &creds)) {
+			ret = False;
+		}
 	}
 
 	talloc_destroy(mem_ctx);
