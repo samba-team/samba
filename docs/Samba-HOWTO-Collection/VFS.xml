@@ -586,13 +586,13 @@ should be implied due to its presence here.
 	<sect2>
 	<title>vscan</title>
 
-	<para>URL: <ulink noescape="1" url="http://www.openantivirus.org/">http://www.openantivirus.org/</ulink></para>
+	<para>URL: <ulink noescape="1" url="http://www.openantivirus.org/projects.php#samba-vscan">http://www.openantivirus.org/projects.php#samba-vscan</ulink></para>
 
 		<para>
-		<filename>samba-vscan</filename> is a proof-of-concept module for Samba, which
-		uses the VFS (virtual file system) features of Samba 2.2.x/3.0
-		alphaX. Of course, Samba has to be compiled with VFS support. 
-		<filename>samba-vscan</filename> supports various virus scanners and is maintained 
+		samba-vscan is a proof-of-concept module for Samba, which
+		uses provides on-access anti-virus support for files shared using 
+		Samba.
+		samba-vscan supports various virus scanners and is maintained 
 		by Rainer Link.
 		</para>
 
