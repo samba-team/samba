@@ -534,6 +534,14 @@ static BOOL print_job_delete1(int jobid)
 
 	snum = print_job_snum(jobid);
 
+	/* Hrm - we need to be able to cope with deleting a job before it
+	   has reached the spooler. */
+
+	if (pjob->sysjob == -1) {
+		DEBUG(5, ("attempt to delete job %d not seen by lpr\n",
+			  jobid));
+	}
+
 	if (pjob->spooled && pjob->sysjob != -1) {
 		/* need to delete the spooled entry */
 		fstring jobstr;
@@ -906,7 +914,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 BOOL print_job_end(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	int snum;
+	int snum, ret;
 	SMB_STRUCT_STAT sbuf;
 	pstring current_directory;
 	pstring print_directory;
@@ -958,7 +966,7 @@ BOOL print_job_end(int jobid)
 	pstring_sub(jobname, "'", "_");
 
 	/* send it to the system spooler */
-	print_run_command(snum, 
+	ret = print_run_command(snum, 
 			  lp_printcommand(snum), NULL,
 			  "%s", p,
   			  "%J", jobname,
@@ -967,19 +975,23 @@ BOOL print_job_end(int jobid)
 
 	chdir(wd);
 
-	pjob->spooled = True;
-	print_job_store(jobid, pjob);
-
-	/* make sure the database is up to date */
-	if (print_cache_expired(snum)) print_queue_update(snum);
-
-	/* Send a printer notify message */
-
-	printer_name = PRINTERNAME(snum);
-
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
-
-	return True;
+	if (ret == 0) {
+		/* The print job has been sucessfully handed over to the back-end */
+		
+		pjob->spooled = True;
+		print_job_store(jobid, pjob);
+		
+		/* make sure the database is up to date */
+		if (print_cache_expired(snum)) print_queue_update(snum);
+		
+		return True;
+	} else {
+		/* The print job was not succesfully started. Cleanup */
+		/* Still need to add proper error return propagation! 010122:JRR */
+		unlink(pjob->filename);
+		tdb_delete(tdb, print_key(jobid));
+		return False;
+	}
 }
 
 /* utility fn to enumerate the print queue */
@@ -1212,11 +1224,15 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 	print_status_struct status;
 	char *printer_name;
 	int njobs, i;
+	BOOL can_job_admin;
 
+	can_job_admin = print_access_check(user, snum, JOB_ACCESS_ADMINISTER);
 	njobs = print_queue_status(snum, &queue, &status);
 
-	if (print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		for (i=0;i<njobs;i++) {
+	for (i=0;i<njobs;i++) {
+		BOOL owner = is_owner(user, queue[i].job);
+
+		if (owner || can_job_admin) {
 			print_job_delete1(queue[i].job);
 		}
 	}
