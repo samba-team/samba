@@ -1,5 +1,7 @@
 Sat Nov  1 01:40:53 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* admin/ktutil.c: Print keytype.
+
 	* lib/kadm5/get_s.c: Set correct n_key_data.
 
 	* lib/kadm5/init_s.c: Add kadm5_s_init_with_password_ctx. Use
