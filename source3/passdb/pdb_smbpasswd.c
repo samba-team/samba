@@ -1133,24 +1133,34 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
  ********************************************************************/
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampass)
 {
-	uid_t uid;
 	uint32 rid;
 
 	if (sampass == NULL) 
 		return False;
-
-	rid = pdb_get_user_rid(sampass);
-
-	/* If the user specified a RID, make sure its able to be both stored and retreived */
-	if (rid && rid != DOMAIN_USER_RID_GUEST && uid != fallback_pdb_user_rid_to_uid(rid)) {
-		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
-		return False;
-	}
-
 	ZERO_STRUCTP(smb_pw);
 
-	smb_pw->smb_userid_set = True;
-	smb_pw->smb_userid=uid;
+	if (!IS_SAM_DEFAULT(sampass, PDB_USERSID)) {
+		rid = pdb_get_user_rid(sampass);
+		
+		/* If the user specified a RID, make sure its able to be both stored and retreived */
+		if (rid == DOMAIN_USER_RID_GUEST) {
+			struct passwd *passwd = getpwnam_alloc(lp_guestaccount());
+			if (!passwd) {
+				DEBUG(0, ("Could not find gest account via getpwnam()! (%s)\n", lp_guestaccount()));
+				return False;
+			}
+			smb_pw->smb_userid_set = True;
+			smb_pw->smb_userid=passwd->pw_uid;
+			passwd_free(&passwd);
+
+		} else if (fallback_pdb_rid_is_user(rid)) {
+			smb_pw->smb_userid_set = True;
+			smb_pw->smb_userid=fallback_pdb_user_rid_to_uid(rid);
+		} else {
+			DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
+			return False;
+		}
+	}
 
 	smb_pw->smb_name=(const char*)pdb_get_username(sampass);
 
