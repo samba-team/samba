@@ -1,0 +1,1 @@
+TEST_ALL="basicsmb-sharelist basicsmb-sharesec basicsmb-usersec basicsmb-serversec basicsmb-shareguest"
