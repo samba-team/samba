@@ -1309,6 +1309,15 @@ void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
 BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote);
 #endif /* HAVE_KRB5 */
 
+
+#ifdef HAVE_LDAP
+
+/* function declarations not included in proto.h */
+LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
+
+#endif	/* HAVE_LDAP */
+
+
 /* TRUE and FALSE are part of the C99 standard and gcc, but
    unfortunately many vendor compilers don't support them.  Use True
    and False instead. */
