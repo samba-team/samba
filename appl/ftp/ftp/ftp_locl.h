@@ -59,7 +59,7 @@
 extern char *optarg;
 #endif
 #ifdef NEED_OPTIND_DECLARATION
-extern int optarg;
+extern int optind;
 #endif
 #ifdef NEED_OPTERR_DECLARATION
 extern int opterr;
