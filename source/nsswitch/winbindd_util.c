@@ -449,9 +449,8 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
 		if (strcmp(domain_name, tmp->name) == 0) {
 			if (!tmp->got_domain_info) return NULL;
-		}
-
-		return tmp;
+                        return tmp;
+                }
         }
 
 	/* Not found */
