@@ -255,8 +255,11 @@ typedef fstring string;
 /* pipe strings */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
+#define PIPE_SAMR     "\\PIPE\\samr"
+#define PIPE_WKSSVC   "\\PIPE\\wkssvc"
 #define PIPE_NETLOGON "\\PIPE\\NETLOGON"
 #define PIPE_NTLSA    "\\PIPE\\ntlsa"
+#define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 
@@ -288,6 +291,15 @@ enum RPC_PKT_TYPE
 #define ACB_PWNOEXP      /* 1 = User password does not expire */
 #define ACB_AUTOLOCK     /* 1 = Account auto locked */
 
+#define SAMR_CLOSE          0x01
+#define SAMR_OPEN_SECRET    0x07
+#define SAMR_LOOKUPNAMES    0x11
+#define SAMR_UNKNOWN_3      0x03
+#define SAMR_UNKNOWN_22     0x22
+#define SAMR_UNKNOWN_24     0x24
+#define SAMR_UNKNOWN_34     0x34
+#define SAMR_UNKNOWN_39     0x39
+
 #define LSA_OPENPOLICY      0x2c
 #define LSA_QUERYINFOPOLICY 0x07
 #define LSA_ENUMTRUSTDOM    0x0d
@@ -298,10 +310,12 @@ enum RPC_PKT_TYPE
 #define LSA_AUTH2           0x0f
 #define LSA_CLOSE           0x00
 
-/* XXXX these are just here to get a compile!!! */
+/* XXXX these are here to get a compile! */
+
 #define LSA_OPENSECRET      0xFF
 #define LSA_LOOKUPSIDS      0xFE
-#define LSA_LOOKUPNAMES     0xFD
+#define LSA_LOOKUPRIDS      0xFD
+#define LSA_LOOKUPNAMES     0xFC
 
 /* srvsvc pipe */
 #define NETSERVERGETINFO 0x15
@@ -716,6 +730,24 @@ typedef struct lsa_r_query_info
 
 } LSA_R_QUERY_INFO;
 
+/* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
+typedef struct lsa_enum_trust_dom_info
+{
+	LSA_POL_HND pol; /* policy handle */
+    uint32 enum_context; /* enumeration context handle */
+    uint32 preferred_len; /* preferred maximum length */
+
+} LSA_Q_ENUM_TRUST_DOM;
+
+/* LSA_R_ENUM_TRUST_DOM - response to LSA enumerate trusted domains */
+typedef struct lsa_r_enum_trust_dom_info
+{
+	LSA_POL_HND pol; /* policy handle */
+
+    uint32 status; /* return code */
+
+} LSA_R_ENUM_TRUST_DOM;
+
 /* LSA_Q_CLOSE */
 typedef struct lsa_q_close_info
 {
@@ -1074,69 +1106,227 @@ typedef struct r_net_share_enum_info
 } SRV_R_NET_SHARE_ENUM;
 
 
+/* SAMR_Q_CLOSE - probably a policy handle close */
+typedef struct q_samr_close_info
+{
+    LSA_POL_HND pol;          /* policy handle */
 
-/*
-
-Yet to be turned into structures:
-
-6) \\MAILSLOT\NET\NTLOGON
--------------------------
-
-6.1) Query for PDC
-------------------
-
-Request:
-
-    uint16         0x0007 - Query for PDC
-    STR            machine name
-    STR            response mailslot
-    uint8[]        padding to 2-byte align with start of mailslot.
-    UNISTR         machine name
-    uint32         NTversion
-    uint16         LMNTtoken
-    uint16         LM20token
-
-Response:
-
-    uint16         0x000A - Respose to Query for PDC
-    STR            machine name (in uppercase)
-    uint8[]        padding to 2-byte align with start of mailslot.
-    UNISTR         machine name
-    UNISTR         domain name
-    uint32         NTversion (same as received in request)
-    uint16         LMNTtoken (same as received in request)
-    uint16         LM20token (same as received in request)
+} SAMR_Q_CLOSE;
 
 
-6.2) SAM Logon
---------------
+/* SAMR_R_CLOSE - probably a policy handle close */
+typedef struct r_samr_close_info
+{
+    LSA_POL_HND pol;       /* policy handle */
+	uint32 status;         /* return status */
 
-Request:
+} SAMR_R_CLOSE;
 
-    uint16         0x0012 - SAM Logon
-    uint16         request count
-    UNISTR         machine name
-    UNISTR         user name
-    STR            response mailslot
-    uint32         alloweable account
-    uint32         domain SID size
-    char[sid_size] domain SID, of sid_size bytes.
-    uint8[]        ???? padding to 4? 2? -byte align with start of mailslot.
-    uint32         NTversion
-    uint16         LMNTtoken
-    uint16         LM20token
-    
-Response:
 
-    uint16         0x0013 - Response to SAM Logon
-    UNISTR         machine name
-    UNISTR         user name - workstation trust account
-    UNISTR         domain name 
-    uint32         NTversion
-    uint16         LMNTtoken
-    uint16         LM20token
+/****************************************************************************
+SAMR_Q_OPEN_SECRET - unknown_0 values seen associated with SIDs:
 
-*/
+0x0000 0200 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
+0x0000 0280 and a well-known domain sid - S-1-5-20
+0x2000 0000 and a well-known domain sid - S-1-5-20
+0x2000 0000 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
+*****************************************************************************/
+
+/* SAMR_Q_OPEN_SECRET - probably an open secret */
+typedef struct q_samr_open_secret_info
+{
+    LSA_POL_HND pol;          /* policy handle */
+	uint32 unknown_0;         /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - unknown */
+	DOM_SID dom_sid;          /* domain SID */
+
+} SAMR_Q_OPEN_SECRET;
+
+
+/* SAMR_R_OPEN_SECRET - probably an open */
+typedef struct r_samr_open_secret_info
+{
+    LSA_POL_HND pol;       /* policy handle associated with the SID */
+	uint32 status;         /* return status */
+
+} SAMR_R_OPEN_SECRET;
+
+
+/* SAMR_Q_UNKNOWN_11 - probably a "read SAM entry" */
+typedef struct q_samr_unknown_11_info
+{
+    LSA_POL_HND pol;             /* policy handle */
+
+	uint32 switch_value1;         /* 1          - switch value? */
+	uint32 unknown_0;             /* 0x0000 03E8 - 32 bit unknown */
+	uint32 unknown_1;             /* 0          - 32 bit unknown */
+	uint32 switch_value2;         /* 1          - switch value? */
+
+	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
+	UNISTR2 uni_mach_acct;       /* unicode machine account name */
+
+} SAMR_Q_UNKNOWN_11;
+
+
+/* SAMR_R_UNKNOWN_11 - probably an open */
+typedef struct r_samr_unknown_11_info
+{
+	uint32 switch_value1;       /* 1 - switch value? */
+	uint32 ptr_0;               /* pointer */
+	uint32 switch_value2;       /* 1 - switch value? */
+	uint32 unknown_0;           /* 0x000003e8 - 32 bit unknown */
+	uint32 switch_value3;       /* 1 - switch value? */
+	uint32 ptr_1;               /* pointer */
+	uint32 switch_value4;       /* 1 - switch value? */
+	uint32 switch_value5;       /* 1 - switch value? */
+
+	uint32 status;         /* return status - 0x99: user exists */
+
+} SAMR_R_UNKNOWN_11;
+
+
+/* SAMR_Q_UNKNOWN_22 - probably an open */
+typedef struct q_samr_unknown_22_info
+{
+    LSA_POL_HND pol;          /* policy handle */
+	uint32 unknown_id_0;      /* 0x0000 03E8 - 32 bit unknown id */
+
+} SAMR_Q_UNKNOWN_22;
+
+
+/* SAMR_R_UNKNOWN_22 - probably an open */
+typedef struct r_samr_unknown_22_info
+{
+    LSA_POL_HND pol;       /* policy handle associated with unknown id */
+	uint32 status;         /* return status */
+
+} SAMR_R_UNKNOWN_22;
+
+
+/* SAMR_Q_UNKNOWN_24 - probably a get sam info */
+typedef struct q_samr_unknown_24_info
+{
+    LSA_POL_HND pol;          /* policy handle associated with unknown id */
+	uint16 unknown_0;         /* 0x0015 or 0x0011 - 16 bit unknown */
+
+} SAMR_Q_UNKNOWN_24;
+
+
+/* SAMR_R_UNKNOWN_24 - probably a get sam info */
+typedef struct r_samr_unknown_24_info
+{
+	uint32 ptr;            /* pointer */
+	uint16 unknown_0;      /* 0x0015 or 0x0011 - 16 bit unknown (same as above) */
+	uint16 unknown_1;      /* 0x8b73 - 16 bit unknown */
+	uint8  padding_0[16];  /* 0 - padding 16 bytes */
+	NTTIME expiry;         /* expiry time or something? */
+	uint8  padding_1[24];  /* 0 - padding 24 bytes */
+
+	UNIHDR hdr_mach_acct;  /* unicode header for machine account */
+	uint32 padding_2;      /* 0 - padding 4 bytes */
+
+	uint32 ptr_1;          /* pointer */
+	uint8  padding_3[32];  /* 0 - padding 32 bytes */
+	uint32 padding_4;      /* 0 - padding 4 bytes */
+
+	uint32 ptr_2;          /* pointer */
+	uint32 padding_5;      /* 0 - padding 4 bytes */
+
+	uint32 ptr_3;          /* pointer */
+	uint8  padding_6[32];  /* 0 - padding 32 bytes */
+
+	uint32 unknown_id_0;   /* unknown id associated with policy handle */
+	uint16 unknown_2;      /* 0x0201      - 16 bit unknown */
+	uint32 unknown_3;      /* 0x0000 0080 - 32 bit unknown */
+	uint16 unknown_4;      /* 0x003f      - 16 bit unknown */
+	uint16 unknown_5;      /* 0x003c      - 16 bit unknown */
+
+	uint8  padding_7[16];  /* 0 - padding 16 bytes */
+	uint32 padding_8;      /* 0 - padding 4 bytes */
+	
+	UNISTR2 uni_mach_acct; /* unicode string for machine account */
+
+	uint8  padding_9[48];  /* 0 - padding 48 bytes */
+
+	uint32 status;         /* return status */
+
+} SAMR_R_UNKNOWN_24;
+
+
+/* SAMR_Q_UNKNOWN_32 - probably a "create SAM entry" */
+typedef struct q_samr_unknown_32_info
+{
+    LSA_POL_HND pol;             /* policy handle */
+
+	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
+	UNISTR2 uni_mach_acct;       /* unicode machine account name */
+
+	uint32 unknown_0;            /* 32 bit unknown */
+	uint16 unknown_1;            /* 16 bit unknown */
+	uint16 unknown_2;            /* 16 bit unknown */
+
+} SAMR_Q_UNKNOWN_32;
+
+
+/* SAMR_R_UNKNOWN_32 - probably a "create SAM entry" */
+typedef struct r_samr_unknown_32_info
+{
+    LSA_POL_HND pol;       /* policy handle */
+	uint32 unknown_0;      /* 0x0000 0030 - 32 bit unknown */
+	uint32 padding;        /* 0           - 4 byte padding */
+
+	uint32 status;         /* return status - 0xC000 0099: user exists */
+
+} SAMR_R_UNKNOWN_32;
+
+
+/* SAMR_Q_UNKNOWN_39 - probably an open */
+typedef struct q_samr_unknown_39_info
+{
+	uint32 ptr_srv_name;         /* pointer (to server name?) */
+	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
+
+	uint32 unknown_0;            /* 32 bit unknown */
+
+} SAMR_Q_UNKNOWN_39;
+
+
+/* SAMR_R_UNKNOWN_39 - probably an open */
+typedef struct r_samr_unknown_39_info
+{
+    LSA_POL_HND pol;       /* policy handle */
+	uint32 status;             /* return status */
+
+} SAMR_R_UNKNOWN_39;
+
+
+/* WKS_Q_UNKNOWN_0 - probably a capabilities request */
+typedef struct q_wks_unknown_0_info
+{
+	uint32 ptr_srv_name;         /* pointer (to server name?) */
+	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
+
+	uint32 unknown_0;            /* 0x64 - 32 bit unknown */
+	uint16 unknown_1;            /* 16 bit unknown */
+
+} WKS_Q_UNKNOWN_0;
+
+
+/* WKS_R_UNKNOWN_0 - probably a capabilities request */
+typedef struct r_wks_unknown_0_info
+{
+	uint32 unknown_0;          /* 64 - unknown */
+	uint32 ptr_1;              /* pointer 1 */
+	uint32 unknown_1;          /* 0x0000 01f4 - unknown */
+	uint32 ptr_srv_name;       /* pointer to server name */
+	uint32 ptr_dom_name;       /* pointer to domain name */
+	uint32 unknown_2;          /* 4 - unknown */
+	uint32 unknown_3;          /* 0 - unknown */
+
+	UNISTR2 uni_srv_name;      /* unicode server name */
+	UNISTR2 uni_dom_name;      /* unicode domainn name */
+	uint32 status;             /* return status */
+
+} WKS_R_UNKNOWN_0;
 
 
 struct smb_passwd
@@ -1147,7 +1337,6 @@ struct smb_passwd
 	unsigned char *smb_nt_passwd; /* Null if no password */
 	/* Other fields / flags may be added later */
 };
-
 
 struct cli_state {
 	int fd;
@@ -1174,6 +1363,7 @@ struct cli_state {
 	int bufsize;
 	int initialised;
 };
+
 
 struct current_user
 {

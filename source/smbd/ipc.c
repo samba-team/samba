@@ -144,7 +144,7 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
   this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
   this_ldata = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
 
-  align = (this_lparam%4);
+  align = (this_lparam%4)+1;
 
   set_message(outbuf,10+lsetup,align+this_ldata+this_lparam,True);
   if (this_lparam)
@@ -2872,7 +2872,9 @@ struct
   {
 #ifdef NTDOMAIN
     { "TransactNmPipe",     "lsarpc",	"lsass",	0x26,	api_ntLsarpcTNP },
+    { "TransactNmPipe",     "samr",	"lsass",	0x26,	api_samrTNP },
     { "TransactNmPipe",     "srvsvc",	"lsass",	0x26,	api_srvsvcTNP },
+    { "TransactNmPipe",     "wkssvc",	"ntsvcs",	0x26,	api_wkssvcTNP },
     { "TransactNmPipe",     "NETLOGON",	"NETLOGON",	0x26,	api_netlogrpcTNP },
     { NULL,		            NULL,       NULL,	-1,	(BOOL (*)())api_Unsupported }
 #else

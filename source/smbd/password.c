@@ -887,7 +887,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 	  return(False);
 	}
 
-      smb_pass = get_smbpwnam(user);
+      /* non-null username indicates search by username not smb userid */
+      smb_pass = get_smbpwd_entry(user, 0);
       if (!smb_pass)
 	{
 	  DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));

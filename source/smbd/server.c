@@ -4732,6 +4732,7 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
   chain_size = 0;
   chain_fnum = -1;
+  reset_chain_pnum();
 
   bzero(outbuf,smb_size);
 
@@ -4942,6 +4943,11 @@ static void init_structs(void )
 
   /* for RPC pipes */
   init_rpc_pipe_hnd();
+
+#ifdef NTDOMAIN
+  /* for LSA handles */
+  init_lsa_policy_hnd();
+#endif
 
   init_dptrs();
 }
