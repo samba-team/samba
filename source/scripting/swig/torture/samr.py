@@ -100,8 +100,6 @@ def test_GetDomPwInfo(pipe, domain):
     r = {}
     r['handle'] = handle
     r['name'] = {}
-    r['name']['name_len'] = 0
-    r['name']['name_size'] = 0
     r['name']['name'] = domain
 
     dcerpc.samr_GetDomPwInfo(pipe, r)
@@ -140,8 +138,6 @@ def test_CreateUser2(pipe, domain_handle):
     r['domain_handle'] = domain_handle
     r['access_mask'] = 0x02000000
     r['account_name'] = {}
-    r['account_name']['name_len'] = 0
-    r['account_name']['name_size'] = 0
     r['account_name']['name'] = 'samrtorturemach$'
     r['acct_flags'] = 0x0080            # WSTRUST
 
@@ -164,14 +160,14 @@ def test_LookupName(pipe, domain_handle, name):
     r['domain_handle'] = domain_handle
     r['num_names'] = 1
     r['names'] = []
-    r['names'].append({'name_len': 0, 'name_size': 0, 'name': name})
+    r['names'].append({'name': name})
 
     result = dcerpc.samr_LookupNames(pipe, r)
 
     rid = result['rids']['ids'][0]
 
     r['num_names'] = 2
-    r['names'].append({'name_len': 0, 'name_size': 0, 'name': 'xxNONAMExx'})
+    r['names'].append({'name': 'xxNONAMExx'})
 
 
     try:
@@ -242,12 +238,8 @@ def test_SetUserInfo(pipe, user_handle):
     r['info'] = {}
     r['info']['info2'] = {}
     r['info']['info2']['comment'] = {}
-    r['info']['info2']['comment']['name_len'] = 0
-    r['info']['info2']['comment']['name_size'] = 0
     r['info']['info2']['comment']['name'] = 'hello'
     r['info']['info2']['unknown'] = {}
-    r['info']['info2']['unknown']['name_len'] = 0
-    r['info']['info2']['unknown']['name_size'] = 0
     r['info']['info2']['unknown']['name'] = None
     r['info']['info2']['country_code'] = 0
     r['info']['info2']['code_page'] = 0
@@ -297,8 +289,6 @@ def test_CreateUser(pipe, domain_handle):
     r = {}
     r['domain_handle'] = domain_handle
     r['account_name'] = {}
-    r['account_name']['name_len'] = 0
-    r['account_name']['name_size'] = 0
     r['account_name']['name'] = 'samrtorturetest'
     r['access_mask'] = 0x02000000
 
@@ -360,8 +350,6 @@ def test_SetAliasInfo(pipe, alias_handle):
     r['level'] = 2
     r['info'] = {}
     r['info']['name'] = {}
-    r['info']['name']['name_len'] = 0
-    r['info']['name']['name_size'] = 0
     r['info']['name']['name'] = 'hello'
 
     dcerpc.samr_SetAliasInfo(pipe, r)
@@ -370,8 +358,6 @@ def test_SetAliasInfo(pipe, alias_handle):
 
     r['level'] = 3
     r['info']['description'] = {}
-    r['info']['description']['name_len'] = 0
-    r['info']['description']['name_size'] = 0
     r['info']['description']['name'] = 'this is a description'
     
     dcerpc.samr_SetAliasInfo(pipe, r)
@@ -431,8 +417,6 @@ def test_CreateAlias(pipe, domain_handle, domain_sid):
     r = {}
     r['domain_handle'] = domain_handle
     r['aliasname'] = {}
-    r['aliasname']['name_len'] = 0
-    r['aliasname']['name_size'] = 0
     r['aliasname']['name'] = alias_name
     r['access_mask'] = 0x02000000
 
@@ -475,8 +459,6 @@ def test_CreateDomainGroup(pipe, domain_handle):
     r = {}
     r['domain_handle'] = domain_handle
     r['name'] = {}
-    r['name']['name_len'] = 0
-    r['name']['name_size'] = 0
     r['name']['name'] = 'samrtorturetestgroup'
     r['access_mask'] = 0x02000000
 
@@ -651,8 +633,6 @@ def test_GetDisplayEnumerationIndex(pipe, domain_handle):
         r['domain_handle'] = domain_handle
         r['level'] = levels[i]
         r['name'] = {}
-        r['name']['name_len'] = 0
-        r['name']['name_size'] = 0
         r['name']['name'] = 'samrtorturetest'
 
         try:
@@ -682,8 +662,6 @@ def test_GetDisplayEnumerationIndex2(pipe, domain_handle):
         r['domain_handle'] = domain_handle
         r['level'] = levels[i]
         r['name'] = {}
-        r['name']['name_len'] = 0
-        r['name']['name_size'] = 0
         r['name']['name'] = 'samrtorturetest'
 
         try:
@@ -832,8 +810,6 @@ def test_LookupDomain(pipe, connect_handle, domain):
     r = {}
     r['connect_handle'] = connect_handle
     r['domain'] = {}
-    r['domain']['name_len'] = 0
-    r['domain']['name_size'] = 0
     r['domain']['name'] = None
 
     try:
