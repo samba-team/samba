@@ -150,7 +150,7 @@ This can be done using a configuration similar to the one shown in <link linkend
 			<listitem><para>Syslog can be used to record all transaction. This can be disabled by setting
 					in the &smb.conf; file <parameter>syslog = 0</parameter>.</para></listitem>
 			<listitem><para>Logging can take place to the default log file (<filename>log.smbd</filename>)
-					for all loaded VFS modules just be setting in the &smb.conf; file
+					for all loaded VFS modules just by setting in the &smb.conf; file
 					<parameter>log level = 0 vfs:x</parameter>, where x is the log level.
 					This will disable general logging while activating all logging of VFS
 					module activity at the log level specified.</para></listitem>
