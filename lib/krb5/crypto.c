@@ -870,7 +870,7 @@ extern struct salt_type AES_salt[];
 extern struct salt_type des_salt[], 
     des3_salt[], des3_salt_derived[], arcfour_salt[];
 
-struct key_type keytype_null = {
+static struct key_type keytype_null = {
     KEYTYPE_NULL,
     "null",
     0,
@@ -882,7 +882,7 @@ struct key_type keytype_null = {
     NULL
 };
 
-struct key_type keytype_des = {
+static struct key_type keytype_des = {
     KEYTYPE_DES,
     "des",
     56,
@@ -895,7 +895,7 @@ struct key_type keytype_des = {
     krb5_DES_random_to_key
 };
 
-struct key_type keytype_des3 = {
+static struct key_type keytype_des3 = {
     KEYTYPE_DES3,
     "des3",
     168,
@@ -908,7 +908,7 @@ struct key_type keytype_des3 = {
     DES3_random_to_key
 };
 
-struct key_type keytype_des3_derived = {
+static struct key_type keytype_des3_derived = {
     KEYTYPE_DES3,
     "des3",
     168,
@@ -922,7 +922,7 @@ struct key_type keytype_des3_derived = {
 };
 
 #ifdef ENABLE_AES
-struct key_type keytype_aes128 = {
+static struct key_type keytype_aes128 = {
     KEYTYPE_AES128,
     "aes-128",
     128,
@@ -934,7 +934,7 @@ struct key_type keytype_aes128 = {
     AES_salt
 };
 
-struct key_type keytype_aes192 = {
+static struct key_type keytype_aes192 = {
     KEYTYPE_AES192,
     "aes-192",
     192,
@@ -946,7 +946,7 @@ struct key_type keytype_aes192 = {
     AES_salt
 };
 
-struct key_type keytype_aes256 = {
+static struct key_type keytype_aes256 = {
     KEYTYPE_AES256,
     "aes-256",
     256,
@@ -959,7 +959,7 @@ struct key_type keytype_aes256 = {
 };
 #endif /* ENABLE_AES */
 
-struct key_type keytype_arcfour = {
+static struct key_type keytype_arcfour = {
     KEYTYPE_ARCFOUR,
     "arcfour",
     128,
@@ -971,7 +971,7 @@ struct key_type keytype_arcfour = {
     arcfour_salt
 };
 
-struct key_type keytype_rc2 = {
+static struct key_type keytype_rc2 = {
     KEYTYPE_RC2,
     "rc2",
     128,
@@ -986,7 +986,7 @@ struct key_type keytype_rc2 = {
     rc2_set_params
 };
 
-struct key_type *keytypes[] = {
+static struct key_type *keytypes[] = {
     &keytype_null,
     &keytype_des,
     &keytype_des3_derived,
@@ -1013,7 +1013,7 @@ _find_keytype(krb5_keytype type)
 }
 
 
-struct salt_type des_salt[] = {
+static struct salt_type des_salt[] = {
     {
 	KRB5_PW_SALT,
 	"pw-salt",
@@ -1027,7 +1027,7 @@ struct salt_type des_salt[] = {
     { 0 }
 };
 
-struct salt_type des3_salt[] = {
+static struct salt_type des3_salt[] = {
     {
 	KRB5_PW_SALT,
 	"pw-salt",
@@ -1036,7 +1036,7 @@ struct salt_type des3_salt[] = {
     { 0 }
 };
 
-struct salt_type des3_salt_derived[] = {
+static struct salt_type des3_salt_derived[] = {
     {
 	KRB5_PW_SALT,
 	"pw-salt",
@@ -1046,7 +1046,7 @@ struct salt_type des3_salt_derived[] = {
 };
 
 #ifdef ENABLE_AES
-struct salt_type AES_salt[] = {
+static struct salt_type AES_salt[] = {
     {
 	KRB5_PW_SALT,
 	"pw-salt",
@@ -1056,7 +1056,7 @@ struct salt_type AES_salt[] = {
 };
 #endif /* ENABLE_AES */
 
-struct salt_type arcfour_salt[] = {
+static struct salt_type arcfour_salt[] = {
     {
 	KRB5_PW_SALT,
 	"pw-salt",
@@ -1814,7 +1814,7 @@ HMAC_MD5_checksum_enc(krb5_context context,
 	krb5_abortx(context, "hmac failed");
 }
 
-struct checksum_type checksum_none = {
+static struct checksum_type checksum_none = {
     CKSUMTYPE_NONE, 
     "none", 
     1, 
@@ -1823,7 +1823,7 @@ struct checksum_type checksum_none = {
     NONE_checksum, 
     NULL
 };
-struct checksum_type checksum_crc32 = {
+static struct checksum_type checksum_crc32 = {
     CKSUMTYPE_CRC32,
     "crc32",
     1,
@@ -1832,7 +1832,7 @@ struct checksum_type checksum_crc32 = {
     CRC32_checksum,
     NULL
 };
-struct checksum_type checksum_rsa_md4 = {
+static struct checksum_type checksum_rsa_md4 = {
     CKSUMTYPE_RSA_MD4,
     "rsa-md4",
     64,
@@ -1841,7 +1841,7 @@ struct checksum_type checksum_rsa_md4 = {
     RSA_MD4_checksum,
     NULL
 };
-struct checksum_type checksum_rsa_md4_des = {
+static struct checksum_type checksum_rsa_md4_des = {
     CKSUMTYPE_RSA_MD4_DES,
     "rsa-md4-des",
     64,
@@ -1851,7 +1851,7 @@ struct checksum_type checksum_rsa_md4_des = {
     RSA_MD4_DES_verify
 };
 #if 0
-struct checksum_type checksum_des_mac = { 
+static struct checksum_type checksum_des_mac = { 
     CKSUMTYPE_DES_MAC,
     "des-mac",
     0,
@@ -1859,7 +1859,7 @@ struct checksum_type checksum_des_mac = {
     0,
     DES_MAC_checksum
 };
-struct checksum_type checksum_des_mac_k = {
+static struct checksum_type checksum_des_mac_k = {
     CKSUMTYPE_DES_MAC_K,
     "des-mac-k",
     0,
@@ -1867,7 +1867,7 @@ struct checksum_type checksum_des_mac_k = {
     0,
     DES_MAC_K_checksum
 };
-struct checksum_type checksum_rsa_md4_des_k = {
+static struct checksum_type checksum_rsa_md4_des_k = {
     CKSUMTYPE_RSA_MD4_DES_K, 
     "rsa-md4-des-k", 
     0, 
@@ -1877,7 +1877,7 @@ struct checksum_type checksum_rsa_md4_des_k = {
     RSA_MD4_DES_K_verify
 };
 #endif
-struct checksum_type checksum_rsa_md5 = {
+static struct checksum_type checksum_rsa_md5 = {
     CKSUMTYPE_RSA_MD5,
     "rsa-md5",
     64,
@@ -1886,7 +1886,7 @@ struct checksum_type checksum_rsa_md5 = {
     RSA_MD5_checksum,
     NULL
 };
-struct checksum_type checksum_rsa_md5_des = {
+static struct checksum_type checksum_rsa_md5_des = {
     CKSUMTYPE_RSA_MD5_DES,
     "rsa-md5-des",
     64,
@@ -1895,7 +1895,7 @@ struct checksum_type checksum_rsa_md5_des = {
     RSA_MD5_DES_checksum,
     RSA_MD5_DES_verify
 };
-struct checksum_type checksum_rsa_md5_des3 = {
+static struct checksum_type checksum_rsa_md5_des3 = {
     CKSUMTYPE_RSA_MD5_DES3,
     "rsa-md5-des3",
     64,
@@ -1904,7 +1904,7 @@ struct checksum_type checksum_rsa_md5_des3 = {
     RSA_MD5_DES3_checksum,
     RSA_MD5_DES3_verify
 };
-struct checksum_type checksum_sha1 = {
+static struct checksum_type checksum_sha1 = {
     CKSUMTYPE_SHA1,
     "sha1",
     64,
@@ -1913,7 +1913,7 @@ struct checksum_type checksum_sha1 = {
     SHA1_checksum,
     NULL
 };
-struct checksum_type checksum_hmac_sha1_des3 = {
+static struct checksum_type checksum_hmac_sha1_des3 = {
     CKSUMTYPE_HMAC_SHA1_DES3,
     "hmac-sha1-des3",
     64,
@@ -1924,7 +1924,7 @@ struct checksum_type checksum_hmac_sha1_des3 = {
 };
 
 #ifdef ENABLE_AES
-struct checksum_type checksum_hmac_sha1_aes128 = {
+static struct checksum_type checksum_hmac_sha1_aes128 = {
     CKSUMTYPE_HMAC_SHA1_96_AES_128,
     "hmac-sha1-96-aes128",
     64,
@@ -1934,7 +1934,7 @@ struct checksum_type checksum_hmac_sha1_aes128 = {
     NULL
 };
 
-struct checksum_type checksum_hmac_sha1_aes256 = {
+static struct checksum_type checksum_hmac_sha1_aes256 = {
     CKSUMTYPE_HMAC_SHA1_96_AES_256,
     "hmac-sha1-96-aes256",
     64,
@@ -1945,7 +1945,7 @@ struct checksum_type checksum_hmac_sha1_aes256 = {
 };
 #endif /* ENABLE_AES */
 
-struct checksum_type checksum_hmac_md5 = {
+static struct checksum_type checksum_hmac_md5 = {
     CKSUMTYPE_HMAC_MD5,
     "hmac-md5",
     64,
@@ -1955,7 +1955,7 @@ struct checksum_type checksum_hmac_md5 = {
     NULL
 };
 
-struct checksum_type checksum_hmac_md5_enc = {
+static struct checksum_type checksum_hmac_md5_enc = {
     CKSUMTYPE_HMAC_MD5_ENC,
     "hmac-md5-enc",
     64,
@@ -1965,7 +1965,7 @@ struct checksum_type checksum_hmac_md5_enc = {
     NULL
 };
 
-struct checksum_type *checksum_types[] = {
+static struct checksum_type *checksum_types[] = {
     &checksum_none,
     &checksum_crc32,
     &checksum_rsa_md4,
