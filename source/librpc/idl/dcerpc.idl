@@ -175,7 +175,7 @@ interface dcerpc
 		[case(DCERPC_PKT_ALTER)]     dcerpc_bind     alter;
 		[case(DCERPC_PKT_ALTER_ACK)] dcerpc_bind_ack alter_ack;
 		[case(DCERPC_PKT_FAULT)]     dcerpc_fault    fault;
-		[case(DCERPC_PKT_AUTH3)]     dcerpc_auth3    auth;
+		[case(DCERPC_PKT_AUTH3)]     dcerpc_auth3    auth3;
 		[case(DCERPC_PKT_BIND_NAK)]  dcerpc_bind_nak bind_nak;
 	} dcerpc_payload;
 
