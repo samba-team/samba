@@ -14,6 +14,7 @@ rshd_SOURCES = rshd.c common.c rsh_locl.h
 
 LDADD = $(LIB_kafs) \
 	$(LIB_krb5) \
+	$(top_builddir)/lib/des/libdes.la \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(LIB_roken)
