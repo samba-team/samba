@@ -116,3 +116,15 @@ gss_err(int exitval, int status, const char *fmt, ...)
     va_end(args);
 }
 
+gss_OID
+select_mech(const char *mech)
+{
+    if (strcasecmp(mech, "krb5") == 0)
+	return GSS_KRB5_MECHANISM;
+    else if (strcasecmp(mech, "spnego") == 0)
+	return GSS_SPNEGO_MECHANISM;
+    else if (strcasecmp(mech, "no-oid") == 0)
+	return GSS_C_NO_OID;
+    else
+	errx (1, "Unknown mechanism '%s' (spnego, krb5, no-oid)", mech);
+}
