@@ -33,14 +33,17 @@ extern fstring global_myworkgroup;
  * Some useful sids
  */
 
-DOM_SID global_sid_Builtin; /* local well-known domain */
-DOM_SID global_sid_World_Domain;    /* everyone */
-DOM_SID global_sid_World;    /* everyone */
-DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner */
-DOM_SID global_sid_Creator_Owner;    /* Creator Owner */
-DOM_SID global_sid_NT_Authority;    /* NT Authority */
-DOM_SID global_sid_NULL;            /* NULL sid */
-DOM_SID global_sid_Builtin_Guests;
+DOM_SID global_sid_Builtin; 				/* Local well-known domain */
+DOM_SID global_sid_World_Domain;	    	/* Everyone domain */
+DOM_SID global_sid_World;    				/* Everyone */
+DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
+DOM_SID global_sid_Creator_Owner;    		/* Creator Owner */
+DOM_SID global_sid_NT_Authority;    		/* NT Authority */
+DOM_SID global_sid_NULL;            		/* NULL sid */
+DOM_SID global_sid_Builtin_Guests;			/* Builtin guest users */
+DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
+DOM_SID global_sid_Network;					/* Network rids */
+DOM_SID global_sid_Anonymous;				/* Anonymous login */
 
 const DOM_SID *global_sid_everyone = &global_sid_World;
 
@@ -51,12 +54,15 @@ typedef struct _known_sid_users {
 } known_sid_users;
 
 /* static known_sid_users no_users[] = {{0, 0, NULL}}; */
+
 static known_sid_users everyone_users[] = {
 	{ 0, SID_NAME_WKN_GRP, "Everyone" },
 	{0, (enum SID_NAME_USE)0, NULL}};
+
 static known_sid_users creator_owner_users[] = {
 	{ 0, SID_NAME_ALIAS, "Creator Owner" },
 	{0, (enum SID_NAME_USE)0, NULL}};
+
 static known_sid_users nt_authority_users[] = {
 	{  1, SID_NAME_ALIAS, "Dialup" },
 	{  2, SID_NAME_ALIAS, "Network"},
@@ -70,6 +76,10 @@ static known_sid_users nt_authority_users[] = {
 	{ 18, SID_NAME_ALIAS, "SYSTEM"},
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
+static known_sid_users builtin_users[] = {
+	{ DOMAIN_USER_RID_ADMIN, SID_NAME_USER, "Administrator" },
+	{  0, (enum SID_NAME_USE)0, NULL}};
+
 static struct sid_name_map_info
 {
 	DOM_SID *sid;
@@ -81,10 +91,22 @@ sid_name_map[] =
 	{ &global_sam_sid, global_myname, NULL},
 	{ &global_sam_sid, global_myworkgroup, NULL},
 	{ &global_sid_Builtin, "BUILTIN", NULL},
+	{ &global_sid_Builtin, "", &builtin_users[0]},
 	{ &global_sid_World_Domain, "", &everyone_users[0] },
 	{ &global_sid_Creator_Owner_Domain, "", &creator_owner_users[0] },
 	{ &global_sid_NT_Authority, "NT Authority", &nt_authority_users[0] },
 	{ NULL, NULL, NULL}
+};
+
+/*
+ * An NT compatible anonymous token.
+ */
+
+static DOM_SID anon_sid_array[3];
+
+NT_USER_TOKEN anonymous_token = {
+    3,
+    anon_sid_array
 };
 
 /****************************************************************************
@@ -101,6 +123,14 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_Creator_Owner, "S-1-3-0");
 	string_to_sid(&global_sid_NT_Authority, "S-1-5");
 	string_to_sid(&global_sid_NULL, "S-1-0-0");
+	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
+	string_to_sid(&global_sid_Network, "S-1-5-2");
+	string_to_sid(&global_sid_Anonymous, "S-1-5-7");
+
+	/* Create the anon token. */
+	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);
+	sid_copy( &anonymous_token.user_sids[1], &global_sid_Network);
+	sid_copy( &anonymous_token.user_sids[2], &global_sid_Anonymous);
 }
 
 /**************************************************************************
@@ -210,15 +240,18 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 void split_domain_name(const char *fullname, char *domain, char *name)
 {
 	pstring full_name;
-	char *p;
+	char *p, *sep;
+
+	sep = lp_winbind_separator();
 
 	*domain = *name = '\0';
 
-	if (fullname[0] == '\\')
+	if (fullname[0] == sep[0] || fullname[0] == '\\')
 		fullname++;
 
 	pstrcpy(full_name, fullname);
 	p = strchr(full_name+1, '\\');
+	if (!p) p = strchr(full_name+1, sep[0]);
 
 	if (p != NULL) {
 		*p = 0;

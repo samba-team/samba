@@ -166,36 +166,55 @@ char *validated_domain(uint16 vuid)
  Create the SID list for this user.
 ****************************************************************************/
 
-NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
+NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest)
 {
+	extern DOM_SID global_sid_World;
+	extern DOM_SID global_sid_Network;
+	extern DOM_SID global_sid_Builtin_Guests;
+	extern DOM_SID global_sid_Authenticated_Users;
 	NT_USER_TOKEN *token;
 	DOM_SID *psids;
 	int i, psid_ndx = 0;
+	size_t num_sids = 0;
 
 	if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
 		return NULL;
 
 	ZERO_STRUCTP(token);
 
-	if ((token->user_sids = (DOM_SID *)malloc( (ngroups + 2)*sizeof(DOM_SID))) == NULL) {
+	/* We always have uid/gid plus World and Network and Authenticated Users or Guest SIDs. */
+	num_sids = 5 + ngroups;
+
+	if ((token->user_sids = (DOM_SID *)malloc( num_sids*sizeof(DOM_SID))) == NULL) {
 		free(token);
 		return NULL;
 	}
 
 	psids = token->user_sids;
 
-	token->num_sids = 2;
+	sid_copy( &psids[psid_ndx++], &global_sid_World);
+	sid_copy( &psids[psid_ndx++], &global_sid_Network);
 
-	uid_to_sid( &psids[0], uid);
-	gid_to_sid( &psids[1], gid);
+	/*
+	 * The only difference between guest and "anonymous" (which we
+	 * don't really support) is the addition of Authenticated_Users.
+	 */
+
+	if (is_guest)
+		sid_copy( &psids[psid_ndx++], &global_sid_Builtin_Guests);
+	else
+		sid_copy( &psids[psid_ndx++], &global_sid_Authenticated_Users);
+
+	uid_to_sid( &psids[psid_ndx++], uid);
+	gid_to_sid( &psids[psid_ndx++], gid);
 
 	for (i = 0; i < ngroups; i++) {
 		if (groups[i] != gid) {
-			gid_to_sid( &psids[psid_ndx+2], groups[i]);
-			psid_ndx++;
-			token->num_sids++;
+			gid_to_sid( &psids[psid_ndx++], groups[i]);
 		}
 	}
+
+	token->num_sids = psid_ndx;
 
 	return token;
 }
@@ -257,7 +276,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	get_current_groups( &vuser->n_groups, &vuser->groups);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
-	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups);
+	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest);
 
 	next_vuid++;
 	num_validated_vuids++;

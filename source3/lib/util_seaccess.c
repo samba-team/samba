@@ -26,36 +26,8 @@
 
 extern int DEBUGLEVEL;
 
-/* Everyone = S-1-1-0 */
-
-static DOM_SID everyone_sid = {
-	1, /* sid_rev_num */
-	1, /* num_auths */
-	{ 0, 0, 0, 0, 0, 1}, /* id_auth[6] */
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} /* sub_auth[15] */
-};
-
-/*
- * Guest token used when there is no NT_USER_TOKEN available.
- */
-
-/* Guest = S-1-5-32-546 */
-
-static DOM_SID guest_sid = {
-	1, /* sid_rev_num */
-	2, /* num_auths */
-	{ 0, 0, 0, 0, 0, 5}, /* id_auth[6] */
-	{ 32, 546, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} /* sub_auth[15] */
-};
-
-static NT_USER_TOKEN guest_token = {
-	1,
-	&guest_sid
-};
-
 /**********************************************************************************
  Check if this ACE has a SID in common with the token.
- The SID "Everyone" always matches.
 **********************************************************************************/
 
 static BOOL token_sid_in_ace( NT_USER_TOKEN *token, SEC_ACE *ace)
@@ -63,8 +35,6 @@ static BOOL token_sid_in_ace( NT_USER_TOKEN *token, SEC_ACE *ace)
 	size_t i;
 
 	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(&ace->sid, &everyone_sid))
-			return True;
 		if (sid_equal(&ace->sid, &token->user_sids[i]))
 			return True;
 	}
@@ -200,10 +170,11 @@ static BOOL get_max_access( SEC_ACL *acl, NT_USER_TOKEN *token, uint32 *granted,
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status)
 {
+	extern NT_USER_TOKEN anonymous_token;
 	size_t i;
 	SEC_ACL *acl;
 	fstring sid_str;
-	NT_USER_TOKEN *token = user->nt_user_token ? user->nt_user_token : &guest_token;
+	NT_USER_TOKEN *token = user->nt_user_token ? user->nt_user_token : &anonymous_token;
 	uint32 tmp_acc_desired = acc_desired;
 
 	if (!status || !acc_granted)
