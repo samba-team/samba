@@ -306,7 +306,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS configdir lockdir piddir logfilebase privatedir swatdir RUNPROG MPROGS LDSHFLAGS SONAMEFLAG SHLD HOST_OS PAM_MOD WRAP WRAP32 WRAPPROG PICFLAG PICSUFFIX POBAD_CC SHLIBEXT LIBSMBCLIENT_SHARED LIBSMBCLIENT PRINTLIBS AUTHLIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA AWK BROKEN_CC build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os CPP EGREP CUPS_CONFIG LIBOBJS TERMLIBS TERMLDFLAGS ROFF DYNEXP MYSQL_CONFIG MYSQL_CFLAGS MYSQL_LIBS XML2_CONFIG XML_CFLAGS XML_LIBS QUOTAOBJS manlangs WINBIND_TARGETS WINBIND_STARGETS WINBIND_LTARGETS WINBIND_PAM_TARGETS WINBIND_NSS_EXTRA_OBJS WINBIND_NSS_EXTRA_LIBS BUILD_POPT FLAGS1 PYTHON builddir LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS configdir lockdir piddir logfilebase privatedir swatdir RUNPROG MPROGS LDSHFLAGS SONAMEFLAG SHLD HOST_OS PAM_MOD WRAP WRAP32 WRAPPROG PICFLAG PICSUFFIX POBAD_CC SHLIBEXT LIBSMBCLIENT_SHARED LIBSMBCLIENT PRINTLIBS AUTHLIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA AWK BROKEN_CC build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os CPP EGREP CUPS_CONFIG LIBOBJS TERMLIBS TERMLDFLAGS ROFF DYNEXP MYSQL_CONFIG MYSQL_CFLAGS MYSQL_LIBS MODULE_PDB_MYSQL XML2_CONFIG XML_CFLAGS XML_LIBS MODULE_PDB_XML QUOTAOBJS manlangs WINBIND_TARGETS WINBIND_STARGETS WINBIND_LTARGETS WINBIND_PAM_TARGETS WINBIND_NSS_EXTRA_OBJS WINBIND_NSS_EXTRA_LIBS BUILD_POPT FLAGS1 PYTHON builddir LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -20360,7 +20360,7 @@ fi
   if test "x$no_mysql" = x ; then
      echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-     :
+     MODULE_PDB_MYSQL=bin/pdb_mysql.so
   else
      echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
@@ -20432,7 +20432,7 @@ rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
      fi
      MYSQL_CFLAGS=""
      MYSQL_LIBS=""
-     :
+     MODULE_PDB_MYSQL=
   fi
 
 
@@ -20654,7 +20654,7 @@ fi
   if test "x$no_xml" = x ; then
      echo "$as_me:$LINENO: result: yes (version $xml_config_major_version.$xml_config_minor_version.$xml_config_micro_version)" >&5
 echo "${ECHO_T}yes (version $xml_config_major_version.$xml_config_minor_version.$xml_config_micro_version)" >&6
-     :
+     MODULE_PDB_XML=bin/pdb_xml.so
   else
      echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
@@ -20722,13 +20722,14 @@ rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
 
      XML_CFLAGS=""
      XML_LIBS=""
-     :
+     MODULE_PDB_XML=
   fi
 
 
   rm -f conf.xmltest
 
 CFLAGS="$CFLAGS $XML_CFLAGS"
+
 
 #################################################
 # check for automount support
@@ -23963,9 +23964,11 @@ s,@DYNEXP@,$DYNEXP,;t t
 s,@MYSQL_CONFIG@,$MYSQL_CONFIG,;t t
 s,@MYSQL_CFLAGS@,$MYSQL_CFLAGS,;t t
 s,@MYSQL_LIBS@,$MYSQL_LIBS,;t t
+s,@MODULE_PDB_MYSQL@,$MODULE_PDB_MYSQL,;t t
 s,@XML2_CONFIG@,$XML2_CONFIG,;t t
 s,@XML_CFLAGS@,$XML_CFLAGS,;t t
 s,@XML_LIBS@,$XML_LIBS,;t t
+s,@MODULE_PDB_XML@,$MODULE_PDB_XML,;t t
 s,@QUOTAOBJS@,$QUOTAOBJS,;t t
 s,@manlangs@,$manlangs,;t t
 s,@WINBIND_TARGETS@,$WINBIND_TARGETS,;t t

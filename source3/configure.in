@@ -2085,14 +2085,15 @@ fi
 
 ########################################################
 # Compile with MySQL support?
-AM_PATH_MYSQL()
+AM_PATH_MYSQL([0.11.0],[MODULE_PDB_MYSQL=bin/pdb_mysql.so],[MODULE_PDB_MYSQL=])
 CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-
+AC_SUBST(MODULE_PDB_MYSQL)
 
 ########################################################
 # Compile with XML support?
-AM_PATH_XML2()
+AM_PATH_XML2([2.0.0],[MODULE_PDB_XML=bin/pdb_xml.so],[MODULE_PDB_XML=])
 CFLAGS="$CFLAGS $XML_CFLAGS"
+AC_SUBST(MODULE_PDB_XML)
 
 #################################################
 # check for automount support
