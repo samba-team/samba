@@ -275,6 +275,7 @@ static const struct {
 } ncacn_options[] = {
 	{"sign", DCERPC_SIGN},
 	{"seal", DCERPC_SEAL},
+	{"connect", DCERPC_CONNECT},
 	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
@@ -495,7 +496,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
 						   domain, username, password);
-	} else if (username && username[0] && (binding->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
+	} else if (username && username[0]) {
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
 	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
@@ -548,12 +549,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
                 return status;
         }
 
-	/* it doesn't seem to work to do a null NTLMSSP session without either sign
-	   or seal, so force signing if we are doing ntlmssp */
-	if (username && username[0] && !(binding->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
-		binding->flags |= DCERPC_SIGN;
-	}
-
 	(*p)->flags = binding->flags;
 
 	/* remember the binding string for possible secondary connections */
@@ -562,7 +557,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
 						   domain, username, password);
-	} else if (username && username[0] && (binding->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
+	} else if (username && username[0]) {
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
 	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);

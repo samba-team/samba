@@ -33,6 +33,10 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 
+	if (!(p->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
+		p->flags |= DCERPC_CONNECT;
+	}
+
 	status = gensec_client_start(&p->security_state.generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));

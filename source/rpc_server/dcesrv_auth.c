@@ -31,7 +31,8 @@ NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
 {
 	NTSTATUS status;
 	if (auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
-	    auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+	    auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY &&
+	    auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_CONNECT) {
 		DEBUG(2,("auth_level %d not supported in dcesrv auth\n", 
 			 auth->auth_info->auth_level));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -191,6 +192,34 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	return True;
 }
 
+
+/*
+  generate a CONNECT level verifier
+*/
+static NTSTATUS dcesrv_connect_verifier(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
+{
+	*blob = data_blob_talloc(mem_ctx, NULL, 16);
+	if (blob->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	SIVAL(blob->data, 0, 1);
+	memset(blob->data+4, 0, 12);
+	return NT_STATUS_OK;
+}
+
+/*
+  generate a CONNECT level verifier
+*/
+static NTSTATUS dcesrv_check_connect_verifier(DATA_BLOB *blob)
+{
+	if (blob->length != 16 ||
+	    IVAL(blob->data, 0) != 1) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_OK;
+}
+
+
 /*
   check credentials on a request
 */
@@ -258,6 +287,10 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 					     full_packet->data,
 					     full_packet->length-auth.credentials.length,
 					     &auth.credentials);
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		status = dcesrv_check_connect_verifier(&auth.credentials);
 		break;
 
 	default:
@@ -340,7 +373,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 					    payload_length,
 					    blob->data,
 					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
-					      &dce_conn->auth_state.auth_info->credentials);
+					    &dce_conn->auth_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -353,6 +386,12 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 					    &dce_conn->auth_state.auth_info->credentials);
 
 		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		status = dcesrv_connect_verifier(call->mem_ctx,
+						 &dce_conn->auth_state.auth_info->credentials);
+		break;
+
 	default:
 		status = NT_STATUS_INVALID_LEVEL;
 		break;
