@@ -354,7 +354,7 @@ int pull_ascii(char *dest, const void *src, int dest_len, int src_len, int flags
 		dest_len = sizeof(pstring);
 	}
 
-	if (flags & STR_TERMINATE) src_len = strlen(src)+1;
+	if (src_len == -1 && (flags & STR_TERMINATE)) src_len = strlen(src)+1;
 
 	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
 
@@ -525,7 +525,7 @@ copy a string from a ucs2 source to a unix char* destination
 flags can have:
   STR_TERMINATE means the string in src is null terminated
   STR_NOALIGN   means don't try to align
-if STR_TERMINATE is set then src_len is ignored
+if STR_TERMINATE is set then src_len is ignored if it is -1
 src_len is the length of the source area in bytes
 return the number of bytes occupied by the string in src
 the resulting string in "dest" is always null terminated
@@ -543,7 +543,7 @@ int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, i
 		if (src_len > 0) src_len--;
 	}
 
-	if (flags & STR_TERMINATE) src_len = strlen_w(src)*2+2;
+	if (src_len == -1 && (flags & STR_TERMINATE)) src_len = strlen_w(src)*2+2;
 
 	/* ucs2 is always a multiple of 2 bytes */
 	src_len &= ~1;
@@ -609,7 +609,7 @@ int pull_utf8(char *dest, const void *src, int dest_len, int src_len, int flags)
 		dest_len = sizeof(pstring);
 	}
 
-	if (flags & STR_TERMINATE) src_len = strlen(src)+1;
+	if (src_len == -1 && (flags & STR_TERMINATE)) src_len = strlen(src)+1;
 
 	ret = convert_string(CH_UTF8, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
@@ -687,7 +687,7 @@ flags can have:
   STR_UNICODE   means to force as unicode
   STR_ASCII     use ascii even with unicode packet
   STR_NOALIGN   means don't do alignment
-if STR_TERMINATE is set then src_len is ignored
+if STR_TERMINATE is set then src_len is ignored is it is -1
 src_len is the length of the source area in bytes
 return the number of bytes occupied by the string in src
 the resulting string in "dest" is always null terminated
