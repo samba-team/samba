@@ -38,7 +38,7 @@ char realm[REALM_SZ + 1];
 char *SPACE_STRING = "                                                      ";
 char STRING[] = "****************";
 
-#define STRING_LENGTH sizeof(STRING)
+#define STRING_LENGTH (sizeof(STRING))
 #define MAX_PASSWD_LENGTH 256
 /* (sizeof(STRING)) */
 
@@ -635,11 +635,12 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     } else if (keysym == XK_u && is_ctrl == XNLOCK_CTRL) {
       while (cnt) {
 	passwd[cnt--] = ' ';
+	echolen = min(cnt, STRING_LENGTH);
 	XDrawImageString(dpy, XtWindow(w), gc,
-		    prompt_x, prompt_y, STRING, cnt);
+		    prompt_x, prompt_y, STRING, echolen);
 	XDrawImageString(dpy, XtWindow(w), gc,
-			 prompt_x + XTextWidth(font, STRING, cnt),
-			 prompt_y, SPACE_STRING, STRING_LENGTH - cnt + 1);
+			 prompt_x + XTextWidth(font, STRING, echolen),
+			 prompt_y, SPACE_STRING, STRING_LENGTH - echolen + 1);
       }
     } else if (isprint(c))
 	if ((cnt + 1) >= MAX_PASSWD_LENGTH)
@@ -652,8 +653,8 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     XDrawImageString(dpy, XtWindow(w), gc,
 	prompt_x, prompt_y, STRING, echolen);
     XDrawImageString(dpy, XtWindow(w), gc,
-	prompt_x + XTextWidth(font, STRING, cnt),
-	prompt_y, SPACE_STRING, STRING_LENGTH - echolen + 1);
+	prompt_x + XTextWidth(font, STRING, echolen),
+	prompt_y, SPACE_STRING, STRING_LENGTH - echolen +1);
 }
 
 #include "nose.0.left"
@@ -837,7 +838,7 @@ main (int argc, char **argv)
     XGCValues gcvalues;
 
     srand(getpid());
-    for (i = 0; i < (sizeof(STRING)-2); i++)
+    for (i = 0; i < STRING_LENGTH - 2; i++)
 	STRING[i] = ((unsigned long)rand() % ('~' - ' ')) + ' ';
 
     locked_at = time(0);
