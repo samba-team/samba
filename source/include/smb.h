@@ -1256,7 +1256,7 @@ struct bitmap {
 #define FILE_VOLUME_IS_COMPRESSED 0x8000
 
 /* ChangeNotify flags. */
-#define FILE_NOTIFY_CHANGE_FILE_NAME   0x001
+#define FILE_NOTIFY_CHANGE_FILE        0x001
 #define FILE_NOTIFY_CHANGE_DIR_NAME    0x002
 #define FILE_NOTIFY_CHANGE_ATTRIBUTES  0x004
 #define FILE_NOTIFY_CHANGE_SIZE        0x008
@@ -1265,6 +1265,7 @@ struct bitmap {
 #define FILE_NOTIFY_CHANGE_CREATION    0x040
 #define FILE_NOTIFY_CHANGE_EA          0x080
 #define FILE_NOTIFY_CHANGE_SECURITY    0x100
+#define FILE_NOTIFY_CHANGE_FILE_NAME   0x200
 
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
