@@ -1963,9 +1963,13 @@ minimal file that looks like a printcap and set "printcap name =" in
 A minimal printcap file would look something like this:
 
 print1|My Printer 1
+.br
 print2|My Printer 2
+.br
 print3|My Printer 3
+.br
 print4|My Printer 4
+.br
 print5|My Printer 5
 
 where the | separates aliases of a printer. The fact that the second
@@ -1994,15 +1998,35 @@ for any printable service that does not have its own printer name specified.
 
 .B Example:
  	printer name = laserwriter
+
+.SS printer driver (S)
+This option allows you to control the string that clients receive when
+they ask the server for the printer driver associated with a
+printer. If you are using Windows95 or WindowsNT then you can use this
+to automate the setup of printers on your system.
+
+You need to set this parameter to the exact string (case sensitive)
+that describes the appropriate printer driver for your system. 
+If you don't know the exact string to use then you should first try
+with no "printer driver" option set and the client will give you a
+list of printer drivers. The appropriate strings are shown in a
+scrollbox after you have chosen the printer manufacturer.
+.B Example:
+	printer driver = HP LaserJet 4L
+
 .SS printer name (S)
 See
 .B printer.
+
 .SS protocol (G)
 The value of the parameter (a string) is the highest protocol level that will
 be supported by the server. 
 
 Possible values are CORE, COREPLUS, LANMAN1, LANMAN2 and NT1. The relative
 merits of each are discussed in the README file.
+
+Normally this option should not be set as the automatic negotiation
+phase in the SMB protocol takes care of choosing the appropriate protocol.
 
 .B Default:
 	protocol = NT1
