@@ -356,31 +356,42 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	DEBUG(10,("make_connection: share is set %s.\n", conn->read_only ? "read only" : "writable" ));
 
 	{
-		pstring list;
-		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
-		pstring_sub(list,"%S",service);
+		char **list;
 
-		if (user_in_list(user,list)) {
+		str_list_copy(&list, lp_readlist(snum));
+		str_list_substitute(list, "%S", lp_servicename(snum));
+
+		if (user_in_plist(user, list)) {
 			DEBUG(10,("make_connection: user in read list makes share read only\n"));
 			conn->read_only = True;
 		}
 
-		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
-		pstring_sub(list,"%S",service);
-		
-		if (user_in_list(user,list)) {
-			DEBUG(10,("make_connection: user in read list makes share writable.\n"));
-			conn->read_only = False;    
+		str_list_free(&list);
+
+		str_list_copy(&list, lp_writelist(snum));
+		str_list_substitute(list, "%S", lp_servicename(snum));
+
+		if (user_in_plist(user, list)) {
+			DEBUG(10,("make_connection: user in write list makes share writable.\n"));
+			conn->read_only = False;
 		}
+
+		str_list_free(&list);
 	}
 
 	/* Admin user check */
 	
 	if (user_in_list(user,lp_admin_users(snum)) ) {
 		conn->admin_user = True;
-		DEBUG(0,("make_connection: %s logged in as admin user (root privileges)\n",user));
+		DEBUG(1,("make_connection: %s logged in as admin user (root privileges)\n",user));
 	} else
 		conn->admin_user = False;
+    
+	if (user_in_plist(user,lp_printer_admin(snum)) ) {
+		conn->print_admin_user = True;
+		DEBUG(1,("make_connection: %s logged in as printer admin user\n",user));
+	} else
+		conn->print_admin_user = False;
     
 	conn->force_user = force;
 	conn->vuid = vuid;

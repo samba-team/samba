@@ -547,6 +547,122 @@ BOOL user_in_list(char *user,char *list)
 	return(False);
 }
 
+/* Slightly modified version of user_in_list() function to use a
+   P_LIST type instead of a P_STRING. */
+
+BOOL user_in_plist(char *user, char **the_list)
+{
+	char **list;
+
+	if (!the_list || !*the_list)
+		return False;
+
+	DEBUG(10,("user_in_plist: checking user %s in list\n", user));
+
+	/* First check usernames only */
+
+	list = the_list;
+
+	while(*list) {
+
+		/* Check raw username */
+
+		if (strequal_unix(user, *list)) {
+			DEBUG(10,("user_in_plist: user |%s| matches |%s|\n", user, *list));
+			return(True);
+		}
+
+		list++;
+	}
+
+	/* Now check groups */
+
+	list = the_list;
+
+	while(*list) {
+
+		/*
+		 * Now check to see if any combination
+		 * of UNIX and netgroups has been specified.
+		 */
+
+		if(**list == '@') {
+			/*
+			 * Old behaviour. Check netgroup list
+			 * followed by UNIX list.
+			 */
+			if(user_in_netgroup_list(user, *list + 1))
+				return True;
+			if(user_in_group_list(user, *list + 1))
+				return True;
+		} else if (**list == '+') {
+
+			if((*(*list + 1)) == '&') {
+				/*
+				 * Search UNIX list followed by netgroup.
+				 */
+				if(user_in_group_list(user, *list + 2))
+					return True;
+				if(user_in_netgroup_list(user, *list + 2))
+					return True;
+
+			} else {
+
+				/*
+				 * Just search UNIX list.
+				 */
+
+				if(user_in_group_list(user, *list + 1))
+					return True;
+			}
+
+		} else if (**list == '&') {
+
+			if(*(*list + 1) == '+') {
+				/*
+				 * Search netgroup list followed by UNIX list.
+				 */
+				if(user_in_netgroup_list(user, *list + 2))
+					return True;
+				if(user_in_group_list(user, *list + 2))
+					return True;
+			} else {
+				/*
+				 * Just search netgroup list.
+				 */
+				if(user_in_netgroup_list(user, *list + 1))
+					return True;
+			}
+		} else if (!name_is_local(*list)) {
+			/*
+			 * If user name did not match and token is not
+			 * a unix group and the token has a winbind separator in the
+			 * name then see if it is a Windows group.
+			 */
+
+			DOM_SID g_sid;
+			enum SID_NAME_USE name_type;
+			BOOL winbind_answered = False;
+			BOOL ret;
+ 
+			/* Check to see if name is a Windows group */
+			if (winbind_lookup_name(NULL, *list, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+ 
+				/* Check if user name is in the Windows group */
+				ret = user_in_winbind_group_list(user, *list, &winbind_answered);
+ 
+				if (winbind_answered && ret == True) {
+					DEBUG(10,("user_in_plist: user |%s| is in group |%s|\n", user, *list));
+					return ret;
+				}
+			}
+		}
+
+		list++;
+	}
+	return(False);
+}
+
 /* The functions below have been taken from password.c and slightly modified */
 /****************************************************************************
  Apply a function to upper/lower case combinations

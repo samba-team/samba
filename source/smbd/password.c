@@ -624,27 +624,43 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 
 BOOL user_ok(char *user,int snum)
 {
-	pstring valid, invalid;
-	BOOL ret;
+	char **valid_list, **invalid_list;
+	BOOL result = True;
 
-	StrnCpy(valid, lp_valid_users(snum), sizeof(pstring)-1);
-	StrnCpy(invalid, lp_invalid_users(snum), sizeof(pstring)-1);
+	/* Substitute for service name */
 
-	pstring_sub(valid,"%S",lp_servicename(snum));
-	pstring_sub(invalid,"%S",lp_servicename(snum));
-	
-	ret = !user_in_list(user,invalid);
-	
-	if (ret && valid && *valid)
-		ret = user_in_list(user,valid);
+	str_list_copy(&valid_list, lp_valid_users(snum));
+	str_list_substitute(valid_list, "%S", lp_servicename(snum));
 
-	if (ret && lp_onlyuser(snum)) {
-		char *user_list = lp_username(snum);
-		pstring_sub(user_list,"%S",lp_servicename(snum));
-		ret = user_in_list(user,user_list);
+	str_list_copy(&invalid_list, lp_invalid_users(snum));
+	str_list_substitute(invalid_list, "%S", lp_servicename(snum));
+
+	/* User is not ok if they are in the invalid users list */
+
+	if (user_in_plist(user, invalid_list)) {
+		result = False;
+		goto done;
 	}
 
-	return(ret);
+	/* An empty valid users list means anyone is ok */
+
+	if (!valid_list)
+		goto done;
+
+	/* Now the user must be in the valid user list to be ok */
+
+	if (user_in_plist(user, valid_list))
+		goto done;
+
+	/* Deny access */
+
+	result = False;
+
+done:
+	str_list_free(&valid_list);
+	str_list_free(&invalid_list);
+
+	return result;
 }
 
 /****************************************************************************

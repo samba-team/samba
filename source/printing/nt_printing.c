@@ -4530,10 +4530,8 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	/* Always allow root or printer admins to do anything */
 
-	if (user->uid == 0 ||
-	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum))) {
+	if (user->uid == 0 || user->conn->print_admin_user)
 		return True;
-	}
 
 	/* Get printer name */
 

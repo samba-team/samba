@@ -301,8 +301,8 @@ typedef struct
 	char *szPath;
 	char *szUsername;
 	char *szGuestaccount;
-	char *szInvalidUsers;
-	char *szValidUsers;
+	char **szInvalidUsers;
+	char **szValidUsers;
 	char *szAdminUsers;
 	char *szCopy;
 	char *szInclude;
@@ -333,9 +333,9 @@ typedef struct
 	char *comment;
 	char *force_user;
 	char *force_group;
-	char *readlist;
-	char *writelist;
-	char *printer_admin;
+	char **readlist;
+	char **writelist;
+	char **printer_admin;
 	char *volume;
 	char *fstype;
 	char *szVfsObjectFile;
@@ -759,12 +759,12 @@ static struct parm_struct parm_table[] = {
 	{"users", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, 0},
 	
 	{"guest account", P_STRING, P_LOCAL, &sDefault.szGuestaccount, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_GLOBAL},
-	{"invalid users", P_STRING, P_LOCAL, &sDefault.szInvalidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"valid users", P_STRING, P_LOCAL, &sDefault.szValidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"invalid users", P_LIST, P_LOCAL, &sDefault.szInvalidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"valid users", P_LIST, P_LOCAL, &sDefault.szValidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"admin users", P_STRING, P_LOCAL, &sDefault.szAdminUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"read list", P_STRING, P_LOCAL, &sDefault.readlist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"write list", P_STRING, P_LOCAL, &sDefault.writelist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"printer admin", P_STRING, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_GLOBAL | FLAG_PRINT},
+	{"read list", P_LIST, P_LOCAL, &sDefault.readlist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"write list", P_LIST, P_LOCAL, &sDefault.writelist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"printer admin", P_LIST, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_GLOBAL | FLAG_PRINT},
 	{"force user", P_STRING, P_LOCAL, &sDefault.force_user, NULL, NULL, FLAG_SHARE},
 	{"force group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, FLAG_SHARE},
 	{"group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, 0},
@@ -1507,6 +1507,8 @@ static char *lp_string(const char *s)
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
  char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
+#define FN_GLOBAL_CONST_STRING(fn_name,ptr) \
+const  char *fn_name(void) {return(const char *)(*(char **)(ptr) ? *(char **)(ptr) : "");}
 #define FN_GLOBAL_LIST(fn_name,ptr) \
  char **fn_name(void) {return(*(char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
@@ -1520,6 +1522,8 @@ static char *lp_string(const char *s)
  char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
  const char *fn_name(int i) {return(const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
+#define FN_LOCAL_LIST(fn_name,val) \
+ char **fn_name(int i) {return(char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
  BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_CHAR(fn_name,val) \
@@ -1582,7 +1586,7 @@ FN_GLOBAL_STRING(lp_domain_admin_group, &Globals.szDomainAdminGroup)
 FN_GLOBAL_STRING(lp_domain_guest_group, &Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
-FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
+FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
@@ -1706,8 +1710,8 @@ FN_LOCAL_STRING(lp_pathname, szPath)
 FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
 FN_LOCAL_STRING(lp_username, szUsername)
 FN_LOCAL_STRING(lp_guestaccount, szGuestaccount)
-FN_LOCAL_STRING(lp_invalid_users, szInvalidUsers)
-FN_LOCAL_STRING(lp_valid_users, szValidUsers)
+FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
+FN_LOCAL_LIST(lp_valid_users, szValidUsers)
 FN_LOCAL_STRING(lp_admin_users, szAdminUsers)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
@@ -1726,9 +1730,9 @@ FN_LOCAL_STRING(lp_magicoutput, szMagicOutput)
 FN_LOCAL_STRING(lp_comment, comment)
 FN_LOCAL_STRING(lp_force_user, force_user)
 FN_LOCAL_STRING(lp_force_group, force_group)
-FN_LOCAL_STRING(lp_readlist, readlist)
-FN_LOCAL_STRING(lp_writelist, writelist)
-FN_LOCAL_STRING(lp_printer_admin, printer_admin)
+FN_LOCAL_LIST(lp_readlist, readlist)
+FN_LOCAL_LIST(lp_writelist, writelist)
+FN_LOCAL_LIST(lp_printer_admin, printer_admin)
 FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
 FN_LOCAL_STRING(lp_vfs_options, szVfsOptions)
