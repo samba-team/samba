@@ -154,7 +154,7 @@ PROFILE_OBJ = profile/profile.o
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
             smbd/ipc.o smbd/mangle.o smbd/negprot.o \
-            smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
+            smbd/message.o smbd/nttrans.o smbd/pipes.o \
             smbd/$(QUOTAOBJS) smbd/reply.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
 	    smbd/vfs.o smbd/vfs-wrap.o \
