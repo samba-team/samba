@@ -3780,6 +3780,7 @@ support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(da
     }
 
     count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
+
 #endif /* LARGE_SMB_OFF_T */
   }
   return count;
@@ -3817,6 +3818,7 @@ support large offsets.\n", (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(d
     }
 
     offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
+
 #endif /* LARGE_SMB_OFF_T */
   }
   return offset;
@@ -3867,23 +3869,23 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
     {
       DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
 no oplock granted on this file.\n", fsp->fnum));
-      return ERROR(ERRDOS,ERRlock);
+
+      /* if this is a pure oplock break request then don't send a reply */
+      if (num_locks == 0 && num_ulocks == 0)
+        return -1;
+      else
+        return ERROR(ERRDOS,ERRlock);
     }
 
     /* Remove the oplock flag from the sharemode. */
     lock_share_entry(fsp->conn, dev, inode, &token);
     if(remove_share_oplock(token, fsp)==False) {
-
-	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
+      DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
 dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
-
-	    unlock_share_entry(fsp->conn, dev, inode, token);
-    } else {
-	    unlock_share_entry(fsp->conn, dev, inode, token);
-
-	    /* Clear the granted flag and return. */
-	    fsp->granted_oplock = False;
     }
+
+    release_file_oplock(fsp);
+    unlock_share_entry(fsp->conn, dev, inode, token);
 
     /* if this is a pure oplock break request then don't send a reply */
     if (num_locks == 0 && num_ulocks == 0)

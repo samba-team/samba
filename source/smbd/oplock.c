@@ -32,7 +32,7 @@ static int oplock_pipe_write = -1;
 #endif /* HAVE_KERNEL_OPLOCKS */
 
 /* Current number of oplocks we have outstanding. */
-int32 global_oplocks_open = 0;
+static int32 global_oplocks_open = 0;
 BOOL global_oplock_break = False;
 
 extern int smb_read_error;
@@ -309,7 +309,7 @@ inode = %.0f. Another process had the file open.\n",
  disabled (just clears flags).
 ****************************************************************************/
 
-static void release_file_oplock(files_struct *fsp)
+void release_file_oplock(files_struct *fsp)
 {
 #if defined(HAVE_KERNEL_OPLOCKS)
 
@@ -806,13 +806,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
     close_sockets();
     close(oplock_sock);
     exit_server("oplock break failure");
-  }
-
-  if(OPEN_FSP(fsp))
-  {
-    /* The lockingX reply will have removed the oplock flag 
-       from the sharemode. */
-    release_file_oplock(fsp);
   }
 
   /* Santity check - remove this later. JRA */

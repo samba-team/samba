@@ -2435,6 +2435,7 @@ BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp);
+void release_file_oplock(files_struct *fsp);
 int setup_oplock_select_set( fd_set *fds);
 BOOL process_local_message(char *buffer, int buf_size);
 BOOL request_oplock_break(share_mode_entry *share_entry, 

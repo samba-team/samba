@@ -23,9 +23,6 @@
 
 extern int DEBUGLEVEL;
 
-extern int32 global_oplocks_open;
-
-
 /****************************************************************************
 run a file if it is a magic script
 ****************************************************************************/
@@ -119,6 +116,9 @@ void close_file(files_struct *fsp, BOOL normal_close)
 		del_share_mode(token, fsp);
 	}
 
+	if(fsp->granted_oplock == True)
+		release_file_oplock(fsp);
+
 	if(fd_attempt_close(fsp->fd_ptr) == 0)
 		last_reference = True;
 
@@ -157,11 +157,6 @@ void close_file(files_struct *fsp, BOOL normal_close)
 with error %s\n", fsp->fsp_name, strerror(errno) ));
         }
     }
-
-	if(fsp->granted_oplock == True)
-		global_oplocks_open--;
-
-	fsp->sent_oplock_break = False;
 
 	DEBUG(2,("%s closed file %s (numopen=%d)\n",
 		 conn->user,fsp->fsp_name,
