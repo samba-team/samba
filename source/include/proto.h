@@ -3651,6 +3651,8 @@ BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, TALLOC_CTX *ctx,
 				char* value, char* data);
 BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_resetprinter(char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_resetprinter(char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct *ps, int depth);
 BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 				uint32 type, const uint8 *data, uint32 len);
 BOOL spoolss_io_q_deleteform(char *desc, SPOOL_Q_DELETEFORM *q_u, prs_struct *ps, int depth);
@@ -4072,6 +4074,7 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 WERROR _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, SPOOL_R_GETPRINTERDRIVERDIR *r_u);
 WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, SPOOL_R_ENUMPRINTERDATA *r_u);
 WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SPOOL_R_SETPRINTERDATA *r_u);
+WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R_RESETPRINTER *r_u);
 WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u);
 WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u);
 WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DELETEFORM *r_u);
