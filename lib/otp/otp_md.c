@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -97,9 +97,9 @@ otp_md_init (OtpKey key,
   p = malloc (len + 1);
   if (p == NULL)
     return -1;
-  strcpy (p, seed);
+  strlcpy (p, seed, len + 1);
   strlwr (p);
-  strcat (p, pwd);
+  strlcat (p, pwd, len + 1);
   (*init)(arg);
   (*update)(arg, p, len);
   (*final)(res, arg);
