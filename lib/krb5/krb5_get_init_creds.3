@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 21, 2004
+.Dd November  9, 2004
 .Dt KRB5_GET_INIT_CREDS 3
 .Os HEIMDAL
 .Sh NAME
@@ -276,6 +276,60 @@ It matches the
 and can be used in the
 .Fa krb5_get_init_creds
 functions.
+.Pp
+.Fn krb5_get_init_creds_opt_set_address_list
+sets the list of
+.Fa addresses
+that is should be stored in the ticket.
+.Pp
+.Fn krb5_get_init_creds_opt_set_anonymous
+make the request anonymous if the
+.Fa anonymous
+parameter is non-zero.
+.Pp
+.Fn krb5_get_init_creds_opt_set_default_flags
+sets the default flags using the configuration file.
+.Pp
+.Fn krb5_get_init_creds_opt_set_etype_list
+set a list of enctypes that the client is willing to support in the
+request.
+.Pp
+.Fn krb5_get_init_creds_opt_set_forwardable
+request a forwardable ticket.
+.Pp
+.Fn krb5_get_init_creds_opt_set_pa_password
+set the
+.Fa password
+and
+.Fa key_proc
+that is going to be used to get a new ticket.
+.Fa password
+or
+.Fa key_proc
+can be
+.Dv NULL
+if the caller what to use the default values.
+If the
+.Fa password
+is unset and needed, the use will be prompted for it.
+.Pp
+.Fn krb5_get_init_creds_opt_set_paq_request
+sets the password that is going to be used to get a new ticket.
+.Pp
+.Fn krb5_get_init_creds_opt_set_preauth_list
+sets the list of client supported preauth types.
+.Pp
+.Fn krb5_get_init_creds_opt_set_proxiable
+makes the request proxiable.
+.Pp
+.Fn krb5_get_init_creds_opt_set_rewew_life
+sets the requested renewable lifetime.
+.Pp
+.Fn krb5_get_init_creds_opt_set_salt
+sets that that is going to be used in the request.
+.Pp
+.Fn krb5_get_init_creds_opt_set_tkt_life
+sets requested ticket lifetime.
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_creds 3 ,
