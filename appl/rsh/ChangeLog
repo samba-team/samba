@@ -1,3 +1,7 @@
+2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rsh.1: document -P
+
 2002-09-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rsh.c: revert to protocol v1 if not asked for specific protocol
