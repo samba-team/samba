@@ -468,7 +468,10 @@ sub ParseStruct($)
 	$result .= "/* Convert a Python string to a struct $s->{NAME} python dict */\n\n";
 	$result .= "NTSTATUS unmarshall_$s->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct $s->{NAME} *s)\n";
 	$result .= "{\n";
-	$result .= "\treturn ndr_pull_struct_blob(blob, mem_ctx, s, ndr_pull_$s->{NAME});\n";
+	$result .= "\tstruct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx);\n";
+	$result .= "\tNTSTATUS result;\n\n";
+	$result .= "\tresult = ndr_pull_struct_blob(blob, mem_ctx, s, ndr_pull_$s->{NAME});\n";
+	$result .= "\treturn result;\n";
 	$result .= "}\n\n";
     }
 
@@ -482,7 +485,7 @@ sub ParseStruct($)
 
 	$result .= "%typemap(argout) struct $s->{NAME} * {\n";
 	$result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(argout) $s->{NAME}\");\n\n";
-	$result .= "\tresultobj = $s->{NAME}_ptr_to_python(mem_ctx, \$1);\n";
+	$result .= "\t\$result = $s->{NAME}_ptr_to_python(mem_ctx, \$1);\n";
 	$result .= "}\n\n";
 
 	$result .= "NTSTATUS unmarshall_$s->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct $s->{NAME} *EMPTY);\n\n";
@@ -574,7 +577,7 @@ sub ParseUnion($)
 	$result .= "\t\treturn;\n";
 	$result .= "\t}\n\n";
     }
-    $result .= "}\n";
+    $result .= "}\n\n";
 
     # Generate function to convert union pointer to Python dict
 
@@ -604,21 +607,7 @@ sub ParseUnion($)
 
     $result .= "}\n\n";
 
-    # Generate function to convert DATA_BLOB to Python dict
-
-    if (util::has_property($u->{DATA}, "public")) {
-	$result .= "/* Convert a Python string to a struct $u->{NAME} python dict */\n\n";
-	$result .= "NTSTATUS unmarshall_$u->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, union $u->{NAME} *u)\n";
-	$result .= "{\n";
-	$result .= "\treturn NT_STATUS_OK;\n";
-	$result .= "}\n\n";
-    }
-
-    $result .= "\n%}\n\n";    
-
-    if (util::has_property($u->{DATA}, "public")) {
-	$result .= "NTSTATUS unmarshall_$u->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, union $u->{NAME} *EMPTY);\n\n";
-    }
+    $result .= "%}\n\n";    
 
     return $result;
 }
