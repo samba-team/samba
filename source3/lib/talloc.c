@@ -316,12 +316,22 @@ smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
 {	
 	int len;
 	char *ret;
+	va_list ap2;
 	
-	len = vsnprintf(NULL, 0, fmt, ap);
+#ifdef HAVE_VA_COPY
+	__va_copy(ap2, ap);  /* for systems were va_list is a struct */
+#else
+	ap2 = ap;
+#endif
+	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	ret = talloc(t, len+1);
-	if (ret)
-		vsnprintf(ret, len+1, fmt, ap);
+	if (ret) {
+#ifdef HAVE_VA_COPY
+		__va_copy(ap2, ap);
+#endif
+		vsnprintf(ret, len+1, fmt, ap2);
+	}
 
 	return ret;
 }
@@ -354,14 +364,23 @@ smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
 			       const char *fmt, va_list ap)
 {	
 	int len, s_len;
+	va_list ap2;
 
+#ifdef HAVE_VA_COPY
+	__va_copy(ap2, ap);
+#else
+	ap2 = ap;
+#endif
 	s_len = strlen(s);
-	len = vsnprintf(NULL, 0, fmt, ap);
+	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	s = talloc_realloc(t, s, s_len + len+1);
 	if (!s) return NULL;
 
-	vsnprintf(s+s_len, len+1, fmt, ap);
+#ifdef HAVE_VA_COPY
+	__va_copy(ap2, ap);
+#endif
+	vsnprintf(s+s_len, len+1, fmt, ap2);
 
 	return s;
 }
