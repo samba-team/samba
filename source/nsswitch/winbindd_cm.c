@@ -296,7 +296,7 @@ static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn,
 /* Open a connction to the remote server, cache failures for 30 seconds */
 
 static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
-			       struct winbindd_cm_conn *new_conn)
+				   struct winbindd_cm_conn *new_conn)
 {
 	struct failed_connection_cache *fcc;
 	extern pstring global_myname;
@@ -458,7 +458,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 
 /* Return a LSA policy handle on a domain */
 
-CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
+NTSTATUS cm_get_lsa_handle(char *domain, CLI_POLICY_HND **return_hnd)
 {
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -467,15 +467,17 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 
 	/* Look for existing connections */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn))) {
-		return NULL;
-	}
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
+		return result;
 
 	/* This *shitty* code needs scrapping ! JRA */
+
 	if (policy_handle_is_valid(&conn->pol)) {
 		hnd.pol = conn->pol;
 		hnd.cli = conn->cli;
-		return &hnd;
+		*return_hnd = &hnd;
+
+		return NT_STATUS_OK;
 	}
 	
 	result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
@@ -484,9 +486,8 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn))) {
-				return NULL;
-			}
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
+				return result;
 
 			result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
 						     des_access, &conn->pol);
@@ -496,19 +497,22 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 			cli_shutdown(conn->cli);
 			DLIST_REMOVE(cm_conns, conn);
 			SAFE_FREE(conn);
-			return NULL;
+
+			return result;
 		}
 	}	
 
 	hnd.pol = conn->pol;
 	hnd.cli = conn->cli;
 
-	return &hnd;
+	*return_hnd = &hnd;
+
+	return NT_STATUS_OK;
 }
 
 /* Return a SAM policy handle on a domain */
 
-CLI_POLICY_HND *cm_get_sam_handle(char *domain)
+NTSTATUS cm_get_sam_handle(char *domain, CLI_POLICY_HND **return_hnd)
 { 
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -517,42 +521,50 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 
 	/* Look for existing connections */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn))) {
-		return NULL;
-	}
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
+		return result;
 	
 	/* This *shitty* code needs scrapping ! JRA */
+
 	if (policy_handle_is_valid(&conn->pol)) {
 		hnd.pol = conn->pol;
 		hnd.cli = conn->cli;
-		return &hnd;
+
+		*return_hnd = &hnd;
+
+		return NT_STATUS_OK;
 	}
+
 	result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 				  des_access, &conn->pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn))) {
-				return NULL;
-			}
+
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
+				return result;
 
 			result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 						  des_access, &conn->pol);
 		}
 
 		if (!NT_STATUS_IS_OK(result)) {
+
 			cli_shutdown(conn->cli);
 			DLIST_REMOVE(cm_conns, conn);
 			SAFE_FREE(conn);
-			return NULL;
+
+			return result;
 		}
 	}	
 
 	hnd.pol = conn->pol;
 	hnd.cli = conn->cli;
 
-	return &hnd;
+	*return_hnd = &hnd;
+
+	return NT_STATUS_OK;
 }
 
 #if 0  /* This code now *well* out of date */
@@ -864,4 +876,29 @@ void winbindd_cm_status(void)
 		dump_conn_list();
 	else
 		DEBUG(0, ("\tNo active connections\n"));
+}
+
+/* Close all cached connections */
+
+void winbindd_cm_flush(void)
+{
+	struct winbindd_cm_conn *conn, tmp;
+
+	for (conn = cm_conns; conn; conn = conn->next) {
+
+		if (!connection_ok(conn))
+			continue;
+
+		DEBUG(10, ("Closing connection to %s on %s\n",
+			   conn->pipe_name, conn->controller));
+
+		if (conn->cli)
+			cli_shutdown(conn->cli);
+
+		tmp.next = conn->next;
+
+		DLIST_REMOVE(cm_conns, conn);
+		SAFE_FREE(conn);
+		conn = &tmp;
+	}
 }
