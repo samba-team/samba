@@ -24,12 +24,12 @@
 struct socket_context;
 
 enum socket_type {
-	SOCKET_TYPE_STREAM
+	SOCKET_TYPE_STREAM,
+	SOCKET_TYPE_DGRAM
 };
 
 struct socket_ops {
 	const char *name;
-	enum socket_type type;
 
 	NTSTATUS (*fn_init)(struct socket_context *sock);
 
@@ -50,9 +50,16 @@ struct socket_ops {
 
 	/* general ops */
 	NTSTATUS (*fn_recv)(struct socket_context *sock, void *buf,
-			 size_t wantlen, size_t *nread, uint32_t flags);
+			    size_t wantlen, size_t *nread, uint32_t flags);
 	NTSTATUS (*fn_send)(struct socket_context *sock, 
-			 const DATA_BLOB *blob, size_t *sendlen, uint32_t flags);
+			    const DATA_BLOB *blob, size_t *sendlen, uint32_t flags);
+
+	NTSTATUS (*fn_sendto)(struct socket_context *sock, 
+			      const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+			      const char *dest_addr, int dest_port);
+	NTSTATUS (*fn_recvfrom)(struct socket_context *sock, 
+				void *buf, size_t wantlen, size_t *nread, uint32_t flags,
+				const char **src_addr, int *src_port);
 
 	void (*fn_close)(struct socket_context *sock);
 

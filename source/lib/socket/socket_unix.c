@@ -4,7 +4,7 @@
    unix domain socket functions
 
    Copyright (C) Stefan Metzmacher 2004
-   Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Andrew Tridgell 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -266,8 +266,6 @@ static int unixdom_get_fd(struct socket_context *sock)
 
 static const struct socket_ops unixdom_ops = {
 	.name			= "unix",
-	.type			= SOCKET_TYPE_STREAM,
-
 	.fn_init		= unixdom_init,
 	.fn_connect		= unixdom_connect,
 	.fn_connect_complete	= unixdom_connect_complete,
@@ -288,7 +286,10 @@ static const struct socket_ops unixdom_ops = {
 	.fn_get_fd		= unixdom_get_fd
 };
 
-const struct socket_ops *socket_unixdom_ops(void)
+const struct socket_ops *socket_unixdom_ops(enum socket_type type)
 {
+	if (type != SOCKET_TYPE_STREAM) {
+		return NULL;
+	}
 	return &unixdom_ops;
 }
