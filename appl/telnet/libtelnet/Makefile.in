@@ -1,4 +1,4 @@
-# Makefile.in,v 1.2 1994/05/13 05:02:46 assar Exp
+# $Id$
 
 srcdir		= @srcdir@
 VPATH		= @srcdir@
@@ -9,7 +9,7 @@ CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
-CFLAGS = @CFLAGS@ -I/usr/athena/include -I.. -I$(VPATH)/..
+CFLAGS = @CFLAGS@ -I/usr/athena/include
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -20,8 +20,8 @@ LIBOBJS=@LIBOBJS@
 SOURCES=auth.c encrypt.c genget.c \
 	misc.c kerberos.c kerberos5.c forward.c spx.c enc_des.c \
 	rsaencpwd.c krb4encpwd.c read_password.c \
-	setenv.c getent.c strdup.c strcasecmp.c \
-	strchr.c strrchr.c strftime.c strerror.c
+	getent.c herror.c memmove.c setenv.c strcasecmp.c \
+	strchr.c strdup.c strerror.c strftime.c strrchr.c
 
 
 OBJECTS=auth.o encrypt.o genget.o \
@@ -30,6 +30,9 @@ OBJECTS=auth.o encrypt.o genget.o \
 	$(LIBOBJS)
 
 all: libtelnet.a
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I.. -I$(srcdir)/.. $<
 
 
 libtelnet.a: $(OBJECTS)
