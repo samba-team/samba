@@ -1384,14 +1384,15 @@ tgs_rep2(KDC_REQ_BODY *b,
     else
 	verify_ap_req_flags = 0;
 
-    ret = krb5_verify_ap_req(context,
-			     &ac,
-			     &ap_req,
-			     princ,
-			     &tkey->key,
-			     verify_ap_req_flags,
-			     &ap_req_options,
-			     &ticket);
+    ret = krb5_verify_ap_req2(context,
+			      &ac,
+			      &ap_req,
+			      princ,
+			      &tkey->key,
+			      verify_ap_req_flags,
+			      &ap_req_options,
+			      &ticket,
+			      KRB5_KU_TGS_REQ_AUTH);
 			     
     krb5_free_principal(context, princ);
     if(ret) {
