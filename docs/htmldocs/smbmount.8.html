@@ -60,8 +60,17 @@ CLASS="COMMAND"
 > command when using the 
 	"-t smb" option. The kernel must support the smbfs filesystem. </P
 ><P
->Options to smbmount are specified as a comma separated list 
-	of key=value pairs.</P
+>Options to smbmount are specified as a comma separated
+	list of key=value pairs. It is possible to send options other
+	than those listed here, assuming that smbfs supports them. If
+	you get mount failures, check your kernel log for errors on
+	unknown options.</P
+><P
+>smbmount is a daemon. After mounting it keeps running until
+	the mounted smbfs is umounted. It will log things that happen
+	when in daemon mode using the "machine name" smbmount, so
+	typically this output will end up in log.smbmount. The
+	smbmount process may also be called mount.smbfs.</P
 ><P
 ><I
 CLASS="EMPHASIS"
@@ -83,7 +92,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN26"
+NAME="AEN27"
 ></A
 ><H2
 >OPTIONS</H2
@@ -97,26 +106,50 @@ CLASS="VARIABLELIST"
 ><DD
 ><P
 >specifies the username to connect as. If
-		this is not given then the environment variable <TT
-CLASS="PARAMETER"
-><I
->		$USER</I
-></TT
-> is used. This option can also take the 
-		form "user%password" or "user/workgroup" or 
-		"user/workgroup%password" to allow the password and workgroup 
+		this is not given, then the environment variable <TT
+CLASS="ENVAR"
+>		USER</TT
+> is used. This option can also take the
+		form "user%password" or "user/workgroup" or
+		"user/workgroup%password" to allow the password and workgroup
 		to be specified as part of the username.</P
 ></DD
 ><DT
 >password=&lt;arg&gt;</DT
 ><DD
 ><P
->specifies the SMB password. If not given then 
-		<B
+>specifies the SMB password. If this
+		option is not given then the environment variable
+		<TT
+CLASS="ENVAR"
+>PASSWD</TT
+> is used. If it can find
+		no password <B
 CLASS="COMMAND"
 >smbmount</B
-> will prompt for a passeword, unless 
-		the guest option is given. </P
+> will prompt
+		for a passeword, unless the guest option is
+		given. </P
+></DD
+><DT
+>credentials=&lt;filename&gt;</DT
+><DD
+><P
+>specifies a file that contains a username
+		and/or password. The format of the file is:</P
+><P
+>		<PRE
+CLASS="PROGRAMLISTING"
+>		username = &lt;value&gt;
+		password = &lt;value&gt;
+		</PRE
+>
+		</P
+><P
+>This is preferred over having passwords in plaintext in a
+		shared file, such as /etc/fstab. Be sure to protect any
+		credentials file properly.
+		</P
 ></DD
 ><DT
 >netbiosname=&lt;arg&gt;</DT
@@ -129,7 +162,8 @@ CLASS="COMMAND"
 >uid=&lt;arg&gt;</DT
 ><DD
 ><P
->sets the uid that files will be mounted as. 
+>sets the uid that will own all files on
+		the mounted filesystem.
 		It may be specified as either a username or a numeric uid.
 		</P
 ></DD
@@ -137,7 +171,8 @@ CLASS="COMMAND"
 >gid=&lt;arg&gt;</DT
 ><DD
 ><P
->sets the gid that files will be mounted as. 
+>sets the gid that will own all files on
+		the mounted filesystem.
 		It may be specified as either a groupname or a numeric 
 		gid. </P
 ></DD
@@ -228,13 +263,118 @@ CLASS="PARAMETER"
 ><P
 >mount read-write </P
 ></DD
+><DT
+>iocharset=&lt;arg&gt;</DT
+><DD
+><P
+>		sets the charset used by the linux side for codepage
+		to charset translations (NLS). Argument should be the
+		name of a charset, like iso8859-1. (Note: only kernel
+		2.4.0 or later)
+		</P
+></DD
+><DT
+>codepage=&lt;arg&gt;</DT
+><DD
+><P
+>		sets the codepage the server uses. See the iocharset
+		option. Example value cp850. (Note: only kernel 2.4.0
+		or later)
+		</P
+></DD
+><DT
+>ttl=&lt;arg&gt;</DT
+><DD
+><P
+>		how long a directory listing is cached in milliseconds
+		(also affects visibility of file size and date
+		changes). A higher value means that changes on the
+		server take longer to be noticed but it can give
+		better performance on large directories, especially
+		over long distances. Default is 1000ms but something
+		like 10000ms (10 seconds) is probably more reasonable
+		in many cases.
+		(Note: only kernel 2.4.2 or later)
+		</P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN98"
+NAME="AEN119"
+></A
+><H2
+>ENVIRONMENT VARIABLES</H2
+><P
+>The variable <TT
+CLASS="ENVAR"
+>USER</TT
+> may contain the username of the
+	person using the client.  This information is used only if the
+	protocol level is high enough to support session-level
+	passwords. The variable can be used to set both username and
+	password by using the format username%password.</P
+><P
+>The variable <TT
+CLASS="ENVAR"
+>PASSWD</TT
+> may contain the password of the
+	person using the client.  This information is used only if the
+	protocol level is high enough to support session-level
+	passwords.</P
+><P
+>The variable <TT
+CLASS="ENVAR"
+>PASSWD_FILE</TT
+> may contain the pathname of
+	a file to read the password from. A single line of input is
+	read and used as password.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN127"
+></A
+><H2
+>BUGS</H2
+><P
+>Not many known smbmount bugs. But one smbfs bug is
+	important enough to mention here anyway:</P
+><P
+></P
+><UL
+><LI
+><P
+>Mounts sometimes stop working. This is usually
+	caused by smbmount terminating. Since smbfs needs smbmount to
+	reconnect when the server disconnects, the mount will go
+	dead. A re-mount normally fixes this. At least 2 ways to
+	trigger this bug are known.</P
+></LI
+></UL
+><P
+>Note that the typical response to a bugreport is suggestion
+	to try the latest version first. So please try doing that first,
+	and always include which versions you use of relevant software
+	when reporting bugs (minimum: samba, kernel, distribution)</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN134"
+></A
+><H2
+>SEE ALSO</H2
+><P
+>Documentation/filesystems/smbfs.txt in the kernel source tree
+	may contain additional options and information.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN137"
 ></A
 ><H2
 >AUTHOR</H2

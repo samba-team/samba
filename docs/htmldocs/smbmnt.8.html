@@ -14,7 +14,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBUMOUNT"
+NAME="SMBMNT"
 >smbmnt</A
 ></H1
 ><DIV
@@ -35,13 +35,13 @@ NAME="AEN8"
 ><P
 ><B
 CLASS="COMMAND"
->smbumount</B
->  {mount-point} [-s &lt;share&gt;] [-r] [-u &lt;uid&gt;] [-g &lt;gid&gt;] [-f &lt;mask&gt;] [-d &lt;mask&gt;]</P
+>smbmnt</B
+>  {mount-point} [-s &lt;share&gt;] [-r] [-u &lt;uid&gt;] [-g &lt;gid&gt;] [-f &lt;mask&gt;] [-d &lt;mask&gt;] [-o &lt;options&gt;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN18"
+NAME="AEN19"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -76,7 +76,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN27"
+NAME="AEN28"
 ></A
 ><H2
 >OPTIONS</H2
@@ -120,13 +120,21 @@ CLASS="VARIABLELIST"
 >specify the octal directory mask 
 		applied  </P
 ></DD
+><DT
+>-o options</DT
+><DD
+><P
+>		list of options that are passed as-is to smbfs, if this
+		command is run on a 2.4 or higher linux kernel.
+		</P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN50"
+NAME="AEN55"
 ></A
 ><H2
 >AUTHOR</H2
