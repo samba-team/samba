@@ -421,18 +421,38 @@ static void cgi_download(char *file)
 		}
 	}
 
-	if (!file_exist(file, &st)) {
+	if (sys_stat(file, &st) != 0) 
+	{
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
 	}
 
-	fd = web_open(file,O_RDONLY,0);
+	if (S_ISDIR(st.st_mode))
+	{
+		snprintf(buf, sizeof(buf), "%s/index.html", file);
+		if (!file_exist(buf, &st) || !S_ISREG(st.st_mode))
+		{
+			cgi_setup_error("404 File Not Found","",
+					"The requested file was not found");
+		}
+	}
+	else if (S_ISREG(st.st_mode))
+	{
+		snprintf(buf, sizeof(buf), "%s", file);
+	}
+	else
+	{
+		cgi_setup_error("404 File Not Found","",
+				"The requested file was not found");
+	}
+
+	fd = web_open(buf,O_RDONLY,0);
 	if (fd == -1) {
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
 	}
 	printf("HTTP/1.0 200 OK\r\n");
-	if ((p=strrchr_m(file,'.'))) {
+	if ((p=strrchr_m(buf, '.'))) {
 		if (strcmp(p,".gif")==0) {
 			printf("Content-Type: image/gif\r\n");
 		} else if (strcmp(p,".jpg")==0) {
@@ -554,7 +574,7 @@ void cgi_setup(const char *rootdir, int auth_required)
 
 	string_sub(url, "/swat/", "", 0);
 
-	if (url[0] != '/' && strstr(url,"..")==0 && file_exist(url, NULL)) {
+	if (url[0] != '/' && strstr(url,"..")==0) {
 		cgi_download(url);
 	}
 
