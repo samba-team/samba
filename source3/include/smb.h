@@ -1059,8 +1059,6 @@ struct bitmap {
 #define DESIRED_ACCESS_PIPE 0x2019f
  
 /* Generic access masks & rights. */
-#define SPECIFIC_RIGHTS_MASK 0x00FFFFL
-#define STANDARD_RIGHTS_MASK 0xFF0000L
 #define DELETE_ACCESS        (1L<<16) /* 0x00010000 */
 #define READ_CONTROL_ACCESS  (1L<<17) /* 0x00020000 */
 #define WRITE_DAC_ACCESS     (1L<<18) /* 0x00040000 */
