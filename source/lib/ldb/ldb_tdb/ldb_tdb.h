@@ -5,7 +5,7 @@ struct ltdb_private {
 	unsigned int connect_flags;
 };
 
-
+#ifdef STANDALONE
 #define IVAL(p, ofs) (((unsigned *)((char *)(p) + (ofs)))[0])
 #define SIVAL(p, ofs, v) do { IVAL(p, ofs) = (v); } while (0)
-
+#endif
