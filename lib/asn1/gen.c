@@ -34,7 +34,7 @@ init_generate (char *filename)
 void
 close_generate ()
 {
-    fprintf (headerfile, "#endif /* __" STEM "_h__ /*\n");
+    fprintf (headerfile, "#endif /* __" STEM "_h__ */\n");
 
     fclose (headerfile);
     fprintf (logfile, "\n");
