@@ -13,6 +13,27 @@
 #undef HAVE_U_INT32_T
 #undef HAVE_U_INT64_T
 
+/*  Define this if struct utmp have ut_user  */
+#undef HAVE_UT_USER
+
+/*  Define this if struct utmp have ut_host  */
+#undef HAVE_UT_HOST
+
+/*  Define this if struct utmp have ut_addr  */
+#undef HAVE_UT_ADDR
+
+/*  Define this if struct utmp have ut_type  */
+#undef HAVE_UT_TYPE
+
+/*  Define this if struct utmp have ut_pid  */
+#undef HAVE_UT_PID
+
+/*  Define this if struct utmp have ut_id  */
+#undef HAVE_UT_ID
+
+/*  Define this if struct utmpx have ut_syslen  */
+#undef HAVE_UT_SYSLEN
+
 /* define if you have h_errno */
 #undef HAVE_H_ERRNO
 
@@ -92,3 +113,49 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 /* Maximum values on all known systems */
 #define MaxHostNameLen (64+4)
 #define MaxPathLen (1024+4)
+
+/* telnet stuff ----------------------------------------------- */
+
+/* define this if you have kerberos 5 */
+#undef KRB5
+
+/* define this if you want encryption */
+#undef ENCRYPTION
+
+/* define this if you want authentication */
+#undef AUTHENTICATION
+
+#if defined(ENCRYPTION) && !defined(AUTHENTICATION)
+#define AUTHENTICATION 1
+#endif
+
+/* Set this if you want des encryption */
+#undef DES_ENCRYPTION
+
+/* Set this to the default system lead string for telnetd 
+ * can contain %-escapes: %s=sysname, %m=machine, %r=os-release
+ * %v=os-version, %t=tty, %h=hostname, %d=date and time
+ */
+#undef USE_IM
+
+/* define this if you want diagnostics in telnetd */
+#undef DIAGNOSTICS
+
+/* define this if you want support for broken ENV_{VALUE,VAR} systems  */
+#undef ENV_HACK
+
+/*  */
+#undef OLD_ENVIRON
+
+/* Used with login -p */
+#undef LOGIN_ARGS
+
+/* Define if there are working stream ptys */
+#undef STREAMSPTY
+
+/* set this to a sensible login */
+#ifndef LOGIN_PATH
+#define LOGIN_PATH BINDIR "/login"
+#endif
+
+
