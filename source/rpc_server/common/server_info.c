@@ -53,3 +53,9 @@ uint32 dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_contex
 {
 	return 2;
 }
+
+/* This hardcoded value should go into a ldb database! */
+const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return "";
+}

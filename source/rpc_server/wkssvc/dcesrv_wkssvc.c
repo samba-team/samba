@@ -47,21 +47,27 @@ static NTSTATUS wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, TALLO
 			break;
 		}
 	case 101: {
-			r->out.info.info101 = NULL;
+			r->out.info.info101 = talloc_p(mem_ctx, struct wkssvc_NetWkstaInfo101);
+			WERR_TALLOC_CHECK(r->out.info.info101);
 
-			r->out.result = WERR_NOT_SUPPORTED;
+			r->out.info.info101->platform_id = dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
+			r->out.info.info101->server = dcesrv_common_get_server_name(mem_ctx, dce_ctx);
+			r->out.info.info101->domain = dcesrv_common_get_domain_name(mem_ctx, dce_ctx);
+			r->out.info.info101->ver_major = dcesrv_common_get_version_major(mem_ctx, dce_ctx);
+			r->out.info.info101->ver_minor = dcesrv_common_get_version_minor(mem_ctx, dce_ctx);
+			r->out.info.info101->lan_root = dcesrv_common_get_lan_root(mem_ctx, dce_ctx);
 			break;
 		}
 	case 102: {
 			r->out.info.info102 = NULL;
 
-			r->out.result = WERR_NOT_SUPPORTED;
+			r->out.result = WERR_ACCESS_DENIED;
 			break;
 		}
 	case 502: {	
 			r->out.info.info502 = NULL;
 
-			r->out.result = WERR_NOT_SUPPORTED;
+			r->out.result = WERR_ACCESS_DENIED;
 			break;
 		}
 	default: {
