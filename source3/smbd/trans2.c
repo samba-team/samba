@@ -226,7 +226,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   }
 
   if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum);
+    close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
     
@@ -235,7 +235,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   mtime = sbuf.st_mtime;
   inode = sbuf.st_ino;
   if (fmode & aDIR) {
-    close_file(fnum);
+    close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 

@@ -147,7 +147,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
 
   if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum);
+    close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -155,7 +155,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   fmode = dos_mode(cnum,fname,&sbuf);
   mtime = sbuf.st_mtime;
   if (fmode & aDIR) {
-    close_file(fnum);
+    close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 

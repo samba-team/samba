@@ -479,8 +479,8 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
   if (user[strlen(user) - 1] == '$') {
-    struct smb_passwd *smb_pass; /* To check if machine account exists */
 #ifdef NTDOMAIN
+    struct smb_passwd *smb_pass; /* To check if machine account exists */
 /* 
    PAXX: Ack. We don't want to do this. The workstation trust account
    with a $ on the end should exist in the local password database
@@ -1178,7 +1178,7 @@ int reply_open(char *inbuf,char *outbuf)
   }
 
   if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum);
+    close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
     
@@ -1188,7 +1188,7 @@ int reply_open(char *inbuf,char *outbuf)
 
   if (fmode & aDIR) {
     DEBUG(3,("attempt to open a directory %s\n",fname));
-    close_file(fnum);
+    close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
   
@@ -1274,7 +1274,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
 
   if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum);
+    close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1282,7 +1282,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   fmode = dos_mode(cnum,fname,&sbuf);
   mtime = sbuf.st_mtime;
   if (fmode & aDIR) {
-    close_file(fnum);
+    close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1328,7 +1328,7 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
     int i;
     for (i=0;i<MAX_OPEN_FILES;i++)
       if (Files[i].uid == vuser->uid && Files[i].open) {
-	close_file(i);
+	close_file(i,False);
       }
   }
 
@@ -2271,7 +2271,7 @@ int reply_close(char *inbuf,char *outbuf)
   /* try and set the date */
   set_filetime(Files[fnum].name,mtime);
 
-  close_file(fnum);
+  close_file(fnum,True);
 
   /* We have a cached error */
   if(eclass || err)
@@ -2318,7 +2318,7 @@ int reply_writeclose(char *inbuf,char *outbuf)
 
   set_filetime(Files[fnum].name,mtime);
   
-  close_file(fnum);
+  close_file(fnum,True);
 
   DEBUG(3,("%s writeclose fnum=%d cnum=%d num=%d wrote=%d (numopen=%d)\n",
 	   timestring(),fnum,cnum,numtowrite,nwritten,
@@ -2550,7 +2550,7 @@ int reply_printclose(char *inbuf,char *outbuf)
   if (!CAN_PRINT(cnum))
     return(ERROR(ERRDOS,ERRnoaccess));
   
-  close_file(fnum);
+  close_file(fnum,True);
   
   DEBUG(3,("%s printclose fd=%d fnum=%d cnum=%d\n",timestring(),Files[fnum].fd_ptr->fd,fnum,cnum));
   
@@ -3187,14 +3187,14 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
 
   fnum2 = find_free_file();
   if (fnum2<0) {
-    close_file(fnum1);
+    close_file(fnum1,False);
     return(False);
   }
   open_file_shared(fnum2,cnum,dest,(DENY_NONE<<4)|1,
 		   ofun,st.st_mode,0,&Access,&action);
 
   if (!Files[fnum2].open) {
-    close_file(fnum1);
+    close_file(fnum1,False);
     return(False);
   }
 
@@ -3205,8 +3205,8 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
   if (st.st_size)
     ret = transfer_file(Files[fnum1].fd_ptr->fd,Files[fnum2].fd_ptr->fd,st.st_size,NULL,0,0);
 
-  close_file(fnum1);
-  close_file(fnum2);
+  close_file(fnum1,False);
+  close_file(fnum2,False);
 
   return(ret == st.st_size);
 }

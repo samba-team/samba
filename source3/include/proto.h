@@ -776,7 +776,7 @@ int disk_free(char *path,int *bsize,int *dfree,int *dsize);
 int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 BOOL check_name(char *name,int cnum);
 void sync_file(int fnum);
-void close_file(int fnum);
+void close_file(int fnum, BOOL normal_close);
 BOOL check_file_sharing(int cnum,char *fname);
 int check_share_mode( min_share_mode_entry *share, int deny_mode, char *fname,
                       BOOL fcbopen, int *flags);
@@ -957,6 +957,8 @@ BOOL become_guest(void);
 BOOL become_user(int cnum, uint16 vuid);
 BOOL unbecome_user(void );
 int smbrun(char *cmd,char *outfile,BOOL shared);
+void become_root(BOOL save_dir) ;
+void unbecome_root(BOOL restore_dir);
 
 /*The following definitions come from  username.c  */
 
