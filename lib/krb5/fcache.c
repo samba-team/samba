@@ -107,6 +107,7 @@ static krb5_error_code
 fcc_close(krb5_context context,
 	  krb5_ccache id)
 {
+    free (FILENAME(id));
     krb5_data_free(&id->data);
     return 0;
 }
@@ -148,7 +149,7 @@ static krb5_error_code
 fcc_read_cred (int fd,
 	       krb5_creds *creds)
 {
-    int ret;
+    int ret = 0;
     int8_t dummy8;
     int32_t dummy32;
     krb5_storage *sp;
@@ -156,25 +157,27 @@ fcc_read_cred (int fd,
     sp = krb5_storage_from_fd(fd);
 
     ret = krb5_ret_principal (sp,  &creds->client);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     ret = krb5_ret_principal (sp,  &creds->server);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     ret = krb5_ret_keyblock (sp,  &creds->session);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     ret = krb5_ret_times (sp,  &creds->times);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     ret = krb5_ret_int8 (sp,  &dummy8);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     ret = krb5_ret_int32 (sp,  &dummy32);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     creds->flags.i = dummy32;
     ret = krb5_ret_addrs (sp,  &creds->addresses);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     ret = krb5_ret_authdata (sp,  &creds->authdata);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     ret = krb5_ret_data (sp,  &creds->ticket);
-    if(ret) return ret;
+    if(ret) goto cleanup;
     ret = krb5_ret_data (sp,  &creds->second_ticket);
+
+cleanup:
     krb5_storage_free(sp);
     return ret;
 }
