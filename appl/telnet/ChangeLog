@@ -1,5 +1,6 @@
 2000-01-18  Assar Westerlund  <assar@sics.se>
 
+	* libtelnet/misc.c (auth_encrypt_user): const-ify
 	* libtelnet/misc.h (RemoteHostName, LocalHostName): const-ify
 	* libtelnet/misc.c (auth_encrypt_init, RemoteHostName,
 	LocalHostName): const-ify

@@ -1,3 +1,15 @@
+2000-01-26  Assar Westerlund  <assar@sics.se>
+
+	* wrap.c: update to pseudo-standard APIs for md4,md5,sha.  some
+	changes to libdes calls to make them more portable.
+	* verify_mic.c: update to pseudo-standard APIs for md4,md5,sha.
+	some changes to libdes calls to make them more portable.
+	* unwrap.c: update to pseudo-standard APIs for md4,md5,sha.  some
+	changes to libdes calls to make them more portable.
+	* get_mic.c: update to pseudo-standard APIs for md4,md5,sha.  some
+	changes to libdes calls to make them more portable.
+	* 8003.c: update to pseudo-standard APIs for md4,md5,sha.
+
 2000-01-06  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: set version to 0:4:0

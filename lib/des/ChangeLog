@@ -1,5 +1,6 @@
 2000-01-26  Assar Westerlund  <assar@sics.se>
 
+	* mdtest.c: update to pseudo-standard APIs for md4,md5,sha.
 	* md4.c, md4.h, md5.c, md5.h, sha.c, sha.h: move to the
 	pseudo-standard APIs
 
