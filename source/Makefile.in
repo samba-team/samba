@@ -126,7 +126,7 @@ SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROG
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/testparm@EXEEXT@ bin/testprns@EXEEXT@ bin/smbstatus@EXEEXT@ 
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
-	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@
+	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ bin/tdbdump@EXEEXT@
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
 	bin/smbcquotas@EXEEXT@
@@ -644,6 +644,8 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o lib/snprintf.o $(TDBBASE_OBJ)
+
+TDBDUMP_OBJ = tdb/tdbdump.o $(TDBBASE_OBJ)
 
 NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
@@ -1173,6 +1175,10 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
+
+bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(TDBDUMP_OBJ)
 
 bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
