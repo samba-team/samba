@@ -70,8 +70,8 @@ static struct stot{
 
 int _resolve_debug = 0;
 
-static int
-string_to_type(const char *name)
+int
+dns_string_to_type(const char *name)
 {
     struct stot *p = stot;
     for(p = stot; p->name; p++)
@@ -80,8 +80,8 @@ string_to_type(const char *name)
     return -1;
 }
 
-static const char *
-type_to_string(int type)
+const char *
+dns_type_to_string(int type)
 {
     struct stot *p = stot;
     for(p = stot; p->name; p++)
@@ -332,13 +332,13 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
         old_options = _res.options;
 	_res.options |= RES_DEBUG;
 	fprintf(stderr, "dns_lookup(%s, %d, %s)\n", domain,
-		rr_class, type_to_string(rr_type));
+		rr_class, dns_type_to_string(rr_type));
     }
     len = res_search(domain, rr_class, rr_type, reply, sizeof(reply));
     if (_resolve_debug) {
         _res.options = old_options;
 	fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",
-		domain, rr_class, type_to_string(rr_type), len);
+		domain, rr_class, dns_type_to_string(rr_type), len);
     }
     if (len >= 0)
 	r = parse_reply(reply, len);
@@ -350,7 +350,7 @@ dns_lookup(const char *domain, const char *type_name)
 {
     int type;
     
-    type = string_to_type(type_name);
+    type = dns_string_to_type(type_name);
     if(type == -1) {
 	if(_resolve_debug)
 	    fprintf(stderr, "dns_lookup: unknown resource type: `%s'\n", 
@@ -387,7 +387,7 @@ main(int argc, char **argv)
 	return 1;
     }
     for(rr = r->head; rr;rr=rr->next){
-	printf("%s %s %d ", rr->domain, type_to_string(rr->type), rr->ttl);
+	printf("%s %s %d ", rr->domain, dns_type_to_string(rr->type), rr->ttl);
 	switch(rr->type){
 	case T_NS:
 	case T_CNAME:
@@ -414,7 +414,7 @@ main(int argc, char **argv)
 	}
 	case T_SIG : {
 	    struct sig_record *sig = rr->u.sig;
-	    const char *type_string = type_to_string (sig->type);
+	    const char *type_string = dns_type_to_string (sig->type);
 
 	    printf ("type %u (%s), algorithm %u, labels %u, orig_ttl %u, sig_expiration %u, sig_inception %u, key_tag %u, signer %s\n",
 		    sig->type, type_string ? type_string : "",
