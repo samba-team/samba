@@ -1,3 +1,11 @@
+2003-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (wrapped_length/wrapped_length_derived): when
+	calculating the length of the encrypted data, use the keyed
+	checksum length if the enctype supports a keyed checksum. This
+	only matter for aes, for all other enctypes the key and unkeyed
+	checksum have the same length.
+
 2003-07-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/install.texi: update pointer to luke ldap documentation
