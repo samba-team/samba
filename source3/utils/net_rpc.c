@@ -779,7 +779,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, max_entries=250, num_entries, i;
+	uint32 start_idx=0, num_entries, i, loop_count = 0;
 	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
 
@@ -809,9 +809,16 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			 "\n-----------------------------\n");
 	do {
 		fstring user, desc;
+		uint32 max_entries, max_size;
+
+		get_query_dispinfo_params(
+			loop_count, &max_entries, &max_size);
+
 		result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
 						 &start_idx, 1, &num_entries,
-						 max_entries, &ctr);
+						 max_entries, max_size, &ctr);
+		loop_count++;
+
 		for (i = 0; i < num_entries; i++) {
 			unistr2_to_ascii(user, &(&ctr.sam.info1->str[i])->uni_acct_name, sizeof(user)-1);
 			if (opt_long_list_entries) 
