@@ -730,7 +730,7 @@ enum nss_status {
 #define MAP_FILE 0
 #endif
 
-#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP))
+#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP) && !defined(WITH_TDBPWD))
 #define USE_SMBPASS_DB 1
 #endif
 
