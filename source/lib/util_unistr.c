@@ -103,7 +103,7 @@ void init_valid_table(void)
 	static int initialised;
 	static int mapped_file;
 	int i;
-	const char *allowed = ".!#$%&'()_-@^`~";
+	const char *allowed = ".!#$%&'()_-@^`~ ";
 
 	if (initialised && mapped_file) return;
 	initialised = 1;
