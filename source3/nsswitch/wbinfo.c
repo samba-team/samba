@@ -660,6 +660,7 @@ int main(int argc, char **argv)
 	static char *string_arg;
 	static int int_arg;
 	BOOL got_command = False;
+	int result = 1;
 
 	struct poptOption long_options[] = {
 
@@ -725,6 +726,8 @@ int main(int argc, char **argv)
 		got_command = True;
 	}
 
+	poptFreeContext(pc);
+
 	pc = poptGetContext(NULL, argc, (const char **)argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 
@@ -732,93 +735,94 @@ int main(int argc, char **argv)
 		switch (opt) {
 		case 'h':
 			usage();
-			exit(0);
+			result = 0;
+			goto done;
 		case 'u':
 			if (!print_domain_users()) {
 				d_printf("Error looking up domain users\n");
-				return 1;
+				goto done;
 			}
 			break;
 		case 'g':
 			if (!print_domain_groups()) {
 				d_printf("Error looking up domain groups\n");
-				return 1;
+				goto done;
 			}
 			break;
 		case 's':
 			if (!wbinfo_lookupsid(string_arg)) {
 				d_printf("Could not lookup sid %s\n", string_arg);
-				return 1;
+				goto done;
 			}
 			break;
 		case 'n':
 			if (!wbinfo_lookupname(string_arg)) {
 				d_printf("Could not lookup name %s\n", string_arg);
-				return 1;
+				goto done;
 			}
 			break;
 		case 'N':
 			if (!wbinfo_wins_byname(string_arg)) {
 				d_printf("Could not lookup WINS by name %s\n", string_arg);
-				return 1;
+				goto done;
 			}
 			break;
 		case 'I':
 			if (!wbinfo_wins_byip(string_arg)) {
 				d_printf("Could not lookup WINS by IP %s\n", string_arg);
-				return 1;
+				goto done;
 			}
 			break;
 		case 'U':
 			if (!wbinfo_uid_to_sid(int_arg)) {
 				d_printf("Could not convert uid %d to sid\n", int_arg);
-				return 1;
+				goto done;
 			}
 			break;
 		case 'G':
 			if (!wbinfo_gid_to_sid(int_arg)) {
 				d_printf("Could not convert gid %d to sid\n",
 				       int_arg);
-				return 1;
+				goto done;
 			}
 			break;
 		case 'S':
 			if (!wbinfo_sid_to_uid(string_arg)) {
 				d_printf("Could not convert sid %s to uid\n",
 				       string_arg);
-				return 1;
+				goto done;
 			}
 			break;
 		case 'Y':
 			if (!wbinfo_sid_to_gid(string_arg)) {
 				d_printf("Could not convert sid %s to gid\n",
 				       string_arg);
-				return 1;
+				goto done;
 			}
 			break;
 		case 't':
 			if (!wbinfo_check_secret()) {
 				d_printf("Could not check secret\n");
-				return 1;
+				goto done;
 			}
 			break;
 		case 'm':
 			if (!wbinfo_list_domains()) {
 				d_printf("Could not list trusted domains\n");
-				return 1;
+				goto done;
 			}
 			break;
 		case OPT_SEQUENCE:
 			if (!wbinfo_show_sequence()) {
 				d_printf("Could not show sequence numbers\n");
-				return 1;
+				goto done;
 			}
 			break;
 		case 'r':
 			if (!wbinfo_get_usergroups(string_arg)) {
 				d_printf("Could not get groups for user %s\n", 
 				       string_arg);
-				return 1;
+				goto done;
 			}
 			break;
                 case 'a': {
@@ -837,30 +841,33 @@ int main(int argc, char **argv)
                         }
 			
                         if (got_error)
-                                return 1;
+                                goto done;
                         break;
 		}
                 case 'p': {
 
                         if (!wbinfo_ping()) {
                                 d_printf("could not ping winbindd!\n");
-                                return 1;
+                                goto done;
 			}
                         break;
 		}
 		case OPT_SET_AUTH_USER:
-			if (!(wbinfo_set_auth_user(string_arg))) {
-				return 1;
-			}
+			if (!(wbinfo_set_auth_user(string_arg)))
+				goto done;
 			break;
 		default:
 			d_fprintf(stderr, "Invalid option\n");
 			usage();
-			return 1;
+			goto done;
 		}
 	}
 
-	/* Clean exit */
+	result = 0;
 
-	return 0;
+	/* Exit code */
+
+ done:
+	poptFreeContext(pc);
+	return result;
 }
