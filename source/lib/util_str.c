@@ -88,11 +88,6 @@ BOOL next_token_nr(const char **ptr, char *buff, const char *sep, size_t bufsize
 
 static uint16 tmpbuf[sizeof(pstring)];
 
-void set_first_token(char *ptr)
-{
-	last_ptr = ptr;
-}
-
 /**
  Convert list of tokens to array; dependent on above routine.
  Uses last_ptr from above - bit of a hack.
@@ -155,7 +150,7 @@ int StrCaseCmp(const char *s, const char *t)
  Case insensitive string compararison, length limited.
 **/
 
-int StrnCaseCmp(const char *s, const char *t, size_t n)
+static int StrnCaseCmp(const char *s, const char *t, size_t n)
 {
 	pstring buf1, buf2;
 	unix_strupper(s, strlen(s)+1, buf1, sizeof(buf1));
@@ -267,17 +262,6 @@ void string_replace(char *s,char oldc,char newc)
 }
 
 /**
- Skip past some strings in a buffer.
-**/
-
-char *skip_string(char *buf,size_t n)
-{
-	while (n--)
-		buf += strlen(buf) + 1;
-	return(buf);
-}
-
-/**
  Count the number of characters in a string. Normally this will
  be the same as the number of bytes in a string for single byte strings,
  but will be different for multibyte.
@@ -382,27 +366,6 @@ size_t count_chars(const char *s,char c)
 		if(*ptr==UCS2_CHAR(c))
 			count++;
 	return(count);
-}
-
-/**
-Return True if a string consists only of one particular character.
-**/
-
-BOOL str_is_all(const char *s,char c)
-{
-	smb_ucs2_t *ptr;
-
-	if(s == NULL)
-		return False;
-	if(!*s)
-		return False;
-  
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(ptr=tmpbuf;*ptr;ptr++)
-		if(*ptr!=UCS2_CHAR(c))
-			return False;
-
-	return True;
 }
 
 /**
@@ -554,73 +517,6 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 	return(dest);
 }
 
-/**
- Like strncpy but copies up to the character marker.  always null terminates.
- returns a pointer to the character marker in the source string (src).
-**/
-
-char *strncpyn(char *dest, const char *src, size_t n, char c)
-{
-	char *p;
-	size_t str_len;
-
-	p = strchr_m(src, c);
-	if (p == NULL) {
-		DEBUG(5, ("strncpyn: separator character (%c) not found\n", c));
-		return NULL;
-	}
-
-	str_len = PTR_DIFF(p, src);
-	strncpy(dest, src, MIN(n, str_len));
-	dest[str_len] = '\0';
-
-	return p;
-}
-
-/**
- Routine to get hex characters and turn them into a 16 byte array.
- the array can be variable length, and any non-hex-numeric
- characters are skipped.  "0xnn" or "0Xnn" is specially catered
- for.
-
- valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
-
-**/
-
-size_t strhex_to_str(char *p, size_t len, const char *strhex)
-{
-	size_t i;
-	size_t num_chars = 0;
-	unsigned char   lonybble, hinybble;
-	const char     *hexchars = "0123456789ABCDEF";
-	char           *p1 = NULL, *p2 = NULL;
-
-	for (i = 0; i < len && strhex[i] != 0; i++) {
-		if (strnequal(hexchars, "0x", 2)) {
-			i++; /* skip two chars */
-			continue;
-		}
-
-		if (!(p1 = strchr_m(hexchars, toupper(strhex[i]))))
-			break;
-
-		i++; /* next hex digit */
-
-		if (!(p2 = strchr_m(hexchars, toupper(strhex[i]))))
-			break;
-
-		/* get the two nybbles */
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-
-		p[num_chars] = (hinybble << 4) | lonybble;
-		num_chars++;
-
-		p1 = NULL;
-		p2 = NULL;
-	}
-	return num_chars;
-}
 
 /**
  Check if a string is part of a list.
@@ -737,76 +633,6 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 	}
 }
 
-void pstring_sub(char *s,const char *pattern,const char *insert)
-{
-	string_sub(s, pattern, insert, sizeof(pstring));
-}
-
-/**
- Similar to string_sub, but it will accept only allocated strings
- and may realloc them so pay attention at what you pass on no
- pointers inside strings, no pstrings or const may be passed
- as string.
-**/
-
-char *realloc_string_sub(char *string, const char *pattern, const char *insert)
-{
-	char *p, *in;
-	char *s;
-	ssize_t ls,lp,li,ld, i;
-
-	if (!insert || !pattern || !*pattern || !string || !*string)
-		return NULL;
-
-	s = string;
-
-	in = strdup(insert);
-	if (!in) {
-		DEBUG(0, ("realloc_string_sub: out of memory!\n"));
-		return NULL;
-	}
-	ls = (ssize_t)strlen(s);
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
-	ld = li - lp;
-	for (i=0;i<li;i++) {
-		switch (in[i]) {
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
-			case '$':
-			case '%':
-			case '\r':
-			case '\n':
-				in[i] = '_';
-			default:
-				/* ok */
-				break;
-		}
-	}
-	
-	while ((p = strstr(s,pattern))) {
-		if (ld > 0) {
-			char *t = Realloc(string, ls + ld + 1);
-			if (!t) {
-				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
-				SAFE_FREE(in);
-				return NULL;
-			}
-			string = t;
-			p = t + (p - s);
-		}
-		if (li != lp) {
-			memmove(p+li,p+lp,strlen(p+lp)+1);
-		}
-		memcpy(p, in, li);
-		s = p + li;
-		ls += ld;
-	}
-	SAFE_FREE(in);
-	return string;
-}
 
 /**
  Similar to string_sub() but allows for any character to be substituted. 
@@ -850,30 +676,6 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 }
 
 /**
- Splits out the front and back at a separator.
-**/
-
-void split_at_last_component(char *path, char *front, char sep, char *back)
-{
-	char *p = strrchr_m(path, sep);
-
-	if (p != NULL)
-		*p = 0;
-
-	if (front != NULL)
-		pstrcpy(front, path);
-
-	if (p != NULL) {
-		if (back != NULL)
-			pstrcpy(back, p+1);
-		*p = '\\';
-	} else {
-		if (back != NULL)
-			back[0] = 0;
-	}
-}
-
-/**
  Write an octal as a string.
 **/
 
@@ -886,17 +688,6 @@ const char *octal_string(int i)
 	return ret;
 }
 
-
-/**
- Truncate a string at a specified length.
-**/
-
-char *string_truncate(char *s, int length)
-{
-	if (s && strlen(s) > length)
-		s[length] = 0;
-	return s;
-}
 
 /**
  Strchr and strrchr_m are very hard to do on general multi-byte strings. 
@@ -955,21 +746,6 @@ void strlower_m(char *s)
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in UTF-8 encoding. (VIV) */
 	unix_strlower(s,strlen(s)+1,s,strlen(s)+1);	
-}
-
-/**
- Duplicate convert a string to lower case.
-**/
-
-char *strdup_lower(const char *s)
-{
-	char *t = strdup(s);
-	if (t == NULL) {
-		DEBUG(0, ("strdup_lower: Out of memory!\n"));
-		return NULL;
-	}
-	strlower_m(t);
-	return t;
 }
 
 /**
@@ -1343,7 +1119,6 @@ char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
 	*ipstr_list = new_ipstr;
 	return *ipstr_list;
 }
-
 
 /**
  * Allocate and initialise an ipstr list using ip adresses
