@@ -88,18 +88,18 @@ struct event_context *event_context_init(void)
 
 /*
   add a fd based event
-  return False on failure (memory allocation error)
+  return NULL on failure (memory allocation error)
 */
-BOOL event_add_fd(struct event_context *ev, struct fd_event *e) 
+struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e) 
 {
 	e = memdup(e, sizeof(*e));
-	if (!e) return False;
+	if (!e) return NULL;
 	DLIST_ADD(ev->fd_events, e);
 	e->ref_count = 1;
 	if (e->fd > ev->maxfd) {
 		ev->maxfd = e->fd;
 	}
-	return True;
+	return e;
 }
 
 
@@ -172,15 +172,15 @@ void event_remove_fd_all_handler(struct event_context *ev, void *handler)
 
 /*
   add a timed event
-  return False on failure (memory allocation error)
+  return NULL on failure (memory allocation error)
 */
-BOOL event_add_timed(struct event_context *ev, struct timed_event *e) 
+struct timed_event *event_add_timed(struct event_context *ev, struct timed_event *e) 
 {
 	e = memdup(e, sizeof(*e));
-	if (!e) return False;
+	if (!e) return NULL;
 	e->ref_count = 1;
 	DLIST_ADD(ev->timed_events, e);
-	return True;
+	return e;
 }
 
 /*
@@ -203,15 +203,15 @@ BOOL event_remove_timed(struct event_context *ev, struct timed_event *e1)
 
 /*
   add a loop event
-  return False on failure (memory allocation error)
+  return NULL on failure (memory allocation error)
 */
-BOOL event_add_loop(struct event_context *ev, struct loop_event *e) 
+struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e)
 {
 	e = memdup(e, sizeof(*e));
-	if (!e) return False;
+	if (!e) return NULL;
 	e->ref_count = 1;
 	DLIST_ADD(ev->loop_events, e);
-	return True;
+	return e;
 }
 
 /*
