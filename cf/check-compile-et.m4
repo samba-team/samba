@@ -61,7 +61,7 @@ elif test "${krb_cv_compile_et}" = "yes"; then
   krb_cv_save_LIBS="${LIBS}"
   LIBS="${LIBS} -lcom_err"
   AC_MSG_CHECKING(for com_err)
-  AC_LINK_IFELSE([AC_LANG_SOURCE([[#include <com_err.h>]],[[
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <com_err.h>]],[[
     const char *p;
     p = error_message(0);
     $krb_cv_com_err_need_r

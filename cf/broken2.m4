@@ -6,8 +6,7 @@ dnl AC_BROKEN2(func, includes, arguments)
 AC_DEFUN([AC_BROKEN2],
 [AC_MSG_CHECKING([for $1])
 AC_CACHE_VAL(ac_cv_func_[]$1,
-[AC_LINK_IFELSE([AC_LANG_SOURCE([[$2]],
-[[
+[AC_LINK_IFELSE([AC_LANG_SOURCE([[$2
 /* The GNU C library defines this for functions which it implements
     to always fail with ENOSYS.  Some functions are actually named
     something starting with __ and the normal name is an alias.  */

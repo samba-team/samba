@@ -89,7 +89,7 @@ fi
 ])
 
 AC_CACHE_CHECK([for IPv6], ac_cv_lib_ipv6, [
-AC_LINK_IFELSE([AC_LANG_SOURCE([[
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -125,7 +125,7 @@ fi
 ## test for AIX missing in6addr_loopback
 if test "$ac_cv_lib_ipv6" = yes; then
 	AC_CACHE_CHECK([for in6addr_loopback],[ac_cv_var_in6addr_loopback],[
-	AC_LINK_IFELSE([AC_LANG_SOURCE([[
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif

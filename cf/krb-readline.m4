@@ -9,7 +9,7 @@ AC_DEFUN([KRB_READLINE],[
 AC_FIND_FUNC_NO_LIBS(el_init, edit, [], [], [$LIB_tgetent])
 if test "$ac_cv_func_el_init" = yes ; then
 	AC_CACHE_CHECK(for four argument el_init, ac_cv_func_el_init_four,[
-		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[#include <stdio.h>
+		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>
 			#include <histedit.h>]],
 			[[el_init("", NULL, NULL, NULL);]])],
 			[ac_cv_func_el_init_four=yes],

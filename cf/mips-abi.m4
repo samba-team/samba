@@ -39,7 +39,7 @@ AC_MSG_CHECKING([if $CC supports the $abi option])
 AC_CACHE_VAL($ac_foo, [
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $abi"
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[]],[[int x;]])],[eval $ac_foo=yes], [eval $ac_foo=no])dnl
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],[[int x;]])],[eval $ac_foo=yes], [eval $ac_foo=no])dnl
 CFLAGS="$save_CFLAGS"
 ])
 ac_res=`eval echo \\\$$ac_foo`
@@ -50,7 +50,7 @@ case $abi in
 	-mabi=32) 
 	save_CFLAGS="$CFLAGS"
 	CFLAGS="$CFLAGS -mabi=n32"
-	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[]],[[int x;]])],[ac_res=yes],[ac_res=no])dnl
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],[[int x;]])],[ac_res=yes],[ac_res=no])dnl
 	CLAGS="$save_CFLAGS"
 	if test $ac_res = yes; then
 		# New GCC

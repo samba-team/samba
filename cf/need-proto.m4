@@ -9,11 +9,9 @@ dnl AC_NEED_PROTO(includes, function)
 AC_DEFUN([AC_NEED_PROTO], [
 if test "$ac_cv_func_$2+set" != set -o "$ac_cv_func_$2" = yes; then
 AC_CACHE_CHECK([if $2 needs a prototype], ac_cv_func_$2_noproto,
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[$1]],
-[[struct foo { int foo; } xx;
-extern int $2 (struct foo*);
-$2(&xx);
-]])],
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$1
+struct foo { int foo; } xx;
+extern int $2 (struct foo*);]],[[$2(&xx)]])],
 [eval "ac_cv_func_$2_noproto=yes"],
 [eval "ac_cv_func_$2_noproto=no"]))
 if test "$ac_cv_func_$2_noproto" = yes; then

@@ -5,7 +5,7 @@ dnl
 AC_DEFUN([AC_BROKEN_GLOB],[
 AC_CACHE_CHECK(for working glob, ac_cv_func_glob_working,
 ac_cv_func_glob_working=yes
-AC_LINK_IFELSE([AC_LANG_SOURCE([[
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <stdio.h>
 #include <glob.h>]],[[
 glob(NULL, GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE|

@@ -9,7 +9,7 @@ dnl
 AC_DEFUN([AC_C___ATTRIBUTE__], [
 AC_MSG_CHECKING(for __attribute__)
 AC_CACHE_VAL(ac_cv___attribute__, [
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[#include <stdlib.h>]],[[
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[#include <stdlib.h>
 static void foo(void) __attribute__ ((noreturn));
 
 static void

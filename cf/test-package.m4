@@ -91,7 +91,7 @@ if test "$with_$1" != no; then
 	if test "$[]$1_cflags" -a "$[]$1_libs"; then
 		CFLAGS="$[]$1_cflags $save_CFLAGS"
 		LIBS="$[]$1_libs $save_LIBS"
-		AC_LINK_IFELSE([AC_LANG_SOURCE([[$2]],[[]])],[
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[$2]],[[]])],[
 			INCLUDE_$1="$[]$1_cflags"
 			LIB_$1="$[]$1_libs"
 			AC_MSG_RESULT([from $with_$1_config])
@@ -101,11 +101,11 @@ if test "$with_$1" != no; then
 		ires= lres=
 		for i in $header_dirs; do
 			CFLAGS="-I$i $save_CFLAGS"
-			AC_COMPILE_IFELSE([AC_LANG_SOURCE([[$2]],[[]])],[ires=$i;break])
+			AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$2]],[[]])],[ires=$i;break])
 		done
 		for i in $lib_dirs; do
 			LIBS="-L$i $3 $4 $save_LIBS"
-			AC_LINK_IFELSE([AC_LANG_SOURCE([[$2]],[[]])],[lres=$i;break])
+			AC_LINK_IFELSE([AC_LANG_PROGRAM([[$2]],[[]])],[lres=$i;break])
 		done
 		if test "$ires" -a "$lres" -a "$with_$1" != "no"; then
 			INCLUDE_$1="-I$ires"

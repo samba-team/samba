@@ -87,7 +87,7 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 		for j in $cdirs; do
 			for k in $clibs; do
 				LIBS="$j $k $save_LIBS"
-				AC_LINK_IFELSE([AC_LANG_SOURCE([test_headers],
+				AC_LINK_IFELSE([AC_LANG_PROGRAM([test_headers],
 						[test_body])],
 					[openssl=yes ires="$i" lres="$j $k"; break 3])
 			done
@@ -96,7 +96,7 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 		for j in $cdirs; do
 			for k in $clibs; do
 				LIBS="$j $k $save_LIBS"
-				AC_LINK_IFELSE([AC_LANG_SOURCE([test_headers],[test_body])],
+				AC_LINK_IFELSE([AC_LANG_PROGRAM([test_headers],[test_body])],
 					[openssl=no ires="$i" lres="$j $k"; break 3])
 			done
 		done
@@ -104,7 +104,7 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 		for j in $cdirs; do
 			for k in $clibs; do
 				LIBS="$j $k $save_LIBS"
-				AC_LINK_IFELSE([AC_LANG_SOURCE([test_headers],[test_body])],
+				AC_LINK_IFELSE([AC_LANG_PROGRAM([test_headers],[test_body])],
 					[openssl=no ires="$i" lres="$j $k"; break 3])
 			done
 		done
@@ -142,7 +142,7 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
 		LIB_des_so="$LIB_des"
 		LIB_des_appl="$LIB_des"
 		LIBS="${LIBS} ${LIB_des}"
-		AC_LINK_IFELSE([AC_LANG_SOURCE([test_headers],[test_body])], [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([test_headers],[test_body])], [
 			crypto_lib=libcrypto openssl=yes
 			AC_MSG_RESULT([libcrypto])
 		])

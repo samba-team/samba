@@ -8,7 +8,7 @@ AC_REQUIRE([AC_HEADER_STDC])
 cv=`echo "$1" | sed 'y%./+- %__p__%'`
 AC_MSG_CHECKING(for $1)
 AC_CACHE_VAL([ac_cv_type_$cv],
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>
 #if STDC_HEADERS
 #include <stdlib.h>
