@@ -34,3 +34,7 @@ asn1_files: ../asn1/asn1_compile $(srcdir)/hdb.asn1
 	../asn1/asn1_compile $(srcdir)/hdb.asn1 hdb_asn1
 
 $(libhdb_la_OBJECTS): hdb_asn1.h hdb_err.h
+
+# to help stupid solaris make
+
+hdb_err.h: hdb_err.et

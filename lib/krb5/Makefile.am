@@ -112,3 +112,9 @@ include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_err.h heim_err.h
 CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h
 
 $(libkrb5_la_OBJECTS): krb5_err.h heim_err.h
+
+# to help stupid solaris make
+
+krb5_err.h: krb5_err.et
+
+heim_err.h: heim_err.et
