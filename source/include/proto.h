@@ -194,7 +194,7 @@ int vslprintf(char *str, int n, char *format, va_list ap);
 
 /*The following definitions come from  lib/smbrun.c  */
 
-int smbrun(char *cmd,char *outfile,BOOL shared);
+int smbrun(char *cmd, int *outfd, char *template);
 
 /*The following definitions come from  lib/snprintf.c  */
 
@@ -502,8 +502,10 @@ BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
 int getfileline(void *vp, char *linebuf, int linebuf_size);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
 char *file_pload(char *syscmd, size_t *size);
+char *fd_load(int fd, size_t *size);
 char *file_load(char *fname, size_t *size);
 char **file_lines_load(char *fname, int *numlines, BOOL convert);
+char **fd_lines_load(int fd, int *numlines, BOOL convert);
 char **file_lines_pload(char *syscmd, int *numlines, BOOL convert);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);

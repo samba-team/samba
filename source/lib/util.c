@@ -1727,8 +1727,9 @@ int smb_mkstemp(char *template)
 #else
 	/* have a reasonable go at emulating it. Hope that
 		the system mktemp() isn't completly hopeless */
-	if (!mktemp(template)) return -1;
-	return open(template, O_CREAT|O_EXCL|O_RDWR, 0600);
+	char *p = smbd_mktemp(template);
+	if (!p) return -1;
+	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 #endif
 }
 

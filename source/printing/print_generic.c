@@ -56,13 +56,14 @@ for local substitution strings
 ****************************************************************************/
 
 #ifdef HAVE_STDARG_H
-static int print_run_command(int snum,char *command, char *outfile, ...)
+static int print_run_command(int snum,char *command, int *outfd, char *outfile, ...)
 {
 #else /* HAVE_STDARG_H */
 static int print_run_command(va_alist)
 va_dcl
 {
 	int snum;
+	int *outfd;
 	char *command, *outfile;
 #endif /* HAVE_STDARG_H */
 
@@ -76,6 +77,7 @@ va_dcl
 #else /* HAVE_STDARG_H */
 	va_start(ap);
 	snum = va_arg(ap,int);
+	fd = va_arg(ap, int *);
 	command = va_arg(ap,char *);
 	outfile = va_arg(ap,char *);
 #endif /* HAVE_STDARG_H */
@@ -102,7 +104,7 @@ va_dcl
 
 	/* Convert script args to unix-codepage */
 	dos_to_unix(syscmd, True);
-	ret = smbrun(syscmd,outfile,False);
+	ret = smbrun(syscmd,outfd,outfile);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
 
@@ -121,7 +123,7 @@ static int generic_job_delete(int snum, struct printjob *pjob)
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(
 		   snum, 
-		   lp_lprmcommand(snum), NULL,
+		   lp_lprmcommand(snum), NULL, NULL,
 		   "%j", jobstr,
 		   "%T", http_timestring(pjob->starttime),
 		   NULL);
@@ -137,7 +139,7 @@ static int generic_job_pause(int snum, struct printjob *pjob)
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(snum, 
-				 lp_lppausecommand(snum), NULL,
+				 lp_lppausecommand(snum), NULL, NULL,
 				 "%j", jobstr,
 				 NULL);
 }
@@ -152,7 +154,7 @@ static int generic_job_resume(int snum, struct printjob *pjob)
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(snum, 
-				 lp_lpresumecommand(snum), NULL,
+				 lp_lpresumecommand(snum), NULL, NULL,
 				 "%j", jobstr,
 				 NULL);
 }
@@ -189,7 +191,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, 
-			  lp_printcommand(snum), NULL,
+			  lp_printcommand(snum), NULL, NULL,
 			  "%s", p,
   			  "%J", jobname,
 			  "%f", p,
@@ -209,6 +211,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 	char *path = lp_pathname(snum);
 	char *cmd = lp_lpqcommand(snum);
 	char **qlines;
+	int fd;
 	pstring tmp_file;
 	int numlines, i, qcount;
 	print_queue_struct *queue;
@@ -221,11 +224,17 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smblpq.%d", path, sys_getpid());
 
 	unlink(tmp_file);
-	print_run_command(snum, cmd, tmp_file, NULL);
+	print_run_command(snum, cmd, &fd, tmp_file, NULL);
 
+	if (fd == -1) {
+		DEBUG(5,("generic_queue_get: Can't read print queue status for printer %s\n",
+			printer_name ));
+		return 0;
+	}
+	
 	numlines = 0;
-	qlines = file_lines_load(tmp_file, &numlines, True);
-	unlink(tmp_file);
+	qlines = fd_lines_load(fd, &numlines, True);
+	close(fd);
 
 	/* turn the lpq output into a series of job structures */
 	qcount = 0;
@@ -253,7 +262,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 ****************************************************************************/
 static int generic_queue_pause(int snum)
 {
-	return print_run_command(snum, lp_queuepausecommand(snum), NULL, 
+	return print_run_command(snum, lp_queuepausecommand(snum), NULL, NULL,
 				 NULL);
 }
 
@@ -262,6 +271,6 @@ static int generic_queue_pause(int snum)
 ****************************************************************************/
 static int generic_queue_resume(int snum)
 {
-	return print_run_command(snum, lp_queueresumecommand(snum), NULL, 
+	return print_run_command(snum, lp_queueresumecommand(snum), NULL, NULL,
 				 NULL);
 }

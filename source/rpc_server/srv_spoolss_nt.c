@@ -286,33 +286,21 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 	if (*lp_deleteprinter_cmd()) {
 
 		char *cmd = lp_deleteprinter_cmd();
-		char *path;
-		pstring tmp_file;
 		pstring command;
 		int ret;
 		int i;
 
-		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
-			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
-		else
-			path = lp_lockdir();
-		
 		/* Printer->dev.handlename equals portname equals sharename */
 		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
 					Printer->dev.handlename);
 		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
-        slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%s", path, generate_random_str(16));
 
-		unlink(tmp_file);
-		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-		ret = smbrun(command, tmp_file, False);
+		DEBUG(10,("Running [%s]\n", command));
+		ret = smbrun(command, NULL, NULL);
 		if (ret != 0) {
-			unlink(tmp_file);
 			return ERROR_INVALID_HANDLE; /* What to return here? */
 		}
 		DEBUGADD(10,("returned [%d]\n", ret));
-		DEBUGADD(10,("Unlinking output file [%s]\n", tmp_file));
-		unlink(tmp_file);
 
 		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
@@ -4140,6 +4128,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	pstring driverlocation;
 	int numlines;
 	int ret;
+	int fd;
 
 	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
 		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
@@ -4152,31 +4141,29 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 
-	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%s", path, generate_random_str(16));
+	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d.", path, sys_getpid());
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, driverlocation);
 
-	unlink(tmp_file);
-
     /* Convert script args to unix-codepage */
     dos_to_unix(command, True);
 	DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-	ret = smbrun(command, tmp_file, False);
+	ret = smbrun(command, &fd, tmp_file);
 	DEBUGADD(10,("returned [%d]\n", ret));
 
 	if ( ret != 0 ) {
-		unlink(tmp_file);
+		if (fd != -1)
+			close(fd);
 		return False;
 	}
 
 	numlines = 0;
     /* Get lines and convert them back to dos-codepage */
-	qlines = file_lines_load(tmp_file, &numlines, True);
+	qlines = fd_lines_load(fd, &numlines, True);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-	DEBUGADD(10,("Unlinking script output file [%s]\n", tmp_file));
-	unlink(tmp_file);
+	close(fd);
 
 	if(numlines) {
 		/* Set the portname to what the script says the portname should be. */
@@ -5423,30 +5410,30 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		pstring command;
 		int numlines;
 		int ret;
+		int fd;
 
 		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
 			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
 		else
 			path = lp_lockdir();
 
-		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%s", path, generate_random_str(16));
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d.", path, sys_getpid());
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 
-		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-		ret = smbrun(command, tmp_file, False);
+		ret = smbrun(command, &fd, tmp_file);
 		DEBUG(10,("Returned [%d]\n", ret));
 		if (ret != 0) {
-			unlink(tmp_file);
+			if (fd != -1)
+				close(fd);
 			/* Is this the best error to return here? */
 			return ERROR_ACCESS_DENIED;
 		}
 
 		numlines = 0;
-		qlines = file_lines_load(tmp_file, &numlines,True);
+		qlines = fd_lines_load(fd, &numlines,True);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-		DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
-		unlink(tmp_file);
+		close(fd);
 
 		if(numlines) {
 			if((ports=(PORT_INFO_1 *)malloc( numlines * sizeof(PORT_INFO_1) )) == NULL) {
@@ -5520,30 +5507,31 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		pstring command;
 		int numlines;
 		int ret;
+		int fd;
 
 		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
 			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
 		else
 			path = lp_lockdir();
 
-		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%s", path, generate_random_str(16));
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d.", path, sys_getpid());
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 2);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-		ret = smbrun(command, tmp_file, False);
+		ret = smbrun(command, &fd, tmp_file);
 		DEBUGADD(10,("returned [%d]\n", ret));
 		if (ret != 0) {
-			unlink(tmp_file);
+			if (fd != -1)
+				close(fd);
 			/* Is this the best error to return here? */
 			return ERROR_ACCESS_DENIED;
 		}
 
 		numlines = 0;
-		qlines = file_lines_load(tmp_file, &numlines,True);
+		qlines = fd_lines_load(fd, &numlines,True);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-		DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
-		unlink(tmp_file);
+		close(fd);
 
 		if(numlines) {
 			if((ports=(PORT_INFO_2 *)malloc( numlines * sizeof(PORT_INFO_2) )) == NULL) {

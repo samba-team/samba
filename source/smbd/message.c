@@ -91,7 +91,7 @@ static void msg_deliver(void)
       pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,sizeof(alpha_msgto)));
       standard_sub_basic(s);
       pstring_sub(s,"%s",name);
-      smbrun(s,NULL,False);
+      smbrun(s,NULL,NULL);
     }
 
   msgpos = 0;
