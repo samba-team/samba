@@ -1241,9 +1241,11 @@ static int addarg(struct arg_val*, char*);
  * function will turn us into the login process.
  */
 
-void start_login(char *host, int autologin, char *name)
+void
+start_login(char *host, int autologin, char *name)
 {
     struct arg_val argv;
+    char *user;
 
 #ifdef HAVE_UTMPX_H
     char id_buf[3];
@@ -1252,7 +1254,6 @@ void start_login(char *host, int autologin, char *name)
     struct utmpx utmpx;
     struct timeval tmp;
     char *clean_tty;
-    char *user;
 
     /*
      * Create utmp entry for child
