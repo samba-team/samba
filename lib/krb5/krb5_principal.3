@@ -1,0 +1,309 @@
+.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden). 
+.\" All rights reserved. 
+.\"
+.\" Redistribution and use in source and binary forms, with or without 
+.\" modification, are permitted provided that the following conditions 
+.\" are met: 
+.\"
+.\" 1. Redistributions of source code must retain the above copyright 
+.\"    notice, this list of conditions and the following disclaimer. 
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright 
+.\"    notice, this list of conditions and the following disclaimer in the 
+.\"    documentation and/or other materials provided with the distribution. 
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors 
+.\"    may be used to endorse or promote products derived from this software 
+.\"    without specific prior written permission. 
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+.\" SUCH DAMAGE. 
+.\"
+.\" $Id$
+.\"
+.Dd April 16, 2003
+.Dt KRB5_PRINCIPAL 3
+.Os HEIMDAL
+.Sh NAME
+.Nm krb5_principal ,
+.Nm krb5_build_principal ,
+.Nm krb5_build_principal_ext ,
+.Nm krb5_build_principal_va ,
+.Nm krb5_build_principal_va_ext ,
+.Nm krb5_copy_principal ,
+.Nm krb5_free_principal ,
+.Nm krb5_make_principal ,
+.Nm krb5_parse_name ,
+.Nm krb5_princ_realm ,
+.Nm krb5_princ_set_realm ,
+.Nm krb5_principal_compare ,
+.Nm krb5_principal_compare_any_realm ,
+.Nm krb5_principal_get_realm ,
+.Nm krb5_principal_get_comp_string ,
+.Nm krb5_principal_match ,
+.Nm krb5_realm_compare ,
+.Nm krb5_sname_to_principal ,
+.Nm krb5_sock_to_principal ,
+.Nm krb5_unparse_name ,
+.Nm krb5_unparse_name_fixed ,
+.Nm krb5_unparse_name_fixed_short ,
+.Nm krb5_unparse_name_short
+.Nd Kerberos 5 principal handling functions
+.Sh LIBRARY
+Kerberos 5 Library (libkrb5, -lkrb5)
+.Sh SYNOPSIS
+.In krb5.h
+.Pp
+.Li krb5_principal;
+.Ft void
+.Fn krb5_free_principal "krb5_context context" "krb5_principal principal" 
+.Ft krb5_error_code
+.Fn krb5_parse_name "krb5_context context" "const char *name" "krb5_principal *principal"
+.Ft krb5_error_code
+.Fn "krb5_unparse_name" "krb5_context context" "krb5_const_principal principal" "char **name"
+.Ft krb5_error_code
+.Fn krb5_unparse_name_fixed "krb5_context context" "krb5_const_principal principal" "char *name" "size_t len"
+.Ft krb5_error_code
+.Fn "krb5_unparse_name_short" "krb5_context context" "krb5_const_principal principal" "char **name"
+.Ft krb5_error_code
+.Fn krb5_unparse_name_fixed_short "krb5_context context" "krb5_const_principal principal" "char *name" "size_t len"
+.Ft krb5_realm *
+.Fn krb5_princ_realm "krb5_context context" "krb5_principal principal"
+.Ft void
+.Fn krb5_princ_set_realm "krb5_context context" "krb5_principal principal" "krb5_realm *realm"  
+.Ft krb5_error_code
+.Fn krb5_build_principal "krb5_context context" "krb5_principal *principal" "int rlen" "krb5_const_realm realm" "..."
+.Ft krb5_error_code
+.Fn krb5_build_principal_va "krb5_context context" "krb5_principal *principal" "int rlen" "krb5_const_realm realm" "va_list ap"
+.Ft krb5_error_code
+.Fn "krb5_build_principal_ext" "krb5_context context", "krb5_principal *principal" "int rlen" "krb5_const_realm realm" "..."
+.Ft krb5_error_code
+.Fn krb5_build_principal_va_ext "krb5_context context" "krb5_principal *principal" "int rlen" "krb5_const_realm realm" "va_list ap"
+.Ft krb5_error_code
+.Fn krb5_make_principal "krb5_context context" "krb5_principal *principal" "krb5_const_realm realm" "..."
+.Ft krb5_error_code
+.Fn krb5_copy_principal "krb5_context context" "krb5_const_principal inprinc" "krb5_principal *outprinc"
+.Ft krb5_boolean
+.Fn krb5_principal_compare "krb5_context context" "krb5_const_principal princ1" "krb5_const_principal princ2"
+.Ft krb5_boolean
+.Fn krb5_principal_compare_any_realm "krb5_context context" "krb5_const_principal princ1 "krb5_const_principal princ2"
+.Ft "const char *"
+.Fn krb5_principal_get_realm "krb5_context context" "krb5_principal principal"
+.Ft "const char *"
+.Fn krb5_principal_get_comp_string "krb5_context context" "krb5_principal principal" "unsigned int component"
+.Ft krb5_boolean
+.Fn krb5_principal_match "krb5_context context" "krb5_const_principal principal" "krb5_const_principal pattern"
+.Ft krb5_boolean
+.Fn krb5_realm_compare "krb5_context context" "krb5_const_principal princ1" "krb5_const_principal princ2"  
+.Ft krb5_error_code
+.Fn krb5_sname_to_principal  "krb5_context context" "const char *hostname" "const char *sname" "int32_t type" "krb5_principal *ret_princ"
+.Ft krb5_error_code
+.Fn krb5_sock_to_principal "krb5_context context" "int socket" "const char *sname" "int32_t type" "krb5_principal *principal"
+.Sh DESCRIPTION
+.Li krb5_principal
+holds the name of a user or service in Kerberos.
+.Pp
+A principal have two parts, a
+.Li PrincipalName
+and a
+.Li realm .
+The PrincipalName consists of one or more components, in printed form,
+each components are separated by /.
+The PrincipalName also have a name-type.
+.Pp
+Examples of a principal are
+.Li nisse/root@EXAMPLE.COM
+and
+.Li host/datan.kth.se@KTH.SE .
+.Fn krb5_parse_name
+passes a principal name in
+.Fa name
+to the kerberos pricpal structure.
+.Pp
+.Fn krb5_unparse_name
+prints the principal
+.Fa princ
+to the string
+.Fa name .
+.Fa name
+should be freed with
+.Xr free 3 .
+.Fn krb5_unparse_name_fixed
+behavies just like
+.Fn krb5_unparse ,
+but instead unparses the principal into a fixed size buffer.
+.Pp
+.Fn krb5_unparse_name_short
+just return the principal without the realm if the principal is with
+in in the default realm. If the principal isn't, the full name is
+returned.
+.Fn krb5_unparse_name_fixed_short
+works just like
+.Fn krb5_unparse_name_short
+but on a fixed size buffer.
+.Pp
+.Fn krb5_build_principal
+builds a principal from the realm
+.Fa realm
+that have the length
+.Fa rlen .
+each following arguments forms the each component of the principal.
+The list of components is terminated with
+.Dv NULL .
+.Pp
+.Fn krb5_build_principal_va
+works like
+.Fn krb5_build_principal
+using vargs.
+.Pp
+The
+.Fn krb5_build_principal_ext
+and
+.Fn krb5_build_principal_va_ext
+takes a list of length-value pairs, the list is terminated with a zero
+length.
+.Pp
+.Fn krb5_make_principal
+works the same way as
+.Fn krb5_build_principal ,
+except it figures out the length of the realm itself.
+.Pp
+.Fn krb5_copy_principal
+makes a copy of a principal.
+The copy needs to be freed with
+.Fn krb5_free_principal .
+.Pp
+.Fn krb5_principal_compare
+compares the two principals, including realm of the principal and returns
+.Dv TRUE
+if they are the same and
+.Dv FALSE
+if not.
+.Pp
+.Fn krb5_principal_compare_any_realm
+works the same way as
+.Fn krb5_principal_compare
+but doesn't compare the realm component of the principal.
+.Pp
+.Fn krb5_realm_compare
+compares the realms of the two principals and returns
+.Dv TRUE
+is they are the same, and
+.Dv FALSE
+if not.
+.Pp
+.Fn krb5_principal_match
+maches are
+.Fa principal
+with a
+.Fa pattern .
+The patttern is a globbing expression, where each component (separated
+by /) of the principal is matched with each other.
+.Pp
+.Fn krb5_principal_get_realm 
+and
+.Fn krb5_principal_get_comp_string
+functions return parts of the
+.Fa principal ,
+either the realm or a specific component.
+Both functions returned string points to data inside the principal, so
+they are valid only as long as the principal exists.
+.Pp
+The
+.Fa component
+argument to
+.Fn krb5_principal_get_comp_string
+is the component number to return, from zero to the total number of
+components minus one. If a the requested component number is out of range,
+.Dv NULL
+is returned.
+.Pp
+.Fn krb5_principal_get_realm
+and
+.Fn krb5_principal_get_comp_string
+can be seen as a replacement for the
+.Fn krb5_princ_realm ,
+.Fn krb5_princ_component
+and related macros, described as intermal in the MIT API
+specification.
+A difference is that these functions return strings, not
+.Dv krb5_data .
+A reason to return
+.Dv krb5_data
+was that it was believed that principal components could contain
+binary data, but this belief was unfounded, and it has been decided
+that principal components are infact UTF8, so it's safe to use zero
+terminated strings.
+.Pp
+It's generally not necessary to look at the components of a principal.
+.Pp
+.Fn krb5_princ_realm
+returns the realm component of the principal.
+Caller must not free realm unless
+.Fn krb5_princ_set_realm
+is called to set a new realm after freeing the realm.
+.Fn krb5_princ_set_realm
+sets the realm component of a principal. Old realm is not freed.
+.Pp
+There are two functions
+.Fn krb5_sname_to_principal
+and
+.Fn krb5_sock_to_principal
+that are for easy creation of 
+.Dq service
+principals that can, for instance, be used to lookup a key in a keytab.
+For both functions the
+.Fa sname
+parameter will be used for the first component of the created principal.
+If
+.Fa sname
+is
+.Dv NULL ,
+.Dq host
+will be used instead.
+.Pp
+.Fn krb5_sname_to_principal
+will use the passed
+.Fa hostname
+for the second component.
+If type
+.Dv KRB5_NT_SRV_HST
+this name will be looked up with
+.Fn gethostbyname .
+If
+.Fa hostname is
+.Dv NULL ,
+the local hostname will be used.
+.Pp
+.Fn krb5_sock_to_principal
+will use the
+.Dq sockname
+of the passed
+.Fa socket ,
+which should be a bound
+.Dv AF_INET
+or
+.Dv AF_INET6
+socket.
+This function require there is a mapping between the address
+.Fq sockname .
+This function might try to resolve the name in DNS.
+.\" .Sh EXAMPLES
+.Sh SEE ALSO
+.Xr krb5_425_conv_principal 3 ,
+.Xr krb5_config 3 ,
+.Xr krb5.conf 5
+.Sh BUGS
+You can not have a NUL in a component in some of the variable argument function above.
+Until someone can give a good example of where it would be a good idea
+to have NUL's in a component, this will not be fixed.

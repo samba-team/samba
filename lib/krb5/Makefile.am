@@ -154,7 +154,6 @@ man_MANS =					\
 	krb5_aname_to_localname.3		\
 	krb5_appdefault.3			\
 	krb5_auth_context.3			\
-	krb5_build_principal.3			\
 	krb5_c_make_checksum.3			\
 	krb5_ccache.3				\
 	krb5_config.3				\
@@ -164,7 +163,6 @@ man_MANS =					\
 	krb5_data.3				\
 	krb5_encrypt.3				\
 	krb5_free_addresses.3			\
-	krb5_free_principal.3			\
 	krb5_get_all_client_addrs.3		\
 	krb5_get_krbhst.3			\
 	krb5_init_context.3			\
@@ -173,9 +171,8 @@ man_MANS =					\
 	krb5_kuserok.3				\
 	krb5_openlog.3				\
 	krb5_parse_name.3			\
-	krb5_principal_get_realm.3		\
+	krb5_principal.3			\
 	krb5_set_default_realm.3		\
-	krb5_sname_to_principal.3		\
 	krb5_timeofday.3			\
 	krb5_unparse_name.3			\
 	krb5_verify_user.3			\
