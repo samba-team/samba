@@ -46,7 +46,6 @@ LOGFILEBASE = $(VARDIR)
 CONFIGFILE = $(LIBDIR)/smb.conf
 LMHOSTSFILE = $(LIBDIR)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
-PASSWD_PROGRAM = /bin/passwd
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
 
