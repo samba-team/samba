@@ -6,6 +6,8 @@ INCLUDES += $(INCLUDE_krb4) -I$(srcdir)/../login
 
 bin_PROGRAMS = rsh
 
+man_MANS = rsh.1 rshd.8
+
 libexec_PROGRAMS = rshd
 
 rsh_SOURCES  = rsh.c common.c rsh_locl.h
