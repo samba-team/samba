@@ -747,11 +747,6 @@ static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
 	return q - start; 
 }
 
-static void make_lsa_chal(DOM_CHAL *cred, char resp_cred[8])
-{
-	memcpy(cred->data, resp_cred, sizeof(cred->data));
-}
-
 static void make_lsa_r_auth_2(LSA_R_AUTH_2 *r_a,
                               DOM_CHAL *resp_cred, NEG_FLAGS *flgs, int status)
 {
@@ -777,22 +772,22 @@ static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 	return q - start; 
 }
 
-static void make_lsa_dom_chal(DOM_CRED *cred, char srv_chal[8], UTIME srv_time)
+static void make_lsa_dom_chal(DOM_CRED *cred, DOM_CHAL *srv_chal, UTIME srv_time)
 {
-	make_lsa_chal(&(cred->challenge), srv_chal);
+	memcpy(cred->challenge.data, srv_chal->data, sizeof(srv_chal->data));
 	cred->timestamp = srv_time;
 }
 	
 
 static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
-                              char srv_chal[8], UTIME srv_time, int status)
+                             DOM_CHAL *srv_chal, UTIME srv_time, int status)  
 {
 	make_lsa_dom_chal(&(r_a->srv_cred), srv_chal, srv_time);
 	r_a->status = status;
 }
 
 static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
-				char srv_cred[8], UTIME srv_time,
+				DOM_CHAL *srv_cred, UTIME srv_time,
 				int status)
 {
 	char *start = q;
@@ -922,7 +917,7 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 
 
 static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
-				char srv_cred[8], UTIME srv_time,
+				DOM_CHAL *srv_cred, UTIME srv_time,
 				LSA_USER_INFO *user_info)
 {
 	char *start = q;
@@ -946,7 +941,7 @@ static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 
 
 static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
-				char srv_cred[8], UTIME srv_time,
+				DOM_CHAL *srv_cred, UTIME srv_time,
 				uint32 status)
 {
 	char *start = q;
@@ -1276,9 +1271,9 @@ static void api_lsa_auth_2( user_struct *vuser,
                 &(vuser->dc.srv_cred), srv_time);
 
 	/* create server credentials for inclusion in the reply */
-	cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred), srv_time, &srv_chal);
+	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), srv_time, &srv_chal);
 
-	/* construct reply.  return status is always 0x0 */
+	/* construct reply.  */
 	reply_len = lsa_reply_auth_2(&q_a, *rdata + 0x18, *rdata + 0x18,
 					&srv_chal, 0x0);
 
@@ -1287,6 +1282,87 @@ static void api_lsa_auth_2( user_struct *vuser,
 
 	*rdata_len = reply_len;
 }
+
+
+static void api_lsa_srv_pwset( user_struct *vuser,
+                               char *param, char *data,
+                               char **rdata, int *rdata_len )
+{
+	int reply_len;
+	LSA_Q_SRV_PWSET q_a;
+
+	DOM_CHAL srv_chal;
+	UTIME srv_time;
+	UTIME new_clnt_time;
+
+	srv_time.time = 0;
+
+	/* grab the challenge... */
+	lsa_io_q_srv_pwset(True, &q_a, data + 0x18, data + 0x18, 4);
+
+	/* check that the client credentials are valid */
+	cred_assert(&(q_a.clnt_id.cred.challenge), vuser->dc.sess_key,
+                &(vuser->dc.srv_cred), srv_time);
+
+	new_clnt_time.time = q_a.clnt_id.cred.timestamp.time + 1;
+
+	/* create server credentials for inclusion in the reply */
+	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), new_clnt_time, &srv_chal);
+
+	*(uint32*)(vuser->dc.srv_cred.data) = ( *(uint32*)(vuser->dc.clnt_cred.data) += new_clnt_time.time );
+
+	/* construct reply.  always indicate failure.  nt keeps going... */
+	reply_len = lsa_reply_srv_pwset(&q_a, *rdata + 0x18, *rdata + 0x18,
+					&srv_chal, srv_time,
+	                NT_STATUS_WRONG_PASSWORD|0xC000000);
+
+	/* construct header, now that we know the reply length */
+	reply_len += make_rpc_reply(data, *rdata, reply_len);
+
+	*rdata_len = reply_len;
+}
+
+#if 0
+case LSASRVPWSET:
+	DEBUG(1,("LSASRVPWSET\n"));
+	q = data + 0x18;
+	dump_data(1,q,128);
+	logonsrv = q + 16;
+	q = skip_unicode_string(logonsrv,1)+12;
+	q = align4(q, data);
+	accountname = q;
+	q = skip_unicode_string(accountname,1);
+	secchanneltype = qSVAL;
+	q += 12;
+	q = align4(q, data);
+	unicomp = q;
+	q = skip_unicode_string(unicomp,1);
+	rcvcred[0] = qIVAL;
+	rcvcred[1] = qIVAL;
+	clnttime = qIVAL;
+
+	DEBUG(1,("PWSET logonsrv=%s accountname=%s unicomp=%s\n",
+		 unistr(logonsrv), unistr(accountname), unistr(unicomp)));
+
+	checkcred(cnum, rcvcred[0], rcvcred[1], clnttime);
+	DEBUG(3,("PWSET %lx %lx %lx %lx\n", rcvcred[0], rcvcred[1], clnttime, negflags));
+	newpass = q;
+
+	DEBUG(1,("PWSET logonsrv=%s accountname=%s unicomp=%s newpass=%s\n",
+		 unistr(logonsrv), unistr(accountname), unistr(unicomp), newpass));
+
+	/* PAXX: For the moment we'll reject these */
+	/* TODO Need to set newpass in smbpasswd file for accountname */
+	q = *rdata + 0x18;
+	makecred(cnum, clnttime+1, q);
+	q += 8;
+	qSIVAL(0); /* timestamp. Seems to be ignored */
+	
+	dcauth[cnum].svrcred[0] = dcauth[cnum].cred[0] = dcauth[cnum].cred[0] + clnttime + 1;
+
+	endrpcreply(data, *rdata, q-*rdata, 0xc000006a, rdata_len);
+	break;
+#endif
 
 
 BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
@@ -1331,6 +1407,13 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 			break;
 		}
 
+		case LSA_SRVPWSET:
+		{
+			DEBUG(3,("LSA_SRVPWSET\n"));
+			api_lsa_srv_pwset(vuser, param, data, rdata, rdata_len);
+			break;
+		}
+
 		default:
 		{
   			DEBUG(4, ("**** netlogon, unknown code: %lx\n", opnum));
@@ -1343,46 +1426,6 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 
 
 #if 0
-
-case LSASVRPWSET:
-	DEBUG(1,("LSASVRPWSET\n"));
-	q = data + 0x18;
-	dump_data(1,q,128);
-	logonsrv = q + 16;
-	q = skip_unicode_string(logonsrv,1)+12;
-	q = align4(q, data);
-	accountname = q;
-	q = skip_unicode_string(accountname,1);
-	secchanneltype = qSVAL;
-	q += 12;
-	q = align4(q, data);
-	unicomp = q;
-	q = skip_unicode_string(unicomp,1);
-	rcvcred[0] = qIVAL;
-	rcvcred[1] = qIVAL;
-	clnttime = qIVAL;
-
-	DEBUG(1,("PWSET logonsrv=%s accountname=%s unicomp=%s\n",
-		 unistr(logonsrv), unistr(accountname), unistr(unicomp)));
-
-	checkcred(cnum, rcvcred[0], rcvcred[1], clnttime);
-	DEBUG(3,("PWSET %lx %lx %lx %lx\n", rcvcred[0], rcvcred[1], clnttime, negflags));
-	newpass = q;
-
-	DEBUG(1,("PWSET logonsrv=%s accountname=%s unicomp=%s newpass=%s\n",
-		 unistr(logonsrv), unistr(accountname), unistr(unicomp), newpass));
-
-	/* PAXX: For the moment we'll reject these */
-	/* TODO Need to set newpass in smbpasswd file for accountname */
-	q = *rdata + 0x18;
-	makecred(cnum, clnttime+1, q);
-	q += 8;
-	qSIVAL(0); /* timestamp. Seems to be ignored */
-	
-	dcauth[cnum].svrcred[0] = dcauth[cnum].cred[0] = dcauth[cnum].cred[0] + clnttime + 1;
-
-	endrpcreply(data, *rdata, q-*rdata, 0xc000006a, rdata_len);
-	break;
 
 case LSASAMLOGON:
 	DEBUG(1,("LSASAMLOGON\n"));
@@ -1630,18 +1673,5 @@ default:
   DEBUG(4, ("**** netlogon, unknown code: %lx\n", opnum));
 
 #endif /* 0 */
-
-void no_fn(uint uid)
-{
-}
-
-#endif /* NTDOMAIN */
-
-#ifdef UNDEFINED_NTDOMAIN
-/*
-   PAXX: Someone fix above.
-   The above API is indexing RPC calls based on RPC flags and 
-   fragment length. I've decided to do it based on operation number :-)
-*/
 
 #endif /* NTDOMAIN */

@@ -282,7 +282,7 @@ typedef fstring string;
 #define LSA_QUERYINFOPOLICY 0x07
 #define LSA_ENUMTRUSTDOM    0x0d
 #define LSA_REQCHAL         0x04
-#define LSA_SVRPWSET        0x06
+#define LSA_SRVPWSET        0x06
 #define LSA_SAMLOGON        0x02
 #define LSA_AUTH2           0x0f
 #define LSA_CLOSE           0x00
