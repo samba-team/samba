@@ -1,6 +1,15 @@
 # Directory Service subsystem
 
 ################################################
+# Start MODULE libldb_samldb
+[MODULE::libldb_samldb]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/samldb.o
+# End MODULE libldb_samldb
+################################################
+
+################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
 INIT_OBJ_FILES = \
