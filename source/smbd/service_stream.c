@@ -170,7 +170,7 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 	talloc_steal(stream_socket, stream_socket->sock);
 
 	/* ready to listen */
-	status = socket_set_option(stream_socket->sock, "SO_KEEPALIVE SO_REUSEADDR=1", NULL);
+	status = socket_set_option(stream_socket->sock, "SO_KEEPALIVE", NULL);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = socket_set_option(stream_socket->sock, lp_socket_options(), NULL);

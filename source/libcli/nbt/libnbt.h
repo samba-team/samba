@@ -90,6 +90,14 @@ struct nbt_name_socket {
 
 	/* how many requests are waiting for a reply */
 	uint16_t num_pending;
+
+	/* what to do with incoming request packets */
+	struct {
+		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
+				const char *, int );
+		void *private;
+	} incoming;
+	   
 };
 
 

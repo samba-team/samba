@@ -51,7 +51,8 @@ static int nbt_name_request_destructor(void *ptr)
 	if (req->nbtsock->send_queue == NULL) {
 		req->nbtsock->fde->flags &= ~EVENT_FD_WRITE;
 	}
-	if (req->nbtsock->num_pending == 0) {
+	if (req->nbtsock->num_pending == 0 && 
+	    req->nbtsock->incoming.handler == NULL) {
 		req->nbtsock->fde->flags &= ~EVENT_FD_READ;
 	}
 	return 0;
@@ -170,6 +171,9 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	}
 
 	if (!(packet->operation & NBT_FLAG_REPLY)) {
+		if (nbtsock->incoming.handler) {
+			nbtsock->incoming.handler(nbtsock, packet, src_addr, src_port);
+		}
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -375,3 +379,20 @@ NTSTATUS nbt_name_request_recv(struct nbt_name_request *req)
 	}
 	return req->status;
 }
+
+
+/*
+  setup a handler for incoming requests
+*/
+NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
+				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
+						  const char *, int ),
+				  void *private)
+{
+	nbtsock->incoming.handler = handler;
+	nbtsock->incoming.private = private;
+	nbtsock->fde->flags |= EVENT_FD_READ;
+	socket_set_option(nbtsock->sock, "SO_BROADCAST", "1");
+	return NT_STATUS_OK;
+}
+

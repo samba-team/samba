@@ -40,6 +40,16 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE server_ldap
 ################################################
 
+################################################
+# Start MODULE server_service_nbtd
+[MODULE::server_service_nbtd]
+INIT_FUNCTION = server_service_nbtd_init
+SUBSYSTEM = SERVER_SERVICE
+REQUIRED_SUBSYSTEMS = \
+		NBTD
+# End MODULE server_service_nbtd
+################################################
+
 #######################
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
