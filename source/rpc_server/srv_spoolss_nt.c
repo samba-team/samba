@@ -779,12 +779,15 @@ static BOOL convert_devicemode(const DEVICEMODE *devmode, NT_DEVICEMODE *nt_devm
 	nt_devmode->panningwidth=devmode->panningwidth;
 	nt_devmode->panningheight=devmode->panningheight;
 
+	safe_free(nt_devmode->private);
 	if (nt_devmode->driverextra != 0) {
 		/* if we had a previous private delete it and make a new one */
-		safe_free(nt_devmode->private);
 		if((nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra * sizeof(uint8))) == NULL)
 			return False;
 		memcpy(nt_devmode->private, devmode->private, nt_devmode->driverextra);
+	}
+	else {
+		nt_devmode->private = NULL;
 	}
 
 	return True;
