@@ -180,6 +180,9 @@ typedef union {
     krb5_flags i;
 } krb5_kdc_flags;
 
+#define KRB5_GC_CACHED		1
+#define KRB5_GC_USER_USER	2
+
 typedef struct krb5_creds {
     krb5_principal client;
     krb5_principal server;
