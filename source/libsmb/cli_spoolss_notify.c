@@ -60,7 +60,7 @@ WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	
 	/* Unmarshall response */
 	
-	if (spoolss_io_r_replyopenprinter("", &r, &rbuf, 0))
+	if (!spoolss_io_r_replyopenprinter("", &r, &rbuf, 0))
 		goto done;
 		
 	/* Return result */
@@ -100,7 +100,7 @@ WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ct
 	
 	/* Unmarshall response */
 	
-	if (spoolss_io_r_replycloseprinter("", &r, &rbuf, 0))
+	if (!spoolss_io_r_replycloseprinter("", &r, &rbuf, 0))
 		goto done;
 		
 	/* Return result */
@@ -144,7 +144,7 @@ WERROR cli_spoolss_routerreplyprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	
 	/* Unmarshall response */
 	
-	if (spoolss_io_r_routerreplyprinter("", &r, &rbuf, 0))
+	if (!spoolss_io_r_routerreplyprinter("", &r, &rbuf, 0))
 		goto done;
 
 	/* Return output parameters */
@@ -165,85 +165,59 @@ done:
  Also see cli_spoolss_routereplyprinter()
  *********************************************************************/
 
-WERROR cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-			       POLICY_HND *pol, uint32 change_low,
-			       uint32 change_high, SPOOL_NOTIFY_INFO *info)
+WERROR cli_spoolss_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			 POLICY_HND *pol, uint32 notify_data_len,
+			 SPOOL_NOTIFY_INFO_DATA *notify_data,
+			 uint32 change_low, uint32 change_high)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_REPLY_RRPCN q;
 	SPOOL_R_REPLY_RRPCN r;
 	WERROR result = W_ERROR(ERRgeneral);
+	SPOOL_NOTIFY_INFO 	notify_info;
 
-	/* Initialise input parameters */
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	make_spoolss_q_reply_rrpcn(&q, pol, change_low, change_high, info);
+	ZERO_STRUCT(notify_info);
 
-	/* Marshall data and send request */
+	/* Initialise input parameters */
 
-	if (!spoolss_io_q_reply_rrpcn("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_RRPCN, &qbuf, &rbuf)) 
-		goto done;
-	
-	/* Unmarshall response */
-	
-	if (spoolss_io_r_reply_rrpcn("", &r, &rbuf, 0))
-		goto done;
-
-#if 0
-	/*
-	 * See comments in _spoolss_setprinter() about PRINTER_CHANGE_XXX
-	 * events.  --jerry
-	 */
-	DEBUG(10,("cli_spoolss_reply_rrpcn: PRINTER_MESSAGE flags = 0x%8x\n", info->flags));
-
-	data_len = build_notify_data(mem_ctx, printer, info->flags, &notify_data);
-	if (info->flags && (data_len == -1)) {
-		DEBUG(0,("cli_spoolss_reply_rrpcn: Failed to build SPOOL_NOTIFY_INFO_DATA [flags == 0x%x] for printer [%s]\n",
-			info->flags, info->printer_name));
-		result = WERR_NOMEM;
-		goto done;
-	}
 	notify_info.version = 0x2;
 	notify_info.flags   = 0x00020000;	/* ?? */
-	notify_info.count   = data_len;
+	notify_info.count   = notify_data_len;
 	notify_info.data    = notify_data;
 
 	/* create and send a MSRPC command with api  */
 	/* store the parameters */
 
-	make_spoolss_q_reply_rrpcn(&q_s, handle, info->low, info->high, &notify_info);
+	make_spoolss_q_reply_rrpcn(&q, pol, change_low, change_high, 
+				   &notify_info);
 
-	/* turn parameters into data stream */
-	if(!spoolss_io_q_reply_rrpcn("", &q_s,  &buf, 0)) {
-		DEBUG(0,("cli_spoolss_reply_rrpcn: Error : failed to marshall SPOOL_Q_REPLY_RRPCN struct.\n"));
-		goto done;
-	}
+	/* Marshall data and send request */
 
-	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SPOOLSS_RRPCN, &buf, &rbuf)) 
+	if(!spoolss_io_q_reply_rrpcn("", &q,  &qbuf, 0) ||
+	   !rpc_api_pipe_req(cli, SPOOLSS_RRPCN, &qbuf, &rbuf)) 
 		goto done;
 
-
-	/* turn data stream into parameters*/
-	if(!spoolss_io_r_reply_rrpcn("", &r_s, &rbuf, 0)) {
-		DEBUG(0,("cli_spoolss_reply_rrpcn: Error : failed to unmarshall SPOOL_R_REPLY_RRPCN struct.\n"));
+	/* Unmarshall response */
+	
+	if(!spoolss_io_r_reply_rrpcn("", &r, &rbuf, 0))
 		goto done;
-	}
 
-#endif
-
-	if (r.unknown0 == 0x00080000) {
+	if (r.unknown0 == 0x00080000)
 		DEBUG(8,("cli_spoolss_reply_rrpcn: I think the spooler resonded that the notification was ignored.\n"));
-	}
-
+	
 	result = r.status;
 
 done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
-	
+
 	return result;
 }
