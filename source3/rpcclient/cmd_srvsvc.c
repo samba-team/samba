@@ -179,14 +179,13 @@ static void display_srv_info_102(SRV_INFO_102 *sv102)
 }
 
 /* Server query info */
-
 static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, char **argv)
 {
 	uint32 info_level = 101;
 	SRV_INFO_CTR ctr;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
@@ -199,7 +198,7 @@ static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli,
 	result = cli_srvsvc_net_srv_get_info(cli, mem_ctx, info_level,
 					     &ctr);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -218,7 +217,7 @@ static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli,
 	}
 
  done:
-	return result;
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
