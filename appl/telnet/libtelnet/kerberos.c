@@ -302,9 +302,22 @@ kerberos4_is(ap, data, cnt)
 
 		if (UserNameRequested && !kuserok(&adat, UserNameRequested))
 			Data(ap, KRB_ACCEPT, (void *)0, 0);
-		else
-			Data(ap, KRB_REJECT,
-				(void *)"user is not authorized", -1);
+		else {
+			char *msg = malloc(ANAME_SZ + 1 + INST_SZ +
+					   REALM_SZ +
+					   strlen(UserNameRequested) + 80);
+			
+			if (msg == NULL)
+				Data(ap, KRB_REJECT, (void *)0, 0);
+			sprintf (msg, "user `%s%s%s@%s' is not authorized "
+				 "to login as `%s'", adat.pname,
+				 *adat.pinst == '\0' ? "" : ".",
+				 adat.pinst, 
+				 adat.prealm,
+				 UserNameRequested);
+			Data(ap, KRB_REJECT, (void *)msg, -1);
+			free(msg);
+		}
 		auth_finished(ap, AUTH_USER);
 		break;
 
