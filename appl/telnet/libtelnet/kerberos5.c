@@ -56,23 +56,15 @@
 RCSID("$Id$");
 
 #ifdef	KRB5
+
 #include <arpa/telnet.h>
 #include <stdio.h>
+#include <netdb.h>
+#include <ctype.h>
+#include <pwd.h>
 #define Authenticator k5_Authenticator
 #include <krb5.h>
 #undef Authenticator
-#include <des.h>
-#if 0
-#include <krb5/asn1.h>
-#include <krb5/crc-32.h>
-#include <krb5/los-proto.h>
-#include <krb5/ext-proto.h>
-#endif
-#if 0
-#include <com_err.h>
-#endif
-#include <netdb.h>
-#include <ctype.h>
 #ifdef SOCKS
 #include <socks.h>
 #endif
@@ -86,6 +78,12 @@ RCSID("$Id$");
 
 extern auth_debug_mode;
 
+/* where should this really reside? */
+
+#ifdef KRB5
+#define FORWARD
+#endif
+
 #ifdef	FORWARD
 int forward_flags = 0;  /* Flags get set in telnet/main.c on -f and -F */
 
@@ -94,7 +92,7 @@ int forward_flags = 0;  /* Flags get set in telnet/main.c on -f and -F */
 #define OPTS_FORWARD_CREDS	0x00000002
 #define OPTS_FORWARDABLE_CREDS	0x00000001
 
-void kerberos5_forward();
+void kerberos5_forward (Authenticator *);
 
 #endif	/* FORWARD */
 
@@ -357,28 +355,60 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	
 	break;
 #ifdef	FORWARD
-    case KRB_FORWARD:
+    case KRB_FORWARD: {
+	struct passwd *pwd;
+	char ccname[1024];	/* XXX */
+	krb5_data inbuf;
+	krb5_ccache ccache;
 	inbuf.data = (char *)data;
 	inbuf.length = cnt;
-	if (r = rd_and_store_for_creds(&inbuf, authdat->ticket,
-				       UserNameRequested)) {
+
+	pwd = getpwnam (UserNameRequested);
+	if (pwd == NULL)
+	    break;
+
+	snprintf (ccname, sizeof(ccname),
+		  "FILE:/tmp/krb5cc_%u", pwd->pw_uid);
+
+	r = krb5_cc_resolve (context, ccname, &ccache);
+	if (r) {
+	    if (auth_debug_mode)
+		printf ("Kerberos V5: could not get ccache\r\n");
+	    break;
+	}
+
+	r = krb5_cc_initialize (context,
+				ccache,
+				ticket->client);
+	if (r) {
+	    if (auth_debug_mode)
+		printf ("Kerberos V5: could not init ccache\r\n");
+	    break;
+	}
+
+
+	r = krb5_rd_cred (context,
+			  auth_context,
+			  ccache,
+			  &inbuf);
+	if(r) {
 	    char *errbuf;
 
-
-	    asprintf(&errbuf,
-		     "Read forwarded creds failed: %s",
-		     krb5_get_err_text (context, r));
+	    asprintf (&errbuf,
+		      "Read forwarded creds failed: %s",
+		      krb5_get_err_text (context, r));
 	    Data(ap, KRB_FORWARD_REJECT, errbuf, -1);
 	    if (auth_debug_mode)
 		printf("Could not read forwarded credentials: %s\r\n",
 		       errbuf);
 	    free (errbuf);
-	}
-	else
+	} else
 	    Data(ap, KRB_FORWARD_ACCEPT, 0, 0);
+	chown (ccname + 5, pwd->pw_uid, -1);
 	if (auth_debug_mode)
 	    printf("Forwarded credentials obtained\r\n");
 	break;
+    }
 #endif	/* FORWARD */
     default:
 	if (auth_debug_mode)
@@ -575,85 +605,79 @@ kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
     }
 }
 
-#ifdef	FORWARD
+#ifdef FORWARD
 void
 kerberos5_forward(Authenticator *ap)
 {
-    struct hostent *hp;
-    krb5_creds *local_creds;
-    krb5_error_code r;
-    krb5_data forw_creds;
-    extern krb5_cksumtype krb5_kdc_req_sumtype;
-    krb5_ccache ccache;
-    int i;
+    krb5_error_code ret;
+    krb5_ccache     ccache;
+    krb5_creds      creds;
+    krb5_kdc_flags  flags;
+    krb5_data       out_data;
+    krb5_principal  principal;
 
-    if (!(local_creds = (krb5_creds *)
-	  calloc(1, sizeof(*local_creds)))) {
+    ret = krb5_cc_default (context, &ccache);
+    if (ret) {
 	if (auth_debug_mode)
-	    printf("Kerberos V5: could not allocate memory for credentials\r\n");
+	    printf ("KerberosV5: could not get default ccache: %s\r\n",
+		    krb5_get_err_text (context, ret));
 	return;
     }
 
-    if (r = krb5_sname_to_principal(context, RemoteHostName, "host", 1,
-				    &local_creds->server)) {
+    ret = krb5_cc_get_principal (context, ccache, &principal);
+    if (ret) {
 	if (auth_debug_mode)
-	    printf("Kerberos V5: could not build server name - %s\r\n",
-		   krb5_get_err_text(context, r));
-	krb5_free_creds(local_creds);
+	    printf ("KerberosV5: could not get principal: %s\r\n",
+		    krb5_get_err_text (context, ret));
 	return;
     }
 
-    if (r = krb5_cc_default(&ccache)) {
+    creds.client = principal;
+    
+    ret = krb5_build_principal (context,
+				&creds.server,
+				strlen(principal->realm),
+				principal->realm,
+				"krbtgt",
+				principal->realm,
+				NULL);
+
+    if (ret) {
 	if (auth_debug_mode)
-	    printf("Kerberos V5: could not get default ccache - %s\r\n",
-		   krb5_get_err_text(context, r));
-	krb5_free_creds(local_creds);
+	    printf ("KerberosV5: could not get principal: %s\r\n",
+		    krb5_get_err_text (context, ret));
 	return;
     }
 
-    if (r = krb5_cc_get_principal(ccache, &local_creds->client)) {
+    creds.times.endtime = 0;
+
+    flags.i = 0;
+    flags.b.forwarded = 1;
+    if (forward_flags & OPTS_FORWARDABLE_CREDS)
+	flags.b.forwardable = 1;
+
+    ret = krb5_get_forwarded_creds (context,
+				    auth_context,
+				    ccache,
+				    flags.i,
+				    RemoteHostName,
+				    &creds,
+				    &out_data);
+    if (ret) {
 	if (auth_debug_mode)
-	    printf("Kerberos V5: could not get default principal - %s\r\n",
-		   krb5_get_err_text(context, r));
-	krb5_free_creds(local_creds);
+	    printf ("Kerberos V5: error gettting forwarded creds: %s\r\n",
+		    krb5_get_err_text (context, ret));
 	return;
     }
 
-    /* Get ticket from credentials cache */
-    if (r = krb5_get_credentials(KRB5_GC_CACHED, ccache, local_creds)) {
-	if (auth_debug_mode)
-	    printf("Kerberos V5: could not obtain credentials - %s\r\n",
-		   krb5_get_err_text(context, r));
-	krb5_free_creds(local_creds);
-	return;
-    }
-
-    if (r = get_for_creds(ETYPE_DES_CBC_CRC,
-			  krb5_kdc_req_sumtype,
-			  RemoteHostName,
-			  local_creds->client,
-			  &local_creds->keyblock,
-			  forward_flags & OPTS_FORWARDABLE_CREDS,
-			  &forw_creds)) {
-	if (auth_debug_mode)
-	    printf("Kerberos V5: error getting forwarded creds - %s\r\n",
-		   krb5_get_err_text(context, r));
-	krb5_free_creds(local_creds);
-	return;
-    }
-
-    /* Send forwarded credentials */
-    if (!Data(ap, KRB_FORWARD, forw_creds.data, forw_creds.length)) {
+    if(!Data(ap, KRB_FORWARD, out_data.data, out_data.length)) {
 	if (auth_debug_mode)
 	    printf("Not enough room for authentication data\r\n");
-    }
-    else {
+    } else {
 	if (auth_debug_mode)
 	    printf("Forwarded local Kerberos V5 credentials to server\r\n");
     }
-
-    krb5_free_creds(local_creds);
 }
-#endif	/* FORWARD */
+#endif
 
 #endif /* KRB5 */
