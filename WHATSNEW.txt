@@ -38,6 +38,7 @@ o   Jeremy Allison <jra@samba.org>
       FindFirst/FindNext info level of 0x104.
     * BUG 2501: Stop Win98 from looping doing FindNext on a 
       singleton directory. 
+    * BUG 2521: Fix error in access checks when user group ACLs.
       
       
 o   Gerald (Jerry) Carter <jerry@samba.org>
