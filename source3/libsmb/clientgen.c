@@ -2269,6 +2269,7 @@ BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip)
                 if (!resolve_name( cli->desthost, &dest_ip, 0x20)) {
                         return False;
                 }
+		if (ip) *ip = dest_ip;
 	} else {
 		dest_ip = *ip;
 	}
