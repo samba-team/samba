@@ -233,6 +233,17 @@ struct acct_info
     uint32 smb_userid; /* domain-relative RID */
 };
 
+/*
+ * higher order functions for use with msrpc client code
+ */
+
+#define PRINT_INFO_FN(fn)\
+        void (*fn)(const char*, uint32, uint32, void  *const *const)
+#define JOB_INFO_FN(fn)\
+        void (*fn)(const char*, const char*, uint32, uint32, void *const *const)
+
+/* end higher order functions */
+
 struct cli_connection;
 
 typedef struct cli_auth_fns

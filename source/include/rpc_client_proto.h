@@ -16,8 +16,11 @@ BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
                               cli_auth_fns * auth, void *auth_creds);
 struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con);
 void *cli_conn_get_auth_creds(struct cli_connection *con);
+BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
+                      prs_struct * data, prs_struct * rdata);
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
                       prs_struct * data, prs_struct * rdata);
+BOOL rpc_con_ok(struct cli_connection *con);
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
@@ -156,9 +159,42 @@ BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_spoolss.c  */
 
+uint32 spoolss_enum_printerdrivers(const char * srv_name,
+                                const char *environment,
+                                uint32 level,
+                             NEW_BUFFER *buffer, uint32 offered,
+                             uint32 *needed, uint32 *returned);
 uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
                              NEW_BUFFER *buffer, uint32 offered,
                              uint32 *needed, uint32 *returned);
+uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
+                         uint32 level, NEW_BUFFER *buffer, uint32 offered,
+                         uint32 *needed, uint32 *returned);
+uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
+                        uint32 *valuelen, uint16 *value, uint32 *rvaluelen,
+                        uint32 *type,
+                        uint32 *datalen, uint8 *data, uint32 *rdatalen);
+uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level,
+                             NEW_BUFFER *buffer, uint32 offered,
+                             uint32 *needed);
+uint32 spoolss_getprinterdriver(const POLICY_HND *hnd,
+                                const char *environment, uint32 level,
+                                NEW_BUFFER *buffer, uint32 offered,
+                                uint32 *needed);
+BOOL spoolss_open_printer_ex(  const char *printername,
+                         const char *datatype, uint32 access_required,
+                         const char *station,  const char *username,
+                        POLICY_HND *hnd);
+BOOL spoolss_closeprinter(POLICY_HND *hnd);
+uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
+                        uint32 in_size,
+                        uint32 *type,
+                        uint32 *out_size,
+                        uint8 *data,
+                        uint32 *needed);
+uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 level,
+                             NEW_BUFFER *buffer, uint32 offered,
+                             uint32 *needed);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
@@ -215,13 +251,4 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
                                   const char *srv_name,
                                   const struct ntuser_creds *ntc,
                                   BOOL reuse, BOOL *is_new_connection);
-
-/*The following definitions come from  rpc_client/ncalrpc_l_use.c  */
-
-struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
-                                      const vuser_key * key,
-                                      BOOL reuse, BOOL *is_new);
-BOOL ncalrpc_l_use_del(const char *pipe_name,
-                       const vuser_key * key,
-                       BOOL force_close, BOOL *connection_closed);
 #endif /* _PROTO_H_ */
