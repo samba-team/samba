@@ -685,6 +685,8 @@ extern int errno;
 #include "libnet/libnet.h"
 #include "utils/net/net.h"
 
+#include "nsswitch/winbind_client.h"
+
 /* hmm, this really is getting ugly isn't it .... we probably need to
    have some way to have subsystem includes without including it
    globally */
