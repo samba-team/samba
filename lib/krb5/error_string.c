@@ -41,17 +41,21 @@ RCSID("$Id$");
 void
 krb5_free_error_string(krb5_context context, char *str)
 {
+    HEIMDAL_MUTEX_lock(context->mutex);
     if (str != context->error_buf)
 	free(str);
+    HEIMDAL_MUTEX_unlock(context->mutex);
 }
 
 void
 krb5_clear_error_string(krb5_context context)
 {
+    HEIMDAL_MUTEX_lock(context->mutex);
     if (context->error_string != NULL
 	&& context->error_string != context->error_buf)
 	free(context->error_string);
     context->error_string = NULL;
+    HEIMDAL_MUTEX_unlock(context->mutex);
 }
 
 krb5_error_code
@@ -72,24 +76,34 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
     __attribute__ ((format (printf, 2, 0)))
 {
     krb5_clear_error_string(context);
+    HEIMDAL_MUTEX_lock(context->mutex);
     vasprintf(&context->error_string, fmt, args);
     if(context->error_string == NULL) {
 	vsnprintf (context->error_buf, sizeof(context->error_buf), fmt, args);
 	context->error_string = context->error_buf;
     }
+    HEIMDAL_MUTEX_unlock(context->mutex);
     return 0;
 }
 
 char*
 krb5_get_error_string(krb5_context context)
 {
-    char *ret = context->error_string;
+    char *ret;
+
+    HEIMDAL_MUTEX_lock(context->mutex);
+    ret = context->error_string;
     context->error_string = NULL;
+    HEIMDAL_MUTEX_unlock(context->mutex);
     return ret;
 }
 
 krb5_boolean
 krb5_have_error_string(krb5_context context)
 {
-    return context->error_string != NULL;
+    char *str;
+    HEIMDAL_MUTEX_lock(context->mutex);
+    str = context->error_string;
+    HEIMDAL_MUTEX_unlock(context->mutex);
+    return str != NULL;
 }
