@@ -915,10 +915,10 @@ static void init_globals(void)
   Globals.bDNSproxy = True;
 
   /*
-   * smbd will check after starting to see if this value
-   * should be set to "true" or not.
+   * smbd will check at runtime to see if this value
+   * will really be used or not.
    */
-  lp_set_kernel_oplocks(False);
+  Globals.bKernelOplocks = True;
 
   /*
    * This must be done last as it checks the value in 
@@ -1163,7 +1163,6 @@ FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_ole_locking_compat,&Globals.bOleLockingCompat)
 FN_GLOBAL_BOOL(lp_nt_smb_support,&Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
-FN_GLOBAL_BOOL(lp_kernel_oplocks,&Globals.bKernelOplocks)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
@@ -2668,10 +2667,32 @@ void lp_set_name_resolve_order(char *new_order)
 }
 
 /***********************************************************
- Set the real value of kernel oplocks (called by smbd).
+ Set the flag that says if kernel oplocks are available 
+ (called by smbd).
 ************************************************************/
+
+static BOOL kernel_oplocks_available = False;
 
 void lp_set_kernel_oplocks(BOOL val)
 {
-  Globals.bKernelOplocks = val;
+  /*
+   * Only set this to True if kerenl
+   * oplocks are really available and were
+   * turned on in the smb.conf file.
+   */
+
+  if(Globals.bKernelOplocks && val)
+    kernel_oplocks_available = True;
+  else
+    kernel_oplocks_available = False;
+}
+
+/***********************************************************
+ Return True if kernel oplocks are available and were turned
+ on in smb.conf.
+************************************************************/
+
+BOOL lp_kernel_oplocks(void)
+{
+  return kernel_oplocks_available;
 }

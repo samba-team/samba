@@ -1077,9 +1077,11 @@ Disabling kernel oplock support.\n", strerror(errno) ));
     oplock_pipe_write = pfd[1];
     close(fd);
 
-    DEBUG(3,("check_kernel_oplocks: Kernel oplocks enabled.\n"));
-
     lp_set_kernel_oplocks(True);
+
+    DEBUG(3,("check_kernel_oplocks: Kernel oplocks available and set to %s.\n",
+          lp_kernel_oplocks() ? "True" : "False" ));
+
   }
 #endif /* HAVE_KERNEL_OPLOCKS */
 }
