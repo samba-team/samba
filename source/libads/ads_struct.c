@@ -22,14 +22,13 @@
 
 #include "includes.h"
 
-/* return a dn of the form "dc=AA,dc=BB,dc=CC" from a 
-   realm of the form AA.BB.CC 
+/* return a ldap dn path from a string, given separators and field name
    caller must free
 */
-char *ads_build_dn(const char *realm)
+char *ads_build_path(const char *realm, const char *sep, const char *field, int reverse)
 {
 	char *p, *r;
-	int numdots = 0;
+	int numbits = 0;
 	char *ret;
 	int len;
 	
@@ -38,24 +37,39 @@ char *ads_build_dn(const char *realm)
 	if (!r || !*r) return r;
 
 	for (p=r; *p; p++) {
-		if (*p == '.') numdots++;
+		if (strchr(sep, *p)) numbits++;
 	}
 
-	len = (numdots+1)*4 + strlen(r) + 1;
+	len = (numbits+1)*(strlen(field)+1) + strlen(r) + 1;
 
 	ret = malloc(len);
-	strlcpy(ret,"dc=", len);
-	p=strtok(r,"."); 
+	strlcpy(ret,field, len);
+	p=strtok(r,sep); 
 	strlcat(ret, p, len);
 
-	while ((p=strtok(NULL,"."))) {
-		strlcat(ret,",dc=", len);
-		strlcat(ret, p, len);
+	while ((p=strtok(NULL,sep))) {
+		char *s;
+		if (reverse) {
+			asprintf(&s, "%s%s,%s", field, p, ret);
+		} else {
+			asprintf(&s, "%s,%s%s", ret, field, p);
+		}
+		free(ret);
+		ret = s;
 	}
 
 	free(r);
 
 	return ret;
+}
+
+/* return a dn of the form "dc=AA,dc=BB,dc=CC" from a 
+   realm of the form AA.BB.CC 
+   caller must free
+*/
+char *ads_build_dn(const char *realm)
+{
+	return ads_build_path(realm, ".", "dc=", 0);
 }
 
 

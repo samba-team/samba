@@ -173,6 +173,23 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ...)
 }
 
 /*
+  build an org unit string
+  if org unit is Computers or blank then assume a container, otherwise
+  assume a \ separated list of organisational units
+  caller must free
+*/
+char *ads_ou_string(const char *org_unit)
+{	
+	if (!org_unit || !*org_unit || strcasecmp(org_unit, "Computers") == 0) {
+		return strdup("cn=Computers");
+	}
+
+	return ads_build_path(org_unit, "\\/", "ou=", 1);
+}
+
+
+
+/*
   add a machine account to the ADS server
 */
 static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname, 
@@ -180,10 +197,13 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 {
 	ADS_STATUS ret;
 	char *host_spn, *host_upn, *new_dn, *samAccountName, *controlstr;
+	char *ou_str;
 
 	asprintf(&host_spn, "HOST/%s", hostname);
 	asprintf(&host_upn, "%s@%s", host_spn, ads->realm);
-	asprintf(&new_dn, "cn=%s,cn=%s,%s", hostname, org_unit, ads->bind_path);
+	ou_str = ads_ou_string(org_unit);
+	asprintf(&new_dn, "cn=%s,%s,%s", hostname, ou_str, ads->bind_path);
+	free(ou_str);
 	asprintf(&samAccountName, "%s$", hostname);
 	asprintf(&controlstr, "%u", 
 		UF_DONT_EXPIRE_PASSWD | UF_WORKSTATION_TRUST_ACCOUNT | 
