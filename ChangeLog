@@ -1,5 +1,7 @@
 Sun Jul 27 04:44:31 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/log.c: Add some general logging functions.
+
 	* kdc/kerberos4.c: Add version 4 protocol handler. The requrement
  	for this to work is that all involved principals has a des key in
  	the database, and that the client has a version 4 (un-)salted
