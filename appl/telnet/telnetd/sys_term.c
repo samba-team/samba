@@ -1250,11 +1250,8 @@ start_login(char *host, int autologin, char *name)
     char *user;
 
 #ifdef HAVE_UTMPX_H
-    char id_buf[3];
-    int ptynum;
     int pid = getpid();
     struct utmpx utmpx;
-    struct timeval tmp;
     char *clean_tty;
 
     /*
@@ -1375,12 +1372,6 @@ static int addarg(struct arg_val *argv, char *val)
 static void
 rmut(void)
 {
-    int f;
-    int found = 0;
-    struct utmp *u, *utmp;
-    int nutmp;
-    struct stat statbf;
-    struct timeval tmp;
     struct utmpx *utxp, utmpx;
     char *clean_tty = clean_ttyname(line);
 
