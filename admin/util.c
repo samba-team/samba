@@ -37,6 +37,7 @@
  */
 
 #include "admin_locl.h"
+#include <parse_units.h>
 
 void
 init_des_key(hdb_entry *ent)
@@ -92,56 +93,73 @@ event2string(Event *ev, char **str)
  */
 
 int
-flags2int(HDBFlags *f)
+flags2int(HDBFlags f)
 {
-    return (f->initial      << 0) |
-	(f->forwardable     << 1) |
-	(f->proxiable       << 2) |
-	(f->renewable       << 3) |
-	(f->postdate        << 4) |
-	(f->server          << 5) |
-	(f->client          << 6) |
-	(f->invalid         << 7) |
-	(f->require_preauth << 8) |
-	(f->change_pw       << 9);
+    return (f.initial      << 0) |
+	(f.forwardable     << 1) |
+	(f.proxiable       << 2) |
+	(f.renewable       << 3) |
+	(f.postdate        << 4) |
+	(f.server          << 5) |
+	(f.client          << 6) |
+	(f.invalid         << 7) |
+	(f.require_preauth << 8) |
+	(f.change_pw       << 9);
 }
 
-static struct flag_name {
-    const char *name;
-    int val;
-} flag_names[] = {
-    {"initial",		0},
-    {"forwardable",	1},
-    {"proxiable",	2},
-    {"renewable",	3},
-    {"postdate",	4},
-    {"server",		5},
-    {"client",		6},
-    {"invalid",		7},
-    {"require_preauth",	8},
-    {"change_pw",	9},
+HDBFlags
+int2flags(int n)
+{
+    HDBFlags flags;
+
+    flags.initial         = (n >> 0) & 1;
+    flags.forwardable     = (n >> 1) & 1;
+    flags.proxiable       = (n >> 2) & 1;
+    flags.renewable       = (n >> 3) & 1;
+    flags.postdate        = (n >> 4) & 1;
+    flags.server          = (n >> 5) & 1;
+    flags.client          = (n >> 6) & 1;
+    flags.invalid         = (n >> 7) & 1;
+    flags.require_preauth = (n >> 8) & 1;
+    flags.change_pw       = (n >> 9) & 1;
+    return flags;
+}
+
+static struct units flag_units[] = {
+    {"change_pw",	1 << 9},
+    {"require_preauth",	1 << 8},
+    {"invalid",		1 << 7},
+    {"client",		1 << 6},
+    {"server",		1 << 5},
+    {"postdate",	1 << 4},
+    {"renewable",	1 << 3},
+    {"proxiable",	1 << 2},
+    {"forwardable",	1 << 1},
+    {"initial",		1 << 0},
     {NULL,		0}
 };
 
 void
-print_flags (FILE *fp, HDBFlags *flags)
+print_hdbflags (FILE *fp, HDBFlags flags)
 {
-    struct flag_name *f;
-    int first_flag = 1;
-    int n = flags2int (flags);
+    char buf[1024];
 
-    for(f = flag_names; f->name != NULL; ++f)
-	if (n & f->val) {
-	    if(!first_flag)
-		fprintf(fp, ", ");
-	    fprintf(fp, "%s", f->name);
-	    first_flag = 0;
-	}
+    unparse_flags (flags2int(flags), flag_units, buf, sizeof(buf));
+    fprintf (fp, "%s", buf);
 }
 
 int
-parse_flags (const char *s, HDBFlags *flags)
+parse_hdbflags (const char *s, HDBFlags *flags)
 {
+    int t;
+
+    t = parse_flags (s, flag_units, flags2int(*flags));
+    if (t < 0)
+	return t;
+    else {
+	*flags = int2flags(t);
+	return 0;
+    }
 }
 
 void
@@ -236,6 +254,21 @@ get_time (const char *name, time_t **v)
     /* XXX */
 }
 
+static void
+get_flags(const char *name, HDBFlags *flags)
+{
+    char buf[1024];
+
+    fprintf (stderr, "%s [", name);
+    print_hdbflags (stderr, *flags);
+    fprintf (stderr, "]: ");
+    if(fgets(buf, sizeof(buf), stdin) == NULL)
+	return;
+    buf[strlen(buf) - 1] = '\0';
+    if(*buf != '\0')
+	parse_hdbflags(buf, flags);
+}
+
 void
 edit_entry(hdb_entry *ent)
 {
@@ -244,7 +277,7 @@ edit_entry(hdb_entry *ent)
     get_time ("Password end", &ent->pw_end);
     get_life ("Max ticket life", &ent->max_life);
     get_life ("Max renewable life", &ent->max_renew);
-    /* flags */
+    get_flags ("Flags", &ent->flags);
 }
 
 void
