@@ -50,6 +50,9 @@ static BOOL api_spoolss_open_printer_ex(prs_struct *data, prs_struct *rdata)
 	                                       q_u.user_switch, q_u.user_ctr,
 	                                       &r_u.handle);
 
+	/* we _really_ need to switch to talloc() */
+	safe_free(q_u.printer_default.devmode_cont.devmode);
+
 	if (!spoolss_io_r_open_printer_ex("",&r_u,rdata,0)){
 		DEBUG(0,("spoolss_io_r_open_printer_ex: unable to marshall SPOOL_R_OPEN_PRINTER_EX.\n"));
 		return False;
