@@ -3224,17 +3224,22 @@ void cmd_sam_add_groupmem(struct client_info *info);
 void cmd_sam_create_dom_group(struct client_info *info);
 uint32 sam_query_usergroups(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
+				char *domain,
+				DOM_SID *sid,
 				uint32 user_rid,
+				char *user_name,
 				uint32 *num_groups,
 				DOM_GID **gid,
 				char    ***name,
-				uint32  **type);
+				uint32  **type,
+				USER_MEM_FN(usr_mem));
 int msrpc_sam_enum_users(struct client_info *info,
 			struct acct_info **sam,
 			uint32 *num_sam_entries,
-			BOOL request_user_info,
-			BOOL request_group_info,
-			BOOL request_alias_info);
+			USER_FN(usr_fn),
+			USER_INFO_FN(usr_inf_fn),
+			USER_MEM_FN(usr_grp_fn),
+			USER_MEM_FN(usr_als_fn));
 void cmd_sam_enum_users(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
 void cmd_sam_query_dispinfo(struct client_info *info);
