@@ -4377,7 +4377,6 @@ static void usage(void)
 
 		lp_set_cmdline("torture:host", host);
 		lp_set_cmdline("torture:share", share);
-		lp_set_cmdline("torture:password", "");
 		asprintf(&binding, "ncacn_np:%s", host);
 		lp_set_cmdline("torture:binding", binding);
 	}
