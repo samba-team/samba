@@ -207,6 +207,8 @@ static int binary_net(int argc, const char **argv)
 		return 1;
 	}
 
+	net_init_subsystems;
+
 	mem_ctx = talloc_init("net_context");
 	ctx = talloc_p(mem_ctx, struct net_context);
 	if (!ctx) {
@@ -232,6 +234,5 @@ static int binary_net(int argc, const char **argv)
 
  int main(int argc, const char **argv)
 {
-	net_init_subsystems;
 	return binary_net(argc, argv);
 }

@@ -2390,6 +2390,7 @@ static struct {
 	{"BASE-CHARSET", torture_charset, 0},
 	{"BASE-CHKPATH",  torture_chkpath_test, 0},
 	{"BASE-SECLEAK",  torture_sec_leak, 0},
+	{"BASE-DISCONNECT",  torture_disconnect, 0},
 
 	/* benchmarking tests */
 	{"BENCH-HOLDCON",  torture_holdcon, 0},
@@ -2633,8 +2634,6 @@ static BOOL is_binding_string(const char *binding_string)
 		POPT_TABLEEND
 	};
 
-	smbtorture_init_subsystems;
-
 	setup_logging("smbtorture", DEBUG_STDOUT);
 
 #ifdef HAVE_SETBUFFER
@@ -2673,6 +2672,10 @@ static BOOL is_binding_string(const char *binding_string)
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
+
+	smbtorture_init_subsystems;
+
+
 	if (torture_seed == 0) {
 		torture_seed = time(NULL);
 	} 

@@ -459,8 +459,6 @@ static void usage(void)
 	int opt;
 	int seed, server, i;
 
-	locktest_init_subsystems;
-
 	setlinebuf(stdout);
 
 	setup_logging("locktest", DEBUG_STDOUT);
@@ -549,6 +547,8 @@ static void usage(void)
 		servers[1].username = servers[0].username;
 		servers[1].password = servers[0].password;
 	}
+
+	locktest_init_subsystems;
 
 	argc -= optind;
 	argv += optind;
