@@ -1612,8 +1612,7 @@ ssl_pass_cb(char *buf, int size, int rwflag, void *u)
 krb5_error_code
 _krb5_pk_load_openssl_id(krb5_context context,
 			 struct krb5_pk_identity **ret_id,
-			 const char *cert_file,
-			 const char *key_file,
+			 const char *user_id,
 			 const char *x509_anchors,
 			 krb5_prompter_fct prompter,
 			 char *password)
@@ -1621,38 +1620,64 @@ _krb5_pk_load_openssl_id(krb5_context context,
     struct krb5_pk_identity *id = NULL;
     STACK_OF(X509) *certificate = NULL, *trusted_certs = NULL;
     EVP_PKEY *private_key = NULL;
-    int no_password;
     krb5_error_code ret;
     struct dirent *file;
-    char *dirname;
+    char *cert_file;
+    char *key_file;
+    char *dirname = NULL;
     X509 *cert;
     DIR *dir;
     FILE *f;
 
     *ret_id = NULL;
 
-    OpenSSL_add_all_algorithms();
-    ERR_load_crypto_strings();
-
-    if (cert_file == NULL) {
-	krb5_set_error_string(context, "certificate file file missing");
-	return HEIM_PKINIT_NO_CERTIFICATE;
-    }
-    if (key_file == NULL) {
-	krb5_set_error_string(context, "key file missing");
-	return HEIM_PKINIT_NO_PRIVATE_KEY;
-    }
     if (x509_anchors == NULL) {
 	krb5_set_error_string(context, "No root ca directory given\n");
 	return HEIM_PKINIT_NO_VALID_CA;
     }
+
+    if (user_id == NULL) {
+	krb5_set_error_string(context, "No user X509 source given given\n");
+	return HEIM_PKINIT_NO_PRIVATE_KEY;
+    }
+
+    /* 
+     *
+     */
+
+    if (strncasecmp(user_id, "FILE:", 5) != 0) {
+	krb5_set_error_string(context, "pkinit: user identity not FILE");
+	return HEIM_PKINIT_NO_CERTIFICATE;
+    }
+    user_id += 5;
+    if (strncasecmp(x509_anchors, "OPENSSL-ANCHOR-DIR:", 19) != 0) {
+	krb5_set_error_string(context, "anchor OPENSSL-ANCHOR-DIR");
+	return HEIM_PKINIT_NO_VALID_CA;
+    }
+    x509_anchors += 19;
+
+    cert_file = strdup(user_id);
+    if (cert_file == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    key_file = strchr(cert_file, ',');
+    if (key_file == NULL) {
+	krb5_set_error_string(context, "key file missing");
+	ret = HEIM_PKINIT_NO_PRIVATE_KEY;
+	goto out;
+    }
+    *key_file++ = '\0';
+
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
 
     f = fopen(cert_file, "r");
     if (f == NULL) {
 	ret = errno;
 	krb5_set_error_string(context, "open failed %s: %s", 
 			      cert_file, strerror(ret));
-	return ret;
+	goto out;
     }
     certificate = sk_X509_new_null();
     while (1) {
@@ -1704,17 +1729,29 @@ _krb5_pk_load_openssl_id(krb5_context context,
 			      "certificate");
 	goto out;
     }
-    /* read ca certificates */
-    dir = opendir(x509_anchors);
-    if (dir == NULL) {
-	ret = errno;
-	krb5_set_error_string(context, "open directory %s: %s",
-			      x509_anchors, strerror(ret));
+
+    dirname = strdup(x509_anchors);
+    if (dirname == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	ret = ENOMEM;
 	goto out;
     }
 
-    asprintf(&dirname, "%s%s", x509_anchors, 
-	     x509_anchors[strlen(x509_anchors) - 1] == '/' ? "" : "/");
+    {
+	size_t len;
+	len = strlen(dirname);
+	if (dirname[len - 1] == '/')
+	    dirname[len - 1] = '\0';
+    }
+
+    /* read ca certificates */
+    dir = opendir(dirname);
+    if (dir == NULL) {
+	ret = errno;
+	krb5_set_error_string(context, "open directory %s: %s",
+			      dirname, strerror(ret));
+	goto out;
+    }
 
     trusted_certs = sk_X509_new_null();
     while ((file = readdir(dir)) != NULL) {
@@ -1726,7 +1763,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 	 */
 
 	if (strlen(file->d_name) == 10 && strcmp(&file->d_name[8],".0") == 0) {
-	    asprintf(&filename, "%s%s", dirname, file->d_name);
+	    asprintf(&filename, "%s/%s", dirname, file->d_name);
 	    if (filename == NULL) {
 		ret = ENOMEM;
 		krb5_set_error_string(context, "out or memory");
@@ -1774,6 +1811,10 @@ _krb5_pk_load_openssl_id(krb5_context context,
     return 0;
 
  out:
+    if (cert_file)
+	free(cert_file);
+    if (dirname)
+	free(dirname);
     if (certificate)
 	sk_X509_pop_free(certificate, X509_free);
     if (trusted_certs)
@@ -1815,8 +1856,7 @@ krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 krb5_error_code
 krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   krb5_get_init_creds_opt *opt,
-				   const char *cert_file,
-				   const char *key_file,
+				   const char *user_id,
 				   const char *x509_anchors,
 				   int flags,
 				   krb5_prompter_fct prompter,
@@ -1839,8 +1879,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     opt->private->pk_init_ctx->id = NULL;
     ret = _krb5_pk_load_openssl_id(context,
 				   &opt->private->pk_init_ctx->id,
-				   cert_file,
-				   key_file,
+				   user_id,
 				   x509_anchors,
 				   prompter,
 				   password);
