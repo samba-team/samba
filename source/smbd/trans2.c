@@ -55,7 +55,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
   char *pp = params;
   char *pd = pdata;
   int params_sent_thistime, data_sent_thistime, total_sent_thistime;
-  int alignment_offset = 1;
+  int alignment_offset = 3;
+  int data_alignment_offset = 0;
 
   /* Initially set the wcnt area to be 10 - this is true for all
      trans2 replies */
@@ -69,18 +70,28 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
       return 0;
     }
 
+  /* when sending params and data ensure that both are nicely aligned */
+  if ((params_to_send % 4) != 0)
+	  data_alignment_offset = 4 - (params_to_send % 4);
+
   /* Space is bufsize minus Netbios over TCP header minus SMB header */
-  /* The alignment_offset is to align the param and data bytes on an even byte
+  /* The alignment_offset is to align the param bytes on an even byte
      boundary. NT 4.0 Beta needs this to work correctly. */
-  useable_space = bufsize - ((smb_buf(outbuf)+alignment_offset) - outbuf);
+  useable_space = bufsize - ((smb_buf(outbuf)+
+			      alignment_offset+data_alignment_offset) - 
+			     outbuf);
+
   /* useable_space can never be more than max_send minus the
      alignment offset. */
-  useable_space = MIN(useable_space, max_send - alignment_offset);
+  useable_space = MIN(useable_space, 
+		      max_send - (alignment_offset+data_alignment_offset));
 
-  while( params_to_send || data_to_send)
+
+  while (params_to_send || data_to_send)
     {
       /* Calculate whether we will totally or partially fill this packet */
-      total_sent_thistime = params_to_send + data_to_send + alignment_offset;
+      total_sent_thistime = params_to_send + data_to_send + 
+	      alignment_offset + data_alignment_offset;
       /* We can never send more than useable_space */
       total_sent_thistime = MIN(total_sent_thistime, useable_space);
 
@@ -121,7 +132,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
 	  /* The offset of the data bytes is the offset of the
 	     parameter bytes plus the number of parameters being sent this time */
 	  SSVAL(outbuf,smb_droff,((smb_buf(outbuf)+alignment_offset) - 
-				  smb_base(outbuf)) + params_sent_thistime);
+				  smb_base(outbuf)) + 
+		params_sent_thistime + data_alignment_offset);
 	  SSVAL(outbuf,smb_drdisp, pd - pdata);
 	}
 
@@ -130,7 +142,7 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
 	memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
       /* Copy in the data bytes */
       if(data_sent_thistime)
-	memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime,pd,data_sent_thistime);
+	memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+data_alignment_offset,pd,data_sent_thistime);
 
       DEBUG(9,("t2_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
 	       params_sent_thistime, data_sent_thistime, useable_space));
