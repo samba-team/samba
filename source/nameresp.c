@@ -115,7 +115,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 	 wanted the unique name and tell them that they can have it
 	 */
       
-      add_name_respond(d,n->fd,d->myip, n->response_id ,&n->name,
+      add_name_respond(d,n->fd,d->myip, n->reply_id ,&n->name,
 		       n->nb_flags, GET_TTL(0),
 		       n->reply_to_ip, True, n->reply_to_ip);
       
@@ -281,7 +281,7 @@ struct response_record *queue_netbios_pkt_wins(
   return queue_netbios_packet(wins_subnet,fd, quest_type, state, 
 		       name, name_type, nb_flags, ttl,
                server_type,my_name,my_comment,
-		       False, True, send_ip, reply_to_ip);
+		       False, True, send_ip, reply_to_ip, 0);
 }
 
 
@@ -296,7 +296,8 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int name_type,int nb_flags, time_t ttl,
 			int server_type, char *my_name, char *my_comment,
 			BOOL bcast,BOOL recurse,
-			struct in_addr send_ip, struct in_addr reply_to_ip)
+			struct in_addr send_ip, struct in_addr reply_to_ip,
+			int reply_id)
 {
   struct response_record *n;
   uint16 id = 0xffff;
@@ -315,7 +316,8 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
   if ((n = make_response_queue_record(state,id,fd,
 				      quest_type,name,name_type,nb_flags,ttl,
 				      server_type,my_name, my_comment,
-				      bcast,recurse,send_ip,reply_to_ip)))
+				      bcast,recurse,send_ip,reply_to_ip,
+				      reply_id)))
     {
       add_response_record(d,n);
       return n;
