@@ -45,8 +45,7 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 	while ((c = *p++)) {
 		switch (c) {
 		case '.':
-			if (!strchr(p,'.') && !*n && ms_fnmatch_lanman_core(p, n)==0)
-				goto match;
+			/* if (! *n && ! *p) goto match; */
 			if (*n != '.') goto nomatch;
 			n++;
 			break;
@@ -113,7 +112,13 @@ next:
 int ms_fnmatch_lanman(char *pattern, char *string)
 {
 	if (!strpbrk(pattern, "?*<>\"")) {
+		if (strcmp(string,"..") == 0) string = ".";
 		return strcmp(pattern, string);
+	}
+
+	if (strcmp(string,"..") == 0 || strcmp(string,".") == 0) {
+		return ms_fnmatch_lanman_core(pattern, "..") &&
+			ms_fnmatch_lanman_core(pattern, ".");
 	}
 
 	return ms_fnmatch_lanman_core(pattern, string);
@@ -124,12 +129,13 @@ static BOOL reg_match_one(char *pattern, char *file)
 	/* oh what a weird world this is */
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;
 
-	if (strcmp(file,"..") == 0) file = ".";
 	if (strcmp(pattern,".") == 0) return False;
 
 	if (max_protocol <= PROTOCOL_LANMAN2) {
 		return ms_fnmatch_lanman(pattern, file)==0;
 	}
+
+	if (strcmp(file,"..") == 0) file = ".";
 
 	return ms_fnmatch(pattern, file)==0;
 }
@@ -276,6 +282,16 @@ static void get_real_name(struct cli_state *cli,
 		pstrcpy(long_name, finfo->name);
 		strlower(long_name);
 	}
+
+	if (*short_name == 0) {
+		fstrcpy(short_name, long_name);
+	}
+
+#if 0
+	if (!strchr(short_name,'.')) {
+		fstrcat(short_name,".");
+	}
+#endif
 }
 
 static void testpair(struct cli_state *cli, char *mask, char *file)
@@ -311,7 +327,7 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	if (showall || strcmp(res1, res2)) {
 		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
 			 res1, res2, count, mask, file, long_name, short_name));
-		//		exit(1);
+		/* 		exit(1); */
 	}
 
 	cli_unlink(cli, file);
