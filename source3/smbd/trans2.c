@@ -67,109 +67,113 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
   /* If there genuinely are no parameters or data to send just send
      the empty packet */
   if(params_to_send == 0 && data_to_send == 0)
-    {
-      send_smb(Client,outbuf);
-      return 0;
-    }
+  {
+    send_smb(Client,outbuf);
+    return 0;
+  }
 
   /* When sending params and data ensure that both are nicely aligned */
   /* Only do this alignment when there is also data to send - else
      can cause NT redirector problems. */
   if (((params_to_send % 4) != 0) && (data_to_send != 0))
-	  data_alignment_offset = 4 - (params_to_send % 4);
+    data_alignment_offset = 4 - (params_to_send % 4);
 
   /* Space is bufsize minus Netbios over TCP header minus SMB header */
   /* The alignment_offset is to align the param bytes on an even byte
      boundary. NT 4.0 Beta needs this to work correctly. */
   useable_space = bufsize - ((smb_buf(outbuf)+
-			      alignment_offset+data_alignment_offset) - 
-			     outbuf);
+                    alignment_offset+data_alignment_offset) - 
+                    outbuf);
 
   /* useable_space can never be more than max_send minus the
      alignment offset. */
   useable_space = MIN(useable_space, 
-		      max_send - (alignment_offset+data_alignment_offset));
+                      max_send - (alignment_offset+data_alignment_offset));
 
 
   while (params_to_send || data_to_send)
+  {
+    /* Calculate whether we will totally or partially fill this packet */
+    total_sent_thistime = params_to_send + data_to_send + 
+                            alignment_offset + data_alignment_offset;
+    /* We can never send more than useable_space */
+    total_sent_thistime = MIN(total_sent_thistime, useable_space);
+
+    set_message(outbuf, 10, total_sent_thistime, True);
+
+    /* Set total params and data to be sent */
+    SSVAL(outbuf,smb_tprcnt,paramsize);
+    SSVAL(outbuf,smb_tdrcnt,datasize);
+
+    /* Calculate how many parameters and data we can fit into
+       this packet. Parameters get precedence */
+
+    params_sent_thistime = MIN(params_to_send,useable_space);
+    data_sent_thistime = useable_space - params_sent_thistime;
+    data_sent_thistime = MIN(data_sent_thistime,data_to_send);
+
+    SSVAL(outbuf,smb_prcnt, params_sent_thistime);
+    if(params_sent_thistime == 0)
     {
-      /* Calculate whether we will totally or partially fill this packet */
-      total_sent_thistime = params_to_send + data_to_send + 
-	      alignment_offset + data_alignment_offset;
-      /* We can never send more than useable_space */
-      total_sent_thistime = MIN(total_sent_thistime, useable_space);
-
-      set_message(outbuf, 10, total_sent_thistime, True);
-
-      /* Set total params and data to be sent */
-      SSVAL(outbuf,smb_tprcnt,paramsize);
-      SSVAL(outbuf,smb_tdrcnt,datasize);
-
-      /* Calculate how many parameters and data we can fit into
-	 this packet. Parameters get precedence */
-
-      params_sent_thistime = MIN(params_to_send,useable_space);
-      data_sent_thistime = useable_space - params_sent_thistime;
-      data_sent_thistime = MIN(data_sent_thistime,data_to_send);
-
-      SSVAL(outbuf,smb_prcnt, params_sent_thistime);
-      if(params_sent_thistime == 0)
-	{
-	  SSVAL(outbuf,smb_proff,0);
-	  SSVAL(outbuf,smb_prdisp,0);
-	} else {
-	  /* smb_proff is the offset from the start of the SMB header to the
-	     parameter bytes, however the first 4 bytes of outbuf are
-	     the Netbios over TCP header. Thus use smb_base() to subtract
-	     them from the calculation */
-	  SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
-	  /* Absolute displacement of param bytes sent in this packet */
-	  SSVAL(outbuf,smb_prdisp,pp - params);
-	}
-
-      SSVAL(outbuf,smb_drcnt, data_sent_thistime);
-      if(data_sent_thistime == 0)
-	{
-	  SSVAL(outbuf,smb_droff,0);
-	  SSVAL(outbuf,smb_drdisp, 0);
-	} else {
-	  /* The offset of the data bytes is the offset of the
-	     parameter bytes plus the number of parameters being sent this time */
-	  SSVAL(outbuf,smb_droff,((smb_buf(outbuf)+alignment_offset) - 
-				  smb_base(outbuf)) + 
-		params_sent_thistime + data_alignment_offset);
-	  SSVAL(outbuf,smb_drdisp, pd - pdata);
-	}
-
-      /* Copy the param bytes into the packet */
-      if(params_sent_thistime)
-	memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
-      /* Copy in the data bytes */
-      if(data_sent_thistime)
-	memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+data_alignment_offset,pd,data_sent_thistime);
-
-      DEBUG(9,("t2_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
-	       params_sent_thistime, data_sent_thistime, useable_space));
-      DEBUG(9,("t2_rep: params_to_send = %d, data_to_send = %d, paramsize = %d, datasize = %d\n",
-	       params_to_send, data_to_send, paramsize, datasize));
-
-      /* Send the packet */
-      send_smb(Client,outbuf);
-
-      pp += params_sent_thistime;
-      pd += data_sent_thistime;
-
-      params_to_send -= params_sent_thistime;
-      data_to_send -= data_sent_thistime;
-
-      /* Sanity check */
-      if(params_to_send < 0 || data_to_send < 0)
-	{
-	  DEBUG(2,("send_trans2_replies failed sanity check pts = %d, dts = %d\n!!!",
-		   params_to_send, data_to_send));
-	  return -1;
-	}
+      SSVAL(outbuf,smb_proff,0);
+      SSVAL(outbuf,smb_prdisp,0);
     }
+    else
+    {
+      /* smb_proff is the offset from the start of the SMB header to the
+         parameter bytes, however the first 4 bytes of outbuf are
+         the Netbios over TCP header. Thus use smb_base() to subtract
+         them from the calculation */
+      SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
+      /* Absolute displacement of param bytes sent in this packet */
+      SSVAL(outbuf,smb_prdisp,pp - params);
+    }
+
+    SSVAL(outbuf,smb_drcnt, data_sent_thistime);
+    if(data_sent_thistime == 0)
+    {
+      SSVAL(outbuf,smb_droff,0);
+      SSVAL(outbuf,smb_drdisp, 0);
+    }
+    else
+    {
+      /* The offset of the data bytes is the offset of the
+         parameter bytes plus the number of parameters being sent this time */
+      SSVAL(outbuf,smb_droff,((smb_buf(outbuf)+alignment_offset) - 
+            smb_base(outbuf)) + params_sent_thistime + data_alignment_offset);
+      SSVAL(outbuf,smb_drdisp, pd - pdata);
+    }
+
+    /* Copy the param bytes into the packet */
+    if(params_sent_thistime)
+      memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
+    /* Copy in the data bytes */
+    if(data_sent_thistime)
+      memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+
+             data_alignment_offset,pd,data_sent_thistime);
+
+    DEBUG(9,("t2_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
+          params_sent_thistime, data_sent_thistime, useable_space));
+    DEBUG(9,("t2_rep: params_to_send = %d, data_to_send = %d, paramsize = %d, datasize = %d\n",
+          params_to_send, data_to_send, paramsize, datasize));
+
+    /* Send the packet */
+    send_smb(Client,outbuf);
+
+    pp += params_sent_thistime;
+    pd += data_sent_thistime;
+
+    params_to_send -= params_sent_thistime;
+    data_to_send -= data_sent_thistime;
+
+    /* Sanity check */
+    if(params_to_send < 0 || data_to_send < 0)
+    {
+      DEBUG(0,("send_trans2_replies failed sanity check pts = %d, dts = %d\n!!!",
+            params_to_send, data_to_send));
+      return -1;
+    }
+  }
 
   return 0;
 }
