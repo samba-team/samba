@@ -26,7 +26,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     int                     nchar;                  /*  Bytes written/read */
 
     /*  Create a temporary maildrop into which to copy the updated maildrop */
-    (void)sprintf(p->temp_drop,POP_DROP,p->user);
+    sprintf(p->temp_drop,POP_DROP,p->user);
 
 #ifdef DEBUG
     if(p->debug)
@@ -41,7 +41,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
 
     /* First create a unique file.  Would prefer mkstemp, but Ultrix...*/
     strcpy(template,POP_TMPDROP);
-    (void) mktemp(template);
+    mktemp(template);
     if ( (tf=fopen(template,"w+")) == NULL ) {	/* failure, bail out	*/
         pop_log(p,POP_PRIORITY,
             "Unable to create temporary temporary maildrop '%s': %s",template,
@@ -52,23 +52,23 @@ pop_dropcopy(POP *p, struct passwd *pwp)
 
     /* Now give this file to the user	*/
     if (pwp) {
-    	(void) chown(template,pwp->pw_uid, pwp->pw_gid);
+    	chown(template,pwp->pw_uid, pwp->pw_gid);
     }
-    (void) chmod(template,0600);
+    chmod(template,0600);
 
     /* Now link this file to the temporary maildrop.  If this fails it
      * is probably because the temporary maildrop already exists.  If so,
      * this is ok.  We can just go on our way, because by the time we try
      * to write into the file we will be running as the user.
      */
-    (void) link(template,p->temp_drop);
-    (void) fclose(tf);
-    (void) unlink(template);
+    link(template,p->temp_drop);
+    fclose(tf);
+    unlink(template);
 
     /* Now we run as the user. */
     if (pwp) {
-    	(void) setuid(pwp->pw_uid);
-    	(void) setgid(pwp->pw_gid);
+    	setuid(pwp->pw_uid);
+    	setgid(pwp->pw_gid);
     }
 #ifdef DEBUG
     if(p->debug)pop_log(p,POP_DEBUG,"uid = %d, gid = %d",getuid(),getgid());
@@ -104,7 +104,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
 
         /*  Lock the maildrop */
         if (k_flock (mfd, K_LOCK_EX) == -1) {
-            (void)close(mfd) ;
+            close(mfd) ;
             return pop_msg(p,POP_FAILURE, "flock: '%s': %s", p->temp_drop,
 		strerror(errno));
         }
@@ -122,21 +122,21 @@ pop_dropcopy(POP *p, struct passwd *pwp)
                see the new mail until the error goes away.
                Should let them process the current backlog,  in case
                the error is a quota problem requiring deletions! */
-            (void)ftruncate(dfd,(int)offset) ;
+            ftruncate(dfd,(int)offset) ;
         } else {
             /* Mail transferred!  Zero the mail drop NOW,  that we
                do not have to do gymnastics to figure out what's new
                and what is old later */
-            (void)ftruncate(mfd,0) ;
+            ftruncate(mfd,0) ;
         }
 
         /*  Close the actual mail drop */
-        (void)close (mfd);
+        close (mfd);
     }
 
     /*  Acquire a stream pointer for the temporary maildrop */
     if ( (p->drop = fdopen(dfd,"a+")) == NULL ) {
-        (void)close(dfd) ;
+        close(dfd) ;
         return pop_msg(p,POP_FAILURE,"Cannot assign stream for %s",
             p->temp_drop);
     }

@@ -223,17 +223,17 @@ iruserok(u_int32_t raddr, int superuser, const char *ruser, const char *luser)
 again:
 	if (hostf) {
 		if (__ivaliduser(hostf, raddr, luser, ruser) == 0) {
-			(void)fclose(hostf);
+			fclose(hostf);
 			return (0);
 		}
-		(void)fclose(hostf);
+		fclose(hostf);
 	}
 	if (first == 1 && (__check_rhosts_file || superuser)) {
 		first = 0;
 		if ((pwd = k_getpwnam((char*)luser)) == NULL)
 			return (-1);
-		(void)strcpy(pbuf, pwd->pw_dir);
-		(void)strcat(pbuf, "/.rhosts");
+		strcpy(pbuf, pwd->pw_dir);
+		strcat(pbuf, "/.rhosts");
 
 		/*
 		 * Change effective uid while opening .rhosts.  If root and
@@ -241,9 +241,9 @@ again:
 		 * are protected read/write owner only.
 		 */
 		uid = geteuid();
-		(void)seteuid(pwd->pw_uid);
+		seteuid(pwd->pw_uid);
 		hostf = fopen(pbuf, "r");
-		(void)seteuid(uid);
+		seteuid(uid);
 
 		if (hostf == NULL)
 			return (-1);
@@ -265,7 +265,7 @@ again:
 		/* If there were any problems, quit. */
 		if (cp) {
 			__rcmd_errstr = cp;
-			(void)fclose(hostf);
+			fclose(hostf);
 			return (-1);
 		}
 		goto again;

@@ -79,7 +79,7 @@ pop_dropinfo(POP *p)
     p->msg_count = ALLOC_MSGS;
     p->mlp = (MsgInfoList *)calloc((unsigned)p->msg_count,sizeof(MsgInfoList));
     if (p->mlp == NULL){
-        (void)fclose (p->drop);
+        fclose (p->drop);
         p->msg_count = 0;
         return pop_msg (p,POP_FAILURE,
             "Can't build message list for '%s': Out of memory", p->user);
@@ -101,7 +101,7 @@ pop_dropinfo(POP *p)
                 p->mlp=(MsgInfoList *) realloc(p->mlp,
                     (p->msg_count+=ALLOC_MSGS)*sizeof(MsgInfoList));
                 if (p->mlp == NULL){
-                    (void)fclose (p->drop);
+                    fclose (p->drop);
                     p->msg_count = 0;
                     return pop_msg (p,POP_FAILURE,
                         "Can't build message list for '%s': Out of memory",

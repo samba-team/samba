@@ -87,10 +87,10 @@ pop_send(POP *p)
     pop_msg(p,POP_SUCCESS,"%u octets",mp->length);
 
     /*  Position to the start of the message */
-    (void)fseek(p->drop,mp->offset,0);
+    fseek(p->drop,mp->offset,0);
 
     /*  Skip the first line (the sendmail "From" line) */
-    (void)fgets (buffer,MAXMSGLINELEN,p->drop);
+    fgets (buffer,MAXMSGLINELEN,p->drop);
 
 #ifdef RETURN_PATH_HANDLING
     return_path_sent = 0;
@@ -146,8 +146,8 @@ pop_send(POP *p)
           return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
     }
     /*  "." signals the end of a multi-line transmission */
-    (void)fputs(".\r\n",p->output);
-    (void)fflush(p->output);
+    fputs(".\r\n",p->output);
+    fflush(p->output);
 
     return(POP_SUCCESS);
 }

@@ -385,8 +385,8 @@ kerberos5_is(ap, data, cnt)
 
 		    errout:
 			authdat = 0;
-			(void) strcpy(errbuf, "Read req failed: ");
-			(void) strcat(errbuf, error_message(r));
+			strcpy(errbuf, "Read req failed: ");
+			strcat(errbuf, error_message(r));
 			Data(ap, KRB_REJECT, errbuf, -1);
 			if (auth_debug_mode)
 				printf("%s\r\n", errbuf);
@@ -443,8 +443,8 @@ kerberos5_is(ap, data, cnt)
 					       UserNameRequested)) {
 		    char errbuf[128];
 
-		    (void) strcpy(errbuf, "Read forwarded creds failed: ");
-		    (void) strcat(errbuf, error_message(r));
+		    strcpy(errbuf, "Read forwarded creds failed: ");
+		    strcat(errbuf, error_message(r));
 		    Data(ap, KRB_FORWARD_REJECT, errbuf, -1);
 		    if (auth_debug_mode)
 		      printf("Could not read forwarded credentials\r\n");

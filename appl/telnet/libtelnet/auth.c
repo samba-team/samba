@@ -585,13 +585,13 @@ auth_wait(char *name)
     if (Server && !authenticating)
 	return(0);
 
-    (void) signal(SIGALRM, auth_intr);
+    signal(SIGALRM, auth_intr);
     alarm(30);
     while (!authenticated)
 	if (telnet_spin())
 	    break;
     alarm(0);
-    (void) signal(SIGALRM, SIG_DFL);
+    signal(SIGALRM, SIG_DFL);
 
     /*
      * Now check to see if the user is valid or not

@@ -436,7 +436,7 @@ send_do(int option, int init)
 			set_his_want_state_will(option);
 		do_dont_resp[option]++;
 	}
-	(void) sprintf(nfrontp, (char *)doopt, option);
+	sprintf(nfrontp, (char *)doopt, option);
 	nfrontp += sizeof (dont) - 2;
 
 	DIAG(TD_OPTIONS, printoption("td: send do", option));
@@ -655,7 +655,7 @@ send_dont(int option, int init)
 		set_his_want_state_wont(option);
 		do_dont_resp[option]++;
 	}
-	(void) sprintf(nfrontp, (char *)dont, option);
+	sprintf(nfrontp, (char *)dont, option);
 	nfrontp += sizeof (doopt) - 2;
 
 	DIAG(TD_OPTIONS, printoption("td: send dont", option));
@@ -802,7 +802,7 @@ send_will(int option, int init)
 		set_my_want_state_will(option);
 		will_wont_resp[option]++;
 	}
-	(void) sprintf(nfrontp, (char *)will, option);
+	sprintf(nfrontp, (char *)will, option);
 	nfrontp += sizeof (doopt) - 2;
 
 	DIAG(TD_OPTIONS, printoption("td: send will", option));
@@ -914,7 +914,7 @@ dooption(int option)
 			set_my_want_state_will(TELOPT_LOGOUT);
 			send_will(TELOPT_LOGOUT, 0);
 			set_my_state_will(TELOPT_LOGOUT);
-			(void)netflush();
+			netflush();
 			cleanup(0);
 			/* NOT REACHED */
 			break;
@@ -959,7 +959,7 @@ send_wont(int option, int init)
 		set_my_want_state_wont(option);
 		will_wont_resp[option]++;
 	}
-	(void) sprintf(nfrontp, (char *)wont, option);
+	sprintf(nfrontp, (char *)wont, option);
 	nfrontp += sizeof (wont) - 2;
 
 	DIAG(TD_OPTIONS, printoption("td: send wont", option));
@@ -1177,7 +1177,7 @@ suboption(void)
 		 */
 		start_slc(1);
 		do_opt_slc(subpointer, subend - subpointer);
-		(void) end_slc(0);
+		end_slc(0);
 		break;
 	} else if (request == LM_MODE) {
 		if (SB_EOF())
@@ -1229,7 +1229,7 @@ suboption(void)
 		return;
 	settimer(xdisplocsubopt);
 	subpointer[SB_LEN()] = '\0';
-	(void)setenv("DISPLAY", (char *)subpointer, 1);
+	setenv("DISPLAY", (char *)subpointer, 1);
 	break;
     }  /* end of case TELOPT_XDISPLOC */
 
@@ -1396,7 +1396,7 @@ suboption(void)
 		case ENV_USERVAR:
 			*cp = '\0';
 			if (valp)
-				(void)setenv(varp, valp, 1);
+				setenv(varp, valp, 1);
 			else
 				unsetenv(varp);
 			cp = varp = (char *)subpointer;
@@ -1415,7 +1415,7 @@ suboption(void)
 	}
 	*cp = '\0';
 	if (valp)
-		(void)setenv(varp, valp, 1);
+		setenv(varp, valp, 1);
 	else
 		unsetenv(varp);
 	break;

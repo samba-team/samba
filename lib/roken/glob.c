@@ -817,15 +817,15 @@ qprintf(const Char *str, Char *s)
 {
 	Char *p;
 
-	(void)printf("%s:\n", str);
+	printf("%s:\n", str);
 	for (p = s; *p; p++)
-		(void)printf("%c", CHAR(*p));
-	(void)printf("\n");
+		printf("%c", CHAR(*p));
+	printf("\n");
 	for (p = s; *p; p++)
-		(void)printf("%c", *p & M_PROTECT ? '"' : ' ');
-	(void)printf("\n");
+		printf("%c", *p & M_PROTECT ? '"' : ' ');
+	printf("\n");
 	for (p = s; *p; p++)
-		(void)printf("%c", ismeta(*p) ? '_' : ' ');
-	(void)printf("\n");
+		printf("%c", ismeta(*p) ? '_' : ' ');
+	printf("\n");
 }
 #endif

@@ -276,7 +276,7 @@ localstat()
 # endif	/* KLUDGELINEMODE */
 			send_do(TELOPT_LINEMODE, 1);
 			/* send along edit modes */
-			(void) sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC, SB,
+			sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC, SB,
 				TELOPT_LINEMODE, LM_MODE, useeditmode,
 				IAC, SE);
 			nfrontp += 7;
@@ -305,7 +305,7 @@ localstat()
 			/*
 			 * Send along appropriate edit mode mask.
 			 */
-			(void) sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC, SB,
+			sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC, SB,
 				TELOPT_LINEMODE, LM_MODE, useeditmode,
 				IAC, SE);
 			nfrontp += 7;
@@ -318,7 +318,7 @@ localstat()
 		 */
 		start_slc(0);
 		check_slc();
-		(void) end_slc(0);
+		end_slc(0);
 	}
 
 done:
@@ -352,7 +352,7 @@ flowstat()
 	if (his_state_is_will(TELOPT_LFLOW)) {
 		if (tty_flowmode() != flowmode) {
 			flowmode = tty_flowmode();
-			(void) sprintf(nfrontp, "%c%c%c%c%c%c",
+			sprintf(nfrontp, "%c%c%c%c%c%c",
 					IAC, SB, TELOPT_LFLOW,
 					flowmode ? LFLOW_ON : LFLOW_OFF,
 					IAC, SE);
@@ -360,7 +360,7 @@ flowstat()
 		}
 		if (tty_restartany() != restartany) {
 			restartany = tty_restartany();
-			(void) sprintf(nfrontp, "%c%c%c%c%c%c",
+			sprintf(nfrontp, "%c%c%c%c%c%c",
 					IAC, SB, TELOPT_LFLOW,
 					restartany ? LFLOW_RESTART_ANY
 						   : LFLOW_RESTART_XON,
@@ -438,7 +438,7 @@ clientstat(code, parm1, parm2)
 					useeditmode |= MODE_SOFT_TAB;
 				if (tty_islitecho())
 					useeditmode |= MODE_LIT_ECHO;
-				(void) sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC,
+				sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC,
 					SB, TELOPT_LINEMODE, LM_MODE,
 							useeditmode, IAC, SE);
 				nfrontp += 7;
@@ -497,7 +497,7 @@ clientstat(code, parm1, parm2)
 			set_termbuf();
 
  			if (!ack) {
- 				(void) sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC,
+ 				sprintf(nfrontp, "%c%c%c%c%c%c%c", IAC,
 					SB, TELOPT_LINEMODE, LM_MODE,
  					useeditmode|MODE_ACK,
  					IAC, SE);
@@ -534,7 +534,7 @@ clientstat(code, parm1, parm2)
 
 		ws.ws_col = parm1;
 		ws.ws_row = parm2;
-		(void) ioctl(ourpty, TIOCSWINSZ, (char *)&ws);
+		ioctl(ourpty, TIOCSWINSZ, (char *)&ws);
 	    }
 #endif	/* TIOCSWINSZ */
 
@@ -602,7 +602,7 @@ defer_terminit()
 		memset((char *)&ws, 0, sizeof(ws));
 		ws.ws_col = def_col;
 		ws.ws_row = def_row;
-		(void) ioctl(ourpty, TIOCSWINSZ, (char *)&ws);
+		ioctl(ourpty, TIOCSWINSZ, (char *)&ws);
 	}
 #endif
 

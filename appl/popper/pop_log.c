@@ -29,13 +29,13 @@ pop_log(POP *p, int stat, char *format, ...)
 	    int a3 = va_arg(ap, int);
 	    int a4 = va_arg(ap, int);
 	    int a5 = va_arg(ap, int);
-	    (void)sprintf(msgbuf, format, a0, a1, a2, a3, a4, a5, 0, 4711);
+	    sprintf(msgbuf, format, a0, a1, a2, a3, a4, a5, 0, 4711);
 	}
 #endif /* HAVE_VSPRINTF */
 
     if (p->debug && p->trace) {
-        (void)fprintf(p->trace,"%s\n",msgbuf);
-        (void)fflush(p->trace);
+        fprintf(p->trace,"%s\n",msgbuf);
+        fflush(p->trace);
     }
     else {
         syslog (stat,"%s",msgbuf);

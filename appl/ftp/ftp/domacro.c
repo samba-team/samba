@@ -56,7 +56,7 @@ domacro(int argc, char **argv)
 		code = -1;
 		return;
 	}
-	(void) strcpy(line2, line);
+	strcpy(line2, line);
 TOP:
 	cp1 = macros[i].mac_start;
 	while (cp1 != macros[i].mac_end) {
@@ -77,7 +77,7 @@ TOP:
 				    }
 				    cp1--;
 				    if (argc - 2 >= j) {
-					(void) strcpy(cp2, argv[j+1]);
+					strcpy(cp2, argv[j+1]);
 					cp2 += strlen(argv[j+1]);
 				    }
 				    break;
@@ -86,7 +86,7 @@ TOP:
 					loopflg = 1;
 					cp1++;
 					if (count < argc) {
-					   (void) strcpy(cp2, argv[count]);
+					   strcpy(cp2, argv[count]);
 					   cp2 += strlen(argv[count]);
 					}
 					break;
@@ -121,9 +121,9 @@ TOP:
 			}
 			(*c->c_handler)(margc, margv);
 			if (bell && c->c_bell) {
-				(void) putchar('\007');
+				putchar('\007');
 			}
-			(void) strcpy(line, line2);
+			strcpy(line, line2);
 			makeargv();
 			argc = margc;
 			argv = margv;

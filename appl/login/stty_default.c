@@ -101,5 +101,5 @@ stty_default(void)
 
     termios.c_cc[VSUSP] = Ctl('Z');
     
-    (void)tcsetattr(0, TCSANOW, &termios);
+    tcsetattr(0, TCSANOW, &termios);
 }

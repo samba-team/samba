@@ -159,7 +159,7 @@ start_slc(getit)
 	slcchange = 0;
 	if (getit)
 		init_termbuf();
-	(void) sprintf((char *)slcbuf, "%c%c%c%c",
+	sprintf((char *)slcbuf, "%c%c%c%c",
 					IAC, SB, TELOPT_LINEMODE, LM_SLC);
 	slcptr = slcbuf + 4;
 
@@ -200,7 +200,7 @@ end_slc(bufp)
 			*bufp = &slcbuf[4];
 			return(slcptr - slcbuf - 4);
 		} else {
-			(void) sprintf((char *)slcptr, "%c%c", IAC, SE);
+			sprintf((char *)slcptr, "%c%c", IAC, SE);
 			slcptr += 2;
 			len = slcptr - slcbuf;
 			writenet(slcbuf, len);
@@ -483,7 +483,7 @@ deferslc()
 	if (def_slcbuf) {
 		start_slc(1);
 		do_opt_slc(def_slcbuf, def_slclen);
-		(void) end_slc(0);
+		end_slc(0);
 		free(def_slcbuf);
 		def_slcbuf = (unsigned char *)0;
 		def_slclen = 0;

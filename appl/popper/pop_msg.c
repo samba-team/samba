@@ -25,9 +25,9 @@ pop_msg(POP *p, int stat, char *format, ...)
 
     /*  Format the POP status code at the beginning of the message */
     if (stat == POP_SUCCESS)
-        (void)sprintf (mp,"%s ",POP_OK);
+        sprintf (mp,"%s ",POP_OK);
     else
-        (void)sprintf (mp,"%s ",POP_ERR);
+        sprintf (mp,"%s ",POP_ERR);
 
     /*  Point past the POP status indicator in the message message */
     mp += strlen(mp);
@@ -44,7 +44,7 @@ pop_msg(POP *p, int stat, char *format, ...)
 	    int a3 = va_arg(ap, int);
 	    int a4 = va_arg(ap, int);
 	    int a5 = va_arg(ap, int);
-	    (void)sprintf(mp, format, a0, a1, a2, a3, a4, a5, 0, 4711);
+	    sprintf(mp, format, a0, a1, a2, a3, a4, a5, 0, 4711);
 	}
 #endif /* HAVE_VSPRINTF */
     
@@ -59,11 +59,11 @@ pop_msg(POP *p, int stat, char *format, ...)
         pop_log(p,POP_PRIORITY,"%s",message);
 
     /*  Append the <CR><LF> */
-    (void)strcat(message, "\r\n");
+    strcat(message, "\r\n");
         
     /*  Send the message to the client */
-    (void)fputs(message,p->output);
-    (void)fflush(p->output);
+    fputs(message,p->output);
+    fflush(p->output);
 
     va_end(ap);
     return(stat);

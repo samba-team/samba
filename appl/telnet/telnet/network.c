@@ -95,7 +95,7 @@ stilloob()
 
     if (value < 0) {
 	perror("select");
-	(void) quit();
+	quit();
 	/* NOTREACHED */
     }
     if (FD_ISSET(net, &excepts)) {
@@ -157,7 +157,7 @@ netflush()
 	if (errno != ENOBUFS && errno != EWOULDBLOCK) {
 	    setcommandmode();
 	    perror(hostname);
-	    (void)NetClose(net);
+	    NetClose(net);
 	    ring_clear_mark(&netoring);
 	    longjmp(peerdied, -1);
 	    /*NOTREACHED*/
@@ -174,7 +174,7 @@ netflush()
 	 * up the other half.
 	 */
 	if ((n1 == n) && ring_full_consecutive(&netoring)) {
-	    (void) netflush();
+	    netflush();
 	}
 	return 1;
     } else {

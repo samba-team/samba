@@ -102,15 +102,15 @@ local_des_read_pw_string(s,max,prompt,verify)
     if (ioctl(0,TIOCSETP,(char *)&tty_state) == -1)
 	return -1;
     while (!ok) {
-	(void) printf(prompt);
-	(void) fflush(stdout);
+	printf(prompt);
+	fflush(stdout);
 	while (!fgets(s, max, stdin));
 
 	if ((ptr = strchr(s, '\n')))
 	    *ptr = '\0';
 	if (verify) {
 	    printf("\nVerifying, please re-enter %s",prompt);
-	    (void) fflush(stdout);
+	    fflush(stdout);
 	    if (!fgets(key_string, sizeof(key_string), stdin)) {
 		clearerr(stdin);
 		continue;
@@ -119,7 +119,7 @@ local_des_read_pw_string(s,max,prompt,verify)
 	    *ptr = '\0';
 	    if (strcmp(s,key_string)) {
 		printf("\n\07\07Mismatch - try again\n");
-		(void) fflush(stdout);
+		fflush(stdout);
 		continue;
 	    }
 	}

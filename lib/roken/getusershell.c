@@ -124,16 +124,16 @@ initshells()
 	if ((fp = fopen(_PATH_SHELLS, "r")) == NULL)
 		return (okshells);
 	if (fstat(fileno(fp), &statb) == -1) {
-		(void)fclose(fp);
+		fclose(fp);
 		return (okshells);
 	}
 	if ((strings = malloc((u_int)statb.st_size)) == NULL) {
-		(void)fclose(fp);
+		fclose(fp);
 		return (okshells);
 	}
 	shells = calloc((unsigned)statb.st_size / 3, sizeof (char *));
 	if (shells == NULL) {
-		(void)fclose(fp);
+		fclose(fp);
 		free(strings);
 		strings = NULL;
 		return (okshells);
@@ -151,7 +151,7 @@ initshells()
 		*cp++ = '\0';
 	}
 	*sp = NULL;
-	(void)fclose(fp);
+	fclose(fp);
 	return (shells);
 }
 #endif /* HAVE_GETUSERSHELL */

@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 			extern char *dest_realm, dst_realm_buf[];
 			extern int dst_realm_sz;
 			dest_realm = dst_realm_buf;
-			(void)strncpy(dest_realm, optarg, dst_realm_sz);
+			strncpy(dest_realm, optarg, dst_realm_sz);
 		    }
 #else
 			fprintf(stderr,
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 		else
 			return (1);
 	}
-	(void)setjmp(toplevel);
+	setjmp(toplevel);
 	for (;;) {
 			command(1, 0, 0);
 	}

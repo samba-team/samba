@@ -857,13 +857,13 @@ EmptyTerminal(void)
 
     if (TTYBYTES() == 0) {
 	FD_SET(tout, &outs);
-	(void) select(tout+1, 0, &outs, 0,
+	select(tout+1, 0, &outs, 0,
 		      (struct timeval *) 0); /* wait for TTLOWAT */
     } else {
 	while (TTYBYTES()) {
-	    (void) ttyflush(0);
+	    ttyflush(0);
 	    FD_SET(tout, &outs);
-	    (void) select(tout+1, 0, &outs, 0,
+	    select(tout+1, 0, &outs, 0,
 			  (struct timeval *) 0); /* wait for TTLOWAT */
 	}
     }
@@ -874,7 +874,7 @@ SetForExit(void)
 {
     setconnmode(0);
     do {
-	(void)telrcv();			/* Process any incoming data */
+	telrcv();			/* Process any incoming data */
 	EmptyTerminal();
     } while (ring_full_count(&netiring));	/* While there is any */
     setcommandmode();

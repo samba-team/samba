@@ -36,7 +36,7 @@ ring(int sig)
 static char *
 tgets(char *str, int size, FILE *fp, int timeout)
 {
-  (void) signal(SIGALRM, ring);
+  signal(SIGALRM, ring);
   alarm(timeout);
   if (setjmp(env))
     str = NULL;

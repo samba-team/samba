@@ -43,8 +43,8 @@ pop_updt (POP *p)
     if (p->msgs_deleted == p->msg_count) {
         /* Truncate before close, to avoid race condition,  DO NOT UNLINK!
            Another process may have opened,  and not yet tried to lock */
-        (void)ftruncate ((int)fileno(p->drop),0);
-        (void)fclose(p->drop) ;
+        ftruncate ((int)fileno(p->drop),0);
+        fclose(p->drop) ;
         return (POP_SUCCESS);
     }
 
@@ -61,7 +61,7 @@ pop_updt (POP *p)
 
     /*  Lock the user's real mail drop */
     if ( k_flock(mfd, K_LOCK_EX) == -1 ) {
-        (void)fclose(md) ;
+        fclose(md) ;
         return pop_msg(p,POP_FAILURE, "flock: '%s': %s", p->temp_drop,
 		       strerror(errno));
     }
@@ -77,18 +77,18 @@ pop_updt (POP *p)
             break ;
         }
     if ( nchar != 0 ) {
-        (void)fclose(md) ;
-        (void)ftruncate((int)fileno(p->drop),(int)offset) ;
-        (void)fclose(p->drop) ;
+        fclose(md) ;
+        ftruncate((int)fileno(p->drop),(int)offset) ;
+        fclose(p->drop) ;
         return pop_msg(p,POP_FAILURE,standard_error);
     }
 
     rewind(md);
-    (void)ftruncate(mfd,0) ;
+    ftruncate(mfd,0) ;
 
     /* Synch stdio and the kernel for the POP drop */
     rewind(p->drop);
-    (void)lseek((int)fileno(p->drop),0,SEEK_SET);
+    lseek((int)fileno(p->drop),0,SEEK_SET);
 
     /*  Transfer messages not flagged for deletion from the temporary 
         maildrop to the new maildrop */
@@ -114,7 +114,7 @@ pop_updt (POP *p)
             continue;
         }
 
-        (void)fseek(p->drop,mp->offset,0);
+        fseek(p->drop,mp->offset,0);
 
 #ifdef DEBUG
         if(p->debug)
@@ -128,9 +128,9 @@ pop_updt (POP *p)
                 /*  Update the message status */
                 if (strncasecmp(buffer,"Status:",7) == 0) {
                     if (mp->retr_flag)
-                        (void)fputs("Status: RO\n",md);
+                        fputs("Status: RO\n",md);
                     else
-                        (void)fputs(buffer, md);
+                        fputs(buffer, md);
                     status_written++;
                     continue;
                 }
@@ -139,19 +139,19 @@ pop_updt (POP *p)
                     doing_body = 1;
                     if (status_written == 0) {
                         if (mp->retr_flag)
-                            (void)fputs("Status: RO\n\n",md);
+                            fputs("Status: RO\n\n",md);
                         else
-                            (void)fputs("Status: U\n\n",md);
+                            fputs("Status: U\n\n",md);
                     }
-                    else (void)fputs ("\n", md);
+                    else fputs ("\n", md);
                     continue;
                 }
                 /*  Save another header line */
-                (void)fputs (buffer, md);
+                fputs (buffer, md);
             } 
             else { /* Body */ 
                 if (strncmp(buffer,"From ",5) == 0) break;
-                (void)fputs (buffer, md);
+                fputs (buffer, md);
             }
         }
     }
@@ -159,16 +159,16 @@ pop_updt (POP *p)
     /* flush and check for errors now!  The new mail will writen
        without stdio,  since we need not separate messages */
 
-    (void)fflush(md) ;
+    fflush(md) ;
     if (ferror(md)) {
-        (void)ftruncate(mfd,0) ;
-        (void)fclose(md) ;
-        (void)fclose(p->drop) ;
+        ftruncate(mfd,0) ;
+        fclose(md) ;
+        fclose(p->drop) ;
         return pop_msg(p,POP_FAILURE,standard_error);
     }
 
     /* Go to start of new mail if any */
-    (void)lseek((int)fileno(p->drop),offset,SEEK_SET);
+    lseek((int)fileno(p->drop),offset,SEEK_SET);
 
     while((nchar=read((int)fileno(p->drop),buffer,BUFSIZ)) > 0)
         if ( nchar != write(mfd,buffer,nchar) ) {
@@ -176,16 +176,16 @@ pop_updt (POP *p)
             break ;
         }
     if ( nchar != 0 ) {
-        (void)ftruncate(mfd,0) ;
-        (void)fclose(md) ;
-        (void)fclose(p->drop) ;
+        ftruncate(mfd,0) ;
+        fclose(md) ;
+        fclose(p->drop) ;
         return pop_msg(p,POP_FAILURE,standard_error);
     }
 
     /*  Close the maildrop and empty temporary maildrop */
-    (void)fclose(md);
-    (void)ftruncate((int)fileno(p->drop),0);
-    (void)fclose(p->drop);
+    fclose(md);
+    ftruncate((int)fileno(p->drop),0);
+    fclose(p->drop);
 
     return(pop_quit(p));
 }

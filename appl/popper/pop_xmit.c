@@ -69,7 +69,7 @@ pop_xmit (POP *p)
             _exit(1);
         case -1:
 #ifdef DEBUG
-            if (!p->debug) (void)unlink (temp_xmit);
+            if (!p->debug) unlink (temp_xmit);
 #endif /* DEBUG */
             return (pop_msg(p,POP_FAILURE,
                 "Unable to execute \"%s\"",MAIL_COMMAND));

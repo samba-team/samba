@@ -81,7 +81,7 @@ main(int argc, char **argv)
 			break;
 
 		default:
-			(void)fprintf(stderr,
+			fprintf(stderr,
 				"usage: ftp [-dgintv] [host [port]]\n");
 			exit(1);
 		}
@@ -103,15 +103,15 @@ main(int argc, char **argv)
 	pw = getpwuid(getuid());
 	if (pw != NULL) {
 		home = homedir;
-		(void) strcpy(home, pw->pw_dir);
+		strcpy(home, pw->pw_dir);
 	}
 	if (argc > 0) {
 		char *xargv[5];
 
 		if (setjmp(toplevel))
 			exit(0);
-		(void) signal(SIGINT, intr);
-		(void) signal(SIGPIPE, lostpeer);
+		signal(SIGINT, intr);
+		signal(SIGPIPE, lostpeer);
 		xargv[0] = argv[0]; /* or should this be "ftp"? */
 		xargv[1] = argv[0];
 		xargv[2] = argv[1];
@@ -121,8 +121,8 @@ main(int argc, char **argv)
 	}
 	if (setjmp(toplevel) == 0) {
 	        top = 1;
-		(void) signal(SIGINT, intr);
-		(void) signal(SIGPIPE, lostpeer);
+		signal(SIGINT, intr);
+		signal(SIGPIPE, lostpeer);
 	} else
 	        top = 0;
 	for (;;) {
@@ -144,13 +144,13 @@ lostpeer(int sig)
 
 	if (connected) {
 		if (cout != NULL) {
-			(void) shutdown(fileno(cout), 1+1);
-			(void) fclose(cout);
+			shutdown(fileno(cout), 1+1);
+			fclose(cout);
 			cout = NULL;
 		}
 		if (data >= 0) {
-			(void) shutdown(data, 1+1);
-			(void) close(data);
+			shutdown(data, 1+1);
+			close(data);
 			data = -1;
 		}
 		connected = 0;
@@ -158,8 +158,8 @@ lostpeer(int sig)
 	pswitch(1);
 	if (connected) {
 		if (cout != NULL) {
-			(void) shutdown(fileno(cout), 1+1);
-			(void) fclose(cout);
+			shutdown(fileno(cout), 1+1);
+			fclose(cout);
 			cout = NULL;
 		}
 		connected = 0;
@@ -198,11 +198,11 @@ cmdscanner(int top)
 	int l;
 
 	if (!top)
-		(void) putchar('\n');
+		putchar('\n');
 	for (;;) {
 		if (fromatty) {
 			printf("ftp> ");
-			(void) fflush(stdout);
+			fflush(stdout);
 		}
 		if (fgets(line, sizeof line, stdin) == NULL)
 			quit(0, 0);
@@ -238,12 +238,12 @@ cmdscanner(int top)
 		}
 		(*c->c_handler)(margc, margv);
 		if (bell && c->c_bell)
-			(void) putchar('\007');
+			putchar('\007');
 		if (c->c_handler != help)
 			break;
 	}
-	(void) signal(SIGINT, intr);
-	(void) signal(SIGPIPE, lostpeer);
+	signal(SIGINT, intr);
+	signal(SIGPIPE, lostpeer);
 }
 
 struct cmd *
@@ -466,7 +466,7 @@ help(int argc, char **argv)
 				}
 				else if (c->c_name) {
 					for (k=0; k < strlen(c->c_name); k++) {
-						(void) putchar(' ');
+						putchar(' ');
 					}
 				}
 				if (c + lines >= &cmdtab[NCMDS]) {
@@ -476,7 +476,7 @@ help(int argc, char **argv)
 				w = strlen(c->c_name);
 				while (w < width) {
 					w = (w + 8) &~ 7;
-					(void) putchar('\t');
+					putchar('\t');
 				}
 			}
 		}

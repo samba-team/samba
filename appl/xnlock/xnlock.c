@@ -505,10 +505,10 @@ countdown(XtPointer _t, XtIntervalId *_d)
     }
     seconds = time(0) - locked_at;
     if (seconds >= 3600)
-      (void) sprintf(buf, "Locked for %d:%02d:%02d    ",
+      sprintf(buf, "Locked for %d:%02d:%02d    ",
                    (int)seconds/3600, (int)seconds/60%60, (int)seconds%60);
     else
-      (void) sprintf(buf, "Locked for %2d:%02d    ",
+      sprintf(buf, "Locked for %2d:%02d    ",
 		     (int)seconds/60, (int)seconds%60);
       
     XDrawImageString(dpy, XtWindow(widget), gc,

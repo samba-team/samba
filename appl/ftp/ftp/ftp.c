@@ -64,7 +64,7 @@ hookup(char *host, int port)
 	hisctladdr.sin_addr.s_addr = inet_addr(host);
 	if (hisctladdr.sin_addr.s_addr != INADDR_NONE) {
 		hisctladdr.sin_family = AF_INET;
-		(void) strncpy(hostnamebuf, host, sizeof(hostnamebuf));
+		strncpy(hostnamebuf, host, sizeof(hostnamebuf));
 	} else {
 		hp = gethostbyname(host);
 		if (hp == NULL) {
@@ -76,7 +76,7 @@ hookup(char *host, int port)
 		memmove((caddr_t)&hisctladdr.sin_addr,
 				hp->h_addr_list[0], hp->h_length);
 		memcpy(&hisctladdr.sin_addr, hp->h_addr, hp->h_length);
-		(void) strncpy(hostnamebuf, hp->h_name, sizeof(hostnamebuf));
+		strncpy(hostnamebuf, hp->h_name, sizeof(hostnamebuf));
 	}
 	hostname = hostnamebuf;
 	s = socket(hisctladdr.sin_family, SOCK_STREAM, 0);
@@ -99,7 +99,7 @@ hookup(char *host, int port)
 					hp->h_addr_list[0], hp->h_length);
 			fprintf(stdout, "Trying %s...\n",
 				inet_ntoa(hisctladdr.sin_addr));
-			(void) close(s);
+			close(s);
 			s = socket(hisctladdr.sin_family, SOCK_STREAM, 0);
 			if (s < 0) {
 				warn("socket");
@@ -128,9 +128,9 @@ hookup(char *host, int port)
 	if (cin == NULL || cout == NULL) {
 		warnx("fdopen failed.");
 		if (cin)
-			(void) fclose(cin);
+			fclose(cin);
 		if (cout)
-			(void) fclose(cout);
+			fclose(cout);
 		code = -1;
 		goto bad;
 	}
@@ -138,9 +138,9 @@ hookup(char *host, int port)
 		printf("Connected to %s.\n", hostname);
 	if (getreply(0) > 2) { 	/* read startup message from server */
 		if (cin)
-			(void) fclose(cin);
+			fclose(cin);
 		if (cout)
-			(void) fclose(cout);
+			fclose(cout);
 		code = -1;
 		goto bad;
 	}
@@ -157,7 +157,7 @@ hookup(char *host, int port)
 
 	return (hostname);
 bad:
-	(void) close(s);
+	close(s);
 	return ((char *)0);
 }
 
@@ -232,12 +232,12 @@ login(char *host)
 		return (0);
 	}
 	if (!aflag && acct != NULL)
-		(void) command("ACCT %s", acct);
+		command("ACCT %s", acct);
 	if (proxy)
 		return (1);
 	for (n = 0; n < macnum; ++n) {
 		if (!strcmp("init", macros[n].mac_name)) {
-			(void) strcpy(line, "$init");
+			strcpy(line, "$init");
 			makeargv();
 			domacro(margc, margv);
 			break;
@@ -252,7 +252,7 @@ cmdabort(int sig)
 {
 
 	printf("\n");
-	(void) fflush(stdout);
+	fflush(stdout);
 	abrtflag++;
 	if (ptflag)
 		longjmp(ptabort,1);
@@ -287,15 +287,15 @@ command(char *fmt, ...)
 	va_end(ap);
 	if(debug){
 	    printf("\n");
-	    (void) fflush(stdout);
+	    fflush(stdout);
 	}
 	fprintf(cout, "\r\n");
-	(void) fflush(cout);
+	fflush(cout);
 	cpend = 1;
 	r = getreply(!strcmp(fmt, "QUIT"));
 	if (abrtflag && oldintr != SIG_IGN)
 		(*oldintr)(SIGINT);
-	(void) signal(SIGINT, oldintr);
+	signal(SIGINT, oldintr);
 	return (r);
 }
 
@@ -415,13 +415,13 @@ getreply(int expecteof)
 				case WONT:
 					c = getc(cin);
 					fprintf(cout, "%c%c%c", IAC, DONT, c);
-					(void) fflush(cout);
+					fflush(cout);
 					break;
 				case DO:
 				case DONT:
 					c = getc(cin);
 					fprintf(cout, "%c%c%c", IAC, WONT, c);
-					(void) fflush(cout);
+					fflush(cout);
 					break;
 				default:
 					break;
@@ -431,14 +431,14 @@ getreply(int expecteof)
 			dig++;
 			if (c == EOF) {
 				if (expecteof) {
-					(void) signal(SIGINT,oldintr);
+					signal(SIGINT,oldintr);
 					code = 221;
 					return (0);
 				}
 				lostpeer(0);
 				if (verbose) {
 					printf("421 Service not available, remote server has closed connection\n");
-					(void) fflush(stdout);
+					fflush(stdout);
 				}
 				code = 421;
 				return (4);
@@ -448,7 +448,7 @@ getreply(int expecteof)
 				if (proxflag &&
 				   (dig == 1 || dig == 5 && verbose == 0))
 					printf("%s:",hostname);
-				(void) putchar(c);
+				putchar(c);
 			}
 			if (dig < 4 && isdigit(c))
 				code = code * 10 + (c - '0');
@@ -475,8 +475,8 @@ getreply(int expecteof)
 				*cp++ = c;
 		}
 		if (verbose > 0 || verbose > -1 && n == '5') {
-			(void) putchar(c);
-			(void) fflush (stdout);
+			putchar(c);
+			fflush (stdout);
 		}
 		if (continuation && code != originalcode) {
 			if (originalcode == 0)
@@ -496,7 +496,7 @@ getreply(int expecteof)
 
 		if (n != '1')
 			cpend = 0;
-		(void) signal(SIGINT,oldintr);
+		signal(SIGINT,oldintr);
 		if (code == 421 || originalcode == 421)
 			lostpeer(0);
 		if (abrtflag && oldintr != cmdabort && oldintr != SIG_IGN)
@@ -525,7 +525,7 @@ abortsend(int sig)
 	mflag = 0;
 	abrtflag = 0;
 	printf("\nsend aborted\nwaiting for remote to finish abort\n");
-	(void) fflush(stdout);
+	fflush(stdout);
 	longjmp(sendabort, 1);
 }
 
@@ -615,16 +615,16 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 	lmode = "w";
 	if (setjmp(sendabort)) {
 		while (cpend) {
-			(void) getreply(0);
+			getreply(0);
 		}
 		if (data >= 0) {
-			(void) close(data);
+			close(data);
 			data = -1;
 		}
 		if (oldintr)
-			(void) signal(SIGINT,oldintr);
+			signal(SIGINT,oldintr);
 		if (oldintp)
-			(void) signal(SIGPIPE,oldintp);
+			signal(SIGPIPE,oldintp);
 		code = -1;
 		return;
 	}
@@ -636,8 +636,8 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 		fin = popen(local + 1, "r");
 		if (fin == NULL) {
 			warn("%s", local + 1);
-			(void) signal(SIGINT, oldintr);
-			(void) signal(SIGPIPE, oldintp);
+			signal(SIGINT, oldintr);
+			signal(SIGPIPE, oldintp);
 			code = -1;
 			return;
 		}
@@ -646,7 +646,7 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 		fin = fopen(local, "r");
 		if (fin == NULL) {
 			warn("local: %s", local);
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 			code = -1;
 			return;
 		}
@@ -654,16 +654,16 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 		if (fstat(fileno(fin), &st) < 0 ||
 		    (st.st_mode&S_IFMT) != S_IFREG) {
 			fprintf(stdout, "%s: not a plain file.\n", local);
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 			fclose(fin);
 			code = -1;
 			return;
 		}
 	}
 	if (initconn()) {
-		(void) signal(SIGINT, oldintr);
+		signal(SIGINT, oldintr);
 		if (oldintp)
-			(void) signal(SIGPIPE, oldintp);
+			signal(SIGPIPE, oldintp);
 		code = -1;
 		if (closefunc != NULL)
 			(*closefunc)(fin);
@@ -704,18 +704,18 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 	}
 	if (remote) {
 		if (command("%s %s", cmd, remote) != PRELIM) {
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 			if (oldintp)
-				(void) signal(SIGPIPE, oldintp);
+				signal(SIGPIPE, oldintp);
 			if (closefunc != NULL)
 				(*closefunc)(fin);
 			return;
 		}
 	} else
 		if (command("%s", cmd) != PRELIM) {
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 			if (oldintp)
-				(void) signal(SIGPIPE, oldintp);
+				signal(SIGPIPE, oldintp);
 			if (closefunc != NULL)
 				(*closefunc)(fin);
 			return;
@@ -738,13 +738,13 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 	    while ((c = getc(fin)) != EOF) {
 		if (c == '\n') {
 		    while (hash && (bytes >= hashbytes)) {
-			(void) putchar('#');
-			(void) fflush(stdout);
+			putchar('#');
+			fflush(stdout);
 			hashbytes += HASHBYTES;
 		    }
 		    if (ferror(dout))
 			break;
-		    (void) sec_putc('\r', dout);
+		    sec_putc('\r', dout);
 		    bytes++;
 		}
 		sec_putc(c, dout);
@@ -753,9 +753,9 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 	    sec_fflush(dout);
 	    if (hash) {
 		if (bytes < hashbytes)
-		    (void) putchar('#');
-		(void) putchar('\n');
-		(void) fflush(stdout);
+		    putchar('#');
+		putchar('\n');
+		fflush(stdout);
 	    }
 	    if (ferror(fin))
 		warn("local: %s", local);
@@ -768,34 +768,34 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 	}
 	if (closefunc != NULL)
 		(*closefunc)(fin);
-	(void) fclose(dout);
-	(void) gettimeofday(&stop, (struct timezone *)0);
-	(void) getreply(0);
-	(void) signal(SIGINT, oldintr);
+	fclose(dout);
+	gettimeofday(&stop, (struct timezone *)0);
+	getreply(0);
+	signal(SIGINT, oldintr);
 	if (oldintp)
-		(void) signal(SIGPIPE, oldintp);
+		signal(SIGPIPE, oldintp);
 	if (bytes > 0)
 		ptransfer("sent", bytes, &start, &stop);
 	return;
 abort:
-	(void) signal(SIGINT, oldintr);
+	signal(SIGINT, oldintr);
 	if (oldintp)
-		(void) signal(SIGPIPE, oldintp);
+		signal(SIGPIPE, oldintp);
 	if (!cpend) {
 		code = -1;
 		return;
 	}
 	if (data >= 0) {
-		(void) close(data);
+		close(data);
 		data = -1;
 	}
 	if (dout)
-		(void) fclose(dout);
-	(void) getreply(0);
+		fclose(dout);
+	getreply(0);
 	code = -1;
 	if (closefunc != NULL && fin != NULL)
 		(*closefunc)(fin);
-	(void) gettimeofday(&stop, (struct timezone *)0);
+	gettimeofday(&stop, (struct timezone *)0);
 	if (bytes > 0)
 		ptransfer("sent", bytes, &start, &stop);
 }
@@ -809,7 +809,7 @@ abortrecv(int sig)
 	mflag = 0;
 	abrtflag = 0;
 	printf("\nreceive aborted\nwaiting for remote to finish abort\n");
-	(void) fflush(stdout);
+	fflush(stdout);
 	longjmp(recvabort, 1);
 }
 
@@ -843,14 +843,14 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 	tcrflag = !crflag && is_retr;
 	if (setjmp(recvabort)) {
 		while (cpend) {
-			(void) getreply(0);
+			getreply(0);
 		}
 		if (data >= 0) {
-			(void) close(data);
+			close(data);
 			data = -1;
 		}
 		if (oldintr)
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 		code = -1;
 		return;
 	}
@@ -861,7 +861,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 
 			if (errno != ENOENT && errno != EACCES) {
 				warn("local: %s", local);
-				(void) signal(SIGINT, oldintr);
+				signal(SIGINT, oldintr);
 				code = -1;
 				return;
 			}
@@ -872,27 +872,27 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 				*dir = '/';
 			if (d < 0) {
 				warn("local: %s", local);
-				(void) signal(SIGINT, oldintr);
+				signal(SIGINT, oldintr);
 				code = -1;
 				return;
 			}
 			if (!runique && errno == EACCES &&
 			    chmod(local, 0600) < 0) {
 				warn("local: %s", local);
-				(void) signal(SIGINT, oldintr);
-				(void) signal(SIGINT, oldintr);
+				signal(SIGINT, oldintr);
+				signal(SIGINT, oldintr);
 				code = -1;
 				return;
 			}
 			if (runique && errno == EACCES &&
 			   (local = gunique(local)) == NULL) {
-				(void) signal(SIGINT, oldintr);
+				signal(SIGINT, oldintr);
 				code = -1;
 				return;
 			}
 		}
 		else if (runique && (local = gunique(local)) == NULL) {
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 			code = -1;
 			return;
 		}
@@ -903,7 +903,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 	} else if (curtype != type)
 		changetype(type, 0);
 	if (initconn()) {
-		(void) signal(SIGINT, oldintr);
+		signal(SIGINT, oldintr);
 		code = -1;
 		return;
 	}
@@ -914,12 +914,12 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 		return;
 	if (remote) {
 		if (command("%s %s", cmd, remote) != PRELIM) {
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 			return;
 		}
 	} else {
 		if (command("%s", cmd) != PRELIM) {
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 			return;
 		}
 	}
@@ -953,7 +953,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 #endif
 	    if (blocksize > bufsize) {
 		if (buf)
-		    (void) free(buf);
+		    free(buf);
 		buf = malloc(blocksize);
 		if (buf == NULL) {
 		    warn("malloc");
@@ -963,7 +963,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 		bufsize = blocksize;
 	    }
 	}
-	(void) gettimeofday(&start, (struct timezone *)0);
+	gettimeofday(&start, (struct timezone *)0);
 	switch (curtype) {
 
 	case TYPE_I:
@@ -982,17 +982,17 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 		    bytes += c;
 		    if (hash) {
 			while (bytes >= hashbytes) {
-			    (void) putchar('#');
+			    putchar('#');
 			    hashbytes += HASHBYTES;
 			}
-			(void) fflush(stdout);
+			fflush(stdout);
 		    }
 		}
 		if (hash && bytes > 0) {
 			if (bytes < HASHBYTES)
-				(void) putchar('#');
-			(void) putchar('\n');
-			(void) fflush(stdout);
+				putchar('#');
+			putchar('\n');
+			fflush(stdout);
 		}
 		if (c < 0) {
 			if (errno != EPIPE)
@@ -1034,15 +1034,15 @@ done:
 				bare_lfs++;
 			while (c == '\r') {
 				while (hash && (bytes >= hashbytes)) {
-					(void) putchar('#');
-					(void) fflush(stdout);
+					putchar('#');
+					fflush(stdout);
 					hashbytes += HASHBYTES;
 				}
 				bytes++;
 				if ((c = sec_getc(din)) != '\n' || tcrflag) {
 					if (ferror(fout))
 						goto break2;
-					(void) putc('\r', fout);
+					putc('\r', fout);
 					if (c == '\0') {
 						bytes++;
 						goto contin2;
@@ -1051,7 +1051,7 @@ done:
 						goto contin2;
 				}
 			}
-			(void) putc(c, fout);
+			putc(c, fout);
 			bytes++;
 	contin2:	;
 		}
@@ -1062,9 +1062,9 @@ break2:
 		}
 		if (hash) {
 			if (bytes < hashbytes)
-				(void) putchar('#');
-			(void) putchar('\n');
-			(void) fflush(stdout);
+				putchar('#');
+			putchar('\n');
+			fflush(stdout);
 		}
 		if (ferror(din)) {
 			if (errno != EPIPE)
@@ -1077,12 +1077,12 @@ break2:
 	}
 	if (closefunc != NULL)
 		(*closefunc)(fout);
-	(void) signal(SIGINT, oldintr);
+	signal(SIGINT, oldintr);
 	if (oldintp)
-		(void) signal(SIGPIPE, oldintp);
-	(void) fclose(din);
-	(void) gettimeofday(&stop, (struct timezone *)0);
-	(void) getreply(0);
+		signal(SIGPIPE, oldintp);
+	fclose(din);
+	gettimeofday(&stop, (struct timezone *)0);
+	getreply(0);
 	if (bytes > 0 && is_retr)
 		ptransfer("received", bytes, &start, &stop);
 	return;
@@ -1091,28 +1091,28 @@ abort:
 /* abort using RFC959 recommended IP,SYNC sequence  */
 
 	if (oldintp)
-		(void) signal(SIGPIPE, oldintr);
-	(void) signal(SIGINT, SIG_IGN);
+		signal(SIGPIPE, oldintr);
+	signal(SIGINT, SIG_IGN);
 	if (!cpend) {
 		code = -1;
-		(void) signal(SIGINT, oldintr);
+		signal(SIGINT, oldintr);
 		return;
 	}
 
 	abort_remote(din);
 	code = -1;
 	if (data >= 0) {
-		(void) close(data);
+		close(data);
 		data = -1;
 	}
 	if (closefunc != NULL && fout != NULL)
 		(*closefunc)(fout);
 	if (din)
-		(void) fclose(din);
-	(void) gettimeofday(&stop, (struct timezone *)0);
+		fclose(din);
+	gettimeofday(&stop, (struct timezone *)0);
 	if (bytes > 0)
 		ptransfer("received", bytes, &start, &stop);
-	(void) signal(SIGINT, oldintr);
+	signal(SIGINT, oldintr);
 }
 
 /*
@@ -1192,7 +1192,7 @@ noport:
 	if (sendport)
 		data_addr.sin_port = 0;	/* let system pick one */ 
 	if (data != -1)
-		(void) close(data);
+		close(data);
 	data = socket(AF_INET, SOCK_STREAM, 0);
 	if (data < 0) {
 		warn("socket");
@@ -1245,7 +1245,7 @@ noport:
 #endif
 	return (0);
 bad:
-	(void) close(data), data = -1;
+	close(data), data = -1;
 	if (tmpno)
 		sendport = 1;
 	return (1);
@@ -1263,10 +1263,10 @@ dataconn(char *lmode)
 	s = accept(data, (struct sockaddr *) &from, &fromlen);
 	if (s < 0) {
 		warn("accept");
-		(void) close(data), data = -1;
+		close(data), data = -1;
 		return (NULL);
 	}
-	(void) close(data);
+	close(data);
 	data = s;
 #ifdef IP_TOS
 	tos = IPTOS_THROUGHPUT;
@@ -1364,7 +1364,7 @@ pswitch(int flag)
 	ip->connect = connected;
 	connected = op->connect;
 	if (hostname) {
-		(void) strncpy(ip->name, hostname, sizeof(ip->name) - 1);
+		strncpy(ip->name, hostname, sizeof(ip->name) - 1);
 		ip->name[strlen(ip->name)] = '\0';
 	} else
 		ip->name[0] = 0;
@@ -1391,21 +1391,21 @@ pswitch(int flag)
 	mcase = op->mcse;
 	ip->ntflg = ntflag;
 	ntflag = op->ntflg;
-	(void) strncpy(ip->nti, ntin, 16);
+	strncpy(ip->nti, ntin, 16);
 	(ip->nti)[strlen(ip->nti)] = '\0';
-	(void) strcpy(ntin, op->nti);
-	(void) strncpy(ip->nto, ntout, 16);
+	strcpy(ntin, op->nti);
+	strncpy(ip->nto, ntout, 16);
 	(ip->nto)[strlen(ip->nto)] = '\0';
-	(void) strcpy(ntout, op->nto);
+	strcpy(ntout, op->nto);
 	ip->mapflg = mapflag;
 	mapflag = op->mapflg;
-	(void) strncpy(ip->mi, mapin, MaxPathLen - 1);
+	strncpy(ip->mi, mapin, MaxPathLen - 1);
 	(ip->mi)[strlen(ip->mi)] = '\0';
-	(void) strcpy(mapin, op->mi);
-	(void) strncpy(ip->mo, mapout, MaxPathLen - 1);
+	strcpy(mapin, op->mi);
+	strncpy(ip->mo, mapout, MaxPathLen - 1);
 	(ip->mo)[strlen(ip->mo)] = '\0';
-	(void) strcpy(mapout, op->mo);
-	(void) signal(SIGINT, oldintr);
+	strcpy(mapout, op->mo);
+	signal(SIGINT, oldintr);
 	if (abrtflag) {
 		abrtflag = 0;
 		(*oldintr)(SIGINT);
@@ -1417,7 +1417,7 @@ abortpt(int sig)
 {
 
 	printf("\n");
-	(void) fflush(stdout);
+	fflush(stdout);
 	ptabflg++;
 	mflag = 0;
 	abrtflag = 0;
@@ -1465,7 +1465,7 @@ proxtrans(char *cmd, char *local, char *remote)
 		goto abort;
 	oldintr = signal(SIGINT, abortpt);
 	if (command("%s %s", cmd, remote) != PRELIM) {
-		(void) signal(SIGINT, oldintr);
+		signal(SIGINT, oldintr);
 		pswitch(1);
 		return;
 	}
@@ -1475,16 +1475,16 @@ proxtrans(char *cmd, char *local, char *remote)
 	if (command("%s %s", cmd2, local) != PRELIM)
 		goto abort;
 	ptflag++;
-	(void) getreply(0);
+	getreply(0);
 	pswitch(0);
-	(void) getreply(0);
-	(void) signal(SIGINT, oldintr);
+	getreply(0);
+	signal(SIGINT, oldintr);
 	pswitch(1);
 	ptflag = 0;
 	printf("local: %s remote: %s\n", local, remote);
 	return;
 abort:
-	(void) signal(SIGINT, SIG_IGN);
+	signal(SIGINT, SIG_IGN);
 	ptflag = 0;
 	if (strcmp(cmd, "RETR") && !proxy)
 		pswitch(1);
@@ -1499,7 +1499,7 @@ abort:
 		pswitch(1);
 		if (ptabflg)
 			code = -1;
-		(void) signal(SIGINT, oldintr);
+		signal(SIGINT, oldintr);
 		return;
 	}
 	if (cpend)
@@ -1513,7 +1513,7 @@ abort:
 			pswitch(1);
 			if (ptabflg)
 				code = -1;
-			(void) signal(SIGINT, oldintr);
+			signal(SIGINT, oldintr);
 			return;
 		}
 	}
@@ -1531,15 +1531,15 @@ abort:
 				code = -1;
 			lostpeer(0);
 		}
-		(void) getreply(0);
-		(void) getreply(0);
+		getreply(0);
+		getreply(0);
 	}
 	if (proxy)
 		pswitch(0);
 	pswitch(1);
 	if (ptabflg)
 		code = -1;
-	(void) signal(SIGINT, oldintr);
+	signal(SIGINT, oldintr);
 }
 
 void
@@ -1557,7 +1557,7 @@ reset(int argc, char **argv)
 			lostpeer(0);
 		}
 		else if (nfnd) {
-			(void) getreply(0);
+			getreply(0);
 		}
 	}
 }
@@ -1579,7 +1579,7 @@ gunique(char *local)
 		warn("local: %s", local);
 		return ((char *) 0);
 	}
-	(void) strcpy(new, local);
+	strcpy(new, local);
 	cp = new + strlen(new);
 	*cp++ = '.';
 	while (!d) {
@@ -1622,7 +1622,7 @@ abort_remote(FILE *din)
 	if (send(fileno(cout), buf, 3, MSG_OOB) != 3)
 		warn("abort");
 	fprintf(cout,"%cABOR\r\n", DM);
-	(void) fflush(cout);
+	fflush(cout);
 	FD_ZERO(&mask);
 	FD_SET(fileno(cin), &mask);
 	if (din) { 
@@ -1642,7 +1642,7 @@ abort_remote(FILE *din)
 	}
 	if (getreply(0) == ERROR && code == 552) {
 		/* 552 needed for nic style abort */
-		(void) getreply(0);
+		getreply(0);
 	}
-	(void) getreply(0);
+	getreply(0);
 }

@@ -87,7 +87,7 @@ char	wtmpf[]	= "/etc/wtmp";
 #include <sys/stropts.h>
 #endif
 
-#define SCPYN(a, b)	(void) strncpy(a, b, sizeof(a))
+#define SCPYN(a, b)	strncpy(a, b, sizeof(a))
 #define SCMPN(a, b)	strncmp(a, b, sizeof(a))
 
 #ifdef	HAVE_SYS_STREAM_H
@@ -173,10 +173,10 @@ init_termbuf(void)
 {
 # ifdef  STREAMSPTY
 	if (really_stream)
-		(void) tcgetattr(ttyfd, &termbuf);
+		tcgetattr(ttyfd, &termbuf);
 	else
 # endif
-		(void) tcgetattr(ourpty, &termbuf);
+		tcgetattr(ourpty, &termbuf);
 	termbuf2 = termbuf;
 }
 
@@ -202,10 +202,10 @@ set_termbuf(void)
 	if (memcmp((char *)&termbuf, (char *)&termbuf2, sizeof(termbuf)))
 # ifdef  STREAMSPTY
 		if (really_stream)
-			(void) tcsetattr(ttyfd, TCSANOW, &termbuf);
+			tcsetattr(ttyfd, TCSANOW, &termbuf);
 		else
 # endif
-			(void) tcsetattr(ourpty, TCSANOW, &termbuf);
+			tcsetattr(ourpty, TCSANOW, &termbuf);
 }
 
 
@@ -451,11 +451,11 @@ int getpty(int *ptynum)
 #ifndef CRAY
 
 #ifndef	__hpux
-	(void) sprintf(line, "/dev/ptyXX");
+	sprintf(line, "/dev/ptyXX");
 	p1 = &line[8];
 	p2 = &line[9];
 #else
-	(void) sprintf(line, "/dev/ptym/ptyXX");
+	sprintf(line, "/dev/ptym/ptyXX");
 	p1 = &line[13];
 	p2 = &line[14];
 #endif
@@ -503,23 +503,23 @@ int getpty(int *ptynum)
 	struct stat sb;
 
 	for (*ptynum = lowpty; *ptynum <= highpty; (*ptynum)++) {
-		(void) sprintf(myline, "/dev/pty/%03d", *ptynum);
+		sprintf(myline, "/dev/pty/%03d", *ptynum);
 		p = open(myline, 2);
 		if (p < 0)
 			continue;
-		(void) sprintf(line, "/dev/ttyp%03d", *ptynum);
+		sprintf(line, "/dev/ttyp%03d", *ptynum);
 		/*
 		 * Here are some shenanigans to make sure that there
 		 * are no listeners lurking on the line.
 		 */
 		if(stat(line, &sb) < 0) {
-			(void) close(p);
+			close(p);
 			continue;
 		}
 		if(sb.st_uid || sb.st_gid || sb.st_mode != 0600) {
 			chown(line, 0, 0);
 			chmod(line, 0600);
-			(void)close(p);
+			close(p);
 			p = open(myline, 2);
 			if (p < 0)
 				continue;
@@ -531,7 +531,7 @@ int getpty(int *ptynum)
 			return(p);
 		else {
 			/* no tty side to pty so skip it */
-			(void) close(p);
+			close(p);
 		}
 	}
 #endif	/* CRAY */
@@ -576,7 +576,7 @@ tty_setlinemode(on)
 {
 #ifdef	TIOCEXT
 	set_termbuf();
-	(void) ioctl(ourpty, TIOCEXT, (char *)&on);
+	ioctl(ourpty, TIOCEXT, (char *)&on);
 	init_termbuf();
 #else	/* !TIOCEXT */
 # ifdef	EXTPROC
@@ -967,8 +967,8 @@ void getptyslave(void)
 # ifdef	TIOCNOTTY
 	t = open(_PATH_TTY, O_RDWR);
 	if (t >= 0) {
-		(void) ioctl(t, TIOCNOTTY, (char *)0);
-		(void) close(t);
+		ioctl(t, TIOCNOTTY, (char *)0);
+		close(t);
 	}
 # endif
 #endif
@@ -1023,7 +1023,7 @@ void getptyslave(void)
 		memset((char *)&ws, 0, sizeof(ws));
 		ws.ws_col = def_col;
 		ws.ws_row = def_row;
-		(void)ioctl(t, TIOCSWINSZ, (char *)&ws);
+		ioctl(t, TIOCSWINSZ, (char *)&ws);
 	}
 # endif
 
@@ -1069,7 +1069,7 @@ void getptyslave(void)
 	if (login_tty(t) == -1)
 		fatalperror(net, "login_tty");
 	if (net > 2)
-		(void) close(net);
+		close(net);
 #if	defined(AUTHENTICATION) && defined(NO_LOGIN_F) && defined(LOGIN_R)
 	/*
 	 * Leave the pty open so that we can write out the rlogin
@@ -1077,7 +1077,7 @@ void getptyslave(void)
 	 */
 #else
 	if (ourpty > 2) {
-		(void) close(ourpty);
+		close(ourpty);
 		ourpty = -1;
 	}
 #endif
@@ -1103,12 +1103,12 @@ int cleanopen(char *line)
 		 * Make sure that other people can't open the
 		 * slave side of the connection.
 		 */
-		(void) chown(line, 0, 0);
-		(void) chmod(line, 0600);
+		chown(line, 0, 0);
+		chmod(line, 0600);
 	}
 
 # if !defined(CRAY) && (BSD > 43)
-	(void) revoke(line);
+	revoke(line);
 # endif
 
 	t = open(line, O_RDWR|O_NOCTTY);
@@ -1121,12 +1121,12 @@ int cleanopen(char *line)
 	 * ourselves.
 	 */
 # if !(defined(CRAY) || defined(__hpux)) && (BSD <= 43) && !defined(STREAMSPTY)
-	(void) signal(SIGHUP, SIG_IGN);
+	signal(SIGHUP, SIG_IGN);
 #ifdef HAVE_VHANGUP
 	vhangup();
 #else
 #endif
-	(void) signal(SIGHUP, SIG_DFL);
+	signal(SIGHUP, SIG_DFL);
 	t = open(line, O_RDWR|O_NOCTTY);
 	if (t < 0)
 		return(-1);
@@ -1134,15 +1134,15 @@ int cleanopen(char *line)
 # if	defined(CRAY) && defined(TCVHUP)
 	{
 		int i;
-		(void) signal(SIGHUP, SIG_IGN);
-		(void) ioctl(t, TCVHUP, (char *)0);
-		(void) signal(SIGHUP, SIG_DFL);
+		signal(SIGHUP, SIG_IGN);
+		ioctl(t, TCVHUP, (char *)0);
+		signal(SIGHUP, SIG_DFL);
 
 		i = open(line, O_RDWR);
 
 		if (i < 0)
 			return(-1);
-		(void) close(t);
+		close(t);
 		t = i;
 	}
 # endif	/* defined(CRAY) && defined(TCVHUP) */
@@ -1189,19 +1189,19 @@ int login_tty(int t)
 	 * it out before opening the tty...
 	 */
 #if defined HAVE_SETPGID
-	(void) setpgid(0, 0);
+	setpgid(0, 0);
 #else
-	(void) setpgrp(0, 0); /* if setpgid isn't available, setpgrp
+	setpgrp(0, 0); /* if setpgid isn't available, setpgrp
 				 probably takes arguments */
 #endif
 	close(open(line, O_RDWR));
 # endif
 	if (t != 0)
-		(void) dup2(t, 0);
+		dup2(t, 0);
 	if (t != 1)
-		(void) dup2(t, 1);
+		dup2(t, 1);
 	if (t != 2)
-		(void) dup2(t, 2);
+		dup2(t, 2);
 	if (t > 2)
 		close(t);
 	return(0);
@@ -1262,7 +1262,7 @@ startslave(char *host, int autologin, char *autoname)
 		/*
 		 * Create utmp entry for child
 		 */
-		(void) time(&wtmp.ut_time);
+		time(&wtmp.ut_time);
 		wtmp.ut_type = LOGIN_PROCESS;
 		wtmp.ut_pid = pid;
 		SCPYN(wtmp.ut_user, "LOGIN");
@@ -1276,11 +1276,11 @@ startslave(char *host, int autologin, char *autoname)
 		pututline(&wtmp);
 		endutent();
 		if ((i = open(wtmpf, O_WRONLY|O_APPEND)) >= 0) {
-			(void) write(i, (char *)&wtmp, sizeof(struct utmp));
-			(void) close(i);
+			write(i, (char *)&wtmp, sizeof(struct utmp));
+			close(i);
 		}
 #ifdef	CRAY
-		(void) signal(WJSIGNAL, sigjob);
+		signal(WJSIGNAL, sigjob);
 #endif
 		utmp_sig_notify(pid);
 # endif	/* PARENT_DOES_UTMP */
@@ -1653,7 +1653,7 @@ static
 void
 rmut(void)
 {
-	f;
+	int f;
 	int found = 0;
 	struct utmp *u, *utmp;
 	int nutmp;
@@ -1661,7 +1661,7 @@ rmut(void)
 
 	f = open(utmpf, O_RDWR);
 	if (f >= 0) {
-		(void) fstat(f, &statbf);
+		fstat(f, &statbf);
 		utmp = (struct utmp *)malloc((unsigned)statbf.st_size);
 		if (!utmp)
 			syslog(LOG_ERR, "utmp malloc failed");
@@ -1673,17 +1673,17 @@ rmut(void)
 				if (SCMPN(u->ut_line, line+5) ||
 				    u->ut_name[0]==0)
 					continue;
-				(void) lseek(f, ((long)u)-((long)utmp), L_SET);
+				lseek(f, ((long)u)-((long)utmp), L_SET);
 				SCPYN(u->ut_name, "");
 #ifdef HAVE_UT_HOST
 				SCPYN(u->ut_host, "");
 #endif
-				(void) time(&u->ut_time);
-				(void) write(f, (char *)u, sizeof(wtmp));
+				time(&u->ut_time);
+				write(f, (char *)u, sizeof(wtmp));
 				found++;
 			}
 		}
-		(void) close(f);
+		close(f);
 	}
 	if (found) {
 		f = open(wtmpf, O_WRONLY|O_APPEND);
@@ -1693,16 +1693,16 @@ rmut(void)
 #ifdef HAVE_UT_HOST
 			SCPYN(wtmp.ut_host, "");
 #endif
-			(void) time(&wtmp.ut_time);
-			(void) write(f, (char *)&wtmp, sizeof(wtmp));
-			(void) close(f);
+			time(&wtmp.ut_time);
+			write(f, (char *)&wtmp, sizeof(wtmp));
+			close(f);
 		}
 	}
-	(void) chmod(line, 0666);
-	(void) chown(line, 0, 0);
+	chmod(line, 0666);
+	chown(line, 0, 0);
 	line[strlen("/dev/")] = 'p';
-	(void) chmod(line, 0666);
-	(void) chown(line, 0, 0);
+	chmod(line, 0666);
+	chown(line, 0, 0);
 }  /* end of rmut */
 #endif	/* CRAY */
 
@@ -1716,24 +1716,24 @@ rmut (char *line)
 	int fd;			/* for /etc/wtmp */
 
 	utmp.ut_type = USER_PROCESS;
-	(void) strncpy(utmp.ut_id, line+12, sizeof(utmp.ut_id));
-	(void) setutent();
+	strncpy(utmp.ut_id, line+12, sizeof(utmp.ut_id));
+	setutent();
 	utptr = getutid(&utmp);
 	/* write it out only if it exists */
 	if (utptr) {
 		utptr->ut_type = DEAD_PROCESS;
 		utptr->ut_time = time((long *) 0);
-		(void) pututline(utptr);
+		pututline(utptr);
 		/* set wtmp entry if wtmp file exists */
 		if ((fd = open(wtmpf, O_WRONLY | O_APPEND)) >= 0) {
-			(void) write(fd, utptr, sizeof(utmp));
-			(void) close(fd);
+			write(fd, utptr, sizeof(utmp));
+			close(fd);
 		}
 	}
-	(void) endutent();
+	endutent();
 
-	(void) chmod(line, 0666);
-	(void) chown(line, 0, 0);
+	chmod(line, 0666);
+	chown(line, 0, 0);
 	line[14] = line[13];
 	line[13] = line[12];
 	line[8] = 'm';
@@ -1741,8 +1741,8 @@ rmut (char *line)
 	line[10] = 'p';
 	line[11] = 't';
 	line[12] = 'y';
-	(void) chmod(line, 0666);
-	(void) chown(line, 0, 0);
+	chmod(line, 0666);
+	chown(line, 0, 0);
 }
 #endif
 
@@ -1797,7 +1797,7 @@ cleanup(int sig)
 #  endif /* CRAY */
     rmut(line);
     close(ourpty);
-    (void) shutdown(net, 2);
+    shutdown(net, 2);
 #  ifdef CRAY
     if (t == 0)
 	cleantmp(&wtmp);
@@ -1852,7 +1852,7 @@ _utmp_sig_rcv(sig)
 	int sig;
 {
 	caught = 1;
-	(void) signal(SIGUSR1, func);
+	signal(SIGUSR1, func);
 }
 
 	void
@@ -1868,7 +1868,7 @@ utmp_sig_init()
 	void
 utmp_sig_reset()
 {
-	(void) signal(SIGUSR1, func);	/* reset handler to default */
+	signal(SIGUSR1, func);	/* reset handler to default */
 }
 
 # ifdef __hpux

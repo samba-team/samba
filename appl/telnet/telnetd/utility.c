@@ -346,7 +346,7 @@ void fatal(int f, char *msg)
 {
 	char buf[BUFSIZ];
 
-	(void) sprintf(buf, "telnetd: %s.\r\n", msg);
+	sprintf(buf, "telnetd: %s.\r\n", msg);
 #if	defined(ENCRYPTION)
 	if (encrypt_output) {
 		/*
@@ -357,7 +357,7 @@ void fatal(int f, char *msg)
 		netflush();
 	}
 #endif
-	(void) write(f, buf, (int)strlen(buf));
+	write(f, buf, (int)strlen(buf));
 	sleep(1);	/*XXX*/
 	exit(1);
 }
@@ -367,7 +367,7 @@ fatalperror(int f, char *msg)
 {
 	char buf[BUFSIZ], *strerror(int);
 
-	(void) sprintf(buf, "%s: %s", msg, strerror(errno));
+	sprintf(buf, "%s: %s", msg, strerror(errno));
 	fatal(f, buf);
 }
 
@@ -403,7 +403,7 @@ void edithost(char *pat, char *host)
 		pat++;
 	}
 	if (*host)
-		(void) strncpy(res, host,
+		strncpy(res, host,
 				sizeof editedhost - (res - editedhost) -1);
 	else
 		*res = '\0';
@@ -499,8 +499,8 @@ void putf(char *cp, char *where)
 		  break;
 
 		case 'd':
-			(void)time(&t);
-			(void)strftime(db, sizeof(db), fmtstr, localtime(&t));
+			time(&t);
+			strftime(db, sizeof(db), fmtstr, localtime(&t));
 			putstr(db);
 			break;
 

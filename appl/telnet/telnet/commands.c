@@ -348,7 +348,7 @@ static int sendcmd(int argc, char **argv)
     for (i = 1; i < argc; i++) {
 	if ((s = GETSEND(argv[i])) == 0) {
 	    fprintf(stderr, "Telnet 'send' error - argument disappeared!\n");
-	    (void) quit();
+	    quit();
 	    /*NOTREACHED*/
 	}
 	if (s->handler) {
@@ -1305,14 +1305,14 @@ setescape(argc, argv)
 		arg = argv[1];
 	else {
 		printf("new escape character: ");
-		(void) fgets(buf, sizeof(buf), stdin);
+		fgets(buf, sizeof(buf), stdin);
 		arg = buf;
 	}
 	if (arg[0] != '\0')
 		escape = arg[0];
 	printf("Escape character is '%s'.\n", control(escape));
 
-	(void) fflush(stdout);
+	fflush(stdout);
 	return 1;
 }
 
@@ -1323,7 +1323,7 @@ togcrmod()
     crmod = !crmod;
     printf("Deprecated usage - please use 'toggle crmod' in the future.\n");
     printf("%s map carriage return on output.\n", crmod ? "Will" : "Won't");
-    (void) fflush(stdout);
+    fflush(stdout);
     return 1;
 }
 
@@ -1337,7 +1337,7 @@ suspend()
 	long oldrows, oldcols, newrows, newcols, err;
 
 	err = (TerminalWindowSize(&oldrows, &oldcols) == 0) ? 1 : 0;
-	(void) kill(0, SIGTSTP);
+	kill(0, SIGTSTP);
 	/*
 	 * If we didn't get the window size before the SUSPEND, but we
 	 * can get them now (?), then send the NAWS to make sure that
@@ -1393,7 +1393,7 @@ shell(int argc, char **argv)
 	    _exit(1);
 	}
     default:
-	    (void)wait((int *)0);	/* Wait for the shell to complete */
+	    wait((int *)0);	/* Wait for the shell to complete */
 
 	    if (TerminalWindowSize(&newrows, &newcols) && connected &&
 		(err || ((oldrows != newrows) || (oldcols != newcols)))) {
@@ -1409,9 +1409,9 @@ static int bye(int argc, char **argv)
     extern int resettermname;
 
     if (connected) {
-	(void) shutdown(net, 2);
+	shutdown(net, 2);
 	printf("Connection closed.\n");
-	(void) NetClose(net);
+	NetClose(net);
 	connected = 0;
 	resettermname = 1;
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
@@ -1428,7 +1428,7 @@ static int bye(int argc, char **argv)
 /*VARARGS*/
 int quit(void)
 {
-	(void) call(bye, "bye", "fromquit", 0);
+	call(bye, "bye", "fromquit", 0);
 	Exit(0);
 	return 0; /*NOTREACHED*/
 }
@@ -1438,7 +1438,7 @@ int quit(void)
 logout()
 {
 	send_do(TELOPT_LOGOUT, 1);
-	(void) netflush();
+	netflush();
 	return 1;
 }
 
@@ -2058,7 +2058,7 @@ static int status(int argc, char **argv)
 	printf("No connection.\n");
     }
     printf("Escape character is '%s'.\n", control(escape));
-    (void) fflush(stdout);
+    fflush(stdout);
     return 1;
 }
 
@@ -2068,7 +2068,7 @@ static int status(int argc, char **argv)
  */
 ayt_status()
 {
-    (void) call(status, "status", "notmuch", 0);
+    call(status, "status", "notmuch", 0);
 }
 #endif
 
@@ -2180,9 +2180,9 @@ int tn(int argc, char **argv)
 	return 0;
     }
     if (argc < 2) {
-	(void) strcpy(line, "open ");
+	strcpy(line, "open ");
 	printf("(to) ");
-	(void) fgets(&line[strlen(line)], sizeof(line) - strlen(line), stdin);
+	fgets(&line[strlen(line)], sizeof(line) - strlen(line), stdin);
 	makeargv();
 	argc = margc;
 	argv = margv;
@@ -2248,7 +2248,7 @@ int tn(int argc, char **argv)
 	if (temp != (unsigned long) -1) {
 	    sin.sin_addr.s_addr = temp;
 	    sin.sin_family = AF_INET;
-	    (void) strcpy(_hostname, hostp);
+	    strcpy(_hostname, hostp);
 	    hostname = _hostname;
 	} else {
 	    host = gethostbyname(hostp);
@@ -2353,7 +2353,7 @@ int tn(int argc, char **argv)
 		host->h_addr_list++;
 		memmove((caddr_t)&sin.sin_addr,
 			host->h_addr_list[0], host->h_length);
-		(void) NetClose(net);
+		NetClose(net);
 		continue;
 	    }
 #endif	/* defined(h_addr) */
@@ -2382,10 +2382,10 @@ int tn(int argc, char **argv)
 	env_define((unsigned char *)"USER", (unsigned char *)user);
 	env_export((unsigned char *)"USER");
     }
-    (void) call(status, "status", "notmuch", 0);
+    call(status, "status", "notmuch", 0);
     if (setjmp(peerdied) == 0)
 	telnet(user);
-    (void) NetClose(net);
+    NetClose(net);
     ExitString("Connection closed by foreign host.\n",1);
     /*NOTREACHED*/
 }
@@ -2493,8 +2493,8 @@ command(top, tbuf, cnt)
     if (!top) {
 	putchar('\n');
     } else {
-	(void) signal(SIGINT, SIG_DFL);
-	(void) signal(SIGQUIT, SIG_DFL);
+	signal(SIGINT, SIG_DFL);
+	signal(SIGQUIT, SIG_DFL);
     }
     for (;;) {
 	if (rlogin == _POSIX_VDISABLE)
@@ -2516,7 +2516,7 @@ command(top, tbuf, cnt)
 		printf("%s> ", prompt);
 	    if (fgets(line, sizeof(line), stdin) == NULL) {
 		if (feof(stdin) || ferror(stdin)) {
-		    (void) quit();
+		    quit();
 		    /*NOTREACHED*/
 		}
 		break;

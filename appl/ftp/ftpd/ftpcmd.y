@@ -239,7 +239,7 @@ cmd
 		{
 			usedefault = 0;
 			if (pdata >= 0) {
-				(void) close(pdata);
+				close(pdata);
 				pdata = -1;
 			}
 			reply(200, "PORT command successful.");
@@ -492,7 +492,7 @@ cmd
 
 			if ($4) {
 				oldmask = umask(0);
-				(void) umask(oldmask);
+				umask(oldmask);
 				reply(200, "Current UMASK is %03o", oldmask);
 			}
 		}
@@ -539,7 +539,7 @@ cmd
 				    maxtimeout);
 			} else {
 				ftpd_timeout = $5;
-				(void) alarm((unsigned) ftpd_timeout);
+				alarm((unsigned) ftpd_timeout);
 				reply(200,
 				    "Maximum IDLE time set to %d seconds",
 				    ftpd_timeout);
@@ -1009,13 +1009,13 @@ getline(char *s, int n)
 			case WONT:
 				c = getc(stdin);
 				printf("%c%c%c", IAC, DONT, 0377&c);
-				(void) fflush(stdout);
+				fflush(stdout);
 				continue;
 			case DO:
 			case DONT:
 				c = getc(stdin);
 				printf("%c%c%c", IAC, WONT, 0377&c);
-				(void) fflush(stdout);
+				fflush(stdout);
 				continue;
 			case IAC:
 				break;
@@ -1082,13 +1082,13 @@ yylex(void)
 		switch (state) {
 
 		case CMD:
-			(void) signal(SIGALRM, toolong);
-			(void) alarm((unsigned) ftpd_timeout);
+			signal(SIGALRM, toolong);
+			alarm((unsigned) ftpd_timeout);
 			if (getline(cbuf, sizeof(cbuf)-1) == NULL) {
 				reply(221, "You could at least say goodbye.");
 				dologout(0);
 			}
-			(void) alarm(0);
+			alarm(0);
 #ifdef HASSETPROCTITLE
 			if (strncasecmp(cbuf, "PASS", 4) != NULL)
 				setproctitle("%s: %s", proctitle, cbuf);
@@ -1305,7 +1305,7 @@ copy(char *s)
 	p = malloc((unsigned) strlen(s) + 1);
 	if (p == NULL)
 		fatal("Ran out of memory.");
-	(void) strcpy(p, s);
+	strcpy(p, s);
 	return (p);
 }
 
@@ -1396,7 +1396,7 @@ sizecmd(char *filename)
 		}
 		if (fstat(fileno(fin), &stbuf) < 0 || !S_ISREG(stbuf.st_mode)) {
 			reply(550, "%s: not a plain file.", filename);
-			(void) fclose(fin);
+			fclose(fin);
 			return;
 		}
 
@@ -1406,7 +1406,7 @@ sizecmd(char *filename)
 				count++;
 			count++;
 		}
-		(void) fclose(fin);
+		fclose(fin);
 
 		reply(213, "%ld", count);
 		break; }

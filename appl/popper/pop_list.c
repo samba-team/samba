@@ -47,12 +47,12 @@ pop_list (POP *p)
     /*  Loop through the message information list.  Skip deleted messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++) {
         if (!mp->del_flag) 
-            (void)fprintf(p->output,"%u %lu\r\n",mp->number,mp->length);
+            fprintf(p->output,"%u %lu\r\n",mp->number,mp->length);
     }
 
     /*  "." signals the end of a multi-line transmission */
-    (void)fprintf(p->output,".\r\n");
-    (void)fflush(p->output);
+    fprintf(p->output,".\r\n");
+    fflush(p->output);
 
     return(POP_SUCCESS);
 }

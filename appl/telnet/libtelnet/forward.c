@@ -317,7 +317,7 @@ krb5_data *outbuf;
     if (retval = encode_krb5_enc_cred_part(&cred_enc_part, &scratch))
       return retval;
 
-#define cleanup_scratch() { (void) memset(scratch->data, 0, scratch->length); krb5_free_data(scratch); }
+#define cleanup_scratch() { memset(scratch->data, 0, scratch->length); krb5_free_data(scratch); }
 
     /* put together an eblock for this encryption */
 
@@ -340,7 +340,7 @@ krb5_data *outbuf;
     }
 
 #define cleanup_encpart() {\
-	(void) memset(ret_cred.enc_part.ciphertext.data, 0, \
+	memset(ret_cred.enc_part.ciphertext.data, 0, \
 	     ret_cred.enc_part.ciphertext.length); \
 	free(ret_cred.enc_part.ciphertext.data); \
 	ret_cred.enc_part.ciphertext.length = 0; \
@@ -351,7 +351,7 @@ krb5_data *outbuf;
 	goto clean_encpart;
     }
 
-#define cleanup_prockey() {(void) krb5_finish_key(&eblock);}
+#define cleanup_prockey() {krb5_finish_key(&eblock);}
 
     /* call the encryption routine */
     if (retval = krb5_encrypt((krb5_pointer) scratch->data,
@@ -470,14 +470,14 @@ const krb5_address *recv_addr;	  /* optional */
 	return retval;
     }
 
-#define cleanup_credmsg() {(void)krb5_xfree(credmsg->enc_part.ciphertext.data); (void)krb5_xfree(credmsg);}
+#define cleanup_credmsg() {krb5_xfree(credmsg->enc_part.ciphertext.data); krb5_xfree(credmsg);}
 
     if (!(scratch = (krb5_data *) malloc(sizeof(*scratch)))) {
 	cleanup_credmsg();
 	return ENOMEM;
     }
 
-#define cleanup_scratch() {(void)memset(scratch->data, 0, scratch->length); (void)krb5_xfree(scratch->data);}
+#define cleanup_scratch() {memset(scratch->data, 0, scratch->length); krb5_xfree(scratch->data);}
 
     if (retval = encode_krb5_ticket(credmsg->tickets[0], &scratch)) {
 	cleanup_credmsg();
@@ -516,7 +516,7 @@ const krb5_address *recv_addr;	  /* optional */
 	return retval;
     }
 
-#define cleanup_prockey() {(void) krb5_finish_key(&eblock);}
+#define cleanup_prockey() {krb5_finish_key(&eblock);}
 
     /* call the decryption routine */
     if (retval = krb5_decrypt((krb5_pointer) credmsg->enc_part.ciphertext.data,
@@ -545,7 +545,7 @@ const krb5_address *recv_addr;	  /* optional */
     }
     cleanup_scratch();
 
-#define cleanup_mesg() {(void)krb5_xfree(credmsg_enc_part);}
+#define cleanup_mesg() {krb5_xfree(credmsg_enc_part);}
 
     if (retval = krb5_timeofday(&currenttime)) {
 	cleanup_mesg();

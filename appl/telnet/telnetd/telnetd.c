@@ -643,12 +643,12 @@ getterminaltype(name)
 	 * we have to just go with what we (might) have already gotten.
 	 */
 	if (his_state_is_will(TELOPT_TTYPE) && !terminaltypeok(terminaltype)) {
-	    (void) strncpy(first, terminaltype, sizeof(first));
+	    strncpy(first, terminaltype, sizeof(first));
 	    for(;;) {
 		/*
 		 * Save the unknown name, and request the next name.
 		 */
-		(void) strncpy(last, terminaltype, sizeof(last));
+		strncpy(last, terminaltype, sizeof(last));
 		_gettermname();
 		if (terminaltypeok(terminaltype))
 		    break;
@@ -667,7 +667,7 @@ getterminaltype(name)
 		     */
 		     _gettermname();
 		    if (strncmp(first, terminaltype, sizeof(first)) != 0)
-			(void) strcpy(terminaltype, first);
+			strcpy(terminaltype, first);
 		    break;
 		}
 	    }
@@ -779,7 +779,7 @@ void doit(struct sockaddr_in *who)
 	remote_host_name[sizeof(remote_host_name)-1] = 0;
 	host = remote_host_name;
 
-	(void) k_gethostname(host_name, sizeof (host_name));
+	k_gethostname(host_name, sizeof (host_name));
 	hostname = host_name;
 
 #ifndef abs
@@ -976,34 +976,34 @@ telnet(f, p)
 	 */
 	telrcv();
 
-	(void) ioctl(f, FIONBIO, (char *)&on);
-	(void) ioctl(p, FIONBIO, (char *)&on);
+	ioctl(f, FIONBIO, (char *)&on);
+	ioctl(p, FIONBIO, (char *)&on);
 
 #if	defined(SO_OOBINLINE)
-	(void) setsockopt(net, SOL_SOCKET, SO_OOBINLINE,
+	setsockopt(net, SOL_SOCKET, SO_OOBINLINE,
 				(void *)&on, sizeof on);
 #endif	/* defined(SO_OOBINLINE) */
 
 #ifdef	SIGTSTP
-	(void) signal(SIGTSTP, SIG_IGN);
+	signal(SIGTSTP, SIG_IGN);
 #endif
 #ifdef	SIGTTOU
 	/*
 	 * Ignoring SIGTTOU keeps the kernel from blocking us
 	 * in ttioct() in /sys/tty.c.
 	 */
-	(void) signal(SIGTTOU, SIG_IGN);
+	signal(SIGTTOU, SIG_IGN);
 #endif
 
-	(void) signal(SIGCHLD, cleanup);
+	signal(SIGCHLD, cleanup);
 
 #ifdef  TIOCNOTTY
 	{
 		int t;
 		t = open(_PATH_TTY, O_RDWR);
 		if (t >= 0) {
-			(void) ioctl(t, TIOCNOTTY, (char *)0);
-			(void) close(t);
+			ioctl(t, TIOCNOTTY, (char *)0);
+			close(t);
 		}
 	}
 #endif
@@ -1027,7 +1027,7 @@ telnet(f, p)
 		HN = getstr("hn", &cp);
 		IM = getstr("im", &cp);
 		if (HN && *HN)
-			(void) strcpy(host_name, HN);
+			strcpy(host_name, HN);
 		if (IM == 0)
 			IM = "";
 	} else {
@@ -1039,7 +1039,7 @@ telnet(f, p)
 		putf(IM, ptyibuf2);
 
 	if (pcc)
-		(void) strncat(ptyibuf2, ptyip, pcc+1);
+		strncat(ptyibuf2, ptyip, pcc+1);
 	ptyip = ptyibuf2;
 	pcc = strlen(ptyip);
 #ifdef	LINEMODE
@@ -1143,7 +1143,7 @@ telnet(f, p)
 		    if (SYNCHing) {
 			int atmark;
 
-			(void) ioctl(net, SIOCATMARK, (char *)&atmark);
+			ioctl(net, SIOCATMARK, (char *)&atmark);
 			if (atmark) {
 			    ncc = recv(net, netibuf, sizeof (netibuf), MSG_OOB);
 			    if ((ncc == -1) && (errno == EINVAL)) {
@@ -1235,7 +1235,7 @@ telnet(f, p)
 					    ptyibuf[0] & TIOCPKT_DOSTOP ? 1 : 0;
 					if (newflow != flowmode) {
 						flowmode = newflow;
-						(void) sprintf(nfrontp,
+						sprintf(nfrontp,
 							"%c%c%c%c%c%c",
 							IAC, SB, TELOPT_LFLOW,
 							flowmode ? LFLOW_ON
@@ -1392,12 +1392,12 @@ interrupt()
 	if (really_stream)
 	{
 		int sig = SIGINT;
-		(void) ioctl(ourpty, TIOCSIGNAL, &sig);
-		(void) ioctl(ourpty, I_FLUSH, FLUSHR);
+		ioctl(ourpty, TIOCSIGNAL, &sig);
+		ioctl(ourpty, I_FLUSH, FLUSHR);
 	}
 #else
 #ifdef	TCSIG
-	(void) ioctl(ourpty, TCSIG, (char *)SIGINT);
+	ioctl(ourpty, TCSIG, (char *)SIGINT);
 #else	/* TCSIG */
 	init_termbuf();
 	*pfrontp++ = slctab[SLC_IP].sptr ?
@@ -1416,7 +1416,7 @@ sendbrk()
 {
 	ptyflush();	/* half-hearted */
 #ifdef	TCSIG
-	(void) ioctl(ourpty, TCSIG, (char *)SIGQUIT);
+	ioctl(ourpty, TCSIG, (char *)SIGQUIT);
 #else	/* TCSIG */
 	init_termbuf();
 	*pfrontp++ = slctab[SLC_ABORT].sptr ?
@@ -1430,7 +1430,7 @@ sendsusp()
 #ifdef	SIGTSTP
 	ptyflush();	/* half-hearted */
 # ifdef	TCSIG
-	(void) ioctl(ourpty, TCSIG, (char *)SIGTSTP);
+	ioctl(ourpty, TCSIG, (char *)SIGTSTP);
 # else	/* TCSIG */
 	*pfrontp++ = slctab[SLC_SUSP].sptr ?
 			(unsigned char)*slctab[SLC_SUSP].sptr : '\032';
@@ -1447,11 +1447,11 @@ recv_ayt()
 {
 #if	defined(SIGINFO) && defined(TCSIG)
 	if (slctab[SLC_AYT].sptr && *slctab[SLC_AYT].sptr != _POSIX_VDISABLE) {
-		(void) ioctl(ourpty, TCSIG, (char *)SIGINFO);
+		ioctl(ourpty, TCSIG, (char *)SIGINFO);
 		return;
 	}
 #endif
-	(void) strcpy(nfrontp, "\r\n[Yes]\r\n");
+	strcpy(nfrontp, "\r\n[Yes]\r\n");
 	nfrontp += 9;
 }
 

@@ -79,7 +79,7 @@ ruserpass(char *host, char **aname, char **apass, char **aacct)
 	hdir = getenv("HOME");
 	if (hdir == NULL)
 		hdir = ".";
-	(void) sprintf(buf, "%s/.netrc", hdir);
+	sprintf(buf, "%s/.netrc", hdir);
 	cfile = fopen(buf, "r");
 	if (cfile == NULL) {
 		if (errno != ENOENT)
@@ -128,7 +128,7 @@ next:
 			if (token())
 				if (*aname == 0) { 
 					*aname = malloc((unsigned) strlen(tokval) + 1);
-					(void) strcpy(*aname, tokval);
+					strcpy(*aname, tokval);
 				} else {
 					if (strcmp(*aname, tokval))
 						goto next;
@@ -144,7 +144,7 @@ next:
 			}
 			if (token() && *apass == 0) {
 				*apass = malloc((unsigned) strlen(tokval) + 1);
-				(void) strcpy(*apass, tokval);
+				strcpy(*apass, tokval);
 			}
 			break;
 		case ACCOUNT:
@@ -156,12 +156,12 @@ next:
 			}
 			if (token() && *aacct == 0) {
 				*aacct = malloc((unsigned) strlen(tokval) + 1);
-				(void) strcpy(*aacct, tokval);
+				strcpy(*aacct, tokval);
 			}
 			break;
 		case MACDEF:
 			if (proxy) {
-				(void) fclose(cfile);
+				fclose(cfile);
 				return (0);
 			}
 			while ((c=getc(cfile)) != EOF && c == ' ' || c == '\t');
@@ -230,10 +230,10 @@ next:
 		goto done;
 	}
 done:
-	(void) fclose(cfile);
+	fclose(cfile);
 	return (0);
 bad:
-	(void) fclose(cfile);
+	fclose(cfile);
 	return (-1);
 }
 

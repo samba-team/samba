@@ -391,7 +391,7 @@ main(int argc, char **argv)
 	sprintf(ttyline, "ftp%u", (unsigned)getpid());
 
 
-	/*	(void) freopen(_PATH_DEVNULL, "w", stderr); */
+	/*	freopen(_PATH_DEVNULL, "w", stderr); */
 	signal(SIGPIPE, lostconn);
 	signal(SIGCHLD, SIG_IGN);
 	if (signal(SIGURG, myoob) == SIG_ERR)
@@ -428,8 +428,8 @@ main(int argc, char **argv)
 				*cp = '\0';
 			lreply(530, "%s", line);
 		}
-		(void) fflush(stdout);
-		(void) fclose(fd);
+		fflush(stdout);
+		fclose(fd);
 		reply(530, "System not available.");
 		exit(0);
 	}
@@ -439,8 +439,8 @@ main(int argc, char **argv)
 				*cp = '\0';
 			lreply(220, "%s", line);
 		}
-		(void) fflush(stdout);
-		(void) fclose(fd);
+		fflush(stdout);
+		fclose(fd);
 		/* reply(220,) must follow */
 	}
 	k_gethostname(hostname, sizeof(hostname));
@@ -474,7 +474,7 @@ sgetsave(char *s)
 		dologout(1);
 		/* NOTREACHED */
 	}
-	(void) strcpy(new, s);
+	strcpy(new, s);
 	return (new);
 }
 
@@ -638,7 +638,7 @@ checkuser(char *fname, char *name)
 					break;
 				}
 			}
-		(void) fclose(fd);
+		fclose(fd);
 	}
 	return (found);
 }
@@ -651,7 +651,7 @@ int do_login(int code, char *passwd)
 		reply(550, "Can't set gid.");
 		return -1;
 	}
-	(void) initgroups(pw->pw_name, pw->pw_gid);
+	initgroups(pw->pw_name, pw->pw_gid);
 
 	/* open wtmp before chroot */
 	logwtmp(ttyline, pw->pw_name, remotehost);
@@ -719,7 +719,7 @@ int do_login(int code, char *passwd)
 			syslog(LOG_INFO, "FTP LOGIN FROM %s as %s",
 			    remotehost, pw->pw_name);
 	}
-	(void) umask(defumask);
+	umask(defumask);
 	return 0;
 }
 
@@ -732,7 +732,7 @@ static void
 end_login(void)
 {
 
-	(void) seteuid((uid_t)0);
+	seteuid((uid_t)0);
 	if (logged_in)
 		logwtmp(ttyline, "", "");
 	pw = NULL;
@@ -924,7 +924,7 @@ retrieve(char *cmd, char *name)
 #else
 	send_data(fin, dout, BUFSIZ);
 #endif
-	(void) fclose(dout);
+	fclose(dout);
 	data = -1;
 	pdata = -1;
 done:
@@ -1027,7 +1027,7 @@ store(char *name, char *mode, int unique)
 		else
 			reply(226, "Transfer complete.");
 	}
-	(void) fclose(din);
+	fclose(din);
 	data = -1;
 	pdata = -1;
 done:
@@ -1042,7 +1042,7 @@ getdatasock(char *mode)
 
 	if (data >= 0)
 		return (fdopen(data, mode));
-	(void) seteuid((uid_t)0);
+	seteuid((uid_t)0);
 	s = socket(AF_INET, SOCK_STREAM, 0);
 	if (s < 0)
 		goto bad;
@@ -1060,7 +1060,7 @@ getdatasock(char *mode)
 			goto bad;
 		sleep(tries);
 	}
-	(void) seteuid((uid_t)pw->pw_uid);
+	seteuid((uid_t)pw->pw_uid);
 #ifdef IP_TOS
 	on = IPTOS_THROUGHPUT;
 	if (setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&on, sizeof(int)) < 0)
@@ -1070,8 +1070,8 @@ getdatasock(char *mode)
 bad:
 	/* Return the real value of errno (close may change it) */
 	t = errno;
-	(void) seteuid((uid_t)pw->pw_uid);
-	(void) close(s);
+	seteuid((uid_t)pw->pw_uid);
+	close(s);
 	errno = t;
 	return (NULL);
 }
@@ -1086,9 +1086,9 @@ dataconn(char *name, off_t size, char *mode)
 	file_size = size;
 	byte_count = 0;
 	if (size != (off_t) -1)
-		(void) sprintf(sizebuf, " (%ld bytes)", size);
+		sprintf(sizebuf, " (%ld bytes)", size);
 	else
-		(void) strcpy(sizebuf, "");
+		strcpy(sizebuf, "");
 	if (pdata >= 0) {
 		struct sockaddr_in from;
 		int s, fromlen = sizeof(from);
@@ -1096,15 +1096,15 @@ dataconn(char *name, off_t size, char *mode)
 		s = accept(pdata, (struct sockaddr *)&from, &fromlen);
 		if (s < 0) {
 			reply(425, "Can't open data connection.");
-			(void) close(pdata);
+			close(pdata);
 			pdata = -1;
 			return (NULL);
 		}
-		(void) close(pdata);
+		close(pdata);
 		pdata = s;
 #ifdef IP_TOS
 		tos = IPTOS_THROUGHPUT;
-		(void) setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&tos,
+		setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&tos,
 		    sizeof(int));
 #endif
 		reply(150, "Opening %s mode data connection for '%s'%s.",
@@ -1136,7 +1136,7 @@ dataconn(char *name, off_t size, char *mode)
 			continue;
 		}
 		perror_reply(425, "Can't build data connection");
-		(void) fclose(file);
+		fclose(file);
 		data = -1;
 		return (NULL);
 	}
@@ -1356,20 +1356,20 @@ statfilecmd(char *filename)
 		if (c == '\n') {
 			if (ferror(stdout)){
 				perror_reply(421, "control connection");
-				(void) ftpd_pclose(fin);
+				ftpd_pclose(fin);
 				dologout(1);
 				/* NOTREACHED */
 			}
 			if (ferror(fin)) {
 				perror_reply(551, filename);
-				(void) ftpd_pclose(fin);
+				ftpd_pclose(fin);
 				return;
 			}
-			(void) putc('\r', stdout);
+			putc('\r', stdout);
 		}
-		(void) putc(c, stdout);
+		putc(c, stdout);
 	}
-	(void) ftpd_pclose(fin);
+	ftpd_pclose(fin);
 	reply(211, "End of Status");
 }
 
@@ -1623,9 +1623,9 @@ dolog(struct sockaddr_in *sin)
 		sizeof(struct in_addr), AF_INET);
 
 	if (hp)
-		(void) strncpy(remotehost, hp->h_name, sizeof(remotehost));
+		strncpy(remotehost, hp->h_name, sizeof(remotehost));
 	else
-		(void) strncpy(remotehost, inet_ntoa(sin->sin_addr),
+		strncpy(remotehost, inet_ntoa(sin->sin_addr),
 		    sizeof(remotehost));
 #endif
 	inaddr2str (sin->sin_addr, remotehost, sizeof(remotehost));
@@ -1647,7 +1647,7 @@ dologout(int status)
 {
 
 	if (logged_in) {
-		(void) seteuid((uid_t)0);
+		seteuid((uid_t)0);
 		logwtmp(ttyline, "", "");
 		dest_tkt();
 		if(k_hasafs())
@@ -1725,12 +1725,12 @@ passive(void)
 	}
 	pasv_addr = ctrl_addr;
 	pasv_addr.sin_port = 0;
-	(void) seteuid((uid_t)0);
+	seteuid((uid_t)0);
 	if (bind(pdata, (struct sockaddr *)&pasv_addr, sizeof(pasv_addr)) < 0) {
-		(void) seteuid((uid_t)pw->pw_uid);
+		seteuid((uid_t)pw->pw_uid);
 		goto pasv_error;
 	}
-	(void) seteuid((uid_t)pw->pw_uid);
+	seteuid((uid_t)pw->pw_uid);
 	len = sizeof(pasv_addr);
 	if (getsockname(pdata, (struct sockaddr *) &pasv_addr, &len) < 0)
 		goto pasv_error;
@@ -1746,7 +1746,7 @@ passive(void)
 	return;
 
 pasv_error:
-	(void) close(pdata);
+	close(pdata);
 	pdata = -1;
 	perror_reply(425, "Can't open passive connection");
 	return;
@@ -1774,11 +1774,11 @@ gunique(char *local)
 	}
 	if (cp)
 		*cp = '/';
-	(void) strcpy(new, local);
+	strcpy(new, local);
 	cp = new + strlen(new);
 	*cp++ = '.';
 	for (count = 1; count < 100; count++) {
-		(void)sprintf(cp, "%d", count);
+		sprintf(cp, "%d", count);
 		if (stat(new, &st) < 0)
 			return (new);
 	}
@@ -1851,7 +1851,7 @@ send_file_list(char *whichf)
       }
       perror_reply(550, whichf);
       if (dout != NULL) {
-	(void) fclose(dout);
+	fclose(dout);
 	transflag = 0;
 	data = -1;
 	pdata = -1;
@@ -1909,7 +1909,7 @@ send_file_list(char *whichf)
 	byte_count += strlen(nbuf) + 1;
       }
     }
-    (void) closedir(dirp);
+    closedir(dirp);
   }
   if (dout == NULL)
     reply(550, "No files found.");
@@ -1922,7 +1922,7 @@ send_file_list(char *whichf)
   if (dout != NULL){
     auth_write(fileno(dout), buf, 0); /* XXX flush */
 	    
-    (void) fclose(dout);
+    fclose(dout);
   }
   data = -1;
   pdata = -1;
