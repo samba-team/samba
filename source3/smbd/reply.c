@@ -283,14 +283,14 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		set_message_end(outbuf,p);
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
-		const char *fsname = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
+		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
 		
 		set_message(outbuf,3,0,True);
 
 		p = smb_buf(outbuf);
 		p += srvstr_push(outbuf, p, server_devicetype, -1, 
 				 STR_TERMINATE|STR_ASCII);
-		p += srvstr_push(outbuf, p, fsname, -1, 
+		p += srvstr_push(outbuf, p, fstype, -1, 
 				 STR_TERMINATE);
 		
 		set_message_end(outbuf,p);
