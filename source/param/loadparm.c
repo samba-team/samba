@@ -3669,3 +3669,27 @@ char *lp_printername(int snum)
 
 	return ret;
 }
+
+
+/*******************************************************************
+ Return the NetBIOS called name.
+********************************************************************/
+
+const char *get_called_name(void)
+{
+	extern fstring local_machine;
+	static fstring called_name;
+
+	if (! *local_machine)
+		return global_myname;
+
+	if ((*local_machine) && !StrCaseCmp(local_machine, "*SMBSERVER")) {
+		fstrcpy(called_name, get_my_primary_ip());
+		DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
+			called_name));
+		return called_name;
+	}
+
+        return local_machine;
+}
+

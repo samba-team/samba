@@ -1336,7 +1336,7 @@ static void spoolss_notify_server_name(int snum,
 	pstring temp_name, temp;
 	uint32 len;
 
-	snprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
+	snprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
 
 	len = (uint32)dos_PutUniCode(temp, temp_name, sizeof(temp) - 2, True);
 
@@ -2460,7 +2460,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 
 	init_unistr(&printer->printername, chaine);
 	
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", global_myname);
+	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", get_called_name());
 	init_unistr(&printer->servername, chaine);
 	
 	printer->cjobs = count;
@@ -2528,12 +2528,12 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int 
 
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
+		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",get_called_name(), ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, lp_comment(snum));
 	}
 	else {
 		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
+		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",get_called_name(), ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
 		
@@ -2866,8 +2866,8 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 
 	*returned=1;
 	
-	snprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", global_myname);		
-	snprintf(desc, sizeof(desc)-1,"%s", global_myname);
+	snprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", get_called_name());		
+	snprintf(desc, sizeof(desc)-1,"%s", get_called_name());
 	snprintf(comment, sizeof(comment)-1, "Logged on Domain");
 
 	init_unistr(&printer->description, desc);
@@ -3716,7 +3716,7 @@ uint32 _spoolss_getprinterdriver2(pipes_struct *p, POLICY_HND *handle, const UNI
 	*servermajorversion=0;
 	*serverminorversion=0;
 
-	pstrcpy(servername, global_myname);
+	pstrcpy(servername, get_called_name());
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
 	if (!get_printer_snum(p, handle, &snum))
@@ -4037,9 +4037,9 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 		 info->servername, info->printername, info->sharename, info->portname, info->drivername, info->comment, info->location));
 
 	/* we force some elements to "correct" values */
-	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", global_myname);
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", get_called_name());
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
-		 global_myname, lp_servicename(snum));
+		 get_called_name(), lp_servicename(snum));
 	fstrcpy(info->sharename, lp_servicename(snum));
 
     /* Although 2k/Nt set the LOCAL attr, they serve it as NETWORK when	they
@@ -4078,7 +4078,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 	/* build driver path... only 9X architecture is needed for legacy reasons */
 	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
-			global_myname);
+			get_called_name());
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 	standard_sub_basic(remote_machine);
@@ -4589,7 +4589,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	struct tm *t;
 	
 	t=gmtime(&queue->time);
-	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
 
 	job_info->jobid=queue->job;	
 	init_unistr(&job_info->printername, lp_servicename(snum));
@@ -4618,11 +4618,11 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	struct tm *t;
 
 	t=gmtime(&queue->time);
-	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
 
 	job_info->jobid=queue->job;
 	
-	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter->info_2->printername);
+	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", get_called_name(), ntprinter->info_2->printername);
 
 	init_unistr(&job_info->printername, chaine);
 	
@@ -5089,7 +5089,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 	fstring architecture;
 
 	DEBUG(4,("_spoolss_enumprinterdrivers\n"));
-	fstrcpy(servername, global_myname);
+	fstrcpy(servername, get_called_name());
 	*needed=0;
 	*returned=0;
 
@@ -5568,7 +5568,7 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 			return ERROR_ACCESS_DENIED;
 		}
 
-	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname,
+	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", get_called_name(),
              printer->info_2->sharename);
 
 	if ((snum = print_queue_snum(printer->info_2->sharename)) == -1) {
