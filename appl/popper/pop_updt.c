@@ -86,6 +86,7 @@ pop_updt (POP *p)
     }
 
     rewind(md);
+    lseek(mfd,0,SEEK_SET);
     ftruncate(mfd,0) ;
 
     /* Synch stdio and the kernel for the POP drop */
