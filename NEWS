@@ -1,0 +1,6 @@
+Changes in release 0.0n:
+
+ * Incremental database propagation.
+ * Somewhat improved kadmin ui; the stuff in admin is now removed.
+ * Some support for using enctypes instead of keytypes.
+ * Lots of other improvement and bug fixes, see ChangeLog for details.
