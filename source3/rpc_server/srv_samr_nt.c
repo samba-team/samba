@@ -560,6 +560,11 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 
 	DEBUG(5,("_samr_get_usrdom_pwinfo: %d\n", __LINE__));
 
+	/* 
+	 * NT sometimes return NT_STATUS_ACCESS_DENIED
+	 * I don't know yet why.
+	 */
+
 	return r_u->status;
 }
 
