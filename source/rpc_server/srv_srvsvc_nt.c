@@ -1219,7 +1219,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	r_u->switch_value = 0;
 
-	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$"))
+	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
 		return ERROR_ACCESS_DENIED;
 
 	snum = find_service(share_name);
@@ -1290,8 +1290,8 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		if (!lp_change_share_cmd() || !*lp_change_share_cmd())
 			return ERROR_ACCESS_DENIED;
 
-		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
-				lp_change_share_cmd(), share_name, ptr, comment);
+		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
+				lp_change_share_cmd(), CONFIGFILE, share_name, ptr, comment);
 		dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
@@ -1385,6 +1385,9 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
+	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
+		return ERROR_ACCESS_DENIED;
+
 	snum = find_service(share_name);
 
 	/* Share already exists. */
@@ -1404,8 +1407,8 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	string_replace(ptr, '"', ' ');
 	string_replace(comment, '"', ' ');
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
-			lp_add_share_cmd(), share_name, ptr, comment);
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
+			lp_add_share_cmd(), CONFIGFILE, share_name, ptr, comment);
 	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
@@ -1451,7 +1454,7 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 
-	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$"))
+	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
 		return ERROR_ACCESS_DENIED;
 
 	snum = find_service(share_name);
@@ -1471,7 +1474,8 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd())
 		return ERROR_ACCESS_DENIED;
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\"", lp_delete_share_cmd(), lp_servicename(snum));
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
+			lp_delete_share_cmd(), CONFIGFILE, lp_servicename(snum));
 	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
