@@ -99,6 +99,21 @@ DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length)
 	return blob;
 }
 
+/**
+ * Steal a talloc'ed DATA_BLOB from one context to another
+ */
+
+DATA_BLOB data_blob_talloc_steal(TALLOC_CTX *old_ctx, TALLOC_CTX *new_ctx, 
+				 DATA_BLOB *old) 
+{
+	DATA_BLOB new;
+	new = *old;
+	new.data = talloc_steal(old_ctx, new_ctx, old->data);
+	if (new.data == NULL) {
+		smb_panic("data_blob_talloc_steal: talloc_steal failed.\n");
+	}
+}
+
 /*******************************************************************
 free a data blob
 *******************************************************************/
