@@ -473,6 +473,17 @@ failed:
 }
 #endif
 
+krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
+{
+#if defined(HAVE_KRB5_KT_FREE_ENTRY)
+	return krb5_kt_free_entry(context, kt_entry);
+#elif defined(HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS)
+	return krb5_free_keytab_entry_contents(context, kt_entry);
+#else
+#error UNKNOWN_KT_FREE_FUNCTION
+#endif
+}
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 

@@ -48,6 +48,9 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	char *principal = NULL;
 	char *princ_s = NULL;
 	char *password_s = NULL;
+#ifndef MAX_KEYTAB_NAME_LEN
+#define MAX_KEYTAB_NAME_LEN 1100
+#endif
 	char keytab_name[MAX_KEYTAB_NAME_LEN];          /* This MAX_NAME_LEN is a constant defined in krb5.h */
 	fstring my_fqdn;
 	int i;
@@ -163,7 +166,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 						error_message(ret)));
 					goto out;
 				}
-				ret = krb5_free_keytab_entry_contents(context, &kt_entry);
+				ret = smb_krb5_kt_free_entry(context, &kt_entry);
 				ZERO_STRUCT(kt_entry);
 				if (ret) {
 					DEBUG(1,("ads_keytab_add_entry: krb5_kt_remove_entry failed (%s)\n",
@@ -174,10 +177,10 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 			}
 
 			/* Not a match, just free this entry and continue. */
-			ret = krb5_free_keytab_entry_contents(context, &kt_entry);
+			ret = smb_krb5_kt_free_entry(context, &kt_entry);
 			ZERO_STRUCT(kt_entry);
 			if (ret) {
-				DEBUG(1,("ads_keytab_add_entry: krb5_free_keytab_entry_contents failed (%s)\n", error_message(ret)));
+				DEBUG(1,("ads_keytab_add_entry: smb_krb5_kt_free_entry failed (%s)\n", error_message(ret)));
 				goto out;
 			}
 		}
@@ -253,7 +256,7 @@ out:
 		krb5_keytab_entry zero_kt_entry;
 		ZERO_STRUCT(zero_kt_entry);
 		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
-			krb5_free_keytab_entry_contents(context, &kt_entry);
+			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
 	}
 	if (princ) {
@@ -343,7 +346,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 				DEBUG(1,("ads_keytab_flush: krb5_kt_start_seq failed (%s)\n",error_message(ret)));
 				goto out;
 			}
-			ret = krb5_free_keytab_entry_contents(context, &kt_entry);
+			ret = smb_krb5_kt_free_entry(context, &kt_entry);
 			ZERO_STRUCT(kt_entry);
 			if (ret) {
 				DEBUG(1,("ads_keytab_flush: krb5_kt_remove_entry failed (%s)\n",error_message(ret)));
@@ -367,7 +370,7 @@ out:
 		krb5_keytab_entry zero_kt_entry;
 		ZERO_STRUCT(zero_kt_entry);
 		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
-			krb5_free_keytab_entry_contents(context, &kt_entry);
+			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
 	}
 	if (cursor && keytab) {
@@ -434,7 +437,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
 		while ((ret = krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) == 0) {
-			krb5_free_keytab_entry_contents(context, &kt_entry);
+			smb_krb5_kt_free_entry(context, &kt_entry);
 			ZERO_STRUCT(kt_entry);
 			found++;
 		}
@@ -496,7 +499,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 					krb5_free_unparsed_name(context, ktprinc);
 				}
 			}
-			krb5_free_keytab_entry_contents(context, &kt_entry);
+			smb_krb5_kt_free_entry(context, &kt_entry);
 			ZERO_STRUCT(kt_entry);
 		}
 		for (i = 0; oldEntries[i]; i++) {
@@ -515,7 +518,7 @@ done:
 		krb5_keytab_entry zero_kt_entry;
 		ZERO_STRUCT(zero_kt_entry);
 		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
-			krb5_free_keytab_entry_contents(context, &kt_entry);
+			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
 	}
 	if (cursor && keytab) {
