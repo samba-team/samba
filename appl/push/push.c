@@ -519,9 +519,14 @@ parse_pobox (char *a0, char *a1,
     if (p) {
 	*p++ = '\0';
 	if (strcmp (h, "po") == 0) {
-	    h = getenv("MAILHOST");
-	    if (h == NULL)
-		errx (1, "MAILHOST not set");
+	    h = strchr(p, '@');
+	    if(h)
+		*h++ = '\0';
+	    else {
+		h = getenv("MAILHOST");
+		if (h == NULL)
+		    errx (1, "MAILHOST not set");
+	    }
 	}
 	u = p;
     } else {
