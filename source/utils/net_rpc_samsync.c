@@ -362,7 +362,7 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	}
 
 #if 0
-        /* No kickoff time in the delta? */
+/*	No kickoff time in the delta? */
 	if (!nt_time_is_zero(&delta->kickoff_time)) {
 		unix_time = nt_time_to_unix(&delta->kickoff_time);
 		stored_time = pdb_get_kickoff_time(account);
