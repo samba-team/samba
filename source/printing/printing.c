@@ -128,7 +128,7 @@ static BOOL print_job_store(int jobid, struct printjob *pjob)
 	d.dptr = (void *)pjob;
 	d.dsize = sizeof(*pjob);
 
-	return (0 == tdb_store(tdb, print_key(jobid), d, TDB_REPLACE));
+	return (tdb_store(tdb, print_key(jobid), d, TDB_REPLACE) == 0);
 }
 
 /****************************************************************************
@@ -170,6 +170,7 @@ static int print_run_command(int snum,char *command,
 	ret = smbrun(syscmd,outfile,False);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
+
 	return ret;
 }
 
@@ -318,8 +319,7 @@ static void print_queue_update(int snum)
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
 
 	unlink(tmp_file);
-	print_run_command(snum, cmd, tmp_file,
-			  NULL);
+	print_run_command(snum, cmd, tmp_file, NULL);
 
 	numlines = 0;
 	qlines = file_lines_load(tmp_file, &numlines);
@@ -341,6 +341,14 @@ static void print_queue_update(int snum)
 		}		
 	}
 	file_lines_free(qlines);
+
+	DEBUG(3, ("%d job%s in queue for %s\n", qcount, (qcount != 1) ?
+		"s" : "", lp_servicename(snum)));
+
+	/* Lock the queue for the database update */
+
+	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", lp_servicename(snum));
+	tdb_lock_bystring(tdb, keystr);
 
 	/*
 	  any job in the internal database that is marked as spooled
@@ -395,6 +403,11 @@ static void print_queue_update(int snum)
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 	tdb_store(tdb, key, data, TDB_REPLACE);	
+
+	/* Unlock for database update */
+
+	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", lp_servicename(snum));
+	tdb_unlock_bystring(tdb, keystr);
 
 	/*
 	 * Update the cache time again. We want to do this call
@@ -678,9 +691,11 @@ static BOOL print_cache_expired(int snum)
 {
 	fstring key;
 	time_t t2, t = time(NULL);
+
 	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
 	t2 = tdb_fetch_int(tdb, key);
 	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
+		DEBUG(3, ("print cache expired\n"));
 		return True;
 	}
 	return False;
