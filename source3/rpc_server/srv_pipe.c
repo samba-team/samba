@@ -276,9 +276,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 
-	uid_t uid;
-	uid_t gid;
-
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
 	memset(p->user_name, '\0', sizeof(p->user_name));
