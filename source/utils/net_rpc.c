@@ -4008,7 +4008,7 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = cli_reg_abort_shutdown(cli, mem_ctx);
+	result = werror_to_ntstatus(cli_reg_abort_shutdown(cli, mem_ctx));
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
@@ -4149,7 +4149,7 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 	}
 
 	/* create an entry */
-	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, opt_reboot, opt_force);
+	result = werror_to_ntstatus(cli_reg_shutdown(cli, mem_ctx, msg, timeout, opt_reboot, opt_force));
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
