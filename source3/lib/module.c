@@ -66,6 +66,8 @@ int smb_load_modules(const char **modules)
 		}
 	}
 
+	DEBUG(2, ("%d modules successfully loaded\n", success));
+
 	return success;
 }
 
