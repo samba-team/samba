@@ -646,18 +646,16 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct spoolss_OpenPrinter r;
 	struct policy_handle handle;
-	DATA_BLOB blob;
 	BOOL ret = True;
 
-	blob = data_blob(NULL, 0);
+	r.in.printername	= talloc_asprintf(mem_ctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
+	r.in.datatype		= NULL;
+	r.in.devmode_ctr.size	= 0;
+	r.in.devmode_ctr.devmode= NULL;
+	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle		= &handle;
 
-	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
-	r.in.printer = NULL;
-	r.in.buffer = &blob;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;	
-	r.out.handle = &handle;
-
-	printf("\nTesting OpenPrinter(%s)\n", r.in.server);
+	printf("\nTesting OpenPrinter(%s)\n", r.in.printername);
 
 	status = dcerpc_spoolss_OpenPrinter(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
@@ -666,7 +664,6 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		/* don't consider failing this an error until we understand it */
 		return True;
 	}
-
 
 	if (!test_GetPrinter(p, mem_ctx, &handle)) {
 		ret = False;
@@ -679,7 +676,7 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!test_ClosePrinter(p, mem_ctx, &handle)) {
 		ret = False;
 	}
-	
+
 	return ret;
 }
 
