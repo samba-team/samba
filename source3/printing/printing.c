@@ -918,7 +918,7 @@ BOOL print_job_end(int jobid)
 	SMB_STRUCT_STAT sbuf;
 	pstring current_directory;
 	pstring print_directory;
-	char *wd, *p, *printer_name;
+	char *wd, *p;
 	pstring jobname;
 
 	if (!pjob)
