@@ -21,7 +21,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_VFS
+#define DBGC_CLASS DBGC_QUOTA
 
 #define DEFAULT_QUOTA_NAME "default_quota"
 

@@ -38,7 +38,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "2"
+#define MOUNT_CIFS_VERSION_MINOR "3"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -285,32 +285,45 @@ static int parse_options(char * options, int * filesys_flags)
 
 		if (strncmp(data, "user", 4) == 0) {
 			if (!value || !*value) {
-				printf("invalid or missing username\n");
-				return 1;	/* needs_arg; */
-			}
-			if (strnlen(value, 260) < 260) {
-				got_user=1;
-				percent_char = strchr(value,'%');
-				if(percent_char) {
-					*percent_char = ',';
-					if(mountpassword == NULL)
-						mountpassword = calloc(65,1);
-					if(mountpassword) {
-						if(got_password)
-							printf("\nmount.cifs warning - password specified twice\n");
-						got_password = 1;
-						percent_char++;
-						strncpy(mountpassword, percent_char,64);
-					/*  remove password from username */
-						while(*percent_char != 0) {
-							*percent_char = ',';
-							percent_char++;
-						}
-					}
+				if(data[4] == '\0') {
+					if(verboseflag)
+						printf("\nskipping empty user mount parameter\n");
+					/* remove the parm since it would otherwise be confusing
+					to the kernel code which would think it was a real username */
+						data[0] = ',';
+						data[1] = ',';
+						data[2] = ',';
+						data[3] = ',';
+					/* BB remove it from mount line so as not to confuse kernel code */
+				} else {
+					printf("username specified with no parameter\n");
+					return 1;	/* needs_arg; */
 				}
 			} else {
-				printf("username too long\n");
-				return 1;
+				if (strnlen(value, 260) < 260) {
+					got_user=1;
+					percent_char = strchr(value,'%');
+					if(percent_char) {
+						*percent_char = ',';
+						if(mountpassword == NULL)
+							mountpassword = calloc(65,1);
+						if(mountpassword) {
+							if(got_password)
+								printf("\nmount.cifs warning - password specified twice\n");
+							got_password = 1;
+							percent_char++;
+							strncpy(mountpassword, percent_char,64);
+						/*  remove password from username */
+							while(*percent_char != 0) {
+								*percent_char = ',';
+								percent_char++;
+							}
+						}
+					}
+				} else {
+					printf("username too long\n");
+					return 1;
+				}
 			}
 		} else if (strncmp(data, "pass", 4) == 0) {
 			if (!value || !*value) {
@@ -634,7 +647,7 @@ int main(int argc, char ** argv)
 
 	/* add sharename in opts string as unc= parm */
 
-	while ((c = getopt_long (argc, argv, "afFhilL:no:O:rsU:vVwt:",
+	while ((c = getopt_long (argc, argv, "afFhilL:no:O:rsSU:vVwt:",
 			 longopts, NULL)) != -1) {
 		switch (c) {
 /* No code to do the following  options yet */
@@ -711,6 +724,9 @@ int main(int argc, char ** argv)
 				got_password = 1;
 				strncpy(mountpassword,optarg,64);
 			}
+			break;
+		case 'S':
+			get_password_from_file(0 /* stdin */,NULL);
 			break;
 		case 't':
 			break;

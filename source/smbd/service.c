@@ -21,12 +21,6 @@
 #include "includes.h"
 
 extern struct timeval smb_last_time;
-extern int case_default;
-extern BOOL case_preserve;
-extern BOOL short_case_preserve;
-extern BOOL case_mangle;
-extern BOOL case_sensitive;
-extern BOOL use_mangled_map;
 extern userdom_struct current_user_info;
 
 
@@ -62,13 +56,7 @@ BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 
 	last_conn = conn;
 
-	case_default = lp_defaultcase(snum);
-	case_preserve = lp_preservecase(snum);
-	short_case_preserve = lp_shortpreservecase(snum);
-	case_mangle = lp_casemangle(snum);
-	case_sensitive = lp_casesensitive(snum);
 	magic_char = lp_magicchar(snum);
-	use_mangled_map = (*lp_mangled_map(snum) ? True:False);
 	return(True);
 }
 
@@ -357,6 +345,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
 	conn->ipc = ((strncmp(dev,"IPC",3) == 0) || strequal(dev,"ADMIN$"));
 	conn->dirptr = NULL;
+
+	/* Case options for the share. */
+	conn->case_sensitive = lp_casesensitive(snum);
+	conn->case_preserve = lp_preservecase(snum);
+	conn->short_case_preserve = lp_shortpreservecase(snum);
+
 	conn->veto_list = NULL;
 	conn->hide_list = NULL;
 	conn->veto_oplock_list = NULL;
@@ -794,6 +788,9 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	DirCacheFlush(SNUM(conn));
 
+	file_close_conn(conn);
+	dptr_closecnum(conn);
+
 	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
@@ -804,9 +801,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	SMB_VFS_DISCONNECT(conn);
 
 	yield_connection(conn, lp_servicename(SNUM(conn)));
-
-	file_close_conn(conn);
-	dptr_closecnum(conn);
 
 	/* make sure we leave the directory available for unmount */
 	vfs_ChDir(conn, "/");
@@ -831,4 +825,28 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	}
 
 	conn_free(conn);
+}
+
+/****************************************************************************
+ Remove stale printers
+****************************************************************************/
+
+void remove_stale_printers( void )
+{
+	int snum, iNumServices, printersServiceNum;
+	const char *pname;
+
+	iNumServices = lp_numservices();
+	printersServiceNum = lp_servicenumber( PRINTERS_NAME);
+	for( snum = 0; snum < iNumServices; snum++) {
+		/* Never remove PRINTERS_NAME */
+		if ( snum == printersServiceNum)
+			continue;
+		pname = lp_printername( snum);
+		/* Is snum a print service and still in the printing subsystem? */
+		if ( lp_print_ok( snum) && !pcap_printername_ok( pname, NULL)) {
+			DEBUG( 3, ( "Removing printer: %s\n", pname));
+			lp_killservice( snum);
+		}
+	}
 }

@@ -506,13 +506,13 @@ BOOL strupper_w(smb_ucs2_t *s)
 /*******************************************************************
   convert a string to "normal" form
 ********************************************************************/
-void strnorm_w(smb_ucs2_t *s)
+
+void strnorm_w(smb_ucs2_t *s, int case_default)
 {
-  extern int case_default;
-  if (case_default == CASE_UPPER)
-    strupper_w(s);
-  else
-    strlower_w(s);
+	if (case_default == CASE_UPPER)
+		strupper_w(s);
+	else
+		strlower_w(s);
 }
 
 int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)

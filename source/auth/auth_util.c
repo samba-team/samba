@@ -1236,6 +1236,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				info3->gids[i].g_rid));			
 				
 			SAFE_FREE(lgroupSIDs);
+			SAFE_FREE(all_group_SIDs);
 			free_server_info(server_info);
 			
 			return nt_status;
@@ -1264,6 +1265,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(4,("create_nt_user_token failed\n"));
+		SAFE_FREE(lgroupSIDs);
 		SAFE_FREE(all_group_SIDs);
 		free_server_info(server_info);
 		return nt_status;
@@ -1271,6 +1273,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	(*server_info)->ptok = token; 
 
+	SAFE_FREE(lgroupSIDs);
 	SAFE_FREE(all_group_SIDs);
 
 	/* ensure we are never given NULL session keys */

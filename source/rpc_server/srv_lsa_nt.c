@@ -171,10 +171,12 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 			status = lookup_name(dom_name, user, &sid, &name_type);
 		}
 
+#if 0 /* This is not true. */
 		if (name_type == SID_NAME_WKN_GRP) {
 			/* BUILTIN aliases are still aliases :-) */
 			name_type = SID_NAME_ALIAS;
 		}
+#endif
 
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
@@ -667,12 +669,12 @@ done:
 
 	/* set up the LSA Lookup SIDs response */
 	init_lsa_trans_names(p->mem_ctx, ref, names, num_entries, sid, &mapped_count);
-	if (mapped_count == 0)
-		r_u->status = NT_STATUS_NONE_MAPPED;
-	else if (mapped_count != num_entries)
-		r_u->status = STATUS_SOME_UNMAPPED;
-	else
-		r_u->status = NT_STATUS_OK;
+	if (NT_STATUS_IS_OK(r_u->status)) {
+		if (mapped_count == 0)
+			r_u->status = NT_STATUS_NONE_MAPPED;
+		else if (mapped_count != num_entries)
+			r_u->status = STATUS_SOME_UNMAPPED;
+	}
 	init_reply_lookup_sids(r_u, ref, names, mapped_count);
 
 	return r_u->status;

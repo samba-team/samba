@@ -217,6 +217,8 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	int uLevel = 1;
 	int count = -1;
 
+	errno = 0; /* reset */
+
 	/* send a SMBtrans command with api NetServerEnum */
 	p = param;
 	SSVAL(p,0,0x68); /* api number */
@@ -269,7 +271,18 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
   
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
-	
+
+	if (count < 0) {
+	    errno = cli_errno(cli);
+	} else {
+	    if (!count) {
+		/* this is a very special case, when the domain master for the 
+		   work group isn't part of the work group itself, there is something
+		   wild going on */
+		errno = ENOENT;
+	    }
+	}
+			
 	return(count > 0);
 }
 

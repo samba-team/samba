@@ -63,19 +63,6 @@ int chain_size = 0;
 
 int trans_num = 0;
 
-/*
-   case handling on filenames 
-*/
-int case_default = CASE_LOWER;
-
-/* the following control case operations - they are put here so the
-   client can link easily */
-BOOL case_sensitive;
-BOOL case_preserve;
-BOOL use_mangled_map = False;
-BOOL short_case_preserve;
-BOOL case_mangle;
-
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 pstring user_socket_options=DEFAULT_SOCKET_OPTIONS;   
 
@@ -609,7 +596,7 @@ void unix_clean_name(char *s)
  Make a dir struct.
 ****************************************************************************/
 
-void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date)
+void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date, BOOL case_sensitive)
 {  
 	char *p;
 	pstring mask2;
@@ -1453,6 +1440,9 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 #endif
 
 	dbgflush();
+#ifdef SIGABRT
+	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
+#endif
 	abort();
 }
 
@@ -1500,7 +1490,7 @@ const char *readdirname(DIR *p)
  of a path matches a (possibly wildcarded) entry in a namelist.
 ********************************************************************/
 
-BOOL is_in_path(const char *name, name_compare_entry *namelist)
+BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensitive)
 {
 	pstring last_component;
 	char *p;
@@ -1711,24 +1701,6 @@ BOOL is_myname(const char *s)
 	}
 	DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
 	return(ret);
-}
-
-/********************************************************************
- Return only the first IP address of our configured interfaces
- as a string
- *******************************************************************/
-
-const char* get_my_primary_ip (void)
-{
-	static fstring ip_string;
-	int n;
-	struct iface_struct nics[MAX_INTERFACES];
-
-	if ((n=get_interfaces(nics, MAX_INTERFACES)) <= 0)
-		return NULL;
-
-	fstrcpy(ip_string, inet_ntoa(nics[0].ip));
-	return ip_string;
 }
 
 BOOL is_myname_or_ipaddr(const char *s)

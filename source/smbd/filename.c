@@ -26,11 +26,6 @@
 
 #include "includes.h"
 
-extern BOOL case_sensitive;
-extern BOOL case_preserve;
-extern BOOL short_case_preserve;
-extern BOOL use_mangled_map;
-
 static BOOL scan_directory(const char *path, char *name,size_t maxlength,
 			   connection_struct *conn,BOOL docache);
 
@@ -39,7 +34,7 @@ static BOOL scan_directory(const char *path, char *name,size_t maxlength,
  This needs to be careful about whether we are case sensitive.
 ****************************************************************************/
 
-static BOOL fname_equal(const char *name1, const char *name2)
+static BOOL fname_equal(const char *name1, const char *name2, BOOL case_sensitive)
 {
 	/* Normal filename handling */
 	if (case_sensitive)
@@ -137,6 +132,10 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	if (!*name) {
 		name[0] = '.';
 		name[1] = '\0';
+		if (SMB_VFS_STAT(conn,name,&st) == 0) {
+			*pst = st;
+		}
+		DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 		return(True);
 	}
 
@@ -152,13 +151,17 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			pstrcpy(saved_last_component, name);
 	}
 
-	if (!case_sensitive && (!case_preserve || (mangle_is_8_3(name, False) && !short_case_preserve)))
-		strnorm(name);
+#if 1
+	if (!conn->case_preserve || (mangle_is_8_3(name, False) && !conn->short_case_preserve))
+#else
+	if (!conn->case_sensitive && (!conn->case_preserve || (mangle_is_8_3(name, False) && !conn->short_case_preserve)))
+#endif
+		strnorm(name, lp_defaultcase(SNUM(conn)));
 
 	start = name;
 	pstrcpy(orig_path, name);
 
-	if(!case_sensitive && stat_cache_lookup(conn, name, dirpath, &start, &st)) {
+	if(!conn->case_sensitive && stat_cache_lookup(conn, name, dirpath, &start, &st)) {
 		*pst = st;
 		return True;
 	}
@@ -168,7 +171,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 */
 
 	if (SMB_VFS_STAT(conn,name,&st) == 0) {
-		stat_cache_add(orig_path, name);
+		stat_cache_add(orig_path, name, conn->case_sensitive);
 		DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 		*pst = st;
 		return(True);
@@ -181,7 +184,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 * sensitive then searching won't help.
 	 */
 
-	if (case_sensitive && !mangle_is_mangled(name) && !use_mangled_map)
+	if (conn->case_sensitive && !mangle_is_mangled(name) && !*lp_mangled_map(SNUM(conn)))
 		return(False);
 
 	name_has_wildcard = ms_has_wild(start);
@@ -297,8 +300,8 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				 * don't normalise it.
 				 */
 
-				if (!case_preserve && (!strhasupper(start) || !strhaslower(start)))		
-					strnorm(start);
+				if (!conn->case_preserve && (!strhasupper(start) || !strhaslower(start)))		
+					strnorm(start, lp_defaultcase(SNUM(conn)));
 
 				/*
 				 * check on the mangled stack to see if we can recover the 
@@ -353,7 +356,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 		 */
 		
 		if(!component_was_mangled && !name_has_wildcard)
-			stat_cache_add(orig_path, dirpath);
+			stat_cache_add(orig_path, dirpath, conn->case_sensitive);
 	
 		/* 
 		 * Restore the / that we wiped out earlier.
@@ -368,7 +371,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 */
 
 	if(!component_was_mangled && !name_has_wildcard)
-		stat_cache_add(orig_path, name);
+		stat_cache_add(orig_path, name, conn->case_sensitive);
 
 	/* 
 	 * The name has been resolved.
@@ -400,7 +403,7 @@ BOOL check_name(pstring name,connection_struct *conn)
 	}
 
 	if (!lp_widelinks(SNUM(conn))) {
-		ret = reduce_name(conn,name,conn->connectpath);
+		ret = reduce_name(conn,name);
 	}
 
 	/* Check if we are allowing users to follow symlinks */
@@ -482,7 +485,7 @@ static BOOL scan_directory(const char *path, char *name, size_t maxlength,
 		 * against unmangled name.
 		 */
 
-		if ((mangled && mangled_equal(name,dname,SNUM(conn))) || fname_equal(name, dname)) {
+		if ((mangled && mangled_equal(name,dname,SNUM(conn))) || fname_equal(name, dname, conn->case_sensitive)) {
 			/* we've found the file, change it's name and return */
 			if (docache)
 				DirCacheAdd(path,name,dname,SNUM(conn));

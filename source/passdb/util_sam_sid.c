@@ -56,16 +56,23 @@ static const known_sid_users creator_owner_users[] = {
 	{0, (enum SID_NAME_USE)0, NULL}};
 
 static const known_sid_users nt_authority_users[] = {
-	{  1, SID_NAME_ALIAS, "Dialup" },
-	{  2, SID_NAME_ALIAS, "Network"},
-	{  3, SID_NAME_ALIAS, "Batch"},
-	{  4, SID_NAME_ALIAS, "Interactive"},
-	{  6, SID_NAME_ALIAS, "Service"},
-	{  7, SID_NAME_ALIAS, "AnonymousLogon"},
-	{  8, SID_NAME_ALIAS, "Proxy"},
-	{  9, SID_NAME_ALIAS, "ServerLogon"},
-	{ 11, SID_NAME_ALIAS, "Authenticated Users"},
-	{ 18, SID_NAME_ALIAS, "SYSTEM"},
+	{  1, SID_NAME_WKN_GRP, "Dialup" },
+	{  2, SID_NAME_WKN_GRP, "Network"},
+	{  3, SID_NAME_WKN_GRP, "Batch"},
+	{  4, SID_NAME_WKN_GRP, "Interactive"},
+	{  6, SID_NAME_WKN_GRP, "Service"},
+	{  7, SID_NAME_WKN_GRP, "AnonymousLogon"},
+	{  8, SID_NAME_WKN_GRP, "Proxy"},
+	{  9, SID_NAME_WKN_GRP, "ServerLogon"},
+	{ 10, SID_NAME_WKN_GRP, "Self"},
+	{ 11, SID_NAME_WKN_GRP, "Authenticated Users"},
+	{ 12, SID_NAME_WKN_GRP, "Restricted"},
+	{ 13, SID_NAME_WKN_GRP, "Terminal Server User"},
+	{ 14, SID_NAME_WKN_GRP, "Remote Interactive Logon"},
+	{ 15, SID_NAME_WKN_GRP, "This Organization"},
+	{ 18, SID_NAME_WKN_GRP, "SYSTEM"},
+	{ 19, SID_NAME_WKN_GRP, "Local Service"},
+	{ 20, SID_NAME_WKN_GRP, "Network Service"},
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
 static const known_sid_users builtin_groups[] = {
@@ -286,6 +293,8 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 
 	if (!sid_name_map_initialized)
 		init_sid_name_map();
+
+	DEBUG(10,("map_name_to_wellknown_sid: looking up %s\n", name));
 
 	for (i=0; sid_name_map[i].sid != NULL; i++) {
 		const known_sid_users *users = sid_name_map[i].known_users;

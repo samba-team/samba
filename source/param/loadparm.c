@@ -249,6 +249,7 @@ typedef struct
 	BOOL bNullPasswords;
 	BOOL bObeyPamRestrictions;
 	BOOL bLoadPrinters;
+	int PrintcapCacheTime;
 	BOOL bLargeReadwrite;
 	BOOL bReadRaw;
 	BOOL bWriteRaw;
@@ -365,7 +366,6 @@ typedef struct
 	BOOL bCaseSensitive;
 	BOOL bCasePreserve;
 	BOOL bShortCasePreserve;
-	BOOL bCaseMangle;
 	BOOL bHideDotFiles;
 	BOOL bHideSpecialFiles;
 	BOOL bHideUnReadable;
@@ -489,7 +489,6 @@ static service sDefault = {
 	False,			/* case sensitive */
 	True,			/* case preserve */
 	True,			/* short case preserve */
-	False,			/* case mangle */
 	True,			/* bHideDotFiles */
 	False,			/* bHideSpecialFiles */
 	False,			/* bHideUnReadable */
@@ -947,6 +946,7 @@ static struct parm_struct parm_table[] = {
 	{"max reported print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxReportedPrintJobs, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"max print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxPrintJobs, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"load printers", P_BOOL, P_GLOBAL, &Globals.bLoadPrinters, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
+	{"printcap cache time", P_INTEGER, P_GLOBAL, &Globals.PrintcapCacheTime, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"printcap name", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"printcap", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_HIDE}, 
 	{"printable", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
@@ -982,7 +982,6 @@ static struct parm_struct parm_table[] = {
 	{"casesignames", P_BOOL, P_LOCAL, &sDefault.bCaseSensitive, NULL, NULL, FLAG_HIDE}, 
 	{"preserve case", P_BOOL, P_LOCAL, &sDefault.bCasePreserve, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"short preserve case", P_BOOL, P_LOCAL, &sDefault.bShortCasePreserve, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"mangle case", P_BOOL, P_LOCAL, &sDefault.bCaseMangle, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangling char", P_CHAR, P_LOCAL, &sDefault.magic_char, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"hide dot files", P_BOOL, P_LOCAL, &sDefault.bHideDotFiles, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"hide special files", P_BOOL, P_LOCAL, &sDefault.bHideSpecialFiles, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
@@ -1365,6 +1364,7 @@ static void init_globals(void)
 	Globals.AlgorithmicRidBase = BASE_RID;
 
 	Globals.bLoadPrinters = True;
+	Globals.PrintcapCacheTime = 0;
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
@@ -1450,6 +1450,7 @@ static void init_globals(void)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
+	str_list_free(&Globals.szPassdbBackend);
 #ifdef WITH_LDAP_SAMCONFIG
 	string_set(&Globals.szLdapServer, "localhost");
 	Globals.ldap_port = 636;
@@ -1616,6 +1617,7 @@ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
+FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
@@ -1833,7 +1835,6 @@ FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
 FN_LOCAL_BOOL(lp_casesensitive, bCaseSensitive)
 FN_LOCAL_BOOL(lp_preservecase, bCasePreserve)
 FN_LOCAL_BOOL(lp_shortpreservecase, bShortCasePreserve)
-FN_LOCAL_BOOL(lp_casemangle, bCaseMangle)
 FN_LOCAL_BOOL(lp_hide_dot_files, bHideDotFiles)
 FN_LOCAL_BOOL(lp_hide_special_files, bHideSpecialFiles)
 FN_LOCAL_BOOL(lp_hideunreadable, bHideUnReadable)
@@ -2521,6 +2522,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 					strupper_m(*(char **)dest_ptr);
 					break;
 				case P_LIST:
+					str_list_free((char ***)dest_ptr);
 					str_list_copy((char ***)dest_ptr, *(const char ***)src_ptr);
 					break;
 				default:
@@ -2752,6 +2754,7 @@ static BOOL handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 
 static BOOL handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
+	str_list_free(&Globals.szNetbiosAliases);
 	Globals.szNetbiosAliases = str_list_make(pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
 }
@@ -4256,7 +4259,7 @@ const char *get_called_name(void)
 	static fstring called_name;
 
 	if (!*local_machine) {
-		fstrcpy(called_name, get_my_primary_ip());
+		fstrcpy(called_name, client_socket_addr());
 		DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
 			 called_name));
 		return called_name;

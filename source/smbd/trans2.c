@@ -24,7 +24,6 @@
 #include "includes.h"
 
 extern int Protocol;
-extern BOOL case_sensitive;
 extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
@@ -883,8 +882,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		pstrcpy(fname,dname);      
 
-		if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive)))
-			got_match = mask_match(fname, mask, case_sensitive);
+		if(!(got_match = *got_exact_match = exact_match(fname, mask, conn->case_sensitive)))
+			got_match = mask_match(fname, mask, conn->case_sensitive);
 
 		if(!got_match && !mangle_is_8_3(fname, False)) {
 
@@ -898,8 +897,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			pstring newname;
 			pstrcpy( newname, fname);
 			mangle_map( newname, True, False, SNUM(conn));
-			if(!(got_match = *got_exact_match = exact_match(newname, mask, case_sensitive)))
-				got_match = mask_match(newname, mask, case_sensitive);
+			if(!(got_match = *got_exact_match = exact_match(newname, mask, conn->case_sensitive)))
+				got_match = mask_match(newname, mask, conn->case_sensitive);
 		}
 
 		if(got_match) {
@@ -1433,7 +1432,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		a different TRANS2 call. */
   
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n", conn->dirpath,lp_dontdescend(SNUM(conn))));
-	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),case_sensitive))
+	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
     
 	p = pdata;
@@ -1633,7 +1632,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",conn->dirpath,lp_dontdescend(SNUM(conn))));
-	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),case_sensitive))
+	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
     
 	p = pdata;
@@ -2303,7 +2302,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 			}
 
-			delete_pending = fsp->directory_delete_on_close;
+			delete_pending = fsp->is_directory ? fsp->directory_delete_on_close : 0;
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -2401,7 +2400,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		c_time &= ~1;
 		sbuf.st_atime &= ~1;
-		sbuf.st_mtime &= ~1;
+		sbuf.st_ctime &= ~1;
 		sbuf.st_mtime &= ~1;
 	}
 
@@ -2863,66 +2862,6 @@ NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
 }
 
 /****************************************************************************
- Returns true if this pathname is within the share, and thus safe.
-****************************************************************************/
-
-static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in, char *link_dest_out)
-{
-#ifdef PATH_MAX
-	char resolved_name[PATH_MAX+1];
-#else
-	pstring resolved_name;
-#endif
-	fstring last_component;
-	pstring link_dest;
-	pstring link_test;
-	char *p;
-	BOOL bad_path = False;
-	SMB_STRUCT_STAT sbuf;
-
-	pstrcpy(link_dest, link_dest_in);
-	unix_convert(link_dest,conn,0,&bad_path,&sbuf);
-
-	/* Store the UNIX converted path. */
-	pstrcpy(link_dest_out, link_dest);
-
-	p = strrchr(link_dest, '/');
-	if (p) {
-		fstrcpy(last_component, p+1);
-		*p = '\0';
-	} else {
-		fstrcpy(last_component, link_dest);
-		pstrcpy(link_dest, "./");
-	}
-		
-	if (SMB_VFS_REALPATH(conn,link_dest,resolved_name) == NULL)
-		return -1;
-
-	pstrcpy(link_dest, resolved_name);
-	pstrcat(link_dest, "/");
-	pstrcat(link_dest, last_component);
-
-	if (*link_dest != '/') {
-		/* Relative path. */
-		pstrcpy(link_test, conn->connectpath);
-		pstrcat(link_test, "/");
-		pstrcat(link_test, link_dest);
-	} else {
-		pstrcpy(link_test, link_dest);
-	}
-
-	/*
-	 * Check if the link is within the share.
-	 */
-
-	if (strncmp(conn->connectpath, link_test, strlen(conn->connectpath))) {
-		errno = EACCES;
-		return -1;
-	}
-	return 0;
-}
-
-/****************************************************************************
  Set a hard link (called by UNIX extensions and by NT rename with HARD link
  code.
 ****************************************************************************/
@@ -2962,6 +2901,10 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (!check_name(oldname,conn)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	rcdest = unix_convert(newname,conn,last_component_newname,&bad_path_newname,&sbuf2);
 	if (!rcdest && bad_path_newname) {
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
@@ -2979,12 +2922,17 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
+	if (!check_name(newname,conn)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* No links from a directory. */
 	if (S_ISDIR(sbuf1.st_mode)) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	if (ensure_link_is_safe(conn, oldname, oldname) != 0)
+	/* Ensure this is within the share. */
+	if (!reduce_name(conn, oldname) != 0)
 		return NT_STATUS_ACCESS_DENIED;
 
 	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n", newname, oldname ));
@@ -3482,7 +3430,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		case SMB_SET_FILE_UNIX_LINK:
 		{
-			pstring oldname;
+			pstring link_target;
 			char *newname = fname;
 
 			/* Set a symbolic link. */
@@ -3491,18 +3439,37 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if (!lp_symlinks(SNUM(conn)))
 				return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
-			srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), -1, STR_TERMINATE, &status);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
+			srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), -1, STR_TERMINATE);
+
+			/* !widelinks forces the target path to be within the share. */
+			/* This means we can interpret the target as a pathname. */
+			if (!lp_widelinks(SNUM(conn))) {
+				pstring rel_name;
+				char *last_dirp = NULL;
+
+				unix_format(link_target);
+				if (*link_target == '/') {
+					/* No absolute paths allowed. */
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
+				pstrcpy(rel_name, newname);
+				last_dirp = strrchr_m(rel_name, '/');
+				if (last_dirp) {
+					last_dirp[1] = '\0';
+				} else {
+					pstrcpy(rel_name, "./");
+				}
+				pstrcat(rel_name, link_target);
+
+				if (!check_name(rel_name, conn)) {
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
 			}
 
-			if (ensure_link_is_safe(conn, oldname, oldname) != 0)
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
-				fname, oldname ));
+				fname, link_target ));
 
-			if (SMB_VFS_SYMLINK(conn,oldname,newname) != 0)
+			if (SMB_VFS_SYMLINK(conn,link_target,newname) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			SSVAL(params,0,0);
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);

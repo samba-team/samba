@@ -503,6 +503,11 @@ typedef struct connection_struct
 	time_t lastused;
 	BOOL used;
 	int num_files_open;
+
+	BOOL case_sensitive;
+	BOOL case_preserve;
+	BOOL short_case_preserve;
+
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       

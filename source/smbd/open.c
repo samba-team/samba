@@ -242,30 +242,10 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	return True;
 }
 
-/****************************************************************************
-  C. Hoch 11/22/95
-  Helper for open_file_shared. 
-  Truncate a file after checking locking; close file if locked.
-  **************************************************************************/
-
-static int truncate_unless_locked(struct connection_struct *conn, files_struct *fsp)
-{
-	SMB_BIG_UINT mask = (SMB_BIG_UINT)-1;
-
-	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK,True)){
-		errno = EACCES;
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRlock;
-		unix_ERR_ntstatus = dos_to_ntstatus(ERRDOS, ERRlock);
-		return -1;
-	} else {
-		return SMB_VFS_FTRUNCATE(fsp,fsp->fd,0); 
-	}
-}
-
 /*******************************************************************
 return True if the filename is one of the special executable types
 ********************************************************************/
+
 static BOOL is_executable(const char *fname)
 {
 	if ((fname = strrchr_m(fname,'.'))) {
@@ -825,6 +805,25 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		return print_fsp_open(conn, fname);
 	}
 
+	if (desired_access && ((desired_access & ~(SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES))==0) &&
+		((desired_access & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) != 0)) {
+		/* Stat open that doesn't trigger oplock breaks or share mode checks... ! JRA. */
+		oplock_request = 0;
+		fsp = open_file_stat(conn, fname, psbuf);
+		if (!fsp)
+			return NULL;
+
+		fsp->desired_access = desired_access;
+		if (Access)
+			*Access = DOS_OPEN_RDONLY;
+		if (paction)
+			*paction = FILE_WAS_OPENED;
+
+		DEBUG(10,("open_file_shared: stat open for fname = %s share_mode = %x\n",
+			fname, share_mode ));
+		return fsp;
+	}
+
 	fsp = file_new(conn);
 	if(!fsp)
 		return NULL;
@@ -990,6 +989,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			if (fsp_open)
 				fd_close(conn, fsp);
 			file_free(fsp);
+			/*
+			 * We have detected a sharing violation here
+			 * so return the correct error code
+			 */
+                        unix_ERR_class = ERRDOS;
+                        unix_ERR_code = ERRbadshare;
+                        unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 			return NULL;
 		}
 
@@ -1057,6 +1063,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
+			/*
+			 * We have detected a sharing violation here, so
+			 * return the correct code.
+			 */
+                        unix_ERR_class = ERRDOS;
+                        unix_ERR_code = ERRbadshare;
+                        unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 			return NULL;
 		}
 
@@ -1095,7 +1108,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		/*
 		 * We are modifing the file after open - update the stat struct..
 		 */
-		if ((truncate_unless_locked(conn,fsp) == -1) || (SMB_VFS_FSTAT(fsp,fsp->fd,psbuf)==-1)) {
+		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fd,0) == -1) || (SMB_VFS_FSTAT(fsp,fsp->fd,psbuf)==-1)) {
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
@@ -1433,12 +1446,8 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	 */
 	
 	fsp->mode = psbuf->st_mode;
-	/* 
-	 * Don't store dev or inode, we don't want any iterator
-	 * to see this.
-	 */
-	fsp->inode = (SMB_INO_T)0;
-	fsp->dev = (SMB_DEV_T)0;
+	fsp->inode = psbuf->st_ino;
+	fsp->dev = psbuf->st_dev;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
 	fsp->file_pid = global_smbpid;

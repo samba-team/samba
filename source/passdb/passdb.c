@@ -814,13 +814,13 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 
 BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use)
 {
-	extern DOM_SID global_sid_World_Domain;
 	DOM_SID local_sid;
+	DOM_SID sid;
 	fstring user;
 	SAM_ACCOUNT *sam_account = NULL;
 	struct group *grp;
 	GROUP_MAP map;
-		
+
 	*psid_name_use = SID_NAME_UNKNOWN;
 
 	/*
@@ -832,14 +832,12 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 
 	sid_copy(&local_sid, get_global_sam_sid());
 
-	/*
-	 * Special case for MACHINE\Everyone. Map to the world_sid.
-	 */
-
-	if(strequal(user, "Everyone")) {
-		sid_copy( psid, &global_sid_World_Domain);
-		sid_append_rid(psid, 0);
-		*psid_name_use = SID_NAME_ALIAS;
+	if (map_name_to_wellknown_sid(&sid, psid_name_use, user)){
+		fstring sid_str;
+		sid_copy( psid, &sid);
+		sid_to_string(sid_str, &sid);
+		DEBUG(10,("lookup_name: name %s = SID %s, type = %u\n", user, sid_str,
+			(unsigned int)*psid_name_use ));
 		return True;
 	}
 

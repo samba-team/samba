@@ -680,12 +680,18 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	srv->cli = c;
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
 
-	/* now add it to the cache (internal or external) */
+	/* now add it to the cache (internal or external)  */
+	/* Let the cache function set errno if it wants to */
+	errno = 0;
 	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
+		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
+		errno = saved_errno;
+		if (errno == 0) {
+			errno = ENOMEM;
+		}
 		goto failed;
 	}
-
 	
 	DEBUG(2, ("Server connect ok: //%s/%s: %p\n", 
 		  server, share, srv));
@@ -1939,7 +1945,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				SAFE_FREE(dir->fname);
 				SAFE_FREE(dir);
 			}
-			errno = cli_errno(&srv->cli);
 
 			return NULL;
 
@@ -2032,7 +2037,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                                         SAFE_FREE(dir->fname);
                                         SAFE_FREE(dir);
                                 }
-                                errno = cli_errno(&srv->cli);
                                 
                                 return NULL;
                                 
@@ -2106,7 +2110,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
 					}
-					errno = cli_errno(&srv->cli);
 					return NULL;
 					
 				}
@@ -2150,7 +2153,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				}
 				else {
 
-					errno = ENODEV;   /* Neither the workgroup nor server exists */
+					errno = ECONNREFUSED;   /* Neither the workgroup nor server exists */
 					if (dir) {
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);

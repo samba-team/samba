@@ -8,6 +8,9 @@ AC_CONFIG_HEADER(include/config.h)
 AC_DISABLE_STATIC
 AC_ENABLE_SHARED
 
+SMB_VERSION_STRING=`cat include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
+echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
+
 #################################################
 # Directory handling stuff to support both the
 # legacy SAMBA directories and FHS compliant
@@ -360,7 +363,7 @@ dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
@@ -2277,7 +2280,21 @@ if test x"$samba_cv_BROKEN_NISPLUS_INCLUDE_FILES" = x"yes"; then
 	AC_DEFINE(BROKEN_NISPLUS_INCLUDE_FILES,1,[Whether the nisplus include files are broken])
 fi
 
+AC_CACHE_CHECK([if the realpath function allows a NULL argument],samba_cv_REALPATH_TAKES_NULL,[
+AC_TRY_RUN([
+#include <stdio.h>
+#include <limits.h>
+main() {
+	char *newpath = realpath("/tmp", NULL);
+	exit ((newpath != NULL) ? 0 : 1);
+}
+],
+samba_cv_REALPATH_TAKES_NULL=yes,samba_cv_REALPATH_TAKES_NULL=no,samba_cv_REALPATH_TAKES_NULL=cross)])
+if test x"$samba_cv_REALPATH_TAKES_NULL" = x"yes"; then
+    AC_DEFINE(REALPATH_TAKES_NULL,1,[Whether the realpath function allows NULL])
+fi
 
+A
 #################################################
 # check for smbwrapper support
 AC_MSG_CHECKING(whether to use smbwrapper)
@@ -2377,12 +2394,30 @@ if test x"$samba_cv_WITH_AFS" != x"no" ||
     fi
 fi
 
-if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no"; then
-	AC_CHECK_LIB( crypto, DES_pcbc_encrypt, LIBS="$LIBS -lcrypto" )
-fi
-
 if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no" && test x"$have_afs_headers" == x"yes"; then
     AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
+fi
+
+#################################################
+# check whether to compile AFS/NT ACL mapping module
+samba_cv_WITH_VFS_AFSACL=no
+AC_MSG_CHECKING(whether to use AFS fake-kaserver)
+AC_ARG_WITH(vfs-afsacl,
+[  --with-vfs-afsacl       Include AFS to NT ACL mapping module (default=no) ],
+[ case "$withval" in
+  yes|auto)
+    AC_MSG_RESULT($withval)
+    samba_cv_WITH_VFS_AFSACL=yes
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+if test x"$samba_cv_WITH_VFS_AFSACL" == x"yes"; then
+   default_shared_modules="$default_shared_modules vfs_afsacl"
 fi
 	
 if test x"$samba_cv_WITH_AFS" != x"no" && test x"$have_afs_headers" = x"yes"; then
@@ -3152,7 +3187,7 @@ AC_ARG_WITH(sys-quotas,
   AC_MSG_RESULT(${samba_cv_TRY_SYS_QUOTAS})
 )
 
-if test x"$samba_cv_TRY_SYS_QUOTAS" = x"auto"; then
+if test x"$samba_cv_TRY_SYS_QUOTAS" != x"no"; then
 AC_MSG_CHECKING(whether to try the lib/sysquotas.c interface on ${host_os})
   case "$host_os" in
 	*linux*)
@@ -4329,6 +4364,7 @@ SMB_SUBSYSTEM(AUTH,auth/auth.o)
 SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), "bin/extd_audit.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_full_audit, \$(VFS_FULL_AUDIT_OBJ), "bin/full_audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), "bin/netatalk.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_default_quota, \$(VFS_DEFAULT_QUOTA_OBJ), "bin/default_quota.$SHLIBEXT", VFS)
@@ -4336,6 +4372,7 @@ SMB_MODULE(vfs_readonly, \$(VFS_READONLY_OBJ), "bin/readonly.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])

@@ -344,6 +344,7 @@ force write permissions on print services.
 #define CAN_IPC (1<<3)
 #define AS_GUEST (1<<5)
 #define QUEUE_IN_OPLOCK (1<<6)
+#define DO_CHDIR (1<<7)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -373,7 +374,7 @@ static const struct smb_message_struct {
 /* 0x0e */ { "SMBctemp",reply_ctemp,AS_USER | QUEUE_IN_OPLOCK },
 /* 0x0f */ { "SMBmknew",reply_mknew,AS_USER}, 
 /* 0x10 */ { "SMBchkpth",reply_chkpth,AS_USER},
-/* 0x11 */ { "SMBexit",reply_exit,0},
+/* 0x11 */ { "SMBexit",reply_exit,DO_CHDIR},
 /* 0x12 */ { "SMBlseek",reply_lseek,AS_USER},
 /* 0x13 */ { "SMBlockread",reply_lockread,AS_USER},
 /* 0x14 */ { "SMBwriteunlock",reply_writeunlock,AS_USER},
@@ -469,7 +470,7 @@ static const struct smb_message_struct {
 /* 0x6e */ { NULL, NULL, 0 },
 /* 0x6f */ { NULL, NULL, 0 },
 /* 0x70 */ { "SMBtcon",reply_tcon,0},
-/* 0x71 */ { "SMBtdis",reply_tdis,0},
+/* 0x71 */ { "SMBtdis",reply_tdis,DO_CHDIR},
 /* 0x72 */ { "SMBnegprot",reply_negprot,0},
 /* 0x73 */ { "SMBsesssetupX",reply_sesssetup_and_X,0},
 /* 0x74 */ { "SMBulogoffX", reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
@@ -682,7 +683,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
 		connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 
-		DEBUG(3,("switch message %s (pid %d)\n",smb_fn_name(type),(int)pid));
+		DEBUG(3,("switch message %s (pid %d) conn 0x%x\n",smb_fn_name(type),(int)pid,(unsigned int)conn));
 
 		smb_dump(smb_fn_name(type), 1, inbuf, size);
 		if(global_oplock_break) {
@@ -754,7 +755,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			return(ERROR_DOS(ERRSRV,ERRaccess));	    
 
 		/* load service specific parameters */
-		if (conn && !set_current_service(conn,(flags & AS_USER)?True:False))
+		if (conn && !set_current_service(conn,(flags & (AS_USER|DO_CHDIR)?True:False)))
 			return(ERROR_DOS(ERRSRV,ERRaccess));
 
 		/* does this protocol need to be run as guest? */
@@ -1077,14 +1078,40 @@ static int setup_select_timeout(void)
 void check_reload(int t)
 {
 	static time_t last_smb_conf_reload_time = 0;
+	static time_t last_load_printers_reload_time = 0;
+	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
 
-	if(last_smb_conf_reload_time == 0)
+	if(last_smb_conf_reload_time == 0) {
 		last_smb_conf_reload_time = t;
+		/* Our printing subsystem might not be ready at smbd start up.
+		   Then no printer is available till the first printers check
+		   is performed.  A lower initial interval circumvents this. */
+		if ( printcap_cache_time > 60 )
+			last_load_printers_reload_time = t - printcap_cache_time + 60;
+		else
+			last_load_printers_reload_time = t;
+	}
 
 	if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK)) {
 		reload_services(True);
 		reload_after_sighup = False;
 		last_smb_conf_reload_time = t;
+	}
+
+	/* 'printcap cache time = 0' disable the feature */
+	
+	if ( printcap_cache_time != 0 )
+	{ 
+		/* see if it's time to reload or if the clock has been set back */
+		
+		if ( (t >= last_load_printers_reload_time+printcap_cache_time) 
+			|| (t-last_load_printers_reload_time  < 0) ) 
+		{
+			DEBUG( 3,( "Printcap cache time expired.\n"));
+			remove_stale_printers();
+			load_printers();
+			last_load_printers_reload_time = t;
+		}
 	}
 }
 

@@ -1102,6 +1102,8 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
+		NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED |
+		NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED |
 		/*
 		 * We need to set this to allow a later SetPassword
 		 * via the SAMR pipe to succeed. Strange.... We could
