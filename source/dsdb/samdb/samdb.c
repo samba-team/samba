@@ -25,6 +25,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "db_wrap.h"
 
 /*
   connect to the SAM database

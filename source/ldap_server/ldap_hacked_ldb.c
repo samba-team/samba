@@ -27,6 +27,7 @@
 #include "ldap_parse.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "db_wrap.h"
 
 
 #define VALID_DN_SYNTAX(dn,i) do {\

@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "registry.h"
 #include "lib/ldb/include/ldb.h"
+#include "db_wrap.h"
 
 struct ldb_key_data 
 {
