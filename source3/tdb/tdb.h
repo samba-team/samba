@@ -99,12 +99,15 @@ typedef struct tdb_context {
 } TDB_CONTEXT;
 
 typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
+typedef void (*tdb_log_func)(TDB_CONTEXT *, int , const char *, ...);
 
-TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
-		      int open_flags, mode_t mode);
 int tdb_reopen(TDB_CONTEXT *tdb);
 int tdb_reopen_all(void);
-void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...));
+void tdb_log_to_stderr(TDB_CONTEXT *tdb, int level, const char *format, ...);
+void tdb_logging_function(TDB_CONTEXT *tdb, tdb_log_func fn);
+TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
+		      int open_flags, mode_t mode,
+		      tdb_log_func log_func);
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
