@@ -593,11 +593,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 
 int dfs_path_error(char* inbuf, char* outbuf)
 {
-	if(global_client_caps & CAP_STATUS32) {
-		return(ERROR(0,NT_STATUS_PATH_NOT_COVERED));
-	} else {
-		return(ERROR(ERRSRV,ERRbadpath)); 
-	}
+	return(ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED,ERRSRV,ERRbadpath));
 }
 
 /**********************************************************************

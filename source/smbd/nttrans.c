@@ -64,8 +64,8 @@ struct generic_mapping file_generic_mapping = {
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_error, char *params,
-                           int paramsize, char *pdata, int datasize)
+static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_error, int eclass, uint32 ecode,
+							char *params, int paramsize, char *pdata, int datasize)
 {
   extern int max_send;
   int data_to_send = datasize;
@@ -85,7 +85,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
   set_message(outbuf,18,0,True);
 
   if(nt_error != 0) {
-    ERROR(0,nt_error);
+    ERROR_BOTH(nt_error,eclass,ecode);
   }
 
   /* 
@@ -678,7 +678,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
       size_t dir_name_len;
 
       if(!dir_fsp) {
-	END_PROFILE(SMBntcreateX);
+        END_PROFILE(SMBntcreateX);
         return(ERROR(ERRDOS,ERRbadfid));
       }
 
@@ -692,13 +692,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
         if( strchr(fname, ':')) {
           END_PROFILE(SMBntcreateX);
-          if (global_client_caps & CAP_STATUS32) {
-            return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
-          } else {
-             return(ERROR(ERRDOS,ERRbadpath));
-          }
+          return(ERROR_BOTH(NT_STATUS_OBJECT_PATH_NOT_FOUND,ERRDOS,ERRbadpath));
         }
-	END_PROFILE(SMBntcreateX);
+        END_PROFILE(SMBntcreateX);
         return(ERROR(ERRDOS,ERRbadfid));
       }
 
@@ -836,11 +832,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(file_attributes);
 					END_PROFILE(SMBntcreateX);
-					if (global_client_caps & CAP_STATUS32) {
-						return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
-					} else {
-						return(ERROR(ERRDOS,ERRbadaccess));
-					}
+					return(ERROR_BOTH(NT_STATUS_FILE_IS_A_DIRECTORY,ERRDOS,ERRbadaccess));
 				}
 	
 				oplock_request = 0;
@@ -1032,7 +1024,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
+	send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, params, 69, *ppdata, 0);
 
 	return -1;
 }
@@ -1221,11 +1213,7 @@ static int call_nt_transact_create(connection_struct *conn,
                             total_parameter_count - 53 - fname_len, fname_len);
 
       if( strchr(fname, ':')) {
-          if (global_client_caps & CAP_STATUS32) {
-            return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
-          } else {
-            return(ERROR(ERRDOS,ERRbadpath));
-          }
+        return(ERROR_BOTH(NT_STATUS_OBJECT_PATH_NOT_FOUND,ERRDOS,ERRbadpath));
       }
 
       return(ERROR(ERRDOS,ERRbadfid));
@@ -1331,11 +1319,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
 				restore_case_semantics(file_attributes);
-				if (global_client_caps & CAP_STATUS32) {
-					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
-				} else {
-					return(ERROR(ERRDOS, ERRbadaccess));
-				}
+				return(ERROR_BOTH(NT_STATUS_FILE_IS_A_DIRECTORY,ERRDOS, ERRbadaccess));
 			}
 	
 			oplock_request = 0;
@@ -1467,7 +1451,7 @@ static int call_nt_transact_create(connection_struct *conn,
   DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
   /* Send the required number of replies */
-  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, params, 69, *ppdata, 0);
 
   return -1;
 }
@@ -1567,7 +1551,7 @@ static int call_nt_transact_rename(connection_struct *conn,
     /*
      * Rename was successful.
      */
-    send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+    send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, NULL, 0, NULL, 0);
 
     DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
           fsp->fsp_name, new_name));
@@ -1631,7 +1615,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   if(max_data_count < sd_size) {
 
-    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
+    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL, ERRDOS, 122,
                     params, 4, *ppdata, 0);
     return -1;
   }
@@ -1687,7 +1671,7 @@ security descriptor.\n"));
 
   talloc_destroy(mem_ctx);
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sd_size);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, params, 4, data, (int)sd_size);
   return -1;
 }
 
@@ -1726,7 +1710,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
 		return (ERROR(error_class, error_code));
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, NULL, 0, NULL, 0);
   return -1;
 }
    
