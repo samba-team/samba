@@ -1,5 +1,11 @@
 2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* arcfour.c (arcfour_mic_cksum): use free_Checksum to free the
+	checksum
+
+	* arcfour.h: swap two last arguments to verify_mic for consistency
+	with des3
+
 	* wrap.c,unwrap.c,get_mic.c,verify_mic.c,cfx.c,cfx.h:
 	prefix cfx symbols with _gssapi_
 
