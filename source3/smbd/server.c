@@ -630,7 +630,7 @@ static void init_structs(void )
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
 	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
 	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
-	{"port", 'p', POPT_ARG_STRING, ports, 0, "Listen on the specified ports"},
+	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug},
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile},
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options},
