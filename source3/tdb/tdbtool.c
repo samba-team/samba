@@ -251,16 +251,26 @@ static void show_tdb(void)
 	}
 
 	key.dptr = k;
-/*	key.dsize = strlen(k)+1;*/
-	key.dsize = strlen(k);
+	key.dsize = strlen(k)+1;
 
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
-		terror("fetch failed");
-		return;
+		/* maybe it is non-NULL terminated key? */
+		key.dsize = strlen(k); 
+		dbuf = tdb_fetch(tdb, key);
+		
+		if ( !dbuf.dptr ) {
+			terror("fetch failed");
+			return;
+		}
 	}
+	
 	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
 	print_rec(tdb, key, dbuf, NULL);
+	
+	free( dbuf.dptr );
+	
+	return;
 }
 
 static void delete_tdb(void)
