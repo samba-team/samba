@@ -3095,7 +3095,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			ZERO_STRUCT(vfskey);
 			pstr_sprintf(vfskey, "%s:", pszParmName);
 			slen = strlen(vfskey);
-			safe_strcat(vfskey, sep+1, sizeof(pstring));
+			pstrcat(vfskey, sep+1);
 			trim_string(vfskey+slen, " ", " ");
 			not_added = True;
 			data = (snum < 0) ? Globals.param_opt : 
