@@ -80,7 +80,7 @@ BOOL reload_services(BOOL test)
  Catch a sighup.
 ****************************************************************************/
 
-VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
+VOLATILE sig_atomic_t reload_after_sighup = False;
 
 static void sig_hup(int sig)
 {

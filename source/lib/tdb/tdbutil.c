@@ -24,7 +24,7 @@
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
 
-static SIG_ATOMIC_T gotalarm;
+static sig_atomic_t gotalarm;
 
 /***************************************************************
  Signal function to tell us we timed out.
