@@ -7,7 +7,8 @@ administration. Support for these kind of things should be added
 sometime in the future.
 
 The domain support only works for WfWg and Win95 clients. Support for
-NT and OS/2 clients is still being worked on.
+NT and OS/2 clients is still being worked on and currently does not
+work. 
 
 Using these features you can make your clients verify their logon via
 the Samba server and make clients run a batch file when they logon to
@@ -39,7 +40,7 @@ For example I have used:
 the choice of batch file is, of course, up to you. The above would
 give each user a separate batch file as the %U will be changed to
 their username automatically. The other standard % macros may also be
-used. You can make the btch files come from a subdirectory by using
+used. You can make the batch files come from a subdirectory by using
 soemthing like:
 
    logon script = scripts\%U.bat

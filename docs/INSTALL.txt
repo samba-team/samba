@@ -49,10 +49,11 @@ options.
 
 The simplest useful configuration file would be something like this:
 
-[homes]
-	workgroup = MYGROUP
-	guest ok = no
-	read only = no
+   workgroup = MYGROUP
+
+   [homes]
+      guest ok = no
+      read only = no
 
 which would allow connections by anyone with an account on the server,
 using either their login name or "homes" as the service name. (Note
@@ -230,8 +231,9 @@ CHOOSING THE PROTOCOL LEVEL
 The SMB protocol has many dialects. Currently Samba supports 5, called
 CORE, COREPLUS, LANMAN1, LANMAN2 and NT1.
 
-You can choose what protocols to support in the smb.conf file. The
-default is NT1 and that is the best for the vast majority of sites.
+You can choose what maximum protocol to support in the smb.conf
+file. The default is NT1 and that is the best for the vast majority of
+sites.
 
 In older versions of Samba you may have found it necessary to use
 COREPLUS. The limitations that led to this have mostly been fixed. It
@@ -310,7 +312,9 @@ compatability modes called DENY_FCB and DENY_DOS.
 
 You can disable share modes using "share modes = no". This may be
 useful on a heavily loaded server as the share modes code is very
-slow. 
+slow. See also the FAST_SHARE_MODES option in the Makefile for a way
+to do full share modes very fast using shared memory (if your OS
+supports it).
 
 
 MAPPING USERNAMES
