@@ -121,4 +121,4 @@ them to the string list option @code{[kdc]use_2b} in the kdc's
 @subsection Configuring AFS clients
 
 There is no need to configure AFS clients. The only software that
-needs to be installed/upgrade is a Kerberos 5 enabled file{afslog}.
+needs to be installed/upgrade is a Kerberos 5 enabled @file{afslog}.
