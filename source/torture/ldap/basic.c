@@ -1,23 +1,47 @@
 
 #include "includes.h"
 
-BOOL test_multibind(struct ldap_connection *conn, TALLOC_CTX *mem_ctx, const char *userdn, const char *password)
+BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
 	NTSTATUS status;
 	BOOL ret = True;
 
-	printf("\nTesting multiple binds on a single connnection as anonymous and user\n");
-
 	status = torture_ldap_bind(conn, userdn, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("1st bind as user over an anonymous bind failed\n");
-		return False;
+		ret = False;
 	}
 
-	status = torture_ldap_bind(conn, NULL, NULL);
+	return ret;
+}
+
+BOOL test_bind_sasl(struct ldap_connection *conn, const char *username, const char *domain, const char *password)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+
+	status = torture_ldap_bind_sasl(conn, username, domain, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("2nd bind as anonymous over an authenticated bind failed\n");
-		return False;
+		ret = False;
+	}
+
+	return ret;
+}
+
+BOOL test_multibind(struct ldap_connection *conn, const char *userdn, const char *password)
+{
+	BOOL ret = True;
+
+	printf("\nTesting multiple binds on a single connnection as anonymous and user\n");
+
+	ret = test_bind_simple(conn, NULL, NULL);
+	if (!ret) {
+		printf("1st bind as anonymous failed\n");
+		return ret;
+	}
+
+	ret = test_bind_simple(conn, userdn, password);
+	if (!ret) {
+		printf("2nd bind as authenticated user failed\n");
 	}
 
 	return ret;
@@ -30,6 +54,9 @@ BOOL torture_ldap_basic(int dummy)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *username = lp_parm_string(-1, "torture", "username");
+	const char *domain = lp_workgroup();
+	const char *password = lp_parm_string(-1, "torture", "password");
 	const char *userdn = lp_parm_string(-1, "torture", "ldap_userdn");
 	const char *basedn = lp_parm_string(-1, "torture", "ldap_basedn");
 	const char *secret = lp_parm_string(-1, "torture", "ldap_secret");
@@ -39,14 +66,18 @@ BOOL torture_ldap_basic(int dummy)
 
 	url = talloc_asprintf(mem_ctx, "ldap://%s/", host);
 
-	status = torture_ldap_connection(&conn, url, NULL, NULL);
+	status = torture_ldap_connection(&conn, url, userdn, secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
 	/* other basic tests here */
 
-	if (!test_multibind(conn, mem_ctx, userdn, secret)) {
+	if (!test_multibind(conn, userdn, secret)) {
+		ret = False;
+	}
+
+	if (!test_bind_sasl(conn, username, domain, password)) {
 		ret = False;
 	}
 

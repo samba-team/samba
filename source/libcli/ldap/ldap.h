@@ -50,6 +50,12 @@ enum ldap_auth_mechanism {
 	LDAP_AUTH_MECH_SASL = 3
 };
 
+enum ldap_result_code {
+	LDAP_SUCCESS = 0,
+	LDAP_SASL_BIND_IN_PROGRESS = 0x0e,
+	LDAP_OTHER = 0x50
+};
+
 struct ldap_Result {
 	int resultcode;
 	const char *dn;
@@ -71,7 +77,7 @@ struct ldap_BindRequest {
 		const char *password;
 		struct {
 			const char *mechanism;
-			DATA_BLOB creds;
+			DATA_BLOB secblob;
 		} SASL;
 	} creds;
 };
@@ -79,8 +85,8 @@ struct ldap_BindRequest {
 struct ldap_BindResponse {
 	struct ldap_Result response;
 	union {
-		DATA_BLOB credentials;
-	} SASL_Credentials;
+		DATA_BLOB creds;
+	} SASL;
 };
 
 struct ldap_UnbindRequest {
@@ -241,6 +247,9 @@ struct ldap_connection {
 
 	/* Outstanding LDAP requests that have not yet been replied to */
 	struct ldap_queue_entry *outstanding;
+
+	/* Let's support SASL */
+	struct gensec_security *gensec;
 };
 
 #endif
