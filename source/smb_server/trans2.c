@@ -925,7 +925,7 @@ static void find_fill_info(struct smbsrv_request *req,
 		SSVAL(data, 20, file->ea_size.attrib);
 		SIVAL(data, 22, file->ea_size.ea_size);
 		trans2_append_data_string(req, trans, &file->ea_size.name, 
-					  ofs + 26, STR_LEN8BIT | STR_TERMINATE | STR_NOALIGN);
+					  ofs + 26, STR_LEN8BIT | STR_NOALIGN);
 		break;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
@@ -1030,13 +1030,12 @@ static void find_fill_info(struct smbsrv_request *req,
 		SIVAL(data,         56, file->id_both_directory_info.attrib);
 		SIVAL(data,         64, file->id_both_directory_info.ea_size);
 		SCVAL(data,         69, 0); /* reserved */
-		memset(data+70,0,24);
+		memset(data+70,0,26);
 		trans2_push_data_string(req, trans, 
 					68 + ofs, 70 + ofs, 
 					&file->id_both_directory_info.short_name, 
 					24, STR_UNICODE | STR_LEN8BIT);
-		SBVAL(data,         94, file->id_both_directory_info.file_id);
-		SSVAL(data,        102, 0); /* reserved? */
+		SBVAL(data,         96, file->id_both_directory_info.file_id);
 		trans2_append_data_string(req, trans, &file->id_both_directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
