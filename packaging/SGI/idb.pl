@@ -15,7 +15,7 @@ while (<IGNORES>) {
 close IGNORES;
 
 # get the names of all the binary files to be installed
-open(MAKEFILE,"Makefile") || die "Unable to open Makefile\n";
+open(MAKEFILE,"../../source/Makefile") || die "Unable to open Makefile\n";
 @makefile = <MAKEFILE>;
 @sprogs = grep(/^SPROGS /,@makefile);
 @progs1 = grep(/^PROGS1 /,@makefile);
@@ -44,20 +44,20 @@ if (@codepage) {
   @codepage[0] =~ s/^.*\=//;
   chdir '../../source';
   # if we have codepages we need to create them for the package
-  system("chmod +x ./installcp.sh");
-  system("./installcp.sh . ../packaging/SGI/codepages . @codepage[0]");
+  system("chmod +x ./script/installcp.sh");
+  system("./script/installcp.sh . ../packaging/SGI/codepages ./bin @codepage[0]");
   chdir $curdir;
   @codepage = sort split(' ',@codepage[0]);
 }
 # install the swat files
 chdir '../../source';
-system("chmod +x ./installswat.sh");
-system("./installswat.sh  ../packaging/SGI/swat ./");
+system("chmod +x ./script/installswat.sh");
+system("./script/installswat.sh  ../packaging/SGI/swat ./");
 system("cp ../swat/README ../packaging/SGI/swat");
 chdir $curdir;
 
 # add my local files to the list of binaries to install
-@bins = sort (@sprogs,@progs,@progs1,@scripts,("findsmb","sambalp","smbprint"));
+@bins = sort byfilename (@sprogs,@progs,@progs1,@scripts,("/findsmb","/sambalp","/smbprint"));
 
 # get a complete list of all files in the tree
 chdir '../../';
@@ -95,25 +95,26 @@ print IDB "f 0444 root sys usr/samba/README packaging/SGI/README samba.sw.base\n
 print IDB "d 0755 root sys usr/samba/bin/ packaging/SGI samba.sw.base\n";
 while(@bins) {
   $nextfile = shift @bins;
+  ($filename = $nextfile) =~ s/^.*\///;;
 
   if (index($nextfile,'$')) {
-    if ($nextfile eq "smbpasswd") {
-      print IDB "f 0755 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
+    if ($filename eq "smbpasswd") {
+      print IDB "f 0755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base\n";
     }
-    elsif ($nextfile eq "findsmb") {
-      print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
+    elsif ($filename eq "findsmb") {
+      print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
     }
-    elsif ($nextfile eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
+    elsif ($filename eq "swat") {
+      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base\n";
     }
-    elsif ($nextfile eq "sambalp") {
-      print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
+    elsif ($filename eq "sambalp") {
+      print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
     }
-    elsif ($nextfile eq "smbprint") {
-      print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
+    elsif ($filename eq "smbprint") {
+      print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
     }
     else {
-      print IDB "f 0755 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base\n";
     }
   }
 }

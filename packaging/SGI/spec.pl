@@ -3,7 +3,7 @@
 # This perl script generates the samba.spec file based on the version
 # information in the version.h file in the source tree
 
-open (VER,'../../source/version.h') || die "Unable to open version.h\n";
+open (VER,'../../source/include/version.h') || die "Unable to open version.h\n";
 ($_ = <VER>) =~ s/"//g;
 close (VER);
 @foo = split(' ');
