@@ -202,6 +202,20 @@ const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
 	return NULL;
 }
 
+/*
+  find a dcerpc interface by uuid
+*/
+const struct dcerpc_interface_table *idl_iface_by_uuid(const char *uuid)
+{
+	int i;
+	for (i=0;dcerpc_pipes[i];i++) {
+		if (strcasecmp(dcerpc_pipes[i]->uuid, uuid) == 0) {
+			return dcerpc_pipes[i];
+		}
+	}
+	return NULL;
+}
+
 
 
 /* 
@@ -240,4 +254,289 @@ NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	SSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, blob->length);
 
 	return NT_STATUS_OK;
+}
+
+
+/*
+  parse a binding string into a dcerpc_binding structure
+*/
+NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding *b)
+{
+	char *part1, *part2, *part3;
+	char *p;
+	int i, j, comma_count;
+	const struct {
+		const char *name;
+		enum dcerpc_transport_t transport;
+	} transports[] = {
+		{"ncacn_np",     NCACN_NP},
+		{"ncacn_ip_tcp", NCACN_IP_TCP}
+	};
+	const struct {
+		const char *name;
+		uint32 flag;
+	} options[] = {
+		{"sign", DCERPC_SIGN},
+		{"seal", DCERPC_SEAL},
+		{"validate", DCERPC_DEBUG_VALIDATE_BOTH}
+	};
+
+	p = strchr(s, ':');
+	if (!p) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	part1 = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
+	if (!part1) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	s = p+1;
+
+	p = strchr(s, ':');
+	if (!p) {
+		part2 = talloc_strdup(mem_ctx, s);
+		part3 = NULL;
+	} else {
+		part2 = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
+		part3 = talloc_strdup(mem_ctx, p+1);
+	}
+	if (!part2) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<ARRAY_SIZE(transports);i++) {
+		if (strcasecmp(part1, transports[i].name) == 0) {
+			b->transport = transports[i].transport;
+			break;
+		}
+	}
+	if (i==ARRAY_SIZE(transports)) {
+		DEBUG(1,("Unknown dcerpc transport '%s'\n", part1));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	b->host = part2;
+	b->options = NULL;
+	b->flags = 0;
+
+	if (!part3) {
+		return NT_STATUS_OK;
+	}
+
+	/* the [] brackets are optional */
+	if (*part3 == '[' && part3[strlen(part3)-1] == ']') {
+		part3++;
+		part3[strlen(part3)-1] = 0;
+	}
+
+	comma_count = count_chars(part3, ',');
+	b->options = talloc_array_p(mem_ctx, const char *, comma_count+2);
+	if (!b->options) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; (p = strchr(part3, ',')); i++) {
+		b->options[i] = talloc_strndup(mem_ctx, part3, PTR_DIFF(p, part3));
+		if (!b->options[i]) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		part3 = p+1;
+	}
+	b->options[i] = part3;
+	b->options[i+1] = NULL;
+
+	/* some options are pre-parsed for convenience */
+	for (i=0;b->options[i];i++) {
+		for (j=0;j<ARRAY_SIZE(options);j++) {
+			if (strcasecmp(options[j].name, b->options[i]) == 0) {
+				b->flags |= options[j].flag;
+				break;
+			}
+		}
+	}
+	
+	return NT_STATUS_OK;
+}
+
+
+/* open a rpc connection to a rpc pipe on SMP using the binding
+   structure to determine the endpoint and options */
+static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p, 
+					     struct dcerpc_binding *binding,
+					     const char *pipe_uuid, 
+					     uint32 pipe_version,
+					     const char *domain,
+					     const char *username,
+					     const char *password)
+{
+	NTSTATUS status;
+	BOOL retry;
+	struct cli_state *cli;
+	const char *pipe_name;
+	
+	if (!binding->options || !binding->options[0]) {
+		const struct dcerpc_interface_table *table = idl_iface_by_uuid(pipe_uuid);
+		if (!table) {
+			DEBUG(0,("Unknown interface endpoint '%s'\n", pipe_uuid));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		pipe_name = table->endpoints->names[0];
+	} else {
+		pipe_name = binding->options[0];
+	}
+
+	if (strncasecmp(pipe_name, "\\pipe\\", 6) == 0) {
+		pipe_name += 6;
+	}
+	if (strncasecmp(pipe_name, "/pipe/", 6) == 0) {
+		pipe_name += 6;
+	}
+	    
+	status = cli_full_connection(&cli, lp_netbios_name(),
+				     binding->host, NULL, 
+				     "ipc$", "?????", 
+				     username, username[0]?domain:"",
+				     password, 0, &retry);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dcerpc_pipe_open_smb(p, cli->tree, pipe_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_tdis(cli);
+		cli_shutdown(cli);
+                return status;
+        }
+	
+	/* this ensures that the reference count is decremented so
+	   a pipe close will really close the link */
+	cli_tree_close(cli->tree);
+	
+	(*p)->flags = binding->flags;
+
+	if (binding->flags & (DCERPC_SIGN | DCERPC_SEAL)) {
+		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
+	} else {    
+		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_pipe_close(*p);
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+/* open a rpc connection to a rpc pipe on SMP using the binding
+   structure to determine the endpoint and options */
+static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p, 
+						 struct dcerpc_binding *binding,
+						 const char *pipe_uuid, 
+						 uint32 pipe_version,
+						 const char *domain,
+						 const char *username,
+						 const char *password)
+{
+	NTSTATUS status;
+	uint32 port = 0;
+
+	if (binding->options && binding->options[0]) {
+		port = atoi(binding->options[0]);
+	}
+
+	if (port == 0) {
+		status = dcerpc_epm_map_tcp_port(binding->host, 
+						 pipe_uuid, pipe_version,
+						 &port);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Failed to map DCERPC/TCP port for '%s' - %s\n", 
+				 pipe_uuid, nt_errstr(status)));
+			return status;
+		}
+		DEBUG(1,("Mapped to DCERPC/TCP port %u\n", port));
+	}
+
+	status = dcerpc_pipe_open_tcp(p, binding->host, port);
+	if (!NT_STATUS_IS_OK(status)) {
+                return status;
+        }
+
+	/* it doesn't seem to work to do a null NTLMSSP session without either sign
+	   or seal, so force signing if we are doing ntlmssp */
+	if (username[0] && !(binding->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
+		binding->flags |= DCERPC_SIGN;
+	}
+
+	(*p)->flags = binding->flags;
+
+	if (!(binding->flags & (DCERPC_SIGN|DCERPC_SEAL)) && !username[0]) {
+		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
+	} else {
+		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
+					       domain, username, password);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_pipe_close(*p);
+		return status;
+	}
+ 
+        return status;
+}
+
+
+/* open a rpc connection to a rpc pipe, using the specified 
+   binding structure to determine the endpoint and options */
+NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **p, 
+			       struct dcerpc_binding *binding,
+			       const char *pipe_uuid, 
+			       uint32 pipe_version,
+			       const char *domain,
+			       const char *username,
+			       const char *password)
+{
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
+
+	switch (binding->transport) {
+	case NCACN_NP:
+		status = dcerpc_pipe_connect_ncacn_np(p, binding, pipe_uuid, pipe_version,
+						      domain, username, password);
+		break;
+	case NCACN_IP_TCP:
+		status = dcerpc_pipe_connect_ncacn_ip_tcp(p, binding, pipe_uuid, pipe_version,
+							  domain, username, password);
+		break;
+	}
+
+	return status;
+}
+
+
+/* open a rpc connection to a rpc pipe, using the specified string
+   binding to determine the endpoint and options */
+NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **p, 
+			     const char *binding,
+			     const char *pipe_uuid, 
+			     uint32 pipe_version,
+			     const char *domain,
+			     const char *username,
+			     const char *password)
+{
+	struct dcerpc_binding b;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("dcerpc_pipe_connect");
+	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
+
+	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(mem_ctx);
+		return status;
+	}
+
+	status = dcerpc_pipe_connect_b(p, &b, pipe_uuid, pipe_version, domain, username, password);
+
+	talloc_destroy(mem_ctx);
+	return status;
 }

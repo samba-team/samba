@@ -89,3 +89,14 @@ struct dcerpc_interface_table {
 	const struct dcerpc_interface_call *calls;
 	const struct dcerpc_endpoint_list *endpoints;
 };
+
+
+enum dcerpc_transport_t {NCACN_NP, NCACN_IP_TCP};
+
+/* this describes a binding to a particular transport/pipe */
+struct dcerpc_binding {
+	enum dcerpc_transport_t transport;
+	const char *host;
+	const char **options;
+	uint32 flags;
+};

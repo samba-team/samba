@@ -130,61 +130,6 @@ BOOL torture_close_connection(struct cli_state *c)
 	return ret;
 }
 
-/* open a rpc connection to a named pipe */
-static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p, 
-				const char *pipe_name,
-				const char *pipe_uuid, 
-				uint32 pipe_version)
-{
-        NTSTATUS status;
-	char *host = lp_parm_string(-1, "torture", "host");
-	const char *port_str = lp_parm_string(-1, "torture", "share");
-	uint32 port = atoi(port_str);
-
-	if (port == 0) {
-		status = dcerpc_epm_map_tcp_port(host, 
-						 pipe_uuid, pipe_version,
-						 &port);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Failed to map DCERPC/TCP port for '%s' - %s\n", 
-				 pipe_name, nt_errstr(status)));
-			return status;
-		}
-		DEBUG(1,("Mapped to DCERPC/TCP port %u\n", port));
-	}
-
-	DEBUG(2,("Connecting to dcerpc server %s:%u\n", host, port));
-
-	status = dcerpc_pipe_open_tcp(p, host, port);
-	if (!NT_STATUS_IS_OK(status)) {
-                printf("Open of pipe '%s' failed with error (%s)\n",
-		       pipe_name, nt_errstr(status));
-                return status;
-        }
-
-	/* always do NDR validation in smbtorture */
-	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
-
-#if 0
-	status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
-#else
-	/* enable signing on tcp connections */
-	(*p)->flags |= DCERPC_SIGN;
-
-	/* bind to the pipe, using the uuid as the key */
-	status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
-				       lp_workgroup(),
-				       lp_parm_string(-1, "torture", "username"),
-				       lp_parm_string(-1, "torture", "password"));
-	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_pipe_close(*p);
-		return status;
-	}
-#endif
- 
-        return status;
-}
-
 
 /* open a rpc connection to a named pipe */
 NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, 
@@ -192,59 +137,18 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 				const char *pipe_uuid, 
 				uint32 pipe_version)
 {
-        struct cli_state *cli;
         NTSTATUS status;
-	char *transport = lp_parm_string(-1, "torture", "transport");
+	char *binding = lp_parm_string(-1, "torture", "binding");
 
-	if (strcmp(transport, "ncacn_ip_tcp") == 0) {
-		return torture_rpc_tcp(p, pipe_name, pipe_uuid, pipe_version);
+	if (!binding) {
+		printf("You must specify a ncacn binding string\n");
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (strcmp(transport, "ncacn_np") != 0) {
-		printf("Unsupported RPC transport '%s'\n", transport);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (! *lp_parm_string(-1, "torture", "share")) {
-		lp_set_cmdline("torture:share", "ipc$");
-	}
-
-	if (!torture_open_connection(&cli)) {
-                return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	status = dcerpc_pipe_open_smb(p, cli->tree, pipe_name);
-	if (!NT_STATUS_IS_OK(status)) {
-                printf("Open of pipe '%s' failed with error (%s)\n",
-		       pipe_name, nt_errstr(status));
-		torture_close_connection(cli);
-                return status;
-        }
-
-	/* this ensures that the reference count is decremented so
-	   a pipe close will really close the link */
-	cli_tree_close(cli->tree);
-
-	/* bind to the pipe, using the uuid as the key */
-#if 1
-	status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
-#else
-	/* enable signing on tcp connections */
-	(*p)->flags |= DCERPC_SIGN;
-
-	/* bind to the pipe, using the uuid as the key */
-	status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
-				       lp_workgroup(),
-				       lp_parm_string(-1, "torture", "username"),
-				       lp_parm_string(-1, "torture", "password"));
-#endif
-	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_pipe_close(*p);
-		return status;
-	}
-
-	/* always do NDR validation in smbtorture */
-	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
+	status = dcerpc_pipe_connect(p, binding, pipe_uuid, pipe_version,
+				     lp_workgroup(), 
+				     lp_parm_string(-1, "torture", "username"),
+				     lp_parm_string(-1, "torture", "password"));
  
         return status;
 }
@@ -4221,23 +4125,8 @@ static void usage(void)
 
 
 	/* see if its a RPC transport specifier */
-	if (strncmp(argv[1], "ncacn", 5) == 0) {
-		char *transport = strdup(argv[1]);
-		p = strchr_m(transport, ':');
-		if (!p) usage();
-		*p = 0;
-		host = p+1;
-		p = strchr_m(host, ':');
-		if (p) {
-			*p = 0;
-			share = p+1;
-			lp_set_cmdline("torture:share", share);
-		} else {
-			share = "";
-			lp_set_cmdline("torture:share", share);
-		}
-		lp_set_cmdline("torture:host", host);
-		lp_set_cmdline("torture:transport", transport);
+	if (strncmp(argv[1], "ncacn_", 6) == 0) {
+		lp_set_cmdline("torture:binding", argv[1]);
 	} else {
 		if (strncmp(argv[1], "//", 2)) {
 			usage();
@@ -4330,10 +4219,6 @@ static void usage(void)
 			usage();
 		}
 	}
-
-	printf("host=%s share=%s user=%s myname=%s\n", 
-	       host, share, lp_parm_string(-1, "torture", "username"), 
-	       lp_netbios_name());
 
 	if (argc == optind) {
 		printf("You must specify a test to run, or 'ALL'\n");
