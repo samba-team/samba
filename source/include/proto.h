@@ -716,6 +716,11 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 
+/*The following definitions come from  libsmb/clienttrust.c  */
+
+BOOL change_trust_account_password(char *domain, char *remote_machine_list,
+					uint16 sec_chan);
+
 /*The following definitions come from  libsmb/credentials.c  */
 
 char *credstr(uchar *cred);
@@ -1774,9 +1779,8 @@ BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_C
                        NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr);
 BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id, uint32 *num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_DELTA_CTR *deltas);
-BOOL change_trust_account_password(char *domain, char *remote_machine_list,
-					uint16 sec_chan);
 BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
+				const char* srv_name,
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
 				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
 				uint32 *num_deltas);
@@ -1878,7 +1882,7 @@ BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum,
 BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
-				uint32 user_rid, void *usr);
+				uint32 user_rid, SAM_USER_INFO_21 *usr);
 BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
@@ -2629,7 +2633,8 @@ BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps,
 BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_names, fstring *name, uint8 *type,
 		uint32 status);
-BOOL samr_io_r_lookup_rids(char *desc,  SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth);
+BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth);
+void samr_free_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u);
 BOOL make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u, POLICY_HND *hnd);
 BOOL samr_io_q_delete_alias(char *desc,  SAMR_Q_DELETE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_delete_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struct *ps, int depth);

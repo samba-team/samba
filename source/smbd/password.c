@@ -1191,7 +1191,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	}
 
 	if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
-	   cli.mach_acct, trust_passwd, SEC_CHAN_WKSTA) == False)
+	   cli.mach_acct, global_myname, trust_passwd, SEC_CHAN_WKSTA) == False)
 	{
 		DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 		%s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));

@@ -30,7 +30,6 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-extern pstring scope;
 extern pstring global_myname;
 
 /****************************************************************************
@@ -89,7 +88,7 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 stat
     if (ok && r_l.status != 0)
     {
       /* report error code */
-      DEBUG(0,("do_net_logon_ctrl2: Error %s\n", get_nt_error_msg(r_l.status)));
+      DEBUG(5,("do_net_logon_ctrl2: Error %s\n", get_nt_error_msg(r_l.status)));
       cli->nt_error = r_l.status;
       ok = False;
     }
@@ -147,7 +146,7 @@ uint32 cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
 		if (status == 0x0 && r_a.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("cli_net_auth2: Error %s\n",
+			DEBUG(5,("cli_net_auth2: Error %s\n",
 			          get_nt_error_msg(r_a.status)));
 			cli->nt_error = r_a.status;
 			status = r_a.status;
@@ -167,7 +166,7 @@ uint32 cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
 				/*
 				 * Server replied with bad credential. Fail.
 				 */
-				DEBUG(0,("cli_net_auth2: server %s replied with bad credential (bad machine \
+				DEBUG(5,("cli_net_auth2: server %s replied with bad credential (bad machine \
 				password ?).\n", cli->desthost ));
 				status = NT_STATUS_NETWORK_CREDENTIAL_CONFLICT | 0xC0000000;
 			}
@@ -182,7 +181,7 @@ uint32 cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
 		if (ok && r_a.srv_flgs.neg_flags != q_a.clnt_flgs.neg_flags)
 		{
 			/* report different neg_flags */
-			DEBUG(0,("cli_net_auth2: error neg_flags (q,r) differ - (%x,%x)\n",
+			DEBUG(5,("cli_net_auth2: error neg_flags (q,r) differ - (%x,%x)\n",
 			q_a.clnt_flgs.neg_flags, r_a.srv_flgs.neg_flags));
 			ok = False;
 		}
@@ -191,8 +190,11 @@ uint32 cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
 	}
 	else
 	{
+		DEBUG(5,("rpc_api_pipe_req FAILED\n"));
 		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
 	}
+
+	DEBUG(5,("cli_net_auth2 status: %x\n", status));
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
@@ -242,7 +244,7 @@ uint32 cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum,
     if (status == 0x0 && r_c.status != 0)
     {
       /* report error code */
-      DEBUG(0,("cli_net_req_chal: Error %s\n", get_nt_error_msg(r_c.status)));
+      DEBUG(5,("cli_net_req_chal: Error %s\n", get_nt_error_msg(r_c.status)));
       cli->nt_error = r_c.status;
 	status = r_c.status;
     }
@@ -255,6 +257,7 @@ uint32 cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum,
   }
   else
   {
+    DEBUG(5,("rpc_api_pipe_req FAILED\n"));
     status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
   }
 
@@ -306,7 +309,7 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum,
     if (ok && r_s.status != 0)
     {
       /* report error code */
-      DEBUG(0,("cli_net_srv_pwset: %s\n", get_nt_error_msg(r_s.status)));
+      DEBUG(5,("cli_net_srv_pwset: %s\n", get_nt_error_msg(r_s.status)));
       cli->nt_error = r_s.status;
       ok = False;
     }
@@ -317,7 +320,7 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum,
       /*
        * Server replied with bad credential. Fail.
        */
-      DEBUG(0,("cli_net_srv_pwset: server %s replied with bad credential (bad machine \
+      DEBUG(5,("cli_net_srv_pwset: server %s replied with bad credential (bad machine \
 password ?).\n", cli->desthost ));
       ok = False;
     }
@@ -379,7 +382,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_C
     if (ok && r_s.status != 0)
     {
       /* report error code */
-      DEBUG(0,("cli_net_sam_logon: %s\n", get_nt_error_msg(r_s.status)));
+      DEBUG(5,("cli_net_sam_logon: %s\n", get_nt_error_msg(r_s.status)));
       cli->nt_error = r_s.status;
       ok = False;
     }
@@ -390,7 +393,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_C
       /*
        * Server replied with bad credential. Fail.
        */
-      DEBUG(0,("cli_net_sam_logon: server %s replied with bad credential (bad machine \
+      DEBUG(5,("cli_net_sam_logon: server %s replied with bad credential (bad machine \
 password ?).\n", cli->desthost ));
         ok = False;
     }
@@ -398,7 +401,7 @@ password ?).\n", cli->desthost ));
     if (ok && r_s.switch_value != 3)
     {
       /* report different switch_value */
-      DEBUG(0,("cli_net_sam_logon: switch_value of 3 expected %x\n",
+      DEBUG(5,("cli_net_sam_logon: switch_value of 3 expected %x\n",
                    r_s.switch_value));
       ok = False;
     }
@@ -461,7 +464,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_
     if (ok && r_s.status != 0)
     {
       /* report error code */
-      DEBUG(0,("cli_net_sam_logoff: %s\n", get_nt_error_msg(r_s.status)));
+      DEBUG(5,("cli_net_sam_logoff: %s\n", get_nt_error_msg(r_s.status)));
       cli->nt_error = r_s.status;
       ok = False;
     }
@@ -472,7 +475,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_
       /*
        * Server replied with bad credential. Fail.
        */
-      DEBUG(0,("cli_net_sam_logoff: server %s replied with bad credential (bad machine \
+      DEBUG(5,("cli_net_sam_logoff: server %s replied with bad credential (bad machine \
 password ?).\n", cli->desthost ));
       ok = False;
     }
@@ -522,7 +525,7 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 		if (ok && r_s.status != 0 && r_s.status != NT_STATUS_MORE_ENTRIES)
 		{
 			/* report error code */
-			DEBUG(0,("cli_net_sam_sync: %s\n", get_nt_error_msg(r_s.status)));
+			DEBUG(5,("cli_net_sam_sync: %s\n", get_nt_error_msg(r_s.status)));
 			cli->nt_error = r_s.status;
 			ok = False;
 		}
@@ -530,7 +533,7 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 		/* Update the credentials. */
 		if (ok && !clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)))
 		{
-			DEBUG(0,("cli_net_sam_sync: server %s replied with bad credential (bad machine password ?).\n", cli->desthost));
+			DEBUG(5,("cli_net_sam_sync: server %s replied with bad credential (bad machine password ?).\n", cli->desthost));
 			ok = False;
 		}
 
@@ -540,7 +543,7 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 
 			if (r_s.status == NT_STATUS_MORE_ENTRIES)
 			{
-				DEBUG(2, ("(More entries)\n"));
+				DEBUG(5, ("(More entries)\n"));
 			}
 		}
 	}
@@ -551,183 +554,9 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 	return ok;
 }
 
-/*********************************************************
- Change the domain password on the PDC.
-**********************************************************/
-
-static BOOL modify_trust_password( char *domain, char *remote_machine, 
-                          unsigned char orig_trust_passwd_hash[16],
-                          unsigned char new_trust_passwd_hash[16],
-                          uint16 sec_chan)
-{
-	uint16 nt_pipe_fnum;
-	struct cli_state cli;
-	struct nmb_name calling, called;
-
-	make_nmb_name(&calling, global_myname , 0x0 , scope);
-	make_nmb_name(&called , remote_machine, 0x20, scope);
-
-	ZERO_STRUCT(cli);
-	if(cli_initialise(&cli) == NULL)
-	{
-		DEBUG(0,("modify_trust_password: unable to initialize client \
-connection.\n"));
-		return False;
-	}
-
-	if(!resolve_name( remote_machine, &cli.dest_ip, 0x20))
-	{
-		DEBUG(0,("modify_trust_password: Can't resolve address for \
-%s\n", remote_machine));
-		return False;
-	}
-
-	if (ismyip(cli.dest_ip))
-	{
-		DEBUG(0,("modify_trust_password: Machine %s is one of our \
-addresses. Cannot add to ourselves.\n", remote_machine));
-		return False;
-	}
-
-	cli.protocol = PROTOCOL_NT1;
-
-	pwd_set_nullpwd(&cli.pwd);
-
-	if (!cli_establish_connection(&cli, remote_machine, &cli.dest_ip,
-	                              &calling, &called,
-	                              "IPC$", "IPC", False, True))
-	{
-		fstring errstr;
-		cli_safe_errstr(&cli, errstr, sizeof(errstr));
-		DEBUG(0,("modify_trust_password: machine %s rejected the SMB \
-session. Error was : %s.\n", remote_machine, errstr ));
-		cli_shutdown(&cli);
-		return False;
-	}
-
-
-	if (cli.protocol != PROTOCOL_NT1)
-	{
-		DEBUG(0,("modify_trust_password: machine %s didn't negotiate \
-NT protocol.\n", remote_machine));
-		cli_shutdown(&cli);
-		return False;
-	}
-
-	if (!(IS_BITS_SET_ALL(cli.sec_mode, 1)))
-	{
-		DEBUG(0,("modify_trust_password: machine %s isn't in user \
-level security mode\n", remote_machine));
-		cli_shutdown(&cli);
-		return False;
-	}
-
-	/*
-	* Ok - we have an anonymous connection to the IPC$ share.
-	* Now start the NT Domain stuff :-).
-	*/
-
-	if (!cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum))
-	{
-		fstring errstr;
-		cli_safe_errstr(&cli, errstr, sizeof(errstr));
-		DEBUG(0,("modify_trust_password: unable to open the domain \
-client session to server %s. Error was : %s.\n", remote_machine, errstr ));
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
-		return False;
-	} 
-
-	if (cli_nt_setup_creds(&cli, nt_pipe_fnum, 
-	                       cli.mach_acct, global_myname,
-	                       orig_trust_passwd_hash, sec_chan) != 0x0)
-	{
-		fstring errstr;
-		cli_safe_errstr(&cli, errstr, sizeof(errstr));
-		DEBUG(0,("modify_trust_password: unable to setup the PDC \
-credentials to server %s. Error was : %s.\n", remote_machine, errstr ));
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
-		return False;
-	} 
-
-	if (!cli_nt_srv_pwset( &cli, nt_pipe_fnum, new_trust_passwd_hash,
-	                       sec_chan ) )
-	{
-		fstring errstr;
-		cli_safe_errstr(&cli, errstr, sizeof(errstr));
-		DEBUG(0,("modify_trust_password: unable to change password for \
-workstation %s in domain %s to Domain controller %s. Error was %s.\n",
-		            global_myname, domain, remote_machine, errstr ));
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
-		return False;
-	}
-
-	cli_nt_session_close(&cli, nt_pipe_fnum);
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
-
-	return True;
-}
-
-/************************************************************************
- Change the trust account password for a domain.
- The user of this function must have locked the trust password file for
- update.
-************************************************************************/
-
-BOOL change_trust_account_password(char *domain, char *remote_machine_list,
-					uint16 sec_chan)
-{
-  fstring remote_machine;
-  unsigned char old_trust_passwd_hash[16];
-  unsigned char new_trust_passwd_hash[16];
-  time_t lct;
-  BOOL res;
-
-  if(!get_trust_account_password( old_trust_passwd_hash, &lct)) {
-    DEBUG(0,("change_trust_account_password: unable to read the machine \
-account password for domain %s.\n", domain));
-    return False;
-  }
-
-  /*
-   * Create the new (random) password.
-   */
-  generate_random_buffer( new_trust_passwd_hash, 16, True);
-
-  while(remote_machine_list && 
-	next_token(&remote_machine_list, remote_machine, 
-		   LIST_SEP, sizeof(remote_machine))) {
-    strupper(remote_machine);
-    if(modify_trust_password( domain, remote_machine, 
-                old_trust_passwd_hash, new_trust_passwd_hash, sec_chan)) {
-      DEBUG(0,("%s : change_trust_account_password: Changed password for \
-domain %s.\n", timestring(), domain));
-      /*
-       * Return the result of trying to write the new password
-       * back into the trust account file.
-       */
-      res = set_trust_account_password(new_trust_passwd_hash);
-      memset(new_trust_passwd_hash, 0, 16);
-      memset(old_trust_passwd_hash, 0, 16);
-      return res;
-    }
-  }
-
-  memset(new_trust_passwd_hash, 0, 16);
-  memset(old_trust_passwd_hash, 0, 16);
-
-  DEBUG(0,("%s : change_trust_account_password: Failed to change password for \
-domain %s.\n", timestring(), domain));
-  return False;
-}
 
 BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
+				const char* srv_name,
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
 				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
 				uint32 *num_deltas)
@@ -737,14 +566,14 @@ BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
 
 	*num_deltas = 0;
 
-	DEBUG(2,("Attempting SAM sync with PDC, domain: %s name: %s\n",
-		cli->domain, global_myname));
+	DEBUG(5,("Attempting SAM sync with PDC, domain: %s name: %s\n",
+		cli->domain, srv_name));
 
 	/* open NETLOGON session.  negotiate credentials */
 	res = res ? cli_nt_session_open(cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
 
 	res = res ? cli_nt_setup_creds(cli, nt_pipe_fnum, 
-	                               cli->mach_acct, global_myname,
+	                               cli->mach_acct, srv_name,
 	                               trust_passwd, SEC_CHAN_BDC) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
@@ -756,11 +585,11 @@ BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
 
 	if (!res)
 	{
-		DEBUG(0, ("SAM synchronisation FAILED\n"));
+		DEBUG(5, ("SAM synchronisation FAILED\n"));
 		return False;
 	}
 
-	DEBUG(0, ("SAM synchronisation returned %d entries\n", *num_deltas));
+	DEBUG(5, ("SAM synchronisation returned %d entries\n", *num_deltas));
 
 	return True;
 }

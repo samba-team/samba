@@ -1654,6 +1654,7 @@ static void samr_reply_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 	DOM_SID pol_sid;
 
 	SAMR_R_LOOKUP_RIDS r_u;
+	ZERO_STRUCT(r_u);
 
 	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
 

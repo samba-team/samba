@@ -309,12 +309,14 @@ do a SAMR query user info
 BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
-				uint32 user_rid, void *usr)
+				uint32 user_rid, SAM_USER_INFO_21 *usr)
 {
 	POLICY_HND pol_open_user;
 	BOOL ret = True;
 
-	if (pol_open_domain == NULL) return False;
+	if (pol_open_domain == NULL || usr == NULL) return False;
+
+	bzero(usr, sizeof(*usr));
 
 	/* send open domain (on user sid) */
 	if (!samr_open_user(cli, fnum,
@@ -328,7 +330,7 @@ BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum,
 	/* send user info query */
 	if (!samr_query_userinfo(cli, fnum,
 				&pol_open_user,
-				info_level, usr))
+				info_level, (void*)usr))
 	{
 		DEBUG(5,("samr_query_userinfo: error in query user info, level 0x%x\n",
 		          info_level));
@@ -415,7 +417,7 @@ BOOL samr_chgpasswd_user(struct cli_state *cli, uint16 fnum,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_CHGPASSWD_USER: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(4,("SAMR_R_CHGPASSWD_USER: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 
@@ -468,7 +470,7 @@ BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name)
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_UNKNOWN_38: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(4,("SAMR_R_UNKNOWN_38: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 #endif
@@ -525,7 +527,7 @@ BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_QUERY_DOMAIN_INFO: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(4,("SAMR_R_QUERY_DOMAIN_INFO: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 
@@ -582,7 +584,7 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_ENUM_DOM_GROUPS: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(4,("SAMR_R_ENUM_DOM_GROUPS: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 
@@ -670,7 +672,7 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_ENUM_DOM_ALIASES: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(4,("SAMR_R_ENUM_DOM_ALIASES: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 
@@ -759,7 +761,7 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_ENUM_DOM_USERS: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(4,("SAMR_R_ENUM_DOM_USERS: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 
@@ -849,7 +851,7 @@ BOOL samr_connect(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_CONNECT: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_CONNECT: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -907,7 +909,7 @@ BOOL samr_open_user(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_OPEN_USER: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_OPEN_USER: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -965,7 +967,7 @@ BOOL samr_open_alias(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_OPEN_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_OPEN_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1021,7 +1023,7 @@ BOOL samr_del_aliasmem(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_DEL_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_DEL_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1076,7 +1078,7 @@ BOOL samr_add_aliasmem(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_ADD_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_ADD_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1131,7 +1133,7 @@ BOOL samr_delete_dom_alias(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_DELETE_DOM_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_DELETE_DOM_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1188,7 +1190,7 @@ BOOL samr_create_dom_user(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_CREATE_USER: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_CREATE_USER: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1246,7 +1248,7 @@ BOOL samr_create_dom_alias(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_CREATE_DOM_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_CREATE_DOM_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1304,7 +1306,7 @@ BOOL samr_get_aliasinfo(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_GET_ALIASINFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_GET_ALIASINFO: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1360,7 +1362,7 @@ BOOL samr_set_aliasinfo(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_SET_ALIASINFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_SET_ALIASINFO: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1417,7 +1419,7 @@ BOOL samr_open_group(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_OPEN_GROUP: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_OPEN_GROUP: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1473,7 +1475,7 @@ BOOL samr_del_groupmem(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_DEL_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_DEL_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1528,7 +1530,7 @@ BOOL samr_add_groupmem(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_ADD_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_ADD_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1582,7 +1584,7 @@ BOOL samr_delete_dom_group(struct cli_state *cli, uint16 fnum, POLICY_HND *group
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_DELETE_DOM_GROUP: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_DELETE_DOM_GROUP: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1638,7 +1640,7 @@ BOOL samr_create_dom_group(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_CREATE_DOM_GROUP: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_CREATE_DOM_GROUP: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1695,7 +1697,7 @@ BOOL samr_set_groupinfo(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_SET_GROUPINFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_SET_GROUPINFO: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1758,7 +1760,7 @@ BOOL samr_open_domain(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_OPEN_DOMAIN: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_OPEN_DOMAIN: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1815,7 +1817,7 @@ BOOL samr_query_lookup_domain(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_LOOKUP_DOMAIN: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_LOOKUP_DOMAIN: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1876,7 +1878,7 @@ BOOL samr_query_lookup_names(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_LOOKUP_NAMES: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_LOOKUP_NAMES: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1954,6 +1956,7 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 	{
 		SAMR_R_LOOKUP_RIDS r_o;
 		BOOL p;
+		ZERO_STRUCT(r_o);
 
 		samr_io_r_lookup_rids("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
@@ -1961,7 +1964,7 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_LOOKUP_RIDS: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_LOOKUP_RIDS: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1994,6 +1997,8 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 				p = False;
 			}
 		}
+
+		samr_free_r_lookup_rids(&r_o);
 	}
 
 	prs_mem_free(&data   );
@@ -2045,7 +2050,7 @@ BOOL samr_query_aliasmem(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_QUERY_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_QUERY_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -2106,7 +2111,7 @@ BOOL samr_query_useraliases(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_QUERY_USERALIASES: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_QUERY_USERALIASES: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -2168,7 +2173,7 @@ BOOL samr_query_groupmem(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_QUERY_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_QUERY_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -2230,7 +2235,7 @@ BOOL samr_query_usergroups(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_QUERY_USERGROUPS: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_QUERY_USERGROUPS: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -2291,13 +2296,13 @@ BOOL samr_query_groupinfo(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_QUERY_GROUPINFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_QUERY_GROUPINFO: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
 		if (p && r_o.ctr->switch_value1 != switch_value)
 		{
-			DEBUG(0,("SAMR_R_QUERY_GROUPINFO: received incorrect level %d\n",
+			DEBUG(4,("SAMR_R_QUERY_GROUPINFO: received incorrect level %d\n",
 			          r_o.ctr->switch_value1));
 		}
 
@@ -2327,7 +2332,7 @@ BOOL samr_query_userinfo(struct cli_state *cli, uint16 fnum,
 
 	DEBUG(4,("SAMR Query User Info.  level: %d\n", switch_value));
 
-	if (pol == NULL || switch_value == 0) return False;
+	if (pol == NULL || usr == NULL || switch_value == 0) return False;
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERINFO */
 
@@ -2355,13 +2360,13 @@ BOOL samr_query_userinfo(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_QUERY_USERINFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_QUERY_USERINFO: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
 		if (p && r_o.switch_value != switch_value)
 		{
-			DEBUG(0,("SAMR_R_QUERY_USERINFO: received incorrect level %d\n",
+			DEBUG(4,("SAMR_R_QUERY_USERINFO: received incorrect level %d\n",
 			          r_o.switch_value));
 		}
 
@@ -2415,7 +2420,7 @@ BOOL samr_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 		if (p && r_c.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_CLOSE_HND: %s\n", get_nt_error_msg(r_c.status)));
+			DEBUG(4,("SAMR_CLOSE_HND: %s\n", get_nt_error_msg(r_c.status)));
 			p = False;
 		}
 
@@ -2435,7 +2440,7 @@ BOOL samr_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 			}	
 			if (!valid_close)
 			{
-				DEBUG(0,("SAMR_CLOSE_HND: non-zero handle returned\n"));
+				DEBUG(4,("SAMR_CLOSE_HND: non-zero handle returned\n"));
 			}
 		}
 	}
@@ -2494,13 +2499,13 @@ BOOL samr_query_dispinfo(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_QUERY_DISPINFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_QUERY_DISPINFO: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
 		if (p && r_o.switch_level != level)
 		{
-			DEBUG(0,("SAMR_R_QUERY_DISPINFO: received incorrect level %d\n",
+			DEBUG(4,("SAMR_R_QUERY_DISPINFO: received incorrect level %d\n",
 			          r_o.switch_level));
 		}
 
