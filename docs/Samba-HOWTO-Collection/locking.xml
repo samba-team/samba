@@ -87,13 +87,13 @@ a file. Unfortunately with the way fcntl() works, this can be slow and may overs
 the <command>rpc.lockd</command>. This is almost always unnecessary as clients are supposed to
 independently make locking calls before reads and writes if locking is
 important to them. By default, Samba only makes locking calls when explicitly asked
-to by a client, but if you set <smbconfoption><name>strict locking</name><value>yes</value></smbconfoption>, it
+to by a client, but if you set <smbconfoption name="strict locking">yes</smbconfoption>, it
 will make lock checking calls on <emphasis>every</emphasis> read and write call.
 </para>
 
 <para>
 You can also disable byte range locking completely by using
-<smbconfoption><name>locking</name><value>no</value></smbconfoption>.
+<smbconfoption name="locking">no</smbconfoption>.
 This is useful for those shares that do not support locking or do not need it
 (such as CDROMs). In this case, Samba fakes the return codes of locking calls to
 tell clients that everything is okay.
@@ -414,7 +414,7 @@ the share.
 
 <para>
 Samba includes an &smb.conf; parameter called 
-<smbconfoption><name>force user</name></smbconfoption> that changes
+<smbconfoption name="force user"/> that changes
 the user accessing a share from the incoming user to whatever user is
 defined by the smb.conf variable. If opportunistic locking is enabled
 on a share, the change in user access causes an oplock break to be sent
@@ -431,7 +431,7 @@ Avoid the combination of the following:
 
 <itemizedlist>
 	<listitem><para>
-	<smbconfoption><name>force user</name></smbconfoption> in the &smb.conf; share configuration.
+	<smbconfoption name="force user"/> in the &smb.conf; share configuration.
 	</para></listitem>
 
 	<listitem><para>
@@ -454,8 +454,8 @@ administrator to adjust various properties of the oplock mechanism to
 account for timing and usage levels. These parameters provide good
 versatility for implementing oplocks in environments where they would
 likely cause problems. The parameters are: 
-<smbconfoption><name>oplock break wait time</name></smbconfoption>,
-<smbconfoption><name>oplock contention limit</name></smbconfoption>.
+<smbconfoption name="oplock break wait time"/>,
+<smbconfoption name="oplock contention limit"/>.
 </para>
 
 <para>
@@ -601,8 +601,8 @@ You can disable oplocks on a per-share basis with the following:
 <para>
 <smbconfblock>
 <smbconfsection>[acctdata]</smbconfsection>
-<smbconfoption><name>oplocks</name><value>False</value></smbconfoption>
-<smbconfoption><name>level2 oplocks</name><value>False</value></smbconfoption>
+<smbconfoption name="oplocks">False</smbconfoption>
+<smbconfoption name="level2 oplocks">False</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -617,7 +617,7 @@ Alternately, you could disable oplocks on a per-file basis within the share:
 
 <para>
 	<smbconfblock>
-<smbconfoption><name>veto oplock files</name><value>/*.mdb/*.MDB/*.dbf/*.DBF/</value></smbconfoption>
+<smbconfoption name="veto oplock files">/*.mdb/*.MDB/*.dbf/*.DBF/</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -647,7 +647,7 @@ basis in the &smb.conf; file.
 
 <para>
 <smbconfblock>
-<smbconfoption><name>kernel oplocks</name><value>yes</value></smbconfoption>
+<smbconfoption name="kernel oplocks">yes</smbconfoption>
 </smbconfblock>
 The default is no.
 </para>
@@ -670,15 +670,15 @@ enabled on a per-share basis, or globally for the entire server, in the
 <smbconfexample id="far1">
 <title>Share with some files oplocked</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>veto oplock files</name><value>/filename.htm/*.txt/</value></smbconfoption>
+<smbconfoption name="veto oplock files">/filename.htm/*.txt/</smbconfoption>
 
 <smbconfsection>[share_name]</smbconfsection>
-<smbconfoption><name>veto oplock files</name><value>/*.exe/filename.ext/</value></smbconfoption>
+<smbconfoption name="veto oplock files">/*.exe/filename.ext/</smbconfoption>
 </smbconfexample>
 </para>
 
 <para>
-<smbconfoption><name>oplock break wait time</name></smbconfoption> is an &smb.conf; parameter
+<smbconfoption name="oplock break wait time"/> is an &smb.conf; parameter
 that adjusts the time interval for Samba to reply to an oplock break request. Samba recommends:
 <quote>Do not change this parameter unless you have read and understood the Samba oplock code.</quote>
 Oplock break Wait Time can only be configured globally in the &smb.conf; file as shown below.
@@ -686,7 +686,7 @@ Oplock break Wait Time can only be configured globally in the &smb.conf; file as
 
 <para>
 	<smbconfblock>
-<smbconfoption><name>oplock break wait time</name><value> 0 (default)</value></smbconfoption>
+<smbconfoption name="oplock break wait time"> 0 (default)</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -703,10 +703,10 @@ the entire server, in the &smb.conf; file as shown in <link linkend="far3"/>.
 <smbconfexample id="far3">
 	<title>Configuration with oplock break contention limit</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>oplock break contention limit</name><value> 2 (default)</value></smbconfoption>
+<smbconfoption name="oplock break contention limit"> 2 (default)</smbconfoption>
 
 <smbconfsection>[share_name]</smbconfsection>
-<smbconfoption><name>oplock break contention limit</name><value> 2 (default)</value></smbconfoption>
+<smbconfoption name="oplock break contention limit"> 2 (default)</smbconfoption>
 </smbconfexample>
 </para>
 

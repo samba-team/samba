@@ -416,7 +416,7 @@
 		<primary>BDC</primary>
 	      </indexterm>
 		Edit the &smb.conf; file to temporarily change the parameter 
-		<smbconfoption><name>domain master</name><value>No</value></smbconfoption> so
+		<smbconfoption name="domain master">No</smbconfoption> so
 		the Samba server functions as a BDC for the purpose of migration. Also, temporarily
 		(only during domain account migration) comment out the lines that specify deletion
 		scripts (delete user script, etc.).
@@ -597,7 +597,7 @@ SAM_DELTA_DOMAIN_INFO not handled
 		<primary>PDC</primary>
 	      </indexterm>
 		Edit the &smb.conf; file to  reset the parameter 
-		<smbconfoption><name>domain master</name><value>Yes</value></smbconfoption> so that
+		<smbconfoption name="domain master">Yes</smbconfoption> so that
 		the Samba server functions as a PDC for the purpose of migration.
                 </para></step>
 	</procedure>
@@ -664,7 +664,7 @@ gidNumber: 1000
 		<primary>BDC</primary>
 	      </indexterm>
 		Edit the &smb.conf; file to temporarily change the parameter 
-		<smbconfoption><name>domain master</name><value>No</value></smbconfoption> so
+		<smbconfoption name="domain master">No</smbconfoption> so
 		the Samba server functions as a BDC for the purpose of migration.
                 </para></step>
 
@@ -824,7 +824,7 @@ Users                 Ordinary users
 		<primary>PDC</primary>
 	      </indexterm>
 		Edit the &smb.conf; file to  reset the parameter 
-		<smbconfoption><name>domain master</name><value>Yes</value></smbconfoption> so
+		<smbconfoption name="domain master">Yes</smbconfoption> so
 		the Samba server functions as a PDC for the purpose of migration.
                 </para></step>
 	</procedure>

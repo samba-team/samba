@@ -34,7 +34,7 @@ on the screen.</para>
 <para>
 One of the best diagnostic tools for debugging problems is Samba itself. 
 You can use the <option>-d option</option> for both &smbd; and &nmbd; to specify the 
-<smbconfoption><name>debug level</name></smbconfoption> at which to run. 
+<smbconfoption name="debug level"/> at which to run. 
 See the man pages for <command>smbd, nmbd</command>  and 
 &smb.conf; for more information regarding debugging options. The debug 
 level can range from 1 (the default) to 10 (100 for debugging passwords).

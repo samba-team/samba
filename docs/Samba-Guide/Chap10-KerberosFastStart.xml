@@ -1188,7 +1188,7 @@
 	      </indexterm>
 	On Domain Member servers and clients, even when the <parameter>winbind use default domain</parameter> has
 	been specified, the use of Domain accounts in security controls requires fully qualified Domain specification,
-	for example, <smbconfoption><name>valid users</name><value>@"MEGANET\Northern Engineers"</value></smbconfoption>. 
+	for example, <smbconfoption name="valid users">@"MEGANET\Northern Engineers"</smbconfoption>. 
 	Note the necessity to use the double quotes to avoid having the space in the Windows group name interpreted as a
 	delimiter. 
 	</para></note>
@@ -1953,7 +1953,7 @@ other::r-x
 	      </indexterm>
 		Yes. This was fixed in Samba-3.0.2. The use of this parameter is strongly recommended as a safeguard
 		on the <smbconfsection>[homes]</smbconfsection> meta-service. The correct way to specify this is:
-		<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>.
+		<smbconfoption name="valid users">%S</smbconfoption>.
 		</para>
 
 	</answer>

@@ -257,7 +257,7 @@ retype new password
 </para>
 
 		<note><para>pdbedit does not call the unix password syncronisation 
-				script if <smbconfoption><name>unix password sync</name></smbconfoption>
+				script if <smbconfoption name="unix password sync"/>
 				has been set. It only updates the data in the Samba 
 				user database. 
 			</para>

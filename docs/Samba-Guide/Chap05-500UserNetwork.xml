@@ -939,41 +939,41 @@ hosts:      files dns wins
 <title>Server: MASSIVE (PDC), File: <filename>/etc/samba/smb.conf</filename></title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MEGANET</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>MASSIVE</value></smbconfoption>
-<smbconfoption><name>interfaces</name><value>eth1, lo</value></smbconfoption>
-<smbconfoption><name>bind interfaces only</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>tdbsam</value></smbconfoption>
-<smbconfoption><name>add user script</name><value>/usr/sbin/useradd -m '%u'</value></smbconfoption>
-<smbconfoption><name>delete user script</name><value>/usr/sbin/userdel -r '%u'</value></smbconfoption>
-<smbconfoption><name>add group script</name><value>/usr/sbin/groupadd '%g'</value></smbconfoption>
-<smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel '%g'</value></smbconfoption>
-<smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G '%g' '%u'</value></smbconfoption>
-<smbconfoption><name>add machine script</name><value>/usr/sbin/</value></smbconfoption>
+<smbconfoption name="workgroup">MEGANET</smbconfoption>
+<smbconfoption name="netbios name">MASSIVE</smbconfoption>
+<smbconfoption name="interfaces">eth1, lo</smbconfoption>
+<smbconfoption name="bind interfaces only">Yes</smbconfoption>
+<smbconfoption name="passdb backend">tdbsam</smbconfoption>
+<smbconfoption name="add user script">/usr/sbin/useradd -m '%u'</smbconfoption>
+<smbconfoption name="delete user script">/usr/sbin/userdel -r '%u'</smbconfoption>
+<smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
+<smbconfoption name="delete group script">/usr/sbin/groupdel '%g'</smbconfoption>
+<smbconfoption name="add user to group script">/usr/sbin/usermod -G '%g' '%u'</smbconfoption>
+<smbconfoption name="add machine script">/usr/sbin/</smbconfoption>
 <member><parameter>useradd -s /bin/false -d /var/lib/nobody '%u'</parameter></member>
-<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>wins support</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>include</name><value>/etc/samba/dc-common.conf</value></smbconfoption>
+<smbconfoption name="preferred master">Yes</smbconfoption>
+<smbconfoption name="wins support">Yes</smbconfoption>
+<smbconfoption name="include">/etc/samba/dc-common.conf</smbconfoption>
 
 <smbconfsection>[IPC$]</smbconfsection>
-<smbconfoption><name>path</name><value>/tmp</value></smbconfoption>
-<smbconfoption><name>hosts allow</name><value>172.16.0.0/16, 127.0.0.1</value></smbconfoption>
-<smbconfoption><name>hosts deny</name><value>0.0.0.0/0</value></smbconfoption>
+<smbconfoption name="path">/tmp</smbconfoption>
+<smbconfoption name="hosts allow">172.16.0.0/16, 127.0.0.1</smbconfoption>
+<smbconfoption name="hosts deny">0.0.0.0/0</smbconfoption>
 
 <smbconfsection>[accounts]</smbconfsection>
-<smbconfoption><name>comment</name><value>Accounting Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/accounts</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Accounting Files</smbconfoption>
+<smbconfoption name="path">/data/accounts</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[service]</smbconfsection>
-<smbconfoption><name>comment</name><value>Financial Services Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/service</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Financial Services Files</smbconfoption>
+<smbconfoption name="path">/data/service</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[pidata]</smbconfsection>
-<smbconfoption><name>comment</name><value>Property Insurance Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/pidata</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Property Insurance Files</smbconfoption>
+<smbconfoption name="path">/data/pidata</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 </smbconfexample>
 
 <!-- Two -->
@@ -981,73 +981,73 @@ hosts:      files dns wins
 <title>Server: MASSIVE (PDC), File: <filename>/etc/samba/dc-common.conf</filename></title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>shutdown script</name><value>/var/lib/samba/scripts/shutdown.sh</value></smbconfoption>
-<smbconfoption><name>abort shutdown script</name><value>/sbin/shutdown -c</value></smbconfoption>
-<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
-<smbconfoption><name>logon path</name><value>\%L\profiles\%U</value></smbconfoption>
-<smbconfoption><name>logon drive</name><value>X:</value></smbconfoption>
-<smbconfoption><name>logon home</name><value>\%L\%U</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>include</name><value>/etc/samba/common.conf</value></smbconfoption>
+<smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
+<smbconfoption name="abort shutdown script">/sbin/shutdown -c</smbconfoption>
+<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
+<smbconfoption name="logon path">\%L\profiles\%U</smbconfoption>
+<smbconfoption name="logon drive">X:</smbconfoption>
+<smbconfoption name="logon home">\%L\%U</smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
+<smbconfoption name="preferred master">Yes</smbconfoption>
+<smbconfoption name="include">/etc/samba/common.conf</smbconfoption>
 
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[netlogon]</smbconfsection>
-<smbconfoption><name>comment</name><value>Network Logon Service</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/netlogon</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>locking</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Network Logon Service</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="locking">No</smbconfoption>
 
 <smbconfsection>[profiles]</smbconfsection>
-<smbconfoption><name>comment</name><value>Profile Share</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/profiles</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>profile acls</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Profile Share</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="profile acls">Yes</smbconfoption>
 </smbconfexample>
 
 <!-- Three -->
 <smbconfexample id="ch5-commonsmb">
 <title>Common Samba Configuration File: <filename>/etc/samba/common.conf</filename></title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-<smbconfoption><name>log level</name><value>1</value></smbconfoption>
-<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
-<smbconfoption><name>log file</name><value>/var/log/samba/%m</value></smbconfoption>
-<smbconfoption><name>max log size</name><value>50</value></smbconfoption>
-<smbconfoption><name>smb ports</name><value>139 445</value></smbconfoption>
-<smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
-<smbconfoption><name>time server</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-<smbconfoption><name>shutdown script</name><value>/var/lib/samba/scripts/shutdown.sh</value></smbconfoption>
-<smbconfoption><name>abort shutdown script</name><value>/sbin/shutdown -c</value></smbconfoption>
-<smbconfoption><name>utmp</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>map acl inherit</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-<smbconfoption><name>veto files</name><value>/*.eml/*.nws/*.{*}/</value></smbconfoption>
-<smbconfoption><name>veto oplock files</name><value>/*.doc/*.xls/*.mdb/</value></smbconfoption>
-<smbconfoption><name>include</name><value> </value></smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="log level">1</smbconfoption>
+<smbconfoption name="syslog">0</smbconfoption>
+<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+<smbconfoption name="max log size">50</smbconfoption>
+<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+<smbconfoption name="time server">Yes</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
+<smbconfoption name="abort shutdown script">/sbin/shutdown -c</smbconfoption>
+<smbconfoption name="utmp">Yes</smbconfoption>
+<smbconfoption name="map acl inherit">Yes</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
+<smbconfoption name="veto files">/*.eml/*.nws/*.{*}/</smbconfoption>
+<smbconfoption name="veto oplock files">/*.doc/*.xls/*.mdb/</smbconfoption>
+<smbconfoption name="include"> </smbconfoption>
 
 <smbconfcomment>Share and Service Definitions are common to all servers</smbconfcomment>
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>SMB Print Spool</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>default devmode</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">SMB Print Spool</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="default devmode">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[apps]</smbconfsection>
-<smbconfoption><name>comment</name><value>Application Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/apps</value></smbconfoption>
-<smbconfoption><name>admin users</name><value>bjordan</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Application Files</smbconfoption>
+<smbconfoption name="path">/apps</smbconfoption>
+<smbconfoption name="admin users">bjordan</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 </smbconfexample>
 
 <!-- Four -->
@@ -1055,9 +1055,9 @@ hosts:      files dns wins
 <title>Server: BLDG1 (Member), File: smb.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MEGANET</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>BLDG1</value></smbconfoption>
-<smbconfoption><name>include</name><value>/etc/samba/dom-mem.conf</value></smbconfoption>
+<smbconfoption name="workgroup">MEGANET</smbconfoption>
+<smbconfoption name="netbios name">BLDG1</smbconfoption>
+<smbconfoption name="include">/etc/samba/dom-mem.conf</smbconfoption>
 </smbconfexample>
 
 <!-- Five -->
@@ -1065,9 +1065,9 @@ hosts:      files dns wins
 <title>Server: BLDG2 (Member), File: smb.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MEGANET</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>BLDG2</value></smbconfoption>
-<smbconfoption><name>include</name><value>/etc/samba/dom-mem.conf</value></smbconfoption>
+<smbconfoption name="workgroup">MEGANET</smbconfoption>
+<smbconfoption name="netbios name">BLDG2</smbconfoption>
+<smbconfoption name="include">/etc/samba/dom-mem.conf</smbconfoption>
 </smbconfexample>
 
 <!-- Six -->
@@ -1075,13 +1075,13 @@ hosts:      files dns wins
 <title>Common Domain Member Include File: dom-mem.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>shutdown script</name><value>/var/lib/samba/scripts/shutdown.sh</value></smbconfoption>
-<smbconfoption><name>abort shutdown script</name><value>/sbin/shutdown -c</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>wins server</name><value>172.16.0.1</value></smbconfoption>
-<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>include</name><value>/etc/samba/common.conf</value></smbconfoption>
+<smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
+<smbconfoption name="abort shutdown script">/sbin/shutdown -c</smbconfoption>
+<smbconfoption name="preferred master">Yes</smbconfoption>
+<smbconfoption name="wins server">172.16.0.1</smbconfoption>
+<smbconfoption name="idmap uid">15000-20000</smbconfoption>
+<smbconfoption name="idmap gid">15000-20000</smbconfoption>
+<smbconfoption name="include">/etc/samba/common.conf</smbconfoption>
 </smbconfexample>
 
 <!-- Seven -->

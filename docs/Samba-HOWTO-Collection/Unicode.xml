@@ -94,7 +94,7 @@ Samba knows of three kinds of character sets:
 
 <variablelist>
 	<varlistentry>
-		<term><smbconfoption><name>unix charset</name></smbconfoption></term>
+		<term><smbconfoption name="unix charset"/></term>
 		<listitem><para>
 		This is the charset used internally by your operating system. 
 		The default is <constant>UTF-8</constant>, which is fine for most 
@@ -105,14 +105,14 @@ Samba knows of three kinds of character sets:
 	</varlistentry>
 
 	<varlistentry>
-		<term><smbconfoption><name>display charset</name></smbconfoption></term>
+		<term><smbconfoption name="display charset"/></term>
 		<listitem><para>This is the charset Samba will use to print messages
 		on your screen. It should generally be the same as the <parameter>unix charset</parameter>.
 		</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
-		<term><smbconfoption><name>dos charset</name></smbconfoption></term>
+		<term><smbconfoption name="dos charset"/></term>
 		<listitem><para>This is the charset Samba uses when communicating with 
 		DOS and Windows 9x/Me clients. It will talk unicode to all newer clients.
 		The default depends on the charsets you have installed on your system.
@@ -183,28 +183,28 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 <sect2><title>Basic Parameter Setting</title>
 
 	<para>
-	<smbconfoption><name>dos charset</name></smbconfoption> and 
-	<smbconfoption><name>display charset</name></smbconfoption>
+	<smbconfoption name="dos charset"/> and 
+	<smbconfoption name="display charset"/>
 	should be set to the locale compatible with the character set 
 	and encoding method used on Windows. This is usually CP932
 	but sometimes has a different name.
 	</para>
 
 	<para>
-	<smbconfoption><name>unix charset</name></smbconfoption> can be either Shift_JIS series,
+	<smbconfoption name="unix charset"/> can be either Shift_JIS series,
 	EUC-JP series and UTF-8. UTF-8 is always available but the availability of other locales
 	and its name itself depends on the system.
 	</para>
 
 	<para>
 	Additionally, you can consider to use the Shift_JIS series as the
-	value of the <smbconfoption><name>unix charset</name></smbconfoption>
+	value of the <smbconfoption name="unix charset"/>
 	parameter by using the vfs_cap module, which does the same thing as
 	setting <quote>coding system = CAP</quote> in the Samba 2.2 series.
 	</para>
 
 	<para>
-	Where to set <smbconfoption><name>unix charset</name></smbconfoption>
+	Where to set <smbconfoption name="unix charset"/>
 	to is a difficult question. Here is a list of details, advantages and
 	disadvantages of using a certain value.
 	</para>
@@ -376,13 +376,13 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 
 <smbconfexample><title>VFS CAP</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>dos charset</name><value>CP932<footnote><para>the locale name "CP932" may be different name</para></footnote></value></smbconfoption>
-<smbconfoption><name>unix charset</name><value>CP932</value></smbconfoption>
+<smbconfoption name="dos charset">CP932<footnote><para>the locale name "CP932" may be different name</para></footnote></smbconfoption>
+<smbconfoption name="unix charset">CP932</smbconfoption>
 
 <member><para>...</para></member>
 
 <smbconfsection>[cap-share]</smbconfsection>
-<smbconfoption><name>vfs option</name><value>cap</value></smbconfoption>
+<smbconfoption name="vfs option">cap</smbconfoption>
 </smbconfexample>
 
 			<para>
@@ -442,9 +442,9 @@ display charset = CP932
 			</para>
 
 <smbconfblock>
-<smbconfoption><name>dos charset</name><value>CP932</value></smbconfoption>
-<smbconfoption><name>unix charset</name><value>CP932 / eucJP-ms / UTF-8</value></smbconfoption>
-<smbconfoption><name>display charset</name><value>CP932</value></smbconfoption>
+<smbconfoption name="dos charset">CP932</smbconfoption>
+<smbconfoption name="unix charset">CP932 / eucJP-ms / UTF-8</smbconfoption>
+<smbconfoption name="display charset">CP932</smbconfoption>
 </smbconfblock>
 
 			<para>
@@ -462,7 +462,7 @@ display charset = CP932
 
 <para> 
 Prior to Samba-2.2 series <quote>coding system</quote> parameter is used as
-<smbconfoption><name>unix charset</name></smbconfoption> parameter of the Samba-3 series.
+<smbconfoption name="unix charset"/> parameter of the Samba-3 series.
 <link linkend="japancharsets">Next table</link> shows the mapping table when migrating from the Samba-2.2 series to Samba-3.
 </para>
 
@@ -500,8 +500,8 @@ Prior to Samba-2.2 series <quote>coding system</quote> parameter is used as
 
 		<para><quote>Samba is complaining about a missing <filename>CP850.so</filename> file.</quote></para>
 
-		<para><emphasis>Answer:</emphasis> CP850 is the default <smbconfoption><name>dos charset</name></smbconfoption>.
-		The <smbconfoption><name>dos charset</name></smbconfoption> is used to convert data to the codepage used by your dos clients.
+		<para><emphasis>Answer:</emphasis> CP850 is the default <smbconfoption name="dos charset"/>.
+		The <smbconfoption name="dos charset"/> is used to convert data to the codepage used by your dos clients.
 		If you do not have any dos clients, you can safely ignore this message. </para>
 
 		<para>CP850 should be supported by your local iconv implementation. Make sure you have all the required packages installed.

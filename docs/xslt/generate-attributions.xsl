@@ -4,7 +4,6 @@
 	(C) Jelmer Vernooij 2003
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc"
 				version="1.1">
 
 <xsl:output method="xml" omit-xml-declaration="yes" indent="yes"/>
@@ -57,7 +56,7 @@
 				<xsl:when test="affiliation/address/email != ''">
 					<xsl:text> &lt;</xsl:text>
 					<xsl:element name="ulink">
-						<xsl:attribute name="samba:noescape">
+						<xsl:attribute name="noescape">
 						<xsl:text>1</xsl:text>
 						</xsl:attribute>
 						<xsl:attribute name="url">

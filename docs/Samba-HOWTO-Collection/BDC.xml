@@ -253,10 +253,10 @@ Refer to <link linkend="minimalPDC">following configuration</link> for an exampl
 
 <para><smbconfexample id="minimalPDC">
 <title>Minimal smb.conf for a PDC in Use With a BDC &smbmdash; LDAP Server on PDC.</title>
-<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>ldapsam://localhost:389</value></smbconfoption>
-<smbconfoption><name>domain master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>yes</value></smbconfoption>
+<smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
+<smbconfoption name="passdb backend">ldapsam://localhost:389</smbconfoption>
+<smbconfoption name="domain master">yes</smbconfoption>
+<smbconfoption name="domain logons">yes</smbconfoption>
 </smbconfexample></para>
 
 <para>
@@ -310,7 +310,7 @@ unable to avoid such configurations, and these sites should review the
 sleep</name></smbconfoption> parameter, intended to slow down Samba sufficiently
 for the replication to catch up.  This is a kludge, and one that the
 administrator must manually duplicate in any scripts (such as the
-<smbconfoption><name>add machine script</name></smbconfoption>) that
+<smbconfoption name="add machine script"/>) that
 they use.
 </para>
 
@@ -346,7 +346,7 @@ the secondary LDAP server in the &smb.conf; file as shown in <link linkend="muli
 <smbconfexample id="mulitldapcfg">
 <title>Multiple LDAP Servers in &smb.conf;</title>
 <member>...</member>
-<smbconfoption><name>passdb backend</name><value> </value></smbconfoption>
+<smbconfoption name="passdb backend"> </smbconfoption>
 <member><parameter>ldapsam:"ldap://master.quenya.org ldap://slave.quenya.org"</parameter></member>
 <member>...</member>
 </smbconfexample>
@@ -460,14 +460,14 @@ The creation of a BDC requires some steps to prepare the Samba server before
 	</listitem>
 
 	<listitem><para>
-	Specification of the <smbconfoption><name>ldap admin dn</name></smbconfoption> is obligatory.
+	Specification of the <smbconfoption name="ldap admin dn"/> is obligatory.
 	This also requires the LDAP administration password to be set in the <filename>secrets.tdb</filename>
 	using the <command>smbpasswd -w <replaceable>mysecret</replaceable></command>.
 	</para></listitem>
 
 	<listitem><para>
-	Either <smbconfoption><name>ldap suffix</name></smbconfoption> or
-	<smbconfoption><name>ldap idmap suffix</name></smbconfoption> must be specified in
+	Either <smbconfoption name="ldap suffix"/> or
+	<smbconfoption name="ldap idmap suffix"/> must be specified in
 	the &smb.conf; file.
 	</para></listitem>
 
@@ -512,11 +512,11 @@ done by setting Samba as shown in <link linkend="minim-bdc">the next example</li
 
 <para><smbconfexample id="minim-bdc">
 <title>Minimal setup for being a BDC</title>
-<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://slave-ldap.quenya.org</value></smbconfoption>
-<smbconfoption><name>domain master</name><value>no</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>yes</value></smbconfoption>
-<smbconfoption><name>idmap backend</name><value>ldap:ldap://slave-ldap.quenya.org</value></smbconfoption>
+<smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
+<smbconfoption name="passdb backend">ldapsam:ldap://slave-ldap.quenya.org</smbconfoption>
+<smbconfoption name="domain master">no</smbconfoption>
+<smbconfoption name="domain logons">yes</smbconfoption>
+<smbconfoption name="idmap backend">ldap:ldap://slave-ldap.quenya.org</smbconfoption>
 </smbconfexample></para>
 
 <para>
@@ -524,7 +524,7 @@ In the <smbconfsection>[global]</smbconfsection>-section of the &smb.conf; of th
 only register the name MIDEARTH&lt;#1c&gt; with the WINS server. This is no
 problem as the name MIDEARTH&lt;#1c&gt; is a NetBIOS group name that is meant to
 be registered by more than one machine. The parameter
-<smbconfoption><name>domain master</name><value>no</value></smbconfoption>
+<smbconfoption name="domain master">no</smbconfoption>
 forces the BDC not to register <?latex \linebreak ?>MIDEARTH&lt;#1b&gt; which as a unique NetBIOS
 name is reserved for the Primary Domain Controller.
 </para>
@@ -547,7 +547,7 @@ regarding its behavior.
 </para></note>
 
 <para>
-The use of the <smbconfoption><name>idmap backend</name><value>ldap:ldap://master.quenya.org</value></smbconfoption>
+The use of the <smbconfoption name="idmap backend">ldap:ldap://master.quenya.org</smbconfoption>
 option on a BDC only make sense where ldapsam is used on a PDC. The purpose for an LDAP based idmap backend is
 also to allow a domain-member (without its own passdb backend) to use winbindd to resolve Windows network users
 and groups to common UID/GIDs. In other words, this option is generally intended for use on BDCs and on Domain

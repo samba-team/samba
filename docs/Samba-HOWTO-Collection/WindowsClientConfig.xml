@@ -457,7 +457,7 @@ The most common reasons for which a Windows NT/200x/XP Professional client canno
 </para>
 
 <itemizedlist>
-	<listitem><para>&smb.conf; does not have correct <smbconfoption><name>add machine script</name></smbconfoption> settings.</para></listitem>
+	<listitem><para>&smb.conf; does not have correct <smbconfoption name="add machine script"/> settings.</para></listitem>
 	<listitem><para><quote>root</quote> account is not in password backend database.</para></listitem>
 	<listitem><para>Attempt to use a user account instead of the <quote>root</quote> account to join a machine to the domain.</para></listitem>
 	<listitem><para>Open connections from the workstation to the server.</para></listitem>

@@ -439,7 +439,7 @@ example of what you would not want to see would be:
 		<note><para>
 		<indexterm><primary>ifconfig</primary></indexterm>
 				On many systems you may need to use the 
-		<smbconfoption><name>interfaces</name></smbconfoption> option in &smb.conf; to specify the IP
+		<smbconfoption name="interfaces"/> option in &smb.conf; to specify the IP
 		address and netmask of your interfaces. Run 
 		<application>ifconfig</application> 
 		as root if you do not know what the broadcast is for your

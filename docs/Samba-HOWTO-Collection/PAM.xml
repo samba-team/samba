@@ -622,7 +622,7 @@ PAM documentation for further helpful information.
 <title>&smb.conf; PAM Configuration</title>
 
 <para>
-	There is an option in &smb.conf; called <smbconfoption><name>obey pam restrictions</name></smbconfoption>.
+	There is an option in &smb.conf; called <smbconfoption name="obey pam restrictions"/>.
 The following is from the online help for this option in SWAT;
 </para>
 
@@ -630,12 +630,12 @@ The following is from the online help for this option in SWAT;
 When Samba is configured to enable PAM support (i.e., <option>--with-pam</option>), this parameter will 
 control whether or not Samba should obey PAM's account and session management directives. The default behavior 
 is to use PAM for clear-text authentication only and to ignore any account or session management. Samba always 
-ignores PAM for authentication in the case of <smbconfoption><name>encrypt passwords</name><value>yes</value></smbconfoption>. 
+ignores PAM for authentication in the case of <smbconfoption name="encrypt passwords">yes</smbconfoption>. 
 The reason is that PAM modules cannot support the challenge/response authentication mechanism needed in the presence of SMB 
 password encryption. 
 </para>
 
-<para>Default: <smbconfoption><name>obey pam restrictions</name><value>no</value></smbconfoption></para>
+<para>Default: <smbconfoption name="obey pam restrictions">no</smbconfoption></para>
 
 </sect2>
 
@@ -666,7 +666,7 @@ lock directory and will be remembered.
 
 <para>
 The astute administrator will realize from this that the combination of <filename>pam_smbpass.so</filename>, 
-<command>winbindd</command> and a distributed <smbconfoption><name>passdb backend</name><value></value></smbconfoption>,
+<command>winbindd</command> and a distributed <smbconfoption name="passdb backend"></smbconfoption>,
 such as <parameter>ldap</parameter>, will allow the establishment of a centrally managed, distributed user/password
 database that can also be used by all PAM-aware (e.g., Linux) programs and applications. This arrangement can have
 particularly potent advantages compared with the use of Microsoft Active Directory Service (ADS) in so far as
@@ -891,8 +891,8 @@ password required /lib/security/pam_stack.so service=system-auth
 	<para>
 	<quote>
 	My &smb.conf; file is correctly configured. I have specified 
-	<smbconfoption><name>idmap uid</name><value>12000</value></smbconfoption>, 
-	and <smbconfoption><name>idmap gid</name><value>3000-3500</value></smbconfoption>
+	<smbconfoption name="idmap uid">12000</smbconfoption>, 
+	and <smbconfoption name="idmap gid">3000-3500</smbconfoption>
 	and <command>winbind</command> is running. When I do the following it all works fine.
 	</quote>
 	</para>

@@ -1848,56 +1848,56 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 <title>LDAP Based &smb.conf; File, Server: MASSIVE &smbmdash; global Section: Part A</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-	<smbconfoption><name>unix charset</name><value>LOCALE</value></smbconfoption>
-	<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
-	<smbconfoption><name>netbios name</name><value>MASSIVE</value></smbconfoption>
-	<smbconfoption><name>interfaces</name><value>eth1, lo</value></smbconfoption>
-	<smbconfoption><name>bind interfaces only</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://massive.abmas.biz</value></smbconfoption>
-	<smbconfoption><name>enable privileges</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-	<smbconfoption><name>log level</name><value>1</value></smbconfoption>
-	<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
-	<smbconfoption><name>log file</name><value>/var/log/samba/%m</value></smbconfoption>
-	<smbconfoption><name>max log size</name><value>50</value></smbconfoption>
-	<smbconfoption><name>smb ports</name><value>139 445</value></smbconfoption>
-	<smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
-	<smbconfoption><name>time server</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-	<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-	<smbconfoption><name>add user script</name><value>/opt/IDEALX/sbin/smbldap-useradd -m "%u"</value></smbconfoption>
-	<smbconfoption><name>delete user script</name><value>/opt/IDEALX/sbin/smbldap-userdel "%u"</value></smbconfoption>
-	<smbconfoption><name>add group script</name><value>/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</value></smbconfoption>
-	<smbconfoption><name>delete group script</name><value>/opt/IDEALX/sbin/smbldap-groupdel "%g"</value></smbconfoption>
-	<smbconfoption><name>add user to group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+	<smbconfoption name="unix charset">LOCALE</smbconfoption>
+	<smbconfoption name="workgroup">MEGANET2</smbconfoption>
+	<smbconfoption name="netbios name">MASSIVE</smbconfoption>
+	<smbconfoption name="interfaces">eth1, lo</smbconfoption>
+	<smbconfoption name="bind interfaces only">Yes</smbconfoption>
+	<smbconfoption name="passdb backend">ldapsam:ldap://massive.abmas.biz</smbconfoption>
+	<smbconfoption name="enable privileges">Yes</smbconfoption>
+	<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+	<smbconfoption name="log level">1</smbconfoption>
+	<smbconfoption name="syslog">0</smbconfoption>
+	<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+	<smbconfoption name="max log size">50</smbconfoption>
+	<smbconfoption name="smb ports">139 445</smbconfoption>
+	<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+	<smbconfoption name="time server">Yes</smbconfoption>
+	<smbconfoption name="printcap name">CUPS</smbconfoption>
+	<smbconfoption name="show add printer wizard">No</smbconfoption>
+	<smbconfoption name="add user script">/opt/IDEALX/sbin/smbldap-useradd -m "%u"</smbconfoption>
+	<smbconfoption name="delete user script">/opt/IDEALX/sbin/smbldap-userdel "%u"</smbconfoption>
+	<smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</smbconfoption>
+	<smbconfoption name="delete group script">/opt/IDEALX/sbin/smbldap-groupdel "%g"</smbconfoption>
+	<smbconfoption name="add user to group script">/opt/IDEALX/sbin/</smbconfoption>
 <member><parameter>smbldap-groupmod -m "%u" "%g"</parameter></member>
-	<smbconfoption><name>delete user from group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+	<smbconfoption name="delete user from group script">/opt/IDEALX/sbin/</smbconfoption>
 <member><parameter>smbldap-groupmod -x "%u" "%g"</parameter></member>
-	<smbconfoption><name>set primary group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+	<smbconfoption name="set primary group script">/opt/IDEALX/sbin/</smbconfoption>
 <member><parameter>smbldap-usermod -g "%g" "%u"</parameter></member>
-	<smbconfoption><name>add machine script</name><value>/opt/IDEALX/sbin/smbldap-useradd -w "%u"</value></smbconfoption>
+	<smbconfoption name="add machine script">/opt/IDEALX/sbin/smbldap-useradd -w "%u"</smbconfoption>
 </smbconfexample>
 
 <smbconfexample id="ch6-massive-smbconfb">
 <title>LDAP Based &smb.conf; File, Server: MASSIVE &smbmdash; global Section: Part B</title>
-	<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
-	<smbconfoption><name>logon path</name><value>\\%L\profiles\%U</value></smbconfoption>
-	<smbconfoption><name>logon drive</name><value>X:</value></smbconfoption>
-	<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>wins support</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>ldap suffix</name><value>dc=abmas,dc=biz</value></smbconfoption>
-	<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
-	<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
-	<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
-	<smbconfoption><name>ldap idmap suffix</name><value>ou=Idmap</value></smbconfoption>
-	<smbconfoption><name>ldap admin dn</name><value>cn=Manager,dc=abmas,dc=biz</value></smbconfoption>
-	<smbconfoption><name>idmap backend</name><value>ldap:ldap://massive.abmas.biz</value></smbconfoption>
-	<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
-	<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
-	<smbconfoption><name>map acl inherit</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-	<smbconfoption><name>printer admin</name><value>root, chrisr</value></smbconfoption>
+	<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
+	<smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>
+	<smbconfoption name="logon drive">X:</smbconfoption>
+	<smbconfoption name="domain logons">Yes</smbconfoption>
+	<smbconfoption name="preferred master">Yes</smbconfoption>
+	<smbconfoption name="wins support">Yes</smbconfoption>
+	<smbconfoption name="ldap suffix">dc=abmas,dc=biz</smbconfoption>
+	<smbconfoption name="ldap machine suffix">ou=People</smbconfoption>
+	<smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+	<smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+	<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+	<smbconfoption name="ldap admin dn">cn=Manager,dc=abmas,dc=biz</smbconfoption>
+	<smbconfoption name="idmap backend">ldap:ldap://massive.abmas.biz</smbconfoption>
+	<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+	<smbconfoption name="idmap gid">10000-20000</smbconfoption>
+	<smbconfoption name="map acl inherit">Yes</smbconfoption>
+	<smbconfoption name="printing">cups</smbconfoption>
+	<smbconfoption name="printer admin">root, chrisr</smbconfoption>
 </smbconfexample>
 
 	</sect2>
@@ -3207,37 +3207,37 @@ smb: \> q
 <title>LDAP Based &smb.conf; File, Server: BLDG1</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-	<smbconfoption><name>unix charset</name><value>LOCALE</value></smbconfoption>
-	<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
-	<smbconfoption><name>netbios name</name><value>BLDG1</value></smbconfoption>
-	<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://massive.abmas.biz</value></smbconfoption>
-	<smbconfoption><name>enable privileges</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-	<smbconfoption><name>log level</name><value>1</value></smbconfoption>
-	<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
-	<smbconfoption><name>log file</name><value>/var/log/samba/%m</value></smbconfoption>
-	<smbconfoption><name>max log size</name><value>50</value></smbconfoption>
-	<smbconfoption><name>smb ports</name><value>139 445</value></smbconfoption>
-	<smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
-	<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-	<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-	<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
-	<smbconfoption><name>logon path</name><value>\\%L\profiles\%U</value></smbconfoption>
-	<smbconfoption><name>logon drive</name><value>X:</value></smbconfoption>
-	<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>domain master</name><value>No</value></smbconfoption>
-	<smbconfoption><name>wins server</name><value>172.16.0.1</value></smbconfoption>
-	<smbconfoption><name>ldap suffix</name><value>dc=abmas,dc=biz</value></smbconfoption>
-	<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
-	<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
-	<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
-	<smbconfoption><name>ldap idmap suffix</name><value>ou=Idmap</value></smbconfoption>
-	<smbconfoption><name>ldap admin dn</name><value>cn=Manager,dc=abmas,dc=biz</value></smbconfoption>
-	<smbconfoption><name>idmap backend</name><value>ldap:ldap://massive.abmas.biz</value></smbconfoption>
-	<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
-	<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
-	<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-	<smbconfoption><name>printer admin</name><value>root, chrisr</value></smbconfoption>
+	<smbconfoption name="unix charset">LOCALE</smbconfoption>
+	<smbconfoption name="workgroup">MEGANET2</smbconfoption>
+	<smbconfoption name="netbios name">BLDG1</smbconfoption>
+	<smbconfoption name="passdb backend">ldapsam:ldap://massive.abmas.biz</smbconfoption>
+	<smbconfoption name="enable privileges">Yes</smbconfoption>
+	<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+	<smbconfoption name="log level">1</smbconfoption>
+	<smbconfoption name="syslog">0</smbconfoption>
+	<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+	<smbconfoption name="max log size">50</smbconfoption>
+	<smbconfoption name="smb ports">139 445</smbconfoption>
+	<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+	<smbconfoption name="printcap name">CUPS</smbconfoption>
+	<smbconfoption name="show add printer wizard">No</smbconfoption>
+	<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
+	<smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>
+	<smbconfoption name="logon drive">X:</smbconfoption>
+	<smbconfoption name="domain logons">Yes</smbconfoption>
+	<smbconfoption name="domain master">No</smbconfoption>
+	<smbconfoption name="wins server">172.16.0.1</smbconfoption>
+	<smbconfoption name="ldap suffix">dc=abmas,dc=biz</smbconfoption>
+	<smbconfoption name="ldap machine suffix">ou=People</smbconfoption>
+	<smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+	<smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+	<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+	<smbconfoption name="ldap admin dn">cn=Manager,dc=abmas,dc=biz</smbconfoption>
+	<smbconfoption name="idmap backend">ldap:ldap://massive.abmas.biz</smbconfoption>
+	<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+	<smbconfoption name="idmap gid">10000-20000</smbconfoption>
+	<smbconfoption name="printing">cups</smbconfoption>
+	<smbconfoption name="printer admin">root, chrisr</smbconfoption>
 </smbconfexample>
 
 
@@ -3245,104 +3245,104 @@ smb: \> q
 <title>LDAP Based &smb.conf; File, Server: BLDG2</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-	<smbconfoption><name>unix charset</name><value>LOCALE</value></smbconfoption>
-	<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
-	<smbconfoption><name>netbios name</name><value>BLDG2</value></smbconfoption>
-	<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://massive.abmas.biz</value></smbconfoption>
-	<smbconfoption><name>enable privileges</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-	<smbconfoption><name>log level</name><value>1</value></smbconfoption>
-	<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
-	<smbconfoption><name>log file</name><value>/var/log/samba/%m</value></smbconfoption>
-	<smbconfoption><name>max log size</name><value>50</value></smbconfoption>
-	<smbconfoption><name>smb ports</name><value>139 445</value></smbconfoption>
-	<smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
-	<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-	<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-	<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
-	<smbconfoption><name>logon path</name><value>\\%L\profiles\%U</value></smbconfoption>
-	<smbconfoption><name>logon drive</name><value>X:</value></smbconfoption>
-	<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>domain master</name><value>No</value></smbconfoption>
-	<smbconfoption><name>wins server</name><value>172.16.0.1</value></smbconfoption>
-	<smbconfoption><name>ldap suffix</name><value>dc=abmas,dc=biz</value></smbconfoption>
-	<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
-	<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
-	<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
-	<smbconfoption><name>ldap idmap suffix</name><value>ou=Idmap</value></smbconfoption>
-	<smbconfoption><name>ldap admin dn</name><value>cn=Manager,dc=abmas,dc=biz</value></smbconfoption>
-	<smbconfoption><name>idmap backend</name><value>ldap:ldap://massive.abmas.biz</value></smbconfoption>
-	<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
-	<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
-	<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-	<smbconfoption><name>printer admin</name><value>root, chrisr</value></smbconfoption>
+	<smbconfoption name="unix charset">LOCALE</smbconfoption>
+	<smbconfoption name="workgroup">MEGANET2</smbconfoption>
+	<smbconfoption name="netbios name">BLDG2</smbconfoption>
+	<smbconfoption name="passdb backend">ldapsam:ldap://massive.abmas.biz</smbconfoption>
+	<smbconfoption name="enable privileges">Yes</smbconfoption>
+	<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+	<smbconfoption name="log level">1</smbconfoption>
+	<smbconfoption name="syslog">0</smbconfoption>
+	<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+	<smbconfoption name="max log size">50</smbconfoption>
+	<smbconfoption name="smb ports">139 445</smbconfoption>
+	<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+	<smbconfoption name="printcap name">CUPS</smbconfoption>
+	<smbconfoption name="show add printer wizard">No</smbconfoption>
+	<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
+	<smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>
+	<smbconfoption name="logon drive">X:</smbconfoption>
+	<smbconfoption name="domain logons">Yes</smbconfoption>
+	<smbconfoption name="domain master">No</smbconfoption>
+	<smbconfoption name="wins server">172.16.0.1</smbconfoption>
+	<smbconfoption name="ldap suffix">dc=abmas,dc=biz</smbconfoption>
+	<smbconfoption name="ldap machine suffix">ou=People</smbconfoption>
+	<smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+	<smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+	<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+	<smbconfoption name="ldap admin dn">cn=Manager,dc=abmas,dc=biz</smbconfoption>
+	<smbconfoption name="idmap backend">ldap:ldap://massive.abmas.biz</smbconfoption>
+	<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+	<smbconfoption name="idmap gid">10000-20000</smbconfoption>
+	<smbconfoption name="printing">cups</smbconfoption>
+	<smbconfoption name="printer admin">root, chrisr</smbconfoption>
 </smbconfexample>
 
 
 <smbconfexample id="ch6-shareconfa">
 <title>LDAP Based &smb.conf; File, Shares Section &smbmdash; Part A</title>
 <smbconfsection>[accounts]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Accounting Files</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/data/accounts</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+	<smbconfoption name="comment">Accounting Files</smbconfoption>
+	<smbconfoption name="path">/data/accounts</smbconfoption>
+	<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[service]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Financial Services Files</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/data/service</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+	<smbconfoption name="comment">Financial Services Files</smbconfoption>
+	<smbconfoption name="path">/data/service</smbconfoption>
+	<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[pidata]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Property Insurance Files</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/data/pidata</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+	<smbconfoption name="comment">Property Insurance Files</smbconfoption>
+	<smbconfoption name="path">/data/pidata</smbconfoption>
+	<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[homes]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-	<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-	<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+	<smbconfoption name="comment">Home Directories</smbconfoption>
+	<smbconfoption name="valid users">%S</smbconfoption>
+	<smbconfoption name="read only">No</smbconfoption>
+	<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-	<smbconfoption><name>comment</name><value>SMB Print Spool</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-	<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+	<smbconfoption name="comment">SMB Print Spool</smbconfoption>
+	<smbconfoption name="path">/var/spool/samba</smbconfoption>
+	<smbconfoption name="guest ok">Yes</smbconfoption>
+	<smbconfoption name="printable">Yes</smbconfoption>
+	<smbconfoption name="browseable">No</smbconfoption>
 </smbconfexample>
 
 <smbconfexample id="ch6-shareconfb">
 <title>LDAP Based &smb.conf; File, Shares Section &smbmdash; Part B</title>
 <smbconfsection>[apps]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Application Files</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/apps</value></smbconfoption>
-	<smbconfoption><name>admin users</name><value>bjordan</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+	<smbconfoption name="comment">Application Files</smbconfoption>
+	<smbconfoption name="path">/apps</smbconfoption>
+	<smbconfoption name="admin users">bjordan</smbconfoption>
+	<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[netlogon]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Network Logon Service</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/var/lib/samba/netlogon</value></smbconfoption>
-	<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-	<smbconfoption><name>locking</name><value>No</value></smbconfoption>
+	<smbconfoption name="comment">Network Logon Service</smbconfoption>
+	<smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
+	<smbconfoption name="guest ok">Yes</smbconfoption>
+	<smbconfoption name="locking">No</smbconfoption>
 
 <smbconfsection>[profiles]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Profile Share</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/var/lib/samba/profiles</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-	<smbconfoption><name>profile acls</name><value>Yes</value></smbconfoption>
+	<smbconfoption name="comment">Profile Share</smbconfoption>
+	<smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
+	<smbconfoption name="read only">No</smbconfoption>
+	<smbconfoption name="profile acls">Yes</smbconfoption>
 
 <smbconfsection>[profdata]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Profile Data Share</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/var/lib/samba/profdata</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-	<smbconfoption><name>profile acls</name><value>Yes</value></smbconfoption>
+	<smbconfoption name="comment">Profile Data Share</smbconfoption>
+	<smbconfoption name="path">/var/lib/samba/profdata</smbconfoption>
+	<smbconfoption name="read only">No</smbconfoption>
+	<smbconfoption name="profile acls">Yes</smbconfoption>
 
 <smbconfsection>[print$]</smbconfsection>
-	<smbconfoption><name>comment</name><value>Printer Drivers</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/var/lib/samba/drivers</value></smbconfoption>
-	<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>guest ok</name><value>no</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>write list</name><value>root, chrisr</value></smbconfoption>
+	<smbconfoption name="comment">Printer Drivers</smbconfoption>
+	<smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
+	<smbconfoption name="browseable">yes</smbconfoption>
+	<smbconfoption name="guest ok">no</smbconfoption>
+	<smbconfoption name="read only">yes</smbconfoption>
+	<smbconfoption name="write list">root, chrisr</smbconfoption>
 </smbconfexample>
 
 <example id="ch6-ldifadd">

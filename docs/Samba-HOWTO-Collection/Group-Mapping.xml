@@ -52,7 +52,7 @@
 	accounts should be automatically created when these tools are used. In the absence of these scripts, and
 	so long as <command>winbindd</command> is running, Samba group accounts that are created using these
 	tools will be allocated UNIX UIDs/GIDs from the ID range specified by the
-	<smbconfoption><name>idmap uid</name></smbconfoption>/<smbconfoption><name>idmap gid</name></smbconfoption>
+	<smbconfoption name="idmap uid"/>/<smbconfoption name="idmap gid"/>
 	parameters in the &smb.conf; file.
 	</para>
 
@@ -527,7 +527,7 @@ exit 0
 <title>Configuration of &smb.conf; for the add group script.</title>
 <smbconfsection>[global]</smbconfsection>
 <member>...</member>
-<smbconfoption><name>add group script</name><value>/path_to_tool/smbgrpadd.sh &quot;%g&quot;</value></smbconfoption>
+<smbconfoption name="add group script">/path_to_tool/smbgrpadd.sh &quot;%g&quot;</smbconfoption>
 <member>...</member>
 </smbconfexample>
 		</para>
@@ -591,7 +591,7 @@ manually before putting them into active service.
 
 		<para>
 		This is a common problem when the <command>groupadd</command> is called directly
-		by the Samba interface script for the <smbconfoption><name>add group script</name></smbconfoption> in
+		by the Samba interface script for the <smbconfoption name="add group script"/> in
 		the &smb.conf; file.
 		</para>
 
