@@ -88,7 +88,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
                   "good" : "bad"));
 
  done:
-	state->response.data.num_entries = NT_STATUS_V(result);
+	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, get_nt_error_msg(result));
 	fstrcpy(state->response.data.auth.error_string, get_nt_error_msg(result));
 	/*state->response.data.auth.pam_error = nt_status_to_pam(result);*/
