@@ -115,11 +115,21 @@ CLASS="COMMAND"
 > accesses the local smbpasswd file 
 	directly, thus enabling changes to be made even if smbd is not 
 	running. </P
+><P
+><B
+CLASS="COMMAND"
+>smbpasswd</B
+> can also be used to retrieve 
+	the SIDs related to previous incarnations of this server on the
+	same machine, as well as set the SID of this domain. This is needed
+	in those cases when the admin changes the NetBIOS or DNS name of 
+	the server without realizing that doing so will change the SID of
+	the server as well. See the -W and -X options below. </P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN36"
+NAME="AEN38"
 ></A
 ><H2
 >OPTIONS</H2
@@ -329,6 +339,24 @@ CLASS="PARAMETER"
 ><P
 >In particular, this parameter specifies the username
                 used to create the machine account when invoked with -j</P
+></DD
+><DT
+>-W S-1-5-21-x-y-z</DT
+><DD
+><P
+>This option forces the SID S-1-5-21-x-y-z to
+		be the server and domain SID for the current Samba server. It
+		does this by updating the appropriate keys in the secrets
+		file. </P
+></DD
+><DT
+>-X server|domain</DT
+><DD
+><P
+>This option allows the admin to retrieve the 
+		SID associated with a former servername or domain name that
+		this Samba server might have used. It does this by retrieving
+		the appropriate entry from the secrets file.</P
 ></DD
 ><DT
 ><B
@@ -685,7 +713,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN213"
+NAME="AEN223"
 ></A
 ><H2
 >NOTES</H2
@@ -728,7 +756,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN223"
+NAME="AEN233"
 ></A
 ><H2
 >VERSION</H2
@@ -739,7 +767,7 @@ NAME="AEN223"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN226"
+NAME="AEN236"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -762,7 +790,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN232"
+NAME="AEN242"
 ></A
 ><H2
 >AUTHOR</H2

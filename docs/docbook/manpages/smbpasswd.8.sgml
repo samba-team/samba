@@ -228,12 +228,13 @@
 
 		<varlistentry>
 		<term> -X server|domain</term>
-		<listitme><para>This option allows the admin to retrieve the 
+		<listitem><para>This option allows the admin to retrieve the 
 		SID associated with a former servername or domain name that
 		this Samba server might have used. It does this by retrieving
 		the appropriate entry from the secrets file.</para>
 		</listitem>
-		</varlistitem>
+		</varlistentry>
+
 <varlistentry>
 <term><command>NOTE:</command></term>
 <listitem><para>
