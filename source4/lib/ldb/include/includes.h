@@ -18,15 +18,15 @@
 #include <fnmatch.h>
 #include <sys/time.h>
 #include <time.h>
+#include <stdint.h>
 
 #include "ldb.h"
 #include "ldb_private.h"
+#include "talloc.h"
 
-#ifdef HAVE_INTPTR_T
+#if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #else
 #define discard_const(ptr) ((void *)(ptr))
 #endif
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
-
-

@@ -99,7 +99,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	}
 
 	/* allocate it */
-	data->dptr = ldb_malloc(ldb, size);
+	data->dptr = talloc_array_p(ldb, char, size);
 	if (!data->dptr) {
 		errno = ENOMEM;
 		return -1;
@@ -144,25 +144,14 @@ int ltdb_pack_data(struct ldb_module *module,
 void ltdb_unpack_data_free(struct ldb_module *module,
 			   struct ldb_message *message)
 {
-	struct ldb_context *ldb = module->ldb;
-	unsigned int i;
-
-	for (i=0;i<message->num_elements;i++) {
-		if (message->elements[i].values) ldb_free(ldb, message->elements[i].values);
-	}
-	if (message->elements) ldb_free(ldb, message->elements);
+	talloc_free(message->elements);
 }
 
 
 /*
   unpack a ldb message from a linear buffer in TDB_DATA
 
-  note that this does not fill in the class and key elements
-
-  caller frees. Memory for the elements[] and values[] arrays are
-  malloced, but the memory for the elements is re-used from the
-  TDB_DATA data. This means the caller only has to free the elements
-  and values arrays. This can be done with ltdb_unpack_data_free()
+  Free with ltdb_unpack_data_free()
 */
 int ltdb_unpack_data(struct ldb_module *module,
 		     const struct TDB_DATA *data,
@@ -220,8 +209,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 		goto failed;
 	}
 
-	message->elements = ldb_malloc_array_p(ldb, struct ldb_message_element,
-					       message->num_elements);
+	message->elements = talloc_array_p(ldb, struct ldb_message_element, message->num_elements);
 	if (!message->elements) {
 		errno = ENOMEM;
 		goto failed;
@@ -247,9 +235,9 @@ int ltdb_unpack_data(struct ldb_module *module,
 		message->elements[i].num_values = pull_uint32(p, 0);
 		message->elements[i].values = NULL;
 		if (message->elements[i].num_values != 0) {
-			message->elements[i].values = ldb_malloc_array_p(ldb,
-									 struct ldb_val, 
-									 message->elements[i].num_values);
+			message->elements[i].values = talloc_array_p(message->elements,
+								     struct ldb_val, 
+								     message->elements[i].num_values);
 			if (!message->elements[i].values) {
 				errno = ENOMEM;
 				goto failed;

@@ -48,11 +48,10 @@ ADD_OBJ_FILES = \
 		lib/ldb/common/ldb_msg.o \
 		lib/ldb/common/util.o \
 		lib/ldb/common/ldb_utf8.o \
-		lib/ldb/common/ldb_alloc.o \
 		lib/ldb/common/ldb_debug.o \
 		lib/ldb/common/ldb_modules.o
 REQUIRED_SUBSYSTEMS = \
-		LIBREPLACE
+		LIBREPLACE LIBTALLOC
 NOPROTO = YES
 #
 # End SUBSYSTEM LIBLDB

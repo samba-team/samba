@@ -65,7 +65,7 @@ a filter is defined by:
 /*
   return next token element. Caller frees
 */
-static char *ldb_parse_lex(struct ldb_context *ldb, const char **s, const char *sep)
+static char *ldb_parse_lex(TALLOC_CTX *ctx, const char **s, const char *sep)
 {
 	const char *p = *s;
 	char *ret;
@@ -81,7 +81,7 @@ static char *ldb_parse_lex(struct ldb_context *ldb, const char **s, const char *
 
 	if (strchr(sep, *p)) {
 		(*s) = p+1;
-		ret = ldb_strndup(ldb, p, 1);
+		ret = talloc_strndup(ctx, p, 1);
 		if (!ret) {
 			errno = ENOMEM;
 		}
@@ -96,7 +96,7 @@ static char *ldb_parse_lex(struct ldb_context *ldb, const char **s, const char *
 		return NULL;
 	}
 
-	ret = ldb_strndup(ldb, *s, p - *s);
+	ret = talloc_strndup(ctx, *s, p - *s);
 	if (!ret) {
 		errno = ENOMEM;
 	}
@@ -128,47 +128,46 @@ static const char *match_brace(const char *s)
 }
 
 
-static struct ldb_parse_tree *ldb_parse_filter(struct ldb_context *ldb, const char **s);
+static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *ctx, const char **s);
 
 /*
   <simple> ::= <attributetype> <filtertype> <attributevalue>
 */
-static struct ldb_parse_tree *ldb_parse_simple(struct ldb_context *ldb, const char *s)
+static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *ctx, const char *s)
 {
 	char *eq, *val, *l;
 	struct ldb_parse_tree *ret;
 
-	l = ldb_parse_lex(ldb, &s, LDB_ALL_SEP);
-	if (!l) {
-		return NULL;
-	}
-
-	if (strchr("()&|=", *l)) {
-		ldb_free(ldb, l);
-		return NULL;
-	}
-
-	eq = ldb_parse_lex(ldb, &s, LDB_ALL_SEP);
-	if (!eq || strcmp(eq, "=") != 0) {
-		ldb_free(ldb, l);
-		if (eq) ldb_free(ldb, eq);
-		return NULL;
-	}
-	ldb_free(ldb, eq);
-
-	val = ldb_parse_lex(ldb, &s, ")");
-	if (val && strchr("()&|", *val)) {
-		ldb_free(ldb, l);
-		if (val) ldb_free(ldb, val);
-		return NULL;
-	}
-	
-	ret = ldb_malloc_p(ldb, struct ldb_parse_tree);
+	ret = talloc_p(ctx, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
+	l = ldb_parse_lex(ret, &s, LDB_ALL_SEP);
+	if (!l) {
+		talloc_free(ret);
+		return NULL;
+	}
+
+	if (strchr("()&|=", *l)) {
+		talloc_free(ret);
+		return NULL;
+	}
+
+	eq = ldb_parse_lex(ret, &s, LDB_ALL_SEP);
+	if (!eq || strcmp(eq, "=") != 0) {
+		talloc_free(ret);
+		return NULL;
+	}
+	talloc_free(eq);
+
+	val = ldb_parse_lex(ret, &s, ")");
+	if (val && strchr("()&|", *val)) {
+		talloc_free(ret);
+		return NULL;
+	}
+	
 	ret->operation = LDB_OP_SIMPLE;
 	ret->u.simple.attr = l;
 	ret->u.simple.value.data = val;
@@ -184,12 +183,12 @@ static struct ldb_parse_tree *ldb_parse_simple(struct ldb_context *ldb, const ch
   <or> ::= '|' <filterlist>
   <filterlist> ::= <filter> | <filter> <filterlist>
 */
-static struct ldb_parse_tree *ldb_parse_filterlist(struct ldb_context *ldb,
+static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *ctx,
 						   enum ldb_parse_op op, const char *s)
 {
 	struct ldb_parse_tree *ret, *next;
 
-	ret = ldb_malloc_p(ldb, struct ldb_parse_tree);
+	ret = talloc_p(ctx, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -197,31 +196,29 @@ static struct ldb_parse_tree *ldb_parse_filterlist(struct ldb_context *ldb,
 
 	ret->operation = op;
 	ret->u.list.num_elements = 1;
-	ret->u.list.elements = ldb_malloc_p(ldb, struct ldb_parse_tree *);
+	ret->u.list.elements = talloc_p(ret, struct ldb_parse_tree *);
 	if (!ret->u.list.elements) {
 		errno = ENOMEM;
-		ldb_free(ldb, ret);
+		talloc_free(ret);
 		return NULL;
 	}
 
-	ret->u.list.elements[0] = ldb_parse_filter(ldb, &s);
+	ret->u.list.elements[0] = ldb_parse_filter(ret->u.list.elements, &s);
 	if (!ret->u.list.elements[0]) {
-		ldb_free(ldb, ret->u.list.elements);
-		ldb_free(ldb, ret);
+		talloc_free(ret);
 		return NULL;
 	}
 
 	while (isspace(*s)) s++;
 
-	while (*s && (next = ldb_parse_filter(ldb, &s))) {
+	while (*s && (next = ldb_parse_filter(ret->u.list.elements, &s))) {
 		struct ldb_parse_tree **e;
-		e = ldb_realloc_p(ldb, ret->u.list.elements, 
-				  struct ldb_parse_tree *, 
-				  ret->u.list.num_elements+1);
+		e = talloc_realloc_p(ret, ret->u.list.elements, 
+				     struct ldb_parse_tree *, 
+				     ret->u.list.num_elements+1);
 		if (!e) {
 			errno = ENOMEM;
-			ldb_parse_tree_free(ldb, next);
-			ldb_parse_tree_free(ldb, ret);
+			talloc_free(ret);
 			return NULL;
 		}
 		ret->u.list.elements = e;
@@ -237,20 +234,20 @@ static struct ldb_parse_tree *ldb_parse_filterlist(struct ldb_context *ldb,
 /*
   <not> ::= '!' <filter>
 */
-static struct ldb_parse_tree *ldb_parse_not(struct ldb_context *ldb, const char *s)
+static struct ldb_parse_tree *ldb_parse_not(TALLOC_CTX *ctx, const char *s)
 {
 	struct ldb_parse_tree *ret;
 
-	ret = ldb_malloc_p(ldb, struct ldb_parse_tree);
+	ret = talloc_p(ctx, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	ret->operation = LDB_OP_NOT;
-	ret->u.not.child = ldb_parse_filter(ldb, &s);
+	ret->u.not.child = ldb_parse_filter(ret, &s);
 	if (!ret->u.not.child) {
-		ldb_free(ldb, ret);
+		talloc_free(ret);
 		return NULL;
 	}
 
@@ -261,49 +258,48 @@ static struct ldb_parse_tree *ldb_parse_not(struct ldb_context *ldb, const char 
   parse a filtercomp
   <filtercomp> ::= <and> | <or> | <not> | <simple>
 */
-static struct ldb_parse_tree *ldb_parse_filtercomp(struct ldb_context *ldb, 
-						   const char *s)
+static struct ldb_parse_tree *ldb_parse_filtercomp(TALLOC_CTX *ctx, const char *s)
 {
 	while (isspace(*s)) s++;
 
 	switch (*s) {
 	case '&':
-		return ldb_parse_filterlist(ldb, LDB_OP_AND, s+1);
+		return ldb_parse_filterlist(ctx, LDB_OP_AND, s+1);
 
 	case '|':
-		return ldb_parse_filterlist(ldb, LDB_OP_OR, s+1);
+		return ldb_parse_filterlist(ctx, LDB_OP_OR, s+1);
 
 	case '!':
-		return ldb_parse_not(ldb, s+1);
+		return ldb_parse_not(ctx, s+1);
 
 	case '(':
 	case ')':
 		return NULL;
 	}
 
-	return ldb_parse_simple(ldb, s);
+	return ldb_parse_simple(ctx, s);
 }
 
 
 /*
   <filter> ::= '(' <filtercomp> ')'
 */
-static struct ldb_parse_tree *ldb_parse_filter(struct ldb_context *ldb, const char **s)
+static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *ctx, const char **s)
 {
 	char *l, *s2;
 	const char *p, *p2;
 	struct ldb_parse_tree *ret;
 
-	l = ldb_parse_lex(ldb, s, LDB_ALL_SEP);
+	l = ldb_parse_lex(ctx, s, LDB_ALL_SEP);
 	if (!l) {
 		return NULL;
 	}
 
 	if (strcmp(l, "(") != 0) {
-		ldb_free(ldb, l);
+		talloc_free(l);
 		return NULL;
 	}
-	ldb_free(ldb, l);
+	talloc_free(l);
 
 	p = match_brace(*s);
 	if (!p) {
@@ -311,14 +307,14 @@ static struct ldb_parse_tree *ldb_parse_filter(struct ldb_context *ldb, const ch
 	}
 	p2 = p + 1;
 
-	s2 = ldb_strndup(ldb, *s, p - *s);
+	s2 = talloc_strndup(ctx, *s, p - *s);
 	if (!s2) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	ret = ldb_parse_filtercomp(ldb, s2);
-	ldb_free(ldb, s2);
+	ret = ldb_parse_filtercomp(ctx, s2);
+	talloc_free(s2);
 
 	*s = p2;
 
@@ -347,27 +343,6 @@ struct ldb_parse_tree *ldb_parse_tree(struct ldb_context *ldb, const char *s)
 */
 void ldb_parse_tree_free(struct ldb_context *ldb, struct ldb_parse_tree *tree)
 {
-	unsigned int i;
-
-	switch (tree->operation) {
-	case LDB_OP_SIMPLE:
-		ldb_free(ldb, tree->u.simple.attr);
-		if (tree->u.simple.value.data) ldb_free(ldb, tree->u.simple.value.data);
-		break;
-
-	case LDB_OP_AND:
-	case LDB_OP_OR:
-		for (i=0;i<tree->u.list.num_elements;i++) {
-			ldb_parse_tree_free(ldb, tree->u.list.elements[i]);
-		}
-		if (tree->u.list.elements) ldb_free(ldb, tree->u.list.elements);
-		break;
-
-	case LDB_OP_NOT:
-		ldb_parse_tree_free(ldb, tree->u.not.child);
-		break;
-	}
-
-	ldb_free(ldb, tree);
+	talloc_free(tree);
 }
 

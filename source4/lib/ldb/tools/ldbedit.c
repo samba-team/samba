@@ -48,7 +48,7 @@ static void ldif_write_msg(struct ldb_context *ldb,
 {
 	struct ldb_ldif ldif;
 	ldif.changetype = changetype;
-	ldif.msg = *msg;
+	ldif.msg = msg;
 	ldb_ldif_write_file(ldb, f, &ldif);
 }
 
@@ -60,14 +60,16 @@ static int modify_record(struct ldb_context *ldb,
 			 struct ldb_message *msg1,
 			 struct ldb_message *msg2)
 {
-	struct ldb_message mod;
+	struct ldb_message *mod;
 	struct ldb_message_element *el;
 	unsigned int i;
 	int count = 0;
 
-	mod.dn = msg1->dn;
-	mod.num_elements = 0;
-	mod.elements = NULL;
+	mod = ldb_msg_new(ldb);
+
+	mod->dn = msg1->dn;
+	mod->num_elements = 0;
+	mod->elements = NULL;
 
 	msg2 = ldb_msg_canonicalize(ldb, msg2);
 	if (msg2 == NULL) {
@@ -84,7 +86,7 @@ static int modify_record(struct ldb_context *ldb,
 			continue;
 		}
 
-		if (ldb_msg_add(ldb, &mod, 
+		if (ldb_msg_add(ldb, mod, 
 				&msg2->elements[i],
 				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != 0) {
 			return -1;
@@ -96,7 +98,7 @@ static int modify_record(struct ldb_context *ldb,
 	for (i=0;i<msg1->num_elements;i++) {
 		el = ldb_msg_find_element(msg2, msg1->elements[i].name);
 		if (!el) {
-			if (ldb_msg_add_empty(ldb, &mod, 
+			if (ldb_msg_add_empty(ldb, mod, 
 					      msg1->elements[i].name,
 					      LDB_FLAG_MOD_DELETE) != 0) {
 				return -1;
@@ -105,18 +107,18 @@ static int modify_record(struct ldb_context *ldb,
 		}
 	}
 
-	if (mod.num_elements == 0) {
+	if (mod->num_elements == 0) {
 		return 0;
 	}
 
-	if (ldb_modify(ldb, &mod) != 0) {
+	if (ldb_modify(ldb, mod) != 0) {
 		fprintf(stderr, "failed to modify %s - %s\n", 
 			msg1->dn, ldb_errstring(ldb));
 		return -1;
 	}
 
 	if (verbose > 0) {
-		ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_MODIFY, &mod);
+		ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_MODIFY, mod);
 	}
 
 	return count;
@@ -205,7 +207,7 @@ static int save_ldif(struct ldb_context *ldb,
 		fprintf(f, "# record %d\n", i+1);
 
 		ldif.changetype = LDB_CHANGETYPE_NONE;
-		ldif.msg = *msgs[i];
+		ldif.msg = msgs[i];
 
 		ldb_ldif_write_file(ldb, f, &ldif);
 	}
@@ -278,12 +280,12 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 	}
 
 	while ((ldif = ldb_ldif_read_file(ldb, f))) {
-		msgs2 = ldb_realloc_p(ldb, msgs2, struct ldb_message *, count2+1);
+		msgs2 = talloc_realloc_p(ldb, msgs2, struct ldb_message *, count2+1);
 		if (!msgs2) {
 			fprintf(stderr, "out of memory");
 			return -1;
 		}
-		msgs2[count2++] = &ldif->msg;
+		msgs2[count2++] = ldif->msg;
 	}
 
 	fclose(f);
