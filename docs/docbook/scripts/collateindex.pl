@@ -1,6 +1,5 @@
 # -*- Perl -*-
 #
-# $Id: collateindex.pl,v 1.1.2.1 2001/07/05 16:00:22 jerry Exp $
 
 use Getopt::Std;
 

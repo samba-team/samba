@@ -1,7 +1,5 @@
 #!/bin/sh
 #
-# "$Id: samba.sh,v 1.1.2.1 2001/07/03 01:01:09 jra Exp $"
-#
 # SAMBA startup (init) script for LSB-compliant systems.
 #
 # Provides: smbd nmbd
@@ -76,5 +74,5 @@ esac
 exit 0
 
 #
-# End of "$Id: samba.sh,v 1.1.2.1 2001/07/03 01:01:09 jra Exp $".
+# End of "$Id: samba.sh,v 1.1.2.2 2001/07/06 01:27:42 jra Exp $".
 #
