@@ -35,8 +35,8 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 /* we need to have a small set of default forms to support our
    default printer */
 static nt_forms_struct default_forms[] = {
-	{"A4", 0xb0, 0x3354f, 0x4884e, 0x0, 0x0, 0x3354f, 0x4884e},
-	{"Letter", 0x20, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367}
+	{"Letter", 0x20, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367},
+	{"A4", 0xb0, 0x3354f, 0x4884e, 0x0, 0x0, 0x3354f, 0x4884e}
 };
 
 
@@ -100,8 +100,8 @@ int get_ntforms(nt_forms_struct **list)
 
 	/* we should never return a null forms list or NT gets unhappy */
 	if (n == 0) {
-		*list = (nt_forms_struct *)memdup(&default_forms, sizeof(default_forms));
-		n = sizeof(sizeof(default_forms))/ sizeof(sizeof(default_forms[0]));
+		*list = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
+		n = sizeof(default_forms) / sizeof(default_forms[0]);
 	}
 	
 
