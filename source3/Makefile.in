@@ -457,13 +457,13 @@ $(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.i
 
 # automatic dependency tracking rules
 .deps/.dummy:
-	@-if test ! -d .deps; then rm -rf .deps; mkdir .deps; fi
+	@-if test ! -d .deps; then mkdir .deps || true; else true; fi
 	@: >$@
 
 .deps/.stamp: .deps/.dummy
 	@:
 
 .deps/.P: .deps/.stamp
-	@-cat .deps/*.P >$@ 2>/dev/null
+	@cat .deps/*.P >$@ 2>/dev/null || true
 
 @MAINT@-include .deps/.P
