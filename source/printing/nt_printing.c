@@ -414,6 +414,13 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	fstrcpy(driver.dependentfiles[i], "");
 
 	free(dbuf.dptr);
+
+	if (len != dbuf.dsize) {
+		return 1;
+	}
+
+	*info_ptr = (NT_PRINTER_DRIVER_INFO_LEVEL_3 *)memdup(&driver, sizeof(driver));
+
 	return 0;
 }
 
@@ -447,7 +454,8 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 				DEBUGADD(106,("monitorname:[%s]\n",     info3->monitorname));
 				DEBUGADD(106,("defaultdatatype:[%s]\n", info3->defaultdatatype));
 				
-				for (i=0; *info3->dependentfiles[i]; i++) {
+				for (i=0; info3->dependentfiles &&
+					  *info3->dependentfiles[i]; i++) {
 					DEBUGADD(106,("dependentfile:[%s]\n", 
 						      info3->dependentfiles[i]));
 				}
