@@ -98,7 +98,8 @@ ADD_OBJ_FILES = \
 		torture/rpc/samsync.o \
 		torture/rpc/rot.o \
 		torture/rpc/bind.o \
-		torture/rpc/dssetup.o
+		torture/rpc/dssetup.o \
+		torture/rpc/alter_context.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_ALL RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_OXIDRESOLVER \
 		RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \

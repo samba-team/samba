@@ -65,8 +65,8 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
-static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			     struct policy_handle *handle)
+BOOL test_lsa_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			  struct policy_handle *handle)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -1298,9 +1298,9 @@ static BOOL test_GetUserName(struct dcerpc_pipe *p,
 	return ret;
 }
 
-static BOOL test_Close(struct dcerpc_pipe *p, 
-		       TALLOC_CTX *mem_ctx, 
-		       struct policy_handle *handle)
+BOOL test_lsa_Close(struct dcerpc_pipe *p, 
+		    TALLOC_CTX *mem_ctx, 
+		    struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct lsa_Close r;
@@ -1351,7 +1351,7 @@ BOOL torture_rpc_lsa(void)
 		ret = False;
 	}
 
-	if (!test_OpenPolicy2(p, mem_ctx, &handle)) {
+	if (!test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
@@ -1401,7 +1401,7 @@ BOOL torture_rpc_lsa(void)
 	}
 #endif
 	
-	if (!test_Close(p, mem_ctx, &handle)) {
+	if (!test_lsa_Close(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 

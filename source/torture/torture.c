@@ -2450,6 +2450,7 @@ static struct {
 	{"RPC-LOGIN", torture_rpc_login, 0},
 	{"RPC-ROT", torture_rpc_rot, 0},
 	{"RPC-DSSETUP", torture_rpc_dssetup, 0},
+        {"RPC-ALTERCONTEXT", torture_rpc_alter_context, 0},
 
 	/* Distributed COM testers */
 	{"DCOM-SIMPLE", torture_dcom_simple, 0},
