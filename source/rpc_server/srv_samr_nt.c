@@ -234,6 +234,8 @@ static uint32 jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 		return NT_STATUS_NO_PROBLEMO;
 }
 
+#if 0 /* This function appears to be unused! */
+
 /*******************************************************************
  This function uses the username map file and tries to map a UNIX
  user name to an DOS name.  (Sort of the reverse of the
@@ -312,6 +314,10 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 	file_lines_free(lines);
 	return NULL;
 }
+
+#endif /* Unused function */
+
+#if 0 /* This function seems to be not used anywhere! */
 
 /*******************************************************************
  This function sets up a list of users taken from the list of
@@ -480,6 +486,8 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 done:
 	return (*num_entries) > 0;
 }
+
+#endif /* Unused function */
 
 /*******************************************************************
  _samr_close_hnd
