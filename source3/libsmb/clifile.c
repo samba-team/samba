@@ -710,14 +710,15 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 	if (!*path2) *path2 = '\\';
 	
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,0,4 + strlen(path2),True);
+	set_message(cli->outbuf,0,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBchkpth);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	safe_strcpy(p,path2,strlen(path2));
-	unix_to_dos(p,True);
+	p += clistr_push(cli, p, path2, -1, CLISTR_TERMINATE | CLISTR_CONVERT);
+
+	set_message(cli->outbuf,0,PTR_DIFF(p, smb_buf(cli->outbuf)), False);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
