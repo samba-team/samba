@@ -3276,7 +3276,7 @@ static BOOL run_opentest(int dummy)
 				   FILE_SHARE_NONE, FILE_OPEN_IF, 0);
 
 	if (fnum2 != -1) {
-		printf("test 4 open 2 of %s SUCCEEDED - should have failed\n", fname, cli_errstr(&cli2));
+		printf("test 4 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, cli_errstr(&cli2));
 		return False;
 	}
 
@@ -3369,7 +3369,7 @@ static BOOL run_opentest(int dummy)
 				   FILE_SHARE_READ|FILE_SHARE_DELETE, FILE_OPEN_IF, 0);
 
 	if (fnum2 != -1) {
-		printf("test 7 open 2 of %s SUCCEEDED - should have failed\n", fname, cli_errstr(&cli2));
+		printf("test 7 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, cli_errstr(&cli2));
 		return False;
 	}
 
