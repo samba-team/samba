@@ -142,13 +142,13 @@ interface nbt
 	} nbt_rdata_status;
 
 	typedef struct {
-		nbt_operation operation;
-	} nbt_rdata_wack;
+		[flag(NDR_REMAINING)] DATA_BLOB data;
+	} nbt_rdata_data;
 
 	typedef [nodiscriminant] union {
 		[case(NBT_QTYPE_NETBIOS)] nbt_rdata_netbios netbios;
 		[case(NBT_QTYPE_STATUS)]  nbt_rdata_status status;
-		[case(NBT_QTYPE_NULL)]    nbt_rdata_wack wack;
+		[default]                 nbt_rdata_data   data;
 	} nbt_rdata;
 
 	typedef [flag(LIBNDR_PRINT_ARRAY_HEX)] struct {

@@ -185,7 +185,7 @@ enum ndr_err_code {
 		} \
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	} \
-	if (ndr->offset >= ndr->data_size) { \
+	if (ndr->offset > ndr->data_size) { \
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull align %u", n); \
 	} \
 } while(0)
