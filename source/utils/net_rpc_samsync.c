@@ -380,8 +380,11 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	}
 
 	if (delta->hdr_parameters.buffer) {
+		DATA_BLOB mung;
 		old_string = pdb_get_munged_dial(account);
-		new_string = unistr2_static(&delta->uni_parameters);
+		mung.length = delta->hdr_parameters.uni_str_len;
+		mung.data = (uint8 *) delta->uni_parameters.buffer;
+		new_string = (mung.length == 0) ? NULL : base64_encode_data_blob(mung);
 
 		if (STRING_CHANGED)
 			pdb_set_munged_dial(account, new_string, PDB_CHANGED);
@@ -408,10 +411,29 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 			pdb_set_logoff_time(account, unix_time,PDB_CHANGED);
 	}
 
+	/* Logon Divs */
 	if (pdb_get_logon_divs(account) != delta->logon_divs)
 		pdb_set_logon_divs(account, delta->logon_divs, PDB_CHANGED);
 
-	/* TODO: logon hours */
+	/* Max Logon Hours */
+	if (delta->unknown1 != pdb_get_unknown_6(account)) {
+		pdb_set_unknown_6(account, delta->unknown1, PDB_CHANGED);
+	}
+
+	/* Logon Hours Len */
+	if (delta->buf_logon_hrs.buf_len != pdb_get_hours_len(account)) {
+		pdb_set_hours_len(account, delta->buf_logon_hrs.buf_len, PDB_CHANGED);
+	}
+
+	/* Logon Hours */
+	if (delta->buf_logon_hrs.buffer) {
+		pstring old, new;
+		pdb_sethexhours(old, pdb_get_hours(account));
+		pdb_sethexhours(new, (const char *)delta->buf_logon_hrs.buffer);
+		if (!strequal(old, new))
+			pdb_set_hours(account, (const char *)delta->buf_logon_hrs.buffer, PDB_CHANGED);
+	}
+
 	if (pdb_get_bad_password_count(account) != delta->bad_pwd_count)
 		pdb_set_bad_password_count(account, delta->bad_pwd_count, PDB_CHANGED);
 

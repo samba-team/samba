@@ -1,17 +1,26 @@
-                   ==============================
-                   Release Notes for Samba 3.0.10
-                             Dec 16, 2004
-                   ==============================
+                   ==================================
+                   Release Notes for Samba 3.0.11pre1
+                                Jan 4, 2005
+                   ===================================
 
-This is the latest stable release of Samba. This is the version
-that production Samba servers should be running for all current 
-bug-fixes.  This is primarily a security release to address 
-CAN-2004-1154.  See the "Changes" section for details on exact 
-updates.
+This is a preview release of the Samba 3.0.2 code base and
+is provided for testing only.  This release is *not* intended
+for production servers.  However, there have been several bug
+fixes since 3.0.10 that we feel are important to make available
+to the Samba community for wider testing.
 
-Common bugs fixed in 3.0.10 include:
+Common bugs fixed in 3.0.11pre1 include:
 
-  o Fix for security issues described in CAN-2004-1154.
+  o Numerous printing bugs bugs including memory 
+    bloating on large/busy print servers.
+  o Compatibility issues with Exchange 5.5 SP4.
+  o sendfile fixes.
+
+Additional features introduced in Samba 3.0.11pre1:
+
+  o Winbindd performance improvements.
+  o More 'net rpc campire' functionality.
+ 
 
 
 
@@ -19,6 +28,258 @@ Common bugs fixed in 3.0.10 include:
 Changes
 #######
 
+Changes since 3.0.10
+--------------------
+
+smb.conf changes
+----------------
+    Parameter Name              	Action
+    --------------              	------
+    afs token lifetime			New
+    min password length			Deprecated
+
+    
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Extend vfs to add seekdir/telldir/rewinddir.
+    * Fix dirent return.
+    * Fix bugs when handling secondary trans2 requests.
+    * Implementation of get posix acls in UNIX extensions.
+    * Added set posix acl functionality into the UNIX extensions code.
+    * Updated config.guess/config.sub .
+    * Fix error reply when 'follow symlinks = no'.
+    * BUG 1061, 2045: Only set mtime from pending_modtime if it's 
+      not already zero.
+    * Fixes for LARGE_READX support.
+    * Fix the problem we get on Linux where sendfile fails, but we've
+      already sent the header using send().
+    * BUG 2081: Ensure SE_DESC_DACL_PROTECTED is set if 'map acl 
+      inherit = no'.
+    * BUG 2088: Ensure inherit permissions is only applied on a new 
+      file, not an existing one.
+    * Don't go fishing for the krb5 authorisation data unless we know
+      it's there.
+    * BUG 2110: Ensure we convert to ucs2 correctly after the 
+      CAN-2004-0930 patch.
+    * Make strict locking an enum. Auto means use oplock optimization.
+    * Fix client  & server to allow 127k READX calls.
+    * More *alloc fixes (includes additional fixes by Albert Chin.
+    * Catch sendfile errors correctly and return the correct values 
+      we want the caller to return.
+
+
+o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 2100: change the way we check for errors after a dlopen().
+    
+    
+o   Andrew Bartlett <abartlet@samba.org>
+    * Clarify error message when 'lanman auth = no'.
+    * Remove the unnecessary UTF-8 conversion calls in the calls to
+      auth_winbind from smbd.
+    
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 2073: fall back to smb_name if current_user_info is not
+      available in lp_file_list_changed().
+    * Fixes the spurious 'register_message_flags: tdb fetch failed' 
+      errors.
+    * Don't run the backgroup LPQ daemon when we are running in
+      interactive mode.
+    * prevent the background LPQ daemon from updating the print queue
+      cache just because multiple smbd processes sent a message that
+      it was out of date.
+    * consolidate printer searches to use find_service rather than 
+      for(...) loops.
+    * BUG 2091: don't remove statically defined printers in 
+      remove_stale_printers().
+    * Fix logic error in add_a_form() that only compared N characters 
+      instead of the entire form name.
+    * BUG 2107: fix memory bloating caused by large numbers of 
+      print_queue_updates() requests sent via messages.tdb.
+    * Check the setprinter(3) based on the access permissions on 
+      the handle and avoid the call to print_access_chaeck().
+      
+
+o   Nadav Danieli <nadavd@exanet.com>
+    * Short circuit some is_locked() tests if we are oplocked.
+    
+    
+o   Guenther Deschner <gd@samba.org> 
+    * Allow 'localhost' as a valid server name in the smbd for the
+      spoolss calls.
+    * Fix KRB5_SETPW-defines, no change in behaviour (Thanks to Luke
+      Mewburn for the input).
+    * BUG 2059: Add additional checks needed after logic change to the
+      HAVE_WRFILE_KEYTAB detection test.
+    * BUG 1076: Fix interaction with Exchange 5.5. SP4 and a 
+      Samba DC.  Allow us to lookup at least our own SID.
+    * More fixes to have proper german in swat (Thanks to Reiner 
+      Klaproth and Björn Jacke.
+    * BUG 404, 2076: Allow to set OWNER- and GROUP-entries while 
+      setting security descriptors with smbcacls and using with 
+      the -S or -M switch. 
+    * Include the munged_dial, bad_password_count, lopgon_count, and 
+      logon_hours attributes when running 'net rpc vampire'.
+    * Fix segfault in idmap_rid.
+    * When winbindd is operating in the multi-mapping mode of 
+      idmap_rid, allow BUILTIN domain-mapping.
+    * Display infolevel 12 in query_dom_info in rpcclient.
+    * Fix bug in winbindd's lowercasing of usernames.
+    * Allow -v or -l for displaying verbose groupmap-listing 
+      as well as "verbose".
+    * Backport Samba4 SAM_DELTA_DOMAIN_INFO for use in 'net rpc 
+      vampire'.
+    * Close LDAP-Connection before retrying to open a new connection 
+      in the retry-loop.
+    * Marking "min password length" as depreciated.  
+    * Implement SAMR query_dom_info-call info-level 8 server- and 
+      client-side, based on samba4-idl.
+
+
+
+o   Jay Fenlason <fenlason@redhat.com>
+    * Fix crash in 'net join' due to calling free on 
+      static buffers.
+
+
+o   Rob Foehl <rwf@loonybin.net>.
+    * Compiler warnings.
+    * Try modifying printer published attributes before adding it a
+      new entry in AD.
+    * Solaris packaging fixes.
+    * Don't force the cups printer-make-and-model tag as the comment
+      for autoloaded printers.
+    
+
+o   Johann Hanne <jhml@gmx.net>
+    * BUG 2038: Only fail winbindd_getgroups() if all lookups fail.
+
+
+o   David Hu <david.hu@hp.com>
+    * Copy structure from print_queue_update() message rather than 
+      referencing it.  Fixes seg fault on HP-UX.
+      
+      
+o   Buck Huppmann <buckh@pobox.com>
+    * BUG 2186: Don't free uninitialized credentials.
+    * BUG 2189: Add the HOST/fqdn servicePrincipalName even when 
+      dnsDomainName != realm.
+   
+
+o   Björn Jacke <bjoern@j3e.de>
+    * BUG 2040: Ensure the locale is reset to C to get ASCII-
+      compatible toupper/lower functions.
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * Fix HPUX sendfile and add configure.in tests and code for
+      sendfile on AIX.
+      
+
+o   Volker Lendecke <vl@samba.org>
+    * Optimize anonymous session setups by workstations in a 
+      Samba domain.
+    * Reimplment the QueryUserAliases() server RPC reply.
+    * Re-add the getpwnam-cache for performance.
+    * Cache the result of a pdb_getsampwnam for later SID lookup 
+      queries.
+    * Unify the means of localtaing a user's global groups on a 
+      Samba DC.
+    * Fix bug when serving the 'Start Menu' in a roaming user profile..
+    * Map more pre-defined NT security descriptors to AFS acls.
+    * Add timeout to AD searche requests.
+    * If a connection to a DC is requested (in winbindd), open
+      connections simultaeneously to all DCs found.
+    * Memleak fixes.
+    * Fix logic error in handling of 'printcap name' parameter.
+    * Prevent winbindd from SPAM'ing the log files with 'user root 
+      does not exist'.
+    * Baclkport samr_DomInfo2 IDL specification from Samba 4.
+    * Implement smbstatus -n, don't lookup users and groups.
+    * Implement a stupid mapping that maps the space to another 
+      character choosable by afsacl:space.
+    * Add support for 'net idmap delete <idmap-file> <SID>'.
+    * Add new parameter 'afs token lifetime' tells the AFS client 
+      when to throw away a token (patch from kllin@it.su.se).
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 1952: Try INITSHUTDOWN pipe first, used by newer 
+      clients.  If it fails, fall back to WINREG.
+    * BUG 1770: Remove READ_ATTRIBUTES from GENERIC_EXECUTE.
+
+
+o   Luke Mewburn <lukem@NetBSD.org>
+    * BUG 2150: shmget() - Use POSIX definitions instead of non-
+      standard SHM_.
+      
+
+o   Buchan Milne <bgmilne@mandrake.org>
+    * Mandrake packaging fixes.
+     
+
+o   Lars Mueller <lmuelle@suse.de>
+    * Fix build of libsmbclient on x86_64.
+    * BUG 2013: Fix testsuite build issues when libsmbclient.so 
+      is installed in a non-default location.
+    * BUG 2050: Calculate max_fd for select correctly.
+    * Fix inverted logic heck for HAVE_WRFILE_KEYTAB in autoconf 
+      script.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * BUG 2069: Remove unused variables.
+    * BUG 2075: Remove dead code paths.
+    * BUG 2083: Fix compiler warnings caused by bad type casts.
+
+
+o   Gavrie Philipson <gavrie@disksites.com>
+    * BUG 1838: Remove stale printers imeeddiately when 
+      processing a SIGHUP and during smb.conf reload.
+
+      
+o   Tim Potter <tpot@samba.org>
+    * BUG 2080: Fix duplicate call to pdb_get_acct_desc().
+    * BUG 2168: Fix cast in SMB_XMALLOC_ARRAY.
+    * Change the license for the winbindd external interface 
+      more liberal.
+    * HP-UX compile fixes.
+
+    
+o   Simo Sorce <idra@samba.org>
+    * Backport pdbedit changes from trunk.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Bring Samba3 into line with the Samba4 password change code.
+    
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Bug fixes for pdb_{xml,pqsql,xml}
+
+
+o   Shiro Yamada <shiro@miraclelinux.com>
+    * BUG 2190: Force SWAT to display parameters in unix charset and 
+      not UTF-8.
+
+
+
+Changes for older versions follow below:
+
+      --------------------------------------------------
+                   ==============================
+                   Release Notes for Samba 3.0.10
+                             Dec 16, 2004
+                   ==============================
+
+Common bugs fixed in 3.0.10 include:
+
+  o Fix for security issues described in CAN-2004-1154.
+
+
+      
 Changes since 3.0.9
 -------------------
 
@@ -44,8 +305,6 @@ o   Luke Mewburn <lukem@NetBSD.org>
       destination directory used by the docs.
      
 
-
-Changes for older versions follow below:
 
       --------------------------------------------------
 
