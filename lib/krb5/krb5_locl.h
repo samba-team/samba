@@ -110,10 +110,6 @@
 
 /* data.c */
 
-krb5_error_code krb5_data_alloc(krb5_data *, int);
-krb5_error_code krb5_data_realloc(krb5_data *, int);
-krb5_error_code krb5_data_copy(krb5_data *, void *, size_t);
-
 /* set_default_realm.c */
 
 krb5_error_code

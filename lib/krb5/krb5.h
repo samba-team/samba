@@ -1013,6 +1013,9 @@ extern const char krb5_defkeyname[];
 
 void		krb5_data_zero(krb5_data *);
 void 		krb5_data_free(krb5_data *);
+krb5_error_code krb5_data_alloc(krb5_data *, int);
+krb5_error_code krb5_data_realloc(krb5_data *, int);
+krb5_error_code krb5_data_copy(krb5_data *, void *, size_t);
 
 void krb5_free_context(krb5_context context);
 
