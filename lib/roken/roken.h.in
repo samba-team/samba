@@ -123,6 +123,8 @@ extern "C" {
 #endif
 #endif
 
+#include <roken-common.h>
+
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
 #endif
@@ -519,6 +521,9 @@ getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
 		     char *serv, size_t servlen,
 		     int flags);
 
+int
+roken_getaddrinfo_hostspec(const char *, int, struct addrinfo **);
+
 #ifndef HAVE_STRFTIME
 size_t
 strftime (char *buf, size_t maxsize, const char *format,
@@ -565,8 +570,6 @@ struct hostent* roken_gethostbyaddr(const void*, size_t, int);
 #endif
 
 void set_progname(char *argv0);
-
-#include <roken-common.h>
 
 #ifdef __cplusplus
 }
