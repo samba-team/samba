@@ -459,19 +459,60 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 }
 
 /****************************************************************************
+ Ensure the enforced permissions for this share apply.
+****************************************************************************/
+
+static mode_t apply_default_perms(files_struct *fsp, mode_t perms, mode_t type)
+{
+	int snum = SNUM(fsp->conn);
+	mode_t and_bits = (mode_t)0;
+	mode_t or_bits = (mode_t)0;
+
+	/* Get the initial bits to apply. */
+
+	if (fsp->is_directory) {
+		and_bits = lp_dir_mask(snum);
+		or_bits = lp_force_dir_mode(snum);
+	} else {
+		and_bits = lp_create_mask(snum);
+		or_bits = lp_force_create_mode(snum);
+	}
+
+	/* Now bounce them into the S_USR space. */	
+	switch(type) {
+	case S_IRUSR:
+		and_bits = unix_perms_to_acl_perms(and_bits, S_IRUSR, S_IWUSR, S_IXUSR);
+		or_bits = unix_perms_to_acl_perms(or_bits, S_IRUSR, S_IWUSR, S_IXUSR);
+		break;
+	case S_IRGRP:
+		and_bits = unix_perms_to_acl_perms(and_bits, S_IRGRP, S_IWGRP, S_IXGRP);
+		or_bits = unix_perms_to_acl_perms(or_bits, S_IRGRP, S_IWGRP, S_IXGRP);
+		break;
+	case S_IROTH:
+		and_bits = unix_perms_to_acl_perms(and_bits, S_IROTH, S_IWOTH, S_IXOTH);
+		or_bits = unix_perms_to_acl_perms(or_bits, S_IROTH, S_IWOTH, S_IXOTH);
+		break;
+	}
+
+	return ((perms & and_bits)|or_bits);
+}
+
+/****************************************************************************
  A well formed POSIX file or default ACL has at least 3 entries, a 
  SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER_OBJ.
  In addition, the owner must always have at least read access.
  When using this call on get_acl, the pst struct is valid and contains
  the mode of the file. When using this call on set_acl, the pst struct has
- been modified to have a mode of r--------.
+ been modified to have a mode containing the default for this file or directory
+ type.
 ****************************************************************************/
 
 static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 							files_struct *fsp,
 							DOM_SID *pfile_owner_sid,
 							DOM_SID *pfile_grp_sid,
-							SMB_STRUCT_STAT *pst)
+							SMB_STRUCT_STAT *pst,
+							BOOL setting_acl)
 {
 	extern DOM_SID global_sid_World;
 	canon_ace *pace;
@@ -481,16 +522,42 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 
 	for (pace = *pp_ace; pace; pace = pace->next) {
 		if (pace->type == SMB_ACL_USER_OBJ) {
-#if 0 /* This should not be needed on set now. JRA */
-			/* Ensure owner has read access. */
-			if (pace->perms == (mode_t)0)
-				pace->perms = S_IRUSR;
-#endif
+
+			if (setting_acl) {
+				if (pace->perms == (mode_t)0) {
+					/* Ensure owner has read access. */
+					pace->perms = S_IRUSR;
+					if (fsp->is_directory)
+						pace->perms |= (S_IWUSR|S_IXUSR);
+				}
+
+				/*
+				 * Ensure create mask/force create mode is respected on set.
+				 */
+
+				pace->perms = apply_default_perms(fsp, pace->perms, S_IRUSR);
+			}
+
 			got_user = True;
-		} else if (pace->type == SMB_ACL_GROUP_OBJ)
+		} else if (pace->type == SMB_ACL_GROUP_OBJ) {
+
+			/*
+			 * Ensure create mask/force create mode is respected on set.
+			 */
+
+			if (setting_acl)
+				pace->perms = apply_default_perms(fsp, pace->perms, S_IRGRP);
 			got_grp = True;
-		else if (pace->type == SMB_ACL_OTHER)
+		} else if (pace->type == SMB_ACL_OTHER) {
+
+			/*
+			 * Ensure create mask/force create mode is respected on set.
+			 */
+
+			if (setting_acl)
+				pace->perms = apply_default_perms(fsp, pace->perms, S_IROTH);
 			got_other = True;
+		}
 	}
 
 	if (!got_user) {
@@ -505,11 +572,6 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.uid = pst->st_uid;
 		pace->sid = *pfile_owner_sid;
 		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
-#if 0 /* This should not be needed on set now. JRA */
-		/* Ensure owner has read access. */
-		if (pace->perms == (mode_t)0)
-			pace->perms = S_IRUSR;
-#endif
 		pace->attr = ALLOW_ACE;
 
 		DLIST_ADD(*pp_ace, pace);
@@ -550,45 +612,6 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	}
 
 	return True;
-}
-
-/****************************************************************************
- Ensure the enforced permissions for this share apply.
-****************************************************************************/
-
-static mode_t apply_default_perms(files_struct *fsp, mode_t perms, mode_t type)
-{
-	int snum = SNUM(fsp->conn);
-	mode_t and_bits = (mode_t)0;
-	mode_t or_bits = (mode_t)0;
-
-	/* Get the initial bits to apply. */
-
-	if (fsp->is_directory) {
-		and_bits = lp_dir_mask(snum);
-		or_bits = lp_force_dir_mode(snum);
-	} else {
-		and_bits = lp_create_mask(snum);
-		or_bits = lp_force_create_mode(snum);
-	}
-
-	/* Now bounce them into the S_USR space. */	
-	switch(type) {
-	case S_IRUSR:
-		and_bits = unix_perms_to_acl_perms(and_bits, S_IRUSR, S_IWUSR, S_IXUSR);
-		or_bits = unix_perms_to_acl_perms(or_bits, S_IRUSR, S_IWUSR, S_IXUSR);
-		break;
-	case S_IRGRP:
-		and_bits = unix_perms_to_acl_perms(and_bits, S_IRGRP, S_IWGRP, S_IXGRP);
-		or_bits = unix_perms_to_acl_perms(or_bits, S_IRGRP, S_IWGRP, S_IXGRP);
-		break;
-	case S_IROTH:
-		and_bits = unix_perms_to_acl_perms(and_bits, S_IROTH, S_IWOTH, S_IXOTH);
-		or_bits = unix_perms_to_acl_perms(or_bits, S_IROTH, S_IWOTH, S_IXOTH);
-		break;
-	}
-
-	return ((perms & and_bits)|or_bits);
 }
 
 /****************************************************************************
@@ -696,25 +719,13 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 
 		if(sid_equal(&current_ace->sid, pfile_owner_sid)) {
 
-			/* Apply the default mode/mask here. */
-			if (current_ace->attr == ALLOW_ACE)
-				current_ace->perms = apply_default_perms(fsp, current_ace->perms, S_IRUSR);
-
 			current_ace->type = SMB_ACL_USER_OBJ;
 
 		} else if( sid_equal(&current_ace->sid, pfile_grp_sid)) {
 
-			/* Apply the default mode/mask here. */
-			if (current_ace->attr == ALLOW_ACE)
-				current_ace->perms = apply_default_perms(fsp, current_ace->perms, S_IRGRP);
-
 			current_ace->type = SMB_ACL_GROUP_OBJ;
 
 		} else if( sid_equal(&current_ace->sid, &global_sid_World)) {
-
-			/* Apply the default mode/mask here. */
-			if (current_ace->attr == ALLOW_ACE)
-				current_ace->perms = apply_default_perms(fsp, current_ace->perms, S_IROTH);
 
 			current_ace->type = SMB_ACL_OTHER;
 
@@ -1260,7 +1271,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	pst->st_mode = create_default_mode(fsp, False);
 
-	if (!ensure_canon_entry_valid(&file_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst)) {
+	if (!ensure_canon_entry_valid(&file_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -1276,7 +1287,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	pst->st_mode = create_default_mode(fsp, True);
 
-	if (!ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst)) {
+	if (!ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -1290,7 +1301,6 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	return True;
 
 }
-
 
 /******************************************************************************
  When returning permissions, try and fit NT display
@@ -1462,7 +1472,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 	 * This next call will ensure we have at least a user/group/world set.
 	 */
 
-	if (!ensure_canon_entry_valid(&list_head, fsp, powner, pgroup, psbuf))
+	if (!ensure_canon_entry_valid(&list_head, fsp, powner, pgroup, psbuf, False))
 		goto fail;
 
 	arrange_posix_perms(fsp->fsp_name,&list_head );
