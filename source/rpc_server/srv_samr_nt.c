@@ -59,12 +59,9 @@ struct samr_info {
 /*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
-
-static void free_samr_info(void *ptr)
+static void free_samr_db(struct samr_info *info)
 {
 	int i;
-
-	struct samr_info *info=(struct samr_info *) ptr;
 
 	if (info->disp_info.group_dbloaded) {
 		for (i=0; i<info->disp_info.num_account; i++)
@@ -79,7 +76,20 @@ static void free_samr_info(void *ptr)
 
 		SAFE_FREE(info->disp_info.disp_user_info);
 	}
-	
+
+	info->disp_info.user_dbloaded=False;
+	info->disp_info.group_dbloaded=False;
+	info->disp_info.num_account=0;
+	info->disp_info.total_size=0;
+	info->disp_info.last_enum=0;
+}
+
+
+static void free_samr_info(void *ptr)
+{
+	struct samr_info *info=(struct samr_info *) ptr;
+
+	free_samr_db(info);
 	SAFE_FREE(ptr);
 }
 
@@ -137,14 +147,12 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 			DEBUG(5,(" acb_mask %x reject\n", acb_mask));
 			continue;
 		}
-		DEBUG(0,("load_sampwd_entries: entry: %d\n", info->disp_info.num_account));
+		DEBUG(11,("load_sampwd_entries: entry: %d\n", info->disp_info.num_account));
 
 		/* Realloc some memory for the array of ptr to the SAM_ACCOUNT structs */
 		if (info->disp_info.num_account % MAX_SAM_ENTRIES == 0) {
 		
 			DEBUG(10,("load_sampwd_entries: allocating more memory\n"));
-		
-		
 			pwd_array=(DISP_USER_INFO *)Realloc(info->disp_info.disp_user_info, 
 			                  (info->disp_info.num_account+MAX_SAM_ENTRIES)*sizeof(DISP_USER_INFO));
 
@@ -157,22 +165,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 		/* link the SAM_ACCOUNT to the array */
 		info->disp_info.disp_user_info[info->disp_info.num_account].sam=pwd;
 
-		/* calculate the size needed to store the data */
-		len_sam_name = strlen(pdb_get_username(pwd));
-		len_sam_full = strlen(pdb_get_fullname(pwd));
-		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
-
-		info->disp_info.disp_user_info[info->disp_info.num_account].size=len_sam_name+
-		                                                                           len_sam_full+
-											   len_sam_desc;
-		/* keep the total size up to date too */
-		info->disp_info.total_size+=info->disp_info.disp_user_info[info->disp_info.num_account].size;
-	
-		/* 
-		 * note: the size calculated are smaller than the size sent on the wire
-		 * we add the SAM_ENTRY_x size later
-		 */
-		DEBUG(10,("load_sampwd_entries: entry: %d size: %d total: %d\n", info->disp_info.num_account, info->disp_info.disp_user_info[info->disp_info.num_account].size,info->disp_info.total_size));
+		DEBUG(10,("load_sampwd_entries: entry: %d\n", info->disp_info.num_account));
 
 		info->disp_info.num_account++;	
 	}
@@ -184,7 +177,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 	info->disp_info.user_dbloaded=True;
 	info->disp_info.last_enum=0;
 
-	DEBUG(10,("load_sampwd_entries: done\n"));
+	DEBUG(12,("load_sampwd_entries: done\n"));
 
 	return NT_STATUS_OK;
 }
@@ -234,7 +227,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 	info->disp_info.group_dbloaded=True;
 	info->disp_info.last_enum=0;
 
-	DEBUG(10,("load_group_domain_entries: done\n"));
+	DEBUG(12,("load_group_domain_entries: done\n"));
 
 	return NT_STATUS_OK;
 }
@@ -1186,7 +1179,7 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_QUERY_DISPINFO *r_u)
 {
 	struct samr_info *info = NULL;
-	uint32 struct_size=0;
+	uint32 struct_size=0x20; /* W2K always reply that, client doesn't care */
 	uint16 acb_mask;
 	
 	uint32 max_entries=q_u->max_entries;
@@ -1234,29 +1227,11 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 	 */
 
 	/* Get what we need from the password database */
-	switch (q_u->switch_level) {
-		case 0x1:
-			acb_mask = ACB_NORMAL;
-			struct_size=0x20;
-			break;
-		case 0x2:
-			acb_mask = ACB_WSTRUST;
-			struct_size=0x20;
-			break;
-		case 0x3:
-			struct_size=0x20;
-			break;
-		case 0x4:
-			acb_mask = ACB_NORMAL;
-			struct_size=0x20;
-			break;
-		case 0x5:
-			struct_size=0x20;
-			break;
-		default:
-			DEBUG(0,("_samr_query_dispinfo: Unknown info level (%u)\n", (unsigned int)q_u->switch_level ));
-			return NT_STATUS_INVALID_INFO_CLASS;
-	}
+
+	if (q_u->switch_level==2)
+		acb_mask = ACB_WSTRUST;
+	else
+		acb_mask = ACB_NORMAL;
 
 	/* Get what we need from the password database */
 	switch (q_u->switch_level) {
@@ -1299,29 +1274,17 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 		return NT_STATUS_OK;
 	}
 
-
 	/* verify we won't overflow */
 	if (max_entries > info->disp_info.num_account-enum_context) {
 		max_entries = info->disp_info.num_account-enum_context;
 		DEBUG(5, ("samr_reply_query_dispinfo: only %d entries to return\n", max_entries));
 	}
 
-
-	/* calculate the size */
-	if (q_u->switch_level==3 || q_u->switch_level==5) 
-	for (i=enum_context; (i<enum_context+max_entries) && (temp_size<max_size); i++) {
-		/*temp_size+=info->disp_info.disp_group_info[i].size * 2;*/
-		temp_size+=struct_size;
-	}
+	/* calculate the size and limit on the number of entries we will return */
+	temp_size=(enum_context+max_entries)*struct_size;
 	
-	else
-	for (i=enum_context; (i<enum_context+max_entries) && (temp_size<max_size); i++) {
-		/*temp_size+=info->disp_info.disp_user_info[i].size * 2;*/
-		temp_size+=struct_size;
-	}
-
-	if (i<enum_context+max_entries) {
-		max_entries=i-enum_context;
+	if (temp_size>max_size) {
+		max_entries=max_size/struct_size;
 		DEBUG(5, ("samr_reply_query_dispinfo: buffer size limits to only %d entries\n", max_entries));
 	}
 
@@ -1384,7 +1347,6 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 	}
 
 	/* calculate the total size */
-	/*total_data_size=info->disp_info.total_size+(info->disp_info.num_account*struct_size);*/
 	total_data_size=info->disp_info.num_account*struct_size;
 
 	if (enum_context+max_entries < info->disp_info.num_account)
@@ -2113,6 +2075,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 
 NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR_R_QUERY_DOMAIN_INFO *r_u)
 {
+	struct samr_info *info = NULL;
 	SAM_UNK_CTR *ctr;
 	uint32 min_pass_len,pass_hist,flag;
 	time_t u_expire, u_min_age;
@@ -2125,6 +2088,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	time_t u_logout;
 	NTTIME nt_logout;
 
+	uint32 num_users=0, num_groups=0, num_aliases=0;
 
 	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -2136,7 +2100,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	switch (q_u->switch_value) {
@@ -2154,8 +2118,27 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			               flag, nt_expire, nt_min_age);
 			break;
 		case 0x02:
+			become_root();		
+			r_u->status=load_sampwd_entries(info, ACB_NORMAL);
+			unbecome_root();
+			if (NT_STATUS_IS_ERR(r_u->status)) {
+				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
+				return r_u->status;
+			}
+			num_users=info->disp_info.num_account;
+			free_samr_db(info);
+			
+			r_u->status=load_group_domain_entries(info, &global_sam_sid);
+			if (NT_STATUS_IS_ERR(r_u->status)) {
+				DEBUG(5, ("_samr_query_dispinfo: load_group_domain_entries failed\n"));
+				return r_u->status;
+			}
+			num_groups=info->disp_info.num_account;
+			free_samr_db(info);
+			
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
+			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL), 
+				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
 			account_policy_get(AP_TIME_TO_LOGOUT, (int *)&u_logout);
@@ -3868,6 +3851,7 @@ NTSTATUS _samr_unknown_2d(pipes_struct *p, SAMR_Q_UNKNOWN_2D *q_u, SAMR_R_UNKNOW
 
 NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOWN_2E *r_u)
 {
+	struct samr_info *info = NULL;
 	SAM_UNK_CTR *ctr;
 	uint32 min_pass_len,pass_hist,flag;
 	time_t u_expire, u_min_age;
@@ -3880,6 +3864,8 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 	time_t u_logout;
 	NTTIME nt_logout;
 
+	uint32 num_users=0, num_groups=0, num_aliases=0;
+
 	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -3890,7 +3876,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 	DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	switch (q_u->switch_value) {
@@ -3908,8 +3894,27 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			               flag, nt_expire, nt_min_age);
 			break;
 		case 0x02:
+			become_root();		
+			r_u->status=load_sampwd_entries(info, ACB_NORMAL);
+			unbecome_root();
+			if (NT_STATUS_IS_ERR(r_u->status)) {
+				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
+				return r_u->status;
+			}
+			num_users=info->disp_info.num_account;
+			free_samr_db(info);
+			
+			r_u->status=load_group_domain_entries(info, &global_sam_sid);
+			if (NT_STATUS_IS_ERR(r_u->status)) {
+				DEBUG(5, ("_samr_query_dispinfo: load_group_domain_entries failed\n"));
+				return r_u->status;
+			}
+			num_groups=info->disp_info.num_account;
+			free_samr_db(info);
+
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
+			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL), 
+				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
 			account_policy_get(AP_TIME_TO_LOGOUT, (int *)&u_logout);
