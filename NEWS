@@ -4,6 +4,9 @@ Changes in release 0.3a:
 
  * make klist work better with v4 and v5
 
+ * make the kdc listen on the krb524 (4444) port for compatibility
+   with MIT krb5 clients
+
  * make the sequence numbers work correctly
 
  * bug fixes
