@@ -28,6 +28,7 @@ Description: a LanManager-like file and printer server for Unix
   swat - Samba Web Administration Tool
   samba-doc - Samba documentation.
   smbfs - Mount and umount commands for the smbfs (kernels 2.2.x and above).
+  mount.cifs - Mount and unmount commnads for cifsvfs (kernels 2.6.x and above).
   libpam-smbpass - pluggable authentication module for SMB password database
   libsmbclient - Shared library that allows applications to talk to SMB servers
   libsmbclient-dev - libsmbclient shared libraries
@@ -120,6 +121,18 @@ Description: mount and umount commands for the smbfs (for kernels >= than 2.2.x)
  that call a specific smbmount/smbumount depending on the kernel
  version.  If you are using a 2.0.x kernel please upgrade or use the
  latest Samba 2.0.7 Debian package.
+
+Package: mount.cifs
+Section: otherosfs
+Priority: optional
+Architecture: any
+Depends: netbase (>= 2.02), samba-common (= ${Source-Version}), ${shlibs:Depends}
+Description: mount and umount commands for the cifsvfs (for kernels >= than 2.6.x)
+ CIFS-VFS is a filesystem which understands the CIFS/SMB protocol. 
+ This is the protocol Windows for Workgroups, Windows NT or
+ LAN Manager use to talk to each other. It was inspired by
+ samba, the program by Andrew Tridgell that turns any unix
+ site into a file server for DOS or Windows clients.
 
 Package: libpam-smbpass
 Section: admin
