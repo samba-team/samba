@@ -246,7 +246,7 @@ MAKEDIR = || exec false; \
 	  exec false; fi || exec false
 
 .c.o: @MAINT@ .deps/.dummy
-	@if (: > $@) >/dev/null 2>&1; then :; else \
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@ \
@@ -256,16 +256,16 @@ MAKEDIR = || exec false; \
 
 
 .c.po: @MAINT@ .deps/.dummy
-	@if (: > $@) >/dev/null 2>&1; then :; else \
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with -fpic
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -fpic -c $< -o $@ \
 	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
 
 bin/.dummy:
-	@if (: > $@) >/dev/null 2>&1; then :; else \
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
 	  dir=bin $(MAKEDIR); fi
-	@: > $@ # create it (what a fancy emoticon :-)
+	@: >> $@ || : > $@ # what a fancy emoticon!
 
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -448,10 +448,9 @@ $(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.i
 
 # automatic dependency tracking rules
 .deps/.dummy:
-	@if (: > $@) >/dev/null 2>&1; then :; else \
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
 	  dir=.deps $(MAKEDIR); fi
-	@: > $@ # create it (what a fancy emoticon :-)
-	@: > $@ # create it (what a fancy emoticon :-)
+	@: >> $@ || : > $@ # what a fancy emoticon!
 
 .deps/.stamp: .deps/.dummy
 	@:
