@@ -39,7 +39,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	char *ccache;
 
 	if (domain->private) {
 		return (ADS_STRUCT *)domain->private;

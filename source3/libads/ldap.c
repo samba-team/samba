@@ -816,18 +816,18 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 {
 	int curmod;
 	LDAPMod **modlist = (LDAPMod **) *mods;
-	void **values;
+	struct berval **ber_values;
+	char **char_values;
 
 	if (!invals) {
-		values = NULL;
 		mod_op = LDAP_MOD_DELETE;
 	} else {
 		if (mod_op & LDAP_MOD_BVALUES)
-			values = (void **) ads_dup_values(ctx, 
-					   (const struct berval **)invals);
+			ber_values = ads_dup_values(ctx, 
+						(const struct berval **)invals);
 		else
-			values = (void **) ads_push_strvals(ctx, 
-						   (const char **) invals);
+			char_values = ads_push_strvals(ctx, 
+						  (const char **) invals);
 	}
 
 	/* find the first empty slot */
@@ -846,10 +846,14 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	if (!(modlist[curmod] = talloc_zero(ctx, sizeof(LDAPMod))))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	modlist[curmod]->mod_type = talloc_strdup(ctx, name);
-	if (mod_op & LDAP_MOD_BVALUES)
-		modlist[curmod]->mod_bvalues = (struct berval **) values;
-	else
-		modlist[curmod]->mod_values = (char **) values;
+	if (mod_op & LDAP_MOD_BVALUES) {
+		modlist[curmod]->mod_bvalues = ber_values;
+	} else if (mod_op & LDAP_MOD_DELETE) {
+		modlist[curmod]->mod_values = NULL;
+	} else {
+		modlist[curmod]->mod_values = char_values;
+	}
+
 	modlist[curmod]->mod_op = mod_op;
 	return ADS_ERROR(LDAP_SUCCESS);
 }
@@ -1500,16 +1504,24 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 #endif
 	if (!(mods = ads_init_mods(ctx))) return ADS_ERROR(LDAP_NO_MEMORY);
 
-	bval.bv_len = sd_size;
-	bval.bv_val = talloc(ctx, sd_size);
+	bval.bv_len = prs_offset(&ps_wire);
+	bval.bv_val = talloc(ctx, bval.bv_len);
 	if (!bval.bv_val) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
 	}
-	prs_copy_all_data_out(bval.bv_val, &ps_wire);
 
-	ads_mod_ber(ctx, &mods, attrs[0], &bval);
-	ret = ads_gen_mod(ads, dn, mods);
+	prs_set_offset(&ps_wire, 0);
+
+	if (!prs_copy_data_out(bval.bv_val, &ps_wire, bval.bv_len)) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto ads_set_sd_error;		
+	}
+
+	ret = ads_mod_ber(ctx, &mods, attrs[0], &bval);
+	if (ADS_ERR_OK(ret)) {
+		ret = ads_gen_mod(ads, dn, mods);
+	}
 
 ads_set_sd_error:
 	ads_msgfree(ads, res);
@@ -1554,7 +1566,7 @@ char *ads_pull_string(ADS_STRUCT *ads,
 	char **values;
 	char *ret = NULL;
 	char *ux_string;
-	int rc;
+	size_t rc;
 
 	values = ldap_get_values(ads->ld, msg, field);
 	if (!values)
@@ -1563,7 +1575,7 @@ char *ads_pull_string(ADS_STRUCT *ads,
 	if (values[0]) {
 		rc = pull_utf8_talloc(mem_ctx, &ux_string, 
 				      values[0]);
-		if (rc != -1)
+		if (rc != (size_t)-1)
 			ret = ux_string;
 		
 	}
@@ -1725,8 +1737,11 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	count = 0;
 	for (i=0; values[i]; i++) {
 		ret = sid_parse(values[i]->bv_val, values[i]->bv_len, &(*sids)[count]);
-		if (ret)
+		if (ret) {
+			fstring sid;
+			DEBUG(10, ("pulling SID: %s\n", sid_to_string(sid, &(*sids)[count])));
 			count++;
+		}
 	}
 	
 	ldap_value_free_len(values);

@@ -62,9 +62,10 @@ typedef struct smb_sign_info {
 	BOOL negotiated_smb_signing;
 	BOOL temp_smb_signing;
 	size_t mac_key_len;
-	uint8 mac_key[44];
+	uint8 mac_key[64];
 	uint32 send_seq_num;
 	uint32 reply_seq_num;
+	BOOL allow_smb_signing;
 } smb_sign_info;
 
 struct cli_state {
@@ -120,6 +121,10 @@ struct cli_state {
 	TALLOC_CTX *mem_ctx;
 
 	smb_sign_info sign_info;
+
+	/* the session key for this CLI, outside 
+	   any per-pipe authenticaion */
+	unsigned char user_session_key[16];
 
 	/*
 	 * Only used in NT domain calls.

@@ -255,6 +255,10 @@ typedef struct
 	BOOL bAllowTrustedDomains;
 	BOOL bLanmanAuth;
 	BOOL bNTLMAuth;
+	BOOL bUseSpnego;
+	BOOL bClientLanManAuth;
+	BOOL bClientNTLMv2Auth;
+	BOOL bClientUseSpnego;
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
 	BOOL bDebugUid;
@@ -263,12 +267,12 @@ typedef struct
 	BOOL bUnicode;
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
-	BOOL bUseSpnego;
 	BOOL bUnixExtensions;
 	BOOL bDisableNetbios;
 	BOOL bKernelChangeNotify;
 	int restrict_anonymous;
 	int name_cache_timeout;
+	BOOL client_signing;
 }
 global;
 

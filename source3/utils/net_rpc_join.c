@@ -264,14 +264,8 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	ctr.switch_value = 24;
 	ctr.info.id24 = &p24;
 
-	/* I don't think this is quite the right place for this
-	   calculation.  It should be moved somewhere where the credentials
-	   are calculated. )-: */
-
-	mdfour(sess_key, cli->pwd.smb_nt_pwd, 16);
-
 	CHECK_RPC_ERR(cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24, 
-					    sess_key, &ctr),
+					    cli->user_session_key, &ctr),
 		      "error setting trust account password");
 
 	/* Why do we have to try to (re-)set the ACB to be the same as what

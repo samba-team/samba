@@ -114,9 +114,14 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		cli->smb_rw_error = smb_read_error;
 		close(cli->fd);
 		cli->fd = -1;
+		return ret;
 	}
 
-	return ret;
+	if (!cli_check_sign_mac(cli)) {
+		DEBUG(0, ("SMB Signiture verification failed on incoming packet!\n"));
+		return False;
+	};
+	return True;
 }
 
 /****************************************************************************
@@ -246,8 +251,10 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	cli->oplock_handler = cli_oplock_ack;
-	if (lp_use_spnego())
-		cli->use_spnego = True;
+
+	cli->use_spnego = lp_client_use_spnego();
+
+	cli->capabilities = CAP_UNICODE | CAP_STATUS32;
 
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
@@ -255,9 +262,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = True;
 
-	/* A way to attempt to force SMB signing */
-	if (getenv("CLI_FORCE_SMB_SIGNING"))
-		cli->sign_info.negotiated_smb_signing = True;
+	if (lp_client_signing()) 
+		cli->sign_info.allow_smb_signing = True;
                                    
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;

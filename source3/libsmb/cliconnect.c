@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Andrew Barteltt 2001-2002
+   Copyright (C) Andrew Bartlett 2001-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ static const struct {
 ****************************************************************************/
 
 static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user, 
-				      const char *pass, int passlen, const char *workgroup)
+				      const char *pass, size_t passlen, const char *workgroup)
 {
 	fstring pword;
 	char *p;
@@ -228,7 +228,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	return True;
 }
 
-static void set_signing_on_cli (struct cli_state *cli, const char* pass, uint8 response[24]) 
+static void set_signing_on_cli (struct cli_state *cli, uint8 user_session_key[16], DATA_BLOB response) 
 {
 	uint8 zero_sig[8];
 	ZERO_STRUCT(zero_sig);
@@ -242,11 +242,17 @@ static void set_signing_on_cli (struct cli_state *cli, const char* pass, uint8 r
 
 		DEBUG(3, ("smb signing enabled!\n"));
 		cli->sign_info.use_smb_signing = True;
-		cli_calculate_mac_key(cli, pass, response);
+		cli_calculate_mac_key(cli, user_session_key, response);
 	} else {
 		DEBUG(5, ("smb signing NOT enabled!\n"));
 	}
 }
+
+static void set_cli_session_key (struct cli_state *cli, DATA_BLOB session_key) 
+{
+	memcpy(cli->user_session_key, session_key.data, MIN(session_key.length, sizeof(cli->user_session_key)));
+}
+
 
 static void set_temp_signing_on_cli(struct cli_state *cli) 
 {
@@ -265,37 +271,54 @@ static void set_temp_signing_on_cli(struct cli_state *cli)
 ****************************************************************************/
 
 static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user, 
-				  const char *pass, int passlen,
-				  const char *ntpass, int ntpasslen,
+				  const char *pass, size_t passlen,
+				  const char *ntpass, size_t ntpasslen,
 				  const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
-	uchar pword[24];
-	uchar ntpword[24];
+	DATA_BLOB lm_response = data_blob(NULL, 0);
+	DATA_BLOB nt_response = data_blob(NULL, 0);
+	DATA_BLOB session_key = data_blob(NULL, 0);
+	BOOL ret = False;
 	char *p;
-	BOOL have_plaintext = False;
-
-	if (passlen > sizeof(pword) || ntpasslen > sizeof(ntpword))
-		return False;
 
 	if (passlen != 24) {
-		/* non encrypted password supplied. Ignore ntpass. */
-		passlen = 24;
-		ntpasslen = 24;
-		SMBencrypt(pass,cli->secblob.data,pword);
-		SMBNTencrypt(pass,cli->secblob.data,ntpword);
+		if (lp_client_ntlmv2_auth()) {
+			DATA_BLOB server_chal;
 
-		have_plaintext = True;
+			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
+
+			if (!SMBNTLMv2encrypt(user, workgroup, pass, server_chal, 
+					      &lm_response, &nt_response, &session_key)) {
+				data_blob_free(&server_chal);
+				return False;
+			}
+			data_blob_free(&server_chal);
+
+		} else {
+			uchar nt_hash[16];
+			E_md4hash(pass, nt_hash);
+
+			/* non encrypted password supplied. Ignore ntpass. */
+			if (lp_client_lanman_auth()) {
+				lm_response = data_blob(NULL, 24);
+				SMBencrypt(pass,cli->secblob.data,lm_response.data);
+			}
+
+			nt_response = data_blob(NULL, 24);
+			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
+			session_key = data_blob(NULL, 16);
+			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+		}
+
 		set_temp_signing_on_cli(cli);
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
 		   signing becouse we don't have oringial key */
-		memcpy(pword, pass, 24);
-		if (ntpasslen == 24)
-			memcpy(ntpword, ntpass, 24);
-		else
-			ZERO_STRUCT(ntpword);
+
+		lm_response = data_blob(pass, passlen);
+		nt_response = data_blob(ntpass, ntpasslen);
 	}
 
 	/* send a session setup command */
@@ -310,28 +333,33 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
 	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-	SSVAL(cli->outbuf,smb_vwv7,passlen);
-	SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
+	SSVAL(cli->outbuf,smb_vwv7,lm_response.length);
+	SSVAL(cli->outbuf,smb_vwv8,nt_response.length);
 	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
 	p = smb_buf(cli->outbuf);
-	memcpy(p,pword,passlen); p += passlen;
-	memcpy(p,ntpword,ntpasslen); p += ntpasslen;
+	if (lm_response.length) {
+		memcpy(p,lm_response.data, lm_response.length); p += lm_response.length;
+	}
+	if (nt_response.length) {
+		memcpy(p,nt_response.data, nt_response.length); p += nt_response.length;
+	}
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE);
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE);
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
-	if (!cli_send_smb(cli))
-		return False;
-
-	if (!cli_receive_smb(cli))
-		return False;
+	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
+		ret = False;
+		goto end;
+	}
 
 	show_msg(cli->inbuf);
 
-	if (cli_is_error(cli))
-		return False;
+	if (cli_is_error(cli)) {
+		ret = False;
+		goto end;
+	}
 
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
@@ -343,11 +371,16 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 
 	fstrcpy(cli->user_name, user);
 
-	if (have_plaintext) {
+	if (session_key.data) {
 		/* Have plaintext orginal */
-		set_signing_on_cli(cli, pass, ntpword);
+		set_cli_session_key(cli, session_key);
+		set_signing_on_cli(cli, session_key.data, nt_response);
 	}
-	
+
+end:	
+	data_blob_free(&lm_response);
+	data_blob_free(&nt_response);
+	data_blob_free(&session_key);
 	return True;
 }
 
@@ -359,10 +392,8 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
-	DATA_BLOB blob2;
+	DATA_BLOB blob2 = data_blob(NULL, 0);
 	uint32 len;
-
-	blob2 = data_blob(NULL, 0);
 
 	capabilities |= CAP_EXTENDED_SECURITY;
 
@@ -420,6 +451,13 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 
 #ifdef HAVE_KRB5
 /****************************************************************************
+ Use in-memory credentials cache
+****************************************************************************/
+static void use_in_memory_ccache(void) {
+	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
+}
+
+/****************************************************************************
  Do a spnego/kerberos encrypted session setup.
 ****************************************************************************/
 
@@ -456,126 +494,87 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, const char *princi
 static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user, 
 				      const char *pass, const char *workgroup)
 {
-	DATA_BLOB msg1, struct_blob;
-	DATA_BLOB blob, chal1, chal2, auth, challenge_blob;
-	uint8 challenge[8];
-	uint8 nthash[24], lmhash[24], sess_key[16];
-	uint32 neg_flags, chal_flags, ntlmssp_command, unkn1, unkn2;
-	pstring server_domain;  /* FIX THIS, SHOULD be UCS2-LE */
+	struct ntlmssp_client_state *ntlmssp_state;
+	NTSTATUS nt_status;
+	int turn = 1;
+	DATA_BLOB msg1;
+	DATA_BLOB blob;
+	DATA_BLOB blob_in = data_blob(NULL, 0);
+	DATA_BLOB blob_out;
 
-	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
-		NTLMSSP_NEGOTIATE_128 | 
-		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_REQUEST_TARGET;
-
-	memset(sess_key, 0, 16);
-
-	DEBUG(10, ("sending NTLMSSP_NEGOTIATE\n"));
-
-	/* generate the ntlmssp negotiate packet */
-	msrpc_gen(&blob, "CddAA",
-		  "NTLMSSP",
-		  NTLMSSP_NEGOTIATE,
-		  neg_flags,
-		  workgroup, 
-		  cli->calling.name);
-	DEBUG(10, ("neg_flags: %0X, workgroup: %s, calling name %s\n",
-		  neg_flags, workgroup, cli->calling.name));
-	/* and wrap it in a SPNEGO wrapper */
-	msg1 = gen_negTokenInit(OID_NTLMSSP, blob);
-	data_blob_free(&blob);
-
-	/* now send that blob on its way */
-	blob = cli_session_setup_blob(cli, msg1);
-
-	data_blob_free(&msg1);
-
-	if (!NT_STATUS_EQUAL(cli_nt_error(cli), NT_STATUS_MORE_PROCESSING_REQUIRED))
-		return False;
-
-#if 0
-	file_save("chal.dat", blob.data, blob.length);
-#endif
-
-	/* the server gives us back two challenges */
-	if (!spnego_parse_challenge(blob, &chal1, &chal2)) {
-		DEBUG(3,("Failed to parse challenges\n"));
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_client_start(&ntlmssp_state))) {
 		return False;
 	}
 
-	data_blob_free(&blob);
-
-	/*
-	 * Ok, chal1 and chal2 are actually two identical copies of
-	 * the NTLMSSP Challenge BLOB, and they contain, encoded in them
-	 * the challenge to use.
-	 */
-
-	if (!msrpc_parse(&chal1, "CdUdbddB",
-			 "NTLMSSP",
-			 &ntlmssp_command, 
-			 &server_domain,
-			 &chal_flags,
-			 &challenge_blob, 8,
-			 &unkn1, &unkn2,
-			 &struct_blob)) {
-	  DEBUG(0, ("Failed to parse the NTLMSSP Challenge\n"));
-	  return False;
-	}
-			
-	if (ntlmssp_command != NTLMSSP_CHALLENGE) {
-		DEBUG(0, ("NTLMSSP Response != NTLMSSP_CHALLENGE. Got %0X\n", 
-			ntlmssp_command));
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
 		return False;
 	}
- 
-	DEBUG(10, ("Challenge:\n"));
-	dump_data(10, challenge_blob.data, 8);
-
-	/* encrypt the password with the challenge which is in the blob */
-	memcpy(challenge, challenge_blob.data, 8); 
-	SMBencrypt(pass, challenge,lmhash);
-	SMBNTencrypt(pass, challenge,nthash);
-	data_blob_free(&challenge_blob);
-
-#if 0
-	file_save("nthash.dat", nthash, 24);
-	file_save("lmhash.dat", lmhash, 24);
-	file_save("chal1.dat", chal1.data, chal1.length);
-#endif
-
-	data_blob_free(&chal1);
-	data_blob_free(&chal2);
-
-	/* this generates the actual auth packet */
-	msrpc_gen(&blob, "CdBBUUUBd", 
-		  "NTLMSSP", 
-		  NTLMSSP_AUTH, 
-		  lmhash, 24,
-		  nthash, 24,
-		  workgroup, 
-		  user, 
-		  cli->calling.name,
-		  sess_key, 0,
-		  neg_flags);
-
-	/* wrap it in SPNEGO */
-	auth = spnego_gen_auth(blob);
-
-	data_blob_free(&blob);
-
-	/* now send the auth packet and we should be done */
-	blob = cli_session_setup_blob(cli, auth);
-
-	data_blob_free(&auth);
-	data_blob_free(&blob);
-
-	if (cli_is_error(cli))
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, workgroup))) {
 		return False;
+	}
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_password(ntlmssp_state, pass))) {
+		return False;
+	}
 
-	set_signing_on_cli(cli, pass, nthash);
+	ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
 
-	return True;
+	do {
+		nt_status = ntlmssp_client_update(ntlmssp_state, 
+						  blob_in, &blob_out);
+		data_blob_free(&blob_in);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			if (turn == 1) {
+				/* and wrap it in a SPNEGO wrapper */
+				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
+			} else {
+				/* wrap it in SPNEGO */
+				msg1 = spnego_gen_auth(blob_out);
+			}
+		
+			/* now send that blob on its way */
+			blob = cli_session_setup_blob(cli, msg1);
+			data_blob_free(&msg1);
+			nt_status = cli_nt_error(cli);
+		}
+		
+		if (!blob.length) {
+			if (NT_STATUS_IS_OK(nt_status)) {
+				nt_status = NT_STATUS_UNSUCCESSFUL;
+			}
+		} else if ((turn == 1) && 
+			   NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DATA_BLOB tmp_blob = data_blob(NULL, 0);
+			/* the server might give us back two challenges */
+			if (!spnego_parse_challenge(blob, &blob_in, 
+						    &tmp_blob)) {
+				DEBUG(3,("Failed to parse challenges\n"));
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+			}
+			data_blob_free(&tmp_blob);
+		} else {
+			/* the server might give us back two challenges */
+			if (!spnego_parse_auth_response(blob, nt_status, 
+							&blob_in)) {
+				DEBUG(3,("Failed to parse auth response\n"));
+				if (NT_STATUS_IS_OK(nt_status) 
+				    || NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) 
+					nt_status = NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		data_blob_free(&blob);
+		data_blob_free(&blob_out);
+		turn++;
+	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED));
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		set_cli_session_key(cli, ntlmssp_state->session_key);
+	}
+
+	if (!NT_STATUS_IS_OK(ntlmssp_client_end(&ntlmssp_state))) {
+		return False;
+	}
+
+	return (NT_STATUS_IS_OK(nt_status));
 }
 
 /****************************************************************************
@@ -628,7 +627,22 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	fstrcpy(cli->user_name, user);
 
 #ifdef HAVE_KRB5
+	/* If password is set we reauthenticate to kerberos server
+	 * and do not store results */
+
 	if (got_kerberos_mechanism && cli->use_kerberos) {
+		if (*pass) {
+			int ret;
+			
+			use_in_memory_ccache();
+			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */);
+			
+			if (ret){
+				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
+				return False;
+			}
+		}
+		
 		return cli_session_setup_kerberos(cli, principal, workgroup);
 	}
 #endif
@@ -942,7 +956,10 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED))
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED))
+			cli->sign_info.negotiated_smb_signing = True;
+
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) && cli->sign_info.allow_smb_signing)
 			cli->sign_info.negotiated_smb_signing = True;
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {

@@ -86,5 +86,25 @@ typedef struct ntlmssp_state
 	const char *(*get_domain)(void);
 
 	int server_role;
+	uint32 expected_state;
 } NTLMSSP_STATE;
+
+typedef struct ntlmssp_client_state 
+{
+	TALLOC_CTX *mem_ctx;
+	BOOL unicode;
+	BOOL use_ntlmv2;
+	char *user;
+	char *domain;
+	char *workstation;
+	char *password;
+
+	const char *(*get_global_myname)(void);
+	const char *(*get_domain)(void);
+
+	DATA_BLOB session_key;
+	
+	uint32 neg_flags;
+
+} NTLMSSP_CLIENT_STATE;
 
