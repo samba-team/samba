@@ -1,3 +1,9 @@
+2003-02-25  Love Hörquist Åstrand <lha@it.su.se>
+
+	* ftp/ftp.1: s/utilizes/uses/ from NetBSD
+	
+	* ftpd/ftpd.8: s/utilize/use/ from NetBSD
+	
 2003-02-10  Assar Westerlund  <assar@kth.se>
 
 	* ftpd/ftpd.c (accept_with_timeout): use socklen_t
