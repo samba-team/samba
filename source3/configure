@@ -8928,7 +8928,7 @@ EOF
 		;;
 		*bsd*)  BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
-			DYNEXP="-Wl,--export-dynamic"
+			DYNEXP="-Wl,-Bdynamic"
 			PICFLAG="-fPIC"
 			cat >> confdefs.h <<\EOF
 #define STAT_ST_BLOCKSIZE 512
