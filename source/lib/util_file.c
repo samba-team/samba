@@ -282,13 +282,15 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
   if (feof(f))
     return(NULL);
 
+  if (maxlen <2) return(NULL);
+
   if (!s2)
     {
       maxlen = MIN(maxlen,8);
       s = (char *)Realloc(s,maxlen);
     }
 
-  if (!s || maxlen < 2) return(NULL);
+  if (!s) return(NULL);
 
   *s = 0;
 
