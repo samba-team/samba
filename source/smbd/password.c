@@ -1241,7 +1241,7 @@ BOOL check_hosts_equiv(char *user)
 }
 
 
-static int password_client = -1;
+int password_client = -1;
 static fstring pserver;
 
 /****************************************************************************
@@ -1405,7 +1405,7 @@ BOOL server_validate(char *buf)
 
   DEBUG(3,("password server %s accepted the password\n",pserver));
 
-#ifndef KEEP_PASSWORD_SERVER_OPEN
+#if !KEEP_PASSWORD_SERVER_OPEN
   close(password_client); password_client= -1;
 #endif
 
