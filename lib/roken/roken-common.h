@@ -276,10 +276,4 @@ socket_set_tos (int sock, int tos);
 void
 socket_set_reuseaddr (int sock, int val);
 
-int
-getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
-		     char *host, size_t hostlen,
-		     char *serv, size_t servlen,
-		     int flags);
-
 #endif /* __ROKEN_COMMON_H__ */
