@@ -619,7 +619,10 @@ char *mktemp(char *); /* No standard include */
 #define NEED_AUTH_PARAMETERS
 #endif
 #define SIGNAL_CAST (void (*)(__harg))
-#ifndef HPUX10 /* This is only needed for HPUX 9.x */
+#ifdef HPUX10
+#include <stropts.h>
+#else /* HPUX10 */  
+/* This is only needed for HPUX 9.x */
 #define SELECT_CAST (int *)
 #endif /* HPUX10 */
 #define SYSV
@@ -630,7 +633,6 @@ char *mktemp(char *); /* No standard include */
 #define USE_SETRES
 #define USE_SYSV_IPC
 #define NO_SEMUN
-#define HAVE_VALLOC
 #define DEFAULT_PRINTING PRINT_HPUX
 /* Ken Weiss <krweiss@ucdavis.edu> tells us that SIGCLD_IGNORE is
    not good for HPUX */
