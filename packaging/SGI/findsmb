@@ -65,6 +65,15 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
   @name = grep(/<00> - /,@nmblookup);
   $_ = @name[0];
+  if (not $_) {
+# try without the -r option
+    open(NMBLOOKUP,"$SAMBABIN/nmblookup -A $ip|") ||
+        die("Can't get nmb name list.\n");
+    @nmblookup = <NMBLOOKUP>;
+    close NMBLOOKUP;
+    @name = grep(/<00> - /,@nmblookup);
+    $_ = @name[0];
+  }
   if ($_) {                     # we have a netbios name
     if (/GROUP/) {		# is it a group name
 	($name, $aliases, $type, $length, @addresses) = 
@@ -79,7 +88,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
 # do an smbclient command on the netbios name.
 
-    open(SMB,"$SAMBABIN/smbclient -N -L $name -I $ip -U% |") ||
+    open(SMB,"$SAMBABIN/smbclient -N -L '$name' -I $ip -U% |") ||
 	die("Can't do smbclient command.\n");
     @smb = <SMB>;
     close SMB;
