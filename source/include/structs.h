@@ -172,6 +172,8 @@ struct nbt_name_register_bcast;
 struct nbt_name_refresh_wins;
 struct nbt_name_register_wins;
 
+struct nbt_dgram_packet;
+
 struct messaging_context;
 struct stream_connection;
 struct task_server;
