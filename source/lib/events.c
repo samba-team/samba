@@ -317,7 +317,13 @@ int event_loop_wait(struct event_context *ev)
 		}
 
 
-		selrtn = sys_select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
+		/* TODO:
+
+		we don't use sys_select() as it isn't thread
+		safe. We need to replace the magic pipe handling in
+		sys_select() with something in the events
+		structure - for now just use select() */
+		selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
 
 		t = time(NULL);
 
