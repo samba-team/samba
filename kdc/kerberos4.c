@@ -494,6 +494,7 @@ do_version4(unsigned char *buf,
 	    KTEXT r;
 	    des_cblock session;
 	    des_new_random_key(&session);
+
 	    krb_create_ticket(&ticket, 0, ad.pname, ad.pinst, ad.prealm,
 			      addr->sin_addr.s_addr, &session, life, kdc_time,
 			      sname, sinst, skey->key.keyvalue.data);
@@ -543,31 +544,6 @@ out:
     if(server)
 	free_ent(server);
     krb5_storage_free(sp);
-    return 0;
-}
-
-
-#define ETYPE_DES_PCBC 17 /* XXX */
-
-krb5_error_code
-encrypt_v4_ticket(void *buf, size_t len, des_cblock *key, EncryptedData *reply)
-{
-    des_key_schedule schedule;
-
-    reply->etype = ETYPE_DES_PCBC;
-    reply->kvno = NULL;
-    reply->cipher.length = len;
-    reply->cipher.data = malloc(len);
-    if(len != 0 && reply->cipher.data == NULL)
-	return ENOMEM;
-    des_set_key(key, schedule);
-    des_pcbc_encrypt(buf,
-		     reply->cipher.data,
-		     len,
-		     schedule,
-		     key,
-		     DES_ENCRYPT);
-    memset(schedule, 0, sizeof(schedule));
     return 0;
 }
 
@@ -657,5 +633,6 @@ encode_v4_ticket(void *buf, size_t len, const EncTicketPart *et,
     }
     return 0;
 }
+
 
 #endif /* KRB4 */
