@@ -62,6 +62,12 @@ struct nbt_name_request {
 		const char *reply_addr;
 		int reply_port;
 	} *replies;
+
+	/* information on what to do on completion */
+	struct {
+		void (*fn)(struct nbt_name_request *);
+		void *private;
+	} async;
 };
 
 
