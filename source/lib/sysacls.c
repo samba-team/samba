@@ -1273,101 +1273,121 @@ int sys_acl_free_acl(SMB_ACL_T acl_d)
 
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d)
 {
+	errno = ENOSYS;
 	return NULL;
 }
 
 SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 {
+	errno = ENOSYS;
 	return (SMB_ACL_T)NULL;
 }
 
 SMB_ACL_T sys_acl_get_fd(int fd)
 {
+	errno = ENOSYS;
 	return (SMB_ACL_T)NULL;
 }
 
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
+	errno = ENOSYS;
 	return (permset & perm) ? 1 : 0;
 }
 
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
 {
+	errno = ENOSYS;
 	return NULL;
 }
 
 int sys_acl_free_text(char *text)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 SMB_ACL_T sys_acl_init( int count)
 {
+	errno = ENOSYS;
 	return NULL;
 }
 
 int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_valid( SMB_ACL_T theacl )
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
 {
+	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_free_acl(SMB_ACL_T the_acl) 
 {
+	errno = ENOSYS;
 	return -1;
 }
 #endif /* No ACLs. */
