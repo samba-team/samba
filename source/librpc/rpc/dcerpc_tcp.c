@@ -284,7 +284,7 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 				  int family)
 {
 	struct tcp_private *tcp;
-	int fd, gai_error;
+	int fd, gai_err;
 	struct fd_event fde;
 	struct addrinfo hints, *res, *tmpres;
 	char portname[16];
@@ -300,10 +300,10 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 
 	snprintf(portname, sizeof(portname)-1, "%d", port);
 	
-	gai_error = getaddrinfo(server, portname, &hints, &res);
-	if (gai_error < 0) 
+	gai_err = getaddrinfo(server, portname, &hints, &res);
+	if (gai_err < 0) 
 	{
-		DEBUG(0, ("Unable to connect to %s:%d : %s\n", server, port, gai_strerror(gai_error)));
+		DEBUG(0, ("Unable to connect to %s:%d : %s\n", server, port, gai_strerror(gai_err)));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
