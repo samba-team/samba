@@ -22,7 +22,7 @@
 	</xsl:element>
 </xsl:template>
 
-<xsl:template match="chapter">
+<xsl:template match="chapter|preface">
 	<xsl:choose>
 		<xsl:when test="chapterinfo/author != ''">
 			<xsl:element name="para">
