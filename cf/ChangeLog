@@ -1,3 +1,7 @@
+2000-12-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken-frag.m4: ifaddrs.h
+
 2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: test for unvis, and vis.h

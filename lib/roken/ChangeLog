@@ -1,3 +1,8 @@
+2000-12-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: rename some headers to avoid conflict with possible
+	system headers
+
 2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* vis.c: make sure _DIAGASSERT is defined
