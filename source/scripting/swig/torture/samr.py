@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import dcerpc
+import sys, dcerpc
 from optparse import OptionParser
 
 def test_Connect(handle):
@@ -167,6 +167,63 @@ def test_DeleteUser_byname(pipe, domain_handle, name):
 
     dcerpc.samr_DeleteUser(pipe, r)
 
+def test_QueryUserInfo(pipe, user_handle):
+
+    levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21]
+
+    for level in levels:
+        r = {}
+        r['handle'] = user_handle
+        r['level'] = level
+
+        result = dcerpc.samr_QueryUserInfo(pipe, r)
+
+def test_QueryUserInfo2(pipe, user_handle):
+
+    levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21]
+
+    for level in levels:
+        r = {}
+        r['handle'] = user_handle
+        r['level'] = level
+
+        result = dcerpc.samr_QueryUserInfo2(pipe, r)
+
+def test_SetUserInfo(pipe, user_handle):
+    pass
+
+def test_GetUserPwInfo(pipe, user_handle):
+
+    r = {}
+    r['handle'] = user_handle
+
+    result = dcerpc.samr_GetUserPwInfo(pipe, r)
+
+def test_TestPrivateFunctionsUser(pipe, user_handle):
+
+    r = {}
+    r['handle'] = user_handle
+
+    try:
+        result = dcerpc.samr_TestPrivateFunctionsUser(pipe, r)
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != 0xc0000002:
+            raise dcerpc.NTSTATUS(arg)
+
+def test_user_ops(pipe, user_handle):
+
+    test_QuerySecurity(pipe, user_handle)
+
+    test_QueryUserInfo(pipe, user_handle)
+
+    test_QueryUserInfo2(pipe, user_handle)
+
+    test_SetUserInfo(pipe, user_handle)
+
+    test_GetUserPwInfo(pipe, user_handle)
+
+    test_TestPrivateFunctionsUser(pipe, user_handle)
+
 def test_CreateUser(pipe, domain_handle):
 
     r = {}
@@ -190,7 +247,81 @@ def test_CreateUser(pipe, domain_handle):
 
     user_handle = result['acct_handle']
 
-    # samr_QueryUserInfo(), etc
+    q = {}
+    q['handle'] = user_handle
+    q['level'] = 16
+
+    result = dcerpc.samr_QueryUserInfo(pipe, q)
+
+    test_user_ops(pipe, user_handle)
+
+    return user_handle
+
+def test_CreateAlias(pipe, domain_handle):
+    pass
+
+def test_CreateDomainGroup(pipe, domain_handle):
+    pass
+
+def test_CreateAlias(pipe, domain_handle):
+    pass
+
+def test_CreateDomainGroup(pipe, domain_handle):
+    pass
+
+def test_QueryDomainInfo(pipe, domain_handle):
+    pass
+    
+def test_QueryDomainInfo2(pipe, domain_handle):
+    pass
+
+def test_EnumDomainUsers(pipe, domain_handle):
+    pass
+
+def test_EnumDomainGroups(pipe, domain_handle):
+    pass
+
+def test_EnumDomainAliases(pipe, domain_handle):
+    pass
+
+def test_QueryDisplayInfo(pipe, domain_handle):
+    pass
+
+def test_QueryDisplayInfo2(pipe, domain_handle):
+    pass
+    
+def test_QueryDisplayInfo3(pipe, domain_handle):
+    pass
+
+def test_GetDisplayEnumerationIndex(pipe, domain_handle):
+    pass
+
+def test_GetDisplayEnumerationIndex2(pipe, domain_handle):
+    pass
+
+def test_GroupList(pipe, domain_handle):
+    pass
+
+def test_TestPrivateFunctionsDomain(pipe, domain_handle):
+    pass
+
+def test_RidToSid(pipe, domain_handle):
+    pass
+
+def test_GetBootKeyInformation(pipe, domain_handle):
+    pass
+
+def test_DeleteUser(pipe, user_handle):
+    pass
+
+def test_DeleteAlias(pipe, alias_handle):
+    pass
+
+def test_DeleteDomainGroup(pipe, group_handle):
+    pass
+
+def test_Close(pipe, domain_handle):
+    pass
 
 def test_OpenDomain(pipe, handle, domain_sid):
 
@@ -211,7 +342,47 @@ def test_OpenDomain(pipe, handle, domain_sid):
 
     test_CreateUser2(pipe, domain_handle)
 
-    test_CreateUser(pipe, domain_handle)
+    user_handle = test_CreateUser(pipe, domain_handle)
+
+    alias_handle = test_CreateAlias(pipe, domain_handle)
+
+    group_handle = test_CreateDomainGroup(pipe, domain_handle)
+
+    test_QueryDomainInfo(pipe, domain_handle)
+    
+    test_QueryDomainInfo2(pipe, domain_handle)
+
+    test_EnumDomainUsers(pipe, domain_handle)
+
+    test_EnumDomainGroups(pipe, domain_handle)
+
+    test_EnumDomainAliases(pipe, domain_handle)
+
+    test_QueryDisplayInfo(pipe, domain_handle)
+
+    test_QueryDisplayInfo2(pipe, domain_handle)
+    
+    test_QueryDisplayInfo3(pipe, domain_handle)
+
+    test_GetDisplayEnumerationIndex(pipe, domain_handle)
+
+    test_GetDisplayEnumerationIndex2(pipe, domain_handle)
+
+    test_GroupList(pipe, domain_handle)
+
+    test_TestPrivateFunctionsDomain(pipe, domain_handle)
+
+    test_RidToSid(pipe, domain_handle)
+
+    test_GetBootKeyInformation(pipe, domain_handle)
+
+    test_DeleteUser(pipe, user_handle)
+
+    test_DeleteAlias(pipe, alias_handle)
+
+    test_DeleteDomainGroup(pipe, group_handle)
+
+    test_Close(pipe, domain_handle)
     
 def test_LookupDomain(pipe, handle, domain):
 
