@@ -705,6 +705,11 @@ uninstallcp:
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@* */*.a
 
+winbindd_proto:
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+		-h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
+		$(WINBINDD_OBJ1)
+
 proto: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h

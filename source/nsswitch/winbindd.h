@@ -55,6 +55,7 @@ struct getent_state {
 	uint32 grp_query_start_ndx;
 	BOOL got_all_sam_entries, got_sam_entries;
 	struct winbindd_domain *domain;
+	POLICY_HND dom_pol; /* Cached SAMR domain handle. */
 };
 
 /* Storage for cached getpwent() user entries */

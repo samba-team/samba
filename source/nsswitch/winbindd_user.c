@@ -337,13 +337,9 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 
 		/* Create a state record for this domain */
                 
-		if ((domain_state = (struct getent_state *)malloc(sizeof(struct getent_state))) == NULL)
+		if ((domain_state = create_getent_state(tmp)) == NULL)
 			return WINBINDD_ERROR;
                 
-		ZERO_STRUCTP(domain_state);
-
-		domain_state->domain = tmp;
-
 		/* Add to list of open domains */
                 
 		DLIST_ADD(state->getpwent_state, domain_state);
@@ -424,7 +420,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 					
 		num_entries = 0;
 
-		status = winbindd_query_dispinfo(ent->domain, mem_ctx,
+		status = winbindd_query_dispinfo(ent->domain, mem_ctx, &ent->dom_pol,
 						 &ent->dispinfo_ndx, 1,
 						 &num_entries, &ctr);
 		
@@ -636,6 +632,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	for (domain = domain_list; domain; domain = domain->next) {
 		NTSTATUS status;
 		uint32 start_ndx = 0;
+		POLICY_HND dom_pol;
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
@@ -644,13 +641,16 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		    !check_domain_env(state->request.domain, domain->name))
 			continue;
 
+		if (!create_samr_domain_handle(domain, &dom_pol))
+			continue;
+
 		/* Query display info */
 
 		do {
 			int i;
 
 			status = winbindd_query_dispinfo(
-                                domain, mem_ctx, &start_ndx, 
+                                domain, mem_ctx, &dom_pol, &start_ndx, 
                                 1, &num_entries, &ctr);
 
 			if (num_entries == 0)
@@ -696,6 +696,8 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 				extra_data[extra_data_len++] = ',';
 			}   
 		} while (NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+
+		close_samr_domain_handle(domain, &dom_pol);
         }
 
 	/* Assign extra_data fields in response structure */

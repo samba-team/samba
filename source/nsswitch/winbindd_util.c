@@ -742,6 +742,58 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
         return NT_STATUS_IS_OK(result);
 }
 
+BOOL create_samr_domain_handle(struct winbindd_domain *domain, POLICY_HND *pdom_pol)
+{
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	TALLOC_CTX *mem_ctx = talloc_init();
+
+	ZERO_STRUCTP(pdom_pol);
+
+	if (!mem_ctx)
+		return False;
+
+	/* Get sam handle */
+
+	if (!(hnd = cm_get_sam_handle(domain->name))) {
+		talloc_destroy(mem_ctx);
+                return False;
+	}
+	/* Get domain handle */
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+				des_access, &domain->sid, pdom_pol);
+
+	talloc_destroy(mem_ctx);
+	if (!NT_STATUS_IS_OK(result))
+		return False;
+
+	return True;
+}
+
+void close_samr_domain_handle(struct winbindd_domain *domain, POLICY_HND *pdom_pol)
+{
+	static POLICY_HND zero_pol;
+	CLI_POLICY_HND *hnd;
+	TALLOC_CTX *mem_ctx = talloc_init();
+
+	if (!mem_ctx)
+		return;
+
+	if (memcmp(pdom_pol, &zero_pol, sizeof(zero_pol)) == 0)
+		return;
+
+	if (!(hnd = cm_get_sam_handle(domain->name))) {
+		talloc_destroy(mem_ctx);
+                return;
+	}
+
+	cli_samr_close(hnd->cli, mem_ctx, pdom_pol);
+	ZERO_STRUCTP(pdom_pol);
+
+	talloc_destroy(mem_ctx);
+}
+
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */
 
 void free_getent_state(struct getent_state *state)
@@ -755,6 +807,9 @@ void free_getent_state(struct getent_state *state)
 	while(temp != NULL) {
 		struct getent_state *next;
 
+		/* Close SAMR cache handle. */
+		close_samr_domain_handle(state->domain, &state->dom_pol);
+
 		/* Free sam entries then list entry */
 
 		SAFE_FREE(state->sam_entries);
@@ -764,6 +819,25 @@ void free_getent_state(struct getent_state *state)
 		SAFE_FREE(temp);
 		temp = next;
 	}
+}
+
+struct getent_state *create_getent_state(struct winbindd_domain *domain)
+{
+	struct getent_state *state = (struct getent_state *)malloc(sizeof(struct getent_state));
+
+	if (state == NULL)
+		return NULL;
+
+	ZERO_STRUCTP(state);
+	state->domain = domain;
+
+	/* Create and cache a SAMR domain handle. */
+	if (!create_samr_domain_handle(state->domain, &state->dom_pol)) {
+		free_getent_state(state);
+		return NULL;
+	}
+
+	return state;
 }
 
 /* Initialise trusted domain info */
@@ -790,41 +864,23 @@ BOOL winbindd_param_init(void)
    application. */
 
 NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
-                                 TALLOC_CTX *mem_ctx,
+                                 TALLOC_CTX *mem_ctx, POLICY_HND *pdom_pol,
 				 uint32 *start_ndx, uint16 info_level, 
 				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND dom_pol;
-	BOOL got_dom_pol = False;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 
 	/* Get sam handle */
 
 	if (!(hnd = cm_get_sam_handle(domain->name)))
-		goto done;
-
-	/* Get domain handle */
-
-	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
-					des_access, &domain->sid, &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	got_dom_pol = True;
+		return NT_STATUS_UNSUCCESSFUL;
 
 	/* Query display info */
 
 	result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
-					&dom_pol, start_ndx, info_level,
+					pdom_pol, start_ndx, info_level,
 					num_entries, 0xffff, ctr);
-
- done:
-
-	if (got_dom_pol)
-		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
 
 	return result;
 }
