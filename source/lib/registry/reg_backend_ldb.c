@@ -29,6 +29,15 @@ struct ldb_key_data
 	int subkey_count, value_count;
 };
 
+static int ldb_close_hive (void *_hive)
+{
+	struct registry_hive *hive = _hive;
+	ldb_close (hive->backend_data);
+	return 0;
+}
+
+
+
 static int reg_close_ldb_key (void *data)
 {
 	struct registry_key *key = data;
@@ -189,6 +198,7 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 
 	hive->root = talloc_zero_p(hive, struct registry_key);
 	talloc_set_destructor (hive->root, reg_close_ldb_key);
+	talloc_set_destructor (hive, ldb_close_hive);
 	hive->root->name = talloc_strdup(hive->root, "");
 	hive->root->backend_data = kd = talloc_zero_p(hive->root, struct ldb_key_data);
 	kd->dn = talloc_strdup(hive->root, "key=root");
@@ -240,18 +250,11 @@ static WERROR ldb_del_key (struct registry_key *key)
 	return WERR_OK;
 }
 
-static WERROR ldb_close_hive (struct registry_hive *hive)
-{
-	ldb_close (hive->backend_data);
-	return WERR_OK;
-}
-
 static struct hive_operations reg_backend_ldb = {
 	.name = "ldb",
 	.add_key = ldb_add_key,
 	.del_key = ldb_del_key,
 	.open_hive = ldb_open_hive,
-	.close_hive = ldb_close_hive,
 	.open_key = ldb_open_key,
 	.get_value_by_index = ldb_get_value_by_id,
 	.get_subkey_by_index = ldb_get_subkey_by_id,
