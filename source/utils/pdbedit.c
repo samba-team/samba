@@ -182,11 +182,9 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL check, ret;
 	
-	errno = 0; /* testing --simo */
 	check = in->pdb_setsampwent(in, False);
-	if (check && errno == ENOENT) {
-		fprintf (stderr,"Password database not found!\n");
-		exit(1);
+	if (!check) {
+		return 1;
 	}
 
 	check = True;
@@ -411,6 +409,7 @@ int main (int argc, char **argv)
 	static char *backend_out = NULL;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
+	static char *config_file = dyn_CONFIGFILE;
 	static int new_debuglevel = -1;
 
 	struct pdb_context *in;
@@ -431,21 +430,14 @@ int main (int argc, char **argv)
 		{"delete",	'x',POPT_ARG_VAL,&delete_user,1,"delete user",NULL},
 		{"import",	'i',POPT_ARG_STRING,&backend_in,0,"use different passdb backend",NULL},
 		{"export",	'e',POPT_ARG_STRING,&backend_out,0,"export user accounts to backend", NULL},
-		{"debuglevel",'D',POPT_ARG_INT,&new_debuglevel,0,"set debuglevel",NULL},
+		{"debuglevel",'D', POPT_ARG_INT, &new_debuglevel,0,"set debuglevel",NULL},
+		{"configfile",'c',POPT_ARG_STRING, &config_file,0,"use different configuration file",NULL},
 		{0,0,0,0}
 	};
 
 	DEBUGLEVEL = 1;
 	setup_logging("pdbedit", True);
 	AllowDebugChange = False;
-
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-				dyn_CONFIGFILE);
-		exit(1);
-	}
-
-	backend_in = lp_passdb_backend();
 
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
 						POPT_CONTEXT_KEEP_FIRST);
@@ -454,6 +446,16 @@ int main (int argc, char **argv)
 
 	if (new_debuglevel != -1) {
 		DEBUGLEVEL = new_debuglevel;
+	}
+
+	if (!lp_load(config_file,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+				config_file);
+		exit(1);
+	}
+
+	if (!backend_in) {
+		backend_in = lp_passdb_backend();
 	}
 
 	setparms = (full_name || home_dir || home_drive || logon_script || profile_path);
