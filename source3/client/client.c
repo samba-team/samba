@@ -29,6 +29,7 @@
 
 struct cli_state *cli;
 extern BOOL in_client;
+static int port = SMB_PORT;
 pstring cur_dir = "\\";
 pstring cd_path = "";
 static pstring service;
@@ -1642,12 +1643,16 @@ struct cli_state *do_connect(char *server, char *share)
 	make_nmb_name(&calling, global_myname, 0x0, "");
 	make_nmb_name(&called , server, name_type, "");
 
+	if (port == 0)
+	  port = 139;   /* If not set, set to 139, FIXME, NUMBERS BAD */
+
  again:
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server_n, &ip)) {
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) == 0) ||
+            !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
@@ -1909,7 +1914,6 @@ static int do_message_op(void)
 {
 	fstring base_directory;
 	char *pname = argv[0];
-	int port = SMB_PORT;
 	int opt;
 	extern FILE *dbf;
 	extern char *optarg;
