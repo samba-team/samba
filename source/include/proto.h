@@ -484,6 +484,7 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
+char *get_trusted_serverlist(const char* domain);
 
 /*The following definitions come from  lib/util_array.c  */
 
