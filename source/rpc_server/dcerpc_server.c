@@ -1024,8 +1024,7 @@ static void dcesrv_init(struct server_service *service, const struct model_ops *
 	int i;
 	const char **endpoint_servers = lp_dcerpc_endpoint_servers();
 
-	DEBUG(0,("dcesrv_init\n"));
-
+	DEBUG(1,("dcesrv_init\n"));
 
 	if (!endpoint_servers) {
 		DEBUG(0,("dcesrv_init_context: no endpoint servers configured\n"));
