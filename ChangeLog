@@ -1,5 +1,8 @@
 2003-03-14  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* kdc/kerberos4.c: add krb4 into the most error messages written
+	to the logfile
+
 	* lib/krb5/krb5_ccache.3: add missing name of argument
 	(krb5_context) to most functions
 
