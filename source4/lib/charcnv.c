@@ -57,25 +57,6 @@ static const char *charset_name(charset_t ch)
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 
-/*
-  on-demand initialisation of conversion handles
-*/
-static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
-{
-	const char *n1, *n2;
-
-	if (conv_handles[from][to]) {
-		return conv_handles[from][to];
-	}
-
-	n1 = charset_name(from);
-	n2 = charset_name(to);
-
-	conv_handles[from][to] = smb_iconv_open(n2,n1);
-
-	return conv_handles[from][to];
-}
-
 /**
  re-initialize iconv conversion descriptors
 **/
@@ -93,6 +74,32 @@ void init_iconv(void)
 		}
 	}
 
+}
+
+/*
+  on-demand initialisation of conversion handles
+*/
+static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
+{
+	const char *n1, *n2;
+	static int initialised;
+	/* auto-free iconv memory on exit so valgrind reports are easier
+	   to look at */
+	if (initialised == 0) {
+		initialised = 1;
+		atexit(init_iconv);
+	}
+
+	if (conv_handles[from][to]) {
+		return conv_handles[from][to];
+	}
+
+	n1 = charset_name(from);
+	n2 = charset_name(to);
+
+	conv_handles[from][to] = smb_iconv_open(n2,n1);
+
+	return conv_handles[from][to];
 }
 
 
