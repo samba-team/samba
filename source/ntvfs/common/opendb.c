@@ -154,10 +154,14 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
-	if (!(e1->access_mask & (SA_RIGHT_FILE_WRITE_DATA | SA_RIGHT_FILE_READ_DATA | STD_RIGHT_DELETE_ACCESS))) {
+	if (!(e1->access_mask & (SA_RIGHT_FILE_WRITE_DATA | 
+				 SA_RIGHT_FILE_READ_EXEC | 
+				 STD_RIGHT_DELETE_ACCESS))) {
 		return False;
 	}
-	if (!(e2->access_mask & (SA_RIGHT_FILE_WRITE_DATA | SA_RIGHT_FILE_READ_DATA | STD_RIGHT_DELETE_ACCESS))) {
+	if (!(e2->access_mask & (SA_RIGHT_FILE_WRITE_DATA | 
+				 SA_RIGHT_FILE_READ_EXEC | 
+				 STD_RIGHT_DELETE_ACCESS))) {
 		return False;
 	}
 
@@ -165,11 +169,19 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 	CHECK_MASK(e1->access_mask, e2->share_access, SA_RIGHT_FILE_WRITE_DATA, NTCREATEX_SHARE_ACCESS_WRITE);
 	CHECK_MASK(e2->access_mask, e1->share_access, SA_RIGHT_FILE_WRITE_DATA, NTCREATEX_SHARE_ACCESS_WRITE);
 
-	CHECK_MASK(e1->access_mask, e2->share_access, SA_RIGHT_FILE_READ_DATA, NTCREATEX_SHARE_ACCESS_READ);
-	CHECK_MASK(e2->access_mask, e1->share_access, SA_RIGHT_FILE_READ_DATA, NTCREATEX_SHARE_ACCESS_READ);
+	CHECK_MASK(e1->access_mask, e2->share_access, 
+		   SA_RIGHT_FILE_READ_EXEC, 
+		   NTCREATEX_SHARE_ACCESS_READ);
+	CHECK_MASK(e2->access_mask, e1->share_access, 
+		   SA_RIGHT_FILE_READ_EXEC, 
+		   NTCREATEX_SHARE_ACCESS_READ);
 
-	CHECK_MASK(e1->access_mask, e2->share_access, STD_RIGHT_DELETE_ACCESS, NTCREATEX_SHARE_ACCESS_DELETE);
-	CHECK_MASK(e2->access_mask, e1->share_access, STD_RIGHT_DELETE_ACCESS, NTCREATEX_SHARE_ACCESS_DELETE);
+	CHECK_MASK(e1->access_mask, e2->share_access, 
+		   STD_RIGHT_DELETE_ACCESS, 
+		   NTCREATEX_SHARE_ACCESS_DELETE);
+	CHECK_MASK(e2->access_mask, e1->share_access, 
+		   STD_RIGHT_DELETE_ACCESS, 
+		   NTCREATEX_SHARE_ACCESS_DELETE);
 
 	/* if a delete is pending then a second open is not allowed */
 	if ((e1->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) ||

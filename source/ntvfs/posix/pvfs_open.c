@@ -289,16 +289,13 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
 	}
 
-	switch (access_mask & (SA_RIGHT_FILE_READ_DATA | SA_RIGHT_FILE_WRITE_DATA)) {
-	case SA_RIGHT_FILE_READ_DATA:
-		flags = O_RDONLY;
-		break;
-	case SA_RIGHT_FILE_WRITE_DATA:
-		flags = O_WRONLY;
-		break;
-	case SA_RIGHT_FILE_WRITE_DATA|SA_RIGHT_FILE_READ_DATA:
+	if ((access_mask & SA_RIGHT_FILE_READ_EXEC) &&
+	    (access_mask & SA_RIGHT_FILE_WRITE_DATA)) {
 		flags = O_RDWR;
-		break;
+	} else if (access_mask & SA_RIGHT_FILE_WRITE_DATA) {
+		flags = O_WRONLY;
+	} else {
+		flags = O_RDONLY;
 	}
 
 	f = talloc_p(req, struct pvfs_file);
@@ -493,16 +490,13 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	switch (access_mask & (SA_RIGHT_FILE_READ_DATA | SA_RIGHT_FILE_WRITE_DATA)) {
-	case SA_RIGHT_FILE_READ_DATA:
-		flags |= O_RDONLY;
-		break;
-	case SA_RIGHT_FILE_WRITE_DATA:
-		flags |= O_WRONLY;
-		break;
-	case SA_RIGHT_FILE_WRITE_DATA|SA_RIGHT_FILE_READ_DATA:
+	if ((access_mask & SA_RIGHT_FILE_READ_EXEC) &&
+	    (access_mask & SA_RIGHT_FILE_WRITE_DATA)) {
 		flags |= O_RDWR;
-		break;
+	} else if (access_mask & SA_RIGHT_FILE_WRITE_DATA) {
+		flags |= O_WRONLY;
+	} else {
+		flags |= O_RDONLY;
 	}
 
 	/* handle creating a new file separately */
