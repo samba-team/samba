@@ -882,6 +882,18 @@ NAME="AEN260"
 ><LI
 ><P
 ><A
+HREF="#ACLCOMPATIBILITY"
+><TT
+CLASS="PARAMETER"
+><I
+>acl compatibility</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
@@ -3068,7 +3080,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN992"
+NAME="AEN996"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4595,7 +4607,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1500"
+NAME="AEN1504"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4604,6 +4616,36 @@ NAME="AEN1500"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+><A
+NAME="ACLCOMPATIBILITY"
+></A
+>acl compatibility (G)</DT
+><DD
+><P
+>New in Samba 2.2.8 and above, this string parameter tells
+		smbd if it should modify any Windows access control lists created
+		from POSIX access control lists to remove features which are not
+		supported by Windows 2000 but not supported by the Windows NT ACL edit.
+		control.</P
+><P
+>By default this parameter is set automatically by detecting the
+		client type and is set to "true" if the client is Windows NT.</P
+><P
+>Default: <EM
+>client detected</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>acl compatibility = Win2k</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>acl compatibility = winnt</B
+></P
+></DD
 ><DT
 ><A
 NAME="ADDPRINTERCOMMAND"
@@ -19733,7 +19775,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6235"
+NAME="AEN6251"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19763,7 +19805,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6241"
+NAME="AEN6257"
 ></A
 ><H2
 >VERSION</H2
@@ -19774,7 +19816,7 @@ NAME="AEN6241"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6244"
+NAME="AEN6260"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19853,7 +19895,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6264"
+NAME="AEN6280"
 ></A
 ><H2
 >AUTHOR</H2

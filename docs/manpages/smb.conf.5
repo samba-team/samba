@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "01 February 2003" "" ""
+.TH "SMB.CONF" "5" "14 March 2003" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -517,6 +517,9 @@ supplied password.
 .PP
 Here is a list of all global parameters. See the section of 
 each parameter for details. Note that some are synonyms.
+.TP 0.2i
+\(bu
+\fIacl compatibility\fR
 .TP 0.2i
 \(bu
 \fIadd printer command\fR
@@ -1446,6 +1449,22 @@ each parameter for details. Note that some are synonyms.
 \(bu
 \fIwriteable\fR
 .SH "EXPLANATION OF EACH PARAMETER"
+.TP
+\fBacl compatibility (G)\fR
+New in Samba 2.2.8 and above, this string parameter tells
+smbd if it should modify any Windows access control lists created
+from POSIX access control lists to remove features which are not
+supported by Windows 2000 but not supported by the Windows NT ACL edit.
+control.
+
+By default this parameter is set automatically by detecting the
+client type and is set to "true" if the client is Windows NT.
+
+Default: \fBclient detected\fR
+
+Example: \fBacl compatibility = Win2k\fR
+
+Example: \fBacl compatibility = winnt\fR
 .TP
 \fBadd printer command (G)\fR
 With the introduction of MS-RPC based printing
