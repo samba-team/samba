@@ -1043,7 +1043,11 @@ void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob)
 	str->uni_str_len = blob->length / sizeof(uint16);
 	str->uni_max_len = str->uni_str_len;
 	str->offset = 0;
-	str->buffer = (uint16 *) memdup(blob->data, blob->length);
+	if (blob->length) {
+		str->buffer = (uint16 *) memdup(blob->data, blob->length);
+	} else {
+		str->buffer = NULL;
+	}
 	if ((str->buffer == NULL) && (blob->length > 0)) {
 		smb_panic("init_unistr2_from_datablob: malloc fail\n");
 	}
