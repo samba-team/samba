@@ -1,3 +1,7 @@
+2003-08-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rshd.c: -P also with KRB5
+	
 2003-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsh.1: replace > with \*[Gt]
