@@ -26,6 +26,10 @@
 
 #ifdef HAVE_KRB5
 
+#if !defined(HAVE_KRB5_PRINC_COMPONENT)
+const krb5_data *krb5_princ_component(krb5_context, krb5_principal, int );
+#endif
+
 /**********************************************************************************
  Try to verify a ticket using the system keytab... the system keytab has kvno -1 entries, so
  it's more like what microsoft does... see comment in utils/net_ads.c in the
