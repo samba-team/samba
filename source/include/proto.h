@@ -642,7 +642,10 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
-void no_fn(uint uid);
+BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
 
 /*The following definitions come from  predict.c  */
 
