@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_readline) $(INCLUDE_krb4)
+INCLUDES += $(INCLUDE_readline) $(INCLUDE_krb4) -I$(srcdir)/../lib/krb5
 
 sbin_PROGRAMS = kadmin
 
