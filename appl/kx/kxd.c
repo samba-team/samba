@@ -2,8 +2,6 @@
 
 RCSID("$Id$");
 
-#include <syslog.h>
-
 char *prog;
 
 static int

@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <pwd.h>
 #include <signal.h>
+#include <syslog.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #ifdef HAVE_SYS_RESOURCE_H
