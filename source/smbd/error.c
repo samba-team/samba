@@ -42,7 +42,7 @@ int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file
 	/* We can now delete the auxiliary struct */
 	free((char *)wbmpx);
 	fsp->wbmpx_ptr = NULL;
-	return error_packet(outbuf,NT_STATUS_OK,eclass,err,line,file);
+	return error_packet(outbuf,NT_STATUS_OK,eclass,err,False,line,file);
 }
 
 /****************************************************************************
@@ -76,7 +76,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
 		}
 	}
 
-	return error_packet(outbuf,ntstatus,eclass,ecode,line,file);
+	return error_packet(outbuf,ntstatus,eclass,ecode,False,line,file);
 }
 
 
@@ -85,7 +85,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
 ****************************************************************************/
 
 int error_packet(char *outbuf,NTSTATUS ntstatus,
-		 uint8 eclass,uint32 ecode,int line, const char *file)
+		 uint8 eclass,uint32 ecode,BOOL force_dos, int line, const char *file)
 {
 	int outsize = set_message(outbuf,0,0,True);
 	extern uint32 global_client_caps;
@@ -106,7 +106,7 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 	 * when talking with clients that normally expect nt status codes. JRA.
 	 */
 
-	if ((lp_nt_status_support() || (SVAL(outbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) && (global_client_caps & CAP_STATUS32)) {
+	if ((lp_nt_status_support() || (SVAL(outbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) && (global_client_caps & CAP_STATUS32) && (!force_dos)) {
 		if (NT_STATUS_V(ntstatus) == 0 && eclass)
 			ntstatus = dos_to_ntstatus(eclass, ecode);
 		SIVAL(outbuf,smb_rcls,NT_STATUS_V(ntstatus));
