@@ -128,7 +128,6 @@ clients is conservative and if followed will minimize problems - but it is not a
 				These are old bad habits that require much discipline and vigilance
 				on the part of network management.
 				</para></listitem>
-			</itemizedlist>
 
 		<listitem><para><indexterm>
 			<primary>WebClient</primary>
@@ -137,6 +136,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 				The use of the WebClient service has been implicated in many Windows
 				networking related problems.
 				</para></listitem>
+			</itemizedlist>
 
 		</para></listitem></varlistentry>
 
