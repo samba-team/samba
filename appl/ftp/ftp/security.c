@@ -672,7 +672,7 @@ sec_login(char *host)
     verbose = -1; /* shut up all messages this will produce (they
 		     are usually not very user friendly) */
     
-    for(m = mechs; (*m)->name; m++) {
+    for(m = mechs; *m && (*m)->name; m++) {
 	app_data = realloc(app_data, (*m)->size);
 	if((*m)->init && (*(*m)->init)(app_data) != 0) {
 	    printf("Skipping %s...\n", (*m)->name);
@@ -708,7 +708,7 @@ sec_login(char *host)
     }
     
     verbose = old_verbose;
-    return 0;
+    return *m == NULL;
 }
 
 void
