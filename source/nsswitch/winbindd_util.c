@@ -180,7 +180,15 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 
 	t = time(NULL);
 
-	if ((t - domain->last_check) < WINBINDD_ESTABLISH_LOOP) {
+	/* 
+	 * Check we haven't checked too recently & make sure
+	 * the system clock has not been wound backwards (i.e. 
+	 * negative time difference) 
+	 */
+	 
+	if ( ((t - domain->last_check) > 0) 
+		&& ((t - domain->last_check) < WINBINDD_ESTABLISH_LOOP) )
+	{
 		return domain->sam_handle_open &&
 			domain->sam_dom_handle_open;
 	}
