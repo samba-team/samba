@@ -345,13 +345,13 @@ ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N)
  Returns 0 on success, -1 on failure.
 ****************************************************************************/
 
-int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
+int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
 	connection_struct *conn = fsp->conn;
 	struct vfs_ops *vfs_ops = &conn->vfs_ops;
-	SMB_OFF_T space_avail;
+	SMB_BIG_UINT space_avail;
 	SMB_BIG_UINT bsize,dfree,dsize;
 
 	release_level_2_oplocks_on_change(fsp);
@@ -362,21 +362,26 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 
 	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n", fsp->fsp_name, (double)len ));
 
+	if (((SMB_OFF_T)len) < 0) {
+		DEBUG(0,("vfs_allocate_file_space: %s negative len requested.\n", fsp->fsp_name ));
+		return -1;
+	}
+
 	ret = vfs_fstat(fsp,fsp->fd,&st);
 	if (ret == -1)
 		return ret;
 
-	if (len == st.st_size)
+	if (len == (SMB_BIG_UINT)st.st_size)
 		return 0;
 
-	if (len < st.st_size) {
+	if (len < (SMB_BIG_UINT)st.st_size) {
 		/* Shrink - use ftruncate. */
 
 		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
 				fsp->fsp_name, (double)st.st_size ));
 
 		flush_write_cache(fsp, SIZECHANGE_FLUSH);
-		if ((ret = vfs_ops->ftruncate(fsp, fsp->fd, len)) != -1) {
+		if ((ret = vfs_ops->ftruncate(fsp, fsp->fd, (SMB_OFF_T)len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
 		return ret;
@@ -389,10 +394,10 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 
 	len -= st.st_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
-	space_avail = (SMB_OFF_T)conn->vfs_ops.disk_free(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
+	space_avail = conn->vfs_ops.disk_free(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
 
-	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %lu, space avail = %lu\n",
-			fsp->fsp_name, (double)st.st_size, (unsigned long)len, (unsigned long)space_avail ));
+	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %.0f, space avail = %.0f\n",
+			fsp->fsp_name, (double)st.st_size, (double)len, (double)space_avail ));
 
 	if (len > space_avail) {
 		errno = ENOSPC;
