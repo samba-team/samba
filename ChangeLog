@@ -1,5 +1,11 @@
+2003-09-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/test/Makefile.am: build http_client
+	
 2003-09-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/asn1/asn1_print.c: add support for printing Enumerated
+	
 	* appl/test/gssapi_client.c: allow user to select mech; krb5,
 	spnego, and no-oid
 
