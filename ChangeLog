@@ -1,3 +1,8 @@
+Sun Aug 31 17:15:49 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/get_port.c: Add context parameter. Now takes port in
+ 	host byte order.
+
 Sat Aug 30 18:48:19 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/connect.c: Add timeout to select, and log about expired tcp
