@@ -2056,26 +2056,22 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 
 /*The following definitions come from  rpc_client/cli_spoolss.c  */
 
-BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
-			uint32 flags, const char *servername,
+BOOL spoolss_enum_printers(uint32 flags, const char *srv_name,
 			uint32 level,
 			uint32 *count,
 			void ***printers);
-uint32 spoolss_enum_jobs(struct cli_state *cli, uint16 fnum,
-			const PRINTER_HND *hnd,
+uint32 spoolss_enum_jobs( const POLICY_HND *hnd,
 			uint32 firstjob,
 			uint32 numofjobs,
 			uint32 level,
 			uint32 *buf_size,
 			uint32 *count,
 			void ***jobs);
-BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
-			const char *printername,
+BOOL spoolss_open_printer_ex( const char *printername,
 			uint32 cbbuf, uint32 devmod, uint32 des_access,
-			const char *station,
-			const char *username,
-			PRINTER_HND *hnd);
-BOOL spoolss_closeprinter(struct cli_state *cli, uint16 fnum, PRINTER_HND *hnd);
+			const char *station, const char *username,
+			POLICY_HND *hnd);
+BOOL spoolss_closeprinter(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
@@ -3170,12 +3166,12 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		const char *username);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
-				PRINTER_HND *handle,
+				POLICY_HND *handle,
 				char *valuename,
 				uint32 size);
 BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
-BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, PRINTER_HND *hnd);
+BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, POLICY_HND *hnd);
 BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_closeprinter(char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_startdocprinter(char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth);
@@ -3218,7 +3214,7 @@ BOOL spoolss_io_r_getprinter(char *desc,
                                SPOOL_R_GETPRINTER *r_u, 
                                prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u,
-				PRINTER_HND *hnd,
+				POLICY_HND *hnd,
 				uint32 level,
 				uint32 buf_size);
 BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u,
@@ -3231,7 +3227,7 @@ BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int de
 BOOL spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int depth);
 void free_r_enumjobs(SPOOL_R_ENUMJOBS *r_u);
 BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth);
-BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const PRINTER_HND *hnd,
+BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const POLICY_HND *hnd,
 				uint32 firstjob,
 				uint32 numofjobs,
 				uint32 level,
@@ -3629,18 +3625,15 @@ void cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
-BOOL msrpc_spoolss_enum_printers(struct cli_state *cli,
-				const char* srv_name,
+BOOL msrpc_spoolss_enum_printers( const char* srv_name,
 				uint32 level,
 				uint32 *num,
 				void ***ctr,
 				PRINT_INFO_FN(fn));
 void cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
 void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[]);
-BOOL msrpc_spoolss_enum_jobs(struct cli_state *cli,
-				const char* srv_name,
-				const char* user_name,
-				const char* printer_name,
+BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
+				const char* station, const char* user_name, 
 				uint32 level,
 				uint32 *num,
 				void ***ctr,

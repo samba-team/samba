@@ -35,8 +35,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a SPOOLSS Enum Printers
 ****************************************************************************/
-BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
-			uint32 flags, const char *servername,
+BOOL spoolss_enum_printers(uint32 flags, const char *srv_name,
 			uint32 level,
 			uint32 *count,
 			void ***printers)
@@ -46,6 +45,13 @@ BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
 	SPOOL_Q_ENUMPRINTERS q_o;
 	BOOL valid_pol = False;
 
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_LSARPC, &con))
+	{
+		return False;
+	}
+
 	if (count == NULL || printers == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -54,15 +60,15 @@ BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
 	/* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
 
 	DEBUG(5,("SPOOLSS Enum Printers (Server: %s level: %d)\n",
-				servername, level));
+				srv_name, level));
 
-	make_spoolss_q_enumprinters(&q_o, flags, servername, level, 0x50);
+	make_spoolss_q_enumprinters(&q_o, flags, srv_name, level, 0x50);
 
 	/* turn parameters into data stream */
 	spoolss_io_q_enumprinters("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SPOOLSS_ENUMPRINTERS, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERS, &buf, &rbuf))
 	{
 		SPOOL_R_ENUMPRINTERS r_o;
 		BOOL p;
@@ -93,14 +99,15 @@ BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
 
+	cli_connection_unlink(con);
+
 	return valid_pol;
 }
 
 /****************************************************************************
 do a SPOOLSS Enum Jobs
 ****************************************************************************/
-uint32 spoolss_enum_jobs(struct cli_state *cli, uint16 fnum,
-			const PRINTER_HND *hnd,
+uint32 spoolss_enum_jobs( const POLICY_HND *hnd,
 			uint32 firstjob,
 			uint32 numofjobs,
 			uint32 level,
@@ -133,7 +140,7 @@ uint32 spoolss_enum_jobs(struct cli_state *cli, uint16 fnum,
 	spoolss_io_q_enumjobs("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SPOOLSS_ENUMJOBS, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMJOBS, &buf, &rbuf))
 	{
 		SPOOL_R_ENUMJOBS r_o;
 		BOOL p;
@@ -172,17 +179,34 @@ uint32 spoolss_enum_jobs(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SPOOLSS Open Printer Ex
 ****************************************************************************/
-BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
-			const char *printername,
+BOOL spoolss_open_printer_ex( const char *printername,
 			uint32 cbbuf, uint32 devmod, uint32 des_access,
-			const char *station,
-			const char *username,
-			PRINTER_HND *hnd)
+			const char *station, const char *username,
+			POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	SPOOL_Q_OPEN_PRINTER_EX q_o;
 	BOOL valid_pol = False;
+	fstring srv_name;
+	char *s;
+
+	struct cli_connection *con = NULL;
+
+	memset(srv_name, 0, sizeof(srv_name));
+	fstrcpy(srv_name, printername);
+
+	s = strchr(&srv_name[2], '\\');
+
+	if (s != NULL)
+	{
+		*s = 0;
+	}
+
+	if (!cli_connection_init(srv_name, PIPE_LSARPC, &con))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -201,7 +225,7 @@ BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
 	spoolss_io_q_open_printer_ex("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SPOOLSS_OPENPRINTEREX, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SPOOLSS_OPENPRINTEREX, &buf, &rbuf))
 	{
 		SPOOL_R_OPEN_PRINTER_EX r_o;
 		BOOL p;
@@ -220,7 +244,10 @@ BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.handle.data, sizeof(hnd->data));
-			valid_pol = True;
+
+			valid_pol = register_policy_hnd(hnd) &&
+					    set_policy_con(hnd, con, 
+						cli_connection_unlink);
 		}
 	}
 
@@ -233,7 +260,7 @@ BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SPOOL Close
 ****************************************************************************/
-BOOL spoolss_closeprinter(struct cli_state *cli, uint16 fnum, PRINTER_HND *hnd)
+BOOL spoolss_closeprinter(POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -256,7 +283,7 @@ BOOL spoolss_closeprinter(struct cli_state *cli, uint16 fnum, PRINTER_HND *hnd)
 	spoolss_io_q_closeprinter("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SPOOLSS_CLOSEPRINTER, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, SPOOLSS_CLOSEPRINTER, &buf, &rbuf))
 	{
 		SPOOL_R_CLOSEPRINTER r_c;
 		BOOL p;
@@ -294,6 +321,8 @@ BOOL spoolss_closeprinter(struct cli_state *cli, uint16 fnum, PRINTER_HND *hnd)
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
+
+	close_policy_hnd(hnd);
 
 	return valid_close;
 }
