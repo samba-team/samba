@@ -441,7 +441,7 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor 
 
 	case EPM_PROTOCOL_IP:
 		if (strlen(data) > 0) {
-			floor->rhs.ip.address = interpret_addr(data);
+			floor->rhs.ip.address = ntohl(interpret_addr(data));
 		} else {
 			floor->rhs.ip.address = 0;
 		}
