@@ -143,34 +143,22 @@ BOOL init_domain_list(void)
 
 	domain = add_trusted_domain(lp_workgroup_unix(), &cache_methods);
 
-	/* Now we *must* get the domain sid for our primary domain. Go into
-	   a holding pattern until that is available */
-
-	result = cache_methods.domain_sid(domain, &domain->sid);
-	while (!NT_STATUS_IS_OK(result)) {
-
-		sleep(10);
-		DEBUG(1,("Retrying startup domain sid fetch for %s\n",
-			 domain->name));
-		result = cache_methods.domain_sid(domain, &domain->sid);
-
-		/* If we don't call lp_talloc_free() here we end up 
-		   accumulating memory in the "global" lp_talloc in
-		   param/loadparm.c */
-
-		lp_talloc_free();
+	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
+		DEBUG(1, ("Could not fetch sid for our domain %s\n",
+			  domain->name));
+		return False;
 	}
-       
-	DEBUG(1,("Added domain %s (%s)\n", 
-		 domain->name, 
+
+	DEBUG(1,("Added domain %s (%s)\n", domain->name, 
 		 sid_string_static(&domain->sid)));
 
 	DEBUG(1, ("getting trusted domain list\n"));
 
-	result = cache_methods.trusted_domains(domain, mem_ctx, (uint *)&num_domains,
-					       &names, &dom_sids);
+	result = cache_methods.trusted_domains(
+		domain, mem_ctx, (uint *)&num_domains, &names, &dom_sids);
 
 	/* Add each domain to the trusted domain list */
+
 	if (NT_STATUS_IS_OK(result)) {
 		int i;
 		for(i = 0; i < num_domains; i++) {
