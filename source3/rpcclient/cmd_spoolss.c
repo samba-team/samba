@@ -122,7 +122,7 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
 		}
 	}
 
-	return werror_to_ntstatus(werror);
+	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 
@@ -476,7 +476,7 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
 					     "", MAXIMUM_ALLOWED_ACCESS, 
 					     servername, user, &pol);
 
-	result = werror_to_ntstatus(werror);
+	result = W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -665,7 +665,7 @@ static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli,
 					     PRINTER_ACCESS_USE,
 					     servername, user, &pol);
 
-	result = werror_to_ntstatus(werror);
+	result = W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 
 	if (!NT_STATUS_IS_OK(result)) {
 		printf("Error opening printer handle for %s!\n", printername);
@@ -1204,6 +1204,168 @@ static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli,
 	return result;
 }
 
+/* Add a form */
+
+static NTSTATUS cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    int argc, char **argv)
+{
+	POLICY_HND handle;
+	WERROR werror;
+	char *servername = NULL, *printername = NULL;
+	FORM form;
+	BOOL got_handle = False;
+	
+	/* Parse the command arguements */
+
+	if (argc != 3) {
+		printf ("Usage: %s <printer> <formname>\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+	
+	/* Get a printer handle */
+
+	asprintf(&servername, "\\\\%s", cli->desthost);
+	strupper(servername);
+	asprintf(&printername, "%s\\%s", servername, argv[1]);
+
+	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
+					     MAXIMUM_ALLOWED_ACCESS, 
+					     servername, cli->user_name, &handle);
+
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	got_handle = True;
+
+	/* Dummy up some values for the form data */
+
+	form.flags = FORM_USER;
+	form.size_x = form.size_y = 100;
+	form.left = 0;
+	form.top = 10;
+	form.right = 20;
+	form.bottom = 30;
+
+	init_unistr2(&form.name, argv[2], strlen(argv[2]) + 1);
+
+	/* Add the form */
+
+	werror = cli_spoolss_addform(cli, mem_ctx, &handle, 1, &form);
+
+ done:
+	if (got_handle)
+		cli_spoolss_close_printer(cli, mem_ctx, &handle);
+
+	SAFE_FREE(servername);
+	SAFE_FREE(printername);
+
+	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/* Set a form */
+
+static NTSTATUS cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    int argc, char **argv)
+{
+	POLICY_HND handle;
+	WERROR werror;
+	char *servername = NULL, *printername = NULL;
+	FORM form;
+	BOOL got_handle = False;
+	
+	/* Parse the command arguements */
+
+	if (argc != 3) {
+		printf ("Usage: %s <printer> <formname>\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+	
+	/* Get a printer handle */
+
+	asprintf(&servername, "\\\\%s", cli->desthost);
+	strupper(servername);
+	asprintf(&printername, "%s\\%s", servername, argv[1]);
+
+	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
+					     MAXIMUM_ALLOWED_ACCESS, 
+					     servername, cli->user_name, &handle);
+
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	got_handle = True;
+
+	/* Dummy up some values for the form data */
+
+	form.flags = FORM_PRINTER;
+	form.size_x = form.size_y = 100;
+	form.left = 0;
+	form.top = 10;
+	form.right = 20;
+	form.bottom = 30;
+
+	init_unistr2(&form.name, argv[2], strlen(argv[2]) + 1);
+
+	/* Set the form */
+
+	werror = cli_spoolss_setform(cli, mem_ctx, &handle, 1, &form);
+
+ done:
+	if (got_handle)
+		cli_spoolss_close_printer(cli, mem_ctx, &handle);
+
+	SAFE_FREE(servername);
+	SAFE_FREE(printername);
+
+	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/* Set a form */
+
+static NTSTATUS cmd_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				       int argc, char **argv)
+{
+	POLICY_HND handle;
+	WERROR werror;
+	char *servername = NULL, *printername = NULL;
+	BOOL got_handle = False;
+	
+	/* Parse the command arguements */
+
+	if (argc != 3) {
+		printf ("Usage: %s <printer> <formname>\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+	
+	/* Get a printer handle */
+
+	asprintf(&servername, "\\\\%s", cli->desthost);
+	strupper(servername);
+	asprintf(&printername, "%s\\%s", servername, argv[1]);
+
+	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
+					     MAXIMUM_ALLOWED_ACCESS, 
+					     servername, cli->user_name, &handle);
+
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	got_handle = True;
+
+	/* Delete the form */
+
+	werror = cli_spoolss_deleteform(cli, mem_ctx, &handle, argv[2]);
+
+ done:
+	if (got_handle)
+		cli_spoolss_close_printer(cli, mem_ctx, &handle);
+
+	SAFE_FREE(servername);
+	SAFE_FREE(printername);
+
+	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -1223,7 +1385,10 @@ struct cmd_set spoolss_commands[] = {
 	{ "getprinter", 	cmd_spoolss_getprinter, 	PIPE_SPOOLSS, "Get printer info",                    "" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	PIPE_SPOOLSS, "Open printer handle",                 "" },
 	{ "setdriver",		cmd_spoolss_setdriver,		PIPE_SPOOLSS, "Set printer driver",                  "" },
-	{ "getprintprocdir",	cmd_spoolss_getprintprocdir, PIPE_SPOOLSS, "Get print processor directory",          "" },
+	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",          "" },
+	{ "addform",            cmd_spoolss_addform,            PIPE_SPOOLSS, "Add form", "" },
+	{ "setform",            cmd_spoolss_setform,            PIPE_SPOOLSS, "Set form", "" },
+	{ "deleteform",         cmd_spoolss_deleteform,         PIPE_SPOOLSS, "Delete form", "" },
 
 	{ NULL }
 };
