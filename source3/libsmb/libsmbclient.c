@@ -492,9 +492,9 @@ static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, m
 
 	smbc_parse_path(context, fname, server, share, path, user, password); /* FIXME, check errors */
 
-	if (user[0] == (char)0) pstrcpy(user, context->user);
+	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	pstrcpy(workgroup, context->workgroup);
+	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, server, share, workgroup, user, password);
 
@@ -821,9 +821,9 @@ static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
 
 	smbc_parse_path(context, fname, server, share, path, user, password); /* FIXME, check errors */
 
-	if (user[0] == (char)0) pstrcpy(user, context->user);
+	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	pstrcpy(workgroup, context->workgroup);
+	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, server, share, workgroup, user, password);
 
@@ -920,11 +920,11 @@ static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname,
 
 	smbc_parse_path(ocontext, oname, server1, share1, path1, user1, password1);
 
-	if (user1[0] == (char)0) pstrcpy(user1, ocontext->user);
+	if (user1[0] == (char)0) fstrcpy(user1, ocontext->user);
 
 	smbc_parse_path(ncontext, nname, server2, share2, path2, user2, password2);
 
-	if (user2[0] == (char)0) pstrcpy(user2, ncontext->user);
+	if (user2[0] == (char)0) fstrcpy(user2, ncontext->user);
 
 	if (strcmp(server1, server2) || strcmp(share1, share2) ||
 	    strcmp(user1, user2)) {
@@ -936,7 +936,7 @@ static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname,
 
 	}
 
-	pstrcpy(workgroup, ocontext->workgroup);
+	fstrcpy(workgroup, ocontext->workgroup);
 	/* HELP !!! Which workgroup should I use ? Or are they always the same -- Tom */ 
 	srv = smbc_server(ocontext, server1, share1, workgroup, user1, password1);
 	if (!srv) {
@@ -1119,9 +1119,9 @@ static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
 
 	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, context->user);
+	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	pstrcpy(workgroup, context->workgroup);
+	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, server, share, workgroup, user, password);
 
@@ -1422,9 +1422,9 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 	}
 
-	if (user[0] == (char)0) pstrcpy(user, context->user);
+	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	pstrcpy(workgroup, context->workgroup);
+	fstrcpy(workgroup, context->workgroup);
 
 	dir = malloc(sizeof(*dir));
 
@@ -1893,9 +1893,9 @@ static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
 
 	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, context->user);
+	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	pstrcpy(workgroup, context->workgroup);
+	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, server, share, workgroup, user, password);
 
@@ -1980,9 +1980,9 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
 
 	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, context->user);
+	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	pstrcpy(workgroup, context->workgroup);
+	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, server, share, workgroup, user, password);
 
@@ -2327,9 +2327,9 @@ static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, smbc_li
 
 	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, context->user);
+	if (user[0] == (char)0) fstrcpy(user, context->user);
 	
-	pstrcpy(workgroup, context->workgroup);
+	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, server, share, workgroup, user, password);
 
@@ -2380,9 +2380,9 @@ static int smbc_unlink_print_job_ctx(SMBCCTX *context, const char *fname, int id
 
 	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, context->user);
+	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	pstrcpy(workgroup, context->workgroup);
+	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, server, share, workgroup, user, password);
 
