@@ -85,6 +85,12 @@ typedef struct {
 	int minor_status;
 } ADS_STATUS;
 
+#ifdef HAVE_ADS
+typedef LDAPMod **ADS_MODLIST;
+#else
+typedef void **ADS_MODLIST;
+#endif
+
 /* macros to simplify error returning */
 #define ADS_ERROR(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0)
 #define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc, 0)
