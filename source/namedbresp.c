@@ -104,6 +104,8 @@ struct response_record *make_response_queue_record(enum state_type state,
   if (!(n = (struct response_record *)malloc(sizeof(*n)))) 
     return(NULL);
 
+  bzero((char *)n, sizeof(*n));
+
   n->response_id = id;
   n->state = state;
   n->fd = fd;
