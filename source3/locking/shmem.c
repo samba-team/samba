@@ -733,7 +733,7 @@ BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off)
    return True;
 }
 
-void * smb_shm_offset2addr(smb_shm_offset_t offset)
+void *smb_shm_offset2addr(smb_shm_offset_t offset)
 {
    if (offset == NULL_OFFSET )
       return (void *)(0);
