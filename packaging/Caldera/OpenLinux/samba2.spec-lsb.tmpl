@@ -324,10 +324,6 @@ install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
 install -m 755 source/bin/debug2html $DESTDIR/usr/sbin/debug2html
 
-#lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
-
-ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
-
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smb.conf $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
@@ -347,7 +343,9 @@ cp -p $VVS/README.Public $DESTDIR/%{LSBservedir}/Public/README.txt
 cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
 
 
+#lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
+ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 for f in testparm testprns; do
   ln -s $f $DESTDIR/usr/bin/smb$f
