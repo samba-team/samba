@@ -1493,7 +1493,9 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 				   const uchar trust_password[16])
 {
 	NTSTATUS result;	
-	uint32 neg_flags = 0x000001ff;
+	/* The 7 here seems to be required to get Win2k not to downgrade us
+	   to NT4.  Actually, anything other than 1ff would seem to do... */
+	uint32 neg_flags = 0x000701ff;
 	int fnum;
 
 	cli_nt_netlogon_netsec_session_close(cli);
@@ -1586,6 +1588,8 @@ NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan,
 			     const uchar trust_password[16])
 {
 	NTSTATUS result;	
+	/* The 7 here seems to be required to get Win2k not to downgrade us
+	   to NT4.  Actually, anything other than 1ff would seem to do... */
 	uint32 neg_flags = 0x000701ff;
 	cli->pipe_auth_flags = 0;
 
