@@ -96,7 +96,7 @@ static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
     Debug1( "nmbd_subnetdb:namelist_entry_compare()\n" );
     Debug1( "%d == memcmp( \"%s\", \"%s\", %d )\n",
             memcmp( Item, &(NR->name), sizeof(struct nmb_name) ),
-            nmb_namestr(Iname), nmb_namestr(&NR->name), sizeof(struct nmb_name) );
+            nmb_namestr(Iname), nmb_namestr(&NR->name), (int)sizeof(struct nmb_name) );
     }
 
   return( memcmp( Item, &(NR->name), sizeof(struct nmb_name) ) ); 

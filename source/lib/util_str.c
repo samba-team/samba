@@ -757,7 +757,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 
     if (len > maxlength) {
 	    DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
-		     len-maxlength, src));
+		     (int)(len-maxlength), src));
 	    len = maxlength;
     }
       
@@ -788,7 +788,7 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 
     if (src_len + dest_len > maxlength) {
 	    DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
-		     src_len + dest_len - maxlength, src));
+		     (int)(src_len + dest_len - maxlength), src));
 	    src_len = maxlength - dest_len;
     }
       

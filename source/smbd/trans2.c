@@ -1170,7 +1170,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
       }
 
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
-	       strlen(vname),vname));
+	       (int)strlen(vname),vname));
       break;
     case SMB_QUERY_FS_SIZE_INFO:
     {

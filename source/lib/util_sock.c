@@ -182,13 +182,13 @@ ssize_t write_socket(int fd,char *buf,size_t len)
 
   if (passive)
     return(len);
-  DEBUG(6,("write_socket(%d,%d)\n",fd,len));
+  DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
   ret = write_data(fd,buf,len);
       
-  DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,len,ret));
+  DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
   if(ret <= 0)
     DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
-       len, fd, strerror(errno) ));
+       (int)len, fd, strerror(errno) ));
 
   return(ret);
 }
@@ -374,13 +374,13 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 
     if (ret == 0)
     {
-      DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", N - total, strerror(errno) ));
+      DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
       smb_read_error = READ_EOF;
       return 0;
     }
     if (ret == -1)
     {
-      DEBUG(0,("read_data: read failure for %d. Error = %s\n", N - total, strerror(errno) ));
+      DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
       smb_read_error = READ_ERROR;
       return -1;
     }
@@ -576,7 +576,7 @@ BOOL send_null_session_msg(int fd)
     ret = write_socket(fd,buffer+nwritten,len - nwritten);
     if (ret <= 0)
     {
-      DEBUG(0,("send_null_session_msg: Error writing %d bytes to client. %d. Exiting\n",len,ret));
+      DEBUG(0,("send_null_session_msg: Error writing %d bytes to client. %d. Exiting\n",(int)len,(int)ret));
       close_sockets();
       exit(1);
     }
@@ -602,7 +602,7 @@ BOOL send_smb(int fd,char *buffer)
     ret = write_socket(fd,buffer+nwritten,len - nwritten);
     if (ret <= 0)
     {
-      DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",len,ret));
+      DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",(int)len,(int)ret));
       close_sockets();
       exit(1);
     }

@@ -449,7 +449,7 @@ file dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode));
       if(msg_len != OPLOCK_BREAK_MSG_LEN)
       {
         DEBUG(0,("process_local_message: incorrect length for OPLOCK_BREAK_CMD (was %d, \
-should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
+should be %d).\n", (int)msg_len, (int)OPLOCK_BREAK_MSG_LEN));
         return False;
       }
       {
@@ -488,7 +488,7 @@ reply - dumping info.\n"));
       if(msg_len != OPLOCK_BREAK_MSG_LEN)
       {
         DEBUG(0,("process_local_message: ubr: incorrect length for reply \
-(was %d, should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
+(was %d, should be %d).\n", (int)msg_len, (int)OPLOCK_BREAK_MSG_LEN));
         return False;
       }
 

@@ -70,7 +70,7 @@ static BOOL cli_send_smb(struct cli_state *cli)
 		}
 		if (ret <= 0) {
 			DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",
-				 len,ret));
+				 (int)len,(int)ret));
 			close_sockets();
 			exit(1);
 		}

@@ -1848,7 +1848,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   if((sec_desc_size = get_nt_acl(fsp, &psd)) == 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-  DEBUG(3,("call_nt_transact_query_security_desc: sec_desc_size = %d.\n", sec_desc_size));
+  DEBUG(3,("call_nt_transact_query_security_desc: sec_desc_size = %d.\n",(int)sec_desc_size));
 
   SIVAL(params,0,(uint32)sec_desc_size);
 

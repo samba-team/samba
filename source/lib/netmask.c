@@ -259,7 +259,7 @@ this one is for AIX
  int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask)
 {
 	char buff[2048];
-	int fd, i, n;
+	int fd, i;
 	struct ifconf ifc;
 	struct ifreq *ifr=NULL;
 

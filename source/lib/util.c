@@ -740,7 +740,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
     if (strncmp(newname,dir2,l) != 0)
     {
       dos_ChDir(wd);
-      DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,l));
+      DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
       return(False);
     }
 
@@ -1697,7 +1697,7 @@ void *Realloc(void *p,size_t size)
 #endif
 
   if (!ret)
-    DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",size));
+    DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
 
   return(ret);
 }

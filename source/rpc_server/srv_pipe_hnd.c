@@ -204,7 +204,7 @@ ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n)
 	DEBUG(6,("write_pipe: %x", p->pnum));
 
 	DEBUG(6,("name: %s open: %s len: %d",
-		 p->name, BOOLSTR(p->open), n));
+		 p->name, BOOLSTR(p->open), (int)n));
 
 	dump_data(50, data, n);
 

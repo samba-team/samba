@@ -1942,7 +1942,7 @@ static void init_copymap(service *pservice)
   if (pservice->copymap) free(pservice->copymap);
   pservice->copymap = (BOOL *)malloc(sizeof(BOOL)*NUMPARAMETERS);
   if (!pservice->copymap)
-    DEBUG(0,("Couldn't allocate copymap!! (size %d)\n",NUMPARAMETERS));
+    DEBUG(0,("Couldn't allocate copymap!! (size %d)\n",(int)NUMPARAMETERS));
 
   for (i=0;i<NUMPARAMETERS;i++)
     pservice->copymap[i] = True;

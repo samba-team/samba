@@ -2050,7 +2050,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   
   DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n",
 	      fsp->fnum, (double)startpos,
-	      maxcount, mincount, nread ) );
+	      (int)maxcount, (int)mincount, (int)nread ) );
   
 #if UNSAFE_READRAW
   {
@@ -2150,7 +2150,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   SSVAL(smb_buf(outbuf),1,nread);
 
   DEBUG( 3, ( "lockread fnum=%d num=%d nread=%d\n",
-            fsp->fnum, numtoread, nread ) );
+            fsp->fnum, (int)numtoread, (int)nread ) );
 
   return(outsize);
 }
@@ -2196,7 +2196,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   SSVAL(smb_buf(outbuf),1,nread);
   
   DEBUG( 3, ( "read fnum=%d num=%d nread=%d\n",
-            fsp->fnum, numtoread, nread ) );
+            fsp->fnum, (int)numtoread, (int)nread ) );
 
   return(outsize);
 }
@@ -2260,7 +2260,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   SSVAL(smb_buf(outbuf),-2,nread);
   
   DEBUG( 3, ( "readX fnum=%d min=%d max=%d nread=%d\n",
-	      fsp->fnum, smb_mincnt, smb_maxcnt, nread ) );
+	      fsp->fnum, (int)smb_mincnt, (int)smb_maxcnt, (int)nread ) );
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -2315,7 +2315,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
     nwritten = write_file(fsp,data,numtowrite);
   
   DEBUG(3,("writebraw1 fnum=%d start=%.0f num=%d wrote=%d sync=%d\n",
-	   fsp->fnum, (double)startpos, numtowrite, nwritten, write_through));
+	   fsp->fnum, (double)startpos, (int)numtowrite, (int)nwritten, (int)write_through));
 
   if (nwritten < numtowrite) 
     return(UNIXERROR(ERRHRD,ERRdiskfull));
@@ -2340,7 +2340,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
   if (tcount > nwritten+numtowrite) {
     DEBUG(3,("Client overestimated the write %d %d %d\n",
-	     tcount,nwritten,numtowrite));
+	     (int)tcount,(int)nwritten,(int)numtowrite));
   }
 
   nwritten = transfer_file(Client,fsp->fd_ptr->fd,(SMB_OFF_T)numtowrite,NULL,0,
@@ -2361,7 +2361,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
     sync_file(conn,fsp);
 
   DEBUG(3,("writebraw2 fnum=%d start=%.0f num=%d wrote=%d\n",
-	   fsp->fnum, (double)startpos, numtowrite, total_written));
+	   fsp->fnum, (double)startpos, (int)numtowrite,(int)total_written));
 
   /* we won't return a status if write through is not selected - this 
      follows what WfWg does */
@@ -2422,7 +2422,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   SSVAL(outbuf,smb_vwv0,nwritten);
   
   DEBUG( 3, ( "writeunlock fnum=%d num=%d wrote=%d\n",
-	      fsp->fnum, numtowrite, nwritten ) );
+	      fsp->fnum, (int)numtowrite, (int)nwritten ) );
 
   return(outsize);
 }
@@ -2477,7 +2477,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   }
   
   DEBUG(3,("write fnum=%d num=%d wrote=%d\n",
-	   fsp->fnum, numtowrite, nwritten));
+	   fsp->fnum, (int)numtowrite, (int)nwritten));
 
   return(outsize);
 }
@@ -2556,7 +2556,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   }
 
   DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
-	   fsp->fnum, numtowrite, nwritten));
+	   fsp->fnum, (int)numtowrite, (int)nwritten));
 
   if (lp_syncalways(SNUM(conn)) || write_through)
     sync_file(conn,fsp);
@@ -2796,7 +2796,7 @@ int reply_writeclose(connection_struct *conn,
 	close_err = close_file(fsp,True);
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
-		 fsp->fnum, numtowrite, nwritten,
+		 fsp->fnum, (int)numtowrite, (int)nwritten,
 		 conn->num_files_open));
   
 	if (nwritten <= 0)
@@ -4393,7 +4393,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   SSVALS(outbuf,smb_vwv0,-1); /* We don't support smb_remaining */
   
   DEBUG( 3, ( "writebmpx fnum=%d num=%d wrote=%d\n",
-	    fsp->fnum, numtowrite, nwritten ) );
+	    fsp->fnum, (int)numtowrite, (int)nwritten ) );
 
   if (write_through && tcount==nwritten) {
     /* we need to send both a primary and a secondary response */

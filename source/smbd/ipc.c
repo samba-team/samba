@@ -3542,7 +3542,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	if (suwcnt) {
 		int i;
 		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
-          DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", suwcnt * sizeof(uint16)));
+          DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", (int)(suwcnt * sizeof(uint16))));
 		  return(ERROR(ERRDOS,ERRnomem));
         } 
 		for (i=0;i<suwcnt;i++)

@@ -69,7 +69,7 @@ extern int DEBUGLEVEL;
     ****************************************** */
 static int strlocate(char *xpLine,char *xpS)
 {
-	int iS,iL,i,iRet;
+	int iS,iL,iRet;
 	char *p;
 	iS = strlen(xpS);
 	iL = strlen(xpLine);
@@ -91,9 +91,9 @@ static int strlocate(char *xpLine,char *xpS)
 /* ******************************************************************* */
 /* *    Scan qconfig and search all virtual printer (device printer) * */
 /* ******************************************************************* */
-static void ScanQconfig_fn(char *psz,void (*fn)())
+static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 {
-	int iLg,iEtat;
+	int iEtat;
 	FILE *pfile;
 	char *line,*p;
 	pstring name,comment;

@@ -714,7 +714,7 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	DEBUG(10,("make_sec_desc: len = %d\n", sec_len));
+	DEBUG(10,("make_sec_desc: len = %d\n", (int)sec_len));
 
 	if((sec_buf = make_sec_desc_buf( (int)sec_len, sec)) == NULL) {
 		DEBUG(0,("make_sec_desc : malloc fail (1)\n"));

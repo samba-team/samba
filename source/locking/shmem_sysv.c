@@ -324,7 +324,7 @@ static BOOL shm_free(int offset)
 	shm_header_p->consistent = False;
 	
 	DEBUG(6,("shm_free : freeing %d bytes at offset %d\n",
-		 header_p->size*CellSize,offset));
+		 (int)(header_p->size*CellSize),(int)offset));
 
 	/* zero the area being freed - this allows us to find bugs faster */
 	memset(shm_offset2addr(offset), 0, header_p->size*CellSize);

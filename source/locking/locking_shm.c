@@ -166,7 +166,7 @@ static int shm_get_share_modes(connection_struct *conn,
                  malloc(num_entries * sizeof(share_mode_entry));
     if(*old_shares == 0)
     {
-      DEBUG(0,("get_share_modes: malloc fail for size 0x%x!\n", num_entries * sizeof(share_mode_entry)));
+      DEBUG(0,("get_share_modes: malloc fail for size 0x%x!\n", (unsigned int)(num_entries * sizeof(share_mode_entry))));
       return 0;
     }
   }
