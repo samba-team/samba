@@ -8,6 +8,10 @@ try something like:
 
 	nroff -man smbd.8 | more
 
+Unfortunately, having said this, the man pages are sadly out of date and
+really need more effort to maintain them. Other sources of information 
+are pointed to by the Samba web site, http://samba.canberra.edu.au/pub/samba.
+
 STEP 1. Building the binaries
 
 To do this, first edit the file source/Makefile. You will find that
