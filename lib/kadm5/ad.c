@@ -99,19 +99,6 @@ RCSID("$Id$");
 static int
 sasl_interact(LDAP *ld, unsigned flags, void *defaults, void *interact)
 {
-#if 0
-    sasl_interact_t *in = interact;
-    char *defresult;
-
-    while (interact->id != SASL_CB_LIST_END) {
-        defresult = in->defresult;
-	if (defresult == NULL)
-	    defresult = "";
-	in->result = strdup(defresult);
-        in->len = strlen(in->result);
-        in++;
-    }
-#endif
     return LDAP_SUCCESS;
 }
 #endif
@@ -135,10 +122,13 @@ ldap_tsasl_bind_s(LDAP *ld,
 		  LDAPControl **clientControls,
 		  const char *host)
 {
+    char *attrs[] = { "supportedSASLMechanisms", NULL };
     struct tsasl_peer *peer = NULL;
     struct tsasl_buffer in, out;
     struct berval ccred, *scred;
-    char *mech = "GSSAPI"; /* XXX ? */
+    LDAPMessage *m, *m0;
+    const char *mech;
+    char **vals;
     int ret, rc;
 
     ret = tsasl_peer_init(TSASL_FLAGS_INITIATOR |
@@ -151,6 +141,30 @@ ldap_tsasl_bind_s(LDAP *ld,
 	rc = LDAP_LOCAL_ERROR;
 	goto out;
     }
+
+    rc = ldap_search_s(ld, "", LDAP_SCOPE_BASE, NULL, attrs, 0, &m0);
+    if (rc != LDAP_SUCCESS)
+	goto out;
+    
+    m = ldap_first_entry(ld, m0);
+    if (m == NULL) {
+	ldap_msgfree(m0);
+	goto out;
+    }
+
+    vals = ldap_get_values(ld, m, "supportedSASLMechanisms");
+    if (vals == NULL) {
+	ldap_msgfree(m0);
+	goto out;
+    }
+
+    ret = tsasl_find_best_mech(peer, vals, &mech);
+    if (ret) {
+	ldap_msgfree(m0);
+	goto out;
+    }
+
+    ldap_msgfree(m0);
 
     ret = tsasl_select_mech(peer, mech);
     if (ret != TSASL_DONE) {
@@ -210,6 +224,26 @@ ldap_tsasl_bind_s(LDAP *ld,
     return rc;
 }
 #endif /* HAVE_TSASL */
+
+
+static int
+check_ldap(kadm5_ad_context *context, int ret)
+{
+    switch (ret) {
+    case LDAP_SUCCESS:
+	return 0;
+    case LDAP_SERVER_DOWN: {
+	LDAP *lp = CTX2LP(context);
+	ldap_unbind(lp);
+	context->ldap_conn = NULL;
+	free(context->base_dn);
+	context->base_dn = NULL;
+	return 1;
+    }
+    default:
+	return 1;
+    }
+}
 
 /*
  *
@@ -293,8 +327,7 @@ _kadm5_ad_connect(void *server_handle)
 	}
 	
 #ifdef HAVE_TSASL
-	lret = ldap_tsasl_bind_s(lp, NULL, NULL, NULL,
-				 servers[i].server);
+	lret = ldap_tsasl_bind_s(lp, NULL, NULL, NULL, servers[i].server);
 				 
 #else
 	lret = ldap_sasl_interactive_bind_s(lp, NULL, NULL, NULL, NULL, 
@@ -324,7 +357,7 @@ _kadm5_ad_connect(void *server_handle)
 	ret = ldap_search_s(CTX2LP(context), "", LDAP_SCOPE_BASE, 
 			    "objectclass=*", attr, 0, &m);
 	free(attr);
-	if (ret != 0)
+	if (check_ldap(context, ret))
 	    goto fail;
 
 	if (ldap_count_entries(CTX2LP(context), m) > 0) {
@@ -377,33 +410,36 @@ nt2unixtime(const char *str)
 /* XXX create filter in a better way */
 
 static int
-ad_find_entry(kadm5_ad_context *context, const char *fqdn, char **name)
+ad_find_entry(kadm5_ad_context *context,
+	      const char *fqdn,
+	      const char *pn,
+	      char **name)
 {
     LDAPMessage *m, *m0;
-    char **attr = NULL;
-    int attrlen = 0;
+    char *attr[] = { "distinguishedName", NULL };
     char *filter;
     int ret;
 
     if (name)
 	*name = NULL;
 
-    laddattr(&attr, &attrlen, "distinguishedName");
-
     if (fqdn)
-	asprintf(&filter, "(&(objectClass=computer)(dNSHostName=%s))", fqdn);
+	asprintf(&filter, 
+		 "(&(objectClass=computer)(|(dNSHostName=%s)(servicePrincipalName=%s)))",
+		 fqdn, pn);
+    else if(pn)
+	asprintf(&filter, "(&(objectClass=account)(userPrincipalName=%s))", pn);
     else
 	return KADM5_RPC_ERROR;
 
     ret = ldap_search_s(CTX2LP(context), CTX2BASE(context),
 			LDAP_SCOPE_SUBTREE, 
 			filter, attr, 0, &m);
-    free(attr);
     free(filter);
-    if (ret)
+    if (check_ldap(context, ret))
 	return KADM5_RPC_ERROR;
 
-    if (ldap_count_entries(CTX2LP(context), m) < 0) {
+    if (ldap_count_entries(CTX2LP(context), m) > 0) {
 	char **vals;
 	m0 = ldap_first_entry(CTX2LP(context), m);
 	vals = ldap_get_values(CTX2LP(context), m0, "distinguishedName");
@@ -482,6 +518,26 @@ kadm5_ad_chpass_principal(void *server_handle,
     return ret;
 }
 
+#ifdef OPENLDAP
+static const char *
+get_fqdn(krb5_context context, const krb5_principal p)
+{
+    const char *s, *hosttypes[] = { "host", "ldap", "gc", "cifs", "dns" };
+    int i;
+
+    s = krb5_principal_get_comp_string(context, p, 0);
+    if (p == NULL)
+	return NULL;
+    
+    for (i = 0; i < sizeof(hosttypes)/sizeof(hosttypes[0]); i++) {
+	if (strcasecmp(s, hosttypes[i]) == 0)
+	    return krb5_principal_get_comp_string(context, p, 1);
+    }
+    return 0;
+}
+#endif
+
+
 static kadm5_ret_t
 kadm5_ad_create_principal(void *server_handle,
 			  kadm5_principal_ent_t entry,
@@ -498,20 +554,138 @@ kadm5_ad_create_principal(void *server_handle,
      */
 
 #ifdef OPENLDAP
-    int ret;
+    LDAPMod *attrs[6], rattrs[5], *a;
+    char *useraccvals[2] = { NULL, NULL }, 
+	*samvals[2], *dnsvals[2], *spnvals[2];
+    char *ocvals_spn[] = { "top", "person", "organizationalPerson", 
+			   "user", "computer", NULL}; 
+    char *p, *dn = NULL;
+    const char *fqdn;
+    char *s, *shortname = NULL;
+    int ret, i;
+
+    for (i = 0; i < sizeof(rattrs)/sizeof(rattrs[0]); i++)
+	attrs[i] = &rattrs[i];
+    attrs[i] = NULL;
 
     ret = ad_get_cred(context, NULL);
     if (ret)
 	return ret;
 
-    /*
-     */
+    ret = _kadm5_ad_connect(server_handle);
+    if (ret)
+	return ret;
 
-    if (ad_find_entry(context, "tiffo.l.nxs.se", NULL) == 0)
+    fqdn = get_fqdn(context->context, entry->principal);
+
+    ret = krb5_unparse_name(context->context, entry->principal, &p);
+    if (ret)
+	return ret;
+
+    if (ad_find_entry(context, fqdn, p, NULL) == 0) {
+	free(p);
 	return KADM5_DUP;
+    }
 
-    context = NULL; /* XXX */
-    return KADM5_DUP; /* XXX */
+    if (fqdn) {
+	/* create computer account */
+	asprintf(&shortname, "%s$", fqdn);
+	if (shortname == NULL) {
+	    free(p);
+	    return ENOMEM;
+	}
+	s = strchr(shortname, '.');
+	if (s) {
+	    s[0] = '$';
+	    s[1] = '\0';
+	}
+
+	asprintf(&dn, "cn=%s, cn=Computers, %s", fqdn, CTX2BASE(context));
+
+	a = &rattrs[0];
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "objectClass";
+	a->mod_values = ocvals_spn;
+
+	a++;
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "userAccountControl";
+	a->mod_values = useraccvals;
+	asprintf(&useraccvals[0], "%d", 
+		 UF_PASSWD_NOT_EXPIRE |
+		 UF_WORKSTATION_TRUST_ACCOUNT);
+	useraccvals[1] = NULL;
+
+	a++;
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "sAMAccountName";
+	a->mod_values = samvals;
+	samvals[0] = shortname;
+	samvals[1] = NULL;
+
+	a++;
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "dNSHostName";
+	a->mod_values = dnsvals;
+	dnsvals[0] = (char *)fqdn;
+	dnsvals[1] = NULL;
+
+	/* XXX  add even more spn's */
+	a++;
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "servicePrincipalName";
+	a->mod_values = spnvals;
+	spnvals[0] = p;
+	spnvals[1] = NULL;
+
+    } else {
+	/* create user account */
+	shortname = strdup(p);
+	if (shortname == NULL) {
+	    free(p);
+	    return ENOMEM;
+	}
+	s = strrchr(shortname, '@');
+	if (s)
+	    *s = '\0';
+	
+	a = &rattrs[0];
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "userAccountControl";
+	a->mod_values = useraccvals;
+	asprintf(&useraccvals[0], "%d", UF_PASSWD_NOT_EXPIRE);
+	useraccvals[1] = NULL;
+
+	a++;
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "sAMAccountName";
+	a->mod_values = samvals;
+	samvals[0] = shortname;
+	samvals[1] = NULL;
+
+	a++;
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "userPrincipalName";
+	a->mod_values = spnvals;
+	spnvals[0] = p;
+	spnvals[1] = NULL;
+    }
+
+    printf("ldap_add\n");
+    ret = ldap_add_s(CTX2LP(context), dn, attrs);
+
+    if (useraccvals[0])
+	free(useraccvals[0]);
+    if (shortname)
+	free(shortname);
+    free(p);
+
+    if (check_ldap(context, ret))
+	return KADM5_RPC_ERROR;
+
+    printf("write code here: %d\n", ret);
+
+    return 0;
 #else
     krb5_set_error_string(context->context, "Function not implemented");
     return KADM5_RPC_ERROR;
@@ -522,8 +696,42 @@ static kadm5_ret_t
 kadm5_ad_delete_principal(void *server_handle, krb5_principal principal)
 {
     kadm5_ad_context *context = server_handle;
+#ifdef OPENLDAP
+    char *p, *dn = NULL;
+    const char *fqdn;
+    int ret;
+
+    ret = ad_get_cred(context, NULL);
+    if (ret)
+	return ret;
+
+    ret = _kadm5_ad_connect(server_handle);
+    if (ret)
+	return ret;
+
+    fqdn = get_fqdn(context->context, principal);
+
+    ret = krb5_unparse_name(context->context, principal, &p);
+    if (ret)
+	return ret;
+
+    if (ad_find_entry(context, fqdn, p, &dn) != 0) {
+	free(p);
+	return KADM5_UNK_PRINC;
+    }
+
+    ret = ldap_delete_s(CTX2LP(context), dn);
+
+    free(dn);
+    free(p);
+
+    if (check_ldap(context, ret))
+	return KADM5_RPC_ERROR;
+    return 0;
+#else
     krb5_set_error_string(context->context, "Function not implemented");
     return KADM5_RPC_ERROR;
+#endif
 }
 
 static kadm5_ret_t
@@ -539,6 +747,8 @@ kadm5_ad_destroy(void *server_handle)
 	LDAP *lp = CTX2LP(context);
 	if (lp)
 	    ldap_unbind(lp);
+	if (context->base_dn)
+	    free(context->base_dn);
     }
     return 0;
 #else
@@ -616,7 +826,7 @@ kadm5_ad_get_principal(void *server_handle,
 			LDAP_SCOPE_SUBTREE, 
 			filter, attr, 0, &m);
     free(attr);
-    if (ret)
+    if (check_ldap(context, ret))
 	return KADM5_RPC_ERROR;
 
     if (ldap_count_entries(CTX2LP(context), m) > 0) {
@@ -754,8 +964,14 @@ kadm5_ad_modify_principal(void *server_handle,
 	entry->kvno = 0;
 
 #ifdef OPENLDAP
-    context = NULL; /* XXX */
-    return 0;
+    kadm5_ret_t ret;
+
+    ret = _kadm5_ad_connect(server_handle);
+    if (ret)
+	return ret;
+
+    krb5_set_error_string(context->context, "Function not implemented");
+    return KADM5_RPC_ERROR;
 #else
     krb5_set_error_string(context->context, "Function not implemented");
     return KADM5_RPC_ERROR;
