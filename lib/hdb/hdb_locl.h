@@ -47,6 +47,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/file.h>
 
 #include <krb5.h>
 #include <hdb.h>
@@ -64,5 +65,8 @@ int hdb_principal2key(krb5_context, krb5_principal, krb5_data*);
 int hdb_key2principal(krb5_context, krb5_data*, krb5_principal);
 int hdb_entry2value(krb5_context, hdb_entry*, krb5_data*);
 int hdb_value2entry(krb5_context, krb5_data*, hdb_entry*);
+
+krb5_error_code hdb_lock(int, int);
+krb5_error_code hdb_unlock(int);
 
 #endif /* __HDB_LOCL_H__ */
