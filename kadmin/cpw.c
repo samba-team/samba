@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -202,7 +202,7 @@ cpw_entry(int argc, char **argv)
     argv += optind;
 
     for(i = 0; i < argc; i++)
-	ret = foreach_principal(argv[i], do_cpw_entry, &data);
+	ret = foreach_principal(argv[i], do_cpw_entry, "cpw", &data);
 
     if (data.key_data) {
 	int16_t dummy;
