@@ -149,6 +149,8 @@ char *skip_unicode_string(char *buf,int n)
 
 /*******************************************************************
  Return a DOS codepage version of a little-endian unicode string.
+ len is the filename length (ignoring any terminating zero) in uin16
+ units. Always null terminates.
  Hack alert: uses fixed buffer(s).
 ********************************************************************/
 
