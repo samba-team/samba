@@ -445,6 +445,8 @@ printing
 
 printcap name
 
+printer driver file
+
 protocol
 
 read bmpx
@@ -627,6 +629,8 @@ preserve case
 print command
 
 printer driver
+
+printer driver location
 
 print ok
 
@@ -2737,6 +2741,7 @@ will assume the file is in AIX "qconfig" format if the string
 
 .B Example:
  	printcap name = /etc/myprintcap
+
 .SS printer (S)
 A synonym for this parameter is 'printer name'.
 
@@ -2771,6 +2776,50 @@ scrollbox after you have chosen the printer manufacturer.
 .SS printer name (S)
 See
 .B printer.
+
+.SS printer driver file (G)
+This parameter tells Samba where the printer driver definition file,
+used when serving drivers to Windows 95 clients, is to be found. If
+this is not set, the default is :
+
+SAMBA_INSTALL_DIRECTORY/lib/printers.def
+
+This file is created from Windows 95 'msprint.def' files found on the
+Windows 95 client system. For more details on setting up serving of
+printer drivers to Windows 95 clients, see the documentation file
+docs/PRINTER_DRIVER.txt.
+
+.B Default:
+    None (set in compile).
+
+.B Example:
+    printer driver file = /usr/local/samba/printers/drivers.def
+
+Related parameters.
+.B printer driver location
+
+.SS printer driver location (S)
+This parameter tells clients of a particular printer share where
+to find the printer driver files for the automatic installation
+of drivers for Windows 95 machines. If Samba is set up to serve
+printer drivers to Windows 95 machines, this should be set to
+
+\e\eMACHINE\ePRINTER$
+
+Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$ 
+is a share you set up for serving printer driver files. For more 
+details on setting this up see the documentation file 
+docs/PRINTER_DRIVER.txt.
+
+.B Default:
+    None
+
+.B Example:
+    printer driver location = \e\eMACHINE\ePRINTER$
+
+Related paramerers.
+.B printer driver file
+
 
 .SS printing (G)
 This parameters controls how printer status information is interpreted
