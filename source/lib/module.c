@@ -80,7 +80,7 @@ int smb_probe_module(const char *subsystem, const char *module)
 	pstring full_path;
 	
 	/* Check for absolute path */
-	if(module[0] == '/')return smb_load_module(module);
+	if(strchr_m(module, '/'))return smb_load_module(module);
 	
 	pstrcpy(full_path, lib_path(subsystem));
 	pstrcat(full_path, "/");
@@ -117,7 +117,31 @@ int smb_probe_module(const char *subsystem, const char *module)
 
 void init_modules(void)
 {
+	/* FIXME: This can cause undefined symbol errors :
+	 *  smb_register_vfs() isn't available in nmbd, for example */
 	if(lp_preload_modules()) 
 		smb_load_modules(lp_preload_modules());
-	/* FIXME: load static modules */
+}
+
+
+/*************************************************************************
+ * This functions /path/to/foobar.so -> foobar
+ ************************************************************************/
+void module_path_get_name(char *path, pstring name)
+{
+	char *s;
+
+	/* First, make the path relative */
+	s = strrchr_m(path, '/');
+	if(s) pstrcpy(name, s+1);
+	else pstrcpy(name, path);
+	
+	if (dyn_SHLIBEXT && *dyn_SHLIBEXT && strlen(dyn_SHLIBEXT) < strlen(name)) {
+		int n = strlen(name) - strlen(dyn_SHLIBEXT);
+		
+		/* Remove extension if necessary */
+		if (name[n-1] == '.' && !strcmp(name+n, dyn_SHLIBEXT)) {
+			name[n-1] = '\0';
+		}
+	}
 }
