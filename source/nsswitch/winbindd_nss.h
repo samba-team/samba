@@ -128,6 +128,7 @@ struct winbindd_request {
 		gid_t gid;           /* getgrgid, gid_to_sid */
 		struct {
 			fstring user;
+			fstring domain;
 			fstring pass;
 		} auth;              /* pam_winbind auth module */
                 struct {
