@@ -379,12 +379,16 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
+
 BOOL smb_password_ok(struct smb_passwd *smb_pass,
                      uchar lm_pass[24], uchar nt_pass[24])
 {
 	uchar challenge[8];
 
 	if (!lm_pass || !smb_pass) return(False);
+
+	DEBUG(4,("Checking SMB password for user %s\n", 
+		 smb_pass->smb_name));
 
 	if(smb_pass->acct_ctrl & ACB_DISABLED) {
 		DEBUG(3,("account for user %s was disabled.\n", 
@@ -396,9 +400,6 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass,
 		DEBUG(1,("no challenge done - password failed\n"));
 		return False;
 	}
-
-	DEBUG(4,("Checking SMB password for user %s\n", 
-		 smb_pass->smb_name));
 
 	if ((Protocol >= PROTOCOL_NT1) && (smb_pass->smb_nt_passwd != NULL)) {
 		/* We have the NT MD4 hash challenge available - see if we can
@@ -493,6 +494,11 @@ static BOOL pass_check_smb(char *user,char *password, struct passwd *pwd)
 		return(False);
 	}
 
+	if(password[0] == '\0' && smb_pass->acct_ctrl & ACB_PWNOTREQ && lp_null_passwords()) {
+		DEBUG(3,("account for user %s has no password and null passwords are allowed.\n", smb_pass->smb_name));
+		return(True);
+	}
+
 	if (smb_password_ok(smb_pass, 
 			    (unsigned char *)password,
 			    (uchar *)password)) {
@@ -510,7 +516,7 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 {
-	if (pwlen == 24) {
+	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords())) {
 		/* if it is 24 bytes long then assume it is an encrypted
 		   password */
 		return pass_check_smb(user, password, pwd);

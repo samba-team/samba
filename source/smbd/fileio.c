@@ -63,7 +63,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 
 #if WITH_MMAP
   if (fsp->mmap_ptr) {
-	  SMB_OFF_T num = (fsp->mmap_size > pos) ? (fsp->mmap_size - pos) : -1;
+	  SMB_OFF_T num = (fsp->mmap_size > pos) ? (fsp->mmap_size - pos) : 0;
 	  num = MIN(n,num);
 	  if (num > 0) {
 		  memcpy(data,fsp->mmap_ptr+pos,num);
