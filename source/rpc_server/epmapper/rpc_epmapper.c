@@ -4,6 +4,7 @@
    endpoint server for the epmapper pipe
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Jelmer Vernooij 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,8 +33,6 @@ enum handle_types {HTYPE_LOOKUP};
 struct dcesrv_ep_iface {
 	const char *name;
 	struct dcerpc_binding ep_description;
-	const char *uuid;
-	uint32_t if_version;
 };
 
 /*
@@ -47,70 +46,6 @@ static int guid_cmp(TALLOC_CTX *mem_ctx, const struct GUID *guid, const char *uu
 	}
 	return 0;
 }
-
-/*
-  fill a protocol tower
-*/
-static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr, 
-				struct dcesrv_ep_iface *e)
-{
-	twr->num_floors = 5;
-	twr->floors = talloc_array_p(mem_ctx, struct epm_floor, 5);
-	if (!twr->floors) {
-		return False;
-	}
-	
-	twr->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
-	GUID_from_string(e->uuid, &twr->floors[0].lhs.info.uuid.uuid);
-	twr->floors[0].lhs.info.uuid.version = e->if_version;
-	twr->floors[0].rhs.uuid.unknown = 0;
-	
-	/* encoded with NDR ... */
-	twr->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
-	GUID_from_string(NDR_GUID, &twr->floors[1].lhs.info.uuid.uuid);
-	twr->floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	twr->floors[1].rhs.uuid.unknown = 0;
-	
-	/* on an RPC connection ... */
-	twr->floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
-	twr->floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->floors[2].rhs.ncacn.minor_version = 0;
-
-	switch (e->ep_description.transport) {
-	case NCACN_NP:
-		/* on a SMB pipe ... */
-		twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
-		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[3].rhs.smb.unc = talloc_strdup(mem_ctx, e->ep_description.options[0]);
-		
-		/* on an NetBIOS link ... */
-		twr->floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
-		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[4].rhs.netbios.name = talloc_asprintf(mem_ctx, "\\\\%s", 
-								   lp_netbios_name());
-		break;
-
-	case NCACN_IP_TCP:
-		/* on a TCP connection ... */
-		twr->floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
-		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[3].rhs.tcp.port = 0;
-		if (e->ep_description.options && e->ep_description.options[0]) {
-			twr->floors[3].rhs.tcp.port = atoi(e->ep_description.options[0]);
-		}
-		
-		/* on an IP link ... */
-		twr->floors[4].lhs.protocol = EPM_PROTOCOL_IP;
-		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[4].rhs.ip.address = 0;
-		/* TODO: we should fill in our IP address here as a hint to the 
-		   client */
-		break;
-	}
-
-	return True;
-}
-
 
 /*
   build a list of all interfaces handled by all endpoint servers
@@ -136,9 +71,11 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 				return 0;
 			}
 			(*eps)[total].name = iface->iface.ndr->name;
-			(*eps)[total].uuid = iface->iface.ndr->uuid;
-			(*eps)[total].if_version = iface->iface.ndr->if_version;
 			(*eps)[total].ep_description = d->ep_description;
+			GUID_from_string(iface->iface.ndr->uuid, 
+							 &(*eps)[total].ep_description.object);
+			(*eps)[total].ep_description.object_version = 
+											iface->iface.ndr->if_version;
 			total++;
 		}
 	}
@@ -173,6 +110,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		struct dcesrv_ep_iface *e;
 	} *eps;
 	uint32_t num_ents;
+	NTSTATUS status;
 	int i;
 
 	h = dcesrv_handle_fetch(dce_call->conn, r->in.entry_handle, HTYPE_LOOKUP);
@@ -221,7 +159,8 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			return EPMAPPER_STATUS_NO_MEMORY;
 		}
 
-		if (!fill_protocol_tower(mem_ctx, &r->out.entries[i].tower->tower, &eps->e[i])) {
+		status = dcerpc_binding_build_tower(mem_ctx, &eps->e[i].ep_description, &r->out.entries[i].tower->tower);
+		if (NT_STATUS_IS_ERR(status)) {
 			return EPMAPPER_STATUS_NO_MEMORY;
 		}
 	}
@@ -244,6 +183,8 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	int i;
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
+	enum dcerpc_transport_t transport;
+	NTSTATUS status;
 
 	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 
@@ -258,8 +199,8 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		return EPMAPPER_STATUS_NO_MEMORY;
 	}
 	
-	if (!r->in.map_tower || r->in.max_towers == 0 ||
-	    r->in.map_tower->tower.num_floors != 5) {
+	if (!r->in.map_tower || r->in.max_towers == 0 || 
+	    r->in.map_tower->tower.num_floors < 3) {
 		goto failed;
 	}
 
@@ -268,31 +209,39 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	if (floors[0].lhs.protocol != EPM_PROTOCOL_UUID ||
 	    floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
 	    guid_cmp(mem_ctx, &floors[1].lhs.info.uuid.uuid, NDR_GUID) != 0 ||
-	    floors[1].lhs.info.uuid.version != NDR_GUID_VERSION ||
-	    floors[2].lhs.protocol != EPM_PROTOCOL_NCACN) {
+	    floors[1].lhs.info.uuid.version != NDR_GUID_VERSION) {
+		goto failed;
+	}
+
+	transport = dcerpc_transport_by_tower(&r->in.map_tower->tower);
+
+	if (transport == -1) {
+		DEBUG(1, ("Client requested unknown transport with levels: "));
+		for (i = 2; i < r->in.map_tower->tower.num_floors; i++) {
+			DEBUG(1, ("%d, ", r->in.map_tower->tower.floors[i].lhs.protocol));
+		}
 		goto failed;
 	}
 	
 	for (i=0;i<count;i++) {
-		if (guid_cmp(mem_ctx, &floors[0].lhs.info.uuid.uuid, eps[i].uuid) != 0 ||
-		    floors[0].lhs.info.uuid.version != eps[i].if_version) {
+		struct epm_tower t;
+		if (!uuid_equal(&floors[0].lhs.info.uuid.uuid, &eps[i].ep_description.object) ||
+		    floors[0].lhs.info.uuid.version != eps[i].ep_description.object_version) {
 			continue;
 		}
-		switch (eps[i].ep_description.transport) {
-		case NCACN_NP:
-			if (floors[3].lhs.protocol != EPM_PROTOCOL_SMB ||
-			    floors[4].lhs.protocol != EPM_PROTOCOL_NETBIOS) {
-				continue;
-			}
-			break;
-		case NCACN_IP_TCP:
-			if (floors[3].lhs.protocol != EPM_PROTOCOL_TCP ||
-			    floors[4].lhs.protocol != EPM_PROTOCOL_IP) {
-				continue;
-			}
-			break;
+
+		if (transport != eps[i].ep_description.transport) {
+			continue;
 		}
-		fill_protocol_tower(mem_ctx, &r->out.towers->twr->tower, &eps[i]);
+		
+		status = dcerpc_binding_build_tower(mem_ctx, 
+						&eps[i].ep_description, 
+						&t);
+
+		if (NT_STATUS_IS_ERR(status)) {
+			return EPMAPPER_STATUS_NO_MEMORY;
+		}
+		r->out.towers->twr->tower = t;
 		r->out.towers->twr->tower_length = 0;
 		return EPMAPPER_STATUS_OK;
 	}
