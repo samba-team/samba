@@ -38,7 +38,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       36
+    EUROPE                                       37
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1738,6 +1738,25 @@ Contact: Dario Centofanti <dario@pantheon.it>
 
 Pantheon provide support for SaMBa and other TCP/IP applications running
 under Linux. We are also an internet provider.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+TREVISO, ITALY
+
+Company: SMC Computers S.r.l.
+Via Roma 4/D         
+Lancenigo di Villorba 31020 (TV)
+
+Telephone number:  +39-422-608408
+FAX Number      :  +39-422-608043
+EMail           :  smc@smc.it
+WWW Address     :  www.smc.it
+
+Our company is specialized in LAN/WAN connectivity on Unix and
+Windows platforms, RDBMS, Data Warehousing.
+We currently port, install and support Samba on the following 
+Unix platforms :
+HP/UX, SunOS 4, SunOS 5, Sinix, Mips, IRIX , AIX, SCO, Linux
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
