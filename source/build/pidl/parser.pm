@@ -135,7 +135,7 @@ sub start_flags($)
 	my $flags = util::has_property($e, "flag");
 	if (defined $flags) {
 		pidl "\t{ uint32_t _flags_save_$e->{TYPE} = ndr->flags;\n";
-		pidl "\tndr->flags |= $flags;\n";
+		pidl "\tndr_set_flags(&ndr->flags, $flags);\n";
 	}
 }
 

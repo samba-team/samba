@@ -149,7 +149,7 @@ interface epmapper
 	typedef struct {
 	} epm_rhs_ncalrpc;
 
-	typedef [nodiscriminant] union {
+	typedef [flag(NDR_BIG_ENDIAN),nodiscriminant] union {
 		[case(EPM_PROTOCOL_DNET_NSP)] epm_rhs_dnet_nsp dnet_nsp;
 		[case(EPM_PROTOCOL_OSI_TP4)] epm_rhs_osi_tp4 osi_tp4;
 		[case(EPM_PROTOCOL_OSI_CLNS)] epm_rhs_osi_clns osi_clns;
