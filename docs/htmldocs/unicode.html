@@ -84,18 +84,23 @@ CLASS="TOC"
 ></DT
 ><DT
 >26.1. <A
-HREF="unicode.html#AEN4127"
+HREF="unicode.html#AEN4132"
 >What are charsets and unicode?</A
 ></DT
 ><DT
 >26.2. <A
-HREF="unicode.html#AEN4136"
+HREF="unicode.html#AEN4141"
 >Samba and charsets</A
 ></DT
 ><DT
 >26.3. <A
-HREF="unicode.html#AEN4155"
+HREF="unicode.html#AEN4160"
 >Conversion from old names</A
+></DT
+><DT
+>26.4. <A
+HREF="unicode.html#AEN4168"
+>Japanese charsets</A
 ></DT
 ></DL
 ></DIV
@@ -104,7 +109,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4127"
+NAME="AEN4132"
 >26.1. What are charsets and unicode?</A
 ></H1
 ><P
@@ -154,7 +159,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4136"
+NAME="AEN4141"
 >26.2. Samba and charsets</A
 ></H1
 ><P
@@ -210,7 +215,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4155"
+NAME="AEN4160"
 >26.3. Conversion from old names</A
 ></H1
 ><P
@@ -232,6 +237,70 @@ CLASS="REPLACEABLE"
 > -type f -exec bash -c 'CP="{}"; ISO=`echo -n "$CP" | iconv -f cp850 \
   -t iso8859-15`; if [ "$CP" != "$ISO" ]; then mv "$CP" "$ISO"; fi' \;</KBD
 ></P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN4168"
+>26.4. Japanese charsets</A
+></H1
+><P
+>Samba doesn't work correctly with Japanese charsets yet. Here are points of attention when setting it up:</P
+><P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>You should set <B
+CLASS="COMMAND"
+>mangling method = hash</B
+></TD
+></TR
+><TR
+><TD
+>There are various iconv() implementations around and not all of 
+them work equally well. glibc2's iconv() has a critical problem in CP932. 
+libiconv-1.8 works with CP932 but still has some problems and does not 
+work with EUC-JP. </TD
+></TR
+><TR
+><TD
+>You should set <B
+CLASS="COMMAND"
+>dos charset = CP932</B
+>, not Shift_JIS, SJIS...</TD
+></TR
+><TR
+><TD
+>Currently only <B
+CLASS="COMMAND"
+>unix charset = CP932</B
+> will work (but still has some problems...) because of iconv() issues. <B
+CLASS="COMMAND"
+>unix charset = EUC-JP</B
+> doesn't work well because of iconv() issues.</TD
+></TR
+><TR
+><TD
+>Currently Samba 3.0 does not support <B
+CLASS="COMMAND"
+>unix charset = UTF8-MAC/CAP/HEX/JIS*</B
+></TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+><P
+>More information (in Japanese) is available at: <A
+HREF="http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html"
+TARGET="_top"
+>http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html</A
+>.</P
 ></DIV
 ></DIV
 ><DIV
