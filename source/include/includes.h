@@ -60,6 +60,11 @@
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
 #include <time.h>
+#ifdef NEEDS_KRB4_DEFINE_WORK_AROUND
+#include <krb.h>
+#define _KERBEROS_KRB_H
+#endif
+
 #else
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -786,6 +791,10 @@ int crypt(const char *key, const char *salt);
 #ifdef REPLACE_GETPASS
 #define getpass(prompt) getsmbpass((prompt))
 #endif
+ 
+#ifdef RENEWABLE_AFS_TICKET
+#include "afsticket.h"
+#endif /* RENEWABLE_AFS_TICKET */
 
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
