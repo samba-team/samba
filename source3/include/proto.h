@@ -536,10 +536,10 @@ void generate_next_challenge(char *challenge);
 BOOL set_challenge(char *challenge);
 BOOL last_challenge(char *challenge);
 int valid_uid(int uid);
-user_struct *get_valid_user_struct(int uid);
-void invalidate_uid(int uid);
-char *validated_username(int vuid);
-void register_uid(int uid,int gid, char *name,BOOL guest);
+user_struct *get_valid_user_struct(uint16 vuid);
+void invalidate_vuid(uint16 vuid);
+char *validated_username(uint16 vuid);
+uint16 register_vuid(int uid,int gid, char *name,BOOL guest);
 void add_session_user(char *user);
 void dfs_unlogin(void);
 BOOL password_check(char *password);
@@ -547,7 +547,7 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
-		     BOOL *guest,BOOL *force,int vuid);
+		     BOOL *guest,BOOL *force,uint16 vuid);
 BOOL check_hosts_equiv(char *user);
 BOOL server_cryptkey(char *buf);
 BOOL server_validate(char *buf);
@@ -681,14 +681,14 @@ BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
 		 int **p_igroups, gid_t **p_groups);
-int make_connection(char *service,char *user,char *password, int pwlen, char *dev,int vuid);
+int make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid);
 int find_free_file(void );
 int reply_corep(char *outbuf);
 int reply_coreplus(char *outbuf);
 int reply_lanman1(char *outbuf);
 int reply_lanman2(char *outbuf);
 int reply_nt1(char *outbuf);
-void close_cnum(int cnum, int uid);
+void close_cnum(int cnum, uint16 vuid);
 BOOL yield_connection(int cnum,char *name,int max_connections);
 BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);
 void exit_server(char *reason);
@@ -801,7 +801,7 @@ char *ufc_crypt(char *key,char *salt);
 
 void init_uid(void);
 BOOL become_guest(void);
-BOOL become_user(int cnum, int uid);
+BOOL become_user(int cnum, uint16 vuid);
 BOOL unbecome_user(void );
 int smbrun(char *cmd,char *outfile,BOOL shared);
 
