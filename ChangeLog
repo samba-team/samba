@@ -1,5 +1,10 @@
 1999-09-28  Assar Westerlund  <assar@sics.se>
 
+	* lib/asn1/check-der.c: add test cases for Generalized time and
+ 	make sure we return the correct value
+
+	* lib/asn1/der_put.c: simplify by using der_put_length_and_tag
+
 	* lib/krb5/verify_user.c (krb5_verify_user_lrealm): ariant of
  	krb5_verify_user that tries in all the local realms
 
