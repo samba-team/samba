@@ -119,6 +119,20 @@ check_boolean(krb5_context context, const char *path, char *data)
 }
 
 static int
+check_524(krb5_context context, const char *path, char *data)
+{
+    if(strcasecmp(data, "yes") == 0 ||
+       strcasecmp(data, "no") == 0 ||
+       strcasecmp(data, "2b") == 0 ||
+       strcasecmp(data, "local") == 0)
+	return 0;
+
+    krb5_warnx(context, "%s: didn't contain a valid option `%s'", 
+	       path, data);
+    return 1;
+}
+
+static int
 check_host(krb5_context context, const char *path, char *data)
 {
     int ret;
@@ -338,6 +352,8 @@ struct entry libdefaults_entries[] = {
 };
 
 struct entry appdefaults_entries[] = {
+    { "afslog", krb5_config_string, check_boolean },
+    { "afs-use-524", krb5_config_string, check_524 },
     { "forwardable", krb5_config_string, check_boolean },
     { "proxiable", krb5_config_string, check_boolean },
     { "ticket_lifetime", krb5_config_string, check_time },
