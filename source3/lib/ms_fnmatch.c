@@ -47,27 +47,30 @@ static int ms_fnmatch_lanman_core(char *pattern, char *string)
 	while ((c = *p++)) {
 		switch (c) {
 		case '.':
+			if (! *n) goto next;
 			/* if (! *n && ! *p) goto match; */
 			if (*n != '.') goto nomatch;
 			n++;
 			break;
 
 		case '?':
+			if (! *n) goto next;
 			if ((*n == '.' && n[1] != '.') || ! *n) goto next;
 			n++;
 			break;
 
 		case '>':
+			if (! *n) goto next;
 			if (n[0] == '.') {
 				if (! n[1] && ms_fnmatch_lanman_core(p, n+1) == 0) goto match;
 				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
 				goto nomatch;
 			}
-			if (! *n) goto next;
 			n++;
 			break;
 
 		case '*':
+			if (! *n) goto next;
 			if (! *p) goto match;
 			for (; *n; n++) {
 				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
@@ -119,7 +122,7 @@ static int ms_fnmatch_lanman1(char *pattern, char *string)
 {
 	if (!strpbrk(pattern, "?*<>\"")) {
 		if (strcmp(string,"..") == 0) string = ".";
-		return strcmp(pattern, string);
+		return strcasecmp(pattern, string);
 	}
 
 	if (strcmp(string,"..") == 0 || strcmp(string,".") == 0) {
