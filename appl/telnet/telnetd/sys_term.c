@@ -361,16 +361,16 @@ char *line = Xline;
 char *myline = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif	/* CRAY */
 
-static char* k_ptsname(int p)
+#ifndef HAVE_PTSNAME
+static char *ptsname(int fd)
 {
-#ifdef HAVE_PTSNAME
-  return ptsname(p);
-#endif
 #ifdef HAVE_TTYNAME
-  return ttyname(p);
-#endif
+  return ttyname(fd);
+#else
   return NULL;
+#endif
 }
+#endif
 
 int getpty(int *ptynum)
 {
@@ -400,7 +400,7 @@ int getpty(int *ptynum)
 #ifdef HAVE_UNLOCKPT
 	    unlockpt(p);
 #endif
-	    strcpy(line, k_ptsname(p));
+	    strcpy(line, ptsname(p));
 	    return p;
 	  }
 	}
@@ -1247,7 +1247,7 @@ startslave(char *host, int autologin, char *autoname)
       {
 	char *tbuf =
 	  "\r\n*** Connection not encrypted! "
-	  "Communication may be eavesdropped.***\r\n";
+	  "Communication may be eavesdropped. ***\r\n";
 #ifdef ENCRYPTION
 	if (encrypt_output == 0 || decrypt_input == 0)
 #endif

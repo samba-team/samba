@@ -496,8 +496,11 @@ EncryptAutoDec(int on)
 void
 encrypt_not(void)
 {
-  if(encrypt_verbose)
-    printf("[ Connection is NOT encrypted ]\r\n");
+    if (encrypt_verbose)
+  	printf("[ Connection is NOT encrypted ]\r\n");
+    else
+  	printf("\r\n*** Connection not encrypted! "
+	       "Communication may be eavesdropped. ***\r\n");
 }
 
 /*
