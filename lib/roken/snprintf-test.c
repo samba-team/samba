@@ -34,6 +34,7 @@
 #include <config.h>
 #endif
 #include "roken.h"
+#include <limits.h>
 
 RCSID("$Id$");
 
