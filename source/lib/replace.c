@@ -48,7 +48,9 @@ ftruncate for operating systems that don't have it
 /*******************************************************************
 a mktime() replacement for those who don't have it - contributed by 
 C.A. Lademann <cal@zls.com>
+Corrections by richard.kettlewell@kewill.com
 ********************************************************************/
+
 #define  MINUTE  60
 #define  HOUR    60*MINUTE
 #define  DAY             24*HOUR
@@ -57,14 +59,16 @@ C.A. Lademann <cal@zls.com>
 {
   struct tm       *u;
   time_t  epoch = 0;
+  int n;
   int             mon [] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
   y, m, i;
 
   if(t->tm_year < 70)
     return((time_t)-1);
 
+  n = t->tm_year + 1900 - 1;
   epoch = (t->tm_year - 70) * YEAR + 
-    (t->tm_year / 4 - 70 / 4 - t->tm_year / 100) * DAY;
+    ((n / 4 - n / 100 + n / 400) - (1969 / 4 - 1969 / 100 + 1969 / 400)) * DAY;
 
   y = t->tm_year;
   m = 0;
