@@ -147,12 +147,54 @@ exit(1);
       fi
     ;;
 
+# Tests for linux LFS support. Need kernel 2.4 and glibc2.2 or greater support.
 #
-# Tests needed for glibc 2.1 large file support.
-# 
-	*linux*)
-		AC_MSG_RESULT([disabling large file support for glibc2.1 on Linux])     
+    *linux*)
+        AC_MSG_CHECKING([for LFS support])
+        old_CPPFLAGS="$CPPFLAGS"
+        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+       AC_TRY_RUN([
+#include <unistd.h>
+#include <sys/utsname.h>
+main() {
+#if _LFS64_LARGEFILE == 1
+       struct utsname uts;
+       char *release;
+       int major, minor;
+
+       /* Ensure this is glibc 2.2 or higher */
+#if defined(__GLIBC__) && defined(__GLIBC_MINOR__)
+       int libc_major = __GLIBC__;
+       int libc_minor = __GLIBC_MINOR__;
+
+       if (libc_major < 2)
+              exit(1);
+       if (libc_minor < 2)
+              exit(1);
+#endif
+
+       /* Ensure this is kernel 2.4 or higher */
+
+       uname(&uts);
+       release = uts.release;
+       major = atoi(strsep(&release, "."));
+       minor = atoi(strsep(&release, "."));
+
+       if (major > 2 || (major == 2 && minor > 3))
+               exit(0);
+       exit(1);
+#else
+       exit(1);
+#endif
+}
+], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
+        CPPFLAGS="$old_CPPFLAGS"
+        if test x$LINUX_LFS_SUPPORT = xyes ; then
+          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+        fi
+       AC_MSG_RESULT([$LINUX_LFS_SUPPORT])
 		;;
+
     *hurd*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
