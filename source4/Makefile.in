@@ -430,7 +430,7 @@ bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-install: installbin installdat 
+install: installbin installtorture installdat 
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privelege
@@ -451,6 +451,9 @@ installbin: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
 
+installtorture: all installdirs
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(TORTURE_PROGS)
+
 installmodules: all installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(NTVFS_LIBDIR) $(NTVFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(DCERPC_LIBDIR) $(DCERPC_MODULES)
@@ -461,7 +464,7 @@ installdat: installdirs
 
 # revert to the previously installed version
 revert:
-	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SBIN_PROGS) 
+	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SBIN_PROGS)
 
 .PHONY: showlayout
 
@@ -473,11 +476,14 @@ showlayout:
 	@echo "  libdir:  $(LIBDIR)"
 	@echo "  vardir:  $(VARDIR)"
 
-uninstall: uninstallbin
+uninstall: uninstallbin uninstalltorture
 
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
+
+uninstalltorture:
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(TORTURE_PROGS)
 
 uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(NTVFS_LIBDIR) $(DESTDIR)$(NTVFS_MODULES)
