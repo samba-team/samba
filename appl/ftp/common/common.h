@@ -47,4 +47,6 @@
 
 #include "base64.h"
 
+void set_buffer_size(int, int);
+
 #endif /* __COMMON_H__ */
