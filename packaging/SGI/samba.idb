@@ -12,7 +12,7 @@ d 0755 root sys usr/samba/bin packaging/SGI samba.sw.base
 f 0755 root sys usr/samba/bin/addtosmbpass source/addtosmbpass samba.sw.base
 f 0775 root sys usr/samba/bin/nmbd source/nmbd samba.sw.base
 f 0755 root sys usr/samba/bin/nmblookup source/nmblookup samba.sw.base
-f 0644 root sys usr/samba/bin/psfixes.sed packaging/SGI/psfixes.sed samba.sw.base
+f 0644 root sys usr/samba/bin/psfixes.pl packaging/SGI/psfixes.pl samba.sw.base
 f 0755 root sys usr/samba/bin/sambalp packaging/SGI/sambalp samba.sw.base
 f 0755 root sys usr/samba/bin/smbclient source/smbclient samba.sw.base
 f 0775 root sys usr/samba/bin/smbd source/smbd samba.sw.base
@@ -36,7 +36,7 @@ f 0644 root sys usr/samba/docs/Faxing.txt docs/Faxing.txt samba.man.doc
 f 0644 root sys usr/samba/docs/GOTCHAS.txt docs/GOTCHAS.txt samba.man.doc
 f 0644 root sys usr/samba/docs/HINTS.txt docs/HINTS.txt samba.man.doc
 f 0644 root sys usr/samba/docs/INSTALL.sambatar docs/INSTALL.sambatar samba.man.doc
-f 0644 root sys usr/samba/docs/MIRRORS docs/MIRRORS samba.man.doc
+f 0644 root sys usr/samba/docs/MIRRORS.txt docs/MIRRORS.txt samba.man.doc
 f 0644 root sys usr/samba/docs/NT4_PlainPassword.reg docs/NT4_PlainPassword.reg samba.man.doc
 f 0644 root sys usr/samba/docs/NetBIOS.txt docs/NetBIOS.txt samba.man.doc
 f 0644 root sys usr/samba/docs/OS2-Client-HOWTO.txt docs/OS2-Client-HOWTO.txt samba.man.doc
@@ -97,7 +97,6 @@ f 0644 root sys usr/samba/docs/nameservresp.doc source/nameservresp.doc samba.ma
 f 0644 root sys usr/samba/docs/namework.doc source/namework.doc samba.man.doc
 f 0644 root sys usr/samba/docs/nmbd.8 docs/nmbd.8 samba.man.doc
 f 0644 root sys usr/samba/docs/samba.7 docs/samba.7 samba.man.doc
-f 0644 root sys usr/samba/docs/samba.faq docs/samba.faq samba.man.doc
 f 0644 root sys usr/samba/docs/samba.lsm docs/samba.lsm samba.man.doc
 f 0644 root sys usr/samba/docs/security_level.txt docs/security_level.txt samba.man.doc
 f 0644 root sys usr/samba/docs/smb.conf.5 docs/smb.conf.5 samba.man.doc
@@ -134,7 +133,7 @@ f 0644 root sys usr/samba/src/docs/Faxing.txt docs/Faxing.txt samba.src.samba
 f 0644 root sys usr/samba/src/docs/GOTCHAS.txt docs/GOTCHAS.txt samba.src.samba
 f 0644 root sys usr/samba/src/docs/HINTS.txt docs/HINTS.txt samba.src.samba
 f 0644 root sys usr/samba/src/docs/INSTALL.sambatar docs/INSTALL.sambatar samba.src.samba
-f 0644 root sys usr/samba/src/docs/MIRRORS docs/MIRRORS samba.src.samba
+f 0644 root sys usr/samba/src/docs/MIRRORS.txt docs/MIRRORS.txt samba.src.samba
 f 0644 root sys usr/samba/src/docs/NT4_PlainPassword.reg docs/NT4_PlainPassword.reg samba.src.samba
 f 0644 root sys usr/samba/src/docs/NetBIOS.txt docs/NetBIOS.txt samba.src.samba
 f 0644 root sys usr/samba/src/docs/OS2-Client-HOWTO.txt docs/OS2-Client-HOWTO.txt samba.src.samba
@@ -181,7 +180,6 @@ f 0644 root sys usr/samba/src/docs/faq/sambafaq.txt docs/faq/sambafaq.txt samba.
 f 0644 root sys usr/samba/src/docs/history docs/history samba.src.samba
 f 0644 root sys usr/samba/src/docs/nmbd.8 docs/nmbd.8 samba.src.samba
 f 0644 root sys usr/samba/src/docs/samba.7 docs/samba.7 samba.src.samba
-f 0644 root sys usr/samba/src/docs/samba.faq docs/samba.faq samba.src.samba
 f 0644 root sys usr/samba/src/docs/samba.lsm docs/samba.lsm samba.src.samba
 f 0644 root sys usr/samba/src/docs/security_level.txt docs/security_level.txt samba.src.samba
 f 0644 root sys usr/samba/src/docs/smb.conf.5 docs/smb.conf.5 samba.src.samba
@@ -215,6 +213,7 @@ f 0644 root sys usr/samba/src/examples/printing/smbprint.sysv examples/printing/
 d 0755 root sys usr/samba/src/examples/simple examples/simple samba.src.samba
 f 0644 root sys usr/samba/src/examples/simple/README examples/simple/README samba.src.samba
 f 0644 root sys usr/samba/src/examples/simple/smb.conf examples/simple/smb.conf samba.src.samba
+f 0644 root sys usr/samba/src/examples/smb.conf.default examples/smb.conf.default samba.src.samba
 d 0775 root sys usr/samba/src/examples/svr4-startup examples/svr4-startup samba.src.samba
 f 0664 root sys usr/samba/src/examples/svr4-startup/README examples/svr4-startup/README samba.src.samba
 f 0775 root sys usr/samba/src/examples/svr4-startup/samba.server examples/svr4-startup/samba.server samba.src.samba
@@ -244,7 +243,7 @@ f 0755 root sys usr/samba/src/packaging/SGI/mkman packaging/SGI/mkman samba.src.
 f 0755 root sys usr/samba/src/packaging/SGI/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.src.samba
 f 0755 root sys usr/samba/src/packaging/SGI/mkrelease.sh packaging/SGI/mkrelease.sh samba.src.samba
 f 0644 root sys usr/samba/src/packaging/SGI/printcap packaging/SGI/printcap samba.src.samba
-f 0644 root sys usr/samba/src/packaging/SGI/psfixes.sed packaging/SGI/psfixes.sed samba.src.samba
+f 0644 root sys usr/samba/src/packaging/SGI/psfixes.pl packaging/SGI/psfixes.pl samba.src.samba
 f 0644 root sys usr/samba/src/packaging/SGI/relnotes.html packaging/SGI/relnotes.html samba.src.samba
 f 0644 root sys usr/samba/src/packaging/SGI/samba.config packaging/SGI/samba.config samba.src.samba
 f 0644 root sys usr/samba/src/packaging/SGI/samba.idb packaging/SGI/samba.idb samba.src.samba
@@ -254,9 +253,16 @@ f 0644 root sys usr/samba/src/packaging/SGI/sambalp packaging/SGI/sambalp samba.
 f 0644 root sys usr/samba/src/packaging/SGI/smb.conf packaging/SGI/smb.conf samba.src.samba
 f 0644 root sys usr/samba/src/packaging/SGI/smbpasswd packaging/SGI/smbpasswd samba.src.samba
 f 0644 root sys usr/samba/src/packaging/SGI/smbprint packaging/SGI/smbprint samba.src.samba
+d 0755 root sys usr/samba/src/packaging/Solaris packaging/Solaris samba.src.samba
+d 0755 root sys usr/samba/src/packaging/Solaris/pkg-specs packaging/Solaris/pkg-specs samba.src.samba
+f 0644 root sys usr/samba/src/packaging/Solaris/pkg-specs/Packaging.script packaging/Solaris/pkg-specs/Packaging.script samba.src.samba
+f 0644 root sys usr/samba/src/packaging/Solaris/pkg-specs/mkprototype packaging/Solaris/pkg-specs/mkprototype samba.src.samba
+f 0644 root sys usr/samba/src/packaging/Solaris/pkg-specs/pkginfo packaging/Solaris/pkg-specs/pkginfo samba.src.samba
+f 0644 root sys usr/samba/src/packaging/Solaris/pkg-specs/postinstall packaging/Solaris/pkg-specs/postinstall samba.src.samba
+f 0644 root sys usr/samba/src/packaging/Solaris/pkg-specs/postremove packaging/Solaris/pkg-specs/postremove samba.src.samba
 d 0755 root sys usr/samba/src/packaging/redhat packaging/redhat samba.src.samba
 f 0644 root sys usr/samba/src/packaging/redhat/Instructions packaging/redhat/Instructions samba.src.samba
-f 0755 root sys usr/samba/src/packaging/redhat/makeldirp.sh packaging/redhat/makeldirs.sh samba.src.samba
+f 0755 root sys usr/samba/src/packaging/redhat/makeldirs.sh packaging/redhat/makeldirs.sh samba.src.samba
 f 0755 root sys usr/samba/src/packaging/redhat/makerpms.sh packaging/redhat/makerpms.sh samba.src.samba
 f 0644 root sys usr/samba/src/packaging/redhat/samba-axp.patch packaging/redhat/samba-axp.patch samba.src.samba
 f 0644 root sys usr/samba/src/packaging/redhat/samba-make.patch packaging/redhat/samba-make.patch samba.src.samba
@@ -265,6 +271,7 @@ f 0644 root sys usr/samba/src/packaging/redhat/samba.pamd packaging/redhat/samba
 f 0644 root sys usr/samba/src/packaging/redhat/samba.spec packaging/redhat/samba.spec samba.src.samba
 f 0644 root sys usr/samba/src/packaging/redhat/smb.conf packaging/redhat/smb.conf samba.src.samba
 f 0755 root sys usr/samba/src/packaging/redhat/smb.init packaging/redhat/smb.init samba.src.samba
+f 0755 root sys usr/samba/src/packaging/redhat/smbadduser packaging/redhat/smbadduser samba.src.samba
 f 0755 root sys usr/samba/src/packaging/redhat/smbprint packaging/redhat/smbprint samba.src.samba
 d 0755 root sys usr/samba/src/source source samba.src.samba
 f 0644 root sys usr/samba/src/source/Makefile source/Makefile samba.src.samba
@@ -279,9 +286,11 @@ f 0644 root sys usr/samba/src/source/charset.h source/charset.h samba.src.samba
 f 0644 root sys usr/samba/src/source/checkos.sh source/checkos.sh samba.src.samba
 f 0644 root sys usr/samba/src/source/chgpasswd.c source/chgpasswd.c samba.src.samba
 f 0644 root sys usr/samba/src/source/client.c source/client.c samba.src.samba
+f 0644 root sys usr/samba/src/source/clientgen.c source/clientgen.c samba.src.samba
 f 0644 root sys usr/samba/src/source/clientutil.c source/clientutil.c samba.src.samba
 f 0644 root sys usr/samba/src/source/clitar.c source/clitar.c samba.src.samba
 f 0644 root sys usr/samba/src/source/clitar.h source/clitar.h samba.src.samba
+f 0644 root sys usr/samba/src/source/cvs.log source/cvs.log samba.src.samba
 f 0644 root sys usr/samba/src/source/dir.c source/dir.c samba.src.samba
 f 0644 root sys usr/samba/src/source/fault.c source/fault.c samba.src.samba
 f 0644 root sys usr/samba/src/source/getsmbpass.c source/getsmbpass.c samba.src.samba

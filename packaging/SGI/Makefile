@@ -27,9 +27,6 @@ INSTALLPERMS = 0755
 
 # Add any optimisation or debugging flags here
 # add -DSYSLOG for syslog support
-# RPM_OPT_FLAGS is needed when building an RPM distribution package
-# for RedHat Linux.
-# FLAGS1 = $(RPM_OPT_FLAGS)
 FLAGS1 = -O
 LIBS1 = 
 
@@ -219,6 +216,11 @@ AWK = awk
 # FLAGSM = -DLINUX -DQUOTAS -DNO_ASMSIGNALH -DGLIBC2 -DFAST_SHARE_MODES
 # LIBSM = -L/lib/libc5-compat -lcrypt
 
+# Use this for Linux with glibc2 (libc6)
+# contributed by Eloy Paris <peloy@ven.ra.rockwell.com>
+# FLAGSM = -DLINUX -DNETGROUP -DSHADOW_PWD -DALLOW_CHANGE_PASSWORD -DFAST_SHARE_MODES=1 -DNO_ASMSIGNALH -DGLIBC2
+# LIBSM = -lnsl -lcrypt
+
 # This is for SUNOS5.4 and later (also known as Solaris 2.4 and later)
 # contributed by Andrew.Tridgell@anu.edu.au
 # FLAGSM = -DSUNOS5 -DSHADOW_PWD -DNETGROUP -DFAST_SHARE_MODES
@@ -291,9 +293,9 @@ AWK = awk
 # LIBSM =
 
 
-# This is for OSF1 (Alpha) V2.0 Enhanced Security 
+# This is for OSF1 (Alpha) V2.0/V4.0 Enhanced Security 
 # contributed by Udo Linauer <ul@eacpc4.tuwien.ac.at>
-# FLAGSM = -DOSF1 -DOSF1_ENH_SEC
+# FLAGSM = -DOSF1 -DOSF1_ENH_SEC -DFAST_SHARE_MODES
 # LIBSM = -lsecurity
 
 
@@ -371,6 +373,7 @@ AWK = awk
 # FOR SGI IRIX 5.x.x, use this line instead
 # FLAGSM = -DSGI5 -DSHADOW_PWD -DHAVE_TIMEZONE -DFAST_SHARE_MODES
 # LIBSM =
+# FLAGS1 = -O -g3
 
 # FOR SGI IRIX 6.2 using the system compiler (*NOT* gcc), use this line instead
 # Contributed by David.Billinghurst@restech.cra.com.au
@@ -606,7 +609,7 @@ CFLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"
 CFLAGS3 = -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\"
 CFLAGS4 = -DWORKGROUP=\"$(WORKGROUP)\" -DGUEST_ACCOUNT=\"$(GUESTACCOUNT)\" 
 CFLAGS5 = $(CFLAGS1) $(CFLAGS2) $(CFLAGS3) $(CFLAGS4) $(FLAGSM) $(AFS_FLAGS) $(KRB5_FLAGS)
-CFLAGS  = $(CFLAGS5) $(PAM_FLAGS) $(DCE_FLAGS) $(DES_FLAGS) $(PASSWD_FLAGS) $(VTP_FLAGS)
+CFLAGS  = $(CFLAGS5) $(PAM_FLAGS) $(DCE_FLAGS) $(DES_FLAGS) $(PASSWD_FLAGS) $(VTP_FLAGS) $(RPM_OPT_FLAGS)
 LIBS = $(LIBS1) $(LIBSM) $(PAM_LIBS) $(DCE_LIBS) $(KRB5_LIBS) $(DES_LIB)
 
 SPROGS = smbd nmbd
@@ -631,7 +634,7 @@ UTILOBJ = $(UTILOBJ2) interface.o replace.o
 PARAMOBJ = $(UTILOBJ) ufc.o smbpass.o access.o shmem.o
 SMBDOBJ1 = $(PARAMOBJ) trans2.o pipes.o message.o dir.o printing.o locking.o
 SMBDOBJ2 = ipc.o reply.o mangle.o chgpasswd.o password.o quotas.o uid.o
-SMBDOBJ = predict.o $(SMBDOBJ1) $(SMBDOBJ2) $(VTP_OBJ)
+SMBDOBJ = predict.o clientgen.o $(SMBDOBJ1) $(SMBDOBJ2) $(VTP_OBJ)
 NMBDOBJ1 = nmblib.o namepacket.o nameresp.o nmbsync.o nameannounce.o nameelect.o
 NMBDOBJ2 = namedbresp.o namedbwork.o namedbserver.o namedbsubnet.o namedbname.o 
 NMBDOBJ3 = nameservresp.o nameservreply.o namelogon.o namebrowse.o namework.o nameserv.o clientutil.o
