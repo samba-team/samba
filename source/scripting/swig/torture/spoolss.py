@@ -1,5 +1,22 @@
-import string
+import sys, string
 import dcerpc
+
+
+def ResizeBufferCall(fn, pipe, r):
+
+    r['buffer'] = None
+    r['buf_size'] = 0
+    
+    result = fn(pipe, r)
+
+    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
+        r['buffer'] = result['buf_size'] * '\x00'
+        r['buf_size'] = result['buf_size']
+
+    result = fn(pipe, r)
+
+    return result
+
 
 def test_OpenPrinterEx(pipe, printer):
 
@@ -50,15 +67,8 @@ def test_GetPrinter(pipe, handle):
         r['buffer'] = None
         r['buf_size'] = 0
 
-        result = dcerpc.spoolss_GetPrinter(pipe, r)
+        result = ResizeBufferCall(dcerpc.spoolss_GetPrinter, pipe, r)
 
-        if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
-            r['buffer'] = result['buf_size'] * '\x00'
-            r['buf_size'] = result['buf_size']
-
-            result = dcerpc.spoolss_GetPrinter(pipe, r)
-
-            print result
 
 def test_EnumForms(pipe, handle):
 
@@ -70,16 +80,20 @@ def test_EnumForms(pipe, handle):
     r['buffer'] = None
     r['buf_size'] = 0
 
-    result = dcerpc.spoolss_EnumForms(pipe, r)
+    result = ResizeBufferCall(dcerpc.spoolss_EnumForms, pipe, r)
 
-    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
-        r['buffer'] = result['buf_size'] * '\x00'
-        r['buf_size'] = result['buf_size']
+    forms = dcerpc.unmarshall_spoolss_FormInfo_array(
+        result['buffer'], r['level'], result['count'])
 
-        result = dcerpc.spoolss_EnumForms(pipe, r)
+    for form in forms:
 
-    print result
-           
+        r = {}
+        r['handle'] = handle
+        r['formname'] = form['info1']['formname']
+        r['level'] = 1
+
+        result = ResizeBufferCall(dcerpc.spoolss_GetForm, pipe, r)
+
 
 def test_EnumPorts(pipe, handle):
 
@@ -91,16 +105,68 @@ def test_EnumPorts(pipe, handle):
     r['buffer'] = None
     r['buf_size'] = 0
 
-    result = dcerpc.spoolss_EnumPorts(pipe, r)
+    result = ResizeBufferCall(dcerpc.spoolss_EnumPorts, pipe, r)
 
-    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
-        r['buffer'] = result['buf_size'] * '\x00'
-        r['buf_size'] = result['buf_size']
 
-        result = dcerpc.spoolss_EnumPorts(pipe, r)
+def test_DeleteForm(pipe, handle, formname):
 
-    print result
-           
+    r = {}
+    r['handle'] = handle
+    r['formname'] = formname
+
+    dcerpc.spoolss_DeleteForm(pipe, r)
+
+
+def test_GetForm(pipe, handle, formname):
+
+    r = {}
+    r['handle'] = handle
+    r['formname'] = formname
+    r['level'] = 1
+
+    result = ResizeBufferCall(dcerpc.spoolss_GetForm, pipe, r)
+
+    return result['info']['info1']
+    
+
+def test_AddForm(pipe, handle):
+
+    print 'testing spoolss_AddForm'
+
+    formname = '__testform__'
+
+    r = {}
+    r['handle'] = handle
+    r['level'] = 1
+    r['info'] = {}
+    r['info']['info1'] = {}
+    r['info']['info1']['formname'] = formname
+    r['info']['info1']['flags'] = 0
+    r['info']['info1']['width'] = 1
+    r['info']['info1']['length'] = 2
+    r['info']['info1']['left'] = 3
+    r['info']['info1']['top'] = 4
+    r['info']['info1']['right'] = 5
+    r['info']['info1']['bottom'] = 6
+
+    try:
+        result = dcerpc.spoolss_AddForm(pipe, r)
+    except dcerpc.WERROR, arg:
+        if arg[0] == dcerpc.WERR_ALREADY_EXISTS:
+            test_DeleteForm(pipe, handle, formname)
+        result = dcerpc.spoolss_AddForm(pipe, r)
+
+    f = test_GetForm(pipe, handle, formname)
+
+    if r['info']['info1'] != f:
+        print 'Form type mismatch: %s != %s' % \
+              (r['info']['info1'], f)
+        sys.exit(1)
+
+    # TODO: test spoolss_SetForm()
+
+    test_DeleteForm(pipe, handle, formname)
+
 
 def test_EnumPrinters(pipe):
 
@@ -120,19 +186,10 @@ def test_EnumPrinters(pipe):
         r['buf_size'] = 0
         r['buffer'] = None
 
-        result = dcerpc.spoolss_EnumPrinters(pipe, r)
-
-        if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
-            r['buffer'] = result['buf_size'] * '\x00'
-            r['buf_size'] = result['buf_size']
-
-            result = dcerpc.spoolss_EnumPrinters(pipe, r)
+        result = ResizeBufferCall(dcerpc.spoolss_EnumPrinters,pipe, r)
 
         printers = dcerpc.unmarshall_spoolss_PrinterInfo_array(
             result['buffer'], r['level'], result['count'])
-
-        from pprint import pprint
-        pprint(printers)
 
         if level == 1:
             printer_names = map(
@@ -143,6 +200,10 @@ def test_EnumPrinters(pipe):
         handle = test_OpenPrinterEx(pipe, printer)
 
         test_GetPrinter(pipe, handle)
+
+        test_EnumForms(pipe, handle)
+
+        test_AddForm(pipe, handle)
 
         test_ClosePrinter(pipe, handle)
         
