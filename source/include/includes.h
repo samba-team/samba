@@ -433,6 +433,11 @@
 #include <com_err.h>
 #endif
 
+#if HAVE_VALGRIND_H
+/* Special macros that are no-ops except when run under Valgrind on x86.  */
+#include <valgrind.h>
+#endif
+
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
