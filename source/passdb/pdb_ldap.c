@@ -580,7 +580,6 @@ Initialize SAM_ACCOUNT from an LDAP query
 static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * sampass)
 {
 	pstring temp;
-	uint32  i; 
 
 	*mods = NULL;
 
