@@ -93,6 +93,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	uint32 *rids=NULL, *new_rids=NULL;
 	gid_t winbind_gid_low, winbind_gid_high;
 	BOOL ret;
+	BOOL winbind_groups_exist;
 
 	/*
 	 * this code is far from perfect.
@@ -108,7 +109,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	*prids=NULL;
 	*numgroups=0;
 
-	lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
+	winbind_groups_exist = lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
 
 
 	DEBUG(10,("get_alias_user_groups: looking if SID %s is a member of groups in the SID domain %s\n", 
@@ -155,7 +156,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 		}
 
 		/* Don't return winbind groups as they are not local! */
-		if ((grp->gr_gid >= winbind_gid_low) && (grp->gr_gid <= winbind_gid_high)) {
+		if (winbind_groups_exist && (grp->gr_gid >= winbind_gid_low) && (grp->gr_gid <= winbind_gid_high)) {
 			DEBUG(10,("get_alias_user_groups: not returing %s, not local.\n", map.nt_name));
 			continue;
 		}
@@ -224,7 +225,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	}
 
 	/* Don't return winbind groups as they are not local! */
-	if ((gid >= winbind_gid_low) && (gid <= winbind_gid_high)) {
+	if (winbind_groups_exist && (gid >= winbind_gid_low) && (gid <= winbind_gid_high)) {
 		DEBUG(10,("get_alias_user_groups: not returing %s, not local.\n", map.nt_name ));
 		goto done;
 	}
