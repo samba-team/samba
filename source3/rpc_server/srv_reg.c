@@ -5,6 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Hewlett-Packard Company           1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -145,6 +146,10 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 	{
 		DEBUG(5,("reg_open_entry: %s\n", name));
 		/* lkcl XXXX do a check on the name, here */
+		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
+		{
+			status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if (status == 0x0 && !set_lsa_policy_reg_name(&pol, name))
@@ -199,7 +204,10 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	{
 	}
 
-	init_reg_r_info(&r_u, 1, "LanmanNT", 0x12, 0x12, status);
+	/* This makes the server look like a member server to clients */
+	/* which tells clients that we have our own local user and    */
+	/* group databases and helps with ACL support.                */
+	init_reg_r_info(&r_u, 1, "ServerNT", 0x12, 0x12, status);
 
 	/* store the response in the SMB stream */
 	reg_io_r_info("", &r_u, rdata, 0);
