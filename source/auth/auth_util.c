@@ -241,11 +241,11 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 ****************************************************************************/
 
 BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
-				     char *smb_name, 
-				     char *client_domain, 
-				     char *wksta_name, 
-				     uchar *lm_network_pwd, int lm_pwd_len,
-				     uchar *nt_network_pwd, int nt_pwd_len)
+				     const char *smb_name, 
+				     const char *client_domain, 
+				     const char *wksta_name, 
+				     const uchar *lm_network_pwd, int lm_pwd_len,
+				     const uchar *nt_network_pwd, int nt_pwd_len)
 {
 	BOOL ret;
 	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
@@ -361,8 +361,8 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 ****************************************************************************/
 
 BOOL make_user_info_for_reply(auth_usersupplied_info **user_info, 
-			      char *smb_name, 
-			      char *client_domain,
+			      const char *smb_name, 
+			      const char *client_domain,
 			      const uint8 chal[8],
 			      DATA_BLOB plaintext_password)
 {
@@ -416,9 +416,9 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 ****************************************************************************/
 
 BOOL make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
-			      char *smb_name,
-			      char *client_domain, 
-			      DATA_BLOB lm_resp, DATA_BLOB nt_resp)
+				  const char *smb_name,
+				  const char *client_domain, 
+				  DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
 	uint32 auth_flags = AUTH_FLAG_NONE;
 
