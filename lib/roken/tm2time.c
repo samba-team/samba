@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -49,13 +49,13 @@ RCSID("$Id$");
 time_t
 tm2time (struct tm tm, int local)
 {
-     time_t t;
+    time_t t;
 
-     tm.tm_isdst = -1;
+    tm.tm_isdst = local ? -1 : 0;
 
-     t = mktime (&tm);
+    t = mktime (&tm);
 
-     if (!local)
-       t += t - mktime (gmtime (&t));
-     return t;
+    if (!local)
+	t += t - mktime (gmtime (&t));
+    return t;
 }
