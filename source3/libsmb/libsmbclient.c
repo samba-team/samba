@@ -246,7 +246,7 @@ smbc_parse_path(SMBCCTX *context,
 	p += 2;  /* Skip the double slash */
 
         /* See if any options were specified */
-        if (q = strrchr(p, '?')) {
+        if ( (q = strrchr(p, '?')) != NULL ) {
                 /* There are options.  Null terminate here and point to them */
                 *q++ = '\0';
                 
@@ -537,9 +537,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	SMBCSRV *srv=NULL;
 	struct cli_state c;
 	struct nmb_name called, calling;
-	char *p;
 	const char *server_n = server;
-	fstring group;
 	pstring ipenv;
 	struct in_addr ip;
 	int tried_reverse = 0;
