@@ -43,6 +43,8 @@ NTSTATUS ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, struct lsa_EnumPrivs *r)
 
 NTSTATUS ndr_push_lsa_QuerySecObj(struct ndr_push *ndr, struct lsa_QuerySecObj *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.sec_info));
 
 	return NT_STATUS_OK;
 }
@@ -582,6 +584,16 @@ NTSTATUS ndr_pull_lsa_EnumPrivs(struct ndr_pull *ndr, struct lsa_EnumPrivs *r)
 
 NTSTATUS ndr_pull_lsa_QuerySecObj(struct ndr_pull *ndr, struct lsa_QuerySecObj *r)
 {
+	uint32 _ptr_sd;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sd));
+	if (_ptr_sd) {
+		NDR_ALLOC(ndr, r->out.sd);
+	} else {
+		r->out.sd = NULL;
+	}
+	if (r->out.sd) {
+		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sd));
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;

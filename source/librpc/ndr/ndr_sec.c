@@ -50,6 +50,8 @@ NTSTATUS ndr_pull_security_ace(struct ndr_pull *ndr, struct security_ace *ace)
 		if (ace->obj->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
 			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &ace->obj->inherit_guid));
 		}
+	} else {
+		ace->obj = NULL;
 	}
 
 
@@ -354,6 +356,44 @@ void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid2
 	ndr_print_dom_sid(ndr, name, sid);
 }
 
+
+/*
+  print a security_ace
+*/
+void ndr_print_security_ace(struct ndr_print *ndr, const char *name, struct security_ace *ace)
+{
+	ndr_print_struct(ndr, name, "security_ace");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "type", ace->type);
+	ndr_print_uint8(ndr, "flags", ace->flags);
+	ndr_print_uint32(ndr, "access_mask", ace->access_mask);
+	if (ace->obj) {
+		ndr_print_struct(ndr, name, "security_ace_obj");
+		ndr->depth++;
+		ndr_print_uint32(ndr, "flags", ace->obj->flags);
+		ndr_print_GUID(ndr, "object_guid", &ace->obj->object_guid);
+		ndr_print_GUID(ndr, "inherit_guid", &ace->obj->inherit_guid);
+		ndr->depth--;
+	}
+	ndr_print_dom_sid(ndr, "trustee", &ace->trustee);
+	ndr->depth--;
+}
+
+/*
+  print a security_acl
+*/
+void ndr_print_security_acl(struct ndr_print *ndr, const char *name, struct security_acl *acl)
+{
+	ndr_print_struct(ndr, name, "security_acl");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "revision", acl->revision);
+	ndr_print_uint32(ndr, "num_aces", acl->num_aces);
+	ndr_print_array(ndr, "aces", acl->aces, 
+			sizeof(acl->aces[0]), acl->num_aces,
+			(ndr_print_fn_t) ndr_print_security_ace);
+	ndr->depth--;
+}
+
 /*
   print a security descriptor 
 */
@@ -361,8 +401,75 @@ void ndr_print_security_descriptor(struct ndr_print *ndr,
 				   const char *name,
 				   struct security_descriptor *sd)
 {
-	ndr->print(ndr, "%-25s: ndr_print_security_descriptor not implemented", 
-		   name);
+	ndr_print_struct(ndr, name, "security_descriptor");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "revision", sd->revision);
+	ndr_print_uint16(ndr, "type", sd->type);
+	ndr_print_ptr(ndr, "owner_sid", sd->owner_sid);
+	if (sd->owner_sid) {
+		ndr_print_dom_sid(ndr, "owner_sid", sd->owner_sid);
+	}
+	ndr_print_ptr(ndr, "group_sid", sd->group_sid);
+	if (sd->group_sid) {
+		ndr_print_dom_sid(ndr, "group_sid", sd->group_sid);
+	}
+	ndr_print_ptr(ndr, "sacl", sd->sacl);
+	if (sd->sacl) {
+		ndr_print_security_acl(ndr, "sacl", sd->sacl);
+	}
+	ndr_print_ptr(ndr, "dacl", sd->dacl);
+	if (sd->dacl) {
+		ndr_print_security_acl(ndr, "dacl", sd->dacl);
+	}
+	ndr->depth--;
 }
 
 
+
+/*
+  implementation of sec_desc_buf - an encapsulated security descriptor
+*/
+NTSTATUS ndr_pull_sec_desc_buf(struct ndr_pull *ndr, int ndr_flags, 
+			       struct sec_desc_buf *sdbuf)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		uint32 _ptr;
+		NDR_CHECK(ndr_pull_uint32(ndr, &sdbuf->size));		
+		NDR_CHECK(ndr_pull_uint32(ndr, &_ptr));
+		if (_ptr) {
+			NDR_ALLOC(ndr, sdbuf->sd);
+		} else {
+			sdbuf->sd = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (sdbuf->sd) {
+			struct ndr_pull ndr2;
+			uint32 size;
+			NDR_CHECK(ndr_pull_uint32(ndr, &size));
+			if (size != sdbuf->size) {
+				return NT_STATUS_INFO_LENGTH_MISMATCH;
+			}
+			NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, sdbuf->size));
+			NDR_CHECK(ndr_pull_security_descriptor(&ndr2, sdbuf->sd));
+			NDR_CHECK(ndr_pull_advance(ndr, sdbuf->size));
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+
+/*
+  print a sec_desc_buf
+*/
+void ndr_print_sec_desc_buf(struct ndr_print *ndr, const char *name,
+			    struct sec_desc_buf *sdbuf)
+{
+	ndr_print_struct(ndr, name, "sec_desc_buf");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "size", sdbuf->size);
+	ndr_print_ptr(ndr, "sd", sdbuf->sd);
+	if (sdbuf->sd) {
+		ndr_print_security_descriptor(ndr, "sd", sdbuf->sd);
+	}
+}

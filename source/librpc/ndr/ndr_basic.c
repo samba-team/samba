@@ -22,19 +22,6 @@
 
 #include "includes.h"
 
-#define NDR_PULL_NEED_BYTES(ndr, n) do { \
-	if ((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size) { \
-		return NT_STATUS_BUFFER_TOO_SMALL; \
-	} \
-} while(0)
-
-#define NDR_PULL_ALIGN(ndr, n) do { \
-	ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
-	if (ndr->offset >= ndr->data_size) { \
-		return NT_STATUS_BUFFER_TOO_SMALL; \
-	} \
-} while(0)
-
 /*
   parse a uint8
 */
@@ -151,13 +138,6 @@ NTSTATUS ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, GUID *guid)
 	return NT_STATUS_OK;
 }
 
-
-#define NDR_PUSH_NEED_BYTES(ndr, n) NDR_CHECK(ndr_push_expand(ndr, ndr->offset+(n)))
-
-#define NDR_PUSH_ALIGN(ndr, n) do { \
-	uint32 _pad = (ndr->offset & (n-1)); \
-	while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, 0)); \
-} while(0)
 
 /*
   push a uint8
