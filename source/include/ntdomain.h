@@ -116,6 +116,8 @@ SamrTestPrivateFunctionsUser
 #define SAMR_OPEN_USER         0x22
 #define SAMR_QUERY_USERINFO    0x24
 #define SAMR_QUERY_USERGROUPS  0x27
+#define SAMR_UNKNOWN_12        0x12
+#define SAMR_UNKNOWN_21        0x21
 #define SAMR_UNKNOWN_32        0x32
 #define SAMR_UNKNOWN_34        0x34
 #define SAMR_CONNECT           0x39
@@ -604,13 +606,13 @@ typedef struct lsa_user_info_3
 	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
 	uint32 user_flgs;     /* user flags */
 
-	char user_sess_key[16]; /* unused user session key */
+	uint8 user_sess_key[16]; /* unused user session key */
 
 	UNIHDR hdr_logon_srv; /* logon server unicode string header */
 	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
 
 	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
-	char padding[40];    /* unused padding bytes.  expansion room */
+	uint8 padding[40];    /* unused padding bytes.  expansion room */
 
 	uint32 num_other_sids; /* 0 - num_sids */
 	uint32 buffer_other_sids; /* NULL - undocumented pointer to SIDs. */
@@ -1113,7 +1115,7 @@ typedef struct net_r_auth2_info
 typedef struct net_q_srv_pwset_info
 {
     DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
-    char pwd[16]; /* new password - undocumented. */
+    uint8 pwd[16]; /* new password - undocumented. */
 
 } NET_Q_SRV_PWSET;
     
@@ -1195,8 +1197,6 @@ typedef struct srv_sess_info_0_info
 	SESS_INFO_0     info_0    [MAX_SESS_ENTRIES]; /* session entry pointers */
 	SESS_INFO_0_STR info_0_str[MAX_SESS_ENTRIES]; /* session entry strings */
 
-	uint32 total_entries;                    /* total number of entries */
-
 } SRV_SESS_INFO_0;
 
 /* SESS_INFO_1 (pointers to level 1 session info strings) */
@@ -1229,8 +1229,6 @@ typedef struct srv_sess_info_1_info
 
 	SESS_INFO_1     info_1    [MAX_SESS_ENTRIES]; /* session entry pointers */
 	SESS_INFO_1_STR info_1_str[MAX_SESS_ENTRIES]; /* session entry strings */
-
-	uint32 total_entries;                    /* total number of entries */
 
 } SRV_SESS_INFO_1;
 
@@ -1274,6 +1272,7 @@ typedef struct r_net_sess_enum_info
 
 	SRV_SESS_INFO_CTR *ctr;
 
+	uint32 total_entries;                    /* total number of entries */
 	ENUM_HND enum_hnd;
 
 	uint32 status;               /* return status */
@@ -1299,8 +1298,6 @@ typedef struct srv_conn_info_0_info
 	uint32 num_entries_read2;                    /* EntriesRead */
 
 	CONN_INFO_0     info_0    [MAX_CONN_ENTRIES]; /* connection entry pointers */
-
-	uint32 total_entries;                    /* total number of entries */
 
 } SRV_CONN_INFO_0;
 
@@ -1335,8 +1332,6 @@ typedef struct srv_conn_info_1_info
 
 	CONN_INFO_1     info_1    [MAX_CONN_ENTRIES]; /* connection entry pointers */
 	CONN_INFO_1_STR info_1_str[MAX_CONN_ENTRIES]; /* connection entry strings */
-
-	uint32 total_entries;                    /* total number of entries */
 
 } SRV_CONN_INFO_1;
 
@@ -1380,6 +1375,7 @@ typedef struct r_net_conn_enum_info
 
 	SRV_CONN_INFO_CTR *ctr;
 
+	uint32 total_entries;                    /* total number of entries */
 	ENUM_HND enum_hnd;
 
 	uint32 status;               /* return status */
@@ -1407,7 +1403,7 @@ typedef struct str_share_info1
 
 } SH_INFO_1_STR;
 
-/* SHARE_INFO_1 */
+/* SRV_SHARE_INFO_1 */
 typedef struct share_info_1_info
 {
 	uint32 num_entries_read;                     /* EntriesRead */
@@ -1417,9 +1413,20 @@ typedef struct share_info_1_info
 	SH_INFO_1     info_1    [MAX_SHARE_ENTRIES]; /* share entry pointers */
 	SH_INFO_1_STR info_1_str[MAX_SHARE_ENTRIES]; /* share entry strings */
 
-	uint32 total_entries;                    /* total number of entries */
+} SRV_SHARE_INFO_1;
 
-} SHARE_INFO_1_CTR;
+/* SRV_SHARE_INFO_CTR */
+typedef struct srv_share_info_1_info
+{
+	uint32 switch_value;         /* switch value */
+	uint32 ptr_share_ctr;       /* pointer to share info union */
+	union
+    {
+		SRV_SHARE_INFO_1 info1; /* file info with 0 entries */
+
+    } share;
+
+} SRV_SHARE_INFO_CTR;
 
 /* SRV_Q_NET_SHARE_ENUM */
 typedef struct q_net_share_enum_info
@@ -1428,15 +1435,8 @@ typedef struct q_net_share_enum_info
 	UNISTR2 uni_srv_name;        /* server name */
 
 	uint32 share_level;          /* share level */
-	uint32 switch_value;         /* switch value */
 
-	uint32 ptr_share_info;       /* pointer to SHARE_INFO_1_CTR */
-
-	union
-    {
-		SHARE_INFO_1_CTR info1; /* share info with 0 entries */
-
-    } share;
+	SRV_SHARE_INFO_CTR *ctr;     /* share info container */
 
 	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
 
@@ -1449,15 +1449,9 @@ typedef struct q_net_share_enum_info
 typedef struct r_net_share_enum_info
 {
 	uint32 share_level;          /* share level */
-	uint32 switch_value;         /* switch value */
+	SRV_SHARE_INFO_CTR *ctr;     /* share info container */
 
-	uint32 ptr_share_info;       /* pointer to SHARE_INFO_1_CTR */
-	union
-    {
-		SHARE_INFO_1_CTR info1; /* share info container */
-
-    } share;
-
+	uint32 total_entries;                    /* total number of entries */
 	ENUM_HND enum_hnd;
 
 	uint32 status;               /* return status */
@@ -1497,8 +1491,6 @@ typedef struct srv_file_info_3
 
 	FILE_INFO_3     info_3    [MAX_FILE_ENTRIES]; /* file entry details */
 	FILE_INFO_3_STR info_3_str[MAX_FILE_ENTRIES]; /* file entry strings */
-
-	uint32 total_entries;                    /* total number of files */
 
 } SRV_FILE_INFO_3;
 
@@ -1542,7 +1534,9 @@ typedef struct r_net_file_enum_info
 
 	SRV_FILE_INFO_CTR *ctr;
 
+	uint32 total_entries;                    /* total number of files */
 	ENUM_HND enum_hnd;
+
 	uint32 status;        /* return status */
 
 } SRV_R_NET_FILE_ENUM;
@@ -2139,10 +2133,57 @@ typedef struct r_samr_lookup_names_info
 } SAMR_R_LOOKUP_NAMES;
 
 
+/****************************************************************************
+SAMR_Q_UNKNOWN_12 - do a conversion from RID groups to something.
+
+called to resolve domain RID groups.
+*****************************************************************************/
+/* SAMR_Q_UNKNOWN_12 */
+typedef struct q_samr_unknown_12_info
+{
+    POLICY_HND pol;       /* policy handle */
+
+	uint32 num_gids1;      /* number of rids being looked up */
+	uint32 rid;            /* 0x0000 03e8 - RID of the server doing the query? */
+	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
+	uint32 num_gids2;      /* number of rids being looked up */
+
+	uint32 gid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
+
+} SAMR_Q_UNKNOWN_12;
+
+
+/****************************************************************************
+SAMR_R_UNKNOWN_12 - do a conversion from group RID to names
+
+*****************************************************************************/
+/* SAMR_R_UNKNOWN_12 */
+typedef struct r_samr_unknown_12_info
+{
+    POLICY_HND pol;       /* policy handle */
+
+	uint32 num_aliases1;      /* number of aliases being looked up */
+	uint32 ptr_aliases;       /* pointer to aliases */
+	uint32 num_aliases2;      /* number of aliases being looked up */
+
+	UNIHDR  hdr_als_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
+	UNISTR2 uni_als_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
+
+	uint32 num_als_usrs1;      /* number of users in aliases being looked up */
+	uint32 ptr_als_usrs;       /* pointer to users in aliases */
+	uint32 num_als_usrs2;      /* number of users in aliases being looked up */
+
+	uint32 num_als_usrs[MAX_LOOKUP_SIDS]; /* number of users per group */
+
+	uint32 status;
+
+} SAMR_R_UNKNOWN_12;
+
+
 /* SAMR_Q_OPEN_USER - probably an open */
 typedef struct q_samr_open_user_info
 {
-    POLICY_HND pol;       /* policy handle */
+    POLICY_HND domain_pol;       /* policy handle */
 	uint32 unknown_0;     /* 32 bit unknown - 0x02011b */
 	uint32 user_rid;      /* user RID */
 
@@ -2152,11 +2193,32 @@ typedef struct q_samr_open_user_info
 /* SAMR_R_OPEN_USER - probably an open */
 typedef struct r_samr_open_user_info
 {
-    POLICY_HND pol;       /* policy handle associated with unknown id */
+    POLICY_HND user_pol;       /* policy handle associated with unknown id */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_USER;
 
+
+/* SAMR_Q_UNKNOWN_13 - probably an open alias in domain */
+typedef struct q_samr_unknown_13_info
+{
+    POLICY_HND alias_pol;        /* policy handle */
+
+	uint16 unknown_1;            /* 16 bit unknown - 0x0200 */
+	uint16 unknown_2;            /* 16 bit unknown - 0x0000 */
+
+} SAMR_Q_UNKNOWN_13;
+
+
+/* SAMR_Q_UNKNOWN_21 - probably an open group in domain */
+typedef struct q_samr_unknown_21_info
+{
+    POLICY_HND group_pol;        /* policy handle */
+
+	uint16 unknown_1;            /* 16 bit unknown - 0x0477 */
+	uint16 unknown_2;            /* 16 bit unknown - 0x0000 */
+
+} SAMR_Q_UNKNOWN_21;
 
 
 /* SAMR_Q_UNKNOWN_32 - probably a "create SAM entry" */

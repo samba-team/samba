@@ -81,7 +81,9 @@ void cmd_srv_query_info(struct client_info *info)
 	{
 		DEBUG(5,("cmd_srv_query_info: query succeeded\n"));
 
-		display_srv_info_ctr(out_hnd, &ctr);
+		display_srv_info_ctr(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
+		display_srv_info_ctr(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
+		display_srv_info_ctr(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
 	}
 	else
 	{
@@ -129,10 +131,17 @@ void cmd_srv_query_conn(struct client_info *info)
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
-	/* enumerate files on server */
+	/* enumerate connections on server */
 	res = res ? do_srv_net_srv_conn_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
 				dest_srv, qual_srv,
 	            info_level, &ctr, 0x1000, &hnd) : False;
+
+	if (res)
+	{
+		display_srv_conn_info_ctr(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
+		display_srv_conn_info_ctr(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
+		display_srv_conn_info_ctr(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
+	}
 
 	/* close the session */
 	do_srv_session_close(ipc_cli, ipc_tidx, info);
@@ -140,14 +149,70 @@ void cmd_srv_query_conn(struct client_info *info)
 	if (res)
 	{
 		DEBUG(5,("cmd_srv_query_conn: query succeeded\n"));
-
-/*
-		display_srv_info_ctr(out_hnd, &ctr);
-*/
 	}
 	else
 	{
 		DEBUG(5,("cmd_srv_query_conn: query failed\n"));
+	}
+}
+
+/****************************************************************************
+server enum connections
+****************************************************************************/
+void cmd_srv_query_shares(struct client_info *info)
+{
+	fstring dest_srv;
+	fstring tmp;
+	SRV_SHARE_INFO_CTR ctr;
+	ENUM_HND hnd;
+	uint32 info_level = 0;
+
+	BOOL res = True;
+
+	bzero(&ctr, sizeof(ctr));
+
+	strcpy(dest_srv, "\\\\");
+	strcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		info_level = strtoul(tmp, (char**)NULL, 10);
+	}
+
+	DEBUG(4,("cmd_srv_query_shares: server:%s info level: %D\n",
+				dest_srv, info_level));
+
+	DEBUG(5, ("cmd_srv_query_shares: ipc_cli->fd:%d\n", ipc_cli->fd));
+
+	/* open srvsvc session. */
+	res = res ? do_srv_session_open(ipc_cli, ipc_tidx, info) : False;
+
+	hnd.ptr_hnd = 1;
+	hnd.handle = 0;
+
+	/* enumerate shares_files on server */
+	res = res ? do_srv_net_srv_share_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
+				dest_srv, 
+	            info_level, &ctr, 0x1000, &hnd) : False;
+
+	if (res)
+	{
+		display_srv_share_info_ctr(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
+		display_srv_share_info_ctr(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
+		display_srv_share_info_ctr(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
+	}
+
+	/* close the session */
+	do_srv_session_close(ipc_cli, ipc_tidx, info);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_srv_query_shares: query succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_srv_query_shares: query failed\n"));
 	}
 }
 
@@ -186,7 +251,7 @@ void cmd_srv_query_sess(struct client_info *info)
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
-	/* enumerate files on server */
+	/* enumerate sessions on server */
 	res = res ? do_srv_net_srv_sess_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
 				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
@@ -196,10 +261,6 @@ void cmd_srv_query_sess(struct client_info *info)
 	if (res)
 	{
 		DEBUG(5,("cmd_srv_query_sess: query succeeded\n"));
-
-/*
-		display_srv_info_ctr(out_hnd, &ctr);
-*/
 	}
 	else
 	{
@@ -246,16 +307,19 @@ void cmd_srv_query_files(struct client_info *info)
 	res = res ? do_srv_net_srv_file_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
 				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
+	if (res)
+	{
+		display_srv_file_info_ctr(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
+		display_srv_file_info_ctr(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
+		display_srv_file_info_ctr(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
+	}
+
 	/* close the session */
 	do_srv_session_close(ipc_cli, ipc_tidx, info);
 
 	if (res)
 	{
 		DEBUG(5,("cmd_srv_query_files: query succeeded\n"));
-
-/*
-		display_srv_info_ctr(out_hnd, &ctr);
-*/
 	}
 	else
 	{
@@ -463,7 +527,9 @@ void cmd_sam_query_users(struct client_info *info)
 							&info->dom.samr_pol_open_domain,
 							user_rid, &usr))
 				{
-					display_sam_user_info_15(out_hnd, &usr);
+					display_sam_user_info_15(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &usr);
+					display_sam_user_info_15(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &usr);
+					display_sam_user_info_15(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &usr);
 				}
 			}
 
@@ -477,13 +543,176 @@ void cmd_sam_query_users(struct client_info *info)
 							&info->dom.samr_pol_open_domain,
 							user_rid, &num_groups, gid))
 				{
-					display_group_info(out_hnd, num_groups, gid);
+					display_group_rid_info(out_hnd, DISPLAY_TXT, ACTION_HEADER   , num_groups, gid);
+					display_group_rid_info(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, num_groups, gid);
+					display_group_rid_info(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , num_groups, gid);
 				}
 			}
 
 			user_idx++;
 		}
 	}
+
+	res = res ? do_samr_close(ipc_cli, ipc_tidx, info->dom.samr_fnum,
+	            &info->dom.samr_pol_connect) : False;
+
+	res = res ? do_samr_close(ipc_cli, ipc_tidx, info->dom.samr_fnum,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	/* close the session */
+	do_samr_session_close(ipc_cli, ipc_tidx, info);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_sam_query_users: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_query_users: failed\n"));
+	}
+}
+
+
+/****************************************************************************
+experimental SAM aliases query.
+****************************************************************************/
+void cmd_sam_query_aliases(struct client_info *info)
+{
+	fstring srv_name;
+	fstring sid;
+	fstring domain;
+	int user_idx;
+	BOOL res = True;
+	BOOL res2 = True;
+	BOOL request_user_info  = False;
+	BOOL request_alias_info = False;
+	uint16 num_entries = 0;
+	uint16 unk_0 = 0x0;
+	uint16 acb_mask = 0;
+	uint16 unk_1 = 0x0;
+	uint32 admin_rid = 0x304; /* absolutely no idea. */
+	fstring tmp;
+
+	uint32 num_aliases = 3;
+	uint32 alias_rid[3] = { DOMAIN_GROUP_RID_ADMINS, DOMAIN_GROUP_RID_USERS, DOMAIN_GROUP_RID_GUESTS };
+	fstring alias_names [3];
+	uint32  num_als_usrs[3];
+
+	fstrcpy(sid   , info->dom.level5_sid);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (strlen(sid) == 0)
+	{
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	strcpy(srv_name, "\\\\");
+	strcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	/* a bad way to do token parsing... */
+	if (next_token(NULL, tmp, NULL))
+	{
+		request_user_info  |= strequal(tmp, "-u");
+		request_alias_info |= strequal(tmp, "-g");
+	}
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		request_user_info  |= strequal(tmp, "-u");
+		request_alias_info |= strequal(tmp, "-g");
+	}
+
+	fprintf(out_hnd, "SAM Enumerate Aliases\n");
+	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	                  info->myhostname, srv_name, domain, sid);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? do_samr_session_open(ipc_cli, ipc_tidx, info) : False;
+
+	/* establish a connection. */
+	res = res ? do_samr_connect(ipc_cli, ipc_tidx, info->dom.samr_fnum,
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
+
+	/* connect to the domain */
+	res = res ? do_samr_open_domain(ipc_cli, ipc_tidx, info->dom.samr_fnum,
+	            &info->dom.samr_pol_connect, admin_rid, sid,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	/* send a query on the aliase */
+	res = res ? do_samr_query_unknown_12(ipc_cli, ipc_tidx, info->dom.samr_fnum,
+	            &info->dom.samr_pol_open_domain, admin_rid, num_aliases, alias_rid,
+	            &num_aliases, alias_names, num_als_usrs) : False;
+
+	if (res)
+	{
+		display_alias_name_info(out_hnd, DISPLAY_TXT, ACTION_HEADER   , num_aliases, alias_names, num_als_usrs);
+		display_alias_name_info(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, num_aliases, alias_names, num_als_usrs);
+		display_alias_name_info(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , num_aliases, alias_names, num_als_usrs);
+	}
+
+#if 0
+
+	/* read some users */
+	res = res ? do_samr_enum_dom_users(ipc_cli, ipc_tidx, info->dom.samr_fnum,
+				&info->dom.samr_pol_open_domain,
+	            num_entries, unk_0, acb_mask, unk_1, 0xffff,
+				info->dom.sam, &info->dom.num_sam_entries) : False;
+
+	if (res && info->dom.num_sam_entries == 0)
+	{
+		fprintf(out_hnd, "No users\n");
+	}
+
+	if (request_user_info || request_alias_info)
+	{
+		/* query all the users */
+		user_idx = 0;
+
+		while (res && user_idx < info->dom.num_sam_entries)
+		{
+			uint32 user_rid = info->dom.sam[user_idx].smb_userid;
+			SAM_USER_INFO_15 usr;
+
+			fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
+					  user_rid,
+					  info->dom.sam[user_idx].acct_name);
+
+			if (request_user_info)
+			{
+				/* send user info query, level 0x15 */
+				if (get_samr_query_userinfo_15(ipc_cli, ipc_tidx, info->dom.samr_fnum,
+							&info->dom.samr_pol_open_domain,
+							user_rid, &usr))
+				{
+					display_sam_user_info_15(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &usr);
+					display_sam_user_info_15(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &usr);
+					display_sam_user_info_15(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &usr);
+				}
+			}
+
+			if (request_alias_info)
+			{
+				uint32 num_aliases;
+				DOM_GID gid[LSA_MAX_GROUPS];
+
+				/* send user aliase query */
+				if (get_samr_query_useraliases(ipc_cli, ipc_tidx, info->dom.samr_fnum,
+							&info->dom.samr_pol_open_domain,
+							user_rid, &num_aliases, gid))
+				{
+					display_alias_info(out_hnd, DISPLAY_TXT, ACTION_HEADER   , num_aliases, gid);
+					display_alias_info(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, num_aliases, gid);
+					display_alias_info(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , num_aliases, gid);
+				}
+			}
+
+			user_idx++;
+		}
+	}
+#endif
 
 	res = res ? do_samr_close(ipc_cli, ipc_tidx, info->dom.samr_fnum,
 	            &info->dom.samr_pol_connect) : False;

@@ -24,6 +24,9 @@
 #ifndef _SMB_H
 #define _SMB_H
 
+enum display_type   { DISPLAY_NONE, DISPLAY_TXT, DISPLAY_HTML };
+enum action_type    { ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER };
+
 #ifndef MAX_CONNECTIONS
 #define MAX_CONNECTIONS 127
 #endif
@@ -276,6 +279,13 @@ implemented */
 #define UDP_NET_QUERYFORPDC_R   12 /* Response to Query for PDC */
 #define UDP_NET_SAMLOGON        18
 #define UDP_NET_SAMLOGON_R      19
+
+typedef struct 
+{
+	uint32 rid;
+	char *name;
+
+} rid_name;
 
 struct smb_passwd
 {

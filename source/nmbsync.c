@@ -30,7 +30,8 @@ static struct subnet_record *call_d;
 /*******************************************************************
   This is the NetServerEnum callback
   ******************************************************************/
-static void callback(FILE *hnd, char *sname, uint32 stype, char *comment)
+static void callback(FILE *hnd, enum display_type display, enum action_type action,
+				char *sname, uint32 stype, char *comment)
 {
 	struct work_record *w = call_w;
 
@@ -109,12 +110,14 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 	call_w = work;
 	call_d = d;
 	
-	cli_NetServerEnum(&cli, t_idx, NULL, work->work_group, 
-			  local_type|SV_TYPE_DOMAIN_ENUM,
+	cli_NetServerEnum(&cli, t_idx,
+	                  NULL, DISPLAY_NONE, ACTION_ENUMERATE,
+	                  work->work_group, local_type|SV_TYPE_DOMAIN_ENUM,
 			  callback);
 
-	cli_NetServerEnum(&cli, t_idx, NULL, work->work_group, 
-			  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
+	cli_NetServerEnum(&cli, t_idx,
+	                  NULL, DISPLAY_NONE, ACTION_ENUMERATE,
+	          work->work_group, local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
 			  callback);
 
 	cli_shutdown(&cli);

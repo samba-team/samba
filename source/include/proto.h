@@ -59,10 +59,14 @@ BOOL cli_api_pipe(struct cli_state *cli, int t_idx,
 	char *param, char *data, uint16 *setup,
 	char **rparam,char **rdata);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli, int t_idx,char *user, char *workstation);
-BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx, FILE* hnd, BOOL sort, BOOL *long_share_name,
-		       void (*fn)(FILE *, char *, uint32, char *));
-BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx, FILE* hnd, char *workgroup, uint32 stype,
-		       void (*fn)(FILE *, char *, uint32, char *));
+BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx,
+				FILE* hnd, enum display_type display, enum action_type action, 
+				BOOL sort, BOOL *long_share_name,
+				void (*fn)(FILE *, enum display_type, enum action_type, char *, uint32, char *));
+BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx,
+				FILE* hnd, enum display_type display, enum action_type action, 
+				char *workgroup, uint32 stype,
+				void (*fn)(FILE *, enum display_type, enum action_type, char *, uint32, char *));
 BOOL cli_session_setup(struct cli_state *cli,
 		       char *user, 
 		       char *pass, int passlen,
@@ -265,13 +269,45 @@ void DirCacheFlush( int snum );
 
 /*The following definitions come from  display.c  */
 
-void display_srv_info_101(FILE *out_hnd, SRV_INFO_101 *sv101);
-void display_srv_info_102(FILE *out_hnd, SRV_INFO_102 *sv102);
-void display_srv_info_ctr(FILE *out_hnd, SRV_INFO_CTR *ctr);
-void display_server(FILE *out_hnd, char *sname, uint32 type, char *comment);
-void display_share(FILE *out_hnd, char *sname, uint32 type, char *comment);
-void display_group_info(FILE *out_hnd, uint32 num_gids, DOM_GID *gid);
-void display_sam_user_info_15(FILE *out_hnd, SAM_USER_INFO_15 *usr);
+char *get_file_mode_str(uint32 share_mode);
+char *get_file_oplock_str(uint32 op_type);
+char *get_share_type_str(uint32 type);
+char *get_server_type_str(uint32 type);
+void display_srv_info_101(FILE *out_hnd, enum display_type disp, enum action_type action,
+		SRV_INFO_101 *sv101);
+void display_srv_info_102(FILE *out_hnd, enum display_type disp, enum action_type action,SRV_INFO_102 *sv102);
+void display_srv_info_ctr(FILE *out_hnd, enum display_type disp, enum action_type action,SRV_INFO_CTR *ctr);
+void display_conn_info_0(FILE *out_hnd, enum display_type disp, enum action_type action,
+		CONN_INFO_0 *info0);
+void display_conn_info_1(FILE *out_hnd, enum display_type disp, enum action_type action,
+		CONN_INFO_1 *info1, CONN_INFO_1_STR *str1);
+void display_srv_conn_info_0_ctr(FILE *out_hnd, enum display_type disp, enum action_type action,
+				SRV_CONN_INFO_0 *ctr);
+void display_srv_conn_info_1_ctr(FILE *out_hnd, enum display_type disp, enum action_type action,
+				SRV_CONN_INFO_1 *ctr);
+void display_srv_conn_info_ctr(FILE *out_hnd, enum display_type disp, enum action_type action,
+				SRV_CONN_INFO_CTR *ctr);
+void display_share_info_1(FILE *out_hnd, enum display_type disp, enum action_type action,
+		SH_INFO_1 *info1, SH_INFO_1_STR *str1);
+void display_srv_share_info_1_ctr(FILE *out_hnd, enum display_type disp, enum action_type action,
+				SRV_SHARE_INFO_1 *ctr);
+void display_srv_share_info_ctr(FILE *out_hnd, enum display_type disp, enum action_type action,
+				SRV_SHARE_INFO_CTR *ctr);
+void display_file_info_3(FILE *out_hnd, enum display_type disp, enum action_type action,
+		FILE_INFO_3 *info3, FILE_INFO_3_STR *str3);
+void display_srv_file_info_3_ctr(FILE *out_hnd, enum display_type disp, enum action_type action,
+				SRV_FILE_INFO_3 *ctr);
+void display_srv_file_info_ctr(FILE *out_hnd, enum display_type disp, enum action_type action,
+				SRV_FILE_INFO_CTR *ctr);
+void display_server(FILE *out_hnd, enum display_type disp, enum action_type action,
+				char *sname, uint32 type, char *comment);
+void display_share(FILE *out_hnd, enum display_type disp, enum action_type action,
+				char *sname, uint32 type, char *comment);
+void display_group_rid_info(FILE *out_hnd, enum display_type disp, enum action_type action,
+				uint32 num_gids, DOM_GID *gid);
+void display_alias_name_info(FILE *out_hnd, enum display_type disp, enum action_type action,
+				uint32 num_aliases, fstring *alias_name, uint32 *num_als_usrs);
+void display_sam_user_info_15(FILE *out_hnd, enum display_type disp, enum action_type action, SAM_USER_INFO_15 *usr);
 
 /*The following definitions come from  fault.c  */
 
@@ -776,10 +812,12 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 void cmd_srv_query_info(struct client_info *info);
 void cmd_srv_query_conn(struct client_info *info);
+void cmd_srv_query_shares(struct client_info *info);
 void cmd_srv_query_sess(struct client_info *info);
 void cmd_srv_query_files(struct client_info *info);
 void cmd_lsa_query_info(struct client_info *info);
 void cmd_sam_query_users(struct client_info *info);
+void cmd_sam_query_aliases(struct client_info *info);
 void cmd_nt_login_test(struct client_info *info);
 void cmd_nltest(struct client_info *info);
 
@@ -1088,7 +1126,7 @@ BOOL do_net_srv_pwset(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[16], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *mach_acct, uint16 sec_chan_type, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *srv_cred,
-		char nt_owf_new_mach_pwd[16]);
+		uint8 nt_owf_new_mach_pwd[16]);
 BOOL do_net_sam_logon(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
@@ -1131,10 +1169,15 @@ BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum,
 				POLICY_HND *rtn_pol);
 BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
-				POLICY_HND *rtn_pol);
+				POLICY_HND *user_pol);
 BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint32 rid, char *sid,
 				POLICY_HND *rtn_pol);
+BOOL do_samr_query_unknown_12(struct cli_state *cli, int t_idx, uint16 fnum, 
+				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
+				uint32 *num_aliases,
+				fstring als_names    [MAX_LOOKUP_SIDS],
+				uint32  num_als_users[MAX_LOOKUP_SIDS]);
 BOOL do_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid);
 BOOL do_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum, 
@@ -1153,6 +1196,11 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, int t_idx, uint16 fnum,
 BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, int t_idx, uint16 fnum,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_share_enum(struct cli_state *cli, int t_idx, uint16 fnum,
+			char *server_name, 
+			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
 BOOL do_srv_net_srv_file_enum(struct cli_state *cli, int t_idx, uint16 fnum,
@@ -1341,6 +1389,14 @@ void samr_io_q_lookup_names(char *desc, BOOL io, SAMR_Q_LOOKUP_NAMES *q_u, struc
 void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		uint32 num_rids, uint32 *rid, uint32 status);
 void samr_io_r_lookup_names(char *desc, BOOL io, SAMR_R_LOOKUP_NAMES *r_u, struct mem_buffer *buf, int *q, int depth);
+void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
+		POLICY_HND *pol, uint32 rid,
+		uint32 num_gids, uint32 *gid);
+void samr_io_q_unknown_12(char *desc, BOOL io, SAMR_Q_UNKNOWN_12 *q_u, struct mem_buffer *buf, int *q, int depth);
+void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
+		uint32 num_aliases, fstring *als_name, uint32 *num_als_usrs,
+		uint32 status);
+void samr_io_r_unknown_12(char *desc, BOOL io, SAMR_R_UNKNOWN_12 *r_u, struct mem_buffer *buf, int *q, int depth);
 void make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 				POLICY_HND *pol,
 				uint32 unk_0, uint32 rid);
@@ -1398,6 +1454,12 @@ void sam_io_user_info15(char *desc, BOOL io, SAM_USER_INFO_15 *usr, struct mem_b
 void make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				uint16 switch_value, void *info, uint32 status);
 void samr_io_r_query_userinfo(char *desc, BOOL io, SAMR_R_QUERY_USERINFO *r_u, struct mem_buffer *buf, int *q, int depth);
+void make_samr_q_unknown_21(SAMR_Q_UNKNOWN_21 *q_c,
+				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
+void samr_io_q_unknown_21(char *desc, BOOL io, SAMR_Q_UNKNOWN_21 *q_u, struct mem_buffer *buf, int *q, int depth);
+void make_samr_q_unknown_13(SAMR_Q_UNKNOWN_13 *q_c,
+				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
+void samr_io_q_unknown_13(char *desc, BOOL io, SAMR_Q_UNKNOWN_13 *q_u, struct mem_buffer *buf, int *q, int depth);
 void samr_io_q_unknown_32(char *desc, BOOL io, SAMR_Q_UNKNOWN_32 *q_u, struct mem_buffer *buf, int *q, int depth);
 void samr_io_r_unknown_32(char *desc, BOOL io, SAMR_R_UNKNOWN_32 *r_u, struct mem_buffer *buf, int *q, int depth);
 void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
@@ -1538,7 +1600,13 @@ void make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark);
 void srv_io_share_info1_str(char *desc, BOOL io, SH_INFO_1_STR *sh1, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *remark);
 void srv_io_share_info1(char *desc, BOOL io, SH_INFO_1 *sh1, struct mem_buffer *buf, int *q,  int depth);
-void srv_io_share_1_ctr(char *desc, BOOL io, SHARE_INFO_1_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_share_info_1(char *desc, BOOL io, SRV_SHARE_INFO_1 *ctr, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_share_ctr(char *desc, BOOL io, SRV_SHARE_INFO_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
+				char *srv_name, 
+				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
 void srv_io_q_net_share_enum(char *desc, BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_r_net_share_enum(char *desc, BOOL io, SRV_R_NET_SHARE_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);

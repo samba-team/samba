@@ -41,15 +41,14 @@ try and browse available connections on a host
 ****************************************************************************/
 void client_browse_host(struct cli_state *cli, int t_idx, char *workgroup, BOOL sort)
 {
-	int count = 0;
 	BOOL long_share_name = False;
 	
 	fprintf(out_hnd, "\n\tSharename      Type      Comment\n");
 	fprintf(out_hnd,   "\t---------      ----      -------\n");
 
-	count = cli_NetShareEnum(cli, t_idx, out_hnd, sort, &long_share_name, display_share);
-
-	if (count == 0)
+	if (!cli_NetShareEnum(cli, t_idx,
+	                         out_hnd, DISPLAY_TXT, ACTION_ENUMERATE,
+	                         sort, &long_share_name, display_share))
 	{
 		fprintf(out_hnd, "\tNo shares available on this host\n");
 	}
@@ -63,13 +62,17 @@ void client_browse_host(struct cli_state *cli, int t_idx, char *workgroup, BOOL 
 	fprintf(out_hnd, "\tWorkgroup      Type                 Master\n");
 	fprintf(out_hnd, "\t---------      ----                 ------\n");
 
-	cli_NetServerEnum(cli, t_idx, out_hnd, workgroup, SV_TYPE_DOMAIN_ENUM, display_server);
+	cli_NetServerEnum(cli, t_idx,
+	                  out_hnd, DISPLAY_TXT, ACTION_ENUMERATE,
+	                  workgroup, SV_TYPE_DOMAIN_ENUM, display_server);
 
 	fprintf(out_hnd, "\n");
 	fprintf(out_hnd, "\tServer         Type                 Comment\n");
 	fprintf(out_hnd, "\t------         ----                 -------\n");
 	
-	cli_NetServerEnum(cli, t_idx, out_hnd, workgroup, SV_TYPE_ALL, display_server);
+	cli_NetServerEnum(cli, t_idx,
+	                  out_hnd, DISPLAY_TXT, ACTION_ENUMERATE,
+	                  workgroup, SV_TYPE_ALL, display_server);
 }
 
 
@@ -84,7 +87,9 @@ void cmd_list_shares(struct client_info *info)
 	fprintf(out_hnd, "\n\tSharename      Type      Comment\n");
 	fprintf(out_hnd,   "\t---------      ----      -------\n");
 
-	count = cli_NetShareEnum(ipc_cli, ipc_tidx, out_hnd, True, &long_share_name, display_share);
+	count = cli_NetShareEnum(ipc_cli, ipc_tidx,
+	                         out_hnd, DISPLAY_TXT, ACTION_ENUMERATE,
+	                         True, &long_share_name, display_share);
 
 	if (count == 0)
 	{
@@ -125,7 +130,9 @@ void cmd_list_wgps(struct client_info *info)
 	fprintf(out_hnd, "\tServer         Type                 Comment\n");
 	fprintf(out_hnd, "\t------         ----                 -------\n");
 
-	cli_NetServerEnum(ipc_cli, ipc_tidx, out_hnd, workgroup, svc_type, display_server);
+	cli_NetServerEnum(ipc_cli, ipc_tidx,
+	                  out_hnd, DISPLAY_TXT, ACTION_ENUMERATE,
+	                  workgroup, SV_TYPE_DOMAIN_ENUM, display_server);
 }
 
 
@@ -156,7 +163,9 @@ void cmd_list_servers(struct client_info *info)
 	fprintf(out_hnd, "\tWorkgroup      Type                 Master\n");
 	fprintf(out_hnd, "\t---------      ----                 ------\n");
 
-cli_NetServerEnum(ipc_cli, ipc_tidx, out_hnd, workgroup, svc_type, display_server);
+	cli_NetServerEnum(ipc_cli, ipc_tidx,
+	                  out_hnd, DISPLAY_TXT, ACTION_ENUMERATE,
+	                  workgroup, SV_TYPE_ALL, display_server);
 }
 
 

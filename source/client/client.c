@@ -85,12 +85,14 @@ struct
   {"nltest",     cmd_nltest,           "<server> Net Logon Test"},
   {"srvinfo",    cmd_srv_query_info,   "DCE/RPC - Server Query Info"},
   {"srvsessions",cmd_srv_query_sess,   "DCE/RPC - List sessions on a server"},
+  {"srvshares",  cmd_srv_query_shares, "DCE/RPC - List shares on a server"},
   {"srvconnections",cmd_srv_query_conn, "DCE/RPC - List connections on a server"},
   {"srvfiles",   cmd_srv_query_files,  "DCE/RPC - List files on a server"},
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
   {"samusers",   cmd_sam_query_users,  "SAM User Database Query"},
+  {"samaliases", cmd_sam_query_aliases,"SAM Aliases Database Query"},
 #if 0
-  {"samgroups",  cmd_sam_query_group,  "SAM Groups Database Query"},
+  {"samgroups",  cmd_sam_query_groups, "SAM Group Database Query"},
 #endif
   {"message",    cmd_send_message,"<username/workgroup> Send a message"},
   {"shares",     cmd_list_shares, "List shares on a server"},
