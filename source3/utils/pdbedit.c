@@ -58,6 +58,7 @@ static void usage(void)
 	printf("     -m                it is a machine trust\n");
 	printf("  -x                   delete this user\n");
 	printf("  -i file              import account from file (smbpasswd style)\n");
+	printf("  -D debuglevel        set DEBUGELEVEL (default = 1)\n");
 	exit(1);
 }
 
@@ -160,19 +161,20 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 	ret = pdb_setsampwent(False);
 	if (ret && errno == ENOENT) {
 		fprintf (stderr,"Password database not found!\n");
-		pdb_free_sam(&sam_pwent);
 		exit(1);
 	}
+	pdb_free_sam(&sam_pwent);
 
-	while ((ret = pdb_getsampwent (sam_pwent))) {
+	while ((NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)) 
+		&& (ret = pdb_getsampwent (sam_pwent)))) {
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
-		pdb_reset_sam(sam_pwent);
+		pdb_free_sam(&sam_pwent);
 	}
+	pdb_free_sam(&sam_pwent);
 	
 	pdb_endsampwent ();
-	pdb_free_sam(&sam_pwent);
 	return 0;
 }
 
@@ -572,7 +574,7 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 	
-	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwx")) != EOF) {
+	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwxD:")) != EOF) {
 		switch(ch) {
 		case 'a':
 			add_user = True;
@@ -618,6 +620,9 @@ int main (int argc, char **argv)
 		case 'i':
 			import = True;
 			smbpasswd = optarg;
+			break;
+		case 'D':
+			DEBUGLEVEL = atoi(optarg);
 			break;
 		default:
 			usage();
