@@ -47,11 +47,27 @@ struct pyconv py_FORM_1[] = {
 BOOL py_from_FORM_1(PyObject **dict, FORM_1 *form)
 {
 	*dict = from_struct(form, py_FORM_1);
+
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(1));
+
 	return True;
 }
 
 BOOL py_to_FORM(FORM *form, PyObject *dict)
 {
-	to_struct(form, dict, py_FORM);
+	PyObject *obj;
+	char *name;
+
+	if (!to_struct(form, dict, py_FORM))
+		return False;
+
+	if (!(obj = PyDict_GetItemString(dict, "name")) ||
+	    !PyString_Check(obj))
+		return False;
+
+	name = PyString_AsString(obj);
+
+	init_unistr2(&form->name, name, strlen(name) + 1);
+	
 	return True;
 }
