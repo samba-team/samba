@@ -1,3 +1,8 @@
+2001-05-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab_keyfile.c (akf_start_seq_get): return
+	KT_NOTFOUND if the file is empty
+
 2001-05-07  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kinit.c (main): try to print the error string
@@ -8,6 +13,21 @@
 	error_buf
 	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add error_string.c
 	* lib/krb5/error_string.c: new file
+
+2001-05-02  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/time.c: krb5_string_to_deltat
+
+	* lib/krb5/sock_principal.c: one less data copy
+
+	* lib/krb5/eai_to_heim_errno.c: conversion function for h_errno's
+
+	* lib/krb5/get_default_principal.c: change this slightly
+
+	* lib/krb5/crypto.c: make checksum_types into an array of pointers
+
+	* lib/krb5/convert_creds.c: make sure we always use a des-cbc-crc
+	ticket
 
 2001-04-29  Assar Westerlund  <assar@sics.se>
 
