@@ -1790,8 +1790,8 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	p = strchr(ads->config.ldap_server_name, '$');
 	if (!p || p[1] != '@') {
 		talloc_destroy(ctx);
+		DEBUG(1, ("ads_server_info: returned ldap server name (%s) does not contain '$@' so was deemed invalid\n", ads->config.ldap_server_name));
 		SAFE_FREE(ads->config.ldap_server_name);
-		DEBUG(1, ("ads_server_info: returned ldap server name did not contain '$@' so was deemed invalid\n"));
 		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
 
