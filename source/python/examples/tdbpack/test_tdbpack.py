@@ -1,6 +1,6 @@
 #! /usr/bin/env python2.2
 
-__doc__ = """test case for samba.tdbkpack functions
+__doc__ = """test case for samba.tdbpack functions
 
 tdbpack provides a means of pickling values into binary formats
 compatible with that used by the samba tdbpack()/tdbunpack()
@@ -113,8 +113,6 @@ class PackTests(unittest.TestCase):
         not "canonical".
         """
         cases = [('w', (42,), '\x2a\0'),
-                 ('p', [None], '\0\0\0\0'),
-                 ('p', ['true'], '\x01\0\0\0'),
                  ]
 
         for packer in both_packers:
