@@ -341,6 +341,15 @@ error:
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+/* Lookup groups a user is a member of. */
+static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  uint32 user_rid, uint32 *num_groups,
+				  uint32 **user_gids)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	query_user_list,
@@ -350,7 +359,8 @@ struct winbindd_methods ads_methods = {
 	   and MS servers always allow RPC for this (even in native mode) so
 	   just use RPC for sid_to_name. Maybe that's why they allow it? */
 	winbindd_rpc_sid_to_name,
-	query_user
+	query_user,
+	lookup_usergroups
 };
 
 #endif

@@ -240,6 +240,65 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	return result;
 }                                   
 
+/* Lookup groups a user is a member of.  I wish Unix had a call like this! */
+static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  uint32 user_rid, uint32 *num_groups,
+				  uint32 **user_gids)
+{
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND dom_pol, user_pol;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	BOOL got_dom_pol = False, got_user_pol = False;
+	DOM_GID *user_groups;
+	int i;
+
+	/* Get sam handle */
+	if (!(hnd = cm_get_sam_handle(domain->name)))
+		goto done;
+
+	/* Get domain handle */
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+					des_access, &domain->sid, &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_dom_pol = True;
+
+	/* Get user handle */
+	result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
+					des_access, user_rid, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_user_pol = True;
+
+	/* Query user rids */
+	result = cli_samr_query_usergroups(hnd->cli, mem_ctx, &user_pol, 
+					   num_groups, &user_groups);
+
+	if (!NT_STATUS_IS_OK(result) || (*num_groups) == 0)
+		goto done;
+
+	(*user_gids) = talloc(mem_ctx, sizeof(uint32) * (*num_groups));
+	for (i=0;i<(*num_groups);i++) {
+		(*user_gids)[i] = user_groups[i].g_rid;
+	}
+	
+ done:
+	/* Clean up policy handles */
+	if (got_user_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+
+	if (got_dom_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+	return result;
+}
+
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
@@ -247,6 +306,7 @@ struct winbindd_methods msrpc_methods = {
 	enum_dom_groups,
 	name_to_sid,
 	winbindd_rpc_sid_to_name,
-	query_user
+	query_user,
+	lookup_usergroups
 };
 
