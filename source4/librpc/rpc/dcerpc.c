@@ -811,6 +811,7 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 	if (length > 0) {
 		req->payload.data = talloc_realloc(req, 
 						   req->payload.data, 
+						   uint8_t,
 						   req->payload.length + length);
 		if (!req->payload.data) {
 			req->status = NT_STATUS_NO_MEMORY;

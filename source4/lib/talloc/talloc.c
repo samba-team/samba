@@ -932,7 +932,7 @@ static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 	}
 	len = vsnprintf(NULL, 0, fmt, ap2);
 
-	s = talloc_realloc(NULL, s, s_len + len+1);
+	s = talloc_realloc(NULL, s, char, s_len + len+1);
 	if (!s) return NULL;
 
 	VA_COPY(ap2, ap);
@@ -961,7 +961,7 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...)
 /*
   alloc an array, checking for integer overflow in the array size
 */
-void *talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name)
+void *_talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name)
 {
 	if (count >= MAX_TALLOC_SIZE/el_size) {
 		return NULL;
@@ -972,7 +972,7 @@ void *talloc_array(const void *ctx, size_t el_size, unsigned count, const char *
 /*
   alloc an zero array, checking for integer overflow in the array size
 */
-void *talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name)
+void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name)
 {
 	if (count >= MAX_TALLOC_SIZE/el_size) {
 		return NULL;
@@ -984,16 +984,12 @@ void *talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const c
 /*
   realloc an array, checking for integer overflow in the array size
 */
-void *talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name)
+void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name)
 {
 	if (count >= MAX_TALLOC_SIZE/el_size) {
 		return NULL;
 	}
-	ptr = talloc_realloc(ctx, ptr, el_size * count);
-	if (ptr) {
-		talloc_set_name_const(ptr, name);
-	}
-	return ptr;
+	return _talloc_realloc(ctx, ptr, el_size * count, name);
 }
 
 /*

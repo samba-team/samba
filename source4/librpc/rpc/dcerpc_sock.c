@@ -151,7 +151,7 @@ static void sock_process_recv(struct dcerpc_pipe *p)
 		frag_length = dcerpc_get_frag_length(&sock->recv.data);
 
 		sock->recv.data.data = talloc_realloc(sock, sock->recv.data.data,
-						     frag_length);
+						      uint8_t, frag_length);
 		if (sock->recv.data.data == NULL) {
 			sock_dead(p, NT_STATUS_NO_MEMORY);
 			return;
