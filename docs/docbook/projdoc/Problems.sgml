@@ -44,7 +44,7 @@ generate a 'LsaEnumTrustedDomains'. Thereafter, the workstation
 maintains an open connection, and therefore there will be an smbd 
 process running (assuming that you haven't set a really short smbd 
 idle timeout)  So, in between pressing ctrl alt delete, and actually 
-typing in your password, you can gdb attach and continue.
+typing in your password, you can attach gdb and continue.
 </para>
 
 <para>
@@ -85,7 +85,7 @@ formatted files.
 Installing netmon on an NT workstation requires a couple 
 of steps.  The following are for installing Netmon V4.00.349, which comes 
 with Microsoft Windows NT Server 4.0, on Microsoft Windows NT 
-Workstation 4.0.  The process should be similar for other version of 
+Workstation 4.0.  The process should be similar for other versions of 
 Windows NT / Netmon.  You will need both the Microsoft Windows 
 NT Server 4.0 Install CD and the Workstation 4.0 Install CD.
 </para> 
