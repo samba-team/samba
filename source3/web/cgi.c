@@ -388,7 +388,7 @@ static BOOL cgi_handle_authorization(char *line)
 	 * Try and get the user from the UNIX password file.
 	 */
 	
-	pass = sys_getpwnam(user);
+	pass = getpwnam_alloc(user);
 	
 	/*
 	 * Validate the password they have given.
@@ -406,6 +406,7 @@ static BOOL cgi_handle_authorization(char *line)
 			
 			/* Save the users name */
 			C_user = strdup(user);
+			passwd_free(&pass);
 			return True;
 		}
 	}
@@ -414,6 +415,7 @@ err:
 	cgi_setup_error("401 Bad Authorization", "", 
 			"username or password incorrect");
 
+	passwd_free(&pass);
 	return False;
 }
 

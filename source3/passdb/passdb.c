@@ -770,11 +770,13 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	/*
 	 * Ensure this uid really does exist.
 	 */
-	if(!(pass = sys_getpwuid(*puid)))
+	if(!(pass = getpwuid_alloc(*puid)))
 		return False;
 
 	DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
 		(unsigned int)*puid, pass->pw_name ));
+
+	passwd_free(&pass);
 
 	*name_type = SID_NAME_USER;
 
@@ -1003,7 +1005,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 			 * Check for a local account - if we're adding only.
 			 */
 			
-			if(!(pwd = sys_getpwnam(user_name))) {
+			if(!(pwd = getpwnam_alloc(user_name))) {
 				slprintf(err_str, err_str_len - 1, "User %s does not \
 exist in system password file (usually /etc/passwd). Cannot add \
 account without a valid local system user.\n", user_name);
@@ -1016,9 +1018,11 @@ account without a valid local system user.\n", user_name);
 
 		if (!NT_STATUS_IS_OK(pdb_init_sam_pw(&sam_pass, pwd))){
 			slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
+			passwd_free(&pwd);
 			return False;
 		}
-
+		
+		passwd_free(&pwd);
 	
 		if (local_flags & LOCAL_TRUST_ACCOUNT) {
 	        	if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST)) {
@@ -1154,12 +1158,14 @@ BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
 	 * and then lokup the user by name in the sam.
 	 */
 	 
-	if ((pw=sys_getpwuid(uid)) == NULL)  {
+	if ((pw=getpwuid_alloc(uid)) == NULL)  {
 		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist in Unix accounts!\n", uid));
 		return False;
 	}
 	
 	fstrcpy (name, pw->pw_name);
+
+	passwd_free(&pw);
 
 	return pdb_getsampwnam (user, name);
 

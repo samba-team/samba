@@ -589,9 +589,10 @@ match is found and is used to update the encrypted password file
 return NT_STATUS_OK on correct match, appropriate error otherwise
 ****************************************************************************/
 
-NTSTATUS pass_check(struct passwd *pass, char *user, char *password, 
+NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password, 
 		    int pwlen, BOOL (*fn) (char *, char *), BOOL run_cracker)
 {
+	struct passwd *pass;
 	pstring pass2;
 	int level = lp_passwordlevel();
 
@@ -620,14 +621,16 @@ NTSTATUS pass_check(struct passwd *pass, char *user, char *password,
 
 	DEBUG(4, ("pass_check: Checking (PAM) password for user %s (l=%d)\n", user, pwlen));
 
-#else /* Not using PAM or Kerebos */
+#else /* Not using PAM */
 
 	DEBUG(4, ("pass_check: Checking password for user %s (l=%d)\n", user, pwlen));
 
-	if (!pass) {
+	if (!input_pass) {
 		DEBUG(3, ("Couldn't find user %s\n", user));
 		return NT_STATUS_NO_SUCH_USER;
 	}
+
+	pass = make_modifyable_passwd(input_pass);
 
 #ifdef HAVE_GETSPNAM
 	{
@@ -659,6 +662,15 @@ NTSTATUS pass_check(struct passwd *pass, char *user, char *password,
 		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
 		if (pr_pw && pr_pw->ufld.fd_encrypt)
 			pstrcpy(pass->pw_passwd, pr_pw->ufld.fd_encrypt);
+	}
+#endif
+
+#ifdef HAVE_GETPWANAM
+	{
+		struct passwd_adjunct *pwret;
+		pwret = getpwanam(s);
+		if (pwret && pwret->pwa_passwd)
+			pstrcpy(pass->pw_passwd,pwret->pwa_passwd);
 	}
 #endif
 
@@ -698,21 +710,26 @@ NTSTATUS pass_check(struct passwd *pass, char *user, char *password,
 	this_salt[2] = 0;
 #endif
 
+	/* Copy into global for the convenience of looping code */
 	fstrcpy(this_crypted, pass->pw_passwd);
 
 	if (!*this_crypted) {
 		if (!lp_null_passwords()) {
 			DEBUG(2, ("Disallowing %s with null password\n",
 				  this_user));
+			passwd_free(&pass);
 			return NT_STATUS_LOGON_FAILURE;
 		}
 		if (!*password) {
 			DEBUG(3,
 			      ("Allowing access to %s with null password\n",
 			       this_user));
+			passwd_free(&pass);
 			return NT_STATUS_OK;
 		}
 	}
+
+	passwd_free(&pass);
 
 #endif /* defined(WITH_PAM) */
 
@@ -736,6 +753,7 @@ NTSTATUS pass_check(struct passwd *pass, char *user, char *password,
 	 * need to proceed as we know it hasn't been case modified by the
 	 * client */
 	if (strhasupper(password) && strhaslower(password)) {
+		passwd_free(&pass);
 		return nt_status;
 	}
 

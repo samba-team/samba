@@ -31,26 +31,21 @@ extern struct current_user current_user;
 BOOL change_to_guest(void)
 {
 	static struct passwd *pass=NULL;
-	static uid_t guest_uid = (uid_t)-1;
-	static gid_t guest_gid = (gid_t)-1;
-	static fstring guest_name;
 
 	if (!pass) {
-		pass = sys_getpwnam(lp_guestaccount());
+		/* Don't need to free() this as its stored in a static */
+		pass = getpwnam_alloc(lp_guestaccount());
 		if (!pass)
 			return(False);
-		guest_uid = pass->pw_uid;
-		guest_gid = pass->pw_gid;
-		fstrcpy(guest_name, pass->pw_name);
 	}
 	
 #ifdef AIX
 	/* MWW: From AIX FAQ patch to WU-ftpd: call initgroups before 
 	   setting IDs */
-	initgroups(guest_name, guest_gid);
+	initgroups(pass->pw_name, pass->pw_gid);
 #endif
 	
-	set_sec_ctx(guest_uid, guest_gid, 0, NULL, NULL);
+	set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL, NULL);
 	
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;

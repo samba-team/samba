@@ -499,7 +499,7 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	/* These values MAY be in LDAP, but they can also be retrieved through 
 	 *  sys_getpw*() which is how we're doing it 
 	 */
-	sys_user = sys_getpwnam(username);
+	sys_user = getpwnam_alloc(username);
 	if (sys_user == NULL) {
 		DEBUG (2,("init_sam_from_ldap: User [%s] does not ave a uid!\n", username));
 		return False;
@@ -524,6 +524,11 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	if (acct_ctrl == 0)
 		acct_ctrl |= ACB_NORMAL;
 
+	pdb_set_uid(sampass, sys_user->pw_uid);
+	pdb_set_gid(sampass, sys_user->pw_gid);
+	
+	/* We are done with this now */
+	passwd_free(&sys_user);
 
 	pdb_set_acct_ctrl(sampass, acct_ctrl);
 	pdb_set_logon_time(sampass, logon_time);
@@ -536,8 +541,6 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	pdb_set_hours_len(sampass, hours_len);
 	pdb_set_logon_divs(sampass, logon_divs);
 
-	pdb_set_uid(sampass, sys_user->pw_uid);
-	pdb_set_gid(sampass, sys_user->pw_gid);
 	pdb_set_user_rid(sampass, user_rid);
 	pdb_set_group_rid(sampass, group_rid);
 

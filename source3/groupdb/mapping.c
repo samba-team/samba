@@ -1083,10 +1083,11 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 		}
 		else (*uid) = u;
 
-		if( (pwd=getpwnam(gr)) !=NULL) {
+		if( (pwd=getpwnam_alloc(gr)) !=NULL) {
 			(*uid)[*num_uids]=pwd->pw_uid;
 			(*num_uids)++;
 		}
+		passwd_free(&pwd);
 		gr = grp->gr_mem[++i];
 	}
 	DEBUG(10, ("got [%d] members\n", *num_uids));

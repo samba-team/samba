@@ -732,6 +732,7 @@ BOOL pass_oem_change(char *user,
 		     uchar * ntdata, uchar * nthash)
 {
 	fstring new_passwd;
+	const char *unix_user;
 	SAM_ACCOUNT *sampass = NULL;
 	BOOL ret = check_oem_password(user, lmdata, lmhash, ntdata, nthash,
 				      &sampass, new_passwd, sizeof(new_passwd));
@@ -745,8 +746,10 @@ BOOL pass_oem_change(char *user,
 	 * available. JRA.
 	 */
 
-	if ((ret) && lp_unix_password_sync())
-		ret = chgpasswd(user, "", new_passwd, True);
+	unix_user = pdb_get_username(sampass);
+
+	if ((ret) && (unix_user) && (*unix_user) && lp_unix_password_sync())
+		ret = chgpasswd(unix_user, "", new_passwd, True);
 
 	if (ret)
 		ret = change_oem_password(sampass, new_passwd);

@@ -34,7 +34,7 @@
 struct smb_passwd
 {
         uid_t smb_userid;     /* this is actually the unix uid_t */
-        char *smb_name;     /* username string */
+        const char *smb_name;     /* username string */
 
         const unsigned char *smb_passwd; /* Null if no password */
         const unsigned char *smb_nt_passwd; /* Null if no password */
@@ -1149,7 +1149,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 	ZERO_STRUCTP(smb_pw);
 
 	smb_pw->smb_userid=uid;
-	smb_pw->smb_name=(char*)pdb_get_username(sampass);
+	smb_pw->smb_name=(const char*)pdb_get_username(sampass);
 
 	smb_pw->smb_passwd=pdb_get_lanman_passwd(sampass);
 	smb_pw->smb_nt_passwd=pdb_get_nt_passwd(sampass);
@@ -1200,7 +1200,7 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 	   FIXME!!!  This is where we should look up an internal
 	   mapping of allocated uid for machine accounts as well 
 	   --jerry */ 
-	pwfile = sys_getpwnam(pw_buf->smb_name);
+	pwfile = getpwnam_alloc(pw_buf->smb_name);
 	if (pwfile == NULL) {
 		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s not in unix passwd database!\n", pw_buf->smb_name));
 		return False;
@@ -1268,6 +1268,8 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
 		/*pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); */
 	}
+
+	passwd_free(&pwfile);
 	
 	return True;
 }

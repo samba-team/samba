@@ -554,16 +554,18 @@ void free_server_info(auth_serversupplied_info **server_info)
 
 BOOL make_server_info_guest(auth_serversupplied_info **server_info) 
 {
-	struct passwd *pass = sys_getpwnam(lp_guestaccount());
+	struct passwd *pass = getpwnam_alloc(lp_guestaccount());
 	
 	if (pass) {
 		if (!make_server_info_pw(server_info, pass)) {
+			passwd_free(&pass);
 			return False;
 		}
 		(*server_info)->guest = True;
+		passwd_free(&pass);
 		return True;
 	}
-	DEBUG(0,("make_server_info_guest: sys_getpwnam() failed on guest account!\n")); 
+	DEBUG(0,("make_server_info_guest: getpwnam_alloc() failed on guest account!\n")); 
 	return False;
 }
 

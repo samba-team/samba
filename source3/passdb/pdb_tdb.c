@@ -469,7 +469,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
 	   is used instaed of Get_Pwnam() as we do not need to try case
 	   permutations */
-	if ((pw=sys_getpwnam(pdb_get_username(user))) == NULL) {
+	if ((pw=getpwnam_alloc(pdb_get_username(user))) == NULL) {
 		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
 		          pdb_get_username(user)));
 		return False;
@@ -479,6 +479,8 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	gid = pw->pw_gid;
 	pdb_set_uid(user, uid);
 	pdb_set_gid(user, gid);
+
+	passwd_free(&pw);
 
 	/* 21 days from present */
 	pdb_set_pass_must_change_time(user, time(NULL)+1814400);
@@ -564,7 +566,7 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
 	   is used instead of Get_Pwnam() as we do not need to try case
 	   permutations */
-	if ((pw=sys_getpwnam(pdb_get_username(user)))) {
+	if ((pw=getpwnam_alloc(pdb_get_username(user)))) {
 		uid = pw->pw_uid;
 		gid = pw->pw_gid;
 		pdb_set_uid(user, uid);
@@ -589,6 +591,8 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 		          pdb_get_username(user)));
 		return False;
 	}
+
+	passwd_free(&pw);
 
 	return True;
 }
