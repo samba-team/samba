@@ -513,7 +513,7 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 
 	(void)map_username(user);
 
-	if((pass = Get_Pwnam(user, True))) {
+	if((pass = Get_Pwnam(user, False))) {
 		sid_append_rid( &local_sid, pdb_uid_to_user_rid(pass->pw_uid));
 		*psid_name_use = SID_NAME_USER;
 	} else {
