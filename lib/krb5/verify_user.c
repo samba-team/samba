@@ -143,7 +143,7 @@ verify_user_opt_int(krb5_context context,
     if (ret)
 	return ret;
     krb5_get_init_creds_opt_set_default_flags(context, NULL, 
-					      *krb5_princ_realm(context, principal), 
+					      krb5_principal_get_realm(context, principal), 
 					      opt);
     ret = krb5_get_init_creds_password (context,
 					&cred,

@@ -150,7 +150,7 @@ init_cred (krb5_context context,
 	   krb5_get_init_creds_opt *options)
 {
     krb5_error_code ret;
-    krb5_realm *client_realm;
+    krb5_const_realm client_realm;
     int tmp;
     krb5_timestamp now;
 
@@ -167,7 +167,7 @@ init_cred (krb5_context context,
 	    goto out;
     }
 
-    client_realm = krb5_princ_realm (context, cred->client);
+    client_realm = krb5_principal_get_realm (context, cred->client);
 
     if (start_time)
 	cred->times.starttime  = now + start_time;
@@ -189,12 +189,12 @@ init_cred (krb5_context context,
 	ret = krb5_parse_name (context, in_tkt_service, &cred->server);
 	if (ret)
 	    goto out;
-	server_realm = strdup (*client_realm);
+	server_realm = strdup (client_realm);
 	free (*krb5_princ_realm(context, cred->server));
 	krb5_princ_set_realm (context, cred->server, &server_realm);
     } else {
 	ret = krb5_make_principal(context, &cred->server, 
-				  *client_realm, KRB5_TGS_NAME, *client_realm,
+				  client_realm, KRB5_TGS_NAME, client_realm,
 				  NULL);
 	if (ret)
 	    goto out;
@@ -230,7 +230,7 @@ report_expiration (krb5_context context,
 
 static void
 print_expire (krb5_context context,
-	      krb5_realm *realm,
+	      krb5_const_realm realm,
 	      krb5_kdc_rep *rep,
 	      krb5_prompter_fct prompter,
 	      krb5_data *data)
@@ -244,7 +244,7 @@ print_expire (krb5_context context,
     krb5_timeofday (context, &sec);
 
     t = sec + get_config_time (context,
-			       *realm,
+			       realm,
 			       "warn_pwexpire",
 			       7 * 24 * 60 * 60);
 
@@ -1372,7 +1372,7 @@ krb5_get_init_creds(krb5_context context,
 
     if (prompter)
 	print_expire (context,
-		      krb5_princ_realm (context, ctx.cred.client),
+		      krb5_principal_get_realm (context, ctx.cred.client),
 		      &kdc_reply,
 		      prompter,
 		      data);

@@ -243,10 +243,10 @@ krb5_get_forwarded_creds (krb5_context	    context,
 
     if (auth_context->local_address && auth_context->local_port) {
 	krb5_boolean noaddr;
-	const krb5_realm *realm;
+	krb5_const_realm realm;
 
-	realm = krb5_princ_realm(context, out_creds->server);
-	krb5_appdefault_boolean(context, NULL, *realm, "no-addresses", FALSE,
+	realm = krb5_principal_get_realm(context, out_creds->server);
+	krb5_appdefault_boolean(context, NULL, realm, "no-addresses", FALSE,
 				&noaddr);
 	if (!noaddr) {
 	    ret = krb5_make_addrport (context,
@@ -261,10 +261,10 @@ krb5_get_forwarded_creds (krb5_context	    context,
     if (auth_context->remote_address) {
 	if (auth_context->remote_port) {
 	    krb5_boolean noaddr;
-	    const krb5_realm *realm;
+	    krb5_const_realm realm;
 
-	    realm = krb5_princ_realm(context, out_creds->server);
-	    krb5_appdefault_boolean(context, NULL, *realm, "no-addresses",
+	    realm = krb5_principal_get_realm(context, out_creds->server);
+	    krb5_appdefault_boolean(context, NULL, realm, "no-addresses",
 				    FALSE, &noaddr);
 	    if (!noaddr) {
 		ret = krb5_make_addrport (context,

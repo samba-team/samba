@@ -344,8 +344,8 @@ krb524_convert_creds_kdc(krb5_context context,
 	krb5_krbhst_handle handle;
 
 	ret = krb5_krbhst_init(context,
-			       *krb5_princ_realm(context, 
-						v5_creds->server),
+			       krb5_principal_get_realm(context, 
+							v5_creds->server),
 			       KRB5_KRBHST_KRB524,
 			       &handle);
 	if (ret)

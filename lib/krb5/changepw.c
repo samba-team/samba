@@ -632,7 +632,7 @@ krb5_set_password (krb5_context	 context,
 	principal = targprinc;
 
     ret = krb5_make_principal(context, &creds.server, 
-			      *krb5_princ_realm(context, principal),
+			      krb5_principal_get_realm(context, principal),
 			      "kadmin", "changepw", NULL);
     if (ret)
 	goto out;
