@@ -38,6 +38,10 @@ samba_cflags = ""
 if os.environ.has_key("PYTHON_CFLAGS"):
     samba_cflags = os.environ.get("PYTHON_CFLAGS")
 
+samba_srcdir = ""
+if os.environ.has_key("SRCDIR"):
+    samba_srcdir = os.environ.get("SRCDIR")
+
 # These variables are filled in by configure
 
 samba_libs = "@LIBS@"
@@ -68,8 +72,10 @@ setup(
 
     # Build info
     
-    include_dirs = [".", "include", "ubiqx", "smbwrapper",
-                    "popt", "/usr/kerberos/include", "/usr/local/include"],
+    include_dirs = [samba_srcdir, samba_srcdir + "include",
+                    samba_srcdir + "ubiqx", samba_srcdir + "smbwrapper",
+                    samba_srcdir + "popt", "/usr/kerberos/include",
+                    "/usr/local/include"],
     
     # Module list
     
@@ -78,9 +84,9 @@ setup(
     # SPOOLSS pipe module
 
     Extension(name = "spoolss",
-              sources = ["python/py_spoolss.c",
-                         "python/py_spoolss_forms.c",
-                         "python/py_common.c"],
+              sources = [samba_srcdir + "python/py_spoolss.c",
+                         samba_srcdir + "python/py_spoolss_forms.c",
+                         samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list),
@@ -88,8 +94,8 @@ setup(
     # LSA pipe module
 
     Extension(name = "lsa",
-              sources = ["python/py_lsa.c",
-                         "python/py_common.c"],
+              sources = [samba_srcdir + "python/py_lsa.c",
+                         samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list),
@@ -97,8 +103,8 @@ setup(
     # winbind client module
 
     Extension(name = "winbind",
-              sources = ["python/py_winbind.c",
-                         "python/py_common.c"],
+              sources = [samba_srcdir + "python/py_winbind.c",
+                         samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list,
