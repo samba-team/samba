@@ -44,8 +44,8 @@ Added Parameters
     winbindd_getusersids() that provides direct SID->SIDs listing of a 
     users supplementary groups. This is enough to allow non-Samba 
     applications to do ACL checking.
-9)  Make sure we don't append the 'ldap suffix' when writing out the ldap 
-    XXX suffix values in SWAT (bug 328).
+9)  Make sure we don't append the 'ldap suffix' when writing out the 
+    'ldap XXX suffix' values in SWAT (bug 328).
 10) Fix renames across file systems.
 11) Ensure that items in a list of strings containing whitespace are 
     written out surrounded by single quotes.  This means that both 
@@ -71,7 +71,7 @@ Added Parameters
     work on bug 770).
 23) Fix build of winbindd with static pdb modules.
 24) Retrieve the correct ACL group bits if the file has an ACL 
-   (bug 802).
+    (bug 802).
 25) Implement "net rpc group members": Get members of a domain group 
     in human-readable format.
 26) Add MacOSX (Darwin) specific charset module code.
