@@ -555,6 +555,7 @@ static void usage(char *pname)
  int main(int argc,char *argv[])
 {
 	extern BOOL append_log;
+	extern BOOL AllowDebugChange;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
 	BOOL interactive = False;
@@ -611,6 +612,7 @@ static void usage(char *pname)
 				DEBUGLEVEL = 10000;
 			else
 				DEBUGLEVEL = atoi(optarg);
+			AllowDebugChange = False;
 			break;
 
 		case 'p':
