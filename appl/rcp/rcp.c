@@ -283,6 +283,22 @@ tolocal(argc, argv)
 	}
 }
 
+static char *
+sizestr(off_t size)
+{
+    static char ss[32];
+    char *p;
+    ss[sizeof(ss) - 1] = '\0';
+    for(p = ss + sizeof(ss) - 2; p >= ss; p--) {
+	*p = '0' + size % 10;
+	size /= 10;
+	if(size == 0)
+	    break;
+    }
+    return ss;
+}
+		    
+
 void
 source(argc, argv)
 	int argc;
@@ -333,8 +349,8 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 				goto next;
 		}
 #define	MODEMASK	(S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
-		(void)snprintf(buf, sizeof(buf), "C%04o %lu %s\n",
-		    stb.st_mode & MODEMASK, (unsigned long)stb.st_size, last);
+		snprintf(buf, sizeof(buf), "C%04o %s %s\n",
+			 stb.st_mode & MODEMASK, sizestr(stb.st_size), last);
 		(void)write(remout, buf, strlen(buf));
 		if (response() < 0)
 			goto next;
@@ -594,16 +610,13 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			if (i + amt > size)
 				amt = size - i;
 			count += amt;
-			do {
-				j = read(remin, cp, amt);
-				if (j <= 0) {
-					run_err("%s", j ? strerror(errno) :
-					    "dropped connection");
-					exit(1);
-				}
-				amt -= j;
-				cp += j;
-			} while (amt > 0);
+			if((j = net_read(remin, cp, amt)) != amt) {
+			    run_err("%s", j ? strerror(errno) :
+				    "dropped connection");
+			    exit(1);
+			}
+			amt -= j;
+			cp += j;
 			if (count == bp->cnt) {
 				/* Keep reading so we stay sync'd up. */
 				if (wrerr == NO) {
