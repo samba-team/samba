@@ -1,5 +1,7 @@
 2004-05-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ad.c: add support for tsasl
+	
 	* private.h: add kadm5_ad_context
 	
 	* ipropd_master.c (prop_one): store the opcode in the begining of
