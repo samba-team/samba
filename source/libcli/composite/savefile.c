@@ -44,7 +44,7 @@ struct savefile_state {
 /*
   setup for the close
 */
-static NTSTATUS setup_close(struct smbcli_composite *c, 
+static NTSTATUS setup_close(struct composite_context *c, 
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
 	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
@@ -73,7 +73,7 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
   called when the open is done - pull the results and setup for the
   first writex, or close if the file is zero size
 */
-static NTSTATUS savefile_open(struct smbcli_composite *c, 
+static NTSTATUS savefile_open(struct composite_context *c, 
 			      struct smb_composite_savefile *io)
 {
 	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
@@ -119,7 +119,7 @@ static NTSTATUS savefile_open(struct smbcli_composite *c,
   called when a write is done - pull the results and setup for the
   next write, or close if the file is all done
 */
-static NTSTATUS savefile_write(struct smbcli_composite *c, 
+static NTSTATUS savefile_write(struct composite_context *c, 
 			      struct smb_composite_savefile *io)
 {
 	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
@@ -157,7 +157,7 @@ static NTSTATUS savefile_write(struct smbcli_composite *c,
 /*
   called when the close is done, check the status and cleanup
 */
-static NTSTATUS savefile_close(struct smbcli_composite *c, 
+static NTSTATUS savefile_close(struct composite_context *c, 
 			       struct smb_composite_savefile *io)
 {
 	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
@@ -181,7 +181,7 @@ static NTSTATUS savefile_close(struct smbcli_composite *c,
 */
 static void savefile_handler(struct smbcli_request *req)
 {
-	struct smbcli_composite *c = req->async.private;
+	struct composite_context *c = req->async.private;
 	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
 
 	/* when this handler is called, the stage indicates what
@@ -214,14 +214,14 @@ static void savefile_handler(struct smbcli_request *req)
   composite savefile call - does an openx followed by a number of writex calls,
   followed by a close
 */
-struct smbcli_composite *smb_composite_savefile_send(struct smbcli_tree *tree, 
+struct composite_context *smb_composite_savefile_send(struct smbcli_tree *tree, 
 						     struct smb_composite_savefile *io)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct savefile_state *state;
 	union smb_open *io_open;
 
-	c = talloc_zero(tree, struct smbcli_composite);
+	c = talloc_zero(tree, struct composite_context);
 	if (c == NULL) goto failed;
 
 	c->state = SMBCLI_REQUEST_SEND;
@@ -268,10 +268,10 @@ failed:
 /*
   composite savefile call - recv side
 */
-NTSTATUS smb_composite_savefile_recv(struct smbcli_composite *c)
+NTSTATUS smb_composite_savefile_recv(struct composite_context *c)
 {
 	NTSTATUS status;
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 	talloc_free(c);
 	return status;
 }
@@ -283,6 +283,6 @@ NTSTATUS smb_composite_savefile_recv(struct smbcli_composite *c)
 NTSTATUS smb_composite_savefile(struct smbcli_tree *tree, 
 				struct smb_composite_savefile *io)
 {
-	struct smbcli_composite *c = smb_composite_savefile_send(tree, io);
+	struct composite_context *c = smb_composite_savefile_send(tree, io);
 	return smb_composite_savefile_recv(c);
 }

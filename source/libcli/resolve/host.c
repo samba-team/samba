@@ -63,7 +63,7 @@ static int host_destructor(void *ptr)
 /*
   the blocking child
 */
-static void run_child(struct smbcli_composite *c, int fd)
+static void run_child(struct composite_context *c, int fd)
 {
 	struct host_state *state = talloc_get_type(c->private, struct host_state);
 	struct ipv4_addr ip;
@@ -85,7 +85,7 @@ static void run_child(struct smbcli_composite *c, int fd)
 static void pipe_handler(struct event_context *ev, struct fd_event *fde, 
 			 struct timeval t, uint16_t flags)
 {
-	struct smbcli_composite *c = talloc_get_type(fde->private, struct smbcli_composite);
+	struct composite_context *c = talloc_get_type(fde->private, struct composite_context);
 	struct host_state *state = talloc_get_type(c->private, struct host_state);
 	char address[128];
 	int ret;
@@ -129,17 +129,17 @@ failed:
 /*
   gethostbyname name resolution method - async send
  */
-struct smbcli_composite *resolve_name_host_send(struct nbt_name *name, 
+struct composite_context *resolve_name_host_send(struct nbt_name *name, 
 						struct event_context *event_ctx)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct host_state *state;
 	NTSTATUS status;
 	int fd[2] = { -1, -1 };
 	struct fd_event fde;
 	int ret;
 
-	c = talloc_zero(NULL, struct smbcli_composite);
+	c = talloc_zero(NULL, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct host_state);
@@ -201,12 +201,12 @@ failed:
 /*
   gethostbyname name resolution method - recv side
 */
-NTSTATUS resolve_name_host_recv(struct smbcli_composite *c, 
+NTSTATUS resolve_name_host_recv(struct composite_context *c, 
 				 TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
 	NTSTATUS status;
 
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct host_state *state = talloc_get_type(c->private, struct host_state);
@@ -224,7 +224,7 @@ NTSTATUS resolve_name_host(struct nbt_name *name,
 			    TALLOC_CTX *mem_ctx,
 			    const char **reply_addr)
 {
-	struct smbcli_composite *c = resolve_name_host_send(name, NULL);
+	struct composite_context *c = resolve_name_host_send(name, NULL);
 	return resolve_name_host_recv(c, mem_ctx, reply_addr);
 }
 

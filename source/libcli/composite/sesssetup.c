@@ -93,7 +93,7 @@ static void use_nt1_session_keys(struct smbcli_session *session,
 */
 static void request_handler(struct smbcli_request *req)
 {
-	struct smbcli_composite *c = req->async.private;
+	struct composite_context *c = req->async.private;
 	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
 	struct smbcli_session *session = req->session;
 	DATA_BLOB session_key = data_blob(NULL, 0);
@@ -164,7 +164,7 @@ static void request_handler(struct smbcli_request *req)
 /*
   send a nt1 style session setup
 */
-static struct smbcli_request *session_setup_nt1(struct smbcli_composite *c,
+static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 						struct smbcli_session *session, 
 						struct smb_composite_sesssetup *io) 
 {
@@ -203,7 +203,7 @@ static struct smbcli_request *session_setup_nt1(struct smbcli_composite *c,
 /*
   old style session setup (pre NT1 protocol level)
 */
-static struct smbcli_request *session_setup_old(struct smbcli_composite *c,
+static struct smbcli_request *session_setup_old(struct composite_context *c,
 						struct smbcli_session *session,
 						struct smb_composite_sesssetup *io)
 {
@@ -237,7 +237,7 @@ static struct smbcli_request *session_setup_old(struct smbcli_composite *c,
 /*
   old style session setup (pre NT1 protocol level)
 */
-static struct smbcli_request *session_setup_spnego(struct smbcli_composite *c, 
+static struct smbcli_request *session_setup_spnego(struct composite_context *c, 
 						   struct smbcli_session *session,
 						   struct smb_composite_sesssetup *io)
 {
@@ -333,13 +333,13 @@ static struct smbcli_request *session_setup_spnego(struct smbcli_composite *c,
   different session setup varients, including the multi-pass nature of
   the spnego varient
 */
-struct smbcli_composite *smb_composite_sesssetup_send(struct smbcli_session *session, 
+struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *session, 
 						      struct smb_composite_sesssetup *io)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct sesssetup_state *state;
 
-	c = talloc_zero(session, struct smbcli_composite);
+	c = talloc_zero(session, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct sesssetup_state);
@@ -384,10 +384,10 @@ failed:
 /*
   receive a composite session setup reply
 */
-NTSTATUS smb_composite_sesssetup_recv(struct smbcli_composite *c)
+NTSTATUS smb_composite_sesssetup_recv(struct composite_context *c)
 {
 	NTSTATUS status;
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 	talloc_free(c);
 	return status;
 }
@@ -397,6 +397,6 @@ NTSTATUS smb_composite_sesssetup_recv(struct smbcli_composite *c)
 */
 NTSTATUS smb_composite_sesssetup(struct smbcli_session *session, struct smb_composite_sesssetup *io)
 {
-	struct smbcli_composite *c = smb_composite_sesssetup_send(session, io);
+	struct composite_context *c = smb_composite_sesssetup_send(session, io);
 	return smb_composite_sesssetup_recv(c);
 }

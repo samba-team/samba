@@ -89,7 +89,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private;
 	const char *host, *user, *pass, *domain, *remote_share;
 	struct smb_composite_connect io;
-	struct smbcli_composite *creq;
+	struct composite_context *creq;
 
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.

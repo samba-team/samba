@@ -29,7 +29,7 @@
 /*
   block until a composite function has completed, then return the status
 */
-NTSTATUS smb_composite_wait(struct smbcli_composite *c)
+NTSTATUS composite_wait(struct composite_context *c)
 {
 	if (c == NULL) return NT_STATUS_NO_MEMORY;
 

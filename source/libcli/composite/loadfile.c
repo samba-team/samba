@@ -43,7 +43,7 @@ struct loadfile_state {
 /*
   setup for the close
 */
-static NTSTATUS setup_close(struct smbcli_composite *c, 
+static NTSTATUS setup_close(struct composite_context *c, 
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
 	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
@@ -72,7 +72,7 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
   called when the open is done - pull the results and setup for the
   first readx, or close if the file is zero size
 */
-static NTSTATUS loadfile_open(struct smbcli_composite *c, 
+static NTSTATUS loadfile_open(struct composite_context *c, 
 			      struct smb_composite_loadfile *io)
 {
 	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
@@ -126,7 +126,7 @@ static NTSTATUS loadfile_open(struct smbcli_composite *c,
   called when a read is done - pull the results and setup for the
   next read, or close if the file is all done
 */
-static NTSTATUS loadfile_read(struct smbcli_composite *c, 
+static NTSTATUS loadfile_read(struct composite_context *c, 
 			      struct smb_composite_loadfile *io)
 {
 	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
@@ -160,7 +160,7 @@ static NTSTATUS loadfile_read(struct smbcli_composite *c,
 /*
   called when the close is done, check the status and cleanup
 */
-static NTSTATUS loadfile_close(struct smbcli_composite *c, 
+static NTSTATUS loadfile_close(struct composite_context *c, 
 			       struct smb_composite_loadfile *io)
 {
 	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
@@ -180,7 +180,7 @@ static NTSTATUS loadfile_close(struct smbcli_composite *c,
 */
 static void loadfile_handler(struct smbcli_request *req)
 {
-	struct smbcli_composite *c = req->async.private;
+	struct composite_context *c = req->async.private;
 	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
 
 	/* when this handler is called, the stage indicates what
@@ -213,13 +213,13 @@ static void loadfile_handler(struct smbcli_request *req)
   composite loadfile call - does an openx followed by a number of readx calls,
   followed by a close
 */
-struct smbcli_composite *smb_composite_loadfile_send(struct smbcli_tree *tree, 
+struct composite_context *smb_composite_loadfile_send(struct smbcli_tree *tree, 
 						     struct smb_composite_loadfile *io)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct loadfile_state *state;
 
-	c = talloc_zero(tree, struct smbcli_composite);
+	c = talloc_zero(tree, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct loadfile_state);
@@ -264,11 +264,11 @@ failed:
 /*
   composite loadfile call - recv side
 */
-NTSTATUS smb_composite_loadfile_recv(struct smbcli_composite *c, TALLOC_CTX *mem_ctx)
+NTSTATUS smb_composite_loadfile_recv(struct composite_context *c, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
@@ -287,7 +287,7 @@ NTSTATUS smb_composite_loadfile(struct smbcli_tree *tree,
 				TALLOC_CTX *mem_ctx,
 				struct smb_composite_loadfile *io)
 {
-	struct smbcli_composite *c = smb_composite_loadfile_send(tree, io);
+	struct composite_context *c = smb_composite_loadfile_send(tree, io);
 	return smb_composite_loadfile_recv(c, mem_ctx);
 }
 

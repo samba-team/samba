@@ -29,7 +29,7 @@
 */
 
 
-struct smbcli_composite {
+struct composite_context {
 	/* the external state - will be queried by the caller */
 	enum smbcli_request_state state;
 
@@ -45,7 +45,7 @@ struct smbcli_composite {
 
 	/* information on what to do on completion */
 	struct {
-		void (*fn)(struct smbcli_composite *);
+		void (*fn)(struct composite_context *);
 		void *private;
 	} async;
 };

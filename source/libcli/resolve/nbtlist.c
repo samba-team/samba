@@ -43,8 +43,8 @@ struct nbtlist_state {
 */
 static void nbtlist_handler(struct nbt_name_request *req)
 {
-	struct smbcli_composite *c = talloc_get_type(req->async.private, 
-						     struct smbcli_composite);
+	struct composite_context *c = talloc_get_type(req->async.private, 
+						     struct composite_context);
 	struct nbtlist_state *state = talloc_get_type(c->private, struct nbtlist_state);
 	int i;
 
@@ -81,18 +81,18 @@ done:
 /*
   nbtlist name resolution method - async send
  */
-struct smbcli_composite *resolve_name_nbtlist_send(struct nbt_name *name, 
+struct composite_context *resolve_name_nbtlist_send(struct nbt_name *name, 
 						   struct event_context *event_ctx,
 						   const char **address_list,
 						   BOOL broadcast,
 						   BOOL wins_lookup)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct nbtlist_state *state;
 	int i;
 	NTSTATUS status;
 
-	c = talloc_zero(NULL, struct smbcli_composite);
+	c = talloc_zero(NULL, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct nbtlist_state);
@@ -143,12 +143,12 @@ failed:
 /*
   nbt list of addresses name resolution method - recv side
  */
-NTSTATUS resolve_name_nbtlist_recv(struct smbcli_composite *c, 
+NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c, 
 				   TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
 	NTSTATUS status;
 
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct nbtlist_state *state = talloc_get_type(c->private, struct nbtlist_state);
@@ -168,7 +168,7 @@ NTSTATUS resolve_name_nbtlist(struct nbt_name *name,
 			      BOOL broadcast, BOOL wins_lookup,
 			      const char **reply_addr)
 {
-	struct smbcli_composite *c = resolve_name_nbtlist_send(name, NULL, address_list, 
+	struct composite_context *c = resolve_name_nbtlist_send(name, NULL, address_list, 
 							       broadcast, wins_lookup);
 	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
 }

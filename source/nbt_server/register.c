@@ -118,7 +118,7 @@ static void nbt_start_refresh_timer(struct nbt_iface_name *iname)
 /*
   a name registration has completed
 */
-static void nbt_register_handler(struct smbcli_composite *req)
+static void nbt_register_handler(struct composite_context *req)
 {
 	struct nbt_iface_name *iname = talloc_get_type(req->async.private, struct nbt_iface_name);
 	NTSTATUS status;
@@ -153,7 +153,7 @@ static void nbt_register_name_iface(struct nbt_interface *iface,
 	struct nbt_iface_name *iname;
 	const char *scope = lp_netbios_scope();
 	struct nbt_name_register_bcast io;
-	struct smbcli_composite *req;
+	struct composite_context *req;
 
 	iname = talloc(iface, struct nbt_iface_name);
 	if (!iname) return;

@@ -32,14 +32,14 @@ enum fetchfile_stage {FETCHFILE_CONNECT,
 struct fetchfile_state {
 	enum fetchfile_stage stage;
 	struct smb_composite_fetchfile *io;
-	struct smbcli_composite *req;
+	struct composite_context *req;
 	struct smb_composite_connect *connect;
 	struct smb_composite_loadfile *loadfile;
 };
 
-static void fetchfile_composite_handler(struct smbcli_composite *req);
+static void fetchfile_composite_handler(struct composite_context *req);
 
-static NTSTATUS fetchfile_connect(struct smbcli_composite *c,
+static NTSTATUS fetchfile_connect(struct composite_context *c,
 				  struct smb_composite_fetchfile *io)
 {
 	NTSTATUS status;
@@ -67,7 +67,7 @@ static NTSTATUS fetchfile_connect(struct smbcli_composite *c,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetchfile_read(struct smbcli_composite *c,
+static NTSTATUS fetchfile_read(struct composite_context *c,
 			       struct smb_composite_fetchfile *io)
 {
 	NTSTATUS status;
@@ -87,7 +87,7 @@ static NTSTATUS fetchfile_read(struct smbcli_composite *c,
 	return NT_STATUS_OK;
 }
 
-static void fetchfile_state_handler(struct smbcli_composite *c)
+static void fetchfile_state_handler(struct composite_context *c)
 {
 	struct fetchfile_state *state;
 	NTSTATUS status;
@@ -114,20 +114,20 @@ static void fetchfile_state_handler(struct smbcli_composite *c)
 	}
 }
 
-static void fetchfile_composite_handler(struct smbcli_composite *req)
+static void fetchfile_composite_handler(struct composite_context *req)
 {
-	struct smbcli_composite *c = talloc_get_type(req->async.private, 
-						     struct smbcli_composite);
+	struct composite_context *c = talloc_get_type(req->async.private, 
+						     struct composite_context);
 	return fetchfile_state_handler(c);
 }
 
-struct smbcli_composite *smb_composite_fetchfile_send(struct smb_composite_fetchfile *io,
+struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetchfile *io,
 						      struct event_context *event_ctx)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct fetchfile_state *state;
 
-	c = talloc_zero(NULL, struct smbcli_composite);
+	c = talloc_zero(NULL, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct fetchfile_state);
@@ -165,12 +165,12 @@ struct smbcli_composite *smb_composite_fetchfile_send(struct smb_composite_fetch
 	return NULL;
 }
 
-NTSTATUS smb_composite_fetchfile_recv(struct smbcli_composite *c,
+NTSTATUS smb_composite_fetchfile_recv(struct composite_context *c,
 				      TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct fetchfile_state *state = talloc_get_type(c->private, struct fetchfile_state);
@@ -184,6 +184,6 @@ NTSTATUS smb_composite_fetchfile_recv(struct smbcli_composite *c,
 NTSTATUS smb_composite_fetchfile(struct smb_composite_fetchfile *io,
 				 TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_composite *c = smb_composite_fetchfile_send(io, NULL);
+	struct composite_context *c = smb_composite_fetchfile_send(io, NULL);
 	return smb_composite_fetchfile_recv(c, mem_ctx);
 }
