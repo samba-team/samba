@@ -26,7 +26,6 @@ extern pstring global_myname;
 
 extern pstring user_socket_options;
 
-extern fstring remote_machine;
 extern WINS_OWNER *global_wins_table;
 extern int partner_count;
 
@@ -637,7 +636,7 @@ static void process(void)
 		lp_set_logfile(logfile);
 	}
 
-	pstrcpy(remote_machine, "wrepld");
+	set_remote_machine_name("wrepld");
 
 	setup_logging(argv[0],interactive);
 
