@@ -530,7 +530,7 @@ void make_buffer2(BUFFER2 *str, const char *buf, int len)
 	str->undoc       = 0;
 
 	/* store the string */
-	ascii_to_unibuf(str->buffer, buf, len);
+	ascii_to_unibuf(str->buffer, buf, MIN(str->buf_len, sizeof(str->buffer)-1));
 }
 
 /*******************************************************************
