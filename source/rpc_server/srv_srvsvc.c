@@ -1118,6 +1118,7 @@ struct api_struct api_srv_cmds[] =
 	{ "SRV_NETCONNENUM"     , SRV_NETCONNENUM     , api_srv_net_conn_enum    },
 	{ "SRV_NETSESSENUM"     , SRV_NETSESSENUM     , api_srv_net_sess_enum    },
 	{ "SRV_NETSHAREENUM"    , SRV_NETSHAREENUM    , api_srv_net_share_enum   },
+	{ "SRV_NETSHAREENUM2"   , SRV_NETSHAREENUM2   , api_srv_net_share_enum   },
 	{ "SRV_NETFILEENUM"     , SRV_NETFILEENUM     , api_srv_net_file_enum    },
 	{ "SRV_NET_SRV_GET_INFO", SRV_NET_SRV_GET_INFO, api_srv_net_srv_get_info },
 	{ "SRV_NET_REMOTE_TOD"  , SRV_NET_REMOTE_TOD  , api_srv_net_remote_tod   },
