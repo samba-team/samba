@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
-#include "nbt_server/winsdb.h"
+#include "nbt_server/wins/winsdb.h"
 #include "system/time.h"
 
 /*

@@ -1,6 +1,19 @@
 # NBTD server subsystem
 
 #######################
+# Start SUBSYSTEM NBTD_WINS
+[SUBSYSTEM::NBTD_WINS]
+ADD_OBJ_FILES = \
+		nbt_server/wins/winsserver.o \
+		nbt_server/wins/winsclient.o \
+		nbt_server/wins/winsdb.o \
+		nbt_server/wins/winswack.o
+REQUIRED_SUBSYSTEMS = \
+		LIBCLI_NBT LIBCLI_WINS
+# End SUBSYSTEM NBTD_WINS
+#######################
+
+#######################
 # Start SUBSYSTEM NBTD
 [SUBSYSTEM::NBTD]
 INIT_OBJ_FILES = \
@@ -10,13 +23,9 @@ ADD_OBJ_FILES = \
 		nbt_server/register.o \
 		nbt_server/query.o \
 		nbt_server/nodestatus.o \
-		nbt_server/winsclient.o \
 		nbt_server/defense.o \
-		nbt_server/packet.o \
-		nbt_server/winsserver.o \
-		nbt_server/winsdb.o \
-		nbt_server/winswack.o
+		nbt_server/packet.o
 REQUIRED_SUBSYSTEMS = \
-		LIBCLI_NBT
-# End SUBSYSTEM SMB
+		LIBCLI_NBT NBTD_WINS
+# End SUBSYSTEM NBTD
 #######################
