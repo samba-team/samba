@@ -88,7 +88,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
-	uint8_t mach_pwd[16];
+	struct samr_Password mach_pwd;
 	struct creds_CredentialState creds;
 	const char *workgroup, *workstation;
 	uint32_t negotiate_flags = 0;
@@ -123,8 +123,8 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	/*
 	  step 3 - authenticate on the netlogon pipe
 	*/
-	E_md4hash(password, mach_pwd);
-	creds_client_init(&creds, &credentials1, &credentials2, mach_pwd, &credentials3,
+	E_md4hash(password, mach_pwd.hash);
+	creds_client_init(&creds, &credentials1, &credentials2, &mach_pwd, &credentials3,
 			  negotiate_flags);
 
 	a.in.server_name = r.in.server_name;
