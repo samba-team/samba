@@ -881,23 +881,17 @@ char *automount_lookup(char *user_name)
  
   char *nis_map = (char *)lp_nis_home_map_name();
  
-  char nis_domain[NIS_MAXNAMELEN + 1];
   char buffer[NIS_MAXATTRVAL + 1];
   nis_result *result;
   nis_object *object;
   entry_obj  *entry;
  
-  strncpy(nis_domain, (char *)nis_local_directory(), NIS_MAXNAMELEN);
-  nis_domain[NIS_MAXNAMELEN] = '\0';
- 
-  DEBUG(5, ("NIS+ Domain: %s\n", nis_domain));
- 
   if (strcmp(user_name, last_key))
   {
-    slprintf(buffer, sizeof(buffer)-1, "[%s=%s]%s.%s", "key", user_name, nis_map, nis_domain);
+    slprintf(buffer, sizeof(buffer)-1, "[key=%s],%s", user_name, nis_map);
     DEBUG(5, ("NIS+ querystring: %s\n", buffer));
  
-    if (result = nis_list(buffer, RETURN_RESULT, NULL, NULL))
+    if (result = nis_list(buffer, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP, NULL, NULL))
     {
        if (result->status != NIS_SUCCESS)
       {
@@ -1739,34 +1733,6 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
 
 
 /*****************************************************************
-like mktemp() but make sure that no % characters are used
-% characters are bad for us because of the macro subs
- *****************************************************************/  
-char *smbd_mktemp(char *template)
-{
-	char *p = mktemp(template);
-	char *p2;
-	SMB_STRUCT_STAT st;
-
-	if (!p) return NULL;
-
-	while ((p2=strchr(p,'%'))) {
-		p2[0] = 'A';
-		while (sys_stat(p,&st) == 0 && p2[0] < 'Z') {
-			/* damn, it exists */
-			p2[0]++;
-		}
-		if (p2[0] == 'Z') {
-			/* oh well ... better return something */
-			p2[0] = '%';
-			return p;
-		}
-	}
-
-	return p;
-}
-
-/*****************************************************************
 possibly replace mkstemp if it is broken
 *****************************************************************/  
 int smb_mkstemp(char *template)
@@ -1775,8 +1741,8 @@ int smb_mkstemp(char *template)
 	return mkstemp(template);
 #else
 	/* have a reasonable go at emulating it. Hope that
-		the system mktemp() isn't completly hopeless */
-	char *p = smbd_mktemp(template);
+	   the system mktemp() isn't completly hopeless */
+	char *p = mktemp(template);
 	if (!p) return -1;
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 #endif
@@ -1875,7 +1841,6 @@ BOOL ms_has_wild(char *s)
 	}
 	return False;
 }
-
 
 /*******************************************************************
  a wrapper that handles case sensitivity and the special handling
