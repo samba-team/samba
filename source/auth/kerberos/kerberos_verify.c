@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
-#include "libcli/auth/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 #include "asn_1.h"
 #include "lib/ldb/include/ldb.h"
 #include "secrets.h"
