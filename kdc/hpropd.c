@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -210,7 +210,7 @@ main(int argc, char **argv)
     int nprincs;
 #ifdef KRB4
     int e;
-    int fd_out;
+    int fd_out = -1;
 #endif
 
     set_progname(argv[0]);
