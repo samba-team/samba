@@ -5,7 +5,7 @@ by Wietse Venema, Eindhoven University of Technology, The Netherlands.
 The code is used here with permission.
 
 The code has been considerably changed from the original. Bug reports
-should be sent to Andrew.Tridgell@anu.edu.au
+should be sent to samba-bugs@samba.anu.edu.au
 */
 
 #include "includes.h"
