@@ -147,6 +147,7 @@ AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
+AC_SUBST(PRINTLIBS)
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -496,7 +497,7 @@ if test x$enable_cups != xno; then
                         AC_DEFINE(HAVE_CUPS)
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
-		LIBS="$LIBS `$CUPS_CONFIG --libs`"
+		PRINTLIBS="$PRINTLIBS `$CUPS_CONFIG --libs`"
         fi
 fi
 
