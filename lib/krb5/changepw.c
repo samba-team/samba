@@ -40,8 +40,6 @@ send_request (krb5_context context,
 	      krb5_auth_context *auth_context,
 	      krb5_creds *creds,
 	      int sock,
-	      struct sockaddr *sa,
-	      int sa_size,
 	      char *passwd,
 	      const char *host)
 {
@@ -89,8 +87,8 @@ send_request (krb5_context context,
     *p++ = (ap_req_data.length >> 0) & 0xFF;
 
     memset(&msghdr, 0, sizeof(msghdr));
-    msghdr.msg_name       = (void *)sa;
-    msghdr.msg_namelen    = sa_size;
+    msghdr.msg_name       = NULL;
+    msghdr.msg_namelen    = 0;
     msghdr.msg_iov        = iov;
     msghdr.msg_iovlen     = sizeof(iov)/sizeof(*iov);
 #if 0
@@ -266,6 +264,9 @@ krb5_change_password (krb5_context	context,
     if (ret)
 	return ret;
 
+    krb5_auth_con_setflags (context, auth_context,
+			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
+
     ret = krb5_krbhst_init (context, realm, KRB5_KRBHST_CHANGEPW, &handle);
     if (ret)
 	goto out;
@@ -284,6 +285,19 @@ krb5_change_password (krb5_context	context,
 	    if (sock < 0)
 		continue;
 
+	    ret = connect(sock, a->ai_addr, a->ai_addrlen);
+	    if (ret < 0) {
+		close (sock);
+		goto out;
+	    }
+
+	    ret = krb5_auth_con_genaddrs (context, auth_context, sock,
+					  KRB5_AUTH_CONTEXT_GENERATE_LOCAL_ADDR);
+	    if (ret) {
+		close (sock);
+		goto out;
+	    }
+
 	    for (i = 0; !done && i < 5; ++i) {
 		fd_set fdset;
 		struct timeval tv;
@@ -294,8 +308,6 @@ krb5_change_password (krb5_context	context,
 					&auth_context,
 					creds,
 					sock,
-					a->ai_addr,
-					a->ai_addrlen,
 					newpw,
 					hi->hostname);
 		    if (ret) {
@@ -353,4 +365,22 @@ krb5_change_password (krb5_context	context,
 				  " in realm %s", realm);
 	return ret;
     }
+}
+
+const char *
+krb5_passwd_result_to_string (krb5_context context,
+			      int result)
+{
+    static const char *strings[] = {
+	"Success",
+	"Malformed",
+	"Hard error",
+	"Auth error",
+	"Soft error" 
+    };
+
+    if (result < 0 || result > KRB5_KPASSWD_SOFTERROR)
+	return "unknown result code";
+    else
+	return strings[result];
 }
