@@ -35,23 +35,17 @@
 #include "includes.h"
 
 #ifdef SYSV
-
-typedef struct printer {
-	char *name;
-	struct printer *next;
-} printer_t;
-static printer_t *printers = NULL;
-
-static void populate_printers(void)
+BOOL sysv_cache_reload(void)
 {
 	char **lines;
 	int i;
 
-	lines = file_lines_pload("/usr/bin/lpstat -v", NULL);
-	if (!lines) return;
+	DEBUG(5, ("reloading sysv printcap cache\n"));
 
-	for (i=0;lines[i];i++) {
-		printer_t *ptmp;
+	if ((lines = file_lines_pload("/usr/bin/lpstat -v", NULL)) == NULL)
+		return False;
+
+	for (i = 0; lines[i]; i++) {
 		char *name, *tmp;
 		char *buf = lines[i];
 
@@ -64,7 +58,7 @@ static void populate_printers(void)
 		 * In case we're only at the "for ".
 		 */
 
-		if(!strncmp("for ",++tmp,4)) {
+		if(!strncmp("for ", ++tmp, 4)) {
 			tmp=strchr_m(tmp, ' ');
 			tmp++;
 		}
@@ -78,7 +72,7 @@ static void populate_printers(void)
 		 * On HPUX there is an extra line that can be ignored.
 		 * d.thibadeau 2001/08/09
 		 */
-		if(!strncmp("remote to",tmp,9))
+		if(!strncmp("remote to", tmp, 9))
 			continue;
 
 		name = tmp;
@@ -88,53 +82,14 @@ static void populate_printers(void)
 			*tmp = '\0';
 		
 		/* add it to the cache */
-		if ((ptmp = SMB_MALLOC_P(printer_t)) != NULL) {
-			ZERO_STRUCTP(ptmp);
-			if((ptmp->name = SMB_STRDUP(name)) == NULL)
-				DEBUG(0,("populate_printers: malloc fail in strdup !\n"));
-			ptmp->next = printers;
-			printers = ptmp;
-		} else {
-			DEBUG(0,("populate_printers: malloc fail for ptmp\n"));
+		if (!pcap_cache_add(name, NULL)) {
+			file_lines_free(lines);
+			return False;
 		}
 	}
 
 	file_lines_free(lines);
-}
-
-
-/*
- * provide the equivalent of pcap_printer_fn() for SVID/XPG4 conforming
- * systems.  It was unclear why pcap_printer_fn() was tossing names longer
- * than 8 characters.  I suspect that its a protocol limit, but amazingly
- * names longer than 8 characters appear to work with my test
- * clients (Win95/NT).
- */
-void sysv_printer_fn(void (*fn)(char *, char *))
-{
-	printer_t *tmp;
-
-	if (printers == NULL)
-		populate_printers();
-	for (tmp = printers; tmp != NULL; tmp = tmp->next)
-		(fn)(tmp->name, "");
-}
-
-
-/*
- * provide the equivalent of pcap_printername_ok() for SVID/XPG4 conforming
- * systems.
- */
-int sysv_printername_ok(const char *name)
-{
-	printer_t *tmp;
-
-	if (printers == NULL)
-		populate_printers();
-	for (tmp = printers; tmp != NULL; tmp = tmp->next)
-		if (strcmp(tmp->name, name) == 0)
-			return (True);
-	return (False);
+	return True;
 }
 
 #else
