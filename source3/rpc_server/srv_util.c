@@ -384,8 +384,7 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 
 		/*** authentication info ***/
 
-		make_rpc_hdr_auth(&p->auth_info,
-		                       0x0a, 0x06, 0);
+		make_rpc_hdr_auth(&p->auth_info, 0x0a, 0x06, 0, 1);
 		smb_io_rpc_hdr_auth("", &p->auth_info, &p->rverf, 0);
 		mem_realloc_data(p->rverf.data, p->rverf.offset);
 
