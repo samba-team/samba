@@ -32,7 +32,7 @@ diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makef
  PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
  
  # Note that all executable programs now provide for an optional executable suffix.
-@@ -1144,7 +1152,7 @@
+@@ -1146,7 +1154,7 @@
  	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
  
  installdat: installdirs
