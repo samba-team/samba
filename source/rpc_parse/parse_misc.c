@@ -910,6 +910,13 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 		return;
 	}
 
+	/*
+	 * don't move this test above ! The UNISTR2 must be initialized !!!
+	 * jfm, 7/7/2001.
+	 */
+	if (buf==NULL)
+		return;
+
 	rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
 }
 
