@@ -43,6 +43,7 @@ int     pflag, iamremote, iamrecursive, targetshouldbedirectory;
 int     doencrypt, noencrypt;
 int     usebroken, usekrb4, usekrb5, forwardtkt;
 char    *port;
+int     eflag = 0;
 
 #define	CMDNEEDS	64
 char cmd[CMDNEEDS];		/* must hold "rcp -r -p -d\0" */
@@ -71,6 +72,7 @@ struct getargs args[] = {
     { NULL,	'x', arg_flag,		&doencrypt,	"use encryption" },
     { NULL,	'z', arg_flag,		&noencrypt,	"don't encrypt" },
     { NULL,	'd', arg_flag,		&targetshouldbedirectory },
+    { NULL,	'e', arg_flag,		&eflag, 	"passed to rsh" },
     { NULL,	'f', arg_flag,		&fflag },
     { NULL,	't', arg_flag,		&tflag },
     { "version", 0,  arg_flag,		&version_flag },
@@ -189,16 +191,18 @@ toremote(char *targ, int argc, char **argv)
 				else if (!okname(suser))
 					continue;
 				asprintf(&bp,
-				    "%s %s -l %s -n %s %s '%s%s%s:%s'",
-				    _PATH_RSH, host, suser, cmd, src,
+				    "%s%s %s -l %s -n %s %s '%s%s%s:%s'",
+					 _PATH_RSH, eflag ? " -e" : "", 
+					 host, suser, cmd, src,
 				    tuser ? tuser : "", tuser ? "@" : "",
 				    thost, targ);
 			} else {
 				asprintf(&bp,
-				    "exec %s %s -n %s %s '%s%s%s:%s'",
-				    _PATH_RSH, argv[i], cmd, src,
-				    tuser ? tuser : "", tuser ? "@" : "",
-				    thost, targ);
+					 "exec %s%s %s -n %s %s '%s%s%s:%s'",
+					 _PATH_RSH, eflag ? " -e" : "", 
+					 argv[i], cmd, src,
+					 tuser ? tuser : "", tuser ? "@" : "",
+					 thost, targ);
 			}
 			if (bp == NULL)
 				err (1, "malloc");
@@ -768,6 +772,8 @@ do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout)
 			args[i++] = "-p";
 			args[i++] = port;
 		}
+		if (eflag)
+		    args[i++] = "-e";
 		if (remuser != NULL) {
 			args[i++] = "-l";
 			args[i++] = remuser;
