@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "Python.h"
 
-#include "python/py_common.h"
+#include "python/py_common_proto.h"
 
 /* SAMR connect policy handle object */
 
