@@ -1157,7 +1157,7 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
  ********************************************************************/
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
 {
-	BYTE	*ptr;
+	uint8	*ptr;
 	
         if (sampass == NULL) 
 		return False;
@@ -1169,22 +1169,22 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
 
         if ((ptr=pdb_get_lanman_passwd(sampass)) != NULL)
 	{
-		if ((smb_pw->smb_passwd=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
+		if ((smb_pw->smb_passwd=(uint8*)malloc(sizeof(uint8)*16)) == NULL)
 		{
 			DEBUG (0,("build_smb_pass: ERROR - Unable to malloc memory!\n"));
 			return False;
 		}
-		memcpy (smb_pw->smb_passwd, ptr, sizeof(BYTE)*16);
+		memcpy (smb_pw->smb_passwd, ptr, sizeof(uint8)*16);
 	}
 
         if ((ptr=pdb_get_nt_passwd(sampass)) != NULL)
 	{
-		if ((smb_pw->smb_nt_passwd=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
+		if ((smb_pw->smb_nt_passwd=(uint8*)malloc(sizeof(uint8)*16)) == NULL)
 		{
 			DEBUG (0,("build_smb_pass: ERROR - Unable to malloc memory!\n"));
 			return False;
 		}
-		memcpy (smb_pw->smb_nt_passwd, ptr, sizeof(BYTE)*16);
+		memcpy (smb_pw->smb_nt_passwd, ptr, sizeof(uint8)*16);
 	}
 		
         smb_pw->acct_ctrl          = pdb_get_acct_ctrl(sampass);

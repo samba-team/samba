@@ -547,7 +547,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	uchar unenc_old_pw[16];
 	SAM_ACCOUNT *sampass = NULL;
 	uint16 acct_ctrl;
-	BYTE *lanman_pw;
+	uint8 *lanman_pw;
 
 	become_root();
 	sampass = pdb_getsampwnam(user);
@@ -614,7 +614,7 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 	uchar unenc_new_pw[16];
 	BOOL ret;
 	uint16 acct_ctrl;
-	BYTE *pwd;
+	uint8 *pwd;
 
 	if (sampass == NULL)
 	{
@@ -710,7 +710,7 @@ BOOL check_oem_password(char *user,
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
 	SAM_ACCOUNT *sampass = NULL;
-	BYTE *lanman_pw, *nt_pw;
+	uint8 *lanman_pw, *nt_pw;
 	uint16 acct_ctrl;
 	int new_pw_len;
 	uchar new_ntp16[16];

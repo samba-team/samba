@@ -46,7 +46,7 @@ static SAM_ACCOUNT 		global_sam_pass;
 /**********************************************************************
  Intialize a SAM_ACCOUNT struct from a BYTE buffer of size len
  *********************************************************************/
-static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, BYTE *buf, 
+static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, 
 				  uint32 buflen)
 {
 	static fstring	username,
@@ -61,7 +61,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, BYTE *buf,
 			profile_path,
 			acct_desc,
 			workstations;
-	static BYTE	*lm_pw_ptr,
+	static uint8	*lm_pw_ptr,
 			*nt_pw_ptr,
 			lm_pw[16],
 			nt_pw[16];
@@ -146,7 +146,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, BYTE *buf,
 /**********************************************************************
  Intialize a BYTE buffer from a SAM_ACCOUNT struct
  *********************************************************************/
-static uint32 init_buffer_from_sam (BYTE **buf, SAM_ACCOUNT *sampass)
+static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 {
 	size_t		len, buflen;
 
@@ -162,7 +162,7 @@ static uint32 init_buffer_from_sam (BYTE **buf, SAM_ACCOUNT *sampass)
 			profile_path,
 			acct_desc,
 			workstations;
-	BYTE		lm_pw[16],
+	uint8		lm_pw[16],
 			nt_pw[16];
 	char		null_pw[] = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
@@ -232,7 +232,7 @@ static uint32 init_buffer_from_sam (BYTE **buf, SAM_ACCOUNT *sampass)
 
 
 	/* malloc the space needed */
-	if ( (*buf=(BYTE*)malloc(len)) == NULL)
+	if ( (*buf=(uint8*)malloc(len)) == NULL)
 	{
 		DEBUG(0,("init_buffer_from_sam: Unable to malloc() memory for buffer!\n"));
 		return (-1);
@@ -624,7 +624,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 {
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	key, data;
-	BYTE		*buf = NULL;
+	uint8		*buf = NULL;
 	fstring 	keystr;
 	pstring		tdbfile;
 	fstring		name;

@@ -785,7 +785,7 @@ void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
 	static fstring workstations="";
 	static fstring unknown_str="";
 	static fstring munged_dial="";
-	static BYTE lm_pw[16], nt_pw[16];
+	static uint8 lm_pw[16], nt_pw[16];
 
 	if (from == NULL || to == NULL) 
 		return;
@@ -1128,7 +1128,7 @@ uint8* pdb_get_hours (SAM_ACCOUNT *sampass)
 		return (NULL);
 }
 
-BYTE* pdb_get_nt_passwd (SAM_ACCOUNT *sampass)
+uint8* pdb_get_nt_passwd (SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->nt_pw);
@@ -1136,7 +1136,7 @@ BYTE* pdb_get_nt_passwd (SAM_ACCOUNT *sampass)
 		return (NULL);
 }
 
-BYTE* pdb_get_lanman_passwd (SAM_ACCOUNT *sampass)
+uint8* pdb_get_lanman_passwd (SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->lm_pw);
@@ -1646,7 +1646,7 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
 	return True;
 }
 
-BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
+BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
 	if ( (!sampass) ||(pwd == NULL) )
 		return False;
@@ -1655,7 +1655,7 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
 		sampass->nt_pw = pwd;
 	else
 	{
-		if ((sampass->nt_pw=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
+		if ((sampass->nt_pw=(uint8*)malloc(sizeof(uint8)*16)) == NULL)
 		{
 			DEBUG(0,("pdb_set_nt_passwd: ERROR - out of memory for nt_pw!\n"));
 			return False;
@@ -1667,7 +1667,7 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
 	return True;
 }
 
-BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
+BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
 	if ( (!sampass) ||(pwd == NULL) )
 		return False;
@@ -1676,7 +1676,7 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
 		sampass->lm_pw = pwd;
 	else
 	{
-		if ((sampass->lm_pw=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
+		if ((sampass->lm_pw=(uint8*)malloc(sizeof(uint8)*16)) == NULL)
 		{
 			DEBUG(0,("pdb_set_lanman_passwd: ERROR - out of memory for lm_pw!\n"));
 			return False;

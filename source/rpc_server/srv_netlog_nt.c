@@ -130,7 +130,7 @@ static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
 static BOOL get_md4pw(char *md4pw, char *mach_acct)
 {
 	SAM_ACCOUNT *sampass = NULL;
-	BYTE *pass;
+	uint8 *pass;
 
 #if 0
     /*
@@ -399,7 +399,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, us
 
 static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 {
-	BYTE    *nt_pwd, *lanman_pwd;
+	uint8    *nt_pwd, *lanman_pwd;
 
 	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
 		id2->hdr_lm_chal_resp.str_str_len, 

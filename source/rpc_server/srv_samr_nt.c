@@ -2014,8 +2014,8 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 {
     SAM_ACCOUNT *pwd = pdb_getsampwrid(rid);
     SAM_ACCOUNT new_pwd;
-    BYTE nt_hash[16];
-    BYTE lm_hash[16];
+    uint8 nt_hash[16];
+    uint8 lm_hash[16];
     pstring buf;
     uint32 len;
 	uint16 acct_ctrl;

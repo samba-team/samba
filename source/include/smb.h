@@ -36,8 +36,6 @@
 #define True (1)
 #define Auto (2)
 
-typedef unsigned char BYTE;
-
 #ifndef _BOOL
 typedef int BOOL;
 #define _BOOL       /* So we don't typedef BOOL again in vfs.h */

@@ -428,7 +428,7 @@ BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
 {
 	uchar challenge[8];
 	char* user_name;
-	BYTE *nt_pw, *lm_pw;
+	uint8 *nt_pw, *lm_pw;
 
 	if (!lm_pass || !sampass) 
 		return(False);
