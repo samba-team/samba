@@ -8045,9 +8045,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	}
 	
 	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
-	
-	SAFE_FREE(queue);
-	
+		
 	*needed += spoolss_size_job_info_1(info_1);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
@@ -8086,12 +8084,14 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		goto done;
 	}
 
-	for (i=0; i<count && found==False; i++) {
-		if (queue[i].job==(int)jobid)
-			found=True;
+	for ( i=0; i<count && found==False; i++ ) 
+	{
+		if (queue[i].job == (int)jobid)
+			found = True;
 	}
 	
-	if (found==False) {
+	if ( !found ) 
+	{
 		/* NT treats not found as bad param... yet another bad
 		   choice */
 		ret = WERR_INVALID_PARAM;
@@ -8101,7 +8101,8 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	ret = get_a_printer(&ntprinter, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(ret))
 		goto done;
-	if (construct_dev_mode(snum) == NULL) {
+		
+	if (!(devmode = construct_dev_mode(snum)) ) {
 		ret = WERR_NOMEM;
 		goto done;
 	}
@@ -8127,7 +8128,6 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
  done:
 	/* Cleanup allocated memory */
 
-	SAFE_FREE(queue);
 	free_job_info_2(info_2);	/* Also frees devmode */
 	SAFE_FREE(info_2);
 	free_a_printer(&ntprinter, 2);
@@ -8140,17 +8140,18 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_u)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 jobid = q_u->jobid;
-	uint32 level = q_u->level;
-	NEW_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
+	POLICY_HND 	*handle = &q_u->handle;
+	uint32 		jobid = q_u->jobid;
+	uint32 		level = q_u->level;
+	NEW_BUFFER 	*buffer = NULL;
+	uint32 		offered = q_u->offered;
+	uint32 		*needed = &r_u->needed;
+	WERROR		wstatus = WERR_OK;
 
-	int snum;
-	int count;
-	print_queue_struct *queue=NULL;
-	print_status_struct prt_status;
+	int 		snum;
+	int 		count;
+	print_queue_struct 	*queue = NULL;
+	print_status_struct 	prt_status;
 
 	/* that's an [in out] buffer */
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
@@ -8158,7 +8159,7 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 
 	DEBUG(5,("spoolss_getjob\n"));
 	
-	*needed=0;
+	*needed = 0;
 	
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
@@ -8168,15 +8169,22 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
 	             count, prt_status.status, prt_status.message));
 		
-	switch (level) {
-	case 1:
-		return getjob_level_1(queue, count, snum, jobid, buffer, offered, needed);
-	case 2:
-		return getjob_level_2(queue, count, snum, jobid, buffer, offered, needed);
-	default:
-		SAFE_FREE(queue);
-		return WERR_UNKNOWN_LEVEL;
+	switch ( level ) {
+	 	case 1:
+			wstatus = getjob_level_1(queue, count, snum, jobid, 
+				buffer, offered, needed);
+			break;
+		case 2:
+			wstatus = getjob_level_2(queue, count, snum, jobid, 
+				buffer, offered, needed);
+			break;
+		default:
+			wstatus = WERR_UNKNOWN_LEVEL;
+			break;
 	}
+	
+	SAFE_FREE(queue);
+	return wstatus;
 }
 
 /********************************************************************
