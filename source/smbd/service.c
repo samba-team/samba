@@ -227,22 +227,27 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* you can only connect to the IPC$ service as an ipc device */
-	if (strequal(lp_fstype(snum), "IPC"))
-		fstrcpy(dev,"IPC");
-	
 	if (dev[0] == '?' || !dev[0]) {
 		if (lp_print_ok(snum)) {
 			fstrcpy(dev,"LPT1:");
+		} else if (strequal(lp_fstype(snum), "IPC")) {
+			fstrcpy(dev, "IPC");
 		} else {
 			fstrcpy(dev,"A:");
 		}
 	}
 
-	/* if the request is as a printer and you can't print then refuse */
 	strupper(dev);
-	if (!lp_print_ok(snum) && (strncmp(dev,"LPT",3) == 0)) {
-		DEBUG(1,("Attempt to connect to non-printer as a printer\n"));
+
+	if (lp_print_ok(snum)) {
+		if (!strequal(dev, "LPT:")) {
+			return NT_STATUS_BAD_DEVICE_TYPE;
+		}
+	} else if (strequal(lp_fstype(snum), "IPC")) {
+		if (!strequal(dev, "IPC")) {
+			return NT_STATUS_BAD_DEVICE_TYPE;
+		}
+	} else if (!strequal(dev, "A:")) {
 		return NT_STATUS_BAD_DEVICE_TYPE;
 	}
 
