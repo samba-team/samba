@@ -185,7 +185,7 @@ static const struct {
 */
 const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 {
-	char *s = NULL;
+	char *s = talloc_strdup(mem_ctx, "");
 	int i;
 	const char *t_name=NULL;
 
@@ -199,7 +199,8 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 	}
 
 	if (!uuid_all_zero(&b->object)) { 
-		s = talloc_asprintf(mem_ctx, "%s@", GUID_string(mem_ctx, &b->object));
+		s = talloc_asprintf(s, "%s@",
+				    GUID_string(mem_ctx, &b->object));
 	}
 
 	s = talloc_asprintf_append(s, "%s:", t_name);
