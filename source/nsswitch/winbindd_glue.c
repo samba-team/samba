@@ -434,15 +434,15 @@ BOOL wb_samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
 	return (ret == NT_STATUS_NOPROBLEMO);
 }
 
-BOOL wb_samr_query_dispinfo(CLI_POLICY_HND *pol, uint32 *start_ndx, 
-			    uint16 info_level, uint32 *num_entries,
-			    SAM_DISPINFO_CTR *ctr)
+/* Unlike all the others, the status code of this function is actually used
+   by winbindd. */
+
+uint32 wb_samr_query_dispinfo(CLI_POLICY_HND *pol, uint32 *start_ndx, 
+                              uint16 info_level, uint32 *num_entries,
+                              SAM_DISPINFO_CTR *ctr)
 {
-	uint32 ret;
-
-	ret = cli_samr_query_dispinfo(pol->cli, pol->mem_ctx, 
-				      &pol->handle, start_ndx, info_level, 
-				      num_entries, 0xffff, ctr);
-
-	return (ret == NT_STATUS_NOPROBLEMO);
+        return cli_samr_query_dispinfo(pol->cli, pol->mem_ctx, 
+                                       &pol->handle, start_ndx, 
+                                       info_level, num_entries, 
+                                       0xffff, ctr);
 }
