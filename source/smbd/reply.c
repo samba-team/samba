@@ -263,10 +263,7 @@ int reply_tcon(connection_struct *conn,
 
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
-	if (!map_nt_and_unix_username(global_myworkgroup, user))
-	{
-		return(connection_error(inbuf,outbuf,ERRbadpw));
-	}
+	map_nt_and_unix_username(global_myworkgroup, user);
 
 	conn = make_connection(service,user,password,pwlen,dev,vuid,&ecode);
   
@@ -336,10 +333,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	StrnCpy(devicename,path + strlen(path) + 1,6);
 	DEBUG(4,("Got device type %s\n",devicename));
 
-	if (!map_nt_and_unix_username(global_myworkgroup, user))
-	{
-		return(connection_error(inbuf,outbuf,ERRbadpw));
-	}
+	map_nt_and_unix_username(global_myworkgroup, user);
 
 	conn = make_connection(service,user,password,passlen,devicename,vuid,&ecode);
 	
