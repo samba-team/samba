@@ -324,6 +324,11 @@ void pidfile_create(char *name);
 
 char *rep_inet_ntoa(struct in_addr ip);
 
+/*The following definitions come from  lib/select.c  */
+
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+
 /*The following definitions come from  lib/set_uid.c  */
 
 const vuser_key *get_sec_ctx(void);
@@ -419,8 +424,6 @@ BOOL surs_tdb_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID * sid,
 
 /*The following definitions come from  lib/system.c  */
 
-int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
-int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_usleep(long usecs);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
@@ -464,6 +467,7 @@ int sys_pclose(int fd);
 
 TALLOC_CTX *talloc_init(void);
 void *talloc(TALLOC_CTX *t, size_t size);
+void talloc_destroy_pool(TALLOC_CTX *t);
 void talloc_destroy(TALLOC_CTX *t);
 
 /*The following definitions come from  lib/time.c  */
@@ -1612,7 +1616,6 @@ int lp_maxmux(void);
 int lp_passwordlevel(void);
 int lp_usernamelevel(void);
 int lp_readsize(void);
-int lp_shmem_size(void);
 int lp_deadtime(void);
 int lp_maxprotocol(void);
 int lp_security(void);
@@ -1664,6 +1667,7 @@ char *lp_force_user(int );
 char *lp_force_group(int );
 char *lp_readlist(int );
 char *lp_writelist(int );
+char *lp_printer_admin(int );
 char *lp_fstype(int );
 char *lp_vfsobj(int );
 char *lp_mangled_map(int );
@@ -2008,13 +2012,18 @@ int write_ntforms(nt_forms_struct **list, int number);
 BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture);
-void get_short_archi(char *short_archi, char *long_archi);
+BOOL get_short_archi(char *short_archi, char *long_archi);
+void clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level);
 uint32 del_a_printer(char *portname);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
+NT_DEVICEMODE *init_devicemode(NT_DEVICEMODE *nt_devmode);
+NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode);
+void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
+void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname);
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring sharename);
-uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
+uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level, 
                             fstring printername, fstring architecture);
@@ -2023,9 +2032,9 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
                                  fstring value, uint8 **data, uint32 *type, uint32 *len);
 BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level, 
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
-void init_devicemode(NT_DEVICEMODE *nt_devmode);
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
 uint32 nt_printing_getsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
+BOOL print_time_access_check(int snum);
 
 /*The following definitions come from  printing/pcap.c  */
 
@@ -3527,7 +3536,7 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   const DEVMODE_CTR devmode_ctr,
-			   const SEC_DESC_BUF *secdesc_ctr,
+			   SEC_DESC_BUF *secdesc_ctr,
 			   uint32 command);
 uint32 _spoolss_fcpn(const POLICY_HND *handle);
 uint32 _spoolss_addjob(const POLICY_HND *handle, uint32 level,

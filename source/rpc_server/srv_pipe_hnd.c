@@ -248,32 +248,6 @@ pipes_struct *get_rpc_pipe_p(char *buf, int where)
 }
 
 /****************************************************************************
-  get an rpc pipe
-****************************************************************************/
-static pipes_struct *get_rpc_vuser(const vuser_key * key)
-{
-	pipes_struct *p;
-
-	DEBUG(4, ("search for pipe vuser [%d,%x]\n", key->pid, key->vuid));
-
-	for (p = Pipes; p; p = p->next)
-	{
-		DEBUG(5, ("pipe name %s [%d,%x] (pipes_open=%d)\n",
-			  p->name, p->key.pid, p->key.vuid, pipes_open));
-	}
-
-	for (p = Pipes; p; p = p->next)
-	{
-		if (p->key.pid == key->pid && p->key.vuid == key->vuid)
-		{
-			return p;
-		}
-	}
-
-	return NULL;
-}
-
-/****************************************************************************
   close an rpc pipe
 ****************************************************************************/
 pipes_struct *get_rpc_pipe(int pnum)
