@@ -119,7 +119,6 @@ struct dcesrv_handle {
 	struct dcesrv_connection_context *context;
 	struct policy_handle wire_handle;
 	void *data;
-	void (*destroy)(struct dcesrv_connection_context *, struct dcesrv_handle *);
 };
 
 /* hold the authentication state information */
