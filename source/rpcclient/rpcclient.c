@@ -48,6 +48,7 @@ static void cmd_quit(struct client_info *info, int argc, char *argv[]);
 
 static struct cli_state smbcli;
 struct cli_state *smb_cli = &smbcli;
+extern struct cli_state *rpc_smb_cli;
 
 static struct client_info cli_info;
 
@@ -62,6 +63,7 @@ initialise smb client structure
 void rpcclient_init(void)
 {
 	bzero(smb_cli, sizeof(smb_cli));
+	rpc_smb_cli = smb_cli;
 	cli_initialise(smb_cli);
 	smb_cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
 }
@@ -1379,6 +1381,7 @@ static char *complete_cmd_null(char *text, int state)
 	out_hnd = stdout;
 	fstrcpy(debugf, argv[0]);
 
+	init_policy_hnd(64);
 	rpcclient_init();
 
 #ifdef KANJI

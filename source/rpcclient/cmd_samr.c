@@ -512,7 +512,6 @@ SAM add alias member.
 void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
-	uint16 fnum_lsa;
 	fstring srv_name;
 	fstring domain;
 	fstring tmp;
@@ -560,23 +559,16 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Domain Alias Member\n");
 
-	/* open LSARPC session. */
-	res3 = res3 ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &fnum_lsa) : False;
-
 	/* lookup domain controller; receive a policy handle */
-	res3 = res3 ? lsa_open_policy(smb_cli, fnum_lsa,
-				srv_name,
+	res3 = res3 ? lsa_open_policy( srv_name,
 				&lsa_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res4 = res3 ? lsa_lookup_names(smb_cli, fnum_lsa, 
-				       &lsa_pol,
+	res4 = res3 ? lsa_lookup_names( &lsa_pol,
 				       num_names, names, 
 				       &sids, NULL, &num_sids) : False;
 
-	res3 = res3 ? lsa_close(smb_cli, fnum_lsa, &lsa_pol) : False;
-
-	cli_nt_session_close(smb_cli, fnum_lsa);
+	res3 = res3 ? lsa_close(&lsa_pol) : False;
 
 	res4 = num_sids < 2 ? False : res4;
 

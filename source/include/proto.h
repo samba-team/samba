@@ -529,8 +529,9 @@ void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodifi
 /*The following definitions come from  lib/util_hnd.c  */
 
 BOOL init_policy_hnd(int num_pol_hnds);
+BOOL register_policy_hnd(POLICY_HND *hnd);
 BOOL open_policy_hnd(POLICY_HND *hnd);
-int find_policy_by_hnd(POLICY_HND *hnd);
+int find_policy_by_hnd(const POLICY_HND *hnd);
 BOOL set_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
 BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
 BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
@@ -540,7 +541,8 @@ BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name);
 BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name);
 BOOL set_policy_cli_state(POLICY_HND *hnd, struct cli_state *cli, uint16 fnum,
 				void (*free_fn)(struct cli_state *, uint16));
-BOOL get_policy_cli_state(POLICY_HND *hnd, struct cli_state **cli, uint16 *fnum);
+BOOL get_policy_cli_state(const POLICY_HND *hnd, struct cli_state **cli,
+	uint16 *fnum);
 BOOL close_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  lib/util_pwdb.c  */
@@ -710,8 +712,9 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
-int cli_nt_create(struct cli_state *cli, char *fname);
-int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
+int cli_nt_create(struct cli_state *cli, const char *fname);
+int cli_open(struct cli_state *cli, const char *fname,
+				int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
@@ -1779,6 +1782,16 @@ BOOL do_brs_query_info(struct cli_state *cli, uint16 fnum,
 			const char *server_name, uint32 switch_value,
 			void *id);
 
+/*The following definitions come from  rpc_client/cli_connect.c  */
+
+void cli_state_free(struct cli_state *cli, uint16 fnum);
+BOOL cli_state_init(const char* server_name, const char* pipe_name,
+				struct cli_state **cli,
+				uint16 *fnum);
+BOOL cli_state_get(const POLICY_HND *pol,
+				struct cli_state **cli,
+				uint16 *fnum);
+
 /*The following definitions come from  rpc_client/cli_eventlog.c  */
 
 BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hnd);
@@ -1813,42 +1826,34 @@ BOOL get_domain_sids(const char *myname,
 BOOL get_trust_sid_and_domain(const char* myname, char *server,
 				DOM_SID *sid,
 				char *domain, size_t len);
-BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
-			const char *server_name, POLICY_HND *hnd,
+BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
-BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
-			const char *server_name, POLICY_HND *hnd,
+BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
-BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
-				const POLICY_HND *hnd_pol,
+BOOL lsa_open_secret( const POLICY_HND *hnd,
 				const char *secret_name,
 				uint32 des_access,
 				POLICY_HND *hnd_secret);
-BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
-		      POLICY_HND *pol, STRING2 *enc_secret,
+BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 		      NTTIME *last_update);
-BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
-			POLICY_HND *hnd,
+BOOL lsa_lookup_names( POLICY_HND *hnd,
 			int num_names,
 			char **names,
 			DOM_SID **sids,
 			uint8 **types,
 			int *num_sids);
-BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
-			POLICY_HND *hnd,
+BOOL lsa_lookup_sids(POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
 			char ***names,
 			uint8 **types,
 			int *num_names);
-BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
-			POLICY_HND *hnd, uint16 info_class,
+BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
-BOOL lsa_enum_trust_dom(struct cli_state *cli, uint16 fnum,
-			POLICY_HND *hnd, uint32 *enum_ctx,
+BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 			uint32 *num_doms, char ***names,
 			DOM_SID ***sids);
-BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
+BOOL lsa_close(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
@@ -1894,7 +1899,8 @@ BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 fnum, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
 void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
-BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, uint16* fnum);
+BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name,
+		uint16* fnum);
 void cli_nt_session_close(struct cli_state *cli, uint16 fnum);
 
 /*The following definitions come from  rpc_client/cli_reg.c  */
@@ -2174,7 +2180,7 @@ BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_client/msrpc_lsarpc.c  */
 
-BOOL msrpc_lsa_query_secret(struct cli_state *cli,
+BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,
 				NTTIME *last_update);
