@@ -1,4 +1,4 @@
-Summary: Samba SMB client and server
+mbpummary: Samba SMB client and server
 Name: samba
 Version: PVERSION
 Release: PRELEASE
@@ -179,11 +179,12 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-msdfs \
 	--with-smbmount \
 	--with-pam \
+	--with-pam_smbpass \
 	--with-syslog \
 	--with-utmp \
 	--with-sambabook=%{prefix}/share/swat/using_samba \
 	--with-swatdir=%{prefix}/share/swat \
-	--with-libsmbclient
+	--with-libsmbclient 
 make -j${NUMCPU} proto
 make -j${NUMCPU} all nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html
@@ -268,6 +269,9 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Install winbind shared libraries
 install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
 install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
+
+# Install pam_smbpass.so
+install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install the VFS modules
 install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
@@ -563,3 +567,4 @@ MANDIR_MACRO/man8/*
 %attr(1777,root,root) %dir /var/spool/samba
 %attr(-,root,root) /lib/libnss_winbind.so
 %attr(-,root,root) /lib/security/pam_winbind.so
+%attr(-,root,root) /lib/security/pam_smbpass.so
