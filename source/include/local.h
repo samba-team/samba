@@ -77,7 +77,7 @@
 #define MAX_PASS_LEN 200
 
 /* separators for lists */
-#define LIST_SEP " \t,;:\n\r"
+#define LIST_SEP " \t,;\n\r"
 
 /* wchar separators for lists */
 #define LIST_SEP_W wchar_list_sep
