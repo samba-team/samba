@@ -2175,7 +2175,7 @@ return    0 - indicates success
 </sect3>
 </sect2>
 
-<sect2
+<sect2>
 <title>LSA SAM Logon</title>
 
 <para><emphasis>
@@ -2279,7 +2279,7 @@ Note:	presumably, the SAM_INFO structure is validated, and a (currently
 
 <para><emphasis>
 Note:	mailslots will contain a response mailslot, to which the response
-	should be sent.  the target NetBIOS name is REQUEST_NAME<20>, where
+	should be sent.  the target NetBIOS name is REQUEST_NAME&lt;20&gt;, where
 	REQUEST_NAME is the name of the machine that sent the request.
 </emphasis></para>
 
@@ -2361,7 +2361,7 @@ Note:	mailslots will contain a response mailslot, to which the response
 </variablelist>
 
 </sect3>
-</sect2
+</sect2>
 
 <sect2>
 <title>SAM Logon</title>
@@ -2663,16 +2663,16 @@ pwdump(machine$) (initially) == md4(lmowf(unicode(machine)))
 <title>Protocol</title>
 
 <para>
-C->S ReqChal,Cc S->C Cs
+C-&gt;S ReqChal,Cc S-&gt;C Cs
 </para>
 
 <para>
-C & S compute session key Ks = E(PW[9..15],E(PW[0..6],Add(Cc,Cs)))
+C &amp; S compute session key Ks = E(PW[9..15],E(PW[0..6],Add(Cc,Cs)))
 </para>
 
 <para>
 C: Rc = Cred(Ks,Cc) C->S Authenticate,Rc S: Rs = Cred(Ks,Cs),
-assert(Rc == Cred(Ks,Cc)) S->C Rs C: assert(Rs == Cred(Ks,Cs))
+assert(Rc == Cred(Ks,Cc)) S-&gt;C Rs C: assert(Rs == Cred(Ks,Cs))
 </para>
 
 <para>
@@ -2682,7 +2682,7 @@ on registry settings. This will also occur weekly afterwards.
 </para>
 
 <para>
-C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C->S ServerPasswordSet,Rc',Tc,
+C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C-&gt;S ServerPasswordSet,Rc',Tc,
 arc4(Ks[0..7,16],lmowf(randompassword()) C: Rc = Cred(Ks,Rc+Tc+1) S:
 assert(Rc' == Cred(Ks,Rc+Tc)), Ts = Time() S: Rs' = Cred(Ks,Rs+Tc+1)
 S->C Rs',Ts C: assert(Rs' == Cred(Ks,Rs+Tc+1)) S: Rs = Rs'
@@ -2694,7 +2694,7 @@ such as workstation and domain omitted)
 </para>
 
 <para>
-C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C->S NetLogonSamLogon,Rc',Tc,U,
+C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C-&gt;S NetLogonSamLogon,Rc',Tc,U,
 arc4(Ks[0..7,16],16,ntowf(P),16), arc4(Ks[0..7,16],16,lmowf(P),16) S:
 assert(Rc' == Cred(Ks,Rc+Tc)) assert(passwords match those in SAM) S:
 Ts = Time()

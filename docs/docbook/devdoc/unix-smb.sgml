@@ -13,7 +13,7 @@
 <para>
 This is a short document that describes some of the issues that
 confront a SMB implementation on unix, and how Samba copes with
-them. They may help people who are looking at unix<->PC
+them. They may help people who are looking at unix&lt;-&gt;PC
 interoperability.
 </para>
 

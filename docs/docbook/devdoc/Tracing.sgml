@@ -80,11 +80,11 @@ stderr output from this command to a file for later perusal. For
 example, if I'm using a csh style shell:
 </para>
 
-<para><command>strace -f -p 3872 >& strace.out</command></para>
+<para><command>strace -f -p 3872 &gt;&amp; strace.out</command></para>
 
 <para>or with a sh style shell:</para>
 
-<para><command>strace -f -p 3872 > strace.out 2>&1</command></para>
+<para><command>strace -f -p 3872 > strace.out 2&gt;&amp;1</command></para>
 
 <para>
 Note the "-f" option. This is only available on some systems, and

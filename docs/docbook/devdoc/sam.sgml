@@ -27,7 +27,7 @@ accessed.</para>
 For example, when you call 
 </para>
 
-<programlisting><
+<programlisting>
 NTSTATUS sam_get_account_by_name(const SAM_CONTEXT *context, const
 NT_USER_TOKEN *access_token, uint32 access_desired, const char *domain,
 const char *name, SAM_ACCOUNT_HANDLE **account)
@@ -182,7 +182,7 @@ This is where smbd, samtest and whatever end-user replacement we have
 for pdbedit sits.  They use only the SAM interface, and do not get
 'special knowledge' of what is below them.
 </para>
-
+</sect2>
 <sect2>
 <title>SAM Interface</title>
 

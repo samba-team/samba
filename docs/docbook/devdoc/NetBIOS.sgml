@@ -101,7 +101,7 @@ rfc1001.txt describes, amongst other things, the implementation and use
 of, a 'NetBIOS Name Service'.  NT/AS offers 'Windows Internet Name Service'
 which is fully rfc1001/2 compliant, but has had to take specific action
 with certain NetBIOS names in order to make it useful.  (for example, it
-deals with the registration of <1c> <1d> <1e> names all in different ways.
+deals with the registration of &lt;1c&gt; &lt;1d&gt; &lt;1e&gt; names all in different ways.
 I recommend the reading of the Microsoft WINS Server Help files for full
 details).
 </para>
