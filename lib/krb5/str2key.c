@@ -236,7 +236,7 @@ DES3_string_to_key(char *str, size_t len, des_cblock *keys)
 	des_set_odd_parity(keys + i);
 	if(des_is_weak_key(keys + i))
 	    xor(keys + i, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
-	des_set_key(keys + i, s + i);
+	des_set_key(keys + i, s[i]);
     }
     memset(&ivec, 0, sizeof(ivec));
     des_ede3_cbc_encrypt((void*)tmp, (void*)tmp, sizeof(tmp), 
