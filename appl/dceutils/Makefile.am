@@ -14,8 +14,8 @@ dpagaix_CFLAGS = @dpagaix_CFLAGS@
 dpagaix_LDFLAGS = @dpagaix_LDFLAGS@
 dpagaix_LDADD = @dpagaix_LDADD@
 
-dpagaix: $(dpagaix_OBJECTS)
-	ld -edpagaix -o dpagaix $(dpagaix_OBJECTS) $(srcdir)/dfspag.exp
+dpagaix$(EXEEXT): $(dpagaix_OBJECTS)
+	ld -edpagaix -o dpagaix$(EXEEXT) $(dpagaix_OBJECTS) $(srcdir)/dfspag.exp
 
 LIB_dce = -ldce
 
