@@ -6,3 +6,5 @@ EXPORTS
 	snprintf
 	asprintf
 	vsnprintf
+	base64_decode
+	base64_encode
