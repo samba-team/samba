@@ -389,25 +389,25 @@ DES3_string_to_key_derived(krb5_context context,
 }
 
 /*
- * RC4
+ * ARCFOUR
  */
 
 static void
-RC4_random_key(krb5_context context, krb5_keyblock *key)
+ARCFOUR_random_key(krb5_context context, krb5_keyblock *key)
 {
     krb5_generate_random_block (key->keyvalue.data,
 				key->keyvalue.length);
 }
 
 static void
-RC4_schedule(krb5_context context, struct key_data *kd)
+ARCFOUR_schedule(krb5_context context, struct key_data *kd)
 {
-    RC4_set_key (kd->schedule->data,
+    ARCFOUR_set_key (kd->schedule->data,
 		 kd->key->keyvalue.length, kd->key->keyvalue.data);
 }
 
 static krb5_error_code
-RC4_string_to_key(krb5_context context,
+ARCFOUR_string_to_key(krb5_context context,
 		  krb5_enctype enctype,
 		  krb5_data password,
 		  krb5_data salt,
@@ -441,7 +441,7 @@ RC4_string_to_key(krb5_context context,
 }
 
 extern struct salt_type des_salt[], 
-    des3_salt[], des3_salt_derived[], rc4_salt[];
+    des3_salt[], des3_salt_derived[], arcfour_salt[];
 
 struct key_type keytype_null = {
     KEYTYPE_NULL,
@@ -487,15 +487,15 @@ struct key_type keytype_des3_derived = {
     des3_salt_derived
 };
 
-struct key_type keytype_rc4 = {
-    KEYTYPE_RC4,
-    "rc4",
+struct key_type keytype_arcfour = {
+    KEYTYPE_ARCFOUR,
+    "arcfour",
     128,
     16,
     sizeof(RC4_KEY),
-    RC4_random_key,
-    RC4_schedule,
-    rc4_salt
+    ARCFOUR_random_key,
+    ARCFOUR_schedule,
+    arcfour_salt
 };
 
 struct key_type *keytypes[] = {
@@ -503,7 +503,7 @@ struct key_type *keytypes[] = {
     &keytype_des,
     &keytype_des3_derived,
     &keytype_des3,
-    &keytype_rc4
+    &keytype_arcfour
 };
 
 static int num_keytypes = sizeof(keytypes) / sizeof(keytypes[0]);
@@ -551,11 +551,11 @@ struct salt_type des3_salt_derived[] = {
     { 0 }
 };
 
-struct salt_type rc4_salt[] = {
+struct salt_type arcfour_salt[] = {
     {
 	KRB5_PW_SALT,
 	"pw-salt",
-	RC4_string_to_key
+	ARCFOUR_string_to_key
     },
     { 0 }
 };
@@ -1438,10 +1438,10 @@ DES3_CBC_encrypt(struct key_data *key,
 }
 
 static void
-RC4_encrypt(struct key_data *key,
-	    void *data,
-	    size_t len,
-	    krb5_boolean encrypt)
+ARCFOUR_encrypt(struct key_data *key,
+		void *data,
+		size_t len,
+		krb5_boolean encrypt)
 {
 
 }

@@ -87,7 +87,8 @@ typedef enum krb5_cksumtype {
   CKSUMTYPE_RSA_MD5_DES3	= 9,
 /*  CKSUMTYPE_SHA1		= 10,*/
   CKSUMTYPE_HMAC_SHA1_DES3	= 12,
-  CKSUMTYPE_SHA1		= 1000 /* correct value? */
+  CKSUMTYPE_SHA1		= 1000, /* correct value? */
+  CKSUMTYPE_HMAC_MD5		= -138 /* unofficial microsoft number */
 } krb5_cksumtype;
 
 
@@ -102,6 +103,8 @@ typedef enum krb5_enctype {
   ETYPE_ENCRYPT_RSA_PRIV	= 9,
   ETYPE_ENCRYPT_RSA_PUB		= 10,
   ETYPE_DES3_CBC_SHA1		= 16, /* with key derivation */
+  ETYPE_ARCFOUR_HMAC_MD5	= 23,
+  ETYPE_ARCFOUR_HMAC_MD5_56	= 24,
   ETYPE_ENCTYPE_PK_CROSS	= 48,
   ETYPE_DES_CBC_NONE		= 0x1000,
   ETYPE_DES3_CBC_NONE		= 0x1001
@@ -214,7 +217,7 @@ typedef enum krb5_keytype {
     KEYTYPE_NULL	= 0,
     KEYTYPE_DES		= 1,
     KEYTYPE_DES3	= 7,
-    KEYTYPE_RC4		= 23
+    KEYTYPE_ARCFOUR	= 23
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
