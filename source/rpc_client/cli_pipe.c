@@ -324,7 +324,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 
   /* create the request RPC_HDR */
   make_rpc_hdr(&hdr, RPC_BIND, 0x0, get_rpc_call_id(),
-               rhdr_rb->offset, auth_req != NULL ? auth_req->offset : 0);
+               rhdr_rb->offset + 0x10, auth_req != NULL ? auth_req->offset : 0);
 
   smb_io_rpc_hdr("hdr"   , &hdr   , rhdr, 0);
   mem_realloc_data(rhdr->data, rhdr->offset);
@@ -380,7 +380,7 @@ static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len)
 
   /* create the rpc header RPC_HDR */
   make_rpc_hdr(&hdr   , RPC_REQUEST, RPC_FLG_FIRST | RPC_FLG_LAST,
-               get_rpc_call_id(), data_len + 0x18, 0);
+               get_rpc_call_id(), data_len, 0);
 
   /* create the rpc request RPC_HDR_REQ */
   make_rpc_hdr_req(&hdr_req, data_len, op_num);
