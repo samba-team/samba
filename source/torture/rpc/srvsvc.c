@@ -117,6 +117,36 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 	return True;
 }
 
+
+static BOOL test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				 const char *sharename)
+{
+	NTSTATUS status;
+	struct srvsvc_NetShareGetInfo r;
+	int levels[] = {0, 1, 2, 501, 502, 1005};
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.share_name = "";
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		r.in.level = levels[i];
+
+		printf("testing NetShareGetInfo level %u on share '%s'\n", 
+		       r.in.level, r.in.share_name);
+
+		status = dcerpc_srvsvc_NetShareGetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetShareGetInfo level %u failed - %s\n",
+			       r.in.level, nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
 static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p, 
 				 TALLOC_CTX *mem_ctx)
 {
@@ -137,6 +167,8 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 	r.out.resume_handle = &resume_handle;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int j;
+
 		resume_handle = 0;
 		r.in.level = levels[i];
 		printf("testing NetShareEnumAll level %u\n", r.in.level);
@@ -144,7 +176,20 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("NetShareEnumAll level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
+			continue;
 		}
+
+		/* call srvsvc_NetShareGetInfo for each returned share */
+		if (r.in.level == 1) {
+			for (j=0;j<r.out.ctr.ctr1->count;j++) {
+				const char *name;
+				name = r.out.ctr.ctr1->array[j].name;
+				if (!test_NetShareGetInfo(p, mem_ctx, name)) {
+					ret = False;
+				}
+			}
+		}
+		
 	}
 
 	return True;
