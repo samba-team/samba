@@ -101,7 +101,7 @@ struct passwd	*	pwp;
     }
 
     /*  Lock the temporary maildrop */
-    if ( flock (dfd, LOCK_EX|LOCK_NB) == -1 ) 
+    if ( k_flock (dfd, (K_LOCK_EX | K_LOCK_NB)) == -1 ) 
     switch(errno) {
         case EWOULDBLOCK:
             return pop_msg(p,POP_FAILURE,
@@ -120,7 +120,7 @@ struct passwd	*	pwp;
     if ((mfd = open(p->drop_name,O_RDWR)) > 0) {
 
         /*  Lock the maildrop */
-        if (flock (mfd,LOCK_EX) == -1) {
+        if (k_flock (mfd, K_LOCK_EX) == -1) {
             (void)close(mfd) ;
             return pop_msg(p,POP_FAILURE, "flock: '%s': %s", p->temp_drop,
                 (errno < sys_nerr) ? sys_errlist[errno] : "");
