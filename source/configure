@@ -12077,11 +12077,11 @@ fi
 
 echo "$ac_t""$with_ads_support" 1>&6
 
+FOUND_KRB5=no
 if test x"$with_ads_support" = x"yes"; then
 
   #################################################
   # check for location of Kerberos 5 install
-FOUND_KRB5=0
   echo $ac_n "checking for kerberos 5 install path""... $ac_c" 1>&6
 echo "configure:12087: checking for kerberos 5 install path" >&5
   # Check whether --with-krb5 or --without-krb5 was given.
@@ -12097,7 +12097,7 @@ if test "${with_krb5+set}" = set; then
       CFLAGS="$CFLAGS -I$withval/include"
       CPPFLAGS="$CPPFLAGS -I$withval/include"
       LDFLAGS="$LDFLAGS -L$withval/lib"
-      FOUND_KRB5=1
+      FOUND_KRB5=yes
       ;;
     esac 
 else
@@ -12107,7 +12107,7 @@ fi
 
 
 
-if  $FOUND_KRB5 = 0 ; then
+if test x$FOUND_KRB5 = x"no"; then
 #################################################
 # see if this box has the RedHat location for kerberos
 echo $ac_n "checking for /usr/kerberos""... $ac_c" 1>&6
@@ -12768,7 +12768,7 @@ fi
 ###############################################
 # test for where we get crypt() from, but only
 # if not using PAM
-if test $with_pam_for_crypt = no; then
+if test x"$with_pam_for_crypt" = x"no"; then
 for ac_func in crypt
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
