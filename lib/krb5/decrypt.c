@@ -11,7 +11,7 @@ krb5_decrypt (krb5_context context,
 	      krb5_data *result)
 {
   u_char *p = (u_char *)ptr;
-  u_long my_crc, her_crc;
+  u_int32_t my_crc, her_crc;
   des_cblock key;
   des_key_schedule schedule;
 
