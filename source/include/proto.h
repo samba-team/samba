@@ -1929,6 +1929,7 @@ char *cgi_rooturl(void);
 char *cgi_pathinfo(void);
 char *cgi_remote_host(void);
 char *cgi_remote_addr(void);
+BOOL cgi_waspost(void);
 
 /*The following definitions come from  web/diagnose.c  */
 
