@@ -685,7 +685,7 @@ reply to a session setup command
 
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  uint16 sess_vuid;
+  int sess_vuid;
   gid_t gid;
   uid_t uid;
   int   smb_bufsize;    
@@ -1049,6 +1049,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      to a uid can get through without a password, on the same VC */
 
   sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,guest);
+  
+  if (sess_vuid == -1) {
+	  return(ERROR(ERRDOS,ERRnoaccess));
+  }
+
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);

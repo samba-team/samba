@@ -170,8 +170,8 @@ typedef struct
 	char *szUtmpDir;
 	char *szWtmpDir;
 	char *szUtmpHostname;
-	BOOL bUtmpConsolidate;
-#endif				/* WITH_UTMP */
+	BOOL bUtmp;
+#endif
 	char *szSourceEnv;
 	char *szWinbindUID;
 	char *szWinbindGID;
@@ -253,7 +253,6 @@ typedef struct
 	BOOL bReadbmpx;
 	BOOL bSyslogOnly;
 	BOOL bBrowseList;
-	BOOL bUnixRealname;
 	BOOL bNISHomeMap;
 	BOOL bTimeServer;
 	BOOL bBindInterfacesOnly;
@@ -368,9 +367,6 @@ typedef struct
 	BOOL bLocking;
 	BOOL bStrictLocking;
 	BOOL bPosixLocking;
-#ifdef WITH_UTMP
-	BOOL bUtmp;
-#endif
 	BOOL bShareModes;
 	BOOL bOpLocks;
 	BOOL bLevel2OpLocks;
@@ -483,9 +479,6 @@ static service sDefault = {
 	True,			/* bLocking */
 	False,			/* bStrictLocking */
 	True,			/* bPosixLocking */
-#ifdef WITH_UTMP
-	False,			/* bUtmp */
-#endif
 	True,			/* bShareModes */
 	True,			/* bOpLocks */
 	True,			/* bLevel2OpLocks */
@@ -929,9 +922,6 @@ static struct parm_struct parm_table[] = {
 	{"fake oplocks", P_BOOL, P_LOCAL, &sDefault.bFakeOplocks, NULL, NULL, FLAG_SHARE},
 	{"kernel oplocks", P_BOOL, P_GLOBAL, &Globals.bKernelOplocks, NULL, NULL, FLAG_GLOBAL},
 	{"locking", P_BOOL, P_LOCAL, &sDefault.bLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-#ifdef WITH_UTMP
-	{"utmp", P_BOOL, P_LOCAL, &sDefault.bUtmp, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-#endif
 	
 	{"oplocks", P_BOOL, P_LOCAL, &sDefault.bOpLocks, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"level2 oplocks", P_BOOL, P_LOCAL, &sDefault.bLevel2OpLocks, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -963,16 +953,13 @@ static struct parm_struct parm_table[] = {
 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0}, 
 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0},
 #ifdef WITH_UTMP
-	{"utmp dir", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, 0},
 	{"utmp directory", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, 0},
-	{"wtmp dir", P_STRING, P_GLOBAL, &Globals.szWtmpDir, NULL, NULL, 0},
 	{"wtmp directory", P_STRING, P_GLOBAL, &Globals.szWtmpDir, NULL, NULL, 0},
 	{"utmp hostname", P_STRING, P_GLOBAL, &Globals.szUtmpHostname, NULL, NULL, 0},
-	{"utmp consolidate", P_BOOL, P_GLOBAL, &Globals.bUtmpConsolidate, NULL, NULL, 0},
-#endif /* WITH_UTMP */
+	{"utmp",          P_BOOL, P_GLOBAL, &Globals.bUtmp, NULL, NULL, 0},
+#endif
 	
-	{"default service", P_STRING, P_GLOBAL,
-	 &Globals.szDefaultService, NULL, NULL, 0},
+	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
 	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, 0},
 	{"dfree command", P_STRING, P_GLOBAL, &Globals.szDfree, NULL, NULL, 0},
@@ -982,7 +969,6 @@ static struct parm_struct parm_table[] = {
 	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, 0},
 	{"homedir map", P_STRING, P_GLOBAL, &Globals.szNISHomeMapName, NULL, NULL, 0},
 	{"time offset", P_INTEGER, P_GLOBAL, &extra_time_offset, NULL, NULL, 0},
-	{"unix realname", P_BOOL, P_GLOBAL, &Globals.bUnixRealname, NULL, NULL, 0},
 	{"NIS homedir", P_BOOL, P_GLOBAL, &Globals.bNISHomeMap, NULL, NULL, 0},
 	{"-valid", P_BOOL, P_LOCAL, &sDefault.valid, NULL, NULL, FLAG_HIDE},
 	
@@ -1206,8 +1192,8 @@ static void init_globals(void)
 	string_set(&Globals.szUtmpDir, "");
 	string_set(&Globals.szWtmpDir, "");
 	string_set(&Globals.szUtmpHostname, "%m");
-	Globals.bUtmpConsolidate = False;
-#endif /* WITH_UTMP */
+	Globals.bUtmp = False;
+#endif
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	pstrcpy(s, "Samba ");
 	pstrcat(s, VERSION);
@@ -1267,7 +1253,6 @@ static void init_globals(void)
 	Globals.lm_interval = 60;
 	Globals.stat_cache_size = 50;	/* Number of stat translations we'll keep */
 	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
-	Globals.bUnixRealname = True;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 	Globals.bNISHomeMap = False;
 #ifdef WITH_NISPLUS_HOME
@@ -1440,8 +1425,8 @@ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
 FN_GLOBAL_STRING(lp_utmp_hostname, &Globals.szUtmpHostname)
-FN_GLOBAL_BOOL(lp_utmp_consolidate, &Globals.bUtmpConsolidate)
-#endif /* WITH_UTMP */
+FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
+#endif
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_source_environment, &Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
@@ -1536,7 +1521,6 @@ FN_GLOBAL_BOOL(lp_debug_hires_timestamp, &Globals.bDebugHiresTimestamp)
 FN_GLOBAL_BOOL(lp_debug_pid, &Globals.bDebugPid)
 FN_GLOBAL_BOOL(lp_debug_uid, &Globals.bDebugUid)
 FN_GLOBAL_BOOL(lp_browse_list, &Globals.bBrowseList)
-FN_GLOBAL_BOOL(lp_unix_realname, &Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map, &Globals.bNISHomeMap)
 static FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
@@ -1646,9 +1630,6 @@ FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
-#ifdef WITH_UTMP
-FN_LOCAL_BOOL(lp_utmp, bUtmp)
-#endif
 FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)

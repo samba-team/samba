@@ -208,6 +208,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 
 /* useful pair of routines for packing/unpacking data consisting of
    integers and strings */
+
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 {
 	va_list ap;
