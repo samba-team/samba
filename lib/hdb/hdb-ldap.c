@@ -1387,7 +1387,8 @@ LDAP_firstkey(krb5_context context, HDB *db, unsigned flags,
 	return ret;
 
     msgid = ldap_search(HDB2LDAP(db), HDB2BASE(db),
-			LDAP_SCOPE_SUBTREE, "(objectclass=krb5Principal)",
+			LDAP_SCOPE_SUBTREE,
+			"(|(objectClass=krb5Principal)(objectClass=sambaSamAccount))",
 			krb5kdcentry_attrs, 0);
     if (msgid < 0)
 	return HDB_ERR_NOENTRY;
