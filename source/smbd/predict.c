@@ -23,6 +23,7 @@
 
 extern int DEBUGLEVEL;
 
+#if USE_READ_PREDICTION
 
 /* variables used by the read prediction module */
 static int rp_fd = -1;
@@ -36,7 +37,7 @@ static int rp_timeout = 5;
 static time_t rp_time = 0;
 static char *rp_buffer = NULL;
 static BOOL predict_skip=False;
-time_t smb_last_time=(time_t)0;
+extern time_t smb_last_time;
 
 /****************************************************************************
 handle read prediction on a file
@@ -156,3 +157,6 @@ void invalidate_read_prediction(int fd)
    rp_predict_fd = -1;
 }
 
+#else
+ void read_prediction_dummy(void) ;
+#endif
