@@ -49,13 +49,6 @@ sigterm(int sig)
     exit_flag = 1;
 }
 
-void
-usage(void)
-{
-    fprintf(stderr, "Usage: %s [-p]\n", __progname);
-    exit(1);
-}
-
 int
 main(int argc, char **argv)
 {
