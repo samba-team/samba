@@ -482,9 +482,10 @@ BOOL reload_services(BOOL test)
 		return(True);
 
 	lp_killunused(conn_snum_used);
-	
+
 	ret = lp_load(dyn_CONFIGFILE, False, False, True);
 
+	remove_stale_printers();
 	load_printers();
 
 	/* perhaps the config filename is now set */
