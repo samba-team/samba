@@ -42,7 +42,8 @@ verify_mic_des
             const gss_buffer_t message_buffer,
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state,
-	    krb5_keyblock *key
+	    krb5_keyblock *key,
+	    char *type
 	    )
 {
   u_char *p;
@@ -57,7 +58,7 @@ verify_mic_des
   p = token_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
 				   token_buffer->length,
-				   "\x01\x01");
+				   type);
   if (ret) {
       *minor_status = 0;
       return ret;
@@ -87,6 +88,7 @@ verify_mic_des
   if (memcmp (p - 8, hash, 8) != 0) {
     memset (deskey, 0, sizeof(deskey));
     memset (schedule, 0, sizeof(schedule));
+    *minor_status = 0;
     return GSS_S_BAD_MIC;
   }
 
@@ -112,6 +114,7 @@ verify_mic_des
   memset (schedule, 0, sizeof(schedule));
 
   if (memcmp (p, seq_data, 8) != 0) {
+    *minor_status = 0;
     return GSS_S_BAD_MIC;
   }
 
@@ -119,6 +122,7 @@ verify_mic_des
 				context_handle->auth_context,
 				++seq_number);
 
+  *minor_status = 0;
   return GSS_S_COMPLETE;
 }
 
@@ -129,7 +133,8 @@ verify_mic_des3
             const gss_buffer_t message_buffer,
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state,
-	    krb5_keyblock *key
+	    krb5_keyblock *key,
+	    char *type
 	    )
 {
   u_char *p;
@@ -146,7 +151,7 @@ verify_mic_des3
   p = token_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
 				   token_buffer->length,
-				   "\x01\x01");
+				   type);
   if (ret) {
       *minor_status = 0;
       return ret;
@@ -240,7 +245,50 @@ verify_mic_des3
 				++seq_number);
 
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
+  *minor_status = 0;
   return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gss_verify_mic_internal
+           (OM_uint32 * minor_status,
+            const gss_ctx_id_t context_handle,
+            const gss_buffer_t message_buffer,
+            const gss_buffer_t token_buffer,
+            gss_qop_t * qop_state,
+	    char * type
+	    )
+{
+    krb5_keyblock *key;
+    OM_uint32 ret;
+    krb5_keytype keytype;
+
+    ret = gss_krb5_get_remotekey(context_handle, &key);
+    if (ret) {
+	gssapi_krb5_set_error_string ();
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+    krb5_enctype_to_keytype (gssapi_krb5_context, key->keytype, &keytype);
+    switch (keytype) {
+    case KEYTYPE_DES :
+	ret = verify_mic_des (minor_status, context_handle,
+			      message_buffer, token_buffer, qop_state, key,
+			      type);
+	break;
+    case KEYTYPE_DES3 :
+	ret = verify_mic_des3 (minor_status, context_handle,
+			       message_buffer, token_buffer, qop_state, key,
+			       type);
+	break;
+    default :
+	*minor_status = KRB5_PROG_ETYPE_NOSUPP;
+	ret = GSS_S_FAILURE;
+	break;
+    }
+    krb5_free_keyblock (gssapi_krb5_context, key);
+    
+    return ret;
 }
 
 OM_uint32
@@ -252,33 +300,14 @@ gss_verify_mic
             gss_qop_t * qop_state
 	    )
 {
-    krb5_keyblock *key;
     OM_uint32 ret;
-    krb5_keytype keytype;
 
     if (qop_state != NULL)
 	*qop_state = GSS_C_QOP_DEFAULT;
-    ret = gss_krb5_get_remotekey(context_handle, &key);
-    if (ret) {
-	gssapi_krb5_set_error_string ();
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
-    krb5_enctype_to_keytype (gssapi_krb5_context, key->keytype, &keytype);
-    switch (keytype) {
-    case KEYTYPE_DES :
-	ret = verify_mic_des (minor_status, context_handle,
-			      message_buffer, token_buffer, qop_state, key);
-	break;
-    case KEYTYPE_DES3 :
-	ret = verify_mic_des3 (minor_status, context_handle,
-			       message_buffer, token_buffer, qop_state, key);
-	break;
-    default :
-	*minor_status = KRB5_PROG_ETYPE_NOSUPP;
-	ret = GSS_S_FAILURE;
-	break;
-    }
-    krb5_free_keyblock (gssapi_krb5_context, key);
+
+    ret = gss_verify_mic_internal(minor_status, context_handle, 
+				  message_buffer, token_buffer,
+				  qop_state, "\x01\x01");
+
     return ret;
 }
