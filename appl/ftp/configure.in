@@ -47,7 +47,7 @@ if test "$ac_cv_struct_ut_host" = "yes"; then
 fi
 	
 
-AC_CHECK_FUNCS(getcwd setproctitle getdtablesize)
+AC_CHECK_FUNCS(getcwd getdtablesize setproctitle)
 
 if test "$ac_cv_func_getcwd" = yes; then
 AC_MSG_CHECKING(for broken getcwd)
@@ -81,7 +81,7 @@ fi
 fi
 
 
-AC_REPLACE_FUNCS(errx hstrerror inet_aton getusershell krb_get_err_text memmove snprintf vsyslog verrx vwarn vwarnx warn warnx)
+AC_REPLACE_FUNCS(errx hstrerror inet_aton getusershell krb_get_err_text memmove snprintf strerror vsyslog verrx vwarn vwarnx warn warnx)
 
 
 AC_MSG_CHECKING([for __progname])
