@@ -73,7 +73,8 @@ FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
 FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\"
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
-FLAGS  = $(FLAGS5) $(PASSWD_FLAGS)
+FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
+FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
@@ -270,6 +271,7 @@ debug2html : CHECK bin/debug2html
 
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
+	@echo "Using FLAGS32 = $(FLAGS32)"
 	@echo "Using LIBS = $(LIBS)"
 
 MAKEDIR = || exec false; \
@@ -320,7 +322,7 @@ MAKEDIR = || exec false; \
 @MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
 @MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@ and -32
-	@$(CC) -32 -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
+	@$(CC) -32 -I. -I$(srcdir) $(FLAGS32) @PICFLAG@ -c $< \
 	  -o $*.po32.o @MAINT@ -Wp,-MD,.deps/$@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po32$$%.o%'` $@.o
 @MAINT@	@sed 's|^'`echo $*.po32.o | sed 's,.*/,,'`':|$@:|' \
