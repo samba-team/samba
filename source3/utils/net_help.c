@@ -99,6 +99,25 @@ int net_help_group(int argc, const char **argv)
 	return -1;
 }
 
+int net_help_groupmap(int argc, const char **argv)
+{
+	if (getuid() != 0) {
+		d_printf("You must be root to edit group mappings.\nExiting...\n");
+		return -1;
+	}
+	
+	d_printf("net groupmap add"\
+		"\n  Create a new group mapping\n");
+	d_printf("net groupmap modify"\
+		"\n  Update a group mapping\n");
+	d_printf("net groupmap delete"\
+		"\n  Remove a group mapping\n");
+	d_printf("net groupmap list"\
+		"\n  List current group map\n");
+	
+	return -1;
+}
+
 
 int net_help_join(int argc, const char **argv)
 {
@@ -152,6 +171,7 @@ static int net_usage(int argc, const char **argv)
 		 "  net lookup\t\tto lookup host name or ip address\n"\
 		 "  net user\t\tto manage users\n"\
 		 "  net group\t\tto manage groups\n"\
+		 "  net groupmap\t\tto manage group mappings\n"\
 		 "  net join\t\tto join a domain\n"\
 		 "  net cache\t\tto operate on cache tdb file\n"\
 		 "  net getlocalsid [NAME]\tto get the SID for local name\n"\
@@ -184,6 +204,7 @@ int net_help(int argc, const char **argv)
 		{"PRINTQ", net_rap_printq_usage},
 		{"USER", net_help_user},
 		{"GROUP", net_help_group},
+		{"GROUPMAP", net_help_groupmap},
 		{"JOIN", net_help_join},
 		{"VALIDATE", net_rap_validate_usage},
 		{"GROUPMEMBER", net_rap_groupmember_usage},
