@@ -165,7 +165,7 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     {
 	char tkt[1024];
 	sprintf(tkt, "%s_%s_to_%s", TKT_ROOT, pw->pw_name, user);
-	ret = doit(pamh, pr.name, pr.inst, resp->resp, tkt);
+	ret = doit(pamh, pr.name, pr.instance, resp->resp, tkt);
 	if(ret == PAM_SUCCESS)
 	    chown(tkt, pw->pw_uid, pw->pw_uid);
 	memset(resp->resp, 0, strlen(resp->resp));
