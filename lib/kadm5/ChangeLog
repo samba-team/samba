@@ -1,3 +1,10 @@
+2003-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: += test_pw_quality
+	
+	* test_pw_quality.c: test program for verifying password quality
+	function
+
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add and enable check program default_keys
