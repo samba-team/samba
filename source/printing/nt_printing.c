@@ -429,10 +429,30 @@ void clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32
 }
 
 /****************************************************************************
+ This function sucks and should be replaced. JRA.
+****************************************************************************/
+
+static void convert_level_6_to_level3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dst, NT_PRINTER_DRIVER_INFO_LEVEL_6 *src)
+{
+    dst->cversion  = src->version;
+
+    fstrcpy( dst->name, src->name);
+    fstrcpy( dst->environment, src->environment);
+    fstrcpy( dst->driverpath, src->driverpath);
+    fstrcpy( dst->datafile, src->datafile);
+    fstrcpy( dst->configfile, src->configfile);
+    fstrcpy( dst->helpfile, src->helpfile);
+    fstrcpy( dst->monitorname, src->monitorname);
+    fstrcpy( dst->defaultdatatype, src->defaultdatatype);
+    dst->dependentfiles = src->dependentfiles;
+}
+
+/****************************************************************************
 ****************************************************************************/
 BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user, uint32 *perr)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
+	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
 	fstring architecture;
 	pstring new_dir;
 	pstring old_name;
@@ -453,7 +473,14 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	if (level==3)
 		driver=driver_abstract.info_3;
-	
+	else if (level==6) {
+		convert_level_6_to_level3(&converted_driver, driver_abstract.info_6);
+		driver = &converted_driver;
+	} else {
+		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)level ));
+		return False;
+	}
+
 	get_short_archi(architecture, driver->environment);
 
 	become_root();
