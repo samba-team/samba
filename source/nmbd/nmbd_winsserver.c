@@ -1524,8 +1524,10 @@ void initiate_wins_processing(time_t t)
 
   if (!lasttime)
     lasttime = t;
-  if (t - lasttime < 5)
+  if (t - lasttime < 20)
     return;
+
+  lasttime = t;
 
   if(!lp_we_are_a_wins_server())
     return;
@@ -1541,16 +1543,22 @@ void initiate_wins_processing(time_t t)
 /*******************************************************************
  Write out the current WINS database.
 ******************************************************************/
-
 void wins_write_database(void)
 {
   struct name_record *namerec;
   pstring fname, fnamenew;
-   
+  static int child_pid;
+
   FILE *fp;
    
   if(!lp_we_are_a_wins_server())
     return;
+
+  /* we will do the writing in a child process to ensure that the parent
+     doesn't block while this is done */
+  if ((child_pid=fork())) {
+	  return;
+  }
 
   pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
