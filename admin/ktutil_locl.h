@@ -71,7 +71,8 @@ extern krb5_context context;
 
 extern int verbose_flag;
 extern char *keytab_string; 
-extern char keytab_buf[256];
+
+krb5_keytab ktutil_open_keytab(void);
 
 int kt_add (int argc, char **argv);
 int kt_change (int argc, char **argv);

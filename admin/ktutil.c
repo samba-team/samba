@@ -40,7 +40,7 @@ static int help_flag;
 static int version_flag;
 int verbose_flag;
 char *keytab_string; 
-char keytab_buf[256];
+static char keytab_buf[256];
 
 static int help(int argc, char **argv);
 
@@ -107,6 +107,31 @@ static struct getargs args[] = {
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 krb5_context context;
+
+krb5_keytab
+ktutil_open_keytab(void)
+{
+    krb5_error_code ret;
+    krb5_keytab keytab;
+    if (keytab_string == NULL) {
+	ret = krb5_kt_default_modify_name (context, keytab_buf,
+					   sizeof(keytab_buf));
+	if (ret) {
+	    krb5_warn(context, ret, "krb5_kt_default_modify_name");
+	    return NULL;
+	}
+	keytab_string = keytab_buf;
+    }
+    ret = krb5_kt_resolve(context, keytab_string, &keytab);
+    if (ret) {
+	krb5_warn(context, ret, "resolving keytab %s", keytab_string);
+	return NULL;
+    }
+    if (verbose_flag)
+	fprintf (stderr, "Using keytab %s\n", keytab_string);
+	
+    return keytab;
+}
 
 static int
 help(int argc, char **argv)

@@ -96,24 +96,9 @@ kt_remove(int argc, char **argv)
 	return 1;
     }
 
-    if (keytab_string == NULL) {
-	ret = krb5_kt_default_modify_name (context, keytab_buf,
-					   sizeof(keytab_buf));
-	if (ret) {
-	    krb5_warn(context, ret, "krb5_kt_default_modify_name");
-	    return 1;
-	}
-	keytab_string = keytab_buf;
-    }
-    ret = krb5_kt_resolve(context, keytab_string, &keytab);
-    if (ret) {
-	krb5_warn(context, ret, "resolving keytab %s", keytab_string);
+    if((keytab = ktutil_open_keytab()) == NULL)
 	return 1;
-    }
 
-    if (verbose_flag)
-	fprintf (stderr, "Using keytab %s\n", keytab_string);
-	
     entry.principal = principal;
     entry.keyblock.keytype = enctype;
     entry.vno = kvno;
