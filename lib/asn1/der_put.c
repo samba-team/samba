@@ -78,37 +78,40 @@ der_put_int (unsigned char *p, size_t len, int val, size_t *size)
 {
     unsigned char *base = p;
 
-    if (val) {
-	while (len > 0 && abs(val) > 255) {
+    if(val >= 0) {
+	do {
+	    if(len < 1)
+		return ASN1_OVERFLOW;
 	    *p-- = val % 256;
+	    len--;
 	    val /= 256;
-	    --len;
+	} while(val);
+	if(p[1] >= 128) {
+	    if(len < 1)
+		return ASN1_OVERFLOW;
+	    *p-- = 0;
+	    len--;
 	}
-	if (len > 0 && abs(val) > 0) {
-	    *p-- = val;
-	    --len;
-	    if ((signed char)val != val) {
-		if (len < 1)
-		    return ASN1_OVERFLOW;
-		*p-- = (val < 0) ? 0xff: 0;
-		--len;
-	    }
+    } else {
+	val = ~val;
+	do {
+	    if(len < 1)
+		return ASN1_OVERFLOW;
+	    *p-- = ~(val % 256);
+	    len--;
 	    val /= 256;
+	} while(val);
+	if(p[1] < 128) {
+	    if(len < 1)
+		return ASN1_OVERFLOW;
+	    *p++ = 0xff;
+	    len--;
 	}
-	if (val != 0)
-	    return ASN1_OVERFLOW;
-	else {
-	    *size = base - p;
-	    return 0;
-	}
-    } else if (len < 1)
-	return ASN1_OVERFLOW;
-    else {
-	*p    = 0;
-	*size = 1;
-	return 0;
     }
+    *size = base - p;
+    return 0;
 }
+
 
 int
 der_put_length (unsigned char *p, size_t len, size_t val, size_t *size)
