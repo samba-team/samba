@@ -26,6 +26,7 @@ INIT_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		auth/auth_util.o \
 		auth/pampass.o \
-		auth/pass_check.o
+		auth/pass_check.o \
+		auth/ntlm_check.o
 # End SUBSYSTEM AUTH
 #######################
