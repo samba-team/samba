@@ -2623,8 +2623,8 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
   
   init_globals();
 
+  init_locals();
   if (save_defaults) {
-	  init_locals();
 	  lp_save_defaults();
   }
   
