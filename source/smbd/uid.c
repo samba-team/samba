@@ -689,7 +689,7 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 	}
 
 	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
-		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
+		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed.\n",
 				sid_to_string(sid_str, psid) ));
 		/* this was probably a foreign sid - assume its a group rid 
 		   and continue */
