@@ -1605,9 +1605,10 @@ for i in $LOOK_DIRS ; do
     save_CPPFLAGS=$CPPFLAGS
     CPPFLAGS="$CPPFLAGS -I$i/include"
 dnl This is here to handle -withval stuff for --with-libiconv
-    if test x"$ICONV_PATH_SPEC" = "xyes" ; then
+dnl Perhaps we should always add a -L
+dnl    if test x"$ICONV_PATH_SPEC" = "xyes" ; then
        LDFLAGS="-L$i/lib"
-    fi
+dnl    fi
     LIBS=
     export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
@@ -1616,7 +1617,7 @@ dnl Try to find iconv(3)
     if test "$ICONV_FOUND" = yes; then
         LIB_ADD_DIR(LDFLAGS, "$i/lib")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-        LIBS="$save_LIBS"
+dnl        LIBS="$save_LIBS"
         ICONV_LOCATION=$i
         export LDFLAGS LIBS CPPFLAGS
 dnl Now, check for a working iconv ... we want to do it here because
