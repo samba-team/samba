@@ -60,7 +60,7 @@ static struct {
 	struct smbcli_state *cli[NINSTANCES];
 	char *server_name;
 	char *share_name;
-	struct cli_credentials credentials;
+	struct cli_credentials *credentials;
 } servers[NSERVERS];
 
 /* the seeds and flags for each operation */
@@ -175,13 +175,13 @@ static BOOL connect_servers(void)
 			NTSTATUS status;
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
-			       servers[i].credentials.username, j);
+			       servers[i].credentials->username, j);
 
 			status = smbcli_full_connection(NULL, &servers[i].cli[j],
 							"gentest",
 							servers[i].server_name, 
 							servers[i].share_name, NULL, 
-							&servers[i].credentials);
+							servers[i].credentials);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
 				       servers[i].server_name, servers[i].share_name,
@@ -2115,6 +2115,7 @@ static void usage(void)
 
 	for (i=0;i<NSERVERS;i++) {
 		const char *share = argv[1+i];
+		servers[i].credentials = cli_credentials_init(NULL);
 		if (!split_unc_name(share, &servers[i].server_name, &servers[i].share_name)) {
 			printf("Invalid share name '%s'\n", share);
 			return -1;
@@ -2135,8 +2136,8 @@ static void usage(void)
 	while ((opt = getopt(argc, argv, "U:s:o:ad:i:AOhS:LFXC")) != EOF) {
 		switch (opt) {
 		case 'U':
-			i = servers[0].credentials.username?1:0;
-			cli_credentials_parse_string(&servers[0].credentials, optarg, CRED_SPECIFIED);
+			i = servers[0].credentials->username?1:0;
+			cli_credentials_parse_string(servers[i].credentials, optarg, CRED_SPECIFIED);
 			break;
 		case 'd':
 			DEBUGLEVEL = atoi(optarg);
@@ -2186,13 +2187,13 @@ static void usage(void)
 
 	gentest_init_subsystems;
 
-	if (!servers[0].credentials.username) {
+	if (!servers[0].credentials->username) {
 		usage();
 		return -1;
 	}
-	if (!servers[1].credentials.username) {
-		servers[1].credentials.username = servers[0].credentials.username;
-		servers[1].credentials.password = servers[0].credentials.password;
+	if (!servers[1].credentials->username) {
+		servers[1].credentials->username = servers[0].credentials->username;
+		servers[1].credentials->password = servers[0].credentials->password;
 	}
 
 	printf("seed=%u\n", options.seed);
