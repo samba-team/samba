@@ -125,6 +125,17 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
     krb5_data key, value;
     int code;
 
+    if(entry->generation == NULL) {
+	struct timeval t;
+	entry->generation = malloc(sizeof(*entry->generation));
+	if(entry->generation == NULL)
+	    return ENOMEM;
+	gettimeofday(&t, NULL);
+	entry->generation->time = t.tv_sec;
+	entry->generation->usec = t.tv_usec;
+	entry->generation->gen = 0;
+    } else
+	entry->generation->gen++;
     hdb_principal2key(context, entry->principal, &key);
     code = hdb_seal_keys(context, db, entry);
     if (code) {
