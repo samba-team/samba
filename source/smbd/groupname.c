@@ -138,13 +138,15 @@ static BOOL make_mydomain_sid(GROUP_NAME_INFO *grp, GROUP_TYPE type)
 	}
 
 	if (strequal(grp->nt_domain, global_sam_name) &&
-	    lookup_wk_group_name(grp->nt_name, &sid, &tmp_type))
+	    lookup_builtin_grp_name(grp->nt_name, &sid, &tmp_type) == 0x0)
 	{
 		sid_copy(&grp->sid, &sid);
 		return True;
 	}
 	else
 	{
+		BOOL ret;
+		fstring sid_str;
 		if (type == GROUP_DOMAIN)
 		{
 			tmp_rid = pwdb_gid_to_group_rid(grp->unix_gid);
@@ -153,7 +155,11 @@ static BOOL make_mydomain_sid(GROUP_NAME_INFO *grp, GROUP_TYPE type)
 		{
 			tmp_rid = pwdb_gid_to_alias_rid(grp->unix_gid);
 		}
-		return sid_append_rid(&(grp->sid), tmp_rid);
+		ret = sid_append_rid(&(grp->sid), tmp_rid);
+		sid_to_string(sid_str, &grp->sid);
+		DEBUG(10,("nt name %s gid %d mapped to %s\n",
+		           grp->nt_name, grp->unix_gid, sid_str));
+		return ret;
 	}
 }
 
@@ -259,7 +265,7 @@ static BOOL make_name_entry(name_map_entry **new_ep,
 /**************************************************************************
  Load a name map file. Sets last accessed timestamp.
 ***************************************************************************/
-static void load_name_map(GROUP_TYPE type)
+static ubi_slList *load_name_map(GROUP_TYPE type)
 {
 	static time_t groupmap_file_last_modified = (time_t)0;
 	static time_t aliasmap_file_last_modified = (time_t)0;
@@ -296,20 +302,21 @@ static void load_name_map(GROUP_TYPE type)
 
 	if (!(*initialised))
 	{
+		DEBUG(10,("initialising group map %s\n", map_file));
 		ubi_slInitList(map_list);
 		(*initialised) = True;
 	}
 
 	if (!*map_file)
 	{
-		return;
+		return map_list;
 	}
 
 	if (sys_stat(map_file, &st) != 0)
 	{
 		DEBUG(0, ("load_name_map: Unable to stat file %s. Error was %s\n",
 		           map_file, strerror(errno) ));
-		return;
+		return map_list;
 	}
 
 	/*
@@ -317,7 +324,7 @@ static void load_name_map(GROUP_TYPE type)
 	 */
 	if (st.st_mtime <= (*file_last_modified))
 	{
-		return;
+		return map_list;
 	}
 
 	(*file_last_modified) = st.st_mtime;
@@ -331,7 +338,7 @@ static void load_name_map(GROUP_TYPE type)
 	{
 		DEBUG(0,("load_name_map: can't open name map %s. Error was %s\n",
 		          map_file, strerror(errno)));
-		return;
+		return map_list;
 	}
 
 	/*
@@ -391,28 +398,31 @@ static void load_name_map(GROUP_TYPE type)
 
 		if (make_name_entry(&new_ep, nt_domain, nt_name, unixname, type))
 		{
-			ubi_slAddHead(map_list, (ubi_slNode *)new_ep);
+			ubi_slAddTail(map_list, (ubi_slNode *)new_ep);
 		}
 	}
 
 	DEBUG(10,("load_name_map: Added %ld entries to name map.\n",
-	ubi_slCount(map_list)));
+	           ubi_slCount(map_list)));
 
 	fclose(fp);
+
+	return map_list;
 }
 
 /***********************************************************
  Lookup by SID
 ************************************************************/
-static BOOL map_sid(GROUP_TYPE type, ubi_slList *map_list,
+static BOOL map_sid(GROUP_TYPE type,
 		DOM_SID *psid, gid_t *gid, char *ntname, char *ntdomain)
 {
 	name_map_entry *gmep;
+	ubi_slList *map_list;
 
 	/*
-	 * Initialize and load if not already loaded.
+	 * Initialise and load if not already loaded.
 	 */
-	load_name_map(type);
+	map_list = load_name_map(type);
 
 	for (gmep = (name_map_entry *)ubi_slFirst(map_list);
 	     gmep != NULL;
@@ -444,18 +454,19 @@ static BOOL map_sid(GROUP_TYPE type, ubi_slList *map_list,
 /***********************************************************
  Lookup nt name.
 ************************************************************/
-static BOOL map_ntname(GROUP_TYPE type, ubi_slList *map_list,
+static BOOL map_ntname(GROUP_TYPE type,
 		char *ntname, char *ntdomain, DOM_SID *psid,
 		char *unixname, gid_t *gid)
 {
 	name_map_entry *gmep;
+	ubi_slList *map_list;
 
 	/*
-	 * Initialize and load if not already loaded.
+	 * Initialise and load if not already loaded.
 	 */
-	load_name_map(type);
+	map_list = load_name_map(type);
 
-	for (gmep = (name_map_entry *)ubi_slFirst(&map_list);
+	for (gmep = (name_map_entry *)ubi_slFirst(map_list);
 	     gmep != NULL;
 	     gmep = (name_map_entry *)ubi_slNext(gmep ))
 	{
@@ -464,7 +475,7 @@ static BOOL map_ntname(GROUP_TYPE type, ubi_slList *map_list,
 		{
 			if (psid != NULL)
 			{
-				*psid = gmep->grp.sid;
+				sid_copy(psid, &gmep->grp.sid);
 			}
 			if (gid != NULL)
 			{
@@ -486,17 +497,18 @@ static BOOL map_ntname(GROUP_TYPE type, ubi_slList *map_list,
 /***********************************************************
  Lookup unix name.
 ************************************************************/
-static BOOL map_unixname(GROUP_TYPE type, ubi_slList *map_list,
+static BOOL map_unixname(GROUP_TYPE type,
 		char *unixname, DOM_SID *psid, char *ntname, char *ntdomain)
 {
 	name_map_entry *gmep;
+	ubi_slList *map_list;
 
 	/*
-	 * Initialize and load if not already loaded.
+	 * Initialise and load if not already loaded.
 	 */
-	load_name_map(type);
+	map_list = load_name_map(type);
 
-	for (gmep = (name_map_entry *)ubi_slFirst(&map_list);
+	for (gmep = (name_map_entry *)ubi_slFirst(map_list);
 	     gmep != NULL;
 	     gmep = (name_map_entry *)ubi_slNext(gmep ))
 	{
@@ -504,7 +516,7 @@ static BOOL map_unixname(GROUP_TYPE type, ubi_slList *map_list,
 		{
 			if (psid != NULL)
 			{
-				*psid = gmep->grp.sid;
+				sid_copy(psid, &gmep->grp.sid);
 			}
 			if (ntname != NULL)
 			{
@@ -526,25 +538,30 @@ static BOOL map_unixname(GROUP_TYPE type, ubi_slList *map_list,
 /***********************************************************
  Lookup by gid_t.
 ************************************************************/
-static BOOL map_gid(GROUP_TYPE type, ubi_slList *map_list,
+static BOOL map_gid(GROUP_TYPE type, 
 		gid_t gid, DOM_SID *psid, char *ntname, char *ntdomain)
 {
 	name_map_entry *gmep;
+	ubi_slList *map_list;
 
 	/*
-	 * Initialize and load if not already loaded.
+	 * Initialise and load if not already loaded.
 	 */
-	load_name_map(type);
+	map_list = load_name_map(type);
 
-	for (gmep = (name_map_entry *)ubi_slFirst(&map_list);
+	for (gmep = (name_map_entry *)ubi_slFirst(map_list);
 	     gmep != NULL;
 	     gmep = (name_map_entry *)ubi_slNext(gmep ))
 	{
+		fstring sid_str;
+		sid_to_string(sid_str, &gmep->grp.sid);
+		DEBUG(10,("map_gid: enum entry unix group %s %d nt %s %s\n",
+			       gmep->grp.unix_name, gmep->grp.unix_gid, gmep->grp.nt_name, sid_str));
 		if (gmep->grp.unix_gid == gid)
 		{
 			if (psid != NULL)
 			{
-				*psid = gmep->grp.sid;
+				sid_copy(psid, &gmep->grp.sid);
 			}
 			if (ntname != NULL)
 			{
@@ -581,7 +598,7 @@ static BOOL map_gid(GROUP_TYPE type, ubi_slList *map_list,
 ************************************************************/
 BOOL map_group_sid(DOM_SID *psid, gid_t *gid, char *group_name, char *nt_domain)
 {
-	return map_sid(GROUP_DOMAIN, &groupname_map_list, psid, gid, group_name, nt_domain);
+	return map_sid(GROUP_DOMAIN, psid, gid, group_name, nt_domain);
 }
 
 /***********************************************************
@@ -589,7 +606,7 @@ BOOL map_group_sid(DOM_SID *psid, gid_t *gid, char *group_name, char *nt_domain)
 ************************************************************/
 BOOL map_alias_sid(DOM_SID *psid, gid_t *gid, char *alias_name, char *nt_domain)
 {
-	return map_sid(GROUP_LOCAL, &aliasname_map_list, psid, gid, alias_name, nt_domain);
+	return map_sid(GROUP_LOCAL, psid, gid, alias_name, nt_domain);
 }
 
 /***********************************************************
@@ -597,7 +614,7 @@ BOOL map_alias_sid(DOM_SID *psid, gid_t *gid, char *alias_name, char *nt_domain)
 ************************************************************/
 BOOL map_unix_group_name(char *group_name, DOM_SID *psid, char *ntgroup_name, char *nt_domain)
 {
-	return map_unixname(GROUP_DOMAIN, &groupname_map_list, group_name, psid, ntgroup_name, nt_domain);
+	return map_unixname(GROUP_DOMAIN, group_name, psid, ntgroup_name, nt_domain);
 }
 
 /***********************************************************
@@ -605,7 +622,7 @@ BOOL map_unix_group_name(char *group_name, DOM_SID *psid, char *ntgroup_name, ch
 ************************************************************/
 BOOL map_unix_alias_name(char *alias_name, DOM_SID *psid, char *ntalias_name, char *nt_domain)
 {
-	return map_unixname(GROUP_LOCAL, &aliasname_map_list, alias_name, psid, ntalias_name, nt_domain);
+	return map_unixname(GROUP_LOCAL, alias_name, psid, ntalias_name, nt_domain);
 }
 
 /***********************************************************
@@ -613,7 +630,7 @@ BOOL map_unix_alias_name(char *alias_name, DOM_SID *psid, char *ntalias_name, ch
 ************************************************************/
 BOOL map_nt_group_name(char *ntgroup_name, char *nt_domain, DOM_SID *psid, char *group_name, gid_t *gid)
 {
-	return map_ntname(GROUP_DOMAIN, &groupname_map_list, ntgroup_name, nt_domain, psid, group_name, gid);
+	return map_ntname(GROUP_DOMAIN, ntgroup_name, nt_domain, psid, group_name, gid);
 }
 
 /***********************************************************
@@ -621,7 +638,7 @@ BOOL map_nt_group_name(char *ntgroup_name, char *nt_domain, DOM_SID *psid, char 
 ************************************************************/
 BOOL map_nt_alias_name(char *ntalias_name, char *nt_domain, DOM_SID *psid, char *alias_name, gid_t *gid)
 {
-	return map_ntname(GROUP_LOCAL, &aliasname_map_list, ntalias_name, nt_domain, psid, alias_name, gid);
+	return map_ntname(GROUP_LOCAL, ntalias_name, nt_domain, psid, alias_name, gid);
 }
 
 /***********************************************************
@@ -629,7 +646,7 @@ BOOL map_nt_alias_name(char *ntalias_name, char *nt_domain, DOM_SID *psid, char 
 ************************************************************/
 BOOL map_alias_gid(gid_t gid, DOM_SID *psid, char *nt_als_name, char *nt_domain)
 {
-	return map_gid(GROUP_LOCAL, &aliasname_map_list, gid, psid, nt_als_name, nt_domain);
+	return map_gid(GROUP_LOCAL, gid, psid, nt_als_name, nt_domain);
 }
 
 /***********************************************************
@@ -637,6 +654,6 @@ BOOL map_alias_gid(gid_t gid, DOM_SID *psid, char *nt_als_name, char *nt_domain)
 ************************************************************/
 BOOL map_group_gid( gid_t gid, DOM_SID *psid, char *nt_grp_name, char *nt_domain)
 {
-	return map_gid(GROUP_DOMAIN, &groupname_map_list, gid, psid, nt_grp_name, nt_domain);
+	return map_gid(GROUP_DOMAIN, gid, psid, nt_grp_name, nt_domain);
 }
 

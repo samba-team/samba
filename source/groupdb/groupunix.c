@@ -203,10 +203,15 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 
 		if (map_group_gid(unix_grp->gr_gid, &sid, gp_buf.name, NULL))
 		{
+			fstring sid_str;
 			/*
 			 * find the NT name represented by this UNIX gid.
 			 * then, only accept NT groups that are in our domain
 			 */
+
+			sid_to_string(sid_str, &sid);
+			DEBUG(10,("getgrpunixpwent: entry %s mapped to name %s, SID %s\n",
+			           unix_grp->gr_name, gp_buf.name, sid_str));
 
 			sid_split_rid(&sid, &gp_buf.rid);
 			if (sid_equal(&sid, &global_sam_sid))
@@ -219,7 +224,7 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 				          gp_buf.name));
 			}
 		}
-		else
+		else if (!is_alias)
 		{
 			/*
 			 * assume that the UNIX group is an NT group with
