@@ -1376,7 +1376,7 @@ static int addarg(struct arg_val *argv, char *val)
 static void
 rmut(void)
 {
-    struct utmpx *utxp, utmpx, *non_save_utxp;
+    struct utmpx utmpx, *non_save_utxp;
     char *clean_tty = clean_ttyname(line);
 
     /*
@@ -1389,6 +1389,7 @@ rmut(void)
     utmpx.ut_type = LOGIN_PROCESS;
     non_save_utxp = getutxline(&utmpx);
     if (non_save_utxp) {
+	struct utmpx *utxp;
 	char user0;
 
 	utxp = malloc(sizeof(struct utmpx));
@@ -1429,9 +1430,8 @@ rmut(void)
 	    close(f);
 	  }
 	}
-#else
-
 #endif
+	free (utxp);
     }
     endutxent();
 }  /* end of rmut */
