@@ -196,18 +196,18 @@ void cgi_load_variables(void)
         printf("<!== End dump in cgi_load_variables() ==>\n");   
 #endif
 
-	/* variables from the client are in display charset - convert them
-	   to our internal charset before use */
+	/* variables from the client are in UTF-8 - convert them
+	   to our internal unix charset before use */
 	for (i=0;i<num_variables;i++) {
 		pstring dest;
 
-		convert_string(CH_DISPLAY, CH_UNIX, 
+		convert_string(CH_UTF8, CH_UNIX, 
 			       variables[i].name, -1, 
 			       dest, sizeof(dest), True);
 		free(variables[i].name);
 		variables[i].name = strdup(dest);
 
-		convert_string(CH_DISPLAY, CH_UNIX, 
+		convert_string(CH_UTF8, CH_UNIX, 
 			       variables[i].value, -1,
 			       dest, sizeof(dest), True);
 		free(variables[i].value);
@@ -334,11 +334,11 @@ static BOOL cgi_handle_authorization(char *line)
 	}
 	*p = 0;
 
-	convert_string(CH_DISPLAY, CH_UNIX, 
+	convert_string(CH_UTF8, CH_UNIX, 
 		       line, -1, 
 		       user, sizeof(user), True);
 
-	convert_string(CH_DISPLAY, CH_UNIX, 
+	convert_string(CH_UTF8, CH_UNIX, 
 		       p+1, -1, 
 		       user_pass, sizeof(user_pass), True);
 
