@@ -37,6 +37,7 @@ struct pvfs_state {
 	struct pvfs_mangle_context *mangle_ctx;
 
 	struct brl_context *brl_context;
+	struct odb_context *odb_context;
 
 	/* an id tree mapping open search ID to a pvfs_search_state structure */
 	void *idtree_search;
