@@ -21,14 +21,14 @@
 */
 
 /* NTLMSSP mode */
-enum NTLMSSP_ROLE
+enum ntlmssp_role
 {
 	NTLMSSP_SERVER,
 	NTLMSSP_CLIENT
 };
 
 /* NTLMSSP message types */
-enum NTLM_MESSAGE_TYPE
+enum ntlmssp_message_type
 {
 	NTLMSSP_INITIAL = 0 /* samba internal state */,
 	NTLMSSP_NEGOTIATE = 1,
@@ -71,11 +71,11 @@ enum NTLM_MESSAGE_TYPE
 
 #define NTLMSSP_SIGN_VERSION 1
 
-typedef struct ntlmssp_state 
+struct ntlmssp_state 
 {
 	TALLOC_CTX *mem_ctx;
 	uint_t ref_count;
-	enum NTLMSSP_ROLE role;
+	enum ntlmssp_role role;
 	enum samr_Role server_role;
 	uint32_t expected_state;
 
@@ -184,5 +184,5 @@ typedef struct ntlmssp_state
 	   Store it here, until we need it */
 	DATA_BLOB stored_response; 
 	
-} NTLMSSP_STATE;
+};
 

@@ -135,13 +135,13 @@ struct auth_init_function_entry {
 	struct auth_init_function_entry *prev, *next;
 };
 
-typedef struct auth_ntlmssp_state
+struct auth_ntlmssp_state
 {
 	TALLOC_CTX *mem_ctx;
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
 	struct ntlmssp_state *ntlmssp_state;
-} AUTH_NTLMSSP_STATE;
+};
 
 #define auth_ops __XXX_ERROR_BLA
 struct auth_operations {
