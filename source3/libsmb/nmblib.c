@@ -672,9 +672,18 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 	}
 	
 	length = read_udp_socket(fd,buf,sizeof(buf));
-
+	
 	dump_data(100, buf, length);
 
+	if (packet_type == NMB_SOCK_PACKET || packet_type == DGRAM_SOCK_PACKET)
+	{
+		uint16 trn_id = 0;
+		if (write(fd, &trn_id, sizeof(trn_id)) != sizeof(trn_id))
+		{
+			return False;
+		}
+	}
+	
   if (length < MIN_DGRAM_SIZE) return(NULL);
 
 	if (packet_type == NMB_SOCK_PACKET || packet_type == DGRAM_SOCK_PACKET)
@@ -900,6 +909,8 @@ BOOL send_packet(struct packet_struct *p)
   char buf[1024];
   int len=0;
 
+	DEBUG(100,("send_packet: %d %d\n", p->fd, p->packet_type));
+
   bzero(buf,sizeof(buf));
 
   switch (p->packet_type) 
@@ -951,15 +962,25 @@ BOOL send_packet(struct packet_struct *p)
 
 		  if (write(p->fd,qbuf,qlen) != qlen)
 		{
+			DEBUG(0,("send_packet: write hdr failed\n"));
 			return False;
 		}
-		qlen = read(p->fd, &trn_id, sizeof(trn_id));
-
-		if (qlen != sizeof(trn_id))
+		if (read(p->fd, &trn_id, sizeof(trn_id)) != sizeof(trn_id))
 		{
+			DEBUG(0,("send_packet: 1st ack failed\n"));
 			return False;
 		}
-	  	return write(p->fd,buf,len) == len;
+	  	if (write(p->fd,buf,len) != len)
+		{
+			DEBUG(0,("send_packet: write packet failed\n"));
+			return False;
+		}
+		if (read(p->fd, &trn_id, sizeof(trn_id)) != sizeof(trn_id))
+		{
+			DEBUG(0,("send_packet: 2nd ack failed\n"));
+			return False;
+		}
+		return True;
 	}
     }
 
@@ -980,6 +1001,7 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
   timeout.tv_sec = t/1000;
   timeout.tv_usec = 1000*(t%1000);
 
+	DEBUG(100,("receive_packet: %d %d\n", fd, type));
   sys_select(fd+1,&fds,NULL, &timeout);
 
   if (FD_ISSET(fd,&fds)) 

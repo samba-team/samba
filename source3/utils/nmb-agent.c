@@ -71,7 +71,7 @@ static BOOL process_cli_sock(struct sock_redir **socks,
 	nmb = (struct nmb_state*)malloc(sizeof(struct nmb_state));
 	if (nmb == NULL)
 	{
-		free(p);
+		free_packet(p);
 		return False;
 	}
 
@@ -99,10 +99,10 @@ static BOOL process_cli_sock(struct sock_redir **socks,
 	if (!send_packet(p))
 	{
 		DEBUG(0,("server is dead\n"));
-		free(p);
+		free_packet(p);
 		return False;
 	}			
-	free(p);
+	free_packet(p);
 	return True;
 }
 
@@ -119,14 +119,17 @@ static BOOL process_srv_sock(struct sock_redir **socks,
 	p = receive_packet(fd, NMB_PACKET, 0);
 	if (p == NULL)
 	{
-		return False;
-	}
-
-	if (!p->packet.nmb.header.response)
-	{
-		free(p);
 		return True;
 	}
+
+#if 0
+	if (!p->packet.nmb.header.response)
+	{
+		DEBUG(10,("skipping response packet\n"));
+		free_packet(p);
+		return True;
+	}
+#endif
 
 	nmb_id = p->packet.nmb.header.name_trn_id;
 	DEBUG(10,("process_srv_sock:\tnmb_id:\t%d\n", nmb_id));
@@ -161,7 +164,7 @@ static BOOL process_srv_sock(struct sock_redir **socks,
 		}			
 		return True;
 	}
-	return False;
+	return True;
 }
 
 static int get_agent_sock(void*id)
@@ -212,7 +215,7 @@ static int get_agent_sock(void*id)
 		return -1;
 	}
 
-	chmod(path, 0666);
+	chmod(path, 0777);
 
 	if (listen(s, 5) == -1)
 	{
