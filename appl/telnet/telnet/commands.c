@@ -2029,7 +2029,12 @@ int
 tn(int argc, char **argv)
 {
     struct hostent *host = 0;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    struct sockaddr_in6 sin6;
+#endif
     struct sockaddr_in sin;
+    struct sockaddr *sa;
+    int sa_size;
     struct servent *sp = 0;
     unsigned long temp;
     extern char *inet_ntoa();
@@ -2038,9 +2043,9 @@ tn(int argc, char **argv)
     int srlen;
 #endif
     char *cmd, *hostp = 0, *portp = 0, *user = 0;
+    int family, port;
 
     /* clear the socket address prior to use */
-    memset(&sin, 0, sizeof(sin));
 
     if (connected) {
 	printf("?Already connected to %s\r\n", hostname);
@@ -2111,27 +2116,55 @@ tn(int argc, char **argv)
 	    setuid(getuid());
 	    return 0;
 	} else {
-	    sin.sin_addr.s_addr = temp;
-	    sin.sin_family = AF_INET;
+	    abort();
 	}
     } else {
 #endif
+	memset (&sin, 0, sizeof(sin));
+#if defined(HAVE_INET_PTON) && defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+	memset (&sin6, 0, sizeof(sin6));
+
+	if(inet_pton(AF_INET6, hostp, &sin6.sin6_addr)) {
+	    sin.sin6_family = family = AF_INET6;
+	    strcpy(_hostname, hostp);
+	    hostname =_hostname;
+	} else
+#endif
 	if(inet_aton(hostp, &sin.sin_addr)){
-	    sin.sin_family = AF_INET;
+	    sin.sin_family = family = AF_INET;
 	    strcpy(_hostname, hostp);
 	    hostname = _hostname;
 	} else {
+#ifdef HAVE_GETHOSTBYNAME2
+	    host = gethostbyname2(hostp, AF_INET6);
+	    if(host == NULL)
+		host = gethostbyname2(hostp, AF_INET);
+#else
 	    host = gethostbyname(hostp);
+#endif
 	    if (host) {
-		sin.sin_family = host->h_addrtype;
-#if	defined(h_addr)		/* In 4.3, this is a #define */
-		memmove(&sin.sin_addr,
-			host->h_addr_list[0],
-			sizeof(sin.sin_addr));
-#else	/* defined(h_addr) */
-		memmove(&sin.sin_addr, host->h_addr, sizeof(sin.sin_addr));
-#endif	/* defined(h_addr) */
-		strncpy(_hostname, host->h_name, sizeof(_hostname));
+		switch(family) {
+		case AF_INET:
+		    memset(&sin, 0, sizeof(sin));
+		    sa_size = sizeof(sin);
+		    sa = (struct sockaddr *)&sin;
+		    sin.sin_family = family;
+		    sin.sin_addr   = *((struct in_addr *)(*host->h_addr_list));
+		    break;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+		case AF_INET6:
+		    memset(&sin6, 0, sizeof(sin6));
+		    sa_size = sizeof(sin6);
+		    sa = (struct sockaddr *)&sin6;
+		    sin6.sin6_family = family;
+		    sin6.sin6_addr   = *((struct in6_addr *)(*host->h_addr_list));
+		    break;
+#endif
+		default:
+		    fprintf(stderr, "Bad address family: %d\n", family);
+		    return 0;
+		}
+
 		_hostname[sizeof(_hostname)-1] = '\0';
 		hostname = _hostname;
 	    } else {
@@ -2154,18 +2187,18 @@ tn(int argc, char **argv)
 	    telnetport = 1;
 	} else
 	    telnetport = 0;
-	sin.sin_port = atoi(portp);
-	if (sin.sin_port == 0) {
+	port = atoi(portp);
+	if (port == 0) {
 	    sp = getservbyname(portp, "tcp");
 	    if (sp)
-		sin.sin_port = sp->s_port;
+		port = sp->s_port;
 	    else {
 		printf("%s: bad port number\r\n", portp);
 		setuid(getuid());
 		return 0;
 	    }
 	} else {
-	    sin.sin_port = htons(sin.sin_port);
+	    port = htons(port);
 	}
     } else {
 	if (sp == 0) {
@@ -2175,13 +2208,35 @@ tn(int argc, char **argv)
 		setuid(getuid());
 		return 0;
 	    }
-	    sin.sin_port = sp->s_port;
+	    port = sp->s_port;
 	}
 	telnetport = 1;
     }
-    printf("Trying %s...\r\n", inet_ntoa(sin.sin_addr));
+    switch(family) {
+    case AF_INET:
+	sin.sin_port = port;
+	printf("Trying %s...\r\n", inet_ntoa(sin.sin_addr));
+	break;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    case AF_INET6: {
+	char buf[INET6_ADDRSTRLEN];
+
+	sin6.sin6_port = port;
+#ifdef HAVE_INET_NTOP
+	printf("Trying %s...\r\n", inet_ntop(AF_INET6,
+					     &sin6.sin6_addr,
+					     buf,
+					     sizeof(buf)));
+#endif
+	break;
+    }
+#endif
+    default:
+	abort();
+    }
+
     do {
-	net = socket(AF_INET, SOCK_STREAM, 0);
+	net = socket(family, SOCK_STREAM, 0);
 	setuid(getuid());
 	if (net < 0) {
 	    perror("telnet: socket");
@@ -2213,23 +2268,36 @@ tn(int argc, char **argv)
 		perror("setsockopt (SO_DEBUG)");
 	}
 
-	if (connect(net, (struct sockaddr *)&sin, sizeof (sin)) < 0) {
-#if	defined(h_addr)		/* In 4.3, this is a #define */
+	if (connect(net, sa, sa_size) < 0) {
 	    if (host && host->h_addr_list[1]) {
 		int oerrno = errno;
 
-		fprintf(stderr, "telnet: connect to address %s: ",
-						inet_ntoa(sin.sin_addr));
+		switch(family) {
+		case AF_INET :
+		    fprintf(stderr, "telnet: connect to address %s: ",
+			    inet_ntoa(sin.sin_addr));
+		    sin.sin_addr = *((struct in_addr *)(*++host->h_addr_list));
+		    break;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+		case AF_INET6: {
+		    char buf[INET6_ADDRSTRLEN];
+
+		    fprintf(stderr, "telnet: connect to address %s: ",
+			    inet_ntop(AF_INET6, &sin6.sin6_addr, buf,
+				      sizeof(buf)));
+		    sin6.sin6_addr = *((struct in6_addr *)(*++host->h_addr_list));
+		    break;
+		}
+#endif
+		default:
+		    abort();
+		}
+		    
 		errno = oerrno;
 		perror(NULL);
-		host->h_addr_list++;
-		memmove(&sin.sin_addr,
-			host->h_addr_list[0],
-			sizeof(sin.sin_addr));
 		NetClose(net);
 		continue;
 	    }
-#endif	/* defined(h_addr) */
 	    perror("telnet: Unable to connect to remote host");
 	    return 0;
 	}
