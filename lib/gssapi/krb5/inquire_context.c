@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -66,7 +66,7 @@ OM_uint32 gss_inquire_context (
   }
 
   if (lifetime_rec)
-    *lifetime_rec = GSS_C_INDEFINITE;
+    *lifetime_rec = context_handle->lifetime;
 
   if (mech_type)
     *mech_type = GSS_KRB5_MECHANISM;
@@ -80,5 +80,6 @@ OM_uint32 gss_inquire_context (
   if (open_context)
     *open_context = context_handle->more_flags & OPEN;
 
+  *minor_status = 0;
   return GSS_S_COMPLETE;
 }
