@@ -68,7 +68,7 @@ uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTR
 	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
 
 	/* set up the Logon Control2 response */
-	init_r_logon_ctrl2(r_u, q_u->query_level,
+	init_net_r_logon_ctrl2(r_u, q_u->query_level,
 	                   flags, pdc_connection_status, logon_attempts,
 	                   tc_status, trusted_domain);
 
