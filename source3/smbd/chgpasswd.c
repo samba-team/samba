@@ -760,19 +760,12 @@ BOOL check_oem_password(char *user,
 BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override)
 {
   int ret;
-  fstring upper_case_new_passwd;
   uchar new_nt_p16[16];
   uchar new_p16[16];
 
-  memset(upper_case_new_passwd, '\0', sizeof(upper_case_new_passwd));
-  fstrcpy(upper_case_new_passwd, new_passwd);
-  strupper(upper_case_new_passwd);
-
-  E_P16((uchar *)upper_case_new_passwd, new_p16);
+  nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
 
   smbpw->smb_passwd = new_p16;
-  
-  E_md4hash((uchar *) new_passwd, new_nt_p16);
   smbpw->smb_nt_passwd = new_nt_p16;
   
   /* Now write it into the file. */
@@ -780,7 +773,6 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL overri
   ret = mod_smbpwd_entry(smbpw,override);
   unbecome_root(0);
 
-  memset(upper_case_new_passwd, '\0', strlen(upper_case_new_passwd));
   memset(new_passwd, '\0', strlen(new_passwd));
 
   return ret;
