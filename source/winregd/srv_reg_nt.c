@@ -29,7 +29,6 @@
 
 extern int DEBUGLEVEL;
 
-#if 0
 /****************************************************************************
   set reg name 
 ****************************************************************************/
@@ -51,6 +50,7 @@ static BOOL set_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
 	return False;
 }
 
+#if 0
 /****************************************************************************
   get reg name 
 ****************************************************************************/
@@ -129,56 +129,43 @@ uint32 _reg_open(POLICY_HND *pol, uint32 access_mask)
        return NT_STATUS_NOPROBLEMO;
 }
 
-#if 0
-
 /*******************************************************************
- reg_reply_open_entry
+ _reg_open_entry
  ********************************************************************/
-static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
-				prs_struct *rdata)
+uint32 _reg_open_entry(const POLICY_HND* pol, const UNISTR2* uni_name, uint32 unknown_0, 
+	uint32 access_mask, POLICY_HND* entry_pol)
 {
-	uint32 status     = 0;
-	POLICY_HND pol;
-	REG_R_OPEN_ENTRY r_u;
 	fstring name;
 
-	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
-
-	if (status == 0 && find_policy_by_hnd(get_global_hnd_cache(), &q_u->pol) == -1)
+	if (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1)
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol, q_u->access_mask))
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		pol, entry_pol, access_mask))
 	{
-		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
-	unistr2_to_ascii(name, &q_u->uni_name, sizeof(name)-1);
+	unistr2_to_ascii(name, uni_name, sizeof(name)-1);
 
-	if (status == 0x0)
+	/* lkcl XXXX do a check on the name, here */
+	if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions") &&
+	    !strequal(name, "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters\\"))
 	{
-		DEBUG(5,("reg_open_entry: %s\n", name));
-		/* lkcl XXXX do a check on the name, here */
-		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions") &&
-		    !strequal(name, "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters\\"))
-		{
-			status = NT_STATUS_ACCESS_DENIED;
-		}
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (status == 0x0 && !set_policy_reg_name(get_global_hnd_cache(), &pol, name))
+	if (!set_policy_reg_name(get_global_hnd_cache(), entry_pol, name))
 	{
-		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
-	make_reg_r_open_entry(&r_u, &pol, status);
-
-	/* store the response in the SMB stream */
-	reg_io_r_open_entry("", &r_u, rdata, 0);
-
-	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
+	return NT_STATUS_NOPROBLEMO;
 }
+
+#if 0
 
 /*******************************************************************
  api_reg_open_entry
@@ -186,7 +173,11 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 static BOOL api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
+	POLICY_HND entry_pol;
 	REG_Q_OPEN_ENTRY q_u;
+	REG_R_OPEN_ENTRY r_u; 
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
 	/* grab the reg open entry */
 	if (!reg_io_q_open_entry("", &q_u, data, 0))
@@ -194,9 +185,16 @@ static BOOL api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
+	memcpy(&r_u.pol, &q_u.pol, sizeof(POLICY_HND)); 
 
 	/* construct reply. */
-	reg_reply_open_entry(&q_u, rdata);
+	
+	r_u.status = _reg_open_entry(&q_u.pol,&q_u.uni_name,q_u.unknown_0,q_u.access_mask,&entry_pol);
+	
+	make_reg_r_open_entry(&r_u, &entry_pol, r_u.status);
+
+	/* store the response in the SMB stream */
+	return reg_io_r_open_entry("", &r_u, rdata, 0);	
 }
 
 
