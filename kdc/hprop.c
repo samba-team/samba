@@ -271,7 +271,9 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent, const char *cell)
     ret = krb5_425_conv_principal(pd->context, ent->name, ent->instance, realm,
 				  &hdb.principal);
     if(ret) {
-	krb5_warn(pd->context, ret, "krb5_425_conv_principal");
+	krb5_warn(pd->context, ret,
+		  "krb5_425_conv_principal (%s.%s@%s)",
+		  ent->name, ent->instance, realm);
 	return 0;
     }
     hdb.kvno = ntohl(ent->kvno);
@@ -320,6 +322,11 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent, const char *cell)
     hdb.flags.renewable = 1;
     hdb.flags.proxiable = 1;
     hdb.flags.postdate = 1;
+    /* XXX - AFS 3.4a creates krbtgt.REALMOFCELL as NOTGS+NOSEAL */
+    if (strcmp(ent->name, "krbtgt") == 0 &&
+	(flags & (KAFNOTGS|KAFNOSEAL)) == (KAFNOTGS|KAFNOSEAL))
+	flags &= ~KAFNOTGS;
+
     hdb.flags.client = (flags & KAFNOTGS) == 0;
     hdb.flags.server = (flags & KAFNOSEAL) == 0;
 
