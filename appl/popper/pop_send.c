@@ -82,12 +82,14 @@ POP     *   p;
 	    if ((return_path_end = index(return_path_adr, ' ')) != NULL)
 		*return_path_end = '\0';
 	    if (strlen(return_path_adr) != 0 && *return_path_adr != '\n') {
-		static char tmpbuf[MAXMSGLINELEN];
-		strcpy(tmpbuf, "Return-Path:");
+		static char tmpbuf[MAXMSGLINELEN + 20];
+		strcpy(tmpbuf, "Return-Path: ");
 		strcat(tmpbuf, return_path_adr);
 		strcat(tmpbuf, "\n");
-		pop_sendline (p,tmpbuf);
-		return_path_sent++;
+		if (strlen(tmpbuf) < MAXMSGLINELEN) {
+		    pop_sendline (p,tmpbuf);
+		    return_path_sent++;
+		}
 	    }
 	}
     }
