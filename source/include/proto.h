@@ -481,6 +481,8 @@ struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd);
 void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping);
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status);
+SEC_DESC_BUF *se_create_child_secdesc(SEC_DESC *parent_ctr, 
+				      BOOL child_container);
 
 /*The following definitions come from  lib/util_sec.c  */
 
@@ -3821,6 +3823,8 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 #if OLD_NTDOMAIN
 size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
 BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+int chmod_acl(char *name, mode_t mode);
+int fchmod_acl(int fd, mode_t mode);
 #endif
 
 /*The following definitions come from  smbd/process.c  */
@@ -4026,6 +4030,8 @@ size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
 BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);
 BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd);
+int vfswrap_chmod_acl(connection_struct *conn, char *name, mode_t mode);
+int vfswrap_fchmod_acl(files_struct *fsp, int fd, mode_t mode);
 #endif
 
 /*The following definitions come from  smbd/vfs.c  */

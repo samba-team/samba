@@ -74,7 +74,10 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_fget_nt_acl,
 	vfswrap_get_nt_acl,
 	vfswrap_fset_nt_acl,
-	vfswrap_set_nt_acl
+	vfswrap_set_nt_acl,
+
+	vfswrap_chmod_acl,
+	vfswrap_fchmod_acl
 };
 
 /****************************************************************************
@@ -257,6 +260,13 @@ BOOL vfs_init_custom(connection_struct *conn)
 	conn->vfs_ops.set_nt_acl = default_vfs_ops.set_nt_acl;
     }
 
+    if (conn->vfs_ops.chmod_acl == NULL) {
+	conn->vfs_ops.chmod_acl = default_vfs_ops.chmod_acl;
+    }
+
+    if (conn->vfs_ops.fchmod_acl == NULL) {
+	conn->vfs_ops.fchmod_acl = default_vfs_ops.fchmod_acl;
+    }
     return True;
 }
 #endif

@@ -85,10 +85,18 @@ struct vfs_ops {
 	int (*ftruncate)(struct files_struct *fsp, int fd, SMB_OFF_T offset);
 	BOOL (*lock)(struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 
+	/* NT ACL operations. */
+
 	size_t (*fget_nt_acl)(struct files_struct *fsp, int fd, struct security_descriptor_info **ppdesc);
 	size_t (*get_nt_acl)(struct files_struct *fsp, char *name, struct security_descriptor_info **ppdesc);
 	BOOL (*fset_nt_acl)(struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor_info *psd);
 	BOOL (*set_nt_acl)(struct files_struct *fsp, char *name, uint32 security_info_sent, struct security_descriptor_info *psd);
+
+	/* POSIX ACL operations. */
+
+	int (*chmod_acl)(struct connection_struct *conn, char *name, mode_t mode);
+	int (*fchmod_acl)(struct files_struct *fsp, int fd, mode_t mode);
+	
 };
 
 struct vfs_options {

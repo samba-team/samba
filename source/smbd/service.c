@@ -33,7 +33,7 @@ extern BOOL case_mangle;
 extern BOOL case_sensitive;
 extern BOOL use_mangled_map;
 extern fstring remote_machine;
-extern pstring sesssetup_user;
+extern userdom_struct current_user_info;
 extern fstring remote_machine;
 
 
@@ -113,8 +113,28 @@ int find_service(char *service)
         int iHomeService;
         if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
         {
-          lp_add_home(service,iHomeService,phome_dir);
-          iService = lp_servicenumber(service);
+          /*
+           * If this is a winbindd provided username, remove
+           * the domain component before adding the service.
+           * Log a warning if the "path=" parameter does not
+           * include any macros.
+           */
+
+          fstring new_service;
+          char *usr_p = NULL;
+
+          fstrcpy(new_service, service);
+
+          if ((usr_p = strchr(service,*lp_winbind_separator())) != NULL)
+            fstrcpy(new_service, usr_p+1);
+
+          lp_add_home(new_service,iHomeService,phome_dir);
+          iService = lp_servicenumber(new_service);
+
+          if (usr_p && (strchr(lp_pathname(iService),'%') == NULL))
+              DEBUG(0,("find_service: Service %s added for user %s - contains non-local (Domain) user \
+with non parameterised path (%s). This may be cause the wrong directory to be seen.\n",
+                 new_service, service, lp_pathname(iService) ));
         }
       }
    }
@@ -234,11 +254,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
-			/* Security = share. Try with sesssetup_user
+			/* Security = share. Try with current_user_info.smb_name
 			 * as the username.  */
-			if(*sesssetup_user) {
+			if(*current_user_info.smb_name) {
 				fstring dos_username;
-				fstrcpy(user,sesssetup_user);
+				fstrcpy(user,current_user_info.smb_name);
 				fstrcpy(dos_username, user);
 				unix_to_dos(dos_username, True);
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));

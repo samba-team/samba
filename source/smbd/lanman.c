@@ -2185,7 +2185,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
   char *p2;
-  extern pstring sesssetup_user;
+  extern userdom_struct current_user_info;
   int level = SVAL(p,0);
 
   DEBUG(4,("NetWkstaGetInfo level %d\n",level));
@@ -2214,7 +2214,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  pstrcpy(p2,sesssetup_user);
+  pstrcpy(p2,current_user_info.smb_name);
   p2 = skip_string(p2,1);
   p += 4;
 
