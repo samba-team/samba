@@ -2,10 +2,10 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) John H Terpstra 1996-1998
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
-   Copyright (C) Paul Ashton 1998
+   Copyright (C) Andrew Tridgell 1992-1999
+   Copyright (C) John H Terpstra 1996-1999
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+   Copyright (C) Paul Ashton 1998 - 1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #define IS_BITS_SET_ALL(var,bit) (((var)&(bit))==(bit))
 #define IS_BITS_SET_SOME(var,bit) (((var)&(bit))!=0)
 #define IS_BITS_CLR_ALL(var,bit) (((var)&(bit))==0)
+#define IS_BITS_CLR_SOME(var,bit) (((var)&(bit))!=(bit))
 
 /* for readability... */
 #define IS_DOS_READONLY(test_mode) (((test_mode) & aRONLY) != 0)

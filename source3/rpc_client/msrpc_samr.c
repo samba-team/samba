@@ -995,27 +995,111 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 /****************************************************************************
 do a SAMR create domain user
 ****************************************************************************/
-BOOL create_samr_domain_user( POLICY_HND *pol_open_domain,
+BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 				const char *acct_name, uint16 acb_info,
+				const char* password,
 				uint32 *rid)
 {
 	POLICY_HND pol_open_user;
 	BOOL ret = True;
+	BOOL res1 = True;
+	char pwbuf[516];
+	char randompw[24];
+	int plen = 0;
+	SAM_USER_INFO_24 *p24;
+	SAM_USER_INFO_16 *p16;
+	SAM_USER_INFO_16 usr16;
 
-	if (pol_open_domain == NULL || acct_name == NULL) return False;
+	if (pol_dom == NULL || acct_name == NULL) return False;
 
 	/* send create user */
-	if (!samr_create_dom_user( pol_open_domain,
+	ret = samr_create_dom_user( pol_dom,
 				acct_name, acb_info, 0xe005000b,
-				&pol_open_user, rid))
+				&pol_open_user, rid);
+
+	if (ret == 0x0)
+	{
+		samr_close(&pol_open_user);
+	}
+
+	if (ret != 0 && ret != (NT_STATUS_USER_EXISTS | 0xC0000000))
 	{
 		return False;
+	}
+
+	if (ret == (NT_STATUS_USER_EXISTS | 0xC0000000))
+	{
+		uint32 num_rids;
+		const char *names[1];
+		uint32 type[1];
+
+		names[0] = acct_name;
+		res1 = samr_query_lookup_names( pol_dom, 0x3e8,
+						1, names,
+						&num_rids, rid, type);
+		if (res1 == False || type[0] != SID_NAME_USER)
+		{
+			return False;
+		}
 	}
 
 	DEBUG(5,("create_samr_domain_user: name: %s rid 0x%x\n",
 	          acct_name, *rid));
 
-	return samr_close(&pol_open_user) && ret;
+	if (IS_BITS_SET_SOME(acb_info, ACB_NORMAL | ACB_DOMTRUST) &&
+	    password == NULL)
+	{
+		return True;
+	}
+
+	if (password == NULL)
+	{
+		generate_random_buffer(randompw, sizeof(randompw), True);
+		password = randompw;
+		plen = sizeof(randompw);
+	}
+	else
+	{
+		plen = strlen(password);
+	}
+	encode_pw_buffer(pwbuf, password, plen, False);
+
+	p24 = (SAM_USER_INFO_24*)malloc(sizeof(SAM_USER_INFO_24));
+	if (p24 == NULL)
+	{
+		return False;
+	}
+
+	make_sam_user_info24(p24, pwbuf, plen);
+		
+	res1 = set_samr_set_userinfo( pol_dom, 0x18, *rid, (void*)p24);
+
+	if (res1 == False)
+	{
+		return False;
+	}
+
+	/* send set user info */
+	res1 = get_samr_query_userinfo( pol_dom, 0x10, *rid, (void*)&usr16);
+
+	if (res1 == False)
+	{
+		return False;
+	}
+
+	if (usr16.acb_info != acb_info)
+	{
+		p16 = (SAM_USER_INFO_16 *) malloc(sizeof(SAM_USER_INFO_16));
+		if (p16 == NULL)
+		{
+			return False;
+		}
+		p16->acb_info = usr16.acb_info;
+
+		res1 = set_samr_set_userinfo2( pol_dom, 0x10, *rid, (void*)p16);
+	}
+
+	return res1;
 }
 
 /****************************************************************************
@@ -1440,7 +1524,8 @@ BOOL get_samr_query_aliasinfo(
 SAM create domain user.
 ****************************************************************************/
 BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
-				char *acct_name, uint16 acb_info,
+				const char *acct_name, uint16 acb_info,
+				const char *password,
 				uint32 *rid)
 {
 	BOOL res = True;
@@ -1464,7 +1549,8 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 	/* create a domain user */
 	res2 = res1 ? create_samr_domain_user( 
 				&pol_dom,
-	                        acct_name, acb_info, &user_rid) : False;
+	                        acct_name, 
+				acb_info, password, &user_rid) : False;
 
 	res1 = res1 ? samr_close( &pol_dom) : False;
 	res  = res  ? samr_close( &sam_pol) : False;

@@ -308,6 +308,21 @@ BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 get a user session key associated with a connection associated with a
 policy handle.
 ****************************************************************************/
+BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16])
+{
+	if (con == NULL)
+	{
+		return False;
+	}
+	memcpy(usr_sess_key, con->cli->usr.pwd.sess_key, 16);
+
+	return True;
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16])
 {
 	if (con == NULL)
@@ -341,6 +356,22 @@ BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
 	}
 	
 	return True;
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
+BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16])
+{
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_get(pol, &con))
+	{
+		return False;
+	}
+
+	return cli_get_con_usr_sesskey(con, usr_sess_key);
 }
 
 /****************************************************************************
