@@ -23,13 +23,21 @@
 
 enum endpoint_type {ENDPOINT_SMB, ENDPOINT_TCP};
 
-/* a description of a single dcerpc endpoint */
+/* a description of a single dcerpc endpoint. Not as flexible as a full epm tower,
+   but much easier to work with */
 struct dcesrv_endpoint {
 	enum endpoint_type type;
 	union {
 		const char *smb_pipe;
 		uint32 tcp_port;
 	} info;
+};
+
+/* a endpoint combined with an interface description */
+struct dcesrv_ep_iface {
+	struct dcesrv_endpoint endpoint;
+	const char *uuid;
+	uint32 if_version;
 };
 
 struct dcesrv_state;
@@ -50,8 +58,20 @@ struct dcesrv_call_state {
 	} *replies;
 };
 
+
+/* a dcerpc handle in internal format */
+struct dcesrv_handle {
+	struct dcesrv_handle *next, *prev;
+	struct policy_handle wire_handle;
+	TALLOC_CTX *mem_ctx;
+	void *data;
+};
+
 /* the state associated with a dcerpc server connection */
 struct dcesrv_state {
+	/* the top level context for this server */
+	struct server_context *smb;
+
 	TALLOC_CTX *mem_ctx;
 
 	/* the endpoint that was opened */
@@ -75,6 +95,11 @@ struct dcesrv_state {
 
 	/* private data for the endpoint server */
 	void *private;
+
+	/* current rpc handles - this is really the wrong scope for
+	   them, but it will do for now */
+	uint32 next_handle;
+	struct dcesrv_handle *handles;
 };
 
 
@@ -92,6 +117,10 @@ struct dcesrv_endpoint_ops {
 
 	/* disconnect() is called when the endpoint is disconnected */
 	void (*disconnect)(struct dcesrv_state *);
+
+	/* this function is used to ask an endpoint server for a list
+	   of endpoints it wants to handle */
+	int (*lookup_endpoints)(TALLOC_CTX *mem_ctx, struct dcesrv_ep_iface **);
 };
 
 

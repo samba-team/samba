@@ -1009,3 +1009,17 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 	}
 #endif
 }
+
+
+/* see if a range of memory is all zero. A NULL pointer is considered
+   to be all zero */
+BOOL all_zero(const char *ptr, unsigned size)
+{
+	int i;
+	if (!ptr) return True;
+	for (i=0;i<size;i++) {
+		if (ptr[i]) return False;
+	}
+	return True;
+}
+

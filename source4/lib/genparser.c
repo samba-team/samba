@@ -22,17 +22,6 @@
 
 #include "includes.h"
 
-/* see if a range of memory is all zero. Used to prevent dumping of zero elements */
-static int all_zero(const char *ptr, unsigned size)
-{
-	int i;
-	if (!ptr) return 1;
-	for (i=0;i<size;i++) {
-		if (ptr[i]) return 0;
-	}
-	return 1;
-}
-
 /* encode a buffer of bytes into a escaped string */
 static char *encode_bytes(TALLOC_CTX *mem_ctx, const char *ptr, unsigned len)
 {

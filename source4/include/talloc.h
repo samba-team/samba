@@ -46,6 +46,11 @@ char *talloc_vasprintf_append(TALLOC_CTX *t, char *, const char *, va_list ap)
 char *talloc_asprintf_append(TALLOC_CTX *t, char *, const char *, ...)
 	PRINTF_ATTRIBUTE(3, 4);
 
+/* useful macros for creating type checked pointers */
+#define talloc_p(ctx, type) (type *)talloc(ctx, sizeof(type));
+#define talloc_array_p(ctx, type, count) (type *)talloc_realloc_array(ctx, NULL, sizeof(type), count)
+#define talloc_realloc_p(ctx, p, type, count) (type *)talloc_realloc_array(ctx, p, sizeof(type), count)
+
 /** @} */
 
 #endif /* ndef _TALLOC_H_ */

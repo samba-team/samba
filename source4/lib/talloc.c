@@ -48,11 +48,12 @@
  **/
 
 /**
- * If you want testing for memory corruption, link with dmalloc or use
- * Insure++.  It doesn't seem useful to duplicate them here.
+ * If you want testing for memory corruption use valgrind
  **/
 
 #include "includes.h"
+
+#define MAX_TALLOC_SIZE 0x10000000
 
 struct talloc_chunk {
 	struct talloc_chunk *next;
@@ -188,8 +189,14 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 	void *new_ptr;
 
 	/* size zero is equivalent to free() */
-	if (!t || size == 0)
+	if (!t) {
 		return NULL;
+	}
+
+	if (size == 0) {
+		talloc_free(t, ptr);
+		return NULL;
+	}
 
 	/* realloc(NULL) is equavalent to malloc() */
 	if (ptr == NULL)
@@ -471,6 +478,39 @@ void talloc_get_allocation(TALLOC_CTX *t,
 
 
 /* 
+   free a lump from a pool. Use sparingly please.
+*/
+void talloc_free(TALLOC_CTX *ctx, void *ptr)
+{
+	struct talloc_chunk *tc;
+
+	if (!ptr || !ctx->list) return;
+
+	/* as a special case, see if its the first element in the
+	   list */
+	if (ctx->list->ptr == ptr) {
+		ctx->total_alloc_size -= ctx->list->size;
+		ctx->list = ctx->list->next;
+		free(ptr);
+		return;
+	}
+
+	/* find it in the context */
+	for (tc=ctx->list; tc->next; tc=tc->next) {
+		if (tc->next->ptr == ptr) break;
+	}
+
+	if (tc->next) {
+		ctx->total_alloc_size -= tc->next->size;
+		tc->next = tc->next->next;
+	} else {
+		DEBUG(0,("Attempt to free non-allocated chunk in context '%s'\n", 
+			 ctx->name));
+	}
+}
+
+
+/* 
    move a lump of memory from one talloc context to another
    return the ptr on success, or NULL if it could not be found
    in the old context or could not be transferred
@@ -511,5 +551,16 @@ const void *talloc_steal(TALLOC_CTX *old_ctx, TALLOC_CTX *new_ctx, const void *p
 	return ptr;
 }
 
+/*
+  realloc an array, checking for integer overflow in the array size
+*/
+void *talloc_realloc_array(TALLOC_CTX *ctx, void *ptr, size_t el_size, unsigned count)
+{
+	if (count == 0 ||
+	    count >= MAX_TALLOC_SIZE/el_size) {
+		return NULL;
+	}
+	return talloc_realloc(ctx, ptr, el_size * count);
+}
 
 /** @} */

@@ -130,15 +130,15 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	twr->towers.floors[2].lhs.protocol = EPM_PROTOCOL_RPC_C;
 	twr->towers.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[2].rhs.rhs_data = data_blob_talloc(p->mem_ctx, NULL, 2);
+	twr->towers.floors[2].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
 
 	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
 	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc(p->mem_ctx, NULL, 2);
+	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
 
 	twr->towers.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
 	twr->towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[4].rhs.rhs_data = data_blob_talloc(p->mem_ctx, NULL, 4);
+	twr->towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 4);
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
@@ -151,7 +151,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_HTTP;
 	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc(p->mem_ctx, NULL, 2);
+	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
@@ -164,11 +164,11 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
 	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc(p->mem_ctx, NULL, 2);
+	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
 
 	twr->towers.floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
 	twr->towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[4].rhs.rhs_data = data_blob_talloc(p->mem_ctx, NULL, 2);
+	twr->towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
