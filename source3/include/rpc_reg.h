@@ -158,7 +158,7 @@ typedef struct q_reg_open_hkcr_info
 typedef struct r_reg_open_hkcr_info
 {
 	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_OPEN_HKCR;
 
@@ -178,7 +178,7 @@ REG_Q_OPEN_HKLM;
 typedef struct r_reg_open_hklm_info
 {
 	POLICY_HND pol;		/* policy handle */
-	NTSTATUS status;		/* return status */
+	WERROR status;		/* return status */
 
 }
 REG_R_OPEN_HKLM;
@@ -198,7 +198,7 @@ typedef struct q_reg_open_hku_info
 typedef struct r_reg_open_hku_info
 {
 	POLICY_HND pol;      /* policy handle */
-	NTSTATUS status;     /* return status */
+	WERROR status;     /* return status */
 
 } REG_R_OPEN_HKU;
 
@@ -213,7 +213,7 @@ typedef struct q_reg_open_flush_key_info
 /* REG_R_FLUSH_KEY */
 typedef struct r_reg_open_flush_key_info
 {
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_FLUSH_KEY;
 
@@ -234,7 +234,7 @@ typedef struct q_reg_set_key_sec_info
 /* REG_R_SET_KEY_SEC */
 typedef struct r_reg_set_key_sec_info
 {
-	NTSTATUS status;
+	WERROR status;
 	
 } REG_R_SET_KEY_SEC;
 
@@ -261,7 +261,7 @@ typedef struct r_reg_get_key_sec_info
 	BUFHDR hdr_sec;    /* header for security data */
 	SEC_DESC_BUF *data;    /* security data */
 
-	NTSTATUS status;
+	WERROR status;
 	
 } REG_R_GET_KEY_SEC;
 
@@ -282,7 +282,7 @@ typedef struct q_reg_create_value_info
 /* REG_R_CREATE_VALUE */
 typedef struct r_reg_create_value_info
 { 
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_CREATE_VALUE;
 
@@ -329,7 +329,7 @@ typedef struct r_reg_enum_value_info
 	uint32 ptr2;            /* pointer */
 	uint32 len_value2;       /* */
 
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_ENUM_VALUE;
 
@@ -365,7 +365,7 @@ typedef struct r_reg_create_key_info
 	POLICY_HND key_pol;       /* policy handle */
 	uint32 unknown; /* 0x0000 0000 */
 
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_CREATE_KEY;
 
@@ -383,7 +383,7 @@ typedef struct r_reg_delete_key_info
 {
 	POLICY_HND key_pol;       /* policy handle */
 
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_DELETE_KEY;
 
@@ -402,7 +402,7 @@ typedef struct r_reg_delete_val_info
 {
 	POLICY_HND key_pol;       /* policy handle */
 
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_DELETE_VALUE;
 
@@ -430,7 +430,7 @@ typedef struct r_reg_query_key_info
 	uint32 sec_desc; /* 0x0000 0078 */
 	NTTIME mod_time;  /* modified time */
 
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_QUERY_KEY;
 
@@ -446,7 +446,7 @@ typedef struct q_reg_unk_1a_info
 typedef struct r_reg_unk_1a_info
 {
 	uint32 unknown;         /* 0x0500 0000 */
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_UNKNOWN_1A;
 
@@ -468,7 +468,7 @@ typedef struct q_reg_unknown_14
 /* REG_R_UNKNOWN_1A */
 typedef struct r_reg_unknown_14
 {
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_SAVE_KEY;
 
@@ -486,7 +486,7 @@ typedef struct reg_r_close_info
 {
 	POLICY_HND pol; /* policy handle.  should be all zeros. */
 
-	NTSTATUS status; /* return code */
+	WERROR status; /* return code */
 
 } REG_R_CLOSE;
 
@@ -531,7 +531,7 @@ typedef struct r_reg_enum_key_info
 	uint32 ptr3;            /* pointer */
 	NTTIME time;            /* current time? */
 
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_ENUM_KEY;
 
@@ -575,7 +575,7 @@ typedef struct r_reg_info_info
 	uint32 ptr_len;
 	uint32 buf_len;
   
-	NTSTATUS status;	/* return status */
+	WERROR status;	/* return status */
 
 } REG_R_INFO;
 
@@ -599,7 +599,7 @@ typedef struct q_reg_open_entry_info
 typedef struct r_reg_open_entry_info
 {
 	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
+	WERROR status;         /* return status */
 
 } REG_R_OPEN_ENTRY;
 
@@ -620,7 +620,7 @@ typedef struct q_reg_shutdown_info
 /* REG_R_SHUTDOWN */
 typedef struct r_reg_shutdown_info
 {
-	NTSTATUS status;		/* return status */
+	WERROR status;		/* return status */
 
 } REG_R_SHUTDOWN;
 
@@ -635,7 +635,7 @@ typedef struct q_reg_abort_shutdown_info
 /* REG_R_ABORT_SHUTDOWN */
 typedef struct r_reg_abort_shutdown_info
 { 
-	NTSTATUS status; /* return status */
+	WERROR status; /* return status */
 
 } REG_R_ABORT_SHUTDOWN;
 
