@@ -204,11 +204,10 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	while ((*reply_count) < max_count) {
 		union smb_search_data *file;
 		const char *name;
+		uint_t ofs = search->current_index;
 
-		name = pvfs_list_next(dir, search->current_index);
+		name = pvfs_list_next(dir, &search->current_index);
 		if (name == NULL) break;
-
-		search->current_index++;
 
 		file = talloc_p(mem_ctx, union smb_search_data);
 		if (!file) {
@@ -225,13 +224,15 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 		if (!callback(search_private, file)) {
 			talloc_free(file);
-			search->current_index--;
+			search->current_index = ofs;
 			break;
 		}
 
 		(*reply_count)++;
 		talloc_free(file);
 	}
+
+	pvfs_list_hibernate(dir);
 
 	return NT_STATUS_OK;
 }
@@ -275,13 +276,8 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dir = talloc_p(search, struct pvfs_dir);
-	if (!dir) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* do the actual directory listing */
-	status = pvfs_list_start(pvfs, name, dir);
+	status = pvfs_list_start(pvfs, name, search, &dir);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -343,8 +339,12 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	}
 
 	search->current_index = io->search_next.in.id.server_cookie;
-
 	dir = search->dir;
+
+	status = pvfs_list_wakeup(dir, &search->current_index);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.level,
 				  &reply_count, search_private, callback);
@@ -406,13 +406,8 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dir = talloc_p(search, struct pvfs_dir);
-	if (!dir) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* do the actual directory listing */
-	status = pvfs_list_start(pvfs, name, dir);
+	status = pvfs_list_start(pvfs, name, search, &dir);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -488,12 +483,19 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 
 	/* work out what type of continuation is being used */
 	if (io->t2fnext.in.last_name && *io->t2fnext.in.last_name) {
-		search->current_index = pvfs_list_seek(dir, io->t2fnext.in.last_name, 
-						       search->current_index);
+		status = pvfs_list_seek(dir, io->t2fnext.in.last_name, &search->current_index);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	} else if (io->t2fnext.in.flags & FLAG_TRANS2_FIND_CONTINUE) {
 		/* plain continue - nothing to do */
 	} else {
 		search->current_index = io->t2fnext.in.resume_key;
+	}
+
+	status = pvfs_list_wakeup(dir, &search->current_index);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	status = pvfs_search_fill(pvfs, req, io->t2fnext.in.max_count, search, io->generic.level,
