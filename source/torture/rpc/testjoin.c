@@ -28,7 +28,6 @@
 #include "includes.h"
 
 struct test_join {
-	TALLOC_CTX *mem_ctx;
 	struct dcerpc_pipe *p;
 	const char *machine_password;
 	struct policy_handle user_handle;
@@ -106,22 +105,13 @@ void *torture_join_domain(const char *machine_name,
 	struct samr_Name name;
 	int policy_min_pw_len = 0;
 	struct test_join *join;
-	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("torture_join_domain");
-	if (!mem_ctx) {
-		return NULL;
-	}
-
-	join = talloc_p(mem_ctx, struct test_join);
+	join = talloc_p(NULL, struct test_join);
 	if (join == NULL) {
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
 	ZERO_STRUCTP(join);
-
-	join->mem_ctx = mem_ctx;
 
 	printf("Connecting to SAMR\n");
 
@@ -137,11 +127,11 @@ void *torture_join_domain(const char *machine_name,
 	c.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	c.out.connect_handle = &handle;
 
-	status = dcerpc_samr_Connect(join->p, mem_ctx, &c);
+	status = dcerpc_samr_Connect(join->p, join, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, join->p->last_fault_code);
+			errstr = dcerpc_errstr(join, join->p->last_fault_code);
 		}
 		printf("samr_Connect failed - %s\n", errstr);
 		goto failed;
@@ -153,7 +143,7 @@ void *torture_join_domain(const char *machine_name,
 	l.in.connect_handle = &handle;
 	l.in.domain = &name;
 
-	status = dcerpc_samr_LookupDomain(join->p, mem_ctx, &l);
+	status = dcerpc_samr_LookupDomain(join->p, join, &l);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupDomain failed - %s\n", nt_errstr(status));
 		goto failed;
@@ -164,7 +154,7 @@ void *torture_join_domain(const char *machine_name,
 	o.in.sid = l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
-	status = dcerpc_samr_OpenDomain(join->p, mem_ctx, &o);
+	status = dcerpc_samr_OpenDomain(join->p, join, &o);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenDomain failed - %s\n", nt_errstr(status));
 		goto failed;
@@ -173,7 +163,7 @@ void *torture_join_domain(const char *machine_name,
 	printf("Creating machine account %s\n", machine_name);
 
 again:
-	name.name = talloc_asprintf(mem_ctx, "%s$", machine_name);
+	name.name = talloc_asprintf(join, "%s$", machine_name);
 	r.in.domain_handle = &domain_handle;
 	r.in.account_name = &name;
 	r.in.acct_flags = acct_flags;
@@ -182,10 +172,10 @@ again:
 	r.out.access_granted = &access_granted;
 	r.out.rid = &rid;
 
-	status = dcerpc_samr_CreateUser2(join->p, mem_ctx, &r);
+	status = dcerpc_samr_CreateUser2(join->p, join, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		status = DeleteUser_byname(join->p, mem_ctx, &domain_handle, name.name);
+		status = DeleteUser_byname(join->p, join, &domain_handle, name.name);
 		if (NT_STATUS_IS_OK(status)) {
 			goto again;
 		}
@@ -198,12 +188,12 @@ again:
 
 	pwp.in.user_handle = &join->user_handle;
 
-	status = dcerpc_samr_GetUserPwInfo(join->p, mem_ctx, &pwp);
+	status = dcerpc_samr_GetUserPwInfo(join->p, join, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
 		policy_min_pw_len = pwp.out.info.min_password_len;
 	}
 
-	join->machine_password = generate_random_str(mem_ctx, MAX(8, policy_min_pw_len));
+	join->machine_password = generate_random_str(join, MAX(8, policy_min_pw_len));
 
 	printf("Setting machine account password '%s'\n", join->machine_password);
 
@@ -224,7 +214,7 @@ again:
 
 	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
 
-	status = dcerpc_samr_SetUserInfo(join->p, mem_ctx, &s);
+	status = dcerpc_samr_SetUserInfo(join->p, join, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo failed - %s\n", nt_errstr(status));
 		goto failed;
@@ -238,7 +228,7 @@ again:
 
 	printf("Resetting ACB flags\n");
 
-	status = dcerpc_samr_SetUserInfo(join->p, mem_ctx, &s);
+	status = dcerpc_samr_SetUserInfo(join->p, join, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo failed - %s\n", nt_errstr(status));
 		goto failed;
@@ -267,7 +257,7 @@ void torture_leave_domain(void *join_ctx)
 		d.in.user_handle = &join->user_handle;
 		d.out.user_handle = &join->user_handle;
 		
-		status = dcerpc_samr_DeleteUser(join->p, join->mem_ctx, &d);
+		status = dcerpc_samr_DeleteUser(join->p, join, &d);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Delete of machine account failed\n");
 		}
@@ -277,5 +267,5 @@ void torture_leave_domain(void *join_ctx)
 		torture_rpc_close(join->p);
 	}
 
-	talloc_destroy(join->mem_ctx);
+	talloc_free(join);
 }

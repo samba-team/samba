@@ -28,7 +28,6 @@ enum schannel_position {
 };
 
 struct dcerpc_schannel_state {
-	TALLOC_CTX *mem_ctx;
 	enum schannel_position state;
 	struct schannel_state *schannel_state;
 	struct creds_CredentialState creds;
@@ -173,7 +172,7 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 			return status;
 		}
 
-		dce_schan_state->account_name = talloc_strdup(dce_schan_state->mem_ctx, account_name);
+		dce_schan_state->account_name = talloc_strdup(dce_schan_state, account_name);
 		
 		/* start up the schannel server code */
 		status = schannel_start(&dce_schan_state->schannel_state, 
@@ -183,6 +182,7 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 				  account_name, nt_errstr(status)));
 			return status;
 		}
+		talloc_steal(dce_schan_state, dce_schan_state->schannel_state);
 		
 		bind_schannel_ack.unknown1 = 1;
 		bind_schannel_ack.unknown2 = 0;
@@ -260,22 +260,13 @@ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 {
 	struct dcerpc_schannel_state *dce_schan_state;
-	TALLOC_CTX *mem_ctx;
-	mem_ctx = talloc_init("dcerpc_schannel_start");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
-	dce_schan_state = talloc_p(mem_ctx, struct dcerpc_schannel_state);
+	dce_schan_state = talloc_p(gensec_security, struct dcerpc_schannel_state);
 	if (!dce_schan_state) {
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dce_schan_state->mem_ctx = mem_ctx;
 	dce_schan_state->state = DCERPC_SCHANNEL_STATE_START;
-	
-
 	gensec_security->private_data = dce_schan_state;
 	
 	return NT_STATUS_OK;
@@ -315,6 +306,7 @@ static NTSTATUS dcerpc_schannel_client_start(struct gensec_security *gensec_secu
 		DEBUG(1, ("Failed to start schannel client\n"));
 		return status;
 	}
+	talloc_steal(dce_schan_state, dce_schan_state->schannel_state);
 
 	return NT_STATUS_OK;
 }
@@ -328,7 +320,7 @@ static void dcerpc_schannel_end(struct gensec_security *gensec_security)
 
 	schannel_end(&dce_schan_state->schannel_state);
 
-	talloc_destroy(dce_schan_state->mem_ctx);
+	talloc_free(dce_schan_state);
 
 	gensec_security->private_data = NULL;
 }

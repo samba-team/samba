@@ -97,11 +97,14 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
+
 	torture_leave_domain(join_ctx);
+	dcerpc_pipe_close(p);
 	return True;
 
 failed:
 	torture_leave_domain(join_ctx);
+	dcerpc_pipe_close(p);
 	return False;	
 }
 
@@ -139,6 +142,8 @@ BOOL torture_rpc_schannel(void)
 			break;
 		}
 	}
+
+	talloc_free(mem_ctx);
 
 	return ret;
 }

@@ -1119,6 +1119,8 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 		return status;
 	}
 
+	talloc_steal(p, *p2);
+
 	(*p2)->flags = p->flags;
 
 	status = dcerpc_bind_auth_none(*p2, pipe_uuid, pipe_version);
