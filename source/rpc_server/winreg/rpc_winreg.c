@@ -328,7 +328,8 @@ static WERROR winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	}
 
 	r->out.secdescsize = 0; /* FIXME */
-	ZERO_STRUCT(r->out.last_changed_time); /* FIXME */	if (!W_ERROR_IS_OK(ret)) { 
+	ZERO_STRUCT(r->out.last_changed_time); /* FIXME */
+	if (!W_ERROR_IS_OK(ret)) { 
 		return ret;
 	}
 
@@ -414,7 +415,22 @@ static WERROR winreg_SetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_C
 static WERROR winreg_SetValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SetValue *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct dcesrv_handle *h;
+	struct registry_key *key;
+	WERROR result;
+
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	DCESRV_CHECK_HANDLE(h);
+
+	key = h->data;
+	
+	result = reg_val_set(key, r->in.name.name, r->in.type, r->in.data, r->in.size);
+
+	if (!W_ERROR_IS_OK(result)) { 
+		return result;
+	}
+
+	return WERR_OK;
 }
 
 

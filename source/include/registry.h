@@ -122,15 +122,15 @@ struct hive_operations {
 	WERROR (*get_value_by_name) (TALLOC_CTX *, struct registry_key *, const char *name, struct registry_value **);
 
 	/* Security control */
-	WERROR (*key_get_sec_desc) (TALLOC_CTX *, struct registry_key *, SEC_DESC **);
-	WERROR (*key_set_sec_desc) (struct registry_key *, SEC_DESC *);
+	WERROR (*key_get_sec_desc) (TALLOC_CTX *, struct registry_key *, struct security_descriptor **);
+	WERROR (*key_set_sec_desc) (struct registry_key *, struct security_descriptor *);
 
 	/* Notification */
 	WERROR (*request_key_change_notify) (struct registry_key *, key_notification_function);
 	WERROR (*request_value_change_notify) (struct registry_value *, value_notification_function);
 
 	/* Key management */
-	WERROR (*add_key)(TALLOC_CTX *, struct registry_key *, const char *name, uint32_t access_mask, SEC_DESC *, struct registry_key **);
+	WERROR (*add_key)(TALLOC_CTX *, struct registry_key *, const char *name, uint32_t access_mask, struct security_descriptor *, struct registry_key **);
 	WERROR (*del_key)(struct registry_key *, const char *name);
 	WERROR (*flush_key) (struct registry_key *);
 
