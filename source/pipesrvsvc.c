@@ -29,6 +29,153 @@
 extern int DEBUGLEVEL;
 
 
+/*******************************************************************
+********************************************************************/
+static void make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark)
+{
+	if (sh1 == NULL) return;
+
+	DEBUG(5,("make_srv_share_info1_str: %s %s\n", net_name, remark));
+
+	make_unistr2(&(sh1->uni_netname), net_name, strlen(net_name));
+	make_unistr2(&(sh1->uni_remark ), remark  , strlen(remark  ));
+}
+
+/*******************************************************************
+********************************************************************/
+static void make_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *remark)
+{
+	if (sh1 == NULL) return;
+
+	DEBUG(5,("make_srv_share_info1_str: %s %8x %s\n", net_name, type, remark));
+
+	sh1->ptr_netname = net_name != NULL ? 1 : 0;
+	sh1->type        = type;
+	sh1->ptr_remark  = remark   != NULL ? 1 : 0;
+}
+
+/*******************************************************************
+fill in a share info level 1 structure.
+
+this function breaks the rule that i'd like to be in place, namely
+it doesn't receive its data as arguments: it has to call lp_xxxx()
+functions itself.  yuck.
+
+this function is identical to api_RNetShareEnum().  maybe it even
+generates the same output!  (too much to hope for, really...)
+
+********************************************************************/
+static void make_srv_share_1_ctr(SHARE_INFO_1_CTR *ctr)
+{
+	int snum;
+	int num_entries = 0;
+	int svcs = lp_numservices();
+
+	if (ctr == NULL) return;
+
+	DEBUG(5,("make_srv_share_1_ctr\n"));
+
+	for (snum = 0; snum < svcs && num_entries < MAX_SHARE_ENTRIES; num_entries++, snum++)
+	{
+		int len_net_name;
+		pstring net_name;
+		pstring remark;
+		uint32 type;
+
+		if (lp_browseable(snum) && lp_snum_ok(snum))
+		{
+			/* see ipc.c:fill_share_info() */
+
+			pstrcpy(net_name, lp_servicename(snum));
+			pstrcpy(remark  , lp_comment    (snum));
+			len_net_name = strlen(net_name);
+
+			/* work out the share type */
+			type = STYPE_DISKTREE;
+			
+			if (lp_print_ok(snum))             type = STYPE_PRINTQ;
+			if (strequal("IPC$", net_name))    type = STYPE_IPC;
+			if (net_name[len_net_name] == '$') type |= STYPE_HIDDEN;
+
+			make_srv_share_info1    (&(ctr->info_1    [num_entries]), net_name, type, remark);
+			make_srv_share_info1_str(&(ctr->info_1_str[num_entries]), net_name,       remark);
+		}
+	}
+
+	ctr->num_entries_read  = num_entries;
+	ctr->ptr_share_info = num_entries > 0 ? 1 : 0;
+	ctr->num_entries_read2 = num_entries;
+}
+
+/*******************************************************************
+********************************************************************/
+static void make_srv_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n,
+                             int share_level, int switch_value, int status)  
+{
+	DEBUG(5,("make_srv_net_share_enum: %d\n", __LINE__));
+
+	r_n->share_level  = share_level;
+	r_n->switch_value = switch_value;
+	r_n->status       = status;
+
+	switch (switch_value)
+	{
+		case 1:
+		{
+			make_srv_share_1_ctr(&(r_n->share.info1));
+			r_n->ptr_share_info = r_n->share.info1.num_entries_read > 0 ? 1 : 0;
+			break;
+		}
+		default:
+		{
+			DEBUG(5,("make_srv_net_share_enum: unsupported switch value %d\n",
+			          switch_value));
+			r_n->ptr_share_info = 0;
+			break;
+		}
+	}
+}
+
+/*******************************************************************
+********************************************************************/
+static int srv_reply_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
+				char *q, char *base,
+				int status)
+{
+	SRV_R_NET_SHARE_ENUM r_n;
+
+	DEBUG(5,("srv_net_share_enum: %d\n", __LINE__));
+
+	/* set up the */
+	make_srv_net_share_enum(&r_n, q_n->share_level, q_n->switch_value, status);
+
+	/* store the response in the SMB stream */
+	q = srv_io_r_net_share_enum(False, &r_n, q, base, 4, 0);
+
+	DEBUG(5,("srv_srv_pwset: %d\n", __LINE__));
+
+	/* return length of SMB data stored */
+	return PTR_DIFF(q, base);
+}
+
+/*******************************************************************
+********************************************************************/
+static void api_srv_net_share_info( char *param, char *data,
+                                    char **rdata, int *rdata_len )
+{
+	SRV_Q_NET_SHARE_ENUM q_n;
+
+	/* grab the net share enum */
+	srv_io_q_net_share_enum(True, &q_n, data + 0x18, data, 4, 0);
+
+	/* construct reply.  always indicate success */
+	*rdata_len = srv_reply_net_share_enum(&q_n, *rdata + 0x18, *rdata, 0x0);
+}
+
+
+/*******************************************************************
+receives a srvsvc pipe and responds.
+********************************************************************/
 BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
@@ -38,8 +185,6 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
   char *q;
   int pkttype;
   extern pstring myname;
-  char *servername;
-  uint32 level;
 
   opnum = SVAL(data,22);
 
@@ -59,24 +204,16 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
   switch (opnum)
   {
     case NETSHAREENUM:
-      q = data + 0x18;
-      servername = q + 16;
-      q = skip_unicode_string(servername,1);
-      if (strlen(unistr(servername)) % 2 == 0)
-      q += 2;
-     level = IVAL(q, 0); q += 4;
-      /* ignore the rest for the moment */
-      q = *rdata + 0x18;
-      SIVAL(q, 0, level); q += 4;
-      SIVAL(q, 0, 1); q += 4; /* switch value */
-      SIVAL(q, 0, 2); q += 4;
-      SIVAL(q, 0, 2); q += 4; /* number of entries */
-      SIVAL(q, 0, 2); q += 4;
-      endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+	{
+	  api_srv_net_share_info( param, data, rdata, rdata_len);
+      make_rpc_reply(data, *rdata, *rdata_len);
       break;
+    }
 
     case NETSERVERGETINFO:
     {
+      char *servername;
+      uint32 level;
       UNISTR2 uni_str;
       q = data + 0x18;
       servername = q + 16;

@@ -156,10 +156,11 @@ implemented */
 #define DENY_FCB 7
 
 /* share types */
-#define STYPE_DISKTREE	0	/* Disk drive */
-#define STYPE_PRINTQ	1	/* Spooler queue */
-#define STYPE_DEVICE	2	/* Serial device */
-#define STYPE_IPC	3	/* Interprocess communication (IPC) */
+#define STYPE_DISKTREE  0	/* Disk drive */
+#define STYPE_PRINTQ    1	/* Spooler queue */
+#define STYPE_DEVICE    2	/* Serial device */
+#define STYPE_IPC       3	/* Interprocess communication (IPC) */
+#define STYPE_HIDDEN    0x80000000 /* share is a hidden one (ends with $) */
 
 /* SMB X/Open error codes for the ERRdos error class */
 #define ERRbadfunc 1 /* Invalid function (or system call) */
