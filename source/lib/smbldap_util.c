@@ -120,7 +120,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	int ldap_op;
 	LDAPMessage *result = NULL;
 	int num_result;
-	char **attr_list;
+	const char **attr_list;
 	uid_t u_low, u_high;
 	gid_t g_low, g_high;
 	uint32 rid_low, rid_high;
@@ -235,7 +235,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	pstring filter;
 	int rc;
-	char **attr_list;
+	const char **attr_list;
 	int count;
 
 	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))",

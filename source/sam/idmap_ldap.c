@@ -126,7 +126,7 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
 	LDAPMessage *result = NULL;
 	int count;
 	int rc;
-	char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
+	const char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
 
 	slprintf(filter, sizeof(filter)-1, "(%s=%s)", LDAP_ATTRIBUTE_SID, sid_to_string(sid_string, sid));
 
@@ -384,7 +384,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	LDAPMod **mods = NULL;
 	const char *type;
 	char *dn = NULL;
-	char **attr_list;
+	const char **attr_list;
 	pstring filter;
 	uid_t	luid, huid;
 	gid_t	lgid, hgid;
@@ -495,7 +495,7 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	int rc;
 	int count;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	char **attr_list;
+	const char **attr_list;
 
 	if ( id_type & ID_USERID ) 
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
@@ -559,7 +559,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	const char *type;
 	int rc;
 	int count;
-	char **attr_list;
+	const char **attr_list;
 	char *dn = NULL;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -669,7 +669,7 @@ static NTSTATUS verify_idpool( void )
 {
 	fstring filter;
 	int rc;
-	char **attr_list;
+	const char **attr_list;
 	LDAPMessage *result = NULL;
 	LDAPMod **mods = NULL;
 	int count;

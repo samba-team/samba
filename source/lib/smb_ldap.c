@@ -209,7 +209,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 
 	while (*s && (next = ldap_parse_filter(mem_ctx, &s))) {
 		struct ldap_parse_tree **e;
-		e = TALLOC_REALLOC_ARRAY(mem_ctx, ret->u.list.elements, struct ldap_parse_tree,
+		e = TALLOC_REALLOC_ARRAY(mem_ctx, ret->u.list.elements, struct ldap_parse_tree *,
 				   ret->u.list.num_elements+1);
 		if (!e) {
 			errno = ENOMEM;
@@ -1862,7 +1862,7 @@ static BOOL ldap_abandon_message(struct ldap_connection *conn, int msgid,
 
 struct ldap_message *new_ldap_search_message(const char *base,
 					     enum ldap_scope scope,
-					     char *filter,
+					     const char *filter,
 					     int num_attributes,
 					     const char **attributes)
 {

@@ -239,16 +239,16 @@ ATTRIB_MAP_ENTRY acctpol_attr_list[] = {
  Return the list of attribute names from a mapping table
  **********************************************************************/
 
- char** get_attr_list( ATTRIB_MAP_ENTRY table[] )
+ const char** get_attr_list( ATTRIB_MAP_ENTRY table[] )
 {
-	char **names;
+	const char **names;
 	int i = 0;
 	
 	while ( table[i].attrib != LDAP_ATTR_LIST_END )
 		i++;
 	i++;
 
-	names = SMB_MALLOC_ARRAY( char*, i );
+	names = SMB_MALLOC_ARRAY( const char*, i );
 	if ( !names ) {
 		DEBUG(0,("get_attr_list: out of memory\n"));
 		return NULL;
@@ -268,7 +268,7 @@ ATTRIB_MAP_ENTRY acctpol_attr_list[] = {
  Cleanup 
  ********************************************************************/
 
- void free_attr_list( char **list )
+ void free_attr_list( const char **list )
 {
 	int i = 0;
 
@@ -1026,7 +1026,7 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 
 int smbldap_search(struct smbldap_state *ldap_state, 
 		   const char *base, int scope, const char *filter, 
-		   char *attrs[], int attrsonly, 
+		   const char *attrs[], int attrsonly, 
 		   LDAPMessage **res)
 {
 	int 		rc = LDAP_SERVER_DOWN;
@@ -1163,7 +1163,7 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
  run the search by name.
 ******************************************************************/
 int smbldap_search_suffix (struct smbldap_state *ldap_state, const char *filter, 
-			   char **search_attr, LDAPMessage ** result)
+			   const char **search_attr, LDAPMessage ** result)
 {
 	int scope = LDAP_SCOPE_SUBTREE;
 	int rc;
