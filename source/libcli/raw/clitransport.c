@@ -98,6 +98,28 @@ void cli_transport_close(struct cli_transport *transport)
 void cli_transport_dead(struct cli_transport *transport)
 {
 	cli_sock_dead(transport->socket);
+
+	/* all pending sends become errors */
+	while (transport->pending_send) {
+		struct cli_request *req = transport->pending_send;
+		req->state = CLI_REQUEST_ERROR;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		DLIST_REMOVE(transport->pending_send, req);
+		if (req->async.fn) {
+			req->async.fn(req);
+		}
+	}
+
+	/* as do all pending receives */
+	while (transport->pending_recv) {
+		struct cli_request *req = transport->pending_recv;
+		req->state = CLI_REQUEST_ERROR;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		DLIST_REMOVE(transport->pending_recv, req);
+		if (req->async.fn) {
+			req->async.fn(req);
+		}
+	}
 }
 
 
@@ -478,6 +500,13 @@ BOOL cli_transport_process(struct cli_transport *transport)
 */
 void cli_transport_send(struct cli_request *req)
 {
+	/* check if the transport is dead */
+	if (req->transport->socket->fd == -1) {
+		req->state = CLI_REQUEST_ERROR;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		return;
+	}
+
 	/* put it on the outgoing socket queue */
 	req->state = CLI_REQUEST_SEND;
 	DLIST_ADD_END(req->transport->pending_send, req, struct cli_request *);
