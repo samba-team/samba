@@ -121,7 +121,7 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
   get_current_user(&user,p);
 
   if (user.uid != 0) {
-	DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
+	DEBUG(10,("_dfs_remove: uid != 0. Access denied.\n"));
 	return ERROR_ACCESS_DENIED;
   }
 
