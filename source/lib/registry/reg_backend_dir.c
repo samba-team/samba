@@ -110,12 +110,12 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 	return WERR_NO_MORE_ITEMS;
 }
 
-static WERROR reg_dir_open(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **key)
+static WERROR reg_dir_open(struct registry_hive *h, struct registry_key **key)
 {
 	if(!h->location) return WERR_INVALID_PARAM;
 
-	*key = talloc_p(mem_ctx, struct registry_key);
-	(*key)->backend_data = talloc_strdup(mem_ctx, h->location);
+	*key = talloc_p(h, struct registry_key);
+	(*key)->backend_data = talloc_strdup(*key, h->location);
 	return WERR_OK;
 }
 
@@ -131,7 +131,7 @@ static WERROR reg_dir_del_value(struct registry_value *v)
 	return WERR_NOT_SUPPORTED;
 }
 
-static struct registry_operations reg_backend_dir = {
+static struct hive_operations reg_backend_dir = {
 	.name = "dir",
 	.open_hive = reg_dir_open,
 	.open_key = reg_dir_open_key,

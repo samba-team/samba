@@ -113,21 +113,19 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 {
 	int opt;
 	poptContext pc;
-	const char *backend1 = NULL, *backend2 = NULL;
-	const char *location2;
-	const char *credentials1= NULL, *credentials2 = NULL;
 	char *outputfile = NULL;
 	FILE *fd = stdout;
-	struct registry_context *h1 = NULL, *h2;
+	struct registry_context *h1 = NULL, *h2 = NULL;
 	int from_null = 0;
 	int i;
 	WERROR error, error2;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"backend", 'b', POPT_ARG_STRING, NULL, 'b', "backend to use", NULL},
-		{"credentials", 'c', POPT_ARG_STRING, NULL, 'c', "credentials", NULL},
+		POPT_COMMON_CREDENTIALS
 		{"output", 'o', POPT_ARG_STRING, &outputfile, 'o', "output file to use", NULL },
-		{"null", 'n', POPT_ARG_NONE, &from_null, 'n', "Diff from NULL" },
+		{"null", 'n', POPT_ARG_NONE, &from_null, 'n', "Diff from NULL", NULL },
+		{"remote", 'R', POPT_ARG_STRING, NULL, 0, "Connect to remote server" , NULL },
+		{"local", 'L', POPT_ARG_NONE, NULL, 0, "Open local registry", NULL },
 		POPT_TABLEEND
 	};
 
@@ -141,49 +139,24 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
+		error = WERR_OK;
 		switch(opt)	{
-		case 'c':
-			if(!credentials1 && !from_null) credentials1 = poptGetOptArg(pc);
-			else if(!credentials2) credentials2 = poptGetOptArg(pc);
+		case 'L':
+			if (!h1 && !from_null) error = reg_open_local(&h1);
+			else if (!h2) error = reg_open_local(&h2);
 			break;
-		case 'b':
-			if(!backend1 && !from_null) backend1 = poptGetOptArg(pc);
-			else if(!backend2) backend2 = poptGetOptArg(pc);
+		case 'R':
+			if (!h1 && !from_null) error = reg_open_remote(&h1, cmdline_get_username(), cmdline_get_userpassword(), poptGetOptArg(pc));
+			else if (!h2) error = reg_open_remote(&h2, cmdline_get_username(), cmdline_get_userpassword(), poptGetOptArg(pc));
 			break;
+		}
+
+		if (!W_ERROR_IS_OK(error)) {
+			fprintf(stderr, "Error: %s\n", win_errstr(error));
+			return 1;
 		}
 	}
 	setup_logging(argv[0], True);
-
-	if(!from_null) {
-		const char *location1;
-		location1 = poptGetArg(pc);
-		if(!location1) {
-			poptPrintUsage(pc, stderr, 0);
-			return 1;
-		}
-
-		if(!backend1) backend1 = "rpc";
-
-		error = reg_open(&h1, backend1, location1, credentials1);
-		if(!W_ERROR_IS_OK(error)) {
-			fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location1, backend1);
-			return 1;
-		}
-	} 
-
-	location2 = poptGetArg(pc);
-	if(!location2) {
-		poptPrintUsage(pc, stderr, 0);
-		return 2;
-	}
-
-	if(!backend2) backend2 = "rpc";
-
-	error = reg_open(&h2, backend2, location2, credentials2);
-	if(!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location2, backend2);
-		return 1;
-	}
 
 	poptFreeContext(pc);
 
@@ -196,12 +169,25 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 	}
 
 	fprintf(fd, "REGEDIT4\n\n");
-	fprintf(fd, "; Generated using regdiff\n");
+	fprintf(fd, "; Generated using regdiff, part of Samba\n");
 
 	error2 = error = WERR_OK; 
 
-	for(i = 0; (!h1 || i < h1->num_hives) && i < h2->num_hives; i++) {
-		writediff(h1?h1->hives[i]->root:NULL, h2->hives[i]->root, fd); 
+	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PN; i++) {
+		struct registry_key *r1, *r2;
+		error = reg_get_hive(h1, i, &r1);
+		if (!W_ERROR_IS_OK(error)) {
+			DEBUG(0, ("Unable to open hive %s for backend 1\n", reg_get_hkey_name(i)));
+			continue;
+		}
+		
+		error = reg_get_hive(h2, i, &r2);
+		if (!W_ERROR_IS_OK(error)) {
+			DEBUG(0, ("Unable to open hive %s for backend 2\n", reg_get_hkey_name(i)));
+			continue;
+		}
+
+		writediff(r1, r2, fd); 
 	}
 
 	fclose(fd);

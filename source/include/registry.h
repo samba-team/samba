@@ -22,26 +22,36 @@
 #ifndef _REGISTRY_H /* _REGISTRY_H */
 #define _REGISTRY_H 
 
-#define HKEY_CLASSES_ROOT	0x80000000
-#define HKEY_CURRENT_USER	0x80000001
-#define HKEY_LOCAL_MACHINE 	0x80000002
-#define HKEY_USERS         	0x80000003
+
+enum hkeys {
+	HKEY_CLASSES_ROOT		= 0x80000000,
+	HKEY_CURRENT_USER		= 0x80000001,
+	HKEY_LOCAL_MACHINE		= 0x80000002,
+	HKEY_USERS				= 0x80000003,
+	HKEY_PERFORMANCE_DATA	= 0x80000004,
+	HKEY_CURRENT_CONFIG		= 0x80000005,
+	HKEY_DYN_DATA			= 0x80000006,
+	HKEY_PT					= 0x80000007, /* Don't know if this is correct! */
+	HKEY_PN					= 0x80000008  /* Don't know if this is correct! */
+};
 
 /* Registry data types */
 
-#define	REG_DELETE									-1
+#define	REG_DELETE								   -1
 #define	REG_NONE									0
 #define	REG_SZ										1
 #define	REG_EXPAND_SZ								2
 #define	REG_BINARY									3
-#define	REG_DWORD									4
-#define	REG_DWORD_LE								4 /* DWORD, little endian*/
-#define	REG_DWORD_BE								5 /* DWORD, big endian */
+#define	REG_DWORD_LE								4 
+#define	REG_DWORD						 REG_DWORD_LE
+#define	REG_DWORD_BE								5 
 #define	REG_LINK									6
 #define	REG_MULTI_SZ								7
 #define	REG_RESOURCE_LIST							8
 #define	REG_FULL_RESOURCE_DESCRIPTOR				9
 #define	REG_RESOURCE_REQUIREMENTS_LIST				10
+#define REG_QWORD_LE								11
+#define REG_QWORD						 REQ_QWORD_LE
 
 #if 0
 /* FIXME */
@@ -62,7 +72,7 @@ typedef struct ace_struct_s {
 /* structure to store the registry handles */
 struct registry_key {
   char *name;         /* Name of the key                    */
-  char *path;		  /* Full path to the key */
+  const char *path;		  /* Full path to the key */
   char *class_name; /* Name of key class */
   NTTIME last_mod; /* Time last modified                 */
   SEC_DESC *security;
@@ -92,18 +102,15 @@ typedef void (*value_notification_function) (void);
  *
  * Backends can provide :
  *  - just one hive (example: nt4, w95)
- *  - several hives (example: rpc)
+ *  - several hives (example: rpc).
  * 
  */ 
 
-struct registry_operations {
+struct hive_operations {
 	const char *name;
 
-	/* If one file, connection, etc may have more then one hive */
-	WERROR (*list_available_hives) (TALLOC_CTX *, const char *location, const char *credentials, char ***hives);
-	
 	/* Implement this one */
-	WERROR (*open_hive) (TALLOC_CTX *, struct registry_hive *, struct registry_key **);
+	WERROR (*open_hive) (struct registry_hive *, struct registry_key **);
 	WERROR (*close_hive) (struct registry_hive *);
 
 	/* Or this one */
@@ -140,11 +147,8 @@ struct registry_operations {
 };
 
 struct registry_hive {
-	const struct registry_operations *functions;
-	char *name; /* usually something like HKEY_CURRENT_USER, etc */
+	const struct hive_operations *functions;
 	char *location;
-	char *credentials;
-	char *backend_hivename;
 	void *backend_data;
 	struct registry_key *root;
 	struct registry_context *reg_ctx;
@@ -153,14 +157,13 @@ struct registry_hive {
 /* Handle to a full registry
  * contains zero or more hives */
 struct registry_context {
-	TALLOC_CTX *mem_ctx;
-	int num_hives;
-	struct registry_hive **hives;
+    void *backend_data;
+	WERROR (*get_hive) (struct registry_context *, uint32 hkey, struct registry_key **);
 };
 
 struct reg_init_function_entry {
 	/* Function to create a member of the pdb_methods list */
-	const struct registry_operations *functions;
+	const struct hive_operations *hive_functions;
 	struct reg_init_function_entry *prev, *next;
 };
 

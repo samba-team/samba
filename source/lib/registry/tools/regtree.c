@@ -36,7 +36,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	
 	/* Hive name */
 	if(p->hive->root == p) {
-		if(p->hive->name) printf("%s\n", p->hive->name); else printf("<No Name>\n");
+		if(p->hive->root->name) printf("%s\n", p->hive->root->name); else printf("<No Name>\n");
 	} else {
 		if(!p->name) printf("<No Name>\n");
 		if(fullpath) printf("%s\n", p->path);
@@ -73,17 +73,19 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
  int main(int argc, char **argv)
 {
 	int opt, i;
-	const char *backend = "rpc";
-	const char *credentials = NULL;
+	const char *backend = NULL;
+	const char *remote = NULL;
 	poptContext pc;
-	struct registry_context *h;
+	struct registry_context *h = NULL;
+	struct registry_key *root = NULL;
 	WERROR error;
 	int fullpath = 0, no_values = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
+		POPT_COMMON_CREDENTIALS	
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
 		{"fullpath", 'f', POPT_ARG_NONE, &fullpath, 0, "show full paths", NULL},
-		{"credentials", 'c', POPT_ARG_STRING, &credentials, 0, "credentials (user%password)", NULL},
+		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL },
 		{"no-values", 'V', POPT_ARG_NONE, &no_values, 0, "don't show values", NULL},
 		POPT_TABLEEND
 	};
@@ -102,7 +104,14 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 
 	setup_logging("regtree", True);
 
-	error = reg_open(&h, backend, poptPeekArg(pc), credentials);
+	if (remote) {
+		error = reg_open_remote(&h, cmdline_get_username(), cmdline_get_userpassword(), remote);
+	} else if (backend) {
+	    error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, &root);
+	} else {
+		error = reg_open_local (&h);
+	}
+
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s':%s \n", poptGetArg(pc), backend, win_errstr(error));
 		return 1;
@@ -110,10 +119,19 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	poptFreeContext(pc);
 
 	error = WERR_OK;
-
-	for(i = 0; i < h->num_hives; i++) {
-		print_tree(0, h->hives[i]->root, fullpath, no_values);
-	}
 	
+	if (!h) {
+		print_tree(0, root, fullpath, no_values);
+	} else {
+		for(i = HKEY_CLASSES_ROOT; i < HKEY_PN; i++) {
+			error = reg_get_hive(h, i, &root);
+			if (!W_ERROR_IS_OK(error)) {
+				fprintf(stderr, "Skipping %s\n", reg_get_hkey_name(i));
+				continue;
+			}
+			print_tree(0, root, fullpath, no_values);
+		}
+	}
+
 	return 0;
 }

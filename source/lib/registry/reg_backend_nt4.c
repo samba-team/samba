@@ -1573,16 +1573,16 @@ error:
 
 #endif
 
-static WERROR nt_open_hive (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **key)
+static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 {
 	REGF *regf;
 	REGF_HDR *regf_hdr;
 	uint_t regf_id, hbin_id;
 	HBIN_HDR *hbin_hdr;
 
-	regf = (REGF *)talloc_p(mem_ctx, REGF);
+	regf = (REGF *)talloc_p(h, REGF);
 	memset(regf, 0, sizeof(REGF));
-	regf->owner_sid_str = h->credentials;
+	regf->owner_sid_str = NULL; /* FIXME: Fill in */
 	h->backend_data = regf;
 
 	DEBUG(5, ("Attempting to load registry file\n"));
@@ -1655,7 +1655,7 @@ static WERROR nt_open_hive (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 
 	h->backend_data = regf;
 
-	return nk_to_key(mem_ctx, h, ((REGF *)h->backend_data)->first_key, BLK_SIZE(((REGF *)h->backend_data)->first_key), NULL, key);
+	return nk_to_key(h, h, ((REGF *)h->backend_data)->first_key, BLK_SIZE(((REGF *)h->backend_data)->first_key), NULL, key);
 }
 
 
@@ -1724,7 +1724,7 @@ static WERROR nt_key_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, int n
 	return WERR_NO_MORE_ITEMS;
 }
 
-static struct registry_operations reg_backend_nt4 = {
+static struct hive_operations reg_backend_nt4 = {
 	.name = "nt4",
 	.open_hive = nt_open_hive,
 	.num_subkeys = nt_num_subkeys,
