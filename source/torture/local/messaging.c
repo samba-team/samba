@@ -93,11 +93,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 			ping_count++;
 		}
 
-		while (ping_count > pong_count + 20) {
-			event_loop_once(ev);
-			event_loop_once(ev);
-			event_loop_once(ev);
-			event_loop_once(ev);
+		while (ping_count > pong_count + 10) {
 			event_loop_once(ev);
 		}
 	}
@@ -110,7 +106,6 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	printf("sending exit\n");
 	messaging_send(msg_ctx, 1, MY_EXIT, NULL);
-	event_loop_once(ev);
 
 	if (ping_count != pong_count) {
 		printf("ping test failed! received %d, sent %d\n", pong_count, ping_count);
