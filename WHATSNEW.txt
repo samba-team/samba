@@ -127,12 +127,12 @@ Changes in alpha22:
 24) Add new timegm() that actually works on solaris
 25) Add support for running smbd, nmbd, & winbindd under the daemontools
     package
-26) Move user password changes into the NTSTATUS era, and add suppport 
+26) Move user password changes into the NTSTATUS era, and add support 
     for the 'min password age' and 'min passwd len' concepts
 27) Add new gencache based namecache code
 28) Add profiles utility support to Samba 3.0.x
 29) Fix open problem with changing attributes on an existing file
-30) Effeciency fixes for internal messaging system
+30) Efficiency fixes for internal messaging system
 31) Make sure to update print queue cache during timeout_processing()
     to send notify events
 32) Make -i flag work like it did in 2.2
@@ -146,7 +146,7 @@ Changes in alpha22:
 40) Fix delete on close semantics to match W2K. 
 41) merge desired_access for open_printer_ex from HEAD, allowing 
     cupsaddsmb to work again!
-42) Add suport for dynamic RPC modules
+42) Add support for dynamic RPC modules
 43) wrap all cm_get_XX calls and their subsequent requests in a retry loop 
     in case we've temporarily lost connection to the DC. Makes winbindd 
     more reliable
@@ -192,7 +192,7 @@ Changes in alpha21:
 11) Merge the new ACL mapping code from Andreas Gruenbacher
 12) Removed make_printerdef tool from build
 13) Fix fd leak on printer queue tdb's
-14) Better error/status loggin in both the pam_winbind client and
+14) Better error/status logging in both the pam_winbind client and
     winbindd_pam
 15) Fix fd leak with kernel change notify
 16) Fix slowdown because of enumerating all print queues on every smbd startup
