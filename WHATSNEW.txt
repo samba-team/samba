@@ -1,4 +1,4 @@
-              WHATS NEW IN 1.9.17alpha1 - May 21st 1997.
+              WHATS NEW IN 1.9.17alpha3 - June 6th 1997.
               ==========================================
 
 Improved browsing support. 
@@ -7,6 +7,10 @@ Improved browsing support.
 Samba now should support propagation of browse lists 
 across subnets correctly. Look in the file docs/BROWSING.txt 
 as it has been largely re-written to explain how to do this.
+
+*IMPORTANT* All Samba servers acting as local/domain master
+browsers must be running 1.9.17alpha3, as should the nmbd
+set up as the WINS server.
 
 Thanks to Silicon Graphics for allowing us to test the new 
 code on their corporate network.
@@ -45,6 +49,23 @@ Many small bugfixes and improvements
 ------------------------------------
 From around the 'net around the world. Many
 thanks to everyone who contributed.
+
+Remaining known issues with cross-subnet browsing.
+--------------------------------------------------
+
+When nmbd is acting as a WINS server it doesn't handle
+de-registering of members of a WORKGROUP<1e> name correctly.
+The first machine to de-register will remove the name. This
+should be fixed in a later release when group names are 
+handled correctly in the WINS code.
+
+Propagation of servers between local master browsers and
+the domain master browser doesn't take into account the
+fact that only names seen by the local master browser on
+the local subnet should be propagated. This causes machines
+that have stopped serving to be propagated between browse
+masters. This issue will be fixed in the smbd code in a
+later release.
 
 Remember - this is new code so there may be
 bugs or problems.
