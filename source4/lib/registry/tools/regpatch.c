@@ -664,12 +664,13 @@ static CMD_FILE *cmd_file_create(const char *file)
 
 char *str_type(uint8_t type);
 
-static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
+static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd_file_name)
 {
 	CMD *cmd;
 	BOOL modified = False;
 	CMD_FILE *cmd_file = NULL;
-	REG_KEY *tmp = NULL;
+	TALLOC_CTX *mem_ctx = talloc_init("apply_cmd_file");
+	struct registry_key *tmp = NULL;
 	WERROR error;
 	cmd_file = cmd_file_create(cmd_file_name);
 
@@ -680,12 +681,12 @@ static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 		 */
 		switch (cmd->cmd) {
 		case CMD_ADD_KEY: 
-		  error = reg_open_key_abs(r, cmd->key, &tmp);
+		  error = reg_open_key_abs(mem_ctx, r, cmd->key, &tmp);
 
 		  /* If we found it, apply the other bits, else create such a key */
 		  if (W_ERROR_EQUAL(error, WERR_DEST_NOT_FOUND)) {
 			  if(W_ERROR_IS_OK(reg_key_add_name_recursive_abs(r, cmd->key))) {
-				  error = reg_open_key_abs(r, cmd->key, &tmp);
+				  error = reg_open_key_abs(mem_ctx, r, cmd->key, &tmp);
 				  if(!W_ERROR_IS_OK(error)) {
 					DEBUG(0, ("Error finding new key '%s' after it has been added\n", cmd->key));
 					continue;
@@ -699,12 +700,12 @@ static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 
 		  while (cmd->val_count) {
 			  VAL_SPEC_LIST *val = cmd->val_spec_list;
-			  REG_VAL *reg_val = NULL;
+			  struct registry_value *reg_val = NULL;
 
 			  if (val->type == REG_DELETE) {
-				  error = reg_key_get_value_by_name( tmp, val->name, &reg_val);
+				  error = reg_key_get_value_by_name( mem_ctx, tmp, val->name, &reg_val);
 				  if(W_ERROR_IS_OK(error)) {
-					  error = reg_val_del(reg_val);
+					  error = reg_del_value(reg_val);
 				  }
 				  if(!W_ERROR_IS_OK(error)) {
 					DEBUG(0, ("Error removing value '%s'\n", val->name));
@@ -712,7 +713,7 @@ static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 				  modified = True;
 			  }
 			  else {
-				  if(!W_ERROR_IS_OK(reg_key_add_value(tmp, val->name, val->type, val->val, strlen(val->val)))) {
+				  if(!W_ERROR_IS_OK(reg_val_set(tmp, val->name, val->type, val->val, strlen(val->val)))) {
 					  DEBUG(0, ("Error adding new value '%s'\n", val->name));
 					  continue;
 				  }
@@ -732,7 +733,7 @@ static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 		   * Find the key if it exists, and delete it ...
 		   */
 
-		  error = reg_open_key_abs(r, cmd->key, &tmp);
+		  error = reg_open_key_abs(mem_ctx, r, cmd->key, &tmp);
 		  if(!W_ERROR_IS_OK(error)) {
 			  DEBUG(0, ("Unable to open key '%s'\n", cmd->key));
 			  continue;
@@ -760,7 +761,7 @@ static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 	const char *credentials = NULL;
 	const char *patch;
 	const char *backend = "dir";
-	REG_HANDLE *h;
+	struct registry_context *h;
 	WERROR error;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -768,6 +769,12 @@ static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 		{"credentials", 'c', POPT_ARG_STRING, &credentials, 'c', "credentials (user%password", NULL},
 		POPT_TABLEEND
 	};
+
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+	}
+
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
@@ -782,7 +789,7 @@ static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 		return 1;
 	}
 
-	error = reg_open(backend, location, credentials, &h);
+	error = reg_open(&h, backend, location, credentials);
 	if(!h) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location, backend);
 		return 1;
@@ -794,7 +801,7 @@ static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 
 	nt_apply_reg_command_file(h, patch);
 
-	reg_free(h);
+	talloc_destroy(h->mem_ctx);
 
 	return 0;
 }

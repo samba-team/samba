@@ -149,10 +149,9 @@
 	WERROR winreg_EnumValue(
 		[in,ref] policy_handle *handle,
 		[in] uint32 enum_index,
-		[in,out,ref] winreg_EnumValueName *name,
+		[out,ref] winreg_EnumValueName *name,
 		[in,out] uint32 *type,
 		[in,out] winreg_Uint8buf *value,
-		[in,out] uint32 *requested_len,
 		[in,out] uint32 *returned_len
 	);
 

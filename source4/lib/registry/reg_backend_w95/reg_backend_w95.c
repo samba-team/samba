@@ -20,7 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "includes.h"
-#include "lib/registry/common/registry.h"
 
 /**
  * The registry starts with a header that contains pointers to 
@@ -179,67 +178,18 @@ static void parse_rgdb_block(CREG *creg, RGDB_HDR *rgdb_hdr)
 	}
 }
 
-static WERROR w95_open_root (REG_HANDLE *h, int hive, REG_KEY **key)
-{
-	CREG *creg = h->backend_data;
-
-	if(hive != 0) return WERR_NO_MORE_ITEMS;
-	
-	/* First element in rgkn should be root key */
-	*key = reg_key_new_abs("", h, LOCN_RGKN(creg, sizeof(RGKN_HDR)));
-	
-	return WERR_OK;
-}
-
-static WERROR w95_get_subkey_by_index (REG_KEY *parent, int n, REG_KEY **key)
-{
-	CREG *creg = parent->handle->backend_data;
-	RGKN_KEY *rgkn_key = parent->backend_data;
-	RGKN_KEY *child;
-	DWORD child_offset;
-	DWORD cur = 0;
-	
-	/* Get id of first child */
-	child_offset = rgkn_key->first_child_offset;
-
-	while(child_offset != 0xFFFFFFFF) {
-		child = LOCN_RGKN(creg, child_offset);
-
-		/* n == cur ? return! */
-		if(cur == n) {
-			RGDB_KEY *rgdb_key;
-			char *name;
-			rgdb_key = LOCN_RGDB_KEY(creg, child->id.rgdb, child->id.id);
-			if(!rgdb_key) {
-				DEBUG(0, ("Can't find %d,%d in RGDB table!\n", child->id.rgdb, child->id.id));
-				return WERR_FOOBAR;
-			}
-			name = strndup((char *)rgdb_key + sizeof(RGDB_KEY), rgdb_key->name_len);
-			*key = reg_key_new_rel(name, parent, child);
-			SAFE_FREE(name);
-			return WERR_OK;
-		}
-
-		cur++;
-		
-		child_offset = child->next_offset;
-	}
-
-	return WERR_NO_MORE_ITEMS;
-}
-
-static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *credentials)
+static WERROR w95_open_reg (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **root)
 {
 	CREG *creg;
 	DWORD creg_id, rgkn_id;
 	DWORD i;
 	DWORD offset;
 
-	creg = talloc_p(h->mem_ctx, CREG);
+	creg = talloc_p(mem_ctx, CREG);
 	memset(creg, 0, sizeof(CREG));
 	h->backend_data = creg;
 
-	if((creg->fd = open(location, O_RDONLY, 0000)) < 0) {
+	if((creg->fd = open(h->location, O_RDONLY, 0000)) < 0) {
 		return WERR_FOOBAR;
 	}
 
@@ -250,7 +200,7 @@ static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *cre
     creg->base = mmap(0, creg->sbuf.st_size, PROT_READ, MAP_SHARED, creg->fd, 0);
                                                                                                                                               
     if ((int)creg->base == 1) {
-		DEBUG(0,("Could not mmap file: %s, %s\n", location, strerror(errno)));
+		DEBUG(0,("Could not mmap file: %s, %s\n", h->location, strerror(errno)));
         return WERR_FOOBAR;
     }
 
@@ -258,7 +208,7 @@ static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *cre
 
 	if ((creg_id = IVAL(&creg->creg_hdr->CREG_ID,0)) != str_to_dword("CREG")) {
 		DEBUG(0, ("Unrecognized Windows 95 registry header id: 0x%0X, %s\n", 
-				  creg_id, location));
+				  creg_id, h->location));
 		return WERR_FOOBAR;
 	}
 
@@ -266,7 +216,7 @@ static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *cre
 
 	if ((rgkn_id = IVAL(&creg->rgkn_hdr->RGKN_ID,0)) != str_to_dword("RGKN")) {
 		DEBUG(0, ("Unrecognized Windows 95 registry key index id: 0x%0X, %s\n", 
-				  rgkn_id, location));
+				  rgkn_id, h->location));
 		return WERR_FOOBAR;
 	}
 
@@ -282,7 +232,7 @@ static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *cre
 	}
 #endif
 
-	creg->rgdb_keys = talloc_array_p(h->mem_ctx, RGDB_KEY **, creg->creg_hdr->num_rgdb);
+	creg->rgdb_keys = talloc_array_p(mem_ctx, RGDB_KEY **, creg->creg_hdr->num_rgdb);
 
 	offset = 0;
 	DEBUG(3, ("Reading %d rgdb entries\n", creg->creg_hdr->num_rgdb));
@@ -291,14 +241,14 @@ static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *cre
 		
 		if(strncmp((char *)&(rgdb_hdr->RGDB_ID), "RGDB", 4)) {
 			DEBUG(0, ("unrecognized rgdb entry: %4d, %s\n", 
-					  rgdb_hdr->RGDB_ID, location));
+					  rgdb_hdr->RGDB_ID, h->location));
 			return WERR_FOOBAR;
 		} else {
 			DEBUG(3, ("Valid rgdb entry, first free id: %d, max id: %d\n", rgdb_hdr->first_free_id, rgdb_hdr->max_id));
 		}
 
 
-		creg->rgdb_keys[i] = talloc_array_p(h->mem_ctx, RGDB_KEY *, rgdb_hdr->max_id+1);
+		creg->rgdb_keys[i] = talloc_array_p(mem_ctx, RGDB_KEY *, rgdb_hdr->max_id+1);
 		memset(creg->rgdb_keys[i], 0, sizeof(RGDB_KEY *) * (rgdb_hdr->max_id+1));
 
 		parse_rgdb_block(creg, rgdb_hdr);
@@ -306,11 +256,51 @@ static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *cre
 		offset+=rgdb_hdr->size;
 	}
 	
-
+	/* First element in rgkn should be root key */
+	*root = talloc_p(mem_ctx, struct registry_key);
+	(*root)->name = NULL;
+	(*root)->backend_data = LOCN_RGKN(creg, sizeof(RGKN_HDR));
+	
 	return WERR_OK;
 }
 
-static WERROR w95_close_reg(REG_HANDLE *h)
+static WERROR w95_get_subkey_by_index (TALLOC_CTX *mem_ctx, struct registry_key *parent, int n, struct registry_key **key)
+{
+	CREG *creg = parent->hive->backend_data;
+	RGKN_KEY *rgkn_key = parent->backend_data;
+	RGKN_KEY *child;
+	DWORD child_offset;
+	DWORD cur = 0;
+	
+	/* Get id of first child */
+	child_offset = rgkn_key->first_child_offset;
+
+	while(child_offset != 0xFFFFFFFF) {
+		child = LOCN_RGKN(creg, child_offset);
+
+		/* n == cur ? return! */
+		if(cur == n) {
+			RGDB_KEY *rgdb_key;
+			rgdb_key = LOCN_RGDB_KEY(creg, child->id.rgdb, child->id.id);
+			if(!rgdb_key) {
+				DEBUG(0, ("Can't find %d,%d in RGDB table!\n", child->id.rgdb, child->id.id));
+				return WERR_FOOBAR;
+			}
+			*key = talloc_p(mem_ctx, struct registry_key);
+			(*key)->backend_data = child;
+			(*key)->name = talloc_strndup(mem_ctx, (char *)rgdb_key + sizeof(RGDB_KEY), rgdb_key->name_len);
+			return WERR_OK;
+		}
+
+		cur++;
+		
+		child_offset = child->next_offset;
+	}
+
+	return WERR_NO_MORE_ITEMS;
+}
+
+static WERROR w95_close_reg(struct registry_hive *h)
 {
 	CREG *creg = h->backend_data;
 	if (creg->base) munmap(creg->base, creg->sbuf.st_size);
@@ -319,47 +309,51 @@ static WERROR w95_close_reg(REG_HANDLE *h)
 	return WERR_OK;
 }
 
-
-static WERROR w95_fetch_values(REG_KEY *k, int *count, REG_VAL ***values)
+static WERROR w95_num_values(struct registry_key *k, int *count)
 {
 	RGKN_KEY *rgkn_key = k->backend_data;
-	DWORD i;
-	DWORD offset = 0;
-	RGDB_KEY *rgdb_key = LOCN_RGDB_KEY((CREG *)k->handle->backend_data, rgkn_key->id.rgdb, rgkn_key->id.id);
+	RGDB_KEY *rgdb_key = LOCN_RGDB_KEY((CREG *)k->hive->backend_data, rgkn_key->id.rgdb, rgkn_key->id.id);
 
 	if(!rgdb_key) return WERR_FOOBAR;
 	
 	*count = rgdb_key->num_values;
 	
-	if((*count) == 0) return WERR_OK;
+	return WERR_OK;
+}
 
-	(*values) = talloc_array_p(k->mem_ctx, REG_VAL *, (*count)+1);
-	for(i = 0; i < rgdb_key->num_values; i++) {
-		RGDB_VALUE *val = (RGDB_VALUE *)(((char *)rgdb_key) + sizeof(RGDB_KEY) + rgdb_key->name_len + offset);
-		(*values)[i] = reg_val_new(k, val);
-		
-		/* Name */
-		(*values)[i]->name = talloc_strndup(k->mem_ctx, (char *)val+sizeof(RGDB_VALUE), val->name_len);
-		
-		/* Value */
-		(*values)[i]->data_len = val->data_len;
-		(*values)[i]->data_blk = talloc_memdup((*values)[i]->mem_ctx, (char *)val+sizeof(RGDB_VALUE)+val->name_len, val->data_len);
+static WERROR w95_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_value **value)
+{
+	RGKN_KEY *rgkn_key = k->backend_data;
+	DWORD i;
+	DWORD offset = 0;
+	RGDB_KEY *rgdb_key = LOCN_RGDB_KEY((CREG *)k->hive->backend_data, rgkn_key->id.rgdb, rgkn_key->id.id);
+	RGDB_VALUE *curval;
 
-		/* Type */
-		(*values)[i]->data_type = val->type;
-
-		offset+=sizeof(RGDB_VALUE) + val->name_len + val->data_len;
+	if(!rgdb_key) return WERR_FOOBAR;
+	
+	if(idx >= rgdb_key->num_values) return WERR_NO_MORE_ITEMS;
+	
+	for(i = 0; i < idx; i++) {
+		curval = (RGDB_VALUE *)(((char *)rgdb_key) + sizeof(RGDB_KEY) + rgdb_key->name_len + offset);
+		offset+=sizeof(RGDB_VALUE) + curval->name_len + curval->data_len;
 	}
+
+	*value = talloc_p(mem_ctx, struct registry_value);
+	(*value)->backend_data = curval;
+	(*value)->name = talloc_strndup(mem_ctx, (char *)curval+sizeof(RGDB_VALUE), curval->name_len);
+		
+	(*value)->data_len = curval->data_len;
+	(*value)->data_blk = talloc_memdup(mem_ctx, (char *)curval+sizeof(RGDB_VALUE)+curval->name_len, curval->data_len);
+	(*value)->data_type = curval->type;
 	
 	return WERR_OK;
 }
 
-static struct registry_ops reg_backend_w95 = {
+static struct registry_operations reg_backend_w95 = {
 	.name = "w95",
-	.open_registry = w95_open_reg,
-	.close_registry = w95_close_reg,
-	.get_hive = w95_open_root,
-	.fetch_values = w95_fetch_values,
+	.open_hive = w95_open_reg,
+	.get_value_by_index = w95_get_value_by_id,
+	.num_values = w95_num_values,
 	.get_subkey_by_index = w95_get_subkey_by_index,
 };
 
