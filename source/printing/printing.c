@@ -882,7 +882,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	struct printjob pjob;
 	int next_jobid;
 	user_struct *vuser;
-	int njobs;
+	int njobs = 0;
 
 	errno = 0;
 
