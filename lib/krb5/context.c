@@ -16,6 +16,7 @@ krb5_init_context(krb5_context *context)
   memset(p, 0, sizeof(krb5_context_data));
   krb5_parse_config_file(&p->cf, NULL);
   krb5_get_lrealm(&p->default_realm);
+  krb5_init_ets(p);
   *context = p;
   return 0;
 }
