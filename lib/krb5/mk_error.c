@@ -64,7 +64,7 @@ krb5_mk_error(krb5_context context,
     if(ctime) {
 	msg.ctime = &ctime;
     }
-    msg.error_code = error_code;
+    msg.error_code = error_code - KRB5KDC_ERR_NONE;
     if (e_text)
 	msg.e_text = (general_string*)&e_text;
     if (e_data)
