@@ -3555,43 +3555,47 @@ struct
   int id;
   BOOL (*fn)(connection_struct *,uint16,char *,char *,
 	     int,int,char **,char **,int *,int *);
-  int flags;
+  BOOL auth_user;		/* Deny anonymous access? */
 } api_commands[] = {
-  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum,0},
-  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo,0},
-  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd,0},
-  {"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum,0},
-  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo,0},
-  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum,0},
-  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers,0},
-  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum,0},
-  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo,0},
-  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups,0},
-  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo,0},
-  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum,0},
-  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo,0},
-  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl,0},
-  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl,0},
-  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate,0},
-  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo,0},
-  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel,0},
-  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum,0},
-  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo,0},
-  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD,0},
-  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl,0},
-  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum,0},
-  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms,0},
-  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword,0},
-  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon,0},
-  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo,0},
-  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum,0},
-  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum,0},
-  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum,0},
-  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword,0},
-  {NULL,		-1,	api_Unsupported,0}};
+  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum, True},
+  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo},
+  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd},
+  {"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum, True},
+  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo},
+  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum, True},
+  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers, True},
+  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum, True},
+  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo},
+  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups},
+  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo},
+  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum, True},
+  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo},
+  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl},
+  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl},
+  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate},
+  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo},
+  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel},
+  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel},
+  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel},
+  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum},
+  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo},
+  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD},
+  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl},
+  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum}, /* anon OK */
+  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms},
+  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword},
+  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon},
+  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo},
+  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum},
+  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum},
+  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum},
+  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword}, /* anon OK */
+  {NULL,		-1,	api_Unsupported}};
 
+/*  The following RAP calls are not implemented by Samba:
+
+        RAP_WFileEnum2 - anon not OK 
+*/
 
 /****************************************************************************
  Handle remote api calls
@@ -3626,6 +3630,15 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
         DEBUG(3,("Doing %s\n",api_commands[i].name));
         break;
     }
+  }
+
+  /* Check whether this api call can be done anonymously */
+
+  if (api_commands[i].auth_user && lp_restrict_anonymous()) {
+	  user_struct *user = get_valid_user_struct(vuid);
+
+	  if (!user || user->guest)
+		  return ERROR_NT(NT_STATUS_ACCESS_DENIED);
   }
 
   rdata = (char *)malloc(1024);
