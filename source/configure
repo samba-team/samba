@@ -1211,7 +1211,7 @@ echo "$ac_t""$ac_cv_prog_cc_Ae" 1>&6
 				ac_cv_gcc_compiler_version_number=`grep 'gcc version' conftest.c`
 				rm -fr conftest.c
 				case "$ac_cv_gcc_compiler_version_number" in
-					"*gcc version 2.6*"|"*gcc version 2.7*")
+					*"gcc version 2.6"*|*"gcc version 2.7"*)
 						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
 						;;
 					*)
