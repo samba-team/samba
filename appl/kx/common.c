@@ -189,11 +189,12 @@ try_pipe (struct x_socket *s, int dpy, const char *pattern)
     
     snprintf (path, sizeof(path), pattern, dpy);
     fd = open (path, O_WRONLY | O_CREAT | O_EXCL, 0600);
-    if (fd < 0)
+    if (fd < 0) {
 	if (errno == EEXIST)
 	    return 1;
 	else
 	    return -1;
+    }
 
     close (fd);
 
@@ -597,6 +598,94 @@ fail:
      return 1;
 }
 
+/* 
+ * Return 0 iff `cookie' is compatible with the cookie for the
+ * localhost with name given in `disp_he' and display number in
+ * `disp_nr'.
+ */
+
+static int
+match_local_auth (Xauth* auth, struct hostent *disp_he, int disp_nr)
+{
+    int auth_disp;
+    char *tmp_disp;
+    
+    tmp_disp = strndup (auth->number, auth->number_length);
+    if (tmp_disp == NULL)
+	return -1;
+    auth_disp = atoi(tmp_disp);
+    free (tmp_disp);
+    if (auth_disp != disp_nr)
+	return 1;
+    if (auth->family == FamilyLocal) {
+	int i;
+
+	if (strncmp (auth->address,
+		     disp_he->h_name,
+		     auth->address_length) == 0)
+	    return 0;
+
+	for (i = 0; disp_he->h_aliases[i] != NULL; ++i)
+	    if (strncmp (auth->address,
+			 disp_he->h_aliases[i],
+			 auth->address_length) == 0)
+		return 0;
+    } else if (auth->family == FamilyInternet
+	     && disp_he->h_addrtype == AF_INET
+	     && auth->address_length == disp_he->h_length) {
+	int i;
+
+	for (i = 0; disp_he->h_addr_list[i] != NULL; ++i)
+	    if (memcmp (disp_he->h_addr_list[i],
+			auth->address,
+			auth->address_length) == 0)
+		return 0;
+    }
+    return 1;
+}
+
+/*
+ * Find `our' cookie from the cookie file `f' and return it or NULL.
+ */
+
+static Xauth*
+find_auth_cookie (FILE *f)
+{
+    Xauth *ret = NULL;
+    char local_hostname[MaxHostNameLen];
+    char *display = getenv("DISPLAY");
+    char *colon;
+    struct hostent *display_he;
+    int disp;
+
+    if (display == NULL)
+	display = ":0";
+    colon = strchr (display, ':');
+    if (colon == NULL)
+	disp = 0;
+    else {
+	*colon = '\0';
+	disp = atoi (colon + 1);
+    }
+    if (strcmp (display, "") == 0
+	|| strncmp (display, "unix", 4) == 0
+	|| strncmp (display, "localhost", 9) == 0) {
+	gethostname (local_hostname, sizeof(local_hostname));
+	display = local_hostname;
+    }
+    display_he = gethostbyname (display);
+    if (display_he == NULL) {
+	warnx ("gethostbyname %s: %s", display, hstrerror(h_errno));
+	return NULL;
+    }
+
+    for (; (ret = XauReadAuth (f)) != NULL; XauDisposeAuth(ret)) {
+	if (match_local_auth (ret, display_he, disp) == 0)
+	    return ret;
+    }
+    return NULL;
+}
+
 /*
  * Get rid of the cookie that we were sent and get the correct one
  * from our own cookie file instead.
@@ -608,7 +697,6 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
      u_char beg[12];
      int bigendianp;
      unsigned n, d, npad, dpad;
-     Xauth *auth;
      FILE *f;
      u_char zeros[6] = {0, 0, 0, 0, 0, 0};
 
@@ -627,51 +715,57 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
      if (n != 0 || d != 0)
 	  return 1;
      f = fopen(filename, "r");
-     if (f) {
-	  u_char len[6] = {0, 0, 0, 0, 0, 0};
+     if (f != NULL) {
+	 Xauth *auth = find_auth_cookie (f);
+	 u_char len[6] = {0, 0, 0, 0, 0, 0};
+	 
+	 fclose (f);
 
-	  auth = XauReadAuth(f);
-	  fclose(f);
-	  if (auth != NULL) {
-	      n = auth->name_length;
-	      d = auth->data_length;
-	  } else {
-	      n = 0;
-	      d = 0;
-	  }
-	  if (bigendianp) {
-	       len[0] = n >> 8;
-	       len[1] = n & 0xFF;
-	       len[2] = d >> 8;
-	       len[3] = d & 0xFF;
-	  } else {
-	       len[0] = n & 0xFF;
-	       len[1] = n >> 8;
-	       len[2] = d & 0xFF;
-	       len[3] = d >> 8;
-	  }
-	  if (krb_net_write (xserver, len, 6) != 6)
-	       return 1;
-	  if(n != 0 && krb_net_write (xserver, auth->name, n) != n)
-	       return 1;
-	  npad = (4 - (n % 4)) % 4;
-	  if (npad && krb_net_write (xserver, zeros, npad) != npad)
-	      return 1;
-	  if (d != 0 && krb_net_write (xserver, auth->data, d) != d)
-	       return 1;
-	  dpad = (4 - (d % 4)) % 4;
-	  if (dpad && krb_net_write (xserver, zeros, dpad) != dpad)
-	      return 1;
-	  XauDisposeAuth(auth);
+	 if (auth != NULL) {
+	     n = auth->name_length;
+	     d = auth->data_length;
+	 } else {
+	     n = 0;
+	     d = 0;
+	 }
+	 if (bigendianp) {
+	     len[0] = n >> 8;
+	     len[1] = n & 0xFF;
+	     len[2] = d >> 8;
+	     len[3] = d & 0xFF;
+	 } else {
+	     len[0] = n & 0xFF;
+	     len[1] = n >> 8;
+	     len[2] = d & 0xFF;
+	     len[3] = d >> 8;
+	 }
+	 if (krb_net_write (xserver, len, 6) != 6) {
+	     XauDisposeAuth(auth);
+	     return 1;
+	 }
+	 if(n != 0 && krb_net_write (xserver, auth->name, n) != n) {
+	     XauDisposeAuth(auth);
+	     return 1;
+	 }
+	 npad = (4 - (n % 4)) % 4;
+	 if (npad && krb_net_write (xserver, zeros, npad) != npad) {
+	     XauDisposeAuth(auth);
+	     return 1;
+	 }
+	 if (d != 0 && krb_net_write (xserver, auth->data, d) != d) {
+	     XauDisposeAuth(auth);
+	     return 1;
+	 }
+	 XauDisposeAuth(auth);
+	 dpad = (4 - (d % 4)) % 4;
+	 if (dpad && krb_net_write (xserver, zeros, dpad) != dpad)
+	     return 1;
      } else {
-	  if(krb_net_write(xserver, zeros, 6) != 6)
-	       return 1;
+	 if(krb_net_write(xserver, zeros, 6) != 6)
+	     return 1;
      }
      return 0;
 }
-
-
-
 
 /*
  * Some simple controls on the address and corresponding socket

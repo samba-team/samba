@@ -1,5 +1,13 @@
-Wed Apr  7 23:39:23 1999  Assar Westerlund  <assar@sics.se>
+1999-05-08  Assar Westerlund  <assar@sics.se>
 
+	* common.c (try_pie): more braces
+	(match_local_auth): new function
+	(find_auth_cookie): new function
+	(replace_cookie): don't just take the first auth cookie.  based on
+	patch from Ake Sandgren <ake@@cs.umu.se>
+
+Wed Apr  7 23:39:23 1999  Assar Westerlund  <assar@sics.se>
+	
 	* common.c (get_xsockets): init local variable to get rid of a gcc
  	warning
 
