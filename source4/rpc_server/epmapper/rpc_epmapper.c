@@ -66,20 +66,37 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 	twr->floors[2].lhs.protocol = EPM_PROTOCOL_RPC_C;
 	twr->floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr->floors[2].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 2);
-	
-	/* on a SMB pipe ... */
-	twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
-	twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->floors[3].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\PIPE\\%s", 
-							   e->endpoint.info.smb_pipe);
-	twr->floors[3].rhs.rhs_data.length = strlen(twr->floors[3].rhs.rhs_data.data)+1;
-	
-	/* on an NetBIOS link ... */
-	twr->floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
-	twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->floors[4].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\\\%s", 
-							   lp_netbios_name());
-	twr->floors[4].rhs.rhs_data.length = strlen(twr->floors[4].rhs.rhs_data.data)+1;
+
+	switch (e->endpoint.type) {
+	case ENDPOINT_SMB:
+		/* on a SMB pipe ... */
+		twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
+		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
+		twr->floors[3].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\PIPE\\%s", 
+								   e->endpoint.info.smb_pipe);
+		twr->floors[3].rhs.rhs_data.length = strlen(twr->floors[3].rhs.rhs_data.data)+1;
+		
+		/* on an NetBIOS link ... */
+		twr->floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
+		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
+		twr->floors[4].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\\\%s", 
+								   lp_netbios_name());
+		twr->floors[4].rhs.rhs_data.length = strlen(twr->floors[4].rhs.rhs_data.data)+1;
+		break;
+
+	case ENDPOINT_TCP:
+		/* on a TCP connection ... */
+		twr->floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
+		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
+		twr->floors[3].rhs.rhs_data = data_blob_talloc(mem_ctx, NULL, 2);
+		RSSVAL(twr->floors[3].rhs.rhs_data.data, 0, e->endpoint.info.tcp_port);
+		
+		/* on an IP link ... */
+		twr->floors[4].lhs.protocol = EPM_PROTOCOL_IP;
+		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
+		twr->floors[4].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 4);
+		break;
+	}
 
 	return True;
 }
@@ -160,7 +177,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 		}
 		h->data = eps;
 
-		eps->count = build_ep_list(h->mem_ctx, dce->smb->dcesrv.endpoint_list, &eps->e);
+		eps->count = build_ep_list(h->mem_ctx, dce->dce->endpoint_list, &eps->e);
 	}
 
 	/* return the next N elements */
@@ -218,7 +235,7 @@ static NTSTATUS epm_Map(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
 
-	count = build_ep_list(mem_ctx, dce->smb->dcesrv.endpoint_list, &eps);
+	count = build_ep_list(mem_ctx, dce->dce->endpoint_list, &eps);
 
 	ZERO_STRUCTP(r->out.entry_handle);
 	r->out.num_towers = 1;
@@ -368,9 +385,9 @@ static const struct dcesrv_endpoint_ops rpc_epmapper_ops = {
 /*
   register with the dcerpc server
 */
-void rpc_epmapper_init(struct server_context *smb)
+void rpc_epmapper_init(struct dcesrv_context *dce)
 {
-	if (!dcesrv_endpoint_register(smb, &rpc_epmapper_ops)) {
+	if (!dcesrv_endpoint_register(dce, &rpc_epmapper_ops)) {
 		DEBUG(1,("Failed to register epmapper endpoint\n"));
 	}
 }

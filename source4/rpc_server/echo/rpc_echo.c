@@ -179,9 +179,9 @@ static const struct dcesrv_endpoint_ops rpc_echo_ops = {
 /*
   register with the dcerpc server
 */
-void rpc_echo_init(struct server_context *smb)
+void rpc_echo_init(struct dcesrv_context *dce)
 {
-	if (!dcesrv_endpoint_register(smb, &rpc_echo_ops)) {
+	if (!dcesrv_endpoint_register(dce, &rpc_echo_ops)) {
 		DEBUG(1,("Failed to register rpcecho endpoint\n"));
 	}
 }

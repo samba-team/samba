@@ -34,48 +34,56 @@ void exit_server(struct server_context *smb, const char *reason)
 
 
 /*
+  setup a single listener of any type
+ */
+static void setup_listen(struct event_context *events,
+			 struct model_ops *model_ops, 
+			 void (*accept_handler)(struct event_context *,struct fd_event *,time_t,uint16),
+			 struct in_addr *ifip, unsigned port)
+{
+	struct fd_event fde;
+	fde.fd = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
+	if (fde.fd == -1) {
+		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
+			 inet_ntoa(*ifip), port, strerror(errno)));
+		return;
+	}
+
+	/* ready to listen */
+	set_socket_options(fde.fd, "SO_KEEPALIVE"); 
+	set_socket_options(fde.fd, lp_socket_options());
+      
+	if (listen(fde.fd, SMBD_LISTEN_BACKLOG) == -1) {
+		DEBUG(0,("Failed to listen on %s:%d - %s\n",
+			 inet_ntoa(*ifip), port, strerror(errno)));
+		close(fde.fd);
+		return;
+	}
+
+	/* we are only interested in read events on the listen socket */
+	fde.flags = EVENT_FD_READ;
+	fde.private = model_ops;
+	fde.handler = accept_handler;
+	
+	event_add_fd(events, &fde);
+}
+
+/*
   add a socket address to the list of events, one event per port
 */
 static void add_socket(struct event_context *events, 
 		       struct model_ops *model_ops, 
 		       struct in_addr *ifip)
 {
-	char *ports = lp_smb_ports();
 	char *ptr, *tok;
 	const char *delim = ", ";
 
-	for (tok=strtok_r(ports, delim, &ptr); 
+	for (tok=strtok_r(lp_smb_ports(), delim, &ptr); 
 	     tok; 
 	     tok=strtok_r(NULL, delim, &ptr)) {
 		unsigned port = atoi(tok);
-		struct fd_event fde;
-
 		if (port == 0) continue;
-
-		fde.fd = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
-		if (fde.fd == -1) {
-			DEBUG(0,("Failed to open socket on %s:%u - %s\n",
-				 inet_ntoa(*ifip), port, strerror(errno)));
-			continue;
-		}
-
-		/* ready to listen */
-		set_socket_options(fde.fd, "SO_KEEPALIVE"); 
-		set_socket_options(fde.fd, lp_socket_options());
-      
-		if (listen(fde.fd, SMBD_LISTEN_BACKLOG) == -1) {
-			DEBUG(0,("Failed to listen on %s:%d - %s\n",
-				 inet_ntoa(*ifip), port, strerror(errno)));
-			close(fde.fd);
-			continue;
-		}
-
-		/* we are only interested in read events on the listen socket */
-		fde.flags = EVENT_FD_READ;
-		fde.private = model_ops;
-		fde.handler = model_ops->accept_connection;
-
-		event_add_fd(events, &fde);
+		setup_listen(events, model_ops, model_ops->accept_connection, ifip, port);
 	}
 }
 
@@ -170,7 +178,6 @@ static BOOL init_structs(void)
 {
 	init_names();
 	file_init();
-	init_rpc_pipe_hnd();
 	secrets_init();
 
 	/* we want to re-seed early to prevent time delays causing
@@ -202,6 +209,9 @@ static void setup_process_model(struct event_context *events,
 	/* now setup the listening sockets, adding 
 	   event handlers to the events structure */
 	open_sockets_smbd(events, ops);
+
+	/* setup any sockets we need to listen on for RPC over TCP */
+	open_sockets_rpc(events, ops);
 }
 
 /****************************************************************************

@@ -71,7 +71,7 @@ struct dcesrv_handle {
 /* the state associated with a dcerpc server connection */
 struct dcesrv_state {
 	/* the top level context for this server */
-	struct server_context *smb;
+	struct dcesrv_context *dce;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -120,7 +120,7 @@ struct dcesrv_endpoint_ops {
 	void (*disconnect)(struct dcesrv_state *);
 
 	/* this function is used to ask an endpoint server for a list
-	   of endpoints it wants to handle */
+	   of endpoints/interfaces it wants to handle */
 	int (*lookup_endpoints)(TALLOC_CTX *mem_ctx, struct dcesrv_ep_iface **);
 };
 

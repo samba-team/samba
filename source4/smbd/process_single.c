@@ -49,9 +49,30 @@ static void accept_connection(struct event_context *ev, struct fd_event *fde, ti
 
 	/* create a smb server context and add it to out event
 	   handling */
-	init_smbsession(ev, model_ops, accepted_fd); 
+	init_smbsession(ev, model_ops, accepted_fd, smbd_read_handler); 
 
 	/* return to event handling */
+}
+
+
+/*
+  called when a rpc listening socket becomes readable
+*/
+static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
+{
+	int accepted_fd;
+	struct sockaddr addr;
+	socklen_t in_addrlen = sizeof(addr);
+	
+	/* accept an incoming connection. */
+	accepted_fd = accept(fde->fd,&addr,&in_addrlen);
+	if (accepted_fd == -1) {
+		DEBUG(0,("accept_connection_single: accept: %s\n",
+			 strerror(errno)));
+		return;
+	}
+
+	init_rpc_session(ev, fde->private, accepted_fd); 
 }
 
 /* called when a SMB connection goes down */
@@ -77,6 +98,7 @@ void process_model_single_init(void)
 	/* fill in all the operations */
 	ops.model_startup = model_startup;
 	ops.accept_connection = accept_connection;
+	ops.accept_rpc_connection = accept_rpc_connection;
 	ops.terminate_connection = terminate_connection;
 	ops.exit_server = NULL;
 	ops.get_id = get_id;
