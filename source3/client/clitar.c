@@ -90,7 +90,7 @@ static void unfixtarname();
 Write a tar header to buffer
 ****************************************************************************/
 static void writetarheader(int f,  char *aname, int size, time_t mtime,
-		    char *amode)
+			   char *amode)
 {
   union hblock hb;
   int i, chk, l;
@@ -99,10 +99,21 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
   memset(hb.dummy, 0, sizeof(hb.dummy));
   
   l=strlen(aname);
-  if (l >= NAMSIZ)
-    {
-      DEBUG(0, ("tar file %s name length exceeds NAMSIZ\n", aname));
-    }
+  if (l >= NAMSIZ) {
+	  /* write a GNU tar style long header */
+	  char *b;
+	  b = (char *)malloc(l+TBLOCK+100);
+	  if (!b) {
+		  DEBUG(0,("out of memory\n"));
+		  exit(1);
+	  }
+	  writetarheader(f, "/./@LongLink", l+1, 0, "     0 \0");
+	  memset(b, 0, l+TBLOCK+100);
+	  fixtarname(b, aname, l+1);
+	  i = strlen(b)+1;
+	  dotarbuf(f, b, TBLOCK*((i+(TBLOCK-1)/TBLOCK)));
+	  free(b);
+  }
 
   /* use l + 1 to do the null too */
   fixtarname(hb.dbuf.name, aname, (l >= NAMSIZ) ? NAMSIZ : l + 1);
@@ -119,8 +130,13 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
   oct_it((long) size, 13, hb.dbuf.size);
   oct_it((long) mtime, 13, hb.dbuf.mtime);
   memcpy(hb.dbuf.chksum, "        ", sizeof(hb.dbuf.chksum));
-  hb.dbuf.linkflag='0';
   memset(hb.dbuf.linkname, 0, NAMSIZ);
+  if (strcmp("/./@LongLink", aname) == 0) {
+	  /* we're doing a GNU tar long filename */
+	  hb.dbuf.linkflag='L';
+  } else {
+	  hb.dbuf.linkflag='0';
+  }
   
   for (chk=0, i=sizeof(hb.dummy), jp=hb.dummy; --i>=0;) chk+=(0xFF & *jp++);
 
