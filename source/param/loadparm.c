@@ -1128,7 +1128,7 @@ static void init_globals(void)
 /* NETLOGON Secure Channel */
 
   Globals.bClientSChannel = False; 
-  Globals.bServerSChannel = Auto; 
+  Globals.bServerSChannel = False; 
 
 /* NTLMv2 */
 

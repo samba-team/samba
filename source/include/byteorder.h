@@ -237,41 +237,41 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 #define DBG_RW_PCVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
 	{ RW_PCVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
+	DEBUG(5+depth,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(5, (unsigned char*)(outbuf), (len)); else \
-	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (outbuf)[idx])); } } \
-	DEBUG(5,("\n")); } 
+    if (charmode) print_asc(depth+5, (unsigned char*)(outbuf), (len)); else \
+	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5+depth,("%02x ", (outbuf)[idx])); } } \
+	DEBUG(5+depth,("\n")); } 
 
 #define DBG_RW_PSVAL(charmode,string,depth,base,read,big_endian,inbuf,outbuf,len) \
 	{ RW_PSVAL(read,big_endian,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
+	DEBUG(5+depth,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(5, (unsigned char*)(outbuf), 2*(len)); else \
-	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", (outbuf)[idx])); } } \
-	DEBUG(5,("\n")); }
+    if (charmode) print_asc(depth+5, (unsigned char*)(outbuf), 2*(len)); else \
+	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5+depth,("%04x ", (outbuf)[idx])); } } \
+	DEBUG(5+depth,("\n")); }
 
 #define DBG_RW_PIVAL(charmode,string,depth,base,read,big_endian,inbuf,outbuf,len) \
 	{ RW_PIVAL(read,big_endian,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
+	DEBUG(5+depth,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(5, (unsigned char*)(outbuf), 4*(len)); else \
-	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", (outbuf)[idx])); } } \
-	DEBUG(5,("\n")); }
+    if (charmode) print_asc(depth+5, (unsigned char*)(outbuf), 4*(len)); else \
+	{ uint32 idx; for (idx = 0; idx < len; idx++) { DEBUG(5+depth,("%08x ", (outbuf)[idx])); } } \
+	DEBUG(5+depth,("\n")); }
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
 	{ RW_CVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %02x\n", \
+	DEBUG(5+depth,("%s%04x %s: %02x\n", \
              tab_depth(depth), base, string, outbuf)); }
 
 #define DBG_RW_SVAL(string,depth,base,read,big_endian,inbuf,outbuf) \
 	{ RW_SVAL(read,big_endian,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %04x\n", \
+	DEBUG(5+depth,("%s%04x %s: %04x\n", \
              tab_depth(depth), base, string, outbuf)); }
 
 #define DBG_RW_IVAL(string,depth,base,read,big_endian,inbuf,outbuf) \
 	{ RW_IVAL(read,big_endian,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %08x\n", \
+	DEBUG(5+depth,("%s%04x %s: %08x\n", \
              tab_depth(depth), base, string, outbuf)); }
 
 /* Alignment macros. */

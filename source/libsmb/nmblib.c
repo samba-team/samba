@@ -800,7 +800,7 @@ static int build_dgram(char *buf,struct packet_struct *p)
 
   /* put in the header */
   ubuf[0] = dgram->header.msg_type;
-  ubuf[1] = (((int)dgram->header.flags.node_type)<<2);
+  ubuf[1] = (((int)dgram->header.flags.node_type)<<2) + 0x10;
   if (dgram->header.flags.more) ubuf[1] |= 1;
   if (dgram->header.flags.first) ubuf[1] |= 2;
   RSSVAL(ubuf,2,dgram->header.dgm_id);

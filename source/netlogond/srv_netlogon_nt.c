@@ -1204,7 +1204,8 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 					     group_rid, num_gids, gids, 0x20,
 					     enc_user_sess_key, &uni_myname,
 					     &uni_sam_name, padding,
-					     &global_sam_sid); break;
+					     &global_sam_sid);
+			break;
 		}
 		case 3:
 		{
@@ -1228,7 +1229,9 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 					     gids, 0x20,
 					     enc_user_sess_key, &uni_myname,
 					     &uni_sam_name, padding,
-					     &global_sam_sid, NULL); break;}
+					     &global_sam_sid, NULL);
+			break;
+		}
 		default:
 		{
 			status = NT_STATUS_INVALID_INFO_CLASS;

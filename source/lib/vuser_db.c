@@ -103,7 +103,7 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr)
 
 	if (usr != NULL)
 	{
-		if (!vuid_io_user_struct("usr", (*usr), &data, 0))
+		if (!vuid_io_user_struct("usr", (*usr), &data, 100))
 		{
 			prs_free_data(&key);
 			prs_free_data(&data);
@@ -138,7 +138,7 @@ BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr)
 	prs_init(&data, 0, 4, False);
 
 	if (!vuid_io_key("key", &k, &key, 0) ||
-	    !vuid_io_user_struct("usr", usr, &data, 0) ||
+	    !vuid_io_user_struct("usr", usr, &data, 100) ||
 	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
 	{
 		prs_free_data(&key);

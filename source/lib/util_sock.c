@@ -305,97 +305,6 @@ ssize_t read_socket_with_timeout(int fd, char *buf, size_t mincnt,
 	if (maxcnt <= 0)
 		return (0);
 
-	/* Blocking read */
-	if (time_out <= 0)
-	{
-		if (mincnt == 0)
-			mincnt = maxcnt;
-
-		while (nread < mincnt)
-		{
-#ifdef WITH_SSL
-			if (fd == sslFd)
-			{
-				readret =
-					SSL_read(ssl, buf + nread,
-						 maxcnt - nread);
-			}
-			else
-			{
-				readret =
-					read(fd, buf + nread, maxcnt - nread);
-			}
-#else /* WITH_SSL */
-			readret = read(fd, buf + nread, maxcnt - nread);
-#endif /* WITH_SSL */
-
-			if (readret <= 0)
-			{
-				return readret;
-			}
-
-			nread += readret;
-		}
-		return ((ssize_t) nread);
-	}
-
-	/* Most difficult - timeout read */
-	/* If this is ever called on a disk file and 
-	   mincnt is greater then the filesize then
-	   system performance will suffer severely as 
-	   select always returns true on disk files */
-
-	for (nread = 0; nread < mincnt;)
-	{
-		int selrtn = read_data_outstanding(fd, time_out);
-
-		/* Check if error */
-		if (selrtn <= 0)
-		{
-			return selrtn;
-		}
-
-#ifdef WITH_SSL
-		if (fd == sslFd)
-		{
-			readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-		}
-		else
-		{
-			readret = read(fd, buf + nread, maxcnt - nread);
-		}
-#else /* WITH_SSL */
-		readret = read(fd, buf + nread, maxcnt - nread);
-#endif /* WITH_SSL */
-
-		if (readret <= 0)
-		{
-			return readret;
-		}
-		nread += readret;
-	}
-
-	/* Return the number we got */
-	return ((ssize_t) nread);
-}
-
-/****************************************************************************
- Read data from a socket with a timout in msec.
-mincount = if timeout, minimum to read before returning
-maxcount = number to be read.
-time_out = timeout in milliseconds
-****************************************************************************/
-
-ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
-			  unsigned int time_out)
-{
-	ssize_t readret;
-	size_t nread = 0;
-
-	/* just checking .... */
-	if (maxcnt <= 0)
-		return (0);
-
 	smb_read_error = 0;
 
 	/* Blocking read */
@@ -424,12 +333,17 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 
 			if (readret == 0)
 			{
+				DEBUG(5,
+				      ("read_socket_with_timeout: blocking read. EOF from client.\n"));
 				smb_read_error = READ_EOF;
 				return -1;
 			}
 
 			if (readret == -1)
 			{
+				DEBUG(0,
+				      ("read_socket_with_timeout: read error = %s.\n",
+				       strerror(errno)));
 				smb_read_error = READ_ERROR;
 				return -1;
 			}
@@ -499,6 +413,90 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 			smb_read_error = READ_ERROR;
 			return -1;
 		}
+		nread += readret;
+	}
+
+	/* Return the number we got */
+	return ((ssize_t) nread);
+}
+
+/****************************************************************************
+ Read data from a fd with a timout in msec.
+mincount = if timeout, minimum to read before returning
+maxcount = number to be read.
+time_out = timeout in milliseconds
+****************************************************************************/
+
+ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
+			  unsigned int time_out)
+{
+	ssize_t readret;
+	size_t nread = 0;
+
+	/* just checking .... */
+	if (maxcnt <= 0)
+		return (0);
+
+	/* Blocking read */
+	if (time_out <= 0)
+	{
+		if (mincnt == 0)
+			mincnt = maxcnt;
+
+		while (nread < mincnt)
+		{
+#ifdef WITH_SSL
+			if (fd == sslFd)
+			{
+				readret =
+					SSL_read(ssl, buf + nread,
+						 maxcnt - nread);
+			}
+			else
+			{
+				readret =
+					read(fd, buf + nread, maxcnt - nread);
+			}
+#else /* WITH_SSL */
+			readret = read(fd, buf + nread, maxcnt - nread);
+#endif /* WITH_SSL */
+
+			if (readret <= 0)
+				return readret;
+
+			nread += readret;
+		}
+		return ((ssize_t) nread);
+	}
+
+	/* Most difficult - timeout read */
+	/* If this is ever called on a disk file and 
+	   mincnt is greater then the filesize then
+	   system performance will suffer severely as 
+	   select always returns true on disk files */
+
+	for (nread = 0; nread < mincnt;)
+	{
+		int selrtn = read_data_outstanding(fd, time_out);
+
+		if (selrtn <= 0)
+			return selrtn;
+
+#ifdef WITH_SSL
+		if (fd == sslFd)
+		{
+			readret = SSL_read(ssl, buf + nread, maxcnt - nread);
+		}
+		else
+		{
+			readret = read(fd, buf + nread, maxcnt - nread);
+		}
+#else /* WITH_SSL */
+		readret = read(fd, buf + nread, maxcnt - nread);
+#endif /* WITH_SSL */
+
+		if (readret <= 0)
+			return readret;
 
 		nread += readret;
 	}

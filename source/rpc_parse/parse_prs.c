@@ -298,26 +298,6 @@ void prs_free_data(prs_struct *buf)
 	buf->data_size = 0;
 }
 
-static void *prs_realloc(void *p, size_t size)
-{
-	void *ret;
-	if (size == 0)
-	{
-		safe_free(p);
-		return NULL;
-	}
-	ret = (void *)malloc(size);
-	if (!ret)
-		return NULL;
-	if (p)
-	{
-		memcpy(ret, p, size);
-		memset(p, 0, 1);
-	}
-	safe_free(p);
-	return ret;
-}
-
 /*******************************************************************
  reallocate a memory buffer
 ********************************************************************/
@@ -685,9 +665,8 @@ BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
 		return False;
 	}
 
-	DBG_RW_CVAL(name, depth, ps->offset, ps->io, q, *data8)
-		ps->offset += 1;
-
+	DBG_RW_CVAL(name, depth, ps->offset, ps->io, q, *data8);
+	ps->offset += 1;
 
 	return True;
 }
@@ -1129,7 +1108,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str,
 	DEBUG(200, ("_prs_string: string %s len %d max %d\n",
 		    str, len, max_buf_size));
 
-	DEBUG(10,
+	DEBUG(5+depth,
 	      ("%s%04x %s: ", tab_depth(depth), ps->offset,
 	       name != NULL ? name : ""));
 	do
@@ -1145,7 +1124,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str,
 		if (q == NULL)
 		{
 			ps->error = True;
-			DEBUG(10, ("%s\n", str));
+			DEBUG(5+depth, ("%s\n", str));
 			prs_debug_out(ps, "_prs_string error", 5);
 			return False;
 		}
@@ -1165,7 +1144,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str,
 
 	ps->offset += i + 1;
 
-	DEBUG(10, ("%s\n", str));
+	DEBUG(5+depth, ("%s\n", str));
 
 	return True;
 }
