@@ -26,6 +26,8 @@
 
 #include "includes.h"
 
+extern pstring global_myname;
+
 /* Opens a SMB connection to the SPOOLSS pipe */
 struct cli_state *cli_spoolss_initialise(struct cli_state *cli, 
 					 char *system_name,
@@ -824,6 +826,110 @@ uint32 cli_spoolss_getprinterdriverdir (
 		prs_mem_free(&rbuf);
 
 	} while (result == ERROR_INSUFFICIENT_BUFFER);
+
+	return result;	
+}
+
+/**********************************************************************
+ * Install a printer driver
+ */
+uint32 cli_spoolss_addprinterdriver (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	PRINTER_DRIVER_CTR  	*ctr
+)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_ADDPRINTERDRIVER 	q;
+        SPOOL_R_ADDPRINTERDRIVER 	r;
+	uint32 				result;
+	fstring 			server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* Initialise input parameters */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+
+
+	/* write the request */
+	make_spoolss_q_addprinterdriver (&q, server, level, ctr);
+
+	/* Marshall data and send request */
+	if (!spoolss_io_q_addprinterdriver ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTERDRIVER, &qbuf, &rbuf)) 
+	{
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+		
+	/* Unmarshall response */
+	if (!spoolss_io_r_addprinterdriver ("", &r, &rbuf, 0))
+	{
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+		
+	/* Return output parameters */
+	result = r.status;
+
+	return result;	
+}
+
+/**********************************************************************
+ * Install a printer 
+ */
+uint32 cli_spoolss_addprinterex (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	PRINTER_INFO_CTR  	*ctr
+)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_ADDPRINTEREX 		q;
+        SPOOL_R_ADDPRINTEREX 		r;
+	uint32 				result;
+	fstring 			server,
+					client,
+					user;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (client, sizeof(fstring), "\\\\%s", cli->desthost);
+        strupper (client);
+        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        strupper (server);
+	fstrcpy  (user, cli->user_name);
+	
+
+	/* Initialise input parameters */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+
+
+	/* write the request */
+	make_spoolss_q_addprinterex (&q, server, client, user, level, ctr);
+
+	/* Marshall data and send request */
+	if (!spoolss_io_q_addprinterex ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTEREX, &qbuf, &rbuf)) 
+	{
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+		
+	/* Unmarshall response */
+	if (!spoolss_io_r_addprinterex ("", &r, &rbuf, 0))
+	{
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+		
+	/* Return output parameters */
+	result = r.status;
 
 	return result;	
 }

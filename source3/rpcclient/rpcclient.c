@@ -30,14 +30,105 @@ extern struct cmd_set lsarpc_commands[];
 extern struct cmd_set samr_commands[];
 extern struct cmd_set spoolss_commands[];
 
-pstring password;
-pstring username;
-pstring workgroup;
-pstring server;
-
 
 DOM_SID domain_sid;
+/***********************************************************************
+ * read in username/password credentials from a file
+ */
+static void read_authfile (
+	char *filename, 
+	char* username, 
+	char* password, 
+	char* domain
+)
+{
+	FILE *auth;
+        fstring buf;
+        uint16 len = 0;
+	char *ptr, *val, *param;
+                               
+	if ((auth=sys_fopen(filename, "r")) == NULL)
+	{
+		printf ("ERROR: Unable to open credentials file!\n");
+		return;
+	}
+                                
+	while (!feof(auth))
+	{  
+		/* get a line from the file */
+		if (!fgets (buf, sizeof(buf), auth))
+			continue;
+		
+		len = strlen(buf);
+		
+		/* skip empty lines */			
+		if ((len) && (buf[len-1]=='\n'))
+		{
+			buf[len-1] = '\0';
+			len--;
+		}	
+		if (len == 0)
+			continue;
+					
+		/* break up the line into parameter & value.
+		   will need to eat a little whitespace possibly */
+		param = buf;
+		if (!(ptr = strchr (buf, '=')))
+			continue;
+		val = ptr+1;
+		*ptr = '\0';
+					
+		/* eat leading white space */
+		while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
+			val++;
+					
+		if (strwicmp("password", param) == 0)
+			fstrcpy (password, val);
+		else if (strwicmp("username", param) == 0)
+			fstrcpy (username, val);
+		else if (strwicmp("domain", param) == 0)
+			fstrcpy (domain, val);
+						
+		memset(buf, 0, sizeof(buf));
+	}
+	fclose(auth);
+	
+	return;
+}
 
+static char* next_command (
+	char**	cmdstr
+)
+{
+	static pstring 		command;
+	char			*p;
+	
+	if (!cmdstr || !(*cmdstr))
+		return NULL;
+	
+	p = strchr(*cmdstr, ';');
+	if (p)
+		*p = '\0';
+	pstrcpy(command, *cmdstr);
+	*cmdstr = p;
+	
+	return command;
+}
+
+static void get_username (char *username)
+{
+        if (getenv("USER"))
+                pstrcpy(username,getenv("USER"));
+ 
+        if (*username == 0 && getenv("LOGNAME"))
+                pstrcpy(username,getenv("LOGNAME"));
+ 
+        if (*username == 0) {
+                pstrcpy(username,"GUEST");
+        }
+
+	return;
+}
 
 /* Fetch the SID for this domain */
 void fetch_domain_sid(struct cli_state *cli)
@@ -75,7 +166,7 @@ void fetch_domain_sid(struct cli_state *cli)
 	return;
 
  error:
-	fprintf(stderr, "could not obtain sid for domain %s\n", workgroup);
+	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
 
 	if (result != NT_STATUS_NOPROBLEMO) {
 		fprintf(stderr, "error: %s\n", get_nt_error_msg(result));
@@ -87,7 +178,7 @@ void fetch_domain_sid(struct cli_state *cli)
 /* Initialise client credentials for authenticated pipe access */
 
 void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
-			  char* workgroup, char* password)
+			  char* domain, char* password)
 {
 	ZERO_STRUCTP(creds);
 	
@@ -98,7 +189,7 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 	}
 
 	fstrcpy(creds->user_name, username);
-	fstrcpy(creds->domain, workgroup);
+	fstrcpy(creds->domain, domain);
 }
 
 /* List to hold groups of commands */
@@ -327,6 +418,7 @@ static void usage(char *pname)
 {
 	printf("Usage: %s server [options]\n", pname);
 
+	printf("\t-A authfile           file containing user credentials\n");
 	printf("\t-c \"command string\"   execute semicolon separated cmds\n");
 	printf("\t-d debuglevel         set the debuglevel\n");
 	printf("\t-l logfile            name of logfile to use as opposed to stdout\n");
@@ -334,7 +426,7 @@ static void usage(char *pname)
 	printf("\t-N                    don't ask for a password\n");
 	printf("\t-s configfile         specify an alternative config file\n");
 	printf("\t-U username           set the network username\n");
-	printf("\t-W workgroup          set the workgroup name\n");
+	printf("\t-W domain             set the domain name for user account\n");
 	printf("\n");
 }
 
@@ -342,19 +434,25 @@ static void usage(char *pname)
 
  int main(int argc, char *argv[])
 {
-	extern char *optarg;
-	extern int optind;
-	struct in_addr dest_ip;
-	extern pstring global_myname;
-	BOOL got_pass = False;
-	BOOL interactive = True;
-	BOOL have_ip = False;
-	int opt;
-	int olddebug;
-	pstring cmdstr = "", servicesf = CONFIGFILE;
+	extern char 		*optarg;
+	extern int 		optind;
+	struct in_addr 		dest_ip;
+	extern pstring 		global_myname;
+	BOOL 			got_pass = False;
+	BOOL 			interactive = True;
+	BOOL 			have_ip = False;
+	int 			opt;
+	int 			olddebug;
+	pstring 		cmdstr = "", 
+				servicesf = CONFIGFILE;
 	struct ntuser_creds	creds;
 	struct cli_state	cli;
+	fstring 		password,
+				username,
+				domain,
+				server;
 
+	charset_initialise();
 	setlinebuf(stdout);
 
 #ifdef HAVE_LIBREADLINE
@@ -375,11 +473,17 @@ static void usage(char *pname)
 	argv++;
 	argc--;
 
-	while ((opt = getopt(argc, argv, "s:Nd:I:U:W:c:l:")) != EOF) {
+	while ((opt = getopt(argc, argv, "A:s:Nd:I:U:W:c:l:")) != EOF) {
 		switch (opt) {
+		case 'A':
+			/* only get the username, password, and domain from the file */
+			read_authfile (optarg, username, password, domain);
+			if (strlen (password))
+				got_pass = True;
+			break;
+
 		case 'c':
 			pstrcpy(cmdstr, optarg);
-			got_pass = True;
 			break;
 
 		case 'd':
@@ -417,7 +521,7 @@ static void usage(char *pname)
 		}
 		
 		case 'W':
-			pstrcpy(workgroup, optarg);
+			pstrcpy(domain, optarg);
 			break;
 			
 		case 'h':
@@ -432,13 +536,10 @@ static void usage(char *pname)
 	setup_logging (argv[0], interactive);
 	if (!interactive) 
 		reopen_logs();
-
-	charset_initialise();
 	
+	/* Load smb.conf file */
 	/* FIXME!  How to get this DEBUGLEVEL to last over lp_load()? */
 	olddebug = DEBUGLEVEL;
-
-	/* Load smb.conf file */
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s\n", servicesf);
 	}
@@ -456,12 +557,15 @@ static void usage(char *pname)
 	 * initialize the credentials struct.  Get password
 	 * from stdin if necessary
 	 */
+	if (!strlen(username))
+		get_username (username);
+		
 	if (!got_pass) {
-		init_rpcclient_creds (&creds, username, workgroup, "");
+		init_rpcclient_creds (&creds, username, domain, "");
 		pwd_read(&creds.pwd, "Enter Password: ", lp_encrypted_passwords());
 	}
 	else {
-		init_rpcclient_creds (&creds, username, workgroup, password);
+		init_rpcclient_creds (&creds, username, domain, password);
 	}
 	memset(password,'X',strlen(password));
 
@@ -478,21 +582,24 @@ static void usage(char *pname)
 	/* Load command lists */
 	add_command_set(rpcclient_commands);
 	add_command_set(separator_command);
+
 	add_command_set(spoolss_commands);
 	add_command_set(separator_command);
+
 	add_command_set(lsarpc_commands);
 	add_command_set(separator_command);
+
 	add_command_set(samr_commands);
 	add_command_set(separator_command);
 
 
 	/* Do anything specified with -c */
 	if (cmdstr[0]) {
-		pstring cmd;
-		char *p = cmdstr;
-		uint32 result;
+		char 	*cmd;
+		char 	*p = cmdstr;
+		uint32 	result;
 
-		while(next_token(&p, cmd, ";", sizeof(pstring))) {
+		while((cmd=next_command(&p)) != NULL) {
 			result = process_cmd(&cli, cmd);
 		}
 
