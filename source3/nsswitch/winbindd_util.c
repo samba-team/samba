@@ -190,65 +190,66 @@ void free_domain_info(void)
 
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 {
-        fstring level5_dom;
-        uint32 enum_ctx = 0, num_doms = 0;
-        char **domains = NULL;
-        DOM_SID *sids = NULL;
-        CLI_POLICY_HND *hnd;
-        NTSTATUS result;
-        BOOL rv = False;
-        TALLOC_CTX *mem_ctx;
+	fstring level5_dom;
+	uint32 enum_ctx = 0, num_doms = 0;
+	char **domains = NULL;
+	DOM_SID *sids = NULL;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result;
+	BOOL rv = False;
+	TALLOC_CTX *mem_ctx;
         
-        DEBUG(1, ("looking up sid for domain %s\n", domain_name));
+	DEBUG(1, ("looking up sid for domain %s\n", domain_name));
         
-        if (!(mem_ctx = talloc_init()))
-                return False;
+	if (!(mem_ctx = talloc_init()))
+		return False;
         
-        if (!(hnd = cm_get_lsa_handle(domain_name)))
-                goto done;
+	if (!(hnd = cm_get_lsa_handle(domain_name)))
+		goto done;
         
-        /* Do a level 5 query info policy if we are looking up the SID for
-           our own domain. */
+	/* Do a level 5 query info policy if we are looking up the SID for
+		our own domain. */
         
-        if (strequal(domain_name, lp_workgroup())) {
+	if (strequal(domain_name, lp_workgroup())) {
                 
-                result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
-                                                   &hnd->pol, 0x05, level5_dom,
-                                                   &domain->sid);
+		result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
+						&hnd->pol, 0x05, level5_dom,
+						&domain->sid);
                 
-                rv = NT_STATUS_IS_OK(result);
-                goto done;
-        } 
+			rv = NT_STATUS_IS_OK(result);
+			goto done;
+	} 
         
-        /* Use lsaenumdomains to get sid for this domain */
+	/* Use lsaenumdomains to get sid for this domain */
         
-        result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx, &hnd->pol,
-                                        &enum_ctx, &num_doms, &domains, &sids);
+	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx, &hnd->pol,
+						&enum_ctx, &num_doms, &domains, &sids);
         
-        /* Look for domain name */
+	/* Look for domain name */
         
-        if (NT_STATUS_IS_OK(result) && domains && sids) {
-                BOOL found = False;
-                int i;
+	if (NT_STATUS_IS_OK(result) && domains && sids) {
+		BOOL found = False;
+		int i;
                 
-                for(i = 0; i < num_doms; i++) {
-                        if (strequal(domain_name, domains[i])) {
-                                sid_copy(&domain->sid, &sids[i]);
-                                found = True;
-                                break;
-                        }
-                }
+		for(i = 0; i < num_doms; i++) {
+			if (strequal(domain_name, domains[i])) {
+				sid_copy(&domain->sid, &sids[i]);
+				found = True;
+				break;
+			}
+		}
                 
-                rv = found;
-                goto done;
-        }
+		rv = found;
+		goto done;
+	}
       
-        rv = False;             /* An error occured with a trusted domain */
+	rv = False;             /* An error occured with a trusted domain */
 
  done:
-        talloc_destroy(mem_ctx);
 
-        return rv;
+	talloc_destroy(mem_ctx);
+
+	return rv;
 }
 
 /* Store a SID in a domain indexed by name in the cache. */
@@ -303,70 +304,6 @@ static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enu
 		name, sid_ret.sid ));
 
 	return True;
-}
-
-/* Lookup a sid in a domain from a name */
-
-BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
-                                 enum SID_NAME_USE *type)
-{
-	int num_sids = 0, num_names = 1;
-	DOM_SID *sids = NULL;
-	uint32 *types = NULL;
-	CLI_POLICY_HND *hnd;
-	NTSTATUS result;
-	TALLOC_CTX *mem_ctx;
-	BOOL rv = False;
-        
-	/* Don't bother with machine accounts */
-        
-	if (name[strlen(name) - 1] == '$')
-		return False;
-
-	/* First check cache. */
-	if (winbindd_lookup_sid_by_name_in_cache(name, sid, type)) {
-		if (*type == SID_NAME_USE_NONE)
-			return False; /* Negative cache hit. */
-		return True;
-	}
-
-	/* Lookup name */
-        
-	if (!(mem_ctx = talloc_init()))
-		return False;
-        
-	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-		goto done;
-        
-	result = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 
-				num_names, (char **)&name, &sids, 
-				&types, &num_sids);
-        
-	/* Return rid and type if lookup successful */
-        
-	if (NT_STATUS_IS_OK(result)) {
-                
-		/* Return sid */
-                
-		if ((sid != NULL) && (sids != NULL))
-			sid_copy(sid, &sids[0]);
-                
-		/* Return name type */
-                
-		if ((type != NULL) && (types != NULL))
-			*type = types[0];
-
-		store_sid_by_name_in_cache(name, &sids[0], types[0]);
-	}
-	/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
-	/* We need to know the error returns that W2K gives on "no such user". */
-
-	rv = NT_STATUS_IS_OK(result);
-
- done:
-	talloc_destroy(mem_ctx);
-        
-	return rv;
 }
 
 /* Store a name in a domain indexed by SID in the cache. */
@@ -424,10 +361,78 @@ static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enu
 	return True;
 }
 
+/* Lookup a sid in a domain from a name */
+
+BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *type)
+{
+	int num_sids = 0, num_names = 1;
+	DOM_SID *sids = NULL;
+	uint32 *types = NULL;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result;
+	TALLOC_CTX *mem_ctx;
+	BOOL rv = False;
+        
+	/* Don't bother with machine accounts */
+        
+	if (name[strlen(name) - 1] == '$')
+		return False;
+
+	/* First check cache. */
+	if (winbindd_lookup_sid_by_name_in_cache(name, sid, type)) {
+		if (*type == SID_NAME_USE_NONE)
+			return False; /* Negative cache hit. */
+		return True;
+	}
+
+	/* Lookup name */
+        
+	if (!(mem_ctx = talloc_init()))
+		return False;
+        
+	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+		goto done;
+        
+	result = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 
+				num_names, (char **)&name, &sids, 
+				&types, &num_sids);
+        
+	/* Return rid and type if lookup successful */
+        
+	if (NT_STATUS_IS_OK(result)) {
+                
+		/* Return sid */
+                
+		if ((sid != NULL) && (sids != NULL))
+			sid_copy(sid, &sids[0]);
+                
+		/* Return name type */
+                
+		if ((type != NULL) && (types != NULL))
+			*type = types[0];
+
+		/* Store the forward and reverse map of this lookup in the cache. */
+		store_sid_by_name_in_cache(name, &sids[0], types[0]);
+		store_name_by_sid_in_cache(&sids[0], name, types[0]);
+	} else {
+		/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
+		DOM_SID nullsid;
+
+		ZERO_STRUCT(nullsid);
+		store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+	}
+
+	rv = NT_STATUS_IS_OK(result);
+
+ done:
+	talloc_destroy(mem_ctx);
+        
+	return rv;
+}
+
 /* Lookup a name in a domain from a sid */
 
-BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
-                                 enum SID_NAME_USE *type)
+BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name, enum SID_NAME_USE *type)
 {
 	int num_sids = 1, num_names = 0;
 	uint32 *types = NULL;
@@ -470,10 +475,15 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 		if ((type != NULL) && (types != NULL))
 			*type = types[0];
 
+		store_sid_by_name_in_cache(names[0], sid, types[0]);
 		store_name_by_sid_in_cache(sid, names[0], types[0]);
+	} else {
+		/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
+		fstring sidstr;
+
+		sid_to_string(sidstr, sid);
+		store_name_by_sid_in_cache(sidstr, "", SID_NAME_USE_NONE);
 	}
-	/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
-	/* We need to know the error returns that W2K gives on "no such user". */
 
 	rv = NT_STATUS_IS_OK(result);
         
