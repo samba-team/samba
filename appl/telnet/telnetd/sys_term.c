@@ -1276,6 +1276,7 @@ start_login(const char *host, int autologin, char *name)
 {
     struct arg_val argv;
     char *user;
+    int save_errno;
 
 #ifdef HAVE_UTMPX_H
     int pid = getpid();
@@ -1371,9 +1372,9 @@ start_login(const char *host, int autologin, char *name)
     sleep(1);
 
     execv(new_login, argv.argv);
-
+    save_errno = errno;
     syslog(LOG_ERR, "%s: %m\n", new_login);
-    fatalperror(net, new_login);
+    fatalperror_errno(net, new_login, save_errno);
     /*NOTREACHED*/
 }
 
