@@ -13637,7 +13637,137 @@ EOF
 	else
 		echo "$ac_t""no" 1>&6;
 	fi
+	;;
 
+	*solaris*)
+		LIBS="$LIBS -lsendfile"
+		echo $ac_n "checking for solaris sendfilev64 support""... $ac_c" 1>&6
+echo "configure:13646: checking for solaris sendfilev64 support" >&5
+if eval "test \"`echo '$''{'samba_cv_HAVE_SENDFILEV64'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  
+		cat > conftest.$ac_ext <<EOF
+#line 13652 "configure"
+#include "confdefs.h"
+\
+#include <sys/sendfile.h>
+int main() {
+\
+        int sfvcnt;
+        size_t xferred;
+        struct sendfilevec vec[2];
+	ssize_t nwritten;
+
+	sfvcnt = 2;
+
+	vec[0].sfv_fd = SFV_FD_SELF;
+	vec[0].sfv_flag = 0;
+	vec[0].sfv_off = 0;
+	vec[0].sfv_len = 0;
+
+	vec[1].sfv_fd = 0;
+	vec[1].sfv_flag = 0;
+	vec[1].sfv_off = 0;
+	vec[1].sfv_len = 0;
+	nwritten = sendfilev64(tofd, vec, sfvcnt, &xferred);
+
+; return 0; }
+EOF
+if { (eval echo configure:13678: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+  rm -rf conftest*
+  samba_cv_HAVE_SENDFILEV64=yes
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  samba_cv_HAVE_SENDFILEV64=no
+fi
+rm -f conftest*
+fi
+
+echo "$ac_t""$samba_cv_HAVE_SENDFILEV64" 1>&6
+
+	if test x"$samba_cv_HAVE_SENDFILEV64" = x"yes"; then
+    		cat >> confdefs.h <<\EOF
+#define HAVE_SENDFILEV64 1
+EOF
+
+		cat >> confdefs.h <<\EOF
+#define SOLARIS_SENDFILE_API 1
+EOF
+
+		cat >> confdefs.h <<\EOF
+#define WITH_SENDFILE 1
+EOF
+
+	else
+		echo "$ac_t""no" 1>&6;
+	fi
+
+		echo $ac_n "checking for solaris sendfilev support""... $ac_c" 1>&6
+echo "configure:13710: checking for solaris sendfilev support" >&5
+if eval "test \"`echo '$''{'samba_cv_HAVE_SENDFILEV'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  
+		cat > conftest.$ac_ext <<EOF
+#line 13716 "configure"
+#include "confdefs.h"
+\
+#include <sys/sendfile.h>
+int main() {
+\
+        int sfvcnt;
+        size_t xferred;
+        struct sendfilevec vec[2];
+	ssize_t nwritten;
+
+	sfvcnt = 2;
+
+	vec[0].sfv_fd = SFV_FD_SELF;
+	vec[0].sfv_flag = 0;
+	vec[0].sfv_off = 0;
+	vec[0].sfv_len = 0;
+
+	vec[1].sfv_fd = 0;
+	vec[1].sfv_flag = 0;
+	vec[1].sfv_off = 0;
+	vec[1].sfv_len = 0;
+	nwritten = sendfilev(tofd, vec, sfvcnt, &xferred);
+
+; return 0; }
+EOF
+if { (eval echo configure:13742: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+  rm -rf conftest*
+  samba_cv_HAVE_SENDFILEV=yes
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  samba_cv_HAVE_SENDFILEV=no
+fi
+rm -f conftest*
+fi
+
+echo "$ac_t""$samba_cv_HAVE_SENDFILEV" 1>&6
+
+	if test x"$samba_cv_HAVE_SENDFILEV" = x"yes"; then
+    		cat >> confdefs.h <<\EOF
+#define HAVE_SENDFILEV 1
+EOF
+
+		cat >> confdefs.h <<\EOF
+#define SOLARIS_SENDFILE_API 1
+EOF
+
+		cat >> confdefs.h <<\EOF
+#define WITH_SENDFILE 1
+EOF
+
+	else
+		echo "$ac_t""no" 1>&6;
+	fi
 	;;
 
 	*)
@@ -13660,7 +13790,7 @@ fi
 # (WINBIND_STARGETS) and shared libraries (WINBIND_LTARGETS).
 
 echo $ac_n "checking whether to build winbind""... $ac_c" 1>&6
-echo "configure:13664: checking whether to build winbind" >&5
+echo "configure:13794: checking whether to build winbind" >&5
 
 # Initially, the value of $host_os decides whether winbind is supported
 
@@ -13720,7 +13850,7 @@ if test x"$HAVE_WINBIND" = x"yes"; then
         echo "$ac_t""yes" 1>&6
 
 	echo $ac_n "checking whether to enable winbind auth challenge/response code""... $ac_c" 1>&6
-echo "configure:13724: checking whether to enable winbind auth challenge/response code" >&5
+echo "configure:13854: checking whether to enable winbind auth challenge/response code" >&5
 	# Check whether --with-winbind-auth-challenge or --without-winbind-auth-challenge was given.
 if test "${with_winbind_auth_challenge+set}" = set; then
   withval="$with_winbind_auth_challenge"
@@ -13766,7 +13896,7 @@ fi
 # Check for Horrible winbindd ldap hack.
 
         echo $ac_n "checking whether to enable winbind ldap hack""... $ac_c" 1>&6
-echo "configure:13770: checking whether to enable winbind ldap hack" >&5
+echo "configure:13900: checking whether to enable winbind ldap hack" >&5
         # Check whether --with-winbind-ldap-hack or --without-winbind-ldap-hack was given.
 if test "${with_winbind_ldap_hack+set}" = set; then
   withval="$with_winbind_ldap_hack"
@@ -13804,7 +13934,7 @@ fi
 # It returns EGID too many times in the list of groups
 # and causes a security problem
 echo $ac_n "checking whether or not getgroups returns EGID too many times""... $ac_c" 1>&6
-echo "configure:13808: checking whether or not getgroups returns EGID too many times" >&5
+echo "configure:13938: checking whether or not getgroups returns EGID too many times" >&5
 if eval "test \"`echo '$''{'samba_cv_have_getgroups_too_many_egids'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -13812,7 +13942,7 @@ else
   samba_cv_have_getgroups_too_many_egids=cross
 else
   cat > conftest.$ac_ext <<EOF
-#line 13816 "configure"
+#line 13946 "configure"
 #include "confdefs.h"
 
 #include <sys/types.h>
@@ -13828,7 +13958,7 @@ int main(int argc, char *argv[])
   exit((n > 1 && groups[0] == getegid() && groups[1] == getegid()) ? 1 : 0);
 }
 EOF
-if { (eval echo configure:13832: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:13962: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   samba_cv_have_getgroups_too_many_egids=no
 else
@@ -13869,20 +13999,20 @@ fi
 #		[#include <pwd.h>])
 
 echo $ac_n "checking whether struct passwd has pw_comment""... $ac_c" 1>&6
-echo "configure:13873: checking whether struct passwd has pw_comment" >&5
+echo "configure:14003: checking whether struct passwd has pw_comment" >&5
 if eval "test \"`echo '$''{'samba_cv_passwd_pw_comment'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
 	cat > conftest.$ac_ext <<EOF
-#line 13879 "configure"
+#line 14009 "configure"
 #include "confdefs.h"
 #include <pwd.h>
 int main() {
 struct passwd p; p.pw_comment;
 ; return 0; }
 EOF
-if { (eval echo configure:13886: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:14016: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_passwd_pw_comment=yes
 else
@@ -13907,20 +14037,20 @@ fi
 #		[#include <pwd.h>])
 
 echo $ac_n "checking whether struct passwd has pw_age""... $ac_c" 1>&6
-echo "configure:13911: checking whether struct passwd has pw_age" >&5
+echo "configure:14041: checking whether struct passwd has pw_age" >&5
 if eval "test \"`echo '$''{'samba_cv_passwd_pw_age'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
 	cat > conftest.$ac_ext <<EOF
-#line 13917 "configure"
+#line 14047 "configure"
 #include "confdefs.h"
 #include <pwd.h>
 int main() {
 struct passwd p; p.pw_age;
 ; return 0; }
 EOF
-if { (eval echo configure:13924: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:14054: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_passwd_pw_age=yes
 else
@@ -13959,7 +14089,7 @@ fi
 
 if test x"$INCLUDED_POPT" != x"yes"; then
     echo $ac_n "checking for poptGetContext in -lpopt""... $ac_c" 1>&6
-echo "configure:13963: checking for poptGetContext in -lpopt" >&5
+echo "configure:14093: checking for poptGetContext in -lpopt" >&5
 ac_lib_var=`echo popt'_'poptGetContext | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -13967,7 +14097,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lpopt  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 13971 "configure"
+#line 14101 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -13978,7 +14108,7 @@ int main() {
 poptGetContext()
 ; return 0; }
 EOF
-if { (eval echo configure:13982: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:14112: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -14002,7 +14132,7 @@ fi
 fi
 
 echo $ac_n "checking whether to use included popt""... $ac_c" 1>&6
-echo "configure:14006: checking whether to use included popt" >&5
+echo "configure:14136: checking whether to use included popt" >&5
 if test x"$INCLUDED_POPT" = x"yes"; then
     echo "$ac_t""$srcdir/popt" 1>&6
     BUILD_POPT='$(POPT_OBJS)'
@@ -14017,16 +14147,16 @@ fi
 #################################################
 # final configure stuff
 echo $ac_n "checking configure summary""... $ac_c" 1>&6
-echo "configure:14021: checking configure summary" >&5
+echo "configure:14151: checking configure summary" >&5
 if test "$cross_compiling" = yes; then
   echo "configure: warning: cannot run when cross-compiling" 1>&2
 else
   cat > conftest.$ac_ext <<EOF
-#line 14026 "configure"
+#line 14156 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:14030: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:14160: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "$ac_t""yes" 1>&6
 else

@@ -285,6 +285,9 @@
 #undef WITH_SENDFILE
 #undef FREEBSD_SENDFILE_API
 #undef HPUX_SENDFILE_API
+#undef HAVE_SENDFILEV
+#undef HAVE_SENDFILEV64
+#undef SOLARIS_SENDFILE_API
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
