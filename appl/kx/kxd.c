@@ -400,18 +400,20 @@ doit_passive (int sock, des_cblock *key, des_key_schedule schedule,
     int len;
     size_t rem;
     u_char msg[1024], *p;
+    int error;
 
     display_num = displaynr;
     if (tcpp)
 	snprintf (display, display_size, "localhost:%u", display_num);
     else
 	snprintf (display, display_size, ":%u", display_num);
-    if(create_and_write_cookie (xauthfile, xauthfile_size, 
-				cookie, cookie_len)) {
+    error = create_and_write_cookie (xauthfile, xauthfile_size, 
+				     cookie, cookie_len);
+    if (error) {
 	cleanup(nsockets, sockets);
 	fatal (sock, key, schedule, me, him,
 	       "Cookie-creation failed with: %s",
-	       strerror(errno));
+	       strerror(error));
 	return 1;
     }
 
