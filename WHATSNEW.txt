@@ -1,58 +1,127 @@
           WHATS NEW IN 1.9.18p4 - March 25th 1998.
           ===========================================
-This is probably the last 1.9.18 release. This version has now stabilised
-to the point that wide scale adoption is considered safe. Work is ahead
-of schedule on 1.9.19 and 1.9.20 and alpha roll out should commence during
-April 1998.
 
-New Parameters
---------------
+This is the latest stable release of Samba. This is the
+version that all production Samba servers should be running
+for all current bug-fixes.
+
+Note that most Samba Team effort is now going into working on the
+next major release which should contain some Windows NT Domain 
+features. It is intended that any future work on the 1.9.18 series
+be maintenance only fixes.
+
+An announcement will be made when the first alpha release of the next
+Samba series is available.
+
+Added features in 1.9.18p4
+--------------------------
+
+Changing passwords now supported
+--------------------------------
+
+Samba now supports changing the SMB password from a Windows 95 client,
+using the standard Windows 95 password changing dialog. Note that this
+changes the SMB password, not the UNIX password (Samba must be set up
+with encrypted passwords in order to support this).
+
+The smbpasswd program has been re-written to take advantage of this
+feature, and now has no need to be a setuid root program, thus eliminating
+a potential security hole. As a side effect of this change smbpasswd
+can now be used on a UNIX machine to change users passwords on an NT
+machine.
+
+Name resolution order now user selectable
+-----------------------------------------
+
+The resolution of NetBIOS names into IP addresses can be done in
+several different ways (broadcast, lmhosts, DNS lookup, WINS). 
+Previous versions of Samba were inconsistant in which commands
+used which methods to look up IP addresses from a name. New in
+this version is a parameter (name resolve order, mentioned in
+the new parameters list below) that allows administrators to
+select the methods of name resolution, and the order in which
+such methods are applied. All Samba utilities have been changed
+to use the new name to IP address name resolution code and
+so this can be controlled from a central place.
+
+Expanded multi-byte character support
+-------------------------------------
+
+In previous versions of Samba, Kanji (Japanese) character 
+support was treated as a special case, making it the only
+multi-byte character set natively supported in Samba. New
+code has been added to generalize the multi-byte codepage
+support, with the effect that other multibyte codepage support
+can be easily added. The new codepages that this version
+ships with are Korean Hangul and Traditional Chinese.
+
+New Parameters in 1.9.18p4
+--------------------------
+
 name resolve order = lmhosts wins hosts bcast
 
 This parameter allows control over the order in which netbios name to
 IP Address resolution is attempted. Any method NOT specified will be
 excluded from the name resolution process. If this parameter is not
 specified then the above default order will be observed - this is
-consistent with prior releases.
+consistent with prior releases. See the smb.conf and smbclient man
+pages for full details. See the above text for the announcement on
+this feature.
+
+fake directory create times
+
+This parameter is a compatibility option for software developers
+using Microsoft NMAKE make tool, saving files onto a Samba share.
+Setting this parameter to true causes Samba to lie to the client
+about the creation time of a directory, so NMAKE commands don't
+re-compile every file.
+
+Changed compile-time default in 1.9.18p4
+----------------------------------------
 
 The maximum length of a printer share name has now been increased to 15
 characters - the same as file share names. Any one who needs to revert back
-to 8 character printer share name support can do so by adjusting the define
+to 8 character printer share name support can do so by adjusting the #define
 in local.h.
 
+Bugfixes added since 1.9.18p3
+-----------------------------
 
-          WHATS NEW IN 1.9.18p3 - February 18th 1998.
-          ===========================================
+1). Fix for nmbd leaving the child nmbd running when doing DNS
+lookups as a WINS server.
+2). Fix core dump in smbd when acting as a logon server with 
+security=share.
+3). Workaround for a bug in FTP OnNet software NBT implementation.
+It does a broadcast name release for WORKGROUP<0> and WORKGROUP<1e>
+names and don't set the group bit.
+4). Ensure all the NetBIOS aliases are added to all the known 
+interfaces on nmbd initialization.
+5). Fix bug in multiple query name responces print code.
+6). Fix to send out mailslot reply on correct interface.
+7). Fix retranmission queue to scan WINS server subnet so
+nmbd retransmitts queries needed when acting as a WINS server.
+Thanks to Andrey Alekseyev <fetch@muffin.arcadia.spb.ru> for
+spotting this one.
+8). Send host announcement to correct 0x1d name rather than
+0x1e name.
+9). Fix for WINS server when returning multi-homed record,
+was returning one garbage IP address.
+10). Fix for Thursby Software's 'Dave' client - ensure
+that a vuid of zero is always returned for them when in
+share level security (the spec say's it shouldn't matter,
+but it was causing them grief).
+11). Added KRB4 authentication code.
+12). Fix to allow max printer name to be 15 characters (see above).
+13). Fix for name mangling cache bug - cache wasn't being
+used in some cases.
+14). Fix for RH5.0 broken system V shared memory include
+files.
+15). Fix for broken redirector use of resume keys between
+deletes in a directory. Samba now returns zero as resume
+keys (as does NT) and uses the resume filename instead.
+16). Fix for systems that have a broken implementation
+of isalnum() - was causing gethostbyname to fail.
 
-This is the latest stable release of Samba. This is the
-version that all production Samba servers should be running
-for all current bug-fixes.
-
-New Parameters
---------------
-
-Two new paramters were added - these are :
-
-In the [global] section of smb.conf :
-
-networkstation user login
-
-This code (submitted by Rob Nielsen) allows the code many people 
-were having problems with that queries an NT password server to 
-be turned off at runtime rather than compile time. Please see the 
-documentation in the smb.conf manual page for details. This is a 
-security option - it must only be turned off after checks have been
-made to ensure that your NT password server does not suffer from the
-bug this code was meant to protect against !
-
-In the [global] or services section of smb.conf :
-
-dos filetime resolution
-
-Setting this paramter to true fixes the problem that people using 
-Microsoft Visual C++ and Samba 1.9.18 were having with files being 
-reported as changed. Please see the documentation in the smb.conf 
-manual page for details.
 
 Bugfixes added since 1.9.18p2
 -----------------------------
