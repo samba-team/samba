@@ -141,6 +141,7 @@ void netflush (void);
 void writenet (unsigned char *ptr, int len);
 void fatal (int f, char *msg);
 void fatalperror (int f, const char *msg);
+void fatalperror_errno (int f, const char *msg, int error);
 void edithost (char *pat, char *host);
 void putstr (char *s);
 void putchr (int cc);
