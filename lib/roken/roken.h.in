@@ -91,10 +91,6 @@ char * strlwr(char *);
 int strnlen(char*, int);
 #endif
 
-#ifndef HAVE_STRTOK_R
-char *strtok_r(char *s1, const char *s2, char **lasts);
-#endif
-
 #ifndef HAVE_STRUPR
 char * strupr(char *);
 #endif
