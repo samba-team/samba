@@ -108,6 +108,18 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	return True;
 }
 
+
+/* write an integer */
+BOOL asn1_write_Integer(ASN1_DATA *data, int i)
+{
+	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
+	do {
+		asn1_write_uint8(data, i);
+		i = i >> 8;
+	} while (i);
+	return asn1_pop_tag(data);
+}
+
 /* write an object ID to a ASN1 buffer */
 BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
 {
@@ -366,6 +378,20 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	blob->length = len;
 	asn1_end_tag(data);
 	return !data->has_error;
+}
+
+/* read an interger */
+BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
+{
+	uint8 b;
+	*i = 0;
+	
+	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
+	while (asn1_tag_remaining(data)>0) {
+		*i = (*i << 8) + asn1_read_uint8(data, &b);
+	}
+	return asn1_end_tag(data);	
+	
 }
 
 /* check a enumarted value is correct */
