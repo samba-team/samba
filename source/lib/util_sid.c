@@ -375,20 +375,26 @@ const char *sid_string_static(DOM_SID *sid)
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
   pstring tok;
-  const char *p = sidstr;
+  char *p;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia;
-
-  memset((char *)sidout, '\0', sizeof(DOM_SID));
-
+  
   if (StrnCaseCmp( sidstr, "S-", 2)) {
     DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
     return False;
   }
 
-  p += 2;
+  memset((char *)sidout, '\0', sizeof(DOM_SID));
+
+  p = strdup(sidstr + 2);
+  if (p == NULL) {
+    DEBUG(0, ("string_to_sid: out of memory!\n"));
+    return False;
+  }
+
   if (!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+    SAFE_FREE(p);
     return False;
   }
 
@@ -397,6 +403,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 
   if (!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+    SAFE_FREE(p);
     return False;
   }
 
@@ -422,6 +429,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 	sid_append_rid(sidout, (uint32)strtoul(tok, NULL, 10));
   }
 
+  SAFE_FREE(p);
   return True;
 }
 
