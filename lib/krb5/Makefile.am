@@ -26,8 +26,6 @@ lib_LTLIBRARIES = libkrb5.la
 
 ERR_FILES = krb5_err.c heim_err.c
 
-EXTRA_libkrb5_la_SOURCES = keytab_krb4.c
-
 libkrb5_la_SOURCES = \
 	addr_families.c \
 	address.c \
@@ -117,6 +115,8 @@ libkrb5_la_SOURCES = \
 	warn.c \
 	write_message.c \
 	$(ERR_FILES)
+
+EXTRA_libkrb5_la_SOURCES = keytab_krb4.c
 
 libkrb5_la_LDFLAGS = -version-info 3:1:0
 
