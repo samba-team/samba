@@ -4596,7 +4596,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
-	WKS_INFO_100 wks_info;
+	smb_ucs2_t *uni_domain_name;
 	
 	char* domain_name;
 	char* domain_name_pol;
@@ -4665,44 +4665,16 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 			 for domain %s\n", domain_name));
 	}
 	 
-	/*
-	 * Call WksQueryInfo to check remote server's capabilities
-	 * note: It is now used only to get unicode domain name
-	 */
-	
-	if (!cli_nt_session_open(cli, PI_WKSSVC)) {
-		DEBUG(0, ("Couldn't not initialise wkssvc pipe\n"));
-		return -1;
-	}
-
-	if (!(mem_ctx = talloc_init("establishing trust relationship to domain %s",
-	                domain_name))) {
-		DEBUG(0, ("talloc_init() failed\n"));
-		cli_shutdown(cli);
-		return -1;
-	}
-	
-   	nt_status = cli_wks_query_info(cli, mem_ctx, &wks_info);
-	
-	if (NT_STATUS_IS_ERR(nt_status)) {
-		DEBUG(0, ("WksQueryInfo call failed.\n"));
-		return -1;
-	}
-
-	if (cli->pipes[cli->pipe_idx].fnum)
-		cli_nt_session_close(cli);
-
-
-	/*
-	 * Call LsaOpenPolicy and LsaQueryInfo
-	 */
-	 
 	if (!(mem_ctx = talloc_init("rpc_trustdom_establish"))) {
 		DEBUG(0, ("talloc_init() failed\n"));
 		cli_shutdown(cli);
 		return -1;
 	}
 
+	/*
+	 * Call LsaOpenPolicy and LsaQueryInfo
+	 */
+	 
 	if (!cli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("Could not initialise lsa pipe\n"));
 		cli_shutdown(cli);
@@ -4720,16 +4692,19 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	/* Querying info level 5 */
 	
 	nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
-	                                      5 /* info level */, &domain_name_pol,
-	                                      &domain_sid);
+	                                      5 /* info level */,
+					      &domain_name_pol, &domain_sid);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
 		return -1;
 	}
 
-
-
+	if (push_ucs2_talloc(mem_ctx, &uni_domain_name, domain_name_pol) < 0) {
+		DEBUG(0, ("Could not convert domain name %s to unicode\n",
+			  domain_name_pol));
+		return -1;
+	}
 
 	/* There should be actually query info level 3 (following nt serv behaviour),
 	   but I still don't know if it's _really_ necessary */
@@ -4738,8 +4713,10 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Store the password in secrets db
 	 */
 
-	if (!secrets_store_trusted_domain_password(domain_name, wks_info.uni_lan_grp.buffer,
-						   wks_info.uni_lan_grp.uni_str_len, opt_password,
+	if (!secrets_store_trusted_domain_password(domain_name,
+						   uni_domain_name,
+						   strlen_w(uni_domain_name)+1,
+						   opt_password,
 						   *domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		return -1;
@@ -4758,6 +4735,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 	if (cli->pipes[cli->pipe_idx].fnum)
 		cli_nt_session_close(cli);
+
+	cli_shutdown(cli);
 	 
 	talloc_destroy(mem_ctx);
 	 
