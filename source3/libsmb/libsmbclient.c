@@ -156,18 +156,63 @@ decode_urlpart(char *segment, size_t sizeof_segment)
 /*
  * Function to parse a path and turn it into components
  *
- * We accept smb://[[[domain;]user[:password@]]server[/share[/path[/file]]]]
- * 
- * smb://       means show all the workgroups
- * smb://name/  means, if name<1D> or name<1B> exists, list servers in workgroup,
- *              else, if name<20> exists, list all shares for server ...
+ * The general format of an SMB URI is explain in Christopher Hertel's CIFS
+ * book, at http://ubiqx.org/cifs/Appendix-D.html.  We accept a subset of the
+ * general format ("smb:" only; we do not look for "cifs:"), and expand on
+ * what he calls "context", herein called "options" to avoid conflict with the
+ * SMBCCTX context used throughout this library.  We add the "mb" keyword
+ * which applies as follows:
+ *
+ *
+ * We accept:
+ *  smb://[[[domain;]user[:password@]]server[/share[/path[/file]]]][?options]
+ *
+ * Meaning of URLs:
+ *
+ * smb://           show all workgroups known by the first master browser found
+ * smb://?mb=.any   same as smb:// (i.e. without any options)
+ *
+ * smb://?mb=.all   show all workgroups known by every master browser found.
+ *                  Why might you want this?  In an "appliance" application
+ *                  where the workgroup/domain being used on the local network
+ *                  is not known ahead of time, but where one wanted to
+ *                  provide network services via samba, a unique workgroup
+ *                  could be used.  However, when the appliance is first
+ *                  started, the local samba instance's master browser has not
+ *                  synchronized with the other master browser(s) on the
+ *                  network (and might not synchronize for 12 minutes) and
+ *                  therefore is not aware of the workgroup/ domain names
+ *                  available on the network.  This option may be used to
+ *                  overcome the problem of a libsmbclient application
+ *                  arbitrarily selecting the local (still ignorant) master
+ *                  browser to obtain its list of workgroups/domains and
+ *                  getting back a practically emmpty list.  By requesting
+ *                  the list of workgroups/domains from each found master
+ *                  browser on the local network, a complete list of
+ *                  workgroups/domains can be built.
+ *
+ * smb://?mb=name   NOT YET IMPLEMENTED -- show all workgroups known by the
+ *                  master browser whose name is "name"
+ *
+ * smb://name/      if name<1D> or name<1B> exists, list servers in
+ *                  workgroup, else, if name<20> exists, list all shares
+ *                  for server ...
+ *
+ * If "options" are provided, this function returns the entire option list as
+ * a string, for later parsing by the caller.
  */
 
 static const char *smbc_prefix = "smb:";
 
 static int
-smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, char *path,
-		char *user, char *password) /* FIXME, lengths of strings */
+smbc_parse_path(SMBCCTX *context,
+                const char *fname,
+                char *server, int server_len,
+                char *share, int share_len,
+                char *path, int path_len,
+		char *user, int user_len,
+                char *password, int password_len,
+                char *options, int options_len)
 {
 	static pstring s;
 	pstring userinfo;
@@ -176,9 +221,10 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 	int len;
 
 	server[0] = share[0] = path[0] = user[0] = password[0] = (char)0;
+        if (options != NULL && options_len > 0) {
+                options[0] = (char)0;
+        }
 	pstrcpy(s, fname);
-
-	/*  clean_fname(s);  causing problems ... */
 
 	/* see if it has the right prefix */
 	len = strlen(smbc_prefix);
@@ -192,11 +238,25 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 
 	if (strncmp(p, "//", 2) && strncmp(p, "\\\\", 2)) {
 
+                DEBUG(1, ("Invalid path (does not begin with smb://"));
 		return -1;
 
 	}
 
-	p += 2;  /* Skip the // or \\  */
+	p += 2;  /* Skip the double slash */
+
+        /* See if any options were specified */
+        if (q = strrchr(p, '?')) {
+                /* There are options.  Null terminate here and point to them */
+                *q++ = '\0';
+                
+                DEBUG(4, ("Found options '%s'", q));
+
+                /* Copy the options */
+                if (options != NULL && options_len > 0) {
+                        safe_strcpy(options, q, options_len - 1);
+                }
+        }
 
 	if (*p == (char)0)
 	    goto decoding;
@@ -247,10 +307,10 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 		}
 
 		if (username[0])
-			strncpy(user, username, sizeof(fstring));  /* FIXME, size and domain */
+			strncpy(user, username, user_len);  /* FIXME, domain */
 
 		if (passwd[0])
-			strncpy(password, passwd, sizeof(fstring)); /* FIXME, size */
+			strncpy(password, passwd, password_len);
 
 	}
 
@@ -268,24 +328,57 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 
 	}
 
-	pstrcpy(path, p);
+        safe_strcpy(path, p, path_len - 1);
 
 	all_string_sub(path, "/", "\\", 0);
 
  decoding:
-	decode_urlpart(path, sizeof(pstring));
-	decode_urlpart(server, sizeof(fstring));
-	decode_urlpart(share, sizeof(fstring));
-	decode_urlpart(user, sizeof(fstring));
-	decode_urlpart(password, sizeof(fstring));
+	decode_urlpart(path, path_len);
+	decode_urlpart(server, server_len);
+	decode_urlpart(share, share_len);
+	decode_urlpart(user, user_len);
+	decode_urlpart(password, password_len);
 
 	return 0;
 }
 
 /*
+ * Verify that the options specified in a URL are valid
+ */
+static int smbc_check_options(char *server, char *share, char *path, char *options)
+{
+        DEBUG(4, ("smbc_check_options(): server='%s' share='%s' path='%s' options='%s'\n", server, share, path, options));
+
+        /* No options at all is always ok */
+        if (! *options) return 0;
+
+        /*
+         * For right now, we only support a very few options possibilities.
+         * No options are supported if server, share, or path are not empty.
+         * If all are empty, then we support the following two choices right
+         * now:
+         *
+         *   mb=.any
+         *   mb=.all
+         */
+        if ((*server || *share || *path) && *options) {
+                /* Invalid: options provided with server, share, or path */
+                DEBUG(1, ("Found unsupported options (%s) with non-empty server, share, or path\n", options));
+                return -1;
+        }
+
+        if (strcmp(options, "mb=.any") != 0 &&
+            strcmp(options, "mb=.all") != 0) {
+                DEBUG(1, ("Found unsupported options (%s)\n", options));
+                return -1;
+        }
+
+        return 0;
+}
+
+/*
  * Convert an SMB error into a UNIX error ...
  */
-
 static int smbc_errno(SMBCCTX *context, struct cli_state *c)
 {
 	int ret = cli_errno(c);
@@ -469,6 +562,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
 	DEBUG(4,("smbc_server: server_n=[%s] server=[%s]\n", server_n, server));
   
+#if 0 /* djl: obsolete code?  neither group nor p is used beyond here */
 	if ((p=strchr_m(server_n,'#')) && 
 	    (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
     
@@ -477,6 +571,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 		*p = 0;
 		
 	}
+#endif
 
 	DEBUG(4,(" -> server_n=[%s] server=[%s]\n", server_n, server));
 
@@ -503,7 +598,6 @@ SMBCSRV *smbc_server(SMBCCTX *context,
                  */
                 c.port = 445;
                 if (!cli_connect(&c, server_n, &ip)) {
-                        cli_shutdown(&c);
                         errno = ENETUNREACH;
                         return NULL;
                 }
@@ -598,6 +692,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	DEBUG(2, ("Server connect ok: //%s/%s: %p\n", 
 		  server, share, srv));
 
+	DLIST_ADD(context->internal->_servers, srv);
 	return srv;
 
  failed:
@@ -648,17 +743,16 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                                                 password, 0,
                                                 Undefined, NULL);
                 if (! NT_STATUS_IS_OK(nt_status)) {
-                        DEBUG(0,("cli_full_connection failed! (%s)\n",
+                        DEBUG(1,("cli_full_connection failed! (%s)\n",
                                  nt_errstr(nt_status)));
                         errno = ENOTSUP;
                         return NULL;
                 }
 
                 if (!cli_nt_session_open(ipc_cli, PI_LSARPC)) {
-                        DEBUG(0, ("cli_nt_session_open fail! (%s)\n",
-                                  nt_errstr(nt_status)));
+                        DEBUG(1, ("cli_nt_session_open fail!\n"));
                         errno = ENOTSUP;
-                        free(ipc_cli);
+                        cli_shutdown(ipc_cli);
                         return NULL;
                 }
 
@@ -673,14 +767,14 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
         
                 if (!NT_STATUS_IS_OK(nt_status)) {
                         errno = smbc_errno(context, ipc_cli);
-                        free(ipc_cli);
+                        cli_shutdown(ipc_cli);
                         return NULL;
                 }
 
                 ipc_srv = (SMBCSRV *)malloc(sizeof(*ipc_srv));
                 if (!ipc_srv) {
                         errno = ENOMEM;
-                        free(ipc_cli);
+                        cli_shutdown(ipc_cli);
                         return NULL;
                 }
 
@@ -690,14 +784,23 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                 free(ipc_cli);
 
                 /* now add it to the cache (internal or external) */
+
+                errno = 0;      /* let cache function set errno if it likes */
                 if (context->callbacks.add_cached_srv_fn(context, ipc_srv,
                                                          server,
                                                          "IPC$$",
                                                          workgroup,
                                                          username)) {
                         DEBUG(3, (" Failed to add server to cache\n"));
+                        if (errno == 0) {
+                                errno = ENOMEM;
+                        }
+                        cli_shutdown(&ipc_srv->cli);
+                        free(ipc_srv);
                         return NULL;
                 }
+
+                DLIST_ADD(context->internal->_servers, ipc_srv);
         }
 
         return ipc_srv;
@@ -730,7 +833,16 @@ static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, m
 
 	}
 
-	smbc_parse_path(context, fname, server, share, path, user, password); /* FIXME, check errors */
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return NULL;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -1042,7 +1154,16 @@ static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
 
 	}
 
-	smbc_parse_path(context, fname, server, share, path, user, password); /* FIXME, check errors */
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -1141,11 +1262,23 @@ static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname,
 	
 	DEBUG(4, ("smbc_rename(%s,%s)\n", oname, nname));
 
-	smbc_parse_path(ocontext, oname, server1, share1, path1, user1, password1);
+	smbc_parse_path(ocontext, oname,
+                        server1, sizeof(server1),
+                        share1, sizeof(share1),
+                        path1, sizeof(path1),
+                        user1, sizeof(user1),
+                        password1, sizeof(password1),
+                        NULL, 0);
 
 	if (user1[0] == (char)0) fstrcpy(user1, ocontext->user);
 
-	smbc_parse_path(ncontext, nname, server2, share2, path2, user2, password2);
+	smbc_parse_path(ncontext, nname,
+                        server2, sizeof(server2),
+                        share2, sizeof(share2),
+                        path2, sizeof(path2),
+                        user2, sizeof(user2),
+                        password2, sizeof(password2),
+                        NULL, 0);
 
 	if (user2[0] == (char)0) fstrcpy(user2, ncontext->user);
 
@@ -1348,7 +1481,16 @@ static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
   
 	DEBUG(4, ("smbc_stat(%s)\n", fname));
 
-	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -1359,27 +1501,6 @@ static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
 	if (!srv) {
 		return -1;  /* errno set by smbc_server */
 	}
-
-	/* if (strncmp(srv->cli.dev, "IPC", 3) == 0) {
-
-	   mode = aDIR | aRONLY;
-
-	   }
-	   else if (strncmp(srv->cli.dev, "LPT", 3) == 0) {
-	   
-	   if (strcmp(path, "\\") == 0) {
-	   
-	   mode = aDIR | aRONLY;
-
-	   }
-	   else {
-
-	   mode = aRONLY;
-	   smbc_stat_printjob(srv, path, &size, &m_time);
-	   c_time = a_time = m_time;
-
-	   }
-	   else { */
 
 	if (!smbc_getatr(context, srv, path, &mode, &size, 
 			 &c_time, &a_time, &m_time, &ino)) {
@@ -1462,16 +1583,7 @@ static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
 
 /*
  * Routine to open a directory
- *
- * We want to allow:
- *
- * smb: which should list all the workgroups available
- * smb:workgroup
- * smb:workgroup//server
- * smb://server
- * smb://server/share
- * smb://<IP-addr> which should list shares on server
- * smb://<IP-addr>/share which should list files on share
+ * We accept the URL syntax explained in smbc_parse_path(), above.
  */
 
 static void smbc_remove_dir(SMBCFILE *dir)
@@ -1536,7 +1648,6 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 		ZERO_STRUCTP(dir->dir_list);
 
 		dir->dir_end = dir->dir_next = dir->dir_list;
-  
 	}
 	else {
 
@@ -1552,7 +1663,6 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 		ZERO_STRUCTP(dir->dir_end->next);
 
 		dir->dir_end = dir->dir_end->next;
-
 	}
 
 	dir->dir_end->next = NULL;
@@ -1573,6 +1683,46 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 
 	return 0;
 
+}
+
+static void
+list_unique_wg_fn(const char *name, uint32 type, const char *comment, void *state)
+{
+	SMBCFILE *dir = (SMBCFILE *)state;
+        struct smbc_dir_list *dir_list;
+        struct smbc_dirent *dirent;
+	int dirent_type;
+        int remove = 0;
+
+	dirent_type = dir->dir_type;
+
+	if (add_dirent(dir, name, comment, dirent_type) < 0) {
+
+		/* An error occurred, what do we do? */
+		/* FIXME: Add some code here */
+	}
+
+        /* Point to the one just added */
+        dirent = dir->dir_end->dirent;
+
+        /* See if this was a duplicate */
+        for (dir_list = dir->dir_list;
+             dir_list != dir->dir_end;
+             dir_list = dir_list->next) {
+                if (! remove &&
+                    strcmp(dir_list->dirent->name, dirent->name) == 0) {
+                        /* Duplicate.  End end of list need to be removed. */
+                        remove = 1;
+                }
+
+                if (remove && dir_list->next == dir->dir_end) {
+                        /* Found the end of the list.  Remove it. */
+                        dir->dir_end = dir_list;
+                        free(dir_list->next);
+                        dir_list->next = NULL;
+                        break;
+                }
+        }
 }
 
 static void
@@ -1615,7 +1765,6 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 		/* FIXME: Add some code here */
 
 	}
-
 }
 
 static void
@@ -1635,7 +1784,7 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 
 static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 {
-	fstring server, share, user, password;
+	fstring server, share, user, password, options;
 	pstring workgroup;
 	pstring path;
 	SMBCSRV *srv  = NULL;
@@ -1656,13 +1805,26 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 		return NULL;
 	}
 
-	if (smbc_parse_path(context, fname, server, share, path, user, password)) {
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(path),
+                            password, sizeof(password),
+                            options, sizeof(options))) {
 	        DEBUG(4, ("no valid path\n"));
 		errno = EINVAL;
 		return NULL;
 	}
 
-	DEBUG(4, ("parsed path: fname='%s' server='%s' share='%s' path='%s'\n", fname, server, share, path));
+	DEBUG(4, ("parsed path: fname='%s' server='%s' share='%s' path='%s' options='%s'\n", fname, server, share, path, options));
+
+        /* Ensure the options are valid */
+        if (smbc_check_options(server, share, path, options)) {
+                DEBUG(4, ("unacceptable options (%s)\n", options));
+                errno = EINVAL;
+                return NULL;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -1686,8 +1848,9 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	dir->file     = False;
 	dir->dir_list = dir->dir_next = dir->dir_end = NULL;
 
-	if (server[0] == (char)0) {
-	    struct in_addr server_ip;
+	if (server[0] == (char)0 &&
+            (! *options || strcmp(options, "mb=.any") == 0)) {
+                struct in_addr server_ip;
 		if (share[0] != (char)0 || path[0] != (char)0) {
 
 			errno = EINVAL;
@@ -1698,9 +1861,11 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 			return NULL;
 		}
 
-		/* We have server and share and path empty ... so list the workgroups */
-                /* first try to get the LMB for our workgroup, and if that fails,     */
-                /* try the DMB                                                        */
+		/*
+                 * We have server and share and path empty ... so list the
+                 * workgroups first try to get the LMB for our workgroup, and
+                 * if that fails, try the DMB
+                 */
 
 		pstrcpy(workgroup, lp_workgroup());
 
@@ -1726,7 +1891,21 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 		    cli_shutdown(cli);
 		} else {
-		    if (!name_status_find("*", 0, 0, server_ip, server)) {
+                    /*
+                     * Do a name status query to find out the name of the
+                     * master browser.  We use <01><02>__MSBROWSE__<02>#01 if
+                     * *#00 fails because a domain master browser will not
+                     * respond to a wildcard query (or, at least, an NT4
+                     * server acting as the domain master browser will not).
+                     *
+                     * We might be able to use ONLY the query on MSBROWSE, but
+                     * that's not yet been tested with all Windows versions,
+                     * so until it is, leave the original wildcard query as
+                     * the first choice and fall back to MSBROWSE if the
+                     * wildcard query fails.
+                     */
+		    if (!name_status_find("*", 0, 0x1d, server_ip, server) &&
+                        !name_status_find(MSBROWSE, 1, 0x1d, server_ip, server)) {
 			errno = ENOENT;
 			return NULL;
 		    }
@@ -1734,9 +1913,10 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 		DEBUG(4, ("using workgroup %s %s\n", workgroup, server));
 
-               /*
-                * Get a connection to IPC$ on the server if we do not already have one
-                */
+                /*
+                 * Get a connection to IPC$ on the server if we do not already
+                 * have one
+                 */
                 
 		srv = smbc_server(context, server, "IPC$", workgroup, user, password);
                 if (!srv) {
@@ -1756,6 +1936,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 		if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_fn,
 				       (void *)dir)) {
 
+                        DEBUG(1, ("Could not enumerate domains using '%s'\n", workgroup));
 			if (dir) {
 				SAFE_FREE(dir->fname);
 				SAFE_FREE(dir);
@@ -1765,9 +1946,99 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 			return NULL;
 
 		}
-	}
-	else { /* Server not an empty string ... Check the rest and see what gives */
+        } else if (server[0] == (char)0 &&
+                   (! *options || strcmp(options, "mb=.all") == 0)) {
 
+                int i;
+                int count;
+                struct ip_service *ip_list;
+                struct ip_service server_addr;
+                struct user_auth_info u_info;
+                struct cli_state *cli;
+
+		if (share[0] != (char)0 || path[0] != (char)0) {
+
+			errno = EINVAL;
+			if (dir) {
+				SAFE_FREE(dir->fname);
+				SAFE_FREE(dir);
+			}
+			return NULL;
+		}
+
+                pstrcpy(u_info.username, user);
+                pstrcpy(u_info.password, password);
+
+		/*
+                 * We have server and share and path empty but options
+                 * requesting that we scan all master browsers for their list
+                 * of workgroups/domains.  This implies that we must first try
+                 * broadcast queries to find all master browsers, and if that
+                 * doesn't work, then try our other methods which return only
+                 * a single master browser.
+                 */
+
+                if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
+                        if (!find_master_ip(workgroup, &server_addr.ip)) {
+
+                                errno = ENOENT;
+                                return NULL;
+                        }
+
+                        ip_list = &server_addr;
+                        count = 1;
+                }
+
+                for (i = 0; i < count; i++) {
+                        DEBUG(99, ("Found master browser %s\n", inet_ntoa(ip_list[i].ip)));
+                        
+                        cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, &u_info);
+                        fstrcpy(server, cli->desthost);
+                        cli_shutdown(cli);
+
+                        DEBUG(4, ("using workgroup %s %s\n", workgroup, server));
+
+                        /*
+                         * For each returned master browser IP address, get a
+                         * connection to IPC$ on the server if we do not
+                         * already have one, and determine the
+                         * workgroups/domains that it knows about.
+                         */
+                
+                        srv = smbc_server(context, server,
+                                          "IPC$", workgroup, user, password);
+                        if (!srv) {
+                                
+                                if (dir) {
+                                        SAFE_FREE(dir->fname);
+                                        SAFE_FREE(dir);
+                                }
+                                return NULL;
+                        }
+                
+                        dir->srv = srv;
+                        dir->dir_type = SMBC_WORKGROUP;
+
+                        /* Now, list the stuff ... */
+                        
+                        if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_unique_wg_fn,
+                                               (void *)dir)) {
+                                
+                                if (dir) {
+                                        SAFE_FREE(dir->fname);
+                                        SAFE_FREE(dir);
+                                }
+                                errno = cli_errno(&srv->cli);
+                                
+                                return NULL;
+                                
+                        }
+                }
+        } else { 
+                /*
+                 * Server not an empty string ... Check the rest and see what
+                 * gives
+                 */
 		if (share[0] == (char)0) {
 
 			if (path[0] != (char)0) { /* Should not have empty share with path */
@@ -1796,7 +2067,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				 */
 
 
-				if (!name_status_find("*", 0, 0, rem_ip, buserver)) {
+				if (!name_status_find(server, 0, 0, rem_ip, buserver)) {
 
 					DEBUG(0, ("Could not get name of local/domain master browser for server %s\n", server));
 					errno = EPERM;  /* FIXME, is this correct */
@@ -1835,7 +2106,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 					return NULL;
 					
 				}
-
 			}
 			else {
 
@@ -1962,7 +2232,6 @@ static int smbc_closedir_ctx(SMBCCTX *context, SMBCFILE *dir)
 
 		SAFE_FREE(dir->fname);
 		SAFE_FREE(dir);    /* Free the space too */
-
 	}
 
 	return 0;
@@ -1983,6 +2252,7 @@ struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
 	    !context->internal->_initialized) {
 
 		errno = EINVAL;
+                DEBUG(0, ("Invalid context in smbc_readdir_ctx()\n"));
 		return NULL;
 
 	}
@@ -1990,6 +2260,7 @@ struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
 	if (!dir || !DLIST_CONTAINS(context->internal->_files, dir)) {
 
 		errno = EBADF;
+                DEBUG(0, ("Invalid dir in smbc_readdir_ctx()\n"));
 		return NULL;
 
 	}
@@ -1997,16 +2268,17 @@ struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
 	if (dir->file != False) { /* FIXME, should be dir, perhaps */
 
 		errno = ENOTDIR;
+                DEBUG(0, ("Found file vs directory in smbc_readdir_ctx()\n"));
 		return NULL;
 
 	}
 
-	if (!dir->dir_next)
+	if (!dir->dir_next) {
 		return NULL;
+        }
 	else {
 
 		dirent = dir->dir_next->dirent;
-
 		if (!dirent) {
 
 			errno = ENOENT;
@@ -2142,7 +2414,16 @@ static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
   
 	DEBUG(4, ("smbc_mkdir(%s)\n", fname));
 
-	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -2229,7 +2510,17 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
   
 	DEBUG(4, ("smbc_rmdir(%s)\n", fname));
 
-	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0))
+        {
+                errno = EINVAL;
+                return -1;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -2466,7 +2757,16 @@ int smbc_chmod_ctx(SMBCCTX *context, const char *fname, mode_t newmode)
   
 	DEBUG(4, ("smbc_chmod(%s, 0%3o)\n", fname, newmode));
 
-	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -2518,7 +2818,16 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
   
 	DEBUG(4, ("smbc_utimes(%s, [%s])\n", fname, ctime(&t)));
 
-	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -3353,7 +3662,16 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_setxattr(%s, %s, %.*s)\n",
                   fname, name, (int) size, (char *) value));
 
-	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+	if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -3485,7 +3803,16 @@ int smbc_getxattr_ctx(SMBCCTX *context,
   
         DEBUG(4, ("smbc_getxattr(%s, %s)\n", fname, name));
 
-        smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+        if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -3568,7 +3895,16 @@ int smbc_removexattr_ctx(SMBCCTX *context,
   
         DEBUG(4, ("smbc_removexattr(%s, %s)\n", fname, name));
 
-        smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+        if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -3700,7 +4036,16 @@ static SMBCFILE *smbc_open_print_job_ctx(SMBCCTX *context, const char *fname)
   
         DEBUG(4, ("smbc_open_print_job_ctx(%s)\n", fname));
 
-        smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+        if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return NULL;
+        }
 
         /* What if the path is empty, or the file exists? */
 
@@ -3814,7 +4159,16 @@ static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, smbc_li
   
         DEBUG(4, ("smbc_list_print_jobs(%s)\n", fname));
 
-        smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+        if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
         
@@ -3867,7 +4221,16 @@ static int smbc_unlink_print_job_ctx(SMBCCTX *context, const char *fname, int id
   
         DEBUG(4, ("smbc_unlink_print_job(%s)\n", fname));
 
-        smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+        if (smbc_parse_path(context, fname,
+                            server, sizeof(server),
+                            share, sizeof(share),
+                            path, sizeof(path),
+                            user, sizeof(user),
+                            password, sizeof(password),
+                            NULL, 0)) {
+                errno = EINVAL;
+                return -1;
+        }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
 
@@ -3989,13 +4352,17 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
                 /* First try to remove the servers the nice way. */
                 if (context->callbacks.purge_cached_fn(context)) {
                         SMBCSRV * s;
+                        SMBCSRV * next;
                         DEBUG(1, ("Could not purge all servers, Nice way shutdown failed.\n"));
                         s = context->internal->_servers;
                         while (s) {
+                                DEBUG(1, ("Forced shutdown: %p (fd=%d)\n", s, s->cli.fd));
                                 cli_shutdown(&s->cli);
                                 context->callbacks.remove_cached_srv_fn(context, s);
+                                next = s->next;
+                                DLIST_REMOVE(context->internal->_servers, s);
                                 SAFE_FREE(s);
-                                s = s->next;
+                                s = next;
                         }
                         context->internal->_servers = NULL;
                 }

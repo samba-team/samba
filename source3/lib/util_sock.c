@@ -714,7 +714,7 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 	/* create a socket to write to */
 	res = socket(PF_INET, type, 0);
 	if (res == -1) {
-		DEBUG(0,("socket error\n"));
+                DEBUG(0,("socket error (%s)\n", strerror(errno)));
 		return -1;
 	}
 
