@@ -41,7 +41,7 @@ krb5_error_code
 db_fetch(krb5_principal principal, hdb_entry **h)
 {
     hdb_entry *ent;
-    krb5_error_code ret;
+    krb5_error_code ret = HDB_ERR_NOENTRY;
     int i;
 
     ent = malloc (sizeof (*ent));
@@ -64,7 +64,7 @@ db_fetch(krb5_principal principal, hdb_entry **h)
 	}
     }
     free(ent);
-    return HDB_ERR_NOENTRY;
+    return ret;
 }
 
 void
