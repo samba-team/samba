@@ -49,5 +49,44 @@ typedef void TALLOC_CTX;
 #define data_blob(ptr, size) data_blob_named(ptr, size, __location__)
 #define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, __location__)
 
+#ifndef PRINTF_ATTRIBUTE
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+
+
+/* The following definitions come from lib/talloc.c  */
+void *_talloc(const void *context, size_t size);
+void talloc_set_destructor(const void *ptr, int (*destructor)(void *));
+void talloc_increase_ref_count(const void *ptr);
+void *talloc_reference(const void *context, const void *ptr);
+void *talloc_unreference(const void *context, const void *ptr);
+void talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+void talloc_set_name_const(const void *ptr, const char *name);
+void *talloc_named(const void *context, size_t size, 
+		   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+void *talloc_named_const(const void *context, size_t size, const char *name);
+const char *talloc_get_name(const void *ptr);
+void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
+int talloc_free(void *ptr);
+void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *name);
+void *talloc_steal(const void *new_ctx, const void *ptr);
+off_t talloc_total_size(const void *ptr);
+off_t talloc_total_blocks(const void *ptr);
+void talloc_report_full(const void *ptr, FILE *f);
+void talloc_report(const void *ptr, FILE *f);
+void talloc_enable_leak_report(void);
+void talloc_enable_leak_report_full(void);
+void *talloc_zero(const void *ctx, size_t size);
+void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name);
+char *talloc_strdup(const void *t, const char *p);
+char *talloc_strndup(const void *t, const char *p, size_t n);
+char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+char *talloc_asprintf_append(char *s,
+			     const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+void *talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name);
+void *talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
+void *talloc_ldb_alloc(void *context, void *ptr, size_t size);
+
 #endif
 
