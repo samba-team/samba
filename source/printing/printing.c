@@ -138,6 +138,8 @@ static int print_run_command(int snum,char *command,
 	char *p;
 	int ret;
 
+	if (!command || !*command) return -1;
+
 	pstrcpy(syscmd, command);
 	if (a1) pstring_sub(syscmd, a1, v1);
 	if (a2) pstring_sub(syscmd, a2, v2);
@@ -204,6 +206,7 @@ struct traverse_struct {
 	int qcount, snum;
 };
 
+/* utility fn to delete any jobs that are no longer active */
 static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
 {
 	struct traverse_struct *ts = (struct traverse_struct *)state;
@@ -484,26 +487,26 @@ pause a job
 BOOL print_job_pause(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	int snum;
+	int snum, ret = -1;
+	fstring jobstr;
 	if (!pjob) return False;
+
+	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
 
-	if (pjob->spooled && pjob->sysjob != -1) {
-		/* need to pause the spooled entry */
-		fstring jobstr;
-		slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
-		print_run_command(snum, 
-				  lp_lppausecommand(snum), NULL,
-				  "%j", jobstr,
-				  NULL, NULL);
-	}
+	/* need to pause the spooled entry */
+	slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
+	ret = print_run_command(snum, 
+				lp_lppausecommand(snum), NULL,
+				"%j", jobstr,
+				NULL, NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
 
 	/* how do we tell if this succeeded? */
-	return True;
+	return ret == 0;
 }
 
 /****************************************************************************
@@ -512,25 +515,25 @@ resume a job
 BOOL print_job_resume(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	int snum;
+	int snum, ret;
+	fstring jobstr;
 	if (!pjob) return False;
+
+	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
 
-	if (pjob->spooled && pjob->sysjob != -1) {
-		fstring jobstr;
-		slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
-		print_run_command(snum, 
-				  lp_lpresumecommand(snum), NULL,
-				  "%j", jobstr,
-				  NULL, NULL);
-	}
+	slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
+	ret = print_run_command(snum, 
+				lp_lpresumecommand(snum), NULL,
+				"%j", jobstr,
+				NULL, NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
 
 	/* how do we tell if this succeeded? */
-	return True;
+	return ret == 0;
 }
 
 /****************************************************************************
@@ -716,6 +719,7 @@ static BOOL print_cache_expired(int snum)
 	return False;
 }
 
+/* utility fn to enumerate the print queue */
 static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
 {
 	struct traverse_struct *ts = (struct traverse_struct *)state;
@@ -801,8 +805,15 @@ int print_queue_snum(char *qname)
 ****************************************************************************/
 BOOL print_queue_pause(int snum)
 {
-	/* not currently supported */
-	return False;
+	int ret = print_run_command(snum, 
+				    lp_queuepausecommand(snum), NULL,
+				    NULL, NULL,
+				    NULL, NULL);
+
+	/* force update the database */
+	print_cache_flush(snum);
+
+	return ret == 0;
 }
 
 /****************************************************************************
@@ -810,8 +821,15 @@ BOOL print_queue_pause(int snum)
 ****************************************************************************/
 BOOL print_queue_resume(int snum)
 {
-	/* not currently supported */
-	return False;
+	int ret = print_run_command(snum, 
+				    lp_queueresumecommand(snum), NULL,
+				    NULL, NULL,
+				    NULL, NULL);
+
+	/* force update the database */
+	print_cache_flush(snum);
+
+	return ret == 0;
 }
 
 /****************************************************************************
