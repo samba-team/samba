@@ -29,6 +29,7 @@
 #include <execinfo.h>
 #endif
 #include "system/wait.h"
+#include "system/filesys.h"
 #include "lib/events/events.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
