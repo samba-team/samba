@@ -32,6 +32,7 @@ extern int optind;
 /*********************************************************
 a strdup with exit
 **********************************************************/
+#ifndef ENABLE_DMALLOC
 static char *xstrdup(char *s)
 {
 	s = strdup(s);
@@ -41,6 +42,7 @@ static char *xstrdup(char *s)
 	}
 	return s;
 }
+#endif
 
 
 /*********************************************************

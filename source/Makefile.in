@@ -108,6 +108,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
+	  lib/dmallocmsg.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
 	  $(TDB_OBJ)
 

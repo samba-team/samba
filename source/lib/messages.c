@@ -70,7 +70,8 @@ a useful function for testing the message system
 ****************************************************************************/
 void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	DEBUG(1,("INFO: Received PING message from PID %d  [%s]\n",src, buf));
+	DEBUG(1,("INFO: Received PING message from PID %d  [%s]\n",src,
+		 (const char *) buf));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }
 /****************************************************************************

@@ -1,8 +1,8 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 3.0
    program to send control messages to Samba processes
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) 2001, 2002 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,6 +32,9 @@ static struct {
 	{"profilelevel", MSG_REQ_PROFILELEVEL},
 	{"debuglevel", MSG_REQ_DEBUGLEVEL},
 	{"printer-notify", MSG_PRINTER_NOTIFY},
+	{"pool-usage", MSG_REQ_POOL_USAGE },
+	{"dmalloc-mark", MSG_REQ_DMALLOC_MARK },
+	{"dmalloc-log-changed", MSG_REQ_DMALLOC_LOG_CHANGED },
 	{NULL, -1}
 };
 
@@ -61,6 +64,26 @@ static BOOL got_level;
 static BOOL pong_registered = False;
 static BOOL debuglevel_registered = False;
 static BOOL profilelevel_registered = False;
+
+
+
+/**
+ * Wait for replies for up to @p *max_secs seconds, or until @p
+ * max_replies are received.  max_replies may be NULL in which case it
+ * is ignored.
+ *
+ * @note This is a pretty lame timeout; all it means is that after
+ * max_secs we won't look for any more messages.
+ **/
+static void wait_for_replies(int max_secs, int *max_replies)
+{
+	time_t timeout_end = time(NULL) + max_secs;
+
+	while ((!max_replies || (*max_replies)-- > 0)
+	       &&  (time(NULL) < timeout_end)) {
+		message_dispatch();
+	}
+}
 
 
 /****************************************************************************
@@ -111,6 +134,9 @@ void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
 	    case 7:
 		s = "count and time";
 		break;
+	    default:
+		    s = "BOGUS";
+		    break;
 	    }
 	    printf("Profiling %s on PID %d\n",s,src);
 	} else {
@@ -165,6 +191,12 @@ static int parse_type(char *mtype)
 		if (strequal(mtype, msg_types[i].name)) return msg_types[i].value;
 	}
 	return -1;
+}
+
+
+static void register_all(void)
+{
+	;
 }
 
 
@@ -309,6 +341,18 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char *params[])
 		}
 		break;
 
+	case MSG_REQ_POOL_USAGE:
+		if (!send_message(dest, MSG_REQ_POOL_USAGE, NULL, 0, True))
+			return False;
+		wait_for_replies(MAX_WAIT, NULL);
+		
+		break;
+
+	case MSG_REQ_DMALLOC_LOG_CHANGED:
+	case MSG_REQ_DMALLOC_MARK:
+		if (!send_message(dest, mtype, NULL, 0, False))
+			return False;
+		break;
 	}
 	
 	return (True);
@@ -345,6 +389,8 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char *params[])
 
 	argc -= optind;
 	argv = &argv[optind];
+
+	register_all();
 
 	if (!interactive) {
 		if (argc < 2) usage(True);

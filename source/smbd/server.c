@@ -1,7 +1,6 @@
 #define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    Main SMB server routines
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -746,6 +745,7 @@ static void usage(char *pname)
 	if (!message_init()) {
 		exit(1);
 	}
+	register_dmalloc_msgs();
 
 	/* Setup the main smbd so that we can get messages. */
 	if (lp_status(-1)) {

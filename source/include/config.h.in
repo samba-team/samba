@@ -963,3 +963,10 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
+
+/* Define to turn on dmalloc debugging */
+#undef ENABLE_DMALLOC
+
+/* Define to check invariants around some common functions */
+#undef DMALLOC_FUNC_CHECK
+

@@ -2,9 +2,9 @@
 #define _INCLUDES_H
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    Machine customisation and include handling
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) 2002 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,6 +52,24 @@
 #ifndef PRINTCAP_NAME
 #define PRINTCAP_NAME "/etc/printcap"
 #endif
+#endif
+
+#ifdef __GNUC__
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument.  **/
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+
+#ifdef __GNUC__
+/** gcc attribute used on function parameters so that it does not emit
+ * warnings about them being unused. **/
+#  define UNUSED(param) param __attribute__ ((unused))
+#else
+#  define UNUSED(param) param
+/** Feel free to add definitions for other compilers here. */
 #endif
 
 #ifdef RELIANTUNIX
@@ -883,6 +901,13 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #ifdef HAVE_LIBDL
 #include <dlfcn.h>
 #endif
+
+/* dmalloc -- free heap debugger (dmalloc.org).  This should be near
+ * the *bottom* of include files so as not to conflict. */
+#ifdef ENABLE_DMALLOC
+#  include <dmalloc.h>
+#endif
+
 
 /* Some POSIX definitions for those without */
  
