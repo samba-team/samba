@@ -71,18 +71,7 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 		/* Read mecListMIC */
 		case ASN1_CONTEXT(3):
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			if (!asn1_read_OctetString(asn1, &token->mechListMIC)) {
-				char *mechListMIC;
-				asn1_push_tag(asn1, ASN1_SEQUENCE(0));
-				asn1_push_tag(asn1, ASN1_CONTEXT(0));
-				asn1_read_GeneralString(asn1, &mechListMIC);
-				asn1_pop_tag(asn1);
-				asn1_pop_tag(asn1);
-
-				token->mechListMIC =
-					data_blob(mechListMIC, strlen(mechListMIC));
-				SAFE_FREE(mechListMIC);
-			}
+			asn1_read_OctetString(asn1, &token->mechListMIC);
 			asn1_end_tag(asn1);
 			break;
 		default:
@@ -156,8 +145,6 @@ static BOOL read_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
 	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
 		switch (asn1->data[asn1->ofs]) {
 		case ASN1_CONTEXT(0):
-			/* this is listed as being non-optional by RFC2478 but
-			   Windows doesn't always send it... */
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_ENUMERATED);
 			asn1_read_uint8(asn1, &token->negResult);
@@ -287,6 +274,40 @@ ssize_t write_spnego_data(DATA_BLOB *blob, SPNEGO_DATA *spnego)
 	}
 	asn1_free(&asn1);
 
+	return ret;
+}
+
+BOOL free_spnego_data(SPNEGO_DATA *spnego)
+{
+	BOOL ret = True;
+
+	if (!spnego) goto out;
+
+	switch(spnego->type) {
+	case SPNEGO_NEG_TOKEN_INIT:
+		if (spnego->negTokenInit.mechTypes) {
+			int i;
+			for (i = 0; spnego->negTokenInit.mechTypes[i]; i++) {
+				free(spnego->negTokenInit.mechTypes[i]);
+			}
+			free(spnego->negTokenInit.mechTypes);
+		}
+		data_blob_free(&spnego->negTokenInit.mechToken);
+		data_blob_free(&spnego->negTokenInit.mechListMIC);
+		break;
+	case SPNEGO_NEG_TOKEN_TARG:
+		if (spnego->negTokenTarg.supportedMech) {
+			free(spnego->negTokenTarg.supportedMech);
+		}
+		data_blob_free(&spnego->negTokenTarg.responseToken);
+		data_blob_free(&spnego->negTokenTarg.mechListMIC);
+		break;
+	default:
+		ret = False;
+		break;
+	}
+	ZERO_STRUCTP(spnego);
+out:
 	return ret;
 }
 
