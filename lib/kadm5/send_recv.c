@@ -45,48 +45,47 @@ _kadm5_client_send(kadm5_client_context *context, krb5_storage *sp)
 {
     krb5_data msg, out;
     krb5_error_code ret;
-    unsigned char buf[1024];
     size_t len;
+    krb5_storage *sock;
+
     len = sp->seek(sp, 0, SEEK_CUR);
+    ret = krb5_data_alloc(&msg, len);
     sp->seek(sp, 0, SEEK_SET);
-    sp->fetch(sp, buf, len);
-    msg.data = buf;
-    msg.length = len;
+    sp->fetch(sp, msg.data, msg.length);
     
     ret = krb5_mk_priv(context->context, context->ac, &msg, &out, NULL);
-    if(ret){
+    krb5_data_free(&msg);
+    if(ret)
 	return ret;
+    
+    sock = krb5_storage_from_fd(context->sock);
+    if(sock == NULL) {
+	krb5_data_free(&out);
+	return ENOMEM;
     }
-    buf[0] = (out.length >> 24) & 0xff;
-    buf[1] = (out.length >> 16) & 0xff;
-    buf[2] = (out.length >> 8) & 0xff;
-    buf[3] = out.length & 0xff;
-    krb5_net_write(context->context, &context->sock, buf, 4);
-    krb5_net_write(context->context, &context->sock, out.data, out.length);
+    
+    ret = krb5_store_data(sock, out);
+    krb5_storage_free(sock);
     krb5_data_free(&out);
-    return 0;
+    return ret;
 }
 
 kadm5_ret_t
 _kadm5_client_recv(kadm5_client_context *context, krb5_storage *sp)
 {
-    unsigned char *buf;
-    size_t len;
     krb5_error_code ret;
     krb5_data data, reply;
-    len = krb5_net_read(context->context, &context->sock, buf, 4);
-    if(len != 4)
-	return KADM5_RPC_ERROR;
-    len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-    buf = malloc(len);
-    if(buf == NULL)
+    krb5_storage *sock;
+    sock = krb5_storage_from_fd(context->sock);
+    if(sock == NULL)
 	return ENOMEM;
-    if(krb5_net_read(context->context, &context->sock, buf, len) != len) {
-	free(buf);
+    ret = krb5_ret_data(sock, &data);
+    krb5_storage_free(sock);
+    if(ret == KRB5_CC_END)
 	return KADM5_RPC_ERROR;
-    }
-    data.length = len;
-    data.data = buf;
+    else if(ret)
+	return ret;
+
     ret = krb5_rd_priv(context->context, context->ac, &data, &reply, NULL);
     krb5_data_free(&data);
     sp->store(sp, reply.data, reply.length);
