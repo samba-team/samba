@@ -171,3 +171,172 @@ BOOL smb_io_rpc_auth_netsec_chk(char *desc, RPC_AUTH_NETSEC_CHK *chk, prs_struct
 
 	return True;
 }
+
+static void netsechash(uchar *key, uchar *data, int data_len)
+{
+  uchar hash[256];
+  uchar index_i = 0;
+  uchar index_j = 0;
+  uchar j = 0;
+  int ind;
+
+  for (ind = 0; ind < 256; ind++)
+  {
+    hash[ind] = (uchar)ind;
+  }
+
+  for( ind = 0; ind < 256; ind++)
+  {
+     uchar tc;
+
+     j += (hash[ind] + key[ind%16]);
+
+     tc = hash[ind];
+     hash[ind] = hash[j];
+     hash[j] = tc;
+  }
+
+  for( ind = 0; ind < data_len; ind++)
+  {
+    uchar tc;
+    uchar t;
+
+    index_i++;
+    index_j += hash[index_i];
+
+    tc = hash[index_i];
+    hash[index_i] = hash[index_j];
+    hash[index_j] = tc;
+
+    t = hash[index_i] + hash[index_j];
+    data[ind] ^= hash[t];
+  }
+}
+
+
+BOOL netsec_encode(struct netsec_auth_struct *a,
+				RPC_AUTH_NETSEC_CHK *verf,
+				char *data, size_t data_len)
+{
+	char dataN[4];
+	char digest1[16]; 
+	struct MD5Context ctx3; 
+	uchar sess_kf0[16];
+	int i;
+
+	/* store the sequence number */
+	SIVAL(dataN, 0, a->seq_num);
+
+	for (i = 0; i < sizeof(sess_kf0); i++)
+	{
+		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
+	}
+
+	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
+	dump_data_pw("a->seq_num :\n", dataN, sizeof(dataN));
+
+	MD5Init(&ctx3);
+	MD5Update(&ctx3, dataN, 0x4);
+	MD5Update(&ctx3, verf->sig, 8);
+
+	MD5Update(&ctx3, verf->data8, 8); 
+
+	dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
+	dump_data_pw("sess_kf0:\n", sess_kf0, sizeof(sess_kf0));
+
+	hmac_md5(sess_kf0, dataN, 0x4, digest1 );
+	dump_data_pw("digest1 (ebp-8):\n", digest1, sizeof(digest1));
+	hmac_md5(digest1, verf->data3, 8, digest1);
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+	netsechash(digest1, verf->data8, 8);
+
+	dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
+
+	dump_data_pw("data   :\n", data, data_len);
+	MD5Update(&ctx3, data, data_len); 
+	netsechash(digest1, data , data_len);
+	dump_data_pw("data:\n", data, data_len);
+
+	hmac_md5(a->sess_key, dataN , 0x4, digest1 );
+	dump_data_pw("ctx:\n", digest1, sizeof(digest1));
+
+	hmac_md5(digest1, verf->data1, 8, digest1);
+
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+
+	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
+	netsechash(digest1, verf->data3, 8);
+	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
+
+	{
+		char digest_tmp[16];
+		MD5Final(digest_tmp, &ctx3);
+		hmac_md5(digest_tmp, a->sess_key, 16, digest1);
+	}
+
+	dump_data_pw("digest:\n", digest1, sizeof(digest1));
+
+	return True;
+}
+
+BOOL netsec_decode(struct netsec_auth_struct *a,
+				RPC_AUTH_NETSEC_CHK *verf,
+				char *data, size_t data_len)
+{
+	char dataN[4];
+	char digest1[16]; 
+	struct MD5Context ctx3; 
+	uchar sess_kf0[16];
+	int i;
+
+	/* store the sequence number */
+	SIVAL(dataN, 0, a->seq_num);
+
+	for (i = 0; i < sizeof(sess_kf0); i++)
+	{
+		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
+	}
+
+	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
+	dump_data_pw("a->seq_num :\n", dataN, sizeof(dataN));
+	hmac_md5(a->sess_key, dataN , 0x4, digest1 );
+	dump_data_pw("ctx:\n", digest1, sizeof(digest1));
+
+	hmac_md5(digest1, verf->data1, 8, digest1);
+
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
+	netsechash(digest1, verf->data3, 8);
+	dump_data_pw("verf->data3_dec:\n", verf->data3, sizeof(verf->data3));
+
+	MD5Init(&ctx3);
+	MD5Update(&ctx3, dataN, 0x4);
+	MD5Update(&ctx3, verf->sig, 8);
+
+	dump_data_pw("sess_kf0:\n", sess_kf0, sizeof(sess_kf0));
+
+	hmac_md5(sess_kf0, dataN, 0x4, digest1 );
+	dump_data_pw("digest1 (ebp-8):\n", digest1, sizeof(digest1));
+	hmac_md5(digest1, verf->data3, 8, digest1);
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+
+	dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
+	netsechash(digest1, verf->data8, 8);
+	dump_data_pw("verf->data8_dec:\n", verf->data8, sizeof(verf->data8));
+	MD5Update(&ctx3, verf->data8, 8); 
+
+	dump_data_pw("data   :\n", data, data_len);
+	netsechash(digest1, data , data_len);
+	dump_data_pw("datadec:\n", data, data_len);
+
+	MD5Update(&ctx3, data, data_len); 
+	{
+		char digest_tmp[16];
+		MD5Final(digest_tmp, &ctx3);
+		hmac_md5(digest_tmp, a->sess_key, 16, digest1);
+	}
+
+	dump_data_pw("digest:\n", digest1, sizeof(digest1));
+
+	return True;
+}

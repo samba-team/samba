@@ -1946,8 +1946,6 @@ BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
 BOOL cli_get_sesskey_srv(const char* srv_name, uchar sess_key[16]);
 void cli_con_gen_next_creds(struct cli_connection *con,
 				DOM_CRED *new_clnt_cred);
-void cli_con_get_sess_key(struct cli_connection *con,
-				uchar sess_key[16]);
 void cli_con_get_cli_cred(struct cli_connection *con,
 				DOM_CRED *clnt_cred);
 BOOL cli_con_deal_with_creds(struct cli_connection *con,
@@ -2901,6 +2899,12 @@ BOOL make_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk,
 				uchar data3[8],
 				uchar data8[8]);
 BOOL smb_io_rpc_auth_netsec_chk(char *desc, RPC_AUTH_NETSEC_CHK *chk, prs_struct *ps, int depth);
+BOOL netsec_encode(struct netsec_auth_struct *a,
+				RPC_AUTH_NETSEC_CHK *verf,
+				char *data, size_t data_len);
+BOOL netsec_decode(struct netsec_auth_struct *a,
+				RPC_AUTH_NETSEC_CHK *verf,
+				char *data, size_t data_len);
 
 /*The following definitions come from  rpc_parse/parse_ntlmssp.c  */
 
