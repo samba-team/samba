@@ -361,7 +361,7 @@ list_files(FILE *out, char **files, int n_files, int flags)
 
     fi = calloc(n_files, sizeof(*fi));
     if (fi == NULL) {
-	sec_fprintf2(out, "ouf of memory\n");
+	sec_fprintf2(out, "ouf of memory\r\n");
 	return;
     }
     for(i = 0; i < n_files; i++) {
