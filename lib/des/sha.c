@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -42,8 +42,8 @@
 RCSID("$Id$");
 #endif
 
-#include "hash.h"
 #include "sha.h"
+#include "hash.h"
 
 #define A m->counter[0]
 #define B m->counter[1]
