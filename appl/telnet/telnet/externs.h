@@ -310,7 +310,7 @@ extern int
 extern cc_t
     *tcval P((int));
 
-extern void quit P((void));
+extern int quit P((void));
 
 #ifndef	USE_TERMIO
 

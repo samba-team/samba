@@ -1080,12 +1080,13 @@ unsetcmd(argc, argv)
 #ifdef	KLUDGELINEMODE
 extern int kludgelinemode;
 
-static void dokludgemode(void)
+static int dokludgemode(void)
 {
     kludgelinemode = 1;
     send_wont(TELOPT_LINEMODE, 1);
     send_dont(TELOPT_SGA, 1);
     send_dont(TELOPT_ECHO, 1);
+    return 1;
 }
 #endif
 
@@ -1124,7 +1125,7 @@ dolmmode(bit, on)
     if (my_want_state_is_wont(TELOPT_LINEMODE)) {
 	printf("?Need to have LINEMODE option enabled first.\n");
 	printf("'mode ?' for help.\n");
-	return 0;
+ 	return 0;
     }
 
     if (on)
@@ -1457,7 +1458,7 @@ static int bye(int argc, char **argv)
 }
 
 /*VARARGS*/
-void quit(void)
+int quit(void)
 {
 	(void) call(bye, "bye", "fromquit", 0);
 	Exit(0);
