@@ -68,6 +68,9 @@ init_generate (char *filename, char *basename)
 	     "#include <stddef.h>\n"
 	     "#include <time.h>\n\n");
     fprintf (headerfile,
+	     "#ifndef __asn1_common_definitions__\n"
+	     "#define __asn1_common_definitions__\n\n");
+    fprintf (headerfile,
 	     "typedef struct octet_string {\n"
 	     "  size_t length;\n"
 	     "  void *data;\n"
@@ -82,6 +85,7 @@ init_generate (char *filename, char *basename)
 	     "typedef char *general_string;\n\n"
 #endif
 	     );
+    fprintf (headerfile, "#endif\n\n");
     logfile = fopen(STEM "_files", "w");
     if (logfile == NULL)
 	err (1, "open " STEM "_files");
