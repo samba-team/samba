@@ -1095,9 +1095,13 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		break;
 	}
 
-	case ASN1_APPLICATION(LDAP_TAG_AbandonRequest): {
-/*		struct ldap_AbandonRequest *r = &msg->r.AbandonRequest; */
+	case ASN1_APPLICATION_SIMPLE(LDAP_TAG_AbandonRequest): {
+		struct ldap_AbandonRequest *r = &msg->r.AbandonRequest;
 		msg->type = LDAP_TAG_AbandonRequest;
+		asn1_start_tag(data,
+				ASN1_APPLICATION_SIMPLE(LDAP_TAG_AbandonRequest));
+		asn1_read_implicit_Integer(data, &r->messageid);
+		asn1_end_tag(data);
 		break;
 	}
 
