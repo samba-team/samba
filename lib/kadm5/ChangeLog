@@ -1,3 +1,13 @@
+2003-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* iprop.h: don't include <krb5-private.h>
+	
+	* ipropd_slave.c: stop using krb5 lib private byte-frobbing
+	functions and replace them with with krb5_storage
+	
+	* ipropd_master.c: stop using krb5 lib private byte-frobbing
+	functions and replace them with with krb5_storage
+	
 2003-11-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* dump_log.c,ipropd_master.c,ipropd_slave.c,
