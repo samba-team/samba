@@ -102,13 +102,13 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 
 
 /****************************************************************************
-check if it's a null mtime
+check if it's a null unix time
 ****************************************************************************/
-static BOOL null_mtime(time_t mtime)
+BOOL null_time(time_t t)
 {
-	return mtime == 0 || 
-		mtime == (time_t)0xFFFFFFFF || 
-		mtime == (time_t)-1;
+	return t == 0 || 
+		t == (time_t)0xFFFFFFFF || 
+		t == (time_t)-1;
 }
 
 /*******************************************************************
@@ -188,7 +188,7 @@ localtime for this sort of date)
 ********************************************************************/
 void push_dos_date3(char *buf,int offset,time_t unixdate, int zone_offset)
 {
-	if (!null_mtime(unixdate)) {
+	if (!null_time(unixdate)) {
 		unixdate -= zone_offset;
 	}
 	SIVAL(buf,offset,unixdate);
@@ -258,7 +258,7 @@ time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset)
 time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
 {
 	time_t t = (time_t)IVAL(date_ptr,0);
-	if (!null_mtime(t)) {
+	if (!null_time(t)) {
 		t += zone_offset;
 	}
 	return t;
