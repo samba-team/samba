@@ -2473,6 +2473,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 		return False;
 	}
 
+	memset(cli->outbuf, '\0', cli->bufsize);
+	memset(cli->inbuf, '\0', cli->bufsize);
+
 	cli->initialised = 1;
 
 	return cli;
