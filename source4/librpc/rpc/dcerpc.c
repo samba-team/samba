@@ -66,7 +66,7 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
 
 /* we need to be able to get/set the fragment length without doing a full
    decode */
-void dcerpc_set_frag_length(DATA_BLOB *blob, uint16 v)
+void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v)
 {
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		SSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, v);
@@ -75,7 +75,7 @@ void dcerpc_set_frag_length(DATA_BLOB *blob, uint16 v)
 	}
 }
 
-uint16 dcerpc_get_frag_length(const DATA_BLOB *blob)
+uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob)
 {
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		return SVAL(blob->data, DCERPC_FRAG_LEN_OFFSET);
@@ -84,7 +84,7 @@ uint16 dcerpc_get_frag_length(const DATA_BLOB *blob)
 	}
 }
 
-void dcerpc_set_auth_length(DATA_BLOB *blob, uint16 v)
+void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 {
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		SSVAL(blob->data, DCERPC_AUTH_LEN_OFFSET, v);
@@ -460,7 +460,7 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
   perform a full request/response pair on a dcerpc pipe
 */
 NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
-			uint16 opnum,
+			uint16_t opnum,
 			TALLOC_CTX *mem_ctx,
 			DATA_BLOB *stub_data_in,
 			DATA_BLOB *stub_data_out)

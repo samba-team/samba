@@ -45,7 +45,7 @@ struct cli_session *cli_session_init(struct cli_transport *transport)
 
 	session->mem_ctx = mem_ctx;
 	session->transport = transport;
-	session->pid = (uint16)getpid();
+	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
 	session->transport->reference_count++;
 
@@ -144,7 +144,7 @@ NTSTATUS smb_raw_session_setup_recv(struct cli_request *req,
 				    TALLOC_CTX *mem_ctx, 
 				    union smb_sesssetup *parms) 
 {
-	uint16 len;
+	uint16_t len;
 	char *p;
 
 	if (!cli_request_receive(req)) {

@@ -28,7 +28,7 @@ translated the ACB_CTRL Flags to UserFlags (userAccountControl)
 /* mapping between ADS userAccountControl and SAMR acct_flags */
 static const struct {
 	uint32_t uf;
-	uint16 acb;
+	uint16_t acb;
 } acct_flags_map[] = {
 	{ UF_ACCOUNTDISABLE, ACB_DISABLED },
 	{ UF_HOMEDIR_REQUIRED, ACB_HOMDIRREQ },
@@ -43,7 +43,7 @@ static const struct {
 	{ UF_LOCKOUT, ACB_AUTOLOCK }
 };
 
-uint32_t samdb_acb2uf(uint16 acb)
+uint32_t samdb_acb2uf(uint16_t acb)
 {
 	uint32_t i, ret = 0;
 	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
@@ -57,10 +57,10 @@ uint32_t samdb_acb2uf(uint16 acb)
 /*
 translated the UserFlags (userAccountControl) to ACB_CTRL Flags
 */
-uint16 samdb_uf2acb(uint32_t uf)
+uint16_t samdb_uf2acb(uint32_t uf)
 {
 	uint32_t i;
-	uint16 ret = 0;
+	uint16_t ret = 0;
 	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
 		if (acct_flags_map[i].uf & uf) {
 			ret |= acct_flags_map[i].acb;

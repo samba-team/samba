@@ -46,7 +46,7 @@ typedef struct file_info_struct file_info2;
 struct file_info_struct
 {
   uint64_t size;
-  uint16 mode;
+  uint16_t mode;
   uid_t uid;
   gid_t gid;
   /* These times are normally kept in GMT */
@@ -74,7 +74,7 @@ extern struct cli_state *cli;
 #define ATTRSET 1
 #define ATTRRESET 0
 
-static uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+static uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 #ifndef CLIENT_TIMEOUT
 #define CLIENT_TIMEOUT (30*1000)
@@ -110,7 +110,7 @@ static int clipn=0;
 static BOOL must_free_cliplist = False;
 
 extern BOOL lowercase;
-extern uint16 cnum;
+extern uint16_t cnum;
 extern BOOL readbraw_supported;
 extern int max_xmit;
 extern pstring cur_dir;
@@ -573,9 +573,9 @@ static int padit(char *buf, int bufsize, int padsize)
 }
 
 
-static void do_setrattr(char *name, uint16 attr, int set)
+static void do_setrattr(char *name, uint16_t attr, int set)
 {
-	uint16 oldattr;
+	uint16_t oldattr;
 
 	if (NT_STATUS_IS_ERR(cli_getatr(cli->tree, name, &oldattr, NULL, NULL)))
 		return;
@@ -1345,7 +1345,7 @@ int cmd_setmode(void)
   char *q;
   fstring buf;
   pstring fname;
-  uint16 attra[2];
+  uint16_t attra[2];
   int direct=1;
 
   attra[0] = attra[1] = 0;

@@ -428,7 +428,7 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint8 bt;
-	uint16 w;
+	uint16_t w;
 	uint32_t d;
 	int i;
 	void *p;
@@ -451,7 +451,7 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 			break;
 		case 'w': /* unsigned 16-bit integer */
 			len = 2;
-			w = (uint16)va_arg(ap, int);
+			w = (uint16_t)va_arg(ap, int);
 			if (bufsize && bufsize >= len)
 				SSVAL(buf, 0, w);
 			break;
@@ -522,7 +522,7 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint8 *bt;
-	uint16 *w;
+	uint16_t *w;
 	uint32_t *d;
 	int len;
 	int *i;
@@ -546,7 +546,7 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 			break;
 		case 'w':
 			len = 2;
-			w = va_arg(ap, uint16 *);
+			w = va_arg(ap, uint16_t *);
 			if (bufsize < len)
 				goto no_space;
 			*w = SVAL(buf, 0);

@@ -25,7 +25,7 @@ send a qpathinfo call
 ****************************************************************************/
 NTSTATUS cli_qpathinfo(struct cli_tree *tree, const char *fname, 
 		       time_t *c_time, time_t *a_time, time_t *m_time, 
-		       size_t *size, uint16 *mode)
+		       size_t *size, uint16_t *mode)
 {
 	union smb_fileinfo parms;
 	TALLOC_CTX *mem_ctx;
@@ -66,7 +66,7 @@ send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
 NTSTATUS cli_qpathinfo2(struct cli_tree *tree, const char *fname, 
 			time_t *c_time, time_t *a_time, time_t *m_time, 
-			time_t *w_time, size_t *size, uint16 *mode,
+			time_t *w_time, size_t *size, uint16_t *mode,
 			SMB_INO_T *ino)
 {
 	union smb_fileinfo parms;
@@ -141,7 +141,7 @@ NTSTATUS cli_qfilename(struct cli_tree *tree, int fnum, const char **name)
 send a qfileinfo call
 ****************************************************************************/
 NTSTATUS cli_qfileinfo(struct cli_tree *tree, int fnum, 
-		       uint16 *mode, size_t *size,
+		       uint16_t *mode, size_t *size,
 		       time_t *c_time, time_t *a_time, time_t *m_time, 
 		       time_t *w_time, SMB_INO_T *ino)
 {

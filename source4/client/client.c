@@ -347,13 +347,13 @@ static BOOL do_this_one(file_info *finfo)
 /*******************************************************************
  Return a string representing an attribute for a file.
 ********************************************************************/
-static const char *attrib_string(uint16 mode)
+static const char *attrib_string(uint16_t mode)
 {
 	static fstring attrstr;
 	int i, len;
 	const struct {
 		char c;
-		uint16 attr;
+		uint16_t attr;
 	} attr_strs[] = {
 		{'V', FILE_ATTRIBUTE_VOLUME},
 		{'D', FILE_ATTRIBUTE_DIRECTORY},
@@ -566,7 +566,7 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 /****************************************************************************
 a wrapper around cli_list that adds recursion
   ****************************************************************************/
-void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
+void do_list(const char *mask,uint16_t attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
 	static int in_do_list = 0;
 
@@ -637,7 +637,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
   ****************************************************************************/
 static int cmd_dir(void)
 {
-	uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mask;
 	fstring buf;
 	char *p=buf;
@@ -674,7 +674,7 @@ static int cmd_dir(void)
   ****************************************************************************/
 static int cmd_du(void)
 {
-	uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mask;
 	fstring buf;
 	char *p=buf;
@@ -715,7 +715,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	char *data;
 	struct timeval tp_start;
 	int read_size = io_bufsize;
-	uint16 attr;
+	uint16_t attr;
 	size_t size;
 	off_t start = 0;
 	off_t nread = 0;
@@ -807,7 +807,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	}
 
 	if (archive_level >= 2 && (attr & FILE_ATTRIBUTE_ARCHIVE)) {
-		cli_setatr(cli->tree, rname, attr & ~(uint16)FILE_ATTRIBUTE_ARCHIVE, 0);
+		cli_setatr(cli->tree, rname, attr & ~(uint16_t)FILE_ATTRIBUTE_ARCHIVE, 0);
 	}
 
 	{
@@ -970,7 +970,7 @@ do a mget command
 ****************************************************************************/
 static int cmd_mget(void)
 {
-	uint16 attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mget_mask;
 	fstring buf;
 	char *p=buf;
@@ -1582,7 +1582,7 @@ static int cmd_del(void)
 {
 	pstring mask;
 	fstring buf;
-	uint16 attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 	if (recurse)
 		attribute |= FILE_ATTRIBUTE_DIRECTORY;

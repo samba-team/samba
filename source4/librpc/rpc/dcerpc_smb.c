@@ -25,7 +25,7 @@
 
 /* transport private information used by SMB pipe transport */
 struct smb_private {
-	uint16 fnum;
+	uint16_t fnum;
 	struct cli_tree *tree;
 };
 
@@ -33,7 +33,7 @@ static struct cli_request *dcerpc_raw_send(struct dcerpc_pipe *p, DATA_BLOB *blo
 {
 	struct smb_private *smb = p->transport.private;
 	struct smb_trans2 trans;
-	uint16 setup[2];
+	uint16_t setup[2];
 	struct cli_request *req;
 	TALLOC_CTX *mem_ctx;
 
@@ -71,7 +71,7 @@ static NTSTATUS dcerpc_raw_recv(struct dcerpc_pipe *p,
 	struct smb_private *smb = p->transport.private;
 	struct smb_trans2 trans;
 	NTSTATUS status;
-	uint16 frag_length;
+	uint16_t frag_length;
 	DATA_BLOB payload;
 
 	status = smb_raw_trans_recv(req, mem_ctx, &trans);

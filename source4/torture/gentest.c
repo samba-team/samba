@@ -68,8 +68,8 @@ static struct {
 /* oplock break info */
 static struct {
 	BOOL got_break;
-	uint16 fnum;
-	uint16 handle;
+	uint16_t fnum;
+	uint16_t handle;
 	uint8 level;
 	BOOL do_close;
 } oplocks[NSERVERS][NINSTANCES];
@@ -94,7 +94,7 @@ static struct {
 
 #define BAD_HANDLE 0xFFFE
 
-static BOOL oplock_handler(struct cli_transport *transport, uint16 tid, uint16 fnum, uint8 level, void *private);
+static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8 level, void *private);
 static void idle_func(struct cli_transport *transport, void *private);
 
 /*
@@ -206,7 +206,7 @@ static uint_t time_skew(void)
 /*
   turn an fnum for an instance into a handle
 */
-static uint_t fnum_to_handle(int server, int instance, uint16 fnum)
+static uint_t fnum_to_handle(int server, int instance, uint16_t fnum)
 {
 	uint_t i;
 	for (i=0;i<options.max_open_handles;i++) {
@@ -224,7 +224,7 @@ static uint_t fnum_to_handle(int server, int instance, uint16 fnum)
 /*
   add some newly opened handles
 */
-static void gen_add_handle(int instance, const char *name, uint16 fnums[NSERVERS])
+static void gen_add_handle(int instance, const char *name, uint16_t fnums[NSERVERS])
 {
 	int i, h;
 	for (h=0;h<options.max_open_handles;h++) {
@@ -260,7 +260,7 @@ static void gen_add_handle(int instance, const char *name, uint16 fnums[NSERVERS
 /*
   remove a closed handle
 */
-static void gen_remove_handle(int instance, uint16 fnums[NSERVERS])
+static void gen_remove_handle(int instance, uint16_t fnums[NSERVERS])
 {
 	int h;
 	for (h=0;h<options.max_open_handles;h++) {
@@ -290,7 +290,7 @@ static BOOL gen_chance(uint_t chance)
 /*
   map an internal handle number to a server fnum
 */
-static uint16 gen_lookup_fnum(int server, uint16 handle)
+static uint16_t gen_lookup_fnum(int server, uint16_t handle)
 {
 	if (handle == BAD_HANDLE) return handle;
 	return open_handles[handle].server_fnum[server];
@@ -299,9 +299,9 @@ static uint16 gen_lookup_fnum(int server, uint16 handle)
 /*
   return a file handle
 */
-static uint16 gen_fnum(int instance)
+static uint16_t gen_fnum(int instance)
 {
-	uint16 h;
+	uint16_t h;
 	int count = 0;
 
 	if (gen_chance(20)) return BAD_HANDLE;
@@ -320,7 +320,7 @@ static uint16 gen_fnum(int instance)
   return a file handle, but skewed so we don't close the last
   couple of handles too readily
 */
-static uint16 gen_fnum_close(int instance)
+static uint16_t gen_fnum_close(int instance)
 {
 	if (num_open_handles < 3) {
 		if (gen_chance(80)) return BAD_HANDLE;
@@ -342,7 +342,7 @@ static int gen_int_range(uint_t min, uint_t max)
   return a fnum for use as a root fid
   be careful to call GEN_SET_FNUM() when you use this!
 */
-static uint16 gen_root_fid(int instance)
+static uint16_t gen_root_fid(int instance)
 {
 	if (gen_chance(5)) return gen_fnum(instance);
 	return 0;
@@ -412,7 +412,7 @@ static const char *gen_fname(void)
 */
 static const char *gen_fname_open(int instance)
 {
-	uint16 h;
+	uint16_t h;
 	h = gen_fnum(instance);
 	if (h == BAD_HANDLE) {
 		return gen_fname();
@@ -472,7 +472,7 @@ static BOOL gen_bool(void)
 /*
   generate ntrename flags
 */
-static uint16 gen_rename_flags(void)
+static uint16_t gen_rename_flags(void)
 {
 	if (gen_chance(30)) return RENAME_FLAG_RENAME;
 	if (gen_chance(30)) return RENAME_FLAG_HARD_LINK;
@@ -484,7 +484,7 @@ static uint16 gen_rename_flags(void)
 /*
   return a lockingx lock mode
 */
-static uint16 gen_lock_mode(void)
+static uint16_t gen_lock_mode(void)
 {
 	if (gen_chance(5))  return gen_bits_mask(0xFFFF);
 	if (gen_chance(20)) return gen_bits_mask(0x1F);
@@ -494,7 +494,7 @@ static uint16 gen_lock_mode(void)
 /*
   generate a pid 
 */
-static uint16 gen_pid(void)
+static uint16_t gen_pid(void)
 {
 	if (gen_chance(10)) return gen_bits_mask(0xFFFF);
 	return getpid();
@@ -549,7 +549,7 @@ static uint32_t gen_open_disp(void)
 /*
   generate an openx open mode
 */
-static uint16 gen_openx_mode(void)
+static uint16_t gen_openx_mode(void)
 {
 	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
 	if (gen_chance(20)) return gen_bits_mask(0xFF);
@@ -559,7 +559,7 @@ static uint16 gen_openx_mode(void)
 /*
   generate an openx flags field
 */
-static uint16 gen_openx_flags(void)
+static uint16_t gen_openx_flags(void)
 {
 	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
 	return gen_bits_mask(0x7);
@@ -568,7 +568,7 @@ static uint16 gen_openx_flags(void)
 /*
   generate an openx open function
 */
-static uint16 gen_openx_func(void)
+static uint16_t gen_openx_func(void)
 {
 	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
 	return gen_bits_mask(0x13);
@@ -675,7 +675,7 @@ static void async_notify(struct cli_request *req)
 	struct smb_notify notify;
 	NTSTATUS status;
 	int i, j;
-	uint16 tid;
+	uint16_t tid;
 	struct cli_transport *transport = req->transport;
 
 	tid = SVAL(req->in.hdr, HDR_TID);
@@ -704,7 +704,7 @@ static void async_notify(struct cli_request *req)
 /*
   the oplock handler will either ack the break or close the file
 */
-static BOOL oplock_handler(struct cli_transport *transport, uint16 tid, uint16 fnum, uint8 level, void *private)
+static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8 level, void *private)
 {
 	union smb_close io;
 	NTSTATUS status;
@@ -852,7 +852,7 @@ again:
 	for (j=0;j<NINSTANCES;j++) {
 		if (oplocks[0][j].got_break &&
 		    oplocks[0][j].do_close) {
-			uint16 fnums[NSERVERS];
+			uint16_t fnums[NSERVERS];
 			for (i=0;i<NSERVERS;i++) {
 				fnums[i] = oplocks[i][j].fnum;
 			}
@@ -968,7 +968,7 @@ again:
 } while(0)
 
 #define ADD_HANDLE(name, field) do { \
-	uint16 fnums[NSERVERS]; \
+	uint16_t fnums[NSERVERS]; \
 	int i; \
 	for (i=0;i<NSERVERS;i++) { \
 		fnums[i] = parm[i].field; \
@@ -977,7 +977,7 @@ again:
 } while(0)
 
 #define REMOVE_HANDLE(field) do { \
-	uint16 fnums[NSERVERS]; \
+	uint16_t fnums[NSERVERS]; \
 	int i; \
 	for (i=0;i<NSERVERS;i++) { \
 		fnums[i] = parm[i].field; \

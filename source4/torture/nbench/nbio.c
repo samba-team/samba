@@ -143,7 +143,7 @@ static struct cli_state *c;
 /*
   a handler function for oplock break requests
 */
-static BOOL oplock_handler(struct cli_transport *transport, uint16 tid, uint16 fnum, uint8 level, void *private)
+static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8 level, void *private)
 {
 	struct cli_tree *tree = private;
 	return cli_oplock_ack(tree, fnum, level);

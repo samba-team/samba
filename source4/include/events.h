@@ -27,8 +27,8 @@ struct event_context {
 	struct fd_event {
 		struct fd_event *next, *prev;
 		int fd;
-		uint16 flags; /* see EVENT_FD_* flags */
-		void (*handler)(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags);
+		uint16_t flags; /* see EVENT_FD_* flags */
+		void (*handler)(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags);
 		void *private;
 		int ref_count;
 	} *fd_events;

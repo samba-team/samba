@@ -53,7 +53,7 @@ static NTSTATUS try_trans2(struct cli_state *cli,
 {
 	NTSTATUS status;
 	struct smb_trans2 t2;
-	uint16 setup = op;
+	uint16_t setup = op;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("try_trans2");

@@ -60,8 +60,8 @@ typedef struct {
 /* struct used for SMBlseek call */
 struct smb_seek {
 	struct {
-		uint16 fnum;
-		uint16 mode;
+		uint16_t fnum;
+		uint16_t mode;
 		int32_t  offset; /* signed */
 	} in;
 	struct {
@@ -74,7 +74,7 @@ struct smb_seek {
 struct smb_unlink {
 	struct {
 		const char *pattern;
-		uint16 attrib;
+		uint16_t attrib;
 	} in;
 };
 
@@ -134,7 +134,7 @@ union smb_rename {
 		struct {
 			const char *pattern1;
 			const char *pattern2;
-			uint16 attrib;
+			uint16_t attrib;
 		} in;
 	} rename;
 
@@ -144,8 +144,8 @@ union smb_rename {
 		enum rename_level level;
 
 		struct {
-			uint16 attrib;
-			uint16 flags; /* see RENAME_FLAG_* */
+			uint16_t attrib;
+			uint16_t flags; /* see RENAME_FLAG_* */
 			uint32_t cluster_size;
 			const char *old_name;
 			const char *new_name;
@@ -172,8 +172,8 @@ union smb_tcon {
 			const char *dev;
 		} in;
 		struct {
-			uint16 max_xmit;
-			uint16 cnum;
+			uint16_t max_xmit;
+			uint16_t cnum;
 		} out;
 	} tcon;
 
@@ -182,16 +182,16 @@ union smb_tcon {
 		enum tcon_level level;
 
 		struct {
-			uint16 flags;
+			uint16_t flags;
 			DATA_BLOB password;
 			const char *path;
 			const char *device;
 		} in;
 		struct {
-			uint16 options;
+			uint16_t options;
 			char *dev_type;
 			char *fs_type;
-			uint16 cnum;
+			uint16_t cnum;
 		} out;
 	} tconx;
 };
@@ -215,7 +215,7 @@ union smb_sesssetup {
 			const char *domain;
 		} in;
 		struct {
-			uint16 vuid;
+			uint16_t vuid;
 			char *os;
 			char *lanman;
 			char *domain;
@@ -227,9 +227,9 @@ union smb_sesssetup {
 		enum sesssetup_level level;
 
 		struct {
-			uint16 bufsize;
-			uint16 mpx_max;
-			uint16 vc_num;
+			uint16_t bufsize;
+			uint16_t mpx_max;
+			uint16_t vc_num;
 			uint32_t sesskey;
 			DATA_BLOB password;
 			const char *user;
@@ -238,8 +238,8 @@ union smb_sesssetup {
 			const char *lanman;
 		} in;
 		struct {
-			uint16 action;
-			uint16 vuid;
+			uint16_t action;
+			uint16_t vuid;
 			char *os;
 			char *lanman;
 			char *domain;
@@ -251,9 +251,9 @@ union smb_sesssetup {
 		enum sesssetup_level level;
 
 		struct {
-			uint16 bufsize;
-			uint16 mpx_max;
-			uint16 vc_num;
+			uint16_t bufsize;
+			uint16_t mpx_max;
+			uint16_t vc_num;
 			uint32_t sesskey;
 			uint32_t capabilities;
 			DATA_BLOB password1;
@@ -264,8 +264,8 @@ union smb_sesssetup {
 			const char *lanman;
 		} in;
 		struct {
-			uint16 action;
-			uint16 vuid;
+			uint16_t action;
+			uint16_t vuid;
 			char *os;
 			char *lanman;
 			char *domain;
@@ -278,9 +278,9 @@ union smb_sesssetup {
 		enum sesssetup_level level;
 
 		struct {
-			uint16 bufsize;
-			uint16 mpx_max;
-			uint16 vc_num;
+			uint16_t bufsize;
+			uint16_t mpx_max;
+			uint16_t vc_num;
 			uint32_t sesskey;
 			uint32_t capabilities;
 			DATA_BLOB secblob;
@@ -289,12 +289,12 @@ union smb_sesssetup {
 			const char *domain;
 		} in;
 		struct {
-			uint16 action;
+			uint16_t action;
 			DATA_BLOB secblob;
 			char *os;
 			char *lanman;
 			char *domain;
-			uint16 vuid;
+			uint16_t vuid;
 		} out;
 	} spnego;
 };
@@ -349,11 +349,11 @@ union smb_fileinfo {
 		 * identical */
 		union smb_fileinfo_in {
 			const char *fname;
-			uint16 fnum;
+			uint16_t fnum;
 		} in;
 		
 		struct {
-			uint16 attrib;
+			uint16_t attrib;
 			uint32_t ea_size;
 			uint_t num_eas;
 			struct ea_struct {
@@ -374,7 +374,7 @@ union smb_fileinfo {
 			uint8 delete_pending;
 			uint8 directory;
 			uint64_t compressed_size;
-			uint16 format;
+			uint16_t format;
 			uint8 unit_shift;
 			uint8 chunk_shift;
 			uint8 cluster_shift;
@@ -401,7 +401,7 @@ union smb_fileinfo {
 		union smb_fileinfo_in in;
 
 		struct {
-			uint16 attrib;
+			uint16_t attrib;
 			uint32_t size;
 			time_t write_time;
 		} out;
@@ -418,7 +418,7 @@ union smb_fileinfo {
 			time_t write_time;
 			uint32_t size;
 			uint32_t alloc_size;
-			uint16 attrib;
+			uint16_t attrib;
 		} out;
 	} getattre;
 
@@ -433,7 +433,7 @@ union smb_fileinfo {
 			time_t write_time;
 			uint32_t size;
 			uint32_t alloc_size;
-			uint16 attrib;
+			uint16_t attrib;
 		} out;
 	} standard;
 
@@ -448,7 +448,7 @@ union smb_fileinfo {
 			time_t write_time;
 			uint32_t size;
 			uint32_t alloc_size;
-			uint16 attrib;
+			uint16_t attrib;
 			uint32_t ea_size;
 		} out;
 	} ea_size;
@@ -570,7 +570,7 @@ union smb_fileinfo {
 
 		struct {
 			uint64_t compressed_size;
-			uint16 format;
+			uint16_t format;
 			uint8 unit_shift;
 			uint8 chunk_shift;
 			uint8 cluster_shift;
@@ -727,7 +727,7 @@ union smb_setfileinfo {
 		   interface */
 		union setfileinfo_file {
 			const char *fname;
-			uint16 fnum;
+			uint16_t fnum;
 		} file;
 	} generic;
 
@@ -736,7 +736,7 @@ union smb_setfileinfo {
 		enum setfileinfo_level level;
 		union setfileinfo_file file;
 		struct {
-			uint16 attrib;
+			uint16_t attrib;
 			time_t write_time;
 		} in;
 	} setattr;
@@ -943,10 +943,10 @@ union smb_fsinfo {
 		enum fsinfo_level level;
 
 		struct {
-			uint16 units_total;
-			uint16 blocks_per_unit;
-			uint16 block_size;
-			uint16 units_free;
+			uint16_t units_total;
+			uint16_t blocks_per_unit;
+			uint16_t block_size;
+			uint16_t units_free;
 		} out;
 	} dskattr;
 
@@ -959,7 +959,7 @@ union smb_fsinfo {
 			uint32_t sectors_per_unit;
 			uint32_t total_alloc_units;
 			uint32_t avail_alloc_units;
-			uint16 bytes_per_sector;
+			uint16_t bytes_per_sector;
 		} out;
 	} allocation;
 
@@ -1024,8 +1024,8 @@ union smb_fsinfo {
 		enum fsinfo_level level;
 
 		struct {
-			uint16 major_version;
-			uint16 minor_version;
+			uint16_t major_version;
+			uint16_t minor_version;
 			uint64_t capability;
 		} out;
 	} unix_info;
@@ -1098,7 +1098,7 @@ union smb_open {
 
 		struct {
 			uint8 oplock_level;
-			uint16 fnum;
+			uint16_t fnum;
 			uint32_t create_action;
 			NTTIME create_time;
 			NTTIME access_time;
@@ -1107,8 +1107,8 @@ union smb_open {
 			uint32_t attrib;
 			uint64_t alloc_size;
 			uint64_t size;
-			uint16 file_type;
-			uint16 ipc_state;
+			uint16_t file_type;
+			uint16_t ipc_state;
 			uint8  is_directory;
 		} out;
 	} ntcreatex, generic;
@@ -1118,11 +1118,11 @@ union smb_open {
 		enum open_level level;
 
 		struct {
-			uint16 flags;
-			uint16 open_mode;
-			uint16 file_attrs;
+			uint16_t flags;
+			uint16_t open_mode;
+			uint16_t file_attrs;
 			time_t write_time;
-			uint16 open_func;
+			uint16_t open_func;
 			uint32_t size;
 			uint32_t timeout;
 			const char *fname;
@@ -1131,14 +1131,14 @@ union smb_open {
 		} in;
 
 		struct {
-			uint16 fnum;
-			uint16 attrib;
+			uint16_t fnum;
+			uint16_t attrib;
 			time_t write_time;
 			uint32_t size;
-			uint16 access;
-			uint16 ftype;
-			uint16 devstate;
-			uint16 action;
+			uint16_t access;
+			uint16_t ftype;
+			uint16_t devstate;
+			uint16_t action;
 			uint32_t unknown;
 		} out;
 	} t2open;
@@ -1148,16 +1148,16 @@ union smb_open {
 		enum open_level level;
 
 		struct {
-			uint16 flags;
-			uint16 search_attrs;
+			uint16_t flags;
+			uint16_t search_attrs;
 			const char *fname;
 		} in;
 		struct {
-			uint16 fnum;
-			uint16 attrib;
+			uint16_t fnum;
+			uint16_t attrib;
 			time_t write_time;
 			uint32_t size;
-			uint16 rmode;
+			uint16_t rmode;
 		} out;
 	} open;
 
@@ -1166,12 +1166,12 @@ union smb_open {
 		enum open_level level;
 
 		struct {
-			uint16 flags;
-			uint16 open_mode;
-			uint16 search_attrs; /* not honoured by win2003 */
-			uint16 file_attrs;
+			uint16_t flags;
+			uint16_t open_mode;
+			uint16_t search_attrs; /* not honoured by win2003 */
+			uint16_t file_attrs;
 			time_t write_time; /* not honoured by win2003 */
-			uint16 open_func;
+			uint16_t open_func;
 			uint32_t size; /* note that this sets the
 					initial file size, not
 					just allocation size */
@@ -1179,14 +1179,14 @@ union smb_open {
 			const char *fname;
 		} in;
 		struct {
-			uint16 fnum;
-			uint16 attrib;
+			uint16_t fnum;
+			uint16_t attrib;
 			time_t write_time;
 			uint32_t size;
-			uint16 access;
-			uint16 ftype;
-			uint16 devstate;
-			uint16 action;
+			uint16_t access;
+			uint16_t ftype;
+			uint16_t devstate;
+			uint16_t action;
 			uint32_t unique_fid;
 			uint32_t access_mask;
 			uint32_t unknown;
@@ -1198,12 +1198,12 @@ union smb_open {
 		enum open_level level;
 
 		struct {
-			uint16 attrib;
+			uint16_t attrib;
 			time_t write_time;
 			const char *fname;
 		} in;
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 		} out;
 	} mknew, create;
 
@@ -1212,12 +1212,12 @@ union smb_open {
 		enum open_level level;
 
 		struct {
-			uint16 attrib;
+			uint16_t attrib;
 			time_t write_time;
 			const char *directory;
 		} in;
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			/* temp name, relative to directory */
 			char *name; 
 		} out;
@@ -1228,12 +1228,12 @@ union smb_open {
 		enum open_level level;
 
 		struct {
-			uint16 setup_length;
-			uint16 mode;
+			uint16_t setup_length;
+			uint16_t mode;
 			const char *ident;
 		} in;
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 		} out;
 	} splopen;
 };
@@ -1253,7 +1253,7 @@ union smb_read {
 		enum read_level level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			uint64_t offset;
 			uint32_t    size;
 		} in;
@@ -1269,10 +1269,10 @@ union smb_read {
 		enum read_level level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			uint64_t offset;
-			uint16  maxcnt;
-			uint16  mincnt;
+			uint16_t  maxcnt;
+			uint16_t  mincnt;
 			uint32_t  timeout;
 		} in;
 		struct {
@@ -1287,14 +1287,14 @@ union smb_read {
 		enum read_level level;
 
 		struct {
-			uint16 fnum;
-			uint16 count;
+			uint16_t fnum;
+			uint16_t count;
 			uint32_t offset;
-			uint16 remaining;
+			uint16_t remaining;
 		} in;
 		struct {
 			char *data;
-			uint16 nread;
+			uint16_t nread;
 		} out;
 	} lockread;
 
@@ -1303,14 +1303,14 @@ union smb_read {
 		enum read_level level;
 
 		struct {
-			uint16 fnum;
-			uint16 count;
+			uint16_t fnum;
+			uint16_t count;
 			uint32_t offset;
-			uint16 remaining;
+			uint16_t remaining;
 		} in;
 		struct {
 			char *data;
-			uint16 nread;
+			uint16_t nread;
 		} out;
 	} read;
 
@@ -1319,17 +1319,17 @@ union smb_read {
 		enum read_level level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			uint64_t offset;
-			uint16 mincnt;
-			uint16 maxcnt;
-			uint16 remaining;
+			uint16_t mincnt;
+			uint16_t maxcnt;
+			uint16_t remaining;
 		} in;
 		struct {
 			char *data;
-			uint16 remaining;
-			uint16 compaction_mode;
-			uint16 nread;
+			uint16_t remaining;
+			uint16_t compaction_mode;
+			uint16_t nread;
 		} out;
 	} readx;
 };
@@ -1346,7 +1346,7 @@ union smb_write {
 		enum write_level level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			uint64_t offset;
 			uint32_t    count;
 			const char *data;
@@ -1362,10 +1362,10 @@ union smb_write {
 		enum write_level level;
 
 		struct {
-			uint16 fnum;
-			uint16 count;
+			uint16_t fnum;
+			uint16_t count;
 			uint32_t offset;
-			uint16 remaining;
+			uint16_t remaining;
 			const char *data;
 		} in;
 		struct {
@@ -1378,14 +1378,14 @@ union smb_write {
 		enum write_level level;
 
 		struct {
-			uint16 fnum;
-			uint16 count;
+			uint16_t fnum;
+			uint16_t count;
 			uint32_t offset;
-			uint16 remaining;
+			uint16_t remaining;
 			const char *data;
 		} in;
 		struct {
-			uint16 nwritten;
+			uint16_t nwritten;
 		} out;
 	} write;
 
@@ -1394,16 +1394,16 @@ union smb_write {
 		enum write_level level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			uint64_t offset;
-			uint16 wmode;
-			uint16 remaining;
+			uint16_t wmode;
+			uint16_t remaining;
 			uint32_t count;
 			const char *data;
 		} in;
 		struct {
 			uint32_t nwritten;
-			uint16 remaining;
+			uint16_t remaining;
 		} out;
 	} writex;
 
@@ -1412,14 +1412,14 @@ union smb_write {
 		enum write_level level;
 
 		struct {
-			uint16 fnum;
-			uint16 count;
+			uint16_t fnum;
+			uint16_t count;
 			uint32_t offset;
 			time_t mtime;
 			const char *data;
 		} in;
 		struct {
-			uint16 nwritten;
+			uint16_t nwritten;
 		} out;
 	} writeclose;
 
@@ -1428,8 +1428,8 @@ union smb_write {
 		enum write_level level;
 
 		struct {
-			uint16 fnum;
-			uint16 count;
+			uint16_t fnum;
+			uint16_t count;
 			const char *data;
 		} in;
 	} splwrite;
@@ -1452,7 +1452,7 @@ union smb_lock {
 		enum lock_level level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			uint32_t count;
 			uint32_t offset;
 		} in;
@@ -1463,7 +1463,7 @@ union smb_lock {
 		enum lock_level level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			uint32_t count;
 			uint32_t offset;
 		} in;
@@ -1474,13 +1474,13 @@ union smb_lock {
 		enum lock_level level;
 
 		struct {
-			uint16 fnum;
-			uint16 mode;
+			uint16_t fnum;
+			uint16_t mode;
 			uint32_t timeout;
-			uint16 ulock_cnt;
-			uint16 lock_cnt;
+			uint16_t ulock_cnt;
+			uint16_t lock_cnt;
 			struct smb_lock_entry {
-				uint16 pid;
+				uint16_t pid;
 				uint64_t offset;
 				uint64_t count;
 			} *locks; /* unlocks are first in the arrray */
@@ -1500,7 +1500,7 @@ union smb_close {
 		enum close_enum level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 		} in;
 	} generic;
 
@@ -1509,7 +1509,7 @@ union smb_close {
 		enum close_enum level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			time_t write_time;
 		} in;
 	} close;
@@ -1519,7 +1519,7 @@ union smb_close {
 		enum close_enum level;
 
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 		} in;
 	} splclose;
 };
@@ -1543,16 +1543,16 @@ union smb_lpq {
 		enum lpq_level level;
 
 		struct {
-			uint16 maxcount;
-			uint16 startidx;
+			uint16_t maxcount;
+			uint16_t startidx;
 		} in;
 		struct {
-			uint16 count;
-			uint16 restart_idx;
+			uint16_t count;
+			uint16_t restart_idx;
 			struct {
 				time_t time;
 				uint8 status;
-				uint16 job;
+				uint16_t job;
 				uint32_t size;
 				char *user;
 			} *queue;
@@ -1576,7 +1576,7 @@ union smb_ioctl {
 	struct {
 		enum ioctl_level level;
 		struct {
-			uint16 fnum;
+			uint16_t fnum;
 			uint32_t request;
 		} in;
 		struct {
@@ -1590,7 +1590,7 @@ union smb_ioctl {
 		enum ioctl_level level;
 		struct {
 			uint32_t function;
-			uint16 fnum;
+			uint16_t fnum;
 			BOOL fsctl;
 			uint8 filter;
 		} in;
@@ -1603,7 +1603,7 @@ union smb_ioctl {
 /* struct for SMBflush */
 struct smb_flush {
 	struct {
-		uint16 fnum;
+		uint16_t fnum;
 	} in;
 };
 
@@ -1611,14 +1611,14 @@ struct smb_flush {
 /* struct for SMBcopy */
 struct smb_copy {
 	struct {
-		uint16 tid2;
-		uint16 ofun;
-		uint16 flags;
+		uint16_t tid2;
+		uint16_t ofun;
+		uint16_t flags;
 		const char *path1;
 		const char *path2;
 	} in;
 	struct {
-		uint16 count;
+		uint16_t count;
 	} out;
 };
 
@@ -1626,13 +1626,13 @@ struct smb_copy {
 /* struct for transact/transact2 call */
 struct smb_trans2 {
 	struct {
-		uint16 max_param;
-		uint16 max_data;
+		uint16_t max_param;
+		uint16_t max_data;
 		uint8  max_setup;
-		uint16 flags;
+		uint16_t flags;
 		uint32_t timeout;
 		uint8  setup_count;
-		uint16 *setup;
+		uint16_t *setup;
 		const char *trans_name; /* SMBtrans only */
 		DATA_BLOB params;
 		DATA_BLOB data;
@@ -1640,7 +1640,7 @@ struct smb_trans2 {
 
 	struct {
 		uint8  setup_count;
-		uint16 *setup;
+		uint16_t *setup;
 		DATA_BLOB params;
 		DATA_BLOB data;
 	} out;
@@ -1653,15 +1653,15 @@ struct smb_nttrans {
 		uint32_t max_param;
 		uint32_t max_data;
 		uint32_t setup_count;
-		uint16 function;
-		uint16 *setup;
+		uint16_t function;
+		uint16_t *setup;
 		DATA_BLOB params;
 		DATA_BLOB data;
 	} in;
 
 	struct {
 		uint8  setup_count;
-		uint16 *setup;
+		uint16_t *setup;
 		DATA_BLOB params;
 		DATA_BLOB data;
 	} out;
@@ -1673,7 +1673,7 @@ struct smb_notify {
 	struct {
 		uint32_t buffer_size;
 		uint32_t completion_filter;
-		uint16 fnum;
+		uint16_t fnum;
 		BOOL recursive;
 	} in;
 
@@ -1712,12 +1712,12 @@ union smb_search_first {
 		enum search_level level;
 	
 		struct {
-			uint16 max_count;
-			uint16 search_attrib;
+			uint16_t max_count;
+			uint16_t search_attrib;
 			const char *pattern;
 		} in;
 		struct {
-			int16 count;
+			int16_t count;
 		} out;
 	} search_first;
 
@@ -1726,16 +1726,16 @@ union smb_search_first {
 		enum search_level level;
 		
 		struct {
-			uint16 search_attrib;
-			uint16 max_count;
-			uint16 flags;
+			uint16_t search_attrib;
+			uint16_t max_count;
+			uint16_t flags;
 			uint32_t storage_type;
 			const char *pattern;
 		} in;
 		struct {
-			uint16 handle;
-			uint16 count;
-			uint16 end_of_search;
+			uint16_t handle;
+			uint16_t count;
+			uint16_t end_of_search;
 		} out;
 	} t2ffirst;
 };
@@ -1751,12 +1751,12 @@ union smb_search_next {
 		enum search_level level;
 	
 		struct {
-			uint16 max_count;
-			uint16 search_attrib;
+			uint16_t max_count;
+			uint16_t search_attrib;
 			DATA_BLOB search_id;
 		} in;
 		struct {
-			uint16 count;
+			uint16_t count;
 		} out;
 	} search_next;
 	
@@ -1765,15 +1765,15 @@ union smb_search_next {
 		enum search_level level;
 		
 		struct {
-			uint16 handle;
-			uint16 max_count;
+			uint16_t handle;
+			uint16_t max_count;
 			uint32_t resume_key;
-			uint16 flags;
+			uint16_t flags;
 			const char *last_name;
 		} in;
 		struct {
-			uint16 count;
-			uint16 end_of_search;
+			uint16_t count;
+			uint16_t end_of_search;
 		} out;
 	} t2fnext;
 };
@@ -1782,7 +1782,7 @@ union smb_search_next {
 union smb_search_data {
 	/* search (old) findfirst */
 	struct {
-		uint16 attrib;
+		uint16_t attrib;
 		time_t write_time;
 		uint32_t size;
 		DATA_BLOB search_id;  /* used to resume search from this point */
@@ -1797,7 +1797,7 @@ union smb_search_data {
 		time_t write_time;
 		uint32_t size;
 		uint32_t alloc_size;
-		uint16 attrib;
+		uint16_t attrib;
 		WIRE_STRING name;
 	} standard;
 
@@ -1809,7 +1809,7 @@ union smb_search_data {
 		time_t write_time;
 		uint32_t size;
 		uint32_t alloc_size;
-		uint16 attrib;
+		uint16_t attrib;
 		uint32_t ea_size;
 		WIRE_STRING name;
 	} ea_size;
@@ -1927,12 +1927,12 @@ union smb_search_close {
 		enum search_level level;
 	
 		struct {
-			uint16 max_count;
-			uint16 search_attrib;
+			uint16_t max_count;
+			uint16_t search_attrib;
 			DATA_BLOB search_id;
 		} in;
 		struct {
-			uint16 count;
+			uint16_t count;
 		} out;
 	} search_next;
 	
@@ -1941,7 +1941,7 @@ union smb_search_close {
 		enum search_close_level level;
 		
 		struct {
-			uint16 handle;
+			uint16_t handle;
 		} in;
 	} findclose;
 };

@@ -24,7 +24,7 @@ int create_complex_file(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *
 
 struct trans2_blobs {
 	struct trans2_blobs *next, *prev;
-	uint16 level;
+	uint16_t level;
 	DATA_BLOB params, data;
 };
 
@@ -32,7 +32,7 @@ struct trans2_blobs {
 static void gen_aliases(struct cli_state *cli, struct smb_trans2 *t2, int level_offset)
 {
 	TALLOC_CTX *mem_ctx;
-	uint16 level;
+	uint16_t level;
 	struct trans2_blobs *alias_blobs = NULL;
 	struct trans2_blobs *t2b, *t2b2;
 	int count=0, alias_count=0;
@@ -81,7 +81,7 @@ static void gen_aliases(struct cli_state *cli, struct smb_trans2 *t2, int level_
 static void qfsinfo_aliases(struct cli_state *cli)
 {
 	struct smb_trans2 t2;
-	uint16 setup = TRANSACT2_QFSINFO;
+	uint16_t setup = TRANSACT2_QFSINFO;
 
 	d_printf("\nChecking for QFSINFO aliases\n");
 
@@ -102,7 +102,7 @@ static void qfsinfo_aliases(struct cli_state *cli)
 static void qfileinfo_aliases(struct cli_state *cli)
 {
 	struct smb_trans2 t2;
-	uint16 setup = TRANSACT2_QFILEINFO;
+	uint16_t setup = TRANSACT2_QFILEINFO;
 	const char *fname = "\\qfileinfo_aliases.txt";
 	int fnum;
 
@@ -139,7 +139,7 @@ static void qfileinfo_aliases(struct cli_state *cli)
 static void qpathinfo_aliases(struct cli_state *cli)
 {
 	struct smb_trans2 t2;
-	uint16 setup = TRANSACT2_QPATHINFO;
+	uint16_t setup = TRANSACT2_QPATHINFO;
 	const char *fname = "\\qpathinfo_aliases.txt";
 	int fnum;
 	TALLOC_CTX *mem_ctx;
@@ -183,7 +183,7 @@ static void qpathinfo_aliases(struct cli_state *cli)
 static void findfirst_aliases(struct cli_state *cli)
 {
 	struct smb_trans2 t2;
-	uint16 setup = TRANSACT2_FINDFIRST;
+	uint16_t setup = TRANSACT2_FINDFIRST;
 	const char *fname = "\\findfirst_aliases.txt";
 	int fnum;
 	TALLOC_CTX *mem_ctx;
@@ -232,7 +232,7 @@ static void findfirst_aliases(struct cli_state *cli)
 static void gen_set_aliases(struct cli_state *cli, struct smb_trans2 *t2, int level_offset)
 {
 	TALLOC_CTX *mem_ctx;
-	uint16 level;
+	uint16_t level;
 	struct trans2_blobs *alias_blobs = NULL;
 	struct trans2_blobs *t2b;
 	int count=0, dsize;
@@ -298,7 +298,7 @@ static void gen_set_aliases(struct cli_state *cli, struct smb_trans2 *t2, int le
 static void setfileinfo_aliases(struct cli_state *cli)
 {
 	struct smb_trans2 t2;
-	uint16 setup = TRANSACT2_SETFILEINFO;
+	uint16_t setup = TRANSACT2_SETFILEINFO;
 	const char *fname = "\\setfileinfo_aliases.txt";
 	int fnum;
 
@@ -335,7 +335,7 @@ static void setfileinfo_aliases(struct cli_state *cli)
 static void setpathinfo_aliases(struct cli_state *cli)
 {
 	struct smb_trans2 t2;
-	uint16 setup = TRANSACT2_SETPATHINFO;
+	uint16_t setup = TRANSACT2_SETPATHINFO;
 	const char *fname = "\\setpathinfo_aliases.txt";
 	int fnum;
 	TALLOC_CTX *mem_ctx;

@@ -265,7 +265,7 @@ static BOOL test_pid(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 	char c = 1;
-	uint16 pid1, pid2;
+	uint16_t pid1, pid2;
 
 	printf("TESTING PID HANDLING\n");
 

@@ -59,7 +59,7 @@
 struct search_state {
 	struct request_context *req;
 	union smb_search_data *file;
-	uint16 last_entry_offset;
+	uint16_t last_entry_offset;
 };
 
 /*
@@ -105,7 +105,7 @@ void reply_search(struct request_context *req)
 	union smb_search_first *sf;
 	union smb_search_next *sn;
 	DATA_BLOB resume_key;
-	uint16 resume_key_length;
+	uint16_t resume_key_length;
 	struct search_state state;
 	char *p;
 
@@ -194,7 +194,7 @@ void reply_fclose(struct request_context *req)
 {
 	union smb_search_next *sn;
 	DATA_BLOB resume_key;
-	uint16 resume_key_length;
+	uint16_t resume_key_length;
 
 	REQ_TALLOC(sn, sizeof(*sn));
 

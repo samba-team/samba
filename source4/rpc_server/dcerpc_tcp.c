@@ -73,7 +73,7 @@ static ssize_t dcerpc_write_fn(void *private, const void *buf, size_t count)
   called when a RPC socket becomes writable
 */
 static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde, 
-				 time_t t, uint16 flags)
+				 time_t t, uint16_t flags)
 {
 	struct rpc_server_context *r = fde->private;
 	NTSTATUS status;
@@ -92,7 +92,7 @@ static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde,
   called when a RPC socket becomes readable
 */
 static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde, 
-				time_t t, uint16 flags)
+				time_t t, uint16_t flags)
 {
 	struct rpc_server_context *r = fde->private;
 	DATA_BLOB blob;
@@ -133,7 +133,7 @@ static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde,
   called when a RPC socket becomes readable
 */
 static void dcerpc_io_handler(struct event_context *ev, struct fd_event *fde, 
-			      time_t t, uint16 flags)
+			      time_t t, uint16_t flags)
 {
 	if (flags & EVENT_FD_WRITE) {
 		dcerpc_write_handler(ev, fde, t, flags);

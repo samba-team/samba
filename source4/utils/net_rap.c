@@ -56,15 +56,15 @@ int net_rap_file_usage(int argc, const char **argv)
 /***************************************************************************
   list info on an open file
 ***************************************************************************/
-static void file_fn(const char * pPath, const char * pUser, uint16 perms, 
-		    uint16 locks, uint32_t id)
+static void file_fn(const char * pPath, const char * pUser, uint16_t perms, 
+		    uint16_t locks, uint32_t id)
 {
 	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
 		 id, pUser, perms, locks, pPath);
 }
 
-static void one_file_fn(const char *pPath, const char *pUser, uint16 perms, 
-			uint16 locks, uint32_t id)
+static void one_file_fn(const char *pPath, const char *pUser, uint16_t perms, 
+			uint16_t locks, uint32_t id)
 {
 	d_printf("File ID          %d\n"\
 		 "User name        %s\n"\
@@ -265,8 +265,8 @@ int net_rap_session_usage(int argc, const char **argv)
 	return -1;
 }
     
-static void list_sessions_func(char *wsname, char *username, uint16 conns,
-			uint16 opens, uint16 users, uint32_t sess_time,
+static void list_sessions_func(char *wsname, char *username, uint16_t conns,
+			uint16_t opens, uint16_t users, uint32_t sess_time,
 			uint32_t idle_time, uint32_t user_flags, char *clitype)
 {
 	int hrs = idle_time / 3600;
@@ -278,7 +278,7 @@ static void list_sessions_func(char *wsname, char *username, uint16 conns,
 }
 
 static void display_session_func(const char *wsname, const char *username, 
-				 uint16 conns, uint16 opens, uint16 users, 
+				 uint16_t conns, uint16_t opens, uint16_t users, 
 				 uint32_t sess_time, uint32_t idle_time, 
 				 uint32_t user_flags, const char *clitype)
 {
@@ -299,8 +299,8 @@ static void display_session_func(const char *wsname, const char *username,
 		 shrs, smin, ssec, ihrs, imin, isec);
 }
 
-static void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens,
-			       uint16 users, uint32_t conn_time,
+static void display_conns_func(uint16_t conn_id, uint16_t conn_type, uint16_t opens,
+			       uint16_t users, uint32_t conn_time,
 			       const char *username, const char *netname)
 {
 	d_printf("%-14.14s %-8.8s %5d\n",
@@ -465,10 +465,10 @@ int net_rap_printq_usage(int argc, const char **argv)
 	return -1;
 }	
 
-static void enum_queue(const char *queuename, uint16 pri, uint16 start, 
-		       uint16 until, const char *sep, const char *pproc, 
+static void enum_queue(const char *queuename, uint16_t pri, uint16_t start, 
+		       uint16_t until, const char *sep, const char *pproc, 
 		       const char *dest, const char *qparms, 
-		       const char *qcomment, uint16 status, uint16 jobcount) 
+		       const char *qcomment, uint16_t status, uint16_t jobcount) 
 {
 	d_printf("%-17.17s Queue %5d jobs                      ",
 		 queuename, jobcount);
@@ -491,9 +491,9 @@ static void enum_queue(const char *queuename, uint16 pri, uint16 start,
 	}
 }
 
-static void enum_jobs(uint16 jobid, const char *ownername, 
+static void enum_jobs(uint16_t jobid, const char *ownername, 
 		      const char *notifyname, const char *datatype,
-		      const char *jparms, uint16 pos, uint16 status, 
+		      const char *jparms, uint16_t pos, uint16_t status, 
 		      const char *jstatus, unsigned int submitted, unsigned int jobsize, 
 		      const char *comment)
 {

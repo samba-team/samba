@@ -127,9 +127,9 @@ BOOL cli_transport_connect(struct cli_transport *transport,
 /****************************************************************************
 get next mid in sequence
 ****************************************************************************/
-uint16 cli_transport_next_mid(struct cli_transport *transport)
+uint16_t cli_transport_next_mid(struct cli_transport *transport)
 {
-	uint16 mid;
+	uint16_t mid;
 	struct cli_request *req;
 
 	mid = transport->next_mid;

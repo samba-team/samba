@@ -83,7 +83,7 @@ ssize_t cli_read(struct cli_tree *tree, int fnum, char *buf, off_t offset,
               0x0008 start of message mode named pipe protocol
 ****************************************************************************/
 ssize_t cli_write(struct cli_tree *tree,
-		  int fnum, uint16 write_mode,
+		  int fnum, uint16_t write_mode,
 		  const char *buf, off_t offset, size_t size)
 {
 	union smb_write parms;

@@ -1108,8 +1108,8 @@ static void dump_binary(const char *field, struct berval **values)
 
 struct uuid {
         uint32_t   i1;
-        uint16   i2;
-        uint16   i3;
+        uint16_t   i2;
+        uint16_t   i3;
         uint8    s[8];
 };
 

@@ -261,10 +261,10 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
  Very raw query file info - returns param/data blobs - (async send)
 ****************************************************************************/
 static struct cli_request *smb_raw_fileinfo_blob_send(struct cli_tree *tree,
-						      uint16 fnum, uint16 info_level)
+						      uint16_t fnum, uint16_t info_level)
 {
 	struct smb_trans2 tp;
-	uint16 setup = TRANSACT2_QFILEINFO;
+	uint16_t setup = TRANSACT2_QFILEINFO;
 	struct cli_request *req;
 	TALLOC_CTX *mem_ctx = talloc_init("raw_fileinfo");
 	
@@ -314,10 +314,10 @@ static NTSTATUS smb_raw_fileinfo_blob_recv(struct cli_request *req,
 ****************************************************************************/
 static struct cli_request *smb_raw_pathinfo_blob_send(struct cli_tree *tree,
 						      const char *fname,
-						      uint16 info_level)
+						      uint16_t info_level)
 {
 	struct smb_trans2 tp;
-	uint16 setup = TRANSACT2_QPATHINFO;
+	uint16_t setup = TRANSACT2_QPATHINFO;
 	struct cli_request *req;
 	TALLOC_CTX *mem_ctx = talloc_init("raw_pathinfo");
 

@@ -26,7 +26,7 @@ change notify (async send)
 struct cli_request *smb_raw_changenotify_send(struct cli_tree *tree, struct smb_notify *parms)
 {
 	struct smb_nttrans nt;
-	uint16 setup[4];
+	uint16_t setup[4];
 
 	nt.in.max_setup = 0;
 	nt.in.max_param = parms->in.buffer_size;
