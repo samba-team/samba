@@ -1042,6 +1042,55 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 	return True;
 }
 
+
+/*******************************************************************
+ Reads or writes a UNISTR_ARRAY structure.
+********************************************************************/
+BOOL smb_io_unistr_array(const char *desc, UNISTR_ARRAY *array, prs_struct *ps, int depth)
+{
+	int i;
+
+	depth++;
+
+	array->count = 0;
+
+	if(!prs_uint32("ref_id", ps, depth, &array->ref_id))
+		return False;
+
+	if (! array->ref_id) {
+		return True;
+	}
+
+	if(!prs_uint32("count", ps, depth, &array->count))
+		return False;
+
+	if (array->count == 0) {
+		return True;
+	}
+
+	array->strings = talloc_zero(get_talloc_ctx(), array->count * sizeof(array->strings[0]));
+	if (! array->strings) {
+		return False;
+	}
+
+	for (i=0;i<array->count;i++) {
+		if(!prs_uint16("length", ps, depth, &array->strings[i].length))
+			return False;
+		if(!prs_uint16("size", ps, depth, &array->strings[i].size))
+			return False;
+		if(!prs_uint32("ref_id", ps, depth, &array->strings[i].ref_id))
+			return False;
+	}
+
+	for (i=0;i<array->count;i++) {
+		if (! smb_io_unistr2("string", &array->strings[i].string, array->strings[i].ref_id, ps, depth)) 
+			return False;
+	}
+	
+	return True;
+}
+
+
 /*******************************************************************
  Inits a DOM_RID2 structure.
 ********************************************************************/
