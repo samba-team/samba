@@ -9,17 +9,10 @@ function start_module(name)
 	num_tests=0;
 }
 
-function parse_typedef(type1, type2,
-		       LOCAL, type, i)
+function parse_define(def1, def2,
+		      LOCAL, type, i)
 {
-	type=type2;
-	if (substr(type,1,1)=="*") type=substr(type,2);
-
-	i=match(type,"[[]");
-	if (i != 0) type = substr(type, 1, i-1);
-	start_struct(type);
-	add_struct_elem(type1, type2);
-	end_struct("");
+	defines[def1]=def2;
 }
 
 function start_struct(name) 
@@ -44,6 +37,9 @@ function end_struct(name)
 function add_element(type, elem, case,
 		     LOCAL, elem_num, i, v)
 {
+	while (defines[type]!="") {
+		type=defines[type];
+	}
 	elem_num=num_elements;
 
 	if (substr(elem, 1, 1) == "*") {

@@ -10,6 +10,12 @@ function parse_error(msg) {
 	next;
 }
 
+/^\#define.*;/ {
+	split($0,a,"[ \t;]*");
+	parse_define(a[2], a[3]);
+	next;
+}
+
 # ignore comments
 /^[ \t]*\#/ {
 	next;
@@ -31,13 +37,6 @@ function parse_error(msg) {
 /^[ \t]*typedef struct.*\{/ {
 	{if (current_struct!="") parse_error("you cannot have nested structures");}
 	start_struct($3);
-	next;
-}
-
-/^[ \t]*typedef.*;/ {
-	{if (current_struct!="") parse_error("typedefs must be global");}
-	split($0,a,"[ \t;]*");
-	parse_typedef(a[2], a[3]);
 	next;
 }
 
@@ -76,8 +75,8 @@ function parse_error(msg) {
 }
 
 /^[ \t]*\} .*;/ {
-	split($0,a,"[ \t;]*");
-	end_struct(a[2]);
+	split($2,a,"[ \t;]*");
+	end_struct(a[1]);
 	next;
 }
 
