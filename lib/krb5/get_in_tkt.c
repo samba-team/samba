@@ -226,7 +226,16 @@ krb5_get_in_tkt(krb5_context context,
     krb5_principal2principalname (a.req_body.sname, creds->server);
     copy_Realm(&creds->client->realm, &a.req_body.realm);
 
-    a.req_body.till  = creds->times.endtime;
+    /* XXX */
+    if(creds->times.starttime){
+	a.req_body.from = malloc(sizeof(*a.req_body.from));
+	*a.req_body.from = creds->times.starttime;
+    }
+    a.req_body.till = creds->times.endtime;
+    if(creds->times.renew_till){
+	a.req_body.rtime = malloc(sizeof(*a.req_body.rtime));
+	*a.req_body.rtime = creds->times.renew_till;
+    }
     krb5_generate_random_block (&a.req_body.nonce, sizeof(a.req_body.nonce));
     krb5_init_etype (context,
 		     &a.req_body.etype.len,
