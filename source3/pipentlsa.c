@@ -226,7 +226,7 @@ static void api_lsa_query_info( char *param, char *data,
 	lsa_io_q_query(True, &q_i, data + 0x18, data, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
-	pstrcpy(dom_sid , lp_domainsid());
+	pstrcpy(dom_sid , lp_domain_sid());
 
 	/* construct reply.  return status is always 0x0 */
 	*rdata_len = lsa_reply_query_info(&q_i, *rdata + 0x18, *rdata, 
@@ -246,7 +246,7 @@ static void api_lsa_lookup_sids( char *param, char *data,
 	lsa_io_q_lookup_sids(True, &q_l, data + 0x18, data, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
-	pstrcpy(dom_sid , lp_domainsid());
+	pstrcpy(dom_sid , lp_domain_sid());
 
 	/* convert received SIDs to strings, so we can do them. */
 	for (i = 0; i < q_l.num_entries; i++)
@@ -269,18 +269,23 @@ static void api_lsa_lookup_names( char *param, char *data,
 	pstring dom_name;
 	pstring dom_sid;
 	uint32 dom_rids[MAX_LOOKUP_SIDS];
+	uint32 dummy_g_rid;
 
 	/* grab the info class and policy handle */
 	lsa_io_q_lookup_rids(True, &q_l, data + 0x18, data, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
-	pstrcpy(dom_sid , lp_domainsid());
+	pstrcpy(dom_sid , lp_domain_sid());
 
 	/* convert received RIDs to strings, so we can do them. */
 	for (i = 0; i < q_l.num_entries; i++)
 	{
 		char *user_name = unistr2(q_l.lookup_name[i].str.buffer);
-		dom_rids[i] = name_to_rid(user_name);
+		if (!name_to_rid(user_name, &dom_rids[i], &dummy_g_rid))
+		{
+			/* WHOOPS!  we should really do something about this... */
+			dom_rids[i] = 0;
+		}
 	}
 
 	/* construct reply.  return status is always 0x0 */

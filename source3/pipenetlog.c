@@ -154,7 +154,7 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
 	int i;
-	int num_other_sids = other_sids != NULL ? 1 : 0;
+	int num_other_sids = 0;
 
 	int len_user_name    = strlen(user_name   );
 	int len_full_name    = strlen(full_name   );
@@ -207,6 +207,8 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 
 	bzero(usr->padding, sizeof(usr->padding));
 
+	num_other_sids = make_dom_sids(other_sids, usr->other_sids, LSA_MAX_SIDS);
+
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = num_other_sids != 0 ? 1 : 0; 
 	
@@ -227,7 +229,7 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 	make_unistr2(&(usr->uni_logon_dom), logon_dom, len_logon_dom);
 
 	make_dom_sid(&(usr->dom_sid), dom_sid);
-	make_dom_sid(&(usr->other_sids[0]), other_sids);
+	/* "other" sids are set up above */
 }
 
 
@@ -350,7 +352,8 @@ static void api_lsa_req_chal( int cnum, uint16 vuid,
 	/* grab the challenge... */
 	lsa_io_q_req_chal(True, &q_r, data + 0x18, data, 4, 0);
 
-	fstrcpy(mach_acct, unistr2(q_r.uni_logon_clnt.buffer));
+	fstrcpy(mach_acct, unistrn2(q_r.uni_logon_clnt.buffer,
+	                            q_r.uni_logon_clnt.uni_str_len));
 
 	strcat(mach_acct, "$");
 
@@ -497,6 +500,8 @@ static void api_lsa_sam_logon( user_struct *vuser,
 	/* checks and updates credentials.  creates reply credentials */
 	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_creds);
 
+	usr_info.ptr_user_info = 0;
+
 	if (vuser != NULL)
 	{
 		DOM_GID gids[LSA_MAX_GROUPS];
@@ -510,7 +515,10 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstring my_workgroup;
 		pstring domain_groups;
 		pstring dom_sid;
+		pstring other_sids;
 		extern pstring myname;
+		uint32 r_uid;
+		uint32 r_gid;
 
 		dummy_time.low  = 0xffffffff;
 		dummy_time.high = 0x7fffffff;
@@ -519,19 +527,20 @@ static void api_lsa_sam_logon( user_struct *vuser,
 
 		pstrcpy(samlogon_user, unistr2(q_l.sam_id.auth.id1.uni_user_name.buffer));
 
-		DEBUG(3,("SAM Logon. Domain:[%s].  User [%s]\n",
+		DEBUG(3,("SAM Logon. Domain:[%s].  User:[%s]\n",
 		          lp_workgroup(), samlogon_user));
 
 		/* hack to get standard_sub_basic() to use the sam logon username */
 		sam_logon_in_ssb = True;
 
-		pstrcpy(logon_script, lp_logon_script());
-		pstrcpy(profile_path, lp_logon_path  ());
-		pstrcpy(dom_sid     , lp_domainsid   ());
-		pstrcpy(my_workgroup, lp_workgroup   ());
+		pstrcpy(logon_script, lp_logon_script     ());
+		pstrcpy(profile_path, lp_logon_path       ());
+		pstrcpy(dom_sid     , lp_domain_sid       ());
+		pstrcpy(other_sids  , lp_domain_other_sids());
+		pstrcpy(my_workgroup, lp_workgroup        ());
 
-		pstrcpy(home_drive  , lp_logon_drive ());
-		pstrcpy(home_dir    , lp_logon_home  ());
+		pstrcpy(home_drive  , lp_logon_drive      ());
+		pstrcpy(home_dir    , lp_logon_home       ());
 
 		/* any additional groups this user is in.  e.g power users */
 		pstrcpy(domain_groups, lp_domain_groups());
@@ -554,14 +563,16 @@ static void api_lsa_sam_logon( user_struct *vuser,
 			strcat(domain_groups, " 513/7 ");
 		}
 
-		num_gids = make_domain_gids(domain_groups, gids);
+		num_gids = make_dom_gids(domain_groups, gids);
 
 		sam_logon_in_ssb = False;
 
 		pstrcpy(my_name     , myname           );
 		strupper(my_name);
 
-		make_lsa_user_info(&usr_info,
+		if (name_to_rid(samlogon_user, &r_uid, &r_gid))
+		{
+			make_lsa_user_info(&usr_info,
 
 		               &dummy_time, /* logon_time */
 		               &dummy_time, /* logoff_time */
@@ -580,23 +591,20 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		               0, /* logon_count */
 		               0, /* bad_pw_count */
 
-		               vuser->uid, /* uint32 user_id */
-		               vuser->gid, /* uint32 group_id */
+		               r_uid, /* RID user_id */
+		               r_gid, /* RID group_id */
 		               num_gids,    /* uint32 num_groups */
 		               gids, /* DOM_GID *gids */
 		               0x20, /* uint32 user_flgs */
 
 		               NULL, /* char sess_key[16] */
 
-		               my_name, /* char *logon_srv */
+		               my_name     , /* char *logon_srv */
 		               my_workgroup, /* char *logon_dom */
 
-		               dom_sid, /* char *dom_sid */
-		               NULL); /* char *other_sids */
-	}
-	else
-	{
-		usr_info.ptr_user_info = 0;
+		               dom_sid,     /* char *dom_sid */
+		               other_sids); /* char *other_sids */
+		}
 	}
 
 	*rdata_len = lsa_reply_sam_logon(&q_l, *rdata + 0x18, *rdata,

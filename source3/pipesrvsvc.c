@@ -170,6 +170,11 @@ static void api_srv_net_share_info( char *param, char *data,
 	/* grab the net share enum */
 	srv_io_q_net_share_enum(True, &q_n, data + 0x18, data, 4, 0);
 
+	/* XXXX push the reply buffer size up a bit, and hope it's sufficient */
+	/* for the current maximum limit of 32 share entries */
+	*rdata_len = 4096;
+	*rdata = REALLOC(*rdata, *rdata_len);
+
 	/* construct reply.  always indicate success */
 	*rdata_len = srv_reply_net_share_enum(&q_n, *rdata + 0x18, *rdata, 0x0);
 }
@@ -208,6 +213,7 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
     case NETSHAREENUM:
 	{
 	  api_srv_net_share_info( param, data, rdata, rdata_len);
+
       make_rpc_reply(data, *rdata, *rdata_len);
       break;
     }

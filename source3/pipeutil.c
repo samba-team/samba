@@ -62,17 +62,41 @@ void endrpcreply(char *inbuf, char *q, int datalen, int rtnval, int *rlen)
 	{ int fd; fd = open("/tmp/rpc", O_RDWR); write(fd, q, datalen + 4); }
 }
 
-/* RID username mapping function.  just for fun, it maps to the unix uid */
-uint32 name_to_rid(char *user_name)
+/* Group and User RID username mapping function */
+BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 {
     struct passwd *pw = Get_Pwnam(user_name, False);
+
+	if (u_rid == NULL || g_rid == NULL || user_name == NULL)
+	{
+		return False;
+	}
+
     if (!pw)
 	{
       DEBUG(1,("Username %s is invalid on this system\n", user_name));
-      return (uint32)(-1);
+      return False;
     }
 
-    return (uint32)(pw->pw_uid);
+	if (user_in_list(user_name, lp_domain_guest_users()))
+	{
+		*u_rid = DOMAIN_USER_RID_GUEST;
+	}
+	else if (user_in_list(user_name, lp_domain_admin_users()))
+	{
+		*u_rid = DOMAIN_USER_RID_ADMIN;
+	}
+	else
+	{
+		/* turn the unix UID into a Domain RID.  this is what the posix
+		   sub-system does (adds 1000 to the uid) */
+		*u_rid = (uint32)(pw->pw_uid + 1000);
+	}
+
+	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
+	*g_rid = (uint32)(pw->pw_gid + 1000);
+
+	return True;
 }
 
 
@@ -87,7 +111,7 @@ char *dom_sid_to_string(DOM_SID *sid)
               (sid->id_auth[2] << 16) +
               (sid->id_auth[3] << 24);
 
-  sprintf(sidstr, "S-%d-%d", sid->sid_no, ia);
+  sprintf(sidstr, "S-%d-%d", sid->sid_rev_num, ia);
 
   for (i = 0; i < sid->num_auths; i++)
   {
@@ -111,7 +135,7 @@ void make_dom_sid(DOM_SID *sid, char *domsid)
 	if (domsid == NULL)
 	{
 		DEBUG(4,("netlogon domain SID: none\n"));
-		sid->sid_no = 0;
+		sid->sid_rev_num = 0;
 		sid->num_auths = 0;
 		return;
 	}
@@ -120,13 +144,13 @@ void make_dom_sid(DOM_SID *sid, char *domsid)
 
 	/* assume, but should check, that domsid starts "S-" */
 	p = strtok(domsid+2,"-");
-	sid->sid_no = atoi(p);
+	sid->sid_rev_num = atoi(p);
 
 	/* identauth in decimal should be <  2^32 */
 	/* identauth in hex     should be >= 2^32 */
 	identauth = atoi(strtok(0,"-"));
 
-	DEBUG(4,("netlogon rev %d\n", sid->sid_no));
+	DEBUG(4,("netlogon rev %d\n", sid->sid_rev_num));
 	DEBUG(4,("netlogon %s ia %d\n", p, identauth));
 
 	sid->id_auth[0] = 0;
@@ -142,6 +166,100 @@ void make_dom_sid(DOM_SID *sid, char *domsid)
 	{
 		sid->sub_auths[sid->num_auths++] = atoi(p);
 	}
+}
+
+int make_dom_sids(char *sids_str, DOM_SID *sids, int max_sids)
+{
+	char *ptr;
+	pstring s2;
+	int count;
+
+	DEBUG(4,("make_dom_sids: %s\n", sids_str));
+
+	if (sids_str == NULL || *sids_str == 0) return 0;
+
+	for (count = 0, ptr = sids_str; next_token(&ptr, s2, NULL) && count < max_sids; count++) 
+	{
+		make_dom_sid(&sids[count], s2);
+	}
+
+	return count;
+}
+
+/* array lookup of well-known RID aliases.  the purpose of these escapes me.. */
+/* XXXX this structure should not have the well-known RID groups added to it,
+   i.e the DOMAIN_GROUP_RID_ADMIN/USER/GUEST.  */
+static struct
+{
+	uint32 rid;
+	char   *rid_name;
+
+} rid_lookups[] = 
+{
+	{ DOMAIN_ALIAS_RID_ADMINS       , "admins" },
+	{ DOMAIN_ALIAS_RID_USERS        , "users" },
+	{ DOMAIN_ALIAS_RID_GUESTS       , "guests" },
+	{ DOMAIN_ALIAS_RID_POWER_USERS  , "power_users" },
+
+	{ DOMAIN_ALIAS_RID_ACCOUNT_OPS  , "account_ops" },
+	{ DOMAIN_ALIAS_RID_SYSTEM_OPS   , "system_ops" },
+	{ DOMAIN_ALIAS_RID_PRINT_OPS    , "print_ops" },
+	{ DOMAIN_ALIAS_RID_BACKUP_OPS   , "backup_ops" },
+	{ DOMAIN_ALIAS_RID_REPLICATOR   , "replicator" },
+	{ 0                             , NULL }
+};
+
+int make_dom_gids(char *gids_str, DOM_GID *gids)
+{
+	char *ptr;
+	pstring s2;
+	int count;
+
+	DEBUG(4,("make_dom_gids: %s\n", gids_str));
+
+	if (gids_str == NULL || *gids_str == 0) return 0;
+
+	for (count = 0, ptr = gids_str; next_token(&ptr, s2, NULL) && count < LSA_MAX_GROUPS; count++) 
+	{
+		/* the entries are of the form GID/ATTR, ATTR being optional.*/
+		char *attr;
+		uint32 rid = 0;
+		int i;
+
+		attr = strchr(s2,'/');
+		if (attr) *attr++ = 0;
+		if (!attr || !*attr) attr = "7"; /* default value for attribute is 7 */
+
+		/* look up the RID string and see if we can turn it into a rid number */
+		for (i = 0; rid_lookups[i].rid_name != NULL; i++)
+		{
+			if (strequal(rid_lookups[i].rid_name, s2))
+			{
+				rid = rid_lookups[i].rid;
+				break;
+			}
+		}
+
+		if (rid == 0) rid = atoi(s2);
+
+		if (rid == 0)
+		{
+			DEBUG(1,("make_dom_gids: unknown well-known alias RID %s/%s\n",
+			          s2, attr));
+			count--;
+		}
+		else
+		{
+			gids[count].g_rid = rid;
+			gids[count].attr  = atoi(attr);
+
+			DEBUG(5,("group id: %d attr: %d\n",
+			          gids[count].g_rid,
+			          gids[count].attr));
+		}
+	}
+
+	return count;
 }
 
 void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
