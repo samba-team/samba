@@ -153,7 +153,8 @@ recv_conn (int sock, kx_context *kc,
 	 ret = 0;
 #endif
      if (ret) {
-	 syslog (LOG_ERR, "unrecognized auth protocol: %x %x %x %x");
+	 syslog (LOG_ERR, "unrecognized auth protocol: %x %x %x %x",
+		 msg[0], msg[1], msg[2], msg[3]);
 	 return 1;
      }
 
@@ -222,7 +223,7 @@ recv_conn (int sock, kx_context *kc,
      syslog (LOG_INFO, "from %s(%s): %s -> %s",
 	     remotehost,
 	     inet_ntoa(thataddr.sin_addr),
-	     kc->user);
+	     kc->user, user);
      umask(077);
      if (!(flags & PASSIVE)) {
 	 p += krb_get_int (p, &tmp32, 4, 0);
@@ -678,7 +679,7 @@ main (int argc, char **argv)
 #endif
     }
 
-    if (!inetd_flag)
+    if (inetd_flag)
 	mini_inetd (port);
 
      signal (SIGCHLD, childhandler);
