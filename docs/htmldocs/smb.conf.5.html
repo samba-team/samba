@@ -18260,30 +18260,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="USESENDFILE"
-></A
->use sendfile (S)</DT
-><DD
-><P
->If this parameter is <TT
-CLASS="CONSTANT"
->yes</TT
->, and Samba
-		was built with the --with-sendfile-support option, and the underlying operating
-		system supports sendfile system call, then some SMB read calls (mainly ReadAndX
-		and ReadRaw) will use the more efficient sendfile system call for files that
-		are exclusively oplocked. This may make more efficient use of the system CPU's
-		and cause Samba to be faster. This is off by default as it's effects are unknown
-		as yet.
-		</P
-><P
->Default: <B
-CLASS="COMMAND"
->use sendfile = no</B
-></P
-></DD
-><DT
-><A
 NAME="USER"
 ></A
 >user (S)</DT
@@ -18376,7 +18352,7 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
->If any of the usernames begin with a '@' then the name 
+>If any of the usernames begin with a '@' then the name
 		will be looked up first in the NIS netgroups list (if Samba 
 		is compiled with netgroup support), followed by a lookup in 
 		the UNIX groups database and will expand to a list of all users 
@@ -18600,6 +18576,30 @@ CLASS="PARAMETER"
 CLASS="COMMAND"
 >username map = /usr/local/samba/lib/users.map
 		</B
+></P
+></DD
+><DT
+><A
+NAME="USESENDFILE"
+></A
+>use sendfile (S)</DT
+><DD
+><P
+>If this parameter is <TT
+CLASS="CONSTANT"
+>yes</TT
+>, and Samba
+		was built with the --with-sendfile-support option, and the underlying operating
+		system supports sendfile system call, then some SMB read calls (mainly ReadAndX
+		and ReadRaw) will use the more efficient sendfile system call for files that
+		are exclusively oplocked. This may make more efficient use of the system CPU's
+		and cause Samba to be faster. This is off by default as it's effects are unknown
+		as yet.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>use sendfile = no</B
 ></P
 ></DD
 ><DT

@@ -6952,17 +6952,6 @@ you are doing.
 
 Default: \fBuse rhosts = no\fR
 .TP
-\fBuse sendfile (S)\fR
-If this parameter is yes, and Samba
-was built with the --with-sendfile-support option, and the underlying operating
-system supports sendfile system call, then some SMB read calls (mainly ReadAndX
-and ReadRaw) will use the more efficient sendfile system call for files that
-are exclusively oplocked. This may make more efficient use of the system CPU's
-and cause Samba to be faster. This is off by default as it's effects are unknown
-as yet.
-
-Default: \fBuse sendfile = no\fR
-.TP
 \fBuser (S)\fR
 Synonym for \fI username\fR.
 .TP
@@ -7000,7 +6989,7 @@ To restrict a service to a particular set of users you
 can use the \fIvalid users
 \fRparameter.
 
-If any of the usernames begin with a '@' then the name 
+If any of the usernames begin with a '@' then the name
 will be looked up first in the NIS netgroups list (if Samba 
 is compiled with netgroup support), followed by a lookup in 
 the UNIX groups database and will expand to a list of all users 
@@ -7135,6 +7124,17 @@ Default: \fBno username map\fR
 
 Example: \fBusername map = /usr/local/samba/lib/users.map
 \fR.TP
+\fBuse sendfile (S)\fR
+If this parameter is yes, and Samba
+was built with the --with-sendfile-support option, and the underlying operating
+system supports sendfile system call, then some SMB read calls (mainly ReadAndX
+and ReadRaw) will use the more efficient sendfile system call for files that
+are exclusively oplocked. This may make more efficient use of the system CPU's
+and cause Samba to be faster. This is off by default as it's effects are unknown
+as yet.
+
+Default: \fBuse sendfile = no\fR
+.TP
 \fButmp (G)\fR
 This boolean parameter is only available if 
 Samba has been configured and compiled with the option \fB --with-utmp\fR. If set to yes then Samba will attempt

@@ -7910,24 +7910,6 @@
 		</varlistentry>
 
 
-
-		<varlistentry>
-		<term><anchor id="USESENDFILE">use sendfile (S)</term>
-		<listitem><para>If this parameter is <constant>yes</constant>, and Samba
-		was built with the --with-sendfile-support option, and the underlying operating
-		system supports sendfile system call, then some SMB read calls (mainly ReadAndX
-		and ReadRaw) will use the more efficient sendfile system call for files that
-		are exclusively oplocked. This may make more efficient use of the system CPU's
-		and cause Samba to be faster. This is off by default as it's effects are unknown
-		as yet.
-		</para>
-
-		<para>Default: <command>use sendfile = no</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
 		<varlistentry>
 		<term><anchor id="USER">user (S)</term>
 		<listitem><para>Synonym for <link linkend="USERNAME"><parameter>
@@ -7977,7 +7959,7 @@
 		can use the <link linkend="VALIDUSERS"><parameter>valid users
 		</parameter></link> parameter.</para>
 
-		<para>If any of the usernames begin with a '@' then the name 
+		<para>If any of the usernames begin with a '@' then the name
 		will be looked up first in the NIS netgroups list (if Samba 
 		is compiled with netgroup support), followed by a lookup in 
 		the UNIX groups database and will expand to a list of all users 
@@ -8125,7 +8107,25 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term><anchor id="USESENDFILE">use sendfile (S)</term>
+		<listitem><para>If this parameter is <constant>yes</constant>, and Samba
+		was built with the --with-sendfile-support option, and the underlying operating
+		system supports sendfile system call, then some SMB read calls (mainly ReadAndX
+		and ReadRaw) will use the more efficient sendfile system call for files that
+		are exclusively oplocked. This may make more efficient use of the system CPU's
+		and cause Samba to be faster. This is off by default as it's effects are unknown
+		as yet.
+		</para>
 
+		<para>Default: <command>use sendfile = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		
+		
 		<varlistentry>
 		<term><anchor id="UTMP">utmp (G)</term>
 		<listitem><para>This boolean parameter is only available if 
