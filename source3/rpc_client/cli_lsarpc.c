@@ -99,6 +99,72 @@ BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 }
 
 /****************************************************************************
+do a LSA Open Policy2
+****************************************************************************/
+BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
+			const char *server_name, POLICY_HND *hnd,
+			BOOL sec_qos)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_OPEN_POL2 q_o;
+	LSA_SEC_QOS qos;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api LSA_OPENPOLICY2 */
+
+	DEBUG(4,("LSA Open Policy2\n"));
+
+	/* store the parameters */
+	if (sec_qos)
+	{
+		make_lsa_sec_qos(&qos, 2, 1, 0, 0x000f0fff);
+		make_q_open_pol2(&q_o, server_name, 0, 0x02000000, &qos);
+	}
+	else
+	{
+		make_q_open_pol2(&q_o, server_name, 0, 0x1, NULL);
+	}
+
+	/* turn parameters into data stream */
+	lsa_io_q_open_pol2("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, LSA_OPENPOLICY2, &buf, &rbuf))
+	{
+		LSA_R_OPEN_POL2 r_o;
+		BOOL p;
+
+		lsa_io_r_open_pol2("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_OPENPOLICY2: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a LSA Open Secret
 ****************************************************************************/
 BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
@@ -595,6 +661,83 @@ BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 			sid_to_string(sid_str, domain_sid);
 			DEBUG(3,("LSA_QUERYINFOPOLICY (level %x): domain:%s  domain sid:%s\n",
 			          r_q.info_class, domain_name, sid_str));
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_response;
+}
+
+/****************************************************************************
+do a LSA Enumerate Trusted Domain 
+****************************************************************************/
+BOOL lsa_enum_trust_dom(struct cli_state *cli, uint16 fnum,
+			POLICY_HND *hnd, uint32 *enum_ctx,
+			uint32 *num_doms, char ***names,
+			DOM_SID ***sids)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_ENUM_TRUST_DOM q_q;
+	BOOL valid_response = False;
+
+	if (hnd == NULL || num_doms == NULL || names == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api LSA_ENUMTRUSTDOM */
+
+	DEBUG(4,("LSA Query Info Policy\n"));
+
+	/* store the parameters */
+	make_q_enum_trust_dom(&q_q, hnd, *enum_ctx, 0xffffffff);
+
+	/* turn parameters into data stream */
+	lsa_io_q_enum_trust_dom("", &q_q, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, LSA_ENUMTRUSTDOM, &buf, &rbuf))
+	{
+		LSA_R_ENUM_TRUST_DOM r_q;
+		BOOL p;
+
+		lsa_io_r_enum_trust_dom("", &r_q, &rbuf, 0);
+		p = rbuf.offset != 0;
+		
+		if (p && r_q.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_ENUMTRUSTDOM: %s\n", get_nt_error_msg(r_q.status)));
+			p = r_q.status == 0x8000001a;
+		}
+
+		if (p)
+		{
+			uint32 i;
+			uint32 num_sids = 0;
+			valid_response = True;
+
+			for (i = 0; i < r_q.num_domains; i++)
+			{
+				fstring tmp;
+				unistr2_to_ascii(tmp, &r_q.uni_domain_name[i],
+				                 sizeof(tmp)-1);
+				add_chars_to_array(num_doms, names, tmp);
+				add_sid_to_array(&num_sids, sids,
+				                 &r_q.domain_sid[i].sid);
+			}
+
+			if (r_q.status == 0x0)
+			{
+				*enum_ctx = r_q.enum_context;
+			}
+			else
+			{
+				*enum_ctx = 0;
+			}
 		}
 	}
 

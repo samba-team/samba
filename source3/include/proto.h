@@ -1739,6 +1739,9 @@ BOOL cli_nt_logoff(struct cli_state *cli, uint16 fnum, NET_ID_INFO_CTR *ctr);
 BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 			const char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
+BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
+			const char *server_name, POLICY_HND *hnd,
+			BOOL sec_qos);
 BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
 		     POLICY_HND *hnd_pol, char *secret_name, uint32 des_access,
 		     POLICY_HND *hnd_secret);
@@ -1762,6 +1765,10 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
+BOOL lsa_enum_trust_dom(struct cli_state *cli, uint16 fnum,
+			POLICY_HND *hnd, uint32 *enum_ctx,
+			uint32 *num_doms, char ***names,
+			DOM_SID ***sids);
 BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
@@ -2124,7 +2131,7 @@ BOOL make_q_open_pol(LSA_Q_OPEN_POL *r_q, uint16 system_name,
 			LSA_SEC_QOS *qos);
 BOOL lsa_io_q_open_pol(char *desc,  LSA_Q_OPEN_POL *r_q, prs_struct *ps, int depth);
 BOOL lsa_io_r_open_pol(char *desc,  LSA_R_OPEN_POL *r_p, prs_struct *ps, int depth);
-BOOL make_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
+BOOL make_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, const char *server_name,
 			uint32 attributes,
 			uint32 desired_access,
 			LSA_SEC_QOS *qos);
@@ -2141,11 +2148,15 @@ BOOL lsa_io_secret_info(char *desc, LSA_SECRET_INFO *info, prs_struct *ps, int d
 BOOL make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol);
 BOOL lsa_io_q_query_secret(char *desc, LSA_Q_QUERY_SECRET *q_q, prs_struct *ps, int depth);
 BOOL lsa_io_r_query_secret(char *desc, LSA_R_QUERY_SECRET *r_q, prs_struct *ps, int depth);
+BOOL make_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
+				POLICY_HND *pol,
+				uint32 enum_context, uint32 preferred_len);
 BOOL lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
 BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-                           uint32 enum_context, char *domain_name, DOM_SID *domain_sid,
-                           uint32 status);
-BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
+				int32 enum_context,
+				char *domain_name, DOM_SID *domain_sid,
+				uint32 status);
+BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
 BOOL lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
 BOOL make_lsa_sid_enum(LSA_SID_ENUM *sen, uint32 num_entries, DOM_SID **sids);
 BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
@@ -3226,6 +3237,7 @@ void cmd_eventlog(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
+void cmd_lsa_enum_trust_dom(struct client_info *info);
 void cmd_lsa_query_info(struct client_info *info);
 void cmd_lsa_lookup_names(struct client_info *info);
 void cmd_lsa_lookup_sids(struct client_info *info);

@@ -314,7 +314,7 @@ BOOL lsa_io_r_open_pol(char *desc,  LSA_R_OPEN_POL *r_p, prs_struct *ps, int dep
 /*******************************************************************
 makes an LSA_Q_OPEN_POL2 structure.
 ********************************************************************/
-BOOL make_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
+BOOL make_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, const char *server_name,
 			uint32 attributes,
 			uint32 desired_access,
 			LSA_SEC_QOS *qos)
@@ -540,11 +540,11 @@ BOOL make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol)
 	memcpy(&(q_q->pol), pol, sizeof(q_q->pol));
 
 	/* Want secret */
-	q_q->info.ptr_value = 0;
+	q_q->info.ptr_value = 1;
 	q_q->info.value.ptr_secret = 0;
 
 	/* Want last change time */
-	q_q->info.ptr_update = 0;
+	q_q->info.ptr_update = 1;
 
 	/* Don't care about old info */
 	q_q->oldinfo.ptr_value = 0;
@@ -591,6 +591,24 @@ BOOL lsa_io_r_query_secret(char *desc, LSA_R_QUERY_SECRET *r_q, prs_struct *ps, 
 }
 
 /*******************************************************************
+makes an LSA_Q_ENUM_TRUST_DOM structure.
+********************************************************************/
+BOOL make_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
+				POLICY_HND *pol,
+				uint32 enum_context, uint32 preferred_len)
+{
+	if (q_e == NULL) return False;
+
+	DEBUG(5,("make_q_enum_trust_dom\n"));
+
+	memcpy(&(q_e->pol), pol, sizeof(q_e->pol));
+	q_e->enum_context = enum_context;
+	q_e->preferred_len = preferred_len;
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes an LSA_Q_ENUM_TRUST_DOM structure.
 ********************************************************************/
 BOOL lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth)
@@ -613,8 +631,9 @@ BOOL lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct 
 makes an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
 BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-                           uint32 enum_context, char *domain_name, DOM_SID *domain_sid,
-                           uint32 status)
+				int32 enum_context,
+				char *domain_name, DOM_SID *domain_sid,
+				uint32 status)
 {
 	if (r_e == NULL) return False;
 
@@ -630,9 +649,9 @@ BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
 		r_e->ptr_enum_domains = 1;
 		r_e->num_domains2 = 1;
 
-		make_uni_hdr2(&(r_e->hdr_domain_name ), len_domain_name);
-		make_unistr2 (&(r_e->uni_domain_name ), domain_name, len_domain_name);
-		make_dom_sid2(&(r_e->other_domain_sid), domain_sid);
+		make_uni_hdr2(&(r_e->hdr_domain_name[0]), len_domain_name);
+		make_unistr2 (&(r_e->uni_domain_name[0]), domain_name, len_domain_name);
+		make_dom_sid2(&(r_e->domain_sid[0]), domain_sid);
 	}
 	else
 	{
@@ -648,7 +667,7 @@ BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
 /*******************************************************************
 reads or writes an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
-BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth)
+BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth)
 {
 	if (r_e == NULL) return False;
 
@@ -661,10 +680,21 @@ BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct 
 
 	if (r_e->ptr_enum_domains != 0)
 	{
+		uint32 i;
 		prs_uint32("num_domains2", ps, depth, &(r_e->num_domains2));
-		smb_io_unihdr2 ("", &(r_e->hdr_domain_name ), ps, depth);
-		smb_io_unistr2 ("", &(r_e->uni_domain_name ), r_e->hdr_domain_name.buffer, ps, depth);
-		smb_io_dom_sid2("", &(r_e->other_domain_sid), ps, depth);
+
+		for (i = 0; i < r_e->num_domains2; i++)
+		{
+
+			smb_io_unihdr2 ("", &(r_e->hdr_domain_name[i]), ps, depth);
+		}
+
+		for (i = 0; i < r_e->num_domains2; i++)
+		{
+			smb_io_unistr2 ("", &(r_e->uni_domain_name[i] ), r_e->hdr_domain_name[i].buffer, ps, depth);
+			prs_align(ps);
+			smb_io_dom_sid2("", &(r_e->domain_sid[i]), ps, depth);
+		}
 	}
 
 	prs_uint32("status", ps, depth, &(r_e->status));
