@@ -85,10 +85,13 @@ int list_find(const void *needle,
 			}
 			return test_i;
 		}
-		if (r == -1) {
+		if (r < 0) {
+			if (test_i == 0) {
+				return -1;
+			}
 			max_i = test_i - 1;
 		}
-		if (r == 1) {
+		if (r > 0) {
 			min_i = test_i + 1;
 		}
 	}

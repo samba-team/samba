@@ -96,6 +96,11 @@ static int ldb_msg_find_idx(const struct ldb_message *msg, const char *attr,
 	return -1;
 }
 
+/* used in sorting dn lists */
+static int list_cmp(const char **s1, const char **s2)
+{
+	return strcmp(*s1, *s2);
+}
 
 /*
   return a list of dn's that might match a simple indexed search or
@@ -164,7 +169,7 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 
 	ltdb_search_dn1_free(ldb, &msg);
 
-	qsort(list->dn, list->count, sizeof(char *), (comparison_fn_t) strcmp);
+	qsort(list->dn, list->count, sizeof(char *), (comparison_fn_t) list_cmp);
 
 	return 1;
 }
@@ -309,7 +314,7 @@ static int list_union(struct dn_list *list, const struct dn_list *list2)
 	}
 
 	if (list->count != count) {
-		qsort(list->dn, list->count, sizeof(char *), (comparison_fn_t)strcmp);
+		qsort(list->dn, list->count, sizeof(char *), (comparison_fn_t)list_cmp);
 	}
 
 	return 0;
@@ -483,7 +488,7 @@ static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree
 			    const char *base,
 			    enum ldb_scope scope,
 			    const struct dn_list *dn_list, 
-			    char * const attrs[], struct ldb_message ***res)
+			    const char * const attrs[], struct ldb_message ***res)
 {
 	int i;
 	unsigned int count = 0;
@@ -523,7 +528,7 @@ int ltdb_search_indexed(struct ldb_context *ldb,
 			const char *base,
 			enum ldb_scope scope,
 			struct ldb_parse_tree *tree,
-			char * const attrs[], struct ldb_message ***res)
+			const char * const attrs[], struct ldb_message ***res)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
 	struct dn_list dn_list;

@@ -207,7 +207,7 @@ static int lldb_add_msg_attr(struct ldb_message *msg,
 */
 static int lldb_search(struct ldb_context *ldb, const char *base,
 		       enum ldb_scope scope, const char *expression,
-		       char * const *attrs, struct ldb_message ***res)
+		       const char * const *attrs, struct ldb_message ***res)
 {
 	struct lldb_private *lldb = ldb->private_data;
 	int count, msg_count;
