@@ -5,6 +5,10 @@
 #include <sys/time.h>
 #include <stdarg.h>
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
 #endif
