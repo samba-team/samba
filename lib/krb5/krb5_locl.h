@@ -55,11 +55,11 @@ krb5_get_default_realm(krb5_context context,
 
 krb5_error_code krb5_config_parse_file (const char *fname,
 					krb5_config_section **res);
-const char *krb5_config_get_next (krb5_config_section *c,
+const void *krb5_config_get_next (krb5_config_section *c,
 				  krb5_config_binding **pointer,
 				  int type,
 				  ...);
-const char *krb5_config_vget_next (krb5_config_section *c,
+const void *krb5_config_vget_next (krb5_config_section *c,
 				   krb5_config_binding **pointer,
 				   int type,
 				   va_list args);
@@ -67,6 +67,11 @@ const char *krb5_config_get_string (krb5_config_section *c,
 				    ...);
 const char *krb5_config_vget_string (krb5_config_section *c,
 				     va_list args);
+
+const krb5_config_binding *krb5_config_get_list (krb5_config_section *c,
+						 ...);
+const krb5_config_binding *krb5_config_vget_list (krb5_config_section *c,
+						  va_list args);
 
 int
 krb5_getportbyname (const char *service,

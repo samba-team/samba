@@ -10,6 +10,7 @@ struct krb5_config_binding {
     union {
 	char *string;
 	struct krb5_config_binding *list;
+	void *generic;
     } u;
 };
 
