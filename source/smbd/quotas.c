@@ -696,7 +696,8 @@ Warning:
     It is understood that Veritas do not publicly support this ioctl interface.
     Rather their preference would be for the user (us) to call the native
     OS and then for the OS itself to call through to the VxFS filesystem.
-    Presumably HPUX 10, see above, does this.
+    Presumably HPUX 10 does this, which is why this patch is not required for
+    HPUX 10.
 
 ****************************************************************************/
 /*************************************************************************** 
@@ -708,7 +709,6 @@ Warning:
    VERITAS is under no obligation to maintain these private
    interfaces in future releases of VERITAS products. 
  ***************************************************************************/
-#if defined(SUNOS5)
 
 #if defined(SUNOS5)
 #include <sys/fs/vx_solaris.h>
@@ -787,7 +787,5 @@ static BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize
 
   return(True);
 }
-
-#endif /* SUNOS5 || ... */
 
 #endif /* VXFS_QUOTA */
