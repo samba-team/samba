@@ -193,8 +193,6 @@ static void* generic_list_locate (GENERIC_LIST *l, void *search,
  *************************************************************/
 BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src)
 {
-	int i;
-
 	/* if we have no destination, return an error */
 	if (dest == NULL)
 		return False;
@@ -205,14 +203,12 @@ BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src)
 	{
 		/* if POLICY_HND internals ever changes,
 		   this will need to be fixed */
-		memset (dest->data, 0, POLICY_HND_SIZE);
+		ZERO_STRUCTP(dest);
 		return True;
 	}	
 
 	/* copy the src handle to the dest */
-	for (i=0; i<POLICY_HND_SIZE; i++)
-		dest->data[i] = src->data[i];
-
+	*dest = *src;
 	return True;
 }
 
@@ -240,7 +236,7 @@ BOOL compare_rpc_hnd_node(const RPC_HND_NODE *x,
 	/* if the POLICY_HND field(s) are ever changed, this
 	   will need to be updated.  Probably should be a set of
 	  support function for dealing with POLICY_HND */
-	return (memcmp(x->hnd.data, y->hnd.data, POLICY_HND_SIZE) == 0);
+	return (memcmp(&x->hnd, &y->hnd, POLICY_HND_SIZE) == 0);
 }
 
 /***************************************************************

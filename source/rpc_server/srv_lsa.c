@@ -34,18 +34,17 @@ extern pstring global_myname;
  lsa_reply_open_policy2
  ***************************************************************************/
 
-static BOOL lsa_reply_open_policy2(prs_struct *rdata)
+static BOOL lsa_reply_open_policy2(pipes_struct *p, prs_struct *rdata)
 {
-	int i;
 	LSA_R_OPEN_POL2 r_o;
 
 	ZERO_STRUCT(r_o);
 
 	/* set up the LSA QUERY INFO response */
 
-	for (i = 4; i < POL_HND_SIZE; i++)
-		r_o.pol.data[i] = i;
 	r_o.status = 0x0;
+        if (!create_policy_hnd(p, &r_o.pol, NULL, NULL))
+                r_o.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	/* store the response in the SMB stream */
 	if(!lsa_io_r_open_pol2("", &r_o, rdata, 0)) {
@@ -60,18 +59,18 @@ static BOOL lsa_reply_open_policy2(prs_struct *rdata)
 lsa_reply_open_policy
  ***************************************************************************/
 
-static BOOL lsa_reply_open_policy(prs_struct *rdata)
+static BOOL lsa_reply_open_policy(pipes_struct *p, prs_struct *rdata)
 {
-	int i;
 	LSA_R_OPEN_POL r_o;
 
 	ZERO_STRUCT(r_o);
 
 	/* set up the LSA QUERY INFO response */
 
-	for (i = 4; i < POL_HND_SIZE; i++)
-		r_o.pol.data[i] = i;
 	r_o.status = 0x0;
+
+	if (!create_policy_hnd(p, &r_o.pol, NULL, NULL))
+		r_o.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	/* store the response in the SMB stream */
 	if(!lsa_io_r_open_pol("", &r_o, rdata, 0)) {
@@ -455,7 +454,7 @@ static BOOL api_lsa_open_policy2(pipes_struct *p)
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* return a 20 byte policy handle */
-	if(!lsa_reply_open_policy2(rdata))
+	if(!lsa_reply_open_policy2(p, rdata))
 		return False;
 
 	return True;
@@ -482,7 +481,7 @@ static BOOL api_lsa_open_policy(pipes_struct *p)
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* return a 20 byte policy handle */
-	if(!lsa_reply_open_policy(rdata))
+	if(!lsa_reply_open_policy(p, rdata))
 		return False;
 
 	return True;
@@ -625,9 +624,23 @@ static BOOL api_lsa_lookup_names(pipes_struct *p)
 static BOOL api_lsa_close(pipes_struct *p)
 {
 	LSA_R_CLOSE r_c;
+	LSA_Q_CLOSE q_u;
+	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(r_c);
+	ZERO_STRUCT(q_u);
+
+	if (!lsa_io_q_close("", &q_u, data, 0)) {
+                DEBUG(0,("api_lsa_close: lsa_io_q_close failed.\n"));
+                return False;
+        }
+
+	if (find_policy_by_hnd(p, &q_u.pol, NULL))
+		close_policy_hnd(p, &q_u.pol);
+	else
+	        r_c.status = NT_STATUS_INVALID_HANDLE;
+
 
 	/* store the response in the SMB stream */
 	if (!lsa_io_r_close("", &r_c, rdata, 0)) {

@@ -85,7 +85,7 @@ static BOOL api_spoolss_getprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_getprinterdata( &q_u.handle, &q_u.valuename,
+	r_u.status = _spoolss_getprinterdata( p, &q_u.handle, &q_u.valuename,
 	                                      q_u.size, &r_u.type, &r_u.size,
 	                                      &r_u.data, &r_u.needed);
 
@@ -120,7 +120,7 @@ static BOOL api_spoolss_deleteprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_deleteprinterdata( &q_u.handle, &q_u.valuename);
+	r_u.status = _spoolss_deleteprinterdata( p, &q_u.handle, &q_u.valuename);
 
 	if (!spoolss_io_r_deleteprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_deleteprinterdata: unable to marshall SPOOL_R_DELETEPRINTERDATA.\n"));
@@ -150,7 +150,7 @@ static BOOL api_spoolss_closeprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_closeprinter(&q_u.handle);
+	r_u.status = _spoolss_closeprinter(p, &q_u.handle);
 	memcpy(&r_u.handle, &q_u.handle, sizeof(r_u.handle));
 
 	if (!spoolss_io_r_closeprinter("",&r_u,rdata,0)) {
@@ -211,7 +211,7 @@ static BOOL api_spoolss_deleteprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_deleteprinter(&q_u.handle);
+	r_u.status = _spoolss_deleteprinter(p,&q_u.handle);
 	memcpy(&r_u.handle, &q_u.handle, sizeof(r_u.handle));
 
 	if (!spoolss_io_r_deleteprinter("",&r_u,rdata,0)) {
@@ -242,7 +242,7 @@ static BOOL api_spoolss_rffpcnex(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_rffpcnex(&q_u.handle, q_u.flags,
+	r_u.status = _spoolss_rffpcnex(p,&q_u.handle, q_u.flags,
 	                               q_u.options, &q_u.localmachine,
 	                               q_u.printerlocal, q_u.option);
 
@@ -276,7 +276,7 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
+	r_u.status = _spoolss_rfnpcnex(p,&q_u.handle, q_u.change,
 	                               q_u.option, data->mem_ctx, &r_u.info);
 
 	safe_free(q_u.option);
@@ -362,7 +362,7 @@ static BOOL api_spoolss_getprinter(pipes_struct *p)
 	/* that's an [in out] buffer */
 	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
 
-	r_u.status = _spoolss_getprinter(&q_u.handle, q_u.level,
+	r_u.status = _spoolss_getprinter(p,&q_u.handle, q_u.level,
 					 r_u.buffer, q_u.offered, 
 					 &r_u.needed);
 
@@ -403,7 +403,7 @@ static BOOL api_spoolss_getprinterdriver2(pipes_struct *p)
 	/* that's an [in out] buffer */
 	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
 
-	r_u.status = _spoolss_getprinterdriver2(&q_u.handle, &q_u.architecture, q_u.level, 
+	r_u.status = _spoolss_getprinterdriver2(p,&q_u.handle, &q_u.architecture, q_u.level, 
 						q_u.clientmajorversion, q_u.clientminorversion,
 						r_u.buffer, q_u.offered,
 						&r_u.needed, &r_u.servermajorversion, &r_u.serverminorversion);
@@ -438,7 +438,7 @@ static BOOL api_spoolss_startpageprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_startpageprinter(&q_u.handle);
+	r_u.status = _spoolss_startpageprinter(p,&q_u.handle);
 
 	if(!spoolss_io_r_startpageprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_startpageprinter: unable to marshall SPOOL_R_STARTPAGEPRINTER.\n"));
@@ -469,7 +469,7 @@ static BOOL api_spoolss_endpageprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_endpageprinter(&q_u.handle);
+	r_u.status = _spoolss_endpageprinter(p,&q_u.handle);
 
 	if(!spoolss_io_r_endpageprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_endpageprinter: unable to marshall SPOOL_R_ENDPAGEPRINTER.\n"));
@@ -527,7 +527,7 @@ static BOOL api_spoolss_enddocprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_enddocprinter(&q_u.handle);
+	r_u.status = _spoolss_enddocprinter(p,&q_u.handle);
 
 	if(!spoolss_io_r_enddocprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_enddocprinter: unable to marshall SPOOL_R_ENDDOCPRINTER.\n"));
@@ -555,7 +555,7 @@ static BOOL api_spoolss_writeprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_writeprinter(&q_u.handle,
+	r_u.status = _spoolss_writeprinter(p,&q_u.handle,
 	                                   q_u.buffer_size,
 	                                   q_u.buffer,
 	                                   &q_u.buffer_size2);
@@ -621,7 +621,7 @@ static BOOL api_spoolss_fcpn(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_fcpn(&q_u.handle);
+	r_u.status = _spoolss_fcpn(p,&q_u.handle);
 
 	if(!spoolss_io_r_fcpn("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_fcpn: unable to marshall SPOOL_R_FCPN.\n"));
@@ -693,7 +693,7 @@ static BOOL api_spoolss_enumjobs(pipes_struct *p)
 	/* that's an [in out] buffer */
 	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
 
-	r_u.status = _spoolss_enumjobs(&q_u.handle, q_u.firstjob, q_u.numofjobs, q_u.level,
+	r_u.status = _spoolss_enumjobs(p,&q_u.handle, q_u.firstjob, q_u.numofjobs, q_u.level,
 					r_u.buffer, q_u.offered,
 					&r_u.needed, &r_u.returned);
 
@@ -936,7 +936,7 @@ static BOOL api_spoolss_addprinterex(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_addprinterex(&q_u.server_name,
+	r_u.status = _spoolss_addprinterex(p,&q_u.server_name,
 	                        q_u.level, &q_u.info,
 				q_u.unk0, q_u.unk1, q_u.unk2, q_u.unk3,
 				q_u.user_switch, &q_u.user_ctr,
@@ -1047,7 +1047,7 @@ static BOOL api_spoolss_enumprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_enumprinterdata(&q_u.handle, q_u.index, q_u.valuesize, q_u.datasize,
+	r_u.status = _spoolss_enumprinterdata(p,&q_u.handle, q_u.index, q_u.valuesize, q_u.datasize,
 						&r_u.valuesize, &r_u.value, &r_u.realvaluesize,
 						&r_u.type,
 						&r_u.datasize, &r_u.data, &r_u.realdatasize);
@@ -1082,7 +1082,7 @@ static BOOL api_spoolss_setprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_setprinterdata(&q_u.handle,
+	r_u.status = _spoolss_setprinterdata(p,&q_u.handle,
 				&q_u.value, q_u.type, q_u.max_len,
 				q_u.data, q_u.real_len, q_u.numeric_data);
 				
@@ -1142,7 +1142,7 @@ static BOOL api_spoolss_addform(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_addform(&q_u.handle, q_u.level, &q_u.form);
+	r_u.status = _spoolss_addform(p,&q_u.handle, q_u.level, &q_u.form);
 	
 	if(!spoolss_io_r_addform("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addform: unable to marshall SPOOL_R_ADDFORM.\n"));
@@ -1169,7 +1169,7 @@ static BOOL api_spoolss_deleteform(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_deleteform(&q_u.handle, &q_u.name);
+	r_u.status = _spoolss_deleteform(p,&q_u.handle, &q_u.name);
 	
 	if(!spoolss_io_r_deleteform("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_deleteform: unable to marshall SPOOL_R_DELETEFORM.\n"));
@@ -1196,7 +1196,7 @@ static BOOL api_spoolss_setform(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_setform(&q_u.handle, &q_u.name, q_u.level, &q_u.form);
+	r_u.status = _spoolss_setform(p,&q_u.handle, &q_u.name, q_u.level, &q_u.form);
 				      
 	if(!spoolss_io_r_setform("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_setform: unable to marshall SPOOL_R_SETFORM.\n"));
@@ -1374,7 +1374,7 @@ static BOOL api_spoolss_getjob(pipes_struct *p)
 	/* that's an [in out] buffer */
 	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
 
-	r_u.status = _spoolss_getjob(&q_u.handle, q_u.jobid, q_u.level,
+	r_u.status = _spoolss_getjob(p,&q_u.handle, q_u.jobid, q_u.level,
 					r_u.buffer, q_u.offered,
 					&r_u.needed);
 	

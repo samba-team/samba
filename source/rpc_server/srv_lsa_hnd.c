@@ -1,11 +1,11 @@
 #define OLD_NTDOMAIN 1
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
+ *  Copyright (C) Jeremy Allison			   2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,266 +24,202 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
+/* This is the max handles across all instances of a pipe name. */
 #ifndef MAX_OPEN_POLS
-#define MAX_OPEN_POLS 2048
+#define MAX_OPEN_POLS 1024
 #endif
 
-struct reg_info
-{
-	/* for use by \PIPE\winreg */
-	fstring name; /* name of registry key */
-};
-
-struct samr_info
-{
-	/* for use by the \PIPE\samr policy */
-	DOM_SID sid;
-	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
-};
-
-static struct policy
-{
-	struct policy *next, *prev;
-	int pnum;
-	BOOL open;
-	POLICY_HND pol_hnd;
-
-	union {
-		struct samr_info samr;
-		struct reg_info reg;
-	} dev;
-} *Policy;
-
-static struct bitmap *bmap;
-
-
 /****************************************************************************
-  create a unique policy handle
+ Initialise a policy handle list on a pipe. Handle list is shared between all
+ pipes of the same name.
 ****************************************************************************/
-static void create_pol_hnd(POLICY_HND *hnd)
+
+BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 {
-	static uint32 pol_hnd_low  = 0;
-	static uint32 pol_hnd_high = 0;
+	pipes_struct *plist = get_first_pipe();
+	struct handle_list *hl = NULL;
 
-	if (hnd == NULL) return;
-
-	/* i severely doubt that pol_hnd_high will ever be non-zero... */
-	pol_hnd_low++;
-	if (pol_hnd_low == 0) pol_hnd_high++;
-
-	SIVAL(hnd->data, 0 , 0x0);  /* first bit must be null */
-	SIVAL(hnd->data, 4 , pol_hnd_low ); /* second bit is incrementing */
-	SIVAL(hnd->data, 8 , pol_hnd_high); /* second bit is incrementing */
-	SIVAL(hnd->data, 12, time(NULL)); /* something random */
-	SIVAL(hnd->data, 16, sys_getpid()); /* something more random */
-}
-
-/****************************************************************************
-  initialise policy handle states...
-****************************************************************************/
-void init_lsa_policy_hnd(void)
-{
-	bmap = bitmap_allocate(MAX_OPEN_POLS);
-	if (!bmap) {
-		exit_server("out of memory in init_lsa_policy_hnd\n");
+	for (plist = get_first_pipe(); plist; plist = get_next_pipe(plist)) {
+		if (strequal( plist->name, pipe_name)) {
+			if (!plist->pipe_handles) {
+				pstring msg;
+				slprintf(msg, sizeof(msg)-1, "init_pipe_handles: NULL pipe_handle pointer in pipe %s",
+						pipe_name );
+				smb_panic(msg);
+			}
+			hl = plist->pipe_handles;
+			break;
+		}
 	}
+
+	if (!hl) {
+		/*
+		 * No handle list for this pipe (first open of pipe).
+		 * Create list.
+		 */
+
+		if ((hl = (struct handle_list *)malloc(sizeof(struct handle_list))) == NULL)
+			return False;
+		ZERO_STRUCTP(hl);
+
+		DEBUG(10,("init_pipe_handles: created handle list for pipe %s\n", pipe_name ));
+	}
+
+	/*
+	 * One more pipe is using this list.
+	 */
+
+	hl->pipe_ref_count++;
+
+	/*
+	 * Point this pipe at this list.
+	 */
+
+	p->pipe_handles = hl;
+
+	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %u for pipe %s\n",
+			p->pipe_handles->pipe_ref_count, pipe_name ));
+
+	return True;
 }
 
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
+
+BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *), void *data_ptr)
 {
-	int i;
-	struct policy *p;
+	static uint32 pol_hnd_low  = 0;
+	static uint32 pol_hnd_high = 0;
 
-	i = bitmap_find(bmap, 1);
+	struct policy *pol;
 
-	if (i == -1) {
-		DEBUG(0,("ERROR: out of Policy Handles!\n"));
+	if (p->pipe_handles->count > MAX_OPEN_POLS) {
+		DEBUG(0,("create_policy_hnd: ERROR: too many handles (%d) on this pipe.\n",
+				(int)p->pipe_handles->count));
 		return False;
 	}
 
-	p = (struct policy *)malloc(sizeof(*p));
-	if (!p) {
-		DEBUG(0,("ERROR: out of memory!\n"));
+	pol = (struct policy *)malloc(sizeof(*p));
+	if (!pol) {
+		DEBUG(0,("create_policy_hnd: ERROR: out of memory!\n"));
 		return False;
 	}
 
-	ZERO_STRUCTP(p);
+	ZERO_STRUCTP(pol);
 
-	p->open = True;				
-	p->pnum = i;
+	pol->data_ptr = data_ptr;
+	pol->free_fn = free_fn;
 
-	create_pol_hnd(hnd);
-	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
+	pol_hnd_low++;
+	if (pol_hnd_low == 0)
+		(pol_hnd_high)++;
 
-	bitmap_set(bmap, i);
+	SIVAL(&pol->pol_hnd.data1, 0 , 0);  /* first bit must be null */
+	SIVAL(&pol->pol_hnd.data2, 0 , pol_hnd_low ); /* second bit is incrementing */
+	SSVAL(&pol->pol_hnd.data3, 0 , pol_hnd_high); /* second bit is incrementing */
+	SSVAL(&pol->pol_hnd.data4, 0 , (pol_hnd_high>>16)); /* second bit is incrementing */
+	SIVAL(pol->pol_hnd.data5, 0, time(NULL)); /* something random */
+	SIVAL(pol->pol_hnd.data5, 4, sys_getpid()); /* something more random */
 
-	DLIST_ADD(Policy, p);
+	DLIST_ADD(p->pipe_handles->Policy, pol);
+	p->pipe_handles->count++;
+
+	*hnd = pol->pol_hnd;
 	
-	DEBUG(4,("Opened policy hnd[%x] ", i));
-	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
+	dump_data(4, (char *)hnd, sizeof(*hnd));
 
 	return True;
 }
 
 /****************************************************************************
-  find policy by handle
+  find policy by handle - internal version.
 ****************************************************************************/
-static struct policy *find_lsa_policy(POLICY_HND *hnd)
-{
-	struct policy *p;
 
-	for (p=Policy;p;p=p->next) {
-		if (memcmp(&p->pol_hnd, hnd, sizeof(*hnd)) == 0) {
-			DEBUG(4,("Found policy hnd[%x] ", p->pnum));
-			dump_data(4, (char *)hnd->data, sizeof(hnd->data));
-			return p;
+static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *hnd, void **data_p)
+{
+	struct policy *pol;
+	size_t i;
+
+	if (data_p)
+		*data_p = NULL;
+
+	for (i = 0, pol=p->pipe_handles->Policy;pol;pol=pol->next, i++) {
+		if (memcmp(&pol->pol_hnd, hnd, sizeof(*hnd)) == 0) {
+			DEBUG(4,("Found policy hnd[%d] ", (int)i));
+			dump_data(4, (char *)hnd, sizeof(*hnd));
+			if (data_p)
+				*data_p = pol->data_ptr;
+			return pol;
 		}
 	}
 
 	DEBUG(4,("Policy not found: "));
-	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+	dump_data(4, (char *)hnd, sizeof(*hnd));
 
 	return NULL;
 }
 
 /****************************************************************************
-  find policy index by handle
+  find policy by handle
 ****************************************************************************/
-int find_lsa_policy_by_hnd(POLICY_HND *hnd)
+
+BOOL find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p)
 {
-	struct policy *p = find_lsa_policy(hnd);
-
-	return p?p->pnum:-1;
-}
-
-
-/****************************************************************************
-  set samr pol status.  absolutely no idea what this is.
-****************************************************************************/
-BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
-{
-	struct policy *p = find_lsa_policy(hnd);
-
-	if (p && p->open) {
-		DEBUG(3,("Setting policy status=%x pnum=%x\n",
-		          pol_status, p->pnum));
-
-		p->dev.samr.status = pol_status;
-		return True;
-	} 
-
-	DEBUG(3,("Error setting policy status=%x\n",
-		 pol_status));
-	return False;
+	return find_policy_by_hnd_internal(p, hnd, data_p) == NULL ? False : True;
 }
 
 /****************************************************************************
-  set samr sid
+  Close a policy.
 ****************************************************************************/
-BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
+
+BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 {
-	fstring sidstr;
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *pol = find_policy_by_hnd_internal(p, hnd, NULL);
 
-	if (p && p->open) {
-		DEBUG(3,("Setting policy sid=%s pnum=%x\n",
-			 sid_to_string(sidstr, sid), p->pnum));
-
-		memcpy(&p->dev.samr.sid, sid, sizeof(*sid));
-		return True;
-	}
-
-	DEBUG(3,("Error setting policy sid=%s\n",
-		  sid_to_string(sidstr, sid)));
-	return False;
-}
-
-/****************************************************************************
-  get samr sid
-****************************************************************************/
-BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
-{
-	struct policy *p = find_lsa_policy(hnd);
-
-	if (p != NULL && p->open) {
-		fstring sidstr;
-		memcpy(sid, &p->dev.samr.sid, sizeof(*sid));
-		DEBUG(3,("Getting policy sid=%s pnum=%x\n",
-			 sid_to_string(sidstr, sid), p->pnum));
-
-		return True;
-	}
-
-	DEBUG(3,("Error getting policy\n"));
-	return False;
-}
-
-/****************************************************************************
-  get samr rid
-****************************************************************************/
-uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd)
-{
-	struct policy *p = find_lsa_policy(hnd);
-
-	if (p && p->open) {
-		uint32 rid = p->dev.samr.sid.sub_auths[p->dev.samr.sid.num_auths-1];
-		DEBUG(3,("Getting policy device rid=%x pnum=%x\n",
-		          rid, p->pnum));
-
-		return rid;
-	}
-
-	DEBUG(3,("Error getting policy\n"));
-	return 0xffffffff;
-}
-
-/****************************************************************************
-  set reg name 
-****************************************************************************/
-BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
-{
-	struct policy *p = find_lsa_policy(hnd);
-
-	if (p && p->open) {
-		DEBUG(3,("Setting policy pnum=%x name=%s\n",
-			 p->pnum, name));
-
-		fstrcpy(p->dev.reg.name, name);
-		return True;
-	}
-
-	DEBUG(3,("Error setting policy name=%s\n", name));
-	return False;
-}
-
-/****************************************************************************
-  close an lsa policy
-****************************************************************************/
-BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
-{
-	struct policy *p = find_lsa_policy(hnd);
-
-	if (!p) {
+	if (!pol) {
 		DEBUG(3,("Error closing policy\n"));
 		return False;
 	}
 
-	DEBUG(3,("Closed policy name pnum=%x\n",  p->pnum));
+	DEBUG(3,("Closed policy\n"));
 
-	DLIST_REMOVE(Policy, p);
+	if (pol->free_fn && pol->data_ptr)
+		(*pol->free_fn)(pol->data_ptr);
 
-	bitmap_clear(bmap, p->pnum);
+	p->pipe_handles->count--;
 
-	ZERO_STRUCTP(p);
+	DLIST_REMOVE(p->pipe_handles->Policy, pol);
 
-	free(p);
+	ZERO_STRUCTP(pol);
+
+	SAFE_FREE(pol);
 
 	return True;
 }
 
+/****************************************************************************
+ Close a pipe - free the handle list if it was the last pipe reference.
+****************************************************************************/
+
+void close_policy_by_pipe(pipes_struct *p)
+{
+	p->pipe_handles->pipe_ref_count--;
+
+	if (p->pipe_handles->pipe_ref_count == 0) {
+		/*
+		 * Last pipe open on this list - free the list.
+		 */
+		while (p->pipe_handles->Policy)
+			close_policy_hnd(p, &p->pipe_handles->Policy->pol_hnd);
+
+		p->pipe_handles->Policy = NULL;
+		p->pipe_handles->count = 0;
+
+		SAFE_FREE(p->pipe_handles);
+		p->pipe_handles = NULL;
+		DEBUG(10,("close_policy_by_pipe: deleted handle list for pipe %s\n", p->name ));
+	}
+}
 #undef OLD_NTDOMAIN

@@ -501,12 +501,6 @@ static void init_structs(void )
 	/* for RPC pipes */
 	init_rpc_pipe_hnd();
 
-	/* for LSA handles */
-	init_lsa_policy_hnd();
-
-	/* for SPOOLSS handles */
-	init_printer_hnd();
-	
 	init_dptrs();
 
 	secrets_init();

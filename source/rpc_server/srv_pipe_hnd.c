@@ -34,11 +34,25 @@ static pipes_struct *chain_p;
 static int pipes_open;
 
 #ifndef MAX_OPEN_PIPES
-#define MAX_OPEN_PIPES 64
+#define MAX_OPEN_PIPES 2048
 #endif
 
 static pipes_struct *Pipes;
 static struct bitmap *bmap;
+
+/****************************************************************************
+ Pipe iterator functions.
+****************************************************************************/
+
+pipes_struct *get_first_pipe(void)
+{
+	return Pipes;
+}
+
+pipes_struct *get_next_pipe(pipes_struct *p)
+{
+	return p->next;
+}
 
 /* this must be larger than the sum of the open files and directories */
 static int pipe_handle_offset;
@@ -147,6 +161,13 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	if ((p->mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
 		free(p);
+		return NULL;
+	}
+
+	if (!init_pipe_handle_list(p, pipe_name)) {
+		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
+		talloc_destroy(p->mem_ctx);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -815,6 +836,9 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 	if (p->mem_ctx)
 		talloc_destroy(p->mem_ctx);
+
+	/* Free the handles database. */
+	close_policy_by_pipe(p);
 
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 

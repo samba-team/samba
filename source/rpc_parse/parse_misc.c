@@ -1413,8 +1413,19 @@ BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth)
 
 	if(!prs_align(ps))
 		return False;
-	
-	if(!prs_uint8s (False, "handle", ps, depth, pol->data, POL_HND_SIZE))
+
+	if(UNMARSHALLING(ps))
+		ZERO_STRUCTP(pol);
+
+	if (!prs_uint32("data1", ps, depth, &pol->data1))
+		return False;
+	if (!prs_uint32("data2", ps, depth, &pol->data2))
+		return False;
+	if (!prs_uint16("data3", ps, depth, &pol->data3))
+		return False;
+	if (!prs_uint16("data4", ps, depth, &pol->data4))
+		return False;
+	if(!prs_uint8s (False, "data5", ps, depth, pol->data5, sizeof(pol->data5)))
 		return False;
 
 	return True;

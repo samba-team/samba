@@ -28,19 +28,32 @@
 
 extern int DEBUGLEVEL;
 
+struct reg_info
+{
+	/* for use by \PIPE\winreg */
+	fstring name; /* name of registry key */
+};
+
+static void free_reg_info(void *ptr)
+{
+	struct reg_info *info = (struct reg_info *)ptr;
+
+	SAFE_FREE(info);
+}
+
 /*******************************************************************
  reg_reply_unknown_1
  ********************************************************************/
-static void reg_reply_close(REG_Q_CLOSE *q_r,
+static void reg_reply_close(pipes_struct *p, REG_Q_CLOSE *q_r,
 				prs_struct *rdata)
 {
 	REG_R_CLOSE r_u;
 
 	/* set up the REG unknown_1 response */
-	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+	ZERO_STRUCT(r_u.pol);
 
 	/* close the policy handle */
-	if (close_lsa_policy_hnd(&(q_r->pol)))
+	if (close_policy_hnd(p, &q_r->pol))
 	{
 		r_u.status = 0;
 	}
@@ -70,7 +83,7 @@ static BOOL api_reg_close(pipes_struct *p)
 	reg_io_q_close("", &q_r, data, 0);
 
 	/* construct reply.  always indicate success */
-	reg_reply_close(&q_r, rdata);
+	reg_reply_close(p, &q_r, rdata);
 
 	return True;
 }
@@ -79,14 +92,14 @@ static BOOL api_reg_close(pipes_struct *p)
 /*******************************************************************
  reg_reply_open
  ********************************************************************/
-static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
+static void reg_reply_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_r,
 				prs_struct *rdata)
 {
 	REG_R_OPEN_HKLM r_u;
 
 	r_u.status = 0x0;
 	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !open_lsa_policy_hnd(&(r_u.pol)))
+	if (r_u.status == 0x0 && !create_policy_hnd(p, &r_u.pol, free_reg_info, NULL))
 	{
 		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -112,7 +125,7 @@ static BOOL api_reg_open(pipes_struct *p)
 	reg_io_q_open_hklm("", &q_u, data, 0);
 
 	/* construct reply.  always indicate success */
-	reg_reply_open(&q_u, rdata);
+	reg_reply_open(p, &q_u, rdata);
 
 	return True;
 }
@@ -121,41 +134,40 @@ static BOOL api_reg_open(pipes_struct *p)
 /*******************************************************************
  reg_reply_open_entry
  ********************************************************************/
-static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
+static void reg_reply_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u,
 				prs_struct *rdata)
 {
 	uint32 status     = 0;
 	POLICY_HND pol;
 	REG_R_OPEN_ENTRY r_u;
 	fstring name;
+	struct reg_info *info = NULL;
 
 	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
 
-	if (status == 0 && find_lsa_policy_by_hnd(&(q_u->pol)) == -1)
-	{
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (status == 0x0 && !open_lsa_policy_hnd(&pol))
-	{
-		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
-	}
 
 	fstrcpy(name, dos_unistrn2(q_u->uni_name.buffer, q_u->uni_name.uni_str_len));
 
-	if (status == 0x0)
-	{
+	if (status == 0) {
+		if ((info = (struct reg_info *)malloc(sizeof(struct reg_info))) == NULL)
+			status = NT_STATUS_NO_MEMORY;
+
+		ZERO_STRUCTP(info);
+		fstrcpy(info->name, name);
+
 		DEBUG(5,("reg_open_entry: %s\n", name));
 		/* lkcl XXXX do a check on the name, here */
-		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
-		{
+		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions")) {
 			status = NT_STATUS_ACCESS_DENIED;
+			SAFE_FREE(info);
 		}
 	}
 
-	if (status == 0x0 && !set_lsa_policy_reg_name(&pol, name))
-	{
+	if (status == 0x0 && !create_policy_hnd(p, &pol, free_reg_info, (void *)info)) {
 		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		SAFE_FREE(info);
 	}
 
 	init_reg_r_open_entry(&r_u, &pol, status);
@@ -179,7 +191,7 @@ static BOOL api_reg_open_entry(pipes_struct *p)
 	reg_io_q_open_entry("", &q_u, data, 0);
 
 	/* construct reply. */
-	reg_reply_open_entry(&q_u, rdata);
+	reg_reply_open_entry(p, &q_u, rdata);
 
 	return True;
 }
@@ -188,7 +200,7 @@ static BOOL api_reg_open_entry(pipes_struct *p)
 /*******************************************************************
  reg_reply_info
  ********************************************************************/
-static void reg_reply_info(REG_Q_INFO *q_u,
+static void reg_reply_info(pipes_struct *p, REG_Q_INFO *q_u,
 				prs_struct *rdata)
 {
 	uint32 status     = 0;
@@ -202,7 +214,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 
 	DEBUG(5,("reg_info: %d\n", __LINE__));
 
-	if (status == 0 && find_lsa_policy_by_hnd(&(q_u->pol)) == -1)
+	if (status == 0 && !find_policy_by_hnd(p, &q_u->pol, NULL))
 	{
 		status = NT_STATUS_INVALID_HANDLE;
 	}
@@ -253,7 +265,7 @@ static BOOL api_reg_info(pipes_struct *p)
 	reg_io_q_info("", &q_u, data, 0);
 
 	/* construct reply.  always indicate success */
-	reg_reply_info(&q_u, rdata);
+	reg_reply_info(p, &q_u, rdata);
 
 	return True;
 }

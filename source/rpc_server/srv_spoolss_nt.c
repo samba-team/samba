@@ -52,13 +52,10 @@ char * drv_ver_to_os[] = {
 /* and the notify info asked about */
 /* that's the central struct */
 typedef struct _Printer{
-	ubi_dlNode Next;
-	ubi_dlNode Prev;
-
-	BOOL open;
+	struct _Printer *prev, *next;
 	BOOL document_started;
 	BOOL page_started;
-    int jobid; /* jobid in printing backend */
+	int jobid; /* jobid in printing backend */
 	POLICY_HND printer_hnd;
 	BOOL printer_type;
 	union {
@@ -82,6 +79,8 @@ typedef struct _Printer{
 	} client;
 } Printer_entry;
 
+static Printer_entry *printers_list;
+
 typedef struct _counter_printer_0 {
 	ubi_dlNode Next;
 	ubi_dlNode Prev;
@@ -90,14 +89,12 @@ typedef struct _counter_printer_0 {
 	uint32 counter;
 } counter_printer_0;
 
-static ubi_dlList Printer_list;
 static ubi_dlList counter_list;
 
 static struct cli_state cli;
 static uint32 smb_connections=0;
 
-#define OPEN_HANDLE(pnum)    ((pnum!=NULL) && (pnum->open!=False) && (IVAL(pnum->printer_hnd.data,16)==(uint32)sys_getpid()))
-#define OUR_HANDLE(pnum) ((pnum==NULL)?"NULL":(IVAL(pnum->data,16)==sys_getpid()?"OURS":"OTHER"))
+#define OUR_HANDLE(hnd) ((hnd==NULL)?"NULL":(IVAL(hnd->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER"))
 
 /* translate between internal status numbers and NT status numbers */
 static int nt_printj_status(int v)
@@ -145,80 +142,16 @@ static int nt_printq_status(int v)
 }
 
 /****************************************************************************
-  initialise printer handle states...
-****************************************************************************/
-void init_printer_hnd(void)
-{
-	ubi_dlInitList(&Printer_list);
-	ubi_dlInitList(&counter_list);
-}
-
-/****************************************************************************
- Return a user struct for a pipe user.
+ Functions to handle SPOOL_NOTIFY_OPTION struct stored in Printer_entry.
 ****************************************************************************/
 
-static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
+static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 {
-	if (p->ntlmssp_auth_validated) {
-		memcpy(user, &p->pipe_user, sizeof(struct current_user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(user, &current_user, sizeof(struct current_user));
-	}
+	if (*pp == NULL)
+		return;
 
-	return user;
-}
-
-/****************************************************************************
-  create a unique printer handle
-****************************************************************************/
-static void create_printer_hnd(POLICY_HND *hnd)
-{
-	static uint32 prt_hnd_low  = 0;
-	static uint32 prt_hnd_high = 0;
-
-	if (hnd == NULL) return;
-
-	/* i severely doubt that prt_hnd_high will ever be non-zero... */
-	prt_hnd_low++;
-	if (prt_hnd_low == 0) prt_hnd_high++;
-
-	SIVAL(hnd->data, 0 , 0x0);          /* first bit must be null */
-	SIVAL(hnd->data, 4 , prt_hnd_low ); /* second bit is incrementing */
-	SIVAL(hnd->data, 8 , prt_hnd_high); /* second bit is incrementing */
-	SIVAL(hnd->data, 12, time(NULL));   /* something random */
-	SIVAL(hnd->data, 16, sys_getpid());     /* something more random */
-}
-
-/****************************************************************************
-  find printer index by handle
-****************************************************************************/
-static Printer_entry *find_printer_index_by_hnd(const POLICY_HND *hnd)
-{
-	Printer_entry *find_printer;
-
-	find_printer = (Printer_entry *)ubi_dlFirst(&Printer_list);
-
-	for(; find_printer; find_printer = (Printer_entry *)ubi_dlNext(find_printer)) {
-
-		if (memcmp(&(find_printer->printer_hnd), hnd, sizeof(*hnd)) == 0) {
-			DEBUG(4,("Found printer handle \n"));
-			/*dump_data(4, hnd->data, sizeof(hnd->data));*/
-			return find_printer;
-		}
-	}
-	
-	DEBUG(3,("Whoops, Printer handle not found: "));
-	/*dump_data(4, hnd->data, sizeof(hnd->data));*/
-	return NULL;
-}
-
-/****************************************************************************
-  clear an handle
-****************************************************************************/
-static void clear_handle(POLICY_HND *hnd)
-{
-	ZERO_STRUCTP(hnd);
+	SAFE_FREE((*pp)->ctr.type);
+	SAFE_FREE(*pp);
 }
 
 /***************************************************************************
@@ -251,38 +184,117 @@ static BOOL srv_spoolss_replycloseprinter(POLICY_HND *handle)
 }
 
 /****************************************************************************
-  close printer index by handle
+ Functions to free a printer entry datastruct.
 ****************************************************************************/
-static BOOL close_printer_handle(POLICY_HND *hnd)
-{
-	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 
-	if (!OPEN_HANDLE(Printer)) {
-		DEBUG(0,("close_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
-		return False;
-	}
+static void free_printer_entry(void *ptr)
+{
+	Printer_entry *Printer = (Printer_entry *)ptr;
 
 	if (Printer->notify.client_connected==True)
-		if(!srv_spoolss_replycloseprinter(&Printer->notify.client_hnd))
-			return ERROR_INVALID_HANDLE;
+		srv_spoolss_replycloseprinter(&Printer->notify.client_hnd);
 
-	Printer->open=False;
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
-	safe_free(Printer->notify.option);
+	free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.option=NULL;
 	Printer->notify.client_connected=False;
 
-	clear_handle(hnd);
+	/* Remove from the internal list. */
+	DLIST_REMOVE(printers_list, Printer);
 
-	ubi_dlRemThis(&Printer_list, Printer);
+	SAFE_FREE(Printer);
+}
 
-	safe_free(Printer);
+/****************************************************************************
+ Functions to duplicate a SPOOL_NOTIFY_OPTION struct stored in Printer_entry.
+****************************************************************************/
+
+SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
+{
+	SPOOL_NOTIFY_OPTION *new_sp = NULL;
+
+	if (!sp)
+		return NULL;
+
+	new_sp = (SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION));
+	if (!new_sp)
+		return NULL;
+
+	*new_sp = *sp;
+
+	if (sp->ctr.count) {
+		new_sp->ctr.type = (SPOOL_NOTIFY_OPTION_TYPE *)memdup(sp->ctr.type, sizeof(SPOOL_NOTIFY_OPTION_TYPE) * sp->ctr.count);
+
+		if (!new_sp->ctr.type) {
+			SAFE_FREE(new_sp);
+			return NULL;
+		}
+	}
+
+	return new_sp;
+}
+
+/****************************************************************************
+  initialise printer handle states...
+****************************************************************************/
+void init_printer_hnd(void)
+{
+	ubi_dlInitList(&counter_list);
+}
+
+/****************************************************************************
+ Return a user struct for a pipe user.
+****************************************************************************/
+
+static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
+{
+	if (p->ntlmssp_auth_validated) {
+		memcpy(user, &p->pipe_user, sizeof(struct current_user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(user, &current_user, sizeof(struct current_user));
+	}
+
+	return user;
+}
+
+/****************************************************************************
+  find printer index by handle
+****************************************************************************/
+
+static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
+{
+	Printer_entry *find_printer = NULL;
+
+	if(!find_policy_by_hnd(p,hnd,(void **)&find_printer)) {
+		DEBUG(3,("find_printer_index_by_hnd: Printer handle not found: "));
+		return NULL;
+	}
+
+	return find_printer;
+}
+
+
+/****************************************************************************
+ Close printer index by handle.
+****************************************************************************/
+
+static BOOL close_printer_handle(pipes_struct *p, POLICY_HND *hnd)
+{
+	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
+
+	if (!Printer) {
+		DEBUG(0,("close_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
+		return False;
+	}
+
+	close_policy_hnd(p, hnd);
 
 	return True;
-}	
+}
 
 /****************************************************************************
   delete a printer. This will call a script to remove entries from smb.conf
@@ -339,11 +351,11 @@ static uint32 delete_printer_hook(char * sharename)
 /****************************************************************************
   delete a printer given a handle
 ****************************************************************************/
-static uint32 delete_printer_handle(POLICY_HND *hnd)
+static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("delete_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -369,11 +381,11 @@ static uint32 delete_printer_handle(POLICY_HND *hnd)
 /****************************************************************************
   return the snum of a printer corresponding to an handle
 ****************************************************************************/
-static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
+static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 		
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("get_printer_snum: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
 		return False;
 	}
@@ -393,11 +405,11 @@ static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
 /****************************************************************************
   set printer handle type.
 ****************************************************************************/
-static BOOL set_printer_hnd_accesstype(POLICY_HND *hnd, uint32 access_required)
+static BOOL set_printer_hnd_accesstype(pipes_struct *p,POLICY_HND *hnd, uint32 access_required)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("set_printer_hnd_accesstype: Invalid handle (%s)", OUR_HANDLE(hnd)));
 		return False;
 	}
@@ -563,50 +575,50 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
   find first available printer slot. creates a printer handle for you.
  ****************************************************************************/
 
-static BOOL open_printer_hnd(POLICY_HND *hnd, char *name)
+static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
 {
-	Printer_entry *new_printer;
+        Printer_entry *new_printer;
 
-	DEBUG(10,("open_printer_hnd: name [%s]\n", name));
-	clear_handle(hnd);
-	create_printer_hnd(hnd);
+        DEBUG(10,("open_printer_hnd: name [%s]\n", name));
 
-	if((new_printer=(Printer_entry *)malloc(sizeof(Printer_entry))) == NULL)
-		return False;
+        if((new_printer=(Printer_entry *)malloc(sizeof(Printer_entry))) == NULL)
+                return False;
 
-	ZERO_STRUCTP(new_printer);
-	
-	new_printer->open = True;
-	new_printer->notify.option=NULL;
-				
-	memcpy(&new_printer->printer_hnd, hnd, sizeof(*hnd));
-	
-	ubi_dlAddHead( &Printer_list, (ubi_dlNode *)new_printer);
+        ZERO_STRUCTP(new_printer);
 
-	if (!set_printer_hnd_printertype(new_printer, name)) {
-		close_printer_handle(hnd);
-		return False;
-	}
-	
-	if (!set_printer_hnd_name(new_printer, name)) {
-		close_printer_handle(hnd);
-		return False;
-	}
+        new_printer->notify.option=NULL;
 
-	DEBUG(5, ("%d printer handles active\n", 
-		  (int)ubi_dlCount(&Printer_list)));
+        if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
+                SAFE_FREE(new_printer);
+                return False;
+        }
 
-	return True;
+        if (!set_printer_hnd_printertype(new_printer, name)) {
+                close_printer_handle(p, hnd);
+                return False;
+        }
+
+        if (!set_printer_hnd_name(new_printer, name)) {
+                close_printer_handle(p, hnd);
+                return False;
+        }
+
+        DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
+
+        /* Add to the internal list. */
+        DLIST_ADD(printers_list, new_printer);
+
+        return True;
 }
 
 /********************************************************************
  Return True is the handle is a print server.
  ********************************************************************/
-static BOOL handle_is_printserver(const POLICY_HND *handle)
+static BOOL handle_is_printserver(pipes_struct *p, POLICY_HND *handle)
 {
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 
-	if (!OPEN_HANDLE(Printer))
+	if (!Printer)
 		return False;
 		
 	if (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
@@ -657,37 +669,36 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	Printer_entry *find_printer;
 	uint32 status;
-	uint32 msg[2];
+	char msg[8];
+	uint32 low, high;
 
 	if (len != sizeof(msg)) {
-		DEBUG(0,("srv_spoolss_receive_message: got null message !\n"));
+		DEBUG(0,("srv_spoolss_receive_message: got incorrect message size (%u)!\n", (unsigned int)len));
 		return;
 	}
 
-	memcpy(msg, (uint32*)buf, sizeof(msg));
-	DEBUG(10,("srv_spoolss_receive_message: Got message printer change low=%x  high=%x\n", msg[0], msg[1]));
+	low = IVAL(msg,0);
+	high = IVAL(msg,4);
 
-	find_printer = (Printer_entry *)ubi_dlFirst(&Printer_list);
+	DEBUG(10,("srv_spoolss_receive_message: Got message printer change low=0x%x  high=0x%x\n", (unsigned int)low,
+		(unsigned int)high ));
 
-	find_printer = (Printer_entry *)ubi_dlFirst(&Printer_list);
+	find_printer = printers_list;
 
 	/* Iterate the printer list */
-	for(; find_printer; find_printer = (Printer_entry *)ubi_dlNext(find_printer)) {
+	for(; find_printer; find_printer = find_printer->next) {
 
 		/*
-		 * if the entry is a printerserver we send the message
+		 * If the entry has a connected client we send the message.
 		 */
 
-		if (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTSERVER) {
-
-			DEBUG(10,("srv_spoolss_receive_message: printerserver [%s]  client_connected=%x\n", find_printer->dev.printerservername, find_printer->notify.client_connected));
-
-			if (find_printer->notify.client_connected==True) {
-				if (cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_PRINTER, 0x0, &status))
-					DEBUG(10,("srv_spoolss_receive_message: cli_spoolss_reply_rrpcn status = 0x%x\n", status));
-				else
-					DEBUG(10,("srv_spoolss_receive_message: cli_spoolss_reply_rrpcn failed\n"));
-			}
+		if (find_printer->notify.client_connected==True) {
+			DEBUG(10,("srv_spoolss_receive_message: printerserver [%s]\n", find_printer->dev.printerservername ));
+			if (cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, low, high, &status))
+				DEBUG(10,("srv_spoolss_receive_message: cli_spoolss_reply_rrpcn status = 0x%x\n",
+					(unsigned int)status));
+			else
+				DEBUG(10,("srv_spoolss_receive_message: cli_spoolss_reply_rrpcn failed\n"));
 		}
 	}
 }
@@ -697,10 +708,10 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 ****************************************************************************/
 static BOOL srv_spoolss_sendnotify(uint32 high, uint32 low)
 {
-	uint32 msg[2];
+	char msg[8];
 
-	msg[0] = low;
-	msg[1] = high;
+	SIVAL(msg,0,low);
+	SIVAL(msg,4,high);
 	DEBUG(10,("srv_spoolss_sendnotify: printer change low=%x  high=%x\n", msg[0], msg[1]));
 
 	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, sizeof(msg), False);
@@ -733,7 +744,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
-	if (!open_printer_hnd(handle, name))
+	if (!open_printer_hnd(p, handle, name))
 		return ERROR_INVALID_PRINTER_NAME;
 	
 /*
@@ -746,8 +757,8 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		set_printer_hnd_datatype(handle, "");
 */
 	
-	if (!set_printer_hnd_accesstype(handle, printer_default->access_required)) {
-		close_printer_handle(handle);
+	if (!set_printer_hnd_accesstype(p, handle, printer_default->access_required)) {
+		close_printer_handle(p, handle);
 		return ERROR_ACCESS_DENIED;
 	}
 		
@@ -776,7 +787,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 
 	get_current_user(&user, p);
 
-	if (handle_is_printserver(handle)) {
+	if (handle_is_printserver(p,handle)) {
 		if (printer_default->access_required == 0) {
 			return NT_STATUS_NO_PROBLEMO;
 		}
@@ -786,14 +797,14 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 			snum = -1;
 
 			if (!lp_ms_add_printer_wizard()) {
-				close_printer_handle(handle);
+				close_printer_handle(p,handle);
 				return ERROR_ACCESS_DENIED;
 			}
 			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin())) {
 				return NT_STATUS_NO_PROBLEMO;
 			} 
 			else {
-				close_printer_handle(handle);
+				close_printer_handle(p,handle);
 				return ERROR_ACCESS_DENIED;
 			}
 		}
@@ -803,7 +814,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
-		if (!get_printer_snum(handle, &snum))
+		if (!get_printer_snum(p,handle, &snum))
 			return ERROR_INVALID_HANDLE;
 
 		/* map an empty access mask to the minimum access mask */
@@ -812,7 +823,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
-			close_printer_handle(handle);
+			close_printer_handle(p,handle);
 			return ERROR_ACCESS_DENIED;
 		}
 
@@ -1003,14 +1014,17 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 /********************************************************************
  * api_spoolss_closeprinter
  ********************************************************************/
-uint32 _spoolss_closeprinter(POLICY_HND *handle)
+uint32 _spoolss_closeprinter(pipes_struct *p, POLICY_HND *handle)
 {
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 
-	if (Printer && Printer->document_started)
-		_spoolss_enddocprinter(handle);          /* print job was not closed */
+	if (!Printer)
+		return ERROR_INVALID_HANDLE;
 
-	if (!close_printer_handle(handle))
+	if (Printer->document_started)
+		_spoolss_enddocprinter(p, handle);          /* print job was not closed */
+
+	if (!close_printer_handle(p, handle))
 		return ERROR_INVALID_HANDLE;	
 		
 	return NT_STATUS_NO_PROBLEMO;
@@ -1019,15 +1033,17 @@ uint32 _spoolss_closeprinter(POLICY_HND *handle)
 /********************************************************************
  * api_spoolss_deleteprinter
  ********************************************************************/
-uint32 _spoolss_deleteprinter(POLICY_HND *handle)
+uint32 _spoolss_deleteprinter(pipes_struct *p, POLICY_HND *handle)
 {
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	Printer_entry *Printer=find_printer_index_by_hnd(p,handle);
 	uint32 result;
 
-	if (Printer && Printer->document_started)
-		_spoolss_enddocprinter(handle);  /* print job was not closed */
+	if (!Printer)
+		return ERROR_INVALID_HANDLE;
+	if (Printer->document_started)
+		_spoolss_enddocprinter(p, handle);  /* print job was not closed */
 
-	result = delete_printer_handle(handle);
+	result = delete_printer_handle(p,handle);
 
 	update_c_setprinter(FALSE);
 
@@ -1119,7 +1135,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 /********************************************************************
  GetPrinterData on a printer Handle.
 ********************************************************************/
-static BOOL getprinterdata_printer(POLICY_HND *handle,
+static BOOL getprinterdata_printer(pipes_struct *p, POLICY_HND *handle,
 				fstring value, uint32 *type,
                         	uint8 **data, uint32 *needed, uint32 in_size )
 {
@@ -1127,16 +1143,16 @@ static BOOL getprinterdata_printer(POLICY_HND *handle,
 	int snum=0;
 	uint8 *idata=NULL;
 	uint32 len;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p,handle);
 	
 	DEBUG(5,("getprinterdata_printer\n"));
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("getprinterdata_printer: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return False;
 	}
 
-	if(!get_printer_snum(handle, &snum))
+	if(!get_printer_snum(p, handle, &snum))
 		return False;
 
 	if(get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
@@ -1175,7 +1191,7 @@ static BOOL getprinterdata_printer(POLICY_HND *handle,
 /********************************************************************
  * spoolss_getprinterdata
  ********************************************************************/
-uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
+uint32 _spoolss_getprinterdata(pipes_struct *p, POLICY_HND *handle, UNISTR2 *valuename,
 				uint32 in_size,
 				uint32 *type,
 				uint32 *out_size,
@@ -1184,7 +1200,7 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 {
 	fstring value;
 	BOOL found=False;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p,handle);
 	
 	/*
 	 * Reminder: when it's a string, the length is in BYTES
@@ -1201,7 +1217,7 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 	
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		if((*data=(uint8 *)malloc(4*sizeof(uint8))) == NULL)
 			return ERROR_NOT_ENOUGH_MEMORY;
 		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
@@ -1210,10 +1226,10 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 	
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
-	if (handle_is_printserver(handle))
+	if (handle_is_printserver(p, handle))
 		found=getprinterdata_printer_server(value, type, data, needed, *out_size);
 	else
-		found= getprinterdata_printer(handle, value, type, data, needed, *out_size);
+		found= getprinterdata_printer(p, handle, value, type, data, needed, *out_size);
 
 	if (found==False) {
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
@@ -1278,15 +1294,15 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
  * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  * called from api_spoolss_rffpcnex
  ********************************************************************/
-uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
+uint32 _spoolss_rffpcnex(pipes_struct *p, POLICY_HND *handle, uint32 flags, uint32 options,
 			 const UNISTR2 *localmachine, uint32 printerlocal,
 			 SPOOL_NOTIFY_OPTION *option)
 {
 	/* store the notify value in the printer struct */
 
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_rffpcnex: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -1294,7 +1310,7 @@ uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
 	Printer->notify.flags=flags;
 	Printer->notify.options=options;
 	Printer->notify.printerlocal=printerlocal;
-	Printer->notify.option=option;
+	Printer->notify.option=dup_spool_notify_option(option);
 	unistr2_to_ascii(Printer->notify.localmachine, localmachine, sizeof(Printer->notify.localmachine)-1);
 
 	/* connect to the client machine and send a ReplyOpenPrinter */
@@ -2201,12 +2217,12 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
  *
  ********************************************************************/
 
-static uint32 printserver_notify_info(const POLICY_HND *hnd, 
+static uint32 printserver_notify_info(pipes_struct *p, POLICY_HND *hnd, 
 				      SPOOL_NOTIFY_INFO *info,
 				      TALLOC_CTX *mem_ctx)
 {
 	int snum;
-	Printer_entry *Printer=find_printer_index_by_hnd(hnd);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, hnd);
 	int n_services=lp_numservices();
 	int i;
 	uint32 id;
@@ -2215,6 +2231,9 @@ static uint32 printserver_notify_info(const POLICY_HND *hnd,
 
 	DEBUG(4,("printserver_notify_info\n"));
 	
+	if (!Printer)
+		return ERRbadfid;
+
 	option=Printer->notify.option;
 	id=1;
 	info->version=2;
@@ -2257,11 +2276,11 @@ static uint32 printserver_notify_info(const POLICY_HND *hnd,
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
-static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
+static uint32 printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 				  TALLOC_CTX *mem_ctx)
 {
 	int snum;
-	Printer_entry *Printer=find_printer_index_by_hnd(hnd);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, hnd);
 	int i;
 	uint32 id;
 	SPOOL_NOTIFY_OPTION *option;
@@ -2272,13 +2291,16 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 	
 	DEBUG(4,("printer_notify_info\n"));
 
+	if (!Printer)
+		return ERRbadfid;
+
 	option=Printer->notify.option;
 	id=0xffffffff;
 	info->version=2;
 	info->data=NULL;
 	info->count=0;
 
-	get_printer_snum(hnd, &snum);
+	get_printer_snum(p, hnd, &snum);
 
 	for (i=0; i<option->count; i++) {
 		option_type=&option->ctr.type[i];
@@ -2337,14 +2359,14 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 /********************************************************************
  * spoolss_rfnpcnex
  ********************************************************************/
-uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
+uint32 _spoolss_rfnpcnex( pipes_struct *p, POLICY_HND *handle, uint32 change,
 			  SPOOL_NOTIFY_OPTION *option, TALLOC_CTX *mem_ctx,
 			  SPOOL_NOTIFY_INFO *info)
 {
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 	uint32 result = ERROR_INVALID_HANDLE;
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_rfnpcnex: Invalid handle (%s).\n",
 			 OUR_HANDLE(handle)));
 		goto done;
@@ -2370,12 +2392,12 @@ uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
 	
 	switch (Printer->printer_type) {
 		case PRINTER_HANDLE_IS_PRINTSERVER:
-			result = printserver_notify_info(handle, info, 
+			result = printserver_notify_info(p, handle, info, 
 							 mem_ctx);
 			break;
 			
 		case PRINTER_HANDLE_IS_PRINTER:
-			result = printer_notify_info(handle, info, mem_ctx);
+			result = printer_notify_info(p, handle, info, mem_ctx);
 			break;
 	}
 	
@@ -3182,14 +3204,14 @@ static uint32 getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
+uint32 _spoolss_getprinter(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int snum;
 	
 	*needed=0;
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
 	switch (level) {
@@ -3677,7 +3699,7 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level,
+uint32 _spoolss_getprinterdriver2(pipes_struct *p, POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level,
 				uint32 clientmajorversion, uint32 clientminorversion,
 				NEW_BUFFER *buffer, uint32 offered,
 				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion)
@@ -3695,7 +3717,7 @@ uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, u
 	pstrcpy(servername, global_myname);
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
 	switch (level) {
@@ -3714,11 +3736,11 @@ uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, u
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_startpageprinter(POLICY_HND *handle)
+uint32 _spoolss_startpageprinter(pipes_struct *p, POLICY_HND *handle)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
-	if (OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		Printer->page_started=True;
 		return 0x0;
 	}
@@ -3729,11 +3751,11 @@ uint32 _spoolss_startpageprinter(POLICY_HND *handle)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_endpageprinter(POLICY_HND *handle)
+uint32 _spoolss_endpageprinter(pipes_struct *p, POLICY_HND *handle)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_endpageprinter: Invalid handle (%s).\n",OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -3757,10 +3779,10 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	int snum;
 	pstring jobname;
 	fstring datatype;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	struct current_user user;
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_startdocprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -3788,7 +3810,7 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	}		
 	
 	/* get the share number of the printer */
-	if (!get_printer_snum(handle, &snum)) {
+	if (!get_printer_snum(p,handle, &snum)) {
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -3814,11 +3836,11 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-uint32 _spoolss_enddocprinter(POLICY_HND *handle)
+uint32 _spoolss_enddocprinter(pipes_struct *p, POLICY_HND *handle)
 {
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 	
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_enddocprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -3832,14 +3854,14 @@ uint32 _spoolss_enddocprinter(POLICY_HND *handle)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_writeprinter( POLICY_HND *handle,
+uint32 _spoolss_writeprinter( pipes_struct *p, POLICY_HND *handle,
 				uint32 buffer_size,
 				uint8 *buffer,
 				uint32 *buffer_written)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_writeprinter: Invalid handle (%s)\n",OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -3860,16 +3882,16 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 {
 	struct current_user user;
 	int snum, errcode = ERROR_INVALID_FUNCTION;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	get_current_user(&user, p);
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("control_printer: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
 	switch (command) {
@@ -3918,9 +3940,9 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	uint32 result;
 	int snum;
 
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
-	if (!OPEN_HANDLE(Printer) || !get_printer_snum(handle, &snum)) {
+	if (!Printer || !get_printer_snum(p, handle, &snum)) {
 		DEBUG(0,("update_printer_sec: Invalid handle (%s)\n",
 			 OUR_HANDLE(handle)));
 
@@ -4338,13 +4360,13 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
  * when updating a printer description
  ********************************************************************/
 
-static uint32 update_printer(POLICY_HND *handle, uint32 level,
+static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
                            const SPOOL_PRINTER_INFO_LEVEL *info,
                            DEVICEMODE *devmode)
 {
 	int snum;
 	NT_PRINTER_INFO_LEVEL *printer = NULL, *old_printer = NULL;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	uint32 result;
 
 	DEBUG(8,("update_printer\n"));
@@ -4358,12 +4380,12 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		result = ERROR_INVALID_HANDLE;
 		goto done;
 	}
 
-	if (!get_printer_snum(handle, &snum)) {
+	if (!get_printer_snum(p, handle, &snum)) {
 		result = ERROR_INVALID_HANDLE;
 		goto done;
 	}
@@ -4483,9 +4505,9 @@ uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 			   SEC_DESC_BUF *secdesc_ctr,
 			   uint32 command, pipes_struct *p)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_setprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -4495,7 +4517,7 @@ uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 		case 0:
 			return control_printer(handle, command, p);
 		case 2:
-			return update_printer(handle, level, info, devmode_ctr.devmode);
+			return update_printer(p, handle, level, info, devmode_ctr.devmode);
 		case 3:
 			return update_printer_sec(handle, level, info, p,
 						  secdesc_ctr);
@@ -4506,27 +4528,24 @@ uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_fcpn(POLICY_HND *handle)
+uint32 _spoolss_fcpn(pipes_struct *p, POLICY_HND *handle)
 {
-	Printer_entry *Printer= find_printer_index_by_hnd(handle);
+	Printer_entry *Printer= find_printer_index_by_hnd(p, handle);
 	
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_fcpn: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
 	if (Printer->notify.client_connected==True)
-		if(!srv_spoolss_replycloseprinter(&Printer->notify.client_hnd))
-			return ERROR_INVALID_HANDLE;
+		srv_spoolss_replycloseprinter(&Printer->notify.client_hnd);
 
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
 	if (Printer->notify.option)
-		safe_free(Printer->notify.option->ctr.type);
-	safe_free(Printer->notify.option);
-	Printer->notify.option=NULL;
+		free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.client_connected=False;
 
 	return NT_STATUS_NO_PROBLEMO;
@@ -4726,7 +4745,7 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 /****************************************************************************
  Enumjobs.
 ****************************************************************************/
-uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			
+uint32 _spoolss_enumjobs( pipes_struct *p, POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			
 			  NEW_BUFFER *buffer, uint32 offered,
 			  uint32 *needed, uint32 *returned)
 {	
@@ -4739,7 +4758,7 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 	*needed=0;
 	*returned=0;
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
 	*returned = print_queue_status(snum, &queue, &prt_status);
@@ -4778,7 +4797,7 @@ uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
 	struct current_user user;
 	int snum, errcode = ERROR_INVALID_FUNCTION;
 		
-	if (!get_printer_snum(handle, &snum)) {
+	if (!get_printer_snum(p,handle, &snum)) {
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -5496,7 +5515,7 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
+static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_srv_name,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
@@ -5573,7 +5592,7 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 		return ERROR_ACCESS_DENIED;
 	}
 
-	if (!open_printer_hnd(handle, name)) {
+	if (!open_printer_hnd(p, handle, name)) {
 		/* Handle open failed - remove addition. */
 	        delete_printer_hook(printer->info_2->sharename);
 		del_a_printer(printer->info_2->sharename);
@@ -5592,7 +5611,7 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
+uint32 _spoolss_addprinterex( pipes_struct *p, const UNISTR2 *uni_srv_name, uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
@@ -5604,7 +5623,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 			/* but I know what to do ... */
 			return ERROR_INVALID_LEVEL;
 		case 2:
-			return spoolss_addprinterex_level_2(uni_srv_name, info,
+			return spoolss_addprinterex_level_2(p, uni_srv_name, info,
 							    unk0, unk1, unk2, unk3,
 							    user_switch, user, handle);
 		default:
@@ -5731,7 +5750,7 @@ uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environmen
 	
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
+uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
 				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
 				uint32 *out_type,
@@ -5745,7 +5764,7 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 	uint32 biggest_valuesize;
 	uint32 biggest_datasize;
 	uint32 data_len;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	int snum;
 	uint8 *data=NULL;
 	uint32 type;
@@ -5760,12 +5779,12 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 
 	DEBUG(5,("spoolss_enumprinterdata\n"));
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p,handle, &snum))
 		return ERROR_INVALID_HANDLE;
 	
 	if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
@@ -5898,7 +5917,7 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setprinterdata( POLICY_HND *handle,
+uint32 _spoolss_setprinterdata( pipes_struct *p, POLICY_HND *handle,
 				const UNISTR2 *value,
 				uint32 type,
 				uint32 max_len,
@@ -5910,16 +5929,16 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	NT_PRINTER_PARAM *param = NULL, old_param;
 	int snum=0;
 	uint32 status = 0x0;
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 	
 	DEBUG(5,("spoolss_setprinterdata\n"));
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_setprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
 
@@ -6006,22 +6025,22 @@ uint32 _spoolss_resetprinter( POLICY_HND *handle, DEVMODE_CTR *ctr)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value)
+uint32 _spoolss_deleteprinterdata( pipes_struct *p, POLICY_HND *handle, const UNISTR2 *value)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	NT_PRINTER_PARAM param;
 	int snum=0;
 	uint32 status = 0x0;
-	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 	
 	DEBUG(5,("spoolss_deleteprinterdata\n"));
 	
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_deleteprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
@@ -6048,7 +6067,7 @@ uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addform( POLICY_HND *handle,
+uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 				uint32 level,
 				FORM *form)
 {
@@ -6056,7 +6075,7 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 
 	int count=0;
 	nt_forms_struct *list=NULL;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 #if 0 /* see below. */
 	int snum;
 #endif
@@ -6064,7 +6083,7 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 
 	DEBUG(5,("spoolss_addform\n"));
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_addform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		result = ERROR_INVALID_HANDLE;
 		goto done;
@@ -6079,7 +6098,7 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 	 * and all that jazz.  Leaving commented out for now.
 	 * --jerry
 	 */
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
@@ -6115,17 +6134,17 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
+uint32 _spoolss_deleteform( pipes_struct *p, POLICY_HND *handle, UNISTR2 *form_name)
 {
 	nt_forms_struct tmpForm;
 	int count=0;
 	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	DEBUG(5,("spoolss_deleteform\n"));
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_deleteform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -6147,7 +6166,7 @@ uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
 /****************************************************************************
 ****************************************************************************/
 
-uint32 _spoolss_setform( POLICY_HND *handle,
+uint32 _spoolss_setform( pipes_struct *p, POLICY_HND *handle,
 				const UNISTR2 *uni_name,
 				uint32 level,
 				FORM *form)
@@ -6156,11 +6175,11 @@ uint32 _spoolss_setform( POLICY_HND *handle,
 
 	int count=0;
 	nt_forms_struct *list=NULL;
-	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
  	DEBUG(5,("spoolss_setform\n"));
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!Printer) {
 		DEBUG(0,("_spoolss_setform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
@@ -6486,7 +6505,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
+uint32 _spoolss_getjob( pipes_struct *p, POLICY_HND *handle, uint32 jobid, uint32 level,
 			NEW_BUFFER *buffer, uint32 offered,
 			uint32 *needed)
 {
@@ -6499,7 +6518,7 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 	
 	*needed=0;
 	
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 	
 	count = print_queue_status(snum, &queue, &prt_status);
@@ -6533,7 +6552,7 @@ uint32 _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	uint32 		*needed = &r_u->needed;
 
 	fstring 	key, value;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(handle);
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	BOOL 		found = False;
 
 	DEBUG(4,("_spoolss_getprinterdataex\n"));
@@ -6577,7 +6596,7 @@ uint32 _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 			return ERROR_INVALID_PARAMETER;
 
 		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
-		found = getprinterdata_printer(handle, value, type, data, needed, in_size);
+		found = getprinterdata_printer(p,handle, value, type, data, needed, in_size);
 		
 	}
 	 
@@ -6622,7 +6641,7 @@ uint32 _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	
 	/* make a copy to call _spoolss_setprinterdata() */
 
-	return _spoolss_setprinterdata(&q_u->handle, &q_u->value, q_u->type,
+	return _spoolss_setprinterdata(p, &q_u->handle, &q_u->value, q_u->type,
 					q_u->max_len, q_u->data, q_u->real_len,
 					q_u->numeric_data);		
 }
@@ -6706,7 +6725,7 @@ uint32 _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	PRINTER_ENUM_VALUES	*enum_values = NULL;
 	fstring 	key, value;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(handle);
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	int 		snum;
 	uint32 		param_index, 
 			data_len,
@@ -6737,7 +6756,7 @@ uint32 _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	}
 
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(p,handle, &snum))
 		return ERRbadfid;
 	
 	ZERO_STRUCT(printer);

@@ -147,6 +147,26 @@ struct msrpc_state
     uint32 pid;
 };
 
+/*
+ * Handle database - stored per pipe.
+ */
+
+struct policy
+{
+	struct policy *next, *prev;
+
+	POLICY_HND pol_hnd;
+
+	void *data_ptr;
+	void (*free_fn)(void *);
+};
+
+struct handle_list {
+	struct policy *Policy;  /* List of policies. */
+	size_t count;                   /* Current number of handles. */
+	size_t pipe_ref_count;  /* Number of pipe handles referring to this list. */
+};
+
 typedef struct pipes_struct
 {
 	struct pipes_struct *next, *prev;
@@ -213,6 +233,10 @@ typedef struct pipes_struct
 
 	/* talloc context to use when allocating memory on this pipe. */
 	TALLOC_CTX *mem_ctx;
+
+	/* handle database to use on this pipe. */
+	struct handle_list *pipe_handles;
+
 } pipes_struct;
 
 struct api_struct

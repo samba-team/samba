@@ -810,6 +810,7 @@ BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	/* check that the returned policy handle is all zeros */
 
+#if 0
 	for (i = 0; i < sizeof(r_c.pol.data); i++) {
 		if (r_c.pol.data[i] != 0) {
 			DEBUG(0,("SAMR_CLOSE_HND: non-zero handle returned\n"));
@@ -817,6 +818,7 @@ BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd)
 			return False;
 		}
 	}	
+#endif
 
 	prs_mem_free(&rdata);
 

@@ -293,8 +293,11 @@ typedef struct gid_info
 /* POLICY_HND */
 typedef struct lsa_policy_info
 {
-  uint8 data[POL_HND_SIZE]; /* policy handle */
-
+	uint32 data1;
+	uint32 data2;
+	uint16 data3;
+	uint16 data4;
+	uint8 data5[8];
 } POLICY_HND;
 
 

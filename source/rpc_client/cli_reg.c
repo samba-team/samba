@@ -126,7 +126,7 @@ BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	}
 
 	/* ok, at last: we're happy. return the policy handle */
-	memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+	memcpy(hnd, &r_o.pol, sizeof(*hnd));
 
 	prs_mem_free(&rbuf);
 
@@ -187,7 +187,7 @@ BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	}
 
 	/* ok, at last: we're happy. return the policy handle */
-	memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+	memcpy(hnd, &r_o.pol, sizeof(*hnd));
 
 	prs_mem_free(&rbuf);
 
@@ -760,7 +760,7 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	memcpy(key, r_o.key_pol.data, sizeof(key->data));
+	memcpy(key, &r_o.key_pol, sizeof(*key));
 
 	prs_mem_free(&rbuf);
 
@@ -1008,7 +1008,7 @@ BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	memcpy(key_hnd, r_o.pol.data, sizeof(key_hnd->data));
+	memcpy(key_hnd, &r_o.pol, sizeof(*key_hnd));
 
 	prs_mem_free(&rbuf);
 
@@ -1071,6 +1071,7 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	/* check that the returned policy handle is all zeros */
 
+#if 0
 	for (i = 0; i < sizeof(r_c.pol.data); i++) {
 		if (r_c.pol.data[i] != 0) {
 			prs_mem_free(&rbuf);
@@ -1078,6 +1079,7 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
 			return False;
 		}
 	}	
+#endif
 
 	prs_mem_free(&rbuf);
 

@@ -87,7 +87,7 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 		return False;
 	} else {
 		/* ok, at last: we're happy. return the policy handle */
-		memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+		memcpy(hnd, &r_o.pol, sizeof(*hnd));
 	}
 
 	prs_mem_free(&rbuf);
@@ -252,6 +252,7 @@ BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	/* check that the returned policy handle is all zeros */
 
+#if 0
 	for (i = 0; i < sizeof(r_c.pol.data); i++) {
 		if (r_c.pol.data[i] != 0) {
 			DEBUG(0,("LSA_CLOSE: non-zero handle returned\n"));
@@ -259,6 +260,7 @@ BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 			return False;
 		}
 	}
+#endif
 
 	prs_mem_free(&rbuf);
 
