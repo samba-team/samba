@@ -48,11 +48,11 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	fstring sid;
 	char *new_passwd;
 	BOOL res = True;
-	uchar nt_newpass[516];
+	char nt_newpass[516];
 	uchar nt_hshhash[16];
 	uchar nt_newhash[16];
 	uchar nt_oldhash[16];
-	uchar lm_newpass[516];
+	char lm_newpass[516];
 	uchar lm_newhash[16];
 	uchar lm_hshhash[16];
 	uchar lm_oldhash[16];
@@ -99,8 +99,8 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	/* establish a connection. */
 	res = res ? do_samr_chgpasswd_user(smb_cli,
 	                                   srv_name, smb_cli->user_name,
-	                                   nt_newpass, nt_hshhash,
-	                                   lm_newpass, lm_hshhash) : False;
+	                                   nt_newpass, (char*)nt_hshhash,
+	                                   lm_newpass, (char*)lm_hshhash) : False;
 	/* close the session */
 	cli_nt_session_close(smb_cli);
 

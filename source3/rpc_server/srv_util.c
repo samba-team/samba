@@ -252,7 +252,7 @@ BOOL create_rpc_reply(pipes_struct *p,
 
 		if (auth_seal)
 		{
-			NTLMSSPcalc(p->ntlmssp_hash, data, data_len);
+			NTLMSSPcalc(p->ntlmssp_hash, (uchar*)data, data_len);
 			crc32 = crc32_calc_buffer(data_len, data);
 		}
 
@@ -267,8 +267,8 @@ BOOL create_rpc_reply(pipes_struct *p,
 			char *auth_data;
 			make_rpc_auth_ntlmssp_chk(&p->ntlmssp_chk, NTLMSSP_SIGN_VERSION, crc32, p->ntlmssp_seq_num);
 			smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(p->ntlmssp_chk), &p->rverf, 0);
-			auth_data = (uchar*)mem_data(&p->rverf.data, 4);
-			NTLMSSPcalc(p->ntlmssp_hash, auth_data, 12);
+			auth_data = mem_data(&p->rverf.data, 4);
+			NTLMSSPcalc(p->ntlmssp_hash, (uchar*)auth_data, 12);
 		}
 	}
 
@@ -601,9 +601,9 @@ static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
 
 	if (auth_seal)
 	{
-		char *data = (uchar*)mem_data(&pd->data, pd->offset);
+		char *data = mem_data(&pd->data, pd->offset);
 		DEBUG(5,("api_pipe_auth_process: data %d\n", pd->offset));
-		NTLMSSPcalc(p->ntlmssp_hash, data, data_len);
+		NTLMSSPcalc(p->ntlmssp_hash, (uchar*)data, data_len);
 		crc32 = crc32_calc_buffer(data_len, data);
 	}
 
@@ -618,9 +618,9 @@ static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
 
 	if (auth_verify)
 	{
-		char *req_data = (uchar*)mem_data(&pd->data, pd->offset + 4);
+		char *req_data = mem_data(&pd->data, pd->offset + 4);
 		DEBUG(5,("api_pipe_auth_process: auth %d\n", pd->offset + 4));
-		NTLMSSPcalc(p->ntlmssp_hash, req_data, 12);
+		NTLMSSPcalc(p->ntlmssp_hash, (uchar*)req_data, 12);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(p->ntlmssp_chk), pd, 0);
 
 		if (!rpc_auth_ntlmssp_chk(&(p->ntlmssp_chk), crc32,
