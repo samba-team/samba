@@ -45,6 +45,7 @@ struct spnego_negTokenInit {
 	int reqFlags;
 	DATA_BLOB mechToken;
 	DATA_BLOB mechListMIC;
+	char *targetPrincipal;
 };
 
 struct spnego_negTokenTarg {
