@@ -1615,8 +1615,8 @@ static int cmd_link(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
   
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("link <src> <dest>\n");
 		return 1;
 	}
@@ -1649,8 +1649,8 @@ static int cmd_symlink(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("symlink <src> <dest>\n");
 		return 1;
 	}
@@ -1684,8 +1684,8 @@ static int cmd_chmod(void)
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("chmod mode file\n");
 		return 1;
 	}
@@ -1720,9 +1720,9 @@ static int cmd_chown(void)
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2)) ||
-	    !next_token(NULL,buf3,NULL, sizeof(buf3))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2)) ||
+	    !next_token_nr(NULL,buf3,NULL, sizeof(buf3))) {
 		d_printf("chown uid gid file\n");
 		return 1;
 	}
