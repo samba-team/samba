@@ -1,3 +1,9 @@
+Sat Jul 12 13:12:48 1997  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: Call `AC_KRB_PROG_LN_S'
+
+	* acinclude.m4: Add `AC_KRB_PROG_LN_S' from krb4
+
 Fri Jul 11 15:04:22 1997  Assar Westerlund  <assar@sics.se>
 
 	* appl/telnet: telnet & telnetd seems to be working.
