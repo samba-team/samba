@@ -1671,9 +1671,8 @@ BOOL set_samr_set_userinfo2(
 	if (pol_open_domain == NULL || usr == NULL) return False;
 
 	/* send open domain (on user sid) */
-	if (!samr_open_user( pol_open_domain,
-				0x000601b4, user_rid,
-				&pol_open_user))
+	if (!samr_open_user( pol_open_domain, SEC_RIGHTS_MAXIMUM_ALLOWED,
+				user_rid, &pol_open_user))
 	{
 		return False;
 	}
@@ -1702,9 +1701,8 @@ BOOL set_samr_set_userinfo( const POLICY_HND *pol_open_domain,
 	if (pol_open_domain == NULL || usr == NULL) return False;
 
 	/* send open domain (on user sid) */
-	if (!samr_open_user( pol_open_domain,
-				0x000601b4, user_rid,
-				&pol_open_user))
+	if (!samr_open_user( pol_open_domain, SEC_RIGHTS_MAXIMUM_ALLOWED,
+				user_rid, &pol_open_user))
 	{
 		return False;
 	}
