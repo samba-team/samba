@@ -43,7 +43,7 @@ RCSID("$Id$");
 #ifdef KRB4
 
 krb5_error_code
-do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr_in *addr)
+do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr *addr)
 {
     krb5_error_code ret = 0;
     krb5_principal sprinc = NULL;
@@ -116,7 +116,7 @@ do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr_in *addr)
 	krb5_addresses *save_caddr, new_addr;
 	krb5_address v4_addr;
 
-	ret = krb5_sockaddr2address((struct sockaddr*)addr, &v4_addr);
+	ret = krb5_sockaddr2address(addr, &v4_addr);
 	if(ret) {
 	    kdc_log(0, "Failed to convert address (%s)", spn);
 	    free_EncTicketPart(&et);
