@@ -251,7 +251,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if ((SVAL(inbuf,smb_vwv2) & 0x1) != 0)
     close_cnum(SVAL(inbuf,smb_tid),vuid);
 
-  if (passlen > MAX_PASSWORD_LENGTH) {
+  if (passlen > MAX_PASS_LEN) {
 	  overflow_attack(passlen);
   }
   
@@ -387,7 +387,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
-    if (smb_apasslen > MAX_PASSWORD_LENGTH)
+    if (smb_apasslen > MAX_PASS_LEN)
     {
 	    overflow_attack(smb_apasslen);
     }
@@ -422,12 +422,12 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     if (passlen1 != 24 && passlen2 != 24)
       doencrypt = False;
 
-    if (passlen1 > MAX_PASSWORD_LENGTH) {
+    if (passlen1 > MAX_PASS_LEN) {
 	    overflow_attack(passlen1);
     }
 
-    passlen1 = MIN(passlen1, MAX_PASSWORD_LENGTH);
-    passlen2 = MIN(passlen2, MAX_PASSWORD_LENGTH);
+    passlen1 = MIN(passlen1, MAX_PASS_LEN);
+    passlen2 = MIN(passlen2, MAX_PASS_LEN);
 
     if(doencrypt) {
       /* Save the lanman2 password and the NT md4 password. */
