@@ -1,8 +1,8 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    name query routines
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) 2002 Martin Pool 
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -352,78 +352,43 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
   return ip_list;
 }
 
-/********************************************************
- This routine parses /etc/resolv.conf and finds the
- first three nameservers specified in the file.
- This routine is used by the Admin Log
- messages when a DNS lookup fails.
-*********************************************************/
 
-BOOL parse_resolvconf(char name_server_arr[][16])
+/**
+ * This routine is called when we fail to look up a name in with
+ * gethostbyname().  It dumps out the resolv.conf file to syslog to
+ * aid in supportability.  Of course, there's no guarantee that on all
+ * platforms it's actually this file that matters, so perhaps this
+ * function shouldn't propagate outside of the APPLIANCE tree...
+ **/
+void dump_resolvconf(void)
 {
-  char *fname = NAME_SERVER_FILE;
-  FILE *fp = sys_fopen(fname,"r");
-  pstring line;
-  int i = 0;
+	const char	*fname = NAME_SERVER_FILE;
+	pstring		line;
+	FILE		*fp;
 
-  if (!fp) {
-    DEBUG(4,("parse_resolvconf: Can't open resolv.conf file %s. Error was %s\n",
-             fname, strerror(errno)));
-    return FALSE;
-  }
+	fp = sys_fopen(fname, "rt");
+	if (!fp) {
+		DEBUG(0, ("dump_resolvconf: failed to open %s: %s\n", fname, strerror(errno)));
+		return;
+	}
 
-  while(!feof(fp) && !ferror(fp)) {
-    pstring keyword,value,extra;
-    char *ptr;
-    int count=0;
+	/* FIXME: Arguably we ought to put all of this on one line, so
+	 * that syslog can do it's funky "last message repeated 420
+	 * times" thing.  */
 
-    if (!fgets_slash(line,sizeof(pstring),fp))
-      continue;
+	sys_adminlog(LOG_CRIT, "dump_resolvconf: contents of %s follow:", fname);
+	
+	while (fgets_slash(line, sizeof line, fp)) {
+		/* NB: Passing \t to syslog is bad */
+		sys_adminlog(LOG_CRIT, "    %s", line);
+	}
 
-    if (*line == '#')
-      continue;
+	sys_adminlog(LOG_CRIT, "dump_resolvconf: end", fname);	
 
-    pstrcpy(keyword,"");
-    pstrcpy(value,"");
-
-    ptr = line;
-
-    if (next_token(&ptr,keyword,NULL,sizeof(keyword)))
-      ++count;
-    if (next_token(&ptr,value ,NULL, sizeof(pstring)))
-      ++count;
-    if (next_token(&ptr,extra,NULL, sizeof(extra)))
-      ++count;
-    
-    if(strequal(keyword,"nameserver"))
-    {
-        if (count <= 0)
-          continue;
-
-        if ( count < 2)
-        {
-            DEBUG(0,("parse_resolvconf: Ill formed nameserver line [%s]\n",line));
-            continue;
-        }
-
-        if (count >= 3)
-        {
-            DEBUG(0,("parse_resolvconf: too many columns in resolv.conf file (incorrect syntax)\n"));
-            continue;
-        }
-
-        if( i < NAME_SERVER_NUM) /* More than 3 DNS servers are not supported ?? */
-        {
-            strncpy(name_server_arr[i],value,16);
-            i++;
-            if(i == 3)
-               break;
-        }
-    }
-  }
-
-  return True;
+	fclose(fp);
 }
+
+
 
 /********************************************************
  Start parsing the lmhosts file.
@@ -705,9 +670,10 @@ static BOOL resolve_hosts(const char *name,
 		*return_count = 1;
 		return True;
 	}
+	
         /* BEGIN_ADMIN_LOG */
-        parse_resolvconf(name_server_arr);
-        sys_adminlog(LOG_CRIT,(char *)gettext("Failed DNS name resolution. Unresolved name: %s. DNS server address: %s."),name,name_server_arr[0]);
+        sys_adminlog(LOG_CRIT, (char *)gettext("Failed DNS name resolution for \"%s\""), name);
+	dump_resolvconf();
         /* END_ADMIN_LOG */
 
 	return False;
