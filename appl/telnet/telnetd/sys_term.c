@@ -1520,7 +1520,7 @@ void start_login(char *host, int autologin, char *name)
 	SCPYN(utmpx.ut_id, utid);
 	
 	utmpx.ut_type = LOGIN_PROCESS;
-	gettimeofday(&utmpx.ut_tv);
+	gettimeofday(&utmpx.ut_tv, NULL);
 	if (pututxline(&utmpx) == NULL)
 		fatal(net, "pututxline failed");
 #endif
