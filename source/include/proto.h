@@ -258,18 +258,18 @@ BOOL strhaslower(char *s);
 int count_chars(char *s,char c);
 void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
 void close_low_fds(void);
-int write_socket(int fd,char *buf,int len);
-int read_udp_socket(int fd,char *buf,int len);
-int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out);
+ssize_t write_socket(int fd,char *buf,size_t len);
+ssize_t read_udp_socket(int fd,char *buf,size_t len);
+ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
 int TvalDiff(struct timeval *tvalold,struct timeval *tvalnew);
 BOOL send_keepalive(int client);
-int read_data(int fd,char *buffer,int N);
-int write_data(int fd,char *buffer,int N);
+ssize_t read_data(int fd,char *buffer,size_t N);
+ssize_t write_data(int fd,char *buffer,size_t N);
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align);
-int read_smb_length(int fd,char *inbuf,int timeout);
-BOOL receive_smb(int fd,char *buffer, int timeout);
-BOOL client_receive_smb(int fd,char *buffer, int timeout);
-BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout);
+ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
+BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
+BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
+BOOL receive_local_message(int fd, char *buffer, int buffer_len, unsigned int timeout);
 BOOL push_oplock_pending_smb_message(char *buf, int msg_len);
 BOOL receive_message_or_smb(int smbfd, int oplock_fd, 
                            char *buffer, int buffer_len, 
@@ -289,7 +289,7 @@ void become_daemon(void);
 BOOL yesno(char *p);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
 int set_filelen(int fd, SMB_OFF_T len);
-void *Realloc(void *p,int size);
+void *Realloc(void *p,size_t size);
 BOOL get_myname(char *my_name,struct in_addr *ip);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr);
@@ -333,7 +333,7 @@ char *tab_depth(int depth);
 char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 int str_checksum(char *s);
-void zero_free(void *p, int size);
+void zero_free(void *p, size_t size);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -1715,8 +1715,8 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 /*The following definitions come from  smbd/fileio.c  */
 
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
-int read_file(files_struct *fsp,char *data,uint32 pos,int n);
-int write_file(files_struct *fsp,char *data,int n);
+ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
+ssize_t write_file(files_struct *fsp,char *data,size_t n);
 void sync_file(connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */
@@ -1846,7 +1846,7 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 
 /*The following definitions come from  smbd/predict.c  */
 
-int read_predict(int fd,SMB_OFF_T offset,char *buf,char **ptr,int num);
+ssize_t read_predict(int fd,SMB_OFF_T offset,char *buf,char **ptr,size_t num);
 void do_read_prediction(void);
 void invalidate_read_prediction(int fd);
 

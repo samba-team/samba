@@ -27,6 +27,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 seek a file. Try to avoid the seek if possible
 ****************************************************************************/
+
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 {
   SMB_OFF_T offset = 0;
@@ -41,45 +42,43 @@ SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 /****************************************************************************
 read from a file
 ****************************************************************************/
-int read_file(files_struct *fsp,char *data,uint32 pos,int n)
+
+ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 {
-  int ret=0,readret;
+  ssize_t ret=0,readret;
 
 #if USE_READ_PREDICTION
-  if (!fsp->can_write)
-    {
-      ret = read_predict(fsp->fd_ptr->fd,pos,data,NULL,n);
+  if (!fsp->can_write) {
+    ret = read_predict(fsp->fd_ptr->fd,pos,data,NULL,n);
 
-      data += ret;
-      n -= ret;
-      pos += ret;
-    }
+    data += ret;
+    n -= ret;
+    pos += ret;
+  }
 #endif
 
 #if WITH_MMAP
-  if (fsp->mmap_ptr)
-    {
-      int num = (fsp->mmap_size > pos) ? (fsp->mmap_size - pos) : -1;
-      num = MIN(n,num);
-      if (num > 0)
-	{
-	  memcpy(data,fsp->mmap_ptr+pos,num);
-	  data += num;
-	  pos += num;
-	  n -= num;
-	  ret += num;
-	}
+  if (fsp->mmap_ptr) {
+    SMB_OFF_T num = (fsp->mmap_size > pos) ? (fsp->mmap_size - pos) : -1;
+    num = MIN(n,num);
+#ifdef LARGE_SMB_OFF_T
+    if ((num > 0) && (num < (1<<(sizeof(size_t)*8))) {
+#else /* LARGE_SMB_OFF_T */
+    if (num > 0) {
+#endif /* LARGE_SMB_OFF_T */
+      memcpy(data,fsp->mmap_ptr+pos,num);
+      data += num;
+      pos += num;
+      n -= num;
+      ret += num;
     }
+  }
 #endif
 
-  if (n <= 0)
+  if (seek_file(fsp,pos) != pos) {
+    DEBUG(3,("Failed to seek to %.0f\n",(double)pos));
     return(ret);
-
-  if (seek_file(fsp,pos) != pos)
-    {
-      DEBUG(3,("Failed to seek to %d\n",pos));
-      return(ret);
-    }
+  }
   
   if (n > 0) {
     readret = read(fsp->fd_ptr->fd,data,n);
@@ -93,7 +92,8 @@ int read_file(files_struct *fsp,char *data,uint32 pos,int n)
 /****************************************************************************
 write to a file
 ****************************************************************************/
-int write_file(files_struct *fsp,char *data,int n)
+
+ssize_t write_file(files_struct *fsp,char *data,size_t n)
 {
 
   if (!fsp->can_write) {
@@ -119,6 +119,7 @@ int write_file(files_struct *fsp,char *data,int n)
 /*******************************************************************
 sync a file
 ********************************************************************/
+
 void sync_file(connection_struct *conn, files_struct *fsp)
 {
 #ifdef HAVE_FSYNC
@@ -126,4 +127,3 @@ void sync_file(connection_struct *conn, files_struct *fsp)
       fsync(fsp->fd_ptr->fd);
 #endif
 }
-
