@@ -86,3 +86,41 @@ _kadm5_set_keys(kadm5_server_context *context,
     ent->kvno++;
     return ret;
 }
+
+
+kadm5_ret_t
+_kadm5_set_keys2(hdb_entry *ent, 
+		 int16_t n_key_data, 
+		 krb5_key_data *key_data)
+{
+    krb5_error_code ret;
+    int i;
+    ent->keys.len = n_key_data;
+    ent->keys.val = malloc(ent->keys.len * sizeof(*ent->keys.val));
+    if(ent->keys.val == NULL)
+	return ENOMEM;
+    for(i = 0; i < n_key_data; i++) {
+	ent->keys.val[i].key.keytype = key_data[i].key_data_type[0];
+	ret = krb5_data_copy(&ent->keys.val[i].key.keyvalue,
+			     key_data[i].key_data_contents[0],
+			     key_data[i].key_data_length[0]);
+	if(ret)
+	    return ret;
+	if(key_data[i].key_data_ver == 2) {
+	    Salt *salt;
+	    salt = malloc(sizeof(*salt));
+	    if(salt == NULL) {
+		free_EncryptionKey(&ent->keys);
+		return ENOMEM;
+	    }
+	    ent->keys.val[i].salt = salt;
+	    salt->type = key_data[i].key_data_type[1];
+	    krb5_data_copy(&salt->salt, 
+			   key_data[i].key_data_contents[1],
+			   key_data[i].key_data_length[1]);
+	} else
+	    ent->keys.val[i].salt = NULL;
+    }
+    ent->kvno++;
+    return 0;
+}
