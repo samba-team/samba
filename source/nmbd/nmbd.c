@@ -776,6 +776,14 @@ static void usage(char *pname)
     become_daemon();
   }
 
+#ifndef SYNC_DNS
+  /* Setup the async dns. We do it here so it doesn't have all the other
+     stuff initialised and thus chewing memory and sockets */
+  if(lp_we_are_a_wins_server()) {
+	  start_async_dns();
+  }
+#endif
+
   if (!directory_exist(lp_lockdir(), NULL)) {
 	  mkdir(lp_lockdir(), 0755);
   }
