@@ -153,8 +153,6 @@ How to print date strings in logs, this string is passed to
 Write log-entries using UTC instead of your local time zone.
 .It Li srv_lookup = Va boolean
 Use DNS SRV records to lookup realm configuration information.
-.It Li srv_try_txt = Va boolean
-If a SRV lookup fails, try looking up the same info in a DNS TXT record.
 .It Li scan_interfaces = Va boolean
 Scan all network interfaces for addresses, as opposed to simply using
 the address associated with the system's host name.
@@ -344,7 +342,7 @@ that reads
 .Nm
 and tries to emit useful diagnostics from parsing errors.  Note that
 this program does not have any way of knowing what options are
-actually used and thus cannot warn about unknown or misspelt ones.
+actually used and thus cannot warn about unknown or misspelled ones.
 .Sh SEE ALSO
 .Xr kinit 1 ,
 .Xr krb5_425_conv_principal 3 ,
