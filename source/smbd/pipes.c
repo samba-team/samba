@@ -371,6 +371,29 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 */
 
 /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+char *dom_sid_to_string(DOM_SID *sid)
+{
+  static pstring sidstr;
+  char subauth[16];
+  int i;
+  uint32 ia = (sid->id_auth[0]) +
+              (sid->id_auth[1] << 8 ) +
+              (sid->id_auth[2] << 16) +
+              (sid->id_auth[3] << 24);
+
+  sprintf(sidstr, "S-%d-%d", sid->sid_no, ia);
+
+  for (i = 0; i < sid->num_auths; i++)
+  {
+    sprintf(subauth, "-%d", sid->sub_auths[i]);
+    strcat(sidstr, subauth);
+  }
+
+  DEBUG(5,("dom_sid_to_string returning %s\n", sidstr));
+  return sidstr;
+}
+
+/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 /* identauth >= 2^32 can be detected because it will be specified in hex */
 static void make_dom_sid(DOM_SID *sid, char *domsid)
 {
@@ -563,7 +586,7 @@ static void make_dom_ref(DOM_R_REF *ref,
 }
 
 static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
-				int num_entries, char *dom_sids[MAX_LOOKUP_SIDS],
+				int num_entries, fstring dom_sids[MAX_LOOKUP_SIDS],
 				char *dom_name, char *dom_sid,
 				char *other_sid1, char *other_sid2, char *other_sid3)
 {
@@ -584,7 +607,8 @@ static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 	r_l->num_entries3 = num_entries;
 }
 
-static int lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, char *q, char *base,
+static int lsa_reply_lookup_sids(char *q, char *base,
+				int num_entries, fstring dom_sids[MAX_LOOKUP_SIDS],
 				char *dom_name, char *dom_sid,
 				char *other_sid1, char *other_sid2, char *other_sid3)
 {
@@ -592,7 +616,7 @@ static int lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, char *q, char *base,
 	LSA_R_LOOKUP_SIDS r_l;
 
 	/* set up the LSA Lookup SIDs response */
-	make_reply_lookup_sids(&r_l, 0, NULL, /* q_l->num_entries, q_l->dom_sids, */
+	make_reply_lookup_sids(&r_l, num_entries, dom_sids,
 				dom_name, dom_sid, other_sid1, other_sid2, other_sid3);
 	r_l.status = 0x0;
 
@@ -893,3 +917,1047 @@ static void api_lsa_query_info( char *param, char *data,
 	make_rpc_reply(data, *rdata, reply_len);
 	*rdata_len = reply_len + 0x18;
 }
+
+static void api_lsa_lookup_sids( char *param, char *data,
+                                 char **rdata, int *rdata_len )
+{
+	int reply_len;
+
+	int i;
+	LSA_Q_LOOKUP_SIDS q_l;
+	pstring dom_name;
+	pstring dom_sid;
+	fstring dom_sids[MAX_LOOKUP_SIDS];
+
+	/* grab the info class and policy handle */
+	lsa_io_q_lookup_sids(True, &q_l, data + 0x18, data + 0x18, 4);
+
+	pstrcpy(dom_name, lp_workgroup());
+	pstrcpy(dom_sid , lp_domainsid());
+
+	/* convert received SIDs to strings, so we can do them. */
+	for (i = 0; i < q_l.num_entries; i++)
+	{
+		fstrcpy(dom_sids[i], dom_sid_to_string(&(q_l.dom_sids[i])));
+	}
+
+	/* construct reply.  return status is always 0x0 */
+	reply_len = lsa_reply_lookup_sids(*rdata + 0x18, *rdata + 0x18,
+	            q_l.num_entries, dom_sids, /* text-converted SIDs */
+				dom_name, dom_sid, /* domain name, domain SID */
+				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
+
+	/* construct header, now that we know the reply length */
+	make_rpc_reply(data, *rdata, reply_len);
+	*rdata_len = reply_len + 0x18;
+}
+
+
+#ifdef UNDEFINED_NTDOMAIN
+/*
+   PAXX: Someone fix above.
+   The above API is indexing RPC calls based on RPC flags and 
+   fragment length. I've decided to do it based on operation number :-)
+*/
+
+BOOL api_ntlsarpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len)
+{
+  uint16 opnum;
+  char *q;
+  char *domainname;
+  int domlen;
+  pstring domsid;
+  char *p;
+  int numsubauths;
+  int subauths[MAXSUBAUTHS];
+  struct smb_passwd *smb_pass; /* To check if machine account exists */
+  pstring machacct;
+  pstring foo;
+  uint16 infoclass;
+  uint16 revision; /* Domain sid revision */
+  int identauth;
+  int i;
+  char *logonsrv;
+  char *unicomp;
+  char *accountname;
+  uint16 secchanneltype;
+  uint32 negflags;
+  char netcred[8];
+  uint32 rcvcred[8];
+  char rtncred[8];
+  uint32 clnttime;
+  uint32 rtntime;
+  char *newpass;
+  uint16 logonlevel;
+  uint16 switchval;
+  uint16 dommaxlen;
+  uint16 paramcontrol;
+  uint32 logonid[2];
+  uint16 usernamelen;
+  uint16 usernamemaxlen;
+  uint16 wslen;
+  uint16 wsmaxlen;
+  uchar *rc4lmowfpass;
+  uchar *rc4ntowfpass;
+  char *domain;
+  char *username;
+  char *ws;
+  struct uinfo *userinfo;
+  int pkttype;
+  ArcfourContext c;
+  uchar rc4key[16];
+  uchar ntowfpass[16];
+  uint32 nentries;
+  char *policyhandle;
+  #define MAXSIDS 64
+  uchar *sids[MAXSIDS]; /* for lookup SID */
+  int nsids;
+  int nnames;
+  #define MAXNAMES 64
+  uchar *names[MAXNAMES];
+
+  opnum = SVAL(data,22);
+
+  pkttype = CVAL(data, 2);
+  if (pkttype == 0x0b) /* RPC BIND */
+  {
+    DEBUG(4,("netlogon rpc bind %x\n",pkttype));
+    LsarpcTNP1(data,rdata,rdata_len);
+    return True;
+  }
+
+  DEBUG(4,("ntlsa TransactNamedPipe op %x\n",opnum));
+  initrpcreply(data, *rdata);
+  DEBUG(4,("netlogon LINE %d\n",__LINE__));
+  switch (opnum)
+  {
+    case LSAOPENPOLICY:
+	    DEBUG(1,("LSAOPENPOLICY\n"));
+	    DEBUG(4,("netlogon LINE %d %lx\n",__LINE__, q));
+	    DEBUG(4,("netlogon data %lx\n", data));
+	    q = *rdata + 0x18;
+	    DEBUG(4,("netlogon LINE %d %lx\n",__LINE__, q));
+	    /* return a 20 byte policy handle */
+	    /* here's a pretty handle:- */
+	    qSIVAL(time(NULL));
+	    qSIVAL(0x810a792f);
+	    qSIVAL(0x11d107d5);
+	    qSIVAL(time(NULL));
+	    qSIVAL(0x6cbcf800);
+	    DEBUG(4,("netlogon LINE %d %lx\n",__LINE__, q));
+	    endrpcreply(data, *rdata, q-*rdata, 0, rdata_len); /* size of data plus return code */
+	    DEBUG(4,("netlogon LINE %d %lx\n",__LINE__, q));
+	    break;
+
+    case LSAQUERYINFOPOLICY:
+	    DEBUG(1,("LSAQUERYINFOPOLICY\n"));
+	    dump_data(1,data,128);
+	    infoclass = SVAL(data, 44); /* also a policy handle but who cares? */
+	    q = *rdata + 0x18;
+	    qRSIVAL(0x00000022); /* undocumented. Usually a buffer pointer whose
+				    value is ignored */
+	    qSSVAL(infoclass);
+	    domainname = lp_workgroup();
+	    domlen = strlen(domainname);
+	    strcpy(domsid,lp_domainsid());
+	    DEBUG(4,("netlogon LINE %d %lx %s\n",__LINE__, q, domsid));
+	    /* assume, but should check, that domsid starts "S-" */
+	    p = strtok(domsid+2,"-");
+	    revision = atoi(p);
+	    DEBUG(4,("netlogon LINE %d %lx %s rev %d\n",__LINE__, q, p, revision));
+	    identauth = atoi(strtok(0,"-"));
+	    DEBUG(4,("netlogon LINE %d %lx %s ia %d\n",__LINE__, q, p, identauth));
+	    numsubauths = 0;
+	    while (p = strtok(0, "-"))
+		    subauths[numsubauths++] = atoi(p);
+	    DEBUG(4,("netlogon LINE %d %lx\n",__LINE__, q));
+	    
+	    switch (infoclass)
+		    {
+		    case 5:
+		    case 3:
+		    default:
+			    qSSVAL(0); /* 2 undocumented bytes */
+			    qSSVAL(domlen*2);
+			    qSSVAL(domlen*2); /* unicode domain len and maxlen */
+			    qSIVAL(4); /* domain buffer pointer */
+			    qSIVAL(2); /* domain sid pointer */
+			    qunistr(domainname);
+			    qSIVAL(numsubauths);
+			    qSCVAL(revision);
+			    qSCVAL(numsubauths);
+			    qRSSVAL(0); /* PAXX: FIX! first 2 bytes identifier authority */
+			    qRSIVAL(identauth); /* next 4 bytes */
+			    for (i = 0; i < numsubauths; i++)
+				    {
+					    qSIVAL(subauths[i]);
+				    }
+		    }
+	    endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+	    break;
+
+    case LSAENUMTRUSTDOM:
+	    DEBUG(1,("LSAENUMTRUSTDOM\n"));
+	    q = *rdata + 0x18;
+	    qSIVAL(0); /* enumeration context */
+	    qSIVAL(0); /* entries read */
+	    qSIVAL(0); /* trust information */
+	    endrpcreply(data, *rdata, q-*rdata, 0x8000001a, rdata_len);
+	    break;
+
+    case LSACLOSE:
+	    DEBUG(1,("LSACLOSE\n"));
+	    q = *rdata + 0x18;
+	    qSIVAL(0);
+	    qSIVAL(0);
+	    qSIVAL(0);
+	    qSIVAL(0);
+	    qSIVAL(0);
+	    endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+      break;
+
+    case LSAOPENSECRET:
+	    DEBUG(1,("LSAOPENSECRET\n"));
+	    q = *rdata + 0x18;
+	    qSIVAL(0);
+	    qSIVAL(0);
+	    qSIVAL(0);
+	    qSIVAL(0);
+	    qSIVAL(0);
+	    endrpcreply(data, *rdata, q-*rdata, 0xc000034, rdata_len);
+      break;
+
+    case LSALOOKUPSIDS:
+	    DEBUG(1,("LSAOPENSECRET\n"));
+	    q = data + 0x18;
+	    policyhandle = q; q += 20;
+	    nentries = qIVAL;
+	    DEBUG(4,("lookupsid entries %d\n",nentries));
+	    q += (2+nentries) * 4; /* skip bufptrs */
+	    /* now we have nentries sids of the form:
+	       uint32  Subauthority count (SAC)
+	       char    Revision
+	       char    Subaurity count again
+	       char[6] Identifier authority
+	       [uint32  subauthority] * SAC
+	       */
+	    for (nsids = 0; nsids < nentries; nsids++)
+		    {
+			    DEBUG(4,("lookupsid q in %lx\n",q));
+			    sids[nsids] = q;
+			    DEBUG(4,("lookupsid numsubs %d\n",IVAL(q,0)));
+			    q += 4+1+1+6+IVAL(q,0)*4;
+			    DEBUG(4,("lookupsid q %lx\n",q));
+		    }
+      /* There's 16 bytes of something after all of that, don't know
+	 what it is though - incorrectly documented */
+
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+      /* formulate reply */
+      q = *rdata + 0x18;
+      qSIVAL(2); /* bufptr */
+      qSIVAL(4); /* number of referenced domains
+		     - need one per each identifier authority in call */
+      qSIVAL(2); /* dom bufptr */
+      qSIVAL(32); /* max entries */
+      qSIVAL(4); /* number of reference domains? */
+
+      qunihdr(lp_workgroup()); /* reference domain */
+      qSIVAL(2); /* sid bufptr */
+
+      qunihdr("S-1-1");
+      qSIVAL(2); /* sid bufptr */
+
+      qunihdr("S-1-5");
+      qSIVAL(2); /* sid bufptr */
+
+      qunihdr("S-1-3");
+      qSIVAL(2); /* sid bufptr */
+
+      qunistr(lp_workgroup());
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+
+      strcpy(domsid,lp_domainsid());
+      p = strtok(domsid+2,"-");
+      revision = atoi(p);
+      identauth = atoi(strtok(0,"-"));
+      numsubauths = 0;
+      while (p = strtok(0, "-"))
+      	subauths[numsubauths++] = atoi(p);
+      qSIVAL(numsubauths);
+      qSCVAL(revision);
+      qSCVAL(numsubauths);
+      qRSSVAL(0); /* PAXX: FIX! first 2 bytes identifier authority */
+      qRSIVAL(identauth); /* next 4 bytes */
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+      for (i = 0; i < numsubauths; i++)
+      {
+  	qSIVAL(subauths[i]);
+      }
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+
+      qunistr("S-1-1");
+      qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(1); /* S-1-1 */
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+
+      qunistr("S-1-5");
+      qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(5); /* S-1-5 */
+
+      qunistr("S-1-3");
+      qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(3); /* S-1-3 */
+
+      qSIVAL(nentries);
+      qSIVAL(2); /* bufptr */
+      qSIVAL(nentries);
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+      for (i = 0; i < nentries; i++)
+      {
+	qSSVAL(5); /* SID name use ?! */
+	qSSVAL(0); /* undocumented */
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+	qunihdr(sidtostring(sids[i]));
+      DEBUG(4,("lookupsid sidname %s\n",sidtostring(sids[i])));
+	qSIVAL(0); /* domain index out of above reference domains */
+      }
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+      for (i = 0; i < nentries; i++)
+      {
+	qunistr(sidtostring(sids[i]));
+      }
+      qSIVAL(nentries); /* mapped count */
+      endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+      break;
+
+    case LSALOOKUPNAMES:
+	    DEBUG(1,("LSALOOKUPNAMES\n"));
+      q = data + 0x18;
+      policyhandle = q; q += 20;
+      nentries = qIVAL;
+      DEBUG(4,("lookupnames entries %d\n",nentries));
+      q += 4; /* skip second count */
+      q += 8 * nentries; /* skip pointers */
+      for (nnames = 0; nnames < nentries; nnames++)
+      {
+	      names[nnames] = q; /* set name string to unicode header */
+	      q += IVAL(q,0)*2; /* guessing here */
+      }
+      /* There's a translated sids structure next but it looks fals */
+
+      DEBUG(4,("lookupnames line %d\n",__LINE__));
+      /* formulate reply */
+      q = *rdata + 0x18;
+      qSIVAL(2); /* bufptr */
+      qSIVAL(4); /* number of referenced domains
+		     - need one per each identifier authority in call */
+      qSIVAL(2); /* dom bufptr */
+      qSIVAL(32); /* max entries */
+      qSIVAL(4); /* number of reference domains? */
+
+      qunihdr(lp_workgroup()); /* reference domain */
+      qSIVAL(2); /* sid bufptr */
+
+      qunihdr("S-1-1");
+      qSIVAL(2); /* sid bufptr */
+
+      qunihdr("S-1-5");
+      qSIVAL(2); /* sid bufptr */
+
+      qunihdr("S-1-3");
+      qSIVAL(2); /* sid bufptr */
+
+      qunistr(lp_workgroup());
+      DEBUG(4,("lookupnames line %d\n",__LINE__));
+
+      strcpy(domsid,lp_domainsid());
+      p = strtok(domsid+2,"-");
+      revision = atoi(p);
+      identauth = atoi(strtok(0,"-"));
+      numsubauths = 0;
+      while (p = strtok(0, "-"))
+      	subauths[numsubauths++] = atoi(p);
+      qSIVAL(numsubauths);
+      qSCVAL(revision);
+      qSCVAL(numsubauths);
+      qRSSVAL(0); /* PAXX: FIX! first 2 bytes identifier authority */
+      qRSIVAL(identauth); /* next 4 bytes */
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+      for (i = 0; i < numsubauths; i++)
+      {
+  	qSIVAL(subauths[i]);
+      }
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+
+      qunistr("S-1-1");
+      qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(1); /* S-1-1 */
+      DEBUG(4,("lookupsid line %d\n",__LINE__));
+
+      qunistr("S-1-5");
+      qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(5); /* S-1-5 */
+
+      qunistr("S-1-3");
+      qSIVAL(0); qSCVAL(1); qSCVAL(0); qRSSVAL(0); qRSIVAL(3); /* S-1-3 */
+
+      qSIVAL(nentries);
+      qSIVAL(2); /* bufptr */
+      qSIVAL(nentries);
+      DEBUG(4,("lookupnames line %d\n",__LINE__));
+      for (i = 0; i < nentries; i++)
+      {
+	qSSVAL(5); /* SID name use  5 == well known sid, 1 == user sid see showacls */
+	qSSVAL(5); /* undocumented */
+      DEBUG(4,("lookupnames line %d\n",__LINE__));
+	qSIVAL(nametorid(names[i]));
+      DEBUG(4,("lookupnames nametorid %d\n",nametorid(names[i])));
+	qSIVAL(0); /* domain index out of above reference domains */
+      }
+      qSIVAL(nentries); /* mapped count */
+      endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+      break;
+
+    default:
+      DEBUG(4, ("NTLSARPC, unknown code: %lx\n", opnum));
+  }
+  return(True);
+}
+
+BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len)
+{
+  uint16 opnum;
+  char *q;
+  char *domainname;
+  int domlen;
+  pstring domsid;
+  char *p;
+  int numsubauths;
+  int subauths[MAXSUBAUTHS];
+  struct smb_passwd *smb_pass; /* To check if machine account exists */
+  pstring machacct;
+  pstring foo;
+  uint16 infoclass;
+  uint16 revision; /* Domain sid revision */
+  int identauth;
+  int i;
+  char *logonsrv;
+  char *unicomp;
+  char *accountname;
+  uint16 secchanneltype;
+  uint32 negflags;
+  char netcred[8];
+  uint32 rcvcred[8];
+  char rtncred[8];
+  uint32 clnttime;
+  uint32 rtntime;
+  char *newpass;
+  uint16 logonlevel;
+  uint16 switchval;
+  uint16 dommaxlen;
+  uint16 paramcontrol;
+  uint32 logonid[2];
+  uint16 usernamelen;
+  uint16 usernamemaxlen;
+  uint16 wslen;
+  uint16 wsmaxlen;
+  uchar *rc4lmowfpass;
+  uchar *rc4ntowfpass;
+  char *domain;
+  char *username;
+  char *ws;
+  struct uinfo *userinfo;
+  int pkttype;
+  ArcfourContext c;
+  uchar rc4key[16];
+  uchar ntowfpass[16];
+
+  opnum = SVAL(data,22);
+
+  pkttype = CVAL(data, 2);
+  if (pkttype == 0x0b) /* RPC BIND */
+  {
+    DEBUG(4,("netlogon rpc bind %x\n",pkttype));
+    LsarpcTNP1(data,rdata,rdata_len);
+    return True;
+  }
+
+  DEBUG(4,("netlogon TransactNamedPipe op %x\n",opnum));
+  initrpcreply(data, *rdata);
+  DEBUG(4,("netlogon LINE %d\n",__LINE__));
+  switch (opnum)
+  {
+    case LSAREQCHAL:
+	    DEBUG(1,("LSAREQCHAL\n"));
+	    q = data + 0x18;
+	    dump_data(1,q,128);
+	    logonsrv = q + 16; /* first 16 bytes, buffer ptr, + unicode lenghts */
+	    q = skip_unicode_string(logonsrv,1) + 12;
+	    q = align4(q, data);
+	    unicomp = q;
+	    q = skip_unicode_string(unicomp,1);
+	    
+      
+	    DEBUG(1,("logonsrv=%s unicomp=%s\n", 
+		     unistr(logonsrv), 
+		     unistr(unicomp)));
+      
+	    dcauth[cnum].chal[0] = IVAL(q, 0);
+	    dcauth[cnum].chal[1] = IVAL(q, 4);
+	    dcauth[cnum].cred[0] = IVAL(q, 0); /* this looks weird (tridge) */
+	    dcauth[cnum].cred[1] = IVAL(q, 4);
+
+DEBUG(1,("NL: client challenge %08x %08x\n", dcauth[cnum].chal[0],dcauth[cnum].chal[1]));
+
+	    /* PAXX: set these to random values */
+	    dcauth[cnum].svrchal[0] = 0x11111111;
+	    dcauth[cnum].svrchal[1] = 0x22222222;
+	    dcauth[cnum].svrcred[0] = 0x11111111;
+	    dcauth[cnum].svrcred[1] = 0x22222222;
+	    strcpy(machacct,unistr(unicomp));
+	    strcat(machacct, "$");
+	    smb_pass = get_smbpwnam(machacct);
+	    if(smb_pass)
+		    memcpy(dcauth[cnum].md4pw, smb_pass->smb_nt_passwd, 16);
+	    else
+		    {
+			    /* No such machine account. Should error out here, but we'll
+			       print and carry on */
+			    DEBUG(1,("No account in domain at REQCHAL for %s\n", machacct));
+		    }
+	    for(i=0;i<16;i++) sprintf(foo+i*2,"%02x",dcauth[cnum].md4pw[i]);
+	    DEBUG(1,("pass %s %s\n", machacct, foo));
+	    setsesskey(cnum);
+	    q = *rdata + 0x18;
+	    qSIVAL(dcauth[cnum].svrchal[0]);
+	    qSIVAL(dcauth[cnum].svrchal[1]);
+
+DEBUG(1,("NL: server challenge %08x %08x\n", 
+	 dcauth[cnum].svrchal[0],dcauth[cnum].svrchal[1]));
+
+	    endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+	    break;
+
+    case LSAAUTH2:
+	    DEBUG(1,("LSAAUTH2\n"));
+	    dump_data(1,q,128);
+	    q = data + 0x18;
+	    logonsrv = q + 16;
+	    q = skip_unicode_string(logonsrv,1)+12;
+	    q = align4(q, data);
+	    accountname = q;
+
+	    q = skip_unicode_string(accountname,1);
+	    secchanneltype = qSVAL;
+	    q += 12;
+	    q = align4(q, data);
+	    unicomp = q;
+	    dump_data(1,unicomp,32);
+	    q = skip_unicode_string(unicomp,1);
+	    rcvcred[0] = qIVAL;
+	    rcvcred[1] = qIVAL;
+	    q = align4(q, data);
+	    negflags = qIVAL;
+	    DEBUG(3,("AUTH2 logonsrv=%s accountname=%s unicomp=%s %lx %lx %lx\n", 
+		     unistr(logonsrv), unistr(accountname), unistr(unicomp),
+		     rcvcred[0], rcvcred[1], negflags));
+
+DEBUG(1,("NL: recvcred %08x %08x negflags=%08x\n", 
+	 rcvcred[0], rcvcred[1], negflags));
+
+	    checkcred(cnum, rcvcred[0], rcvcred[1], 0);
+	    q = *rdata + 0x18;
+	    makecred(cnum, 0, q);
+	    q += 8;
+
+	    qSIVAL(negflags);
+	    /* update stored client credentials */
+	    dcauth[cnum].cred[0] = dcauth[cnum].svrcred[0] = rcvcred[0];
+	    dcauth[cnum].cred[1] = dcauth[cnum].svrcred[1] = rcvcred[1];
+	    endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+	    break;
+
+    case LSASVRPWSET:
+	    DEBUG(1,("LSASVRPWSET\n"));
+	    q = data + 0x18;
+	    dump_data(1,q,128);
+	    logonsrv = q + 16;
+	    q = skip_unicode_string(logonsrv,1)+12;
+	    q = align4(q, data);
+	    accountname = q;
+	    q = skip_unicode_string(accountname,1);
+	    secchanneltype = qSVAL;
+	    q += 12;
+	    q = align4(q, data);
+	    unicomp = q;
+	    q = skip_unicode_string(unicomp,1);
+	    rcvcred[0] = qIVAL;
+	    rcvcred[1] = qIVAL;
+	    clnttime = qIVAL;
+
+	    DEBUG(1,("PWSET logonsrv=%s accountname=%s unicomp=%s\n",
+		     unistr(logonsrv), unistr(accountname), unistr(unicomp)));
+
+	    checkcred(cnum, rcvcred[0], rcvcred[1], clnttime);
+	    DEBUG(3,("PWSET %lx %lx %lx %lx\n", rcvcred[0], rcvcred[1], clnttime, negflags));
+	    newpass = q;
+
+	    DEBUG(1,("PWSET logonsrv=%s accountname=%s unicomp=%s newpass=%s\n",
+		     unistr(logonsrv), unistr(accountname), unistr(unicomp), newpass));
+
+	    /* PAXX: For the moment we'll reject these */
+	    /* TODO Need to set newpass in smbpasswd file for accountname */
+	    q = *rdata + 0x18;
+	    makecred(cnum, clnttime+1, q);
+	    q += 8;
+	    qSIVAL(0); /* timestamp. Seems to be ignored */
+	    
+	    dcauth[cnum].svrcred[0] = dcauth[cnum].cred[0] = dcauth[cnum].cred[0] + clnttime + 1;
+
+	    endrpcreply(data, *rdata, q-*rdata, 0xc000006a, rdata_len);
+	    break;
+
+    case LSASAMLOGON:
+	    DEBUG(1,("LSASAMLOGON\n"));
+	    dump_data(1,data,128);
+	    q = data + 0x18;
+	    logonsrv = q + 16;
+	    DEBUG(1,("SMLOG %d\n", __LINE__));
+	    q = skip_unicode_string(logonsrv,1)+16;
+	    q = align4(q, data);
+	    unicomp = q;
+	    q = skip_unicode_string(unicomp,1)+4;
+	    DEBUG(1,("SMLOG %d  logonsrv=%s unicomp=%s\n", 
+		     __LINE__, unistr(logonsrv), unistr(unicomp)));
+	    q = align4(q, data);
+	    rcvcred[0] = qIVAL;
+	    DEBUG(1,("SMLOG %d\n", __LINE__));
+	    rcvcred[1] = qIVAL;
+	    DEBUG(1,("SMLOG %d\n", __LINE__));
+	    clnttime = qIVAL;
+	    checkcred(cnum, rcvcred[0], rcvcred[1], clnttime);
+	    q += 2;
+	    rtncred[0] = qIVAL; /* all these are ignored */
+	    DEBUG(1,("SMLOG %d\n", __LINE__));
+	    rtncred[1] = qIVAL;
+	    rtntime = qIVAL;
+	    logonlevel = qSVAL;
+	    DEBUG(1,("SMLOG %d\n", __LINE__));
+	    switchval = qSVAL;
+	    switch (switchval)
+		    {
+		    case 1:
+			    
+			    q += 6;
+			    domlen = qSVAL;
+			    dommaxlen = qSVAL; q += 4;
+			    paramcontrol = qIVAL;
+			    logonid[0] = qIVAL; /* low part */
+			    logonid[1] = qIVAL; /* high part */
+			    
+			    usernamelen = qSVAL;
+			    
+			    DEBUG(1,("SMLOG %d\n", __LINE__));
+			    usernamemaxlen = qSVAL; q += 4;
+			    
+			    DEBUG(1,("usernamelen=%d maxlen=%d dommaxlen=%d\n", 
+				     usernamelen, usernamemaxlen, dommaxlen));
+			    
+			    dump_data(1,q,128);
+			    
+			    wslen = qSVAL;
+			    wsmaxlen = qSVAL; q += 4;
+			    rc4lmowfpass = q; q += 16;
+			    rc4ntowfpass = q; q += 16;
+			    
+			    q += 12; domain = q; q += dommaxlen + 12;
+			    q = align4(q, data);
+			    username = q; q += usernamemaxlen + 12; 
+			    q = align4(q, data);
+			    ws = q;
+			    DEBUG(1,("domain=%s username=%s ws=%s\n",
+				     unistr(domain), unistr(username),
+				     unistr(ws)));
+			    break;
+		    default: 
+			    DEBUG(0,("unknown switch in SAMLOGON %d\n",
+				     switchval));
+		    }
+	    for(i=0;i<16;i++) sprintf(foo+i*2,"%02x",username[i]);
+	    DEBUG(1,("userNAME %s  [%s]\n", foo, username));
+	    DEBUG(1,("SMLOG %d\n", __LINE__));
+	    q = *rdata + 0x18;
+	    qSIVAL(0x16a4b4); /* magic buffer pointer ? */
+	    makecred(cnum, clnttime+1, q);
+	    dcauth[cnum].svrcred[0] = dcauth[cnum].cred[0] = dcauth[cnum].cred[0] + clnttime + 1;
+	    q += 8;
+	    qSIVAL(0); /* timestamp. client doesn't care */
+	    qSSVAL(3); /* switch value 3. May be others? */
+	    qSSVAL(0); /* undocumented */
+	    DEBUG(1,("SMLOG %d\n", __LINE__));
+	    
+	    memset(rc4key, 0, sizeof rc4key);
+	    SIVAL(rc4key, 0, dcauth[cnum].sesskey[0]);
+	    SIVAL(rc4key, 4, dcauth[cnum].sesskey[1]);
+	    for(i=0;i<16;i++) sprintf(foo+i*2,"%02x",rc4ntowfpass[i]);
+	    DEBUG(1,("rc4ntowf %s\n", foo));
+	    arcfour_init(&c, rc4key, sizeof rc4key);
+	    arcfour_encrypt(&c, ntowfpass, rc4ntowfpass, sizeof ntowfpass);
+	    for(i=0;i<16;i++) sprintf(foo+i*2,"%02x",ntowfpass[i]);
+	    DEBUG(1,("ntowf %s\n", foo));
+	    
+	    if(!(userinfo = getuserinfo(username, usernamelen, ntowfpass))) {
+		    qSIVAL(0); /* no buffer */
+		    qSCVAL(1); /* Authoratitive. Change if passthrough? */
+		    qSCVAL(0); /* pad for above boolean */
+		    qSSVAL(0); /* pad for above boolean */
+		    
+		    endrpcreply(data, *rdata, q-*rdata, 0xc0000064, rdata_len);
+		    break;
+	    }
+
+	    qSIVAL(2); /* another magic bufptr? */
+      DEBUG(1,("SMLOG %d %lx\n", __LINE__, userinfo));
+      qSIVAL(userinfo->logontime[0]); qSIVAL(userinfo->logontime[1]);
+      qSIVAL(userinfo->logofftime[0]); qSIVAL(userinfo->logofftime[1]);
+      DEBUG(1,("SMLOG %d %lx\n", __LINE__, userinfo->passlastsettime[1]));
+      qSIVAL(userinfo->kickofftime[0]); qSIVAL(userinfo->kickofftime[1]);
+      qSIVAL(userinfo->passlastsettime[0]); qSIVAL(userinfo->passlastsettime[1]);
+      qSIVAL(userinfo->passcanchgtime[0]); qSIVAL(userinfo->passcanchgtime[1]);
+      qSIVAL(userinfo->passmustchgtime[0]); qSIVAL(userinfo->passmustchgtime[1]);
+      DEBUG(1,("SMLOG %d %s\n", __LINE__, userinfo->effectivename));
+      qunihdr(userinfo->effectivename);
+      qunihdr(userinfo->fullname);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qunihdr(userinfo->logonscript);
+      qunihdr(userinfo->profilepath);
+      qunihdr(userinfo->homedirectory);
+      qunihdr(userinfo->homedirectorydrive);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qSSVAL(userinfo->logoncount);
+      qSSVAL(userinfo->badpwcount);
+      qSIVAL(userinfo->uid);
+      qSIVAL(userinfo->gid);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qSIVAL(userinfo->ngroups);
+      qSIVAL(8); /* ptr to groups */
+      qSIVAL(userinfo->userflags);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qSIVAL(0); qSIVAL(0); qSIVAL(0); qSIVAL(0); /* unused user session key */
+      qunihdr(userinfo->logonserver);
+      qunihdr(userinfo->logondomain);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qSIVAL(2); /* logon domain id ptr */
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      memset(q,0,40); q += 40; /* expansion room */
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qSIVAL(userinfo->nsids);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qSIVAL(0); /* ptr to sids and values */
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qunistr(userinfo->effectivename);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qunistr(userinfo->fullname);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qunistr(userinfo->logonscript);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qunistr(userinfo->profilepath);
+      qunistr(userinfo->homedirectory);
+      qunistr(userinfo->homedirectorydrive);
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      qSIVAL(userinfo->ngroups);
+      for (i = 0; i < userinfo->ngroups; i++)
+      {
+        qSIVAL(userinfo->groups[i].gid);
+        qSIVAL(userinfo->groups[i].attr);
+      }
+      qunistr(userinfo->logonserver);
+      qunistr(userinfo->logondomain);
+      for (i = 0; i < userinfo->nsids; i++)
+      {
+        /* put the extra sids: PAXX: TODO */
+      }
+      /* Assumption. This is the only domain, sending our SID */
+      /* PAXX: may want to do passthrough later */
+      strcpy(domsid,lp_domainsid());
+  DEBUG(4,("netlogon LINE %d %lx %s\n",__LINE__, q, domsid));
+      /* assume, but should check, that domsid starts "S-" */
+      p = strtok(domsid+2,"-");
+      revision = atoi(p);
+  DEBUG(4,("netlogon LINE %d %lx %s rev %d\n",__LINE__, q, p, revision));
+      identauth = atoi(strtok(0,"-"));
+  DEBUG(4,("netlogon LINE %d %lx %s ia %d\n",__LINE__, q, p, identauth));
+      numsubauths = 0;
+      while (p = strtok(0, "-"))
+      	subauths[numsubauths++] = atoi(p);
+      qSIVAL(numsubauths);
+      qSCVAL(revision);
+      qSCVAL(numsubauths);
+      qRSSVAL(0); /* PAXX: FIX. first 2 bytes identifier authority */
+      qRSIVAL(identauth); /* next 4 bytes */
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      for (i = 0; i < numsubauths; i++)
+      {
+      	qSIVAL(subauths[i]);
+      }
+      qSCVAL(1); /* Authoratitive. Change if passthrough? */
+      qSCVAL(0); /* pad for above boolean */
+      qSSVAL(0); /* pad for above boolean */
+
+      endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+      break;
+
+    case LSASAMLOGOFF:
+	    DEBUG(1,("LSASAMLOGOFF\n"));
+      q = data + 0x18;
+      logonsrv = q + 16;
+      DEBUG(1,("SAMLOGOFF %d\n", __LINE__));
+      unicomp = skip_unicode_string(logonsrv,1)+16;
+      if (strlen(unistr(logonsrv)) % 2 == 0)
+	q += 2;
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      q = skip_unicode_string(unicomp,1)+4;
+      if (strlen(unistr(unicomp)) % 2 == 0)
+	q += 2;
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      rcvcred[0] = qIVAL;
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      rcvcred[1] = qIVAL;
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      clnttime = qIVAL;
+      checkcred(cnum, rcvcred[0], rcvcred[1], clnttime);
+      q += 4;
+      rtncred[0] = qIVAL; /* all these are ignored */
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      rtncred[1] = qIVAL;
+      rtntime = qIVAL;
+      logonlevel = qSVAL;
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+      switchval = qSVAL;
+      switch (switchval)
+      {
+        case 1:
+	  q += 4;
+	  domlen = qSVAL;
+	  dommaxlen = qSVAL; q += 4;
+	  paramcontrol = qIVAL;
+	  logonid[0] = qIVAL; /* low part */
+	  logonid[1] = qIVAL; /* high part */
+	  usernamelen = qSVAL;
+      DEBUG(1,("SMLOG %d\n", __LINE__));
+	  usernamemaxlen = qSVAL; q += 4;
+	  wslen = qSVAL;
+	  wsmaxlen = qSVAL; q += 4;
+	  rc4lmowfpass = q; q += 16;
+	  rc4ntowfpass = q; q += 16;
+	  q += 12; domain = q; q += dommaxlen + 12;
+	  if ((domlen/2) % 2 != 0) q += 2;
+	  username = q; q += usernamemaxlen + 12; /* PAXX: HACK */
+	  if ((usernamelen/2) % 2 != 0) q += 2;
+	  ws = q;
+	  break;
+	default: DEBUG(0, ("unknown switch in SAMLOGON %d\n",switchval));
+      }
+      DEBUG(1,("SAMLOGOFF %s\n", unistr(username)));
+    default:
+      DEBUG(4, ("**** netlogon, unknown code: %lx\n", opnum));
+  }
+  return(True);
+}
+
+void initrpcreply(char *inbuf, char *q)
+{
+	uint32 callid;
+
+	qSCVAL(5); /* RPC version 5 */
+	qSCVAL(0); /* minor version 0 */
+	qSCVAL(2); /* RPC response packet */
+	qSCVAL(3); /* first frag + last frag */
+	qRSIVAL(0x10000000); /* packed data representation */
+	qRSSVAL(0); /* fragment length, fill in later */
+	qSSVAL(0); /* authentication length */
+	callid = RIVAL(inbuf,12);
+	qRSIVAL(callid); /* call identifier - match incoming RPC */
+	qSIVAL(0x18); /* allocation hint (no idea) */
+	qSSVAL(0); /* presentation context identifier */
+	qSCVAL(0); /* cancel count */
+	qSCVAL(0); /* reserved */
+}
+
+endrpcreply(char *inbuf, char *q, int datalen, int rtnval, int *rlen)
+{
+	SSVAL(q, 8, datalen + 4);
+	SIVAL(q,0x10,datalen+4-0x18); /* allocation hint */
+	SIVAL(q, datalen, rtnval);
+	*rlen = datalen + 4;
+	{int fd; fd = open("/tmp/rpc", O_RDWR);write(fd,q,datalen+4);}
+}
+
+void setsesskey(int cnum)
+{
+	uint32 sum[2];
+	char netsum[8];
+	char netsesskey[8];
+	char icv[8];
+
+	sum[0] = dcauth[cnum].chal[0] + dcauth[cnum].svrchal[0];
+	sum[1] = dcauth[cnum].chal[1] + dcauth[cnum].svrchal[1];
+	SIVAL(netsum,0,sum[0]);
+	SIVAL(netsum,4,sum[1]);
+	E1(dcauth[cnum].md4pw,netsum,icv);
+	E1(dcauth[cnum].md4pw+9,icv,netsesskey);
+	dcauth[cnum].sesskey[0] = IVAL(netsesskey,0);
+	dcauth[cnum].sesskey[1] = IVAL(netsesskey,4);
+
+DEBUG(1,("NL: session key %08x %08x\n",
+	 dcauth[cnum].sesskey[0],
+	 dcauth[cnum].sesskey[1]));
+}
+
+void checkcred(int cnum, uint32 cred0, uint32 cred1, uint32 time)
+{
+	uint32 sum[2];
+	char netdata[8];
+	char netsesskey[8];
+	char calccred[8];
+	char icv[8];
+	char key2[7];
+
+	SIVAL(netdata, 0, dcauth[cnum].cred[0]+time);
+	SIVAL(netdata, 4, dcauth[cnum].cred[1]);
+	SIVAL(netsesskey, 0, dcauth[cnum].sesskey[0]);
+	SIVAL(netsesskey, 4, dcauth[cnum].sesskey[1]);
+	E1(netsesskey,netdata,icv);
+	memset(key2, 0, sizeof key2);
+	key2[0] = netsesskey[7];
+	E1(key2, icv, calccred);
+	if (IVAL(calccred,0) != cred0 ||
+	    IVAL(calccred,4) != cred1)
+	{
+	  DEBUG(1,("Incorrect client credential received cred %lx %lx time %lx sk %lx %lx cred %lx %lx expcred %lx %lx\n",
+		  cred0, cred1, time,
+		  dcauth[cnum].sesskey[0], dcauth[cnum].sesskey[1],
+		  dcauth[cnum].cred[0], dcauth[cnum].cred[1],
+		  IVAL(calccred,0),  IVAL(calccred,4)));
+	  /* PAXX: do something about it! */
+	} else
+	  DEBUG(4,("Correct client credential received chal %lx %lx time %lx sk %lx %lx cred %lx %lx expcred %lx %lx\n",
+		  cred0, cred1, time,
+		  dcauth[cnum].sesskey[0], dcauth[cnum].sesskey[1],
+		  dcauth[cnum].cred[0], dcauth[cnum].cred[1],
+		  IVAL(calccred,0),  IVAL(calccred,4)));
+}
+
+void makecred(int cnum, uint32 time, char *calccred)
+{
+	uint32 sum[2];
+	char netdata[8];
+	char netsesskey[8];
+	char icv[8];
+	char key2[7];
+
+	SIVAL(netdata, 0, dcauth[cnum].svrcred[0]+time);
+	SIVAL(netdata, 4, dcauth[cnum].svrcred[1]);
+	SIVAL(netsesskey, 0, dcauth[cnum].sesskey[0]);
+	SIVAL(netsesskey, 4, dcauth[cnum].sesskey[1]);
+	E1(netsesskey,netdata,icv);
+	memset(key2, 0, sizeof key2);
+	key2[0] = netsesskey[7];
+	E1(key2, icv, calccred);
+        DEBUG(4,("Server credential: chal %lx %lx sk %lx %lx cred %lx %lx calc %lx %lx\n",
+	   dcauth[cnum].svrchal[0], dcauth[cnum].svrchal[1],
+	   dcauth[cnum].sesskey[0], dcauth[cnum].sesskey[1],
+	   dcauth[cnum].svrcred[0], dcauth[cnum].svrcred[1],
+	   IVAL(calccred, 0), IVAL(calccred, 4)));
+}
+
+
+struct uinfo *getuserinfo(char *user, int len, char *ntowfpass)
+{
+  static struct uinfo u;
+  static pstring fullnm;
+  static pstring ascuser;
+  extern pstring myname;
+  static pstring stme;
+  static pstring stdom;
+  struct smb_passwd *smb_pass;
+
+  strcpy(ascuser,unistr(user));
+  ascuser[len/2] = 0; /* PAXX: FIXMEFIXMEFIXME */
+  DEBUG(1,("GETUSER username :%s: len=%d\n",ascuser, len));
+
+  smb_pass = get_smbpwnam(ascuser);
+  if(!smb_pass)
+    return 0;
+      DEBUG(1,("GETU %d\n", __LINE__));
+      if (memcmp(ntowfpass, smb_pass->smb_nt_passwd, 16)) {
+	      DEBUG(1,("pass mismatch:\n"));
+	      dump_data(1,ntowfpass,16);
+	      dump_data(1,smb_pass->smb_nt_passwd,16);
+	      return 0;
+      }
+
+      DEBUG(1,("GETU %d\n", __LINE__));
+  u.logontime[0] = 0xffffffff; u.logontime[1] = 0x7fffffff;
+  u.logofftime[0] = 0xffffffff; u.logofftime[1] = 0x7fffffff;
+  u.kickofftime[0] = 0xffffffff; u.kickofftime[1] = 0x7fffffff;
+      DEBUG(1,("GETU %d\n", __LINE__));
+  u.passlastsettime[0] = 0xffffffff; u.passlastsettime[1] = 0x7fffffff;
+  u.passcanchgtime[0] = 0xffffffff; u.passcanchgtime[1] = 0x7fffffff;
+  u.passmustchgtime[0] = 0xffffffff; u.passmustchgtime[1] = 0x7fffffff;
+      DEBUG(1,("GETU %d\n", __LINE__));
+  u.effectivename = ascuser;
+  strcpy(fullnm, "Full name of ");
+  strcat(fullnm, ascuser);
+      DEBUG(1,("GETU %d\n", __LINE__));
+  u.fullname = fullnm;
+  u.logonscript = "foologin.cmd";
+  u.profilepath = "prof";
+  u.homedirectory = "foohomes";
+      DEBUG(1,("GETU %d\n", __LINE__));
+  u.homedirectorydrive = "a:";
+  u.logoncount = 7;
+  u.badpwcount = 8;
+  u.uid = 778;
+      DEBUG(1,("GETU %d\n", __LINE__));
+  u.gid = 998;
+  u.ngroups = 2;
+  u.groups = (struct groupinfo *)(malloc(sizeof (struct groupinfo) * 2));
+  u.groups[0].gid = 776;
+      DEBUG(1,("GETU %d\n", __LINE__));
+  u.groups[0].attr = 0x7;
+  u.groups[1].gid = 776;
+  u.groups[1].attr = 0x7;
+  u.userflags = 0x20;
+  u.logonserver = stme;
+  get_myname(myname,NULL);
+  strcpy(stme, myname);
+  strupper(stme);
+  DEBUG(1,("LS %s\n", u.logonserver));
+  u.logondomain = stdom;
+  strcpy(stdom, lp_workgroup());
+  strupper(stdom);
+  DEBUG(1,("DOM %s\n", u.logondomain));
+  u.nsids = 0;
+  u.sids = 0;
+      DEBUG(1,("GETU %d\n", __LINE__));
+  return &u;
+};
+
+int
+nametorid(char *uniuser)
+{
+	if (!strncmp(unistr(uniuser+12),"ashtonp",7))
+	   return 2000;
+	if (!strncmp(unistr(uniuser+12),"user1",5))
+	   return 1;
+	if (!strncmp(unistr(uniuser+12),"user2",5))
+	   return 10;
+	if (!strncmp(unistr(uniuser+12),"user3",5))
+	   return 100;
+	return 3000;
+}
+
+#endif /* NTDOMAIN */
