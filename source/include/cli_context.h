@@ -70,8 +70,7 @@ struct smbcli_socket {
 	/* the port used */
 	int port;
 	
-	/* the open file descriptor */
-	int fd;
+	struct socket_context *sock;
 
 	/* a count of the number of packets we have received. We
 	 * actually only care about zero/non-zero at this stage */
