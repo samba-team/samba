@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan 
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan 
  * (Royal Institute of Technology, Stockholm, Sweden).  
  * All rights reserved.
  * 
@@ -36,7 +36,7 @@
 RCSID("$Id$");
 #endif
 
-#include "err.h"
+#include "roken.h"
 
 void
 vwarnx(const char *fmt, va_list ap)
