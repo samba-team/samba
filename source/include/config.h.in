@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if type char is unsigned and you are not using gcc.  */
 #ifndef __CHAR_UNSIGNED__
@@ -896,6 +896,9 @@
 /* Define if you have the <grp.h> header file.  */
 #undef HAVE_GRP_H
 
+/* Define if you have the <gssapi.h> header file.  */
+#undef HAVE_GSSAPI_H
+
 /* Define if you have the <gssapi/gssapi.h> header file.  */
 #undef HAVE_GSSAPI_GSSAPI_H
 
@@ -1256,9 +1259,6 @@
 /* Whether we have CUPS */
 #undef HAVE_CUPS
 
-/* Whether we have dlopen() */
-#undef HAVE_DLOPEN
-
 /* Whether the compiler supports immediate structures */
 #undef HAVE_IMMEDIATE_STRUCTURES
 
@@ -1312,9 +1312,6 @@
 
 /* Whether the system has connect() */
 #undef HAVE_CONNECT
-
-/* Whether the system has yp_get_default_domain() */
-#undef HAVE_YP_GET_DEFAULT_DOMAIN
 
 /* Whether stat64() is available */
 #undef HAVE_STAT64
@@ -1606,6 +1603,9 @@
 
 /* Whether KRB5 is available */
 #undef HAVE_KRB5
+
+/* Whether GSSAPI is available */
+#undef HAVE_GSSAPI
 
 /* Whether GSSAPI is available */
 #undef HAVE_GSSAPI
