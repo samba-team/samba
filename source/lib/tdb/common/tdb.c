@@ -490,7 +490,7 @@ static int rec_free_read(TDB_CONTEXT *tdb, tdb_off off, struct list_struct *rec)
 	if (rec->magic == TDB_MAGIC) {
 		/* this happens when a app is showdown while deleting a record - we should
 		   not completely fail when this happens */
-		TDB_LOG((tdb, 0,"rec_free_read non-free magic at offset=%d - fixing\n", 
+		TDB_LOG((tdb, 0,"rec_free_read non-free magic 0x%x at offset=%d - fixing\n", 
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
 		if (tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
