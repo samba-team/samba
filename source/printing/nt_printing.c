@@ -1776,7 +1776,7 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
 	if (!dbuf.dptr) 
-		return WERR_ACCESS_DENIED;
+		return WERR_UNKNOWN_PRINTER_DRIVER;
 
 	len += tdb_unpack(dbuf.dptr, dbuf.dsize, "dffffffff",
 			  &driver.cversion,
@@ -1895,7 +1895,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 	int i;
 	
-	DEBUG(106,("Dumping printer driver at level [%d]\n", level));
+	DEBUG(20,("Dumping printer driver at level [%d]\n", level));
 	
 	switch (level)
 	{
@@ -3762,13 +3762,13 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
   to a printer
 ****************************************************************************/
 
-BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
+BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 )
 {
 	int snum;
 	int n_services = lp_numservices();
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
-	if ( !i ) 
+	if ( !info_3 ) 
 		return False;
 
 	DEBUG(5,("printer_driver_in_use: Beginning search through ntprinters.tdb...\n"));
@@ -3783,7 +3783,7 @@ BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
 		if ( !W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))) )
 			continue;
 		
-		if ( !StrCaseCmp(i->name, printer->info_2->drivername) ) {
+		if ( !StrCaseCmp(info_3->name, printer->info_2->drivername) ) {
 			free_a_printer( &printer, 2 );
 			return True;
 		}
@@ -3805,7 +3805,7 @@ BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
  
 static BOOL drv_file_in_use( char* file, NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 {
-	char *s;
+	int i = 0;
 	
 	if ( !info )
 		return False;
@@ -3821,16 +3821,18 @@ static BOOL drv_file_in_use( char* file, NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 
 	if ( strequal(file, info->helpfile) )
 		return True;
-		
-	s = (char*) info->dependentfiles;
 	
-	if ( s ) {
-		while ( *s )
-		{
-			if ( strequal(file, s) )
-				return True;
-			s += strlen(s) + 1;
-		}
+	/* see of there are any dependent files to examine */
+	
+	if ( !info->dependentfiles )
+		return False;
+	
+	while ( *info->dependentfiles[i] ) 
+	{
+		if ( strequal(file, info->dependentfiles[i]) )
+			return True;
+			
+		i++;
 	}
 	
 	return False;
@@ -3842,27 +3844,20 @@ static BOOL drv_file_in_use( char* file, NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
  input parameter from the list 
  *********************************************************************/
 
-static void trim_dependent_file( char* s )
+static void trim_dependent_file( fstring files[], int idx )
 {
-	char *p;
 	
-	/* set p to the next character string in the list */
-	
-	p = s + strlen( s ) + 1;
-	
-	/* check to see that we have another string to copy back */
-	
-	if ( *p == '\0' ) 
+	/* bump everything down a slot */
+
+	while( *files[idx+1] ) 
 	{
-		/* loop over s copying characters from p to s */
-		while ( *p!='\0' && *(p+1)!='\0' )
-			*s++ = *p++;
+		fstrcpy( files[idx], files[idx+1] );
+		idx++;
 	}
 	
-	/* add the two trailing NULL's */
-	
-	*s      = '\0';
-	*(s+1)  = '\0';
+	*files[idx] = '\0';
+
+	return;	
 }
 
 /**********************************************************************
@@ -3872,8 +3867,8 @@ static void trim_dependent_file( char* s )
 static BOOL trim_overlap_drv_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src, 
 				       NT_PRINTER_DRIVER_INFO_LEVEL_3 *drv )
 {
-	BOOL in_use = False;
-	char *s;
+	BOOL 	in_use = False;
+	int 	i = 0;
 	
 	if ( !src || !drv )
 		return False;
@@ -3882,33 +3877,43 @@ static BOOL trim_overlap_drv_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src,
 	
 	if ( drv_file_in_use(src->driverpath, drv) ) {
 		in_use = True;
+		DEBUG(10,("Removing driverfile [%s] from list\n", src->driverpath));
 		fstrcpy( src->driverpath, "" );
 	}
 		
 	if ( drv_file_in_use(src->datafile, drv) ) {
 		in_use = True;
+		DEBUG(10,("Removing datafile [%s] from list\n", src->datafile));
 		fstrcpy( src->datafile, "" );
 	}
 		
 	if ( drv_file_in_use(src->configfile, drv) ) {
 		in_use = True;
+		DEBUG(10,("Removing configfile [%s] from list\n", src->configfile));
 		fstrcpy( src->configfile, "" );
 	}
 		
-	s = (char*)src->dependentfiles;
-	
-	if ( s ) {
-		while ( *s ) 
-		{
-			if ( drv_file_in_use(s, drv) ) {
-				in_use = True;
-				trim_dependent_file( s );
-			}
-			else
-				s += strlen(s) + 1;	
-		} 
+	if ( drv_file_in_use(src->helpfile, drv) ) {
+		in_use = True;
+		DEBUG(10,("Removing helpfile [%s] from list\n", src->helpfile));
+		fstrcpy( src->helpfile, "" );
 	}
+	
+	/* are there any dependentfiles to examine? */
+	
+	if ( !src->dependentfiles )
+		return in_use;
 		
+	while ( *src->dependentfiles[i] ) 
+	{
+		if ( drv_file_in_use(src->dependentfiles[i], drv) ) {
+			in_use = True;
+			DEBUG(10,("Removing [%s] from dependent file list\n", src->dependentfiles[i]));
+			trim_dependent_file( src->dependentfiles, i );
+		}
+		else
+			i++;
+	} 		
 		
 	return in_use;
 }
@@ -3932,58 +3937,61 @@ BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 	fstring 			*list = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
 	
+	if ( !info )
+		return False;
+	
+	version = info->cversion;
+	
 	/* loop over all driver versions */
 	
 	DEBUG(5,("printer_driver_files_in_use: Beginning search through ntdrivers.tdb...\n"));
 	
-	for ( version=0; version<DRIVER_MAX_VERSION; version++ )
-	{
-		/* get the list of drivers */
+	/* get the list of drivers */
 		
-		list = NULL;
-		ndrivers = get_ntdrivers(&list, info->environment, version);
+	list = NULL;
+	ndrivers = get_ntdrivers(&list, info->environment, version);
 		
-		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", 
-			ndrivers, info->environment, version));
+	DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", 
+		ndrivers, info->environment, version));
 
-		if (ndrivers == -1)
-			continue;
-			
-		/* check each driver for overlap in files */
+	/* check each driver for overlap in files */
 		
-		for (i=0; i<ndrivers; i++) 
+	for (i=0; i<ndrivers; i++) 
+	{
+		DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
+			
+		ZERO_STRUCT(driver);
+			
+		if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, list[i], 
+			info->environment, version)) )
 		{
-			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
+			SAFE_FREE(list);
+			return True;
+		}
 			
-			ZERO_STRUCT(driver);
+		/* check if d2 uses any files from d1 */
+		/* only if this is a different driver than the one being deleted */
 			
-			if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, list[i], 
-				info->environment, version)) )
-			{
-				SAFE_FREE(list);
+		if ( !strequal(info->name, driver.info_3->name) )
+		{
+			if ( trim_overlap_drv_files(info, driver.info_3) ) {
+				free_a_printer_driver(driver, 3);
+				SAFE_FREE( list );
 				return True;
 			}
-			
-			/* check if d2 uses any files from d1 */
-			/* only if this is a different driver than the one being deleted */
-			
-			if ( !strequal(info->name, driver.info_3->name) 
-				|| (info->cversion != driver.info_3->cversion) )
-			{
-				if ( trim_overlap_drv_files(info, driver.info_3) ) {
-					free_a_printer_driver(driver, 3);
-					SAFE_FREE( list );
-					return True;
-				}
-			}
+		}
 	
-			free_a_printer_driver(driver, 3);
-		}	
-		
-		SAFE_FREE(list);
-	}
+		free_a_printer_driver(driver, 3);
+	}	
+	
+	SAFE_FREE(list);
 	
 	DEBUG(5,("printer_driver_files_in_use: Completed search through ntdrivers.tdb...\n"));
+	
+	driver.info_3 = info;
+	
+	if ( DEBUGLEVEL >= 20 )
+		dump_a_printer_driver( driver, 3 );
 	
 	return False;
 }
@@ -3994,18 +4002,19 @@ BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
   this.
 ****************************************************************************/
 
-static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user )
+static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user )
 {
+	int i = 0;
 	char *s;
 	connection_struct *conn;
 	fstring null_pw, user_name;
 	int ecode;
 	struct passwd *pass = NULL;
 	
-	if ( !i )
+	if ( !info_3 )
 		return False;
 		
-	DEBUG(6,("delete_driver_files: deleting driver [%s] - version [%d]\n", i->name, i->cversion));
+	DEBUG(6,("delete_driver_files: deleting driver [%s] - version [%d]\n", info_3->name, info_3->cversion));
 
 	become_root();
 	pass = sys_getpwuid(user->uid);
@@ -4044,49 +4053,55 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct curre
 	/* now delete the files; must strip the '\print$' string from 
 	   fron of path                                                */
 	
-	if ( *i->driverpath ) {
-		if ( (s = strchr( &i->driverpath[1], '\\' )) != NULL ) {
+	if ( *info_3->driverpath ) {
+		if ( (s = strchr( &info_3->driverpath[1], '\\' )) != NULL ) {
 			DEBUG(10,("deleting driverfile [%s]\n", s));
 			unlink_internals(conn, 0, s);
 		}
 	}
 		
-	if ( *i->configfile ) {
-		if ( (s = strchr( &i->configfile[1], '\\' )) != NULL ) {
+	if ( *info_3->configfile ) {
+		if ( (s = strchr( &info_3->configfile[1], '\\' )) != NULL ) {
 			DEBUG(10,("deleting configfile [%s]\n", s));
 			unlink_internals(conn, 0, s);
 		}
 	}
 	
-	if ( *i->datafile ) {
-		if ( (s = strchr( &i->datafile[1], '\\' )) != NULL ) {
+	if ( *info_3->datafile ) {
+		if ( (s = strchr( &info_3->datafile[1], '\\' )) != NULL ) {
 			DEBUG(10,("deleting datafile [%s]\n", s));
 			unlink_internals(conn, 0, s);
 		}
 	}
 	
-	if ( *i->helpfile ) {
-		if ( (s = strchr( &i->helpfile[1], '\\' )) != NULL ) {
+	if ( *info_3->helpfile ) {
+		if ( (s = strchr( &info_3->helpfile[1], '\\' )) != NULL ) {
 			DEBUG(10,("deleting helpfile [%s]\n", s));
 			unlink_internals(conn, 0, s);
 		}
 	}
 	
-	s = (char*)i->dependentfiles;
+	/* check if we are done removing files */
 	
-	while ( s && *s ) {
-		char *file;
+	if ( info_3->dependentfiles )
+	{
+		while ( *info_3->dependentfiles[i] ) {
+			char *file;
 
-		if ( (file = strchr( s+1, '\\' )) != NULL )
-		{
-			DEBUG(10,("deleting dependent file [%s]\n", file));
-			unlink_internals(conn, 0, file );
-			file += strlen( file ) + 1;
+			/* bypass the "\print$" portion of the path */
+			
+			if ( (file = strchr( info_3->dependentfiles[i]+1, '\\' )) != NULL )
+			{
+				DEBUG(10,("deleting dependent file [%s]\n", file));
+				unlink_internals(conn, 0, file );
+			}
+			
+			i++;
 		}
-
-		s = file;
 	}
 
+	unbecome_user();
+	
 	return True;
 }
 
@@ -4095,7 +4110,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct curre
  previously looked up.
  ***************************************************************************/
 
-static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
+WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user,
                               uint32 version, BOOL delete_files )
 {
 	pstring 	key;
@@ -4105,14 +4120,14 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 
 	/* delete the tdb data first */
 
-	get_short_archi(arch, i->environment);
+	get_short_archi(arch, info_3->environment);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
-		arch, version, i->name);
+		arch, version, info_3->name);
 
 	DEBUG(5,("delete_printer_driver: key = [%s] delete_files = %s\n",
 		key, delete_files ? "TRUE" : "FALSE" ));
 
-	ctr.info_3 = i;
+	ctr.info_3 = info_3;
 	dump_a_printer_driver( ctr, 3 );
 
 	kbuf.dptr=key;
@@ -4122,7 +4137,7 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 	
 	dbuf = tdb_fetch( tdb_drivers, kbuf );
 	if ( !dbuf.dptr ) {
-		DEBUG(8,("delete_printer_driver_internal: Driver unknown [%s]\n", key));
+		DEBUG(8,("delete_printer_driver: Driver unknown [%s]\n", key));
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 		
@@ -4131,7 +4146,7 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 	/* ok... the driver exists so the delete should return success */
 		
 	if (tdb_delete(tdb_drivers, kbuf) == -1) {
-		DEBUG (0,("delete_printer_driver_internal: fail to delete %s!\n", key));
+		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -4142,49 +4157,12 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 	 */
 
 	if ( delete_files )
-		delete_driver_files( i, user );
+		delete_driver_files( info_3, user );
 		
 
-	DEBUG(5,("delete_printer_driver_internal: driver delete successful [%s]\n", key));
+	DEBUG(5,("delete_printer_driver: driver delete successful [%s]\n", key));
 
 	return WERR_OK;
-}
-
-/****************************************************************************
- Remove a printer driver from the TDB.  This assumes that the the driver was
- previously looked up.
- ***************************************************************************/
-
-WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
-                              uint32 version, BOOL delete_files )
-{
-	WERROR err;
-
-	/*
-	 * see if we should delete all versions of this driver 
-	 * (DRIVER_ANY_VERSION uis only set for "Windows NT x86")
-	 */
-
-	if ( version == DRIVER_ANY_VERSION ) 
-	{
-		/* Windows NT 4.0 */
-		
-		err = delete_printer_driver_internal(i, user, 2, delete_files );
-		if ( !W_ERROR_IS_OK(err) && (W_ERROR_V(err) != ERRunknownprinterdriver ) )
-			return err;
-			
-		/* Windows 2000/XP  */
-		
-		err = delete_printer_driver_internal(i, user, 3, delete_files );
-		if ( !W_ERROR_IS_OK(err) && (W_ERROR_V(err) != ERRunknownprinterdriver ) )
-			return err;
-			
-		return WERR_OK;
-	}
-	
-	/* just delete what they asked for */
-	
-	return delete_printer_driver_internal(i, user, version, delete_files );
 }
 
 /****************************************************************************
