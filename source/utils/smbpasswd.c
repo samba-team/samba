@@ -33,10 +33,10 @@ static char *prog_name;
 static void usage(char *name, BOOL is_root)
 {
 	if(is_root)
-		fprintf(stderr, "Usage is : %s [-D DEBUGLEVEL] [-a] [-d] [-e] [-m] [-n] [username] [password]\n\
+		fprintf(stderr, "Usage is : %s [-D DEBUGLEVEL] [-h] [-a] [-d] [-e] [-m] [-n] [-s] [username] [password]\n\
 %s: [-R <name resolve order>] [-D DEBUGLEVEL] [-j DOMAINNAME] [-r machine] [-U remote_username] [username] [password]\n%s: [-h]\n", name, name, name);
 	else
-		fprintf(stderr, "Usage is : %s [-h] [-D DEBUGLEVEL] [-r machine] [-U remote_username] [password]\n", name);
+		fprintf(stderr, "Usage is : %s [-h] [-s] [-D DEBUGLEVEL] [-r machine] [-U remote_username] [password]\n", name);
 	exit(1);
 }
 
@@ -114,21 +114,61 @@ unable to join domain.\n", prog_name);
 }
 
 /*************************************************************
+ Utility function to prompt for passwords from stdin. Each
+ password entered must end with a newline.
+*************************************************************/
+
+static char *stdin_new_passwd(void)
+{
+  static fstring new_passwd;
+  size_t len;
+
+  memset( new_passwd, '\0', sizeof(new_passwd));
+
+  /*
+   * if no error is reported from fgets() and string at least contains
+   * the newline that ends the password, then replace the newline with
+   * a null terminator.
+   */
+  if ( fgets(new_passwd, sizeof(new_passwd), stdin) != NULL) {
+    if ((len = strlen(new_passwd)) > 0) {
+      if(new_passwd[len-1] == '\n')
+        new_passwd[len - 1] = 0; 
+    }
+  }
+  return(new_passwd);
+}
+
+/*************************************************************
+ Utility function to get passwords via tty or stdin
+ Used if the '-s' option is set to silently get passwords
+ to enable scripting.
+*************************************************************/
+
+static char *get_pass( char *prompt, BOOL stdin_get)
+{
+  if (stdin_get)
+    return( stdin_new_passwd());
+  else
+    return( getpass( prompt));
+}
+
+/*************************************************************
  Utility function to prompt for new password.
 *************************************************************/
 
-static void prompt_for_new_password(char *new_passwd)
+static void prompt_for_new_password(char *new_passwd, BOOL stdin_get)
 {
   char *p;
 
   new_passwd[0] = '\0';
-  
-  p = getpass("New SMB password:");
+ 
+  p = get_pass("New SMB password:", stdin_get);
 
   strncpy(new_passwd, p, sizeof(fstring));
   new_passwd[sizeof(fstring)-1] = '\0';
 
-  p = getpass("Retype new SMB password:");
+  p = get_pass("Retype new SMB password:", stdin_get);
 
   if (strncmp(p, new_passwd, sizeof(fstring)-1))
   {
@@ -173,6 +213,7 @@ int main(int argc, char **argv)
   BOOL enable_user = False;
   BOOL set_no_password = False;
   BOOL joining_domain = False;
+  BOOL stdin_passwd_get = False;
   char *new_domain = NULL;
   pstring servicesf = CONFIGFILE;
   void           *vp;
@@ -235,7 +276,7 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((ch = getopt(argc, argv, "adehmnj:r:R:D:U:")) != EOF) {
+  while ((ch = getopt(argc, argv, "adehmnj:r:sR:D:U:")) != EOF) {
     switch(ch) {
     case 'a':
       if(is_root)
@@ -271,6 +312,28 @@ int main(int argc, char **argv)
         usage(prog_name, is_root);
     case 'r':
       remote_machine = optarg;
+      break;
+    case 's':
+      /*
+       * Ensure stdin/stdout are line buffered.
+       */
+      if (setvbuf( stdin, NULL, _IOLBF, 0) != 0) {
+        fprintf(stderr, "%s: setvbuf error on stdin. Error was %s\n", prog_name, strerror(errno));
+        exit(1);
+      }
+
+      if (setvbuf( stdout, NULL, _IOLBF, 0) != 0) {
+        fprintf(stderr, "%s: setvbuf error on stdout. Error was %s\n", prog_name, strerror(errno));
+        exit(1);
+      }
+
+      if (setvbuf( stderr, NULL, _IOLBF, 0) != 0) {
+        fprintf(stderr, "%s: setvbuf error on stderr. Error was %s\n", prog_name, strerror(errno));
+        perror("setvbuf error on stdout");
+        exit(1);
+      }
+
+      stdin_passwd_get = True;
       break;
     case 'R':
       if(is_root) {
@@ -439,12 +502,12 @@ int main(int argc, char **argv)
    */
 
   if (remote_machine != NULL) {
-    p = getpass("Old SMB password:");
+    p = get_pass("Old SMB password:",stdin_passwd_get);
     fstrcpy(old_passwd, p);
   }
 
   if (!got_new_pass)
-    prompt_for_new_password(new_passwd);
+    prompt_for_new_password(new_passwd,stdin_passwd_get);
   
   if (new_passwd[0] == '\0') {
     printf("Password not set\n");
@@ -617,7 +680,7 @@ int main(int argc, char **argv)
     smb_pwent->acct_ctrl |= ACB_DISABLED;
   else if (enable_user) {
     if(smb_pwent->smb_passwd == NULL) {
-      prompt_for_new_password(new_passwd);
+      prompt_for_new_password(new_passwd,stdin_passwd_get);
       nt_lm_owf_gen( new_passwd, new_nt_p16, new_p16);
       smb_pwent->smb_passwd = new_p16;
       smb_pwent->smb_nt_passwd = new_nt_p16;
