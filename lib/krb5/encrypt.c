@@ -38,7 +38,7 @@ static struct encryption_type em [] = {
     { ETYPE_DES_CBC_CRC, 8, 8, DES_encrypt,  KEYTYPE_DES,  CKSUMTYPE_CRC32 },
     { ETYPE_DES_CBC_MD4, 8, 8, DES_encrypt,  KEYTYPE_DES,  CKSUMTYPE_RSA_MD4 },
     { ETYPE_DES_CBC_MD5, 8, 8, DES_encrypt,  KEYTYPE_DES,  CKSUMTYPE_RSA_MD5 },
-    { ETYPE_NULL,        1, 0, NULL_encrypt, KEYTYPE_NONE, CKSUMTYPE_NONE },
+    { ETYPE_NULL,        1, 0, NULL_encrypt, KEYTYPE_NULL, CKSUMTYPE_NONE },
 };
 
 static int num_etypes = sizeof(em) / sizeof(em[0]);
