@@ -76,7 +76,6 @@ and how to configure the parts of samba you will most likely need.
 PLEASE read this.</para>
 </partintro>
 &UNIX-INSTALL;
-&BROWSING;
 &BROWSING-Quick;
 &Passdb;
 </part>
@@ -110,6 +109,7 @@ part each cover one specific feature.</para>
 &MS-Dfs-Setup;
 &PRINTER-DRIVER2;
 &WINBIND;
+&BROWSING;
 &VFS;
 &CVS-Access;
 &GROUP-MAPPING-HOWTO;
