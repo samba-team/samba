@@ -866,7 +866,6 @@ krb5_sname_to_principal (krb5_context context,
     krb5_error_code ret;
     char localhost[128];
     char **realms, *host = NULL;
-    struct hostent *hp = NULL;
 	
     if(type != KRB5_NT_SRV_HST && type != KRB5_NT_UNKNOWN)
 	return KRB5_SNAME_UNSUPP_NAMETYPE;
@@ -901,16 +900,12 @@ krb5_sname_to_principal (krb5_context context,
     }
     ret = krb5_get_host_realm(context, hostname, &realms);
     if(ret) {
-	if (hp != NULL)
-	    freehostent (hp);
 	return ret;
     }
     ret = krb5_make_principal(context, ret_princ, realms[0], sname,
 			      hostname, NULL);
     if(host)
 	free(host);
-    if (hp)
-	freehostent (hp);
     krb5_free_host_realm(context, realms);
     return ret;
 }
