@@ -32,7 +32,7 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
 
 	for (i=0;i<twr->num_floors;i++) {
 		struct epm_lhs *lhs = &twr->floors[i].lhs;
-		struct epm_rhs *rhs = &twr->floors[i].rhs;
+		union epm_rhs *rhs = &twr->floors[i].rhs;
 
 		switch(lhs->protocol) {
 		case EPM_PROTOCOL_UUID:
@@ -62,27 +62,27 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
 
 		case EPM_PROTOCOL_IP:
 			printf(" IP:");
-			if (rhs->rhs_data.length == 4) {
+			{
 				struct in_addr in;
-				in.s_addr = IVAL(rhs->rhs_data.data, 0);
+				in.s_addr = rhs->ip.address;
 				printf("%s", inet_ntoa(in));
 			}
 			break;
 
 		case EPM_PROTOCOL_PIPE:
-			printf(" PIPE:%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
+			printf(" PIPE:%s", rhs->pipe.path);
 			break;
 
 		case EPM_PROTOCOL_SMB:
-			printf(" SMB:%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
+			printf(" SMB:%s", rhs->smb.unc);
 			break;
 
 		case EPM_PROTOCOL_UNIX_DS:
-			printf(" Unix Domain Socket:%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
+			printf(" Unix Domain Socket:%s", rhs->unix_ds.path);
 			break;
 
 		case EPM_PROTOCOL_NETBIOS:
-			printf(" NetBIOS:%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
+			printf(" NetBIOS:%s", rhs->netbios.name);
 			break;
 
 		case EPM_PROTOCOL_NB_NB:
@@ -97,33 +97,23 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
 			printf(" NB_IPX");
 			break;
 
-		case 0x01:
-			printf(" UNK(1):%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
-			break;
-
 		case EPM_PROTOCOL_HTTP:
-			printf(" HTTP:");
-			if (rhs->rhs_data.length == 2) {
-				printf("%d", RSVAL(rhs->rhs_data.data, 0));
-			}
+			printf(" HTTP:%d", rhs->http.port);
 			break;
 
 		case EPM_PROTOCOL_TCP:
 			/* what is the difference between this and 0x1f? */
-			printf(" TCP:");
-			if (rhs->rhs_data.length == 2) {
-				printf("%d", RSVAL(rhs->rhs_data.data, 0));
-			}
+			printf(" TCP:%d", rhs->tcp.port);
 			break;
 
 		case EPM_PROTOCOL_UDP:
-			printf(" UDP:");
+			printf(" UDP:%d", rhs->udp.port);
 			break;
 
 		default:
 			printf(" UNK(%02x):", lhs->protocol);
-			if (rhs->rhs_data.length == 2) {
-				printf("%d", RSVAL(rhs->rhs_data.data, 0));
+			if (rhs->unknown.length == 2) {
+				printf("%d", RSVAL(rhs->unknown.data, 0));
 			}
 			break;
 		}
@@ -163,15 +153,15 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	twr->towers.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
 	twr->towers.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[2].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr->towers.floors[2].rhs.ncacn.minor_version = 0;
 
 	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
 	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr->towers.floors[3].rhs.tcp.port = 0;
 
 	twr->towers.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
 	twr->towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p, 4);
+	twr->towers.floors[4].rhs.ip.address = 0;
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
@@ -184,7 +174,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_HTTP;
 	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr->towers.floors[3].rhs.http.port = 0;
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
@@ -197,11 +187,11 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
 	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr->towers.floors[3].rhs.smb.unc = "";
 
 	twr->towers.floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
 	twr->towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr->towers.floors[4].rhs.netbios.name = "";
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
