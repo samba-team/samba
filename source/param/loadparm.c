@@ -1070,7 +1070,6 @@ static void init_printer_values(void)
 			break;
 
 		case PRINT_CUPS:
-			string_set(&Globals.szPrintcapname, "cups");
 #ifdef HAVE_LIBCUPS
 			string_set(&sDefault.szLpqcommand, "");
 			string_set(&sDefault.szLprmcommand, "");
@@ -1079,12 +1078,24 @@ static void init_printer_values(void)
 			string_set(&sDefault.szLpresumecommand, "");
 			string_set(&sDefault.szQueuepausecommand, "");
 			string_set(&sDefault.szQueueresumecommand, "");
+
+	                string_set(&Globals.szPrintcapname, "cups");
 #else
-			string_set(&sDefault.szLpqcommand, "/usr/bin/lpstat -o%p");
-			string_set(&sDefault.szLprmcommand, "/usr/bin/cancel %p-%j");
-			string_set(&sDefault.szPrintcommand, "/usr/bin/lp -d%p -oraw %s; rm %s");
-			string_set(&sDefault.szQueuepausecommand, "/usr/bin/disable %p");
-			string_set(&sDefault.szQueueresumecommand, "/usr/bin/enable %p");
+			string_set(&sDefault.szLpqcommand,
+			           "/usr/bin/lpstat -o %p");
+			string_set(&sDefault.szLprmcommand,
+			           "/usr/bin/cancel %p-%j");
+			string_set(&sDefault.szPrintcommand,
+			           "/usr/bin/lp -d %p %s; rm %s");
+			string_set(&sDefault.szLppausecommand,
+				   "lp -i %p-%j -H hold");
+			string_set(&sDefault.szLpresumecommand,
+				   "lp -i %p-%j -H resume");
+			string_set(&sDefault.szQueuepausecommand,
+			           "/usr/bin/disable %p");
+			string_set(&sDefault.szQueueresumecommand,
+			           "/usr/bin/enable %p");
+			string_set(&Globals.szPrintcapname, "lpstat");
 #endif /* HAVE_LIBCUPS */
 			break;
 
