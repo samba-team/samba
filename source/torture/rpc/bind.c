@@ -23,7 +23,15 @@
 
 #include "includes.h"
 
+/*
+  This test is 'bogus' in that it doesn't actually perform to the
+  spec.  We need to deal with other things inside the DCERPC layer,
+  before we could have multiple binds.
 
+  We should never pass this test, until such details are fixed in our
+  client, and it looks like multible binds are never used anyway.
+
+*/
 
 BOOL torture_multi_bind(int dummy) 
 {
