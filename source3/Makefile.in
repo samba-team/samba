@@ -775,7 +775,7 @@ installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 installclientlib:
-	-$(INSTALLCMD) bin/libsmbclient.so $(LIBDIR)
+	-$(INSTALLCMD) bin/libsmbclient.so ${prefix}/lib
 	-$(INSTALLCMD) -d ${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
 
