@@ -431,7 +431,7 @@ typedef struct
 } dir_status_struct;
 
 struct vuid_cache {
-  int entries;
+  unsigned int entries;
   uint16 list[VUID_CACHE_SIZE];
 };
 
