@@ -221,7 +221,7 @@ int k5dcesession(luid, pname, tgt, ppag, tflags)
       *ppag = prev_pag;
 
    strcpy(ccname+38,prev_name);
-   esetenv("KRB5CCNAME",ccname,1);
+   setenv("KRB5CCNAME",ccname,1);
  
    return(0);
 }
@@ -315,7 +315,7 @@ int k5dcegettgt(pcache, ccname, pname, tgt)
    * either. 
    */
 
-  esetenv("KRB5CCNAME",ccname,1);
+  setenv("KRB5CCNAME",ccname,1);
   cache = NULL;
   *tgt = NULL;
 
@@ -449,7 +449,7 @@ int k5dcecon(luid, luser, pname)
     return(0); /* but OK to continue */
   }
 
-  esetenv("KRB5CCNAME","",1);
+  setenv("KRB5CCNAME","",1);
     
 #define TKT_ACCEPTABLE (TKT_FLG_FORWARDABLE | TKT_FLG_PROXIABLE \
          | TKT_FLG_MAY_POSTDATE | TKT_FLG_RENEWABLE | TKT_FLG_HW_AUTH \
@@ -538,7 +538,7 @@ int k5dcecreate(luid, luser, pname, krbtgt)
     int lst;
     dce_error_string_t  err_string;
 
-	esetenv("KRB5CCNAME","",1); /* make sure it not misused */
+	setenv("KRB5CCNAME","",1); /* make sure it not misused */
 
 	uid = getuid();
 	DEEDEBUG2("uid=%d\n",uid);
