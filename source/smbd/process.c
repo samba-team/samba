@@ -1139,7 +1139,10 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
     return False;
   }
 
-  if(global_machine_password_needs_changing)
+  if(global_machine_password_needs_changing && 
+     /* for ADS we need to do a regular ADS password change, not a domain
+        password change */
+     lp_security() == SEC_DOMAIN)
   {
     unsigned char trust_passwd_hash[16];
     time_t lct;
