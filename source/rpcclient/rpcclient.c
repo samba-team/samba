@@ -747,7 +747,7 @@ enum client_action
 	}
 	else 
 	{
-		pwd_read(&(smb_cli->pwd), "Enter Password:", False);
+		pwd_read(&(smb_cli->pwd), "Enter Password:", True);
 	}
 
 	/* paranoia: destroy the local copy of the password */
