@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,6 +42,7 @@ RCSID("$Id$");
 
 struct foreach_data {
     const char *exp;
+    char *exp2;
     char **princs;
     int count;
 };
@@ -68,7 +69,7 @@ foreach(krb5_context context, HDB *db, hdb_entry *ent, void *data)
     if(ret)
 	return ret;
     if(d->exp){
-	if(fnmatch(d->exp, princ, 0) == 0)
+	if(fnmatch(d->exp, princ, 0) == 0 || fnmatch(d->exp2, princ, 0) == 0)
 	    ret = add_princ(d, princ);
 	else
 	    free(princ);
@@ -95,6 +96,12 @@ kadm5_s_get_principals(void *server_handle,
 	return ret;
     }
     d.exp = exp;
+    {
+	krb5_realm r;
+	krb5_get_default_realm(context->context, &r);
+	asprintf(&d.exp2, "%s@%s", exp, r);
+	free(r);
+    }
     d.princs = NULL;
     d.count = 0;
     ret = hdb_foreach(context->context, context->db, foreach, &d);
@@ -106,5 +113,6 @@ kadm5_s_get_principals(void *server_handle,
 	*count = d.count - 1;
     }else
 	kadm5_free_name_list(context, d.princs, &d.count);
+    free(d.exp2);
     return _kadm5_error_code(ret);
 }
