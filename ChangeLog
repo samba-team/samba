@@ -1,3 +1,12 @@
+Sat Nov  1 01:40:53 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/kadm5/init_s.c: Add kadm5_s_init_with_password_ctx. Use
+ 	master key.
+
+	* lib/kadm5/destroy_s.c: Check for allocated context.
+
+	* lib/kadm5/{create,chpass}_s.c: Use _kadm5_set_keys().
+
 Wed Oct 29 23:41:26 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/warn.c (_warnerr): handle the case of an illegal error
