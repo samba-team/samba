@@ -336,6 +336,7 @@ struct entry libdefaults_entries[] = {
     { "encrypt", krb5_config_string, check_boolean },
     { "extra_addresses", krb5_config_string, NULL },
     { "fcache_version", krb5_config_string, check_numeric },
+    { "fcc-mit-ticketflags", krb5_config_string, check_boolean },
     { "forward", krb5_config_string, check_boolean },
     { "forwardable", krb5_config_string, check_boolean },
     { "http_proxy", krb5_config_string, check_host /* XXX */ },
@@ -350,6 +351,7 @@ struct entry libdefaults_entries[] = {
     { "ticket_lifetime", krb5_config_string, check_time },
     { "time_format", krb5_config_string, NULL },
     { "transited_realms_reject", krb5_config_string, NULL },
+    { "no-addresses", krb5_config_string, check_boolean },
     { "v4_instance_resolve", krb5_config_string, check_boolean },
     { "v4_name_convert", krb5_config_list, v4_name_convert_entries },
     { "verify_ap_req_nofail", krb5_config_string, check_boolean },
@@ -369,6 +371,7 @@ struct entry appdefaults_entries[] = {
     { "renew_lifetime", krb5_config_string, check_time },
     { "no-addresses", krb5_config_string, check_boolean },
     { "krb4_get_tickets", krb5_config_string, check_boolean },
+    { "pkinit-anchors", krb5_config_string, NULL },
 #if 0
     { "anonymous", krb5_config_string, check_boolean },
 #endif
@@ -432,8 +435,8 @@ struct entry kdc_entries[] = {
     { "enable-kerberos4", krb5_config_string, check_boolean },
     { "enable-524", krb5_config_string, check_boolean },
     { "enable-http", krb5_config_string, check_boolean },
-    { "check_ticket-addresses", krb5_config_string, check_boolean },
-    { "allow-null-addresses", krb5_config_string, check_boolean },
+    { "check-ticket-addresses", krb5_config_string, check_boolean },
+    { "allow-null-ticket-addresses", krb5_config_string, check_boolean },
     { "allow-anonymous", krb5_config_string, check_boolean },
     { "v4_realm", krb5_config_string, NULL },
     { "enable-kaserver", krb5_config_string, check_boolean },
@@ -467,6 +470,12 @@ struct entry capaths_entries[] = {
     { NULL }
 };
 
+struct entry password_quality_entries[] = {
+    { "policies", krb5_config_string, NULL },
+    { "", krb5_config_list, all_strings },
+    { NULL }
+};
+
 struct entry toplevel_sections[] = {
     { "libdefaults" , krb5_config_list, libdefaults_entries },
     { "realms", krb5_config_list, realms_foobar },
@@ -477,6 +486,7 @@ struct entry toplevel_sections[] = {
     { "appdefaults", krb5_config_list, appdefaults_entries },
     { "gssapi", krb5_config_list, NULL },
     { "capaths", krb5_config_list, capaths_entries },
+    { "password_quality", krb5_config_list, password_quality_entries },
     /* MIT stuff */
     { "kdcdefaults", krb5_config_list, kdcdefaults_entries },
     { NULL }
