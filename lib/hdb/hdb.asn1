@@ -6,6 +6,9 @@ EncryptionKey EXTERNAL
 KerberosTime EXTERNAL
 Principal EXTERNAL
 
+HDB_DB_FORMAT INTEGER ::= 0	-- format of database, 
+				-- update when making changes
+
 Key ::= SEQUENCE {
 	mkvno[0]	INTEGER,	-- master key version number
 	key[1]		EncryptionKey,
