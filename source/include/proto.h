@@ -127,12 +127,18 @@ void mdfour(unsigned char *out, unsigned char *in, int n);
 void ping_message(int msg_type, pid_t src, void *buf, size_t len);
 void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL message_init(void);
-BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
+BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
+		      BOOL duplicates_allowed);
 void message_dispatch(void);
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len));
 void message_deregister(int msg_type);
-BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
+BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
+		      const void *buf, size_t len,
+		      BOOL duplicates_allowed,
+		      int *n_sent);
+BOOL message_named_mutex(char *name);
+void message_named_mutex_release(char *name);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 
@@ -2033,6 +2039,7 @@ BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
 BOOL lp_blocking_locks(int );
 BOOL lp_inherit_perms(int );
+BOOL lp_inherit_acls(int );
 BOOL lp_use_client_driver(int );
 BOOL lp_default_devmode(int );
 BOOL lp_nt_acl_support(int );

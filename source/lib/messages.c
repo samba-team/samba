@@ -1,8 +1,8 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba internal messaging functions
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) 2001 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,12 +19,21 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this module is used for internal messaging between Samba daemons. 
+/**
+   @defgroups messages Internal messaging framework
+   @{
+   @file messages.c
+
+   This module is used for internal messaging between Samba daemons. 
 
    The idea is that if a part of Samba wants to do communication with
    another Samba process then it will do a message_register() of a
    dispatch function, and use message_send_pid() to send messages to
    that process.
+
+   The dispatch function is given the pid of the sender, and it can
+   use that to reply by message_send_pid().  See ping_message() for a
+   simple example.
 
    This system doesn't have any inherent size limitations but is not
    very efficient for large messages or when messages are sent in very
@@ -151,7 +160,8 @@ static BOOL message_notify(pid_t pid)
  Send a message to a particular pid.
 ****************************************************************************/
 
-BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
+BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
+		      BOOL duplicates_allowed)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -198,7 +208,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 			 */
 
 			if (!memcmp(ptr, &rec, sizeof(rec))) {
-				if (!len || (len && !memcmp( ptr + sizeof(rec), (char *)buf, len))) {
+				if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
 					DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
 					SAFE_FREE(dbuf.dptr);
 					tdb_chainunlock(tdb, kbuf);
@@ -303,6 +313,7 @@ void message_dispatch(void)
 	void *buf;
 	size_t len;
 	struct dispatch_fns *dfn;
+	int n_handled;
 
 	if (!received_signal) return;
 
@@ -311,11 +322,20 @@ void message_dispatch(void)
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
+		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%d\n",
+			  msg_type, (int) src));
+		n_handled = 0;
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
 				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
 				dfn->fn(msg_type, src, buf, len);
+				n_handled++;
 			}
+		}
+		if (!n_handled) {
+			DEBUG(5,("message_dispatch: warning: no handlers registed for "
+				 "msg_type %d in pid%d\n",
+				 msg_type, getpid()));
 		}
 		SAFE_FREE(buf);
 	}
@@ -366,9 +386,10 @@ void message_deregister(int msg_type)
 
 struct msg_all {
 	int msg_type;
-	void *buf;
+	const void *buf;
 	size_t len;
 	BOOL duplicates;
+	int		n_sent;
 };
 
 /****************************************************************************
@@ -390,8 +411,9 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 
 	/* if the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/
-	if (!message_send_pid(crec.pid, msg_all->msg_type, msg_all->buf, msg_all->len,
-							msg_all->duplicates)) {
+	if (!message_send_pid(crec.pid, msg_all->msg_type,
+			      msg_all->buf, msg_all->len,
+			      msg_all->duplicates)) {
 		
 		/* if the pid was not found delete the entry from connections.tdb */
 		if (errno == ESRCH) {
@@ -400,16 +422,26 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 			tdb_delete(the_tdb, kbuf);
 		}
 	}
+	msg_all->n_sent++;
 	return 0;
 }
 
-/****************************************************************************
- This is a useful function for sending messages to all smbd processes.
- It isn't very efficient, but should be OK for the sorts of applications that 
- use it. When we need efficient broadcast we can add it.
-****************************************************************************/
-
-BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
+/**
+ * Send a message to all smbd processes.
+ *
+ * It isn't very efficient, but should be OK for the sorts of
+ * applications that use it. When we need efficient broadcast we can add
+ * it.
+ *
+ * @param n_sent Set to the number of messages sent.  This should be
+ * equal to the number of processes, but be careful for races.
+ *
+ * @return True for success.
+ **/
+BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
+		      const void *buf, size_t len,
+		      BOOL duplicates_allowed,
+		      int *n_sent)
 {
 	struct msg_all msg_all;
 
@@ -417,7 +449,42 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len
 	msg_all.buf = buf;
 	msg_all.len = len;
 	msg_all.duplicates = duplicates_allowed;
+	msg_all.n_sent = 0;
 
 	tdb_traverse(conn_tdb, traverse_fn, &msg_all);
+	if (n_sent)
+		*n_sent = msg_all.n_sent;
 	return True;
+}
+
+/** @} **/
+
+
+/*
+  lock the messaging tdb based on a string - this is used as a primitive form of mutex
+  between smbd instances. 
+*/
+BOOL message_named_mutex(char *name)
+{
+	TDB_DATA key;
+
+	if (!message_init()) return False;
+
+	key.dptr = name;
+	key.dsize = strlen(name)+1;
+
+	return (tdb_chainlock(tdb, key) == 0);
+}
+
+/*
+  unlock a named mutex
+*/
+void message_named_mutex_release(char *name)
+{
+	TDB_DATA key;
+
+	key.dptr = name;
+	key.dsize = strlen(name)+1;
+
+	tdb_chainunlock(tdb, key);
 }

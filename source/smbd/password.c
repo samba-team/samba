@@ -1235,17 +1235,28 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
     cli_shutdown(pcli);
     return False;
   }
-  
+
+  /* we use a mutex to prevent two connections at once - when a NT PDC gets
+     two connections where one hasn't completed a negprot yet it will send a
+     TCP reset to the first connection (tridge) */
+
+  if (!message_named_mutex(server)) {
+          DEBUG(1,("domain mutex failed for %s\n", server));
+          return False;
+  }
+
   if (!cli_connect(pcli, remote_machine, &dest_ip)) {
     DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     cli_shutdown(pcli);
+    message_named_mutex_release(server);
     return False;
   }
   
   if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
     DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
 session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
+    message_named_mutex_release(server);
     return False;
   }
   
@@ -1255,6 +1266,7 @@ session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(0,("connect_to_domain_password_server: machine %s rejected the negotiate protocol. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     cli_shutdown(pcli);
+    message_named_mutex_release(server);
     return False;
   }
 
@@ -1262,6 +1274,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(0,("connect_to_domain_password_server: machine %s didn't negotiate NT protocol.\n",
                    remote_machine));
     cli_shutdown(pcli);
+    message_named_mutex_release(server);
     return False;
   }
 
@@ -1273,6 +1286,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(0,("connect_to_domain_password_server: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     cli_shutdown(pcli);
+    message_named_mutex_release(server);
     return False;
   }
 
@@ -1280,6 +1294,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(1,("connect_to_domain_password_server: machine %s isn't in user level security mode\n",
                remote_machine));
     cli_shutdown(pcli);
+    message_named_mutex_release(server);
     return False;
   }
 
@@ -1287,8 +1302,11 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(0,("connect_to_domain_password_server: machine %s rejected the tconX on the IPC$ share. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     cli_shutdown(pcli);
+    message_named_mutex_release(server);
     return False;
   }
+
+  message_named_mutex_release(server);
 
   /*
    * We now have an anonymous connection to IPC$ on the domain password server.
