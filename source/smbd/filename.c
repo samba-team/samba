@@ -338,6 +338,42 @@ BOOL unix_dfs_convert(char *name,connection_struct *conn,
 	return unix_convert(name, conn, saved_last_component, bad_path, pst);
 }
 
+
+/*******************************************************************
+reduce a file name, removing .. elements. 
+********************************************************************/
+static void unix_clean_name(char *s)
+{
+  char *p=NULL;
+
+  DEBUG(3,("unix_clean_name [%s]\n",s));
+
+  /* remove any double slashes */
+  string_sub(s, "//","/");
+
+  /* Remove leading ./ characters */
+  if(strncmp(s, "./", 2) == 0) {
+    trim_string(s, "./", NULL);
+    if(*s == 0)
+      pstrcpy(s,"./");
+  }
+
+  while ((p = strstr(s,"/../")) != NULL)
+    {
+      pstring s1;
+
+      *p = 0;
+      pstrcpy(s1,p+3);
+
+      if ((p=strrchr(s,'/')) != NULL)
+	*p = 0;
+      else
+	*s = 0;
+      pstrcat(s,s1);
+    }  
+
+  trim_string(s,NULL,"/..");
+}
 /****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format
@@ -665,6 +701,154 @@ BOOL unix_convert(char *name,connection_struct *conn,
   return(True);
 }
 
+/*******************************************************************
+reduce a file name, removing .. elements and checking that 
+it is below dir in the hierarchy. This uses GetWd() and so must be run
+on the system that has the referenced file system.
+
+widelinks are allowed if widelinks is true
+********************************************************************/
+
+static BOOL reduce_name(char *s,char *dir,BOOL widelinks)
+{
+#ifndef REDUCE_PATHS
+  return True;
+#else
+  pstring dir2;
+  pstring wd;
+  pstring base_name;
+  pstring newname;
+  char *p=NULL;
+  BOOL relative = (*s != '/');
+
+  *dir2 = *wd = *base_name = *newname = 0;
+
+  if (widelinks)
+    {
+      unix_clean_name(s);
+      /* can't have a leading .. */
+      if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
+	{
+	  DEBUG(3,("Illegal file name? (%s)\n",s));
+	  return(False);
+	}
+
+      if (strlen(s) == 0)
+        pstrcpy(s,"./");
+
+      return(True);
+    }
+  
+  DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
+
+  /* remove any double slashes */
+  string_sub(s,"//","/");
+
+  pstrcpy(base_name,s);
+  p = strrchr(base_name,'/');
+
+  if (!p)
+    return(True);
+
+  if (!dos_GetWd(wd))
+    {
+      DEBUG(0,("couldn't getwd for %s %s\n",s,dir));
+      return(False);
+    }
+
+  if (dos_ChDir(dir) != 0)
+    {
+      DEBUG(0,("couldn't chdir to %s\n",dir));
+      return(False);
+    }
+
+  if (!dos_GetWd(dir2))
+    {
+      DEBUG(0,("couldn't getwd for %s\n",dir));
+      dos_ChDir(wd);
+      return(False);
+    }
+
+
+    if (p && (p != base_name))
+      {
+	*p = 0;
+	if (strcmp(p+1,".")==0)
+	  p[1]=0;
+	if (strcmp(p+1,"..")==0)
+	  *p = '/';
+      }
+
+  if (dos_ChDir(base_name) != 0)
+    {
+      dos_ChDir(wd);
+      DEBUG(3,("couldn't chdir for %s %s basename=%s\n",s,dir,base_name));
+      return(False);
+    }
+
+  if (!dos_GetWd(newname))
+    {
+      dos_ChDir(wd);
+      DEBUG(2,("couldn't get wd for %s %s\n",s,dir2));
+      return(False);
+    }
+
+  if (p && (p != base_name))
+    {
+      pstrcat(newname,"/");
+      pstrcat(newname,p+1);
+    }
+
+  {
+    size_t l = strlen(dir2);    
+    if (dir2[l-1] == '/')
+      l--;
+
+    if (strncmp(newname,dir2,l) != 0)
+      {
+	dos_ChDir(wd);
+	DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,l));
+	return(False);
+      }
+
+    if (relative)
+      {
+	if (newname[l] == '/')
+	  pstrcpy(s,newname + l + 1);
+	else
+	  pstrcpy(s,newname+l);
+      }
+    else
+      pstrcpy(s,newname);
+  }
+
+  dos_ChDir(wd);
+
+  if (strlen(s) == 0)
+    pstrcpy(s,"./");
+
+  DEBUG(3,("reduced to %s\n",s));
+  return(True);
+#endif
+}
+
+/****************************************************************************
+expand some *s 
+****************************************************************************/
+static void expand_one(char *Mask,int len)
+{
+  char *p1;
+  while ((p1 = strchr(Mask,'*')) != NULL)
+    {
+      int lfill = (len+1) - strlen(Mask);
+      int l1= (p1 - Mask);
+      pstring tmp;
+      pstrcpy(tmp,Mask);  
+      memset(tmp+l1,'?',lfill);
+      pstrcpy(tmp + l1 + lfill,Mask + l1 + 1);	
+      pstrcpy(Mask,tmp);      
+    }
+}
 
 /****************************************************************************
 check a filename - possibly caling reducename
