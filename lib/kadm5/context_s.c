@@ -40,7 +40,7 @@ set_funcs(kadm5_server_context *c)
 {
 #define SET(C, F) (C)->funcs.F = kadm5_s_ ## F
     SET(c, chpass_principal);
-    SET(c, chpass_principal);
+    SET(c, chpass_principal_with_key);
     SET(c, create_principal);
     SET(c, delete_principal);
     SET(c, destroy);
