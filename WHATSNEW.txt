@@ -70,11 +70,46 @@ Changes since 3.0.11rc1
 commits
 -------
 o   Jeremy Allison <jra@samba.org>
+
+
 o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 2263: Guard base64_encode_data_blob() against empty blobs.
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 2262: Add support in configure.in for *freebsd6*.
+    * BUG 2266: Portability fixes for queota code on FreeBSD4.
+    * BUG 2264: Remove shutdown and abortshutdown commands from 
+      rpcclient in favor of using the same functions in 'net'.
+    * BUG 2295: Prevent mbd from returning an emptry servername
+      in certain lanman api calls.
+    * BUG 2290: Fix autogen.sh script in examples (based on original
+      patch from Lars Mueller).
+    * Fix bug enumerating domain trusts in security = ads.
+    * Fix segv in rpcclient's dsenumdomtrusts.
+    * Fix bug in expansion of %U and %G in included filesnames.
+    
+
 o   Guenther Deschner <gd@samba.org>
+
+
 o   Volker Lendecke <vl@samba.org>
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * BUG 2113, 2289: Remove dead code.
+
+
 o   Tim Potter <tpot@samba.org>
+    * Compile fixes after new setsampwent() API.
+
+
+o   Richard Renard <rrenard@idealx.com>
+    * Update Netscape DS 5.2 LDAP schema.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Log a warning in testparm if a print command is defined for
+      a print service using 'printing = cups'.
 
 
 Changes since 3.0.10

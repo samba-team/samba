@@ -135,6 +135,18 @@ void set_current_user_info(const userdom_struct *pcui)
 }
 
 /*******************************************************************
+ return the current active user name
+*******************************************************************/
+
+const char* get_current_username( void )
+{
+	if ( current_user_info.smb_name[0] == '\0' )
+		return smb_user_name;
+
+	return current_user_info.smb_name; 
+}
+
+/*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
  Return the number of characters by which the pointer should be advanced.
  Based on code by Branko Cibej <branko.cibej@hermes.si>
