@@ -55,62 +55,56 @@ typedef void (*sighand) (int);
 char *
 hookup (const char *host, int port)
 {
-    struct hostent *hp = NULL;
-    int s, len;
     static char hostnamebuf[MaxHostNameLen];
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
     int error;
-    int af;
-    char **h;
-    int ret;
+    char portstr[NI_MAXSERV];
+    int len;
+    int s;
 
-#ifdef HAVE_IPV6
-    if (hp == NULL)
-	hp = getipnodebyname (host, AF_INET6, 0, &error);
-#endif
-    if (hp == NULL)
-	hp = getipnodebyname (host, AF_INET, 0, &error);
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags    = AI_CANONNAME;
 
-    if (hp == NULL) {
-	warnx ("%s: %s", host, hstrerror(error));
+    snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
+
+    error = getaddrinfo (host, portstr, &hints, &ai);
+    if (error) {
+	warnx ("%s: %s", host, gai_strerror(error));
 	code = -1;
 	return NULL;
     }
-    strlcpy (hostnamebuf, hp->h_name, sizeof(hostnamebuf));
+    strlcpy (hostnamebuf, ai->ai_canonname, sizeof(hostnamebuf));
     hostname = hostnamebuf;
-    af = hisctladdr->sa_family = hp->h_addrtype;
 
-    for (h = hp->h_addr_list;
-	 *h != NULL;
-	 ++h) {
+    for (a = ai; a != NULL; a = a->ai_next) {
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	if (s < 0)
+	    continue;
+
+	memcpy (hisctladdr, a->ai_addr, a->ai_addrlen);
 	
-	s = socket (af, SOCK_STREAM, 0);
-	if (s < 0) {
-	    warn ("socket");
-	    code = -1;
-	    freehostent (hp);
-	    return (0);
-	}
+	error = connect (s, a->ai_addr, a->ai_addrlen);
+	if (error < 0) {
+	    char addrstr[256];
 
-	socket_set_address_and_port (hisctladdr, *h, port);
-
-	ret = connect (s, hisctladdr, socket_sockaddr_size(hisctladdr));
-	if (ret < 0) {
-	    char addr[256];
-
-	    if (inet_ntop (af, socket_get_address(hisctladdr),
-			   addr, sizeof(addr)) == NULL)
-		strlcpy (addr, "unknown address",
-				 sizeof(addr));
-	    warn ("connect %s", addr);
+	    if (getnameinfo (a->ai_addr, a->ai_addrlen,
+			     addrstr, sizeof(addrstr),
+			     NULL, 0, NI_NUMERICHOST) != 0)
+		strlcpy (addrstr, "unknown address", sizeof(addrstr));
+			     
+	    warn ("connect %s", addrstr);
 	    close (s);
 	    continue;
 	}
 	break;
     }
-    freehostent (hp);
-    if (ret < 0) {
+    freeaddrinfo (ai);
+    if (error < 0) {
+	warnx ("failed to contact %s", host);
 	code = -1;
-	close (s);
 	return NULL;
     }
 
