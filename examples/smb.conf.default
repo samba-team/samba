@@ -3,6 +3,9 @@
 # here. Samba has a huge number of configurable options (perhaps too
 # many!) most of which are not shown in this example
 #
+# For a step to step guide on installing, configuring and using samba, 
+# read the Samba HOWTO Collection.
+#
 # Any line which starts with a ; (semi-colon) or a # (hash) 
 # is a comment and is ignored. In this example we will use a #
 # for commentry and a ; for parts of the config file that you
@@ -70,7 +73,7 @@
 # This option is no longer implemented.
 
 # You may wish to use password encryption. Please read
-# ENCRYPTION.txt, Win95.txt and WinNT.txt in the Samba documentation.
+# the 'User database' chapter in the Samba HOWTO Collection
 # Do not enable this option unless you have read those documents
 ;  encrypt passwords = yes
 
@@ -82,7 +85,8 @@
 ;   include = /usr/local/samba/lib/smb.conf.%m
 
 # Most people will find that this option gives better performance.
-# See speed.txt and the manual pages for details
+# See the chapter 'Samba performance issues' in the Samba HOWTO Collection
+# and the manual pages for details.
 # You may want to add the following on a Linux system:
 #         SO_RCVBUF=8192 SO_SNDBUF=8192
    socket options = TCP_NODELAY 
