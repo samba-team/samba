@@ -204,6 +204,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	void *res = NULL;
 	void *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	uint32 group_flags;
 
 	*num_entries = 0;
 
@@ -231,6 +232,10 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	}
 
 	i = 0;
+	
+	group_flags = ATYPE_GLOBAL_GROUP;
+	if ( domain->native_mode )
+		group_flags |= ATYPE_LOCAL_GROUP;
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		char *name, *gecos;
@@ -238,10 +243,9 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		uint32 rid;
 		uint32 account_type;
 
-		if (!ads_pull_uint32(ads, msg, "sAMAccountType", 
-				     &account_type) ||
-		    !(account_type & ATYPE_GLOBAL_GROUP)) continue;
-
+		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &account_type) || !(account_type & group_flags) ) 
+			continue; 
+			
 		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
@@ -270,6 +274,27 @@ done:
 	if (res) ads_msgfree(ads, res);
 
 	return status;
+}
+
+/* list all domain local groups */
+static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_entries, 
+				struct acct_info **info)
+{
+	/*
+	 * This is a stub function only as we returned the domain 
+	 * ocal groups in enum_dom_groups() if the domain->native field
+	 * was true.  This is a simple performance optimization when
+	 * using LDAP.
+	 *
+	 * if we ever need to enumerate domain local groups separately, 
+	 * then this the optimization in enum_dom_groups() will need 
+	 * to be split out
+	 */
+	*num_entries = 0;
+	
+	return NT_STATUS_OK;
 }
 
 /* convert a single name to a sid in a domain */
@@ -675,7 +700,7 @@ struct winbindd_methods ads_methods = {
 	True,
 	query_user_list,
 	enum_dom_groups,
-	NULL,
+	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
 	query_user,
