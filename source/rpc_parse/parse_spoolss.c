@@ -4007,6 +4007,9 @@ BOOL spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, in
 	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;	
 
+	if(!prs_align(ps))
+		return False;
+
 	if (!prs_uint32("offered", ps, depth, &q_u->offered))
 		return False;
 
