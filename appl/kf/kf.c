@@ -336,8 +336,10 @@ doit (const char *hostname, int port, const char *service)
 	    close (s);
 	    continue;
 	}
+	freehostent (hostent);
 	return proto (s, hostname, service);
     }
+    freehostent (hostent);
     return 1;
 }
 
