@@ -309,6 +309,9 @@ max can be %d\n",
 				   done correctly in the process.  */
 				reset_globals_after_fork();
 
+				/* tdb needs special fork handling */
+				tdb_reopen_all();
+
 				return True; 
 			}
 			/* The parent doesn't need this socket */
