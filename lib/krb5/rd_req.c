@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,7 +62,8 @@ decrypt_tkt_enc_part (krb5_context context,
     krb5_data_free (&plain);
     if (ret)
 	return ret;
-    return 0;
+    ret = krb5_convert_etype(context, &decr_part->key.keytype);
+    return ret;
 }
 
 static krb5_error_code

@@ -185,6 +185,10 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
 
+    ret = krb5_convert_etype(context, &rep->enc_part.key.keytype);
+    if(ret)
+	goto out;
+
     /* compare nonces */
 
     if (nonce != rep->enc_part.nonce) {
