@@ -599,6 +599,56 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 	return NT_STATUS_OK;
 }
 
+
+/*
+  handle a bind request
+*/
+static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32 context_id)
+{
+	uint32_t if_version, transfer_syntax_version;
+	const char *uuid, *transfer_syntax;
+	struct dcesrv_connection_context *context;
+	const struct dcesrv_interface *iface;
+
+	if_version = call->pkt.u.alter.ctx_list[0].abstract_syntax.if_version;
+	uuid = GUID_string(call, &call->pkt.u.alter.ctx_list[0].abstract_syntax.uuid);
+	if (!uuid) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	transfer_syntax_version = call->pkt.u.alter.ctx_list[0].transfer_syntaxes[0].if_version;
+	transfer_syntax = GUID_string(call, 
+				      &call->pkt.u.alter.ctx_list[0].transfer_syntaxes[0].uuid);
+	if (!transfer_syntax ||
+	    strcasecmp(NDR_GUID, transfer_syntax) != 0 ||
+	    NDR_GUID_VERSION != transfer_syntax_version) {
+		/* we only do NDR encoded dcerpc */
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	iface = find_interface_by_uuid(call->conn->endpoint, uuid, if_version);
+	if (iface == NULL) {
+		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid, if_version));
+		return NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED;
+	}
+
+	/* add this context to the list of available context_ids */
+	context = talloc(call->conn, struct dcesrv_connection_context);
+	if (context == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	context->conn = call->conn;
+	context->iface = iface;
+	context->context_id = context_id;
+	context->private = NULL;
+	context->handles = NULL;
+	DLIST_ADD(call->conn->contexts, context);
+	call->context = context;
+
+	return NT_STATUS_OK;
+}
+
+
 /*
   handle a bind request
 */
@@ -608,14 +658,28 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 	uint32_t result=0, reason=0;
+	uint32_t context_id;
 
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_alter(call)) {
 		/* TODO: work out the right reject code */
-		return dcesrv_bind_nak(call, 0);
+		result = DCERPC_BIND_PROVIDER_REJECT;
+		reason = DCERPC_BIND_REASON_ASYNTAX;		
 	}
 
-	/* setup a alter_ack */
+	context_id = call->pkt.u.alter.ctx_list[0].context_id;
+
+	/* see if they are asking for a new interface */
+	if (result == 0 &&
+	    dcesrv_find_context(call->conn, context_id) == NULL) {
+		status = dcesrv_alter_new_context(call, context_id);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = DCERPC_BIND_PROVIDER_REJECT;
+			reason = DCERPC_BIND_REASON_ASYNTAX;		
+		}
+	}
+
+	/* setup a alter_resp */
 	dcesrv_init_hdr(&pkt);
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
@@ -623,7 +687,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.u.alter_resp.max_xmit_frag = 0x2000;
 	pkt.u.alter_resp.max_recv_frag = 0x2000;
-	pkt.u.alter_resp.assoc_group_id = call->pkt.u.bind.assoc_group_id;
+	pkt.u.alter_resp.assoc_group_id = call->pkt.u.alter.assoc_group_id;
 	pkt.u.alter_resp.secondary_address = NULL;
 	pkt.u.alter_resp.num_results = 1;
 	pkt.u.alter_resp.ctx_list = talloc_p(call, struct dcerpc_ack_ctx);
@@ -635,6 +699,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	GUID_from_string(NDR_GUID, &pkt.u.alter_resp.ctx_list[0].syntax.uuid);
 	pkt.u.alter_resp.ctx_list[0].syntax.if_version = NDR_GUID_VERSION;
 	pkt.u.alter_resp.auth_info = data_blob(NULL, 0);
+	pkt.u.alter_resp.secondary_address = "";
 
 	if (!dcesrv_auth_alter_ack(call, &pkt)) {
 		return dcesrv_bind_nak(call, 0);
