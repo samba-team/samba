@@ -396,6 +396,12 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 void become_root(BOOL save_dir);
 void unbecome_root(BOOL restore_dir);
 
+/*The following definitions come from  lib/sursalgdomonly.c  */
+
+BOOL sursalg_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id);
+BOOL sursalg_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
+				BOOL create);
+
 /*The following definitions come from  lib/system.c  */
 
 int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval);
@@ -1066,6 +1072,9 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 				const LSA_OBJ_ATTR *attr,
 				uint32 des_access);
 uint32 _lsa_close(POLICY_HND *hnd);
+uint32 _lsa_open_secret(const POLICY_HND *hnd,
+			const UNISTR2 *secret_name, uint32 des_access,
+			POLICY_HND *hnd_secret);
 
 /*The following definitions come from  msrpc/msrpcd.c  */
 

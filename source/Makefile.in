@@ -292,6 +292,7 @@ SAMRD_OBJ1 = samrd/samrd.o \
 		rpc_server/srv_lookup.o \
 		rpc_server/srv_pipe_ntlmssp.o \
 		rpc_server/srv_samr.o $(SAM_SRVDB_OBJ) \
+		lib/sursalgdomonly.o \
 		smbd/chgpasswd.o
 
 SVCCTLD_OBJ1 = svcctld/svcctld.o \

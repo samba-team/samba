@@ -752,10 +752,17 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				POLICY_HND *user_pol,
 				uint32 *unknown_0, uint32 *user_rid)
 {
-	DOM_SID sid;
+	DOM_SID dom_sid;
+	DOM_SID usr_sid;
 	TDB_CONTEXT *tdb_usr = NULL;
+	struct passwd *pass = NULL;
 
 	SAM_USER_INFO_21 usr;
+	uint32 status1;
+	uint32 rid;
+	uint32 type;
+	uint32 num_rids;
+	uint32 num_types;
 
 	(*unknown_0) = 0x30;
 	(*user_rid) = 0x0;
@@ -768,26 +775,68 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
-					&tdb_usr, NULL, NULL, &sid))
+					&tdb_usr, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status1 = _samr_lookup_names(domain_pol, 1,  0x3e8, 1, uni_username,
+
+			&num_rids,
+			&rid,
+			&num_types,
+			&type);
+
+	if (status1 == 0x0)
+	{
+		switch (type)
+		{
+			case SID_NAME_USER: return NT_STATUS_USER_EXISTS;
+			case SID_NAME_ALIAS: return NT_STATUS_ALIAS_EXISTS;
+			case SID_NAME_DOM_GRP:
+			case SID_NAME_WKN_GRP: return NT_STATUS_GROUP_EXISTS;
+			case SID_NAME_DOMAIN: return NT_STATUS_DOMAIN_EXISTS;
+			default:
+			{
+				DEBUG(3,("create user: unknown, ignoring\n"));
+				break;
+			}
+		}
 	}
 
 	{
 		fstring user_name;
 		unistr2_to_ascii(user_name, uni_username, sizeof(user_name)-1);
+		pass = Get_Pwnam(user_name, False);
 		DEBUG(10,("create user: %s\n", user_name));
+		if (pass == NULL)
+		{
+			DEBUG(0,("create user: no unix user named %s\n",
+			          user_name));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+			
 	}
 
-	DEBUG(0,("TODO: verify that the user doesn't exist!\n"));
-#if 0
-	if (tdb_lookup_user(tdb_usr, user_rid, &usr) == 0x0)
+	/* create a SID for the unix user */
+	if (!sursalg_unixid_to_sam_sid(pass->pw_uid, SID_NAME_USER, &usr_sid,
+	                               True))
 	{
-		/* account exists: say so */
-		return NT_STATUS_USER_EXISTS;
+		DEBUG(0,("create user: unix uid %d to RID failed\n",
+		          pass->pw_uid));
+		return NT_STATUS_ACCESS_DENIED;
 	}
-#endif
-	create_user_info_21(&usr, uni_username, acb_info, 1001);
+
+	if (!sid_split_rid(&usr_sid, user_rid) ||
+	    !sid_equal(&dom_sid, &usr_sid))
+	{
+		fstring tmp;
+		DEBUG(0,("create user: invalid SID %s\n",
+		         sid_to_string(tmp, &usr_sid)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	create_user_info_21(&usr, uni_username, acb_info, (*user_rid));
 
 	if (!tdb_create_user(tdb_usr, usr.user_rid, &usr))
 	{
@@ -796,7 +845,6 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	}
 
 	*unknown_0 = 0x000703ff;
-	*user_rid = usr.user_rid;
 
 	return samr_open_by_tdbrid(user_pol, access_mask, *user_rid);
 }
