@@ -1,7 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-
-   Running object table functions
+   test suite for the running object table
 
    Copyright (C) Jelmer Vernooij 2004
    
@@ -21,10 +20,27 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_rot.h"
 
-
-struct dcom_interface_p *dcom_get_iface_p(struct GUID *ipid)
+BOOL torture_rpc_rot(void)
 {
-	/* FIXME */
-	return NULL; 
+    NTSTATUS status;
+    struct dcerpc_pipe *p;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+
+	mem_ctx = talloc_init("torture_rpc_rot");
+
+	status = torture_rpc_connection(&p, 
+					DCERPC_ROT_NAME, 
+					DCERPC_ROT_UUID, 
+					DCERPC_ROT_VERSION);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+    torture_rpc_close(p);
+
+	return ret;
 }
