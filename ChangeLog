@@ -1,3 +1,27 @@
+2004-08-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/acache.c: replace magic 3 with ccapi_version_3
+	
+	* lib/krb5/Makefile.am: libkrb5_la_SOURCES += acache.c
+	
+	* lib/krb5/krb5.h: add krb5_acc_ops
+	
+	* lib/krb5/acache.c: CCAPI v3 implementation, the read only
+	support was from Magnus Ahltorp and then extended by me to support
+	all other operations.  Tested with MIT kerberos cc cache
+	implementation on MacOS 10.3.3
+
+	* lib/krb5/cache.c (krb5_cc_set_default_name): allow setting the
+	default cc name, this is not very useful for general purpose glue
+	since its not possible to glue in user information (like uid), but
+	for CCAPI it works just fine
+
+2004-08-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kgetcred.1: document --cache/-c
+	
+	* kuser/kgetcred.c: allow to specify what credential cache to use
+	
 2004-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/Makefile.am: add krb5_eai_to_heim_errno.3
