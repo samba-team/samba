@@ -50,6 +50,8 @@ krb5_rd_cred(krb5_context context,
     krb5_crypto crypto;
     int i;
 
+    *ret_creds = NULL;
+
     ret = decode_KRB_CRED(in_data->data, in_data->length, 
 			  &cred, &len);
     if(ret)
