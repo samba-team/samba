@@ -716,7 +716,7 @@ if test x$enable_cups != xno; then
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
 		PRINT_LIBS="$PRINT_LIBS `$CUPS_CONFIG --libs`"
-	elif test x"$enable_cups" == x"yes"; then
+	elif test x"$enable_cups" = x"yes"; then
 		AC_MSG_ERROR(Cups support required but cups-config not located.  Make sure cups-devel related files are installed.)
         fi
 fi
@@ -2421,7 +2421,7 @@ if test x"$samba_cv_WITH_AFS" != x"no" ||
     fi
 fi
 
-if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no" && test x"$have_afs_headers" == x"yes"; then
+if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no" && test x"$have_afs_headers" = x"yes"; then
     AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
 fi
 
@@ -2443,7 +2443,7 @@ AC_ARG_WITH(vfs-afsacl,
   AC_MSG_RESULT(no)
 )
 
-if test x"$samba_cv_WITH_VFS_AFSACL" == x"yes"; then
+if test x"$samba_cv_WITH_VFS_AFSACL" = x"yes"; then
    default_shared_modules="$default_shared_modules vfs_afsacl"
 fi
 	
