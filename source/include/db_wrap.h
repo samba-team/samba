@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
-   tdb utility functions
-   Copyright (C) Andrew Tridgell 1992-1998
+
+   database wrap headers
+
+   Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,10 +20,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include <fnmatch.h>
 
-/* these are little tdb utility functions that are meant to make
-   dealing with a tdb database a little less cumbersome in Samba */
+struct ldb_wrap {
+	struct ldb_context *ldb;
 
+	const char *url;
+	struct ldb_wrap *next, *prev;
+};
+
+
+struct tdb_wrap {
+	TDB_CONTEXT *tdb;
+
+	const char *name;
+	struct tdb_wrap *next, *prev;
+};
 

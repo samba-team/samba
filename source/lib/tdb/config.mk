@@ -28,7 +28,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/tdb/tools/tdbtest.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+		LIBTDB
 REQUIRED_LIBRARIES = GDBM
 # End BINARY tdbtest
 ################################################
@@ -49,7 +49,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/tdb/tools/tdbtorture.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+		LIBTDB
 # End BINARY tdbtorture
 ################################################
 
@@ -59,7 +59,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/tdb/tools/tdbdump.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+		LIBTDB
 # End BINARY tdbdump
 ################################################
 

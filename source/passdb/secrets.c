@@ -27,7 +27,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-static TDB_CONTEXT *tdb;
+static struct tdb_wrap *tdb;
 
 /**
  * Use a TDB to store an incrementing random seed.
@@ -41,7 +41,7 @@ static void get_rand_seed(int *new_seed)
 {
 	*new_seed = getpid();
 	if (tdb) {
-		tdb_change_int32_atomic(tdb, "INFO/random_seed", new_seed, 1);
+		tdb_change_int32_atomic(tdb->tdb, "INFO/random_seed", new_seed, 1);
 	}
 }
 
@@ -57,7 +57,7 @@ BOOL secrets_init(void)
 	pstrcpy(fname, lp_private_dir());
 	pstrcat(fname,"/secrets.tdb");
 
-	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_wrap_open(NULL, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
@@ -89,7 +89,7 @@ static void *secrets_fetch(const char *key, size_t *size)
 		return NULL;
 	kbuf.dptr = strdup(key);
 	kbuf.dsize = strlen(key);
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch(tdb->tdb, kbuf);
 	if (size)
 		*size = dbuf.dsize;
 	free(kbuf.dptr);
@@ -127,7 +127,7 @@ BOOL secrets_named_mutex(const char *name, uint_t timeout, size_t *p_ref_count)
 		return False;
 
 	if (ref_count == 0) {
-		ret = tdb_lock_bystring(tdb, name, timeout);
+		ret = tdb_lock_bystring(tdb->tdb, name, timeout);
 		if (ret == 0)
 			DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
 	}
@@ -150,7 +150,7 @@ void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
 	SMB_ASSERT(ref_count != 0);
 
 	if (ref_count == 1) {
-		tdb_unlock_bystring(tdb, name);
+		tdb_unlock_bystring(tdb->tdb, name);
 		DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));
 	}
 

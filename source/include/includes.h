@@ -619,6 +619,7 @@ extern int errno;
 #include "lib/tdb/include/spinlock.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "talloc.h"
+#include "db_wrap.h"
 #include "nt_status.h"
 #include "interfaces.h"
 #include "trans2.h"
