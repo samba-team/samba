@@ -312,10 +312,11 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { NULL };
-	uint32 needed;
-	char *key, *value, *data;
+	uint32 needed, returned, i;
+	char *key;
 	WERROR werror;
 	PyObject *result;
+	PRINTER_ENUM_VALUES *values;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &key))
 		return NULL;
@@ -323,11 +324,13 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 	/* Get max buffer sizes for value and data */
 
 	werror = cli_spoolss_enumprinterdataex(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key);
+		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key,
+		&returned, &values);
 
 	if (W_ERROR_V(werror) == ERRmoredata) 
 		werror = cli_spoolss_enumprinterdataex(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key);
+			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key,
+			&returned, &values);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -338,8 +341,18 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 
 	result = PyDict_New();
 
-	
+	for (i = 0; i < returned; i++) {
+		PyObject *item;
+		fstring value = "";
 
+		rpcstr_pull(value, values[i].valuename.buffer, sizeof(value), -1, STR_TERMINATE);
+		item = PyDict_New();
+		py_from_printerdata(&item, key, value, values[i].type, values[i].data, 
+				    values[i].data_len);
+
+		PyDict_SetItemString(result, value, item);
+	}
+	
 	return result;
 }
 
