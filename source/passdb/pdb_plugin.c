@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-#ifdef HAVE_LIBDL
-
 NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	void * dl_handle;
@@ -59,13 +57,3 @@ NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	DEBUG(5, ("Starting sam plugin %s with location %s\n", plugin_name, plugin_location));
 	return plugin_init(pdb_context, pdb_method, plugin_location);
 }
-
-#else
-
-NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	DEBUG(0, ("pdb_init_plugin: No libdl present - cannot use passdb loadable modules\n"));
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-#endif
