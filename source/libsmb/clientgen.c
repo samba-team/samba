@@ -259,9 +259,6 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = True;
 
-	/* initialise signing */
-	cli_null_set_signing(cli);
-
 	if (lp_client_signing()) 
 		cli->sign_info.allow_smb_signing = True;
                                    
@@ -273,6 +270,13 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
 	memset(cli->outbuf, 0, cli->bufsize);
 	memset(cli->inbuf, 0, cli->bufsize);
+
+	/* just becouse we over-allocate, doesn't mean it's right to use it */
+	clobber_region(__FUNCTION__, __LINE__, cli->outbuf+cli->bufsize, SAFETY_MARGIN);
+	clobber_region(__FUNCTION__, __LINE__, cli->inbuf+cli->bufsize, SAFETY_MARGIN);
+
+	/* initialise signing */
+	cli_null_set_signing(cli);
 
 	cli->nt_pipe_fnum = 0;
 
