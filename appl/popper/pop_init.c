@@ -215,7 +215,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     argcount -= optind;
     argmessage += optind;
 
-    if (argc != 0) {
+    if (argcount != 0) {
 	arg_printusage(args, num_args, "");
 	exit(1);
     }
