@@ -1743,6 +1743,9 @@ to open spool file %s.\n", pjob.filename));
 
 	pjob_store(snum, jobid, &pjob);
 
+	/* Ensure we keep a rough count of the number of total jobs... */
+	tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, 1);
+
 	release_print_db(pdb);
 
 	/*
