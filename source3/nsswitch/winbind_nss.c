@@ -632,8 +632,8 @@ _nss_winbind_getgrent_r(struct group *result,
 			num_gr_cache * sizeof(struct winbindd_gr);
 
 		ret = fill_grent(result, &gr_cache[ndx_gr_cache],
-				 (char *)(getgrent_response.extra_data +
-					  mem_ofs), &buffer, &buflen);
+				 ((char *)getgrent_response.extra_data)+mem_ofs,
+				 &buffer, &buflen);
 		
 		/* Out of memory - try again */
 
