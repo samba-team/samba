@@ -6881,7 +6881,6 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
 	
-	free_dev_mode(devmode);
 	free_a_printer(&ntprinter, 2);
 	safe_free(queue);
 	
@@ -6889,11 +6888,13 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info_2);
+		free_dev_mode(devmode);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
 	new_smb_io_job_info_2("", buffer, info_2, 0);
 
+	free_dev_mode(devmode);
 	free(info_2);
 
 	if (*needed > offered)
