@@ -207,14 +207,15 @@ void restore_re_uid(void)
 #if USE_SETRESUID
 	setresuid(saved_ruid, saved_euid, -1);
 #elif USE_SETREUID
-	setreuid(-1, saved_ruid);
-	setreuid(saved_euid, -1);
+	setreuid(saved_ruid, -1);
+	setreuid(-1,saved_euid);
 #elif USE_SETUIDX
 	setuidx(ID_REAL, saved_ruid);
 	setuidx(ID_EFFECTIVE, saved_euid);
 #else
 	set_effective_uid(saved_euid);
-	if (getuid() != saved_ruid) setuid(saved_ruid);
+	if (getuid() != saved_ruid)
+		setuid(saved_ruid);
 	set_effective_uid(saved_euid);
 #endif
 
