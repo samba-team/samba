@@ -203,6 +203,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
         return WINBINDD_ERROR;
     }
 
+    string_sub(user_name, "\\", "/", sizeof(fstring));
+
     /* Get some user info */
     
     if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {

@@ -541,6 +541,8 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
         return WINBINDD_ERROR;
     }
 
+    string_sub(group_name, "\\", "/", sizeof(fstring));
+
     if (!((name_type == SID_NAME_ALIAS) || (name_type == SID_NAME_DOM_GRP))) {
         DEBUG(1, ("from_gid: name '%s' is not a local or domain group: %d\n", 
                   group_name, name_type));
