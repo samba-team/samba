@@ -334,7 +334,9 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	struct dcerpc_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct dcerpc_syntax_id tsyntax;
+
+	p->syntax = *syntax;
+	p->transfer_syntax = *transfer_syntax;
 
 	init_dcerpc_hdr(p, &pkt);
 
@@ -353,9 +355,8 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	}
 	pkt.u.bind.ctx_list[0].context_id = 0;
 	pkt.u.bind.ctx_list[0].num_transfer_syntaxes = 1;
-	pkt.u.bind.ctx_list[0].abstract_syntax = *syntax;
-	tsyntax = *transfer_syntax;
-	pkt.u.bind.ctx_list[0].transfer_syntaxes = &tsyntax;
+	pkt.u.bind.ctx_list[0].abstract_syntax = p->syntax;
+	pkt.u.bind.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
@@ -376,13 +377,13 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	if ((pkt.ptype != DCERPC_PKT_BIND_ACK && pkt.ptype != DCERPC_PKT_ALTER_ACK) ||
+	if ((pkt.ptype != DCERPC_PKT_BIND_ACK) ||
 	    pkt.u.bind_ack.num_results == 0 ||
 	    pkt.u.bind_ack.ctx_list[0].result != 0) {
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (pkt.ptype != DCERPC_PKT_ALTER_ACK) {
+	if (pkt.ptype == DCERPC_PKT_BIND_ACK) {
 		p->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
 		p->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
 	}
@@ -390,6 +391,75 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	/* the bind_ack might contain a reply set of credentials */
 	if (p->security_state.auth_info && pkt.u.bind_ack.auth_info.length) {
 		status = ndr_pull_struct_blob(&pkt.u.bind_ack.auth_info,
+					      mem_ctx,
+					      p->security_state.auth_info,
+					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	}
+
+	return status;	
+}
+
+/* 
+   perform a alter context using the given syntax 
+
+   the auth_info structure is updated with the reply authentication info
+   on success
+*/
+NTSTATUS dcerpc_alter(struct dcerpc_pipe *p, 
+		     TALLOC_CTX *mem_ctx)
+{
+	struct dcerpc_packet pkt;
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	init_dcerpc_hdr(p, &pkt);
+
+	pkt.ptype = DCERPC_PKT_ALTER;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.call_id = p->call_id;
+	pkt.auth_length = 0;
+
+	pkt.u.alter.max_xmit_frag = 0x2000;
+	pkt.u.alter.max_recv_frag = 0x2000;
+	pkt.u.alter.assoc_group_id = 0;
+	pkt.u.alter.num_contexts = 1;
+	pkt.u.alter.ctx_list = talloc(mem_ctx, sizeof(pkt.u.alter.ctx_list[0]));
+	if (!pkt.u.alter.ctx_list) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	pkt.u.alter.ctx_list[0].context_id = 0;
+	pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
+	pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
+	pkt.u.alter.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
+	pkt.u.alter.auth_info = data_blob(NULL, 0);
+
+	/* construct the NDR form of the packet */
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->security_state.auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* send it on its way */
+	status = p->transport.full_request(p, mem_ctx, &blob, &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* unmarshall the NDR */
+	status = dcerpc_pull(&blob, mem_ctx, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if ((pkt.ptype != DCERPC_PKT_ALTER_ACK) ||
+	    pkt.u.alter_ack.num_results == 0 ||
+	    pkt.u.alter_ack.ctx_list[0].result != 0) {
+		status = NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* the bind_ack might contain a reply set of credentials */
+	if (p->security_state.auth_info && pkt.u.alter_ack.auth_info.length) {
+		status = ndr_pull_struct_blob(&pkt.u.alter_ack.auth_info,
 					      mem_ctx,
 					      p->security_state.auth_info,
 					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);

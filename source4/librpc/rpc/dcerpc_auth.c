@@ -44,7 +44,7 @@ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 	return status;
 }
 
-NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
+NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type,
 			  const char *uuid, uint_t version)
 {
 	NTSTATUS status;
@@ -126,4 +126,90 @@ done:
 	return status;
 }
 
+NTSTATUS dcerpc_bind_alter(struct dcerpc_pipe *p, uint8_t auth_type,
+			  const char *uuid, uint_t version)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	DATA_BLOB credentials;
+	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 
+	mem_ctx = talloc_init("dcerpc_bind_auth");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	if (!p->security_state.generic_state) {
+		status = gensec_client_start(&p->security_state.generic_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = gensec_start_mech_by_authtype(p->security_state.generic_state, auth_type);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	p->security_state.auth_info = talloc(p->mem_ctx, sizeof(*p->security_state.auth_info));
+	if (!p->security_state.auth_info) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	p->security_state.auth_info->auth_type = auth_type;
+	p->security_state.auth_info->auth_pad_length = 0;
+	p->security_state.auth_info->auth_reserved = 0;
+	p->security_state.auth_info->auth_context_id = random();
+	p->security_state.auth_info->credentials = null_data_blob;
+
+	if (p->flags & DCERPC_SEAL) {
+		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	} else if (p->flags & DCERPC_SIGN) {
+		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	} else {
+		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_NONE;
+	}
+
+	status = gensec_update(p->security_state.generic_state, mem_ctx,
+			       null_data_blob,
+			       &credentials);
+	
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		goto done;
+	}
+
+	p->security_state.auth_info->credentials = credentials;
+
+	status = dcerpc_bind_byuuid(p, mem_ctx, uuid, version);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	while(1) {
+		status = gensec_update(p->security_state.generic_state, mem_ctx,
+			       p->security_state.auth_info->credentials,
+			       &credentials);
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			goto done;
+		}
+
+		p->security_state.auth_info->credentials = credentials;
+
+		status = dcerpc_alter(p, mem_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
+
+done:
+	talloc_destroy(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ZERO_STRUCT(p->security_state);
+	}
+
+	return status;
+}

@@ -476,7 +476,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	status = dcerpc_bind_auth(p, DCERPC_AUTH_TYPE_SCHANNEL,
+	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_SCHANNEL,
 				  uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {
