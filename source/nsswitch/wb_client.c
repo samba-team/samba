@@ -77,6 +77,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_N
 	if (result == NSS_STATUS_SUCCESS) {
 		parse_domain_user(response.data.name.name, dom_name, name);
 		*name_type = (enum SID_NAME_USE)response.data.name.type;
+		DEBUG(10,("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", sid_str, dom_name, name ));
 	}
 
 	return (result == NSS_STATUS_SUCCESS);
@@ -265,6 +266,8 @@ int winbind_initgroups(char *user, gid_t gid)
 
 	result = wb_getgroups(user, &groups);
 
+	DEBUG(10,("wb_getgroups: %s: result = %s\n", user, result == NSS_STATUS_SUCCESS ? "SUCCESS" : "FAIL"));
+
 	if (result != -1) {
 		int ngroups = result, i;
 		BOOL is_member = False;
@@ -350,16 +353,18 @@ BOOL winbind_uidtoname(fstring name, uid_t uid)
 {
 	DOM_SID sid;
 	fstring dom_name;
+	fstring user_name;
 	enum SID_NAME_USE name_type;
 
 	if (!winbind_uid_to_sid(&sid, uid))
 		return False;
-	if (!winbind_lookup_sid(&sid, dom_name, name, &name_type))
+	if (!winbind_lookup_sid(&sid, dom_name, user_name, &name_type))
 		return False;
 
 	if (name_type != SID_NAME_USER)
 		return False;
 
+	slprintf(name, sizeof(fstring)-1, "%s%s%s", dom_name, lp_winbind_separator(), user_name );
 	return True;
 }
 
@@ -371,16 +376,18 @@ BOOL winbind_gidtoname(fstring name, gid_t gid)
 {
 	DOM_SID sid;
 	fstring dom_name;
+	fstring group_name;
 	enum SID_NAME_USE name_type;
 
 	if (!winbind_gid_to_sid(&sid, gid))
 		return False;
-	if (!winbind_lookup_sid(&sid, dom_name, name, &name_type))
+	if (!winbind_lookup_sid(&sid, dom_name, group_name, &name_type))
 		return False;
 
 	if (name_type != SID_NAME_USER)
 		return False;
 
+	slprintf(name, sizeof(fstring)-1, "%s%s%s", dom_name, lp_winbind_separator(), group_name );
 	return True;
 }
 
