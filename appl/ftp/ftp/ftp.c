@@ -200,7 +200,9 @@ login (char *host)
     }
     strlcpy(username, user, sizeof(username));
     n = command("USER %s", user);
-    if (n == CONTINUE) {
+    if (n == COMPLETE) 
+       n = command("PASS dummy"); /* DK: Compatibility with gssftp daemon */
+    else if(n == CONTINUE) {
 	if (pass == NULL) {
 	    char prompt[128];
 	    if(myname && 

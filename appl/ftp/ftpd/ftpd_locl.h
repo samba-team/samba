@@ -147,6 +147,10 @@
 #include <krb.h>
 #include <kafs.h>
 #endif
+ 
+#ifdef KRB5
+#include <krb5.h>
+#endif /* KRB5 */
 
 #ifdef OTP
 #include <otp.h>

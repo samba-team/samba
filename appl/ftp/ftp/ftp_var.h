@@ -101,6 +101,7 @@ extern int     cpend;                  /* flag: if != 0, then pending server rep
 extern int	mflag;			/* flag: if != 0, then active multi command */
 
 extern int	options;		/* used during socket creation */
+extern int      use_kerberos;           /* use Kerberos authentication */
 
 /*
  * Format of command table.

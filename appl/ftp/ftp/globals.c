@@ -60,6 +60,7 @@ int     cpend;                  /* flag: if != 0, then pending server reply */
 int	mflag;			/* flag: if != 0, then active multi command */
 
 int	options;		/* used during socket creation */
+int     use_kerberos;           /* use Kerberos authentication */
 
 /*
  * Format of command table.

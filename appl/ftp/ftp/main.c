@@ -55,8 +55,9 @@ main(int argc, char **argv)
 	interactive = 1;
 	autologin = 1;
 	passivemode = 0; /* passive mode not active */
+        use_kerberos = 1;
 
-	while ((ch = getopt(argc, argv, "dginptv")) != -1) {
+	while ((ch = getopt(argc, argv, "dginptvK")) != -1) {
 		switch (ch) {
 		case 'd':
 			options |= SO_DEBUG;
@@ -86,9 +87,14 @@ main(int argc, char **argv)
 			verbose++;
 			break;
 
+                case 'K':
+                        /* Disable Kerberos authentication */
+                        use_kerberos = 0;
+                        break;
+
 		default:
 		    fprintf(stderr,
-			    "usage: ftp [-dginptv] [host [port]]\n");
+                            "usage: ftp [-dginptvK] [host [port]]\n");
 		    exit(1);
 		}
 	}
