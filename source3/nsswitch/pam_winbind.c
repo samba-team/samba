@@ -45,9 +45,9 @@ static int _pam_parse(int argc, const char **argv)
 		else if (!strcasecmp(*argv, "use_authtok"))
 			ctrl |= WINBIND_USE_AUTHTOK_ARG;
 		else if (!strcasecmp(*argv, "use_first_pass"))
-			ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
-		else if (!strcasecmp(*argv, "try_first_pass"))
 			ctrl |= WINBIND_USE_FIRST_PASS_ARG;
+		else if (!strcasecmp(*argv, "try_first_pass"))
+			ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 		else if (!strcasecmp(*argv, "unknown_ok"))
 			ctrl |= WINBIND_UNKNOWN_OK_ARG;
 		else {
@@ -405,7 +405,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 				     &password);
      
      if (retval != PAM_SUCCESS) {
-	 _pam_log(LOG_ERR, "Could not retrive user's password");
+	 _pam_log(LOG_ERR, "Could not retrieve user's password");
 	 return PAM_AUTHTOK_ERR;
      }
      

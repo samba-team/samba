@@ -415,6 +415,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 				if (conn->cli) {
 					cli_shutdown(conn->cli);
 				}
+				ZERO_STRUCT(conn_temp);
 				conn_temp.next = conn->next;
 				DLIST_REMOVE(cm_conns, conn);
 				SAFE_FREE(conn);
@@ -426,7 +427,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 	}
 	
 	if (!conn) {
-		if (!(conn = (struct winbindd_cm_conn *) malloc(sizeof(struct winbindd_cm_conn))))
+		if (!(conn = malloc(sizeof(*conn))))
 			return NT_STATUS_NO_MEMORY;
 		
 		ZERO_STRUCTP(conn);
