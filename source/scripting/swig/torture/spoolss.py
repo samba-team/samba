@@ -11,7 +11,7 @@ def test_EnumPrinters(pipe):
 
     result = dcerpc.spoolss_EnumPrinters(pipe, r)
 
-    print result
+    print dcerpc.unmarshall_spoolss_PrinterInfo1(result['buffer'])
 
 def runtests(binding, domain, username, password):
     

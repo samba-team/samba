@@ -351,8 +351,6 @@ sub ParseFunction($)
 
     $result .= "\tresultobj = temp;\n\n";
 
-	
-
     $result .= "\tif (NT_STATUS_IS_ERR(result)) {\n";
     $result .= "\t\tset_ntstatus_exception(NT_STATUS_V(result));\n";
     $result .= "\t\tgoto fail;\n";
@@ -466,18 +464,29 @@ sub ParseStruct($)
 
     # Generate function to convert DATA_BLOB to Python dict
 
-    if (util::has_property($s, "public")) {
-	$result .= "/* Convert DATA_BLOB to python dict of struct $s->{NAME} */\n\n";
-
-	$result .= "NTSTATUS DATA_BLOB_to_python_$s->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, PyObject **obj)\n";
+    if (util::has_property($s->{DATA}, "public")) {
+	$result .= "/* Convert a Python string to a struct $s->{NAME} python dict */\n\n";
+	$result .= "NTSTATUS unmarshall_$s->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct $s->{NAME} *s)\n";
 	$result .= "{\n";
-	$result .= "\tstruct $s->{NAME} s;\n";
-	$result .= "\tNTSTATUS result = ndr_pull_struct_blob(blob, mem_ctx, &s, ndr_pull_$s->{NAME});\n\n";
-	$result .= "\treturn NT_STATUS_OK;\n";
-	$result .= "}\n";
+	$result .= "\treturn ndr_pull_struct_blob(blob, mem_ctx, s, ndr_pull_$s->{NAME});\n";
+	$result .= "}\n\n";
     }
 
     $result .= "\n%}\n\n";    
+
+    if (util::has_property($s->{DATA}, "public")) {
+
+	$result .= "%typemap(in, numinputs=0) struct $s->{NAME} *EMPTY (struct $s->{NAME} *temp_$s->{NAME}) {\n";
+	$result .= "\t\$1 = &temp_$s->{NAME};\n";
+	$result .= "}\n\n";
+
+	$result .= "%typemap(argout) struct $s->{NAME} * {\n";
+	$result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(argout) $s->{NAME}\");\n\n";
+	$result .= "\tresultobj = $s->{NAME}_ptr_to_python(mem_ctx, \$1);\n";
+	$result .= "}\n\n";
+
+	$result .= "NTSTATUS unmarshall_$s->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct $s->{NAME} *EMPTY);\n\n";
+    }
 
     return $result;
 }
@@ -595,7 +604,21 @@ sub ParseUnion($)
 
     $result .= "}\n\n";
 
+    # Generate function to convert DATA_BLOB to Python dict
+
+    if (util::has_property($u->{DATA}, "public")) {
+	$result .= "/* Convert a Python string to a struct $u->{NAME} python dict */\n\n";
+	$result .= "NTSTATUS unmarshall_$u->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, union $u->{NAME} *u)\n";
+	$result .= "{\n";
+	$result .= "\treturn NT_STATUS_OK;\n";
+	$result .= "}\n\n";
+    }
+
     $result .= "\n%}\n\n";    
+
+    if (util::has_property($u->{DATA}, "public")) {
+	$result .= "NTSTATUS unmarshall_$u->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, union $u->{NAME} *EMPTY);\n\n";
+    }
 
     return $result;
 }
