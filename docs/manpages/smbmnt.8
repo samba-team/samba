@@ -20,24 +20,35 @@ smbmnt \- mount smb file system
 
 .SH DESCRIPTION
 .B smbmnt 
-is a little helper application for the smbmount program. smbmnt is
-meant to be installed setuid root to enable normal users to mount
-their smb shares. Smbmnt checks whether the user calling it has write
-permissions on the mount point and then mounts the directory.
+is a helper application used by the 
+.BI smbmount (8)
+program to do the actual mounting.
+.B smbmnt
+is meant to be installed setuid root so that normal users can mount
+their smb shares. It checks whether the user has write permissions
+on the mount point and then mounts the directory.
 
+The
+.B smbmnt
+program is normally invoked by a mount command to
+.BI smbmount ,
+and the command line arguments are passed directly to
+.B smbmnt.
+
+.SH OPTIONS
 .B -u
 .I uid,
 .B -g
 .I gid
 .RS 3
 A Lan Manager server does not tell us anything about the owner of a
-file. Unix requires that each file has an owner and a group it belongs
+file, but Unix requires that each file have an owner and a group it belongs
 to. With 
 .B -u
 and
 .B -g
 you can tell smbmount which id's it should assign to the files in the
-mounted direcory.
+mounted directory.
 
 The defaults for these values are the current uid and gid.
 .RE
@@ -52,19 +63,33 @@ Like
 and
 .B -g,
 these options are also used to bridge differences in concepts between
-Lan Manager and unix. Lan Manager does not know anything about file
-permissions. So smbmount has to be told which permissions it should
-assign to the mounted files and direcories. The values have to be
-given as octal numbers. The default values are taken from the current
-umask, where the file mode is the current umask, and the dir mode adds
-execute permissions where the file mode gives read permissions.
+Lan Manager and Unix. Lan Manager does not know anything about file
+permissions, so
+.B smbmnt
+must be told which permissions it should assign to the mounted files
+and directories.
+
+The values must be given as octal numbers. The default values are taken
+from the current umask, where the file mode is the current umask,
+and the dir mode adds execute permissions where the file mode gives
+read permissions.
 
 Note that these permissions can differ from the rights the server
-gives to us. If you do not have write permissions on the server, you
-can very well choose a file mode that tells that you have. This
-certainly cannot override the restrictions imposed by the server.
-.RE
+gives to us. If you do not have write permissions on the server,
+you should choose a file mode that matches your actual permissions.
+This certainly cannot override the restrictions imposed by the server.
 
+In addition to specifying the file mode, the
+.B -f
+argument can be used to specify certain bug-fix workarounds.
+This allows bug fixes to be enabled on a per mount-point basis,
+rather than being compiled into the kernel.
+The required bug fixes are specified by prepending an (octal) value
+to the file mode.
+For information on the available bug workarounds, refer to the
+.B smbfs.txt
+file in the Linux kernel Documentation directory. 
+.RE
 
 .SH SEE ALSO
 .B smbmount(8)

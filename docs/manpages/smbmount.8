@@ -9,24 +9,36 @@ smbmount \- mount smb file system
 
 .SH DESCRIPTION
 .B smbmount 
-is a stripped down smbclient program. It only contains the mount
-command that itself calls the
-.B smbmnt(8)
+is a stripped-down version of the 
+.BI smbclient (1)
+program used to mount smbfs shares. It implements only the mount command,
+which then calls the
+.BI smbmnt (8)
 program to do the actual mount.
 .B smbmount
-itself accepts nearly the same options as
-.B smbclient(1)
-does. See the smbclient manpage for details.
+itself accepts most of the options that
+.B smbclient
+does. See the
+.BI smbclient (1)
+manpage for details.
 
-To mount an smb file system I suggest to use the option
+To mount an smb file system, I suggest using the option
 .B -c
-for smbclient. For example, use
+for smbmount to pass the mount command. For example, use
 
 smbmount "\\\\server\\tmp" -c 'mount /mnt -u 123 -g 456'
 
 to mount the tmp share of server on /mnt, giving it a local uid 123
 and a local gid 456.
 
+The arguments supplied to the mount command are passed directly to the
+.B smbmnt
+utility for processing.
+Refer to the
+.BI smbmnt (8)
+manpage for details.
+
 .SH SEE ALSO
-.B smbmnt(8), smbclient(1)
+.BI smbmnt (8),
+.BI smbclient (1)
 
