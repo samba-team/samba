@@ -4294,6 +4294,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 int unlink_internals(connection_struct *conn, char *inbuf,char *outbuf,
 					 int dirtype, char *name);
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+void fail_readraw(void);
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
 int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length, int dum_buffsiz);
 int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);

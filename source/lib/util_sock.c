@@ -490,30 +490,31 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
 
 ssize_t write_data(int fd,char *buffer,size_t N)
 {
-  size_t total=0;
-  ssize_t ret;
+	size_t total=0;
+	ssize_t ret;
 
-  while (total < N)
-  {
+	while (total < N) {
 #ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_write(ssl,buffer + total,N - total);
-    }else{
-      ret = write(fd,buffer + total,N - total);
-    }
+		if(fd == sslFd){
+			ret = SSL_write(ssl,buffer + total,N - total);
+		} else {
+			ret = write(fd,buffer + total,N - total);
+		}
 #else /* WITH_SSL */
-    ret = write(fd,buffer + total,N - total);
+		ret = write(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
-    if (ret == -1) {
-      DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
-      return -1;
-    }
-    if (ret == 0) return total;
+		if (ret == -1) {
+			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return (ssize_t)total;
 
-    total += ret;
-  }
-  return (ssize_t)total;
+		total += (size_t)ret;
+	}
+
+	return (ssize_t)total;
 }
 
 /****************************************************************************

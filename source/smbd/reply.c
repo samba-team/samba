@@ -2089,154 +2089,140 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   return(outsize);
 }
 
+/****************************************************************************
+ Fail for readbraw.
+****************************************************************************/
+
+void fail_readraw(void)
+{
+	pstring errstr;
+	slprintf(errstr, sizeof(errstr)-1, "FAIL ! reply_readbraw: socket write fail (%s)\n",
+		strerror(errno) );
+	exit_server(errstr);
+}
 
 /****************************************************************************
-   reply to a readbraw (core+ protocol)
+ Reply to a readbraw (core+ protocol).
 ****************************************************************************/
 
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
-  size_t maxcount,mincount;
-  size_t nread = 0;
-  SMB_OFF_T startpos;
-  char *header = outbuf;
-  ssize_t ret=0;
-  files_struct *fsp;
-  START_PROFILE(SMBreadbraw);
+	size_t maxcount,mincount;
+	size_t nread = 0;
+	SMB_OFF_T startpos;
+	char *header = outbuf;
+	ssize_t ret=0;
+	files_struct *fsp;
+	START_PROFILE(SMBreadbraw);
 
-  /*
-   * Special check if an oplock break has been issued
-   * and the readraw request croses on the wire, we must
-   * return a zero length response here.
-   */
+	/*
+	 * Special check if an oplock break has been issued
+	 * and the readraw request croses on the wire, we must
+	 * return a zero length response here.
+	 */
 
-  if(global_oplock_break)
-  {
-    _smb_setlen(header,0);
-    transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
-    DEBUG(5,("readbraw - oplock break finished\n"));
-    END_PROFILE(SMBreadbraw);
-    return -1;
-  }
+	if(global_oplock_break) {
+		_smb_setlen(header,0);
+		if (write_data(smbd_server_fd(),header,4) != 4)
+			fail_readraw();
+		DEBUG(5,("readbraw - oplock break finished\n"));
+		END_PROFILE(SMBreadbraw);
+		return -1;
+	}
 
-  fsp = file_fsp(inbuf,smb_vwv0);
+	fsp = file_fsp(inbuf,smb_vwv0);
 
-  if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
-	  /*
-	   * fsp could be NULL here so use the value from the packet. JRA.
-	   */
-	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",(int)SVAL(inbuf,smb_vwv0)));
-	  _smb_setlen(header,0);
-	  transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
-	  END_PROFILE(SMBreadbraw);
-	  return(-1);
-  }
+	if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
+		/*
+		 * fsp could be NULL here so use the value from the packet. JRA.
+		 */
+		DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",(int)SVAL(inbuf,smb_vwv0)));
+		_smb_setlen(header,0);
+		if (write_data(smbd_server_fd(),header,4) != 4)
+			fail_readraw();
+		END_PROFILE(SMBreadbraw);
+		return(-1);
+	}
 
-  CHECK_FSP(fsp,conn);
+	CHECK_FSP(fsp,conn);
 
-  flush_write_cache(fsp, READRAW_FLUSH);
+	flush_write_cache(fsp, READRAW_FLUSH);
 
-  startpos = IVAL(inbuf,smb_vwv1);
-  if(CVAL(inbuf,smb_wct) == 10) {
-    /*
-     * This is a large offset (64 bit) read.
-     */
+	startpos = IVAL(inbuf,smb_vwv1);
+	if(CVAL(inbuf,smb_wct) == 10) {
+		/*
+		 * This is a large offset (64 bit) read.
+		 */
 #ifdef LARGE_SMB_OFF_T
 
-    startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv8)) << 32);
+		startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv8)) << 32);
 
 #else /* !LARGE_SMB_OFF_T */
 
-    /*
-     * Ensure we haven't been sent a >32 bit offset.
-     */
+		/*
+		 * Ensure we haven't been sent a >32 bit offset.
+		 */
 
-    if(IVAL(inbuf,smb_vwv8) != 0) {
-      DEBUG(0,("readbraw - large offset (%x << 32) used and we don't support \
+		if(IVAL(inbuf,smb_vwv8) != 0) {
+			DEBUG(0,("readbraw - large offset (%x << 32) used and we don't support \
 64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv8) ));
-      _smb_setlen(header,0);
-      transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
-      END_PROFILE(SMBreadbraw);
-      return(-1);
-    }
+			_smb_setlen(header,0);
+			if (write_data(smbd_server_fd(),header,4) != 4)
+				fail_readraw();
+			END_PROFILE(SMBreadbraw);
+			return(-1);
+		}
 
 #endif /* LARGE_SMB_OFF_T */
 
-    if(startpos < 0) {
-      DEBUG(0,("readbraw - negative 64 bit readraw offset (%.0f) !\n",
-            (double)startpos ));
-	  _smb_setlen(header,0);
-	  transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
-	  END_PROFILE(SMBreadbraw);
-	  return(-1);
-    }      
-  }
-  maxcount = (SVAL(inbuf,smb_vwv3) & 0xFFFF);
-  mincount = (SVAL(inbuf,smb_vwv4) & 0xFFFF);
+		if(startpos < 0) {
+			DEBUG(0,("readbraw - negative 64 bit readraw offset (%.0f) !\n", (double)startpos ));
+			_smb_setlen(header,0);
+			if (write_data(smbd_server_fd(),header,4) != 4)
+				fail_readraw();
+			END_PROFILE(SMBreadbraw);
+			return(-1);
+		}      
+	}
+	maxcount = (SVAL(inbuf,smb_vwv3) & 0xFFFF);
+	mincount = (SVAL(inbuf,smb_vwv4) & 0xFFFF);
 
-  /* ensure we don't overrun the packet size */
-  maxcount = MIN(65535,maxcount);
-  maxcount = MAX(mincount,maxcount);
+	/* ensure we don't overrun the packet size */
+	maxcount = MIN(65535,maxcount);
+	maxcount = MAX(mincount,maxcount);
 
-  if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False))
-  {
-    SMB_OFF_T size = fsp->size;
-    SMB_OFF_T sizeneeded = startpos + maxcount;
-	    
-    if (size < sizeneeded)
-    {
-      SMB_STRUCT_STAT st;
-      if (vfs_fstat(fsp,fsp->fd,&st) == 0)
-        size = st.st_size;
-      if (!fsp->can_write) 
-        fsp->size = size;
-    }
-
-    nread = MIN(maxcount,(size - startpos));	  
-  }
-
-  if (nread < mincount)
-    nread = 0;
+	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+		SMB_OFF_T size = fsp->size;
+		SMB_OFF_T sizeneeded = startpos + maxcount;
   
-  DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n",
-	      fsp->fnum, (double)startpos,
-	      (int)maxcount, (int)mincount, (int)nread ) );
+		if (size < sizeneeded) {
+			SMB_STRUCT_STAT st;
+			if (vfs_fstat(fsp,fsp->fd,&st) == 0)
+				size = st.st_size;
+			if (!fsp->can_write) 
+				fsp->size = size;
+		}
+
+		nread = MIN(maxcount,(size - startpos));	  
+	}
+
+	if (nread < mincount)
+		nread = 0;
   
-#if UNSAFE_READRAW
-  {
-    BOOL seek_fail = False;
-    int predict=0;
-    _smb_setlen(header,nread);
+	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
+				(int)maxcount, (int)mincount, (int)nread ) );
+  
+	ret = read_file(fsp,header+4,startpos,nread);
+	if (ret < mincount)
+		ret = 0;
 
-    if ((nread-predict) > 0) {
-      if(conn->vfs_ops.seek(fsp,fsp->fd,startpos + predict) == -1) {
-        DEBUG(0,("reply_readbraw: ERROR: seek_file failed.\n"));
-        ret = 0;
-        seek_fail = True;
-      } 
-    }
+	_smb_setlen(header,ret);
+	if (write_data(smbd_server_fd(),header,4+ret) != 4+ret)
+		fail_readraw();
 
-    if(!seek_fail)
-      ret = (ssize_t)vfs_transfer_file(-1, fsp, fsp->fd, Client, NULL,
-                                   (SMB_OFF_T)(nread-predict),header,4+predict, 
-                                   startpos+predict);
-  }
-
-  if (ret != nread+4)
-    DEBUG(0,("ERROR: file read failure on %s at %d for %d bytes (%d)\n",
-	     fsp->fsp_name,startpos,nread,ret));
-
-#else /* UNSAFE_READRAW */
-  ret = read_file(fsp,header+4,startpos,nread);
-  if (ret < mincount) ret = 0;
-
-  _smb_setlen(header,ret);
-  transfer_file(0,smbd_server_fd(),0,header,4+ret,0);
-#endif /* UNSAFE_READRAW */
-
-  DEBUG(5,("readbraw finished\n"));
-  END_PROFILE(SMBreadbraw);
-  return -1;
+	DEBUG(5,("readbraw finished\n"));
+	END_PROFILE(SMBreadbraw);
+	return -1;
 }
 
 
@@ -2437,114 +2423,126 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
-  ssize_t nwritten=0;
-  ssize_t total_written=0;
-  size_t numtowrite=0;
-  size_t tcount;
-  SMB_OFF_T startpos;
-  char *data=NULL;
-  BOOL write_through;
-  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-  int outsize = 0;
-  START_PROFILE(SMBwritebraw);
+	ssize_t nwritten=0;
+	ssize_t total_written=0;
+	size_t numtowrite=0;
+	size_t tcount;
+	SMB_OFF_T startpos;
+	char *data=NULL;
+	BOOL write_through;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	int outsize = 0;
+	START_PROFILE(SMBwritebraw);
 
-  CHECK_FSP(fsp,conn);
-  CHECK_WRITE(fsp);
+	CHECK_FSP(fsp,conn);
+	CHECK_WRITE(fsp);
   
-  tcount = IVAL(inbuf,smb_vwv1);
-  startpos = IVAL(inbuf,smb_vwv3);
-  write_through = BITSETW(inbuf+smb_vwv7,0);
+	tcount = IVAL(inbuf,smb_vwv1);
+	startpos = IVAL(inbuf,smb_vwv3);
+	write_through = BITSETW(inbuf+smb_vwv7,0);
 
-  /* We have to deal with slightly different formats depending
-     on whether we are using the core+ or lanman1.0 protocol */
-  if(Protocol <= PROTOCOL_COREPLUS) {
-    numtowrite = SVAL(smb_buf(inbuf),-2);
-    data = smb_buf(inbuf);
-  } else {
-    numtowrite = SVAL(inbuf,smb_vwv10);
-    data = smb_base(inbuf) + SVAL(inbuf, smb_vwv11);
-  }
+	/* We have to deal with slightly different formats depending
+		on whether we are using the core+ or lanman1.0 protocol */
 
-  /* force the error type */
-  CVAL(inbuf,smb_com) = SMBwritec;
-  CVAL(outbuf,smb_com) = SMBwritec;
+	if(Protocol <= PROTOCOL_COREPLUS) {
+		numtowrite = SVAL(smb_buf(inbuf),-2);
+		data = smb_buf(inbuf);
+	} else {
+		numtowrite = SVAL(inbuf,smb_vwv10);
+		data = smb_base(inbuf) + SVAL(inbuf, smb_vwv11);
+	}
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
-    END_PROFILE(SMBwritebraw);
-    return(ERROR(ERRDOS,ERRlock));
-  }
+	/* force the error type */
+	CVAL(inbuf,smb_com) = SMBwritec;
+	CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (numtowrite>0)
-    nwritten = write_file(fsp,data,startpos,numtowrite);
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+		END_PROFILE(SMBwritebraw);
+		return(ERROR(ERRDOS,ERRlock));
+	}
+
+	if (numtowrite>0)
+		nwritten = write_file(fsp,data,startpos,numtowrite);
   
-  DEBUG(3,("writebraw1 fnum=%d start=%.0f num=%d wrote=%d sync=%d\n",
-	   fsp->fnum, (double)startpos, (int)numtowrite, (int)nwritten, (int)write_through));
+	DEBUG(3,("writebraw1 fnum=%d start=%.0f num=%d wrote=%d sync=%d\n",
+		fsp->fnum, (double)startpos, (int)numtowrite, (int)nwritten, (int)write_through));
 
-  if (nwritten < numtowrite)  {
-    END_PROFILE(SMBwritebraw);
-    return(UNIXERROR(ERRHRD,ERRdiskfull));
-  }
+	if (nwritten < numtowrite)  {
+		END_PROFILE(SMBwritebraw);
+		return(UNIXERROR(ERRHRD,ERRdiskfull));
+	}
 
-  total_written = nwritten;
+	total_written = nwritten;
 
-  /* Return a message to the redirector to tell it
-     to send more bytes */
-  CVAL(outbuf,smb_com) = SMBwritebraw;
-  SSVALS(outbuf,smb_vwv0,-1);
-  outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
-  if (!send_smb(smbd_server_fd(),outbuf))
-    exit_server("reply_writebraw: send_smb failed.\n");
+	/* Return a message to the redirector to tell it to send more bytes */
+	CVAL(outbuf,smb_com) = SMBwritebraw;
+	SSVALS(outbuf,smb_vwv0,-1);
+	outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
+	if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("reply_writebraw: send_smb failed.\n");
   
-  /* Now read the raw data into the buffer and write it */
-  if (read_smb_length(smbd_server_fd(),inbuf,SMB_SECONDARY_WAIT) == -1) {
-    exit_server("secondary writebraw failed");
-  }
+	/* Now read the raw data into the buffer and write it */
+	if (read_smb_length(smbd_server_fd(),inbuf,SMB_SECONDARY_WAIT) == -1) {
+		exit_server("secondary writebraw failed");
+	}
   
-  /* Even though this is not an smb message, smb_len
-     returns the generic length of an smb message */
-  numtowrite = smb_len(inbuf);
+	/* Even though this is not an smb message, smb_len returns the generic length of an smb message */
+	numtowrite = smb_len(inbuf);
 
-  if (tcount > nwritten+numtowrite) {
-    DEBUG(3,("Client overestimated the write %d %d %d\n",
-	     (int)tcount,(int)nwritten,(int)numtowrite));
-  }
+	/* Set up outbuf to return the correct return */
+	outsize = set_message(outbuf,1,0,True);
+	CVAL(outbuf,smb_com) = SMBwritec;
+	SSVAL(outbuf,smb_vwv0,total_written);
 
-  nwritten = vfs_transfer_file(smbd_server_fd(), NULL, -1, fsp,
-			       (SMB_OFF_T)numtowrite,NULL,0, 
-			       startpos+nwritten);
-  total_written += nwritten;
-  
-  /* Set up outbuf to return the correct return */
-  outsize = set_message(outbuf,1,0,True);
-  CVAL(outbuf,smb_com) = SMBwritec;
-  SSVAL(outbuf,smb_vwv0,total_written);
+	if (numtowrite != 0) {
 
-  if (nwritten < (ssize_t)numtowrite) {
-    CVAL(outbuf,smb_rcls) = ERRHRD;
-    SSVAL(outbuf,smb_err,ERRdiskfull);      
-  }
+		if (numtowrite > BUFFER_SIZE) {
+			DEBUG(0,("reply_writebraw: Oversize secondary write raw requested (%u). Terminating\n",
+				(unsigned int)numtowrite ));
+			exit_server("secondary writebraw failed");
+		}
 
-  if ((lp_syncalways(SNUM(conn)) || write_through) && 
-      lp_strict_sync(SNUM(conn)))
-      sync_file(conn,fsp);
+		if (tcount > nwritten+numtowrite) {
+			DEBUG(3,("Client overestimated the write %d %d %d\n",
+				(int)tcount,(int)nwritten,(int)numtowrite));
+		}
 
-  DEBUG(3,("writebraw2 fnum=%d start=%.0f num=%d wrote=%d\n",
-	   fsp->fnum, (double)startpos, (int)numtowrite,(int)total_written));
+		if (read_data( smbd_server_fd(), inbuf+4, numtowrite) != numtowrite ) {
+			DEBUG(0,("reply_writebraw: Oversize secondary write raw read failed (%s). Terminating\n",
+				strerror(errno) ));
+			exit_server("secondary writebraw failed");
+		}
 
-  /* we won't return a status if write through is not selected - this 
-     follows what WfWg does */
-  END_PROFILE(SMBwritebraw);
-  if (!write_through && total_written==tcount) {
-    /*
-     * Fix for "rabbit pellet" mode, trigger an early TCP ack by
-     * sending a SMBkeepalive. Thanks to DaveCB at Sun for this. JRA.
-     */
-    if (!send_keepalive(smbd_server_fd()))
-      exit_server("reply_writebraw: send of keepalive failed");
-    return(-1);
-  }
+		nwritten = write_file(fsp,inbuf+4,startpos+nwritten,numtowrite);
 
-  return(outsize);
+		if (nwritten < (ssize_t)numtowrite) {
+			CVAL(outbuf,smb_rcls) = ERRHRD;
+			SSVAL(outbuf,smb_err,ERRdiskfull);      
+		}
+
+		if (nwritten > 0)
+			total_written += nwritten;
+ 	}
+ 
+	if ((lp_syncalways(SNUM(conn)) || write_through) && lp_strict_sync(SNUM(conn)))
+		sync_file(conn,fsp);
+
+	DEBUG(3,("writebraw2 fnum=%d start=%.0f num=%d wrote=%d\n",
+		fsp->fnum, (double)startpos, (int)numtowrite,(int)total_written));
+
+	/* we won't return a status if write through is not selected - this follows what WfWg does */
+	END_PROFILE(SMBwritebraw);
+	if (!write_through && total_written==tcount) {
+		/*
+		 * Fix for "rabbit pellet" mode, trigger an early TCP ack by
+		 * sending a SMBkeepalive. Thanks to DaveCB at Sun for this. JRA.
+		 */
+		if (!send_keepalive(smbd_server_fd()))
+			exit_server("reply_writebraw: send of keepalive failed");
+		return(-1);
+	}
+
+	return(outsize);
 }
 
 /****************************************************************************
@@ -2929,7 +2927,6 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 {
 	int outsize = 0;
 	time_t mtime;
-	int32 eclass = 0, err = 0;
 	files_struct *fsp = NULL;
 	START_PROFILE(SMBclose);
 
@@ -2996,12 +2993,6 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 			return (UNIXERROR(ERRHRD,ERRgeneral));
 		}
 	}  
-
-	/* We have a cached error */
-	if(eclass || err) {
-		END_PROFILE(SMBclose);
-		return(ERROR(eclass,err));
-	}
 
 	END_PROFILE(SMBclose);
 	return(outsize);
