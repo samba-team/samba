@@ -1,3 +1,8 @@
+2003-11-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.c: checksum the header last in MIC token, update to -03
+	From: Luke Howard <lukeh@padl.com>
+	
 2003-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* add_cred.c: If its a MEMORY cc, make a copy. We need to do this
