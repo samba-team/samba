@@ -67,9 +67,7 @@ krb5_addresses explicit_addresses;
 char *v4_realm;
 int enable_v4 = -1;
 int enable_524 = -1;
-#endif
-#ifdef KASERVER
-krb5_boolean enable_kaserver = -1;
+int enable_kaserver = -1;
 #endif
 
 static int help_flag;
@@ -106,15 +104,13 @@ static struct getargs args[] = {
 	"v4-realm",	'r',	arg_string, &v4_realm, 
 	"realm to serve v4-requests for"
     },
-#endif
-#ifdef KASERVER
     {
-	"kaserver", 'K', arg_negative_flag,   &enable_kaserver,
-	"turn off kaserver support"
+	"kaserver", 'K', arg_flag,   &enable_kaserver,
+	"enable kaserver support"
     },
 #endif
     {	"ports",	'P', 	arg_string, &port_str,
-	"ports to listen to" 
+	"ports to listen to", "portspec"
     },
     {	"addresses",	0,	arg_strings, &addresses_str,
 	"addresses to listen on", "list of addresses" },
@@ -329,10 +325,8 @@ configure(int argc, char **argv)
 	if(p)
 	    v4_realm = strdup(p);
     }
-#endif
-#ifdef KASERVER
     if (enable_kaserver == -1)
-	enable_kaserver = krb5_config_get_bool_default(context, cf, TRUE,
+	enable_kaserver = krb5_config_get_bool_default(context, cf, FALSE,
 						       "kdc",
 						       "enable-kaserver",
 						       NULL);

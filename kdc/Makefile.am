@@ -19,19 +19,21 @@ kstash_SOURCES = kstash.c headers.h
 
 string2key_SOURCES = string2key.c headers.h
 
+if KRB4
+krb4_sources = 	524.c kerberos4.c kaserver.c rx.h
+else
+krb4_sources = 
+endif
+
 kdc_SOURCES = \
-	524.c		\
 	config.c	\
 	connect.c	\
-	kaserver.c	\
 	kdc_locl.h	\
-	kerberos4.c	\
-	kerberos4.h	\
 	kerberos5.c	\
 	log.c		\
 	main.c		\
 	misc.c		\
-	rx.h
+	$(krb4_sources)
 
 
 hprop_LDADD = \

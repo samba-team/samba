@@ -67,8 +67,6 @@ extern krb5_boolean allow_anonymous;
 extern char *v4_realm;
 extern int enable_v4;
 extern int enable_524;
-#endif
-#ifdef KASERVER
 extern krb5_boolean enable_kaserver;
 #endif
 
@@ -110,7 +108,7 @@ krb5_error_code get_des_key(hdb_entry*, krb5_boolean, Key**);
 int maybe_version4 (unsigned char*, int);
 #endif
 
-#ifdef KASERVER
+#ifdef KRB4
 krb5_error_code do_kaserver (unsigned char*, size_t, krb5_data*, const char*, 
 			     struct sockaddr_in*);
 #endif

@@ -35,7 +35,6 @@
 
 RCSID("$Id$");
 
-#ifdef KASERVER
 
 #include <rx.h>
 
@@ -311,8 +310,8 @@ create_reply_ticket (struct rx_header *hdr,
 
     /* encrypt it */
     des_set_key (key, schedule);
-    des_pcbc_encrypt ((des_cblock *)enc_data.data,
-		      (des_cblock *)enc_data.data,
+    des_pcbc_encrypt (enc_data.data,
+		      enc_data.data,
 		      enc_data.length,
 		      schedule,
 		      key,
@@ -451,8 +450,8 @@ do_authenticate (struct rx_header *hdr,
     /* try to decode the `request' */
     memcpy (&key, ckey->key.keyvalue.data, sizeof(key));
     des_set_key (&key, schedule);
-    des_pcbc_encrypt ((des_cblock *)request.data,
-		      (des_cblock *)request.data,
+    des_pcbc_encrypt (request.data,
+		      request.data,
 		      request.length,
 		      schedule,
 		      &key,
@@ -819,5 +818,3 @@ out:
     krb5_storage_free (sp);
     return ret;
 }
-
-#endif /* KASERVER */

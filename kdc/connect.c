@@ -140,8 +140,6 @@ add_standard_ports (int family)
 	add_port_service(family, "krb524", 4444, "udp");
 	add_port_service(family, "krb524", 4444, "tcp");
     }
-#endif
-#ifdef KASERVER
     if (enable_kaserver)
 	add_port_service(family, "afs3-kaserver", 7004, "udp");
 #endif
@@ -385,10 +383,7 @@ process_request(unsigned char *buf,
 	ret = do_524(&ticket, reply, from, addr);
 	free_Ticket(&ticket);
 	return ret;
-    }
-#endif
-#ifdef KASERVER
-    else if (enable_kaserver) {
+    } else if (enable_kaserver) {
 	ret = do_kaserver (buf, len, reply, from, (struct sockaddr_in*)addr);
 	return ret;
     }
