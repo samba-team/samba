@@ -1,12 +1,9 @@
 dnl # LIBRPC subsystem
 
-SMB_SUBSYSTEM(LIBNDR_RAW,[],
-		[librpc/ndr/ndr.o
-		librpc/ndr/ndr_basic.o
-		librpc/ndr/ndr_sec.o
-		librpc/ndr/ndr_spoolss_buf.o])
+SMB_SUBSYSTEM_MK(LIBNDR_RAW,librpc/config.mk)
 
 SMB_SUBSYSTEM_NOPROTO(LIBNDR_GEN)
+SMB_MODULE_MK(ndr_echo, LIBNDR_GEN_ECHO, STATIC, librpc/config.m4)
 SMB_SUBSYSTEM(LIBNDR_GEN,[],
 		[librpc/gen_ndr/tables.o
 		librpc/gen_ndr/ndr_audiosrv.o
@@ -50,16 +47,5 @@ SMB_SUBSYSTEM(LIBNDR_GEN,[],
 		librpc/gen_ndr/ndr_krb5pac.o
 		librpc/gen_ndr/ndr_schannel.o])
 
-SMB_SUBSYSTEM(LIBRPC_RAW,[],
-		[librpc/rpc/dcerpc.o
-		librpc/rpc/dcerpc_auth.o
-		librpc/rpc/dcerpc_util.o
-		librpc/rpc/dcerpc_error.o
-		librpc/rpc/dcerpc_schannel.o
-		librpc/rpc/dcerpc_ntlm.o
-		librpc/rpc/dcerpc_spnego.o
-		librpc/rpc/dcerpc_smb.o
-		librpc/rpc/dcerpc_sock.o])
-
-SMB_SUBSYSTEM(LIBRPC,[],[],[],
-		[LIBNDR_RAW LIBNDR_GEN LIBRPC_RAW])
+SMB_SUBSYSTEM_MK(LIBRPC_RAW,librpc/config.mk)
+SMB_SUBSYSTEM_MK(LIBRPC,librpc/config.mk)
