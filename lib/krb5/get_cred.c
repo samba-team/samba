@@ -142,6 +142,7 @@ init_tgs_req (krb5_context context,
     t->msg_type = krb_tgs_req;
     if (in_creds->session.keytype) {
 	krb5_enctype foo[2];
+
 	foo[0] = in_creds->session.keytype;
 	foo[1] = 0;
 	ret = krb5_init_etype(context,
@@ -209,21 +210,30 @@ init_tgs_req (krb5_context context,
     {
 	krb5_auth_context ac;
 	krb5_keyblock *key;
+
 	ret = krb5_auth_con_init(context, &ac);
 	if(ret)
-	    return ret;
+	    goto fail;
 	ret = krb5_generate_subkey (context, &krbtgt->session, &key);
+	if (ret) {
+	    krb5_auth_con_free (context, ac);
+	    goto fail;
+	}
 	ret = krb5_auth_con_setlocalsubkey(context, ac, key);
-	if(ret == ENOMEM)
-	    /* XXX */;
+	if (ret) {
+	    krb5_free_keyblock (context, key);
+	    krb5_auth_con_free (context, ac);
+	    goto fail;
+	}
 
-	if(in_creds->authdata.len){
+	if(in_creds->authdata.len) {
 	    size_t len;
 	    unsigned char *buf;
 	    krb5_crypto crypto;
 	    len = length_AuthorizationData(&in_creds->authdata);
 	    buf = malloc(len);
-	    ret = encode_AuthorizationData(buf + len - 1, len, &in_creds->authdata, &len);
+	    ret = encode_AuthorizationData(buf + len - 1,
+					   len, &in_creds->authdata, &len);
 	    ALLOC(t->req_body.enc_authorization_data, 1);
 	    ret = krb5_crypto_init(context, key, 0, &crypto);
 	    krb5_encrypt_EncryptedData(context, 
@@ -235,17 +245,19 @@ init_tgs_req (krb5_context context,
 				       0,
 				       t->req_body.enc_authorization_data);
 	    krb5_crypto_destroy(context, crypto);
-	}else
+	} else {
 	    t->req_body.enc_authorization_data = NULL;
+	}
     
-
 	ret = make_pa_tgs_req(context,
 			      ac,
 			      &t->req_body, 
 			      t->padata->val,
 			      krbtgt);
-	if(ret)
+	if(ret) {
+	    krb5_auth_con_free(context, ac);
 	    goto fail;
+	}
 	*subkey = key;
 	
 	krb5_auth_con_free(context, ac);
