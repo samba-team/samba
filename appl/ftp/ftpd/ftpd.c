@@ -55,6 +55,10 @@ RCSID("$Id$");
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
 #define	FTP_NAMES
 #include <arpa/ftp.h>
 #include <arpa/inet.h>
@@ -248,7 +252,7 @@ static void conn_wait(int port)
 }
 
 int
-main(int argc, char **argv, char **envp)
+main(int argc, char **argv)
 {
 	int addrlen, ch, on = 1, tos;
 	char *cp, line[LINE_MAX];
@@ -790,6 +794,19 @@ skip:
 	end_login();
 }
 
+static void
+set_buffer_size(int fd, int read)
+{
+#if defined(SO_RCVBUF) && defined(SO_SNDBUF)
+    size_t size = 1048576;
+    while(size >= 131072 && 
+	  setsockopt(fd, SOL_SOCKET, read ? SO_RCVBUF : SO_SNDBUF, 
+		     (char*)&size, sizeof(size)) < 0)
+	size /= 2;
+#endif
+}
+
+
 void
 retrieve(char *cmd, char *name)
 {
@@ -845,6 +862,7 @@ retrieve(char *cmd, char *name)
 	dout = dataconn(name, st.st_size, "w");
 	if (dout == NULL)
 		goto done;
+	set_buffer_size(fileno(dout), 0);
 	send_data(fin, dout, st.st_blksize);
 	(void) fclose(dout);
 	data = -1;
@@ -942,6 +960,7 @@ store(char *name, char *mode, int unique)
 	din = dataconn(name, (off_t)-1, "r");
 	if (din == NULL)
 		goto done;
+	set_buffer_size(fileno(din), 1);
 	if (receive_data(din, fout) == 0) {
 		if (unique)
 			reply(226, "Transfer complete (unique file name:%s).",
@@ -1110,33 +1129,53 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 			goto data_err;
 		reply(226, "Transfer complete.");
 		return;
-
+		
 	case TYPE_I:
 	case TYPE_L:
-		if ((buf = malloc((u_int)blksize)) == NULL) {
+#ifdef HAVE_MMAP
+	    {
+		struct stat st;
+		void *chunk;
+		int in = fileno(instr);
+		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)){
+		    chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, in, 0);
+		    if(chunk != NULL){
+			auth_write(fileno(outstr), chunk, st.st_size);
+			munmap(chunk, st.st_size);
+			auth_write(fileno(outstr), NULL, 0);
+			cnt = st.st_size;
 			transflag = 0;
-			perror_reply(451, "Local resource failure: malloc");
-			return;
+		    }
 		}
-		netfd = fileno(outstr);
-		filefd = fileno(instr);
-		while ((cnt = read(filefd, buf, (u_int)blksize)) > 0 &&
-		       auth_write(netfd, buf, cnt) == cnt)
-		    byte_count += cnt;
-		auth_write(netfd, buf, 0); /* to end an encrypted stream */
+	    }
+	
+#endif
+	if(transflag){
+	    if ((buf = malloc(10 * blksize)) == NULL) {
 		transflag = 0;
-		(void)free(buf);
-		if (cnt != 0) {
-			if (cnt < 0)
-				goto file_err;
-			goto data_err;
-		}
-		reply(226, "Transfer complete.");
+		perror_reply(451, "Local resource failure: malloc");
 		return;
+	    }
+	    netfd = fileno(outstr);
+	    filefd = fileno(instr);
+	    while ((cnt = read(filefd, buf, 10 * blksize)) > 0 &&
+		   auth_write(netfd, buf, cnt) == cnt)
+		byte_count += cnt;
+	    auth_write(netfd, buf, 0); /* to end an encrypted stream */
+	    transflag = 0;
+	    free(buf);
+	    if (cnt != 0) {
+		if (cnt < 0)
+		    goto file_err;
+		goto data_err;
+	    }
+	}
+	reply(226, "Transfer complete.");
+	return;
 	default:
-		transflag = 0;
-		reply(550, "Unimplemented TYPE %d in send_data", type);
-		return;
+	    transflag = 0;
+	    reply(550, "Unimplemented TYPE %d in send_data", type);
+	    return;
 	}
 
 data_err:
@@ -1159,7 +1198,7 @@ static int
 receive_data(FILE *instr, FILE *outstr)
 {
     int cnt, bare_lfs = 0;
-    char buf[BUFSIZ];
+    char buf[100*BUFSIZ];
 
     transflag++;
     if (setjmp(urgcatch)) {
