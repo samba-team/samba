@@ -14,10 +14,10 @@
 @syncodeindex pg cp
 @c %**end of header
 
-@c not yet @include version.texi
+@c @include version.texi
 @set UPDATED $Date$
 @set EDITION 0.1
-@set VERSION 0.3a
+@set VERSION 0.7
 
 @ifinfo
 @dircategory Heimdal
@@ -224,6 +224,7 @@ to the following restrictions:
 * What is Kerberos?::           
 * Building and Installing::     
 * Setting up a realm::          
+* Applications::          
 * Things in search for a better place::  
 * Kerberos 4 issues::           
 * Windows 2000 compatability::
@@ -237,6 +238,7 @@ to the following restrictions:
 @include whatis.texi
 @include install.texi
 @include setup.texi
+@include apps.texi
 @include misc.texi
 @include kerberos4.texi
 @include win2k.texi
