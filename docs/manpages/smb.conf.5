@@ -465,6 +465,8 @@ use rhosts
 
 valid chars
 
+veto files
+
 workgroup
 
 write raw
@@ -2995,6 +2997,22 @@ See also "invalid users"
 
 .B Example
 	valid users = greg, @pcusers
+
+
+.SS veto files(S)
+This is a list of files and directories that are neither visible nor
+accessible.  Each entry in the list must be separate by a "/", which
+allows spaces to be included in the entry.  Note that '*' and '?' at
+present cannot be used to specify multiple files or directories.
+
+.B Default
+	No files or directories are vetoed.
+
+.B Example
+	veto files = DesktopFolderDB/TrashFor%m/resource.frk
+
+The above example is based on files that the Macintosh client (DAVE)
+creates for internal use.
 
 .SS volume (S)
 This allows you to override the volume label returned for a
