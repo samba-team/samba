@@ -61,16 +61,12 @@
 #define DEATH_TIME 600
 
 /* The list of dead wins servers is stored in gencache.tdb.  Each server is
-   marked dead m the point of view of a given source address. We keep a 
+   marked dead from the point of view of a given source address. We keep a 
    separate dead list for each src address to cope with multiple interfaces 
    that are not routable to each other.
   */
 
 #define WINS_SRV_FMT "WINS_SRV_DEAD/%s,%s" /* wins_ip,src_ip */
-
-/*
-  see if an ip is on the dead list
-*/
 
 static char *wins_srv_keystr(struct in_addr wins_ip, struct in_addr src_ip)
 {
@@ -84,6 +80,10 @@ static char *wins_srv_keystr(struct in_addr wins_ip, struct in_addr src_ip)
 
 	return keystr;
 }
+
+/*
+  see if an ip is on the dead list
+*/
 
 BOOL wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
 {
