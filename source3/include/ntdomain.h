@@ -391,6 +391,7 @@ typedef struct {
 #include "authdata.h"
 
 /* different dce/rpc pipes */
+#include "rpc_buffer.h"
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
 #include "rpc_reg.h"
