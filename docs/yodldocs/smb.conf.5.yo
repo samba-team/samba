@@ -1320,7 +1320,7 @@ See also : link(bf("valid chars"))(validchars)
 	client code page = 936
 
 label(codingsystem)
-dit(bf(codingsystem))
+dit(bf(codingsystem (G)))
 
 This parameter is used to determine how incoming Shift-JIS Japanese
 characters are mapped from the incoming link(bf("client code
@@ -1445,133 +1445,167 @@ mode bits on created directories.
   bf(Example:)
  	create mask = 0775
 
-.SS create mode (S)
-See
-.B create mask.
+label(createmode)
+dit(bf(create mode (S)))
 
-.SS deadtime (G)
-The value of the parameter (a decimal integer) represents the number of
-minutes of inactivity before a connection is considered dead, and it
-is disconnected. The deadtime only takes effect if the number of open files
-is zero.
+This is a synonym for link(bf(create mask))(createmask).
+
+label(deadtime)
+dit(bf(deadtime (G)))
+
+The value of the parameter (a decimal integer) represents the number
+of minutes of inactivity before a connection is considered dead, and
+it is disconnected. The deadtime only takes effect if the number of
+open files is zero.
 
 This is useful to stop a server's resources being exhausted by a large
 number of inactive connections.
 
-Most clients have an auto-reconnect feature when a connection is broken so
-in most cases this parameter should be transparent to users.
+Most clients have an auto-reconnect feature when a connection is
+broken so in most cases this parameter should be transparent to users.
 
 Using this parameter with a timeout of a few minutes is recommended
 for most systems.
 
-A deadtime of zero indicates that no auto-disconnection should be performed.
+A deadtime of zero indicates that no auto-disconnection should be
+performed.
 
-.B Default:
+  bf(Default:)
  	deadtime = 0
 
-.B Example:
+  bf(Example:)
  	deadtime = 15
-.SS debug level (G)
+
+label(debug timestamp (G))
+
+Samba2.0 debug log messages are timestamped by default. If you
+are running at a high debug level these timestamps can be
+distracting. This boolean parameter allows them to be turned
+off.
+
+  bf(Default:)
+         debug timestamp = Yes
+
+  bf(Example:)
+         debug timestamp = No
+
+label(debuglevel)
+dit(bf(debug level (G)))
+
 The value of the parameter (an integer) allows the debug level
-(logging level) to be specified in the
-.B smb.conf
-file. This is to give
-greater flexibility in the configuration of the system.
+(logging level) to be specified in the bf(smb.conf) file. This is to
+give greater flexibility in the configuration of the system.
 
-The default will be the debug level specified on the command line.
+The default will be the debug level specified on the command line
+or level zero if none was specified.
 
-.B Example:
+  bf(Example:)
  	debug level = 3
-.SS default (G)
-See
-.B default service.
-.SS default case (S)
 
-See the section on "NAME MANGLING" Also note the addition of "short
-preserve case"
+label(default)
+dit(bf(default (G)))
 
-.SS default service (G)
-A synonym for this parameter is 'default'.
+A synonym for link(bf(default service))(defaultservice).
 
-This parameter specifies the name of a service which will be connected to
-if the service actually requested cannot be found. Note that the square
-brackets are NOT given in the parameter value (see example below).
+label(defaultcase)
+dit(bf(default case (S)))
 
-There is no default value for this parameter. If this parameter is not given,
-attempting to connect to a nonexistent service results in an error.
+See the section on link(bf("NAME MANGLING"))(NAMEMANGLING). Also note
+the link(bf("short preserve case"))(shortpreservecase) parameter.
+
+label(default service)
+dit(bf(default service (G)))
+
+This parameter specifies the name of a service which will be connected
+to if the service actually requested cannot be found. Note that the
+square brackets are em(NOT) given in the parameter value (see example
+below).
+
+There is no default value for this parameter. If this parameter is not
+given, attempting to connect to a nonexistent service results in an
+error.
 
 Typically the default service would be a public, read-only service.
 
-Also note that as of 1.9.14 the apparent service name will be changed to
-equal that of the requested service, this is very useful as it allows
-you to use macros like %S to make a wildcard service.
+Also note that the apparent service name will be changed to equal that
+of the requested service, this is very useful as it allows you to use
+macros like link(bf(%S))(percentS) to make a wildcard service.
 
-Note also that any _ characters in the name of the service used in the
-default service will get mapped to a /. This allows for interesting
-things.
+Note also that any tt('_') characters in the name of the service used
+in the default service will get mapped to a tt('/'). This allows for
+interesting things.
 
 
-.B Example:
+  bf(Example:)
+
+verb(
  	default service = pub
         
         [pub]
              path = /%S
-          
+)
 
-.SS delete readonly (S)
-This parameter allows readonly files to be deleted.  This is not normal DOS
-semantics, but is allowed by UNIX.
+label(deletereadonly)
+dit(bf(delete readonly (S)))
 
-This option may be useful for running applications such as rcs, where UNIX
-file ownership prevents changing file permissions, and DOS semantics prevent
-deletion of a read only file.
+This parameter allows readonly files to be deleted.  This is not
+normal DOS semantics, but is allowed by UNIX.
 
-.B Default:
+This option may be useful for running applications such as rcs, where
+UNIX file ownership prevents changing file permissions, and DOS
+semantics prevent deletion of a read only file.
+
+  bf(Default:)
  	delete readonly = No
 
-.B Example:
+  bf(Example:)
  	delete readonly = Yes
-.SS deny hosts (S)
-A synonym for this parameter is 'hosts deny'.
 
-The opposite of 'allow hosts' - hosts listed here are NOT permitted
-access to services unless the specific services have their own lists to
-override this one. Where the lists conflict, the 'allow' list takes precedence.
-
-.B Default:
- 	none (i.e., no hosts specifically excluded)
-
-.B Example:
-  	deny hosts = 150.203.4. badhost.mynet.edu.au
-
-.SS delete veto files (S)
+label(deletevetofiles)
+dit(bf(delete veto files (S)))
 
 This option is used when Samba is attempting to delete a directory
-that contains one or more vetoed directories (see the 'veto files' option).
-If this option is set to False (the default) then if a vetoed directory
-contains any non-vetoed files or directories then the directory delete 
-will fail. This is usually what you want. 
+that contains one or more vetoed directories (see the link(bf('veto
+files'))(vetofiles) option).  If this option is set to False (the
+default) then if a vetoed directory contains any non-vetoed files or
+directories then the directory delete will fail. This is usually what
+you want.
 
-If this option is set to True, then Samba will attempt
-to recursively delete any files and directories within the vetoed
-directory. This can be useful for integration with file serving
-systems such as Netatalk, which create meta-files within directories
-you might normally veto DOS/Windows users from seeing (eg. .AppleDouble)
+If this option is set to True, then Samba will attempt to recursively
+delete any files and directories within the vetoed directory. This can
+be useful for integration with file serving systems such as bf(NetAtalk),
+which create meta-files within directories you might normally veto
+DOS/Windows users from seeing (eg. tt(.AppleDouble))
 
-Setting 'delete veto files = True' allows these directories to be 
+Setting tt('delete veto files = True') allows these directories to be 
 transparently deleted when the parent directory is deleted (so long
 as the user has permissions to do so).
 
-.B Default:
+See also the link(bf(veto files))(vetofiles) parameter.
+
+  bf(Default:)
     delete veto files = False
 
-.B Example:
+  bf(Example:)
     delete veto files = True
 
-See
-.B veto files
+label(denyhosts)
+dit(bf(deny hosts (S)))
 
-.SS dfree command (G)
+The opposite of link(bf('allow hosts'))(allowhosts) - hosts listed
+here are em(NOT) permitted access to services unless the specific
+services have their own lists to override this one. Where the lists
+conflict, the link(bf('allow'))(allowhosts) list takes precedence.
+
+  bf(Default:)
+ 	none (i.e., no hosts specifically excluded)
+
+  bf(Example:)
+  	deny hosts = 150.203.4. badhost.mynet.edu.au
+
+label(dfreecommand)
+dit(bf(dfree command (G)))
+
 The dfree command setting should only be used on systems where a
 problem occurs with the internal disk space calculations. This has
 been known to happen with Ultrix, but may occur with other operating
@@ -1581,56 +1615,59 @@ Ignore" at the end of each directory listing.
 This setting allows the replacement of the internal routines to
 calculate the total disk space and amount available with an external
 routine. The example below gives a possible script that might fulfill
-this function. 
+this function.
 
 The external program will be passed a single parameter indicating a
 directory in the filesystem being queried. This will typically consist
-of the string "./". The script should return two integers in ascii. The
-first should be the total disk space in blocks, and the second should
-be the number of available blocks. An optional third return value
-can give the block size in bytes. The default blocksize is 1024 bytes.
+of the string tt("./"). The script should return two integers in
+ascii. The first should be the total disk space in blocks, and the
+second should be the number of available blocks. An optional third
+return value can give the block size in bytes. The default blocksize
+is 1024 bytes.
 
-Note: Your script should NOT be setuid or setgid and should be owned by
-(and writable only by) root!
+Note: Your script should em(NOT) be setuid or setgid and should be
+owned by (and writable only by) root!
 
-.B Default:
+  bf(Default:)
  	By default internal routines for determining the disk capacity
 and remaining space will be used.
 
-.B Example:
+  bf(Example:)
  	dfree command = /usr/local/samba/bin/dfree
 
-	Where the script dfree (which must be made executable) could be
+	Where the script dfree (which must be made executable) could be:
 
-.nf
+verb(
 	#!/bin/sh
 	df $1 | tail -1 | awk '{print $2" "$4}'
-.fi
+)
 
-	or perhaps (on Sys V)
+	or perhaps (on Sys V based systems):
 
-.nf
+verb(
 	#!/bin/sh
 	/usr/bin/df -k $1 | tail -1 | awk '{print $3" "$5}'
-.fi
+)
 
 	Note that you may have to replace the command names with full
 path names on some systems.
-.SS directory (S)
-See
-.B path.
 
-.SS directory mask (S)
-A synonym for this parameter is 'directory mode'.
+label(directory)
+dit(bf(directory (S)))
 
-This parameter is the octal modes which are used when converting DOS modes 
-to UNIX modes when creating UNIX directories.
+Synonym for link(bf(path))(path).
+
+label(directorymask)
+dit(bf(directory mask (S)))
+
+This parameter is the octal modes which are used when converting DOS
+modes to UNIX modes when creating UNIX directories.
 
 When a directory is created, the neccessary permissions are calculated
-according to the mapping from DOS modes to UNIX permissions, and
-the resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
-This parameter may be thought of as a bit-wise MASK for the UNIX
-modes of a directory. Any bit *not* set here will be removed from the
+according to the mapping from DOS modes to UNIX permissions, and the
+resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
+This parameter may be thought of as a bit-wise MASK for the UNIX modes
+of a directory. Any bit em(*not*) set here will be removed from the
 modes set on a directory when it is created.
 
 The default value of this parameter removes the 'group' and 'other'
@@ -1638,71 +1675,148 @@ write bits from the UNIX mode, allowing only the user who owns the
 directory to modify it.
 
 Following this Samba will bit-wise 'OR' the UNIX mode created from
-this parameter with the value of the "force directory mode" parameter. 
-This parameter is set to 000 by default (ie. no extra mode bits are added).
+this parameter with the value of the "force directory mode"
+parameter. This parameter is set to 000 by default (ie. no extra mode
+bits are added).
 
-See the "force directory mode" parameter to cause particular mode
-bits to always be set on created directories.
+See the link(bf("force directory mode"))(forcedirectorymode) parameter
+to cause particular mode bits to always be set on created directories.
 
-See also the "create mode" parameter for masking mode bits on created
-files.
+See also the link(bf("create mode"))(createmode) parameter for masking
+mode bits on created files.
 
-.B Default:
+  bf(Default:)
  	directory mask = 0755
 
-.B Example:
+  bf(Example:)
  	directory mask = 0775
 
-.SS directory mode (S)
-See
-.B directory mask.
+label(directorymode)
+dit(bf(directory mode (S)))
 
-.SS dns proxy (G)
+Synonym for link(bf(directory mask))(directorymask).
 
-Specifies that nmbd should (as a WINS server), on finding that a NetBIOS
-name has not been registered, treat the NetBIOS name word-for-word as
-a DNS name.
+label(dnsproxy)
+dit(bf(dns proxy (G)))
 
-Note that the maximum length for a NetBIOS name is 15
-characters, so the DNS name (or DNS alias) can likewise only be 15
-characters, maximum.
+Specifies that link(bf(nmbd))(nmbd.8.html) when acting as a WINS
+server and finding that a NetBIOS name has not been registered, should
+treat the NetBIOS name word-for-word as a DNS name and do a lookup
+with the DNS server for that name on behalf of the name-querying
+client.
 
-Note also that nmbd will block completely until the DNS name is resolved.
-This will result in temporary loss of browsing and WINS services.
-Enable this option only if you are certain that DNS resolution is fast,
-or you can live with the consequences of periodic pauses in nmbd service.
+Note that the maximum length for a NetBIOS name is 15 characters, so
+the DNS name (or DNS alias) can likewise only be 15 characters,
+maximum.
 
-.B Default:
+link(bf(nmbd))(nmbd.8.html) spawns a second copy of itself to do the
+DNS name lookup requests, as doing a name lookup is a blocking action.
+
+See also the parameter link(bf(wins support))(winssupport).
+
+  bf(Default:)
 	 dns proxy = yes
 
-.SS domain controller (G)
+label(domainadmingroup)
+bf(domain admin group (G))
 
-The meaning of this parameter changed from a string to a boolean (yes/no)
-value. It is currently not used within the Samba source and should be removed
-from all current smb.conf files. It is left behind for compatibility reasons.
+This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
+Samba NT Domain Controller Code. It may be removed in a later release.
+To work with the latest code builds that may have more support for
+Samba NT Domain Controller functionality please subscibe to the
+mailing list bf(Samba-ntdom) available by sending email to
+email(listproc@samba.anu.edu.au)
 
-.B Default:
-	 domain controller = no
+label(domainadminusers) 
+dit(bf(domain admin users)
 
-.SS domain logons (G)
+This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
+Samba NT Domain Controller Code. It may be removed in a later release.
+To work with the latest code builds that may have more support for
+Samba NT Domain Controller functionality please subscibe to the
+mailing list bf(Samba-ntdom) available by sending email to
+email(listproc@samba.anu.edu.au)
 
-If set to true, the Samba server will serve Windows 95 domain logons
-for the workgroup it is in. For more details on setting up this feature
-see the file DOMAINS.txt in the Samba source documentation directory.
+label(domain controller)
+dit(bf(domain controller (G)))
 
-.B Default:
+This is a bf(DEPRECATED) parameter. It is currently not used within
+the Samba source and should be removed from all current smb.conf
+files. It is left behind for compatibility reasons.
+
+label(domaingroups)
+dit(bf(domain groups (G)))
+
+This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
+Samba NT Domain Controller Code. It may be removed in a later release.
+To work with the latest code builds that may have more support for
+Samba NT Domain Controller functionality please subscibe to the
+mailing list bf(Samba-ntdom) available by sending email to
+email(listproc@samba.anu.edu.au)
+
+label(domainguestgroup)
+dit(bf(domain guest group (G)))
+
+This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
+Samba NT Domain Controller Code. It may be removed in a later release.
+To work with the latest code builds that may have more support for
+Samba NT Domain Controller functionality please subscibe to the
+mailing list bf(Samba-ntdom) available by sending email to
+email(listproc@samba.anu.edu.au)
+
+label(domainguestusers)
+dit(bf(domain guest users (G)))
+
+This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
+Samba NT Domain Controller Code. It may be removed in a later release.
+To work with the latest code builds that may have more support for
+Samba NT Domain Controller functionality please subscibe to the
+mailing list bf(Samba-ntdom) available by sending email to
+email(listproc@samba.anu.edu.au)
+
+label(domainlogons)
+dit(bf(domain logons (G)))
+
+If set to true, the Samba server will serve Windows 95/98 Domain
+logons for the link(bf(workgroup))(workgroup) it is in. For more
+details on setting up this feature see the file DOMAINS.txt in the
+Samba documentation directory tt(docs/) shipped with the source code.
+
+Note that Win95/98 Domain logons are em(NOT) the same as Windows
+NT Domain logons. NT Domain logons require a Primary Domain Controller
+(PDC) for the Domain. It is inteded that in a future release Samba
+will be able to provide this functionality for Windows NT clients
+also.
+
+  bf(Default:)
 	 domain logons = no
 
-.SS domain master (G)
+label(domainmaster)
+dit(bf(domain master (G)))
 
-Enable WAN-wide browse list collation.  Local master browsers on 
-broadcast-isolated subnets will give samba their local browse lists, and 
-ask for a complete copy of the browse list for the whole wide area network.
-Browser clients will then contact their local master browser, and will
-receive the domain-wide browse list, instead of just the list for their
-broadcast-isolated subnet.
+Tell link(bf(nmbd))(nmbd.8.html) to enable WAN-wide browse list
+collation.Setting this option causes link(bf(nmbd))(nmbd.8.html) to
+claim a special domain specific NetBIOS name that identifies it as a
+domain master browser for its given
+link(bf(workgroup))(workgroup). Local master browsers in the same
+link(bf(workgroup))(workgroup) on broadcast-isolated subnets will give
+this link(bf(nmbd))(nmbd.8.html) their local browse lists, and then
+ask link(bf(smbd))(smbd.8.html) for a complete copy of the browse list
+for the whole wide area network.  Browser clients will then contact
+their local master browser, and will receive the domain-wide browse
+list, instead of just the list for their broadcast-isolated subnet.
 
-.B Default:
+Note that Windows NT Primary Domain Controllers expect to be able to
+claim this link(bf(workgroup))(workgroup) specific special NetBIOS
+name that identifies them as domain master browsers for that
+link(bf(workgroup))(workgroup) by default (ie. there is no way to
+prevent a Windows NT PDC from attempting to do this). This means that
+if this parameter is set and link(bf(nmbd))(nmbd.8.html) claims the
+special name for a link(bf(workgroup))(workgroup) before a Windows NT
+PDC is able to do so then cross subnet browsing will behave strangely
+and may fail.
+
+  bf(Default:)
  	domain master = no
 
 .SS dont descend (S)
