@@ -2538,25 +2538,25 @@ fi
 
 # Display test results
 
-if test x"$HAVE_WINBIND" = x"yes" && test x"$BLDSHARED" = x"true"; then
 
+WINBIND_TARGETS=""
+WINBIND_STARGETS=""
+WINBIND_LTARGETS=""
+WINBIND_PAM_PROGS=""
+
+if test x"$HAVE_WINBIND" = x"yes"; then
         AC_MSG_RESULT(yes)
 
 	WINBIND_TARGETS="bin/wbinfo"
 	WINBIND_STARGETS="bin/winbindd"
-	WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
-	case "$with_pam" in
-		yes)
+        if test x"$BLDSHARED" = x"true"; then
+		WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
+		if test x"$with_pam" = x"yes"; then
 			WINBIND_PAM_TARGETS="nsswitch/pam_winbind.so"
-		;;
-	esac
+		fi
+	fi
 else
         AC_MSG_RESULT(no$winbind_no_reason)
-
-	WINBIND_TARGETS=""
-	WINBIND_STARGETS=""
-	WINBIND_LTARGETS=""
-	WINBIND_PAM_PROGS=""
 fi
 
 # Substitution time!
