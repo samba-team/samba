@@ -685,10 +685,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		restore_case_semantics(file_attributes);
 
 		if(!fsp) {
-			if((errno == ENOENT) && bad_path) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
+			set_bad_path_error(errno, bad_path);
 			END_PROFILE(SMBntcreateX);
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
@@ -755,22 +752,14 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
-					if((errno == ENOENT) && bad_path) {
-						unix_ERR_class = ERRDOS;
-						unix_ERR_code = ERRbadpath;
-					}
+					set_bad_path_error(errno, bad_path);
 					END_PROFILE(SMBntcreateX);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
 			} else {
 
-				if((errno == ENOENT) && bad_path) {
-					unix_ERR_class = ERRDOS;
-					unix_ERR_code = ERRbadpath;
-				}
-				
 				restore_case_semantics(file_attributes);
-				
+				set_bad_path_error(errno, bad_path);
 				END_PROFILE(SMBntcreateX);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
@@ -1180,10 +1169,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
     if(!fsp) {
       restore_case_semantics(file_attributes);
-      if((errno == ENOENT) && bad_path) {
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadpath;
-      }
+      set_bad_path_error(errno, bad_path);
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
 
@@ -1217,21 +1203,13 @@ static int call_nt_transact_create(connection_struct *conn,
 				
 			if(!fsp) {
 				restore_case_semantics(file_attributes);
-				if((errno == ENOENT) && bad_path) {
-					unix_ERR_class = ERRDOS;
-					unix_ERR_code = ERRbadpath;
-				}
+				set_bad_path_error(errno, bad_path);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 		} else {
 
-			if((errno == ENOENT) && bad_path) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
-
 			restore_case_semantics(file_attributes);
-
+			set_bad_path_error(errno, bad_path);
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
       } 
