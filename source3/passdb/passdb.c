@@ -1541,7 +1541,7 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, const char *username)
  
 	if (!username)
 		return False;
-	StrnCpy (sampass->private.username, username, strlen(username));
+	StrnCpy (sampass->private.username, username, sizeof(pstring) - 1);
 
 	return True;
 }
@@ -1558,7 +1558,7 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain)
 	if (!domain)
 		return False;
 
-	StrnCpy (sampass->private.domain, domain, strlen(domain));
+	StrnCpy (sampass->private.domain, domain, sizeof(pstring) - 1);
 
 	return True;
 }
@@ -1575,7 +1575,7 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username)
 	if (!nt_username)
 		return False;
 
-	StrnCpy (sampass->private.nt_username, nt_username, strlen(nt_username));
+	StrnCpy (sampass->private.nt_username, nt_username, sizeof(pstring) - 1);
 
 	return True;
 }
@@ -1596,7 +1596,7 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *fullname)
 	if (!fullname)
 		return False;
 
-	StrnCpy (sampass->private.full_name, fullname, strlen(fullname));
+	StrnCpy (sampass->private.full_name, fullname, sizeof(pstring) - 1);
 
 	return True;
 }
@@ -1617,7 +1617,7 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL s
 	if (!logon_script)
 		return False;
 
-	StrnCpy (sampass->private.logon_script, logon_script, strlen(logon_script));
+	StrnCpy (sampass->private.logon_script, logon_script, sizeof(pstring) - 1);
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT); 
@@ -1641,7 +1641,7 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL 
 	if (!profile_path)
 		return False;
 	
-	StrnCpy (sampass->private.profile_path, profile_path, strlen(profile_path));
+	StrnCpy (sampass->private.profile_path, profile_path, sizeof(pstring) - 1);
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
@@ -1661,7 +1661,7 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 	if (!dir_drive)
 		return False;
 
-	StrnCpy (sampass->private.dir_drive, dir_drive, strlen(dir_drive));
+	StrnCpy (sampass->private.dir_drive, dir_drive, sizeof(pstring) - 1);
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
@@ -1681,7 +1681,7 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *homedir, BOOL store)
 	if (!homedir)
 		return False;
 	
-	StrnCpy (sampass->private.home_dir, homedir, strlen(homedir));
+	StrnCpy (sampass->private.home_dir, homedir, sizeof(pstring) - 1);
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
@@ -1701,7 +1701,7 @@ BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, const char *acct_desc)
 	if (!acct_desc)
 		return False;
 	
-	StrnCpy (sampass->private.acct_desc, acct_desc, strlen(acct_desc));
+	StrnCpy (sampass->private.acct_desc, acct_desc, sizeof(pstring) - 1);
 
 	return True;
 }
@@ -1718,7 +1718,7 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, const char *workstations)
 	if (!workstations)
 		return False;
 
-	StrnCpy (sampass->private.workstations, workstations, strlen(workstations));
+	StrnCpy (sampass->private.workstations, workstations, sizeof(pstring) - 1);
 
 	return True;
 }
@@ -1735,7 +1735,7 @@ BOOL pdb_set_unknown_str (SAM_ACCOUNT *sampass, const char *unknown_str)
 	if (!unknown_str)
 		return False;
 
-	StrnCpy (sampass->private.unknown_str, unknown_str, strlen(unknown_str));
+	StrnCpy (sampass->private.unknown_str, unknown_str, sizeof(pstring) - 1);
 
 	return True;
 }
@@ -1752,7 +1752,7 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, const char *munged_dial)
 	if (!munged_dial)
 		return False;
 
-	StrnCpy (sampass->private.munged_dial, munged_dial, strlen(munged_dial));
+	StrnCpy (sampass->private.munged_dial, munged_dial, sizeof(pstring) - 1);
 
 	return True;
 }
