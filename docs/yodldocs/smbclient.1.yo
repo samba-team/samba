@@ -287,6 +287,13 @@ that this may be very insecure on some systems but on others allows
 users to script smbclient commands without having a password appear in
 the command line of a process listing.
 
+A third option is to use a credentials file which contains
+the plaintext of the username and password.  This option is
+mainly provided for scripts where the admin doesn't desire to
+pass the credentials on the command line or via environment variables.
+If this method is used, make certain that the permissions on the file
+restrict access from unwanted users.  See the bf(-A) for more details.
+
 Note: Some servers (including OS/2 and Windows for Workgroups) insist
 on an uppercase password. Lowercase or mixed case passwords may be
 rejected by these servers.
@@ -296,6 +303,17 @@ tt(PASSWD) environment variable. Also, on many systems the command
 line of a running process may be seen via the tt(ps) command to be
 safe always allow smbclient to prompt for a password and type it in
 directly.
+
+label(minusA)
+dit(bf(-A <filename>)) This option allows you to specify a file from which
+to read the username and password used in the connection.  The format
+of the file is
+
+tt(username = <value>) nl()
+tt(password = <value>) nl()
+
+Make certain that the permissions on the file restrict access from
+unwanted users.
 
 label(minusL)
 dit(bf(-L)) This option allows you to look at what services are
