@@ -192,6 +192,8 @@ sub struct_alignment
 				if (defined $structs{$e->{TYPE}}->{DATA}) {
 					$a = union_alignment($structs{$e->{TYPE}}->{DATA});
 				}
+			} elsif ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "ENUM") {
+				$a = util::type_align($e);
 			}
 		} else {
 			$a = util::type_align($e);

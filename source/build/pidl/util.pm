@@ -335,6 +335,11 @@ sub type_align($)
 	    return $ret;
     }
 
+    if (is_enum($type)) {
+	    my $ret = type_align(get_enum($type));
+	    return $ret;
+    }
+
     # it must be an external type - all we can do is guess 
     return 4;
 }
