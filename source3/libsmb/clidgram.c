@@ -54,7 +54,7 @@ int cli_send_mailslot(int dgram_sock, BOOL unique, char *mailslot,
   dgram->header.flags.more = False;
   dgram->header.dgm_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)sys_getpid()%(unsigned)100);
   dgram->header.source_ip.s_addr = src_ip.s_addr;
-  fprintf(stderr, "Source IP = %0X\n", dgram->header.source_ip);
+  /*fprintf(stderr, "Source IP = %0X\n", dgram->header.source_ip); */
   dgram->header.source_port = ntohs(src_port);
   fprintf(stderr, "Source Port = %0X\n", dgram->header.source_port);
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
@@ -128,6 +128,8 @@ int cli_get_response(int dgram_sock, BOOL unique, char *mailslot, char *buf, int
   else 
     return -1;
 
+  return 0;
+
 }
 
 /*
@@ -147,7 +149,8 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   if (!resolve_name(send_to_name, &sendto_ip, 0x1d)) {
 
-    fprintf(stderr, "Could not resolve name: %s<1D>\n", send_to_name);
+    DEBUG(0, ("Could not resolve name: %s<1D>\n", send_to_name));
+    return False;
 
   }
 
@@ -155,7 +158,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
  
   if (!resolve_name(myname, &my_ip, 0x00)) { /* FIXME: Call others here */
 
-    fprintf(stderr, "Could not resolve name: %s<00>\n", myname);
+    DEBUG(0, ("Could not resolve name: %s<00>\n", myname));
 
   }
 
@@ -174,7 +177,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   if (fcntl(dgram_sock, F_SETFL, O_NONBLOCK) < 0) {
 
-    fprintf(stderr, "Unable to set non blocking on dgram sock\n");
+    DEBUG(0, ("Unable to set non blocking on dgram sock\n"));
 
   }
 
@@ -206,7 +209,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   getsockname(dgram_sock, (struct sockaddr_in *)&sock_out, &name_size);
 
-  fprintf(stderr, "Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port));
+  DEBUG(5, ("Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port)));
 
   /* Now, build the request */
 
@@ -238,6 +241,8 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   close(dgram_sock);
 
+  return True;
+
 }
 
 /*
@@ -259,4 +264,9 @@ int cli_get_backup_server(char *my_name, char *target, char *servername, int nam
 
   strncpy(servername, cli_backup_list, MIN(16, namesize));
 
+  return True;
+
 }
+
+
+
