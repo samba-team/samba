@@ -354,7 +354,6 @@ parse_reply(const unsigned char *data, size_t len)
 	return NULL;
 
     p = data;
-    memcpy(&r->h, p, 12); /* XXX this will probably be mostly garbage */
 
     r->h.id = (p[0] << 8) | p[1];
     r->h.misc = (p[2] << 8) | p[3];
@@ -365,7 +364,7 @@ parse_reply(const unsigned char *data, size_t len)
 
     p += 12;
 
-    if(ntohs(r->h.qdcount) != 1) {
+    if(r->h.qdcount != 1) {
 	free(r);
 	return NULL;
     }
@@ -390,21 +389,21 @@ parse_reply(const unsigned char *data, size_t len)
     p += 2;
     
     rr = &r->head;
-    for(i = 0; i < ntohs(r->h.ancount); i++) {
+    for(i = 0; i < r->h.ancount; i++) {
 	if(parse_record(data, end_data, &p, rr) != 0) {
 	    dns_free_data(r);
 	    return NULL;
 	}
 	rr = &(*rr)->next;
     }
-    for(i = 0; i < ntohs(r->h.nscount); i++) {
+    for(i = 0; i < r->h.nscount; i++) {
 	if(parse_record(data, end_data, &p, rr) != 0) {
 	    dns_free_data(r);
 	    return NULL;
 	}
 	rr = &(*rr)->next;
     }
-    for(i = 0; i < ntohs(r->h.arcount); i++) {
+    for(i = 0; i < r->h.arcount; i++) {
 	if(parse_record(data, end_data, &p, rr) != 0) {
 	    dns_free_data(r);
 	    return NULL;
