@@ -1591,7 +1591,7 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
  * construct_printer_info_0
  * fill a printer_info_1 struct
  ********************************************************************/
-static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, pstring servername)
+static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring servername)
 {
 	pstring chaine;
 	int count;
@@ -2200,7 +2200,7 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinter_level_0(pstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinter_level_0(fstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_0 *printer=NULL;
 
@@ -2232,7 +2232,7 @@ static uint32 getprinter_level_0(pstring servername, int snum, NEW_BUFFER *buffe
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinter_level_1(pstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinter_level_1(fstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_1 *printer=NULL;
 
@@ -2264,7 +2264,7 @@ static uint32 getprinter_level_1(pstring servername, int snum, NEW_BUFFER *buffe
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinter_level_2(pstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinter_level_2(fstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_2 *printer=NULL;
 	fstring temp;
@@ -2305,7 +2305,7 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int snum;
-	pstring servername;
+	fstring servername;
 	
 	*needed=0;
 
@@ -2336,13 +2336,13 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
  ********************************************************************/
 static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, 
                                        NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
+				       fstring servername, fstring architecture)
 {
 	init_unistr( &(info->name), driver.info_3->name);
 }
 
 static void construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, 
-                                            pstring servername, fstring architecture)
+                                            fstring servername, fstring architecture)
 {	
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -2396,7 +2396,7 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info,
  * construct_printer_driver_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
-static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, pstring servername, fstring architecture)
+static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fstring servername, fstring architecture)
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -2448,7 +2448,7 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
  ********************************************************************/
 static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, 
                                        NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
+				       fstring servername, fstring architecture)
 {
 	pstring where;
 	pstring temp_driverpath;
@@ -2490,7 +2490,7 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
  * fill a printer_info_3 struct
  ********************************************************************/
 static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, 
-                                            pstring servername, fstring architecture)
+                                            fstring servername, fstring architecture)
 {	
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -2506,7 +2506,7 @@ static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum,
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinterdriver2_level1(pstring servername, pstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinterdriver2_level1(fstring servername, fstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_1 *info=NULL;
 	
@@ -2537,7 +2537,7 @@ static uint32 getprinterdriver2_level1(pstring servername, pstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinterdriver2_level2(pstring servername, pstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinterdriver2_level2(fstring servername, fstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_2 *info=NULL;
 	
@@ -2568,7 +2568,7 @@ static uint32 getprinterdriver2_level2(pstring servername, pstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinterdriver2_level3(pstring servername, pstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinterdriver2_level3(fstring servername, fstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_3 *info=NULL;
 	
@@ -2605,7 +2605,7 @@ uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_a
 				NEW_BUFFER *buffer, uint32 offered,
 				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion)
 {
-	pstring servername;
+	fstring servername;
 	fstring architecture;
 	int snum;
 
@@ -3261,7 +3261,8 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_2 *driver_info_2=NULL;
 
-	if((driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2))) == NULL)
+	if (*returned > 0 && 
+	    !(driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2))))
 		return ERROR_NOT_ENOUGH_MEMORY;
 
 	for (i=0; i<*returned; i++) {
