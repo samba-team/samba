@@ -27,6 +27,8 @@
 #define OID_SPNEGO "1 3 6 1 5 5 2"
 #define OID_KERBEROS5 "1 2 840 113554 1 2 2"
 
+#define CHECK_CALL(x) if (! x) goto failed
+
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
@@ -34,60 +36,62 @@ static krb5_error_code krb5_mk_req2(krb5_context context,
 				    krb5_auth_context *auth_context, 
 				    const krb5_flags ap_req_options,
 				    const char *service, 
-				    krb5_data *in_data,
+				    const char *realm,
 				    krb5_ccache ccache, 
 				    krb5_data *outbuf)
 {
-    krb5_error_code 	  retval;
-    krb5_principal	  server;
-    krb5_creds 		* credsp;
-    krb5_creds 		  creds;
-    char *realm;
+	krb5_error_code 	  retval;
+	krb5_principal	  server;
+	krb5_creds 		* credsp;
+	krb5_creds 		  creds;
+	krb5_data in_data;
+	
+	retval = krb5_build_principal(context, &server, strlen(realm),
+				      realm, service, NULL);
+	if (retval) {
+		DEBUG(1,("Failed to build principle for %s@%s\n", service, realm));
+		return retval;
+	}
+	
+	/* obtain ticket & session key */
+	memset((char *)&creds, 0, sizeof(creds));
+	if ((retval = krb5_copy_principal(context, server, &creds.server)))
+		goto cleanup_princ;
+	
+	if ((retval = krb5_cc_get_principal(context, ccache, &creds.client)))
+		goto cleanup_creds;
 
-    /* we should really get the realm from the negTargInit packet,
-       but this will do until I've done the asn1 decoder for that */
-    if ((retval = krb5_get_default_realm(context, &realm))) {
-	    return retval;
-    }
+	if ((retval = krb5_get_credentials(context, 0,
+					   ccache, &creds, &credsp))) {
+		DEBUG(1,("krb5_get_credentials failed (%d)\n", retval));
+		goto cleanup_creds;
+	}
 
-    retval = krb5_build_principal(context, &server, strlen(realm),
-				  realm, service, NULL);
-    if (retval)
-      return retval;
-
-    /* obtain ticket & session key */
-    memset((char *)&creds, 0, sizeof(creds));
-    if ((retval = krb5_copy_principal(context, server, &creds.server)))
-	goto cleanup_princ;
-
-    if ((retval = krb5_cc_get_principal(context, ccache, &creds.client)))
-	goto cleanup_creds;
-
-    if ((retval = krb5_get_credentials(context, 0,
-				       ccache, &creds, &credsp)))
-	goto cleanup_creds;
-
-    retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
-				  in_data, credsp, outbuf);
-
-    krb5_free_creds(context, credsp);
+	in_data.length = 0;
+	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
+				      &in_data, credsp, outbuf);
+	if (retval) {
+		DEBUG(1,("krb5_mk_req_extended failed (%d)\n", retval));
+	}
+	
+	krb5_free_creds(context, credsp);
 
 cleanup_creds:
-    krb5_free_cred_contents(context, &creds);
+	krb5_free_cred_contents(context, &creds);
 
 cleanup_princ:
-    krb5_free_principal(context, server);
+	krb5_free_principal(context, server);
 
-    return retval;
+	return retval;
 }
 
 /*
   get a kerberos5 ticket for the given service 
 */
-static DATA_BLOB krb5_get_ticket(char *service)
+static DATA_BLOB krb5_get_ticket(char *service, char *realm)
 {
 	krb5_error_code retval;
-	krb5_data packet, inbuf;
+	krb5_data packet;
 	krb5_ccache ccdef;
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
@@ -99,8 +103,6 @@ static DATA_BLOB krb5_get_ticket(char *service)
 		goto failed;
 	}
 
-	inbuf.length = 0;
-
 	if ((retval = krb5_cc_default(context, &ccdef))) {
 		DEBUG(1,("krb5_cc_default failed\n"));
 		goto failed;
@@ -109,8 +111,8 @@ static DATA_BLOB krb5_get_ticket(char *service)
 	if ((retval = krb5_mk_req2(context, 
 				   &auth_context, 
 				   AP_OPTS_MUTUAL_REQUIRED, 
-				   service,
-				   &inbuf, ccdef, &packet))) {
+				   service, realm,
+				   ccdef, &packet))) {
 		DEBUG(1,("krb5_mk_req2 failed\n"));
 		goto failed;
 	}
@@ -139,16 +141,16 @@ ASN1_DATA spnego_gen_negTokenInit(uint8 guid[16],
 
 	memset(&data, 0, sizeof(data));
 
-	asn1_write(&data, guid, 16);
-	asn1_push_tag(&data,ASN1_APPLICATION(0));
-	asn1_write_OID(&data,OID_SPNEGO);
-	asn1_push_tag(&data,ASN1_CONTEXT(0));
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
+	CHECK_CALL(asn1_write(&data, guid, 16));
+	CHECK_CALL(asn1_push_tag(&data,ASN1_APPLICATION(0)));
+	CHECK_CALL(asn1_write_OID(&data,OID_SPNEGO));
+	CHECK_CALL(asn1_push_tag(&data,ASN1_CONTEXT(0)));
+	CHECK_CALL(asn1_push_tag(&data,ASN1_SEQUENCE(0)));
 
-	asn1_push_tag(&data,ASN1_CONTEXT(0));
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
+	CHECK_CALL(asn1_push_tag(&data,ASN1_CONTEXT(0)));
+	CHECK_CALL(asn1_push_tag(&data,ASN1_SEQUENCE(0)));
 	for (i=0; OIDs[i]; i++) {
-		asn1_write_OID(&data,OIDs[i]);
+		CHECK_CALL(asn1_write_OID(&data,OIDs[i]));
 	}
 	asn1_pop_tag(&data);
 	asn1_pop_tag(&data);
@@ -167,6 +169,62 @@ ASN1_DATA spnego_gen_negTokenInit(uint8 guid[16],
 	asn1_pop_tag(&data);
 
 	return data;
+
+failed:
+	DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data.ofs));
+	asn1_free(&data);
+	return data;
+}
+
+
+/*
+  parse a negTokenInit packet giving a GUID, a list of supported
+  OIDs (the mechanisms) and a principle name string 
+*/
+BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
+			       uint8 guid[16], 
+			       char *OIDs[ASN1_MAX_OIDS], 
+			       char **principle)
+{
+	int i;
+	BOOL ret;
+	ASN1_DATA data;
+
+	asn1_load(&data, blob);
+
+	asn1_read(&data, guid, 16);
+	asn1_start_tag(&data,ASN1_APPLICATION(0));
+	asn1_check_OID(&data,OID_SPNEGO);
+	asn1_start_tag(&data,ASN1_CONTEXT(0));
+	asn1_start_tag(&data,ASN1_SEQUENCE(0));
+
+	asn1_start_tag(&data,ASN1_CONTEXT(0));
+	asn1_start_tag(&data,ASN1_SEQUENCE(0));
+	for (i=0; asn1_tag_remaining(&data) > 0 && i < ASN1_MAX_OIDS; i++) {
+		char *oid = NULL;
+		asn1_read_OID(&data,&oid);
+		OIDs[i] = oid;
+	}
+	OIDs[i] = NULL;
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	asn1_start_tag(&data, ASN1_CONTEXT(3));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_CONTEXT(0));
+	asn1_read_GeneralString(&data,principle);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	asn1_end_tag(&data);
+
+	ret = !data.has_error;
+	asn1_free(&data);
+	return ret;
 }
 
 
@@ -229,25 +287,28 @@ static ASN1_DATA spnego_gen_krb5_wrap(DATA_BLOB ticket)
    generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
    kerberos session setup 
 */
-DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli)
+DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli, char *principle)
 {
 	char *p;
 	fstring service;
+	char *realm;
 	DATA_BLOB tkt, ret;
 	ASN1_DATA tkt_wrapped, targ;
 	const char *krb_mechs[] = 
 	{"1 2 840 48018 1 2 2", "1 3 6 1 4 1 311 2 2 10", NULL};
 
-	/* the service name is the WINS name of the server in lowercase with
-	   a $ on the end */
-	fstrcpy(service, cli->desthost);
-	p = strchr_m(service, '.');
-	if (p) *p = 0;
-	fstrcat(service, "$");
-	strlower(service);
+	fstrcpy(service, principle);
+	p = strchr_m(service, '@');
+	if (!p) {
+		DEBUG(1,("Malformed principle [%s] in spnego_gen_negTokenTarg\n",
+			 principle));
+		return data_blob(NULL, 0);
+	}
+	*p = 0;
+	realm = p+1;
 
 	/* get a kerberos ticket for the service */
-	tkt = krb5_get_ticket(service);
+	tkt = krb5_get_ticket(service, realm);
 
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt);
