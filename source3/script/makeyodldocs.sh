@@ -67,7 +67,7 @@ do
 			;;
 		*)
 #
-# Non man-page YODL docs - just make html.
+# Non man-page YODL docs - just make html and text.
 #
 			echo $d
 			rm -f $bn.html
@@ -78,6 +78,14 @@ do
             fi
 			cp $bn.html ../htmldocs || echo "Cannot create $YODLDIR/../htmldocs/$bn.html"
 			rm -f $bn.html
+			rm -f $bn.txt
+			yodl2txt $d
+			if [ ! -f $bn.txt ]; then
+                echo "Failed to make text page for $d"
+                exit 1
+            fi
+			cp $bn.txt ../textdocs || echo "Cannot create $YODLDIR/../textdocs/$bn.txt"
+			rm -f $bn.txt
 		;;
 	esac
 done

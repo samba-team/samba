@@ -321,7 +321,7 @@ static int cgi_handle_authorization(char *line)
 /***************************************************************************
 is this root?
   ***************************************************************************/
-BOOL is_root()
+BOOL is_root(void)
 {
 	if ((C_user) && (strcmp(C_user,"root") == 0)) {
 		return( True);
@@ -333,7 +333,7 @@ BOOL is_root()
 /***************************************************************************
 return a ptr to the users name
   ***************************************************************************/
-char * get_user_name()
+char *get_user_name(void)
 {
         return(C_user);
 }
