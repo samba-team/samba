@@ -138,10 +138,10 @@ static void display_print_info_0(PRINTER_INFO_0 *i0)
 		return;
 
 	if (i0->printername.buffer)
-		rpcstr_pull(name, i0->printername.buffer, sizeof(name), 0, STR_TERMINATE);
+		rpcstr_pull(name, i0->printername.buffer, sizeof(name), -1, STR_TERMINATE);
 
 	if (i0->servername.buffer)
-		rpcstr_pull(servername, i0->servername.buffer, sizeof(servername), 0,STR_TERMINATE);
+		rpcstr_pull(servername, i0->servername.buffer, sizeof(servername), -1,STR_TERMINATE);
   
 	printf("\tprintername:[%s]\n", name);
 	printf("\tservername:[%s]\n", servername);
@@ -196,15 +196,15 @@ static void display_print_info_1(PRINTER_INFO_1 *i1)
 	fstring comm = "";
 
 	if (i1->description.buffer)
-		rpcstr_pull(desc, i1->description.buffer, sizeof(desc), 0, 
+		rpcstr_pull(desc, i1->description.buffer, sizeof(desc), -1,
 			    STR_TERMINATE);
 
 	if (i1->name.buffer)
-		rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, 
+		rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, 
 			    STR_TERMINATE);
 
 	if (i1->comment.buffer)
-		rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), 0, 
+		rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), -1, 
 			    STR_TERMINATE);
 
 	printf("\tflags:[0x%x]\n", i1->flags);
@@ -233,37 +233,37 @@ static void display_print_info_2(PRINTER_INFO_2 *i2)
 	fstring parameters = "";
 	
 	if (i2->servername.buffer)
-		rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), 0, STR_TERMINATE);
+		rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), -1, STR_TERMINATE);
 
 	if (i2->printername.buffer)
-		rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), 0, STR_TERMINATE);
+		rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), -1, STR_TERMINATE);
 
 	if (i2->sharename.buffer)
-		rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), 0, STR_TERMINATE);
+		rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), -1, STR_TERMINATE);
 
 	if (i2->portname.buffer)
-		rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), 0, STR_TERMINATE);
+		rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), -1, STR_TERMINATE);
 
 	if (i2->drivername.buffer)
-		rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), 0, STR_TERMINATE);
+		rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), -1, STR_TERMINATE);
 
 	if (i2->comment.buffer)
-		rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), 0, STR_TERMINATE);
+		rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), -1, STR_TERMINATE);
 
 	if (i2->location.buffer)
-		rpcstr_pull(location, i2->location.buffer,sizeof(location), 0, STR_TERMINATE);
+		rpcstr_pull(location, i2->location.buffer,sizeof(location), -1, STR_TERMINATE);
 
 	if (i2->sepfile.buffer)
-		rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), 0, STR_TERMINATE);
+		rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), -1, STR_TERMINATE);
 
 	if (i2->printprocessor.buffer) 
-		rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), 0, STR_TERMINATE);
+		rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), -1, STR_TERMINATE);
 
 	if (i2->datatype.buffer)
-		rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), 0, STR_TERMINATE);
+		rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), -1, STR_TERMINATE);
 
 	if (i2->parameters.buffer)
-		rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), 0, STR_TERMINATE);
+		rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), -1, STR_TERMINATE);
 
 	printf("\tservername:[%s]\n", servername);
 	printf("\tprintername:[%s]\n", printername);
@@ -377,7 +377,7 @@ static void display_port_info_1(PORT_INFO_1 *i1)
 {
 	fstring buffer;
 	
-	rpcstr_pull(buffer, i1->port_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
+	rpcstr_pull(buffer, i1->port_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
 	printf("\tPort Name:\t[%s]\n", buffer);
 }
 
@@ -388,12 +388,12 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 {
 	fstring buffer;
 	
-	rpcstr_pull(buffer, i2->port_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
+	rpcstr_pull(buffer, i2->port_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
 	printf("\tPort Name:\t[%s]\n", buffer);
-	rpcstr_pull(buffer, i2->monitor_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
+	rpcstr_pull(buffer, i2->monitor_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
 
 	printf("\tMonitor Name:\t[%s]\n", buffer);
-	rpcstr_pull(buffer, i2->description.buffer, sizeof(buffer), 0, STR_TERMINATE);
+	rpcstr_pull(buffer, i2->description.buffer, sizeof(buffer), -1, STR_TERMINATE);
 
 	printf("\tDescription:\t[%s]\n", buffer);
 	printf("\tPort Type:\t[%d]\n", i2->port_type);
@@ -613,7 +613,7 @@ static void display_print_driver_1(DRIVER_INFO_1 *i1)
 	if (i1 == NULL)
 		return;
 
-	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, STR_TERMINATE);
 
 	printf ("Printer Driver Info 1:\n");
 	printf ("\tDriver Name: [%s]\n\n", name);
@@ -634,11 +634,11 @@ static void display_print_driver_2(DRIVER_INFO_2 *i1)
 	if (i1 == NULL)
 		return;
 
-	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
-	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), 0, STR_TERMINATE);
-	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), 0, STR_TERMINATE);
-	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), 0, STR_TERMINATE);
-	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), 0, STR_TERMINATE);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, STR_TERMINATE);
+	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), -1, STR_TERMINATE);
+	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), -1, STR_TERMINATE);
+	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), -1, STR_TERMINATE);
+	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), -1, STR_TERMINATE);
 
 	printf ("Printer Driver Info 2:\n");
 	printf ("\tVersion: [%x]\n", i1->version);
@@ -672,14 +672,14 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 	if (i1 == NULL)
 		return;
 
-	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
-	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), 0, STR_TERMINATE);
-	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), 0, STR_TERMINATE);
-	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), 0, STR_TERMINATE);
-	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), 0, STR_TERMINATE);
-	rpcstr_pull(helpfile, i1->helpfile.buffer, sizeof(helpfile), 0, STR_TERMINATE);
-	rpcstr_pull(monitorname, i1->monitorname.buffer, sizeof(monitorname), 0, STR_TERMINATE);
-	rpcstr_pull(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype), 0, STR_TERMINATE);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, STR_TERMINATE);
+	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), -1, STR_TERMINATE);
+	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), -1, STR_TERMINATE);
+	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), -1, STR_TERMINATE);
+	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), -1, STR_TERMINATE);
+	rpcstr_pull(helpfile, i1->helpfile.buffer, sizeof(helpfile), -1, STR_TERMINATE);
+	rpcstr_pull(monitorname, i1->monitorname.buffer, sizeof(monitorname), -1, STR_TERMINATE);
+	rpcstr_pull(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype), -1, STR_TERMINATE);
 
 	printf ("Printer Driver Info 3:\n");
 	printf ("\tVersion: [%x]\n", i1->version);
@@ -692,7 +692,7 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 
 	while (valid)
 	{
-		rpcstr_pull(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles), 0, STR_TERMINATE);
+		rpcstr_pull(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles), -1, STR_TERMINATE);
 		
 		length+=strlen(dependentfiles)+1;
 		
@@ -887,7 +887,7 @@ static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
         if (i1 == NULL)
                 return;
  
-	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, STR_TERMINATE);
  
 	printf ("\tDirectory Name:[%s]\n", name);
 }
@@ -1083,7 +1083,7 @@ static NTSTATUS cmd_spoolss_addprinterdriver(struct cli_state *cli,
 
 	if (W_ERROR_IS_OK(result)) {
 		rpcstr_pull(driver_name, info3.name.buffer, 
-			    sizeof(driver_name), 0, STR_TERMINATE);
+			    sizeof(driver_name), -1, STR_TERMINATE);
 		printf ("Printer Driver %s successfully installed.\n",
 			driver_name);
 	}
@@ -1588,7 +1588,7 @@ static NTSTATUS cmd_spoolss_enum_forms(struct cli_state *cli,
 
 		if (forms[i].name.buffer)
 			rpcstr_pull(form_name, forms[i].name.buffer,
-				    sizeof(form_name), 0, STR_TERMINATE);
+				    sizeof(form_name), -1, STR_TERMINATE);
 
 		printf("%s\n", form_name);
 	}
@@ -1676,6 +1676,123 @@ done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+static void display_job_info_1(JOB_INFO_1 *job)
+{
+	fstring username = "", document = "", text_status = "";
+
+	if (job->username.buffer)
+		rpcstr_pull(username, job->username.buffer,
+			   sizeof(username), -1, STR_TERMINATE);
+
+	if (job->document.buffer)
+		rpcstr_pull(document, job->document.buffer,
+			   sizeof(document), -1, STR_TERMINATE);
+
+	if (job->text_status.buffer)
+		rpcstr_pull(text_status, job->text_status.buffer,
+			   sizeof(text_status), -1, STR_TERMINATE);
+
+	printf("%d: jobid[%d]: %s %s %s %d/%d pages\n", job->position, job->jobid,
+	       username, document, text_status, job->pagesprinted,
+	       job->totalpages);
+}
+
+static void display_job_info_2(JOB_INFO_2 *job)
+{
+	fstring username = "", document = "", text_status = "";
+
+	if (job->username.buffer)
+		rpcstr_pull(username, job->username.buffer,
+			   sizeof(username), -1, STR_TERMINATE);
+
+	if (job->document.buffer)
+		rpcstr_pull(document, job->document.buffer,
+			   sizeof(document), -1, STR_TERMINATE);
+
+	if (job->text_status.buffer)
+		rpcstr_pull(text_status, job->text_status.buffer,
+			   sizeof(text_status), -1, STR_TERMINATE);
+
+	printf("%d: jobid[%d]: %s %s %s %d/%d pages, %d bytes\n", job->position, job->jobid,
+	       username, document, text_status, job->pagesprinted,
+	       job->totalpages, job->size);
+}
+
+/* Enumerate jobs */
+
+static NTSTATUS cmd_spoolss_enum_jobs(struct cli_state *cli, 
+				      TALLOC_CTX *mem_ctx, int argc, 
+				      char **argv)
+{
+	WERROR result;
+	uint32 needed, level = 1, num_jobs, i;
+	BOOL got_hnd = False;
+	pstring printername;
+	fstring servername, user;
+	POLICY_HND hnd;
+	JOB_INFO_CTR ctr;
+	
+	if (argc < 2 || argc > 3) {
+		printf("Usage: %s printername [level]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	if (argc == 3)
+		level = atoi(argv[2]);
+
+	/* Open printer handle */
+
+	slprintf(servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper(servername);
+	fstrcpy(user, cli->user_name);
+	fstrcpy(printername, argv[1]);
+	slprintf(printername, sizeof(pstring)-1, "\\\\%s\\", cli->desthost);
+	strupper(printername);
+	pstrcat(printername, argv[1]);
+
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+					     "", MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &hnd);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+ 
+	got_hnd = True;
+
+	/* Enumerate ports */
+
+	result = cli_spoolss_enumjobs(
+		cli, mem_ctx, 0, &needed, &hnd, level, 0, 1000,
+		&num_jobs, &ctr);
+
+	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+		result = cli_spoolss_enumjobs(
+			cli, mem_ctx, needed, NULL, &hnd, level, 0,
+			1000, &num_jobs, &ctr);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	for (i = 0; i < num_jobs; i++) {
+		switch(level) {
+		case 1:
+			display_job_info_1(&ctr.job.job_info_1[i]);
+			break;
+		case 2:
+			display_job_info_2(&ctr.job.job_info_2[i]);
+			break;
+		default:
+			d_printf("unknown info level %d\n", level);
+			break;
+		}
+	}
+	
+done:
+	if (got_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
 
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
@@ -1686,7 +1803,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "addprinter",		cmd_spoolss_addprinterex,	PIPE_SPOOLSS, "Add a printer",                       "" },
 	{ "deldriver",		cmd_spoolss_deletedriver,	PIPE_SPOOLSS, "Delete a printer driver",             "" },
 	{ "enumdata",		cmd_spoolss_not_implemented,	PIPE_SPOOLSS, "Enumerate printer data (*)",          "" },
-	{ "enumjobs",		cmd_spoolss_not_implemented,	PIPE_SPOOLSS, "Enumerate print jobs (*)",            "" },
+	{ "enumjobs",		cmd_spoolss_enum_jobs,          PIPE_SPOOLSS, "Enumerate print jobs",                "" },
 	{ "enumports", 		cmd_spoolss_enum_ports, 	PIPE_SPOOLSS, "Enumerate printer ports",             "" },
 	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	PIPE_SPOOLSS, "Enumerate installed printer drivers", "" },
 	{ "enumprinters", 	cmd_spoolss_enum_printers, 	PIPE_SPOOLSS, "Enumerate printers",                  "" },
