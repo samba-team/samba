@@ -563,7 +563,7 @@ void reply_name_query(struct packet_struct *p)
      */
     if (success && !n && (lp_wins_proxy() || !bcast))
     {
-      n = dns_name_search(question, p->timestamp, search);
+      n = dns_name_search(question, p->timestamp);
     }
   }
 

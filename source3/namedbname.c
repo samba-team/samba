@@ -140,8 +140,7 @@ void remove_name(struct subnet_record *d, struct name_record *n)
   find a name in a namelist.
   **************************************************************************/
 struct name_record *find_name(struct name_record *n,
-			struct nmb_name *name,
-			int search)
+			struct nmb_name *name, int search)
 {
 	struct name_record *ret;
   
@@ -510,16 +509,17 @@ void expire_names(time_t t)
 
 
 /***************************************************************************
-  reply to a name query
+  assume a WINS name is a dns name, and do a gethostbyname() on it.
   ****************************************************************************/
-struct name_record *dns_name_search(struct nmb_name *question,
-				    int Time, int search)
+struct name_record *dns_name_search(struct nmb_name *question, int Time)
 {
 	int name_type = question->name_type;
 	char *qname = question->name;
+	char *r;
 	BOOL dns_type = (name_type == 0x20 || name_type == 0);
 	struct in_addr dns_ip;
 	struct subnet_record *d = find_subnet(ipgrp);
+    pstring dns_name;
 
 	if (d == NULL) return NULL;
 
@@ -532,8 +532,27 @@ struct name_record *dns_name_search(struct nmb_name *question,
 		return NULL;
 	}
 
+    StrnCpy(dns_name, qname, sizeof(dns_name));
+	if ((r = strchr(dns_name,'.')) == NULL)
+	{
+		/* append a dot to the name, hopefully to stop DNS recursing */
+		strcat(dns_name, ".");
+
+#ifdef NETGROUP
+	{
+		char domainname[255];
+
+		if (getdomainname(domainname, sizeof(domainname)) == 0)
+		{
+			/* we have a domain name - append it to the dns name */
+			strcat(dns_name, domainname);
+		}
+	}
+#endif
+	}
+
 	/* look it up with DNS */      
-	dns_ip.s_addr = interpret_addr(qname);
+	dns_ip.s_addr = interpret_addr(dns_name);
 
 	if (!dns_ip.s_addr)
 	{

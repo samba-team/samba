@@ -338,8 +338,7 @@ BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2);
 BOOL ms_browser_name(char *name, int type);
 void remove_name(struct subnet_record *d, struct name_record *n);
 struct name_record *find_name(struct name_record *n,
-			struct nmb_name *name,
-			int search);
+			struct nmb_name *name, int search);
 struct name_record *find_name_search(struct subnet_record **d,
 			struct nmb_name *name,
 			int search, struct in_addr ip);
@@ -353,8 +352,7 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 		int ttl, enum name_source source, struct in_addr ip,
 		BOOL new_only,BOOL wins);
 void expire_names(time_t t);
-struct name_record *dns_name_search(struct nmb_name *question,
-				    int Time, int search);
+struct name_record *dns_name_search(struct nmb_name *question, int Time);
 
 /*The following definitions come from  namedbresp.c  */
 
