@@ -152,6 +152,7 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
 #define WBFLAG_QUERY_ONLY		0x0020
 #define WBFLAG_ALLOCATE_RID		0x0040
+#define WBFLAG_PAM_UNIX_NAME            0x0080
 
 /* Winbind request structure */
 

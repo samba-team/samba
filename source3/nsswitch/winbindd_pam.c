@@ -366,6 +366,32 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		
 		if (state->request.flags & WBFLAG_PAM_INFO3_NDR) {
 			result = append_info3_as_ndr(mem_ctx, state, &info3);
+		} else if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {
+			/* ntlm_auth should return the unix username, per 
+			   'winbind use default domain' settings and the like */
+			
+			fstring username_out;
+			const char *nt_username, *nt_domain;
+			if (!(nt_username = unistr2_tdup(mem_ctx, &(info3.uni_user_name)))) {
+				/* If the server didn't give us one, just use the one we sent them */
+				nt_username = user;
+			}
+			
+			if (!(nt_domain = unistr2_tdup(mem_ctx, &(info3.uni_logon_dom)))) {
+				/* If the server didn't give us one, just use the one we sent them */
+				nt_domain = domain;
+			}
+
+			fill_domain_username(username_out, nt_username, nt_domain);
+
+			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
+
+			state->response.extra_data = strdup(username_out);
+			if (!state->response.extra_data) {
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			state->response.length +=  strlen(state->response.extra_data)+1;
 		}
 		
 		if (state->request.flags & WBFLAG_PAM_NTKEY) {
