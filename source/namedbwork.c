@@ -134,7 +134,8 @@ static struct work_record *make_workgroup(char *name)
   remove workgroups
   ******************************************************************/
 struct work_record *remove_workgroup(struct subnet_record *d, 
-				     struct work_record *work)
+				     struct work_record *work,
+					 BOOL remove_all_servers)
 {
   struct work_record *ret_work = NULL;
   
@@ -142,16 +143,19 @@ struct work_record *remove_workgroup(struct subnet_record *d,
   
   DEBUG(3,("Removing old workgroup %s\n", work->work_group));
   
-  remove_old_servers(work, -1);
-  
   ret_work = work->next;
+
+  remove_old_servers(work, -1, remove_all_servers);
   
-  if (work->prev) work->prev->next = work->next;
-  if (work->next) work->next->prev = work->prev;
+  if (!work->serverlist)
+  {
+    if (work->prev) work->prev->next = work->next;
+    if (work->next) work->next->prev = work->prev;
   
-  if (d->workgrouplist == work) d->workgrouplist = work->next; 
+    if (d->workgrouplist == work) d->workgrouplist = work->next; 
   
-  free(work);
+    free(work);
+  }
   
   return ret_work;
 }

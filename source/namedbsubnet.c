@@ -272,17 +272,21 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
 void write_browse_list(void)
 {
   struct subnet_record *d;
-  
   pstring fname,fnamenew;
   FILE *f;
+
+  static time_t lasttime = 0;
+  time_t t = time(NULL);
+
+  if (!lasttime) lasttime = t;
+  if (!updatedlists || t - lasttime < 5) return;
   
-  if (!updatedlists) return;
+  lasttime = t;
+  updatedlists = False;
+  updatecount++;
   
   dump_names();
   dump_workgroups();
-  
-  updatedlists = False;
-  updatecount++;
   
   strcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
@@ -336,5 +340,4 @@ void write_browse_list(void)
   rename(fnamenew,fname);   
   DEBUG(3,("Wrote browse list %s\n",fname));
 }
-
 

@@ -46,9 +46,11 @@ extern BOOL updatedlists;
 
 /*******************************************************************
   expire old servers in the serverlist
-  time of -1 indicates everybody dies
+  time of -1 indicates everybody dies except those with time of 0
+  remove_all_servers indicates everybody dies.
   ******************************************************************/
-void remove_old_servers(struct work_record *work, time_t t)
+void remove_old_servers(struct work_record *work, time_t t,
+					BOOL remove_all)
 {
   struct server_record *s;
   struct server_record *nexts;
@@ -56,7 +58,7 @@ void remove_old_servers(struct work_record *work, time_t t)
   /* expire old entries in the serverlist */
   for (s = work->serverlist; s; s = nexts)
     {
-      if (t == -1 || (s->death_time && s->death_time < t))
+      if (remove_all || (s->death_time && (t == -1 || s->death_time < t)))
 	{
 	  DEBUG(3,("Removing dead server %s\n",s->serv.name));
 	  updatedlists = True;
@@ -195,7 +197,7 @@ void expire_servers(time_t t)
       
       for (work = d->workgrouplist; work; work = work->next)
 	{
-	  remove_old_servers(work, t);
+	  remove_old_servers(work, t, False);
 	}
     }
 }

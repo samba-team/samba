@@ -81,9 +81,10 @@ void initiate_netbios_packet(uint16 *id,
 
   bzero((char *)&p,sizeof(p));
 
-  update_name_trn_id();
-
-  if (*id == 0xffff) *id = name_trn_id; /* allow resending with same id */
+  if (*id == 0xffff) {
+    update_name_trn_id();
+    *id = name_trn_id; /* allow resending with same id */
+  }
 
   nmb->header.name_trn_id = *id;
   nmb->header.opcode = opcode;

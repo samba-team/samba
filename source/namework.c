@@ -622,7 +622,7 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
       for (d = subnetlist; d; d = d->next)
 	{
 	  struct work_record *work;
-	  for (work=d->workgrouplist;work;work=remove_workgroup(d,work));
+	  for (work=d->workgrouplist;work;work=remove_workgroup(d,work,True));
 	}
       add_my_subnets(lp_workgroup());
     }

@@ -96,31 +96,32 @@ void browser_gone(char *work_name, struct in_addr ip)
   struct subnet_record *d = find_subnet(ip);
   struct work_record *work = find_workgroupstruct(d, work_name, False);
 
+  /* i don't know about this workgroup, therefore i don't care */
   if (!work || !d) return;
-
-  if (strequal(work->work_group, lp_workgroup()) &&
-      ismybcast(d->bcast_ip))
-    {
+ 
+  if (strequal(work->work_group, lp_workgroup()) && d->my_interface)
+  {
 
       DEBUG(2,("Forcing election on %s %s\n",
 	       work->work_group,inet_ntoa(d->bcast_ip)));
 
       /* we can attempt to become master browser */
       work->needelection = True;
-    }
+  }
   else
-    {
-      /* XXXX note: this will delete entries that have been added in by
-	 lmhosts as well. a flag to ensure that these are not deleted may
-	 be considered */
-      
-      /* workgroup with no master browser is not the default workgroup:
-	 it's also not on our subnet. therefore delete it: it can be
-	 recreated dynamically */
-      
-      send_election(d, work->work_group, 0, 0, myname);
-      remove_workgroup(d, work);      
-    }
+  {
+     /* local interfaces: force an election */
+     if (d->my_interface)
+       send_election(d, work->work_group, 0, 0, myname);
+
+     /* only removes workgroup completely on a local interface or
+        if there are no server entries on the remote interface.
+        (persistent lmhost entries on a remote interface will stop
+        the workgroup being removed. persistent lmhosts entries on
+        a local interface _will_ be removed).
+      */
+     remove_workgroup(d, work, d->my_interface);      
+  }
 }
 
 
@@ -247,7 +248,8 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
   if (!work) return;
   
-  DEBUG(2,("Becoming master for %s (stage %d)",work->work_group,work->state));
+  DEBUG(2,("Becoming master for %s (currently at stage %d)\n",
+					work->work_group,work->state));
   
   switch (work->state)
   {
@@ -261,7 +263,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
       work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
       add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
 
-      DEBUG(2,("first stage: register ^1^2__MSBROWSE__^2^1\n"));
+      DEBUG(3,("go to first stage: register ^1^2__MSBROWSE__^2^1\n"));
 
       /* add special browser name */
       add_my_name_entry(d,MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
@@ -275,7 +277,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
       /* add server entry on successful registration of MSBROWSE */
       add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
 
-      DEBUG(2,("second stage: register as master browser\n"));
+      DEBUG(3,("go to second stage: register as master browser\n"));
 
       /* add master name */
       add_my_name_entry(d,work->work_group,0x1d,NB_ACTIVE         );
@@ -298,13 +300,13 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
       if (lp_domain_master())
       {
-        DEBUG(2,("third stage: register as domain master\n"));
+        DEBUG(3,("third stage: register as domain master\n"));
         /* add domain master name */
         add_my_name_entry(d,work->work_group,0x1b,NB_ACTIVE         );
       }
       else
       {
-        DEBUG(2,("samba not configured as a domain master: no third stage.\n"));
+        DEBUG(3,("samba not configured as a domain master: no third stage.\n"));
       }
   
       break;
@@ -323,7 +325,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
 	      work->ServerType |= SV_TYPE_DOMAIN_CTRL;
 	      work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
 	    }
-        DEBUG(2,("fourth stage: samba is now a domain master.\n"));
+        DEBUG(3,("fourth stage: samba is now a domain master.\n"));
         add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
       }
   
@@ -332,7 +334,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
     case MST_DOMAIN:
     {
       /* nothing else to become, at the moment: we are top-dog. */
-      DEBUG(2,("fifth stage: there isn't one yet!\n"));
+      DEBUG(3,("fifth stage: there isn't one yet!\n"));
       break;
     }
   }

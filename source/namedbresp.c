@@ -50,6 +50,9 @@ void add_response_record(struct subnet_record *d,
 
   num_response_packets++; /* count of total number of packets still around */
 
+  DEBUG(4,("adding response record id:%d num_records:%d\n",
+                   n->response_id, num_response_packets));
+
   if (!d->responselist)
     {
       d->responselist = n;
@@ -89,7 +92,7 @@ void remove_response_record(struct subnet_record *d,
   create a name query response record
   **************************************************************************/
 struct response_record *make_response_queue_record(enum state_type state,
-				int id,int fd,
+				int id,uint16 fd,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
 				BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip)
@@ -114,8 +117,8 @@ struct response_record *make_response_queue_record(enum state_type state,
   n->reply_to_ip = reply_to_ip;
 
   n->repeat_interval = 1; /* XXXX should be in ms */
-  n->repeat_count = 4;
-  n->repeat_time = time(NULL) + n->repeat_interval;
+  n->repeat_count = 3; /* 3 retries */
+  n->repeat_time = time(NULL) + n->repeat_interval; /* initial retry time */
 
   n->num_msgs = 0;
 
@@ -138,6 +141,8 @@ struct response_record *find_response_record(struct subnet_record **d,
     for (n = (*d)->responselist; n; n = n->next)
     {
       if (n->response_id == id) {
+         DEBUG(4, ("found response record on %s: %d\n",
+					inet_ntoa((*d)->bcast_ip), id));
          return n;
       }
     }
