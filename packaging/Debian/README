@@ -4,7 +4,7 @@ Building Samba Packages for Debian GNU/Linux
 Building Debian packages is not as hard as some people might think. The
 following instructions will allow you to build your own Samba Debian
 packages. These instructions, and the files in packaging/Debian/, should
-be current as of Samba 3.0beta2, and should allow you to build Debian
+be current as of Samba 3.0beta3, and should allow you to build Debian
 packages for Debian unstable.
 
 We try to maintain as much compatibility with previous releases
@@ -44,12 +44,12 @@ devscripts, etc.):
     That's fine; the configure script won't detect CUPS support and the
     resulting binaries won't support CUPS.
 
-  * The list above is current as of samba-3.0.0beta2, but it can get
+  * The list above is current as of samba-3.0.0beta3, but it can get
     out of date. The best way to check what packages are required to
     build the samba packages on Debian is to look for the Build-Depends:
     field in the file debian/control.
 
-1) cd samba[-<version>]. For example, "cd samba-3.0.0beta1".
+1) cd samba[-<version>]. For example, "cd samba-3.0.0beta3".
 2) cp -a packaging/Debian/debian/ debian
   It's important that you copy instead of symlink because the build
   tools in Potato have a problem that prevents the build to work with
@@ -58,8 +58,8 @@ devscripts, etc.):
    Debian version numbers! Don't complain later if you can't upgrade
    to official versions of the Samba packages for Debian.)
   - Edit the changelog and make sure the version is right. For example,
-    for Samba 3.0.0beta1, the version number should something like
-  3.0.0beta1-1.1.
+    for Samba 3.0.0beta3, the version number should something like
+  3.0.0beta3-0.1.
 4) Run 'debian/rules binary'.
   - It is better that you prefix the above command with 'fakeroot'.
     If you have problems you might try building as root.

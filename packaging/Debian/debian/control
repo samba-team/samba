@@ -8,7 +8,7 @@ Standards-Version: 3.5.10
 
 Package: samba
 Architecture: any
-Depends: debconf, samba-common (= ${Source-Version}), netbase, logrotate, ${shlibs:Depends}
+Depends: samba-common (= ${Source-Version}), netbase, logrotate, ${shlibs:Depends}, ${misc:Depends}
 Replaces: samba-common (<= 2.0.5a-2)
 Suggests: samba-doc
 Description: a LanManager-like file and printer server for Unix
@@ -163,7 +163,7 @@ Package: winbind
 Section: net
 Priority: optional
 Architecture: any
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Replaces: samba (<= 2.2.3-2)
 Description: service to resolve user and group information from Windows NT servers
  This package provides the winbindd daemon, which provides a

@@ -191,11 +191,6 @@ if dpkg --compare-versions "$2" lt 2.999+3.0.alpha20-4; then
 	update-inetd --remove netbios-ns
 fi
 
-# We always run /etc/init.d/samba, even if we run Samba from inetd.
-#	The init.d script takes care of handling the conflict of running
-#	from inetd or as daemons.
-update-rc.d samba defaults 20 19 > /dev/null
-
 # We want to add these entries to inetd.conf commented out. Otherwise
 #	UDP traffic could make inetd to start nmbd or smbd right during
 #	the configuration stage.
@@ -207,16 +202,6 @@ if [ "$RUN_MODE" = "daemons" ]; then
 	update-inetd --disable netbios-ssn
 else
 	update-inetd --enable netbios-ssn
-fi
-
-# Start Samba: we don't want to call /etc/init.d/samba if we are
-# running from inetd because a nasty help message would be printed out.
-
-# Run the init script if this is a first-time install, or if it's an
-# upgrade and Samba was running before, _and_ we're not running from inetd.
-if [ -z "$2" -o ! -f /tmp/samba-was-not-running ]; then
-	# Check the script is executable before running it.
-	[ -x /etc/init.d/samba ] && /etc/init.d/samba start
 fi
 
 # This check is a safety net: the /etc/samba/smbpasswd file must have
@@ -237,10 +222,6 @@ rm -f /etc/samba/debian_config
 # Move old log files to the new location of Samba's log files
 mv -f /var/log/nmb* /var/log/samba/ 2> /dev/null || true
 mv -f /var/log/smb* /var/log/samba/ 2> /dev/null || true
-
-# Do this last, so we don't accidentally start the daemons if something 
-# else in the script fails above.
-rm -f /tmp/samba-was-not-running
 
 #DEBHELPER#
 

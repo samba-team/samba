@@ -1,24 +1,5 @@
 #!/bin/sh -e
 
-# Clean up any such stale file.
-rm -f /tmp/samba-was-not-running
-
-# The smbd pid file is missing, or points to a dead process
-if [ ! -f /var/run/samba/smbd.pid ] || \
-	! ps h `cat /var/run/samba/smbd.pid` > /dev/null
-then
-	# The nmbd pid file is missing, or points to a dead process
-	if [ -f /var/run/samba/nmbd.pid ] || \
-		! ps h `cat /var/run/samba/nmbd.pid` > /dev/null
-	then
-		# let the postinst know not to start samba.
-		[ "$1" = "upgrade" ] && touch /tmp/samba-was-not-running
-	fi
-fi
-
-# We call the init script to stop Samba, even if it only affects nmbd.
-[ -x /etc/init.d/samba ] && /etc/init.d/samba stop
-
 if [ "$1" = upgrade -a -n "$2" ] && dpkg --compare-versions "$2" lt 2.99 \
    && [ -e /var/lib/samba/passdb.tdb -a ! -e /etc/samba/smbpasswd ]
 then

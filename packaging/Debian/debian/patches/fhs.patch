@@ -1,6 +1,6 @@
-diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makefile.in
---- samba-3.0alpha23.orig/source/Makefile.in	2003-03-30 20:28:28.000000000 -0600
-+++ samba-3.0alpha23/source/Makefile.in	2003-04-04 21:04:05.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/Makefile.in samba-3.0.0beta2/source/Makefile.in
+--- samba-3.0.0beta2.orig/source/Makefile.in	2003-07-02 23:26:46.000000000 -0500
++++ samba-3.0.0beta2/source/Makefile.in	2003-07-02 23:19:46.000000000 -0500
 @@ -68,6 +68,7 @@
  CONFIGDIR = @configdir@
  VARDIR = @localstatedir@
@@ -32,7 +32,7 @@ diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makef
  PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
  
  # Note that all executable programs now provide for an optional executable suffix.
-@@ -1129,7 +1137,7 @@
+@@ -1123,7 +1131,7 @@
  	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
  
  installdat: installdirs
@@ -41,9 +41,9 @@ diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makef
  
  installswat: installdirs
  	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
-diff -uNr samba-3.0alpha23.orig/source/configure.in samba-3.0alpha23/source/configure.in
---- samba-3.0alpha23.orig/source/configure.in	2003-04-04 21:03:52.000000000 -0600
-+++ samba-3.0alpha23/source/configure.in	2003-04-04 21:04:05.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/configure.in samba-3.0.0beta2/source/configure.in
+--- samba-3.0.0beta2.orig/source/configure.in	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/configure.in	2003-07-02 23:19:02.000000000 -0500
 @@ -17,18 +17,25 @@
  AC_ARG_WITH(fhs, 
  [  --with-fhs              Use FHS-compliant paths (default=no)],
@@ -83,9 +83,9 @@ diff -uNr samba-3.0alpha23.orig/source/configure.in samba-3.0alpha23/source/conf
  
  dnl Unique-to-Samba variables we'll be playing with.
  AC_SUBST(SHELL)
-diff -uNr samba-3.0alpha23.orig/source/dynconfig.c samba-3.0alpha23/source/dynconfig.c
---- samba-3.0alpha23.orig/source/dynconfig.c	2003-02-14 16:34:36.000000000 -0600
-+++ samba-3.0alpha23/source/dynconfig.c	2003-04-04 21:04:05.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/dynconfig.c samba-3.0.0beta2/source/dynconfig.c
+--- samba-3.0.0beta2.orig/source/dynconfig.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/dynconfig.c	2003-07-02 23:19:02.000000000 -0500
 @@ -53,6 +53,13 @@
  pstring dyn_LMHOSTSFILE = LMHOSTSFILE;
  
@@ -128,9 +128,9 @@ diff -uNr samba-3.0alpha23.orig/source/dynconfig.c samba-3.0alpha23/source/dynco
 +	return lp_lockdir();
 +#endif
 +}
-diff -uNr samba-3.0alpha23.orig/source/groupdb/mapping.c samba-3.0alpha23/source/groupdb/mapping.c
---- samba-3.0alpha23.orig/source/groupdb/mapping.c	2003-03-30 20:28:28.000000000 -0600
-+++ samba-3.0alpha23/source/groupdb/mapping.c	2003-04-04 21:04:05.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/groupdb/mapping.c samba-3.0.0beta2/source/groupdb/mapping.c
+--- samba-3.0.0beta2.orig/source/groupdb/mapping.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/groupdb/mapping.c	2003-07-02 23:19:02.000000000 -0500
 @@ -134,7 +134,7 @@
  	
  	if (tdb && local_pid == sys_getpid())
@@ -140,9 +140,9 @@ diff -uNr samba-3.0alpha23.orig/source/groupdb/mapping.c samba-3.0alpha23/source
  	if (!tdb) {
  		DEBUG(0,("Failed to open group mapping database\n"));
  		return False;
-diff -uNr samba-3.0alpha23.orig/source/include/dynconfig.h samba-3.0alpha23/source/include/dynconfig.h
---- samba-3.0alpha23.orig/source/include/dynconfig.h	2003-02-14 16:34:36.000000000 -0600
-+++ samba-3.0alpha23/source/include/dynconfig.h	2003-04-04 21:04:05.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/include/dynconfig.h samba-3.0.0beta2/source/include/dynconfig.h
+--- samba-3.0.0beta2.orig/source/include/dynconfig.h	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/include/dynconfig.h	2003-07-02 23:19:02.000000000 -0500
 @@ -31,8 +31,12 @@
  extern pstring dyn_CONFIGFILE;
  extern pstring dyn_LOGFILEBASE, dyn_LMHOSTSFILE;
@@ -154,11 +154,11 @@ diff -uNr samba-3.0alpha23.orig/source/include/dynconfig.h samba-3.0alpha23/sour
  extern const pstring dyn_SMB_PASSWD_FILE;
  extern const pstring dyn_PRIVATE_DIR;
 +
-+char *dyn_STATEDIR();
-+char *dyn_CACHEDIR();
-diff -uNr samba-3.0alpha23.orig/source/intl/lang_tdb.c samba-3.0alpha23/source/intl/lang_tdb.c
---- samba-3.0alpha23.orig/source/intl/lang_tdb.c	2003-01-03 08:41:24.000000000 -0600
-+++ samba-3.0alpha23/source/intl/lang_tdb.c	2003-04-04 21:04:05.000000000 -0600
++char *dyn_STATEDIR(void);
++char *dyn_CACHEDIR(void);
+diff -uNr samba-3.0.0beta2.orig/source/intl/lang_tdb.c samba-3.0.0beta2/source/intl/lang_tdb.c
+--- samba-3.0.0beta2.orig/source/intl/lang_tdb.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/intl/lang_tdb.c	2003-07-02 23:19:02.000000000 -0500
 @@ -123,7 +123,7 @@
  	/* if no lang then we don't translate */
  	if (!lang) return True;
@@ -177,9 +177,9 @@ diff -uNr samba-3.0alpha23.orig/source/intl/lang_tdb.c samba-3.0alpha23/source/i
  
  	tdb = tdb_open_log(path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
  	if (!tdb) {
-diff -uNr samba-3.0alpha23.orig/source/lib/account_pol.c samba-3.0alpha23/source/lib/account_pol.c
---- samba-3.0alpha23.orig/source/lib/account_pol.c	2003-01-03 08:41:24.000000000 -0600
-+++ samba-3.0alpha23/source/lib/account_pol.c	2003-04-04 21:04:06.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/lib/account_pol.c samba-3.0.0beta2/source/lib/account_pol.c
+--- samba-3.0.0beta2.orig/source/lib/account_pol.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/lib/account_pol.c	2003-07-02 23:19:02.000000000 -0500
 @@ -36,7 +36,7 @@
  
  	if (tdb && local_pid == sys_getpid())
@@ -189,10 +189,10 @@ diff -uNr samba-3.0alpha23.orig/source/lib/account_pol.c samba-3.0alpha23/source
  	if (!tdb) {
  		DEBUG(0,("Failed to open account policy database\n"));
  		return False;
-diff -uNr samba-3.0alpha23.orig/source/lib/util.c samba-3.0alpha23/source/lib/util.c
---- samba-3.0alpha23.orig/source/lib/util.c	2003-03-30 20:28:28.000000000 -0600
-+++ samba-3.0alpha23/source/lib/util.c	2003-04-04 21:04:06.000000000 -0600
-@@ -2241,6 +2241,61 @@
+diff -uNr samba-3.0.0beta2.orig/source/lib/util.c samba-3.0.0beta2/source/lib/util.c
+--- samba-3.0.0beta2.orig/source/lib/util.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/lib/util.c	2003-07-02 23:19:02.000000000 -0500
+@@ -2252,6 +2252,61 @@
  }
  
  /**
@@ -254,9 +254,9 @@ diff -uNr samba-3.0alpha23.orig/source/lib/util.c samba-3.0alpha23/source/lib/ut
   * @brief Returns the platform specific shared library extension.
   *
   * @retval Pointer to a static #fstring containing the extension.
-diff -uNr samba-3.0alpha23.orig/source/lib/util_unistr.c samba-3.0alpha23/source/lib/util_unistr.c
---- samba-3.0alpha23.orig/source/lib/util_unistr.c	2003-02-27 09:22:58.000000000 -0600
-+++ samba-3.0alpha23/source/lib/util_unistr.c	2003-04-04 21:04:06.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/lib/util_unistr.c samba-3.0.0beta2/source/lib/util_unistr.c
+--- samba-3.0.0beta2.orig/source/lib/util_unistr.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/lib/util_unistr.c	2003-07-02 23:19:02.000000000 -0500
 @@ -54,8 +54,8 @@
  	if (initialised) return;
  	initialised = 1;
@@ -277,9 +277,30 @@ diff -uNr samba-3.0alpha23.orig/source/lib/util_unistr.c samba-3.0alpha23/source
  	if (valid_file) {
  		valid_table = valid_file;
  		mapped_file = 1;
-diff -uNr samba-3.0alpha23.orig/source/nmbd/nmbd_serverlistdb.c samba-3.0alpha23/source/nmbd/nmbd_serverlistdb.c
---- samba-3.0alpha23.orig/source/nmbd/nmbd_serverlistdb.c	2002-12-12 09:07:32.000000000 -0600
-+++ samba-3.0alpha23/source/nmbd/nmbd_serverlistdb.c	2003-04-04 21:04:06.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/libsmb/samlogon_cache.c samba-3.0.0beta2/source/libsmb/samlogon_cache.c
+--- samba-3.0.0beta2.orig/source/libsmb/samlogon_cache.c	2003-07-01 09:40:37.000000000 -0500
++++ samba-3.0.0beta2/source/libsmb/samlogon_cache.c	2003-07-02 23:19:02.000000000 -0500
+@@ -34,7 +34,7 @@
+ BOOL netsamlogon_cache_init(void)
+ {
+ 	if (!netsamlogon_tdb) {
+-		netsamlogon_tdb = tdb_open_log(lock_path(NETSAMLOGON_TDB), 0,
++		netsamlogon_tdb = tdb_open_log(cache_path(NETSAMLOGON_TDB), 0,
+ 						   TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
+ 	}
+ 
+@@ -67,7 +67,7 @@
+            winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
+ 
+ 	if (!tdb) {
+-		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000,
++		tdb = tdb_open_log(cache_path("winbindd_cache.tdb"), 5000,
+ 				   TDB_DEFAULT, O_RDWR, 0600);
+ 		if (!tdb) {
+ 			DEBUG(5, ("netsamlogon_clear_cached_user: failed to open cache\n"));
+diff -uNr samba-3.0.0beta2.orig/source/nmbd/nmbd_serverlistdb.c samba-3.0.0beta2/source/nmbd/nmbd_serverlistdb.c
+--- samba-3.0.0beta2.orig/source/nmbd/nmbd_serverlistdb.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/nmbd/nmbd_serverlistdb.c	2003-07-02 23:19:02.000000000 -0500
 @@ -343,7 +343,7 @@
  
    updatecount++;
@@ -289,8 +310,30 @@ diff -uNr samba-3.0alpha23.orig/source/nmbd/nmbd_serverlistdb.c samba-3.0alpha23
    trim_string(fname,NULL,"/");
    pstrcat(fname,"/");
    pstrcat(fname,SERVER_LIST);
---- samba/source/nsswitch/winbindd_cache.c.orig	2003-07-02 22:37:40.000000000 -0400
-+++ samba/source/nsswitch/winbindd_cache.c	2003-07-02 22:39:05.000000000 -0400
+diff -uNr samba-3.0.0beta2.orig/source/nmbd/nmbd_winsserver.c samba-3.0.0beta2/source/nmbd/nmbd_winsserver.c
+--- samba-3.0.0beta2.orig/source/nmbd/nmbd_winsserver.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/nmbd/nmbd_winsserver.c	2003-07-02 23:19:02.000000000 -0500
+@@ -230,7 +230,7 @@
+ 
+   add_samba_names_to_subnet(wins_server_subnet);
+ 
+-  if((fp = x_fopen(lock_path(WINS_LIST),O_RDONLY,0)) == NULL)
++  if((fp = x_fopen(state_path(WINS_LIST),O_RDONLY,0)) == NULL)
+   {
+     DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
+            WINS_LIST, strerror(errno) ));
+@@ -1836,7 +1836,7 @@
+ 	  }
+   }
+ 
+-  slprintf(fname,sizeof(fname)-1,"%s/%s", lp_lockdir(), WINS_LIST);
++  slprintf(fname,sizeof(fname)-1,"%s/%s", dyn_STATEDIR(), WINS_LIST);
+   all_string_sub(fname,"//", "/", 0);
+   slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
+ 
+diff -uNr samba-3.0.0beta2.orig/source/nsswitch/winbindd_cache.c samba-3.0.0beta2/source/nsswitch/winbindd_cache.c
+--- samba-3.0.0beta2.orig/source/nsswitch/winbindd_cache.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/nsswitch/winbindd_cache.c	2003-07-02 23:19:02.000000000 -0500
 @@ -56,7 +56,7 @@
  	if (opt_nocache)
  		return;
@@ -300,9 +343,21 @@ diff -uNr samba-3.0alpha23.orig/source/nmbd/nmbd_serverlistdb.c samba-3.0alpha23
  				   TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0600);
  
  	if (!wcache->tdb) {
-diff -uNr samba-3.0alpha23.orig/source/param/loadparm.c samba-3.0alpha23/source/param/loadparm.c
---- samba-3.0alpha23.orig/source/param/loadparm.c	2003-03-30 20:28:29.000000000 -0600
-+++ samba-3.0alpha23/source/param/loadparm.c	2003-04-04 21:04:06.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/nsswitch/winbindd_util.c samba-3.0.0beta2/source/nsswitch/winbindd_util.c
+--- samba-3.0.0beta2.orig/source/nsswitch/winbindd_util.c	2003-07-01 15:44:25.000000000 -0500
++++ samba-3.0.0beta2/source/nsswitch/winbindd_util.c	2003-07-02 23:19:02.000000000 -0500
+@@ -747,7 +747,7 @@
+ 	SMB_STRUCT_STAT stbuf;
+ 	TDB_CONTEXT *idmap_tdb;
+ 
+-	pstrcpy(idmap_name, lock_path("winbindd_idmap.tdb"));
++	pstrcpy(idmap_name, state_path("winbindd_idmap.tdb"));
+ 
+ 	if (!file_exist(idmap_name, &stbuf)) {
+ 		/* nothing to convert return */
+diff -uNr samba-3.0.0beta2.orig/source/param/loadparm.c samba-3.0.0beta2/source/param/loadparm.c
+--- samba-3.0.0beta2.orig/source/param/loadparm.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/param/loadparm.c	2003-07-02 23:19:02.000000000 -0500
 @@ -104,6 +104,9 @@
  	char *szAddPrinterCommand;
  	char *szDeletePrinterCommand;
@@ -327,9 +382,36 @@ diff -uNr samba-3.0alpha23.orig/source/param/loadparm.c samba-3.0alpha23/source/
  	{"pid directory", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
  #ifdef WITH_UTMP
  	{"utmp directory", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-diff -uNr samba-3.0alpha23.orig/source/passdb/secrets.c samba-3.0alpha23/source/passdb/secrets.c
---- samba-3.0alpha23.orig/source/passdb/secrets.c	2003-03-30 20:28:29.000000000 -0600
-+++ samba-3.0alpha23/source/passdb/secrets.c	2003-04-04 21:04:06.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/passdb/pdb_tdb.c samba-3.0.0beta2/source/passdb/pdb_tdb.c
+--- samba-3.0.0beta2.orig/source/passdb/pdb_tdb.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/passdb/pdb_tdb.c	2003-07-02 23:19:02.000000000 -0500
+@@ -526,10 +526,7 @@
+ 	if (location) {
+ 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, location);
+ 	} else {
+-		pstring tdbfile;
+-		get_private_directory(tdbfile);
+-		pstrcat(tdbfile, "/");
+-		pstrcat(tdbfile, PASSDB_FILE_NAME);
++		char *tdbfile = state_path(PASSDB_FILE_NAME);
+ 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
+ 	}
+ 
+diff -uNr samba-3.0.0beta2.orig/source/passdb/privileges.c samba-3.0.0beta2/source/passdb/privileges.c
+--- samba-3.0.0beta2.orig/source/passdb/privileges.c	2003-06-07 12:57:35.000000000 -0500
++++ samba-3.0.0beta2/source/passdb/privileges.c	2003-07-02 23:19:02.000000000 -0500
+@@ -62,7 +62,7 @@
+ /* initialise the privilege database */
+ BOOL privilege_init(void)
+ {
+-	tdb = tdb_open_log(lock_path("privilege.tdb"), 0, TDB_DEFAULT, 
++	tdb = tdb_open_log(state_path("privilege.tdb"), 0, TDB_DEFAULT, 
+ 			   O_RDWR|O_CREAT, 0600);
+ 	if (!tdb) {
+ 		DEBUG(0,("Failed to open privilege database\n"));
+diff -uNr samba-3.0.0beta2.orig/source/passdb/secrets.c samba-3.0.0beta2/source/passdb/secrets.c
+--- samba-3.0.0beta2.orig/source/passdb/secrets.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/passdb/secrets.c	2003-07-02 23:19:02.000000000 -0500
 @@ -37,8 +37,7 @@
  	if (tdb)
  		return True;
@@ -340,9 +422,9 @@ diff -uNr samba-3.0alpha23.orig/source/passdb/secrets.c samba-3.0alpha23/source/
  
  	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
  
-diff -uNr samba-3.0alpha23.orig/source/printing/nt_printing.c samba-3.0alpha23/source/printing/nt_printing.c
---- samba-3.0alpha23.orig/source/printing/nt_printing.c	2003-03-30 20:28:29.000000000 -0600
-+++ samba-3.0alpha23/source/printing/nt_printing.c	2003-04-04 21:04:07.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/printing/nt_printing.c samba-3.0.0beta2/source/printing/nt_printing.c
+--- samba-3.0.0beta2.orig/source/printing/nt_printing.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/printing/nt_printing.c	2003-07-02 23:19:02.000000000 -0500
 @@ -287,28 +287,28 @@
   
  	if (tdb_drivers)
@@ -378,9 +460,9 @@ diff -uNr samba-3.0alpha23.orig/source/printing/nt_printing.c samba-3.0alpha23/s
  		return False;
  	}
   
-diff -uNr samba-3.0alpha23.orig/source/printing/printing.c samba-3.0alpha23/source/printing/printing.c
---- samba-3.0alpha23.orig/source/printing/printing.c	2003-03-30 20:28:29.000000000 -0600
-+++ samba-3.0alpha23/source/printing/printing.c	2003-04-04 21:04:08.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/printing/printing.c samba-3.0.0beta2/source/printing/printing.c
+--- samba-3.0.0beta2.orig/source/printing/printing.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/printing/printing.c	2003-07-02 23:19:02.000000000 -0500
 @@ -174,8 +174,8 @@
  	if (local_pid == sys_getpid())
  		return True;
@@ -392,9 +474,9 @@ diff -uNr samba-3.0alpha23.orig/source/printing/printing.c samba-3.0alpha23/sour
  	mkdir(printing_path,0755);
  
  	local_pid = sys_getpid();
-diff -uNr samba-3.0alpha23.orig/source/printing/printing_db.c samba-3.0alpha23/source/printing/printing_db.c
---- samba-3.0alpha23.orig/source/printing/printing_db.c	2003-02-14 16:34:37.000000000 -0600
-+++ samba-3.0alpha23/source/printing/printing_db.c	2003-04-04 21:04:08.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/printing/printing_db.c samba-3.0.0beta2/source/printing/printing_db.c
+--- samba-3.0.0beta2.orig/source/printing/printing_db.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/printing/printing_db.c	2003-07-02 23:19:02.000000000 -0500
 @@ -86,7 +86,7 @@
  		DLIST_ADD(print_db_head, p);
  	}
@@ -404,9 +486,9 @@ diff -uNr samba-3.0alpha23.orig/source/printing/printing_db.c samba-3.0alpha23/s
  	pstrcat(printdb_path, printername);
  	pstrcat(printdb_path, ".tdb");
  
-diff -uNr samba-3.0alpha23.orig/source/registry/reg_db.c samba-3.0alpha23/source/registry/reg_db.c
---- samba-3.0alpha23.orig/source/registry/reg_db.c	2002-08-26 09:46:07.000000000 -0500
-+++ samba-3.0alpha23/source/registry/reg_db.c	2003-04-04 21:04:08.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/registry/reg_db.c samba-3.0.0beta2/source/registry/reg_db.c
+--- samba-3.0.0beta2.orig/source/registry/reg_db.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/registry/reg_db.c	2003-07-02 23:19:02.000000000 -0500
 @@ -131,13 +131,13 @@
  	 * if we need to init the data in the registry
  	 */
@@ -424,9 +506,9 @@ diff -uNr samba-3.0alpha23.orig/source/registry/reg_db.c samba-3.0alpha23/source
  			return False;
  		}
  		
-diff -uNr samba-3.0alpha23.orig/source/rpc_server/srv_srvsvc_nt.c samba-3.0alpha23/source/rpc_server/srv_srvsvc_nt.c
---- samba-3.0alpha23.orig/source/rpc_server/srv_srvsvc_nt.c	2003-03-30 20:28:31.000000000 -0600
-+++ samba-3.0alpha23/source/rpc_server/srv_srvsvc_nt.c	2003-04-04 21:04:08.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/rpc_server/srv_srvsvc_nt.c samba-3.0.0beta2/source/rpc_server/srv_srvsvc_nt.c
+--- samba-3.0.0beta2.orig/source/rpc_server/srv_srvsvc_nt.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/rpc_server/srv_srvsvc_nt.c	2003-07-02 23:19:02.000000000 -0500
 @@ -133,10 +133,10 @@
   
  	if (share_tdb && local_pid == sys_getpid())
@@ -440,9 +522,21 @@ diff -uNr samba-3.0alpha23.orig/source/rpc_server/srv_srvsvc_nt.c samba-3.0alpha
  		return False;
  	}
   
-diff -uNr samba-3.0alpha23.orig/source/smbd/lanman.c samba-3.0alpha23/source/smbd/lanman.c
---- samba-3.0alpha23.orig/source/smbd/lanman.c	2003-02-25 14:51:35.000000000 -0600
-+++ samba-3.0alpha23/source/smbd/lanman.c	2003-04-04 21:04:08.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/sam/idmap_tdb.c samba-3.0.0beta2/source/sam/idmap_tdb.c
+--- samba-3.0.0beta2.orig/source/sam/idmap_tdb.c	2003-07-01 15:44:26.000000000 -0500
++++ samba-3.0.0beta2/source/sam/idmap_tdb.c	2003-07-02 23:19:02.000000000 -0500
+@@ -495,7 +495,7 @@
+ 	BOOL tdb_is_new = False;
+ 
+ 	/* use the old database if present */
+-	tdbfile = strdup(lock_path("winbindd_idmap.tdb"));
++	tdbfile = strdup(state_path("winbindd_idmap.tdb"));
+ 	if (!tdbfile) {
+ 		DEBUG(0, ("idmap_init: out of memory!\n"));
+ 		return NT_STATUS_NO_MEMORY;
+diff -uNr samba-3.0.0beta2.orig/source/smbd/lanman.c samba-3.0.0beta2/source/smbd/lanman.c
+--- samba-3.0.0beta2.orig/source/smbd/lanman.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/smbd/lanman.c	2003-07-02 23:19:02.000000000 -0500
 @@ -966,9 +966,9 @@
    BOOL local_list_only;
    int i;
@@ -455,9 +549,9 @@ diff -uNr samba-3.0alpha23.orig/source/smbd/lanman.c samba-3.0alpha23/source/smb
      return(0);
    }
  
-diff -uNr samba-3.0alpha23.orig/source/wrepld/process.c samba-3.0alpha23/source/wrepld/process.c
---- samba-3.0alpha23.orig/source/wrepld/process.c	2003-01-14 10:01:01.000000000 -0600
-+++ samba-3.0alpha23/source/wrepld/process.c	2003-04-04 21:04:09.000000000 -0600
+diff -uNr samba-3.0.0beta2.orig/source/wrepld/process.c samba-3.0.0beta2/source/wrepld/process.c
+--- samba-3.0.0beta2.orig/source/wrepld/process.c	2003-07-02 23:26:47.000000000 -0500
++++ samba-3.0.0beta2/source/wrepld/process.c	2003-07-02 23:19:02.000000000 -0500
 @@ -197,7 +197,7 @@
  {
  	TDB_CONTEXT *tdb;
@@ -476,70 +570,14 @@ diff -uNr samba-3.0alpha23.orig/source/wrepld/process.c samba-3.0alpha23/source/
  	if (!tdb) {
  		DEBUG(2,("send_entry_request: Can't open wins database file %s. Error was %s\n", WINS_LIST, strerror(errno) ));
  		return;
-diff -uNr samba-3.0alpha23.orig/source/passdb/pdb_tdb.c samba-3.0alpha23/source/passdb/pdb_tdb.c
---- samba-3.0alpha23.orig/source/passdb/pdb_tdb.c	2003-03-30 20:28:29.000000000 -0600
-+++ samba-3.0alpha23/source/passdb/pdb_tdb.c	2003-04-30 13:51:43.000000000 -0500
-@@ -956,10 +956,7 @@
- 	if (location) {
- 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, location);
- 	} else {
--		pstring tdbfile;
--		get_private_directory(tdbfile);
--		pstrcat(tdbfile, "/");
--		pstrcat(tdbfile, PASSDB_FILE_NAME);
-+		char *tdbfile = state_path(PASSDB_FILE_NAME);
- 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
- 	}
+--- samba_3_0/source/nsswitch/winbindd_acct.c.orig	2003-07-15 13:03:59.000000000 -0400
++++ samba_3_0/source/nsswitch/winbindd_acct.c	2003-07-15 13:04:42.000000000 -0400
+@@ -73,7 +73,7 @@
+ 		
+ 	/* Nope.  Try to open it */
  
---- samba-3.0alpha24/source/nmbd/nmbd_winsserver.c.orig	2003-05-18 19:12:27.000000000 -0400
-+++ samba-3.0alpha24/source/nmbd/nmbd_winsserver.c	2003-05-18 19:18:04.000000000 -0400
-@@ -230,7 +230,7 @@
- 
-   add_samba_names_to_subnet(wins_server_subnet);
- 
--  if((fp = x_fopen(lock_path(WINS_LIST),O_RDONLY,0)) == NULL)
-+  if((fp = x_fopen(state_path(WINS_LIST),O_RDONLY,0)) == NULL)
-   {
-     DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
-            WINS_LIST, strerror(errno) ));
-@@ -1836,7 +1836,7 @@
- 	  }
-   }
- 
--  slprintf(fname,sizeof(fname)-1,"%s/%s", lp_lockdir(), WINS_LIST);
-+  slprintf(fname,sizeof(fname)-1,"%s/%s", dyn_STATEDIR(), WINS_LIST);
-   all_string_sub(fname,"//", "/", 0);
-   slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
- 
---- samba-3.0alpha24/source/nsswitch/winbindd_idmap_tdb.c.orig	2003-05-18 19:22:14.000000000 -0400
-+++ samba-3.0alpha24/source/nsswitch/winbindd_idmap_tdb.c	2003-05-18 19:27:14.000000000 -0400
-@@ -283,16 +283,16 @@
- 	SMB_STRUCT_STAT stbuf;
- 
- 	/* move to the new database on first startup */
--	if (!file_exist(lock_path("idmap.tdb"), &stbuf)) {
--		if (file_exist(lock_path("winbindd_idmap.tdb"), &stbuf)) {
-+	if (!file_exist(state_path("idmap.tdb"), &stbuf)) {
-+		if (file_exist(state_path("winbindd_idmap.tdb"), &stbuf)) {
- 			char *cmd = NULL;
- 			
- 			/* lazy file copy */
--			if (asprintf(&cmd, "cp -p %s/winbindd_idmap.tdb %s/idmap.tdb", lp_lockdir(), lp_lockdir()) != -1) {
-+			if (asprintf(&cmd, "cp -p %s/winbindd_idmap.tdb %s/idmap.tdb", dyn_STATEDIR(), dyn_STATEDIR()) != -1) {
- 				system(cmd);
- 				free(cmd);
- 			}
--			if (!file_exist(lock_path("idmap.tdb"), &stbuf)) {
-+			if (!file_exist(state_path("idmap.tdb"), &stbuf)) {
- 				DEBUG(0, ("idmap_init: Unable to make a new database copy\n"));
- 				return False;
- 			}
-@@ -300,7 +300,7 @@
- 	}
- 
- 	/* Open tdb cache */
--	if (!(idmap_tdb = tdb_open_log(lock_path("idmap.tdb"), 0,
-+	if (!(idmap_tdb = tdb_open_log(state_path("idmap.tdb"), 0,
- 				       TDB_DEFAULT, O_RDWR | O_CREAT,
- 				       0600))) {
- 		DEBUG(0,
+-	if (!(account_tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0, 
++	if (!(account_tdb = tdb_open_log(state_path("winbindd_idmap.tdb"), 0, 
+ 		TDB_DEFAULT, O_RDWR | O_CREAT, 0600))) 
+ 	{
+ 		/* last chance -- maybe idmap has already opened it */
