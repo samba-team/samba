@@ -4,8 +4,8 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
- *  Copyright (C) Gerald Carter                2000-2002
- *  Copyright (C) Tim Potter		       2001.
+ *  Copyright (C) Gerald Carter                2000-2002,
+ *  Copyright (C) Tim Potter		       2001-2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -121,7 +121,7 @@ reads or writes an DOC_INFO structure.
 
 static BOOL smb_io_doc_info(char *desc, DOC_INFO *info, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0;
+	uint32 useless_ptr=1;
 	
 	if (info == NULL) return False;
 
@@ -7120,6 +7120,66 @@ BOOL make_spoolss_q_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u,
 
 BOOL make_spoolss_q_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, 
 				   POLICY_HND *handle)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_startdocprinter(SPOOL_Q_STARTDOCPRINTER *q_u, 
+				    POLICY_HND *handle, uint32 level,
+				    char *docname, char *outputfile,
+				    char *datatype)
+{
+	DOC_INFO_CONTAINER *ctr = &q_u->doc_info_container;
+
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	ctr->level = level;
+
+	switch (level) {
+	case 1:
+		ctr->docinfo.switch_value = level;
+
+		ctr->docinfo.doc_info_1.p_docname = docname ? 1 : 0;
+		ctr->docinfo.doc_info_1.p_outputfile = outputfile ? 1 : 0;
+		ctr->docinfo.doc_info_1.p_datatype = datatype ? 1 : 0;
+
+		if (docname)
+			init_unistr2(&ctr->docinfo.doc_info_1.docname, docname,
+				     strlen(docname) + 1);
+
+		if (outputfile)
+			init_unistr2(&ctr->docinfo.doc_info_1.outputfile, outputfile,
+				     strlen(outputfile) + 1);
+
+		if (datatype)
+			init_unistr2(&ctr->docinfo.doc_info_1.datatype, datatype,
+				     strlen(datatype) + 1);
+
+		break;
+	case 2:
+		/* DOC_INFO_2 is only used by Windows 9x and since it
+	           doesn't do printing over RPC we don't have to worry
+  	           about it. */
+	default:
+		DEBUG(3, ("unsupported info level %d\n", level));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, 
+				  POLICY_HND *handle)
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 
