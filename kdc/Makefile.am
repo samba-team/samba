@@ -6,7 +6,7 @@ INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4)
 
 bin_PROGRAMS = string2key
 
-sbin_PROGRAMS = kstash srv2keytab
+sbin_PROGRAMS = kstash
 
 libexec_PROGRAMS = hprop hpropd kdc
 
