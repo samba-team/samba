@@ -96,9 +96,46 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 
 
 /****************************************************************************
+delete a record if it is for a dead process
+****************************************************************************/
+static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+	struct lock_struct *locks;
+	struct lock_key *key;
+	int count, i;
+
+	tdb_lockchain(tdb, kbuf);
+
+	locks = (struct lock_struct *)dbuf.dptr;
+	key = (struct lock_key *)kbuf.dptr;
+
+	count = dbuf.dsize / sizeof(*locks);
+	for (i=0; i<count; i++) {
+		struct lock_struct *lock = &locks[i];
+
+		if (process_exists(lock->context.pid)) continue;
+
+		if (count > 1 && i < count-1) {
+			memmove(&locks[i], &locks[i+1], 
+				sizeof(*locks)*((count-1) - i));
+		}
+		count--;
+		i--;
+	}
+
+	if (count == 0) {
+		tdb_delete(tdb, kbuf);
+	} else if (count < (dbuf.dsize / sizeof(*locks))) {
+		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+	}
+
+	tdb_unlockchain(tdb, kbuf);
+	return 0;
+}
+
+/****************************************************************************
  Open up the brlock.tdb database.
 ****************************************************************************/
-
 void brl_init(int read_only)
 {
 	if (tdb) return;
@@ -106,6 +143,12 @@ void brl_init(int read_only)
 		       read_only?O_RDONLY:O_RDWR|O_CREAT, 0644);
 	if (!tdb) {
 		DEBUG(0,("Failed to open byte range locking database\n"));
+		return;
+	}
+
+	/* delete any dead locks */
+	if (!read_only) {
+		tdb_traverse(tdb, delete_fn, NULL);
 	}
 }
 
@@ -313,7 +356,7 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 {
 	struct lock_key key;
 	TDB_DATA kbuf, dbuf;
-	int count, i;
+	int count, i, dcount=0;
 	struct lock_struct *locks;
 
 	key.device = dev;
@@ -344,12 +387,14 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 			}
 			count--;
 			i--;
+			dcount++;
 		}
 	}
 
 	if (count == 0) {
 		tdb_delete(tdb, kbuf);
 	} else if (count < (dbuf.dsize / sizeof(*locks))) {
+		dbuf.dsize -= dcount * sizeof(*locks);
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 	}
 
