@@ -186,11 +186,10 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	return True;
 }
 
-
 /*
   check credentials on a request
 */
-BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
+BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 {
 	struct dcerpc_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
@@ -238,6 +237,8 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 					      call->mem_ctx,
 					      pkt->u.request.stub_and_verifier.data, 
 					      pkt->u.request.stub_and_verifier.length, 
+					      full_packet->data,
+					      full_packet->length-auth.credentials.length,
 					      &auth.credentials);
 		break;
 
@@ -246,6 +247,8 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 					     call->mem_ctx,
 					     pkt->u.request.stub_and_verifier.data, 
 					     pkt->u.request.stub_and_verifier.length,
+					     full_packet->data,
+					     full_packet->length-auth.credentials.length,
 					     &auth.credentials);
 		break;
 
@@ -254,7 +257,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 		break;
 	}
 
-	/* remove the indicated amount of paddiing */
+	/* remove the indicated amount of padding */
 	if (pkt->u.request.stub_and_verifier.length < auth.auth_pad_length) {
 		return False;
 	}
@@ -298,31 +301,10 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	dce_conn->auth_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
 	ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
 
-	/* sign or seal the packet */
-	switch (dce_conn->auth_state.auth_info->auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = gensec_seal_packet(dce_conn->auth_state.gensec_security, 
-					      call->mem_ctx,
-					      ndr->data + DCERPC_REQUEST_LENGTH, 
-					      ndr->offset - DCERPC_REQUEST_LENGTH,
-					      &dce_conn->auth_state.auth_info->credentials);
-		break;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = gensec_sign_packet(dce_conn->auth_state.gensec_security, 
-					    call->mem_ctx,
-					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    ndr->offset - DCERPC_REQUEST_LENGTH,
-					    &dce_conn->auth_state.auth_info->credentials);
-		break;
-	default:
-		status = NT_STATUS_INVALID_LEVEL;
-		break;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}	
+	
+	dce_conn->auth_state.auth_info->credentials
+		= data_blob_talloc(call->mem_ctx, NULL, 
+				   gensec_sig_size(dce_conn->auth_state.gensec_security));
 
 	/* add the auth verifier */
 	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, dce_conn->auth_state.auth_info);
@@ -339,6 +321,40 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	dcerpc_set_frag_length(blob, blob->length);
 	dcerpc_set_auth_length(blob, dce_conn->auth_state.auth_info->credentials.length);
 
+	/* sign or seal the packet */
+	switch (dce_conn->auth_state.auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = gensec_seal_packet(dce_conn->auth_state.gensec_security, 
+					    call->mem_ctx,
+					    ndr->data + DCERPC_REQUEST_LENGTH, 
+					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    blob->data,
+					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
+					      &dce_conn->auth_state.auth_info->credentials);
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = gensec_sign_packet(dce_conn->auth_state.gensec_security, 
+					    call->mem_ctx,
+					    ndr->data + DCERPC_REQUEST_LENGTH, 
+					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    blob->data,
+					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
+					    &dce_conn->auth_state.auth_info->credentials);
+
+		break;
+	default:
+		status = NT_STATUS_INVALID_LEVEL;
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}	
+
+	memcpy(blob->data + blob->length - dce_conn->auth_state.auth_info->credentials.length, 
+	       dce_conn->auth_state.auth_info->credentials.data, dce_conn->auth_state.auth_info->credentials.length);
+	
 	data_blob_free(&dce_conn->auth_state.auth_info->credentials);
 
 	return True;

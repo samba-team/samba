@@ -107,13 +107,16 @@ NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t aut
 	}
 
 	p->security_state.auth_info->credentials = credentials;
-
+	
 	status = dcerpc_auth3(p, mem_ctx);
 done:
 	talloc_destroy(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		ZERO_STRUCT(p->security_state);
+	} else {
+		/* Authenticated connections use the generic session key */
+		p->security_state.session_key = dcerpc_generic_session_key;
 	}
 
 	return status;
@@ -196,6 +199,9 @@ done:
 
 	if (!NT_STATUS_IS_OK(status)) {
 		ZERO_STRUCT(p->security_state);
+	} else {
+		/* Authenticated connections use the generic session key */
+		p->security_state.session_key = dcerpc_generic_session_key;
 	}
 
 	return status;

@@ -248,8 +248,6 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 		gensec_want_feature(gensec_security, GENSEC_WANT_SEAL);
 	}
 
-	gensec_want_feature(gensec_security, GENSEC_WANT_SESSION_KEY);
-
 	return gensec_start_mech(gensec_security);
 }
 
@@ -303,17 +301,23 @@ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 */
 NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security, 
 			      TALLOC_CTX *mem_ctx, 
-			      uint8_t *data, size_t length, DATA_BLOB *sig)
+			      uint8_t *data, size_t length, 
+			      const uint8_t *whole_pdu, size_t pdu_length, 
+			      DATA_BLOB *sig)
 {
 	if (!gensec_security->ops->unseal_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return gensec_security->ops->unseal_packet(gensec_security, mem_ctx, data, length, sig);
+	return gensec_security->ops->unseal_packet(gensec_security, mem_ctx, 
+						   data, length, 
+						   whole_pdu, pdu_length, 
+						   sig);
 }
 
 NTSTATUS gensec_check_packet(struct gensec_security *gensec_security, 
 			     TALLOC_CTX *mem_ctx, 
 			     const uint8_t *data, size_t length, 
+			     const uint8_t *whole_pdu, size_t pdu_length, 
 			     const DATA_BLOB *sig)
 {
 	if (!gensec_security->ops->check_packet) {
@@ -323,12 +327,13 @@ NTSTATUS gensec_check_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	return gensec_security->ops->check_packet(gensec_security, mem_ctx, data, length, sig);
+	return gensec_security->ops->check_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
 NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security, 
 			    TALLOC_CTX *mem_ctx, 
 			    uint8_t *data, size_t length, 
+			    const uint8_t *whole_pdu, size_t pdu_length, 
 			    DATA_BLOB *sig)
 {
 	if (!gensec_security->ops->seal_packet) {
@@ -338,12 +343,13 @@ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, sig);
+	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
 NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security, 
 			    TALLOC_CTX *mem_ctx, 
 			    const uint8_t *data, size_t length, 
+			    const uint8_t *whole_pdu, size_t pdu_length, 
 			    DATA_BLOB *sig)
 {
 	if (!gensec_security->ops->sign_packet) {
@@ -353,7 +359,19 @@ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	return gensec_security->ops->sign_packet(gensec_security, mem_ctx, data, length, sig);
+	return gensec_security->ops->sign_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
+}
+
+size_t gensec_sig_size(struct gensec_security *gensec_security) 
+{
+	if (!gensec_security->ops->sig_size) {
+		return 0;
+	}
+	if (!(gensec_security->want_features & GENSEC_WANT_SIGN)) {
+		return 0;
+	}
+	
+	return gensec_security->ops->sig_size(gensec_security);
 }
 
 NTSTATUS gensec_session_key(struct gensec_security *gensec_security, 

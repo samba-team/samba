@@ -458,8 +458,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		pipe_name += 6;
 	}
 	    
-	if ((binding->flags & (DCERPC_SCHANNEL_ANY | DCERPC_SIGN | DCERPC_SEAL))
-		|| !username || !username[0]) {
+	if (!username || !username[0]) {
 		status = smbcli_full_connection(&cli, lp_netbios_name(),
 					     binding->host, NULL, 
 					     "ipc$", "?????", 
@@ -500,6 +499,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
 	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
+
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -691,15 +691,22 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dcerpc_generic_session_key(struct dcerpc_pipe *p,
+				  DATA_BLOB *session_key)
+{
+	/* this took quite a few CPU cycles to find ... */
+	session_key->data = "SystemLibraryDTC";
+	session_key->length = 16;
+	return NT_STATUS_OK;
+}
 
 /*
-  fetch the user session key for the underlying transport. Currently
-  only works for the ncacn_np transport
+  fetch the user session key - may be default (above) or the SMB session key
 */
 NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 				  DATA_BLOB *session_key)
 {
-	return p->transport.session_key(p, session_key);
+	return p->security_state.session_key(p, session_key);
 }
 
 
