@@ -1,3 +1,8 @@
+2001-05-25  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krbhst.c (krb5_get_krb524hst): add and restructure the
+	support functions
+
 2001-05-22  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos5.c (tgs_rep2): alloc and free csec and cusec
