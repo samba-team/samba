@@ -787,7 +787,7 @@ int main(int argc, char **argv)
 
 	/* Initialise samba/rpc client stuff */
 
-	while ((opt = getopt(argc, argv, "id:s:nh")) != EOF) {
+	while ((opt = getopt(argc, argv, "id:s:nhB")) != EOF) {
 		switch (opt) {
 
 			/* Don't become a daemon */
