@@ -1,5 +1,5 @@
 !==
-!== DOMAIN.txt for Samba release 2.0.0-alpha5 17 Sep 1998
+!== DOMAIN.txt for Samba release 2.0.0-alpha6 19 Sep 1998
 !==
 Contributor:	Samba Team
 Updated:	June 27, 1997

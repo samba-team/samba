@@ -1,5 +1,5 @@
 !==
-!== security_level.txt for Samba release 2.0.0-alpha5 17 Sep 1998
+!== security_level.txt for Samba release 2.0.0-alpha6 19 Sep 1998
 !==
 Contributor:	Andrew Tridgell
 Updated:	June 27, 1997
