@@ -117,7 +117,8 @@ void close_file(files_struct *fsp, BOOL normal_close)
 		del_share_mode(token, fsp);
 	}
 
-	fd_attempt_close(fsp->fd_ptr);
+	if(fd_attempt_close(fsp->fd_ptr) == 0)
+		fsp->fd_ptr = NULL;
 
 	if (lp_share_modes(SNUM(conn)))
 		unlock_share_entry(conn, dev, inode, token);

@@ -170,13 +170,10 @@ int fd_attempt_close(file_fd_struct *fd_ptr)
         close(fd_ptr->fd_readonly);
       if(fd_ptr->fd_writeonly != -1)
         close(fd_ptr->fd_writeonly);
-      fd_ptr->fd = -1;
-      fd_ptr->fd_readonly = -1;
-      fd_ptr->fd_writeonly = -1;
-      fd_ptr->real_open_flags = -1;
-      fd_ptr->dev = (SMB_DEV_T)-1;
-      fd_ptr->inode = (SMB_INO_T)-1;
-      fd_ptr->uid_cache_count = 0;
+      /*
+       * Delete this fd_ptr.
+       */
+      fd_ptr_free(fd_ptr);
     } else {
       fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
     }
@@ -457,10 +454,9 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     if (p) *p = 0;
     if (sys_disk_free(dname,&dum1,&dum2,&dum3) < 
 	lp_minprintspace(SNUM(conn))) {
-      fd_attempt_close(fd_ptr);
-      fsp->fd_ptr = 0;
-      if(fd_ptr->ref_count == 0)
+      if(fd_attempt_close(fd_ptr) == 0)
         dos_unlink(fname);
+      fsp->fd_ptr = 0;
       errno = ENOSPC;
       return;
     }

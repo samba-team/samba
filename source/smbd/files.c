@@ -133,8 +133,8 @@ file_fd_struct *fd_get_already_open(SMB_STRUCT_STAT *sbuf)
 				 (unsigned int)fd_ptr->dev, (double)fd_ptr->inode, 
 				 fd_ptr->ref_count));
 #else /* LARGE_SMB_INO_T */
-			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %x, ref_count = %d\n",
-				 (unsigned int)fd_ptr->dev, fd_ptr->inode, 
+			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %lx, ref_count = %d\n",
+				 (unsigned int)fd_ptr->dev, (unsigned long)fd_ptr->inode, 
 				 fd_ptr->ref_count));
 #endif /* LARGE_SMB_INO_T */
 			return fd_ptr;
@@ -315,7 +315,7 @@ void file_sync_all(connection_struct *conn)
 /****************************************************************************
 free up a fd_ptr
 ****************************************************************************/
-static void fd_ptr_free(file_fd_struct *fd_ptr)
+void fd_ptr_free(file_fd_struct *fd_ptr)
 {
 	DLIST_REMOVE(FileFd, fd_ptr);
 
