@@ -469,6 +469,11 @@
 		Misty Stanley-Jones has contributed information that summarizes her experience at migration
 		from a NetWare server to Samba-3.
 		</para>
+
+		<para><emphasis>TechInfo</emphasis> &smbmdash; The documentation provided demonstrates
+		how one site miigrated from NetWare to Samba. Some alternatives tools are mentioned. These
+		could be used to provide another pathway to a successful migration.
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>
