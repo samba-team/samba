@@ -280,12 +280,7 @@ int iface_count(void)
   **************************************************************************/
 BOOL we_are_multihomed(void)
 {
-	static int multi = -1;
-
-	if(multi == -1)
-		multi = (iface_count() > 1 ? True : False);
-	
-	return multi;
+	multi = (iface_count() > 1 ? True : False);
 }
 
 /****************************************************************************
