@@ -92,6 +92,7 @@ EXTRA_libroken_la_SOURCES =	\
 	strftime.c		\
 	strlwr.c		\
 	strncasecmp.c		\
+	strndup.c		\
 	strnlen.c		\
 	strsep.c		\
 	strtok_r.c		\
