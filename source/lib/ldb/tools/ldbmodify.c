@@ -54,7 +54,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 	struct ldb_ldif *ldif;
 	int ret = -1, count = 0;
 	
-	while ((ldif = ldif_read_file(ldb, f))) {
+	while ((ldif = ldb_ldif_read_file(ldb, f))) {
 		switch (ldif->changetype) {
 		case LDB_CHANGETYPE_NONE:
 		case LDB_CHANGETYPE_ADD:
@@ -74,7 +74,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 		} else {
 			count++;
 		}
-		ldif_read_free(ldb, ldif);
+		ldb_ldif_read_free(ldb, ldif);
 	}
 
 	return count;

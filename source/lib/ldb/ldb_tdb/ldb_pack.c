@@ -69,10 +69,16 @@ int ltdb_pack_data(struct ldb_context *ldb,
 		   const struct ldb_message *message,
 		   struct TDB_DATA *data)
 {
-	int i, j;
+	int i, j, real_elements=0;
 	size_t size;
 	char *p;
 	size_t len;
+
+	for (i=0;i<message->num_elements;i++) {
+		if (message->elements[i].num_values != 0) {
+			real_elements++;
+		}
+	}
 
 	/* work out how big it needs to be */
 	size = 8;
@@ -99,7 +105,7 @@ int ltdb_pack_data(struct ldb_context *ldb,
 
 	p = data->dptr;
 	put_uint32(p, 0, LTDB_PACKING_FORMAT); 
-	put_uint32(p, 4, message->num_elements); 
+	put_uint32(p, 4, real_elements); 
 	p += 8;
 
 	/* the dn needs to be packed so we can be case preserving
@@ -211,11 +217,13 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 
 	message->elements = ldb_malloc_array_p(ldb, struct ldb_message_element,
 					       message->num_elements);
-				     
 	if (!message->elements) {
 		errno = ENOMEM;
 		goto failed;
 	}
+
+	memset(message->elements, 0, 
+	       message->num_elements * sizeof(struct ldb_message_element));
 
 	for (i=0;i<message->num_elements;i++) {
 		if (remaining < 10) {
@@ -243,6 +251,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 			}
 		}
 		p += 4;
+		remaining -= 4;
 		for (j=0;j<message->elements[i].num_values;j++) {
 			len = pull_uint32(p, 0);
 			if (len > remaining-5) {
@@ -255,6 +264,11 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 			remaining -= len+4+1;
 			p += len+4+1;
 		}
+	}
+
+	if (remaining != 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, 
+			  "Error: %d bytes unread in ltdb_unpack_data\n", remaining);
 	}
 
 	return 0;

@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
+#include "ldb/include/ldb_parse.h"
 
 struct dn_list {
 	unsigned int count;

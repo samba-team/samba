@@ -60,9 +60,6 @@ struct ldb_val {
 	void *data;
 };
 
-#include "ldb_parse.h"
-
-
 /* these flags are used in ldd_message_element.flags fields. The
    LDA_FLAGS_MOD_* flags are used in ldap_modify() calls to specify
    whether attributes are being added, deleted or modified */
@@ -256,16 +253,16 @@ char *ldb_casefold(struct ldb_context *ldb, const char *s);
 /*
   ldif manipulation functions
 */
-int ldif_write(struct ldb_context *ldb,
-	       int (*fprintf_fn)(void *, const char *, ...), 
-	       void *private_data,
-	       const struct ldb_ldif *ldif);
-void ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *);
-struct ldb_ldif *ldif_read(struct ldb_context *ldb, 
-			   int (*fgetc_fn)(void *), void *private_data);
-struct ldb_ldif *ldif_read_file(struct ldb_context *ldb, FILE *f);
-struct ldb_ldif *ldif_read_string(struct ldb_context *ldb, const char *s);
-int ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *msg);
+int ldb_ldif_write(struct ldb_context *ldb,
+		   int (*fprintf_fn)(void *, const char *, ...), 
+		   void *private_data,
+		   const struct ldb_ldif *ldif);
+void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *);
+struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb, 
+			       int (*fgetc_fn)(void *), void *private_data);
+struct ldb_ldif *ldb_ldif_read_file(struct ldb_context *ldb, FILE *f);
+struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char *s);
+int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *msg);
 
 
 /* useful functions for ldb_message structure manipulation */

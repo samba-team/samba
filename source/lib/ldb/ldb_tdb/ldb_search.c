@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
+#include "ldb/include/ldb_parse.h"
 
 /*
   free a message that has all parts separately allocated
@@ -192,6 +193,31 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 			continue;
 		}
 
+		if (ldb_attr_cmp(attrs[i], "dn") == 0) {
+			struct ldb_message_element el2;
+			struct ldb_val val;
+
+			el2.flags = 0;
+			el2.name = ldb_strdup(ldb, "dn");
+			if (!el2.name) {
+				msg_free_all_parts(ldb, ret);
+				ldb_free(ldb, el2.name);
+				return NULL;				
+			}
+			el2.num_values = 1;
+			el2.values = &val;
+			val.data = ret->dn;
+			val.length = strlen(ret->dn);
+
+			if (msg_add_element(ldb, ret, &el2) != 0) {
+				msg_free_all_parts(ldb, ret);
+				ldb_free(ldb, el2.name);
+				return NULL;				
+			}
+			ldb_free(ldb, el2.name);
+			continue;
+		}
+
 		el = ldb_msg_find_element(msg, attrs[i]);
 		if (!el) {
 			continue;
@@ -290,7 +316,7 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 
 	ret = ltdb_unpack_data(ldb, &tdb_data2, msg);
 	if (ret == -1) {
-		free(tdb_data2.dptr);
+		ldb_free(ldb, tdb_data2.dptr);
 		return -1;		
 	}
 

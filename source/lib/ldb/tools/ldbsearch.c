@@ -69,7 +69,7 @@ static int do_search(struct ldb_context *ldb,
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = *msgs[i];
 
-		ldif_write_file(ldb, stdout, &ldif);
+		ldb_ldif_write_file(ldb, stdout, &ldif);
 	}
 
 	if (ret > 0) {

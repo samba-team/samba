@@ -196,10 +196,10 @@ static const struct {
 /*
   write to ldif, using a caller supplied write method
 */
-int ldif_write(struct ldb_context *ldb,
-	       int (*fprintf_fn)(void *, const char *, ...), 
-	       void *private_data,
-	       const struct ldb_ldif *ldif)
+int ldb_ldif_write(struct ldb_context *ldb,
+		   int (*fprintf_fn)(void *, const char *, ...), 
+		   void *private_data,
+		   const struct ldb_ldif *ldif)
 {
 	int i, j;
 	int total=0, ret;
@@ -407,7 +407,7 @@ static int next_attr(char **s, const char **attr, struct ldb_val *value)
 /*
   free a message from a ldif_read
 */
-void ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *ldif)
+void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *ldif)
 {
 	struct ldb_message *msg = &ldif->msg;
 	int i;
@@ -457,8 +457,8 @@ static int msg_add_empty(struct ldb_context *ldb,
 /*
  read from a LDIF source, creating a ldb_message
 */
-struct ldb_ldif *ldif_read(struct ldb_context *ldb,
-			   int (*fgetc_fn)(void *), void *private_data)
+struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
+			       int (*fgetc_fn)(void *), void *private_data)
 {
 	struct ldb_ldif *ldif;
 	struct ldb_message *msg;
@@ -582,7 +582,7 @@ struct ldb_ldif *ldif_read(struct ldb_context *ldb,
 	return ldif;
 
 failed:
-	if (ldif) ldif_read_free(ldb, ldif);
+	if (ldif) ldb_ldif_read_free(ldb, ldif);
 	return NULL;
 }
 
@@ -601,11 +601,11 @@ static int fgetc_file(void *private_data)
 	return fgetc(state->f);
 }
 
-struct ldb_ldif *ldif_read_file(struct ldb_context *ldb, FILE *f)
+struct ldb_ldif *ldb_ldif_read_file(struct ldb_context *ldb, FILE *f)
 {
 	struct ldif_read_file_state state;
 	state.f = f;
-	return ldif_read(ldb, fgetc_file, &state);
+	return ldb_ldif_read(ldb, fgetc_file, &state);
 }
 
 
@@ -625,11 +625,11 @@ static int fgetc_string(void *private_data)
 	return EOF;
 }
 
-struct ldb_ldif *ldif_read_string(struct ldb_context *ldb, const char *s)
+struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char *s)
 {
 	struct ldif_read_string_state state;
 	state.s = s;
-	return ldif_read(ldb, fgetc_string, &state);
+	return ldb_ldif_read(ldb, fgetc_string, &state);
 }
 
 
@@ -652,9 +652,9 @@ static int fprintf_file(void *private_data, const char *fmt, ...)
 	return ret;
 }
 
-int ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *ldif)
+int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *ldif)
 {
 	struct ldif_write_file_state state;
 	state.f = f;
-	return ldif_write(ldb, fprintf_file, &state, ldif);
+	return ldb_ldif_write(ldb, fprintf_file, &state, ldif);
 }
