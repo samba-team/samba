@@ -177,7 +177,8 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 
 NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selected) 
 {
-	/* HINT: Don't store 'selected' becouse its often an lp_ string and will 'go away' */
+	/* HINT: Don't store 'selected' becouse its often an lp_ string and
+	   will 'go away' */
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 	char *module_name = smb_xstrdup(selected);
@@ -196,18 +197,20 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selecte
 
 	trim_string(module_name, " ", " ");
 
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context))) {
-		return nt_status;
-	}
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context)))
+		goto done;
 	
-	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
-	for (i = 0; builtin_pdb_init_functions[i].name; i++)
-	{
-		if (strequal(builtin_pdb_init_functions[i].name, module_name))
-		{
-			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_name, i));
-			if (NT_STATUS_IS_OK(nt_status 
-					    = builtin_pdb_init_functions[i].init(*context, &(*context)->pdb_selected, module_location))) {
+	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", 
+		 selected, module_name));
+
+	for (i = 0; builtin_pdb_init_functions[i].name; i++) {
+		if (strequal(builtin_pdb_init_functions[i].name, 
+			     module_name)) {
+
+			DEBUG(5,("Found pdb backend %s (at pos %d)\n", 
+				 module_name, i));
+
+			if (NT_STATUS_IS_OK(nt_status = builtin_pdb_init_functions[i].init(*context, &(*context)->pdb_selected, module_location))) {
 				DEBUG(5,("pdb backend %s has a valid init\n", selected));
 			} else {
 				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
@@ -221,16 +224,21 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selecte
 		DEBUG(0,("failed to select passdb backed!\n"));
 		talloc_destroy((*context)->mem_ctx);
 		*context = NULL;
-		return nt_status;
+		goto done;
 	}
 
-	return NT_STATUS_OK;
+	nt_status = NT_STATUS_OK;
+
+ done:
+	SAFE_FREE(module_name);
+
+	return nt_status;
 }
 
 
 /******************************************************************
- Return an already initilised pdb_context, to facilitate backward 
- compatiablity (see functions below).
+ Return an already initialised pdb_context, to facilitate backward 
+ compatibility (see functions below).
 *******************************************************************/
 
 static struct pdb_context *pdb_get_static_context(BOOL reload) 
@@ -256,7 +264,7 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 #if !defined(WITH_NISPLUS_SAM)
 
 /******************************************************************
- Backward compatability functions for the original passdb interface
+ Backward compatibility functions for the original passdb interface
 *******************************************************************/
 
 BOOL pdb_setsampwent(BOOL update) 
