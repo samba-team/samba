@@ -71,6 +71,7 @@
 #endif
 
 #include <sys/socket.h>
+#include <sys/time.h>
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif /* HAVE_SYS_RESOURCE_H */
@@ -80,7 +81,6 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #ifndef	FILIO_H
 #include <sys/ioctl.h>
 #else
