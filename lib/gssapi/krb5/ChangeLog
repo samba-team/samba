@@ -1,3 +1,19 @@
+2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* unwrap.c: hook in arcfour unwrap
+	
+	* wrap.c: hook in arcfour wrap
+	
+	* verify_mic.c: hook in arcfour verify_mic
+	
+	* get_mic.c: hook in arcfour get_mic
+	
+	* arcfour.c: implement wrap/unwarp
+	
+	* gssapi_locl.h: add gssapi_{en,de}code_be_om_uint32
+	
+	* 8003.c: add gssapi_{en,de}code_be_om_uint32
+	
 2003-08-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* arcfour.c (_gssapi_verify_mic_arcfour): Do the checksum on right
