@@ -117,7 +117,7 @@ uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*connect_pol = r.connect_pol;
 	}
 
@@ -163,7 +163,7 @@ uint32 cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*connect_pol = r.pol;
 	}
 
@@ -210,7 +210,7 @@ uint32 cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*domain_pol = r.domain_pol;
 	}
 
@@ -257,7 +257,7 @@ uint32 cli_samr_open_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*user_pol = r.user_pol;
 	}
 
@@ -304,7 +304,7 @@ uint32 cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*group_pol = r.pol;
 	}
 
@@ -444,7 +444,7 @@ uint32 cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*num_groups = r.num_entries;
 		*gid = r.gid;
 	}
@@ -492,7 +492,7 @@ uint32 cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*num_mem = r.num_entries;
 		*rid = r.rid;
 		*attr = r.attr;
@@ -544,7 +544,7 @@ uint32 cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_NOPROBLEMO &&
+	if (result != NT_STATUS_OK &&
 	    result != STATUS_MORE_ENTRIES) {
 		goto done;
 	}
@@ -618,7 +618,7 @@ uint32 cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -678,7 +678,7 @@ uint32 cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*alias_pol = r.pol;
 	}
 
@@ -727,7 +727,7 @@ uint32 cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -780,7 +780,7 @@ uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         result = r.status;
 
-	if (result != NT_STATUS_NOPROBLEMO &&
+	if (result != NT_STATUS_OK &&
 	    result != STATUS_MORE_ENTRIES) {
 		goto done;
 	}
@@ -840,7 +840,7 @@ uint32 cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -908,7 +908,7 @@ uint32 cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -970,7 +970,7 @@ uint32 cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -1026,7 +1026,7 @@ uint32 cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -1073,7 +1073,7 @@ uint32 cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_OK) {
 		goto done;
 	}
 

@@ -79,13 +79,13 @@ BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
 				     des_access, &pol->handle);
 
  done:
-	if (result != NT_STATUS_NOPROBLEMO && pol->cli) {
+	if (result != NT_STATUS_OK && pol->cli) {
 		if (pol->cli->initialised)
 			cli_shutdown(pol->cli);
 		free(pol->cli);
 	}
 
-	return (result == NT_STATUS_NOPROBLEMO);
+	return (result == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -99,7 +99,7 @@ BOOL wb_lsa_enum_trust_dom(CLI_POLICY_HND *hnd, uint32 *enum_ctx,
 	ret = cli_lsa_enum_trust_dom(hnd->cli, hnd->mem_ctx, &hnd->handle,
 				     enum_ctx, num_doms, names, sids);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -113,7 +113,7 @@ BOOL wb_lsa_query_info_pol(CLI_POLICY_HND *hnd, uint16 info_class,
 	ret = cli_lsa_query_info_policy(hnd->cli, hnd->mem_ctx, &hnd->handle,
 					info_class, domain_name, domain_sid);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -127,7 +127,7 @@ BOOL wb_lsa_lookup_names(CLI_POLICY_HND *hnd, int num_names, char **names,
 	ret = cli_lsa_lookup_names(hnd->cli, hnd->mem_ctx, &hnd->handle,
 				   num_names, names, sids, types, num_sids);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -141,7 +141,7 @@ BOOL wb_lsa_lookup_sids(CLI_POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 	ret = cli_lsa_lookup_sids(hnd->cli, hnd->mem_ctx, &hnd->handle,
 				  num_sids, sids, names, types, num_names);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -153,7 +153,7 @@ BOOL wb_lsa_close(CLI_POLICY_HND *hnd)
 
 	ret = cli_lsa_close(hnd->cli, hnd->mem_ctx, &hnd->handle);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 
@@ -166,7 +166,7 @@ BOOL wb_samr_close(CLI_POLICY_HND *hnd)
 
 	ret = cli_samr_close(hnd->cli, hnd->mem_ctx, &hnd->handle);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 
@@ -225,13 +225,13 @@ BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol)
 				  access_mask, &pol->handle);
 
  done:
-	if (result != NT_STATUS_NOPROBLEMO && pol->cli) {
+	if (result != NT_STATUS_OK && pol->cli) {
 		if (pol->cli->initialised)
 			cli_shutdown(pol->cli);
 		free(pol->cli);
 	}
 
-	return (result == NT_STATUS_NOPROBLEMO);
+	return (result == NT_STATUS_OK);
 }
 
 
@@ -250,7 +250,7 @@ BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
 				   sid,
 				   &domain_pol->handle);
 
-	if (ret == NT_STATUS_NOPROBLEMO) {
+	if (ret == NT_STATUS_OK) {
 		domain_pol->cli = connect_pol->cli;
 		domain_pol->mem_ctx = connect_pol->mem_ctx;
 		return True;
@@ -271,7 +271,7 @@ uint32 wb_samr_enum_dom_groups(CLI_POLICY_HND *pol, uint32 *start_idx,
 	ret = cli_samr_enum_dom_groups(pol->cli, pol->mem_ctx, &pol->handle,
 				       start_idx, size, sam, num_sam_groups);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -287,20 +287,20 @@ BOOL wb_get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
 	if ((result = cli_samr_open_user(pol->cli, pol->mem_ctx, 
 					 &pol->handle, MAXIMUM_ALLOWED_ACCESS,
 					 user_rid, &user_pol)) 
-	    != NT_STATUS_NOPROBLEMO)
+	    != NT_STATUS_OK)
 		goto done;
 
 	got_user_pol = True;
 
 	if ((result = cli_samr_query_userinfo(pol->cli, pol->mem_ctx,
 					      &user_pol, info_level, ctr))
-	    != NT_STATUS_NOPROBLEMO)
+	    != NT_STATUS_OK)
 		goto done;
 
  done:
 	if (got_user_pol) cli_samr_close(pol->cli, pol->mem_ctx, &user_pol);
 
-	return (result == NT_STATUS_NOPROBLEMO);
+	return (result == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -314,7 +314,7 @@ BOOL wb_samr_open_user(CLI_POLICY_HND *pol, uint32 access_mask, uint32 rid,
 	ret = cli_samr_open_user(pol->cli, pol->mem_ctx, &pol->handle,
 				 access_mask, rid, user_pol);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 BOOL wb_samr_query_usergroups(CLI_POLICY_HND *pol, uint32 *num_groups,
@@ -325,7 +325,7 @@ BOOL wb_samr_query_usergroups(CLI_POLICY_HND *pol, uint32 *num_groups,
 	ret = cli_samr_query_usergroups(pol->cli, pol->mem_ctx, &pol->handle,
 					num_groups, gid);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 BOOL wb_get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
@@ -338,20 +338,20 @@ BOOL wb_get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
 	if ((result = cli_samr_open_group(pol->cli, pol->mem_ctx,
 					  &pol->handle, MAXIMUM_ALLOWED_ACCESS,
 					  group_rid, &group_pol))
-	    != NT_STATUS_NOPROBLEMO) 
+	    != NT_STATUS_OK) 
 		goto done;
 
 	got_group_pol = True;
 
 	if ((result = cli_samr_query_groupinfo(pol->cli, pol->mem_ctx,
 					       &group_pol, info_level,
-					       ctr)) != NT_STATUS_NOPROBLEMO)
+					       ctr)) != NT_STATUS_OK)
 		goto done;
 
  done:
 	if (got_group_pol) cli_samr_close(pol->cli, pol->mem_ctx, &group_pol);
 
-	return (result == NT_STATUS_NOPROBLEMO);
+	return (result == NT_STATUS_OK);
 }
 
 BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
@@ -365,7 +365,7 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 	if ((result = cli_samr_open_group(pol->cli, pol->mem_ctx,
 					  &pol->handle, MAXIMUM_ALLOWED_ACCESS,
 					  group_rid, &group_pol))
-	    != NT_STATUS_NOPROBLEMO) 
+	    != NT_STATUS_OK) 
 		goto done;
 
 	got_group_pol = True;
@@ -373,7 +373,7 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 	if ((result = cli_samr_query_groupmem(pol->cli, pol->mem_ctx,
 					      &group_pol, num_names, rid_mem, 
 					      name_types))
-	    != NT_STATUS_NOPROBLEMO)
+	    != NT_STATUS_OK)
 		goto done;
 
         /* Call cli_samr_lookup_rids() in bunches of ~1000 rids to avoid
@@ -399,7 +399,7 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
                                               &tmp_num_names,
                                               &tmp_names, &tmp_types);
 
-                if (result != NT_STATUS_NOPROBLEMO)
+                if (result != NT_STATUS_OK)
                         goto done;
 
                 /* Copy result into array.  The talloc system will take
@@ -420,7 +420,7 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 	if (got_group_pol) 
                 cli_samr_close(pol->cli, pol->mem_ctx, &group_pol);
 
-	return (result == NT_STATUS_NOPROBLEMO);	
+	return (result == NT_STATUS_OK);	
 }
 
 BOOL wb_samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
@@ -431,7 +431,7 @@ BOOL wb_samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
 	ret = cli_samr_query_dom_info(pol->cli, pol->mem_ctx, 
 				      &pol->handle, switch_value, ctr);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	return (ret == NT_STATUS_OK);
 }
 
 /* Unlike all the others, the status code of this function is actually used

@@ -154,7 +154,7 @@ static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *gran
 	 */
 
 	*granted = acc_granted;
-	*status = NT_STATUS_NOPROBLEMO;
+	*status = NT_STATUS_OK;
 	return True;
 }
 
@@ -214,7 +214,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	if (!status || !acc_granted)
 		return False;
 
-	*status = NT_STATUS_NOPROBLEMO;
+	*status = NT_STATUS_OK;
 	*acc_granted = 0;
 
 	DEBUG(10,("se_access_check: requested access %x, for uid %u\n", 
@@ -228,7 +228,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	/* ACL must have something in it */
 
 	if (!sd || (sd && (!(sd->type & SEC_DESC_DACL_PRESENT) || sd->dacl == NULL))) {
-		*status = NT_STATUS_NOPROBLEMO;
+		*status = NT_STATUS_OK;
 		*acc_granted = acc_desired;
 		DEBUG(5, ("se_access_check: no sd or blank DACL, access allowed\n"));
 		return True;
@@ -276,7 +276,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 			  (unsigned int)tmp_acc_desired ));
 
 		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
-		if (*status != NT_STATUS_NOPROBLEMO) {
+		if (*status != NT_STATUS_OK) {
 			*acc_granted = 0;
 			DEBUG(5,("se_access_check: ACE %u denied with status %x.\n", (unsigned int)i, (unsigned int)*status ));
 			return False;
@@ -290,7 +290,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
 	if (tmp_acc_desired == 0) {
 		*acc_granted = acc_desired;
-		*status = NT_STATUS_NOPROBLEMO;
+		*status = NT_STATUS_OK;
 		DEBUG(5,("se_access_check: access (%x) granted.\n", (unsigned int)acc_desired ));
 		return True;
 	}

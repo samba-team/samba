@@ -1112,7 +1112,7 @@ static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 									driver->driverpath, user, &err)) == -1)
 		return err;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 	
 /****************************************************************************
@@ -1177,7 +1177,7 @@ static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 									driver->driverpath, user, &err)) == -1)
 		return err;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3318,7 +3318,7 @@ uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
 	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
 		i->name));
 	
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 /****************************************************************************
 ****************************************************************************/
@@ -3872,7 +3872,7 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 		DEBUG(5,("printer_write_default_dev: Access denied for printer %s\n",
 			lp_servicename(snum) ));
 		result = ERRnoaccess;
-		/*result = NT_STATUS_NOPROBLEMO;*/
+		/*result = NT_STATUS_OK;*/
 		goto done;
 	}
 

@@ -530,7 +530,7 @@ static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n
 
 	if (init_srv_share_info_ctr(p, &r_n->ctr, info_level,
 				    &resume_hnd, &r_n->total_entries, all)) {
-		r_n->status = NT_STATUS_NOPROBLEMO;
+		r_n->status = NT_STATUS_OK;
 	} else {
 		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
@@ -545,7 +545,7 @@ static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n
 static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_INFO *r_n,
 				  char *share_name, uint32 info_level)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	int snum;
 
 	DEBUG(5,("init_srv_r_net_share_get_info: %d\n", __LINE__));
@@ -577,7 +577,7 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
 		status = NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	r_n->info.ptr_share_ctr = (status == NT_STATUS_NOPROBLEMO) ? 1 : 0;
+	r_n->info.ptr_share_ctr = (status == NT_STATUS_OK) ? 1 : 0;
 	r_n->status = status;
 }
 
@@ -697,7 +697,7 @@ static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 static uint32 init_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	DEBUG(5,("init_srv_sess_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -739,7 +739,7 @@ static void init_srv_r_net_sess_enum(SRV_R_NET_SESS_ENUM *r_n,
 	else
 		r_n->status = init_srv_sess_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
 
-	if (r_n->status != NT_STATUS_NOPROBLEMO)
+	if (r_n->status != NT_STATUS_OK)
 		resume_hnd = 0;
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
@@ -853,7 +853,7 @@ static void init_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *sto
 static uint32 init_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	DEBUG(5,("init_srv_conn_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -894,7 +894,7 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 	else
 		r_n->status = init_srv_conn_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
 
-	if (r_n->status != NT_STATUS_NOPROBLEMO)
+	if (r_n->status != NT_STATUS_OK)
 		resume_hnd = 0;
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
@@ -953,7 +953,7 @@ static void init_srv_file_info_3(SRV_FILE_INFO_3 *fl3, uint32 *fnum, uint32 *fto
 static uint32 init_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	DEBUG(5,("init_srv_file_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -990,7 +990,7 @@ static void init_srv_r_net_file_enum(SRV_R_NET_FILE_ENUM *r_n,
 	else
 		r_n->status = init_srv_file_info_ctr(r_n->ctr, switch_value, &resume_hnd, &(r_n->total_entries));
 
-	if (r_n->status != NT_STATUS_NOPROBLEMO)
+	if (r_n->status != NT_STATUS_OK)
 		resume_hnd = 0;
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
@@ -1002,7 +1002,7 @@ net server get info
 
 uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	SRV_INFO_CTR *ctr = (SRV_INFO_CTR *)talloc(p->mem_ctx, sizeof(SRV_INFO_CTR));
 
 	if (!ctr)
@@ -1059,7 +1059,7 @@ uint32 _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R
 	/* NT gives "Windows NT error 0xc00000022" if we return
 	   NT_STATUS_ACCESS_DENIED here so just pretend everything is OK. */
 
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 
 	DEBUG(5,("srv_net_srv_set_info: %d\n", __LINE__));
 
@@ -1369,7 +1369,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1479,7 +1479,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1536,7 +1536,7 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	lp_killservice(snum);
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1557,7 +1557,7 @@ uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
  
 	r_u->tod = tod;
 	r_u->ptr_srv_tod = 0x1;
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
 
@@ -1607,7 +1607,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	ZERO_STRUCT(st);
 
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
@@ -1700,7 +1700,7 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	ZERO_STRUCT(st);
 
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
@@ -1824,7 +1824,7 @@ uint32 _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 	const char *disk_name;
 	uint32 resume=get_enum_hnd(&q_u->enum_hnd);
 
-	r_u->status=NT_STATUS_NOPROBLEMO;
+	r_u->status=NT_STATUS_OK;
 
 	r_u->total_entries = init_server_disk_enum(&resume);
 
@@ -1859,7 +1859,7 @@ uint32 _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 	int snum;
 	fstring share_name;
 
-	r_u->status=NT_STATUS_NOPROBLEMO;
+	r_u->status=NT_STATUS_OK;
 
 	switch(q_u->type) {
 

@@ -170,7 +170,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 
 uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	fstring mach_acct;
 
 	if (!get_valid_user_struct(p->vuid))
@@ -229,7 +229,7 @@ static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, int status)
 
 uint32 _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 
@@ -275,7 +275,7 @@ static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
 
 uint32 _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 	NEG_FLAGS srv_flgs;
@@ -312,7 +312,7 @@ uint32 _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 
 uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	DOM_CRED srv_cred;
 	pstring mach_acct;
 	SAM_ACCOUNT *sampass=NULL;
@@ -379,7 +379,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	unbecome_root();
 
 	if (ret)
-		status = NT_STATUS_NOPROBLEMO;
+		status = NT_STATUS_OK;
 
 	/* set up the LSA Server Password Set response */
 	init_net_r_srv_pwset(r_u, &srv_cred, status);
@@ -411,7 +411,7 @@ uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF 
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
 	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
 
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	return r_u->status;
 }
@@ -484,7 +484,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 
 	if (id2->hdr_nt_chal_resp.str_str_len == 24 && nt_pwd != NULL)	{
 		if(smb_password_check((char *)id2->nt_chal_resp.buffer, nt_pwd, id2->lm_chal)) 
-			return NT_STATUS_NOPROBLEMO;
+			return NT_STATUS_OK;
 		else
 			return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -501,7 +501,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 		smb_password_check((char *)id2->lm_chal_resp.buffer,
 		                   lanman_pwd, id2->lm_chal)) 
 	{
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 	}
 
 
@@ -516,7 +516,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 
 uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	NET_USER_INFO_3 *usr_info = NULL;
 	DOM_CRED srv_cred;
 	SAM_ACCOUNT *sampass = NULL;
@@ -607,14 +607,14 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		}
 	}
 
-	if (status != NT_STATUS_NOPROBLEMO)
+	if (status != NT_STATUS_OK)
 		return status;
 
 #ifdef WITH_PAM
 	become_root();
 	status = smb_pam_accountcheck(pdb_get_username(sampass));
 	unbecome_root();
-	if (status != NT_STATUS_NOPROBLEMO)
+	if (status != NT_STATUS_OK)
 		return status;
 #endif
 

@@ -123,7 +123,7 @@ enum winbindd_result winbindd_check_machine_acct(
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
 
-	DEBUG(3, ("secret is %s\n", (result == NT_STATUS_NOPROBLEMO) ?
+	DEBUG(3, ("secret is %s\n", (result == NT_STATUS_OK) ?
 		  "good" : "bad"));
 
  done:

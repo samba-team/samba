@@ -1404,7 +1404,7 @@ uint32 init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_ent
 		  max_entries, max_data_size));
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	sam->sam=(SAM_ENTRY1 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY1));
 	if (!sam->sam)
@@ -1442,7 +1442,7 @@ uint32 init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1515,7 +1515,7 @@ uint32 init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_ent
 	max_data_size = *data_size;
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if (!(sam->sam=(SAM_ENTRY2 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY2))))
 		return NT_STATUS_NO_MEMORY;
@@ -1547,7 +1547,7 @@ uint32 init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1622,7 +1622,7 @@ uint32 init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_ent
 	max_data_size = *data_size;
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if (!(sam->sam=(SAM_ENTRY3 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY3))))
 		return NT_STATUS_NO_MEMORY;
@@ -1650,7 +1650,7 @@ uint32 init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1726,7 +1726,7 @@ uint32 init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_ent
 	max_data_size = *data_size;
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if (!(sam->sam=(SAM_ENTRY4 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY4))))
 		return NT_STATUS_NO_MEMORY;
@@ -1752,7 +1752,7 @@ uint32 init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1828,7 +1828,7 @@ uint32 init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_ent
 	max_data_size = *data_size;
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if (!(sam->sam=(SAM_ENTRY5 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY5))))
 		return NT_STATUS_NO_MEMORY;
@@ -1852,7 +1852,7 @@ uint32 init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -4461,7 +4461,7 @@ uint32 init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 		init_unistr2(&q_u->uni_name[i], name[i], len_name);	/* unicode string for machine account */
 	}
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -4570,7 +4570,7 @@ uint32 init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 
 	r_u->status = status;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -5999,7 +5999,7 @@ uint32 make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************

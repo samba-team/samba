@@ -450,7 +450,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INF
 
 	ret_err_code = cli_net_sam_logon_internal(cli, ctr, user_info3, validation_level);
 
-	if(ret_err_code == NT_STATUS_NOPROBLEMO) {
+	if(ret_err_code == NT_STATUS_OK) {
 		DEBUG(10,("cli_net_sam_logon: Success \n"));
 		ok = True;
 	} else if (ret_err_code == NT_STATUS_INVALID_INFO_CLASS) {

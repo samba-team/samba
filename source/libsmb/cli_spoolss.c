@@ -133,7 +133,7 @@ uint32 cli_spoolss_open_printer_ex(
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*pol = r.handle;
 	}
 
@@ -186,7 +186,7 @@ uint32 cli_spoolss_close_printer(
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*pol = r.handle;
 	}
 
@@ -478,7 +478,7 @@ uint32 cli_spoolss_enum_printers(
 		
 		/* Return output parameters */
 
-		if (((result=r.status) == NT_STATUS_NOPROBLEMO) && (*returned = r.returned))
+		if (((result=r.status) == NT_STATUS_OK) && (*returned = r.returned))
 		{
 
 			switch (level) {
@@ -554,7 +554,7 @@ uint32 cli_spoolss_enum_ports(
 		
 		/* Return output parameters */
 
-		if ((result = r.status) == NT_STATUS_NOPROBLEMO &&
+		if ((result = r.status) == NT_STATUS_OK &&
 		    r.returned > 0) {
 
 			*returned = r.returned;
@@ -623,7 +623,7 @@ uint32 cli_spoolss_getprinter(
 		}
 		
 		/* Return output parameters */
-		if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+		if ((result = r.status) == NT_STATUS_OK) {
 
 			switch (level) {
 			case 0:
@@ -754,7 +754,7 @@ uint32 cli_spoolss_getprinterdriver (
 		}
 		
 		/* Return output parameters */
-		if ((result = r.status) == NT_STATUS_NOPROBLEMO) 
+		if ((result = r.status) == NT_STATUS_OK) 
 		{
 
 			switch (level) 
@@ -833,7 +833,7 @@ uint32 cli_spoolss_enumprinterdrivers (
 		}
 		
 		/* Return output parameters */
-		if (((result=r.status) == NT_STATUS_NOPROBLEMO) && 
+		if (((result=r.status) == NT_STATUS_OK) && 
 		    (r.returned != 0))
 		{
 			*returned = r.returned;
@@ -914,7 +914,7 @@ uint32 cli_spoolss_getprinterdriverdir (
 		}
 		
 		/* Return output parameters */
-		if ((result=r.status) == NT_STATUS_NOPROBLEMO)
+		if ((result=r.status) == NT_STATUS_OK)
 		{
 			switch (level) 
 			{

@@ -594,7 +594,7 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 	if (cli_samr_query_usergroups(domain->sam_dom_handle.cli,
 				      domain->sam_dom_handle.mem_ctx,
 				      &user_pol, num_groups, user_groups)
-	    != NT_STATUS_NOPROBLEMO) {
+	    != NT_STATUS_OK) {
 		result = False;
 		goto done;
 	}

@@ -55,7 +55,7 @@ uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 	if (!close_policy_hnd(p, &q_u->pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -67,7 +67,7 @@ uint32 _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
 	if (!create_policy_hnd(p, &r_u->pol, free_reg_info, NULL))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -103,7 +103,7 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	if (!create_policy_hnd(p, &pol, free_reg_info, (void *)info))
 		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 
-	init_reg_r_open_entry(r_u, &pol, NT_STATUS_NOPROBLEMO);
+	init_reg_r_open_entry(r_u, &pol, NT_STATUS_OK);
 
 	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
 
@@ -116,7 +116,7 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 
 uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = NT_STATUS_OK;
 	char *key = NULL;
 	uint32 type=0x1; /* key type: REG_SZ */
 
