@@ -139,10 +139,10 @@ static BOOL fetch_ldapsam_pw(char **dn, char** pw)
 static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
 		"logoffTime", "kickoffTime", "cn",
 		"pwdCanChange", "pwdMustChange",
-		"dislplayName", "homeDrive",
+		"displayName", "homeDrive",
 		"smbHome", "scriptPath",
 		"profilePath", "description",
-		"userWorkstation", "rid",
+		"userWorkstations", "rid",
 		"primaryGroupID", "lmPassword",
 		"ntPassword", "acctFlags",
 		"domain", "description", NULL };
