@@ -1906,6 +1906,9 @@ uint32 spoolss_enum_printerdrivers(const char * srv_name,
 uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
                              NEW_BUFFER *buffer, uint32 offered,
                              uint32 *needed, uint32 *returned);
+uint32 spoolss_enum_ports(fstring srv_name, uint32 level,
+                             NEW_BUFFER *buffer, uint32 offered,
+                             uint32 *needed, uint32 *returned);
 uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
                          uint32 level, NEW_BUFFER *buffer, uint32 offered,
                          uint32 *needed, uint32 *returned);
@@ -1982,6 +1985,8 @@ BOOL do_wks_query_info(struct cli_state *cli,
 
 BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, 
 				 uint32 level, PRINTER_INFO_CTR ctr);
+BOOL msrpc_spoolss_enum_ports(char* srv_name, 
+				 uint32 level, PORT_INFO_CTR *ctr);
 uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
                                 const char* station,
                                 const char* user_name,
@@ -2706,6 +2711,7 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
 BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info, int depth);
 BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth);
 BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth);
+BOOL new_smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth);
 BOOL new_smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) ;
 BOOL new_smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_2 *info, int depth) ;
 BOOL new_smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_3 *info, int depth);
@@ -2748,6 +2754,9 @@ BOOL make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u,
 BOOL spoolss_io_q_getprinterdriver2(char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, uint32 flags, 
+				fstring servername, uint32 level, 
+				NEW_BUFFER *buffer, uint32 offered);
+BOOL make_spoolss_q_enumports(SPOOL_Q_ENUMPORTS *q_u, 
 				fstring servername, uint32 level, 
 				NEW_BUFFER *buffer, uint32 offered);
 BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *ps, int depth);
@@ -3170,6 +3179,7 @@ BOOL api_wkssvc_rpc(pipes_struct *p);
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
 uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_enum_ports(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
@@ -3187,6 +3197,9 @@ void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *const se
 
 void display_printer_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
 				uint32 count, PRINTER_INFO_CTR ctr);
+void display_port_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
+				uint32 count, PORT_INFO_CTR *ctr);
+void display_port_info_2(FILE *out_hnd, enum action_type action, PORT_INFO_2 *i2);
 void display_printer_enumdata(FILE *out_hnd, enum action_type action, uint32 idx, 
 				uint32 valuelen, uint16 *value, uint32 rvaluelen,
 				uint32 type, 
