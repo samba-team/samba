@@ -512,27 +512,27 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 
 static int search_both_compare(union smb_search_data *d1, union smb_search_data *d2)
 {
-	return strcmp(d1->both_directory_info.name.s, d2->both_directory_info.name.s);
+	return strcmp_safe(d1->both_directory_info.name.s, d2->both_directory_info.name.s);
 }
 
 static int search_standard_compare(union smb_search_data *d1, union smb_search_data *d2)
 {
-	return strcmp(d1->standard.name.s, d2->standard.name.s);
+	return strcmp_safe(d1->standard.name.s, d2->standard.name.s);
 }
 
 static int search_ea_size_compare(union smb_search_data *d1, union smb_search_data *d2)
 {
-	return strcmp(d1->ea_size.name.s, d2->ea_size.name.s);
+	return strcmp_safe(d1->ea_size.name.s, d2->ea_size.name.s);
 }
 
 static int search_directory_info_compare(union smb_search_data *d1, union smb_search_data *d2)
 {
-	return strcmp(d1->directory_info.name.s, d2->directory_info.name.s);
+	return strcmp_safe(d1->directory_info.name.s, d2->directory_info.name.s);
 }
 
 static int search_old_compare(union smb_search_data *d1, union smb_search_data *d2)
 {
-	return strcmp(d1->search.name, d2->search.name);
+	return strcmp_safe(d1->search.name, d2->search.name);
 }
 
 

@@ -1464,3 +1464,18 @@ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+
+
+/*
+  varient of strcmp() that handles NULL ptrs
+*/
+int strcmp_safe(const char *s1, const char *s2)
+{
+	if (s1 == s2) {
+		return 0;
+	}
+	if (s1 == NULL || s2 == NULL) {
+		return s1?-1:1;
+	}
+	return strcmp(s1, s2);
+}
