@@ -54,18 +54,26 @@ SECTION ONE: General information
 * 1: What is Samba?
 
 Samba is a suite of programs which work together to allow clients to access
-Unix filespace and printers via the SMB (Session Message Block) protocol.
+to a server's filespace and printers via the SMB (Session Message Block) 
+protocol. Initially written for Unix, Samba now also runs on Netware, OS/2 and
+AmigaDOS.
 
 In practice, this means that you can redirect disks and printers to Unix disks
 and printers from Lan Manager clients, Windows for Workgroups 3.11 clients,
-Windows NT clients and OS/2 clients. There is also a Unix client program
-supplied as part of the suite which allows Unix users to use an ftp-like
-interface to access filespace and printers on any other SMB servers.
+Windows NT clients, Linux clients and OS/2 clients. There is also a generic 
+Unix client program supplied as part of the suite which allows Unix users to 
+use an ftp-like interface to access filespace and printers on any other SMB 
+servers. This gives the capability for these operating systems to behave much
+like a LAN Server or Windows NT Server machine, only with added functionality
+and flexibility designed to make life easier for administrators.
 
 The components of the suite are (in summary):
 
-     * smbd, the SMB server. This handles actual connections from clients
-     * nmbd, the Netbios name server, which helps clients locate servers
+     * smbd, the SMB server. This handles actual connections from clients,
+         doing all the file, permission and username work
+     * nmbd, the Netbios name server, which helps clients locate servers,
+         doing the browsing work and managing domains as this capability is
+         being built into Samba
      * smbclient, the Unix-hosted client program
      * smbrun, a little 'glue' program to help the server run external
          programs
@@ -75,12 +83,14 @@ The components of the suite are (in summary):
      * smb.conf, the Samba configuration file
      * smbprint, a sample script to allow a Unix host to use smbclient to
          print to an SMB server
+     * documentation! DON'T neglect to read it - you will save a great deal
+         of time!
 
 The suite is supplied with full source (of course!) and is GPLed.
 
 The primary creator of the Samba suite is Andrew Tridgell. Later versions
 incorporate much effort by many net.helpers. The man pages and this FAQ were
-written by Karl Auer.
+originally written by Karl Auer.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 2: What is the current version of Samba?
@@ -155,7 +165,9 @@ At time of writing, the Makefile claimed support for:
 There are two mailing lists devoted to discussion of Samba-related matters.
 There is also the newsgroup, comp.protocols.smb, which has a great deal of
 discussion on Samba. There is also a WWW site 'SAMBA Web Pages' at
-http://samba.canberra.edu.au/pub/samba/samba.html
+http://samba.canberra.edu.au/pub/samba/samba.html, under which there is a 
+comprehensive survey of Samba users. Another useful resource is the hypertext
+archive of the Samba mailing list.
 
 Send email to listproc@anu.edu.au. Make sure the subject line is blank, and
 include the following two lines in the body of the message:
@@ -188,7 +200,9 @@ subscribed.
 DO NOT post messages on mailing lists or in newsgroups until you have carried
 out the first three steps given here!
 
-Firstly, see if there are any likely looking entries in this FAQ!
+Firstly, see if there are any likely looking entries in this FAQ! If you have
+just installed Samba, have you run through the checklist in DIAGNOSIS.txt? It
+can save you a lot of time and effort.
 
 Secondly, read the man pages for smbd, nmbd and smb.conf, looking for topics
 that relate to what you are trying to do.
@@ -199,10 +213,20 @@ problems. You may need to reconfigure the servers to provide more extensive
 debugging information - usually level 2 or level 3 provide ample debugging
 info. Inspect these logs closely, looking particularly for the string "Error:".
 
-If you successfully solve a problem, please mail me a succinct description of
-the symptom, the problem and the solution, so I can incorporate it in the next
-version of the FAQ.
+Fourthly, if you still haven't got anywhere, ask the mailing list or newsgroup.
+In general nobody minds answering questions provided you have followed the
+preceding steps. It might be a good idea to scan the archives of the mailing
+list, which are available through the Samba web site described in the previous
+section.
 
+If you successfully solve a problem, please mail the FAQ maintainer a succinct 
+description of the symptom, the problem and the solution, so I can incorporate 
+it in the next version.
+
+If you make changes to the source code, _please_ submit these patches so that
+everyone else gets the benefit of your work. This is one of the most important
+aspects to the maintainence of Samba. Send all patches to 
+samba-bugs@samba.anu.edu.au, not Andrew Tridgell or any other individual. 
 
 ===============================================================================
 SECTION TWO: Compiling and installing Samba on a Unix host
@@ -307,7 +331,9 @@ Nothing is wrong - Samba does not implement the primary domain name controller
 stuff for several reasons, including the fact that the whole concept of a
 primary domain controller and "logging in to a network" doesn't fit well with
 clients possibly running on multiuser machines (such as users of smbclient
-under Unix).
+under Unix). Having said that, several developers are working hard on 
+building it in to the next major version of Samba. If you can contribute, 
+send a message to samba-bugs!
 
 Seeing this message should not affect your ability to mount redirected disks
 and printers, which is really what all this is about.
