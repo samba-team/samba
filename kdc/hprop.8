@@ -87,7 +87,8 @@ a Transarc kaserver database
 The keytab to use for fetching the key to be used for authenticating
 to the propagation daemon(s). The key
 .Pa kadmin/hprop
-is used from this keytab.
+is used from this keytab.  The default is to fetch the key from the
+KDC database.
 .It Xo
 .Fl R Ar string Ns ,
 .Fl -v5-realm= Ns Ar string
