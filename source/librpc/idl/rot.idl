@@ -41,3 +41,16 @@
 					   [out] MInterfacePointer *EnumMoniker
 					   );
 }
+
+/*
+[
+	object,
+] interface IRotData : IUnknown
+{
+	WERROR irotdata_getdata(
+							[out,size_is(max),length_is(ret)] uint8 *data, 
+							[in] uint32 max,
+							[out] uint32 ret
+						   );
+}
+*/

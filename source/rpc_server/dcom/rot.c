@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Running object table functions
+   endpoint server for the rot pipe
 
    Copyright (C) Jelmer Vernooij 2004
    
@@ -22,17 +22,79 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
+#include "librpc/gen_ndr/ndr_rot.h"
 #include "rpc_server/common/common.h"
 
-struct dcom_object *dcom_call_get_object(struct dcesrv_call_state *call)
-{
-	struct GUID *object;
 
-	if (! (call->pkt.pfc_flags & DCERPC_PFC_FLAG_ORPC) ) {
-		return NULL;
-	}
-	
-	object = &call->pkt.u.request.object.object;
-	/* FIXME */
-	return NULL; 
+/* 
+  rot_add 
+*/
+static WERROR rot_add(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct rot_add *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
+
+/* 
+  rot_remove 
+*/
+static WERROR rot_remove(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct rot_remove *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  rot_is_listed 
+*/
+static WERROR rot_is_listed(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct rot_is_listed *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  rot_get_interface_pointer 
+*/
+static WERROR rot_get_interface_pointer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct rot_get_interface_pointer *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  rot_set_modification_time 
+*/
+static WERROR rot_set_modification_time(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct rot_set_modification_time *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  rot_get_modification_time 
+*/
+static WERROR rot_get_modification_time(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct rot_get_modification_time *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  rot_enum 
+*/
+static WERROR rot_enum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct rot_enum *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_rot_s.c"

@@ -324,6 +324,20 @@ interface IRemUnknown : IUnknown
 	WERROR ISCMLocalActivator_CreateInstance( );
 }
 
+[
+	uuid("c6f3ee72-ce7e-11d1-b71e-00c04fc3111a")
+] interface IMachineLocalActivator 
+{
+	WERROR IMachineLocalActivator_foo();
+}
+
+[
+	uuid("e60c73e6-88f9-11cf-9af1-0020af6e72f4")
+] interface ILocalObjectExporter
+{
+	WERROR ILocalObjectExporter_Foo();
+}
+
 /* Looks like this is the equivalent of .NET's 
    System.Activator class */
 [
