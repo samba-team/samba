@@ -111,9 +111,9 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 		      uchar session_key[8]);
 void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred);
-int cred_assert(DOM_CHAL *cred, char session_key[8], DOM_CHAL *stored_cred,
+int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
 		UTIME timestamp);
-BOOL clnt_deal_with_creds(char sess_key[8],
+BOOL clnt_deal_with_creds(uchar sess_key[8],
 			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
 BOOL deal_with_creds(uchar sess_key[8],
 		     DOM_CRED *sto_clnt_cred, 
