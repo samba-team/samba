@@ -320,76 +320,45 @@ HREF="#AEN433"
 ><DT
 >3. <A
 HREF="#AEN443"
->LanMan and NT Password Encryption in Samba 2.x</A
+>Configuring PAM for distributed but centrally 
+managed authentication</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.1. <A
 HREF="#AEN454"
->Introduction</A
+>Samba and PAM</A
 ></DT
 ><DT
 >3.2. <A
-HREF="#AEN458"
->How does it work?</A
+HREF="#AEN496"
+>Distributed Authentication</A
 ></DT
 ><DT
 >3.3. <A
-HREF="#AEN469"
->Important Notes About Security</A
-></DT
-><DD
-><DL
-><DT
->3.3.1. <A
-HREF="#AEN488"
->Advantages of SMB Encryption</A
-></DT
-><DT
->3.3.2. <A
-HREF="#AEN495"
->Advantages of non-encrypted passwords</A
-></DT
-></DL
-></DD
-><DT
->3.4. <A
-HREF="#AEN504"
-><A
-NAME="SMBPASSWDFILEFORMAT"
-></A
->The smbpasswd file</A
-></DT
-><DT
->3.5. <A
-HREF="#AEN556"
->The smbpasswd Command</A
-></DT
-><DT
->3.6. <A
-HREF="#AEN595"
->Setting up Samba to support LanManager Encryption</A
+HREF="#AEN503"
+>PAM Configuration in smb.conf</A
 ></DT
 ></DL
 ></DD
 ><DT
 >4. <A
-HREF="#AEN610"
+HREF="#AEN512"
 >Hosting a Microsoft Distributed File System tree on Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
 >4.1. <A
-HREF="#AEN621"
+HREF="#AEN523"
 >Instructions</A
 ></DT
 ><DD
 ><DL
 ><DT
 >4.1.1. <A
-HREF="#AEN656"
+HREF="#AEN558"
 >Notes</A
 ></DT
 ></DL
@@ -398,82 +367,143 @@ HREF="#AEN656"
 ></DD
 ><DT
 >5. <A
-HREF="#AEN665"
->Printing Support in Samba 2.2.x</A
+HREF="#AEN567"
+>UNIX Permission Bits and Windows NT Access Control Lists</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.1. <A
-HREF="#AEN676"
->Introduction</A
+HREF="#AEN578"
+>Viewing and changing UNIX permissions using the NT 
+	security dialogs</A
 ></DT
 ><DT
 >5.2. <A
-HREF="#AEN698"
+HREF="#AEN587"
+>How to view file security on a Samba share</A
+></DT
+><DT
+>5.3. <A
+HREF="#AEN598"
+>Viewing file ownership</A
+></DT
+><DT
+>5.4. <A
+HREF="#AEN618"
+>Viewing file or directory permissions</A
+></DT
+><DD
+><DL
+><DT
+>5.4.1. <A
+HREF="#AEN633"
+>File Permissions</A
+></DT
+><DT
+>5.4.2. <A
+HREF="#AEN647"
+>Directory Permissions</A
+></DT
+></DL
+></DD
+><DT
+>5.5. <A
+HREF="#AEN654"
+>Modifying file or directory permissions</A
+></DT
+><DT
+>5.6. <A
+HREF="#AEN676"
+>Interaction with the standard Samba create mask 
+	parameters</A
+></DT
+><DT
+>5.7. <A
+HREF="#AEN740"
+>Interaction with the standard Samba file attribute 
+	mapping</A
+></DT
+></DL
+></DD
+><DT
+>6. <A
+HREF="#AEN750"
+>Printing Support in Samba 2.2.x</A
+></DT
+><DD
+><DL
+><DT
+>6.1. <A
+HREF="#AEN761"
+>Introduction</A
+></DT
+><DT
+>6.2. <A
+HREF="#AEN783"
 >Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
->5.2.1. <A
-HREF="#AEN709"
+>6.2.1. <A
+HREF="#AEN794"
 >Creating [print$]</A
 ></DT
 ><DT
->5.2.2. <A
-HREF="#AEN744"
+>6.2.2. <A
+HREF="#AEN829"
 >Setting Drivers for Existing Printers</A
 ></DT
 ><DT
->5.2.3. <A
-HREF="#AEN761"
+>6.2.3. <A
+HREF="#AEN846"
 >Support a large number of printers</A
 ></DT
 ><DT
->5.2.4. <A
-HREF="#AEN772"
+>6.2.4. <A
+HREF="#AEN857"
 >Adding New Printers via the Windows NT APW</A
 ></DT
 ><DT
->5.2.5. <A
-HREF="#AEN797"
+>6.2.5. <A
+HREF="#AEN882"
 >Samba and Printer Ports</A
 ></DT
 ></DL
 ></DD
 ><DT
->5.3. <A
-HREF="#AEN805"
+>6.3. <A
+HREF="#AEN890"
 >The Imprints Toolset</A
 ></DT
 ><DD
 ><DL
 ><DT
->5.3.1. <A
-HREF="#AEN809"
+>6.3.1. <A
+HREF="#AEN894"
 >What is Imprints?</A
 ></DT
 ><DT
->5.3.2. <A
-HREF="#AEN819"
+>6.3.2. <A
+HREF="#AEN904"
 >Creating Printer Driver Packages</A
 ></DT
 ><DT
->5.3.3. <A
-HREF="#AEN822"
+>6.3.3. <A
+HREF="#AEN907"
 >The Imprints server</A
 ></DT
 ><DT
->5.3.4. <A
-HREF="#AEN826"
+>6.3.4. <A
+HREF="#AEN911"
 >The Installation Client</A
 ></DT
 ></DL
 ></DD
 ><DT
->5.4. <A
-HREF="#AEN848"
+>6.4. <A
+HREF="#AEN933"
 ><A
 NAME="MIGRATION"
 ></A
@@ -482,138 +512,138 @@ NAME="MIGRATION"
 ></DL
 ></DD
 ><DT
->6. <A
-HREF="#AEN892"
+>7. <A
+HREF="#AEN977"
 >security = domain in Samba 2.x</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.1. <A
-HREF="#AEN910"
+>7.1. <A
+HREF="#AEN995"
 >Joining an NT Domain with Samba 2.2</A
 ></DT
 ><DT
->6.2. <A
-HREF="#AEN974"
+>7.2. <A
+HREF="#AEN1059"
 >Samba and Windows 2000 Domains</A
 ></DT
 ><DT
->6.3. <A
-HREF="#AEN979"
+>7.3. <A
+HREF="#AEN1064"
 >Why is this better than security = server?</A
 ></DT
 ></DL
 ></DD
 ><DT
->7. <A
-HREF="#AEN995"
+>8. <A
+HREF="#AEN1080"
 >How to Configure Samba 2.2 as a Primary Domain Controller</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.1. <A
-HREF="#AEN1012"
+>8.1. <A
+HREF="#AEN1097"
 >Prerequisite Reading</A
 ></DT
 ><DT
->7.2. <A
-HREF="#AEN1018"
+>8.2. <A
+HREF="#AEN1103"
 >Background</A
 ></DT
 ><DT
->7.3. <A
-HREF="#AEN1058"
+>8.3. <A
+HREF="#AEN1143"
 >Configuring the Samba Domain Controller</A
 ></DT
 ><DT
->7.4. <A
-HREF="#AEN1101"
+>8.4. <A
+HREF="#AEN1186"
 >Creating Machine Trust Accounts and Joining Clients 
 to the Domain</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.4.1. <A
-HREF="#AEN1115"
+>8.4.1. <A
+HREF="#AEN1200"
 >Manually creating machine trust accounts</A
 ></DT
 ><DT
->7.4.2. <A
-HREF="#AEN1143"
+>8.4.2. <A
+HREF="#AEN1228"
 >Creating machine trust accounts "on the fly"</A
 ></DT
 ></DL
 ></DD
 ><DT
->7.5. <A
-HREF="#AEN1154"
+>8.5. <A
+HREF="#AEN1239"
 >Common Problems and Errors</A
 ></DT
 ><DT
->7.6. <A
-HREF="#AEN1202"
+>8.6. <A
+HREF="#AEN1287"
 >System Policies and Profiles</A
 ></DT
 ><DT
->7.7. <A
-HREF="#AEN1246"
+>8.7. <A
+HREF="#AEN1331"
 >What other help can I get ?</A
 ></DT
 ><DT
->7.8. <A
-HREF="#AEN1360"
+>8.8. <A
+HREF="#AEN1445"
 >Domain Control for Windows 9x/ME</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.8.1. <A
-HREF="#AEN1390"
+>8.8.1. <A
+HREF="#AEN1475"
 >Configuration Instructions:	Network Logons</A
 ></DT
 ><DT
->7.8.2. <A
-HREF="#AEN1424"
+>8.8.2. <A
+HREF="#AEN1509"
 >Configuration Instructions:	Setting up Roaming User Profiles</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.8.2.1. <A
-HREF="#AEN1432"
+>8.8.2.1. <A
+HREF="#AEN1517"
 >Windows NT Configuration</A
 ></DT
 ><DT
->7.8.2.2. <A
-HREF="#AEN1440"
+>8.8.2.2. <A
+HREF="#AEN1525"
 >Windows 9X Configuration</A
 ></DT
 ><DT
->7.8.2.3. <A
-HREF="#AEN1448"
+>8.8.2.3. <A
+HREF="#AEN1533"
 >Win9X and WinNT Configuration</A
 ></DT
 ><DT
->7.8.2.4. <A
-HREF="#AEN1455"
+>8.8.2.4. <A
+HREF="#AEN1540"
 >Windows 9X Profile Setup</A
 ></DT
 ><DT
->7.8.2.5. <A
-HREF="#AEN1491"
+>8.8.2.5. <A
+HREF="#AEN1576"
 >Windows NT Workstation 4.0</A
 ></DT
 ><DT
->7.8.2.6. <A
-HREF="#AEN1504"
+>8.8.2.6. <A
+HREF="#AEN1589"
 >Windows NT Server</A
 ></DT
 ><DT
->7.8.2.7. <A
-HREF="#AEN1507"
+>8.8.2.7. <A
+HREF="#AEN1592"
 >Sharing Profiles between W95 and NT Workstation 4.0</A
 ></DT
 ></DL
@@ -621,190 +651,129 @@ HREF="#AEN1507"
 ></DL
 ></DD
 ><DT
->7.9. <A
-HREF="#AEN1517"
+>8.9. <A
+HREF="#AEN1602"
 >DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></DT
 ></DL
 ></DD
 ><DT
->8. <A
-HREF="#AEN1542"
+>9. <A
+HREF="#AEN1627"
 >Unified Logons between Windows NT and UNIX using Winbind</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.1. <A
-HREF="#AEN1560"
+>9.1. <A
+HREF="#AEN1645"
 >Abstract</A
 ></DT
 ><DT
->8.2. <A
-HREF="#AEN1564"
+>9.2. <A
+HREF="#AEN1649"
 >Introduction</A
 ></DT
 ><DT
->8.3. <A
-HREF="#AEN1577"
+>9.3. <A
+HREF="#AEN1662"
 >What Winbind Provides</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.3.1. <A
-HREF="#AEN1584"
+>9.3.1. <A
+HREF="#AEN1669"
 >Target Uses</A
 ></DT
 ></DL
 ></DD
 ><DT
->8.4. <A
-HREF="#AEN1588"
+>9.4. <A
+HREF="#AEN1673"
 >How Winbind Works</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.4.1. <A
-HREF="#AEN1593"
+>9.4.1. <A
+HREF="#AEN1678"
 >Microsoft Remote Procedure Calls</A
 ></DT
 ><DT
->8.4.2. <A
-HREF="#AEN1597"
+>9.4.2. <A
+HREF="#AEN1682"
 >Name Service Switch</A
 ></DT
 ><DT
->8.4.3. <A
-HREF="#AEN1613"
+>9.4.3. <A
+HREF="#AEN1698"
 >Pluggable Authentication Modules</A
 ></DT
 ><DT
->8.4.4. <A
-HREF="#AEN1621"
+>9.4.4. <A
+HREF="#AEN1706"
 >User and Group ID Allocation</A
 ></DT
 ><DT
->8.4.5. <A
-HREF="#AEN1625"
+>9.4.5. <A
+HREF="#AEN1710"
 >Result Caching</A
 ></DT
 ></DL
 ></DD
 ><DT
->8.5. <A
-HREF="#AEN1628"
+>9.5. <A
+HREF="#AEN1713"
 >Installation and Configuration</A
 ></DT
 ><DT
->8.6. <A
-HREF="#AEN1634"
+>9.6. <A
+HREF="#AEN1719"
 >Limitations</A
 ></DT
 ><DT
->8.7. <A
-HREF="#AEN1646"
+>9.7. <A
+HREF="#AEN1731"
 >Conclusion</A
 ></DT
 ></DL
 ></DD
 ><DT
->9. <A
-HREF="#AEN1649"
->UNIX Permission Bits and Windows NT Access Control Lists</A
-></DT
-><DD
-><DL
-><DT
->9.1. <A
-HREF="#AEN1660"
->Viewing and changing UNIX permissions using the NT 
-	security dialogs</A
-></DT
-><DT
->9.2. <A
-HREF="#AEN1669"
->How to view file security on a Samba share</A
-></DT
-><DT
->9.3. <A
-HREF="#AEN1680"
->Viewing file ownership</A
-></DT
-><DT
->9.4. <A
-HREF="#AEN1700"
->Viewing file or directory permissions</A
-></DT
-><DD
-><DL
-><DT
->9.4.1. <A
-HREF="#AEN1715"
->File Permissions</A
-></DT
-><DT
->9.4.2. <A
-HREF="#AEN1729"
->Directory Permissions</A
-></DT
-></DL
-></DD
-><DT
->9.5. <A
-HREF="#AEN1736"
->Modifying file or directory permissions</A
-></DT
-><DT
->9.6. <A
-HREF="#AEN1758"
->Interaction with the standard Samba create mask 
-	parameters</A
-></DT
-><DT
->9.7. <A
-HREF="#AEN1822"
->Interaction with the standard Samba file attribute 
-	mapping</A
-></DT
-></DL
-></DD
-><DT
 >10. <A
-HREF="#AEN1832"
+HREF="#AEN1734"
 >OS2 Client HOWTO</A
 ></DT
 ><DD
 ><DL
 ><DT
 >10.1. <A
-HREF="#AEN1843"
+HREF="#AEN1745"
 >FAQs</A
 ></DT
 ><DD
 ><DL
 ><DT
 >10.1.1. <A
-HREF="#AEN1845"
+HREF="#AEN1747"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
 >10.1.2. <A
-HREF="#AEN1860"
+HREF="#AEN1762"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
 >10.1.3. <A
-HREF="#AEN1869"
+HREF="#AEN1771"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
 >10.1.4. <A
-HREF="#AEN1873"
+HREF="#AEN1775"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
@@ -814,31 +783,31 @@ HREF="#AEN1873"
 ></DD
 ><DT
 >11. <A
-HREF="#AEN1882"
+HREF="#AEN1784"
 >HOWTO Access Samba source code via CVS</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.1. <A
-HREF="#AEN1889"
+HREF="#AEN1791"
 >Introduction</A
 ></DT
 ><DT
 >11.2. <A
-HREF="#AEN1894"
+HREF="#AEN1796"
 >CVS Access to samba.org</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.2.1. <A
-HREF="#AEN1897"
+HREF="#AEN1799"
 >Access via CVSweb</A
 ></DT
 ><DT
 >11.2.2. <A
-HREF="#AEN1902"
+HREF="#AEN1804"
 >Access via cvs</A
 ></DT
 ></DL
@@ -2840,7 +2809,8 @@ CLASS="CHAPTER"
 ><HR><H1
 ><A
 NAME="AEN443"
->Chapter 3. LanMan and NT Password Encryption in Samba 2.x</A
+>Chapter 3. Configuring PAM for distributed but centrally 
+managed authentication</A
 ></H1
 ><DIV
 CLASS="SECT1"
@@ -2848,405 +2818,159 @@ CLASS="SECT1"
 CLASS="SECT1"
 ><A
 NAME="AEN454"
->3.1. Introduction</A
+>3.1. Samba and PAM</A
 ></H1
 ><P
->With the development of LanManager and Windows NT 
-	compatible password encryption for Samba, it is now able 
-	to validate user connections in exactly the same way as 
-	a LanManager or Windows NT server.</P
-><P
->This document describes how the SMB password encryption 
-	algorithm works and what issues there are in choosing whether 
-	you want to use it. You should read it carefully, especially 
-	the part about security and the "PROS and CONS" section.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN458"
->3.2. How does it work?</A
-></H1
-><P
->LanManager encryption is somewhat similar to UNIX 
-	password encryption. The server uses a file containing a 
-	hashed value of a user's password.  This is created by taking 
-	the user's plaintext password, capitalising it, and either 
-	truncating to 14 bytes or padding to 14 bytes with null bytes. 
-	This 14 byte value is used as two 56 bit DES keys to encrypt 
-	a 'magic' eight byte value, forming a 16 byte value which is 
-	stored by the server and client. Let this value be known as 
-	the "hashed password".</P
-><P
->Windows NT encryption is a higher quality mechanism, 
-	consisting of doing an MD4 hash on a Unicode version of the user's 
-	password. This also produces a 16 byte hash value that is 
-	non-reversible.</P
-><P
->When a client (LanManager, Windows for WorkGroups, Windows 
-	95 or Windows NT) wishes to mount a Samba drive (or use a Samba 
-	resource), it first requests a connection and negotiates the 
-	protocol that the client and server will use. In the reply to this 
-	request the Samba server generates and appends an 8 byte, random 
-	value - this is stored in the Samba server after the reply is sent 
-	and is known as the "challenge".  The challenge is different for 
-	every client connection.</P
-><P
->The client then uses the hashed password (16 byte values 
-	described above), appended with 5 null bytes, as three 56 bit 
-	DES keys, each of which is used to encrypt the challenge 8 byte 
-	value, forming a 24 byte value known as the "response".</P
-><P
->In the SMB call SMBsessionsetupX (when user level security 
-	is selected) or the call SMBtconX (when share level security is 
-	selected), the 24 byte response is returned by the client to the 
-	Samba server.  For Windows NT protocol levels the above calculation 
-	is done on both hashes of the user's password and both responses are 
-	returned in the SMB call, giving two 24 byte values.</P
-><P
->The Samba server then reproduces the above calculation, using 
-	its own stored value of the 16 byte hashed password (read from the 
-	<TT
+>A number of Unix systems (eg: Sun Solaris), as well as the 
+xxxxBSD family and Linux, now utilize the Pluggable Authentication 
+Modules (PAM) facility to provide all authentication, 
+authorization and resource control services. Prior to the 
+introduction of PAM, a decision to use an alternative to 
+the system password database (<TT
 CLASS="FILENAME"
->smbpasswd</TT
-> file - described later) and the challenge 
-	value that it kept from the negotiate protocol reply. It then checks 
-	to see if the 24 byte value it calculates matches the 24 byte value 
-	returned to it from the client.</P
+>/etc/passwd</TT
+>) 
+would require the provision of alternatives for all programs that provide 
+security services. Such a choice would involve provision of 
+alternatives to such programs as: <B
+CLASS="COMMAND"
+>login</B
+>, 
+<B
+CLASS="COMMAND"
+>passwd</B
+>, <B
+CLASS="COMMAND"
+>chown</B
+>, etc.</P
 ><P
->If these values match exactly, then the client knew the 
-	correct password (or the 16 byte hashed value - see security note 
-	below) and is thus allowed access. If not, then the client did not 
-	know the correct password and is denied access.</P
+>PAM provides a mechanism that disconnects these security programs 
+from the underlying authentication/authorization infrastructure.
+PAM is configured either through one file <TT
+CLASS="FILENAME"
+>/etc/pam.conf</TT
+> (Solaris), 
+or by editing individual files that are located in <TT
+CLASS="FILENAME"
+>/etc/pam.d</TT
+>.</P
 ><P
->Note that the Samba server never knows or stores the cleartext 
-	of the user's password - just the 16 byte hashed values derived from 
-	it. Also note that the cleartext password or 16 byte hashed values 
-	are never transmitted over the network - thus increasing security.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN469"
->3.3. Important Notes About Security</A
-></H1
+>The following is an example <TT
+CLASS="FILENAME"
+>/etc/pam.d/login</TT
+> configuration file. 
+This example had all options been uncommented is probably not usable 
+as it stacks many conditions before allowing successful completion 
+of the login process. Essentially all conditions can be disabled 
+by commenting them out except the calls to <TT
+CLASS="FILENAME"
+>pam_pwdb.so</TT
+>.</P
 ><P
->The unix and SMB password encryption techniques seem similar 
-	on the surface. This similarity is, however, only skin deep. The unix 
-	scheme typically sends clear text passwords over the network when 
-	logging in. This is bad. The SMB encryption scheme never sends the 
-	cleartext password over the network but it does store the 16 byte 
-	hashed values on disk. This is also bad. Why? Because the 16 byte hashed 
-	values are a "password equivalent". You cannot derive the user's 
-	password from them, but they could potentially be used in a modified 
-	client to gain access to a server. This would require considerable 
-	technical knowledge on behalf of the attacker but is perfectly possible. 
-	You should thus treat the smbpasswd file as though it contained the 
-	cleartext passwords of all your users. Its contents must be kept 
-	secret, and the file should be protected accordingly.</P
-><P
->Ideally we would like a password scheme which neither requires 
-	plain text passwords on the net or on disk. Unfortunately this 
-	is not available as Samba is stuck with being compatible with 
-	other SMB systems (WinNT, WfWg, Win95 etc). </P
-><DIV
-CLASS="WARNING"
-><P
-></P
 ><TABLE
-CLASS="WARNING"
-BORDER="1"
+BORDER="0"
+BGCOLOR="#E0E0E0"
 WIDTH="100%"
 ><TR
 ><TD
-ALIGN="CENTER"
-><B
->Warning</B
-></TD
-></TR
-><TR
-><TD
-ALIGN="LEFT"
-><P
->Note that Windows NT 4.0 Service pack 3 changed the 
-		default for permissible authentication so that plaintext 
-		passwords are <EM
->never</EM
-> sent over the wire. 
-		The solution to this is either to switch to encrypted passwords 
-		with Samba or edit the Windows NT registry to re-enable plaintext 
-		passwords. See the document WinNT.txt for details on how to do 
-		this.</P
-><P
->Other Microsoft operating systems which also exhibit 
-		this behavior includes</P
-><P
-></P
-><UL
-><LI
-><P
->MS DOS Network client 3.0 with 
-			the basic network redirector installed</P
-></LI
-><LI
-><P
->Windows 95 with the network redirector 
-			update installed</P
-></LI
-><LI
-><P
->Windows 98 [se]</P
-></LI
-><LI
-><P
->Windows 2000</P
-></LI
-></UL
-><P
-><EM
->Note :</EM
->All current release of 
-		Microsoft SMB/CIFS clients support authentication via the
-		SMB Challenge/Response mechanism described here.  Enabling
-		clear text authentication does not disable the ability
-		of the client to participate in encrypted authentication.</P
+><PRE
+CLASS="PROGRAMLISTING"
+>#%PAM-1.0
+# The PAM configuration file for the `login' service
+#
+auth 		required	pam_securetty.so
+auth 		required	pam_nologin.so
+# auth 		required	pam_dialup.so
+# auth 		optional	pam_mail.so
+auth		required	pam_pwdb.so shadow md5
+# account    	requisite  	pam_time.so
+account		required	pam_pwdb.so
+session		required	pam_pwdb.so
+# session 	optional	pam_lastlog.so
+# password   	required   	pam_cracklib.so retry=3
+password	required	pam_pwdb.so shadow md5</PRE
 ></TD
 ></TR
 ></TABLE
-></DIV
-><DIV
-CLASS="SECT2"
-><HR><H2
-CLASS="SECT2"
-><A
-NAME="AEN488"
->3.3.1. Advantages of SMB Encryption</A
-></H2
-><P
 ></P
-><UL
-><LI
 ><P
->plain text passwords are not passed across 
-			the network. Someone using a network sniffer cannot just 
-			record passwords going to the SMB server.</P
-></LI
-><LI
+>PAM allows use of replacable modules. Those available on a 
+sample system include:</P
 ><P
->WinNT doesn't like talking to a server 
-			that isn't using SMB encrypted passwords. It will refuse 
-			to browse the server if the server is also in user level 
-			security mode. It will insist on prompting the user for the 
-			password on each connection, which is very annoying. The
-			only things you can do to stop this is to use SMB encryption.
-			</P
-></LI
-></UL
-></DIV
-><DIV
-CLASS="SECT2"
-><HR><H2
-CLASS="SECT2"
-><A
-NAME="AEN495"
->3.3.2. Advantages of non-encrypted passwords</A
-></H2
-><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>$ /bin/ls /lib/security
+pam_access.so    pam_ftp.so          pam_limits.so     
+pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
+pam_cracklib.so  pam_group.so        pam_listfile.so   
+pam_nologin.so   pam_rootok.so       pam_tally.so      
+pam_deny.so      pam_issue.so        pam_mail.so       
+pam_permit.so    pam_securetty.so    pam_time.so       
+pam_dialup.so    pam_lastlog.so      pam_mkhomedir.so  
+pam_pwdb.so      pam_shells.so       pam_unix.so       
+pam_env.so       pam_ldap.so         pam_motd.so       
+pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
+pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
+pam_userdb.so    pam_warn.so         pam_unix_session.so</PRE
+></TD
+></TR
+></TABLE
 ></P
-><UL
-><LI
 ><P
->plain text passwords are not kept 
-			on disk. </P
-></LI
-><LI
-><P
->uses same password file as other unix 
-			services such as login and ftp</P
-></LI
-><LI
-><P
->you are probably already using other 
-			services (such as telnet and ftp) which send plain text 
-			passwords over the net, so sending them for SMB isn't 
-			such a big deal.</P
-></LI
-></UL
-></DIV
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN504"
->3.4. <A
-NAME="SMBPASSWDFILEFORMAT"
-></A
->The smbpasswd file</A
-></H1
-><P
->In order for Samba to participate in the above protocol 
-	it must be able to look up the 16 byte hashed values given a user name.
-	Unfortunately, as the UNIX password value is also a one way hash
-	function (ie. it is impossible to retrieve the cleartext of the user's
-	password given the UNIX hash of it), a separate password file
-	containing this 16 byte value must be kept. To minimise problems with
-	these two password files, getting out of sync, the UNIX <TT
+>The following example for the login program replaces the use of 
+the <TT
 CLASS="FILENAME"
->	/etc/passwd</TT
-> and the <TT
-CLASS="FILENAME"
->smbpasswd</TT
-> file, 
-	a utility, <B
-CLASS="COMMAND"
->mksmbpasswd.sh</B
->, is provided to generate
-	a smbpasswd file from a UNIX <TT
+>pam_pwdb.so</TT
+> module which uses the system 
+password database (<TT
 CLASS="FILENAME"
 >/etc/passwd</TT
-> file.
-	</P
-><P
->To generate the smbpasswd file from your <TT
+>,
+<TT
 CLASS="FILENAME"
->/etc/passwd
-	</TT
-> file use the following command :</P
-><P
-><TT
-CLASS="PROMPT"
->$ </TT
-><TT
-CLASS="USERINPUT"
-><B
->cat /etc/passwd | mksmbpasswd.sh
-	&#62; /usr/local/samba/private/smbpasswd</B
-></TT
-></P
-><P
->If you are running on a system that uses NIS, use</P
-><P
-><TT
-CLASS="PROMPT"
->$ </TT
-><TT
-CLASS="USERINPUT"
-><B
->ypcat passwd | mksmbpasswd.sh
-	&#62; /usr/local/samba/private/smbpasswd</B
-></TT
-></P
-><P
->The <B
-CLASS="COMMAND"
->mksmbpasswd.sh</B
-> program is found in 
-	the Samba source directory. By default, the smbpasswd file is 
-	stored in :</P
-><P
-><TT
+>/etc/shadow</TT
+>, <TT
+CLASS="FILENAME"
+>/etc/group</TT
+>) with 
+the module <TT
+CLASS="FILENAME"
+>pam_smbpass.so</TT
+> which uses the Samba 
+database which contains the Microsoft MD4 encrypted password 
+hashes. This database is stored in either 
+<TT
 CLASS="FILENAME"
 >/usr/local/samba/private/smbpasswd</TT
-></P
-><P
->The owner of the <TT
-CLASS="FILENAME"
->/usr/local/samba/private/</TT
-> 
-	directory should be set to root, and the permissions on it should 
-	be set to 0500 (<B
-CLASS="COMMAND"
->chmod 500 /usr/local/samba/private</B
->).
-	</P
-><P
->Likewise, the smbpasswd file inside the private directory should 
-	be owned by root and the permissions on is should be set to 0600
-	(<B
-CLASS="COMMAND"
->chmod 600 smbpasswd</B
->).</P
-><P
->The format of the smbpasswd file is (The line has been 
-	wrapped here. It should appear as one entry per line in 
-	your smbpasswd file.)</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="PROGRAMLISTING"
->username:uid:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:
-	[Account type]:LCT-&#60;last-change-time&#62;:Long name
-	</PRE
-></TD
-></TR
-></TABLE
-></P
-><P
->Although only the <TT
-CLASS="REPLACEABLE"
-><I
->username</I
-></TT
 >, 
-	<TT
-CLASS="REPLACEABLE"
-><I
->uid</I
-></TT
->, <TT
-CLASS="REPLACEABLE"
-><I
->	XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</I
-></TT
->,
-	[<TT
-CLASS="REPLACEABLE"
-><I
->Account type</I
-></TT
->] and <TT
-CLASS="REPLACEABLE"
-><I
->	last-change-time</I
-></TT
-> sections are significant 
-	and are looked at in the Samba code.</P
-><P
->It is <EM
->VITALLY</EM
-> important that there by 32 
-	'X' characters between the two ':' characters in the XXX sections - 
-	the smbpasswd and Samba code will fail to validate any entries that 
-	do not have 32 characters  between ':' characters. The first XXX 
-	section is for the Lanman password hash, the second is for the 
-	Windows NT version.</P
-><P
->When the password file is created all users have password entries
-	consisting of 32 'X' characters. By default this disallows any access
-	as this user. When a user has a password set, the 'X' characters change
-	to 32 ascii hexadecimal digits (0-9, A-F). These are an ascii
-	representation of the 16 byte hashed value of a user's password.</P
-><P
->To set a user to have no password (not recommended), edit the file
-	using vi, and replace the first 11 characters with the ascii text
-	<TT
+<TT
+CLASS="FILENAME"
+>/etc/samba/smbpasswd</TT
+>, or in 
+<TT
+CLASS="FILENAME"
+>/etc/samba.d/smbpasswd</TT
+>, depending on the 
+Samba implementation for your Unix/Linux system. The 
+<TT
+CLASS="FILENAME"
+>pam_smbpass.so</TT
+> module is provided by 
+Samba version 2.2.1 or later. It can be compiled only if the 
+<TT
 CLASS="CONSTANT"
->"NO PASSWORD"</TT
-> (minus the quotes).</P
-><P
->For example, to clear the password for user bob, his smbpasswd file 
-	entry would look like :</P
+>--with-pam --with-pam_smbpass</TT
+> options are both 
+provided to the Samba <B
+CLASS="COMMAND"
+>configure</B
+> program.</P
 ><P
 ><TABLE
 BORDER="0"
@@ -3256,238 +2980,167 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->	bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:Bob's full name:/bobhome:/bobshell
-	</PRE
+>#%PAM-1.0
+# The PAM configuration file for the `login' service
+#
+auth		required	pam_smbpass.so nodelay
+account		required	pam_smbpass.so nodelay
+session		required	pam_smbpass.so nodelay
+password	required	pam_smbpass.so nodelay</PRE
 ></TD
 ></TR
 ></TABLE
 ></P
 ><P
->If you are allowing users to use the smbpasswd command to set 
-	their own passwords, you may want to give users NO PASSWORD initially 
-	so they do not have to enter a previous password when changing to their 
-	new password (not recommended). In order for you to allow this the
-	<B
-CLASS="COMMAND"
->smbpasswd</B
-> program must be able to connect to the 
-	<B
-CLASS="COMMAND"
->smbd</B
-> daemon as that user with no password. Enable this 
-	by adding the line :</P
+>The following is the PAM configuration file for a particular 
+Linux system. The default condition uses <TT
+CLASS="FILENAME"
+>pam_pwdb.so</TT
+>.</P
 ><P
-><B
-CLASS="COMMAND"
->null passwords = yes</B
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>#%PAM-1.0
+# The PAM configuration file for the `samba' service
+#
+auth       required     /lib/security/pam_pwdb.so nullok nodelay shadow audit
+account    required     /lib/security/pam_pwdb.so audit nodelay
+session    required     /lib/security/pam_pwdb.so nodelay
+password   required     /lib/security/pam_pwdb.so shadow md5</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
->to the [global] section of the smb.conf file (this is why 
-	the above scenario is not recommended). Preferably, allocate your
-	users a default password to begin with, so you do not have
-	to enable this on your server.</P
+>In the following example the decision has been made to use the 
+smbpasswd database even for basic samba authentication. Such a 
+decision could also be made for the passwd program and would 
+thus allow the smbpasswd passwords to be changed using the passwd 
+program.</P
 ><P
-><EM
->Note : </EM
->This file should be protected very 
-	carefully. Anyone with access to this file can (with enough knowledge of 
-	the protocols) gain access to your SMB server. The file is thus more 
-	sensitive than a normal unix <TT
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>#%PAM-1.0
+# The PAM configuration file for the `samba' service
+#
+auth       required     /lib/security/pam_smbpass.so nodelay
+account    required     /lib/security/pam_pwdb.so audit nodelay
+session    required     /lib/security/pam_pwdb.so nodelay
+password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Note: PAM allows stacking of authentication mechanisms. It is 
+also possible to pass information obtained within on PAM module through 
+to the next module in the PAM stack. Please refer to the documentation for 
+your particular system implementation for details regarding the specific 
+capabilities of PAM in this environment. Some Linux implmentations also 
+provide the <TT
 CLASS="FILENAME"
->/etc/passwd</TT
-> file.</P
+>pam_stack.so</TT
+> module that allows all 
+authentication to be configured in a single central file. The 
+<TT
+CLASS="FILENAME"
+>pam_stack.so</TT
+> method has some very devoted followers 
+on the basis that it allows for easier administration. As with all issues in 
+life though, every decision makes trade-offs, so you may want examine the 
+PAM documentation for further helpful information.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN556"
->3.5. The smbpasswd Command</A
+NAME="AEN496"
+>3.2. Distributed Authentication</A
 ></H1
 ><P
->The smbpasswd command maintains the two 32 byte password fields 
-	in the smbpasswd file. If you wish to make it similar to the unix 
-	<B
-CLASS="COMMAND"
->passwd</B
-> or <B
-CLASS="COMMAND"
->yppasswd</B
-> programs, 
-	install it in <TT
+>The astute administrator will realize from this that the 
+combination of <TT
 CLASS="FILENAME"
->/usr/local/samba/bin/</TT
-> (or your 
-	main Samba binary directory).</P
-><P
->Note that as of Samba 1.9.18p4 this program <EM
->MUST NOT 
-	BE INSTALLED</EM
-> setuid root (the new <B
+>pam_smbpass.so</TT
+>, 
+<B
 CLASS="COMMAND"
->smbpasswd</B
-> 
-	code enforces this restriction so it cannot be run this way by 
-	accident).</P
-><P
-><B
+>winbindd</B
+>, and <B
 CLASS="COMMAND"
->smbpasswd</B
-> now works in a client-server mode 
-	where it contacts the local smbd to change the user's password on its 
-	behalf. This has enormous benefits - as follows.</P
-><P
-></P
-><UL
-><LI
-><P
->smbpasswd no longer has to be setuid root - 
-		an enormous range of potential security problems is 
-		eliminated.</P
-></LI
-><LI
-><P
-><B
-CLASS="COMMAND"
->smbpasswd</B
-> now has the capability 
-		to change passwords on Windows NT servers (this only works when 
-		the request is sent to the NT Primary Domain Controller if you 
-		are changing an NT Domain user's password).</P
-></LI
-></UL
-><P
->To run smbpasswd as a normal user just type :</P
-><P
-><TT
-CLASS="PROMPT"
->$ </TT
-><TT
-CLASS="USERINPUT"
-><B
->smbpasswd</B
-></TT
-></P
-><P
-><TT
-CLASS="PROMPT"
->Old SMB password: </TT
-><TT
-CLASS="USERINPUT"
-><B
->&#60;type old value here - 
-	or hit return if there was no old password&#62;</B
-></TT
-></P
-><P
-><TT
-CLASS="PROMPT"
->New SMB Password: </TT
-><TT
-CLASS="USERINPUT"
-><B
->&#60;type new value&#62;
-	</B
-></TT
-></P
-><P
-><TT
-CLASS="PROMPT"
->Repeat New SMB Password: </TT
-><TT
-CLASS="USERINPUT"
-><B
->&#60;re-type new value
-	</B
-></TT
-></P
-><P
->If the old value does not match the current value stored for 
-	that user, or the two new values do not match each other, then the 
-	password will not be changed.</P
-><P
->If invoked by an ordinary user it will only allow the user 
-	to change his or her own Samba password.</P
-><P
->If run by the root user smbpasswd may take an optional 
-	argument, specifying the user name whose SMB password you wish to 
-	change.  Note that when run as root smbpasswd does not prompt for 
-	or check the old password value, thus allowing root to set passwords 
-	for users who have forgotten their passwords.</P
-><P
-><B
-CLASS="COMMAND"
->smbpasswd</B
-> is designed to work in the same way 
-	and be familiar to UNIX users who use the <B
-CLASS="COMMAND"
->passwd</B
-> or 
-	<B
-CLASS="COMMAND"
->yppasswd</B
-> commands.</P
-><P
->For more details on using <B
-CLASS="COMMAND"
->smbpasswd</B
-> refer 
-	to the man page which will always be the definitive reference.</P
+>rsync</B
+> (see
+<A
+HREF="http://rsync.samba.org/"
+TARGET="_top"
+>http://rsync.samba.org/</A
+>)
+will allow the establishment of a centrally managed, distributed 
+user/password database that can also be used by all 
+PAM (eg: Linux) aware programs and applications. This arrangement 
+can have particularly potent advantages compared with the 
+use of Microsoft Active Directory Service (ADS) in so far as 
+reduction of wide area network authentication traffic.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN595"
->3.6. Setting up Samba to support LanManager Encryption</A
+NAME="AEN503"
+>3.3. PAM Configuration in smb.conf</A
 ></H1
 ><P
->This is a very brief description on how to setup samba to 
-	support password encryption. </P
+>There is an option in smb.conf called <A
+HREF="smb.conf.5.html#OBEYPAMRESTRICTIONS"
+TARGET="_top"
+>obey pam restrictions</A
+>. 
+The following is from the on-line help for this option in SWAT;</P
 ><P
-></P
-><OL
-TYPE="1"
-><LI
+>When Samba 2.2 is configure to enable PAM support (i.e. 
+<TT
+CLASS="CONSTANT"
+>--with-pam</TT
+>), this parameter will 
+control whether or not Samba should obey PAM's account 
+and session management directives. The default behavior 
+is to use PAM for clear text authentication only and to 
+ignore any account or session management. Note that Samba always 
+ignores PAM for authentication in the case of 
+<A
+HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
+TARGET="_top"
+>encrypt passwords = yes</A
+>. 
+The reason is that PAM modules cannot support the challenge/response 
+authentication mechanism needed in the presence of SMB 
+password encryption. </P
 ><P
->compile and install samba as usual</P
-></LI
-><LI
-><P
->enable encrypted passwords in <TT
-CLASS="FILENAME"
->		smb.conf</TT
-> by adding the line <B
+>Default: <B
 CLASS="COMMAND"
->encrypt 
-		passwords = yes</B
-> in the [global] section</P
-></LI
-><LI
-><P
->create the initial <TT
-CLASS="FILENAME"
->smbpasswd</TT
->
-		password file in the place you specified in the Makefile 
-		(--prefix=&#60;dir&#62;). See the notes under the <A
-HREF="#SMBPASSWDFILEFORMAT"
->The smbpasswd File</A
->
-		section earlier in the document for details.</P
-></LI
-></OL
-><P
->Note that you can test things using smbclient.</P
+>obey pam restrictions = no</B
+></P
 ></DIV
 ></DIV
 ><DIV
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN610"
+NAME="AEN512"
 >Chapter 4. Hosting a Microsoft Distributed File System tree on Samba</A
 ></H1
 ><DIV
@@ -3495,7 +3148,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN621"
+NAME="AEN523"
 >4.1. Instructions</A
 ></H1
 ><P
@@ -3652,7 +3305,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN656"
+NAME="AEN558"
 >4.1.1. Notes</A
 ></H2
 ><P
@@ -3685,16 +3338,769 @@ NAME="AEN656"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN665"
->Chapter 5. Printing Support in Samba 2.2.x</A
+NAME="AEN567"
+>Chapter 5. UNIX Permission Bits and Windows NT Access Control Lists</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
+NAME="AEN578"
+>5.1. Viewing and changing UNIX permissions using the NT 
+	security dialogs</A
+></H1
+><P
+>New in the Samba 2.0.4 release is the ability for Windows 
+	NT clients to use their native security settings dialog box to 
+	view and modify the underlying UNIX permissions.</P
+><P
+>Note that this ability is careful not to compromise 
+	the security of the UNIX host Samba is running on, and 
+	still obeys all the file permission rules that a Samba 
+	administrator can set.</P
+><P
+>In Samba 2.0.4 and above the default value of the 
+	parameter <A
+HREF="smb.conf.5.html#NTACLSUPPORT"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>	nt acl support</I
+></TT
+></A
+> has been changed from 
+	<TT
+CLASS="CONSTANT"
+>false</TT
+> to <TT
+CLASS="CONSTANT"
+>true</TT
+>, so 
+ 	manipulation of permissions is turned on by default.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN587"
+>5.2. How to view file security on a Samba share</A
+></H1
+><P
+>From an NT 4.0 client, single-click with the right 
+	mouse button on any file or directory in a Samba mounted 
+	drive letter or UNC path. When the menu pops-up, click 
+	on the <EM
+>Properties</EM
+> entry at the bottom of 
+	the menu. This brings up the normal file properties dialog
+	box, but with Samba 2.0.4 this will have a new tab along the top
+	marked <EM
+>Security</EM
+>. Click on this tab and you 
+	will see three buttons, <EM
+>Permissions</EM
+>, 	
+	<EM
+>Auditing</EM
+>, and <EM
+>Ownership</EM
+>. 
+	The <EM
+>Auditing</EM
+> button will cause either 
+	an error message <SPAN
+CLASS="ERRORNAME"
+>A requested privilege is not held 
+	by the client</SPAN
+> to appear if the user is not the 
+	NT Administrator, or a dialog which is intended to allow an 
+	Administrator to add auditing requirements to a file if the 
+	user is logged on as the NT Administrator. This dialog is 
+	non-functional with a Samba share at this time, as the only 
+	useful button, the <B
+CLASS="COMMAND"
+>Add</B
+> button will not currently 
+	allow a list of users to be seen.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN598"
+>5.3. Viewing file ownership</A
+></H1
+><P
+>Clicking on the <B
+CLASS="COMMAND"
+>"Ownership"</B
+> button 
+	brings up a dialog box telling you who owns the given file. The 
+	owner name will be of the form :</P
+><P
+><B
+CLASS="COMMAND"
+>"SERVER\user (Long name)"</B
+></P
+><P
+>Where <TT
+CLASS="REPLACEABLE"
+><I
+>SERVER</I
+></TT
+> is the NetBIOS name of 
+	the Samba server, <TT
+CLASS="REPLACEABLE"
+><I
+>user</I
+></TT
+> is the user name of 
+	the UNIX user who owns the file, and <TT
+CLASS="REPLACEABLE"
+><I
+>(Long name)</I
+></TT
+>
+	is the descriptive string identifying the user (normally found in the
+	GECOS field of the UNIX password database). Click on the <B
+CLASS="COMMAND"
+>Close
+	</B
+> button to remove this dialog.</P
+><P
+>If the parameter <TT
+CLASS="PARAMETER"
+><I
+>nt acl support</I
+></TT
+>
+	is set to <TT
+CLASS="CONSTANT"
+>false</TT
+> then the file owner will 
+	be shown as the NT user <B
+CLASS="COMMAND"
+>"Everyone"</B
+>.</P
+><P
+>The <B
+CLASS="COMMAND"
+>Take Ownership</B
+> button will not allow 
+	you to change the ownership of this file to yourself (clicking on 
+	it will display a dialog box complaining that the user you are 
+	currently logged onto the NT client cannot be found). The reason 
+	for this is that changing the ownership of a file is a privileged 
+	operation in UNIX, available only to the <EM
+>root</EM
+> 
+	user. As clicking on this button causes NT to attempt to change 
+	the ownership of a file to the current user logged into the NT 
+	client this will not work with Samba at this time.</P
+><P
+>There is an NT chown command that will work with Samba 
+	and allow a user with Administrator privilege connected 
+	to a Samba 2.0.4 server as root to change the ownership of 
+	files on both a local NTFS filesystem or remote mounted NTFS 
+	or Samba drive. This is available as part of the <EM
+>Seclib
+	</EM
+> NT security library written by Jeremy Allison of 
+	the Samba Team, available from the main Samba ftp site.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN618"
+>5.4. Viewing file or directory permissions</A
+></H1
+><P
+>The third button is the <B
+CLASS="COMMAND"
+>"Permissions"</B
+> 
+	button. Clicking on this brings up a dialog box that shows both 
+	the permissions and the UNIX owner of the file or directory. 
+	The owner is displayed in the form :</P
+><P
+><B
+CLASS="COMMAND"
+>"SERVER\user (Long name)"</B
+></P
+><P
+>Where <TT
+CLASS="REPLACEABLE"
+><I
+>SERVER</I
+></TT
+> is the NetBIOS name of 
+	the Samba server, <TT
+CLASS="REPLACEABLE"
+><I
+>user</I
+></TT
+> is the user name of 
+	the UNIX user who owns the file, and <TT
+CLASS="REPLACEABLE"
+><I
+>(Long name)</I
+></TT
+>
+	is the descriptive string identifying the user (normally found in the
+	GECOS field of the UNIX password database).</P
+><P
+>If the parameter <TT
+CLASS="PARAMETER"
+><I
+>nt acl support</I
+></TT
+>
+	is set to <TT
+CLASS="CONSTANT"
+>false</TT
+> then the file owner will 
+	be shown as the NT user <B
+CLASS="COMMAND"
+>"Everyone"</B
+> and the 
+	permissions will be shown as NT "Full Control".</P
+><P
+>The permissions field is displayed differently for files 
+	and directories, so I'll describe the way file permissions 
+	are displayed first.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN633"
+>5.4.1. File Permissions</A
+></H2
+><P
+>The standard UNIX user/group/world triple and 
+		the corresponding "read", "write", "execute" permissions 
+		triples are mapped by Samba into a three element NT ACL 
+		with the 'r', 'w', and 'x' bits mapped into the corresponding 
+		NT permissions. The UNIX world permissions are mapped into 
+		the global NT group <B
+CLASS="COMMAND"
+>Everyone</B
+>, followed 
+		by the list of permissions allowed for UNIX world. The UNIX 
+		owner and group permissions are displayed as an NT 
+		<B
+CLASS="COMMAND"
+>user</B
+> icon and an NT <B
+CLASS="COMMAND"
+>local 
+		group</B
+> icon respectively followed by the list 
+	 	of permissions allowed for the UNIX user and group.</P
+><P
+>As many UNIX permission sets don't map into common 
+		NT names such as <B
+CLASS="COMMAND"
+>"read"</B
+>, <B
+CLASS="COMMAND"
+>		"change"</B
+> or <B
+CLASS="COMMAND"
+>"full control"</B
+> then 
+		usually the permissions will be prefixed by the words <B
+CLASS="COMMAND"
+>		"Special Access"</B
+> in the NT display list.</P
+><P
+>But what happens if the file has no permissions allowed 
+		for a particular UNIX user group or world component ? In order 
+		to  allow "no permissions" to be seen and modified then Samba 
+		overloads the NT <B
+CLASS="COMMAND"
+>"Take Ownership"</B
+> ACL attribute 
+		(which has no meaning in UNIX) and reports a component with 
+		no permissions as having the NT <B
+CLASS="COMMAND"
+>"O"</B
+> bit set. 
+		This was chosen of course to make it look like a zero, meaning 
+		zero permissions. More details on the decision behind this will 
+		be given below.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN647"
+>5.4.2. Directory Permissions</A
+></H2
+><P
+>Directories on an NT NTFS file system have two 
+		different sets of permissions. The first set of permissions 
+		is the ACL set on the directory itself, this is usually displayed 
+		in the first set of parentheses in the normal <B
+CLASS="COMMAND"
+>"RW"</B
+> 
+		NT style. This first set of permissions is created by Samba in 
+		exactly the same way as normal file permissions are, described 
+		above, and is displayed in the same way.</P
+><P
+>The second set of directory permissions has no real meaning 
+		in the UNIX permissions world and represents the <B
+CLASS="COMMAND"
+>		"inherited"</B
+> permissions that any file created within 
+		this directory would inherit.</P
+><P
+>Samba synthesises these inherited permissions for NT by 
+		returning as an NT ACL the UNIX permission mode that a new file 
+		created by Samba on this share would receive.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN654"
+>5.5. Modifying file or directory permissions</A
+></H1
+><P
+>Modifying file and directory permissions is as simple 
+	as changing the displayed permissions in the dialog box, and 
+	clicking the <B
+CLASS="COMMAND"
+>OK</B
+> button. However, there are 
+	limitations that a user needs to be aware of, and also interactions 
+	with the standard Samba permission masks and mapping of DOS 
+	attributes that need to also be taken into account.</P
+><P
+>If the parameter <TT
+CLASS="PARAMETER"
+><I
+>nt acl support</I
+></TT
+>
+	is set to <TT
+CLASS="CONSTANT"
+>false</TT
+> then any attempt to set 
+	security permissions will fail with an <B
+CLASS="COMMAND"
+>"Access Denied"
+	</B
+> message.</P
+><P
+>The first thing to note is that the <B
+CLASS="COMMAND"
+>"Add"</B
+> 
+	button will not return a list of users in Samba 2.0.4 (it will give 
+	an error message of <B
+CLASS="COMMAND"
+>"The remote procedure call failed 
+	and did not execute"</B
+>). This means that you can only 
+	manipulate the current user/group/world permissions listed in 
+	the dialog box. This actually works quite well as these are the 
+	only permissions that UNIX actually has.</P
+><P
+>If a permission triple (either user, group, or world) 
+	is removed from the list of permissions in the NT dialog box, 
+	then when the <B
+CLASS="COMMAND"
+>"OK"</B
+> button is pressed it will 
+	be applied as "no permissions" on the UNIX side. If you then 
+	view the permissions again the "no permissions" entry will appear 
+	as the NT <B
+CLASS="COMMAND"
+>"O"</B
+> flag, as described above. This 
+	allows you to add permissions back to a file or directory once 
+	you have removed them from a triple component.</P
+><P
+>As UNIX supports only the "r", "w" and "x" bits of 
+	an NT ACL then if other NT security attributes such as "Delete 
+	access" are selected then they will be ignored when applied on 
+	the Samba server.</P
+><P
+>When setting permissions on a directory the second 
+	set of permissions (in the second set of parentheses) is 
+	by default applied to all files within that directory. If this 
+	is not what you want you must uncheck the <B
+CLASS="COMMAND"
+>"Replace 
+	permissions on existing files"</B
+> checkbox in the NT 
+	dialog before clicking <B
+CLASS="COMMAND"
+>"OK"</B
+>.</P
+><P
+>If you wish to remove all permissions from a 
+	user/group/world  component then you may either highlight the 
+	component and click the <B
+CLASS="COMMAND"
+>"Remove"</B
+> button, 
+	or set the component to only have the special <B
+CLASS="COMMAND"
+>"Take
+	Ownership"</B
+> permission (displayed as <B
+CLASS="COMMAND"
+>"O"
+	</B
+>) highlighted.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
 NAME="AEN676"
->5.1. Introduction</A
+>5.6. Interaction with the standard Samba create mask 
+	parameters</A
+></H1
+><P
+>Note that with Samba 2.0.5 there are four new parameters 
+	to control this interaction.  These are :</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force security mode</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>directory security mask</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force directory security mode</I
+></TT
+></P
+><P
+>Once a user clicks <B
+CLASS="COMMAND"
+>"OK"</B
+> to apply the 
+	permissions Samba maps the given permissions into a user/group/world 
+	r/w/x triple set, and then will check the changed permissions for a 
+	file against the bits set in the <A
+HREF="smb.conf.5.html#SECURITYMASK"
+TARGET="_top"
+> 
+	<TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+></A
+> parameter. Any bits that 
+	were changed that are not set to '1' in this parameter are left alone 
+	in the file permissions.</P
+><P
+>Essentially, zero bits in the <TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+>
+	mask may be treated as a set of bits the user is <EM
+>not</EM
+> 
+	allowed to change, and one bits are those the user is allowed to change.
+	</P
+><P
+>If not set explicitly this parameter is set to the same value as 
+	the <A
+HREF="smb.conf.5.html#CREATEMASK"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>create mask
+	</I
+></TT
+></A
+> parameter to provide compatibility with Samba 2.0.4 
+	where this permission change facility was introduced. To allow a user to 
+	modify all the user/group/world permissions on a file, set this parameter 
+	to 0777.</P
+><P
+>Next Samba checks the changed permissions for a file against 
+	the bits set in the <A
+HREF="smb.conf.5.html#FORCESECURITYMODE"
+TARGET="_top"
+>	<TT
+CLASS="PARAMETER"
+><I
+>force security mode</I
+></TT
+></A
+> parameter. Any bits 
+	that were changed that correspond to bits set to '1' in this parameter 
+	are forced to be set.</P
+><P
+>Essentially, bits set in the <TT
+CLASS="PARAMETER"
+><I
+>force security mode
+	</I
+></TT
+> parameter may be treated as a set of bits that, when 
+	modifying security on a file, the user has always set to be 'on'.</P
+><P
+>If not set explicitly this parameter is set to the same value 
+	as the <A
+HREF="smb.conf.5.html#FORCECREATEMODE"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>force 
+	create mode</I
+></TT
+></A
+> parameter to provide compatibility
+	with Samba 2.0.4 where the permission change facility was introduced.
+	To allow a user to modify all the user/group/world permissions on a file
+	with no restrictions set this parameter to 000.</P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+> and <TT
+CLASS="PARAMETER"
+><I
+>force 
+	security mode</I
+></TT
+> parameters are applied to the change 
+	request in that order.</P
+><P
+>For a directory Samba will perform the same operations as 
+	described above for a file except using the parameter <TT
+CLASS="PARAMETER"
+><I
+>	directory security mask</I
+></TT
+> instead of <TT
+CLASS="PARAMETER"
+><I
+>security 
+	mask</I
+></TT
+>, and <TT
+CLASS="PARAMETER"
+><I
+>force directory security mode
+	</I
+></TT
+> parameter instead of <TT
+CLASS="PARAMETER"
+><I
+>force security mode
+	</I
+></TT
+>.</P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>directory security mask</I
+></TT
+> parameter 
+	by default is set to the same value as the <TT
+CLASS="PARAMETER"
+><I
+>directory mask
+	</I
+></TT
+> parameter and the <TT
+CLASS="PARAMETER"
+><I
+>force directory security 
+	mode</I
+></TT
+> parameter by default is set to the same value as 
+ 	the <TT
+CLASS="PARAMETER"
+><I
+>force directory mode</I
+></TT
+> parameter to provide 
+	compatibility with Samba 2.0.4 where the permission change facility 
+	was introduced.</P
+><P
+>In this way Samba enforces the permission restrictions that 
+	an administrator can set on a Samba share, whilst still allowing users 
+	to modify the permission bits within that restriction.</P
+><P
+>If you want to set up a share that allows users full control
+	in modifying the permission bits on their files and directories and
+	doesn't force any particular bits to be set 'on', then set the following
+	parameters in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)
+	</TT
+></A
+> file in that share specific section :</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>security mask = 0777</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force security mode = 0</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>directory security mask = 0777</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force directory security mode = 0</I
+></TT
+></P
+><P
+>As described, in Samba 2.0.4 the parameters :</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>create mask</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force create mode</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>directory mask</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force directory mode</I
+></TT
+></P
+><P
+>were used instead of the parameters discussed here.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN740"
+>5.7. Interaction with the standard Samba file attribute 
+	mapping</A
+></H1
+><P
+>Samba maps some of the DOS attribute bits (such as "read 
+	only") into the UNIX permissions of a file. This means there can 
+	be a conflict between the permission bits set via the security 
+	dialog and the permission bits set by the file attribute mapping.
+	</P
+><P
+>One way this can show up is if a file has no UNIX read access
+	for the owner it will show up as "read only" in the standard 
+	file attributes tabbed dialog. Unfortunately this dialog is
+	the same one that contains the security info in another tab.</P
+><P
+>What this can mean is that if the owner changes the permissions
+	to allow themselves read access using the security dialog, clicks
+	<B
+CLASS="COMMAND"
+>"OK"</B
+> to get back to the standard attributes tab 
+	dialog, and then clicks <B
+CLASS="COMMAND"
+>"OK"</B
+> on that dialog, then 
+	NT will set the file permissions back to read-only (as that is what 
+	the attributes still say in the dialog). This means that after setting 
+	permissions and clicking <B
+CLASS="COMMAND"
+>"OK"</B
+> to get back to the 
+	attributes dialog you should always hit <B
+CLASS="COMMAND"
+>"Cancel"</B
+> 
+	rather than <B
+CLASS="COMMAND"
+>"OK"</B
+> to ensure that your changes 
+	are not overridden.</P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="AEN750"
+>Chapter 6. Printing Support in Samba 2.2.x</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN761"
+>6.1. Introduction</A
 ></H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
@@ -3777,8 +4183,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN698"
->5.2. Configuration</A
+NAME="AEN783"
+>6.2. Configuration</A
 ></H1
 ><DIV
 CLASS="WARNING"
@@ -3845,8 +4251,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN709"
->5.2.1. Creating [print$]</A
+NAME="AEN794"
+>6.2.1. Creating [print$]</A
 ></H2
 ><P
 >In order to support the uploading of printer driver 
@@ -3856,7 +4262,8 @@ the name is very important (print$ is the service used by
 Windows NT print servers to provide support for printer driver 
 download).</P
 ><P
->You should modify the server's smb.conf file to create the 
+>You should modify the server's smb.conf file to add the global
+parameters and to create the 
 following file share (of course, some of the parameter values,
 such as 'path' are arbitrary and should be replaced with
 appropriate values for your site):</P
@@ -3869,7 +4276,13 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->[print$]
+>[global]
+    ; members of the ntadmin group should be able
+    ; to add drivers and set printer properties
+    ; root is implicitly a 'printer admin'
+    printer admin = @ntadmin
+
+[print$]
     path = /usr/local/samba/printers
     guest ok = yes
     browseable = yes
@@ -3879,7 +4292,7 @@ CLASS="PROGRAMLISTING"
     ; sure this account can copy files to the share.  If this
     ; is setup to a non-root account, then it should also exist
     ; as a 'printer admin'
-    write list = ntadmin</PRE
+    write list = @ntadmin,root</PRE
 ></TD
 ></TR
 ></TABLE
@@ -4039,8 +4452,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN744"
->5.2.2. Setting Drivers for Existing Printers</A
+NAME="AEN829"
+>6.2.2. Setting Drivers for Existing Printers</A
 ></H2
 ><P
 >The initial listing of printers in the Samba host's 
@@ -4111,8 +4524,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN761"
->5.2.3. Support a large number of printers</A
+NAME="AEN846"
+>6.2.3. Support a large number of printers</A
 ></H2
 ><P
 >One issue that has arisen during the development
@@ -4186,8 +4599,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN772"
->5.2.4. Adding New Printers via the Windows NT APW</A
+NAME="AEN857"
+>6.2.4. Adding New Printers via the Windows NT APW</A
 ></H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
@@ -4292,8 +4705,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN797"
->5.2.5. Samba and Printer Ports</A
+NAME="AEN882"
+>6.2.5. Samba and Printer Ports</A
 ></H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
@@ -4329,8 +4742,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN805"
->5.3. The Imprints Toolset</A
+NAME="AEN890"
+>6.3. The Imprints Toolset</A
 ></H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
@@ -4347,8 +4760,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN809"
->5.3.1. What is Imprints?</A
+NAME="AEN894"
+>6.3.1. What is Imprints?</A
 ></H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
@@ -4379,8 +4792,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN819"
->5.3.2. Creating Printer Driver Packages</A
+NAME="AEN904"
+>6.3.2. Creating Printer Driver Packages</A
 ></H2
 ><P
 >The process of creating printer driver packages is beyond
@@ -4395,8 +4808,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN822"
->5.3.3. The Imprints server</A
+NAME="AEN907"
+>6.3.3. The Imprints server</A
 ></H2
 ><P
 >The Imprints server is really a database server that 
@@ -4415,8 +4828,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN826"
->5.3.4. The Installation Client</A
+NAME="AEN911"
+>6.3.4. The Installation Client</A
 ></H2
 ><P
 >More information regarding the Imprints installation client 
@@ -4518,8 +4931,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN848"
->5.4. <A
+NAME="AEN933"
+>6.4. <A
 NAME="MIGRATION"
 ></A
 >Migration to from Samba 2.0.x to 2.2.x</A
@@ -4695,16 +5108,16 @@ TARGET="_top"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN892"
->Chapter 6. security = domain in Samba 2.x</A
+NAME="AEN977"
+>Chapter 7. security = domain in Samba 2.x</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN910"
->6.1. Joining an NT Domain with Samba 2.2</A
+NAME="AEN995"
+>7.1. Joining an NT Domain with Samba 2.2</A
 ></H1
 ><P
 >In order for a Samba-2 server to join an NT domain, 
@@ -4930,8 +5343,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN974"
->6.2. Samba and Windows 2000 Domains</A
+NAME="AEN1059"
+>7.2. Samba and Windows 2000 Domains</A
 ></H1
 ><P
 >Many people have asked regarding the state of Samba's ability to participate in
@@ -4955,8 +5368,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN979"
->6.3. Why is this better than security = server?</A
+NAME="AEN1064"
+>7.3. Why is this better than security = server?</A
 ></H1
 ><P
 >Currently, domain security in Samba doesn't free you from 
@@ -5041,16 +5454,16 @@ TARGET="_top"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN995"
->Chapter 7. How to Configure Samba 2.2 as a Primary Domain Controller</A
+NAME="AEN1080"
+>Chapter 8. How to Configure Samba 2.2 as a Primary Domain Controller</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1012"
->7.1. Prerequisite Reading</A
+NAME="AEN1097"
+>8.1. Prerequisite Reading</A
 ></H1
 ><P
 >Before you continue reading in this chapter, please make sure 
@@ -5077,8 +5490,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1018"
->7.2. Background</A
+NAME="AEN1103"
+>8.2. Background</A
 ></H1
 ><DIV
 CLASS="NOTE"
@@ -5234,8 +5647,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1058"
->7.3. Configuring the Samba Domain Controller</A
+NAME="AEN1143"
+>8.3. Configuring the Samba Domain Controller</A
 ></H1
 ><P
 >The first step in creating a working Samba PDC is to 
@@ -5456,8 +5869,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1101"
->7.4. Creating Machine Trust Accounts and Joining Clients 
+NAME="AEN1186"
+>8.4. Creating Machine Trust Accounts and Joining Clients 
 to the Domain</A
 ></H1
 ><P
@@ -5514,8 +5927,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1115"
->7.4.1. Manually creating machine trust accounts</A
+NAME="AEN1200"
+>8.4.1. Manually creating machine trust accounts</A
 ></H2
 ><P
 >The first step in creating a machine trust account by hand is to 
@@ -5654,8 +6067,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1143"
->7.4.2. Creating machine trust accounts "on the fly"</A
+NAME="AEN1228"
+>8.4.2. Creating machine trust accounts "on the fly"</A
 ></H2
 ><P
 >The second, and most recommended way of creating machine trust accounts 
@@ -5702,8 +6115,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1154"
->7.5. Common Problems and Errors</A
+NAME="AEN1239"
+>8.5. Common Problems and Errors</A
 ></H1
 ><P
 ></P
@@ -5901,8 +6314,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1202"
->7.6. System Policies and Profiles</A
+NAME="AEN1287"
+>8.6. System Policies and Profiles</A
 ></H1
 ><P
 >Much of the information necessary to implement System Policies and
@@ -6058,8 +6471,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1246"
->7.7. What other help can I get ?</A
+NAME="AEN1331"
+>8.7. What other help can I get ?</A
 ></H1
 ><P
 >There are many sources of information available in the form 
@@ -6454,8 +6867,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1360"
->7.8. Domain Control for Windows 9x/ME</A
+NAME="AEN1445"
+>8.8. Domain Control for Windows 9x/ME</A
 ></H1
 ><DIV
 CLASS="NOTE"
@@ -6590,8 +7003,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1390"
->7.8.1. Configuration Instructions:	Network Logons</A
+NAME="AEN1475"
+>8.8.1. Configuration Instructions:	Network Logons</A
 ></H2
 ><P
 >To use domain logons and profiles you need to do the following:</P
@@ -6779,8 +7192,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1424"
->7.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
+NAME="AEN1509"
+>8.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
 ></H2
 ><DIV
 CLASS="WARNING"
@@ -6826,8 +7239,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1432"
->7.8.2.1. Windows NT Configuration</A
+NAME="AEN1517"
+>8.8.2.1. Windows NT Configuration</A
 ></H3
 ><P
 >To support WinNT clients, inn the [global] section of smb.conf set the
@@ -6870,8 +7283,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1440"
->7.8.2.2. Windows 9X Configuration</A
+NAME="AEN1525"
+>8.8.2.2. Windows 9X Configuration</A
 ></H3
 ><P
 >To support Win9X clients, you must use the "logon home" parameter. Samba has
@@ -6910,8 +7323,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1448"
->7.8.2.3. Win9X and WinNT Configuration</A
+NAME="AEN1533"
+>8.8.2.3. Win9X and WinNT Configuration</A
 ></H3
 ><P
 >You can support profiles for both Win9X and WinNT clients by setting both the
@@ -6948,8 +7361,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1455"
->7.8.2.4. Windows 9X Profile Setup</A
+NAME="AEN1540"
+>8.8.2.4. Windows 9X Profile Setup</A
 ></H3
 ><P
 >When a user first logs in on Windows 9X, the file user.DAT is created,
@@ -7104,8 +7517,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1491"
->7.8.2.5. Windows NT Workstation 4.0</A
+NAME="AEN1576"
+>8.8.2.5. Windows NT Workstation 4.0</A
 ></H3
 ><P
 >When a user first logs in to a Windows NT Workstation, the profile
@@ -7186,8 +7599,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1504"
->7.8.2.6. Windows NT Server</A
+NAME="AEN1589"
+>8.8.2.6. Windows NT Server</A
 ></H3
 ><P
 >There is nothing to stop you specifying any path that you like for the
@@ -7200,8 +7613,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1507"
->7.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
+NAME="AEN1592"
+>8.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
 ></H3
 ><DIV
 CLASS="WARNING"
@@ -7265,8 +7678,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1517"
->7.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
+NAME="AEN1602"
+>8.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></H1
 ><DIV
 CLASS="WARNING"
@@ -7386,16 +7799,16 @@ within its registry.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN1542"
->Chapter 8. Unified Logons between Windows NT and UNIX using Winbind</A
+NAME="AEN1627"
+>Chapter 9. Unified Logons between Windows NT and UNIX using Winbind</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1560"
->8.1. Abstract</A
+NAME="AEN1645"
+>9.1. Abstract</A
 ></H1
 ><P
 >Integration of UNIX and Microsoft Windows NT through 
@@ -7416,8 +7829,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1564"
->8.2. Introduction</A
+NAME="AEN1649"
+>9.2. Introduction</A
 ></H1
 ><P
 >It is well known that UNIX and Microsoft Windows NT have 
@@ -7470,8 +7883,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1577"
->8.3. What Winbind Provides</A
+NAME="AEN1662"
+>9.3. What Winbind Provides</A
 ></H1
 ><P
 >Winbind unifies UNIX and Windows NT account management by 
@@ -7512,8 +7925,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1584"
->8.3.1. Target Uses</A
+NAME="AEN1669"
+>9.3.1. Target Uses</A
 ></H2
 ><P
 >Winbind is targeted at organizations that have an 
@@ -7536,8 +7949,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1588"
->8.4. How Winbind Works</A
+NAME="AEN1673"
+>9.4. How Winbind Works</A
 ></H1
 ><P
 >The winbind system is designed around a client/server 
@@ -7556,8 +7969,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1593"
->8.4.1. Microsoft Remote Procedure Calls</A
+NAME="AEN1678"
+>9.4.1. Microsoft Remote Procedure Calls</A
 ></H2
 ><P
 >Over the last two years, efforts have been underway 
@@ -7582,8 +7995,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1597"
->8.4.2. Name Service Switch</A
+NAME="AEN1682"
+>9.4.2. Name Service Switch</A
 ></H2
 ><P
 >The Name Service Switch, or NSS, is a feature that is 
@@ -7661,8 +8074,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1613"
->8.4.3. Pluggable Authentication Modules</A
+NAME="AEN1698"
+>9.4.3. Pluggable Authentication Modules</A
 ></H2
 ><P
 >Pluggable Authentication Modules, also known as PAM, 
@@ -7710,8 +8123,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1621"
->8.4.4. User and Group ID Allocation</A
+NAME="AEN1706"
+>9.4.4. User and Group ID Allocation</A
 ></H2
 ><P
 >When a user or group is created under Windows NT 
@@ -7736,8 +8149,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1625"
->8.4.5. Result Caching</A
+NAME="AEN1710"
+>9.4.5. Result Caching</A
 ></H2
 ><P
 >An active system can generate a lot of user and group 
@@ -7759,8 +8172,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1628"
->8.5. Installation and Configuration</A
+NAME="AEN1713"
+>9.5. Installation and Configuration</A
 ></H1
 ><P
 >The easiest way to install winbind is by using the packages 
@@ -7790,8 +8203,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1634"
->8.6. Limitations</A
+NAME="AEN1719"
+>9.6. Limitations</A
 ></H1
 ><P
 >Winbind has a number of limitations in its current 
@@ -7838,8 +8251,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1646"
->8.7. Conclusion</A
+NAME="AEN1731"
+>9.7. Conclusion</A
 ></H1
 ><P
 >The winbind system, through the use of the Name Service 
@@ -7854,760 +8267,7 @@ NAME="AEN1646"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN1649"
->Chapter 9. UNIX Permission Bits and Windows NT Access Control Lists</A
-></H1
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN1660"
->9.1. Viewing and changing UNIX permissions using the NT 
-	security dialogs</A
-></H1
-><P
->New in the Samba 2.0.4 release is the ability for Windows 
-	NT clients to use their native security settings dialog box to 
-	view and modify the underlying UNIX permissions.</P
-><P
->Note that this ability is careful not to compromise 
-	the security of the UNIX host Samba is running on, and 
-	still obeys all the file permission rules that a Samba 
-	administrator can set.</P
-><P
->In Samba 2.0.4 and above the default value of the 
-	parameter <A
-HREF="smb.conf.5.html#NTACLSUPPORT"
-TARGET="_top"
-><TT
-CLASS="PARAMETER"
-><I
->	nt acl support</I
-></TT
-></A
-> has been changed from 
-	<TT
-CLASS="CONSTANT"
->false</TT
-> to <TT
-CLASS="CONSTANT"
->true</TT
->, so 
- 	manipulation of permissions is turned on by default.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN1669"
->9.2. How to view file security on a Samba share</A
-></H1
-><P
->From an NT 4.0 client, single-click with the right 
-	mouse button on any file or directory in a Samba mounted 
-	drive letter or UNC path. When the menu pops-up, click 
-	on the <EM
->Properties</EM
-> entry at the bottom of 
-	the menu. This brings up the normal file properties dialog
-	box, but with Samba 2.0.4 this will have a new tab along the top
-	marked <EM
->Security</EM
->. Click on this tab and you 
-	will see three buttons, <EM
->Permissions</EM
->, 	
-	<EM
->Auditing</EM
->, and <EM
->Ownership</EM
->. 
-	The <EM
->Auditing</EM
-> button will cause either 
-	an error message <SPAN
-CLASS="ERRORNAME"
->A requested privilege is not held 
-	by the client</SPAN
-> to appear if the user is not the 
-	NT Administrator, or a dialog which is intended to allow an 
-	Administrator to add auditing requirements to a file if the 
-	user is logged on as the NT Administrator. This dialog is 
-	non-functional with a Samba share at this time, as the only 
-	useful button, the <B
-CLASS="COMMAND"
->Add</B
-> button will not currently 
-	allow a list of users to be seen.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN1680"
->9.3. Viewing file ownership</A
-></H1
-><P
->Clicking on the <B
-CLASS="COMMAND"
->"Ownership"</B
-> button 
-	brings up a dialog box telling you who owns the given file. The 
-	owner name will be of the form :</P
-><P
-><B
-CLASS="COMMAND"
->"SERVER\user (Long name)"</B
-></P
-><P
->Where <TT
-CLASS="REPLACEABLE"
-><I
->SERVER</I
-></TT
-> is the NetBIOS name of 
-	the Samba server, <TT
-CLASS="REPLACEABLE"
-><I
->user</I
-></TT
-> is the user name of 
-	the UNIX user who owns the file, and <TT
-CLASS="REPLACEABLE"
-><I
->(Long name)</I
-></TT
->
-	is the descriptive string identifying the user (normally found in the
-	GECOS field of the UNIX password database). Click on the <B
-CLASS="COMMAND"
->Close
-	</B
-> button to remove this dialog.</P
-><P
->If the parameter <TT
-CLASS="PARAMETER"
-><I
->nt acl support</I
-></TT
->
-	is set to <TT
-CLASS="CONSTANT"
->false</TT
-> then the file owner will 
-	be shown as the NT user <B
-CLASS="COMMAND"
->"Everyone"</B
->.</P
-><P
->The <B
-CLASS="COMMAND"
->Take Ownership</B
-> button will not allow 
-	you to change the ownership of this file to yourself (clicking on 
-	it will display a dialog box complaining that the user you are 
-	currently logged onto the NT client cannot be found). The reason 
-	for this is that changing the ownership of a file is a privileged 
-	operation in UNIX, available only to the <EM
->root</EM
-> 
-	user. As clicking on this button causes NT to attempt to change 
-	the ownership of a file to the current user logged into the NT 
-	client this will not work with Samba at this time.</P
-><P
->There is an NT chown command that will work with Samba 
-	and allow a user with Administrator privilege connected 
-	to a Samba 2.0.4 server as root to change the ownership of 
-	files on both a local NTFS filesystem or remote mounted NTFS 
-	or Samba drive. This is available as part of the <EM
->Seclib
-	</EM
-> NT security library written by Jeremy Allison of 
-	the Samba Team, available from the main Samba ftp site.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN1700"
->9.4. Viewing file or directory permissions</A
-></H1
-><P
->The third button is the <B
-CLASS="COMMAND"
->"Permissions"</B
-> 
-	button. Clicking on this brings up a dialog box that shows both 
-	the permissions and the UNIX owner of the file or directory. 
-	The owner is displayed in the form :</P
-><P
-><B
-CLASS="COMMAND"
->"SERVER\user (Long name)"</B
-></P
-><P
->Where <TT
-CLASS="REPLACEABLE"
-><I
->SERVER</I
-></TT
-> is the NetBIOS name of 
-	the Samba server, <TT
-CLASS="REPLACEABLE"
-><I
->user</I
-></TT
-> is the user name of 
-	the UNIX user who owns the file, and <TT
-CLASS="REPLACEABLE"
-><I
->(Long name)</I
-></TT
->
-	is the descriptive string identifying the user (normally found in the
-	GECOS field of the UNIX password database).</P
-><P
->If the parameter <TT
-CLASS="PARAMETER"
-><I
->nt acl support</I
-></TT
->
-	is set to <TT
-CLASS="CONSTANT"
->false</TT
-> then the file owner will 
-	be shown as the NT user <B
-CLASS="COMMAND"
->"Everyone"</B
-> and the 
-	permissions will be shown as NT "Full Control".</P
-><P
->The permissions field is displayed differently for files 
-	and directories, so I'll describe the way file permissions 
-	are displayed first.</P
-><DIV
-CLASS="SECT2"
-><HR><H2
-CLASS="SECT2"
-><A
-NAME="AEN1715"
->9.4.1. File Permissions</A
-></H2
-><P
->The standard UNIX user/group/world triple and 
-		the corresponding "read", "write", "execute" permissions 
-		triples are mapped by Samba into a three element NT ACL 
-		with the 'r', 'w', and 'x' bits mapped into the corresponding 
-		NT permissions. The UNIX world permissions are mapped into 
-		the global NT group <B
-CLASS="COMMAND"
->Everyone</B
->, followed 
-		by the list of permissions allowed for UNIX world. The UNIX 
-		owner and group permissions are displayed as an NT 
-		<B
-CLASS="COMMAND"
->user</B
-> icon and an NT <B
-CLASS="COMMAND"
->local 
-		group</B
-> icon respectively followed by the list 
-	 	of permissions allowed for the UNIX user and group.</P
-><P
->As many UNIX permission sets don't map into common 
-		NT names such as <B
-CLASS="COMMAND"
->"read"</B
->, <B
-CLASS="COMMAND"
->		"change"</B
-> or <B
-CLASS="COMMAND"
->"full control"</B
-> then 
-		usually the permissions will be prefixed by the words <B
-CLASS="COMMAND"
->		"Special Access"</B
-> in the NT display list.</P
-><P
->But what happens if the file has no permissions allowed 
-		for a particular UNIX user group or world component ? In order 
-		to  allow "no permissions" to be seen and modified then Samba 
-		overloads the NT <B
-CLASS="COMMAND"
->"Take Ownership"</B
-> ACL attribute 
-		(which has no meaning in UNIX) and reports a component with 
-		no permissions as having the NT <B
-CLASS="COMMAND"
->"O"</B
-> bit set. 
-		This was chosen of course to make it look like a zero, meaning 
-		zero permissions. More details on the decision behind this will 
-		be given below.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><HR><H2
-CLASS="SECT2"
-><A
-NAME="AEN1729"
->9.4.2. Directory Permissions</A
-></H2
-><P
->Directories on an NT NTFS file system have two 
-		different sets of permissions. The first set of permissions 
-		is the ACL set on the directory itself, this is usually displayed 
-		in the first set of parentheses in the normal <B
-CLASS="COMMAND"
->"RW"</B
-> 
-		NT style. This first set of permissions is created by Samba in 
-		exactly the same way as normal file permissions are, described 
-		above, and is displayed in the same way.</P
-><P
->The second set of directory permissions has no real meaning 
-		in the UNIX permissions world and represents the <B
-CLASS="COMMAND"
->		"inherited"</B
-> permissions that any file created within 
-		this directory would inherit.</P
-><P
->Samba synthesises these inherited permissions for NT by 
-		returning as an NT ACL the UNIX permission mode that a new file 
-		created by Samba on this share would receive.</P
-></DIV
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN1736"
->9.5. Modifying file or directory permissions</A
-></H1
-><P
->Modifying file and directory permissions is as simple 
-	as changing the displayed permissions in the dialog box, and 
-	clicking the <B
-CLASS="COMMAND"
->OK</B
-> button. However, there are 
-	limitations that a user needs to be aware of, and also interactions 
-	with the standard Samba permission masks and mapping of DOS 
-	attributes that need to also be taken into account.</P
-><P
->If the parameter <TT
-CLASS="PARAMETER"
-><I
->nt acl support</I
-></TT
->
-	is set to <TT
-CLASS="CONSTANT"
->false</TT
-> then any attempt to set 
-	security permissions will fail with an <B
-CLASS="COMMAND"
->"Access Denied"
-	</B
-> message.</P
-><P
->The first thing to note is that the <B
-CLASS="COMMAND"
->"Add"</B
-> 
-	button will not return a list of users in Samba 2.0.4 (it will give 
-	an error message of <B
-CLASS="COMMAND"
->"The remote procedure call failed 
-	and did not execute"</B
->). This means that you can only 
-	manipulate the current user/group/world permissions listed in 
-	the dialog box. This actually works quite well as these are the 
-	only permissions that UNIX actually has.</P
-><P
->If a permission triple (either user, group, or world) 
-	is removed from the list of permissions in the NT dialog box, 
-	then when the <B
-CLASS="COMMAND"
->"OK"</B
-> button is pressed it will 
-	be applied as "no permissions" on the UNIX side. If you then 
-	view the permissions again the "no permissions" entry will appear 
-	as the NT <B
-CLASS="COMMAND"
->"O"</B
-> flag, as described above. This 
-	allows you to add permissions back to a file or directory once 
-	you have removed them from a triple component.</P
-><P
->As UNIX supports only the "r", "w" and "x" bits of 
-	an NT ACL then if other NT security attributes such as "Delete 
-	access" are selected then they will be ignored when applied on 
-	the Samba server.</P
-><P
->When setting permissions on a directory the second 
-	set of permissions (in the second set of parentheses) is 
-	by default applied to all files within that directory. If this 
-	is not what you want you must uncheck the <B
-CLASS="COMMAND"
->"Replace 
-	permissions on existing files"</B
-> checkbox in the NT 
-	dialog before clicking <B
-CLASS="COMMAND"
->"OK"</B
->.</P
-><P
->If you wish to remove all permissions from a 
-	user/group/world  component then you may either highlight the 
-	component and click the <B
-CLASS="COMMAND"
->"Remove"</B
-> button, 
-	or set the component to only have the special <B
-CLASS="COMMAND"
->"Take
-	Ownership"</B
-> permission (displayed as <B
-CLASS="COMMAND"
->"O"
-	</B
->) highlighted.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN1758"
->9.6. Interaction with the standard Samba create mask 
-	parameters</A
-></H1
-><P
->Note that with Samba 2.0.5 there are four new parameters 
-	to control this interaction.  These are :</P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->security mask</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->force security mode</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->directory security mask</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->force directory security mode</I
-></TT
-></P
-><P
->Once a user clicks <B
-CLASS="COMMAND"
->"OK"</B
-> to apply the 
-	permissions Samba maps the given permissions into a user/group/world 
-	r/w/x triple set, and then will check the changed permissions for a 
-	file against the bits set in the <A
-HREF="smb.conf.5.html#SECURITYMASK"
-TARGET="_top"
-> 
-	<TT
-CLASS="PARAMETER"
-><I
->security mask</I
-></TT
-></A
-> parameter. Any bits that 
-	were changed that are not set to '1' in this parameter are left alone 
-	in the file permissions.</P
-><P
->Essentially, zero bits in the <TT
-CLASS="PARAMETER"
-><I
->security mask</I
-></TT
->
-	mask may be treated as a set of bits the user is <EM
->not</EM
-> 
-	allowed to change, and one bits are those the user is allowed to change.
-	</P
-><P
->If not set explicitly this parameter is set to the same value as 
-	the <A
-HREF="smb.conf.5.html#CREATEMASK"
-TARGET="_top"
-><TT
-CLASS="PARAMETER"
-><I
->create mask
-	</I
-></TT
-></A
-> parameter to provide compatibility with Samba 2.0.4 
-	where this permission change facility was introduced. To allow a user to 
-	modify all the user/group/world permissions on a file, set this parameter 
-	to 0777.</P
-><P
->Next Samba checks the changed permissions for a file against 
-	the bits set in the <A
-HREF="smb.conf.5.html#FORCESECURITYMODE"
-TARGET="_top"
->	<TT
-CLASS="PARAMETER"
-><I
->force security mode</I
-></TT
-></A
-> parameter. Any bits 
-	that were changed that correspond to bits set to '1' in this parameter 
-	are forced to be set.</P
-><P
->Essentially, bits set in the <TT
-CLASS="PARAMETER"
-><I
->force security mode
-	</I
-></TT
-> parameter may be treated as a set of bits that, when 
-	modifying security on a file, the user has always set to be 'on'.</P
-><P
->If not set explicitly this parameter is set to the same value 
-	as the <A
-HREF="smb.conf.5.html#FORCECREATEMODE"
-TARGET="_top"
-><TT
-CLASS="PARAMETER"
-><I
->force 
-	create mode</I
-></TT
-></A
-> parameter to provide compatibility
-	with Samba 2.0.4 where the permission change facility was introduced.
-	To allow a user to modify all the user/group/world permissions on a file
-	with no restrictions set this parameter to 000.</P
-><P
->The <TT
-CLASS="PARAMETER"
-><I
->security mask</I
-></TT
-> and <TT
-CLASS="PARAMETER"
-><I
->force 
-	security mode</I
-></TT
-> parameters are applied to the change 
-	request in that order.</P
-><P
->For a directory Samba will perform the same operations as 
-	described above for a file except using the parameter <TT
-CLASS="PARAMETER"
-><I
->	directory security mask</I
-></TT
-> instead of <TT
-CLASS="PARAMETER"
-><I
->security 
-	mask</I
-></TT
->, and <TT
-CLASS="PARAMETER"
-><I
->force directory security mode
-	</I
-></TT
-> parameter instead of <TT
-CLASS="PARAMETER"
-><I
->force security mode
-	</I
-></TT
->.</P
-><P
->The <TT
-CLASS="PARAMETER"
-><I
->directory security mask</I
-></TT
-> parameter 
-	by default is set to the same value as the <TT
-CLASS="PARAMETER"
-><I
->directory mask
-	</I
-></TT
-> parameter and the <TT
-CLASS="PARAMETER"
-><I
->force directory security 
-	mode</I
-></TT
-> parameter by default is set to the same value as 
- 	the <TT
-CLASS="PARAMETER"
-><I
->force directory mode</I
-></TT
-> parameter to provide 
-	compatibility with Samba 2.0.4 where the permission change facility 
-	was introduced.</P
-><P
->In this way Samba enforces the permission restrictions that 
-	an administrator can set on a Samba share, whilst still allowing users 
-	to modify the permission bits within that restriction.</P
-><P
->If you want to set up a share that allows users full control
-	in modifying the permission bits on their files and directories and
-	doesn't force any particular bits to be set 'on', then set the following
-	parameters in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)
-	</TT
-></A
-> file in that share specific section :</P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->security mask = 0777</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->force security mode = 0</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->directory security mask = 0777</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->force directory security mode = 0</I
-></TT
-></P
-><P
->As described, in Samba 2.0.4 the parameters :</P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->create mask</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->force create mode</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->directory mask</I
-></TT
-></P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->force directory mode</I
-></TT
-></P
-><P
->were used instead of the parameters discussed here.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><HR><H1
-CLASS="SECT1"
-><A
-NAME="AEN1822"
->9.7. Interaction with the standard Samba file attribute 
-	mapping</A
-></H1
-><P
->Samba maps some of the DOS attribute bits (such as "read 
-	only") into the UNIX permissions of a file. This means there can 
-	be a conflict between the permission bits set via the security 
-	dialog and the permission bits set by the file attribute mapping.
-	</P
-><P
->One way this can show up is if a file has no UNIX read access
-	for the owner it will show up as "read only" in the standard 
-	file attributes tabbed dialog. Unfortunately this dialog is
-	the same one that contains the security info in another tab.</P
-><P
->What this can mean is that if the owner changes the permissions
-	to allow themselves read access using the security dialog, clicks
-	<B
-CLASS="COMMAND"
->"OK"</B
-> to get back to the standard attributes tab 
-	dialog, and then clicks <B
-CLASS="COMMAND"
->"OK"</B
-> on that dialog, then 
-	NT will set the file permissions back to read-only (as that is what 
-	the attributes still say in the dialog). This means that after setting 
-	permissions and clicking <B
-CLASS="COMMAND"
->"OK"</B
-> to get back to the 
-	attributes dialog you should always hit <B
-CLASS="COMMAND"
->"Cancel"</B
-> 
-	rather than <B
-CLASS="COMMAND"
->"OK"</B
-> to ensure that your changes 
-	are not overridden.</P
-></DIV
-></DIV
-><DIV
-CLASS="CHAPTER"
-><HR><H1
-><A
-NAME="AEN1832"
+NAME="AEN1734"
 >Chapter 10. OS2 Client HOWTO</A
 ></H1
 ><DIV
@@ -8615,7 +8275,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1843"
+NAME="AEN1745"
 >10.1. FAQs</A
 ></H1
 ><DIV
@@ -8623,7 +8283,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1845"
+NAME="AEN1747"
 >10.1.1. How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></H2
@@ -8682,7 +8342,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1860"
+NAME="AEN1762"
 >10.1.2. How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></H2
@@ -8735,7 +8395,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1869"
+NAME="AEN1771"
 >10.1.3. Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></H2
@@ -8757,7 +8417,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1873"
+NAME="AEN1775"
 >10.1.4. How do I get printer driver download working 
 		for OS/2 clients?</A
 ></H2
@@ -8805,7 +8465,7 @@ CLASS="REPLACEABLE"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN1882"
+NAME="AEN1784"
 >Chapter 11. HOWTO Access Samba source code via CVS</A
 ></H1
 ><DIV
@@ -8813,7 +8473,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1889"
+NAME="AEN1791"
 >11.1. Introduction</A
 ></H1
 ><P
@@ -8835,7 +8495,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1894"
+NAME="AEN1796"
 >11.2. CVS Access to samba.org</A
 ></H1
 ><P
@@ -8848,7 +8508,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1897"
+NAME="AEN1799"
 >11.2.1. Access via CVSweb</A
 ></H2
 ><P
@@ -8869,7 +8529,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1902"
+NAME="AEN1804"
 >11.2.2. Access via cvs</A
 ></H2
 ><P

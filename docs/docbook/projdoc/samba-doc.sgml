@@ -10,6 +10,7 @@
 <!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
 <!ENTITY CVS-Access SYSTEM "CVS-Access.sgml">
 <!ENTITY IntegratingWithWindows SYSTEM "Integrating-with-Windows.sgml">
+<!ENTITY Samba-PAM SYSTEM "PAM-Authentication-And-Samba.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
@@ -44,13 +45,13 @@ Cheers, jerry
 
 &UNIX-INSTALL;
 &IntegratingWithWindows;
-&ENCRYPTION;
+&Samba-PAM;
 &MS-Dfs-Setup;
+&NT-Security;
 &PRINTER-DRIVER2;
 &DOMAIN-MEMBER;
 &Samba-PDC-HOWTO;
 &WINBIND;
-&NT-Security;
 &OS2-Client;
 &CVS-Access;
 

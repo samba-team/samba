@@ -192,14 +192,21 @@ the name is very important (print$ is the service used by
 Windows NT print servers to provide support for printer driver 
 download).</P
 ><P
->You should modify the server's smb.conf file to create the 
+>You should modify the server's smb.conf file to add the global
+parameters and to create the 
 following file share (of course, some of the parameter values,
 such as 'path' are arbitrary and should be replaced with
 appropriate values for your site):</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->[print$]
+>[global]
+    ; members of the ntadmin group should be able
+    ; to add drivers and set printer properties
+    ; root is implicitly a 'printer admin'
+    printer admin = @ntadmin
+
+[print$]
     path = /usr/local/samba/printers
     guest ok = yes
     browseable = yes
@@ -209,7 +216,7 @@ CLASS="PROGRAMLISTING"
     ; sure this account can copy files to the share.  If this
     ; is setup to a non-root account, then it should also exist
     ; as a 'printer admin'
-    write list = ntadmin</PRE
+    write list = @ntadmin,root</PRE
 ></P
 ><P
 >The <A
