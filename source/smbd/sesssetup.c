@@ -273,10 +273,11 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 {
 	BOOL ret;
 	DATA_BLOB response;
-	struct auth_serversupplied_info *server_info;
-	server_info = (*auth_ntlmssp_state)->server_info;
+	struct auth_serversupplied_info *server_info = NULL;
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (NT_STATUS_IS_OK(nt_status)) {
+		server_info = (*auth_ntlmssp_state)->server_info;
+	} else {
 		nt_status = do_map_to_guest(nt_status, 
 					    &server_info, 
 					    (*auth_ntlmssp_state)->ntlmssp_state->user, 
@@ -387,19 +388,22 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 			     DATA_BLOB blob1)
 {
 	DATA_BLOB auth, auth_reply;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
 		file_save("auth.dat", blob1.data, blob1.length);
 #endif
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
-
-	if ( global_ntlmssp_state ) {
+	
+	if (!global_ntlmssp_state) {
+		/* auth before negotiatiate? */
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	
 	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
-					  auth, &auth_reply);
-	}
+						auth, &auth_reply);
 
 	data_blob_free(&auth);
 
