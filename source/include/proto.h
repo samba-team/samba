@@ -3459,11 +3459,6 @@ void cmd_brs_query_info(struct client_info *info, int argc, char *argv[]);
 
 void cmd_dfs_add(struct client_info *info, int argc, char *argv[]);
 void cmd_dfs_remove(struct client_info *info, int argc, char *argv[]);
-void display_dfs_enum_1(FILE *out_hnd, DFS_INFO_CTR *ctr);
-void display_dfs_enum_2(FILE *out_hnd, DFS_INFO_CTR *ctr);
-void display_dfs_enum_3_storages(FILE *out_hnd, DFS_INFO_3 *info3);
-void display_dfs_enum_3(FILE *out_hnd, DFS_INFO_CTR *ctr);
-void display_dfs_enum(FILE *out_hnd, char *srv_name, DFS_INFO_CTR *ctr);
 void cmd_dfs_enum(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_eventlog.c  */
@@ -3617,6 +3612,14 @@ void display_at_enum_info(FILE *out_hnd, enum action_type action,
 				char *const *const commands);
 void display_at_job_info(FILE *out_hnd, enum action_type action, 
 		     AT_JOB_INFO *const job, fstring command);
+
+/*The following definitions come from  rpcclient/display_dfs.c  */
+
+void display_dfs_enum_1(FILE *hnd, DFS_INFO_CTR *ctr);
+void display_dfs_enum_2(FILE *hnd, DFS_INFO_CTR *ctr);
+void display_dfs_enum_3_storages(FILE *hnd, DFS_INFO_3 *info3);
+void display_dfs_enum_3(FILE *hnd, DFS_INFO_CTR *ctr);
+void display_dfs_enum(FILE *hnd, char *srv_name, DFS_INFO_CTR *ctr);
 
 /*The following definitions come from  rpcclient/display_event.c  */
 
