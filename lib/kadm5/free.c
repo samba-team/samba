@@ -81,3 +81,14 @@ kadm5_free_principal_ent(void *server_handle,
     }
 }
 
+void 
+kadm5_free_name_list(void *server_handle,
+		     char **names, 
+		     int *count)
+{
+    int i;
+    for(i = 0; i < *count; i++)
+	free(names[i]);
+    free(names);
+    *count = 0;
+}
