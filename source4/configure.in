@@ -1986,6 +1986,7 @@ fi ])
 
 sinclude(lib/iconv.m4)
 sinclude(smbd/process_model.m4)
+sinclude(smb_server/config.m4)
 sinclude(ntvfs/config.m4)
 sinclude(rpc_server/config.m4)
 
