@@ -7,7 +7,7 @@
 #ifndef lint
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_dropcopy.c	2.6  2.6 4/3/91";
-#endif not lint
+#endif /* not lint */
 
 #include <errno.h>
 #include <stdio.h>
@@ -49,7 +49,7 @@ struct passwd	*	pwp;
     if(p->debug)
         pop_log(p,POP_DEBUG,"Creating temporary maildrop '%s'",
             p->temp_drop);
-#endif DEBUG
+#endif /* DEBUG */
 
     /* Here we work to make sure the user doesn't cause us to remove or
      * write over existing files by limiting how much work we do while
@@ -89,7 +89,7 @@ struct passwd	*	pwp;
     }
 #ifdef DEBUG
     if(p->debug)pop_log(p,POP_DEBUG,"uid = %d, gid = %d",getuid(),getgid());
-#endif DEBUG
+#endif /* DEBUG */
 
     /* Open for append,  this solves the crash recovery problem */
     if ((dfd = open(p->temp_drop,O_RDWR|O_APPEND|O_CREAT,0600)) == -1){

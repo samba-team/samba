@@ -7,7 +7,7 @@
 #ifndef lint
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_dropinfo.c	2.1  2.1 3/18/91";
-#endif not lint
+#endif /* not lint */
 
 #include <errno.h>
 #include <stdio.h>
@@ -80,7 +80,7 @@ POP     *   p;
                 pop_log(p,POP_DEBUG,
                     "Msg %d at offset %d is %d octets long and has %u lines.",
                         mp->number,mp->offset,mp->length,mp->lines);
-#endif DEBUG
+#endif /* DEBUG */
             ++mp;
             mp->number = msg_num;
             mp->length = 0;
@@ -91,7 +91,7 @@ POP     *   p;
 #ifdef DEBUG
             if(p->debug)
                 pop_log(p,POP_DEBUG, "Msg %d being added to list", mp->number);
-#endif DEBUG
+#endif /* DEBUG */
         }
         mp->length += nchar;
         p->drop_size += nchar;
@@ -107,7 +107,7 @@ POP     *   p;
                 "Msg %d at offset %d is %d octets long and has %u lines.",
                     mp->number,mp->offset,mp->length,mp->lines);
     }
-#endif DEBUG
+#endif /* DEBUG */
 
     return(POP_SUCCESS);
 }

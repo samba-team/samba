@@ -7,7 +7,7 @@
 #ifndef lint
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_init.c	2.1  2.1 3/18/91";
-#endif not lint
+#endif /* not lint */
 
 #include <errno.h>
 #include <stdio.h>
@@ -160,7 +160,7 @@ char    **      argmessage;
                 p->client = p->ipaddr;
             }
         }
-#endif BIND43
+#endif /* BIND43 */
     }
 
     /*  Create input file stream for TCP/IP communication */
@@ -188,7 +188,7 @@ char    **      argmessage;
                 trace_file_name);
     else if (p->debug)
         pop_log(p,POP_PRIORITY,"Debugging turned on");
-#endif DEBUG
+#endif /* DEBUG */
 
     return(authenticate(p, &cs));
 }

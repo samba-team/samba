@@ -7,7 +7,7 @@
 #ifndef lint
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_get_command.c	2.1  2.1 3/18/91";
-#endif not lint
+#endif /* not lint */
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -23,7 +23,7 @@ static state_table states[] = {
         auth2,  "pass", 1,  1,  pop_pass,   {auth1, trans},
 #ifdef RPOP
         auth2,  "rpop", 1,  1,  pop_rpop,   {auth1, trans},
-#endif RPOP
+#endif /* RPOP */
         auth1,  "quit", 0,  0,  pop_quit,   {halt,  halt},
         auth2,  "quit", 0,  0,  pop_quit,   {halt,  halt},
         trans,  "stat", 0,  0,  pop_stat,   {trans, trans},
@@ -50,7 +50,7 @@ register char   *   mp;         /*  Pointer to unparsed line
     /*  Save a copy of the original client line */
 #ifdef DEBUG
     if(p->debug) strcpy (buf,mp);
-#endif DEBUG
+#endif /* DEBUG */
 
     /*  Parse the message into the parameter array */
     if ((p->parm_count = pop_parse(p,mp)) < 0) return(NULL);
@@ -66,7 +66,7 @@ register char   *   mp;         /*  Pointer to unparsed line
             pop_log(p,POP_DEBUG,"Received: \"%s\"",buf);
         }
     }
-#endif DEBUG
+#endif /* DEBUG */
 
     /*  Search for the POP command in the command/state table */
     for (s = states; s->command; s++) {

@@ -7,7 +7,7 @@
 #ifndef lint
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_msg.c	2.1  2.1 3/18/91";
-#endif not lint
+#endif /* not lint */
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -79,7 +79,7 @@ va_dcl
 #ifdef DEBUG
     if (p->debug && stat == POP_SUCCESS)
         pop_log(p,POP_DEBUG,"%s",message);
-#endif DEBUG
+#endif /* DEBUG */
 
     /*  Log the message if a failure occurred */
     if (stat != POP_SUCCESS) 

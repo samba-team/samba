@@ -7,7 +7,7 @@
 #ifndef lint
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_dele.c	2.1  2.1 3/18/91";
-#endif not lint
+#endif /* not lint */
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -45,7 +45,7 @@ POP     *   p;
     if(p->debug)
         pop_log(p,POP_DEBUG,"Deleting message %u at offset %u of length %u\n",
             mp->number,mp->offset,mp->length);
-#endif DEBUG
+#endif /* DEBUG */
 
     /*  Update the messages_deleted and bytes_deleted counters */
     p->msgs_deleted++;
