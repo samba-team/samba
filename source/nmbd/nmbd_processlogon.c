@@ -200,7 +200,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       uniuser = skip_unibuf(unicomp, PTR_DIFF(buf+len, unicomp));
       getdc = skip_unibuf(uniuser,PTR_DIFF(buf+len, uniuser));
       q = skip_string(getdc,1);
-      q += 4;
+      q += 4; /* Account Control Bits - indicating username type */
       domainsidsize = IVAL(q, 0);
       q += 4;
       q += domainsidsize + 3;
