@@ -42,6 +42,7 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection *dce_conn,
 	}
 	h->mem_ctx = mem_ctx;
 	h->data = NULL;
+	h->destroy = NULL;
 
 	h->wire_handle.handle_type = handle_type;
 	uuid_generate_random(&h->wire_handle.uuid);
@@ -57,6 +58,9 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection *dce_conn,
 void dcesrv_handle_destroy(struct dcesrv_connection *dce_conn, 
 			   struct dcesrv_handle *h)
 {
+	if (h->destroy) {
+		h->destroy(dce_conn, h);
+	}
 	DLIST_REMOVE(dce_conn->handles, h);
 	talloc_destroy(h->mem_ctx);
 }

@@ -315,9 +315,7 @@ void dcesrv_endpoint_disconnect(struct dcesrv_connection *p)
 
 	/* destroy any handles */
 	while (p->handles) {
-		TALLOC_CTX *m = p->handles->mem_ctx;
-		DLIST_REMOVE(p->handles, p->handles);
-		talloc_destroy(m);
+		dcesrv_handle_destroy(p, p->handles);
 	}
 	
 	talloc_destroy(p->mem_ctx);
