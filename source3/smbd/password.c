@@ -1576,11 +1576,25 @@ BOOL server_cryptkey(char *buf)
   p = outbuf+len;
   name_mangle(desthost,p,' ');
   len += name_len(p);
+  p = outbuf+len;
 
   /* and my name */
-  p = outbuf+len;
-  name_mangle(remote_machine,p,' ');
-  len += name_len(p);
+  /* Fix from Frank Varnavas <varnavas@ny.ubs.com>.
+     We cannot use the same name as the client to 
+     the NT password server, as NT will drop client
+     connections if the same client name connects
+     twice. Instead, synthesize a name from our pid.
+     and the remote machine name.
+   */
+  {
+    char buf[32]; /* create name as PIDname */
+    sprintf(buf,"%d", getpid());
+    strncpy(&buf[strlen(buf)], remote_machine, 31 - strlen(buf));
+    buf[31] = '\0';
+    DEBUG(1,("negprot w/password server as %s\n",buf));
+    name_mangle(buf,p,' ');
+    len += name_len(p);
+  }
 
   _smb_setlen(outbuf,len);
   CVAL(outbuf,0) = 0x81;
