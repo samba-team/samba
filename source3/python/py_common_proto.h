@@ -12,6 +12,8 @@ void py_samba_init(void);
 PyObject *get_debuglevel(PyObject *self, PyObject *args);
 PyObject *set_debuglevel(PyObject *self, PyObject *args);
 PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw);
+BOOL py_parse_creds(PyObject *creds, char **username, char **domain, 
+		    char **password, char **errstr);
 struct cli_state *open_pipe_creds(char *server, PyObject *creds, 
 				  char *pipe_name, char **errstr);
 BOOL get_level_value(PyObject *dict, uint32 *level);
