@@ -25,6 +25,7 @@
 static fstring password;
 static fstring username;
 static int got_pass;
+static int test_args;
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
@@ -88,6 +89,8 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 {
 	struct perm_value *v;
 	fstring sidstr;
+	int do_print = 0;
+	uint32 got_mask;
 
 	SidToString(sidstr, &ace->sid);
 
@@ -122,11 +125,27 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 		}
 	}
 
-	/* Special permissions */
+	/* Special permissions.  Print out a hex value if we have
+	   leftover bits in the mask. */
 
+	got_mask = ace->info.mask;
+
+ again:
 	for (v = special_values; v->perm; v++) {
 		if ((ace->info.mask & v->mask) == v->mask) {
-			fprintf(f, "%s", v->perm);
+			if (do_print) {
+				fprintf(f, "%s", v->perm);
+			}
+			got_mask &= ~v->mask;
+		}
+	}
+
+	if (!do_print) {
+		if (got_mask != 0) {
+			fprintf(f, "0x%08x", ace->info.mask);
+		} else {
+			do_print = 1;
+			goto again;
 		}
 	}
 
@@ -138,18 +157,89 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 static BOOL parse_ace(SEC_ACE *ace, char *str)
 {
 	char *p;
+	fstring tok;
 	unsigned atype, aflags, amask;
 	DOM_SID sid;
 	SEC_ACCESS mask;
+	struct perm_value *v;
+
 	ZERO_STRUCTP(ace);
 	p = strchr(str,':');
 	if (!p) return False;
-	*p = 0;
-	if (sscanf(p+1, "%i/%i/%i", 
-		   &atype, &aflags, &amask) != 3 ||
-	    !StringToSid(&sid, str)) {
+	*p = '\0';
+	p++;
+
+	/* Try to parse numeric form */
+
+	if (sscanf(p, "%i/%i/%i", &atype, &aflags, &amask) == 3 &&
+	    StringToSid(&sid, str)) {
+		goto done;
+	}
+
+	/* Try to parse text form */
+
+	if (!string_to_sid(&sid, str)) {
 		return False;
 	}
+
+	if (!next_token(&p, tok, "/", sizeof(fstring))) {
+		return False;
+	}
+
+	if (strncmp(tok, "ALLOWED", strlen("ALLOWED")) == 0) {
+		atype = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	} else if (strncmp(tok, "DENIED", strlen("DENIED")) == 0) {
+		atype = SEC_ACE_TYPE_ACCESS_DENIED;
+	} else {
+		return False;
+	}
+
+	/* Only numeric form accepted for flags at present */
+
+	if (!(next_token(NULL, tok, "/", sizeof(fstring)) &&
+	      sscanf(tok, "%i", &aflags))) {
+		return False;
+	}
+
+	if (!next_token(NULL, tok, "/", sizeof(fstring))) {
+		return False;
+	}
+
+	if (strncmp(tok, "0x", 2) == 0) {
+		if (sscanf(tok, "%i", &amask) != 1) {
+			return False;
+		}
+		goto done;
+	}
+
+	for (v = standard_values; v->perm; v++) {
+		if (strcmp(tok, v->perm) == 0) {
+			amask = v->mask;
+			goto done;
+		}
+	}
+
+	p = tok;
+
+	while(*p) {
+		BOOL found = False;
+
+		for (v = special_values; v->perm; v++) {
+			if (v->perm[0] == *p) {
+				amask |= v->mask;
+				found = True;
+			}
+		}
+
+		if (!found) return False;
+		p++;
+	}
+
+	if (*p) {
+		return False;
+	}
+
+ done:
 	mask.mask = amask;
 	init_sec_ace(ace, &sid, atype, mask, aflags);
 	return True;
@@ -229,6 +319,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 			    NULL, dacl, &sd_size);
 
 	free_sec_acl(&dacl);
+
 	if (grp_sid) free(grp_sid);
 	if (owner_sid) free(owner_sid);
 
@@ -280,6 +371,8 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 	int fnum;
 	SEC_DESC *sd;
 
+	if (test_args) return;
+
 	fnum = cli_nt_create(cli, filename, 0x20000);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
@@ -316,6 +409,8 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		printf("Failed to parse security descriptor\n");
 		return;
 	}
+
+	if (test_args) return;
 
 	/* the desired access below is the only one I could find that works with
 	   NT4, W2KP and Samba */
@@ -492,16 +587,17 @@ struct cli_state *connect_one(char *share)
 static void usage(void)
 {
 	printf(
-"Usage: smbcacls //server1/share1 filename [options]\n\n\
+"Usage: smbcacls //server1/share1 filename -U username [options]\n\
 \n\
 \t-D <acls>               delete an acl\n\
 \t-M <acls>               modify an acl\n\
 \t-A <acls>               add an acl\n\
 \t-S <acls>               set acls\n\
-\t-U username             set the network username\n\
 \t-n                      don't resolve sids or masks to names\n\
 \t-h                      print help\n\
 \n\
+The username can be of the form username%%password or\n\
+workgroup\\username%%password.\n\n\
 An acl is of the form ACL:<SID>:type/flags/mask\n\
 You can string acls together with spaces, commas or newlines\n\
 ");
@@ -556,7 +652,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:t")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -592,6 +688,10 @@ You can string acls together with spaces, commas or newlines\n\
 			numeric = 1;
 			break;
 
+		case 't':
+			test_args = 1;
+			break;
+
 		case 'h':
 			usage();
 			exit(1);
@@ -604,9 +704,16 @@ You can string acls together with spaces, commas or newlines\n\
 
 	argc -= optind;
 	argv += optind;
+	
+	if (argc > 0) {
+		usage();
+		exit(1);
+	}
 
-	cli = connect_one(share);
-	if (!cli) exit(1);
+	if (!test_args) {
+		cli = connect_one(share);
+		if (!cli) exit(1);
+	}
 
 	if (acl) {
 		cacl_set(cli, filename, acl, mode);
