@@ -465,7 +465,9 @@ static void usage(char *pname)
   int opt;
   extern FILE *dbf;
   extern char *optarg;
-  char pidFile[100] = { 0 };
+  char pidFile[100];
+
+  *pidFile = '\0';
 
   global_nmb_port = NMB_PORT;
   *host_file = 0;

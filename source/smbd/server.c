@@ -5043,7 +5043,9 @@ static void usage(char *pname)
   int port = SMB_PORT;
   int opt;
   extern char *optarg;
-  char pidFile[100] = { 0 };
+  char pidFile[100];
+
+  *pidFile = '\0';
 
 #ifdef NEED_AUTH_PARAMETERS
   set_auth_parameters(argc,argv);
