@@ -78,6 +78,10 @@ krb5_error_code hdb_next_keytype2key(krb5_context, hdb_entry*,
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*, hdb_entry*, void*);
 krb5_error_code hdb_foreach(krb5_context context, HDB *db, hdb_foreach_func_t func, void *data);
 
+Key *hdb_unseal_key(Key*, des_key_schedule);
+void hdb_seal_key(Key*, des_key_schedule);
+void hdb_free_key(Key*);
+
 #define HDB_DEFAULT_DB "heimdal"
 
 #endif /* __HDB_H__ */
