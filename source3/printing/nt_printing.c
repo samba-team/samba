@@ -1081,12 +1081,6 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 
 	nt_printing_getsec(sharename, &info.secdesc_buf);
 
-	/* the following should not be necessary - why are these values
-	   getting corrupted? */
-	fstrcpy(info.printprocessor, "winprint");
-	fstrcpy(info.datatype, "RAW");
-	fstrcpy(info.parameters,"");
-	
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
 
