@@ -85,7 +85,7 @@ static char *build_print_command(int cnum, char *command, char *syscmd, char *fi
       strcat(filename,filename1);
     }
     else
-      strcpy(filename,filename1);
+      pstrcpy(filename,filename1);
     
     string_sub(syscmd, "%s", filename);
   }
@@ -258,7 +258,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
     if (p)
       {
 	strcpy(tmp,p+1);
-	strcpy(tok[FILETOK],tmp);
+	fstrcpy(tok[FILETOK],tmp);
       }
   }
 	
@@ -404,8 +404,8 @@ A long spool-path will just waste significant chars of the file name.
     char *p = strrchr(tok[LPRNG_FILETOK],'/');
     if (p)
       {
-       strcpy(tmp,p+1);
-       strcpy(tok[LPRNG_FILETOK],tmp);
+       fstrcpy(tmp,p+1);
+       fstrcpy(tok[LPRNG_FILETOK],tmp);
       }
   }
        
@@ -472,8 +472,8 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
             char *p = strrchr(tok[2],'/');
             if (p)
               {
-                strcpy(tmp,p+1);
-                strcpy(tok[2],tmp);
+                fstrcpy(tmp,p+1);
+                fstrcpy(tok[2],tmp);
               }
           }
 
@@ -506,8 +506,8 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
         char *p = strrchr(tok[4],'/');
         if (p)
           {
-            strcpy(tmp,p+1);
-            strcpy(tok[4],tmp);
+            fstrcpy(tmp,p+1);
+            fstrcpy(tok[4],tmp);
           }
       }
 
@@ -666,8 +666,8 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
   if ((p=strchr(tok[2],'!')))
     {
       string tmp;
-      strcpy(tmp,p+1);
-      strcpy(tok[2],tmp);
+      fstrcpy(tmp,p+1);
+      fstrcpy(tok[2],tmp);
     }
     
 
@@ -731,8 +731,8 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
     char *p = strrchr(tok[6],'/');
     if (p)
       {
-	strcpy(tmp,p+1);
-	strcpy(tok[6],tmp);
+	fstrcpy(tmp,p+1);
+	fstrcpy(tok[6],tmp);
       }
   }
 	
@@ -795,8 +795,8 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
     char *p = strrchr(tok[6],'/');
     if (p)
       {
-        strcpy(tmp,p+1);
-        strcpy(tok[6],tmp);
+        fstrcpy(tmp,p+1);
+        fstrcpy(tok[6],tmp);
       }
   }
 
@@ -863,7 +863,7 @@ static BOOL parse_lpq_entry(int snum,char *line,
     /* change guest entries to the current logged in user to make
        them appear deletable to windows */
     if (sesssetup_user[0] && strequal(buf->user,lp_guestaccount(snum)))
-      strcpy(buf->user,sesssetup_user);
+      pstrcpy(buf->user,sesssetup_user);
   }
 #endif
 
@@ -940,7 +940,7 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
       return(0);
     }
     
-  strcpy(syscmd,lpq_command);
+  pstrcpy(syscmd,lpq_command);
   string_sub(syscmd,"%p",printername);
 
   standard_sub(cnum,syscmd);
@@ -1031,7 +1031,7 @@ void del_printqueue(int cnum,int snum,int jobid)
     
   sprintf(jobstr,"%d",jobid);
 
-  strcpy(syscmd,lprm_command);
+  pstrcpy(syscmd,lprm_command);
   string_sub(syscmd,"%p",printername);
   string_sub(syscmd,"%j",jobstr);
   standard_sub(cnum,syscmd);
@@ -1069,7 +1069,7 @@ void status_printjob(int cnum,int snum,int jobid,int status)
     
   sprintf(jobstr,"%d",jobid);
 
-  strcpy(syscmd,lpstatus_command);
+  pstrcpy(syscmd,lpstatus_command);
   string_sub(syscmd,"%p",printername);
   string_sub(syscmd,"%j",jobstr);
   standard_sub(cnum,syscmd);

@@ -976,6 +976,8 @@ void file_unlock(int fd);
 BOOL is_myname(const char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch();
+void fstrcpy(char *dest, char *src);
+void pstrcpy(char *dest, char *src);
 
 /*The following definitions come from  vt_mode.c  */
 

@@ -171,7 +171,8 @@ BOOL cli_send_session_request(char *inbuf, char *outbuf)
   int len = 4;
   /* send a session request (RFC 8002) */
 
-  strcpy(dest,desthost);
+  fstrcpy(dest,desthost);
+  
   p = strchr(dest,'.');
   if (p) *p = 0;
 
@@ -302,11 +303,11 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
       outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
     }
 
-  strcpy(dev,"A:");
+  pstrcpy(dev,"A:");
   if (connect_as_printer)
-    strcpy(dev,"LPT1:");
+    pstrcpy(dev,"LPT1:");
   if (connect_as_ipc)
-    strcpy(dev,"IPC");
+    pstrcpy(dev,"IPC");
 
 
   if (start_session && !cli_send_session_request(inbuf,outbuf))
@@ -438,7 +439,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
     {
       fstring pword;
       int passlen = strlen(pass)+1;
-      strcpy(pword,pass);      
+      fstrcpy(pword,pass);      
 
 #ifdef SMB_PASSWD
       if (doencrypt && *pass) {
@@ -451,7 +452,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
 #endif
 
       /* if in share level security then don't send a password now */
-      if (!(sec_mode & 1)) {strcpy(pword, "");passlen=1;} 
+      if (!(sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 
 
       /* send a session setup command */
       bzero(outbuf,smb_size);
@@ -557,7 +558,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
   {
     int passlen = strlen(pass)+1;
     fstring pword;
-    strcpy(pword,pass);
+    fstrcpy(pword,pass);
 
 #ifdef SMB_PASSWD
     if (doencrypt && *pass) {
@@ -568,7 +569,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
 
     /* if in user level security then don't send a password now */
     if ((sec_mode & 1)) {
-      strcpy(pword, ""); passlen=1; 
+      fstrcpy(pword, ""); passlen=1; 
     }
 
     set_message(outbuf,4,2 + strlen(service) + passlen + strlen(dev),True);
@@ -817,9 +818,9 @@ BOOL cli_open_sockets(int port)
     }
   else
     {
-      strcpy(service2,service);
+      pstrcpy(service2,service);
       host = strtok(service2,"\\/");
-      strcpy(desthost,host);
+      pstrcpy(desthost,host);
     }
 
   DEBUG(5,("Opening sockets\n"));

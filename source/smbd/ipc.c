@@ -774,7 +774,7 @@ static int get_server_info(uint32 servertype,
   pstring line;
   BOOL local_list_only;
 
-  strcpy(fname,lp_lockdir());
+  pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
   strcat(fname,"/");
   strcat(fname,SERVER_LIST);
@@ -1363,7 +1363,7 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
   fstring user;
   fstring pass1,pass2;
 
-  strcpy(user,p);
+  fstrcpy(user,p);
 
   p = skip_string(p,1);
 
@@ -1698,14 +1698,14 @@ static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
       pstring comment;
       uint32 servertype= lp_default_server_announce();
 
-      strcpy(comment,lp_serverstring());
+      pstrcpy(comment,lp_serverstring());
 
       if ((count=get_server_info(SV_TYPE_ALL,&servers,myworkgroup))>0) {
 	for (i=0;i<count;i++)
 	  if (strequal(servers[i].name,local_machine))
       {
 	    servertype = servers[i].type;
-	    strcpy(comment,servers[i].comment);	    
+	    pstrcpy(comment,servers[i].comment);	    
 	  }
       }
       if (servers) free(servers);
@@ -2026,7 +2026,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 	p2 = p + usri11_end;
 
 	memset(p,0,21); 
-	strcpy(p+usri11_name,UserName); /* 21 bytes - user name */
+	fstrcpy(p+usri11_name,UserName); /* 21 bytes - user name */
 
 	if (uLevel > 0)
 	{
@@ -2043,9 +2043,9 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		strcpy(p2,"UserComment");
 		p2 = skip_string(p2,1);
 
-        /* EEK! the cifsrap.txt doesn't have this in!!!! */
+		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-        strcpy(p2,vuser->real_name);	/* simeon */
+		strcpy(p2,vuser->real_name);	/* simeon */
 		p2 = skip_string(p2,1);
 	}
 
@@ -2062,7 +2062,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		else
 		{
 #if (defined(NETGROUP) && defined(AUTOMOUNT))
-            strcpy(p2, vuser->home_share);
+			strcpy(p2, vuser->home_share);
 #else
 			strcpy(p2,"\\\\%L\\%U");
 #endif
@@ -2461,7 +2461,8 @@ static void fill_printdest_info(int cnum, int snum, int uLevel,
 				struct pack_desc* desc)
 {
   char buf[100];
-  strcpy(buf,SERVICE(snum));
+  strncpy(buf,SERVICE(snum),sizeof(buf)-1);
+  buf[sizeof(buf)-1] = 0;
   strupper(buf);
   if (uLevel <= 1) {
     PACKS(desc,"B9",buf);	/* szName */
@@ -3018,7 +3019,11 @@ int reply_trans(char *inbuf,char *outbuf)
   int dsoff = SVAL(inbuf,smb_vwv12);
   int suwcnt = CVAL(inbuf,smb_vwv13);
 
-  StrnCpy(name,smb_buf(inbuf),sizeof(name)-1);
+  fstrcpy(name,smb_buf(inbuf));
+
+  if (dscnt > tdscnt || pscnt > tpscnt) {
+	  exit_server("invalid trans parameters\n");
+  }
   
   if (tdscnt)
     {
@@ -3079,6 +3084,10 @@ int reply_trans(char *inbuf,char *outbuf)
       
       pscnt += pcnt;
       dscnt += dcnt;
+
+      if (dscnt > tdscnt || pscnt > tpscnt) {
+	      exit_server("invalid trans parameters\n");
+      }
 
       if (pcnt)
 	memcpy(params+pdisp,smb_base(inbuf)+poff,pcnt);

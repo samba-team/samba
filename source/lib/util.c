@@ -1079,7 +1079,7 @@ void unix_format(char *fname)
 
   if (*fname == '/')
     {
-      strcpy(namecopy,fname);
+      pstrcpy(namecopy,fname);
       strcpy(fname,".");
       strcat(fname,namecopy);
     }  
@@ -1290,7 +1290,7 @@ void dos_clean_name(char *s)
       pstring s1;
 
       *p = 0;
-      strcpy(s1,p+3);
+      pstrcpy(s1,p+3);
 
       if ((p=strrchr(s,'\\')) != NULL)
 	*p = 0;
@@ -1328,7 +1328,7 @@ void unix_clean_name(char *s)
       pstring s1;
 
       *p = 0;
-      strcpy(s1,p+3);
+      pstrcpy(s1,p+3);
 
       if ((p=strrchr(s,'/')) != NULL)
 	*p = 0;
@@ -1355,7 +1355,7 @@ int ChDir(char *path)
   DEBUG(3,("chdir to %s\n",path));
   res = sys_chdir(path);
   if (!res)
-    strcpy(LastDir,path);
+    pstrcpy(LastDir,path);
   return(res);
 }
 
@@ -1515,7 +1515,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   /* remove any double slashes */
   string_sub(s,"//","/");
 
-  strcpy(basename,s);
+  pstrcpy(basename,s);
   p = strrchr(basename,'/');
 
   if (!p)
@@ -1585,12 +1585,12 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
     if (relative)
       {
 	if (newname[l] == '/')
-	  strcpy(s,newname + l + 1);
+	  pstrcpy(s,newname + l + 1);
 	else
-	  strcpy(s,newname+l);
+	  pstrcpy(s,newname+l);
       }
     else
-      strcpy(s,newname);
+      pstrcpy(s,newname);
   }
 
   ChDir(wd);
@@ -1614,10 +1614,10 @@ static void expand_one(char *Mask,int len)
       int lfill = (len+1) - strlen(Mask);
       int l1= (p1 - Mask);
       pstring tmp;
-      strcpy(tmp,Mask);  
+      pstrcpy(tmp,Mask);  
       memset(tmp+l1,'?',lfill);
-      strcpy(tmp + l1 + lfill,Mask + l1 + 1);	
-      strcpy(Mask,tmp);      
+      pstrcpy(tmp + l1 + lfill,Mask + l1 + 1);	
+      pstrcpy(Mask,tmp);      
     }
 }
 
@@ -1641,20 +1641,20 @@ void expand_mask(char *Mask,BOOL doext)
 
   filename_dos(Mask,filepart);
 
-  strcpy(mbeg,filepart);
+  pstrcpy(mbeg,filepart);
   if ((p1 = strchr(mbeg,'.')) != NULL)
     {
       hasdot = True;
       *p1 = 0;
       p1++;
-      strcpy(mext,p1);
+      pstrcpy(mext,p1);
     }
   else
     {
       strcpy(mext,"");
       if (strlen(mbeg) > 8)
 	{
-	  strcpy(mext,mbeg + 8);
+	  pstrcpy(mext,mbeg + 8);
 	  mbeg[8] = 0;
 	}
     }
@@ -1672,7 +1672,7 @@ void expand_mask(char *Mask,BOOL doext)
   if (*mext)
     expand_one(mext,3);
 
-  strcpy(Mask,dirpart);
+  pstrcpy(Mask,dirpart);
   if (*dirpart || absolute) strcat(Mask,"\\");
   strcat(Mask,mbeg);
   strcat(Mask,".");
@@ -1773,7 +1773,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,unsigned int size,int mode
   char *p;
   pstring mask2;
 
-  strcpy(mask2,mask);
+  pstrcpy(mask2,mask);
 
   if ((mode & aDIR) != 0)
     size = 0;
@@ -2421,7 +2421,12 @@ BOOL string_init(char **dest,char *src)
     }
   else
     {
-      *dest = (char *)malloc(l+1);
+      (*dest) = (char *)malloc(l+1);
+      if ((*dest) == NULL) {
+	      DEBUG(0,("Out of memory in string_init\n"));
+	      return False;
+      }
+
       strcpy(*dest,src);
     }
   return(True);
@@ -2593,25 +2598,25 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   DEBUG(5,("mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2, p1, case_sig));
 
   if (trans2) {
-    strcpy(ebase,p1);
-    strcpy(sbase,p2);
+    fstrcpy(ebase,p1);
+    fstrcpy(sbase,p2);
   } else {
     if ((p=strrchr(p1,'.'))) {
       *p = 0;
-      strcpy(ebase,p1);
-      strcpy(eext,p+1);
+      fstrcpy(ebase,p1);
+      fstrcpy(eext,p+1);
     } else {
-      strcpy(ebase,p1);
+      fstrcpy(ebase,p1);
       eext[0] = 0;
     }
 
   if (!strequal(p2,".") && !strequal(p2,"..") && (p=strrchr(p2,'.'))) {
     *p = 0;
-    strcpy(sbase,p2);
-    strcpy(sext,p+1);
+    fstrcpy(sbase,p2);
+    fstrcpy(sext,p+1);
   } else {
-    strcpy(sbase,p2);
-    strcpy(sext,"");
+    fstrcpy(sbase,p2);
+    fstrcpy(sext,"");
   }
   }
 
@@ -2927,7 +2932,7 @@ BOOL get_myname(char *my_name,struct in_addr *ip)
       char *p = strchr(hostname,'.');
       if (p) *p = 0;
 
-      strcpy(my_name,hostname);
+      fstrcpy(my_name,hostname);
     }
 
   if (ip)
@@ -3295,7 +3300,7 @@ char *client_addr(void)
     return addr_buf;
   }
 
-  strcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
+  fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
 
   global_client_addr_done = True;
   return addr_buf;
@@ -3552,7 +3557,7 @@ char *readdirname(void *p)
 
   {
     static pstring buf;
-    strcpy(buf, dname);
+    pstrcpy(buf, dname);
     unix_to_dos(buf, True);
     dname = buf;
   }
@@ -3906,4 +3911,55 @@ void set_remote_arch(enum remote_arch_types type)
 enum remote_arch_types get_remote_arch()
 {
   return ra_type;
+}
+
+
+/*******************************************************************
+safe string copy into a fstring
+********************************************************************/
+void fstrcpy(char *dest, char *src)
+{
+	int maxlength = sizeof(fstring) - 1;
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in fstrcpy\n"));
+		return;
+	}
+
+	if (!src) {
+		*dest = 0;
+		return;
+	}
+
+	while (maxlength-- && *src)
+		*dest++ = *src++;
+	*dest = 0;
+	if (*src) {
+		DEBUG(0,("ERROR: string overflow by %d in fstrcpy\n",
+			 strlen(src)));
+	}
+}
+
+/*******************************************************************
+safe string copy into a pstring
+********************************************************************/
+void pstrcpy(char *dest, char *src)
+{
+	int maxlength = sizeof(pstring) - 1; 
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in pstrcpy\n"));
+		return;
+	}
+
+	if (!src) {
+		*dest = 0;
+		return;
+	}
+
+	while (maxlength-- && *src)
+		*dest++ = *src++;
+	*dest = 0;
+	if (*src) {
+		DEBUG(0,("ERROR: string overflow by %d in pstrcpy\n",
+			 strlen(src)));
+	}
 }

@@ -49,6 +49,18 @@ a packet to ensure chaining works correctly */
 
 
 /****************************************************************************
+report a possible attack via the password buffer overflow bug
+****************************************************************************/
+static void overflow_attack(int len)
+{
+	DEBUG(0,("ERROR: Invalid password length %d\n", len));
+	DEBUG(0,("you're machine may be under attack by a user exploiting an old bug\n"));
+	DEBUG(0,("Attack was from IP=%s\n", client_addr()));
+	exit_server("possible attack");
+}
+
+
+/****************************************************************************
   reply to an special message 
 ****************************************************************************/
 int reply_special(char *inbuf,char *outbuf)
@@ -69,22 +81,22 @@ int reply_special(char *inbuf,char *outbuf)
     case 0x81: /* session request */
       CVAL(outbuf,0) = 0x82;
       CVAL(outbuf,3) = 0;
-		if (name_len(inbuf+4) > 50) {
-	  DEBUG(0,("Invalid name length in session request\n"));
-	  return(0);
-	}
+      if (name_len(inbuf+4) > 50 || name_len(inbuf+4 + name_len(inbuf + 4)) > 50) {
+	      DEBUG(0,("Invalid name length in session request\n"));
+	      return(0);
+      }
       name_extract(inbuf,4,name1);
       name_extract(inbuf,4 + name_len(inbuf + 4),name2);
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
 
-      strcpy(remote_machine,name2);
+      fstrcpy(remote_machine,name2);
       trim_string(remote_machine," "," ");
       p = strchr(remote_machine,' ');
       strlower(remote_machine);
       if (p) *p = 0;
 
-      strcpy(local_machine,name1);
+      fstrcpy(local_machine,name1);
       trim_string(local_machine," "," ");
       p = strchr(local_machine,' ');
       strlower(local_machine);
@@ -160,25 +172,25 @@ static void parse_connect(char *p,char *service,char *user,
     
   p2 = strrchr(p,'\\');
   if (p2 == NULL)
-    strcpy(service,p);
+    fstrcpy(service,p);
   else
-    strcpy(service,p2+1);
+    fstrcpy(service,p2+1);
   
   p += strlen(p) + 2;
   
-  strcpy(password,p);
+  fstrcpy(password,p);
   *pwlen = strlen(password);
 
   p += strlen(p) + 2;
 
-  strcpy(dev,p);
+  fstrcpy(dev,p);
   
   *user = 0;
   p = strchr(service,'%');
   if (p != NULL)
     {
       *p = 0;
-      strcpy(user,p+1);
+      fstrcpy(user,p+1);
     }
 }
 
@@ -238,6 +250,10 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* we might have to close an old one */
   if ((SVAL(inbuf,smb_vwv2) & 0x1) != 0)
     close_cnum(SVAL(inbuf,smb_tid),vuid);
+
+  if (passlen > MAX_PASSWORD_LENGTH) {
+	  overflow_attack(passlen);
+  }
   
   {
     char *path;
@@ -252,18 +268,17 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       passlen = strlen(password);
     }
     
-    DEBUG(4,("parsing net-path %s, passlen=%d\n",path,passlen));
-    strcpy(service,path+2);
+    fstrcpy(service,path+2);
     p = strchr(service,'\\');
     if (!p)
       return(ERROR(ERRSRV,ERRinvnetname));
     *p = 0;
-    strcpy(service,p+1);
+    fstrcpy(service,p+1);
     p = strchr(service,'%');
     if (p)
       {
 	*p++ = 0;
-	strcpy(user,p);
+	fstrcpy(user,p);
       }
     StrnCpy(devicename,path + strlen(path) + 1,6);
     DEBUG(4,("Got device type %s\n",devicename));
@@ -372,11 +387,15 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
-    memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
-    StrnCpy(user,smb_buf(inbuf)+smb_apasslen,sizeof(user)-1);
+    if (smb_apasslen > MAX_PASSWORD_LENGTH)
+	    overflow_attack(smb_apasslen);
 
-    if (lp_security() != SEC_SERVER && !doencrypt)
-      smb_apasslen = strlen(smb_apasswd);
+    memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
+    pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
+
+    if (lp_security() != SEC_SERVER && !doencrypt) {
+	    smb_apasslen = strlen(smb_apasswd);
+    }
   } else {
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
@@ -400,6 +419,13 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
     if (passlen1 != 24 && passlen2 != 24)
       doencrypt = False;
+
+    if (passlen1 > MAX_PASSWORD_LENGTH) {
+	    overflow_attack(passlen1);
+    }
+
+    passlen1 = MIN(passlen1, MAX_PASSWORD_LENGTH);
+    passlen2 = MIN(passlen2, MAX_PASSWORD_LENGTH);
 
     if(doencrypt) {
       /* Save the lanman2 password and the NT md4 password. */
@@ -438,7 +464,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     }
     
     p += passlen1 + passlen2;
-    strcpy(user,p); p = skip_string(p,1);
+    fstrcpy(user,p); p = skip_string(p,1);
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     p,skip_string(p,1),skip_string(p,2)));
   }
@@ -591,7 +617,7 @@ int reply_chkpth(char *inbuf,char *outbuf)
  
   cnum = SVAL(inbuf,smb_tid);
   
-  strcpy(name,smb_buf(inbuf) + 1);
+  pstrcpy(name,smb_buf(inbuf) + 1);
   unix_convert(name,cnum,0,&bad_path);
 
   mode = SVAL(inbuf,smb_vwv0);
@@ -639,7 +665,7 @@ int reply_getatr(char *inbuf,char *outbuf)
  
   cnum = SVAL(inbuf,smb_tid);
 
-  strcpy(fname,smb_buf(inbuf) + 1);
+  pstrcpy(fname,smb_buf(inbuf) + 1);
   unix_convert(fname,cnum,0,&bad_path);
 
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
@@ -714,7 +740,7 @@ int reply_setatr(char *inbuf,char *outbuf)
  
   cnum = SVAL(inbuf,smb_tid);
   
-  strcpy(fname,smb_buf(inbuf) + 1);
+  pstrcpy(fname,smb_buf(inbuf) + 1);
   unix_convert(fname,cnum,0,&bad_path);
 
   mode = SVAL(inbuf,smb_vwv0);
@@ -825,8 +851,8 @@ int reply_search(char *inbuf,char *outbuf)
     {
       pstring dir2;
 
-      strcpy(directory,smb_buf(inbuf)+1);
-      strcpy(dir2,smb_buf(inbuf)+1);
+      pstrcpy(directory,smb_buf(inbuf)+1);
+      pstrcpy(dir2,smb_buf(inbuf)+1);
       unix_convert(directory,cnum,0,&bad_path);
       unix_format(dir2);
 
@@ -842,7 +868,7 @@ int reply_search(char *inbuf,char *outbuf)
       else
       {
         *p = 0;
-        strcpy(mask,p+1);
+        pstrcpy(mask,p+1);
       }
 
       p = strrchr(directory,'/');
@@ -876,7 +902,7 @@ int reply_search(char *inbuf,char *outbuf)
     if ((p = strrchr(mask,' ')))
       {
 	fstring ext;
-	strcpy(ext,p+1);
+	fstrcpy(ext,p+1);
 	*p = 0;
 	trim_string(mask,NULL," ");
 	strcat(mask,".");
@@ -898,7 +924,7 @@ int reply_search(char *inbuf,char *outbuf)
   if (!strchr(mask,'.') && strlen(mask)>8)
     {
       fstring tmp;
-      strcpy(tmp,&mask[8]);
+      fstrcpy(tmp,&mask[8]);
       mask[8] = '.';
       mask[9] = 0;
       strcat(mask,tmp);
@@ -1078,7 +1104,7 @@ int reply_open(char *inbuf,char *outbuf)
 
   share_mode = SVAL(inbuf,smb_vwv0);
 
-  strcpy(fname,smb_buf(inbuf)+1);
+  pstrcpy(fname,smb_buf(inbuf)+1);
   unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
@@ -1168,7 +1194,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   /* XXXX we need to handle passed times, sattr and flags */
 
-  strcpy(fname,smb_buf(inbuf));
+  pstrcpy(fname,smb_buf(inbuf));
   unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
@@ -1281,7 +1307,7 @@ int reply_mknew(char *inbuf,char *outbuf)
   cnum = SVAL(inbuf,smb_tid);
 
   createmode = SVAL(inbuf,smb_vwv0);
-  strcpy(fname,smb_buf(inbuf)+1);
+  pstrcpy(fname,smb_buf(inbuf)+1);
   unix_convert(fname,cnum,0,&bad_path);
 
   if (createmode & aVOLID)
@@ -1359,7 +1385,8 @@ int reply_ctemp(char *inbuf,char *outbuf)
  
   cnum = SVAL(inbuf,smb_tid);
   createmode = SVAL(inbuf,smb_vwv0);
-  sprintf(fname,"%s/TMXXXXXX",smb_buf(inbuf)+1);
+  pstrcpy(fname,smb_buf(inbuf)+1);
+  strcat(fname,"/TMXXXXXX");
   unix_convert(fname,cnum,0,&bad_path);
   
   unixmode = unix_mode(cnum,createmode);
@@ -1455,7 +1482,7 @@ int reply_unlink(char *inbuf,char *outbuf)
   cnum = SVAL(inbuf,smb_tid);
   dirtype = SVAL(inbuf,smb_vwv0);
   
-  strcpy(name,smb_buf(inbuf) + 1);
+  pstrcpy(name,smb_buf(inbuf) + 1);
    
   DEBUG(3,("reply_unlink : %s\n",name));
    
@@ -1503,7 +1530,7 @@ int reply_unlink(char *inbuf,char *outbuf)
 	while ((dname = ReadDirName(dirptr)))
 	  {
 	    pstring fname;
-	    strcpy(fname,dname);
+	    pstrcpy(fname,dname);
 	    
 	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
 
@@ -2381,7 +2408,7 @@ int reply_printopen(char *inbuf,char *outbuf)
   {
     pstring s;
     char *p;
-    StrnCpy(s,smb_buf(inbuf)+1,sizeof(pstring)-1);
+    pstrcpy(s,smb_buf(inbuf)+1);
     p = s;
     while (*p)
       {
@@ -2583,7 +2610,7 @@ int reply_mkdir(char *inbuf,char *outbuf)
   int outsize,ret= -1;
   BOOL bad_path = False;
  
-  strcpy(directory,smb_buf(inbuf) + 1);
+  pstrcpy(directory,smb_buf(inbuf) + 1);
   cnum = SVAL(inbuf,smb_tid);
   unix_convert(directory,cnum,0,&bad_path);
   
@@ -2620,7 +2647,7 @@ int reply_rmdir(char *inbuf,char *outbuf)
   BOOL bad_path = False;
 
   cnum = SVAL(inbuf,smb_tid);
-  strcpy(directory,smb_buf(inbuf) + 1);
+  pstrcpy(directory,smb_buf(inbuf) + 1);
   unix_convert(directory,cnum,0,&bad_path);
   
   if (check_name(directory,cnum))
@@ -2668,7 +2695,7 @@ int reply_rmdir(char *inbuf,char *outbuf)
                           errno = ENOMEM;
                           break;
                         }
-                      strcpy(fullname, directory);
+                      pstrcpy(fullname, directory);
                       strcat(fullname, "/");
                       strcat(fullname, dname);
                       
@@ -2730,21 +2757,21 @@ static BOOL resolve_wildcards(char *name1,char *name2)
 
   if (!name1 || !name2) return(False);
   
-  strcpy(root1,name1);
-  strcpy(root2,name2);
+  fstrcpy(root1,name1);
+  fstrcpy(root2,name2);
   p = strrchr(root1,'.');
   if (p) {
     *p = 0;
-    strcpy(ext1,p+1);
+    fstrcpy(ext1,p+1);
   } else {
-    strcpy(ext1,"");    
+    fstrcpy(ext1,"");    
   }
   p = strrchr(root2,'.');
   if (p) {
     *p = 0;
-    strcpy(ext2,p+1);
+    fstrcpy(ext2,p+1);
   } else {
-    strcpy(ext2,"");    
+    fstrcpy(ext2,"");    
   }
 
   p = root1;
@@ -2818,8 +2845,8 @@ int reply_mv(char *inbuf,char *outbuf)
 
   cnum = SVAL(inbuf,smb_tid);
   
-  strcpy(name,smb_buf(inbuf) + 1);
-  strcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
+  pstrcpy(name,smb_buf(inbuf) + 1);
+  pstrcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
    
   DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
    
@@ -2933,14 +2960,14 @@ int reply_mv(char *inbuf,char *outbuf)
 	while ((dname = ReadDirName(dirptr)))
 	  {
 	    pstring fname;
-	    strcpy(fname,dname);
+	    pstrcpy(fname,dname);
 	    
 	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
 
 	    error = ERRnoaccess;
 	    sprintf(fname,"%s/%s",directory,dname);
 	    if (!can_rename(fname,cnum)) continue;
-	    strcpy(destname,newname);
+	    pstrcpy(destname,newname);
 
 	    if (!resolve_wildcards(fname,destname)) continue;
 
@@ -2986,7 +3013,7 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
   int fnum1,fnum2;
   pstring dest;
   
-  strcpy(dest,dest1);
+  pstrcpy(dest,dest1);
   if (target_is_directory) {
     char *p = strrchr(src,'/');
     if (p) 
@@ -3063,8 +3090,8 @@ int reply_copy(char *inbuf,char *outbuf)
 
   cnum = SVAL(inbuf,smb_tid);
   
-  strcpy(name,smb_buf(inbuf));
-  strcpy(newname,smb_buf(inbuf) + 1 + strlen(name));
+  pstrcpy(name,smb_buf(inbuf));
+  pstrcpy(newname,smb_buf(inbuf) + 1 + strlen(name));
    
   DEBUG(3,("reply_copy : %s -> %s\n",name,newname));
    
@@ -3133,7 +3160,7 @@ int reply_copy(char *inbuf,char *outbuf)
 	while ((dname = ReadDirName(dirptr)))
 	  {
 	    pstring fname;
-	    strcpy(fname,dname);
+	    pstrcpy(fname,dname);
 	    
 	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
 
@@ -3187,7 +3214,7 @@ int reply_setdir(char *inbuf,char *outbuf)
   if (!CAN_SETDIR(snum))
     return(ERROR(ERRDOS,ERRnoaccess));
   
-  strcpy(newdir,smb_buf(inbuf) + 1);
+  pstrcpy(newdir,smb_buf(inbuf) + 1);
   strlower(newdir);
   
   if (strlen(newdir) == 0)

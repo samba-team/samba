@@ -616,10 +616,10 @@ static int build_dgram(char *buf,struct packet_struct *p)
   ******************************************************************/
 void make_nmb_name(struct nmb_name *n,char *name,int type,char *this_scope)
 {
-  strcpy(n->name,name);
+  fstrcpy(n->name,name);
   strupper(n->name);
   n->name_type = type;
-  strcpy(n->scope,this_scope);
+  fstrcpy(n->scope,this_scope);
 }
 
 

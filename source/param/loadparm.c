@@ -1382,7 +1382,7 @@ static void add_to_file_list(char *fname)
 
   {
     pstring n2;
-    strcpy(n2,fname);
+    pstrcpy(n2,fname);
     standard_sub_basic(n2);
     f->modtime = file_modtime(n2);
   }
@@ -1402,7 +1402,7 @@ BOOL lp_file_list_changed(void)
     pstring n2;
     time_t mod_time;
 
-    strcpy(n2,f->name);
+    pstrcpy(n2,f->name);
     standard_sub_basic(n2);
 
     DEBUG(6,("file %s -> %s  last mod_time: %s\n",
@@ -1532,7 +1532,7 @@ handle the include operation
 static BOOL handle_include(char *pszParmValue,char **ptr)
 { 
   pstring fname;
-  strcpy(fname,pszParmValue);
+  pstrcpy(fname,pszParmValue);
 
   add_to_file_list(fname);
 
@@ -2025,7 +2025,7 @@ BOOL lp_load(char *pszFname,BOOL global_only)
   
   init_globals();
   
-  strcpy(n2,pszFname);
+  pstrcpy(n2,pszFname);
   standard_sub_basic(n2);
 
   /* We get sections first, so have to start 'behind' to make up */

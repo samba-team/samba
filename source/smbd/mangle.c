@@ -269,7 +269,7 @@ BOOL check_mangled_stack(char *s)
 	}
       if (check_extension && !strchr(mangled_stack[i],'.'))
 	{
-	  strcpy(tmpname,mangled_stack[i]);
+	  pstrcpy(tmpname,mangled_stack[i]);
 	  strcat(tmpname,extension);
 	  mangle_name_83(tmpname);
 	  if (strequal(tmpname,s))
@@ -303,7 +303,7 @@ static char *map_filename(char *s, /* This is null terminated */
   pstring pat;
 
   StrnCpy(pat, pattern, len);   /* Get pattern into a proper string! */
-  strcpy(matching_bit,"");      /* Match but no star gets this. */
+  pstrcpy(matching_bit,"");      /* Match but no star gets this. */
   pp = pat;                     /* Initialise the pointers. */
   sp = s;
   if ((len == 1) && (*pattern == '*')) {
@@ -442,7 +442,7 @@ static void do_fwd_mangled_map(char *s, char *MangledMap)
         continue;               /* Always check for the end. */
       }
       if (*end == '*') {
-        strcpy(np, match_string);
+        pstrcpy(np, match_string);
         np += strlen(match_string);
         end++;                  /* Skip the '*' */
         while ((*end)             /* Not the end of string. */
@@ -456,7 +456,7 @@ static void do_fwd_mangled_map(char *s, char *MangledMap)
       }
       *np++ = '\0';             /* NULL terminate it. */
       DEBUG(5,("End of second in pair '%s'\n", end));
-      strcpy(s, new_string);    /* Substitute with the new name. */
+      pstrcpy(s, new_string);    /* Substitute with the new name. */
       DEBUG(5,("s is now '%s'\n", s));
     }
     start = end;              /* Skip a bit which cannot be wanted */

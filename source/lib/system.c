@@ -311,8 +311,8 @@ int sys_rename(char *from, char *to)
     int rcode;  
     pstring zfrom, zto;
 
-    strcpy (zfrom, dos_to_unix (from, False));
-    strcpy (zto, dos_to_unix (to, False));
+    pstrcpy (zfrom, dos_to_unix (from, False));
+    pstrcpy (zto, dos_to_unix (to, False));
     rcode = rename (zfrom, zto);
 
     if (errno == EXDEV) 

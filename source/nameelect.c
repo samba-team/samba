@@ -182,7 +182,7 @@ void send_election(struct subnet_record *d, char *group,uint32 criterion,
   SIVAL(p,1,criterion);
   SIVAL(p,5,timeup*1000); /* ms - despite the spec */
   p += 13;
-  strcpy(p,name);
+  pstrcpy(p,name);
   strupper(p);
   p = skip_string(p,1);
   

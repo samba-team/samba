@@ -82,7 +82,7 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   SIVAL(p,0,servertype);
   p += 4;
   
-  strcpy(p, work->work_group);
+  pstrcpy(p, work->work_group);
   p = skip_string(p,1);
   
   if (cli_call_api(PTR_DIFF(p,param),0, 8,BUFFER_SIZE - SAFETY_MARGIN,
@@ -162,7 +162,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 	    name, work->work_group, inet_ntoa(ip)));
   
   strcpy(workgroup,work->work_group);
-  strcpy(desthost,name);
+  fstrcpy(desthost,name);
   dest_ip = ip;
   
   if (zero_ip(dest_ip)) return;

@@ -108,7 +108,7 @@ BOOL start_share_mode_mgmt(void)
 {
    pstring shmem_file_name;
    
-  strcpy(shmem_file_name,lp_lockdir());
+  pstrcpy(shmem_file_name,lp_lockdir());
   if (!directory_exist(shmem_file_name,NULL))
     mkdir(shmem_file_name,0755);
   trim_string(shmem_file_name,"","/");

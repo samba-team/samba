@@ -226,11 +226,11 @@ void dump_names(void)
   if(lp_wins_support() == False || wins_subnet == 0)
     return;
  
-  strcpy(fname,lp_lockdir());
+  fstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
   strcat(fname,"/");
   strcat(fname,WINS_LIST);
-  strcpy(fnamenew,fname);
+  fstrcpy(fnamenew,fname);
   strcat(fnamenew,".");
   
   f = fopen(fnamenew,"w");
@@ -306,7 +306,7 @@ void load_netbios_names(void)
 
   if (!d) return;
 
-  strcpy(fname,lp_lockdir());
+  fstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
   strcat(fname,"/");
   strcat(fname,WINS_LIST);
@@ -366,7 +366,7 @@ void load_netbios_names(void)
         nb_flags_str[strlen(nb_flags_str)-1] = '\0';
 
       /* netbios name. # divides the name from the type (hex): netbios#xx */
-      strcpy(name,name_str);
+      pstrcpy(name,name_str);
 
       p = strchr(name,'#');
 
