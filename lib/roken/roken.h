@@ -299,4 +299,6 @@ extern int opterr;
 extern const char *__progname;
 #endif
 
+void set_progname(char *argv0);
+
 #endif /*  __ROKEN_H__ */
