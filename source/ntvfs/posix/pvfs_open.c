@@ -23,6 +23,12 @@
 #include "include/includes.h"
 #include "vfs_posix.h"
 
+/*
+  create file handles with convenient numbers for sniffers
+*/
+#define PVFS_MIN_FILE_FNUM 0x100
+#define PVFS_MIN_NEW_FNUM 0x200
+#define PVFS_MIN_DIR_FNUM 0x1000
 
 /*
   find open file handle given fnum
@@ -114,7 +120,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
+	fnum = idr_get_new_above(pvfs->idtree_fnum, f, PVFS_MIN_DIR_FNUM, UINT16_MAX);
 	if (fnum == -1) {
 		talloc_free(f);
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
@@ -202,6 +208,13 @@ static int pvfs_fd_destructor(void *p)
 
 	idr_remove(f->pvfs->idtree_fnum, f->fnum);
 
+	if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (unlink(f->name->full_name) != 0) {
+			DEBUG(0,("pvfs_close: failed to delete '%s'\n", 
+				 f->name->full_name));
+		}
+	}
+
 	lck = odb_lock(f, f->pvfs->odb_context, &f->locking_key);
 	if (lck == NULL) {
 		DEBUG(0,("Unable to lock opendb for close\n"));
@@ -214,12 +227,7 @@ static int pvfs_fd_destructor(void *p)
 			 f->name->full_name, nt_errstr(status)));
 	}
 
-	if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
-		if (unlink(f->name->full_name) != 0) {
-			DEBUG(0,("pvfs_close: failed to delete '%s'\n", 
-				 f->name->full_name));
-		}
-	}
+	talloc_free(lck);
 
 	return 0;
 }
@@ -280,7 +288,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
+	fnum = idr_get_new_above(pvfs->idtree_fnum, f, PVFS_MIN_NEW_FNUM, UINT16_MAX);
 	if (fnum == -1) {
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
@@ -498,7 +506,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* allocate a fnum */
-	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
+	fnum = idr_get_new_above(pvfs->idtree_fnum, f, PVFS_MIN_FILE_FNUM, UINT16_MAX);
 	if (fnum == -1) {
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
