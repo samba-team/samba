@@ -1615,6 +1615,7 @@ void samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO *r_u, prs_struct
 	}
 
 	prs_align(ps);
+	prs_align(ps);
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
@@ -3688,10 +3689,17 @@ void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 	prs_uint32("num_rids1", ps, depth, &(r_u->num_rids1));
 	prs_uint32("ptr_rids ", ps, depth, &(r_u->ptr_rids ));
-	prs_uint32("num_rids2", ps, depth, &(r_u->num_rids2));
 
-	if (r_u->ptr_rids != 0 && r_u->num_rids1 != 0)
+	if (r_u->ptr_rids != 0)
 	{
+		prs_uint32("num_rids2", ps, depth, &(r_u->num_rids2));
+
+		if (r_u->num_rids2 != r_u->num_rids1)
+		{
+			/* RPC fault */
+			return;
+		}
+
 		for (i = 0; i < r_u->num_rids2; i++)
 		{
 			prs_grow(ps);
@@ -3702,10 +3710,17 @@ void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 	prs_uint32("num_types1", ps, depth, &(r_u->num_types1));
 	prs_uint32("ptr_types ", ps, depth, &(r_u->ptr_types ));
-	prs_uint32("num_types2", ps, depth, &(r_u->num_types2));
 
-	if (r_u->ptr_types != 0 && r_u->num_types1 != 0)
+	if (r_u->ptr_types != 0)
 	{
+		prs_uint32("num_types2", ps, depth, &(r_u->num_types2));
+
+		if (r_u->num_types2 != r_u->num_types1)
+		{
+			/* RPC fault */
+			return;
+		}
+
 		for (i = 0; i < r_u->num_types2; i++)
 		{
 			prs_grow(ps);
