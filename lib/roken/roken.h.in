@@ -320,6 +320,8 @@ int roken_vconcat (char *s, size_t len, va_list args);
 
 size_t roken_vmconcat (char **s, size_t max_len, va_list args);
 
+int issuid(void);
+
 #ifndef HAVE_STRUCT_WINSIZE
 struct winsize {
 	unsigned short ws_row, ws_col;
