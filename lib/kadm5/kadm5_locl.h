@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -88,6 +88,19 @@ typedef struct kadm5_common_context {
     void *data;
 }kadm5_common_context;
 
+typedef struct kadm5_log_peer {
+    int fd;
+    char *name;
+    krb5_auth_context ac;
+    struct kadm5_log_peer *next;
+} kadm5_log_peer;
+
+typedef struct kadm5_log_context {
+    char *log_file;
+    int log_fd;
+    u_int32_t version;
+} kadm5_log_context;
+
 typedef struct kadm5_server_context {
     krb5_context context;
     krb5_boolean my_context;
@@ -97,6 +110,7 @@ typedef struct kadm5_server_context {
     krb5_principal caller;
     unsigned acl_flags;
     char *acl_file;
+    kadm5_log_context log_context;
 }kadm5_server_context;
 
 typedef struct kadm5_client_context {
@@ -185,5 +199,68 @@ kadm5_ret_t
 _kadm5_string_to_privs __P((
 	const char *s,
 	u_int32_t* privs));
+
+kadm5_ret_t
+kadm5_log_init (kadm5_server_context *context);
+
+kadm5_ret_t
+kadm5_log_create (kadm5_server_context *context,
+		  hdb_entry *ent);
+
+kadm5_ret_t
+kadm5_log_delete (kadm5_server_context *context,
+		  krb5_principal princ);
+
+kadm5_ret_t
+kadm5_log_rename (kadm5_server_context *context,
+		  krb5_principal source,
+		  hdb_entry *ent);
+
+kadm5_ret_t
+kadm5_log_modify (kadm5_server_context *context,
+		  hdb_entry *ent,
+		  u_int32_t mask);
+
+kadm5_ret_t
+kadm5_log_end (kadm5_server_context *context);
+
+kadm5_ret_t
+kadm5_log_foreach (kadm5_server_context *context,
+		   void (*func)(u_int32_t ver,
+				time_t timestamp,
+				enum kadm_ops op,
+				u_int32_t len,
+				krb5_storage *sp));
+
+kadm5_ret_t
+kadm5_log_replay_create (kadm5_server_context *context,
+			 u_int32_t ver,
+			 u_int32_t len,
+			 krb5_storage *sp);
+
+kadm5_ret_t
+kadm5_log_replay_delete (kadm5_server_context *context,
+			 u_int32_t ver,
+			 u_int32_t len,
+			 krb5_storage *sp);
+
+kadm5_ret_t
+kadm5_log_replay_rename (kadm5_server_context *context,
+			 u_int32_t ver,
+			 u_int32_t len,
+			 krb5_storage *sp);
+
+kadm5_ret_t
+kadm5_log_replay_modify (kadm5_server_context *context,
+			 u_int32_t ver,
+			 u_int32_t len,
+			 krb5_storage *sp);
+
+kadm5_ret_t
+kadm5_log_replay (kadm5_server_context *context,
+		  enum kadm_ops op,
+		  u_int32_t ver,
+		  u_int32_t len,
+		  krb5_storage *sp);
 
 #endif /* __KADM5_LOCL_H__ */
