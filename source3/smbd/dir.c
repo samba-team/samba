@@ -627,8 +627,8 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 			see masktest for a demo
 		*/
 		if ((strcmp(mask,"*.*") == 0) ||
-				mask_match(filename,mask,False) ||
-				mangle_mask_match(conn,filename,mask)) {
+		    mask_match(filename,mask,False) ||
+		    mangle_mask_match(conn,filename,mask)) {
 			if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
 				continue;
 
