@@ -715,7 +715,7 @@ sub ParseUnionPush($)
 			pidl "\tcase $el->{CASE}:\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPushBuffer($el->{DATA}, "r->", "ndr_flags");
+			ParseElementPushBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
 		}
 		pidl "\tbreak;\n\n";
 	}
