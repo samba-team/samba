@@ -35,6 +35,9 @@ static state_table states[] = {
 #ifdef XOVER
 	{trans,	"xover", 0,  0,	 pop_xover,  {trans, trans}},
 #endif
+#ifdef XDELE
+        {trans,  "xdele", 1,  2,  pop_xdele,   {trans, trans}},
+#endif
         {(state) 0,  NULL,   0,  0,  NULL,       {halt,  halt}},
 };
 

@@ -18,6 +18,7 @@
 #include <config.h>
 #define UIDL
 #define XOVER
+#define XDELE
 #define DEBUG
 #define RETURN_PATH_HANDLING
 #endif
@@ -317,6 +318,9 @@ int pop_uidl(POP *p);
 #endif
 #ifdef XOVER
 int pop_xover(POP *p);
+#endif
+#ifdef XDELE
+int pop_xdele(POP *p);
 #endif
 int pop_help(POP *p);
 state_table *pop_get_command(POP *p, char *mp);
