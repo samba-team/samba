@@ -311,7 +311,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		  0,
 		  0x30, /* ?? */
 		  neg_flags,
-		  cryptkey, sizeof(cryptkey),
+		  cryptkey, 8,
 		  0, 0, 0,
 		  0x3000); /* ?? */
 
