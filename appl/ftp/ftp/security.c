@@ -608,25 +608,17 @@ sec_prot(int argc, char **argv)
 {
     int level = -1;
 
-    if(argc != 2){
-	printf("usage: %s (clear | safe | confidential | private)\n",
-	       argv[0]);
-	code = -1;
-	return;
-    }
-    if(!sec_complete){
+    if(argc < 2 || argc > 3)
+	goto usage;
+    if(!sec_complete) {
 	printf("No security data exchange has taken place.\n");
 	code = -1;
 	return;
     }
-    level = name_to_level(argv[1]);
+    level = name_to_level(argv[argc - 1]);
     
-    if(level == -1){
-	printf("usage: %s (clear | safe | confidential | private)\n",
-	       argv[0]);
-	code = -1;
-	return;
-    }
+    if(level == -1)
+	goto usage;
     
     if((*mech->check_prot)(app_data, level)) {
 	printf("%s does not implement %s protection.\n", 
@@ -635,11 +627,22 @@ sec_prot(int argc, char **argv)
 	return;
     }
     
-    if(sec_prot_internal(level) < 0){
-	code = -1;
-	return;
-    }
+    if(argc == 2 || strcasecmp(argv[1], "data") == 0) {
+	if(sec_prot_internal(level) < 0){
+	    code = -1;
+	    return;
+	}
+    } else if(strcasecmp(argv[1], "command") == 0)
+	command_prot = level;
+    else
+	goto usage;
     code = 0;
+    return;
+ usage:
+    printf("usage: %s (command | data) "
+	   "(clear | safe | confidential | private)\n",
+	   argv[0]);
+    code = -1;
 }
 
 static enum protection_level request_data_prot;
