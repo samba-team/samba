@@ -401,7 +401,7 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 ######################################################################
 # now the rules...
 ######################################################################
-all : CHECK include/proto.h $(SPROGS) $(PROGS) $(SHLIBS)
+all : CHECK include/proto.h $(SPROGS) $(PROGS) $(SHLIBS) nsswitch
 
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
@@ -641,7 +641,7 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 install: installbin installman installscripts installswat
 
 installdirs:
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
+	-$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
 	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR)
 
 installservers: all installdirs
