@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,6 +36,10 @@
 
 RCSID("$Id$");
 
+static krb5_error_code _warnerr(krb5_context context, int do_errtext, 
+	 krb5_error_code code, int level, const char *fmt, va_list ap)
+	__attribute__((__format__(__printf__, 5, 0)));
+	
 static krb5_error_code
 _warnerr(krb5_context context, int do_errtext, 
 	 krb5_error_code code, int level, const char *fmt, va_list ap)
