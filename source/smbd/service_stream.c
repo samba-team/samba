@@ -97,10 +97,10 @@ static void stream_new_connection(struct event_context *ev,
 
 	srv_conn->private       = stream_socket->private;
 	srv_conn->model_ops     = stream_socket->model_ops;
-	srv_conn->event.ctx	= ev;
 	srv_conn->socket	= sock;
 	srv_conn->server_id	= server_id;
 	srv_conn->ops           = stream_socket->ops;
+	srv_conn->event.ctx	= ev;
 	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
 					       EVENT_FD_READ, 
 					       stream_io_handler, srv_conn);
