@@ -1307,7 +1307,13 @@ with error %s.\n", desthost, cli_errstr(cli) ));
 			return False;
 		}
 
-		cli_shutdown(cli);
+		/*
+		 * We need to close the connection here but can't call cli_shutdown as
+		 * will free an allocated cli struct. cli_close_connection was invented
+		 * for this purpose. JRA. Based on work by "Kim R. Pedersen" <krp@filanet.dk>.
+		 */
+
+		cli_close_connection(cli);
 
 		if (!cli_initialise(cli) ||
 				!cli_connect(cli, desthost, pdest_ip) ||
