@@ -44,7 +44,7 @@ krb_authenticate(POP *p, struct sockaddr_in *addr)
                 krb_get_err_text(auth));
         pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, 
                 kdata.pname, kdata.pinst, kdata.prealm, krb_get_err_text(auth));
-        exit(-1);
+        exit (1);
     }
 
 #ifdef DEBUG
@@ -118,7 +118,7 @@ pop_init(POP *p,int argcount,char **argmessage)
                     pop_log(p,POP_PRIORITY,
                         "Unable to open trace file \"%s\", err = %d",
                             optarg,errno);
-                    exit(-1);
+                    exit (1);
                 }
                 trace_file_name = optarg;
                 break;
@@ -143,7 +143,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     /*  Exit if bad options specified */
     if (errflag) {
         (void)fprintf(stderr,"Usage: %s [-d]\n",argmessage[0]);
-        exit(-1);
+        exit (1);
     }
 
     /*  Get the address and socket of the client to whom I am speaking */
@@ -151,7 +151,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     if (getpeername(sp,(struct sockaddr *)&cs,&len) < 0){
         pop_log(p,POP_PRIORITY,
             "Unable to obtain socket and address of client, err = %d",errno);
-        exit(-1);
+        exit (1);
     }
 
     /*  Save the dotted decimal form of the client's IP address 
@@ -208,14 +208,14 @@ pop_init(POP *p,int argcount,char **argmessage)
     if ((p->input = fdopen(sp,"r")) == NULL){
         pop_log(p,POP_PRIORITY,
             "Unable to open communication stream for input, err = %d",errno);
-        exit (-1);
+        exit (1);
     }
 
     /*  Create output file stream for TCP/IP communication */
     if ((p->output = fdopen(sp,"w")) == NULL){
         pop_log(p,POP_PRIORITY,
             "Unable to open communication stream for output, err = %d",errno);
-        exit (-1);
+        exit (1);
     }
 
     pop_log(p,POP_PRIORITY,
