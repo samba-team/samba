@@ -190,7 +190,7 @@ int main(int argc, const char *argv[])
 	int ret = 0;
 	int opt;
 	poptContext pc;
-	static char *term_code = "";
+	static const char *term_code = "";
 	static char *new_local_machine = NULL;
 	const char *cname;
 	const char *caddr;
@@ -202,6 +202,7 @@ int main(int argc, const char *argv[])
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
 		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
+		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{0,0,0,0}
 	};
 
