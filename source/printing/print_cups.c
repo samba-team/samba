@@ -1073,7 +1073,7 @@ cups_queue_pause(int snum)
 
         ret = 1;
 
-	if ((response = cupsDoRequest(http, request, "/admin")) != NULL)
+	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL)
 	{
 	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
 		DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
@@ -1164,7 +1164,7 @@ cups_queue_resume(int snum)
 
         ret = 1;
 
-	if ((response = cupsDoRequest(http, request, "/admin")) != NULL)
+	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL)
 	{
 	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
 		DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
