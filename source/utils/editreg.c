@@ -422,7 +422,7 @@ typedef struct sec_desc_s {
 #define SEC_DESC_NON 0
 #define SEC_DESC_RES 1
 #define SEC_DESC_OCU 2
-
+#define SEC_DESC_NBK 3
 struct key_sec_desc_s {
   struct key_sec_desc_s *prev, *next;
   int ref_cnt;
@@ -467,8 +467,8 @@ typedef struct hbin_sub_struct {
 
 typedef struct hbin_struct {
   DWORD HBIN_ID; /* hbin */
-  DWORD next_off;
   DWORD prev_off;
+  DWORD next_off;
   DWORD uk1;
   DWORD uk2;
   DWORD uk3;
@@ -594,6 +594,7 @@ struct regf_struct_s {
   REG_KEY *root;  /* Root of the tree for this file */
   int sk_count, sk_map_size;
   SK_MAP *sk_map;
+  SEC_DESC *def_sec_desc;
 };
 
 typedef struct regf_struct_s REGF;
@@ -1131,7 +1132,7 @@ REG_KEY *nt_create_reg_key1(char *name, REG_KEY *parent)
 /*
  * Convert a string of the form S-1-5-x[-y-z-r] to a SID
  */
-int strng_to_sid(DOM_SID **sid, char *sid_str)
+int string_to_sid(DOM_SID **sid, char *sid_str)
 {
   int i = 0, auth;
   char *lstr; 
@@ -1172,6 +1173,47 @@ int strng_to_sid(DOM_SID **sid, char *sid_str)
 }
 
 /*
+ * Create a default ACL
+ */
+ACL *nt_create_default_acl(REGF *regf)
+{
+  ACL *acl;
+
+  acl = (ACL *)malloc(sizeof(ACL));
+  if (!acl) goto error;
+
+  return acl;
+
+ error:
+  if (acl) nt_delete_acl(acl);
+}
+
+/*
+ * Create a default security descriptor. We pull in things from env
+ * if need be 
+ */
+SEC_DESC *nt_create_def_sec_desc(REGF *regf)
+{
+  SEC_DESC *tmp;
+
+  tmp = (SEC_DESC *)malloc(sizeof(SEC_DESC));
+  if (!tmp) return NULL;
+
+  tmp->rev = 1;
+  tmp->type = 0x8004;
+  if (!string_to_sid(&tmp->owner, "S-1-5-32-544")) goto error;
+  if (!string_to_sid(&tmp->group, "S-1-5-18")) goto error;
+  tmp->sacl = NULL;
+  tmp->dacl = nt_create_default_acl(regf);
+
+  return tmp;
+
+ error:
+  if (tmp) nt_delete_sec_desc(tmp);
+  return NULL;
+}
+
+/*
  * We will implement inheritence that is based on what the parent's SEC_DESC
  * says, but the Owner and Group SIDs can be overwridden from the command line
  * and additional ACEs can be applied from the command line etc.
@@ -1191,6 +1233,13 @@ KEY_SEC_DESC *nt_create_init_sec(REGF *regf)
 {
   KEY_SEC_DESC *tsec = NULL;
   
+  tsec = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+  if (!tsec) return NULL;
+
+  tsec->ref_cnt = 1;
+  tsec->state = SEC_DESC_NBK;
+
+  tsec->sec_desc = regf->def_sec_desc;
 
   return tsec;
 }
@@ -1727,6 +1776,8 @@ ACL *dup_acl(REG_ACL *acl)
   tmp->num_aces = num_aces;
   tmp->refcnt = 1;
   tmp->rev = SVAL(&acl->rev);
+  if (verbose) fprintf(stdout, "ACL: refcnt: %u, rev: %u\n", tmp->refcnt, 
+		       tmp->rev);
   ace = (REG_ACE *)&acl->aces;
   for (i=0; i<num_aces; i++) {
     tmp->aces[i] = dup_ace(ace);
@@ -1749,6 +1800,8 @@ SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
   
   tmp->rev = SVAL(&sec_desc->rev);
   tmp->type = SVAL(&sec_desc->type);
+  if (verbose) fprintf(stdout, "SEC_DESC Rev: %0X, Type: %0X\n", 
+		       tmp->rev, tmp->type);
   tmp->owner = dup_sid((DOM_SID *)((char *)sec_desc + IVAL(&sec_desc->owner_off)));
   if (!tmp->owner) {
     free(tmp);
@@ -2006,7 +2059,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size, REG_KEY *parent)
   assert(size < 0);
 
   count = SVAL(&lf_hdr->key_count);
-
+  if (verbose) fprintf(stdout, "Key Count: %u\n", count);
   if (count <= 0) return NULL;
 
   /* Now, we should allocate a KEY_LIST struct and fill it in ... */
@@ -2023,6 +2076,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size, REG_KEY *parent)
     NK_HDR *nk_hdr;
 
     nk_off = IVAL(&lf_hdr->hr[i].nk_off);
+    if (verbose) fprintf(stdout, "NK Offset: %0X\n", nk_off);
     nk_hdr = (NK_HDR *)LOCN(regf->base, nk_off);
     tmp->keys[i] = nt_get_key_tree(regf, nk_hdr, BLK_SIZE(nk_hdr), parent);
     if (!tmp->keys[i]) {
@@ -2114,6 +2168,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
 
     clsnam_off = IVAL(&nk_hdr->clsnam_off);
     clsnamep = LOCN(regf->base, clsnam_off);
+    if (verbose) fprintf(stdout, "Class Name Offset: %0X\n", clsnam_off);
  
     bzero(cls_name, clsname_len);
     uni_to_ascii(clsnamep, cls_name, sizeof(cls_name), clsname_len);
@@ -2140,8 +2195,9 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
 
   own_off = IVAL(&nk_hdr->own_off);
   own = (REG_KEY *)LOCN(regf->base, own_off);
+  if (verbose) fprintf(stdout, "Owner Offset: %0X\n", own_off);
 
-  if (verbose) fprintf(stdout, "  Owner offset: %0X, Our Offset: %0X\n", 
+  if (verbose) fprintf(stdout, "  Owner locn: %0X, Our locn: %0X\n", 
 		       (unsigned int)own, (unsigned int)nk_hdr);
 
   /* 
@@ -2156,11 +2212,12 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
    */
 
   val_count = IVAL(&nk_hdr->val_cnt);
-
+  if (verbose) fprintf(stdout, "Val Count: %d\n", val_count);
   if (val_count) {
 
     val_off = IVAL(&nk_hdr->val_off);
     vl = (VL_TYPE *)LOCN(regf->base, val_off);
+    if (verbose) fprintf(stdout, "Val List Offset: %0X\n", val_off);
 
     tmp->values = process_vl(regf, *vl, val_count, BLK_SIZE(vl));
     if (!tmp->values) {
@@ -2175,6 +2232,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
 
   sk_off = IVAL(&nk_hdr->sk_off);
   sk_hdr = (SK_HDR *)LOCN(regf->base, sk_off);
+  if (verbose) fprintf(stdout, "SK Offset: %0X\n", sk_off);
 
   if (sk_off != -1) {
 
@@ -2183,6 +2241,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
   } 
 
   lf_off = IVAL(&nk_hdr->lf_off);
+  if (verbose) fprintf(stdout, "SubKey list offset: %0X\n", lf_off);
 
   /*
    * No more subkeys if lf_off == -1
@@ -2257,7 +2316,21 @@ int nt_load_registry(REGF *regf)
    * Get a pointer to the first key from the hreg_hdr
    */
 
+  if (verbose) fprintf(stdout, "First Key: %0X\n",
+		       IVAL(&regf_hdr->first_key));
+
   first_key = (NK_HDR *)LOCN(regf->base, IVAL(&regf_hdr->first_key));
+  if (verbose) fprintf(stdout, "First Key Offset: %0X\n", 
+		       IVAL(&regf_hdr->first_key));
+
+  if (verbose) fprintf(stdout, "Data Block Size: %d\n",
+		       IVAL(&regf_hdr->dblk_size));
+
+  if (verbose) fprintf(stdout, "Offset to next hbin block: %0X\n",
+		       IVAL(&hbin_hdr->next_off));
+
+  if (verbose) fprintf(stdout, "HBIN block size: %0X\n",
+		       IVAL(&hbin_hdr->blk_size));
 
   /*
    * Now, get the registry tree by processing that NK recursively
@@ -2280,7 +2353,13 @@ int nt_load_registry(REGF *regf)
 }
 
 /*
- * Story the registry in the output file
+ * Store the registry in the output file
+ * We write out the header and then each of the keys etc into the file
+ * We have to flatten the data structure ...
+ *
+ * The structures are stored in a breadth-first fashion, with all records
+ * aligned on 8-byte boundaries, with sub-keys and values layed down before
+ * the lists that contain them. SK records are layed down first, however.
  */
 int nt_store_registry(REGF *regf)
 {
