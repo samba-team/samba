@@ -39,18 +39,17 @@ static REG_KEY *cmd_set(REG_KEY *cur, int argc, char **argv)
 
 static REG_KEY *cmd_ck(REG_KEY *cur, int argc, char **argv)
 { 
-	REG_KEY *new;
+	REG_KEY *new = NULL;
 	WERROR error;
 	if(argc < 2) {
 		new = cur;
 	} else {
 		error = reg_open_key(cur, argv[1], &new);
 		if(!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Error opening specified key\n"));
+			DEBUG(0, ("Error opening specified key: %s\n", win_errstr(error)));
+			return NULL;
 		}
-	}
-	
-	if(!new) new = cur;
+	} 
 
 	printf("Current path is: %s\n", reg_key_get_path(new));
 	
