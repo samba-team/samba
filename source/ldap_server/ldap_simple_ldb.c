@@ -470,12 +470,12 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 
 	if (count == 1) {
 		DEBUG(10,("sldb_Compare: matched\n"));
-		result = 0;
+		result = 6;
 		errstr = NULL;
 	} else if (count == 0) {
-		result = 32;
-		errstr = talloc_strdup(compare_r, ldb_errstring(samdb->ldb));
-		DEBUG(10,("sldb_Compare: no results: %s\n", errstr));
+		DEBUG(10,("sldb_Compare: doesn't matched\n"));
+		result = 5;
+		errstr = NULL;
 	} else if (count > 1) {
 		result = 80;
 		errstr = talloc_strdup(compare_r, "too many objects match");
