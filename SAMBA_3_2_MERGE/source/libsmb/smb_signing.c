@@ -89,18 +89,6 @@ static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
  SMB signing - Common code for 'real' implementations
 ************************************************************/
 
-static BOOL set_smb_signing_real_common(struct smb_sign_info *si)
-{
-	if (si->mandatory_signing) {
-		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
-	}
-
-	si->doing_signing = True;
-	DEBUG(5, ("SMB signing enabled!\n"));
-
-	return True;
-}
-
 static void mark_packet_signed(char *outbuf)
 {
 	uint16 flags2;
@@ -113,7 +101,7 @@ static void mark_packet_signed(char *outbuf)
  SMB signing - NULL implementation - calculate a MAC to send.
 ************************************************************/
 
-static void null_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
+static void null_sign_outgoing_message(char *outbuf, struct smb_sign_info_x *si)
 {
 	/* we can't zero out the sig, as we might be trying to send a
 	   session request - which is NBT-level, not SMB level and doesn't
@@ -125,7 +113,7 @@ static void null_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - NULL implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL null_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
+static BOOL null_check_incoming_message(char *inbuf, struct smb_sign_info_x *si, BOOL must_be_ok)
 {
 	return True;
 }
@@ -134,7 +122,7 @@ static BOOL null_check_incoming_message(char *inbuf, struct smb_sign_info *si, B
  SMB signing - NULL implementation - free signing context
 ************************************************************/
 
-static void null_free_signing_context(struct smb_sign_info *si)
+static void null_free_signing_context(struct smb_sign_info_x *si)
 {
 	return;
 }
@@ -146,7 +134,7 @@ static void null_free_signing_context(struct smb_sign_info *si)
        shut down a real signing mechanism
 */
 
-static BOOL null_set_signing(struct smb_sign_info *si)
+static BOOL null_set_signing(struct smb_sign_info_x *si)
 {
 	si->signing_context = NULL;
 	
@@ -161,7 +149,7 @@ static BOOL null_set_signing(struct smb_sign_info *si)
  * Free the signing context
  */
  
-static void free_signing_context(struct smb_sign_info *si)
+static void free_signing_context(struct smb_sign_info_x *si)
 {
 	if (si->free_signing_context) {
 		si->free_signing_context(si);
@@ -172,7 +160,7 @@ static void free_signing_context(struct smb_sign_info *si)
 }
 
 
-static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good, uint32 seq, BOOL must_be_ok) 
+static BOOL signing_good(char *inbuf, struct smb_sign_info_x *si, BOOL good, uint32 seq, BOOL must_be_ok) 
 {
 	if (good) {
 
@@ -260,124 +248,11 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 	MD5Final(calc_md5_mac, &md5_ctx);
 }
 
-
-/***********************************************************
- SMB signing - Client implementation - send the MAC.
-************************************************************/
-
-static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
-{
-	unsigned char calc_md5_mac[16];
-	struct smb_basic_signing_context *data = si->signing_context;
-	uint32 send_seq_num;
-
-	if (!si->doing_signing)
-		return;
-
-	/* JRA Paranioa test - we should be able to get rid of this... */
-	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(1, ("client_sign_outgoing_message: Logic error. Can't check signature on short packet! smb_len = %u\n",
-					smb_len(outbuf) ));
-		abort();
-	}
-
-	/* mark the packet as signed - BEFORE we sign it...*/
-	mark_packet_signed(outbuf);
-
-	if (data->trans_info)
-		send_seq_num = data->trans_info->send_seq_num;
-	else
-		send_seq_num = data->send_seq_num;
-
-	simple_packet_signature(data, (const unsigned char *)outbuf, send_seq_num, calc_md5_mac);
-
-	DEBUG(10, ("client_sign_outgoing_message: sent SMB signature of\n"));
-	dump_data(10, (const char *)calc_md5_mac, 8);
-
-	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
-
-/*	cli->outbuf[smb_ss_field+2]=0; 
-	Uncomment this to test if the remote server actually verifies signatures...*/
-
-	if (data->trans_info)
-		return;
-
-	data->send_seq_num++;
-	store_sequence_for_reply(&data->outstanding_packet_list, 
-				 SVAL(outbuf,smb_mid), data->send_seq_num);
-	data->send_seq_num++;
-}
-
-/***********************************************************
- SMB signing - Client implementation - check a MAC sent by server.
-************************************************************/
-
-static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
-{
-	BOOL good;
-	uint32 reply_seq_number;
-	uint32 saved_seq;
-	unsigned char calc_md5_mac[16];
-	unsigned char *server_sent_mac;
-
-	struct smb_basic_signing_context *data = si->signing_context;
-
-	if (!si->doing_signing)
-		return True;
-
-	if (smb_len(inbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(1, ("client_check_incoming_message: Can't check signature on short packet! smb_len = %u\n", smb_len(inbuf)));
-		return False;
-	}
-
-	if (data->trans_info) {
-		reply_seq_number = data->trans_info->reply_seq_num;
-	} else if (!get_sequence_for_reply(&data->outstanding_packet_list, 
-				    SVAL(inbuf, smb_mid), &reply_seq_number)) {
-		DEBUG(1, ("client_check_incoming_message: failed to get sequence number %u for reply.\n",
-					(unsigned int) SVAL(inbuf, smb_mid) ));
-		return False;
-	}
-
-	saved_seq = reply_seq_number;
-	simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number, calc_md5_mac);
-
-	server_sent_mac = (unsigned char *)&inbuf[smb_ss_field];
-	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
-	
-	if (!good) {
-		DEBUG(5, ("client_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
-		dump_data(5, (const char *)calc_md5_mac, 8);
-		
-		DEBUG(5, ("client_check_incoming_message: BAD SIG: got SMB signature of\n"));
-		dump_data(5, (const char *)server_sent_mac, 8);
-#if 1 /* JRATEST */
-		{
-			int i;
-			reply_seq_number -= 5;
-			for (i = 0; i < 10; i++, reply_seq_number++) {
-				simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number, calc_md5_mac);
-				if (memcmp(server_sent_mac, calc_md5_mac, 8) == 0) {
-					DEBUG(0,("client_check_incoming_message: out of seq. seq num %u matches. \
-We were expecting seq %u\n", reply_seq_number, saved_seq ));
-					break;
-				}
-			}
-		}
-#endif /* JRATEST */
-
-	} else {
-		DEBUG(10, ("client_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
-		dump_data(10, (const char *)server_sent_mac, 8);
-	}
-	return signing_good(inbuf, si, good, saved_seq, must_be_ok);
-}
-
 /***********************************************************
  SMB signing - Simple implementation - free signing context
 ************************************************************/
 
-static void simple_free_signing_context(struct smb_sign_info *si)
+static void simple_free_signing_context(struct smb_sign_info_x *si)
 {
 	struct smb_basic_signing_context *data = si->signing_context;
 	struct outstanding_packet_lookup *list = data->outstanding_packet_list;
@@ -402,7 +277,7 @@ static void simple_free_signing_context(struct smb_sign_info *si)
  SMB signing - TEMP implementation - calculate a MAC to send.
 ************************************************************/
 
-static void temp_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
+static void temp_sign_outgoing_message(char *outbuf, struct smb_sign_info_x *si)
 {
 	/* mark the packet as signed - BEFORE we sign it...*/
 	mark_packet_signed(outbuf);
@@ -417,7 +292,7 @@ static void temp_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - TEMP implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL temp_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL foo)
+static BOOL temp_check_incoming_message(char *inbuf, struct smb_sign_info_x *si, BOOL foo)
 {
 	return True;
 }
@@ -426,7 +301,7 @@ static BOOL temp_check_incoming_message(char *inbuf, struct smb_sign_info *si, B
  SMB signing - TEMP implementation - free signing context
 ************************************************************/
 
-static void temp_free_signing_context(struct smb_sign_info *si)
+static void temp_free_signing_context(struct smb_sign_info_x *si)
 {
 	return;
 }
@@ -435,7 +310,7 @@ static void temp_free_signing_context(struct smb_sign_info *si)
  SMB signing - Server implementation - send the MAC.
 ************************************************************/
 
-static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
+static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info_x *si)
 {
 	unsigned char calc_md5_mac[16];
 	struct smb_basic_signing_context *data = si->signing_context;
@@ -513,7 +388,7 @@ static BOOL is_oplock_break(char *inbuf)
  SMB signing - Server implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
+static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info_x *si, BOOL must_be_ok)
 {
 	BOOL good;
 	struct smb_basic_signing_context *data = si->signing_context;
@@ -594,7 +469,7 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
  SMB signing - server API's.
 ************************************************************/
 
-static struct smb_sign_info srv_sign_info = {
+static struct smb_sign_info_x srv_sign_info = {
 	null_sign_outgoing_message,
 	null_check_incoming_message,
 	null_free_signing_context,

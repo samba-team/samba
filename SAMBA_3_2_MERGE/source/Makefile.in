@@ -141,7 +141,6 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@
 
 BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
-BIN_PROGS = bin/smbclient@EXEEXT@
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
@@ -638,7 +637,7 @@ BASIC_OBJ = lib/util_str.o lib/debug.o lib/xfile.o lib/util.o \
             lib/util_file.o lib/interface.o lib/interfaces.o lib/ms_fnmatch.o \
             lib/util_sid.o lib/signal.o lib/genrand.o lib/md4.o lib/crc32.o \
             intl/lang_tdb.o lib/dummysmbd.o lib/clobber.o lib/smbrun.o \
-            lib/util_sec.o
+            lib/util_sec.o libsmb/smb_signing.o
 
 NSSWITCH_OBJ = nsswitch/wb_client.o $(WBCOMMON_OBJ)
 
@@ -817,10 +816,8 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 
 basics: idl proto_exists
 
-#all : SHOWFLAGS basics $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-#	$(MODULES) @EXTRA_ALL_TARGETS@
-
-all: SHOWFLAGS basics $(BIN_PROGS)
+all: SHOWFLAGS basics $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
+	$(MODULES) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
