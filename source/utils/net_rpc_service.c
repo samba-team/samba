@@ -20,68 +20,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-
-/********************************************************************
-********************************************************************/
-
-static WERROR open_scmanager( struct cli_state *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hSCM )
-{
-	SVCCTL_Q_OPEN_SCMANAGER in;
-	SVCCTL_R_OPEN_SCMANAGER out;
-	WERROR result;
-	fstring server;
-	
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-	/* leave the database name NULL to get the default service db */
-
-	in.database = NULL;
-
-	/* set the server name */
-
-	if ( !(in.servername = TALLOC_P( mem_ctx, UNISTR2 )) )
-		return WERR_NOMEM;
-	fstr_sprintf( server, "\\\\%s", cli->desthost );
-	init_unistr2( in.servername, server, UNI_STR_TERMINATE );
-
-	in.access = SC_MANAGER_ALL_ACCESS;
-	
-	result = cli_svcctl_open_scm( cli, mem_ctx, &in, &out );
-	
-	if ( !W_ERROR_IS_OK( result ) )
-		return result;
-
-	memcpy( hSCM, &out.handle, sizeof(POLICY_HND) );
-	
-	return WERR_OK;
-}
-
-
-/********************************************************************
-********************************************************************/
-
-static WERROR close_service_handle( struct cli_state *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hService )
-{
-	SVCCTL_Q_CLOSE_SERVICE in;
-	SVCCTL_R_CLOSE_SERVICE out;
-	WERROR result;
-	
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
-	
-	result = cli_svcctl_close_service( cli, mem_ctx, &in, &out );
-	
-	if ( !W_ERROR_IS_OK( result ) )
-		return result;
-	
-	return WERR_OK;
-}
-
-
-
 /********************************************************************
 ********************************************************************/
 
@@ -97,12 +35,14 @@ static NTSTATUS rpc_service_list_internal( const DOM_SID *domain_sid, const char
 		return NT_STATUS_OK;
 	}
 
-	if ( !W_ERROR_IS_OK(result = open_scmanager( cli, mem_ctx, &hSCM )) ) {
+	if ( !W_ERROR_IS_OK(result = cli_svcctl_open_scm( cli, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  )) ) {
 		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
 	d_printf("Successfully opened Service Control Manager.\n");
+	
+	
 	
 	close_service_handle( cli, mem_ctx, &hSCM  );
 		
