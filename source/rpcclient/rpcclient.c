@@ -655,12 +655,10 @@ static void usage(char *pname)
 
 	/* Loop around accepting commands */
 	while(1) {
-		pstring prompt, cmd;
+		pstring prompt;
 		char *line;
 		uint32 result;
 
-		ZERO_STRUCT(cmd);
-		
 		slprintf(prompt, sizeof(prompt) - 1, "rpcclient $> ");
 
 		line = smb_readline(prompt, NULL, completion_fn);
