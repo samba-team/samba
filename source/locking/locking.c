@@ -275,8 +275,6 @@ static int open_read_only;
 
 BOOL locking_init(int read_only)
 {
-	BOOL check_self = False;
-
 	brl_init(read_only);
 
 	if (tdb)
@@ -295,10 +293,6 @@ BOOL locking_init(int read_only)
 	if (!posix_locking_init(read_only))
 		return False;
 
-	/* delete any dead locks */
-	if (!read_only)
-		tdb_traverse(tdb, delete_fn, &check_self);
-
 	open_read_only = read_only;
 
 	return True;
@@ -310,19 +304,9 @@ BOOL locking_init(int read_only)
 
 BOOL locking_end(void)
 {
-#if 0
-	BOOL check_self = True;
-#endif
 
 	brl_shutdown(open_read_only);
 	if (tdb) {
-
-		/* delete any dead locks */
-
-#if 0 /* Don't scan on close. */
-		if (!open_read_only)
-			tdb_traverse(tdb, delete_fn, &check_self);
-#endif
 
 		if (tdb_close(tdb) != 0)
 			return False;
@@ -397,28 +381,71 @@ void unlock_share_entry_fsp(files_struct *fsp)
 
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
-		    share_mode_entry **shares)
+		    share_mode_entry **pp_shares)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
-	int ret;
+	int num_share_modes;
+	share_mode_entry *shares = NULL;
 
-	*shares = NULL;
+	*pp_shares = NULL;
 
 	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
 	if (!dbuf.dptr)
 		return 0;
 
 	data = (struct locking_data *)dbuf.dptr;
-	ret = data->u.num_share_mode_entries;
-	if(ret)
-		*shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data), ret * sizeof(**shares));
+	num_share_modes = data->u.num_share_mode_entries;
+	if(num_share_modes) {
+		int i;
+		int del_count = 0;
+
+		shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data),	
+								num_share_modes * sizeof(share_mode_entry));
+
+		if (!shares) {
+			SAFE_FREE(dbuf.dptr);
+			return 0;
+		}
+
+		/*
+		 * Ensure that each entry has a real process attached.
+		 */
+
+		for (i = 0; i < num_share_modes; ) {
+			share_mode_entry *entry_p = &shares[i];
+			if (process_exists(entry_p->pid))
+				i++;
+			else {
+				memcpy( &shares[i], &shares[i+1],
+							sizeof(share_mode_entry) * (num_share_modes - i - 1));
+				num_share_modes--;
+				del_count++;
+			}
+		}
+
+		/* Did we delete any ? If so, re-store in tdb. */
+		if (del_count) {
+			data->u.num_share_mode_entries = num_share_modes;
+			
+			if (num_share_modes)
+				memcpy(dbuf.dptr + sizeof(*data), shares,
+						num_share_modes * sizeof(share_mode_entry));
+
+			/* The record has shrunk a bit */
+			dbuf.dsize -= del_count * sizeof(share_mode_entry);
+
+			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1) {
+				SAFE_FREE(shares);
+				SAFE_FREE(dbuf.dptr);
+				return 0;
+			}
+		}
+	}
+
 	SAFE_FREE(dbuf.dptr);
-
-	if (! *shares)
-		return 0;
-
-	return ret;
+	*pp_shares = shares;
+	return num_share_modes;
 }
 
 /*******************************************************************
