@@ -57,9 +57,9 @@ static NTSTATUS do_map_to_guest(NTSTATUS status, auth_serversupplied_info **serv
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.
 ****************************************************************************/
-static int add_signature(char *outbuf) 
+static int add_signature(char *outbuf, char *p)
 {
-	char *p = outbuf;
+	char *start = p;
 	fstring lanman;
 
 	snprintf( lanman, sizeof(lanman), "Samba %s", VERSION );
@@ -68,7 +68,7 @@ static int add_signature(char *outbuf)
 	p += srvstr_push(outbuf, p, lanman, -1, STR_TERMINATE);
 	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
 
-	return PTR_DIFF(p, outbuf);
+	return PTR_DIFF(p, start);
 }
 
 /****************************************************************************
@@ -91,7 +91,7 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 	memcpy(p, blob.data, blob.length);
 	p += blob.length;
 
-	p += add_signature( p );
+	p += add_signature( outbuf, p );
 
 	set_message_end(outbuf,p);
 
@@ -732,7 +732,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	set_message(outbuf,3,0,True);
 	if (Protocol >= PROTOCOL_NT1) {
 		char *p = smb_buf( outbuf );
-		p += add_signature( p );
+		p += add_signature( outbuf, p );
 		set_message_end( outbuf, p );
 		/* perhaps grab OS version here?? */
 	}
