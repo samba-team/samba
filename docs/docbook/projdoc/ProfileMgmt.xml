@@ -7,6 +7,30 @@
 <title>Desktop Profile Management</title>
 
 <sect1>
+<title>Features and Benefits</title>
+
+<para>
+Roaming Profiles are feared by some, hated by a few, loved by many, and a Godsend for
+some administrators.
+</para>
+
+<para>
+Roaming Profiles allow an administrator to make available a consistent user desktop
+as the user moves from one machine to another. This chapter provides much information
+regarding how to configure and manage Roaming Profiles.
+</para>
+
+<para>
+While Roaming Profiles might sound like nirvana to some, they are a real and tangible
+problem to others. In particular, users of mobile computing tools, where often there may not
+be a sustained network connection, are often better served by purely Local Profiles.
+This chapter provides information to help the Samba administrator to deal with those
+situations also.
+</para>
+
+</sect1>
+
+<sect1>
 <title>Roaming Profiles</title>
 
 <warning>
@@ -1170,6 +1194,106 @@ be either:
 	A group profile (really should be mandatory ie:unchangable)
 	</para></listitem>
 </itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Can NOT use Roaming Profiles</title>
+
+<para>
+<screen>
+> I dont want Roaming profile to be implemented, I just want to give users
+> local profiles only.
+...
+> Please help me I am totally lost with this error from past two days I tried
+> everything and googled around quite a bit but of no help. Please help me.
+
+
+Your choices are:
+        1. Local profiles
+                - I know of no registry keys that will allow auto-deletion
+                of LOCAL profiles on log out
+        2. Roaming profiles
+                - your options here are:
+                - can use auto-delete on logout option
+                        - requires a registry key change on workstation
+        a) Personal Roaming profiles
+                - should be preserved on a central server
+                - workstations 'cache' (store) a local copy
+                        - used in case the profile can not be downloaded
+                        at next logon
+        b) Group profiles
+                - loaded from a cetral place
+        c) Mandatory profiles
+                - can be personal or group
+                - can NOT be changed (except by an administrator
+
+A WinNT4/2K/XP profile can vary in size from 130KB to off the scale.
+Outlook PST files are most often part of the profile and can be many GB in
+size. On average (in a well controlled environment) roaming profie size of
+2MB is a good rule of thumb to use for planning purposes. In an
+undisciplined environment I have seen up to 2GB profiles. Users tend to
+complain when it take an hour to log onto a workstation but they harvest
+the fuits of folly (and ignorance).
+
+The point of all the above is to show that roaming profiles and good
+controls of how they can be changed as well as good discipline make up for
+a problem free site.
+
+PS: Microsoft's answer to the PST problem is to store all email in an MS
+Exchange Server back-end. But this is another story ...!
+
+So, having LOCAL profiles means:
+        a) If lots of users user each machine
+                - lot's of local disk storage needed for local profiles
+        b) Every workstation the user logs into has it's own profile
+                - can be very different from machine to machine
+
+On the other hand, having roaming profiles means:
+        a) The network administrator can control EVERY aspect of user
+           profiles
+        b) With the use of mandatory profiles - a drastic reduction
+           in network management overheads
+        c) User unhappiness about not being able to change their profiles
+           soon fades as  they get used to being able to work reliably
+
+But note:
+
+I have managed and installed MANY NT/2K networks and have NEVER found one
+where users who move from machine to machine are happy with local
+profiles. In the long run local profiles bite them.
+
+> When the client tries to logon to the PDC it looks for a profile to download
+> where do I put this default profile.
+
+Firstly, your samba server need to be configured as a domain controller.
+        server = user
+        os level = 32 (or more)
+        domain logons = Yes
+
+        Plus you need to have a NETLOGON share that is world readable.
+        It is a good idea to add a logon script to pre-set printer and
+        drive connections. There is also a facility for automatically
+        synchronizing the workstation time clock with that of the logon
+        server (another good thing to do).
+
+Note: To invoke auto-deletion of roaming profile from the local
+workstation cache (disk storage) you need to use the Group Policy Editor
+to create a file called NTConfig.POL with the appropriate entries. This
+file needs to be located in the NETLOGON share root directory.
+
+Oh, of course the windows clients need to be members of the domain.
+Workgroup machines do NOT do network logons - so they never see domain
+profiles.
+
+Secondly, for roaming profiles you need:
+
+        logon path = \\%N\profiles\%U   (with some such path)
+        logon drive = H:                (Z: is the default)
+
+        Plus you need a PROFILES share that is world writable.
+</screen>
+</para>
 
 </sect2>
 </sect1>
