@@ -1,3 +1,9 @@
+1999-05-08  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpcmd.y: rename getline -> ftpd_getline
+
+	* ftp/main.c (makeargv): fill in unused slots with NULL
+
 Thu Apr  8 15:06:40 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* ftpd/ftpd.c: remove definition of KRB_VERIFY_USER (moved to

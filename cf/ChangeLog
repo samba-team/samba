@@ -1,3 +1,7 @@
+1999-05-08  Assar Westerlund  <assar@sics.se>
+
+	* krb-find-db.m4: try with more header files than ndbm.h
+
 1999-04-19  Assar Westerlund  <assar@sics.se>
 
 	* test-package.m4: try to handle the case of --without-package

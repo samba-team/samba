@@ -1,3 +1,18 @@
+1999-05-08  Assar Westerlund  <assar@sics.se>
+
+	* xdbm.h: also try <db.h> with DB_DBM_HSEARCH == 1
+
+	* strnlen.c (strnlen): update prototype
+
+	* Makefile.am: strndup.c: add
+
+	* Makefile.in: strndup.c: add
+
+	* roken.h.in (strndup): add
+	(strnlen): update prototype
+
+	* strndup.c: new file
+
 Fri Apr 16 17:59:30 1999  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in: include strsep prototype if needed
