@@ -614,7 +614,7 @@ static void notify_string(struct spoolss_notify_msg *msg,
 
 	init_unistr2(&unistr, msg->notify.data, msg->len);
 
-	data->notify_data.data.length = msg->len;
+	data->notify_data.data.length = msg->len * 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, msg->len * 2);
 
 	if (!data->notify_data.data.string) {
@@ -651,10 +651,7 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 	if (!spoolss_io_system_time("", &ps, 0, &systime))
 		return;
 
-	/* Yuck - the smb_io_notify_info_data() function thinks
-	   everything is a string and does x*2 - 1 */
-
-	data->notify_data.data.length = (prs_offset(&ps) - 1) / 2;
+	data->notify_data.data.length = prs_offset(&ps);
 	data->notify_data.data.string =
 		talloc(mem_ctx, prs_offset(&ps));
 
