@@ -323,6 +323,18 @@ typedef struct lsa_policy_info
 	uint16 data3;
 	uint16 data4;
 	uint8 data5[8];
+
+#ifdef __INSURE__
+
+	/* To prevent the leakage of policy handles mallocate a bit of
+	   memory when a policy handle is created and free it when the
+	   handle is closed.  This should cause Insure to flag an error
+	   when policy handles are overwritten or fall out of scope without
+	   being freed. */
+
+	char *marker;
+#endif
+
 } POLICY_HND;
 
 /*

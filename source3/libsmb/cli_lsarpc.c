@@ -99,6 +99,9 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*pol = r.pol;
+#ifdef __INSURE__
+		pol->marker = malloc(1);
+#endif
 	}
 
  done:
@@ -160,6 +163,9 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*pol = r.pol;
+#ifdef __INSURE__
+		pol->marker = (char *)malloc(1);
+#endif
 	}
 
  done:
@@ -207,6 +213,9 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Return output parameters */
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
+#ifdef __INSURE__
+		SAFE_FREE(pol->marker);
+#endif
 		*pol = r.pol;
 	}
 
@@ -1052,7 +1061,10 @@ NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Fetch a DOMAIN sid. Does complete cli setup / teardown anonymously. */
+#if 0
+
+/** An example of how to use the routines in this file.  Fetch a DOMAIN
+    sid. Does complete cli setup / teardown anonymously. */
 
 BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid)
 {
@@ -1149,5 +1161,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 	cli_shutdown(&cli);
 	return ret;
 }
+
+#endif
 
 /** @} **/
