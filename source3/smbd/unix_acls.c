@@ -151,6 +151,7 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
   SEC_ACL *dacl = psd->dacl;
   BOOL all_aces_are_inherit_only = (is_directory ? True : False);
   int i;
+  enum SID_NAME_USE sid_type;
 
   *pmode = 0;
   *puser = (uid_t)-1;
@@ -184,20 +185,20 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
    * This may be a group chown only set.
    */
 
-  if(!validate_unix_sid( &owner_sid, &owner_rid, psd->owner_sid))
-    DEBUG(3,("unpack_nt_permissions: unable to validate owner sid.\n"));
-  else if(security_info_sent & OWNER_SECURITY_INFORMATION)
-    *puser = pdb_user_rid_to_uid(owner_rid);
+  if (security_info_sent & OWNER_SECURITY_INFORMATION) {
+    if (!sid_to_uid( &owner_sid, puser, &sid_type))
+      DEBUG(3,("unpack_nt_permissions: unable to validate owner sid.\n"));
+  }
 
   /*
    * Don't immediately fail if the group sid cannot be validated.
    * This may be an owner chown only set.
    */
 
-  if(!validate_unix_sid( &grp_sid, &grp_rid, psd->grp_sid))
-    DEBUG(3,("unpack_nt_permissions: unable to validate group sid.\n"));
-  else if(security_info_sent & GROUP_SECURITY_INFORMATION)
-    *pgrp = pdb_user_rid_to_gid(grp_rid);
+  if (security_info_sent & GROUP_SECURITY_INFORMATION) {
+    if (!sid_to_gid( &grp_sid, pgrp, &sid_type))
+      DEBUG(3,("unpack_nt_permissions: unable to validate group sid.\n"));
+  }
 
   /*
    * If no DACL then this is a chown only security descriptor.
