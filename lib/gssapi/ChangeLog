@@ -1,5 +1,10 @@
 2003-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss_acquire_cred.3: document gss_context_time
+	
+	* context_time.c: if lifetime of context have expired, set
+	time_rec to 0 and return GSS_S_CONTEXT_EXPIRED
+	
 	* gssapi.3: document [gssapi]correct_des3_mic
 	[gssapi]broken_des3_mic
 
