@@ -32,11 +32,25 @@ interface mgmt
 
 	/***********************/
 	/* Function 0x01       */
+
+	const int mgmt_stats_calls_in       = 0;
+	const int mgmt_stats_calls_out      = 1;
+	const int mgmt_stats_pkts_in        = 2;
+	const int mgmt_stats_pkts_out       = 3;
+	const int mgmt_stats_array_max_size = 4;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] uint32 statistics[*];
+	} mgmt_statistics;
+
 	void mgmt_inq_stats (
-		[in, out]   unsigned32              *count,
-		[out, size_is(*count)]  unsigned32  *statistics,
-		[out]       error_status_t          *status
+		[in]        uint32             max_count,
+		[in]        uint32             unknown,
+		[out]       mgmt_statistics        statistics,
+		[out]       error_status_t         status
 		);
+
 
 	/***********************/
 	/* Function 0x02       */
