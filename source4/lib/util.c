@@ -89,7 +89,7 @@ time_t file_modtime(const char *fname)
  Check if a directory exists.
 ********************************************************************/
 
-BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
+BOOL directory_exist(const char *dname,SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st2;
 	BOOL ret;
