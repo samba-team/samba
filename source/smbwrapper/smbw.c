@@ -1512,11 +1512,11 @@ struct kernel_stat {
 	unsigned long int st_size;
 	unsigned long int st_blksize;
 	unsigned long int st_blocks;
-	unsigned long int st_atime;
+	unsigned long int st_atime_;
 	unsigned long int __unused1;
-	unsigned long int st_mtime;
+	unsigned long int st_mtime_;
 	unsigned long int __unused2;
-	unsigned long int st_ctime;
+	unsigned long int st_ctime_;
 	unsigned long int __unused3;
 	unsigned long int __unused4;
 	unsigned long int __unused5;
@@ -1547,8 +1547,8 @@ struct kernel_stat {
 	st->st_size = kbuf->st_size;
 	st->st_blksize = kbuf->st_blksize;
 	st->st_blocks = kbuf->st_blocks;
-	st->st_atime = kbuf->st_atime;
-	st->st_mtime = kbuf->st_mtime;
-	st->st_ctime = kbuf->st_ctime;
+	st->st_atime = kbuf->st_atime_;
+	st->st_mtime = kbuf->st_mtime_;
+	st->st_ctime = kbuf->st_ctime_;
 }
 #endif
