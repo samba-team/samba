@@ -101,6 +101,7 @@ FLAGS1 = $(CFLAGS)	\
 		-Iinclude -I$(srcdir)/include                    \
 		-I$(srcdir)/ubiqx                                \
 		-I$(srcdir)/smbwrapper                           \
+		-I$(srcdir)/lib                                  \
 		$(CPPFLAGS)                                      \
 		-DLOGFILEBASE=\"$(LOGFILEBASE)\"                 \
 		-DSMBLOGFILE=\"$(SMBLOGFILE)\"                   \

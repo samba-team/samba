@@ -20,10 +20,24 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-extern int DEBUGLEVEL;
-
 #include "includes.h"
+#include "sma.h"
 
+
+/*******************************************************************
+ SMA stuff
+ ********************************************************************/
+
+static SMA_REGION *prs_sma_region = NULL;
+
+static void prs_sma_init(void)
+{
+	if (prs_sma_region)
+		return;
+
+	/* waste about 400k for sma... */
+	prs_sma_region = sma_alloc_region(16384, 24);
+}
 
 /*******************************************************************
 dump a prs to a file
@@ -164,12 +178,14 @@ BOOL prs_copy(prs_struct *ps, const prs_struct *from)
 /*******************************************************************
  allocate a memory buffer.  assume it's empty
  ********************************************************************/
-BOOL prs_alloc_data(prs_struct *buf, int size)
+static BOOL prs_alloc_data(prs_struct *buf, int size)
 {
+	prs_sma_init();
+
 	CHECK_STRUCT(buf);
 
 	buf->data_size = size;
-	buf->data = (char *)malloc(buf->data_size);
+	buf->data = sma_alloc(prs_sma_region, buf->data_size);
 
 	if (buf->data == NULL && size != 0)
 	{
@@ -281,7 +297,7 @@ void prs_struct_free(prs_struct **buf)
 
 	CHECK_STRUCT(*buf);
 	prs_free_data(*buf);	/* delete memory data */
-	free(*buf);		/* delete item */
+	safe_free(*buf);		/* delete item */
 	(*buf) = NULL;
 }
 
@@ -315,7 +331,9 @@ void prs_free_data(prs_struct *buf)
 	if (buf->data != NULL)
 	{
 		CHECK_STRUCT(buf);
-		safe_free(buf->data);	/* delete data in this structure */
+		/* delete data in this structure */
+		/* prs_sma_region should realy already be initialised */
+		sma_free(prs_sma_region, buf->data);
 		buf->data = NULL;
 	}
 	buf->data_size = 0;
@@ -327,6 +345,8 @@ void prs_free_data(prs_struct *buf)
 BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 {
 	char *new_data;
+
+	prs_sma_init();
 
 	CHECK_STRUCT(buf);
 
@@ -340,7 +360,7 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 		return True;
 	}
 
-	new_data = (char *)Realloc(buf->data, new_size);
+	new_data = sma_realloc(prs_sma_region, buf->data, new_size);
 
 	if (new_data != NULL)
 	{
@@ -629,8 +649,7 @@ BOOL prs_set_offset(prs_struct *ps, uint32 offset)
 
 void prs_mem_free(prs_struct *ps)
 {
-	safe_free(ps->data);
-	ps->data = NULL;
+	prs_free_data(ps);
 	ps->offset = 0;
 }
 
