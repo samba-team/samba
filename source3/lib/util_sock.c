@@ -186,30 +186,6 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 	return(ret);
 }
 
-/*******************************************************************
- checks if read data is outstanding.
- ********************************************************************/
-static int read_data_outstanding(int fd, unsigned int time_out)
-{
-	int selrtn;
-	fd_set fds;
-	struct timeval timeout;
-
-	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
-
-	timeout.tv_sec = (time_t) (time_out / 1000);
-	timeout.tv_usec = (long)(1000 * (time_out % 1000));
-
-	selrtn = sys_select_intr(fd + 1, &fds, NULL, NULL, &timeout);
-
-	if (selrtn <= 0)
-	{
-		return selrtn;
-	}
-	return FD_ISSET(fd, &fds) ? 1 : 0;
-}
-
 /****************************************************************************
  Read data from a socket with a timout in msec.
  mincount = if timeout, minimum to read before returning
@@ -217,7 +193,7 @@ static int read_data_outstanding(int fd, unsigned int time_out)
  time_out = timeout in milliseconds
 ****************************************************************************/
 
-static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out)
+ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out)
 {
 	fd_set fds;
 	int selrtn;
@@ -306,62 +282,6 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 	
 	/* Return the number we got */
 	return (ssize_t)nread;
-}
-
-/****************************************************************************
- Read data from a fd with a timout in msec.
- mincount = if timeout, minimum to read before returning
- maxcount = number to be read.
- time_out = timeout in milliseconds
-****************************************************************************/
-
-ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
-			  unsigned int time_out)
-{
-	ssize_t readret;
-	size_t nread = 0;
-	
-	/* just checking .... */
-	if (maxcnt <= 0)
-		return(0);
-	
-	/* Blocking read */
-	if (time_out <= 0) {
-		if (mincnt == 0) mincnt = maxcnt;
-		
-		while (nread < mincnt) {
-			readret = sys_read(fd, buf + nread, maxcnt - nread);
-			
-			if (readret <= 0)
-				return readret;
-			
-			nread += readret;
-		}
-		return((ssize_t)nread);
-	}
-	
-	/* Most difficult - timeout read */
-	/* If this is ever called on a disk file and 
-	   mincnt is greater then the filesize then
-	   system performance will suffer severely as 
-	   select always returns true on disk files */
-	
-	for (nread=0; nread < mincnt; ) {      
-		int selrtn = read_data_outstanding(fd, time_out);
-		
-		if(selrtn <= 0)
-			return selrtn;
-		
-		readret = sys_read(fd, buf+nread, maxcnt-nread);
-		
-		if (readret <= 0)
-			return readret;
-		
-		nread += readret;
-	}
-	
-	/* Return the number we got */
-	return((ssize_t)nread);
 }
 
 /****************************************************************************
