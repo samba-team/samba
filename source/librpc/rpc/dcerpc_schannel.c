@@ -362,6 +362,9 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 					     DCERPC_NETLOGON_NAME, 
 					     DCERPC_NETLOGON_UUID, 
 					     DCERPC_NETLOGON_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 
 	/*
