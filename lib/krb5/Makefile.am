@@ -16,6 +16,7 @@ TESTS =						\
 	store-test				\
 	parse-name-test				\
 	test_cc					\
+	test_config				\
 	test_time				\
 	name-45-test
 
