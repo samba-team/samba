@@ -901,8 +901,6 @@ tgs_rep2(KDC_REQ_BODY *b,
     Key *ekey;
     krb5_principal cp = NULL;
 
-    char *spn = NULL, *cpn = NULL;
-
     ret = krb5_decode_ap_req(context, &pa_data->padata_value, &ap_req);
     if(ret){
 	kdc_log(0, "Failed to decode AP-REQ: %s", 
@@ -964,6 +962,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     {
 	PrincipalName *s;
 	Realm r;
+	char *spn = NULL, *cpn = NULL;
 	hdb_entry *server = NULL, *client = NULL;
 
 	s = b->sname;
@@ -1028,7 +1027,6 @@ tgs_rep2(KDC_REQ_BODY *b,
     out:
 	free_AP_REQ(&ap_req);
 	free(spn);
-	krb5_free_principal(context, cp);
 	free(cpn);
 	    
 	if(server){
@@ -1051,6 +1049,7 @@ out2:
 		      sp,
 		      0,
 		      reply);
+    krb5_free_principal(context, cp);
     if (ticket) {
 	krb5_free_ticket(context, ticket);
 	free(ticket);
