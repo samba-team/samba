@@ -1,4 +1,4 @@
-              WHATS NEW IN Samba 2.0.4b
+              WHATS NEW IN Samba 2.0.4c
               =========================
 
 This is the latest stable release of Samba. This is the
@@ -87,6 +87,16 @@ Samba 2.0.4 is provided as :
 
 docs/textdocs/NT_Security.txt
 docs/htmldocs/NT_Security.html
+
+Changes in 2.0.4c
+-----------------
+
+1). smbmount for Linux systems has been re-written to use
+the libsmb code and clientutil.c is no longer used with it.
+2). A bug preventing directory opens using the NT SMB calls
+has been fixed.
+3). A related bug causing a file structure leak when directory
+opens were denied has been fixed.
 
 Changes in 2.0.4b
 -----------------
