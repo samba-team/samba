@@ -631,7 +631,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 /****************************************************************************
 send a qfileinfo call
 ****************************************************************************/
-BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata)
+BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutdata, uint32 *poutlen)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -639,9 +639,13 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdat
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
 
+	*poutdata = NULL;
+	*poutlen = 0;
+
 	/* if its a win95 server then fail this - win95 totally screws it
 	   up */
-	if (cli->win95) return False;
+	if (cli->win95)
+		return False;
 
 	param_len = 4;
 
@@ -665,7 +669,8 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdat
 		return False;
 	}
 
-	memcpy(outdata, rdata, data_len);
+	memdup(poutdata, data_len);
+	*poutlen = data_len;
 
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);
