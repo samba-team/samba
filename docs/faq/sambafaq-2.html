@@ -18,9 +18,10 @@
 <P>
 <A NAME="no_browse"></A> 
 </P>
-<P>*** Until the FAQ can be updated, please check the file:
-*** ftp://samba.anu.edu.au/pub/samba/BROWSING.txt
-*** for more information on browsing.</P>
+<P>See 
+<A HREF="ftp://samba.anu.edu.au/pub/samba/BROWSING.txt">BROWSING.txt</A>
+for more information on browsing.  Browsing.txt can also be found
+in the docs directory of the Samba source.</P>
 <P>If your GUI client does not permit you to select non-browsable
 servers, you may need to do so on the command line. For example, under
 Lan Manager you might connect to the above service as disk drive M:
@@ -30,14 +31,14 @@ thusly:</P>
 client to client - check your client's documentation.</P>
 
 
-<H2><A NAME="ss2.2">2.2 Some files that I KNOW are on the server doesn't show up when I</A>view the files from my client!</H2>
+<H2><A NAME="ss2.2">2.2 Some files that I KNOW are on the server doesn't show up when I view the files from my client! </A></H2>
 
 <P> 
 <A NAME="missing_files"></A> 
 </P>
 
 
-<H2><A NAME="ss2.3">2.3 Some files on the server show up with really wierd filenames when</A>I view the files from my client!</H2>
+<H2><A NAME="ss2.3">2.3 Some files on the server show up with really wierd filenames when I view the files from my client! </A></H2>
 
 <P> 
 <A NAME="strange_filenames"></A> 
@@ -81,7 +82,7 @@ Two of this FAQ for more ideas.</P>
 tests :-)     </P>
 
 
-<H2><A NAME="ss2.5">2.5 My client reports "cannot locate specified share name" or</A>similar</H2>
+<H2><A NAME="ss2.5">2.5 My client reports "cannot locate specified share name" or similar</A></H2>
 
 <P> 
 <A NAME="cant_see_share"></A> 
@@ -93,14 +94,14 @@ the name you gave.</P>
 trying to connect to (consult your system administrator). Assuming it
 exists and you specified it correctly (read your client's doco on how
 to specify a service name correctly), read on:</P>
-<P>* Many clients cannot accept or use service names longer than
-eight
-characters.
-* Many clients cannot accept or use service names containing
-spaces.
-* Some servers (not Samba though) are case sensitive with service
-names.
-* Some clients force service names into upper case.</P>
+<P>
+<UL>
+<LI> Many clients cannot accept or use service names longer than eight characters.</LI>
+<LI> Many clients cannot accept or use service names containing spaces.</LI>
+<LI> Some servers (not Samba though) are case sensitive with service names.</LI>
+<LI> Some clients force service names into upper case.</LI>
+</UL>
+</P>
 
 
 <H2><A NAME="ss2.6">2.6 My client reports "cannot find domain controller", "cannot log</A>on to the network" or similar </H2>
@@ -164,7 +165,8 @@ as a strictly temporary solution.</P>
 <P>In earlier Samba versions there were some difficulties with the very
 latest Microsoft products, particularly Excel 5 and Word for Windows
 6. These should have all been solved. If not then please let Andrew
-Tridgell know.</P>
+Tridgell know via email at 
+<A HREF="mailto:samba-bugs@anu.edu.au">samba-bugs@anu.edu.au</A>.</P>
 
 
 <H2><A NAME="ss2.9">2.9 My "server string" doesn't seem to be recognised</A></H2>
@@ -175,9 +177,9 @@ Tridgell know.</P>
 <P>my client reports the default setting, eg. "Samba 1.9.15p4", instead
 of what I have changed it to in the smb.conf file.</P>
 <P>You need to use the -C option in nmbd. The "server string" affects
-what smbd puts out and -C affects what nmbd puts out. In a future
-version these will probably be combined and -C will be removed, but
-for now use -C</P>
+what smbd puts out and -C affects what nmbd puts out. 
+Current versions of Samba (1.9.16p11 +) have combined these options into
+the "server string" field of smb.conf, -C for nmbd is now obsolete.</P>
 
 
 <H2><A NAME="ss2.10">2.10 My client reports "This server is not configured to list shared</A>resources" </H2>
