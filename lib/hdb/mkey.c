@@ -218,6 +218,8 @@ hdb_read_master_key(krb5_context context, const char *filename,
 
     off_t len;
 
+    *mkey = NULL;
+
     if(filename == NULL)
 	filename = HDB_DB_DIR "/m-key";
 
