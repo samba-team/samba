@@ -2672,7 +2672,7 @@ static uint32 rev_changeid(void)
 
 	get_process_uptime(&tv);
 	/* This value is in ms * 100 */
-	return (tv.tv_sec * 100000) + (tv.tv_usec / 10);
+	return (((tv.tv_sec * 1000000) + tv.tv_usec)/100);
 }
 
 /*

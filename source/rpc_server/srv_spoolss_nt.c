@@ -5935,6 +5935,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 
 	convert_specific_param(&param, value , type, data, real_len);
 
+#if 0 /* JRA - changeid must change. */
     	if (get_specific_param(*printer, 2, param->value, &old_param.data,
 		&old_param.type, (unsigned int *)&old_param.data_len)) {
 	
@@ -5948,6 +5949,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 				goto done;
 		}
 	}
+#endif
 
 	unlink_specific_param_if_exist(printer->info_2, param);
 

@@ -104,15 +104,16 @@ static struct timeval start_time_hires;
 
 void TimeInit(void)
 {
-  serverzone = TimeZone(time(NULL));
+	serverzone = TimeZone(time(NULL));
 
-  if ((serverzone % 60) != 0) {
-	  DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
-  }
+	if ((serverzone % 60) != 0) {
+		DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
+	}
 
-  DEBUG(4,("Serverzone is %d\n",serverzone));
-  /* Save the start time of this process. */
-  GetTimeOfDay(&start_time_hires);
+	DEBUG(4,("Serverzone is %d\n",serverzone));
+	/* Save the start time of this process. */
+	if (start_time_hires.tv_sec == 0 && start_time_hires.tv_usec == 0)
+		GetTimeOfDay(&start_time_hires);
 }
 
 /**********************************************************************
