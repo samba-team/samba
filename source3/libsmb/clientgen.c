@@ -839,6 +839,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	slprintf(fullshare, sizeof(fullshare)-1,
 		 "\\\\%s\\%s", cli->desthost, share);
+	strupper(fullshare);
 
 	set_message(cli->outbuf,4,
 		    2 + strlen(fullshare) + passlen + strlen(dev),True);

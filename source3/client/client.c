@@ -1639,8 +1639,6 @@ struct cli_state *do_connect(char *server, char *share)
 	
 	ip = ipzero;
 
-	strupper(server);
-
 	make_nmb_name(&calling, global_myname, 0x0, "");
 	make_nmb_name(&called , server, name_type, "");
 
@@ -1878,8 +1876,6 @@ static int do_message_op(void)
 
 	ip = ipzero;
 
-	strupper(desthost);
-
 	make_nmb_name(&calling, global_myname, 0x0, "");
 	make_nmb_name(&called , desthost, name_type, "");
 
@@ -2048,7 +2044,6 @@ static int do_message_op(void)
 		case 'M':
 			name_type = 0x03; /* messages are sent to NetBIOS name type 0x3 */
 			pstrcpy(desthost,optarg);
-			strupper(desthost);
 			message = True;
 			break;
 		case 'i':
@@ -2137,7 +2132,6 @@ static int do_message_op(void)
 	}
 
 	get_myname((*global_myname)?NULL:global_myname,NULL);  
-	strupper(global_myname);
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);
