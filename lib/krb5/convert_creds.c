@@ -194,7 +194,7 @@ krb524_convert_creds_kdc(krb5_context context,
 	memcpy(v4creds->session, v5_creds->session.keyvalue.data, 8);
     } else {
 	krb5_set_error_string(context, "converting credentials: %s", 
-			      krb5_get_err_text(context, ret);
+			      krb5_get_err_text(context, ret));
     }
 out:
     krb5_storage_free(sp);
