@@ -1685,6 +1685,8 @@ static BOOL lp_add_ipc(const char *ipc_name, BOOL guest_ok)
 	ServicePtrs[i]->bPrint_ok = False;
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
+	lp_do_parameter(i, "ntvfs handler", "default");
+
 	DEBUG(3, ("adding IPC service\n"));
 
 	return (True);
