@@ -358,7 +358,6 @@ _kadm5_set_keys(kadm5_server_context *context,
     _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.val = keys;
     ent->keys.len = num_keys;
-    ent->kvno++;
     return 0;
 }
 
@@ -411,7 +410,6 @@ _kadm5_set_keys2(kadm5_server_context *context,
     _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = keys;
-    ent->kvno++;
     return 0;
  out:
     _kadm5_free_keys (context, len, keys);
@@ -452,7 +450,6 @@ _kadm5_set_keys3(kadm5_server_context *context,
     _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = keys;
-    ent->kvno++;
     return 0;
  out:
     _kadm5_free_keys (context, len, keys);
@@ -546,7 +543,6 @@ out:
    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
    ent->keys.val = keys;
    ent->keys.len = num_keys;
-   ent->kvno++;
    *new_keys     = kblock;
    *n_keys       = num_keys;
 
