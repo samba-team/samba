@@ -1,5 +1,8 @@
 Mon Apr 19 12:32:04 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* kpasswd/kpasswdd.c: add support for dlopen:ing password quality
+ 	check library
+
 	* configure.in: add appl/su
 
 Sun Apr 18 15:46:53 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
