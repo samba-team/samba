@@ -3505,6 +3505,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	DOM_SID group_sid;
 	DOM_SID user_sid;
 	fstring group_sid_str;
+	uid_t uid;
 	struct passwd *pwd;
 	struct group *grp;
 	fstring grp_name;
@@ -3546,7 +3547,19 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	
+
+	/* check a real user exist before we run the script to add a user to a group */
+	if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
+		pdb_free_sam(&sam_user);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	pdb_free_sam(&sam_user);
+
+	if ((pwd=getpwuid_alloc(uid)) == NULL) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
 	if ((grp=getgrgid(map.gid)) == NULL) {
 		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_GROUP;
