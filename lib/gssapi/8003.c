@@ -146,17 +146,7 @@ gssapi_krb5_create_8003_checksum (
     p += 4;
 
     if (fwd_data->length > 0 && (flags & GSS_C_DELEG_FLAG)) {
-#if 0
-	u_char *tmp;
 
-	result->checksum.length = 28 + fwd_data->length;
-	tmp = realloc(result->checksum.data, result->checksum.length);
-	if (tmp == NULL)
-	    return ENOMEM;
-	result->checksum.data = tmp;
-
-	p = (u_char*)result->checksum.data + 24;  
-#endif
 	*p++ = (1 >> 0) & 0xFF;                   /* DlgOpt */ /* == 1 */
 	*p++ = (1 >> 8) & 0xFF;                   /* DlgOpt */ /* == 0 */
 	*p++ = (fwd_data->length >> 0) & 0xFF;    /* Dlgth  */
