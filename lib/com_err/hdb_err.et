@@ -19,5 +19,6 @@ error_code RECURSIVELOCK,	"Attempt to lock database twice"
 error_code NOTLOCKED,		"Attempt to unlock database when not locked"
 error_code BADLOCKMODE,		"Invalid kdb lock mode"
 error_code CANT_LOCK_DB,	"Insufficient access to lock database"
+error_code EXISTS,		"Entry already exists in database"
 
 end
