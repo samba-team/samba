@@ -19,7 +19,7 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifdef USE_NISPLUS_DB
+#ifdef WITH_NISPLUS
 
 #include "includes.h"
 #include <rpcsvc/nis.h>
@@ -166,7 +166,7 @@ static nis_result *nisp_get_nis_list(char *nis_name)
 	result = nis_list(nis_name, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP,NULL,NULL);
 
 	alarm(0);
-	signal(SIGALRM, SIGNAL_CAST SIG_DFL);
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
 
 	if (gotalarm)
 	{
@@ -531,13 +531,13 @@ static struct sam_passwd *getnisp21pwnam(char *name)
 
 	/* Search the table. */
 	gotalarm = 0;
-	signal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 	alarm(5);
 
 	result = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
 
 	alarm(0);
-	signal(SIGALRM, SIGNAL_CAST SIG_DFL);
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
 
 	if (gotalarm)
 	{
@@ -576,13 +576,13 @@ static struct sam_passwd *getnisp21pwrid(uint32 rid)
 
 	/* Search the table. */
 	gotalarm = 0;
-	signal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 	alarm(5);
 
 	result = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
 
 	alarm(0);
-	signal(SIGALRM, SIGNAL_CAST SIG_DFL);
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
 
 	if (gotalarm)
 	{
@@ -674,7 +674,7 @@ struct passdb_ops *nisplus_initialize_password_db(void)
  
 #else
  void nisplus_dummy_function(void) { } /* stop some compilers complaining */
-#endif /* USE_NISPLUS_DB */
+#endif /* WITH_NISPLUS */
 
 /* useful code i can't bring myself to delete */
 #if 0

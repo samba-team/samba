@@ -88,17 +88,13 @@ BOOL initialize_password_db(void)
     return True;
   }
 
-#ifdef USE_NISPLUS_DB
+#ifdef WITH_NISPLUS
   pdb_ops =  nisplus_initialize_password_db();
-#endif /* USE_NISPLUS_DB */
-
-#ifdef USE_LDAP_DB
+#elif defined(WITH_LDAP)
   pdb_ops = ldap_initialize_password_db();
-#endif /* USE_LDAP_DB */
-
-#ifdef USE_SMBPASS_DB
+#else 
   pdb_ops = file_initialize_password_db();
-#endif /* USE_SMBPASS_DB */
+#endif 
 
   return (pdb_ops != NULL);
 }
@@ -899,159 +895,167 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
  Generate the global machine sid. Look for the MACHINE.SID file first, if
  not found then look in smb.conf and use it to create the MACHINE.SID file.
 ****************************************************************************/
-
 BOOL pdb_generate_machine_sid(void)
 {
-  int fd;
-  char *p;
-  pstring sid_file;
-  fstring sid_string;
-  struct stat st;
-  uchar raw_sid_data[12];
+	int fd;
+	char *p;
+	pstring sid_file;
+	fstring sid_string;
+	struct stat st;
+	uchar raw_sid_data[12];
 
-  pstrcpy(sid_file, lp_smb_passwd_file());
-  p = strrchr(sid_file, '/');
-  if(p != NULL)
-    *++p = '\0';
+	pstrcpy(sid_file, lp_smb_passwd_file());
+	p = strrchr(sid_file, '/');
+	if(p != NULL) {
+		*++p = '\0';
+	}
+
+	if (!directory_exist(sid_file, NULL)) {
+		if (sys_mkdir(sid_file, 0700) != 0) {
+			DEBUG(0,("generate_machine_sid: can't create private directory %s : %s\n",
+				 sid_file, strerror(errno)));
+			return False;
+		}
+	}
+
+	pstrcat(sid_file, "MACHINE.SID");
     
-  pstrcat(sid_file, "MACHINE.SID");
-    
-  if((fd = open( sid_file, O_RDWR | O_CREAT, 0644)) < 0 ) {
-    DEBUG(0,("generate_machine_sid: unable to open or create file %s. Error was %s\n",
-             sid_file, strerror(errno) ));
-    return False;
-  } 
+	if((fd = open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
+		DEBUG(0,("generate_machine_sid: unable to open or create file %s. Error was %s\n",
+			 sid_file, strerror(errno) ));
+		return False;
+	} 
   
-  /*
-   * Check if the file contains data.
-   */
-    
-  if(fstat( fd, &st) < 0) {
-    DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
-             sid_file, strerror(errno) ));
-    close(fd);
-    return False;
-  } 
+	/*
+	 * Check if the file contains data.
+	 */
+	
+	if(fstat( fd, &st) < 0) {
+		DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
+			 sid_file, strerror(errno) ));
+		close(fd);
+		return False;
+	} 
   
-  if(st.st_size > 0) {
-    /*
-     * We have a valid SID - read it.
-     */
-    if(!read_sid_from_file( fd, sid_file)) {
-      DEBUG(0,("generate_machine_sid: unable to read file %s. Error was %s\n",
-             sid_file, strerror(errno) ));
-      close(fd);
-      return False;
-    }
-    close(fd);
-    return True;
-  } 
+	if(st.st_size > 0) {
+		/*
+		 * We have a valid SID - read it.
+		 */
+		if(!read_sid_from_file( fd, sid_file)) {
+			DEBUG(0,("generate_machine_sid: unable to read file %s. Error was %s\n",
+				 sid_file, strerror(errno) ));
+			close(fd);
+			return False;
+		}
+		close(fd);
+		return True;
+	} 
   
-  /*
-   * The file contains no data - we may need to generate our
-   * own sid. Try the lp_domain_sid() first.
-   */
-    
-  if(*lp_domain_sid())
-    fstrcpy( sid_string, lp_domain_sid());
-  else {
-    /*
-     * Generate the new sid data & turn it into a string.
-     */
-    int i;
-    generate_random_buffer( raw_sid_data, 12, True);
-    
-    fstrcpy( sid_string, "S-1-5-21");
-    for( i = 0; i < 3; i++) {
-      fstring tmp_string;
-      slprintf( tmp_string, sizeof(tmp_string) - 1, "-%u", IVAL(raw_sid_data, i*4));
-      fstrcat( sid_string, tmp_string);
-    }
-  } 
+	/*
+	 * The file contains no data - we may need to generate our
+	 * own sid. Try the lp_domain_sid() first.
+	 */
+	
+	if(*lp_domain_sid())
+		fstrcpy( sid_string, lp_domain_sid());
+	else {
+		/*
+		 * Generate the new sid data & turn it into a string.
+		 */
+		int i;
+		generate_random_buffer( raw_sid_data, 12, True);
+		
+		fstrcpy( sid_string, "S-1-5-21");
+		for( i = 0; i < 3; i++) {
+			fstring tmp_string;
+			slprintf( tmp_string, sizeof(tmp_string) - 1, "-%u", IVAL(raw_sid_data, i*4));
+			fstrcat( sid_string, tmp_string);
+		}
+	} 
+	
+	fstrcat(sid_string, "\n");
+	
+	/*
+	 * Ensure our new SID is valid.
+	 */
+	
+	if(!string_to_sid( &global_machine_sid, sid_string)) {
+		DEBUG(0,("generate_machine_sid: unable to generate machine SID.\n"));
+		return False;
+	} 
   
-  fstrcat(sid_string, "\n");
-    
-  /*
-   * Ensure our new SID is valid.
-   */
-    
-  if(!string_to_sid( &global_machine_sid, sid_string)) {
-    DEBUG(0,("generate_machine_sid: unable to generate machine SID.\n"));
-    return False;
-  } 
+	/*
+	 * Do an exclusive blocking lock on the file.
+	 */
+	
+	if(!do_file_lock( fd, 60, F_WRLCK)) {
+		DEBUG(0,("generate_machine_sid: unable to lock file %s. Error was %s\n",
+			 sid_file, strerror(errno) ));
+		close(fd);
+		return False;
+	} 
   
-  /*
-   * Do an exclusive blocking lock on the file.
-   */
-    
-  if(!do_file_lock( fd, 60, F_WRLCK)) {
-    DEBUG(0,("generate_machine_sid: unable to lock file %s. Error was %s\n",
-             sid_file, strerror(errno) ));
-    close(fd);
-    return False;
-  } 
+	/*
+	 * At this point we have a blocking lock on the SID
+	 * file - check if in the meantime someone else wrote
+	 * SID data into the file. If so - they were here first,
+	 * use their data.
+	 */
+	
+	if(fstat( fd, &st) < 0) {
+		DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
+			 sid_file, strerror(errno) ));
+		close(fd);
+		return False;
+	} 
   
-  /*
-   * At this point we have a blocking lock on the SID
-   * file - check if in the meantime someone else wrote
-   * SID data into the file. If so - they were here first,
-   * use their data.
-   */
-    
-  if(fstat( fd, &st) < 0) {
-    DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
-             sid_file, strerror(errno) ));
-    close(fd);
-    return False;
-  } 
-  
-  if(st.st_size > 0) {
-    /*
-     * Unlock as soon as possible to reduce
-     * contention on the exclusive lock.
-     */ 
-    do_file_lock( fd, 60, F_UNLCK);
-    
-    /*
-     * We have a valid SID - read it.
-     */
-    
-    if(!read_sid_from_file( fd, sid_file)) {
-      DEBUG(0,("generate_machine_sid: unable to read file %s. Error was %s\n",
-             sid_file, strerror(errno) ));
-      close(fd);
-      return False;
-    }
-    close(fd);
-    return True;
-  } 
-    
-  /*
-   * The file is still empty and we have an exlusive lock on it.
-   * Write out out SID data into the file.
-   */
-    
-  if(fchmod(fd, 0644) < 0) {
-    DEBUG(0,("generate_machine_sid: unable to set correct permissions on file %s. \
+	if(st.st_size > 0) {
+		/*
+		 * Unlock as soon as possible to reduce
+		 * contention on the exclusive lock.
+		 */ 
+		do_file_lock( fd, 60, F_UNLCK);
+		
+		/*
+		 * We have a valid SID - read it.
+		 */
+		
+		if(!read_sid_from_file( fd, sid_file)) {
+			DEBUG(0,("generate_machine_sid: unable to read file %s. Error was %s\n",
+				 sid_file, strerror(errno) ));
+			close(fd);
+			return False;
+		}
+		close(fd);
+		return True;
+	} 
+	
+	/*
+	 * The file is still empty and we have an exlusive lock on it.
+	 * Write out out SID data into the file.
+	 */
+	
+	if(fchmod(fd, 0644) < 0) {
+		DEBUG(0,("generate_machine_sid: unable to set correct permissions on file %s. \
 Error was %s\n", sid_file, strerror(errno) ));
-    close(fd);
-    return False;
-  } 
-  
-  if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
-    DEBUG(0,("generate_machine_sid: unable to write file %s. Error was %s\n",
-          sid_file, strerror(errno) ));
-    close(fd);
-    return False;
-  } 
-  
-  /*
-   * Unlock & exit.
-   */
-    
-  do_file_lock( fd, 60, F_UNLCK);
-  close(fd);
-  return True;
+		close(fd);
+		return False;
+	} 
+	
+	if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
+		DEBUG(0,("generate_machine_sid: unable to write file %s. Error was %s\n",
+			 sid_file, strerror(errno) ));
+		close(fd);
+		return False;
+	} 
+	
+	/*
+	 * Unlock & exit.
+	 */
+	
+	do_file_lock( fd, 60, F_UNLCK);
+	close(fd);
+	return True;
 }   
 
 /*******************************************************************

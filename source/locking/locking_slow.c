@@ -33,6 +33,9 @@
 */
 
 #include "includes.h"
+
+#ifndef FAST_SHARE_MODES
+
 extern int DEBUGLEVEL;
 extern connection_struct Connections[];
 extern files_struct Files[];
@@ -504,17 +507,8 @@ mode file %s (%s)\n", fname, strerror(errno)));
       return 0;
     }
     /* Now truncate the file at this point. */
-#ifdef FTRUNCATE_NEEDS_ROOT
-    become_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
-
     if(ftruncate(fd, newsize)!= 0)
     {
-
-#ifdef FTRUNCATE_NEEDS_ROOT
-      unbecome_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
-
       DEBUG(0,("ERROR: get_share_modes: failed to ftruncate share \
 mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
       if(*old_shares)
@@ -525,10 +519,6 @@ mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
       return 0;
     }
   }
-
-#ifdef FTRUNCATE_NEEDS_ROOT
-      unbecome_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
 
   if(buf)
     free(buf);
@@ -670,27 +660,14 @@ mode file %s (%s)\n", fname, strerror(errno)));
   }
 
   /* Now truncate the file at this point. */
-#ifdef FTRUNCATE_NEEDS_ROOT
-  become_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
-
   if(ftruncate(fd, newsize) != 0)
   {
-
-#ifdef FTRUNCATE_NEEDS_ROOT
-    unbecome_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
-
     DEBUG(0,("ERROR: del_share_mode: failed to ftruncate share \
 mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
     if(buf)
       free(buf);
     return;
   }
-
-#ifdef FTRUNCATE_NEEDS_ROOT
-  unbecome_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
 }
   
 /*******************************************************************
@@ -825,17 +802,8 @@ deleting it (%s).\n",fname, strerror(errno)));
 
   /* Now truncate the file at this point - just for safety. */
 
-#ifdef FTRUNCATE_NEEDS_ROOT
-  become_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
-
   if(ftruncate(fd, header_size + (SMF_ENTRY_LENGTH*num_entries))!= 0)
   {
-
-#ifdef FTRUNCATE_NEEDS_ROOT
-    unbecome_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
-
     DEBUG(0,("ERROR: set_share_mode: failed to ftruncate share \
 mode file %s to size %d (%s)\n", fname, header_size + (SMF_ENTRY_LENGTH*num_entries), 
                 strerror(errno)));
@@ -843,10 +811,6 @@ mode file %s to size %d (%s)\n", fname, header_size + (SMF_ENTRY_LENGTH*num_entr
       free(buf);
     return False;
   }
-
-#ifdef FTRUNCATE_NEEDS_ROOT
-  unbecome_root(False);
-#endif /* FTRUNCATE_NEEDS_ROOT */
 
   if(buf)
     free(buf);
@@ -1093,3 +1057,7 @@ struct share_ops *locking_slow_init(int ronly)
 
 	return &share_ops;
 }
+#else
+ int locking_slow_dummy_procedure(void)
+{return 0;}
+#endif /* !FAST_SHARE_MODES */

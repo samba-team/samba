@@ -1,0 +1,102 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   signal handling functions
+
+   Copyright (C) Andrew Tridgell 1998
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+
+
+/****************************************************************************
+catch child exits
+****************************************************************************/
+static void sig_cld(int signum)
+{
+	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0) ;
+
+	CatchSignal(SIGCLD, SIG_IGN);
+}
+
+
+
+/*******************************************************************
+block sigs
+********************************************************************/
+void BlockSignals(BOOL block,int signum)
+{
+#ifdef HAVE_SIGPROCMASK
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set,signum);
+	sigprocmask(block?SIG_BLOCK:SIG_UNBLOCK,&set,NULL);
+#elif defined(HAVE_SIGBLOCK)
+	int block_mask = sigmask(signum);
+	static int oldmask = 0;
+	if (block) {
+		oldmask = sigblock(block_mask);
+	} else {
+		sigsetmask(oldmask);
+	}
+#else
+	/* yikes! This platform can't block signals? */
+	static int done;
+	if (!done) {
+		DEBUG(0,("WARNING: No signal blocking available\n"));
+		done=1;
+	}
+#endif
+}
+
+
+
+/*******************************************************************
+catch a signal. This should implement the following semantics:
+
+1) the handler remains installed after being called
+2) the signal should be blocked during handler execution
+********************************************************************/
+void CatchSignal(int signum,void (*handler)(int ))
+{
+#ifdef HAVE_SIGACTION
+	struct sigaction act;
+
+	memset(&act, 0, sizeof(act));
+
+	act.sa_handler = handler;
+#ifdef SA_RESTART
+	act.sa_flags = SA_RESTART;
+#endif
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask,signum);
+	sigaction(signum,&act,NULL);
+#else
+	/* FIXME: need to handle sigvec and systems with broken signal() */
+	signal(signum, handler);
+#endif
+}
+
+
+
+/*******************************************************************
+ignore SIGCLD via whatever means is necessary for this OS
+********************************************************************/
+void CatchChild(void)
+{
+	CatchSignal(SIGCLD, sig_cld);
+}

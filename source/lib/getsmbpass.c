@@ -40,20 +40,19 @@ static struct termio t;
 #define TCSANOW 0
 #endif
 
- int tcgetattr(int fd, struct termio *t)
+static int tcgetattr(int fd, struct termio *t)
 {
 	return ioctl(fd, TCGETA, t);
 }
 
- int tcsetattr(int fd, int flags, struct termio *t)
+static int tcsetattr(int fd, int flags, struct termio *t)
 {
 	if(flags & TCSAFLUSH)
 		ioctl(fd, TCFLSH, TCIOFLUSH);
 	return ioctl(fd, TCSETS, t);
 }
 
-#else /* SYSV_TERMIO */
-#ifdef BSD_TERMIO
+#elif !defined(TCSAFLUSH)
 
 /* BSD TERMIO HANDLING */
 
@@ -63,33 +62,25 @@ static struct sgttyb t;
 #define TURN_ECHO_OFF(t) ((t).sg_flags &= ~ECHO)
 #define TURN_ECHO_ON(t) ((t).sg_flags |= ECHO)
 
-#ifndef TCSAFLUSH
 #define TCSAFLUSH 1
-#endif
-
-#ifndef TCSANOW
 #define TCSANOW 0
-#endif
 
- int tcgetattr(int fd, struct sgttyb *t)
+static int tcgetattr(int fd, struct sgttyb *t)
 {
 	return ioctl(fd, TIOCGETP, (char *)t);
 }
 
- int tcsetattr(int fd, int flags, struct sgttyb *t)
+static int tcsetattr(int fd, int flags, struct sgttyb *t)
 {
 	return ioctl(fd, TIOCSETP, (char *)t);
 }
 
-#else /* BSD_TERMIO */
-
-/* POSIX TERMIO HANDLING */
+#else /* POSIX TERMIO HANDLING */
 #define ECHO_IS_ON(t) ((t).c_lflag & ECHO)
 #define TURN_ECHO_OFF(t) ((t).c_lflag &= ~ECHO)
 #define TURN_ECHO_ON(t) ((t).c_lflag |= ECHO)
 
 static struct termios t;
-#endif /* BSD_TERMIO */
 #endif /* SYSV_TERMIO */
 
 char *getsmbpass(char *prompt)    
@@ -101,7 +92,7 @@ char *getsmbpass(char *prompt)
   size_t nread;
 
   /* Catch problematic signals */
-  signal(SIGINT, SIGNAL_CAST SIG_IGN);
+  CatchSignal(SIGINT, SIGNAL_CAST SIG_IGN);
 
   /* Try to write to and read from the terminal if we can.
      If we can't open the terminal, use stderr and stdin.  */
@@ -153,7 +144,7 @@ char *getsmbpass(char *prompt)
     fclose (in);
 
   /* Catch problematic signals */
-  signal(SIGINT, SIGNAL_CAST SIG_DFL);
+  CatchSignal(SIGINT, SIGNAL_CAST SIG_DFL);
 
   printf("\n");
   return buf;

@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
+#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 #include "rpcsvc/ypclnt.h"
 #endif
 
@@ -347,44 +347,6 @@ void add_session_user(char *user)
 }
 
 
-#ifdef NO_GETSPNAM
-/* a fake shadow password routine which just fills a fake spwd struct
- * with the sp_pwdp field. (sreiz@aie.nl)
- */
-static struct spwd *getspnam(char *username) /* fake shadow password routine */
-{
-       FILE *f;
-       char line[1024];
-       static fstring pw;
-       static struct spwd static_spwd;
-
-       static_spwd.sp_pwdp=0;
-       if (!(f=fopen("/etc/master.passwd", "r")))
-               return 0;
-       while (fgets(line, 1024, f)) {
-               if (!strncmp(line, username, strlen(username)) &&
-                line[strlen(username)]==':') { /* found entry */
-                       char *p, *q;
-
-                       p=line+strlen(username)+1;
-                       if ((q=strchr(p, ':'))) {
-                               *q=0;
-                               if (q-p+1>20)
-                                       break;
-                               fstrcpy(pw, p);
-                               static_spwd.sp_pwdp=pw;
-                       }
-                       break;
-               }
-       }
-       fclose(f);
-       if (static_spwd.sp_pwdp)
-               return &static_spwd;
-       return 0;
-}
-#endif
-
-
 #ifdef OSF1_ENH_SEC
 /****************************************************************************
 an enhanced crypt for OSF1
@@ -480,7 +442,7 @@ static void update_protected_database( char *user, BOOL result)
 }
 
 
-#ifdef USE_PAM
+#ifdef HAVE_PAM
 /*******************************************************************
 check on PAM authentication
 ********************************************************************/
@@ -583,7 +545,7 @@ static BOOL pam_auth(char *this_user,char *password)
 #endif
 
 
-#ifdef AFS_AUTH
+#ifdef WITH_AFS
 /*******************************************************************
 check on AFS authentication
 ********************************************************************/
@@ -610,7 +572,7 @@ static BOOL afs_auth(char *this_user,char *password)
 #endif
 
 
-#ifdef DFS_AUTH
+#ifdef WITH_DFS
 
 /*****************************************************************
  This new version of the DFS_AUTH code was donated by Karsten Muuss
@@ -645,7 +607,7 @@ static BOOL dfs_auth(char *this_user,char *password)
 
   if (dcelogin_atmost_once) return(False);
 
-#ifndef NO_CRYPT
+#ifdef HAVE_CRYPT
   /*
    * We only go for a DCE login context if the given password
    * matches that stored in the local password file.. 
@@ -1099,24 +1061,24 @@ core of password checking routine
 BOOL password_check(char *password)
 {
 
-#ifdef USE_PAM
+#ifdef HAVE_PAM
 /* This falls through if the password check fails
-	- if NO_CRYPT is defined this causes an error msg
+	- if HAVE_CRYPT is not defined this causes an error msg
 		saying Warning - no crypt available
-	- if NO_CRYPT is NOT defined this is a potential security hole
+	- if HAVE_CRYPT is defined this is a potential security hole
 		as it may authenticate via the crypt call when PAM
 		settings say it should fail.
-  if (pam_auth(this_user,password)) return(True);
-Hence we make a direct return to avoid a second chance!!!
+		if (pam_auth(this_user,password)) return(True);
+		Hence we make a direct return to avoid a second chance!!!
 */
   return (pam_auth(this_user,password));
 #endif
 
-#ifdef AFS_AUTH
+#ifdef WITH_AFS
   if (afs_auth(this_user,password)) return(True);
 #endif
 
-#ifdef DFS_AUTH
+#ifdef WITH_DFS
   if (dfs_auth(this_user,password)) return(True);
 #endif 
 
@@ -1126,11 +1088,6 @@ Hence we make a direct return to avoid a second chance!!!
 
 #ifdef KRB4_AUTH
   if (krb4_auth(this_user,password)) return(True);
-#endif
-
-#ifdef PWDAUTH
-  if (pwdauth(this_user,password) == 0)
-    return(True);
 #endif
 
 #ifdef OSF1_ENH_SEC
@@ -1152,11 +1109,11 @@ Hence we make a direct return to avoid a second chance!!!
   return(linux_bigcrypt(password,this_salt,this_crypted));
 #endif
 
-#ifdef HPUX_10_TRUSTED
+#ifdef HAVE_BIGCRYPT
   return(strcmp(bigcrypt(password,this_salt),this_crypted) == 0);
 #endif
 
-#ifdef NO_CRYPT
+#ifndef HAVE_CRYPT
   DEBUG(1,("Warning - no crypt available\n"));
   return(False);
 #else
@@ -1364,7 +1321,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
       return(False);
     }
 
-#ifdef SHADOW_PWD
+#ifdef HAVE_GETSPNAM
   {
     struct spwd *spass;
 
@@ -1388,15 +1345,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   }
 #endif
 
-#ifdef SecureWare
-  {
-    struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
-    if (pr_pw && pr_pw->ufld.fd_encrypt)
-      pass->pw_passwd = pr_pw->ufld.fd_encrypt;
-  }
-#endif
-
-#ifdef HPUX_10_TRUSTED
+#ifdef HAVE_GETPRPWNAM
   {
     struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
     if (pr_pw && pr_pw->ufld.fd_encrypt)
@@ -1436,23 +1385,21 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   /* extract relevant info */
   fstrcpy(this_user,pass->pw_name);  
   fstrcpy(this_salt,pass->pw_passwd);
-#ifdef HPUX
-  /* The crypt on HPUX won't work with more than 2 salt characters. */
+  /* crypt on some platforms (HPUX in particular)
+     won't work with more than 2 salt characters. */
   this_salt[2] = 0;
-#endif /* HPUX */
+
   fstrcpy(this_crypted,pass->pw_passwd);
  
   if (!*this_crypted) {
     if (!lp_null_passwords()) {
-      DEBUG(2,("Disallowing access to %s due to null password\n",this_user));
-      return(False);
+	    DEBUG(2,("Disallowing access to %s due to null password\n",this_user));
+	    return(False);
     }
-#ifndef PWDAUTH
     if (!*password) {
-      DEBUG(3,("Allowing access to %s with null password\n",this_user));
-      return(True);
+	    DEBUG(3,("Allowing access to %s with null password\n",this_user));
+	    return(True);
     }
-#endif    
   }
 
   /* try it as it came to us */
@@ -1551,7 +1498,7 @@ validate a group username entry. Return the username or NULL
 ****************************************************************************/
 static char *validate_group(char *group,char *password,int pwlen,int snum)
 {
-#ifdef NETGROUP
+#ifdef HAVE_NETGROUP
   {
     char *host, *user, *domain;
     setnetgrent(group);
@@ -1568,7 +1515,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
   }
 #endif
   
-#if HAVE_GETGRNAM 
+#ifdef HAVE_GETGRNAM 
   {
     struct group *gptr = (struct group *)getgrnam(group);
     char **member;
@@ -1824,7 +1771,7 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 	{
 	  BOOL host_ok = False;
 
-#ifdef NETGROUP	  
+#ifdef HAVE_NETGROUP	  
 	  if (is_group)
 	    {
 	      static char *mydomain = NULL;
@@ -1836,7 +1783,7 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 #else
 	  if (is_group)
 	    {
-	      DEBUG(1,("Netgroups not configured - add -DNETGROUP and recompile\n"));
+	      DEBUG(1,("Netgroups not configured\n"));
 	      continue;
 	    }
 #endif

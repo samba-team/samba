@@ -156,7 +156,7 @@ void	VT_SigCLD(int	sig)
 	if(wait(NULL) == VT_ChildPID)
 		VT_ChildDied = True;
 	else
-		signal(SIGCLD, VT_SigCLD);
+		CatchSignal(SIGCLD, VT_SigCLD);
 }
 
 
@@ -305,12 +305,12 @@ int	VT_Start(void)
 		VT_ChildDied = False;
 		VT_Fd = master;
 
-		signal(SIGCLD, VT_SigCLD);
+		CatchSignal(SIGCLD, VT_SigCLD);
 
-		signal(SIGHUP, VT_SigEXIT);
-		signal(SIGTERM, VT_SigEXIT);
-		signal(SIGINT, VT_SigEXIT);
-		signal(SIGQUIT, VT_SigEXIT);
+		CatchSignal(SIGHUP, VT_SigEXIT);
+		CatchSignal(SIGTERM, VT_SigEXIT);
+		CatchSignal(SIGINT, VT_SigEXIT);
+		CatchSignal(SIGQUIT, VT_SigEXIT);
 
 		memset(OutBuf, 0, sizeof(OutBuf));
 		OutBuf [4] = 0x06;

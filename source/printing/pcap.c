@@ -232,8 +232,9 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 	fclose(pfile);
 	return(False);
 }
+#endif /* AIX */
 
-#endif
+
 /***************************************************************************
 Scan printcap file pszPrintcapname for a printer called pszPrintername. 
 Return True if found, else False. Returns False on error, too, after logging 

@@ -23,7 +23,7 @@
 #include "includes.h"
 
 
-#ifdef FAST_SHARE_MODES
+#ifdef HAVE_SHARED_MMAP
 
 
 extern int DEBUGLEVEL;
@@ -874,7 +874,7 @@ struct shmem_ops *smb_shm_open(int ronly)
 }
 
 
-#else /* FAST_SHARE_MODES */
+#else /* HAVE_SHARED_MMAP */
  int shmem_dummy_procedure(void)
 {return 0;}
-#endif /* FAST_SHARE_MODES */
+#endif /* HAVE_SHARED_MMAP */

@@ -160,6 +160,10 @@ BOOL deal_with_creds(uchar sess_key[8],
 		     DOM_CRED *sto_clnt_cred, 
 		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
 
+/*The following definitions come from  dfree.c  */
+
+int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
+
 /*The following definitions come from  dir.c  */
 
 void init_dptrs(void);
@@ -186,7 +190,7 @@ BOOL SeekDir(void *p,int pos);
 int TellDir(void *p);
 void DirCacheAdd( char *path, char *name, char *dname, int snum );
 char *DirCacheCheck( char *path, char *name, int snum );
-void DirCacheFlush( int snum );
+void DirCacheFlush(int snum);
 
 /*The following definitions come from  fault.c  */
 
@@ -1188,21 +1192,6 @@ BOOL name_map_mangle( char *OutName, BOOL need83, int snum );
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
 
-/*The following definitions come from  mem_man/mem_man.c  */
-
-void *smb_mem_malloc(size_t size,char *file,int line);
-char *smb_mem_strdup(char *s, char *file, int line);
-int smb_mem_free(void *ptr,char *file,int line);
-void smb_mem_write_info(void *ptr,FILE *outfile);
-char *smb_mem_query_file(void *ptr);
-int smb_mem_query_line(void *ptr);
-int smb_mem_test(void *ptr);
-void smb_mem_write_status(FILE *outfile);
-void smb_mem_write_verbose(FILE *outfile);
-void smb_mem_write_errors(FILE *outfile);
-void smb_mem_set_multiplier(int multiplier);
-void *smb_mem_resize(void *ptr,size_t newsize);
-
 /*The following definitions come from  membuffer.c  */
 
 void mem_init(struct mem_buf *buf, int margin);
@@ -1239,6 +1228,10 @@ FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
 BOOL resolve_name(char *name, struct in_addr *return_ip);
+
+/*The following definitions come from  netmask.c  */
+
+int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask);
 
 /*The following definitions come from  nisppass.c  */
 
@@ -1742,10 +1735,6 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 
 /*The following definitions come from  replace.c  */
 
-char *Strstr(char *s, char *p);
-time_t Mktime(struct tm      *t);
-int InNetGr(char *group,char *host,char *user,char *dom);
-void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
 
 /*The following definitions come from  reply.c  */
 
@@ -1811,8 +1800,6 @@ int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st);
 int file_utime(int cnum, char *fname, struct utimbuf *times);
 BOOL set_filetime(int cnum, char *fname, time_t mtime);
 BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_path);
-int disk_free(char *path,int *bsize,int *dfree,int *dsize);
-int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 BOOL check_name(char *name,int cnum);
 void sync_file(int cnum, int fnum);
 void close_file(int fnum, BOOL normal_close);
@@ -1858,6 +1845,12 @@ struct shmem_ops *smb_shm_open(int ronly);
 /*The following definitions come from  shmem_sysv.c  */
 
 struct shmem_ops *sysv_shm_open(int ronly);
+
+/*The following definitions come from  signal.c  */
+
+void BlockSignals(BOOL block,int signum);
+void CatchSignal(int signum,void (*handler)(int ));
+void CatchChild(void);
 
 /*The following definitions come from  slprintf.c  */
 
@@ -1987,7 +1980,6 @@ char *tmpdir(void);
 BOOL is_a_socket(int fd);
 BOOL next_token(char **ptr,char *buff,char *sep);
 char **toktocliplist(int *ctok, char *sep);
-void *MemMove(void *dest,void *src,int size);
 void *mem_dup( void *from, int size );
 void array_promote(char *array,int elsize,int element);
 void set_socket_options(int fd, char *options);
@@ -2097,7 +2089,6 @@ struct hostent *Get_Hostbyname(char *name);
 BOOL process_exists(int pid);
 char *uidtoname(int uid);
 char *gidtoname(int gid);
-void BlockSignals(BOOL block,int signum);
 void ajt_panic(void);
 char *readdirname(void *p);
 BOOL is_in_path(char *name, name_compare_entry *namelist);

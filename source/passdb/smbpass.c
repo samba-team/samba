@@ -953,5 +953,5 @@ struct passdb_ops *file_initialize_password_db(void)
 
 #else
  /* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
- void dummy_function(void) { } /* stop some compilers complaining */
+ void smbpass_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_SMBPASS_DB */

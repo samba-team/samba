@@ -19,9 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
+#define NO_SYSLOG
 
 #include "includes.h"
 #include "trans2.h"
@@ -1633,9 +1631,9 @@ BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 	_smb_setlen(cli->outbuf,len);
 	CVAL(cli->outbuf,0) = 0x81;
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
 retry:
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 
 	send_smb(cli->fd,cli->outbuf);
 	DEBUG(5,("Sent session request\n"));
@@ -1643,14 +1641,14 @@ retry:
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
     if(CVAL(cli->inbuf,0) == 0x83 && CVAL(cli->inbuf,4) == 0x8e){ /* use ssl */
         if(!sslutil_fd_is_ssl(cli->fd)){
             if(sslutil_connect(cli->fd) == 0)
                 goto retry;
         }
     }
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 
 	if (CVAL(cli->inbuf,0) != 0x82) {
                 /* This is the wrong place to put the error... JRA. */
@@ -1718,9 +1716,9 @@ void cli_shutdown(struct cli_state *cli)
 {
 	if (cli->outbuf) free(cli->outbuf);
 	if (cli->inbuf) free(cli->inbuf);
-#ifdef USE_SSL
+#ifdef WITH_SSL
     if (cli->fd != -1) sslutil_disconnect(cli->fd);
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 	if (cli->fd != -1) close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
 }

@@ -1,0 +1,231 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   functions to calculate the free disk space
+   Copyright (C) Andrew Tridgell 1998
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+
+
+extern int DEBUGLEVEL;
+
+/****************************************************************************
+normalise for DOS usage 
+****************************************************************************/
+static void disk_norm(int *bsize,int *dfree,int *dsize)
+{
+	/* check if the disk is beyond the max disk size */
+	int maxdisksize = lp_maxdisksize();
+	if (maxdisksize) {
+		/* convert to blocks - and don't overflow */
+		maxdisksize = ((maxdisksize*1024)/(*bsize))*1024;
+		if (*dsize > maxdisksize) *dsize = maxdisksize;
+		if (*dfree > maxdisksize) *dfree = maxdisksize-1; 
+		/* the -1 should stop applications getting div by 0
+		   errors */
+	}  
+	
+	while (*dfree > WORDMAX || *dsize > WORDMAX || *bsize < 512) {
+		*dfree /= 2;
+		*dsize /= 2;
+		*bsize *= 2;
+		if (*bsize > WORDMAX) {
+			*bsize = WORDMAX;
+			if (*dsize > WORDMAX)
+				*dsize = WORDMAX;
+			if (*dfree >  WORDMAX)
+				*dfree = WORDMAX;
+			break;
+		}
+	}
+}
+
+
+/* Return the number of TOSIZE-byte blocks used by
+   BLOCKS FROMSIZE-byte blocks, rounding away from zero.
+   TOSIZE must be positive.  Return -1 if FROMSIZE is not positive.  */
+static int adjust_blocks(int blocks, int fromsize, int tosize)
+{
+	if (tosize <= 0 || fromsize <= 0) {
+		return -1;
+	}
+
+	if (fromsize == tosize)	/* e.g., from 512 to 512 */
+		return blocks;
+	else if (fromsize > tosize)	/* e.g., from 2048 to 512 */
+		return blocks * (fromsize / tosize);
+	else				/* e.g., from 256 to 512 */
+		return (blocks + (blocks < 0 ? -1 : 1)) / (tosize / fromsize);
+}
+
+/* this does all of the system specific guff to get the free disk space.
+   It is derived from code in the GNU fileutils package, but has been
+   considerably mangled for use here 
+
+   results are returned in *dfree and *dsize, in 512 byte units
+*/
+static int fsusage(const char *path, int *dfree, int *dsize)
+{
+#ifdef STAT_STATFS3_OSF1
+#define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_fsize, 512)
+	struct statfs fsd;
+
+	if (statfs (path, &fsd, sizeof (struct statfs)) != 0)
+		return -1;
+#endif /* STAT_STATFS3_OSF1 */
+	
+#ifdef STAT_STATFS2_FS_DATA	/* Ultrix */
+#define CONVERT_BLOCKS(B) adjust_blocks ((B), 1024, 512)	
+	struct fs_data fsd;
+	
+	if (statfs (path, &fsd) != 1)
+		return -1;
+	
+	(*dsize) = CONVERT_BLOCKS (fsd.fd_req.btot);
+	(*dfree) = CONVERT_BLOCKS (fsd.fd_req.bfreen);
+#endif /* STAT_STATFS2_FS_DATA */
+	
+#ifdef STAT_STATFS2_BSIZE	/* 4.3BSD, SunOS 4, HP-UX, AIX */
+#define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_bsize, 512)
+	struct statfs fsd;
+	
+	if (statfs (path, &fsd) < 0)
+		return -1;
+	
+#ifdef STATFS_TRUNCATES_BLOCK_COUNTS
+	/* In SunOS 4.1.2, 4.1.3, and 4.1.3_U1, the block counts in the
+	   struct statfs are truncated to 2GB.  These conditions detect that
+	   truncation, presumably without botching the 4.1.1 case, in which
+	   the values are not truncated.  The correct counts are stored in
+	   undocumented spare fields.  */
+	if (fsd.f_blocks == 0x1fffff && fsd.f_spare[0] > 0) {
+		fsd.f_blocks = fsd.f_spare[0];
+		fsd.f_bfree = fsd.f_spare[1];
+		fsd.f_bavail = fsd.f_spare[2];
+	}
+#endif /* STATFS_TRUNCATES_BLOCK_COUNTS */
+#endif /* STAT_STATFS2_BSIZE */
+	
+
+#ifdef STAT_STATFS2_FSIZE	/* 4.4BSD */
+#define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_fsize, 512)
+	
+	struct statfs fsd;
+	
+	if (statfs (path, &fsd) < 0)
+		return -1;
+#endif /* STAT_STATFS2_FSIZE */
+	
+#ifdef STAT_STATFS4		/* SVR3, Dynix, Irix, AIX */
+# if _AIX || defined(_CRAY)
+#  define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_bsize, 512)
+#  ifdef _CRAY
+#   define f_bavail f_bfree
+#  endif
+# else
+#  define CONVERT_BLOCKS(B) (B)
+#  ifndef _SEQUENT_		/* _SEQUENT_ is DYNIX/ptx */
+#   ifndef DOLPHIN		/* DOLPHIN 3.8.alfa/7.18 has f_bavail */
+#    define f_bavail f_bfree
+#   endif
+#  endif
+# endif
+	
+	struct statfs fsd;
+
+	if (statfs (path, &fsd, sizeof fsd, 0) < 0)
+		return -1;
+	/* Empirically, the block counts on most SVR3 and SVR3-derived
+	   systems seem to always be in terms of 512-byte blocks,
+	   no matter what value f_bsize has.  */
+
+#endif /* STAT_STATFS4 */
+
+#ifdef STAT_STATVFS		/* SVR4 */
+# define CONVERT_BLOCKS(B) \
+	adjust_blocks ((B), fsd.f_frsize ? fsd.f_frsize : fsd.f_bsize, 512)
+
+	struct statvfs fsd;
+
+	if (statvfs (path, &fsd) < 0)
+		return -1;
+	/* f_frsize isn't guaranteed to be supported.  */
+
+#endif /* STAT_STATVFS */
+
+#ifndef CONVERT_BLOCKS
+	/* we don't have any dfree code! */
+	return -1;
+#else
+#if !defined(STAT_STATFS2_FS_DATA)
+	/* !Ultrix */
+	(*dsize) = CONVERT_BLOCKS (fsd.f_blocks);
+	(*dfree) = CONVERT_BLOCKS (fsd.f_bavail);
+#endif /* not STAT_STATFS2_FS_DATA */
+#endif
+
+	return 0;
+}
+
+/****************************************************************************
+  return number of 1K blocks available on a path and total number 
+****************************************************************************/
+static int disk_free(char *path,int *bsize,int *dfree,int *dsize)
+{
+	int dfree_retval;
+
+	(*dfree) = (*dsize) = 0;
+	(*bsize) = 512;
+
+	fsusage(path, dfree, dsize);
+
+	if (*bsize < 256) {
+		*bsize = 512;
+	}
+
+	if ((*dsize)<1) {
+		static int done;
+		if (!done) {
+			DEBUG(0,("WARNING: dfree is broken on this system\n"));
+			done=1;
+		}
+		*dsize = 20*1024*1024/(*bsize);
+		*dfree = MAX(1,*dfree);
+	}
+
+	disk_norm(bsize,dfree,dsize);
+
+	if ((*bsize) < 1024) {
+		dfree_retval = (*dfree)/(1024/(*bsize));
+	} else {
+		dfree_retval = ((*bsize)/1024)*(*dfree);
+	}
+
+	return(dfree_retval);
+}
+
+
+/****************************************************************************
+wrap it to get filenames right
+****************************************************************************/
+int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize)
+{
+	return(disk_free(dos_to_unix(path,False),bsize,dfree,dsize));
+}
+
+

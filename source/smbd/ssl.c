@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef USE_SSL  /* should always be defined if this module is compiled */
+#ifdef WITH_SSL  /* should always be defined if this module is compiled */
 
 #include "includes.h"
 #include <ssl.h>
@@ -261,6 +261,6 @@ char            *reqHosts, *resignHosts;
     return 1;
 }
 
-#else /* USE_SSL */
+#else /* WITH_SSL */
  void ssl_dummy(void) {;} /* So some compilers don't complain. */
-#endif  /* USE_SSL */
+#endif  /* WITH_SSL */

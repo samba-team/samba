@@ -44,7 +44,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   int             ret;
 
   gotalarm = 0;
-  signal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+  CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 
   lock.l_type = type;
   lock.l_whence = SEEK_SET;
@@ -55,7 +55,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   alarm(5);
   ret = fcntl(fd, F_SETLKW, &lock);
   alarm(0);
-  signal(SIGALRM, SIGNAL_CAST SIG_DFL);
+  CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
 
   if (gotalarm) {
     DEBUG(0, ("do_file_lock: failed to %s file.\n",

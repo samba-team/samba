@@ -33,7 +33,6 @@ char *OutBuffer = NULL;
 char *last_inbuf = NULL;
 
 int am_parent = 1;
-int atexit_set = 0;
 
 /* the last message the was processed */
 int last_message = -1;
@@ -56,9 +55,9 @@ extern int smb_read_error;
 
 extern pstring user_socket_options;
 
-#ifdef DFS_AUTH
+#ifdef WITH_DFS
 extern int dcelogin_atmost_once;
-#endif /* DFS_AUTH */
+#endif /* WITH_DFS */
 
 /*
  * This is set on startup - it defines the SID for this
@@ -696,236 +695,6 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 
 
 /****************************************************************************
-normalise for DOS usage 
-****************************************************************************/
-static void disk_norm(int *bsize,int *dfree,int *dsize)
-{
-  /* check if the disk is beyond the max disk size */
-  int maxdisksize = lp_maxdisksize();
-  if (maxdisksize) {
-    /* convert to blocks - and don't overflow */
-    maxdisksize = ((maxdisksize*1024)/(*bsize))*1024;
-    if (*dsize > maxdisksize) *dsize = maxdisksize;
-    if (*dfree > maxdisksize) *dfree = maxdisksize-1; /* the -1 should stop 
-							 applications getting 
-							 div by 0 errors */
-  }  
-
-  while (*dfree > WORDMAX || *dsize > WORDMAX || *bsize < 512) 
-    {
-      *dfree /= 2;
-      *dsize /= 2;
-      *bsize *= 2;
-      if (*bsize > WORDMAX )
-	{
-	  *bsize = WORDMAX;
-	  if (*dsize > WORDMAX)
-	    *dsize = WORDMAX;
-	  if (*dfree >  WORDMAX)
-	    *dfree = WORDMAX;
-	  break;
-	}
-    }
-}
-
-/****************************************************************************
-  return number of 1K blocks available on a path and total number 
-****************************************************************************/
-int disk_free(char *path,int *bsize,int *dfree,int *dsize)
-{
-  char *df_command = lp_dfree_command();
-  int dfree_retval;
-#ifdef QUOTAS
-  int dfreeq_retval;
-  int dfreeq = 0;
-  int bsizeq = *bsize;
-  int dsizeq = *dsize;
-#endif
-
-#ifndef NO_STATFS
-#ifdef USE_STATVFS
-  struct statvfs fs;
-#else
-#ifdef ULTRIX
-  struct fs_data fs;
-#else
-  struct statfs fs;
-#endif
-#endif
-#endif
-
-  /* possibly use system() to get the result */
-  if (df_command && *df_command)
-    {
-      int ret;
-      pstring syscmd;
-      pstring outfile;
-	  
-      slprintf(outfile,sizeof(outfile)-1, "%s/dfree.smb.%d",tmpdir(),(int)getpid());
-      slprintf(syscmd,sizeof(syscmd)-1,"%s %s",df_command,path);
-      standard_sub_basic(syscmd);
-
-      ret = smbrun(syscmd,outfile,False);
-      DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
-	  
-      {
-        FILE *f = fopen(outfile,"r");	
-        *dsize = 0;
-        *dfree = 0;
-        *bsize = 1024;
-        if (f)
-          {
-            fscanf(f,"%d %d %d",dsize,dfree,bsize);
-            fclose(f);
-          }
-        else
-          DEBUG(0,("Can't open %s\n",outfile));
-      }
-	  
-      unlink(outfile);
-      disk_norm(bsize,dfree,dsize);
-      dfree_retval = ((*bsize)/1024)*(*dfree);
-#ifdef QUOTAS
-      /* Ensure we return the min value between the users quota and
-         what's free on the disk. Thanks to Albrecht Gebhardt 
-         <albrecht.gebhardt@uni-klu.ac.at> for this fix.
-      */
-      if (disk_quotas(path, &bsizeq, &dfreeq, &dsizeq))
-        {
-          disk_norm(&bsizeq, &dfreeq, &dsizeq);
-          dfreeq_retval = ((bsizeq)/1024)*(dfreeq);
-          dfree_retval =  ( dfree_retval < dfreeq_retval ) ? 
-                           dfree_retval : dfreeq_retval ;
-          /* maybe dfree and dfreeq are calculated using different bsizes 
-             so convert dfree from bsize into bsizeq */
-          /* avoid overflows due to multiplication, so do not:
-                *dfree = ((*dfree) * (*bsize)) / (bsizeq); 
-             bsize and bsizeq are powers of 2 so its better to
-             to divide them getting a multiplication or division factor
-             for dfree. Rene Nieuwenhuizen (07-10-1997) */
-          if (*bsize >= bsizeq) 
-            *dfree = *dfree * (*bsize / bsizeq);
-          else 
-            *dfree = *dfree / (bsizeq / *bsize);
-          *dfree = ( *dfree < dfreeq ) ? *dfree : dfreeq ; 
-          *bsize = bsizeq;
-          *dsize = dsizeq;
-        }
-#endif
-      return(dfree_retval);
-    }
-
-#ifdef NO_STATFS
-  DEBUG(1,("Warning - no statfs function\n"));
-  return(1);
-#else
-#ifdef STATFS4
-  if (statfs(path,&fs,sizeof(fs),0) != 0)
-#else
-#ifdef USE_STATVFS
-    if (statvfs(path, &fs))
-#else
-#ifdef STATFS3
-      if (statfs(path,&fs,sizeof(fs)) == -1)	 
-#else
-	if (statfs(path,&fs) == -1)
-#endif /* STATFS3 */
-#endif /* USE_STATVFS */
-#endif /* STATFS4 */
-	  {
-	    DEBUG(3,("dfree call failed code errno=%d\n",errno));
-	    *bsize = 1024;
-	    *dfree = 1;
-	    *dsize = 1;
-	    return(((*bsize)/1024)*(*dfree));
-	  }
-
-#ifdef ULTRIX
-  *bsize = 1024;
-  *dfree = fs.fd_req.bfree;
-  *dsize = fs.fd_req.btot;
-#else
-#ifdef USE_STATVFS
-  *bsize = fs.f_frsize;
-#else
-#ifdef USE_F_FSIZE
-  /* eg: osf1 has f_fsize = fundamental filesystem block size, 
-     f_bsize = optimal transfer block size (MX: 94-04-19) */
-  *bsize = fs.f_fsize;
-#else
-  *bsize = fs.f_bsize;
-#endif /* STATFS3 */
-#endif /* USE_STATVFS */
-
-#ifdef STATFS4
-  *dfree = fs.f_bfree;
-#else
-  *dfree = fs.f_bavail;
-#endif /* STATFS4 */
-  *dsize = fs.f_blocks;
-#endif /* ULTRIX */
-
-#if defined(SCO) || defined(ISC) || defined(MIPS)
-  *bsize = 512;
-#endif
-
-/* handle rediculous bsize values - some OSes are broken */
-if ((*bsize) < 512 || (*bsize)>0xFFFF) *bsize = 1024;
-
-  disk_norm(bsize,dfree,dsize);
-
-  if (*bsize < 256)
-    *bsize = 512;
-  if ((*dsize)<1)
-    {
-      DEBUG(0,("dfree seems to be broken on your system\n"));
-      *dsize = 20*1024*1024/(*bsize);
-      *dfree = MAX(1,*dfree);
-    }
-  dfree_retval = ((*bsize)/1024)*(*dfree);
-#ifdef QUOTAS
-  /* Ensure we return the min value between the users quota and
-     what's free on the disk. Thanks to Albrecht Gebhardt 
-     <albrecht.gebhardt@uni-klu.ac.at> for this fix.
-  */
-  if (disk_quotas(path, &bsizeq, &dfreeq, &dsizeq))
-    {
-      disk_norm(&bsizeq, &dfreeq, &dsizeq);
-      dfreeq_retval = ((bsizeq)/1024)*(dfreeq);
-      dfree_retval = ( dfree_retval < dfreeq_retval ) ? 
-                       dfree_retval : dfreeq_retval ;
-      /* maybe dfree and dfreeq are calculated using different bsizes 
-         so convert dfree from bsize into bsizeq */
-      /* avoid overflows due to multiplication, so do not:
-              *dfree = ((*dfree) * (*bsize)) / (bsizeq); 
-       bsize and bsizeq are powers of 2 so its better to
-       to divide them getting a multiplication or division factor
-       for dfree. Rene Nieuwenhuizen (07-10-1997) */
-      if (*bsize >= bsizeq)
-        *dfree = *dfree * (*bsize / bsizeq);
-      else
-        *dfree = *dfree / (bsizeq / *bsize);
-      *dfree = ( *dfree < dfreeq ) ? *dfree : dfreeq ;
-      *bsize = bsizeq;
-      *dsize = dsizeq;
-    }
-#endif
-  return(dfree_retval);
-#endif
-}
-
-
-/****************************************************************************
-wrap it to get filenames right
-****************************************************************************/
-int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize)
-{
-  return(disk_free(dos_to_unix(path,False),bsize,dfree,dsize));
-}
-
-
-
-/****************************************************************************
 check a filename - possibly caling reducename
 
 This is called by every routine before it allows an operation on a filename.
@@ -1541,7 +1310,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
 
   }
 
-#if USE_MMAP
+#if WITH_MMAP
   /* mmap it if read-only */
   if (!fsp->can_write)
   {
@@ -1563,9 +1332,9 @@ sync a file
 ********************************************************************/
 void sync_file(int cnum, int fnum)
 {
-#ifndef NO_FSYNC
-  if(lp_strict_sync(SNUM(cnum)))
-    fsync(Files[fnum].fd_ptr->fd);
+#ifdef HAVE_FSYNC
+    if(lp_strict_sync(SNUM(cnum)))
+      fsync(Files[fnum].fd_ptr->fd);
 #endif
 }
 
@@ -1627,7 +1396,7 @@ static void close_filestruct(files_struct *fs_p)
     fs_p->wbmpx_ptr = NULL; 
   }  
      
-#if USE_MMAP
+#if WITH_MMAP
   if(fs_p->mmap_ptr) 
   {
     munmap(fs_p->mmap_ptr,fs_p->mmap_size);
@@ -2303,7 +2072,7 @@ int read_file(int fnum,char *data,uint32 pos,int n)
     }
 #endif
 
-#if USE_MMAP
+#if WITH_MMAP
   if (Files[fnum].mmap_ptr)
     {
       int num = (Files[fnum].mmap_size > pos) ? (Files[fnum].mmap_size - pos) : -1;
@@ -2627,52 +2396,6 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 }
 
 
-#ifndef SIGCLD_IGNORE
-/****************************************************************************
-this prevents zombie child processes
-****************************************************************************/
-static int sig_cld(void)
-{
-  static int depth = 0;
-  if (depth != 0)
-    {
-      DEBUG(0,("ERROR: Recursion in sig_cld? Perhaps you need `#define USE_WAITPID'?\n"));
-      depth=0;
-      return(0);
-    }
-  depth++;
-
-  BlockSignals(True,SIGCLD);
-  DEBUG(5,("got SIGCLD\n"));
-
-#ifdef USE_WAITPID
-  while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0);
-#endif
-
-  /* Stop zombies */
-  /* Stevens, Adv. Unix Prog. says that on system V you must call
-     wait before reinstalling the signal handler, because the kernel
-     calls the handler from within the signal-call when there is a
-     child that has exited. This would lead to an infinite recursion
-     if done vice versa. */
-        
-#ifndef DONT_REINSTALL_SIG
-#ifdef SIGCLD_IGNORE
-  signal(SIGCLD, SIG_IGN);  
-#else
-  signal(SIGCLD, SIGNAL_CAST sig_cld);
-#endif
-#endif
-
-#ifndef USE_WAITPID
-  while (wait3(WAIT3_CAST1 NULL, WNOHANG, WAIT3_CAST2 NULL) > 0);
-#endif
-  depth--;
-  BlockSignals(False,SIGCLD);
-  return 0;
-}
-#endif
-
 /****************************************************************************
   this is called when the client exits abruptly
   **************************************************************************/
@@ -2684,9 +2407,6 @@ static int sig_pipe(void)
 	if ((cli = server_client()) && cli->initialised) {
 		DEBUG(3,("lost connection to password server\n"));
 		cli_shutdown(cli);
-#ifndef DONT_REINSTALL_SIG
-		signal(SIGPIPE, SIGNAL_CAST sig_pipe);
-#endif
 		BlockSignals(False,SIGPIPE);
 		return 0;
 	}
@@ -2710,15 +2430,17 @@ static BOOL open_sockets(BOOL is_daemon,int port)
     int s;
     int i;
 
-    /* Stop zombies */
-#ifdef SIGCLD_IGNORE
-    signal(SIGCLD, SIG_IGN);
-#else
-    signal(SIGCLD, SIGNAL_CAST sig_cld);
+#ifdef HAVE_ATEXIT
+    static int atexit_set;
+    if(atexit_set == 0) {
+	    atexit_set=1;
+	    atexit(killkids);
+    }
 #endif
 
-    if(atexit_set == 0)
-      atexit(killkids);
+    /* Stop zombies */
+    CatchChild();
+
 
     FD_ZERO(&listen_set);
 
@@ -2825,21 +2547,12 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
           continue;
         }
 
-#ifdef NO_FORK_DEBUG
-#ifndef NO_SIGNAL_TEST
-        signal(SIGPIPE, SIGNAL_CAST sig_pipe);
-        signal(SIGCLD, SIGNAL_CAST SIG_DFL);
-#endif /* NO_SIGNAL_TEST */
-        return True;
-#else /* NO_FORK_DEBUG */
         if (Client != -1 && fork()==0)
         {
           /* Child code ... */
 
-#ifndef NO_SIGNAL_TEST
-          signal(SIGPIPE, SIGNAL_CAST sig_pipe);
-          signal(SIGCLD, SIGNAL_CAST SIG_DFL);
-#endif /* NO_SIGNAL_TEST */
+          CatchSignal(SIGPIPE, SIGNAL_CAST sig_pipe);
+
           /* close the listening socket(s) */
           for(i = 0; i < num_interfaces; i++)
             close(fd_listenset[i]);
@@ -2860,20 +2573,19 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
         }
         close(Client); /* The parent doesn't need this socket */
 
-        /*
-         * Force parent to check log size after spawning child.
-         * Fix from klausr@ITAP.Physik.Uni-Stuttgart.De.
-         * The parent smbd will log to logserver.smb. 
-         * It writes only two messages for each child
-         * started/finished. But each child writes, say, 50 messages also in
-         * logserver.smb, begining with the debug_count of the parent, before the
-         * child opens its own log file logserver.client. In a worst case
-         * scenario the size of logserver.smb would be checked after about
-         * 50*50=2500 messages (ca. 100kb).
-         */
-        force_check_log_size();
-
-#endif /* NO_FORK_DEBUG */
+	/*
+	 * Force parent to check log size after spawning child.
+	 * Fix from klausr@ITAP.Physik.Uni-Stuttgart.De.
+	 * The parent smbd will log to logserver.smb. 
+	 * It writes only two messages for each child
+	 * started/finished. But each child writes, say, 50 messages also in
+	 * logserver.smb, begining with the debug_count of the parent, before the
+	 * child opens its own log file logserver.client. In a worst case
+	 * scenario the size of logserver.smb would be checked after about
+	 * 50*50=2500 messages (ca. 100kb).
+	 */
+	force_check_log_size();
+ 
       } /* end for num */
     } /* end while 1 */
   } /* end if is_daemon */
@@ -2882,9 +2594,7 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
     /* Started from inetd. fd 0 is the socket. */
     /* We will abort gracefully when the client or remote system 
        goes away */
-#ifndef NO_SIGNAL_TEST
-    signal(SIGPIPE, SIGNAL_CAST sig_pipe);
-#endif
+    CatchSignal(SIGPIPE, SIGNAL_CAST sig_pipe);
     Client = dup(0);
 
     /* close our standard file descriptors */
@@ -2905,10 +2615,10 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
 static void process_smb(char *inbuf, char *outbuf)
 {
   extern int Client;
-#ifdef USE_SSL
+#ifdef WITH_SSL
   extern BOOL sslEnabled;     /* don't use function for performance reasons */
   static int sslConnected = 0;
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
   static int trans_num;
   int msg_type = CVAL(inbuf,0);
   int32 len = smb_len(inbuf);
@@ -2933,7 +2643,7 @@ static void process_smb(char *inbuf, char *outbuf)
   DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
   DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
     if(sslEnabled && !sslConnected){
         sslConnected = sslutil_negotiate_ssl(Client, msg_type);
         if(sslConnected < 0){   /* an error occured */
@@ -2943,7 +2653,7 @@ static void process_smb(char *inbuf, char *outbuf)
             return;
         }
     }
-#endif  /* USE_SSL */
+#endif  /* WITH_SSL */
 
 #ifdef WITH_VTP
   if(trans_num == 1 && VT_Check(inbuf)) 
@@ -3641,9 +3351,6 @@ static int sig_hup(void)
    */
 
   reload_after_sighup = True;
-#ifndef DONT_REINSTALL_SIG
-  signal(SIGHUP,SIGNAL_CAST sig_hup);
-#endif
   BlockSignals(False,SIGHUP);
   return(0);
 }
@@ -3811,7 +3518,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   string_set(&pcon->dirpath,"");
   string_set(&pcon->user,user);
 
-#if HAVE_GETGRNAM 
+#ifdef HAVE_GETGRNAM 
   if (*lp_force_group(snum))
     {
       struct group *gptr;
@@ -4596,7 +4303,7 @@ static BOOL dump_core(void)
   if (chdir(dname)) return(False);
   umask(~(0700));
 
-#ifndef NO_GETRLIMIT
+#ifdef HAVE_GETRLIMIT
 #ifdef RLIMIT_CORE
   {
     struct rlimit rlp;
@@ -4631,7 +4338,7 @@ void exit_server(char *reason)
   for (i=0;i<MAX_CONNECTIONS;i++)
     if (Connections[i].open)
       close_cnum(i,(uint16)-1);
-#ifdef DFS_AUTH
+#ifdef WITH_DFS
   if (dcelogin_atmost_once)
     dfs_unlogin();
 #endif
@@ -5431,11 +5138,12 @@ static void usage(char *pname)
   int opt;
   extern char *optarg;
 
-#ifdef NEED_AUTH_PARAMETERS
+#ifdef HAVE_SET_AUTH_PARAMETERS
   set_auth_parameters(argc,argv);
 #endif
 
-#ifdef SecureWare
+#ifdef HAVE_SETLUID
+  /* needed for SecureWare on SCO */
   setluid(0);
 #endif
 
@@ -5453,7 +5161,7 @@ static void usage(char *pname)
 
   /* make absolutely sure we run as root - to handle cases where people
      are crazy enough to have it setuid */
-#ifdef USE_SETRES
+#ifdef HAVE_SETRESUID
   setresuid(0,0,0);
 #else
   setuid(0);
@@ -5463,7 +5171,7 @@ static void usage(char *pname)
 #endif
 
   fault_setup((void (*)(void *))exit_server);
-  signal(SIGTERM , SIGNAL_CAST dflt_sig);
+  CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
 
   /* we want total control over the permissions on created files,
      so set our umask to 0 */
@@ -5533,7 +5241,7 @@ static void usage(char *pname)
   DEBUG(2,("%s smbd version %s started\n",timestring(),VERSION));
   DEBUG(2,("Copyright Andrew Tridgell 1992-1997\n"));
 
-#ifndef NO_GETRLIMIT
+#ifdef HAVE_GETRLIMIT
 #ifdef RLIMIT_NOFILE
   {
     struct rlimit rlp;
@@ -5566,28 +5274,25 @@ static void usage(char *pname)
   if (!reload_services(False))
     return(-1);	
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
   {
     extern BOOL sslEnabled;
     sslEnabled = lp_ssl_enabled();
     if(sslEnabled)
       sslutil_init(True);
   }
-#endif        /* USE_SSL */
+#endif        /* WITH_SSL */
 
   codepage_initialise(lp_client_code_page());
 
   pstrcpy(global_myworkgroup, lp_workgroup());
 
-  if(!pdb_generate_machine_sid())
-  {
-    DEBUG(0,("ERROR: Samba cannot get a machine SID.\n"));
-    exit(1);
+  if(!pdb_generate_machine_sid()) {
+	  DEBUG(0,("ERROR: Samba cannot get a machine SID.\n"));
+	  exit(1);
   }
 
-#ifndef NO_SIGNAL_TEST
-  signal(SIGHUP,SIGNAL_CAST sig_hup);
-#endif
+  CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 
   /* Setup the signals that allow the debug log level
      to by dynamically changed. */
@@ -5597,11 +5302,11 @@ static void usage(char *pname)
 
 #ifndef MEM_MAN
 #if defined(SIGUSR1)
-  signal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+  CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
 #endif /* SIGUSR1 */
    
 #if defined(SIGUSR2)
-  signal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+  CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 #endif /* SIGUSR2 */
 #endif /* MEM_MAN */
 

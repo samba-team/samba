@@ -1,0 +1,322 @@
+###########################################################################
+# Makefile.in for Samba - rewritten for autoconf support
+# Copyright Andrew Tridgell 1992-1998
+###########################################################################
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+INSTALL_BIN=$(exec_prefix)/bin
+INSTALL_MAN=$(prefix)/man
+
+LIBS1=@LIBS@
+CC=@CC@
+CFLAGS=@CFLAGS@
+AWK=@AWK@
+
+INSTALLCMD=@INSTALL@
+
+VPATH=@srcdir@
+srcdir=@srcdir@
+SHELL=/bin/sh
+
+.SUFFIXES:
+.SUFFIXES: .c .o
+
+BASEDIR=$(prefix)/samba
+BINDIR = $(BASEDIR)/bin
+SBINDIR = $(BASEDIR)/bin
+LIBDIR = $(BASEDIR)/lib
+VARDIR = $(BASEDIR)/var
+MANDIR = $(BASEDIR)/man
+
+# The permissions to give the executables
+INSTALLPERMS = 0755
+
+# Add any optimisation or debugging flags here
+# add -DSYSLOG for syslog support
+FLAGS1 = -O
+
+# set these to where to find various files
+# These can be overridden by command line switches (see smbd(8))
+# or in smb.conf (see smb.conf(5))
+SMBLOGFILE = $(VARDIR)/log.smb
+NMBLOGFILE = $(VARDIR)/log.nmb
+CONFIGFILE = $(LIBDIR)/smb.conf
+LMHOSTSFILE = $(LIBDIR)/lmhosts
+DRIVERFILE = $(LIBDIR)/printers.def
+SMB_PASSWD = $(BINDIR)/smbpasswd
+SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
+
+# This is where SWAT images and help files go
+SWATDIR = $(BASEDIR)/swat
+
+# the directory where lock files go
+LOCKDIR = $(VARDIR)/locks
+
+# The directory where code page definition files go
+CODEPAGEDIR = $(LIBDIR)/codepages
+# The current codepage definition list.
+CODEPAGELIST= 437 737 850 852 861 932 866 949 950 936
+
+# set this to the default group you want your machine to appear in
+# for browsing. This can also be set in nmbd (see nmbd(8))
+WORKGROUP = WORKGROUP
+
+# set this to the name of the default account, which is the one
+# to use when no username or password is specified.  This can be overridden
+# in the runtime configuration file (see smb.conf(5))
+# NOTE: The account "nobody" may not be a good one as
+# on many unixes it may not be able to print. Thus you
+# might have to create a separate guest account that can print.
+GUESTACCOUNT = nobody
+
+# where you are going to have the smbrun binary. This defaults to the 
+# install directory. This binary is needed for correct printing
+# and magic script execution. This should be an absolute path!
+# Also not that this should include the name "smbrun" on the end (the
+# name of the executable)
+SMBRUN = $(BINDIR)/smbrun
+
+
+PASSWD_FLAGS = -DSMB_PASSWD=\"$(SMB_PASSWD)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\"
+FLAGS1 = $(CFLAGS) -I. -I$(srcdir)/ubiqx -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
+FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" -DWEB_ROOT=\"$(WEB_ROOT)\" $(REGEX_FLAGS)
+FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
+FLAGS4 = -DWORKGROUP=\"$(WORKGROUP)\" -DGUEST_ACCOUNT=\"$(GUESTACCOUNT)\" -DDRIVERFILE=\"$(DRIVERFILE)\"
+FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) $(AFS_FLAGS) $(KRB5_FLAGS) $(KRB4_FLAGS) $(RPM_OPT_FLAGS) -DHAVE_INCLUDES_H
+
+FLAGS  = $(FLAGS5) $(PAM_FLAGS) $(DCE_FLAGS) $(DES_FLAGS) $(PASSWD_FLAGS) $(VTP_FLAGS) $(NISPLUS_FLAGS) $(LDAP_FLAGS) $(SSL_CFLAGS)
+LIBS = $(LIBS1) $(LIBSM) $(PAM_LIBS) $(DCE_LIBS) $(KRB5_LIBS) $(KRB4_LIBS) $(DES_LIB) $(LDAP_LIBS) $(SSL_LIBS)
+
+SPROGS = smbd nmbd swat
+PROGS1 = smbclient testparm testprns smbrun smbstatus smbpasswd make_smbcodepage
+PROGS = $(PROGS1) nmblookup make_printerdef $(MOUNT_PROGS)
+
+SCRIPTS = smbtar addtosmbpass
+
+
+######################################################################
+# object modules
+######################################################################
+
+# modules in the ubiqx library from Chris Hertel
+UBIOBJ = ubiqx/ubi_dLinkList.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
+         ubiqx/ubi_BinTree.o ubiqx/ubi_sLinkList.o
+
+# client specific object code in the lib/rpc directory
+RPC_CLI_OBJ = lib/rpc/client/cli_login.o lib/rpc/client/cli_netlogon.o lib/rpc/client/cli_samr.o \
+              lib/rpc/client/cli_wkssvc.o lib/rpc/client/cli_lsarpc.o lib/rpc/client/cli_pipe.o \
+              lib/rpc/client/cli_srvsvc.o lib/rpc/client/ntclienttrust.o
+
+# client code that needs to do in the server in the lib/rpc directory.
+RPC_CLIENT_SERVER_SUBSET_OBJ = lib/rpc/client/cli_pipe.o lib/rpc/client/cli_login.o \
+                               lib/rpc/client/cli_netlogon.o
+
+# server specific object code in the lib/rpc directory
+RPC_SERV_OBJ = lib/rpc/server/srv_lsa.o lib/rpc/server/srv_netlog.o lib/rpc/server/srv_reg.o \
+               lib/rpc/server/srv_srvsvc.o lib/rpc/server/srv_wkssvc.o \
+               lib/rpc/server/srv_lsa_hnd.o lib/rpc/server/srv_pipe_hnd.o \
+               lib/rpc/server/srv_samr.o lib/rpc/server/srv_util.o
+
+# parse object files in the lib/rpc subdirectory
+RPC_OBJ = lib/rpc/parse/parse_lsa.o lib/rpc/parse/parse_net.o lib/rpc/parse/parse_reg.o \
+          lib/rpc/parse/parse_samr.o lib/rpc/parse/parse_wks.o lib/rpc/parse/parse_misc.o \
+          lib/rpc/parse/parse_prs.o lib/rpc/parse/parse_rpc.o lib/rpc/parse/parse_srv.o
+
+
+# password database object files
+PASSDB_OBJ = passdb.o ldap.o smbpass.o nisppass.o smbpassfile.o
+
+# general utility object files
+UTILOBJ1 = util.o system.o charset.o kanji.o fault.o smbencrypt.o smbdes.o charcnv.o genrand.o
+UTILOBJ2 = $(UTILOBJ1) md4.o loadparm.o params.o pcap.o username.o time.o membuffer.o namequery.o nmblib.o
+UTILOBJ3 = $(UTILOBJ2) signal.o netmask.o dfree.o
+UTILOBJ = $(UTILOBJ3) credentials.o interface.o replace.o print_svid.o smberr.o pidfile.o slprintf.o $(SSL_OBJ)
+
+# Client utility object files.
+CLIENTUTIL = clientgen.o nterr.o
+
+# object code for smbd
+SMBDOBJ1 = $(UTILOBJ) trans2.o nttrans.o message.o dir.o printing.o 
+SMBDOBJ2 = ipc.o reply.o mangle.o chgpasswd.o password.o quotas.o uid.o
+SMBDOBJ3 = predict.o pipes.o server.o access.o 
+SMBDOBJ4 = ufc.o connection.o groupname.o
+SMBDOBJ = $(SMBDOBJ1) $(SMBDOBJ2) $(SMBDOBJ3) $(SMBDOBJ4) $(UBIOBJ) $(RPC_OBJ) $(RPC_SERV_OBJ) \
+          $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(VTP_OBJ) $(LOCKOBJ) $(CLIENTUTIL) $(PASSDB_OBJ)
+
+# object code needed for programs that handle the the locking files
+LOCKOBJ = locking_shm.o locking_slow.o locking.o shmem.o shmem_sysv.o
+
+# object code for nmbd
+NMBDOBJ1 = $(PASSDB_OBJ) nmbd.o nmbd_packets.o nmbd_lmhosts.o nmbd_become_dmb.o nmbd_logonnames.o
+NMBDOBJ2 = nmbd_browserdb.o nmbd_responserecordsdb.o nmbd_workgroupdb.o nmbd_serverlistdb.o
+NMBDOBJ3 = nmbd_subnetdb.o nmbd_browsesync.o nmbd_nodestatus.o nmbd_mynames.o nmbd_winsproxy.o
+NMBDOBJ4 = nmbd_sendannounce.o nmbd_processlogon.o nmbd_incomingdgrams.o
+NMBDOBJ5 = asyncdns.o nmbd_winsserver.o nmbd_incomingrequests.o nmbd_nameregister.o
+NMBDOBJ6 = nmbd_namerelease.o nmbd_namequery.o nmbd_become_lmb.o nmbd_elections.o nmbd_namelistdb.o
+
+NMBDOBJ = $(UTILOBJ) $(NMBDOBJ1) $(NMBDOBJ2) $(NMBDOBJ3) $(NMBDOBJ4) $(NMBDOBJ5) $(NMBDOBJ6) $(CLIENTUTIL) $(UBIOBJ)
+
+# object files for smbclient
+CLIENT_OBJ = client.o clientutil.o clitar.o getsmbpass.o $(UTILOBJ)
+
+# object files for smbmount
+MOUNT_OBJ = smbmount.o clientutil.o getsmbpass.o $(UTILOBJ)
+
+# object files for smbmnt
+MNT_OBJ = smbmnt.o 
+
+# object files for smbumount
+UMOUNT_OBJ = smbumount.o $(UTILOBJ)
+
+# object files for smbstatus
+STATUS_OBJ = status.o $(UTILOBJ) $(LOCKOBJ) 
+
+# object files for nmblookup
+LOOKUP_OBJ = nmblookup.o $(UTILOBJ) 
+
+# object files for swat
+SWAT_OBJ = web/swat.o web/statuspage.o web/cgi.o web/diagnose.o web/startstop.o password.o $(PASSDB_OBJ) \
+           $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(RPC_OBJ) $(UTILOBJ) $(LOCKOBJ) $(CLIENTUTIL)
+
+# object files to be auto-prototyped
+PROTOOBJ = $(UTILOBJ) $(SMBDOBJ) $(NMBDOBJ) $(LOCKOBJ) $(CLIENT_OBJ) $(STATUS_OBJ) $(SWAT_OBJ) \
+           $(CLIENTUTIL) $(PASSDB_OBJ)
+
+######################################################################
+# now the rules...
+######################################################################
+
+all : $(SPROGS) $(PROGS) 
+
+.SUFFIXES:
+.SUFFIXES: .c .o .h
+
+.c.o: $(INCLUDES)
+	@echo Compiling $*.c
+	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@
+
+smbd: $(SMBDOBJ) 
+	@echo Linking smbd
+	@$(CC) $(FLAGS) -o smbd $(SMBDOBJ) $(LIBS) $(AFS_LIBS)
+
+smbrun: smbrun.o 
+	@echo Linking smbrun
+	@$(CC) $(FLAGS) -o smbrun smbrun.o $(LIBS)
+
+nmblookup: $(LOOKUP_OBJ)
+	@echo Linking nmblookup
+	@$(CC) $(FLAGS) -o nmblookup $(LOOKUP_OBJ) $(LIBS)
+
+nmbd: $(NMBDOBJ)
+	@echo Linking nmbd
+	@$(CC) $(FLAGS) -o nmbd $(NMBDOBJ) $(LIBS)
+
+smbclient: $(CLIENT_OBJ) 
+	@echo Linking smbclient
+	@$(CC) $(FLAGS) -o smbclient $(CLIENT_OBJ) $(LIBS)
+
+smbmount: $(MOUNT_OBJ) 
+	@echo Linking smbmount
+	@$(CC) $(FLAGS) -o smbmount $(MOUNT_OBJ) $(LIBS)
+
+smbmnt: $(MNT_OBJ)
+	@echo Linking smbmnt
+	@$(CC) $(FLAGS) -o smbmnt $(MNT_OBJ)
+
+smbumount: $(UMOUNT_OBJ)
+	@echo Linking smbumount
+	@$(CC) $(FLAGS) -o smbumount $(UMOUNT_OBJ)
+
+smbtorture: torture.o getsmbpass.o $(UTILOBJ) $(CLIENTUTIL)
+	@echo Linking smbtorture
+	@$(CC) $(FLAGS) -o smbtorture torture.o getsmbpass.o $(UTILOBJ) $(CLIENTUTIL) $(LIBS)
+
+smbstatus: $(STATUS_OBJ)
+	@echo Linking smbstatus
+	@$(CC) $(FLAGS) -o smbstatus $(STATUS_OBJ) $(LIBS)
+
+testparm: testparm.o access.o $(UTILOBJ)
+	@echo Linking testparm
+	@$(CC) $(FLAGS) -o testparm testparm.o access.o $(UTILOBJ) $(LIBS)
+
+testprns: testprns.o $(UTILOBJ)
+	@echo Linking testprns
+	@$(CC) $(FLAGS) -o testprns testprns.o $(UTILOBJ) $(LIBS)
+
+smbpasswd: smbpasswd.o getsmbpass.o $(PASSDB_OBJ) $(UTILOBJ) $(CLIENTUTIL) $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(RPC_OBJ)
+	@echo Linking smbpasswd
+	@$(CC) $(FLAGS) -o smbpasswd smbpasswd.o getsmbpass.o $(PASSDB_OBJ) $(UTILOBJ) $(CLIENTUTIL) \
+                        $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(RPC_OBJ) $(LIBS)
+
+make_smbcodepage: make_smbcodepage.o $(UTILOBJ) 
+	@echo Linking make_smbcodepage
+	@$(CC) $(FLAGS) -o make_smbcodepage make_smbcodepage.o $(UTILOBJ) $(LIBS)
+
+make_printerdef: make_printerdef.o $(UTILOBJ) 
+	@echo Linking make_printerdef
+	@$(CC) $(FLAGS) -o make_printerdef make_printerdef.o $(UTILOBJ) $(LIBS)
+
+wsmbstatus: wsmbstatus.o $(UTILOBJ)  
+	@echo Linking wsmbstatus
+	@$(CC) $(FLAGS) -o wsmbstatus wsmbstatus.o $(UTILOBJ) $(LIBS)
+
+swat: $(SWAT_OBJ)
+	@echo Linking swat
+	@$(CC) $(FLAGS) -o swat $(SWAT_OBJ) $(LIBS) 
+
+install: installbin installman installscripts installcp installswat
+
+installbin: all
+	@$(SHELL) $(srcdir)/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
+
+installscripts:
+	@$(SHELL) $(srcdir)/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
+
+installcp:
+	@$(SHELL) $(srcdir)/installcp.sh $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
+
+installswat:
+	@$(SHELL) $(srcdir)/installswat.sh $(SWATDIR) $(srcdir)
+
+# revert to the previously installed version
+revert:
+	@$(SHELL) $(srcdir)/revert.sh $(SBINDIR) $(SPROGS) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS)
+
+installman:
+	@$(SHELL) $(srcdir)/installman.sh $(MANDIR) $(srcdir)
+
+uninstall: uninstallman uninstallbin uninstallscripts uninstallcp
+
+uninstallman:
+	@$(SHELL) $(srcdir)/uninstallman.sh $(MANDIR) $(srcdir)
+
+uninstallbin:
+	@$(SHELL) $(srcdir)/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
+
+uninstallscripts:
+	@$(SHELL) $(srcdir)/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
+
+uninstallcp:
+	@$(SHELL) $(srcdir)/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
+
+clean: 
+	@echo Cleaning up ...
+	@rm -f core *.o */*.o $(PROTOOBJ) lib/rpc/*/*.o *~ config.cache $(PROGS) $(SPROGS)
+
+cleandir:  clean
+	rm -f .depend tags
+
+proto:
+	$(AWK) -f mkproto.awk `echo $(PROTOOBJ) | sed -e 's/\.o/\.c/g' | tr ' ' '\n' | sort | fgrep -v "ubiqx" | uniq` > proto.h
+
+etags:
+	etags `find . -name "*.[ch]"`
+
+ctags:
+	ctags `find . -name "*.[ch]"`
+
+realclean: clean

@@ -30,7 +30,7 @@ extern connection_struct Connections[];
 
 
 
-uint32 dircounter = 0;
+static uint32 dircounter = 0;
 
 
 #define NUMDIRPTRS 256
@@ -723,7 +723,7 @@ char *DirCacheCheck( char *path, char *name, int snum )
   return(NULL);
   } /* DirCacheCheck */
 
-void DirCacheFlush( int snum )
+void DirCacheFlush(int snum)
   /* ------------------------------------------------------------------------ **
    * Remove all cache entries which have an snum that matches the input.
    *
@@ -733,18 +733,18 @@ void DirCacheFlush( int snum )
    *
    * ------------------------------------------------------------------------ **
    */
-  {
-  dir_cache_entry *entry;
-  ubi_dlNodePtr    next;
+{
+	dir_cache_entry *entry;
+	ubi_dlNodePtr    next;
 
-  for( entry = (dir_cache_entry *)ubi_dlFirst( dir_cache ); NULL != entry; )
-    {
-    next = ubi_dlNext( entry );
-    if( entry->snum == snum )
-      free( ubi_dlRemThis( dir_cache, entry ) );
-    entry = (dir_cache_entry *)next;
-    }
-  } /* DirCacheFlush */
+	for(entry = (dir_cache_entry *)ubi_dlFirst( dir_cache ); 
+	    NULL != entry; )  {
+		next = ubi_dlNext( entry );
+		if( entry->snum == snum )
+			free( ubi_dlRemThis( dir_cache, entry ) );
+		entry = (dir_cache_entry *)next;
+	}
+} /* DirCacheFlush */
 
 /* -------------------------------------------------------------------------- **
  * End of the section that manages the global directory cache.
@@ -752,276 +752,3 @@ void DirCacheFlush( int snum )
  */
 
 
-#ifdef REPLACE_GETWD
-/* This is getcwd.c from bash.  It is needed in Interactive UNIX.  To
- * add support for another OS you need to determine which of the
- * conditional compilation macros you need to define.  All the options
- * are defined for Interactive UNIX.
- */
-#ifdef ISC
-#define HAVE_UNISTD_H
-#define USGr3
-#define USG
-#endif
-
-#if defined (HAVE_UNISTD_H)
-#  include <unistd.h>
-#endif
-
-#if defined (__STDC__)
-#  define CONST const
-#  define PTR void *
-#else /* !__STDC__ */
-#  define CONST
-#  define PTR char *
-#endif /* !__STDC__ */
-
-#if !defined (PATH_MAX)
-#  if defined (MAXPATHLEN)
-#    define PATH_MAX MAXPATHLEN
-#  else /* !MAXPATHLEN */
-#    define PATH_MAX 1024
-#  endif /* !MAXPATHLEN */
-#endif /* !PATH_MAX */
-
-#if defined (_POSIX_VERSION) || defined (USGr3) || defined (HAVE_DIRENT_H)
-#  if !defined (HAVE_DIRENT)
-#    define HAVE_DIRENT
-#  endif /* !HAVE_DIRENT */
-#endif /* _POSIX_VERSION || USGr3 || HAVE_DIRENT_H */
-
-#if defined (HAVE_DIRENT)
-#  define D_NAMLEN(d)	(strlen ((d)->d_name))
-#else
-#  define D_NAMLEN(d)	((d)->d_namlen)
-#endif /* ! (_POSIX_VERSION || USGr3) */
-
-#if defined (USG) || defined (USGr3)
-#  define d_fileno d_ino
-#endif
-
-#if !defined (alloca)
-extern char *alloca ();
-#endif /* alloca */
-
-/* Get the pathname of the current working directory,
-   and put it in SIZE bytes of BUF.  Returns NULL if the
-   directory couldn't be determined or SIZE was too small.
-   If successful, returns BUF.  In GNU, if BUF is NULL,
-   an array is allocated with `malloc'; the array is SIZE
-   bytes long, unless SIZE <= 0, in which case it is as
-   big as necessary.  */
-#if defined (__STDC__)
-char *
-getcwd (char *buf, size_t size)
-#else /* !__STDC__ */
-char *
-getcwd (buf, size)
-     char *buf;
-     int size;
-#endif /* !__STDC__ */
-{
-  static CONST char dots[]
-    = "../../../../../../../../../../../../../../../../../../../../../../../\
-../../../../../../../../../../../../../../../../../../../../../../../../../../\
-../../../../../../../../../../../../../../../../../../../../../../../../../..";
-  CONST char *dotp, *dotlist;
-  size_t dotsize;
-  dev_t rootdev, thisdev;
-  ino_t rootino, thisino;
-  char path[PATH_MAX + 1];
-  register char *pathp;
-  char *pathbuf;
-  size_t pathsize;
-  struct stat st;
-
-  if (buf != NULL && size == 0)
-    {
-      errno = EINVAL;
-      return ((char *)NULL);
-    }
-
-  pathsize = sizeof (path);
-  pathp = &path[pathsize];
-  *--pathp = '\0';
-  pathbuf = path;
-
-  if (stat (".", &st) < 0)
-    return ((char *)NULL);
-  thisdev = st.st_dev;
-  thisino = st.st_ino;
-
-  if (stat ("/", &st) < 0)
-    return ((char *)NULL);
-  rootdev = st.st_dev;
-  rootino = st.st_ino;
-
-  dotsize = sizeof (dots) - 1;
-  dotp = &dots[sizeof (dots)];
-  dotlist = dots;
-  while (!(thisdev == rootdev && thisino == rootino))
-    {
-      register DIR *dirstream;
-      register struct dirent *d;
-      dev_t dotdev;
-      ino_t dotino;
-      char mount_point;
-      int namlen;
-
-      /* Look at the parent directory.  */
-      if (dotp == dotlist)
-	{
-	  /* My, what a deep directory tree you have, Grandma.  */
-	  char *new;
-	  if (dotlist == dots)
-	    {
-	      new = malloc (dotsize * 2 + 1);
-	      if (new == NULL)
-		goto lose;
-	      memcpy (new, dots, dotsize);
-	    }
-	  else
-	    {
-	      new = realloc ((PTR) dotlist, dotsize * 2 + 1);
-	      if (new == NULL)
-		goto lose;
-	    }
-	  memcpy (&new[dotsize], new, dotsize);
-	  dotp = &new[dotsize];
-	  dotsize *= 2;
-	  new[dotsize] = '\0';
-	  dotlist = new;
-	}
-
-      dotp -= 3;
-
-      /* Figure out if this directory is a mount point.  */
-      if (stat (dotp, &st) < 0)
-	goto lose;
-      dotdev = st.st_dev;
-      dotino = st.st_ino;
-      mount_point = dotdev != thisdev;
-
-      /* Search for the last directory.  */
-      dirstream = opendir(dotp);
-      if (dirstream == NULL)
-	goto lose;
-      while ((d = (struct dirent *)readdir(dirstream)) != NULL)
-	{
-	  if (d->d_name[0] == '.' &&
-	      (d->d_name[1] == '\0' ||
-		(d->d_name[1] == '.' && d->d_name[2] == '\0')))
-	    continue;
-	  if (mount_point || d->d_fileno == thisino)
-	    {
-	      char *name;
-
-	      namlen = D_NAMLEN(d);
-	      name = (char *)
-		alloca (dotlist + dotsize - dotp + 1 + namlen + 1);
-	      memcpy (name, dotp, dotlist + dotsize - dotp);
-	      name[dotlist + dotsize - dotp] = '/';
-	      memcpy (&name[dotlist + dotsize - dotp + 1],
-		      d->d_name, namlen + 1);
-	      if (lstat (name, &st) < 0)
-		{
-		  int save = errno;
-		  closedir(dirstream);
-		  errno = save;
-		  goto lose;
-		}
-	      if (st.st_dev == thisdev && st.st_ino == thisino)
-		break;
-	    }
-	}
-      if (d == NULL)
-	{
-	  int save = errno;
-	  closedir(dirstream);
-	  errno = save;
-	  goto lose;
-	}
-      else
-	{
-	  size_t space;
-
-	  while ((space = pathp - pathbuf) <= namlen)
-	    {
-	      char *new;
-
-	      if (pathbuf == path)
-		{
-		  new = malloc (pathsize * 2);
-		  if (!new)
-		    goto lose;
-		}
-	      else
-		{
-		  new = realloc ((PTR) pathbuf, (pathsize * 2));
-		  if (!new)
-		    goto lose;
-		  pathp = new + space;
-		}
-	      (void) memcpy (new + pathsize + space, pathp, pathsize - space);
-	      pathp = new + pathsize + space;
-	      pathbuf = new;
-	      pathsize *= 2;
-	    }
-
-	  pathp -= namlen;
-	  (void) memcpy (pathp, d->d_name, namlen);
-	  *--pathp = '/';
-	  closedir(dirstream);
-	}
-
-      thisdev = dotdev;
-      thisino = dotino;
-    }
-
-  if (pathp == &path[sizeof(path) - 1])
-    *--pathp = '/';
-
-  if (dotlist != dots)
-    free ((PTR) dotlist);
-
-  {
-    size_t len = pathbuf + pathsize - pathp;
-    if (buf == NULL)
-      {
-	if (len < (size_t) size)
-	  len = size;
-	buf = (char *) malloc (len);
-	if (buf == NULL)
-	  goto lose2;
-      }
-    else if ((size_t) size < len)
-      {
-	errno = ERANGE;
-	goto lose2;
-      }
-    (void) memcpy((PTR) buf, (PTR) pathp, len);
-  }
-
-  if (pathbuf != path)
-    free (pathbuf);
-
-  return (buf);
-
- lose:
-  if ((dotlist != dots) && dotlist)
-    {
-      int e = errno;
-      free ((PTR) dotlist);
-      errno = e;
-    }
-
- lose2:
-  if ((pathbuf != path) && pathbuf)
-    {
-      int e = errno;
-      free ((PTR) pathbuf);
-      errno = e;
-    }
-  return ((char *)NULL);
-}
-#endif

@@ -102,9 +102,7 @@ static int sig_hup(void)
   set_samba_nb_type();
 
   BlockSignals(False,SIGHUP);
-#ifndef DONT_REINSTALL_SIG
-  signal(SIGHUP,SIGNAL_CAST sig_hup);
-#endif
+
   return(0);
 } /* sig_hup */
 
@@ -141,7 +139,7 @@ static BOOL dump_core(void)
     return( False );
   umask( ~(0700) );
 
-#ifndef NO_GETRLIMIT
+#ifdef HAVE_GETRLIMIT
 #ifdef RLIMIT_CORE
   {
     struct rlimit rlp;
@@ -428,7 +426,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   if ( ClientNMB == -1 )
     return( False );
 
-  signal( SIGPIPE, SIGNAL_CAST sig_pipe );
+  CatchSignal( SIGPIPE, SIGNAL_CAST sig_pipe );
 
   set_socket_options( ClientNMB,   "SO_BROADCAST" );
   set_socket_options( ClientDGRAM, "SO_BROADCAST" );
@@ -582,8 +580,8 @@ int main(int argc,char *argv[])
 
   fault_setup((void (*)(void *))fault_continue );
 
-  signal( SIGHUP,  SIGNAL_CAST sig_hup );
-  signal( SIGTERM, SIGNAL_CAST sig_term );
+  CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
+  CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
 
   /* Setup the signals that allow the debug log level
      to by dynamically changed. */
@@ -592,11 +590,11 @@ int main(int argc,char *argv[])
      SIGUSR1 and SIGUSR2 to do debug level changes. */
 #ifndef MEM_MAN
 #if defined(SIGUSR1)
-  signal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+  CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
 #endif /* SIGUSR1 */
 
 #if defined(SIGUSR2)
-  signal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+  CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 #endif /* SIGUSR2 */
 #endif /* MEM_MAN */
 

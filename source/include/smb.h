@@ -57,12 +57,6 @@ typedef int BOOL;
    as signed and unsigned int will work.
 */
 
-/* afs/stds.h defines int16 and int32 */
-#ifndef AFS_AUTH
-typedef short int16;
-typedef int int32;
-#endif
-
 #ifndef uint8
 typedef unsigned char uint8;
 #endif
@@ -71,21 +65,16 @@ typedef unsigned char uint8;
 typedef unsigned short uint16;
 #endif
 
-#ifndef uint32
-typedef unsigned int uint32;
-#endif
-
 #ifndef uchar
 #define uchar unsigned char
 #endif
+
 #ifndef int16
 #define int16 short
 #endif
+
 #ifndef uint16
 #define uint16 unsigned short
-#endif
-#ifndef uint32
-#define uint32 unsigned int
 #endif
 
 #define SIZEOFWORD 2
@@ -94,11 +83,15 @@ typedef unsigned int uint32;
 #define DEF_CREATE_MASK (0755)
 #endif
 
+#ifndef PRINTCAP_NAME
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
 
 /* debugging code */
-#ifndef SYSLOG
+#if !defined(WITH_SYSLOG) || defined(NO_SYSLOG)
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))?(Debug1 body):0)
 #define DEBUGLVL(level) (DEBUGLEVEL>=(level))
 #else
@@ -1149,7 +1142,7 @@ struct parm_struct
 #define ERRHRD 0x03  /* Error is an hardware error. */
 #define ERRCMD 0xFF  /* Command was not in the "SMB" format. */
 
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
 int Debug1(char *, ...); 
 int slprintf(char *str, int n, char *format, ...);
 #else
@@ -1157,7 +1150,7 @@ int Debug1();
 int slprintf();
 #endif
 
-#ifdef DFS_AUTH
+#ifdef WITH_DFS
 void dfs_unlogin(void);
 extern int dcelogin_atmost_once;
 #endif
@@ -1168,14 +1161,6 @@ void ajt_panic(void);
 
 #ifdef NOSTRDUP
 char *strdup(char *s);
-#endif
-
-#ifdef REPLACE_STRLEN
-int Strlen(char *);
-#endif
-
-#ifdef REPLACE_STRSTR
-char *Strstr(char *s, char *p);
 #endif
 
 #ifndef MIN
@@ -1190,7 +1175,7 @@ char *Strstr(char *s, char *p);
 #endif
 
 #ifndef SIGNAL_CAST
-#define SIGNAL_CAST
+#define SIGNAL_CAST (RETSIGTYPE (*)())
 #endif
 
 #ifndef SELECT_CAST
@@ -1330,10 +1315,10 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_SAMB
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
 /* SSL version options */
 enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 
 /* Macros to get at offsets within smb_lkrng and smb_unlkrng
    structures. We cannot define these as actual structures
