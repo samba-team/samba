@@ -516,7 +516,7 @@ void debug_init(void)
  * get ready for syslog stuff
  * ************************************************************************** **
  */
-void setup_logging(char *pname, BOOL interactive)
+void setup_logging(const char *pname, BOOL interactive)
 {
 	debug_init();
 
@@ -531,7 +531,7 @@ void setup_logging(char *pname, BOOL interactive)
 	}
 #ifdef WITH_SYSLOG
 	else {
-		char *p = strrchr_m( pname,'/' );
+		const char *p = strrchr_m( pname,'/' );
 		if (p)
 			pname = p + 1;
 #ifdef LOG_DAEMON
