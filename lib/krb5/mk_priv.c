@@ -39,7 +39,7 @@ krb5_mk_priv(krb5_context context,
 
   s.pvno = 5;
   s.msg_type = krb_priv;
-  s.enc_part.etype = ETYPE_DES_CBC_CRC;
+  s.enc_part.etype = auth_context->enctype;
   s.enc_part.kvno = NULL;
 
   r = krb5_encrypt (context, buf + sizeof(buf) - len, len,
