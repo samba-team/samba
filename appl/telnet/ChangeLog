@@ -1,3 +1,13 @@
+Mon Nov  3 07:09:16 1997  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/telnetd.c (terminaltypeok): always return OK.  It used
+ 	to call `tgetent' to figure if it was a defined terminal type.
+  	It's possible to overflow tgetent so that's a bad idea.  The worst
+ 	that could happen by saying yes to all terminals is that the user
+ 	ends up with a terminal that has no definition on the local
+ 	system.  And besides, most telnet client has no support for
+ 	falling back to a different terminal type.
+
 Mon Oct 20 05:47:19 1997  Assar Westerlund  <assar@sics.se>
 
 	* libtelnet/kerberos5.c: remove lots of old junk.  clean-up.
