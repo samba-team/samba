@@ -760,12 +760,17 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 /*******************************************************************
  * init a structure.
  ********************************************************************/
-
-BOOL make_spoolss_q_addprinterex(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name,
-				 const char* clientname, const char* user_name,
-				 uint32 level, PRINTER_INFO_2 *info)
+BOOL make_spoolss_q_addprinterex(
+	SPOOL_Q_ADDPRINTEREX *q_u, 
+	const char *srv_name,
+	const char* clientname, 
+	const char* user_name,
+	uint32 level, 
+	PRINTER_INFO_CTR *ctr)
 {
 	DEBUG(5,("make_spoolss_q_addprinterex\n"));
+	
+	if (!ctr) return False;
 
 	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
 	init_unistr2(&q_u->server_name, srv_name, strlen(srv_name));
@@ -773,12 +778,12 @@ BOOL make_spoolss_q_addprinterex(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTEREX *q_u, con
 	q_u->level = level;
 	
 	q_u->info.level = level;
-	q_u->info.info_ptr = (info!=NULL)?1:0;
+	q_u->info.info_ptr = (ctr->printers_2!=NULL)?1:0;
 	switch (level)
 	{
 		case 2:
 			/* init q_u->info.info2 from *info */
-			if (!make_spool_printer_info_2( ctx, &q_u->info.info_2, info))
+			if (!make_spool_printer_info_2(&q_u->info.info_2, ctr->printers_2))
 			{
 				DEBUG(0,("make_spoolss_q_addprinterex: Unable to fill SPOOL_Q_ADDPRINTEREX struct!\n"));
 				return False;
@@ -812,14 +817,16 @@ BOOL make_spoolss_q_addprinterex(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTEREX *q_u, con
 create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
 *******************************************************************/
 
-BOOL make_spool_printer_info_2(TALLOC_CTX *ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
-			       PRINTER_INFO_2 *info)
+BOOL make_spool_printer_info_2(
+	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+	PRINTER_INFO_2 *info
+)
 {
 
 	SPOOL_PRINTER_INFO_LEVEL_2 *inf;
 
 	/* allocate the necessary memory */
-	inf = (SPOOL_PRINTER_INFO_LEVEL_2*)talloc_zero(ctx,sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
+	inf = (SPOOL_PRINTER_INFO_LEVEL_2*)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
 	if (spool_info2 == NULL)
 	{
 		DEBUG(0,("make_spool_printer_info_2: Unable to allocate SPOOL_PRINTER_INFO_LEVEL_2 sruct!\n"));
@@ -4620,9 +4627,11 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
  init a SPOOL_Q_ADDPRINTERDRIVER struct
  ******************************************************************/
 
-BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTERDRIVER *q_u, 
-				     const char* srv_name, uint32 level, 
-				     PRINTER_DRIVER_CTR *info)
+BOOL make_spoolss_q_addprinterdriver(
+	SPOOL_Q_ADDPRINTERDRIVER *q_u, 
+	const char* srv_name, 
+	uint32 level, 
+	PRINTER_DRIVER_CTR *info)
 {
 	DEBUG(5,("make_spoolss_q_addprinterdriver\n"));
 	
@@ -4639,8 +4648,9 @@ BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTERDRIVER *
 		   WinNT and Win2k */
 		case 3 :
 			q_u->info.info_3=(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3*)
-				          talloc_zero(ctx, sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
-			make_spool_driver_info_3(ctx,q_u->info.info_3, info->info3);
+				          malloc(sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
+			memset (q_u->info.info_3, 0x0, sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
+			make_spool_driver_info_3(q_u->info.info_3, info->info3);
 			break;
 		
 		/* info level 6 is supported by WinME and Win2k */
@@ -4657,8 +4667,10 @@ info level [%d]\n", level));
 	return True;
 }
 
-BOOL make_spool_driver_info_3(TALLOC_CTX *ctx, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
-			      DRIVER_INFO_3 *info3)
+BOOL make_spool_driver_info_3(
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+	DRIVER_INFO_3 *info3
+)
 {
 	uint32		len = 0;
 	uint16		*ptr = info3->dependentfiles;
@@ -4707,7 +4719,7 @@ BOOL make_spool_driver_info_3(TALLOC_CTX *ctx, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3
 	}
 	spool_drv_info->dependentfiles_ptr = (info3->dependentfiles!=NULL)?1:0;
 	spool_drv_info->dependentfilessize = len;
-	if(!make_spool_buffer5(ctx, &spool_drv_info->dependentfiles, len, info3->dependentfiles))
+	if(!make_spool_buffer5(&spool_drv_info->dependentfiles, len, info3->dependentfiles))
 		return False;
 	
 	return True;
@@ -4717,11 +4729,11 @@ BOOL make_spool_driver_info_3(TALLOC_CTX *ctx, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3
  make a BUFFER5 struct from a uint16*
  ******************************************************************/
 
-BOOL make_spool_buffer5(TALLOC_CTX *ctx, BUFFER5 *buf5, uint32 len, uint16 *src)
+BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src)
 {
 
 	buf5->buf_len = len;
-	if((buf5->buffer=(uint16*)talloc(ctx, sizeof(uint16)*len)) == NULL)
+	if((buf5->buffer=(uint16*)malloc(sizeof(uint16)*len)) == NULL)
 	{
 		DEBUG(0,("make_spool_buffer5: Unable to talloc memory for buffer!\n"));
 		return False;
