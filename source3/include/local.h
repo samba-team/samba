@@ -156,6 +156,6 @@
 
 
 /* the directory to sit in when idle */
-#define IDLE_DIR "/"
+/* #define IDLE_DIR "/" */
 
 #endif

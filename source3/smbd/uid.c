@@ -31,6 +31,8 @@ static int initial_gid;
 /* what user is current? */
 struct current_user current_user;
 
+extern pstring OriginalDir;
+
 /****************************************************************************
 initialise the uid routines
 ****************************************************************************/
@@ -54,7 +56,7 @@ void init_uid(void)
 
   current_user.cnum = -1;
 
-  ChDir(IDLE_DIR);
+  ChDir(OriginalDir);
 }
 
 
@@ -280,7 +282,7 @@ BOOL unbecome_user(void )
   if (current_user.cnum == -1)
     return(False);
 
-  ChDir(IDLE_DIR);
+  ChDir(OriginalDir);
 
   if (initial_uid == 0)
     {
@@ -317,9 +319,9 @@ BOOL unbecome_user(void )
   current_user.uid = initial_uid;
   current_user.gid = initial_gid;
   
-  if (ChDir(IDLE_DIR) != 0)
+  if (ChDir(OriginalDir) != 0)
     DEBUG(0,("%s chdir(%s) failed in unbecome_user\n",
-	     timestring(),IDLE_DIR));
+	     timestring(),OriginalDir));
 
   DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
 	getuid(),geteuid(),getgid(),getegid()));

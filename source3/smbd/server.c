@@ -67,6 +67,7 @@ static int num_connections_open = 0;
 
 extern fstring remote_machine;
 
+pstring OriginalDir;
 
 /* these can be set by some functions to override the error codes */
 int unix_ERR_class=SUCCESS;
@@ -3617,6 +3618,8 @@ static void usage(char *pname)
   /* we want total control over the permissions on created files,
      so set our umask to 0 */
   umask(0);
+
+  GetWd(OriginalDir);
 
   init_uid();
 
