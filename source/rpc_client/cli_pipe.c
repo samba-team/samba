@@ -473,6 +473,34 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 	return True;
 }
 
+/*******************************************************************
+ creates a DCE/RPC bind authentication response
+
+ - initialises the parse structure.
+ - dynamically allocates the header data structure
+ - caller is expected to free the header data structure once used.
+
+ ********************************************************************/
+void create_ntlmssp_resp(struct pwd_info *pwd,
+				char *domain, char *user_name, char *my_name,
+				uint32 ntlmssp_cli_flgs,
+                                prs_struct *auth_resp)
+{
+	RPC_AUTH_NTLMSSP_RESP     ntlmssp_resp;
+	unsigned char lm_owf[24];
+	unsigned char nt_owf[128];
+	size_t nt_owf_len;
+
+	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len);
+			
+	make_rpc_auth_ntlmssp_resp(&ntlmssp_resp,
+			         lm_owf, nt_owf, nt_owf_len,
+			         domain, user_name, my_name,
+			         ntlmssp_cli_flgs);
+
+	smb_io_rpc_auth_ntlmssp_resp("ntlmssp_resp", &ntlmssp_resp, auth_resp, 0);
+	mem_realloc_data(auth_resp->data, auth_resp->offset);
+}
 
 /*******************************************************************
  creates a DCE/RPC bind authentication response
@@ -482,7 +510,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
  - caller is expected to free the header data structure once used.
 
  ********************************************************************/
-static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
+BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,
 				uint32 ntlmssp_cli_flgs,
 				uint32 rpc_call_id,
@@ -490,13 +518,9 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
                                 prs_struct *rhdr_autha,
                                 prs_struct *auth_resp)
 {
-	unsigned char lm_owf[24];
-	unsigned char nt_owf[128];
-	size_t nt_owf_len;
 	RPC_HDR                   hdr;
 	RPC_HDR_AUTHA             hdr_autha;
 	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
-	RPC_AUTH_NTLMSSP_RESP     ntlmssp_resp;
 
 	make_rpc_hdr_autha(&hdr_autha, 0x1630, 0x1630, 0x0a, 0x06, 0x00);
 	smb_io_rpc_hdr_autha("hdr_autha", &hdr_autha, rhdr_autha, 0);
@@ -508,15 +532,8 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 	smb_io_rpc_auth_ntlmssp_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
 	mem_realloc_data(auth_resp->data, auth_resp->offset);
 
-	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len);
-			
-	make_rpc_auth_ntlmssp_resp(&ntlmssp_resp,
-			         lm_owf, nt_owf, nt_owf_len,
-			         domain, user_name, my_name,
-			         ntlmssp_cli_flgs);
-
-	smb_io_rpc_auth_ntlmssp_resp("ntlmssp_resp", &ntlmssp_resp, auth_resp, 0);
-	mem_realloc_data(auth_resp->data, auth_resp->offset);
+	create_ntlmssp_resp(pwd, domain, user_name, my_name, ntlmssp_cli_flgs,
+                                auth_resp);
 
 	/* create the request RPC_HDR */
 	make_rpc_hdr(&hdr, RPC_BINDRESP, 0x0, rpc_call_id,

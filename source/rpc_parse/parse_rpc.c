@@ -702,7 +702,7 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	int dom_len = strlen(domain);
 	int wks_len = strlen(wks   );
 	int usr_len = strlen(user  );
-	int lm_len  = lm_resp != NULL ? 24 : 0;
+	int lm_len  = nt_len != 0 ? (lm_resp != NULL ? 24 : 0) : 1;
 
 	DEBUG(5,("make_rpc_auth_ntlmssp_resp\n"));
 
@@ -710,9 +710,15 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm_resp\n"));
-	dump_data(100, lm_resp, lm_len);
+	if (lm_resp != NULL)
+	{
+		dump_data(100, lm_resp, lm_len);
+	}
 	DEBUG(100,("nt_resp\n"));
-	dump_data(100, nt_resp, nt_len);
+	if (nt_resp != NULL)
+	{
+		dump_data(100, nt_resp, nt_len);
+	}
 #endif
 
 	DEBUG(6,("dom: %s user: %s wks: %s neg_flgs: 0x%x\n",
@@ -746,8 +752,22 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 	rsp->neg_flags = neg_flags;
 
-	memcpy(rsp->lm_resp, lm_resp, lm_len);
-	memcpy(rsp->nt_resp, nt_resp, nt_len);
+	if (lm_resp != NULL && lm_len != 1)
+	{
+		memcpy(rsp->lm_resp, lm_resp, lm_len);
+	}
+	else
+	{
+		rsp->lm_resp[0] = 0;
+	}
+	if (nt_resp != NULL)
+	{
+		memcpy(rsp->nt_resp, nt_resp, nt_len);
+	}
+	else
+	{
+		rsp->nt_resp[0] = 0;
+	}
 
 	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
 	{

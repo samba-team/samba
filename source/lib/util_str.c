@@ -462,7 +462,7 @@ char *skip_string(char *buf,size_t n)
 {
   while (n--)
     buf += strlen(buf) + 1;
-  return(buf);
+  return buf;
 }
 
 /*******************************************************************

@@ -604,7 +604,7 @@ char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default);
 /*The following definitions come from  lib/util_unistr.c  */
 
 char *ascii_to_unibuf(char *dest, const char *src, int maxlen);
-void unibuf_to_ascii(char *dest, const char *src, int maxlen);
+const char *unibuf_to_ascii(char *dest, const char *src, int maxlen);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
 void unistr2_to_ascii(char *dest, const UNISTR2 *str, int maxlen);
@@ -1779,6 +1779,17 @@ BOOL synchronise_passdb(void);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
+void create_ntlmssp_resp(struct pwd_info *pwd,
+				char *domain, char *user_name, char *my_name,
+				uint32 ntlmssp_cli_flgs,
+                                prs_struct *auth_resp);
+BOOL create_rpc_bind_resp(struct pwd_info *pwd,
+				char *domain, char *user_name, char *my_name,
+				uint32 ntlmssp_cli_flgs,
+				uint32 rpc_call_id,
+				prs_struct *rhdr,
+                                prs_struct *rhdr_autha,
+                                prs_struct *auth_resp);
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 nt_pipe_fnum, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
 void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);

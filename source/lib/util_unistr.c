@@ -51,8 +51,7 @@ char *ascii_to_unibuf(char *dest, const char *src, int maxlen)
 /*******************************************************************
  Pull an ASCII string out of a UNICODE buffer (little endian).
  ********************************************************************/
-
-void unibuf_to_ascii(char *dest, const char *src, int maxlen)
+const char *unibuf_to_ascii(char *dest, const char *src, int maxlen)
 {
 	char *destend = dest + maxlen;
 	register char c;
@@ -70,6 +69,8 @@ void unibuf_to_ascii(char *dest, const char *src, int maxlen)
 	}
 
 	*dest = 0;
+
+	return src;
 }
 
 
