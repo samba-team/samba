@@ -1,4 +1,4 @@
-.\" Copyright (c) 1997, 2001 - 2002 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1997, 2001 - 2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -89,13 +89,13 @@ is a wrapper around
 If the realm is
 .Dv NULL ,
 the default realm will be used.
-.Sh BUGS
-You can not have a NUL in a component. Until someone can give a good
-example of where it would be a good idea to have NUL's in a component,
-this will not be fixed.
 .Sh SEE ALSO
 .Xr krb5_425_conv_principal 3 ,
 .Xr krb5_free_principal 3 ,
 .Xr krb5_parse_name 3 ,
 .Xr krb5_sname_to_principal 3 ,
 .Xr krb5_unparse_name 3
+.Sh BUGS
+You can not have a NUL in a component. Until someone can give a good
+example of where it would be a good idea to have NUL's in a component,
+this will not be fixed.
