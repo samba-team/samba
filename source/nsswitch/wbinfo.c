@@ -398,6 +398,27 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
+	/* First see whether the SID is actually a user -- otherwise
+	 * winbind might end up a uid number for a group SID and this
+	 * is asking for trouble later. */
+
+	fstrcpy(request.data.sid, sid);
+
+	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_printf("Could not lookup sid %s\n", sid);
+		return False;
+	}
+
+	if (response.data.name.type != SID_NAME_USER) {
+		d_printf("SID is of type %s\n",
+			 sid_type_lookup(response.data.name.type));
+		return False;
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
@@ -420,6 +441,26 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+
+	/* First see whether the SID is actually a group -- otherwise
+	 * winbind might end up a gid number for a user SID and this
+	 * is asking for trouble later. */
+
+	fstrcpy(request.data.sid, sid);
+
+	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_printf("Could not lookup sid %s\n", sid);
+		return False;
+	}
+
+	if ((response.data.name.type != SID_NAME_DOM_GRP) &&
+	    (response.data.name.type != SID_NAME_ALIAS) &&
+	    (response.data.name.type != SID_NAME_WKN_GRP)) {
+		d_printf("SID is of type %s\n",
+			 sid_type_lookup(response.data.name.type));
+		return False;
+	}
 
 	/* Send request */
 
