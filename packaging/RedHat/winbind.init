@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# chkconfig: 345 81 45
+# chkconfig: 345 91 45
 # description: Starts and stops the Samba winbind daemon to provide \
 # user and group information from a domain controller to linux.
 
@@ -19,15 +19,10 @@ fi
 # Check that networking is up.
 [ ${NETWORKING} = "no" ] && exit 0
 
+CONFIG=/etc/samba/smb.conf
+
 # Check that smb.conf exists.
 [ -f $CONFIG ] || exit 0
-
-RETVAL=0
-
-CONFIG=/usr/local/samba/lib/smb.conf
-PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/samba/sbin:/usr/local/samba/bin
-export PATH
-
 
 start() {
 	echo -n "Starting Winbind services: "

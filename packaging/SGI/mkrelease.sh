@@ -114,6 +114,8 @@ if [ $errstat -ne 0 ]; then
   echo "Error $errstat creating samba.idb\n";
   exit $errstat;
 fi
+sort +4 samba.idb > xxx
+mv xxx samba.idb
 
 if [ ! -d bins ]; then
    mkdir bins

@@ -3,12 +3,12 @@ Section: net
 Priority: optional
 Maintainer: Eloy A. Paris <peloy@debian.org>
 Uploaders: Steve Langasek <vorlon@debian.org>
-Build-Depends: debhelper (>= 4.1.13), libpam0g-dev, libreadline4-dev, libcupsys2-dev, autoconf, libacl1-dev (>= 2.2.11-1), libacl1 (>= 2.2.11-1), libkrb5-dev, libldap2-dev, po-debconf, python-dev (>= 2.2)
+Build-Depends: debhelper (>= 4.1.13), libpam0g-dev, libreadline4-dev, libcupsys2-dev, autoconf, libacl1-dev (>= 2.2.11-1), libacl1 (>= 2.2.11-1), libkrb5-dev, libldap2-dev, po-debconf, python2.3-dev
 Standards-Version: 3.5.10
 
 Package: samba
 Architecture: any
-Depends: samba-common (= ${Source-Version}), netbase, logrotate, ${shlibs:Depends}, ${misc:Depends}
+Depends: samba-common (= ${Source-Version}), netbase, logrotate, ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 0.76-13.1), libpam-modules
 Replaces: samba-common (<= 2.0.5a-2)
 Suggests: samba-doc
 Description: a LanManager-like file and printer server for Unix
@@ -32,7 +32,7 @@ Description: a LanManager-like file and printer server for Unix
   libsmbclient - Shared library that allows applications to talk to SMB servers
   libsmbclient-dev - libsmbclient shared libraries
   winbind: Service to resolve user and group information from Windows NT servers
-  python2.2-samba: Python bindings that allow access to various aspects of Samba
+  python2.3-samba: Python bindings that allow access to various aspects of Samba
  .
  It is possible to install a subset of these packages depending on
  your particular needs. For example, to access other SMB servers you
@@ -175,14 +175,14 @@ Description: service to resolve user and group information from Windows NT serve
  Windows NT server. The service can also provide authentication
  services via an associated PAM module.
 
-Package: python2.2-samba
+Package: python2.3-samba
 Section: python
 Priority: optional
 Architecture: any
-Depends: ${shlibs:Depends}, python2.2
+Depends: ${shlibs:Depends}, python2.3
 Description: Python bindings that allow access to various aspects of Samba
  The Samba Python bindings allow you to access various aspects of Samba.
  At the moment their status is "experimental" but they have been reported
  to work well.
  .
- See /usr/share/doc/python2.2-samba/examples for a couple of examples.
+ See /usr/share/doc/python2.3-samba/examples for a couple of examples.

@@ -1,3 +1,6 @@
+## grab the major and minor version of rpm 
+%define rpm_version `rpm --version | awk '{print $3}' | awk -F. '{print $1$2}'`
+
 Summary: Samba SMB client and server
 Name: samba
 Version: PVERSION
@@ -5,9 +8,15 @@ Release: PRELEASE
 License: GNU GPL version 2
 Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
+
+# Don't depend on Net::LDAP
+# one filter for RH 8 and one for 9
+Source998: filter-requires-samba_rh8.sh
+Source999: filter-requires-samba_rh9.sh
+
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
-Prereq: chkconfig fileutils
+Prereq: chkconfig fileutils /sbin/ldconfig
 Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -37,6 +46,19 @@ docs directory for implementation details.
 %setup
 
 %build
+
+# Working around perl dependency problem from docs
+# Only > RH 8.0 seems to care here
+
+echo "rpm_version == %{rpm_version}"
+if [ "%{rpm_version}" == "42" ]; then
+   %define __perl_requires %{SOURCE999}
+   echo "%{__perl_requires}"
+elif [ "%{rpm_version}" == "41" ]; then
+   %define __find_requires %{SOURCE998}
+   echo "%{__find_requires}"
+fi
+
 ## Build main Samba source
 cd source
 
@@ -94,7 +116,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net \
-	smbcacls pdbedit tdbbackup smbtree
+	smbcacls pdbedit tdbbackup smbtree ntlm_auth smbcquotas
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -123,7 +145,7 @@ make DESTDIR=$RPM_BUILD_ROOT \
 	LIBDIR=%{prefix}/lib/samba \
 	VARDIR=/var \
 	SBINDIR=%{prefix}/sbin \
-	BINDIR=$%{prefix}/bin \
+	BINDIR=%{prefix}/bin \
 	MANDIR=MANDIR_MACRO \
 	SWATDIR=%{prefix}/share/swat \
 	SAMBABOOK=%{prefix}/share/swat/using_samba \
@@ -147,22 +169,7 @@ install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 
-# Install SWAT helper files
-#for i in swat/help/*.html docs/htmldocs/*.html
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
-#done
-#for i in swat/images/*.gif
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
-#done
-#for i in swat/include/*.html
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
-#done
-
 # Install the miscellany
-install -m755 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat/README
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
@@ -287,15 +294,13 @@ else
 	rm -f /etc/samba/samba.stack
 fi
 
-# Create winbind nss client symlink
-
-if [ -e /lib/libnss_winbind.so ]; then
-	ln -sf /lib/libnss_winbind.so /lib/libnss_winbind.so.2
-fi
+## call ldconfig to create the version symlink for libsmbclient.so
+/sbin/ldconfig
 
 %preun
 if [ $1 = 0 ] ; then
 	/sbin/chkconfig --del smb
+	/sbin/chkconfig --del winbind
 
 	# We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
 	if [ -e /var/cache/samba/browse.dat ]; then
@@ -366,12 +371,13 @@ if [ $1 = 0 ] ; then
 	fi
 fi
 
+/sbin/ldconfig
+
 %files
 %defattr(-,root,root)
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
 %doc docs
-%doc swat/README
 %doc examples
 %{prefix}/sbin/smbd
 %{prefix}/sbin/nmbd
@@ -399,12 +405,15 @@ fi
 %{prefix}/bin/smbcontrol
 %{prefix}/bin/wbinfo
 %{prefix}/bin/net
+%{prefix}/bin/ntlm_auth
+%{prefix}/bin/smbcquotas
 %{prefix}/bin/smbcacls
 %{prefix}/bin/pdbedit
 %{prefix}/bin/tdbbackup
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
+%attr(755,root,root) %{prefix}/lib/samba/charset/*.so
 #%attr(755,root,root) %{prefix}/lib/samba/pdb/*.so
 %attr(755,root,root) %{prefix}/lib/samba/*.dat
 %{prefix}/include/libsmbclient.h
@@ -417,7 +426,6 @@ fi
 %{prefix}/share/swat/lang/*/images/*
 %{prefix}/share/swat/lang/*/include/*.html
 %{prefix}/share/swat/using_samba/*
-%{prefix}/share/swat/README
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers
