@@ -1943,8 +1943,13 @@ struct cli_state *do_connect(char *server, char *share)
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup)) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
-		return NULL;
+		/* if a password was not supplied then try again with a null username */
+		if (password[0] || !username[0] || 
+		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
+			DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
+			return NULL;
+		}
+		DEBUG(0,("Anonymous login successful\n"));
 	}
 
 	/*
@@ -2177,7 +2182,6 @@ static int do_message_op(void)
 	extern int optind;
 	pstring query_host;
 	BOOL message = False;
-	BOOL explicit_user = False;
 	extern char tar_type;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
@@ -2370,7 +2374,6 @@ static int do_message_op(void)
 		case 'U':
 			{
 				char *lp;
-				explicit_user = True;
 				pstrcpy(username,optarg);
 				if ((lp=strchr(username,'%'))) {
 					*lp = 0;
@@ -2385,9 +2388,6 @@ static int do_message_op(void)
 			while(*p == '\\' || *p == '/')
 				p++;
 			pstrcpy(query_host,p);
-			
-			if(!explicit_user)
-				*username = '\0';
 			break;
 		case 't':
 			pstrcpy(term_code, optarg);
