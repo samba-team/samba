@@ -43,7 +43,7 @@ void init_buffer(NEW_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
 	buffer->ptr = (size!=0)? 1:0;
 	buffer->size=size;
 	buffer->string_at_end=size;
-	prs_init(&buffer->prs, size, 4, ctx, MARSHALL);
+	prs_init(&buffer->prs, size, ctx, MARSHALL);
 	buffer->struct_start = prs_offset(&buffer->prs);
 }
 

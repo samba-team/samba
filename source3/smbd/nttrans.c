@@ -1085,7 +1085,7 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_i
 		return False;
 	}
 
-	prs_init(&pd, 0, 4, mem_ctx, UNMARSHALL);
+	prs_init(&pd, 0, mem_ctx, UNMARSHALL);
 
 	/*
 	 * Setup the prs_struct to point at the memory we just
@@ -1662,7 +1662,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
     return(ERROR(ERRDOS,ERRnomem));
   }
 
-  prs_init(&pd, 0, 4, mem_ctx, MARSHALL);
+  prs_init(&pd, 0, mem_ctx, MARSHALL);
 
   /*
    * Setup the prs_struct to point at the memory we just

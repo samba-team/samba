@@ -43,8 +43,8 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
 
@@ -114,8 +114,8 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 	if (hnd == NULL || domain_name == NULL || domain_sid == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api LSA_QUERYINFOPOLICY */
 
@@ -213,8 +213,8 @@ BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
 
 	DEBUG(4,("LSA Close\n"));
 
@@ -305,8 +305,8 @@ uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 
 	if (hnd == NULL) return NT_STATUS_UNSUCCESSFUL;
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, NULL, False);
-	prs_init(&rbuf, 0, 4, NULL, True);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, NULL, MARSHALL);
+	prs_init(&rbuf, 0, NULL, UNMARSHALL);
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
 
@@ -371,8 +371,8 @@ uint32 lsa_close(POLICY_HND *hnd)
 
         /* Create and send a MSRPC command with api LSA_OPENPOLICY */
 
-        prs_init(&buf, MAX_PDU_FRAG_LEN, 4, NULL, False);
-        prs_init(&rbuf, 0, 4, NULL, True);
+        prs_init(&buf, MAX_PDU_FRAG_LEN, NULL, MARSHALL);
+        prs_init(&rbuf, 0, NULL, UNMARSHALL);
 
         DEBUG(4, ("LSA Close\n"));
 
@@ -437,8 +437,8 @@ uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 		*names = NULL;
 	}
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, ctx, False);
-	prs_init(&rbuf, 0, 4, ctx, True);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
+	prs_init(&rbuf, 0, ctx, UNMARSHALL);
 
 	/* Create and send a MSRPC command with api LSA_LOOKUP_SIDS */
 
@@ -580,8 +580,8 @@ uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
 
 	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, ctx, False);
-	prs_init(&rbuf, 0, 4, ctx, True);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
+	prs_init(&rbuf, 0, ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api LSA_LOOKUP_NAMES */
 
