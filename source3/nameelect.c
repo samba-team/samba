@@ -250,19 +250,19 @@ void name_register_work(struct subnet_record *d, char *name, int name_type,
 
 			if (ms_browser_name(name, name_type))
 			{
-				add_type_local ||= True;
+				add_type_local = True;
 			}
 			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1d)
 			{
-				add_type_local ||= True;
+				add_type_local = True;
 			}
 			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1b)
 			{
-				add_type_domain ||= True;
+				add_type_domain = True;
 			}
 			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1c)
 			{
-				add_type_logon ||= True;
+				add_type_logon = True;
 			}
 
 			if (add_type_local ) become_local_master (d, work);
