@@ -143,7 +143,7 @@ verify_mic_des3
   OM_uint32 ret;
   krb5_crypto crypto;
   krb5_data seq_data;
-  int cmp;
+  int cmp, docompat;
   Checksum csum;
   char *tmp;
   char ivec[8];
@@ -173,7 +173,9 @@ verify_mic_des3
   }
 
   /* verify sequence number */
-  if (context_handle->more_flags & COMPAT_OLD_DES3)
+  docompat = (context_handle->more_flags & COMPAT_OLD_DES3);
+retry:
+  if (docompat)
       memset(ivec, 0, 8);
   else
       memcpy(ivec, p + 8, 8);
@@ -183,16 +185,22 @@ verify_mic_des3
 			   KRB5_KU_USAGE_SEQ,
 			   p, 8, &seq_data, ivec);
   if (ret) {
-      gssapi_krb5_set_error_string ();
-      krb5_crypto_destroy (gssapi_krb5_context, crypto);
-      *minor_status = ret;
-      return GSS_S_FAILURE;
+      if (docompat++) {
+	  gssapi_krb5_set_error_string ();
+	  krb5_crypto_destroy (gssapi_krb5_context, crypto);
+	  *minor_status = ret;
+	  return GSS_S_FAILURE;
+      } else
+	  goto retry;
   }
 
   if (seq_data.length != 8) {
-      krb5_crypto_destroy (gssapi_krb5_context, crypto);
       krb5_data_free (&seq_data);
-      return GSS_S_BAD_MIC;
+      if (docompat++) {
+	  krb5_crypto_destroy (gssapi_krb5_context, crypto);
+	  return GSS_S_BAD_MIC;
+      } else
+	  goto retry;
   }
 
   krb5_auth_getremoteseqnumber (gssapi_krb5_context,
@@ -208,8 +216,11 @@ verify_mic_des3
   cmp = memcmp (seq, seq_data.data, seq_data.length);
   krb5_data_free (&seq_data);
   if (cmp != 0) {
-      krb5_crypto_destroy (gssapi_krb5_context, crypto);
-      return GSS_S_BAD_MIC;
+      if (docompat++) {
+	  krb5_crypto_destroy (gssapi_krb5_context, crypto);
+	  return GSS_S_BAD_MIC;
+      } else
+	  goto retry;
   }
 
   /* verify checksum */
