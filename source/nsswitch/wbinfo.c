@@ -114,47 +114,6 @@ static BOOL wbinfo_check_secret(void)
         return False;
 }
 
-/* Check trust account password but return if a reply isn't received within
-   a certain period of time. */
-
-#define WB_TIMEOUT 10000	/* Timeout in msec */
-
-static BOOL wbinfo_check_secret_with_timeout(void)
-{
-        struct winbindd_response response;
-        int result;
-
-        ZERO_STRUCT(response);
-
-        result = winbindd_request_with_timeout(WINBINDD_CHECK_MACHACC, NULL, 
-					       &response, WB_TIMEOUT) ;
-
-	if (result == NSS_STATUS_SUCCESS) {
-
-		/* Winbindd returned success or failure */
-
-                if (response.data.num_entries == 0) {
-                        printf("Secret is good\n");
-                } else {
-                        printf("Secret is bad\n0x%08x\n", 
-			       response.data.num_entries);
-                }
-		
-                return True;
-        }
-
-	if (result == NSS_STATUS_TRYAGAIN) {
-
-		/* Timed out waiting for reply */
-
-		printf("Timed out\n");
-
-		return True;
-	}
-
-        return False;
-}
-
 /* Convert uid to sid */
 
 static BOOL wbinfo_uid_to_sid(uid_t uid)
@@ -518,7 +477,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tTmr:a:")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:a:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -574,12 +533,6 @@ int main(int argc, char **argv)
 			break;
 		case 't':
 			if (!wbinfo_check_secret()) {
-				printf("Could not check secret\n");
-				return 1;
-			}
-			break;
-		case 'T':
-			if (!wbinfo_check_secret_with_timeout()) {
 				printf("Could not check secret\n");
 				return 1;
 			}
