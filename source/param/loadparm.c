@@ -251,9 +251,7 @@ typedef struct
   BOOL bDebugHiresTimestamp;
   BOOL bDebugPid;
   BOOL bDebugUid;
-#ifdef MS_DFS
   BOOL bHostMSDfs;
-#endif
 } global;
 
 static global Globals;
@@ -1315,9 +1313,7 @@ FN_GLOBAL_BOOL(lp_nt_acl_support,&Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains,&Globals.bAllowTrustedDomains)
 FN_GLOBAL_BOOL(lp_restrict_anonymous,&Globals.bRestrictAnonymous)
-#ifdef MS_DFS
 FN_GLOBAL_BOOL(lp_host_msdfs,&Globals.bHostMSDfs)
-#endif
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl,&Globals.max_wins_ttl)

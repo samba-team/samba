@@ -301,11 +301,13 @@ BOOL reload_services(BOOL test)
 	
 	ret = lp_load(servicesf,False,False,True);
 
+#ifdef MS_DFS
 	/* load the dfs maps of all the services having 
 	   a dfs_map parameter 
 	   we don't want to do this in lp_load because we want just the smbd
-	   server to load up the dfs maps into msdfds.tdb. not nmbd, swat etc*/
+	   server to load up the dfs maps into msdfs.tdb. not nmbd, swat etc*/
 	load_dfsmaps();
+#endif
 
 	load_printers();
 

@@ -252,7 +252,7 @@ void msdfs_close(void)
 
 void msdfs_end(void)
 {
-  pstring fname;
+  /*  pstring fname; */
   msdfs_close();
   
   /*  pstrcpy(fname,lock_path(MSDFS_TDB));
