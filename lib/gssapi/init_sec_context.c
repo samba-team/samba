@@ -725,8 +725,8 @@ spnego_reply
     }
 
     /*
-     * Verify the mechListMIC if GSS_C_EXPECTING_MECH_LIST_MIC_FLAG
-     * was specified or CFX was used; or if local policy dictated so.
+     * Verify the mechListMIC if CFX was used; or if local policy
+     * dictated so.
      */
     ret = _gss_spnego_require_mechlist_mic(minor_status, *context_handle,
 					   &require_mic);
