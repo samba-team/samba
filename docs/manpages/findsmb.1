@@ -29,16 +29,16 @@ findsmb \- list info about machines that respond to SMB name queries on a subnet
 .SH "DESCRIPTION"
 
 .PP
-This perl script is part of the \fBSamba\fR(7) suite\&.
+This Perl script is part of the \fBSamba\fR(7) suite\&.
 
 .PP
-\fBfindsmb\fR is a perl script that prints out several pieces of information about machines on a subnet that respond to SMB name query requests\&. It uses \fBnmblookup\fR(1) and \fBsmbclient\fR(1) to obtain this information\&.
+\fBfindsmb\fR is a Perl script that prints out several pieces of information about machines on a subnet that respond to SMB name query requests\&. It uses \fBnmblookup\fR(1) and \fBsmbclient\fR(1) to obtain this information\&.
 
 .SH "OPTIONS"
 
 .TP
 -r
-Controls whether \fBfindsmb\fR takes bugs in Windows95 into account when trying to find a Netbios name registered of the remote machine\&. This option is disabled by default because it is specific to Windows 95 and Windows 95 machines only\&. If set, \fBnmblookup\fR(1) will be called with \fB-B\fR option\&.
+Controls whether \fBfindsmb\fR takes bugs in Windows95 into account when trying to find a NetBIOS name registered of the remote machine\&. This option is disabled by default because it is specific to Windows 95 and Windows 95 machines only\&. If set, \fBnmblookup\fR(1) will be called with \fB-B\fR option\&.
 
 
 .TP
