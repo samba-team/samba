@@ -192,10 +192,11 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		global_myname_unix(), state->request.data.auth_crap.chal, 
 		lm_resp, nt_resp, &info3, NULL, NULL);
         
-	if ( NT_STATUS_IS_OK(result) )
+	if ( NT_STATUS_IS_OK(result) ) {
 		netsamlogon_cache_store( cli->mem_ctx, &info3 );
-	
-        
+		wcache_invalidate_samlogon(find_domain_from_name(domain), &info3);
+	}
+
 done:
 
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
@@ -302,7 +303,8 @@ enum winbindd_result winbindd_smbd_auth_crap(struct winbindd_cli_state *state)
 	if ( NT_STATUS_IS_OK(result) ) {
 	
 		netsamlogon_cache_store( cli->mem_ctx, &info3 );
-		
+		wcache_invalidate_samlogon(find_domain_from_name(domain), &info3);
+
 		if ( raw_info3_data && raw_data_len ) {
 		/*
 		 * Return the raw info3 data as extra data.
