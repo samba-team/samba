@@ -19,7 +19,7 @@ main()
 	printf("WARNING: No automated netmask determination - use an interfaces line\n");
 #endif
 
-#if !(defined(STAT_STATVFS) || defined(STAT_STATFS3_OSF1) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS4) || defined(STAT_STATFS2_FSIZE) || defined(STAT_STATFS2_FS_DATA))
+#if !(defined(STAT_STATVFS) || defined(STAT_STATVFS64) || defined(STAT_STATFS3_OSF1) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS4) || defined(STAT_STATFS2_FSIZE) || defined(STAT_STATFS2_FS_DATA))
 	printf("ERROR: No disk free routine!\n");
 	exit(1);
 #endif

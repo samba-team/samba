@@ -1094,7 +1094,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
   {
     case 1:
     {
-      int dfree,dsize,bsize;
+      SMB_BIG_UINT dfree,dsize,bsize;
       data_len = 18;
       sys_disk_free(".",&bsize,&dfree,&dsize);	
       SIVAL(pdata,l1_idFileSystem,st.st_dev);
@@ -1102,8 +1102,9 @@ static int call_trans2qfsinfo(connection_struct *conn,
       SIVAL(pdata,l1_cUnit,dsize);
       SIVAL(pdata,l1_cUnitAvail,dfree);
       SSVAL(pdata,l1_cbSector,512);
-      DEBUG(5,("call_trans2qfsinfo : bsize=%d, id=%x, cSectorUnit=%d, cUnit=%d, cUnitAvail=%d, cbSector=%d\n",
-		 bsize, (unsigned)st.st_dev, bsize/512, dsize, dfree, 512));
+      DEBUG(5,("call_trans2qfsinfo : bsize=%u, id=%x, cSectorUnit=%u, cUnit=%u, cUnitAvail=%u, cbSector=%d\n",
+		 (unsigned int)bsize, (unsigned int)st.st_dev, ((unsigned int)bsize)/512, (unsigned int)dsize,
+         (unsigned int)dfree, 512));
       break;
     }
     case 2:
@@ -1132,6 +1133,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
       SIVAL(pdata,4,128); /* Max filename component length */
       SIVAL(pdata,8,2*strlen(FSTYPE_STRING));
       PutUniCode(pdata+12,FSTYPE_STRING);
+      SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
       break;
     case SMB_QUERY_FS_LABEL_INFO:
       data_len = 4 + strlen(vname);
@@ -1139,20 +1141,27 @@ static int call_trans2qfsinfo(connection_struct *conn,
       pstrcpy(pdata+4,vname);      
       break;
     case SMB_QUERY_FS_VOLUME_INFO:      
-      data_len = 18 + 2*strlen(vname);
+
+      /*
+       * NB: The earlier CIFS spec that says this always  
+       * uses UNICODE is incorrect ! JRA.
+       */
+
+      data_len = 18 + strlen(vname);
+
       /* 
        * Add volume serial number - hash of a combination of
        * the called hostname and the service name.
        */
       SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
-      SIVAL(pdata,12,2*strlen(vname));
-      PutUniCode(pdata+18,vname);      
+      SIVAL(pdata,12,strlen(vname));
+      pstrcpy(pdata+18,vname);      
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", strlen(vname),
 	       vname));
       break;
     case SMB_QUERY_FS_SIZE_INFO:
     {
-      int dfree,dsize,bsize;
+      SMB_BIG_UINT dfree,dsize,bsize;
       data_len = 24;
       sys_disk_free(".",&bsize,&dfree,&dsize);	
       SIVAL(pdata,0,dsize);

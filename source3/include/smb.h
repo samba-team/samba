@@ -708,8 +708,8 @@ struct passdb_ops {
    */
   void *(*startsmbpwent)(BOOL);
   void (*endsmbpwent)(void *);
-  SMB_BIG_INTEGER (*getsmbpwpos)(void *);
-  BOOL (*setsmbpwpos)(void *, SMB_BIG_INTEGER);
+  SMB_BIG_UINT (*getsmbpwpos)(void *);
+  BOOL (*setsmbpwpos)(void *, SMB_BIG_UINT);
 
   /*
    * smb password database query functions.
@@ -925,6 +925,15 @@ struct bitmap {
 #define smb_vwv16 69
 #define smb_vwv17 71
 
+/* flag defines. CIFS spec 3.1.1 */
+#define FLAG_SUPPORT_LOCKREAD       0x01
+#define FLAG_CLIENT_BUF_AVAIL       0x02
+#define FLAG_RESERVED               0x04
+#define FLAG_CASELESS_PATHNAMES     0x08
+#define FLAG_CANONICAL_PATHNAMES    0x10
+#define FLAG_REQUEST_OPLOCK         0x20
+#define FLAG_REQUEST_BATCH_OPLOCK   0x40
+#define FLAG_REPLY                  0x80
 
 /* the complete */
 #define SMBmkdir      0x00   /* create directory */
@@ -1115,7 +1124,7 @@ struct bitmap {
 /* these are for the NT create_and_X */
 #define smb_ntcreate_NameLength (smb_vwv0 + 5)
 #define smb_ntcreate_Flags (smb_vwv0 + 7)
-#define smb_ntcreate_RootDirectoryFid (smb_wvw0 + 11)
+#define smb_ntcreate_RootDirectoryFid (smb_vwv0 + 11)
 #define smb_ntcreate_DesiredAccess (smb_vwv0 + 15)
 #define smb_ntcreate_AllocationSize (smb_vwv0 + 19)
 #define smb_ntcreate_FileAttributes (smb_vwv0 + 27)
@@ -1494,7 +1503,8 @@ extern int unix_ERR_code;
 /*
  * Core protocol.
  */
-#define CORE_OPLOCK_REQUEST(inbuf) ((CVAL(inbuf,smb_flg)&((1<<5)|(1<<6)))>>5)
+#define CORE_OPLOCK_REQUEST(inbuf) \
+    ((CVAL(inbuf,smb_flg)&(FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK))>>5)
 
 /*
  * Extended protocol.

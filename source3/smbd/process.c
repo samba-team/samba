@@ -501,9 +501,9 @@ void construct_reply_common(char *inbuf,char *outbuf)
   memcpy(outbuf+4,inbuf+4,4);
   CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
   CVAL(outbuf,smb_reh) = 0;
-  CVAL(outbuf,smb_flg) = 0x80 | (CVAL(inbuf,smb_flg) & 0x8); /* bit 7 set
+  SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); /* bit 7 set
                                  means a reply */
-  SSVAL(outbuf,smb_flg2,1); /* say we support long filenames */
+  SSVAL(outbuf,smb_flg2,FLAGS2_LONG_PATH_COMPONENTS); /* say we support long filenames */
   SSVAL(outbuf,smb_err,SMB_SUCCESS);
   SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
   SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));

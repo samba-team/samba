@@ -27,10 +27,10 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 normalise for DOS usage 
 ****************************************************************************/
-static void disk_norm(int *bsize,int *dfree,int *dsize)
+static void disk_norm(SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	/* check if the disk is beyond the max disk size */
-	int maxdisksize = lp_maxdisksize();
+	SMB_BIG_UINT maxdisksize = lp_maxdisksize();
 	if (maxdisksize) {
 		/* convert to blocks - and don't overflow */
 		maxdisksize = ((maxdisksize*1024)/(*bsize))*1024;
@@ -58,19 +58,15 @@ static void disk_norm(int *bsize,int *dfree,int *dsize)
 
 /* Return the number of TOSIZE-byte blocks used by
    BLOCKS FROMSIZE-byte blocks, rounding away from zero.
-   TOSIZE must be positive.  Return -1 if FROMSIZE is not positive.  */
-static int adjust_blocks(int blocks, int fromsize, int tosize)
+*/
+static SMB_BIG_UINT adjust_blocks(SMB_BIG_UINT blocks, SMB_BIG_UINT fromsize, SMB_BIG_UINT tosize)
 {
-	if (tosize <= 0 || fromsize <= 0) {
-		return -1;
-	}
-
 	if (fromsize == tosize)	/* e.g., from 512 to 512 */
 		return blocks;
 	else if (fromsize > tosize)	/* e.g., from 2048 to 512 */
 		return blocks * (fromsize / tosize);
 	else				/* e.g., from 256 to 512 */
-		return (blocks + (blocks < 0 ? -1 : 1)) / (tosize / fromsize);
+		return (blocks + 1) / (tosize / fromsize);
 }
 
 /* this does all of the system specific guff to get the free disk space.
@@ -79,10 +75,10 @@ static int adjust_blocks(int blocks, int fromsize, int tosize)
 
    results are returned in *dfree and *dsize, in 512 byte units
 */
-static int fsusage(const char *path, int *dfree, int *dsize)
+static int fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 #ifdef STAT_STATFS3_OSF1
-#define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_fsize, 512)
+#define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)fsd.f_fsize, (SMB_BIG_UINT)512)
 	struct statfs fsd;
 
 	if (statfs (path, &fsd, sizeof (struct statfs)) != 0)
@@ -90,7 +86,7 @@ static int fsusage(const char *path, int *dfree, int *dsize)
 #endif /* STAT_STATFS3_OSF1 */
 	
 #ifdef STAT_STATFS2_FS_DATA	/* Ultrix */
-#define CONVERT_BLOCKS(B) adjust_blocks ((B), 1024, 512)	
+#define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)1024, (SMB_BIG_UINT)512)	
 	struct fs_data fsd;
 	
 	if (statfs (path, &fsd) != 1)
@@ -101,7 +97,7 @@ static int fsusage(const char *path, int *dfree, int *dsize)
 #endif /* STAT_STATFS2_FS_DATA */
 	
 #ifdef STAT_STATFS2_BSIZE	/* 4.3BSD, SunOS 4, HP-UX, AIX */
-#define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_bsize, 512)
+#define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)fsd.f_bsize, (SMB_BIG_UINT)512)
 	struct statfs fsd;
 	
 	if (statfs (path, &fsd) < 0)
@@ -123,7 +119,7 @@ static int fsusage(const char *path, int *dfree, int *dsize)
 	
 
 #ifdef STAT_STATFS2_FSIZE	/* 4.4BSD */
-#define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_fsize, 512)
+#define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)fsd.f_fsize, (SMB_BIG_UINT)512)
 	
 	struct statfs fsd;
 	
@@ -133,12 +129,12 @@ static int fsusage(const char *path, int *dfree, int *dsize)
 	
 #ifdef STAT_STATFS4		/* SVR3, Dynix, Irix, AIX */
 # if _AIX || defined(_CRAY)
-#  define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_bsize, 512)
+#  define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)fsd.f_bsize, (SMB_BIG_UINT)512)
 #  ifdef _CRAY
 #   define f_bavail f_bfree
 #  endif
 # else
-#  define CONVERT_BLOCKS(B) (B)
+#  define CONVERT_BLOCKS(B) ((SMB_BIG_UINT)B)
 #  ifndef _SEQUENT_		/* _SEQUENT_ is DYNIX/ptx */
 #   ifndef DOLPHIN		/* DOLPHIN 3.8.alfa/7.18 has f_bavail */
 #    define f_bavail f_bfree
@@ -158,11 +154,11 @@ static int fsusage(const char *path, int *dfree, int *dsize)
 
 #ifdef STAT_STATVFS		/* SVR4 */
 # define CONVERT_BLOCKS(B) \
-	adjust_blocks ((B), fsd.f_frsize ? fsd.f_frsize : fsd.f_bsize, 512)
+	adjust_blocks ((SMB_BIG_UINT)(B), fsd.f_frsize ? (SMB_BIG_UINT)fsd.f_frsize : (SMB_BIG_UINT)fsd.f_bsize, (SMB_BIG_UINT)512)
 
-	struct statvfs fsd;
+	SMB_STRUCT_STATVFS fsd;
 
-	if (statvfs (path, &fsd) < 0)
+	if (sys_statvfs (path, &fsd) < 0)
 		return -1;
 	/* f_frsize isn't guaranteed to be supported.  */
 
@@ -185,7 +181,7 @@ static int fsusage(const char *path, int *dfree, int *dsize)
 /****************************************************************************
   return number of 1K blocks available on a path and total number 
 ****************************************************************************/
-static int disk_free(char *path,int *bsize,int *dfree,int *dsize)
+static SMB_BIG_UINT disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	int dfree_retval;
 
@@ -223,9 +219,7 @@ static int disk_free(char *path,int *bsize,int *dfree,int *dsize)
 /****************************************************************************
 wrap it to get filenames right
 ****************************************************************************/
-int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize)
+SMB_BIG_UINT sys_disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	return(disk_free(dos_to_unix(path,False),bsize,dfree,dsize));
 }
-
-

@@ -921,7 +921,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
-  int dfree,dsize,bsize;
+  SMB_BIG_UINT dfree,dsize,bsize;
   
   sys_disk_free(".",&bsize,&dfree,&dsize);
   

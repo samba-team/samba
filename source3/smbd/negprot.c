@@ -50,7 +50,8 @@ static int reply_coreplus(char *outbuf)
   int outsize = set_message(outbuf,13,0,True);
   SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
 				 readbraw and writebraw (possibly) */
-  CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
+  /* Reply, SMBlockread, SMBwritelock supported. */
+  SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
   SSVAL(outbuf,smb_vwv1,0x1); /* user level security, don't encrypt */	
 
   Protocol = PROTOCOL_COREPLUS;
@@ -80,7 +81,8 @@ static int reply_lanman1(char *outbuf)
 
   Protocol = PROTOCOL_LANMAN1;
 
-  CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
+  /* Reply, SMBlockread, SMBwritelock supported. */
+  SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
   SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
   SSVAL(outbuf,smb_vwv4,1);
@@ -138,7 +140,8 @@ static int reply_lanman2(char *outbuf)
 
   Protocol = PROTOCOL_LANMAN2;
 
-  CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
+  /* Reply, SMBlockread, SMBwritelock supported. */
+  SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
   SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); 
   SSVAL(outbuf,smb_vwv4,1);
@@ -417,4 +420,3 @@ int reply_negprot(connection_struct *conn,
 
   return(outsize);
 }
-
