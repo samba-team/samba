@@ -82,6 +82,11 @@ libkrb5_a_SOURCES = \
 	warn.c \
 	write_message.c
 
+$(libkrb5_a_OBJECTS): $(srcdir)/krb5-protos.h
+
+$(srcdir)/krb5-protos.h:
+	cd $(srcdir); perl ../../aux/make-proto.pl $(libkrb5_a_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
+
 INCLUDES = $(INCLUDE_krb4)
 
 libkrb5_a_LIBADD = ../error/error.o ../error/krb5_err.o \
