@@ -86,11 +86,6 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 
 DYNEXP=
 
-# I'm sure gcc supports -rdynamic
-if test "$ac_cv_prog_gcc" = yes; then
-    DYNEXP="-rdynamic"
-fi
-
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
