@@ -315,6 +315,38 @@ static NTSTATUS cmd_srvsvc_net_remote_tod(struct cli_state *cli,
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS cmd_srvsvc_net_file_enum(struct cli_state *cli, 
+					 TALLOC_CTX *mem_ctx,
+					 int argc, char **argv)
+{
+	uint32 info_level = 3;
+	SRV_FILE_INFO_CTR ctr;
+	WERROR result;
+	ENUM_HND hnd;
+	uint32 preferred_len = 0;
+
+	if (argc > 2) {
+		printf("Usage: %s [infolevel]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 2)
+		info_level = atoi(argv[1]);
+
+	init_enum_hnd(&hnd, 0);
+
+	ZERO_STRUCT(ctr);
+
+	result = cli_srvsvc_net_file_enum(
+		cli, mem_ctx, 0, &ctr, preferred_len, &hnd);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+ done:
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set srvsvc_commands[] = {
@@ -323,6 +355,7 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "srvinfo",    cmd_srvsvc_srv_query_info,  PIPE_SRVSVC, "Server query info", "" },
 	{ "netshareenum", cmd_srvsvc_net_share_enum, PIPE_SRVSVC, "Enumerate shares", "" },
+	{ "netfileenum", cmd_srvsvc_net_file_enum, PIPE_SRVSVC, "Enumerate open files", "" },
 	{ "netremotetod", cmd_srvsvc_net_remote_tod, PIPE_SRVSVC, "Fetch remote time of day", "" },
 
 	{ NULL }
