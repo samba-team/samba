@@ -80,10 +80,10 @@ DES3_encrypt(void *p, size_t len, const krb5_keyblock *keyblock, int encrypt)
 }
 
 static struct encryption_type em [] = {
-    { ETYPE_DES_CBC_CRC, 8, 8, 4, DES_encrypt, CRC_checksum },
-    { ETYPE_DES_CBC_MD4, 8, 8, 16, DES_encrypt, MD4_checksum },
-    { ETYPE_DES_CBC_MD5, 8, 8, 16, DES_encrypt, MD5_checksum },
-    { ETYPE_NULL, 1, 0, 0, NULL_encrypt, NULL_checksum },
+    { ETYPE_DES_CBC_CRC,  8,  8,  4, DES_encrypt, CRC_checksum },
+    { ETYPE_DES_CBC_MD4,  8,  8, 16, DES_encrypt, MD4_checksum },
+    { ETYPE_DES_CBC_MD5,  8,  8, 16, DES_encrypt, MD5_checksum },
+    { ETYPE_NULL,         1,  0,  0, NULL_encrypt, NULL_checksum },
 };
 
 static int num_etypes = sizeof(em) / sizeof(em[0]);
@@ -103,7 +103,7 @@ krb5_do_encrypt(krb5_context context,
     p = calloc(1, sz);
     if (p == NULL)
 	return ENOMEM;
-    des_rand_data(p, et->confoundersize);
+    des_rand_data(p, et->confoundersize); /* XXX */
     memcpy(p + et->confoundersize + et->checksumsize, ptr, len);
     (*et->checksum)(p, sz, p + et->confoundersize);
     (*et->encrypt)(p, sz, keyblock, 1);
@@ -142,6 +142,16 @@ krb5_do_decrypt(krb5_context context,
     return 0;
 }
 
+static struct encryption_type *
+find_encryption_type(int etype)
+{
+    struct encryption_type *e;
+    for(e = em; e < em + num_etypes; e++)
+	if(etype == e->type)
+	    return e;
+    return NULL;
+}
+
 krb5_error_code
 krb5_encrypt (krb5_context context,
 	      void *ptr,
@@ -151,8 +161,21 @@ krb5_encrypt (krb5_context context,
 	      krb5_data *result)
 {
     struct encryption_type *e;
-    for(e = em; e < em + num_etypes; e++)
-	if(etype == e->type)
-	    return krb5_do_encrypt(context, ptr, len, e, keyblock, result);
+    if((e = find_encryption_type(etype)))
+	return krb5_do_encrypt(context, ptr, len, e, keyblock, result);
+    return KRB5_PROG_ETYPE_NOSUPP;
+}
+
+krb5_error_code
+krb5_decrypt (krb5_context context,
+	      void *ptr,
+	      size_t len,
+	      int etype,
+	      krb5_keyblock *keyblock,
+	      krb5_data *result)
+{
+    struct encryption_type *e;
+    if((e = find_encryption_type(etype)))
+	return krb5_do_encrypt(context, ptr, len, e, keyblock, result);
     return KRB5_PROG_ETYPE_NOSUPP;
 }
