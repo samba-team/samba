@@ -1,7 +1,7 @@
 /* 
    Samba Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
-   Copyright (C) Andrew Tridgell 2000
+   Copyright (C) Andrew Tridgell 2000-2004
    Copyright (C) 2001, 2002 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
@@ -151,6 +151,18 @@ static TALLOC_CTX *talloc_init_internal(void)
 	return t;
 }
 
+
+/*
+  return the talloc context given a pointer that has been allocated using
+  talloc
+*/
+TALLOC_CTX *talloc_get_context(void *ptr)
+{
+	struct talloc_chunk *tc;
+	tc = ((struct talloc_chunk *)ptr)-1;
+
+	return tc->context;
+}
 
 /** Allocate a bit of memory from the specified pool **/
 void *talloc(TALLOC_CTX *t, size_t size)
