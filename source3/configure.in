@@ -1959,19 +1959,8 @@ AC_MSG_RESULT($with_ads_support)
 if test x"$with_ads_support" = x"yes"; then
 
   #################################################
-  # see if this box has the RedHat location for kerberos
-  AC_MSG_CHECKING(for /usr/kerberos)
-  if test -d /usr/kerberos; then
-    LDFLAGS="$LDFLAGS -L/usr/kerberos/lib"
-    CFLAGS="$CFLAGS -I/usr/kerberos/include"
-    CPPFLAGS="$CPPFLAGS -I/usr/kerberos/include"
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT(no)
-  fi
-
-  #################################################
   # check for location of Kerberos 5 install
+FOUND_KRB5=0
   AC_MSG_CHECKING(for kerberos 5 install path)
   AC_ARG_WITH(krb5,
   [  --with-krb5=base-dir    Locate Kerberos 5 support (default=/usr)],
@@ -1985,10 +1974,27 @@ if test x"$with_ads_support" = x"yes"; then
       CFLAGS="$CFLAGS -I$withval/include"
       CPPFLAGS="$CPPFLAGS -I$withval/include"
       LDFLAGS="$LDFLAGS -L$withval/lib"
+    FOUND_KRB5=1
       ;;
     esac ],
     AC_MSG_RESULT(no)
   )
+
+
+if [ $FOUND_KRB5 = 0 ]; then
+#################################################
+# see if this box has the RedHat location for kerberos
+AC_MSG_CHECKING(for /usr/kerberos)
+if test -d /usr/kerberos; then
+    LDFLAGS="$LDFLAGS -L/usr/kerberos/lib"
+    CFLAGS="$CFLAGS -I/usr/kerberos/include"
+    CPPFLAGS="$CPPFLAGS -I/usr/kerberos/include"
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_RESULT(no)
+fi
+fi
+
 
   # now check for krb5.h. Some systems have the libraries without the headers!
   # note that this check is done here to allow for different kerberos
