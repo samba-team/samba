@@ -664,7 +664,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 			struct samr_LookupDomain l;
 			struct samr_OpenDomain o;
 
-			if (strcmp(e.out.sam->entries[i].name.name,
+			if (strcmp(e.out.sam->entries[i].name.string,
 				   "Builtin") == 0)
 				continue;
 
@@ -692,10 +692,10 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 
 	{
 		struct samr_LookupNames l;
-		struct samr_Name samr_name;
+		struct samr_String samr_name;
 		struct samr_OpenUser o;
 
-		samr_name.name = name;
+		samr_name.string = name;
 
 		l.in.domain_handle = &domain_handle;
 		l.in.num_names = 1;
@@ -829,7 +829,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 
 			struct samr_LookupDomain l;
 
-			if (strcmp(e.out.sam->entries[i].name.name,
+			if (strcmp(e.out.sam->entries[i].name.string,
 				   "Builtin") == 0)
 				continue;
 
@@ -866,10 +866,10 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 
 	{
 		struct samr_LookupNames l;
-		struct samr_Name samr_name;
+		struct samr_String samr_name;
 		struct samr_OpenUser o;
 
-		samr_name.name = name;
+		samr_name.string = name;
 
 		l.in.domain_handle = &domain_handle;
 		l.in.num_names = 1;
