@@ -73,7 +73,7 @@ void prs_dump_region(char *name, int v, prs_struct *ps,
  XXXX side-effect of this function is to increase the debug depth XXXX
 
  ********************************************************************/
-void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
+void prs_debug(prs_struct *ps, int depth, const char *desc, char *fn_name)
 {
 	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->data_offset, fn_name, desc));
 }
