@@ -494,7 +494,7 @@ void exit_server(char *reason)
 	invalidate_all_vuids();
 
 	/* delete our entry in the connections database. */
-	yield_connection(NULL,"",MAXSTATUS);
+	yield_connection(NULL,"");
 
 	respond_to_all_remaining_local_messages();
 	decrement_smbd_process_count();
@@ -812,7 +812,7 @@ static void usage(char *pname)
 	register_dmalloc_msgs();
 
 	/* Setup the main smbd so that we can get messages. */
-	claim_connection(NULL,"",MAXSTATUS,True);
+	claim_connection(NULL,"",0,True);
 
 	/* 
 	   DO NOT ENABLE THIS TILL YOU COPE WITH KILLING THESE TASKS AND INETD
@@ -828,21 +828,17 @@ static void usage(char *pname)
 	 * everything after this point is run after the fork()
 	 */ 
 
-	if (!locking_init(0)) {
+	if (!locking_init(0))
 		exit(1);
-	}
 
-	if (!print_backend_init()) {
+	if (!print_backend_init())
 		exit(1);
-	}
 
-	if (!share_info_db_init()) {
+	if (!share_info_db_init())
 		exit(1);
-	}
 
-	if(!initialize_password_db(False)) {
+	if(!initialize_password_db(False))
 		exit(1);
-	}
 
 	/* possibly reload the services file. */
 	reload_services(True);
@@ -868,19 +864,16 @@ static void usage(char *pname)
 	}
 
 	/* Setup oplocks */
-	if (!init_oplocks()) {
+	if (!init_oplocks())
 		exit(1);
-	}
 	
 	/* Setup mangle */
-	if (!init_mangle_tdb()) {
+	if (!init_mangle_tdb())
 		exit(1);
-	}
 
 	/* Setup change notify */
-	if (!init_change_notify()) {
+	if (!init_change_notify())
 		exit(1);
-	}
 
 	smbd_process();
 	

@@ -68,7 +68,8 @@
 #endif
  
 /* the max number of simultanous connections to the server by all clients */
-#define MAXSTATUS 100000
+/* zero means no limit. */
+#define MAXSTATUS 0
 
 #define WORDMAX 0xFFFF
 

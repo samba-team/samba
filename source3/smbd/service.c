@@ -588,9 +588,7 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
 			DEBUG(1,("root preexec gave %d - failing connection\n", ret));
-			yield_connection(conn,
-					 lp_servicename(SNUM(conn)),
-					 lp_max_connections(SNUM(conn)));
+			yield_connection(conn, lp_servicename(SNUM(conn)));
 			conn_free(conn);
 			*status = NT_STATUS_UNSUCCESSFUL;
 			return NULL;
@@ -619,7 +617,7 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
 			change_to_root_user();
-			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+			yield_connection(conn, lp_servicename(SNUM(conn)));
 			conn_free(conn);
 			*status = NT_STATUS_UNSUCCESSFUL;
 			return NULL;
@@ -631,9 +629,7 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 			 remote_machine, conn->client_address,
 			 conn->connectpath,strerror(errno)));
 		change_to_root_user();
-		yield_connection(conn,
-				 lp_servicename(SNUM(conn)),
-				 lp_max_connections(SNUM(conn)));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
@@ -713,9 +709,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    
 	}
 
-	yield_connection(conn,
-			 lp_servicename(SNUM(conn)),
-			 lp_max_connections(SNUM(conn)));
+	yield_connection(conn, lp_servicename(SNUM(conn)));
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);
