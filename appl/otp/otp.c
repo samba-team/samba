@@ -261,8 +261,8 @@ list_otps (int argc, char **argv, char *user)
     usage();
 
   db = otp_db_open ();
-  if(db == NULL) {
-    errx ("otp_db_open failed");
+  if(db == NULL)
+    errx (1, "otp_db_open failed");
 
   if (user)
     print_otp_entry_for_name(db, user);

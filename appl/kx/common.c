@@ -198,7 +198,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 	 break;
      }
      if (dpy == 256)
-	 errx ("no free x-servers");
+	 errx (1, "no free x-servers");
      if (listen (unixfd, SOMAXCONN) < 0)
 	 err (1, "listen");
      if (tcp_socket)
