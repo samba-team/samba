@@ -74,7 +74,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	fd = open(DATA, O_RDWR|O_CREAT|O_TRUNC, 0600);
+	unlink(DATA);
+	fd = open(DATA, O_RDWR|O_CREAT|O_EXCL, 0600);
 
 	if (fd == -1) {
 		fprintf(stderr,"ERROR: failed to open %s (errno=%d)\n", 
