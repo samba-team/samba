@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -142,6 +142,8 @@ main(int argc, char **argv)
 	    if(debug_port == 0)
 		debug_port = krb5_getportbyname (context, "kerberos-adm", 
 						 "tcp", 749);
+	    else
+		debug_port = htons(debug_port);
 	    mini_inetd(debug_port);
 	}
 	if(realm)
