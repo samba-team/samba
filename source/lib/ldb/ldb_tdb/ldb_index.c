@@ -33,6 +33,7 @@
  */
 
 #include "includes.h"
+#include "ldb/ldb_tdb/ldb_tdb.h"
 
 struct dn_list {
 	unsigned int count;
@@ -719,6 +720,71 @@ int ltdb_index_del(struct ldb_context *ldb, const struct ldb_message *msg)
 				return -1;
 			}
 		}
+	}
+
+	return 0;
+}
+
+
+/*
+  traversal function that deletes all @INDEX records
+*/
+static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+{
+	if (strncmp(key.dptr, "@INDEX:", 7) == 0) {
+		return tdb_delete(tdb, key);
+	}
+	return 0;
+}
+
+/*
+  traversal function that adds @INDEX records during a re index
+*/
+static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+{
+	struct ldb_context *ldb = state;
+	struct ldb_message msg;
+	int ret;
+
+	if (strncmp(key.dptr, "DN=@", 4) == 0 ||
+	    strncmp(key.dptr, "DN=", 3) != 0) {
+		return 0;
+	}
+
+	ret = ltdb_unpack_data(ldb, &data, &msg);
+	if (ret != 0) {
+		return -1;
+	}
+
+	msg.dn = key.dptr+3;
+
+	ret = ltdb_index_add(ldb, &msg);
+
+	ltdb_unpack_data_free(&msg);
+
+	return ret;
+}
+
+/*
+  force a complete reindex of the database
+*/
+int ltdb_reindex(struct ldb_context *ldb)
+{
+	struct ltdb_private *ltdb = ldb->private;
+	int ret;
+
+	/* first traverse the database deleting any @INDEX records */
+	ret = tdb_traverse(ltdb->tdb, delete_index, NULL);
+	if (ret == -1) {
+		errno = EIO;
+		return -1;
+	}
+
+	/* now traverse adding any indexes for normal LDB records */
+	ret = tdb_traverse(ltdb->tdb, re_index, ldb);
+	if (ret == -1) {
+		errno = EIO;
+		return -1;
 	}
 
 	return 0;
