@@ -148,20 +148,52 @@ static int
 krb5_start_session (struct passwd *pwd)
 {
     krb5_error_code ret;
-    char residual[32];
+    char residual[64];
 
     /* copy credentials to file cache */
     snprintf(residual, sizeof(residual), "FILE:/tmp/krb5cc_%u", 
 	     (unsigned)pwd->pw_uid);
     krb5_cc_resolve(context, residual, &id2);
     ret = krb5_cc_copy_cache(context, id, id2);
-    krb5_cc_close(context, id2);
     if (ret == 0)
 	add_env("KRB5CCNAME", residual);
-    else
+    else {
 	krb5_cc_destroy (context, id2);
+	return ret;
+    }
+#ifdef KRB4
+    if (krb5_config_get_bool(context, NULL,
+			     "libdefaults",
+			     "krb4_get_tickets",
+			     NULL)) {
+        CREDENTIALS c;
+        krb5_creds mcred, cred;
+        krb5_realm realm;
+        char krb4tkfile[MAXPATHLEN];
+
+        krb5_get_default_realm(context, &realm);
+        krb5_make_principal(context, &mcred.server, realm,
+                            "krbtgt",
+                            realm,
+                            NULL);
+        ret = krb5_cc_retrieve_cred(context, id2, 0, &mcred, &cred);
+        if(ret == 0) {
+            ret = krb524_convert_creds_kdc(context, &cred, &c);
+            if(!ret) {
+                snprintf(krb4tkfile,sizeof(krb4tkfile),"%s%d",TKT_ROOT,
+			 getuid());
+                krb_set_tkt_string(krb4tkfile);
+                tf_setup(&c, c.pname, c.pinst);
+            }
+            memset(&c, 0, sizeof(c));
+            krb5_free_creds_contents(context, &cred);
+        }
+        krb5_free_principal(context, mcred.server);
+    }
+#endif
+    krb5_cc_close(context, id2);
     krb5_cc_destroy(context, id);
-    return ret;
+    return 0;
 }
 
 static void
@@ -172,31 +204,46 @@ krb5_finish (void)
 
 #ifdef KRB4
 
+static int pag_set = 0;
+
 static void
 krb5_get_afs_tokens (struct passwd *pwd)
 {
     char cell[64];
     char *pw_dir;
+    krb5_error_code ret;
 
     if (!k_hasafs ())
 	return;
 
+    ret = krb5_init_context(&context);
+    if(ret)
+	return;
+    ret = krb5_cc_default(context, &id2);
+ 
+    if (ret == 0) {
 #ifdef _AIX
-    /* XXX this is a fix for a bug in AFS for AIX 4.3, w/o
+	/* XXX this is a fix for a bug in AFS for AIX 4.3, w/o
 	   this hack the kernel crashes on the following
 	   pioctl... */
-    pw_dir = strdup(pwd->pw_dir);
+	pw_dir = strdup(pwd->pw_dir);
 #else
-    pw_dir = pwd->pw_dir;
+	pw_dir = pwd->pw_dir;
 #endif
 
-    k_setpag();
+	if (!pag_set) {
+	    k_setpag();
+	    pag_set = 1;
+	}
 
-    if(k_afs_cell_of_file(pw_dir, cell, sizeof(cell)) == 0)
-	krb5_afslog_uid_home (context, id2,
-			      cell, NULL, pwd->pw_uid, pwd->pw_dir);
-    krb5_afslog_uid_home (context, id2, NULL, NULL,
-			  pwd->pw_uid, pwd->pw_dir);
+	if(k_afs_cell_of_file(pw_dir, cell, sizeof(cell)) == 0)
+	    krb5_afslog_uid_home (context, id2,
+				  cell, NULL, pwd->pw_uid, pwd->pw_dir);
+	krb5_afslog_uid_home (context, id2, NULL, NULL,
+			      pwd->pw_uid, pwd->pw_dir);
+	krb5_cc_close (context, id2);
+    }
+    krb5_free_context (context);
 }
 
 #endif /* KRB4 */
@@ -254,7 +301,10 @@ krb4_get_afs_tokens (struct passwd *pwd)
     pw_dir = pwd->pw_dir;
 #endif
 
-    k_setpag();
+    if (!pag_set) {
+	k_setpag();
+	pag_set = 1;
+    }
 
     if(k_afs_cell_of_file(pw_dir, cell, sizeof(cell)) == 0)
 	krb_afslog_uid_home (cell, NULL, pwd->pw_uid, pwd->pw_dir);
@@ -322,11 +372,18 @@ checknologin(void)
 static void
 do_login(struct passwd *pwd, char *tty, char *ttyn)
 {
+#ifdef HAVE_SHADOW_H 
+    struct spwd *sp;
+#endif
     int rootlogin = (pwd->pw_uid == 0);
 
-    if(pwd->pw_uid != 0)
+    if(!rootlogin)
 	checknologin();
     
+#ifdef HAVE_SHADOW_H
+    sp = getspnam(pwd->pw_name);
+#endif
+
     update_utmp(pwd->pw_name, remote_host ? remote_host : "",
 		tty, ttyn);
 #ifdef HAVE_SETLOGIN
@@ -353,7 +410,12 @@ do_login(struct passwd *pwd, char *tty, char *ttyn)
 	if(rootlogin == 0)
 	    exit(1);
     }
-    /* perhaps work some magic */
+    /* all kinds of different magic */
+
+#ifdef HAVE_SHADOW_H
+    check_shadow(pwd,sp);
+#endif
+
     if(do_osfc2_magic(pwd->pw_uid))
 	exit(1);
 #if defined(HAVE_GETUDBNAM) && defined(HAVE_SETLIM)
@@ -395,17 +457,15 @@ do_login(struct passwd *pwd, char *tty, char *ttyn)
 #ifdef KRB5
     if (auth == AUTH_KRB5) {
 	krb5_start_session (pwd);
-#ifdef KRB4
-	krb5_get_afs_tokens (pwd);
-#endif /* KRB4 */
 	krb5_finish ();
     }
+#ifdef KRB4
+    krb5_get_afs_tokens (pwd);
+#endif /* KRB4 */
 #endif /* KRB5 */
 
 #ifdef KRB4
-    if (auth == AUTH_KRB4) {
-	krb4_get_afs_tokens (pwd);
-    }
+    krb4_get_afs_tokens (pwd);
 #endif /* KRB4 */
 
     add_env("HOME", pwd->pw_dir);
@@ -509,20 +569,27 @@ main(int argc, char **argv)
 	    if(ret == -2)
 		continue;
 	}
-	if(f_flag == 0){
-	    ret = read_string("Password: ", password, sizeof(password), 0);
-	    if(ret == -3 || ret == -2)
-		continue;
-	}
-	pwd = getpwnam(username);
+        pwd = k_getpwnam(username);
 	if(pwd == NULL){
 	    fprintf(stderr, "Login incorrect.\n");
 	    ask = 1;
 	    continue;
 	}
+#ifdef ALLOW_NULL_PASSWORD
+        if (pwd != NULL && (pwd->pw_passwd[0] == '\0')) {
+            strcpy(password,"");
+        }
+        else
+#endif
+	if(f_flag == 0) {
+	    ret = read_string("Password: ", password, sizeof(password), 0);
+	    if(ret == -3 || ret == -2)
+		continue;
+	}
 	
 	if(f_flag == 0 && check_password(pwd, password)){
 	    fprintf(stderr, "Login incorrect.\n");
+            ask = 1;
 	    continue;
 	}
 	ttyn = ttyname(STDIN_FILENO);
