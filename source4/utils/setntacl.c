@@ -91,9 +91,8 @@ static void setntacl(char *filename, struct security_descriptor *sd)
 			return 1;
 		}
 		
-		acl->aces = talloc_realloc(
-			acl->aces, 
-			(acl->num_aces + 1) * sizeof(struct security_ace));
+		acl->aces = talloc_realloc(mem_ctx, acl->aces,
+				(acl->num_aces + 1) * sizeof(struct security_ace));
 
 		acl->aces[acl->num_aces].type = ace_type;
 		acl->aces[acl->num_aces].flags = ace_flags;
