@@ -60,9 +60,9 @@ static void add_socket_rpc_unix(struct server_service *service,
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
 
-	sock = service_setup_socket(service,model_ops, "unix", e->ep_description.options[0], &port);
+	sock = service_setup_socket(service,model_ops, "unix", e->ep_description.endpoint, &port);
 	if (!sock) {
-		DEBUG(0,("service_setup_socket(path=%s) failed\n",e->ep_description.options[0]));
+		DEBUG(0,("service_setup_socket(path=%s) failed\n",e->ep_description.endpoint));
 		return;
 	}
 
@@ -89,22 +89,16 @@ static void add_socket_rpc_ncalrpc(struct server_service *service,
 	uint16_t port = 1;
 	char *full_path;
 
-	if (!e->ep_description.options) {
-		e->ep_description.options = talloc_array_p(dce_ctx, const char *, 2);
-		e->ep_description.options[0] = NULL; 
-	}
-
-	if (!e->ep_description.options[0]) {
+	if (!e->ep_description.endpoint) {
 		/* No identifier specified: generate one */
-		e->ep_description.options[0] = generate_random_str(dce_ctx, 10);
-		e->ep_description.options[1] = NULL;
+		e->ep_description.endpoint = generate_random_str(dce_ctx, 10);
 	}
 
-	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(), e->ep_description.options[0]);
+	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(), e->ep_description.endpoint);
 
 	sock = service_setup_socket(service,model_ops, "unix", full_path, &port);
 	if (!sock) {
-		DEBUG(0,("service_setup_socket(identifier=%s,path=%s) failed\n",e->ep_description.options[0], full_path));
+		DEBUG(0,("service_setup_socket(identifier=%s,path=%s) failed\n",e->ep_description.endpoint, full_path));
 		return;
 	}
 
@@ -137,8 +131,8 @@ static void add_socket_rpc_tcp_iface(struct server_service *service,
 	uint16_t port = 0;
 	const char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
 			
-	if (e->ep_description.options && e->ep_description.options[0]) 
-		port = atoi(e->ep_description.options[0]);
+	if (e->ep_description.endpoint) 
+		port = atoi(e->ep_description.endpoint);
 
 	sock = service_setup_socket(service,model_ops, "ipv4", ip_str, &port);
 	if (!sock) {
@@ -146,13 +140,8 @@ static void add_socket_rpc_tcp_iface(struct server_service *service,
 		return;
 	}
 
-	/* And put the settings back into the binding. This will 
-	 * go away once we store the 'encoded' endpoint instead of a 
-	 * string describing it */
-	if (e->ep_description.options == NULL) {
-		e->ep_description.options = talloc_array_p(dce_ctx, const char *, 2);
-		e->ep_description.options[0] = talloc_asprintf(dce_ctx, "%d", port);
-		e->ep_description.options[1] = NULL;
+	if (e->ep_description.endpoint == NULL) {
+		e->ep_description.endpoint = talloc_asprintf(dce_ctx, "%d", port);
 	}
 
 	dcesrv_sock = talloc_p(sock, struct dcesrv_socket_context);

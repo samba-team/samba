@@ -150,11 +150,6 @@ BOOL torture_rpc_scanner(int dummy)
 		return False;
 	}
 
-	b.options = talloc_array_p(mem_ctx, const char *, 2);
-	if (!b.options) {
-		return False;
-	}
-
 	for (i=0;dcerpc_pipes[i];i++) {		
 		/* some interfaces are not mappable */
 		if (dcerpc_pipes[i]->num_calls == 0 ||
@@ -165,20 +160,16 @@ BOOL torture_rpc_scanner(int dummy)
 		printf("\nTesting pipe '%s'\n", dcerpc_pipes[i]->name);
 
 		if (b.transport == NCACN_IP_TCP) {
-			uint32_t port;
-			status = dcerpc_epm_map_tcp_port(b.host, 
+			status = dcerpc_epm_map(mem_ctx, &b, 
 							 dcerpc_pipes[i]->uuid,
-							 dcerpc_pipes[i]->if_version,
-							 &port);
+							 dcerpc_pipes[i]->if_version);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to map port for uuid %s\n", dcerpc_pipes[i]->uuid);
 				continue;
 			}
-			b.options[0] = talloc_asprintf(mem_ctx, "%u", port);
 		} else {
-			b.options[0] = dcerpc_pipes[i]->name;
+			b.endpoint = dcerpc_pipes[i]->name;
 		}
-		b.options[1] = NULL;
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, &b));
 

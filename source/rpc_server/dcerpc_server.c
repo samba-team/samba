@@ -33,15 +33,11 @@ static BOOL endpoints_match(const struct dcerpc_binding *ep1,
 		return False;
 	}
 
-	if (!ep1->options || !ep2->options) {
-		return ep1->options == ep2->options;
+	if (!ep1->endpoint || !ep2->endpoint) {
+		return ep1->endpoint == ep2->endpoint;
 	}
 
-	if (!ep1->options[0] || !ep2->options[0]) {
-		return ep1->options[0] == ep2->options[0];
-	}
-
-	if (strcasecmp(ep1->options[0], ep2->options[0]) != 0) 
+	if (strcasecmp(ep1->endpoint, ep2->endpoint) != 0) 
 		return False;
 
 	return True;
