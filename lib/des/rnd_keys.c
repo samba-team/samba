@@ -1,6 +1,7 @@
-/* rnd_keys.c */
-/* Copyright (C) 1993 Eric Young - see COPYING for more details */
 #include "des_locl.h"
+
+RCSID("$Id");
+
 #include <sys/time.h>
 
 #include <unistd.h>
@@ -42,12 +43,6 @@ do { \
        memcpy((char *)sequence_index, (ll), sizeof(sequence_index)); \
      } while (0)
 
-#define des_generate_random_block(ret) \
-do { \
-       des_ecb_encrypt((des_cblock *) sequence_index, (ret), sequence_seed, DES_ENCRYPT); \
-	 incr_long_long(sequence_index); \
-     } while (0)
-
 void
 des_set_random_generator_seed(des_cblock *seed)
 {
@@ -68,7 +63,11 @@ des_new_random_key(des_cblock *key)
     do_initialize();
 
  try_again:
-  des_generate_random_block(key);
+  des_ecb_encrypt((des_cblock *) sequence_index,
+		  key,
+		  sequence_seed,
+		  DES_ENCRYPT);
+  incr_long_long(sequence_index);
   /* random key must have odd parity and not be weak */
   des_set_odd_parity(key);
   if (des_is_weak_key(key))
@@ -98,12 +97,9 @@ static long gethostid(void)
 /*
  * des_init_random_number_generator:
  *
- *    This routine takes a secret key possibly shared by a number
- * of servers and uses it to generate a random number stream that is
- * not shared by any of the other servers.  It does this by using the current
- * process id, host id, and the current time to the nearest second.  The
- * resulting stream seed is not useful information for cracking the secret
- * key.   Moreover, this routine keeps no copy of the secret key.
+ * Initialize the sequence of random 64 bit blocks.  The input seed
+ * can be a secret key since it should be well hidden and is also not
+ * keept.
  *
  */
 void 
