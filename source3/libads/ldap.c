@@ -48,7 +48,7 @@ static void gotalarm_sig(void)
 	gotalarm = 1;
 }
                                                                                                                    
-LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
+ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
 {
 	LDAP *ldp = NULL;
                                                                                                                    
