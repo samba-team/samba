@@ -113,7 +113,7 @@ static void usr1_handler(int x)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *do_connection(char *service)
+static struct cli_state *do_connection(char *the_service)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
@@ -123,12 +123,12 @@ static struct cli_state *do_connection(char *service)
 	pstring server;
 	char *share;
 
-	if (service[0] != '\\' || service[1] != '\\') {
+	if (the_service[0] != '\\' || the_service[1] != '\\') {
 		usage();
 		exit(1);
 	}
 
-	pstrcpy(server, service+2);
+	pstrcpy(server, the_service+2);
 	share = strchr_m(server,'\\');
 	if (!share) {
 		usage();
@@ -309,7 +309,7 @@ static void smb_umount(char *mount_point)
  * not exit after open_sockets() or send_login() errors,
  * as the smbfs mount would then have no way to recover.
  */
-static void send_fs_socket(char *service, char *mount_point, struct cli_state *c)
+static void send_fs_socket(char *the_service, char *mount_point, struct cli_state *c)
 {
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
@@ -382,7 +382,7 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 			setup_logging("mount.smbfs", False);
 			append_log = True;
 			reopen_logs();
-			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", service, getpid()));
+			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", the_service, getpid()));
 
 			closed = 1;
 		}
@@ -393,7 +393,7 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 			CatchSignal(SIGUSR1, &usr1_handler);
 			pause();
 			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", getpid()));
-			c = do_connection(service);
+			c = do_connection(the_service);
 		}
 	}
 
@@ -477,7 +477,7 @@ static void init_mount(void)
 	if (sys_fork() == 0) {
 		char *smbmnt_path;
 
-		smbmnt_path = asprintf("%s/smbmnt", dyn_BINDIR);
+		asprintf(&smbmnt_path, "%s/smbmnt", dyn_BINDIR);
 		
 		if (file_exist(smbmnt_path, NULL)) {
 			execv(smbmnt_path, args);
@@ -810,7 +810,6 @@ static void parse_mount_smb(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	static pstring servicesf = dyn_CONFIGFILE;
 	char *p;
 
 	DEBUGLEVEL = 1;
@@ -855,9 +854,9 @@ static void parse_mount_smb(int argc, char **argv)
 		pstrcpy(username,getenv("LOGNAME"));
 	}
 
-	if (!lp_load(servicesf,True,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			servicesf);
+			dyn_CONFIGFILE);
 	}
 
 	parse_mount_smb(argc, argv);
