@@ -923,11 +923,10 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.req.req5.highwatermark.reserved_usn	= 0;
 			r.in.req.req5.highwatermark.highest_usn		= 0;
 			r.in.req.req5.uptodateness_vector		= NULL;
-			r.in.req.req5.replica_flags			= 0
-#if 0
-									| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES
-#endif
-									;
+			r.in.req.req5.replica_flags			= 0;
+			if (lp_parm_bool(-1, "drsuapi","compression", False)) {
+				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+			}
 			r.in.req.req5.unknown2				= 0;
 			r.in.req.req5.unknown3				= 0;
 			r.in.req.req5.unknown4				= 0;
