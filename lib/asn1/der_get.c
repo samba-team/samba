@@ -321,6 +321,7 @@ decode_generalized_time (unsigned char *p, size_t len, time_t *t, size_t *size)
     if (e) return e;
     p += l;
     len -= l;
+    ret += l;
     if (len < slen)
 	return ASN1_OVERRUN;
     e = der_get_octet_string (p, slen, &k, &l);
