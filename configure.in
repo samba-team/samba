@@ -331,7 +331,7 @@ fi
 AC_BROKEN(chown daemon err errx fchown flock fnmatch getcwd)
 AC_BROKEN(getdtablesize getopt getusershell inet_aton)
 AC_BROKEN(initgroups iruserok lstat memmove mkstemp)
-AC_BROKEN(putenv rcmd readv setegid setenv setenv seteuid)
+AC_BROKEN(putenv rcmd readv setegid setenv seteuid)
 AC_BROKEN(seteuid strcasecmp strncasecmp strcpy_truncate strdup strerror)
 AC_BROKEN(strftime strlwr strnlen strsep strtok_r strupr swab)
 AC_BROKEN(unsetenv verr verrx vsyslog vwarn vwarnx warn warnx writev)
