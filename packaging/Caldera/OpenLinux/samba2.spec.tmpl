@@ -363,15 +363,15 @@ cp -p swat/README $DOCD/README.swat
 # This is the O'Reily Samba Book - on-line
 for i in docs/htmldocs/using_samba/*.html
 do
-install -m644 $i $DESTDIR%{prefix}/share/swat/using_samba
+install -m644 $i $DESTDIR/usr/share/swat/using_samba
 done
 for i in docs/htmldocs/using_samba/figs/*.gif
 do
-install -m644 $i $DESTDIR%{prefix}/share/swat/using_samba/figs
+install -m644 $i $DESTDIR/usr/share/swat/using_samba/figs
 done
 for i in docs/htmldocs/using_samba/gifs/*.gif
 do
-install -m644 $i $DESTDIR%{prefix}/share/swat/using_samba/gifs
+install -m644 $i $DESTDIR/usr/share/swat/using_samba/gifs
 done
 
 %{fixUP} -vT $DOCD/examples -e 's:/usr/local/bin/:/usr/bin/:g;'
@@ -471,4 +471,4 @@ lisa --inetd disable swat $1
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec.tmpl,v 1.1.6.7 2001/02/26 16:19:45 jht Exp $
+$Id: samba2.spec.tmpl,v 1.1.6.8 2001/02/26 16:58:26 jht Exp $
