@@ -132,3 +132,5 @@ struct security_acl;
 struct security_ace;
 
 struct lsa_RightSet;
+
+struct ldb_val;
