@@ -117,35 +117,19 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 				 * conversion to unicode. If the one byte char converts then
 				 * it really is a directory separator following. Otherwise if
 				 * the two byte character converts (and it should or our assumption
-				 * about character sets is broken and we panic) then copy both
+				 * about character sets is broken and we return an error) then copy both
 				 * bytes as it's a MB character, not a directory separator.
 				 */
 
 				uint16 ucs2_val;
 
-				/*
-				 * We know the following will return 2 bytes. What
-				 * we need to know was if errno was set.
-				 * Note that if CH_UNIX is utf8 a string may be 3
-				 * bytes, but this is ok as mb utf8 characters don't
-				 * contain embedded directory separators. We are really checking
-				 * for mb UNIX asian characters like Japanese (SJIS) here.
-				 * JRA.
-				 */
-
-				errno = 0;
-				convert_string(CH_UNIX, CH_UCS2, s, 1, &ucs2_val, 2);
-				if (errno == 0) {
+				if (convert_string(CH_UNIX, CH_UCS2, s, 1, &ucs2_val, 2, False) == 2) {
 					;
+				} else if (convert_string(CH_UNIX, CH_UCS2, s, 2, &ucs2_val, 2, False) == 2) {
+					*d++ = *s++;
 				} else {
-					errno = 0;
-					convert_string(CH_UNIX, CH_UCS2, s, 2, &ucs2_val, 2);
-					if (errno == 0) {
-						*d++ = *s++;
-					} else {
-						DEBUG(0,("check_path_syntax: directory separator assumptions invalid !\n"));
-						return NT_STATUS_INVALID_PARAMETER;
-					}
+					DEBUG(0,("check_path_syntax: directory separator assumptions invalid !\n"));
+					return NT_STATUS_INVALID_PARAMETER;
 				}
 			}
 			/* Just copy the char (or the second byte of the mb char). */
