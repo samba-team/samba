@@ -332,6 +332,10 @@
 
 #if defined(HAVE_MYSQL_H)
 #include <mysql.h>
+#else
+/* needed to get make proto to work with no <mysql.h> */
+#define MYSQL     void
+#define MYSQL_ROW void
 #endif
 
 #ifndef uchar
