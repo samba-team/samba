@@ -385,7 +385,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 	  BOOL has_punctuation;
 	  if ((q = strchr(p,'|'))) *q++ = 0;
 
-	  has_punctuation = (strchr(p,' ') || strchr(p,'(') || strchr(p,')'));
+	  has_punctuation = (strchr(p,' ') || strchr(p,'\t') || strchr(p,'(') || strchr(p,')'));
 
 	  if (strlen(p)>strlen(comment) && has_punctuation)
 	    {
