@@ -68,6 +68,7 @@ int getarg(struct getargs *args, size_t num_args,
 
 void arg_printusage (struct getargs *args,
 		     size_t num_args,
+		     const char *progname,
 		     const char *extra_string);
 
 #endif /* __GETARG_H__ */
