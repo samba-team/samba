@@ -390,9 +390,9 @@ struct share_ops *locking_slow_init(int ronly);
 
 int str_checksum(char *s);
 BOOL is_8_3(char *fname, BOOL check_case);
-void reset_mangled_stack( int size );
+void create_mangled_stack(int size);
 BOOL check_mangled_stack(char *s);
-BOOL is_mangled( char *s );
+BOOL is_mangled(char *s);
 void mangle_name_83(char *s);
 BOOL name_map_mangle(char *OutName,BOOL need83,int snum);
 
@@ -766,8 +766,10 @@ int reply_getattrE(char *inbuf,char *outbuf);
 /*The following definitions come from  rpc_pipes/lsa_hnd.c  */
 
 void init_lsa_policy_hnd(void);
-BOOL open_lsa_policy_hnd(LSA_POL_HND *hnd, DOM_SID *sid);
+BOOL open_lsa_policy_hnd(LSA_POL_HND *hnd);
 BOOL set_lsa_policy_samr_rid(LSA_POL_HND *hnd, uint32 rid);
+BOOL set_lsa_policy_samr_pol_status(LSA_POL_HND *hnd, uint32 pol_status);
+BOOL set_lsa_policy_samr_sid(LSA_POL_HND *hnd, DOM_SID *sid);
 uint32 get_lsa_policy_samr_rid(LSA_POL_HND *hnd);
 BOOL close_lsa_policy_hnd(LSA_POL_HND *hnd);
 
@@ -889,7 +891,6 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 
 /*The following definitions come from  rpc_pipes/pipeutil.c  */
 
-void create_pol_hnd(LSA_POL_HND *hnd);
 void initrpcreply(char *inbuf, char *q);
 void endrpcreply(char *inbuf, char *q, int datalen, int rtnval, int *rlen);
 BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
@@ -912,10 +913,10 @@ char* samr_io_q_close(BOOL io, SAMR_Q_CLOSE *q_u, char *q, char *base, int align
 char* samr_io_r_close(BOOL io, SAMR_R_CLOSE *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_open_secret(BOOL io, SAMR_Q_OPEN_SECRET *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_open_secret(BOOL io, SAMR_R_OPEN_SECRET *r_u, char *q, char *base, int align, int depth);
-char* samr_io_q_unknown_11(BOOL io, SAMR_Q_UNKNOWN_11 *q_u, char *q, char *base, int align, int depth);
-void make_samr_r_unknown_11(SAMR_R_UNKNOWN_11 *r_u,
-		uint32 switch_value, uint32 unknown_0, uint32 status);
-char* samr_io_r_unknown_11(BOOL io, SAMR_R_UNKNOWN_11 *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_lookup_rids(BOOL io, SAMR_Q_LOOKUP_RIDS *q_u, char *q, char *base, int align, int depth);
+void make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
+		uint32 num_rids, uint32 rid, uint32 status);
+char* samr_io_r_lookup_rids(BOOL io, SAMR_R_LOOKUP_RIDS *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_22(BOOL io, SAMR_Q_UNKNOWN_22 *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_unknown_22(BOOL io, SAMR_R_UNKNOWN_22 *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_24(BOOL io, SAMR_Q_UNKNOWN_24 *q_u, char *q, char *base, int align, int depth);
@@ -925,8 +926,8 @@ void make_samr_r_unknown_24(SAMR_R_UNKNOWN_24 *r_u,
 char* samr_io_r_unknown_24(BOOL io, SAMR_R_UNKNOWN_24 *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_32(BOOL io, SAMR_Q_UNKNOWN_32 *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_unknown_32(BOOL io, SAMR_R_UNKNOWN_32 *r_u, char *q, char *base, int align, int depth);
-char* samr_io_q_unknown_39(BOOL io, SAMR_Q_UNKNOWN_39 *q_u, char *q, char *base, int align, int depth);
-char* samr_io_r_unknown_39(BOOL io, SAMR_R_UNKNOWN_39 *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_open_policy(BOOL io, SAMR_Q_OPEN_POLICY *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_open_policy(BOOL io, SAMR_R_OPEN_POLICY *r_u, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/smbparse.c  */
 
@@ -946,6 +947,8 @@ void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);
 char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, int depth);
 void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
 char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, int depth);
+void make_dom_rid3(DOM_RID3 *rid3, uint32 rid);
+char* smb_io_dom_rid3(BOOL io, DOM_RID3 *rid3, char *q, char *base, int align, int depth);
 void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name);
 char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth);
 void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,

@@ -517,11 +517,20 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
    if (!smb_pass)
    {
+     /* lkclXXXX: if workstation entry doesn't exist, indicate logon failure */
+     DEBUG(4,("Workstation trust account %s doesn't exist.",user));
+     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
+     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
+     return(ERROR(NT_STATUS_LOGON_FAILURE, 0xc000)); /* decimal 109 NT error, 0xc000 */
+   }
+   else
+   {
      /* PAXX: This is the NO LOGON workstation trust account stuff */
+     /* lkclXXXX: if the workstation *does* exist, indicate failure differently! */
      DEBUG(4,("No Workstation trust account %s",user));
      SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
      CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(NT_STATUS_LOGON_FAILURE, 0xc000)); /* 0x109 NT error, 0xc000 */
+     return(ERROR(NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT, 0xc000)); /* decimal 409 NT error, 0xc000 */
    }
 
    computer_id = True;
