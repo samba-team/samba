@@ -5,21 +5,38 @@ SPECDIR=${SPECDIR:-/usr/src/OpenLinux/SPECS}
 SRCDIR=${SRCDIR:-/usr/src/OpenLinux/SOURCES}
 USERID=`id -u`
 GRPID=`id -g`
+devel=0;
+old=0;
 
-if ( z$1 == "zdevel" ) then
-        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba; mv samba samba-PVERSION )
-        ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERIONS; mv samba-PVERSION samba )
+# Do some argument parsing...
+if [ z$1 = z"devel" ]; then
+	devel=1;
+	shift
+fi
+if [ z$1 = z"old" ]; then
+	old=1;
+	shift
+fi
+
+# Start preparing the packages...
+if [ $devel -ne 0 ]; then
+        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} samba; mv samba samba-PVERSION )
+        ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION; mv samba-PVERSION samba )
 else
-        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba-PVERSION )
+        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} samba-PVERSION )
         ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION )
-done
+fi
 
-cp -a *.spec *.spec-lsb $SPECDIR
+cp -af *.spec *.spec-lsb $SPECDIR
 for src in *.patch; do
   trg=`echo $src | sed 's;xxxxxx;PVERSION;'`
   cp -a $src $SRCDIR/$trg
 done
+
+# Start building the package
 cd $SPECDIR
-mv samba2.spec samba2.spec-nonlsb
-ln samba2.spec-lsb samba2.spec
+if [ $old -eq 0 ]; then
+mv -f samba2.spec samba2.spec-nonlsb
+ln -f samba2.spec-lsb samba2.spec
+fi
 rpm -ba -v samba2.spec

@@ -15,7 +15,7 @@
 [global]
 
 # workgroup = NT-Domain-Name or Workgroup-Name
-   workgroup = WORKGROUP
+   workgroup = MYGROUP
 
 # server string is the equivalent of the NT Description field
    server string = Samba Server on Caldera OpenLinux
@@ -37,7 +37,7 @@
 # It should not be necessary to specify the print system type unless
 # it is non-standard. Currently supported print systems include:
 # bsd, sysv, plp, lprng, aix, hpux, qnx
-   printing = lprng
+   printing = cups
 
 # Uncomment this if you want a guest account, you must add this to /etc/passwd
 # otherwise the user "nobody" is used
@@ -45,10 +45,10 @@
 
 # this tells Samba to use a separate log file for each machine
 # that connects
-;  log file = /var/log/samba.d/smb.%m
+  log file = /var/log/samba.d/smb.%m
 
 # Put a capping on the size of the log files (in Kb).
-   max log size = 50
+   max log size = 200
 
 # Security mode. Most people will want user level security. See
 # security_level.txt for details.
@@ -58,14 +58,14 @@
 
 # Password Level allows matching of _n_ characters of the password for
 # all combinations of upper and lower case.
-;  password level = 8
-;  username level = 8
+  password level = 8
+  username level = 8
 
 # You may wish to use password encryption. Please read
 # ENCRYPTION.txt, Win95.txt and WinNT.txt in the Samba documentation.
 # Do not enable this option unless you have read those documents
-;  encrypt passwords = yes
-;  smb passwd file = /etc/samba.d/smbpasswd
+  encrypt passwords = yes
+  smb passwd file = /etc/samba.d/smbpasswd
 
 # The following are needed to allow password changing from Windows to
 # update the Linux sytsem password also.
@@ -78,7 +78,7 @@
 ;  passwd chat = *New*UNIX*password* %n\n *ReType*new*UNIX*password* %n\n *passwd:*all*authentication*tokens*updated*successfully*
 
 # Unix users can map to different SMB User names
-;  username map = /etc/samba.d/smbusers
+  username map = /etc/samba.d/smbusers
 
 # Using the following line enables you to customise your configuration
 # on a per machine basis. The %m gets replaced with the netbios name
@@ -87,7 +87,7 @@
 
 # Most people will find that this option gives better performance.
 # See speed.txt and the manual pages for details
-   socket options = TCP_NODELAY 
+   socket options = TCP_NODELAY SO_RCVBUF=8192 SO_SNDBUF=8192
 
 # Configure Samba to use multiple interfaces
 # If you have multiple network interfaces then you must list them
@@ -108,7 +108,7 @@
 
 # OS Level determines the precedence of this server in master browser
 # elections. The default value should be reasonable
-;   os level = 33
+   os level = 20
 
 # Domain Master specifies Samba to be the Domain Master Browser. This
 # allows Samba to collate browse lists between subnets. Don't use this
@@ -137,7 +137,7 @@
 # Where to store roving profiles (only for Win95 and WinNT)
 #        %L substitutes for this servers netbios name, %U is username
 #        You must uncomment the [Profiles] share below
-;   logon path = \\%L\Profiles\%U
+   logon path = \\%L\Profiles\%U
 
 # All NetBIOS names must be resolved to IP Addresses
 # 'Name Resolve Order' allows the named resolution mechanism to be specified
@@ -186,28 +186,30 @@
 ; (it is named 'public' as it is intended to be used by other sharing
 ; technologies (like NetWare, appletalk) too and may get disclosed due
 ; to weak protocols! -- hmm, are there less secure protocols than NFS? :)
-   path = %H/Public
+   path = %H/Samba
    valid users = %S
+   users = %S
    only user = yes
    browseable = no
    writable = yes
    create mask = 0750
 
 # Un-comment the following and create the netlogon directory for Domain Logons
-; [netlogon]
-;   comment = Samba Network Logon Service
-;   path = /home/samba/netlogon
-;   guest ok = yes
-;   writable = no
-;   share modes = no
+[netlogon]
+  comment = Samba Network Logon Service
+  path = @samba_home@/netlogon
+  guest ok = yes
+  writable = no
+  share modes = no
 
 
 # Un-comment the following to provide a specific roving profile share
 # the default is to use the user's home directory
-;[Profiles]
-;    path = /home/samba/profiles
-;    browseable = no
-;    guest ok = yes
+[profiles]
+    path = @samba_home@/profiles
+    writeable = yes
+    browseable = no
+    guest ok = yes
 
 
 # NOTE: If you have a BSD-style print system there is no need to 
@@ -224,13 +226,14 @@
 
 # A publicly accessible directory, but read only, except for people in
 # the "users" group
-;[public]
-;   comment = Public Stuff
-;   path = /home/public
-;   browseable = yes
-;   public = yes
+[public]
+   comment = Public Stuff
+   path = @samba_home@/public
+   browseable = yes
+   read only = yes
+   public = no
+   printable = no
 ;   writable = yes
-;   printable = no
 # access may be controlled by these options
 ;  read list = user1, user2, @group
 ;  valid users = user1, user3
