@@ -201,205 +201,469 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	return True;
 }
 
-/* Open a connction to the remote server, cache failures for 30 seconds */
+/************************************************************************
+ Given a fd with a just-connected TCP connection to a DC, open a connection
+ to the pipe.
+************************************************************************/
 
-static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const int pipe_index,
-				   struct winbindd_cm_conn *new_conn)
+static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
+				      const int sockfd,
+				      const int pipe_index,
+				      const char *controller,
+				      struct cli_state **cli,
+				      BOOL *retry)
 {
-	NTSTATUS result;
-	char *machine_password; 
-	char *machine_krb5_principal, *ipc_username, *ipc_domain, *ipc_password;
-	struct in_addr dc_ip;
-	int i;
-	BOOL retry = True;
+	char *machine_password, *machine_krb5_principal;
+	char *ipc_username, *ipc_domain, *ipc_password;
+	struct ntuser_creds creds;
 
-	ZERO_STRUCT(dc_ip);
+	BOOL got_mutex;
+	BOOL add_failed_connection = True;
 
-	fstrcpy(new_conn->domain, domain->name);
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (!get_dc_name_via_netlogon(domain, new_conn->controller, &dc_ip)) {
+	struct sockaddr peeraddr;
+	socklen_t peeraddr_len;
 
-		/* connection failure cache has been moved inside of
-		   get_dc_name so we can deal with half dead DC's --jerry */
+	struct sockaddr_in *peeraddr_in = (struct sockaddr_in *)&peeraddr;
 
-		if (!get_dc_name(domain->name, domain->alt_name[0] ?
-				 domain->alt_name : NULL, 
-				 new_conn->controller, &dc_ip)) {
-			result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-			add_failed_connection_entry(domain->name, "", result);
-			return result;
-		}
-	}
-		
-	/* Initialise SMB connection */
-	fstrcpy(new_conn->pipe_name, get_pipe_name_from_index(pipe_index));
-
-	/* grab stored passwords */
+	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL,
+							  NULL);
 	
-	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-	
-	if (asprintf(&machine_krb5_principal, "%s$@%s", global_myname(), lp_realm()) == -1) {
+	if (asprintf(&machine_krb5_principal, "%s$@%s", global_myname(),
+		     lp_realm()) == -1) {
 		SAFE_FREE(machine_password);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
-	for (i = 0; retry && (i < 3); i++) {
-		BOOL got_mutex;
-		if (!(got_mutex = secrets_named_mutex(new_conn->controller, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
-			DEBUG(0,("cm_open_connection: mutex grab failed for %s\n", new_conn->controller));
-			result = NT_STATUS_POSSIBLE_DEADLOCK;
-			continue;
+	*retry = True;
+
+	got_mutex = secrets_named_mutex(controller,
+					WINBIND_SERVER_MUTEX_WAIT_TIME);
+
+	if (!got_mutex) {
+		DEBUG(0,("cm_open_connection: mutex grab failed for %s\n",
+			 controller));
+		result = NT_STATUS_POSSIBLE_DEADLOCK;
+		goto done;
+	}
+
+	if ((*cli = cli_initialise(NULL)) == NULL) {
+		DEBUG(1, ("Could not cli_initialize\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	(*cli)->timeout = 10000; 	/* 10 seconds */
+	(*cli)->fd = sockfd;
+	fstrcpy((*cli)->desthost, controller);
+	(*cli)->use_kerberos = True;
+
+	peeraddr_len = sizeof(peeraddr);
+
+	if ((getpeername((*cli)->fd, &peeraddr, &peeraddr_len) != 0) ||
+	    (peeraddr_len != sizeof(struct sockaddr_in)) ||
+	    (peeraddr_in->sin_family != PF_INET))
+		goto done;
+
+	if (ntohs(peeraddr_in->sin_port) == 139) {
+		struct nmb_name calling;
+		struct nmb_name called;
+
+		make_nmb_name(&calling, global_myname(), 0x0);
+		make_nmb_name(&called, "*SMBSERVER", 0x20);
+
+		if (!cli_session_request(*cli, &calling, &called)) {
+			DEBUG(8, ("cli_session_request failed for %s\n",
+				  controller));
+			goto done;
 		}
-		
-		new_conn->cli = NULL;
-		result = cli_start_connection(&new_conn->cli, global_myname(), 
-					      new_conn->controller, 
-					      &dc_ip, 0, Undefined, 
-					      CLI_FULL_CONNECTION_USE_KERBEROS, 
-					      &retry);
+	}
 
-		if (NT_STATUS_IS_OK(result)) {
+	cli_setup_signing_state(*cli, Undefined);
 
-			/* reset the error code */
-			result = NT_STATUS_UNSUCCESSFUL; 
+	if (!cli_negprot(*cli)) {
+		DEBUG(1, ("cli_negprot failed\n"));
+		cli_shutdown(*cli);
+		goto done;
+	}
 
-			/* Krb5 session */
+	/* Krb5 session */
 			
-			if ((lp_security() == SEC_ADS) 
-				&& (new_conn->cli->protocol >= PROTOCOL_NT1 && new_conn->cli->capabilities & CAP_EXTENDED_SECURITY)) {
-				ADS_STATUS ads_status;
-				new_conn->cli->use_kerberos = True;
-				DEBUG(5, ("connecting to %s from %s with kerberos principal [%s]\n", 
-					  new_conn->controller, global_myname(), machine_krb5_principal));
+	if ((lp_security() == SEC_ADS) 
+	    && ((*cli)->protocol >= PROTOCOL_NT1 &&
+		(*cli)->capabilities & CAP_EXTENDED_SECURITY)) {
 
-				ads_status = cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
-								      machine_password, 
-								      lp_workgroup());
-				if (!ADS_ERR_OK(ads_status)) {
-					DEBUG(4,("failed kerberos session setup with %s\n", ads_errstr(ads_status)));
-					result = ads_ntstatus(ads_status);
-				} else {
-					result = NT_STATUS_OK;
-				}
-			}
-			new_conn->cli->use_kerberos = False;
-			
-			/* only do this is we have a username/password for thr IPC$ connection */
-			
-			if ( !NT_STATUS_IS_OK(result) 
-				&& new_conn->cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE
-				&& strlen(ipc_username) )
-			{	
-				DEBUG(5, ("connecting to %s from %s with username [%s]\\[%s]\n", 
-					  new_conn->controller, global_myname(), ipc_domain, ipc_username));
+		ADS_STATUS ads_status;
+		(*cli)->use_kerberos = True;
+		DEBUG(5, ("connecting to %s from %s with kerberos principal "
+			  "[%s]\n", controller, global_myname(),
+			  machine_krb5_principal));
 
-				result = NT_STATUS_OK;
+		ads_status = cli_session_setup_spnego(*cli,
+						      machine_krb5_principal, 
+						      machine_password, 
+						      lp_workgroup());
 
-				if (!cli_session_setup(new_conn->cli, ipc_username, 
-						       ipc_password, strlen(ipc_password)+1, 
-						       ipc_password, strlen(ipc_password)+1, 
-						       ipc_domain)) {
-					result = cli_nt_error(new_conn->cli);
-					DEBUG(4,("failed authenticated session setup with %s\n", nt_errstr(result)));
-					if (NT_STATUS_IS_OK(result)) 
-						result = NT_STATUS_UNSUCCESSFUL;
-				}
-			}
-			
-			/* anonymous is all that is left if we get to here */
-			
-			if (!NT_STATUS_IS_OK(result)) {	
-			
-				DEBUG(5, ("anonymous connection attempt to %s from %s\n", 
-					  new_conn->controller, global_myname()));
-					  
-				result = NT_STATUS_OK;
+		if (!ADS_ERR_OK(ads_status))
+			DEBUG(4,("failed kerberos session setup with %s\n",
+				 ads_errstr(ads_status)));
 
-				if (!cli_session_setup(new_conn->cli, "", NULL, 0, NULL, 0, "")) 
-				{
-					result = cli_nt_error(new_conn->cli);
-					DEBUG(4,("failed anonymous session setup with %s\n", nt_errstr(result)));
-					if (NT_STATUS_IS_OK(result)) 
-						result = NT_STATUS_UNSUCCESSFUL;
-				} 
-				
-			}
+		result = ads_ntstatus(ads_status);
+	}
 
-			if (NT_STATUS_IS_OK(result) && !cli_send_tconX(new_conn->cli, "IPC$", "IPC",
-								       "", 0)) {
-				result = cli_nt_error(new_conn->cli);
-				DEBUG(1,("failed tcon_X with %s\n", nt_errstr(result)));
-				cli_shutdown(new_conn->cli);
-				if (NT_STATUS_IS_OK(result)) {
-					result = NT_STATUS_UNSUCCESSFUL;
-				}
-			}
+	if (NT_STATUS_IS_OK(result))
+		goto session_setup_done;
+
+	/* Fall back to non-kerberos session setup */
+
+	(*cli)->use_kerberos = False;
+
+	if ((((*cli)->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) != 0) &&
+	    (strlen(ipc_username) > 0)) {
+
+		/* Only try authenticated if we have a username */
+
+		DEBUG(5, ("connecting to %s from %s with username "
+			  "[%s]\\[%s]\n",  controller, global_myname(),
+			  ipc_domain, ipc_username));
+
+		if (cli_session_setup(*cli, ipc_username,
+				      ipc_password, strlen(ipc_password)+1,
+				      ipc_password, strlen(ipc_password)+1,
+				      ipc_domain)) {
+			DEBUG(5, ("authenticated session setup failed\n"));
+			goto session_setup_done;
 		}
+	}
 
-		if (NT_STATUS_IS_OK(result)) {
-			struct ntuser_creds creds;
-			init_creds(&creds, ipc_username, ipc_domain, ipc_password);
-			cli_init_creds(new_conn->cli, &creds);
-		}
+	/* Fall back to anonymous connection, this might fail later */
 
-		if (got_mutex)
-			secrets_named_mutex_release(new_conn->controller);
+	if (cli_session_setup(*cli, "", NULL, 0, NULL, 0, "")) {
+		DEBUG(5, ("Connected anonymously\n"));
+		goto session_setup_done;
+	}
+
+	result = cli_nt_error(*cli);
+
+	if (NT_STATUS_IS_OK(result))
+		result = NT_STATUS_UNSUCCESSFUL;
+
+	/* We can't session setup */
+
+	goto done;
+
+ session_setup_done:
+
+	if (!cli_send_tconX(*cli, "IPC$", "IPC", "", 0)) {
+
+		result = cli_nt_error(*cli);
+
+		DEBUG(1,("failed tcon_X with %s\n", nt_errstr(result)));
 
 		if (NT_STATUS_IS_OK(result))
-			break;
+			result = NT_STATUS_UNSUCCESSFUL;
+
+		cli_shutdown(*cli);
+		goto done;
 	}
 
-	/* try and use schannel if possible, but continue anyway if it
-	   failed. This allows existing setups to continue working,
-	   while solving the win2003 '100 user' limit for systems that
-	   are joined properly.
-	
-	   Only do this for our own domain or perhaps a trusted domain
-	   if we are on a Samba DC */
+	init_creds(&creds, ipc_username, ipc_domain, ipc_password);
+	cli_init_creds(*cli, &creds);
 
-	if (NT_STATUS_IS_OK(result) && (domain->primary || IS_DC) ) {
-		NTSTATUS status = setup_schannel( new_conn->cli, domain->name );
+	secrets_named_mutex_release(controller);
+	got_mutex = False;
+	*retry = False;
+
+	if (domain->primary || IS_DC) {
+		NTSTATUS status = setup_schannel( *cli, domain->name );
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("schannel refused - continuing without schannel (%s)\n", 
-				 nt_errstr(status)));
+			DEBUG(3,("schannel refused - continuing without "
+				 "schannel (%s)\n", nt_errstr(status)));
 		}
 	}
 
+	/* set the domain if empty; needed for schannel connections */
+	if ( !*(*cli)->domain )
+		fstrcpy( (*cli)->domain, domain->name );
+
+	if ( !cli_nt_session_open (*cli, pipe_index) ) {
+
+		result = NT_STATUS_PIPE_NOT_AVAILABLE;
+
+		/* This might be a NT4 DC */
+		if ( is_win2k_pipe(pipe_index) )
+			add_failed_connection = False;
+
+		cli_shutdown(*cli);
+		goto done;
+	}
+
+	result = NT_STATUS_OK;
+	add_failed_connection = False;
+
+ done:
+	if (got_mutex)
+		secrets_named_mutex_release(controller);
+
+	SAFE_FREE(machine_password);
+	SAFE_FREE(machine_krb5_principal);
 	SAFE_FREE(ipc_username);
 	SAFE_FREE(ipc_domain);
 	SAFE_FREE(ipc_password);
-	SAFE_FREE(machine_password);
-	SAFE_FREE(machine_krb5_principal);
 
-	if (!NT_STATUS_IS_OK(result)) {
-		add_failed_connection_entry(domain->name, new_conn->controller, result);
-		return result;
-	}
-	
-	/* set the domain if empty; needed for schannel connections */
-	if ( !*new_conn->cli->domain )
-		fstrcpy( new_conn->cli->domain, domain->name );
-		
-	
-	if ( !cli_nt_session_open (new_conn->cli, pipe_index) ) {
-		result = NT_STATUS_PIPE_NOT_AVAILABLE;
-		/* 
-		 * only cache a failure if we are not trying to open the 
-		 * **win2k** specific lsarpc UUID.  This could be an NT PDC 
-		 * and therefore a failure is normal.  This should probably
-		 * be abstracted to a check for 2k specific pipes and wondering
-		 * if the PDC is an NT4 box.   but since there is only one 2k 
-		 * specific UUID right now, i'm not going to bother.  --jerry
-		 */
-		if ( !is_win2k_pipe(pipe_index) )
-			add_failed_connection_entry(domain->name, new_conn->controller, result);
-		cli_shutdown(new_conn->cli);
-		return result;
+	if (add_failed_connection)
+		add_failed_connection_entry(domain->name, controller, result);
+
+	return result;
+}
+
+struct dc_name_ip {
+	fstring name;
+	struct in_addr ip;
+};
+
+static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
+			      const char *dcname, struct in_addr ip,
+			      struct dc_name_ip **dcs, int *num)
+{
+	if (!NT_STATUS_IS_OK(check_negative_conn_cache(domain_name, dcname)))
+		return False;
+
+	*dcs = talloc_realloc(mem_ctx, *dcs, ((*num)+1) * sizeof(**dcs));
+
+	if (*dcs == NULL)
+		return False;
+
+	fstrcpy((*dcs)[*num].name, dcname);
+	(*dcs)[*num].ip = ip;
+	*num += 1;
+	return True;
+}
+
+static BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
+				const char *str, char ***array, int *num)
+{
+	char *dup_str = talloc_strdup(mem_ctx, str);
+
+	*array = talloc_realloc(mem_ctx, *array, ((*num)+1) * sizeof(**array));
+
+	if ((*array == NULL) || (dup_str == NULL))
+		return False;
+
+	(*array)[*num] = dup_str;
+	*num += 1;
+	return True;
+}
+
+static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
+				  struct in_addr ip, uint16 port,
+				  struct sockaddr_in **addrs, int *num)
+{
+	*addrs = talloc_realloc(mem_ctx, *addrs, ((*num)+1) * sizeof(**addrs));
+
+	if (*addrs == NULL)
+		return False;
+
+	(*addrs)[*num].sin_family = PF_INET;
+	putip((char *)&((*addrs)[*num].sin_addr), (char *)&ip);
+	(*addrs)[*num].sin_port = htons(port);
+
+	*num += 1;
+	return True;
+}
+
+static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
+		       const struct winbindd_domain *domain,
+		       struct dc_name_ip **dcs, int *num_dcs)
+{
+	struct ip_service *iplist = NULL;
+	int i, num = 0;
+
+	if (!internal_resolve_name(domain->name, 0x1c, &iplist, &num,
+				   lp_name_resolve_order()))
+		return False;
+
+	/* Now try to find the server names of at least one IP address, hosts
+	 * not replying are cached as such */
+
+	for (i=0; i<num; i++) {
+
+		fstring dcname;
+
+		if (!name_status_find(domain->name, 0x1c, 0x20, iplist[i].ip,
+				      dcname))
+			continue;
+
+		if (add_one_dc_unique(mem_ctx, domain->name, dcname,
+				      iplist[i].ip, dcs, num_dcs)) {
+			/* One DC responded, so we assume that he will also
+			   work on 139/445 */
+			break;
+		}
 	}
 
-	return NT_STATUS_OK;
+	return True;
+}
+
+static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
+		    struct dc_name_ip **dcs, int *num_dcs)
+{
+	fstring dcname;
+	struct in_addr ip;
+	BOOL is_our_domain;
+
+	const char *p;
+
+	is_our_domain = strequal(domain->name, lp_workgroup());
+
+	if (!is_our_domain && get_dc_name_via_netlogon(domain, dcname, &ip) &&
+	    add_one_dc_unique(mem_ctx, domain->name, dcname, ip, dcs, num_dcs))
+			return True;
+
+	if (!is_our_domain) {
+		/* NETLOGON to our own domain could not give us a DC name
+		 * (which is an error), fall back to looking up domain#1c */
+		return get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
+	}
+
+	if (must_use_pdc(domain->name) && get_pdc_ip(domain->name, &ip)) {
+
+		if (!name_status_find(domain->name, 0x1b, 0x20, ip, dcname))
+			return False;
+
+		if (add_one_dc_unique(mem_ctx, domain->name,
+				      dcname, ip, dcs, num_dcs))
+			return True;
+	}
+
+	p = lp_passwordserver();
+
+	if (*p == 0)
+		return get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
+
+	while (next_token(&p, dcname, LIST_SEP, sizeof(dcname))) {
+
+		if (strequal(dcname, "*")) {
+			get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
+			continue;
+		}
+
+		if (!resolve_name(dcname, &ip, 0x20))
+			continue;
+
+		add_one_dc_unique(mem_ctx, domain->name, dcname, ip,
+				  dcs, num_dcs);
+	}
+
+	return True;
+}
+
+static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
+			const struct winbindd_domain *domain,
+			fstring dcname, struct sockaddr_in *addr, int *fd)
+{
+	struct dc_name_ip *dcs = NULL;
+	int num_dcs = 0;
+
+	char **dcnames = NULL;
+	int num_dcnames = 0;
+
+	struct sockaddr_in *addrs = NULL;
+	int num_addrs = 0;
+
+	int i, fd_index;
+
+	if (!get_dcs(mem_ctx, domain, &dcs, &num_dcs) || (num_dcs == 0))
+		return False;
+
+	for (i=0; i<num_dcs; i++) {
+
+		add_string_to_array(mem_ctx, dcs[i].name,
+				    &dcnames, &num_dcnames);
+		add_sockaddr_to_array(mem_ctx, dcs[i].ip, 445,
+				      &addrs, &num_addrs);
+
+		add_string_to_array(mem_ctx, dcs[i].name,
+				    &dcnames, &num_dcnames);
+		add_sockaddr_to_array(mem_ctx, dcs[i].ip, 139,
+				      &addrs, &num_addrs);
+	}
+
+	if ((num_dcnames == 0) || (num_dcnames != num_addrs))
+		return False;
+
+	if (!open_any_socket_out(addrs, num_addrs, 10000, &fd_index, fd)) {
+		for (i=0; i<num_dcs; i++) {
+			add_failed_connection_entry(domain->name,
+						    dcs[i].name,
+						    NT_STATUS_UNSUCCESSFUL);
+		}
+		return False;
+	}
+
+	fstrcpy(dcname, dcnames[fd_index]);
+	*addr = addrs[fd_index];
+
+	return True;
+}
+
+static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
+				   const int pipe_index,
+				   struct winbindd_cm_conn *new_conn)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS result;
+
+	int retries;
+
+	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	for (retries = 0; retries < 3; retries++) {
+
+		int fd = -1;
+		BOOL retry;
+
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+
+		if ((strlen(domain->dcname) > 0) &&
+		    NT_STATUS_IS_OK(check_negative_conn_cache(domain->name,
+							      domain->dcname))) {
+			int dummy;
+			if (!open_any_socket_out(&domain->dcaddr, 1, 10000,
+						 &dummy, &fd)) {
+				fd = -1;
+			}
+		}
+
+		if ((fd == -1) &&
+		    !find_new_dc(mem_ctx, domain, domain->dcname,
+				 &domain->dcaddr, &fd))
+			break;
+
+		new_conn->cli = NULL;
+
+		result = cm_prepare_connection(domain, fd, pipe_index,
+					       domain->dcname,
+					       &new_conn->cli, &retry);
+
+		if (NT_STATUS_IS_OK(result)) {
+			fstrcpy(new_conn->domain, domain->name);
+			/* Initialise SMB connection */
+			fstrcpy(new_conn->pipe_name,
+				get_pipe_name_from_index(pipe_index));
+			break;
+		}
+
+		if (!retry)
+			break;
+	}
+
+	talloc_destroy(mem_ctx);
+	return result;
 }
 
 /************************************************************************
