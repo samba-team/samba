@@ -32,11 +32,17 @@ void ldapsrv_RootDSE_Search(struct ldapsrv_call *call,
 {
 	struct ldap_SearchResEntry *ent;
 	struct ldap_Result *done;
+	int code = 0;
 	struct ldapsrv_reply *ent_r, *done_r;
 	int num_attrs = 3;
 	struct ldap_attribute *attrs;
 
 	DEBUG(10, ("Root DSE: %s\n", r->filter));
+
+	if (r->scope != LDAP_SEARCH_SCOPE_BASE) {
+		code = 32; /* nosuchobject */
+		goto no_base_scope;
+	}
 
 	attrs = talloc_array_p(call, struct ldap_attribute, num_attrs); 
 	if (!attrs) {
@@ -233,6 +239,8 @@ void ldapsrv_RootDSE_Search(struct ldapsrv_call *call,
 
 	ldapsrv_queue_reply(call, ent_r);
 
+no_base_scope:
+
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	if (!done_r) {
 		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
@@ -240,7 +248,7 @@ void ldapsrv_RootDSE_Search(struct ldapsrv_call *call,
 	}
 
 	done = &done_r->msg.r.SearchResultDone;
-	done->resultcode = 0;
+	done->resultcode = code;
 	done->dn = NULL;
 	done->errormessage = NULL;
 	done->referral = NULL;

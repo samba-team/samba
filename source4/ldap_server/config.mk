@@ -5,8 +5,9 @@
 [SUBSYSTEM::LDAP]
 INIT_OBJ_FILES = \
 		ldap_server/ldap_server.o \
-		ldap_server/ldap_rootdse.o
+		ldap_server/ldap_rootdse.o \
+		ldap_server/ldap_simple_ldb.o
 REQUIRED_SUBSYSTEMS = \
-		LIBCLI_LDAP
+		LIBCLI_LDAP LIBLDB
 # End SUBSYSTEM SMB
 #######################
