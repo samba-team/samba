@@ -51,7 +51,8 @@ struct getargs{
 	   arg_flag, 
 	   arg_negative_flag, 
 	   arg_strings,
-	   arg_double
+	   arg_double,
+	   arg_collect
     } type;
     void *value;
     const char *help;
@@ -68,6 +69,11 @@ typedef struct getarg_strings {
     int num_strings;
     char **strings;
 } getarg_strings;
+
+typedef struct getarg_collect_info {
+    int (*func)(char *optarg, int argc, char **argv, int *optind, void *data);
+    void *data;
+} getarg_collect_info;
 
 int getarg(struct getargs *args, size_t num_args, 
 	   int argc, char **argv, int *optind);

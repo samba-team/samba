@@ -296,7 +296,7 @@ add_string(getarg_strings *s, char *value)
 
 static int
 arg_match_long(struct getargs *args, size_t num_args,
-	       char *argv)
+	       char *argv, int argc, char **rargv, int *optind)
 {
     int i;
     char *optarg = NULL;
@@ -393,6 +393,10 @@ arg_match_long(struct getargs *args, size_t num_args,
 	*(double*)current->value = tmp;
 	return 0;
     }
+    case arg_collect:{
+	struct getarg_collect_info *c = current->value;
+	return (*c->func)(optarg + 1, argc, rargv, optind, c->data);
+    }
     default:
 	abort ();
     }
@@ -415,7 +419,8 @@ getarg(struct getargs *args, size_t num_args,
 		i++;
 		break;
 	    }
-	    ret = arg_match_long (args, num_args, argv[i] + 2);
+	    ret = arg_match_long (args, num_args, argv[i] + 2, 
+				  argc, argv, &i);
 	    if(ret)
 		return ret;
 	}else{
@@ -458,6 +463,12 @@ getarg(struct getargs *args, size_t num_args,
 			    if(sscanf(optarg, "%lf", &tmp) != 1)
 				return ARG_ERR_BAD_ARG;
 			    *(double*)args[k].value = tmp;
+			    goto out;
+			} else if(args[k].type == arg_collect){
+			    struct getarg_collect_info *c = args[k].value;
+			    if((*c->func)(optarg, argc, argv, &i, 
+					  c->data))
+				return ARG_ERR_BAD_ARG;
 			    goto out;
 			}
 			return ARG_ERR_BAD_ARG;
