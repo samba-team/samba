@@ -232,7 +232,7 @@ void generate_random_buffer( unsigned char *out, int len, BOOL re_seed)
  Use the random number generator to generate a random string.
 ********************************************************************/
 
-static char c_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+ _-#.,";
+static char c_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
 
 char *generate_random_str(size_t len)
 {
