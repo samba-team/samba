@@ -62,14 +62,30 @@ int	utmp_len = MaxHostNameLen;
 #endif
 
 #ifndef UTMP_FILE
+#ifdef _PATH_UTMP
+#define UTMP_FILE _PATH_UTMP
+#else
 #define UTMP_FILE "/etc/utmp"
+#endif
+#endif
+
+#if !defined(WTMP_FILE) && defined(_PATH_WTMP)
+#define WTMP_FILE _PATH_WTMP
 #endif
 
 #ifndef PARENT_DOES_UTMP
+#ifdef WTMP_FILE
+char	wtmpf[] = WTMP_FILE;
+#else
 char	wtmpf[]	= "/usr/adm/wtmp";
+#endif
 char	utmpf[] = UTMP_FILE;
 #else /* PARENT_DOES_UTMP */
+#ifdef WTMP_FILE
+char	wtmpf[] = WTMP_FILE;
+#else
 char	wtmpf[]	= "/etc/wtmp";
+#endif
 #endif /* PARENT_DOES_UTMP */
 
 #ifdef HAVE_TMPDIR_H
@@ -87,9 +103,6 @@ char	wtmpf[]	= "/etc/wtmp";
 #endif
 
 #endif /* STREAMSPTY */
-
-#define SCPYN(a, b)	strncpy(a, b, sizeof(a))
-#define SCMPN(a, b)	strncmp(a, b, sizeof(a))
 
 #ifdef	HAVE_SYS_STREAM_H
 #ifdef  HAVE_SYS_UIO_H
@@ -1128,9 +1141,9 @@ startslave(char *host, int autologin, char *autoname)
 	time(&wtmp.ut_time);
 	wtmp.ut_type = LOGIN_PROCESS;
 	wtmp.ut_pid = pid;
-	SCPYN(wtmp.ut_user, "LOGIN");
-	SCPYN(wtmp.ut_host, host);
-	SCPYN(wtmp.ut_line, clean_ttyname(line));
+	strncpy(wtmp.ut_user,  "LOGIN", sizeof(wtmp.ut_user));
+	strncpy(wtmp.ut_host,  host, sizeof(wtmp.ut_host));
+	strncpy(wtmp.ut_line,  clean_ttyname(line), sizeof(wtmp.ut_line));
 
 	pututline(&wtmp);
 	endutent();
@@ -1227,9 +1240,9 @@ void start_login(char *host, int autologin, char *name)
      */
 
     memset(&utmpx, 0, sizeof(utmpx));
-    SCPYN(utmpx.ut_user, ".telnet");
+    strncpy(utmpx.ut_user,  ".telnet", sizeof(utmpx.ut_user));
 
-    SCPYN(utmpx.ut_line, clean_ttyname(line));
+    strncpy(utmpx.ut_line,  clean_ttyname(line), sizeof(utmpx.ut_line));
     utmpx.ut_pid = pid;
 	
     utmpx.ut_type = LOGIN_PROCESS;
@@ -1379,10 +1392,10 @@ rmut(void)
 	  int f = open(wtmpf, O_WRONLY|O_APPEND);
 	  struct utmp wtmp;
 	  if (f >= 0) {
-	    SCPYN(wtmp.ut_line, clean_ttyname(line));
-	    SCPYN(wtmp.ut_name, "");
+	    strncpy(wtmp.ut_line,  clean_ttyname(line), sizeof(wtmp.ut_line));
+	    strncpy(wtmp.ut_name,  "", sizeof(wtmp.ut_name));
 #ifdef HAVE_UT_HOST
-	    SCPYN(wtmp.ut_host, "");
+	    strncpy(wtmp.ut_host,  "", sizeof(wtmp.ut_host));
 #endif
 	    time(&wtmp.ut_time);
 	    write(f, &wtmp, sizeof(wtmp));
@@ -1418,13 +1431,15 @@ rmut(void)
 	    nutmp /= sizeof(struct utmp);
 
 	    for (u = utmp ; u < &utmp[nutmp] ; u++) {
-		if (SCMPN(u->ut_line, clean_ttyname(line)) ||
+		if (strncmp(u->ut_line,
+			    clean_ttyname(line),
+			    sizeof(u->ut_line)) ||
 		    u->ut_name[0]==0)
 		    continue;
 		lseek(f, ((long)u)-((long)utmp), L_SET);
-		SCPYN(u->ut_name, "");
+		strncpy(u->ut_name,  "", sizeof(u->ut_name));
 #ifdef HAVE_UT_HOST
-		SCPYN(u->ut_host, "");
+		strncpy(u->ut_host,  "", sizeof(u->ut_host));
 #endif
 		time(&u->ut_time);
 		write(f, u, sizeof(wtmp));
@@ -1436,10 +1451,10 @@ rmut(void)
     if (found) {
 	f = open(wtmpf, O_WRONLY|O_APPEND);
 	if (f >= 0) {
-	    SCPYN(wtmp.ut_line, clean_ttyname(line));
-	    SCPYN(wtmp.ut_name, "");
+	    strncpy(wtmp.ut_line,  clean_ttyname(line), sizeof(wtmp.ut_line));
+	    strncpy(wtmp.ut_name,  "", sizeof(wtmp.ut_name));
 #ifdef HAVE_UT_HOST
-	    SCPYN(wtmp.ut_host, "");
+	    strncpy(wtmp.ut_host,  "", sizeof(wtmp.ut_host));
 #endif
 	    time(&wtmp.ut_time);
 	    write(f, &wtmp, sizeof(wtmp));
