@@ -89,7 +89,7 @@ BOOL trustdom_cache_shutdown(void)
 
 static char* trustdom_cache_key(const char* name)
 {
-	char* keystr;
+	char* keystr = NULL;
 	asprintf(&keystr, TDOMKEY_FMT, strupper_static(name));
 	
 	return keystr;
@@ -165,11 +165,14 @@ BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
 
 	/* prepare a key and get the value */
 	key = trustdom_cache_key(name);
+	if (!key) return False;
 	
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
+		SAFE_FREE(key);
 		return False;
 	} else {
+		SAFE_FREE(key);
 		DEBUG(5, ("trusted domain %s found (%s)\n", name, value));
 	}
 
