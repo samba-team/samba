@@ -108,6 +108,7 @@ struct dcesrv_crypto_ops {
 				const uint8_t *data, size_t length, const DATA_BLOB *sig);
 	NTSTATUS (*unseal)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
 				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*session_key)(struct dcesrv_auth *auth, uint8_t session_key[16]);
 	void (*end)(struct dcesrv_auth *auth);
 };
 

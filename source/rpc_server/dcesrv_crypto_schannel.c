@@ -28,6 +28,36 @@ struct srv_schannel_state {
 	struct schannel_state *state;
 };
 
+static NTSTATUS schannel_setup_session_info(struct srv_schannel_state *schannel, 
+					    const char *account_name, 
+					    struct auth_session_info **session_info)
+{
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("schannel_setup");
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*session_info) = talloc_p(mem_ctx, struct auth_session_info);
+	if (*session_info == NULL) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCTP(*session_info);
+	
+	(*session_info)->workstation = talloc_strdup(mem_ctx, account_name);
+	if ((*session_info)->workstation == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* TODO: fill in the rest of the session_info structure */
+
+	return NT_STATUS_OK;
+}
+
+
 /*
   start crypto state
 */
@@ -36,9 +66,9 @@ static NTSTATUS dcesrv_crypto_schannel_start(struct dcesrv_auth *auth, DATA_BLOB
 	struct srv_schannel_state *schannel = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
-	uint8_t session_key[16];
 	const char *account_name;
 	struct schannel_bind_ack ack;
+	struct creds_CredentialState creds;
 
 	mem_ctx = talloc_init("schannel_start");
 	if (!mem_ctx) {
@@ -58,7 +88,7 @@ static NTSTATUS dcesrv_crypto_schannel_start(struct dcesrv_auth *auth, DATA_BLOB
 				      (ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
+		return status;
 	}
 
 	if (schannel->bind_info.bind_type == 23) {
@@ -68,23 +98,25 @@ static NTSTATUS dcesrv_crypto_schannel_start(struct dcesrv_auth *auth, DATA_BLOB
 	}
 
 	/* pull the session key for this client */
-	status = schannel_fetch_session_key(mem_ctx, account_name, session_key);
+	status = schannel_fetch_session_key(mem_ctx, account_name, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
-		return NT_STATUS_INVALID_HANDLE;
-	}
-	
-	/* start up the schannel server code */
-	status = schannel_start(&schannel->state, session_key, False);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_INVALID_HANDLE;
+		return status;
 	}
 
-	/* TODO: here we need to set the session_info
-	 *       what should happen when te session_info is already set
-	 */
-	auth->session_info = NULL;
+	/* start up the schannel server code */
+	status = schannel_start(&schannel->state, creds.session_key, False);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(mem_ctx);
+		return status;
+	}
+
+	status = schannel_setup_session_info(schannel, account_name, 
+					     &auth->session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(mem_ctx);
+		return status;
+	}
 
 	auth->crypto_ctx.private_data = schannel;
 
@@ -156,6 +188,18 @@ static NTSTATUS dcesrv_crypto_schannel_unseal(struct dcesrv_auth *auth, TALLOC_C
 }
 
 /*
+  get the session key
+*/
+static NTSTATUS dcesrv_crypto_schannel_session_key(struct dcesrv_auth *auth, uint8_t session_key[16])
+{
+	struct srv_schannel_state *srv_schannel_state = auth->crypto_ctx.private_data;
+
+	memcpy(session_key, srv_schannel_state->state->session_key, 16);
+
+	return NT_STATUS_OK;
+}
+
+/*
   end crypto state
 */
 static void dcesrv_crypto_schannel_end(struct dcesrv_auth *auth)
@@ -182,6 +226,7 @@ static const struct dcesrv_crypto_ops dcesrv_crypto_schannel_ops = {
 	.sign		= dcesrv_crypto_schannel_sign,
 	.check_sig	= dcesrv_crypto_schannel_check_sig,
 	.unseal		= dcesrv_crypto_schannel_unseal,
+	.session_key	= dcesrv_crypto_schannel_session_key,
 	.end		= dcesrv_crypto_schannel_end
 };
 

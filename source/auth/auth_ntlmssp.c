@@ -231,5 +231,8 @@ NTSTATUS auth_ntlmssp_get_session_info(struct auth_ntlmssp_state *auth_ntlmssp_s
 							auth_ntlmssp_state->ntlmssp_state->session_key.data,
 							auth_ntlmssp_state->ntlmssp_state->session_key.length);
 
+	(*session_info)->workstation = talloc_strdup((*session_info)->mem_ctx, 
+						     auth_ntlmssp_state->ntlmssp_state->workstation);
+
 	return NT_STATUS_OK;
 }

@@ -103,6 +103,9 @@ struct auth_session_info
 	struct auth_serversupplied_info *server_info;
 
 	DATA_BLOB session_key;
+
+	/* needed to key the schannel credentials */
+	const char *workstation;
 };
 
 struct auth_context {

@@ -120,6 +120,14 @@ NTSTATUS dcesrv_crypto_unseal(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
 }
 
 /*
+  get the negotiated session key
+*/
+NTSTATUS dcesrv_crypto_session_key(struct dcesrv_auth *auth, uint8_t session_key[16])
+{
+	return auth->crypto_ctx.ops->session_key(auth, session_key);
+}
+
+/*
   end crypto state
 */
 void dcesrv_crypto_end(struct dcesrv_auth *auth) 
