@@ -1746,6 +1746,47 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name);
 void cli_nt_session_close(struct cli_state *cli);
 
+/*The following definitions come from  rpc_client/cli_reg.c  */
+
+BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
+				POLICY_HND *reg_hnd);
+BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd);
+BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd);
+BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd);
+BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
+				char *class, uint32 *class_len,
+				uint32 *num_subkeys, uint32 *max_subkeylen,
+				uint32 *max_subkeysize, uint32 *num_values,
+				uint32 *max_valnamelen, uint32 *max_valbufsize,
+				uint32 *sec_desc, NTTIME *mod_time);
+BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk);
+BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_value, uint32* key_type);
+BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd, SEC_DESC_BUF *sec_desc_buf);
+BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd, uint32 *sec_buf_size, SEC_DESC_BUF **ppsec_desc_buf);
+BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name);
+BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name);
+BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_name, char *key_class,
+				SEC_ACCESS *sam_access,
+				POLICY_HND *key);
+BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
+				int key_index, char *key_name,
+				uint32 *unk_1, uint32 *unk_2,
+				time_t *mod_time);
+BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
+				char *val_name, uint32 type, BUFFER3 *data);
+BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
+				int val_index, int max_valnamelen, int max_valbufsize,
+				fstring val_name,
+				uint32 *val_type, BUFFER2 *value);
+BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_name, uint32 unk_0,
+				POLICY_HND *key_hnd);
+BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
+
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
 #if OLD_NTDOMAIN
