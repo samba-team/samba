@@ -35,7 +35,7 @@ static BOOL endpoints_match(const struct dcesrv_ep_description *ep1,
 
 	switch (ep1->type) {
 		case ENDPOINT_SMB:
-			if (strcmp(ep1->info.smb_pipe,ep2->info.smb_pipe)==0) {
+			if (strcasecmp(ep1->info.smb_pipe,ep2->info.smb_pipe)==0) {
 				return True;
 			}			
 			break;
