@@ -887,7 +887,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		d_len = (flags & LIBNDR_FLAG_STR_FIXLEN32)?32:15;
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*d_len);
 		ret = convert_string(CH_UNIX, chset, 
-				     s, s_len + 1,
+				     s, s_len,
 				     ndr->data+ndr->offset, byte_mul*d_len);
 		if (ret == -1) {
 			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 

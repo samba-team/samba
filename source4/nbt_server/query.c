@@ -25,15 +25,6 @@
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
 
-/* check a condition on an incoming packet */
-#define NBT_ASSERT_PACKET(packet, src_address, test) do { \
-	if (!(test)) { \
-		nbt_bad_packet(packet, src_address, #test); \
-		return; \
-	} \
-} while (0)
-
-
 /*
   send a name query reply
 */
@@ -91,6 +82,13 @@ void nbt_request_query(struct nbt_name_socket *nbtsock,
 	struct nbt_interface *iface;
 	struct nbt_iface_name *iname;
 	struct nbt_name *name;
+
+	/* see if its a node status query */
+	if (packet->qdcount == 1 &&
+	    packet->questions[0].question_type == NBT_QTYPE_STATUS) {
+		nbt_query_status(nbtsock, packet, src_address, src_port);
+		return;
+	}
 
 	/* if its a WINS query then direct to our WINS server */
 	if ((packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
