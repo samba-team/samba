@@ -231,7 +231,7 @@ configure(int argc, char **argv)
 end:
     kdc_openlog(cf);
     if(cf)
-	krb5_config_file_free (cf);
+	krb5_config_file_free (context, cf);
     if(max_request == 0)
 	max_request = 64 * 1024;
     if(require_preauth == -1)
