@@ -1,3 +1,25 @@
+2003-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_in_tkt_with_keytab.c (krb5_get_in_tkt_with_keytab):
+	avoid memory leak that snuck in when krb5_keytab_key_proc was
+	exported, pointed out by Panases Inc
+
+	* lib/krb5/keytab_file.c: do locking, found to be a problem for
+	Panasas Inc
+
+	* lib/krb5/fcache.c: internally export x{,un}lock and thus prefix
+	them with _krb5_
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): use
+	KRB5_AUTH_CONTEXT_DO_TIME if we want timestamp in forwarded
+	krb-cred
+
+	* lib/krb5/krb5_auth_context.3: some text about
+	krb5_auth_con_{add,remove}flags
+
+	* lib/krb5/auth_context.c: add krb5_auth_con_addflags and
+	krb5_auth_con_removeflags
+
 2003-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/crypto.c (decrypt_internal_derived): move up padsize to
