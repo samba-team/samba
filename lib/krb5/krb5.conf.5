@@ -136,7 +136,60 @@ for logging. See the
 .Xr krb5_openlog 3
 manual page for a list of defined destinations.
 .El
+.It Li [kdc]
+.Bl -tag -width "xxx" -offset indent
+.It database Li = {
+.Bl -tag -width "xxx" -offset indent
+.It dbname Li = Va DATABASENAME
+use this database for this realm.
+.It realm Li = Va REALM
+specifies the realm that will be stored in this database.
+.It mkey_file Li = Pa FILENAME
+use this keytab file for the master key of this database.
+If not specified
+.Va DATABASENAME .
+mkey
+will be used.
 .El
+.It Li }
+.It max-request = Va SIZE
+Maximum size of a kdc request.
+.It require-preauth = Va BOOL
+If set pre-authentication is required. Since krb4 requests are not
+pre-authenticated they will be rejected.
+.It ports = Va "list of ports"
+list of ports the kdc should listen to.
+.It addresses = Va "list of interfaces"
+list of addresses the kdc should bind to.
+.It enable-kerberos4 = Va BOOL
+turn on kerberos4 support.
+.It v4-realm = Va REALM
+to what realm v4 requests should be mapped.
+.It enable-524 = Va BOOL
+should the Kerberos 524 converting facility be turned on. Default is same as
+.Va enable-kerberos4 .
+.It enable-http = Va BOOL
+should the kdc answer kdc-requests over http.
+.It enable-kaserver = Va BOOL
+if this kdc should emulate the AFS kaserver.
+.It check-ticket-addresses = Va BOOL
+verify the addresses in the tickets used in tgs requests.
+.\" XXX
+.It allow-null-ticket-addresses = Va BOOL
+allow addresses-less tickets.
+.\" XXX 
+.It allow-anonymous = Va BOOL
+if the kdc is allowed to hand out anonymous tickets.
+.It encode_as_rep_as_tgs_rep = Va BOOL
+encode as-rep as tgs-rep tobe compatible with mistakes older DCE secd did.
+.\" XXX 
+.It kdc_warn_pwexpire = Va TIME
+the time before expiration that the user should be warned that her
+password is about to expire.
+.It logging = Va Logging
+What type of logging the kdc should use, see also [logging]/kdc.
+.El
+.It Li }
 .Sh ENVIRONMENT
 .Ev KRB5_CONFIG
 points to the configuration file to read.
