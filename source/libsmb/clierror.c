@@ -75,6 +75,12 @@ char *cli_errstr(struct cli_state *cli)
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), errnum;
         uint8 errclass;
         int i;
+	
+	if (!cli->initialised) {
+		fstrcpy(cli_error_message, "[Programmer's error] cli_errstr called on unitialized cli_stat struct!\n");
+		return cli_error_message;
+	}
+		
 
         /* Case #1: RAP error */
 	if (cli->rap_error) {
