@@ -26,7 +26,6 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 struct winbind_cache {
-	struct winbindd_methods *backend;
 	TDB_CONTEXT *tdb;
 };
 
@@ -96,30 +95,28 @@ void winbindd_check_cache_size(time_t t)
 /* get the winbind_cache structure */
 static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
-	extern struct winbindd_methods msrpc_methods;
 	struct winbind_cache *ret = wcache;
+
+	if (!domain->backend) {
+		extern struct winbindd_methods msrpc_methods;
+		switch (lp_security()) {
+#ifdef HAVE_ADS
+		case SEC_ADS: {
+			extern struct winbindd_methods ads_methods;
+			domain->backend = &ads_methods;
+			break;
+		}
+#endif
+		default:
+			domain->backend = &msrpc_methods;
+		}
+	}
 
 	if (ret)
 		return ret;
 	
 	ret = smb_xmalloc(sizeof(*ret));
 	ZERO_STRUCTP(ret);
-	switch (lp_security()) { /* winbind pdc disabled until ready
-	if (!strcmp(domain->name, lp_workgroup()) && (lp_security() == SEC_USER)) {
-		extern struct winbindd_methods passdb_methods;
-		ret->backend = &passdb_methods;
-
-	} else switch (lp_security()) { */
-#ifdef HAVE_ADS
-	case SEC_ADS: {
-		extern struct winbindd_methods ads_methods;
-		ret->backend = &ads_methods;
-		break;
-	}
-#endif
-	default:
-		ret->backend = &msrpc_methods;
-	}
 
 	wcache = ret;
 	wcache_flush_cache();
@@ -339,7 +336,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	if ( NT_STATUS_IS_OK(status) )
 		goto done;	
 
-	status = wcache->backend->sequence_number(domain, &domain->sequence_number);
+	status = domain->backend->sequence_number(domain, &domain->sequence_number);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		domain->sequence_number = DOM_SEQUENCE_NONE;
@@ -681,7 +678,7 @@ do_query:
 	DEBUG(10,("query_user_list: [Cached] - doing backend query for list for domain %s\n",
 		domain->name ));
 
-	status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
+	status = domain->backend->query_user_list(domain, mem_ctx, num_entries, info);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -694,7 +691,7 @@ do_query:
 		centry_put_string(centry, (*info)[i].full_name);
 		centry_put_sid(centry, (*info)[i].user_sid);
 		centry_put_sid(centry, (*info)[i].group_sid);
-		if (cache->backend->consistent) {
+		if (domain->backend->consistent) {
 			/* when the backend is consistent we can pre-prime some mappings */
 			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
 						(*info)[i].acct_name, 
@@ -766,7 +763,7 @@ do_query:
 	DEBUG(10,("enum_dom_groups: [Cached] - doing backend query for list for domain %s\n",
 		domain->name ));
 
-	status = cache->backend->enum_dom_groups(domain, mem_ctx, num_entries, info);
+	status = domain->backend->enum_dom_groups(domain, mem_ctx, num_entries, info);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -848,7 +845,7 @@ do_query:
 	DEBUG(10,("enum_local_groups: [Cached] - doing backend query for list for domain %s\n",
 		domain->name ));
 
-	status = cache->backend->enum_local_groups(domain, mem_ctx, num_entries, info);
+	status = domain->backend->enum_local_groups(domain, mem_ctx, num_entries, info);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -914,7 +911,7 @@ do_query:
 	DEBUG(10,("name_to_sid: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
 
-	status = cache->backend->name_to_sid(domain, mem_ctx, name, sid, type);
+	status = domain->backend->name_to_sid(domain, mem_ctx, name, sid, type);
 
 	/* and save it */
 	wcache_save_name_to_sid(domain, status, name, sid, *type);
@@ -966,7 +963,7 @@ do_query:
 	DEBUG(10,("sid_to_name: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
 
-	status = cache->backend->sid_to_name(domain, mem_ctx, sid, name, type);
+	status = domain->backend->sid_to_name(domain, mem_ctx, sid, name, type);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -1017,7 +1014,7 @@ do_query:
 	DEBUG(10,("sid_to_name: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
-	status = cache->backend->query_user(domain, mem_ctx, user_sid, info);
+	status = domain->backend->query_user(domain, mem_ctx, user_sid, info);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -1078,7 +1075,7 @@ do_query:
 	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
-	status = cache->backend->lookup_usergroups(domain, mem_ctx, user_sid, num_groups, user_gids);
+	status = domain->backend->lookup_usergroups(domain, mem_ctx, user_sid, num_groups, user_gids);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -1158,8 +1155,8 @@ do_query:
 	DEBUG(10,("lookup_groupmem: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
-	status = cache->backend->lookup_groupmem(domain, mem_ctx, group_sid, num_names, 
-						 sid_mem, names, name_types);
+	status = domain->backend->lookup_groupmem(domain, mem_ctx, group_sid, num_names, 
+						  sid_mem, names, name_types);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -1197,38 +1194,38 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				char ***alt_names,
 				DOM_SID **dom_sids)
 {
-	struct winbind_cache *cache = get_cache(domain);
+	get_cache(domain);
 
 	DEBUG(10,("trusted_domains: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	/* we don't cache this call */
-	return cache->backend->trusted_domains(domain, mem_ctx, num_domains, 
+	return domain->backend->trusted_domains(domain, mem_ctx, num_domains, 
 					       names, alt_names, dom_sids);
 }
 
 /* find the domain sid */
 static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 {
-	struct winbind_cache *cache = get_cache(domain);
+	get_cache(domain);
 
 	DEBUG(10,("domain_sid: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	/* we don't cache this call */
-	return cache->backend->domain_sid(domain, sid);
+	return domain->backend->domain_sid(domain, sid);
 }
 
 /* find the alternate names for the domain, if any */
 static NTSTATUS alternate_name(struct winbindd_domain *domain)
 {
-	struct winbind_cache *cache = get_cache(domain);
+	get_cache(domain);
 
 	DEBUG(10,("alternate_name: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	/* we don't cache this call */
-	return cache->backend->alternate_name(domain);
+	return domain->backend->alternate_name(domain);
 }
 
 /* the ADS backend methods are exposed via this structure */

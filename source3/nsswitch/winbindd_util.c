@@ -118,6 +118,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	}
 
 	domain->methods = methods;
+	domain->backend = NULL;
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
 	if (sid) {
@@ -379,12 +380,12 @@ BOOL winbindd_param_init(void)
 	/* Parse winbind uid and winbind_gid parameters */
 
 	if (!lp_idmap_uid(&server_state.uid_low, &server_state.uid_high)) {
-		DEBUG(0, ("winbind uid range missing or invalid\n"));
+		DEBUG(0, ("idmap uid range missing or invalid\n"));
 		return False;
 	}
 	
 	if (!lp_idmap_gid(&server_state.gid_low, &server_state.gid_high)) {
-		DEBUG(0, ("winbind gid range missing or invalid\n"));
+		DEBUG(0, ("idmap gid range missing or invalid\n"));
 		return False;
 	}
 	

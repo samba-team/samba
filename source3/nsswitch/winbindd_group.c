@@ -278,7 +278,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	/* Get rid from gid */
-	if (NT_STATUS_IS_ERR(uid_to_sid(&group_sid, state->request.data.gid))) {
+	if (NT_STATUS_IS_ERR(gid_to_sid(&group_sid, state->request.data.gid))) {
 		DEBUG(1, ("could not convert gid %d to rid\n", 
 			  state->request.data.gid));
 		return WINBINDD_ERROR;
