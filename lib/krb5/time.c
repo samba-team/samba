@@ -108,7 +108,7 @@ krb5_format_time(krb5_context context, time_t t,
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_deltat(const char *string, krb5_deltat *deltat)
 {
-    if((*deltat = parse_time(string, "m")) == -1)
-	return EINVAL;
+    if((*deltat = parse_time(string, "s")) == -1)
+	return KRB5_DELTAT_BADFORMAT;
     return 0;
 }
