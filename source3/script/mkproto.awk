@@ -130,7 +130,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T/ ) {
+  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^ADS_MODLIST/ ) {
     gotstart = 1;
   }
 
