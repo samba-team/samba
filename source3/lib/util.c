@@ -4284,11 +4284,19 @@ char *unistrn2(uint16 *buf, int len)
 	static int nexti;
 	char *lbuf = lbufs[nexti];
 	char *p;
+
 	nexti = (nexti+1)%8;
+
+	DEBUG(10, ("unistrn2: "));
+
 	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len > 0; len--, p++, buf++)
 	{
+		DEBUG(10, ("%4x ", *buf));
 		*p = *buf;
 	}
+
+	DEBUG(10,("\n"));
+
 	*p = 0;
 	return lbuf;
 }
@@ -4304,13 +4312,52 @@ char *unistr2(uint16 *buf)
 	static int nexti;
 	char *lbuf = lbufs[nexti];
 	char *p;
+
 	nexti = (nexti+1)%8;
+
+	DEBUG(10, ("unistr2: "));
+
 	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf++)
 	{
+		DEBUG(10, ("%4x ", *buf));
 		*p = *buf;
 	}
+
+	DEBUG(10,("\n"));
+
 	*p = 0;
 	return lbuf;
+}
+
+/*******************************************************************
+create a null-terminated unicode string from a null-terminated ascii string.
+return number of unicode chars copied, excluding the null character.
+
+only handles ascii strings
+********************************************************************/
+#define MAXUNI 1024
+int struni2(uint16 *p, char *buf)
+{
+	int len = 0;
+
+	if (p == NULL) return 0;
+
+	DEBUG(10, ("struni2: "));
+
+	if (buf != NULL)
+	{
+		for (; *buf && len < MAXUNI-2; len++, p++, buf++)
+		{
+			DEBUG(10, ("%2x ", *buf));
+			*p = *buf;
+		}
+
+		DEBUG(10,("\n"));
+	}
+
+	*p = 0;
+
+	return len;
 }
 
 /*******************************************************************

@@ -207,7 +207,7 @@ creates a UNISTR structure.
 void make_unistr(UNISTR *str, char *buf)
 {
 	/* store the string (null-terminated copy) */
-	PutUniCode((char *)(str->buffer), buf);
+	struni2(str->buffer, buf);
 }
 
 /*******************************************************************
@@ -216,6 +216,8 @@ XXXX NOTE: UNISTR structures NEED to be null-terminated.
 ********************************************************************/
 char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align, int depth)
 {
+	int i = 0;
+
 	if (uni == NULL) return NULL;
 
 	DEBUG(5,("%s%04x smb_io_unistr\n",  tab_depth(depth), PTR_DIFF(q, base)));
@@ -223,16 +225,14 @@ char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align, int de
 
 	q = align_offset(q, base, align);
 	
-	if (io)
+	do 
 	{
-		/* io True indicates read _from_ the SMB buffer into the string */
-		q += 2 * unistrcpy((char*)uni->buffer, q);
-	}
-	else
-	{
-		/* io True indicates copy _from_ the string into SMB buffer */
-		q += 2 * unistrcpy(q, (char*)uni->buffer);
-	}
+		RW_SVAL(io, q, uni->buffer[i], 0); q += 2; 
+		i++;
+
+	} while ((i < sizeof(uni->buffer) / sizeof(uni->buffer[0])) &&
+		     (uni->buffer[i] != 0));
+
 	return q;
 }
 
@@ -247,7 +247,7 @@ void make_unistr2(UNISTR2 *str, char *buf, int len)
 	str->uni_str_len = len;
 
 	/* store the string (null-terminated copy) */
-	PutUniCode((char *)str->buffer, buf);
+	struni2(str->buffer, buf);
 }
 
 /*******************************************************************

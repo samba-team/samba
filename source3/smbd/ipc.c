@@ -2862,23 +2862,27 @@ static BOOL api_WPrintPortEnum(int cnum,uint16 vuid, char *param,char *data,
 struct
 {
   char * name;
-  char * pipename;
+  char * pipe_clnt_name;
+#ifdef NTDOMAIN
+  char * pipe_srv_name;
+#endif
   int subcommand;
   BOOL (*fn) ();
 } api_fd_commands [] =
   {
 #ifdef NTDOMAIN
-    { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
-    { "SetNmdPpHndState",	"srvsvc",	1,	api_LsarpcSNPHS },
-    { "SetNmdPpHndState",	"NETLOGON",	1,	api_LsarpcSNPHS },
-    { "TransactNmPipe",	"lsarpc",	0x26,	api_ntLsarpcTNP },
-    { "TransactNmPipe",	"srvsvc",	0x26,	api_srvsvcTNP },
-    { "TransactNmPipe",	"NETLOGON",	0x26,	api_netlogrpcTNP },
+    { "SetNmdPpHndState",	"lsarpc",	"lsass",	1,	api_LsarpcSNPHS },
+    { "SetNmdPpHndState",	"srvsvc",	"lsass",	1,	api_LsarpcSNPHS },
+    { "SetNmdPpHndState",	"NETLOGON",	"NETLOGON",	1,	api_LsarpcSNPHS },
+    { "TransactNmPipe",     "lsarpc",	"lsass",	0x26,	api_ntLsarpcTNP },
+    { "TransactNmPipe",     "srvsvc",	"lsass",	0x26,	api_srvsvcTNP },
+    { "TransactNmPipe",     "NETLOGON",	"NETLOGON",	0x26,	api_netlogrpcTNP },
+    { NULL,		            NULL,       NULL,	-1,	(BOOL (*)())api_Unsupported }
 #else
     { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
     { "TransactNmPipe"  ,	"lsarpc",	0x26,	api_LsarpcTNP },
-#endif
     { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }
+#endif
   };
 
 /****************************************************************************
@@ -2929,7 +2933,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   
   for (i = 0; api_fd_commands[i].name; i++)
   {
-    if (strequal(api_fd_commands[i].pipename, pipe_name) &&
+    if (strequal(api_fd_commands[i].pipe_clnt_name, pipe_name) &&
 	    api_fd_commands[i].subcommand == subcommand &&
 	    api_fd_commands[i].fn)
     {
@@ -2964,7 +2968,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 
         /* name has to be \PIPE\xxxxx */
         strcpy(ack_pipe_name, "\\PIPE\\");
-        strcat(ack_pipe_name, api_fd_commands[i].pipename);
+        strcat(ack_pipe_name, api_fd_commands[i].pipe_srv_name);
 
         /* make a bind acknowledgement */
         make_rpc_hdr_ba(&hdr_ba,

@@ -85,6 +85,17 @@ uint16 open_rpc_pipe(char *inbuf, char *outbuf, char *rname, int Client, int cnu
 	return fnum;
 }
 
+struct
+{
+	char *client;
+	char *server;
+} pipe_names [] =
+{
+	{ PIPE_LSARPC  , PIPE_LSASS },
+	{ PIPE_NETLOGON, PIPE_NETLOGON },
+	{ NULL         , NULL          }
+};
+
 /****************************************************************************
 do an rpc bind
 ****************************************************************************/
@@ -140,6 +151,7 @@ BOOL bind_rpc_pipe(char *pipe_name, uint16 fnum, uint32 call_id,
 		RPC_HDR_BA hdr_ba;
 		int hdr_len;
 		int pkt_len;
+		int i = 0;
 
 		DEBUG(5, ("cli_call_api: return OK\n"));
 
@@ -172,10 +184,35 @@ BOOL bind_rpc_pipe(char *pipe_name, uint16 fnum, uint32 call_id,
 		}
 #endif
 
-		if (p && (strcmp(pipe_name, hdr_ba.addr.str) != 0))
+		while (p && (pipe_names[i].server != NULL))
 		{
-			DEBUG(2,("bind_rpc_pipe: pipe_name %s != expected pipe %s\n",
-			         pipe_name, hdr_ba.addr.str));
+			DEBUG(6,("bind_rpc_pipe: searching pipe name: client:%s server:%s\n",
+			          pipe_names[i].client, pipe_names[i].server));
+
+			if ((strcmp(pipe_name      , pipe_names[i].client) == 0))
+			{
+				if (strcmp(hdr_ba.addr.str, pipe_names[i].server) == 0)
+				{
+					DEBUG(5,("bind_rpc_pipe: server pipe_name found: %s\n",
+					        pipe_names[i].server));
+					break;
+				}
+				else
+				{
+					DEBUG(2,("bind_rpc_pipe: pipe_name %s != expected pipe %s\n",
+					        pipe_names[i].server, hdr_ba.addr.str));
+					p = NULL;
+				}
+			}
+			else
+			{
+				i++;
+			}
+		}
+
+		if (p && pipe_names[i].server == NULL)
+		{
+			DEBUG(2,("bind_rpc_pipe: pipe name %s unsupported\n", hdr_ba.addr.str));
 			p = NULL;
 		}
 
