@@ -165,7 +165,7 @@ uint32 spoolss_enum_jobs( const POLICY_HND *hnd,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			(*count) = r_o.numofjobs;
-			(*jobs) = r_o.job.info;
+			(*jobs) = r_o.ctr.job.info;
 			(*buf_size) = r_o.offered;
 		}
 	}

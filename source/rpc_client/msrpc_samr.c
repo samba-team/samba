@@ -68,7 +68,7 @@ lookup in a sam database
 ****************************************************************************/
 uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 			uint32 num_names, char **names,
-			uint32 *num_rids, uint32 **rids, uint8 **types)
+			uint32 *num_rids, uint32 **rids, uint32 **types)
 {
 	fstring srv_name;
 	BOOL res = True;
@@ -127,7 +127,7 @@ uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 	{
 		uint32 i, num;
 		num = *num_rids;
-		*types = g_new(uint8, num);
+		*types = g_new(uint32, num);
 		if (*types == NULL)
 		{
 			safe_free(my_types);

@@ -2405,7 +2405,7 @@ uint32 lookup_sam_domainname(const char *srv_name,
 			     const char *domain, DOM_SID *sid);
 uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 			uint32 num_names, char **names,
-			uint32 *num_rids, uint32 **rids, uint8 **types);
+			uint32 *num_rids, uint32 **rids, uint32 **types);
 uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 				char *name, uint32 *rid, uint32 *type);
 uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
@@ -4336,10 +4336,10 @@ uint32 _samr_create_user(SAMR_Q_CREATE_USER *q_u,
 				prs_struct *rdata);
 uint32 _samr_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
 				prs_struct *rdata);
-uint32 _samr_connect(SAMR_Q_CONNECT *q_u,
-				prs_struct *rdata);
-uint32 _samr_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
-				prs_struct *rdata);
+uint32 _samr_connect(const UNISTR2 *srv_name, uint32 unknown_0, POLICY_HND *connect_pol);
+uint32 _samr_open_alias(const POLICY_HND *domain_pol,
+					uint32 flags, uint32 alias_rid,
+					POLICY_HND *alias_pol);
 uint32 _samr_open_group(const POLICY_HND *domain_pol,	uint32 flags, uint32 group_rid,
 					POLICY_HND *group_pol);
 uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,

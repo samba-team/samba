@@ -1199,108 +1199,23 @@ static void api_samr_connect_anon( rpcsrv_struct *p, prs_struct *data, prs_struc
 }
 
 /*******************************************************************
- samr_reply_connect
- ********************************************************************/
-static void samr_reply_connect(SAMR_Q_CONNECT *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_CONNECT r_u;
-	BOOL pol_open = False;
-
-	/* set up the SAMR connect response */
-
-	r_u.status = 0x0;
-	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), &(r_u.connect_pol))))
-	{
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	/* associate the domain SID with the (unique) handle. */
-	if (r_u.status == 0x0 && !set_policy_samr_pol_status(get_global_hnd_cache(), &(r_u.connect_pol), q_u->unknown_0))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (r_u.status != 0 && pol_open)
-	{
-		close_policy_hnd(get_global_hnd_cache(), &(r_u.connect_pol));
-	}
-
-	DEBUG(5,("samr_connect: %d\n", __LINE__));
-
-	/* store the response in the SMB stream */
-	samr_io_r_connect("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_connect: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
  api_samr_connect
  ********************************************************************/
 static void api_samr_connect( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CONNECT q_u;
+	SAMR_R_CONNECT r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_connect("", &q_u, data, 0);
-	samr_reply_connect(&q_u, rdata);
-}
-
-/*******************************************************************
- samr_reply_open_alias
- ********************************************************************/
-static void samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_OPEN_ALIAS r_u;
-	DOM_SID sid;
-	BOOL pol_open = False;
-
-	/* set up the SAMR open_alias response */
-
-	r_u.status = 0x0;
-	if (r_u.status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->dom_pol, &sid))
-	{
-		r_u.status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), &(r_u.pol))))
-	{
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	DEBUG(0,("TODO: verify that the alias rid exists\n"));
-
-	/* associate a RID with the (unique) handle. */
-	if (r_u.status == 0x0 && !set_policy_samr_rid(get_global_hnd_cache(), &(r_u.pol), q_u->rid_alias))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	sid_append_rid(&sid, q_u->rid_alias);
-
-	/* associate an alias SID with the (unique) handle. */
-	if (r_u.status == 0x0 && !set_policy_samr_sid(get_global_hnd_cache(), &(r_u.pol), &sid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (r_u.status != 0 && pol_open)
-	{
-		close_policy_hnd(get_global_hnd_cache(), &(r_u.pol));
-	}
-
-	DEBUG(5,("samr_open_alias: %d\n", __LINE__));
+	r_u.status = _samr_connect(&q_u.uni_srv_name,
+	                            q_u.unknown_0,
+	                           &r_u.connect_pol);
 
 	/* store the response in the SMB stream */
-	samr_io_r_open_alias("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_open_alias: %d\n", __LINE__));
-
+	samr_io_r_connect("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
@@ -1310,47 +1225,18 @@ static void api_samr_open_alias( rpcsrv_struct *p, prs_struct *data, prs_struct 
                                 
 {
 	SAMR_Q_OPEN_ALIAS q_u;
+	SAMR_R_OPEN_ALIAS r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_open_alias("", &q_u, data, 0);
-	samr_reply_open_alias(&q_u, rdata);
-}
-
-/*******************************************************************
- samr_reply_open_group
- ********************************************************************/
-/* XXXX this entire function is going to go, as most of it's already
-  in _samr_open_group()
- */
-static void samr_reply_open_group(SAMR_Q_OPEN_GROUP *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_OPEN_GROUP r_u; /* XXXX cut/paste this line to below (1)! */
-	DOM_SID sid;
-
-	DEBUG(5,("samr_open_group: %d\n", __LINE__));
-
-	r_u.status = 0x0;
-
-	/* find the domain sid associated with the policy handle */
-	if (r_u.status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->domain_pol, &sid))
-	{
-		r_u.status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (r_u.status == 0x0 && !sid_equal(&sid, &global_sam_sid))
-	{
-		r_u.status = NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (r_u.status == 0x0)
-	{
-		r_u.status = open_samr_group(&sid, &r_u.pol, q_u->rid_group);
-	}
+	r_u.status = _samr_open_alias(&q_u.dom_pol,
+	                               q_u.unknown_0,
+	                               q_u.rid_alias, &r_u.pol);
 
 	/* store the response in the SMB stream */
-	samr_io_r_open_group("", &r_u, rdata, 0); /* XXXX cut/paste to (2) */
-
-	DEBUG(5,("samr_open_group: %d\n", __LINE__));
-
+	samr_io_r_open_alias("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
@@ -1360,20 +1246,18 @@ static void api_samr_open_group( rpcsrv_struct *p, prs_struct *data, prs_struct 
                                 
 {
 	SAMR_Q_OPEN_GROUP q_u;
-	/* XXXX (1) HERE! */
+	SAMR_R_OPEN_GROUP r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_open_group("", &q_u, data, 0);
-	samr_reply_open_group(&q_u, rdata); /* XXXX replace me with a call
-		                               to _samr_open_group() instead! */
+	/* leave flags 0, because it isn't used in _samr_open_group() */
+	r_u.status = _samr_open_group(&q_u.domain_pol, 0, q_u.rid_group, &r_u.pol);
 
-	/* XXXX (2) HERE ! */
+	/* store the response in the SMB stream */
+	samr_io_r_open_group("", &r_u, rdata, 0);
 }
-
-/* XXXX if you've completed the cut/pastes (1) and (2), you can delete
-   samr_reply_open_group().  do make bin/samrd and then send me a patch
-
-   do these one-at-a-time so i can check them and make sure we meet in the
-   middle!
-   */
 
 /*******************************************************************
  api_samr_lookup_domain
