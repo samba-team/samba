@@ -372,9 +372,8 @@
 #endif
 
 /*
- * Define SIG_ATOMIC_T if needed.
+ * Define additional missing types
  */
-
 #ifndef HAVE_SIG_ATOMIC_T_TYPE
 typedef int sig_atomic_t;
 #endif
@@ -382,6 +381,7 @@ typedef int sig_atomic_t;
 #ifndef HAVE_SOCKLEN_T_TYPE
 typedef int socklen_t;
 #endif
+
 
 #ifndef uchar
 #define uchar unsigned char
@@ -449,6 +449,9 @@ typedef int socklen_t;
 #define uint32 unsigned long
 #elif (SIZEOF_SHORT == 4)
 #define uint32 unsigned short
+#else
+/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
+#define uint32 unsigned
 #endif
 #endif
 
@@ -659,6 +662,8 @@ extern int errno;
 
 #include "profile.h"
 
+#include "mapping.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
@@ -693,17 +698,38 @@ typedef struct smb_wpasswd {
 #define UNI_XDIGIT   0x8
 #define UNI_SPACE    0x10
 
-#ifdef HAVE_NSS_H
+#ifdef HAVE_NSS_COMMON_H
+
+/* Sun Solaris */
+
+#include <nss_common.h>
+#include <nss_dbdefs.h>
+#include <nsswitch.h>
+
+typedef nss_status_t NSS_STATUS;
+
+#define NSS_STATUS_SUCCESS     NSS_SUCCESS
+#define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
+#define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
+#define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
+
+#elif HAVE_NSS_H
+
+/* GNU */
+
 #include <nss.h>
-#else
 
-/* Minimal needed to compile.. */
+typedef enum nss_status NSS_STATUS;
 
-enum nss_status {
-	NSS_STATUS_SUCCESS,
-	NSS_STATUS_NOTFOUND,
-	NSS_STATUS_UNAVAIL
-};
+#else /* Nothing's defined. Neither gnu nor sun */
+
+typedef enum
+{
+  NSS_STATUS_SUCCESS,
+  NSS_STATUS_NOTFOUND,
+  NSS_STATUS_UNAVAIL,
+  NSS_STATUS_TRYAGAIN
+} NSS_STATUS;
 
 #endif
 
@@ -861,6 +887,9 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
+#ifndef HAVE_VASPRINTF_DECL
+int vasprintf(char **ptr, const char *format, va_list ap);
+#endif
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
 #define bzero(a,b) memset((a),'\0',(b))
@@ -956,16 +985,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 
 #ifndef SHM_W
 #define SHM_W 0200
-#endif
-
-
-/* Some systems (SCO) treat UNIX domain sockets as FIFOs */
-
-#ifndef S_IFSOCK
-#define S_IFSOCK S_IFIFO
-#endif
-#ifndef S_ISSOCK
-#define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
 #endif
 
 #if HAVE_KERNEL_SHARE_MODES
