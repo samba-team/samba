@@ -437,7 +437,14 @@ AM_CONDITIONAL(have_glob_h, test "$ac_cv_func_glob_working" = yes)
 
 dnl these should happen after tests for *snprintf
 
-AC_FIND_FUNC_NO_LIBS(dbopen, $berkeley_db)
+AC_FIND_FUNC_NO_LIBS2(dbopen, $berkeley_db, [
+#if defined(HAVE_DB_185_H)
+#include <db_185.h>
+#elif defined(HAVE_DB_H)
+#include <db.h>
+#endif
+],[NULL, 0, 0, 0, NULL])
+
 AC_FIND_FUNC_NO_LIBS(dbm_firstkey, $berkeley_db gdbm ndbm)
 
 DBLIB="$LIB_dbopen"
