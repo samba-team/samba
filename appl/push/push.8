@@ -14,6 +14,8 @@ fetch mail via POP
 .Op Fl v | Fl -verbose
 .Op Fl f | Fl -fork
 .Op Fl l | -leave
+.Op Fl -from
+.Op Fl -header
 .Oo Fl p Ar port-spec  \*(Ba Xo
 .Fl -port= Ns Ar port-spec Oc
 .Xc
@@ -68,6 +70,14 @@ fork before starting to delete messages
 .Xc
 don't delete fetched mail
 .It Xo
+.Fl -from
+.Xc
+behave like from.
+.It Xo
+.Fl -header
+.Xc
+which header from should print.
+.It Xo
 .Fl p Ar port-spec Ns ,
 .Fl -port= Ns Ar port-spec
 .Xc
@@ -98,10 +108,20 @@ from the post office at
 and stores the mail in
 .Pa ~/.gnus-crash-box  
 (you are using Gnus, aren't you?)
+.Bd -literal -offset indent
+$ push --from -5 havregryn
+.Ed
+
+tries to fetch 
+.Nm From: 
+lines for current user at post office
+.Dq havregryn
+using Kerberos 5.
 .\".Sh DIAGNOSTICS
 .Sh SEE ALSO
 .Xr movemail 8 ,
-.Xr popper 8
+.Xr popper 8 ,
+.Xr from 1
 .\".Sh STANDARDS
 .Sh HISTORY
 .Nm
