@@ -202,8 +202,8 @@ int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 	len = clistr_push(cli, p, fname, -1, CLISTR_CONVERT);
 	p += len;
 	SSVAL(cli->outbuf,smb_ntcreate_NameLength, len);
-	SSVAL(p, 0, 0);
-	p += 2;
+	/* sigh. this copes with broken netapp filer behaviour */
+	p += clistr_push(cli, p, "", -1, CLISTR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
