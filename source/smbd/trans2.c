@@ -2186,17 +2186,30 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 #else
 	pstring resolved_name;
 #endif
+	fstring last_component;
 	pstring link_dest;
+	char *p;
 	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
 
 	pstrcpy(link_dest, link_dest_in);
 	unix_convert(link_dest,conn,0,&bad_path,&sbuf);
 
+	p = strrchr(link_dest, '/');
+	if (p) {
+		fstrcpy(last_component, p+1);
+		*p = '\0';
+	} else {
+		fstrcpy(last_component, link_dest);
+		pstrcpy(link_dest, "./");
+	}
+		
 	if (conn->vfs_ops.realpath(conn,dos_to_unix(link_dest,False),resolved_name) == NULL)
 		return -1;
 
 	pstrcpy(link_dest, unix_to_dos(resolved_name,False));
+	pstrcat(link_dest, "/");
+	pstrcat(link_dest, last_component);
 
 	if (*link_dest != '/') {
 		/* Relative path. */
