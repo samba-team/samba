@@ -206,6 +206,10 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		return NSD_NEXT;
 	}
 	switch ((int)rq->f_cmd_data) {
+	    case WINBINDD_WINS_BYNAME:
+	    case WINBINDD_WINS_BYIP:
+		snprintf(result,1023,"%s\n",response.data.name.name);
+		break;
 	    case WINBINDD_GETPWNAM_FROM_UID:
 	    case WINBINDD_GETPWNAM_FROM_USER:
 		snprintf(result,1023,"%s:%s:%d:%d:%s:%s:%s\n",
@@ -408,6 +412,12 @@ int lookup(nsd_file_t *rq)
 	} else if (strcasecmp(map,"group.bygid") == 0) {
 	    request->data.gid = atoi(key);
 	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM_FROM_GID;
+	} else if (strcasecmp(map,"hosts.byname") == 0) {
+	    strncpy(request->data.name, key, sizeof(request->data.name) - 1);
+	    rq->f_cmd_data = (void *)WINBINDD_WINS_BYNAME;
+	} else if (strcasecmp(map,"hosts.byaddr") == 0) {
+	    strncpy(request->data.name, key, sizeof(request->data.name) - 1);
+	    rq->f_cmd_data = (void *)WINBINDD_WINS_BYIP;
 	} else {
 		/*
 		 * Don't understand this map - just return not found
