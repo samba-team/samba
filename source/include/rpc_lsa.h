@@ -103,6 +103,8 @@ enum SID_NAME_USE
 #define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
 #define LSA_PRIV_GET_DISPNAME  0x21
+#define LSA_ADD_ACC_PRIVS      0x25
+#define LSA_REM_ACC_PRIVS      0x26
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_UNK_2D             0x2d /* LsaGetConnectedCredentials ? */
 

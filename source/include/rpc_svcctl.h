@@ -28,6 +28,7 @@
 /* svcctl pipe */
 #define SVC_CLOSE             0x00
 #define SVC_STOP_SERVICE      0x01
+#define SVC_DELETE            0x02 /* possibly */
 #define SVC_UNKNOWN_3         0x03
 #define SVC_GET_SVC_SEC       0x04
 #define SVC_CHANGE_SVC_CONFIG 0x0b
