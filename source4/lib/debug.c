@@ -129,13 +129,13 @@ const char *do_debug_tab(uint_t n)
 void log_suspicious_usage(const char *from, const char *info)
 {
 	if (debug_handlers.ops.log_suspicious_usage) {
-		return debug_handlers.ops.log_suspicious_usage(from, info);
+		debug_handlers.ops.log_suspicious_usage(from, info);
 	}
 }
 void print_suspicious_usage(const char* from, const char* info)
 {
 	if (debug_handlers.ops.print_suspicious_usage) {
-		return debug_handlers.ops.print_suspicious_usage(from, info);
+		debug_handlers.ops.print_suspicious_usage(from, info);
 	}
 }
 
