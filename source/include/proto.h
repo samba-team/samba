@@ -636,7 +636,7 @@ BOOL check_file_sharing(int cnum,char *fname);
 void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 		      int mode,int *Access,int *action);
 int seek_file(int fnum,int pos);
-int read_file(int fnum,char *data,int pos,int mincnt,int maxcnt,int timeout,BOOL exact);
+int read_file(int fnum,char *data,int pos,int n);
 int write_file(int fnum,char *data,int n);
 BOOL become_service(int cnum,BOOL do_chdir);
 int find_service(char *service);
@@ -819,8 +819,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,unsigned int size,int mode
 void close_low_fds(void);
 int write_socket(int fd,char *buf,int len);
 int read_udp_socket(int fd,char *buf,int len);
-int set_blocking(int fd, BOOL set);
-int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out,BOOL exact);
+int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out);
 int read_max_udp(int fd,char *buffer,int bufsize,int maxtime);
 int TvalDiff(struct timeval *tvalold,struct timeval *tvalnew);
 BOOL send_keepalive(int client);

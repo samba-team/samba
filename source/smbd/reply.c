@@ -1363,7 +1363,7 @@ int reply_readbraw(char *inbuf, char *outbuf)
 	     fname,startpos,nread,ret));
 
 #else
-  ret = read_file(fnum,header+4,startpos,nread,nread,-1,False);
+  ret = read_file(fnum,header+4,startpos,nread);
   if (ret < mincount) ret = 0;
 
   _smb_setlen(header,ret);
@@ -1405,7 +1405,7 @@ int reply_lockread(char *inbuf,char *outbuf)
   if(!do_lock( fnum, cnum, numtoread, startpos, &eclass, &ecode))
     return (ERROR(eclass,ecode));
 
-  nread = read_file(fnum,data,startpos,numtoread,numtoread,-1,False);
+  nread = read_file(fnum,data,startpos,numtoread);
   
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1450,7 +1450,7 @@ int reply_read(char *inbuf,char *outbuf)
     return(ERROR(ERRDOS,ERRlock));	
 
   if (numtoread > 0)
-    nread = read_file(fnum,data,startpos,numtoread,numtoread,-1,False);
+    nread = read_file(fnum,data,startpos,numtoread);
   
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1495,7 +1495,7 @@ int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   if (is_locked(fnum,cnum,smb_maxcnt,smb_offs))
     return(ERROR(ERRDOS,ERRlock));
-  nread = read_file(fnum,data,smb_offs,smb_maxcnt,smb_maxcnt,-1,False);
+  nread = read_file(fnum,data,smb_offs,smb_maxcnt);
   ok = True;
   
   if (nread < 0)
@@ -2934,7 +2934,7 @@ int reply_readbmpx(char *inbuf,char *outbuf,int length,int bufsize)
     {
       int N = MIN(max_per_packet,tcount-total_read);
   
-      nread = read_file(fnum,data,startpos,N,N,-1,False);
+      nread = read_file(fnum,data,startpos,N);
 
       if (nread <= 0) nread = 0;
 

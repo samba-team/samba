@@ -48,6 +48,8 @@ extern BOOL short_case_preserve;
 extern BOOL case_mangle;
 extern time_t smb_last_time;
 
+extern int smb_read_error;
+
 extern pstring user_socket_options;
 
 connection_struct Connections[MAX_CONNECTIONS];
@@ -1263,41 +1265,35 @@ int seek_file(int fnum,int pos)
 /****************************************************************************
 read from a file
 ****************************************************************************/
-int read_file(int fnum,char *data,int pos,int mincnt,int maxcnt,int timeout,BOOL exact)
+int read_file(int fnum,char *data,int pos,int n)
 {
-  int ret=0;
+  int ret=0,readret;
 
   if (!Files[fnum].can_write)
     {
-      ret = read_predict(Files[fnum].fd,
-			 pos,
-			 data,
-			 NULL,
-			 maxcnt);
+      ret = read_predict(Files[fnum].fd,pos,data,NULL,n);
 
       data += ret;
-      maxcnt -= ret;
-      mincnt = MAX(mincnt-ret,0);
+      n -= ret;
       pos += ret;
     }
 
 #if USE_MMAP
   if (Files[fnum].mmap_ptr)
     {
-      int num = MIN(maxcnt,Files[fnum].mmap_size-pos);
+      int num = MIN(n,Files[fnum].mmap_size-pos);
       if (num > 0)
 	{
 	  memcpy(data,Files[fnum].mmap_ptr+pos,num);
 	  data += num;
 	  pos += num;
-	  maxcnt -= num;
-	  mincnt = MAX(mincnt-num,0);
+	  n -= num;
 	  ret += num;
 	}
     }
 #endif
 
-  if (maxcnt <= 0)
+  if (n <= 0)
     return(ret);
 
   if (seek_file(fnum,pos) != pos)
@@ -1306,13 +1302,10 @@ int read_file(int fnum,char *data,int pos,int mincnt,int maxcnt,int timeout,BOOL
       return(ret);
     }
   
-  if (maxcnt > 0)
-    ret += read_with_timeout(Files[fnum].fd,
-			     data,
-			     mincnt,
-			     maxcnt,
-			     timeout,
-			     exact);
+  if (n > 0) {
+    readret = read(Files[fnum].fd,data,n);
+    if (readret > 0) ret += readret;
+  }
 
   return(ret);
 }
@@ -3437,9 +3430,14 @@ static void process(void)
 	  BOOL allidle = True;
 	  extern int keepalive;
 
-	  /* check for socket failure */
-	  if (errno) {
-	    DEBUG(3,("receive_smb error (%s) exiting\n",strerror(errno)));
+	  if (smb_read_error == READ_EOF) {
+	    DEBUG(3,("end of file from client\n"));
+	    return;
+	  }
+
+	  if (smb_read_error == READ_ERROR) {
+	    DEBUG(3,("receive_smb error (%s) exiting\n",
+		     strerror(errno)));
 	    return;
 	  }
 

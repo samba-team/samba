@@ -178,7 +178,7 @@ static int expect(int master,char *expected,char *buf)
     }
 
     /* allow 4 seconds for some output to appear */
-    m = read_with_timeout(master, buf+n, 1, BUFSIZE-1-n, 4000, True);
+    m = read_with_timeout(master, buf+n, 1, BUFSIZE-1-n, 4000);
     if (m < 0) 
       return False;
 

@@ -111,11 +111,10 @@ EXTERN int syslog_level;
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))? (syslog_level = (level), Debug1 body):0)
 #endif
 
-/* this defines the error codes that receive_smb can put in smberrcode */
-#define SMBERR_OK 0
-#define SMBERR_TIMEOUT 1
-#define SMBERR_EOF 2
-#define SMBERR_ERROR 3
+/* this defines the error codes that receive_smb can put in smb_read_error */
+#define READ_TIMEOUT 1
+#define READ_EOF 2
+#define READ_ERROR 3
 
 
 #define DIR_STRUCT_SIZE 43
