@@ -57,16 +57,25 @@ typedef enum krb5_cksumtype {
   CKSUMTYPE_DES_MAC		= 4,
   CKSUMTYPE_DES_MAC_K		= 5,
   CKSUMTYPE_RSA_MD4_DES_K	= 6,
-  CKSUMTYPE_RSA_MD5_DES		= 7
+  CKSUMTYPE_RSA_MD5		= 7,
+  CKSUMTYPE_RSA_MD5_DES		= 8,
+  CKSUMTYPE_RSA_MD5_DES3	= 9,
+  CKSUMTYPE_HMAC_SHA1_DES3	= 10
 } krb5_cksumtype;
 
 
 
 typedef enum krb5_enctype { 
-  ETYPE_NONE		= 0,
-  ETYPE_DES_CBC_CRC	= 1,
-  ETYPE_DES_CBC_MD4	= 2,
-  ETYPE_DES_CBC_MD5	= 3
+  ETYPE_NULL			= 0,
+  ETYPE_DES_CBC_CRC		= 1,
+  ETYPE_DES_CBC_MD4		= 2,
+  ETYPE_DES_CBC_MD5		= 3,
+  ETYPE_DES3_CBC_MD5		= 5,
+  ETYPE_DES3_CBC_SHA1		= 7,
+  ETYPE_SIGN_DSA_GENERATE	= 8,
+  ETYPE_ENCRYPT_RSA_PRIV	= 9,
+  ETYPE_ENCRYPT_RSA_PUB		= 10,
+  ETYPE_ENCTYPE_PK_CROSS	= 48
 } krb5_enctype;
 
 typedef enum krb5_preauthtype {
