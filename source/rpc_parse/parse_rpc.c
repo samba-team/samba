@@ -285,7 +285,7 @@ static BOOL smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, i
 	if (!smb_io_rpc_uuid(  "uuid", &ifc->uuid, ps, depth))
 		return False;
 
-	if(!prs_uint32 (       "version", ps, depth, &ifc->version))
+	if(!prs_uint32 ("version", ps, depth, &ifc->version))
 		return False;
 
 	return True;
@@ -1187,26 +1187,6 @@ BOOL smb_io_rpc_auth_netsec_neg(const char *desc, RPC_AUTH_NETSEC_NEG *neg,
 	return True;
 }
 
-
-/*******************************************************************
-creates an RPC_AUTH_NETSEC_CHK structure.
-********************************************************************/
-BOOL init_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
-			      const uchar sig[8],
-			      const uchar packet_digest[8],
-			      const uchar seq_num[8], const uchar confounder[8])
-{
-	if (chk == NULL)
-		return False;
-
-	memcpy(chk->sig, sig, sizeof(chk->sig));
-	memcpy(chk->packet_digest, packet_digest, sizeof(chk->packet_digest));
-	memcpy(chk->seq_num, seq_num, sizeof(chk->seq_num));
-	memcpy(chk->confounder, confounder, sizeof(chk->confounder));
-
-	return True;
-}
-
 /*******************************************************************
 reads or writes an RPC_AUTH_NETSEC_CHK structure.
 ********************************************************************/
@@ -1222,7 +1202,7 @@ BOOL smb_io_rpc_auth_netsec_chk(const char *desc, RPC_AUTH_NETSEC_CHK * chk,
 	prs_uint8s(False, "sig  ", ps, depth, chk->sig, sizeof(chk->sig));
 	prs_uint8s(False, "seq_num", ps, depth, chk->seq_num, sizeof(chk->seq_num));
 	prs_uint8s(False, "packet_digest", ps, depth, chk->packet_digest, sizeof(chk->packet_digest));
-	prs_uint8s(False, "data8", ps, depth, chk->confounder, sizeof(chk->confounder));
+	prs_uint8s(False, "confounder", ps, depth, chk->confounder, sizeof(chk->confounder));
 
 	return True;
 }
