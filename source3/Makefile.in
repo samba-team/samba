@@ -928,6 +928,11 @@ bin/librpc_netdfs.@SHLIBEXT@: $(RPC_DFS_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_DFS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
+bin/librpc_echo.@SHLIBEXT@: $(RPC_ECHO_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_ECHO_OBJ) -lc \
+			@SONAMEFLAG@`basename $@`
+
 nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc \
