@@ -295,6 +295,18 @@ int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode,
 void del_share_mode(share_lock_token token, int fnum);
 BOOL set_share_mode(share_lock_token token,int fnum);
 
+/*The following definitions come from  make_smbcodepage.c  */
+
+void codepage_usage(const char *progname);
+void read_line( char **buf, char *line_buf, int size);
+int clean_data( char **buf, uint32 *size);
+BOOL parse_byte(char *buf, unsigned char *bp);
+BOOL parse_bool(char *buf, unsigned char *bp);
+void parse_error(char *buf, char *msg);
+int do_compile(int codepage, const char *input_file, const char *output_file);
+int do_decompile( int codepage, const char *input_file, const char *output_file);
+int main(int argc, char **argv);
+
 /*The following definitions come from  mangle.c  */
 
 int str_checksum(char *s);
@@ -739,17 +751,17 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 BOOL smb_shm_create_hash_table( unsigned int size );
 BOOL smb_shm_open( char *file_name, int size);
 BOOL smb_shm_close( void );
+smb_shm_offset_t smb_shm_alloc(int size);
 BOOL smb_shm_free(smb_shm_offset_t offset);
+smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
-void * smb_shm_offset2addr(smb_shm_offset_t offset);
+void *smb_shm_offset2addr(smb_shm_offset_t offset);
+smb_shm_offset_t smb_shm_addr2offset(void *addr);
 BOOL smb_shm_lock_hash_entry( unsigned int entry);
 BOOL smb_shm_unlock_hash_entry( unsigned int entry );
 BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
 		   int *bytes_overhead);
-smb_shm_offset_t smb_shm_alloc(int size);
-smb_shm_offset_t smb_shm_addr2offset(void *addr);
-smb_shm_offset_t smb_shm_get_userdef_off(void);
 
 /*The following definitions come from  smbencrypt.c  */
 
