@@ -92,7 +92,7 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	static struct get_dc_name_cache *get_dc_name_cache;
 	struct get_dc_name_cache *dcc;
 	struct in_addr *ip_list, dc_ip;
-	int count, i = 0;
+	int count, i;
 
 	/* Check the cache for previous lookups */
 
