@@ -2,30 +2,36 @@
 
 RCSID("$Id$");
 
+struct entry{
+    char *principal;
+    char *key;
+    char *kvno;
+    char *max_life;
+    char *max_renew;
+};
+
 int main(int argc, char **argv)
 {
     FILE *f;
-    DB *db;
+    HDB *db;
     krb5_context context;
     char s[1024];
     char *p;
     int line;
-    unsigned char key_buf[1024];
-    unsigned char *q;
-    unsigned char value_buf[1024];
-    krb5_keyblock keyblock;
-    DBT key, value;
     int err;
     int i;
-    krb5_storage *sp;
 
     struct entry e;
+    hdb_entry ent;
 
-    krb5_principal princ;
     
     krb5_init_context(&context);
     f = fopen(argv[1], "r");
-    db = dbopen(argv[2], O_RDWR | O_CREAT | O_TRUNC, 0600, DB_BTREE, NULL);
+    err = hdb_open(context, &db, argv[2], O_RDWR | O_CREAT | O_TRUNC, 0600);
+    if(err){
+	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, err));
+	exit(1);
+    }
     line = 0;
     while(fgets(s, sizeof(s), f)){
 	line++;
@@ -61,7 +67,7 @@ int main(int argc, char **argv)
 	    *p++;
 	*p++ = 0;
 
-	err = krb5_parse_name(context, e.principal, &princ);
+	err = krb5_parse_name(context, e.principal, &ent.principal);
 	if(err){
 	    fprintf(stderr, "%s:%s:%s (%s)\n", 
 		    argv[1], 
@@ -71,29 +77,17 @@ int main(int argc, char **argv)
 	    continue;
 	}
 	
-	sp = krb5_storage_from_mem(key_buf, sizeof(key_buf));
-	princ->type = 0;
-	krb5_store_principal(sp, princ);
-	key.data = key_buf;
-	key.size = sp->seek(sp, 0, SEEK_CUR);
-	krb5_storage_free(sp);
-
-	keyblock.keytype = KEYTYPE_DES;
-	keyblock.contents.data = malloc(strlen(e.key)/2+1);
+	ent.keyblock.keytype = KEYTYPE_DES;
+	ent.keyblock.contents.data = malloc(strlen(e.key)/2+1);
 	for(i = 0; i < strlen(e.key); i += 2){
 	    sscanf(e.key + i, "%2x", 
-		   (unsigned char *)keyblock.contents.data + (i/2));
+		   (unsigned char *)ent.keyblock.contents.data + (i/2));
 	}
-	keyblock.contents.length = i / 2;
-	sp = krb5_storage_from_mem(value_buf, sizeof(value_buf));
-	krb5_store_keyblock(sp, keyblock);
-	krb5_store_int32(sp, atoi(e.kvno));
-	krb5_store_int32(sp, atoi(e.max_life));
-	krb5_store_int32(sp, atoi(e.max_renew));
-	value.data = value_buf;
-	value.size = sp->seek(sp, 0, SEEK_CUR);
-	db->put(db, &key, &value, 0);
-	krb5_storage_free(sp);
+	ent.keyblock.contents.length = i / 2;
+	ent.kvno = atoi(e.kvno);
+	ent.max_life = atoi(e.max_life);
+	ent.max_renew = atoi(e.max_renew);
+	db->store(context, db, &ent);
     }
-    db->close(db);
+    db->close(context, db);
 }

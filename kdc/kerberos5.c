@@ -5,44 +5,17 @@ RCSID("$Id$");
 struct timeval now;
 #define kdc_time now.tv_sec
 
-struct db_entry*
+hdb_entry*
 db_fetch(krb5_context context, PrincipalName *principal, char *realm)
 {
-    DB *db;
-    DBT key, value;
-    krb5_data data;
-    krb5_storage *sp;
-    struct db_entry *ent;
-    int32_t tmp;
-    int i;
+    HDB *db;
+    hdb_entry *ent;
 
-    ent = malloc(sizeof(struct db_entry));
+    ent = malloc(sizeof(*ent));
     principalname2krb5_principal(&ent->principal, *principal, realm);
-
-    sp = krb5_storage_emem();
-    ent->principal->type = 0;
-    krb5_store_principal(sp, ent->principal);
-    krb5_storage_to_data(sp, &data);
-    krb5_storage_free(sp);
-    key.data = data.data;
-    key.size = data.length;
-    
-    db = dbopen("foo.db", O_RDONLY, 0, DB_BTREE, NULL);
-    if(db->get(db, &key, &value, 0)){
-	db->close(db);
-	return NULL;
-    }
-    krb5_data_free(&data);
-    sp = krb5_storage_from_mem(value.data, value.size);
-    krb5_ret_keyblock(sp, &ent->keyblock);
-    krb5_ret_int32(sp, &tmp);
-    ent->kvno = tmp;
-    krb5_ret_int32(sp, &tmp);
-    ent->max_life = tmp;
-    krb5_ret_int32(sp, &tmp);
-    ent->max_renew = tmp;
-    krb5_storage_free(sp);
-    db->close(db);
+    hdb_open(context, &db, NULL, O_RDONLY, 0);
+    db->fetch(context, db, ent);
+    db->close(context, db);
     return ent;
 }
 
@@ -93,7 +66,7 @@ as_rep(krb5_context context,
 {
     KDCOptions f = req->req_body.kdc_options;
     KDC_REQ_BODY *b = &req->req_body;
-    struct db_entry *client, *server;
+    hdb_entry *client, *server;
     int use_etype;
     EncTicketPart *et = calloc(1, sizeof(*et));
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
@@ -235,7 +208,7 @@ tgs_rep(krb5_context context,
     KDC_REQ_BODY *b = &req->req_body;
     KDCOptions f = req->req_body.kdc_options;
     EncTicketPart *tgt;
-    struct db_entry *server, *krbtgt, *client;
+    hdb_entry *server, *krbtgt, *client;
     EncTicketPart *et = calloc(1, sizeof(*et));
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
     
@@ -250,7 +223,7 @@ tgs_rep(krb5_context context,
 	krb5_flags ap_req_options;
 	krb5_ticket *ticket;
 	krb5_error_code err;
-	struct db_entry *ent;
+	hdb_entry *ent;
 
 	err = krb5_build_principal(context,
 				   &princ,
@@ -479,14 +452,12 @@ process_request(krb5_context context,
     krb5_principal princ;
     unsigned char key_buf[1024];
     unsigned char *q;
-    DB *db;
-    DBT key, value;
 
     
     KDC_REP rep;
 
 
-    struct db_entry *cname, *sname;
+    hdb_entry *cname, *sname;
     
     gettimeofday(&now, NULL);
 
