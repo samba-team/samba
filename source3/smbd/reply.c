@@ -944,7 +944,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     }
   }
 
-  if (!Get_Pwnam(user,True)) {
+  if (!smb_getpwnam(user,domain,True)) {
     DEBUG(3,("No such user %s - using guest account\n",user));
     pstrcpy(user,lp_guestaccount(-1));
     guest = True;
@@ -979,7 +979,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      user we should become.
      */
   {
-    const struct passwd *pw = Get_Pwnam(user,False);
+    const struct passwd *pw = smb_getpwnam(user,domain,False);
     if (!pw) {
       DEBUG(1,("Username %s is invalid on this system\n",user));
       return bad_password_error(inbuf,outbuf);
@@ -993,7 +993,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
-  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest);
+  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,domain,guest);
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);
