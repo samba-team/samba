@@ -54,6 +54,16 @@ Options:         (Description)                 (Default)
   exit $ex
 }
 
+echo Params count: $#
+
+# DEC OSF AKA Digital UNIX does not seem to return a value in OPTIND if 
+# there are no command line params, so protect us against that ...
+if [ $# = 0 ]; then
+
+  Usage 2 "Please enter a command line parameter!"
+
+fi
+
 while getopts rivl:b:d:N:s:p:x:u:Xt: c; do
   case $c in
    r) # [r]estore to Windows (instead of the default "Save from Windows")
