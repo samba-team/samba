@@ -146,8 +146,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	   winbind_lookup_userinfo() */
     
         if (!(mem_ctx = talloc_init())) {
-            DEBUG(1, ("out of memory\n"));
-            return WINBINDD_ERROR;
+                DEBUG(1, ("out of memory\n"));
+                return WINBINDD_ERROR;
         }
 
 	sid_split_rid(&user_sid, &user_rid);
@@ -240,8 +240,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	/* Get some user info */
 	
         if (!(mem_ctx = talloc_init())) {
-            DEBUG(1, ("out of memory\n"));
-            return WINBINDD_ERROR;
+                DEBUG(1, ("out of memory\n"));
+                return WINBINDD_ERROR;
         }
 
 	if (!winbindd_lookup_userinfo(domain, mem_ctx, user_rid, &user_info)) {
