@@ -354,7 +354,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 	oid = talloc_asprintf(mem_ctx, "%u",  b/40);
 	oid = talloc_asprintf_append(mem_ctx, oid, " %u",  b%40);
 
-	while (asn1_tag_remaining(data) > 0) {
+	while (!data->has_error && asn1_tag_remaining(data) > 0) {
 		uint_t v = 0;
 		do {
 			asn1_read_uint8(data, &b);
