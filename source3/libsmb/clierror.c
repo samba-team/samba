@@ -67,7 +67,7 @@ static char *cli_smb_errstr(struct cli_state *cli)
     
 char *cli_errstr(struct cli_state *cli)
 {   
-	static fstring error_message;
+	static fstring cli_error_message;
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), errnum;
         uint8 errclass;
         int i;
@@ -93,10 +93,10 @@ char *cli_errstr(struct cli_state *cli)
 		}
 	} 
 
-	slprintf(error_message, sizeof(error_message) - 1, "code %d", 
+	slprintf(cli_error_message, sizeof(cli_error_message) - 1, "code %d", 
                  cli->rap_error);
 
-	return error_message;
+	return cli_error_message;
 }
 
 
