@@ -37,6 +37,9 @@
 #define STATUS_NOTIFY_ENUM_DIR            NT_STATUS(0x010c)
 #define ERROR_INVALID_DATATYPE		  NT_STATUS(0x070c)
 
+/* Special "invalid" NT status code. */
+#define NT_STATUS_INVALID		  NT_STATUS(0xFFFFFFFF)
+
 /* Win32 Error codes extracted using a loop in smbclient then printing a
    netmon sniff to a file. */
 

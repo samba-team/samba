@@ -357,14 +357,14 @@ typedef struct time_info
 } UTIME;
 
 /* Structure used when SMBwritebmpx is active */
-typedef struct
-{
-  size_t wr_total_written; /* So we know when to discard this */
-  int32 wr_timeout;
-  int32 wr_errclass;
-  int32 wr_error; /* Cached errors */
-  BOOL  wr_mode; /* write through mode) */
-  BOOL  wr_discard; /* discard all further data */
+typedef struct {
+	size_t wr_total_written; /* So we know when to discard this */
+	int32 wr_timeout;
+	int32 wr_errclass; /* Cached errors */
+	int32 wr_error; /* Cached errors */
+	NTSTATUS wr_status; /* Cached errors */
+	BOOL  wr_mode; /* write through mode) */
+	BOOL  wr_discard; /* discard all further data */
 } write_bmpx_struct;
 
 typedef struct write_cache
@@ -1383,13 +1383,6 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
  * Size of buffer to use when moving files across filesystems. 
  */
 #define COPYBUF_SIZE (8*1024)
-
-/* 
- * Values used to override error codes. 
- */
-extern int unix_ERR_class;
-extern int unix_ERR_code;
-extern NTSTATUS unix_ERR_ntstatus;
 
 /*
  * Used in chaining code.
