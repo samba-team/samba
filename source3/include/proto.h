@@ -1037,6 +1037,7 @@ void exit_server(char *reason);
 
 BOOL receive_next_smb(char *inbuf, int bufsize, int timeout);
 void process_smb(char *inbuf, char *outbuf);
+BOOL get_user_creds(struct user_creds *usr);
 void lsarpcd_process(void);
 
 /*The following definitions come from  mem_man/mem_man.c  */
@@ -1944,8 +1945,7 @@ BOOL net_sam_sync(const char* srv_name, const char* myhostname,
 
 /*The following definitions come from  rpc_client/cli_lsarpc.c  */
 
-BOOL get_domain_sids(const char *myname,
-				DOM_SID *sid3, DOM_SID *sid5, char *domain);
+BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5);
 BOOL get_trust_sid_and_domain(const char* myname, char *server,
 				DOM_SID *sid,
 				char *domain, size_t len);

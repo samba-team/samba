@@ -34,8 +34,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
  obtain the sid from the PDC.  do some verification along the way...
 ****************************************************************************/
-BOOL get_domain_sids(const char *myname,
-				DOM_SID *sid3, DOM_SID *sid5, char *domain)
+BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5)
 {
 	POLICY_HND pol;
 	fstring srv_name;
