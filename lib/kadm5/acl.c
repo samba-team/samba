@@ -41,15 +41,34 @@
 RCSID("$Id$");
 
 static struct units acl_units[] = {
-    { "all",	KADM5_PRIV_ALL },
-    { "cpw",	KADM5_PRIV_CPW },
-    { "list",	KADM5_PRIV_LIST },
-    { "delete",	KADM5_PRIV_DELETE },
-    { "modify",	KADM5_PRIV_MODIFY },
-    { "add",	KADM5_PRIV_ADD },
-    { "get", 	KADM5_PRIV_GET },
+    { "all",		KADM5_PRIV_ALL },
+    { "change-password",KADM5_PRIV_CPW },
+    { "cpw",		KADM5_PRIV_CPW },
+    { "list",		KADM5_PRIV_LIST },
+    { "delete",		KADM5_PRIV_DELETE },
+    { "modify",		KADM5_PRIV_MODIFY },
+    { "add",		KADM5_PRIV_ADD },
+    { "get", 		KADM5_PRIV_GET },
     { NULL }
 };
+
+kadm5_ret_t
+_kadm5_string_to_privs(const char *s, u_int32_t* privs)
+{
+    int flags;
+    flags = parse_flags(s, acl_units, 0);
+    if(flags < 0)
+	return KADM5_FAILURE;
+    *privs = flags;
+    return 0;
+}
+
+kadm5_ret_t
+_kadm5_privs_to_string(u_int32_t privs, char *string, size_t len)
+{
+    unparse_flags(privs, acl_units + 1, string, len);
+    return 0;
+}
 
 kadm5_ret_t
 _kadm5_acl_init(kadm5_server_context *context)
@@ -88,7 +107,7 @@ _kadm5_acl_init(kadm5_server_context *context)
 	    p = strtok_r(NULL, "\n", &foo);
 	    if(p == NULL)
 		continue;
-	    flags = parse_flags(p, acl_units, 0);
+	    ret = _kadm5_string_to_privs(p, &flags);
 	    break;
 	}
 	fclose(f);
