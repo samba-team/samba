@@ -482,8 +482,12 @@ static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing GetPrinterDataEx\n");
 
 	status = dcerpc_spoolss_GetPrinterDataEx(p, mem_ctx, &r);
-
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_NET_WRITE_FAULT) &&
+		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
+			printf("GetPrinterDataEx not supported by server\n");
+			return True;
+		}
 		printf("GetPrinterDataEx failed - %s\n", nt_errstr(status));
 		return False;
 	}
