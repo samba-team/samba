@@ -820,7 +820,7 @@ static BOOL readlink_check(connection_struct *conn, const char *dir, char *name)
 	}
 
 	if (SMB_VFS_READLINK(conn, name, flink, sizeof(pstring) -1) != -1) {
-		DEBUG(3,("reduce_name: file path name %s is a symlink\nChecking it's path\n", name));
+		DEBUG(3,("readlink_check: file path name %s is a symlink\nChecking it's path\n", name));
 		if (*flink == '/') {
 			pstrcpy(cleanlink, flink);
 		} else {
