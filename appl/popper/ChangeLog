@@ -1,3 +1,8 @@
+Sat Mar 13 22:17:29 1999  Assar Westerlund  <assar@sics.se>
+
+	* pop_parse.c (pop_parse): cast when calling is* to get rid of a
+ 	warning
+
 Mon Mar  8 11:50:06 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* pop_init.c: use print_version

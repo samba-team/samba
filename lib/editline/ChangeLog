@@ -1,3 +1,7 @@
+Sat Mar 13 22:23:22 1999  Assar Westerlund  <assar@sics.se>
+
+	* <roken.h>: add
+
 Sun Nov 22 10:40:28 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (WFLAGS): set

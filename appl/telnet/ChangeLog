@@ -1,3 +1,9 @@
+Sat Mar 13 22:18:57 1999  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/telnetd.c (main): 0 -> STDIN_FILENO.  remove abs
+
+	* libtelnet/kerberos.c (kerberos4_is): syslog root logins
+
 Thu Mar 11 14:48:54 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* telnetd/Makefile.in: add WFLAGS

@@ -1,3 +1,8 @@
+Sat Mar 13 22:22:56 1999  Assar Westerlund  <assar@sics.se>
+
+	* compile_et.c (generate_h): cast when calling is* to get rid of a
+ 	warning
+
 Thu Mar 11 15:00:51 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* parse.y: prototype for error_message
