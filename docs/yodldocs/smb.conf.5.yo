@@ -107,7 +107,7 @@ as the default guest user (specified elsewhere):
 verb(
  	[aprinter]
  		path = /usr/spool/public
- 		read only = true
+ 		writeable = false
  		printable = true
  		guest ok = true
 )
@@ -3801,7 +3801,7 @@ tt(	max open files = 10000)
 label(maxpacket)
 dit(bf(max packet (G)))
 
-Synonym for label(bf("packet size"))(packetsize).
+Synonym for link(bf("packet size"))(packetsize).
 
 label(maxttl)
 dit(bf(max ttl (G)))
@@ -4716,7 +4716,7 @@ submit spool files on the directory specified for the service.
 
 Note that a printable service will ALWAYS allow writing to the service
 path (user privileges permitting) via the spooling of print data. The
-link(bf("read only"))(readonly) parameter controls only non-printing
+link(bf("writeable"))(writeable) parameter controls only non-printing
 access to the resource.
 
   bf(Default:)
@@ -4864,7 +4864,8 @@ on your system. It also affects the default values for the
 link(bf("print command"))(printcommand), link(bf("lpq
 command"))(lpqcommand) link(bf("lppause command"))(lppausecommand),
 link(bf("lpresume command"))(lpresumecommand), and link(bf("lprm
-command"))(lprmcommand) if specified in the bf([global]) section.
+command"))(lprmcommand) if specified in the link(bf([global]))(global)
+section.
 
 Currently eight printing styles are supported. They are
 bf("printing=BSD"), bf("printing=AIX"), bf("printing=LPRNG"),
@@ -4985,7 +4986,7 @@ dit(bf(read list (S)))
 
 This is a list of users that are given read-only access to a
 service. If the connecting user is in this list then they will not be
-given write access, no matter what the link(bf("read only"))(readonly)
+given write access, no matter what the link(bf("writeable"))(writeable)
 option is set to. The list can include group names using the syntax
 described in the link(bf("invalid users"))(invalidusers) parameter.
 
@@ -6738,7 +6739,7 @@ dit(bf(write list (S)))
 
 This is a list of users that are given read-write access to a
 service. If the connecting user is in this list then they will be
-given write access, no matter what the link(bf("read only"))(readonly)
+given write access, no matter what the link(bf("writeable"))(writeable)
 option is set to. The list can include group names using the @group
 syntax.
 
