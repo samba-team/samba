@@ -243,6 +243,16 @@ struct browse_cache_record
   time_t         death_time; /* The time the record must be removed. */
   };
 
+/* used for server information: client, nameserv and ipc */
+struct server_info_struct
+{
+  fstring name;
+  uint32_t type;
+  fstring comment;
+  fstring domain; /* used ONLY in ipc.c NOT namework.c */
+  BOOL server_added; /* used ONLY in ipc.c NOT namework.c */
+};
+
 /* This is used to hold the list of servers in my domain, and is
    contained within lists of domains. */
 

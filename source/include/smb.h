@@ -33,37 +33,7 @@
 #define SMB_PORT2 139
 #define SMB_PORTS "445 139"
 
-#define False (0)
-#define True (1)
-#define Auto (2)
-
 enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, SMB_SIGNING_REQUIRED};
-
-#ifndef _BOOL
-typedef int BOOL;
-#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
-#endif
-
-/* string manipulation flags - see clistr.c and srvstr.c */
-#define STR_TERMINATE 1
-#define STR_UPPER 2
-#define STR_ASCII 4
-#define STR_UNICODE 8
-#define STR_NOALIGN 16
-#define STR_NO_RANGE_CHECK 32
-#define STR_LEN8BIT 64
-#define STR_TERMINATE_ASCII 128 /* only terminate if ascii */
-#define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
-
-/* Debugging stuff */
-#include "debug.h"
-
-/* types of socket errors */
-enum socket_error {SOCKET_READ_TIMEOUT,
-		   SOCKET_READ_EOF,
-		   SOCKET_READ_ERROR,
-		   SOCKET_WRITE_ERROR,
-		   SOCKET_READ_BAD_SIG};
 
 /* deny modes */
 #define DENY_DOS 0
@@ -211,30 +181,6 @@ enum socket_error {SOCKET_READ_TIMEOUT,
    incorrect parameters - what does it mean? maybe created temporary file? */
 #define NTCREATEX_ACTION_UNKNOWN 5
 
-#include "doserr.h"
-
-/*
- * SMB UCS2 (16-bit unicode) internal type.
- */
-
-typedef uint16_t smb_ucs2_t;
-
-/* ucs2 string types. */
-typedef smb_ucs2_t wpstring[PSTRING_LEN];
-typedef smb_ucs2_t wfstring[FSTRING_LEN];
-
-#ifdef WORDS_BIGENDIAN
-#define UCS2_SHIFT 8
-#else
-#define UCS2_SHIFT 0
-#endif
-
-/* turn a 7 bit character into a ucs2 character */
-#define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
-
-/* for compatibility */
-#define SID_NAME_USE samr_SidType
-
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.
@@ -253,148 +199,8 @@ typedef struct nt_user_token {
 	struct dom_sid **user_sids;
 } NT_USER_TOKEN;
 
-/* used to hold an arbitrary blob of data */
-typedef struct data_blob {
-	uint8_t *data;
-	size_t length;
-	void (*free)(struct data_blob *data_blob);
-} DATA_BLOB;
-
-#include "enums.h"
-#include "events.h"
-#include "librpc/gen_ndr/ndr_misc.h"
-#include "smb_interfaces.h"
-#include "librpc/ndr/libndr.h"
-
-
-/* used for server information: client, nameserv and ipc */
-struct server_info_struct
-{
-  fstring name;
-  uint32_t type;
-  fstring comment;
-  fstring domain; /* used ONLY in ipc.c NOT namework.c */
-  BOOL server_added; /* used ONLY in ipc.c NOT namework.c */
-};
-
-
-/* used for network interfaces */
-struct interface
-{
-	struct interface *next, *prev;
-	struct in_addr ip;
-	struct in_addr bcast;
-	struct in_addr nmask;
-};
-
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
-
-/*
- * Flags for account policy.
- */
-#define AP_MIN_PASSWORD_LEN 		1
-#define AP_PASSWORD_HISTORY		2
-#define AP_USER_MUST_LOGON_TO_CHG_PASS	3
-#define AP_MAX_PASSWORD_AGE		4
-#define AP_MIN_PASSWORD_AGE		5
-#define AP_LOCK_ACCOUNT_DURATION	6
-#define AP_RESET_COUNT_TIME		7
-#define AP_BAD_ATTEMPT_LOCKOUT		8
-#define AP_TIME_TO_LOGOUT		9
-
-
-/*
- * Flags for local user manipulation.
- */
-
-#define LOCAL_ADD_USER 0x1
-#define LOCAL_DELETE_USER 0x2
-#define LOCAL_DISABLE_USER 0x4
-#define LOCAL_ENABLE_USER 0x8
-#define LOCAL_TRUST_ACCOUNT 0x10
-#define LOCAL_SET_NO_PASSWORD 0x20
-#define LOCAL_SET_PASSWORD 0x40
-#define LOCAL_SET_LDAP_ADMIN_PW 0x80
-#define LOCAL_INTERDOM_ACCOUNT 0x100
-#define LOCAL_AM_ROOT 0x200  /* Act as root */
-
-/* key and data in the connections database - used in smbstatus and smbd */
-struct connections_key {
-	pid_t pid;
-	int cnum;
-	fstring name;
-};
-
-struct connections_data {
-	int magic;
-	pid_t pid;
-	int cnum;
-	uid_t uid;
-	gid_t gid;
-	char name[24];
-	char addr[24];
-	char machine[FSTRING_LEN];
-	time_t start;
-	uint32_t bcast_msg_flags;
-};
-
-/* the following are used by loadparm for option lists */
-typedef enum
-{
-  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
-  P_STRING,P_USTRING,P_ENUM,P_SEP
-} parm_type;
-
-typedef enum
-{
-  P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
-} parm_class;
-
-struct enum_list {
-	int value;
-	const char *name;
-};
-
-struct parm_struct
-{
-	const char *label;
-	parm_type type;
-	parm_class class;
-	void *ptr;
-	BOOL (*special)(const char *, char **);
-	const struct enum_list *enum_list;
-	uint_t flags;
-	union {
-		BOOL bvalue;
-		int ivalue;
-		char *svalue;
-		char cvalue;
-		char **lvalue;
-	} def;
-};
-
-struct bitmap {
-	uint32_t *b;
-	uint_t n;
-};
-
-#define FLAG_BASIC 	0x0001 /* fundamental options */
-#define FLAG_SHARE 	0x0002 /* file sharing options */
-#define FLAG_PRINT 	0x0004 /* printing options */
-#define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
-#define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
-#define FLAG_ADVANCED 	0x0020 /* Parameters that the wizard will operate on */
-#define FLAG_DEVELOPER 	0x0040 /* Parameters that the wizard will operate on */
-#define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
-#define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
-#define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
-#define FLAG_CMDLINE    0x8000 /* this option was set from the command line */
-
-#ifndef LOCKING_VERSION
-#define LOCKING_VERSION 4
-#endif /* LOCKING_VERSION */
-
 
 /* the basic packet size, assuming no words or bytes. Does not include the NBT header */
 #define MIN_SMB_SIZE 35
@@ -665,14 +471,6 @@ struct bitmap {
    otherwise NT will not honour the announce packets */
 #define MAX_SERVER_STRING_LENGTH 48
 
-#ifndef SIGNAL_CAST
-#define SIGNAL_CAST (RETSIGTYPE (*)(int))
-#endif
-
-#ifndef SELECT_CAST
-#define SELECT_CAST
-#endif
-
 /* these are used in NetServerEnum to choose what to receive */
 #define SV_TYPE_WORKSTATION         0x00000001
 #define SV_TYPE_SERVER              0x00000002
@@ -802,118 +600,7 @@ struct bitmap {
 #define BATCH_OPLOCK_RETURN 2
 #define LEVEL_II_OPLOCK_RETURN 3
 
-/*
- * Loopback command offsets.
- */
-
-#define OPBRK_CMD_LEN_OFFSET 0
-#define OPBRK_CMD_PORT_OFFSET 4
-#define OPBRK_CMD_HEADER_LEN 6
-
-#define OPBRK_MESSAGE_CMD_OFFSET 0
-
-/* Message types */
-#define OPLOCK_BREAK_CMD 0x1
-#define KERNEL_OPLOCK_BREAK_CMD 0x2
-#define LEVEL_II_OPLOCK_BREAK_CMD 0x3
-#define ASYNC_LEVEL_II_OPLOCK_BREAK_CMD 0x4
-
-/*
- * Capabilities abstracted for different systems.
- */
-
-#define KERNEL_OPLOCK_CAPABILITY 0x1
-
-/*
- * Oplock break command code sent via the kernel interface (if it exists).
- *
- * Form of this is :
- *
- *  0     2       2+devsize 2+devsize+inodesize
- *  +----+--------+--------+----------+
- *  | cmd| dev    |  inode |  fileid  |
- *  +----+--------+--------+----------+
- */
-#define KERNEL_OPLOCK_BREAK_DEV_OFFSET 2
-#define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define KERNEL_OPLOCK_BREAK_FILEID_OFFSET (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
-#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
-
-
 #define CMD_REPLY 0x8000
-
-#include "smb_macros.h"
-
-/* A netbios name structure. */
-struct nmb_name {
-	char         name[17];
-	char         scope[64];
-	uint_t name_type;
-};
-
-
-/* A netbios node status array element. */
-struct node_status {
-	char name[16];
-	uint8_t type;
-	uint8_t flags;
-};
-
-#include "rpc_secdes.h"
-
-typedef struct user_struct
-{
-	struct user_struct *next, *prev;
-	uint16_t vuid; /* Tag for this entry. */
-
-	char *session_keystr; /* used by utmp and pam session code.  
-				 TDB key string */
-	int homes_snum;
-
-	struct auth_session_info *session_info;
-
-} user_struct;
-
-#include "client.h"
-
-/*
-   Do you want session setups at user level security with a invalid
-   password to be rejected or allowed in as guest? WinNT rejects them
-   but it can be a pain as it means "net view" needs to use a password
-
-   You have 3 choices in the setting of map_to_guest:
-
-   "NEVER_MAP_TO_GUEST" means session setups with an invalid password
-   are rejected. This is the default.
-
-   "MAP_TO_GUEST_ON_BAD_USER" means session setups with an invalid password
-   are rejected, unless the username does not exist, in which case it
-   is treated as a guest login
-
-   "MAP_TO_GUEST_ON_BAD_PASSWORD" means session setups with an invalid password
-   are treated as a guest login
-
-   Note that map_to_guest only has an effect in user or server
-   level security.
-*/
-
-#define NEVER_MAP_TO_GUEST 0
-#define MAP_TO_GUEST_ON_BAD_USER 1
-#define MAP_TO_GUEST_ON_BAD_PASSWORD 2
-
-#define SAFE_NETBIOS_CHARS ". -_"
-
-/* generic iconv conversion structure */
-typedef struct {
-	size_t (*direct)(void *cd, const char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft);
-	size_t (*pull)(void *cd, const char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-	size_t (*push)(void *cd, const char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-	void *cd_direct, *cd_pull, *cd_push;
-	char *from_name, *to_name;
-} *smb_iconv_t;
 
 /* The maximum length of a trust account password.
    Used when we randomly create it, 15 char passwords
@@ -929,7 +616,5 @@ typedef struct {
 
 /* passed to br lock code */
 enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
-
-#include "popt_common.h"
 
 #endif /* _SMB_H */
