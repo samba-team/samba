@@ -3,12 +3,8 @@ If you'd like to work on any of these, please contact jerry@samba.org or jelmer@
 Outdated docs:
 Manifest
  - this should be updated
-docs/announce - out of date (announces 2.2.0) - should it go away?
+docs/announce - out of date (announces 2.2.0)
  - this should be updated
-docs/docbook/manpages/net.8.sgml - Still not finished
- - this is in hand by Jelmer
-docs/docbook/manpages/samba.7.sgml - Listing of samba programs is not complete
- - this is in hand by Jelmer
 docs/docbook/manpages/smb.conf.5.sgml - 'restrict anonymous' isn't documented properly
  - this should be updated
 docs/docbook/projdoc/Integrating-with-Windows.sgml - Should slowly go a way. Contains a little bit information about wins, a little bit about domain membership, a little about winbind, etc
@@ -31,8 +27,6 @@ docs/docbook/projdoc/upgrading-to-3.0.sgml - not finished yet
  - this should be updated
 docs/textdocs/CUPS-PrintingInfo.txt - needs to be converted to sgml - Kurt Pfeifle
  - this is in hand by Kurt/jht
-docs/textdocs/README.jis - Seems to need updating - possibly obsoleted by a newer japanese howto?
- - not yet reviewed - needs attention
 docs/docbook/manpages/ntlm_auth.1.sgml - Is very basic at the moment, parameters need better descriptions - abartlet
  - this is in hand by Andrew Bartlett
  
