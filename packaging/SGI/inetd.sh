@@ -10,7 +10,7 @@ chkconfig samba off
 #
 cp /etc/inetd.conf /etc/inetd.conf.O
 
-if [ $? ]; then exit 1; fi
+if [ $? -ne 0 ]; then exit 1; fi
 if [ ! -r /etc/inetd.conf.O -o ! -w /etc/inetd.conf ]; then exit 1; fi
 
 sed -e "/^netbios/D" -e "/^#SAMBA/D" /etc/inetd.conf.O > /etc/inetd.conf
@@ -23,7 +23,7 @@ echo netbios-ns  dgram udp   wait    root    /usr/samba/bin/nmbd nmbd -S >> /etc
 #
 cp /etc/services /etc/services.O
 
-if [ $? ]; then exit 1; fi
+if [ $? -ne 0 ]; then exit 1; fi
 if [ ! -r /etc/services.O -o ! -w /etc/services ]; then exit 1; fi
 
 sed -e "/^netbios/D" -e "/^#SAMBA/D" /etc/services.O > /etc/services
