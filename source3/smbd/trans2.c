@@ -1932,6 +1932,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,l1_attrFile+2,4); /* this is what OS2 does */
 			break;
 
+		case SMB_INFO_IS_NAME_VALID:
+			if (tran_call == TRANSACT2_QFILEINFO) {
+				/* os/2 needs this ? really ?*/      
+				return ERROR_DOS(ERRDOS,ERRbadfunc); 
+			}
+			data_size = 0;
+			break;
+			
 		case SMB_INFO_QUERY_EAS_FROM_LIST:
 			data_size = 24;
 			put_dos_date2(pdata,0,c_time);
@@ -1946,9 +1954,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			data_size = 4;
 			SIVAL(pdata,0,data_size);
 			break;
-
-		case 6:
-			return ERROR_DOS(ERRDOS,ERRbadfunc); /* os/2 needs this */      
 
 		case SMB_FILE_BASIC_INFORMATION:
 		case SMB_QUERY_FILE_BASIC_INFO:
@@ -2121,6 +2126,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			}
 			break;
 
+		case SMB_QUERY_COMPRESSION_INFO:
 		case SMB_FILE_COMPRESSION_INFORMATION:
 			SOFF_T(pdata,0,file_size);
 			SIVAL(pdata,8,0); /* ??? */
