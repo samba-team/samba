@@ -111,10 +111,12 @@ krb5_get_forwarded_creds (krb5_context	    context,
     addrs.val = NULL;
 
 #ifdef HAVE_GETHOSTBYNAME2
-    ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET6));
+    ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET6),
+		     AF_INET6);
     if (ret)
 	return ret;
-    ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET));
+    ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET),
+		     AF_INET);
     if (ret)
 	return ret;
 #else
