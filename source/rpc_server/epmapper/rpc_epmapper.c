@@ -118,6 +118,10 @@ static uint32 build_ep_list(TALLOC_CTX *mem_ctx,
 		struct dcesrv_ep_iface *e;
 		int count = d->endpoint_ops->lookup_endpoints(mem_ctx, &e);
 		if (count > 0) {
+			int i;
+			for (i=0;i<count;i++) {
+				e[i].endpoint = d->endpoint;
+			}
 			(*eps) = talloc_realloc_p(mem_ctx, *eps, 
 						  struct dcesrv_ep_iface,
 						  total + count);
@@ -387,7 +391,7 @@ static const struct dcesrv_endpoint_ops rpc_epmapper_ops = {
 */
 void rpc_epmapper_init(struct dcesrv_context *dce)
 {
-	if (!dcesrv_endpoint_register(dce, &rpc_epmapper_ops)) {
+	if (!dcesrv_endpoint_register(dce, &rpc_epmapper_ops, &dcerpc_table_epmapper)) {
 		DEBUG(1,("Failed to register epmapper endpoint\n"));
 	}
 }

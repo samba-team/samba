@@ -135,6 +135,7 @@ struct dcesrv_context {
 	/* the list of endpoints servers that have registered */
 	struct dce_endpoint {
 		struct dce_endpoint *next, *prev;
+		struct dcesrv_endpoint endpoint;
 		const struct dcesrv_endpoint_ops *endpoint_ops;
 	} *endpoint_list;
 };
