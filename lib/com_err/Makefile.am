@@ -14,6 +14,8 @@ compile_et_SOURCES = compile_et.c parse.y lex.l
 
 libcom_err_a_SOURCES = error.c com_err.c
 
+CLEANFILES = lex.c parse.c parse.h
+
 $(compile_et_OBJECTS): parse.h
 
 compile_et_LDADD = -L../roken -lroken
