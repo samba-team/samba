@@ -722,7 +722,6 @@ static void store_gid_sid_cache(const DOM_SID *psid, const enum SID_NAME_USE sid
 
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-#ifdef WITH_IDMAP
 	unid_t id;
 
 	DEBUG(10,("uid_to_sid: uid = [%d]\n", uid));
@@ -738,47 +737,13 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 	   We may add a switch in future to allow smooth migrations to
 	   idmap-only db  ---Simo */	
 
-	become_root();
-	psid = local_uid_to_sid(psid, uid);
-        unbecome_root();
+	sid_copy(psid, get_global_sam_sid());
+	sid_append_rid(psid, fallback_pdb_uid_to_user_rid(uid));
 
 	DEBUG(10,("uid_to_sid: algorithmic %u -> %s\n", (unsigned int)uid, sid_string_static(psid)));
-	if (psid)
-		idmap_set_mapping(psid, id, ID_USERID);
 
 	return psid;
 	
-#else
-	uid_t low, high;
-	enum SID_NAME_USE sidtype;
-	fstring sid;
-
-	if (fetch_sid_from_uid_cache(psid, &sidtype, uid))
-		return psid;
-
-	if (lp_idmap_uid(&low, &high) && uid >= low && uid <= high) {
-		if (winbind_uid_to_sid(psid, uid)) {
-
-			DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
-				(unsigned int)uid, sid_to_string(sid, psid)));
-
-			if (psid)
-				store_uid_sid_cache(psid, SID_NAME_USER, uid);
-			return psid;
-		}
-	}
-	
-	/* Make sure we report failure, (when psid == NULL) */
-	become_root();
-	psid = local_uid_to_sid(psid, uid);
-        unbecome_root();
-
-	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid, sid_to_string(sid, psid)));
-	if (psid)
-		store_uid_sid_cache(psid, SID_NAME_USER, uid);
-
-	return psid;
-#endif
 }
 
 /*****************************************************************
@@ -789,7 +754,7 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 {
-#ifdef WITH_IDMAP
+	GROUP_MAP map;
 	unid_t id;
 
 	DEBUG(10,("gid_to_sid: gid = [%d]\n", gid));
@@ -805,46 +770,16 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 	   We may add a switch in future to allow smooth migrations to
 	   idmap-only db  ---Simo */	
 
-	become_root();
-	psid = local_gid_to_sid(psid, gid);
-        unbecome_root();
-
-	DEBUG(10,("gid_to_sid: algorithmic %u -> %s\n", (unsigned int)gid, sid_string_static(psid)));
-	if (psid)
-		idmap_set_mapping(psid, id, ID_GROUPID);
-
-	return psid;
-	
-#else
-	gid_t low, high;
-	enum SID_NAME_USE sidtype;
-	fstring sid;
-
-	if (fetch_sid_from_gid_cache(psid, &sidtype, gid))
-		return psid;
-
-	if (lp_idmap_gid(&low, &high) && gid >= low && gid <= high) {
-		if (winbind_gid_to_sid(psid, gid)) {
-
-			DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
-				(unsigned int)gid, sid_to_string(sid, psid)));
-                        
-			if (psid)
-				store_gid_sid_cache(psid, SID_NAME_DOM_GRP, gid);
-			return psid;
-		}
+	if (pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
+		sid_copy(psid, &map.sid);
+	} else {
+		sid_copy(psid, get_global_sam_sid());
+		sid_append_rid(psid, pdb_gid_to_group_rid(gid));
 	}
 
-	/* Make sure we report failure, (when psid == NULL) */
-	become_root();
-	psid = local_gid_to_sid(psid, gid);
-	unbecome_root();
-	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
-	if (psid)
-		store_gid_sid_cache(psid, SID_NAME_DOM_GRP, gid);
+	DEBUG(10,("gid_to_sid: algorithmic %u -> %s\n", (unsigned int)gid, sid_string_static(psid)));
 
 	return psid;
-#endif
 }
 
 /*****************************************************************
@@ -856,7 +791,6 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 {
-#ifdef WITH_IDMAP
 	unid_t id;
 	int type;
 
@@ -873,94 +807,22 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 
 	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
 		BOOL result;
+		uint32 rid;
 
 		DEBUG(10,("sid_to_uid: sid is local [%s]\n", sid_string_static(get_global_sam_sid())));
-		become_root();
-		result = local_sid_to_uid(puid, psid, sidtype);
-		unbecome_root();
-		if (result) {
-			id.uid = *puid;
-			DEBUG(10,("sid_to_uid: uid = [%d]\n", id.uid));
-			idmap_set_mapping(psid, id, ID_USERID);
-			return True;
+
+		if (!sid_peek_rid(psid, &rid)) {
+			DEBUG(0, ("sid_to_uid: Error extracting RID from SID\n!"));
+			return False;
 		}
+		if (!pdb_rid_is_user(rid)) {
+			DEBUG(3, ("sid_to_uid: RID %u is *NOT* a user\n", (unsigned)rid));
+			return False;
+		}
+		*puid = fallback_pdb_user_rid_to_uid(rid);
+		return True;
 	}
 	return False;
-#else
-	fstring sid_str;
-
-	if (fetch_uid_from_cache(puid, psid, *sidtype))
-		return True;
-
-	/* if we know its local then don't try winbindd */
-	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
-		BOOL result;
-		become_root();
-		result = local_sid_to_uid(puid, psid, sidtype);
-		unbecome_root();
-		if (result)
-			store_uid_sid_cache(psid, *sidtype, *puid);
-		return result;
-	}
-
-/* (tridge) I commented out the slab of code below in order to support foreign SIDs
-   Do we really need to validate the type of SID we have in this case? 
-*/
-#if 0
-	fstring dom_name, name;
-	enum SID_NAME_USE name_type;
-
-	*sidtype = SID_NAME_UNKNOWN;
-	/*
-	 * First we must look up the name and decide if this is a user sid.
-	 */
-
-	if ( (!winbind_lookup_sid(psid, dom_name, name, &name_type)) || (name_type != SID_NAME_USER) ) {
-		BOOL result;
-		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
-				sid_to_string(sid_str, psid) ));
-
-		become_root();
-		result = local_sid_to_uid(puid, psid, sidtype);
-		unbecome_root();
-		return result;
-	}
-
-	/*
-	 * Ensure this is a user sid.
-	 */
-
-	if (name_type != SID_NAME_USER) {
-		DEBUG(10,("sid_to_uid: winbind lookup succeeded but SID is not a uid (%u)\n",
-				(unsigned int)name_type ));
-		return False;
-	}
-#endif
-	*sidtype = SID_NAME_USER;
-
-	/*
-	 * Get the uid for this SID.
-	 */
-
-	if (!winbind_sid_to_uid(puid, psid)) {
-		BOOL result;
-		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed.\n",
-				sid_to_string(sid_str, psid) ));
-		become_root();
-		result = local_sid_to_uid(puid, psid, sidtype);
-		unbecome_root();
-		if (result)
-			store_uid_sid_cache(psid, *sidtype, *puid);
-		return result;
-	}
-
-	DEBUG(10,("sid_to_uid: winbindd %s -> %u\n",
-		sid_to_string(sid_str, psid),
-		(unsigned int)*puid ));
-
-	store_uid_sid_cache(psid, *sidtype, *puid);
-	return True;
-#endif
 }
 
 /*****************************************************************
@@ -972,7 +834,6 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 
 BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 {
-#ifdef WITH_IDMAP
 	unid_t id;
 	int type;
 
@@ -988,81 +849,33 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 	}
 
 	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
+		GROUP_MAP map;
 		BOOL result;
-		become_root();
-		result = local_sid_to_gid(pgid, psid, sidtype);
-		unbecome_root();
-		if (result) {
-			id.gid = *pgid;
-			DEBUG(10,("sid_to_gid: gid = [%d]\n", id.gid));
-			idmap_set_mapping(psid, id, ID_GROUPID);
+
+		if (pdb_getgrsid(&map, *psid, MAPPING_WITHOUT_PRIV)) {
+			/* the SID is in the mapping table but not mapped */
+			if (map.gid==(gid_t)-1)
+				return False;
+			
+			*pgid = map.gid;
+			*sidtype = map.sid_name_use;
 			return True;
+		} else {
+			uint32 rid;
+
+			if (!sid_peek_rid(psid, &rid)) {
+				DEBUG(0, ("sid_to_gid: Error extracting RID from SID\n!"));
+				return False;
+			}
+			if (pdb_rid_is_user(rid)) {
+				DEBUG(3, ("sid_to_gid: RID %u is *NOT* a group\n", (unsigned)rid));
+				return False;
+			}
+			*pgid = pdb_group_rid_to_gid(rid);
+			*sidtype = SID_NAME_ALIAS;	
 		}
 	}
 
 	return False;
-
-#else
-	fstring dom_name, name, sid_str;
-	enum SID_NAME_USE name_type;
-
-	*sidtype = SID_NAME_UNKNOWN;
-
-	if (fetch_gid_from_cache(pgid, psid, *sidtype))
-		return True;
-
-	/*
-	 * First we must look up the name and decide if this is a group sid.
-	 */
-
-	/* if we know its local then don't try winbindd */
-	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
-		BOOL result;
-		become_root();
-		result = local_sid_to_gid(pgid, psid, sidtype);
-		unbecome_root();
-		if (result)
-			store_gid_sid_cache(psid, *sidtype, *pgid);
-		return result;
-	}
-
-	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
-		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed.\n",
-				sid_to_string(sid_str, psid) ));
-		/* this was probably a foreign sid - assume its a group rid 
-		   and continue */
-		name_type = SID_NAME_DOM_GRP;
-	}
-
-	/*
-	 * Ensure this is a group sid.
-	 */
-
-	if ((name_type != SID_NAME_DOM_GRP) && (name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_WKN_GRP)) {
-		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a known group (%u)\n",
-				(unsigned int)name_type ));
-
-		return False;
-	}
-
-	*sidtype = name_type;
-
-	/*
-	 * Get the gid for this SID.
-	 */
-
-	if (!winbind_sid_to_gid(pgid, psid)) {
-		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed.\n",
-				sid_to_string(sid_str, psid) ));
-		return False;
-	}
-
-	DEBUG(10,("sid_to_gid: winbindd %s -> %u\n",
-		sid_to_string(sid_str, psid),
-		(unsigned int)*pgid ));
-
-	store_gid_sid_cache(psid, *sidtype, *pgid);
-	return True;
-#endif
 }
 

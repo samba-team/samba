@@ -874,6 +874,49 @@ done:
 	return (ret);	
 }
 
+#if 0
+/***************************************************************************
+ Allocates a new RID and returns it to the caller as a domain sid
+
+ NOTE: Use carefullt, do not waste RIDs they are a limited resource!
+ 							- SSS
+ ***************************************************************************/
+
+static NTSTATUS tdbsam_get_next_sid (struct pdb_methods *my_methods, DOM_SID *sid)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
+	TDB_CONTEXT 	*pwd_tdb;
+	uint32		rid;
+
+	if (sid == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
+  	if (!pwd_tdb)
+	{
+		DEBUG(0, ("tdbsam_get_next_sid: Unable to open TDB passwd (%s)!\n", tdb_state->tdbsam_location));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rid = BASE_RID;
+	if (tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &rid, 1)) {
+
+		sid_copy(sid, get_global_sam_sid());
+		if (!sid_append_rid(sid, rid)) {
+			goto done;
+		}
+		
+		ret = NT_STATUS_OK;
+	}
+
+done:
+	tdb_close (pwd_tdb);
+	return ret;
+}
+#endif
+
 /***************************************************************************
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
@@ -946,8 +989,6 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
 	}
 
-	tdb_state->algorithmic_rids = True;
-
 	(*pdb_method)->private_data = tdb_state;
 
 	(*pdb_method)->free_private_data = free_private_data;
@@ -961,6 +1002,8 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 
 		tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
 
+	} else {
+		tdb_state->algorithmic_rids = True;
 	}
 
 	return NT_STATUS_OK;
