@@ -1,5 +1,7 @@
 2001-07-03  Assar Westerlund  <assar@sics.se>
 
+	* warnerr.c (setprogname): add const cast
+	* vis.c (SVIS): add some (unsigned char) before calling isfoo*
 	* Makefile.am (libroken_la_LDFLAGS:) set version to 13:0:4
 
 	* Makefile.am: add snprintf_test
