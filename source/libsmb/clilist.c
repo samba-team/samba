@@ -30,7 +30,8 @@ The length of the structure is returned
 The structure of a long filename depends on the info level. 260 is used
 by NT and 2 is used by OS/2
 ****************************************************************************/
-static int interpret_long_filename(int level,char *p,file_info *finfo)
+static int interpret_long_filename(struct cli_state *cli,
+				   int level,char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
 
@@ -47,8 +48,10 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mtime = make_unix_date2(p+12);
 				finfo->size = IVAL(p,16);
 				finfo->mode = CVAL(p,24);
-				pstrcpy(finfo->name,p+27);
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p+27,
+					    sizeof(finfo->name),
+					    -1, 
+					    CLISTR_TERMINATE | CLISTR_CONVERT);
 			}
 			return(28 + CVAL(p,26));
 
@@ -60,8 +63,10 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mtime = make_unix_date2(p+12);
 				finfo->size = IVAL(p,16);
 				finfo->mode = CVAL(p,24);
-				pstrcpy(finfo->name,p+31);
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p+31,
+					    sizeof(finfo->name),
+					    -1, 
+					    CLISTR_TERMINATE | CLISTR_CONVERT);
 			}
 			return(32 + CVAL(p,30));
 
@@ -74,8 +79,10 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mtime = make_unix_date2(p+16);
 				finfo->size = IVAL(p,20);
 				finfo->mode = CVAL(p,28);
-				pstrcpy(finfo->name,p+33);
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p+33,
+					    sizeof(finfo->name),
+					    -1, 
+					    CLISTR_TERMINATE | CLISTR_CONVERT);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -87,8 +94,10 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mtime = make_unix_date2(p+16);
 				finfo->size = IVAL(p,20);
 				finfo->mode = CVAL(p,28);
-				pstrcpy(finfo->name,p+37);
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p+37,
+					    sizeof(finfo->name),
+					    -1, 
+					    CLISTR_TERMINATE | CLISTR_CONVERT);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -124,16 +133,15 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				p += 4; /* EA size */
 				slen = SVAL(p, 0);
 				p += 2; 
-				if (p[1] == 0 && slen > 1) {
-					/* NT has stuffed up again */
-					unistr_to_dos(finfo->short_name, p, slen/2);
-				} else {
-					strncpy(finfo->short_name, p, 12);
-					finfo->short_name[12] = 0;
-				}
+				clistr_pull(cli, finfo->short_name, p,
+					    sizeof(finfo->short_name),
+					    -1, 
+					    CLISTR_TERMINATE | CLISTR_CONVERT);
 				p += 24; /* short name? */	  
-				StrnCpy(finfo->name,p,MIN(sizeof(finfo->name)-1,namelen));
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p,
+					    sizeof(finfo->name),
+					    -1, 
+					    CLISTR_TERMINATE | CLISTR_CONVERT);
 				return(ret);
 			}
 			return(SVAL(p,0));
@@ -172,7 +180,6 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	pstring param;
 	
 	pstrcpy(mask,Mask);
-	unix_to_dos(mask,True);
 	
 	while (ff_eos == 0) {
 		loop_count++;
@@ -181,7 +188,9 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			break;
 		}
 
-		param_len = 12+strlen(mask)+1;
+		param_len = 12+clistr_push_size(cli, NULL, mask, -1, 
+						CLISTR_TERMINATE |
+						CLISTR_CONVERT);
 
 		if (First) {
 			setup = TRANSACT2_FINDFIRST;
@@ -190,7 +199,8 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,4,4+2);	/* resume required + close on end */
 			SSVAL(param,6,info_level); 
 			SIVAL(param,8,0);
-			pstrcpy(param+12,mask);
+			clistr_push(cli, param+12, mask, -1, 
+				    CLISTR_TERMINATE | CLISTR_CONVERT);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -198,10 +208,8 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,4,info_level); 
 			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
-			pstrcpy(param+12,mask);
-
-			DEBUG(5,("hand=0x%X ff_lastname=%d mask=%s\n",
-				 ff_dir_handle,ff_lastname,mask));
+			clistr_push(cli, param+12, mask, -1, 
+				    CLISTR_TERMINATE | CLISTR_CONVERT);
 		}
 
 		if (!cli_send_trans(cli, SMBtrans2, 
@@ -254,18 +262,23 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			switch(info_level)
 				{
 				case 260:
-					StrnCpy(mask,p+ff_lastname,
-						MIN(sizeof(mask)-1,data_len-ff_lastname));
+					clistr_pull(cli, mask, p+ff_lastname,
+						    sizeof(mask), 
+						    data_len-ff_lastname,
+						    CLISTR_TERMINATE |
+						    CLISTR_CONVERT);
 					break;
 				case 1:
-					pstrcpy(mask,p + ff_lastname + 1);
+					clistr_pull(cli, mask, p+ff_lastname+1,
+						    sizeof(mask), 
+						    -1,
+						    CLISTR_TERMINATE |
+						    CLISTR_CONVERT);
 					break;
 				}
 		} else {
 			pstrcpy(mask,"");
 		}
- 
-		dos_to_unix(mask, True);
  
 		/* and add them to the dirlist pool */
 		dirlist = Realloc(dirlist,dirlist_len + data_len);
@@ -278,7 +291,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		/* put in a length for the last entry, to ensure we can chain entries 
 		   into the next packet */
 		for (p2=p,i=0;i<(ff_searchcount-1);i++)
-			p2 += interpret_long_filename(info_level,p2,NULL);
+			p2 += interpret_long_filename(cli,info_level,p2,NULL);
 		SSVAL(p2,0,data_len - PTR_DIFF(p2,p));
 
 		/* grab the data for later use */
@@ -299,7 +312,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	}
 
 	for (p=dirlist,i=0;i<total_received;i++) {
-		p += interpret_long_filename(info_level,p,&finfo);
+		p += interpret_long_filename(cli,info_level,p,&finfo);
 		fn(&finfo, Mask, state);
 	}
 

@@ -48,6 +48,7 @@ int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int 
 	}
 
 	if (clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
+		*(char *)dest = 0;
 		dest++;
 		dest_len--;
 	}
@@ -90,7 +91,7 @@ int clistr_push_size(struct cli_state *cli, void *dest, char *src, int dest_len,
 	if (flags & CLISTR_TERMINATE) len++;
 	if (cli_use_unicode && (cli->capabilities & CAP_UNICODE)) len *= 2;
 
-	if (clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
+	if (dest && clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
 		len++;
 	}
 
