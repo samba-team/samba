@@ -578,7 +578,7 @@ BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int di
 	return True;
 }
 
-static BOOL mangle_mask_match(connection_struct *conn, char *filename, char *mask)
+static BOOL mangle_mask_match(connection_struct *conn, fstring filename, char *mask)
 {
 	mangle_map(filename,True,False,SNUM(conn));
 	return mask_match(filename,mask,False);
@@ -588,10 +588,10 @@ static BOOL mangle_mask_match(connection_struct *conn, char *filename, char *mas
  Get an 8.3 directory entry.
 ****************************************************************************/
 
-BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
+BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname,
                    SMB_OFF_T *size,int *mode,time_t *date,BOOL check_descend)
 {
-	char *dname;
+	const char *dname;
 	BOOL found = False;
 	SMB_STRUCT_STAT sbuf;
 	pstring path;
@@ -907,7 +907,7 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 			dirp->current = dirp->data;
 		}
 
-		safe_strcpy(dirp->data+used,n, dirp->mallocsize - used - 1);
+		safe_strcpy_base(dirp->data+used,n, dirp->data, dirp->mallocsize);
 		used += l;
 		dirp->numentries++;
 	}
@@ -933,7 +933,7 @@ void CloseDir(void *p)
  Read from a directory.
 ********************************************************************/
 
-char *ReadDirName(void *p)
+const char *ReadDirName(void *p)
 {
 	char *ret;
 	Dir *dirp = (Dir *)p;
@@ -1008,7 +1008,7 @@ static ubi_dlNewList( dir_cache );
  Output: None.
 *****************************************************************************/
 
-void DirCacheAdd( const char *path, char *name, char *dname, int snum )
+void DirCacheAdd( const char *path, const char *name, const char *dname, int snum )
 {
 	int pathlen;
 	int namelen;

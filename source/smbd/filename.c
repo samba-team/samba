@@ -39,7 +39,7 @@ static BOOL scan_directory(const char *path, char *name,size_t maxlength,
  This needs to be careful about whether we are case sensitive.
 ****************************************************************************/
 
-static BOOL fname_equal(char *name1, char *name2)
+static BOOL fname_equal(const char *name1, const char *name2)
 {
 	/* Normal filename handling */
 	if (case_sensitive)
@@ -52,7 +52,7 @@ static BOOL fname_equal(char *name1, char *name2)
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
 
-static BOOL mangled_equal(char *name1, const char *name2, int snum)
+static BOOL mangled_equal(const char *name1, const char *name2, int snum)
 {
 	pstring tmpname;
 	
@@ -439,7 +439,7 @@ static BOOL scan_directory(const char *path, char *name, size_t maxlength,
 			   connection_struct *conn,BOOL docache)
 {
 	void *cur_dir;
-	char *dname;
+	const char *dname;
 	BOOL mangled;
 
 	mangled = mangle_is_mangled(name);

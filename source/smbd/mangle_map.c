@@ -201,7 +201,7 @@ static void mangled_map(char *s, const char *MangledMap)
   front end routine to the mangled map code 
   personally I think that the whole idea of "mangled map" is completely bogus
 */
-void mangle_map_filename(char *fname, int snum)
+void mangle_map_filename(fstring fname, int snum)
 {
 	char *map;
 

@@ -460,7 +460,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 BOOL *out_of_space, BOOL *got_exact_match,
 				 int *last_name_off)
 {
-	char *dname;
+	const char *dname;
 	BOOL found = False;
 	SMB_STRUCT_STAT sbuf;
 	pstring mask;
@@ -1173,7 +1173,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		 */
 
 		int current_pos, start_pos;
-		char *dname = NULL;
+		const char *dname = NULL;
+		pstring dname_pstring;
 		void *dirptr = conn->dirptr;
 		start_pos = TellDir(dirptr);
 		for(current_pos = start_pos; current_pos >= 0; current_pos--) {
@@ -1181,7 +1182,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
 			SeekDir(dirptr, current_pos);
 			dname = ReadDirName(dirptr);
-
+			if (dname) {
 			/*
 			 * Remember, mangle_map is called by
 			 * get_lanman2_dir_entry(), so the resume name
@@ -1189,14 +1190,17 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			 * here.
 			 */
 
-			if(dname != NULL)
-				mangle_map( dname, False, True, SNUM(conn));
+				/* make sure we get a copy that mangle_map can modify */
 
-			if(dname && strcsequal( resume_name, dname)) {
+				pstrcpy(dname_pstring, dname);
+				mangle_map( dname_pstring, False, True, SNUM(conn));
+
+				if(strcsequal( resume_name, dname_pstring)) {
 				SeekDir(dirptr, current_pos+1);
 				DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
 				break;
 			}
+		}
 		}
 
 		/*
@@ -1215,13 +1219,17 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 				 * here.
 				 */
 
-				if(dname != NULL)
-					mangle_map( dname, False, True, SNUM(conn));
+				if(dname) {
+					/* make sure we get a copy that mangle_map can modify */
 
-				if(dname && strcsequal( resume_name, dname)) {
+					pstrcpy(dname_pstring, dname);
+					mangle_map(dname_pstring, False, True, SNUM(conn));
+
+					if(strcsequal( resume_name, dname_pstring)) {
 					SeekDir(dirptr, current_pos+1);
 					DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
 					break;
+				}
 				}
 			} /* end for */
 		} /* end if current_pos */
@@ -1268,7 +1276,6 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
 		dptr_close(&dptr_num); /* This frees up the saved mask */
 	}
-
 
 	/* Set up the return parameter block */
 	SSVAL(params,0,numentries);
