@@ -5,6 +5,9 @@ include $(top_srcdir)/Makefile.am.common
 if OTP
 dir_otp = otp
 endif
+if DCE
+dir_dce = dceutil
+endif
 SUBDIRS = 					\
 	  afsutil				\
 	  ftp					\
@@ -19,4 +22,4 @@ SUBDIRS = 					\
 	  test					\
 	  kx					\
 	  kf					\
-	  $(APPL_dce)
+	  $(dir_dce)

@@ -8,6 +8,9 @@ endif
 if OTP
 dir_otp = otp
 endif
+if DCE
+dir_dce = kdfs
+endif
 
 SUBDIRS = @DIR_roken@ vers editline com_err sl asn1 des krb5 \
-	kafs hdb kadm5 gssapi auth $(dir_45) $(dir_otp) $(LIB_dce)
+	kafs hdb kadm5 gssapi auth $(dir_45) $(dir_otp) $(dir_dce)
