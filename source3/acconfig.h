@@ -5,6 +5,7 @@
 #undef HAVE_REMSH
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF
+#undef ssize_t
 #undef ino_t
 #undef ssize_t
 #undef HAVE_CONNECT
@@ -38,6 +39,7 @@
 #undef STAT_STATFS3_OSF1
 #undef STAT_STATFS4
 #undef STAT_STATVFS
+#undef STAT_STATVFS64
 #undef HAVE_NETMASK_IFREQ
 #undef HAVE_NETMASK_AIX
 #undef HAVE_CRYPT

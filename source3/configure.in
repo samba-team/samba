@@ -39,9 +39,9 @@ AC_CHECK_HEADERS(shadow.h netinet/tcp.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h)
 
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(int,cross)
+AC_CHECK_SIZEOF(long,cross)
+AC_CHECK_SIZEOF(short,cross)
 
 AC_C_CONST
 AC_C_INLINE
@@ -58,46 +58,39 @@ AC_STRUCT_ST_RDEV
 AC_CHECK_TYPE(ino_t,unsigned)
 AC_CHECK_TYPE(ssize_t, int)
 
-echo $ac_n "checking for errno in errno.h... $ac_c"
-AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
-echo yes; AC_DEFINE(HAVE_ERRNO_DECL),
-echo no)
+AC_CACHE_CHECK([for errno in errno.h],samba_cv_errno, [
+    AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
+	samba_cv_errno=yes,samba_cv_have_errno_decl=no)])
+if test x"$samba_cv_errno" = x"yes"; then
+   AC_DEFINE(HAVE_ERRNO_DECL)
+fi
 
 # stupid glibc has the functions but no declaration. grrrr.
-echo $ac_n "checking for setresuid declaration $ac_c"
-AC_TRY_COMPILE([#include <unistd.h>],[int i = setresuid],
-echo yes; AC_DEFINE(HAVE_SETRESUID_DECL),
-echo no)
+AC_CACHE_CHECK([for setresuid declaration],samba_cv_have_setresuid_decl,[
+    AC_TRY_COMPILE([#include <unistd.h>],[int i = setresuid],
+        samba_cv_have_setresuid_decl=yes,samba_cv_have_setresuid_decl=no)])
+if test x"$samba_cv_have_setresuid_decl" = x"yes"; then
+    AC_DEFINE(HAVE_SETRESUID_DECL)
+fi
 
 # and glibc has setresuid under linux but the function does
 # nothing until kernel 2.1.44! very dumb.
-echo $ac_n "checking for real setresuid $ac_c"
-AC_TRY_RUN([#include <errno.h>
+AC_CACHE_CHECK([for real setresuid],samba_cv_have_setresuid,[
+    AC_TRY_RUN([#include <errno.h>
 main() { setresuid(1,1,1); setresuid(2,2,2); exit(errno==EPERM?0:1);}],
-echo yes;AC_DEFINE(HAVE_SETRESUID), 
-echo no)
-
+	samba_cv_have_setresuid=yes,samba_cv_have_setresuid=no,samba_cv_have_setresuid=cross)])
+if test x"$samba_cv_have_setresuid" = x"yes"; then
+    AC_DEFINE(HAVE_SETRESUID)
+fi
 
 AC_FUNC_MEMCMP
 
 ###############################################
 # test for where we get crypt() from
-if test "$ac_cv_lib_crypt_crypt" = "yes"; then
-  AC_CHECK_LIB(crypt, crypt)
-  AC_DEFINE(HAVE_CRYPT)
-fi
-if test "$ac_cv_lib_crypt_crypt" = "no" || 
-   test "$ac_cv_lib_crypt_crypt" = ""; then
-# look for crypt 
-AC_CHECK_FUNC(crypt, AC_DEFINE(HAVE_CRYPT), 
-[case "$LIBS" in
-*-lcrypt*) ;;
-*) AC_CHECK_LIB(crypt, crypt) ;;
-esac
-if test "$ac_cv_lib_crypt_crypt" = "yes"; then
-  ac_cv_func_crypt=yes
-  AC_DEFINE(HAVE_CRYPT)
-fi])
+AC_CHECK_FUNCS(crypt)
+if test x"$ac_cv_func_crypt" = x"no"; then
+    AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt";
+	AC_DEFINE(HAVE_CRYPT)])
 fi
 
 
@@ -105,25 +98,14 @@ fi
 # test for where we get pam_authenticate() from
 # might need libdl for this to work
 if test "$ac_cv_header_security_pam_appl_h" = "yes"; then
-  AC_HAVE_LIBRARY(dl)
+  AC_CHECK_LIB(dl,main)
 fi
-if test "$ac_cv_lib_pam_pam_authenticate" = "yes"; then
-  AC_CHECK_LIB(pam, pam_authenticate)
-  AC_DEFINE(HAVE_PAM_AUTHENTICATE)
+AC_CHECK_FUNCS(pam_authenticate)
+if test x"$ac_cv_func_pam_authenticate" = x"no"; then
+    AC_CHECK_LIB(pam, pam_authenticate, [LIBS="$LIBS -lpam"
+	AC_DEFINE(HAVE_PAM_AUTHENTICATE)])
 fi
-if test "$ac_cv_lib_pam_pam_authenticate" = "no" || 
-   test "$ac_cv_lib_pam_pam_authenticate" = ""; then
-# look for pam_authenticate
-AC_CHECK_FUNC(pam_authenticate, AC_DEFINE(HAVE_PAM_AUTHENTICATE), 
-[case "$LIBS" in
-*-lpam*) ;;
-*) AC_CHECK_LIB(pam, pam_authenticate) ;;
-esac
-if test "$ac_cv_lib_pam_pam_authenticate" = "yes"; then
-  ac_cv_func_pam_authenticate=yes
-  AC_DEFINE(HAVE_PAM_AUTHENTICATE)
-fi])
-fi
+
 
 ###############################################
 # test for where we get readline() from
@@ -132,36 +114,40 @@ if test "$ac_cv_header_readline_h" = "yes" ||
   AC_CHECK_LIB(readline,readline)
 fi
 
+
 # The following test taken from the cvs sources
 # If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
 # The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
 # libsocket.so which has a bad implementation of gethostbyname (it
 # only looks in /etc/hosts), so we only look for -lsocket if we need
 # it.
-AC_CHECK_FUNC(connect, :, 
-[case "$LIBS" in
-*-lnsl*) ;;
-*) AC_CHECK_LIB(nsl_s, printf) ;;
-esac
-case "$LIBS" in
-*-lnsl*) ;;
-*) AC_CHECK_LIB(nsl, printf) ;;
-esac
-case "$LIBS" in
-*-lsocket*) ;;
-*) AC_CHECK_LIB(socket, connect) ;;
-esac
-case "$LIBS" in
-*-linet*) ;;
-*) AC_CHECK_LIB(inet, connect) ;;
-esac
-dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
-dnl has been cached.
-if test "$ac_cv_lib_socket_connect" = "yes" || 
-   test "$ac_cv_lib_inet_connect" = "yes"; then
-  ac_cv_func_connect=yes
-  AC_DEFINE(HAVE_CONNECT)
-fi])
+AC_CHECK_FUNCS(connect)
+if test x"$ac_cv_func_connect" = x"no"; then
+    case "$LIBS" in
+    *-lnsl*) ;;
+    *) AC_CHECK_LIB(nsl_s, printf) ;;
+    esac
+    case "$LIBS" in
+    *-lnsl*) ;;
+    *) AC_CHECK_LIB(nsl, printf) ;;
+    esac
+    case "$LIBS" in
+    *-lsocket*) ;;
+    *) AC_CHECK_LIB(socket, connect) ;;
+    esac
+    case "$LIBS" in
+    *-linet*) ;;
+    *) AC_CHECK_LIB(inet, connect) ;;
+    esac
+    dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
+    dnl has been cached.
+    if test x"$ac_cv_lib_socket_connect" = x"yes" || 
+       test x"$ac_cv_lib_inet_connect" = x"yes"; then
+        # ac_cv_func_connect=yes
+        # don't!  it would cause AC_CHECK_FUNC to succeed next time configure is run
+        AC_DEFINE(HAVE_CONNECT)
+    fi
+fi
 
 
 AC_CHECK_FUNCS(waitpid getcwd strdup strerror chown chmod chroot)
@@ -173,116 +159,147 @@ AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64)
 AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
 
-echo $ac_n "checking for long long ... $ac_c"
+AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
 AC_TRY_RUN([#include <stdio.h>
 main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }],
-echo yes;AC_DEFINE(HAVE_LONGLONG), 
-echo no)
+samba_cv_have_longlong=yes,samba_cv_have_longlong=no,samba_cv_have_longlong=cross)])
+if test x"$samba_cv_have_longlong" = x"yes"; then
+    AC_DEFINE(HAVE_LONGLONG)
+fi
 
-echo $ac_n "checking for 64 bit off_t ... $ac_c"
+AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
 main() { exit((sizeof(off_t) == 8) ? 0 : 1); }],
-echo yes;AC_DEFINE(SIZEOF_OFF_T,8),
-echo no)
+samba_cv_SIZEOF_OFF_T=yes,samba_cv_SIZEOF_OFF_T=no,samba_cv_SIZEOF_OFF_T=cross)])
+if test x"$samba_cv_SIZEOF_OFF_T" = x"yes"; then
+    AC_DEFINE(SIZEOF_OFF_T,8)
+fi
 
-echo $ac_n "checking for off64_t ... $ac_c"
+AC_CACHE_CHECK([for off64_t],samba_cv_HAVE_OFF64_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
 main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
-echo yes;AC_DEFINE(HAVE_OFF64_T), 
-echo no)
+samba_cv_HAVE_OFF64_T=yes,samba_cv_HAVE_OFF64_T=no,samba_cv_HAVE_OFF64_T=cross)])
+if test x"$samba_cv_HAVE_OFF64_T" = x"yes"; then
+    AC_DEFINE(HAVE_OFF64_T)
+fi
 
-echo $ac_n "checking for 64 bit ino_t ... $ac_c"
+AC_CACHE_CHECK([for 64 bit ino_t],samba_cv_SIZEOF_INO_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
 main() { exit((sizeof(ino_t) == 8) ? 0 : 1); }],
-echo yes;AC_DEFINE(SIZEOF_INO_T,8),
-echo no)
+samba_cv_SIZEOF_INO_T=yes,samba_cv_SIZEOF_INO_T=no,samba_cv_SIZEOF_INO_T=cross)])
+if test x"$samba_cv_SIZEOF_INO_T" = x"yes"; then
+    AC_DEFINE(SIZEOF_INO_T,8)
+fi
 
-echo $ac_n "checking for ino64_t ... $ac_c"
+AC_CACHE_CHECK([for ino64_t],samba_cv_HAVE_INO64_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
 main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
-echo yes;AC_DEFINE(HAVE_INO64_T), 
-echo no)
+samba_cv_HAVE_INO64_T=yes,samba_cv_HAVE_INO64_T=no,samba_cv_HAVE_INO64_T=cross)])
+if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
+    AC_DEFINE(HAVE_INO64_T)
+fi
 
-echo $ac_n "checking for union semun ... $ac_c"
+AC_CACHE_CHECK([for union semun],samba_cv_HAVE_UNION_SEMUN,[
 AC_TRY_RUN([
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 main() { union semun ss; exit(0); }],
-echo yes;AC_DEFINE(HAVE_UNION_SEMUN), 
-echo no)
+samba_cv_HAVE_UNION_SEMUN=yes,samba_cv_HAVE_UNION_SEMUN=no,samba_cv_HAVE_UNION_SEMUN=cross)])
+if test x"$samba_cv_HAVE_UNION_SEMUN" = x"yes"; then
+    AC_DEFINE(HAVE_UNION_SEMUN)
+fi
 
-echo $ac_n "checking for unsigned char ... $ac_c"
+AC_CACHE_CHECK([for unsigned char],samba_cv_HAVE_UNSIGNED_CHAR,[
 AC_TRY_RUN([#include <stdio.h>
 main() { char c; c=250; exit((c > 0)?0:1); }],
-echo yes;AC_DEFINE(HAVE_UNSIGNED_CHAR), 
-echo no)
+samba_cv_HAVE_UNSIGNED_CHAR=yes,samba_cv_HAVE_UNSIGNED_CHAR=no,samba_cv_HAVE_UNSIGNED_CHAR=cross)])
+if test x"$samba_cv_HAVE_UNSIGNED_CHAR" = x"yes"; then
+    AC_DEFINE(HAVE_UNSIGNED_CHAR)
+fi
 
-echo $ac_n "checking for sin_len in sock ... $ac_c"
+AC_CACHE_CHECK([for sin_len in sock],samba_cv_HAVE_SOCK_SIN_LEN,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>],
 [struct sockaddr_in sock; sock.sin_len = sizeof(sock);],
-echo yes;AC_DEFINE(HAVE_SOCK_SIN_LEN), 
-echo no)
+samba_cv_HAVE_SOCK_SIN_LEN=yes,samba_cv_HAVE_SOCK_SIN_LEN=no)])
+if test x"$samba_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
+    AC_DEFINE(HAVE_SOCK_SIN_LEN)
+fi
 
-echo $ac_n "checking for __FILE__ macro ... $ac_c"
+AC_CACHE_CHECK([for __FILE__ macro],samba_cv_HAVE_FILE_MACRO,[
 AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FILE__);],
-echo yes;AC_DEFINE(HAVE_FILE_MACRO), 
-echo no)
+samba_cv_HAVE_FILE_MACRO=yes,samba_cv_HAVE_FILE_MACRO=no)])
+if test x"$samba_cv_HAVE_FILE_MACRO" = x"yes"; then
+    AC_DEFINE(HAVE_FILE_MACRO)
+fi
 
-echo $ac_n "checking for __FUNCTION__ macro ... $ac_c"
+AC_CACHE_CHECK([for __FUNCTION__ macro],samba_cv_HAVE_FUNCTION_MACRO,[
 AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FUNCTION__);],
-echo yes;AC_DEFINE(HAVE_FUNCTION_MACRO), 
-echo no)
+samba_cv_HAVE_FUNCTION_MACRO=yes,samba_cv_HAVE_FUNCTION_MACRO=no)])
+if test x"$samba_cv_HAVE_FUNCTION_MACRO" = x"yes"; then
+    AC_DEFINE(HAVE_FUNCTION_MACRO)
+fi
 
-echo $ac_n "checking if gettimeofday takes tz argument ... $ac_c"
+AC_CACHE_CHECK([if gettimeofday takes tz argument],samba_cv_HAVE_GETTIMEOFDAY_TZ,[
 AC_TRY_RUN([
 #include <sys/time.h>
 #include <unistd.h>
 main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}],
-           echo yes;AC_DEFINE(HAVE_GETTIMEOFDAY_TZ),
-	   echo no)
+           samba_cv_HAVE_GETTIMEOFDAY_TZ=yes,samba_cv_HAVE_GETTIMEOFDAY_TZ=no,samba_cv_HAVE_GETTIMEOFDAY_TZ=cross)])
+if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
+    AC_DEFINE(HAVE_GETTIMEOFDAY_TZ)
+fi
 
 
-echo $ac_n "checking for broken readdir ... $ac_c"
+AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
 AC_TRY_RUN([#include <sys/types.h>
 #include <dirent.h>
 main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
 if (di && di->d_name[-2] == '.' && di->d_name[-1] == 0 &&
 di->d_name[0] == 0) exit(0); exit(1);} ],
-echo yes - you are using the broken /usr/ucb/cc;AC_DEFINE(HAVE_BROKEN_READDIR), 
-echo no)
+samba_cv_HAVE_BROKEN_READDIR=yes,samba_cv_HAVE_BROKEN_READDIR=no,samba_cv_HAVE_BROKEN_READDIR=cross)])
+if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
+    AC_DEFINE(HAVE_BROKEN_READDIR)
+fi
 
-echo $ac_n "checking for utimbuf ... $ac_c"
+AC_CACHE_CHECK([for utimbuf],samba_cv_HAVE_UTIMBUF,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <utime.h>],
 [struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; exit(utime("foo.c",&tbuf));],
-echo yes;AC_DEFINE(HAVE_UTIMBUF), 
-echo no)
+samba_cv_HAVE_UTIMBUF=yes,samba_cv_HAVE_UTIMBUF=no,samba_cv_HAVE_UTIMBUF=cross)])
+if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
+    AC_DEFINE(HAVE_UTIMBUF)
+fi
 
 
-echo $ac_n "checking for test routines ... $ac_c"
-AC_TRY_RUN([#include "tests/trivial.c"],
-           echo yes;,
-	   echo ERROR - cant find test code. Aborting config; exit 1)
+AC_MSG_CHECKING([for test routines])
+AC_TRY_RUN([#include "${srcdir-.}/tests/trivial.c"],
+           AC_MSG_RESULT(yes),
+	   AC_MSG_ERROR([cant find test code. Aborting config]),
+	   AC_MSG_WARN([cannot run when cross-compiling]))
 
-echo $ac_n "checking for ftruncate extend ... $ac_c"
-AC_TRY_RUN([#include "tests/ftruncate.c"],
-           echo yes;AC_DEFINE(HAVE_FTRUNCATE_EXTEND), 
-	   echo no)
+AC_CACHE_CHECK([for ftruncate extend],samba_cv_HAVE_FTRUNCATE_EXTEND,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/ftruncate.c"],
+           samba_cv_HAVE_FTRUNCATE_EXTEND=yes,samba_cv_HAVE_FTRUNCATE_EXTEND=no,samba_cv_HAVE_FTRUNCATE_EXTEND=cross)])
+if test x"$samba_cv_HAVE_FTRUNCATE_EXTEND" = x"yes"; then
+    AC_DEFINE(HAVE_FTRUNCATE_EXTEND)
+fi
 
-echo $ac_n "checking for broken getgroups ... $ac_c"
-AC_TRY_RUN([#include "tests/getgroups.c"],
-           echo yes;AC_DEFINE(HAVE_BROKEN_GETGROUPS), 
-	   echo no)
+AC_CACHE_CHECK([for broken getgroups],samba_cv_HAVE_BROKEN_GETGROUPS,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/getgroups.c"],
+           samba_cv_HAVE_BROKEN_GETGROUPS=yes,samba_cv_HAVE_BROKEN_GETGROUPS=no,samba_cv_HAVE_BROKEN_GETGROUPS=cross)])
+if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
+    AC_DEFINE(HAVE_BROKEN_GETGROUPS)
+fi
 
 
-echo $ac_n "checking for broken inet_ntoa ... $ac_c"
+AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
 #include <stdio.h>
 #include <sys/types.h>
@@ -292,59 +309,77 @@ main() { struct in_addr ip; ip.s_addr = 0x12345678;
 if (strcmp(inet_ntoa(ip),"18.52.86.120") &&
     strcmp(inet_ntoa(ip),"120.86.52.18")) { exit(0); } 
 exit(1);}],
-           echo yes;AC_DEFINE(REPLACE_INET_NTOA), 
-	   echo no)
+           samba_cv_REPLACE_INET_NTOA=yes,samba_cv_REPLACE_INET_NTOA=no,samba_cv_REPLACE_INET_NTOA=cross)])
+if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
+    AC_DEFINE(REPLACE_INET_NTOA)
+fi
 
-echo $ac_n "checking for root ... $ac_c"
+AC_CACHE_CHECK([for root],samba_cv_HAVE_ROOT,[
 AC_TRY_RUN([main() { exit(getuid() != 0); }],
-           echo yes;AC_DEFINE(HAVE_ROOT), 
-	   echo WARNING: running as non-root will disable some tests;)
+           samba_cv_HAVE_ROOT=yes,samba_cv_HAVE_ROOT=no,samba_cv_HAVE_ROOT=cross)])
+if test x"$samba_cv_HAVE_ROOT" = x"yes"; then
+    AC_DEFINE(HAVE_ROOT)
+else
+    AC_MSG_WARN(running as non-root will disable some tests)
+fi
 
 netmask=no;
-echo $ac_n "checking for netmask ifconf ... $ac_c"
+AC_CACHE_CHECK([for netmask ifconf],samba_cv_HAVE_NETMASK_IFCONF,[
 AC_TRY_RUN([
 #define HAVE_NETMASK_IFCONF 1
 #define AUTOCONF 1
-#include "lib/netmask.c"],
-           echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_IFCONF),
-	   echo no)
+#include "${srcdir-.}/lib/netmask.c"],
+           samba_cv_HAVE_NETMASK_IFCONF=yes,samba_cv_HAVE_NETMASK_IFCONF=no,samba_cv_HAVE_NETMASK_IFCONF=cross)])
+if test x"$samba_cv_HAVE_NETMASK_IFCONF" = x"yes"; then
+    netmask=yes;AC_DEFINE(HAVE_NETMASK_IFCONF)
+fi
 
 if test $netmask = no; then
-echo $ac_n "checking for netmask ifreq ... $ac_c"
+AC_CACHE_CHECK([for netmask ifreq],samba_cv_HAVE_NETMASK_IFREQ,[
 AC_TRY_RUN([
 #define HAVE_NETMASK_IFREQ 1
 #define AUTOCONF 1
-#include "lib/netmask.c"],
-           echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_IFREQ),
-	   echo no)
+#include "${srcdir-.}/lib/netmask.c"],
+           samba_cv_HAVE_NETMASK_IFREQ=yes,samba_cv_HAVE_NETMASK_IFREQ=no,samba_cv_HAVE_NETMASK_IFREQ=cross)])
+if test x"$samba_cv_HAVE_NETMASK_IFREQ" = x"yes"; then
+    netmask=yes;AC_DEFINE(HAVE_NETMASK_IFREQ)
+fi
 fi
 
 if test $netmask = no; then
-echo $ac_n "checking for netmask AIX ... $ac_c"
+AC_CACHE_CHECK([for netmask AIX],samba_cv_HAVE_NETMASK_AIX,[
 AC_TRY_RUN([
 #define HAVE_NETMASK_AIX 1
 #define AUTOCONF 1
-#include "lib/netmask.c"],
-           echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_AIX),
-	   echo no)
+#include "${srcdir-.}/lib/netmask.c"],
+           samba_cv_HAVE_NETMASK_AIX=yes,samba_cv_HAVE_NETMASK_AIX=no,samba_cv_HAVE_NETMASK_AIX=cross)])
+if test x"$samba_cv_HAVE_NETMASK_AIX" = x"yes"; then
+    netmask=yes;AC_DEFINE(HAVE_NETMASK_AIX)
+fi
 fi
 
-echo $ac_n "checking for trapdoor seteuid ... $ac_c"
-AC_TRY_RUN([#include "tests/trapdoor.c"],
-	   echo no,
-           echo yes;AC_DEFINE(HAVE_TRAPDOOR_UID))
+AC_CACHE_CHECK([for trapdoor seteuid],samba_cv_HAVE_TRAPDOOR_UID,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/trapdoor.c"],
+	   samba_cv_HAVE_TRAPDOOR_UID=no,samba_cv_HAVE_TRAPDOOR_UID=yes,:)])
+if test x"$samba_cv_HAVE_TRAPDOOR_UID" = x"yes"; then
+    AC_DEFINE(HAVE_TRAPDOOR_UID)
+fi
 
-echo $ac_n "checking for shared mmap ... $ac_c"
-AC_TRY_RUN([#include "tests/shared_mmap.c"],
-           echo yes;AC_DEFINE(HAVE_SHARED_MMAP), 
-	   echo no)
+AC_CACHE_CHECK([for shared mmap],samba_cv_HAVE_SHARED_MMAP,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
+           samba_cv_HAVE_SHARED_MMAP=yes,samba_cv_HAVE_SHARED_MMAP=no,samba_cv_HAVE_SHARED_MMAP=cross)])
+if test x"$samba_cv_HAVE_SHARED_MMAP" = x"yes"; then
+    AC_DEFINE(HAVE_SHARED_MMAP)
+fi
 
-echo $ac_n "checking for fcntl locking ... $ac_c"
-AC_TRY_RUN([#include "tests/fcntl_lock.c"],
-           echo yes;AC_DEFINE(HAVE_FCNTL_LOCK), 
-	   echo no)
+AC_CACHE_CHECK([for fcntl locking],samba_cv_HAVE_FCNTL_LOCK,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock.c"],
+           samba_cv_HAVE_FCNTL_LOCK=yes,samba_cv_HAVE_FCNTL_LOCK=no,samba_cv_HAVE_FCNTL_LOCK=cross)])
+if test x"$samba_cv_HAVE_FCNTL_LOCK" = x"yes"; then
+    AC_DEFINE(HAVE_FCNTL_LOCK)
+fi
 
-echo $ac_n "checking for 64 bit fcntl locking ... $ac_c"
+AC_CACHE_CHECK([for 64 bit fcntl locking],samba_cv_HAVE_STRUCT_FLOCK64,[
 AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
@@ -363,13 +398,17 @@ exit(0);
 exit(1);
 #endif
 }],
-       echo yes;AC_DEFINE(HAVE_STRUCT_FLOCK64),
-       echo no)
+       samba_cv_HAVE_STRUCT_FLOCK64=yes,samba_cv_HAVE_STRUCT_FLOCK64=no,samba_cv_HAVE_STRUCT_FLOCK64=cross)])
+if test x"$samba_cv_HAVE_STRUCT_FLOCK64" = x"yes"; then
+    AC_DEFINE(HAVE_STRUCT_FLOCK64)
+fi
 
-echo $ac_n "checking for sysv ipc ... $ac_c"
-AC_TRY_RUN([#include "tests/sysv_ipc.c"],
-           echo yes;AC_DEFINE(HAVE_SYSV_IPC), 
-	   echo no)
+AC_CACHE_CHECK([for sysv ipc],samba_cv_HAVE_SYSV_IPC,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/sysv_ipc.c"],
+           samba_cv_HAVE_SYSV_IPC=yes,samba_cv_HAVE_SYSV_IPC=no,samba_cv_HAVE_SYSV_IPC=cross)])
+if test x"$samba_cv_HAVE_SYSV_IPC" = x"yes"; then
+    AC_DEFINE(HAVE_SYSV_IPC)
+fi
 
 #################################################
 # check for the AFS filesystem
@@ -571,7 +610,8 @@ if test $space = no; then
     exit (statfs64 (".", &fsd));
   }],
   fu_cv_sys_stat_statvfs64=yes,
-  fu_cv_sys_stat_statvfs64=no)])
+  fu_cv_sys_stat_statvfs64=no,
+  fu_cv_sys_stat_statvfs64=cross)])
   if test $fu_cv_sys_stat_statvfs64 = yes; then
     space=yes
     AC_DEFINE(STAT_STATVFS64)
@@ -734,12 +774,13 @@ if test $space = no; then
 fi
 
 echo "checking configure summary"
-AC_TRY_RUN([#include "tests/summary.c"],
+AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
-	   echo ERROR - summary failure. Aborting config; exit 1)
+	   AC_MSG_ERROR([summary failure. Aborting config]),:)
 
 
 AC_OUTPUT(Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
 web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
-rpc_parse/dummy script/dummy include/dummy codepages/dummy
-libsmb/dummy bin/dummy printing/dummy)
+rpc_client/dummy rpc_parse/dummy locking/dummy passdb/dummy
+script/dummy include/dummy codepages/dummy libsmb/dummy bin/dummy
+utils/dummy printing/dummy include/stamp-h)
