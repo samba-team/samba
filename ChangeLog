@@ -1,3 +1,9 @@
+2003-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/changepw.c: draft-ietf-cat-kerb-chg-password-02 and
+	rfc3244 share the response packet sure more constants now that
+	they exists
+
 2003-05-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.h: some define for rfc3244
