@@ -1694,14 +1694,25 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
     case SMB_SET_FILE_BASIC_INFO:
     {
+      /* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
+      time_t write_time;
+      time_t changed_time;
+
       /* Ignore create time at offset pdata. */
 
       /* access time */
       tvs.actime = interpret_long_date(pdata+8);
 
-      /* write time + changed time, combined. */
-      tvs.modtime=MIN(interpret_long_date(pdata+16),
-                      interpret_long_date(pdata+24));
+      write_time = interpret_long_date(pdata+16);
+      changed_time = interpret_long_date(pdata+24);
+
+      tvs.modtime = MAX(write_time, changed_time);
+
+      /* Prefer a defined time to an undefined one. */
+      if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
+       tvs.modtime = (write_time == (time_t)0 || write_time == (time_t)-1
+                      ? changed_time
+                      : write_time);
 
 #if 0 /* Needs more testing... */
       /* Test from Luke to prevent Win95 from
