@@ -494,11 +494,25 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
       if (*dname == '.' && (strequal(dname,".") || strequal(dname,"..")))
         continue;
 
+      /*
+       * dname here is the unmangled name.
+       */
       pstrcpy(name2,dname);
       if (!name_map_mangle(name2,False,True,SNUM(conn)))
         continue;
 
-      if ((mangled && mangled_equal(name,name2)) || fname_equal(name, name2)) {
+      /*
+       * At this point name2 is the mangled name, dname is the unmangled name.
+       * name is either mangled or not, depending on the state of the "mangled"
+       * variable. JRA.
+       */
+
+      /*
+       * Check mangled name against mangled name, or unmangled name
+       * against unmangled name.
+       */
+
+      if ((mangled && mangled_equal(name,name2)) || fname_equal(name, dname)) {
         /* we've found the file, change it's name and return */
         if (docache)
           DirCacheAdd(path,name,dname,SNUM(conn));
