@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -89,8 +89,11 @@ krb5_kt_resolve(krb5_context context,
 	if(strncmp(type, context->kt_types[i].prefix, type_len) == 0)
 	    break;
     }
-    if(i == context->num_kt_types)
+    if(i == context->num_kt_types) {
+	krb5_set_error_string(context, "unknown keytype type %.*s", 
+			      (int)type_len, type);
 	return KRB5_KT_UNKNOWN_TYPE;
+    }
     
     k = malloc (sizeof(*k));
     if (k == NULL)
@@ -115,6 +118,19 @@ krb5_error_code
 krb5_kt_default_name(krb5_context context, char *name, size_t namesize)
 {
     if (strlcpy (name, context->default_keytab, namesize) >= namesize)
+	return KRB5_CONFIG_NOTENUFSPACE;
+    return 0;
+}
+
+/*
+ * copy the name of the default modify keytab into `name'.
+ * Return 0 or KRB5_CONFIG_NOTENUFSPACE if `namesize' is too short.
+ */
+
+krb5_error_code
+krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
+{
+    if (strlcpy (name, context->default_keytab_modify, namesize) >= namesize)
 	return KRB5_CONFIG_NOTENUFSPACE;
     return 0;
 }
