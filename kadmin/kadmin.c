@@ -183,8 +183,10 @@ main(int argc, char **argv)
 	conf.mask |= KADM5_CONFIG_REALM;
     }
 
-    conf.admin_server = admin_server;
-    conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
+    if (admin_server) {
+	conf.admin_server = admin_server;
+	conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
+    }
 
     if(local_flag){
 	ret = kadm5_s_init_with_password_ctx(context, 
