@@ -37,7 +37,8 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	if (argc > 0 && argv[0]) {
 		new_password = argv[0];
 	} else {
-		password_prompt = talloc_asprintf(ctx->mem_ctx, "Enter new password for %s:", ctx->user.account_name);
+		password_prompt = talloc_asprintf(ctx->mem_ctx, "Enter new password for account [%s\\%s]:", 
+							ctx->user.domain_name, ctx->user.account_name);
 		new_password = getpass(password_prompt);
 	}
 
