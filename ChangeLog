@@ -1,3 +1,8 @@
+2002-08-22  Assar Westerlund <assar@kth.se>
+
+	* lib/asn1/der_get.c (der_get_int): handle len == 0.  based on a
+	patch from Love <lha@stacken.kth.se>
+
 2002-08-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kdc.8: add blurb about adding and removing addresses; update
