@@ -1,21 +1,25 @@
-/*
- * Unix SMB/Netbios implementation. Version 1.9. tdbedit module. Copyright
- * (C) Simo Sorce 2000
- * 
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (at your option)
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 675
- * Mass Ave, Cambridge, MA 02139, USA.
- */
+/* 
+   Unix SMB/Netbios implementation.
+   passdb editing frontend
+   Version 3.0
+   
+   Copyright (C) Simo Sorce      2000
+   Copyright (C) Andrew Bartlett 2001   
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 
 /* base uid for trust accounts is set to 60000 ! 
  * May be we should add the defines in smb.h to make it possible having 
@@ -89,19 +93,19 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 	{
 		char lm_passwd[33];
 		char nt_passwd[33];
-		smbpasswd_sethexpwd(lm_passwd, 
-                                    pdb_get_lanman_passwd(sam_pwent), 
-                                    pdb_get_acct_ctrl(sam_pwent));
-		smbpasswd_sethexpwd(nt_passwd, 
-                                    pdb_get_nt_passwd(sam_pwent), 
-                                    pdb_get_acct_ctrl(sam_pwent));
+		pdb_sethexpwd(lm_passwd, 
+			      pdb_get_lanman_passwd(sam_pwent), 
+			      pdb_get_acct_ctrl(sam_pwent));
+		pdb_sethexpwd(nt_passwd, 
+			      pdb_get_nt_passwd(sam_pwent), 
+			      pdb_get_acct_ctrl(sam_pwent));
 		
-		printf("%s:%d:%s:%s:%s:LCT-%08x:\n",
+		printf("%s:%d:%s:%s:%s:LCT-%08X:\n",
                        pdb_get_username(sam_pwent),
                        pdb_get_uid(sam_pwent),
                        lm_passwd,
                        nt_passwd,
-                       smbpasswd_encode_acb_info(pdb_get_acct_ctrl(sam_pwent)),
+                       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
                        (uint32)pdb_get_pass_last_set_time(sam_pwent));
 	}
 	else
@@ -213,13 +217,6 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 
 	pdb_init_sam (&sam_pwent);
 
-	if (pdb_getsampwnam (sam_pwent, username))
-	{
-		fprintf (stderr, "Username already exist in database!\n");
-		pdb_free_sam (sam_pwent);
-		return -1;
-	}
-
 	if (!(pwd = sys_getpwnam(username)))
 	{
 		fprintf (stderr, "User %s does not exist in system passwd!\n", username);
@@ -256,7 +253,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	if (pdb_add_sam_account (sam_pwent)) { 
 		print_user_info (username, True, False);
 	} else {
-		fprintf (stderr, "Unable to add user!\n");
+		fprintf (stderr, "Unable to add user! (does it alredy exist?)\n");
 		pdb_free_sam (sam_pwent);
 		return -1;
 	}
@@ -283,11 +280,11 @@ static int new_machine (char *machinename)
 	safe_strcat (name, "$", 16);
 	
 	string_set (&password, machinename);
-	strlower(password);
+	strlower_m (password);
 	
-	pdb_set_plaintext_passwd(sam_pwent, password);
+	pdb_set_plaintext_passwd (sam_pwent, password);
 
-	pdb_set_username(sam_pwent, name);
+	pdb_set_username (sam_pwent, name);
 	
 	for (uid=BASE_MACHINE_UID; uid<=MAX_MACHINE_UID; uid++) {
 		pdb_init_sam (&sam_trust);
@@ -304,8 +301,8 @@ static int new_machine (char *machinename)
 		return -1;
 	}
 
-	pdb_set_uid(sam_pwent, uid);
-	pdb_set_gid(sam_pwent, BASE_MACHINE_UID); /* TODO: set there more appropriate value!! */
+	pdb_set_uid (sam_pwent, uid);
+	pdb_set_gid (sam_pwent, BASE_MACHINE_UID); /* TODO: set there more appropriate value!! */
 	pdb_set_user_rid (sam_pwent,pdb_uid_to_user_rid (uid));
 	pdb_set_group_rid (sam_pwent, pdb_gid_to_group_rid (BASE_MACHINE_UID));
 	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST);
@@ -313,7 +310,7 @@ static int new_machine (char *machinename)
 	if (pdb_add_sam_account (sam_pwent)) {
 		print_user_info (name, True, False);
 	} else {
-		fprintf (stderr, "Unable to add machine!\n");
+		fprintf (stderr, "Unable to add machine! (does it already exist?)\n");
 		pdb_free_sam (sam_pwent);
 		return -1;
 	}
@@ -350,8 +347,7 @@ static int delete_machine_entry (char *machinename)
 static int import_users (char *filename)
 {
 	FILE *fp = NULL;
-	SAM_ACCOUNT sam_pwent;
-	SAM_ACCOUNT sam_test;
+	SAM_ACCOUNT *sam_pwent = NULL;
 	static pstring  user_name;
 	static unsigned char smbpwd[16];
 	static unsigned char smbntpwd[16];
@@ -362,6 +358,10 @@ static int import_users (char *filename)
 	long uidval;
 	int line = 0;
 	int good = 0;
+
+	if (!pdb_init_sam (&sam_pwent)) {
+		fprintf (stderr, "pdb_init_sam FAILED!\n");
+	}
 
 	if((fp = sys_fopen(filename, "rb")) == NULL)
 	{
@@ -377,6 +377,7 @@ static int import_users (char *filename)
 		if (ferror(fp))
 		{
 			fprintf (stderr, "%s\n", strerror (ferror (fp)));
+			pdb_free_sam(sam_pwent);
 			return -1;
 		}
 		if ((linebuf_len = strlen(linebuf)) == 0)
@@ -398,19 +399,20 @@ static int import_users (char *filename)
 		if ((linebuf[0] == 0) && feof(fp))
 		{
 			/*end of file!!*/
+			pdb_free_sam(sam_pwent);
 			return 0;
 		}
 		line++;
 		if (linebuf[0] == '#' || linebuf[0] == '\0') continue;
 		
-		/*pdb_init_sam (&sam_pwent);*/
-		sam_pwent.acct_ctrl = ACB_NORMAL;
+		pdb_set_acct_ctrl (sam_pwent,ACB_NORMAL);
 		
 		/* Get user name */
 		p = (unsigned char *) strchr_m(linebuf, ':');
 		if (p == NULL)
 		{
 			fprintf (stderr, "Error: malformed password entry at line %d !!\n", line);
+			pdb_reset_sam (sam_pwent);
 			continue;
 		}
 		strncpy(user_name, linebuf, PTR_DIFF(p, linebuf));
@@ -421,11 +423,13 @@ static int import_users (char *filename)
 		if(*p == '-')
 		{
 			fprintf (stderr, "Error: negative uid at line %d\n", line);
+			pdb_reset_sam (sam_pwent);
 			continue;
 		}
 		if (!isdigit(*p))
 		{
 			fprintf (stderr, "Error: malformed password entry at line %d (uid not number)\n", line);
+			pdb_reset_sam (sam_pwent);
 			continue;
 		}
 		uidval = atoi((char *) p);
@@ -433,11 +437,12 @@ static int import_users (char *filename)
 		if (*p != ':')
 		{
 			fprintf (stderr, "Error: malformed password entry at line %d (no : after uid)\n", line);
+			pdb_reset_sam (sam_pwent);
 			continue;
 		}
 
-		pdb_set_username(&sam_pwent, user_name);
-		pdb_set_uid (&sam_pwent, uidval);
+		pdb_set_username(sam_pwent, user_name);
+		pdb_set_uid (sam_pwent, uidval);
 		
 		/* Get passwords */
 		p++;
@@ -445,46 +450,49 @@ static int import_users (char *filename)
 		{
 			/* Password deliberately invalid */
 			fprintf (stderr, "Warning: entry invalidated for user %s\n", user_name);
-			sam_pwent.lm_pw = NULL;
-			sam_pwent.nt_pw = NULL;
-			sam_pwent.acct_ctrl |= ACB_DISABLED;
+			pdb_set_lanman_passwd(sam_pwent, NULL);
+			pdb_set_nt_passwd(sam_pwent,NULL);
+			pdb_set_acct_ctrl(sam_pwent, pdb_get_acct_ctrl(sam_pwent) | ACB_DISABLED);
 		}
 		else
 		{
 			if (linebuf_len < (PTR_DIFF(p, linebuf) + 33))
 			{
 				fprintf (stderr, "Error: malformed password entry at line %d (password too short)\n",line);
+				pdb_reset_sam (sam_pwent);
 				continue;
 			}
 			if (p[32] != ':')
 			{
 				fprintf (stderr, "Error: malformed password entry at line %d (no terminating :)\n",line);
+				pdb_reset_sam (sam_pwent);
 				continue;
 			}
 			if (!strncasecmp((char *) p, "NO PASSWORD", 11))
 			{
-				sam_pwent.lm_pw = NULL;
-				sam_pwent.acct_ctrl |= ACB_PWNOTREQ;
+				pdb_set_lanman_passwd(sam_pwent, NULL);
+				pdb_set_acct_ctrl(sam_pwent, pdb_get_acct_ctrl(sam_pwent) | ACB_PWNOTREQ);
 			}
 			else
 			{
 				if (!smbpasswd_gethexpwd((char *)p, smbpwd))
 				{
 					fprintf (stderr, "Error: malformed Lanman password entry at line %d (non hex chars)\n", line);
+					pdb_reset_sam (sam_pwent);
 					continue;
 				}
-				sam_pwent.lm_pw = smbpwd;
+				pdb_set_lanman_passwd(sam_pwent, smbpwd);
 			}
 			/* NT password */
-			sam_pwent.nt_pw = NULL;
+			pdb_set_nt_passwd(sam_pwent, smbpwd);
 			p += 33;
 			if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':'))
 			{
 				if (*p != '*' && *p != 'X')
 				{
-					if (smbpasswd_gethexpwd((char *)p,smbntpwd))
+					if (pdb_gethexpwd((char *)p,smbntpwd))
 					{
-						sam_pwent.nt_pw = smbntpwd;
+						pdb_set_nt_passwd(sam_pwent, smbntpwd);
 					}
 				}
 				p += 33;
@@ -494,10 +502,13 @@ static int import_users (char *filename)
 		/* Get ACCT_CTRL field if any */
 		if (*p == '[')
 		{
+			uint16 acct_ctrl;
 			unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
 			
-			sam_pwent.acct_ctrl = smbpasswd_decode_acb_info((char*)p);
-			if(sam_pwent.acct_ctrl == 0) sam_pwent.acct_ctrl = ACB_NORMAL;
+			acct_ctrl = pdb_decode_acct_ctrl((char*)p);
+			if (acct_ctrl) acct_ctrl = ACB_NORMAL;
+
+			pdb_set_acct_ctrl(sam_pwent, acct_ctrl);
 			
 			/* Get last change time */
 			if(end_p) p = end_p + 1;
@@ -515,69 +526,60 @@ static int import_users (char *filename)
 					}
 					if(i == 8)
 					{
-						sam_pwent.pass_last_set_time = (time_t)strtol((char *)p, NULL, 16);
+						 pdb_set_pass_last_set_time (sam_pwent, (time_t)strtol((char *)p, NULL, 16));
 					}
 				}
 			}
 		}
 
-		/* Test if workstation */
-		else
+		/* Old-style workstation account code droped. */
+
+		if (pdb_get_acct_ctrl(sam_pwent) & ACB_WSTRUST)
 		{
-			if(sam_pwent.username[strlen(sam_pwent.username) - 1] == '$')
-			{
-				sam_pwent.acct_ctrl &= ~ACB_NORMAL;
-				sam_pwent.acct_ctrl |= ACB_WSTRUST;
-			}
-		}
-		if (sam_pwent.acct_ctrl & ACB_WSTRUST)
-		{
-			if (!(BASE_MACHINE_UID <= uidval <= MAX_MACHINE_UID))
+			if ((uidval < BASE_MACHINE_UID) || (uidval > MAX_MACHINE_UID))
 			{
 				fprintf (stderr, "Warning: Machine UID out of normal range %d-%d\n",
 						 BASE_MACHINE_UID,
 						 MAX_MACHINE_UID);
 			}
-			sam_pwent.gid = BASE_MACHINE_UID;
+			pdb_set_uid(sam_pwent, BASE_MACHINE_UID);
 		}
 	
 		/* Test if user is valid */
-		if (sam_pwent.acct_ctrl & ACB_NORMAL)
+		if (pdb_get_acct_ctrl(sam_pwent) & ACB_NORMAL)
 		{
 			struct passwd  *pwd = NULL;
 
-			if (pdb_getsampwnam (&sam_test,user_name))
-			{
-				fprintf (stderr, "Error: Username already exist in database!\n");
-				continue;
-			}
 			if (!(pwd = sys_getpwnam(user_name)))
 			{
 				fprintf (stderr, "Error: User %s does not exist in system passwd!\n", user_name);
 				continue;
 			}
-			sam_pwent.gid = pwd->pw_gid;
+			pdb_set_gid(sam_pwent, pwd->pw_gid);
 		}
 
 		/* Fill in sam_pwent structure */
-		sam_pwent.user_rid = pdb_uid_to_user_rid (sam_pwent.uid);
-		sam_pwent.group_rid = pdb_gid_to_group_rid (sam_pwent.gid);
+		pdb_set_user_rid(sam_pwent, pdb_uid_to_user_rid (pdb_get_uid(sam_pwent)));
+		pdb_set_group_rid(sam_pwent, pdb_gid_to_group_rid (pdb_get_gid(sam_pwent)));
+
 		/* TODO: set also full_name, home_dir, dir_drive, logon_script, profile_path, ecc...
 		 * when defaults will be available (after passdb redesign)
 		 * let them blank just now they are not used anyway
 		 */
 		 			 
 		 /* Now ADD the entry */
-		if (!(pdb_add_sam_account (&sam_pwent)))
+		if (!(pdb_add_sam_account (sam_pwent)))
 		{
 			fprintf (stderr, "Unable to add user entry!\n");
+			pdb_reset_sam (sam_pwent);
 			continue;
 		}
 		printf ("%s imported!\n", user_name);
 		good++;
+		pdb_reset_sam (sam_pwent);
 	}
 	printf ("%d lines read.\n%d entryes imported\n", line, good);
-	
+	pdb_free_sam(sam_pwent);	
 	return 0;
 }
 
