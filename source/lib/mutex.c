@@ -28,17 +28,17 @@ static struct {
 	struct mutex_ops ops;
 } mutex_handlers;
 
-int mutex_lock_by_id(enum mutex_id id, const char *name)
+int smb_mutex_lock_by_id(enum mutex_id id, const char *name)
 {
-	return mutex_lock(&mutex_list[id], name);
+	return smb_mutex_lock(&mutex_list[id], name);
 }
 
-int mutex_unlock_by_id(enum mutex_id id, const char *name)
+int smb_mutex_unlock_by_id(enum mutex_id id, const char *name)
 {
-	return mutex_unlock(&mutex_list[id], name);
+	return smb_mutex_unlock(&mutex_list[id], name);
 }
 
-int mutex_init(smb_mutex_t *mutex, const char *name)
+int smb_mutex_init(smb_mutex_t *mutex, const char *name)
 {
 	if (mutex_handlers.ops.mutex_init) {
 		return mutex_handlers.ops.mutex_init(mutex, name);
@@ -46,7 +46,7 @@ int mutex_init(smb_mutex_t *mutex, const char *name)
 	return 0;
 }
 
-int mutex_destroy(smb_mutex_t *mutex, const char *name)
+int smb_mutex_destroy(smb_mutex_t *mutex, const char *name)
 {
 	if (mutex_handlers.ops.mutex_destroy) {
 		return mutex_handlers.ops.mutex_destroy(mutex, name);
@@ -54,7 +54,7 @@ int mutex_destroy(smb_mutex_t *mutex, const char *name)
 	return 0;
 }
 
-int mutex_lock(smb_mutex_t *mutex, const char *name)
+int smb_mutex_lock(smb_mutex_t *mutex, const char *name)
 {
 	if (mutex_handlers.ops.mutex_lock) {
 		return mutex_handlers.ops.mutex_lock(mutex, name);
@@ -62,7 +62,7 @@ int mutex_lock(smb_mutex_t *mutex, const char *name)
 	return 0;
 }
 
-int mutex_unlock(smb_mutex_t *mutex, const char *name)
+int smb_mutex_unlock(smb_mutex_t *mutex, const char *name)
 {
 	if (mutex_handlers.ops.mutex_unlock) {
 		return mutex_handlers.ops.mutex_unlock(mutex, name);

@@ -38,12 +38,12 @@ enum rwlock_id { RWLOCK_SMBD, 		/* global smbd lock */
 		RWLOCK_MAX /* this MUST be kept last */
 };
 
-#define MUTEX_LOCK_BY_ID(mutex_index) mutex_lock_by_id(mutex_index, #mutex_index)
-#define MUTEX_UNLOCK_BY_ID(mutex_index) mutex_unlock_by_id(mutex_index, #mutex_index)
-#define MUTEX_INIT(mutex, name) mutex_init(mutex, #name)
-#define MUTEX_DESTROY(mutex, name) mutex_destroy(mutex, #name)
-#define MUTEX_LOCK(mutex, name) mutex_lock(mutex, #name)
-#define MUTEX_UNLOCK(mutex, name) mutex_unlock(mutex, #name)
+#define MUTEX_LOCK_BY_ID(mutex_index) smb_mutex_lock_by_id(mutex_index, #mutex_index)
+#define MUTEX_UNLOCK_BY_ID(mutex_index) smb_mutex_unlock_by_id(mutex_index, #mutex_index)
+#define MUTEX_INIT(mutex, name) smb_mutex_init(mutex, #name)
+#define MUTEX_DESTROY(mutex, name) smb_mutex_destroy(mutex, #name)
+#define MUTEX_LOCK(mutex, name) smb_mutex_lock(mutex, #name)
+#define MUTEX_UNLOCK(mutex, name) smb_mutex_unlock(mutex, #name)
 
 #define RWLOCK_INIT(rwlock, name) rwlock_init(rwlock, #name)
 #define RWLOCK_DESTROY(rwlock, name) rwlock_destroy(rwlock, #name)

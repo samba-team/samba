@@ -1,7 +1,9 @@
 #!/usr/bin/perl
 
 use strict;
-use warnings;
+
+# don't use warnings module as it is not portable enough
+# use warnings;
 
 my $header_name = '_PROTO_H_';
 
