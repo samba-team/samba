@@ -1054,23 +1054,29 @@ installclientlib:
 
 # Python extensions
 
-PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
-	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+PYTHON_OBJS = $(PARAM_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
+	$(UBIQX_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	$(SECRETS_OBJ) $(KRBCLIENT_OBJ)
 
-python_ext: $(PYTHON_OBJS)
+PYTHON_PICOBJS = $(PYTHON_OBJS:.o=.po)
+
+python_ext: $(PYTHON_PICOBJS)
 	@if test -z "$(PYTHON)"; then \
 		echo Use the option --with-python to configure python; \
-		exit 1; fi
-	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
-	LIBS="$(LIBS)" \
+		exit 1; \
+	fi
+	PYTHON_OBJS="$(PYTHON_PICOBJS)" \
+	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
+	LIBS="$(LIBS) $(PASSDBLIBS) $(KRB5LIBS)" \
 		$(PYTHON) python/setup.py build
 
-python_install: $(PYTHON_OBJS)
+python_install: $(PYTHON_PICOBJS)
 	@if test -z "$(PYTHON)"; then \
 		echo Use the option --with-python to configure python; \
-		exit 1; fi
-	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+		exit 1; \
+	fi
+	PYTHON_OBJS="$(PYTHON_PICOBJS)" \
+	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
 	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py install
 
