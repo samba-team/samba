@@ -177,6 +177,7 @@ void run_elections(time_t t)
   
   lastime = t;
   
+  START_PROFILE(run_elections);
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
   {
     struct work_record *work;
@@ -192,7 +193,6 @@ void run_elections(time_t t)
          */
         struct nmb_name nmbname;
 
-	START_PROFILE(run_elections);
         make_nmb_name(&nmbname, work->work_group, 0x1e);
         if(find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME)==NULL) {
           DEBUG(8,("run_elections: Cannot send election packet yet as name %s not \
@@ -213,10 +213,10 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
 
           become_local_master_browser(subrec, work);
         }
-	END_PROFILE(run_elections);
       }
     }
   }
+  END_PROFILE(run_elections);
 }
 
 /*******************************************************************
