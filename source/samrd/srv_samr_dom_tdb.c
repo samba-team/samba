@@ -746,36 +746,26 @@ typedef struct tdb_rid_info
 	BOOL found_one;
 }
 TDB_RID_INFO;
+
 /******************************************************************
-tdb_userlookup_rids
+tdb_userlookup_names
 ********************************************************************/
-static int tdb_userlookup_rids(TDB_CONTEXT * tdb,
-			       TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static int tdb_userlookup_rids(TDB_CONTEXT * tdb, void *state)
 {
-	prs_struct ps;
 	SAM_USER_INFO_21 usr;
 	TDB_RID_INFO *data = (TDB_RID_INFO *) state;
-	uint32 rid;
 	int i;
+
 	DEBUG(5, ("tdb_userlookup_rids\n"));
-	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
-	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
-	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
-	if (!sam_io_user_info21("usr", &usr, &ps, 0))
+
+	if (!tdb_lookup_user(tdb, &usr))
 	{
-		DEBUG(5, ("tdb_userlookup_rids: user convert failed\n"));
-		return 0;
-	}
-	prs_create(&ps, kbuf.dptr, kbuf.dsize, 4, True);
-	if (!_prs_uint32("rid", &ps, 0, &rid))
-	{
-		DEBUG(5, ("tdb_userlookup_rids: rid convert failed\n"));
-		return 0;
+		return -1;
 	}
 
 	for (i = 0; i < data->num_rids; i++)
 	{
-		if (rid == data->rids[i])
+		if (usr.user_rid == data->rids[i])
 		{
 			UNISTR2 *str = &data->uni_name[i];
 			UNIHDR *hdr = &data->hdr_name[i];
@@ -831,7 +821,14 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 	}
 
 	/* lookups */
-	tdb_traverse(usr_tdb, tdb_userlookup_rids, (void *)&state);
+	if (!dom_user_traverse
+	    (&dom_sid, tdb_userlookup_rids, (void *)&state))
+	{
+		safe_free(state.types);
+		safe_free(state.hdr_name);
+		safe_free(state.uni_name);
+		return NT_STATUS_ACCESS_DENIED;
+	}
 	if (!state.found_one)
 	{
 		safe_free(state.types);

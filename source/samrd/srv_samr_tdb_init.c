@@ -60,7 +60,7 @@ uint32 initialise_dom_tdb(const DOM_SID * sid)
 		return NT_STATUS_NOPROBLEMO;
 	}
 
-	dom_tdb = tdb_open(passdb_path(tmp), 0, 0, O_RDWR|O_CREAT, 0600);
+	dom_tdb = tdb_open(passdb_path(tmp), 0, 0, O_RDWR|O_CREAT, 0644);
 
 	if (dom_tdb == NULL)
 	{

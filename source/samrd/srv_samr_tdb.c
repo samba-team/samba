@@ -450,7 +450,7 @@ uint32 samr_open_user_tdb(const POLICY_HND *parent_pol,
 		if (perms_write && perms_read)
 			perms = O_RDWR;
 
-		usr_tdb = open_usr_db(sid, rid, O_RDWR);
+		usr_tdb = open_usr_db(sid, rid, perms);
 	}
 
 	if (usr_tdb == NULL)
