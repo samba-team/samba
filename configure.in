@@ -60,20 +60,22 @@ AC_DECL_YYTEXT
 dnl Checks for header files.
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS(arpa/inet.h arpa/telnet.h bsdsetjmp.h)
-AC_CHECK_HEADERS(crypt.h curses.h db.h dbm.h dirent.h fcntl.h)
-AC_CHECK_HEADERS(grp.h limits.h ndbm.h net/if.h netdb.h)
-AC_CHECK_HEADERS(netinet/in.h netinet/in_systm.h netinet/in6.h)
-AC_CHECK_HEADERS(netinet/in6_machtypes.h netinet/ip.h paths.h)
+AC_CHECK_HEADERS(arpa/inet.h arpa/telnet.h bsdsetjmp.h crypt.h)
+AC_CHECK_HEADERS(curses.h db.h dbm.h dirent.h err.h fcntl.h grp.h)
+AC_CHECK_HEADERS(limits.h ndbm.h net/if.h netdb.h netinet/in.h)
+AC_CHECK_HEADERS(netinet/in6.h netinet/in6_machtypes.h)
+AC_CHECK_HEADERS(netinet/in_systm.h netinet/ip.h paths.h)
 AC_CHECK_HEADERS(pty.h pwd.h rpcsvc/dbm.h sac.h shadow.h)
-AC_CHECK_HEADERS(signal.h stropts.h sys/bitypes.h sys/filio.h)
-AC_CHECK_HEADERS(sys/file.h sys/ioctl.h sys/param.h sys/proc.h)
+AC_CHECK_HEADERS(signal.h stropts.h sys/bitypes.h sys/file.h)
+AC_CHECK_HEADERS(sys/filio.h sys/ioctl.h sys/param.h sys/proc.h)
 AC_CHECK_HEADERS(sys/pty.h sys/ptyio.h sys/ptyvar.h sys/resource.h)
 AC_CHECK_HEADERS(sys/select.h sys/socket.h sys/sockio.h sys/stat.h)
 AC_CHECK_HEADERS(sys/stream.h sys/stropts.h sys/sysctl.h)
-AC_CHECK_HEADERS(sys/time.h sys/tty.h sys/types.h sys/wait.h)
-AC_CHECK_HEADERS(sys/uio.h syslog.h termio.h termios.h tmpdir.h)
-AC_CHECK_HEADERS(unistd.h util.h utmp.h utmpx.h sys/utsname.h)
+AC_CHECK_HEADERS(sys/time.h sys/tty.h sys/types.h sys/uio.h)
+AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h termio.h)
+AC_CHECK_HEADERS(termios.h tmpdir.h unistd.h util.h utmp.h utmpx.h)
+
+AC_SUBST(ac_cv_header_err_h)
 
 dnl Checks for libraries.
 
