@@ -260,7 +260,7 @@ BOOL cli_is_error(struct cli_state *cli)
         else
                 rcls = CVAL(cli->inbuf, smb_rcls);
 
-        return (rcls == 0);
+        return (rcls != 0);
 }
 
 /* Return true if the last error was an NT error */
