@@ -1,3 +1,10 @@
+Fri Aug 29 01:45:25 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/krb5.h: Remove all prototypes.
+
+	* lib/krb5/convert_creds.c: Use `struct credentials' instead of
+ 	`CREDENTIALS'.
+
 Fri Aug 29 00:08:18 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/gen_glue.c: new file. generates 2int and int2 functions
