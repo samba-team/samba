@@ -15,3 +15,8 @@ following:
 
 There is currently no support for changing kerberos passwords. Use
 kpasswd instead.
+
+
+See also Derrick J Brashear's <shadow@dementia.org> Kerberos PAM
+module at ftp://ftp.dementia.org/pub/pam. It has a lot more features,
+and is more in line with other PAM modules.
