@@ -330,13 +330,14 @@ time_t nt_time_to_unix(NTTIME *nt)
 }
 
 /****************************************************************************
-convert a NTTIME structure to a time_t
-It's originally in "100ns units"
+ Convert a NTTIME structure to a time_t.
+ It's originally in "100ns units".
 
-this is an absolute version of the one above.
-By absolute I mean, it doesn't adjust from 1/1/1601 to 1/1/1970
-if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
+ This is an absolute version of the one above.
+ By absolute I mean, it doesn't adjust from 1/1/1601 to 1/1/1970
+ if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
 ****************************************************************************/
+
 time_t nt_time_to_unix_abs(NTTIME *nt)
 {
 	double d;
@@ -366,14 +367,8 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 
 	ret = (time_t)(d+0.5);
 
-	/* this takes us from kludge-GMT to real GMT */
-	ret -= get_serverzone();
-	ret += LocTimeDiff(ret);
-
 	return(ret);
 }
-
-
 
 /****************************************************************************
 interprets an nt time into a unix time_t
@@ -425,12 +420,13 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 }
 
 /****************************************************************************
-convert a time_t to a NTTIME structure
+ Convert a time_t to a NTTIME structure
 
-this is an absolute version of the one above.
-By absolute I mean, it doesn't adjust from 1/1/1970 to 1/1/1601
-if the nttime_t was 5 seconds, the NTTIME is 5 seconds. JFM
+ This is an absolute version of the one above.
+ By absolute I mean, it doesn't adjust from 1/1/1970 to 1/1/1601
+ If the nttime_t was 5 seconds, the NTTIME is 5 seconds. JFM
 ****************************************************************************/
+
 void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 {
 	double d;
@@ -453,9 +449,6 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 		nt->high = 0x80000000;
 		return;
 	}		
-
-	/* this converts GMT to kludge-GMT */
-	t -= LocTimeDiff(t) - get_serverzone(); 
 
 	d = (double)(t);
 	d *= 1.0e7;
