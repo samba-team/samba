@@ -682,7 +682,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 				s = result.list[i].search.name;
 			}
 			asprintf(&fname, "t%03d-%d.txt", i, i);
-			if (strcmp(fname, s)) {
+			if (strcasecmp(fname, s)) {
 				printf("Incorrect name %s at entry %d\n", s, i);
 				ret = False;
 				break;
