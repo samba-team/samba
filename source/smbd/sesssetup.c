@@ -152,7 +152,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	auth_serversupplied_info *server_info = NULL;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	uint8 tok_id[2];
-	BOOL foreign = False;
 	DATA_BLOB nullblob = data_blob(NULL, 0);
 	fstring real_username;
 
@@ -197,7 +196,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
-		foreign = True;
 	}
 
 	/* this gives a fully qualified user name (ie. with full realm).
