@@ -171,13 +171,7 @@ interface netlogon
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
 		uint32 AccountControl;
-		uint32 unknown1;
-		uint32 unknown2;
-		uint32 unknown3;
-		uint32 unknown4;
-		uint32 unknown5;
-		uint32 unknown6;
-		uint32 unknown7;
+		uint32 unknown[7];
 	} netr_SamInfo2;
 
 	typedef struct {
@@ -211,16 +205,45 @@ interface netlogon
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
 		uint32 AccountControl;
-		uint32 unknown1;
-		uint32 unknown2;
-		uint32 unknown3;
-		uint32 unknown4;
-		uint32 unknown5;
-		uint32 unknown6;
-		uint32 unknown7;
+		uint32 unknown[7];
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
 	} netr_SamInfo3;
+
+
+	typedef struct {
+		NTTIME last_logon;
+		NTTIME last_logoff;
+		NTTIME acct_expiry;
+		NTTIME last_password_change;
+		NTTIME allow_password_change;
+		NTTIME force_password_change;
+		netr_String account_name;
+		netr_String full_name;
+		netr_String logon_script;
+		netr_String profile_path;
+		netr_String home_directory;
+		netr_String home_drive;
+		uint16 logon_count;
+		uint16 bad_password_count;
+		uint32 rid;
+		uint32 primary_gid;
+		uint32 group_count;
+		[size_is(group_count)] netr_GroupMembership *groupids;
+		uint32 acct_flags;
+		netr_UserSessionKey key;
+		netr_String logon_server;
+		netr_String domain;
+		dom_sid2 *domain_sid;
+		netr_LMSessionKey LMSessKey;
+		uint32 AccountControl;
+		uint32 unknown1[9];
+		netr_String forest;
+		netr_String principle;
+		uint32 unknown4[18];
+		uint32 sidcount;
+		[size_is(sidcount)] netr_SidAttr *sids;
+	} netr_SamInfo6;
 
 	typedef struct {
 		uint32 pac_size;
@@ -239,10 +262,11 @@ interface netlogon
 	} netr_PacInfo;
 
 	typedef union {
-		[case(2)] netr_SamInfo2  *sam2;
+		[case(2)] netr_SamInfo2 *sam2;
 		[case(3)] netr_SamInfo3 *sam3;
 		[case(4)] netr_PacInfo  *pac;
-		[case(5)] netr_PacInfo  *pac2;
+		[case(5)] netr_PacInfo  *pac;
+		[case(6)] netr_SamInfo6 *sam6;
 	} netr_Validation;
 
 	NTSTATUS netr_LogonSamLogon(
