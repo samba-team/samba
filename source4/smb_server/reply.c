@@ -2312,7 +2312,8 @@ void reply_special(struct smbsrv_request *req)
 		SCVAL(buf,3,0);
 		
 		DEBUG(0,("REWRITE: not parsing netbios names in NBT session request!\n"));
-		
+		/* TODO: store the name for the session setup 'remote machine' code, as well as smbstatus */
+
 		req->smb_conn->negotiate.done_nbt_session = True;
 		
 		req->out.buffer = buf;
