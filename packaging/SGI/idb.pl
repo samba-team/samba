@@ -115,7 +115,7 @@ while(@bins) {
       print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
     }
     elsif ($filename eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip preop(/etc/killall smbd nmbd) exitop(/usr/samba/scripts/startswat.sh) removeop(/usr/samba/scripts/removeswat.sh)\n";
+      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip preop(\"chroot \$rbase /etc/init.d/samba stop\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh\") removeop(\"chroot \$rbase /usr/samba/scripts/removeswat.sh\")\n";
     }
     elsif ($filename eq "sambalp") {
       print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base nostrip\n";
