@@ -118,7 +118,7 @@ parameter.\n" );
 			if(access(truncated_prog, F_OK) == -1) {
 				printf("ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
 cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
-			ret = 1;
+				ret = 1;
 			}
 		}
 
@@ -139,6 +139,23 @@ parameter.\n");
 via the %%o substitution. With encrypted passwords this is not possible.\n", lp_passwd_chat() );
 				ret = 1;
 			}
+		}
+	}
+
+	/*
+	 * WINS server line sanity checks.
+	 */
+
+	if(*lp_wins_server()) {
+		fstring server;
+		int count = 0;
+		char *p = lp_wins_server();
+
+		while(next_token(&p,server,LIST_SEP,sizeof(server)))
+			count++;
+		if(count > 1) {
+			printf("ERROR: the 'wins server' parameter must only contain one WINS server.\n");
+			ret = -1;
 		}
 	}
 
