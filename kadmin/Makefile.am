@@ -10,7 +10,8 @@ libexec_PROGRAMS = kadmind
 
 kadmin_SOURCES = 						\
 	ank.c cpw.c del.c dump.c ext.c get.c init.c kadmin.c	\
-	load.c mod.c rename.c util.c kadmin_locl.h
+	load.c mod.c rename.c util.c random_password.c		\
+	kadmin_locl.h
 
 if KRB4
 KRB4LIB = $(LIB_krb4)
