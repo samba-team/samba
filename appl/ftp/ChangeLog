@@ -1,5 +1,26 @@
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
+	* common/socket.c: new file with generic socket functions
+
+	* ftpd/ftpd.c: make it more AF-neutral and v6-capable
+
+	* ftpd/ftpcmd.y: add EPRT and EPSV
+
+	* ftpd/extern.h: update prototypes and variables
+
+	* ftp/krb4.c: update to new types of addresses
+
+	* ftp/gssapi.c: add support for both AF_INET and AF_INET6
+ 	addresses
+
+	* ftp/ftp.c: make it more AF-neutral and v6-capable
+
+	* ftp/extern.h (hookup): change prototype
+
+	* common/common.h: add prototypes for functions in socket.c
+
+	* common/Makefile.am (libcommon_a_SOURCES): add socket.c
+
 	* ftp/gssapi.c (gss_auth): check return value from
  	`gss_import_name' and print error messages if it fails
 

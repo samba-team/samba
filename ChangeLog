@@ -1,5 +1,9 @@
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
+	* lib/asn1/Makefile.am: bump version to 1:2:0
+
+	* lib/krb5/Makefile.am: bump version to 3:1:0
+
 	* configure.in: more inet_pton to roken
 
 	* lib/krb5/principal.c (krb5_sname_to_principal): use

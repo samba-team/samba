@@ -1,5 +1,7 @@
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am: set version to 2:0:2
+
 	* roken.h.in (inet_pton): add prototype
 
 	* Makefile.am (EXTRA_libroken_la_SOURCES): add inet_pton
