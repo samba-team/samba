@@ -3469,7 +3469,9 @@ int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
+int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 
 /*The following definitions come from  utils/nbio.c  */
