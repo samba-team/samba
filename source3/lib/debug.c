@@ -234,13 +234,13 @@ void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 	/* Set the new DEBUGLEVEL_CLASS array from the pased array */
 	memcpy(DEBUGLEVEL_CLASS, buf, sizeof(DEBUGLEVEL_CLASS));
 	
-	DEBUG(1,("INFO: Debug class %s level = %d   (pid %d from pid %d)\n",
+	DEBUG(3,("INFO: Debug class %s level = %d   (pid %d from pid %d)\n",
 			classname_table[DBGC_ALL],
 			DEBUGLEVEL_CLASS[DBGC_ALL], getpid(), (int)src));
 
 	for (i=1; i<DBGC_LAST; i++) {
 		if (DEBUGLEVEL_CLASS[i])
-			 DEBUGADD(1,("INFO: Debug class %s level = %d\n", 
+			 DEBUGADD(3,("INFO: Debug class %s level = %d\n", 
 						classname_table[i], DEBUGLEVEL_CLASS[i]));
 	}
 }
