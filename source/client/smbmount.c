@@ -27,7 +27,6 @@
 #error this code will only compile on versions of linux after 2.1.70
 #endif
 
-#include <linux/limits.h>
 #include "includes.h"
 
 #include <mntent.h>
@@ -41,7 +40,11 @@ static struct smb_conn_opt conn_options;
 #endif
 
 /* Uncomment this to allow debug the smbmount daemon */
-#define SMBFS_DEBUG 1
+/* WARNING!  This option is incompatible with autofs/automount because
+	it does not close the stdout pipe back to the automount
+	process, which automount depends on.  This will cause automount
+	to hang!  Use with caution! */
+/* #define SMBFS_DEBUG 1	*/
 
 pstring cur_dir = "\\";
 pstring cd_path = "";
@@ -958,8 +961,7 @@ static void usage(char *pname)
 
   codepage_initialise(lp_client_code_page());
 
-  if(*term_code)
-    interpret_coding_system(term_code);
+  interpret_coding_system(term_code);
 
   if (*workgroup == 0)
     pstrcpy(workgroup,lp_workgroup());
