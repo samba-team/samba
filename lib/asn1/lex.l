@@ -44,19 +44,18 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <roken.h>
 #include "symbol.h"
 #include "parse.h"
+#include "lex.h"
 #include "gen_locl.h"
-
-void error_message(const char *, ...)
-#ifdef HAVE___ATTRIBUTE__
-__attribute__ ((format (printf, 1, 2)))
-#endif
-;
 
 static unsigned lineno = 1;
 
-/* ","|"{"|"}"|"("|")"|"["|"]"|"|"	{ return *yytext; } */
+#define YY_NO_UNPUT
+
+#undef ECHO
+
 %}
 
 
