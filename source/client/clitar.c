@@ -1725,6 +1725,7 @@ static char * get_longfilename(file_info2 finfo)
   char *longname = malloc(namesize);
   char *xxx;
   int offset = 0, left = finfo.size;
+  BOOL first = True;
 
   DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
   DEBUG(5, ("Len = %i\n", finfo.size));
@@ -1755,7 +1756,7 @@ static char * get_longfilename(file_info2 finfo)
 
     }
 
-    unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size),False);
+    unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size), first--);
     DEBUG(5, ("UnfixedName: %s, buffer: %s\n", longname, buffer_p));
 
     offset += TBLOCK;
