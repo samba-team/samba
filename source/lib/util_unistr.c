@@ -52,23 +52,23 @@ void load_case_tables(void)
 	if (!upcase_table) {
 		DEBUG(1,("creating lame upcase table\n"));
 		upcase_table = malloc(0x20000);
-		for (i=0;i<256;i++) upcase_table[i] = UCS2_CHAR(islower(i)?toupper(i):i);
-		for (;i<0x10000;i++) upcase_table[i] = UCS2_CHAR(i);
+		for (i=0;i<0x10000;i++) upcase_table[i] = i;
+		for (i=0;i<256;i++) upcase_table[UCS2_CHAR(i)] = UCS2_CHAR(islower(i)?toupper(i):i);
 	}
 
 	if (!lowcase_table) {
 		DEBUG(1,("creating lame lowcase table\n"));
 		lowcase_table = malloc(0x20000);
-		for (i=0;i<256;i++) lowcase_table[i] = UCS2_CHAR(isupper(i)?tolower(i):i);
-		for (;i<0x10000;i++) lowcase_table[i] = UCS2_CHAR(i);
+		for (i=0;i<0x10000;i++) upcase_table[i] = i;
+		for (i=0;i<256;i++) lowcase_table[UCS2_CHAR(i)] = UCS2_CHAR(isupper(i)?tolower(i):i);
 	}
 
 	if (!valid_table) {
 		const char *allowed = "!#$%&'()_-@^`~";
 		DEBUG(1,("creating lame valid table\n"));
 		valid_table = malloc(0x10000);
-		for (i=0;i<256;i++) valid_table[i] = UCS2_CHAR(isalnum(i) || strchr(allowed,i));
-		for (;i<0x10000;i++) valid_table[i] = 0;
+		for (0;i<0x10000;i++) valid_table[i] = 0;
+		for (i=0;i<256;i++) valid_table[UCS2_CHAR(i)] = isalnum(i) || strchr(allowed,i);
 	}
 }
 
