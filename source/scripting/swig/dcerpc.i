@@ -377,3 +377,4 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 }
 
 %include "librpc/gen_ndr/winreg.i"
+%include "librpc/gen_ndr/spoolss.i"
