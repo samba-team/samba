@@ -38,6 +38,9 @@ for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
 enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %changelog
+* Sun Apr 25 1999 John H Terpstra <jht@samba.org>
+ - added smbsh.1 man page
+
 * Fri Mar 26 1999 Andrew Tridgell <tridge@samba.org>
  - added --with-pam as pam is no longer used by default
 
@@ -138,7 +141,7 @@ install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
 
 # Install level 1 man pages
-for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1 nmblookup.1
+for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1 nmblookup.1 smbsh.1
 do
 install -m644 docs/manpages/$i $RPM_BUILD_ROOT/usr/man/man1
 done
@@ -289,6 +292,7 @@ fi
 %attr(-,root,root) /usr/share/swat/help/samba.7.html
 %attr(-,root,root) /usr/share/swat/help/smb.conf.5.html
 %attr(-,root,root) /usr/share/swat/help/smbclient.1.html
+%attr(-,root,root) /usr/share/swat/help/smbsh.1.html
 %attr(-,root,root) /usr/share/swat/help/smbd.8.html
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.5.html
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.8.html
@@ -329,6 +333,7 @@ fi
 %attr(-,root,root) /usr/man/man1/make_smbcodepage.1
 %attr(-,root,root) /usr/man/man1/smbrun.1
 %attr(-,root,root) /usr/man/man1/smbtar.1
+%attr(-,root,root) /usr/man/man1/smbsh.1
 %attr(-,root,root) /usr/man/man1/testparm.1
 %attr(-,root,root) /usr/man/man1/testprns.1
 %attr(-,root,root) /usr/man/man1/nmblookup.1
