@@ -24,40 +24,6 @@
 
 #include "includes.h"
 
-/*
- * Some useful sids
- */
-
-struct dom_sid *global_sid_World_Domain;	    	/* Everyone domain */
-struct dom_sid *global_sid_World;    				/* Everyone */
-struct dom_sid *global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
-struct dom_sid *global_sid_NT_Authority;    		/* NT Authority */
-struct dom_sid *global_sid_System;    		/* System */
-struct dom_sid *global_sid_NULL;            		/* NULL sid */
-struct dom_sid *global_sid_Authenticated_Users;		/* All authenticated rids */
-struct dom_sid *global_sid_Network;			/* Network rids */
-
-struct dom_sid *global_sid_Creator_Owner;	/* Creator Owner */
-struct dom_sid *global_sid_Creator_Group;	/* Creator Group */
-struct dom_sid *global_sid_Anonymous;		/* Anonymous login */
-
-struct dom_sid *global_sid_Builtin; 			/* Local well-known domain */
-struct dom_sid *global_sid_Builtin_Administrators;	/* Builtin administrators */
-struct dom_sid *global_sid_Builtin_Users;		/* Builtin users */
-struct dom_sid *global_sid_Builtin_Guests;		/* Builtin guest users */
-struct dom_sid *global_sid_Builtin_Power_Users;		/* Builtin power users */
-struct dom_sid *global_sid_Builtin_Account_Operators;	/* Builtin account operators */
-struct dom_sid *global_sid_Builtin_Server_Operators;	/* Builtin server operators */
-struct dom_sid *global_sid_Builtin_Print_Operators;	/* Builtin print operators */
-struct dom_sid *global_sid_Builtin_Backup_Operators;	/* Builtin backup operators */
-struct dom_sid *global_sid_Builtin_Replicator;		/* Builtin replicator */
-
-#define SECURITY_NULL_SID_AUTHORITY    0
-#define SECURITY_WORLD_SID_AUTHORITY   1
-#define SECURITY_LOCAL_SID_AUTHORITY   2
-#define SECURITY_CREATOR_SID_AUTHORITY 3
-#define SECURITY_NT_AUTHORITY          5
-
 /****************************************************************************
  Lookup string names for SID types.
 ****************************************************************************/
@@ -93,60 +59,9 @@ const char *sid_type_lookup(uint32_t sid_type)
 	return "SID *TYPE* is INVALID";
 }
 
-/****************************************************************************
- Creates some useful well known sids
-****************************************************************************/
-
-void generate_wellknown_sids(void)
-{
-	static BOOL initialised = False;
-	static TALLOC_CTX *mem_ctx;
-
-	if (initialised) 
-		return;
-
-	mem_ctx = talloc_init("Well known groups, global static context");
-	if (!mem_ctx)
-		return;
-
-	/* SECURITY_NULL_SID_AUTHORITY */
-	global_sid_NULL = dom_sid_parse_talloc(mem_ctx, "S-1-0-0");
-
-	/* SECURITY_WORLD_SID_AUTHORITY */
-	global_sid_World_Domain = dom_sid_parse_talloc(mem_ctx, "S-1-1");
-	global_sid_World = dom_sid_parse_talloc(mem_ctx, "S-1-1-0");
-
-	/* SECURITY_CREATOR_SID_AUTHORITY */
-	global_sid_Creator_Owner_Domain = dom_sid_parse_talloc(mem_ctx, "S-1-3");
-	global_sid_Creator_Owner = dom_sid_parse_talloc(mem_ctx, "S-1-3-0");
-	global_sid_Creator_Group = dom_sid_parse_talloc(mem_ctx, "S-1-3-1");
-
-	/* SECURITY_NT_AUTHORITY */
-	global_sid_NT_Authority = dom_sid_parse_talloc(mem_ctx, "S-1-5");
-	global_sid_Network = dom_sid_parse_talloc(mem_ctx, "S-1-5-2");
-	global_sid_Anonymous = dom_sid_parse_talloc(mem_ctx, "S-1-5-7");
-	global_sid_Authenticated_Users = dom_sid_parse_talloc(mem_ctx, "S-1-5-11");
-	global_sid_System = dom_sid_parse_talloc(mem_ctx, "S-1-5-18");
-
-	/* SECURITY_BUILTIN_DOMAIN_RID */
-	global_sid_Builtin = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
-	global_sid_Builtin_Administrators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-544");
-	global_sid_Builtin_Users = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-545");
-	global_sid_Builtin_Guests = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-546");
-	global_sid_Builtin_Power_Users = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-547");
-	global_sid_Builtin_Account_Operators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-548");
-	global_sid_Builtin_Server_Operators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-549");
-	global_sid_Builtin_Print_Operators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-550");
-	global_sid_Builtin_Backup_Operators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-551");
-	global_sid_Builtin_Replicator = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-552");
-
-	initialised = True;
-}
-
 /*****************************************************************
  Return the last rid from the end of a sid
 *****************************************************************/  
-
 BOOL sid_peek_rid(const struct dom_sid *sid, uint32_t *rid)
 {
 	if (!sid || !rid)

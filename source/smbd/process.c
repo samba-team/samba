@@ -28,8 +28,6 @@ void smbd_process_init(void)
 {
 	TALLOC_CTX *mem_ctx;
 
-	generate_wellknown_sids();
-	
 	mem_ctx = talloc_init("smbd_process_init talloc");
 	if (!mem_ctx) {
 		DEBUG(0,("smbd_process_init: ERROR: No memory\n"));
