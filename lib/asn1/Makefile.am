@@ -93,7 +93,7 @@ CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) \
 
 include_HEADERS = asn1.h asn1_err.h der.h
 
-lex.lo: parse.h
+$(asn1_compile_OBJECTS): parse.h
 
 $(gen_files) asn1.h: asn1_files
 
