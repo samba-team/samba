@@ -462,6 +462,7 @@ BOOL close_policy_hnd(POLICY_HND *hnd)
 				p->dev.cli->free(p->dev.cli->cli,
 				                 p->dev.cli->fnum);
 			}
+			free(p->dev.cli);
 			break;
 		}
 	}

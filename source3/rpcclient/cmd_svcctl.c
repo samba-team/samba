@@ -31,9 +31,6 @@
 
 extern int DEBUGLEVEL;
 
-extern struct cli_state *smb_cli;
-extern int smb_tidx;
-
 extern FILE* out_hnd;
 
 void svc_display_query_svc_cfg(const QUERY_SERVICE_CONFIG *cfg)
@@ -43,8 +40,7 @@ void svc_display_query_svc_cfg(const QUERY_SERVICE_CONFIG *cfg)
 	display_query_svc_cfg(out_hnd, ACTION_FOOTER   , cfg);
 }
 
-BOOL svc_query_service(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *pol_scm,
+BOOL svc_query_service( POLICY_HND *pol_scm,
 				const char *svc_name,
 				SVC_QUERY_FN(svc_query_fn))
 {
@@ -54,12 +50,10 @@ BOOL svc_query_service(struct cli_state *cli, uint16 fnum,
 	QUERY_SERVICE_CONFIG cfg;
 	uint32 svc_buf_size = 0x8000;
 
-	res2 = res2 ? svc_open_service(cli, fnum,
-				       pol_scm,
+	res2 = res2 ? svc_open_service( pol_scm,
 				       svc_name, 0x80000001,
 				       &pol_svc) : False;
-	res3 = res2 ? svc_query_svc_cfg(cli, fnum,
-				       &pol_svc, &cfg,
+	res3 = res2 ? svc_query_svc_cfg( &pol_svc, &cfg,
 				       &svc_buf_size) : False;
 
 	if (res3 && svc_query_fn != NULL)
@@ -67,7 +61,7 @@ BOOL svc_query_service(struct cli_state *cli, uint16 fnum,
 		svc_query_fn(&cfg);
 	}
 
-	res2 = res2 ? svc_close(cli, fnum, &pol_svc) : False;
+	res2 = res2 ? svc_close(&pol_svc) : False;
 
 	return res3;
 }
@@ -77,7 +71,6 @@ nt service info
 ****************************************************************************/
 void cmd_svc_info(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = True;
 	char *svc_name;
@@ -87,7 +80,7 @@ void cmd_svc_info(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_svc_info: server:%s\n", srv_name));
@@ -100,21 +93,14 @@ void cmd_svc_info(struct client_info *info, int argc, char *argv[])
 
 	svc_name = argv[1];
 
-	/* open SVCCTL session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
-
 	/* open service control manager receive a policy handle */
-	res = res ? svc_open_sc_man(smb_cli, fnum,
-	                        srv_name, NULL, 0x80000004,
+	res = res ? svc_open_sc_man( srv_name, NULL, 0x80000004,
 				&pol_scm) : False;
 
-	res1 = svc_query_service(smb_cli, fnum, &pol_scm, svc_name,
+	res1 = svc_query_service(&pol_scm, svc_name,
 				svc_display_query_svc_cfg);
 
-	res = res ? svc_close(smb_cli, fnum, &pol_scm) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res = res ? svc_close(&pol_scm) : False;
 
 	if (res && res1)
 	{
@@ -136,13 +122,12 @@ static void svc_display_svc_info(const ENUM_SRVC_STATUS *svc)
 /****************************************************************************
 nt service enum
 ****************************************************************************/
-BOOL msrpc_svc_enum(struct client_info *info,
+BOOL msrpc_svc_enum(const char* srv_name,
 				ENUM_SRVC_STATUS **svcs,
 				uint32 *num_svcs,
 				SVC_INFO_FN(info_fn),
 				SVC_QUERY_FN(query_fn))
 {
-	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = False;
 	int i;
@@ -152,21 +137,11 @@ BOOL msrpc_svc_enum(struct client_info *info,
 
 	POLICY_HND pol_scm;
 	
-	fstring srv_name;
-
 	(*svcs) = NULL;
 	(*num_svcs) = 0;
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
-	strupper(srv_name);
-
-	/* open SVCCTL session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
-
 	/* open service control manager receive a policy handle */
-	res = res ? svc_open_sc_man(smb_cli, fnum,
-	                        srv_name, NULL, 0x80000004,
+	res = res ? svc_open_sc_man( srv_name, NULL, 0x80000004,
 				&pol_scm) : False;
 
 	do
@@ -181,8 +156,7 @@ BOOL msrpc_svc_enum(struct client_info *info,
 		buf_size += 0x800;
 
 		/* enumerate services */
-		res1 = res ? svc_enum_svcs(smb_cli, fnum,
-		                        &pol_scm,
+		res1 = res ? svc_enum_svcs( &pol_scm,
 		                        0x00000030, 0x00000003,
 		                        &buf_size, &resume_hnd, &dos_error,
 		                        svcs, num_svcs) : False;
@@ -198,7 +172,7 @@ BOOL msrpc_svc_enum(struct client_info *info,
 
 		if (query_fn != NULL)
 		{
-			res1 = svc_query_service(smb_cli, fnum, &pol_scm,
+			res1 = svc_query_service(&pol_scm,
 			                         svc_name, query_fn);
 		}
 		else if (info_fn != NULL)
@@ -207,10 +181,7 @@ BOOL msrpc_svc_enum(struct client_info *info,
 		}
 	}
 
-	res = res ? svc_close(smb_cli, fnum, &pol_scm) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res = res ? svc_close(&pol_scm) : False;
 
 	return res1;
 }
@@ -224,6 +195,11 @@ void cmd_svc_enum(struct client_info *info, int argc, char *argv[])
 	uint32 num_svcs = 0;
 	BOOL request_info = False;
 	int opt;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
 
 	argc--;
 	argv++;
@@ -243,7 +219,7 @@ void cmd_svc_enum(struct client_info *info, int argc, char *argv[])
 	report(out_hnd,"Services\n");
 	report(out_hnd,"--------\n");
 
-	msrpc_svc_enum(info, &svcs, &num_svcs,
+	msrpc_svc_enum(srv_name, &svcs, &num_svcs,
 	               request_info ? NULL : svc_display_svc_info,
 	               request_info ? svc_display_query_svc_cfg : NULL);
 
@@ -258,7 +234,6 @@ nt stop service
 ****************************************************************************/
 void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = True;
 	char *svc_name;
@@ -269,7 +244,7 @@ void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_svc_stop: server:%s\n", srv_name));
@@ -282,25 +257,17 @@ void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 
 	svc_name = argv[1];
 
-	/* open SVCCTL session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
-
 	/* open service control manager receive a policy handle */
-	res = res ? svc_open_sc_man(smb_cli, fnum,
-	                        srv_name, NULL, 0x80000000,
+	res = res ? svc_open_sc_man( srv_name, NULL, 0x80000000,
 				&pol_scm) : False;
 
-	res1 = res ? svc_open_service(smb_cli, fnum,
-				       &pol_scm,
+	res1 = res ? svc_open_service( &pol_scm,
 				       svc_name, 0x00000020,
 				       &pol_svc) : False;
-	res2 = res1 ? svc_stop_service(smb_cli, fnum, &pol_svc, 0x1) : False;
+	res2 = res1 ? svc_stop_service(&pol_svc, 0x1) : False;
 
-	res1 = res1 ? svc_close(smb_cli, fnum, &pol_svc) : False;
-	res  = res  ? svc_close(smb_cli, fnum, &pol_scm) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res1 = res1 ? svc_close(&pol_svc) : False;
+	res  = res  ? svc_close(&pol_scm) : False;
 
 	if (res2)
 	{
@@ -319,7 +286,6 @@ nt start service
 ****************************************************************************/
 void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = True;
 	char *svc_name;
@@ -330,7 +296,7 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_svc_start: server:%s\n", srv_name));
@@ -349,26 +315,17 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 	argv++;
 	argc--;
 
-	/* open SVCCTL session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
-
 	/* open service control manager receive a policy handle */
-	res = res ? svc_open_sc_man(smb_cli, fnum,
-	                        srv_name, NULL, 0x80000000,
+	res = res ? svc_open_sc_man( srv_name, NULL, 0x80000000,
 				&pol_scm) : False;
 
-	res1 = res ? svc_open_service(smb_cli, fnum,
-				       &pol_scm,
+	res1 = res ? svc_open_service( &pol_scm,
 				       svc_name, 0x80000010,
 				       &pol_svc) : False;
-	res2 = res1 ? svc_start_service(smb_cli, fnum,
-				       &pol_svc, argc, argv) : False;
+	res2 = res1 ? svc_start_service( &pol_svc, argc, argv) : False;
 
-	res1 = res1 ? svc_close(smb_cli, fnum, &pol_svc) : False;
-	res  = res  ? svc_close(smb_cli, fnum, &pol_scm) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res1 = res1 ? svc_close(&pol_svc) : False;
+	res  = res  ? svc_close(&pol_scm) : False;
 
 	if (res2)
 	{
@@ -387,7 +344,6 @@ nt service set
 ****************************************************************************/
 void cmd_svc_set(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	BOOL res = True;
 	BOOL res2 = True;
 	BOOL res3;
@@ -402,7 +358,7 @@ void cmd_svc_set(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_svc_set: server:%s\n", srv_name));
@@ -415,25 +371,19 @@ void cmd_svc_set(struct client_info *info, int argc, char *argv[])
 
 	svc_name = argv[1];
 
-	/* open SVCCTL session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
-
 	/* open service control manager receive a policy handle */
-	res = res ? svc_open_sc_man(smb_cli, fnum,
-	                        srv_name, NULL, 0x80000004,
+	res = res ? svc_open_sc_man( srv_name, NULL, 0x80000004,
 				&pol_scm) : False;
 
-	res2 = res ? svc_open_service(smb_cli, fnum,
-				       &pol_scm,
+	res2 = res ? svc_open_service( &pol_scm,
 				       svc_name, 0x80000001,
 				       &pol_svc) : False;
-	res3 = res2 ? svc_query_svc_cfg(smb_cli, fnum,
-				       &pol_svc, &cfg,
+	res3 = res2 ? svc_query_svc_cfg( &pol_svc, &cfg,
 				       &svc_buf_size) : False;
 
 	if (res3)
 	{
-		res3 = svc_change_svc_cfg(smb_cli, fnum, &pol_svc,
+		res3 = svc_change_svc_cfg(&pol_svc,
 		                   cfg.service_type,
 		                   cfg.start_type,
 		                   0xffffffff,
@@ -444,12 +394,9 @@ void cmd_svc_set(struct client_info *info, int argc, char *argv[])
 			
 	}
 
-	res2 = res2 ? svc_close(smb_cli, fnum, &pol_svc) : False;
+	res2 = res2 ? svc_close(&pol_svc) : False;
 
-	res = res ? svc_close(smb_cli, fnum, &pol_scm) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res = res ? svc_close(&pol_scm) : False;
 
 	if (res3)
 	{

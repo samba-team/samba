@@ -1112,6 +1112,12 @@ static char *complete_svcenum(char *text, int state)
 	static uint32 i = 0;
 	static uint32 num_svcs = 0;
 	static ENUM_SRVC_STATUS *svc = NULL;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli_info.dest_host);
+	strupper(srv_name);
+
     
 	if (state == 0)
 	{
@@ -1120,7 +1126,7 @@ static char *complete_svcenum(char *text, int state)
 		num_svcs = 0;
 
 		/* Iterate all users */
-		if (msrpc_svc_enum(&cli_info, &svc, &num_svcs,
+		if (msrpc_svc_enum(srv_name, &svc, &num_svcs,
 		                   NULL, NULL) == 0)
 		{
 			return NULL;
