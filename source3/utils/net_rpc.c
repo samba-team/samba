@@ -1009,7 +1009,7 @@ rpc_user_info_internals(const DOM_SID *domain_sid, const char *domain_name,
 
 	/* Look up rids */
 
-	if (rids) {
+	if (num_rids) {
 		rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
 
 		for (i = 0; i < num_rids; i++)
@@ -1027,9 +1027,6 @@ rpc_user_info_internals(const DOM_SID *domain_sid, const char *domain_name,
 
 		for (i = 0; i < num_names; i++)
 			printf("%s\n", names[i]);
-	}
-	else {
-		printf("no groups\n");
 	}
  done:
 	return result;
