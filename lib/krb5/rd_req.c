@@ -260,64 +260,6 @@ krb5_verify_ap_req(krb5_context context,
 		   
 
 krb5_error_code
-krb5_rd_req_with_keytab(krb5_context context,
-			krb5_auth_context *auth_context,
-			const krb5_data *inbuf,
-			krb5_const_principal server,
-			krb5_keytab keytab,
-			krb5_flags *ap_req_options,
-			krb5_ticket **ticket)
-{
-    krb5_keytab_entry entry;
-    krb5_error_code ret;
-    krb5_ap_req ap_req;
-    int kvno;
-    krb5_keytype keytype;
-
-    if (*auth_context == NULL) {
-	ret = krb5_auth_con_init(context, auth_context);
-	if (ret)
-	    return ret;
-    }
-
-    ret = krb5_decode_ap_req(context, inbuf, &ap_req);
-    if(ret)
-	return ret;
-
-    if (ap_req.ticket.enc_part.kvno)
-	kvno = *ap_req.ticket.enc_part.kvno;
-    else
-	kvno = 0;
-
-    ret = krb5_etype_to_keytype (context,
-				 ap_req.ticket.enc_part.etype,
-				 &keytype);
-    if (ret)
-	goto out;
-
-    ret = krb5_kt_get_entry (context,
-			     keytab,
-			     server,
-			     kvno,
-			     keytype,
-			     &entry);
-    if (ret)
-	goto out;
-    
-    ret = krb5_verify_ap_req(context,
-			     auth_context,
-			     &ap_req,
-			     server,
-			     &entry.keyblock,
-			     ap_req_options,
-			     ticket);
-    krb5_kt_free_entry (context, &entry);
-out:    
-    free_AP_REQ(&ap_req);
-    return ret;
-}
-
-krb5_error_code
 krb5_rd_req_with_keyblock(krb5_context context,
 			  krb5_auth_context *auth_context,
 			  const krb5_data *inbuf,
@@ -351,6 +293,53 @@ krb5_rd_req_with_keyblock(krb5_context context,
     return ret;
 }
 
+static krb5_error_code
+get_key_from_keytab(krb5_context context,
+		    krb5_auth_context *auth_context,
+		    krb5_ap_req *ap_req,
+		    krb5_const_principal server,
+		    krb5_keytab keytab,
+		    krb5_keyblock **out)
+{
+    krb5_keytab_entry entry;
+    krb5_error_code ret;
+    int kvno;
+    krb5_keytype keytype;
+    krb5_keytab real_keytab;
+
+    if(keytab == NULL)
+	krb5_kt_default(context, &real_keytab);
+    else
+	real_keytab = keytab;
+    
+    if (ap_req->ticket.enc_part.kvno)
+	kvno = *ap_req->ticket.enc_part.kvno;
+    else
+	kvno = 0;
+
+    ret = krb5_etype_to_keytype (context,
+				 ap_req->ticket.enc_part.etype,
+				 &keytype);
+    if (ret)
+	goto out;
+
+    ret = krb5_kt_get_entry (context,
+			     real_keytab,
+			     server,
+			     kvno,
+			     keytype,
+			     &entry);
+    if(ret)
+	goto out;
+    ret = krb5_copy_keyblock(context, &entry.keyblock, out);
+    krb5_kt_free_entry (context, &entry);
+out:    
+    if(keytab == NULL)
+	krb5_kt_close(context, real_keytab);
+    
+    return ret;
+}
+
 krb5_error_code
 krb5_rd_req(krb5_context context,
 	    krb5_auth_context *auth_context,
@@ -361,23 +350,44 @@ krb5_rd_req(krb5_context context,
 	    krb5_ticket **ticket)
 {
     krb5_error_code ret;
-    krb5_keytab real_keytab;
+    krb5_ap_req ap_req;
+    krb5_keyblock *keyblock = NULL;
 
-    if(keytab == NULL)
-	krb5_kt_default(context, &real_keytab);
-    else
-	real_keytab = keytab;
+    if (*auth_context == NULL) {
+	ret = krb5_auth_con_init(context, auth_context);
+	if (ret)
+	    return ret;
+    }
 
-    ret = krb5_rd_req_with_keytab(context,
-				  auth_context,
-				  inbuf,
+    ret = krb5_decode_ap_req(context, inbuf, &ap_req);
+    if(ret)
+	return ret;
+
+    if(ap_req.ap_options.use_session_key == 0 || 
+       (*auth_context)->keyblock == NULL){
+	ret = get_key_from_keytab(context, 
+				  auth_context, 
+				  &ap_req,
 				  server,
-				  real_keytab,
-				  ap_req_options,
-				  ticket);
+				  keytab,
+				  &keyblock);
+	if(ret)
+	    return ret;
+    }
+	
 
-    if (keytab == NULL)
-	krb5_kt_close (context, real_keytab);
+    ret = krb5_verify_ap_req(context,
+			     auth_context,
+			     &ap_req,
+			     server,
+			     keyblock,
+			     ap_req_options,
+			     ticket);
+
+    if(keyblock != NULL)
+	krb5_free_keyblock(context, keyblock);
+
+    free_AP_REQ(&ap_req);
 
     return ret;
 }
