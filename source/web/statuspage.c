@@ -162,7 +162,6 @@ void status_page(void)
 		printf("Couldn't open status file %s\n",fname);
 		if (!lp_status(-1))
 			printf("You need to have status=yes in your smb config file\n");
-		return;
 	}
 
 
@@ -195,7 +194,7 @@ void status_page(void)
 	printf("<table border=1>\n");
 	printf("<tr><th>PID</th><th>Client</th><th>IP address</th><th>Date</th><th>Kill</th></tr>\n");
 
-	while (!feof(f)) {
+	while (f && !feof(f)) {
 		if (fread(&crec,sizeof(crec),1,f) != 1)
 			break;
 		if (crec.magic == 0x280267 && 
@@ -211,13 +210,13 @@ void status_page(void)
 
 	printf("</table><p>\n");
 
-	fseek(f, 0, SEEK_SET);
+	if (f) fseek(f, 0, SEEK_SET);
 	
 	printf("<p><h3>Active Shares</h3>\n");
 	printf("<table border=1>\n");
 	printf("<tr><th>Share</th><th>User</th><th>Group</th><th>PID</th><th>Client</th><th>Date</th></tr>\n\n");
 
-	while (!feof(f)) {
+	while (f && !feof(f)) {
 		if (fread(&crec,sizeof(crec),1,f) != 1)
 			break;
 		if (crec.cnum == -1) continue;
@@ -241,7 +240,7 @@ void status_page(void)
 	locking_end();
 	printf("</table>\n");
 
-	fclose(f);
+	if (f) fclose(f);
 
 	printf("</FORM>\n");
 
