@@ -94,7 +94,7 @@ add_user (krb5_context context, void *kadm_handle,
 }
 
 static void
-add_users (unsigned n)
+add_users (const char *filename, unsigned n)
 {
     krb5_error_code ret;
     int i;
@@ -115,7 +115,7 @@ add_users (unsigned n)
     if(ret)
 	krb5_err(context, 1, ret, "kadm5_init_with_password");
 
-    nwords = read_words (WORDS_FILENAME, &words);
+    nwords = read_words (filename, &words);
     
     for (i = 0; i < n; ++i)
 	add_user (context, kadm_handle, nwords, words);
@@ -137,7 +137,7 @@ usage (int ret)
     arg_printusage (args,
 		    sizeof(args)/sizeof(*args),
 		    NULL,
-		    NULL);
+		    "[filename [n]]");
     exit (ret);
 }
 
@@ -145,6 +145,8 @@ int
 main(int argc, char **argv)
 {
     int optind = 0;
+    int n = NUSERS;
+    const char *filename = WORDS_FILENAME;
 
     setprogname(argv[0]);
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
@@ -156,6 +158,15 @@ main(int argc, char **argv)
 	return 0;
     }
     srand (0);
-    add_users (NUSERS);
+    argc -= optind;
+    argv += optind;
+
+    if (argc > 0) {
+	if (argc > 1)
+	    n = atoi(argv[1]);
+	filename = argv[0];
+    }
+
+    add_users (filename, n);
     return 0;
 }
