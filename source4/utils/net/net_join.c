@@ -61,9 +61,9 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->user.account_name	= ctx->user.account_name;
-	libnetctx->user.domain_name	= ctx->user.domain_name;
-	libnetctx->user.password	= ctx->user.password;
+	libnetctx->user.account_name= cli_credentials_get_username(ctx->credentials);
+	libnetctx->user.domain_name	= cli_credentials_get_domain(ctx->credentials);
+	libnetctx->user.password	= cli_credentials_get_password(ctx->credentials);
 
 	/* prepare password change */
 	r.generic.level			 = LIBNET_JOIN_GENERIC;

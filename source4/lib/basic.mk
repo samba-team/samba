@@ -39,7 +39,6 @@ INIT_OBJ_FILES = lib/version.o
 ADD_OBJ_FILES = \
 		lib/debug.o \
 		lib/fault.o \
-		lib/getsmbpass.o \
 		lib/pidfile.o \
 		lib/signal.o \
 		lib/system.o \
@@ -65,7 +64,8 @@ ADD_OBJ_FILES = \
 		lib/idtree.o \
 		lib/unix_privs.o \
 		lib/db_wrap.o \
-		lib/gencache.o
+		lib/gencache.o \
+		lib/credentials.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC
 # End SUBSYSTEM LIBBASIC

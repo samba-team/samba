@@ -45,9 +45,6 @@ pstring cur_dir = "\\";
 static pstring cd_path = "";
 static pstring service;
 static pstring desthost;
-static pstring username;
-static pstring domain;
-static pstring password;
 static char *cmdstr = NULL;
 
 static int io_bufsize = 64512;
@@ -103,7 +100,7 @@ static double dir_total;
 #define USENMB
 
 /* some forward declarations */
-static struct smbcli_state *do_connect(const char *server, const char *share);
+static struct smbcli_state *do_connect(const char *server, const char *share, struct cli_credentials *cred);
 
 
 /*******************************************************************
@@ -202,7 +199,7 @@ static void send_message(void)
 	int total_len = 0;
 	int grp_id;
 
-	if (!smbcli_message_start(cli->tree, desthost, username, &grp_id)) {
+	if (!smbcli_message_start(cli->tree, desthost, cli_credentials_get_username(cmdline_credentials), &grp_id)) {
 		d_printf("message start: %s\n", smbcli_errstr(cli->tree));
 		return;
 	}
@@ -2559,8 +2556,9 @@ static BOOL browse_host(const char *query_host)
 				     DCERPC_SRVSVC_UUID, 
 				     DCERPC_SRVSVC_VERSION,
 				     lp_netbios_name(),
-				     domain, 
-				     username, password);
+				     cli_credentials_get_domain(cmdline_credentials), 
+				     cli_credentials_get_username(cmdline_credentials), 
+					 cli_credentials_get_password(cmdline_credentials));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 
 			 binding, nt_errstr(status));
@@ -2753,7 +2751,7 @@ static int process_command_string(char *cmd)
 	/* establish the connection if not already */
 	
 	if (!cli) {
-		cli = do_connect(desthost, service);
+		cli = do_connect(desthost, service, cmdline_credentials);
 		if (!cli)
 			return 0;
 	}
@@ -3039,7 +3037,7 @@ static void process_stdin(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *do_connect(const char *server, const char *share)
+static struct smbcli_state *do_connect(const char *server, const char *share, struct cli_credentials *cred)
 {
 	struct smbcli_state *c;
 	NTSTATUS status;
@@ -3050,7 +3048,9 @@ static struct smbcli_state *do_connect(const char *server, const char *share)
 	}
 	
 	status = smbcli_full_connection(NULL, &c, lp_netbios_name(), server,
-					share, NULL, username, domain, password);
+					share, NULL, cli_credentials_get_username(cred), 
+								 cli_credentials_get_domain(cred), 
+								 cli_credentials_get_password(cred));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
 			 server, share, nt_errstr(status));
@@ -3068,7 +3068,7 @@ static int process(char *base_directory)
 {
 	int rc = 0;
 
-	cli = do_connect(desthost, service);
+	cli = do_connect(desthost, service, cmdline_credentials);
 	if (!cli) {
 		return 1;
 	}
@@ -3261,7 +3261,7 @@ static void remember_query_host(const char *arg,
 	}
 
 	if (poptPeekArg(pc)) { 
-		cmdline_set_userpassword(poptGetArg(pc));
+		cli_credentials_set_password(cmdline_credentials, poptGetArg(pc), CRED_SPECIFIED);
 	}
 
 	/*init_names(); */
@@ -3272,10 +3272,6 @@ static void remember_query_host(const char *arg,
 	}
 
 	poptFreeContext(pc);
-
-	pstrcpy(username, cmdline_get_username());
-	pstrcpy(domain, cmdline_get_userdomain());
-	pstrcpy(password, cmdline_get_userpassword());
 
 	DEBUG( 3, ( "Client started (version %s).\n", SAMBA_VERSION_STRING ) );
 
