@@ -55,7 +55,7 @@ AC_C___ATTRIBUTE__
 AC_ENABLE_SHARED(no)
 AC_PROG_LIBTOOL
 
-AC_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
+rk_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
 
 rk_TEST_PACKAGE(openldap,
 [#include <lber.h>
