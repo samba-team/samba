@@ -842,6 +842,9 @@ int main(int argc, char **argv)
 
 	/* Winbind daemon initialisation */
 
+	if (!winbindd_upgrade_idmap())
+		return 1;
+
 	if (!idmap_init())
 		return 1;
 
