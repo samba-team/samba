@@ -64,10 +64,12 @@ BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd,
 enum winbindd_result winbindd_check_machine_acct(
 	struct winbindd_cli_state *state)
 {
+	int result = WINBINDD_ERROR;
 	uchar trust_passwd[16];
+	struct in_addr *ip_list = NULL;
+	int count;
 	uint16 validation_level;
-	fstring trust_account;
-	int result = 0;
+	fstring controller, trust_account;
 
 	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
 
@@ -78,16 +80,33 @@ enum winbindd_result winbindd_check_machine_acct(
 		goto done;
 	}
 
-	slprintf(trust_account, sizeof(trust_account) - 1, "%s$",
-		 global_myname);
+	/* Get domain controller */
 
-        result = cli_nt_setup_creds(server_state.controller, 
-				    lp_workgroup(), global_myname,
-				    trust_account, trust_passwd, 
-				    SEC_CHAN_WKSTA, &validation_level);
+	if (!get_dc_list(True, lp_workgroup(), &ip_list, &count) ||
+	    !lookup_pdc_name(global_myname, lp_workgroup(), &ip_list[0],
+			     controller)) {
+		DEBUG(0, ("could not find domain controller for "
+			  "domain %s\n", lp_workgroup()));		  
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		goto done;
+	}
+
+	DEBUG(3, ("contacting controller %s to check secret\n", controller));
+
+	/* Contact domain controller to check secret */
+
+        slprintf(trust_account, sizeof(trust_account) - 1, "%s$",
+                 global_myname);
+
+        result = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
+                                    trust_account, trust_passwd, 
+                                    SEC_CHAN_WKSTA, &validation_level);	
 
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
+
+	DEBUG(3, ("secret is %s\n", (result == NT_STATUS_NOPROBLEMO) ?
+		  "good" : "bad"));
 
  done:
 	state->response.data.num_entries = result;
