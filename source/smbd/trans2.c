@@ -1895,6 +1895,10 @@ int reply_trans2(connection_struct *conn,
   
 	if ((total_params && !params)  || (total_data && !data)) {
 		DEBUG(2,("Out of memory in reply_trans2\n"));
+        if(params)
+          free(params);
+        if(data)
+          free(data); 
 		return(ERROR(ERRDOS,ERRnomem));
 	}
 

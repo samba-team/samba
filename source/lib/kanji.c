@@ -1173,6 +1173,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = hangul_is_multibyte_char_1;
+    break;
   case BIG5_CODEPAGE:
     multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
     multibyte_strrchr = (char *(*)(char *, int )) generic_multibyte_strrchr;
@@ -1180,6 +1181,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = big5_is_multibyte_char_1;
+    break;
   case SIMPLIFIED_CHINESE_CODEPAGE:
     multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
     multibyte_strrchr = (char *(*)(char *, int )) generic_multibyte_strrchr;

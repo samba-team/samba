@@ -2454,10 +2454,13 @@ BOOL string_init(char **dest,char *src)
 
   if (l == 0)
     {
-      if (!null_string)
-	null_string = (char *)malloc(1);
-
-      *null_string = 0;
+      if (!null_string) {
+        if((null_string = (char *)malloc(1)) == NULL) {
+          DEBUG(0,("string_init: malloc fail for null_string.\n"));
+          return False;
+        }
+        *null_string = 0;
+      }
       *dest = null_string;
     }
   else
