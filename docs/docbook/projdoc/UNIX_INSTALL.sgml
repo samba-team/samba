@@ -167,16 +167,10 @@
 	
 	<para>Then you might read the file chapter 
 	<link linkend="diagnosis">Diagnosis</link> and the 
-	FAQ. If you are still stuck then try the mailing list or 
-	newsgroup (look in the README for details). Samba has been 
-	successfully installed at thousands of sites worldwide, so maybe 
-	someone else has hit your problem and has overcome it. You could 
-	also use the WWW site to scan back issues of the samba-digest.</para>
-
-	<para>When you fix the problem <emphasis>please</emphasis> send some 
-	updates of the documentation (or source code) to one of 
-	the documentation maintainers or the list.
-	</para>
+	FAQ. If you are still stuck then try to follow 
+	the <link linkend="problems">Analysing and Solving Problems chapter</link>
+	Samba has been successfully installed at thousands of sites worldwide,
+	so maybe someone else has hit your problem and has overcome it. </para>
 
 	<sect2>
 		<title>Scope IDs</title>
