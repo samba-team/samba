@@ -227,8 +227,14 @@ BOOL py_from_PRINTER_INFO_2(PyObject **dict, PRINTER_INFO_2 *info)
 	if (py_from_SECDESC(&obj, info->secdesc))
 		PyDict_SetItemString(*dict, "security_descriptor", obj);
 
-	if (py_from_DEVICEMODE(&obj, info->devmode))
-		PyDict_SetItemString(*dict, "device_mode", obj);
+	/* Bong!  The devmode could be NULL */
+
+	if (info->devmode)
+		py_from_DEVICEMODE(&obj, info->devmode);
+	else
+		obj = PyDict_New();
+
+	PyDict_SetItemString(*dict, "device_mode", obj);
 
 	PyDict_SetItemString(*dict, "level", PyInt_FromLong(2));
 
