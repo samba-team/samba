@@ -661,7 +661,7 @@ static void chg_passwd(void)
 ****************************************************************************/
 static void passwd_page(void)
 {
-	char *new_name;
+	char *new_name = get_user_name();
 
 	printf("<H2>Password Manager</H2>\n");
 
@@ -673,14 +673,11 @@ static void passwd_page(void)
 	 * After the first time through here be nice. If the user
 	 * changed the User box text to another users name, remember it.
 	 */
-	if (cgi_variable(USER) && 
-	    (strcmp(cgi_variable(USER), get_user_name()))) {
-		/* User is changing another accounts passwd */
+	if (cgi_variable(USER)) {
 		new_name = cgi_variable(USER);
-	} else {
-		/* User is changing there own passwd */
-		new_name = get_user_name();
-	}
+	} 
+
+	if (!new_name) new_name = "";
 
 	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", 
 	       USER, new_name);
