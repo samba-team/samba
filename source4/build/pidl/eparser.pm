@@ -239,7 +239,6 @@ sub ParseArrayPull($$)
 		pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad conformant size (%u should be %u)\", $alloc_size, $size);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad conformant size\", $alloc_size, $size);\n";
-		pidl "\t\treturn;\n";
 		pidl "\t}\n";
 	} elsif (!util::is_inline_array($e)) {
 #		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
@@ -258,8 +257,7 @@ sub ParseArrayPull($$)
 		}
 		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array size (%u should be %u)\", _array_size, $size);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array size\", _array_size, $size);\n";
-		pidl "\t\t\treturn;\n";
+		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array size (%u should be %u)\", _array_size, $size);\n";
 		pidl "\t\t}\n";
 		if ($size =~ /r->in/) {
 			pidl "else { $size = _array_size; }\n";
@@ -293,13 +291,11 @@ sub ParseArrayPull($$)
 		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array offset %d\", _offset);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \"Bad array offset %d\", _offset);\n";
-		pidl "\t\t\treturn;\n";
 		pidl "\t\t}\n";
 		pidl "\t\tif (_length > $size || _length != $length) {\n";
 		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array length %d > size %d\", _offset, $size);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array length %d > size %d\", _offset, $size);\n";
-		pidl "\t\t\treturn;\n";
 		pidl "\t\t}\n";
 		$size = "_length";
 	}
@@ -380,7 +376,7 @@ sub ParseElementPullScalar($$)
 	    } elsif (util::is_builtin_type($e->{TYPE})) {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
 	} else {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, $ndr_flags);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, subtree_$e->{NAME}, $ndr_flags);\n";
 	}
 
 	end_flags($e);
@@ -428,11 +424,11 @@ sub ParseElementPullBuffer($$)
 			}
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
 	} elsif ($e->{POINTERS}) {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, tree, NDR_SCALARS|NDR_BUFFERS);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, NDR_SCALARS|NDR_BUFFERS);\n";
 	} else {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, tree, $ndr_flags);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, subtree_$e->{NAME}, $ndr_flags);\n";
 	}
 
 	if (util::need_wire_pointer($e)) {
@@ -477,12 +473,22 @@ sub ParseStructPull($)
 			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
 		if (!util::is_scalar_type($e->{TYPE})) {
-		    pidl "\tproto_tree *subtree_$e->{NAME};\n";
+		    pidl "\tproto_tree *subtree_$e->{NAME} = tree;\n";
 		}
 	}
 
 	pidl "\n";
 
+	# Some debugging stuff
+
+	pidl "\tif ((ndr_flags & (NDR_SCALARS|NDR_BUFFERS)) == (NDR_SCALARS|NDR_BUFFERS))\n";
+	pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"NDR_SCALARS|NDR_BUFFERS\");\n";
+	pidl "\telse if (ndr_flags & NDR_SCALARS)\n";
+	pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"NDR_SCALARS\");\n";
+	pidl "\telse if (ndr_flags & NDR_BUFFERS)\n";
+	pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"NDR_BUFFERS\");\n";
+
+	pidl "\n";
 	start_flags($struct);
 
 	pidl "\tif ((ndr_flags & (NDR_SCALARS|NDR_BUFFERS)) == (NDR_SCALARS|NDR_BUFFERS)) {\n";
@@ -496,9 +502,9 @@ sub ParseStructPull($)
 	    }
 	}
 
-	pidl "\t}";
+	pidl "\t}\n\n";
 
-	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n\n";
 
 	pidl "\tndr_pull_struct_start(ndr);\n";
 
@@ -513,7 +519,7 @@ sub ParseStructPull($)
 		ParseElementPullScalar($e, "NDR_SCALARS");
 	}	
 
-	pidl "buffers:\n";
+	pidl "\nbuffers:\n\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPullBuffer($e, "NDR_BUFFERS");
@@ -552,7 +558,7 @@ sub ParseUnionPull($)
 			$have_default = 1;
 		} else {
 			pidl "\tcase $el->{CASE}: {\n";
-			pidl "\tproto_tree *tree_$el->{DATA}{NAME} = tree;\n";
+			pidl "\tproto_tree *subtree_$el->{DATA}{NAME} = tree;\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
 			my $e2 = $el->{DATA};
@@ -567,8 +573,7 @@ sub ParseUnionPull($)
 		pidl "\tdefault:\n";
 		pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 6Bad switch value %u\", level);\n";
-		pidl "\t\treturn;\n";
+		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad switch value %u\", level);\n";
 	}
 	pidl "\t}\n";
 	pidl "buffers:\n";
@@ -578,19 +583,19 @@ sub ParseUnionPull($)
 		if ($el->{CASE} eq "default") {
 			pidl "\tdefault:\n";
 		} else {
-			pidl "\tcase $el->{CASE}:\n";
+			pidl "\tcase $el->{CASE}: {\n";
+			pidl "\tproto_tree *subtree_$el->{DATA}{NAME} = tree;\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
 			ParseElementPullBuffer($el->{DATA}, "NDR_BUFFERS");
 		}
-		pidl "\t\tbreak;\n\n";
+		pidl "\t\tbreak;\n\t}\n";
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
 		pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 7Bad switch value %u\", level);\n";
-		pidl "\t\treturn;\n";
 	}
 	pidl "\t}\n";
 	pidl "\tndr_pull_struct_end(ndr);\n";
@@ -728,21 +733,37 @@ sub ParseFunctionPull($)
 
 	pidl $static . "int $fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *toplevel_tree, guint8 *drep)\n";
 	pidl "{\n";
-	pidl "\tproto_tree *tree = toplevel_tree;\n";
 	pidl "\tstruct e_ndr_pull *ndr = ndr_pull_init(tvb, offset, pinfo, drep);\n";
+	pidl "\tproto_item *item;\n";
+	pidl "\tproto_tree *tree = toplevel_tree;\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
 
-		if (util::need_wire_pointer($e) &&
-		    util::has_property($e, "in")) {
+	    if (util::has_property($e, "in")) {
+
+		if (util::need_wire_pointer($e)) {
 			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
-
-		if (util::has_property($e, "in")) {
-		    pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
-	                if util::is_builtin_type($e->{TYPE});
+		
+		pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
+		    if util::is_builtin_type($e->{TYPE});
+		
+		if (util::need_wire_pointer($e) ||
+		    !util::is_scalar_type($e->{TYPE})) {
+		    pidl "\tproto_tree *subtree_$e->{NAME} = tree;\n";
 		}
+	    }
+	}
+
+	pidl "\n";
+
+	foreach my $e (@{$fn->{DATA}}) {
+	    if (util::has_property($e, "in") &&
+		!util::is_scalar_type($e->{TYPE})) {
+		pidl "\titem = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"$e->{NAME}\");\n";
+		pidl "\tsubtree_$e->{NAME} = proto_item_add_subtree(item, ett_dcerpc_$module);\n";
+	    }
 	}
 
 	pidl "\n";
@@ -763,21 +784,37 @@ sub ParseFunctionPull($)
 
 	pidl $static . "int $fn->{NAME}_resp(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *toplevel_tree, guint8 *drep)\n";
 	pidl "{\n";
-	pidl "\tproto_tree *tree = toplevel_tree;\n";
 	pidl "\tstruct e_ndr_pull *ndr = ndr_pull_init(tvb, offset, pinfo, drep);\n";
+	pidl "\tproto_item *item;\n";
+	pidl "\tproto_tree *tree = toplevel_tree;\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
 
-		if (util::need_wire_pointer($e) && 
-		    util::has_property($e, "out")) {
-			pidl "\tguint32 ptr_$e->{NAME};\n";
+	    if (util::has_property($e, "out")) {
+
+		if (util::need_wire_pointer($e)) {
+		    pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
 
-		if (util::has_property($e, "out")) {
-		    pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
-	                if util::is_builtin_type($e->{TYPE});
+		pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
+		    if util::is_builtin_type($e->{TYPE});
+
+		if (util::need_wire_pointer($e) ||
+		    !util::is_scalar_type($e->{TYPE})) {
+ 		    pidl "\tproto_tree *subtree_$e->{NAME} = tree;\n";
 		}
+	    }
+	}
+
+	pidl "\n";
+
+	foreach my $e (@{$fn->{DATA}}) {
+	    if (util::has_property($e, "out") && 
+		!util::is_scalar_type($e->{TYPE})) {
+		pidl "\titem = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"$e->{NAME}\");\n";
+		pidl "\tsubtree_$e->{NAME} = proto_item_add_subtree(item, ett_dcerpc_$module);\n";
+	    }
 	}
 
 	pidl "\n";
