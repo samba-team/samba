@@ -64,8 +64,8 @@ static BOOL checkopt(char *input, char *optname, char **params)
 	return True;
 }
 
-char *daynames[] = {"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
-char *daynames_short[] = {"M", "T", "W", "Th", "F", "S", "Su"};
+extern char *daynames_short[];
+extern char *daynames[];
 
 /****************************************************************************
 parses a list of days of the week and month
