@@ -1,6 +1,7 @@
-2003-03-03  Love  <lha@stacken.kth.se>
+2003-03-03  Love Hörnquist Åstrand <lha@it.su.se>
 
-	* inquire_context.c: (gss_inquire_context): rename argument open to open_context
+	* inquire_context.c: (gss_inquire_context): rename argument open
+	to open_context
 
 	* gssapi.h (gss_inquire_context): rename argument open to open_context
 
