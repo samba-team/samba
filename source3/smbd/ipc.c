@@ -37,7 +37,7 @@
 extern int DEBUGLEVEL;
 extern int max_send;
 
-extern pstring local_machine;
+extern fstring local_machine;
 extern fstring global_myworkgroup;
 
 #define NERR_Success 0

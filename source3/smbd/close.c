@@ -103,6 +103,7 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	SMB_INO_T inode = fsp->fd_ptr->inode;
 	int token;
     BOOL last_reference = False;
+    BOOL delete_on_close = fsp->fd_ptr->delete_on_close;
 	connection_struct *conn = fsp->conn;
 
 	remove_pending_lock_requests_by_fid(fsp);
@@ -140,7 +141,7 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	 * reference to a file.
 	 */
 
-    if (normal_close && last_reference && fsp->delete_on_close) {
+    if (normal_close && last_reference && delete_on_close) {
 		if(dos_unlink(fsp->fsp_name) != 0)
           DEBUG(0,("close_file: file %s. Delete on close was set and unlink failed \
 with error %s\n", fsp->fsp_name, strerror(errno) ));

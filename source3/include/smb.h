@@ -186,6 +186,47 @@ implemented */
 #define DENY_NONE 4
 #define DENY_FCB 7
 
+/* open modes */
+#define DOS_OPEN_RDONLY 0
+#define DOS_OPEN_WRONLY 1
+#define DOS_OPEN_RDWR 2
+#define DOS_OPEN_FCB 0xF
+
+/* define shifts and masks for share and open modes. */
+#define OPEN_MODE_MASK 0xF
+#define SHARE_MODE_SHIFT 4
+#define SHARE_MODE_MASK 0x7
+#define GET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
+#define SET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
+#define GET_DENY_MODE(x) (((x)>>SHARE_MODE_SHIFT) & SHARE_MODE_MASK)
+#define SET_DENY_MODE(x) ((x)<<SHARE_MODE_SHIFT)
+
+/* allow delete on open file mode (used by NT SMB's). */
+#define ALLOW_SHARE_DELETE (1<<15)
+#define GET_ALLOW_SHARE_DELETE(x) (((x) & ALLOW_SHARE_DELETE) ? 1 : 0)
+#define SET_ALLOW_SHARE_DELETE(x) ((x) ? ALLOW_SHARE_DELETE : 0)
+
+/* Sync on open file (not sure if used anymore... ?) */
+#define FILE_SYNC_OPENMODE (1<<14)
+#define GET_FILE_SYNC_OPENMODE(x) (((x) & FILE_SYNC_OPENMODE) ? 1 : 0)
+
+/* open disposition values */
+#define FILE_EXISTS_FAIL 0
+#define FILE_EXISTS_OPEN 1
+#define FILE_EXISTS_TRUNCATE 2
+
+/* mask for open disposition. */
+#define FILE_OPEN_MASK 0x3
+
+#define GET_FILE_OPEN_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
+#define SET_FILE_OPEN_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
+
+/* The above can be OR'ed with... */
+#define FILE_CREATE_IF_NOT_EXIST 0x10
+#define FILE_FAIL_IF_NOT_EXIST 0
+
+#define GET_FILE_CREATE_DISPOSITION(x) ((x) & (FILE_CREATE_IF_NOT_EXIST|FILE_FAIL_IF_NOT_EXIST))
+
 /* share types */
 #define STYPE_DISKTREE  0	/* Disk drive */
 #define STYPE_PRINTQ    1	/* Spooler queue */
@@ -433,6 +474,7 @@ typedef struct file_fd_struct
 	int fd_readonly;
 	int fd_writeonly;
 	int real_open_flags;
+	BOOL delete_on_close;
 } file_fd_struct;
 
 /*
@@ -517,17 +559,16 @@ typedef struct files_struct
 	SMB_OFF_T mmap_size;
 	write_bmpx_struct *wbmpx_ptr;
 	struct timeval open_time;
+	int share_mode;
 	BOOL open;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;
-	BOOL share_mode;
 	BOOL print_file;
 	BOOL modified;
 	BOOL granted_oplock;
 	BOOL sent_oplock_break;
 	BOOL is_directory;
-	BOOL delete_on_close;
 	char *fsp_name;
 } files_struct;
 
@@ -788,7 +829,7 @@ struct bitmap {
 #define FLAG_HIDE  2 /* options that should be hidden in SWAT */
 #define FLAG_PRINT 4 /* printing options */
 #define FLAG_GLOBAL 8 /* local options that should be globally settable in SWAT */
-#define FLAG_DEPRECATED 16 /* options that should no longer be used */
+#define FLAG_DEPRECATED 0x10 /* options that should no longer be used */
 
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4

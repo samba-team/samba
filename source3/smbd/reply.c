@@ -1239,6 +1239,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 /****************************************************************************
   reply to an open
 ****************************************************************************/
+
 int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
@@ -1276,8 +1277,8 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
  
   unixmode = unix_mode(conn,aARCH);
       
-  open_file_shared(fsp,conn,fname,share_mode,3,unixmode,
-                   oplock_request,&rmode,NULL);
+  open_file_shared(fsp,conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+                   unixmode, oplock_request,&rmode,NULL);
 
   if (!fsp->open)
   {
@@ -1529,8 +1530,8 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   }
 
   /* Open file in dos compatibility share mode. */
-  open_file_shared(fsp,conn,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, 
-                   oplock_request, NULL, NULL);
+  open_file_shared(fsp,conn,fname,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+                   ofun, unixmode, oplock_request, NULL, NULL);
   
   if (!fsp->open)
   {
@@ -1601,8 +1602,8 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  open_file_shared(fsp,conn,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, 
-                   oplock_request, NULL, NULL);
+  open_file_shared(fsp,conn,fname2,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+                   (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unixmode, oplock_request, NULL, NULL);
 
   if (!fsp->open)
   {
@@ -1702,8 +1703,10 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (!has_wild) {
     pstrcat(directory,"/");
     pstrcat(directory,mask);
-    if (can_delete(directory,conn,dirtype) && !dos_unlink(directory)) count++;
-    if (!count) exists = file_exist(directory,NULL);    
+    if (can_delete(directory,conn,dirtype) && !dos_unlink(directory))
+      count++;
+    if (!count)
+      exists = file_exist(directory,NULL);    
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -2675,9 +2678,8 @@ int reply_printopen(connection_struct *conn,
 	}
 
 	/* Open for exclusive use, write only. */
-	open_file_shared(fsp,conn,fname2,
-			 (DENY_ALL<<4)|1, 0x12, unix_mode(conn,0), 
-			 0, NULL, NULL);
+	open_file_shared(fsp,conn,fname2, SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
+                     (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE), unix_mode(conn,0), 0, NULL, NULL);
 
 	if (!fsp->open) {
 		file_free(fsp);
@@ -3323,6 +3325,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
 /*******************************************************************
   copy a file as part of a reply_copy
   ******************************************************************/
+
 static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		      int count,BOOL target_is_directory)
 {
@@ -3343,12 +3346,15 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
     pstrcat(dest,p);
   }
 
-  if (!file_exist(src,&st)) return(False);
+  if (!file_exist(src,&st))
+    return(False);
 
   fsp1 = file_new();
-  if (!fsp1) return(False);
-  open_file_shared(fsp1,conn,src,(DENY_NONE<<4),
-		   1,0,0,&Access,&action);
+  if (!fsp1)
+    return(False);
+
+  open_file_shared(fsp1,conn,src,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+		   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),0,0,&Access,&action);
 
   if (!fsp1->open) {
 	  file_free(fsp1);
@@ -3363,7 +3369,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	  close_file(fsp1,False);
 	  return(False);
   }
-  open_file_shared(fsp2,conn,dest,(DENY_NONE<<4)|1,
+  open_file_shared(fsp2,conn,dest,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
 		   ofun,st.st_mode,0,&Access,&action);
 
   if (!fsp2->open) {
