@@ -4736,7 +4736,7 @@
 
 		<varlistentry>
 		<term><anchor id="OBEYPAMRESTRICTIONS">obey pam restrictions (G)</term>
-		<listitem><para>When Samba 2.2 is configure to enable PAM support
+		<listitem><para>When Samba 2.2 is configured to enable PAM support
 		(i.e. --with-pam), this parameter will control whether or not Samba
 		should obey PAM's account and session management directives.  The 
 		default behavior is to use PAM for clear text authentication only
@@ -4914,13 +4914,15 @@
 
 		<varlistentry>
 		<term><anchor id="PAMPASSWORDCHANGE">pam password change (G)</term>
-		<listitem><para>With the addition of better PAM support in Samba 2.2, 
-		this parameter, it is possible to use PAM's password change control 
-		flag for Samba.  If enabled, then PAM will be used for password
-		changes when requested by an SMB client, and  the <link 
-		linkend="PASSWDCHAT"><parameter>passwd chat</parameter></link> must be
-		be changed to work with the PAM prompts.
-		</para>
+  		<listitem><para>With the addition of better PAM support in Samba 2.2, 
+  		this parameter, it is possible to use PAM's password change control 
+  		flag for Samba.  If enabled, then PAM will be used for password
+ 		changes when requested by an SMB client insted of the program listed in 
+                <link linkend="PASSWDPROGRAM"><parameter>passwd program</parameter></link>. 
+                It should be possible to enable this without changing your 
+                <link linkend="PASSWDCHAT"><parameter>passwd chat</parameter></link>
+                paramater for most setups.
+  		</para>
 		
 		<para>Default: <command>pam password change = no</command></para>
 		
@@ -4982,15 +4984,11 @@
 		password cleartext. In this case the old password cleartext is set 
 		to "" (the empty string).</para>
 
-		<para>Also, if the <link linkend="PAMPASSWORDCHANGE"><parameter>pam
-		password change</parameter></link> parameter is set to <constant>true</constant>, then the
-		chat sequence should consist of three elements. The first element should
-		match the PAM prompt for the old password, the second element should match
-		the PAM prompt for the first request for the new password, and the final
-		element should match the PAM prompt for the second request for the new password.
-		These matches are done case insensitively. Under most conditions this change
-		is done as root so the prompt for the old password will never be matched.
-		</para>
+  		<para>Also, if the <link linkend="PAMPASSWORDCHANGE"><parameter>pam
+ 		password change</parameter></link> parameter is set to true, the chat pairs
+                may be matched in any order, and sucess is determined by the PAM result, 
+                not any particular output. The \n macro is ignored for PAM conversions.
+  		</para>
 
 		<para>See also <link linkend="UNIXPASSWORDSYNC"><parameter>unix password 
 		sync</parameter></link>, <link linkend="PASSWDPROGRAM"><parameter>
@@ -5019,12 +5017,15 @@
 		to be seen in the <command>smbd</command> log. It is available to help 
 		Samba admins debug their <parameter>passwd chat</parameter> scripts 
 		when calling the <parameter>passwd program</parameter> and should 
-		be turned off after this has been done. This parameter is off by
-		default.</para>
+ 		be turned off after this has been done. This option has no effect if the 
+                <link linkend="PAMPASSWORDCHANGE"><parameter>pam password change</parameter>
+                paramter is set. This parameter is off by default.</para>
+  
 
-		<para>See also <<link linkend="PASSWDCHAT"><parameter>passwd chat</parameter>
-		</link>, <link linkend="PASSWDPROGRAM"><parameter>passwd program</parameter>
-		</link>.</para>
+ 		<para>See also <link linkend="PASSWDCHAT"><parameter>passwd chat</parameter>
+ 		</link>, <link linkend="PAMPASSWORDCHANGE"><parameter>pam password change</parameter>
+                </link>, <link linkend="PASSWDPROGRAM"><parameter>passwd program</parameter>
+  		</link>.</para>
 
 		<para>Default: <command>passwd chat debug = no</command></para>
 		</listitem>
@@ -6259,7 +6260,7 @@
 		<para>See also the section <link linkend="VALIDATIONSECT">
 		NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
-		<para><anchor id="SECURITYEQUALSUSER"><emphasis>SECURIYT = USER
+		<para><anchor id="SECURITYEQUALSUSER"><emphasis>SECURITY = USER
 		</emphasis></para>
 
 		<para>This is the default security setting in Samba 2.2. 
