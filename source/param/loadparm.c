@@ -266,7 +266,6 @@ typedef struct
 	BOOL bTimestampLogs;
 	BOOL bNTSmbSupport;
 	BOOL bNTPipeSupport;
-	BOOL bNTAclSupport;
 	BOOL bStatCache;
 	BOOL bKernelOplocks;
 	BOOL bAllowTrustedDomains;
@@ -396,6 +395,7 @@ typedef struct
 	BOOL bInheritPerms;
 	BOOL bMSDfsRoot;
 	BOOL bUseClientDriver;
+	BOOL bNTAclSupport;
 
 	char dummy[3];		/* for alignment */
 }
@@ -510,6 +510,7 @@ static service sDefault = {
 	False,			/* bInheritPerms */
 	False,			/* bMSDfsRoot */
 	False,			/* bUseClientDriver */
+	True,			/* bNTAclSupport */
 
 	""			/* dummy */
 };
@@ -812,7 +813,7 @@ static struct parm_struct parm_table[] = {
 	
 	{"nt smb support", P_BOOL, P_GLOBAL, &Globals.bNTSmbSupport, NULL, NULL, 0},
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, 0},
-	{"nt acl support", P_BOOL, P_GLOBAL, &Globals.bNTAclSupport, NULL, NULL, 0},
+	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, 0},
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, 0},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, 0},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, 0},
@@ -1302,7 +1303,6 @@ static void init_globals(void)
 	Globals.bPasswdChatDebug = False;
 	Globals.bNTSmbSupport = True;	/* Do NT SMB's by default. */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
-	Globals.bNTAclSupport = True;	/* Use NT ACLs by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
 	Globals.bRestrictAnonymous = False;
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
@@ -1581,7 +1581,6 @@ FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_nt_smb_support, &Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
-FN_GLOBAL_BOOL(lp_nt_acl_support, &Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_BOOL(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
@@ -1704,6 +1703,7 @@ FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
+FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)

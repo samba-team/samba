@@ -777,9 +777,9 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: list groups\n", state->pid));
 
-        /* Enumerate over trusted domains */
+	/* Enumerate over trusted domains */
 	ZERO_STRUCT(groups);
-        for (domain = domain_list; domain; domain = domain->next) {
+	for (domain = domain_list; domain; domain = domain->next) {
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
@@ -801,19 +801,23 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		 */
 		 
 		num_domain_entries = 0;
-		while (get_sam_group_entries(&groups))
-		{
+		while (get_sam_group_entries(&groups)) {
 			int new_size;
 			int offset;
-			
+			char *new_sam_entries;
+
 			offset = sizeof(struct acct_info) * num_domain_entries;
 			new_size = sizeof(struct acct_info) 
 			 	* (groups.num_sam_entries + num_domain_entries);
-			sam_entries = Realloc(sam_entries, new_size);
-			
-			if (!sam_entries)
+			new_sam_entries = Realloc(sam_entries, new_size);
+		
+			if (new_sam_entries)
+				sam_entries = new_sam_entries;
+			else {
+				safe_free(sam_entries);
 				return WINBINDD_ERROR;
-			
+			}
+	
 			num_domain_entries += groups.num_sam_entries;
 			memcpy (sam_entries+offset, groups.sam_entries, 
 				sizeof(struct acct_info) * groups.num_sam_entries);
@@ -822,7 +826,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 			groups.num_sam_entries = 0;
 		}
 
-		/* skip remainder of loop if we idn;t retrieve any groups */
+		/* skip remainder of loop if we didn't retrieve any groups */
 		
 		if (num_domain_entries == 0) 
 			continue;
@@ -841,12 +845,12 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		/* Allocate some memory for extra data.  Note that we limit
 		   account names to sizeof(fstring) = 128 characters.  */
 		
-                ted = Realloc(extra_data, sizeof(fstring) * total_entries);
+		ted = Realloc(extra_data, sizeof(fstring) * total_entries);
  
 		if (!ted) {
 			DEBUG(0,("winbindd_list_groups: failed to enlarge buffer!\n"));
-			if (extra_data)
-				free(extra_data);
+			SAFE_FREE(groups.sam_entries);
+			SAFE_FREE(extra_data);
 			return WINBINDD_ERROR;
 		} else
 			extra_data = ted;
@@ -883,7 +887,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 	/* No domains may have responded but that's still OK so don't
 	   return an error. */
 
-        return WINBINDD_OK;
+	return WINBINDD_OK;
 }
 
 /* Get user supplementary groups.  This is much quicker than trying to

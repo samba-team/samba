@@ -1179,7 +1179,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
       int fstype_len;
       SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 			FILE_DEVICE_IS_MOUNTED|
-            (lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
+            (lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
       SIVAL(pdata,0,0x700FF);

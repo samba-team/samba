@@ -1575,8 +1575,25 @@ static int call_nt_transact_rename(connection_struct *conn,
   return(outsize);
 }
 
+/******************************************************************************
+ Fake up a completely empty SD.
+*******************************************************************************/
 
-/****************************************************************************
+static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
+{
+	extern DOM_SID global_sid_World;
+	size_t sd_size;
+
+	*ppsd = make_standard_sec_desc( mem_ctx, &global_sid_World, &global_sid_World, NULL, &sd_size);
+	if(!*ppsd) {
+		DEBUG(0,("get_null_nt_acl: Unable to malloc space for security descriptor.\n"));
+		sd_size = 0;
+	}
+ 
+	return sd_size;
+}
+
+/**************************************************************************n
  Reply to query a security descriptor - currently this is not implemented (it
  is planned to be though). Right now it just returns the same thing NT would
  when queried on a FAT filesystem. JRA.
@@ -1612,7 +1629,12 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Get the permissions to return.
    */
 
-  if((sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd)) == 0)
+  if (!lp_nt_acl_support(SNUM(conn)))
+    sd_size = get_null_nt_acl(mem_ctx, &psd);
+  else
+    sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
+
+  if (sd_size == 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
   DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %d.\n",(int)sd_size));
@@ -1690,34 +1712,36 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 									int bufsize, char **ppsetup, 
 									char **ppparams, char **ppdata)
 {
-  uint32 total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
-  char *params= *ppparams;
-  char *data = *ppdata;
-  uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
-  files_struct *fsp = NULL;
-  uint32 security_info_sent = 0;
-  int error_class;
-  uint32 error_code;
+	uint32 total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
+	char *params= *ppparams;
+	char *data = *ppdata;
+	uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
+	files_struct *fsp = NULL;
+	uint32 security_info_sent = 0;
+	int error_class;
+	uint32 error_code;
 
-  if(!lp_nt_acl_support())
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+	if(!lp_nt_acl_support(SNUM(conn)))
+		goto done;
 
-  if(total_parameter_count < 8)
-    return(ERROR(ERRDOS,ERRbadfunc));
+	if(total_parameter_count < 8)
+		return(ERROR(ERRDOS,ERRbadfunc));
 
-  if((fsp = file_fsp(params,0)) == NULL)
-    return(ERROR(ERRDOS,ERRbadfid));
+	if((fsp = file_fsp(params,0)) == NULL)
+		return(ERROR(ERRDOS,ERRbadfid));
 
-  security_info_sent = IVAL(params,4);
+	security_info_sent = IVAL(params,4);
 
-  DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
-       (unsigned int)security_info_sent ));
+	DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
+		(unsigned int)security_info_sent ));
 
-  if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
+	if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
 		return (ERROR(error_class, error_code));
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, NULL, 0, NULL, 0);
-  return -1;
+  done:
+
+	send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, NULL, 0, NULL, 0);
+	return -1;
 }
    
 /****************************************************************************
