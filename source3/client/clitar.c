@@ -66,8 +66,6 @@ typedef struct
 
 } stack;
 
-static stack dir_stack = {NULL, 0}; /* Want an empty stack */
-
 #define SEPARATORS " \t\n\r"
 extern struct cli_state *cli;
 

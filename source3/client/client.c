@@ -1123,7 +1123,10 @@ static int do_put(char *rname,char *lname)
 	}
 
 	
-	x_fclose(f);
+	if (f != x_stdin) {
+		x_fclose(f);
+	}
+
 	SAFE_FREE(buf);
 
 	{
