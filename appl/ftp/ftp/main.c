@@ -37,12 +37,6 @@
 
 #include "ftp_locl.h"
 
-#ifndef HAVE___PROGNAME
-char *__progname = "ftp";
-#else
-extern char *__progname;
-#endif
-
 int
 main(int argc, char **argv)
 {
@@ -121,7 +115,7 @@ main(int argc, char **argv)
 			exit(0);
 		(void) signal(SIGINT, intr);
 		(void) signal(SIGPIPE, lostpeer);
-		xargv[0] = __progname;
+		xargv[0] = argv[0]; /* or should this be "ftp"? */
 		xargv[1] = argv[0];
 		xargv[2] = argv[1];
 		xargv[3] = argv[2];
