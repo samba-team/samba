@@ -11,7 +11,7 @@
 	xmlns:exsl="http://exslt.org/common"
 	version="1.1">
 
-	<xsl:output method="text" encoding="iso-8859-1" standalone="yes"/>
+	<xsl:output method="text" encoding="iso-8859-1" standalone="yes" indent="no"/>
 	<xsl:strip-space elements="*"/>
 
 	<xsl:template match="refentry">
@@ -91,11 +91,7 @@
 		<xsl:text>paragraph(</xsl:text>
 		<xsl:value-of select="title"/>
 		<xsl:text>)&#10;</xsl:text>
-		<xsl:for-each select="para">
-			<xsl:copy>
-				<xsl:apply-templates/>
-			</xsl:copy>
-		</xsl:for-each>
+		<xsl:apply-templates/>
 	</xsl:template>
 
 	<xsl:template match="part">
@@ -112,7 +108,13 @@
 		<xsl:apply-templates/>
 	</xsl:template>
 
-	<xsl:template match="parameter">
+	<xsl:template match="quote">
+		<xsl:text>"</xsl:text>
+		<xsl:apply-templates/>
+		<xsl:text>"</xsl:text>
+	</xsl:template>
+
+	<xsl:template match="parameter|filename">
 		<xsl:text>code(</xsl:text>
 		<xsl:apply-templates/>
 		<xsl:text>)</xsl:text>
@@ -139,10 +141,10 @@
 	</xsl:template>
 
 	<xsl:template match="refsynopsisdiv">
-		manpagesynopsis()
+		<xsl:text>manpagesynopsis()</xsl:text>
 	</xsl:template>
 
-	<xsl:template match="refsect1">
+	<xsl:template match="refsect1|refsect2">
 		<xsl:choose>
 			<xsl:when test="title='DESCRIPTION'">
 				<xsl:text>&#10;manpagedescription()&#10;&#10;</xsl:text>
@@ -171,11 +173,7 @@
 				<xsl:text>)&#10;&#10;</xsl:text>
 			</xsl:otherwise>
 		</xsl:choose>
-		<xsl:for-each select="para">
-			<xsl:copy>
-				<xsl:apply-templates/>
-			</xsl:copy>
-		</xsl:for-each>
+		<xsl:apply-templates/>
 	</xsl:template>
 
 	<xsl:template match="orderedlist">
@@ -206,12 +204,20 @@
 		<xsl:text>startdit()&#10;</xsl:text>
 		<xsl:for-each select="varlistentry">
 			<xsl:text>dit(</xsl:text>
-			<xsl:value-of select="term"/>
+			<xsl:copy-of select="term">
+				<xsl:apply-templates/>
+			</xsl:copy-of>
 			<xsl:text>) </xsl:text>
-			<xsl:apply-templates select="listitem"/>
+			<xsl:apply-templates select="listitem/para"/>
 			<xsl:text>&#10;</xsl:text>
 		</xsl:for-each>
 		<xsl:text>enddit()&#10;</xsl:text>
+	</xsl:template>
+
+	<xsl:template match="anchor">
+		<xsl:text>label(</xsl:text>
+		<xsl:value-of select="@id"/>
+		<xsl:text>)&#10;</xsl:text>
 	</xsl:template>
 
 	<xsl:template match="footnote">
