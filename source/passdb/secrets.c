@@ -50,6 +50,28 @@ BOOL secrets_init(void)
 	return True;
 }
 
+/* Another incarnation of secrets_init that returns the opened
+   tdb context to the caller. Used by tdbsam api to access trust
+   passwords */
+
+TDB_CONTEXT* secrets_open(void)
+{
+	pstring fname;
+
+	if (tdb)
+		return tdb;
+
+	pstrcpy(fname, lp_private_dir());
+	pstrcat(fname,"/secrets.tdb");
+
+	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	if (!tdb) {
+		DEBUG(0,("Failed to open %s\n", fname));
+		return NULL;
+	}
+	return tdb;
+}
+
 /* read a entry from the secrets database - the caller must free the result
    if size is non-null then the size of the entry is put in there
  */
@@ -83,7 +105,7 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 }
 
 
-/* delete a secets database entry
+/* delete a secrets database entry
  */
 BOOL secrets_delete(const char *key)
 {
@@ -201,7 +223,7 @@ const char *trust_keystr(const char *domain)
  *
  * @return stored password's key
  **/
-static char *trustdom_keystr(const char *domain)
+const char *trustdom_keystr(const char *domain)
 {
 	static pstring keystr;
 
@@ -244,7 +266,7 @@ uint32 get_default_sec_channel(void)
 /************************************************************************
  Routine to get the trust account password for a domain.
  The user of this function must have locked the trust password file using
- the above secrets_lock_trust_account_password().
+ secrets_lock_trust_account_password().
 ************************************************************************/
 
 BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],

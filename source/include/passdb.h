@@ -5,6 +5,7 @@
    Copyright (C) Luke Kenneth Casson Leighton 1998 - 2000
    Copyright (C) Andrew Bartlett 2002
    Copyright (C) Simo Sorce 2003
+   Copyright (C) Rafal Szczesniak 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -277,7 +278,7 @@ typedef struct sam_trust_passwd {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 8
+#define PASSDB_INTERFACE_VERSION 9
 
 typedef struct pdb_context 
 {
@@ -392,6 +393,8 @@ typedef struct pdb_context
 	/* trust password functions */
 	
 	NTSTATUS (*pdb_settrustpwent)(struct pdb_context *context);
+
+	void (*pdb_endtrustpwent)(struct pdb_context *);
 
 	NTSTATUS (*pdb_gettrustpwent)(struct pdb_context *context, SAM_TRUST_PASSWD *trust);
 	
@@ -536,6 +539,8 @@ typedef struct pdb_methods
 	/* trust password functions */
 
 	NTSTATUS (*settrustpwent)(struct pdb_methods *methods);
+	
+	void (*endtrustpwent)(struct pdb_methods *);
 
 	NTSTATUS (*gettrustpwent)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust);
 	

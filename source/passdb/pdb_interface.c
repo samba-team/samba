@@ -601,6 +601,22 @@ static NTSTATUS context_settrustpwent(struct pdb_context *context)
 	return ret;
 }
 
+static void context_endtrustpwent(struct pdb_context *context)
+{
+	struct pdb_methods *cur_methods;
+	
+	if (!context) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return;
+	}
+	
+	cur_methods = context->pdb_methods;
+	
+	cur_methods->endtrustpwent(cur_methods);
+	context->pdb_methods = cur_methods;
+	return;
+}
+
 static NTSTATUS context_gettrustpwent(struct pdb_context *context,
                                       SAM_TRUST_PASSWD *trust)
 {
@@ -1001,6 +1017,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_enum_aliasmem = context_enum_aliasmem;
 	(*context)->pdb_enum_alias_memberships = context_enum_alias_memberships;
 	(*context)->pdb_settrustpwent = context_settrustpwent;
+	(*context)->pdb_endtrustpwent = context_endtrustpwent;
 	(*context)->pdb_gettrustpwent = context_gettrustpwent;
 	(*context)->pdb_gettrustpwnam = context_gettrustpwnam;
 	(*context)->pdb_gettrustpwsid = context_gettrustpwsid;
@@ -1578,6 +1595,11 @@ static NTSTATUS pdb_default_settrustpwent(struct pdb_methods *methods)
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static void pdb_default_endtrustpwent(struct pdb_methods *methods)
+{
+	return;
+}
+
 static NTSTATUS pdb_default_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASSWD* trust)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -1681,6 +1703,7 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->enum_alias_memberships = pdb_default_alias_memberships;
 	
 	(*methods)->settrustpwent = pdb_default_settrustpwent;
+	(*methods)->endtrustpwent = pdb_default_endtrustpwent;
 	(*methods)->gettrustpwent = pdb_default_gettrustpwent;
 	(*methods)->gettrustpwnam = pdb_default_gettrustpwnam;
 	(*methods)->gettrustpwsid = pdb_default_gettrustpwsid;

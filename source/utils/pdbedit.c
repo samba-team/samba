@@ -2,9 +2,10 @@
    Unix SMB/CIFS implementation.
    passdb editing frontend
    
-   Copyright (C) Simo Sorce      2000
-   Copyright (C) Andrew Bartlett 2001   
-   Copyright (C) Jelmer Vernooij 2002
+   Copyright (C) Simo Sorce        2000
+   Copyright (C) Andrew Bartlett   2001   
+   Copyright (C) Jelmer Vernooij   2002
+   Copyright (C) Rafal Szczesniak  2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -298,11 +299,13 @@ static char* trustpw_flag_name(const int val)
 static int print_trustpw_info(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD *trust, BOOL verbose)
 {
 	char *dom_name;
+	size_t uni_name_len;
 	if (!mem_ctx || !trust) return -1;
 
 	/* convert unicode domain name to char* */
 	if (!pull_ucs2_talloc(mem_ctx, &dom_name, trust->private.uni_name)) return -1;
-	dom_name[trust->private.uni_name_len] = 0;
+	uni_name_len = trust->private.uni_name_len;
+	dom_name[uni_name_len > 32 ? 32 : uni_name_len] = 0;
 
 	/* different output depending on level of verbosity */
 	if (verbose) {
@@ -397,19 +400,21 @@ static int print_trustpw_list(struct pdb_context *in, BOOL verbose, BOOL smbpwds
 	/* small separation to make it clear these are not regular accounts */
 	if (!verbose) printf("---\n");
 	
-	do {
+	/* first trust password */
+	status = in->pdb_gettrustpwent(in, &trust);
+
+	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+		/* print trust password info */
+		if (verbose) printf ("---------------\n");
+		print_trustpw_info(mem_ctx, &trust, verbose);
+		
 		/* fetch next trust password */
 		status = in->pdb_gettrustpwent(in, &trust);
-
-		if (trust.private.uni_name_len) {
-			/* print trust password info */
-			if (verbose) printf ("---------------\n");
-			print_trustpw_info(mem_ctx, &trust, verbose);
-		}
-
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(status, NT_STATUS_OK));
+	}
 	
+	in->pdb_endtrustpwent(in);
 	talloc_destroy(mem_ctx);
+
 	return 0;
 }
 

@@ -1156,3 +1156,102 @@ uint32 pdb_build_fields_present (SAM_ACCOUNT *sampass)
 	return 0x00ffffff;
 }
 
+
+/*
+ * Get/set functions for SAM_TRUST_PASSWD.
+ */
+
+const uint16 pdb_get_tp_flags(const SAM_TRUST_PASSWD *trust)
+{
+	if (!trust)
+		return -1;
+
+	return trust->private.flags;
+}
+
+const smb_ucs2_t* pdb_get_tp_domain_name(const SAM_TRUST_PASSWD *trust)
+{
+	smb_ucs2_t name[32];
+
+	if (!trust)
+		return NULL;
+	
+	/* ensure null-termination of unicode domain name */
+	strncpy_w(name, trust->private.uni_name, 32);
+	name[trust->private.uni_name_len] = 0;
+
+	return strdup_w(name);
+}
+
+const char* pdb_get_tp_pass(const SAM_TRUST_PASSWD *trust)
+{
+	if (!trust)
+		return NULL;
+
+	return trust->private.pass;
+}
+
+
+time_t pdb_get_tp_mod_time(const SAM_TRUST_PASSWD *trust)
+{
+	if (!trust)
+		return -1;
+	
+	return trust->private.mod_time;
+}
+
+const DOM_SID* pdb_get_tp_domain_sid(const SAM_TRUST_PASSWD *trust)
+{
+	if (!trust)
+		return NULL;
+
+	return &trust->private.domain_sid;
+}
+
+
+BOOL pdb_set_tp_domain_name(SAM_TRUST_PASSWD *trust, const smb_ucs2_t *dom_name)
+{
+	if (!trust || !dom_name)
+		return False;
+
+	trust->private.uni_name_len = strnlen_w(dom_name, 32);
+	strncpy_w(trust->private.uni_name, dom_name, trust->private.uni_name_len);
+
+	return True;
+}
+
+BOOL pdb_set_tp_flags(SAM_TRUST_PASSWD *trust, uint16 t_flags)
+{
+	if (!trust)
+		return False;
+
+	trust->private.flags = t_flags;
+	return True;
+}
+
+BOOL pdb_set_tp_pass(SAM_TRUST_PASSWD *trust, const char *pass)
+{
+	if (!trust || !pass)
+		return False;
+
+	strncpy(trust->private.pass, pass, sizeof(trust->private.pass));
+	return True;
+}
+
+BOOL pdb_set_tp_mod_time(SAM_TRUST_PASSWD *trust, time_t mod_time)
+{
+	if (!trust)
+		return False;
+
+	trust->private.mod_time = mod_time;
+	return True;
+}
+
+BOOL pdb_set_tp_domain_sid(SAM_TRUST_PASSWD *trust, const DOM_SID *sid)
+{
+	if (!trust || !sid)
+		return False;
+
+	sid_copy(&trust->private.domain_sid, sid);
+	return True;
+}

@@ -6,6 +6,7 @@
  * Copyright (C) Gerald Carter     2000
  * Copyright (C) Jeremy Allison    2001
  * Copyright (C) Andrew Bartlett   2002
+ * Copyright (C) Rafal Szczesniak  2004
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -43,6 +44,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
 #define PRIVPREFIX		"PRIV_"
+#define TRUSTPW_PREFIX		"TRUSTPW_"
 #define tdbsamver_t 	int32
 
 struct tdbsam_privates {
@@ -57,6 +59,8 @@ struct pwent_list {
 	TDB_DATA key;
 };
 static struct pwent_list *tdbsam_pwent_list;
+
+static TDB_LIST_NODE *tp_key_list;
 
 
 /**
@@ -336,7 +340,7 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_DATA 		data;
 	struct pwent_list	*pkey;
-
+	
 	if ( !user ) {
 		DEBUG(0,("tdbsam_getsampwent: SAM_ACCOUNT is NULL.\n"));
 		return nt_status;
@@ -698,9 +702,10 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
+
 /**
- * Start trust passwords enumeration. This function is a simple
- * wrapper for calling gettrustpwent with null pointer passed.
+ * Start trust passwords enumeration. 
+ * Function performs a search for properly prefixed objects.
  *
  * @param methods methods belonging in pdb context (module)
  * @return nt status of performed operation
@@ -708,8 +713,24 @@ static void free_private_data(void **vp)
 
 static NTSTATUS tdbsam_settrustpwent(struct pdb_methods *methods)
 {
-	/* rewind enumeration from beginning */
-	return methods->gettrustpwent(methods, NULL);
+	TDB_CONTEXT *secrets_tdb = secrets_open();
+	char* trustpw_pattern;
+
+	if (!methods)
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	asprintf(&trustpw_pattern, "%s*", TRUSTPW_PREFIX);
+	tp_key_list = tdb_search_keys(secrets_tdb, trustpw_pattern);
+
+	SAFE_FREE(trustpw_pattern);
+	return NT_STATUS_OK;
+}
+
+
+static void tdbsam_endtrustpwent(struct pdb_methods *methods)
+{
+	tdb_search_list_free(tp_key_list);
+	tp_key_list = NULL;
 }
 
 
@@ -725,100 +746,34 @@ static NTSTATUS tdbsam_settrustpwent(struct pdb_methods *methods)
 static NTSTATUS tdbsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct trust_passwd_data t;
-	TALLOC_CTX *mem_ctx;
-	
-	TRUSTDOM **trustdom;
-	static int enum_ctx;
-	int num_domains = 0;
-	unsigned int max_domains = 1;
-	char *dom_name, *dom_pass;
-	
-	smb_ucs2_t *uni_dom_name;
-	uint8 mach_pass[16];
-	uint32 sec_chan;
-	
-	if (!methods) return NT_STATUS_UNSUCCESSFUL;
-	
-	/*
-	 * NT domain trust passwords
-	 */
-	
-	/* rewind enumeration when passed NULL pointer as a trust */
-	if (!trust) {
-		enum_ctx = 0;
-		return NT_STATUS_OK;
-	}
-	
-	mem_ctx = talloc_init("tdbsam_gettrustpwent: trust password enumeration");
+	TDB_LIST_NODE *tp_key;
+	TDB_DATA tp_data;
+	TDB_CONTEXT *secrets_tdb = secrets_open();
 
-	/* fetch next trusted domain (one at a time) and its full information */
-	nt_status = secrets_get_trusted_domains(mem_ctx, &enum_ctx, max_domains, &num_domains,
-	                                        &trustdom);
-	if (num_domains) {
-		pull_ucs2_talloc(mem_ctx, &dom_name, trustdom[0]->name);
-		if (secrets_fetch_trusted_domain_password(dom_name, &dom_pass, &t.domain_sid,
-		                                          &t.mod_time)) {
-
-			t.uni_name_len = strnlen_w(trustdom[0]->name, 32);
-			strncpy_w(t.uni_name, trustdom[0]->name, t.uni_name_len);
-			safe_strcpy(t.pass, dom_pass, FSTRING_LEN - 1);
-			t.flags = PASS_DOMAIN_TRUST_NT;
-
-			SAFE_FREE(dom_pass);
-			talloc_destroy(mem_ctx);
-			trust->private = t;
-			return nt_status;
-		} else {
-			talloc_destroy(mem_ctx);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	}
-	
-	/*
-	 * NT machine trust password
-	 */
-	
-	if (secrets_lock_trust_account_password(lp_workgroup(), True)) {
-		sec_chan = get_default_sec_channel();
-		if (secrets_fetch_trust_account_password(lp_workgroup(), mach_pass, &t.mod_time,
-		                                         &sec_chan)) {
-			
-			t.uni_name_len = strlen(lp_workgroup());
-			push_ucs2_talloc(mem_ctx, &uni_dom_name, lp_workgroup());
-			strncpy_w(t.uni_name, uni_dom_name, t.uni_name_len);
-			safe_strcpy(t.pass, mach_pass, FSTRING_LEN - 1);
-			t.flags = PASS_MACHINE_TRUST_NT;
-			if (!secrets_fetch_domain_sid(lp_workgroup(), &t.domain_sid)) {
-				talloc_destroy(mem_ctx);
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			
-			talloc_destroy(mem_ctx);
-			trust->private = t;
-			return NT_STATUS_NO_MORE_ENTRIES;
-		}
-		secrets_lock_trust_account_password(lp_workgroup(), False);
-
-	} else {
-		talloc_destroy(mem_ctx);
+	if (!secrets_tdb) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/*
-	 * ADS machine trust password (TODO)
-	 */
-	 
+	tp_key = tp_key_list;
+	if (!tp_key || !tp_key->node_key.dptr) {
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
 
-	/*
-	 * if nothing is to be returned then reset domain name
-	 * and return "no more entries"
-	 */
-	nt_status = NT_STATUS_NO_MORE_ENTRIES;
-	trust->private.uni_name_len = 0;
-	trust->private.uni_name[trust->private.uni_name_len] = 0;
+	DLIST_REMOVE(tp_key_list, tp_key);
 
-	talloc_destroy(mem_ctx);
+	tp_data = tdb_fetch(secrets_tdb, tp_key->node_key);
+	SAFE_FREE(tp_key->node_key.dptr);
+	SAFE_FREE(tp_key);
+
+	if (!tp_data.dptr) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	pdb_init_trustpw_from_buffer(trust, (const char**)&tp_data.dptr,
+	                             tp_data.dsize);
+	nt_status = STATUS_MORE_ENTRIES;
+
+	SAFE_FREE(tp_data.dptr);
 	return nt_status;
 }
 
@@ -839,24 +794,28 @@ static NTSTATUS tdbsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PASS
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	char domain_name[32];
 	size_t domain_name_len = sizeof(domain_name);
+	size_t uni_name_len;
 	
 	if (!methods || !trust || !name) return nt_status;
+	methods->settrustpwent(methods);
 	
 	do {
 		/* get trust password (next in turn) */
-		nt_status = tdbsam_gettrustpwent(methods, trust);
+		nt_status = methods->gettrustpwent(methods, trust);
 		
 		/* convert unicode name and do case insensitive compare source
 		   string length is given as byte length, even though it not
 		   necessarily corresponds to the actual unicode string length */
 		pull_ucs2(NULL, domain_name, trust->private.uni_name, domain_name_len,
 		          sizeof(trust->private.uni_name), 0);
-		domain_name[trust->private.uni_name_len] = 0;
+		uni_name_len = trust->private.uni_name_len;
+		domain_name[uni_name_len > 32 ? 32 : uni_name_len] = 0;
 		if (!StrnCaseCmp(domain_name, name, sizeof(domain_name)))
 			return NT_STATUS_OK;
 
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 	
+	methods->endtrustpwent(methods);
 	return nt_status;
 }
 
@@ -877,6 +836,7 @@ static NTSTATUS tdbsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASS
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;	
 	
 	if (!methods || !trust || !sid) return nt_status;
+	methods->settrustpwent(methods);
 	
 	do {
 		nt_status = tdbsam_gettrustpwent(methods, trust);
@@ -886,6 +846,59 @@ static NTSTATUS tdbsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASS
 	
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 	
+	methods->endtrustpwent(methods);
+	return nt_status;
+}
+
+
+static NTSTATUS tdb_update_trustpw(const SAM_TRUST_PASSWD *pass, int tdb_flag)
+{
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *mem_ctx;
+	TDB_CONTEXT *secrets_tdb;
+	TDB_DATA key, data;
+	
+	char* domain = NULL, *tp_key = NULL;
+	char** buffer;
+	size_t buffer_len;
+
+	secrets_tdb = secrets_open();
+	if (!secrets_tdb)
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	mem_ctx = talloc_init("tdbsam_add_trust_passwd: storing new trust password");
+	if (!mem_ctx)
+		return NT_STATUS_NO_MEMORY;
+		
+	/* convert unicode name to char* and create the key for tdb record */
+	pull_ucs2_talloc(mem_ctx, &domain, pass->private.uni_name);
+	if (!domain) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tp_key = talloc_asprintf(mem_ctx, "%s%s", TRUSTPW_PREFIX, domain);
+	if (!tp_key) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* prepare storage record */
+	buffer_len = pdb_init_buffer_from_trustpw(mem_ctx, buffer, pass);
+
+	key.dptr   = tp_key;
+	key.dsize  = strlen(tp_key);
+	data.dptr  = *buffer;
+	data.dsize = buffer_len;
+
+	/* write the packed structure in secrets.tdb */
+	if (tdb_store(secrets_tdb, key, data, tdb_flag) != TDB_SUCCESS) {
+		talloc_destroy(mem_ctx);
+		return nt_status;
+	}
+	
+	nt_status = NT_STATUS_OK;
+	talloc_destroy(mem_ctx);
 	return nt_status;
 }
 
@@ -901,40 +914,7 @@ static NTSTATUS tdbsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASS
 
 static NTSTATUS tdbsam_add_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD *trust)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	BOOL status = False;
-	TALLOC_CTX *mem_ctx;
-	
-	char* domain = NULL;
-	struct trust_passwd_data t = trust->private;
-	uint32 sec_chan;
-	
-	mem_ctx = talloc_init("tdbsam_add_trust_passwd: storing new trust password");
-		
-	/* convert unicode name to char* (used to form the key) */
-	pull_ucs2_talloc(mem_ctx, &domain, t.uni_name);
-	
-	/* add nt machine trust password */
-	if (t.flags & (PASS_MACHINE_TRUST_NT | PASS_SERVER_TRUST_NT)) {
-		sec_chan = (t.flags & PASS_MACHINE_TRUST_NT) ? SEC_CHAN_WKSTA : SEC_CHAN_BDC;
-		status = secrets_store_machine_password(t.pass, domain, sec_chan);
-		if (status)
-			status = secrets_store_domain_sid(domain, &t.domain_sid);
-		
-		nt_status = status ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-		
-	/* add nt domain trust password */
-	} else if (t.flags & PASS_DOMAIN_TRUST_NT) {
-		status = secrets_store_trusted_domain_password(domain, t.uni_name, t.uni_name_len,
-		                                               t.pass, t.domain_sid);
-		nt_status = status ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-		
-	/* add ads machine trust password (TODO) */
-	} else if (t.flags & PASS_MACHINE_TRUST_ADS) {
-	}
-
-	talloc_destroy(mem_ctx);	
-	return nt_status;
+	return tdb_update_trustpw(trust, TDB_INSERT);
 }
 
 
@@ -949,64 +929,7 @@ static NTSTATUS tdbsam_add_trust_passwd(struct pdb_methods *methods, const SAM_T
 
 static NTSTATUS tdbsam_update_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	BOOL status = False;
-	TALLOC_CTX *mem_ctx = NULL;
-
-	char *domain = NULL;
-	struct trust_passwd_data ot, t = trust->private;
-	char machine_pass[16], *domain_pass;
-	time_t mod_time;
-	uint32 sec_chan;
-
-	if (!methods || !trust) return nt_status;
-
-	mem_ctx = talloc_init("tdbsam_add_trust_passwd: updating trust password");
-	
-	/* convert unicode name to char* and make sure it's null-terminated */
-	pull_ucs2_talloc(mem_ctx, &domain, t.uni_name);
-	domain[t.uni_name_len] = 0;
-	
-	/* update nt machine trust password */
-	if (t.flags & (PASS_MACHINE_TRUST_NT | PASS_SERVER_TRUST_NT)) {
-		sec_chan = (t.flags & PASS_MACHINE_TRUST_NT) ? SEC_CHAN_WKSTA : SEC_CHAN_BDC;
-
-		if (secrets_lock_trust_account_password(domain, True)) {
-			/* try to fetch the password to see if it actually exists... */
-			if (!secrets_fetch_trust_account_password(domain, machine_pass, &mod_time,
-			                                         &sec_chan)) {
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			}
-			
-			/* ... it does, to proceed with updating it */
-			status = secrets_store_machine_password(t.pass, domain, sec_chan);
-			if (status)
-				status = secrets_store_domain_sid(domain, &t.domain_sid);
-
-			nt_status = status ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-
-		} else {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		secrets_lock_trust_account_password(domain, False);
-
-	/* update nt domain trust password */
-	} else if (t.flags & (PASS_DOMAIN_TRUST_NT)) {
-		/* check whether domain trust password actually exists */
-		if (!secrets_fetch_trusted_domain_password(domain, &domain_pass, &ot.domain_sid,
-		                                           &ot.mod_time))
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-		/* do the update */
-		status = secrets_store_trusted_domain_password(domain, t.uni_name, t.uni_name_len,
-		                                               t.pass, t.domain_sid);
-		nt_status = status ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-		
-	/* update ads machine trust password (TODO) */
-	} else if (t.flags & PASS_MACHINE_TRUST_ADS) {
-	}
-	
-	return nt_status;
+	return tdb_update_trustpw(trust, TDB_MODIFY);
 }
 
 
@@ -1022,34 +945,36 @@ static NTSTATUS tdbsam_update_trust_passwd(struct pdb_methods *methods, const SA
 static NTSTATUS tdbsam_delete_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	BOOL status = False;
+	int status;
 	TALLOC_CTX *mem_ctx = NULL;
-
-	char *domain;
-	struct trust_passwd_data t = trust->private;
-
+	TDB_CONTEXT *secrets_tdb = NULL;
+	TDB_DATA domain_key;
+	char *domain = NULL;
+	struct trust_passwd_data t;
+	
 	if (!methods || !trust) return nt_status;
+	t = trust->private;
 
+	secrets_tdb = secrets_open();
+	if (!secrets_tdb)
+		return nt_status;
+	
 	mem_ctx = talloc_init("tdbsam_delete_trust_passwd: deleting trust password");
 	
 	/* convert unicode name to char* and make sure it's null-terminated */
 	pull_ucs2_talloc(mem_ctx, &domain, t.uni_name);
-	domain[t.uni_name_len] = 0;
+	if (!domain)
+		return NT_STATUS_NO_MEMORY;
+
+	domain_key.dptr  = talloc_asprintf(mem_ctx, "%s%s", TRUSTPW_PREFIX, domain);
+	domain_key.dsize = strlen(TRUSTPW_PREFIX) + t.uni_name_len;
+	if (!domain_key.dptr)
+		return NT_STATUS_NO_MEMORY;
+
+	status = tdb_delete(secrets_tdb, domain_key);
 	
-	/* try to delete the entry as if it was machine trust password */
-	status = trust_password_delete(domain);
-	if (status)
-		nt_status = NT_STATUS_OK;
-
-	/* now try the domain trust */
-	if (!status) {
-		status = trusted_domain_password_delete(domain);
-		if (status)
-			nt_status = NT_STATUS_OK;
-	}
-
 	talloc_destroy(mem_ctx);
-	return NT_STATUS_UNSUCCESSFUL;
+	return status ? NT_STATUS_UNSUCCESSFUL : NT_STATUS_OK;
 }
 
 
@@ -1584,7 +1509,6 @@ static NTSTATUS tdbsam_lsa_enumerate_accounts(struct pdb_methods *my_methods, DO
 
 	if (!(pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDONLY)))
 		return NT_STATUS_UNSUCCESSFUL;
-
 	pt.status = NT_STATUS_NO_MORE_ENTRIES;
 	pt.sid_list = sid_list;
 	pt.sid_count = sid_count;
@@ -1603,10 +1527,15 @@ static NTSTATUS tdbsam_lsa_enumerate_accounts(struct pdb_methods *my_methods, DO
 }
 
 
-
-
-
-
+/**
+ * Init tdbsam backend
+ *
+ * @param pdb_context initialised passdb context
+ * @param pdb_method backend methods structure to be filled with function pointers
+ * @param location the backend tdb file location
+ *
+ * @return nt_status code
+ **/
 
 static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
@@ -1628,6 +1557,7 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
 	(*pdb_method)->settrustpwent = tdbsam_settrustpwent;
+	(*pdb_method)->endtrustpwent = tdbsam_endtrustpwent;
 	(*pdb_method)->gettrustpwent = tdbsam_gettrustpwent;
 	(*pdb_method)->gettrustpwnam = tdbsam_gettrustpwnam;
 	(*pdb_method)->gettrustpwsid = tdbsam_gettrustpwsid;

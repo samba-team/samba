@@ -2339,3 +2339,61 @@ BOOL pdb_increment_bad_password_count(SAM_ACCOUNT *sampass)
 
 	return True;
 }
+
+
+/**
+ * Allocate and initialise buffer from SAM_TRUST_PASSWD
+ *
+ * @param trust trust structure's pointer address
+ * @return nt status code
+ **/
+
+size_t pdb_init_buffer_from_trustpw(TALLOC_CTX *mem_ctx, char** buf, const SAM_TRUST_PASSWD *trust)
+{
+	size_t len, buflen;
+
+	if (!mem_ctx || !trust)
+		return 0;
+
+	/* flags must be defined (ie. not null) */
+	if (!pdb_get_tp_flags(trust)) {
+		return 0;
+	}
+
+	/* calculate length of the storage buffer */
+	len = tdb_trustpw_pack(trust, NULL, 0);
+
+	*buf = (char*)talloc(mem_ctx, len);
+	if (!(*buf)) {
+		return 0;
+	}
+
+	/* pack the structure in allocated buffer */
+	buflen = tdb_trustpw_pack(trust, *buf, len);
+	
+	if (buflen != len) {
+		return 0;
+	}
+
+	return buflen;
+}
+
+
+/**
+ * Allocate and initialise buffer from SAM_TRUST_PASSWD
+ *
+ * @param trust trust structure's pointer address (it's up to caller
+ *              to free an allocated structure)
+ * @param buf
+ * @param buf_len
+ * @return nt status code
+ **/
+
+BOOL pdb_init_trustpw_from_buffer(SAM_TRUST_PASSWD *trust, const char** buf, size_t buf_len)
+{
+	if (!trust || !buf)
+		return False;
+	
+	tdb_trustpw_unpack(trust, *buf, buf_len);
+	return True;
+}
