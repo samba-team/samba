@@ -388,6 +388,14 @@ static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enu
 	return True;
 }
 
+static void store_negative_sid_by_name(char *name)
+{
+	DOM_SID nullsid;
+		
+	ZERO_STRUCT(nullsid);
+	store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+}
+
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *type)
@@ -412,6 +420,10 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 		return True;
 	}
 
+	/* Setup for fail. */
+	*type = SID_NAME_UNKNOWN;
+	ZERO_STRUCTP(sid);
+
 	/* Lookup name */
         
 	if (!(mem_ctx = talloc_init()))
@@ -428,33 +440,41 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 	   SID_NAME_USE_NONE. */
 		
 	if (!NT_STATUS_IS_OK(result)) {
-		DOM_SID nullsid;
-		
-		ZERO_STRUCT(nullsid);
-		store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+		store_negative_sid_by_name(name);
 		*type = SID_NAME_UNKNOWN;
-
 		goto done;
 	}
 
-	/* Return sid */
-                
-	if ((sid != NULL) && (sids != NULL))
-		sid_copy(sid, &sids[0]);
-	
-	/* Return name type */
-	
-	if ((type != NULL) && (types != NULL))
-		*type = (enum SID_NAME_USE)types[0];
-	
+	if (sids == NULL || types == NULL || ((enum SID_NAME_USE)types[0]) == SID_NAME_UNKNOWN) {
+		store_negative_sid_by_name(name);
+		*type = SID_NAME_UNKNOWN;
+		result = NT_STATUS_NONE_MAPPED;
+		goto done;
+	}
+
+	/* Return sid and type */
+
+	sid_copy(sid, &sids[0]);
+	*type = (enum SID_NAME_USE)types[0];
+
 	/* Now we do a reverse lookup of the SID to get the correct
 	   capitalisation of the name. */
 
 	result = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol, 1,
 				     sids, &names, &types, &num_names);
 
-	if (!NT_STATUS_IS_OK(result))
+	/* Tests for results being ok. */
+
+	if (!NT_STATUS_IS_OK(result)) {
+		*type = SID_NAME_UNKNOWN;
 		goto done;
+	}
+
+	if (names == NULL || types == NULL || ((enum SID_NAME_USE)types[0]) == SID_NAME_UNKNOWN) {
+		*type = SID_NAME_UNKNOWN;
+		result = NT_STATUS_NONE_MAPPED;
+		goto done;
+	}
 
 	/* Store the forward and reverse map of this lookup in the cache. */
 
@@ -465,8 +485,8 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 		&sids[0], names[0], (enum SID_NAME_USE)types[0]);
 
  done:
+
 	talloc_destroy(mem_ctx);
-        
 	return NT_STATUS_IS_OK(result);
 }
 
@@ -505,6 +525,10 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 			return True;
 	}
 
+	/* Default fail. */
+	*type = SID_NAME_UNKNOWN;
+	*name = '\0';
+
 	/* Lookup name */
 
 	if (!(mem_ctx = talloc_init()))
@@ -523,29 +547,33 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
                 
 		/* Return name */
                 
-		if ((names != NULL) && (name != NULL))
+		if (names != NULL)
 			fstrcpy(name, names[0]);
                 
 		/* Return name type */
 
-		if ((type != NULL) && (types != NULL))
+		if (types != NULL)
 			*type = (enum SID_NAME_USE)types[0];
 
-		store_sid_by_name_in_cache(names[0], sid, (enum SID_NAME_USE)types[0]);
-		store_name_by_sid_in_cache(sid, names[0], (enum SID_NAME_USE)types[0]);
-	} else {
-		/* OK, so we tried to look up a name in this sid, and
-		 * didn't find it.  Therefore add a negative cache
-		 * entry.  */
-		store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
-		*type = SID_NAME_UNKNOWN;
-		fstrcpy(name, name_deadbeef);
+		if ((*type != SID_NAME_UNKNOWN) && *name) {
+			store_sid_by_name_in_cache(name, sid, *type);
+			store_name_by_sid_in_cache(sid, name, *type);
+			goto done;
+		}
 	}
 
-        
- done:
-	talloc_destroy(mem_ctx);
+	/* OK, so we tried to look up a name in this sid, and
+	 * didn't find it.  Therefore add a negative cache
+	 * entry.  */
 
+	store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
+	*type = SID_NAME_UNKNOWN;
+	fstrcpy(name, name_deadbeef);
+        rv = False;
+
+ done:
+
+	talloc_destroy(mem_ctx);
 	return rv;
 }
 
