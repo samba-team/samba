@@ -849,7 +849,8 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	dce_partial_advance(dce_conn, blob.length);
 
 	/* see if this is a continued packet */
-	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
+	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
+	    !(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
 		struct dcesrv_call_state *call2 = call;
 		uint32_t alloc_size;
 
@@ -895,7 +896,8 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 
 	/* this may not be the last pdu in the chain - if its isn't then
 	   just put it on the call_list and wait for the rest */
-	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
+	    !(call->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 		DLIST_ADD_END(dce_conn->call_list, call, struct dcesrv_call_state *);
 		return NT_STATUS_OK;
 	}
@@ -998,6 +1000,8 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	if (rep->data.length == 0) {
 		/* we're done with this section of the call */
 		DLIST_REMOVE(call->replies, rep);
+	} else {
+		return STATUS_BUFFER_OVERFLOW;
 	}
 
 	if (call->replies == NULL) {
