@@ -480,7 +480,7 @@ static void process_ldap_loop(void)
 	while (client != NULL) {
 
 		if (client->finished) {
-			struct winbindd_ldap_client *next = client->next;
+			struct winbind_ldap_client *next = client->next;
 			DLIST_REMOVE(ldap_clients, client);
 			close(client->sock);
 			SAFE_FREE(client->in_buffer.data);
@@ -508,7 +508,7 @@ static void process_ldap_loop(void)
 	while (server != NULL) {
 
 		if (server->finished) {
-			struct winbindd_ldap_server *next = server->next;
+			struct winbind_ldap_server *next = server->next;
 			DLIST_REMOVE(ldap_servers, server);
 			close(server->sock);
 			SAFE_FREE(server);
