@@ -300,6 +300,11 @@ ssize_t
 readv(int d, const struct iovec *iov, int iovcnt);
 #endif
 
+#ifndef HAVE_MKSTEMP
+int
+mkstemp(char *template);
+#endif
+
 #ifndef HAVE_FLOCK
 #ifndef LOCK_SH
 #define LOCK_SH   1		/* Shared lock */
