@@ -65,6 +65,9 @@ struct profile_stats {
 	unsigned syscall_write_bytes;	/* bytes written with write syscall */
 	unsigned syscall_lseek_count;
 	unsigned syscall_lseek_time;
+	unsigned syscall_sendfile_count;
+	unsigned syscall_sendfile_time;
+	unsigned syscall_sendfile_bytes; /* bytes read with sendfile syscall */
 	unsigned syscall_rename_count;
 	unsigned syscall_rename_time;
 	unsigned syscall_fsync_count;

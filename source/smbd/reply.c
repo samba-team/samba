@@ -1683,6 +1683,85 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 }
 
 /****************************************************************************
+ Reply to a read and X - possibly using sendfile.
+****************************************************************************/
+
+int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, 
+		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
+{
+	ssize_t nread = -1;
+	char *data = smb_buf(outbuf);
+
+#if defined(WITH_SENDFILE) && defined(HAVE_SENDFILE)
+	/*
+	 * We can only use sendfile on a non-chained packet and on a file
+	 * that is exclusively oplocked.
+	 */
+
+	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		SMB_STRUCT_STAT sbuf;
+		DATA_BLOB header;
+
+		if(vfs_fstat(fsp,fsp->fd, &sbuf) == -1)
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+		if (startpos > sbuf.st_size)
+			goto normal_read;
+
+		if (smb_maxcnt > (sbuf.st_size - startpos))
+			smb_maxcnt = (sbuf.st_size - startpos);
+
+		if (smb_maxcnt == 0)
+			goto normal_read;
+
+		/* 
+		 * Set up the packet header before send. We
+		 * assume here the sendfile will work (get the
+		 * correct amount of data).
+		 */
+
+		SSVAL(outbuf,smb_vwv5,smb_maxcnt);
+		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+		SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
+		CVAL(outbuf,smb_vwv0) = 0xFF;
+		set_message(outbuf,12,smb_maxcnt,False);
+		header.data = outbuf;
+		header.length = data - outbuf;
+		header.free = NULL;
+
+		if ( conn->vfs_ops.sendfile( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt) == -1) {
+			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
+				fsp->fsp_name, strerror(errno) ));
+			exit_server("send_file_readX sendfile failed");
+		}
+
+		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
+			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+		return -1;
+	}
+
+  normal_read:
+
+#endif
+
+	nread = read_file(fsp,data,startpos,smb_maxcnt);
+  
+	if (nread < 0) {
+		END_PROFILE(SMBreadX);
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
+
+	SSVAL(outbuf,smb_vwv5,nread);
+	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+	SSVAL(smb_buf(outbuf),-2,nread);
+  
+	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
+		fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+
+	return nread;
+}
+
+/****************************************************************************
  Reply to a read and X.
 ****************************************************************************/
 
@@ -1690,10 +1769,12 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 {
 	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
 	SMB_OFF_T startpos = IVAL(inbuf,smb_vwv3);
-	size_t smb_maxcnt = SVAL(inbuf,smb_vwv5);
-	size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
 	ssize_t nread = -1;
-	char *data;
+	size_t smb_maxcnt = SVAL(inbuf,smb_vwv5);
+#if 0
+	size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
+#endif
+
 	START_PROFILE(SMBreadX);
 
 	/* If it's an IPC, pass off the pipe handler. */
@@ -1706,7 +1787,6 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	CHECK_READ(fsp);
 
 	set_message(outbuf,12,0,True);
-	data = smb_buf(outbuf);
 
 	if(CVAL(inbuf,smb_wct) == 12) {
 #ifdef LARGE_SMB_OFF_T
@@ -1736,22 +1816,13 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		END_PROFILE(SMBreadX);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
-	nread = read_file(fsp,data,startpos,smb_maxcnt);
 
-	if (nread < 0) {
-		END_PROFILE(SMBreadX);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
-	}
-  
-	SSVAL(outbuf,smb_vwv5,nread);
-	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
-	SSVAL(smb_buf(outbuf),-2,nread);
-  
-	DEBUG( 3, ( "readX fnum=%d min=%d max=%d nread=%d\n",
-		fsp->fnum, (int)smb_mincnt, (int)smb_maxcnt, (int)nread ) );
+	nread = send_file_readX(conn, inbuf, outbuf, length, fsp, startpos, smb_maxcnt);
+	if (nread != -1)
+		nread = chain_reply(inbuf,outbuf,length,bufsize);
 
 	END_PROFILE(SMBreadX);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return nread;
 }
 
 /****************************************************************************
