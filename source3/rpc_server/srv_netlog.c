@@ -851,7 +851,6 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
 
 static BOOL api_net_trust_dom_list(prs_struct *data, prs_struct *rdata)
 {
-        uint16 vuid = current_user.vuid;
 	NET_Q_TRUST_DOM_LIST q_t;
 
 	char *trusted_domain = "test_domain";
@@ -886,7 +885,6 @@ static BOOL api_net_trust_dom_list(prs_struct *data, prs_struct *rdata)
 
 static BOOL api_net_logon_ctrl2(prs_struct *data, prs_struct *rdata)
 {
-        uint16 vuid = current_user.vuid;
 	NET_Q_LOGON_CTRL2 q_l;
 
 	/* lkclXXXX - guess what - absolutely no idea what these are! */
