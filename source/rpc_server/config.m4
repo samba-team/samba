@@ -8,6 +8,7 @@ SMB_MODULE(dcerpc_epmapper,DCERPC,STATIC,[rpc_server/epmapper/rpc_epmapper.o])
 SMB_MODULE(dcerpc_remote,DCERPC,STATIC,[rpc_server/remote/dcesrv_remote.o])
 SMB_MODULE(dcerpc_srvsvc,DCERPC,STATIC,[rpc_server/srvsvc/dcesrv_srvsvc.o])
 SMB_MODULE(dcerpc_wkssvc,DCERPC,STATIC,[rpc_server/wkssvc/dcesrv_wkssvc.o])
+SMB_MODULE(dcerpc_samr,DCERPC,STATIC,[rpc_server/samr/dcesrv_samr.o rpc_server/samr/samdb.o])
 SMB_MODULE(dcerpc_winreg,DCERPC,STATIC,[rpc_server/winreg/rpc_winreg.o \$(REG_OBJS)],[],[\$(REG_LIBS)])
 
 SMB_SUBSYSTEM(DCERPC,rpc_server/dcerpc_server.o,
