@@ -582,13 +582,54 @@ static BOOL wbinfo_auth_crap(char *username)
 
 	generate_random_buffer(request.data.auth_crap.chal, 8);
         
-        SMBencrypt(pass, request.data.auth_crap.chal, 
-                   (uchar *)request.data.auth_crap.lm_resp);
-        SMBNTencrypt(pass, request.data.auth_crap.chal,
-                     (uchar *)request.data.auth_crap.nt_resp);
+	if (lp_client_ntlmv2_auth()) {
+		DATA_BLOB server_chal;
+		DATA_BLOB names_blob;	
 
-        request.data.auth_crap.lm_resp_len = 24;
-        request.data.auth_crap.nt_resp_len = 24;
+		DATA_BLOB lm_response;
+		DATA_BLOB nt_response;
+
+		server_chal = data_blob(request.data.auth_crap.chal, 8); 
+		
+		/* Pretend this is a login to 'us', for blob purposes */
+		names_blob = NTLMv2_generate_names_blob(global_myname(), lp_workgroup());
+		
+		if (!SMBNTLMv2encrypt(name_user, name_domain, pass, &server_chal, 
+				      &names_blob,
+				      &lm_response, &nt_response, NULL)) {
+			data_blob_free(&names_blob);
+			data_blob_free(&server_chal);
+			return False;
+		}
+		data_blob_free(&names_blob);
+		data_blob_free(&server_chal);
+
+		memcpy(request.data.auth_crap.nt_resp, nt_response.data, 
+		       MIN(nt_response.length, 
+			   sizeof(request.data.auth_crap.nt_resp)));
+		request.data.auth_crap.nt_resp_len = nt_response.length;
+
+		memcpy(request.data.auth_crap.lm_resp, lm_response.data, 
+		       MIN(lm_response.length, 
+			   sizeof(request.data.auth_crap.lm_resp)));
+		request.data.auth_crap.lm_resp_len = lm_response.length;
+		       
+		data_blob_free(&nt_response);
+		data_blob_free(&lm_response);
+
+	} else {
+		if (lp_client_lanman_auth() 
+		    && SMBencrypt(pass, request.data.auth_crap.chal, 
+			       (uchar *)request.data.auth_crap.lm_resp)) {
+			request.data.auth_crap.lm_resp_len = 24;
+		} else {
+			request.data.auth_crap.lm_resp_len = 0;
+		}
+		SMBNTencrypt(pass, request.data.auth_crap.chal,
+			     (uchar *)request.data.auth_crap.nt_resp);
+
+		request.data.auth_crap.nt_resp_len = 24;
+	}
 
 	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
 
