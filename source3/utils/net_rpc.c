@@ -220,7 +220,7 @@ static int rpc_changetrustpw(int argc, const char **argv)
  *
  * This uses 'machinename' as the inital password, and changes it. 
  *
- * The password should be created with 'server manager' or eqiv first.
+ * The password should be created with 'server manager' or equiv first.
  *
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
@@ -332,7 +332,7 @@ int net_rpc_join(int argc, const char **argv)
  * display info about a rpc domain
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
