@@ -552,7 +552,7 @@ check_for_passive (const char *disp)
 	(*disp == ':'
 	 || strncmp(disp, "unix", 4) == 0
 	 || strncmp(disp, "localhost", 9) == 0
-	 || strncmp(disp, local_hostname, strlen(local_hostname) == 0));
+	 || strncmp(disp, local_hostname, strlen(local_hostname)) == 0);
 }
 
 static void
@@ -626,7 +626,7 @@ main(int argc, char **argv)
      signal (SIGCHLD, childhandler);
      signal (SIGUSR1, usr1handler);
      signal (SIGUSR2, usr2handler);
-     if (check_for_passive(getenv("DISPLAY")))
+     if (force_passive || check_for_passive(getenv("DISPLAY")))
 	 return doit_passive (argv[0], user, debugp, keepalivep, port);
      else
 	 return doit_active  (argv[0], user, debugp, keepalivep, tcpp, port);
