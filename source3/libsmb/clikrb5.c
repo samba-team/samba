@@ -113,7 +113,8 @@ DATA_BLOB krb5_get_ticket(char *service, char *realm)
 	}
 
 	ret = data_blob(packet.data, packet.length);
-	krb5_free_data_contents(context, &packet);
+/* Hmm, heimdal dooesn't have this - what's the correct call? */
+/* 	krb5_free_data_contents(context, &packet); */
 	krb5_free_context(context);
 	return ret;
 
