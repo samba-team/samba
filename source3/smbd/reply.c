@@ -1873,7 +1873,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   SSVAL(outbuf,smb_vwv0,fsp->fnum);
   CVAL(smb_buf(outbuf),0) = 4;
   p = smb_buf(outbuf) + 1;
-  p += srvstr_push(inbuf, outbuf, p, fname2, -1, STR_TERMINATE|STR_CONVERT);
+  p += srvstr_push(outbuf, p, fname2, -1, STR_TERMINATE|STR_CONVERT);
   set_message_end(outbuf, p);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
