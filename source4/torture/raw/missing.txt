@@ -1,3 +1,5 @@
+- RAW-CONTEXT passes on nt4 but TCON doesn't !!??
+
 - all messaging commands
 
 - writebraw

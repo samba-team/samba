@@ -161,7 +161,7 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/module.o lib/genparser.o \
 	  lib/ldap_escape.o lib/events.o lib/mutex.o
 
-LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o $(LIB_OBJ)
+LIB_SMBD_OBJ = lib/util_smbd.o $(LIB_OBJ)
 
 READLINE_OBJ = lib/readline.o
 
