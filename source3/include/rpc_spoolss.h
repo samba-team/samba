@@ -21,8 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _RPC_SPOOLSS_H /* _RPC_SPOOLSS_H */
-#define _RPC_SPOOLSS_H 
+#ifndef _RPC_SPOOLSS_H		/* _RPC_SPOOLSS_H */
+#define _RPC_SPOOLSS_H
 
 #define INTEGER 1
 #define STRING 2
@@ -298,7 +298,7 @@
  * ( SHARED | NETWORK | RAW_ONLY )
  * RAW_ONLY _MUST_ be present otherwise NT will send an EMF file
  */
- 
+
 #define PRINTER_ATTRIBUTE_QUEUED		0x00000001
 #define PRINTER_ATTRIBUTE_DIRECT		0x00000002
 #define PRINTER_ATTRIBUTE_DEFAULT		0x00000004
@@ -360,60 +360,64 @@ typedef struct spool_user_1
 	uint32 processor;
 	UNISTR2 client_name;
 	UNISTR2 user_name;
-} SPOOL_USER_1;
+}
+SPOOL_USER_1;
 
 typedef struct spool_user_ctr_info
 {
 	uint32 level;
 	uint32 ptr;
 	SPOOL_USER_1 user1;
-} SPOOL_USER_CTR;
+}
+SPOOL_USER_CTR;
 
 typedef struct devicemode
 {
-	UNISTR	devicename;
-	uint16	specversion;
-	uint16	driverversion;
-	uint16	size;
-	uint16	driverextra;
-	uint32	fields;
-	uint16	orientation;
-	uint16	papersize;
-	uint16	paperlength;
-	uint16	paperwidth;
-	uint16	scale;
-	uint16	copies;
-	uint16	defaultsource;
-	uint16	printquality;
-	uint16	color;
-	uint16	duplex;
-	uint16	yresolution;
-	uint16	ttoption;
-	uint16	collate;
-	UNISTR	formname;
-	uint16	logpixels;
-	uint32	bitsperpel;
-	uint32	pelswidth;
-	uint32	pelsheight;
-	uint32	displayflags;
-	uint32	displayfrequency;
-	uint32	icmmethod;
-	uint32	icmintent;
-	uint32	mediatype;
-	uint32	dithertype;
-	uint32	reserved1;
-	uint32	reserved2;
-	uint32	panningwidth;
-	uint32	panningheight;
-	uint8	*private;
-} DEVICEMODE;
+	UNISTR devicename;
+	uint16 specversion;
+	uint16 driverversion;
+	uint16 size;
+	uint16 driverextra;
+	uint32 fields;
+	uint16 orientation;
+	uint16 papersize;
+	uint16 paperlength;
+	uint16 paperwidth;
+	uint16 scale;
+	uint16 copies;
+	uint16 defaultsource;
+	uint16 printquality;
+	uint16 color;
+	uint16 duplex;
+	uint16 yresolution;
+	uint16 ttoption;
+	uint16 collate;
+	UNISTR formname;
+	uint16 logpixels;
+	uint32 bitsperpel;
+	uint32 pelswidth;
+	uint32 pelsheight;
+	uint32 displayflags;
+	uint32 displayfrequency;
+	uint32 icmmethod;
+	uint32 icmintent;
+	uint32 mediatype;
+	uint32 dithertype;
+	uint32 reserved1;
+	uint32 reserved2;
+	uint32 panningwidth;
+	uint32 panningheight;
+	uint8 *private;
+}
+DEVICEMODE;
 
 typedef struct _devmode_cont
 {
 	uint32 size;
 	uint32 devmode_ptr;
 	DEVICEMODE *devmode;
-} DEVMODE_CTR;
+}
+DEVMODE_CTR;
 
 typedef struct _printer_default
 {
@@ -421,7 +425,8 @@ typedef struct _printer_default
 	UNISTR2 datatype;
 	DEVMODE_CTR devmode_cont;
 	uint32 access_required;
-} PRINTER_DEFAULT;
+}
+PRINTER_DEFAULT;
 
 /* SPOOL_Q_OPEN_PRINTER_EX request to open a printer */
 typedef struct spool_q_open_printer_ex
@@ -431,15 +436,17 @@ typedef struct spool_q_open_printer_ex
 	PRINTER_DEFAULT printer_default;
 	uint32 user_switch;
 	SPOOL_USER_CTR user_ctr;
-} SPOOL_Q_OPEN_PRINTER_EX;
+}
+SPOOL_Q_OPEN_PRINTER_EX;
 
-/* SPOOL_R_OPEN_PRINTER_EX reply to an open printer */ 
+/* SPOOL_R_OPEN_PRINTER_EX reply to an open printer */
 typedef struct spool_r_open_printer_ex
-{	
-	POLICY_HND handle; /* handle used along all transactions (20*uint8) */
+{
+	POLICY_HND handle;	/* handle used along all transactions (20*uint8) */
 	uint32 status;
 
-} SPOOL_R_OPEN_PRINTER_EX;
+}
+SPOOL_R_OPEN_PRINTER_EX;
 
 typedef struct spool_notify_option_type
 {
@@ -451,13 +458,15 @@ typedef struct spool_notify_option_type
 	uint32 fields_ptr;
 	uint32 count2;
 	uint16 fields[MAX_NOTIFY_TYPE_FOR_NOW];
-} SPOOL_NOTIFY_OPTION_TYPE;
+}
+SPOOL_NOTIFY_OPTION_TYPE;
 
 typedef struct spool_notify_option_type_ctr
 {
 	uint32 count;
 	SPOOL_NOTIFY_OPTION_TYPE *type;
-} SPOOL_NOTIFY_OPTION_TYPE_CTR;
+}
+SPOOL_NOTIFY_OPTION_TYPE_CTR;
 
 
 
@@ -468,8 +477,10 @@ typedef struct s_header_type
 	{
 		uint32 value;
 		UNISTR string;
-	} data;
-} HEADER_TYPE;
+	}
+	data;
+}
+HEADER_TYPE;
 
 typedef struct new_buffer
 {
@@ -478,14 +489,16 @@ typedef struct new_buffer
 	prs_struct prs;
 	uint32 struct_start;
 	uint32 string_at_end;
-} NEW_BUFFER;
+}
+NEW_BUFFER;
 
 typedef struct spool_q_getprinterdata
 {
 	POLICY_HND handle;
-	UNISTR2    valuename;
-	uint32     size;
-} SPOOL_Q_GETPRINTERDATA;
+	UNISTR2 valuename;
+	uint32 size;
+}
+SPOOL_Q_GETPRINTERDATA;
 
 typedef struct spool_r_getprinterdata
 {
@@ -494,38 +507,45 @@ typedef struct spool_r_getprinterdata
 	uint8 *data;
 	uint32 needed;
 	uint32 status;
-} SPOOL_R_GETPRINTERDATA;
+}
+SPOOL_R_GETPRINTERDATA;
 
 typedef struct spool_q_closeprinter
 {
 	POLICY_HND handle;
-} SPOOL_Q_CLOSEPRINTER;
+}
+SPOOL_Q_CLOSEPRINTER;
 
 typedef struct spool_r_closeprinter
 {
 	POLICY_HND handle;
 	uint32 status;
-} SPOOL_R_CLOSEPRINTER;
+}
+SPOOL_R_CLOSEPRINTER;
 
 typedef struct spool_q_startpageprinter
 {
 	POLICY_HND handle;
-} SPOOL_Q_STARTPAGEPRINTER;
+}
+SPOOL_Q_STARTPAGEPRINTER;
 
 typedef struct spool_r_startpageprinter
 {
 	uint32 status;
-} SPOOL_R_STARTPAGEPRINTER;
+}
+SPOOL_R_STARTPAGEPRINTER;
 
 typedef struct spool_q_endpageprinter
 {
 	POLICY_HND handle;
-} SPOOL_Q_ENDPAGEPRINTER;
+}
+SPOOL_Q_ENDPAGEPRINTER;
 
 typedef struct spool_r_endpageprinter
 {
 	uint32 status;
-} SPOOL_R_ENDPAGEPRINTER;
+}
+SPOOL_R_ENDPAGEPRINTER;
 
 typedef struct spool_doc_info_1
 {
@@ -535,41 +555,48 @@ typedef struct spool_doc_info_1
 	UNISTR2 docname;
 	UNISTR2 outputfile;
 	UNISTR2 datatype;
-} DOC_INFO_1;
+}
+DOC_INFO_1;
 
 typedef struct spool_doc_info
 {
 	uint32 switch_value;
 	DOC_INFO_1 doc_info_1;
-} DOC_INFO;
+}
+DOC_INFO;
 
 typedef struct spool_doc_info_container
 {
 	uint32 level;
 	DOC_INFO docinfo;
-} DOC_INFO_CONTAINER;
+}
+DOC_INFO_CONTAINER;
 
 typedef struct spool_q_startdocprinter
 {
 	POLICY_HND handle;
 	DOC_INFO_CONTAINER doc_info_container;
-} SPOOL_Q_STARTDOCPRINTER;
+}
+SPOOL_Q_STARTDOCPRINTER;
 
 typedef struct spool_r_startdocprinter
 {
 	uint32 jobid;
 	uint32 status;
-} SPOOL_R_STARTDOCPRINTER;
+}
+SPOOL_R_STARTDOCPRINTER;
 
 typedef struct spool_q_enddocprinter
 {
 	POLICY_HND handle;
-} SPOOL_Q_ENDDOCPRINTER;
+}
+SPOOL_Q_ENDDOCPRINTER;
 
 typedef struct spool_r_enddocprinter
 {
 	uint32 status;
-} SPOOL_R_ENDDOCPRINTER;
+}
+SPOOL_R_ENDDOCPRINTER;
 
 typedef struct spool_q_writeprinter
 {
@@ -577,13 +604,15 @@ typedef struct spool_q_writeprinter
 	uint32 buffer_size;
 	uint8 *buffer;
 	uint32 buffer_size2;
-} SPOOL_Q_WRITEPRINTER;
+}
+SPOOL_Q_WRITEPRINTER;
 
 typedef struct spool_r_writeprinter
 {
 	uint32 buffer_written;
 	uint32 status;
-} SPOOL_R_WRITEPRINTER;
+}
+SPOOL_R_WRITEPRINTER;
 
 typedef struct spool_notify_option
 {
@@ -592,7 +621,8 @@ typedef struct spool_notify_option
 	uint32 count;
 	uint32 option_type_ptr;
 	SPOOL_NOTIFY_OPTION_TYPE_CTR ctr;
-} SPOOL_NOTIFY_OPTION;
+}
+SPOOL_NOTIFY_OPTION;
 
 typedef struct spool_notify_info_data
 {
@@ -600,17 +630,19 @@ typedef struct spool_notify_info_data
 	uint16 field;
 	uint32 reserved;
 	uint32 id;
-	union 
+	union
 	{
 		uint32 value[2];
 		struct
 		{
 			uint32 length;
 			uint16 string[1024];
-		} data;
-	} notify_data;
+		}
+		data;
+	}
+	notify_data;
 	uint32 size;
-	BOOL   enc_type;
+	BOOL enc_type;
 } SPOOL_NOTIFY_INFO_DATA;
 
 typedef struct spool_notify_info
@@ -619,7 +651,8 @@ typedef struct spool_notify_info
 	uint32 flags;
 	uint32 count;
 	SPOOL_NOTIFY_INFO_DATA *data;
-} SPOOL_NOTIFY_INFO;
+}
+SPOOL_NOTIFY_INFO;
 
 /* If the struct name looks obscure, yes it is ! */
 /* RemoteFindFirstPrinterChangeNotificationEx query struct */
@@ -630,15 +663,17 @@ typedef struct spoolss_q_rffpcnex
 	uint32 options;
 	uint32 localmachine_ptr;
 	UNISTR2 localmachine;
-	uint32	printerlocal;
+	uint32 printerlocal;
 	uint32 option_ptr;
-        SPOOL_NOTIFY_OPTION *option;
-} SPOOL_Q_RFFPCNEX;
+	SPOOL_NOTIFY_OPTION *option;
+}
+SPOOL_Q_RFFPCNEX;
 
 typedef struct spool_r_rffpcnex
 {
 	uint32 status;
-} SPOOL_R_RFFPCNEX;
+}
+SPOOL_R_RFFPCNEX;
 
 /* Remote Find Next Printer Change Notify Ex */
 typedef struct spool_q_rfnpcnex
@@ -647,25 +682,29 @@ typedef struct spool_q_rfnpcnex
 	uint32 change;
 	uint32 option_ptr;
 	SPOOL_NOTIFY_OPTION *option;
-} SPOOL_Q_RFNPCNEX;
+}
+SPOOL_Q_RFNPCNEX;
 
 typedef struct spool_r_rfnpcnex
 {
 	uint32 info_ptr;
 	SPOOL_NOTIFY_INFO info;
 	uint32 status;
-} SPOOL_R_RFNPCNEX;
+}
+SPOOL_R_RFNPCNEX;
 
 /* Find Close Printer Notify */
 typedef struct spool_q_fcpn
 {
 	POLICY_HND handle;
-} SPOOL_Q_FCPN;
+}
+SPOOL_Q_FCPN;
 
 typedef struct spool_r_fcpn
 {
 	uint32 status;
-} SPOOL_R_FCPN;
+}
+SPOOL_R_FCPN;
 
 
 typedef struct printer_info_0
@@ -699,41 +738,44 @@ typedef struct printer_info_0
 	uint32 unknown20;
 	uint32 unknown21;
 	uint16 unknown22;
-	uint32 unknown23;	
-} PRINTER_INFO_0;
+	uint32 unknown23;
+}
+PRINTER_INFO_0;
 
 typedef struct printer_info_1
 {
-    uint32 flags;
-    UNISTR description;
-    UNISTR name;
-    UNISTR comment;
-} PRINTER_INFO_1;
+	uint32 flags;
+	UNISTR description;
+	UNISTR name;
+	UNISTR comment;
+}
+PRINTER_INFO_1;
 
 typedef struct printer_info_2
 {
-    UNISTR     servername;
-    UNISTR     printername;
-    UNISTR     sharename;
-    UNISTR     portname;
-    UNISTR     drivername;
-    UNISTR     comment;
-    UNISTR     location;
-    DEVICEMODE *devmode;
-    UNISTR     sepfile;
-    UNISTR     printprocessor;
-    UNISTR     datatype;
-    UNISTR     parameters;
-    /*SECURITY_DESCRIPTOR securitydescriptor;*/
-    uint32   attributes;
-    uint32   priority;
-    uint32   defaultpriority;
-    uint32   starttime;
-    uint32   untiltime;
-    uint32   status;
-    uint32   cjobs;
-    uint32   averageppm;
-} PRINTER_INFO_2;
+	UNISTR servername;
+	UNISTR printername;
+	UNISTR sharename;
+	UNISTR portname;
+	UNISTR drivername;
+	UNISTR comment;
+	UNISTR location;
+	DEVICEMODE *devmode;
+	UNISTR sepfile;
+	UNISTR printprocessor;
+	UNISTR datatype;
+	UNISTR parameters;
+	/*SECURITY_DESCRIPTOR securitydescriptor; */
+	uint32 attributes;
+	uint32 priority;
+	uint32 defaultpriority;
+	uint32 starttime;
+	uint32 untiltime;
+	uint32 status;
+	uint32 cjobs;
+	uint32 averageppm;
+}
+PRINTER_INFO_2;
 
 typedef struct spool_q_enumprinters
 {
@@ -743,21 +785,24 @@ typedef struct spool_q_enumprinters
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_ENUMPRINTERS;
+}
+SPOOL_Q_ENUMPRINTERS;
 
 typedef struct printer_info_ctr_info
 {
 	PRINTER_INFO_1 *printers_1;
 	PRINTER_INFO_2 *printers_2;
-} PRINTER_INFO_CTR;
+}
+PRINTER_INFO_CTR;
 
 typedef struct spool_r_enumprinters
 {
 	NEW_BUFFER *buffer;
-	uint32 needed;	 /* bytes needed */
-	uint32 returned; /* number of printers */
+	uint32 needed;		/* bytes needed */
+	uint32 returned;	/* number of printers */
 	uint32 status;
-} SPOOL_R_ENUMPRINTERS;
+}
+SPOOL_R_ENUMPRINTERS;
 
 
 typedef struct spool_q_getprinter
@@ -766,11 +811,13 @@ typedef struct spool_q_getprinter
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_GETPRINTER;
+}
+SPOOL_Q_GETPRINTER;
 
 typedef struct printer_info_info
 {
-	union {
+	union
+	{
 		PRINTER_INFO_0 *info0;
 		PRINTER_INFO_1 *info1;
 		PRINTER_INFO_2 *info2;
@@ -784,21 +831,27 @@ typedef struct spool_r_getprinter
 	uint32 needed;
 	uint32 status;
 
-} SPOOL_R_GETPRINTER;
+}
+SPOOL_R_GETPRINTER;
+
+struct _print_queue_struct;
 
 struct s_notify_info_data_table
 {
 	uint16 type;
 	uint16 field;
-	char   *name;
+	char *name;
 	uint32 size;
-	void   (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA * data,
+		    struct _print_queue_struct * queue,
+		    NT_PRINTER_INFO_LEVEL * printer);
 };
 
 typedef struct driver_info_1
 {
 	UNISTR name;
-} DRIVER_INFO_1;
+}
+DRIVER_INFO_1;
 
 typedef struct driver_info_2
 {
@@ -808,7 +861,8 @@ typedef struct driver_info_2
 	UNISTR driverpath;
 	UNISTR datafile;
 	UNISTR configfile;
-} DRIVER_INFO_2;
+}
+DRIVER_INFO_2;
 
 typedef struct driver_info_3
 {
@@ -822,17 +876,21 @@ typedef struct driver_info_3
 	UNISTR **dependentfiles;
 	UNISTR monitorname;
 	UNISTR defaultdatatype;
-} DRIVER_INFO_3;
+}
+DRIVER_INFO_3;
 
 typedef struct driver_info_info
 {
-	union {
+	union
+	{
 		DRIVER_INFO_1 *info1;
 		DRIVER_INFO_2 *info2;
 		DRIVER_INFO_3 *info3;
-	} driver;
+	}
+	driver;
 
-} DRIVER_INFO;
+}
+DRIVER_INFO;
 
 typedef struct spool_q_getprinterdriver2
 {
@@ -843,7 +901,8 @@ typedef struct spool_q_getprinterdriver2
 	NEW_BUFFER *buffer;
 	uint32 offered;
 	uint32 unknown;
-} SPOOL_Q_GETPRINTERDRIVER2;
+}
+SPOOL_Q_GETPRINTERDRIVER2;
 
 typedef struct spool_r_getprinterdriver2
 {
@@ -852,14 +911,16 @@ typedef struct spool_r_getprinterdriver2
 	uint32 unknown0;
 	uint32 unknown1;
 	uint32 status;
-} SPOOL_R_GETPRINTERDRIVER2;
+}
+SPOOL_R_GETPRINTERDRIVER2;
 
 
 typedef struct add_jobinfo_1
 {
 	UNISTR path;
 	uint32 job_number;
-} ADD_JOBINFO_1;
+}
+ADD_JOBINFO_1;
 
 
 typedef struct spool_q_addjob
@@ -868,12 +929,14 @@ typedef struct spool_q_addjob
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_ADDJOB;
+}
+SPOOL_Q_ADDJOB;
 
 typedef struct spool_r_addjob
 {
 	uint32 status;
-} SPOOL_R_ADDJOB;
+}
+SPOOL_R_ADDJOB;
 
 /*
  * I'm really wondering how many different time formats
@@ -883,15 +946,16 @@ typedef struct spool_r_addjob
 */
 typedef struct systemtime
 {
-    uint16 year;
-    uint16 month;
-    uint16 dayofweek;
-    uint16 day;
-    uint16 hour;
-    uint16 minute;
-    uint16 second;
-    uint16 milliseconds;
-} SYSTEMTIME;
+	uint16 year;
+	uint16 month;
+	uint16 dayofweek;
+	uint16 day;
+	uint16 hour;
+	uint16 minute;
+	uint16 second;
+	uint16 milliseconds;
+}
+SYSTEMTIME;
 
 typedef struct s_job_info_1
 {
@@ -908,7 +972,8 @@ typedef struct s_job_info_1
 	uint32 totalpages;
 	uint32 pagesprinted;
 	SYSTEMTIME submitted;
-} JOB_INFO_1;
+}
+JOB_INFO_1;
 
 typedef struct s_job_info_2
 {
@@ -935,7 +1000,8 @@ typedef struct s_job_info_2
 	SYSTEMTIME submitted;
 	uint32 timeelapsed;
 	uint32 pagesprinted;
-} JOB_INFO_2;
+}
+JOB_INFO_2;
 
 typedef struct spool_q_enumjobs
 {
@@ -945,11 +1011,13 @@ typedef struct spool_q_enumjobs
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_ENUMJOBS;
+}
+SPOOL_Q_ENUMJOBS;
 
 typedef struct job_info_ctr_info
 {
-	union {
+	union
+	{
 		JOB_INFO_1 **job_info_1;
 		JOB_INFO_2 **job_info_2;
 		void *info;
@@ -963,23 +1031,27 @@ typedef struct spool_r_enumjobs
 	uint32 needed;
 	uint32 returned;
 	uint32 status;
-} SPOOL_R_ENUMJOBS;
+}
+SPOOL_R_ENUMJOBS;
 
 typedef struct spool_q_schedulejob
 {
 	POLICY_HND handle;
 	uint32 jobid;
-} SPOOL_Q_SCHEDULEJOB;
+}
+SPOOL_Q_SCHEDULEJOB;
 
 typedef struct spool_r_schedulejob
 {
 	uint32 status;
-} SPOOL_R_SCHEDULEJOB;
+}
+SPOOL_R_SCHEDULEJOB;
 
 typedef struct s_port_info_1
 {
 	UNISTR port_name;
-} PORT_INFO_1;
+}
+PORT_INFO_1;
 
 typedef struct s_port_info_2
 {
@@ -988,7 +1060,8 @@ typedef struct s_port_info_2
 	UNISTR description;
 	uint32 port_type;
 	uint32 reserved;
-} PORT_INFO_2;
+}
+PORT_INFO_2;
 
 typedef struct spool_q_enumports
 {
@@ -997,24 +1070,29 @@ typedef struct spool_q_enumports
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_ENUMPORTS;
+}
+SPOOL_Q_ENUMPORTS;
 
 typedef struct port_info_ctr_info
 {
-	union {
+	union
+	{
 		PORT_INFO_1 *info_1;
 		PORT_INFO_2 *info_2;
-	} port;
+	}
+	port;
 
-} PORT_INFO_CTR;
+}
+PORT_INFO_CTR;
 
 typedef struct spool_r_enumports
 {
 	NEW_BUFFER *buffer;
-	uint32 needed;	 /* bytes needed */
-	uint32 returned; /* number of printers */
+	uint32 needed;		/* bytes needed */
+	uint32 returned;	/* number of printers */
 	uint32 status;
-} SPOOL_R_ENUMPORTS;
+}
+SPOOL_R_ENUMPORTS;
 
 #define JOB_CONTROL_PAUSE              1
 #define JOB_CONTROL_RESUME             2
@@ -1024,12 +1102,15 @@ typedef struct spool_r_enumports
 
 typedef struct job_info_info
 {
-	union {
+	union
+	{
 		JOB_INFO_1 job_info_1;
 		JOB_INFO_2 job_info_2;
-	} job;
+	}
+	job;
 
-} JOB_INFO;
+}
+JOB_INFO;
 
 typedef struct spool_q_setjob
 {
@@ -1039,13 +1120,15 @@ typedef struct spool_q_setjob
 	JOB_INFO ctr;
 	uint32 command;
 
-} SPOOL_Q_SETJOB;
+}
+SPOOL_Q_SETJOB;
 
 typedef struct spool_r_setjob
 {
 	uint32 status;
 
-} SPOOL_R_SETJOB;
+}
+SPOOL_R_SETJOB;
 
 typedef struct spool_q_enumprinterdrivers
 {
@@ -1056,7 +1139,8 @@ typedef struct spool_q_enumprinterdrivers
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_ENUMPRINTERDRIVERS;
+}
+SPOOL_Q_ENUMPRINTERDRIVERS;
 
 typedef struct spool_r_enumprinterdrivers
 {
@@ -1064,7 +1148,8 @@ typedef struct spool_r_enumprinterdrivers
 	uint32 needed;
 	uint32 returned;
 	uint32 status;
-} SPOOL_R_ENUMPRINTERDRIVERS;
+}
+SPOOL_R_ENUMPRINTERDRIVERS;
 
 typedef struct spool_form_1
 {
@@ -1076,15 +1161,17 @@ typedef struct spool_form_1
 	uint32 top;
 	uint32 right;
 	uint32 bottom;
-} FORM_1;
+}
+FORM_1;
 
 typedef struct spool_q_enumforms
 {
 	POLICY_HND handle;
-	uint32     level;
+	uint32 level;
 	NEW_BUFFER *buffer;
-	uint32     offered;
-} SPOOL_Q_ENUMFORMS;
+	uint32 offered;
+}
+SPOOL_Q_ENUMFORMS;
 
 typedef struct spool_r_enumforms
 {
@@ -1092,7 +1179,8 @@ typedef struct spool_r_enumforms
 	uint32 needed;
 	uint32 numofforms;
 	uint32 status;
-} SPOOL_R_ENUMFORMS;
+}
+SPOOL_R_ENUMFORMS;
 
 
 typedef struct spool_printer_info_level_2
@@ -1130,14 +1218,16 @@ typedef struct spool_printer_info_level_2
 	UNISTR2 datatype;
 	UNISTR2 parameters;
 	SEC_DESC_BUF *secdesc;
-} SPOOL_PRINTER_INFO_LEVEL_2;
+}
+SPOOL_PRINTER_INFO_LEVEL_2;
 
 typedef struct spool_printer_info_level
 {
 	uint32 level;
 	uint32 info_ptr;
 	SPOOL_PRINTER_INFO_LEVEL_2 *info_2;
-} SPOOL_PRINTER_INFO_LEVEL;
+}
+SPOOL_PRINTER_INFO_LEVEL;
 
 typedef struct spool_printer_driver_info_level_3
 {
@@ -1163,14 +1253,16 @@ typedef struct spool_printer_driver_info_level_3
 	UNISTR2 defaultdatatype;
 	BUFFER5 dependentfiles;
 
-} SPOOL_PRINTER_DRIVER_INFO_LEVEL_3;
+}
+SPOOL_PRINTER_DRIVER_INFO_LEVEL_3;
 
 typedef struct spool_printer_driver_info_level
 {
 	uint32 level;
 	uint32 ptr;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *info_3;
-} SPOOL_PRINTER_DRIVER_INFO_LEVEL;
+}
+SPOOL_PRINTER_DRIVER_INFO_LEVEL;
 
 
 /* this struct is undocumented */
@@ -1186,12 +1278,14 @@ typedef struct spool_user_level_1
 	uint32 processor;
 	UNISTR2 client_name;
 	UNISTR2 user_name;
-} SPOOL_USER_LEVEL_1;
+}
+SPOOL_USER_LEVEL_1;
 
 typedef struct spool_user_level
 {
 	SPOOL_USER_LEVEL_1 *user_level_1;
-} SPOOL_USER_LEVEL;
+}
+SPOOL_USER_LEVEL;
 
 typedef struct spool_q_setprinter
 {
@@ -1205,16 +1299,19 @@ typedef struct spool_q_setprinter
 	{
 		uint32 size_of_buffer;
 		uint32 data;
-	} security;
+	}
+	security;
 
 	uint32 command;
 
-} SPOOL_Q_SETPRINTER;
+}
+SPOOL_Q_SETPRINTER;
 
 typedef struct spool_r_setprinter
 {
 	uint32 status;
-} SPOOL_R_SETPRINTER;
+}
+SPOOL_R_SETPRINTER;
 
 typedef struct spool_q_addprinter
 {
@@ -1227,12 +1324,14 @@ typedef struct spool_q_addprinter
 	uint32 unk3;
 	uint32 user_level;
 	SPOOL_USER_LEVEL user;
-} SPOOL_Q_ADDPRINTER;
+}
+SPOOL_Q_ADDPRINTER;
 
 typedef struct spool_r_addprinter
 {
 	uint32 status;
-} SPOOL_R_ADDPRINTER;
+}
+SPOOL_R_ADDPRINTER;
 
 
 typedef struct spool_q_addprinterex
@@ -1247,13 +1346,15 @@ typedef struct spool_q_addprinterex
 	uint32 unk3;
 	uint32 user_switch;
 	SPOOL_USER_CTR user_ctr;
-} SPOOL_Q_ADDPRINTEREX;
+}
+SPOOL_Q_ADDPRINTEREX;
 
 typedef struct spool_r_addprinterex
 {
 	POLICY_HND handle;
 	uint32 status;
-} SPOOL_R_ADDPRINTEREX;
+}
+SPOOL_R_ADDPRINTEREX;
 
 
 typedef struct spool_q_addprinterdriver
@@ -1262,25 +1363,31 @@ typedef struct spool_q_addprinterdriver
 	UNISTR2 server_name;
 	uint32 level;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL info;
-} SPOOL_Q_ADDPRINTERDRIVER;
+}
+SPOOL_Q_ADDPRINTERDRIVER;
 
 typedef struct spool_r_addprinterdriver
 {
 	uint32 status;
-} SPOOL_R_ADDPRINTERDRIVER;
+}
+SPOOL_R_ADDPRINTERDRIVER;
 
 
 typedef struct driver_directory_1
 {
 	UNISTR name;
-} DRIVER_DIRECTORY_1 ;
+}
+DRIVER_DIRECTORY_1;
 
 typedef struct driver_info_ctr_info
 {
-	union {
+	union
+	{
 		DRIVER_DIRECTORY_1 info_1;
-	} driver;
-} DRIVER_DIRECTORY_CTR;
+	}
+	driver;
+}
+DRIVER_DIRECTORY_CTR;
 
 typedef struct spool_q_getprinterdriverdirectory
 {
@@ -1291,14 +1398,16 @@ typedef struct spool_q_getprinterdriverdirectory
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_GETPRINTERDRIVERDIR;
+}
+SPOOL_Q_GETPRINTERDRIVERDIR;
 
 typedef struct spool_r_getprinterdriverdirectory
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 status;
-} SPOOL_R_GETPRINTERDRIVERDIR;
+}
+SPOOL_R_GETPRINTERDRIVERDIR;
 
 typedef struct spool_q_enumprintprocessors
 {
@@ -1309,12 +1418,14 @@ typedef struct spool_q_enumprintprocessors
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_ENUMPRINTPROCESSORS;
+}
+SPOOL_Q_ENUMPRINTPROCESSORS;
 
 typedef struct printprocessor_1
 {
 	UNISTR name;
-} PRINTPROCESSOR_1;
+}
+PRINTPROCESSOR_1;
 
 typedef struct spool_r_enumprintprocessors
 {
@@ -1322,7 +1433,8 @@ typedef struct spool_r_enumprintprocessors
 	uint32 needed;
 	uint32 returned;
 	uint32 status;
-} SPOOL_R_ENUMPRINTPROCESSORS;
+}
+SPOOL_R_ENUMPRINTPROCESSORS;
 
 typedef struct spool_q_enumprintprocdatatypes
 {
@@ -1333,12 +1445,14 @@ typedef struct spool_q_enumprintprocdatatypes
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_ENUMPRINTPROCDATATYPES;
+}
+SPOOL_Q_ENUMPRINTPROCDATATYPES;
 
 typedef struct ppdatatype_1
 {
 	UNISTR name;
-} PRINTPROCDATATYPE_1;
+}
+PRINTPROCDATATYPE_1;
 
 typedef struct spool_r_enumprintprocdatatypes
 {
@@ -1346,19 +1460,22 @@ typedef struct spool_r_enumprintprocdatatypes
 	uint32 needed;
 	uint32 returned;
 	uint32 status;
-} SPOOL_R_ENUMPRINTPROCDATATYPES;
+}
+SPOOL_R_ENUMPRINTPROCDATATYPES;
 
 typedef struct printmonitor_1
 {
 	UNISTR name;
-} PRINTMONITOR_1;
+}
+PRINTMONITOR_1;
 
 typedef struct printmonitor_2
 {
 	UNISTR name;
 	UNISTR environment;
 	UNISTR dll_name;
-} PRINTMONITOR_2;
+}
+PRINTMONITOR_2;
 
 typedef struct spool_q_enumprintmonitors
 {
@@ -1367,7 +1484,8 @@ typedef struct spool_q_enumprintmonitors
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_ENUMPRINTMONITORS;
+}
+SPOOL_Q_ENUMPRINTMONITORS;
 
 typedef struct spool_r_enumprintmonitors
 {
@@ -1375,7 +1493,8 @@ typedef struct spool_r_enumprintmonitors
 	uint32 needed;
 	uint32 returned;
 	uint32 status;
-} SPOOL_R_ENUMPRINTMONITORS;
+}
+SPOOL_R_ENUMPRINTMONITORS;
 
 
 typedef struct spool_q_enumprinterdata
@@ -1384,7 +1503,8 @@ typedef struct spool_q_enumprinterdata
 	uint32 index;
 	uint32 valuesize;
 	uint32 datasize;
-} SPOOL_Q_ENUMPRINTERDATA;
+}
+SPOOL_Q_ENUMPRINTERDATA;
 
 typedef struct spool_r_enumprinterdata
 {
@@ -1393,10 +1513,11 @@ typedef struct spool_r_enumprinterdata
 	uint32 realvaluesize;
 	uint32 type;
 	uint32 datasize;
-	uint8  *data;
+	uint8 *data;
 	uint32 realdatasize;
 	uint32 status;
-} SPOOL_R_ENUMPRINTERDATA;
+}
+SPOOL_R_ENUMPRINTERDATA;
 
 typedef struct spool_q_setprinterdata
 {
@@ -1407,25 +1528,28 @@ typedef struct spool_q_setprinterdata
 	uint8 *data;
 	uint32 real_len;
 	uint32 numeric_data;
-} SPOOL_Q_SETPRINTERDATA;
+}
+SPOOL_Q_SETPRINTERDATA;
 
 typedef struct spool_r_setprinterdata
 {
 	uint32 status;
-} SPOOL_R_SETPRINTERDATA;
+}
+SPOOL_R_SETPRINTERDATA;
 
 typedef struct _form
 {
-       uint32 flags;
-       uint32 name_ptr;
-       uint32 size_x;
-       uint32 size_y;
-       uint32 left;
-       uint32 top;
-       uint32 right;
-       uint32 bottom;
-       UNISTR2 name;
-} FORM;
+	uint32 flags;
+	uint32 name_ptr;
+	uint32 size_x;
+	uint32 size_y;
+	uint32 left;
+	uint32 top;
+	uint32 right;
+	uint32 bottom;
+	UNISTR2 name;
+}
+FORM;
 
 typedef struct spool_q_addform
 {
@@ -1433,12 +1557,14 @@ typedef struct spool_q_addform
 	uint32 level;
 	uint32 level2;
 	FORM form;
-} SPOOL_Q_ADDFORM;
+}
+SPOOL_Q_ADDFORM;
 
 typedef struct spool_r_addform
 {
 	uint32 status;
-} SPOOL_R_ADDFORM;
+}
+SPOOL_R_ADDFORM;
 
 typedef struct spool_q_setform
 {
@@ -1447,12 +1573,14 @@ typedef struct spool_q_setform
 	uint32 level;
 	uint32 level2;
 	FORM form;
-} SPOOL_Q_SETFORM;
+}
+SPOOL_Q_SETFORM;
 
 typedef struct spool_r_setform
 {
 	uint32 status;
-} SPOOL_R_SETFORM;
+}
+SPOOL_R_SETFORM;
 
 typedef struct spool_q_getjob
 {
@@ -1461,11 +1589,13 @@ typedef struct spool_q_getjob
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-} SPOOL_Q_GETJOB;
+}
+SPOOL_Q_GETJOB;
 
 typedef struct pjob_info_info
 {
-	union {
+	union
+	{
 		JOB_INFO_1 *job_info_1;
 		JOB_INFO_2 *job_info_2;
 		void *info;
@@ -1478,7 +1608,8 @@ typedef struct spool_r_getjob
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 status;
-} SPOOL_R_GETJOB;
+}
+SPOOL_R_GETJOB;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
