@@ -107,8 +107,9 @@ handle_udp(krb5_context context, struct descr *d)
 {
     unsigned char buf[1024];
     struct sockaddr_in from;
-    size_t from_len = sizeof(from);
+    int from_len = sizeof(from);
     size_t n;
+
     n = recvfrom(d->s, buf, sizeof(buf), 0, 
 		 (struct sockaddr*)&from, &from_len);
     if(n < 0){
@@ -137,8 +138,9 @@ handle_tcp(krb5_context context, struct descr *d, int index, int min_free)
 {
     unsigned char buf[1024];
     struct sockaddr_in from;
-    size_t from_len = sizeof(from);
+    int from_len = sizeof(from);
     size_t n;
+
     if(d[index].timeout == 0){
 	int s;
 	from_len = sizeof(from);
