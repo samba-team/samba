@@ -73,7 +73,24 @@ typedef enum
 #define NSD_MEM_VOLATILE 1
 #define NSD_MEM_DYNAMIC 2
 
-#else /* Nothing's defined. Neither gnu nor sun */
+#elif defined(HPUX)
+/* HP-UX 11 */
+
+#include "nsswitch/hp_nss_common.h"
+#include "nsswitch/hp_nss_dbdefs.h"
+#include <nsswitch.h>
+
+#ifndef _HAVE_TYPEDEF_NSS_STATUS
+#define _HAVE_TYPEDEF_NSS_STATUS
+typedef nss_status_t NSS_STATUS;
+
+#define NSS_STATUS_SUCCESS     NSS_SUCCESS
+#define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
+#define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
+#define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
+#endif /* HPUX */
+
+#else /* Nothing's defined. Neither gnu nor sun nor hp */
 
 typedef enum
 {
@@ -86,4 +103,3 @@ typedef enum
 #endif
 
 #endif /* _NSSWITCH_NSS_H */
-
