@@ -23,8 +23,6 @@
 
 #include "winbindd.h"
 
-extern pstring debugf;
-
 /* List of all connected clients */
 
 struct winbindd_cli_state *client_list;
@@ -36,6 +34,7 @@ BOOL opt_nocache;
 static BOOL reload_services_file(BOOL test)
 {
 	BOOL ret;
+	pstring logfile;
 
 	if (lp_loaded()) {
 		pstring fname;
@@ -47,8 +46,14 @@ static BOOL reload_services_file(BOOL test)
 		}
 	}
 
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
+
 	reopen_logs();
 	ret = lp_load(dyn_CONFIGFILE,False,False,True);
+
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
 
 	reopen_logs();
 	load_interfaces();
@@ -66,7 +71,7 @@ static BOOL dump_core(void)
 {
 	char *p;
 	pstring dname;
-	pstrcpy( dname, debugf );
+	pstrcpy( dname, lp_logfile() );
 	if ((p=strrchr(dname,'/')))
 		*p=0;
 	pstrcat( dname, "/corefiles" );
@@ -725,6 +730,7 @@ int main(int argc, char **argv)
 {
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
+	pstring logfile;
 	int accept_sock;
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
@@ -735,7 +741,8 @@ int main(int argc, char **argv)
  	CatchSignal(SIGUSR1, SIG_IGN);
 
 	fault_setup((void (*)(void *))fault_quit );
-	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", dyn_LOGFILEBASE);
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
 
 	/* Initialise for running in non-root mode */
 
@@ -777,7 +784,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", dyn_LOGFILEBASE);
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
 	setup_logging("winbindd", interactive);
 	reopen_logs();
 

@@ -3881,4 +3881,13 @@ BOOL is_netbios_alias_or_name(char *name)
 	return False;
 }
 
+/***********************************************************
+ Allow daemons such as winbindd to fix their logfile name.
+************************************************************/
 
+void lp_set_logfile(const char *name)
+{
+	extern pstring debugf;
+	pstrcpy(Globals.szLogFile, name);
+	pstrcpy(debugf, name);
+}
