@@ -201,7 +201,8 @@ static BOOL wcache_server_down(struct winbindd_domain *domain)
   refresh the domain sequence number. If force is True
   then always refresh it, no matter how recently we fetched it
 */
-static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
+static NTSTATUS refresh_sequence_number(struct winbindd_domain *domain, 
+					BOOL force)
 {
 	NTSTATUS status;
 	unsigned time_diff;
@@ -210,7 +211,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 
 	/* see if we have to refetch the domain sequence number */
 	if (!force && (time_diff < lp_winbind_cache_time())) {
-		return;
+		return NT_STATUS_OK;
 	}
 
 	status = wcache->backend->sequence_number(domain, &domain->sequence_number);
@@ -238,6 +239,8 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 
 	DEBUG(10, ("refresh_sequence_number: seq number is now %d\n", 
 		   domain->sequence_number));
+
+	return status;
 }
 
 /*
@@ -276,8 +279,18 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	TDB_DATA data;
 	struct cache_entry *centry;
 	TDB_DATA key;
+	NTSTATUS result;
 
-	refresh_sequence_number(domain, False);
+	result = refresh_sequence_number(domain, False);
+
+	/* Treat an access denied result from refresh_sequence_number as a
+	   cache miss.  Access denied is returned when the domain
+	   controller disallows anonymous access.  Perhaps we should treat
+	   any error as a miss although that might increase the time it
+	   takes winbindd to determine if a domain controller is down. */
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED))
+		return NULL;
 
 	va_start(ap, format);
 	smb_xvasprintf(&kstr, format, ap);
@@ -738,9 +751,15 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 do_query:
 	ZERO_STRUCTP(sid);
 
-	/* Return status value returned by seq number check */
+	/* If the seq number check indicated that there is a problem
+	 * with this DC, then return that status... except for
+	 * access_denied.  This is special because the dc may be in
+	 * "restrict anonymous = 1" mode, in which case it will deny
+	 * most unauthenticated operations, but *will* allow the LSA
+	 * name-to-sid that we try as a fallback. */
 
-	if (!NT_STATUS_IS_OK(domain->last_status))
+	if (!(NT_STATUS_IS_OK(domain->last_status)
+	      || NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED)))
 		return domain->last_status;
 
 	status = cache->backend->name_to_sid(domain, name, sid, type);
@@ -784,9 +803,16 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 do_query:
 	*name = NULL;
 
-	/* Return status value returned by seq number check */
 
-	if (!NT_STATUS_IS_OK(domain->last_status))
+	/* If the seq number check indicated that there is a problem
+	 * with this DC, then return that status... except for
+	 * access_denied.  This is special because the dc may be in
+	 * "restrict anonymous = 1" mode, in which case it will deny
+	 * most unauthenticated operations, but *will* allow the LSA
+	 * sid-to-name that we try as a fallback. */
+
+	if (!(NT_STATUS_IS_OK(domain->last_status)
+	      || NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED)))
 		return domain->last_status;
 
 	status = cache->backend->sid_to_name(domain, mem_ctx, sid, name, type);
