@@ -1,3 +1,25 @@
+Fri Aug  8 05:51:02 1997  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kverify.c: new file
+
+	* lib/krb5/free_host_realm.c: new file
+
+	* lib/krb5/principal.c (krb5_sname_to_principal): implement
+ 	different nametypes.  Also free memory.
+
+	* lib/krb5/verify_init.c: more functionality
+
+	* lib/krb5/mk_req_ext.c (krb5_mk_req_extended): free the checksum
+
+	* lib/krb5/get_in_tkt.c (extract_ticket): don't copy over the
+ 	principals in creds.  Should also compare them with that received
+ 	from the KDC
+
+	* lib/krb5/cache.c (krb5_cc_gen_new): copy the newly allocated
+ 	krb5_ccache
+	(krb5_cc_destroy): call krb5_cc_close
+	(krb5_cc_retrieve_cred): delete the unused creds
+
 Fri Aug  8 02:30:40 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/log.c: Allow better control of destinations of logging
