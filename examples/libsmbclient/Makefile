@@ -10,7 +10,7 @@ CFLAGS = -I$(SAMBA_INCL) $(EXTLIB_INCL)
 
 LDFLAGS = -L/usr/lib
 
-all: testsmbc tree testacl
+all: testsmbc tree testacl testbrowse
 
 testsmbc: testsmbc.o 
 	@echo Linking testsmbc
@@ -27,6 +27,10 @@ tree: tree.o
 testacl: testacl.o
 	@echo Linking testacl
 	@$(CC) `gtk-config --cflags` $(CFLAGS) $(LDFLAGS) -o $@ `gtk-config --libs` -lsmbclient -lpopt $<
+
+testbrowse: testbrowse.o
+	@echo Linking testbrowse
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -lsmbclient -lpopt $<
 
 clean:
 	@rm -f *.o *~

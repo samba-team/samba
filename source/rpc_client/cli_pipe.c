@@ -1443,7 +1443,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 		cli->nt_pipe_fnum = (uint16)fnum;
 	} else {
 		if ((fnum = cli_open(cli, pipe_names[pipe_idx].client_pipe, O_CREAT|O_RDWR, DENY_NONE)) == -1) {
-			DEBUG(0,("cli_nt_session_open: cli_open failed on pipe %s to machine %s.  Error was %s\n",
+			DEBUG(1,("cli_nt_session_open: cli_open failed on pipe %s to machine %s.  Error was %s\n",
 				 pipe_names[pipe_idx].client_pipe, cli->desthost, cli_errstr(cli)));
 			return False;
 		}
