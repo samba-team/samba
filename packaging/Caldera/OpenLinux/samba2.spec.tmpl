@@ -262,7 +262,6 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--without-smbwrapper \
 	--with-smbmount \
 	--with-pam \
-	--with-tdbpwd \
 	--with-profile \
 	--with-netatalk \
 	--with-quotas \
@@ -350,7 +349,7 @@ EoH
 
 DOCD="$DESTDIR/%{_defaultdocdir}/samba-%{Version}"; mkdir -p $DOCD
 ln -sf ../Copyrights/GPL-2.0  $DOCD/COPYING
-cp -p README README-smbmount Manifest Read-Manifest-Now $DOCD
+cp -p README Manifest Read-Manifest-Now $DOCD
 cp -p WHATSNEW.txt Roadmap $DOCD
 cp -a docs examples $DOCD
 
@@ -458,4 +457,4 @@ lisa --inetd disable swat $1
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec.tmpl,v 1.1.6.5 2001/01/24 00:06:06 jht Exp $
+$Id: samba2.spec.tmpl,v 1.1.6.6 2001/02/26 15:01:04 jht Exp $
