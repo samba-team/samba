@@ -10,7 +10,16 @@
 	* lib/krb5/krb5.h: remove des.h, it's not needed and applications
 	should not have to make sure to find it.
 
+2000-02-03  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_req.c (get_key_from_keytab): rename parameter to
+	`out_key' to avoid conflicting with label.  reported by Sean Doran
+	<smd@ebone.net>
+
 2000-02-02  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/expand_hostname.c: remember to lower-case host names.
+	bug reported by <amu@mit.edu>
 
 	* kdc/kerberos4.c (do_version4): look at check_ticket_addresses
 	and emulate that by setting krb_ignore_ip_address (not a great
