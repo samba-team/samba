@@ -45,7 +45,6 @@ struct session_record{
 } *srecs;
 
 extern int DEBUGLEVEL;
-extern XFILE *dbf;
 
 static pstring Ucrit_username = "";                   /* added by OH */
 static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */

@@ -2280,7 +2280,6 @@ static int do_message_op(void)
 	fstring base_directory;
 	char *pname = argv[0];
 	int opt;
-	extern XFILE *dbf;
 	extern char *optarg;
 	extern int optind;
 	int old_debug;

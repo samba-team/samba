@@ -49,7 +49,6 @@ static char *smb_readline_replacement(char *prompt, void (*callback)(void),
                                                              int end))
 {
 	fd_set fds;
-	extern XFILE *dbf;
 	static pstring line;
 	struct timeval timeout;
 	int fd = fileno(stdin);

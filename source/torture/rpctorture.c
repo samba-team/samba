@@ -229,7 +229,6 @@ enum client_action
 {
 	char *pname = argv[0];
 	int opt;
-	extern XFILE *dbf;
 	extern char *optarg;
 	extern int optind;
 	static pstring servicesf = CONFIGFILE;

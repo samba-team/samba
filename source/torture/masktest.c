@@ -420,7 +420,6 @@ static void usage(void)
 	struct cli_state *cli;	
 	extern char *optarg;
 	extern int optind;
-	extern XFILE *dbf;
 	int opt;
 	char *p;
 	int seed;

@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
 	int opt;
 	extern char *optarg;
 	extern int optind;
-	extern XFILE *dbf;
 
 	dbf = x_stdout;
 	smbw_setup_shared();

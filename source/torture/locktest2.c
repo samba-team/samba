@@ -533,7 +533,6 @@ static void usage(void)
 	char *share1, *share2, *nfspath1, *nfspath2;
 	extern char *optarg;
 	extern int optind;
-	extern XFILE *dbf;
 	int opt;
 	char *p;
 	int seed;
