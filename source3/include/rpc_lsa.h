@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
@@ -39,7 +38,7 @@ enum SID_NAME_USE
 	SID_NAME_UNKNOWN = 8  /* oops. */
 };
 
-/* Opcodes available on this pipe */
+/* Opcodes available on PIPE_LSARPC */
 
 #define LSA_CLOSE              0x00
 #define LSA_DELETE             0x01
