@@ -874,7 +874,7 @@ password required /lib/security/pam_stack.so service=system-auth
 
 	<para>
 	When I open a new console with [ctrl][alt][F1], I can't log in with my user <quote>pitie</quote>.
-	I have tried with user <quote>scienceu+pitie</quote> also.
+	I have tried with user <quote>scienceu\pitie</quote> also.
 	</para>
 
 	<para>
@@ -903,18 +903,18 @@ password required /lib/security/pam_stack.so service=system-auth
 
 <para><screen>
 &rootprompt;<userinput>wbinfo -u</userinput>
-MIDEARTH+maryo
-MIDEARTH+jackb
-MIDEARTH+ameds
+MIDEARTH\maryo
+MIDEARTH\jackb
+MIDEARTH\ameds
 ...
-MIDEARTH+root
+MIDEARTH\root
 
 &rootprompt;<userinput>wbinfo -g</userinput>
-MIDEARTH+Domain Users
-MIDEARTH+Domain Admins
-MIDEARTH+Domain Guests
+MIDEARTH\Domain Users
+MIDEARTH\Domain Admins
+MIDEARTH\Domain Guests
 ...
-MIDEARTH+Accounts
+MIDEARTH\Accounts
 
 &rootprompt;<userinput>getent passwd</userinput>
 root:x:0:0:root:/root:/bin/bash
