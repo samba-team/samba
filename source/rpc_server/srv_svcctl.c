@@ -93,7 +93,7 @@ static void svc_reply_open_service(SVC_Q_OPEN_SERVICE *q_u,
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
-	fstrcpy(name, unistr2_to_str(&q_u->uni_srv_name));
+	fstrcpy(name, unistr2_to_str(&q_u->uni_svc_name));
 
 	if (status == 0x0)
 	{
