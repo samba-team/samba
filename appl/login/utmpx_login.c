@@ -7,11 +7,11 @@ RCSID("$Id$");
 /* utmpx_login - update utmp and wtmp after login */
 
 #ifndef HAVE_UTMPX_H
-int utmpx_login(char *line, char *user, char *host) { return 0; }
+int utmpx_login(char *line, const char *user, const char *host) { return 0; }
 #else
 
 static void
-utmpx_update(struct utmpx *ut, char *line, char *user, char *host)
+utmpx_update(struct utmpx *ut, char *line, const char *user, const char *host)
 {
     struct timeval tmp;
     char *clean_tty = clean_ttyname(line);
@@ -49,7 +49,7 @@ utmpx_update(struct utmpx *ut, char *line, char *user, char *host)
 }
 
 int
-utmpx_login(char *line, char *user, char *host)
+utmpx_login(char *line, const char *user, const char *host)
 {
     struct utmpx *ut;
     pid_t   mypid = getpid();

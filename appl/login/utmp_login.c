@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -41,7 +41,8 @@
 RCSID("$Id$");
 
 void
-prepare_utmp (struct utmp *utmp, char *tty, char *username, char *hostname)
+prepare_utmp (struct utmp *utmp, char *tty, 
+	      const char *username, const char *hostname)
 {
     char *ttyx = clean_ttyname (tty);
 
@@ -81,12 +82,15 @@ prepare_utmp (struct utmp *utmp, char *tty, char *username, char *hostname)
 }
 
 #ifdef HAVE_UTMPX_H
-void utmp_login(char *tty, char *username, char *hostname) { return; }
+void utmp_login(char *tty, const char *username, const char *hostname)
+{ 
+    return;
+}
 #else
 
 /* update utmp and wtmp - the BSD way */
 
-void utmp_login(char *tty, char *username, char *hostname)
+void utmp_login(char *tty, const char *username, const char *hostname)
 {
     struct utmp utmp;
     int fd;
