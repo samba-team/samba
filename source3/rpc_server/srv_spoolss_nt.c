@@ -535,11 +535,7 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 
 	prs_set_offset(ps, old_offset);
 
-#if 0 /* JRATEST */
-	buffer->string_at_end = buffer_size;
-#else
 	buffer->string_at_end=prs_data_size(ps);
-#endif
 
 	return True;
 }
@@ -1838,10 +1834,7 @@ static DEVICEMODE *construct_dev_mode(int snum, char *servername)
 
 	if (printer->info_2->devmode)
 		ntdevmode = dup_nt_devicemode(printer->info_2->devmode);
-#if 0 /* JFMTEST */
-	else
-		ntdevmode = construct_nt_devicemode(printer->info_2->printername);
-#endif
+
 	if (ntdevmode == NULL)
 		goto fail;
 
@@ -1998,10 +1991,29 @@ static BOOL construct_printer_info_3(fstring servername,
 
 	ZERO_STRUCTP(printer);
 	
-	printer->flags = 4; /* This is the offset to the SEC_DESC. */
+	printer->flags = 4; /* These are the components of the SD we are returning. */
 	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
 		/* steal the printer info sec_desc structure.  [badly done]. */
 		printer->secdesc = ntprinter->info_2->secdesc_buf->sec;
+
+#if 0
+		/*
+		 * Set the flags for the components we are returning.
+		 */
+
+		if (printer->secdesc->owner_sid)
+			printer->flags |= OWNER_SECURITY_INFORMATION;
+
+		if (printer->secdesc->grp_sid)
+			printer->flags |= GROUP_SECURITY_INFORMATION;
+
+		if (printer->secdesc->dacl)
+			printer->flags |= DACL_SECURITY_INFORMATION;
+
+		if (printer->secdesc->sacl)
+			printer->flags |= SACL_SECURITY_INFORMATION;
+#endif
+
 		ntprinter->info_2->secdesc_buf->sec = NULL; /* Stolen the malloced memory. */
 		ntprinter->info_2->secdesc_buf->len = 0; /* Stolen the malloced memory. */
 		ntprinter->info_2->secdesc_buf->max_len = 0; /* Stolen the malloced memory. */
@@ -2643,6 +2655,8 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	pstring temp_configfile;
 	pstring temp_helpfile;
 
+	ZERO_STRUCTP(info);
+
 	info->version=driver.info_3->cversion;
 
 	init_unistr( &info->name, driver.info_3->name );	
@@ -2675,7 +2689,7 @@ static uint32 construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 {	
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-uint32 status=0;
+	uint32 status=0;
 	ZERO_STRUCT(driver);
 
 	status=get_a_printer(&printer, 2, lp_servicename(snum) );
@@ -2697,12 +2711,99 @@ uint32 status=0;
 	return NT_STATUS_NO_PROBLEMO;
 }
 
+/********************************************************************
+ * construct_printer_info_6
+ * fill a printer_info_6 struct - we know that driver is really level 3. This sucks. JRA.
+ ********************************************************************/
+
+static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
+{
+	pstring temp_driverpath;
+	pstring temp_datafile;
+	pstring temp_configfile;
+	pstring temp_helpfile;
+	fstring nullstr;
+
+	ZERO_STRUCTP(info);
+	memset(&nullstr, '\0', sizeof(fstring));
+
+	info->version=driver.info_3->cversion;
+
+	init_unistr( &info->name, driver.info_3->name );	
+	init_unistr( &info->architecture, driver.info_3->environment );
+
+	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		 
+	init_unistr( &info->driverpath, temp_driverpath );
+
+	snprintf(temp_datafile, sizeof(temp_datafile)-1, "\\\\%s%s", servername, driver.info_3->datafile); 
+	init_unistr( &info->datafile, temp_datafile );
+
+	snprintf(temp_configfile, sizeof(temp_configfile)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+	init_unistr( &info->configfile, temp_configfile );	
+
+	snprintf(temp_helpfile, sizeof(temp_helpfile)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+	init_unistr( &info->helpfile, temp_helpfile );
+
+	init_unistr( &info->monitorname, driver.info_3->monitorname );
+	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
+
+	info->dependentfiles=NULL;
+	init_unistr_array(&info->dependentfiles, driver.info_3->dependentfiles, servername);
+
+	info->previousdrivernames=NULL;
+	init_unistr_array(&info->previousdrivernames, &nullstr, servername);
+
+	init_unistr( &info->mfgname, "");
+	init_unistr( &info->oem_url, "");
+	init_unistr( &info->hardware_id, "");
+	init_unistr( &info->provider, "");
+}
+
+/********************************************************************
+ * construct_printer_info_6
+ * fill a printer_info_6 struct
+ ********************************************************************/
+static uint32 construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fstring servername, fstring architecture, uint32 version)
+{	
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	NT_PRINTER_DRIVER_INFO_LEVEL driver;
+	uint32 status=0;
+	ZERO_STRUCT(driver);
+
+	status=get_a_printer(&printer, 2, lp_servicename(snum) );
+	DEBUG(8,("construct_printer_driver_info_6: status: %d\n", status));
+	if (status != 0)
+		return ERROR_INVALID_PRINTER_NAME;
+
+	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
+	DEBUG(8,("construct_printer_driver_info_6: status: %d\n", status));
+	if (status != 0) {
+		free_a_printer(&printer,2);
+		return ERROR_UNKNOWN_PRINTER_DRIVER;
+	}
+
+	fill_printer_driver_info_6(info, driver, servername);
+
+	free_a_printer(&printer,2);
+
+	return NT_STATUS_NO_PROBLEMO;
+}
+
 /****************************************************************************
 ****************************************************************************/
 
 static void free_printer_driver_info_3(DRIVER_INFO_3 *info)
 {
 	safe_free(info->dependentfiles);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void free_printer_driver_info_6(DRIVER_INFO_6 *info)
+{
+	safe_free(info->dependentfiles);
+	
 }
 
 /****************************************************************************
@@ -2812,6 +2913,39 @@ static uint32 getprinterdriver2_level3(fstring servername, fstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
+static uint32 getprinterdriver2_level6(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+{
+	DRIVER_INFO_6 info;
+	uint32 status;
+
+	ZERO_STRUCT(info);
+
+	status=construct_printer_driver_info_6(&info, snum, servername, architecture, version);
+	if (status != NT_STATUS_NO_PROBLEMO) {
+		return status;
+	}
+
+	/* check the required size. */	
+	*needed += spoolss_size_printer_driver_info_6(&info);
+
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_driver_info_3(&info);
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
+
+	/* fill the buffer with the structures */
+	new_smb_io_printer_driver_info_6("", buffer, &info, 0);
+
+	free_printer_driver_info_6(&info);
+
+	if (*needed > offered)
+		return ERROR_INSUFFICIENT_BUFFER;
+	else
+		return NT_STATUS_NO_PROBLEMO;
+}
+
+/****************************************************************************
+****************************************************************************/
 uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, 
 				uint32 clientmajorversion, uint32 clientminorversion,
 				NEW_BUFFER *buffer, uint32 offered,
@@ -2842,6 +2976,9 @@ uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, u
 		break;				
 	case 3:
 		return getprinterdriver2_level3(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
+		break;				
+	case 6:
+		return getprinterdriver2_level6(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
 		break;				
 	default:
 		return ERROR_INVALID_LEVEL;
@@ -3678,9 +3815,13 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 		}
 
 		for (i=0; i<ndrivers; i++) {
+			uint32 status;
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
-			get_a_printer_driver(&driver, 3, list[i], architecture, version);
+			if ((status = get_a_printer_driver(&driver, 3, list[i], architecture, version)) != 0) {
+				safe_free(list);
+				return status;
+			}
 			fill_printer_driver_info_1(&driver_info_1[*returned+i], driver, servername, architecture );		
 			free_a_printer_driver(driver, 3);
 		}	
@@ -3749,9 +3890,14 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 		}
 		
 		for (i=0; i<ndrivers; i++) {
+			uint32 status;
+
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
-			get_a_printer_driver(&driver, 3, list[i], architecture, version);
+			if ((status = get_a_printer_driver(&driver, 3, list[i], architecture, version)) != 0) {
+				safe_free(list);
+				return status;
+			}
 			fill_printer_driver_info_2(&driver_info_2[*returned+i], driver, servername);		
 			free_a_printer_driver(driver, 3);
 		}	
@@ -3820,9 +3966,14 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 		}
 
 		for (i=0; i<ndrivers; i++) {
+			uint32 status;
+
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
-			get_a_printer_driver(&driver, 3, list[i], architecture, version);
+			if ((status = get_a_printer_driver(&driver, 3, list[i], architecture, version)) != 0) {
+				safe_free(list);
+				return status;
+			}
 			fill_printer_driver_info_3(&driver_info_3[*returned+i], driver, servername);		
 			free_a_printer_driver(driver, 3);
 		}	
@@ -4538,6 +4689,7 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 	if ( (in_value_len==0) && (in_data_len==0) ) {
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 
+#if 0
 		/*
 		 * NT can ask for a specific parameter size - we need to return NO_MORE_ITEMS
 		 * if this parameter size doesn't exist.
@@ -4552,6 +4704,7 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 			free_a_printer(&printer, 2);
 			return ERROR_NO_MORE_ITEMS;
 		}
+#endif
 
 		safe_free(data);
 		data = NULL;
