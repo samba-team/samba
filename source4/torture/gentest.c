@@ -1267,6 +1267,28 @@ static BOOL handler_ntrename(int instance)
 
 
 /*
+  generate seek operations
+*/
+static BOOL handler_seek(int instance)
+{
+	struct smb_seek parm[NSERVERS];
+	NTSTATUS status[NSERVERS];
+
+	parm[0].in.fnum = gen_fnum(instance);
+	parm[0].in.mode = gen_bits_mask2(0x3, 0xFFFF);
+	parm[0].in.offset = gen_offset();
+
+	GEN_COPY_PARM;
+	GEN_SET_FNUM(in.fnum);
+	GEN_CALL(smb_raw_seek(tree, &parm[i]));
+
+	CHECK_EQUAL(out.offset);
+
+	return True;
+}
+
+
+/*
   generate readx operations
 */
 static BOOL handler_readx(int instance)
@@ -1815,6 +1837,7 @@ static struct {
 	{"SPATHINFO",  handler_spathinfo},
 	{"SFILEINFO",  handler_sfileinfo},
 	{"NOTIFY",     handler_notify},
+	{"SEEK",       handler_seek},
 };
 
 
