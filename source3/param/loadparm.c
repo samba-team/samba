@@ -4304,7 +4304,7 @@ const char *lp_printcapname(void)
 
 BOOL lp_use_sendfile(int snum)
 {
-	extern int Protocol;
+	extern enum protocol_types Protocol;
 	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
 	if (Protocol < PROTOCOL_NT1) {
 		return False;
