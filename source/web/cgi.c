@@ -513,11 +513,6 @@ static void cgi_download(char *file)
 		}
 	}
 
-	if (strstr(file,"..")) {
-		cgi_setup_error("404 File Not Found","",
-				"Relative paths not allowed");
-	}
-
 	if (!file_exist(file, &st)) {
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");

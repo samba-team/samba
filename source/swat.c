@@ -308,7 +308,7 @@ static void shares_page(void)
 		printf("<option value=\" \"> \n");
 	for (i=0;i<lp_numservices();i++) {
 		s = lp_servicename(i);
-		if (s && (*s) && strcmp(s,"IPC$")) {
+		if (s && (*s) && strcmp(s,"IPC$") && !lp_print_ok(i)) {
 			printf("<option %s value=\"%s\">%s\n", 
 			       (share && strcmp(share,s)==0)?"SELECTED":"",
 			       s, s);
