@@ -25,6 +25,8 @@
 
 #include "includes.h"
 
+MYSQL_ROW *mysql_getpwent(void *vp);
+
 extern int DEBUGLEVEL;
 
 extern pstring samlogon_user;

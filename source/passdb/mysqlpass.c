@@ -392,7 +392,7 @@ struct smb_passwd *mysql_getsmbpwent(void *vp)
 	return (struct smb_passwd*)mysql_fill_smb_passwd( mysql_getpwent(vp) );
 }
 
-void *mysql_fetch_passwd( mysql_fill_func filler, char *where )
+void *mysql_fetch_passwd( void *(*filler)(MYSQL_ROW*), char *where )
 {
 	void *retval;
 	MYSQL handle;
@@ -442,7 +442,7 @@ void *mysql_fetch_passwd( mysql_fill_func filler, char *where )
 	return retval;
 }
 
-void *mysql_getpwuid(mysql_fill_func filler, uid_t uid)
+void *mysql_getpwuid(void *(*filler)(MYSQL_ROW *), uid_t uid)
 {
 	fstring where;
 
@@ -461,7 +461,7 @@ struct smb_passwd *mysql_getsmbpwuid(uid_t uid)
 	return (struct smb_passwd *)mysql_getpwuid( mysql_fill_smb_passwd, uid );
 }
 
-void *mysql_getpwnam(mysql_fill_func filler, char *field, const char *name)
+void *mysql_getpwnam(void *(*filler)(MYSQL_ROW *), char *field, const char *name)
 {
 	fstring where;
 	char format[] = "%s='%s'";
