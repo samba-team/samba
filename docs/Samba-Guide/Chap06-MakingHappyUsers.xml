@@ -9,7 +9,12 @@
 ]>
 
 <chapter id="happy">
-  <title>Making Users Happy</title>
+  <title>Making Happy Users</title>
+
+<note><para>
+This chapter is under reconstruction/modification. The data here is incomplete at this time.
+Please check back in a few days time as the contents are undergoing change.
+</para></note>
 
 	<para>
 	It has been said, <quote>A day that is without troubles is not fulfilling.  Rather, give 
@@ -964,10 +969,16 @@
 	</indexterm><indexterm>
 	  <primary>Red Hat Linux</primary>
 	</indexterm>
-	All configuration files and locations are shown for SUSE Linux 9.0. The file locations for
-	Red Hat Linux are similar. You may need to adjust the locations for your particular
-	Linux system distribution/implementation.
+	All configuration files and locations are shown for SUSE Linux 9.2 and are equaly valid for SUSE
+	Linux Enterprise Server 9. The file locations for Red Hat Linux are similar. You may need to
+	adjust the locations for your particular Linux system distribution/implementation.
 	</para>
+
+<note><para>
+The following information applies to Samba-3.0.12 when used with the Idealx smbldap-tools scripts
+version 0.8.7. If using a different version of Samba, or of the smbldap-tools tarball, please 
+verify that the versions you are about to use are matching.
+</para></note>
 
 	<para>
 	The steps in the process involve changes from the network configuration
@@ -1000,7 +1011,7 @@
 			<thead>
 				<row>
 					<entry align="center">SUSE Linux 8.x</entry>
-					<entry align="center">SUSE Linux 9</entry>
+					<entry align="center">SUSE Linux 9.x</entry>
 					<entry align="center">Red Hat Linux 9</entry>
 				</row>
 			</thead>
@@ -1055,8 +1066,6 @@
 	follow these guidelines, the resulting system should work fine.
 	</para>
 
-<?latex \newpage ?>
-
 	<procedure>
 	  <step><para><indexterm>
 		<primary>/etc/openldap/slapd.conf</primary>
@@ -1066,16 +1075,16 @@
 		</para></step>
 
 	  <step><para><indexterm>
-		<primary>/var/lib/ldap</primary>
+		<primary>/data/ldap</primary>
 	      </indexterm><indexterm>
 		<primary>group account</primary>
 	      </indexterm><indexterm>
 		<primary>user account</primary>
 	      </indexterm>
-		Remove all files from the directory <filename>/var/lib/ldap</filename>, making certain that
+		Remove all files from the directory <filename>/data/ldap</filename>, making certain that
 		the directory exists with permissions:
 <screen>
-&rootprompt; ls -al /var/lib | grep ldap
+&rootprompt; ls -al /data | grep ldap
 drwx------   2 ldap    ldap       48 Dec 15 22:11 ldap
 </screen>
 		This may require you to add a user and a group account for LDAP if they do not exist.
@@ -1091,12 +1100,20 @@ include		/etc/openldap/schema/core.schema
 include		/etc/openldap/schema/cosine.schema
 include		/etc/openldap/schema/inetorgperson.schema
 include		/etc/openldap/schema/nis.schema
-include		/etc/openldap/schema/samba.schema
+include		/etc/openldap/schema/samba3.schema
 
 pidfile		/var/run/slapd/slapd.pid
 argsfile	/var/run/slapd/slapd.args
 
-database	ldbm
+access to *
+                by self write
+                by users read
+                by anonymous auth
+
+database	bdb
+checkpoint      1024 5
+cachesize       10000
+
 suffix		"dc=abmas,dc=biz"
 rootdn		"cn=Manager,dc=abmas,dc=biz"
 
@@ -1198,40 +1215,52 @@ index default               sub
 <example id="ch6-nss01">
 <title>Configuration File for NSS LDAP Support &smbmdash; <filename>/etc/ldap.conf</filename></title>
 <screen>
-SIZELIMIT	200
-TIMELIMIT	15
-DEREF		never
-
 host 127.0.0.1
+
 base dc=abmas,dc=biz
+
 binddn cn=Manager,dc=abmas,dc=biz
 bindpw not24get
 
-pam_password exop
+timelimit 50
+bind_timelimit 50
+bind_policy hard
 
-nss_base_passwd	ou=People,dc=abmas,dc=biz?one
-nss_base_shadow	ou=People,dc=abmas,dc=biz?one
-nss_base_group  ou=Groups,dc=abmas,dc=biz?one
-</screen>
-</example>
-
-<example id="ch6-nss02">
-<title>Configuration File for NSS LDAP Clients Support &smbmdash; <filename>/etc/ldap.conf</filename></title>
-<screen>
-SIZELIMIT	200
-TIMELIMIT	15
-DEREF		never
-
-host  172.16.0.1
-base dc=abmas,dc=biz
-binddn cn=Manager,dc=abmas,dc=biz
-bindpw not24get
+idle_timelimit 3600
 
 pam_password exop
 
 nss_base_passwd ou=People,dc=abmas,dc=biz?one
 nss_base_shadow ou=People,dc=abmas,dc=biz?one
 nss_base_group  ou=Groups,dc=abmas,dc=biz?one
+
+ssl off
+</screen>
+</example>
+
+<example id="ch6-nss02">
+<title>Configuration File for NSS LDAP Clients Support &smbmdash; <filename>/etc/ldap.conf</filename></title>
+<screen>
+host 172.16.0.1
+
+base dc=abmas,dc=biz
+
+binddn cn=Manager,dc=abmas,dc=biz
+bindpw not24get
+
+timelimit 50
+bind_timelimit 50
+bind_policy hard
+
+idle_timelimit 3600
+
+pam_password exop
+
+nss_base_passwd ou=People,dc=abmas,dc=biz?one
+nss_base_shadow ou=People,dc=abmas,dc=biz?one
+nss_base_group  ou=Groups,dc=abmas,dc=biz?one
+
+ssl off
 </screen>
 </example>
 
@@ -1317,10 +1346,11 @@ session  optional    pam_mail.so
 	<para><indexterm>
 	    <primary>Samba RPM Packages</primary>
 	  </indexterm>
-	Verify that the Samba-3.0.2 (or later) packages are installed on each SUSE Linux server 
-	before following the steps below. If Samba-3.0.2 (or later) is not installed, you have the
+	Verify that the Samba-3.0.12 (or later) packages are installed on each SUSE Linux server 
+	before following the steps below. If Samba-3.0.12 (or later) is not installed, you have the
 	choice to either build your own or to obtain the packages from a dependable source.
-	Packages for SUSE Linux 8.2 and 9.0, and Red Hat 9.0 are included on the CD-ROM that
+	Packages for SUSE Linux 8.x, 9.x and SUSE Linux Enterprise Server 9, as well as for 
+	Red Hat Fedora Core and Red Hat Enteprise Linux Server 3 and 4 are included on the CD-ROM that
 	is included at the back of this book.
 	</para>
 
@@ -1331,31 +1361,40 @@ session  optional    pam_mail.so
 		<link linkend="ch6-massive-smbconfb"/>, <link linkend="ch6-shareconfa"/>, 
 		and <link linkend="ch6-shareconfb"/> into the <filename>/etc/samba/</filename> 
 		directory. The three files should be added together to form the &smb.conf; 
-		file.
+		master file. It is a good practice to call this file something like
+		<filename>smb.conf.master</filename>, and then to perform all file edits
+		on the master file. The operational &smb.conf; is then generated as shown in
+		the next step.
 		</para></step>
 
 	  <step><para><indexterm>
 		<primary>testparm</primary>
 	      </indexterm>
-		Verify the contents of the &smb.conf; file that is generated by Samba
-		as it collates all the included files. You do this by executing:
+		Create and verify the contents of the &smb.conf; file that is generated by:
 <screen>
-&rootprompt; testparm -s &gt; test.conf
+&rootprompt; testparm -s smb.conf.master &gt; smb.conf
+</screen>
+		Immediately follow this with the following:
+<screen>
+&rootprompt; testparm
 </screen>
 		The output that is created should be free from errors, as shown here:
 
 <screen>
+Load smb config files from /etc/samba/smb.conf
+Processing section "[accounts]"
+Processing section "[service]"
+Processing section "[pidata]"
 Processing section "[homes]"
 Processing section "[printers]"
 Processing section "[apps]"
 Processing section "[netlogon]"
 Processing section "[profiles]"
 Processing section "[profdata]"
-Processing section "[IPC$]"
-Processing section "[accounts]"
-Processing section "[service]"
-Processing section "[pidata]"
+Processing section "[print$]"
 Loaded services file OK.
+Server role: ROLE_DOMAIN_PDC
+Press enter to see a dump of your service definitions
 </screen>
 		</para></step>
 		
@@ -1404,11 +1443,16 @@ Setting stored password for "cn=Manager,dc=abmas,dc=biz" in secrets.tdb
 		A report such as the following means that the Domain Security Identifier (SID) has not yet
 		been written to the <filename>secrets.tdb</filename> or to the LDAP backend:
 <screen>
-[2003/12/16 22:32:20, 0] utils/net.c:net_getlocalsid(414)
-  Can't fetch domain SID for name: MASSIVE
+[2005/03/03 23:19:34, 0] lib/smbldap.c:smbldap_connect_system(852)
+  failed to bind to server ldap://massive.abmas.biz with dn="cn=Manager,dc=abmas,dc=biz" Error: Can't contact LDAP server
+        (unknown)
+[2005/03/03 23:19:48, 0] lib/smbldap.c:smbldap_search_suffix(1169)
+  smbldap_search_suffix: Problem during the LDAP search: (unknown) (Timed out)
 </screen>
-		When the Domain has been created and written to the <filename>secrets.tdb</filename>
-		file, the output should look like this:
+		The attempt to read the SID will attempt to bind to the LDAP server. Because the LDAP server
+		is not running this operation will fail by way of a time out, as shown above. This is
+		normal output, do not worry about this error message.  When the Domain has been created and
+		written to the <filename>secrets.tdb</filename> file, the output should look like this:
 <screen>
 SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 </screen>
@@ -1448,7 +1492,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 		of the PDC. rsync is a useful tool here as it resembles the NT replication service quite 
 		closely. If you do use NFS, do not forget to start the NFS server as follows:
 <screen>
-&rootprompt; rcnfs start
+&rootprompt; rcnfsserver start
 </screen>
 		</para></step>
 	</procedure>
@@ -1468,6 +1512,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption><name>interfaces</name><value>eth1, lo</value></smbconfoption>
 	<smbconfoption><name>bind interfaces only</name><value>Yes</value></smbconfoption>
 	<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://massive.abmas.biz</value></smbconfoption>
+	<smbconfoption><name>enable privileges</name><value>Yes</value></smbconfoption>
 	<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
 	<smbconfoption><name>log level</name><value>1</value></smbconfoption>
 	<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
@@ -1478,18 +1523,22 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption><name>time server</name><value>Yes</value></smbconfoption>
 	<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
 	<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-	<smbconfoption><name>add user script</name><value>/var/lib/samba/sbin/smbldap-useradd.pl -a -m '%u'</value></smbconfoption>
-	<smbconfoption><name>delete user script</name><value>/var/lib/samba/sbin/smbldap-userdel.pl '%u'</value></smbconfoption>
-	<smbconfoption><name>add group script</name><value>/var/lib/samba/sbin/smbldap-groupadd.pl -p '%g'</value></smbconfoption>
-	<smbconfoption><name>delete group script</name><value>/var/lib/samba/sbin/smbldap-groupdel.pl '%g'</value></smbconfoption>
-	<smbconfoption><name>add user to group script</name><value>/var/lib/samba/sbin/</value></smbconfoption>
-		<member><parameter>smbldap-groupmod.pl -m '%u' '%g'</parameter></member>
-	<smbconfoption><name>delete user from group script</name><value>/var/lib/samba/sbin/</value></smbconfoption>
-		<member><parameter>smbldap-groupmod.pl -x '%u' '%g'</parameter></member>
-	<smbconfoption><name>set primary group script</name><value>/var/lib/samba/sbin/</value></smbconfoption>
-		<member><parameter>smbldap-usermod.pl -g '%g' '%u'</parameter></member>
-	<smbconfoption><name>add machine script</name><value>/var/lib/samba/sbin/</value></smbconfoption>
-		<member><parameter>smbldap-useradd.pl -w '%u'</parameter></member>
+	<smbconfoption><name>add user script</name><value>/opt/IDEALX/sbin/smbldap-useradd -m "%u"</value></smbconfoption>
+	<smbconfoption><name>delete user script</name><value>/opt/IDEALX/sbin/smbldap-userdel "%u"</value></smbconfoption>
+	<smbconfoption><name>add group script</name><value>/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</value></smbconfoption>
+	<smbconfoption><name>delete group script</name><value>/opt/IDEALX/sbin/smbldap-groupdel "%g"</value></smbconfoption>
+	<smbconfoption><name>add user to group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+		<member><parameter>smbldap-groupmod -m "%u" "%g"</parameter></member>
+	<smbconfoption><name>delete user from group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+		<member><parameter>smbldap-groupmod -x "%u" "%g"</parameter></member>
+	<smbconfoption><name>set primary group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+		<member><parameter>smbldap-usermod -g "%g" "%u"</parameter></member>
+	<smbconfoption><name>add machine script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+		<member><parameter>smbldap-useradd -w "%u"</parameter></member>
+</smbconfexample>
+
+<smbconfexample id="ch6-massive-smbconfb">
+<title>LDAP Based &smb.conf; File, Server: MASSIVE &smbmdash; global Section: Part B</title>
 	<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
 	<smbconfoption><name>logon path</name><value>\\%L\profiles\%U</value></smbconfoption>
 	<smbconfoption><name>logon drive</name><value>X:</value></smbconfoption>
@@ -1500,10 +1549,6 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
 	<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
 	<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
-</smbconfexample>
-
-<smbconfexample id="ch6-massive-smbconfb">
-<title>LDAP Based &smb.conf; File, Server: MASSIVE &smbmdash; global Section: Part B</title>
 	<smbconfoption><name>ldap idmap suffix</name><value>ou=Idmap</value></smbconfoption>
 	<smbconfoption><name>ldap admin dn</name><value>cn=Manager,dc=abmas,dc=biz</value></smbconfoption>
 	<smbconfoption><name>idmap backend</name><value>ldap:ldap://massive.abmas.biz</value></smbconfoption>
@@ -1518,43 +1563,52 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 
 
 	<sect2>
-	<title>Install and Configure Idealx SMB-LDAP Scripts</title>
+	<title>Install and Configure Idealx smbldap-tools Scripts</title>
 
 	<para><indexterm>
 	    <primary>Idealx</primary>
 	    <secondary>smbldap-tools</secondary>
 	  </indexterm>
 	The Idealx scripts, or equivalent, are necessary to permit Samba-3 to manage accounts
-	on the LDAP server. You have chosen the Idealx scripts since they are part of the
-	Samba-3 package distribution. On your SUSE Linux system, you find these scripts in the
-	<filename>/usr/share/doc/packages/samba3/Examples/LDAP/smbldap-tools</filename>
-	directory. On a Red Hat Linux system, they are in a similar path. If you cannot find
-	the scripts on your system, it is easy enough to download them from the Idealx
+	on the LDAP server. You have chosen the Idealx scripts since they are the best known
+	LDAP configuration scripts. The use of these scripts will help avoid the necessity
+	to create custom scripts. It is easy to download them from the Idealx
 	<ulink url="http://samba.idealx.org/index.en.html">Web Site.</ulink> The tarball may
-	be directly <ulink
-	    url="http://samba.idealx.org/dist/smbldap-tools-0.8.2.tgz">downloaded</ulink>
-	for this site, also.
+	be directly <ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.7.tgz">downloaded</ulink>
+	for this site, also. Alternately, you may obtain the 
+	<ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.7-3.src.rpm">smbldap-tools-0.8.7-3.src.rpm</ulink>
+	file that may be used to build an installable RPM package for your Linux system.
 	</para>
 
-	<para>
-	In your installation, the smbldap-tools are located in <filename>/var/lib/samba/sbin</filename>.
-	They can be installed in any convenient directory of your choice, in which case you must
-	change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</constant>).
-	</para>
+<note><para>
+The smbldap-tools scripts can be installed in any convenient directory of your choice, in which case you must
+change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</constant>).
+</para></note>
 
 	<para>
+	The smbldap-tools are located in <filename>/opt/IDEALX/sbin</filename>.
 	The scripts are not needed on BDC machines because all LDAP updates are handled by
 	the PDC alone.
 	</para>
 
+	<sect3>
+	<title>Installation of smbldap-tools from the tarball</title>
+
+	<para>
+	To perform a manual installation of the smbldap-tools scripts the following procedure may be used:
+	</para>
+
 	<procedure id="idealxscript">
 		<step><para>
-		Create the <filename>/var/lib/samba/sbin</filename> directory, and set its permissions
+		Create the <filename>/opt/IDEALX/sbin</filename> directory, and set its permissions
 		and ownership as shown here:
 <screen>
-&rootprompt; mkdir -p /var/lib/samba/sbin
-&rootprompt; chown root.root /var/lib/samba/sbin
-&rootprompt; chmod 755 /var/lib/samba/sbin
+&rootprompt; mkdir -p /opt/IDEALX/sbin
+&rootprompt; chown root.root /opt/IDEALX/sbin
+&rootprompt; chmod 755 /opt/IDEALX/sbin
+&rootprompt; mkdir -p /etc/smbldap-tools
+&rootprompt; chown root.root /etc/smbldap-tools
+&rootprompt; chmod 755 /etc/smbldap-tools
 </screen>
 		</para></step>
 
@@ -1565,118 +1619,30 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 		</para></step>
 
 		<step><para>
-		Copy all the <filename>.pl</filename> and <filename>.pm</filename> files into the 
-		<filename>/var/lib/samba/sbin</filename> directory, as shown here:
+		Copy all the <filename>smbldap-*</filename> and the <filename>configure.pl</filename> files into the 
+		<filename>/opt/IDEALX/sbin</filename> directory, as shown here:
 <screen>
-&rootprompt; cd /usr/share/doc/packages/samba3/Examples/LDAP/smbldap-tools
-&rootprompt; cp *.pl *.pm /var/lib/samba/sbin
+&rootprompt; cd smbldap-tools-0.8.7/
+&rootprompt; cp smbldap-* configure.pl *pm /opt/IDEALX/sbin/
+&rootprompt; cp smbldap*conf /etc/smbldap-tools/
+&rootprompt; chmod 750 /opt/IDEALX/sbin/smbldap-*
+&rootprompt; chmod 750 /opt/IDEALX/sbin/configure.pl
+&rootprompt; chmod 640 /etc/smbldap-tools/smbldap.conf
+&rootprompt; chmod 600 /etc/smbldap-tools/smbldap_bind.conf
 </screen>
-		</para></step>
-
-	  <step><para><indexterm>
-		<primary>mkntpasswd</primary>
-	      </indexterm>
-		You must compile the <command>mkntpasswd</command> tool and then install it into
-		the <filename>/var/lib/samba/sbin</filename> directory, as shown here:
-<screen>
-&rootprompt; cd mkntpwd
-&rootprompt; make
-gcc  -O2 -DMPU8086  -c -o getopt.o getopt.c
-gcc  -O2 -DMPU8086  -c -o md4.o md4.c
-gcc  -O2 -DMPU8086  -c -o mkntpwd.o mkntpwd.c
-mkntpwd.c: In function `main':
-mkntpwd.c:37: warning: return type of `main' is not `int'
-gcc  -O2 -DMPU8086  -c -o smbdes.o smbdes.c
-gcc  -O2 -DMPU8086  -o mkntpwd getopt.o md4.o mkntpwd.o smbdes.o
-&rootprompt; cp mkntpwd /var/lib/samba/sbin
-</screen>
-		The smbldap-tools scripts must now be configured.
 		</para></step>
 
 		<step><para>
-		Change to the <filename>/var/lib/samba/sbin</filename> directory, and edit the
-		<filename>/var/lib/samba/sbin/smbldap_conf.pm</filename> to affect the changes
+		The smbldap-tools scripts master control file must now be configured.
+		Change to the <filename>/opt/IDEALX/sbin</filename> directory, then edit the
+		<filename>/opt/IDEALX/sbin/smbldap_conf.pm</filename> to affect the changes
 		shown here:
 <screen>
-# Put your own SID
-# to obtain this number do: "net getlocalsid"
-#$SID='S-1-5-21-1671648649-242858427-2873575837';
-$SID='S-1-5-21-3504140859-1010554828-2431957765';
 ...
-# LDAP Suffix
-# Ex: $suffix = "dc=IDEALX,dc=ORG";
-$suffix = "dc=abmas,dc=biz";
-...
-# Where are stored Users
-# Ex: $usersdn = "ou=Users,$suffix"; ...
-$usersou = q(People);
-$usersdn = "ou=$usersou,$suffix";
+# ugly funcs using global variables and spawning openldap clients
 
-# Where are stored Computers
-# Ex: $computersdn = "ou=Computers,$suffix"; ...
-$computersou = q(People);
-$computersdn = "ou=$computersou,$suffix";
-
-# Where are stored Groups
-# Ex $groupsdn = "ou=Groups,$suffix"; ...
-$groupsou = q(Groups);
-$groupsdn = "ou=$groupsou,$suffix";
-
-# Default scope Used
-$scope = "sub";
-
-# Unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA)
-$hash_encrypt="MD5";
-...
-############################
-# Credential Configuration #
-############################
-# Bind DN used
-# Ex: $binddn = "cn=admin,$suffix"; ...
-$binddn = "cn=Manager,$suffix";
-
-# Bind DN passwd used
-# Ex: $bindpasswd = 'secret'; for 'secret'
-$bindpasswd = 'not24get';
-...
-# Login defs
-# Default Login Shell
-# Ex: $_userLoginShell = q(/bin/bash);
-#$_userLoginShell = q(_LOGINSHELL_);
-$_userLoginShell = q(/bin/bash);
-
-# Home directory prefix (without username)
-# Ex: $_userHomePrefix = q(/home/);
-#$_userHomePrefix = q(_HOMEPREFIX_);
-$_userHomePrefix = q(/home/);
-...
-# The UNC path to home drives location without the 
-# username last extension (will be dynamically prepended)
-# Ex: q(\\\\My-PDC-netbios-name\\homes)
-# Just comment this if you want to use the smb.conf 
-# 'logon home' directive # and/or desabling roaming profiles
-#$_userSmbHome = q(\\\\_PDCNAME_\\homes);
-$_userSmbHome = q(\\\\MASSIVE\\homes);
-
-# The UNC path to profiles locations without the username 
-# last extension (will be dynamically prepended)
-# Ex: q(\\\\My-PDC-netbios-name\\profiles\\)
-# Just comment this if you want to use the smb.conf 
-# 'logon path' directive and/or desabling roaming profiles
-$_userProfile = q(\\\\MASSIVE\\profiles\\);
-
-# The default Home Drive Letter mapping
-# (automatically mapped at logon time if home directory exists)
-# Ex: q(U:) for U:
-#$_userHomeDrive = q(_HOMEDRIVE_);
-$_userHomeDrive = q(H:);
-...
-# Allows not to use smbpasswd 
-# (if $with_smbpasswd == 0 in smbldap_conf.pm) but
-# prefer mkntpwd... most of the time, it's a wise choice :-)
-$with_smbpasswd = 0;
-$smbpasswd = "/usr/bin/smbpasswd";
-$mk_ntpasswd = "/var/lib/samba/sbin/mkntpwd";
+my $smbldap_conf="/etc/smbldap-tools/smbldap.conf";
+my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 ...
 </screen>
 		</para></step>
@@ -1685,14 +1651,204 @@ $mk_ntpasswd = "/var/lib/samba/sbin/mkntpwd";
 		To complete the configuration of the smbldap-tools, set the permissions and ownership
 		by executing the following commands:
 <screen>
-&rootprompt; chown root.root /var/lib/samba/sbin/* 
-&rootprompt; chmod 755 /var/lib/samba/sbin/smb*pl 
-&rootprompt; chmod 640 /var/lib/samba/sbin/smb*pm 
-&rootprompt; chmod 555 /var/lib/samba/sbin/mkntpwd
+&rootprompt; chown root.root /opt/IDEALX/sbin/* 
+&rootprompt; chmod 755 /opt/IDEALX/sbin/smbldap-*
+&rootprompt; chmod 640 /opt/IDEALX/sbin/smb*pm 
 </screen>
-		The smbldap-tools scripts are now ready for use.
+		The smbldap-tools scripts are now ready for the configuration step outlined in
+		<link linkend="smbldap-init">Configuration of smbldap-tools</link>.
 		</para></step>
 	</procedure>
+
+	</sect3>
+
+	<sect3>
+	<title>Installing smbldap-tools from the RPM Package</title>
+
+	<para>
+	In the event that you have elected to use the RPM package provided by Idealx, download the
+	source RPM <filename>smbldap-tools-0.8.7-3.src.rpm</filename>, then follow the following procedure:
+	</para>
+
+	<procedure>
+
+		<step><para>
+		Install the source RPM that has been downloaded as follows:
+<screen>
+&rootprompt; rpm -i smbldap-tools-0.8.7-3.src.rpm
+</screen>
+		</para></step>
+
+		<step><para>
+		Change into the directory in which the SPEC files are located. On SUSE Linux:
+<screen>
+&rootprompt; cd /usr/src/packages/SPECS
+</screen>
+		On Red Hat Linux systems:
+<screen>
+&rootprompt; cd /usr/src/redhat/SPECS
+</screen>
+		</para></step>
+
+		<step><para>
+		Edit the <filename>smbldap-tools.spec</filename> file to change the value of the
+		<constant>_sysconfig</constant> macro as shown here:
+<screen>
+%define _prefix /opt/IDEALX
+%define _sysconfdir /etc
+</screen>
+		Note: Any suitable directory can be specified.
+		</para></step>
+
+		<step><para>
+		Build the package by executing:
+<screen>
+&rootprompt; rpmbuild -ba -v smbldap-tools.spec
+</screen>
+		A build process that has completed without error will place the installable binary
+		files in the directory <filename>../RPMS/noarch</filename>.
+		</para></step>
+
+		<step><para>
+		Install the binary package by executing:
+<screen>
+&rootprompt; rpm -Uvh ../RPMS/noarch/smbldap-tools-0.8.7-3.noarch.rpm
+</screen>
+		</para></step>
+
+	</procedure>
+
+	<para>
+	The Idealx scripts should now be ready for configuration using the steps outlined in
+	<link linkend="smbldap-init">Configuration of smbldap-tools</link>.
+	</para>
+
+	</sect3>
+
+	<sect3 id="smbldap-init">
+	<title>Configuration of smbldap-tools</title>
+
+	<para>
+	Prior to use the smbldap-tools must be configured to match the settings in the &smb.conf; file
+	and to match the settings in the <filename>/etc/openldap/slapd.conf</filename> file. The assumption
+	is made that the &smb.conf; file has correct contents. The following procedure will ensure that
+	this is completed correctly:
+	</para>
+
+	<para>
+	The smbldap-tools require that the netbios name (machine name) of the Samba server be included
+	in the &smb.conf; file.
+	</para>
+
+	<procedure>
+
+		<step><para>
+		Change into the directory that contains the <filename>configure.pl</filename> script.
+<screen>
+&rootprompt; cd /opt/IDEALX/sbin
+</screen>
+		</para></step>
+
+		<step><para>
+		Execute the <filename>configure.pl</filename> script as follows:
+<screen>
+&rootprompt; ./configure.pl
+</screen>
+		The interactive use of this script for the PDC is demonstrated here:
+<screen>
+Unrecognized escape \p passed through at ./configure.pl line 194.
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+       smbldap-tools script configuration
+       -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Before starting, check
+ . if your samba controller is up and running.
+ . if the domain SID is defined (you can get it with the 'net getlocalsid')
+
+ . you can leave the configuration using the Crtl-c key combination
+ . empty value can be set with the "." caracter
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Looking for configuration files...
+
+Samba Config File Location [/etc/samba/smb.conf] &gt;
+smbldap Config file Location (global parameters) [/etc/smbldap-tools/smbldap.conf] &gt;
+smbldap Config file Location (bind parameters) [/etc/smbldap-tools/smbldap_bind.conf] &gt;
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Let's start configuring the smbldap-tools scripts ...
+
+. workgroup name: name of the domain Samba act as a PDC
+  workgroup name [MEGANET2] &gt;
+. netbios name: netbios name of the samba controler
+  netbios name [MASSIVE] &gt;
+. logon drive: local path to which the home directory will be connected (for NT Workstations). Ex: 'H:'
+  logon drive [X:] &gt;
+. logon home: home directory location (for Win95/98 or NT Workstation).
+  (use %U as username) Ex:'\\MASSIVE\home\%U'
+  logon home (leave blank if you don't want homeDirectory) [\\MASSIVE\home\%U] &gt; \\MASSIVE\%U
+. logon path: directory where roaming profiles are stored. Ex:'\\MASSIVE\profiles\%U'
+  logon path (leave blank if you don't want roaming profile) [\\MASSIVE\profiles\%U] &gt;
+. home directory prefix (use %U as username) [/home/%U] &gt; /home/users/%U
+. default user netlogon script (use %U as username) [%U.cmd] &gt; scripts\login.cmd
+  default password validation time (time in days) [45] &gt; 0
+. ldap suffix [dc=abmas,dc=biz] &gt;
+. ldap group suffix [ou=Groups] &gt;
+. ldap user suffix [ou=People] &gt;
+. ldap machine suffix [ou=People] &gt;
+. Idmap suffix [ou=Idmap] &gt;
+. sambaUnixIdPooldn: object where you want to store the next uidNumber
+  and gidNumber available for new users and groups
+  sambaUnixIdPooldn object (relative to ${suffix}) [cn=NextFreeUnixId] &gt;
+. ldap master server: IP adress or DNS name of the master (writable) ldap server
+Use of uninitialized value in scalar chomp at ./configure.pl line 138, &lt;STDIN&gt; line 17.
+Use of uninitialized value in hash element at ./configure.pl line 140, &lt;STDIN&gt; line 17.
+Use of uninitialized value in concatenation (.) or string at ./configure.pl line 144, &lt;STDIN&gt; line 17.
+Use of uninitialized value in string at ./configure.pl line 145, &lt;STDIN&gt; line 17.
+  ldap master server [] &gt; 127.0.0.1
+. ldap master port [389] &gt;
+. ldap master bind dn [cn=Manager,dc=abmas,dc=biz] &gt;
+. ldap master bind password [] &gt;
+. ldap slave server: IP adress or DNS name of the slave ldap server: can also be the master one
+Use of uninitialized value in scalar chomp at ./configure.pl line 138, &lt;STDIN&gt; line 21.
+Use of uninitialized value in hash element at ./configure.pl line 140, &lt;STDIN&gt; line 21.
+Use of uninitialized value in concatenation (.) or string at ./configure.pl line 144, &lt;STDIN&gt; line 21.
+Use of uninitialized value in string at ./configure.pl line 145, &lt;STDIN&gt; line 21.
+  ldap slave server [] &gt; 127.0.0.1
+. ldap slave port [389] &gt;
+. ldap slave bind dn [cn=Manager,dc=abmas,dc=biz] &gt;
+. ldap slave bind password [] &gt;
+. ldap tls support (1/0) [0] &gt;
+. SID for domain MEGANET2: SID of the domain (can be obtained with 'net getlocalsid MASSIVE')
+  SID for domain MEGANET2 [S-1-5-21-3504140859-1010554828-2431957765] &gt;
+. unix password encryption: encryption used for unix passwords
+  unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] &gt; MD5
+. default user gidNumber [513] &gt;
+. default computer gidNumber [515] &gt;
+. default login shell [/bin/bash] &gt;
+. default domain name to append to mail adress [] &gt; abmas.biz
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+backup old configuration files:
+  /etc/smbldap-tools/smbldap.conf-&gt;etc/smbldap-tools/smbldap.conf.old
+  /etc/smbldap-tools/smbldap_bind.conf-&gt;etc/smbldap-tools/smbldap_bind.conf.old
+writing new configuration file:
+  /etc/smbldap-tools/smbldap.conf done.
+  /etc/smbldap-tools/smbldap_bind.conf done.
+</screen>
+		Since a slave LDAP server has not been configured it is necessary to specify the IP
+		address of the master LDAP server for both the master and the slave configuration
+		prompts.
+		</para></step>
+
+		<step><para>
+		Change to the directory that contains the <filename>smbldap.conf</filename> file
+		then verify its contents.
+		</para></step>
+
+	</procedure>
+
+	<para>
+	The smbldap-tools are now ready for use.
+	</para>
+
+	</sect3>
 
 	</sect2>
 
@@ -1755,10 +1911,10 @@ $mk_ntpasswd = "/var/lib/samba/sbin/mkntpwd";
 	</para>
 
 	<para><indexterm>
-	    <primary>smbldap-populate.pl</primary>
+	    <primary>smbldap-populate</primary>
 	  </indexterm>
 	The following steps initialize the LDAP database, and then you can add user and group
-	accounts that Samba can use. You use the <command>smbldap-populate.pl</command> to
+	accounts that Samba can use. You use the <command>smbldap-populate</command> to
 	seed the LDAP database. You then manually add the accounts shown in <link linkend="ch6-bigacct"/>. 
 	The list of users does not cover all 500 network users; it provides examples only.
 	</para>
@@ -1857,33 +2013,53 @@ Starting ldap-server                           done
 		</para></step>
 
 		<step><para>
-		Change to the <filename>/var/lib/samba/sbin</filename> directory.
+		Change to the <filename>/opt/IDEALX/sbin</filename> directory.
 		</para></step>
 
 		<step><para>
 		Execute the script that will populate the LDAP database as shown here:
 <screen>
 &rootprompt; ./smbldap-populate.pl
+</screen>
+		The expected output from this is:
+<screen>
+Using workgroup name from smb.conf: sambaDomainName=MEGANET2
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+=> Warning: you must update smbldap.conf configuration file to :
+=> sambaUnixIdPooldn parameter must be set to "sambaDomainName=MEGANET2,dc=abmas,dc=biz"
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Using builtin directory structure
 adding new entry: dc=abmas,dc=biz
 adding new entry: ou=People,dc=abmas,dc=biz
 adding new entry: ou=Groups,dc=abmas,dc=biz
-adding new entry: ou=Computers,dc=abmas,dc=biz
-adding new entry: uid=Administrator,ou=People,dc=abmas,dc=biz
+entry ou=People,dc=abmas,dc=biz already exist.
+adding new entry: ou=Idmap,dc=abmas,dc=biz
+adding new entry: sambaDomainName=MEGANET2,dc=abmas,dc=biz
+adding new entry: uid=root,ou=People,dc=abmas,dc=biz
 adding new entry: uid=nobody,ou=People,dc=abmas,dc=biz
 adding new entry: cn=Domain Admins,ou=Groups,dc=abmas,dc=biz
 adding new entry: cn=Domain Users,ou=Groups,dc=abmas,dc=biz
 adding new entry: cn=Domain Guests,ou=Groups,dc=abmas,dc=biz
+adding new entry: cn=Domain Computers,ou=Groups,dc=abmas,dc=biz
 adding new entry: cn=Administrators,ou=Groups,dc=abmas,dc=biz
-adding new entry: cn=Users,ou=Groups,dc=abmas,dc=biz
-adding new entry: cn=Guests,ou=Groups,dc=abmas,dc=biz
-adding new entry: cn=Power Users,ou=Groups,dc=abmas,dc=biz
-adding new entry: cn=Account Operators,ou=Groups,dc=abmas,dc=biz
-adding new entry: cn=Server Operators,ou=Groups,dc=abmas,dc=biz
 adding new entry: cn=Print Operators,ou=Groups,dc=abmas,dc=biz
 adding new entry: cn=Backup Operators,ou=Groups,dc=abmas,dc=biz
-adding new entry: cn=Replicator,ou=Groups,dc=abmas,dc=biz
-adding new entry: cn=Domain Computers,ou=Groups,dc=abmas,dc=biz
+adding new entry: cn=Replicators,ou=Groups,dc=abmas,dc=biz
+</screen>
+		</para></step>
+
+		<step><para>
+		Edit the <filename>/etc/smbldap-tools/smbldap.conf</filename> file so that the following
+		information is changed from:
+<screen>
+# Where to store next uidNumber and gidNumber available
+sambaUnixIdPooldn="cn=NextFreeUnixId,${suffix}"
+</screen>
+		to read, after modification:
+<screen>
+# Where to store next uidNumber and gidNumber available
+#sambaUnixIdPooldn="cn=NextFreeUnixId,${suffix}"
+sambaUnixIdPooldn="sambaDomainName=MEGANET2,dc=abmas,dc=biz"
 </screen>
 		</para></step>
 
@@ -2083,7 +2259,7 @@ uid=1002(chrisr) gid=513(Domain Users) groups=513(Domain Users)
 		management of user and group accounts requires that the UID=0. You decide to rectify 
 		this immediately as demonstrated here:
 <screen>
-&rootprompt; cd /var/lib/samba/sbin
+&rootprompt; cd /opt/IDEALX/sbin
 &rootprompt; ./smbldap-usermod.pl -u 0 Administrator
 </screen>
 		</para></step>
@@ -2641,6 +2817,7 @@ smb: \> q
 	<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
 	<smbconfoption><name>netbios name</name><value>BLDG1</value></smbconfoption>
 	<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://massive.abmas.biz</value></smbconfoption>
+	<smbconfoption><name>enable privileges</name><value>Yes</value></smbconfoption>
 	<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
 	<smbconfoption><name>log level</name><value>1</value></smbconfoption>
 	<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
@@ -2678,6 +2855,7 @@ smb: \> q
 	<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
 	<smbconfoption><name>netbios name</name><value>BLDG2</value></smbconfoption>
 	<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://massive.abmas.biz</value></smbconfoption>
+	<smbconfoption><name>enable privileges</name><value>Yes</value></smbconfoption>
 	<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
 	<smbconfoption><name>log level</name><value>1</value></smbconfoption>
 	<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
