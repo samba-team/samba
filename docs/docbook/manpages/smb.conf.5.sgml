@@ -588,11 +588,9 @@
 	each parameter for details.  Note that some are synonyms.</para>
 
 	<itemizedlist>
-		<listitem><para><link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>add printer command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDSHARECOMMAND"><parameter>add share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
-		<listitem><para><link linkend="ADDMACHINESCRIPT"><parameter>add machine script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ALLOWTRUSTEDDOMAINS"><parameter>allow trusted domains</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEAS"><parameter>announce as</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEVERSION"><parameter>announce version</parameter></link></para></listitem>
@@ -652,6 +650,8 @@
 		<listitem><para><link linkend="LOCALMASTER"><parameter>local master</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIR"><parameter>lock dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIRECTORY"><parameter>lock directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOCKSPINCOUNT"><parameter>lock spin count</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOCKSPINTIME"><parameter>lock spin time</parameter></link></para></listitem>
 		<listitem><para><link linkend="PIDDIRECTORY"><parameter>pid directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGFILE"><parameter>log file</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGLEVEL"><parameter>log level</parameter></link></para></listitem>
@@ -716,7 +716,6 @@
 		<listitem><para><link linkend="SECURITY"><parameter>security</parameter></link></para></listitem>
 		<listitem><para><link linkend="SERVERSTRING"><parameter>server string</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHOWADDPRINTERWIZARD"><parameter>show add printer wizard</parameter></link></para></listitem>
-		<listitem><para><link linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="SMBPASSWDFILE"><parameter>smb passwd file</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETADDRESS"><parameter>socket address</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link></para></listitem>
@@ -767,6 +766,7 @@
 		<listitem><para><link linkend="WINBINDGID"><parameter>winbind gid</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDSEPARATOR"><parameter>winbind separator</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDUID"><parameter>winbind uid</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDUSEDEFAULTDOMAIN"><parameter>winbind use default domain</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSHOOK"><parameter>wins hook</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSPROXY"><parameter>wins proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSSERVER"><parameter>wins server</parameter></link></para></listitem>
@@ -831,6 +831,7 @@
 		<listitem><para><link linkend="HOSTSALLOW"><parameter>hosts allow</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOSTSDENY"><parameter>hosts deny</parameter></link></para></listitem>
 		<listitem><para><link linkend="INCLUDE"><parameter>include</parameter></link></para></listitem>
+		<listitem><para><link linkend="INHERITACLS"><parameter>inherit acls</parameter></link></para></listitem>
 		<listitem><para><link linkend="INHERITPERMISSIONS"><parameter>inherit permissions</parameter></link></para></listitem>
 		<listitem><para><link linkend="INVALIDUSERS"><parameter>invalid users</parameter></link></para></listitem>
 		<listitem><para><link linkend="LEVEL2OPLOCKS"><parameter>level2 oplocks</parameter></link></para></listitem>
@@ -914,21 +915,6 @@
 	<title>EXPLANATION OF EACH PARAMETER</title>
 	
 	<variablelist>
-
-		<varlistentry>
-		<term><anchor id="ABORTSHUTDOWNSCRIPT">abort shutdown script (G)</term>
-		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
-		This a full path name to a script called by
-		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>  that
-		should stop a shutdown procedure issued by the <link 
-		linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link>.</para>
-		
-		<para>This command will be run as user.</para>
-
-		<para>Default: <emphasis>None</emphasis>.</para>
-		<para>Example: <command>abort shutdown script = /sbin/shutdown -c</command></para>
-		</listitem>
-		</varlistentry>
 
 
 		<varlistentry>
@@ -1043,23 +1029,6 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="ADDMACHINESCRIPT">add machine script (G)</term>
-		<listitem><para>This is the full pathname to a script that will 
-		be run by <ulink url="smbd.8.html">smbd(8)</ulink>  when a machine is added
-                to it's domain using the administrator username and password method. </para>
-
-		<para>This option is only required when using sam back-ends tied to the
-                Unix uid method of RID calculation such as smbpasswd.  This option is only
-                available in Samba 3.0.</para>
-
-		<para>Default: <command>add machine script = &lt;empty string&gt;
-		</command></para>	
-
-		<para>Example: <command>add machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
-                </command></para>
-		</listitem>
-		</varlistentry>
 
 
 		<varlistentry>
@@ -1115,6 +1084,7 @@
 
 
 
+		
 		<varlistentry>
 		<term><anchor id="ADMINUSERS">admin users (S)</term>
 		<listitem><para>This is a list of users who will be granted 
@@ -3238,6 +3208,24 @@
 
 
 		<varlistentry>
+		<term><anchor id="INHERITACLS">inherit acls (S)</term>
+		<listitem><para>This parameter can be used to ensure
+		that if default acls exist on parent directories,
+		they are always honored when creating a subdirectory.
+		The default behavior is to use the mode specified
+		when creating the directory.  Enabling this option
+		sets the mode to 0777, thus guaranteeing that 
+		default directory acls are propagated.
+		</para>
+
+		<para>Default: <command>inherit acls = no</command>
+		</para></listitem>
+		</varlistentry>
+		
+
+
+
+		<varlistentry>
 		<term><anchor id="INHERITPERMISSIONS">inherit permissions (S)</term>
 		<listitem><para>The permissions on new files and directories 
 		are normally governed by <link linkend="CREATEMASK"><parameter>
@@ -3745,6 +3733,39 @@
 
 
 		<varlistentry>
+		<term><anchor id="LOCKSPINCOUNT">lock spin count (G)</term>
+		<listitem><para>This parameter controls the number of times
+		that smbd should attempt to gain a byte range lock on the 
+		behalf of a client request.  Experiments have shown that
+		Windows 2k servers do not reply with a failure if the lock
+		could not be immediately granted, but try a few more times
+		in case the lock could later be aquired.  This behavior
+		is used to support PC database formats such as MS Access
+		and FoxPro.
+		</para>
+
+		<para>Default: <command>lock spin count = 2</command>
+		</para></listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LOCKSPINTIME">lock spin time (G)</term>
+		<listitem><para>The time in microseconds that smbd should 
+		pause before attempting to gain a failed lock.  See
+		<link linkend="LOCKSPINCOUNT"><parameter>lock spin 
+		count</parameter></link> for more details.
+		</para>
+
+		<para>Default: <command>lock spin time = 10</command>
+		</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
 		<term><anchor id="LOCKING">locking (S)</term>
 		<listitem><para>This controls whether or not locking will be 
 		performed by the server in response to lock requests from the 
@@ -4033,8 +4054,8 @@
 		takes a printer name as its only parameter and outputs printer 
 		status information.</para>
 
-		<para>Currently eight styles of printer status information 
-		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+		<para>Currently nine styles of printer status information 
+		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 		This covers most UNIX systems. You control which type is expected 
 		using the <parameter>printing =</parameter> option.</para>
 
@@ -4050,7 +4071,10 @@
 
 		<para>Note that it is good practice to include the absolute path 
 		in the <parameter>lpq command</parameter> as the <envar>$PATH
-		</envar> may not be available to the server.</para>
+		</envar> may not be available to the server.  When compiled with
+		the CUPS libraries, no <parameter>lpq command</parameter> is
+		needed because smbd will make a library call to obtain the 
+		print queue listing.</para>
 
 		<para>See also the <link linkend="PRINTING"><parameter>printing
 		</parameter></link> parameter.</para>
@@ -5746,13 +5770,22 @@
 		manually remove old spool files.</para>
 		
 		<para>The print command is simply a text string. It will be used 
-		verbatim, with two exceptions: All occurrences of <parameter>%s
-		</parameter> and <parameter>%f</parameter> will be replaced by the 
-		appropriate spool file name, and all occurrences of <parameter>%p
-		</parameter> will be replaced by the appropriate printer name. The 
-		spool file name is generated automatically by the server.  The 
-		<parameter>%J</parameter> macro can be used to access the job 
+		verbatim after macro substitutions have been made:</para>
+
+		<para>s, %p - the path to the spool
+		file name</para>
+
+		<para>%p - the appropriate printer 
+		name</para>
+
+		<para>%J - the job 
 		name as transmitted by the client.</para>
+
+		<para>%c - The number of printed pages
+		of the spooled job (if known).</para>
+
+		<para>%z - the size of the spooled
+		print job (in bytes)</para>
 
 		<para>The print command <emphasis>MUST</emphasis> contain at least 
 		one occurrence of <parameter>%s</parameter> or <parameter>%f
@@ -5796,6 +5829,17 @@
 
 		<para>For <command>printing = SOFTQ :</command></para>
 		<para><command>print command = lp -d%p -s %s; rm %s</command></para>
+
+		<para>For printing = CUPS :   If SAMBA is compiled against
+		libcups, then <link linkend="PRINTING">printcap = cups</link> 
+		uses the CUPS API to
+		submit jobs, etc.  Otherwise it maps to the System V
+		commands with the -oraw option for printing, i.e. it
+		uses <command>lp -c -d%p -oraw; rm %s</command>.   
+		With <command>printing = cups</command>,
+		and if SAMBA is compiled against libcups, any manually 
+		set print command will be ignored.</para>
+
 
 		<para>Example: <command>print command = /usr/local/samba/bin/myprintscript
 		%p %s</command></para>
@@ -5851,7 +5895,13 @@
 		why you might want to do this.</para>
 
 		<para>To use the CUPS printing interface set <command>printcap name = cups
-		</command>.</para>
+		</command>. This should be supplemented by an addtional setting 
+		<link linkend="PRINTING">printing = cups</link> in the [global] 
+		section.  <command>printcap name = cups</command> will use the  
+		"dummy" printcap created by CUPS, as specified in your CUPS
+		configuration file.
+		</para>
+
 		<para>On System V systems that use <command>lpstat</command> to 
 		list available printers you can use <command>printcap name = lpstat
 		</command> to automatically obtain lists of available printers. This 
@@ -6843,49 +6893,6 @@
 		</varlistentry>
 
 
-
-		<varlistentry>
-		<term><anchor id="SHUTDOWNSCRIPT">shutdown script (G)</term>
-		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
-		This a full path name to a script called by
-		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink> that
-		should start a shutdown procedure.</para>
-
-		<para>This command will be run as the user connected to the
-		server.</para>
-
-		<para>%m %t %r %f parameters are expanded</para>
-		<para><parameter>%m</parameter> will be substituted with the
-		shutdown message sent to the server.</para>
-		<para><parameter>%t</parameter> will be substituted with the
-		number of seconds to wait before effectively starting the
-		shutdown procedure.</para>
-		<para><parameter>%r</parameter> will be substituted with the
-		switch <emphasis>-r</emphasis>. It means reboot after shutdown
-		for NT.
-		</para>
-		<para><parameter>%f</parameter> will be substituted with the
-		switch <emphasis>-f</emphasis>. It means force the shutdown
-		even if applications do not respond for NT.</para>
-
-		<para>Default: <emphasis>None</emphasis>.</para>
-		<para>Example: <command>abort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</command></para>
-		<para>Shutdown script example:
-		<programlisting>
-		#!/bin/bash
-		
-		$time=0
-		let "time/60"
-		let "time++"
-
-		/sbin/shutdown $3 $4 +$time $1 &
-		</programlisting>
-		Shutdown does not return so we need to launch it in background.
-		</para>
-
-		<para>See also <link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link>.</para>
-		</listitem>
-		</varlistentry>
 
 
 		<varlistentry>
@@ -8224,7 +8231,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 		<varlistentry>
-		<term><anchor id="WINBINDCACHETIME">winbind cache time</term>
+		<term><anchor id="WINBINDCACHETIME">winbind cache time (G)</term>
 		<listitem><para>This parameter specifies the number of seconds the
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> daemon will cache 
 		user and group information before querying a Windows NT server 
@@ -8236,8 +8243,8 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 		<varlistentry>
-		<term><anchor id="WINBINDENUMUSERS">winbind enum
-		users</term> <listitem><para>On large installations using
+		<term><anchor id="WINBINDENUMUSERS">winbind enum users (G)</term> 
+		<listitem><para>On large installations using
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
 		necessary to suppress the enumeration of users through the
 		<command> setpwent()</command>,
@@ -8258,8 +8265,8 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		</varlistentry>
 		
 		<varlistentry>
-		<term><anchor id="WINBINDENUMGROUPS">winbind enum
-		groups</term> <listitem><para>On large installations using
+		<term><anchor id="WINBINDENUMGROUPS">winbind enum groups (G)</term> 
+		<listitem><para>On large installations using
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
 		necessary to suppress the enumeration of groups through the
 		<command> setgrent()</command>,
@@ -8279,7 +8286,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 	
 		<varlistentry>
-		<term><anchor id="WINBINDGID">winbind gid</term>
+		<term><anchor id="WINBINDGID">winbind gid (G)</term>
 		<listitem><para>The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink> daemon.  This range of group ids should have no 
@@ -8295,7 +8302,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 		<varlistentry>
-		<term><anchor id="WINBINDSEPARATOR">winbind separator</term>
+		<term><anchor id="WINBINDSEPARATOR">winbind separator (G)</term>
 		<listitem><para>This parameter allows an admin to define the character 
 		used when listing a username of the form of <replaceable>DOMAIN
 		</replaceable>\<replaceable>user</replaceable>.  This parameter 
@@ -8307,8 +8314,8 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		with group membership at least on glibc systems, as the character +
 		is used as a special character for NIS in /etc/group.</para>
 
-		<para>Example: <command>winbind separator = \\</command></para>
-		<para>Example: <command>winbind separator = /</command></para>
+		<para>Default: <command>winbind separator = '\'</command></para>
+		<para>Example: <command>winbind separator = +</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -8316,7 +8323,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 		<varlistentry>
-		<term><anchor id="WINBINDUID">winbind uid</term>
+		<term><anchor id="WINBINDUID">winbind uid (G)</term>
 		<listitem><para>The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink> daemon.  This range of ids should have no 
@@ -8328,6 +8335,22 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		
 		<para>Example: <command>winbind uid = 10000-20000</command></para>
 		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain (G)</term>
+		<listitem><para>This option controls whether or not smbd
+		should lookup 'username' as 'DOMAIN\username' when winbindd is
+		running on a system.  This is most useful when used in conjunction
+		with pam_winbind.so to prevent a Windows user from having to enter
+		commands like "ssh 'DOMAIN\username@hostname'".  This option is disabled 
+		by default, thus requiring that the DOMAIN\username format be used.</para>
+
+		<para>Default: <command>winbind use default domain = no</command>
+		</para></listitem>
 		</varlistentry>
 
 

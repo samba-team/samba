@@ -862,18 +862,6 @@ NAME="AEN254"
 ><LI
 ><P
 ><A
-HREF="#ABORTSHUTDOWNSCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->abort shutdown script</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
@@ -903,18 +891,6 @@ HREF="#ADDUSERSCRIPT"
 CLASS="PARAMETER"
 ><I
 >add user script</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#ADDMACHINESCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->add machine script</I
 ></TT
 ></A
 ></P
@@ -1599,6 +1575,30 @@ HREF="#LOCKDIRECTORY"
 CLASS="PARAMETER"
 ><I
 >lock directory</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LOCKSPINCOUNT"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin count</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LOCKSPINTIME"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin time</I
 ></TT
 ></A
 ></P
@@ -2374,18 +2374,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#SHUTDOWNSCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->shutdown script</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#SMBPASSWDFILE"
 ><TT
 CLASS="PARAMETER"
@@ -2955,6 +2943,18 @@ HREF="#WINBINDUID"
 CLASS="PARAMETER"
 ><I
 >winbind uid</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#WINBINDUSEDEFAULTDOMAIN"
+><TT
+CLASS="PARAMETER"
+><I
+>winbind use default domain</I
 ></TT
 ></A
 ></P
@@ -3594,6 +3594,18 @@ HREF="#INCLUDE"
 CLASS="PARAMETER"
 ><I
 >include</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#INHERITACLS"
+><TT
+CLASS="PARAMETER"
+><I
+>inherit acls</I
 ></TT
 ></A
 ></P
@@ -4503,7 +4515,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1470"
+NAME="AEN1474"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4512,46 +4524,6 @@ NAME="AEN1470"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
-><DT
-><A
-NAME="ABORTSHUTDOWNSCRIPT"
-></A
->abort shutdown script (G)</DT
-><DD
-><P
-><EM
->This parameter only exists in the HEAD cvs branch</EM
->
-		This a full path name to a script called by
-		<A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
->  that
-		should stop a shutdown procedure issued by the <A
-HREF="#SHUTDOWNSCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->shutdown script</I
-></TT
-></A
->.</P
-><P
->This command will be run as user.</P
-><P
->Default: <EM
->None</EM
->.</P
-><P
->Example: <B
-CLASS="COMMAND"
->abort shutdown script = /sbin/shutdown -c</B
-></P
-></DD
 ><DT
 ><A
 NAME="ADDPRINTERCOMMAND"
@@ -4858,37 +4830,6 @@ CLASS="PARAMETER"
 >Example: <B
 CLASS="COMMAND"
 >add share command = /usr/local/bin/addshare</B
-></P
-></DD
-><DT
-><A
-NAME="ADDMACHINESCRIPT"
-></A
->add machine script (G)</DT
-><DD
-><P
->This is the full pathname to a script that will 
-		be run by <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd(8)</A
->  when a machine is added
-                to it's domain using the administrator username and password method. </P
-><P
->This option is only required when using sam back-ends tied to the
-                Unix uid method of RID calculation such as smbpasswd.  This option is only
-                available in Samba 3.0.</P
-><P
->Default: <B
-CLASS="COMMAND"
->add machine script = &#60;empty string&#62;
-		</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->add machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
-                </B
 ></P
 ></DD
 ><DT
@@ -9366,6 +9307,28 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="INHERITACLS"
+></A
+>inherit acls (S)</DT
+><DD
+><P
+>This parameter can be used to ensure
+		that if default acls exist on parent directories,
+		they are always honored when creating a subdirectory.
+		The default behavior is to use the mode specified
+		when creating the directory.  Enabling this option
+		sets the mode to 0777, thus guaranteeing that 
+		default directory acls are propagated.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>inherit acls = no</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="INHERITPERMISSIONS"
 ></A
 >inherit permissions (S)</DT
@@ -10384,6 +10347,56 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="LOCKSPINCOUNT"
+></A
+>lock spin count (G)</DT
+><DD
+><P
+>This parameter controls the number of times
+		that smbd should attempt to gain a byte range lock on the 
+		behalf of a client request.  Experiments have shown that
+		Windows 2k servers do not reply with a failure if the lock
+		could not be immediately granted, but try a few more times
+		in case the lock could later be aquired.  This behavior
+		is used to support PC database formats such as MS Access
+		and FoxPro.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>lock spin count = 2</B
+>
+		</P
+></DD
+><DT
+><A
+NAME="LOCKSPINTIME"
+></A
+>lock spin time (G)</DT
+><DD
+><P
+>The time in microseconds that smbd should 
+		pause before attempting to gain a failed lock.  See
+		<A
+HREF="#LOCKSPINCOUNT"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin 
+		count</I
+></TT
+></A
+> for more details.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>lock spin time = 10</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="LOCKING"
 ></A
 >locking (S)</DT
@@ -10913,8 +10926,8 @@ CLASS="COMMAND"
 		takes a printer name as its only parameter and outputs printer 
 		status information.</P
 ><P
->Currently eight styles of printer status information 
-		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+>Currently nine styles of printer status information 
+		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 		This covers most UNIX systems. You control which type is expected 
 		using the <TT
 CLASS="PARAMETER"
@@ -10948,7 +10961,15 @@ CLASS="PARAMETER"
 CLASS="ENVAR"
 >$PATH
 		</TT
-> may not be available to the server.</P
+> may not be available to the server.  When compiled with
+		the CUPS libraries, no <TT
+CLASS="PARAMETER"
+><I
+>lpq command</I
+></TT
+> is
+		needed because smbd will make a library call to obtain the 
+		print queue listing.</P
 ><P
 >See also the <A
 HREF="#PRINTING"
@@ -14231,33 +14252,22 @@ CLASS="COMMAND"
 		manually remove old spool files.</P
 ><P
 >The print command is simply a text string. It will be used 
-		verbatim, with two exceptions: All occurrences of <TT
-CLASS="PARAMETER"
-><I
->%s
-		</I
-></TT
-> and <TT
-CLASS="PARAMETER"
-><I
->%f</I
-></TT
-> will be replaced by the 
-		appropriate spool file name, and all occurrences of <TT
-CLASS="PARAMETER"
-><I
->%p
-		</I
-></TT
-> will be replaced by the appropriate printer name. The 
-		spool file name is generated automatically by the server.  The 
-		<TT
-CLASS="PARAMETER"
-><I
->%J</I
-></TT
-> macro can be used to access the job 
+		verbatim after macro substitutions have been made:</P
+><P
+>s, %p - the path to the spool
+		file name</P
+><P
+>%p - the appropriate printer 
+		name</P
+><P
+>%J - the job 
 		name as transmitted by the client.</P
+><P
+>%c - The number of printed pages
+		of the spooled job (if known).</P
+><P
+>%z - the size of the spooled
+		print job (in bytes)</P
 ><P
 >The print command <EM
 >MUST</EM
@@ -14365,6 +14375,25 @@ CLASS="COMMAND"
 >print command = lp -d%p -s %s; rm %s</B
 ></P
 ><P
+>For printing = CUPS :   If SAMBA is compiled against
+		libcups, then <A
+HREF="#PRINTING"
+>printcap = cups</A
+> 
+		uses the CUPS API to
+		submit jobs, etc.  Otherwise it maps to the System V
+		commands with the -oraw option for printing, i.e. it
+		uses <B
+CLASS="COMMAND"
+>lp -c -d%p -oraw; rm %s</B
+>.   
+		With <B
+CLASS="COMMAND"
+>printing = cups</B
+>,
+		and if SAMBA is compiled against libcups, any manually 
+		set print command will be ignored.</P
+><P
 >Example: <B
 CLASS="COMMAND"
 >print command = /usr/local/samba/bin/myprintscript
@@ -14459,7 +14488,18 @@ HREF="#AEN79"
 CLASS="COMMAND"
 >printcap name = cups
 		</B
->.</P
+>. This should be supplemented by an addtional setting 
+		<A
+HREF="#PRINTING"
+>printing = cups</A
+> in the [global] 
+		section.  <B
+CLASS="COMMAND"
+>printcap name = cups</B
+> will use the  
+		"dummy" printcap created by CUPS, as specified in your CUPS
+		configuration file.
+		</P
 ><P
 >On System V systems that use <B
 CLASS="COMMAND"
@@ -16445,115 +16485,6 @@ CLASS="PARAMETER"
 CLASS="COMMAND"
 >show add printer wizard = yes</B
 ></P
-></DD
-><DT
-><A
-NAME="SHUTDOWNSCRIPT"
-></A
->shutdown script (G)</DT
-><DD
-><P
-><EM
->This parameter only exists in the HEAD cvs branch</EM
->
-		This a full path name to a script called by
-		<A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
-> that
-		should start a shutdown procedure.</P
-><P
->This command will be run as the user connected to the
-		server.</P
-><P
->%m %t %r %f parameters are expanded</P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->%m</I
-></TT
-> will be substituted with the
-		shutdown message sent to the server.</P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->%t</I
-></TT
-> will be substituted with the
-		number of seconds to wait before effectively starting the
-		shutdown procedure.</P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->%r</I
-></TT
-> will be substituted with the
-		switch <EM
->-r</EM
->. It means reboot after shutdown
-		for NT.
-		</P
-><P
-><TT
-CLASS="PARAMETER"
-><I
->%f</I
-></TT
-> will be substituted with the
-		switch <EM
->-f</EM
->. It means force the shutdown
-		even if applications do not respond for NT.</P
-><P
->Default: <EM
->None</EM
->.</P
-><P
->Example: <B
-CLASS="COMMAND"
->abort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</B
-></P
-><P
->Shutdown script example:
-		<TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
-><PRE
-CLASS="PROGRAMLISTING"
->		#!/bin/bash
-		
-		$time=0
-		let "time/60"
-		let "time++"
-
-		/sbin/shutdown $3 $4 +$time $1 &#38;
-		</PRE
-></TD
-></TR
-></TABLE
->
-		Shutdown does not return so we need to launch it in background.
-		</P
-><P
->See also <A
-HREF="#ABORTSHUTDOWNSCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->abort shutdown script</I
-></TT
-></A
->.</P
 ></DD
 ><DT
 ><A
@@ -18871,7 +18802,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDCACHETIME"
 ></A
->winbind cache time</DT
+>winbind cache time (G)</DT
 ><DD
 ><P
 >This parameter specifies the number of seconds the
@@ -18892,8 +18823,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDENUMUSERS"
 ></A
->winbind enum
-		users</DT
+>winbind enum users (G)</DT
 ><DD
 ><P
 >On large installations using
@@ -18944,8 +18874,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDENUMGROUPS"
 ></A
->winbind enum
-		groups</DT
+>winbind enum groups (G)</DT
 ><DD
 ><P
 >On large installations using
@@ -18995,7 +18924,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDGID"
 ></A
->winbind gid</DT
+>winbind gid (G)</DT
 ><DD
 ><P
 >The winbind gid parameter specifies the range of group 
@@ -19022,7 +18951,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDSEPARATOR"
 ></A
->winbind separator</DT
+>winbind separator (G)</DT
 ><DD
 ><P
 >This parameter allows an admin to define the character 
@@ -19052,21 +18981,21 @@ CLASS="FILENAME"
 		with group membership at least on glibc systems, as the character +
 		is used as a special character for NIS in /etc/group.</P
 ><P
->Example: <B
+>Default: <B
 CLASS="COMMAND"
->winbind separator = \\</B
+>winbind separator = '\'</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = /</B
+>winbind separator = +</B
 ></P
 ></DD
 ><DT
 ><A
 NAME="WINBINDUID"
 ></A
->winbind uid</DT
+>winbind uid (G)</DT
 ><DD
 ><P
 >The winbind gid parameter specifies the range of group 
@@ -19088,6 +19017,26 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >winbind uid = 10000-20000</B
 ></P
+></DD
+><DT
+><A
+NAME="WINBINDUSEDEFAULTDOMAIN"
+></A
+>winbind use default domain (G)</DT
+><DD
+><P
+>This option controls whether or not smbd
+		should lookup 'username' as 'DOMAIN\username' when winbindd is
+		running on a system.  This is most useful when used in conjunction
+		with pam_winbind.so to prevent a Windows user from having to enter
+		commands like "ssh 'DOMAIN\username@hostname'".  This option is disabled 
+		by default, thus requiring that the DOMAIN\username format be used.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind use default domain = no</B
+>
+		</P
 ></DD
 ><DT
 ><A
@@ -19458,7 +19407,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6147"
+NAME="AEN6134"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19488,7 +19437,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6153"
+NAME="AEN6140"
 ></A
 ><H2
 >VERSION</H2
@@ -19499,7 +19448,7 @@ NAME="AEN6153"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6156"
+NAME="AEN6143"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19578,7 +19527,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6176"
+NAME="AEN6163"
 ></A
 ><H2
 >AUTHOR</H2

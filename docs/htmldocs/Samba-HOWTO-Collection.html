@@ -878,29 +878,29 @@ HREF="#AEN2015"
 ><DL
 ><DT
 >11.5.1. <A
-HREF="#AEN2020"
+HREF="#AEN2022"
 >Introduction</A
 ></DT
 ><DT
 >11.5.2. <A
-HREF="#AEN2033"
+HREF="#AEN2035"
 >Requirements</A
 ></DT
 ><DT
 >11.5.3. <A
-HREF="#AEN2047"
+HREF="#AEN2049"
 >Testing Things Out</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.5.3.1. <A
-HREF="#AEN2058"
+HREF="#AEN2060"
 >Configure and compile SAMBA</A
 ></DT
 ><DT
 >11.5.3.2. <A
-HREF="#AEN2077"
+HREF="#AEN2079"
 >Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
@@ -909,22 +909,22 @@ winbind libraries</A
 ></DT
 ><DT
 >11.5.3.3. <A
-HREF="#AEN2102"
+HREF="#AEN2104"
 >Configure smb.conf</A
 ></DT
 ><DT
 >11.5.3.4. <A
-HREF="#AEN2118"
+HREF="#AEN2120"
 >Join the SAMBA server to the PDC domain</A
 ></DT
 ><DT
 >11.5.3.5. <A
-HREF="#AEN2129"
+HREF="#AEN2131"
 >Start up the winbindd daemon and test it!</A
 ></DT
 ><DT
 >11.5.3.6. <A
-HREF="#AEN2165"
+HREF="#AEN2167"
 >Fix the <TT
 CLASS="FILENAME"
 >/etc/rc.d/init.d/smb</TT
@@ -932,7 +932,7 @@ CLASS="FILENAME"
 ></DT
 ><DT
 >11.5.3.7. <A
-HREF="#AEN2187"
+HREF="#AEN2189"
 >Configure Winbind and PAM</A
 ></DT
 ></DL
@@ -941,12 +941,12 @@ HREF="#AEN2187"
 ></DD
 ><DT
 >11.6. <A
-HREF="#AEN2234"
+HREF="#AEN2236"
 >Limitations</A
 ></DT
 ><DT
 >11.7. <A
-HREF="#AEN2244"
+HREF="#AEN2246"
 >Conclusion</A
 ></DT
 ></DL
@@ -960,32 +960,32 @@ HREF="#OS2"
 ><DL
 ><DT
 >12.1. <A
-HREF="#AEN2258"
+HREF="#AEN2260"
 >FAQs</A
 ></DT
 ><DD
 ><DL
 ><DT
 >12.1.1. <A
-HREF="#AEN2260"
+HREF="#AEN2262"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
 >12.1.2. <A
-HREF="#AEN2275"
+HREF="#AEN2277"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
 >12.1.3. <A
-HREF="#AEN2284"
+HREF="#AEN2286"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
 >12.1.4. <A
-HREF="#AEN2288"
+HREF="#AEN2290"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
@@ -1002,24 +1002,24 @@ HREF="#CVS-ACCESS"
 ><DL
 ><DT
 >13.1. <A
-HREF="#AEN2304"
+HREF="#AEN2306"
 >Introduction</A
 ></DT
 ><DT
 >13.2. <A
-HREF="#AEN2309"
+HREF="#AEN2311"
 >CVS Access to samba.org</A
 ></DT
 ><DD
 ><DL
 ><DT
 >13.2.1. <A
-HREF="#AEN2312"
+HREF="#AEN2314"
 >Access via CVSweb</A
 ></DT
 ><DT
 >13.2.2. <A
-HREF="#AEN2317"
+HREF="#AEN2319"
 >Access via cvs</A
 ></DT
 ></DL
@@ -1028,7 +1028,7 @@ HREF="#AEN2317"
 ></DD
 ><DT
 ><A
-HREF="#AEN2345"
+HREF="#AEN2347"
 >Index</A
 ></DT
 ></DL
@@ -9535,12 +9535,20 @@ for providing the HOWTO for this section.</P
 >This HOWTO describes how to get winbind services up and running 
 to control access and authenticate users on your Linux box using 
 the winbind services which come with SAMBA 2.2.2.</P
+><P
+>There is also some Solaris specific information in 
+<TT
+CLASS="FILENAME"
+>docs/textdocs/Solaris-Winbind-HOWTO.txt</TT
+>.
+Future revisions of this document will incorporate that
+information.</P
 ><DIV
 CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2020"
+NAME="AEN2022"
 >11.5.1. Introduction</A
 ></H2
 ><P
@@ -9591,7 +9599,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2033"
+NAME="AEN2035"
 >11.5.2. Requirements</A
 ></H2
 ><P
@@ -9649,7 +9657,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2047"
+NAME="AEN2049"
 >11.5.3. Testing Things Out</A
 ></H2
 ><P
@@ -9694,7 +9702,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2058"
+NAME="AEN2060"
 >11.5.3.1. Configure and compile SAMBA</A
 ></H3
 ><P
@@ -9769,7 +9777,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2077"
+NAME="AEN2079"
 >11.5.3.2. Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
@@ -9859,7 +9867,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2102"
+NAME="AEN2104"
 >11.5.3.3. Configure smb.conf</A
 ></H3
 ><P
@@ -9943,7 +9951,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2118"
+NAME="AEN2120"
 >11.5.3.4. Join the SAMBA server to the PDC domain</A
 ></H3
 ><P
@@ -9989,7 +9997,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2129"
+NAME="AEN2131"
 >11.5.3.5. Start up the winbindd daemon and test it!</A
 ></H3
 ><P
@@ -10130,7 +10138,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2165"
+NAME="AEN2167"
 >11.5.3.6. Fix the <TT
 CLASS="FILENAME"
 >/etc/rc.d/init.d/smb</TT
@@ -10260,7 +10268,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2187"
+NAME="AEN2189"
 >11.5.3.7. Configure Winbind and PAM</A
 ></H3
 ><P
@@ -10482,7 +10490,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2234"
+NAME="AEN2236"
 >11.6. Limitations</A
 ></H1
 ><P
@@ -10523,7 +10531,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2244"
+NAME="AEN2246"
 >11.7. Conclusion</A
 ></H1
 ><P
@@ -10547,7 +10555,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2258"
+NAME="AEN2260"
 >12.1. FAQs</A
 ></H1
 ><DIV
@@ -10555,7 +10563,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2260"
+NAME="AEN2262"
 >12.1.1. How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></H2
@@ -10614,7 +10622,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2275"
+NAME="AEN2277"
 >12.1.2. How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></H2
@@ -10667,7 +10675,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2284"
+NAME="AEN2286"
 >12.1.3. Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></H2
@@ -10689,7 +10697,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2288"
+NAME="AEN2290"
 >12.1.4. How do I get printer driver download working 
 		for OS/2 clients?</A
 ></H2
@@ -10745,7 +10753,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2304"
+NAME="AEN2306"
 >13.1. Introduction</A
 ></H1
 ><P
@@ -10767,7 +10775,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2309"
+NAME="AEN2311"
 >13.2. CVS Access to samba.org</A
 ></H1
 ><P
@@ -10780,7 +10788,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2312"
+NAME="AEN2314"
 >13.2.1. Access via CVSweb</A
 ></H2
 ><P
@@ -10801,7 +10809,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2317"
+NAME="AEN2319"
 >13.2.2. Access via cvs</A
 ></H2
 ><P
@@ -10907,7 +10915,7 @@ CLASS="COMMAND"
 ></DIV
 ><HR><H1
 ><A
-NAME="AEN2345"
+NAME="AEN2347"
 >Index</A
 ></H1
 ><DL
