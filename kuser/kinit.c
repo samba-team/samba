@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -145,6 +145,7 @@ static struct getargs args[] = {
 
     { "request-pac",	0,   arg_flag,	&pac_flag,
       "request a Windows PAC" },
+
 #ifdef PKINIT
     {  "certificate",  'C',  arg_string, &pk_cert_file,
        "principal's public key certificate", "filename"},
@@ -431,7 +432,8 @@ static krb5_error_code
 get_new_tickets(krb5_context context, 
 		krb5_principal principal,
 		krb5_ccache ccache,
-		krb5_deltat ticket_life)
+		krb5_deltat ticket_life,
+		int interactive)
 {
     krb5_error_code ret;
     krb5_get_init_creds_opt *opt;
@@ -544,6 +546,10 @@ get_new_tickets(krb5_context context,
 					    start_time,
 					    server,
 					    opt);
+    } else if (!interactive) {
+	krb5_warnx(context, "Not interactive, failed to get initial ticket");
+	krb5_get_init_creds_opt_free(opt);
+	return 0;
     } else {
 	char *p, *prompt;
 
@@ -626,6 +632,74 @@ get_new_tickets(krb5_context context,
     krb5_free_creds_contents (context, &cred);
 
     return 0;
+}
+
+static time_t
+ticket_lifetime(krb5_context context, krb5_ccache cache, 
+		krb5_principal client, const char *server)
+{
+    krb5_creds in_cred, *cred;
+    krb5_error_code ret;
+    time_t timeout;
+
+    memset(&in_cred, 0, sizeof(in_cred));
+
+    ret = krb5_cc_get_principal(context, cache, &in_cred.client);
+    if(ret) {
+	krb5_warn(context, ret, "krb5_cc_get_principal");
+	return 0;
+    }
+    ret = get_server(context, in_cred.client, server, &in_cred.server);
+    if(ret) {
+	krb5_free_principal(context, in_cred.client);
+	krb5_warn(context, ret, "get_server");
+	return 0;
+    }
+
+    ret = krb5_get_credentials(context, KRB5_GC_CACHED,
+			       cache, &in_cred, &cred);
+    krb5_free_principal(context, in_cred.client);
+    krb5_free_principal(context, in_cred.server);
+    if(ret) {
+	krb5_warn(context, ret, "krb5_get_credentials");
+	return 0;
+    }
+    timeout = cred->times.endtime - cred->times.starttime;
+    if (timeout < 0)
+	timeout = 0;
+    krb5_free_creds(context, cred);
+    return timeout;
+}
+
+struct renew_ctx {
+    krb5_context context;
+    krb5_ccache  ccache;
+    krb5_principal principal;
+    krb5_deltat ticket_life;
+};
+
+static time_t
+renew_func(void *ptr)
+{
+    struct renew_ctx *ctx = ptr;
+    krb5_error_code ret;
+    time_t expire;
+
+
+    ret = renew_validate(ctx->context, renewable_flag, validate_flag,
+			     ctx->ccache, server, ctx->ticket_life);
+    if (ret)
+	get_new_tickets(ctx->context, ctx->principal, 
+			ctx->ccache, ctx->ticket_life, 0);
+
+    if(get_v4_tgt || convert_524)
+	do_524init(ctx->context, ctx->ccache, NULL, server);
+    if(do_afslog && k_hasafs())
+	krb5_afslog(ctx->context, ctx->ccache, NULL, NULL);
+
+    expire = ticket_lifetime(ctx->context, ctx->ccache, ctx->principal,
+			     server) / 2;
+    return expire + 1;
 }
 
 int
@@ -756,14 +830,26 @@ main (int argc, char **argv)
     }
 
     if(!convert_524)
-	get_new_tickets(context, principal, ccache, ticket_life);
+	get_new_tickets(context, principal, ccache, ticket_life, 1);
 
     if(get_v4_tgt || convert_524)
 	do_524init(context, ccache, NULL, server);
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
     if(argc > 1) {
-	ret = simple_execvp(argv[1], argv+1);
+	struct renew_ctx ctx;
+	time_t timeout;
+
+	timeout = ticket_lifetime(context, ccache, principal, server) / 2;
+
+	ctx.context = context;
+	ctx.ccache = ccache;
+	ctx.principal = principal;
+	ctx.ticket_life = ticket_life;
+
+	ret = simple_execvp_timed(argv[1], argv+1, 
+				  renew_func, &ctx, timeout);
+
 	krb5_cc_destroy(context, ccache);
 	_krb5_krb_dest_tkt(context, krb4_cc_name);
 	if(k_hasafs())
