@@ -383,10 +383,6 @@ queue_reply:
 		}
 	}
 
-
-
-no_base_scope:
-
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	if (!done_r) {
 		return NT_STATUS_NO_MEMORY;
