@@ -113,6 +113,28 @@ static void smbw_share_add(const char *share, uint32 type, const char *comment)
 
 
 /***************************************************** 
+add a entry to a directory listing
+*******************************************************/
+static void smbw_printjob_add(struct print_job_info *job)
+{
+	struct file_info finfo;
+
+	ZERO_STRUCT(finfo);
+
+	pstrcpy(finfo.name, job->name);
+	finfo.mode = aRONLY | aDIR;	
+	finfo.mtime = job->t;
+	finfo.atime = job->t;
+	finfo.ctime = job->t;
+	finfo.uid = nametouid(job->user);
+	finfo.mode = aRONLY;
+	finfo.size = job->size;
+
+	smbw_dir_add(&finfo);
+}
+
+
+/***************************************************** 
 open a directory on the server
 *******************************************************/
 int smbw_dir_open(const char *fname)
@@ -159,15 +181,20 @@ int smbw_dir_open(const char *fname)
 	slprintf(mask, sizeof(mask)-1, "%s\\*", path);
 	string_sub(mask,"\\\\","\\");
 
-	if (strcmp(share,"IPC$") == 0) {
+	if (strcmp(srv->cli.dev,"IPC") == 0) {
 		DEBUG(4,("doing NetShareEnum\n"));
-		if (cli_RNetShareEnum(&srv->cli, smbw_share_add) <= 0) {
+		if (cli_RNetShareEnum(&srv->cli, smbw_share_add) < 0) {
+			errno = smbw_errno(&srv->cli);
+			goto failed;
+		}
+	} else if (strncmp(srv->cli.dev,"LPT",3) == 0) {
+		if (cli_print_queue(&srv->cli, smbw_printjob_add) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
 	} else {
 		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, 
-			     smbw_dir_add) <= 0) {
+			     smbw_dir_add) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
@@ -344,7 +371,8 @@ int smbw_chdir(const char *name)
 		goto failed;
 	}
 
-	if (strcmp(share,"IPC$") &&
+	if (strncmp(srv->cli.dev,"IPC",3) &&
+	    strncmp(srv->cli.dev,"LPT",3) &&
 	    !smbw_getatr(srv, path, 
 			 &mode, NULL, NULL, NULL, NULL)) {
 		errno = smbw_errno(&srv->cli);

@@ -137,6 +137,29 @@ static void cli_setup_packet(struct cli_state *cli)
 }
 
 
+/*****************************************************************************
+ Convert a character pointer in a cli_call_api() response to a form we can use.
+ This function contains code to prevent core dumps if the server returns 
+ invalid data.
+*****************************************************************************/
+static char *fix_char_ptr(unsigned int datap, unsigned int converter, 
+			  char *rdata, int rdrcnt)
+{
+	if (datap == 0)	{	/* turn NULL pointers into zero length strings */
+		return "";
+	} else {
+		unsigned int offset = datap - converter;
+
+		if (offset >= rdrcnt) {
+			DEBUG(1,("bad char ptr: datap=%u, converter=%u rdrcnt=%d>",
+				 datap, converter, rdrcnt));
+			return "<ERROR>";
+		} else {
+			return &rdata[offset];
+		}
+	}
+}
+
 /****************************************************************************
   send a SMB trans or trans2 request
   ****************************************************************************/
@@ -739,6 +762,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
+	fstrcpy(cli->share, share);
+
 	if (cli->sec_mode & 1) {
 		passlen = 1;
 		pass = "";
@@ -778,6 +803,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	if (CVAL(cli->inbuf,smb_rcls) != 0) {
 		return False;
 	}
+
+	fstrcpy(cli->dev, smb_buf(cli->inbuf));
 
 	if (cli->protocol >= PROTOCOL_NT1 &&
 	    smb_buflen(cli->inbuf) == 3) {
@@ -2465,4 +2492,77 @@ BOOL cli_establish_connection(struct cli_state *cli,
       cli_shutdown(cli);
 
 	return True;
+}
+
+
+
+/****************************************************************************
+call fn() on each entry in a print queue
+****************************************************************************/
+int cli_print_queue(struct cli_state *cli, 
+		    void (*fn)(struct print_job_info *))
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	char *p;
+	int rdrcnt, rprcnt;
+	pstring param;
+	int result_code=0;
+	int i = -1;
+	
+	bzero(param,sizeof(param));
+
+	p = param;
+	SSVAL(p,0,76);         /* API function number 76 (DosPrintJobEnum) */
+	p += 2;
+	pstrcpy(p,"zWrLeh");   /* parameter description? */
+	p = skip_string(p,1);
+	pstrcpy(p,"WWzWWDDzz");  /* returned data format */
+	p = skip_string(p,1);
+	pstrcpy(p,cli->share);    /* name of queue */
+	p = skip_string(p,1);
+	SSVAL(p,0,2);   /* API function level 2, PRJINFO_2 data structure */
+	SSVAL(p,2,1000); /* size of bytes of returned data buffer */
+	p += 4;
+	pstrcpy(p,"");   /* subformat */
+	p = skip_string(p,1);
+
+	DEBUG(4,("doing cli_print_queue for %s\n", cli->share));
+
+	if (cli_api(cli, 
+		    param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
+		    NULL, 0, CLI_BUFFER_SIZE,            /* data, length, maxlen */
+		    &rparam, &rprcnt,                /* return params, length */
+		    &rdata, &rdrcnt)) {               /* return data, length */
+		int converter;
+		result_code = SVAL(rparam,0);
+		converter = SVAL(rparam,2);       /* conversion factor */
+
+		if (result_code == 0) {
+			struct print_job_info job;
+			
+			p = rdata; 
+
+			for (i = 0; i < SVAL(rparam,4); ++i) {
+				job.id = SVAL(p,0);
+				job.priority = SVAL(p,2);
+				fstrcpy(job.user,
+					fix_char_ptr(SVAL(p,4), converter, 
+						     rdata, rdrcnt));
+				job.t = make_unix_date3(p + 12);
+				job.size = IVAL(p,16);
+				fstrcpy(job.name,fix_char_ptr(SVAL(p,24), 
+							      converter, 
+							      rdata, rdrcnt));
+				fn(&job);				
+				p += 28;
+			}
+		}
+	}
+
+	/* If any parameters or data were returned, free the storage. */
+	if(rparam) free(rparam);
+	if(rdata) free(rdata);
+
+	return i;
 }
