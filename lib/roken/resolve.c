@@ -232,6 +232,11 @@ dns_lookup(char *domain, char *type_name)
     return NULL;
 }
 
+void
+dns_free_data(struct dns_reply *r)
+{
+}
+
 #endif
 
 #ifdef TEST
