@@ -108,7 +108,7 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
  ***************************************************************************/
 
 static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
-				int num_entries, UNISTR2 name[MAX_LOOKUP_SIDS],
+				int num_entries, UNISTR2 *name,
 				uint32 *mapped_count, BOOL endian)
 {
 	int i;
