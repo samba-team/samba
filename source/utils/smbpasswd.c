@@ -69,6 +69,7 @@ static void usage(void)
 		printf("  -e                   enable user\n");
 		printf("  -n                   set no password\n");
 		printf("  -m                   workstation trust account\n");
+		printf("  -b                   backup domain controller account\n");
 		printf("  -i                   inter-domain trust account\n");
 		printf("  -p                   user cannot change password\n");
 		printf("  -x                   user can change password\n");
@@ -86,19 +87,23 @@ static int join_domain(char *domain, char *remote)
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
 	BOOL ret;
+	uint16 sec_chan;
 
 	pstrcpy(remote_machine, remote ? remote : "");
 	fstrcpy(trust_passwd, global_myname);
 	strlower(trust_passwd);
 	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
 
-	/* Ensure that we are not trying to join a
-	   domain if we are locally set up as a domain
-	   controller. */
-
-	if(strequal(remote, global_myname)) {
-		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
-		return 1;
+	switch (lp_server_role())
+	{
+		case ROLE_DOMAIN_PDC:
+			DEBUG(0, ("Cannot join domain - we are PDC!\n"));
+			return;
+		case ROLE_DOMAIN_BDC:
+			sec_chan = SEC_CHAN_BDC;
+			break;
+		default:
+			sec_chan = SEC_CHAN_WKSTA;
 	}
 
 	/*
@@ -136,7 +141,7 @@ unable to join domain.\n");
 		return 1;
 	}
 
-	ret = change_trust_account_password( domain, remote_machine);
+	ret = change_trust_account_password(domain, remote_machine, sec_chan);
 	trust_password_unlock();
 	
 	if(!ret) {
@@ -283,6 +288,7 @@ static int process_root(int argc, char *argv[])
 	uint16 acb_mask = 0;
 	BOOL joining_domain = False;
 	BOOL wks_trust_account = False;
+	BOOL srv_trust_account = False;
 	BOOL dom_trust_account = False;
 	BOOL add_user = False;
 	BOOL disable_user = False;
@@ -297,7 +303,7 @@ static int process_root(int argc, char *argv[])
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
-	while ((ch = getopt(argc, argv, "adehimnpxj:r:sR:D:U:")) != EOF)
+	while ((ch = getopt(argc, argv, "abdehimnpxj:r:sR:D:U:")) != EOF)
 	{
 		switch(ch)
 		{
@@ -348,6 +354,11 @@ static int process_root(int argc, char *argv[])
 			case 'i':
 			{
 				dom_trust_account = True;
+				break;
+			}
+			case 'b':
+			{
+				srv_trust_account = True;
 				break;
 			}
 			case 'm':
@@ -429,7 +440,7 @@ static int process_root(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (wks_trust_account || dom_trust_account)
+	if (wks_trust_account || srv_trust_account || dom_trust_account)
 	{
 		/* add the $ automatically */
 		static fstring buf;
@@ -528,6 +539,11 @@ static int process_root(int argc, char *argv[])
 	{
 		acb_mask |= ACB_WSTRUST;
 		acb_info |= ACB_WSTRUST;
+	}
+	else if (srv_trust_account)
+	{
+		acb_mask |= ACB_SVRTRUST;
+		acb_info |= ACB_SVRTRUST;
 	}
 	else if (dom_trust_account)
 	{
