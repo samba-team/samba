@@ -385,8 +385,8 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 			for (i = 0; i < 10; i++, reply_seq_number++) {
 				simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number, calc_md5_mac);
 				if (memcmp(server_sent_mac, calc_md5_mac, 8) == 0) {
-					DEBUG(0,("client_check_incoming_message: out of seq. seq num %u matches.\n",
-							reply_seq_number ));
+					DEBUG(0,("client_check_incoming_message: out of seq. seq num %u matches. \
+We were expecting seq %u\n", reply_seq_number, saved_seq ));
 					break;
 				}
 			}
@@ -748,8 +748,8 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 			for (i = 0; i < 10; i++, reply_seq_number++) {
 				simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number, calc_md5_mac);
 				if (memcmp(server_sent_mac, calc_md5_mac, 8) == 0) {
-					DEBUG(0,("srv_check_incoming_message: out of seq. seq num %u matches.\n",
-							reply_seq_number ));
+					DEBUG(0,("srv_check_incoming_message: out of seq. seq num %u matches. \
+We were expecting seq %u\n", reply_seq_number, saved_seq ));
 					break;
 				}
 			}
