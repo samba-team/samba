@@ -4240,9 +4240,9 @@ int lp_minor_announce_version(void)
  Set the global name resolution order (used in smbclient).
 ************************************************************/
 
-void lp_set_name_resolve_order(char *new_order)
+void lp_set_name_resolve_order(const char *new_order)
 {
-	Globals.szNameResolveOrder = new_order;
+	string_set(&Globals.szNameResolveOrder, new_order);
 }
 
 const char *lp_printername(int snum)
