@@ -490,6 +490,22 @@ data and keeps it out of the desktop profile. That keeps desktop profiles from b
 </sect2>
 
 <sect2>
+        <title>User Profile Hive Cleanup Service</title>
+
+<para>
+There certain situations that cause a cached local copy of roaming profile not to be deleted on exit, even if
+the policy to force such deletion is set. To deal with that situation special service was created. The application 
+<command>UPHClean</command> (User Profile Hive Cleanup) can be installed as service on Windows NT4/2000/XP Professional,
+and Windows 2003.
+</para>
+
+<para>
+The UPHClean software package can be downloaded from <ulink url="http://www.microsoft.com/downloads/details.aspx?FamilyID=1B286E6D-8912-4E18-B570-42470E2F3582&displaylang=en">User Profile Hive Cleanup Service</ulink>
+</para>
+
+</sect2>
+
+<sect2>
 	<title>Sharing Profiles between W9x/Me and NT4/200x/XP Workstations</title>
 
 <para> Sharing of desktop profiles between Windows versions is not recommended. Desktop profiles are an

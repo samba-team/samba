@@ -402,6 +402,67 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	group members will be able to write to (or delete) them.
 	</para>
 
+	<sect3>
+	<title>Protecting Directories and Files from Deletion</title>
+
+	<para>
+	People have asked on the Samba mailing list how is it possible to protect files or directories from deletion by users.
+	For example, Windows NT/2K/XP provides the capacity to set access controls on a directory into which people can
+	write files but not delete them. It is possible to set an ACL on a Windows file that permits the file to be written to
+	but not deleted. Such concepts are foreign to the UNIX operating system file space. Within the UNIX file system
+	anyone who has the ability to create a file can write to it, and has the capability to delete it. Of necessity, Samba
+	is subject to the file system semantics of the host operating system. Samba is therefore limited in the file system
+	capabilities that can be made available through Windows ACLs, and therefore performs a <quote>best fit</quote>
+	translation to POSIX ACLs. Some UNIX file systems do however support a feature known as extended attributes. Only
+	the Windows concept of <quote>inheritance</quote> is implemented by Samba through the appropriate extended attribute.
+	</para>	
+
+	<para>
+	The specific semantics of the extended attributes are not consistent across UNIX and UNIX-like systems such as Linux.
+	For example, it is possible on some implementations of the extended attributes to set a flag that prevents the directory
+	or file from being deleted. The extended attribute that may achieve this is called the <constant>immutible</constant> bit.
+	Unfortunately, the implementation of the immutible flag is NOT consistent with published documentation. For example, the
+	man page for the <command>chattr</command> on SUSE Linux 9.2 says:
+<screen>
+A file with the‘i attribute cannot be modified: it cannot be deleted or renamed,
+no link can be created to this file and no data can be written to the file. Only
+the superuser or a process possessing the CAP_LINUX_IMMUTABLE capability can set
+or clear this attribute.
+</screen>
+	A simple test can be done to check if the immutible flag is supported on files in the file system of the Samba host
+	server.
+	</para>o
+
+<procedure>
+	<step><para>
+	Create a file called <filename>filename</filename>
+	</para></step>
+
+	<step><para>
+	Login as the <constant>root</constant> user, then set the immutibile flag on a test file as follows:
+<screen>
+&rootprompt; chatter +i 'filename'
+</screen>
+	</para></step>
+
+	<step><para>
+	Login as the user who owns the file (not root) attempt to remove the file as follows:
+<screen>
+mystic:/home/hannibal > rm filename
+</screen>
+	It will not be possible to delete the file if the immutible flag is correctly honored.
+	</para></step>
+</procedure>
+
+	<para>
+	On those systems and file system types that support the immutible bit it is possible to create directories
+	that can not be deleted. Check the man page on your particular host system to determine whether or not
+	immutable directories are writable. If they are not, then the entire directory and its contents will effectively
+	by protected from writing (file creation also) and deletion.
+	</para>
+
+	</sect3>
+
 	</sect2>
 
 </sect1>
