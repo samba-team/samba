@@ -1553,6 +1553,16 @@ struct nmb_name {
   unsigned int name_type;
 };
 
+
+/* A netbios node status array element. */
+struct node_status {
+	char name[16];
+	unsigned char type;
+	unsigned char flags;
+};
+
+
+
 #define AGENT_CMD_CON       0
 #define AGENT_CMD_CON_ANON  2
 #define AGENT_CMD_CON_REUSE 1

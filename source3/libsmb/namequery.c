@@ -45,168 +45,155 @@ static int generate_trn_id(void)
 
 
 /****************************************************************************
- Interpret a node status response.
+ parse a node status response into an array of structures
 ****************************************************************************/
-
-static void _interpret_node_status(char *p, char *master,char *rname)
+static struct node_status *parse_node_status(char *p, int *num_names)
 {
-  int numnames = CVAL(p,0);
-  DEBUG(1,("received %d names\n",numnames));
+	struct node_status *ret;
+	int i;
 
-  if (rname) *rname = 0;
-  if (master) *master = 0;
+	*num_names = CVAL(p,0);
 
-  p += 1;
-  while (numnames--) {
-    char qname[17];
-    int type;
-    fstring flags;
-    int i;
-    *flags = 0;
-    StrnCpy(qname,p,15);
-    type = CVAL(p,15);
-    p += 16;
+	if (*num_names == 0) return NULL;
 
-    fstrcat(flags, (p[0] & 0x80) ? "<GROUP> " : "        ");
-    if ((p[0] & 0x60) == 0x00) fstrcat(flags,"B ");
-    if ((p[0] & 0x60) == 0x20) fstrcat(flags,"P ");
-    if ((p[0] & 0x60) == 0x40) fstrcat(flags,"M ");
-    if ((p[0] & 0x60) == 0x60) fstrcat(flags,"H ");
-    if (p[0] & 0x10) fstrcat(flags,"<DEREGISTERING> ");
-    if (p[0] & 0x08) fstrcat(flags,"<CONFLICT> ");
-    if (p[0] & 0x04) fstrcat(flags,"<ACTIVE> ");
-    if (p[0] & 0x02) fstrcat(flags,"<PERMANENT> ");
+	ret = (struct node_status *)malloc(sizeof(struct node_status)* (*num_names));
+	if (!ret) return NULL;
 
-    if (master && !*master && type == 0x1d) {
-      StrnCpy(master,qname,15);
-      trim_string(master,NULL," ");
-    }
-
-    if (rname && !*rname && type == 0x20 && !(p[0]&0x80)) {
-      StrnCpy(rname,qname,15);
-      trim_string(rname,NULL," ");
-    }
-      
-    for (i = strlen( qname) ; --i >= 0 ; ) {
-      if (!isprint((int)qname[i])) qname[i] = '.';
-    }
-    DEBUG(1,("\t%-15s <%02x> - %s\n",qname,type,flags));
-    p+=2;
-  }
-
-  DEBUG(1,("num_good_sends=%d num_good_receives=%d\n",
-	       IVAL(p,20),IVAL(p,24)));
+	p++;
+	for (i=0;i< *num_names;i++) {
+		StrnCpy(ret[i].name,p,15);
+		trim_string(ret[i].name,NULL," ");
+		ret[i].type = CVAL(p,15);
+		ret[i].flags = p[16];
+		p += 18;
+	}
+	return ret;
 }
+
 
 /****************************************************************************
- Internal function handling a netbios name status query on a host.
+do a NBT node status query on an open socket and return an array of
+structures holding the returned names or NULL if the query failed
 **************************************************************************/
-static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
-				 struct in_addr to_ip,char *master,
-				 char *rname, BOOL verbose,
-				 void (*fn_interpret_node_status)(char *, char *,char *))
+struct node_status *name_status_query(int fd,struct nmb_name *name,
+				      struct in_addr to_ip, int *num_names)
 {
-  BOOL found=False;
-  int retries = 2;
-  int retry_time = 2000;
-  struct timeval tval;
-  struct packet_struct p;
-  struct packet_struct *p2;
-  struct nmb_packet *nmb = &p.packet.nmb;
+	BOOL found=False;
+	int retries = 2;
+	int retry_time = 2000;
+	struct timeval tval;
+	struct packet_struct p;
+	struct packet_struct *p2;
+	struct nmb_packet *nmb = &p.packet.nmb;
+	struct node_status *ret;
 
-  memset((char *)&p,'\0',sizeof(p));
+	ZERO_STRUCT(p);
 
-  nmb->header.name_trn_id = generate_trn_id();
-  nmb->header.opcode = 0;
-  nmb->header.response = False;
-  nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = False;
-  nmb->header.nm_flags.recursion_desired = False;
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = False;
-  nmb->header.rcode = 0;
-  nmb->header.qdcount = 1;
-  nmb->header.ancount = 0;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 0;
+	nmb->header.name_trn_id = generate_trn_id();
+	nmb->header.opcode = 0;
+	nmb->header.response = False;
+	nmb->header.nm_flags.bcast = False;
+	nmb->header.nm_flags.recursion_available = False;
+	nmb->header.nm_flags.recursion_desired = False;
+	nmb->header.nm_flags.trunc = False;
+	nmb->header.nm_flags.authoritative = False;
+	nmb->header.rcode = 0;
+	nmb->header.qdcount = 1;
+	nmb->header.ancount = 0;
+	nmb->header.nscount = 0;
+	nmb->header.arcount = 0;
+	nmb->question.question_name = *name;
+	nmb->question.question_type = 0x21;
+	nmb->question.question_class = 0x1;
 
-  make_nmb_name(&nmb->question.question_name,name,name_type);
+	p.ip = to_ip;
+	p.port = NMB_PORT;
+	p.fd = fd;
+	p.timestamp = time(NULL);
+	p.packet_type = NMB_PACKET;
+	
+	GetTimeOfDay(&tval);
+  
+	if (!send_packet(&p)) 
+		return NULL;
 
-  nmb->question.question_type = 0x21;
-  nmb->question.question_class = 0x1;
+	retries--;
 
-  p.ip = to_ip;
-  p.port = NMB_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
+	while (1) {
+		struct timeval tval2;
+		GetTimeOfDay(&tval2);
+		if (TvalDiff(&tval,&tval2) > retry_time) {
+			if (!retries)
+				break;
+			if (!found && !send_packet(&p))
+				return NULL;
+			GetTimeOfDay(&tval);
+			retries--;
+		}
 
-  GetTimeOfDay(&tval);
+		if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
+			struct nmb_packet *nmb2 = &p2->packet.nmb;
+			debug_nmb_packet(p2);
+			
+			if (nmb2->header.opcode != 0 ||
+			    nmb2->header.nm_flags.bcast ||
+			    nmb2->header.rcode ||
+			    !nmb2->header.ancount ||
+			    nmb2->answers->rr_type != 0x21) {
+				/* XXXX what do we do with this? could be a
+				   redirect, but we'll discard it for the
+				   moment */
+				free_packet(p2);
+				continue;
+			}
 
-  if (!send_packet(&p)) 
-    return(False);
-
-  retries--;
-
-  while (1) {
-	  struct timeval tval2;
-	  GetTimeOfDay(&tval2);
-	  if (TvalDiff(&tval,&tval2) > retry_time) {
-		  if (!retries)
-			  break;
-		  if (!found && !send_packet(&p))
-			  return False;
-		  GetTimeOfDay(&tval);
-		  retries--;
-	  }
-
-	  if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
-		  struct nmb_packet *nmb2 = &p2->packet.nmb;
-		  debug_nmb_packet(p2);
-
-		  if (nmb2->header.opcode != 0 ||
-		      nmb2->header.nm_flags.bcast ||
-		      nmb2->header.rcode ||
-		      !nmb2->header.ancount ||
-		      nmb2->answers->rr_type != 0x21) {
-			  /* XXXX what do we do with this? could be a
-			     redirect, but we'll discard it for the
-			     moment */
-			  free_packet(p2);
-			  continue;
-		  }
-
-		  if(fn_interpret_node_status)
-			  (*fn_interpret_node_status)(&nmb2->answers->rdata[0],master,rname);
-		  free_packet(p2);
-		  return(True);
-	  }
-  }
-
-  if(verbose)
-	  DEBUG(0,("No status response (this is not unusual)\n"));
-
-  return(False);
+			ret = parse_node_status(&nmb2->answers->rdata[0], num_names);
+			free_packet(p2);
+			return ret;
+		}
+	}
+	
+	return NULL;
 }
+
 
 /****************************************************************************
- Do a netbios name status query on a host.
- The "master" parameter is a hack used for finding workgroups.
+find the first type XX name in a node status reply - used for finding
+a servers name given its IP
+return the matched name in *name
 **************************************************************************/
-BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname)
+BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 {
-	return internal_name_status(fd,name,name_type,recurse,
-				    to_ip,master,rname,True,
-				    _interpret_node_status);
+	struct node_status *status;
+	struct nmb_name nname;
+	int count, i;
+	int sock;
+
+	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
+	if (sock == -1) return False;
+
+	make_nmb_name(&nname, "*", 0);
+	status = name_status_query(sock, &nname, to_ip, &count);
+	close(sock);
+	if (!status) return False;
+
+	for (i=0;i<count;i++) {
+		if (status[i].type == type) break;
+	}
+	if (i == count) return False;
+
+	StrnCpy(name, status[i].name, 15);
+
+	free(status);
+	return True;
 }
+
 
 /****************************************************************************
  Do a netbios name query to find someones IP.
  Returns an array of IP addresses or NULL if none.
  *count will be set to the number of addresses returned.
 ****************************************************************************/
-
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count)
@@ -822,30 +809,6 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 	return False;
 }
 
-#if !defined(I_HATE_WINDOWS_REPLY_CODE)
-/********************************************************
- Internal function to extract the MACHINE<0x20> name.
-*********************************************************/
-
-static void _lookup_pdc_name(char *p, char *master,char *rname)
-{
-  int numnames = CVAL(p,0);
-
-  *rname = '\0';
-
-  p += 1;
-  while (numnames--) {
-    int type = CVAL(p,15);
-    if(type == 0x20) {
-      StrnCpy(rname,p,15);
-      trim_string(rname,NULL," ");
-      return;
-    }
-    p += 18;
-  }
-}
-#endif /* I_HATE_WINDOWS_REPLY_CODE */
-
 /********************************************************
  Lookup a PDC name given a Domain name and IP address.
 *********************************************************/
@@ -862,17 +825,9 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
    * query here... JRA.
    */
 
-  int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
-
-  if(sock == -1)
-    return False;
-
   *pdc_name = '\0';
 
-  ret = internal_name_status(sock,"*SMBSERVER",0x20,True,
-		 *pdc_ip,NULL,pdc_name,False,_lookup_pdc_name);
-
-  close(sock);
+  ret = name_status_find(0x20,*pdc_ip,pdc_name);
 
   if(ret && *pdc_name) {
     fstrcpy(ret_name, pdc_name);
