@@ -4,7 +4,7 @@
  * specifies the terms and conditions for redistribution.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_send.c	2.1  2.1 3/18/91";
 #endif /* not lint */
@@ -14,6 +14,7 @@ static char SccsId[] = "@(#)@(#)pop_send.c	2.1  2.1 3/18/91";
 /*
  *  sendline:   Send a line of a multi-line response to a client.
  */
+static
 void
 pop_sendline(POP *p, char *buffer)
 {
@@ -23,7 +24,7 @@ pop_sendline(POP *p, char *buffer)
     if (*buffer == POP_TERMINATE) (void)fputc(POP_TERMINATE,p->output);
 
     /*  Look for a <NL> in the buffer */
-    if (bp = strchr(buffer,NEWLINE)) *bp = 0;
+    if ((bp = strchr(buffer,NEWLINE))) *bp = 0;
 
     /*  Send the line to the client */
     (void)fputs(buffer,p->output);

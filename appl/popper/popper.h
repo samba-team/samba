@@ -223,16 +223,25 @@ typedef struct  {                               /*  POP parameter block */
                                                     parsed list */
 } POP;
 
-extern int  pop_dele();
-extern int  pop_last();
-extern int  pop_list();
-extern int  pop_pass();
-extern int  pop_quit();
-extern int  pop_rset();
-extern int  pop_send();
-extern int  pop_stat();
-extern int  pop_updt();
-extern int  pop_user();
-extern int  pop_xtnd();
-extern int  pop_xmit();
+int pop_dele(POP *p);
+int pop_dropcopy(POP *p, struct passwd *pwp);
+int pop_dropinfo(POP *p);
+int pop_init(POP *p,int argcount,char **argmessage);
+int pop_last(POP *p);
+int pop_list(POP *p);
+int pop_parse(POP *p, char *buf);
+int pop_pass(POP *p);
+int pop_quit(POP *p);
+int pop_rset(POP *p);
+int pop_send(POP *p);
+int pop_stat(POP *p);
+int pop_updt(POP *p);
+int pop_user(POP *p);
+int pop_xmit(POP *p);
+int pop_xtnd(POP *p);
+state_table *pop_get_command(POP *p, char *mp);
+void pop_lower(char *buf);
+xtnd_table *pop_get_subcommand(POP *p);
 
+int pop_log __P((POP *p, int stat, char *format, ...));
+int pop_msg __P((POP *p, int stat, char *format, ...));

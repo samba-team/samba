@@ -4,7 +4,7 @@
  * specifies the terms and conditions for redistribution.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_list.c	2.1  2.1 3/18/91";
 #endif /* not lint */
@@ -51,7 +51,7 @@ pop_list (POP *p)
     /*  Loop through the message information list.  Skip deleted messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++) {
         if (!mp->del_flag) 
-            (void)fprintf(p->output,"%u %u\r\n",mp->number,mp->length);
+            (void)fprintf(p->output,"%u %lu\r\n",mp->number,mp->length);
     }
 
     /*  "." signals the end of a multi-line transmission */

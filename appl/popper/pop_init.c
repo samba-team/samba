@@ -4,7 +4,7 @@
  * specifies the terms and conditions for redistribution.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)pop_init.c	2.1  2.1 3/18/91";
 #endif /* not lint */
@@ -20,6 +20,41 @@ AUTH_DAT kdata;
 #endif
 
 extern int      errno;
+
+static
+int
+authenticate(POP *p, struct sockaddr_in *addr)
+{
+
+#ifdef KERBEROS
+    Key_schedule schedule;
+    KTEXT_ST ticket;
+    char instance[INST_SZ];  
+    char version[9];
+    int auth;
+  
+    strcpy(instance, "*");
+    auth = krb_recvauth(0L, 0, &ticket, "pop", instance,
+                        addr, (struct sockaddr_in *) NULL,
+                        &kdata, "", schedule, version);
+    
+    if (auth != KSUCCESS) {
+        pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s", 
+                krb_get_err_text(auth));
+        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, 
+                kdata.pname, kdata.pinst, kdata.prealm, krb_get_err_text(auth));
+        exit(-1);
+    }
+
+#ifdef DEBUG
+    pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", kdata.pname, 
+            kdata.pinst, kdata.prealm, inet_ntoa(addr->sin_addr));
+#endif /* DEBUG */
+
+#endif /* KERBEROS */
+
+    return(POP_SUCCESS);
+}
 
 /* 
  *  init:   Start a Post Office Protocol session
@@ -189,38 +224,4 @@ pop_init(POP *p,int argcount,char **argmessage)
 #endif /* DEBUG */
 
     return(authenticate(p, &cs));
-}
-
-int
-authenticate(POP *p, struct sockaddr_in *addr)
-{
-
-#ifdef KERBEROS
-    Key_schedule schedule;
-    KTEXT_ST ticket;
-    char instance[INST_SZ];  
-    char version[9];
-    int auth;
-  
-    strcpy(instance, "*");
-    auth = krb_recvauth(0L, 0, &ticket, "pop", instance,
-                        addr, (struct sockaddr_in *) NULL,
-                        &kdata, "", schedule, version);
-    
-    if (auth != KSUCCESS) {
-        pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s", 
-                krb_get_err_text(auth));
-        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, 
-                kdata.pname, kdata.pinst, kdata.prealm, krb_get_err_text(auth));
-        exit(-1);
-    }
-
-#ifdef DEBUG
-    pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", kdata.pname, 
-            kdata.pinst, kdata.prealm, inet_ntoa(addr->sin_addr));
-#endif /* DEBUG */
-
-#endif /* KERBEROS */
-
-    return(POP_SUCCESS);
 }
