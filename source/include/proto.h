@@ -1403,19 +1403,28 @@ struct smb_passdb_ops *ldap_initialise_password_db(void);
 
 /*The following definitions come from  passdb/mysqlpass.c  */
 
+int mysql_db_lock_connect( MYSQL *handle );
 void *mysql_startpwent( BOOL update );
 void mysql_endpwent( void *ptr );
 SMB_BIG_UINT mysql_getpwpos(void *vp);
 BOOL mysql_setpwpos(void *vp, SMB_BIG_UINT pos);
+void *mysql_fill_smb_passwd( MYSQL_ROW *row );
 struct smb_passwd *mysql_getsmbpwent(void *vp);
+void *mysql_fetch_passwd( void *(*filler)(MYSQL_ROW*), char *where );
+void *mysql_getpwuid(void *(*filler)(MYSQL_ROW *), uid_t uid);
 struct smb_passwd *mysql_getsmbpwuid(uid_t uid);
+void *mysql_getpwnam(void *(*filler)(MYSQL_ROW *), char *field, const char *name);
 struct smb_passwd *mysql_getsmbpwnam(const char *unix_name);
+BOOL mysql_del_smb( MYSQL *handle, char *unix_name );
+BOOL mysql_add_smb( MYSQL *handle, struct smb_passwd *smb );
+BOOL mysql_mod_smb( MYSQL *handle, struct smb_passwd *smb, BOOL override );
 BOOL mysql_add_smbpwd_entry(struct smb_passwd *smb);
 BOOL mysql_mod_smbpwd_entry(struct smb_passwd *smb, BOOL override);
 struct smb_passdb_ops *mysql_initialise_password_db(void);
 
 /*The following definitions come from  passdb/mysqlsampass.c  */
 
+void *mysql_fill_sam_passwd( MYSQL_ROW *row );
 struct sam_passwd *mysql_getsampwent(void *vp);
 struct sam_passwd *mysql_getsampwrid(uint32 rid);
 struct sam_passwd *mysql_getsampwuid(uid_t uid);
