@@ -86,7 +86,8 @@ int reply_special(char *inbuf, char *outbuf)
 	DEBUG(20, ("NBT message\n"));
 	dump_data(20, inbuf, smb_len(inbuf));
 
-	switch (msg_type) {
+	switch (msg_type)
+	{
 		case 0x81:	/* session request */
 			CVAL(outbuf, 0) = 0x82;
 			CVAL(outbuf, 3) = 0;
@@ -164,10 +165,11 @@ int reply_special(char *inbuf, char *outbuf)
 /*******************************************************************
 work out what error to give to a failed connection
 ********************************************************************/
+
 static int connection_error(char *inbuf, char *outbuf, int ecode)
 {
 	if (ecode == ERRnoipc)
-		return (ERROR(ERRDOS, ERRnoipc));
+		return (ERROR(ERRDOS, ecode));
 
 	return (ERROR(ERRSRV, ecode));
 }
@@ -435,9 +437,8 @@ int reply_ioctl(connection_struct * conn,
 /****************************************************************************
  always return an error: it's just a matter of which one...
  ****************************************************************************/
-static int session_trust_account(connection_struct * conn,
-				 char *inbuf, char *outbuf,
-				 char *user, char *domain,
+static int session_trust_account(connection_struct * conn, char *inbuf,
+				 char *outbuf, char *user, char *domain,
 				 char *smb_passwd, int smb_passlen,
 				 char *smb_nt_passwd, int smb_nt_passlen)
 {
@@ -479,6 +480,31 @@ static int session_trust_account(connection_struct * conn,
 }
 
 /****************************************************************************
+ Create a UNIX user on demand.
+ ****************************************************************************/
+
+
+/****************************************************************************
+ Delete a UNIX user on demand.
+ ****************************************************************************/
+
+
+/****************************************************************************
+ Check user is in correct domain if required
+ ****************************************************************************/
+
+
+/****************************************************************************
+ Check for a valid username and password in security=server mode.
+ ****************************************************************************/
+
+
+/****************************************************************************
+ Check for a valid username and password in security=domain mode.
+ ****************************************************************************/
+
+
+/****************************************************************************
  Return a bad password error configured for the correct client type.
 ****************************************************************************/
 
@@ -490,7 +516,7 @@ static int bad_password_error(char *inbuf, char *outbuf)
 	    (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32)))
 	{
 		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-		return (ERROR(0, 0xc0000000 | NT_STATUS_LOGON_FAILURE));
+		return (ERROR(0, NT_STATUS_LOGON_FAILURE));
 	}
 
 	return (ERROR(ERRSRV, ERRbadpw));
@@ -541,6 +567,7 @@ int reply_sesssetup_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 		 * Incoming user is in DOS codepage format. Convert
 		 * to UNIX.
 		 */
+		strlower(user);
 		dos_to_unix(user, True);
 
 		if (!doencrypt && (lp_security() != SEC_SERVER))
@@ -583,7 +610,7 @@ user %s attempted down-level SMB connection\n",
 			}
 		}
 
-		if (passlen1 != 24 && passlen2 <= 24)
+		if (passlen1 != 24 && passlen2 != 24)
 			doencrypt = False;
 
 		if (passlen1 > MAX_PASS_LEN)
@@ -704,6 +731,7 @@ user %s attempted down-level SMB connection\n",
 		 * Incoming user is in DOS codepage format. Convert
 		 * to UNIX.
 		 */
+		strlower(user);
 		dos_to_unix(user, True);
 		domain = p;
 
@@ -712,6 +740,7 @@ user %s attempted down-level SMB connection\n",
 		       passlen1, passlen2, domain, skip_string(p, 1),
 		       skip_string(p, 2)));
 	}
+
 
 	DEBUG(3, ("sesssetupX:name=[%s]\n", user));
 
@@ -723,20 +752,18 @@ user %s attempted down-level SMB connection\n",
 	    && (smb_ntpasslen == 24))
 	{
 		return session_trust_account(conn, inbuf, outbuf, user,
-					     domain, smb_apasswd,
-					     smb_apasslen, smb_ntpasswd,
-					     smb_ntpasslen);
+					     domain,
+					     smb_apasswd, smb_apasslen,
+					     smb_ntpasswd, smb_ntpasslen);
 	}
 
 	if (done_sesssetup && lp_restrict_anonymous())
 	{
-		/* tests show that even if browsing is done over
-		 * already validated connections without a username
-		 * and password the domain is still provided, which it
-		 * wouldn't be if it was a purely anonymous connection.
-		 * So, in order to restrict anonymous, we only deny
-		 * connections that have no session information.  If a
-		 * domain has been provided, then it's not a purely
+		/* tests show that even if browsing is done over already validated connections
+		 * without a username and password the domain is still provided, which it
+		 * wouldn't be if it was a purely anonymous connection.  So, in order to
+		 * restrict anonymous, we only deny connections that have no session
+		 * information.  If a domain has been provided, then it's not a purely
 		 * anonymous connection. AAB
 		 */
 		if (!*user && !*smb_apasswd && !*domain)
@@ -757,8 +784,6 @@ user %s attempted down-level SMB connection\n",
 			guest = True;
 	}
 
-	strlower(user);
-
 	/*
 	 * In share level security, only overwrite sesssetup_use if
 	 * it's a non null-session share. Helps keep %U and %G
@@ -767,6 +792,7 @@ user %s attempted down-level SMB connection\n",
 
 	if ((lp_security() != SEC_SHARE) || (*user && !guest))
 		pstrcpy(sesssetup_user, user);
+
 	reload_services(True);
 
 	/*
@@ -842,7 +868,6 @@ user %s attempted down-level SMB connection\n",
 			       user));
 			guest = True;
 		}
-
 	}
 
 	if (!Get_Pwnam(user, True))
@@ -909,6 +934,7 @@ user %s attempted down-level SMB connection\n",
 
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
+
 	sess_vuid =
 		register_vuid(sys_getpid(), uid, gid, user, sesssetup_user, guest,
 			      &info3);
@@ -1521,9 +1547,14 @@ int reply_open_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 	files_struct *fsp;
 
 	/* If it's an IPC, pass off the pipe handler. */
-	if (IS_IPC(conn) && lp_nt_pipe_support())
-		return reply_open_pipe_and_X(conn, inbuf, outbuf, length,
-					     bufsize);
+	if (IS_IPC(conn))
+	{
+		if (lp_nt_pipe_support())
+			return reply_open_pipe_and_X(conn, inbuf, outbuf,
+						     length, bufsize);
+		else
+			return (ERROR(ERRSRV, ERRaccess));
+	}
 
 	/* XXXX we need to handle passed times, sattr and flags */
 

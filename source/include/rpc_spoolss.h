@@ -64,6 +64,7 @@
 #define SPOOLSS_SPOOLERINIT				0x3f
 #define SPOOLSS_RESETPRINTEREX				0x40
 #define SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION	0x42
+#define SPOOLSS_GETPRINTERDATAEX			0x4e
 */
 
 /* those are implemented */
@@ -355,7 +356,7 @@
 /* thanks to the ddk ... */
 typedef struct spool_user_1
 {
-	uint32 size;
+	uint32 size;		/* length of user_name & client_name + 2? */
 	uint32 client_name_ptr;
 	uint32 user_name_ptr;
 	uint32 build;
@@ -963,6 +964,8 @@ SPOOL_Q_ADDJOB;
 
 typedef struct spool_r_addjob
 {
+	NEW_BUFFER *buffer;
+	uint32 needed;
 	uint32 status;
 }
 SPOOL_R_ADDJOB;
