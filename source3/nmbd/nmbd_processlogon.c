@@ -136,20 +136,18 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       fstrcpy(q, reply_name);
       q = skip_string(q, 1); /* PDC name */
 
-      if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
-        q = align2(q, buf);
+      q = align2(q, buf);
 
-	/* PDC and domain name */
-        q = ascii_to_unibuf(q, my_name, outbuf+sizeof(outbuf)-q-2);
-        q = ascii_to_unibuf(q, global_myworkgroup, outbuf+sizeof(outbuf)-q-2);
+      /* PDC and domain name */
+      q = ascii_to_unibuf(q, my_name, outbuf+sizeof(outbuf)-q-2);
+      q = ascii_to_unibuf(q, global_myworkgroup, outbuf+sizeof(outbuf)-q-2);
 
-        SIVAL(q, 0, ntversion);
-        q += 4;
-        SSVAL(q, 0, lmnttoken);
-        q += 2;
-        SSVAL(q, 0, lm20token);
-        q += 2;
-      }
+      SIVAL(q, 0, ntversion);
+      q += 4;
+      SSVAL(q, 0, lmnttoken);
+      q += 2;
+      SSVAL(q, 0, lm20token);
+      q += 2;
 
       DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
