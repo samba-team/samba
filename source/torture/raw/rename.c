@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -61,7 +62,7 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	op.generic.level = RAW_OPEN_NTCREATEX;
 	op.ntcreatex.in.root_fid = 0;
 	op.ntcreatex.in.flags = 0;
-	op.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	op.ntcreatex.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	op.ntcreatex.in.create_options = 0;
 	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	op.ntcreatex.in.share_access = 
@@ -88,7 +89,7 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	smbcli_close(cli->tree, fnum);
 
-	op.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_READ;
+	op.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
 	op.ntcreatex.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_DELETE | 
 		NTCREATEX_SHARE_ACCESS_READ |

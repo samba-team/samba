@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "system/filesys.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   read from a file
@@ -50,9 +51,9 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	mask = SA_RIGHT_FILE_READ_DATA;
+	mask = SEC_FILE_READ_DATA;
 	if (req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) {
-		mask |= SA_RIGHT_FILE_EXECUTE;
+		mask |= SEC_FILE_EXECUTE;
 	}
 	if (!(f->access_mask & mask)) {
 		return NT_STATUS_ACCESS_DENIED;

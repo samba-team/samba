@@ -33,6 +33,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /* a second stage function converts from the out parameters of the generic
    call onto the out parameters of the specific call made */
@@ -178,7 +179,7 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 		io->openx.out.devstate    = 0;
 		io->openx.out.action      = io2->generic.out.create_action;
 		io->openx.out.unique_fid  = 0;
-		io->openx.out.access_mask = STANDARD_RIGHTS_ALL_ACCESS;
+		io->openx.out.access_mask = SEC_STD_ALL;
 		io->openx.out.unknown     = 0;
 		
 		/* we need to extend the file to the requested size if
@@ -280,17 +281,19 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 	
 		switch (io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) {
 		case OPENX_MODE_ACCESS_READ:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
+			io2->generic.in.access_mask = SEC_RIGHTS_FILE_READ;
 			io->openx.out.access = OPENX_MODE_ACCESS_READ;
 			break;
 		case OPENX_MODE_ACCESS_WRITE:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
+			io2->generic.in.access_mask = SEC_RIGHTS_FILE_WRITE;
 			io->openx.out.access = OPENX_MODE_ACCESS_WRITE;
 			break;
 		case OPENX_MODE_ACCESS_RDWR:
 		case OPENX_MODE_ACCESS_FCB:
 		case OPENX_MODE_ACCESS_EXEC:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE | GENERIC_RIGHTS_FILE_READ;
+			io2->generic.in.access_mask = 
+				SEC_RIGHTS_FILE_READ | 
+				SEC_RIGHTS_FILE_WRITE;
 			io->openx.out.access = OPENX_MODE_ACCESS_RDWR;
 			break;
 		default:
@@ -381,17 +384,17 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN;
 		switch (io->openold.in.flags & OPEN_FLAGS_MODE_MASK) {
 		case OPEN_FLAGS_OPEN_READ:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
+			io2->generic.in.access_mask = SEC_RIGHTS_FILE_READ;
 			io->openold.out.rmode = DOS_OPEN_RDONLY;
 			break;
 		case OPEN_FLAGS_OPEN_WRITE:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
+			io2->generic.in.access_mask = SEC_RIGHTS_FILE_WRITE;
 			io->openold.out.rmode = DOS_OPEN_WRONLY;
 			break;
 		case OPEN_FLAGS_OPEN_RDWR:
 		case 0xf: /* FCB mode */
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ |
-				GENERIC_RIGHTS_FILE_WRITE;
+			io2->generic.in.access_mask = SEC_RIGHTS_FILE_READ |
+				SEC_RIGHTS_FILE_WRITE;
 			io->openold.out.rmode = DOS_OPEN_RDWR; /* assume we got r/w */
 			break;
 		default:
@@ -463,8 +466,8 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.fname = io->mknew.in.fname;
 		io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
 		io2->generic.in.access_mask = 
-			GENERIC_RIGHTS_FILE_READ |
-			GENERIC_RIGHTS_FILE_WRITE;
+			SEC_RIGHTS_FILE_READ |
+			SEC_RIGHTS_FILE_WRITE;
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;
@@ -476,8 +479,8 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.fname = io->mknew.in.fname;
 		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
 		io2->generic.in.access_mask = 
-			GENERIC_RIGHTS_FILE_READ |
-			GENERIC_RIGHTS_FILE_WRITE;
+			SEC_RIGHTS_FILE_READ |
+			SEC_RIGHTS_FILE_WRITE;
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;
@@ -493,8 +496,8 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 					generate_random_str_list(io2, 5, "0123456789"));
 		io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
 		io2->generic.in.access_mask = 
-			GENERIC_RIGHTS_FILE_READ |
-			GENERIC_RIGHTS_FILE_WRITE;
+			SEC_RIGHTS_FILE_READ |
+			SEC_RIGHTS_FILE_WRITE;
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;

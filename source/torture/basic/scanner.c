@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define VERBOSE 0
 #define OP_MIN 0
@@ -255,10 +256,12 @@ BOOL torture_trans2_scan(void)
 		printf("file open failed - %s\n", smbcli_errstr(cli->tree));
 	}
 	dnum = smbcli_nt_create_full(cli->tree, "\\", 
-				  0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
-				  NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE, 
-				  NTCREATEX_DISP_OPEN, 
-				  NTCREATEX_OPTIONS_DIRECTORY, 0);
+				     0, 
+				     SEC_RIGHTS_FILE_READ, 
+				     FILE_ATTRIBUTE_NORMAL,
+				     NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE, 
+				     NTCREATEX_DISP_OPEN, 
+				     NTCREATEX_OPTIONS_DIRECTORY, 0);
 	if (dnum == -1) {
 		printf("directory open failed - %s\n", smbcli_errstr(cli->tree));
 	}

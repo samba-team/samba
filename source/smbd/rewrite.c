@@ -10,9 +10,6 @@
 BOOL pcap_printername_ok(const char *service, const char *foo)
 { return True; }
 
-BOOL share_access_check(struct smbsrv_request *req, struct smbsrv_tcon *tcon, int snum, uint32_t desired_access)
-{ return True; }
-
 /*
  * initialize an smb process. Guaranteed to be called only once per
  * smbd instance (so it can assume it is starting from scratch, and

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /* transport private information used by SMB pipe transport */
 struct smb_private {
@@ -379,11 +380,11 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.access_mask = 
-		STD_RIGHT_READ_CONTROL_ACCESS | 
-		SA_RIGHT_FILE_WRITE_ATTRIBUTES | 
-		SA_RIGHT_FILE_WRITE_EA | 
-		GENERIC_RIGHTS_FILE_READ |
-		GENERIC_RIGHTS_FILE_WRITE;
+		SEC_STD_READ_CONTROL |
+		SEC_FILE_WRITE_ATTRIBUTE |
+		SEC_FILE_WRITE_EA |
+		SEC_FILE_READ_DATA |
+		SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.file_attr = 0;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.share_access = 

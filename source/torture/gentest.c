@@ -23,6 +23,7 @@
 #include "system/time.h"
 #include "request.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2
@@ -526,8 +527,8 @@ static uint32_t gen_ntcreatex_flags(void)
 */
 static uint32_t gen_access_mask(void)
 {
-	if (gen_chance(50)) return SEC_RIGHT_MAXIMUM_ALLOWED;
-	if (gen_chance(20)) return GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	if (gen_chance(50)) return SEC_RIGHTS_MAXIMUM_ALLOWED;
+	if (gen_chance(20)) return SEC_FILE_ALL;
 	return gen_bits_mask(0xFFFFFFFF);
 }
 

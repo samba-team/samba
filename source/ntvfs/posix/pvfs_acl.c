@@ -71,7 +71,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	    - Group
 	    - Everyone
 	 */
-	access_masks[0] = SEC_RIGHTS_FULL_CTRL | STD_RIGHT_ALL_ACCESS;
+	access_masks[0] = SEC_RIGHTS_FULL_CONTROL;
 	access_masks[1] = 0;
 	access_masks[2] = 0;
 	access_masks[3] = 0;
@@ -80,54 +80,54 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 
 	if (mode & S_IRUSR) {
 		access_masks[1] |= 
-			SA_RIGHT_FILE_READ_DATA | 
-			SA_RIGHT_FILE_READ_EA |
-			SA_RIGHT_FILE_READ_ATTRIBUTES |
-			SA_RIGHT_FILE_EXECUTE |
-			STD_RIGHT_SYNCHRONIZE_ACCESS |
-			STD_RIGHT_READ_CONTROL_ACCESS;
+			SEC_FILE_READ_DATA | 
+			SEC_FILE_READ_EA |
+			SEC_FILE_READ_ATTRIBUTE |
+			SEC_FILE_EXECUTE |
+			SEC_STD_SYNCHRONIZE |
+			SEC_STD_READ_CONTROL;
 	}
 	if (mode & S_IWUSR) {
 		access_masks[1] |= 
-			SA_RIGHT_FILE_WRITE_DATA | 
-			SA_RIGHT_FILE_APPEND_DATA |
-			SA_RIGHT_FILE_WRITE_EA |
-			SA_RIGHT_FILE_WRITE_ATTRIBUTES |
-			STD_RIGHT_DELETE_ACCESS;
+			SEC_FILE_WRITE_DATA | 
+			SEC_FILE_APPEND_DATA |
+			SEC_FILE_WRITE_EA |
+			SEC_FILE_WRITE_ATTRIBUTE |
+			SEC_STD_DELETE;
 	}
 
 	if (mode & S_IRGRP) {
 		access_masks[2] |= 
-			SA_RIGHT_FILE_READ_DATA | 
-			SA_RIGHT_FILE_READ_EA |
-			SA_RIGHT_FILE_READ_ATTRIBUTES |
-			SA_RIGHT_FILE_EXECUTE |
-			STD_RIGHT_SYNCHRONIZE_ACCESS |
-			STD_RIGHT_READ_CONTROL_ACCESS;
+			SEC_FILE_READ_DATA | 
+			SEC_FILE_READ_EA |
+			SEC_FILE_READ_ATTRIBUTE |
+			SEC_FILE_EXECUTE |
+			SEC_STD_SYNCHRONIZE |
+			SEC_STD_READ_CONTROL;
 	}
 	if (mode & S_IWGRP) {
 		access_masks[2] |= 
-			SA_RIGHT_FILE_WRITE_DATA | 
-			SA_RIGHT_FILE_APPEND_DATA |
-			SA_RIGHT_FILE_WRITE_EA |
-			SA_RIGHT_FILE_WRITE_ATTRIBUTES;
+			SEC_FILE_WRITE_DATA | 
+			SEC_FILE_APPEND_DATA |
+			SEC_FILE_WRITE_EA |
+			SEC_FILE_WRITE_ATTRIBUTE;
 	}
 
 	if (mode & S_IROTH) {
 		access_masks[3] |= 
-			SA_RIGHT_FILE_READ_DATA | 
-			SA_RIGHT_FILE_READ_EA |
-			SA_RIGHT_FILE_READ_ATTRIBUTES |
-			SA_RIGHT_FILE_EXECUTE |
-			STD_RIGHT_SYNCHRONIZE_ACCESS |
-			STD_RIGHT_READ_CONTROL_ACCESS;
+			SEC_FILE_READ_DATA | 
+			SEC_FILE_READ_EA |
+			SEC_FILE_READ_ATTRIBUTE |
+			SEC_FILE_EXECUTE |
+			SEC_STD_SYNCHRONIZE |
+			SEC_STD_READ_CONTROL;
 	}
 	if (mode & S_IWOTH) {
 		access_masks[3] |= 
-			SA_RIGHT_FILE_WRITE_DATA | 
-			SA_RIGHT_FILE_APPEND_DATA |
-			SA_RIGHT_FILE_WRITE_EA |
-			SA_RIGHT_FILE_WRITE_ATTRIBUTES;
+			SEC_FILE_WRITE_DATA | 
+			SEC_FILE_APPEND_DATA |
+			SEC_FILE_WRITE_EA |
+			SEC_FILE_WRITE_ATTRIBUTE;
 	}
 
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
@@ -163,16 +163,16 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 */
 static void normalise_sd_flags(struct security_descriptor *sd, uint32_t secinfo_flags)
 {
-	if (!(secinfo_flags & OWNER_SECURITY_INFORMATION)) {
+	if (!(secinfo_flags & SECINFO_OWNER)) {
 		sd->owner_sid = NULL;
 	}
-	if (!(secinfo_flags & GROUP_SECURITY_INFORMATION)) {
+	if (!(secinfo_flags & SECINFO_GROUP)) {
 		sd->group_sid = NULL;
 	}
-	if (!(secinfo_flags & DACL_SECURITY_INFORMATION)) {
+	if (!(secinfo_flags & SECINFO_DACL)) {
 		sd->dacl = NULL;
 	}
-	if (!(secinfo_flags & SACL_SECURITY_INFORMATION)) {
+	if (!(secinfo_flags & SECINFO_SACL)) {
 		sd->sacl = NULL;
 	}
 }
@@ -214,16 +214,16 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	new_sd = info->set_secdesc.in.sd;
 
 	/* only set the elements that have been specified */
-	if (secinfo_flags & OWNER_SECURITY_INFORMATION) {
+	if (secinfo_flags & SECINFO_OWNER) {
 		sd->owner_sid = new_sd->owner_sid;
 	}
-	if (secinfo_flags & GROUP_SECURITY_INFORMATION) {
+	if (secinfo_flags & SECINFO_GROUP) {
 		sd->group_sid = new_sd->group_sid;
 	}
-	if (secinfo_flags & DACL_SECURITY_INFORMATION) {
+	if (secinfo_flags & SECINFO_DACL) {
 		sd->dacl = new_sd->dacl;
 	}
-	if (secinfo_flags & SACL_SECURITY_INFORMATION) {
+	if (secinfo_flags & SECINFO_SACL) {
 		sd->sacl = new_sd->sacl;
 	}
 

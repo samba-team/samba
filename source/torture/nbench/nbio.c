@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "dlinklist.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define MAX_FILES 100
 
@@ -247,13 +248,13 @@ void nb_createx(const char *fname,
 	mem_ctx = talloc_init("raw_open");
 
 	if (create_options & NTCREATEX_OPTIONS_DIRECTORY) {
-		desired_access = SA_RIGHT_FILE_READ_DATA;
+		desired_access = SEC_FILE_READ_DATA;
 	} else {
 		desired_access = 
-			SA_RIGHT_FILE_READ_DATA | 
-			SA_RIGHT_FILE_WRITE_DATA |
-			SA_RIGHT_FILE_READ_ATTRIBUTES |
-			SA_RIGHT_FILE_WRITE_ATTRIBUTES;
+			SEC_FILE_READ_DATA | 
+			SEC_FILE_WRITE_DATA |
+			SEC_FILE_READ_ATTRIBUTE |
+			SEC_FILE_WRITE_ATTRIBUTE;
 		flags = NTCREATEX_FLAGS_EXTENDED |
 			NTCREATEX_FLAGS_REQUEST_OPLOCK | 
 			NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;

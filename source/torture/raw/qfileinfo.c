@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 static struct {
 	const char *name;
@@ -554,13 +555,14 @@ BOOL torture_raw_qfileinfo(void)
 
 	/* and make sure we can open by alternate name */
 	smbcli_close(cli->tree, fnum);
-	fnum = smbcli_nt_create_full(cli->tree, correct_name, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, 
-				  FILE_ATTRIBUTE_NORMAL,
-				  NTCREATEX_SHARE_ACCESS_DELETE|
-				  NTCREATEX_SHARE_ACCESS_READ|
-				  NTCREATEX_SHARE_ACCESS_WRITE, 
-				  NTCREATEX_DISP_OVERWRITE_IF, 
-				  0, 0);
+	fnum = smbcli_nt_create_full(cli->tree, correct_name, 0, 
+				     SEC_RIGHTS_FULL_CONTROL,
+				     FILE_ATTRIBUTE_NORMAL,
+				     NTCREATEX_SHARE_ACCESS_DELETE|
+				     NTCREATEX_SHARE_ACCESS_READ|
+				     NTCREATEX_SHARE_ACCESS_WRITE, 
+				     NTCREATEX_DISP_OVERWRITE_IF, 
+				     0, 0);
 	if (fnum == -1) {
 		printf("Unable to open by alt_name - %s\n", smbcli_errstr(cli->tree));
 		ret = False;

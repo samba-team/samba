@@ -125,3 +125,5 @@ struct ldb_message;
 struct security_token;
 struct security_acl;
 struct security_ace;
+
+typedef struct security_descriptor SEC_DESC;

@@ -26,6 +26,7 @@
 #include "system/time.h"
 #include "system/wait.h"
 #include "ioctl.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 int torture_nprocs=4;
 int torture_numops=100;
@@ -895,9 +896,11 @@ static BOOL run_deferopen(struct smbcli_state *cli, int dummy)
 		do {
 			struct timeval tv;
 			tv = timeval_current();
-			fnum = smbcli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
-				FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE,
-				NTCREATEX_DISP_OPEN_IF, 0, 0);
+			fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
+						     SEC_RIGHTS_FULL_CONTROL,
+						     FILE_ATTRIBUTE_NORMAL, 
+						     NTCREATEX_SHARE_ACCESS_NONE,
+						     NTCREATEX_DISP_OPEN_IF, 0, 0);
 			if (fnum != -1) {
 				break;
 			}
@@ -1311,22 +1314,22 @@ static BOOL run_trans2test(void)
 
 
 /* FIRST_DESIRED_ACCESS   0xf019f */
-#define FIRST_DESIRED_ACCESS   SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA|SA_RIGHT_FILE_APPEND_DATA|\
-                               SA_RIGHT_FILE_READ_EA|                           /* 0xf */ \
-                               SA_RIGHT_FILE_WRITE_EA|SA_RIGHT_FILE_READ_ATTRIBUTES|     /* 0x90 */ \
-                               SA_RIGHT_FILE_WRITE_ATTRIBUTES|                  /* 0x100 */ \
-                               STD_RIGHT_DELETE_ACCESS|STD_RIGHT_READ_CONTROL_ACCESS|\
-                               STD_RIGHT_WRITE_DAC_ACCESS|STD_RIGHT_WRITE_OWNER_ACCESS     /* 0xf0000 */
+#define FIRST_DESIRED_ACCESS   SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|SEC_FILE_APPEND_DATA|\
+                               SEC_FILE_READ_EA|                           /* 0xf */ \
+                               SEC_FILE_WRITE_EA|SEC_FILE_READ_ATTRIBUTE|     /* 0x90 */ \
+                               SEC_FILE_WRITE_ATTRIBUTE|                  /* 0x100 */ \
+                               SEC_STD_DELETE|SEC_STD_READ_CONTROL|\
+                               SEC_STD_WRITE_DAC|SEC_STD_WRITE_OWNER     /* 0xf0000 */
 /* SECOND_DESIRED_ACCESS  0xe0080 */
-#define SECOND_DESIRED_ACCESS  SA_RIGHT_FILE_READ_ATTRIBUTES|                   /* 0x80 */ \
-                               STD_RIGHT_READ_CONTROL_ACCESS|STD_RIGHT_WRITE_DAC_ACCESS|\
-                               STD_RIGHT_WRITE_OWNER_ACCESS                      /* 0xe0000 */
+#define SECOND_DESIRED_ACCESS  SEC_FILE_READ_ATTRIBUTE|                   /* 0x80 */ \
+                               SEC_STD_READ_CONTROL|SEC_STD_WRITE_DAC|\
+                               SEC_STD_WRITE_OWNER                      /* 0xe0000 */
 
 #if 0
-#define THIRD_DESIRED_ACCESS   FILE_READ_ATTRIBUTES|                   /* 0x80 */ \
-                               READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|\
-                               SA_RIGHT_FILE_READ_DATA|\
-                               WRITE_OWNER_ACCESS                      /* */
+#define THIRD_DESIRED_ACCESS   FILE_READ_ATTRIBUTE|                   /* 0x80 */ \
+                               READ_CONTROL|WRITE_DAC|\
+                               SEC_FILE_READ_DATA|\
+                               WRITE_OWNER                      /* */
 #endif
 
 /*
@@ -1346,9 +1349,11 @@ static BOOL run_xcopy(void)
 	}
 	
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
-				   FIRST_DESIRED_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
-				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 
-				   0x4044, 0);
+				      FIRST_DESIRED_ACCESS, 
+				      FILE_ATTRIBUTE_ARCHIVE,
+				      NTCREATEX_SHARE_ACCESS_NONE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 
+				      0x4044, 0);
 
 	if (fnum1 == -1) {
 		printf("First open failed - %s\n", smbcli_errstr(cli1->tree));
@@ -1388,7 +1393,7 @@ static BOOL run_pipe_number(void)
 	}
 
 	while(1) {
-		fnum = smbcli_nt_create_full(cli1->tree, pipe_name, 0, SA_RIGHT_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+		fnum = smbcli_nt_create_full(cli1->tree, pipe_name, 0, SEC_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 		if (fnum == -1) {
@@ -1705,7 +1710,7 @@ error_test4:
 	
 	printf("TEST #1 testing 2 non-io opens (no delete)\n");
 	
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
@@ -1714,7 +1719,7 @@ error_test4:
 		return False;
 	}
 
-	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 	if (fnum2 == -1) {
 		printf("test 1 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
@@ -1737,7 +1742,7 @@ error_test10:
 
 	printf("TEST #2 testing 2 non-io opens (first with delete)\n");
 	
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, STD_RIGHT_DELETE_ACCESS|SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
@@ -1746,7 +1751,7 @@ error_test10:
 		return False;
 	}
 
-	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
@@ -1770,7 +1775,7 @@ error_test20:
 
 	printf("TEST #3 testing 2 non-io opens (second with delete)\n");
 	
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
@@ -1779,7 +1784,7 @@ error_test20:
 		return False;
 	}
 
-	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, STD_RIGHT_DELETE_ACCESS|SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
@@ -1803,7 +1808,7 @@ error_test30:
 
 	printf("TEST #4 testing 2 non-io opens (both with delete)\n");
 	
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, STD_RIGHT_DELETE_ACCESS|SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
@@ -1812,7 +1817,7 @@ error_test30:
 		return False;
 	}
 
-	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, STD_RIGHT_DELETE_ACCESS|SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 != -1) {
@@ -1834,7 +1839,7 @@ error_test40:
 
 	printf("TEST #5 testing 2 non-io opens (both with delete - both with file share delete)\n");
 	
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, STD_RIGHT_DELETE_ACCESS|SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
@@ -1843,7 +1848,7 @@ error_test40:
 		return False;
 	}
 
-	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, STD_RIGHT_DELETE_ACCESS|SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
@@ -1868,7 +1873,7 @@ error_test50:
 	
 	smbcli_unlink(cli1->tree, fname);
 
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
@@ -1877,7 +1882,7 @@ error_test50:
 		return False;
 	}
 
-	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_READ, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
@@ -1902,7 +1907,7 @@ error_test60:
 
 	smbcli_unlink(cli1->tree, fname);
 
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
@@ -1911,7 +1916,7 @@ error_test60:
 		return False;
 	}
 
-	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, STD_RIGHT_DELETE_ACCESS|SA_RIGHT_FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 != -1) {

@@ -40,6 +40,7 @@
 
 #include "includes.h"
 #include "messages.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 struct odb_context {
 	struct tdb_wrap *w;
@@ -157,14 +158,18 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
-	if (!(e1->access_mask & (SA_RIGHT_FILE_WRITE_APPEND | 
-				 SA_RIGHT_FILE_READ_EXEC | 
-				 STD_RIGHT_DELETE_ACCESS))) {
+	if (!(e1->access_mask & (SEC_FILE_WRITE_DATA |
+				 SEC_FILE_APPEND_DATA |
+				 SEC_FILE_READ_DATA |
+				 SEC_FILE_EXECUTE |
+				 SEC_STD_DELETE))) {
 		return False;
 	}
-	if (!(e2->access_mask & (SA_RIGHT_FILE_WRITE_APPEND | 
-				 SA_RIGHT_FILE_READ_EXEC | 
-				 STD_RIGHT_DELETE_ACCESS))) {
+	if (!(e2->access_mask & (SEC_FILE_WRITE_DATA |
+				 SEC_FILE_APPEND_DATA |
+				 SEC_FILE_READ_DATA |
+				 SEC_FILE_EXECUTE |
+				 SEC_STD_DELETE))) {
 		return False;
 	}
 
@@ -176,24 +181,24 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 	}
 
 	CHECK_MASK(e1->access_mask, e2->share_access, 
-		   SA_RIGHT_FILE_WRITE_APPEND, 
+		   SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
 		   NTCREATEX_SHARE_ACCESS_WRITE);
 	CHECK_MASK(e2->access_mask, e1->share_access, 
-		   SA_RIGHT_FILE_WRITE_APPEND, 
+		   SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
 		   NTCREATEX_SHARE_ACCESS_WRITE);
 	
 	CHECK_MASK(e1->access_mask, e2->share_access, 
-		   SA_RIGHT_FILE_READ_EXEC, 
+		   SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
 		   NTCREATEX_SHARE_ACCESS_READ);
 	CHECK_MASK(e2->access_mask, e1->share_access, 
-		   SA_RIGHT_FILE_READ_EXEC, 
+		   SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
 		   NTCREATEX_SHARE_ACCESS_READ);
 
 	CHECK_MASK(e1->access_mask, e2->share_access, 
-		   STD_RIGHT_DELETE_ACCESS, 
+		   SEC_STD_DELETE,
 		   NTCREATEX_SHARE_ACCESS_DELETE);
 	CHECK_MASK(e2->access_mask, e1->share_access, 
-		   STD_RIGHT_DELETE_ACCESS, 
+		   SEC_STD_DELETE,
 		   NTCREATEX_SHARE_ACCESS_DELETE);
 
 	/* if a delete is pending then a second open is not allowed */

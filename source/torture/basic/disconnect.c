@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define BASEDIR "\\test_disconnect"
 
@@ -47,7 +48,7 @@ static BOOL test_disconnect_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_READ_DATA;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ;

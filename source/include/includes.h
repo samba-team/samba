@@ -169,7 +169,6 @@ extern int errno;
 #include "enums.h"
 #include "pstring.h"
 #include "smb_macros.h"
-#include "rpc_secdes.h"
 #include "smb.h"
 #include "ads.h"
 #include "lib/socket/socket.h"

@@ -22,6 +22,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/shmem.h"
 #include "system/time.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 
 /*
@@ -52,7 +53,7 @@ int create_directory_handle(struct smbcli_tree *tree, const char *dname)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_ALL_ACCESS;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
@@ -86,13 +87,14 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 	NTSTATUS status;
 
 	smbcli_unlink(cli->tree, fname);
-	fnum = smbcli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
-				  FILE_ATTRIBUTE_NORMAL,
-				  NTCREATEX_SHARE_ACCESS_DELETE|
-				  NTCREATEX_SHARE_ACCESS_READ|
-				  NTCREATEX_SHARE_ACCESS_WRITE, 
-				  NTCREATEX_DISP_OVERWRITE_IF,
-				  0, 0);
+	fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
+				     SEC_RIGHTS_FULL_CONTROL,
+				     FILE_ATTRIBUTE_NORMAL,
+				     NTCREATEX_SHARE_ACCESS_DELETE|
+				     NTCREATEX_SHARE_ACCESS_READ|
+				     NTCREATEX_SHARE_ACCESS_WRITE, 
+				     NTCREATEX_DISP_OVERWRITE_IF,
+				     0, 0);
 	if (fnum == -1) return -1;
 
 	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));

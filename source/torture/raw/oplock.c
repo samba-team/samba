@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -107,7 +108,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
-	io.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FULL_CONTROL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
@@ -275,7 +276,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
-	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_READ_ATTRIBUTES|SA_RIGHT_FILE_WRITE_ATTRIBUTES|STD_RIGHT_SYNCHRONIZE_ACCESS;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_ATTRIBUTE|SEC_STD_SYNCHRONIZE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.ntcreatex.out.fnum;
@@ -292,7 +293,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
-	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_READ_ATTRIBUTES|SA_RIGHT_FILE_WRITE_ATTRIBUTES|STD_RIGHT_SYNCHRONIZE_ACCESS;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_ATTRIBUTE|SEC_STD_SYNCHRONIZE;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -307,7 +308,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
-	io.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FULL_CONTROL;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   Test rename on files open with share delete and no share delete.
@@ -42,7 +43,7 @@ BOOL torture_test_rename(void)
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_unlink(cli1->tree, fname1);
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      GENERIC_RIGHTS_FILE_READ, 
+				      SEC_RIGHTS_FILE_READ, 
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_READ, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
@@ -69,7 +70,7 @@ BOOL torture_test_rename(void)
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_unlink(cli1->tree, fname1);
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      GENERIC_RIGHTS_FILE_READ, 
+				      SEC_RIGHTS_FILE_READ, 
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_DELETE|NTCREATEX_SHARE_ACCESS_READ, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
@@ -97,7 +98,7 @@ BOOL torture_test_rename(void)
 	smbcli_unlink(cli1->tree, fname1);
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      STD_RIGHT_READ_CONTROL_ACCESS, 
+				      SEC_STD_READ_CONTROL, 
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_NONE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
