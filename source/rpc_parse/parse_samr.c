@@ -6060,7 +6060,7 @@ BOOL samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *p
 /*******************************************************************
 makes a SAMR_Q_UNKNOWN_38 structure.
 ********************************************************************/
-BOOL make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name)
+BOOL make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, const char *srv_name)
 {
 	int len_srv_name = strlen(srv_name);
 
@@ -6139,7 +6139,7 @@ BOOL samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, i
 /*******************************************************************
 make a SAMR_ENC_PASSWD structure.
 ********************************************************************/
-BOOL make_enc_passwd(SAMR_ENC_PASSWD *pwd, char pass[512])
+BOOL make_enc_passwd(SAMR_ENC_PASSWD *pwd, const char pass[512])
 {
 	if (pwd == NULL) return False;
 
@@ -6170,7 +6170,7 @@ BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int de
 /*******************************************************************
 makes a SAMR_ENC_HASH structure.
 ********************************************************************/
-BOOL make_enc_hash(SAMR_ENC_HASH *hsh, uchar hash[16])
+BOOL make_enc_hash(SAMR_ENC_HASH *hsh, const uchar hash[16])
 {
 	if (hsh == NULL) return False;
 
@@ -6202,9 +6202,11 @@ BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth)
 makes a SAMR_R_UNKNOWN_38 structure.
 ********************************************************************/
 BOOL make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
-				char *dest_host, char *user_name,
-				char nt_newpass[516], uchar nt_oldhash[16],
-				char lm_newpass[516], uchar lm_oldhash[16])
+				const char *dest_host, const char *user_name,
+				const char nt_newpass[516],
+				const uchar nt_oldhash[16],
+				const char lm_newpass[516],
+				const uchar lm_oldhash[16])
 {
 	int len_dest_host = strlen(dest_host);
 	int len_user_name = strlen(user_name);

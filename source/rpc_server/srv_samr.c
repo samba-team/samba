@@ -3179,8 +3179,8 @@ static struct api_struct api_samr_cmds [] =
 /*******************************************************************
  receives a samr pipe and responds.
  ********************************************************************/
-BOOL api_samr_rpc(rpcsrv_struct *p, prs_struct *data)
+BOOL api_samr_rpc(rpcsrv_struct *p)
 {
-    return api_rpcTNP(p, "api_samr_rpc", api_samr_cmds, data);
+    return api_rpcTNP(p, "api_samr_rpc", api_samr_cmds);
 }
 

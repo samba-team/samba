@@ -133,24 +133,11 @@ SAM password change
 void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
-	fstring domain;
-	fstring sid;
 	char *new_passwd;
-	BOOL res = True;
-	char nt_newpass[516];
-	uchar nt_hshhash[16];
-	uchar nt_newhash[16];
+	char *new_passwd2;
 	uchar nt_oldhash[16];
-	char lm_newpass[516];
-	uchar lm_newhash[16];
-	uchar lm_hshhash[16];
 	uchar lm_oldhash[16];
 	fstring acct_name;
-
-	struct cli_connection *con = NULL;
-
-	sid_to_string(sid, &info->dom.level5_sid);
-	fstrcpy(domain, info->dom.level5_dom);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -171,38 +158,21 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 		pwd_get_lm_nt_16(&(usr_creds->ntc.pwd), lm_oldhash, nt_oldhash );
 	}
 
-	new_passwd = (char*)getpass("New Password (ONCE ONLY - get it right :-)");
-	nt_lm_owf_gen(new_passwd, lm_newhash, nt_newhash);
-	make_oem_passwd_hash(nt_newpass, new_passwd, nt_oldhash, True);
-	make_oem_passwd_hash(lm_newpass, new_passwd, lm_oldhash, True);
-	E_old_pw_hash(lm_newhash, lm_oldhash, lm_hshhash);
-	E_old_pw_hash(lm_newhash, nt_oldhash, nt_hshhash);
+	new_passwd = (char*)getpass("New Password: ");
+	new_passwd2 = (char*)getpass("retype: ");
 
-	usr_creds->ntc.ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
-		                    NTLMSSP_NEGOTIATE_OEM |
-		                    NTLMSSP_NEGOTIATE_SIGN |
-		                    NTLMSSP_NEGOTIATE_SEAL |
-		                    NTLMSSP_NEGOTIATE_LM_KEY |
-		                    NTLMSSP_NEGOTIATE_NTLM |
-		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
-		                    NTLMSSP_NEGOTIATE_00001000 |
-		                    NTLMSSP_NEGOTIATE_00002000;
-
-	/* open SAMR session.  */
-	res = res ? cli_connection_init(srv_name, PIPE_SAMR, &con) : False;
+	if ((new_passwd != NULL && new_passwd2 != NULL &&
+	     !strequal(new_passwd, new_passwd2)) ||
+	    (new_passwd != new_passwd2))
+	{
+		report(out_hnd, "New passwords differ!\n");
+		return;
+	}
 
 	/* establish a connection. */
-	res = res ? samr_unknown_38(con, srv_name) : False;
-
-	/* establish a connection. */
-	res = res ? samr_chgpasswd_user(con,
-	                                   srv_name, acct_name,
-	                                   nt_newpass, nt_hshhash,
-	                                   lm_newpass, lm_hshhash) : False;
-	/* close the session */
-	cli_connection_unlink(con);
-
-	if (res)
+	if (msrpc_sam_ntchange_pwd( srv_name, acct_name,
+	                                   lm_oldhash, nt_oldhash,
+	                                   new_passwd))
 	{
 		report(out_hnd, "NT Password changed OK\n");
 	}

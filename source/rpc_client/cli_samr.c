@@ -35,9 +35,9 @@ extern int DEBUGLEVEL;
 do a SAMR change user password command
 ****************************************************************************/
 BOOL samr_chgpasswd_user( struct cli_connection *con, 
-		char *srv_name, char *user_name,
-		char nt_newpass[516], uchar nt_oldhash[16],
-		char lm_newpass[516], uchar lm_oldhash[16])
+		const char *srv_name, const char *user_name,
+		const char nt_newpass[516], const uchar nt_oldhash[16],
+		const char lm_newpass[516], const uchar lm_oldhash[16])
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -94,7 +94,7 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 /****************************************************************************
 do a SAMR unknown 0x38 command
 ****************************************************************************/
-BOOL samr_unknown_38(struct cli_connection *con, char *srv_name)
+BOOL samr_unknown_38(struct cli_connection *con, const char *srv_name)
 {
 	prs_struct data;
 	prs_struct rdata;

@@ -1668,3 +1668,65 @@ BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 	return res1;
 }
 
+/****************************************************************************
+SAM password change
+****************************************************************************/
+BOOL msrpc_sam_ntchange_pwd(const char* srv_name, const char *user, 
+				const uchar lm_oldhash[16],
+				const uchar nt_oldhash[16],
+				const char* new_passwd)
+{
+	BOOL res  = True;
+	BOOL res1 = True;
+
+	char nt_newpass[516];
+	uchar nt_hshhash[16];
+	uchar nt_newhash[16];
+
+	char lm_newpass[516];
+	uchar lm_newhash[16];
+	uchar lm_hshhash[16];
+
+	struct cli_connection *con = NULL;
+	extern struct user_creds *usr_creds;
+
+	nt_lm_owf_gen(new_passwd, nt_newhash, lm_newhash);
+	make_oem_passwd_hash(nt_newpass, new_passwd, nt_oldhash, True);
+	make_oem_passwd_hash(lm_newpass, new_passwd, lm_oldhash, True);
+	E_old_pw_hash(nt_newhash, lm_oldhash, lm_hshhash);
+	E_old_pw_hash(nt_newhash, nt_oldhash, nt_hshhash);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, nt_newhash, 16);
+	dump_data(100, lm_oldhash, 16);
+	dump_data(100, lm_hshhash, 16);
+#endif
+
+	usr_creds->ntc.ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
+		                    NTLMSSP_NEGOTIATE_OEM |
+		                    NTLMSSP_NEGOTIATE_SIGN |
+		                    NTLMSSP_NEGOTIATE_SEAL |
+		                    NTLMSSP_NEGOTIATE_LM_KEY |
+		                    NTLMSSP_NEGOTIATE_NTLM |
+		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+		                    NTLMSSP_NEGOTIATE_00001000 |
+		                    NTLMSSP_NEGOTIATE_00002000;
+
+	/* open SAMR session.  */
+	res = res ? cli_connection_init(srv_name, PIPE_SAMR, &con) : False;
+
+	/* establish a connection. */
+	res1 = res ? samr_unknown_38(con, srv_name) : False;
+
+	/* establish a connection. */
+	res1 = res1 ? samr_chgpasswd_user(con, srv_name, user,
+	                                   nt_newpass, nt_hshhash,
+	                                   lm_newpass, lm_hshhash) : False;
+	/* close the session */
+	if (res)
+	{
+		cli_connection_unlink(con);
+	}
+
+	return res1;
+}

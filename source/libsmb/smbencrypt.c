@@ -151,7 +151,7 @@ void lm_owf_genW(const UNISTR2 *pwd, uchar p16[16])
 	E_P16((uchar *) pwrd, (uchar *)p16);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
+	DEBUG(100,("lm_owf_genW: pwd, lm#\n"));
 	dump_data(120, pwrd, strlen(pwrd));
 	dump_data(100, p16, 16);
 #endif
@@ -204,7 +204,7 @@ void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
 	mdfour(nt_p16, (unsigned char *)pwrd.buffer, pwrd.uni_str_len * 2);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("nt_owf_gen: pwd, nt#\n"));
+	DEBUG(100,("nt_owf_genW: pwd, nt#\n"));
 	dump_data(120, (const char*)pwrd.buffer, pwrd.uni_str_len * 2);
 	dump_data(100, nt_p16, 16);
 #endif
@@ -406,7 +406,8 @@ void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24])
 #endif
 }
 
-BOOL make_oem_passwd_hash(char data[516], const char *pwrd, uchar old_pw_hash[16], BOOL unicode)
+BOOL make_oem_passwd_hash(char data[516], const char *pwrd, 
+				const uchar old_pw_hash[16], BOOL unicode)
 {
 	int new_pw_len = strlen(pwrd) * (unicode ? 2 : 1);
 
@@ -437,7 +438,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *pwrd, uchar old_pw_hash[16
 	DEBUG(100,("make_oem_pwrd_hash\n"));
 	dump_data(100, data, 516);
 #endif
-	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, True);
+	SamOEMhash( (unsigned char *)data, (const char*)old_pw_hash, True);
 
 	return True;
 }

@@ -1127,8 +1127,8 @@ struct api_struct api_srv_cmds[] =
 /*******************************************************************
 receives a srvsvc pipe and responds.
 ********************************************************************/
-BOOL api_srvsvc_rpc(rpcsrv_struct *p, prs_struct *data)
+BOOL api_srvsvc_rpc(rpcsrv_struct *p)
 {
-	return api_rpcTNP(p, "api_srvsvc_rpc", api_srv_cmds, data);
+	return api_rpcTNP(p, "api_srvsvc_rpc", api_srv_cmds);
 }
 

@@ -277,13 +277,13 @@ static void str_to_key(const uchar *str, uchar *key)
 }
 
 
-void smbhash(unsigned char *out, const uchar *in, const uchar *key, int forw)
+void smbhash(uchar *out, const uchar *in, const uchar *key, int forw)
 {
 	int i;
 	char outb[64];
 	char inb[64];
 	char keyb[64];
-	unsigned char key2[8];
+	uchar key2[8];
 
 	str_to_key(key, key2);
 
@@ -305,65 +305,65 @@ void smbhash(unsigned char *out, const uchar *in, const uchar *key, int forw)
 	}
 }
 
-void E_P16(unsigned char *p14,unsigned char *p16)
+void E_P16(uchar *p14,uchar *p16)
 {
-	unsigned char sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
+	uchar sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
 	smbhash(p16, sp8, p14, 1);
 	smbhash(p16+8, sp8, p14+7, 1);
 }
 
-void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24)
+void E_P24(uchar *p21, uchar *c8, uchar *p24)
 {
 	smbhash(p24, c8, p21, 1);
 	smbhash(p24+8, c8, p21+7, 1);
 	smbhash(p24+16, c8, p21+14, 1);
 }
 
-void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out)
+void D_P16(uchar *p14, uchar *in, uchar *out)
 {
 	smbhash(out, in, p14, 0);
         smbhash(out+8, in+8, p14+7, 0);
 }
 
-void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out)
+void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out)
 {
         smbhash(out, in, p14, 1);
         smbhash(out+8, in+8, p14+7, 1);
 }
 
-void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
+void cred_hash1(uchar *out,uchar *in,uchar *key)
 {
-	unsigned char buf[8];
+	uchar buf[8];
 
 	smbhash(buf, in, key, 1);
 	smbhash(out, buf, key+9, 1);
 }
 
-void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
+void cred_hash2(uchar *out,uchar *in,uchar *key)
 {
-	unsigned char buf[8];
-	static unsigned char key2[8];
+	uchar buf[8];
+	static uchar key2[8];
 
 	smbhash(buf, in, key, 1);
 	key2[0] = key[7];
 	smbhash(out, buf, key2, 1);
 }
 
-void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw)
+void cred_hash3(uchar *out,uchar *in,uchar *key, int forw)
 {
-        static unsigned char key2[8];
+        static uchar key2[8];
 
         smbhash(out, in, key, forw);
         key2[0] = key[7];
         smbhash(out + 8, in + 8, key2, forw);
 }
 
-void SamOEMhash( unsigned char *data, unsigned char *key, int val)
+void SamOEMhash( uchar *data, const uchar *key, int val)
 {
-  unsigned char s_box[256];
-  unsigned char index_i = 0;
-  unsigned char index_j = 0;
-  unsigned char j = 0;
+  uchar s_box[256];
+  uchar index_i = 0;
+  uchar index_j = 0;
+  uchar j = 0;
   int ind;
   int len = 0;
   if (val == 1) len = 516;
@@ -372,12 +372,12 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
 
   for (ind = 0; ind < 256; ind++)
   {
-    s_box[ind] = (unsigned char)ind;
+    s_box[ind] = (uchar)ind;
   }
 
   for( ind = 0; ind < 256; ind++)
   {
-     unsigned char tc;
+     uchar tc;
 
      j += (s_box[ind] + key[ind%16]);
 
@@ -387,8 +387,8 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
   }
   for( ind = 0; ind < len; ind++)
   {
-    unsigned char tc;
-    unsigned char t;
+    uchar tc;
+    uchar t;
 
     index_i++;
     index_j += s_box[index_i];
@@ -404,12 +404,12 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
 
 void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw)
 {
-	unsigned char s[14];
+	uchar s[14];
 
-	s[0] = s[4] = s[8] = s[12] = (unsigned char)(rid & 0xFF);
-	s[1] = s[5] = s[9] = s[13] = (unsigned char)((rid >> 8) & 0xFF);
-	s[2] = s[6] = s[10]        = (unsigned char)((rid >> 16) & 0xFF);
-	s[3] = s[7] = s[11]        = (unsigned char)((rid >> 24) & 0xFF);
+	s[0] = s[4] = s[8] = s[12] = (uchar)(rid & 0xFF);
+	s[1] = s[5] = s[9] = s[13] = (uchar)((rid >> 8) & 0xFF);
+	s[2] = s[6] = s[10]        = (uchar)((rid >> 16) & 0xFF);
+	s[3] = s[7] = s[11]        = (uchar)((rid >> 24) & 0xFF);
 
 	smbhash(out, in, s, forw);
 	smbhash(out+8, in+8, s+7, forw);

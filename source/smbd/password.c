@@ -61,20 +61,24 @@ update the encrypted smbpasswd file from the plaintext username and password
 static BOOL update_smbpassword_file(char *user, char *password)
 {
 	struct smb_passwd *smbpw;
+	UNISTR2 newpw;
 	BOOL ret;
 	
 	become_root(0);
 	smbpw = getsmbpwnam(user);
 	unbecome_root(0);
-	
-	if(smbpw == NULL) {
+
+	make_unistr2(&newpw, password, password != NULL ? strlen(password) : 0);
+
+	if(smbpw == NULL)
+	{
 		DEBUG(0,("getsmbpwnam returned NULL\n"));
 		return False;
 	}
  
 	/* Here, the flag is one, because we want to ignore the
            XXXXXXX'd out password */
-	ret = change_oem_password( smbpw, password, True);
+	ret = change_oem_password( smbpw, &newpw, True);
 	if (!ret)
 	{
 		DEBUG(3,("change_oem_password returned False\n"));

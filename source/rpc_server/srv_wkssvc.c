@@ -105,8 +105,8 @@ struct api_struct api_wks_cmds[] =
 /*******************************************************************
  receives a wkssvc pipe and responds.
  ********************************************************************/
-BOOL api_wkssvc_rpc(rpcsrv_struct *p, prs_struct *data)
+BOOL api_wkssvc_rpc(rpcsrv_struct *p)
 {
-	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds, data);
+	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds);
 }
 

@@ -251,8 +251,8 @@ static struct api_struct api_reg_cmds[] =
 /*******************************************************************
  receives a reg pipe and responds.
  ********************************************************************/
-BOOL api_reg_rpc(rpcsrv_struct *p, prs_struct *data)
+BOOL api_reg_rpc(rpcsrv_struct *p)
 {
-	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds, data);
+	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds);
 }
 

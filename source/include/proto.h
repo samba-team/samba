@@ -926,15 +926,15 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
 
 /*The following definitions come from  libsmb/smbdes.c  */
 
-void smbhash(unsigned char *out, const uchar *in, const uchar *key, int forw);
-void E_P16(unsigned char *p14,unsigned char *p16);
-void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
-void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out);
-void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out);
-void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
-void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
-void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw);
-void SamOEMhash( unsigned char *data, unsigned char *key, int val);
+void smbhash(uchar *out, const uchar *in, const uchar *key, int forw);
+void E_P16(uchar *p14,uchar *p16);
+void E_P24(uchar *p21, uchar *c8, uchar *p24);
+void D_P16(uchar *p14, uchar *in, uchar *out);
+void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out);
+void cred_hash1(uchar *out,uchar *in,uchar *key);
+void cred_hash2(uchar *out,uchar *in,uchar *key);
+void cred_hash3(uchar *out,uchar *in,uchar *key, int forw);
+void SamOEMhash( uchar *data, const uchar *key, int val);
 void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw);
 
 /*The following definitions come from  libsmb/smbencrypt.c  */
@@ -967,7 +967,8 @@ void ntv2_owf_gen(const uchar owf[16],
 				const char *domain_n,
 				uchar kr_buf[16]);
 void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24]);
-BOOL make_oem_passwd_hash(char data[516], const char *pwrd, uchar old_pw_hash[16], BOOL unicode);
+BOOL make_oem_passwd_hash(char data[516], const char *pwrd, 
+				const uchar old_pw_hash[16], BOOL unicode);
 BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
 void create_ntlmssp_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,
@@ -1033,7 +1034,7 @@ BOOL reload_services(BOOL test);
 
 /*The following definitions come from  lsarpcd/srv_lsa.c  */
 
-BOOL api_ntlsa_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_ntlsa_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  mem_man/mem_man.c  */
 
@@ -2115,10 +2116,10 @@ BOOL reg_shutdown(const char *srv_name,
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
 BOOL samr_chgpasswd_user( struct cli_connection *con, 
-		char *srv_name, char *user_name,
-		char nt_newpass[516], uchar nt_oldhash[16],
-		char lm_newpass[516], uchar lm_oldhash[16]);
-BOOL samr_unknown_38(struct cli_connection *con, char *srv_name);
+		const char *srv_name, const char *user_name,
+		const char nt_newpass[516], const uchar nt_oldhash[16],
+		const char lm_newpass[516], const uchar lm_oldhash[16]);
+BOOL samr_unknown_38(struct cli_connection *con, const char *srv_name);
 BOOL samr_query_dom_info(  POLICY_HND *domain_pol, uint16 switch_value,
 				SAM_UNK_CTR *ctr);
 uint32 samr_enum_domains(  POLICY_HND *pol,
@@ -2481,6 +2482,10 @@ BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 				uint16 switch_value,
 				uint32 *num_entries, SAM_DISPINFO_CTR *ctr,
 				DISP_FN(disp_fn));
+BOOL msrpc_sam_ntchange_pwd(const char* srv_name, const char *user, 
+				const uchar lm_oldhash[16],
+				const uchar nt_oldhash[16],
+				const char* new_passwd);
 
 /*The following definitions come from  rpc_parse/parse_at.c  */
 
@@ -3354,18 +3359,20 @@ BOOL samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int dep
 BOOL make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u);
 BOOL samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name);
+BOOL make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, const char *srv_name);
 BOOL samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth);
 BOOL make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u);
 BOOL samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
-BOOL make_enc_passwd(SAMR_ENC_PASSWD *pwd, char pass[512]);
+BOOL make_enc_passwd(SAMR_ENC_PASSWD *pwd, const char pass[512]);
 BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
-BOOL make_enc_hash(SAMR_ENC_HASH *hsh, uchar hash[16]);
+BOOL make_enc_hash(SAMR_ENC_HASH *hsh, const uchar hash[16]);
 BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
 BOOL make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
-				char *dest_host, char *user_name,
-				char nt_newpass[516], uchar nt_oldhash[16],
-				char lm_newpass[516], uchar lm_oldhash[16]);
+				const char *dest_host, const char *user_name,
+				const char nt_newpass[516],
+				const uchar nt_oldhash[16],
+				const char lm_newpass[516],
+				const uchar lm_oldhash[16]);
 BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
 BOOL make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status);
 BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
@@ -3703,7 +3710,7 @@ BOOL wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int
 
 /*The following definitions come from  rpc_server/srv_brs.c  */
 
-BOOL api_brs_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_brs_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_lookup.c  */
 
@@ -3728,7 +3735,7 @@ uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 
-BOOL api_netlog_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_netlog_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
@@ -3761,11 +3768,11 @@ pipes_struct *get_rpc_pipe(int pnum);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 
-BOOL api_reg_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_reg_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_samr.c  */
 
-BOOL api_samr_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_samr_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_spoolss.c  */
 
@@ -3776,15 +3783,15 @@ BOOL api_spoolss_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 
-BOOL api_srvsvc_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_srvsvc_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_svcctl.c  */
 
-BOOL api_svcctl_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_svcctl_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
-BOOL api_wkssvc_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_wkssvc_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpcclient/cmd_atsvc.c  */
 
@@ -4119,9 +4126,8 @@ BOOL pass_oem_change(char *user,
 BOOL check_oem_password(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash,
-                        struct smb_passwd **psmbpw, char *new_passwd,
-                        int new_passwd_size);
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
+                        struct smb_passwd **psmbpw, UNISTR2 *new_passwd);
+BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd, BOOL override);
 
 /*The following definitions come from  smbd/close.c  */
 
@@ -4237,7 +4243,16 @@ void file_chain_restore(void);
 
 /*The following definitions come from  smbd/ipc.c  */
 
+void send_trans_reply(char *outbuf,
+				prs_struct *rdata,
+				prs_struct *rparam,
+				uint16 *setup, int lsetup, int max_data_ret);
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize);
+
+/*The following definitions come from  smbd/lanman.c  */
+
+int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
+		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt);
 
 /*The following definitions come from  smbd/mangle.c  */
 

@@ -567,11 +567,11 @@ BOOL pass_oem_change(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash)
 {
-	fstring new_passwd;
+	UNISTR2 new_passwd;
 	struct smb_passwd *sampw;
 	BOOL ret = check_oem_password( user, lmdata, lmhash, ntdata, nthash,
 	                               &sampw, 
-	                               new_passwd, sizeof(new_passwd));
+	                               &new_passwd);
 
 	/* now we check to see if we are actually allowed to change the
 	   password. */
@@ -592,15 +592,15 @@ BOOL pass_oem_change(char *user,
 
 	if ( ret && lp_unix_password_sync())
 	{
-		ret = chgpasswd(user,"", new_passwd, True);
+		ret = chgpasswd(user,"", (char*)new_passwd.buffer, True);
 	}
 
 	if (ret)
 	{
-		ret = change_oem_password( sampw, new_passwd, False );
+		ret = change_oem_password( sampw, &new_passwd, False );
 	}
 
-	memset(new_passwd, 0, sizeof(new_passwd));
+	ZERO_STRUCT(new_passwd);
 
 	return ret;
 }
@@ -615,8 +615,7 @@ BOOL pass_oem_change(char *user,
 BOOL check_oem_password(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash,
-                        struct smb_passwd **psmbpw, char *new_passwd,
-                        int new_passwd_size)
+                        struct smb_passwd **psmbpw, UNISTR2 *new_passwd)
 {
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
@@ -683,7 +682,7 @@ BOOL check_oem_password(char *user,
 	 */
 	SamOEMhash( (uchar *)lmdata, (uchar *)smbpw->smb_passwd, True);
 
-	if (!decode_pw_buffer(lmdata, new_passwd, new_passwd_size, &len))
+	if (!decode_pw_buffer(lmdata, (char*)new_passwd->buffer, 256, &len))
 	{
 		return False;
 	}
@@ -693,10 +692,11 @@ BOOL check_oem_password(char *user,
 	 * use it as a key to test the passed old password.
 	 */
 
-	nt_lm_owf_gen(new_passwd, new_ntp16, new_p16);
-
 	if (!nt_pass_set)
 	{
+		DEBUG(10,("check_oem_password: non-unicode\n"));
+		nt_lm_owf_gen((char*)new_passwd->buffer, new_ntp16, new_p16);
+
 		/*
 		 * Now use new_p16 as the key to see if the old
 		 * password matches.
@@ -710,9 +710,16 @@ BOOL check_oem_password(char *user,
 		}
 
 #ifdef DEBUG_PASSWORD
-		DEBUG(100,("check_oem_password: password %s ok\n", new_passwd));
+		DEBUG(100,("check_oem_password: password %s ok\n",
+		            (char*)new_passwd->buffer));
 #endif
 		return True;
+	}
+	else
+	{
+		new_passwd->uni_max_len = len / 2;
+		new_passwd->uni_str_len = len / 2;
+		nt_lm_owf_genW(new_passwd, new_ntp16, new_p16);
 	}
 
 	/*
@@ -722,6 +729,12 @@ BOOL check_oem_password(char *user,
 	D_P16(new_ntp16, lmhash, unenc_old_pw);
 	D_P16(new_ntp16, nthash, unenc_old_ntpw);
 
+#ifdef DEBUG_PASSWORD
+	dump_data(100, lmhash, 16);
+	dump_data(100, unenc_old_pw, 16);
+	dump_data(100, new_ntp16, 16);
+	dump_data(100, smbpw->smb_passwd, 16);
+#endif
 	if (memcmp(smbpw->smb_passwd, unenc_old_pw, 16))
 	{
 		DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
@@ -734,7 +747,7 @@ BOOL check_oem_password(char *user,
 		return False;
 	}
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("check_oem_password: password %s ok\n", new_passwd));
+	DEBUG(100,("check_oem_password: password ok\n"));
 #endif
 	return True;
 }
@@ -746,13 +759,13 @@ BOOL check_oem_password(char *user,
  override = True, override XXXXXXXXXX'd password
 ************************************************************/
 
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override)
+BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd, BOOL override)
 {
   int ret;
   uchar new_nt_p16[16];
   uchar new_p16[16];
 
-  nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
+  nt_lm_owf_genW(new_passwd, new_nt_p16, new_p16);
 
   smbpw->smb_passwd = new_p16;
   smbpw->smb_nt_passwd = new_nt_p16;
@@ -762,7 +775,7 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL overri
   ret = mod_smbpwd_entry(smbpw,override);
   unbecome_root(0);
 
-  memset(new_passwd, '\0', strlen(new_passwd));
+ 	ZERO_STRUCTP(new_passwd);
 
   return ret;
 }

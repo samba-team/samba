@@ -688,7 +688,7 @@ static struct api_struct api_lsa_cmds[] =
 /***************************************************************************
  api_ntLsarpcTNP
  ***************************************************************************/
-BOOL api_ntlsa_rpc(rpcsrv_struct *p, prs_struct *data)
+BOOL api_ntlsa_rpc(rpcsrv_struct *p)
 {
-	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds, data);
+	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds);
 }
