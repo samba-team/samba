@@ -12,7 +12,15 @@ kadmin_SOURCES = 						\
 	ank.c cpw.c del.c dump.c ext.c get.c init.c kadmin.c	\
 	load.c mod.c rename.c util.c
 
-COMMON_LDADD = $(top_builddir)/lib/hdb/libhdb.a $(top_builddir)/lib/krb5/libkrb5.a $(top_builddir)/lib/des/libdes.a $(top_builddir)/lib/asn1/libasn1.a $(top_builddir)/lib/sl/libsl.a $(LIB_readline) $(top_builddir)/lib/roken/libroken.a
+COMMON_LDADD = \
+	$(top_builddir)/lib/hdb/libhdb.a \
+	$(top_builddir)/lib/krb5/libkrb5.a \
+	$(top_builddir)/lib/des/libdes.a \
+	$(top_builddir)/lib/asn1/libasn1.a \
+	$(top_builddir)/lib/sl/libsl.a \
+	$(LIB_readline) \
+	$(top_builddir)/lib/roken/libroken.a \
+	$(DBLIB)
 
 kadmind_LDADD = $(top_builddir)/lib/kadm5/libkadm5srv.a $(COMMON_LDADD)
 kadmin_LDADD = $(top_builddir)/lib/kadm5/libkadm5clnt.a $(COMMON_LDADD)
