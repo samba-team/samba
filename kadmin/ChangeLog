@@ -1,3 +1,10 @@
+2001-01-29  Assar Westerlund  <assar@sics.se>
+
+	* kadm_conn.c (spawn_child): close the newly created socket in the
+	packet, it's not used.  from <shadow@dementia.org>
+	* version4.c (decode_packet): check success of
+	krb5_425_conv_principal.  from <shadow@dementia.org>
+
 2001-01-12  Assar Westerlund  <assar@sics.se>
 
 	* util.c (parse_attributes): make empty string mean no attributes,
