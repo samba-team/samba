@@ -172,7 +172,7 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
                                  &sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom) : False;
+	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom): False;
 
 	names[0] = name;
 
@@ -1287,7 +1287,7 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 				uint32 *rid)
 {
 	POLICY_HND pol_open_user;
-	BOOL ret = True;
+	uint32 ret;
 	BOOL res1 = True;
 	char pwbuf[516];
 	SAM_USER_INFO_24 *p24;
@@ -1790,36 +1790,40 @@ BOOL get_samr_query_aliasinfo(
 /****************************************************************************
 SAM create domain user.
 ****************************************************************************/
-BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
-				char *acct_name, uint16 acb_info,
-				const char *password, int plen,
-				uint32 *rid)
+uint32 msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
+				 char *acct_name, uint16 acb_info,
+				 const char *password, int plen,
+				 uint32 *rid)
 {
-	BOOL res = True;
-	BOOL res1 = True;
-	BOOL res2 = True;
+	uint32 status = NT_STATUS_INVALID_PARAMETER;
 	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 user_rid; 
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
-				&sam_pol) : False;
+	if (!samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+			  &sam_pol)) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
 
 	/* connect to the domain */
-	res1 = res ? samr_open_domain( &sam_pol, ace_perms, sid1,
-	            &pol_dom) : False;
+	if ((status=isamr_open_domain( &sam_pol, ace_perms, sid1,
+				      &pol_dom)) != NT_STATUS_NOPROBLEMO) {
+		return status;
+	}
 
 	/* create a domain user */
-	res2 = res1 ? create_samr_domain_user( &pol_dom,
-	                        acct_name, 
-				acb_info, password, plen, &user_rid) : False;
+	if (!create_samr_domain_user( &pol_dom,
+				      acct_name, 
+				      acb_info, password, plen, &user_rid)) {
+		status = NT_STATUS_ACCESS_DENIED;
+	}
 
-	res1 = res1 ? samr_close( &pol_dom) : False;
-	res  = res  ? samr_close( &sam_pol) : False;
+	samr_close( &pol_dom);
+	samr_close( &sam_pol);
 
-	if (res2)
+	if (status == NT_STATUS_NOPROBLEMO)
 	{
 		DEBUG(5,("msrpc_sam_create_dom_user: succeeded\n"));
 	}
@@ -1828,7 +1832,7 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 		DEBUG(5,("msrpc_sam_create_dom_user: failed\n"));
 	}
 
-	return res2;
+	return status;
 }
 
 /****************************************************************************

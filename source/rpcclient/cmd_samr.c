@@ -975,7 +975,8 @@ uint32 cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 	report(out_hnd, "SAM Create Domain Trusting Account\n");
 
 	if (msrpc_sam_create_dom_user(srv_name,
-				      acct_name, ACB_WSTRUST, &user_rid))
+				      acct_name, ACB_WSTRUST, &user_rid) ==
+	    NT_STATUS_NOPROBLEMO)
 	{
 		report(out_hnd, "Create Domain User: OK\n");
 		return NT_STATUS_NOPROBLEMO;
@@ -1152,7 +1153,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	if (join_domain && acb_info == ACB_NORMAL)
 	{
 		report(out_hnd, "can only join trust accounts to a domain\n");
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 	}
 
 	if (join_domain)
@@ -1163,7 +1164,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			report(out_hnd,
 			       "could not locate server for domain %s\n",
 			       domain);
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		}
 
 		status = msrpc_sam_get_first_domain(srv_name, domain, &sid1);
@@ -1188,7 +1189,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			report(out_hnd,
 			       ("Workstation and Server Trust Accounts are randomly auto-generated\n"));
 			memset(&upw, 0, sizeof(upw));
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		if (join_domain)
@@ -1249,79 +1250,78 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	if (res && msrpc_sam_create_dom_user(srv_name, &sid1,
-					     acct_name, acb_info, password,
-					     plen, &user_rid))
-	{
-		report(out_hnd, "Create Domain User: OK\n");
-
-		if (join_domain)
-		{
-			POLICY_HND pol_sec;
-			BOOL res1;
-			BOOL res2 = False;
-			uchar ntpw[16];
-
-			nt_owf_genW(&upw, ntpw);
-
-			strupper(domain);
-			strupper(name);
-
-			report(out_hnd, "Join %s to Domain %s\n", name,
-			       domain);
-
-			/* attempt to create, and if already exist, open */
-			if (lsa_local) {
-				res2 = res1 = res = lsa_local_set_secret(domain, ntpw);
-				status = res ? NT_STATUS_NOPROBLEMO : NT_STATUS_ACCESS_DENIED;
-			} else {
-				res1 = lsa_create_secret(&lsa_pol, "$MACHINE.ACC",
-							 0x020003, &pol_sec);
-
-				if (res1) {
-					report(out_hnd, "Create $MACHINE.ACC: OK\n");
-				} else {
-					res1 = lsa_open_secret(&lsa_pol,
-							       "$MACHINE.ACC",
-							       0x020003, &pol_sec);
-				}
-
-				/* valid pol_sec on $MACHINE.ACC, set trust passwd */
-				if (res1) {
-					STRING2 secret;
-					secret_store_data(&secret, password, plen);
-					status = lsa_set_secret(&pol_sec, &secret);
-					res2 = status == NT_STATUS_NOPROBLEMO;
-				}
-			}
-
-			if (res2)
-			{
-				report(out_hnd, "Set $MACHINE.ACC: OK\n");
-				status = NT_STATUS_NOPROBLEMO;
-			}
-			else
-			{
-				report(out_hnd, "Set $MACHINE.ACC: FAILED\n");
-				status = NT_STATUS_ACCESS_DENIED;
-			}
-
-			if (!lsa_local) {
-				res1 = res1 ? lsa_close(&pol_sec) : False;
-				res = res ? lsa_close(&lsa_pol) : False;
-			}
-
-			memset(ntpw, 0, sizeof(ntpw));
-		}
-	}
-	else
-	{
-		report(out_hnd, "Create Domain User: FAILED\n");
+	if (!res) {
 		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
 	}
 
-	memset(&upw, 0, sizeof(upw));
+	if ((status=msrpc_sam_create_dom_user(srv_name, &sid1,
+					      acct_name, acb_info, password,
+					      plen, &user_rid)) !=
+	    NT_STATUS_NOPROBLEMO) {
+		report(out_hnd, "Create Domain User: FAILED\n");
+		goto done;
+	}
 
+	report(out_hnd, "Create Domain User: OK\n");
+
+	if (join_domain) {
+		POLICY_HND pol_sec;
+		BOOL res1;
+		BOOL res2 = False;
+		uchar ntpw[16];
+		
+		nt_owf_genW(&upw, ntpw);
+		
+		strupper(domain);
+		strupper(name);
+		
+		report(out_hnd, "Join %s to Domain %s\n", name,
+		       domain);
+		
+		/* attempt to create, and if already exist, open */
+		if (lsa_local) {
+			res2 = res1 = res = lsa_local_set_secret(domain, ntpw);
+			status = res ? NT_STATUS_NOPROBLEMO : NT_STATUS_ACCESS_DENIED;
+		} else {
+			res1 = lsa_create_secret(&lsa_pol, "$MACHINE.ACC",
+						 0x020003, &pol_sec);
+			
+			if (res1) {
+				report(out_hnd, "Create $MACHINE.ACC: OK\n");
+			} else {
+				res1 = lsa_open_secret(&lsa_pol,
+						       "$MACHINE.ACC",
+						       0x020003, &pol_sec);
+			}
+			
+			/* valid pol_sec on $MACHINE.ACC, set trust passwd */
+			if (res1) {
+				STRING2 secret;
+				secret_store_data(&secret, password, plen);
+				status = lsa_set_secret(&pol_sec, &secret);
+				res2 = status == NT_STATUS_NOPROBLEMO;
+			}
+		}
+		
+		if (res2) {
+			report(out_hnd, "Set $MACHINE.ACC: OK\n");
+			status = NT_STATUS_NOPROBLEMO;
+		} else {
+			report(out_hnd, "Set $MACHINE.ACC: FAILED\n");
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (!lsa_local) {
+			res1 = res1 ? lsa_close(&pol_sec) : False;
+			res = res ? lsa_close(&lsa_pol) : False;
+		}
+
+		memset(ntpw, 0, sizeof(ntpw));
+	}
+
+ done:
+	memset(&upw, 0, sizeof(upw));
 	return status;
 }
 

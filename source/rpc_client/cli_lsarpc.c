@@ -476,6 +476,8 @@ uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 * secret)
 	prs_struct rbuf;
 	prs_struct buf;
 	LSA_Q_SET_SECRET q_q;
+	LSA_R_SET_SECRET r_q;
+	BOOL p;
 
 	uchar sess_key[16];
 #if 0
@@ -525,33 +527,29 @@ uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 * secret)
 	}
 
 	/* turn parameters into data stream */
-	if (lsa_io_q_set_secret("", &q_q, &buf, 0) &&
-	    rpc_hnd_pipe_req(hnd, LSA_SETSECRET, &buf, &rbuf))
+	if (!lsa_io_q_set_secret("", &q_q, &buf, 0) ||
+	    !rpc_hnd_pipe_req(hnd, LSA_SETSECRET, &buf, &rbuf)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	lsa_io_r_set_secret("", &r_q, &rbuf, 0);
+	p = rbuf.offset != 0;
+
+	if (p && r_q.status != 0)
 	{
-		LSA_R_SET_SECRET r_q;
-		BOOL p;
-
-		lsa_io_r_set_secret("", &r_q, &rbuf, 0);
-		p = rbuf.offset != 0;
-
-		if (p && r_q.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,
-			      ("LSA_SETSECRET: %s\n",
-			       get_nt_error_msg(r_q.status)));
-			status = NT_STATUS_INVALID_PARAMETER;
-		}
-		else
-		{
-			status = r_q.status;
-		}
+		/* report error code */
+		DEBUG(0,
+		      ("LSA_SETSECRET: %s\n",
+		       get_nt_error_msg(r_q.status)));
+		status = NT_STATUS_INVALID_PARAMETER;
 	}
 	else
 	{
-
-		status = NT_STATUS_INVALID_PARAMETER;
+		status = r_q.status;
 	}
+
+ out:
 	prs_free_data(&rbuf);
 	prs_free_data(&buf);
 

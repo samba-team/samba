@@ -1661,20 +1661,30 @@ BOOL samr_unknown_2d(  const POLICY_HND *domain_pol,
 	return valid_pol;
 }
 
+BOOL samr_open_domain(  const POLICY_HND *connect_pol,
+			  uint32 ace_perms,
+			  const DOM_SID *sid,
+			  POLICY_HND *domain_pol)
+{
+	return isamr_open_domain(connect_pol, ace_perms, sid, domain_pol) ==
+		NT_STATUS_NOPROBLEMO;
+}
+
 /****************************************************************************
 do a SAMR Open Domain
 ****************************************************************************/
-BOOL samr_open_domain(  const POLICY_HND *connect_pol,
-				uint32 ace_perms,
-				const DOM_SID *sid,
-				POLICY_HND *domain_pol)
+uint32 isamr_open_domain(  const POLICY_HND *connect_pol,
+			  uint32 ace_perms,
+			  const DOM_SID *sid,
+			  POLICY_HND *domain_pol)
 {
 	pstring sid_str;
 	prs_struct data;
 	prs_struct rdata;
-
+	SAMR_R_OPEN_DOMAIN r_o;
 	SAMR_Q_OPEN_DOMAIN q_o;
-	BOOL valid_pol = False;
+
+	r_o.status = NT_STATUS_UNSUCCESSFUL;
 
 	if (DEBUGLEVEL >= 4)
 	{
@@ -1683,7 +1693,8 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 					sid_str, ace_perms));
 	}
 
-	if (connect_pol == NULL || sid == NULL || domain_pol == NULL) return False;
+	if (connect_pol == NULL || sid == NULL || domain_pol == NULL) 
+		return NT_STATUS_INVALID_PARAMETER;
 
 	/* create and send a MSRPC command with api SAMR_OPEN_DOMAIN */
 
@@ -1697,7 +1708,6 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 	if (samr_io_q_open_domain("", &q_o,  &data, 0) &&
 	    rpc_hnd_pipe_req(connect_pol, SAMR_OPEN_DOMAIN, &data, &rdata))
 	{
-		SAMR_R_OPEN_DOMAIN r_o;
 		BOOL p;
 
 		samr_io_r_open_domain("", &r_o, &rdata, 0);
@@ -1713,7 +1723,9 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 		if (p)
 		{
 			*domain_pol = r_o.domain_pol;
-			valid_pol = cli_pol_link(domain_pol, connect_pol);
+			if (!cli_pol_link(domain_pol, connect_pol)) {
+				r_o.status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
 			policy_hnd_set_name(get_global_hnd_cache(),
 					    domain_pol, "SAM_DOMAIN");
 		}
@@ -1722,7 +1734,7 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 	prs_free_data(&data   );
 	prs_free_data(&rdata  );
 
-	return valid_pol;
+	return r_o.status;
 }
 
 /****************************************************************************
