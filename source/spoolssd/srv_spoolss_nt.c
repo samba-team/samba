@@ -2176,36 +2176,13 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 	return 0x0;
 }
 
-#if 0
-
-/****************************************************************************
-****************************************************************************/
-uint32 _spoolss_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENDDOCPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(handle);
-
-	if (OPEN_HANDLE(pnum))
-	{
-		status=0x0;
-
-		spoolss_io_r_enddocprinter("",&r_u,rdata,0);		
-	}
-	else
-	{
-		DEBUG(3,("Error in enddocprinter printer handle (pnum=%x)\n",pnum));
-	}
-}
-
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void api_spoolss_enddocprinter(rpcsrv_struct *p, prs_struct *data,
-                                          prs_struct *rdata)
+uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 {
-	SPOOL_Q_ENDDOCPRINTER q_u;
 	int pnum;
 	int snum;
 	pstring filename;
@@ -2214,68 +2191,84 @@ static void api_spoolss_enddocprinter(rpcsrv_struct *p, prs_struct *data,
 	pstring syscmd;
 	char *tstr;
 	
-	spoolss_io_q_enddocprinter("", &q_u, data, 0);
-	
 	*syscmd=0;
 	
 	pnum = find_printer_index_by_hnd(handle);
 	
-	if (OPEN_HANDLE(pnum))
+	if (!OPEN_HANDLE(pnum))
 	{
-		Printer[pnum].document_started=False;
-		close(Printer[pnum].document_fd);
-		DEBUG(4,("Temp spool file closed, printing now ...\n"));
+		DEBUG(3,("Error in enddocprinter handle (pnum=%x)\n",pnum));
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	Printer[pnum].document_started=False;
+	close(Printer[pnum].document_fd);
+	DEBUG(4,("Temp spool file closed, printing now ...\n"));
 
-		pstrcpy(filename1, Printer[pnum].document_name);
-		pstrcpy(job_name, Printer[pnum].job_name);
-		
-		get_printer_snum(handle,&snum);
-		
-		/* copy the command into the buffer for extensive meddling. */
-		StrnCpy(syscmd, lp_printcommand(snum), sizeof(pstring) - 1);
-
-		/* look for "%s" in the string. If there is no %s, we cannot print. */   
-		if (!strstr(syscmd, "%s") && !strstr(syscmd, "%f"))
-		{
-			DEBUG(2,("WARNING! No placeholder for the filename in the print command for service %s!\n", SERVICE(snum)));
-		}
-
-		if (strstr(syscmd,"%s"))
-		{
-	 		pstrcpy(filename,filename1);
-			string_sub(syscmd, "%s", filename);
-		}
-
-		string_sub(syscmd, "%f", filename1);
-
-		/* Does the service have a printername? If not, make a fake and empty	 */
-		/* printer name. That way a %p is treated sanely if no printer */
-		/* name was specified to replace it. This eventuality is logged.	 */
-		tstr = lp_printername(snum);
-		if (tstr == NULL || tstr[0] == '\0')
-		{
-			DEBUG(3,( "No printer name - using %s.\n", SERVICE(snum)));
-			tstr = SERVICE(snum);
-		}
-
-		string_sub(syscmd, "%p", tstr);
-
-		/* If the lpr command support the 'Job' option replace here */
-		string_sub(syscmd, "%j", job_name);
-
-		if ( *syscmd != '\0')
-	  	{
-	  	  int ret = smbrun(syscmd, NULL, False);
-	  	  DEBUG(3,("Running the command `%s' gave %d\n", syscmd, ret));
-	  	}
-		else
-		  DEBUG(0,("Null print command?\n"));
-
-		lpq_reset(snum);
+	pstrcpy(filename1, Printer[pnum].document_name);
+	pstrcpy(job_name, Printer[pnum].job_name);
+	
+	if (!get_printer_snum(handle,&snum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
 	}
 	
-	spoolss_enddocprinter(&q_u, rdata);
+	/* copy the command into the buffer for extensive meddling. */
+	StrnCpy(syscmd, lp_printcommand(snum), sizeof(pstring) - 1);
+
+	/* look for "%s" in the string. If there is no %s, we cannot print. */   
+	if (!strstr(syscmd, "%s") && !strstr(syscmd, "%f"))
+	{
+		DEBUG(2,("WARNING! No placeholder for the filename in the print command for service %s!\n", SERVICE(snum)));
+	}
+
+	if (strstr(syscmd,"%s"))
+	{
+		pstrcpy(filename,filename1);
+		string_sub(syscmd, "%s", filename);
+	}
+
+	string_sub(syscmd, "%f", filename1);
+
+	/* Does the service have a printername? If not, make a fake and empty
+	 * printer name. That way a %p is treated sanely if no printer
+	 * name was specified to replace it. This eventuality is logged.
+	 */
+
+	tstr = lp_printername(snum);
+	if (tstr == NULL || tstr[0] == '\0')
+	{
+		DEBUG(3,( "No printer name - using %s.\n", SERVICE(snum)));
+		tstr = SERVICE(snum);
+	}
+
+	string_sub(syscmd, "%p", tstr);
+
+	/* If the lpr command support the 'Job' option replace here */
+	string_sub(syscmd, "%j", job_name);
+
+	if ( *syscmd != '\0')
+	{
+	  int ret = smbrun(syscmd, NULL, False);
+	  DEBUG(3,("Running the command `%s' gave %d\n", syscmd, ret));
+	  if (ret < 0)
+		{
+			lpq_reset(snum);
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+	else
+		{
+	  DEBUG(0,("Null print command?\n"));
+			lpq_reset(snum);
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+	lpq_reset(snum);
+
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
