@@ -410,7 +410,8 @@ struct packet_struct
 #define REMOTE_ANNOUNCE_INTERVAL 180
 
 #define DFLT_SERVER_TYPE (SV_TYPE_WORKSTATION | SV_TYPE_SERVER | \
-			  SV_TYPE_TIME_SOURCE | SV_TYPE_SERVER_UNIX | \
+			  (lp_time_server() ? SV_TYPE_TIME_SOURCE : 0) | \
+                          SV_TYPE_SERVER_UNIX | \
 			  SV_TYPE_PRINTQ_SERVER | SV_TYPE_SERVER_NT | \
 			  SV_TYPE_NT )
 
