@@ -339,8 +339,8 @@ wierd.
 ********************************************************************/
 void samr_io_r_unknown_3(char *desc,  SAMR_R_UNKNOWN_3 *r_u, prs_struct *ps, int depth)
 {
-	int ptr_len0;
-	int ptr_len1;
+	int ptr_len0=0;
+	int ptr_len1=0;
 	int ptr_sid_stuff = 0;
 
 	if (r_u == NULL) return;
