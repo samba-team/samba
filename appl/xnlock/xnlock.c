@@ -614,7 +614,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 			int code;
 			if (k_hasafs())
 			    {
-				if ((code = k_afsklog(NULL, realm)) != KSUCCESS
+				if ((code = k_afsklog(NULL, NULL)) != KSUCCESS
 				    && code != KDC_PR_UNKNOWN)
 				    fprintf(stderr,
 					    "%s: Warning %s\n",
