@@ -24,9 +24,7 @@
 #ifndef _RPC_SAMR_H /* _RPC_SAMR_H */
 #define _RPC_SAMR_H 
 
-
 #include "rpc_misc.h"
-
 
 /*******************************************************************
  the following information comes from a QuickView on samsrv.dll,
@@ -143,8 +141,6 @@ SamrTestPrivateFunctionsUser
 #define SAMR_GET_DOM_PWINFO    0x38
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
-
-
 
 typedef struct logon_hours_info
 {
@@ -541,23 +537,14 @@ typedef struct r_samr_lookup_domain_info
 
 } SAMR_R_LOOKUP_DOMAIN;
 
-
-/****************************************************************************
-SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
-
-0x0000 03f1 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
-0x0000 0200 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
-*****************************************************************************/
-
 /* SAMR_Q_OPEN_DOMAIN */
 typedef struct q_samr_open_domain_info
 {
-	POLICY_HND pol;   /* policy handle */
-	uint32 flags;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - flags? */
-	DOM_SID2 dom_sid;         /* domain SID */
+	POLICY_HND connect_pol;   /* Policy handle */
+	uint32 access_mask;       /* Requested permissions */
+	DOM_SID2 dom_sid;         /* Domain SID */
 
 } SAMR_Q_OPEN_DOMAIN;
-
 
 /* SAMR_R_OPEN_DOMAIN - probably an open */
 typedef struct r_samr_open_domain_info
@@ -1462,7 +1449,7 @@ typedef struct q_samr_open_group_info
 /* SAMR_R_OPEN_GROUP - probably an open */
 typedef struct r_samr_open_group_info
 {
-	POLICY_HND pol;       /* policy handle */
+	POLICY_HND group_pol;       /* policy handle */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_GROUP;
