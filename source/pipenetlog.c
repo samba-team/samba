@@ -193,11 +193,11 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 
 	if (sess_key != NULL)
 	{
-		memcpy(usr->sess_key, sess_key, sizeof(usr->sess_key));
+		memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 	}
 	else
 	{
-		bzero(usr->sess_key, sizeof(usr->sess_key));
+		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
 	}
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv, len_logon_srv, 4);
