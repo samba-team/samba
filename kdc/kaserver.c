@@ -432,17 +432,17 @@ do_authenticate (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = get_des_key(client_entry, TRUE, &ckey);
+    ret = get_des_key(client_entry, FALSE, TRUE, &ckey);
     if(ret){
-	kdc_log(0, "%s", krb5_get_err_text(context, ret));
+	kdc_log(0, "no suitable DES key for client");
 	make_error_reply (hdr, KANOKEYS, reply);
 	goto out;
     }
 
     /* find a DES key */
-    ret = get_des_key(server_entry, TRUE, &skey);
+    ret = get_des_key(server_entry, TRUE, TRUE, &skey);
     if(ret){
-	kdc_log(0, "%s", krb5_get_err_text(context, ret));
+	kdc_log(0, "no suitable DES key for server");
 	make_error_reply (hdr, KANOKEYS, reply);
 	goto out;
     }
@@ -623,17 +623,17 @@ do_getticket (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = get_des_key(krbtgt_entry, TRUE, &kkey);
+    ret = get_des_key(krbtgt_entry, TRUE, TRUE, &kkey);
     if(ret){
-	kdc_log(0, "%s", krb5_get_err_text(context, ret));
+	kdc_log(0, "no suitable DES key for krbtgt");
 	make_error_reply (hdr, KANOKEYS, reply);
 	goto out;
     }
 
     /* find a DES key */
-    ret = get_des_key(server_entry, TRUE, &skey);
+    ret = get_des_key(server_entry, TRUE, TRUE, &skey);
     if(ret){
-	kdc_log(0, "%s", krb5_get_err_text(context, ret));
+	kdc_log(0, "no suitable DES key for server");
 	make_error_reply (hdr, KANOKEYS, reply);
 	goto out;
     }
