@@ -82,6 +82,18 @@ BOOL print_backend_init(void)
 }
 
 /****************************************************************************
+ Shut down printing backend. Called once at shutdown to close the tdb.
+****************************************************************************/
+
+void printing_end(void)
+{
+	if (tdb) {
+		tdb_close(tdb);
+		tdb = NULL;
+	}
+}
+
+/****************************************************************************
  Useful function to generate a tdb key.
 ****************************************************************************/
 
@@ -254,8 +266,9 @@ static BOOL pjob_store(int jobid, struct printjob *pjob)
 }
 
 /****************************************************************************
-remove a job structure from the database
+ Remove a job structure from the database.
 ****************************************************************************/
+
 static void pjob_delete(int jobid)
 {
 	int snum;
@@ -489,7 +502,7 @@ static void set_updating_pid(fstring printer_name, BOOL delete)
 }
 
 /****************************************************************************
-update the internal database from the system print queue for a queue
+ Update the internal database from the system print queue for a queue.
 ****************************************************************************/
 
 static void print_queue_update(int snum)
@@ -1505,7 +1518,8 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 	}
 
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum)) print_queue_update(snum);
+	if (print_cache_expired(snum))
+		print_queue_update(snum);
 
 	/* Send a printer notify message */
 
