@@ -163,8 +163,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
     size_t len;
     unsigned char *buf;
     size_t buf_size;
-    krb5_timestamp sec;
-    int32_t usec;
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
     struct addrinfo *ai;
@@ -186,7 +184,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     freeaddrinfo (ai);
     if (ret)
 	return ret;
-
+    
     kdc_flags.i = flags;
 
     ret = krb5_get_kdc_cred (context,
@@ -224,22 +222,30 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	goto out4;
     }
     
-    krb5_us_timeofday (context, &sec, &usec);
-
-    ALLOC(enc_krb_cred_part.timestamp, 1);
-    if (enc_krb_cred_part.timestamp == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
-	goto out4;
+    if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
+	krb5_timestamp sec;
+	int32_t usec;
+	
+	krb5_us_timeofday (context, &sec, &usec);
+	
+	ALLOC(enc_krb_cred_part.timestamp, 1);
+	if (enc_krb_cred_part.timestamp == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    goto out4;
+	}
+	*enc_krb_cred_part.timestamp = sec;
+	ALLOC(enc_krb_cred_part.usec, 1);
+	if (enc_krb_cred_part.usec == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    goto out4;
+	}
+	*enc_krb_cred_part.usec      = usec;
+    } else {
+	enc_krb_cred_part.timestamp = NULL;
+	enc_krb_cred_part.usec = NULL;
     }
-    *enc_krb_cred_part.timestamp = sec;
-    ALLOC(enc_krb_cred_part.usec, 1);
-    if (enc_krb_cred_part.usec == NULL) {
- 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
-	goto out4;
-    }
-    *enc_krb_cred_part.usec      = usec;
 
     if (auth_context->local_address && auth_context->local_port) {
 	krb5_boolean noaddr;
