@@ -142,7 +142,8 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	 */
 
     if (normal_close && last_reference && delete_on_close) {
-        DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n"));
+        DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
+	    fsp->fsp_name));
 		if(dos_unlink(fsp->fsp_name) != 0) {
 
           /*
