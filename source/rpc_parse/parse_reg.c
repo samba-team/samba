@@ -129,11 +129,11 @@ BOOL reg_io_q_open_hklm(char *desc, REG_Q_OPEN_HKLM * r_q, prs_struct *ps,
 	if (r_q->ptr != 0)
 	{
 		if (!prs_uint16("unknown_0", ps, depth, &(r_q->unknown_0)))
-		return False;
+			return False;
 		if (!prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1)))
-		return False;
+			return False;
 		if (!prs_uint32("access_mask", ps, depth, &(r_q->access_mask)))
-		return False;
+			return False;
 	}
 
 	return True;
