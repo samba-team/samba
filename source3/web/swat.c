@@ -212,7 +212,11 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		if ((char ***)ptr && *(char ***)ptr && **(char ***)ptr) {
 			char **list = *(char ***)ptr;
 			for (;*list;list++) {
-				d_printf("%s%s", *list, ((*(list+1))?" ":""));
+				/* enclose in quotes if the string contains a space */
+				if ( strchr_m(*list, ' ') ) 
+					d_printf("\'%s\'%s", *list, ((*(list+1))?", ":""));
+				else
+					d_printf("%s%s", *list, ((*(list+1))?", ":""));
 			}
 		}
 		d_printf("\">");
@@ -221,7 +225,11 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		if (parm->def.lvalue) {
 			char **list = (char **)(parm->def.lvalue);
 			for (; *list; list++) {
-				d_printf("%s%s", *list, ((*(list+1))?" ":""));
+				/* enclose in quotes if the string contains a space */
+				if ( strchr_m(*list, ' ') ) 
+					d_printf("\'%s\'%s", *list, ((*(list+1))?", ":""));
+				else
+					d_printf("%s%s", *list, ((*(list+1))?", ":""));
 			}
 		}
 		d_printf("\'\">");
