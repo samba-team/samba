@@ -2753,29 +2753,34 @@ fi
 
 ########################################################
 # Compile experimental passdb backends?
-# (pdb_xml, pdb_mysql)
+# (pdb_xml, pdb_mysql, pdb_pgsql)
 AC_MSG_CHECKING(whether to build experimental passdb libraries)
 AC_ARG_WITH(expsam,
 [  --with-expsam=<list>    Include experimental passdb libraries (default=no)]
 [                          Valid choices include (comma separated list): ]
-[                              xml & mysql],
+[                              xml, mysql & pgsql],
 [ expsam_pdb_modules=`echo "$withval" | sed 's/,/ /g'`
   if test "z$expsam_pdb_modules" = "zyes"; then
-    expsam_pdb_modules="xml mysql"
+    expsam_pdb_modules="xml mysql pgsql"
   fi
   AC_MSG_RESULT($expsam_pdb_modules)
   for i in $expsam_pdb_modules
   do 
     case "$i" in
-    xml)
+    xml|all|yes)
       ## pdb_xml
 	  AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[AC_MSG_ERROR([Can't find XML libraries while XML support is requested])])
       CFLAGS="$CFLAGS $XML_CFLAGS"
       ;;
-    mysql)
+    mysql|all|yes)
       ## pdb_mysql
 	  AM_PATH_MYSQL([default_shared_modules="$default_shared_modules pdb_mysql"],[AC_MSG_ERROR([Can't find MySQL libraries while MySQL support is requested])])
       CFLAGS="$CFLAGS $MYSQL_CFLAGS"
+      ;;
+     pgsql|all|yes)
+      ## pdb_pgsql
+      AM_PATH_PGSQL([default_shared_modules="$default_shared_modules pdb_pgsql"],[])
+      CFLAGS="$CFLAGS $PGSQL_CFLAGS"
       ;;
     no)
       ;;
@@ -4175,6 +4180,8 @@ SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
 		  [ PASSDB_LIBS="$PASSDB_LIBS $XML_LIBS" ] )
 SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
 		   [ PASSDB_LIBS="$PASSDB_LIBS $MYSQL_LIBS" ]	)
+SMB_MODULE(pdb_pgsql, passdb/pdb_pgsql.o, "bin/pgsql.$SHLIBEXT", PDB, 
+		   [ PASSDB_LIBS="$PASSDB_LIBS $PGSQL_LIBS" ]	)
 
 ## end of contributed pdb_modules
 ###########################################################################
