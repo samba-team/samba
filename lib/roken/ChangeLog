@@ -1,3 +1,10 @@
+2003-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* gai_strerror.c: EAI_ADDRFAMILY and EAI_NODATA is deprecated
+	
+	* roken-common.h: use EAI_NONAME instead of EAI_ADDRFAMILY to
+	check for if we need EAI_ macros
+
 2003-10-04   Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* strptime.c: let t and n match zero or more whitespaces
