@@ -43,25 +43,28 @@
 	<variablelist>
 
 		<varlistentry>
+		<term>-h</term>
+		<listitem><para>
+		Get help information.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>-s suffix</term>
 		<listitem><para>
-		The <term>-s</term> option allows the adminisistrator to specify a file
+		The <command>-s</command> option allows the adminisistrator to specify a file
 		backup extension. This way it is possible to keep a history of tdb backup
 		files by using a new suffix for each backup.
 		</para> </listitem>
 		</varlistentry>
 
-		&stdarg.help;
-
 		<varlistentry>
 		<term>-v</term>
 		<listitem><para>
-		The <term>-v</term> will check the database for damages (currupt data)
+		The <command>-v</command> will check the database for damages (currupt data)
 		which if detected causes the backup to be restored.
 		</para></listitem>
 		</varlistentry>
-
-		&popt.common.samba;
 
 	</variablelist>
 </refsect1>
@@ -88,8 +91,9 @@
 	<para>
 	Samba .tdb files are stored in various locations, be sure to run backup all
 	.tdb file on the system. Imporatant files includes:
+	</para>
 
-	<itemistedlist>
+	<itemizedlist>
 		<listitem><para>
 		<command>secrets.tdb</command> - usual location is in the /usr/local/samba/private
 		directory, or on some systems in /etc/samba.
@@ -104,7 +108,6 @@
 		<command>*.tdb</command> located in the /usr/local/samba/var directory or on some
 		systems in the /var/cache or /var/lib/samba directories.
 		</para></listitem>
-
 	</itemizedlist>
 
 </refsect1>
