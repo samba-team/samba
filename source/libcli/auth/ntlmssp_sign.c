@@ -117,8 +117,6 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 					      enum ntlmssp_direction direction,
 					      DATA_BLOB *sig) 
 {
-	NTSTATUS nt_status;
-
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 
 		HMACMD5Context ctx;
@@ -157,18 +155,9 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 
 	} else {
 		uint32_t crc;
-
 		crc = crc32_calc_buffer((const char *)data, length);
-
-		nt_status = ndr_push_format_blob(sig, sig_mem_ctx,
-					"dddd",
-					NTLMSSP_SIGN_VERSION,
-					0,
-					crc,
-					ntlmssp_state->ntlmssp_seq_num);
-
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
+		if (!msrpc_gen(sig_mem_ctx, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmssp_seq_num)) {
+			return NT_STATUS_NO_MEMORY;
 		}
 		
 		dump_data_pw("ntlmssp hash:\n", ntlmssp_state->ntlmssp_hash,
@@ -275,9 +264,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			     TALLOC_CTX *sig_mem_ctx, 
 			     uint8_t *data, size_t length,
 			     DATA_BLOB *sig)
-{
-	NTSTATUS nt_status;
-
+{	
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot seal packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -313,18 +300,9 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		memcpy(sig->data + 12, seq_num, 4);
 	} else {
 		uint32_t crc;
-
 		crc = crc32_calc_buffer((const char *)data, length);
-
-		nt_status = ndr_push_format_blob(sig, sig_mem_ctx,
-					"dddd", 
-					NTLMSSP_SIGN_VERSION,
-					0,
-					crc, 
-					ntlmssp_state->ntlmssp_seq_num);
-
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
+		if (!msrpc_gen(sig_mem_ctx, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmssp_seq_num)) {
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* The order of these two operations matters - we must first seal the packet,

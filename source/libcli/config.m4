@@ -44,6 +44,7 @@ SMB_SUBSYSTEM(LIBCLI_AUTH,[],
 		[libcli/auth/spnego.o
 		libcli/auth/spnego_parse.o
 		libcli/auth/ntlmssp.o
+		libcli/auth/ntlmssp_parse.o
 		libcli/auth/ntlmssp_sign.o
 		libcli/auth/schannel.o
 		libcli/auth/credentials.o
