@@ -224,10 +224,12 @@ doit(int s,
     int numheaders = 1;
     char **headers = NULL;
     int i;
-    char *tmp = estrdup(header_str);
+    char *tmp = NULL;
 
     if (do_from) {
-	char *tmp2 = tmp;
+	char *tmp2;
+
+	tmp2 = tmp = estrdup(header_str);
 
 	out_fd = -1;
 	if (verbose)
