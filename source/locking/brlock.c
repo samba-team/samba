@@ -563,7 +563,6 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	dbuf.dptr = NULL;
 
-	tdb_chainlock(tdb, kbuf);
 	dbuf = tdb_fetch(tdb, kbuf);
 
 	lock.context.smbpid = smbpid;
@@ -594,12 +593,10 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	/* no conflicts - we could have added it */
 	SAFE_FREE(dbuf.dptr);
-	tdb_chainunlock(tdb, kbuf);
 	return True;
 
  fail:
 	SAFE_FREE(dbuf.dptr);
-	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
 
