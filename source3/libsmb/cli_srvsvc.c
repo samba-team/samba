@@ -22,15 +22,6 @@
 
 #include "includes.h"
 
-/* Opens a SMB connection to the svrsvc pipe */
-
-struct cli_state *cli_svrsvc_initialise(struct cli_state *cli, 
-					char *system_name,
-					struct ntuser_creds *creds)
-{
-        return cli_pipe_initialise(cli, system_name, PIPE_SRVSVC, creds);
-}
-
 NTSTATUS cli_srvsvc_net_srv_get_info(struct cli_state *cli, 
                                      TALLOC_CTX *mem_ctx,
                                      uint32 switch_value, SRV_INFO_CTR *ctr)
