@@ -1,4 +1,11 @@
-2003-11-14  Love  <lha@stacken.kth.se>
+2003-11-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* accept_sec_context.c: Don't require timestamp to be set on
+	delegated token, its already protected by the outer token (and
+	windows doesn't alway send it) Pointed out by Zi-Bin Yang
+	<zbyang@decru.com> on heimdal-discuss
+
+2003-11-14  LLove Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.c: fix {} error, pointed out by Liqiang Zhu
 	
