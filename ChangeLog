@@ -1,3 +1,12 @@
+2000-07-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5_config.3: manpage
+
+	* lib/krb5/krb5_appdefault.3: manpage
+
+	* lib/krb5/appdefault.c: implementation of the krb5_appdefault set
+	of functions
+
 2000-07-23  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/init_creds_pw.c (change_password): reset forwardable
