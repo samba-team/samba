@@ -40,24 +40,24 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 	static BOOL already_perm = False;
 	fstring tmp_local_machine;
 
+	fstrcpy(tmp_local_machine,local_name);
+	trim_char(tmp_local_machine,' ',' ');
+
 	/*
 	 * Windows NT/2k uses "*SMBSERVER" and XP uses "*SMBSERV"
 	 * arrggg!!! 
 	 */
 
-	if (strequal(local_name, "*SMBSERVER")) 
+	if ( strequal(tmp_local_machine, "*SMBSERVER") || strequal(tmp_local_machine, "*SMBSERV") )  {
+		fstrcpy( local_machine, client_socket_addr() );
 		return;
-
-	if (strequal(local_name, "*SMBSERV")) 
-		return;
+	}
 
 	if (already_perm)
 		return;
 
 	already_perm = perm;
 
-	fstrcpy(tmp_local_machine,local_name);
-	trim_char(tmp_local_machine,' ',' ');
 	alpha_strcpy(local_machine,tmp_local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
 	strlower_m(local_machine);
 }
