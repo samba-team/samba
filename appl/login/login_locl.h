@@ -129,6 +129,10 @@
 #define _PATH_ETC_ENVIRONMENT "/etc/environment"
 #endif
 
+#ifndef _PATH_DEFPATH
+#define _PATH_DEFPATH "/usr/bin:/bin"
+#endif
+
 struct spwd;
 
 extern char **env;
