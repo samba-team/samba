@@ -81,7 +81,7 @@ static WERROR wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR wkssvc_NetWkstaSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetWkstaSetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -91,7 +91,7 @@ static WERROR wkssvc_NetWkstaSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR WKSSVC_NETRWKSTAUSERENUM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRWKSTAUSERENUM *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -101,7 +101,7 @@ static WERROR WKSSVC_NETRWKSTAUSERENUM(struct dcesrv_call_state *dce_call, TALLO
 static WERROR WKSSVC_NETRWKSTAUSERGETINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRWKSTAUSERGETINFO *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -111,7 +111,7 @@ static WERROR WKSSVC_NETRWKSTAUSERGETINFO(struct dcesrv_call_state *dce_call, TA
 static WERROR WKSSVC_NETRWKSTAUSERSETINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRWKSTAUSERSETINFO *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -149,7 +149,7 @@ static WERROR wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_call, T
 static WERROR WKSSVC_NETRWKSTATRANSPORTADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRWKSTATRANSPORTADD *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -159,7 +159,7 @@ static WERROR WKSSVC_NETRWKSTATRANSPORTADD(struct dcesrv_call_state *dce_call, T
 static WERROR WKSSVC_NETRWKSTATRANSPORTDEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRWKSTATRANSPORTDEL *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -169,7 +169,7 @@ static WERROR WKSSVC_NETRWKSTATRANSPORTDEL(struct dcesrv_call_state *dce_call, T
 static WERROR WKSSVC_NETRUSEADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRUSEADD *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -179,7 +179,7 @@ static WERROR WKSSVC_NETRUSEADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR WKSSVC_NETRUSEGETINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRUSEGETINFO *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -189,7 +189,7 @@ static WERROR WKSSVC_NETRUSEGETINFO(struct dcesrv_call_state *dce_call, TALLOC_C
 static WERROR WKSSVC_NETRUSEDEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRUSEDEL *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -199,7 +199,7 @@ static WERROR WKSSVC_NETRUSEDEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR WKSSVC_NETRUSEENUM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRUSEENUM *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -209,7 +209,7 @@ static WERROR WKSSVC_NETRUSEENUM(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static WERROR WKSSVC_NETRMESSAGEBUFFERSEND(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRMESSAGEBUFFERSEND *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -219,7 +219,7 @@ static WERROR WKSSVC_NETRMESSAGEBUFFERSEND(struct dcesrv_call_state *dce_call, T
 static WERROR WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -229,7 +229,7 @@ static WERROR WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct dcesrv_call_state *dce_
 static WERROR WKSSVC_NETRLOGONDOMAINNAMEADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRLOGONDOMAINNAMEADD *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -239,7 +239,7 @@ static WERROR WKSSVC_NETRLOGONDOMAINNAMEADD(struct dcesrv_call_state *dce_call, 
 static WERROR WKSSVC_NETRLOGONDOMAINNAMEDEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -249,7 +249,7 @@ static WERROR WKSSVC_NETRLOGONDOMAINNAMEDEL(struct dcesrv_call_state *dce_call, 
 static WERROR WKSSVC_NETRJOINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRJOINDOMAIN *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -259,7 +259,7 @@ static WERROR WKSSVC_NETRJOINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_C
 static WERROR WKSSVC_NETRUNJOINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRUNJOINDOMAIN *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -269,7 +269,7 @@ static WERROR WKSSVC_NETRUNJOINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC
 static WERROR WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -279,7 +279,7 @@ static WERROR WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct dcesrv_call_state *dce_cal
 static WERROR WKSSVC_NETRVALIDATENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRVALIDATENAME *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -289,7 +289,7 @@ static WERROR WKSSVC_NETRVALIDATENAME(struct dcesrv_call_state *dce_call, TALLOC
 static WERROR WKSSVC_NETRGETJOININFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRGETJOININFORMATION *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -299,7 +299,7 @@ static WERROR WKSSVC_NETRGETJOININFORMATION(struct dcesrv_call_state *dce_call, 
 static WERROR WKSSVC_NETRGETJOINABLEOUS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRGETJOINABLEOUS *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -309,7 +309,7 @@ static WERROR WKSSVC_NETRGETJOINABLEOUS(struct dcesrv_call_state *dce_call, TALL
 static WERROR WKSSVC_NETRJOINDOMAIN2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRJOINDOMAIN2 *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -319,7 +319,7 @@ static WERROR WKSSVC_NETRJOINDOMAIN2(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR WKSSVC_NETRUNJOINDOMAIN2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRUNJOINDOMAIN2 *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -329,7 +329,7 @@ static WERROR WKSSVC_NETRUNJOINDOMAIN2(struct dcesrv_call_state *dce_call, TALLO
 static WERROR WKSSVC_NETRRENAMEMACHINEINDOMAIN2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRRENAMEMACHINEINDOMAIN2 *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -339,7 +339,7 @@ static WERROR WKSSVC_NETRRENAMEMACHINEINDOMAIN2(struct dcesrv_call_state *dce_ca
 static WERROR WKSSVC_NETRVALIDATENAME2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRVALIDATENAME2 *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -349,7 +349,7 @@ static WERROR WKSSVC_NETRVALIDATENAME2(struct dcesrv_call_state *dce_call, TALLO
 static WERROR WKSSVC_NETRGETJOINABLEOUS2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRGETJOINABLEOUS2 *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -359,7 +359,7 @@ static WERROR WKSSVC_NETRGETJOINABLEOUS2(struct dcesrv_call_state *dce_call, TAL
 static WERROR WKSSVC_NETRADDALTERNATECOMPUTERNAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRADDALTERNATECOMPUTERNAME *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -369,7 +369,7 @@ static WERROR WKSSVC_NETRADDALTERNATECOMPUTERNAME(struct dcesrv_call_state *dce_
 static WERROR WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -379,7 +379,7 @@ static WERROR WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME(struct dcesrv_call_state *d
 static WERROR WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -389,7 +389,7 @@ static WERROR WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct dcesrv_call_state *dce_ca
 static WERROR WKSSVC_NETRENUMERATECOMPUTERNAMES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
