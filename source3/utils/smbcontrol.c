@@ -69,7 +69,7 @@ a useful function for testing the message system
 void pong_function(int msg_type, pid_t src, void *buf, size_t len)
 {
 	pong_count++;
-	printf("PONG from PID %d\n",src);
+	printf("PONG from PID %u\n",(unsigned int)src);
 }
 
 /****************************************************************************
@@ -82,7 +82,7 @@ void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
 
 	memcpy(debuglevel_class, buf, len);
 
-	printf("Current debug level of PID %d is %d ",src, debuglevel_class[0]);
+	printf("Current debug level of PID %u is %d ",(unsigned int)src, debuglevel_class[0]);
 	for (i=1;i<DBGC_LAST;i++)
 		if (debuglevel_class[i])
 			printf("%s:%d ", debug_classname_from_index(i), debuglevel_class[i]);
@@ -112,9 +112,9 @@ void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
 		s = "count and time";
 		break;
 	    }
-	    printf("Profiling %s on PID %d\n",s,src);
+	    printf("Profiling %s on PID %u\n",s,(unsigned int)src);
 	} else {
-	    printf("Profiling not available on PID %d\n",src);
+	    printf("Profiling not available on PID %u\n",(unsigned int)src);
 	}
 	got_level = True;
 }

@@ -358,7 +358,7 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   */
 
   for (ptr = title; *ptr; ptr ++)
-    if (!isalnum(*ptr) && !isspace(*ptr))
+    if (!isalnum((int)*ptr) && !isspace((int)*ptr))
       *ptr = '_';
 
  /*
