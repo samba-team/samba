@@ -38,6 +38,52 @@
 #include "includes.h"
 #include "clitar.h"
 
+/**
+ Convert list of tokens to array; dependent on above routine.
+ Uses last_ptr from above - bit of a hack.
+**/
+
+static char **toktocliplist(const char *ptr, int *ctok, const char *sep)
+{
+	char *s = ptr;
+	int ictok=0;
+	char **ret, **iret;
+
+	if (!sep)
+		sep = " \t\n\r";
+
+	while(*s && strchr_m(sep,*s))
+		s++;
+
+	/* nothing left? */
+	if (!*s)
+		return(NULL);
+
+	do {
+		ictok++;
+		while(*s && (!strchr_m(sep,*s)))
+			s++;
+		while(*s && strchr_m(sep,*s))
+			*s++=0;
+	} while(*s);
+	
+	*ctok=ictok;
+	s = ptr;
+	
+	if (!(ret=iret=malloc(ictok*sizeof(char *))))
+		return NULL;
+	
+	while(ictok--) {    
+		*iret++=s;
+		while(*s++)
+			;
+		while(!*s)
+			s++;
+	}
+
+	return ret;
+}
+
 static int clipfind(char **aret, int ret, char *tok);
 void dos_clean_name(char *s);
 
