@@ -73,6 +73,8 @@ sub process_file($)
 			      ^GtkWidget|^GType|^smb_ucs2_t
 			      /xo);
 
+		next if ($line =~ /^int\s*main/);
+
 		if ($line =~ /^FN_/) {
 			handle_loadparm($line);
 			next;
