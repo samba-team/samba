@@ -43,8 +43,36 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 
+/*
+ * Common state
+ */
+
+struct state {
+  char *str;
+  char *s;
+  char *theend;
+  size_t sz;
+  int (*append_char)(struct state *, char);
+  int (*reserve)(struct state *, size_t);
+  /* XXX - methods */
+};
+
+static int as_append_char (struct state *state, char c);
+static int sn_append_char (struct state *state, char c);
+static int as_reserve (struct state *, size_t);
+static int sn_reserve (struct state *, size_t);
+static int append_number (struct state *state,
+			  unsigned long num, unsigned base, char *rep,
+			  int width, int zerop, int minusp);
+static int append_string (struct state *state,
+			  char *arg,
+			  int prec);
+static int xyzprintf (struct state *state, const char *format, va_list ap);
+
+#ifndef HAVE_SNPRINTF
 int
 snprintf (char *str, size_t sz, const char *format, ...)
 {
@@ -53,10 +81,169 @@ snprintf (char *str, size_t sz, const char *format, ...)
 
   va_start(args, format);
   ret = vsnprintf (str, sz, format, args);
+
+  /* XXX - This is real paranoia! */
+  {
+    int ret2;
+    char *tmp;
+
+    tmp = malloc (sz);
+    if (tmp == NULL)
+      abort ();
+
+    ret2 = vsprintf (tmp, format, args);
+    if (ret != ret2 || strcmp(str, tmp))
+      abort ();
+    free (tmp);
+  }
+
   va_end(args);
   return ret;
 }
+#endif
 
+#ifndef HAVE_ASPRINTF
+int
+asprintf (char **ret, const char *format, ...)
+{
+  va_list args;
+  int val;
+
+  va_start(args, format);
+  val = vasprintf (ret, format, args);
+
+  /* XXX - more paranoia */
+  {
+    int ret2;
+    char *tmp;
+    tmp = malloc (val + 1);
+    if (tmp == NULL)
+      abort ();
+
+    ret2 = vsprintf (tmp, format, args);
+    if (val != ret2 || strcmp(*ret, tmp))
+      abort ();
+    free (tmp);
+  }
+
+  va_end(args);
+  return val;
+}
+#endif
+
+#ifndef HAVE_VASPRINTF
+int
+vasprintf (char **ret, const char *format, va_list args)
+{
+  int st;
+  size_t len;
+  struct state state;
+
+  state.sz  = 1;
+  state.str = malloc(state.sz);
+  if (state.str == NULL) {
+    *ret = NULL;
+    return -1;
+  }
+  state.s = state.str;
+  state.theend = state.s + state.sz - 1;
+  state.append_char = as_append_char;
+  state.reserve     = as_reserve;
+
+  st = xyzprintf (&state, format, args);
+  if (st) {
+    *ret = NULL;
+    return -1;
+  } else {
+    *state.s = '\0';
+    len = state.s - state.str;
+    state.str = realloc (state.str, len+1);
+    if (state.str == NULL) {
+      *ret = NULL;
+      return -1;
+    }
+    *ret = state.str;
+    return len;
+  }
+}
+#endif
+
+#ifndef HAVE_VSNPRINTF
+int
+vsnprintf (char *str, size_t sz, const char *format, va_list args)
+{
+  struct state state;
+  int ret;
+
+  state.sz     = sz;
+  state.str    = str;
+  state.s      = str;
+  state.theend = str + sz - 1;
+  state.append_char = sn_append_char;
+  state.reserve     = sn_reserve;
+
+  ret = xyzprintf (&state, format, args);
+  *state.s = '\0';
+  if (ret)
+    return sz;
+  else
+    return state.s - state.str;
+}
+#endif
+
+static int
+sn_append_char (struct state *state, char c)
+{
+  if(state->s < state->theend) {
+    *state->s++ = c;
+    return 0;
+  } else {
+    *state->s++ = '\0';
+    return 1;
+  }
+}
+
+static int
+sn_reserve (struct state *state, size_t n)
+{
+  return state->s + n >= state->theend;
+}
+
+static int
+as_append_char (struct state *state, char c)
+{
+  if (state->s >= state->theend) {
+    int off = state->s - state->str;
+
+    state->sz *= 2;
+    state->str = realloc (state->str, state->sz);
+    if (state->str == NULL) {
+      return 1;
+    }
+    state->s = state->str + off;
+    state->theend = state->str + state->sz - 1;
+  }
+  *state->s++ = c;
+  return 0;
+}
+
+static int
+as_reserve (struct state *state, size_t n)
+{
+  while (state->s + n >= state->theend) {
+    int off = state->s - state->str;
+
+    state->sz *= 2;
+    state->str = realloc (state->str, state->sz);
+    if (state->str == NULL)
+      return 1;
+    state->s = state->str + off;
+    state->theend = state->str + state->sz - 1;
+  }
+  return 0;
+}
+
+#if 0 /* old code */
 static int
 append_char (char **s, char *theend, char c)
 {
@@ -68,28 +255,45 @@ append_char (char **s, char *theend, char c)
     return 1;
   }
 }
+#endif
 
 static int
-append_number (char **s, char *theend,
+append_number (struct state *state,
 	       unsigned long num, unsigned base, char *rep,
 	       int width, int zerop, int minusp)
 {
   char *beg;
   int i, len;
 
-  if (num == 0)
-    return append_char (s, theend, '0');
-  beg = *s;
+  len = 0;
+  if (num == 0) {
+    ++len;
+    if((*state->append_char) (state, '0'))
+      return 1;
+  }
   while (num > 0) {
-    if (append_char (s, theend, rep[num % base]))
+    ++len;
+    if ((*state->append_char) (state, rep[num % base]))
       return 1;
     num /= base;
   }
-  if (minusp)
-    if (append_char (s, theend, '-'))
+  if (minusp) {
+    ++len;
+    if ((*state->append_char) (state, '-'))
       return 1;
+  }
 
-  len = *s - beg;
+  for (i = 0; i < len / 2; ++i) {
+    char c;
+
+    c = state->s[-i-1];
+    state->s[-i-1] = state->s[-len+i];
+    state->s[-len+i] = c;
+  }
+
+
+
+#if 0 /* old */
   for (i = 0; i < len / 2; ++i) {
     char c;
 
@@ -97,45 +301,70 @@ append_number (char **s, char *theend,
     beg[i] = beg[len-i-1];
     beg[len-i-1] = c;
   }
+#endif
 
   if (width > len) {
+    if ((*state->reserve) (state, width - len))
+      return 1;
+
+#if 0
     if (*s + width - len >= theend) {
       *(*s)++ = '\0';
       return 1;
     }
-    *s += width - len;
+#endif
+    memmove (state->s + width - 2 * len, state->s - len, len);
+    for (i = 0; i < width - len; ++i)
+      state->s[-len+i] = (zerop ? '0' : ' ');
+    state->s += width - len;
+
+#if 0
     memmove (beg + width - len, beg, len);
     for (i = 0; i < width - len; ++i)
       beg[i] = (zerop ? '0' : ' ');
+#endif
   }
   return 0;
 }
 
 static int
-append_string (char **s, char *theend, char *arg,
+append_string (struct state *state,
+	       char *arg,
 	       int prec)
 {
   if (prec) {
     while (*arg && prec--)
-      if (append_char(s, theend, *arg++))
+      if ((*state->append_char) (state, *arg++))
 	return 1;
   } else {
     while (*arg)
-      if (append_char(s, theend, *arg++))
+      if ((*state->append_char) (state, *arg++))
 	return 1;
   }
   return 0;
 }
 
-int
-vsnprintf (char *str, size_t sz, const char *format, va_list ap)
+/*
+ * This can't be made into a function...
+ */
+
+#define PARSE_INT_FORMAT(res, arg, unsig) \
+if (long_flag) \
+     res = va_arg(arg, unsig long); \
+else if (short_flag) \
+     res = va_arg(arg, unsig short); \
+else \
+     res = va_arg(arg, unsig int)
+
+/*
+ * zyxprintf - return 0 or -1
+ */
+
+static int
+xyzprintf (struct state *state, const char *format, va_list ap)
 {
-  char *theend;
-  char *s;
   char c;
 
-  s = str;
-  theend = str + sz - 1;
   while((c = *format++)) {
     if (c == '%') {
       int zerop      = 0;
@@ -189,13 +418,14 @@ vsnprintf (char *str, size_t sz, const char *format, va_list ap)
 
       switch (c) {
       case 'c' :
-	if (append_char(&s, theend, (unsigned char)va_arg(ap, int)))
-	  return s - str;
+	if ((*state->append_char)(state, (unsigned char)va_arg(ap, int)))
+	  return -1;
 	break;
       case 's' :
-	if (append_string(&s, theend, va_arg(ap, char*),
+	if (append_string(state,
+			  va_arg(ap, char*),
 			  prec))
-	  return s - str;
+	  return -1;
 	break;
       case 'd' :
       case 'i' : {
@@ -203,12 +433,7 @@ vsnprintf (char *str, size_t sz, const char *format, va_list ap)
 	unsigned long num;
 	int minusp = 0;
 
-	if (long_flag)
-	  arg = va_arg(ap, long);
-	else if (short_flag)
-	  arg = va_arg(ap, short);
-	else
-	  arg = va_arg(ap, int);
+	PARSE_INT_FORMAT(arg, ap, );
 
 	if (arg < 0) {
 	  minusp = 1;
@@ -216,93 +441,72 @@ vsnprintf (char *str, size_t sz, const char *format, va_list ap)
 	} else
 	  num = arg;
 
-	if (append_number (&s, theend, num, 10, "0123456789",
+	if (append_number (state, num, 10, "0123456789",
 			   width, zerop, minusp))
-	  return s - str;
+	  return -1;
 	break;
       }
       case 'u' : {
 	unsigned long arg;
 
-	if (long_flag)
-	  arg = va_arg(ap, unsigned long);
-	else if (short_flag)
-	  arg = va_arg(ap, unsigned short);
-	else
-	  arg = va_arg(ap, unsigned);
+	PARSE_INT_FORMAT(arg, ap, unsigned);
 
-	if (append_number (&s, theend, arg, 10, "0123456789",
+	if (append_number (state, arg, 10, "0123456789",
 			   width, zerop, 0))
-	  return s - str;
+	  return -1;
 	break;
       }
       case 'o' : {
 	unsigned long arg;
 
-	if (long_flag)
-	  arg = va_arg(ap, unsigned long);
-	else if (short_flag)
-	  arg = va_arg(ap, unsigned short);
-	else
-	  arg = va_arg(ap, unsigned);
+	PARSE_INT_FORMAT(arg, ap, unsigned);
 
-	if (append_number (&s, theend, arg, 010, "01234567",
+	if (append_number (state, arg, 010, "01234567",
 			   width, zerop, 0))
-	  return s - str;
+	  return -1;
 	break;
       }
       case 'x' : {
 	unsigned long arg;
 
-	if (long_flag)
-	  arg = va_arg(ap, unsigned long);
-	else if (short_flag)
-	  arg = va_arg(ap, unsigned short);
-	else
-	  arg = va_arg(ap, unsigned);
+	PARSE_INT_FORMAT(arg, ap, unsigned);
 
-	if (append_number (&s, theend, arg, 0x10, "0123456789abcdef",
+	if (append_number (state, arg, 0x10, "0123456789abcdef",
 			   width, zerop, 0))
-	  return s - str;
+	  return -1;
 	break;
       }
       case 'X' :{
 	unsigned long arg;
 
-	if (long_flag)
-	  arg = va_arg(ap, unsigned long);
-	else if (short_flag)
-	  arg = va_arg(ap, unsigned short);
-	else
-	  arg = va_arg(ap, unsigned);
+	PARSE_INT_FORMAT(arg, ap, unsigned);
 
-	if (append_number (&s, theend, arg, 0x10, "0123456789ABCDEF",
+	if (append_number (state, arg, 0x10, "0123456789ABCDEF",
 			   width, zerop, 0))
-	  return s - str;
+	  return -1;
 	break;
       }
       case 'p' : {
 	unsigned long arg = (unsigned long)va_arg(ap, void*);
 
-	if (append_number (&s, theend, arg, 0x10, "0123456789ABCDEF",
+	if (append_number (state, arg, 0x10, "0123456789ABCDEF",
 			   width, zerop, 0))
-	  return s - str;
+	  return -1;
 	break;
       }
       case '%' :
-	if (append_char (&s, theend, c))
-	  return s - str;
+	if ((*state->append_char)(state, c))
+	  return -1;
 	break;
       default :
-	if (   append_char(&s, theend, '%')
-	    || append_char(&s, theend, c))
-	  return s - str;
+	if (   (*state->append_char)(state, '%')
+	    || (*state->append_char)(state, c))
+	  return -1;
 	break;
       }
     } else
-      if (append_char (&s, theend, c))
-	return s - str;
+      if ((*state->append_char) (state, c))
+	return -1;
   }
-  *s = '\0';
-  return s - str;
+  return 0;
 }
