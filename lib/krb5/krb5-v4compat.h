@@ -81,11 +81,10 @@ struct credentials {
 
 #define		KERB_ERR_NULL_KEY	10
 
-int
-_krb5_krb_time_to_life(time_t start, time_t end);
-
-time_t
-_krb5_krb_life_to_time(int start, int life_);
+time_t	_krb5_krb_life_to_time (int, int);
+int	_krb5_krb_time_to_life (time_t, time_t);
+int	_krb5_krb_tf_setup (krb5_context, struct credentials *,
+	    const char *, int);
 
 #define krb_time_to_life	_krb5_krb_time_to_life
 #define krb_life_to_time	_krb5_krb_life_to_time
