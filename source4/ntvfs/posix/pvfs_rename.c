@@ -48,9 +48,14 @@ NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	if (pvfs_is_open(pvfs, name1) ||
-	    pvfs_is_open(pvfs, name2)) {
-		return NT_STATUS_SHARING_VIOLATION;
+	status = pvfs_can_delete(pvfs, name1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = pvfs_can_delete(pvfs, name2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (name1->has_wildcard || name2->has_wildcard) {

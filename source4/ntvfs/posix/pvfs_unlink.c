@@ -47,6 +47,11 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	status = pvfs_can_delete(pvfs, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* finally try the actual unlink */
 	if (unlink(name->full_name) == -1) {
 		status = pvfs_map_errno(pvfs, errno);
@@ -78,10 +83,6 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 
 	if (!name->exists && !name->has_wildcard) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (pvfs_is_open(pvfs, name)) {
-		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	dir = talloc_p(req, struct pvfs_dir);
