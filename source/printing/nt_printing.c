@@ -2203,30 +2203,47 @@ jfm: I should use this comment for the text file to explain
 */
 
 /****************************************************************************
- Check a user has permissions to perform the given operation 
+ Check a user has permissions to perform the given operation.  We use some
+ constants defined in include/rpc_spoolss.h that look relevant to check
+ the various actions we perform when checking printer access.
 
-   if user is NULL then use the current_user structure
+   PRINTER_ACCESS_ADMINISTER:
+       print_queue_pause, print_queue_resume, update_printer_sec,
+       update_printer, spoolss_addprinterex_level_2,
+       _spoolss_setprinterdata
+        
+   PRINTER_ACCESS_USE:
+       print_job_start
+
+   JOB_ACCESS_ADMINISTER:
+       print_job_delete, print_job_pause, print_job_resume,
+       print_queue_purge
+
  ****************************************************************************/
-BOOL print_access_check(struct current_user *user, int snum,
-			uint32 required_access)
+BOOL print_access_check(struct current_user *user, int snum, int access_type)
 {
 	SEC_DESC_BUF *secdesc = NULL;
-	uint32 access_granted, status;
+	uint32 access_granted, status, required_access = 0;
 	BOOL result;
 	char *pname;
 	int i;
 	extern struct current_user current_user;
 	
+	/* If user is NULL then use the current_user structure */
+
 	if (!user) user = &current_user;
 
-	/* always allow root or printer admins to do anything */
-	if (user->uid==0 ||
+	/* Always allow root or printer admins to do anything */
+
+	if (user->uid == 0 ||
 	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum))) {
 		return True;
 	}
 
 	/* Get printer name */
+
 	pname = PRINTERNAME(snum);
+
 	if (!pname || !*pname)
 		pname = SERVICE(snum);
 
@@ -2236,7 +2253,33 @@ BOOL print_access_check(struct current_user *user, int snum,
 	}
 
 	/* Get printer security descriptor */
+
 	nt_printing_getsec(pname, &secdesc);
+
+	/* Check against NT4 ACE mask values.  From observation these
+	   values are:
+
+	       Access Type       ACE Mask    Constant
+	       -------------------------------------
+	       Full Control      0x10000000  PRINTER_ACE_FULL_CONTROL
+	       Print             0xe0000000  PRINTER_ACE_PRINT
+	       Manage Documents  0x00020000  PRINTER_ACE_MANAGE_DOCUMENTS
+	*/
+
+	switch (access_type) {
+	case PRINTER_ACCESS_USE:
+		required_access = PRINTER_ACE_PRINT;
+		break;
+	case PRINTER_ACCESS_ADMINISTER:
+		required_access = PRINTER_ACE_MANAGE_DOCUMENTS | 
+			PRINTER_ACE_PRINT;
+		break;
+	case JOB_ACCESS_ADMINISTER:
+		required_access = PRINTER_ACE_MANAGE_DOCUMENTS;
+	default:
+		DEBUG(0, ("invalid value passed to print_access_check()\n"));
+		return False;
+	}	
 
 	/* The ACE for Full Control in a printer security descriptor
 	   doesn't seem to map properly to the access checking model.  For
@@ -2248,16 +2291,6 @@ BOOL print_access_check(struct current_user *user, int snum,
 	   PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT before
 	   performing the access check.  I'm sure there is a better way to
 	   do this! */
-
-	/* You forgot to also change the *required access* from PRINTER_ACE_FULL_CONTROL
-		to PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT before doing the check.
-		This took me 3 hours to find !!!!! JRA.
-	*/
-
-	if (required_access & PRINTER_ACE_FULL_CONTROL) {
-		required_access |= (PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT);
-		required_access &= ~PRINTER_ACE_FULL_CONTROL;
-	}
 
 	if (secdesc && secdesc->sec && secdesc->sec->dacl &&
 	    secdesc->sec->dacl->ace) {
@@ -2271,14 +2304,46 @@ BOOL print_access_check(struct current_user *user, int snum,
 		}
 	}
 
-	/* Check access */
+	if ((result = se_access_check(secdesc->sec, user, required_access, 
+				      &access_granted, &status))) {
+		goto done;
+	}
+
+	/* Check against NT5 ACE mask values.  From observation these
+	   values are:
+
+	       Access Type       ACE Mask    Constant
+	       -------------------------------------
+	       Full Control      0x000f000c  PRINTER_ACE_NT5_FULL_CONTROL
+	       Print             0x00020008  PRINTER_ACE_NT5_PRINT
+	       Manage Documents  0x00020000  PRINTER_ACE_NT5_MANAGE_DOCUMENTS
+
+	   NT5 likes to rewrite the security descriptor and change the ACE
+	   masks from NT4 format to NT5 format making them unreadable by
+	   NT4 clients. */
+
+	switch (access_type) {
+	case PRINTER_ACCESS_USE:
+		required_access = PRINTER_ACE_NT5_PRINT;
+		break;
+	case PRINTER_ACCESS_ADMINISTER:
+		required_access = PRINTER_ACE_NT5_FULL_CONTROL;
+		break;
+	case JOB_ACCESS_ADMINISTER:
+		required_access = PRINTER_ACE_NT5_MANAGE_DOCUMENTS;
+		break;
+	}	
 
 	result = se_access_check(secdesc->sec, user, required_access, 
 				 &access_granted, &status);
 
+	/* Check access */
+	
+ done:
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
-
+	
 	/* Free mallocated memory */
+
 	free_sec_desc_buf(&secdesc);
 
 	if (!result)

@@ -507,7 +507,7 @@ BOOL print_job_delete(struct current_user *user, int jobid)
 	   owns their job. */
 
 	if (!owner && 
-	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 		return False;
 	}
@@ -542,7 +542,7 @@ BOOL print_job_pause(struct current_user *user, int jobid)
 	owner = is_owner(user->uid, jobid);
 
 	if (!owner &&
-	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 		return False;
 	}
@@ -579,7 +579,7 @@ BOOL print_job_resume(struct current_user *user, int jobid)
 	owner = is_owner(user->uid, jobid);
 
 	if (!is_owner(user->uid, jobid) &&
-	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		return False;
 	}
@@ -624,9 +624,9 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
 	errno = 0;
 
-	if (!print_access_check(user, snum, PRINTER_ACE_PRINT)) {
+	if (!print_access_check(user, snum, PRINTER_ACCESS_USE)) {
 		DEBUG(3, ("job start denied by security descriptor\n"));
-		return False;
+		return -1;
 	}
 
 	path = lp_pathname(snum);
@@ -665,6 +665,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	/* lock the database */
 	tdb_writelock(tdb);
 
+ next_jobnum:
 	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
 	if (next_jobid == -1) next_jobid = 1;
 
@@ -684,16 +685,19 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
 	   we unlink first to cope with old spool files and also to beat
 	   a symlink security hole - it allows us to use O_EXCL 
+	   There may be old spool files owned by other users lying around.
 	*/
 	slprintf(pjob.filename, sizeof(pjob.filename), "%s/%s%d", 
 		 path, PRINT_SPOOL_PREFIX, jobid);
 	if (unlink(pjob.filename) == -1 && errno != ENOENT) {
-		goto fail;
+		goto next_jobnum;
 	}
 	pjob.fd = sys_open(pjob.filename,O_WRONLY|O_CREAT|O_EXCL,0600);
 	if (pjob.fd == -1) goto fail;
 
 	print_job_store(jobid, &pjob);
+
+	tdb_writeunlock(tdb);
 
 	/*
 	 * If the printer is marked as postscript output a leading
@@ -706,7 +710,6 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		print_job_write(jobid, "%!\n",3);
 	}
 
-	tdb_writeunlock(tdb);
 	return jobid;
 
  fail:
@@ -896,7 +899,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 	
 	if (!user) return False;
 	
-	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		*errcode = ERROR_ACCESS_DENIED;
 		return False;
 	}
@@ -917,7 +920,7 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 {
 	int ret;
 
-	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		*errcode = ERROR_ACCESS_DENIED;
 		return False;
 	}
@@ -940,14 +943,11 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 	print_status_struct status;
 	int njobs, i;
 
-	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
-		*errcode = ERROR_ACCESS_DENIED;
-		return False;
-	}
-
 	njobs = print_queue_status(snum, &queue, &status);
 	for (i=0;i<njobs;i++) {
-		print_job_delete1(queue[i].job);
+		if (print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
+			print_job_delete1(queue[i].job);
+		}
 	}
 
 	print_cache_flush(snum);
