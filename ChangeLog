@@ -1,3 +1,7 @@
+2004-10-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/klist.c: use rtbl_set_separator
+	
 2004-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: filter out dup openssl engine keys, parse
@@ -37,6 +41,16 @@
 
 	* admin/list.c: use rtbl
 	
+	* admin/ktutil-commands.in: slc source file
+	
+	* lib/krb5/constants.c: check
+	/Library/Preferences/edu.mit.Kerberos on OSX
+
+2004-09-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/time.c (krb5_format_time): check return value from
+	localtime and strftime
+
 2004-09-14  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/kinit.c: make sure we don't always get renewable creds
