@@ -28,6 +28,7 @@ struct pvfs_dir {
 	struct pvfs_state *pvfs;
 	BOOL no_wildcard;
 	char *last_name;
+	const char *pattern;
 	off_t offset;
 	DIR *dir;
 	const char *unix_path;
@@ -60,6 +61,7 @@ static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filen
 
 	dir->dir = NULL;
 	dir->offset = 0;
+	dir->pattern = NULL;
 
 	return NT_STATUS_OK;
 }
@@ -110,6 +112,11 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	if (!dir->unix_path) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	dir->pattern = talloc_strdup(dir, pattern);
+	if (dir->pattern == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	
 	dir->dir = opendir(name->full_name);
 	if (!dir->dir) { 
@@ -147,20 +154,35 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 		dir->offset = *ofs;
 	}
 	
-	de = readdir(dir->dir);
-	if (de == NULL) {
-		dir->last_name = NULL;
-		dir->end_of_search = True;
-		pvfs_list_hibernate(dir);
-		return NULL;
+	while ((de = readdir(dir->dir))) {
+		const char *dname = de->d_name;
+
+		if (ms_fnmatch(dir->pattern, dname, 
+			       dir->pvfs->tcon->smb_conn->negotiate.protocol) != 0) {
+			char *short_name = pvfs_short_name_component(dir->pvfs, dname);
+			if (short_name == NULL ||
+			    ms_fnmatch(dir->pattern, short_name, 
+				       dir->pvfs->tcon->smb_conn->negotiate.protocol) != 0) {
+				talloc_free(short_name);
+				continue;
+			}
+			talloc_free(short_name);
+		}
+
+		dir->offset = telldir(dir->dir);
+		(*ofs) = dir->offset;
+
+		if (dir->last_name) talloc_free(dir->last_name);
+		dir->last_name = talloc_strdup(dir, de->d_name);
+
+		return dir->last_name;
 	}
 
-	dir->offset = telldir(dir->dir);
-	(*ofs) = dir->offset;
-
-	dir->last_name = de->d_name;
-
-	return dir->last_name;
+	if (dir->last_name) talloc_free(dir->last_name);
+	dir->last_name = NULL;
+	dir->end_of_search = True;
+	pvfs_list_hibernate(dir);
+	return NULL;
 }
 
 /* 
@@ -172,6 +194,10 @@ void pvfs_list_hibernate(struct pvfs_dir *dir)
 	if (dir->dir) {
 		closedir(dir->dir);
 		dir->dir = NULL;
+	}
+	if (!dir->no_wildcard && dir->last_name) {
+		talloc_free(dir->last_name);
+		dir->last_name = NULL;
 	}
 }
 
@@ -233,7 +259,8 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 		return status;
 	}
 
-	if (StrCaseCmp(name, dir->last_name) == 0) {
+	if (dir->last_name &&
+	    StrCaseCmp(name, dir->last_name) == 0) {
 		*ofs = dir->offset;
 		return NT_STATUS_OK;
 	}
@@ -244,6 +271,8 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 		if (StrCaseCmp(name, de->d_name) == 0) {
 			dir->offset = telldir(dir->dir);
 			*ofs = dir->offset;
+			if (dir->last_name) talloc_free(dir->last_name);
+			dir->last_name = talloc_strdup(dir, de->d_name);
 			return NT_STATUS_OK;
 		}
 	}
