@@ -161,7 +161,11 @@ TALLOC_CTX *talloc_get_context(void *ptr)
 	struct talloc_chunk *tc;
 	tc = ((struct talloc_chunk *)ptr)-1;
 
-	return tc->context;
+	if (tc->magic == TALLOC_MAGIC) {
+		return tc->context;
+	} else {
+		return NULL;
+	}
 }
 
 /** Allocate a bit of memory from the specified pool **/
