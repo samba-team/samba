@@ -28,6 +28,7 @@ libdir = @libdir@
 
 PICFLAGS = @PICFLAGS@
  
+PROGS = compile_et
 LIBNAME = $(LIBPREFIX)com_err
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
