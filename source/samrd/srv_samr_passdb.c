@@ -29,9 +29,6 @@
 	BOOL samr_create_dom_alias(  POLICY_HND *domain_pol, const char *acct_name,
 					POLICY_HND *alias_pol, uint32 *rid);
 	BOOL samr_set_aliasinfo(  POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
-	BOOL samr_open_group(  const POLICY_HND *domain_pol,
-					uint32 flags, uint32 rid,
-					POLICY_HND *group_pol);
 	BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
 					POLICY_HND *group_pol, uint32 *rid);
 	BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
@@ -2658,10 +2655,16 @@ uint32 _samr_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 /*******************************************************************
  samr_reply_open_group
  ********************************************************************/
+/* XXXX this is from cli_samr.c's part of proto.h, use it to get the
+   args right for _samr_open_group.
+	BOOL samr_open_group(  const POLICY_HND *domain_pol,
+					uint32 flags, uint32 rid,
+					POLICY_HND *group_pol);
+*/
 uint32 _samr_open_group(SAMR_Q_OPEN_GROUP *q_u,
 				prs_struct *rdata)
 {
-	SAMR_R_OPEN_GROUP r_u;
+	SAMR_R_OPEN_GROUP r_u; /* XXXX remove this */
 	DOM_SID sid;
 
 	DEBUG(5,("samr_open_group: %d\n", __LINE__));
@@ -2685,12 +2688,15 @@ uint32 _samr_open_group(SAMR_Q_OPEN_GROUP *q_u,
 	}
 
 	/* store the response in the SMB stream */
-	samr_io_r_open_group("", &r_u, rdata, 0);
+	samr_io_r_open_group("", &r_u, rdata, 0); /* XXXX remove this */
 
 	DEBUG(5,("samr_open_group: %d\n", __LINE__));
 
+	/* XXXX return status code here */
 }
 
+/* XXXX now do a make proto; make samrd/srv_samr_passdb.c,
+   and go to rpc_server/srv_samr.c */
 
 /*******************************************************************
  samr_reply_lookup_domain
