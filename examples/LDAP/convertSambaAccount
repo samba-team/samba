@@ -170,7 +170,7 @@ while ( !$ldif->eof ) {
 		$entry->add( 'sambaSID' => $domsid."-".$entry->get_value( "rid" ) );
 		$entry->delete( 'rid' );
 	
-		if ( $entry->get_value( "primaryGroupID" ) ) {
+		if ( defined($entry->get_value( "primaryGroupID" )) ) {
 			push @adds, "sambaPrimaryGroupSID: " . $domsid."-".$entry->get_value( "primaryGroupID" );
 			push @dels, "primaryGroupID";
 			$entry->add( 'sambaPrimaryGroupSID' => $domsid."-".$entry->get_value( "primaryGroupID" ) );
