@@ -1439,6 +1439,33 @@ DES3_CBC_encrypt(struct key_data *key,
 }
 
 static void
+DES_CFB64_encrypt_null_ivec(struct key_data *key, 
+			    void *data, 
+			    size_t len, 
+			    krb5_boolean encrypt)
+{
+    des_cblock ivec;
+    int num = 0;
+    des_key_schedule *s = key->schedule->data;
+    memset(&ivec, 0, sizeof(ivec));
+
+    des_cfb64_encrypt(data, data, len, *s, &ivec, &num, encrypt);
+}
+
+static void
+DES_PCBC_encrypt_key_ivec(struct key_data *key, 
+			  void *data, 
+			  size_t len, 
+			  krb5_boolean encrypt)
+{
+    des_cblock ivec;
+    des_key_schedule *s = key->schedule->data;
+    memcpy(&ivec, key->key->keyvalue.data, sizeof(ivec));
+
+    des_pcbc_encrypt(data, data, len, *s, &ivec, encrypt);
+}
+
+static void
 ARCFOUR_encrypt(struct key_data *key,
 		void *data,
 		size_t len,
@@ -1539,6 +1566,28 @@ static struct encryption_type etypes[] = {
 	NULL,
 	F_PSEUDO,
 	DES_CBC_encrypt_null_ivec,
+    },
+    {
+	ETYPE_DES_CFB64_NONE,
+	"des-cfb64-none",
+	1,
+	0,
+	&keytype_des,
+	&checksum_none,
+	NULL,
+	F_PSEUDO,
+	DES_CFB64_encrypt_null_ivec,
+    },
+    {
+	ETYPE_DES_PCBC_NONE,
+	"des-pcbc-none",
+	8,
+	0,
+	&keytype_des,
+	&checksum_none,
+	NULL,
+	F_PSEUDO,
+	DES_PCBC_encrypt_key_ivec,
     },
     {
 	ETYPE_DES3_CBC_NONE,
@@ -2091,7 +2140,7 @@ derive_key(krb5_context context,
     ret = _key_schedule(context, key);
     if(ret)
 	return ret;
-    if(et->blocksize * 8 < kt->bits ||
+    if(et->blocksize * 8 < kt->bits || 
        len != et->blocksize) {
 	nblocks = (kt->bits + et->blocksize * 8 - 1) / (et->blocksize * 8);
 	k = malloc(nblocks * et->blocksize);
@@ -2106,6 +2155,7 @@ derive_key(krb5_context context,
 	    (*et->encrypt)(key, k + i * et->blocksize, et->blocksize, 1);
 	}
     } else {
+	/* this case is probably broken, but won't be run anyway */
 	void *c = malloc(len);
 	size_t res_len = (kt->bits + 7) / 8;
 
@@ -2345,3 +2395,64 @@ krb5_crypto_debug(krb5_context context,
 }
 
 #endif /* CRYPTO_DEBUG */
+
+#if 0
+int
+main()
+{
+#if 0
+    int i;
+    krb5_context context;
+    krb5_crypto crypto;
+    struct key_data *d;
+    krb5_keyblock key;
+    char constant[4];
+    unsigned usage = ENCRYPTION_USAGE(3);
+
+    krb5_init_context(&context);
+
+    key.keytype = ETYPE_NEW_DES3_CBC_SHA1;
+    key.keyvalue.data = "\xb3\x85\x58\x94\xd9\xdc\x7c\xc8"
+	"\x25\xe9\x85\xab\x3e\xb5\xfb\x0e"
+	"\xc8\xdf\xab\x26\x86\x64\x15\x25";
+    key.keyvalue.length = 24;
+
+    krb5_crypto_init(context, &key, 0, &crypto);
+
+    d = _new_derived_key(crypto, usage);
+    if(d == NULL)
+	return ENOMEM;
+    krb5_copy_keyblock(context, crypto->key.key, &d->key);
+    _krb5_put_int(constant, usage, 4);
+    derive_key(context, crypto->et, d, constant, sizeof(constant));
+    return 0;
+#else
+    int i;
+    krb5_context context;
+    krb5_crypto crypto;
+    struct key_data *d;
+    krb5_keyblock key;
+
+    Checksum res;
+
+    char *data = "what do ya want for nothing?";
+
+    krb5_init_context(&context);
+
+    key.keytype = ETYPE_NEW_DES3_CBC_SHA1;
+    key.keyvalue.data = "Jefe";
+    /* "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
+       "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"; */
+    key.keyvalue.length = 4;
+
+    d = calloc(1, sizeof(*d));
+
+    d->key = &key;
+    res.checksum.length = 20;
+    res.checksum.data = malloc(res.checksum.length);
+    HMAC_SHA1_DES3_checksum(context, d, data, 28, &res);
+
+    return 0;
+#endif
+}
+#endif
