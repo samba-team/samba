@@ -58,10 +58,10 @@ struct entry{
 static char *
 skip_next(char *p)
 {
-    while(*p && !isspace(*p)) 
+    while(*p && !isspace((unsigned char)*p)) 
 	p++;
     *p++ = 0;
-    while(*p && isspace(*p)) p++;
+    while(*p && isspace((unsigned char)*p)) p++;
     return p;
 }
 
@@ -240,7 +240,7 @@ doit(char *filename, int merge)
 	for(p = s; *p; p++){
 	    if(*p == '\\')
 		p++;
-	    else if(isspace(*p)) {
+	    else if(isspace((unsigned char)*p)) {
 		*p = 0;
 		break;
 	    }
