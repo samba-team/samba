@@ -80,7 +80,10 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	struct ipc_private *private;
 
 	tcon->fs_type = talloc_strdup(tcon, "IPC");
+	NT_STATUS_HAVE_NO_MEMORY(tcon->fs_type);
+
 	tcon->dev_type = talloc_strdup(tcon, "IPC");
+	NT_STATUS_HAVE_NO_MEMORY(tcon->dev_type);
 
 	/* prepare the private state for this connection */
 	private = talloc(tcon, struct ipc_private);
