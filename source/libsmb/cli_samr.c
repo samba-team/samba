@@ -851,7 +851,7 @@ uint32 cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		fstring tmp;
 
 		unistr2_to_ascii(tmp, &r.uni_name[i], sizeof(tmp) - 1);
-		(*names)[i] = strdup(tmp);
+		(*names)[i] = talloc_strdup(mem_ctx, tmp);
 		(*name_types)[i] = r.type[i];
 	}
 
