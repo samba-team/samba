@@ -82,7 +82,8 @@ typedef enum krb5_cksumtype {
   CKSUMTYPE_RSA_MD5		= 7,
   CKSUMTYPE_RSA_MD5_DES		= 8,
   CKSUMTYPE_RSA_MD5_DES3	= 9,
-  CKSUMTYPE_HMAC_SHA1_DES3	= 10
+  CKSUMTYPE_HMAC_SHA1_DES3	= 10,
+  CKSUMTYPE_SHA1		= 1000 /* correct value? */
 } krb5_cksumtype;
 
 
@@ -126,7 +127,8 @@ typedef HostAddresses krb5_addresses;
 
 typedef enum krb5_keytype { 
     KEYTYPE_NULL = 0,
-    KEYTYPE_DES = 1 
+    KEYTYPE_DES = 1,
+    KEYTYPE_DES3 = 7
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
@@ -158,13 +160,14 @@ typedef Principal krb5_principal_data;
 typedef struct Principal *krb5_principal;
 typedef const struct Principal *krb5_const_principal;
 
-typedef time_t krb5_time;
+typedef time_t krb5_deltat;
+typedef time_t krb5_timestamp;
 
 typedef struct krb5_times{
-  krb5_time authtime;
-  krb5_time starttime;
-  krb5_time endtime;
-  krb5_time renew_till;
+  krb5_timestamp authtime;
+  krb5_timestamp starttime;
+  krb5_timestamp endtime;
+  krb5_timestamp renew_till;
 } krb5_times;
 
 typedef union {
@@ -346,8 +349,6 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 extern const char krb5_config_file[];
 extern const char krb5_defkeyname[];
-
-typedef krb5_time krb5_deltat;
 
 typedef struct _krb5_prompt {
     char *prompt;
