@@ -1292,6 +1292,58 @@ done:
 }
 
 
+/* list account SIDs that have the specified right */
+
+NTSTATUS cli_lsa_enum_account_with_right(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					 POLICY_HND *pol, const char *right,
+					 uint32 *count, DOM_SID **sids)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_ENUM_ACCT_WITH_RIGHT q;
+	LSA_R_ENUM_ACCT_WITH_RIGHT r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+
+	/* Initialise parse structures */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+	init_q_enum_acct_with_right(&q, pol, right);
+
+	if (!lsa_io_q_enum_acct_with_right("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_ENUMACCTWITHRIGHT, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_enum_acct_with_right("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	*count = r.count;
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	if (*count) {
+		int i;
+		(*sids) = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) * (*count));
+		for (i=0; i<*count; i++) {
+			sid_copy(&(*sids)[i], &r.sids.sids[i].sid.sid);
+		}
+	}
+done:
+
+	return result;
+}
+
+
 #if 0
 
 /** An example of how to use the routines in this file.  Fetch a DOMAIN

@@ -553,7 +553,6 @@ typedef struct
 	DOM_SID2 sid;
 	uint32 removeall;
 	UNISTR2_ARRAY rights;
-	uint32 count;
 } LSA_Q_REMOVE_ACCT_RIGHTS;
 
 /* LSA_R_REMOVE_ACCT_RIGHTS - LSA remove account rights */
@@ -561,6 +560,23 @@ typedef struct
 {
 	NTSTATUS status;
 } LSA_R_REMOVE_ACCT_RIGHTS;
+
+/* LSA_Q_ENUM_ACCT_WITH_RIGHT - LSA enum accounts with right */
+typedef struct
+{
+	POLICY_HND pol;
+	STRHDR right_hdr;
+	UNISTR2 right; 
+} LSA_Q_ENUM_ACCT_WITH_RIGHT;
+
+/* LSA_R_ENUM_ACCT_WITH_RIGHT - LSA enum accounts with right */
+typedef struct
+{
+	uint32 count;
+	SID_ARRAY sids;
+	NTSTATUS status;
+} LSA_R_ENUM_ACCT_WITH_RIGHT;
+
 
 /* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */
 typedef struct lsa_q_priv_get_dispname
