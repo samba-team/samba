@@ -556,12 +556,12 @@ inits a structure.
 
 void init_unk_info12(SAM_UNK_INFO_12 * u_12)
 {
-	u_12->unknown_0 = 0xcf1dcc00;
-	u_12->unknown_1 = 0xfffffffb;
-	u_12->unknown_2 = 0xcf1dcc00;
-	u_12->unknown_3 = 0xfffffffb;
+	u_12->duration.low = 0xcf1dcc00;
+	u_12->duration.high = 0xfffffffb;
+	u_12->reset_count.low = 0xcf1dcc00;
+	u_12->reset_count.high = 0xfffffffb;
 
-	u_12->unknown_4 = 0x8a880000;
+	u_12->bad_attempt_lockout = 0x0000;
 }
 
 /*******************************************************************
@@ -577,15 +577,11 @@ static BOOL sam_io_unk_info12(char *desc, SAM_UNK_INFO_12 * u_12,
 	prs_debug(ps, depth, desc, "sam_io_unk_info12");
 	depth++;
 
-	if(!prs_uint32("unknown_0", ps, depth, &u_12->unknown_0))
+	if(!smb_io_time("duration", &u_12->duration, ps, depth))
 		return False;
-	if(!prs_uint32("unknown_1", ps, depth, &u_12->unknown_1))
+	if(!smb_io_time("reset_count", &u_12->reset_count, ps, depth))
 		return False;
-	if(!prs_uint32("unknown_2", ps, depth, &u_12->unknown_2))
-		return False;
-	if(!prs_uint32("unknown_3", ps, depth, &u_12->unknown_3))
-		return False;
-	if(!prs_uint32("unknown_4", ps, depth, &u_12->unknown_4))
+	if(!prs_uint16("bad_attempt_lockout", ps, depth, &u_12->bad_attempt_lockout))
 		return False;
 
 	return True;
@@ -6862,5 +6858,256 @@ BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+void init_samr_q_unknown_2e(SAMR_Q_UNKNOWN_2E *q_u,
+				POLICY_HND *domain_pol, uint16 switch_value)
+{
+	DEBUG(5, ("init_samr_q_unknown_2e\n"));
+
+	q_u->domain_pol = *domain_pol;
+	q_u->switch_value = switch_value;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_unknown_2e(char *desc, SAMR_Q_UNKNOWN_2E *q_u,
+			      prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_unknown_2e");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("domain_pol", &q_u->domain_pol, ps, depth))
+		return False;
+
+	if(!prs_uint16("switch_value", ps, depth, &q_u->switch_value))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a SAMR_R_QUERY_DOMAIN_INFO structure.
+********************************************************************/
+
+void init_samr_r_samr_unknown_2e(SAMR_R_UNKNOWN_2E * r_u,
+				uint16 switch_value, SAM_UNK_CTR * ctr,
+				NTSTATUS status)
+{
+	DEBUG(5, ("init_samr_r_samr_unknown_2e\n"));
+
+	r_u->ptr_0 = 0;
+	r_u->switch_value = 0;
+	r_u->status = status;	/* return status */
+
+	if (NT_STATUS_IS_OK(status)) {
+		r_u->switch_value = switch_value;
+		r_u->ptr_0 = 1;
+		r_u->ctr = ctr;
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_r_samr_unknown_2e(char *desc, SAMR_R_UNKNOWN_2E * r_u,
+			      prs_struct *ps, int depth)
+{
+        if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_samr_unknown_2e");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_0 ", ps, depth, &r_u->ptr_0))
+		return False;
+
+	if (r_u->ptr_0 != 0 && r_u->ctr != NULL) {
+		if(!prs_uint16("switch_value", ps, depth, &r_u->switch_value))
+			return False;
+		if(!prs_align(ps))
+			return False;
+
+		switch (r_u->switch_value) {
+		case 0x0c:
+			if(!sam_io_unk_info12("unk_inf12", &r_u->ctr->info.inf12, ps, depth))
+				return False;
+			break;
+		case 0x07:
+			if(!sam_io_unk_info7("unk_inf7",&r_u->ctr->info.inf7, ps,depth))
+				return False;
+			break;
+		case 0x06:
+			if(!sam_io_unk_info6("unk_inf6",&r_u->ctr->info.inf6, ps,depth))
+				return False;
+			break;
+		case 0x05:
+			if(!sam_io_unk_info5("unk_inf5",&r_u->ctr->info.inf5, ps,depth))
+				return False;
+			break;
+		case 0x03:
+			if(!sam_io_unk_info3("unk_inf3",&r_u->ctr->info.inf3, ps,depth))
+				return False;
+			break;
+		case 0x02:
+			if(!sam_io_unk_info2("unk_inf2",&r_u->ctr->info.inf2, ps,depth))
+				return False;
+			break;
+		case 0x01:
+			if(!sam_io_unk_info1("unk_inf1",&r_u->ctr->info.inf1, ps,depth))
+				return False;
+			break;
+		default:
+			DEBUG(0, ("samr_io_r_samr_unknown_2e: unknown switch level 0x%x\n",
+				r_u->switch_value));
+			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
+			return False;
+		}
+	}
+	
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+	
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+void init_samr_q_set_domain_info(SAMR_Q_SET_DOMAIN_INFO *q_u,
+				POLICY_HND *domain_pol, uint16 switch_value, SAM_UNK_CTR *ctr)
+{
+	DEBUG(5, ("init_samr_q_set_domain_info\n"));
+
+	q_u->domain_pol = *domain_pol;
+	q_u->switch_value0 = switch_value;
+
+	q_u->switch_value = switch_value;
+	q_u->ctr = ctr;
+	
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_set_domain_info(char *desc, SAMR_Q_SET_DOMAIN_INFO *q_u,
+			      prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_set_domain_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("domain_pol", &q_u->domain_pol, ps, depth))
+		return False;
+
+	if(!prs_uint16("switch_value0", ps, depth, &q_u->switch_value0))
+		return False;
+
+	if(!prs_uint16("switch_value", ps, depth, &q_u->switch_value))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if ((q_u->ctr = (SAM_UNK_CTR *)prs_alloc_mem(ps, sizeof(SAM_UNK_CTR))) == NULL)
+		return False;
+	
+	switch (q_u->switch_value) {
+
+	case 0x0c:
+		if(!sam_io_unk_info12("unk_inf12", &q_u->ctr->info.inf12, ps, depth))
+			return False;
+		break;
+	case 0x07:
+		if(!sam_io_unk_info7("unk_inf7",&q_u->ctr->info.inf7, ps,depth))
+			return False;
+		break;
+	case 0x06:
+		if(!sam_io_unk_info6("unk_inf6",&q_u->ctr->info.inf6, ps,depth))
+			return False;
+		break;
+	case 0x05:
+		if(!sam_io_unk_info5("unk_inf5",&q_u->ctr->info.inf5, ps,depth))
+			return False;
+		break;
+	case 0x03:
+		if(!sam_io_unk_info3("unk_inf3",&q_u->ctr->info.inf3, ps,depth))
+			return False;
+		break;
+	case 0x02:
+		if(!sam_io_unk_info2("unk_inf2",&q_u->ctr->info.inf2, ps,depth))
+			return False;
+		break;
+	case 0x01:
+		if(!sam_io_unk_info1("unk_inf1",&q_u->ctr->info.inf1, ps,depth))
+			return False;
+		break;
+	default:
+		DEBUG(0, ("samr_io_r_samr_unknown_2e: unknown switch level 0x%x\n",
+			q_u->switch_value));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+inits a SAMR_R_QUERY_DOMAIN_INFO structure.
+********************************************************************/
+
+void init_samr_r_set_domain_info(SAMR_R_SET_DOMAIN_INFO * r_u, NTSTATUS status)
+{
+	DEBUG(5, ("init_samr_r_set_domain_info\n"));
+
+	r_u->status = status;	/* return status */
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_r_set_domain_info(char *desc, SAMR_R_SET_DOMAIN_INFO * r_u,
+			      prs_struct *ps, int depth)
+{
+        if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_samr_unknown_2e");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+	
 	return True;
 }

@@ -87,6 +87,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_ENUM_DOMAINS      0x06
 #define SAMR_OPEN_DOMAIN       0x07
 #define SAMR_QUERY_DOMAIN_INFO 0x08
+#define SAMR_SET_DOMAIN_INFO   0x09
 
 #define SAMR_CREATE_DOM_GROUP  0x0a
 #define SAMR_ENUM_DOM_GROUPS   0x0b
@@ -127,7 +128,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_2b        0x2b
 #define SAMR_GET_USRDOM_PWINFO 0x2c
 #define SAMR_UNKNOWN_2D        0x2d
-#define SAMR_UNKNOWN_2e        0x2e
+#define SAMR_UNKNOWN_2E        0x2e /* looks like an alias for SAMR_QUERY_DOMAIN_INFO */
 #define SAMR_UNKNOWN_2f        0x2f
 #define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 3 */
@@ -507,12 +508,9 @@ typedef struct sam_unknown_info_7_info
 
 typedef struct sam_unknown_info_12_inf
 {
-	uint32 unknown_0; /* 0xcf1d cc00 */
-	uint32 unknown_1; /* 0xffff fffb */
-	uint32 unknown_2; /* 0xcf1d cc00 */
-	uint32 unknown_3; /* 0xffff fffb */
-	
-	uint32 unknown_4; /* 0x8a88 0000 */
+	NTTIME duration;
+	NTTIME reset_count;
+	uint16 bad_attempt_lockout;
 
 } SAM_UNK_INFO_12;
 
@@ -1760,39 +1758,38 @@ typedef struct sid_info_3
 /* SAMR_Q_UNKNOWN_2E */
 typedef struct q_samr_unknown_2e_info
 {
-	POLICY_HND dom_pol;   /* policy handle */
+	POLICY_HND domain_pol;   /* policy handle */
 	uint16 switch_value;
 
 } SAMR_Q_UNKNOWN_2E;
 
-typedef struct sam_unknown_2e_info_12
-{
-	uint32 duration_low;
-	uint32 duration_high;
-	uint32 reset_count_low;
-	uint32 reset_count_high;
-	uint32 bad_attempt_lockout;
-} SAM_UNK_2E_INFO_12;
-
-typedef struct sam_unknown_2e_ctr_info
-{
-	union
-	{
-		SAM_UNK_2E_INFO_12 info12;
-	} info;
-
-} SAM_UNK_2E_CTR;
-
-
-/* SAMR_R_UNKNOWN_2E - probably an open */
+/* SAMR_R_UNKNOWN_2E */
 typedef struct r_samr_unknown_2e_info
 {
-	uint32 ptr;
+	uint32 ptr_0;
 	uint16 switch_value;
-	SAM_UNK_2E_CTR *ctr;
-	
-	uint32 status;         /* return status */
+	SAM_UNK_CTR *ctr;
+	NTSTATUS status;         /* return status */
 
 } SAMR_R_UNKNOWN_2E;
+
+/* SAMR_Q_SET_DOMAIN_INFO */
+typedef struct q_samr_set_domain_info
+{
+	POLICY_HND domain_pol;   /* policy handle */
+	uint16 switch_value0;
+	uint16 switch_value;
+	SAM_UNK_CTR *ctr;
+
+} SAMR_Q_SET_DOMAIN_INFO;
+
+/* SAMR_R_SET_DOMAIN_INFO */
+typedef struct r_samr_set_domain_info
+{
+	NTSTATUS status;         /* return status */
+
+} SAMR_R_SET_DOMAIN_INFO;
+
+
 #endif /* _RPC_SAMR_H */
 
