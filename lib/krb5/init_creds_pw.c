@@ -388,7 +388,6 @@ krb5_get_init_creds_password(krb5_context context,
     krb5_addresses *addrs = NULL;
     krb5_enctype *etypes = NULL;
     krb5_preauthtype *pre_auth_types = NULL;
-    krb5_preauthdata *preauth = NULL, preauth2;
     krb5_creds this_cred;
     krb5_kdc_rep kdc_reply;
     char buf[BUFSIZ];
@@ -432,7 +431,7 @@ krb5_get_init_creds_password(krb5_context context,
 				addrs,
 				etypes,
 				pre_auth_types,
-				preauth,
+				NULL,
 				krb5_password_key_proc,
 				password,
 				NULL,
@@ -473,10 +472,6 @@ out:
 	krb5_free_kdc_rep (context, &kdc_reply);
 
     free (pre_auth_types);
-    if(preauth) {
-	free_ETYPE_INFO(&preauth->val[0].info);
-	free(preauth->val);
-    }
     free (etypes);
     if (ret == 0 && creds)
 	*creds = this_cred;
