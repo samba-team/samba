@@ -35,6 +35,7 @@ static unsigned signals_processed;
 #define DN_CREATE       0x00000004      /* File created in directory */
 #define DN_DELETE       0x00000008      /* File removed from directory */
 #define DN_RENAME       0x00000010      /* File renamed in directory */
+#define DN_ATTRIB       0x00000020      /* File changed attribute */
 #define DN_MULTISHOT    0x80000000      /* Don't remove notifier */
 #endif
 
@@ -131,14 +132,17 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 		return NULL;
 	}
 
-	kernel_flags = DN_CREATE; /* always notify on file creation */
-	if (flags & FILE_NOTIFY_CHANGE_FILE_NAME)   kernel_flags |= DN_RENAME|DN_DELETE;
+	kernel_flags = DN_CREATE|DN_DELETE|DN_RENAME; /* creation/deletion changes everything! */
+	if (flags & FILE_NOTIFY_CHANGE_FILE)        kernel_flags |= DN_MODIFY;
 	if (flags & FILE_NOTIFY_CHANGE_DIR_NAME)    kernel_flags |= DN_RENAME|DN_DELETE;
-	if (flags & FILE_NOTIFY_CHANGE_ATTRIBUTES)  kernel_flags |= DN_MODIFY;
+	if (flags & FILE_NOTIFY_CHANGE_ATTRIBUTES)  kernel_flags |= DN_ATTRIB;
 	if (flags & FILE_NOTIFY_CHANGE_SIZE)        kernel_flags |= DN_MODIFY;
 	if (flags & FILE_NOTIFY_CHANGE_LAST_WRITE)  kernel_flags |= DN_MODIFY;
 	if (flags & FILE_NOTIFY_CHANGE_LAST_ACCESS) kernel_flags |= DN_ACCESS;
 	if (flags & FILE_NOTIFY_CHANGE_CREATION)    kernel_flags |= DN_CREATE;
+	if (flags & FILE_NOTIFY_CHANGE_SECURITY)    kernel_flags |= DN_ATTRIB;
+	if (flags & FILE_NOTIFY_CHANGE_EA)          kernel_flags |= DN_ATTRIB;
+	if (flags & FILE_NOTIFY_CHANGE_FILE_NAME)   kernel_flags |= DN_RENAME|DN_DELETE;
 
 	if (fcntl(fd, F_NOTIFY, kernel_flags) == -1) {
 		DEBUG(3,("Failed to set async flag for change notify\n"));
