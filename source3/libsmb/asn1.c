@@ -373,6 +373,7 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 {
 	int len;
+	ZERO_STRUCTP(blob);
 	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
 	len = asn1_tag_remaining(data);
 	*blob = data_blob(NULL, len);
@@ -389,7 +390,8 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 	
 	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
 	while (asn1_tag_remaining(data)>0) {
-		*i = (*i << 8) + asn1_read_uint8(data, &b);
+		asn1_read_uint8(data, &b);
+		*i = (*i << 8) + b;
 	}
 	return asn1_end_tag(data);	
 	
