@@ -661,6 +661,7 @@ extern int errno;
 #include "hash.h"
 #include "trans2.h"
 #include "nterr.h"
+#include "ntioctl.h"
 #include "secrets.h"
 #include "messages.h"
 

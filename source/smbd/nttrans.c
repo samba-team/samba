@@ -1720,20 +1720,47 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 }
    
 /****************************************************************************
- Reply to IOCTL - not implemented - no plans.
+ Reply to IOCTL.
 ****************************************************************************/
-static int call_nt_transact_ioctl(connection_struct *conn,
-				  char *inbuf, char *outbuf, int length,
-                                  int bufsize, 
-                                  char **ppsetup, char **ppparams, char **ppdata)
-{
-	static BOOL logged_message = False;
 
-	if(!logged_message) {
-		DEBUG(2,("call_nt_transact_ioctl: Currently not implemented.\n"));
-		logged_message = True; /* Only print this once... */
+static int call_nt_transact_ioctl(connection_struct *conn,
+				char *inbuf, char *outbuf, int length,
+				int bufsize, 
+				char **ppsetup, int setup_count,
+				char **ppparams, int parameter_count,
+				char **ppdata, int data_count)
+{
+	unsigned fnum, control;
+	static BOOL logged_message;
+ 
+	if (setup_count != 8) {
+		DEBUG(3,("call_nt_transact_ioctl: invalid setup count %d\n", setup_count));
+		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 	}
-	return ERROR_DOS(ERRSRV,ERRnosupport);
+ 
+	fnum = SVAL(*ppsetup, 4);
+	control = IVAL(*ppsetup, 0);
+ 
+	DEBUG(6,("call_nt_transact_ioctl: fnum=%d control=0x%x\n",
+		fnum, control));
+ 
+	switch (control) {
+	case NTIOCTL_SET_SPARSE:
+		/* pretend this succeeded - tho strictly we should
+			mark the file sparse (if the local fs supports it)
+			so we can know if we need to pre-allocate or not */
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+		return -1;
+ 
+	default:
+		if (!logged_message) {
+			logged_message = True; /* Only print this once... */
+			DEBUG(3,("call_nt_transact_ioctl(0x%x): Currently not implemented.\n",
+				control));
+		}
+	}
+ 
+	return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 }
    
 /****************************************************************************
@@ -1892,9 +1919,11 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
       break;
     case NT_TRANSACT_IOCTL:
       START_PROFILE_NESTED(NT_transact_ioctl);
-      outsize = call_nt_transact_ioctl(conn, 
-				       inbuf, outbuf, length, bufsize, 
-                                       &setup, &params, &data);
+      outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
+							length, bufsize, 
+							&setup, setup_count,
+							&params, parameter_count,
+							&data, data_count);
       END_PROFILE_NESTED(NT_transact_ioctl);
       break;
     case NT_TRANSACT_SET_SECURITY_DESC:
