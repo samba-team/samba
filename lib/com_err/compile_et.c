@@ -38,6 +38,7 @@
 
 #undef ROKEN_RENAME
 #include "compile_et.h"
+#include <getarg.h>
 
 RCSID("$Id$");
 
@@ -179,27 +180,50 @@ generate(void)
     return generate_c() || generate_h();
 }
 
+int version_flag;
+int help_flag;
+struct getargs args[] = {
+    { "version", 0, arg_flag, &version_flag },
+    { "help", 0, arg_flag, &help_flag }
+};
+int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage(int code)
+{
+    arg_printusage(args, num_args, NULL, "error-table");
+    exit(code);
+}
+
 int
 main(int argc, char **argv)
 {
     char *p;
-    set_progname(argv[0]);
+    int optind = 0;
 
-    if(argc != 2) {
-	fprintf(stderr, "Usage: %s error_table\n", __progname);
-	exit(1);
+    set_progname(argv[0]);
+    if(getarg(args, num_args, argc, argv, &optind))
+	usage(1);
+    if(help_flag)
+	usage(0);
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
     }
-    filename = argv[1];
+
+    if(optind == argc) 
+	usage(1);
+    filename = argv[optind];
     yyin = fopen(filename, "r");
     if(yyin == NULL)
 	err(1, "%s", filename);
 	
     
-    p = strrchr(argv[1], '/');
+    p = strrchr(filename, '/');
     if(p)
 	p++;
     else
-	p = argv[1];
+	p = filename;
     strncpy(Basename, p, sizeof(Basename));
     Basename[sizeof(Basename) - 1] = '\0';
     
