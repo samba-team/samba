@@ -43,23 +43,29 @@ process_it(int sock,
 	   )
 {
     OM_uint32 maj_stat, min_stat;
-    gss_buffer_desc name_token;
     gss_buffer_desc real_input_token, real_output_token;
     gss_buffer_t input_token = &real_input_token,
 	output_token = &real_output_token;
+    gss_name_t server_name;
     int conf_flag;
 
-    maj_stat = gss_display_name (&min_stat,
-				 client_name,
-				 &name_token,
-				 NULL);
+    print_gss_name("User is", client_name);
+
+    maj_stat = gss_inquire_context(&min_stat,
+				   context_hdl,
+				   NULL,
+				   &server_name,
+				   NULL,
+				   NULL,
+				   NULL,
+				   NULL,
+				   NULL);
     if (GSS_ERROR(maj_stat))
-	gss_err (1, min_stat, "gss_display_name");
+	gss_err (1, min_stat, "gss_verify_mic");
 
-    fprintf (stderr, "User is `%.*s'\n", (int)name_token.length,
-	    (char *)name_token.value);
+    print_gss_name("Server is", server_name);
 
-    gss_release_buffer (&min_stat, &name_token);
+
 
     /* gss_verify_mic */
 
