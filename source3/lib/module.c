@@ -80,7 +80,7 @@ int smb_probe_module(const char *subsystem, const char *module)
 	pstring full_path;
 	
 	/* Check for absolute path */
-	if(strchr_m(module, '/'))return smb_load_module(module);
+	if(module[0] == '/')return smb_load_module(module);
 	
 	pstrcpy(full_path, lib_path(subsystem));
 	pstrcat(full_path, "/");
