@@ -53,6 +53,7 @@ SOURCES = \
 	get_window_size.c \
 	getarg.c \
 	getcwd.c \
+	get_default_username.c \
 	getdtablesize.c \
 	gethostname.c \
 	getopt.c \
@@ -122,6 +123,7 @@ OBJECTS = \
 	erealloc.o \
 	estrdup.o \
 	ewrite.o \
+	get_default_username.o \
 	get_window_size.o \
 	getarg.o \
 	inaddr2str.o \
