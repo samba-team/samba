@@ -668,11 +668,16 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		DATA_BLOB key = data_blob(ntlmssp_state->session_key.data,
 					  ntlmssp_state->session_key.length);
 		DATA_BLOB null_blob = data_blob(NULL, 0);
+		BOOL res;
 
 		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
 		cli_set_session_key(cli, ntlmssp_state->session_key);
 
-		if (cli_simple_set_signing(cli, key, null_blob)) {
+		res = cli_simple_set_signing(cli, key, null_blob);
+
+		data_blob_free(&key);
+
+		if (res) {
 			
 			/* 'resign' the last message, so we get the right sequence numbers
 			   for checking the first reply from the server */
