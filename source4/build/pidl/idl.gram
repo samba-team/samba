@@ -2,7 +2,7 @@
 	use util;
 }
 
-idl: idl_interface(s?)
+idl: idl_interface(s)
      {{ util::FlattenArray($item[1]) }}
   | <error>
 
