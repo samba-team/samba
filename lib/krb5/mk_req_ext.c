@@ -27,7 +27,7 @@ krb5_mk_req_extended(krb5_context context,
 		  in_creds->session.keyvalue.length);
 
   r = krb5_create_checksum (context,
-			    CKSUMTYPE_RSA_MD4,
+			    (*auth_context)->cksumtype,
 			    in_data->data,
 			    in_data->length,
 			    &c);
