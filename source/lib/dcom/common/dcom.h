@@ -21,6 +21,10 @@
 #ifndef _DCOM_H /* _DCOM_H */
 #define _DCOM_H 
 
+struct IUnknown_AddRef;
+struct IUnknown_Release;
+struct IUnknown_QueryInterface;
+
 struct dcom_interface
 {
 	struct dcerpc_pipe *pipe;
