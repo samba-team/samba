@@ -195,7 +195,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
        * Let's ignore the SID.
        */
 
-      strcpy(ascuser, unistr(uniuser));
+      pstrcpy(ascuser, unistr(uniuser));
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
       strcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */

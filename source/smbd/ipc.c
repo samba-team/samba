@@ -2185,8 +2185,11 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 	char *p2;
 
     /* get NIS home of a previously validated user - simeon */
+    /* With share level security vuid will always be zero.
+       Don't depend on vuser being non-null !!. JRA */
     user_struct *vuser = get_valid_user_struct(vuid);
-    DEBUG(3,("  Username of UID %d is %s\n", vuser->uid, vuser->name));
+    if(vuser != NULL)
+      DEBUG(3,("  Username of UID %d is %s\n", vuser->uid, vuser->name));
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
@@ -2236,7 +2239,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
 		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-		strcpy(p2,vuser->real_name);	/* simeon */
+		strcpy(p2,((vuser != NULL) ? vuser->real_name : UserName));	/* simeon */
 		p2 = skip_string(p2,1);
 	}
 
@@ -2292,7 +2295,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		{
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-   			strcpy(p2,vuser->real_name);	/* simeon */
+   			strcpy(p2,((vuser != NULL) ? vuser->real_name : UserName));
 			p2 = skip_string(p2,1);
 			SIVAL(p,68,0);		/* urs_comment */
 			SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */

@@ -300,10 +300,12 @@ struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec
 struct subnet_record *get_next_subnet_maybe_unicast_or_wins_server(struct subnet_record *subrec)
 {
   if(subrec == unicast_subnet)
+  {
     if(wins_server_subnet)
       return wins_server_subnet;
     else
       return NULL;
+  }
 
   if(wins_server_subnet && subrec == wins_server_subnet)
     return NULL;

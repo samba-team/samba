@@ -1260,12 +1260,13 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
       }
     }
 
-    for(; i < namerec->num_ips; i++)
+    for(j = 0; j < namerec->num_ips; j++)
     {
-      if(i == same_net_index)
+      if(j == same_net_index)
         continue;
       set_nb_flags(&prdata[i*6],namerec->nb_flags);
-      putip((char *)&prdata[2+(i*6)], &namerec->ip[i]);
+      putip((char *)&prdata[2+(i*6)], &namerec->ip[j]);
+      i++;
     }
     reply_data_len = namerec->num_ips * 6;
 
