@@ -563,6 +563,7 @@ static BOOL handle_debug_list( const char *pszParmValue, char **ptr );
 static BOOL handle_workgroup( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_scope( const char *pszParmValue, char **ptr );
+static BOOL handle_charset( const char *pszParmValue, char **ptr );
 
 static BOOL handle_ldap_suffix ( const char *pszParmValue, char **ptr );
 static BOOL handle_ldap_sub_suffix ( const char *pszParmValue, char **ptr );
@@ -753,9 +754,9 @@ static const struct enum_list enum_map_to_guest[] = {
 static struct parm_struct parm_table[] = {
 	{"Base Options", P_SEP, P_SEPARATOR}, 
 
-	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, NULL, NULL, FLAG_ADVANCED}, 
-	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, NULL, NULL, FLAG_ADVANCED}, 
-	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, NULL, NULL, FLAG_ADVANCED}, 
+	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, handle_charset, NULL, FLAG_ADVANCED}, 
+	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, handle_charset, NULL, FLAG_ADVANCED}, 
+	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, handle_charset, NULL, FLAG_ADVANCED}, 
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_HIDE}, 
@@ -2701,7 +2702,6 @@ static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 
 	standard_sub_basic(current_user_info.smb_name, netbios_name,sizeof(netbios_name));
 
-
 	ret = set_global_myname(netbios_name);
 	string_set(&Globals.szNetbiosName,global_myname());
 	
@@ -2709,6 +2709,13 @@ static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 	       global_myname()));
 
 	return ret;
+}
+
+static BOOL handle_charset(const char *pszParmValue, char **ptr)
+{
+	string_set(ptr, pszParmValue);
+	init_iconv();
+	return True;
 }
 
 static BOOL handle_workgroup(const char *pszParmValue, char **ptr)

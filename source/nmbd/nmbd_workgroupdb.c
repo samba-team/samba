@@ -31,7 +31,7 @@ int workgroup_count = 0; /* unique index key: one for each workgroup */
 
 /****************************************************************************
   Add a workgroup into the list.
-  **************************************************************************/
+**************************************************************************/
 
 static void add_workgroup(struct subnet_record *subrec, struct work_record *work)
 {
@@ -42,164 +42,153 @@ static void add_workgroup(struct subnet_record *subrec, struct work_record *work
 
 /****************************************************************************
   Create an empty workgroup.
-  **************************************************************************/
+**************************************************************************/
 
 static struct work_record *create_workgroup(const char *name, int ttl)
 {
-  struct work_record *work;
-  struct subnet_record *subrec;
-  int t = -1;
+	struct work_record *work;
+	struct subnet_record *subrec;
+	int t = -1;
   
-  if((work = (struct work_record *)malloc(sizeof(*work))) == NULL)
-  {
-    DEBUG(0,("create_workgroup: malloc fail !\n"));
-    return NULL;
-  }
-  memset((char *)work, '\0', sizeof(*work));
+	if((work = (struct work_record *)malloc(sizeof(*work))) == NULL) {
+		DEBUG(0,("create_workgroup: malloc fail !\n"));
+		return NULL;
+	}
+	memset((char *)work, '\0', sizeof(*work));
  
-  fstrcpy(work->work_group,name);
-  work->serverlist = NULL;
+	fstrcpy(work->work_group,name);
+	work->serverlist = NULL;
   
-  work->RunningElection = False;
-  work->ElectionCount = 0;
-  work->announce_interval = 0;
-  work->needelection = False;
-  work->needannounce = True;
-  work->lastannounce_time = time(NULL);
-  work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
-  work->dom_state = DOMAIN_NONE;
-  work->log_state = LOGON_NONE;
+	work->RunningElection = False;
+	work->ElectionCount = 0;
+	work->announce_interval = 0;
+	work->needelection = False;
+	work->needannounce = True;
+	work->lastannounce_time = time(NULL);
+	work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
+	work->dom_state = DOMAIN_NONE;
+	work->log_state = LOGON_NONE;
   
-  work->death_time = (ttl != PERMANENT_TTL) ? time(NULL)+(ttl*3) : PERMANENT_TTL;
+	work->death_time = (ttl != PERMANENT_TTL) ? time(NULL)+(ttl*3) : PERMANENT_TTL;
 
-  /* Make sure all token representations of workgroups are unique. */
+	/* Make sure all token representations of workgroups are unique. */
   
-  for (subrec = FIRST_SUBNET; subrec && (t == -1); 
-           subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
-  {
-    struct work_record *w;
-    for (w = subrec->workgrouplist; w && t == -1; w = w->next)
-    {
-      if (strequal(w->work_group, work->work_group))
-        t = w->token;
-    }
-  }
+	for (subrec = FIRST_SUBNET; subrec && (t == -1); subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) {
+		struct work_record *w;
+		for (w = subrec->workgrouplist; w && t == -1; w = w->next) {
+			if (strequal(w->work_group, work->work_group))
+				t = w->token;
+		}
+	}
   
-  if (t == -1)
-    work->token = ++workgroup_count;
-  else
-    work->token = t;
+	if (t == -1)
+		work->token = ++workgroup_count;
+	else
+		work->token = t;
   
-  /* No known local master browser as yet. */
-  *work->local_master_browser_name = '\0';
+	/* No known local master browser as yet. */
+	*work->local_master_browser_name = '\0';
 
-  /* No known domain master browser as yet. */
-  *work->dmb_name.name = '\0';
-  zero_ip(&work->dmb_addr);
+	/* No known domain master browser as yet. */
+	*work->dmb_name.name = '\0';
+	zero_ip(&work->dmb_addr);
 
-  /* WfWg  uses 01040b01 */
-  /* Win95 uses 01041501 */
-  /* NTAS  uses ???????? */
-  work->ElectionCriterion  = (MAINTAIN_LIST)|(BROWSER_ELECTION_VERSION<<8); 
-  work->ElectionCriterion |= (lp_os_level() << 24);
-  if (lp_domain_master())
-    work->ElectionCriterion |= 0x80;
+	/* WfWg  uses 01040b01 */
+	/* Win95 uses 01041501 */
+	/* NTAS  uses ???????? */
+	work->ElectionCriterion  = (MAINTAIN_LIST)|(BROWSER_ELECTION_VERSION<<8); 
+	work->ElectionCriterion |= (lp_os_level() << 24);
+	if (lp_domain_master())
+		work->ElectionCriterion |= 0x80;
   
-  return work;
+	return work;
 }
 
 /*******************************************************************
   Remove a workgroup.
-  ******************************************************************/
+******************************************************************/
 
 static struct work_record *remove_workgroup_from_subnet(struct subnet_record *subrec, 
                                      struct work_record *work)
 {
-  struct work_record *ret_work = NULL;
+	struct work_record *ret_work = NULL;
   
-  DEBUG(3,("remove_workgroup: Removing workgroup %s\n", work->work_group));
+	DEBUG(3,("remove_workgroup: Removing workgroup %s\n", work->work_group));
   
-  ret_work = work->next;
+	ret_work = work->next;
 
-  remove_all_servers(work);
+	remove_all_servers(work);
   
-  if (!work->serverlist)
-  {
-    if (work->prev)
-      work->prev->next = work->next;
-    if (work->next)
-      work->next->prev = work->prev;
+	if (!work->serverlist) {
+		if (work->prev)
+			work->prev->next = work->next;
+		if (work->next)
+			work->next->prev = work->prev;
   
-    if (subrec->workgrouplist == work)
-      subrec->workgrouplist = work->next; 
+		if (subrec->workgrouplist == work)
+			subrec->workgrouplist = work->next; 
   
-    ZERO_STRUCTP(work);
-    SAFE_FREE(work);
-  }
+		ZERO_STRUCTP(work);
+		SAFE_FREE(work);
+	}
   
-  subrec->work_changed = True;
+	subrec->work_changed = True;
 
-  return ret_work;
+	return ret_work;
 }
-
 
 /****************************************************************************
   Find a workgroup in the workgroup list of a subnet.
-  **************************************************************************/
+**************************************************************************/
 
 struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec, 
                                              const char *name)
 {
-  struct work_record *ret;
+	struct work_record *ret;
   
-  DEBUG(4, ("find_workgroup_on_subnet: workgroup search for %s on subnet %s: ",
-            name, subrec->subnet_name));
+	DEBUG(4, ("find_workgroup_on_subnet: workgroup search for %s on subnet %s: ",
+		name, subrec->subnet_name));
   
-  for (ret = subrec->workgrouplist; ret; ret = ret->next)
-  {
-    if (!strcmp(ret->work_group,name))
-    {
-      DEBUGADD(4, ("found.\n"));
-      return(ret);
-    }
-  }
-  DEBUGADD(4, ("not found.\n"));
-  return NULL;
+	for (ret = subrec->workgrouplist; ret; ret = ret->next) {
+		if (strequal(ret->work_group,name)) {
+			DEBUGADD(4, ("found.\n"));
+			return(ret);
+		}
+	}
+	DEBUGADD(4, ("not found.\n"));
+	return NULL;
 }
 
 /****************************************************************************
   Create a workgroup in the workgroup list of the subnet.
-  **************************************************************************/
+**************************************************************************/
 
 struct work_record *create_workgroup_on_subnet(struct subnet_record *subrec,
                                                const char *name, int ttl)
 {
-  struct work_record *work = NULL;
+	struct work_record *work = NULL;
 
-  DEBUG(4,("create_workgroup_on_subnet: creating group %s on subnet %s\n",
-           name, subrec->subnet_name));
+	DEBUG(4,("create_workgroup_on_subnet: creating group %s on subnet %s\n",
+		name, subrec->subnet_name));
   
-  if ((work = create_workgroup(name, ttl)))
-  {
-    add_workgroup(subrec, work);
+	if ((work = create_workgroup(name, ttl))) {
+		add_workgroup(subrec, work);
+		subrec->work_changed = True;
+		return(work);
+	}
 
-    subrec->work_changed = True;
-
-    return(work);
-  }
-
-  return NULL;
+	return NULL;
 }
 
 /****************************************************************************
   Update a workgroup ttl.
-  **************************************************************************/
+**************************************************************************/
 
 void update_workgroup_ttl(struct work_record *work, int ttl)
 {
-  if(work->death_time != PERMANENT_TTL)
-    work->death_time = time(NULL)+(ttl*3);
-  work->subnet->work_changed = True;
+	if(work->death_time != PERMANENT_TTL)
+		work->death_time = time(NULL)+(ttl*3);
+	work->subnet->work_changed = True;
 }
 
 /****************************************************************************
@@ -210,8 +199,8 @@ void update_workgroup_ttl(struct work_record *work, int ttl)
 static void fail_register(struct subnet_record *subrec, struct response_record *rrec,
                           struct nmb_name *nmbname)
 {  
-  DEBUG(0,("fail_register: Failed to register name %s on subnet %s.\n",
-            nmb_namestr(nmbname), subrec->subnet_name));
+	DEBUG(0,("fail_register: Failed to register name %s on subnet %s.\n",
+		nmb_namestr(nmbname), subrec->subnet_name));
 }  
 
 /****************************************************************************
@@ -220,50 +209,38 @@ static void fail_register(struct subnet_record *subrec, struct response_record *
 
 void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_record *work)
 {
-  int i;
+	int i;
 
-  if(!strequal(lp_workgroup(), work->work_group))
-    return;
+	if(!strequal(lp_workgroup(), work->work_group))
+		return;
 
-  /* If this is a broadcast subnet then start elections on it
-     if we are so configured. */
+	/* If this is a broadcast subnet then start elections on it if we are so configured. */
 
-  if ((subrec != unicast_subnet) && (subrec != remote_broadcast_subnet) &&
-      (subrec != wins_server_subnet) && lp_preferred_master() &&
-      lp_local_master())
-  {
-    DEBUG(3, ("initiate_myworkgroup_startup: preferred master startup for \
+	if ((subrec != unicast_subnet) && (subrec != remote_broadcast_subnet) &&
+			(subrec != wins_server_subnet) && lp_preferred_master() && lp_local_master()) {
+		DEBUG(3, ("initiate_myworkgroup_startup: preferred master startup for \
 workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
-    work->needelection = True;
-    work->ElectionCriterion |= (1<<3);
-  }  
+		work->needelection = True;
+		work->ElectionCriterion |= (1<<3);
+	}
   
-  /* Register the WORKGROUP<0> and WORKGROUP<1e> names on the network. */
+	/* Register the WORKGROUP<0> and WORKGROUP<1e> names on the network. */
 
-  register_name(subrec,lp_workgroup(),0x0,samba_nb_type|NB_GROUP,
-                NULL,
-                fail_register,NULL);
-     
-  register_name(subrec,lp_workgroup(),0x1e,samba_nb_type|NB_GROUP,
-                NULL,
-                fail_register,NULL);
-     
-  for( i = 0; my_netbios_names(i); i++)
-  {
-    const char *name = my_netbios_names(i);
-    int stype = lp_default_server_announce() | (lp_local_master() ?
-                        SV_TYPE_POTENTIAL_BROWSER : 0 );
+	register_name(subrec,lp_workgroup(),0x0,samba_nb_type|NB_GROUP, NULL, fail_register,NULL);
+	register_name(subrec,lp_workgroup(),0x1e,samba_nb_type|NB_GROUP, NULL, fail_register,NULL);
+
+	for( i = 0; my_netbios_names(i); i++) {
+		const char *name = my_netbios_names(i);
+		int stype = lp_default_server_announce() | (lp_local_master() ?  SV_TYPE_POTENTIAL_BROWSER : 0 );
    
-    if(!strequal(global_myname(), name))
-        stype &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_POTENTIAL_BROWSER|
-                   SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
+		if(!strequal(global_myname(), name))
+			stype &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_POTENTIAL_BROWSER|SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
    
-    create_server_on_workgroup(work,name,stype|SV_TYPE_LOCAL_LIST_ONLY,
-			       PERMANENT_TTL, 
-			       string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
-    DEBUG(3,("initiate_myworkgroup_startup: Added server name entry %s \
+		create_server_on_workgroup(work,name,stype|SV_TYPE_LOCAL_LIST_ONLY, PERMANENT_TTL, 
+				string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+		DEBUG(3,("initiate_myworkgroup_startup: Added server name entry %s \
 on subnet %s\n", name, subrec->subnet_name));
-  }
+	}
 } 
 
 /****************************************************************************
@@ -272,43 +249,34 @@ on subnet %s\n", name, subrec->subnet_name));
 
 void dump_workgroups(BOOL force_write)
 {
-  struct subnet_record *subrec;
-  int debuglevel = force_write ? 0 : 4;
+	struct subnet_record *subrec;
+	int debuglevel = force_write ? 0 : 4;
  
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
-  {
-    if (subrec->workgrouplist)
-    {
-      struct work_record *work;
+	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) {
+		if (subrec->workgrouplist) {
+			struct work_record *work;
 
-      if( DEBUGLVL( debuglevel ) )
-      {
-        dbgtext( "dump_workgroups()\n " );
-        dbgtext( "dump workgroup on subnet %15s: ", subrec->subnet_name );
-        dbgtext( "netmask=%15s:\n", inet_ntoa(subrec->mask_ip) );
-      }
-	  
-      for (work = subrec->workgrouplist; work; work = work->next)
-      {
-        DEBUGADD( debuglevel, ( "\t%s(%d) current master browser = %s\n",
-                                work->work_group,
-                                work->token, 
-                               *work->local_master_browser_name
-                              ? work->local_master_browser_name : "UNKNOWN" ) );
-        if (work->serverlist)
-        {
-          struct server_record *servrec;		  
-          for (servrec = work->serverlist; servrec; servrec = servrec->next)
-          {
-            DEBUGADD( debuglevel, ( "\t\t%s %8x (%s)\n",
-                                    servrec->serv.name,
-                                    servrec->serv.type,
-                                    servrec->serv.comment ) );
-          }
-        }
-      }
-    }
-  }
+			if( DEBUGLVL( debuglevel ) ) {
+				dbgtext( "dump_workgroups()\n " );
+				dbgtext( "dump workgroup on subnet %15s: ", subrec->subnet_name );
+				dbgtext( "netmask=%15s:\n", inet_ntoa(subrec->mask_ip) );
+			}
+
+			for (work = subrec->workgrouplist; work; work = work->next) {
+				DEBUGADD( debuglevel, ( "\t%s(%d) current master browser = %s\n", work->work_group,
+					work->token, *work->local_master_browser_name ? work->local_master_browser_name : "UNKNOWN" ) );
+				if (work->serverlist) {
+					struct server_record *servrec;		  
+					for (servrec = work->serverlist; servrec; servrec = servrec->next) {
+						DEBUGADD( debuglevel, ( "\t\t%s %8x (%s)\n",
+							servrec->serv.name,
+							servrec->serv.type,
+							servrec->serv.comment ) );
+					}
+				}
+			}
+		}
+	}
 }
 
 /****************************************************************************
@@ -318,25 +286,22 @@ void dump_workgroups(BOOL force_write)
 
 void expire_workgroups_and_servers(time_t t)
 {
-  struct subnet_record *subrec;
+	struct subnet_record *subrec;
    
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
-  {
-    struct work_record *work;
-    struct work_record *nextwork;
+	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) {
+		struct work_record *work;
+		struct work_record *nextwork;
 
-    for (work = subrec->workgrouplist; work; work = nextwork)
-    {
-      nextwork = work->next;
-      expire_servers(work, t);
+		for (work = subrec->workgrouplist; work; work = nextwork) {
+			nextwork = work->next;
+			expire_servers(work, t);
 
-      if ((work->serverlist == NULL) && (work->death_time != PERMANENT_TTL) && 
-                     ((t == -1) || (work->death_time < t)))
-      {
-        DEBUG(3,("expire_workgroups_and_servers: Removing timed out workgroup %s\n",
-                  work->work_group));
-        remove_workgroup_from_subnet(subrec, work);
-      }
-    }
-  }
+			if ((work->serverlist == NULL) && (work->death_time != PERMANENT_TTL) && 
+					((t == -1) || (work->death_time < t))) {
+				DEBUG(3,("expire_workgroups_and_servers: Removing timed out workgroup %s\n",
+						work->work_group));
+				remove_workgroup_from_subnet(subrec, work);
+			}
+		}
+	}
 }
