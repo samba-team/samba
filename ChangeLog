@@ -1,5 +1,12 @@
 2001-08-22  Assar Westerlund  <assar@sics.se>
 
+	* configure.in: re-write the handling of crypto libraries.  try to
+	use the one of openssl's libcrypto or krb4's libdes that has all
+	the required functionality (md4, md5, sha1, des, rc4).  if there
+	is no such library, the included lib/des is built.
+
+2001-08-22  Assar Westerlund  <assar@sics.se>
+
 	* kdc/headers.h: include libutil.h if it exists
 	* kpasswd/kpasswd_locl.h: include libutil.h if it exists
 	* kdc/kerberos4.c (get_des_key): check for null keys even if
