@@ -54,6 +54,10 @@ recv_loop (int fd,
      int ret;
      int nbytes;
 
+     if (fd >= FD_SETSIZE) {
+	 return -1;
+     }
+
      krb5_data_zero(rep);
      do {
 	 FD_ZERO(&fdset);
