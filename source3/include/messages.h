@@ -31,6 +31,8 @@
 #define MSG_DEBUGLEVEL		6
 #define MSG_REQ_PROFILELEVEL	7
 #define MSG_PROFILELEVEL	8
+#define MSG_REQ_POOL_USAGE	9
+#define MSG_POOL_USAGE		10
 
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
