@@ -129,6 +129,7 @@ extern size_t cookie_len;
 int get_xsockets (int *unix_socket, int *tcp_socket);
 int connect_local_xsocket (unsigned dnr);
 int create_and_write_cookie (char *xauthfile,
+			     size_t size,
 			     u_char *cookie,
 			     size_t sz);
 int verify_and_remove_cookies (int fd, int sock);
