@@ -62,7 +62,7 @@ TALLOC_CTX *talloc_init(void)
  * Create a new talloc context, with a name specifying its purpose.
  * Please call this in preference to talloc_init().
  **/
-TALLOC_CTX *talloc_init_named(char const *fmt, ...)
+ TALLOC_CTX *talloc_init_named(char const *fmt, ...) 
 {
 	TALLOC_CTX *t;
 	va_list ap;
@@ -197,7 +197,7 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
  * Perform string formatting, and return a pointer to newly allocated
  * memory holding the result, inside a memory pool.
  **/
-char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
+ char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
 {
 	va_list ap;
 	char *ret;
@@ -210,7 +210,7 @@ char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
 }
 
 
-char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
+ char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
 {	
 	int len;
 	char *ret;
