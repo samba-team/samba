@@ -431,57 +431,6 @@ NTSTATUS make_server_info(const TALLOC_CTX *mem_ctx,
 }
 
 /***************************************************************************
- Make (and fill) a user_info struct for a guest login.
-***************************************************************************/
-NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx, struct auth_serversupplied_info **server_info)
-{
-	NTSTATUS nt_status;
-
-	nt_status = make_server_info(mem_ctx, server_info, "");
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-	
-	(*server_info)->guest = True;
-
-	(*server_info)->user_sid = dom_sid_parse_talloc((*server_info), SID_NT_ANONYMOUS);
-	(*server_info)->primary_group_sid = dom_sid_parse_talloc((*server_info), SID_BUILTIN_GUESTS);
-	(*server_info)->n_domain_groups = 0;
-	(*server_info)->domain_groups = NULL;
-	
-	/* annoying, but the Guest really does have a session key, 
-	   and it is all zeros! */
-	(*server_info)->user_session_key = data_blob_talloc(*server_info, NULL, 16);
-	(*server_info)->lm_session_key = data_blob_talloc(*server_info, NULL, 16);
-
-	data_blob_clear(&(*server_info)->user_session_key);
-	data_blob_clear(&(*server_info)->lm_session_key);
-
-	(*server_info)->account_name = "";
-	(*server_info)->domain = "";
-	(*server_info)->full_name = "Anonymous";
-	(*server_info)->logon_script = "";
-	(*server_info)->profile_path = "";
-	(*server_info)->home_directory = "";
-	(*server_info)->home_drive = "";
-
-	(*server_info)->last_logon = 0;
-	(*server_info)->last_logoff = 0;
-	(*server_info)->acct_expiry = 0;
-	(*server_info)->last_password_change = 0;
-	(*server_info)->allow_password_change = 0;
-	(*server_info)->force_password_change = 0;
-
-	(*server_info)->logon_count = 0;
-	(*server_info)->bad_password_count = 0;
-
-	(*server_info)->acct_flags = ACB_NORMAL;
-
-	return nt_status;
-}
-
-/***************************************************************************
  Make a server_info struct from the info3 returned by a domain logon 
 ***************************************************************************/
 
