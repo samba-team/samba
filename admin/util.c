@@ -46,7 +46,7 @@ init_des_key(hdb_entry *ent)
 			    (ent->keys.len + 1) * sizeof(*ent->keys.val));
     k = ent->keys.val + ent->keys.len;
     ent->keys.len++;
-    k->mkvno = 0;
+    memset(k, 0, sizeof(*k));
     krb5_generate_random_keyblock(context, KEYTYPE_DES, &k->key);
 }
 
