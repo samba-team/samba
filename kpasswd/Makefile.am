@@ -16,6 +16,7 @@ kpasswdd_LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5srv.la \
 	$(top_builddir)/lib/hdb/libhdb.la \
 	$(LDADD) \
+	$(LIB_dlopen) \
 	$(DBLIB)
 
 LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
