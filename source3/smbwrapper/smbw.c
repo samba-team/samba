@@ -436,10 +436,11 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	/* some programs play with file descriptors fairly intimately. We
 	   try to get out of the way by duping to a high fd number */
-	if (fcntl(SMBW_CLI_FD, F_GETFD) && errno == EBADF) {
-		if (dup2(srv->cli.fd, SMBW_CLI_FD) == SMBW_CLI_FD) {
+	if (fcntl(SMBW_CLI_FD + srv->cli.fd, F_GETFD) && errno == EBADF) {
+		if (dup2(srv->cli.fd,SMBW_CLI_FD+srv->cli.fd) == 
+		    srv->cli.fd+SMBW_CLI_FD) {
 			close(srv->cli.fd);
-			srv->cli.fd = SMBW_CLI_FD;
+			srv->cli.fd += SMBW_CLI_FD;
 		}
 	}
 
@@ -515,6 +516,9 @@ static BOOL smbw_getatr(struct smbw_server *srv, char *path,
 {
 	if (cli_qpathinfo(&srv->cli, path, c_time, a_time, m_time,
 			  size, mode)) return True;
+
+	/* if this is NT then don't bother with the getatr */
+	if (srv->cli.capabilities & CAP_NT_SMBS) return False;
 
 	if (cli_getatr(&srv->cli, path, mode, size, m_time)) {
 		a_time = c_time = m_time;
@@ -800,9 +804,9 @@ int smbw_fstat(int fd, struct stat *st)
 		return ret;
 	}
 
-	DEBUG(4,("%s - getattrE\n", __FUNCTION__));
-
-	if (!cli_getattrE(&file->srv->cli, file->cli_fd, 
+	if (!cli_qfileinfo(&file->srv->cli, file->cli_fd, 
+			  &mode, &size, &c_time, &a_time, &m_time) &&
+	    !cli_getattrE(&file->srv->cli, file->cli_fd, 
 			  &mode, &size, &c_time, &a_time, &m_time)) {
 		errno = EINVAL;
 		smbw_busy--;
@@ -1404,4 +1408,47 @@ int smbw_chmod(const char *fname, mode_t newmode)
  failed:
 	smbw_busy--;
 	return -1;
+}
+
+/***************************************************** 
+a wrapper for lseek()
+*******************************************************/
+ssize_t smbw_lseek(int fd, off_t offset, int whence)
+{
+	struct smbw_file *file;
+	uint32 size;
+
+	DEBUG(4,("%s\n", __FUNCTION__));
+
+	smbw_busy++;
+
+	file = smbw_file(fd);
+	if (!file) {
+		errno = EBADF;
+		smbw_busy--;
+		return -1;
+	}
+
+	switch (whence) {
+	case SEEK_SET:
+		file->offset = offset;
+		break;
+	case SEEK_CUR:
+		file->offset += offset;
+		break;
+	case SEEK_END:
+		if (!cli_qfileinfo(&file->srv->cli, file->cli_fd, 
+				   NULL, &size, NULL, NULL, NULL) &&
+		    !cli_getattrE(&file->srv->cli, file->cli_fd, 
+				  NULL, &size, NULL, NULL, NULL)) {
+			errno = EINVAL;
+			smbw_busy--;
+			return -1;
+		}
+		file->offset = size + offset;
+		break;
+	}
+
+	smbw_busy--;
+	return file->offset;
 }
