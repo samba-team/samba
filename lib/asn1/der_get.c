@@ -238,6 +238,7 @@ der_match_tag_and_length (const unsigned char *p, size_t len,
     p += l;
     len -= l;
     ret += l;
+
     e = der_get_length (p, len, length_ret, &l);
     if (e) return e;
     p += l;
@@ -260,6 +261,7 @@ decode_boolean (const unsigned char *p, size_t len,
     p += l;
     len -= l;
     ret += l;
+
     e = der_get_length (p, len, &reallen, &l);
     if (e) return e;
     p += l;
@@ -267,6 +269,7 @@ decode_boolean (const unsigned char *p, size_t len,
     ret += l;
     if (reallen > len)
 	return ASN1_OVERRUN;
+
     e = der_get_boolean (p, reallen, num, &l);
     if (e) return e;
     p += l;
@@ -289,6 +292,7 @@ decode_integer (const unsigned char *p, size_t len,
     p += l;
     len -= l;
     ret += l;
+
     e = der_get_length (p, len, &reallen, &l);
     if (e) return e;
     p += l;
@@ -296,6 +300,7 @@ decode_integer (const unsigned char *p, size_t len,
     ret += l;
     if (reallen > len)
 	return ASN1_OVERRUN;
+
     e = der_get_int (p, reallen, num, &l);
     if (e) return e;
     p += l;
@@ -318,6 +323,7 @@ decode_unsigned (const unsigned char *p, size_t len,
     p += l;
     len -= l;
     ret += l;
+
     e = der_get_length (p, len, &reallen, &l);
     if (e) return e;
     p += l;
@@ -325,6 +331,7 @@ decode_unsigned (const unsigned char *p, size_t len,
     ret += l;
     if (reallen > len)
 	return ASN1_OVERRUN;
+
     e = der_get_unsigned (p, reallen, num, &l);
     if (e) return e;
     p += l;
@@ -347,11 +354,15 @@ decode_enumerated (const unsigned char *p, size_t len,
     p += l;
     len -= l;
     ret += l;
+
     e = der_get_length (p, len, &reallen, &l);
     if (e) return e;
     p += l;
     len -= l;
     ret += l;
+    if (reallen > len)
+	return ASN1_OVERRUN;
+
     e = der_get_int (p, reallen, num, &l);
     if (e) return e;
     p += l;
@@ -366,9 +377,8 @@ decode_general_string (const unsigned char *p, size_t len,
 		       heim_general_string *str, size_t *size)
 {
     size_t ret = 0;
-    size_t l;
+    size_t l, reallen;
     int e;
-    size_t slen;
 
     e = der_match_tag (p, len, UNIV, PRIM, UT_GeneralString, &l);
     if (e) return e;
@@ -376,15 +386,15 @@ decode_general_string (const unsigned char *p, size_t len,
     len -= l;
     ret += l;
 
-    e = der_get_length (p, len, &slen, &l);
+    e = der_get_length (p, len, &reallen, &l);
     if (e) return e;
     p += l;
     len -= l;
     ret += l;
-    if (len < slen)
+    if (len < reallen)
 	return ASN1_OVERRUN;
 
-    e = der_get_general_string (p, slen, str, &l);
+    e = der_get_general_string (p, reallen, str, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -398,9 +408,8 @@ decode_octet_string (const unsigned char *p, size_t len,
 		     heim_octet_string *k, size_t *size)
 {
     size_t ret = 0;
-    size_t l;
+    size_t l, reallen;
     int e;
-    size_t slen;
 
     e = der_match_tag (p, len, UNIV, PRIM, UT_OctetString, &l);
     if (e) return e;
@@ -408,15 +417,15 @@ decode_octet_string (const unsigned char *p, size_t len,
     len -= l;
     ret += l;
 
-    e = der_get_length (p, len, &slen, &l);
+    e = der_get_length (p, len, &reallen, &l);
     if (e) return e;
     p += l;
     len -= l;
     ret += l;
-    if (len < slen)
+    if (len < reallen)
 	return ASN1_OVERRUN;
 
-    e = der_get_octet_string (p, slen, k, &l);
+    e = der_get_octet_string (p, reallen, k, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -430,9 +439,8 @@ decode_oid (const unsigned char *p, size_t len,
 	    heim_oid *k, size_t *size)
 {
     size_t ret = 0;
-    size_t l;
+    size_t l, reallen;
     int e;
-    size_t slen;
 
     e = der_match_tag (p, len, UNIV, PRIM, UT_OID, &l);
     if (e) return e;
@@ -440,15 +448,15 @@ decode_oid (const unsigned char *p, size_t len,
     len -= l;
     ret += l;
 
-    e = der_get_length (p, len, &slen, &l);
+    e = der_get_length (p, len, &reallen, &l);
     if (e) return e;
     p += l;
     len -= l;
     ret += l;
-    if (len < slen)
+    if (len < reallen)
 	return ASN1_OVERRUN;
 
-    e = der_get_oid (p, slen, k, &l);
+    e = der_get_oid (p, reallen, k, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -478,9 +486,8 @@ decode_generalized_time (const unsigned char *p, size_t len,
     heim_octet_string k;
     char *times;
     size_t ret = 0;
-    size_t l;
+    size_t l, reallen;
     int e;
-    size_t slen;
 
     e = der_match_tag (p, len, UNIV, PRIM, UT_GeneralizedTime, &l);
     if (e) return e;
@@ -488,14 +495,15 @@ decode_generalized_time (const unsigned char *p, size_t len,
     len -= l;
     ret += l;
 
-    e = der_get_length (p, len, &slen, &l);
+    e = der_get_length (p, len, &reallen, &l);
     if (e) return e;
     p += l;
     len -= l;
     ret += l;
-    if (len < slen)
+    if (len < reallen)
 	return ASN1_OVERRUN;
-    e = der_get_octet_string (p, slen, &k, &l);
+
+    e = der_get_octet_string (p, reallen, &k, &l);
     if (e) return e;
     p += l;
     len -= l;
