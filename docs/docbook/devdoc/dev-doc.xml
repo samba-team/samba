@@ -19,6 +19,7 @@
 <!ENTITY packagers SYSTEM "packagers.xml">
 <!ENTITY contributing SYSTEM "contributing.xml">
 <!ENTITY vfs SYSTEM "vfs.xml">
+<!ENTITY windows-deb SYSTEM "windows-debug.xml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -80,6 +81,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &parsing;
 &unix-smb;
 &Tracing;
+&windows-deb;
 &cifsntdomain;
 &printing;
 &wins;

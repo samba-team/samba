@@ -1,22 +1,21 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 19. CUPS Printing Support in Samba 3.0</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="printing.html" title="Chapter 18. Classical Printing Support"><link rel="next" href="VFS.html" title="Chapter 20. Stackable VFS modules"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 19. CUPS Printing Support in Samba 3.0</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="printing.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="VFS.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="CUPS-printing"></a>Chapter 19. CUPS Printing Support in Samba 3.0</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Kurt</span> <span class="surname">Pfeifle</span></h3><div class="affiliation"><span class="orgname"> Danka Deutschland GmbH <br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:kpfeifle@danka.de">kpfeifle@danka.de</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Ciprian</span> <span class="surname">Vizitiu</span></h3><span class="contrib">drawings</span><div class="affiliation"><div class="address"><p><tt class="email">&lt;<a href="mailto:CVizitiu@gbif.org">CVizitiu@gbif.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate"> (3 June 2003) </p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="CUPS-printing.html#id2956942">Introduction</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2956949">Features and Benefits</a></dt><dt><a href="CUPS-printing.html#id2956998">Overview</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2957049">Basic Configuration of CUPS support</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2957129">Linking of smbd with libcups.so</a></dt><dt><a href="CUPS-printing.html#id2950037">Simple smb.conf Settings for CUPS</a></dt><dt><a href="CUPS-printing.html#id2950100">More complex smb.conf Settings for
-CUPS</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2950199">Advanced Configuration</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2950220">Central spooling vs. &quot;Peer-to-Peer&quot; printing</a></dt><dt><a href="CUPS-printing.html#id2950247">CUPS/Samba as a &quot;spooling-only&quot; Print Server; &quot;raw&quot; printing
-with Vendor Drivers on Windows Clients</a></dt><dt><a href="CUPS-printing.html#id2950283">Driver Installation Methods on Windows Clients</a></dt><dt><a href="CUPS-printing.html#id2950342">Explicitly enable &quot;raw&quot; printing for
-application/octet-stream!</a></dt><dt><a href="CUPS-printing.html#id2950503">Three familiar Methods for driver upload plus a new one</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2950596">Using CUPS/Samba in an advanced Way -- intelligent printing
-with PostScript Driver Download</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2950671">GDI on Windows -- PostScript on Unix</a></dt><dt><a href="CUPS-printing.html#id2950716">Windows Drivers, GDI and EMF</a></dt><dt><a href="CUPS-printing.html#id2950814">Unix Printfile Conversion and GUI Basics</a></dt><dt><a href="CUPS-printing.html#id2950886">PostScript and Ghostscript</a></dt><dt><a href="CUPS-printing.html#id2950982">Ghostscript -- the Software RIP for non-PostScript Printers</a></dt><dt><a href="CUPS-printing.html#id2951078">PostScript Printer Description (PPD) Specification</a></dt><dt><a href="CUPS-printing.html#id2963900">CUPS can use all Windows-formatted Vendor PPDs</a></dt><dt><a href="CUPS-printing.html#id2963990">CUPS also uses PPDs for non-PostScript Printers</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2964013">The CUPS Filtering Architecture</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2964151">MIME types and CUPS Filters</a></dt><dt><a href="CUPS-printing.html#id2964338">MIME type Conversion Rules</a></dt><dt><a href="CUPS-printing.html#id2964455">Filter Requirements</a></dt><dt><a href="CUPS-printing.html#id2964624">Prefilters</a></dt><dt><a href="CUPS-printing.html#id2964708">pstops</a></dt><dt><a href="CUPS-printing.html#id2964812">pstoraster</a></dt><dt><a href="CUPS-printing.html#id2964968">imagetops and imagetoraster</a></dt><dt><a href="CUPS-printing.html#id2965023">rasterto [printerspecific]</a></dt><dt><a href="CUPS-printing.html#id2965107">CUPS Backends</a></dt><dt><a href="CUPS-printing.html#id2965422">cupsomatic/Foomatic -- how do they fit into the Picture?</a></dt><dt><a href="CUPS-printing.html#id2965524">The Complete Picture</a></dt><dt><a href="CUPS-printing.html#id2965540">mime.convs</a></dt><dt><a href="CUPS-printing.html#id2965593">&quot;Raw&quot; printing</a></dt><dt><a href="CUPS-printing.html#id2965647">&quot;application/octet-stream&quot; printing</a></dt><dt><a href="CUPS-printing.html#id2965862">PostScript Printer Descriptions (PPDs) for non-PS Printers</a></dt><dt><a href="CUPS-printing.html#id2966090">Difference between cupsomatic/foomatic-rip and
-native CUPS printing</a></dt><dt><a href="CUPS-printing.html#id2966247">Examples for filtering Chains</a></dt><dt><a href="CUPS-printing.html#id2966476">Sources of CUPS drivers / PPDs</a></dt><dt><a href="CUPS-printing.html#id2966601">Printing with Interface Scripts</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2966663">Network printing (purely Windows)</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2966679">From Windows Clients to an NT Print Server</a></dt><dt><a href="CUPS-printing.html#id2966718">Driver Execution on the Client</a></dt><dt><a href="CUPS-printing.html#id2966777">Driver Execution on the Server</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2966840">Network Printing (Windows clients -- UNIX/Samba Print
-Servers)</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2966861">From Windows Clients to a CUPS/Samba Print Server</a></dt><dt><a href="CUPS-printing.html#id2967021">Samba receiving Jobfiles and passing them to CUPS</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2967099">Network PostScript RIP: CUPS Filters on Server -- clients use
-PostScript Driver with CUPS-PPDs</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2967154">PPDs for non-PS Printers on UNIX</a></dt><dt><a href="CUPS-printing.html#id2967194">PPDs for non-PS Printers on Windows</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2967260">Windows Terminal Servers (WTS) as CUPS Clients</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2967277">Printer Drivers running in &quot;Kernel Mode&quot; cause many
-Problems</a></dt><dt><a href="CUPS-printing.html#id2967312">Workarounds impose Heavy Limitations</a></dt><dt><a href="CUPS-printing.html#id2967333">CUPS: a &quot;Magical Stone&quot;?</a></dt><dt><a href="CUPS-printing.html#id2967360">PostScript Drivers with no major problems -- even in Kernel
-Mode</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2967394"> Setting up CUPS for driver Download</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2967412">cupsaddsmb: the unknown Utility</a></dt><dt><a href="CUPS-printing.html#id2967504">Prepare your smb.conf for
-cupsaddsmb</a></dt><dt><a href="CUPS-printing.html#id2967550">CUPS Package of &quot;PostScript Driver for WinNT/2k/XP&quot;</a></dt><dt><a href="CUPS-printing.html#id2967748">Recognize the different Driver Files</a></dt><dt><a href="CUPS-printing.html#id2967806">Acquiring the Adobe Driver Files</a></dt><dt><a href="CUPS-printing.html#id2967838">ESP Print Pro Package of &quot;PostScript Driver for
-WinNT/2k/XP&quot;</a></dt><dt><a href="CUPS-printing.html#id2967888">Caveats to be considered</a></dt><dt><a href="CUPS-printing.html#id2968110">What are the Benefits of using the &quot;CUPS PostScript Driver for
-Windows NT/2k/XP&quot; as compared to the Adobe Driver?</a></dt><dt><a href="CUPS-printing.html#id2968291">Run &quot;cupsaddsmb&quot; (quiet Mode)</a></dt><dt><a href="CUPS-printing.html#id2968392">Run &quot;cupsaddsmb&quot; with verbose Output</a></dt><dt><a href="CUPS-printing.html#id2968534">Understanding cupsaddsmb</a></dt><dt><a href="CUPS-printing.html#id2968628">How to recognize if cupsaddsm completed successfully</a></dt><dt><a href="CUPS-printing.html#id2968716">cupsaddsmb with a Samba PDC</a></dt><dt><a href="CUPS-printing.html#id2968750">cupsaddsmb Flowchart</a></dt><dt><a href="CUPS-printing.html#id2968801">Installing the PostScript Driver on a Client</a></dt><dt><a href="CUPS-printing.html#id2968916">Avoiding critical PostScript Driver Settings on the
-Client</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2969051">Installing PostScript Driver Files manually (using
-rpcclient)</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2969166">A Check of the rpcclient man Page</a></dt><dt><a href="CUPS-printing.html#id2969278">Understanding the rpcclient man Page</a></dt><dt><a href="CUPS-printing.html#id2969357">Producing an Example by querying a Windows Box</a></dt><dt><a href="CUPS-printing.html#id2969447">What is required for adddriver and setdriver to succeed</a></dt><dt><a href="CUPS-printing.html#id2969609">Manual Commandline Driver Installation in 15 little Steps</a></dt><dt><a href="CUPS-printing.html#id2970229">Troubleshooting revisited</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2970331">The printing *.tdb Files</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2970434">Trivial DataBase Files</a></dt><dt><a href="CUPS-printing.html#id2970504">Binary Format</a></dt><dt><a href="CUPS-printing.html#id2970566">Losing *.tdb Files</a></dt><dt><a href="CUPS-printing.html#id2970624">Using tdbbackup</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2970686">CUPS Print Drivers from Linuxprinting.org</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2970793">foomatic-rip and Foomatic explained</a></dt><dt><a href="CUPS-printing.html#id2971421">foomatic-rip and Foomatic-PPD Download and Installation</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2971878">Page Accounting with CUPS</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2971910">Setting up Quotas</a></dt><dt><a href="CUPS-printing.html#id2971941">Correct and incorrect Accounting</a></dt><dt><a href="CUPS-printing.html#id2971982">Adobe and CUPS PostScript Drivers for Windows Clients</a></dt><dt><a href="CUPS-printing.html#id2972054">The page_log File Syntax</a></dt><dt><a href="CUPS-printing.html#id2972155">Possible Shortcomings</a></dt><dt><a href="CUPS-printing.html#id2972226">Future Developments</a></dt><dt><a href="CUPS-printing.html#id2972275">Other Accounting Tools</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2972290">Additional Material</a></dt><dt><a href="CUPS-printing.html#id2972483">Auto-Deletion or Preservation of CUPS Spool Files</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2972529">CUPS Configuration Settings explained</a></dt><dt><a href="CUPS-printing.html#id2972611">Pre-conditions</a></dt><dt><a href="CUPS-printing.html#id2972672">Manual Configuration</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2972690">When not to use Samba to print to
-CUPS</a></dt><dt><a href="CUPS-printing.html#id2972707">In Case of Trouble.....</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2972742">Where to find Documentation</a></dt><dt><a href="CUPS-printing.html#id2972755">How to ask for Help</a></dt><dt><a href="CUPS-printing.html#id2972768">Where to find Help</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2972782">Appendix</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2972789">Printing from CUPS to Windows attached
-Printers</a></dt><dt><a href="CUPS-printing.html#id2972982">More CUPS filtering Chains</a></dt><dt><a href="CUPS-printing.html#id2973237">Trouble Shooting Guidelines to fix typical Samba printing
-Problems</a></dt><dt><a href="CUPS-printing.html#id2974343">An Overview of the CUPS Printing Processes</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2956942"></a>Introduction</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956949"></a>Features and Benefits</h3></div></div><div></div></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 19. CUPS Printing Support in Samba 3.0</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="printing.html" title="Chapter 18. Classical Printing Support"><link rel="next" href="VFS.html" title="Chapter 20. Stackable VFS modules"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 19. CUPS Printing Support in Samba 3.0</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="printing.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="VFS.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="CUPS-printing"></a>Chapter 19. CUPS Printing Support in Samba 3.0</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Kurt</span> <span class="surname">Pfeifle</span></h3><div class="affiliation"><span class="orgname"> Danka Deutschland GmbH <br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:kpfeifle@danka.de">kpfeifle@danka.de</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Ciprian</span> <span class="surname">Vizitiu</span></h3><span class="contrib">drawings</span><div class="affiliation"><div class="address"><p><tt class="email">&lt;<a href="mailto:CVizitiu@gbif.org">CVizitiu@gbif.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate"> (3 June 2003) </p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="CUPS-printing.html#id2953785">Introduction</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2953792">Features and Benefits</a></dt><dt><a href="CUPS-printing.html#id2953845">Overview</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2953900">Basic Configuration of CUPS support</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2953979">Linking of smbd with libcups.so</a></dt><dt><a href="CUPS-printing.html#id2954122">Simple smb.conf Settings for CUPS</a></dt><dt><a href="CUPS-printing.html#id2954205">More complex smb.conf Settings for
+CUPS</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2954322">Advanced Configuration</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2954343">Central spooling vs. &quot;Peer-to-Peer&quot; printing</a></dt><dt><a href="CUPS-printing.html#id2954370">CUPS/Samba as a &quot;spooling-only&quot; Print Server; &quot;raw&quot; printing
+with Vendor Drivers on Windows Clients</a></dt><dt><a href="CUPS-printing.html#id2954406">Driver Installation Methods on Windows Clients</a></dt><dt><a href="CUPS-printing.html#id2954465">Explicitly enable &quot;raw&quot; printing for
+application/octet-stream!</a></dt><dt><a href="CUPS-printing.html#id2954626">Three familiar Methods for driver upload plus a new one</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2954719">Using CUPS/Samba in an advanced Way -- intelligent printing
+with PostScript Driver Download</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2954794">GDI on Windows -- PostScript on Unix</a></dt><dt><a href="CUPS-printing.html#id2954839">Windows Drivers, GDI and EMF</a></dt><dt><a href="CUPS-printing.html#id2954940">Unix Printfile Conversion and GUI Basics</a></dt><dt><a href="CUPS-printing.html#id2955028">PostScript and Ghostscript</a></dt><dt><a href="CUPS-printing.html#id2955125">Ghostscript -- the Software RIP for non-PostScript Printers</a></dt><dt><a href="CUPS-printing.html#id2955238">PostScript Printer Description (PPD) Specification</a></dt><dt><a href="CUPS-printing.html#id2955308">CUPS can use all Windows-formatted Vendor PPDs</a></dt><dt><a href="CUPS-printing.html#id2955397">CUPS also uses PPDs for non-PostScript Printers</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2955420">The CUPS Filtering Architecture</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2955560">MIME types and CUPS Filters</a></dt><dt><a href="CUPS-printing.html#id2955747">MIME type Conversion Rules</a></dt><dt><a href="CUPS-printing.html#id2955864">Filter Requirements</a></dt><dt><a href="CUPS-printing.html#id2956034">Prefilters</a></dt><dt><a href="CUPS-printing.html#id2956120">pstops</a></dt><dt><a href="CUPS-printing.html#id2956222">pstoraster</a></dt><dt><a href="CUPS-printing.html#id2956377">imagetops and imagetoraster</a></dt><dt><a href="CUPS-printing.html#id2956434">rasterto [printers specific]</a></dt><dt><a href="CUPS-printing.html#id2956519">CUPS Backends</a></dt><dt><a href="CUPS-printing.html#id2956831">cupsomatic/Foomatic -- how do they fit into the Picture?</a></dt><dt><a href="CUPS-printing.html#id2956944">The Complete Picture</a></dt><dt><a href="CUPS-printing.html#id2956960">mime.convs</a></dt><dt><a href="CUPS-printing.html#id2957012">&quot;Raw&quot; printing</a></dt><dt><a href="CUPS-printing.html#id2957066">&quot;application/octet-stream&quot; printing</a></dt><dt><a href="CUPS-printing.html#id2957282">PostScript Printer Descriptions (PPDs) for non-PS Printers</a></dt><dt><a href="CUPS-printing.html#id2957510">Difference between cupsomatic/foomatic-rip and
+native CUPS printing</a></dt><dt><a href="CUPS-printing.html#id2957666">Examples for filtering Chains</a></dt><dt><a href="CUPS-printing.html#id2957897">Sources of CUPS drivers / PPDs</a></dt><dt><a href="CUPS-printing.html#id2958024">Printing with Interface Scripts</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2958100">Network printing (purely Windows)</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2958116">From Windows Clients to an NT Print Server</a></dt><dt><a href="CUPS-printing.html#id2958155">Driver Execution on the Client</a></dt><dt><a href="CUPS-printing.html#id2958227">Driver Execution on the Server</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2958289">Network Printing (Windows clients -- UNIX/Samba Print
+Servers)</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2958310">From Windows Clients to a CUPS/Samba Print Server</a></dt><dt><a href="CUPS-printing.html#id2958474">Samba receiving Jobfiles and passing them to CUPS</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2958550">Network PostScript RIP: CUPS Filters on Server -- clients use
+PostScript Driver with CUPS-PPDs</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2958605">PPDs for non-PS Printers on UNIX</a></dt><dt><a href="CUPS-printing.html#id2958646">PPDs for non-PS Printers on Windows</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2958712">Windows Terminal Servers (WTS) as CUPS Clients</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2958729">Printer Drivers running in &quot;Kernel Mode&quot; cause many
+Problems</a></dt><dt><a href="CUPS-printing.html#id2958763">Workarounds impose Heavy Limitations</a></dt><dt><a href="CUPS-printing.html#id2958784">CUPS: a &quot;Magical Stone&quot;?</a></dt><dt><a href="CUPS-printing.html#id2958811">PostScript Drivers with no major problems -- even in Kernel
+Mode</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2958865"> Setting up CUPS for driver Download</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2958884">cupsaddsmb: the unknown Utility</a></dt><dt><a href="CUPS-printing.html#id2958976">Prepare your smb.conf for
+cupsaddsmb</a></dt><dt><a href="CUPS-printing.html#id2959022">CUPS Package of &quot;PostScript Driver for WinNT/2k/XP&quot;</a></dt><dt><a href="CUPS-printing.html#id2959220">Recognize the different Driver Files</a></dt><dt><a href="CUPS-printing.html#id2959278">Acquiring the Adobe Driver Files</a></dt><dt><a href="CUPS-printing.html#id2959310">ESP Print Pro Package of &quot;PostScript Driver for
+WinNT/2k/XP&quot;</a></dt><dt><a href="CUPS-printing.html#id2959360">Caveats to be considered</a></dt><dt><a href="CUPS-printing.html#id2959582">What are the Benefits of using the &quot;CUPS PostScript Driver for
+Windows NT/2k/XP&quot; as compared to the Adobe Driver?</a></dt><dt><a href="CUPS-printing.html#id2959764">Run &quot;cupsaddsmb&quot; (quiet Mode)</a></dt><dt><a href="CUPS-printing.html#id2959865">Run &quot;cupsaddsmb&quot; with verbose Output</a></dt><dt><a href="CUPS-printing.html#id2960092">Understanding cupsaddsmb</a></dt><dt><a href="CUPS-printing.html#id2960186">How to recognize if cupsaddsm completed successfully</a></dt><dt><a href="CUPS-printing.html#id2960273">cupsaddsmb with a Samba PDC</a></dt><dt><a href="CUPS-printing.html#id2960308">cupsaddsmb Flowchart</a></dt><dt><a href="CUPS-printing.html#id2960361">Installing the PostScript Driver on a Client</a></dt><dt><a href="CUPS-printing.html#id2960474">Avoiding critical PostScript Driver Settings on the
+Client</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2960608">Installing PostScript Driver Files manually (using
+rpcclient)</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2960723">A Check of the rpcclient man Page</a></dt><dt><a href="CUPS-printing.html#id2960836">Understanding the rpcclient man Page</a></dt><dt><a href="CUPS-printing.html#id2960925">Producing an Example by querying a Windows Box</a></dt><dt><a href="CUPS-printing.html#id2961015">What is required for adddriver and setdriver to succeed</a></dt><dt><a href="CUPS-printing.html#id2961177">Manual Commandline Driver Installation in 15 little Steps</a></dt><dt><a href="CUPS-printing.html#id2961830">Troubleshooting revisited</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2961930">The printing *.tdb Files</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2962033">Trivial DataBase Files</a></dt><dt><a href="CUPS-printing.html#id2962103">Binary Format</a></dt><dt><a href="CUPS-printing.html#id2962165">Losing *.tdb Files</a></dt><dt><a href="CUPS-printing.html#id2962224">Using tdbbackup</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2962290">CUPS Print Drivers from Linuxprinting.org</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2962398">foomatic-rip and Foomatic explained</a></dt><dt><a href="CUPS-printing.html#id2963027">foomatic-rip and Foomatic-PPD Download and Installation</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2963488">Page Accounting with CUPS</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2963519">Setting up Quotas</a></dt><dt><a href="CUPS-printing.html#id2963551">Correct and incorrect Accounting</a></dt><dt><a href="CUPS-printing.html#id2963592">Adobe and CUPS PostScript Drivers for Windows Clients</a></dt><dt><a href="CUPS-printing.html#id2963663">The page_log File Syntax</a></dt><dt><a href="CUPS-printing.html#id2963765">Possible Shortcomings</a></dt><dt><a href="CUPS-printing.html#id2963836">Future Developments</a></dt><dt><a href="CUPS-printing.html#id2963884">Other Accounting Tools</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2963899">Additional Material</a></dt><dt><a href="CUPS-printing.html#id2964092">Auto-Deletion or Preservation of CUPS Spool Files</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2964138">CUPS Configuration Settings explained</a></dt><dt><a href="CUPS-printing.html#id2964221">Pre-conditions</a></dt><dt><a href="CUPS-printing.html#id2964281">Manual Configuration</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2964299">When not to use Samba to print to
+CUPS</a></dt><dt><a href="CUPS-printing.html#id2964316">In Case of Trouble.....</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2964352">Where to find Documentation</a></dt><dt><a href="CUPS-printing.html#id2964364">How to ask for Help</a></dt><dt><a href="CUPS-printing.html#id2964377">Where to find Help</a></dt></dl></dd><dt><a href="CUPS-printing.html#id2964391">Appendix</a></dt><dd><dl><dt><a href="CUPS-printing.html#id2964398">Printing from CUPS to Windows attached
+Printers</a></dt><dt><a href="CUPS-printing.html#id2964612">More CUPS filtering Chains</a></dt><dt><a href="CUPS-printing.html#id2964919">Trouble Shooting Guidelines to fix typical Samba printing
+Problems</a></dt><dt><a href="CUPS-printing.html#id2966041">An Overview of the CUPS Printing Processes</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2953785"></a>Introduction</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2953792"></a>Features and Benefits</h3></div></div><div></div></div><p>
 			The Common Unix Print System (<a href="http://www.cups.org/" target="_top">CUPS</a>) has become very popular. All
 			big Linux distributions now ship it as their default printing
 			system. But to many it is still a very mystical tool.  Normally it
@@ -41,7 +40,7 @@ Problems</a></dt><dt><a href="CUPS-printing.html#id2974343">An Overview of the C
 			contained. But lets start with the most basic things first. Maybe this
 			is all you need for now. Then you can skip most of the other
 			paragraphs.
-		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956998"></a>Overview</h3></div></div><div></div></div><p>
+		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2953845"></a>Overview</h3></div></div><div></div></div><p>
 			CUPS is more than just a print spooling system. It is a complete
 			printer management system that complies with the new IPP
 			(<span class="emphasis"><em>Internet Printing Protocol</em></span>). IPP is an industry
@@ -61,7 +60,7 @@ Problems</a></dt><dt><a href="CUPS-printing.html#id2974343">An Overview of the C
 			argue that CUPS is better! In any case, let us now move on to
 			explore how one may configure CUPS for interfacing with MS Windows
 			print clients via Samba.
-		</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2957049"></a>Basic Configuration of CUPS support</h2></div></div><div></div></div><p>
+		</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2953900"></a>Basic Configuration of CUPS support</h2></div></div><div></div></div><p>
 		Printing with CUPS in the most basic <tt class="filename">smb.conf</tt>
 		setup in Samba 3.0 (as was true for 2.2.x) only needs two
 		settings: <i class="parameter"><tt>printing = cups</tt></i> and <i class="parameter"><tt>printcap
@@ -77,7 +76,7 @@ Problems</a></dt><dt><a href="CUPS-printing.html#id2974343">An Overview of the C
 		details see <b class="command">man cupsd.conf</b> and other CUPS-related
 		documentation, like the wealth of documents on your CUPS server
 		itself: <a href="http://localhost:631/documentation.html" target="_top">http://localhost:631/documentation.html</a>.
-	</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957129"></a>Linking of smbd with <tt class="filename">libcups.so</tt></h3></div></div><div></div></div><p>
+	</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2953979"></a>Linking of smbd with libcups.so</h3></div></div><div></div></div><p>
 			Samba has a very special relationship to CUPS. The reason is: Samba
 			can be compiled with CUPS library support. Most recent installations
 			have this support enabled, and per default CUPS linking is compiled
@@ -114,9 +113,9 @@ Problems</a></dt><dt><a href="CUPS-printing.html#id2974343">An Overview of the C
 				<i class="parameter"><tt>print command</tt></i>; other commands are
 				<i class="parameter"><tt>lppause command, lpresume command, lpq command, lprm
 					command, queuepause command </tt></i> and <i class="parameter"><tt>queue resume
-					command</tt></i>).</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950037"></a>Simple <tt class="filename">smb.conf</tt> Settings for CUPS</h3></div></div><div></div></div><p>
+					command</tt></i>).</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954122"></a>Simple <tt class="filename">smb.conf</tt> Settings for CUPS</h3></div></div><div></div></div><p>
 			To summarize, here is the simplest printing-related setup
-			for<tt class="filename">smb.conf</tt> to enable basic CUPS support:
+			for <tt class="filename">smb.conf</tt> to enable basic CUPS support:
 		</p><pre class="screen">
 
 				[global]
@@ -149,10 +148,10 @@ Problems</a></dt><dt><a href="CUPS-printing.html#id2974343">An Overview of the C
 			printer is not a PostScript device, the print data stream is &quot;binary&quot;,
 			sensible only for the target printer. Read on to learn which problem
 			this may cause and how to avoid it.
-		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950100"></a>More complex <tt class="filename">smb.conf</tt> Settings for
+		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954205"></a>More complex <tt class="filename">smb.conf</tt> Settings for
 CUPS</h3></div></div><div></div></div><p>
 Here is a slightly more complex printing-related setup
-for<tt class="filename">smb.conf</tt>. It enables general CUPS printing
+for <tt class="filename">smb.conf</tt>. It enables general CUPS printing
 support for all printers, but defines one printer share which is set
 up differently.
 </p><pre class="screen">
@@ -190,7 +189,7 @@ up differently.
 
 </pre><p>
 This special share is only there for my testing purposes. It doesn't
-even write the printjob to a file. It just logs the job parameters
+even write the print job to a file. It just logs the job parameters
 known to Samba into the <tt class="filename">/tmp/smbprn.log</tt> file and
 deletes the jobfile. Moreover, the <i class="parameter"><tt>printer
 admin</tt></i> of this share is &quot;kurt&quot; (not the &quot;@ntadmins&quot; group);
@@ -200,13 +199,13 @@ allowing access from three hosts. To prevent CUPS kicking in and
 taking over the print jobs for that share, we need to set
 <i class="parameter"><tt>printing = sysv</tt></i> and <i class="parameter"><tt>printcap =
 lpstat</tt></i>.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2950199"></a>Advanced Configuration</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2954322"></a>Advanced Configuration</h2></div></div><div></div></div><p>
 Before we dive into all the configuration options, let's clarify a few
 points. <span class="emphasis"><em>Network printing needs to be organized and setup
 correctly</em></span>. Often this is not done correctly. Legacy systems
 or small LANs in business environments often lack a clear design and
 good housekeeping.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950220"></a>Central spooling vs. &quot;Peer-to-Peer&quot; printing</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954343"></a>Central spooling vs. &quot;Peer-to-Peer&quot; printing</h3></div></div><div></div></div><p>
 Many small office or home networks, as well as badly organized larger
 environments, allow each client a direct access to available network
 printers. Generally, this is a bad idea. It often blocks one client's
@@ -218,13 +217,13 @@ is the usage of a &quot;print server&quot;: it routes all jobs through one
 central system, which responds immediately, takes jobs from multiple
 concurrent clients at the same time and in turn transfers them to the
 printer(s) in the correct order.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950247"></a>CUPS/Samba as a &quot;spooling-only&quot; Print Server; &quot;raw&quot; printing
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954370"></a>CUPS/Samba as a &quot;spooling-only&quot; Print Server; &quot;raw&quot; printing
 with Vendor Drivers on Windows Clients</h3></div></div><div></div></div><p>
 Most traditionally configured Unix print servers acting on behalf of
 Samba's Windows clients represented a really simple setup. Their only
 task was to manage the &quot;raw&quot; spooling of all jobs handed to them by
 Samba. This approach meant that the Windows clients were expected to
-prepare the printjob file in such a way that it became fit to be fed to
+prepare the print job file in such a way that it became fit to be fed to
 the printing device. Here a native (vendor-supplied) Windows printer
 driver for the target device needed to be installed on each and every
 client.
@@ -237,7 +236,7 @@ sent in a format that is suitable for direct delivery to the
 printer. Clients need to run the vendor-provided drivers to do
 this. In this case CUPS will NOT do any print file format conversion
 work.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950283"></a>Driver Installation Methods on Windows Clients</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954406"></a>Driver Installation Methods on Windows Clients</h3></div></div><div></div></div><p>
 The printer drivers on the Windows clients may be installed
 in two functionally different ways:
 </p><div class="itemizedlist"><ul type="disc"><li><p>manually install the drivers locally on each client,
@@ -250,7 +249,7 @@ first time they access the printer; with this method NT/2K/XP
 clients use the <span class="emphasis"><em>SPOOLSS/MS-RPC</em></span>
 type printing calls.</p></li></ul></div><p>
 The second method is recommended for use over the first.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950342"></a>Explicitly enable &quot;raw&quot; printing for
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954465"></a>Explicitly enable &quot;raw&quot; printing for
 <span class="emphasis"><em>application/octet-stream</em></span>!</h3></div></div><div></div></div><p>
 If you use the first option (drivers are installed on the client
 side), there is one setting to take care of: CUPS needs to be told
@@ -299,7 +298,7 @@ This is all you need to know to get the CUPS/Samba combo printing
 locally installed. If you are not interested in background information about
 more advanced CUPS/Samba printing, simply skip the remaining sections
 of this chapter.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950503"></a>Three familiar Methods for driver upload plus a new one</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954626"></a>Three familiar Methods for driver upload plus a new one</h3></div></div><div></div></div><p>
 If you want to use the MS-RPC type printing, you must upload the
 drivers onto the Samba server first (<i class="parameter"><tt>[print$]</tt></i>
 share). For a discussion on how to deposit printer drivers on the
@@ -321,7 +320,7 @@ utility.</p></li></ul></div><p>
 cupsaddsmb is discussed in much detail further below. But we will
 first explore the CUPS filtering system and compare the Windows and
 UNIX printing architectures.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2950596"></a>Using CUPS/Samba in an advanced Way -- intelligent printing
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2954719"></a>Using CUPS/Samba in an advanced Way -- intelligent printing
 with PostScript Driver Download</h2></div></div><div></div></div><p>
 Still reading on? Good. Let's go into more detail then. We now know
 how to set up a &quot;dump&quot; printserver, that is, a server which is spooling
@@ -346,7 +345,7 @@ how CUPS works and how you can enable its features.
 What follows is the comparison of some fundamental concepts for
 Windows and Unix printing; then is the time for a description of the
 CUPS filtering system, how it works and how you can tweak it.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950671"></a>GDI on Windows -- PostScript on Unix</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954794"></a>GDI on Windows -- PostScript on Unix</h3></div></div><div></div></div><p>
 Network printing is one of the most complicated and error-prone
 day-to-day tasks any user or an administrator may encounter. This is
 true for all OS platforms. And there are reasons for this.
@@ -355,14 +354,14 @@ You can't expect for most file formats to just throw them towards
 printers and they get printed. There needs to be a file format
 conversion in between. The problem is: there is no common standard for
 print file formats across all manufacturers and printer types.  While
-<span class="emphasis"><em>PostScript</em></span> (trademark held by Adobe), and to an
-extend<span class="emphasis"><em>PCL</em></span> (trademark held by HP), have developed
+<span class="emphasis"><em>PostScript</em></span> (trademark held by Adobe), and, to an
+extent, <span class="emphasis"><em>PCL</em></span> (trademark held by HP), have developed
 into semi-official &quot;standards&quot;, by being the most widely used PDLs
 (<span class="emphasis"><em>Page Description Languages</em></span>), there are still
 many manufacturers who &quot;roll their own&quot; (their reasons may be
 unacceptable license fees for using printer-embedded PostScript
 interpreters, etc.).
-</p></div><div xmlns:ns51="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950716"></a>Windows Drivers, GDI and EMF</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954839"></a>Windows Drivers, GDI and EMF</h3></div></div><div></div></div><p>
 In Windows OS, the format conversion job is done by the printer
 drivers. On MS Windows OS platforms all application programmers have
 at their disposal a built-in API, the GDI (<span class="emphasis"><em>Graphical Device
@@ -384,10 +383,10 @@ put paper and screen output on a common foundation for their
 (BSD-Unix-based, did you know??) Mac OS X and Darwin Operating
 Systems.Their <span class="emphasis"><em>Core Graphic Engine</em></span> uses a
 <span class="emphasis"><em>PDF</em></span> derivate for all display work.
-</p></div><ns51:p>
+</p></div><p>
 
-</ns51:p><div class="figure"><a name="id2950780"></a><p class="title"><b>Figure 19.1. Windows Printing to a local Printer</b></p><div class="mediaobject"><img src="projdoc/imagefiles/1small.png" alt="Windows Printing to a local Printer"></div></div><ns51:p>
-</ns51:p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950814"></a>Unix Printfile Conversion and GUI Basics</h3></div></div><div></div></div><p>
+</p><div class="figure"><a name="id2954904"></a><p class="title"><b>Figure 19.1. Windows Printing to a local Printer</b></p><div class="mediaobject"><img src="projdoc/imagefiles/1small.png" alt="Windows Printing to a local Printer"></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2954940"></a>Unix Printfile Conversion and GUI Basics</h3></div></div><div></div></div><p>
 In Unix and Linux, there is no comparable layer built into the OS
 kernel(s) or the X (screen display) server. Every application is
 responsible for itself to create its print output.  Fortunately, most
@@ -423,7 +422,7 @@ form and you will be reading its PostScript code, the language
 instructions which need to be interpreted by a rasterizer. Rasterizers
 produce pixel images, which may be displayed on screen by a viewer
 program or on paper by a printer.
-</p></div><div xmlns:ns52="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950886"></a>PostScript and Ghostscript</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2955028"></a>PostScript and Ghostscript</h3></div></div><div></div></div><p>
 So, Unix is lacking a common ground for printing on paper and
 displaying on screen. Despite this unfavorable legacy for Unix, basic
 printing is fairly easy: if you have PostScript printers at your
@@ -442,9 +441,9 @@ options a printer supports: duplexing, stapling, punching... Therefore
 Unix users for a long time couldn't choose many of the supported
 device and job options, unlike Windows or Apple users. But now there
 is CUPS.... ;-)
-</p></div><ns52:p>
-</ns52:p><div class="figure"><a name="id2950932"></a><p class="title"><b>Figure 19.2. Printing to a Postscript Printer</b></p><div class="mediaobject"><img src="projdoc/imagefiles/2small.png" alt="Printing to a Postscript Printer"></div></div><ns52:p>
-</ns52:p><p>
+</p></div><p>
+</p><div class="figure"><a name="id2955075"></a><p class="title"><b>Figure 19.2. Printing to a Postscript Printer</b></p><div class="mediaobject"><img src="projdoc/imagefiles/2small.png" alt="Printing to a Postscript Printer"></div></div><p>
+</p><p>
 However, there are other types of printers out there. These don't know
 how to print PostScript. They use their own <span class="emphasis"><em>Page Description
 Language</em></span> (PDL, often proprietary). To print to them is much
@@ -452,17 +451,17 @@ more demanding. Since your Unix applications mostly produce
 PostScript, and since these devices don't understand PostScript, you
 need to convert the printfiles to a format suitable for your printer
 on the host, before you can send it away.
-</p></div><div xmlns:ns53="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950982"></a>Ghostscript -- the Software RIP for non-PostScript Printers</h3></div></div><div></div></div><p>
-Here is where<span class="emphasis"><em>Ghostscript</em></span> kicks in. Ghostscript is
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2955125"></a>Ghostscript -- the Software RIP for non-PostScript Printers</h3></div></div><div></div></div><p>
+Here is where <span class="emphasis"><em>Ghostscript</em></span> kicks in. Ghostscript is
 the traditional (and quite powerful) PostScript interpreter used on
 Unix platforms. It is a RIP in software, capable to do a
 <span class="emphasis"><em>lot</em></span> of file format conversions, for a very broad
 spectrum of hardware devices as well as software file formats.
 Ghostscript technology and drivers is what enables PostScript printing
 to non-PostScript hardware.
-</p><ns53:p>
-</ns53:p><div class="figure"><a name="id2951012"></a><p class="title"><b>Figure 19.3. Ghostscript as a RIP for non-postscript printers</b></p><div class="mediaobject"><img src="projdoc/imagefiles/3small.png" alt="Ghostscript as a RIP for non-postscript printers"></div></div><ns53:p>
-</ns53:p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Tip</h3><p>
+</p><p>
+</p><div class="figure"><a name="id2955155"></a><p class="title"><b>Figure 19.3. Ghostscript as a RIP for non-postscript printers</b></p><div class="mediaobject"><img src="projdoc/imagefiles/3small.png" alt="Ghostscript as a RIP for non-postscript printers"></div></div><p>
+</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Tip</h3><p>
 Use the &quot;gs -h&quot; command to check for all built-in &quot;devices&quot; of your
 Ghostscript version. If you specify e.g. a parameter of
 <i class="parameter"><tt>-sDEVICE=png256</tt></i> on your Ghostscript command
@@ -479,7 +478,7 @@ enhancement over GNU Ghostscript, with lots of bug-fixes, additional
 devices and improvements. It is jointly maintained by developers from
 CUPS, Gimp-Print, MandrakeSoft, SuSE, RedHat and Debian. It includes
 the &quot;cups&quot; device (essential to print to non-PS printers from CUPS).
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2951078"></a>PostScript Printer Description (PPD) Specification</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2955238"></a>PostScript Printer Description (PPD) Specification</h3></div></div><div></div></div><p>
 While PostScript in essence is a <span class="emphasis"><em>Page Description
 Language</em></span> (PDL) to represent the page layout in a
 <span class="emphasis"><em>device independent</em></span> way, real world print jobs are
@@ -510,7 +509,7 @@ for achieving a certain print job output (e.g. duplexed, stapled and
 punched) on a specific target machine, may not print as expected, or
 may not be printable at all on other models; it also may not be fit
 for further processing by software (e.g. by a PDF distilling program).
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963900"></a>CUPS can use all Windows-formatted Vendor PPDs</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2955308"></a>CUPS can use all Windows-formatted Vendor PPDs</h3></div></div><div></div></div><p>
 CUPS can handle all spec-compliant PPDs as supplied by the
 manufacturers for their PostScript models. Even if a
 Unix/Linux-illiterate vendor might not have mentioned our favorite
@@ -537,7 +536,7 @@ your LAN has the PostScript driver installed, just use
 access the Windows directory where all printer driver files are
 stored. First look in the <tt class="filename">W32X86/2</tt> subdir for
 the PPD you are seeking.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963990"></a>CUPS also uses PPDs for non-PostScript Printers</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2955397"></a>CUPS also uses PPDs for non-PostScript Printers</h3></div></div><div></div></div><p>
 CUPS also uses specially crafted PPDs to handle non-PostScript
 printers. These PPDs are usually not available from the vendors (and
 no, you can't just take the PPD of a Postscript printer with the same
@@ -545,7 +544,7 @@ model name and hope it works for the non-PostScript version too). To
 understand how these PPDs work for non-PS printers we first need to
 dive deeply into the CUPS filtering and file format conversion
 architecture. Stay tuned.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2964013"></a>The CUPS Filtering Architecture</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2955420"></a>The CUPS Filtering Architecture</h2></div></div><div></div></div><p>
 The core of the CUPS filtering system is based on
 <span class="emphasis"><em>Ghostscript</em></span>. In addition to Ghostscript, CUPS
 uses some other filters of its own. You (or your OS vendor) may have
@@ -587,7 +586,7 @@ others. However, even for Foomatic/cupsomatic usage, best results and
 broadest printer model support is provided by ESP Ghostscript (more
 about cupsomatic/Foomatic, particularly the new version called now
 <span class="emphasis"><em>foomatic-rip</em></span>, follows below).
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964151"></a>MIME types and CUPS Filters</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2955560"></a>MIME types and CUPS Filters</h3></div></div><div></div></div><p>
 CUPS reads the file <tt class="filename">/etc/cups/mime.types</tt>
 (and all other files carrying a <tt class="filename">*.types</tt> suffix
 in the same directory) upon startup. These files contain the MIME
@@ -640,7 +639,7 @@ CUPS can handle ASCII text, HP-GL, PDF, PostScript, DVI and a
 lot of image formats (GIF. PNG, TIFF, JPEG, Photo-CD, SUN-Raster,
 PNM, PBM, SGI-RGB and some more) and their associated MIME types
 with its filters.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964338"></a>MIME type Conversion Rules</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2955747"></a>MIME type Conversion Rules</h3></div></div><div></div></div><p>
 CUPS reads the file <tt class="filename">/etc/cups/mime.convs</tt>
 (and all other files named with a <tt class="filename">*.convs</tt>
 suffix in the same directory) upon startup. These files contain
@@ -681,7 +680,7 @@ The last two examples name the <span class="emphasis"><em>texttops</em></span> f
 to work on &quot;text/plain&quot; as well as on &quot;application/x-shell&quot;. (Hint:
 this differentiation is needed for the syntax highlighting feature of
 &quot;texttops&quot;).
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964455"></a>Filter Requirements</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2955864"></a>Filter Requirements</h3></div></div><div></div></div><p>
 There are many more combinations named in mime.convs.  However, you
 are not limited to use the ones pre-defined there. You can plug in any
 filter you like into the CUPS framework. It must meet, or must be made
@@ -702,7 +701,7 @@ attribute</p></dd><dt><span class="term">Printer</span></dt><dd><p>The string fr
 attribute</p></dd><dt><span class="term">Printer</span></dt><dd><p>The job options</p></dd><dt><span class="term">Printer</span></dt><dd><p>(Optionally) The print request file (if missing,
 filters expected data fed through <tt class="filename">stdin</tt>). In most
 cases it is very easy to write a simple wrapper script around existing
-filters to make them work with CUPS.</p></dd></dl></div></div></div><div xmlns:ns54="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964624"></a>Prefilters</h3></div></div><div></div></div><p>
+filters to make them work with CUPS.</p></dd></dl></div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956034"></a>Prefilters</h3></div></div><div></div></div><p>
 As was said, PostScript is the central file format to any Unix based
 printing system. From PostScript, CUPS generates raster data to feed
 non-PostScript printers.
@@ -719,18 +718,18 @@ the <span class="emphasis"><em>imagetops</em></span> filter. Its outcome is alwa
 MIME type <span class="emphasis"><em>application/vnd.cups-postscript</em></span>
 (<span class="emphasis"><em>not</em></span> application/postscript), meaning it has the
 print options already embedded into the file.
-</p><ns54:p>
-</ns54:p><div class="figure"><a name="id2964674"></a><p class="title"><b>Figure 19.4. Prefiltering in CUPS to form Postscript</b></p><div class="mediaobject"><img src="projdoc/imagefiles/4small.png" alt="Prefiltering in CUPS to form Postscript"></div></div><ns54:p>
-</ns54:p></div><div xmlns:ns55="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964708"></a>pstops</h3></div></div><div></div></div><p>
+</p><p>
+</p><div class="figure"><a name="id2956084"></a><p class="title"><b>Figure 19.4. Prefiltering in CUPS to form Postscript</b></p><div class="mediaobject"><img src="projdoc/imagefiles/4small.png" alt="Prefiltering in CUPS to form Postscript"></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956120"></a>pstops</h3></div></div><div></div></div><p>
 <span class="emphasis"><em>pstops</em></span>is the filter to convert
 <span class="emphasis"><em>application/postscript</em></span> to
 <span class="emphasis"><em>application/vnd.cups-postscript</em></span>. It was said
 above that this filter inserts all device-specific print options
 (commands to the printer to ask for the duplexing of output, or
 stapling an punching it, etc.) into the PostScript file.
-</p><ns55:p>
-</ns55:p><div class="figure"><a name="id2964739"></a><p class="title"><b>Figure 19.5. Adding Device-specific Print Options</b></p><div class="mediaobject"><img src="projdoc/imagefiles/5small.png" alt="Adding Device-specific Print Options"></div></div><ns55:p>
-</ns55:p><p>
+</p><p>
+</p><div class="figure"><a name="id2956149"></a><p class="title"><b>Figure 19.5. Adding Device-specific Print Options</b></p><div class="mediaobject"><img src="projdoc/imagefiles/5small.png" alt="Adding Device-specific Print Options"></div></div><p>
+</p><p>
 This is not all: other tasks performed by it are:
 </p><div class="itemizedlist"><ul type="disc"><li><p>
 selecting the range of pages to be printed (if you choose to
@@ -741,7 +740,7 @@ putting 2 or more logical pages on one sheet of paper (the
 so-called &quot;number-up&quot; function)
 </p></li><li><p>counting the pages of the job to insert the accounting
 information into the <tt class="filename">/var/log/cups/page_log</tt>
-</p></li></ul></div></div><div xmlns:ns56="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964812"></a>pstoraster</h3></div></div><div></div></div><p>
+</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956222"></a>pstoraster</h3></div></div><div></div></div><p>
 <span class="emphasis"><em>pstoraster</em></span> is at the core of the CUPS filtering
 system. It is responsible for the first stage of the rasterization
 process. Its input is of MIME type application/vnd.cups-postscript;
@@ -749,9 +748,9 @@ its output is application/vnd.cups-raster. This output format is not
 yet meant to be printable. Its aim is to serve as a general purpose
 input format for more specialized <span class="emphasis"><em>raster drivers</em></span>,
 that are able to generate device-specific printer data.
-</p><ns56:p>
-</ns56:p><div class="figure"><a name="id2964842"></a><p class="title"><b>Figure 19.6. Postscript to intermediate Raster format</b></p><div class="mediaobject"><img src="projdoc/imagefiles/6small.png" alt="Postscript to intermediate Raster format"></div></div><ns56:p>
-</ns56:p><p>
+</p><p>
+</p><div class="figure"><a name="id2956251"></a><p class="title"><b>Figure 19.6. Postscript to intermediate Raster format</b></p><div class="mediaobject"><img src="projdoc/imagefiles/6small.png" alt="Postscript to intermediate Raster format"></div></div><p>
+</p><p>
 CUPS raster is a generic raster format with powerful features. It is
 able to include per-page information, color profiles and more to be
 used by the following downstream raster drivers. Its MIME type is
@@ -762,9 +761,9 @@ printer models, should they choose to do so. CUPS always takes care
 for the first stage of rasterization so these vendors don't need to care
 about Ghostscript complications (in fact, there is currently more
 than one vendor financing the development of CUPS raster drivers).
-</p><ns56:p>
-</ns56:p><div class="figure"><a name="id2964894"></a><p class="title"><b>Figure 19.7. CUPS-raster production using Ghostscript</b></p><div class="mediaobject"><img src="projdoc/imagefiles/7small.png" alt="CUPS-raster production using Ghostscript"></div></div><ns56:p>
-</ns56:p><p>
+</p><p>
+</p><div class="figure"><a name="id2956304"></a><p class="title"><b>Figure 19.7. CUPS-raster production using Ghostscript</b></p><div class="mediaobject"><img src="projdoc/imagefiles/7small.png" alt="CUPS-raster production using Ghostscript"></div></div><p>
+</p><p>
 CUPS versions before version 1.1.15 were shipping a binary (or source
 code) standalone filter, named &quot;pstoraster&quot;. pstoraster was derived
 from GNU Ghostscript 5.50, and could be installed besides and in
@@ -777,16 +776,16 @@ integrated back into Ghostscript (now based on GNU Ghostscript version
 parameter. If your Ghostscript doesn't show a success on asking for
 <b class="command">gs -h |grep cups</b>, you might not be able to
 print. Update your Ghostscript then!
-</p></div><div xmlns:ns57="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964968"></a>imagetops and imagetoraster</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956377"></a>imagetops and imagetoraster</h3></div></div><div></div></div><p>
 Above in the section about prefilters, we mentioned the prefilter
 that generates PostScript from image formats. The imagetoraster
 filter is used to convert directly from image to raster, without the
 intermediate PostScript stage. It is used more often than the above
 mentioned prefilters. Here is a summarizing flowchart of image file
 filtering:
-</p><ns57:p>
-</ns57:p><div class="figure"><a name="id2964989"></a><p class="title"><b>Figure 19.8. Image format to CUPS-raster format conversion</b></p><div class="mediaobject"><img src="projdoc/imagefiles/8small.png" alt="Image format to CUPS-raster format conversion"></div></div><ns57:p>
-</ns57:p></div><div xmlns:ns58="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2965023"></a>rasterto [printerspecific]</h3></div></div><div></div></div><p>
+</p><p>
+</p><div class="figure"><a name="id2956398"></a><p class="title"><b>Figure 19.8. Image format to CUPS-raster format conversion</b></p><div class="mediaobject"><img src="projdoc/imagefiles/8small.png" alt="Image format to CUPS-raster format conversion"></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956434"></a>rasterto [printers specific]</h3></div></div><div></div></div><p>
 CUPS ships with quite some different raster drivers processing CUPS
 raster. On my system I find in /usr/lib/cups/filter/ these:
 <i class="parameter"><tt>rastertoalps, rastertobj, rastertoepson, rastertoescp,
@@ -798,9 +797,9 @@ than this; some of these are installed by commercial add-ons to CUPS
 <i class="parameter"><tt>rastertoprinter</tt></i>) by 3rd party driver
 development projects (such as Gimp-Print) wanting to cooperate as
 closely as possible with CUPS.
-</p><ns58:p>
-</ns58:p><div class="figure"><a name="id2965074"></a><p class="title"><b>Figure 19.9. Raster to Printer Specific formats</b></p><div class="mediaobject"><img src="projdoc/imagefiles/9small.png" alt="Raster to Printer Specific formats"></div></div><ns58:p>
-</ns58:p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2965107"></a>CUPS Backends</h3></div></div><div></div></div><p>
+</p><p>
+</p><div class="figure"><a name="id2956484"></a><p class="title"><b>Figure 19.9. Raster to Printer Specific formats</b></p><div class="mediaobject"><img src="projdoc/imagefiles/9small.png" alt="Raster to Printer Specific formats"></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956519"></a>CUPS Backends</h3></div></div><div></div></div><p>
 The last part of any CUPS filtering chain is a &quot;backend&quot;.  Backends
 are special programs that send the print-ready file to the final
 device. There is a separate backend program for any transfer
@@ -874,8 +873,8 @@ PDF (through a &quot;pdfgen:/&quot; backend) or dump them to &quot;/dev/null&quo
 fact I have the system-wide default printer set up to be connected to
 a &quot;devnull:/&quot; backend: there are just too many people sending jobs
 without specifying a printer, or scripts and programs which don't name
-a printer. The system-wided default deletes the job and sends a polite
-mail back to the $USER asking him to alsways specify a correct
+a printer. The system-wide default deletes the job and sends a polite
+mail back to the $USER asking him to always specify a correct
 printername).
 </p><p>
 Not all of the mentioned backends may be present on your system or
@@ -887,7 +886,7 @@ all available backends:
 
  lpinfo -v
 
-</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2965422"></a>cupsomatic/Foomatic -- how do they fit into the Picture?</h3></div></div><div></div></div><p>
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956831"></a>cupsomatic/Foomatic -- how do they fit into the Picture?</h3></div></div><div></div></div><p>
 &quot;cupsomatic&quot; filters may be the most widely used on CUPS
 installations. You must be clear about the fact that these were not
 developed by the CUPS people. They are a &quot;Third Party&quot; add-on to
@@ -908,7 +907,7 @@ You can recognize these PPDs from the line calling the
 This line you may find amongst the first 40 or so lines of the PPD
 file. If you have such a PPD installed, the printer shows up in the
 CUPS web interface with a <span class="emphasis"><em>foomatic</em></span> namepart for
-the driver description. cupsomatic is a Perlscript that runs
+the driver description. cupsomatic is a Perl script that runs
 Ghostscript, with all the complicated commandline options
 auto-constructed from the selected PPD and commandline options give to
 the printjob.
@@ -937,11 +936,11 @@ print-options from page to page, in the middle of a job. And the
 best thing is: the new foomatic-rip now works seamlessly with all
 legacy spoolers too (like LPRng, BSD-LPD, PDQ, PPR etc.), providing
 for them access to use PPDs for their printing!
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2965524"></a>The Complete Picture</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956944"></a>The Complete Picture</h3></div></div><div></div></div><p>
 If you want to see an overview over all the filters and how they
 relate to each other, the complete picture of the puzzle is at the end
 of this document.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2965540"></a><tt class="filename">mime.convs</tt></h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2956960"></a><tt class="filename">mime.convs</tt></h3></div></div><div></div></div><p>
 CUPS auto-constructs all possible filtering chain paths for any given
 MIME type, and every printer installed. But how does it decide in
 favor or against a specific alternative?  (There may often be cases,
@@ -958,7 +957,7 @@ cost. This is a very efficient way to limit the load of any CUPS
 server by setting an appropriate &quot;FilterLimit&quot; value. A FilterLimit of
 200 allows roughly 1 job at a time, while a FilterLimit of 1000 allows
 approximately 5 jobs maximum at a time.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2965593"></a>&quot;Raw&quot; printing</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957012"></a>&quot;Raw&quot; printing</h3></div></div><div></div></div><p>
 You can tell CUPS to print (nearly) any file &quot;raw&quot;. &quot;Raw&quot; means it
 will not be filtered. CUPS will send the file to the printer &quot;as is&quot;
 without bothering if the printer is able to digest it. Users need to
@@ -981,7 +980,7 @@ CUPS will automatically treat each job sent to a queue as a &quot;raw&quot; one,
 if it can't find a PPD associated with the queue.  However, CUPS will
 only send known MIME types (as defined in its own mime.types file) and
 refuse others.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2965647"></a>&quot;application/octet-stream&quot; printing</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957066"></a>&quot;application/octet-stream&quot; printing</h3></div></div><div></div></div><p>
 Any MIME type with no rule in the
 <tt class="filename">/etc/cups/mime.types</tt> file is regarded as unknown
 or <span class="emphasis"><em>application/octet-stream</em></span> and will not be
@@ -1031,7 +1030,7 @@ does not by default allow one to send deliberate (possibly binary)
 data to printing devices.  (This could be easily abused to launch a
 Denial of Service attack on your printer(s), causing at least the loss
 of a lot of paper and ink...) &quot;Unknown&quot; data are regarded by CUPS
-as<span class="emphasis"><em>MIME type</em></span>
+as <span class="emphasis"><em>MIME type</em></span>
 <span class="emphasis"><em>application/octet-stream</em></span>. While you
 <span class="emphasis"><em>can</em></span> send data &quot;raw&quot;, the MIME type for these must
 be one that is known to CUPS and an allowed one. The file
@@ -1039,7 +1038,7 @@ be one that is known to CUPS and an allowed one. The file
 recognizes MIME types. The file
 <tt class="filename">/etc/cups/mime.convs</tt> decides which file
 conversion filter(s) may be applied to which MIME types.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2965862"></a>PostScript Printer Descriptions (PPDs) for non-PS Printers</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957282"></a>PostScript Printer Descriptions (PPDs) for non-PS Printers</h3></div></div><div></div></div><p>
 Originally PPDs were meant to be used for PostScript printers
 only. Here, they help to send device-specific commands and settings
 to the RIP which processes the jobfile. CUPS has extended this
@@ -1082,9 +1081,9 @@ specific model supports):
 </p></dd><dt><span class="term">stcolor2.ppd</span></dt><dd><p>newer Epson Stylus Color printers
 </p></dd><dt><span class="term">stphoto.ppd</span></dt><dd><p>older Epson Stylus Photo printers
 </p></dd><dt><span class="term">stphoto2.ppd</span></dt><dd><p>newer Epson Stylus Photo printers
-</p></dd><dt><span class="term">laserjet.ppd</span></dt><dd><p>all PCL printersFurther below is a discussion
+</p></dd><dt><span class="term">laserjet.ppd</span></dt><dd><p>all PCL printers. Further below is a discussion
 of several other driver/PPD-packages suitable fur use with CUPS.
-</p></dd></dl></div></div><div xmlns:ns59="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966090"></a>Difference between <span class="emphasis"><em>cupsomatic/foomatic-rip</em></span> and
+</p></dd></dl></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957510"></a>Difference between <span class="emphasis"><em>cupsomatic/foomatic-rip</em></span> and
 <span class="emphasis"><em>native CUPS</em></span> printing</h3></div></div><div></div></div><p>
 Native CUPS rasterization works in two steps.
 </p><div class="itemizedlist"><ul type="disc"><li><p>
@@ -1097,9 +1096,9 @@ quality filters for this step, some are Free Software, some are
 Shareware/Non-Free, some are proprietary.</p></li></ul></div><p>
 Often this produces better quality (and has several more
 advantages) than other methods.
-</p><ns59:p>
-</ns59:p><div class="figure"><a name="id2966140"></a><p class="title"><b>Figure 19.10. cupsomatic/foomatic processing versus Native CUPS</b></p><div class="mediaobject"><img src="projdoc/imagefiles/10small.png" alt="cupsomatic/foomatic processing versus Native CUPS"></div></div><ns59:p>
-</ns59:p><p>
+</p><p>
+</p><div class="figure"><a name="id2957561"></a><p class="title"><b>Figure 19.10. cupsomatic/foomatic processing versus Native CUPS</b></p><div class="mediaobject"><img src="projdoc/imagefiles/10small.png" alt="cupsomatic/foomatic processing versus Native CUPS"></div></div><p>
+</p><p>
 One other method is the <span class="emphasis"><em>cupsomatic/foomatic-rip</em></span>
 way. Note that cupsomatic is <span class="emphasis"><em>not</em></span> made by the CUPS
 developers. It is an independent contribution to printing development,
@@ -1109,7 +1108,7 @@ supported. It has now been replaced by
 <span class="emphasis"><em>foomatic-rip</em></span>. foomatic-rip is a complete re-write
 of the old cupsomatic idea, but very much improved and generalized to
 other (non-CUPS) spoolers. An upgrade to foomatic-rip is strongly
-adviced, especially if you are upgrading to a recent version of CUPS
+advised, especially if you are upgrading to a recent version of CUPS
 too.
 </p><p>
 Both the cupsomatic (old) and the foomatic-rip (new) methods from
@@ -1126,14 +1125,14 @@ which works best for you.
 </p><p>
 cupsomatic &quot;kidnaps&quot; the printfile after the
 <span class="emphasis"><em>application/vnd.cups-postscript</em></span> stage and
-deviates it through the CUPS-external, systemwide Ghostscript
+deviates it through the CUPS-external, system wide Ghostscript
 installation: Therefore the printfile bypasses the &quot;pstoraster&quot; filter
 (and thus also bypasses the CUPS-raster-drivers
 &quot;rastertosomething&quot;). After Ghostscript finished its rasterization,
 cupsomatic hands the rendered file directly to the CUPS backend. The
 flowchart above illustrates the difference between native CUPS
 rendering and the Foomatic/cupsomatic method.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966247"></a>Examples for filtering Chains</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957666"></a>Examples for filtering Chains</h3></div></div><div></div></div><p>
 Here are a few examples of commonly occurring filtering chains to
 illustrate the workings of CUPS.
 </p><p>
@@ -1183,7 +1182,7 @@ which transfers the job to the printers.</p></li></ul></div><p>
 The resulting filter chain therefore is:
 </p><pre class="screen">
 pdftops --&gt; pstops --&gt; pstoraster --&gt; rastertoepson --&gt; usb
-</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966476"></a>Sources of CUPS drivers / PPDs</h3></div></div><div></div></div><p>
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957897"></a>Sources of CUPS drivers / PPDs</h3></div></div><div></div></div><p>
 On the internet you can find now many thousand CUPS-PPD files
 (with their companion filters), in many national languages,
 supporting more than 1000 non-PostScript models.
@@ -1204,7 +1203,7 @@ roughly the same amount of printers in excellent
 quality;</p></li><li><p><a href="http://www-124.ibm.com/developerworks/oss/linux/projects/omni/" target="_top">OMNI
 (http://www-124.ibm.com/developerworks/oss/linux/projects/omni/)</a>
 (LPGL, Free) is a package made by IBM, now containing support for more
-than 400 printers, stemming from the inheritance of IBM OS/2 KnowHow
+than 400 printers, stemming from the inheritance of IBM OS/2 Know-How
 ported over to Linux (CUPS support is in a Beta-stage at
 present);</p></li><li><p><a href="http://hpinkjet.sourceforge.net/" target="_top">HPIJS
 (http://hpinkjet.sourceforge.net/)</a> (BSD-style licenses, Free)
@@ -1218,7 +1217,7 @@ HPIJS).</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-r
 The cupsomatic/Foomatic trick from Linuxprinting.org works
 differently from the other drivers. This is explained elsewhere in this
 document.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966601"></a>Printing with Interface Scripts</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958024"></a>Printing with Interface Scripts</h3></div></div><div></div></div><p>
 CUPS also supports the usage of &quot;interface scripts&quot; as known from
 System V AT&amp;T printing systems. These are often used for PCL
 printers, from applications that generate PCL print jobs.  Interface
@@ -1240,12 +1239,12 @@ with CUPS they provide the most easy way to plug in your own
 custom-written filtering script or program into one specific print
 queue (some information about the traditional usage of interface scripts is
 to be found at <a href="http://playground.sun.com/printing/documentation/interface.html" target="_top">http://playground.sun.com/printing/documentation/interface.html</a>).
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2966663"></a>Network printing (purely Windows)</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2958100"></a>Network printing (purely Windows)</h2></div></div><div></div></div><p>
 Network printing covers a lot of ground. To understand what exactly
 goes on with Samba when it is printing on behalf of its Windows
 clients, let's first look at a &quot;purely Windows&quot; setup: Windows clients
 with a Windows NT print server.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966679"></a>From Windows Clients to an NT Print Server</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958116"></a>From Windows Clients to an NT Print Server</h3></div></div><div></div></div><p>
 Windows clients printing to an NT-based print server have two
 options. They may
 </p><div class="itemizedlist"><ul type="disc"><li><p>execute the driver locally and render the GDI output
@@ -1254,7 +1253,7 @@ or</p></li><li><p>send the GDI output (EMF) to the server, where the
 driver is executed to render the printer specific
 output.</p></li></ul></div><p>
 Both print paths are shown in the flowcharts below.
-</p></div><div xmlns:ns60="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966718"></a>Driver Execution on the Client</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958155"></a>Driver Execution on the Client</h3></div></div><div></div></div><p>
 In the first case the print server must spool the file as &quot;raw&quot;,
 meaning it shouldn't touch the jobfile and try to convert it in any
 way. This is what traditional Unix-based print server can do too; and
@@ -1264,9 +1263,9 @@ advantage of this setup is that this &quot;spooling-only&quot; print server may
 be used even if no driver(s) for Unix are available it is sufficient
 to have the Windows client drivers available and installed on the
 clients.
-</p><ns60:p>
-</ns60:p><div class="figure"><a name="id2966743"></a><p class="title"><b>Figure 19.11. Print Driver execution on the Client</b></p><div class="mediaobject"><img src="projdoc/imagefiles/11small.png" alt="Print Driver execution on the Client"></div></div><ns60:p>
-</ns60:p></div><div xmlns:ns61="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966777"></a>Driver Execution on the Server</h3></div></div><div></div></div><p>
+</p><p>
+</p><div class="figure"><a name="id2958191"></a><p class="title"><b>Figure 19.11. Print Driver execution on the Client</b></p><div class="mediaobject"><img src="projdoc/imagefiles/11small.png" alt="Print Driver execution on the Client"></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958227"></a>Driver Execution on the Server</h3></div></div><div></div></div><p>
 The other path executes the printer driver on the server. The clients
 transfers print files in EMF format to the server. The server uses the
 PostScript, PCL, ESC/P or other driver to convert the EMF file into
@@ -1274,18 +1273,18 @@ the printer-specific language. It is not possible for Unix to do the
 same. Currently there is no program or method to convert a Windows
 client's GDI output on a Unix server into something a printer could
 understand.
-</p><ns61:p>
-</ns61:p><div class="figure"><a name="id2966799"></a><p class="title"><b>Figure 19.12. Print Driver execution on the Server</b></p><div class="mediaobject"><img src="projdoc/imagefiles/12small.png" alt="Print Driver execution on the Server"></div></div><ns61:p>
-</ns61:p><p>
+</p><p>
+</p><div class="figure"><a name="id2958249"></a><p class="title"><b>Figure 19.12. Print Driver execution on the Server</b></p><div class="mediaobject"><img src="projdoc/imagefiles/12small.png" alt="Print Driver execution on the Server"></div></div><p>
+</p><p>
 However, there is something similar possible with CUPS. Read on...
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2966840"></a>Network Printing (Windows clients -- UNIX/Samba Print
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2958289"></a>Network Printing (Windows clients -- UNIX/Samba Print
 Servers)</h2></div></div><div></div></div><p>
 Since UNIX print servers <span class="emphasis"><em>cannot</em></span> execute the Win32
 program code on their platform, the picture is somewhat
 different. However, this doesn't limit your options all that
 much. In the contrary, you may have a way here to implement printing
 features which are not possible otherwise.
-</p><div xmlns:ns62="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966861"></a>From Windows Clients to a CUPS/Samba Print Server</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958310"></a>From Windows Clients to a CUPS/Samba Print Server</h3></div></div><div></div></div><p>
 Here is a simple recipe showing how you can take advantage of CUPS
 powerful features for the benefit of your Windows network printing
 clients:
@@ -1312,10 +1311,10 @@ other print commands are set up, then printing will use the
 option automatically passing through (if you want your own defined
 print commands to work with a Samba that has CUPS support compiled in,
 simply use <i class="parameter"><tt>printing = sysv</tt></i>).
-</p><ns62:p>
-</ns62:p><div class="figure"><a name="id2966987"></a><p class="title"><b>Figure 19.13. Printing via CUPS/samba server</b></p><div class="mediaobject"><img src="projdoc/imagefiles/13small.png" alt="Printing via CUPS/samba server"></div></div><ns62:p>
-</ns62:p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967021"></a>Samba receiving Jobfiles and passing them to CUPS</h3></div></div><div></div></div><p>
-Samba<span class="emphasis"><em>must</em></span> use its own spool directory (it is set
+</p><p>
+</p><div class="figure"><a name="id2958439"></a><p class="title"><b>Figure 19.13. Printing via CUPS/samba server</b></p><div class="mediaobject"><img src="projdoc/imagefiles/13small.png" alt="Printing via CUPS/samba server"></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958474"></a>Samba receiving Jobfiles and passing them to CUPS</h3></div></div><div></div></div><p>
+Samba <span class="emphasis"><em>must</em></span> use its own spool directory (it is set
 by a line similar to <i class="parameter"><tt>path = /var/spool/samba</tt></i>,
 in the <i class="parameter"><tt>[printers]</tt></i> or
 <i class="parameter"><tt>[printername]</tt></i> section of
@@ -1332,7 +1331,7 @@ A Windows user authenticates only to Samba (by whatever means is
 configured). If Samba runs on the same host as CUPS, you only need to
 allow &quot;localhost&quot; to print. If they run on different machines, you
 need to make sure the Samba host gets access to printing on CUPS.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2967099"></a>Network PostScript RIP: CUPS Filters on Server -- clients use
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2958550"></a>Network PostScript RIP: CUPS Filters on Server -- clients use
 PostScript Driver with CUPS-PPDs</h2></div></div><div></div></div><p>
 PPDs can control all print device options. They are usually provided
 by the manufacturer; if you own a PostScript printer, that is. PPD
@@ -1352,7 +1351,7 @@ or see if you have lphelp on your system). There are also some
 different GUI frontends on Linux/UNIX, which can present PPD options
 to users. PPD options are normally meant to be evaluated by the
 PostScript RIP on the real PostScript printer.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967154"></a>PPDs for non-PS Printers on UNIX</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958605"></a>PPDs for non-PS Printers on UNIX</h3></div></div><div></div></div><p>
 CUPS doesn't limit itself to &quot;real&quot; PostScript printers in its usage
 of PPDs. The CUPS developers have extended the scope of the PPD
 concept, to also describe available device and driver options for
@@ -1369,7 +1368,7 @@ the supplied PostScript. Thus CUPS lets all its printers appear as
 PostScript devices to its clients, because it can act as a PostScript
 RIP for those printers, processing the received PostScript code into a
 proper raster print format.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967194"></a>PPDs for non-PS Printers on Windows</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958646"></a>PPDs for non-PS Printers on Windows</h3></div></div><div></div></div><p>
 CUPS-PPDs can also be used on Windows-Clients, on top of a
 &quot;core&quot; PostScript driver (now recommended is the &quot;CUPS PostScript
 Driver for WindowsNT/2K/XP&quot;; you can also use the Adobe one, with
@@ -1385,13 +1384,13 @@ which always remain unfiltered per definition;</p></li><li><p>enable clients to 
 driver, even for many different target printers.</p></li></ul></div><p>
 Using CUPS PPDs on Windows clients enables these to control
 all print job settings just as a UNIX client can do too.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2967260"></a>Windows Terminal Servers (WTS) as CUPS Clients</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2958712"></a>Windows Terminal Servers (WTS) as CUPS Clients</h2></div></div><div></div></div><p>
 This setup may be of special interest to people experiencing major
 problems in WTS environments. WTS need often a multitude of
 non-PostScript drivers installed to run their clients' variety of
 different printer models. This often imposes the price of much
 increased instability.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967277"></a>Printer Drivers running in &quot;Kernel Mode&quot; cause many
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958729"></a>Printer Drivers running in &quot;Kernel Mode&quot; cause many
 Problems</h3></div></div><div></div></div><p>
 The reason is that in Win NT printer drivers run in &quot;Kernel
 Mode&quot;, this introduces a high risk for the stability of the system
@@ -1408,7 +1407,7 @@ might be because there have so far only been 2 different PostScript
 drivers the ones from Adobe and the one from Microsoft. Both are
 very well tested and are as stable as you ever can imagine on
 Windows. The CUPS driver is derived from the Microsoft one.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967312"></a>Workarounds impose Heavy Limitations</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958763"></a>Workarounds impose Heavy Limitations</h3></div></div><div></div></div><p>
 In many cases, in an attempt to work around this problem, site
 administrators have resorted to restrict the allowed drivers installed
 on their WTS to one generic PCL- and one PostScript driver. This
@@ -1416,7 +1415,7 @@ however restricts the clients in the amount of printer options
 available for them; often they can't get out more than simplex
 prints from one standard paper tray, while their devices could do much
 better, if driven by a different driver! )
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967333"></a>CUPS: a &quot;Magical Stone&quot;?</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958784"></a>CUPS: a &quot;Magical Stone&quot;?</h3></div></div><div></div></div><p>
 Using a PostScript driver, enabled with a CUPS-PPD, seems to be a very
 elegant way to overcome all these shortcomings. There are, depending
 on the version of Windows OS you use, up to 3 different PostScript
@@ -1428,7 +1427,7 @@ is a certain price for this too: a CUPS server acting as a PostScript
 RIP for its clients requires more CPU and RAM than when just acting as
 a &quot;raw spooling&quot; device.  Plus, this setup is not yet widely tested,
 although the first feedbacks look very promising.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967360"></a>PostScript Drivers with no major problems -- even in Kernel
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958811"></a>PostScript Drivers with no major problems -- even in Kernel
 Mode</h3></div></div><div></div></div><p>
 More recent printer drivers on W2K and XP don't run in Kernel mode
 (unlike Win NT) any more. However, both operating systems can still
@@ -1445,14 +1444,14 @@ development efforts. This is what the CUPS people have done. The
 license doesn't allow them to publish the whole of the source code.
 However, they have released the &quot;diff&quot; under the GPL, and if you are
 owner of an &quot;MS DDK for Win NT&quot;, you can check the driver yourself.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2967394"></a> Setting up CUPS for driver Download</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2958865"></a> Setting up CUPS for driver Download</h2></div></div><div></div></div><p>
 As we have said before: all previously known methods to prepare client
 printer drivers on the Samba server for download and &quot;Point'n'Print&quot;
 convenience of Windows workstations are working with CUPS too. These
 methods were described in the previous chapter. In reality, this is a
 pure Samba business, and only relates to the Samba/Win client
 relationship.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967412"></a><span class="emphasis"><em>cupsaddsmb</em></span>: the unknown Utility</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958884"></a><span class="emphasis"><em>cupsaddsmb</em></span>: the unknown Utility</h3></div></div><div></div></div><p>
 The cupsaddsmb utility (shipped with all current CUPS versions) is an
 alternative method to transfer printer drivers into the Samba
 <i class="parameter"><tt>[print$]</tt></i> share. Remember, this share is where
@@ -1467,7 +1466,7 @@ named in its man page.
 </p><p>
 The CUPS printer driver is available from the CUPS download site. Its
 package name is <tt class="filename">cups-samba-[version].tar.gz</tt> . It
-is prefered over the Adobe drivers since it has a number of
+is preferred over the Adobe drivers since it has a number of
 advantages:
 </p><div class="itemizedlist"><ul type="disc"><li><p>it supports a much more accurate page
 accounting;</p></li><li><p>it supports banner pages, and page labels on all
@@ -1477,7 +1476,7 @@ job-billing)</p></li></ul></div><p>
 However, currently only Windows NT, 2000, and XP are supported by the
 CUPS drivers. You will need to get the respective part of Adobe driver
 too if you need to support Windows 95, 98, and ME clients.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967504"></a>Prepare your <tt class="filename">smb.conf</tt> for
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2958976"></a>Prepare your <tt class="filename">smb.conf</tt> for
 cupsaddsmb</h3></div></div><div></div></div><p>
 Prior to running cupsaddsmb, you need the following settings in
 <tt class="filename">smb.conf</tt>:
@@ -1506,7 +1505,7 @@ Prior to running cupsaddsmb, you need the following settings in
          read only = yes
          write list = root  
 
-</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967550"></a>CUPS Package of &quot;PostScript Driver for WinNT/2k/XP&quot;</h3></div></div><div></div></div><p>
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2959022"></a>CUPS Package of &quot;PostScript Driver for WinNT/2k/XP&quot;</h3></div></div><div></div></div><p>
 CUPS users may get the exactly same packages from<a href="http://www.cups.org/software.html" target="_top"><span class="emphasis"><em>http://www.cups.org/software.html</em></span></a>.
 It is a separate package from the CUPS base software files, tagged as
 <span class="emphasis"><em>CUPS 1.1.x Windows NT/2k/XP Printer Driver for SAMBA
@@ -1577,7 +1576,7 @@ Studio 6. Driver developers are not allowed to distribute the whole of
 the source code as Free Software. However, CUPS developers released
 the &quot;diff&quot; in source code under the GPL, so anybody with a license of
 Visual Studio and a DDK will be able to compile for him/herself.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967748"></a>Recognize the different Driver Files</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2959220"></a>Recognize the different Driver Files</h3></div></div><div></div></div><p>
 The CUPS drivers don't support the &quot;older&quot; Windows 95/98/ME, but only
 the Windows NT/2000/XP client:
 </p><pre class="screen">
@@ -1612,7 +1611,7 @@ support of WinNT/2k/XP are present in , the Adobe ones will be ignored
 and the CUPS ones will be used. If you prefer -- for whatever reason
 -- to use Adobe-only drivers, move away the 3 CUPS driver files. The
 Win95/98/ME clients use the Adobe drivers in any case.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967806"></a>Acquiring the Adobe Driver Files</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2959278"></a>Acquiring the Adobe Driver Files</h3></div></div><div></div></div><p>
 Acquiring the Adobe driver files seems to be unexpectedly difficult
 for many users. They are not available on the Adobe website as single
 files and the self-extracting and/or self-installing Windows-exe is
@@ -1625,7 +1624,7 @@ Generic PostScript printer.  After this, the client's
 where you can get them with smbclient from the CUPS host. A more
 detailed description about this is in the next (the CUPS printing)
 chapter.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967838"></a>ESP Print Pro Package of &quot;PostScript Driver for
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2959310"></a>ESP Print Pro Package of &quot;PostScript Driver for
 WinNT/2k/XP&quot;</h3></div></div><div></div></div><p>
 Users of the ESP Print Pro software are able to install their &quot;Samba
 Drivers&quot; package for this purpose with no problem. Retrieve the driver
@@ -1641,7 +1640,7 @@ driver files; i.e.  mainly setup the <i class="parameter"><tt>[print$]</tt></i>
 share, etc. The ESP Print Pro package includes the CUPS driver files
 as well as a (licensed) set of Adobe drivers for the Windows 95/98/ME
 client family.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2967888"></a>Caveats to be considered</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2959360"></a>Caveats to be considered</h3></div></div><div></div></div><p>
 Once you have run the install script (and possibly manually
 moved the <tt class="filename">cups.hlp</tt> file to
 <tt class="filename">/usr/share/cups/drivers/</tt>), the driver is
@@ -1661,8 +1660,8 @@ working in an environment where everything is configured for
 Once the driver files are in the <i class="parameter"><tt>[print$]</tt></i> share
 and are initialized, they are ready to be downloaded and installed by
 the Win NT/2k/XP clients.
-</p><div xmlns:ns63="" class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><ns63:p>
-</ns63:p><div class="orderedlist"><ol type="1"><li><p>
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+</p><div class="orderedlist"><ol type="1"><li><p>
 Win 9x/ME clients won't work with the CUPS PostScript driver. For
 these you'd still need to use the <tt class="filename">ADOBE*.*</tt>
 drivers as previously.
@@ -1697,8 +1696,8 @@ as described elsewhere in the &quot;Samba HOWTO Collection&quot;: either change
 a driver for an existing printer by running the &quot;Printer Properties&quot;
 dialog, or use <b class="command">rpcclient</b> with the
 <b class="command">setdriver</b> sub-command.
-</p></li></ol></div><ns63:p>
-</ns63:p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968110"></a>What are the Benefits of using the &quot;CUPS PostScript Driver for
+</p></li></ol></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2959582"></a>What are the Benefits of using the &quot;CUPS PostScript Driver for
 Windows NT/2k/XP&quot; as compared to the Adobe Driver?</h3></div></div><div></div></div><p>
 You are interested in a comparison between the CUPS and the Adobe
 PostScript drivers? For our purposes these are the most important
@@ -1718,9 +1717,9 @@ the more special MIME type
 <span class="emphasis"><em>application/cups.vnd-postscript</em></span>),
 which therefore also leads to the page accounting in
 <span class="emphasis"><em>/var/log/cups/page_log</em></span> not
-receiving the exact mumber of pages; instead the dummy page number
+receiving the exact number of pages; instead the dummy page number
 of &quot;1&quot; is logged in a standard setup)</p></li><li><p>the Adobe driver has more options to &quot;mis-configure&quot; the
-PostScript generated by it (like setting it inadvertedly to
+PostScript generated by it (like setting it inadvertently to
 <span class="emphasis"><em>Optimize for Speed</em></span>, instead of
 <span class="emphasis"><em>Optimize for Portability</em></span>, which
 could lead to CUPS being unable to process it)</p></li><li><p>the CUPS PostScript driver output sent by Windows
@@ -1744,7 +1743,7 @@ not disturb any other applications as they will regard it as a comment
 and simply ignore it).</p></li><li><p>the CUPS PostScript driver will be the heart of the
 fully fledged CUPS IPP client for Windows NT/2K/XP to be released soon
 (probably alongside the first Beta release for CUPS
-1.2).</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968291"></a>Run &quot;cupsaddsmb&quot; (quiet Mode)</h3></div></div><div></div></div><p>
+1.2).</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2959764"></a>Run &quot;cupsaddsmb&quot; (quiet Mode)</h3></div></div><div></div></div><p>
 The cupsaddsmb command copies the needed files into your
 <i class="parameter"><tt>[print$]</tt></i> share. Additionally, the PPD
 associated with this printer is copied from
@@ -1770,11 +1769,11 @@ Here is an example of a successfully run cupsaddsmb command.
  Password for root required to access localhost via SAMBA: [type in password 'secret']
 
 </pre><p>
-To share<span class="emphasis"><em>all</em></span> printers and drivers, use the
+To share <span class="emphasis"><em>all</em></span> printers and drivers, use the
 <i class="parameter"><tt>-a</tt></i> parameter instead of a printer name. Since
 cupsaddsmb &quot;exports&quot; the printer drivers to Samba, it should be
 obvious that it only works for queues with a CUPS driver associated.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968392"></a>Run &quot;cupsaddsmb&quot; with verbose Output</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2959865"></a>Run &quot;cupsaddsmb&quot; with verbose Output</h3></div></div><div></div></div><p>
 Probably you want to see what's going on. Use the
 <i class="parameter"><tt>-v</tt></i> parameter to get a more verbose output. The
 output below was edited for better readability: all &quot;\&quot; at the end of
@@ -1850,7 +1849,7 @@ unencrypted!
   Running command: rpcclient localhost -N -U'root%secret'                                  \
                              -c 'setdriver infotec_2105 infotec_2105'
   cmd = setdriver infotec_2105 infotec_2105
-  Succesfully set infotec_2105 to driver infotec_2105.
+  Successfully set infotec_2105 to driver infotec_2105.
 
 </pre><p>
 If you look closely, you'll discover your root password was transfered
@@ -1859,7 +1858,7 @@ you'll discover error messages like NT_STATUS_OBJECT_NAME_COLLISION in
 between. They occur, because the directories WIN40 and W32X86 already
 existed in the <i class="parameter"><tt>[print$]</tt></i> driver download share
 (from a previous driver installation). They are harmless here.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968534"></a>Understanding cupsaddsmb</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960092"></a>Understanding cupsaddsmb</h3></div></div><div></div></div><p>
 What has happened? What did cupsaddsmb do? There are five stages of
 the procedure
 </p><div class="orderedlist"><ol type="1"><li><p>call the CUPS server via IPP and request the
@@ -1882,7 +1881,7 @@ same host):
 
  # cupsaddsmb -H sambaserver -h cupsserver -v printername
 
-</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968628"></a>How to recognize if cupsaddsm completed successfully</h3></div></div><div></div></div><p>
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960186"></a>How to recognize if cupsaddsm completed successfully</h3></div></div><div></div></div><p>
 You <span class="emphasis"><em>must</em></span> always check if the utility completed
 successfully in all fields. You need as a minimum these 3 messages
 amongst the output:
@@ -1890,7 +1889,7 @@ amongst the output:
 installed.</em></span> # (for the W32X86 == WinNT/2K/XP
 architecture...)</p></li><li><p><span class="emphasis"><em>Printer Driver infotec_2105 successfully
 installed.</em></span> # (for the WIN40 == Win9x/ME
-architecture...)</p></li><li><p><span class="emphasis"><em>Succesfully set [printerXPZ] to driver
+architecture...)</p></li><li><p><span class="emphasis"><em>Successfully set [printerXPZ] to driver
 [printerXYZ].</em></span></p></li></ol></div><p>
 These messages probably not easily recognized in the general
 output. If you run cupsaddsmb with the <i class="parameter"><tt>-a</tt></i>
@@ -1903,7 +1902,7 @@ It is impossible to see any diagnostic output if you don't run
 cupsaddsmb in verbose mode.  Therefore we strongly recommend to not
 use the default quiet mode.  It will hide any problems from you which
 might occur.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968716"></a>cupsaddsmb with a Samba PDC</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960273"></a>cupsaddsmb with a Samba PDC</h3></div></div><div></div></div><p>
 You can't get the standard cupsaddsmb command to run on a Samba PDC?
 You are asked for the password credential all over again and again and
 the command just will not take off at all? Try one of these
@@ -1917,13 +1916,13 @@ variations:
 </pre><p>
 (Note the two backslashes: the first one is required to
 &quot;escape&quot; the second one).
-</p></div><div xmlns:ns64="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968750"></a>cupsaddsmb Flowchart</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960308"></a>cupsaddsmb Flowchart</h3></div></div><div></div></div><p>
 Here is a chart about the procedures, commandflows and
 dataflows of the &quot;cupaddsmb&quot; command. Note again: cupsaddsmb is
 not intended to, and does not work with, &quot;raw&quot; queues!
-</p><ns64:p>
-</ns64:p><div class="figure"><a name="id2968768"></a><p class="title"><b>Figure 19.14. cupsaddsmb flowchart</b></p><div class="mediaobject"><img src="projdoc/imagefiles/1small.png" alt="cupsaddsmb flowchart"></div></div><ns64:p>
-</ns64:p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968801"></a>Installing the PostScript Driver on a Client</h3></div></div><div></div></div><p>
+</p><p>
+</p><div class="figure"><a name="id2960326"></a><p class="title"><b>Figure 19.14. cupsaddsmb flowchart</b></p><div class="mediaobject"><img src="projdoc/imagefiles/1small.png" alt="cupsaddsmb flowchart"></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960361"></a>Installing the PostScript Driver on a Client</h3></div></div><div></div></div><p>
 After cupsaddsmb completed, your driver is prepared for the clients to
 use. Here are the steps you must perform to download and install it
 via &quot;Point'n'Print&quot;. From a Windows client, browse to the CUPS/Samba
@@ -1959,7 +1958,7 @@ functions. (Note that user &quot;ntadmin&quot; needs to be a valid Samba user
 with the required privileges to access the printershare) This would
 set up the printer connection in the traditional
 <span class="emphasis"><em>LanMan</em></span> way (not using MS-RPC).
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2968916"></a>Avoiding critical PostScript Driver Settings on the
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960474"></a>Avoiding critical PostScript Driver Settings on the
 Client</h3></div></div><div></div></div><p>
 Soooo: printing works, but there are still problems. Most jobs print
 well, some don't print at all. Some jobs have problems with fonts,
@@ -1970,7 +1969,7 @@ your print device is not PostScript-enabled, you are treating your
 Ghostscript installation on your CUPS host with the output your client
 driver settings produce. Treat it well:
 </p><div class="itemizedlist"><ul type="disc"><li><p>Avoid the <span class="emphasis"><em>PostScript Output Option: Optimize
-for Speed</em></span> settting. Rather use the <span class="emphasis"><em>Optimize for
+for Speed</em></span> setting. Rather use the <span class="emphasis"><em>Optimize for
 Portability</em></span> instead (Adobe PostScript
 driver).</p></li><li><p>Don't use the <span class="emphasis"><em>Page Independence:
 NO</em></span> setting. Instead use <span class="emphasis"><em>Page Independence
@@ -1984,8 +1983,8 @@ Font</em></span> (for exotic fonts you may need to change it back to
 get a printout at all) (Adobe)</p></li><li><p>Sometimes you can choose <span class="emphasis"><em>PostScript Language
 Level</em></span>: in case of problems try <span class="emphasis"><em>2</em></span>
 instead of <span class="emphasis"><em>3</em></span> (the latest ESP Ghostscript package
-handels Level 3 PostScript very well) (Adobe).</p></li><li><p>Say <span class="emphasis"><em>Yes</em></span> to <span class="emphasis"><em>PostScript
-Error Handler</em></span> (Adobe)</p></li></ul></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2969051"></a>Installing PostScript Driver Files manually (using
+handles Level 3 PostScript very well) (Adobe).</p></li><li><p>Say <span class="emphasis"><em>Yes</em></span> to <span class="emphasis"><em>PostScript
+Error Handler</em></span> (Adobe)</p></li></ul></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2960608"></a>Installing PostScript Driver Files manually (using
 rpcclient)</h2></div></div><div></div></div><p>
 Of course you can run all the commands which are embedded into the
 cupsaddsmb convenience utility yourself, one by one, and hereby upload
@@ -2004,9 +2003,9 @@ sub-commands. <b class="command">enumprinters</b>,
 the most interesting ones. rpcclient implements an important part of
 the MS-RPC protocol. You can use it to query (and command) a Win NT
 (or 2K/XP) PC too. MS-RPC is used by Windows clients, amongst other
-things, to benefit from the &quot;Point'n' Print&quot; features. Samba can now
+things, to benefit from the &quot;Point'n'Print&quot; features. Samba can now
 mimic this too.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2969166"></a>A Check of the rpcclient man Page</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960723"></a>A Check of the rpcclient man Page</h3></div></div><div></div></div><p>
 First let's have a little check of the rpcclient man page. Here are
 two relevant passages:
 </p><p>
@@ -2039,7 +2038,7 @@ printer driver associated with an installed printer. The printer
 driver must already be correctly installed on the print server.
 </p><p> See also the enumprinters and enumdrivers commands for
 obtaining a list of installed printers and drivers.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2969278"></a>Understanding the rpcclient man Page</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960836"></a>Understanding the rpcclient man Page</h3></div></div><div></div></div><p>
 The <span class="emphasis"><em>exact</em></span> format isn't made too clear by the man
 page, since you have to deal with some parameters containing
 spaces. Here is a better description for it. We have line-broken the
@@ -2075,7 +2074,7 @@ box now, and access it from a UNIX workstation. We will query it
 with <b class="command">rpcclient</b> to see what it tells us and
 try to understand the man page more clearly which we've read just
 now.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2969357"></a>Producing an Example by querying a Windows Box</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2960925"></a>Producing an Example by querying a Windows Box</h3></div></div><div></div></div><p>
 We could run <b class="command">rpcclient</b> with a
 <b class="command">getdriver</b> or a <b class="command">getprinter</b>
 subcommand (in level 3 verbosity) against it. Just sit down at UNIX or
@@ -2120,9 +2119,9 @@ Some printer drivers list additional files under the label
 <span class="emphasis"><em>ListOfFiles,Comma-separated</em></span>. For the CUPS
 PostScript drivers we don't need any (nor would we for the Adobe
 PostScript driver): therefore the field will get a &quot;NULL&quot; entry.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2969447"></a>What is required for adddriver and setdriver to succeed</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2961015"></a>What is required for adddriver and setdriver to succeed</h3></div></div><div></div></div><p>
 From the manpage (and from the quoted output
-of<span class="emphasis"><em>cupsaddsmb</em></span>, above) it becomes clear that you
+of <span class="emphasis"><em>cupsaddsmb</em></span>, above) it becomes clear that you
 need to have certain conditions in order to make the manual uploading
 and initializing of the driver files succeed. The two rpcclient
 subcommands (<b class="command">adddriver</b> and
@@ -2151,12 +2150,12 @@ rpcclient. A long-standing bug prevented a proper update of the
 printer list until every smbd process had received a SIGHUP or was
 restarted. Remember this in case you've created the CUPS printer just
 shortly ago and encounter problems: try restarting
-Samba.</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2969609"></a>Manual Commandline Driver Installation in 15 little Steps</h3></div></div><div></div></div><p>
+Samba.</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2961177"></a>Manual Commandline Driver Installation in 15 little Steps</h3></div></div><div></div></div><p>
 We are going to install a printer driver now by manually executing all
 required commands. As this may seem a rather complicated process at
 first, we go through the procedure step by step, explaining every
 single action item as it comes up.
-</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969625"></a>First Step: Install the Printer on CUPS</h4></div></div><div></div></div><pre class="screen">
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961194"></a>First Step: Install the Printer on CUPS</h4></div></div><div></div></div><pre class="screen">
 
 # lpadmin -p mysmbtstprn -v socket://10.160.51.131:9100 -E -P /home/kurt/canonIR85.ppd
 
@@ -2165,7 +2164,7 @@ This installs printer with the name <span class="emphasis"><em>mysmbtstprn</em><
 to the CUPS system. The printer is accessed via a socket
 (a.k.a. JetDirect or Direct TCP/IP) connection. You need to be root
 for this step
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969656"></a>Second Step (optional): Check if the Printer is recognized by
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961224"></a>Second Step (optional): Check if the Printer is recognized by
 Samba</h4></div></div><div></div></div><pre class="screen">
 
  # rpcclient -Uroot%xxxx -c 'enumprinters' localhost | grep -C2 mysmbtstprn
@@ -2186,7 +2185,7 @@ already. You need to know root's Samba password (as set by the
 following steps. Alternatively you can authenticate as one of the
 users from the &quot;write list&quot; as defined in <tt class="filename">smb.conf</tt> for
 <i class="parameter"><tt>[print$]</tt></i>.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969719"></a>Third Step (optional): Check if Samba knows a Driver for the
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961288"></a>Third Step (optional): Check if Samba knows a Driver for the
 Printer</h4></div></div><div></div></div><pre class="screen">
 
 #  rpcclient -Uroot%xxxx -c 'getprinter mysmbtstprn 2' localhost | grep driver
@@ -2212,7 +2211,7 @@ This step was done for the purpose of demonstrating this condition. An
 attempt to connect to the printer at this stage will prompt the
 message along the lines: &quot;The server has not the required printer
 driver installed&quot;.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969757"></a>Fourth Step: Put all required Driver Files into Samba's
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961326"></a>Fourth Step: Put all required Driver Files into Samba's
 [print$]</h4></div></div><div></div></div><pre class="screen">
 
 #  smbclient //localhost/print\$ -U 'root%xxxx'                        \ 
@@ -2231,7 +2230,7 @@ present in the <i class="parameter"><tt>[print$]</tt></i> share. However, client
 would still not be able to install them, because Samba does not yet
 treat them as driver files. A client asking for the driver would still
 be presented with a &quot;not installed here&quot; message.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969808"></a>Fifth Step: Verify where the Driver Files are now</h4></div></div><div></div></div><pre class="screen">
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961377"></a>Fifth Step: Verify where the Driver Files are now</h4></div></div><div></div></div><pre class="screen">
 
 #  ls -l /etc/samba/drivers/W32X86/
  total 669
@@ -2245,7 +2244,7 @@ be presented with a &quot;not installed here&quot; message.
 </pre><p>
 The driver files now are in the W32X86 architecture &quot;root&quot; of
 <i class="parameter"><tt>[print$]</tt></i>.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969846"></a>Sixth Step: Tell Samba that these are
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961415"></a>Sixth Step: Tell Samba that these are
 <span class="emphasis"><em>Driver</em></span> Files
 (<b class="command">adddriver</b>)</h4></div></div><div></div></div><pre class="screen">
 
@@ -2266,7 +2265,7 @@ driver. It is normally a good idea to use the same name as is used for
 the printername; however, in big installations you may use this driver
 for a number of printers which have obviously different names. So the
 name of the driver is not fixed.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969900"></a>Seventh Step: Verify where the Driver Files are now</h4></div></div><div></div></div><pre class="screen">
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961469"></a>Seventh Step: Verify where the Driver Files are now</h4></div></div><div></div></div><pre class="screen">
 
 #  ls -l /etc/samba/drivers/W32X86/
  total 1
@@ -2285,7 +2284,7 @@ name of the driver is not fixed.
 </pre><p>
 Notice how step 6 did also move the driver files to the appropriate
 subdirectory. Compare with the situation after step 5.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969934"></a>Eighth Step (optional): Verify if Samba now recognizes the
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961503"></a>Eighth Step (optional): Verify if Samba now recognizes the
 Driver</h4></div></div><div></div></div><pre class="screen">
 
 #  rpcclient -Uroot%xxxx -c 'enumdrivers 3' localhost | grep -B2 -A5 mydrivername
@@ -2302,7 +2301,7 @@ Driver</h4></div></div><div></div></div><pre class="screen">
 </pre><p>
 Remember, this command greps for the name you did choose for the
 driver in step Six. This command must succeed before you can proceed.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2969967"></a>Ninth Step: Tell Samba which Printer should use these Driver
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961536"></a>Ninth Step: Tell Samba which Printer should use these Driver
 Files (<b class="command">setdriver</b>)</h4></div></div><div></div></div><pre class="screen">
 
 #  rpcclient -Uroot%xxxx -c 'setdriver mysmbtstprn mydrivername' localhost
@@ -2316,7 +2315,7 @@ driver. You don't need to repeat all the previous steps for the
 setdriver command to succeed. The only pre-conditions are:
 <b class="command">enumdrivers</b> must find the driver and
 <b class="command">enumprinters</b> must find the printer.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970017"></a>Tenth Step (optional): Verify if Samba has this Association
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961586"></a>Tenth Step (optional): Verify if Samba has this Association
 recognized</h4></div></div><div></div></div><pre class="screen">
 
 #  rpcclient -Uroot%xxxx -c 'getprinter mysmbtstprn 2' localhost | grep driver
@@ -2358,7 +2357,7 @@ Compare these results with the ones from steps 2 and 3. Note that
 every single of these commands show the driver is installed.  Even
 the <b class="command">enumprinters</b> command now lists the driver
 on the &quot;description&quot; line.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970073"></a>Eleventh Step (optional): Tickle the Driver into a correct
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961666"></a>Eleventh Step (optional): Tickle the Driver into a correct
 Device Mode</h4></div></div><div></div></div><p>
 You certainly know how to install the driver on the client.  In case
 you are not particularly familiar with Windows, here is a short
@@ -2383,7 +2382,7 @@ into the &quot;DOS box&quot; (type root's smbpassword when prompted):
 Change any printer setting once (like <span class="emphasis"><em>&quot;portrait&quot;
 --&gt; &quot;landscape&quot;</em></span>), click &quot;Apply&quot;; change the setting
 back.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970135"></a>Twelveth Step: Install the Printer on a Client
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961731"></a>Twelfth Step: Install the Printer on a Client
 (&quot;Point'n'Print&quot;)</h4></div></div><div></div></div><pre class="screen">
 
  C:\&gt; rundll32 printui.dll,PrintUIEntry /in /n &quot;\\sambacupsserver\mysmbtstprn&quot;
@@ -2391,24 +2390,24 @@ back.
 </pre><p>
 If it doesn't work it could be a permission problem with the
 <i class="parameter"><tt>[print$]</tt></i> share.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970166"></a>Thirteenth Step (optional): Print a Test Page</h4></div></div><div></div></div><pre class="screen">
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961764"></a>Thirteenth Step (optional): Print a Test Page</h4></div></div><div></div></div><pre class="screen">
 
  C:\&gt; rundll32 printui.dll,PrintUIEntry /p /n &quot;\\sambacupsserver\mysmbtstprn&quot;
 
 </pre><p>
 Then hit [TAB] 5 times, [ENTER] twice, [TAB] once and [ENTER] again
 and march to the printer.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970191"></a>Fourteenth Step (recommended): Study the Test Page</h4></div></div><div></div></div><p>
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961790"></a>Fourteenth Step (recommended): Study the Test Page</h4></div></div><div></div></div><p>
 Hmmm.... just kidding! By now you know everything about printer
 installations and you don't need to read a word. Just put it in a
 frame and bolt it to the wall with the heading &quot;MY FIRST
 RPCCLIENT-INSTALLED PRINTER&quot; - why not just throw it away!
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970208"></a>Fifteenth Step (obligatory): Enjoy. Jump. Celebrate your
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2961808"></a>Fifteenth Step (obligatory): Enjoy. Jump. Celebrate your
 Success</h4></div></div><div></div></div><pre class="screen">
 
 # echo &quot;Cheeeeerioooooo! Success...&quot; &gt;&gt; /var/log/samba/log.smbd     
 
-</pre></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2970229"></a>Troubleshooting revisited</h3></div></div><div></div></div><p>
+</pre></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2961830"></a>Troubleshooting revisited</h3></div></div><div></div></div><p>
 The setdriver command will fail, if in Samba's mind the queue is not
 already there. You had promising messages about the:
 </p><pre class="screen">
@@ -2451,7 +2450,7 @@ An alternative command could be this:
 </pre><p>
 BTW, you can use these commands, plus a few more, of course,
 to install drivers on remote Windows NT print servers too!
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2970331"></a>The printing <tt class="filename">*.tdb</tt> Files</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2961930"></a>The printing <tt class="filename">*.tdb</tt> Files</h2></div></div><div></div></div><p>
 Some mystery is associated with the series of files with a
 tdb-suffix appearing in every Samba installation. They are
 <tt class="filename">connections.tdb</tt>,
@@ -2466,7 +2465,7 @@ tdb-suffix appearing in every Samba installation. They are
 <tt class="filename">ntprinters.tdb</tt>,
 <tt class="filename">sessionid.tdb</tt> and
 <tt class="filename">secrets.tdb</tt>. What is their purpose?
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2970434"></a>Trivial DataBase Files</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2962033"></a>Trivial DataBase Files</h3></div></div><div></div></div><p>
 A Windows NT (Print) Server keeps track of all information needed to serve
 its duty toward its clients by storing entries in the Windows
 &quot;Registry&quot;. Client queries are answered by reading from the registry,
@@ -2479,7 +2478,7 @@ or <tt class="filename">/var/lock/samba/</tt> . The printing related files
 are <tt class="filename">ntprinters.tdb</tt>,
 <tt class="filename">printing.tdb</tt>,<tt class="filename">ntforms.tdb</tt> and
 <tt class="filename">ntdrivers.tdb</tt>.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2970504"></a>Binary Format</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2962103"></a>Binary Format</h3></div></div><div></div></div><p>
 <tt class="filename">*.tdb</tt> files are not human readable. They are
 written in a binary format. &quot;Why not ASCII?&quot;, you may ask. &quot;After all,
 ASCII configuration files are a good and proofed tradition on UNIX.&quot;
@@ -2492,7 +2491,7 @@ same time</em></span>. The file format of Samba's
 <tt class="filename">*.tdb</tt> files allows for this provision. Many smbd
 processes may write to the same <tt class="filename">*.tdb</tt> file at the
 same time. This wouldn't be possible with pure ASCII files.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2970566"></a>Losing <tt class="filename">*.tdb</tt> Files</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2962165"></a>Losing <tt class="filename">*.tdb</tt> Files</h3></div></div><div></div></div><p>
 It is very important that all <tt class="filename">*.tdb</tt> files remain
 consistent over all write and read accesses. However, it may happen
 that these files <span class="emphasis"><em>do</em></span> get corrupted. (A
@@ -2502,7 +2501,7 @@ etc.). In cases of trouble, a deletion of the old printing-related
 <tt class="filename">*.tdb</tt> files may be the only option. You need to
 re-create all print related setup after that.  Or you have made a
 backup of the <tt class="filename">*.tdb</tt> files in time.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2970624"></a>Using <span class="emphasis"><em>tdbbackup</em></span></h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2962224"></a>Using <span class="emphasis"><em>tdbbackup</em></span></h3></div></div><div></div></div><p>
 Samba ships with a little utility which helps the root user of your
 system to back up your <tt class="filename">*.tdb</tt> files. If you run it
 with no argument, it prints a little usage message:
@@ -2514,7 +2513,7 @@ with no argument, it prints a little usage message:
  Version:3.0a
    -h            this help message
    -s suffix     set the backup suffix
-   -v            veryify mode (restore if corrupt)
+   -v            verify mode (restore if corrupt)
 
 </pre><p>
 Here is how I backed up my printing.tdb file:
@@ -2532,7 +2531,7 @@ Here is how I backed up my printing.tdb file:
  -rw-------    1 root     root        40960 May  2 03:44 printing.tdb
  -rw-------    1 root     root        40960 May  2 03:44 printing.tdb.bak
 
-</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2970686"></a>CUPS Print Drivers from Linuxprinting.org</h2></div></div><div></div></div><p>
+</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2962290"></a>CUPS Print Drivers from Linuxprinting.org</h2></div></div><div></div></div><p>
 CUPS ships with good support for HP LaserJet type printers.  You can
 install the generic driver as follows:
 </p><pre class="screen">
@@ -2566,13 +2565,13 @@ not work with PPDs generated for the old cupsomatic. The new-style
 PPDs are 100% compliant to the Adobe PPD specification. They are
 intended to be used by Samba and the cupsaddsmb utility also, to
 provide the driver files for the Windows clients also!
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2970793"></a>foomatic-rip and Foomatic explained</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2962398"></a>foomatic-rip and Foomatic explained</h3></div></div><div></div></div><p>
 Nowadays most Linux distros rely on the utilities of Linuxprinting.org
 to create their printing related software (which, BTW, works on all
 UNIXes and on Mac OS X or Darwin too). It is not known as well as it
 should be, that it also has a very end-user friendly interface which
 allows for an easy update of drivers and PPDs, for all supported
-models, all spoolers, all operatings systems and all package formats
+models, all spoolers, all operating systems and all package formats
 (because there is none). Its history goes back a few years.
 </p><p>
 Recently Foomatic has achieved the astonishing milestone of <a href="http://www.linuxprinting.org/printer_list.cgi?make=Anyone" target="_top">1000
@@ -2583,7 +2582,7 @@ its <a href="http://www.linuxprinting.org/foomatic.html" target="_top">Foomatic<
 database. Currently there are <a href="http://www.linuxprinting.org/driver_list.cgi" target="_top">245 drivers</a>
 in the database: many drivers support various models, and many models
 may be driven by different drivers; it's your choice!
-</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970847"></a>690 &quot;perfect&quot; Printers</h4></div></div><div></div></div><p>
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2962453"></a>690 &quot;perfect&quot; Printers</h4></div></div><div></div></div><p>
 At present there are 690 devices dubbed as working &quot;perfectly&quot;, 181
 &quot;mostly&quot;, 96 &quot;partially&quot; and 46 are &quot;Paperweights&quot;. Keeping in mind
 that most of these are non-PostScript models (PostScript printers are
@@ -2591,10 +2590,10 @@ automatically supported supported by CUPS to perfection, by using
 their own manufacturer-provided Windows-PPD...), and that a
 multifunctional device never qualifies as working &quot;perfectly&quot; if it
 doesn't also scan and copy and fax under GNU/Linux: then this is a
-truely astonishing achievement. Three years ago the number was not
+truly astonishing achievement. Three years ago the number was not
 more than 500, and Linux or UNIX &quot;printing&quot; at the time wasn't
 anywhere near the quality it is today!
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970872"></a>How the &quot;Printing HOWTO&quot; started it all</h4></div></div><div></div></div><p>
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2962477"></a>How the &quot;Printing HOWTO&quot; started it all</h4></div></div><div></div></div><p>
 A few years ago <a href="http://www2.picante.com:81/~gtaylor/" target="_top">Grant Taylor</a>
 started it all. The roots of today's Linuxprinting.org are in the
 first <a href="http://www.linuxprinting.org/foomatic2.9/howto/" target="_top">Linux Printing
@@ -2608,7 +2607,7 @@ hardware and driver zoo that made up Linux printing of the time. This
 database became the core component of today's Foomatic collection of
 tools and data. In the meantime it has moved to an XML representation
 of the data.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970918"></a>Foomatic's strange Name</h4></div></div><div></div></div><p>
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2962522"></a>Foomatic's strange Name</h4></div></div><div></div></div><p>
 &quot;Why the funny name?&quot;, you ask. When it really took off, around spring
 2000, CUPS was far less popular than today, and most systems used LPD,
 LPRng or even PDQ to print. CUPS shipped with a few generic &quot;drivers&quot;
@@ -2631,7 +2630,7 @@ developments available for CUPS;</p></li><li><p>It made available a lot of addit
 to CUPS users (because often the &quot;traditional&quot; Ghostscript way of
 printing was the only one available);</p></li><li><p>It gave all the advanced CUPS options (web interface,
 GUI driver configurations) to users wanting (or needing) to use
-Ghostscript filters.</p></li></ul></div></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2970984"></a>cupsomatic, pdqomatic, lpdomatic, directomatic</h4></div></div><div></div></div><p>
+Ghostscript filters.</p></li></ul></div></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2962589"></a>cupsomatic, pdqomatic, lpdomatic, directomatic</h4></div></div><div></div></div><p>
 CUPS worked through a quickly-hacked up filter script named <a href="http://www.linuxprinting.org/download.cgi?filename=cupsomatic&amp;show=0" target="_top">cupsomatic</a>.
 cupsomatic ran the printfile through Ghostscript, constructing
 automatically the rather complicated command line needed. It just
@@ -2665,7 +2664,7 @@ Foomatic up to versions 2.0.x required (ugly) Perl data structures
 attached the Linuxprinting.org PPDs for CUPS. It had a different
 &quot;*omatic&quot; script for every spooler, as well as different printer
 configuration files..
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2971117"></a>7.13.1.5.The <span class="emphasis"><em>Grand Unification</em></span>
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2962725"></a>7.13.1.5.The <span class="emphasis"><em>Grand Unification</em></span>
 achieved...</h4></div></div><div></div></div><p>
 This all has changed in Foomatic versions 2.9 (Beta) and released as
 &quot;stable&quot; 3.0. This has now achieved the convergence of all *omatic
@@ -2701,7 +2700,7 @@ sizes for many printers; and it will support printing on media drawn
 from different paper trays within the same job (in both cases: even
 where there is no support for this from Windows-based vendor printer
 drivers).
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2971204"></a>Driver Development outside</h4></div></div><div></div></div><p>
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2962810"></a>Driver Development outside</h4></div></div><div></div></div><p>
 Most driver development itself does not happen within
 Linuxprinting.org. Drivers are written by independent maintainers.
 Linuxprinting.org just pools all the information, and stores it in its
@@ -2724,7 +2723,7 @@ effort, started by Michael Sweet (also lead developer for CUPS), now
 directed by Robert Krawitz, which has achieved an amazing level of
 photo print quality (many Epson users swear that its quality is
 better than the vendor drivers provided by Epson for the Microsoft
-platforms). This currently supports 522 models.</p></li></ul></div></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2971283"></a>Forums, Downloads, Tutorials, Howtos -- also for Mac OS X and
+platforms). This currently supports 522 models.</p></li></ul></div></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2962892"></a>Forums, Downloads, Tutorials, Howtos -- also for Mac OS X and
 commercial Unix</h4></div></div><div></div></div><p>
 Linuxprinting.org today is the one-stop &quot;shop&quot; to download printer
 drivers. Look for printer information and <a href="http://www.linuxprinting.org//kpfeifle/LinuxKongress2002/Tutorial/" target="_top">tutorials</a>
@@ -2745,7 +2744,7 @@ of the Foomatic project.
 Till Kamppeter from MandrakeSoft is doing an excellent job in his
 spare time to maintain Linuxprinting.org and Foomatic. So if you use
 it often, please send him a note showing your appreciation.
-</p></div></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2971356"></a>Foomatic Database generated PPDs</h4></div></div><div></div></div><p>
+</p></div></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2962963"></a>Foomatic Database generated PPDs</h4></div></div><div></div></div><p>
 The Foomatic database is an amazing piece of ingenuity in itself. Not
 only does it keep the printer and driver information, but it is
 organized in a way that it can generate &quot;PPD&quot; files &quot;on the fly&quot; from
@@ -2770,7 +2769,7 @@ GUI tools (like KDE's marvellous <a href="http://printing.kde.org/overview/kprin
 or the GNOME <a href="http://gtklp.sourceforge.net/" target="_top">&quot;gtklp&quot;</a>, &quot;xpp&quot; and the CUPS
 web interface) read the PPD too and use this information to present
 the available settings to the user as an intuitive menu selection.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2971421"></a>foomatic-rip and Foomatic-PPD Download and Installation</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963027"></a>foomatic-rip and Foomatic-PPD Download and Installation</h3></div></div><div></div></div><p>
 Here are the steps to install a foomatic-rip driven &quot;LaserJet 4 Plus&quot;
 compatible printer in CUPS (note that recent distributions of SuSE,
 UnitedLinux and Mandrake may ship with a complete package of
@@ -2869,7 +2868,7 @@ the driver/model) contain support for a certain &quot;device&quot;, representing
 the selected &quot;driver&quot; for your model (as shown by &quot;gs
 -h&quot;)</p></li><li><p>foomatic-rip needs a new version of PPDs (PPD versions
 produced for cupsomatic don't work with
-foomatic-rip).</p></li></ul></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2971878"></a>Page Accounting with CUPS</h2></div></div><div></div></div><p>
+foomatic-rip).</p></li></ul></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2963488"></a>Page Accounting with CUPS</h2></div></div><div></div></div><p>
 Often there are questions regarding &quot;print quotas&quot; wherein Samba users
 (that is, Windows clients) should not be able to print beyond a
 certain amount of pages or data volume per day, week or month. This
@@ -2882,7 +2881,7 @@ Of course one could &quot;hack&quot; things with one's own scripts. But then
 there is CUPS. CUPS supports &quot;quotas&quot; which can be based on sizes of
 jobs or on the number of pages or both, and are spanning any time
 period you want.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2971910"></a>Setting up Quotas</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963519"></a>Setting up Quotas</h3></div></div><div></div></div><p>
 This is an example command how root would set a print quota in CUPS,
 assuming an existing printer named &quot;quotaprinter&quot;:
 </p><pre class="screen">
@@ -2893,7 +2892,7 @@ assuming an existing printer named &quot;quotaprinter&quot;:
 This would limit every single user to print 100 pages or 1024 KB of
 data (whichever comes first) within the last 604,800 seconds ( = 1
 week).
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2971941"></a>Correct and incorrect Accounting</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963551"></a>Correct and incorrect Accounting</h3></div></div><div></div></div><p>
 For CUPS to count correctly, the printfile needs to pass the CUPS
 &quot;pstops&quot; filter, otherwise it uses a &quot;dummy&quot; count of &quot;1&quot;.  Some
 printfiles don't pass it (eg: image files) but then those are mostly 1
@@ -2908,7 +2907,7 @@ printer is a non-PostScript model, you need to let CUPS do the job to
 convert the file to a print-ready format for the target printer. This
 will be working for currently about 1,000 different printer models,
 see <a href="http://www.linuxprinting.org/printer_list.cgi" target="_top">http://www.linuxprinting.org/printer_list.cgi</a>).
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2971982"></a>Adobe and CUPS PostScript Drivers for Windows Clients</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963592"></a>Adobe and CUPS PostScript Drivers for Windows Clients</h3></div></div><div></div></div><p>
 Before CUPS-1.1.16 your only option was to use the Adobe PostScript
 Driver on the Windows clients. The output of this driver was not
 always passed through the &quot;pstops&quot; filter on the CUPS/Samba side, and
@@ -2928,7 +2927,7 @@ printfile</p></li></ul></div><p>
 You can read more about the setup of this combination in the manpage
 for &quot;cupsaddsmb&quot; (which is only present with CUPS installed, and only
 current from CUPS 1.1.16).
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972054"></a>The page_log File Syntax</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963663"></a>The page_log File Syntax</h3></div></div><div></div></div><p>
 These are the items CUPS logs in the &quot;page_log&quot; for every
 single <span class="emphasis"><em>page</em></span> of a job:
 </p><div class="itemizedlist"><ul type="disc"><li><p>Printer name</p></li><li><p>User name</p></li><li><p>Job ID</p></li><li><p>Time of printing</p></li><li><p>the page number</p></li><li><p>the number of copies</p></li><li><p>a billing information string
@@ -2950,7 +2949,7 @@ This was job ID &quot;401&quot;, printed on &quot;infotec_IS2027&quot; by user &
 from IP address 10.160.50.13. The next job had ID &quot;402&quot;, was sent by
 user &quot;boss&quot; from IP address 10.160.51.33,printed from one page 440
 copies and is set to be billed to &quot;finance-dep&quot;.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972155"></a>Possible Shortcomings</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963765"></a>Possible Shortcomings</h3></div></div><div></div></div><p>
 What flaws or shortcomings are there with this quota system?
 </p><div class="itemizedlist"><ul type="disc"><li><p>the ones named above (wrongly logged job in case of
 printer hardware failure, etc.)</p></li><li><p>in reality, CUPS counts the job pages that are being
@@ -2964,7 +2963,7 @@ groups</p></li><li><p>no means to read out the current balance or the
 &quot;used-up&quot; number of current quota</p></li><li><p>a user having used up 99 sheets of 100 quota will
 still be able to send and print a 1,000 sheet job</p></li><li><p>a user being denied a job because of a filled-up quota
 doesn't get a meaningful error message from CUPS other than
-&quot;client-error-not-possible&quot;.</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972226"></a>Future Developments</h3></div></div><div></div></div><p>
+&quot;client-error-not-possible&quot;.</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963836"></a>Future Developments</h3></div></div><div></div></div><p>
 This is the best system currently available, and there are huge
 improvements under development for CUPS 1.2:
 </p><div class="itemizedlist"><ul type="disc"><li><p>page counting will go into the &quot;backends&quot; (these talk
@@ -2972,9 +2971,9 @@ directly to the printer and will increase the count in sync with the
 actual printing process: thus a jam at the 5th sheet will lead to a
 stop in the counting)</p></li><li><p>quotas will be handled more flexibly</p></li><li><p>probably there will be support for users to inquire
 their &quot;accounts&quot; in advance</p></li><li><p>probably there will be support for some other tools
-around this topic</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972275"></a>Other Accounting Tools</h3></div></div><div></div></div><p>
+around this topic</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2963884"></a>Other Accounting Tools</h3></div></div><div></div></div><p>
 PrintAnalyzer, pyKota, printbill, LogReport.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2972290"></a>Additional Material</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2963899"></a>Additional Material</h2></div></div><div></div></div><p>
 A printer queue with <span class="emphasis"><em>no</em></span> PPD associated to it is a
 &quot;raw&quot; printer and all files will go directly there as received by the
 spooler. The exceptions are file types &quot;application/octet-stream&quot;
@@ -3052,7 +3051,7 @@ the jobs of hundreds of users on some big machine, where no user is
 allowed to have direct access (such as when the operators often need
 to load the proper paper type before running the 10,000 page job
 requested by marketing for the mailing, etc.).
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2972483"></a>Auto-Deletion or Preservation of CUPS Spool Files</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2964092"></a>Auto-Deletion or Preservation of CUPS Spool Files</h2></div></div><div></div></div><p>
 Samba print files pass through two &quot;spool&quot; directories. One is the
 incoming directory managed by Samba, (set in the <span class="emphasis"><em>path =
 /var/spool/samba</em></span> directive in the
@@ -3061,7 +3060,7 @@ incoming directory managed by Samba, (set in the <span class="emphasis"><em>path
 your UNIX print subsystem. For CUPS it is normally
 <tt class="filename">/var/spool/cups/</tt>, as set by the cupsd.conf
 directive <tt class="filename">RequestRoot /var/spool/cups</tt>.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972529"></a>CUPS Configuration Settings explained</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964138"></a>CUPS Configuration Settings explained</h3></div></div><div></div></div><p>
 Some important parameter settings in the CUPS configuration file
 <tt class="filename">cupsd.conf</tt> are:
 </p><div class="variablelist"><dl><dt><span class="term">PreserveJobHistory Yes</span></dt><dd><p>
@@ -3085,7 +3084,7 @@ maximum to 0 disables this functionality. The default setting is
 </p></dd></dl></div><p>
 (There are also additional settings for &quot;MaxJobsPerUser&quot; and
 &quot;MaxJobsPerPrinter&quot;...)
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972611"></a>Pre-conditions</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964221"></a>Pre-conditions</h3></div></div><div></div></div><p>
 For everything to work as announced, you need to have three
 things:
 </p><div class="itemizedlist"><ul type="disc"><li><p>a Samba-smbd which is compiled against &quot;libcups&quot; (Check
@@ -3096,15 +3095,15 @@ In this case all other manually set printing-related commands (like
 &quot;print command&quot;, &quot;lpq command&quot;, &quot;lprm command&quot;, &quot;lppause command&quot; or
 &quot;lpresume command&quot;) are ignored and they should normally have no
 influence what-so-ever on your printing.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972672"></a>Manual Configuration</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964281"></a>Manual Configuration</h3></div></div><div></div></div><p>
 If you want to do things manually, replace the &quot;printing =
 cups&quot; by &quot;printing = bsd&quot;. Then your manually set commands may work
 (haven't tested this), and a &quot;print command = lp -d %P %s; rm %s&quot;
 may do what you need.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2972690"></a>When <span class="emphasis"><em>not</em></span> to use Samba to print to
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2964299"></a>When <span class="emphasis"><em>not</em></span> to use Samba to print to
 CUPS</h2></div></div><div></div></div><p>
 [TO BE DONE]
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2972707"></a>In Case of Trouble.....</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2964316"></a>In Case of Trouble.....</h2></div></div><div></div></div><p>
 If you have more problems, post the output of these commands
 to the CUPS or Samba mailing lists (choose the one which seems more
 relevant to your problem):
@@ -3120,13 +3119,13 @@ compact way. Don't forget to name the CUPS and Samba versions you
 are using! This saves bandwidth and makes for easier readability
 for experts (and you are expecting experts to read them, right?
 ;-)
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972742"></a>Where to find Documentation</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964352"></a>Where to find Documentation</h3></div></div><div></div></div><p>
 [TO BE DONE]
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972755"></a>How to ask for Help</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964364"></a>How to ask for Help</h3></div></div><div></div></div><p>
 [TO BE DONE]
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972768"></a>Where to find Help</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964377"></a>Where to find Help</h3></div></div><div></div></div><p>
 [TO BE DONE]
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2972782"></a>Appendix</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972789"></a>Printing <span class="emphasis"><em>from</em></span> CUPS to Windows attached
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2964391"></a>Appendix</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964398"></a>Printing <span class="emphasis"><em>from</em></span> CUPS to Windows attached
 Printers</h3></div></div><div></div></div><p>
 From time to time the question arises, how you can print
 <span class="emphasis"><em>to</em></span> a Windows attached printer
@@ -3214,7 +3213,7 @@ doesn't require a password! Printing will only work if you have a
 working netbios name resolution up and running. Note that this is a
 feature of CUPS and you don't necessarily need to have smbd running
 (but who wants that? :-).
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2972982"></a>More CUPS filtering Chains</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964612"></a>More CUPS filtering Chains</h3></div></div><div></div></div><p>
 The following diagrams reveal how CUPS handles print jobs.
 </p><pre class="screen">
 #########################################################################
@@ -3505,7 +3504,7 @@ The following diagrams reveal how CUPS handles print jobs.
 #       CUPS and ESP PrintPro plug-in where rastertosomething is noted.
 #
 ##########################################################################
-</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2973237"></a>Trouble Shooting Guidelines to fix typical Samba printing
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2964919"></a>Trouble Shooting Guidelines to fix typical Samba printing
 Problems</h3></div></div><div></div></div><p>
 This is a short description of how to debug printing problems
 with Samba. This describes how to debug problems with printing from
@@ -3618,35 +3617,35 @@ three dialogs <span class="emphasis"><em>look</em></span> the same. Only one of 
 <span class="emphasis"><em>does</em></span> what you intend. You need to be
 Administrator or Print Administrator to do this for all users.  Here
 is how I do in on XP:
-</p><div class="orderedlist"><ol type="A"><li xmlns:ns65=""><ns65:p>The first &quot;wrong&quot; way:
+</p><div class="orderedlist"><ol type="A"><li><p>The first &quot;wrong&quot; way:
 
-</ns65:p><div class="orderedlist"><ol type="1"><li><p>Open the <span class="emphasis"><em>Printers</em></span>
+</p><div class="orderedlist"><ol type="1"><li><p>Open the <span class="emphasis"><em>Printers</em></span>
 folder.</p></li><li><p>Right-click on the printer
 (<span class="emphasis"><em>remoteprinter on cupshost</em></span>) and
 select in context menu <span class="emphasis"><em>Printing
 Preferences...</em></span></p></li><li><p>Look at this dialog closely and remember what it looks
-like.</p></li></ol></div><ns65:p>
-</ns65:p></li><li xmlns:ns66=""><ns66:p>The second &quot;wrong&quot; way:
+like.</p></li></ol></div><p>
+</p></li><li><p>The second &quot;wrong&quot; way:
 
-</ns66:p><div class="orderedlist"><ol type="1"><li><p>Open the <span class="emphasis"><em>Printers</em></span>
+</p><div class="orderedlist"><ol type="1"><li><p>Open the <span class="emphasis"><em>Printers</em></span>
 folder.</p></li><li><p>Right-click on the printer (<span class="emphasis"><em>remoteprinter on
 cupshost</em></span>) and select in the context menu
 <span class="emphasis"><em>Properties</em></span></p></li><li><p>Click on the <span class="emphasis"><em>General</em></span>
 tab</p></li><li><p>Click on the button <span class="emphasis"><em>Printing
 Preferences...</em></span></p></li><li><p>A new dialog opens. Keep this dialog open and go back
-to the parent dialog.</p></li></ol></div><ns66:p>
-</ns66:p></li><li xmlns:ns67=""><ns67:p>The third, the &quot;correct&quot; way: (should you do
+to the parent dialog.</p></li></ol></div><p>
+</p></li><li><p>The third, the &quot;correct&quot; way: (should you do
 this from the beginning, just carry out steps 1. and 2. from second
 &quot;way&quot; above)
 
-</ns67:p><div class="orderedlist"><ol type="1"><li><p>Click on the <span class="emphasis"><em>Advanced</em></span>
+</p><div class="orderedlist"><ol type="1"><li><p>Click on the <span class="emphasis"><em>Advanced</em></span>
 tab. (Hmmm... if everything is &quot;Grayed Out&quot;, then you are not logged
 in as a user with enough privileges).</p></li><li><p>Click on the <span class="emphasis"><em>Printing
 Defaults...</em></span> button.</p></li><li><p>On any of the two new tabs, click on the
 <span class="emphasis"><em>Advanced...</em></span>
 button.</p></li><li><p>A new dialog opens. Compare this one to the other,
-identical looking one from &quot;B.5&quot; or A.3&quot;.</p></li></ol></div><ns67:p>
-</ns67:p></li></ol></div><p>
+identical looking one from &quot;B.5&quot; or A.3&quot;.</p></li></ol></div><p>
+</p></li></ol></div><p>
 Do you see any difference? I don't either... However, only the last
 one, which you arrived at with steps &quot;C.1.-6.&quot; will save any settings
 permanently and be the defaults for new users. If you want all clients
@@ -3729,6 +3728,6 @@ Windows box with a shared PostScript printer: <b class="command">smbclient
 <tt class="filename">W32X86/2</tt> subdir to <b class="command">mget ADOBE*</b>
 and other files or to <tt class="filename">WIN40/0</tt> to do the same. --
 Another option is to download the <tt class="filename">*.exe</tt> packaged
-files from the Adobe website.</p></dd></dl></div></div><div xmlns:ns68="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2974343"></a>An Overview of the CUPS Printing Processes</h3></div></div><div></div></div><ns68:p>
-</ns68:p><div class="figure"><a name="id2974353"></a><p class="title"><b>Figure 19.15. CUPS Printing Overview</b></p><div class="mediaobject"><img src="projdoc/imagefiles/a_small.png" alt="CUPS Printing Overview"></div></div><ns68:p>
-</ns68:p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="printing.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="VFS.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 18. Classical Printing Support </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 20. Stackable VFS modules</td></tr></table></div></body></html>
+files from the Adobe website.</p></dd></dl></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2966041"></a>An Overview of the CUPS Printing Processes</h3></div></div><div></div></div><p>
+</p><div class="figure"><a name="id2966052"></a><p class="title"><b>Figure 19.15. CUPS Printing Overview</b></p><div class="mediaobject"><img src="projdoc/imagefiles/a_small.png" alt="CUPS Printing Overview"></div></div><p>
+</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="printing.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="VFS.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 18. Classical Printing Support </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 20. Stackable VFS modules</td></tr></table></div></body></html>
