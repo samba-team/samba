@@ -413,3 +413,11 @@ main()
 	exit(0);
 }
 #endif
+
+/****************************************************************************
+Check if we are setuid root.  Used in libsmb and smbpasswd parinoia checks.
+****************************************************************************/
+BOOL is_setuid_root(void) 
+{
+	return (geteuid() == (uid_t)0) && (getuid() != (uid_t)0);
+}

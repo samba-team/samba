@@ -154,6 +154,12 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 {
         BOOL alloced_cli = False;
 
+	/* Check the effective uid - make sure we are not setuid */
+	if (is_setuid_root()) {
+		DEBUG(0,("libsmb based programs must *NOT* be setuid root.\n"));
+		return NULL;
+	}
+
 	if (!cli) {
 		cli = (struct cli_state *)malloc(sizeof(*cli));
 		if (!cli)

@@ -933,7 +933,7 @@ int main(int argc, char **argv)
 	strupper(global_myname);
 
 	/* Check the effective uid - make sure we are not setuid */
-	if ((geteuid() == (uid_t)0) && (getuid() != (uid_t)0)) {
+	if (is_setuid_root()) {
 		fprintf(stderr, "smbpasswd must *NOT* be setuid root.\n");
 		exit(1);
 	}
