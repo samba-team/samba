@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -183,27 +183,29 @@ fcc_initialize(krb5_context context,
 	    f->version = context->fcache_vno;
 	else
 	    f->version = KRB5_FCC_FVNO_4;
-	krb5_store_int8(sp, 5);
-	krb5_store_int8(sp, f->version);
+	ret |= krb5_store_int8(sp, 5);
+	ret |= krb5_store_int8(sp, f->version);
 	storage_set_flags(context, sp, f->version);
-	if(f->version == KRB5_FCC_FVNO_4) {
+	if(f->version == KRB5_FCC_FVNO_4 && ret == 0) {
 	    /* V4 stuff */
 	    if (context->kdc_sec_offset) {
-		krb5_store_int16 (sp, 12); /* length */
-		krb5_store_int16 (sp, FCC_TAG_DELTATIME); /* Tag */
-		krb5_store_int16 (sp, 8); /* length of data */
-		krb5_store_int32 (sp, context->kdc_sec_offset);
-		krb5_store_int32 (sp, context->kdc_usec_offset);
+		ret |= krb5_store_int16 (sp, 12); /* length */
+		ret |= krb5_store_int16 (sp, FCC_TAG_DELTATIME); /* Tag */
+		ret |= krb5_store_int16 (sp, 8); /* length of data */
+		ret |= krb5_store_int32 (sp, context->kdc_sec_offset);
+		ret |= krb5_store_int32 (sp, context->kdc_usec_offset);
 	    } else {
-		krb5_store_int16 (sp, 0);
+		ret |= krb5_store_int16 (sp, 0);
 	    }
 	}
-	krb5_store_principal(sp, primary_principal);
+	ret |= krb5_store_principal(sp, primary_principal);
 	krb5_storage_free(sp);
     }
-    close(fd);
+    if(close(fd) < 0)
+	if (ret == 0)
+	    ret = errno;
 	
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
@@ -232,6 +234,7 @@ fcc_store_cred(krb5_context context,
 	       krb5_ccache id,
 	       krb5_creds *creds)
 {
+    int ret;
     int fd;
     char *f;
 
@@ -244,11 +247,13 @@ fcc_store_cred(krb5_context context,
 	krb5_storage *sp;
 	sp = krb5_storage_from_fd(fd);
 	storage_set_flags(context, sp, FCACHE(id)->version);
-	krb5_store_creds(sp, creds);
+	ret = krb5_store_creds(sp, creds);
 	krb5_storage_free(sp);
     }
-    close(fd);
-    return 0; /* XXX */
+    if (close(fd) < 0)
+	if (ret == 0)
+	    ret = errno;
+    return ret;
 }
 
 static krb5_error_code
