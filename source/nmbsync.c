@@ -55,7 +55,7 @@ char *getsmbpass(char *pass)
 /****************************************************************************
 adds information retrieved from a NetServerEnum call
 ****************************************************************************/
-static BOOL add_info(struct domain_record *d, struct work_record *work, int servertype)
+static BOOL add_info(struct subnet_record *d, struct work_record *work, int servertype)
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -112,7 +112,7 @@ static BOOL add_info(struct domain_record *d, struct work_record *work, int serv
 		  /* creates workgroup on remote subnet */
 		  if ((w = find_workgroupstruct(d,sname, True)))
 		    {
-		      if (ismybcast(d->bcast_ip))
+		      if (d->my_interface)
 			{
 			  announce_request(w, d->bcast_ip);
 			}
@@ -141,7 +141,7 @@ static BOOL add_info(struct domain_record *d, struct work_record *work, int serv
 void sync_browse_lists(struct work_record *work, char *name, int nm_type,
 		       struct in_addr ip)
 {
-  struct domain_record *d;
+  struct subnet_record *d;
   pid = getpid();
   uid = getuid();
   gid = getgid();

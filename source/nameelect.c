@@ -47,7 +47,7 @@ extern time_t StartupTime;
 
 #define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
 
-extern struct domain_record *domainlist;
+extern struct subnet_record *subnetlist;
 
 
 /*******************************************************************
@@ -57,7 +57,7 @@ void check_master_browser(void)
 {
   static time_t lastrun=0;
   time_t t = time(NULL);
-  struct domain_record *d;
+  struct subnet_record *d;
 
   if (!lastrun) lastrun = t;
   if (t < lastrun + CHECK_TIME_MST_BROWSE * 60) 
@@ -67,7 +67,7 @@ void check_master_browser(void)
 
   dump_workgroups();
 
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
 
@@ -92,13 +92,13 @@ void check_master_browser(void)
   ******************************************************************/
 void browser_gone(char *work_name, struct in_addr ip)
 {
-  struct domain_record *d = find_domain(ip);
+  struct subnet_record *d = find_domain(ip);
   struct work_record *work = find_workgroupstruct(d, work_name, False);
 
   if (!work || !d) return;
 
   if (strequal(work->work_group, lp_workgroup()) &&
-      ismybcast(d->bcast_ip))
+      d->my_interface)
     {
 
       DEBUG(2,("Forcing election on %s %s\n",
@@ -125,7 +125,7 @@ void browser_gone(char *work_name, struct in_addr ip)
 /****************************************************************************
   send an election packet
   **************************************************************************/
-void send_election(struct domain_record *d, char *group,uint32 criterion,
+void send_election(struct subnet_record *d, char *group,uint32 criterion,
 		   int timeup,char *name)
 {
   pstring outbuf;
@@ -157,7 +157,7 @@ void send_election(struct domain_record *d, char *group,uint32 criterion,
 /*******************************************************************
   become the master browser
   ******************************************************************/
-static void become_master(struct domain_record *d, struct work_record *work)
+static void become_master(struct subnet_record *d, struct work_record *work)
 {
   uint32 domain_type = SV_TYPE_DOMAIN_ENUM | SV_TYPE_SERVER_UNIX | 0x00400000;
 
@@ -192,7 +192,7 @@ static void become_master(struct domain_record *d, struct work_record *work)
   add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
   add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
   
-  if (ismybcast(d->bcast_ip))
+  if (d->my_interface)
     {
       /* ask all servers on our local net to announce to us */
       announce_request(work, d->bcast_ip);
@@ -203,7 +203,7 @@ static void become_master(struct domain_record *d, struct work_record *work)
 /*******************************************************************
   unbecome the master browser
   ******************************************************************/
-void become_nonmaster(struct domain_record *d, struct work_record *work)
+void become_nonmaster(struct subnet_record *d, struct work_record *work)
 {
   DEBUG(2,("Becoming non-master for %s\n",work->work_group));
   
@@ -227,14 +227,14 @@ void run_elections(void)
   time_t t = time(NULL);
   static time_t lastime = 0;
   
-  struct domain_record *d;
+  struct subnet_record *d;
   
   /* send election packets once a second */
   if (lastime && t-lastime <= 0) return;
   
   lastime = t;
   
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
@@ -293,7 +293,7 @@ void process_election(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct domain_record *d = find_domain(ip);
+  struct subnet_record *d = find_domain(ip);
   int version = CVAL(buf,0);
   uint32 criterion = IVAL(buf,1);
   int timeup = IVAL(buf,5)/1000;
@@ -313,7 +313,7 @@ void process_election(struct packet_struct *p,char *buf)
     {
       if (listening_name(work, &dgram->dest_name) && 
 	  strequal(work->work_group, lp_workgroup()) &&
-	  ismybcast(d->bcast_ip))
+	  d->my_interface)
 	{
 	  if (win_election(work, version,criterion,timeup,name))
 	    {
@@ -350,10 +350,10 @@ void process_election(struct packet_struct *p,char *buf)
   ***************************************************************************/
 BOOL check_elections(void)
 {
-  struct domain_record *d;
+  struct subnet_record *d;
   BOOL run_any_election = False;
 
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)

@@ -41,7 +41,7 @@ extern int ClientDGRAM;
 extern int ClientNMB;
 
 /* this is our domain/workgroup/server database */
-extern struct domain_record *domainlist;
+extern struct subnet_record *subnetlist;
 
 /* machine comment for host announcements */
 extern  pstring ServerComment;
@@ -119,7 +119,7 @@ void announce_backup(void)
   time_t t = time(NULL);
   pstring outbuf;
   char *p;
-  struct domain_record *d1;
+  struct subnet_record *d1;
   int tok;
   
   if (!lastrun) lastrun = t;
@@ -128,10 +128,10 @@ void announce_backup(void)
   
   for (tok = 0; tok <= workgroup_count; tok++)
     {
-      for (d1 = domainlist; d1; d1 = d1->next)
+      for (d1 = subnetlist; d1; d1 = d1->next)
 	{
 	  struct work_record *work;
-	  struct domain_record *d;
+	  struct subnet_record *d;
 	  
 	  /* search for unique workgroup: only the name matters */
 	  for (work = d1->workgrouplist;
@@ -141,7 +141,7 @@ void announce_backup(void)
 	  if (!work) continue;
 
 	  /* found one: announce it across all domains */
-	  for (d = domainlist; d; d = d->next)
+	  for (d = subnetlist; d; d = d->next)
 	    {
 	      int type=0;
 
@@ -192,17 +192,17 @@ void announce_host(void)
   char *commentp;
   pstring comment;
   char *my_name;
-  struct domain_record *d;
+  struct subnet_record *d;
 
   StrnCpy(comment, *ServerComment ? ServerComment : "NoComment", 43);
 
   my_name = *myname ? myname : "NoName";
 
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
       
-      if (!ismybcast(d->bcast_ip))
+      if (!d->my_interface)
 	continue;
 
       for (work = d->workgrouplist; work; work = work->next)
@@ -229,7 +229,7 @@ void announce_host(void)
 	  
 	  work->lastannounce_time = t;
 
-	  if (!ismybcast(d->bcast_ip)) {
+	  if (!d->my_interface) {
 	    stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
 		       SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
 		       SV_TYPE_DOMAIN_CTRL | SV_TYPE_DOMAIN_MEMBER);
@@ -264,7 +264,7 @@ void announce_host(void)
 	      p = p+31;
 	      p = skip_string(p,1);
 	      
-	      if (ismybcast(d->bcast_ip))
+	      if (d->my_interface)
 		{
 		  if (AM_MASTER(work))
 		    {
@@ -338,7 +338,7 @@ void announce_host(void)
   **************************************************************************/
 void announce_master(void)
 {
-  struct domain_record *d;
+  struct subnet_record *d;
   static time_t last=0;
   time_t t = time(NULL);
   BOOL am_master = False; /* are we a master of some sort? :-) */
@@ -348,7 +348,7 @@ void announce_master(void)
 
   last = t;
 
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
@@ -362,7 +362,7 @@ void announce_master(void)
   
   if (!am_master) return; /* only proceed if we are a master browser */
   
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
@@ -394,8 +394,8 @@ void announce_master(void)
 			}
 		      else
 			{
-			  struct domain_record *d2;
-			  for (d2 = domainlist; d2; d2 = d2->next)
+			  struct subnet_record *d2;
+			  for (d2 = subnetlist; d2; d2 = d2->next)
 			    {
 			      queue_netbios_packet(ClientNMB,NMB_QUERY,
 						   MASTER_SERVER_CHECK,
