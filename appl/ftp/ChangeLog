@@ -4,6 +4,8 @@
 	
 	* ftp/ftp.1: fix mdoc bug
 	
+	* ftp/ftp.1: document --no-gss-bindings
+
 	* ftp/gssapi.c: Optionally support gss bindings, client does it by
 	default, server not.  This is to make it work for clients behind
 	NAT.
