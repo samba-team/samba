@@ -130,6 +130,18 @@ init_context_from_config_file(krb5_context context)
 	    krb5_free_addresses(context, &addresses);
 	}
 	krb5_config_free_strings(adr);
+
+	adr = krb5_config_get_strings(context, NULL, 
+				      "libdefaults", 
+				      "ignore_addresses", 
+				      NULL);
+	memset(&addresses, 0, sizeof(addresses));
+	for(a = adr; a && *a; a++) {
+	    krb5_parse_address(context, *a, &addresses);
+	    krb5_add_ignore_addresses(context, &addresses);
+	    krb5_free_addresses(context, &addresses);
+	}
+	krb5_config_free_strings(adr);
     }
     
     INIT_FIELD(context, bool, scan_interfaces, TRUE, "scan_interfaces");
@@ -360,6 +372,44 @@ krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
 	return 0;
     }
     return copy_HostAddresses(context->extra_addresses, addresses);
+}
+
+krb5_error_code
+krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
+{
+
+    if(context->ignore_addresses)
+	return krb5_append_addresses(context, 
+				     context->ignore_addresses, addresses);
+    else
+	return krb5_set_ignore_addresses(context, addresses);
+}
+
+krb5_error_code
+krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
+{
+    if(context->ignore_addresses) {
+	krb5_free_addresses(context, context->ignore_addresses);
+	free(context->ignore_addresses);
+    }
+    if(context->ignore_addresses == NULL) {
+	context->ignore_addresses = malloc(sizeof(*context->ignore_addresses));
+	if(context->ignore_addresses == NULL) {
+	    krb5_set_error_string (context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+    }
+    return krb5_copy_addresses(context, addresses, context->ignore_addresses);
+}
+
+krb5_error_code
+krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
+{
+    if(context->ignore_addresses == NULL) {
+	memset(addresses, 0, sizeof(*addresses));
+	return 0;
+    }
+    return copy_HostAddresses(context->ignore_addresses, addresses);
 }
 
 krb5_error_code
