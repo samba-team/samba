@@ -796,7 +796,7 @@
 	/* Function 0x44 */
 	typedef struct {
 		uint16 sid_type;
-		dom_sid *sid;
+		dom_sid2 *sid;
 		uint32 sid_index;
 		uint32 unknown;
 	} lsa_TranslatedSid3;
