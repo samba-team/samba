@@ -307,10 +307,10 @@ static struct dispatch_table cache_table[] = {
 
 	/* Lookup related functions */
 
-	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid, "SID_TO_UID" },
-	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
-	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
-	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
+	{ WINBINDD_SID_TO_UID, cache_sid_to_uid, "SID_TO_UID" },
+	{ WINBINDD_SID_TO_GID, cache_sid_to_gid, "SID_TO_GID" },
+	{ WINBINDD_GID_TO_SID, cache_gid_to_sid, "GID_TO_SID" },
+	{ WINBINDD_UID_TO_SID, cache_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
 
 	/* Miscellaneous */
@@ -949,7 +949,7 @@ struct winbindd_state server_state;   /* Server state information */
 int main(int argc, char **argv)
 {
 	pstring logfile;
-	int num_children;
+	int num_children = 1;
 	static BOOL interactive = False;
 	static BOOL Fork = True;
 	static BOOL log_stdout = False;

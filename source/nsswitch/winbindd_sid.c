@@ -454,3 +454,147 @@ enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
 
 	return WINBINDD_OK;
 }
+
+enum winbindd_result cache_sid_to_uid(struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	uint32 flags = ID_CACHE_ONLY;
+	NTSTATUS result;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
+		  state->request.data.sid));
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(1, ("Could not convert sid %s from string\n",
+			  state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+	
+	if ( state->request.flags & WBFLAG_QUERY_ONLY ) 
+		flags = ID_QUERY_ONLY;
+	
+	/* Find uid for this sid and return it */
+
+	result = idmap_sid_to_uid(&sid, &(state->response.data.uid), flags);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	if (state->continuation != NULL) {
+		/* Here the second time, the SID could not be mapped by the
+		 * dual daemon */
+		return WINBINDD_ERROR;
+	}
+
+	state->send_to_background = True;
+	state->continuation = cache_sid_to_uid;
+	return WINBINDD_PENDING;
+}
+
+enum winbindd_result cache_sid_to_gid(struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	uint32 flags = ID_CACHE_ONLY;
+	NTSTATUS result;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
+		  state->request.data.sid));
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(1, ("Could not convert sid %s from string\n",
+			  state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+	
+	if ( state->request.flags & WBFLAG_QUERY_ONLY ) 
+		flags = ID_QUERY_ONLY;
+	
+	/* Find uid for this sid and return it */
+
+	result = idmap_sid_to_gid(&sid, &(state->response.data.uid), flags);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	if (state->continuation != NULL) {
+		/* Here the second time, the SID could not be mapped by the
+		 * dual daemon */
+		return WINBINDD_ERROR;
+	}
+
+	state->send_to_background = True;
+	state->continuation = cache_sid_to_gid;
+	return WINBINDD_PENDING;
+}
+
+enum winbindd_result cache_uid_to_sid(struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	unid_t id;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.uid));
+
+	/* Lookup rid for this uid */
+
+	id.uid = state->request.data.uid;
+
+	result = idmap_get_sid_from_id(&sid, id,
+				       ID_USERID|ID_QUERY_ONLY|ID_CACHE_ONLY);
+
+	if (NT_STATUS_IS_OK(result)) {
+		sid_to_string(state->response.data.sid.sid, &sid);
+		state->response.data.sid.type = SID_NAME_USER;
+		return WINBINDD_OK;
+	}
+
+	if (state->continuation != NULL) {
+		/* Here the second time, the SID could not be mapped by the
+		 * dual daemon */
+		return WINBINDD_ERROR;
+	}
+
+	state->send_to_background = True;
+	state->continuation = cache_uid_to_sid;
+	return WINBINDD_PENDING;
+}
+
+enum winbindd_result cache_gid_to_sid(struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	unid_t id;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.uid));
+
+	/* Lookup rid for this gid */
+
+	id.uid = state->request.data.gid;
+
+	result = idmap_get_sid_from_id(&sid, id,
+				       ID_GROUPID|ID_QUERY_ONLY|ID_CACHE_ONLY);
+
+	if (NT_STATUS_IS_OK(result)) {
+		sid_to_string(state->response.data.sid.sid, &sid);
+		state->response.data.sid.type = SID_NAME_DOM_GRP;
+		return WINBINDD_OK;
+	}
+
+	if (state->continuation != NULL) {
+		/* Here the second time, the SID could not be mapped by the
+		 * dual daemon */
+		return WINBINDD_ERROR;
+	}
+
+	state->send_to_background = True;
+	state->continuation = cache_gid_to_sid;
+	return WINBINDD_PENDING;
+}

@@ -275,6 +275,11 @@ void do_dual_daemon(void)
 		DEBUG(0,("tdb_reopen_all failed.\n"));
 		_exit(0);
 	}
+
+	if (!message_init()) {
+		DEBUG(0, ("message_init failed\n"));
+		_exit(0);
+	}
 	
 	dual_daemon_pipe = -1;
 	opt_dual_daemon = False;

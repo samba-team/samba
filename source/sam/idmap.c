@@ -201,7 +201,7 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 		return NT_STATUS_OK;
 	}
 
-	if (remote_map == NULL) {
+	if ((remote_map == NULL) || (loc_type & ID_CACHE_ONLY)) {
 		return ret;
 	}
 
@@ -237,7 +237,7 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	if (NT_STATUS_IS_OK(ret))
 		return ret;
 
-	if (remote_map == NULL)
+	if ((remote_map == NULL) || (loc_type & ID_CACHE_ONLY))
 		return ret;
 
 	/* We have a second chance, ask our authoritative backend */
