@@ -1012,7 +1012,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
+	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 8;
@@ -1529,7 +1529,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
+	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 8;
