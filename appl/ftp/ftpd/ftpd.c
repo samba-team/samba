@@ -216,27 +216,6 @@ curdir(void)
 #define LINE_MAX 1024
 #endif
 
-static void conn_wait(int port)
-{
-    int s, t;
-    struct sockaddr_in sa;
-    int one = 1;
-    s = socket(AF_INET, SOCK_STREAM, 0);
-
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one));
-    memset(&sa, 0, sizeof(sa));
-    sa.sin_port = port; /* in network byteorder */
-    sa.sin_addr.s_addr = INADDR_ANY;
-    bind(s, (struct sockaddr*)&sa, sizeof(sa));
-    listen(s, 5);
-    t = accept(s, NULL, 0);
-    close(s);
-    dup2(t, 0);
-    dup2(t, 1);
-    if(t > 2)
-	close(t);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -334,7 +313,7 @@ main(int argc, char **argv)
 	}
 
 	if(not_inetd)
-	    conn_wait(port);
+	    mini_inetd (port);
 
 
 	/*
