@@ -3,7 +3,7 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AM_INIT_AUTOMAKE(heimdal,0.2r)
+AM_INIT_AUTOMAKE(heimdal,0.2s-pre)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -75,6 +75,12 @@ if test "$withval" = no; then
 	berkeley_db=""
 fi
 ])
+
+AC_TEST_PACKAGE_NEW(openldap,[#include <ldap.h>],[-lldap -llber])
+
+if test "$openldap_libdir"; then
+	LIB_openldap="-rpath $openldap_libdir $LIB_openldap"
+fi
 
 AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena)
 
