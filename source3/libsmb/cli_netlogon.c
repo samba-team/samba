@@ -434,9 +434,10 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
                 nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
-                init_id_info1(&ctr.auth.id1, lp_workgroup(), 0,
+                init_id_info1(&ctr.auth.id1, lp_workgroup(), 
+                              0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
-                              username, global_myname, 
+                              username, cli->clnt_name_slash,
                               cli->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
@@ -452,16 +453,17 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                 SMBencrypt(password, chal, local_lm_response);
                 SMBNTencrypt(password, chal, local_nt_response);
 
-                init_id_info2(&ctr.auth.id2, lp_workgroup(), 0, 
+                init_id_info2(&ctr.auth.id2, lp_workgroup(), 
+                              0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
-                              username, global_myname, chal,
+                              username, cli->clnt_name_slash, chal,
                               local_lm_response, 24, local_nt_response, 24);
                 break;
         }
         default:
                 DEBUG(0, ("switch value %d not supported\n", 
                           ctr.switch_value));
-                break;
+                goto done;
         }
 
         init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname,
@@ -472,7 +474,6 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (!net_io_q_sam_logon("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, NET_SAMLOGON, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -481,7 +482,6 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         r.user = &user;
 
 	if (!net_io_r_sam_logon("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
