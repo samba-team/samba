@@ -56,11 +56,11 @@ void *talloc(TALLOC_CTX *t, size_t size)
 {
 	void *p;
 
-	size = (size + TALLOC_ALIGN) & (~TALLOC_ALIGN-1);
+	size = (size + (TALLOC_ALIGN-1)) & ~(TALLOC_ALIGN-1);
 
 	if (!t->list || (t->list->total_size - t->list->alloc_size) < size) {
 		struct talloc_chunk *c;
-		size_t asize = (size + TALLOC_CHUNK_SIZE) & ~(TALLOC_CHUNK_SIZE-1);
+		size_t asize = (size + (TALLOC_CHUNK_SIZE-1)) & ~(TALLOC_CHUNK_SIZE-1);
 
 		c = (struct talloc_chunk *)malloc(sizeof(*c));
 		if (!c) return NULL;
