@@ -1,3 +1,8 @@
+2004-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_set_password.3: spelling from wiz@netbsd.org
+	description for krb5_passwd_result_to_string
+	
 2004-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_set_password.3: Remove superfluous comma; grammar
