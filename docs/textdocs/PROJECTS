@@ -22,9 +22,7 @@ Documentation and FAQ
 Docs and FAQ files for the Samba suite of software.
 
 Contact samba-bugs@samba.anu.edu.au with the diffs. These are urgently 
-required. The man pages were last guaranteed up to date as of version
-1.7.07, and although many changes have been made since then there is still
-a lot of work to be done.
+required. 
 
 The FAQ is being added to on an ad hoc basis, see the web pages for info.
 
@@ -58,20 +56,9 @@ Contact lendecke@namu01.gwdg.de (Volker Lendecke)
 
 This works really well, and is measurably more efficient than commercial
 client software. It is now part of the Linux kernel. Long filename support
-is in alpha.
+is in use.
 
-Status last updated 2nd October 1996
-========================================================================
-
-========================================================================
-Nmbd
-
-Aims to produce a complete rfc1001/1002 implementation. The current
-nmbd is a partial implementation.
-
-Contact Fabrice Cetre (cetre@ifhpserv.insa-lyon.fr)
-
-Status last updated 23rd August 1994
+Status last updated June 1997
 ========================================================================
 
 ========================================================================

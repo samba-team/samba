@@ -1,6 +1,14 @@
-There are some particular issues with Samba and Windows NT
+Contributor:	Various
+Updated:	June 27, 1997
+Status:		Current
 
-=====================================================================
+Subject:	Samba and Windows NT Password Handling
+=============================================================================
+
+There are some particular issues with Samba and Windows NT.
+
+Passwords:
+==========
 One of the most annoying problems with WinNT is that NT refuses to
 connect to a server that is in user level security mode and that
 doesn't support password encryption unless it first prompts the user
@@ -8,21 +16,31 @@ for a password.
 
 This means even if you have the same password on the NT box and the
 Samba server you will get prompted for a password. Entering the
-correct password will get you connected.
+correct password will get you connected only if Windows NT can
+communicate with Samba using a compatible mode of password security.
+
+All versions of Windows NT prior to 4.0 Service Pack 3 could negotiate
+plain text (clear text) passwords. Windows NT 4.0 Service Pack 3 changed
+this default behaviour so it now will only handle encrypted passwords.
+The following registry entry change will re-enable clear text password
+handling:
+
+Run regedt32.exe and locate the hive key entry:
+HKEY_LOCAL_MACHINE\system\CurrentControlSet\Services\rdr\parameters\
+
+Add the following value:
+	EnablePlainTextPassword:REG_DWORD=1
+
 
 The other major ramification of this feature of NT is that it can't
 browse a user level non-encrypted server unless it already has a
 connection open. This is because there is no spot for a password
 prompt in the browser window. It works fine if you already have a
 drive mounted (for example, one auto mounted on startup).
-
-Samba should support encrypted passwords soon, which will solve this
-problem.
 =====================================================================
 
-
-
-=====================================================================
+Printing:
+=========
 When you mount a printer using the print manager in NT you may find
 the following info from Matthew Harrell <harrell@leech.nrl.navy.mil>
 useful:
@@ -49,8 +67,3 @@ time for the NT machine to get verification that the printer queue
 actually exists.
 
 I hope this helped in some way...
------------
-=====================================================================
-
-
-

@@ -1,7 +1,10 @@
 January 7, 1997
-Contributor: John H Terpstra
+Updated:	June 27, 1997
+Contributor:	John H Terpstra <samba-bugs@samba.anu.edu.au>
+Status:		Current
 
 Subject: Using a Samba share as an administrative share for MS Office, etc.
+==============================================================================
 
 Problem:
 ========
@@ -21,9 +24,9 @@ is desirable to enable file locking and share mode operation during this
 process.
 
 Subsequent installation of MS Office from this share will FAIL unless certain
-procautions are taken. The failure will be caused by share mode operation
+precautions are taken. This failure will be caused by share mode operation
 which will prevent the MS Office installation process from re-opening various
-dynamic link library files. Some other files will also NOT be found at times.
+dynamic link library files and will cause sporadic file not found problems.
 
 Solution:
 =========
@@ -40,6 +43,7 @@ Solution:
 		browseable = yes
 		public = yes
 
-2. Now you are ready to run the setup program from the workstation as follows:-
+2. Now you are ready to run the setup program from the Microsoft Windows
+workstation as follows:-
 	\\"Server_Name"\MSOP95\msoffice\setup
 

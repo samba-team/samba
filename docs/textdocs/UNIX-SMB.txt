@@ -1,3 +1,9 @@
+Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
+Date:		April 1995
+
+Subject:	Discussion of NetBIOS in a Unix World
+============================================================================
+
 This is a short document that describes some of the issues that
 confront a SMB implementation on unix, and how Samba copes with
 them. They may help people who are looking at unix<->PC
@@ -5,9 +11,6 @@ interoperability.
 
 It was written to help out a person who was writing a paper on unix to
 PC connectivity.
-
-Andrew Tridgell
-April 1995
 
 
 Usernames
@@ -88,16 +91,14 @@ specified number of case changes, or by using the "password server"
 option which allows Samba to do it's validation via another machine
 (typically a WinNT server).
 
-Samba also doesn't support the password encryption method used by SMB
-clients. This is because the spec isn't sufficiently detailed for an
-implementation (although Jeremy Allison is working on it, to try and
-work it out). Also, there is a fundamental problem with what we
-understand so far in the algorithm, as it seems that the server would
-need to store somewhere on disk a reversibly encrypted (effectively
-plaintext) copy of the users password in order to use the
-algorithm. This goes against the unix policy that "even the super-user
-doesn't know your password" which comes from the use of a one-way hash
-function.
+Samba supports the password encryption method used by SMB
+clients. Note that the use of password encryption in Microsoft
+networking leads to password hashes that are "plain text equivalent".
+This means that it is *VERY* important to ensure that the Samba
+smbpasswd file containing these password hashes is only readable
+by the root user. See the documentation ENCRYPTION.txt for more
+details.
+
 
 Locking
 =======
@@ -140,10 +141,12 @@ allowed by anyone else who tries to use the file at the same time. If
 DENY_READ is placed on the file, for example, then any attempt to open
 the file for reading should fail.
 
-Unix has no equivalent notion. To implement these Samba uses lock
+Unix has no equivalent notion. To implement this Samba uses either lock
 files based on the files inode and placed in a separate lock
-directory. These are clumsy and consume processing and file resources,
-so they are optional and off by default.
+directory or a shared memory implementation. The lock file method 
+is clumsy and consumes processing and file resources,
+the shared memory implementation is vastly prefered and is turned on
+by default for those systems that support it.
 
 Trapdoor UIDs
 =============
@@ -219,5 +222,10 @@ this protocol level much easier.
 
 There is also a problem with the SMB specications. SMB is a X/Open
 spec, but the X/Open book is far from ideal, and fails to cover many
-important issues, leaving much to the imagination.
+important issues, leaving much to the imagination. Microsoft recently
+renamed the SMB protocol CIFS (Common Internet File System) and have 
+published new specifications. These are far superior to the old 
+X/Open documents but there are still undocumented calls and features. 
+This specification is actively being worked on by a CIFS developers 
+mailing list hosted by Microsft.
 

@@ -1,5 +1,8 @@
-DIAGNOSING YOUR SAMBA SERVER
-============================
+Contributor:	Andrew Tridgell
+Updated:	June 27, 1997
+
+Subject:	DIAGNOSING YOUR SAMBA SERVER
+===========================================================================
 
 This file contains a list of tests you can perform to validate your
 Samba server. It also tells you what the likely cause of the problem
@@ -23,10 +26,12 @@ ASSUMPTIONS
 
 In all of the tests I assume you have a Samba server called BIGSERVER
 and a PC called ACLIENT. I also assume the PC is running windows for
-workgroups with a recent copy of the microsoft tcp/ip stack. The
-procedure is similar for other types of clients.
+workgroups with a recent copy of the microsoft tcp/ip stack. Alternatively,
+your PC may be running Windows 95 or Windows NT (Workstation or Server).
 
-I also assume you know the name of a available share in your
+The procedure is similar for other types of clients.
+
+I also assume you know the name of an available share in your
 smb.conf. I will assume this share is called "tmp". You can add a
 "tmp" share like by adding the following to smb.conf:
 
@@ -43,8 +48,12 @@ COMMANDS SHOWN DID NOT EXIST IN EARLIER VERSIONS
 TEST 1:
 -------
 
-run the command "testparm". If it reports any errors then your
-smb.conf configuration file is faulty.
+In the directory in which you store your smb.conf file, run the command
+"testparm smb.conf". If it reports any errors then your smb.conf
+configuration file is faulty.
+
+Note:	Your smb.conf file may be located in: /etc
+	or in:   /usr/local/samba/lib
 
 
 TEST 2:
@@ -66,7 +75,7 @@ you do have correct entries for the remainder of these tests.
 TEST 3:
 -------
 
-run the command "smbclient -L BIGSERVER" on the unix box. You
+Run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. 
 
 If you get a error message containing the string "Bad password" then
@@ -77,7 +86,7 @@ temporarily remove any "hosts allow", "hosts deny", "valid users" or
 "invalid users" lines.
 
 If you get a "connection refused" response then the smbd server could
-not be run. If you installed it in inetd.conf then you probably edited
+not be running. If you installed it in inetd.conf then you probably edited
 that file incorrectly. If you installed it as a daemon then check that
 it is running, and check that the netbios-ssn port is in a LISTEN
 state using "netstat -a".
@@ -86,19 +95,20 @@ If you get a "session request failed" then the server refused the
 connection. If it says "your server software is being unfriendly" then
 its probably because you have invalid command line parameters to smbd,
 or a similar fatal problem with the initial startup of smbd. Also
-check your config file for syntax errors with "testparm" and that the
-various directories where samba keeps its log and lock files exist.
+check your config file (smb.conf) for syntax errors with "testparm"
+and that the various directories where samba keeps its log and lock
+files exist.
 
 Another common cause of these two errors is having something already running 
-on port 139, such as Samba (ie smbd is running from inetd already) or something
-like Digital's Pathworks. Check your inetd.conf file before trying to start
-smbd as a daemon, it can avoid a lot of frustration!
+on port 139, such as Samba (ie: smbd is running from inetd already) or
+something like Digital's Pathworks. Check your inetd.conf file before trying
+to start smbd as a daemon, it can avoid a lot of frustration!
 
 
 TEST 4:
 -------
 
-run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
+Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
 IP address of your Samba server back.
 
 If you don't then nmbd is incorrectly installed. Check your inetd.conf
@@ -110,6 +120,7 @@ parameters on the command line. If this is the case then create a
 one-line script that contains the right parameters and run that from
 inetd.
 
+
 TEST 5:
 -------
 
@@ -119,10 +130,11 @@ You should get the PCs IP address back. If you don't then the client
 software on the PC isn't installed correctly, or isn't started, or you
 got the name of the PC wrong. 
 
+
 TEST 6:
 -------
 
-run the command "nmblookup -d 2 '*'"
+Run the command "nmblookup -d 2 '*'"
 
 This time we are trying the same as the previous test but are trying
 it via a broadcast to the default broadcast address. A number of
@@ -141,10 +153,11 @@ If your PC and server aren't on the same subnet then you will need to
 use the -B option to set the broadcast address to the that of the PCs
 subnet.
 
+
 TEST 7:
 -------
 
-run the command "smbclient '\\BIGSERVER\TMP'". You should then be
+Run the command "smbclient '\\BIGSERVER\TMP'". You should then be
 prompted for a password. You should use the password of the account
 you are logged into the unix box with. If you want to test with
 another account then add the -U <accountname> option to the command
@@ -196,10 +209,11 @@ particular, make sure your "hosts allow" line is correct (see the man
 pages)
 
 
+
 TEST 9:
 --------
 
-run the command "net use x: \\BIGSERVER\TMP". You should be prompted
+Run the command "net use x: \\BIGSERVER\TMP". You should be prompted
 for a password then you should get a "command completed successfully"
 message. If not then your PC software is incorrectly installed or your
 smb.conf is incorrect. make sure your "hosts allow" and other config
@@ -221,7 +235,10 @@ specified in smb.conf). You should be able to double click on the name
 of the server and get a list of shares. If you get a "invalid
 password" error when you do then you are probably running WinNT and it
 is refusing to browse a server that has no encrypted password
-capability and is in user level security mode.
+capability and is in user level security mode. In this case either set
+"security = server" AND "password server = Windows_NT_Machine" in your
+smb.conf file, or enable encrypted passwords AFTER compiling in support
+for encrypted passwords (refer to the Makefile).
 
 
 Still having troubles?

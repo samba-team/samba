@@ -1,4 +1,11 @@
-There is an annoying TCPIP bug in SCO Unix. This causes orruption when
+Contributor:	Geza Makay <makayg@math.u-szeged.hu>
+Date:		Unknown
+Status:		Obsolete - Dates to SCO Unix v3.2.4 approx.
+
+Subject:	TCP/IP Bug in SCO Unix
+============================================================================
+
+There is an annoying TCPIP bug in SCO Unix. This causes corruption when
 transferring files with Samba.
 
 Geza Makay (makayg@math.u-szeged.hu) sends this information:

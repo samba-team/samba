@@ -1,8 +1,11 @@
-                F A X I N G   with  S A M B A
+Contributor:		Gerhard Zuber <zuber@berlin.snafu.de>
+Initial Release:	?
+
+Subject:            F A X I N G   with  S A M B A
+=============================================================================
 
 This text describes how to turn your SAMBA-server into a fax-server
 for any environment, especially for Windows.
-   Author: Gerhard Zuber <zuber@berlin.snafu.de>
 
 Requirements:
    UNIX box (Linux preferred) with SAMBA

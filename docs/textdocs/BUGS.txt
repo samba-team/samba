@@ -1,21 +1,26 @@
-This file describes how to report Samba bugs. 
+Contributor:	Samba Team
+Updated:	June 27, 1997
+
+Subject: This file describes how to report Samba bugs. 
+============================================================================
 
 >> The email address for bug reports is samba-bugs@samba.anu.edu.au <<
 
 Please take the time to read this file before you submit a bug
-report. Also, please see if it has changed between releases, as I
-may be changing the bug reporting mechanism sometime soon.
+report. Also, please see if it has changed between releases, as we
+may be changing the bug reporting mechanism at some time.
 
 Please also do as much as you can yourself to help track down the
-bug. I only develop Samba in my spare time and I receive far more mail
-about it than I can possibly answer, so you have a much higher chance
-of an answer and a fix if you send me a "developer friendly" bug
-report that lets me fix it fast. 
+bug. Samba is maintained by a dedicated group of people who volunteer
+their time, skills and efforts. We receive far more mail about it than
+we can possibly answer, so you have a much higher chance of an answer
+and a fix if you send us a "developer friendly" bug report that lets
+us fix it fast. 
 
 Do not assume that if you post the bug to the comp.protocols.smb
-newsgroup or the mailing list that I will read it. If you suspect that your 
+newsgroup or the mailing list that we will read it. If you suspect that your 
 problem is not a bug but a configuration problem then it is better to send 
-it to the Samba mailing list, as there are (at last count) 1900 other users on
+it to the Samba mailing list, as there are (at last count) 5000 other users on
 that list that may be able to help you.
 
 You may also like to look though the recent mailing list archives,
@@ -51,6 +56,7 @@ To set the debug level use "log level =" in your smb.conf. You may
 also find it useful to set the log level higher for just one machine
 and keep separate logs for each machine. To do this use:
 
+log level = 10
 log file = /usr/local/samba/lib/log.%m
 include = /usr/local/samba/lib/smb.conf.%m
 
@@ -59,6 +65,15 @@ then create a file "/usr/local/samba/lib/smb.conf.machine" where
 put any smb.conf commands you want, for example "log level=" may be
 useful. This also allows you to experiment with different security
 systems, protocol levels etc on just one machine.
+
+The smb.conf entry "log level =" is synonymous with the entry
+"debuglevel =" that has been used in older versions of Samba and
+is being retained for backwards compatibility of smb.conf files.
+
+As the "log level =" value is increased you will record a significantly
+increasing level of debugging information. For most debugging operations
+you may not need a setting higher than 3. Nearly all bugs can be tracked
+at a setting of 10, but be prepared for a VERY large volume of log data.
 
 
 INTERNAL ERRORs
@@ -112,7 +127,7 @@ where it occurred.
 PATCHES
 -------
 
-The best sort of bug report is one that includes a fix! If you send me
+The best sort of bug report is one that includes a fix! If you send us
 patches please use "diff -u" format if your version of diff supports
 it, otherwise use "diff -c4". Make sure your do the diff against a
 clean version of the source and let me know exactly what version you

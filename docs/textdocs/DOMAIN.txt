@@ -1,19 +1,26 @@
-Samba now supports domain logons, network logon scripts and user profiles.
+Contributor:	Samba Team
+Updated:	June 27, 1997
+
+Subject:	Network Logons and Roving Profiles
+===========================================================================
+
+Samba supports domain logons, network logon scripts and user profiles.
 The support is still experimental, but it seems to work.
 
 The support is also not complete. Samba does not yet support the
-sharing of the SAM database with other systems yet, or remote
-administration. Support for these kind of things should be added
-sometime in the future.
+sharing of the SAM database with other systems, or remote administration.
+Support for these kind of things should be added sometime in the future.
 
-The domain support only works for WfWg and Win95 clients. Support for
-NT and OS/2 clients is still being worked on and currently does not
-work. 
+The domain support works for WfWg and Win95 clients. Support for Windows
+NT and OS/2 clients is still being worked on and  is still experimental.
 
 Using these features you can make your clients verify their logon via
 the Samba server, make clients run a batch file when they logon to
 the network and download their preferences, desktop and start menu.
 
+
+Configuration Instructions:	Network Logons
+==============================================
 
 To use domain logons and profiles you need to do the following:
 
@@ -74,7 +81,9 @@ domain logons to work correctly. Share level security won't work
 correctly.
 
 
-User Profiles
+
+Configuration Instructions:	Setting up Roaming User Profiles
+================================================================
 
 1) in the [global] section of smb.conf set the following:
 
