@@ -1133,7 +1133,7 @@ selecting your model (Laserjet 4 Plus) and clicking on "Show execution details".
 This will bring up this web page:
 </para>
 
-<para><ulink url="http://www.linuxprinting.org/execution.cgi?driver=ljet4&amp;printer=75104&amp;.submit=Show+execution+details">http://www.linuxprinting.org/execution.cgi?driver=ljet4&amp;printer=75104&amp;.submit=Show+execution+details</ulink></para>
+<para><ulink url="http://www.linuxprinting.org/execution.cgi?driver=ljet4;printer=75104;.submit=Show+execution+details">http://www.linuxprinting.org/execution.cgi?driver=ljet4;printer=75104;.submit=Show+execution+details</ulink></para>
 
 <para>
 The ingenious thing is that the database is kept current. If there
