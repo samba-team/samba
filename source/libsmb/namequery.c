@@ -446,7 +446,7 @@ static BOOL resolve_bcast(char *name, struct in_addr *return_ip, int name_type)
 			/* Done this way to fix compiler error on IRIX 5.x */
 			sendto_ip = *iface_bcast(*iface_n_ip(i));
 			iplist = name_query(sock, name, name_type, True, 
-					    False, sendto_ip, &count, NULL);
+					    True, sendto_ip, &count, NULL);
 			if(iplist != NULL) {
 				*return_ip = iplist[0];
 				free((char *)iplist);
