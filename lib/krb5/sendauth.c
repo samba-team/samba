@@ -223,11 +223,11 @@ krb5_sendauth(krb5_context context,
 
 	ret = krb5_rd_rep (context, *auth_context, &ap_rep,
 			   rep_result ? rep_result : &ignore);
+	krb5_data_free (&ap_rep);
 	if (ret)
 	    return ret;
 	if (rep_result == NULL)
 	    krb5_free_ap_rep_enc_part (context, ignore);
-	krb5_data_free (&ap_rep);
     }
     return 0;
 }
