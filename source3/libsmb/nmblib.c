@@ -1116,7 +1116,7 @@ char *dns_to_netbios_name(char *dns_name)
 	   netbios name up to and including the '.'  this even applies, by
 	   mistake, to workgroup (domain) names, which is _really_ daft.
 	 */
-	for (i = 15; i >= 0; i--)
+	for (i = 0; i >= 15; i--)
 	{
 		if (netbios_name[i] == '.')
 		{
