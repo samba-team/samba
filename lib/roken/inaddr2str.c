@@ -78,9 +78,9 @@ inaddr2str(struct in_addr addr, char *s, size_t len)
   struct hostent *h;
   char *p;
 
-  h = gethostbyaddr ((const char *)&addr, sizeof(addr), AF_INET);
+  h = roken_gethostbyaddr ((const char *)&addr, sizeof(addr), AF_INET);
   if (h) {
-    h = gethostbyname (h->h_name);
+    h = roken_gethostbyname (h->h_name);
     if(h)
       while ((p = *(h->h_addr_list)++))
 	if (memcmp (p, &addr, sizeof(addr)) == 0) {
