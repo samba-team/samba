@@ -74,6 +74,7 @@ static void single_new_task(struct event_context *ev,
 /* called when a task goes down */
 static void single_terminate(struct event_context *ev, const char *reason) 
 {
+	DEBUG(2,("single_terminate: reason[%s]\n",reason));
 }
 
 static const struct model_ops single_ops = {
