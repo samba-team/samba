@@ -1,3 +1,9 @@
+Changes in release 0.2i:
+
+ * use get{addr,name}info everywhere.  and implement it in terms of
+   getipnodeby{name,addr} (which uses gethostbyname{,2} and
+   gethostbyaddr)
+
 Changes in release 0.2h:
 
  * fix typo in kx (now compiles)
