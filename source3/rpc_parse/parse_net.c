@@ -1674,7 +1674,7 @@ BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
 		memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));
 
 	q_s->database_id = database_id;
-	q_s->restart_state = 4;
+	q_s->restart_state = 0;
 	q_s->sync_context = next_rid;
 	q_s->max_size = 0xffff;
 
