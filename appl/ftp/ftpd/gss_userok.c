@@ -82,6 +82,11 @@ gss_userok(void *app_data, char *username)
            
            pw = getpwnam(username);
            
+	   if (pw == NULL) {
+	       ret = 1;
+	       goto fail;
+	   }
+
            asprintf (&ticketfile, "%s%u", KRB5_DEFAULT_CCROOT, pw->pw_uid);
         
            ret = krb5_cc_resolve(gssapi_krb5_context, ticketfile, &ccache);
