@@ -670,7 +670,7 @@ static char *validate_group(const char *group,char *password,int pwlen,int snum)
 #ifdef HAVE_NETGROUP
 	{
 		char *host, *user, *domain;
-		setnetgrent(group);
+		setnetgrent((char *)group);
 		while (getnetgrent(&host, &user, &domain)) {
 			if (user) {
 				if (user_ok(user, snum) && 
