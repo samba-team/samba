@@ -135,7 +135,7 @@ send a "set debug level" message
 ****************************************************************************/
 void debug_message_send(pid_t pid, int level)
 {
-	message_send_pid(pid, MSG_DEBUG, &level, sizeof(int));
+	message_send_pid(pid, MSG_DEBUG, &level, sizeof(int), False);
 }
 
 
