@@ -62,7 +62,7 @@ void	cmdabort (int);
 void	cmdscanner (int);
 int	command (char *fmt, ...);
 int	confirm (char *, char *);
-FILE   *dataconn (char *);
+FILE   *dataconn (const char *);
 void	delete (int, char **);
 void	disconnect (int, char **);
 void	do_chmod (int, char **);
