@@ -308,7 +308,9 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define USE_STATVFS
 #define USE_GETCWD
 #define USE_SETSID
+#ifndef REPLACE_GETPASS
 #define REPLACE_GETPASS
+#endif /* REPLACE_GETPASS */
 #define USE_SIGPROCMASK
 #endif
 
@@ -459,7 +461,9 @@ char *mktemp(char *); /* No standard include */
 #define NO_FSYNC
 #define USE_GETCWD
 #define USE_SETSID
+#ifndef REPLACE_GETPASS
 #define REPLACE_GETPASS
+#endif /* REPLACE_GETPASS */
 #define NO_GETRLIMIT
 #endif	/* CLIX */
 
