@@ -564,8 +564,7 @@ void process_election(struct packet_struct *p,char *buf)
   
   for (work = d->workgrouplist; work; work = work->next)
     {
-      if (listening_name(work, &dgram->dest_name) && 
-	  strequal(work->work_group, lp_workgroup()))
+      if (strequal(work->work_group, lp_workgroup()))
 	{
 	  if (win_election(work, version,criterion,timeup,name))
 	    {

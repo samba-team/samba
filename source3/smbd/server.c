@@ -2564,41 +2564,6 @@ static int reply_negprot(char *inbuf,char *outbuf)
 
 
 /****************************************************************************
-  parse a connect packet
-****************************************************************************/
-void parse_connect(char *buf,char *service,char *user,char *password,int *pwlen,char *dev)
-{
-  char *p = smb_buf(buf) + 1;
-  char *p2;
-
-  DEBUG(4,("parsing connect string %s\n",p));
-    
-  p2 = strrchr(p,'\\');
-  if (p2 == NULL)
-    strcpy(service,p);
-  else
-    strcpy(service,p2+1);
-  
-  p += strlen(p) + 2;
-  
-  strcpy(password,p);
-  *pwlen = strlen(password);
-
-  p += strlen(p) + 2;
-
-  strcpy(dev,p);
-  
-  *user = 0;
-  p = strchr(service,'%');
-  if (p != NULL)
-    {
-      *p = 0;
-      strcpy(user,p+1);
-    }
-}
-
-
-/****************************************************************************
 close all open files for a connection
 ****************************************************************************/
 static void close_open_files(int cnum)
@@ -3261,14 +3226,14 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   outbuf2 = orig_outbuf + SVAL(outbuf,smb_vwv1) + 4 - smb_wct;
 
   /* remember the original command type */
-  smb_com1 = CVAL(orig_outbuf,smb_com);
+  smb_com1 = CVAL(orig_inbuf,smb_com);
 
   /* save the data which will be overwritten by the new headers */
   memcpy(inbuf_saved,inbuf2,smb_wct);
   memcpy(outbuf_saved,outbuf2,smb_wct);
 
-  /* give the new packet the same header as the first part of the SMB */
-  memmove(inbuf2,orig_inbuf,smb_wct);
+  /* give the new packet the same header as the last part of the SMB */
+  memmove(inbuf2,inbuf,smb_wct);
 
   /* create the in buffer */
   CVAL(inbuf2,smb_com) = smb_com2;
@@ -3297,8 +3262,8 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   outsize2 = switch_message(smb_com2,inbuf2,outbuf2,size-chain_size,
 			    bufsize-chain_size);
 
-  /* copy the new reply header over the old one, but preserve 
-     the smb_com field */
+  /* copy the new reply and request headers over the old ones, but
+     preserve the smb_com field */
   memmove(orig_outbuf,outbuf2,smb_wct);
   CVAL(orig_outbuf,smb_com) = smb_com1;
 

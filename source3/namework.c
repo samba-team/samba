@@ -166,22 +166,6 @@ BOOL same_context(struct dgram_packet *dgram)
 
 
 /*******************************************************************
-  am I listening on a name. XXXX check the type of name as well.
-  ******************************************************************/
-BOOL listening_name(struct work_record *work, struct nmb_name *n)
-{
-  if (strequal(n->name,myname) ||
-      strequal(n->name,work->work_group) ||
-      strequal(n->name,MSBROWSE))
-    {
-      return(True);
-    }
-  
-  return(False);
-}
-
-
-/*******************************************************************
   process a domain announcement frame
 
   Announce frames come in 3 types. Servers send host announcements
@@ -666,70 +650,6 @@ static void process_announce_request(struct packet_struct *p,char *buf)
     }
 }
 
-
-/****************************************************************************
-depending on what announce has been made, we are only going to
-accept certain types of name announce. XXXX untested code
-
-check listening name type
-****************************************************************************/
-BOOL listening_type(struct packet_struct *p, int command)
-{
-  struct dgram_packet *dgram = &p->packet.dgram;
-  int type = dgram->dest_name.name_type;
-
-  switch (command)
-    {
-    case ANN_HostAnnouncement:
-      {
-	if (type != 0x0 || type != 0x20) return (False);
-	break;
-      }
-      
-    case ANN_AnnouncementRequest:
-      {
-	return (True);
-	break;
-      }
-      
-    case ANN_Election:
-      {
-	return (True);
-	break;
-      }
-      
-    case ANN_GetBackupListReq:
-      {
-	return (True);
-	break;
-      }
-      
-    case ANN_GetBackupListResp:
-      {
-	return (True);
-	break;
-      }
-      
-    case ANN_DomainAnnouncement:
-      {
-	if (type != 0x1b || type != 0x1c) return (False);
-	break;
-      }
-      
-    case ANN_MasterAnnouncement:
-      {
-	if (type != 0x1d) return (False);
-	break;
-      }
-      
-    case ANN_LocalMasterAnnouncement:
-      {
-	if (type != 0x1c || type != 0x1d) return (False);
-	break;
-      }
-    }
-  return (True); /* we're not dealing with unknown packet types */
-}
 
 
 /****************************************************************************
