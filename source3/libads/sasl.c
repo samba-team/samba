@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-#ifdef HAVE_ADS
+#ifdef HAVE_LDAP
 
 /* 
    perform a LDAP/SASL/SPNEGO/NTLMSSP bind (just how many layers can
@@ -190,10 +190,12 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	}
 	DEBUG(3,("got principal=%s\n", principal));
 
+#ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
 	    got_kerberos_mechanism && ads_kinit_password(ads) == 0) {
 		return ads_sasl_spnego_krb5_bind(ads, principal);
 	}
+#endif
 
 	/* lets do NTLMSSP ... this has the big advantage that we don't need
 	   to sync clocks, and we don't rely on special versions of the krb5 
