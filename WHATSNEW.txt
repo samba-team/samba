@@ -1,6 +1,6 @@
 **** THIS IS AN ALPHA RELEASE *****
 
-This is version 2.0.6pre1 of Samba. This snapshot release is intended
+This is version 2.0.6pre3 of Samba. This snapshot release is intended
 for testing purposes and should not be used on production sites.
 
 --------------------------------
