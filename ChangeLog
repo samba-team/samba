@@ -4,6 +4,17 @@
 	
 	* configure.in: check for netinet/ip.h
 	
+1999-05-31  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswdd.c (setup_passwd_quality_check): conditionalize
+ 	on RTLD_NOW
+
+1999-05-23  Assar Westerlund  <assar@sics.se>
+
+	* appl/test/uu_server.c: removed unused stuff
+
+	* appl/test/uu_client.c: removed unused stuff
+
 1999-05-21  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kgetcred.c (main): correct error message
