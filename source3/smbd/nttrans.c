@@ -2062,6 +2062,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
   uint32 owner_rid;
   uint32 grp_rid;
   SEC_ACL *dacl = psd->dacl;
+  BOOL all_aces_are_inherit_only = (is_directory ? True : False);
   int i;
 
   *pmode = 0;
@@ -2069,7 +2070,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
   *pgrp = (gid_t)-1;
 
   if(security_info_sent == 0) {
-    DEBUG(0,("unpack_unix_permissions: no security info sent !\n"));
+    DEBUG(0,("unpack_nt_permissions: no security info sent !\n"));
     return False;
   }
 
@@ -2080,7 +2081,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
   memset(&owner_sid, '\0', sizeof(owner_sid));
   memset(&grp_sid, '\0', sizeof(grp_sid));
 
-  DEBUG(5,("unpack_unix_permissions: validating owner_sid.\n"));
+  DEBUG(5,("unpack_nt_permissions: validating owner_sid.\n"));
 
   /*
    * Don't immediately fail if the owner sid cannot be validated.
@@ -2088,7 +2089,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
    */
 
   if(!validate_unix_sid( &owner_sid, &owner_rid, psd->owner_sid))
-    DEBUG(3,("unpack_unix_permissions: unable to validate owner sid.\n"));
+    DEBUG(3,("unpack_nt_permissions: unable to validate owner sid.\n"));
   else if(security_info_sent & OWNER_SECURITY_INFORMATION)
     *puser = pdb_user_rid_to_uid(owner_rid);
 
@@ -2098,7 +2099,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
    */
 
   if(!validate_unix_sid( &grp_sid, &grp_rid, psd->grp_sid))
-    DEBUG(3,("unpack_unix_permissions: unable to validate group sid.\n"));
+    DEBUG(3,("unpack_nt_permissions: unable to validate group sid.\n"));
   else if(security_info_sent & GROUP_SECURITY_INFORMATION)
     *pgrp = pdb_user_rid_to_gid(grp_rid);
 
@@ -2122,7 +2123,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
 
     if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) &&
        (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
-      DEBUG(3,("unpack_unix_permissions: unable to set anything but an ALLOW or DENY ACE.\n"));
+      DEBUG(3,("unpack_nt_permissions: unable to set anything but an ALLOW or DENY ACE.\n"));
       return False;
     }
 
@@ -2132,15 +2133,22 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
 
     if(is_directory) {
       if(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-        DEBUG(3,("unpack_unix_permissions: ignoring inherit only ACE.\n"));
+        DEBUG(3,("unpack_nt_permissions: ignoring inherit only ACE.\n"));
         continue;
       }
+
+      /*
+       * At least one of the ACE entries wasn't inherit only.
+       * Flag this so we know the returned mode is valid.
+       */
+
+      all_aces_are_inherit_only = False;
 
       psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
     }
 
     if(psa->flags != 0) {
-      DEBUG(1,("unpack_unix_permissions: unable to set ACE flags (%x).\n", 
+      DEBUG(1,("unpack_nt_permissions: unable to set ACE flags (%x).\n", 
             (unsigned int)psa->flags));
       return False;
     }
@@ -2191,9 +2199,20 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
         *pmode &= ~(map_nt_perms( psa->info, S_IROTH));
 
     } else {
-      DEBUG(0,("unpack_unix_permissions: unknown SID used in ACL.\n"));
+      DEBUG(0,("unpack_nt_permissions: unknown SID used in ACL.\n"));
       return False;
     }
+  }
+
+  if (is_directory && all_aces_are_inherit_only) {
+    /*
+     * Windows 2000 is doing one of these weird 'inherit acl'
+     * traverses to conserve NTFS ACL resources. Just pretend
+     * there was no DACL sent. JRA.
+     */
+
+    DEBUG(10,("unpack_nt_permissions: Win2k inherit acl traverse. Ignoring DACL.\n"));
+    free_sec_acl(&psd->dacl);
   }
 
   return True;
