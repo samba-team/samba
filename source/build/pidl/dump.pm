@@ -3,7 +3,7 @@
 # Copyright tridge@samba.org 2000
 # released under the GNU GPL
 
-package dump;
+package IdlDump;
 
 use strict;
 
@@ -14,15 +14,14 @@ my($res);
 sub DumpProperties($)
 {
     my($props) = shift;
-    foreach my $d (@{$props}) {
-	if (ref($d) ne "HASH") {
-	    $res .= "[$d] ";
-	} else {
-	    foreach my $k (keys %{$d}) {
-		$res .= "[$k($d->{$k})] ";
-	    }
+    my($res);
+
+    foreach my $d ($props) {
+	foreach my $k (keys %{$d}) {
+	    $res .= "[$k($d->{$k})] ";
 	}
     }
+    return $res;
 }
 
 #####################################################################
@@ -30,8 +29,11 @@ sub DumpProperties($)
 sub DumpElement($)
 {
     my($element) = shift;
-    (defined $element->{PROPERTIES}) && DumpProperties($element->{PROPERTIES});
-    DumpType($element->{TYPE});
+    my($res);
+
+    (defined $element->{PROPERTIES}) && 
+	($res .= DumpProperties($element->{PROPERTIES}));
+    $res .= DumpType($element->{TYPE});
     $res .= " ";
     if ($element->{POINTERS}) {
 	for (my($i)=0; $i < $element->{POINTERS}; $i++) {
@@ -40,6 +42,8 @@ sub DumpElement($)
     }
     $res .= "$element->{NAME}";
     (defined $element->{ARRAY_LEN}) && ($res .= "[$element->{ARRAY_LEN}]");
+
+    return $res;
 }
 
 #####################################################################
@@ -47,14 +51,18 @@ sub DumpElement($)
 sub DumpStruct($)
 {
     my($struct) = shift;
+    my($res);
+
     $res .= "struct {\n";
     if (defined $struct->{ELEMENTS}) {
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-	    DumpElement($e);
+	    $res .= DumpElement($e);
 	    $res .= ";\n";
 	}
     }
     $res .= "}";
+    
+    return $res;
 }
 
 
@@ -63,9 +71,13 @@ sub DumpStruct($)
 sub DumpUnionElement($)
 {
     my($element) = shift;
+    my($res);
+
     $res .= "[case($element->{CASE})] ";
-    DumpElement($element->{DATA});
+    $res .= DumpElement($element->{DATA});
     $res .= ";\n";
+
+    return $res;
 }
 
 #####################################################################
@@ -73,12 +85,17 @@ sub DumpUnionElement($)
 sub DumpUnion($)
 {
     my($union) = shift;
-    (defined $union->{PROPERTIES}) && DumpProperties($union->{PROPERTIES});
+    my($res);
+
+    (defined $union->{PROPERTIES}) && 
+	($res .= DumpProperties($union->{PROPERTIES}));
     $res .= "union {\n";
     foreach my $e (@{$union->{DATA}}) {
-	DumpUnionElement($e);
+	$res .= DumpUnionElement($e);
     }
     $res .= "}";
+
+    return $res;
 }
 
 #####################################################################
@@ -86,14 +103,18 @@ sub DumpUnion($)
 sub DumpType($)
 {
     my($data) = shift;
+    my($res);
+
     if (ref($data) eq "HASH") {
 	($data->{TYPE} eq "STRUCT") &&
-	    DumpStruct($data);
+	    ($res .= DumpStruct($data));
 	($data->{TYPE} eq "UNION") &&
-	    DumpUnion($data);
+	    ($res .= DumpUnion($data));
     } else {
 	$res .= "$data";
     }
+
+    return $res;
 }
 
 #####################################################################
@@ -101,9 +122,13 @@ sub DumpType($)
 sub DumpTypedef($)
 {
     my($typedef) = shift;
+    my($res);
+
     $res .= "typedef ";
-    DumpType($typedef->{DATA});
+    $res .= DumpType($typedef->{DATA});
     $res .= " $typedef->{NAME};\n\n";
+
+    return $res;
 }
 
 #####################################################################
@@ -112,13 +137,17 @@ sub DumpFunction($)
 {
     my($function) = shift;
     my($first) = 1;
-    DumpType($function->{RETURN_TYPE});
+    my($res);
+
+    $res .= DumpType($function->{RETURN_TYPE});
     $res .= " $function->{NAME}(\n";
     for my $d (@{$function->{DATA}}) {
 	$first || ($res .= ",\n"); $first = 0;
-	DumpElement($d);
+	$res .= DumpElement($d);
     }
     $res .= "\n);\n\n";
+
+    return $res;
 }
 
 #####################################################################
@@ -128,12 +157,16 @@ sub DumpModuleHeader($)
     my($header) = shift;
     my($data) = $header->{DATA};
     my($first) = 1;
+    my($res);
+
     $res .= "[\n";
     foreach my $k (keys %{$data}) {
 	    $first || ($res .= ",\n"); $first = 0;
 	    $res .= "$k($data->{$k})";
     }
     $res .= "\n]\n";
+
+    return $res;
 }
 
 #####################################################################
@@ -142,14 +175,18 @@ sub DumpInterface($)
 {
     my($interface) = shift;
     my($data) = $interface->{DATA};
+    my($res);
+
     $res .= "interface $interface->{NAME}\n{\n";
     foreach my $d (@{$data}) {
 	($d->{TYPE} eq "TYPEDEF") &&
-	    DumpTypedef($d);
+	    ($res .= DumpTypedef($d));
 	($d->{TYPE} eq "FUNCTION") &&
-	    DumpFunction($d);
+	    ($res .= DumpFunction($d));
     }
     $res .= "}\n";
+
+    return $res;
 }
 
 
@@ -158,12 +195,14 @@ sub DumpInterface($)
 sub Dump($)
 {
     my($idl) = shift;
+    my($res);
+
     $res = "/* Dumped by pidl */\n\n";
     foreach my $x (@{$idl}) {
 	($x->{TYPE} eq "MODULEHEADER") && 
-	    DumpModuleHeader($x);
+	    ($res .= DumpModuleHeader($x));
 	($x->{TYPE} eq "INTERFACE") && 
-	    DumpInterface($x);
+	    ($res .= DumpInterface($x));
     }
     return $res;
 }
