@@ -281,19 +281,24 @@ _kadm5_ad_connect(void *server_handle)
 	char *domain;
 
 	asprintf(&domain, "_ldap._tcp.%s", context->realm);
-	if (domain == NULL)
+	if (domain == NULL) {
+	    krb5_set_error_string(context->context, "malloc");
 	    return KADM5_NO_SRV;
+	}
 
 	r = dns_lookup(domain, "SRV");
 	free(domain);
-	if (r == NULL)
+	if (r == NULL) {
+	    krb5_set_error_string(context->context, "Didn't find ldap dns");
 	    return KADM5_NO_SRV;
-	
+	}	
+
 	for (rr = r->head ; rr != NULL; rr = rr->next) {
 	    if (rr->type != T_SRV)
 		continue;
 	    s = realloc(servers, sizeof(*servers) * (num_servers + 1));
 	    if (s == NULL) {
+		krb5_set_error_string(context->context, "malloc");
 		dns_free_data(r);
 		goto fail;
 	    }
@@ -305,8 +310,10 @@ _kadm5_ad_connect(void *server_handle)
 	dns_free_data(r);
     }
 
-    if (num_servers == 0)
+    if (num_servers == 0) {
+	krb5_set_error_string(context->context, "No AD server found in DNS");
 	return KADM5_NO_SRV;
+    }
 
     for (i = 0; i < num_servers; i++) {
 	int lret, version = LDAP_VERSION3;
@@ -335,6 +342,9 @@ _kadm5_ad_connect(void *server_handle)
 					    sasl_interact, NULL);
 #endif
 	if (lret != LDAP_SUCCESS) {
+	    krb5_set_error_string(context->context, 
+				  "Couldn't contact any AD servers: %s",
+				  ldap_err2string(lret));
 	    ldap_unbind(lp);
 	    continue;
 	}
@@ -342,8 +352,9 @@ _kadm5_ad_connect(void *server_handle)
 	context->ldap_conn = lp;
 	break;
     }
-    if (i >= num_servers)
+    if (i >= num_servers) {
 	goto fail;
+    }
 
     {
 	LDAPMessage *m, *m0;
@@ -363,13 +374,18 @@ _kadm5_ad_connect(void *server_handle)
 	if (ldap_count_entries(CTX2LP(context), m) > 0) {
 	    m0 = ldap_first_entry(CTX2LP(context), m);
 	    if (m0 == NULL) {
+		krb5_set_error_string(context->context,
+				      "Error in AD ldap responce");
 		ldap_msgfree(m);
 		goto fail;
 	    }
 	    vals = ldap_get_values(CTX2LP(context), 
 				   m0, "defaultNamingContext");
-	    if (vals == NULL)
+	    if (vals == NULL) {
+		krb5_set_error_string(context->context,
+				      "No naming context found");
 		goto fail;
+	    }
 	    context->base_dn = strdup(vals[0]);
 	} else
 	    goto fail;
@@ -832,11 +848,13 @@ kadm5_ad_destroy(void *server_handle)
 	if (context->base_dn)
 	    free(context->base_dn);
     }
-    return 0;
-#else
-    krb5_set_error_string(context->context, "Function not implemented");
-    return KADM5_RPC_ERROR;
 #endif
+    free(context->realm);
+    free(context->client_name);
+    krb5_free_principal(context->context, context->caller);
+    if(context->my_context)
+	krb5_free_context(context->context);
+    return 0;
 }
 
 static kadm5_ret_t
@@ -1333,27 +1351,21 @@ set_funcs(kadm5_ad_context *c)
 }
 
 kadm5_ret_t 
-kadm5_ad_init_with_password(const char *client_name,
-			    const char *password,
-			    const char *service_name,
-			    kadm5_config_params *realm_params,
-			    unsigned long struct_version,
-			    unsigned long api_version,
-			    void **server_handle)
+kadm5_ad_init_with_password_ctx(krb5_context context,
+				const char *client_name,
+				const char *password,
+				const char *service_name,
+				kadm5_config_params *realm_params,
+				unsigned long struct_version,
+				unsigned long api_version,
+				void **server_handle)
 {
-    krb5_context context;
     kadm5_ret_t ret;
     kadm5_ad_context *ctx;
 
-    ret = krb5_init_context(&context);
-    if (ret)
-	return ret;
-
     ctx = malloc(sizeof(*ctx));
-    if(ctx == NULL) {
-	krb5_free_context(context);
+    if(ctx == NULL)
 	return ENOMEM;
-    }
     memset(ctx, 0, sizeof(*ctx));
     set_funcs(ctx);
 
@@ -1362,7 +1374,6 @@ kadm5_ad_init_with_password(const char *client_name,
 
     ret = krb5_parse_name(ctx->context, client_name, &ctx->caller);
     if(ret) {
-	krb5_free_context(context);
 	free(ctx);
 	return ret;
     }
@@ -1375,7 +1386,6 @@ kadm5_ad_init_with_password(const char *client_name,
     } else
 	ret = krb5_get_default_realm(ctx->context, &ctx->realm);
     if (ret) {
-	krb5_free_context(context);
 	free(ctx);
 	return ret;
     }
@@ -1400,5 +1410,38 @@ kadm5_ad_init_with_password(const char *client_name,
 #endif
 
     *server_handle = ctx;
+    return 0;
+}
+
+kadm5_ret_t 
+kadm5_ad_init_with_password(const char *client_name,
+			    const char *password,
+			    const char *service_name,
+			    kadm5_config_params *realm_params,
+			    unsigned long struct_version,
+			    unsigned long api_version,
+			    void **server_handle)
+{
+    krb5_context context;
+    kadm5_ret_t ret;
+    kadm5_ad_context *ctx;
+
+    ret = krb5_init_context(&context);
+    if (ret)
+	return ret;
+    ret = kadm5_ad_init_with_password_ctx(context, 
+					  client_name,
+					  password,
+					  service_name,
+					  realm_params,
+					  struct_version,
+					  api_version,
+					  server_handle);
+    if(ret) {
+	krb5_free_context(context);
+	return ret;
+    }
+    ctx = *server_handle;
+    ctx->my_context = 1;
     return 0;
 }
