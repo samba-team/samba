@@ -258,8 +258,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		/* non encrypted password supplied. */
 		passlen = 24;
 		ntpasslen = 24;
-		clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
-		clistr_push(cli, ntpword, ntpass, sizeof(ntpword), STR_TERMINATE);
+		clistr_push(cli, pword, 
+			    pass?pass:"", sizeof(pword), STR_TERMINATE|STR_ASCII);
+		clistr_push(cli, ntpword, 
+			    ntpass?ntpass:"", sizeof(ntpword), STR_TERMINATE|STR_ASCII);
 		SMBencrypt((uchar *)pword,cli->secblob.data,(uchar *)pword);
 		SMBNTencrypt((uchar *)ntpword,cli->secblob.data,(uchar *)ntpword);
 	} else {
