@@ -1043,7 +1043,6 @@ BOOL torture_rpc_lsa(int dummy)
 	if (!test_lsakey_puzzle(p, mem_ctx, &handle)) {
 		ret = False;
 	}
-	exit(1);
 
 	if (!test_many_LookupSids(p, mem_ctx, &handle)) {
 		ret = False;
