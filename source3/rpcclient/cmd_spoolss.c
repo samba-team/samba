@@ -95,49 +95,47 @@ uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[
 	strupper(srv_name);
 	
 	flags=PRINTER_ENUM_LOCAL;
-
+	report (out_hnd, "Flags = PRINTER_ENUM_LOCAL\n");
 	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
 	else
 		report(out_hnd, "FAILED\n");
 		
 		
-#if 0	/* JERRY */
 	flags=PRINTER_ENUM_NAME;
-
+	report (out_hnd, "Flags = PRINTER_ENUM_NAME\n");	
 	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
 	else
 		report(out_hnd, "FAILED\n");
 
 	flags=PRINTER_ENUM_SHARED|PRINTER_ENUM_NAME;
-
+	report (out_hnd, "Flags = PRINTER_ENUM_SHARED|PRINTER_ENUM_NAME\n");
 	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
 	else
 		report(out_hnd, "FAILED\n");
 
 	flags=PRINTER_ENUM_CONNECTIONS;
-
+	report (out_hnd, "Flags = PRINTER_ENUM_CONNECTIONS\n");	
 	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
 	else
 		report(out_hnd, "FAILED\n");
 		
 	flags=PRINTER_ENUM_NETWORK;
-
+	report (out_hnd, "Flags = PRINTER_ENUM_NETWORK\n");
 	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
 	else
 		report(out_hnd, "FAILED\n");
 		
 	flags=PRINTER_ENUM_REMOTE;
-
+	report (out_hnd, "Flags = PRINTER_ENUM_REMOTE\n");
 	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
 	else
 		report(out_hnd, "FAILED\n");
-#endif
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -646,11 +644,8 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	init_unistr( &print_info_2.portname,	port_name);
 	init_unistr( &print_info_2.drivername,	driver_name);
 	init_unistr( &print_info_2.comment,	"Created by rpcclient");
-	/* init_unistr( &print_info_2.location,	"");
-	init_unistr( &print_info_2.sepfile,	""); */
 	init_unistr( &print_info_2.printprocessor, "winprint");
 	init_unistr( &print_info_2.datatype,	"RAW");
-	/* init_unistr( &print_info_2.parameters,	""); */
 	print_info_2.devmode = NULL;
 	print_info_2.secdesc = NULL;
 	print_info_2.attributes 	= PRINTER_ATTRIBUTE_SHARED;
@@ -658,9 +653,13 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	print_info_2.defaultpriority	= 0;
 	print_info_2.starttime		= 0;
 	print_info_2.untiltime		= 0;
+	
+	/* These three fields must not be used by AddPrinter() 
+	   as defined in the MS Platform SDK documentation..  --jerry
 	print_info_2.status		= 0;
 	print_info_2.cjobs		= 0;
 	print_info_2.averageppm		= 0;
+	*/
 
 
 	/* if successful, spoolss_addprinterex() should return True and hnd 

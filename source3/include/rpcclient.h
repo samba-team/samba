@@ -132,6 +132,7 @@ struct client_info
     struct nt_client_info dom;
 
     BOOL reuse;
+    BOOL show_prompt;
 };
 
 
