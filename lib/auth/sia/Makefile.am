@@ -56,7 +56,7 @@ libsia_krb5.so: $(OBJS)
 	else \
 		echo "missing libraries"; exit 1; \
 	fi
-	ostrip -x -z $@
+	ostrip -x $@
 
 CLEANFILES = libsia_krb5.so $(OBJS) so_locations
 
