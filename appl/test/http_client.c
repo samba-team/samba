@@ -106,6 +106,32 @@ fdprintf(int s, const char *fmt, ...)
     free(str);
 }
 
+static int help_flag;
+static int version_flag;
+static char *port_str;
+static char *service = "HTTP";
+static char *gss_mech = "SPNEGO";
+
+static struct getargs args[] = {
+    { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
+    { "service", 's', arg_string, &service, "service to use", "service" },
+    { "mech", 'm', arg_string, &gss_mech, "gssapi mech to use", "mech" },
+    { "help", 'h', arg_flag, &help_flag },
+    { "version", 0, arg_flag, &version_flag }
+};
+
+static int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage(int code)
+{
+    arg_printusage(args, num_args, NULL, "host [page]");
+    exit(code);
+}
+
+/*
+ *
+ */
 
 struct http_req {
     char *response;
@@ -247,14 +273,30 @@ main(int argc, char **argv)
     int num_headers;
     gss_ctx_id_t context_hdl = GSS_C_NO_CONTEXT;
     gss_name_t server = GSS_C_NO_NAME;
+    int optind = 0;
+    gss_OID mech;
 
-    setprogname(argv[0]);
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
 
-    if (argc != 2 && argc != 3)
+    if (help_flag)
+	usage (0);
+
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= optind;
+    argv += optind;
+
+    mech = select_mech(gss_mech);
+
+    if (argc != 1 && argc != 2)
 	errx(1, "usage: %s host [page]", getprogname());
-    host = argv[1];
-    if (argc == 3)
-	page = argv[2];
+    host = argv[0];
+    if (argc == 2)
+	page = argv[1];
     else
 	page = "/";
 
@@ -292,7 +334,7 @@ main(int argc, char **argv)
 		
 		if (server == GSS_C_NO_NAME) {
 		    char *name;
-		    asprintf(&name, "HTTP@%s", host);
+		    asprintf(&name, "%s@%s", service, host);
 		    input_token.length = strlen(name);
 		    input_token.value = name;
 
@@ -329,7 +371,7 @@ main(int argc, char **argv)
 					 GSS_C_NO_CREDENTIAL,
 					 &context_hdl,
 					 server,
-					 GSS_SPNEGO_MECHANISM,
+					 mech,
 					 0,
 					 0,
 					 GSS_C_NO_CHANNEL_BINDINGS,
@@ -349,7 +391,7 @@ main(int argc, char **argv)
 
 		    gssapi_done = 1;
 
-		    printf("Negotiate done\n");
+		    printf("Negotiate done: %s\n", gss_mech);
 
 		    maj_stat = gss_inquire_context(&min_stat,
 						   context_hdl,
