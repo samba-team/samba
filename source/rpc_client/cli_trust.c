@@ -43,7 +43,7 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
    */
 
   if (!secrets_fetch_domain_sid(domain, &domain_sid)) {
-    DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
+    DEBUG(0, ("modify_trust_password: unable to fetch domain sid.\n"));
     return False;
   }
 
