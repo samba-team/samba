@@ -360,16 +360,15 @@ kadm_connect(kadm5_client_context *ctx)
 	krb5_data params, enc_data;
 	ret = _kadm5_marshal_params(context, ctx->realm_params, &params);
 	
-	ret = krb5_mk_priv(context,
-			   ctx->ac,
-			   &params,
-			   &enc_data,
-			   NULL);
-
-	ret = krb5_write_message(context, &s, &enc_data);
-	
+	ret = krb5_write_priv_message(context, ctx->ac, &s, &params);
 	krb5_data_free(&params);
-	krb5_data_free(&enc_data);
+	if(ret) {
+	    freeaddrinfo (ai);
+	    close(s);
+	    if(ctx->ccache == NULL)
+		krb5_cc_close(context, cc);
+	    return ret;
+	}
     } else if(ret == KRB5_SENDAUTH_BADAPPLVERS) {
 	close(s);
 
@@ -383,8 +382,6 @@ kadm_connect(kadm5_client_context *ctx)
 	    freeaddrinfo (ai);
 	    return errno;
 	}
-	freeaddrinfo (ai);
-
 	ret = krb5_sendauth(context, &ctx->ac, &s, 
 			    KADMIN_OLD_APPL_VERSION, NULL, 
 			    server, AP_OPTS_MUTUAL_REQUIRED, 
