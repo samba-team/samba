@@ -1605,7 +1605,7 @@ Can't find printer handle we created for printer %s\n", name ));
 
 			/* if the user is not root and not a printer admin, then fail */
 			
-			if ( user.uid != 0 && !p->conn->print_admin_user) {
+			if ( user.uid!=0 && !user_in_plist(uidtoname(user.uid), lp_printer_admin(snum)) ) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
 			}
