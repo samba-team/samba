@@ -163,7 +163,8 @@ BOOL init_registry_db( void )
  fstrings
 
  The full path to the registry key is used as database after the 
- \'s are converted to /'s.
+ \'s are converted to /'s.  Key string is also normalized to UPPER
+ case.
  ***********************************************************************/
  
 BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
@@ -177,6 +178,8 @@ BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 	
 	if ( !keyname )
 		return False;
+	
+	strupper_m( keyname  );
 	
 	/* allocate some initial memory */
 		
@@ -245,6 +248,7 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 	
 	/* convert to key format */
 	pstring_sub( path, "\\", "/" ); 
+	strupper_m( path );
 	
 	dbuf = tdb_fetch_by_string( tdb_reg, path );
 	

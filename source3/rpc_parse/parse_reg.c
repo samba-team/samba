@@ -1118,7 +1118,8 @@ BOOL new_init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
 		     REGISTRY_VALUE *val, NTSTATUS status)
 {
 	uint32		buf_len = 0;
-	
+	BUFFER2		buf2;
+		
 	if(r_r == NULL)
 		return False;
 	
@@ -1135,6 +1136,11 @@ BOOL new_init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
 		r_r->ptr_uni_val = 1;
 		buf_len = reg_init_buffer2( &r_r->uni_val, val );
 	
+	}
+	else {
+		/* dummy buffer used so we can get the size */
+		r_r->ptr_uni_val = 0;
+		buf_len = reg_init_buffer2( &buf2, val );
 	}
 
 	r_r->ptr_max_len = 1;
