@@ -1569,12 +1569,14 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 
 	srvstr_get_path(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE, &ntstatus, True);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		/* Win9x can send a resume name of "..". This will cause the parser to
+		/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
 		   complain (it thinks we're asking for the directory above the shared
-		   path). Catch this as the resume name is only compared, never used in
+		   path or an invalid name). Catch this as the resume name is only compared, never used in
 		   a file access. JRA. */
-		if (NT_STATUS_V(ntstatus) == NT_STATUS_V(NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
+		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
 			pstrcpy(resume_name, "..");
+		} else if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_OBJECT_NAME_INVALID)) {
+			pstrcpy(resume_name, ".");
 		} else {
 			return ERROR_NT(ntstatus);
 		}
