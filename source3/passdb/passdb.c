@@ -94,11 +94,11 @@ void endsampwent(void *vp)
 struct smb_passwd *getsampwent(void *vp)
 {
 #ifdef USE_NISPLUS_DB
-  return getnisppwent(vp);
+  return pdb_sam_to_smb(getnisppwent(vp);
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-  return getldappwent(vp);
+  return pdb_sam_to_smb(getldap21pwent(vp));
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
@@ -111,28 +111,19 @@ struct smb_passwd *getsampwent(void *vp)
  *************************************************************************/
 struct sam_disp_info *getsamdispent(void *vp)
 {
-	struct sam_passwd *pwd = NULL;
-	static struct sam_disp_info disp_info;
-
 #ifdef USE_NISPLUS_DB
-	pwd = getnisp21pwent(vp);
+	return pdb_sam_to_dispinfo(getnisp21pwent(vp));
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-	pwd = getldap21pwent(vp);
+	return pdb_sam_to_dispinfo(getldap21pwent(vp));
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
-	pwd = getsmb21pwent(vp);
+	return pdb_sam_to_dispinfo(getsmb21pwent(vp));
 #endif /* USE_SMBPASS_DB */
 
-	if (pwd == NULL) return NULL;
-
-	disp_info.smb_name  = pwd->smb_name;
-	disp_info.full_name = pwd->full_name;
-	disp_info.user_rid  = pwd->user_rid;
-
-	return &disp_info;
+	return NULL;
 }
 
 /*************************************************************************
@@ -141,16 +132,18 @@ struct sam_disp_info *getsamdispent(void *vp)
 struct sam_passwd *getsam21pwent(void *vp)
 {
 #ifdef USE_NISPLUS_DB
-  return getnisp21pwent(vp);
+	return getnisp21pwent(vp);
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-  return getldap21pwent(vp);
+	return getldap21pwent(vp);
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
-  return getsmb21pwent(vp);
+	return getsmb21pwent(vp);
 #endif /* USE_SMBPASS_DB */
+
+	return NULL;
 }
 
 /*************************************************************************
@@ -160,15 +153,15 @@ struct sam_passwd *getsam21pwent(void *vp)
 unsigned long getsampwpos(void *vp)
 {
 #ifdef USE_NISPLUS_DB
-  return getnisppwpos(vp);
+	return getnisppwpos(vp);
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-  return getldappwpos(vp);
+	return getldappwpos(vp);
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
-  return getsmbpwpos(vp);
+	return getsmbpwpos(vp);
 #endif /* USE_SMBPASS_DB */
 }
 
@@ -201,7 +194,7 @@ BOOL add_sampwd_entry(struct smb_passwd *newpwd)
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-  return add_ldappwd_entry(newpwd);
+	return add_ldap21pwd_entry(pdb_smb_to_sam(newpwd));
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
@@ -215,15 +208,15 @@ BOOL add_sampwd_entry(struct smb_passwd *newpwd)
 BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 {
 #ifdef USE_NISPLUS_DB
-  return add_nisp21pwd_entry(newpwd);
+	return add_nisp21pwd_entry(newpwd);
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-  return add_ldap21pwd_entry(newpwd);
+	return add_ldap21pwd_entry(newpwd);
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
-  return add_smb21pwd_entry(newpwd);
+	return add_smb21pwd_entry(newpwd);
 #endif /* USE_SMBPASS_DB */
 }
 
@@ -242,7 +235,7 @@ BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override)
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-  return mod_ldappwd_entry(pwd, override);
+  return mod_ldap21pwd_entry(pdb_smb_to_sam(pwd), override);
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
@@ -317,24 +310,6 @@ static struct smb_passwd *_getsampwnam(char *name)
 }
 
 /************************************************************************
- Routine to search sam passwd by name.
-*************************************************************************/
-struct smb_passwd *getsampwnam(char *name)
-{
-#ifdef USE_NISPLUS_DB
-	return _getsampwnam(name);
-#endif /* USE_NISPLUS_DB */
-
-#ifdef USE_LDAP_DB
-	return _getsampwnam(name);
-#endif /* USE_LDAP_DB */
-
-#ifdef USE_SMBPASS_DB
-	return _getsampwnam(name);
-#endif /* USE_SMBPASS_DB */
-}
-
-/************************************************************************
  Routine to search sam passwd by name.  use this if your database
  does not have search facilities.
 *************************************************************************/
@@ -384,6 +359,24 @@ struct sam_passwd *getsam21pwnam(char *name)
 }
 
 /************************************************************************
+ Routine to search sam passwd by name.
+*************************************************************************/
+struct smb_passwd *getsampwnam(char *name)
+{
+#ifdef USE_NISPLUS_DB
+	return pdb_sam_to_smb(_getsampwnam(name));
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
+	return pdb_sam_to_smb(_getsam21pwnam(name));
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
+	return _getsampwnam(name);
+#endif /* USE_SMBPASS_DB */
+}
+
+/************************************************************************
  Routine to search sam passwd by uid.  use this if your database
  does not have search facilities.
 *************************************************************************/
@@ -412,24 +405,6 @@ static struct smb_passwd *_getsampwuid(uid_t smb_userid)
 
 	endsmbpwent(fp);
 	return pwd;
-}
-
-/************************************************************************
- Routine to search sam passwd by uid.
-*************************************************************************/
-struct smb_passwd *getsampwuid(uid_t smb_userid)
-{
-#ifdef USE_NISPLUS_DB
-	return _getsampwuid(smb_userid);
-#endif /* USE_NISPLUS_DB */
-
-#ifdef USE_LDAP_DB
-	return _getsampwuid(smb_userid);
-#endif /* USE_LDAP_DB */
-
-#ifdef USE_SMBPASS_DB
-	return _getsampwuid(smb_userid);
-#endif /* USE_SMBPASS_DB */
 }
 
 
@@ -465,6 +440,24 @@ static struct sam_passwd *_getsam21pwrid(uint32 rid)
 }
 
 /************************************************************************
+ Routine to search sam passwd by uid.
+*************************************************************************/
+struct smb_passwd *getsampwuid(uid_t smb_userid)
+{
+#ifdef USE_NISPLUS_DB
+	return pdb_sam_to_smb(_getsampwuid(smb_userid));
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
+	return pdb_sam_to_smb(_getsam21pwuid(smb_userid));
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
+	return _getsampwuid(smb_userid);
+#endif /* USE_SMBPASS_DB */
+}
+
+/************************************************************************
  Routine to search sam passwd by rid.  
 *************************************************************************/
 struct sam_passwd *getsam21pwrid(uint32 rid)
@@ -493,12 +486,20 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
  **********************************************************/
 
 /*************************************************************
+ initialises a struct sam_disp_info.
+ **************************************************************/
+void pdb_init_dispinfo(struct sam_disp_info *user)
+{
+	if (user == NULL) return;
+	bzero(user, sizeof(*user));
+}
+
+/*************************************************************
  initialises a struct smb_passwd.
  **************************************************************/
 void pdb_init_smb(struct smb_passwd *user)
 {
 	if (user == NULL) return;
-
 	bzero(user, sizeof(*user));
 	user->pass_last_set_time    = (time_t)-1;
 }
@@ -509,7 +510,6 @@ void pdb_init_smb(struct smb_passwd *user)
 void pdb_init_sam(struct sam_passwd *user)
 {
 	if (user == NULL) return;
-
 	bzero(user, sizeof(*user));
 	user->logon_time            = (time_t)-1;
 	user->logoff_time           = (time_t)-1;
@@ -517,6 +517,24 @@ void pdb_init_sam(struct sam_passwd *user)
 	user->pass_last_set_time    = (time_t)-1;
 	user->pass_can_change_time  = (time_t)-1;
 	user->pass_must_change_time = (time_t)-1;
+}
+
+/*************************************************************************
+ Routine to return the next entry in the sam passwd list.
+ *************************************************************************/
+struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user)
+{
+	static struct sam_disp_info disp_info;
+
+	if (user == NULL) return NULL;
+
+	pdb_init_dispinfo(&disp_info);
+
+	disp_info.smb_name  = user->smb_name;
+	disp_info.full_name = user->full_name;
+	disp_info.user_rid  = user->user_rid;
+
+	return &disp_info;
 }
 
 /*************************************************************

@@ -168,18 +168,6 @@ struct sam_passwd *getnisp21pwent(void *vp)
 }
 
 /*************************************************************************
- Routine to return the next entry in the nisplus passwd list.
-
- do not call this function directly.  use passdb.c instead.
-
- *************************************************************************/
-struct smb_passwd *getnisppwent(void *vp)
-{
-	DEBUG(5,("getnisppwent: end of file reached.\n"));
-	return NULL;
-}
-
-/*************************************************************************
  Return the current position in the nisplus passwd list as an unsigned long.
  This must be treated as an opaque token.
 
@@ -210,16 +198,6 @@ BOOL setnisppwpos(void *vp, unsigned long tok)
 
 *************************************************************************/
 BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
-{
-}
-
-/************************************************************************
- Routine to add an entry to the nisplus passwd file.
-
- do not call this function directly.  use passdb.c instead.
-
-*************************************************************************/
-BOOL add_nisppwd_entry(struct smb_passwd *newpwd)
 {
 	/* Static buffers we will return. */
 	static pstring  user_name;
@@ -375,25 +353,9 @@ BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override)
 }
  
 /************************************************************************
- Routine to search the nisplus passwd file for an entry matching the username.
- and then modify its password entry. We can't use the startnisppwent()/
- getnisppwent()/endnisppwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out password or NO PASS
-
- do not call this function directly.  use passdb.c instead.
-
-************************************************************************/
-BOOL mod_nisppwd_entry(struct smb_passwd* pwd, BOOL override)
-{
-	return False;
-}
- 
-/************************************************************************
- makes a struct smb_passwd from a NIS+ result.
+ makes a struct sam_passwd from a NIS+ result.
  ************************************************************************/
-static BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
+static BOOL make_sam_from_nisp(struct sam_passwd *pw_buf, nis_result *result)
 {
 	int uidval;
 	static pstring  user_name;
@@ -404,7 +366,7 @@ static BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
 
 	if (pw_buf == NULL || result == NULL) return False;
 
-	bzero(pw_buf, sizeof(*pw_buf));
+	pdb_init_sam(pw_buf);
 
 	if (result->status != NIS_SUCCESS)
 	{
@@ -458,10 +420,10 @@ static BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-struct smb_passwd *getnisppwnam(char *name)
+struct sam_passwd *getnisp21pwnam(char *name)
 {
 	/* Static buffers we will return. */
-	static struct smb_passwd pw_buf;
+	static struct sam_passwd pw_buf;
 	nis_result *result;
 	pstring nisname;
 	BOOL ret;
@@ -494,7 +456,7 @@ struct smb_passwd *getnisppwnam(char *name)
 		return NULL;
 	}
 
-	ret = make_smb_from_nisp(&pw_buf, result);
+	ret = make_sam_from_nisp(&pw_buf, result);
 	nis_freeresult(result);
 
 	return ret ? &pw_buf : NULL;
@@ -503,10 +465,10 @@ struct smb_passwd *getnisppwnam(char *name)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-struct smb_passwd *getnisppwuid(int smb_userid)
+struct sam_passwd *getnisp21pwuid(int smb_userid)
 {
 	/* Static buffers we will return. */
-	static struct smb_passwd pw_buf;
+	static struct sam_passwd pw_buf;
 	nis_result *result;
 	pstring nisname;
 	BOOL ret;
@@ -539,7 +501,7 @@ struct smb_passwd *getnisppwuid(int smb_userid)
 		return NULL;
 	}
 
-	ret = make_smb_from_nisp(&pw_buf, result);
+	ret = make_sam_from_nisp(&pw_buf, result);
 	nis_freeresult(result);
 
 	return ret ? &pw_buf : NULL;
