@@ -1,3 +1,29 @@
+Mon Apr 14 00:09:03 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/gssapi: Enough of a gssapi-over-krb5 implementation to be
+	able to (mostly) run gss-client and gss-server.
+	
+	* lib/krb5/keytab.c: implemented krb5_kt_add_entry,
+ 	krb5_kt_store_principal, krb5_kt_store_keyblock
+
+	* lib/des/md5.[ch], sha.[ch]: new files
+
+	* lib/asn1/der_get.c (generalizedtime2time): use `timegm'
+
+	* lib/asn1/timegm.c: new file
+
+	* admin/extkeytab.c: new program
+
+	* admin/admin_locl.h: new file
+
+	* admin/Makefile.am: Added extkeytab
+
+	* configure.in: moved config to include
+	removed timezone garbage
+	added lib/gssapi and admin
+
+	* Makefile.am: Added admin
+
 Mon Mar 17 11:34:05 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* kdc/kdc.c: Use new copying functions, and free some data.
