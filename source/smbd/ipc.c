@@ -2519,7 +2519,10 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
-		SIVAL(p,54,0);		/* script_path */
+		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
+		pstrcpy(p2,lp_logon_script());
+		standard_sub( conn, p2 );             
+		p2 = skip_string(p2,1);
 		if (uLevel == 2)
 		{
 			SIVAL(p,60,0);		/* auth_flags */
@@ -2618,7 +2621,6 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   int uLevel;
   struct pack_desc desc;
   char* name;
-  char* logon_script;
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2664,9 +2666,12 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
 
 /* JHT - By calling lp_logon_script() and standard_sub() we have */
 /* made sure all macros are fully substituted and available */
-    logon_script = lp_logon_script();
-    standard_sub( conn, logon_script );
-    PACKS(&desc,"z", logon_script);		/* script path */
+    {
+      pstring logon_script;
+      pstrcpy(logon_script,lp_logon_script());
+      standard_sub( conn, logon_script );
+      PACKS(&desc,"z", logon_script);		/* script path */
+    }
 /* End of JHT mods */
 
     PACKI(&desc,"D",0x00000000);		/* reserved */

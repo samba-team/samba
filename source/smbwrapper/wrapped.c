@@ -462,7 +462,7 @@
 #endif
 
 #ifdef HAVE_UTIMES
- int utimes(char *name,void *tvp)
+ int utimes(const char *name,struct timeval *tvp)
 {
 	if (smbw_path(name)) {
 		return smbw_utimes(name, tvp);
