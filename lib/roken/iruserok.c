@@ -75,7 +75,8 @@ __icheckhost(unsigned raddr, const char *lhost)
 	char **pp;
 
 	/* Try for raw ip address first. */
-	if (isdigit(*lhost) && (long)(laddr = inet_addr(lhost)) != -1)
+	if (isdigit((unsigned char)*lhost)
+	    && (long)(laddr = inet_addr(lhost)) != -1)
 		return (raddr == laddr);
 
 	/* Better be a hostname. */
@@ -142,7 +143,8 @@ __ivaliduser(FILE *hostf, unsigned raddr, const char *luser,
 			continue;
 		}
 		while (*p != '\n' && *p != ' ' && *p != '\t' && *p != '\0') {
-			*p = isupper(*p) ? tolower(*p) : *p;
+		        if (isupper((unsigned char)*p))
+			    *p = tolower((unsigned char)*p);
 			p++;
 		}
 		if (*p == ' ' || *p == '\t') {

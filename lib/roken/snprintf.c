@@ -60,12 +60,12 @@ enum format_flags {
  */
 
 struct state {
-  char *str;
-  char *s;
-  char *theend;
+  unsigned char *str;
+  unsigned char *s;
+  unsigned char *theend;
   size_t sz;
   size_t max_sz;
-  int (*append_char)(struct state *, char);
+  int (*append_char)(struct state *, unsigned char);
   int (*reserve)(struct state *, size_t);
   /* XXX - methods */
 };
@@ -78,7 +78,7 @@ sn_reserve (struct state *state, size_t n)
 }
 
 static int
-sn_append_char (struct state *state, char c)
+sn_append_char (struct state *state, unsigned char c)
 {
   if (sn_reserve (state, 1)) {
     return 1;
@@ -94,7 +94,7 @@ as_reserve (struct state *state, size_t n)
 {
   if (state->s + n > state->theend) {
     int off = state->s - state->str;
-    char *tmp;
+    unsigned char *tmp;
 
     if (state->max_sz && state->sz >= state->max_sz)
       return 1;
@@ -113,7 +113,7 @@ as_reserve (struct state *state, size_t n)
 }
 
 static int
-as_append_char (struct state *state, char c)
+as_append_char (struct state *state, unsigned char c)
 {
   if(as_reserve (state, 1))
     return 1;
@@ -125,7 +125,7 @@ as_append_char (struct state *state, char c)
 
 static int
 append_number(struct state *state,
-	      unsigned long num, unsigned base, char *rep,
+	      unsigned long num, unsigned base, unsigned char *rep,
 	      int width, int prec, int flags, int minusp)
 {
   int len = 0;
@@ -214,7 +214,7 @@ append_number(struct state *state,
 
 static int
 append_string (struct state *state,
-	       char *arg,
+	       unsigned char *arg,
 	       int width,
 	       int prec,
 	       int flags)
@@ -245,7 +245,7 @@ append_string (struct state *state,
 
 static int
 append_char(struct state *state,
-	    char arg,
+	    unsigned char arg,
 	    int width,
 	    int flags)
 {
@@ -279,9 +279,10 @@ else \
  */
 
 static int
-xyzprintf (struct state *state, const char *format, va_list ap)
+xyzprintf (struct state *state, const char *char_format, va_list ap)
 {
-  char c;
+  const unsigned char *format = (const unsigned char *)char_format;
+  unsigned char c;
 
   while((c = *format++)) {
     if (c == '%') {
@@ -356,7 +357,7 @@ xyzprintf (struct state *state, const char *format, va_list ap)
 	break;
       case 's' :
 	if (append_string(state,
-			  va_arg(ap, char*),
+			  va_arg(ap, unsigned char*),
 			  width,
 			  prec, 
 			  flags))

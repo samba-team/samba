@@ -84,7 +84,7 @@ parse_something (const char *s, const struct units *units,
 	size_t u_len;
 	unsigned partial;
 
-	while(isspace(*p) || *p == ',')
+	while(isspace((unsigned char)*p) || *p == ',')
 	    ++p;
 
 	val = strtod (p, &next); /* strtol(p, &next, 0); */
@@ -93,7 +93,7 @@ parse_something (const char *s, const struct units *units,
 		return -1;
 	}
 	p = next;
-	while (isspace(*p))
+	while (isspace((unsigned char)*p))
 	    ++p;
 	if (*p == '\0') {
 	    res = (*func)(res, val, def_mult);
