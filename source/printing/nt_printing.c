@@ -390,7 +390,6 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	fstring driver_name;
 	fstring architecture;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info = NULL;
-	char *line;
 	fstring p;
 	char *v;
 	int i=0;
@@ -422,12 +421,8 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 	ZERO_STRUCTP(info);
 	
-	/* allocate a 4Kbytes buffer for parsing lines */
-	if((line=(char *)malloc(4096*sizeof(char))) == NULL)
-		goto err;
-	
 	for (lcount=0; lines[lcount]; lcount++) {
-		line = lines[lcount];
+		char *line = lines[lcount];
 		v=strncpyn(p, line, sizeof(p), ':');
 		if (v==NULL)
 		{
