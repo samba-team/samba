@@ -2869,24 +2869,18 @@ static BOOL run_error_map_extract(int dummy) {
 
 	fstring user;
 
-	if (!open_nbt_connection(&c_dos)) {
-		return False;
-	}
-
-	if (!open_nbt_connection(&c_nt)) {
-		return False;
-	}
-
-	c_dos.force_dos_errors = True;
-
-	if (!cli_negprot(&c_dos)) {
-		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(&c_dos));
-		cli_shutdown(&c_dos);
-		return False;
-	}
+	open_nbt_connection(&c_nt);
 	if (!cli_negprot(&c_nt)) {
 		printf("%s rejected the NT-error negprot (%s)\n",host, cli_errstr(&c_nt));
 		cli_shutdown(&c_nt);
+		return False;
+	}
+
+	open_nbt_connection(&c_dos);
+	c_dos.force_dos_errors = True;
+	if (!cli_negprot(&c_dos)) {
+		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(&c_dos));
+		cli_shutdown(&c_dos);
 		return False;
 	}
 
