@@ -25,7 +25,8 @@ init_generate (char *filename)
 	     "#ifndef __" STEM "_h__\n"
 	     "#define __" STEM "_h__\n\n");
     fprintf (headerfile, 
-	     "#include <stddef.h>\n\n");
+	     "#include <stddef.h>\n"
+	     "#include <time.h>\n\n");
     fprintf (headerfile,
 	     "typedef struct {\n"
 	     "  size_t length;\n"

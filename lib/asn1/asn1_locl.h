@@ -12,6 +12,7 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
+#include <time.h>
 #include "gen.h"
 #include "hash.h"
 #include "symbol.h"
