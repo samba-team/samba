@@ -1103,12 +1103,19 @@ static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue,
 										NT_PRINTER_INFO_LEVEL *printer)
 {
+	/* the notify name should not contain the \\server\ part */
+	char *p = strrchr(printer->info_2->printername, '\\');
+	if (!p) {
+		p = printer->info_2->printername;
+	} else {
+		p++;
+	}
 /*
 	data->notify_data.data.length=strlen(lp_servicename(snum));
 	dos_PutUniCode(data->notify_data.data.string, lp_servicename(snum), sizeof(data->notify_data.data.string), True);
 */
 	data->notify_data.data.length=(uint32)((dos_PutUniCode((char *)data->notify_data.data.string,
-				printer->info_2->printername, sizeof(data->notify_data.data.string), True) - sizeof(uint16))/sizeof(uint16));
+				p, sizeof(data->notify_data.data.string), True) - sizeof(uint16))/sizeof(uint16));
 }
 
 /*******************************************************************
@@ -1871,8 +1878,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	 */
 	global_counter=session_counter->counter;
 	
-	/* the description and the name are of the form \\server\share */
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s",servername, ntprinter->info_2->printername);
+	pstrcpy(chaine,ntprinter->info_2->printername);
 
 	init_unistr(&printer->printername, chaine);
 	
@@ -2013,7 +2019,7 @@ static DEVICEMODE *construct_dev_mode(int snum, char *servername)
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 
-	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, printer->info_2->printername);
+	safe_strcpy(adevice, printer->info_2->printername, sizeof(adevice));
 	init_unistr(&devmode->devicename, adevice);
 
 	snprintf(aform, sizeof(aform), ntdevmode->formname);
@@ -3433,50 +3439,25 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 
 /********************************************************************
  Do Samba sanity checks on a printer info struct.
+ this has changed purpose: it now "canonicalises" printer
+ info from a client rather than just checking it is correct
  ********************************************************************/
 
 static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 {
-	/*
-	 * Ensure that this printer is shared under the correct name
-	 * as this is what Samba insists upon.
-	 */
+	DEBUG(5,("check_printer_ok: servername=%s printername=%s sharename=%s portname=%s drivername=%s comment=%s location=%s\n",
+		 info->servername, info->printername, info->sharename, info->portname, info->drivername, info->comment, info->location));
 
-	if (!(info->attributes & (PRINTER_ATTRIBUTE_SHARED|PRINTER_ATTRIBUTE_NETWORK))) {
-		DEBUG(10,("check_printer_ok: SHARED/NETWORK check failed (%x).\n",
-							(unsigned int)info->attributes ));
-		return False;
-	}
-
-	if (!(info->attributes & PRINTER_ATTRIBUTE_RAW_ONLY)) {
-		/* NT forgets to set the raw attribute but sends the correct type. */
-		if (strequal(info->datatype, "RAW"))
-			info->attributes |= PRINTER_ATTRIBUTE_RAW_ONLY;
-		else {
-			DEBUG(10,("check_printer_ok: RAW check failed (%x).\n", (unsigned int)info->attributes ));
-			return False;
-		}
-	}
-
-	/*
-	 * Sometimes the NT client doesn't set the sharename, but
-	 * includes the sharename in the printername. This could
-	 * cause SETPRINTER to fail which causes problems with the
-	 * client getting confused between local/remote printers...
-	 */
-	 
-	if (*info->sharename == '\0') {
-		char *p = strrchr(info->printername, '\\');
-		if (p)
-			fstrcpy(info->sharename, p+1);
-	}
-
-	if (!strequal(info->sharename, lp_servicename(snum))) {
-		DEBUG(10,("check_printer_ok: NAME check failed (%s) (%s).\n",
-					info->sharename, lp_servicename(snum)));
-		return False;
-	}
-
+	/* we force some elements to "correct" values */
+	slprintf(info->servername, sizeof(info->servername), "\\\\%s", global_myname);
+	slprintf(info->printername, sizeof(info->printername), "\\\\%s\\%s", 
+		 global_myname, lp_servicename(snum));
+	fstrcpy(info->sharename, lp_servicename(snum));
+	info->attributes = PRINTER_ATTRIBUTE_SHARED   \
+		| PRINTER_ATTRIBUTE_LOCAL  \
+		| PRINTER_ATTRIBUTE_RAW_ONLY \
+		| PRINTER_ATTRIBUTE_QUEUED ;  
+	
 	return True;
 }
 
