@@ -48,11 +48,26 @@ static krb5_error_code
 LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 		   hdb_entry * ent);
 
-#define HDB2LDAP(db) ((LDAP *)(db)->hdb_db)
-
 static const char *default_structural_object = "account";
 static char *structural_object;
 static krb5_boolean samba_forwardable;
+
+struct hdbldapdb {
+    LDAP *h_lp;
+    int   h_msgid;
+    char *h_base;
+#if 0
+    char *h_createbase;
+#endif
+};
+
+#define HDB2LDAP(db) (((struct hdbldapdb *)(db)->hdb_db)->h_lp)
+#define HDB2MSGID(db) (((struct hdbldapdb *)(db)->hdb_db)->h_msgid)
+#define HDBSETMSGID(db,msgid) do { ((struct hdbldapdb *)(db)->hdb_db)->h_msgid = msgid; } while(0)
+#define HDB2BASE(dn) (((struct hdbldapdb *)(db)->hdb_db)->h_base)
+#if 0
+#define HDB2CREATE(db) (((struct hdbldapdb *)(db)->hdb_db)->h_createbase)
+#endif
 
 /*
  *
@@ -786,7 +801,7 @@ LDAP__lookup_princ(krb5_context context,
     if (ret)
 	goto out;
 
-    rc = ldap_search_s(HDB2LDAP(db), db->hdb_name, LDAP_SCOPE_SUBTREE, filter, 
+    rc = ldap_search_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, filter, 
 		       krb5kdcentry_attrs, 0, msg);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_search_s: %s",
@@ -802,7 +817,7 @@ LDAP__lookup_princ(krb5_context context,
 	*msg = NULL;
 	
 	rc = asprintf(&filter,
-		      "(&(objectclass=account)(uid=%s))",
+		      "(&(objectclass=sambaSamAccount)(uid=%s))",
 		      userid);
 	if (rc < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
@@ -814,7 +829,7 @@ LDAP__lookup_princ(krb5_context context,
 	if (ret)
 	    goto out;
 
-	rc = ldap_search_s(HDB2LDAP(db), db->hdb_name, LDAP_SCOPE_SUBTREE, 
+	rc = ldap_search_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, 
 			   filter, krb5kdcentry_attrs, 0, msg);
 	if (rc != LDAP_SUCCESS) {
 	    krb5_set_error_string(context, "ldap_search_s: %s",
@@ -1265,11 +1280,14 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
     return ret;
 }
 
-static krb5_error_code LDAP_close(krb5_context context, HDB * db)
+static krb5_error_code
+LDAP_close(krb5_context context, HDB * db)
 {
-    ldap_unbind_ext(HDB2LDAP(db), NULL, NULL);
-    db->hdb_db = NULL;
-
+    if (HDB2LDAP(db)) {
+	ldap_unbind_ext(HDB2LDAP(db), NULL, NULL);
+	((struct hdbldapdb *)db->hdb_db)->h_lp = NULL;
+    }
+    
     return 0;
 }
 
@@ -1292,10 +1310,9 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
     krb5_error_code ret;
     LDAPMessage *e;
 
-    msgid = db->hdb_openp;		/* BOGUS OVERLOADING */
-    if (msgid < 0) {
+    msgid = HDB2MSGID(db);
+    if (msgid < 0)
 	return HDB_ERR_NOENTRY;
-    }
 
     do {
 	rc = ldap_result(HDB2LDAP(db), msgid, LDAP_MSG_ONE, NULL, &e);
@@ -1316,7 +1333,7 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
 		ldap_abandon(HDB2LDAP(db), msgid);
 	    }
 	    ret = HDB_ERR_NOENTRY;
-	    db->hdb_openp = -1;
+	    HDBSETMSGID(db, -1);
 	    break;
 	case 0:
 	case -1:
@@ -1325,7 +1342,7 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
 	    ldap_msgfree(e);
 	    ldap_abandon(HDB2LDAP(db), msgid);
 	    ret = HDB_ERR_NOENTRY;
-	    db->hdb_openp = -1;
+	    HDBSETMSGID(db, -1);
 	    break;
 	}
     } while (rc == LDAP_RES_SEARCH_REFERENCE);
@@ -1356,14 +1373,13 @@ LDAP_firstkey(krb5_context context, HDB *db, unsigned flags,
     if (ret)
 	return ret;
 
-    msgid = ldap_search(HDB2LDAP(db), db->hdb_name,
+    msgid = ldap_search(HDB2LDAP(db), HDB2BASE(db),
 			LDAP_SCOPE_SUBTREE, "(objectclass=krb5Principal)",
 			krb5kdcentry_attrs, 0);
-    if (msgid < 0) {
+    if (msgid < 0)
 	return HDB_ERR_NOENTRY;
-    }
 
-    db->hdb_openp = msgid;
+    HDBSETMSGID(db, msgid);
 
     return LDAP_seq(context, db, flags, entry);
 }
@@ -1392,7 +1408,7 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
      */
     struct berval bv = { 0, "" };
 
-    if (db->hdb_db != NULL) {
+    if (HDB2LDAP(db)) {
 	/* connection has been opened. ping server. */
 	struct sockaddr_un addr;
 	socklen_t len = sizeof(addr);
@@ -1405,7 +1421,7 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
 	}
     }
 
-    if (db->hdb_db != NULL) {
+    if (HDB2LDAP(db) != NULL) {
 	/* server is UP */
 	return 0;
     }
@@ -1422,8 +1438,7 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_set_option: %s",
 			      ldap_err2string(rc));
-	ldap_unbind_ext(HDB2LDAP(db), NULL, NULL);
-	db->hdb_db = NULL;
+	LDAP_close(context, db);
 	return HDB_ERR_BADVERSION;
     }
 
@@ -1432,8 +1447,7 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_sasl_bind_s: %s",
 			      ldap_err2string(rc));
-	ldap_unbind_ext(HDB2LDAP(db), NULL, NULL);
-	db->hdb_db = NULL;
+	LDAP_close(context, db);
 	return HDB_ERR_BADVERSION;
     }
 
@@ -1525,14 +1539,7 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
     }
 
     if (e == NULL) {
-	e = NULL;
-
-	if (db->hdb_name != NULL) {
-	    ret = asprintf(&dn, "krb5PrincipalName=%s,%s", name, db->hdb_name);
-	} else {
-	    /* A bit bogus, but we don't have a search base */
-	    ret = asprintf(&dn, "krb5PrincipalName=%s", name);
-	}
+	ret = asprintf(&dn, "krb5PrincipalName=%s,%s", name, HDB2BASE(db));
 	if (ret < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
 	    ret = ENOMEM;
@@ -1642,14 +1649,19 @@ LDAP_remove(krb5_context context, HDB * db, hdb_entry * entry)
     return ret;
 }
 
-static krb5_error_code LDAP_destroy(krb5_context context, HDB * db)
+static krb5_error_code
+LDAP_destroy(krb5_context context, HDB * db)
 {
     krb5_error_code ret;
 
+    LDAP_close(context, db);
+
     ret = hdb_clear_master_key(context, db);
-    if (db->hdb_name != NULL) {
+    if (HDB2BASE(db))
+	free(HDB2BASE(db));
+    if (db->hdb_name)
 	free(db->hdb_name);
-    }
+    free(db->hdb_db);
     free(db);
 
     return ret;
@@ -1658,6 +1670,13 @@ static krb5_error_code LDAP_destroy(krb5_context context, HDB * db)
 krb5_error_code
 hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
 {
+    struct hdbldapdb *h;
+
+    if (arg == NULL && arg[0] == '\0') {
+	krb5_set_error_string(context, "ldap search base not configured");
+	return ENOMEM; /* XXX */
+    }
+
     if (structural_object == NULL) {
 	const char *p;
 
@@ -1683,26 +1702,26 @@ hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
     }
     memset(*db, 0, sizeof(**db));
 
-    (*db)->hdb_db = NULL;
-
-    if (arg == NULL || arg[0] == '\0') {
-	/*
-	 * if no argument specified in the configuration file
-	 * then use NULL, which tells OpenLDAP to look in
-	 * the ldap.conf file. This doesn't work for
-	 * writing entries because we don't know where to
-	 * put new principals.
-	 */
-	(*db)->hdb_name = NULL;
-    } else {
-	(*db)->hdb_name = strdup(arg); 
-	if ((*db)->hdb_name == NULL) {
-	    krb5_set_error_string(context, "strdup: out of memory");
-	    free(*db);
-	    *db = NULL;
-	    return ENOMEM;
-	}
+    h = malloc(sizeof(*h));
+    if (h == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	free(*db);
+	*db = NULL;
+	return ENOMEM;
     }
+    memset(h, 0, sizeof(*h));
+
+    asprintf(&(*db)->hdb_name, "ldap:%s", arg);
+
+    (*db)->hdb_db = h;
+    h->h_base = strdup(arg);
+    if (h->h_base == NULL) {
+	krb5_set_error_string(context, "strdup: out of memory");
+	free(*db);
+	*db = NULL;
+	return ENOMEM;
+    }
+
 
     (*db)->hdb_master_key_set = 0;
     (*db)->hdb_openp = 0;
