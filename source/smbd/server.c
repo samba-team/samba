@@ -1985,10 +1985,10 @@ struct
   int new_smb_error;
   int old_smb_error;
   int protocol_level;
-  char *valid_remote_arch;
+  enum remote_arch_types valid_ra_type;
 } old_client_errmap[] =
 {
-  {ERRbaddirectory, ERRbadpath, (int)PROTOCOL_NT1, "WinNT"},
+  {ERRbaddirectory, ERRbadpath, (int)PROTOCOL_NT1, RA_WINNT},
   {0,0,0}
 };
 
@@ -1997,7 +1997,6 @@ struct
 ****************************************************************************/
 int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line)
 {
-  extern fstring remote_arch;
   int eclass=def_class;
   int ecode=def_code;
   int i=0;
@@ -2030,7 +2029,7 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
      for apps to work correctly, Win95 will break if
      these error codes are returned. But they both
      negotiate the *same* protocol. So we need to use
-     the revolting 'remote_arch' string to tie break.
+     the revolting 'remote_arch' enum to tie break.
 
      There must be a better way of doing this...
   */
@@ -2038,7 +2037,7 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
   for(i = 0; old_client_errmap[i].new_smb_error != 0; i++)
   {
     if(((Protocol < old_client_errmap[i].protocol_level) ||
-       !strcsequal( old_client_errmap[i].valid_remote_arch, remote_arch)) &&
+       (old_client_errmap[i].valid_ra_type != get_remote_arch())) &&
        (old_client_errmap[i].new_smb_error == ecode))
     {
       ecode = old_client_errmap[i].old_smb_error;
@@ -3062,7 +3061,6 @@ struct {
 ****************************************************************************/
 static int reply_negprot(char *inbuf,char *outbuf)
 {
-  extern fstring remote_arch;
   int outsize = set_message(outbuf,1,0,True);
   int Index=0;
   int choice= -1;
@@ -3102,22 +3100,22 @@ static int reply_negprot(char *inbuf,char *outbuf)
     
   switch ( arch ) {
   case ARCH_SAMBA:
-    strcpy(remote_arch,"Samba");
+    set_remote_arch(RA_SAMBA);
     break;
   case ARCH_WFWG:
-    strcpy(remote_arch,"WfWg");
+    set_remote_arch(RA_WFWG);
     break;
   case ARCH_WIN95:
-    strcpy(remote_arch,"Win95");
+    set_remote_arch(RA_WIN95);
     break;
   case ARCH_WINNT:
-    strcpy(remote_arch,"WinNT");
+    set_remote_arch(RA_WINNT);
     break;
   case ARCH_OS2:
-    strcpy(remote_arch,"OS2");
+    set_remote_arch(RA_OS2);
     break;
   default:
-    strcpy(remote_arch,"UNKNOWN");
+    set_remote_arch(RA_UNKNOWN);
     break;
   }
  

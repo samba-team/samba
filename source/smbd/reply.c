@@ -367,7 +367,23 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   } else {
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
+    uint32 client_caps = IVAL(inbuf,smb_vwv11);
+    enum remote_arch_types ra_type = get_remote_arch();
+
     char *p = smb_buf(inbuf);    
+
+    /* client_caps is used as final determination if client is NT or Win95. 
+       This is needed to return the correct error codes in some
+       circumstances.
+     */
+    
+    if(ra_type == RA_WINNT || ra_type == RA_WIN95)
+    {
+      if(client_caps & (CAP_NT_SMBS | CAP_STATUS32))
+        set_remote_arch( RA_WINNT);
+      else
+        set_remote_arch( RA_WIN95);
+    }
 
     if (passlen1 != 24 && passlen2 != 24)
       doencrypt = False;
