@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "lib/registry/common/registry.h"
 
-static BOOL reg_dir_add_key(REG_KEY *parent, const char *name)
+static WERROR reg_dir_add_key(REG_KEY *parent, const char *name, uint32 access_mask, SEC_DESC *desc)
 {
 	char *path;
 	int ret;
@@ -29,15 +29,16 @@ static BOOL reg_dir_add_key(REG_KEY *parent, const char *name)
 	path = reg_path_win2unix(path);
 	ret = mkdir(path, 0700);
 	SAFE_FREE(path);
-	return (ret == 0);
+	if(ret == 0)return WERR_OK;
+	return WERR_INVALID_PARAM;
 }
 
-static BOOL reg_dir_del_key(REG_KEY *k)
+static WERROR reg_dir_del_key(REG_KEY *k)
 {
-	return (rmdir((char *)k->backend_data) == 0);
+	return (rmdir((char *)k->backend_data) == 0)?WERR_OK:WERR_GENERAL_FAILURE;
 }
 
-static REG_KEY *reg_dir_open_key(REG_HANDLE *h, const char *name)
+static WERROR reg_dir_open_key(REG_HANDLE *h, const char *name, REG_KEY **subkey)
 {
 	DIR *d;
 	char *fullpath;
@@ -45,7 +46,7 @@ static REG_KEY *reg_dir_open_key(REG_HANDLE *h, const char *name)
 	TALLOC_CTX *mem_ctx = talloc_init("tmp");
 	if(!name) {
 		DEBUG(0, ("NULL pointer passed as directory name!"));
-		return NULL;
+		return WERR_INVALID_PARAM;
 	}
 	fullpath = talloc_asprintf(mem_ctx, "%s%s", h->location, name);
 	fullpath = reg_path_win2unix(fullpath);
@@ -54,16 +55,17 @@ static REG_KEY *reg_dir_open_key(REG_HANDLE *h, const char *name)
 	if(!d) {
 		DEBUG(3,("Unable to open '%s': %s\n", fullpath, strerror(errno)));
 		talloc_destroy(mem_ctx);
-		return NULL;
+		return WERR_BADFILE;
 	}
 	closedir(d);
 	ret = reg_key_new_abs(name, h, fullpath);
 	talloc_steal(mem_ctx, ret->mem_ctx, fullpath);
 	talloc_destroy(mem_ctx);
-	return ret;
+	*subkey = ret;
+	return WERR_OK;
 }
 
-static BOOL reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
+static WERROR reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 {
 	struct dirent *e;
 	int max = 200;
@@ -75,7 +77,7 @@ static BOOL reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 
 	d = opendir(fullpath);
 
-	if(!d) return False;
+	if(!d) return WERR_INVALID_PARAM;
 	
 	while((e = readdir(d))) {
 		if(e->d_type == DT_DIR && 
@@ -96,35 +98,35 @@ static BOOL reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 	closedir(d);
 	
 	*r = ar;
-	return True;
+	return WERR_OK;
 }
 
-static BOOL reg_dir_open(REG_HANDLE *h, const char *loc, BOOL try) {
-	if(!loc) return False;
-	return True;
+static WERROR reg_dir_open(REG_HANDLE *h, const char *loc, const char *credentials) {
+	if(!loc) return WERR_INVALID_PARAM;
+	return WERR_OK;
 }
 
-static REG_VAL *reg_dir_add_value(REG_KEY *p, const char *name, int type, void *data, int len)
+static WERROR reg_dir_add_value(REG_KEY *p, const char *name, int type, void *data, int len, REG_VAL **value)
 {
-	REG_VAL *ret = reg_val_new(p, NULL);
 	char *fullpath;
 	FILE *fd;
-	ret->name = name?talloc_strdup(ret->mem_ctx, name):NULL;
-	fullpath = reg_path_win2unix(strdup(reg_val_get_path(ret)));
+	*value = reg_val_new(p, NULL);
+	(*value)->name = name?talloc_strdup((*value)->mem_ctx, name):NULL;
+	fullpath = reg_path_win2unix(strdup(reg_val_get_path(*value)));
 	
 	fd = fopen(fullpath, "w+");
 	
 	/* FIXME */
-	return NULL;
+	return WERR_NOT_SUPPORTED;
 }
 
-static BOOL reg_dir_del_value(REG_VAL *v)
+static WERROR reg_dir_del_value(REG_VAL *v)
 {
 	/* FIXME*/
-	return False;
+	return WERR_NOT_SUPPORTED;
 }
 
-static REG_OPS reg_backend_dir = {
+static struct registry_ops reg_backend_dir = {
 	.name = "dir",
 	.open_registry = reg_dir_open,
 	.open_key = reg_dir_open_key,

@@ -54,27 +54,24 @@ static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			  struct policy_handle *handle, const char *name, const char *class)
+			  struct policy_handle *handle, char *name, const char *class)
 {
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
 	NTSTATUS status;
 	struct sec_desc_buf sec_desc;
+	uint32 sec_info = 0;
 
 	printf("\ntesting CreateKey\n");
 
 	r.in.handle = handle;
 	r.out.handle = &newhandle;
 	init_winreg_String(&r.in.key, name);	
-	init_winreg_String(&r.in.class, class);	
+	init_winreg_String(&r.in.class, class);
 	r.in.reserved = 0x0;
-	r.in.reserved2 = 0x0;
 	r.in.access_mask = 0x02000000;
-	r.out.reserved = 0x0;
-	r.in.sec_info = 0x0;
-	sec_desc.size = 0;
-	sec_desc.sd = NULL;
-	r.in.sec_desc = &sec_desc;
+	r.in.sec_info = &sec_info;
+	r.in.sec_desc = NULL;
 
 	status = dcerpc_winreg_CreateKey(p, mem_ctx, &r);
 
@@ -148,6 +145,11 @@ static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_winreg_OpenKey(p, mem_ctx, &r);
 
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenKey failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("OpenKey failed - %s\n", win_errstr(r.out.result));
 		return False;
@@ -194,6 +196,11 @@ static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	init_winreg_String(&r.in.class, class);
 	
 	status = dcerpc_winreg_QueryInfoKey(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryInfoKey failed - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("QueryInfoKey failed - %s\n", win_errstr(r.out.result));
@@ -371,6 +378,53 @@ static BOOL test_OpenHKCR(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			const char *msg, uint32 timeout)
+{
+	struct winreg_InitiateSystemShutdown r;
+	NTSTATUS status;
+	
+	init_winreg_String(&r.in.message, msg);
+	r.in.flags = 0;
+	r.in.timeout = timeout;
+
+	status = dcerpc_winreg_InitiateSystemShutdown(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("InitiateSystemShutdown failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("InitiateSystemShutdown failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_AbortSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	struct winreg_AbortSystemShutdown r;
+	NTSTATUS status;
+
+	r.in.server = 0x0;
+	
+	status = dcerpc_winreg_AbortSystemShutdown(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AbortSystemShutdown failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("AbortSystemShutdown failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_OpenHKCU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle)
 {
@@ -433,17 +487,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 	if (!open_fn(p, mem_ctx, &handle))
 		return False;
 
-	if (!test_GetVersion(p, mem_ctx, &handle)) {
-		printf("GetVersion failed\n");
-		ret = False;
-	}
-
-	if (!test_FlushKey(p, mem_ctx, &handle)) {
-		printf("FlushKey failed\n");
-		ret = False;
-	}
-
-	if (!test_CreateKey(p, mem_ctx, &handle, "spottyfoot", "foo")) {
+	if (!test_CreateKey(p, mem_ctx, &handle, "spottyfoot", NULL)) {
 		printf("CreateKey failed\n");
 		ret = False;
 	}
@@ -460,6 +504,16 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 
 	if (test_OpenKey(p, mem_ctx, &handle, "spottyfoot", &newhandle)) {
 		printf("DeleteKey failed (OpenKey after Delete didn't work)\n");
+		ret = False;
+	}
+
+	if (!test_GetVersion(p, mem_ctx, &handle)) {
+		printf("GetVersion failed\n");
+		ret = False;
+	}
+
+	if (!test_FlushKey(p, mem_ctx, &handle)) {
+		printf("FlushKey failed\n");
 		ret = False;
 	}
 
@@ -482,7 +536,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 BOOL torture_rpc_winreg(int dummy)
 {
         NTSTATUS status;
-        struct dcerpc_pipe *p;
+       struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	winreg_open_fn *open_fns[] = { test_OpenHKLM, test_OpenHKU,
@@ -499,6 +553,9 @@ BOOL torture_rpc_winreg(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	if(!test_InitiateSystemShutdown(p, mem_ctx, "spottyfood", 30))
+		ret = False;
 
 	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
 		if (!test_Open(p, mem_ctx, open_fns[i]))

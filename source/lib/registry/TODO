@@ -1,10 +1,6 @@
 - support subtrees
-- ../../, /bla/blie support in regshell
-- use memory pools?
-- get rid of all the nasty memory leaks..
-- security stuff
-- clean up code
-- rpc_server
+- ..\..\, \bla\blie support in regshell
+- finish rpc_server
 
 reg_backend_dir:
  - value support
@@ -15,9 +11,15 @@ reg_backend_nt4:
 reg_backend_rpc:
  - value enum support
  - write support
+ - rewrite
  
 reg_backend_ldb:
- - implement
+ - finish 
 
 reg_backend_wine.c:
- - implement
+ - finish 
+
+gregedit.c:
+ - support for editing values / adding values / deleting values
+ - support for adding/deleting keys
+ - support for security descriptors

@@ -201,6 +201,7 @@ int main (int argc, char **argv)
 	REG_HANDLE *h;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
 		POPT_TABLEEND
 	};

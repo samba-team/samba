@@ -57,42 +57,55 @@ struct reg_val_s {
   int ref;
 };
 
+/* FIXME */
+typedef void (*key_notification_function) ();
+typedef void (*value_notification_function) ();
+
+
 /* 
  * Container for function pointers to enumeration routines
  * for virtual registry view 
  */ 
  
-struct reg_ops_s {
+struct registry_ops {
 	const char *name;
-	BOOL (*open_registry) (REG_HANDLE *, const char *location, BOOL try_complete_load);
-	BOOL (*sync)(REG_HANDLE *, const char *location);
-	BOOL (*close_registry) (REG_HANDLE *);
+	WERROR (*open_registry) (REG_HANDLE *, const char *location, const char *credentials);
+	WERROR (*sync_key)(REG_KEY *, const char *location);
+	WERROR (*close_registry) (REG_HANDLE *);
 
 	/* Either implement these */
-	REG_KEY *(*open_root_key) (REG_HANDLE *);
-	int (*num_subkeys) (REG_KEY *);
-	int (*num_values) (REG_KEY *);
-	REG_KEY *(*get_subkey_by_index) (REG_KEY *, int idx);
-	REG_KEY *(*get_subkey_by_name) (REG_KEY *, const char *name);
-	REG_VAL *(*get_value_by_index) (REG_KEY *, int idx);
-	REG_VAL *(*get_value_by_name) (REG_KEY *, const char *name);
+	WERROR (*open_root_key) (REG_HANDLE *, REG_KEY **);
+	WERROR (*num_subkeys) (REG_KEY *, int *count);
+	WERROR (*num_values) (REG_KEY *, int *count);
+	WERROR (*get_subkey_by_index) (REG_KEY *, int idx, REG_KEY **);
+	WERROR (*get_subkey_by_name) (REG_KEY *, const char *name, REG_KEY **);
+	WERROR (*get_value_by_index) (REG_KEY *, int idx, REG_VAL **);
+	WERROR (*get_value_by_name) (REG_KEY *, const char *name, REG_VAL **);
 
 	/* Or these */
-	REG_KEY *(*open_key) (REG_HANDLE *, const char *name);
-	BOOL (*fetch_subkeys) (REG_KEY *, int *count, REG_KEY ***);
-	BOOL (*fetch_values) (REG_KEY *, int *count, REG_VAL ***);
+	WERROR (*open_key) (REG_HANDLE *, const char *name, REG_KEY **);
+	WERROR (*fetch_subkeys) (REG_KEY *, int *count, REG_KEY ***);
+	WERROR (*fetch_values) (REG_KEY *, int *count, REG_VAL ***);
+
+	/* Security control */
+	WERROR (*key_get_sec_desc) (REG_KEY *, SEC_DESC **);
+	WERROR (*key_set_sec_desc) (REG_KEY *, SEC_DESC *);
+
+	/* Notification */
+	WERROR (*request_key_change_notify) (REG_KEY *, key_notification_function);
+	WERROR (*request_value_change_notify) (REG_VAL *, value_notification_function);
 
 	/* Key management */
-	BOOL (*add_key)(REG_KEY *, const char *name);
-	BOOL (*del_key)(REG_KEY *);
+	WERROR (*add_key)(REG_KEY *, const char *name, uint32 access_mask, SEC_DESC *, REG_KEY **);
+	WERROR (*del_key)(REG_KEY *);
 
 	/* Value management */
-	REG_VAL *(*add_value)(REG_KEY *, const char *name, int type, void *data, int len);
-	BOOL (*del_value)(REG_VAL *);
+	WERROR (*add_value)(REG_KEY *, const char *name, int type, void *data, int len);
+	WERROR (*del_value)(REG_VAL *);
  	
 	/* If update is not available, value will first be deleted and then added 
 	 * again */
-	BOOL (*update_value)(REG_VAL *, int type, void *data, int len); 
+	WERROR (*update_value)(REG_VAL *, int type, void *data, int len); 
 
 	void (*free_key_backend_data) (REG_KEY *);
 	void (*free_val_backend_data) (REG_VAL *);
@@ -105,7 +118,7 @@ typedef struct reg_sub_tree_s {
 } REG_SUBTREE;
 
 struct reg_handle_s {
-	REG_OPS *functions;
+	struct registry_ops *functions;
 	REG_SUBTREE *subtrees;
 	char *location;
 	void *backend_data;
@@ -114,7 +127,7 @@ struct reg_handle_s {
 
 struct reg_init_function_entry {
 	/* Function to create a member of the pdb_methods list */
-	REG_OPS *functions;
+	struct registry_ops *functions;
 	struct reg_init_function_entry *prev, *next;
 };
 

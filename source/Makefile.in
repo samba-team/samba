@@ -140,6 +140,7 @@ DCERPC_LIBS = @DCERPC_LIBS@
 
 REG_OBJS = @REG_OBJS@
 REG_LIBS = @REG_LIBS@
+GTK_LIBS = @GTK_LIBS@
 
 TORTURE_RAW_OBJS = @TORTURE_RAW_OBJS@
 
@@ -191,6 +192,7 @@ NDRDUMP_OBJS = utils/ndrdump.o utils/rewrite.o \
 NDRDUMP_LIBS =	$(LIBSMB_LIBS) $(CONFIG_LIBS) $(LIBBASIC_LIBS)
 
 REGTREE_OBJ = $(REG_OBJS) lib/registry/tools/regtree.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
+GREGEDIT_OBJ = $(REG_OBJS) lib/registry/tools/gregedit.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
 REGSHELL_OBJ = $(REG_OBJS) lib/registry/tools/regshell.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
 REGPATCH_OBJ = $(REG_OBJS) lib/registry/tools/regpatch.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
 REGDIFF_OBJ = $(REG_OBJS) lib/registry/tools/regdiff.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
@@ -349,6 +351,10 @@ bin/regshell@EXEEXT@: $(REGSHELL_OBJ) bin/.dummy
 bin/regtree@EXEEXT@: $(REGTREE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(REGTREE_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS)
+
+bin/gregedit@EXEEXT@: $(GREGEDIT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLGS) -o $@ $(GREGEDIT_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS) $(GTK_LIBS)
 
 bin/regpatch@EXEEXT@: $(REGPATCH_OBJ) bin/.dummy
 	@echo Linking $@

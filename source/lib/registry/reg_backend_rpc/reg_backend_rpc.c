@@ -77,12 +77,18 @@ struct {
 { NULL, NULL }
 };
 
-static BOOL rpc_open_registry(REG_HANDLE *h, const char *location, BOOL try_full)
+static WERROR rpc_open_registry(REG_HANDLE *h, const char *location, const char *credentials)
 {
-	BOOL res = True;
 	struct rpc_data *mydata = talloc(h->mem_ctx, sizeof(struct rpc_data));
 	char *binding = strdup(location);
 	NTSTATUS status;
+	char *user, *pass;
+
+	if(!credentials || !location) return WERR_INVALID_PARAM;
+
+	user = talloc_strdup(h->mem_ctx, credentials);
+	pass = strchr(user, '%');
+	*pass = '\0'; pass++;
 	
 	ZERO_STRUCTP(mydata);
 	
@@ -90,26 +96,26 @@ static BOOL rpc_open_registry(REG_HANDLE *h, const char *location, BOOL try_full
                     DCERPC_WINREG_UUID,
                     DCERPC_WINREG_VERSION,
                      lp_workgroup(),
-                     "tridge", "samba");
+                     user, pass);
 
-	if(!NT_STATUS_IS_OK(status)) return False;
 
 	h->backend_data = mydata;
 	
-	return True;
+	return ntstatus_to_werror(status);
 }
 
-static REG_KEY *rpc_open_root(REG_HANDLE *h)
+static WERROR rpc_open_root(REG_HANDLE *h, REG_KEY **k)
 {
 	/* There's not really a 'root' key here */
-	return reg_key_new_abs("\\", h, h->backend_data);
+	*k = reg_key_new_abs("\\", h, h->backend_data);
+	return WERR_OK;
 }
 
-static BOOL rpc_close_registry(REG_HANDLE *h)
+static WERROR rpc_close_registry(REG_HANDLE *h)
 {
 	dcerpc_pipe_close(((struct rpc_data *)h->backend_data)->pipe);
 	free(h->backend_data);
-	return True;
+	return WERR_OK;
 }
 
 static struct policy_handle *rpc_get_key_handle(REG_HANDLE *h, const char *path)
@@ -161,12 +167,15 @@ static struct policy_handle *rpc_get_key_handle(REG_HANDLE *h, const char *path)
 	return key_handle;
 }
 
-static REG_KEY *rpc_open_key(REG_HANDLE *h, const char *name)
+static WERROR rpc_open_key(REG_HANDLE *h, const char *name, REG_KEY **key)
 {
-	return reg_key_new_abs(name, h, rpc_get_key_handle(h, name));
+	struct policy_handle *pol = rpc_get_key_handle(h, name);
+	if(!pol) return WERR_DEST_NOT_FOUND;
+	*key = reg_key_new_abs(name, h, pol);
+	return WERR_OK;
 }
 
-static BOOL rpc_fetch_subkeys(REG_KEY *parent, int *count, REG_KEY ***subkeys) 
+static WERROR rpc_fetch_subkeys(REG_KEY *parent, int *count, REG_KEY ***subkeys) 
 {
 	struct winreg_EnumKey r;
 	struct winreg_EnumKeyNameRequest keyname;
@@ -188,12 +197,12 @@ static BOOL rpc_fetch_subkeys(REG_KEY *parent, int *count, REG_KEY ***subkeys)
 
 		*subkeys = ar;
 
-		return True;
+		return WERR_OK;
 	}
 
 	if(!parent->backend_data) parent->backend_data = rpc_get_key_handle(parent->handle, reg_key_get_path(parent));
 
-	if(!parent->backend_data) return False;
+	if(!parent->backend_data) return WERR_GENERAL_FAILURE;
 
 	(*count) = 0;
 	r.in.handle = parent->backend_data;
@@ -219,10 +228,10 @@ static BOOL rpc_fetch_subkeys(REG_KEY *parent, int *count, REG_KEY ***subkeys)
 	}
 
 	*subkeys = ar;
-	return True;
+	return r.out.result;
 }
 
-static BOOL rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values) 
+static WERROR rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values) 
 {
 	struct winreg_EnumValue r;
 	struct winreg_Uint8buf value;
@@ -238,12 +247,12 @@ static BOOL rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values)
 	/* Root */
 	if(parent->backend_data == parent->handle->backend_data) {
 		*values = ar;
-		return True;
+		return WERR_OK;
 	}
 	
 	if(!parent->backend_data) parent->backend_data = rpc_get_key_handle(parent->handle, reg_key_get_path(parent));
 
-	if(!parent->backend_data) return False;
+	if(!parent->backend_data) return WERR_GENERAL_FAILURE;
 
 	r.in.handle = parent->backend_data;
 	r.in.enum_index = 0;
@@ -283,22 +292,48 @@ static BOOL rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values)
 	
 	*values = ar;
 
-	return True;
+	return r.out.result;
 }
 
-static BOOL rpc_add_key(REG_KEY *parent, const char *name)
+static WERROR rpc_add_key(REG_KEY *parent, const char *name)
 {
 	/* FIXME */
-	return False;	
+	return WERR_NOT_SUPPORTED;
 }
 
-static BOOL rpc_del_key(REG_KEY *k)
+static struct policy_handle*get_hive(REG_KEY *k)
 {
-	/* FIXME */
-	return False;
+	int i;
+	struct rpc_data *mydata = k->handle->backend_data;
+	for(i = 0; known_hives[i].name; i++) {
+		if(!strncmp(known_hives[i].name, reg_key_get_path(k)+1, strlen(known_hives[i].name))) 
+		return mydata->hives[i];
+	}
+	return NULL;
 }
 
-static REG_OPS reg_backend_rpc = {
+static WERROR rpc_del_key(REG_KEY *k)
+{
+	NTSTATUS status;
+	struct rpc_data *mydata = k->handle->backend_data;
+	struct winreg_DeleteKey r;
+	char *hivepath;
+	struct policy_handle *hive = get_hive(k);
+
+	printf("first: %s\n", reg_key_get_path(k));
+	hivepath = strchr(reg_key_get_path(k), '\\');
+	hivepath = strchr(hivepath+1, '\\');
+	printf("asfter: %s\n", hivepath+1);
+	
+    r.in.handle = hive;
+    init_winreg_String(&r.in.key, hivepath+1);
+ 
+    status = dcerpc_winreg_DeleteKey(mydata->pipe, k->mem_ctx, &r);
+
+	return r.out.result;
+}
+
+static struct registry_ops reg_backend_rpc = {
 	.name = "rpc",
 	.open_registry = rpc_open_registry,
 	.close_registry = rpc_close_registry,
