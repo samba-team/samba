@@ -59,6 +59,10 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	for (i = 0;i<sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
 
+		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+			continue;
+		}
+
 		if (!sid_active_in_token(&ace->trustee, token)) {
 			continue;
 		}
