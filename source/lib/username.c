@@ -361,7 +361,7 @@ failed with error %s\n", strerror(errno) ));
  	for (i = 0; i < num_groups; i++) {
  		if (gid == groups[i]) {
 			ret = True;
-			DEBUG(0,("user_in_winbind_group_list: user |%s| is in group |%s|\n",
+			DEBUG(10,("user_in_winbind_group_list: user |%s| is in group |%s|\n",
 				user, gname ));
  			break;
  		}
