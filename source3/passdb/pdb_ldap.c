@@ -1404,6 +1404,66 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	return NT_STATUS_OK;
 }	
 
+static BOOL ldapsam_can_pwchange_exop(struct smbldap_state *ldap_state)
+{
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry = NULL;
+	char **values = NULL;
+	char *attrs[] = { "supportedExtension", NULL };
+	int rc, num_result, num_values, i;
+	BOOL result = False;
+
+	rc = smbldap_search(ldap_state, "", LDAP_SCOPE_BASE, "(objectclass=*)",
+			    attrs, 0, &msg);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(3, ("Could not search rootDSE\n"));
+		return False;
+	}
+
+	num_result = ldap_count_entries(ldap_state->ldap_struct, msg);
+
+	if (num_result != 1) {
+		DEBUG(3, ("Expected one rootDSE, got %d\n", num_result));
+		goto done;
+	}
+
+	entry = ldap_first_entry(ldap_state->ldap_struct, msg);
+
+	if (entry == NULL) {
+		DEBUG(3, ("Could not retrieve rootDSE\n"));
+		goto done;
+	}
+
+	values = ldap_get_values(ldap_state->ldap_struct, entry,
+				 "supportedExtension");
+
+	if (values == NULL) {
+		DEBUG(9, ("LDAP Server does not support any extensions\n"));
+		goto done;
+	}
+
+	num_values = ldap_count_values(values);
+
+	if (num_values == 0) {
+		DEBUG(9, ("LDAP Server does not support any extensions\n"));
+		goto done;
+	}
+
+	for (i=0; i<num_values; i++) {
+		if (strcmp(values[i], LDAP_EXOP_MODIFY_PASSWD) == 0)
+			result = True;
+	}
+
+ done:
+	if (values != NULL)
+		ldap_value_free(values);
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	return result;
+}
+
 /********************************************************************
  Do the actual modification - also change a plaintext passord if 
  it it set.
@@ -1467,6 +1527,12 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		char *utf8_password;
 		char *utf8_dn;
 
+		if (!ldapsam_can_pwchange_exop(ldap_state->smbldap_state)) {
+			DEBUG(2, ("ldap password change requested, but LDAP "
+				  "server does not support it -- ignoring\n"));
+			return NT_STATUS_OK;
+		}
+
 		if (push_utf8_allocate(&utf8_password, pdb_get_plaintext_passwd(newpwd)) == (size_t)-1) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1503,6 +1569,15 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 						     bv, NULL, NULL, &retoid, 
 						     &retdata)) != LDAP_SUCCESS) {
 			char *ld_error = NULL;
+
+			if (rc == LDAP_OBJECT_CLASS_VIOLATION) {
+				DEBUG(3, ("Could not set userPassword "
+					  "attribute due to an objectClass "
+					  "violation -- ignoring\n"));
+				ber_bvfree(bv);
+				return NT_STATUS_OK;
+			}
+
 			ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 					&ld_error);
 			DEBUG(0,("ldapsam_modify_entry: LDAP Password could not be changed for user %s: %s\n\t%s\n",
