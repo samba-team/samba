@@ -39,7 +39,7 @@ RCSID("$Id$");
 
 static char *config_file;
 static char *keyfile;
-static int local_flag;
+int local_flag;
 static int ad_flag;
 static int help_flag;
 static int version_flag;
@@ -86,15 +86,13 @@ static int num_args = sizeof(args) / sizeof(args[0]);
 krb5_context context;
 void *kadm_handle;
 
-static SL_cmd *actual_cmds;
-
 int
 help(void *opt, int argc, char **argv)
 {
     if(argc == 0) {
-	sl_help(actual_cmds, 1, argv - 1 /* XXX */);
+	sl_help(commands, 1, argv - 1 /* XXX */);
     } else {
-	SL_cmd *c = sl_match (actual_cmds, argv[0], 0);
+	SL_cmd *c = sl_match (commands, argv[0], 0);
  	if(c == NULL) {
 	    printf ("No such command: %s. "
 		    "Try \"help\" for a list of commands\n",
@@ -214,22 +212,20 @@ main(int argc, char **argv)
 	conf.mask |= KADM5_CONFIG_STASH_FILE;
     }
 
-    if(local_flag){
+    if(local_flag)
 	ret = kadm5_s_init_with_password_ctx(context, 
 					     KADM5_ADMIN_SERVICE,
 					     NULL,
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
-	actual_cmds = commands;
-    } else if (ad_flag) {
+    else if (ad_flag)
 	ret = kadm5_ad_init_with_password(client_name,
 					  NULL,
 					  KADM5_ADMIN_SERVICE,
 					  &conf, 0, 0,
 					  &kadm_handle);
-        actual_cmds = commands + 4; /* XXX */
-    } else if (keytab) {
+    else if (keytab) {
 	if (client_name == NULL)
 	    krb5_errx(context, 1, "keytab mode require principal name");
         ret = kadm5_c_init_with_skey_ctx(context,
@@ -238,16 +234,13 @@ main(int argc, char **argv)
 					 KADM5_ADMIN_SERVICE,
                                          &conf, 0, 0,
                                          &kadm_handle);
-        actual_cmds = commands + 5; /* XXX */
-    } else {
+    } else
 	ret = kadm5_c_init_with_password_ctx(context, 
 					     client_name,
 					     NULL,
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
-	actual_cmds = commands + 4; /* XXX */
-    }
     
     if(ret)
 	krb5_err(context, 1, ret, "kadm5_init_with_password");
@@ -258,11 +251,11 @@ main(int argc, char **argv)
                                 each function, f.i `get' might be
                                 interruptable, but not `create' */
     if (argc != 0) {
-	ret = sl_command (actual_cmds, argc, argv);
+	ret = sl_command (commands, argc, argv);
 	if(ret == -1)
 	    krb5_warnx (context, "unrecognized command: %s", argv[0]);
     } else
-	ret = sl_loop (actual_cmds, "kadmin> ") != 0;
+	ret = sl_loop (commands, "kadmin> ") != 0;
 
     kadm5_destroy(kadm_handle);
     krb5_free_context(context);
