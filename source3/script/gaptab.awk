@@ -23,9 +23,9 @@ function tonum(str)
 function fmt(val)
 {
   if (f++ % 8 == 0)
-    { printf ("\n  '\\x%02x',", val); }
+    { printf ("\n  0x%02x,", val); }
   else
-    { printf (" '\\x%02x',", val); }
+    { printf (" 0x%02x,", val); }
 }
 
 {
