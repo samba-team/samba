@@ -290,7 +290,8 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 						  null_data_blob, 
 						  unwrapped_out);
 		}
-		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(nt_status)) {
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
+		    && (!NT_STATUS_IS_OK(nt_status))) {
 			DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed: %s\n", 
 				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
 				gensec_end(&spnego_state->sub_sec_security);
@@ -412,7 +413,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 
 
 static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
-			       const DATA_BLOB in, DATA_BLOB *out) 
+				     const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);

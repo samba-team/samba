@@ -262,6 +262,17 @@ const char *gensec_get_name_by_authtype(uint8_t authtype)
 }
 	
 
+const char *gensec_get_name_by_oid(const char *oid) 
+{
+	const struct gensec_security_ops *ops;
+	ops = gensec_security_by_oid(oid);
+	if (ops) {
+		return ops->name;
+	}
+	return NULL;
+}
+	
+
 /** 
  * Start a GENSEC sub-mechanism by OID, used in SPNEGO
  *

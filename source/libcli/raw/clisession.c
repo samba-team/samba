@@ -379,6 +379,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 	union smb_sesssetup s2;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
+	const char *chosen_oid;
 
 	s2.generic.level = RAW_SESSSETUP_SPNEGO;
 	s2.spnego.in.bufsize = ~0;
@@ -429,21 +430,25 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 		goto done;
 	}
 
-	status = gensec_start_mech_by_oid(session->gensec, OID_SPNEGO);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
-			  nt_errstr(status)));
-		goto done;
+	if (session->transport->negotiate.secblob.length) {
+		chosen_oid = OID_SPNEGO;
+	} else {
+		/* without a sec blob, means raw NTLMSSP */
+		chosen_oid = OID_NTLMSSP;
 	}
 
+	status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism %s: %s\n",
+			  gensec_get_name_by_oid(chosen_oid), nt_errstr(status)));
+		goto done;
+	}
+	
 	status = gensec_update(session->gensec, mem_ctx,
-			       session->transport->negotiate.secblob,
-			       &s2.spnego.in.secblob);
+				       session->transport->negotiate.secblob,
+				       &s2.spnego.in.secblob);
 
 	while(1) {
-		if (NT_STATUS_IS_OK(status) && s2.spnego.in.secblob.length == 0) {
-			break;
-		}
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
 			break;
 		}
@@ -455,6 +460,10 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 			smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
 		}
 		
+		if (NT_STATUS_IS_OK(status) && s2.spnego.in.secblob.length == 0) {
+			break;
+		}
+
 		session->vuid = s2.spnego.out.vuid;
 		status = smb_raw_session_setup(session, mem_ctx, &s2);
 		session->vuid = UID_FIELD_INVALID;
@@ -483,7 +492,7 @@ done:
 		parms->generic.out.lanman = s2.spnego.out.lanman;
 		parms->generic.out.domain = s2.spnego.out.domain;
 	} else {
-		DEBUG(1, ("Failed to login with SPNEGO: %s\n", nt_errstr(status)));
+		DEBUG(1, ("Failed to login with %s: %s\n", gensec_get_name_by_oid(chosen_oid), nt_errstr(status)));
 		return status;
 	}
 
