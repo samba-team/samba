@@ -35,6 +35,7 @@ flags can have:
   CLISTR_TERMINATE means include the null termination
   CLISTR_CONVERT   means convert from unix to dos codepage
   CLISTR_UPPER     means uppercase in the destination
+  CLISTR_ASCII     use ascii even with unicode servers
 dest_len is the maximum length allowed in the destination. If dest_len
 is -1 then no maxiumum is used
 ****************************************************************************/
@@ -47,14 +48,14 @@ int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int 
 		dest_len = sizeof(pstring);
 	}
 
-	if (clistr_align(cli, PTR_DIFF(dest, cli->outbuf))) {
+	if (!(flags & CLISTR_ASCII) && clistr_align(cli, PTR_DIFF(dest, cli->outbuf))) {
 		*(char *)dest = 0;
 		dest++;
 		dest_len--;
 		len++;
 	}
 
-	if (!cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
+	if ((flags & CLISTR_ASCII) || !cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
 		/* the server doesn't want unicode */
 		safe_strcpy(dest, src, dest_len);
 		len = strlen(dest);
@@ -90,9 +91,9 @@ int clistr_push_size(struct cli_state *cli, void *dest, char *src, int dest_len,
 {
 	int len = strlen(src);
 	if (flags & CLISTR_TERMINATE) len++;
-	if (cli_use_unicode && (cli->capabilities & CAP_UNICODE)) len *= 2;
+	if (!(flags & CLISTR_ASCII) && cli_use_unicode && (cli->capabilities & CAP_UNICODE)) len *= 2;
 
-	if (dest && clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
+	if (!(flags & CLISTR_ASCII) && dest && clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
 		len++;
 	}
 
