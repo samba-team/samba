@@ -139,6 +139,7 @@ char *smbw_getshared(const char *name)
  failed:
 	DEBUG(0,("smbw: shared variables corrupt (%s)\n", strerror(errno)));
 	exit(1);
+	return NULL;
 }
 
 
@@ -185,9 +186,14 @@ set an env variable - some systems don't have this
 int smbw_setenv(const char *name, const char *value)
 {
 	pstring s;
+	char *p;
 
 	slprintf(s,sizeof(s)-1,"%s=%s", name, value);
 
-	return putenv(s);
+	p = strdup(s);
+
+	if (p) p = putenv(p);
+
+	return p;
 }
 
