@@ -186,6 +186,11 @@ Set the form given by the dictionary argument.
 	{ "deleteform", spoolss_deleteform, METH_VARARGS | METH_KEYWORDS,
 	  "Delete a form" },
 
+        /* Job related methods */
+
+        { "enumjobs", spoolss_enumjobs, METH_VARARGS | METH_KEYWORDS,
+          "Enumerate jobs" },
+
 	{ NULL }
 
 };

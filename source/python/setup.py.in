@@ -96,6 +96,8 @@ setup(
                          samba_srcdir + "python/py_spoolss_printers_conv.c",
                          samba_srcdir + "python/py_spoolss_ports.c",
                          samba_srcdir + "python/py_spoolss_ports_conv.c",
+                         samba_srcdir + "python/py_spoolss_jobs.c",
+                         samba_srcdir + "python/py_spoolss_jobs_conv.c",
                          ],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
