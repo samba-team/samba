@@ -850,11 +850,11 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    ac_cv_shlib_works=no
    # try building a trivial shared library
    if test "$PICSUFFIX" = "po"; then
-     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
+     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/build/tests/shlib.c &&
        $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
        ac_cv_shlib_works=yes
    else
-     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c &&
+     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.$PICSUFFIX ${srcdir-.}/build/tests/shlib.c &&
        mv shlib.$PICSUFFIX shlib.po &&
        $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
        ac_cv_shlib_works=yes
@@ -1239,20 +1239,20 @@ if test x"$samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT" = x"yes"; then
 fi
 
 AC_MSG_CHECKING([for test routines])
-AC_TRY_RUN([#include "${srcdir-.}/tests/trivial.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
            AC_MSG_RESULT(yes),
 	   AC_MSG_ERROR([cant find test code. Aborting config]),
 	   AC_MSG_WARN([cannot run when cross-compiling]))
 
 AC_CACHE_CHECK([for ftruncate extend],samba_cv_HAVE_FTRUNCATE_EXTEND,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/ftruncate.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/ftruncate.c"],
            samba_cv_HAVE_FTRUNCATE_EXTEND=yes,samba_cv_HAVE_FTRUNCATE_EXTEND=no,samba_cv_HAVE_FTRUNCATE_EXTEND=cross)])
 if test x"$samba_cv_HAVE_FTRUNCATE_EXTEND" = x"yes"; then
     AC_DEFINE(HAVE_FTRUNCATE_EXTEND,1,[Truncate extend])
 fi
 
 AC_CACHE_CHECK([for AF_LOCAL socket support], samba_cv_HAVE_WORKING_AF_LOCAL, [
-AC_TRY_RUN([#include "${srcdir-.}/tests/unixsock.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/unixsock.c"],
 	   samba_cv_HAVE_WORKING_AF_LOCAL=yes,
 	   samba_cv_HAVE_WORKING_AF_LOCAL=no,
 	   samba_cv_HAVE_WORKING_AF_LOCAL=cross)])
@@ -1262,7 +1262,7 @@ then
 fi
 
 AC_CACHE_CHECK([for broken getgroups],samba_cv_HAVE_BROKEN_GETGROUPS,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/getgroups.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/getgroups.c"],
            samba_cv_HAVE_BROKEN_GETGROUPS=yes,samba_cv_HAVE_BROKEN_GETGROUPS=no,samba_cv_HAVE_BROKEN_GETGROUPS=cross)])
 if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_GETGROUPS,1,[Whether getgroups is broken])
@@ -1439,28 +1439,28 @@ fi
 
 
 AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/shared_mmap.c"],
            samba_cv_HAVE_MMAP=yes,samba_cv_HAVE_MMAP=no,samba_cv_HAVE_MMAP=cross)])
 if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
     AC_DEFINE(HAVE_MMAP,1,[Whether mmap works])
 fi
 
 AC_CACHE_CHECK([for ftruncate needs root],samba_cv_FTRUNCATE_NEEDS_ROOT,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/ftruncroot.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/ftruncroot.c"],
            samba_cv_FTRUNCATE_NEEDS_ROOT=yes,samba_cv_FTRUNCATE_NEEDS_ROOT=no,samba_cv_FTRUNCATE_NEEDS_ROOT=cross)])
 if test x"$samba_cv_FTRUNCATE_NEEDS_ROOT" = x"yes"; then
     AC_DEFINE(FTRUNCATE_NEEDS_ROOT,1,[Whether ftruncate() needs root])
 fi
 
 AC_CACHE_CHECK([for fcntl locking],samba_cv_HAVE_FCNTL_LOCK,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/fcntl_lock.c"],
            samba_cv_HAVE_FCNTL_LOCK=yes,samba_cv_HAVE_FCNTL_LOCK=no,samba_cv_HAVE_FCNTL_LOCK=cross)])
 if test x"$samba_cv_HAVE_FCNTL_LOCK" = x"yes"; then
     AC_DEFINE(HAVE_FCNTL_LOCK,1,[Whether fcntl locking is available])
 fi
 
 AC_CACHE_CHECK([for broken (glibc2.1/x86) 64 bit fcntl locking],samba_cv_HAVE_BROKEN_FCNTL64_LOCKS,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock64.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/fcntl_lock64.c"],
            samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=yes,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=no,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=cross)])
 if test x"$samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_FCNTL64_LOCKS,1,[Whether fcntl64 locks are broken])
@@ -1571,7 +1571,7 @@ if test x"$with_pam_for_crypt" != x"yes"; then
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
 crypt_LIBS="$LIBS"
 LIBS="$AUTHLIBS $LIBS"
-AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/crypttest.c"],
 	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)
 LIBS="$crypt_LIBS"])
 if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
