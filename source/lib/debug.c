@@ -123,14 +123,12 @@ int sig_usr2( void )
   DEBUG( 0, ( "Got SIGUSR2; set debug level to %d.\n", DEBUGLEVEL ) );
 
   BlockSignals( False, SIGUSR2 );
+  CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 
-#ifndef DONT_REINSTALL_SIG
-  signal( SIGUSR2, SIGNAL_CAST sig_usr2 );
-#endif
   return( 0 );
   } /* sig_usr2 */
-#endif /* SIGUSR1 */
-   
+#endif /* SIGUSR2 */
+
 #if defined(SIGUSR1)
 /* ************************************************************************** **
  * catch a sigusr1 - increase the debug log level. 
@@ -148,9 +146,8 @@ int sig_usr1( void )
   DEBUG( 0, ( "Got SIGUSR1; set debug level to %d.\n", DEBUGLEVEL ) );
 
   BlockSignals( False, SIGUSR1 );
-#ifndef DONT_REINSTALL_SIG
-  signal( SIGUSR1, SIGNAL_CAST sig_usr1 );
-#endif
+  CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+
   return( 0 );
   } /* sig_usr1 */
 #endif /* SIGUSR1 */
@@ -208,8 +205,7 @@ void reopen_logs( void )
         dbf = fopen( debugf, "a" );
       else
         dbf = fopen( debugf, "w" );
-      /*
-       * Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
+      /* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
        * to fix problem where smbd's that generate less
        * than 100 messages keep growing the log.
        */
@@ -247,7 +243,7 @@ static void check_log_size( void )
   int         maxlog;
   struct stat st;
 
-  if( debug_count++ < 100 || getuid() != 0)
+  if( debug_count++ < 100 || getuid() != 0 )
     return;
 
   maxlog = lp_max_log_size() * 1024;
