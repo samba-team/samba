@@ -19,6 +19,8 @@ ADD_OBJ_FILES = \
 		lib/ldb/ldb_tdb/ldb_index.o \
 		lib/ldb/ldb_tdb/ldb_match.o \
 		lib/ldb/ldb_tdb/ldb_cache.o
+REQUIRED_SUBSYSTEMS = \
+		LIBTDB
 # End MODULE libldb_tdb
 ################################################
 

@@ -51,7 +51,7 @@ static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
  Lock a chain with timeout (in seconds).
 ****************************************************************************/
 
-static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout, int rw_type)
+static int tdb_chainlock_with_timeout_internal(TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout, int rw_type)
 {
 	/* Allow tdb_chainlock to be interrupted by an alarm. */
 	int ret;
@@ -72,8 +72,8 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 		alarm(0);
 		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 		if (gotalarm) {
-			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
-				timeout, key.dptr, tdb->name ));
+			tdb_debug(tdb, 0, "tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
+				timeout, key.dptr, tdb->name );
 			/* TODO: If we time out waiting for a lock, it might
 			 * be nice to use F_GETLK to get the pid of the
 			 * process currently holding the lock and print that
@@ -89,7 +89,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
  Write lock a chain. Return -1 if timeout or lock failed.
 ****************************************************************************/
 
-int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
+int tdb_chainlock_with_timeout(TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
 {
 	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
 }
@@ -384,7 +384,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldv
  integers and strings.
 ****************************************************************************/
 
-size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
+size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint8 bt;
@@ -452,8 +452,8 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 			}
 			break;
 		default:
-			DEBUG(0,("Unknown tdb_pack format %c in %s\n", 
-				 c, fmt));
+			tdb_debug(tdb, 0,"Unknown tdb_pack format %c in %s\n", 
+				 c, fmt);
 			len = 0;
 			break;
 		}
@@ -467,8 +467,8 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 
 	va_end(ap);
 
-	DEBUG(18,("tdb_pack(%s, %d) -> %d\n", 
-		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
+	tdb_debug(tdb, 18,"tdb_pack(%s, %d) -> %d\n", 
+		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
 	
 	return PTR_DIFF(buf, buf0);
 }
@@ -478,7 +478,7 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
  integers and strings.
 ****************************************************************************/
 
-int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
+int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint8 *bt;
@@ -559,8 +559,8 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 			memcpy(*b, buf+4, *i);
 			break;
 		default:
-			DEBUG(0,("Unknown tdb_unpack format %c in %s\n", 
-				 c, fmt));
+			tdb_debug(tdb, 0, "Unknown tdb_unpack format %c in %s\n", 
+				 c, fmt);
 
 			len = 0;
 			break;
@@ -572,8 +572,8 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 
 	va_end(ap);
 
-	DEBUG(18,("tdb_unpack(%s, %d) -> %d\n", 
-		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
+	tdb_debug(tdb, 18, "tdb_unpack(%s, %d) -> %d\n", 
+		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
 
 	return PTR_DIFF(buf, buf0);
 
@@ -591,22 +591,22 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
  *
  * @return length of the packed representation of the whole structure
  **/
-size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
+size_t tdb_sid_pack(TDB_CONTEXT *tdb, char* pack_buf, int bufsize, DOM_SID* sid)
 {
 	int idx;
 	size_t len = 0;
 	
 	if (!sid || !pack_buf) return -1;
 	
-	len += tdb_pack(pack_buf + len, bufsize - len, "bb", sid->sid_rev_num,
+	len += tdb_pack(tdb, pack_buf + len, bufsize - len, "bb", sid->sid_rev_num,
 	                sid->num_auths);
 	
 	for (idx = 0; idx < 6; idx++) {
-		len += tdb_pack(pack_buf + len, bufsize - len, "b", sid->id_auth[idx]);
+		len += tdb_pack(tdb, pack_buf + len, bufsize - len, "b", sid->id_auth[idx]);
 	}
 	
 	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_pack(pack_buf + len, bufsize - len, "d", sid->sub_auths[idx]);
+		len += tdb_pack(tdb, pack_buf + len, bufsize - len, "d", sid->sub_auths[idx]);
 	}
 	
 	return len;
@@ -622,65 +622,40 @@ size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
  *
  * @return size of structure unpacked from buffer
  **/
-size_t tdb_sid_unpack(char* pack_buf, int bufsize, DOM_SID* sid)
+size_t tdb_sid_unpack(TDB_CONTEXT *tdb, char* pack_buf, int bufsize, DOM_SID* sid)
 {
 	int idx, len = 0;
 	
 	if (!sid || !pack_buf) return -1;
 
-	len += tdb_unpack(pack_buf + len, bufsize - len, "bb",
+	len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "bb",
 	                  &sid->sid_rev_num, &sid->num_auths);
 			  
 	for (idx = 0; idx < 6; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "b", &sid->id_auth[idx]);
+		len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "b", &sid->id_auth[idx]);
 	}
 	
 	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "d", &sid->sub_auths[idx]);
+		len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "d", &sid->sub_auths[idx]);
 	}
 	
 	return len;
 }
 
+
 /****************************************************************************
- Log tdb messages via DEBUG().
+ Print out debug messages.
 ****************************************************************************/
 
-static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
+void tdb_debug(TDB_CONTEXT *tdb, int level, const char *fmt, ...)
 {
 	va_list ap;
-	char *ptr = NULL;
-
-	va_start(ap, format);
-	vasprintf(&ptr, format, ap);
-	va_end(ap);
-	
-	if (!ptr || !*ptr)
+	if (tdb->log_fn == NULL) {
 		return;
-
-	DEBUG(level, ("tdb(%s): %s", tdb->name ? tdb->name : "unnamed", ptr));
-	SAFE_FREE(ptr);
-}
-
-/****************************************************************************
- Like tdb_open() but also setup a logging function that redirects to
- the samba DEBUG() system.
-****************************************************************************/
-
-TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
-			  int open_flags, mode_t mode)
-{
-	TDB_CONTEXT *tdb;
-
-	if (!lp_use_mmap())
-		tdb_flags |= TDB_NOMMAP;
-
-	tdb = tdb_open_ex(name, hash_size, tdb_flags, 
-				    open_flags, mode, tdb_log);
-	if (!tdb)
-		return NULL;
-
-	return tdb;
+	}
+	va_start(ap, fmt);
+	tdb->log_fn(tdb, level, fmt, ap);
+	va_end(ap);
 }
 
 
@@ -715,11 +690,11 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 		/* duplicate key string to ensure null-termination */
 		char *key_str = (char*) strndup(key.dptr, key.dsize);
 		if (!key_str) {
-			DEBUG(0, ("tdb_search_keys: strndup() failed!\n"));
+			tdb_debug(tdb, 0, "tdb_search_keys: strndup() failed!\n");
 			smb_panic("strndup failed!\n");
 		}
-		
-		DEBUG(18, ("checking %s for match to pattern %s\n", key_str, pattern));
+
+		tdb_debug(tdb, 18, "checking %s for match to pattern %s\n", key_str, pattern);
 		
 		next = tdb_nextkey(tdb, key);
 
@@ -732,7 +707,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 			DLIST_ADD_END(list, rec, TDB_LIST_NODE *);
 		
-			DEBUG(18, ("checking %s matched pattern %s\n", key_str, pattern));
+			tdb_debug(tdb, 18, "checking %s matched pattern %s\n", key_str, pattern);
 		} else {
 			free(key.dptr);
 		}
