@@ -64,6 +64,54 @@ typedef char fstring[FSTRING_LEN];
 #define SMB_BIG_UINT unsigned long
 #endif
 
+#ifndef MAXSUBAUTHS
+#define MAXSUBAUTHS 15 /* max sub authorities in a SID */
+#endif
+
+#ifndef uint8
+#define uint8 unsigned char
+#endif 
+
+#if !defined(uint32) && !defined(HAVE_UINT32_FROM_RPC_RPC_H)
+#if (SIZEOF_INT == 4)
+#define uint32 unsigned int
+#elif (SIZEOF_LONG == 4)
+#define uint32 unsigned long
+#elif (SIZEOF_SHORT == 4)
+#define uint32 unsigned short
+#endif
+#endif
+
+#ifndef _DOM_SID
+/* DOM_SID - security id */
+typedef struct sid_info
+{
+  uint8  sid_rev_num;             /* SID revision number */
+  uint8  num_auths;               /* number of sub-authorities */
+  uint8  id_auth[6];              /* Identifier Authority */
+  /*
+   * Note that the values in these uint32's are in *native* byteorder,
+   * not neccessarily little-endian...... JRA.
+   */
+  uint32 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
+
+} DOM_SID;
+#define _DOM_SID
+#endif
+
+/*
+ * The complete list of SIDS belonging to this user.
+ * Created when a vuid is registered.
+ */
+
+#ifndef _NT_USER_TOKEN
+typedef struct _nt_user_token {
+    size_t num_sids;
+    DOM_SID *user_sids;
+} NT_USER_TOKEN;
+#define _NT_USER_TOKEN
+#endif
+
 /* Information from the connection_struct passed to the vfs layer */
 
 struct vfs_connection_struct {
@@ -93,6 +141,7 @@ struct vfs_connection_struct {
     gid_t gid;
     int ngroups;
     gid_t *groups;
+	NT_USER_TOKEN *nt_user_token;
 };
 
 /* Avoid conflict with an AIX include file */

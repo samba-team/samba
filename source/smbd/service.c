@@ -360,65 +360,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->veto_oplock_list = NULL;
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
+	conn->nt_user_token = NULL;
 	
-        conn->vfs_conn = (struct vfs_connection_struct *)
-            malloc(sizeof(struct vfs_connection_struct));
-
-        if (conn->vfs_conn == NULL) {
-            DEBUG(0, ("No memory to create vfs_connection_struct"));
-            return NULL;
-        }
-        
-        ZERO_STRUCTP(conn->vfs_conn);
-
-        /* Copy across relevant data from connection struct */
-        
-        conn->vfs_conn->printer = conn->printer;
-        conn->vfs_conn->ipc = conn->ipc;
-        conn->vfs_conn->read_only = conn->read_only;
-        conn->vfs_conn->admin_user = conn->admin_user;
-
-        pstrcpy(conn->vfs_conn->dirpath, conn->dirpath);
-        pstrcpy(conn->vfs_conn->connectpath, conn->connectpath);
-        pstrcpy(conn->vfs_conn->origpath, conn->origpath);
-        
-        pstrcpy(conn->vfs_conn->service, service);
-        pstrcpy(conn->vfs_conn->user, conn->user);
-        
-        conn->vfs_conn->uid = conn->uid;
-        conn->vfs_conn->gid = conn->gid;
-        conn->vfs_conn->ngroups = conn->ngroups;
-	if (conn->vfs_conn->ngroups != 0) {
-		conn->vfs_conn->groups = (gid_t *)memdup(conn->groups, 
-							 conn->ngroups * sizeof(gid_t));
-	} else {
-		conn->vfs_conn->groups = NULL;
-	}
-
-	/* Initialise VFS function pointers */
-
-	if (*lp_vfsobj(SNUM(conn))) {
-
-#ifdef HAVE_LIBDL
-
-	    /* Loadable object file */
-
-	    if (!vfs_init_custom(conn)) {
-		return NULL;
-	    }
-#else
-	    DEBUG(0, ("No libdl present - cannot use VFS objects\n"));
-	    conn_free(conn);
-	    return NULL;
-#endif
-
-	} else {
-
-	    /* Normal share - initialise with disk access functions */
-
-	    vfs_init_default(conn);
-	}
-
 	/*
 	 * If force user is true, then store the
 	 * given userid and also the primary groupid
@@ -529,7 +472,73 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			claim_connection(conn,"",
 					 MAXSTATUS,False);
 	} /* IS_IPC */
-	
+
+	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, conn->ngroups, conn->groups);
+
+	/*
+	 * Now initialize the vfs layer.
+	 */
+
+	conn->vfs_conn = (struct vfs_connection_struct *)
+		malloc(sizeof(struct vfs_connection_struct));
+
+	if (conn->vfs_conn == NULL) {
+		DEBUG(0, ("No memory to create vfs_connection_struct"));
+		return NULL;
+	}
+        
+	ZERO_STRUCTP(conn->vfs_conn);
+
+	/* Copy across relevant data from connection struct */
+        
+	conn->vfs_conn->printer = conn->printer;
+	conn->vfs_conn->ipc = conn->ipc;
+	conn->vfs_conn->read_only = conn->read_only;
+	conn->vfs_conn->admin_user = conn->admin_user;
+
+	pstrcpy(conn->vfs_conn->dirpath, conn->dirpath);
+	pstrcpy(conn->vfs_conn->connectpath, conn->connectpath);
+	pstrcpy(conn->vfs_conn->origpath, conn->origpath);
+        
+	pstrcpy(conn->vfs_conn->service, service);
+	pstrcpy(conn->vfs_conn->user, conn->user);
+        
+	conn->vfs_conn->uid = conn->uid;
+	conn->vfs_conn->gid = conn->gid;
+	conn->vfs_conn->ngroups = conn->ngroups;
+	if (conn->vfs_conn->ngroups != 0) {
+		conn->vfs_conn->groups = (gid_t *)memdup(conn->groups, 
+							 conn->ngroups * sizeof(gid_t));
+	} else {
+		conn->vfs_conn->groups = NULL;
+	}
+
+	conn->vfs_conn->nt_user_token = dup_nt_token(conn->nt_user_token);
+
+	/* Initialise VFS function pointers */
+
+	if (*lp_vfsobj(SNUM(conn))) {
+
+#ifdef HAVE_LIBDL
+
+	    /* Loadable object file */
+
+	    if (!vfs_init_custom(conn)) {
+			return NULL;
+	    }
+#else
+	    DEBUG(0, ("No libdl present - cannot use VFS objects\n"));
+	    conn_free(conn);
+	    return NULL;
+#endif
+
+	} else {
+
+	    /* Normal share - initialise with disk access functions */
+
+	    vfs_init_default(conn);
+	}
+
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(SNUM(conn))) {
 		pstring cmd;
@@ -630,13 +639,12 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	/* Invoke VFS make connection hook */
 
-        if (conn->vfs_ops.connect) {
-            if (conn->vfs_ops.connect(conn->vfs_conn, service, user) < 0) {
-                return NULL;
-            }
-        }
+	if (conn->vfs_ops.connect) {
+		if (conn->vfs_ops.connect(conn->vfs_conn, service, user) < 0)
+			return NULL;
+	}
             
-        return(conn);
+	return(conn);
 }
 
 
