@@ -753,6 +753,8 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 				sizeof(struct acct_info) * 
                                 groups.num_sam_entries);
 			
+			free(groups.sam_entries);
+
 			groups.sam_entries = NULL;
 			groups.num_sam_entries = 0;
 		}
@@ -808,6 +810,11 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 			extra_data[extra_data_len++] = ',';
 		}
 	}
+
+	/* Free group data */
+
+	if (groups.sam_entries)
+		free(groups.sam_entries);
 
 	/* Assign extra_data fields in response structure */
 
