@@ -214,6 +214,19 @@ sinclude(lib/registry/config.m4)
 sinclude(torture/config.m4)
 sinclude(scripting/config.m4)
 
+ALLLIBS_LIBS="$LIBS"
+ALLLIBS_CFLAGS="$CFLAGS"
+ALLLIBS_CPPFLAGS="$CPPFLAGS"
+ALLLIBS_LDFLAGS="$LDFLAGS"
+
+SMB_EXT_LIB_ENABLE(ALLLIBS,YES)
+
+SMB_EXT_LIB(ALLLIBS,
+		[${ALLLIBS_LIBS}],
+		[${ALLLIBS_CFLAGS}],
+		[${ALLLIBS_CPPFLAGS}],
+		[${ALLLIBS_LDFLAGS}])
+
 SMB_BINARY(smbd, [ALL], [SBIN],
 	[smbd/server.o
 	smbd/process.o
@@ -221,39 +234,39 @@ SMB_BINARY(smbd, [ALL], [SBIN],
 	smbd/build_options.o
 	smbd/rewrite.o],
 	[],
-	[PROCESS_MODEL SMB AUTH PASSDB NTVFS DCERPC LIBBASIC CONFIG LIBCMDLINE LIBPOPT LIBSMB REGISTRY])
+	[PROCESS_MODEL SMB AUTH PASSDB NTVFS DCERPC LIBBASIC CONFIG LIBCMDLINE LIBSMB REGISTRY])
 
 SMB_BINARY(smbclient, [ALL], [BIN], 
 	[client/client.o
 	client/clitar.o
 	libcli/raw/clirewrite.o],
 	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 SMB_BINARY(ndrdump, [ALL], [BIN],
 	[utils/ndrdump.o
 	utils/rewrite.o],
 	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 SMB_BINARY(gentest, [ALL], [BIN],
 	[torture/gentest.o
 	torture/torture_util.o
 	libcli/raw/clirewrite.o],
 	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 SMB_BINARY(masktest, [ALL], [BIN], 
 	[torture/masktest.o
 	libcli/raw/clirewrite.o],
 	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 SMB_BINARY(locktest, [ALL], [BIN],
 	[torture/locktest.o
 	libcli/raw/clirewrite.o],
 	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 

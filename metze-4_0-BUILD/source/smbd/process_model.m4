@@ -12,6 +12,7 @@ AC_ARG_WITH(pthreads,
 	yes)
 		AC_MSG_RESULT(yes)
 		SMB_MODULE_DEFAULT(process_model_thread,STATIC)
+		SMB_EXT_LIB_ENABLE(PTHREAD,YES)
 	;;
 	*)
 		AC_MSG_RESULT(no)
@@ -20,7 +21,9 @@ AC_ARG_WITH(pthreads,
 AC_MSG_RESULT(no)
 )
 
+SMB_EXT_LIB(PTHREAD,[-lpthread])
+
 SMB_MODULE(process_model_thread,PROCESS_MODEL,NOT,
-		[smbd/process_thread.o],[],[-lpthread])
+		[smbd/process_thread.o],[],[PTHREAD])
 
 SMB_SUBSYSTEM(PROCESS_MODEL,smbd/process_model.o)

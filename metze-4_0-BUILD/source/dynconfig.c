@@ -40,19 +40,7 @@
  * table?  There's kind of a chicken-and-egg situation there...
  **/
 
-#define SBINDIR ""
-#define BINDIR ""
-#define CONFIGFILE ""
-#define LOGFILEBASE ""
-#define LMHOSTSFILE ""
-#define LIBDIR ""
-#define SHLIBEXT ""
-#define LOCKDIR ""
-#define PIDDIR ""
-#define SMB_PASSWD_FILE ""
-#define PRIVATE_DIR ""
-
-char const *dyn_SBINDIR = SBINDIR,
+const char *dyn_SBINDIR = SBINDIR,
 	*dyn_BINDIR = BINDIR;
 
 pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/

@@ -6,6 +6,29 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+sub _generate_ext_libs($)
+{
+	my $CTX = shift;
+
+	#
+	# loop over all binaries
+	#
+	foreach my $key (sort keys %{$CTX->{DEPEND}{EXT_LIBS}}) {
+		my $NAME = $CTX->{INPUT}{EXT_LIBS}{$key}{NAME};
+
+		#
+		# set the lists
+		#
+		$CTX->{OUTPUT}{EXT_LIBS}{$key}{NAME} = $NAME;
+		@{$CTX->{OUTPUT}{EXT_LIBS}{$key}{LIBS}} = @{$CTX->{DEPEND}{EXT_LIBS}{$key}{LIBS}};
+		@{$CTX->{OUTPUT}{EXT_LIBS}{$key}{CFLAGS}} = @{$CTX->{DEPEND}{EXT_LIBS}{$key}{CFLAGS}};
+		@{$CTX->{OUTPUT}{EXT_LIBS}{$key}{CPPFLAGS}} = @{$CTX->{DEPEND}{EXT_LIBS}{$key}{CPPFLAGS}};
+		@{$CTX->{OUTPUT}{EXT_LIBS}{$key}{LDFLAGS}} = @{$CTX->{DEPEND}{EXT_LIBS}{$key}{LDFLAGS}};
+	}
+
+	return;	
+}
+
 sub _generate_subsystems($)
 {
 	my $CTX = shift;
@@ -16,7 +39,6 @@ sub _generate_subsystems($)
 	foreach my $key (sort keys %{$CTX->{DEPEND}{SUBSYSTEMS}}) {
 		my $NAME = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
 		my @OBJ_LIST = @{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{OBJ_LIST}};
-		my @LIB_LIST = ();
 
 		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(SUBSYSTEM_$key\_OBJS)");
 
@@ -25,7 +47,6 @@ sub _generate_subsystems($)
 		#
 		$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{NAME} = $NAME;
 		@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{OBJ_LIST}} = @OBJ_LIST;
-		@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{LIB_LIST}} = @LIB_LIST;
 	}
 
 	return;	
@@ -41,7 +62,6 @@ sub _generate_shared_modules($)
 	foreach my $key (sort keys %{$CTX->{DEPEND}{SHARED_MODULES}}) {
 		my $NAME = $CTX->{INPUT}{MODULES}{$key}{NAME};
 		my @OBJ_LIST = ();
-		my @LIB_LIST = ();
 		#
 		my $MODULE = $NAME.".so";
 		my @DEPEND_LIST = ("\$(MODULE_$NAME\_OBJS)");
@@ -55,12 +75,19 @@ sub _generate_shared_modules($)
 		push(@OBJ_LIST,@{$CTX->{INPUT}{MODULES}{$key}{ADD_OBJ_FILES}});
 
 		foreach my $elem (@{$CTX->{DEPEND}{SHARED_MODULES}{$key}{SUBSYSTEMS_LIST}}) {
+			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
+				die("Shared Module[$NAME] depends on unkown Subsystem[$elem]!\n");
+			}
 			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
 			push(@LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
 		}
 
 		foreach my $elem (@{$CTX->{DEPEND}{SHARED_MODULES}{$key}{LIBRARIES_LIST}}) {
-			#push(@LINK_FLAGS,"\$(EXTLIB_$elem\_FLAGS");
+			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
+				die("Share Module[$NAME] depends on unkown External Library[$elem]!\n");
+			}
+			push(@LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
+			push(@LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
 		}
 
 		#
@@ -68,7 +95,6 @@ sub _generate_shared_modules($)
 		#
 		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME} = $NAME;
 		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}} = @OBJ_LIST;
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LIB_LIST}} = @LIB_LIST;
 		#
 		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{MODULE} = $MODULE;
 		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{DEPEND_LIST}} = @DEPEND_LIST;
@@ -94,7 +120,6 @@ sub _generate_binaries($)
 	foreach my $key (sort keys %{$CTX->{DEPEND}{BINARIES}}) {
 		my $NAME = $CTX->{INPUT}{BINARIES}{$key}{NAME};
 		my @OBJ_LIST = @{$CTX->{INPUT}{BINARIES}{$key}{OBJ_FILES}};
-		my @LIB_LIST = ();
 		#
 		my $BINARY = $NAME;
 		my @DEPEND_LIST = ("\$(BINARY_$NAME\_OBJS)");
@@ -105,12 +130,19 @@ sub _generate_binaries($)
 		push(@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}},"bin/$BINARY");
 
 		foreach my $elem (@{$CTX->{DEPEND}{BINARIES}{$key}{SUBSYSTEMS_LIST}}) {
+			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
+				die("Binary[$NAME] depends on unkown Subsystem[$elem]!\n");
+			}
 			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
 			push(@LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
 		}
 
 		foreach my $elem (@{$CTX->{DEPEND}{BINARIES}{$key}{LIBRARIES_LIST}}) {
-			#push(@LINK_FLAGS,"\$(EXTLIB_$elem\_FLAGS");
+			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
+				die("Binary[$NAME] depends on unkown External Library[$elem]!\n");
+			}
+			push(@LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
+			push(@LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
 		}
 
 		#
@@ -118,7 +150,6 @@ sub _generate_binaries($)
 		#
 		$CTX->{OUTPUT}{BINARIES}{$key}{NAME} = $NAME;
 		@{$CTX->{OUTPUT}{BINARIES}{$key}{OBJ_LIST}} = @OBJ_LIST;
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{LIB_LIST}} = @LIB_LIST;
 		#
 		$CTX->{OUTPUT}{BINARIES}{$key}{BINARY} = $BINARY;
 		@{$CTX->{OUTPUT}{BINARIES}{$key}{DEPEND_LIST}} = @DEPEND_LIST;
@@ -145,6 +176,8 @@ sub create_output($)
 	$CTX->{OUTPUT}{TARGETS}{ALL} = ();
 	$CTX->{OUTPUT}{TARGETS}{ALL}{TARGET} = "all";
 	@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}} = ();
+
+	_generate_ext_libs($CTX);
 
 	_generate_subsystems($CTX);
 

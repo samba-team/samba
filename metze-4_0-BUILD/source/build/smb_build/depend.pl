@@ -28,7 +28,7 @@ sub _do_calc_subsystem_list($$)
 	#
 	my $i = 0;
 	my $count = $#SUBSYSTEMS_LIST;
-	for (;$i<$count;$i++) {			
+	for (;$i<=$count;$i++) {			
 		#
 		# see if the current subsystem depends on other not listed subsystems
 		#
@@ -236,6 +236,41 @@ sub _do_depend_subsystems($)
 }
 
 ###########################################################
+# This function creates the dependencies for ext libs
+# _do_depend_ext_libs($SMB_BUILD_CTX)
+#
+# $SMB_BUILD_CTX -	the global SMB_BUILD context
+sub _do_depend_ext_libs($)
+{
+	my $CTX = shift;
+
+	#
+	# loop over all ext libs
+	#
+	foreach my $key (sort keys %{$CTX->{INPUT}{EXT_LIBS}}) {
+		my $name = $CTX->{INPUT}{EXT_LIBS}{$key}{NAME};
+
+		#
+		# if it's not a shared module skip it
+		#
+		if ($CTX->{INPUT}{EXT_LIBS}{$key}{ENABLE} ne "YES") {
+			next;
+		}
+
+		#
+		# set the lists
+		#
+		$CTX->{DEPEND}{EXT_LIBS}{$key}{NAME} = $name;
+		@{$CTX->{DEPEND}{EXT_LIBS}{$key}{LIBS}} = @{$CTX->{INPUT}{EXT_LIBS}{$key}{LIBS}};
+		@{$CTX->{DEPEND}{EXT_LIBS}{$key}{CFLAGS}} = @{$CTX->{INPUT}{EXT_LIBS}{$key}{CFLAGS}};
+		@{$CTX->{DEPEND}{EXT_LIBS}{$key}{CPPFLAGS}} = @{$CTX->{INPUT}{EXT_LIBS}{$key}{CPPFLAGS}};
+		@{$CTX->{DEPEND}{EXT_LIBS}{$key}{LDFLAGS}} = @{$CTX->{INPUT}{EXT_LIBS}{$key}{LDFLAGS}};
+	}
+
+	return;
+}
+
+###########################################################
 # This function creates the dependencies for shared modules
 # _do_depend_shared_modules($SMB_BUILD_CTX)
 #
@@ -418,6 +453,8 @@ sub _do_depend_binaries($)
 sub create_depend($)
 {
 	my $CTX = shift;
+
+	_do_depend_ext_libs($CTX);
 
 	_do_depend_subsystems($CTX);
 

@@ -29,6 +29,43 @@ exec_prefix=\@exec_prefix\@
 VPATH=\@srcdir\@
 srcdir=\@srcdir\@
 builddir=\@builddir\@
+
+BASEDIR= \@prefix\@
+BINDIR = \@bindir\@
+SBINDIR = \@sbindir\@
+LIBDIR = \@libdir\@
+CONFIGDIR = \@configdir\@
+VARDIR = \@localstatedir\@
+
+# The permissions to give the executables
+INSTALLPERMS = 0755
+
+# set these to where to find various files
+# These can be overridden by command line switches (see smbd(8))
+# or in smb.conf (see smb.conf(5))
+LOGFILEBASE = \@logfilebase\@
+CONFIGFILE = \$(CONFIGDIR)/smb.conf
+LMHOSTSFILE = \$(CONFIGDIR)/lmhosts
+
+# This is where smbpasswd et al go
+PRIVATEDIR = \@privatedir\@
+SMB_PASSWD_FILE = \$(PRIVATEDIR)/smbpasswd
+
+# the directory where lock files go
+LOCKDIR = \@lockdir\@
+
+# the directory where pid files go
+PIDDIR = \@piddir\@
+
+PASSWD_FLAGS = -DSMB_PASSWD_FILE=\\\"\$(SMB_PASSWD_FILE)\\\" -DPRIVATE_DIR=\\\"\$(PRIVATEDIR)\\\"
+PATH_FLAGS1 = -DCONFIGFILE=\\\"\$(CONFIGFILE)\\\"  -DSBINDIR=\\\"\$(SBINDIR)\\\"
+PATH_FLAGS2 = \$(PATH_FLAGS1) -DBINDIR=\\\"\$(BINDIR)\\\" 
+PATH_FLAGS3 = \$(PATH_FLAGS2) -DLMHOSTSFILE=\\\"\$(LMHOSTSFILE)\\\" 
+PATH_FLAGS4 = \$(PATH_FLAGS3) -DLOCKDIR=\\\"\$(LOCKDIR)\\\" -DPIDDIR=\\\"\$(PIDDIR)\\\"
+PATH_FLAGS5 = \$(PATH_FLAGS4) -DLIBDIR=\\\"\$(LIBDIR)\\\" \\
+	      -DLOGFILEBASE=\\\"\$(LOGFILEBASE)\\\" -DSHLIBEXT=\\\"\@SHLIBEXT\@\\\"
+PATH_FLAGS6 = \$(PATH_FLAGS5) -DCONFIGDIR=\\\"\$(CONFIGDIR)\\\"
+PATH_FLAGS = \$(PATH_FLAGS6) \$(PASSWD_FLAGS)
 ";
 	return $output;
 }
@@ -89,7 +126,16 @@ idl_full: build/pidl/idl.pm
 idl: build/pidl/idl.pm
 	\@CPP=\"\@CPP\@\" script/build_idl.sh
 
+build/pidl/idl.pm: build/pidl/idl.yp
+	-yapp -s build/pidl/idl.yp
+
+pch: include/includes.h.gch
+
+pch_clean:
+	-rm -f include/includes.h.gch
+
 basics: idl proto_exists
+
 ";
 	return $output;
 }
@@ -112,6 +158,14 @@ bin/.dummy:
 	\@if (: >> \$\@ || : > \$\@) >/dev/null 2>&1; then :; else \\
 	  dir=bin \$(MAKEDIR); fi
 	\@: >> \$\@ || : > \$\@
+
+dynconfig.o: dynconfig.c Makefile
+	\@if (: >> \$\@ || : > \$\@) >/dev/null 2>&1; then rm -f \$\@; else \\
+	 dir=`echo \$\@ | sed 's,/[^/]*\$\$,,;s,^\$\$,.,'` \$(MAKEDIR); fi
+	\@echo Compiling \$*.c
+	\@\$(CC) \$(CC_FLAGS) \$(PATH_FLAGS) -c \$< -o \$\@
+\@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
+
 ";
 	return $output;
 }
@@ -191,35 +245,30 @@ sub array2oneline($)
 }
 
 ###########################################################
-# This function creates a object file
-# and library list
+# This function creates a object file list
 #
-# $output = _prepare_var_obj_and_lib_list($var, $var_ctx)
+# $output = _prepare_var_obj_list($var, $var_ctx)
 #
 # $var_ctx -		the subsystem context
 #
 # $var_ctx->{NAME} 	-	the <var> name
 # $var_ctx->{OBJ_LIST} 	-	the list of objectfiles which sould be linked to this <var>
-# $var_ctx->{LIB_LIST} 	-	the list of libraries which sould be linked to this <var>
 #
 # $output -		the resulting output buffer
-sub _prepare_var_obj_and_lib_list($$)
+sub _prepare_var_obj_list($$)
 {
 	my $var = shift;
 	my $ctx = shift;
 	my $tmpobjlist;
-	my $tmpliblist;
 	my $output;
 
 	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
-	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
 
 	$output = "
 ###################################
-# Start $var $ctx->{NAME} OBJ AND LIB LIST
+# Start $var $ctx->{NAME} OBJ LIST
 $var\_$ctx->{NAME}_OBJS =$tmpobjlist
-$var\_$ctx->{NAME}_LIBS =$tmpliblist
-# End $var $ctx->{NAME} OBJ AND LIB LIST
+# End $var $ctx->{NAME} OBJ LIST
 ###################################
 ";
 
@@ -227,28 +276,25 @@ $var\_$ctx->{NAME}_LIBS =$tmpliblist
 }
 
 ###########################################################
-# This function creates a object file
-# and library list for a subsystem
+# This function creates a object file list for a subsystem
 #
-# $output = _prepare_subsystem_obj_and_lib_list($subsystem_ctx)
+# $output = _prepare_subsystem_obj_list($subsystem_ctx)
 #
 # $subsystem_ctx -		the subsystem context
 #
 # $subsystem_ctx->{NAME} -	the subsystem name
 # $subsystem_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this subsystem
-# $subsystem_ctx->{LIB_LIST} -	the list of libraries which sould be linked to this subsystem
 #
 # $output -		the resulting output buffer
-sub _prepare_subsystem_obj_and_lib_list($)
+sub _prepare_subsystem_obj_list($)
 {
 	my $ctx = shift;
 
-	return _prepare_var_obj_and_lib_list("SUBSYSTEM",$ctx);
+	return _prepare_var_obj_list("SUBSYSTEM",$ctx);
 }
 
 ###########################################################
-# This function creates a object file 
-# and library list for a module
+# This function creates a object file list for a module
 #
 # $output = _prepare_module_obj_and_lib_list($module_ctx)
 #
@@ -256,14 +302,13 @@ sub _prepare_subsystem_obj_and_lib_list($)
 #
 # $module_ctx->{NAME} -		the module binary name
 # $module_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this module
-# $module_ctx->{LIB_LIST} -	the list of libraries which sould be linked to this module
 #
 # $output -		the resulting output buffer
-sub _prepare_module_obj_and_lib_list($)
+sub _prepare_module_objlist($)
 {
 	my $ctx = shift;
 
-	return _prepare_var_obj_and_lib_list("MODULE",$ctx);
+	return _prepare_var_obj_list("MODULE",$ctx);
 
 }
 
@@ -300,7 +345,7 @@ MODULE_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 MODULE_$ctx->{NAME}_LINK_LIST =$tmplink
 MODULE_$ctx->{NAME}_LINK_FLAGS =$tmpflag
 #
-bin/$ctx->{MODULE}: basics \$(MODULE_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+bin/$ctx->{MODULE}: \$(MODULE_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$(MODULE_$ctx->{NAME}_LINK_FLAGS) \\
@@ -313,8 +358,7 @@ bin/$ctx->{MODULE}: basics \$(MODULE_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 }
 
 ###########################################################
-# This function creates a object file 
-# and library list for a library
+# This function creates a object file list for a library
 #
 # $output = _prepare_library_obj_and_lib_list($library_ctx)
 #
@@ -322,14 +366,13 @@ bin/$ctx->{MODULE}: basics \$(MODULE_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 #
 # $library_ctx->{NAME} -	the library binary name
 # $library_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this library
-# $library_ctx->{LIB_LIST} -	the list of objectfiles which sould be linked to this library
 #
 # $output -		the resulting output buffer
-sub _prepare_library_obj_and_lib_list($)
+sub _prepare_library_obj_list($)
 {
 	my $ctx = shift;
 
-	return _prepare_var_obj_and_lib_list("LIBRARY",$ctx);
+	return _prepare_var_obj_list("LIBRARY",$ctx);
 
 }
 
@@ -383,7 +426,7 @@ LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
 LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
 #
 # Static $ctx->{STATIC_LIBRARY}
-bin/$ctx->{STATIC_LIBRARY}: basics \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+bin/$ctx->{STATIC_LIBRARY}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(STLD) \$(STLD_FLAGS) \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS) \\
@@ -392,7 +435,7 @@ bin/$ctx->{STATIC_LIBRARY}: basics \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dum
 	if (defined($ctx->{SHARED_LIBRARY})) {
 		$output .= "
 # Shared $ctx->{SHARED_LIBRARY}
-bin/$ctx->{SHARED_LIBRARY}: basics \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+bin/$ctx->{SHARED_LIBRARY}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
@@ -407,8 +450,7 @@ $output .= "
 }
 
 ###########################################################
-# This function creates a object file 
-# and library list for a binary
+# This function creates a object file list for a binary
 #
 # $output = _prepare_binary_obj_and_lib_list($binary_ctx)
 #
@@ -416,14 +458,13 @@ $output .= "
 #
 # $binary_ctx->{NAME} -		the binary name
 # $binary_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this binary
-# $binary_ctx->{LIB_LIST} -	the list of libraries which sould be linked to this binary
 #
 # $output -		the resulting output buffer
-sub _prepare_binary_obj_and_lib_list($)
+sub _prepare_binary_obj_list($)
 {
 	my $ctx = shift;
 
-	return _prepare_var_obj_and_lib_list("BINARY",$ctx);
+	return _prepare_var_obj_list("BINARY",$ctx);
 
 }
 
@@ -463,7 +504,7 @@ BINARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 BINARY_$ctx->{NAME}_LINK_LIST =$tmplink
 BINARY_$ctx->{NAME}_LINK_FLAGS =$tmpflag
 #
-bin/$ctx->{BINARY}: basics \$(BINARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST)
 	\@echo Linking \$\@
 	\@\$(LD) \$(LD_FLAGS) -o \$\@ \\
 		\$(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
@@ -515,8 +556,8 @@ sub _prepare_proto_rules()
 # afterwards.
 proto_exists: \$(builddir)/include/proto.h \$(builddir)/include/build_env.h
 
-delheaders:
-	@/bin/rm -f \$(builddir)/include/proto.h include/build_env.h:
+delheaders: pch_clean
+	-rm -f \$(builddir)/include/proto.h include/build_env.h:
 
 include/proto.h:
 	\@cd \$(srcdir) && \$(SHELL) script/mkproto.sh \$(PERL) \\
@@ -532,7 +573,7 @@ include/build_env.h:
 # parallel make.
 headers: delheaders \$(builddir)/include/proto.h \$(builddir)/include/build_env.h
 
-proto: idl headers 
+proto: idl headers
 
 proto_test:
 	\@[ -f \$(builddir)/include/proto.h ] || \$(MAKE) proto
@@ -572,7 +613,7 @@ sub _prepare_make_target($)
 	$output = "
 ###################################
 # Start Target $ctx->{TARGET}
-$ctx->{TARGET}: $tmpdepend
+$ctx->{TARGET}: basics $tmpdepend
 # End Target $ctx->{TARGET}
 ###################################
 ";
@@ -580,25 +621,25 @@ $ctx->{TARGET}: $tmpdepend
 	return $output;
 }
 
-sub _prepare_obj_and_lib_lists($)
+sub _prepare_obj_lists($)
 {
 	my $CTX = shift;
 	my $output = "";
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{SUBSYSTEMS}}) {
-		$output .= _prepare_subsystem_obj_and_lib_list(\%{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}});
+		$output .= _prepare_subsystem_obj_list(\%{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}});
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
-		$output .= _prepare_module_obj_and_lib_list(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
+		$output .= _prepare_module_obj_list(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
-		$output .= _prepare_library_obj_and_lib_list(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
+		$output .= _prepare_library_obj_list(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
-		$output .= _prepare_binary_obj_and_lib_list(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
+		$output .= _prepare_binary_obj_list(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
 	}
 
 	$output .= _prepare_proto_obj_list(\%{$CTX->{OUTPUT}{PROTO}});
@@ -606,10 +647,107 @@ sub _prepare_obj_and_lib_lists($)
 	return $output;
 }
 
-sub _prepare_depend_lists($)
+sub _prepare_install_rules($)
 {
 	my $CTX = shift;
 	my $output = "";
+
+	$output .= "
+
+showlayout: 
+	\@echo \"Samba will be installed into:\"
+	\@echo \"  basedir: \$(BASEDIR)\"
+	\@echo \"  bindir:  \$(BINDIR)\"
+	\@echo \"  sbindir: \$(SBINDIR)\"
+	\@echo \"  libdir:  \$(LIBDIR)\"
+	\@echo \"  vardir:  \$(VARDIR)\"
+
+SBIN_PROGS = bin/smbd
+
+BIN_PROGS = bin/smbclient 
+
+TORTURE_PROGS = bin/smbtorture \\
+		bin/gentest \\
+		bin/locktest \\
+		bin/masktest \\
+		bin/ndrdump
+
+LDB_PROGS = 	bin/ldbadd \\
+		bin/ldbdel \\
+		bin/ldbmodify \\
+		bin/ldbedit \\
+		bin/ldbsearch
+
+REG_PROGS = 	bin/regpatch \\
+		bin/regshell \\
+		bin/regtree \\
+		bin/regpatch \\
+		bin/regdiff
+
+install: showlayout installbin installtorture installldb installreg installdat 
+
+# DESTDIR is used here to prevent packagers wasting their time
+# duplicating the Makefile. Remove it and you will have the privelege
+# of package each samba release for muliple versions of multiple
+# distributions and operating systems, or at least supplying patches
+# to all the packaging files required for this, prior to committing
+# the removal of DESTDIR. Do not remove it even though you think it
+# is not used
+
+installdirs:
+
+installbin: all installdirs
+	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(SBINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(SBIN_PROGS)
+	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(BIN_PROGS)
+
+installtorture: all installdirs
+	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(TORTURE_PROGS)
+
+installldb: all installdirs
+	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(LDB_PROGS)
+
+installreg: all installdirs
+	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(REG_PROGS)
+
+installdat: installdirs
+	\@\$(SHELL) \$(srcdir)/script/installdat.sh \$(DESTDIR)\$(LIBDIR) \$(srcdir)
+
+uninstall: uninstallbin uninstalltorture uninstallldb uninstallreg
+
+uninstallbin:
+	\@\$(SHELL) \$(srcdir)/script/uninstallbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(SBINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(SBIN_PROGS)
+
+uninstalltorture:
+	\@\$(SHELL) \$(srcdir)/script/uninstallbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(TORTURE_PROGS)
+
+uninstallldb:
+	\@\$(SHELL) \$(srcdir)/script/uninstallbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(LDB_PROGS)
+
+uninstallreg:
+	\@\$(SHELL) \$(srcdir)/script/uninstallbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(REG_PROGS)
+
+# Swig extensions
+
+PYTHON_TDB_OBJ = lib/tdb/tdb.o lib/tdb/spinlock.o
+PYTHON_TDB_PICOBJ = \$(PYTHON_TDB_OBJ:.o=.po)
+
+swig: scripting/swig/python/_tdb.so
+
+swig_clean: 
+	-rm -f scripting/swig/python/_tdb.so scripting/swig/python/tdb.pyc \\
+		scripting/swig/python/tdb.py scripting/swig/python/tdb_wrap.c \\
+		scripting/swig/python/tdb_wrap.po
+
+scripting/swig/python/tdb.py: scripting/swig/tdb.i
+	swig -python scripting/swig/tdb.i
+	mv scripting/swig/tdb.py scripting/swig/python
+	mv scripting/swig/tdb_wrap.c scripting/swig/python
+
+scripting/swig/python/_tdb.so: scripting/swig/python/tdb.py scripting/swig/python/tdb_wrap.po \$(PYTHON_TDB_PICOBJ)
+	\$(SHLD) \$(LDSHFLAGS) -o scripting/swig/python/_tdb.so scripting/swig/python/tdb_wrap.po \\
+		\$(PYTHON_TDB_PICOBJ)
+
+";
 
 	return $output;
 }
@@ -635,6 +773,8 @@ sub _prepare_rule_lists($)
 	$output .= _prepare_IDL($idl_ctx);
 
 	$output .= _prepare_proto_rules();
+
+	$output .= _prepare_install_rules($CTX);
 
 	return $output;
 }
@@ -676,9 +816,7 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_std_CC_rule("c","o","Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch","Precompiling","Rule for precompiled headerfiles");
 
-	$output .= _prepare_obj_and_lib_lists($CTX);
-
-	$output .= _prepare_depend_lists($CTX);
+	$output .= _prepare_obj_lists($CTX);
 
 	$output .= _prepare_rule_lists($CTX);
 

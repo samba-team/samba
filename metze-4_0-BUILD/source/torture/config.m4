@@ -6,7 +6,9 @@ SMB_SUBSYSTEM(TORTURE_BASIC,[],
 		torture/basic/charset.o
 		torture/basic/mangle_test.o
 		torture/basic/denytest.o
-		torture/basic/aliases.o])
+		torture/basic/aliases.o],
+		[],
+		[LIBSMB])
 
 SMB_SUBSYSTEM(TORTURE_RAW,[],
 		[torture/raw/qfsinfo.o
@@ -27,7 +29,9 @@ SMB_SUBSYSTEM(TORTURE_RAW,[],
 		torture/raw/write.o
 		torture/raw/lock.o
 		torture/raw/rename.o
-		torture/raw/seek.o])
+		torture/raw/seek.o],
+		[],
+		[LIBSMB])
 
 SMB_SUBSYSTEM(TORTURE_RPC,[],
 		[torture/rpc/lsa.o
@@ -44,7 +48,9 @@ SMB_SUBSYSTEM(TORTURE_RPC,[],
 		torture/rpc/mgmt.o
 		torture/rpc/scanner.o
 		torture/rpc/autoidl.o
-		torture/rpc/netlogon.o])
+		torture/rpc/netlogon.o],
+		[],
+		[LIBSMB])
 
 SMB_SUBSYSTEM(TORTURE_NBENCH,[],
 		[torture/nbench/nbio.o
@@ -55,4 +61,4 @@ SMB_BINARY(smbtorture, [ALL], [BIN],
 		torture/torture_util.o
 		libcli/raw/clirewrite.o],
 		[],
-		[TORTURE_BASIC TORTURE_RAW TORTURE_RPC TORTURE_NBENCH CONFIG LIBSMB LIBBASIC])
+		[TORTURE_BASIC TORTURE_RAW TORTURE_RPC TORTURE_NBENCH CONFIG LIBCMDLINE LIBBASIC])
