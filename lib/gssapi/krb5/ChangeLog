@@ -1,3 +1,7 @@
+2003-11-14  Love  <lha@stacken.kth.se>
+
+	* cfx.c: fix {} error, pointed out by Liqiang Zhu
+	
 2003-11-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.c: Sequence number should be stored in bigendian order From:
