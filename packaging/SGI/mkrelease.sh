@@ -69,7 +69,7 @@ if [ "$doclean" = "clean" ]; then
   chmod +x config.guess
   chmod +x config.status
   chmod +x config.sub
-  ./configure --prefix=/usr --mandir=/usr/src/man --with-smbwrapper
+  ./configure --prefix=/usr/samba --mandir=/usr/share/catman --with-smbwrapper
   errstat=$?
   if [ $errstat -ne 0 ]; then
     echo "Error $errstat creating Makefile\n";
