@@ -1199,7 +1199,7 @@ static void init_globals(void)
 	string_set(&Globals.szWorkGroup, WORKGROUP);
 	string_set(&Globals.szPasswdProgram, "");
 	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
-	string_set(&Globals.szLockDir, LOCKDIR);
+	string_set(&Globals.szLockDir, dyn_LOCKDIR);
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	pstrcpy(s, "Samba ");
 	pstrcat(s, VERSION);

@@ -194,9 +194,7 @@ void build_options(BOOL screen)
 #endif
        output(screen,"   SBINDIR: %s\n", dyn_SBINDIR);
        output(screen,"   BINDIR: %s\n", dyn_BINDIR);
-#ifdef LOCKDIR
-       output(screen,"   LOCKDIR: %s\n",LOCKDIR);
-#endif
+       output(screen,"   LOCKDIR: %s\n",dyn_LOCKDIR);
 #ifdef DRIVERFILE
        output(screen,"   DRIVERFILE: %s\n",DRIVERFILE);
 #endif

@@ -34,6 +34,9 @@
  * they can for example consistently be set across the whole of Samba
  * by command-line parameters, config file entries, or environment
  * variables.
+ *
+ * @todo Perhaps eventually these should be merged into the parameter
+ * table?  There's kind of a chicken-and-egg situation there...
  **/
 
 char const *dyn_SBINDIR = SBINDIR,
@@ -45,3 +48,17 @@ pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
 pstring dyn_LOGFILEBASE; /**< Log file directory. **/
 
 pstring dyn_LMHOSTSFILE; /**< Statically configured LanMan hosts. **/
+
+/**
+ * @brief Samba library directory.
+ *
+ * @sa lib_path() to get the path to a file inside the LIBDIR.
+ **/
+pstring dyn_LIBDIR; 
+
+/**
+ * @brief Directory holding lock files.
+ *
+ * Not writable, but used to set a default in the parameter table.
+ **/
+const pstring dyn_LOCKDIR;
