@@ -202,10 +202,11 @@ int smbw_stat(const char *fname, struct stat *st)
 	srv = smbw_server(server, share);
 	if (!srv) {
 
-		/* For shares we aren't allowed to connect to, return
-		   an empty directory */
+		/* For shares we aren't allowed to connect to, or no master
+		   browser found, return an empty directory */
 
-		if (server[0] && share[0] && !path[0] && errno == EACCES) {
+		if ((server[0] && share[0] && !path[0] && errno == EACCES) ||
+		    (!path[0] && errno == ENOENT)) {
 			mode = aDIR | aRONLY;
 			smbw_setup_stat(st, path, size, mode);
 			goto done;
