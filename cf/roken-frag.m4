@@ -411,7 +411,8 @@ fi
 if test "$ac_cv_func_getaddrinfo" = "yes"; then
   rk_BROKEN_GETADDRINFO
   if test "$ac_cv_func_getaddrinfo_numserv" = no; then
-	AC_LIBOBJ(getaddrinfo freeaddrinfo)
+	AC_LIBOBJ(getaddrinfo)
+	AC_LIBOBJ(freeaddrinfo)
   fi
 fi
 
