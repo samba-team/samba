@@ -44,6 +44,7 @@ struct lsa_policy_state {
 	struct sidmap_context *sidmap;
 	uint32_t access_mask;
 	const char *domain_dn;
+	const char *builtin_dn;
 	const char *domain_name;
 	struct dom_sid *domain_sid;
 	struct dom_sid *builtin_sid;
@@ -221,6 +222,15 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	state->domain_dn = samdb_search_string(state->sam_ctx, state, NULL,
 					       "dn", "(&(objectClass=domain)(!(objectclass=builtinDomain)))");
 	if (!state->domain_dn) {
+		talloc_free(state);
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
+	/* work out the builtin_dn - useful for so many calls its worth
+	   fetching here */
+	state->builtin_dn = samdb_search_string(state->sam_ctx, state, NULL,
+						"dn", "objectClass=builtinDomain");
+	if (!state->builtin_dn) {
 		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
@@ -427,7 +437,58 @@ static NTSTATUS lsa_CreateAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static NTSTATUS lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct lsa_EnumAccounts *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+	int ret, i;
+	struct ldb_message **res;
+	const char * const attrs[] = { "objectSid", NULL};
+	uint32_t count;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	ret = samdb_search(state->sam_ctx, mem_ctx, state->builtin_dn, &res, attrs, "objectClass=group");
+	if (ret <= 0) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (*r->in.resume_handle >= ret) {
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
+
+	count = ret - *r->in.resume_handle;
+	if (count > r->in.num_entries) {
+		count = r->in.num_entries;
+	}
+
+	if (count == 0) {
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
+
+	r->out.sids->sids = talloc_array_p(r->out.sids, struct lsa_SidPtr, count);
+	if (r->out.sids->sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<count;i++) {
+		const char *sidstr;
+
+		sidstr = samdb_result_string(res[i + *r->in.resume_handle], "objectSid", NULL);
+		if (sidstr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		r->out.sids->sids[i].sid = dom_sid_parse_talloc(r->out.sids->sids, sidstr);
+		if (r->out.sids->sids[i].sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	r->out.sids->num_sids = count;
+	*r->out.resume_handle = count + *r->in.resume_handle;
+
+	return NT_STATUS_OK;
+	
 }
 
 

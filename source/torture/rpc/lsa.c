@@ -702,26 +702,31 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 	r.out.sids = &sids1;
 
 	resume_handle = 0;
-	status = dcerpc_lsa_EnumAccounts(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumAccounts failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	while (True) {
+		status = dcerpc_lsa_EnumAccounts(p, mem_ctx, &r);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+			break;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumAccounts failed - %s\n", nt_errstr(status));
+			return False;
+		}
 
-	if (!test_LookupSids(p, mem_ctx, handle, &sids1)) {
-		return False;
-	}
+		if (!test_LookupSids(p, mem_ctx, handle, &sids1)) {
+			return False;
+		}
 
-	if (!test_LookupSids2(p, mem_ctx, handle, &sids1)) {
-		return False;
-	}
+		if (!test_LookupSids2(p, mem_ctx, handle, &sids1)) {
+			return False;
+		}
 
-	printf("testing all accounts\n");
-	for (i=0;i<sids1.num_sids;i++) {
-		test_OpenAccount(p, mem_ctx, handle, sids1.sids[i].sid);
-		test_EnumAccountRights(p, mem_ctx, handle, sids1.sids[i].sid);
+		printf("testing all accounts\n");
+		for (i=0;i<sids1.num_sids;i++) {
+			test_OpenAccount(p, mem_ctx, handle, sids1.sids[i].sid);
+			test_EnumAccountRights(p, mem_ctx, handle, sids1.sids[i].sid);
+		}
+		printf("\n");
 	}
-	printf("\n");
 
 	if (sids1.num_sids < 3) {
 		return True;
