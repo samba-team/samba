@@ -1,3 +1,10 @@
+2001-04-25  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/sys_term.c (start_login): give the correct error if exec
+	fails
+	* telnetd/utility.c (fatalperror_errno): add a new function with
+	explicit errno parameter
+
 2001-03-07  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/sys_term.c: some minimal more amount of
