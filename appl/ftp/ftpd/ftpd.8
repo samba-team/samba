@@ -67,10 +67,12 @@ Select the level of authentication required. Recognised values are:
 .Bl -tag -width debug
 .It none
 Allows anyone to connect.
+.It otp
+Allows only OTP, kerberos authorized access and anonymous ftp.
 .It safe
-Allows only authorized access and anonymous ftp.
+Allows only kerberos authorized access and anonymous ftp.
 .It user
-Allows only authorized access.
+Allows only kerberos authorized access.
 .El
 .It Fl d
 Debugging information is written to the syslog using LOG_FTP.
@@ -101,6 +103,8 @@ The default limit is 2 hours.
 The inactivity timeout period is set to
 .Ar timeout
 seconds (the default is 15 minutes).
+.It Fl u
+Set the initial umask to something else than the default 027.
 .It Fl v
 Verbose mode.
 .El
@@ -168,7 +172,7 @@ The case of the requests is ignored.
 .It XRMD Ta "remove a directory (deprecated)"
 .El
 .Pp
-The following commands are specified by ftpsec draft.
+The following commands are specified by the ftpsec draft.
 .Bl -column Request -offset indent
 .It AUTH Ta "authentication/security mechanism"
 .It ADAT Ta "authentication/security data"
@@ -187,9 +191,14 @@ by the
 SITE request.
 .Pp
 .Bl -column Request -offset indent
-.It UMASK Ta change umask, e.g. ``SITE UMASK 002''
-.It IDLE Ta set idle-timer, e.g. ``SITE IDLE 60''
-.It CHMOD Ta change mode of a file, e.g. ``SITE CHMOD 755 filename''
+.It UMASK Ta change umask, (e.g. 
+.Ic "SITE UMASK 002" )
+.It IDLE Ta set idle-timer, (e.g. 
+.Ic "SITE IDLE 60" )
+.It CHMOD Ta change mode of a file (e.g. 
+.Ic "SITE CHMOD 755 filename" )
+.It FIND Ta quickly find a specific file with GNU 
+.Xr locate 1 .
 .It HELP Ta give help information.
 .El
 .Pp
@@ -232,17 +241,16 @@ If Kerberos authentication is used, the user must pass valid tickets
 and the principal must be allowed to login as the remote user.
 .It
 The login name must be in the password data base, and not have a null
-password (if kerberos is used the password field is not checked).
-In this case a password must be provided by the client before any
-file operations may be performed.
-If the user has an S/Key key, the response from a successful USER
-command will include an S/Key challenge. The client may choose to respond
-with a PASS command giving either a standard password or an S/Key
-one-time password. The server will automatically determine which type of
-password it has been given and attempt to authenticate accordingly. See
-.Xr skey 1
-for more information on S/Key authentication. S/Key is a Trademark of
-Bellcore.
+password (if kerberos is used the password field is not checked).  In
+this case a password must be provided by the client before any file
+operations may be performed.  If the user has an OTP key, the response
+from a successful USER command will include an OTP challenge. The
+client may choose to respond with a PASS command giving either a
+standard password or an OTP one-time password. The server will
+automatically determine which type of password it has been given and
+attempt to authenticate accordingly. See
+.Xr otp 1
+for more information on OTP authentication.
 .It
 The login name must not appear in the file
 .Pa /etc/ftpusers .
@@ -287,44 +295,111 @@ user.
 In order that system security is not breached, it is recommended
 that the
 .Dq ftp
-subtree be constructed with care, following these rules:
+subtree be constructed with care, consider following these guidelines
+for anonymous ftp.
+
+In general all files should be owned by
+.Dq root ,
+and have non-write permissions (644 or 755 depending on the kind of
+file). No files should be owned or writable by
+.Dq ftp
+(possibly with exception for the
+.Pa ~ftp/incoming ,
+as specified below).
 .Bl -tag -width "~ftp/pub" -offset indent
 .It Pa ~ftp
-Make the home directory owned by
-.Dq root
-and unwritable by anyone.
+The 
+.Dq ftp
+homedirectory should be owned by root.
 .It Pa ~ftp/bin
-Make this directory owned by
-.Dq root
-and unwritable by anyone (mode 555).
-The program
-.Xr ls 1
-must be present to support the list command.
-This program should be mode 111.
-.It Pa ~ftp/etc
-Make this directory owned by
-.Dq root
-and unwritable by anyone (mode 555).
-The files
-.Xr passwd 5
+The directory for external programs (such as 
+.Xr ls 1 ) .
+These programs must either be statically linked, or you must setup an
+environment for dynamic linking when running chrooted.  
+These programs will be used if present:
+.Bl -tag -width "locate" -offset indent
+.It ls
+Used when listing files.
+.It compress
+When retrieving a filename that ends in
+.Pa .Z ,
+and that file isn't present,
+.Nm
+will try to find the filename without
+.Pa .Z
+and compress it on the fly.
+.It gzip
+Same as compress, just with files ending in
+.Pa .gz .
+.It gtar
+Enables retrieval of whole directories as files ending in
+.Pa .tar .
+Can also be combined with compression. You must use GNU Tar (or some
+other that supports the
+.Fl z 
 and
+.Fl Z
+flags).
+.It locate
+Will enable ``fast find'' with the 
+.Ic SITE FIND
+command. You must also create a 
+.Pa locatedb
+file in 
+.Pa ~ftp/etc .
+.El
+.It Pa ~ftp/etc
+If you put copies of the
+.Xr passwd 5
+and 
 .Xr group 5
-must be present for the 
-.Xr ls
-command to be able to produce owner names rather than numbers.
-The password field in
-.Xr passwd
-is not used, and should not contain real passwords.
+files here, ls will be able to produce owner names rather than
+numbers. Remember to remove any passwords from these files.  
+
 The file
 .Pa motd ,
 if present, will be printed after a successful login.
-These files should be mode 444.
 .It Pa ~ftp/pub
-Make this directory mode 777 and owned by
-.Dq ftp .
-Guests
-can then place files which are to be accessible via the anonymous
-account in this directory.
+Traditional place to put whatever you want to make public.
+.El
+
+If you want guests to be able to upload files, create a
+.Pa ~ftp/incoming
+directory owned by 
+.Dq root ,
+and group
+.Dq ftp
+with mode 730 (make sure 
+.Dq ftp 
+is member of group
+.Dq ftp ) .
+The following restrictions apply to anonymous users:
+.Bl -bullet
+.It
+Directories created will have mode 700.
+.It
+Uploaded files will have mode 000.
+.It
+These command are not accessible: 
+.Ic DELE , RMD , RNTO , RNFR , 
+.Ic SITE UMASK ,
+and
+.Ic SITE CHMOD .
+.It
+Filenames must start with an alpha-numeric character, and consist of
+alpha-numeric characters or any of the following: 
+.Li \&+  
+(plus),
+.Li \&-  
+(minus),
+.Li \&=  
+(equal),
+.Li \&_  
+(underscore),
+.Li \&.  
+(period), and
+.Li \&,  
+(comma).
 .El
 .Sh FILES
 .Bl -tag -width /etc/ftpwelcome -compact
@@ -343,7 +418,7 @@ Login access for Kerberos.
 .El
 .Sh SEE ALSO
 .Xr ftp 1 ,
-.Xr skey 1 ,
+.Xr otp 1 ,
 .Xr getusershell 3 ,
 .Xr syslogd 8 ,
 .Sh STANDARDS
