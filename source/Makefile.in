@@ -422,6 +422,8 @@ pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
 smbwrapper : CHECK @WRAPPROG@ @WRAP@ @WRAP32@
 
+libsmbclient : CHECK libsmbclient.@SHLIBEXT@ libsmbclient.a
+
 torture : CHECK $(TORTURE_PROGS)
 
 smbtorture : CHECK bin/smbtorture
