@@ -1293,13 +1293,15 @@ static BOOL need_ldap_mod(BOOL pdb_add, const SAM_ACCOUNT * sampass, enum pdb_el
 *********************************************************************/
 static void make_ldap_mod(LDAP *ldap_struct, LDAPMessage *existing,
 			  LDAPMod ***mods,
-			  const SAM_ACCOUNT *sampass, BOOL pdb_add,
+			  const SAM_ACCOUNT *sampass,
+			  BOOL (*need_update)(const SAM_ACCOUNT *,
+					      enum pdb_elements),
 			  enum pdb_elements element,
 			  const char *attribute, const char *newval)
 {
 	char **values = NULL;
 
-	if (!need_ldap_mod(pdb_add, sampass, element)) {
+	if (!need_update(sampass, element)) {
 		return;
 	}
 
@@ -1349,7 +1351,8 @@ Initialize SAM_ACCOUNT from an LDAP query
 static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state, 
 				LDAPMessage *existing,
 				LDAPMod *** mods, const SAM_ACCOUNT * sampass,
-				BOOL pdb_add)
+				BOOL (*need_update)(const SAM_ACCOUNT *,
+						    enum pdb_elements))
 {
 	pstring temp;
 	uint32 rid;
@@ -1365,7 +1368,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	 * took out adding "objectclass: sambaAccount"
 	 * do this on a per-mod basis
 	 */
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_USERNAME, "uid", pdb_get_username(sampass));
 	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
 
@@ -1393,7 +1396,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	}
 
 	slprintf(temp, sizeof(temp) - 1, "%i", rid);
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_USERSID, "rid", temp);
 
 
@@ -1413,7 +1416,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	}
 
 	slprintf(temp, sizeof(temp) - 1, "%i", rid);
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_GROUPSID, "primaryGroupID", temp);
 
 	/* displayName, cn, and gecos should all be the same
@@ -1424,55 +1427,55 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	 *  it does not exist.
 	 */
 
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_FULLNAME, "displayName",
 		      pdb_get_fullname(sampass));
 
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_ACCTDESC, "description",
 		      pdb_get_acct_desc(sampass));
 
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_WORKSTATIONS, "userWorkstations",
 		      pdb_get_workstations(sampass));
 
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_SMBHOME, "smbHome",
 		      pdb_get_homedir(sampass));
 			
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_DRIVE, "homeDrive",
 		      pdb_get_dir_drive(sampass));
 
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_LOGONSCRIPT, "scriptPath",
 		      pdb_get_logon_script(sampass));
 
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_PROFILE, "profilePath",
 		      pdb_get_profile_path(sampass));
 
 	slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logon_time(sampass));
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_LOGONTIME, "logonTime", temp);
 
 	slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logoff_time(sampass));
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_LOGOFFTIME, "logoffTime", temp);
 
 	slprintf (temp, sizeof (temp) - 1, "%li",
 		  pdb_get_kickoff_time(sampass));
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_KICKOFFTIME, "kickoffTime", temp);
 
 	slprintf (temp, sizeof (temp) - 1, "%li",
 		  pdb_get_pass_can_change_time(sampass));
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_CANCHANGETIME, "pwdCanChange", temp);
 
 	slprintf (temp, sizeof (temp) - 1, "%li",
 		  pdb_get_pass_must_change_time(sampass));
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_MUSTCHANGETIME, "pwdMustChange", temp);
 
 	if ((pdb_get_acct_ctrl(sampass)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST))||
@@ -1480,22 +1483,22 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 		pdb_sethexpwd (temp, pdb_get_lanman_passwd(sampass),
 			       pdb_get_acct_ctrl(sampass));
-		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 			      PDB_LMPASSWD, "lmPassword", temp);
 
 		pdb_sethexpwd (temp, pdb_get_nt_passwd(sampass),
 			       pdb_get_acct_ctrl(sampass));
-		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 			      PDB_NTPASSWD, "ntPassword", temp);
 
 		slprintf (temp, sizeof (temp) - 1, "%li",
 			  pdb_get_pass_last_set_time(sampass));
-		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 			      PDB_PASSLASTSET, "pwdLastSet", temp);
 	}
 
 	/* FIXME: Hours stuff goes in LDAP  */
-	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, pdb_add,
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass, need_update,
 		      PDB_ACCTCTRL, "acctFlags",
 		      pdb_encode_acct_ctrl (pdb_get_acct_ctrl(sampass),
 					    NEW_PW_FORMAT_SPACE_PADDED_LEN));
@@ -1942,6 +1945,16 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 }
 
 /**********************************************************************
+  Helper function to determine for update_sam_account whether
+  we need LDAP modification.
+*********************************************************************/
+static BOOL element_is_changed(const SAM_ACCOUNT *sampass,
+			       enum pdb_elements element)
+{
+	return IS_SAM_CHANGED(sampass, element);
+}
+
+/**********************************************************************
 Update SAM_ACCOUNT 
 *********************************************************************/
 static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT * newpwd)
@@ -1968,7 +1981,8 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	entry = ldap_first_entry(ldap_state->ldap_struct, result);
 	dn = ldap_get_dn(ldap_state->ldap_struct, entry);
 
-	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd, False)) {
+	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
+				element_is_changed)) {
 		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1995,6 +2009,17 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	DEBUG(2, ("successfully modified uid = %s in the LDAP database\n",
 		  pdb_get_username(newpwd)));
 	return NT_STATUS_OK;
+}
+
+/**********************************************************************
+  Helper function to determine for update_sam_account whether
+  we need LDAP modification.
+*********************************************************************/
+static BOOL element_is_set_or_changed(const SAM_ACCOUNT *sampass,
+				      enum pdb_elements element)
+{
+	return (IS_SAM_SET(sampass, element) ||
+		IS_SAM_CHANGED(sampass, element));
 }
 
 /**********************************************************************
@@ -2067,7 +2092,8 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
                 }
 	}
 
-	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd, True)) {
+	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
+				element_is_set_or_changed)) {
 		DEBUG(0, ("ldapsam_add_sam_account: init_ldap_from_sam failed!\n"));
 		ldap_msgfree(result);
 		ldap_mods_free(mods, 1);
