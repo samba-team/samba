@@ -1560,7 +1560,6 @@ BOOL server_validate(char *user, char *domain,
 		     char *ntpass, int ntpasslen)
 {
 	extern fstring local_machine;
-	fstring share;
 
 	if (!cli.initialised) {
 		DEBUG(1,("password server %s is not connected\n", cli.desthost));
@@ -1579,9 +1578,7 @@ BOOL server_validate(char *user, char *domain,
 	}
 
 
-	sprintf(share,"\\\\%s\\IPC$", cli.desthost);
-
-	if (!cli_send_tconX(&cli, share, "IPC", "", 1)) {
+	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
 		DEBUG(1,("password server %s refused IPC$ connect\n", cli.desthost));
 		return False;
 	}

@@ -1102,7 +1102,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
   cli_setup_pkt(outbuf);
 
   SSVAL(outbuf,smb_vwv0,0xFF);
-  SSVAL(outbuf,smb_vwv2,1);
+  SSVAL(outbuf,smb_vwv2,1); /* return additional info */
   SSVAL(outbuf,smb_vwv3,(DENY_NONE<<4));
   SSVAL(outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
   SSVAL(outbuf,smb_vwv5,aSYSTEM | aHIDDEN);

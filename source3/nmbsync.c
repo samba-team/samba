@@ -60,7 +60,6 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 		       char *name, int nm_type, struct in_addr ip, BOOL local)
 {
 	extern fstring local_machine;
-	fstring share;
 	static struct cli_state cli;
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
@@ -97,9 +96,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 		return;
 	}
 
-	sprintf(share,"\\\\%s\\IPC$", name);
-
-	if (!cli_send_tconX(&cli, share, "IPC", "", 1)) {
+	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
 		DEBUG(1,("%s refused browse sync IPC$ connect\n", name));
 		cli_shutdown(&cli);
 		return;
