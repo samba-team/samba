@@ -1,5 +1,5 @@
 !==
-!== WinNT.txt for Samba release 2.0.5 21 Jul 1999
+!== WinNT.txt for Samba release 2.0.5a 22 Jul 1999
 !==
 Contributors:	Various
 		Password Section - Copyright (C) 1997 - John H Terpstra
