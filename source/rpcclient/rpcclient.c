@@ -26,8 +26,8 @@
 
  int main(int argc, char *argv[])
 {
-#if 0
 	add_lsa_commands();
+#if 0
 	add_net_commands();
 	add_evt_commands();
 	add_sam_commands();
