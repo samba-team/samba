@@ -388,6 +388,8 @@ typedef struct
 #ifdef WITH_SENDFILE
 	BOOL bUseSendfile;
 #endif
+	BOOL bProfileAcls;
+
 	char dummy[3];		/* for alignment */
 }
 service;
@@ -510,6 +512,7 @@ static service sDefault = {
 #ifdef WITH_SENDFILE
 	False,			/* bUseSendfile */
 #endif
+	False,			/* bProfileAcls */
 
 	""			/* dummy */
 };
@@ -811,6 +814,8 @@ static struct parm_struct parm_table[] = {
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE  | FLAG_ADVANCED | FLAG_WIZARD},
 	{"nt status support", P_BOOL, P_GLOBAL, &Globals.bNTStatusSupport, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"profile acls", P_BOOL,  P_LOCAL, &sDefault.bProfileAcls, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE  | FLAG_ADVANCED | FLAG_WIZARD},
+	
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, FLAG_DEVELOPER},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, FLAG_DEVELOPER},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1742,6 +1747,7 @@ FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 #ifdef WITH_SENDFILE
 FN_LOCAL_BOOL(lp_use_sendfile, bUseSendfile)
 #endif
+FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
