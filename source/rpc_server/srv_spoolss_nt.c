@@ -1769,8 +1769,11 @@ Can't find printer handle we created for printer %s\n", name ));
 	/* HACK ALERT!!! Sleep for 1/3 of a second to try trigger a LAN/WAN 
 	   optimization in Windows 2000 clients  --jerry */
 
-	if ( RA_WIN2K == get_remote_arch() )
-		usleep( 384000 );
+	if ( (printer_default->access_required == PRINTER_ACCESS_ADMINISTER) 
+		&& (RA_WIN2K == get_remote_arch()) )
+	{
+		usleep( 500000 );
+	}
 
 	return WERR_OK;
 }
@@ -2415,7 +2418,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 				status = WERR_NOMEM;
 				goto done;
 			}
-			**data = printer->info_2->changeid;
+			SIVAL( *data, 0, printer->info_2->changeid );
 			
 			status = WERR_OK;
 		}
