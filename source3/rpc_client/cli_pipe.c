@@ -522,7 +522,7 @@ static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, uint32 rpc_ca
 	prs_struct auth_info;
 	int auth_len = 0;
 
-	prs_init(&auth_info, MAX_PDU_FRAG_LEN, 4, MARSHALL);
+	prs_init(&auth_info, 0, 4, MARSHALL);
 
 	if (do_auth) {
 		RPC_HDR_AUTH hdr_auth;
@@ -1087,13 +1087,20 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
 	prs_struct rdata;
 	BOOL do_auth = (cli->ntlmssp_cli_flgs != 0);
 	uint32 rpc_call_id;
+	char buffer[MAX_PDU_FRAG_LEN];
 
 	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum, pipe_name));
 
 	if (!valid_pipe_name(pipe_name, &abstract, &transfer))
 		return False;
 
-	prs_init(&rpc_out, MAX_PDU_FRAG_LEN, 4, MARSHALL);
+	prs_init(&rpc_out, 0, 4, MARSHALL);
+
+	/*
+	 * Use the MAX_PDU_FRAG_LEN buffer to store the bind request.
+	 */
+
+	prs_give_memory( &rpc_out, buffer, sizeof(buffer), False);
 
 	rpc_call_id = get_rpc_call_id();
 
