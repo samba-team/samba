@@ -363,12 +363,18 @@ void fatal(int f, char *msg)
 }
 
 void
-fatalperror(int f, const char *msg)
+fatalperror_errno(int f, const char *msg, int error)
 {
     char buf[BUFSIZ];
     
-    snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(errno));
+    snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(error));
     fatal(f, buf);
+}
+
+void
+fatalperror(int f, const char *msg)
+{
+    return fatalperror_errno(f, msg, errno);
 }
 
 char editedhost[32];
