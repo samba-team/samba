@@ -35,7 +35,7 @@
 RCSID("$Id$");
 
 /*
- * Implementation of draft-ietf-krb-wg-gssapi-cfx-0?.txt
+ * Implementation of draft-ietf-krb-wg-gssapi-cfx-02.txt
  */
 
 #define SentByAcceptor	(1 << 0)
@@ -149,6 +149,7 @@ static krb5_error_code rrc_rotate(void *data,
 {
     u_char *tmp;
     size_t left;
+    char buf[256];
 
     if (rrc == 0) {
 	return 0;
@@ -160,9 +161,12 @@ static krb5_error_code rrc_rotate(void *data,
 
     left = len - rrc;
 
-    tmp = malloc(rrc);
-    if (tmp == NULL) {
-	return ENOMEM;
+    if (rrc <= sizeof(buf)) {
+	tmp = buf;
+    } else {
+	tmp = malloc(rrc);
+	if (tmp == NULL) {
+	    return ENOMEM;
     }
  
     if (unrotate) {
@@ -175,7 +179,9 @@ static krb5_error_code rrc_rotate(void *data,
 	memcpy(data, tmp, rrc);
     }
 
-    free(tmp);
+    if (rrc > sizeof(buf)) 
+	free(tmp);
+    }
 
     return 0;
 }
@@ -216,12 +222,8 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-#ifdef GSS_C_DCE_STYLE
-    if (context_handle->flags & GSS_C_DCE_STYLE) {
-	/* Rotate encrypted token (if any) and checksum to header */
-	rrc = (conf_req_flag ? sizeof(*token) : 0) + (u_int16_t)cksumsize;
-    }
-#endif /* GSS_C_DCE_STYLE */
+    /* Always rotate encrypted token (if any) and checksum to header */
+    rrc = (conf_req_flag ? sizeof(*token) : 0) + (u_int16_t)cksumsize;
 
     output_message_buffer->length = wrapped_len;
     output_message_buffer->value = malloc(output_message_buffer->length);
@@ -245,8 +247,8 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	 * used to encode the size (in bytes) of the random filler.
 	 */
 	token->Flags |= Sealed;
-	token->EC[0] = (padlength >> 0) & 0xFF;
-	token->EC[1] = (padlength >> 8) & 0xFF;
+	token->EC[0] = (padlength >> 8) & 0xFF;
+	token->EC[1] = (padlength >> 0) & 0xFF;
     } else {
 	/*
 	 * In Wrap tokens without confidentiality, the EC field is
@@ -328,8 +330,8 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	    return GSS_S_FAILURE;
 	}
 	assert(sizeof(*token) + cipher.length == wrapped_len);
-	token->RRC[0] = (rrc >> 0) & 0xFF;  
-	token->RRC[1] = (rrc >> 8) & 0xFF;
+	token->RRC[0] = (rrc >> 8) & 0xFF;  
+	token->RRC[1] = (rrc >> 0) & 0xFF;
 
 	ret = rrc_rotate(cipher.data, cipher.length, rrc, FALSE);
 	if (ret != 0) {
@@ -372,10 +374,10 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	free(buf);
 
 	assert(cksum.checksum.length == cksumsize);
-	token->EC[0] =  (cksum.checksum.length >> 0) & 0xFF;
-	token->EC[1] =  (cksum.checksum.length >> 8) & 0xFF;
-	token->RRC[0] = (rrc >> 0) & 0xFF;  
-	token->RRC[1] = (rrc >> 8) & 0xFF;
+	token->EC[0] =  (cksum.checksum.length >> 8) & 0xFF;
+	token->EC[1] =  (cksum.checksum.length >> 0) & 0xFF;
+	token->RRC[0] = (rrc >> 8) & 0xFF;  
+	token->RRC[1] = (rrc >> 0) & 0xFF;
 
 	p += sizeof(*token);
 	memcpy(p, input_message_buffer->value, input_message_buffer->length);
@@ -455,8 +457,8 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	*conf_state = (token->Flags & Sealed) ? 1 : 0;
     }
 
-    ec  = (token->EC[1] << 8)  | token->EC[0];
-    rrc = (token->RRC[1] << 8) | token->RRC[0];
+    ec  = (token->EC[0]  << 8) | token->EC[1];
+    rrc = (token->RRC[0] << 8) | token->RRC[1];
 
     /*
      * Check sequence number
