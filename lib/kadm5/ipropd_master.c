@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,8 +46,7 @@ make_signal_socket (krb5_context context)
 	krb5_err (context, 1, errno, "socket AF_UNIX");
     memset (&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy (addr.sun_path, KADM5_LOG_SIGNAL, sizeof(addr.sun_path));
-    addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
+    strlcpy (addr.sun_path, KADM5_LOG_SIGNAL, sizeof(addr.sun_path));
     unlink (addr.sun_path);
     if (bind (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 	krb5_err (context, 1, errno, "bind %s", addr.sun_path);
@@ -67,7 +66,8 @@ make_listen_socket (krb5_context context)
     setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     memset (&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port   = htons(4711);
+    addr.sin_port   = krb5_getportbyname (context,
+					  IPROP_SERVICE, "tcp", IPROP_PORT);
     if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 	krb5_err (context, 1, errno, "bind");
     if (listen(fd, SOMAXCONN) < 0)
@@ -109,7 +109,7 @@ check_acl (krb5_context context, const char *name)
 }
 
 static void
-add_slave (krb5_context context, slave **root, int fd)
+add_slave (krb5_context context, krb5_keytab keytab, slave **root, int fd)
 {
     krb5_principal server;
     krb5_error_code ret;
@@ -141,7 +141,7 @@ add_slave (krb5_context context, slave **root, int fd)
     }
 
     ret = krb5_recvauth (context, &s->ac, &s->fd,
-			 IPROP_VERSION, server, 0, NULL, &ticket);
+			 IPROP_VERSION, server, 0, keytab, &ticket);
     krb5_free_principal (context, server);
     if (ret) {
 	krb5_warn (context, ret, "krb5_recvauth");
@@ -191,17 +191,107 @@ remove_slave (krb5_context context, slave *s, slave **root)
     free (s);
 }
 
-static int
-send_complete (krb5_context context, slave *s)
+static krb5_error_code 
+send_priv(krb5_context context, krb5_auth_context ac,
+	  krb5_data *data, int fd)
 {
-    abort ();
+    krb5_data packet;
+    krb5_error_code ret;
+
+    ret = krb5_mk_priv (context,
+			ac,
+			data,
+			&packet,
+			NULL);
+    if (ret)
+	return ret;
+    
+    ret = krb5_write_message (context, &fd, &packet);
+    krb5_data_free(&packet);
+    return ret;
+}
+
+struct prop_context {
+    krb5_auth_context auth_context;
+    int fd;
+};
+
+static int
+prop_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
+{
+    krb5_error_code ret;
+    krb5_data data;
+    struct slave *slave = (struct slave *)v;
+
+    ret = hdb_entry2value (context, entry, &data);
+    if (ret)
+	return ret;
+    ret = krb5_data_realloc (&data, data.length + 4);
+    if (ret) {
+	krb5_data_free (&data);
+	return ret;
+    }
+    memmove ((char *)data.data + 4, data.data, data.length - 4);
+    _krb5_put_int (data.data, ONE_PRINC, 4);
+
+    ret = send_priv (context, slave->ac, &data, slave->fd);
+    krb5_data_free (&data);
+    return ret;
+}
+
+static int
+send_complete (krb5_context context, slave *s,
+	       const char *database, u_int32_t current_version)
+{
+    krb5_error_code ret;
+    HDB *db;
+    krb5_data data, priv_data;
+    char buf[8];
+
+    ret = hdb_create (context, &db, database);
+    if (ret)
+	krb5_err (context, 1, ret, "hdb_create: %s", database);
+    ret = db->open (context, db, O_RDONLY, 0);
+    if (ret)
+	krb5_err (context, 1, ret, "db->open");
+
+    _krb5_put_int(buf, TELL_YOU_EVERYTHING, 4);
+
+    data.data   = buf;
+    data.length = 4;
+
+    ret = krb5_mk_priv (context, s->ac, &data, &priv_data, NULL);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_mk_priv");
+
+    ret = krb5_write_message (context, &s->fd, &priv_data);
+    krb5_data_free (&priv_data);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_write_message");
+
+    ret = hdb_foreach (context, db, 0, prop_one, s);
+    if (ret)
+	krb5_err (context, 1, ret, "hdb_foreach");
+
+    _krb5_put_int (buf, NOW_YOU_HAVE, 4);
+    _krb5_put_int (buf + 4, current_version, 4);
+
+    ret = krb5_mk_priv (context, s->ac, &data, &priv_data, NULL);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_mk_priv");
+
+    ret = krb5_write_message (context, &s->fd, &priv_data);
+    krb5_data_free (&priv_data);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_write_message");
+    return 0;
 }
 
 static int
 send_diffs (krb5_context context, slave *s, int log_fd,
-	    u_int32_t current_version)
+	    const char *database, u_int32_t current_version)
 {
-    krb5_storage *sp, *data_sp;
+    krb5_storage *sp;
     u_int32_t ver;
     time_t timestamp;
     enum kadm_ops op;
@@ -227,7 +317,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 	if (ver == s->version + 1)
 	    break;
 	if (left == 0)
-	    return send_complete (context, s);
+	    return send_complete (context, s, database, current_version);
     }
     krb5_data_alloc (&data, right - left + 4);
     sp->fetch (sp, (char *)data.data + 4, data.length - 4);
@@ -253,7 +343,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 
 static int
 process_msg (krb5_context context, slave *s, int log_fd,
-	     u_int32_t current_version)
+	     const char *database, u_int32_t current_version)
 {
     int ret = 0;
     krb5_data in, out;
@@ -282,7 +372,7 @@ process_msg (krb5_context context, slave *s, int log_fd,
     case I_HAVE :
 	krb5_ret_int32 (sp, &tmp);
 	s->version = tmp;
-	ret = send_diffs (context, s, log_fd, current_version);
+	ret = send_diffs (context, s, log_fd, database, current_version);
 	break;
     case FOR_YOU :
     default :
@@ -294,15 +384,21 @@ process_msg (krb5_context context, slave *s, int log_fd,
     return ret;
 }
 
-char *realm;
-int version_flag;
-int help_flag;
-struct getargs args[] = {
+static char *realm;
+static int version_flag;
+static int help_flag;
+static char *keytab_str;
+static char *database;
+
+static struct getargs args[] = {
     { "realm", 'r', arg_string, &realm },
+    { "keytab", 'k', arg_string, &keytab_str,
+      "keytab to get authentication from", "kspec" },
+    { "database", 'd', arg_string, &database, "database", "file"},
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
-int num_args = sizeof(args) / sizeof(args[0]);
+static int num_args = sizeof(args) / sizeof(args[0]);
 
 int
 main(int argc, char **argv)
@@ -316,7 +412,7 @@ main(int argc, char **argv)
     int log_fd;
     slave *slaves = NULL;
     u_int32_t current_version, old_version = 0;
-
+    krb5_keytab keytab;
     int optind;
     
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
@@ -328,17 +424,25 @@ main(int argc, char **argv)
 	exit(0);
     }
 
+    ret = krb5_kt_register(context, &hdb_kt_ops);
+    if(ret)
+	krb5_err(context, 1, ret, "krb5_kt_register");
+
+    ret = krb5_kt_resolve(context, keytab_str, &keytab);
+    if(ret)
+	krb5_err(context, 1, ret, "%s", keytab_str);
+    
     memset(&conf, 0, sizeof(conf));
     if(realm) {
 	conf.mask |= KADM5_CONFIG_REALM;
 	conf.realm = realm;
     }
-    ret = kadm5_init_with_password_ctx (context,
-					KADM5_ADMIN_SERVICE,
-					NULL,
-					KADM5_ADMIN_SERVICE,
-					&conf, 0, 0, 
-					&kadm_handle);
+    ret = kadm5_init_with_skey_ctx (context,
+				    KADM5_ADMIN_SERVICE,
+				    NULL,
+				    KADM5_ADMIN_SERVICE,
+				    &conf, 0, 0, 
+				    &kadm_handle);
     if (ret)
 	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
 
@@ -385,7 +489,7 @@ main(int argc, char **argv)
 
 	    if (current_version > old_version)
 		for (p = slaves; p != NULL; p = p->next)
-		    send_diffs (context, p, log_fd, current_version);
+		    send_diffs (context, p, log_fd, database, current_version);
 	}
 
 	if (ret && FD_ISSET(signal_fd, &readset)) {
@@ -402,17 +506,17 @@ main(int argc, char **argv)
 	    old_version = current_version;
 	    kadm5_log_get_version (log_fd, &current_version);
 	    for (p = slaves; p != NULL; p = p->next)
-		send_diffs (context, p, log_fd, current_version);
+		send_diffs (context, p, log_fd, database, current_version);
 	}
 
 	for(p = slaves; p != NULL && ret--; p = p->next)
 	    if (FD_ISSET(p->fd, &readset)) {
-		if(process_msg (context, p, log_fd, current_version))
+		if(process_msg (context, p, log_fd, database, current_version))
 		    remove_slave (context, p, &slaves);
 	    }
 
 	if (ret && FD_ISSET(listen_fd, &readset)) {
-	    add_slave (context, &slaves, listen_fd);
+	    add_slave (context, keytab, &slaves, listen_fd);
 	    --ret;
 	}
 
