@@ -268,8 +268,8 @@ static int expect(int master, char *issue, char *expected)
 		{
 			DEBUG(2, ("expect: %s\n", strerror(errno)));
 			return False;
+		}
 	}
-}
 
 	return match;
 }
@@ -549,7 +549,7 @@ static BOOL check_oem_password(const char *user,
 			       const uchar * _lmdata, const uchar * lmhash,
 			       const uchar * _ntdata, const uchar * nthash,
 			       struct smb_passwd **psmbpw,
-			       UNISTR2 * new_passwd)
+			       UNISTR2 *new_passwd)
 {
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
@@ -712,6 +712,42 @@ static BOOL check_oem_password(const char *user,
 }
 
 /***********************************************************
+ Code to change the oem password. Changes both the lanman
+ and NT hashes.
+ override = False, normal
+ override = True, override XXXXXXXXXX'd password
+************************************************************/
+static BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd,
+				BOOL override)
+{
+	int ret;
+	uchar new_nt_p16[16];
+	uchar new_p16[16];
+
+	DEBUG(100, ("change_oem_password: %d\n", __LINE__));
+
+	nt_lm_owf_genW(new_passwd, new_nt_p16, new_p16);
+
+	DEBUG(100, ("change_oem_password: %d\n", __LINE__));
+	dbgflush();
+
+	smbpw->smb_passwd = new_p16;
+	smbpw->smb_nt_passwd = new_nt_p16;
+
+	DEBUG(100, ("change_oem_password: %d\n", __LINE__));
+	dbgflush();
+
+	/* Now write it into the file. */
+	become_root(0);
+	ret = mod_smbpwd_entry(smbpw, override);
+	unbecome_root(0);
+
+	ZERO_STRUCTP(new_passwd);
+
+	return ret;
+}
+
+/***********************************************************
  Code to check and change the OEM hashed password.
 ************************************************************/
 BOOL pass_oem_change(const char *user,
@@ -757,63 +793,17 @@ BOOL pass_oem_change(const char *user,
 	{
 		/* chgpasswd takes ascii... */
 		fstring asc;
-		unistr2_to_ascii(asc, &new_passwd, sizeof(asc)-1);
+		unistr2_to_ascii(asc, &new_passwd, sizeof(asc) - 1);
 		ret = chgpasswd(user, "", asc, True);
 		ZERO_STRUCT(asc);
 	}
 
 	if (ret)
 	{
-		ret = change_oem_password(sampw, &new_passwd,
-					  ntdata != NULL, False);
+		ret = change_oem_password(sampw, &new_passwd, False);
 	}
 
 	ZERO_STRUCT(new_passwd);
-
-	return ret;
-}
-
-/***********************************************************
- Code to change the oem password. Changes both the lanman
- and NT hashes.
- override = False, normal
- override = True, override XXXXXXXXXX'd password
-************************************************************/
-
-BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 * new_passwd,
-			 BOOL unicode, BOOL override)
-{
-	int ret;
-	uchar new_nt_p16[16];
-	uchar new_p16[16];
-
-	DEBUG(100, ("change_oem_password: %d\n", __LINE__));
-
-	if (unicode)
-	{
-		nt_lm_owf_genW(new_passwd, new_nt_p16, new_p16);
-	}
-	else
-	{
-		nt_lm_owf_gen((char *)new_passwd->buffer, new_nt_p16,
-			      new_p16);
-	}
-
-	DEBUG(100, ("change_oem_password: %d\n", __LINE__));
-	dbgflush();
-
-	smbpw->smb_passwd = new_p16;
-	smbpw->smb_nt_passwd = new_nt_p16;
-
-	DEBUG(100, ("change_oem_password: %d\n", __LINE__));
-	dbgflush();
-
-	/* Now write it into the file. */
-	become_root(0);
-	ret = mod_smbpwd_entry(smbpw, override);
-	unbecome_root(0);
-
-	ZERO_STRUCTP(new_passwd);
 
 	return ret;
 }
@@ -842,7 +832,7 @@ BOOL update_smbpassword_file(const char *user, const char *password)
 
 	/* Here, the flag is one, because we want to ignore the
 	   XXXXXXX'd out password */
-	ret = change_oem_password(smbpw, &newpw, True, True);
+	ret = change_oem_password(smbpw, &newpw, True);
 	if (!ret)
 	{
 		DEBUG(3, ("change_oem_password returned False\n"));
