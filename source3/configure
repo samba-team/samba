@@ -1599,7 +1599,7 @@ test "$host_alias" != "$target_alias" &&
 
 
   case "$host_os" in
-	*irix*) cat >> confdefs.h <<\EOF
+	*irix6*) cat >> confdefs.h <<\EOF
 #include <standards.h>
 EOF
 
