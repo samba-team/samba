@@ -283,7 +283,7 @@ static void run_locktest1(void)
 	t2 = time(NULL);
 
 	if (t2 - t1 < 5) {
-		printf("This server appears not to support timed lock requests\n");
+		printf("error: This server appears not to support timed lock requests\n");
 	}
 
 	if (!cli_close(&cli1, fnum2)) {
@@ -436,6 +436,160 @@ static void run_locktest2(void)
 }
 
 
+/*
+  This test checks that 
+
+  1) the server supports the full offset range in lock requests
+*/
+static void run_locktest3(int numops)
+{
+	static struct cli_state cli1, cli2;
+	char *fname = "\\locktest.lck";
+	int fnum1, fnum2, i;
+	uint32 offset;
+
+#define NEXT_OFFSET offset += (~(uint32)0) / numops
+
+	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+		return;
+	}
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	printf("starting locktest3\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+	fnum2 = cli_open(&cli2, fname, O_RDWR, DENY_NONE);
+	if (fnum2 == -1) {
+		printf("open2 of %s failed (%s)\n", fname, cli_errstr(&cli2));
+		return;
+	}
+
+	for (offset=i=0;i<numops;i++) {
+		NEXT_OFFSET;
+		if (!cli_lock(&cli1, fnum1, offset-1, 1, 0)) {
+			printf("lock1 %d failed (%s)\n", 
+			       i,
+			       cli_errstr(&cli1));
+			return;
+		}
+
+		if (!cli_lock(&cli2, fnum2, offset-2, 1, 0)) {
+			printf("lock2 %d failed (%s)\n", 
+			       i,
+			       cli_errstr(&cli1));
+			return;
+		}
+	}
+
+	for (offset=i=0;i<numops;i++) {
+		NEXT_OFFSET;
+
+		if (cli_lock(&cli1, fnum1, offset-2, 1, 0)) {
+			printf("error: lock1 %d succeeded!\n", i);
+			return;
+		}
+
+		if (cli_lock(&cli2, fnum2, offset-1, 1, 0)) {
+			printf("error: lock2 %d succeeded!\n", i);
+			return;
+		}
+
+		if (cli_lock(&cli1, fnum1, offset-1, 1, 0)) {
+			printf("error: lock3 %d succeeded!\n", i);
+			return;
+		}
+
+		if (cli_lock(&cli2, fnum2, offset-2, 1, 0)) {
+			printf("error: lock4 %d succeeded!\n", i);
+			return;
+		}
+	}
+
+	for (offset=i=0;i<numops;i++) {
+		NEXT_OFFSET;
+
+		if (!cli_unlock(&cli1, fnum1, offset-1, 1, 0)) {
+			printf("unlock1 %d failed (%s)\n", 
+			       i,
+			       cli_errstr(&cli1));
+			return;
+		}
+
+		if (!cli_unlock(&cli2, fnum2, offset-2, 1, 0)) {
+			printf("unlock2 %d failed (%s)\n", 
+			       i,
+			       cli_errstr(&cli1));
+			return;
+		}
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close1 failed (%s)\n", cli_errstr(&cli1));
+	}
+
+	if (!cli_close(&cli2, fnum2)) {
+		printf("close2 failed (%s)\n", cli_errstr(&cli2));
+	}
+
+	if (!cli_unlink(&cli1, fname)) {
+		printf("unlink failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	close_connection(&cli1);
+	close_connection(&cli2);
+
+	printf("finished locktest3\n");
+}
+
+
+/*
+  This test checks that 
+
+  1) the server does not allow an unlink on a file that is open
+*/
+static void run_unlinktest(void)
+{
+	static struct cli_state cli;
+	char *fname = "\\unlink.tst";
+	int fnum;
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	cli_sockopt(&cli, sockops);
+
+	printf("starting unlink test\n");
+
+	cli_unlink(&cli, fname);
+
+	cli_setpid(&cli, 1);
+
+	fnum = cli_open(&cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli));
+		return;
+	}
+
+	if (cli_unlink(&cli, fname)) {
+		printf("error: server allowed unlink on an open file\n");
+	}
+
+	close_connection(&cli);
+
+	printf("unlink test finished\n");
+}
+
+
+
 static void create_procs(int nprocs, int numops)
 {
 	int i, status;
@@ -548,6 +702,8 @@ static void create_procs(int nprocs, int numops)
 
 	run_locktest1();
 	run_locktest2();
+	run_locktest3(numops);
+	run_unlinktest();
 
 	return(0);
 }
