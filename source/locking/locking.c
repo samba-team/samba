@@ -41,8 +41,6 @@ extern int DEBUGLEVEL;
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
 
-int global_smbpid;
-
 /*
  * Doubly linked list to hold pending closes needed for
  * POSIX locks. This may be changed to use a hash table (as
@@ -569,7 +567,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 		return(False);
 
 	ret = !brl_locktest(fsp->dev, fsp->inode, 
-			     global_smbpid, getpid(), conn->cnum, 
+			     fsp->smbpid, getpid(), conn->cnum, 
 			     offset, count, lock_type);
 
 	/*
@@ -607,7 +605,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      global_smbpid, getpid(), conn->cnum, 
+			      fsp->smbpid, getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
 
@@ -627,7 +625,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 				 * lock entry.
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								global_smbpid, getpid(), conn->cnum, 
+								fsp->smbpid, getpid(), conn->cnum, 
 								offset, count);
 			}
 		}
@@ -676,9 +674,10 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	pid = getpid();
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			global_smbpid, pid, conn->cnum, offset, count);
+			fsp->smbpid, pid, conn->cnum, offset, count);
    
 	if (!ok) {
+		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		*eclass = ERRDOS;
 		*ecode = ERRlock;
 		return False;
