@@ -43,9 +43,9 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 	BOOL res = True;
 	BOOL res1 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
-	char *names[1];
-	uint32 rids [MAX_LOOKUP_SIDS];
-	uint32 types[MAX_LOOKUP_SIDS];
+	const char *names[1];
+	uint32 *rids;
+	uint32 *types;
 	uint32 num_rids;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
@@ -69,7 +69,7 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x000003e8,
 	            1, names,
-	            &num_rids, rids, types) : False;
+	            &num_rids, &rids, &types) : False;
 
 	res  = res  ? samr_close(&pol_dom) : False;
 	res  = res  ? samr_close(&sam_pol) : False;
@@ -81,6 +81,9 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 
 	*rid = rids[0];
 	*type = (uint8)(types[0]);
+
+	free(rids);
+	free(types);
 
 	return 0x0;
 }
@@ -132,6 +135,8 @@ uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 
 	res  = res  ? samr_close(&pol_dom) : False;
 	res  = res  ? samr_close(&sam_pol) : False;
+
+	free(rid_mem);
 
 	if (!res1 || num_names != 1)
 	{
@@ -217,6 +222,8 @@ uint32 sam_query_usergroups( const POLICY_HND *pol_dom,
 			       user_rid, user_name,
 			       num_names, rid_mem, *name, *type);
 		}
+
+		free(rid_mem);
 	}
 
 	return num_names;
@@ -304,6 +311,8 @@ static void req_alias_info( const POLICY_HND *pol_dom,
 				       user_rid, user_name,
 				       num_names, rid_mem, name, type);
 			}
+
+			free(rid_copy);
 		}
 
 		free_char_array(num_names, name);
@@ -383,10 +392,10 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 	BOOL res = True;
 	BOOL res1 = True;
 
-	char *names[1];
+	const char *names[1];
 	uint32 num_rids;
-	uint32 rid[MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 *rid;
+	uint32 *type;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
@@ -400,7 +409,7 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 	names[0] = user_name;
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
-					&num_rids, rid, type) : False;
+					&num_rids, &rid, &type) : False;
 
 	/* send user info query */
 	if (res1 && num_rids == 1)
@@ -409,7 +418,7 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 				domain,
 				sid, NULL,
 				rid[0],
-				names[0],
+				user_name,
 				usr_fn, usr_inf_fn,
 		                usr_grp_fn, usr_als_fn);
 	}
@@ -417,6 +426,11 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 	{
 		res1 = False;
 	}
+
+	if (rid)
+		free(rid);
+	if (type)
+		free(type);
 
 	res = res ? samr_close( &pol_dom) : False;
 	res = res ? samr_close( &sam_pol) : False;
@@ -725,6 +739,8 @@ BOOL sam_query_groupmem( const POLICY_HND *pol_dom,
 			/* resolve names */
 			res3 = samr_query_lookup_rids( pol_dom, 1000,
 		                   num_mem, rid_copy, num_names, name, type);
+
+			free(rid_copy);
 		}
 	}
 	else
@@ -1117,17 +1133,29 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 	if (ret == (NT_STATUS_USER_EXISTS | 0xC0000000))
 	{
 		uint32 num_rids;
-		char *names[1];
-		uint32 type[1];
+		const char *names[1];
+		uint32 *types;
+		uint32 *rids;
 
 		names[0] = acct_name;
 		res1 = samr_query_lookup_names( pol_dom, 0x3e8,
 						1, names,
-						&num_rids, rid, type);
-		if (res1 == False || type[0] != SID_NAME_USER)
+						&num_rids, &rids, &types);
+		if (res1 == False || types[0] != SID_NAME_USER)
 		{
+			if(rids)
+				free(rids);
+			if(types)
+				free(types);
 			return False;
 		}
+
+		*rid = rids[0];
+
+		if(rids)
+			free(rids);
+		if(types)
+			free(types);
 	}
 
 	DEBUG(5,("create_samr_domain_user: name: %s rid 0x%x\n",

@@ -624,7 +624,7 @@ BOOL set_policy_samr_pol_status(struct policy_cache *cache,
 BOOL set_policy_samr_sid(struct policy_cache *cache,
 				POLICY_HND *hnd, DOM_SID *sid);
 BOOL get_policy_samr_sid(struct policy_cache *cache,
-				POLICY_HND *hnd, DOM_SID *sid);
+				const POLICY_HND *hnd, DOM_SID *sid);
 uint32 get_policy_samr_rid(struct policy_cache *cache,
 				POLICY_HND *hnd);
 BOOL get_policy_svc_name(struct policy_cache *cache,
@@ -2247,13 +2247,11 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 				POLICY_HND *domain_pol);
 BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 			      DOM_SID *dom_sid);
-BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
-				uint32 num_names, char **names,
-				uint32 *num_rids,
-				uint32 rid[MAX_LOOKUP_SIDS],
-				uint32 type[MAX_LOOKUP_SIDS]);
+BOOL samr_query_lookup_names(const POLICY_HND *pol, uint32 flags,
+			     uint32 num_names, const char **names,
+			     uint32 *num_rids, uint32 **rids, uint32 **types);
 BOOL samr_query_lookup_rids(  const POLICY_HND *pol, uint32 flags,
-				uint32 num_rids, uint32 *rids,
+				uint32 num_rids, const uint32 *rids,
 				uint32 *num_names,
 				char   ***names,
 				uint32 **type);
@@ -3131,15 +3129,10 @@ BOOL make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value);
 BOOL samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth);
 BOOL make_unk_info3(SAM_UNK_INFO_3 *u_3);
-BOOL sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 *u_3, prs_struct *ps, int depth);
 BOOL make_unk_info6(SAM_UNK_INFO_6 *u_6);
-BOOL sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 *u_6, prs_struct *ps, int depth);
 BOOL make_unk_info7(SAM_UNK_INFO_7 *u_7);
-BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 *u_7, prs_struct *ps, int depth);
 BOOL make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server);
-BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth);
 BOOL make_unk_info1(SAM_UNK_INFO_1 *u_1);
-BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 *u_1, prs_struct *ps, int depth);
 BOOL make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
 				uint16 switch_value, SAM_UNK_CTR *ctr,
 				uint32 status);
@@ -3296,7 +3289,7 @@ BOOL samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, i
 BOOL samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 		const POLICY_HND *pol, uint32 flags,
-		uint32 num_rids, uint32 *rid);
+		uint32 num_rids, const uint32 *rid);
 BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps, int depth);
 void samr_free_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u);
 BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
@@ -3333,12 +3326,16 @@ BOOL make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
 		uint32 num_sids, DOM_SID2 *sid, uint32 status);
 BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
-		POLICY_HND *pol, uint32 flags,
-		uint32 num_names, char **name);
+			      const POLICY_HND *pol, uint32 flags,
+			      uint32 num_names, const char **name);
 BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
+void samr_free_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_l);
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
-		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status);
+			      uint32 num_rids,
+			      const uint32 *rid, const uint8 *type,
+			      uint32 status);
 BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth);
+void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_l);
 BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 				const POLICY_HND *pol,
 				uint32 unk_0, uint32 rid);

@@ -370,7 +370,7 @@ BOOL make_unk_info3(SAM_UNK_INFO_3 *u_3)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 *u_3, prs_struct *ps, int depth)
+static BOOL sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 *u_3, prs_struct *ps, int depth)
 {
 	if (u_3 == NULL) return False;
 
@@ -403,7 +403,7 @@ BOOL make_unk_info6(SAM_UNK_INFO_6 *u_6)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 *u_6, prs_struct *ps, int depth)
+static BOOL sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 *u_6, prs_struct *ps, int depth)
 {
 	if (u_6 == NULL) return False;
 
@@ -435,7 +435,7 @@ BOOL make_unk_info7(SAM_UNK_INFO_7 *u_7)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 *u_7, prs_struct *ps, int depth)
+static BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 *u_7, prs_struct *ps, int depth)
 {
 	if (u_7 == NULL) return False;
 
@@ -488,7 +488,7 @@ BOOL make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth)
+static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth)
 {
 	if (u_2 == NULL) return False;
 
@@ -546,7 +546,7 @@ BOOL make_unk_info1(SAM_UNK_INFO_1 *u_1)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 *u_1, prs_struct *ps, int depth)
+static BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 *u_1, prs_struct *ps, int depth)
 {
 	if (u_1 == NULL) return False;
 
@@ -2766,6 +2766,8 @@ frees a structure.
 ********************************************************************/
 void samr_free_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u)
 {
+	r_u->ptr_0 = 0;
+	r_u->num_entries = 0;
 	if (r_u->gid)
 	{
 		free(r_u->gid);
@@ -3717,19 +3719,19 @@ makes a SAMR_Q_LOOKUP_RIDS structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 		const POLICY_HND *pol, uint32 flags,
-		uint32 num_rids, uint32 *rid)
+		uint32 num_rids, const uint32 *rid)
 {
 	if (q_u == NULL) return False;
 
-	DEBUG(5,("make_samr_r_unknwon_12\n"));
+	DEBUG(5,("make_samr_q_lookup_rids\n"));
 
-	memcpy(&(q_u->pol), pol, sizeof(*pol));
+	q_u->pol = *pol;
 
 	q_u->num_rids1 = num_rids;
 	q_u->flags     = flags;
 	q_u->ptr       = 0;
 	q_u->num_rids2 = num_rids;
-	q_u->rid = rid;
+	q_u->rid = (uint32 *) memdup(rid, num_rids * sizeof(q_u->rid[0]));
 
 	return True;
 }
@@ -3746,6 +3748,11 @@ BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps,
 
 	prs_debug(ps, depth, desc, "samr_io_q_lookup_rids");
 	depth++;
+
+	if (ps->io)
+	{
+		ZERO_STRUCTP(q_u);
+	}
 
 	prs_align(ps);
 
@@ -4391,12 +4398,13 @@ BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struc
 	return True;
 }
 
+
 /*******************************************************************
 makes a SAMR_Q_LOOKUP_NAMES structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
-		POLICY_HND *pol, uint32 flags,
-		uint32 num_names, char **name)
+			      const POLICY_HND *pol, uint32 flags,
+			      uint32 num_names, const char **name)
 {
 	uint32 i;
 	if (q_u == NULL) return False;
@@ -4420,7 +4428,6 @@ BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 	return True;
 }
 
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
@@ -4433,6 +4440,11 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 	prs_debug(ps, depth, desc, "samr_io_q_lookup_names");
 	depth++;
 
+	if (ps->io)
+	{
+		ZERO_STRUCTP(q_u);
+	}
+
 	prs_align(ps);
 
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth); 
@@ -4440,7 +4452,7 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 
 	prs_uint32("num_names1", ps, depth, &(q_u->num_names1));
 	prs_uint32("flags     ", ps, depth, &(q_u->flags     ));
-	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
+	prs_uint32("ptr       ", ps, depth, &(q_u->ptr       ));
 	prs_uint32("num_names2", ps, depth, &(q_u->num_names2));
 
 	SMB_ASSERT_ARRAY(q_u->hdr_name, q_u->num_names2);
@@ -4457,22 +4469,36 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 
 	prs_align(ps);
 
+	if (!ps->io)
+	{
+		/* storing.  memory no longer needed */
+		samr_free_q_lookup_names(q_u);
+	}
+
 	return True;
 }
 
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void samr_free_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_l)
+{
+}
 
 /*******************************************************************
 makes a SAMR_R_LOOKUP_NAMES structure.
 ********************************************************************/
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
-		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status)
+			      uint32 num_rids,
+			      const uint32 *rid, const uint8 *type,
+			      uint32 status)
 {
 	uint32 i;
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_lookup_names\n"));
 
-	if (status == 0x0)
+	if ((status == 0x0) && (num_rids != 0))
 	{
 		r_u->num_types1 = num_rids;
 		r_u->ptr_types  = 1;
@@ -4482,12 +4508,19 @@ BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		r_u->ptr_rids  = 1;
 		r_u->num_rids2 = num_rids;
 
-		SMB_ASSERT_ARRAY(r_u->rid, num_rids);
+		r_u->rids  = g_new(uint32, num_rids);
+		r_u->types = g_new(uint32, num_rids);
+
+		if (! r_u->rids || ! r_u->types)
+		{
+			samr_free_r_lookup_names(r_u);
+			return False;
+		}
 
 		for (i = 0; i < num_rids; i++)
 		{
-			r_u->rid [i] = rid [i];
-			r_u->type[i] = type[i];
+			r_u->rids [i] = rid [i];
+			r_u->types[i] = type[i];
 		}
 	}
 	else
@@ -4499,6 +4532,9 @@ BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		r_u->num_rids1 = 0;
 		r_u->ptr_rids  = 0;
 		r_u->num_rids2 = 0;
+
+		r_u->rids  = NULL;
+		r_u->types = NULL;
 	}
 
 	r_u->status = status;
@@ -4519,6 +4555,11 @@ BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 	prs_debug(ps, depth, desc, "samr_io_r_lookup_names");
 	depth++;
 
+	if (ps->io)
+	{
+		ZERO_STRUCTP(r_u);
+	}
+
 	prs_align(ps);
 
 	prs_uint32("num_rids1", ps, depth, &(r_u->num_rids1));
@@ -4534,10 +4575,20 @@ BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 			return False;
 		}
 
+		if (ps->io)
+			r_u->rids = g_new(uint32, r_u->num_rids2);
+
+		if (! r_u->rids)
+		{
+			DEBUG(0, ("NULL rids in samr_io_r_lookup_names\n"));
+			samr_free_r_lookup_names(r_u);
+			return False;
+		}
+
 		for (i = 0; i < r_u->num_rids2; i++)
 		{
 			slprintf(tmp, sizeof(tmp) - 1, "rid[%02d]  ", i);
-			prs_uint32(tmp, ps, depth, &(r_u->rid[i]));
+			prs_uint32(tmp, ps, depth, &(r_u->rids[i]));
 		}
 	}
 
@@ -4554,16 +4605,56 @@ BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 			return False;
 		}
 
+		if (ps->io)
+			r_u->types = g_new(uint32, r_u->num_types2);
+
+		if (! r_u->types)
+		{
+			DEBUG(0, ("NULL types in samr_io_r_lookup_names\n"));
+			samr_free_r_lookup_names(r_u);
+			return False;
+		}
+
 		for (i = 0; i < r_u->num_types2; i++)
 		{
 			slprintf(tmp, sizeof(tmp) - 1, "type[%02d]  ", i);
-			prs_uint32(tmp, ps, depth, &(r_u->type[i]));
+			prs_uint32(tmp, ps, depth, &(r_u->types[i]));
 		}
 	}
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
+	if (!ps->io)
+	{
+		/* storing.  memory no longer needed */
+		samr_free_r_lookup_names(r_u);
+	}
+
 	return True;
+}
+
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_l)
+{
+	if (r_l->rids != NULL)
+	{
+		free(r_l->rids);
+		r_l->rids = NULL;
+	}
+	if (r_l->types != NULL)
+	{
+		free(r_l->types);
+		r_l->types = NULL;
+	}
+	r_l->num_types1 = 0;
+	r_l->ptr_types  = 0;
+	r_l->num_types2 = 0;
+
+	r_l->num_rids1 = 0;
+	r_l->ptr_rids  = 0;
+	r_l->num_rids2 = 0;
 }
 
 

@@ -93,3 +93,4 @@
 #undef WITH_LIBNMB
 #undef WITH_LIBSAMBA
 #undef WITH_LIBSMB
+#undef WITH_LIBSMBPW

@@ -1588,7 +1588,7 @@ static void api_samr_query_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_str
 /*******************************************************************
  samr_reply_lookup_names
  ********************************************************************/
-static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
+static void samr_reply_lookup_names(const SAMR_Q_LOOKUP_NAMES *q_u,
 				prs_struct *rdata)
 {
 	uint32 rid [MAX_SAM_ENTRIES];
@@ -1648,7 +1648,6 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 	samr_io_r_lookup_names("", &r_u, rdata, 0);
 
 	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
-
 }
 
 /*******************************************************************
@@ -1659,6 +1658,7 @@ static void api_samr_lookup_names( rpcsrv_struct *p, prs_struct *data, prs_struc
 	SAMR_Q_LOOKUP_NAMES q_u;
 	samr_io_q_lookup_names("", &q_u, data, 0);
 	samr_reply_lookup_names(&q_u, rdata);
+	samr_free_q_lookup_names(&q_u);
 }
 
 /*******************************************************************

@@ -1641,11 +1641,9 @@ BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 /****************************************************************************
 do a SAMR Query Lookup Names
 ****************************************************************************/
-BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
-				uint32 num_names, char **names,
-				uint32 *num_rids,
-				uint32 rid[MAX_LOOKUP_SIDS],
-				uint32 type[MAX_LOOKUP_SIDS])
+BOOL samr_query_lookup_names(const POLICY_HND *pol, uint32 flags,
+			     uint32 num_names, const char **names,
+			     uint32 *num_rids, uint32 **rids, uint32 **types)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -1654,7 +1652,11 @@ BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
 	BOOL valid_query = False;
 
 	if (pol == NULL || flags == 0 || num_names == 0 || names == NULL ||
-	    num_rids == NULL || rid == NULL || type == NULL ) return False;
+	    num_rids == NULL || rids == NULL || types == NULL ) return False;
+
+	*num_rids = 0;
+	*types = NULL;
+	*rids  = NULL;
 
 	/* create and send a MSRPC command with api SAMR_LOOKUP_NAMES */
 
@@ -1675,6 +1677,7 @@ BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
 		SAMR_R_LOOKUP_NAMES r_o;
 		BOOL p;
 
+		ZERO_STRUCT(r_o);
 		samr_io_r_lookup_names("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
 		
@@ -1694,14 +1697,16 @@ BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
 
 				valid_query = True;
 				*num_rids = r_o.num_rids1;
+				*types = g_new(uint32, *num_rids);
+				*rids  = g_new(uint32, *num_rids);
 
 				for (i = 0; i < r_o.num_rids1; i++)
 				{
-					rid[i] = r_o.rid[i];
+					(*rids)[i] = r_o.rids[i];
 				}
 				for (i = 0; i < r_o.num_types1; i++)
 				{
-					type[i] = r_o.type[i];
+					(*types)[i] = r_o.types[i];
 				}
 			}
 			else if (r_o.ptr_rids == 0 && r_o.ptr_types == 0)
@@ -1714,6 +1719,8 @@ BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
 				p = False;
 			}
 		}
+
+		samr_free_r_lookup_names(&r_o);
 	}
 
 	prs_free_data(&data   );
@@ -1726,7 +1733,7 @@ BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
 do a SAMR Query Lookup RIDS
 ****************************************************************************/
 BOOL samr_query_lookup_rids(  const POLICY_HND *pol, uint32 flags,
-				uint32 num_rids, uint32 *rids,
+				uint32 num_rids, const uint32 *rids,
 				uint32 *num_names,
 				char   ***names,
 				uint32 **type)
@@ -2044,6 +2051,7 @@ BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 
 		samr_io_r_query_usergroups("", &r_o, &rdata, 0);
 		*gid = r_o.gid;
+		r_o.gid = NULL;
 		p = rdata.offset != 0;
 		
 		if (p && r_o.status != 0)
@@ -2059,6 +2067,7 @@ BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 			*num_groups = r_o.num_entries;
 		}
 
+		samr_free_r_query_usergroups(&r_o);
 	}
 
 	prs_free_data(&data   );

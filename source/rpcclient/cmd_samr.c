@@ -390,9 +390,9 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 	BOOL res2 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 alias_rid = 0;
-	char *names[1];
-	uint32 rid [MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	const char *names[1];
+	uint32 *rids;
+	uint32 *types;
 	uint32 num_rids;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
@@ -433,11 +433,19 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x000003e8,
 	            1, names,
-	            &num_rids, rid, type) : False;
+	            &num_rids, &rids, &types) : False;
 
-	if (res1 && num_rids == 1)
+	if (res1 && num_rids == 1 && rids)
 	{
-		alias_rid = rid[0];
+		alias_rid = rids[0];
+	}
+	if (rids)
+	{
+		free(rids);
+	}
+	if (types)
+	{
+		free(types);
 	}
 
 	/* connect to the domain */
@@ -988,9 +996,9 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[])
 	BOOL res2 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 group_rid = 0;
-	char *names[1];
-	uint32 rid [MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	const char *names[1];
+	uint32 *rids;
+	uint32 *types;
 	uint32 num_rids;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
@@ -1031,11 +1039,19 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[])
 
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x000003e8,
 	            1, names,
-	            &num_rids, rid, type) : False;
+	            &num_rids, &rids, &types) : False;
 
-	if (res1 && num_rids == 1)
+	if (res1 && num_rids == 1 && rids)
 	{
-		group_rid = rid[0];
+		group_rid = rids[0];
+	}
+	if (rids)
+	{
+		free(rids);
+	}
+	if (types)
+	{
+		free(types);
 	}
 
 	/* connect to the domain */
@@ -1077,14 +1093,14 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	BOOL res3 = True;
 	BOOL res4 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
-	uint32 group_rid[1];
-	uint32 group_type[1];
-	char **names = NULL;
+	uint32 *group_rids;
+	uint32 *group_types;
+	const char **names = NULL;
 	uint32 num_names = 0;
 	fstring group_name;
-	char *group_names[1];
-	uint32 rid [MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	const char *group_names[1];
+	uint32 *rids;
+	uint32 *types;
 	uint32 num_rids;
 	uint32 num_group_rids;
 	uint32 i;
@@ -1124,13 +1140,12 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	argv++;
 
 	num_names = argc;
-	names = argv;
+	names = (const char **) argv;
 
 	report(out_hnd, "SAM Add Domain Group member\n");
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000,
-				&sam_pol) : False;
+	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
 
 	/* connect to the domain */
 	res4 = res ? samr_open_domain( &sam_pol, ace_perms, &sid1,
@@ -1142,32 +1157,49 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 
 	res2 = res4 ? samr_query_lookup_names( &pol_dom, 0x000003e8,
 	            1, group_names,
-	            &num_group_rids, group_rid, group_type) : False;
+	            &num_group_rids, &group_rids, &group_types) : False;
 
 	/* open the group */
 	res2 = res2 ? samr_open_group( &pol_dom,
-	            0x0000001f, group_rid[0], &pol_grp) : False;
+	            0x0000001f, group_rids[0], &pol_grp) : False;
 
-	if (!res2 || (group_type != NULL && group_type[0] == SID_NAME_UNKNOWN))
+	if (!res2 || (group_types != NULL && group_types[0] == SID_NAME_UNKNOWN))
 	{
+		if (group_rids != NULL)
+		{
+			free(group_rids);
+		}
+		if (group_types != NULL)
+		{
+			free(group_types);
+		}
+
 		res2 = res3 ? samr_query_lookup_names( &pol_blt, 0x000003e8,
 			    1, group_names, 
-			    &num_group_rids, group_rid, group_type) : False;
+			    &num_group_rids, &group_rids, &group_types) : False;
 
 		/* open the group */
 		res2 = res2 ? samr_open_group( &pol_blt,
-			    0x0000001f, group_rid[0], &pol_grp) : False;
+			    0x0000001f, group_rids[0], &pol_grp) : False;
 	}
 
-	if (res2 && group_type[0] == SID_NAME_ALIAS)
+	if (res2 && group_types[0] == SID_NAME_ALIAS)
 	{
 		report(out_hnd, "%s is a local alias, not a group.  Use addaliasmem command instead\n",
 			group_name);
+		if (group_rids != NULL)
+		{
+			free(group_rids);
+		}
+		if (group_types != NULL)
+		{
+			free(group_types);
+		}
 		return;
 	}
 	res1 = res2 ? samr_query_lookup_names( &pol_dom, 0x000003e8,
 	            num_names, names,
-	            &num_rids, rid, type) : False;
+	            &num_rids, &rids, &types) : False;
 
 	if (num_rids == 0)
 	{
@@ -1175,16 +1207,16 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	}
 	for (i = 0; i < num_rids && res2 && res1; i++)
 	{
-		if (type[i] == SID_NAME_UNKNOWN)
+		if (types[i] == SID_NAME_UNKNOWN)
 		{
 			report(out_hnd, "Name %s unknown\n", names[i]);
 		}
 		else
 		{
-			if (samr_add_groupmem(&pol_grp, rid[i]))
+			if (samr_add_groupmem(&pol_grp, rids[i]))
 			{
 				report(out_hnd, "RID added to Group 0x%x: 0x%x\n",
-						 group_rid[0], rid[i]);
+						 group_rids[0], rids[i]);
 			}
 		}
 	}
@@ -1194,7 +1226,9 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	res1 = res4 ? samr_close(&pol_dom) : False;
 	res  = res ? samr_close(&sam_pol) : False;
 
+#if 0
 	free_char_array(num_names, names);
+#endif
 	
 	if (res && res1 && res2)
 	{
@@ -1206,16 +1240,22 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 		DEBUG(5,("cmd_sam_add_groupmem: failed\n"));
 		report(out_hnd, "Add Domain Group Member: FAILED\n");
 	}
-#if 0
-	if (group_rid != NULL)
+	if (group_rids != NULL)
 	{
-		free(group_rid);
+		free(group_rids);
 	}
-	if (group_type != NULL)
+	if (group_types != NULL)
 	{
-		free(group_type);
+		free(group_types);
 	}
-#endif
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
+	}
 }
 
 
@@ -1381,10 +1421,10 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *group_name;
-	char *names[1];
+	const char *names[1];
 	uint32 num_rids;
-	uint32 rid[MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 *rids;
+	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
@@ -1427,15 +1467,15 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	names[0] = group_name;
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
-					&num_rids, rid, type) : False;
+					&num_rids, &rids, &types) : False;
 
 	if (res1 && num_rids == 1)
 	{
 		res1 = req_groupmem_info( &pol_dom,
 				domain,
 				&sid,
-				rid[0],
-	                        names[0],
+				rids[0],
+	                        group_name,
 				sam_display_group_members);
 	}
 
@@ -1449,6 +1489,14 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	else
 	{
 		DEBUG(5,("cmd_sam_query_group: failed\n"));
+	}
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
 	}
 }
 
@@ -1466,10 +1514,10 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *group_name;
-	char *names[1];
+	const char *names[1];
 	uint32 num_rids;
-	uint32 rid[MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 *rids;
+	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
@@ -1501,25 +1549,23 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	                  info->myhostname, srv_name, domain, sid_str);
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000,
-				&sam_pol) : False;
+	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain( &sam_pol, 0x304, &sid,
-	            &pol_dom) : False;
+	res = res ? samr_open_domain( &sam_pol, 0x304, &sid, &pol_dom) : False;
 
 	/* look up group rid */
 	names[0] = group_name;
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
-					&num_rids, rid, type) : False;
+					&num_rids, &rids, &types) : False;
 
 	if (res1 && num_rids == 1)
 	{
 		res1 = query_groupinfo( &pol_dom,
 				domain,
 				&sid,
-				rid[0],
+				rids[0],
 				sam_display_group_info);
 	}
 
@@ -1534,6 +1580,15 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_sam_query_group: failed\n"));
 	}
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
+	}
+	
 }
 
 
@@ -1551,10 +1606,10 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	int opt;
 
 	char *user_name;
-	char *names[1];
+	const char *names[1];
 	uint32 num_rids;
-	uint32 rid[MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 *rids;
+	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
@@ -1626,7 +1681,7 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	names[0] = user_name;
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
-					&num_rids, rid, type) : False;
+					&num_rids, &rids, &types) : False;
 
 	/* send user info query */
 	if (res1 && num_rids == 1)
@@ -1634,7 +1689,7 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 		msrpc_sam_user( &pol_dom, NULL,
 				domain,
 				&sid, NULL,
-				rid[0], names[0],
+				rids[0], user_name,
 	            sam_display_user,
 	            request_user_info  ? sam_display_user_info     : NULL,
 	            request_group_info ? sam_display_group_members : NULL,
@@ -1656,6 +1711,14 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_sam_query_user: failed\n"));
 	}
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
+	}
 }
 
 
@@ -1675,10 +1738,10 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 	fstring user_name;
 
-	char *names[1];
+	const char *names[1];
 	uint32 num_rids;
-	uint32 rid[MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 *rids;
+	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 	SAM_USER_INFO_16 usr16;
@@ -1737,11 +1800,11 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	names[0] = user_name;
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
-					&num_rids, rid, type) : False;
+					&num_rids, &rids, &types) : False;
 
 	/* send set user info */
 	if (res1 && num_rids == 1 && get_samr_query_userinfo( &pol_dom,
-						    0x10, rid[0],
+						    0x10, rids[0],
 	                                            (void*)&usr16))
 	{
 		void *usr = NULL;
@@ -1764,7 +1827,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		if (usr != NULL)
 		{
 			res1 = set_samr_set_userinfo2( &pol_dom,
-					    switch_value, rid[0], usr);
+					    switch_value, rids[0], usr);
 		}
 	}
 
@@ -1780,6 +1843,14 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd, "Set User Info: Failed\n");
 		DEBUG(5,("cmd_sam_query_user: failed\n"));
+	}
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
 	}
 }
 
@@ -1800,10 +1871,10 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	fstring user_name;
 	fstring password;
 
-	char *names[1];
+	const char *names[1];
 	uint32 num_rids;
-	uint32 rid[MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 *rids;
+	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 	SAM_USER_INFO_21 usr21;
@@ -1881,11 +1952,11 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	names[0] = user_name;
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
-					&num_rids, rid, type) : False;
+					&num_rids, &rids, &types) : False;
 
 	/* send set user info */
 	if (res1 && num_rids == 1 && get_samr_query_userinfo( &pol_dom,
-						    0x15, rid[0], &usr21))
+						    0x15, rids[0], &usr21))
 	{
 		void *usr = NULL;
 		uint32 switch_value = 0;
@@ -1949,7 +2020,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		if (usr != NULL)
 		{
 			res1 = set_samr_set_userinfo( &pol_dom,
-					    switch_value, rid[0], usr);
+					    switch_value, rids[0], usr);
 		}
 	}
 
@@ -1965,6 +2036,14 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd, "Set User Info: Failed\n");
 		DEBUG(5,("cmd_sam_query_user: failed\n"));
+	}
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
 	}
 }
 
@@ -2084,10 +2163,10 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *alias_name;
-	char *names[1];
+	const char *names[1];
 	uint32 num_rids;
-	uint32 rid[MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 *rids;
+	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
@@ -2130,7 +2209,7 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	names[0] = alias_name;
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
-					&num_rids, rid, type) : False;
+					&num_rids, &rids, &types) : False;
 
 	if (res1 && num_rids == 1)
 	{
@@ -2138,8 +2217,8 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 				&pol_dom,
 				domain,
 				&sid,
-				rid[0],
-	                        names[0],
+				rids[0],
+	                        alias_name,
 				sam_display_alias_members);
 	}
 
@@ -2153,6 +2232,14 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	else
 	{
 		DEBUG(5,("cmd_sam_query_alias: failed\n"));
+	}
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
 	}
 }
 
@@ -2170,10 +2257,10 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *alias_name;
-	char *names[1];
+	const char *names[1];
 	uint32 num_rids;
-	uint32 rid[MAX_LOOKUP_SIDS];
-	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 *rids;
+	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
@@ -2216,14 +2303,14 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	names[0] = alias_name;
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
-					&num_rids, rid, type) : False;
+					&num_rids, &rids, &types) : False;
 
 	if (res1 && num_rids == 1)
 	{
 		res1 = query_aliasinfo( &pol_dom,
 				domain,
 				&sid,
-				rid[0],
+				rids[0],
 				sam_display_alias_info);
 	}
 
@@ -2237,6 +2324,14 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	else
 	{
 		DEBUG(5,("cmd_sam_query_alias: failed\n"));
+	}
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
 	}
 }
 

@@ -317,7 +317,7 @@ BOOL set_policy_samr_sid(struct policy_cache *cache,
   get samr sid
 ****************************************************************************/
 BOOL get_policy_samr_sid(struct policy_cache *cache,
-				POLICY_HND *hnd, DOM_SID *sid)
+				const POLICY_HND *hnd, DOM_SID *sid)
 {
 	struct policy *p = find_policy(cache, hnd);
 

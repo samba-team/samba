@@ -1303,13 +1303,13 @@ typedef struct r_samr_lookup_names_info
 	uint32 ptr_rids;       /* pointer to aliases */
 	uint32 num_rids2;      /* number of aliases being looked up */
 
-	uint32 rid[MAX_LOOKUP_SIDS]; /* rids */
+	uint32 *rids; /* rids */
 
 	uint32 num_types1;      /* number of users in aliases being looked up */
 	uint32 ptr_types;       /* pointer to users in aliases */
 	uint32 num_types2;      /* number of users in aliases being looked up */
 
-	uint32 type[MAX_LOOKUP_SIDS]; /* SID_ENUM type */
+	uint32 *types; /* SID_ENUM type */
 
 	uint32 status; /* return code */
 
