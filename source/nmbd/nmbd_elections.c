@@ -48,7 +48,7 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
   SIVAL(p,5,timeup*1000); /* ms - Despite what the spec says. */
   p += 13;
   pstrcpy_base(p, server_name, outbuf);
-  strupper(p);
+  strupper_m(p);
   p = skip_string(p,1);
   
   send_mailslot(False, BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),

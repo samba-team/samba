@@ -100,7 +100,7 @@ BOOL secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
 	fstring key;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
-	strupper(key);
+	strupper_m(key);
 	return secrets_store(key, sid, sizeof(DOM_SID));
 }
 
@@ -111,7 +111,7 @@ BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 	size_t size;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
-	strupper(key);
+	strupper_m(key);
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
 
 	if (dyn_sid == NULL)
@@ -133,7 +133,7 @@ BOOL secrets_store_domain_guid(const char *domain, GUID *guid)
 	fstring key;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
-	strupper(key);
+	strupper_m(key);
 	return secrets_store(key, guid, sizeof(GUID));
 }
 
@@ -145,7 +145,7 @@ BOOL secrets_fetch_domain_guid(const char *domain, GUID *guid)
 	GUID new_guid;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
-	strupper(key);
+	strupper_m(key);
 	dyn_guid = (GUID *)secrets_fetch(key, &size);
 
 	DEBUG(6,("key is %s, size is %d\n", key, (int)size));
@@ -183,7 +183,7 @@ const char *trust_keystr(const char *domain)
 
 	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
 		 SECRETS_MACHINE_ACCT_PASS, domain);
-	strupper(keystr);
+	strupper_m(keystr);
 
 	return keystr;
 }
@@ -200,7 +200,7 @@ char *trustdom_keystr(const char *domain)
 	static char* keystr;
 
 	asprintf(&keystr, "%s/%s", SECRETS_DOMTRUST_ACCT_PASS, domain);
-	strupper(keystr);
+	strupper_m(keystr);
 		
 	return keystr;
 }
@@ -399,7 +399,7 @@ BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32
 	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
 	if (!key) 
 		return False;
-	strupper(key);
+	strupper_m(key);
 
 	ret = secrets_store(key, pass, strlen(pass)+1);
 	SAFE_FREE(key);
@@ -410,7 +410,7 @@ BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32
 	asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
 	if (!key) 
 		return False;
-	strupper(key);
+	strupper_m(key);
 
 	SIVAL(&last_change_time, 0, time(NULL));
 	ret = secrets_store(key, &last_change_time, sizeof(last_change_time));
@@ -419,7 +419,7 @@ BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32
 	asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
 	if (!key) 
 		return False;
-	strupper(key);
+	strupper_m(key);
 
 	SIVAL(&sec_channel_type, 0, sec_channel);
 	ret = secrets_store(key, &sec_channel_type, sizeof(sec_channel_type));
@@ -440,7 +440,7 @@ char *secrets_fetch_machine_password(const char *domain,
 	char *key = NULL;
 	char *ret;
 	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
-	strupper(key);
+	strupper_m(key);
 	ret = (char *)secrets_fetch(key, NULL);
 	SAFE_FREE(key);
 	
@@ -448,7 +448,7 @@ char *secrets_fetch_machine_password(const char *domain,
 		size_t size;
 		uint32 *last_set_time;
 		asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
-		strupper(key);
+		strupper_m(key);
 		last_set_time = secrets_fetch(key, &size);
 		if (last_set_time) {
 			*pass_last_set_time = IVAL(last_set_time,0);
@@ -463,7 +463,7 @@ char *secrets_fetch_machine_password(const char *domain,
 		size_t size;
 		uint32 *channel_type;
 		asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
-		strupper(key);
+		strupper_m(key);
 		channel_type = secrets_fetch(key, &size);
 		if (channel_type) {
 			*channel = IVAL(channel_type,0);

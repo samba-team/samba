@@ -209,9 +209,4 @@ size_t __unsafe_string_function_usage_here_char__(void);
 
 #endif
 
-/* replace some string functions with multi-byte
-   versions */
-#define strlower(s) strlower_m(s)
-#define strupper(s) strupper_m(s)
-
 #endif

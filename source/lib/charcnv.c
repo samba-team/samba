@@ -387,7 +387,7 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
-		strupper(tmpbuf);
+		strupper_m(tmpbuf);
 		src = tmpbuf;
 	}
 
@@ -488,7 +488,7 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
-		strupper(tmpbuf);
+		strupper_m(tmpbuf);
 		src = tmpbuf;
 	}
 
@@ -566,7 +566,7 @@ static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
-		strupper(tmpbuf);
+		strupper_m(tmpbuf);
 		src = tmpbuf;
 	}
 

@@ -392,7 +392,7 @@ static int process_root(int local_flags)
 		if (local_flags & LOCAL_ADD_USER) {
 		        SAFE_FREE(new_passwd);
 			new_passwd = smb_xstrdup(user_name);
-			strlower(new_passwd);
+			strlower_m(new_passwd);
 		}
 
 		/*

@@ -227,7 +227,8 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards)
 		SAFE_FREE(str);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	if (p) *p = 0;
+	if (p)
+		*p = 0;
 	strupper_w(str);
 	p = &(str[1]);
 
@@ -660,7 +661,7 @@ static void to_8_3(char *s)
 	} else
 		csum = str_checksum(s);
 
-	strupper( s );
+	strupper_m( s );
 
 	if( p ) {
 		if( p == s )

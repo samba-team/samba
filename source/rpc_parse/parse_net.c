@@ -446,7 +446,7 @@ void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 	for (i = 0; i < num_doms; i++) {
 		fstring domain_name;
 		fstrcpy(domain_name, dom_name);
-		strupper(domain_name);
+		strupper_m(domain_name);
 		init_unistr2(&r_t->uni_trust_dom_name[i], domain_name, strlen(domain_name)+1);
 		/* the use of UNISTR2 here is non-standard. */
 		r_t->uni_trust_dom_name[i].undoc = 0x1;

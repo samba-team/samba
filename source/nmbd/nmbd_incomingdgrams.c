@@ -580,7 +580,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
   /* We always return at least one name - our own. */
   count = 1;
   fstrcpy(myname, global_myname());
-  strupper(myname);
+  strupper_m(myname);
   myname[15]='\0';
   push_pstring_base(p, myname, outbuf);
 
@@ -614,7 +614,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
       continue;
 
     StrnCpy(p, servrec->serv.name, 15);
-    strupper(p);
+    strupper_m(p);
     count++;
 
     DEBUG(5,("send_backup_list_response: Adding server %s number %d\n",

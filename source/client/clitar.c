@@ -197,7 +197,7 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
   fixtarname(hb.dbuf.name, aname, (l >= NAMSIZ) ? NAMSIZ : l + 1);
 
   if (lowercase)
-    strlower(hb.dbuf.name);
+    strlower_m(hb.dbuf.name);
 
   /* write out a "standard" tar format header */
 

@@ -92,13 +92,13 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	SSVAL(p,0,1);
 	p += 2;
 	pstrcpy_base(p,user,param);
-	strupper(p);
+	strupper_m(p);
 	p += 21;
 	p++;
 	p += 15;
 	p++; 
 	pstrcpy_base(p, workstation, param);
-	strupper(p);
+	strupper_m(p);
 	p += 16;
 	SSVAL(p, 0, CLI_BUFFER_SIZE);
 	p += 2;

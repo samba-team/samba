@@ -659,7 +659,7 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	GetTimeOfDay(&tp_start);
 
 	if (lowercase) {
-		strlower(lname);
+		strlower_m(lname);
 	}
 
 	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
@@ -834,7 +834,7 @@ static void do_mget(file_info *finfo)
 
 	unix_format(finfo->name);
 	if (lowercase)
-		strlower(finfo->name);
+		strlower_m(finfo->name);
 	
 	if (!directory_exist(finfo->name,NULL) && 
 	    mkdir(finfo->name,0777) != 0) {

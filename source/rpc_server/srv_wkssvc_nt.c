@@ -40,10 +40,10 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
 	DEBUG(5,("create_wks_info_100: %d\n", __LINE__));
 
 	pstrcpy (my_name, global_myname());
-	strupper(my_name);
+	strupper_m(my_name);
 
 	pstrcpy (domain, lp_workgroup());
-	strupper(domain);
+	strupper_m(domain);
 
 	init_wks_info_100(inf,
 	                  0x000001f4, /* platform id info */

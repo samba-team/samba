@@ -155,7 +155,7 @@ workgroup %s. This is a bug.\n", name, work->work_group));
  
   fstrcpy(servrec->serv.name,name);
   fstrcpy(servrec->serv.comment,comment);
-  strupper(servrec->serv.name);
+  strupper_m(servrec->serv.name);
   servrec->serv.type  = servertype;
 
   update_server_ttl(servrec, ttl);

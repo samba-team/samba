@@ -1570,15 +1570,15 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 
 	fstrcpy(cli->srv_name_slash, "\\\\");
 	fstrcat(cli->srv_name_slash, cli->desthost);
-	strupper(cli->srv_name_slash);
+	strupper_m(cli->srv_name_slash);
 
 	fstrcpy(cli->clnt_name_slash, "\\\\");
 	fstrcat(cli->clnt_name_slash, global_myname());
-	strupper(cli->clnt_name_slash);
+	strupper_m(cli->clnt_name_slash);
 
 	fstrcpy(cli->mach_acct, global_myname());
 	fstrcat(cli->mach_acct, "$");
-	strupper(cli->mach_acct);
+	strupper_m(cli->mach_acct);
 
 	/* Remember which pipe we're talking to */
 	fstrcpy(cli->pipe_name, pipe_names[pipe_idx].client_pipe);

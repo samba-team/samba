@@ -50,7 +50,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
 		standard_sub_basic(current_user_info.smb_name, desthost, sizeof(desthost));
-		strupper(desthost);
+		strupper_m(desthost);
 
 		if(!resolve_name( desthost, &dest_ip, 0x20)) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
