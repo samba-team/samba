@@ -1974,8 +1974,6 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 	return (True);
 }
 
-BOOL (*register_printer_fn)(const char *);
-
 /***************************************************************************
 add a new printer service, with defaults coming from service iFrom.
 ***************************************************************************/
@@ -2008,8 +2006,6 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
 	update_server_announce_as_printserver();
-	if (register_printer_fn && (!(*register_printer_fn)(pszPrintername)))
-		return False;
 
 	return (True);
 }
