@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 YFLAGS = -d
 
 lib_LTLIBRARIES = libasn1.la
-libasn1_la_LDFLAGS = -version-info 6:0:0
+libasn1_la_LDFLAGS = -version-info 6:1:1
 
 libasn1_la_LIBADD = @LIB_com_err@
 
@@ -27,6 +27,8 @@ gen_files =					\
 	asn1_ENCTYPE.x				\
 	asn1_ETYPE_INFO.x			\
 	asn1_ETYPE_INFO_ENTRY.x			\
+	asn1_ETYPE_INFO2.x			\
+	asn1_ETYPE_INFO2_ENTRY.x		\
 	asn1_EncAPRepPart.x			\
 	asn1_EncASRepPart.x			\
 	asn1_EncKDCRepPart.x			\
