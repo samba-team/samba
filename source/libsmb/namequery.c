@@ -492,7 +492,7 @@ BOOL getlmhostsent( XFILE *fp, pstring name, int *name_type, struct in_addr *ipa
 
     *name_type = -1;
 
-    if (!fgets_slash_x(line,sizeof(pstring),fp))
+    if (!fgets_slash(line,sizeof(pstring),fp))
       continue;
 
     if (*line == '#')

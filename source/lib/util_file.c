@@ -271,86 +271,8 @@ read a line from a file with possible \ continuation chars.
 Blanks at the start or end of a line are stripped.
 The string will be allocated if s2 is NULL
 ****************************************************************************/
-char *fgets_slash(char *s2,int maxlen,FILE *f)
-{
-  char *s=s2;
-  int len = 0;
-  int c;
-  BOOL start_of_line = True;
 
-  if (feof(f))
-    return(NULL);
-
-  if (maxlen <2) return(NULL);
-
-  if (!s2)
-    {
-      char *t;
-
-      maxlen = MIN(maxlen,8);
-      t = (char *)Realloc(s,maxlen);
-      if (!t) {
-        DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
-        SAFE_FREE(s);
-        return(NULL);
-      } else
-        s = t;
-    }
-
-  if (!s)
-    return(NULL);
-
-  *s = 0;
-
-  while (len < maxlen-1)
-    {
-      c = getc(f);
-      switch (c)
-	{
-	case '\r':
-	  break;
-	case '\n':
-	  while (len > 0 && s[len-1] == ' ')
-	    {
-	      s[--len] = 0;
-	    }
-	  if (len > 0 && s[len-1] == '\\')
-	    {
-	      s[--len] = 0;
-	      start_of_line = True;
-	      break;
-	    }
-	  return(s);
-	case EOF:
-	  if (len <= 0 && !s2) 
-	    SAFE_FREE(s);
-	  return(len>0?s:NULL);
-	case ' ':
-	  if (start_of_line)
-	    break;
-	default:
-	  start_of_line = False;
-	  s[len++] = c;
-	  s[len] = 0;
-	}
-      if (!s2 && len > maxlen-3) {
-        char *t;
-
-        maxlen *= 2;
-        t = (char *)Realloc(s,maxlen);
-        if (!t) {
-          DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
-          SAFE_FREE(s);
-          return(NULL);
-        } else
-          s = t;
-      }
-    }
-  return(s);
-}
-
-/* Temporary.... JRA */
-char *fgets_slash_x(char *s2,int maxlen,XFILE *f)
+char *fgets_slash(char *s2,int maxlen,XFILE *f)
 {
   char *s=s2;
   int len = 0;
@@ -428,11 +350,10 @@ char *fgets_slash_x(char *s2,int maxlen,XFILE *f)
   return(s);
 }
 
-
-
 /****************************************************************************
 load from a pipe into memory
 ****************************************************************************/
+
 char *file_pload(char *syscmd, size_t *size)
 {
 	int fd, n;
