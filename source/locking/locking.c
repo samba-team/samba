@@ -541,19 +541,6 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 
 BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
 {
-#if 1 /* JRA PARANOIA TEST - REMOVE LATER */
-	if (e1->pid == e2->pid &&
-		e1->share_file_id == e2->share_file_id &&
-		e1->dev == e2->dev &&
-		e1->inode == e2->inode &&
-		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) != (e2->share_mode & ~DELETE_ON_CLOSE_FLAG)) {
-			DEBUG(0,("PANIC: share_modes_identical: share_mode missmatch (e1 = %u, e2 = %u). Logic error.\n",
-				(unsigned int)(e1->share_mode & ~DELETE_ON_CLOSE_FLAG),
-				(unsigned int)(e2->share_mode & ~DELETE_ON_CLOSE_FLAG) ));
-		smb_panic("PANIC: share_modes_identical logic error.\n");
-	}
-#endif
-
 	return (e1->pid == e2->pid &&
 		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) == (e2->share_mode & ~DELETE_ON_CLOSE_FLAG) &&
 		e1->dev == e2->dev &&
@@ -679,7 +666,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		pstrcat(fname, fsp->fsp_name);
 
 		size = sizeof(*data) + sizeof(share_mode_entry) + strlen(fname) + 1;
-		p = (char *)malloc(size);
+		p = (char *)SMB_MALLOC(size);
 		if (!p)
 			return False;
 		data = (struct locking_data *)p;
@@ -711,7 +698,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		fsp->fsp_name, data->u.num_share_mode_entries ));
 
 	size = dbuf.dsize + sizeof(share_mode_entry);
-	p = malloc(size);
+	p = SMB_MALLOC(size);
 	if (!p) {
 		SAFE_FREE(dbuf.dptr);
 		return False;
@@ -924,7 +911,6 @@ static void print_deferred_open_table(struct deferred_open_data *data)
 		DEBUG(10,("print_deferred_open_table: %s\n", deferred_open_str(i, entry_p) ));
 	}
 }
-
 
 /*******************************************************************
  Form a static deferred open locking key for a dev/inode pair.
@@ -1161,7 +1147,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 		/* we'll need to create a new record */
 
 		size = sizeof(*data) + sizeof(deferred_open_entry) + strlen(fname) + 1;
-		p = (char *)malloc(size);
+		p = (char *)SMB_MALLOC(size);
 		if (!p)
 			return False;
 		data = (struct deferred_open_data *)p;
@@ -1193,7 +1179,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 		fname, data->u.num_deferred_open_entries ));
 
 	size = dbuf.dsize + sizeof(deferred_open_entry);
-	p = malloc(size);
+	p = SMB_MALLOC(size);
 	if (!p) {
 		SAFE_FREE(dbuf.dptr);
 		return False;

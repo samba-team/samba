@@ -318,7 +318,7 @@ BOOL initialise_wins(void)
 		}
 
 		/* Allocate the space for the ip_list. */
-		if((ip_list = (struct in_addr *)malloc( num_ips * sizeof(struct in_addr))) == NULL) {
+		if((ip_list = SMB_MALLOC_ARRAY( struct in_addr, num_ips)) == NULL) {
 			DEBUG(0,("initialise_wins: Malloc fail !\n"));
 			return False;
 		}
@@ -1379,7 +1379,7 @@ static void process_wins_dmb_query_request(struct subnet_record *subrec,
 		return;
 	}
 
-	if((prdata = (char *)malloc( num_ips * 6 )) == NULL) {
+	if((prdata = (char *)SMB_MALLOC( num_ips * 6 )) == NULL) {
 		DEBUG(0,("process_wins_dmb_query_request: Malloc fail !.\n"));
 		return;
 	}
@@ -1442,7 +1442,7 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
 		if( namerec->data.num_ips == 1 ) {
 			prdata = rdata;
 		} else {
-			if((prdata = (char *)malloc( namerec->data.num_ips * 6 )) == NULL) {
+			if((prdata = (char *)SMB_MALLOC( namerec->data.num_ips * 6 )) == NULL) {
 				DEBUG(0,("send_wins_name_query_response: malloc fail !\n"));
 				return;
 			}

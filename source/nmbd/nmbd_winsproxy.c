@@ -59,7 +59,7 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 	if(num_ips == 1) {
 		iplist = &ip;
 	} else {
-		if((iplist = (struct in_addr *)malloc( num_ips * sizeof(struct in_addr) )) == NULL) {
+		if((iplist = SMB_MALLOC_ARRAY( struct in_addr, num_ips )) == NULL) {
 			DEBUG(0,("wins_proxy_name_query_request_success: malloc fail !\n"));
 			return;
 		}
@@ -131,7 +131,7 @@ proxy query returns.
 static struct userdata_struct *wins_proxy_userdata_copy_fn(struct userdata_struct *userdata)
 {
 	struct packet_struct *p, *copy_of_p;
-	struct userdata_struct *new_userdata = (struct userdata_struct *)malloc( userdata->userdata_len );
+	struct userdata_struct *new_userdata = (struct userdata_struct *)SMB_MALLOC( userdata->userdata_len );
 
 	if(new_userdata == NULL)
 		return NULL;

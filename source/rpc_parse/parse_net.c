@@ -1019,7 +1019,7 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 		}
 
 		/* Now allocate space for them. */
-		*ppsids = (DOM_SID2 *)talloc_zero(ctx, count * sizeof(DOM_SID2));
+		*ppsids = TALLOC_ZERO_ARRAY(ctx, DOM_SID2, count);
 		if (*ppsids == NULL)
 			return 0;
 
@@ -1310,7 +1310,7 @@ static BOOL net_io_id_info_ctr(const char *desc, NET_ID_INFO_CTR **pp_ctr, prs_s
 	depth++;
 
 	if (UNMARSHALLING(ps)) {
-		ctr = *pp_ctr = (NET_ID_INFO_CTR *)prs_alloc_mem(ps, sizeof(NET_ID_INFO_CTR));
+		ctr = *pp_ctr = PRS_ALLOC_MEM(ps, NET_ID_INFO_CTR, 1);
 		if (ctr == NULL)
 			return False;
 	}
@@ -1481,7 +1481,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	usr->num_groups2 = num_groups;
 
-	usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * (num_groups));
+	usr->gids = TALLOC_ZERO_ARRAY(ctx,DOM_GID,num_groups);
 	if (usr->gids == NULL && num_groups>0)
 		return;
 
@@ -1614,7 +1614,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 		return False;
 
 	if (UNMARSHALLING(ps) && usr->num_groups2 > 0) {
-		usr->gids = (DOM_GID *)prs_alloc_mem(ps, sizeof(DOM_GID)*usr->num_groups2);
+		usr->gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_groups2);
 		if (usr->gids == NULL)
 			return False;
 	}
@@ -1635,7 +1635,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if (usr->num_other_sids) {
 
 		if (UNMARSHALLING(ps)) {
-			usr->other_sids = (DOM_SID2 *)prs_alloc_mem(ps, sizeof(DOM_SID2)*usr->num_other_sids);
+			usr->other_sids = PRS_ALLOC_MEM(ps, DOM_SID2, usr->num_other_sids);
 			if (usr->other_sids == NULL)
 				return False;
 		}
@@ -1644,7 +1644,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 			return False;
 
 		if (UNMARSHALLING(ps) && usr->num_other_groups > 0) {
-			usr->other_gids = (DOM_GID *)prs_alloc_mem(ps, sizeof(DOM_GID)*usr->num_other_groups);
+			usr->other_gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_other_groups);
 			if (usr->other_gids == NULL)
 				return False;
 		}
@@ -2322,8 +2322,7 @@ static BOOL net_io_sam_group_mem_info(const char *desc, SAM_GROUP_MEM_INFO * inf
 			return False;
 		}
 
-                info->rids = talloc(ps->mem_ctx, sizeof(uint32) *
-                                    info->num_members2);
+                info->rids = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_members2);
 
                 if (info->rids == NULL) {
                         DEBUG(0, ("out of memory allocating %d rids\n",
@@ -2350,8 +2349,7 @@ static BOOL net_io_sam_group_mem_info(const char *desc, SAM_GROUP_MEM_INFO * inf
 			return False;
 		}
 
-                info->attribs = talloc(ps->mem_ctx, sizeof(uint32) *
-                                       info->num_members3);
+                info->attribs = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_members3);
 
                 if (info->attribs == NULL) {
                         DEBUG(0, ("out of memory allocating %d attribs\n",
@@ -2438,8 +2436,7 @@ static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * inf
 			return False;
 		}
 
-                info->ptr_sids = talloc(ps->mem_ctx, sizeof(uint32) *
-                                        info->num_sids);
+                info->ptr_sids = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_sids);
                 
                 if (info->ptr_sids == NULL) {
                         DEBUG(0, ("out of memory allocating %d ptr_sids\n",
@@ -2454,8 +2451,7 @@ static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * inf
                                 return False;
 		}
 
-                info->sids = talloc(ps->mem_ctx, sizeof(DOM_SID2) *
-                                    info->num_sids);
+                info->sids = TALLOC_ARRAY(ps->mem_ctx, DOM_SID2, info->num_sids);
 
                 if (info->sids == NULL) {
                         DEBUG(0, ("error allocating %d sids\n",
@@ -2772,7 +2768,7 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 	if(!prs_uint32("attribute_count", ps, depth, &info->attribute_count))
                 return False;
 
-	info->attributes = talloc(ps->mem_ctx, sizeof(uint32) * info->attribute_count);
+	info->attributes = TALLOC_ARRAY(ps->mem_ctx, uint32, info->attribute_count);
 
 	for (i=0; i<info->attribute_count; i++)
 		if(!prs_uint32("attributes", ps, depth, &info->attributes[i]))
@@ -2781,8 +2777,8 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 	if(!prs_uint32("privlist_count", ps, depth, &info->privlist_count))
                 return False;
 
-	info->hdr_privslist = talloc(ps->mem_ctx, sizeof(UNIHDR) * info->privlist_count);
-	info->uni_privslist = talloc(ps->mem_ctx, sizeof(UNISTR2) * info->privlist_count);
+	info->hdr_privslist = TALLOC_ARRAY(ps->mem_ctx, UNIHDR, info->privlist_count);
+	info->uni_privslist = TALLOC_ARRAY(ps->mem_ctx, UNISTR2, info->privlist_count);
 
 	for (i=0; i<info->privlist_count; i++)
 		if(!smb_io_unihdr("hdr_privslist", &info->hdr_privslist[i], ps, depth))
@@ -2914,10 +2910,7 @@ BOOL net_io_r_sam_sync(const char *desc, uint8 sess_key[16],
 			}
 
                         if (r_s->num_deltas2 > 0) {
-                                r_s->hdr_deltas = (SAM_DELTA_HDR *)
-                                        talloc(ps->mem_ctx, r_s->num_deltas2 *
-                                               sizeof(SAM_DELTA_HDR));
-                          
+                                r_s->hdr_deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_HDR, r_s->num_deltas2);
                                 if (r_s->hdr_deltas == NULL) {
                                         DEBUG(0, ("error tallocating memory "
                                                   "for %d delta headers\n", 
@@ -2935,10 +2928,7 @@ BOOL net_io_r_sam_sync(const char *desc, uint8 sess_key[16],
 			}
 
                         if (r_s->num_deltas2 > 0) {
-                                r_s->deltas = (SAM_DELTA_CTR *)
-                                        talloc(ps->mem_ctx, r_s->num_deltas2 *
-                                               sizeof(SAM_DELTA_CTR));
-
+                                r_s->deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_CTR, r_s->num_deltas2);
                                 if (r_s->deltas == NULL) {
                                         DEBUG(0, ("error tallocating memory "
                                                   "for %d deltas\n", 
@@ -3050,9 +3040,7 @@ BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
 		if (r_s->ptr_deltas != 0)
 		{
                         if (r_s->num_deltas > 0) {
-                                r_s->hdr_deltas = (SAM_DELTA_HDR *)
-                                        talloc(ps->mem_ctx, r_s->num_deltas *
-                                               sizeof(SAM_DELTA_HDR));
+                                r_s->hdr_deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_HDR, r_s->num_deltas);
                                 if (r_s->hdr_deltas == NULL) {
                                         DEBUG(0, ("error tallocating memory "
                                                   "for %d delta headers\n", 
@@ -3068,10 +3056,7 @@ BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
 			}
                         
                         if (r_s->num_deltas > 0) {
-                                r_s->deltas = (SAM_DELTA_CTR *)
-                                        talloc(ps->mem_ctx, r_s->num_deltas *
-                                               sizeof(SAM_DELTA_CTR));
-
+                                r_s->deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_CTR, r_s->num_deltas);
                                 if (r_s->deltas == NULL) {
                                         DEBUG(0, ("error tallocating memory "
                                                   "for %d deltas\n", 

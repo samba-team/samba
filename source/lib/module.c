@@ -172,7 +172,7 @@ smb_event_id_t smb_register_idle_event(smb_idle_event_fn *fn, void *data, time_t
 		return SMB_EVENT_ID_INVALID;
 	}
 
-	event = (struct smb_idle_list_ent *)malloc(sizeof(struct smb_idle_list_ent));
+	event = SMB_MALLOC_P(struct smb_idle_list_ent);
 	if (!event) {
 		DEBUG(0,("malloc() failed!\n"));
 		return SMB_EVENT_ID_INVALID;
@@ -254,7 +254,7 @@ smb_event_id_t smb_register_exit_event(smb_exit_event_fn *fn, void *data)
 		return SMB_EVENT_ID_INVALID;
 	}
 
-	event = (struct smb_exit_list_ent *)malloc(sizeof(struct smb_exit_list_ent));
+	event = SMB_MALLOC_P(struct smb_exit_list_ent);
 	if (!event) {
 		DEBUG(0,("malloc() failed!\n"));
 		return SMB_EVENT_ID_INVALID;

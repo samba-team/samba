@@ -154,7 +154,7 @@ int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
 		goto fail;
 	}
 
-	if((groups = (gid_t *)malloc(sizeof(gid_t)*(ngroups+1))) == NULL) {
+	if((groups = SMB_MALLOC_ARRAY(gid_t, ngroups+1)) == NULL) {
 		DEBUG(0,("setup_groups malloc fail !\n"));
 		goto fail;
 	}
@@ -260,7 +260,7 @@ BOOL push_sec_ctx(void)
 	ctx_p->ngroups = sys_getgroups(0, NULL);
 
 	if (ctx_p->ngroups != 0) {
-		if (!(ctx_p->groups = malloc(ctx_p->ngroups * sizeof(gid_t)))) {
+		if (!(ctx_p->groups = SMB_MALLOC_ARRAY(gid_t, ctx_p->ngroups))) {
 			DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
 			delete_nt_token(&ctx_p->token);
 			return False;

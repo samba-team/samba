@@ -88,7 +88,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*pol = r.pol;
 #ifdef __INSURE__
-		pol->marker = malloc(1);
+		pol->marker = MALLOC(1);
 #endif
 	}
 
@@ -276,22 +276,19 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!((*domains) = (char **)talloc(mem_ctx, sizeof(char *) *
-					   num_sids))) {
+	if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*names) = (char **)talloc(mem_ctx, sizeof(char *) *
-					 num_sids))) {
+	if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*types) = (uint32 *)talloc(mem_ctx, sizeof(uint32) *
-					  num_sids))) {
+	if (!((*types) = TALLOC_ARRAY(mem_ctx, uint32, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -393,15 +390,13 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!((*sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
-					 num_names)))) {
+	if (!((*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*types = (uint32 *)talloc(mem_ctx, sizeof(uint32) *
-					 num_names)))) {
+	if (!((*types = TALLOC_ARRAY(mem_ctx, uint32, num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -491,7 +486,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		if (domain_sid && (r.dom.id3.buffer_dom_sid != 0)) {
-			*domain_sid = talloc(mem_ctx, sizeof(**domain_sid));
+			*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
 			if (*domain_sid) {
 				sid_copy(*domain_sid, &r.dom.id3.dom_sid.sid);
 			}
@@ -508,7 +503,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		}
 			
 		if (domain_sid && (r.dom.id5.buffer_dom_sid != 0)) {
-			*domain_sid = talloc(mem_ctx, sizeof(**domain_sid));
+			*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
 			if (*domain_sid) {
 				sid_copy(*domain_sid, &r.dom.id5.dom_sid.sid);
 			}
@@ -599,14 +594,14 @@ NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 	
 	if (domain_guid) {
-		*domain_guid = talloc(mem_ctx, sizeof(**domain_guid));
+		*domain_guid = TALLOC_P(mem_ctx, struct uuid);
 		memcpy(*domain_guid, 
 		       &r.info.dns_dom_info.dom_guid, 
 		       sizeof(struct uuid));
 	}
 
 	if (domain_sid && r.info.dns_dom_info.ptr_dom_sid != 0) {
-		*domain_sid = talloc(mem_ctx, sizeof(**domain_sid));
+		*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
 		if (*domain_sid) {
 			sid_copy(*domain_sid, 
 				 &r.info.dns_dom_info.dom_sid.sid);
@@ -689,8 +684,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		/* Allocate memory for trusted domain names and sids */
 
-		*domain_names = (char **)talloc(mem_ctx, sizeof(char *) *
-						r.num_domains);
+		*domain_names = TALLOC_ARRAY(mem_ctx, char *, r.num_domains);
 
 		if (!*domain_names) {
 			DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
@@ -698,8 +692,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		*domain_sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
-						 r.num_domains);
+		*domain_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, r.num_domains);
 		if (!domain_sids) {
 			DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
@@ -775,19 +768,19 @@ NTSTATUS cli_lsa_enum_privilege(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	*enum_context = r.enum_context;
 	*count = r.count;
 
-	if (!((*privs_name = (char **)talloc(mem_ctx, sizeof(char *) * r.count)))) {
+	if (!((*privs_name = TALLOC_ARRAY(mem_ctx, char *, r.count)))) {
 		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*privs_high = (uint32 *)talloc(mem_ctx, sizeof(uint32) * r.count)))) {
+	if (!((*privs_high = TALLOC_ARRAY(mem_ctx, uint32, r.count)))) {
 		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*privs_low = (uint32 *)talloc(mem_ctx, sizeof(uint32) * r.count)))) {
+	if (!((*privs_low = TALLOC_ARRAY(mem_ctx, uint32, r.count)))) {
 		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -912,7 +905,7 @@ NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	*sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) * r.sids.num_entries);
+	*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, r.sids.num_entries);
 	if (!*sids) {
 		DEBUG(0, ("(cli_lsa_enum_sids): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
@@ -1037,7 +1030,7 @@ NTSTATUS cli_lsa_enum_privsaccount(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (r.count == 0)
 		goto done;
 
-	if (!((*set = (LUID_ATTR *)talloc(mem_ctx, sizeof(LUID_ATTR) * r.count)))) {
+	if (!((*set = TALLOC_ARRAY(mem_ctx, LUID_ATTR, r.count)))) {
 		DEBUG(0, ("(cli_lsa_enum_privsaccount): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -1206,7 +1199,7 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	*privs_name = (char **)talloc(mem_ctx, (*count) * sizeof(char **));
+	*privs_name = TALLOC_ARRAY(mem_ctx, char *, *count);
 	for (i=0;i<*count;i++) {
 		pull_ucs2_talloc(mem_ctx, &(*privs_name)[i], r.rights.strings[i].string.buffer);
 	}

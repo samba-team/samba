@@ -554,7 +554,7 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 			len += *i;
 			if (bufsize < len)
 				goto no_space;
-			*b = (char *)malloc(*i);
+			*b = (char *)SMB_MALLOC(*i);
 			if (! *b)
 				goto no_space;
 			memcpy(*b, buf+4, *i);
@@ -778,7 +778,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
 		/* duplicate key string to ensure null-termination */
-		char *key_str = (char*) strndup(key.dptr, key.dsize);
+		char *key_str = (char*) SMB_STRNDUP(key.dptr, key.dsize);
 		if (!key_str) {
 			DEBUG(0, ("tdb_search_keys: strndup() failed!\n"));
 			smb_panic("strndup failed!\n");
@@ -790,7 +790,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 
 		/* do the pattern checking */
 		if (fnmatch(pattern, key_str, 0) == 0) {
-			rec = (TDB_LIST_NODE*) malloc(sizeof(*rec));
+			rec = SMB_MALLOC_P(TDB_LIST_NODE);
 			ZERO_STRUCTP(rec);
 
 			rec->node_key = key;

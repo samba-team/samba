@@ -253,7 +253,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	}
 
 	if (!cli) {
-		cli = (struct cli_state *)malloc(sizeof(*cli));
+		cli = SMB_MALLOC_P(struct cli_state);
 		if (!cli)
 			return NULL;
 		ZERO_STRUCTP(cli);
@@ -275,8 +275,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
 	cli->bufsize = CLI_BUFFER_SIZE+4;
 	cli->max_xmit = cli->bufsize;
-	cli->outbuf = (char *)malloc(cli->bufsize+SAFETY_MARGIN);
-	cli->inbuf = (char *)malloc(cli->bufsize+SAFETY_MARGIN);
+	cli->outbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
+	cli->inbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
 	cli->case_sensitive = False;
 

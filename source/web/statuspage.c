@@ -61,14 +61,14 @@ static void addPid2Machine (pid_t pid, char *machine)
 	if (PID_or_Machine) {
 		PIDMAP *newmap;
 
-		if ((newmap = (PIDMAP *) malloc (sizeof (PIDMAP))) == NULL) {
+		if ((newmap = SMB_MALLOC_P(PIDMAP)) == NULL) {
 			/* XXX need error message for this?
 			   if malloc fails, PID is always shown */
 			return;
 		}
 
 		newmap->pid = pid;
-		newmap->machine = strdup (machine);
+		newmap->machine = SMB_STRDUP(machine);
 
 		DLIST_ADD(pidmap, newmap);
 	}

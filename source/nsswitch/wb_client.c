@@ -326,7 +326,7 @@ int winbind_initgroups(char *user, gid_t gid)
 		/* Add group to list if necessary */
 
 		if (!is_member) {
-			tgr = (gid_t *)Realloc(groups, sizeof(gid_t) * ngroups + 1);
+			tgr = SMB_REALLOC_ARRAY(groups, gid_t, ngroups + 1);
 			
 			if (!tgr) {
 				errno = ENOMEM;

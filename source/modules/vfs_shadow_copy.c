@@ -82,7 +82,7 @@ static DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection_struct *co
 		return NULL;
 	}
 
-	dirp = (shadow_copy_Dir *)malloc(sizeof(shadow_copy_Dir));
+	dirp = SMB_MALLOC_P(shadow_copy_Dir);
 	if (!dirp) {
 		DEBUG(0,("shadow_copy_opendir: Out of memory\n"));
 		SMB_VFS_NEXT_CLOSEDIR(handle,conn,p);
@@ -108,7 +108,7 @@ static DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection_struct *co
 
 		DEBUG(10,("shadow_copy_opendir: not hide [%s]\n",d->d_name));
 
-		r = (struct dirent *)Realloc(dirp->dirs,(dirp->num+1)*sizeof(struct dirent));
+		r = SMB_REALLOC_ARRAY(dirp->dirs, struct dirent, dirp->num+1);
 		if (!r) {
 			DEBUG(0,("shadow_copy_opendir: Out of memory\n"));
 			break;
@@ -176,7 +176,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_str
 			continue;
 		}
 
-		tlabels = (SHADOW_COPY_LABEL *)talloc_realloc(shadow_copy_data->mem_ctx,
+		tlabels = (SHADOW_COPY_LABEL *)TALLOC_REALLOC(shadow_copy_data->mem_ctx,
 									shadow_copy_data->labels,
 									(shadow_copy_data->num_volumes+1)*sizeof(SHADOW_COPY_LABEL));
 		if (tlabels == NULL) {

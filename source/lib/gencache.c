@@ -117,9 +117,9 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	if (!valstr)
 		return False;
 
-	keybuf.dptr = strdup(keystr);
+	keybuf.dptr = SMB_STRDUP(keystr);
 	keybuf.dsize = strlen(keystr)+1;
-	databuf.dptr = strdup(valstr);
+	databuf.dptr = SMB_STRDUP(valstr);
 	databuf.dsize = strlen(valstr)+1;
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
 	           " %s (%d seconds %s)\n", keybuf.dptr, value,ctime(&timeout),
@@ -170,9 +170,9 @@ BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 	           = %s\n", keystr, old_valstr, ctime(&old_timeout)));
 
 	asprintf(&datastr, CACHE_DATA_FMT, (int)timeout, valstr);
-	keybuf.dptr = strdup(keystr);
+	keybuf.dptr = SMB_STRDUP(keystr);
 	keybuf.dsize = strlen(keystr)+1;
-	databuf.dptr = strdup(datastr);
+	databuf.dptr = SMB_STRDUP(datastr);
 	databuf.dsize = strlen(datastr)+1;
 	DEBUGADD(10, ("New value = %s, new timeout = %s (%d seconds %s)", valstr,
 	              ctime(&timeout), (int)(timeout - time(NULL)),
@@ -209,7 +209,7 @@ BOOL gencache_del(const char *keystr)
 
 	if (!gencache_init()) return False;	
 	
-	keybuf.dptr = strdup(keystr);
+	keybuf.dptr = SMB_STRDUP(keystr);
 	keybuf.dsize = strlen(keystr)+1;
 	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
 	ret = tdb_delete(cache, keybuf);
@@ -242,18 +242,17 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	if (!gencache_init())
 		return False;
 	
-	keybuf.dptr = strdup(keystr);
+	keybuf.dptr = SMB_STRDUP(keystr);
 	keybuf.dsize = strlen(keystr)+1;
 	databuf = tdb_fetch(cache, keybuf);
 	SAFE_FREE(keybuf.dptr);
 	
 	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {
-		char* entry_buf = strndup(databuf.dptr, databuf.dsize);
+		char* entry_buf = SMB_STRNDUP(databuf.dptr, databuf.dsize);
 		char *v;
 		time_t t;
 
-		v = (char*)malloc(sizeof(char) * 
-				  (databuf.dsize - TIMEOUT_LEN));
+		v = SMB_MALLOC(databuf.dsize - TIMEOUT_LEN);
 				
 		SAFE_FREE(databuf.dptr);
 		sscanf(entry_buf, CACHE_DATA_FMT, (int*)&t, v);
@@ -320,7 +319,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	
 	while (node) {
 		/* ensure null termination of the key string */
-		keystr = strndup(node->node_key.dptr, node->node_key.dsize);
+		keystr = SMB_STRNDUP(node->node_key.dptr, node->node_key.dsize);
 		
 		/* 
 		 * We don't use gencache_get function, because we need to iterate through
@@ -333,9 +332,9 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 			node = node->next;
 			continue;
 		}
-		entry = strndup(databuf.dptr, databuf.dsize);
+		entry = SMB_STRNDUP(databuf.dptr, databuf.dsize);
 		SAFE_FREE(databuf.dptr);
-		valstr = (char*)malloc(sizeof(char) * (databuf.dsize - TIMEOUT_LEN));
+		valstr = SMB_MALLOC(databuf.dsize - TIMEOUT_LEN);
 		sscanf(entry, CACHE_DATA_FMT, (int*)(&timeout), valstr);
 		
 		DEBUG(10, ("Calling function with arguments (key = %s, value = %s, timeout = %s)\n",

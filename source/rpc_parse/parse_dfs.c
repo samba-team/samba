@@ -374,7 +374,7 @@ BOOL dfs_io_dfs_info_ctr(const char *desc, DFS_INFO_CTR* ctr, uint32 num_entries
 		depth++;
 		/* should depend on whether marshalling or unmarshalling! */
 		if(UNMARSHALLING(ps)) {
-			ctr->dfs.info1 = (DFS_INFO_1 *)prs_alloc_mem(ps, sizeof(DFS_INFO_1)*num_entries);
+			ctr->dfs.info1 = PRS_ALLOC_MEM(ps, DFS_INFO_1, num_entries);
 			if (!ctr->dfs.info1)
 				return False;
 		}
@@ -394,7 +394,7 @@ BOOL dfs_io_dfs_info_ctr(const char *desc, DFS_INFO_CTR* ctr, uint32 num_entries
 	case 2:
 		depth++;
 		if(UNMARSHALLING(ps)) {
-			ctr->dfs.info2 = (DFS_INFO_2 *)prs_alloc_mem(ps, num_entries*sizeof(DFS_INFO_2));
+			ctr->dfs.info2 = PRS_ALLOC_MEM(ps, DFS_INFO_2, num_entries);
 			if (!ctr->dfs.info2)
 				return False;
 		}
@@ -424,7 +424,7 @@ BOOL dfs_io_dfs_info_ctr(const char *desc, DFS_INFO_CTR* ctr, uint32 num_entries
 	case 3:
 		depth++;
 		if(UNMARSHALLING(ps)) {
-			ctr->dfs.info3 = (DFS_INFO_3 *)prs_alloc_mem(ps, num_entries*sizeof(DFS_INFO_3));
+			ctr->dfs.info3 = PRS_ALLOC_MEM(ps, DFS_INFO_3, num_entries);
 			if (!ctr->dfs.info3)
 				return False;
 		}
@@ -517,7 +517,7 @@ BOOL dfs_io_dfs_storage_info(const char *desc, DFS_INFO_3* info3, prs_struct *ps
 	depth++;
 
 	if(UNMARSHALLING(ps)) {
-		info3->storages = (DFS_STORAGE_INFO *)prs_alloc_mem(ps, info3->num_storage_infos*sizeof(DFS_STORAGE_INFO));
+		info3->storages = PRS_ALLOC_MEM(ps, DFS_STORAGE_INFO, info3->num_storage_infos);
 		if (!info3->storages)
 			return False;
 	}

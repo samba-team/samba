@@ -78,7 +78,7 @@ static void pdb_sql_int_field(struct pdb_sql_query *q, const char *name, int val
 
 char *sql_escape_string(const char *unesc)
 {
-	char *esc = malloc(strlen(unesc) * 2 + 3);
+	char *esc = SMB_MALLOC(strlen(unesc) * 2 + 3);
 	size_t pos_unesc = 0, pos_esc = 0;
 
 	for(pos_unesc = 0; unesc[pos_unesc]; pos_unesc++) {
@@ -472,7 +472,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 								   " VALUES (%s", query.part2);
 	}
 
-	ret = strdup(query.part1);
+	ret = SMB_STRDUP(query.part1);
 	talloc_destroy(query.mem_ctx);
 	return ret;
 }

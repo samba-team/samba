@@ -49,7 +49,7 @@ BOOL getgroups_user(const char *user, gid_t **ret_groups, int *ngroups)
 	if (!pwd) return False;
 
 	max_grp = groups_max();
-	temp_groups = (gid_t *)malloc(sizeof(gid_t) * max_grp);
+	temp_groups = SMB_MALLOC_ARRAY(gid_t, max_grp);
 	if (! temp_groups) {
 		passwd_free(&pwd);
 		return False;
@@ -59,7 +59,7 @@ BOOL getgroups_user(const char *user, gid_t **ret_groups, int *ngroups)
 		
 		gid_t *groups_tmp;
 		
-		groups_tmp = Realloc(temp_groups, sizeof(gid_t) * max_grp);
+		groups_tmp = SMB_REALLOC_ARRAY(temp_groups, gid_t, max_grp);
 		
 		if (!groups_tmp) {
 			SAFE_FREE(temp_groups);

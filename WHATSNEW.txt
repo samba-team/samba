@@ -1,27 +1,67 @@
-                   =============================
-                   Release Notes for Samba 3.0.9
-                             Nov 15, 2004
-                   =============================
+                   ==============================
+                   Release Notes for Samba 3.0.10
+                             Dec 16, 2004
+                   ==============================
 
 This is the latest stable release of Samba. This is the version
-that production Samba servers should be running for all
-current bug-fixes.  There have been several important issues
-fixes since the 3.0.8 release.  See the "Changes" section for
-details on exact updates.
+that production Samba servers should be running for all current 
+bug-fixes.  This is primarily a security release to address 
+CAN-2004-1154.  See the "Changes" section for details on exact 
+updates.
 
-Common bugs fixed in 3.0.9 include:
+Common bugs fixed in 3.0.10 include:
 
-  o Problem updating roaming user profiles.
-  o Crash in smbd when printing from a Windows 9x client.
-  o Unresolved symbols in libsmbclient which caused 
-    applications such as KDE's konqueror to fail when
-    accessing smb:// URLs.
+  o Fix for security issues described in CAN-2004-1154.
 
 
 
 ######################################################################
 Changes
 #######
+
+Changes since 3.0.9
+-------------------
+
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Added checks surrounding all *alloc() calls to fix
+      CAN-2004-1154.
+    * Fix long standing memory size bug in bitmap_allocate().
+    * Remove bogus error check in deferred open file serving 
+      code.
+
+
+o   Thomas Bork <tombork@web.de>
+    * Fix autoconf script on platforms using a version of GNU ld
+      that does not include a date stamp in the output of --version.
+
+
+o   Luke Mewburn <lukem@NetBSD.org>
+    * Fix the swat install script to deal with the new image
+      destination directory used by the docs.
+     
+
+
+Changes for older versions follow below:
+
+      --------------------------------------------------
+
+                   =============================
+                   Release Notes for Samba 3.0.9
+                             Nov 15, 2004
+                   =============================
+
+Common bugs fixed in 3.0.9 include:
+
+  o Problem updating roaming user profiles.
+  o Crash in smbd when printing from a Windows 9x client.
+  o Unresolved symbols in libsmbclient which caused
+    applications such as KDE's konqueror to fail when
+    accessing smb:// URLs.
+
 
 Changes since 3.0.8
 -------------------
@@ -88,9 +128,8 @@ o   Martin Zielinski <mz@seh.de>
     * Add DeletePrinterDriverEx() functionality to rpcclient.
     
 
-Changes for older versions follow below:
-
       --------------------------------------------------
+
                    =============================
                    Release Notes for Samba 3.0.8
                              Nov 7, 2004
@@ -551,6 +590,7 @@ o   Igor Zhbanov <bsg@uniyar.ac.ru>
       option.
 
       --------------------------------------------------
+
                   =============================
                   Release Notes for Samba 3.0.7
                            Sept 13, 2004

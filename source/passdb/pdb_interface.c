@@ -98,7 +98,7 @@ NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function in
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	entry = smb_xmalloc(sizeof(struct pdb_init_function_entry));
+	entry = SMB_XMALLOC_P(struct pdb_init_function_entry);
 	entry->name = smb_xstrdup(name);
 	entry->init = init;
 
@@ -692,7 +692,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 		return NT_STATUS_NO_MEMORY;
 	}		
 
-	*context = talloc(mem_ctx, sizeof(**context));
+	*context = TALLOC_P(mem_ctx, struct pdb_context);
 	if (!*context) {
 		DEBUG(0, ("make_pdb_context: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -1198,7 +1198,7 @@ static void pdb_default_endsampwent(struct pdb_methods *methods)
 
 NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods) 
 {
-	*methods = talloc(mem_ctx, sizeof(struct pdb_methods));
+	*methods = TALLOC_P(mem_ctx, struct pdb_methods);
 
 	if (!*methods) {
 		return NT_STATUS_NO_MEMORY;

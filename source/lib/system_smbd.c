@@ -53,7 +53,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 		return -1;
 	}
 	
-	gids_saved = (gid_t *)malloc(sizeof(gid_t) * (ngrp_saved+1));
+	gids_saved = SMB_MALLOC_ARRAY(gid_t, ngrp_saved+1);
 	if (!gids_saved) {
 		errno = ENOMEM;
 		return -1;

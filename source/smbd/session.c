@@ -151,7 +151,7 @@ BOOL session_claim(user_struct *vuser)
 			       sessionid.id_str, sessionid.id_num);
 	}
 
-	vuser->session_keystr = strdup(keystr);
+	vuser->session_keystr = SMB_STRDUP(keystr);
 	if (!vuser->session_keystr) {
 		DEBUG(0, ("session_claim:  strdup() failed for session_keystr\n"));
 		return False;
@@ -221,8 +221,8 @@ static int gather_sessioninfo(TDB_CONTEXT *stdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	const struct sessionid *current = (const struct sessionid *) dbuf.dptr;
 
 	sesslist->count += 1;
-	sesslist->sessions = REALLOC(sesslist->sessions, sesslist->count * 
-				      sizeof(struct sessionid));
+	sesslist->sessions = SMB_REALLOC_ARRAY(sesslist->sessions, struct sessionid,
+					sesslist->count);
 
 	memcpy(&sesslist->sessions[sesslist->count - 1], current, 
 	       sizeof(struct sessionid));

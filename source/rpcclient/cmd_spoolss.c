@@ -1333,7 +1333,7 @@ static BOOL init_drv_info_3_members (
 	/* allocate the space; add one extra slot for a terminating NULL.
 	   Each filename is NULL terminated and the end contains a double
 	   NULL */
-	if ((info->dependentfiles=(uint16*)talloc(mem_ctx, (len+1)*sizeof(uint16))) == NULL)
+	if ((info->dependentfiles=TALLOC_ARRAY(mem_ctx, uint16, len+1)) == NULL)
 	{
 		DEBUG(0,("init_drv_info_3_members: Unable to malloc memory for dependenfiles\n"));
 		return False;
@@ -2035,7 +2035,7 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 	fstrcpy(value.valuename, argv[2]);
 	value.type = REG_SZ;
 	value.size = data.uni_str_len * 2;
-	value.data_p = talloc_memdup(mem_ctx, data.buffer, value.size);
+	value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
 
 	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, &value);
 		
@@ -2417,8 +2417,7 @@ static WERROR cmd_spoolss_rffpcnex(struct cli_state *cli,
 	option.option_type_ptr = 1;
 	option.count = option.ctr.count = 2;
 
-	option.ctr.type = (SPOOL_NOTIFY_OPTION_TYPE *)talloc(
-		mem_ctx, sizeof(SPOOL_NOTIFY_OPTION_TYPE) * 2);
+	option.ctr.type = TALLOC_ARRAY(mem_ctx, SPOOL_NOTIFY_OPTION_TYPE, 2);
 
 	ZERO_STRUCT(option.ctr.type[0]);
 	option.ctr.type[0].type = PRINTER_NOTIFY_TYPE;

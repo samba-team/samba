@@ -1224,7 +1224,7 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 
 				if (current_history_len < pwHistLen) {
 					/* Ensure we have space for the needed history. */
-					uchar *new_history = talloc(sampass->mem_ctx,
+					uchar *new_history = TALLOC(sampass->mem_ctx,
 								pwHistLen*PW_HISTORY_ENTRY_LEN);
 					/* And copy it into the new buffer. */
 					if (current_history_len) {

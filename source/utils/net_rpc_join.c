@@ -258,7 +258,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	{ 
 		char *str;
 		str = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-		clear_trust_password = strdup(str);
+		clear_trust_password = SMB_STRDUP(str);
 		E_md4hash(clear_trust_password, md4_trust_password);
 	}
 

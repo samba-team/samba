@@ -53,9 +53,6 @@ typedef int BOOL;
 #define _BOOL       /* So we don't typedef BOOL again in vfs.h */
 #endif
 
-/* limiting size of ipc replies */
-#define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
-
 #define SIZEOFWORD 2
 
 #ifndef DEF_CREATE_MASK
@@ -1656,7 +1653,7 @@ struct unix_error_map {
 #define SAFE_NETBIOS_CHARS ". -_"
 
 /* generic iconv conversion structure */
-typedef struct {
+typedef struct _smb_iconv_t {
 	size_t (*direct)(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft);
 	size_t (*pull)(void *cd, const char **inbuf, size_t *inbytesleft,

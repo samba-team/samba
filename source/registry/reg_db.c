@@ -183,7 +183,7 @@ BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 	
 	/* allocate some initial memory */
 		
-	buffer = malloc(sizeof(pstring));
+	buffer = SMB_MALLOC(sizeof(pstring));
 	buflen = sizeof(pstring);
 	len = 0;
 	
@@ -197,7 +197,7 @@ BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 		len += tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
 		if ( len > buflen ) {
 			/* allocate some extra space */
-			if ((tmpbuf = Realloc( buffer, len*2 )) == NULL) {
+			if ((tmpbuf = SMB_REALLOC( buffer, len*2 )) == NULL) {
 				DEBUG(0,("regdb_store_reg_keys: Failed to realloc memory of size [%d]\n", len*2));
 				ret = False;
 				goto done;

@@ -189,7 +189,7 @@ static BOOL parse_symlink(char* buf,struct referral** preflist,
 
 	DEBUG(10,("parse_symlink: count=%d\n", count));
 
-	reflist = *preflist = (struct referral*) malloc(count * sizeof(struct referral));
+	reflist = *preflist = SMB_MALLOC_ARRAY(struct referral, count);
 	if(reflist == NULL) {
 		DEBUG(0,("parse_symlink: Malloc failed!\n"));
 		return False;
@@ -417,7 +417,7 @@ static BOOL self_ref(char *pathname, struct junction_map *jucn,
 		*self_referralp = True;
 
 	jucn->referral_count = 1;
-	if((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
+	if((ref = SMB_MALLOC_P(struct referral)) == NULL) {
 		DEBUG(0,("self_ref: malloc failed for referral\n"));
 		return False;
 	}
@@ -503,7 +503,7 @@ BOOL get_referred_path(char *pathname, struct junction_map *jucn,
 					self_referralp);
 
 		jucn->referral_count = 1;
-		if ((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
+		if ((ref = SMB_MALLOC_P(struct referral)) == NULL) {
 			DEBUG(0, ("malloc failed for referral\n"));
 			goto out;
 		}
@@ -595,7 +595,7 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 	/* add the unexplained 0x16 bytes */
 	reply_size += 0x16;
 
-	pdata = Realloc(pdata,reply_size);
+	pdata = SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
 		DEBUG(0,("malloc failed for Realloc!\n"));
 		return -1;
@@ -676,7 +676,7 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 		reply_size += (strlen(junction->referral_list[i].alternate_path)+1)*2;
 	}
 
-	pdata = Realloc(pdata,reply_size);
+	pdata = SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
 		DEBUG(0,("version3 referral setup: malloc failed for Realloc!\n"));
 		return -1;
@@ -962,8 +962,7 @@ static BOOL form_junctions(int snum, struct junction_map* jucn, int* jn_count)
 	jucn[cnt].volume_name[0] = '\0';
 	jucn[cnt].referral_count = 1;
 
-	ref = jucn[cnt].referral_list
-		= (struct referral*) malloc(sizeof(struct referral));
+	ref = jucn[cnt].referral_list = SMB_MALLOC_P(struct referral);
 	if (jucn[cnt].referral_list == NULL) {
 		DEBUG(0, ("Malloc failed!\n"));
 		goto out;

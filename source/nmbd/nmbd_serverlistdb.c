@@ -137,7 +137,7 @@ workgroup %s. This is a bug.\n", name, work->work_group));
 		return NULL;
 	}
   
-	if((servrec = (struct server_record *)malloc(sizeof(*servrec))) == NULL) {
+	if((servrec = SMB_MALLOC_P(struct server_record)) == NULL) {
 		DEBUG(0,("create_server_entry_on_workgroup: malloc fail !\n"));
 		return NULL;
 	}

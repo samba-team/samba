@@ -259,10 +259,10 @@ static BOOL usergrp_display(char *field, void **values, void *data_area)
 	if (!values) /* must be new field, indicate string field */
 		return True;
 	if (StrCaseCmp(field, "sAMAccountName") == 0) {
-		disp_fields[0] = strdup((char *) values[0]);
+		disp_fields[0] = SMB_STRDUP((char *) values[0]);
 	}
 	if (StrCaseCmp(field, "description") == 0)
-		disp_fields[1] = strdup((char *) values[0]);
+		disp_fields[1] = SMB_STRDUP((char *) values[0]);
 	return True;
 }
 
@@ -718,7 +718,7 @@ int net_ads_join(int argc, const char **argv)
 	}
 
 	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-	password = strdup(tmp_password);
+	password = SMB_STRDUP(tmp_password);
 
 	if (!(ads = ads_startup())) {
 		return -1;

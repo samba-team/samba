@@ -65,7 +65,7 @@ NTSTATUS _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INF
 
 	DEBUG(5,("_wks_query_info: %d\n", __LINE__));
 
-	wks100 = (WKS_INFO_100 *)talloc_zero(p->mem_ctx, sizeof(WKS_INFO_100));
+	wks100 = TALLOC_ZERO_P(p->mem_ctx, WKS_INFO_100);
 
 	if (!wks100)
 		return NT_STATUS_NO_MEMORY;

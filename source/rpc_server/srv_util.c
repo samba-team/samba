@@ -276,7 +276,7 @@ BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SA
 	
 	if (n_unix_groups > 0) {
 	
-		*pgids   = talloc(ctx, sizeof(DOM_GID) * n_unix_groups);
+		*pgids   = TALLOC_ARRAY(ctx, DOM_GID, n_unix_groups);
 		
 		if (!*pgids) {
 			DEBUG(0, ("get_user_group: malloc() failed for DOM_GID list!\n"));
@@ -324,7 +324,7 @@ NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 	DOM_GID *gids;
 	int i;
 
-	gids = (DOM_GID *)talloc(mem_ctx, sizeof(*gids) * nt_token->num_sids);
+	gids = TALLOC_ARRAY(mem_ctx, DOM_GID, nt_token->num_sids);
 
 	if (!gids) {
 		return NT_STATUS_NO_MEMORY;

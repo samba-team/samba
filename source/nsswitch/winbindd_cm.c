@@ -489,7 +489,7 @@ static NTSTATUS new_cm_connection(struct winbindd_domain *domain, const char *pi
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 
-	if (!(conn = malloc(sizeof(*conn))))
+	if (!(conn = SMB_MALLOC_P(struct winbindd_cm_conn)))
 		return NT_STATUS_NO_MEMORY;
 		
 	ZERO_STRUCTP(conn);

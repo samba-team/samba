@@ -139,7 +139,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
         
 	/* Create new domain entry */
 
-	if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL)
+	if ((domain = SMB_MALLOC_P(struct winbindd_domain)) == NULL)
 		return NULL;
 
 	/* Fill in fields */
@@ -777,7 +777,7 @@ DOM_SID *rid_to_talloced_sid(struct winbindd_domain *domain,
 				    uint32 rid) 
 {
 	DOM_SID *sid;
-	sid = talloc(mem_ctx, sizeof(*sid));
+	sid = TALLOC_P(mem_ctx, DOM_SID);
 	if (!sid) {
 		smb_panic("rid_to_to_talloced_sid: talloc for DOM_SID failed!\n");
 	}

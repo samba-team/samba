@@ -75,7 +75,7 @@ NTSTATUS dupalloc_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *
 	if ( !old_la )
 		return NT_STATUS_OK;
 
-	*new_la = (LUID_ATTR *)talloc(mem_ctx, sizeof(LUID_ATTR));
+	*new_la = TALLOC_P(mem_ctx, LUID_ATTR);
 	ALLOC_CHECK(new_la, ret, done, "dupalloc_luid_attr");
 
 	(*new_la)->luid.high = old_la->luid.high;
@@ -97,7 +97,7 @@ NTSTATUS init_privilege(PRIVILEGE_SET **priv_set)
 	TALLOC_CTX *mem_ctx = talloc_init("privilege set");
 	ALLOC_CHECK(mem_ctx, ret, done, "init_privilege");
 
-	*priv_set = talloc_zero(mem_ctx, sizeof(PRIVILEGE_SET));
+	*priv_set = TALLOC_ZERO_P(mem_ctx, PRIVILEGE_SET);
 	ALLOC_CHECK(*priv_set, ret, done, "init_privilege");
 
 	(*priv_set)->mem_ctx = mem_ctx;
@@ -112,7 +112,7 @@ NTSTATUS init_priv_with_ctx(TALLOC_CTX *mem_ctx, PRIVILEGE_SET **priv_set)
 {
 	NTSTATUS ret;
 
-	*priv_set = talloc_zero(mem_ctx, sizeof(PRIVILEGE_SET));
+	*priv_set = TALLOC_ZERO_P(mem_ctx, PRIVILEGE_SET);
 	ALLOC_CHECK(*priv_set, ret, done, "init_privilege");
 
 	(*priv_set)->mem_ctx = mem_ctx;
@@ -154,7 +154,7 @@ NTSTATUS add_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 
 	/* we can allocate memory to add the new privilege */
 
-	new_set = (LUID_ATTR *)talloc_realloc(priv_set->mem_ctx, priv_set->set, (priv_set->count + 1) * (sizeof(LUID_ATTR)));
+	new_set = TALLOC_REALLOC_ARRAY(priv_set->mem_ctx, priv_set->set, LUID_ATTR, priv_set->count + 1);
 	ALLOC_CHECK(new_set, ret, done, "add_privilege");
 
 	new_set[priv_set->count].luid.high = set.luid.high;
@@ -269,7 +269,7 @@ NTSTATUS remove_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 
 	old_set = priv_set->set;
 
-	new_set = (LUID_ATTR *)talloc(priv_set->mem_ctx, (priv_set->count - 1) * (sizeof(LUID_ATTR)));
+	new_set = TALLOC_ARRAY(priv_set->mem_ctx, LUID_ATTR, priv_set->count - 1);
 	ALLOC_CHECK(new_set, ret, done, "remove_privilege");
 
 	for (i=0, j=0; i < priv_set->count; i++) {
@@ -329,7 +329,7 @@ NTSTATUS dup_priv_set(PRIVILEGE_SET *new_priv_set, PRIVILEGE_SET *priv_set)
 
 	old_set = priv_set->set;
 
-	new_set = (LUID_ATTR *)talloc(new_priv_set->mem_ctx, (priv_set->count - 1) * (sizeof(LUID_ATTR)));
+	new_set = TALLOC_ARRAY(new_priv_set->mem_ctx, LUID_ATTR, priv_set->count - 1);
 	ALLOC_CHECK(new_set, ret, done, "dup_priv_set");
 
 	for (i=0; i < priv_set->count; i++) {

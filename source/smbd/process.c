@@ -85,8 +85,7 @@ static void free_queued_message(struct pending_message_list *msg)
 static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct timeval *ptv, char *private, size_t private_len)
 {
 	struct pending_message_list *tmp_msg;
-	struct pending_message_list *msg = (struct pending_message_list *)
-                               malloc(sizeof(struct pending_message_list));
+	struct pending_message_list *msg = SMB_MALLOC_P(struct pending_message_list);
 
 	if(msg == NULL) {
 		DEBUG(0,("push_message: malloc fail (1)\n"));
@@ -1498,8 +1497,8 @@ void smbd_process(void)
 	unsigned int num_smbs = 0;
 	const size_t total_buffer_size = BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN;
 
-	InBuffer = (char *)malloc(total_buffer_size);
-	OutBuffer = (char *)malloc(total_buffer_size);
+	InBuffer = (char *)SMB_MALLOC(total_buffer_size);
+	OutBuffer = (char *)SMB_MALLOC(total_buffer_size);
 	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
 		return;
 

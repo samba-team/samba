@@ -136,7 +136,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	if (ret)
 		return ret;
 	
-	ret = smb_xmalloc(sizeof(*ret));
+	ret = SMB_XMALLOC_P(struct winbind_cache);
 	ZERO_STRUCTP(ret);
 
 	wcache = ret;
@@ -209,7 +209,7 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		smb_panic("centry_string");
 	}
 
-	ret = talloc(mem_ctx, len+1);
+	ret = TALLOC(mem_ctx, len+1);
 	if (!ret) {
 		smb_panic("centry_string out of memory\n");
 	}
@@ -227,7 +227,7 @@ static DOM_SID *centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 	DOM_SID *sid;
 	char *sid_string;
 
-	sid = talloc(mem_ctx, sizeof(*sid));
+	sid = TALLOC_P(mem_ctx, DOM_SID);
 	if (!sid)
 		return NULL;
 	
@@ -450,7 +450,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 		return NULL;
 	}
 
-	centry = smb_xmalloc(sizeof(*centry));
+	centry = SMB_XMALLOC_P(struct cache_entry);
 	centry->data = (unsigned char *)data.dptr;
 	centry->len = data.dsize;
 	centry->ofs = 0;
@@ -501,7 +501,7 @@ static void centry_expand(struct cache_entry *centry, uint32 len)
 	if (centry->len - centry->ofs >= len)
 		return;
 	centry->len *= 2;
-	p = realloc(centry->data, centry->len);
+	p = SMB_REALLOC(centry->data, centry->len);
 	if (!p) {
 		DEBUG(0,("out of memory: needed %d bytes in centry_expand\n", centry->len));
 		smb_panic("out of memory in centry_expand");
@@ -568,10 +568,10 @@ struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status
 	if (!wcache->tdb)
 		return NULL;
 
-	centry = smb_xmalloc(sizeof(*centry));
+	centry = SMB_XMALLOC_P(struct cache_entry);
 
 	centry->len = 8192; /* reasonable default */
-	centry->data = smb_xmalloc(centry->len);
+	centry->data = SMB_XMALLOC_ARRAY(char, centry->len);
 	centry->ofs = 0;
 	centry->sequence_number = domain->sequence_number;
 	centry_put_uint32(centry, NT_STATUS_V(status));
@@ -684,7 +684,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = talloc(mem_ctx, sizeof(**info) * (*num_entries));
+	(*info) = TALLOC_ARRAY(mem_ctx, WINBIND_USERINFO, *num_entries);
 	if (! (*info))
 		smb_panic("query_user_list out of memory");
 	for (i=0; i<(*num_entries); i++) {
@@ -793,7 +793,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = talloc(mem_ctx, sizeof(**info) * (*num_entries));
+	(*info) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
 	if (! (*info))
 		smb_panic("enum_dom_groups out of memory");
 	for (i=0; i<(*num_entries); i++) {
@@ -866,7 +866,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = talloc(mem_ctx, sizeof(**info) * (*num_entries));
+	(*info) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
 	if (! (*info))
 		smb_panic("enum_dom_groups out of memory");
 	for (i=0; i<(*num_entries); i++) {
@@ -1156,7 +1156,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (*num_groups == 0)
 		goto do_cached;
 
-	(*user_gids) = talloc(mem_ctx, sizeof(**user_gids) * (*num_groups));
+	(*user_gids) = TALLOC_ARRAY(mem_ctx, DOM_SID *, *num_groups);
 	if (! (*user_gids))
 		smb_panic("lookup_usergroups out of memory");
 	for (i=0; i<(*num_groups); i++) {
@@ -1227,9 +1227,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (*num_names == 0)
 		goto do_cached;
 
-	(*sid_mem) = talloc(mem_ctx, sizeof(**sid_mem) * (*num_names));
-	(*names) = talloc(mem_ctx, sizeof(**names) * (*num_names));
-	(*name_types) = talloc(mem_ctx, sizeof(**name_types) * (*num_names));
+	(*sid_mem) = TALLOC_ARRAY(mem_ctx, DOM_SID *, *num_names);
+	(*names) = TALLOC_ARRAY(mem_ctx, char *, *num_names);
+	(*name_types) = TALLOC_ARRAY(mem_ctx, uint32, *num_names);
 
 	if (! (*sid_mem) || ! (*names) || ! (*name_types)) {
 		smb_panic("lookup_groupmem out of memory");

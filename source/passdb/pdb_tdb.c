@@ -267,7 +267,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 	struct pwent_list *ptr;
 	
 	if ( strncmp(key.dptr, prefix, prefixlen) == 0 ) {
-		if ( !(ptr=(struct pwent_list*)malloc(sizeof(struct pwent_list))) ) {
+		if ( !(ptr=SMB_MALLOC_P(struct pwent_list)) ) {
 			DEBUG(0,("tdbsam_traverse_setpwent: Failed to malloc new entry for list\n"));
 			
 			/* just return 0 and let the traversal continue */
@@ -724,7 +724,7 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
 
-	tdb_state = talloc_zero(pdb_context->mem_ctx, sizeof(struct tdbsam_privates));
+	tdb_state = TALLOC_ZERO_P(pdb_context->mem_ctx, struct tdbsam_privates);
 
 	if (!tdb_state) {
 		DEBUG(0, ("talloc() failed for tdbsam private_data!\n"));
