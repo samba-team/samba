@@ -5,12 +5,12 @@ Changes in release 0.6
 * Better AFS support: kdc (524) supports 2b; 524 in kdc and AFS
   support in applications no longer requires Kerberos 4 libs
 
-* DES3 GSS-API mechansim changed to interrop with other GSSAPI
-  implementations, this however break backward compatiblity with pre
-  Heimdal 0.6 (see manpage gssapi how to turn on backward compatiblity
+* DES3 GSS-API mechanism changed to interrop with other GSSAPI
+  implementations, this however break backward compatibility with Heimdal
+  pre 0.6 (see man page GSS-API how to turn on backward compatibility
   support)
 
-* Kerberos 4 (includes ka and 524) default turned off in KDC
+* Kerberos 4 support in kdc defaults to turned off (includes ka and 524)
 
 * other bug fixes
 
