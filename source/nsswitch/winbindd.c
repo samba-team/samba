@@ -758,6 +758,8 @@ struct winbindd_state server_state;   /* Server state information */
 static void usage(void)
 {
 	printf("Usage: winbindd [options]\n");
+        printf("\t-F                daemon in foreground mode\n");
+        printf("\t-S                log to stdout\n");
 	printf("\t-i                interactive mode\n");
 	printf("\t-B                dual daemon mode\n");
 	printf("\t-n                disable cacheing\n");
@@ -771,6 +773,8 @@ static void usage(void)
 	extern BOOL AllowDebugChange;
 	pstring logfile;
 	BOOL interactive = False;
+	BOOL Fork = True;
+	BOOL log_stdout = False;
 	int opt;
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
@@ -795,12 +799,20 @@ static void usage(void)
 
 	/* Initialise samba/rpc client stuff */
 
-	while ((opt = getopt(argc, argv, "id:s:nhB")) != EOF) {
+	while ((opt = getopt(argc, argv, "FSid:s:nhB")) != EOF) {
 		switch (opt) {
 
+		case 'F':
+			Fork = False;
+			break;
+		case 'S':
+			log_stdout = True;
+			break;
 			/* Don't become a daemon */
 		case 'i':
 			interactive = True;
+			log_stdout = True;
+			Fork = False;
 			break;
 
 			/* dual daemon system */
@@ -834,9 +846,15 @@ static void usage(void)
 		}
 	}
 
+	if (log_stdout && Fork) {
+		printf("Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n");
+		usage();
+		exit(1);
+	}
+
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
 	lp_set_logfile(logfile);
-	setup_logging("winbindd", interactive);
+	setup_logging("winbindd", log_stdout);
 	reopen_logs();
 
 	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
@@ -853,7 +871,7 @@ static void usage(void)
 		exit(1);
 
 	if (!interactive) {
-		become_daemon();
+		become_daemon(Fork);
 		pidfile_create("winbindd");
 	}
 

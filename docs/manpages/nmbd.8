@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "26 November 2002" "" ""
+.TH "NMBD" "8" "03 January 2003" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
 
-\fBnmbd\fR [ \fB-D\fR ] [ \fB-a\fR ] [ \fB-i\fR ] [ \fB-o\fR ] [ \fB-h\fR ] [ \fB-V\fR ] [ \fB-d <debug level>\fR ] [ \fB-H <lmhosts file>\fR ] [ \fB-l <log directory>\fR ] [ \fB-n <primary netbios name>\fR ] [ \fB-p <port number>\fR ] [ \fB-s <configuration file>\fR ]
+\fBnmbd\fR [ \fB-D\fR ] [ \fB-F\fR ] [ \fB-S\fR ] [ \fB-a\fR ] [ \fB-i\fR ] [ \fB-o\fR ] [ \fB-h\fR ] [ \fB-V\fR ] [ \fB-d <debug level>\fR ] [ \fB-H <lmhosts file>\fR ] [ \fB-l <log directory>\fR ] [ \fB-n <primary netbios name>\fR ] [ \fB-p <port number>\fR ] [ \fB-s <configuration file>\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -57,6 +57,23 @@ will operate as a daemon if launched from a command shell.
 nmbd can also be operated from the \fBinetd\fR 
 meta-daemon, although this is not recommended.
 .TP
+\fB-F\fR
+If specified, this parameter causes
+the main \fBnmbd\fR process to not daemonize,
+i.e. double-fork and disassociate with the terminal.
+Child processes are still created as normal to service
+each connection request, but the main process does not
+exit. This operation mode is suitable for running
+\fBnmbd\fR under process supervisors such
+as \fBsupervise\fR and \fBsvscan\fR
+from Daniel J. Bernstein's \fBdaemontools\fR
+package, or the AIX process monitor.
+.TP
+\fB-S\fR
+If specified, this parameter causes
+\fBnmbd\fR to log to standard output rather
+than a file.
+.TP
 \fB-a\fR
 If this parameter is specified, each new 
 connection will append log messages to the log file.  
@@ -67,7 +84,9 @@ If this parameter is specified it causes the
 server to run "interactively", not as a daemon, even if the
 server is executed on the command line of a shell. Setting this
 parameter negates the implicit daemon mode when run from the
-command line.
+command line. \fBnmbd\fR also logs to standard
+output, as if the \fB-S\fR parameter had been
+given. 
 .TP
 \fB-o\fR
 If this parameter is specified, the 

@@ -873,10 +873,13 @@ void msleep(unsigned int t)
  Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
 
-void become_daemon(void)
+void become_daemon(BOOL Fork)
 {
-	if (sys_fork())
-		_exit(0);
+	if (Fork) {
+		if (sys_fork()) {
+			_exit(0);
+		}
+	}
 
   /* detach from the terminal */
 #ifdef HAVE_SETSID
