@@ -310,6 +310,9 @@ BOOL reopen_logs( void )
 	FILE *new_dbf = NULL;
 	BOOL ret = True;
 
+	if (stdout_logging)
+		return True;
+
 	oldumask = umask( 022 );
   
 	pstrcpy(fname, debugf );
