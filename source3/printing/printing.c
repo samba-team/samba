@@ -159,7 +159,7 @@ static int print_run_command(int snum,char *command,
 	p = PRINTERNAME(snum);
 	if (!p || !*p) p = SERVICE(snum);
   
-	pstring_sub(syscmd, "%p", p);  
+	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd);
   
 	ret = smbrun(syscmd,outfile,False);
@@ -477,17 +477,15 @@ static BOOL print_job_delete1(int jobid)
 	return True;
 }
 
-/* Return true if the uid owns the print job */
-
+/****************************************************************************
+return true if the uid owns the print job
+****************************************************************************/
 static BOOL is_owner(uid_t uid, int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	struct passwd *pw;
 
 	if (!pjob || !(pw = sys_getpwuid(uid))) return False;
-
-	DEBUG(0, ("checking owner of jobid %d: %s == %s\n",
-		  jobid, pw->pw_name, pjob->user));
 
 	return (pw && pjob && strequal(pw->pw_name, pjob->user));
 }
@@ -498,11 +496,16 @@ delete a print job
 BOOL print_job_delete(struct current_user *user, int jobid)
 {
 	int snum = print_job_snum(jobid);
+	BOOL owner;
+	
+	if (!user) return False;
 
+	owner = is_owner(user->uid, jobid);
+	
 	/* Check access against security descriptor or whether the user
 	   owns their job. */
 
-	if (!is_owner(user->uid, jobid) &&
+	if (!owner && 
 	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 		return False;
@@ -512,6 +515,7 @@ BOOL print_job_delete(struct current_user *user, int jobid)
 
 	/* force update the database and say the delete failed if the
            job still exists */
+
 	print_queue_update(snum);
 
 	return !print_job_exists(jobid);
@@ -526,13 +530,17 @@ BOOL print_job_pause(struct current_user *user, int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret = -1;
 	fstring jobstr;
-	if (!pjob) return False;
+	BOOL owner;
+	
+
+	if (!pjob || !user) return False;
 
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
+	owner = is_owner(user->uid, jobid);
 
-	if (!is_owner(user->uid, jobid) &&
+	if (!owner &&
 	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 		return False;
@@ -560,11 +568,14 @@ BOOL print_job_resume(struct current_user *user, int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret;
 	fstring jobstr;
-	if (!pjob) return False;
+	BOOL owner;
+	
+	if (!pjob || !user) return False;
 
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
+	owner = is_owner(user->uid, jobid);
 
 	if (!is_owner(user->uid, jobid) &&
 	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
@@ -872,12 +883,15 @@ int print_queue_snum(char *qname)
 BOOL print_queue_pause(struct current_user *user, int snum)
 {
 	int ret;
-
+	
+	if (!user) return False;
+	
 	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
 		return False;
 	}
 
-	ret = print_run_command(snum, lp_queuepausecommand(snum), NULL, NULL);
+	ret = print_run_command(snum, lp_queuepausecommand(snum), NULL, 
+				NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -896,7 +910,8 @@ BOOL print_queue_resume(struct current_user *user, int snum)
 		return False;
 	}
 
-	ret = print_run_command(snum, lp_queueresumecommand(snum), NULL, NULL);
+	ret = print_run_command(snum, lp_queueresumecommand(snum), NULL, 
+				NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
