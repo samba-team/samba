@@ -193,7 +193,7 @@ SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int wh
 }
 
 #if 0 /* JRATEST */
-ssize_t vfswrap_sendfile(int outfd, struct files_struct *fsp, int infd, DATA_BLOB *hdr, SMB_OFF_T offset, size_t n)
+ssize_t vfswrap_sendfile(int tofd, struct files_struct *fsp, int fromfd, DATA_BLOB *hdr, SMB_OFF_T offset, size_t n)
 {
 	ssize_t result;
 
