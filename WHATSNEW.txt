@@ -62,6 +62,13 @@ See the cvs log for SAMBA_2_2 for more details
 27) Include support for CUPS printer classes and logging the remote 
     client name
 
+Changes since 2.2.8pre1
+-----------------------
+28) smbumount lazy patch from Mandrake
+29) Check for too many processes *before* the fork.
+30) make sure we don't run over the end of 'name' in unix_convert()
+31) set umask to 0 before creating socket directory.
+
 
 Changes since 2.2.7
 --------------------
