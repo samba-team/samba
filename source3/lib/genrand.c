@@ -26,7 +26,6 @@
 extern int DEBUGLEVEL;
 static uint32 counter = 0;
 
-
 /****************************************************************
 get a 16 byte hash from the contents of a file
 Note that the hash is not initialised.
@@ -102,18 +101,19 @@ static void do_dirrand(char *name, unsigned char *buf, int buf_len)
  Try and get a good random number seed. Try a number of
  different factors. Firstly, try /dev/random and try and
  read from this. If this fails iterate through /tmp and
- XOR all the file timestamps. If this fails then just use
- a combination of pid and time of day (yes I know this
+ /dev and XOR all the file timestamps. Next add in
+ a hash of the contents of /etc/shadow and the smb passwd
+ file and a combination of pid and time of day (yes I know this
  sucks :-). Finally md4 the result.
 
  The result goes in a 16 byte buffer passed from the caller
 **************************************************************/
 
-static void do_reseed(unsigned char *md4_outbuf)
+static uint32 do_reseed(unsigned char *md4_outbuf)
 {
   unsigned char md4_inbuf[40];
   BOOL got_random = False;
-  uint32 v1, v2;
+  uint32 v1, v2, ret;
   int fd;
   struct timeval tval;
   pid_t mypid;
@@ -135,7 +135,7 @@ static void do_reseed(unsigned char *md4_outbuf)
 
   if(!got_random) {
     /*
-     * /dev/random failed - try /tmp/ for timestamps.
+     * /dev/random failed - try /tmp and /dev for timestamps.
      */
     do_dirrand("/tmp", md4_inbuf, sizeof(md4_inbuf));
     do_dirrand("/dev", md4_inbuf, sizeof(md4_inbuf));
@@ -148,7 +148,7 @@ static void do_reseed(unsigned char *md4_outbuf)
   /* add in the root encrypted password. On any system where security is taken
      seriously this will be secret */
   pw = getpwnam("root");
-  if (pw) {
+  if (pw && pw->pw_passwd) {
 	  int i;
 	  unsigned char md4_tmp[16];
 	  mdfour(md4_tmp, pw->pw_passwd, strlen(pw->pw_passwd));
@@ -168,6 +168,16 @@ static void do_reseed(unsigned char *md4_outbuf)
   SIVAL(md4_inbuf, 36, v2 ^ IVAL(md4_inbuf, 36));
 
   mdfour(md4_outbuf, md4_inbuf, sizeof(md4_inbuf));
+
+  /*
+   * Return a 32 bit int created from XORing the
+   * 16 bit return buffer.
+   */
+
+  ret = IVAL(md4_outbuf, 0);
+  ret ^= IVAL(md4_outbuf, 4);
+  ret ^= IVAL(md4_outbuf, 8);
+  return (ret ^ IVAL(md4_outbuf, 12));
 }
 
 /*******************************************************************
@@ -177,25 +187,38 @@ static void do_reseed(unsigned char *md4_outbuf)
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed)
 {
   static BOOL done_reseed = False;
+  static unsigned char md4_buf[16];
   unsigned char tmp_buf[16];
-  unsigned char md4_buf[16];
   unsigned char *p;
 
   if(!done_reseed || re_seed) {
-	  do_reseed(md4_buf);
+	  srandom(do_reseed(md4_buf));
 	  done_reseed = True;
   }
 
   /*
    * Generate random numbers in chunks of 64 bytes,
    * then md4 them & copy to the output buffer.
+   * Added XOR with output from random, seeded
+   * by the original md4_buf. This is to stop the
+   * output from this function being the previous
+   * md4_buf md4'ed. The output from this function
+   * is often output onto the wire, and so it should
+   * not be possible to guess the next output from
+   * this function based on the previous output.
+   * XORing in the output from random(), seeded by
+   * the original md4 hash should stop this. JRA.
    */
 
   p = out;
   while(len > 0) {
+    int i;
     int copy_len = len > 16 ? 16 : len;
     mdfour(tmp_buf, md4_buf, sizeof(md4_buf));
     memcpy(md4_buf, tmp_buf, sizeof(md4_buf));
+    /* XOR in output from random(). */
+    for(i = 0; i < 4; i++)
+      SIVAL(tmp_buf, i*4, (IVAL(tmp_buf, i*4) ^ (uint32)random()));
     memcpy(p, tmp_buf, copy_len);
     p += copy_len;
     len -= copy_len;

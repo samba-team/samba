@@ -4133,7 +4133,11 @@ static int reply_negprot(char *inbuf,char *outbuf, int dum_size, int dum_buffsiz
     
   /* a special case to stop password server loops */
   if (Index == 1 && strequal(remote_machine,myhostname) && 
+#ifdef DOMAIN_CLIENT
+      (lp_security()==SEC_SERVER || lp_security()==SEC_DOMAIN))
+#else /* DOMAIN_CLIENT */
       lp_security()==SEC_SERVER)
+#endif /* DOMAIN_CLIENT */
     exit_server("Password server loop!");
   
   /* Check for protocols, most desirable first */
