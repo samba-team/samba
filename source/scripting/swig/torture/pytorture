@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import sys
 from optparse import OptionParser
 
 # Parse command line
@@ -31,7 +32,20 @@ domain = options.domain
 username = options.username
 password = options.password
 
-# Run tests
+if len(args) == 0:
+   parser.error('You must supply the name of a module to test')
 
-import samr
-samr.runtests(binding, domain, username, password)
+# Import and test
+
+for test in args:
+
+   try:
+      module = __import__(test)
+   except ImportError:
+      print 'No such module "%s"' % test
+      sys.exit(1)
+
+   if not hasattr(module, 'runtests'):
+      print 'Module "%s" does not have a runtests function' % test
+
+   module.runtests(binding, domain, username, password)
