@@ -133,12 +133,9 @@ Prints out the current Debug level returned by MSG_DEBUGLEVEL
 void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
 {
 	const char *levels = (char *)buf;
-	pstring dbgcl;
 
 	printf("Current debug levels of PID %u are:\n",(unsigned int)src);
-	
-	while(next_token(&levels, dbgcl, " ", sizeof(pstring)))
-		printf("%s\n", dbgcl);
+	printf("%s\n", levels);
 	
 	got_level = True;
 }
