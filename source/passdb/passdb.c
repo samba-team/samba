@@ -553,7 +553,7 @@ char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
  15 lines, which is more important.
  **********************************************************/
 
-uint16 pdb_decode_acct_ctrl(char *p)
+uint16 pdb_decode_acct_ctrl(const char *p)
 {
 	uint16 acct_ctrl = 0;
 	BOOL finished = False;
@@ -596,7 +596,7 @@ uint16 pdb_decode_acct_ctrl(char *p)
  gets password-database-format time from a string.
  ********************************************************************/
 
-static time_t get_time_from_string(char *p)
+static time_t get_time_from_string(const char *p)
 {
 	int i;
 
@@ -612,7 +612,7 @@ static time_t get_time_from_string(char *p)
 		 * read into a time_t as the seconds since
 		 * 1970 that the password was last changed.
 		 */
-		return (time_t)strtol((char *)p, NULL, 16);
+		return (time_t)strtol(p, NULL, 16);
 	}
 	return (time_t)-1;
 }
@@ -621,9 +621,9 @@ static time_t get_time_from_string(char *p)
  gets password last set time
  ********************************************************************/
 
-time_t pdb_get_last_set_time(char *p)
+time_t pdb_get_last_set_time(const char *p)
 {
-	if (*p && StrnCaseCmp((char *)p, "LCT-", 4))
+	if (*p && StrnCaseCmp(p, "LCT-", 4))
 	{
 		return get_time_from_string(p + 4);
 	}
