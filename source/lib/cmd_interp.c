@@ -923,7 +923,7 @@ static char **completion_fn(char *text, int start, int end)
 
       if (num_words == 2 || num_words == 3)
       {
-		(Function *)fn;
+		char* (*fn)(char*, int);
 		fn = commands[cmd_index]->compl_args[num_words - 2];
 		if (fn != NULL)
 		{
