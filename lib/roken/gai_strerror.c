@@ -43,7 +43,7 @@ static struct gai_error {
     char *str;
 } errors[] = {
 {EAI_NOERROR,		"no error"},
-#ifndef EAI_ADDRFAMILY
+#ifdef EAI_ADDRFAMILY
 {EAI_ADDRFAMILY,	"address family for nodename not supported"},
 #endif
 {EAI_AGAIN,		"temporary failure in name resolution"},
