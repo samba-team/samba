@@ -1077,6 +1077,32 @@ BOOL make_spoolss_printer_info_3(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_3
 }
 
 /*******************************************************************
+create a SPOOL_PRINTER_INFO_7 struct from a PRINTER_INFO_7 struct
+*******************************************************************/
+
+BOOL make_spoolss_printer_info_7(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_7 **spool_info7, 
+				PRINTER_INFO_7 *info)
+{
+
+	SPOOL_PRINTER_INFO_LEVEL_7 *inf;
+
+	/* allocate the necessary memory */
+	if (!(inf=(SPOOL_PRINTER_INFO_LEVEL_7*)talloc(mem_ctx, sizeof(SPOOL_PRINTER_INFO_LEVEL_7)))) {
+		DEBUG(0,("make_spoolss_printer_info_7: Unable to allocate SPOOL_PRINTER_INFO_LEVEL_7 struct!\n"));
+		return False;
+	}
+
+	inf->guid_ptr	 	= (info->guid.buffer!=NULL)?1:0;
+	inf->action		= info->action;
+	init_unistr2_from_unistr(&inf->guid,	 	&info->guid);
+
+	*spool_info7 = inf;
+
+	return True;
+}
+
+
+/*******************************************************************
  * read a structure.
  * called from spoolss_q_open_printer_ex (srv_spoolss.c)
  ********************************************************************/
@@ -4149,6 +4175,10 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 		q_u->secdesc_ctr->sec = secdesc;
 
 		break;
+	case 7:
+		make_spoolss_printer_info_7 (mem_ctx, &q_u->info.info_7, info->printers_7);
+		break;
+
 	default: 
 		DEBUG(0,("make_spoolss_q_setprinter: Unknown info level [%d]\n", level));
 			break;

@@ -2011,7 +2011,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 	BOOL got_hnd_dst = False;
 	BOOL got_dst_spoolss_pipe = False;
 	POLICY_HND hnd_src, hnd_dst;
-	PRINTER_INFO_CTR ctr_enum, ctr_dst;
+	PRINTER_INFO_CTR ctr_enum, ctr_dst, ctr_dst_publish;
 	REGVAL_CTR reg_ctr;
 	struct cli_state *cli_dst = NULL;
 	char *devicename = NULL, *unc_name = NULL, *url = NULL;
@@ -2095,10 +2095,19 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 		   is correctly installed (incl. driver ???) */
 		init_unistr( &ctr_dst.printers_2->portname, SAMBA_PRINTER_PORT_NAME);
 
-		/* check if printer is published -> no publish-migration for the moment */
+		/* check if printer is published */ 
 		if (ctr_enum.printers_2[i].attributes & PRINTER_ATTRIBUTE_PUBLISHED) {
-			printf("printer on originating server was published, ignoring that\n");
-			ctr_dst.printers_2->attributes = PRINTER_ATTRIBUTE_SAMBA;
+
+			/* check for existing dst printer */
+			if (!net_spoolss_getprinter(cli_dst, mem_ctx, &hnd_dst, 7, &ctr_dst_publish))
+				goto done;
+
+			ctr_dst_publish.printers_7->action = SPOOL_DS_PUBLISH;
+
+			/* ignore False from setprinter due to WERR_IO_PENDING */
+	 		net_spoolss_setprinter(cli_dst, mem_ctx, &hnd_dst, 7, &ctr_dst_publish);
+
+			DEBUG(3,("republished printer\n"));
 		}
 
 		/* copy devmode (info level 2) */
