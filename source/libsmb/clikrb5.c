@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */

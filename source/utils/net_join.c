@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#if HAVE_ADS
+#ifdef HAVE_ADS
 
 /* a lame random number generator - used /dev/urandom if possible */
 static unsigned one_random(void)

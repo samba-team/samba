@@ -95,7 +95,7 @@ size_t convert_string(charset_t from, charset_t to,
 {
 	size_t i_len, o_len;
 	size_t retval;
-	const char* inbuf = (char*)src;
+	const char* inbuf = (const char*)src;
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
 
@@ -155,7 +155,7 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 {
 	size_t i_len, o_len, destlen;
 	size_t retval;
-	const char *inbuf = (char *)src;
+	const char *inbuf = (const char *)src;
 	char *outbuf, *ob;
 	smb_iconv_t descriptor;
 
