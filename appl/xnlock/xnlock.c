@@ -274,7 +274,7 @@ leave(void)
 static void
 walk(int dir)
 {
-    register int incr = 0;
+    int incr = 0;
     static int lastdir;
     static int up = 1;
     static Pixmap frame;
@@ -354,7 +354,7 @@ move(XtPointer _p, XtIntervalId *_id)
     static int length, dir;
 
     if (!length) {
-	register int tries = 0;
+	int tries = 0;
 	dir = 0;
 	if ((rand() & 1) && think()) {
 	    talk(0); /* sets timeout to itself */
@@ -703,7 +703,7 @@ talk(int force_erase)
     int width = 0, height, Z, total = 0;
     static int X, Y, talking;
     static struct { int x, y, width, height; } s_rect;
-    register char *p, *p2;
+    char *p, *p2;
     char buf[BUFSIZ], args[MAXLINES][256];
 
     /* clear what we've written */
@@ -734,7 +734,7 @@ talk(int force_erase)
      * if no CR or only one, then just print the line
      */
     if (!(p2 = strchr(p, '\n')) || !p2[1]) {
-	register int w;
+	int w;
 
 	if (p2)
 	    *p2 = 0;
@@ -843,7 +843,7 @@ look(void)
 int
 main (int argc, char **argv)
 {
-    register int i;
+    int i;
     Widget override;
     XGCValues gcvalues;
 
