@@ -1,0 +1,487 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>vfstest</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="VFSTEST">vfstest</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>vfstest&nbsp;--&nbsp;tool for testing samba VFS modules </DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>vfstest</B
+> [-d debuglevel] [-c command] [-l logfile] [-h]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN15"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><B
+CLASS="COMMAND"
+>vfstest</B
+> is a small command line
+	utility that has the ability to test dso samba VFS modules. It gives the
+	user the ability to call the various VFS functions manually and
+	supports cascaded VFS modules.
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN21"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-c|--command=command</DT
+><DD
+><P
+>Execute the specified (colon-separated) commands.
+		See below for the commands that are available.
+		</P
+></DD
+><DT
+>-d|--debug=debuglevel</DT
+><DD
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>debuglevel</I
+></TT
+> is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.</P
+><P
+>The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.</P
+><P
+>Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will 
+override the <A
+HREF="smb.conf.5.html#loglevel"
+TARGET="_top"
+>log
+level</A
+> parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> file.</P
+></DD
+><DT
+>-h|--help</DT
+><DD
+><P
+>Print a summary of command line options.</P
+></DD
+><DT
+>-l|--logfile=logbasename</DT
+><DD
+><P
+>File name for log/debug files. The extension
+		<TT
+CLASS="CONSTANT"
+>'.client'</TT
+> will be appended. The log file is never removed
+		by the client.
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN48"
+></A
+><H2
+>COMMANDS</H2
+><P
+><I
+CLASS="EMPHASIS"
+>VFS COMMANDS</I
+></P
+><P
+></P
+><UL
+><LI
+><P
+><B
+CLASS="COMMAND"
+>load &#60;module.so&#62;</B
+> - Load specified VFS module </P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>populate &#60;char&#62; &#60;size&#62;</B
+> - Populate a data buffer with the specified data
+		</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>showdata [&#60;offset&#62; &#60;len&#62;]</B
+> - Show data currently in data buffer
+		</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>connect</B
+> - VFS connect()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>disconnect</B
+> - VFS disconnect()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>disk_free</B
+> - VFS disk_free()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>opendir</B
+> - VFS opendir()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>readdir</B
+> - VFS readdir()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>mkdir</B
+> - VFS mkdir()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>rmdir</B
+> - VFS rmdir()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>closedir</B
+> - VFS closedir()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>open</B
+> - VFS open()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>close</B
+> - VFS close()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>read</B
+> - VFS read()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>write</B
+> - VFS write()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>lseek</B
+> - VFS lseek()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>rename</B
+> - VFS rename()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>fsync</B
+> - VFS fsync()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>stat</B
+> - VFS stat()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>fstat</B
+> - VFS fstat()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>lstat</B
+> - VFS lstat()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>unlink</B
+> - VFS unlink()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>chmod</B
+> - VFS chmod()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>fchmod</B
+> - VFS fchmod()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>chown</B
+> - VFS chown()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>fchown</B
+> - VFS fchown()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>chdir</B
+> - VFS chdir()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>getwd</B
+> - VFS getwd()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>utime</B
+> - VFS utime()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>ftruncate</B
+> - VFS ftruncate()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>lock</B
+> - VFS lock()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>symlink</B
+> - VFS symlink()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>readlink</B
+> - VFS readlink()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>link</B
+> - VFS link()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>mknod</B
+> - VFS mknod()</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>realpath</B
+> - VFS realpath()</P
+></LI
+></UL
+><P
+><I
+CLASS="EMPHASIS"
+>GENERAL COMMANDS</I
+></P
+><P
+></P
+><UL
+><LI
+><P
+><B
+CLASS="COMMAND"
+>conf &#60;smb.conf&#62;</B
+> - Load a different configuration file</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>help [&#60;command&#62;]</B
+> - Get list of commands or info about specified command</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>debuglevel &#60;level&#62;</B
+> - Set debug level</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>freemem</B
+> - Free memory currently in use</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>exit</B
+> - Exit vfstest</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN179"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 3.0 of the Samba
+	suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN182"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</P
+><P
+>The vfstest man page was written by Jelmer Vernooij.</P
+></DIV
+></BODY
+></HTML
+>
