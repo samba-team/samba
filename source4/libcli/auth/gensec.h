@@ -27,6 +27,7 @@ struct gensec_user {
 	const char *domain;
 	const char *name;
 	const char *password;
+	char schan_session_key[16];
 };
 /* GENSEC mode */
 enum gensec_role
@@ -38,27 +39,47 @@ enum gensec_role
 struct gensec_security_ops {
 	const char *name;
 	const char *sasl_name;
-	uint8 auth_type;
+	uint8 auth_type;  /* 0 if not offered on DCE-RPC */
 	const char *oid;  /* NULL if not offered by SPENGO */
 	NTSTATUS (*client_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*server_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*update)(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
 			   const DATA_BLOB in, DATA_BLOB *out);
-	NTSTATUS (*seal)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
+	NTSTATUS (*seal_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
 				uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*sign)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
+	NTSTATUS (*sign_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
 				const uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*check_sig)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx, 
-				const uint8_t *data, size_t length, const DATA_BLOB *sig);
-	NTSTATUS (*unseal)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
-				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*check_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx, 
+				 const uint8_t *data, size_t length, const DATA_BLOB *sig);
+	NTSTATUS (*unseal_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
+				  uint8_t *data, size_t length, DATA_BLOB *sig);
 	NTSTATUS (*session_key)(struct gensec_security *gensec_security, DATA_BLOB *session_key);
+	NTSTATUS (*session_info)(struct gensec_security *gensec_security, 
+				 struct auth_session_info **session_info); 
 	void (*end)(struct gensec_security *gensec_security);
 };
 	
+typedef NTSTATUS (*gensec_password_callback)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx, 
+					     char **password);
+
+#define GENSEC_INTERFACE_VERSION 0
+
 struct gensec_security {
-	struct gensec_user user;
-	void *private_data;
+	TALLOC_CTX *mem_ctx;
+	gensec_password_callback password_callback;
+	void *password_callback_private;
 	const struct gensec_security_ops *ops;
+	void *private_data;
+	struct gensec_user user;
+	enum gensec_role gensec_role;
 };
 
+/* this structure is used by backends to determine the size of some critical types */
+struct gensec_critical_sizes {
+	int interface_version;
+	int sizeof_gensec_security_ops;
+	int sizeof_gensec_security;
+};
+
+
+       

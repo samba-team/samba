@@ -58,21 +58,15 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 	state->mem_ctx = mem_ctx;
 	state->authenticated = True;
 	
-	state->creds = talloc_p(mem_ctx, struct creds_CredentialState);
-	if (state->creds == NULL) {
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	ZERO_STRUCTP(state->creds);
-	
 	if (dce_call->conn->auth_state.session_info == NULL) {
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 	
-	status = schannel_fetch_session_key(mem_ctx, 
-					    dce_call->conn->auth_state.session_info->workstation, 
-					    state->creds);
+	status = dcerpc_schannel_creds(dce_call->conn->auth_state.gensec_security, 
+				       mem_ctx, 
+				       &state->creds);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		return status;

@@ -22,21 +22,24 @@
 
 #include "includes.h"
 
-#define DCERPC_SCHANNEL_STATE_START 0
-#define DCERPC_SCHANNEL_STATE_UPDATE_1 1
+enum schannel_position {
+	DCERPC_SCHANNEL_STATE_START = 0,
+	DCERPC_SCHANNEL_STATE_UPDATE_1
+};
 
 struct dcerpc_schannel_state {
 	TALLOC_CTX *mem_ctx;
-	uint8_t state;
-	struct schannel_bind bind_schannel;
+	enum schannel_position state;
 	struct schannel_state *schannel_state;
+	struct creds_CredentialState creds;
+	char *account_name;
 };
 
 static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
-			     const char *domain,
-			     const char *username,
-			     const char *password,
-			     int chan_type,
+				    const char *domain,
+				    const char *username,
+				    const char *password,
+				    int chan_type,
 				    uint8_t new_session_key[16]);
 
 /*
@@ -45,39 +48,39 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
   These will become static again, when we get dynamic registration, and
   decrpc_schannel_security_ops come back here.
 */
-static NTSTATUS dcerpc_schannel_unseal(struct gensec_security *gensec_security, 
-				    TALLOC_CTX *mem_ctx, 
-				    uint8_t *data, size_t length, DATA_BLOB *sig)
+static NTSTATUS dcerpc_schannel_unseal_packet(struct gensec_security *gensec_security, 
+					      TALLOC_CTX *mem_ctx, 
+					      uint8_t *data, size_t length, DATA_BLOB *sig)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
-
+	
 	return schannel_unseal_packet(dce_schan_state->schannel_state, mem_ctx, data, length, sig);
 }
 
-static NTSTATUS dcerpc_schannel_check_sig(struct gensec_security *gensec_security, 
-				   TALLOC_CTX *mem_ctx, 
-				   const uint8_t *data, size_t length, 
-				   const DATA_BLOB *sig)
+static NTSTATUS dcerpc_schannel_check_packet(struct gensec_security *gensec_security, 
+					     TALLOC_CTX *mem_ctx, 
+					     const uint8_t *data, size_t length, 
+					     const DATA_BLOB *sig)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
 	return schannel_check_packet(dce_schan_state->schannel_state, data, length, sig);
 }
 
-static NTSTATUS dcerpc_schannel_seal(struct gensec_security *gensec_security, 
-				  TALLOC_CTX *mem_ctx, 
-				  uint8_t *data, size_t length, 
-				  DATA_BLOB *sig)
+static NTSTATUS dcerpc_schannel_seal_packet(struct gensec_security *gensec_security, 
+					    TALLOC_CTX *mem_ctx, 
+					    uint8_t *data, size_t length, 
+					    DATA_BLOB *sig)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
 	return schannel_seal_packet(dce_schan_state->schannel_state, mem_ctx, data, length, sig);
 }
 
-static NTSTATUS dcerpc_schannel_sign(struct gensec_security *gensec_security, 
-				 TALLOC_CTX *mem_ctx, 
-				 const uint8_t *data, size_t length, 
-				 DATA_BLOB *sig)
+static NTSTATUS dcerpc_schannel_sign_packet(struct gensec_security *gensec_security, 
+					    TALLOC_CTX *mem_ctx, 
+					    const uint8_t *data, size_t length, 
+					    DATA_BLOB *sig)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
@@ -85,47 +88,233 @@ static NTSTATUS dcerpc_schannel_sign(struct gensec_security *gensec_security,
 }
 
 static NTSTATUS dcerpc_schannel_session_key(struct gensec_security *gensec_security, 
-				  DATA_BLOB *session_key)
+					    DATA_BLOB *session_key)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
-						const DATA_BLOB in, DATA_BLOB *out) 
+				       const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 	NTSTATUS status;
 	struct schannel_bind bind_schannel;
+	struct schannel_bind_ack bind_schannel_ack;
+	const char *account_name;
 
-	if (dce_schan_state->state != DCERPC_SCHANNEL_STATE_START) {
-		return NT_STATUS_OK;
+	switch (gensec_security->gensec_role) {
+	case GENSEC_CLIENT:
+		if (dce_schan_state->state != DCERPC_SCHANNEL_STATE_START) {
+			/* we could parse the bind ack, but we don't know what it is yet */
+			return NT_STATUS_OK;
+		}
+		
+		bind_schannel.unknown1 = 0;
+#if 0
+		/* to support this we'd need to have access to the full domain name */
+		bind_schannel.bind_type = 23;
+		bind_schannel.u.info23.domain = gensec_security->user.domain;
+		bind_schannel.u.info23.account_name = gensec_security->user.name;
+		bind_schannel.u.info23.dnsdomain = str_format_nbt_domain(out_mem_ctx, fulldomainname);
+		bind_schannel.u.info23.workstation = str_format_nbt_domain(out_mem_ctx, gensec_security->user.name);
+#else
+		bind_schannel.bind_type = 3;
+		bind_schannel.u.info3.domain = gensec_security->user.domain;
+		bind_schannel.u.info3.account_name = gensec_security->user.name;
+#endif
+		
+		status = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel,
+					      (ndr_push_flags_fn_t)ndr_push_schannel_bind);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not create schannel bind: %s\n",
+				  nt_errstr(status)));
+			return status;
+		}
+		
+		dce_schan_state->state = DCERPC_SCHANNEL_STATE_UPDATE_1;
+
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	case GENSEC_SERVER:
+		
+		if (dce_schan_state->state != DCERPC_SCHANNEL_STATE_START) {
+			/* no third leg on this protocol */
+			return NT_STATUS_OK;
+		}
+		
+		/* parse the schannel startup blob */
+		status = ndr_pull_struct_blob(&in, out_mem_ctx, &bind_schannel, 
+					      (ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		
+		if (bind_schannel.bind_type == 23) {
+			account_name = bind_schannel.u.info23.account_name;
+		} else {
+			account_name = bind_schannel.u.info3.account_name;
+		}
+		
+		/* pull the session key for this client */
+		status = schannel_fetch_session_key(out_mem_ctx, account_name, &dce_schan_state->creds);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not find session key for attempted schannel connection on %s: %s\n",
+				  account_name, nt_errstr(status)));
+			return status;
+		}
+
+		dce_schan_state->account_name = talloc_strdup(dce_schan_state->mem_ctx, account_name);
+		
+		/* start up the schannel server code */
+		status = schannel_start(&dce_schan_state->schannel_state, 
+					dce_schan_state->creds.session_key, False);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not initialise schannel state for account %s: %s\n",
+				  account_name, nt_errstr(status)));
+			return status;
+		}
+		
+		bind_schannel_ack.unknown1 = 1;
+		bind_schannel_ack.unknown2 = 0;
+		bind_schannel_ack.unknown3 = 0x6c0000;
+		
+		status = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel_ack, 
+					      (ndr_push_flags_fn_t)ndr_push_schannel_bind_ack);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not return schannel bind ack for account %s: %s\n",
+				  account_name, nt_errstr(status)));
+			return status;
+		}
+
+		dce_schan_state->state = DCERPC_SCHANNEL_STATE_UPDATE_1;
+
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
+/** 
+ * Return the credentials of a logged on user, including session keys
+ * etc.
+ *
+ * Only valid after a successful authentication
+ *
+ * May only be called once per authentication.
+ *
+ */
+
+NTSTATUS dcerpc_schannel_session_info(struct gensec_security *gensec_security,
+				      struct auth_session_info **session_info)
+{ 
+	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
+	TALLOC_CTX *mem_ctx;
+	mem_ctx = talloc_init("dcerpc_schannel_start");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	dce_schan_state->state = DCERPC_SCHANNEL_STATE_UPDATE_1;
+	(*session_info) = talloc_p(mem_ctx, struct auth_session_info);
+	if (*session_info == NULL) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	bind_schannel.unknown1 = 0;
-#if 0
-	/* to support this we'd need to have access to the full domain name */
-	bind_schannel.bind_type = 23;
-	bind_schannel.u.info23.domain = gensec_security->user.domain;
-	bind_schannel.u.info23.account_name = gensec_security->user.name;
-	bind_schannel.u.info23.dnsdomain = str_format_nbt_domain(dce_schan_state->mem_ctx, fulldomainname);
-	bind_schannel.u.info23.workstation = str_format_nbt_domain(dce_schan_state->mem_ctx, gensec_security->user.name);
-#else
-	bind_schannel.bind_type = 3;
-	bind_schannel.u.info3.domain = gensec_security->user.domain;
-	bind_schannel.u.info3.account_name = gensec_security->user.name;
-#endif
+	ZERO_STRUCTP(*session_info);
+	(*session_info)->mem_ctx = mem_ctx;
+	(*session_info)->refcount = 1;
+	
+	(*session_info)->workstation = talloc_strdup(mem_ctx, dce_schan_state->account_name);
+	if ((*session_info)->workstation == NULL) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+		
 
-	status = ndr_push_struct_blob(out, dce_schan_state->mem_ctx, &bind_schannel,
-				      (ndr_push_flags_fn_t)ndr_push_schannel_bind);
+/**
+ * Return the struct creds_CredentialState.
+ *
+ * Make sure not to call this unless gensec is using schannel...
+ */
+
+NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
+			       TALLOC_CTX *mem_ctx,
+			       struct creds_CredentialState **creds)
+{ 
+	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
+
+	*creds = talloc_p(mem_ctx, struct creds_CredentialState);
+	if (*creds) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	**creds = dce_schan_state->creds;
+	return NT_STATUS_OK;
+}
+		
+
+static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
+{
+	struct dcerpc_schannel_state *dce_schan_state;
+	TALLOC_CTX *mem_ctx;
+	mem_ctx = talloc_init("dcerpc_schannel_start");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dce_schan_state = talloc_p(mem_ctx, struct dcerpc_schannel_state);
+	if (!dce_schan_state) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dce_schan_state->mem_ctx = mem_ctx;
+	dce_schan_state->state = DCERPC_SCHANNEL_STATE_START;
+	
+
+	gensec_security->private_data = dce_schan_state;
+	
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcerpc_schannel_server_start(struct gensec_security *gensec_security) 
+{
+	NTSTATUS status;
+
+	status = dcerpc_schannel_start(gensec_security);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcerpc_schannel_client_start(struct gensec_security *gensec_security) 
+{
+	NTSTATUS status;
+	struct dcerpc_schannel_state *dce_schan_state;
+
+	status = dcerpc_schannel_start(gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	dce_schan_state = gensec_security->private_data;
+
+	status = schannel_start(&dce_schan_state->schannel_state, 
+				gensec_security->user.schan_session_key, 
+				True);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start schannel client\n"));
+		return status;
+	}
+
+	dump_data_pw("session key:\n", dce_schan_state->schannel_state->session_key, 16);
+	return NT_STATUS_OK;
+}
+
+/*
+  end crypto state
+*/
 static void dcerpc_schannel_end(struct gensec_security *gensec_security)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
@@ -137,18 +326,6 @@ static void dcerpc_schannel_end(struct gensec_security *gensec_security)
 	gensec_security->private_data = NULL;
 }
 
-
-static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
-	.name		= "dcerpc_schannel",
-	.auth_type	= DCERPC_AUTH_TYPE_SCHANNEL,
-	.update 	= dcerpc_schannel_update,
-	.seal 		= dcerpc_schannel_seal,
-	.sign		= dcerpc_schannel_sign,
-	.check_sig	= dcerpc_schannel_check_sig,
-	.unseal		= dcerpc_schannel_unseal,
-	.session_key	= dcerpc_schannel_session_key,
-	.end		= dcerpc_schannel_end
-};
 
 /*
   get a schannel key using a netlogon challenge on a secondary pipe
@@ -251,10 +428,12 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 				   const char *password)
 {
 	NTSTATUS status;
-	struct dcerpc_schannel_state *dce_schan_state;
-	TALLOC_CTX *mem_ctx;
-	uint8_t session_key[16];
 	int chan_type = 0;
+
+	status = gensec_client_start(&p->security_state.generic_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (p->flags & DCERPC_SCHANNEL_BDC) {
 		chan_type = SEC_CHAN_BDC;
@@ -265,44 +444,75 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 	}
 
 	status = dcerpc_schannel_key(p, domain, 
-					username,
-					password, 
-					chan_type, session_key);
+				     username,
+				     password, 
+				     chan_type, 
+				     p->security_state.generic_state->user.schan_session_key);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to fetch schannel session key: %s\n", nt_errstr(status)));
+		gensec_end(&p->security_state.generic_state);
 		return status;
 	}
-
-	mem_ctx = talloc_init("dcerpc_schannel_start");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dce_schan_state = talloc_p(mem_ctx, struct dcerpc_schannel_state);
-	if (!dce_schan_state) {
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dce_schan_state->mem_ctx = mem_ctx;
-
-	status = schannel_start(&dce_schan_state->schannel_state, session_key, True);
+	
+	status = gensec_set_username(p->security_state.generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set schannel username to %s: %s\n", username, nt_errstr(status)));
+		gensec_end(&p->security_state.generic_state);
 		return status;
 	}
+	
+	status = gensec_set_domain(p->security_state.generic_state, domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set schannel domain to %s: %s\n", domain, nt_errstr(status)));
+		gensec_end(&p->security_state.generic_state);
+		return status;
+	}
+	
+	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_SCHANNEL);
 
-	dce_schan_state->state = DCERPC_SCHANNEL_STATE_START;
-
-	p->security_state.generic_state.user.domain = domain;
-	p->security_state.generic_state.user.name = username;
-	p->security_state.generic_state.user.password = password;
-
-	p->security_state.generic_state.ops = &gensec_dcerpc_schannel_security_ops;
-	p->security_state.generic_state.private_data = dce_schan_state;
-
-	dump_data_pw("session key:\n", dce_schan_state->schannel_state->session_key, 16);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start SCHANNEL GENSEC backend: %s\n", nt_errstr(status)));
+		gensec_end(&p->security_state.generic_state);
+		return status;
+	}
 
 	status = dcerpc_bind_auth(p, DCERPC_AUTH_TYPE_SCHANNEL,
 				  uuid, version);
 
-	return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to bind to pipe with SCHANNEL: %s\n", nt_errstr(status)));
+		gensec_end(&p->security_state.generic_state);
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
+	.name		= "dcerpc_schannel",
+	.auth_type	= DCERPC_AUTH_TYPE_SCHANNEL,
+	.client_start   = dcerpc_schannel_client_start,
+	.server_start   = dcerpc_schannel_server_start,
+	.update 	= dcerpc_schannel_update,
+	.seal_packet 	= dcerpc_schannel_seal_packet,
+	.sign_packet   	= dcerpc_schannel_sign_packet,
+	.check_packet	= dcerpc_schannel_check_packet,
+	.unseal_packet 	= dcerpc_schannel_unseal_packet,
+	.session_key	= dcerpc_schannel_session_key,
+	.session_info	= dcerpc_schannel_session_info,
+	.end		= dcerpc_schannel_end
+};
+
+NTSTATUS gensec_dcerpc_schannel_init(void)
+{
+	NTSTATUS ret;
+	ret = register_backend("gensec", &gensec_dcerpc_schannel_security_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' gensec backend!\n",
+			gensec_dcerpc_schannel_security_ops.name));
+		return ret;
+	}
+
+	return ret;
 }

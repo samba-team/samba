@@ -146,9 +146,9 @@ static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_connection *dce_
   register an interface on an endpoint
 */
 NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
-				const char *ep_name,
-				const struct dcesrv_interface *iface,
-				const struct security_descriptor *sd)
+				   const char *ep_name,
+				   const struct dcesrv_interface *iface,
+				   const struct security_descriptor *sd)
 {
 	struct dcesrv_ep_description ep_description;
 	struct dcesrv_endpoint *ep;
@@ -269,8 +269,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	(*p)->handles = NULL;
 	(*p)->partial_input = data_blob(NULL, 0);
 	(*p)->auth_state.auth_info = NULL;
-	(*p)->auth_state.crypto_ctx.private_data = NULL;
-	(*p)->auth_state.crypto_ctx.ops = NULL;
+	(*p)->auth_state.gensec_security = NULL;
 	(*p)->auth_state.session_info = NULL;
 
 	return NT_STATUS_OK;
@@ -298,6 +297,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 		return status;
 	}
 
+	session_info->refcount++;
 	(*dce_conn_p)->auth_state.session_info = session_info;
 
 	/* TODO: check security descriptor of the endpoint here 
@@ -323,8 +323,12 @@ void dcesrv_endpoint_disconnect(struct dcesrv_connection *p)
 		dcesrv_handle_destroy(p, p->handles);
 	}
 
-	if (p->auth_state.crypto_ctx.ops) {
-		p->auth_state.crypto_ctx.ops->end(&p->auth_state);
+	if (p->auth_state.gensec_security) {
+		gensec_end(&p->auth_state.gensec_security);
+	}
+
+	if (p->auth_state.session_info) {
+		free_session_info(&p->auth_state.session_info);
 	}
 
 	talloc_destroy(p->mem_ctx);
@@ -1027,7 +1031,7 @@ static int num_ep_servers;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-static NTSTATUS dcerpc_register_ep_server(void *_ep_server)
+static NTSTATUS dcerpc_register_ep_server(const void *_ep_server)
 {
 	const struct dcesrv_endpoint_server *ep_server = _ep_server;
 	

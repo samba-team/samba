@@ -28,7 +28,7 @@ enum dcerpc_transport_t {NCACN_NP, NCACN_IP_TCP};
 struct dcerpc_pipe;
 struct dcerpc_security {
 	struct dcerpc_auth *auth_info;
-	struct gensec_security generic_state;
+	struct gensec_security *generic_state;
 };
 
 struct dcerpc_pipe {

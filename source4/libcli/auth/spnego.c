@@ -27,7 +27,25 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
+enum spnego_state_position {
+	SPNEGO_SERVER_START,
+	SPNEGO_CLIENT_GET_MECHS,
+	SPNEGO_CLIENT_SEND_MECHS,
+	SPNEGO_TARG,
+	SPNEGO_FALLBACK,
+	SPNEGO_DONE
+};
+
+struct spnego_state {
+	TALLOC_CTX *mem_ctx;
+	uint_t ref_count;
+	enum spnego_message_type expected_packet;
+	enum spnego_message_type state_position;
+	negResult_t result;
+	struct gensec_security *sub_sec_security;
+};
+
+static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 {
 	struct spnego_state *spnego_state;
 	TALLOC_CTX *mem_ctx = talloc_init("gensec_spengo_client_start");
@@ -40,11 +58,11 @@ NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	spnego_state->role = SPNEGO_CLIENT;
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_CLIENT_GET_MECHS;
 	spnego_state->result = SPNEGO_ACCEPT_INCOMPLETE;
 	spnego_state->mem_ctx = mem_ctx;
+	spnego_state->sub_sec_security = NULL;
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -53,9 +71,9 @@ NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 /*
   wrappers for the spnego_*() functions
 */
-NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_security, 
-				      TALLOC_CTX *mem_ctx, 
-				      uint8_t *data, size_t length, DATA_BLOB *sig)
+static NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_security, 
+				     TALLOC_CTX *mem_ctx, 
+				     uint8_t *data, size_t length, DATA_BLOB *sig)
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 
@@ -64,11 +82,11 @@ NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	return spnego_state->sub_sec_security.ops->unseal(&spnego_state->sub_sec_security, 
-							  mem_ctx, data, length, sig); 
+	return gensec_unseal_packet(spnego_state->sub_sec_security, 
+				    mem_ctx, data, length, sig); 
 }
 
-NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_security, 
+static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_security, 
 				     TALLOC_CTX *mem_ctx, 
 				     const uint8_t *data, size_t length, 
 				     const DATA_BLOB *sig)
@@ -81,11 +99,11 @@ NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	return spnego_state->sub_sec_security.ops->check_sig(&spnego_state->sub_sec_security, 
-							     mem_ctx, data, length, sig);
+	return gensec_check_packet(spnego_state->sub_sec_security, 
+				mem_ctx, data, length, sig);
 }
 
-NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_security, 
+static NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_security, 
 				    TALLOC_CTX *mem_ctx, 
 				    uint8_t *data, size_t length, 
 				    DATA_BLOB *sig)
@@ -98,11 +116,11 @@ NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	return spnego_state->sub_sec_security.ops->seal(&spnego_state->sub_sec_security, 
-							mem_ctx, data, length, sig);
+	return gensec_seal_packet(spnego_state->sub_sec_security, 
+				  mem_ctx, data, length, sig);
 }
 
-NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_security, 
+static NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_security, 
 				    TALLOC_CTX *mem_ctx, 
 				    const uint8_t *data, size_t length, 
 				    DATA_BLOB *sig)
@@ -114,11 +132,11 @@ NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	return spnego_state->sub_sec_security.ops->sign(&spnego_state->sub_sec_security, 
-							      mem_ctx, data, length, sig);
+	return gensec_sign_packet(spnego_state->sub_sec_security, 
+				  mem_ctx, data, length, sig);
 }
 
-NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 
+static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 
 				    DATA_BLOB *session_key)
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
@@ -127,11 +145,11 @@ NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	return spnego_state->sub_sec_security.ops->session_key(&spnego_state->sub_sec_security, 
-							      session_key);
+	return gensec_session_key(spnego_state->sub_sec_security, 
+				  session_key);
 }
 
-NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
+static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
 			       const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
@@ -139,7 +157,6 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 	DATA_BLOB unwrapped_out;
 	struct spnego_data spnego_out;
 	struct spnego_data spnego;
-	const struct gensec_security_ops *op;
 
 	ssize_t len;
 
@@ -148,32 +165,38 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 	}
 
 	if (spnego_state->state_position == SPNEGO_FALLBACK) {
-		return spnego_state->sub_sec_security.ops->update(&spnego_state->sub_sec_security,
-								  out_mem_ctx, in, out);
+		return gensec_update(spnego_state->sub_sec_security,
+				     out_mem_ctx, in, out);
 	}
 
 	len = spnego_read_data(in, &spnego);
 
 	if (len == -1 && spnego_state->state_position == SPNEGO_SERVER_START) {
 		int i;
-		const struct gensec_security_ops **all_ops = gensec_security_all();
-		for (i=0; all_ops[i]; i++) {
+		int num_ops;
+		const struct gensec_security_ops **all_ops = gensec_security_all(&num_ops);
+		for (i=0; i < num_ops; i++) {
 			NTSTATUS nt_status;
-			op = all_ops[i];
-			if (!op->oid) {
+			if (!all_ops[i]->oid) {
 				continue;
 			}
-			nt_status = op->server_start(&spnego_state->sub_sec_security);
+			nt_status = gensec_server_start(&spnego_state->sub_sec_security);
 			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
+			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
+							     all_ops[i]->oid);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				gensec_end(&spnego_state->sub_sec_security);
 				continue;
 			}
-			nt_status = op->update(&spnego_state->sub_sec_security,
-					       out_mem_ctx, in, out);
+			nt_status = gensec_update(spnego_state->sub_sec_security,
+						  out_mem_ctx, in, out);
 			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 				spnego_state->state_position = SPNEGO_FALLBACK;
 				return nt_status;
 			}
-			op->end(&spnego_state->sub_sec_security);
+			gensec_end(&spnego_state->sub_sec_security);
 		}
 		DEBUG(1, ("Failed to parse SPENGO request\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -196,33 +219,33 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 			NTSTATUS nt_status;
 			
 			for (i=0; mechType[i]; i++) {
-				op = gensec_security_by_oid(mechType[i]);
-				if (!op) {
-					continue;
-				}
-				spnego_state->sub_sec_security.ops = op;
-				spnego_state->sub_sec_security.user = gensec_security->user;
-
-				nt_status = op->client_start(&spnego_state->sub_sec_security);
+				nt_status = gensec_client_start(&spnego_state->sub_sec_security);
 				if (!NT_STATUS_IS_OK(nt_status)) {
-					op->end(&spnego_state->sub_sec_security);
+					break;
+				}
+				nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
+								     mechType[i]);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					gensec_end(&spnego_state->sub_sec_security);
 					continue;
 				}
+
 				if (i == 0) {
-					nt_status = op->update(&spnego_state->sub_sec_security,
-							       out_mem_ctx, 
-							       spnego.negTokenInit.mechToken, 
-							       &unwrapped_out);
+					nt_status = gensec_update(spnego_state->sub_sec_security,
+								  out_mem_ctx, 
+								  spnego.negTokenInit.mechToken, 
+								  &unwrapped_out);
 				} else {
 					/* only get the helping start blob for the first OID */
-					nt_status = op->update(&spnego_state->sub_sec_security,
-							       out_mem_ctx, 
-							       null_data_blob, 
-							       &unwrapped_out);
+					nt_status = gensec_update(spnego_state->sub_sec_security,
+								  out_mem_ctx, 
+								  null_data_blob, 
+								  &unwrapped_out);
 				}
 				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-					DEBUG(1, ("SPENGO(%s) NEG_TOKEN_INIT failed: %s\n", op->name, nt_errstr(nt_status)));
-					op->end(&spnego_state->sub_sec_security);
+					DEBUG(1, ("SPENGO(%s) NEG_TOKEN_INIT failed: %s\n", 
+						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
+					gensec_end(&spnego_state->sub_sec_security);
 				} else {
 					break;
 				}
@@ -237,7 +260,7 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 			}
 			
 			/* compose reply */
-			my_mechs[0] = op->oid;
+			my_mechs[0] = spnego_state->sub_sec_security->ops->oid;
 
 			spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
 			spnego_out.negTokenInit.mechTypes = my_mechs;
@@ -261,12 +284,11 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
-			op = spnego_state->sub_sec_security.ops;
 			if (spnego.negTokenTarg.responseToken.length) {
-				nt_status = op->update(&spnego_state->sub_sec_security,
-						       out_mem_ctx, 
-						       spnego.negTokenTarg.responseToken, 
-						       &unwrapped_out);
+				nt_status = gensec_update(spnego_state->sub_sec_security,
+							  out_mem_ctx, 
+							  spnego.negTokenTarg.responseToken, 
+							  &unwrapped_out);
 			} else {
 				unwrapped_out = data_blob(NULL, 0);
 				nt_status = NT_STATUS_OK;
@@ -284,7 +306,9 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 				/* compose reply */
 				spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
 				spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-				spnego_out.negTokenTarg.supportedMech = op->oid;
+				spnego_out.negTokenTarg.supportedMech 
+					= spnego_state->sub_sec_security->ops->oid;
+;
 				spnego_out.negTokenTarg.responseToken = unwrapped_out;
 				spnego_out.negTokenTarg.mechListMIC = null_data_blob;
 				
@@ -296,7 +320,9 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 			} else if (NT_STATUS_IS_OK(nt_status)) {
 				spnego_state->state_position = SPNEGO_DONE;
 			} else {
-				DEBUG(1, ("SPENGO(%s) login failed: %s\n", op->name, nt_errstr(nt_status)));
+				DEBUG(1, ("SPENGO(%s) login failed: %s\n", 
+					  spnego_state->sub_sec_security->ops->name, 
+					  nt_errstr(nt_status)));
 				return nt_status;
 			}
 			
@@ -309,13 +335,42 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 	}
 }
 
-void gensec_spnego_end(struct gensec_security *gensec_security)
+static void gensec_spnego_end(struct gensec_security *gensec_security)
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
-	
-	spnego_state->sub_sec_security.ops->end(&spnego_state->sub_sec_security);
+
+	if (spnego_state->sub_sec_security) {
+		gensec_end(&spnego_state->sub_sec_security);
+	}
 
 	talloc_destroy(spnego_state->mem_ctx);
 
 	gensec_security->private_data = NULL;
+}
+
+static const struct gensec_security_ops gensec_spnego_security_ops = {
+	.name		= "spnego",
+	.sasl_name	= "GSS-SPNEGO",
+	.oid            = OID_SPNEGO,
+	.client_start   = gensec_spnego_client_start,
+	.update 	= gensec_spnego_update,
+	.seal_packet	= gensec_spnego_seal_packet,
+	.sign_packet	= gensec_spnego_sign_packet,
+	.check_packet	= gensec_spnego_check_packet,
+	.unseal_packet	= gensec_spnego_unseal_packet,
+	.session_key	= gensec_spnego_session_key,
+	.end		= gensec_spnego_end
+};
+
+NTSTATUS gensec_spengo_init(void)
+{
+	NTSTATUS ret;
+	ret = register_backend("gensec", &gensec_spnego_security_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' gensec backend!\n",
+			gensec_spnego_security_ops.name));
+		return ret;
+	}
+
+	return ret;
 }

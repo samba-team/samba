@@ -94,31 +94,10 @@ struct dcesrv_handle {
 	void (*destroy)(struct dcesrv_connection *, struct dcesrv_handle *);
 };
 
-struct dcesrv_crypto_ops {
-	const char *name;
-	uint8 auth_type;
-	NTSTATUS (*start)(struct dcesrv_auth *auth, DATA_BLOB *auth_blob);
-	NTSTATUS (*update)(struct dcesrv_auth *auth, TALLOC_CTX *out_mem_ctx,
-				const DATA_BLOB in, DATA_BLOB *out);
-	NTSTATUS (*seal)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
-				uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*sign)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
-				const uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*check_sig)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx, 
-				const uint8_t *data, size_t length, const DATA_BLOB *sig);
-	NTSTATUS (*unseal)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
-				uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*session_key)(struct dcesrv_auth *auth, uint8_t session_key[16]);
-	void (*end)(struct dcesrv_auth *auth);
-};
-
 /* hold the authentication state information */
 struct dcesrv_auth {
 	struct dcerpc_auth *auth_info;
-	struct {
-		void *private_data;
-		const struct dcesrv_crypto_ops *ops;
-	} crypto_ctx;
+	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
 };
 
