@@ -1042,8 +1042,8 @@ printsub(int direction, unsigned char *pointer, int length)
 		sprintf(nfrontp, " NAME \"");
 		nfrontp += strlen(nfrontp);
 		while (i < length)
-		    *nfrontp += pointer[i++];
-		*nfrontp += '"';
+		    *nfrontp++ = pointer[i++];
+		*nfrontp++ = '"';
 		break;
 
 	    default:
