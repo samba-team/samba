@@ -91,7 +91,7 @@ always generates a new subkey in an authenticator
 
 should the sequence numbers be XORed?
 
-pa-afs3-salt?
+fix pre-authentication with pa-afs3-salt
 
 OTP?
 

@@ -1,3 +1,20 @@
+Sat Jan  3 22:07:07 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kdc/string2key.c: Use AFS string-to-key from libkrb5.
+
+	* lib/krb5/get_in_tkt.c: Handle pa-afs3-salt case.
+
+	* lib/krb5/krb5.h: Add value for AFS salts.
+
+	* lib/krb5/str2key.c: Add support for AFS string-to-key.
+
+	* lib/kadm5/rename_s.c: Use correct salt.
+
+	* lib/kadm5/ent_setup.c: Always enable client. Only set max-life
+ 	and max-renew if != 0.
+
+	* lib/krb5/config_file.c: Add context to all krb5_config_*get_*.
+
 Thu Dec 25 17:03:25 1997  Assar Westerlund  <assar@sics.se>
 
 	* kadmin/ank.c (ank): don't zero password if --random-key was
