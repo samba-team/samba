@@ -2288,11 +2288,15 @@ static BOOL run_deletetest(int dummy)
 	static struct cli_state cli1;
 	static struct cli_state cli2;
 	char *fname = "\\delete.file";
-	int fnum1, fnum2;
+	int fnum1 = -1;
+	int fnum2 = -1;
 	BOOL correct = True;
 	
 	printf("starting delete test\n");
 	
+	ZERO_STRUCT(cli1);
+	ZERO_STRUCT(cli2);
+
 	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
@@ -2310,23 +2314,27 @@ static BOOL run_deletetest(int dummy)
 	
 	if (fnum1 == -1) {
 		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[1] close failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	fnum1 = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
 	if (fnum1 == -1) {
 		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[1] close failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	printf("first delete on close test succeeded.\n");
@@ -2342,17 +2350,20 @@ static BOOL run_deletetest(int dummy)
 	
 	if (fnum1 == -1) {
 		printf("[2] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
 		printf("[2] setting delete_on_close failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[2] close failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
@@ -2361,6 +2372,7 @@ static BOOL run_deletetest(int dummy)
 		if (!cli_close(&cli1, fnum1)) {
 			printf("[2] close failed (%s)\n", cli_errstr(&cli1));
 			correct = False;
+			goto fail;
 		}
 		cli_unlink(&cli1, fname);
 	} else
@@ -2375,7 +2387,8 @@ static BOOL run_deletetest(int dummy)
 
 	if (fnum1 == -1) {
 		printf("[3] open - 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	/* This should fail with a sharing violation - open for delete is only compatible
@@ -2386,7 +2399,8 @@ static BOOL run_deletetest(int dummy)
 
 	if (fnum2 != -1) {
 		printf("[3] open  - 2 of %s succeeded - should have failed.\n", fname);
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	/* This should succeed. */
@@ -2396,22 +2410,26 @@ static BOOL run_deletetest(int dummy)
 
 	if (fnum2 == -1) {
 		printf("[3] open  - 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
 		printf("[3] setting delete_on_close failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[3] close 1 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_close(&cli1, fnum2)) {
 		printf("[3] close 2 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	/* This should fail - file should no longer be there. */
@@ -2424,6 +2442,7 @@ static BOOL run_deletetest(int dummy)
 		}
 		cli_unlink(&cli1, fname);
 		correct = False;
+		goto fail;
 	} else
 		printf("third delete on close test succeeded.\n");
 
@@ -2436,7 +2455,8 @@ static BOOL run_deletetest(int dummy)
 								
 	if (fnum1 == -1) {
 		printf("[4] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	/* This should succeed. */
@@ -2444,17 +2464,20 @@ static BOOL run_deletetest(int dummy)
 			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
 	if (fnum2 == -1) {
 		printf("[4] open  - 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_close(&cli1, fnum2)) {
 		printf("[4] close - 1 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
 		printf("[4] setting delete_on_close failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	/* This should fail - no more opens once delete on close set. */
@@ -2462,13 +2485,15 @@ static BOOL run_deletetest(int dummy)
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
 	if (fnum2 != -1) {
 		printf("[4] open  - 3 of %s succeeded ! Should have failed.\n", fname );
-		return False;
+		correct = False;
+		goto fail;
 	} else
 		printf("fourth delete on close test succeeded.\n");
 	
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[4] close - 2 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	/* Test 5 ... */
@@ -2478,19 +2503,22 @@ static BOOL run_deletetest(int dummy)
 	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
 		printf("[5] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	/* This should fail - only allowed on NT opens with DELETE access. */
 
 	if (cli_nt_delete_on_close(&cli1, fnum1, True)) {
 		printf("[5] setting delete_on_close on OpenX file succeeded - should fail !\n");
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[5] close - 2 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	printf("fifth delete on close test succeeded.\n");
@@ -2505,19 +2533,22 @@ static BOOL run_deletetest(int dummy)
 	
 	if (fnum1 == -1) {
 		printf("[6] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	/* This should fail - only allowed on NT opens with DELETE access. */
 	
 	if (cli_nt_delete_on_close(&cli1, fnum1, True)) {
 		printf("[6] setting delete_on_close on file with no delete access succeeded - should fail !\n");
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[6] close - 2 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	printf("sixth delete on close test succeeded.\n");
@@ -2531,22 +2562,26 @@ static BOOL run_deletetest(int dummy)
 								
 	if (fnum1 == -1) {
 		printf("[7] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
 		printf("[7] setting delete_on_close on file failed !\n");
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_nt_delete_on_close(&cli1, fnum1, False)) {
 		printf("[7] unsetting delete_on_close on file failed !\n");
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[7] close - 2 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	/* This next open should succeed - we reset the flag. */
@@ -2554,12 +2589,14 @@ static BOOL run_deletetest(int dummy)
 	fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 == -1) {
 		printf("[5] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[7] close - 2 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	printf("seventh delete on close test succeeded.\n");
@@ -2570,7 +2607,8 @@ static BOOL run_deletetest(int dummy)
 	
 	if (!torture_open_connection(&cli2)) {
 		printf("[8] failed to open second connection.\n");
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	cli_sockopt(&cli1, sockops);
@@ -2580,7 +2618,8 @@ static BOOL run_deletetest(int dummy)
 	
 	if (fnum1 == -1) {
 		printf("[8] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	fnum2 = cli_nt_create_full(&cli2, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
@@ -2588,38 +2627,78 @@ static BOOL run_deletetest(int dummy)
 	
 	if (fnum2 == -1) {
 		printf("[8] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
 		printf("[8] setting delete_on_close on file failed !\n");
-		return False;
+		correct = False;
+		goto fail;
 	}
 	
 	if (!cli_close(&cli1, fnum1)) {
 		printf("[8] close - 1 failed (%s)\n", cli_errstr(&cli1));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	if (!cli_close(&cli2, fnum2)) {
 		printf("[8] close - 2 failed (%s)\n", cli_errstr(&cli2));
-		return False;
+		correct = False;
+		goto fail;
 	}
 
 	/* This should fail.. */
 	fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 != -1) {
 		printf("[8] open of %s succeeded should have been deleted on close !\n", fname);
-		if (!cli_close(&cli1, fnum1)) {
-			printf("[8] close failed (%s)\n", cli_errstr(&cli1));
-		}
-		cli_unlink(&cli1, fname);
+		goto fail;
 		correct = False;
 	} else
 		printf("eighth delete on close test succeeded.\n");
 
-	printf("finished delete test\n");
+	/* This should fail - we need to set DELETE_ACCESS. */
+	fnum1 = cli_nt_create_full(&cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA,
+				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE);
 	
+	if (fnum1 != -1) {
+		printf("[9] open of %s succeeded should have failed!\n", fname);
+		correct = False;
+		goto fail;
+	}
+
+	printf("ninth delete on close test succeeded.\n");
+
+	fnum1 = cli_nt_create_full(&cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE);
+	if (fnum1 == -1) {
+		printf("[10] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		correct = False;
+		goto fail;
+	}
+
+	/* This should delete the file. */
+	if (!cli_close(&cli1, fnum1)) {
+		printf("[10] close failed (%s)\n", cli_errstr(&cli1));
+		correct = False;
+		goto fail;
+	}
+
+	/* This should fail.. */
+	fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
+	if (fnum1 != -1) {
+		printf("[10] open of %s succeeded should have been deleted on close !\n", fname);
+		goto fail;
+		correct = False;
+	} else
+		printf("tenth delete on close test succeeded.\n");
+	printf("finished delete test\n");
+
+  fail:
+	
+	cli_close(&cli1, fnum1);
+	cli_close(&cli1, fnum2);
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 	
