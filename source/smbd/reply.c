@@ -625,7 +625,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 	     domain,skip_string(p,1),skip_string(p,2)));
   }
 
-
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
 
   /* If name ends in $ then I think it's asking about whether a */
@@ -648,7 +647,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   }
 
   strlower(user);
-
   /*
    * In share level security, only overwrite sesssetup_use if
    * it's a non null-session share. Helps keep %U and %G
@@ -657,7 +655,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   if((lp_security() != SEC_SHARE) || (*user && !guest))
     pstrcpy(sesssetup_user,user);
-
   reload_services(True);
 
   /*
@@ -668,7 +665,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   pstrcpy( orig_user, user);
 
-	map_nt_and_unix_username(domain, user);
+  map_nt_and_unix_username(domain, user);
 
   add_session_user(user);
 
@@ -757,7 +754,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 		lp_add_home(user,homes,home_dir);
 	}
   }
-
 
   /* it's ok - setup a reply */
   if (Protocol < PROTOCOL_NT1) {
@@ -897,7 +893,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     unix_convert(fname,conn,0,&bad_path,&sbuf);
     if (check_name(fname,conn))
     {
-      if (VALID_STAT(sbuf) || dos_stat(fname,&sbuf) == 0)
+      if (VALID_STAT(sbuf) || conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf) == 0)
       {
         mode = dos_mode(conn,fname,&sbuf);
         size = sbuf.st_size;
@@ -998,7 +994,7 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   int outsize = 0;
   SMB_BIG_UINT dfree,dsize,bsize;
   
-  sys_disk_free(".",&bsize,&dfree,&dsize);
+  conn->vfs_ops.disk_free(".",&bsize,&dfree,&dsize);
   
   outsize = set_message(outbuf,5,0,True);
   
@@ -1346,8 +1342,9 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
  
   unixmode = unix_mode(conn,aARCH);
       
-  open_file_shared(fsp,conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-                   unixmode, oplock_request,&rmode,NULL);
+  open_file_shared(fsp, conn, fname, share_mode,
+		   (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN),
+		   unixmode, oplock_request, &rmode, NULL);
 
   if (!fsp->open)
   {
@@ -1360,7 +1357,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+  if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1450,8 +1447,8 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   unixmode = unix_mode(conn,smb_attr | aARCH);
       
-  open_file_shared(fsp,conn,fname,smb_mode,smb_ofun,unixmode,
-	               oplock_request, &rmode,&smb_action);
+  open_file_shared(fsp, conn, fname, smb_mode, smb_ofun, unixmode,
+		   oplock_request, &rmode, &smb_action);
       
   if (!fsp->open)
   {
@@ -1464,7 +1461,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+  if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1601,8 +1598,9 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   }
 
   /* Open file in dos compatibility share mode. */
-  open_file_shared(fsp,conn,fname,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-                   ofun, unixmode, oplock_request, NULL, NULL);
+  open_file_shared(fsp, conn, fname,
+		  SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+		  ofun, unixmode, oplock_request, NULL, NULL);
   
   if (!fsp->open)
   {
@@ -1673,8 +1671,10 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  open_file_shared(fsp,conn,fname2,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-                   (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unixmode, oplock_request, NULL, NULL);
+  open_file_shared(fsp,conn,fname2,
+		   SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB),
+		   (FILE_CREATE_IF_NOT_EXIST | FILE_EXISTS_FAIL), 
+		   unixmode, oplock_request, NULL, NULL);
 
   if (!fsp->open)
   {
@@ -1717,7 +1717,7 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (dos_lstat(fname,&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(fname,&sbuf) != 0) return(False);
   fmode = dos_mode(conn,fname,&sbuf);
   if (fmode & aDIR) return(False);
   if (!lp_delete_readonly(SNUM(conn))) {
@@ -1774,10 +1774,10 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (!has_wild) {
     pstrcat(directory,"/");
     pstrcat(directory,mask);
-    if (can_delete(directory,conn,dirtype) && !dos_unlink(directory))
+    if (can_delete(directory,conn,dirtype) && !conn->vfs_ops.unlink(directory))
       count++;
     if (!count)
-      exists = dos_file_exist(directory,NULL);    
+      exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);    
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -1807,7 +1807,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    if (!can_delete(fname,conn,dirtype)) continue;
-	    if (!dos_unlink(fname)) count++;
+	    if (!conn->vfs_ops.unlink(fname)) count++;
 	    DEBUG(3,("reply_unlink : doing unlink on %s\n",fname));
 	  }
 	CloseDir(dirptr);
@@ -1900,7 +1900,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     if (size < sizeneeded)
     {
       SMB_STRUCT_STAT st;
-      if (sys_fstat(fsp->fd_ptr->fd,&st) == 0)
+      if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&st) == 0)
         size = st.st_size;
       if (!fsp->can_write) 
         fsp->size = size;
@@ -1924,11 +1924,11 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
 #if USE_READ_PREDICTION
     if (!fsp->can_write)
-      predict = read_predict(fsp->fd_ptr->fd,startpos,header+4,NULL,nread);
+      predict = read_predict(fsp, fsp->fd_ptr->fd,startpos,header+4,NULL,nread);
 #endif /* USE_READ_PREDICTION */
 
     if ((nread-predict) > 0) {
-      if(seek_file(fsp,startpos + predict) == -1) {
+      if(conn->vfs_ops.seek(fsp,startpos + predict) == -1) {
         DEBUG(0,("reply_readbraw: ERROR: seek_file failed.\n"));
         ret = 0;
         seek_fail = True;
@@ -1936,7 +1936,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     }
 
     if(!seek_fail)
-      ret = (ssize_t)transfer_file(fsp->fd_ptr->fd,Client,
+      ret = (ssize_t)vfs_transfer_file(-1, fsp->fd_ptr->fd, Client, NULL,
                                    (SMB_OFF_T)(nread-predict),header,4+predict, 
                                    startpos+predict);
   }
@@ -2039,8 +2039,9 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   if (is_locked(fsp,conn,numtoread,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));	
 
-  if (numtoread > 0)
+  if (numtoread > 0) {
     nread = read_file(fsp,data,startpos,numtoread);
+  }
   
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2092,15 +2093,15 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   if (is_locked(fsp,conn,smb_maxcnt,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));
-  nread = read_file(fsp,data,startpos,smb_maxcnt);
-  
+  nread = read_file(fsp,data,smb_maxcnt);
+
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   SSVAL(outbuf,smb_vwv5,nread);
   SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
   SSVAL(smb_buf(outbuf),-2,nread);
-  
+
   DEBUG( 3, ( "readX fnum=%d min=%d max=%d nread=%d\n",
 	      fsp->fnum, smb_mincnt, smb_maxcnt, nread ) );
 
@@ -2184,8 +2185,9 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 	     tcount,nwritten,numtowrite));
   }
 
-  nwritten = transfer_file(Client,fsp->fd_ptr->fd,(SMB_OFF_T)numtowrite,NULL,0,
-			   startpos+nwritten);
+  nwritten = vfs_transfer_file(Client, NULL, -1, fsp,
+			       (SMB_OFF_T)numtowrite,NULL,0, 
+			       startpos+nwritten);
   total_written += nwritten;
   
   /* Set up outbuf to return the correct return */
@@ -2199,7 +2201,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   }
 
   if (lp_syncalways(SNUM(conn)) || write_through)
-    sync_file(conn,fsp);
+    conn->vfs_ops.sync(conn, fsp);
 
   DEBUG(3,("writebraw2 fnum=%d start=%.0f num=%d wrote=%d\n",
 	   fsp->fnum, (double)startpos, numtowrite, total_written));
@@ -2249,7 +2251,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
     nwritten = write_file(fsp,data,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
-    sync_file(conn,fsp);
+    conn->vfs_ops.sync(conn, fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2302,7 +2304,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
     nwritten = write_file(fsp,data,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
-    sync_file(conn,fsp);
+    conn->vfs_ops.sync(conn, fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2386,7 +2388,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	   fsp->fnum, numtowrite, nwritten));
 
   if (lp_syncalways(SNUM(conn)) || write_through)
-    sync_file(conn,fsp);
+    conn->vfs_ops.sync(conn, fsp);
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -2418,7 +2420,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       umode = SEEK_SET; break;
   }
 
-  if((res = sys_lseek(fsp->fd_ptr->fd,startpos,umode)) == -1)
+  if((res = conn->vfs_ops.lseek(fsp->fd_ptr->fd,startpos,umode)) == -1)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
   fsp->pos = res;
@@ -2448,7 +2450,7 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   if (!fsp) {
 	  file_sync_all(conn);
   } else {
-	  sync_file(conn,fsp);
+	  conn->vfs_ops.sync(conn, fsp);
   }
 
   DEBUG(3,("flush\n"));
@@ -2914,7 +2916,8 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
-    ret = dos_mkdir(directory,unix_mode(conn,aDIR));
+    ret = conn->vfs_ops.mkdir(dos_to_unix(directory,False),
+			      unix_mode(conn,aDIR));
   
   if (ret < 0)
   {
@@ -2937,11 +2940,11 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 Static function used by reply_rmdir to delete an entire directory
 tree recursively.
 ****************************************************************************/
-static BOOL recursive_rmdir(char *directory)
+static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 {
   char *dname = NULL;
   BOOL ret = False;
-  void *dirptr = OpenDir(NULL, directory, False);
+  void *dirptr = OpenDir(conn, directory, False);
 
   if(dirptr == NULL)
     return True;
@@ -2965,7 +2968,7 @@ static BOOL recursive_rmdir(char *directory)
     pstrcat(fullname, "/");
     pstrcat(fullname, dname);
 
-    if(dos_lstat(fullname, &st) != 0)
+    if(conn->vfs_ops.lstat(fullname, &st) != 0)
     {
       ret = True;
       break;
@@ -2973,18 +2976,18 @@ static BOOL recursive_rmdir(char *directory)
 
     if(st.st_mode & S_IFDIR)
     {
-      if(recursive_rmdir(fullname)!=0)
+      if(recursive_rmdir(conn, fullname)!=0)
       {
         ret = True;
         break;
       }
-      if(dos_rmdir(fullname) != 0)
+      if(conn->vfs_ops.rmdir(dos_to_unix(fullname,False)) != 0)
       {
         ret = True;
         break;
       }
     }
-    else if(dos_unlink(fullname) != 0)
+    else if(conn->vfs_ops.unlink(dos_to_unix(fullname,False)) != 0)
     {
       ret = True;
       break;
@@ -3011,7 +3014,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     {
 
       dptr_closepath(directory,SVAL(inbuf,smb_pid));
-      ok = (dos_rmdir(directory) == 0);
+      ok = (conn->vfs_ops.rmdir(dos_to_unix(directory,False)) == 0);
       if(!ok && (errno == ENOTEMPTY) && lp_veto_files(SNUM(conn)))
         {
           /* Check to see if the only thing in this directory are
@@ -3056,24 +3059,25 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
                       pstrcat(fullname, "/");
                       pstrcat(fullname, dname);
                       
-                      if(dos_lstat(fullname, &st) != 0)
+                      if(conn->vfs_ops.lstat(fullname, &st) != 0)
                         break;
                       if(st.st_mode & S_IFDIR)
                       {
                         if(lp_recursive_veto_delete(SNUM(conn)))
                         {
-                          if(recursive_rmdir(fullname) != 0)
+			  DEBUG(0, ("ERROR: recursive_rmdir()\n"));
+                          if(recursive_rmdir(conn, fullname) != 0)
                             break;
                         }
-                        if(dos_rmdir(fullname) != 0)
+                        if(conn->vfs_ops.rmdir(dos_to_unix(fullname,False)) != 0)
                           break;
                       }
-                      else if(dos_unlink(fullname) != 0)
+                      else if(conn->vfs_ops.unlink(dos_to_unix(fullname,False)) != 0)
                         break;
                     }
                   CloseDir(dirptr);
                   /* Retry the rmdir */
-                  ok = (dos_rmdir(directory) == 0);
+                  ok = (conn->vfs_ops.rmdir(dos_to_unix(directory,False)) == 0);
                 }
               else
                 CloseDir(dirptr);
@@ -3178,7 +3182,7 @@ static BOOL can_rename(char *fname,connection_struct *conn)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (dos_lstat(fname,&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(fname,&sbuf) != 0) return(False);
   if (!check_file_sharing(conn,fname,True)) return(False);
 
   return(True);
@@ -3298,21 +3302,23 @@ int rename_internals(connection_struct *conn,
 			 */
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
-			   !dos_rename(directory,newname))
+			   !conn->vfs_ops.rename(dos_to_unix(directory,False),
+						 newname))
 				count++;
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
-			    !dos_file_exist(newname,NULL) &&
-			    !dos_rename(directory,newname))
+			    !vfs_file_exist(conn,dos_to_unix(newname,False),NULL) &&
+			    !conn->vfs_ops.rename(dos_to_unix(directory,False),
+						  newname))
 				count++;
 		}
 
 		DEBUG(3,("rename_internals: %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
                          directory,newname));
 		
-		if (!count) exists = dos_file_exist(directory,NULL);
-		if (!count && exists && dos_file_exist(newname,NULL)) {
+		if (!count) exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);
+		if (!count && exists && vfs_file_exist(conn,dos_to_unix(newname,False),NULL)) {
 			exists = True;
 			error = ERRrename;
 		}
@@ -3353,13 +3359,13 @@ int rename_internals(connection_struct *conn,
 					continue;
 				}
 				
-				if (!replace_if_exists && dos_file_exist(destname,NULL)) {
-					DEBUG(6,("dos_file_exist %s\n", destname));
+				if (!replace_if_exists && vfs_file_exist(conn,dos_to_unix(destname,False),NULL)) {
+					DEBUG(6,("file_exist %s\n", destname));
 					error = 183;
 					continue;
 				}
 				
-				if (!dos_rename(fname,destname))
+				if (!conn->vfs_ops.rename(dos_to_unix(fname,False),destname))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
@@ -3428,15 +3434,16 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
     pstrcat(dest,p);
   }
 
-  if (!dos_file_exist(src,&st))
+  if (!vfs_file_exist(conn,dos_to_unix(src,False),&st))
     return(False);
 
   fsp1 = file_new();
-  if (!fsp1)
+  if (!fsp1) 
     return(False);
 
-  open_file_shared(fsp1,conn,src,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-		   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),0,0,&Access,&action);
+  open_file_shared(fsp1, conn, src,
+      SET_DENY_MODE(DENY_NONE) | SET_OPEN_MODE(DOS_OPEN_RDONLY),
+      (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN), 0, 0, &Access, &action);
 
   if (!fsp1->open) {
 	  file_free(fsp1);
@@ -3451,8 +3458,9 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	  close_file(fsp1,False);
 	  return(False);
   }
-  open_file_shared(fsp2,conn,dest,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-		   ofun,st.st_mode,0,&Access,&action);
+  open_file_shared(fsp2, conn, dest,
+      SET_DENY_MODE(DENY_NONE) | SET_OPEN_MODE(DOS_OPEN_WRONLY),
+      ofun, st.st_mode, 0, &Access, &action);
 
   if (!fsp2->open) {
     close_file(fsp1,False);
@@ -3461,7 +3469,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   }
 
   if ((ofun&3) == 1) {
-    if(sys_lseek(fsp2->fd_ptr->fd,0,SEEK_END) == -1) {
+    if(conn->vfs_ops.lseek(fsp2->fd_ptr->fd,0,SEEK_END) == -1) {
       DEBUG(0,("copy_file: error - sys_lseek returned error %s\n",
                strerror(errno) ));
       /*
@@ -3473,8 +3481,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   }
   
   if (st.st_size)
-    ret = transfer_file(fsp1->fd_ptr->fd,
-                        fsp2->fd_ptr->fd,st.st_size,NULL,0,0);
+    ret = vfs_transfer_file(-1, fsp1, -1, fsp2, st.st_size, NULL, 0, 0);
 
   close_file(fsp1,False);
   close_file(fsp2,False);
@@ -3558,7 +3565,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     if (resolve_wildcards(directory,newname) && 
 	copy_file(directory,newname,conn,ofun,
 		  count,target_is_directory)) count++;
-    if (!count) exists = dos_file_exist(directory,NULL);
+    if (!count) exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -3862,7 +3869,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
     {
       size_t N = MIN(max_per_packet,tcount-total_read);
   
-      nread = read_file(fsp,data,startpos,N);
+      nread = read_file(fsp,data,N);
 
       if (nread <= 0) nread = 0;
 
@@ -3925,7 +3932,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   nwritten = write_file(fsp,data,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
-    sync_file(conn,fsp);
+    conn->vfs_ops.sync(conn, fsp);
   
   if(nwritten < (ssize_t)numtowrite)
     return(UNIXERROR(ERRHRD,ERRdiskfull));
@@ -4038,7 +4045,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   nwritten = write_file(fsp,data,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
-    sync_file(conn,fsp);
+    conn->vfs_ops.sync(conn, fsp);
   
   if (nwritten < (ssize_t)numtowrite)
   {
@@ -4143,7 +4150,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   CHECK_ERROR(fsp);
 
   /* Do an fstat on this file */
-  if(sys_fstat(fsp->fd_ptr->fd, &sbuf))
+  if(fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd, &sbuf))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   mode = dos_mode(conn,fsp->fsp_name,&sbuf);
