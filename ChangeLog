@@ -1,3 +1,7 @@
+2000-01-06  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.2k
+
 2000-01-06  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc): advance colon so that
