@@ -529,7 +529,7 @@ static void process_loop(void)
 
 		/* rescan the trusted domains list. This must be done
 		   regularly to cope with transitive trusts */
-		rescan_trusted_domains();
+		rescan_trusted_domains(False);
 
 		/* Free up temporary memory */
 
