@@ -51,9 +51,12 @@ _kadm5_set_keys(kadm5_server_context *context,
     krb5_get_salt(ent->principal, &salt);
     for(i = 0; i < ent->keys.len; i++){
 	key = &ent->keys.val[i];
-	if(key->salt && key->salt->type == hdb_pw_salt && 
-	   key->salt->salt.length != 0){
-	    /* zap old salt, but not v4 salts */
+	if(key->salt && 
+	   key->salt->type == hdb_pw_salt &&
+	   (key->salt->salt.length != 0 ||
+	    !krb5_config_get_bool(context->context, NULL, 
+				  "kadmin", "use_v4_salt", NULL))){
+	    /* zap old salt, possibly keeping version 4 salts */
 	    free_Salt(key->salt);
 	    key->salt = NULL;
 	}
