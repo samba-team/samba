@@ -20,6 +20,11 @@
 
 #include "includes.h"
 
+extern uint16 global_smbpid;
+extern int keepalive;
+extern struct auth_context *negprot_global_auth_context;
+extern int smb_echo_count;
+
 struct timeval smb_last_time;
 
 static char *InBuffer = NULL;
@@ -852,7 +857,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 {
 	static pid_t pid= (pid_t)-1;
 	int outsize = 0;
-	extern uint16 global_smbpid;
 
 	type &= 0xff;
 
@@ -1331,7 +1335,6 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 	static time_t last_idle_closed_check = 0;
 	time_t t;
 	BOOL allidle = True;
-	extern int keepalive;
 
 	if (smb_read_error == READ_EOF) {
 		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
@@ -1375,7 +1378,6 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 	}
 
 	if (keepalive && (t - last_keepalive_sent_time)>keepalive) {
-		extern struct auth_context *negprot_global_auth_context;
 		if (!send_keepalive(smbd_server_fd())) {
 			DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
 			return False;
@@ -1493,7 +1495,6 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 
 void smbd_process(void)
 {
-	extern int smb_echo_count;
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
 	const size_t total_buffer_size = BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN;

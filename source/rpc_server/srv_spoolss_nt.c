@@ -28,6 +28,8 @@
 
 #include "includes.h"
 
+extern userdom_struct current_user_info;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -6027,7 +6029,6 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 
 static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
-	extern userdom_struct current_user_info;
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
 	pstring command;

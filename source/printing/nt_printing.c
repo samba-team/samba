@@ -22,6 +22,7 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
 extern DOM_SID global_sid_World;
 
 static TDB_CONTEXT *tdb_forms; /* used for forms files */
@@ -5115,7 +5116,6 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	BOOL result;
 	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
-	extern struct current_user current_user;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	
 	/* If user is NULL then use the current_user structure */

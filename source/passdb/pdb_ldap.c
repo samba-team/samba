@@ -45,6 +45,8 @@
 
 #include "includes.h"
 
+extern DOM_SID global_sid_NULL;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
@@ -2436,7 +2438,6 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	LDAPMessage *entry;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int num_sids, num_gids;
-	extern DOM_SID global_sid_NULL;
 
 	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
 		return pdb_default_enum_group_memberships(methods, username,

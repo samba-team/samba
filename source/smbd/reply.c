@@ -35,6 +35,7 @@ extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
 
+extern struct current_user current_user;
 extern BOOL global_encrypted_passwords_negotiated;
 
 /****************************************************************************
@@ -471,7 +472,6 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	int passlen = SVAL(inbuf,smb_vwv3);
 	pstring path;
 	char *p, *q;
-	extern BOOL global_encrypted_passwords_negotiated;
 	
 	START_PROFILE(SMBtconX);	
 
@@ -2010,7 +2010,6 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int out_buffsize)
 {
-	extern struct current_user current_user;
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	SMB_OFF_T startpos;
@@ -2980,7 +2979,6 @@ int reply_exit(connection_struct *conn,
 int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
                 int dum_buffsize)
 {
-	extern struct current_user current_user;
 	int outsize = 0;
 	time_t mtime;
 	int32 eclass = 0, err = 0;

@@ -26,6 +26,12 @@
 #include "includes.h"
 #include "winbindd.h"
 
+extern BOOL opt_nocache;
+extern struct winbindd_methods msrpc_methods;
+extern struct winbindd_methods ads_methods;
+extern BOOL opt_dual_daemon;
+extern BOOL background_process;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -47,8 +53,6 @@ static struct winbind_cache *wcache;
 /* flush the cache */
 void wcache_flush_cache(void)
 {
-	extern BOOL opt_nocache;
-
 	if (!wcache)
 		return;
 	if (wcache->tdb) {
@@ -102,11 +106,9 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	struct winbind_cache *ret = wcache;
 
 	if (!domain->backend) {
-		extern struct winbindd_methods msrpc_methods;
 		switch (lp_security()) {
 #ifdef HAVE_ADS
 		case SEC_ADS: {
-			extern struct winbindd_methods ads_methods;
 			/* always obey the lp_security parameter for our domain */
 			if (domain->primary) {
 				domain->backend = &ads_methods;
@@ -469,13 +471,11 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	centry->sequence_number = centry_uint32(centry);
 
 	if (centry_expired(domain, kstr, centry)) {
-		extern BOOL opt_dual_daemon;
 
 		DEBUG(10,("wcache_fetch: entry %s expired for domain %s\n",
 			 kstr, domain->name ));
 
 		if (opt_dual_daemon) {
-			extern BOOL background_process;
 			background_process = True;
 			DEBUG(10,("wcache_fetch: background processing expired entry %s for domain %s\n",
 				 kstr, domain->name ));

@@ -22,6 +22,22 @@
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
 
+/* these can be removed when they are in glibc headers */
+struct  cap_user_header {
+	uint32 version;
+	int pid;
+} header;
+struct cap_user_data {
+	uint32 effective;
+	uint32 permitted;
+	uint32 inheritable;
+} data;
+
+extern int capget(struct cap_user_header * hdrp,
+		  struct cap_user_data * datap);
+extern int capset(struct cap_user_header * hdrp,
+		  const struct cap_user_data * datap);
+
 static SIG_ATOMIC_T signals_received;
 #define FD_PENDING_SIZE 100
 static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
@@ -68,22 +84,6 @@ static void set_capability(unsigned capability)
 #ifndef _LINUX_CAPABILITY_VERSION
 #define _LINUX_CAPABILITY_VERSION 0x19980330
 #endif
-	/* these can be removed when they are in glibc headers */
-	struct  cap_user_header {
-		uint32 version;
-		int pid;
-	} header;
-	struct cap_user_data {
-		uint32 effective;
-		uint32 permitted;
-		uint32 inheritable;
-	} data;
-
-        extern int capget(struct cap_user_header * hdrp,
-                          struct cap_user_data * datap);
-        extern int capset(struct cap_user_header * hdrp,
-                          const struct cap_user_data * datap);
-
 	header.version = _LINUX_CAPABILITY_VERSION;
 	header.pid = 0;
 

@@ -23,6 +23,11 @@
 
 #include "includes.h"
 
+extern fstring local_machine;
+extern char *global_clobber_region_function;
+extern unsigned int global_clobber_region_line;
+extern fstring remote_arch;
+
 /* Max allowable allococation - 256mb - 0x10000000 */
 #define MAX_ALLOC_SIZE (1024*1024*256)
 
@@ -230,7 +235,6 @@ BOOL set_netbios_aliases(const char **str_array)
 
 BOOL init_names(void)
 {
-	extern fstring local_machine;
 	char *p;
 	int n;
 
@@ -1453,8 +1457,6 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 
 #ifdef DEVELOPER
 	{
-		extern char *global_clobber_region_function;
-		extern unsigned int global_clobber_region_line;
 
 		if (global_clobber_region_function) {
 			DEBUG(0,("smb_panic: clobber_region() last called from [%s(%u)]\n",
@@ -1919,7 +1921,6 @@ void ra_lanman_string( const char *native_lanman )
 
 void set_remote_arch(enum remote_arch_types type)
 {
-	extern fstring remote_arch;
 	ra_type = type;
 	switch( type ) {
 	case RA_WFWG:

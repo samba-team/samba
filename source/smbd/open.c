@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
 extern userdom_struct current_user_info;
 extern uint16 global_oplock_port;
 extern uint16 global_smbpid;
@@ -172,7 +173,6 @@ Error was %s\n",
 static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		      const char *fname,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode, uint32 desired_access)
 {
-	extern struct current_user current_user;
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 
@@ -1606,7 +1606,6 @@ int close_file_fchmod(files_struct *fsp)
 files_struct *open_directory(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf,
 			uint32 desired_access, int share_mode, int smb_ofun, int *action)
 {
-	extern struct current_user current_user;
 	BOOL got_stat = False;
 	files_struct *fsp = file_new(conn);
 	BOOL delete_on_close = GET_DELETE_ON_CLOSE_FLAG(share_mode);
@@ -1744,7 +1743,6 @@ files_struct *open_directory(connection_struct *conn, const char *fname, SMB_STR
 
 files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf)
 {
-	extern struct current_user current_user;
 	files_struct *fsp = NULL;
 
 	if (!VALID_STAT(*psbuf))
