@@ -11503,12 +11503,8 @@ fi
 #################################################
 # check for POSIX ACL support
 
-cat >> confdefs.h <<\EOF
-#define HAVE_NO_ACLS 1
-EOF
-
 echo $ac_n "checking whether to support POSIX ACLs""... $ac_c" 1>&6
-echo "configure:11512: checking whether to support POSIX ACLs" >&5
+echo "configure:11508: checking whether to support POSIX ACLs" >&5
 # Check whether --with-posix-acls or --without-posix-acls was given.
 if test "${with_posix_acls+set}" = set; then
   withval="$with_posix_acls"
@@ -11516,7 +11512,7 @@ if test "${with_posix_acls+set}" = set; then
   yes)
 
     echo $ac_n "checking for acl_get_file in -lacl""... $ac_c" 1>&6
-echo "configure:11520: checking for acl_get_file in -lacl" >&5
+echo "configure:11516: checking for acl_get_file in -lacl" >&5
 ac_lib_var=`echo acl'_'acl_get_file | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -11524,7 +11520,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lacl  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 11528 "configure"
+#line 11524 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -11535,7 +11531,7 @@ int main() {
 acl_get_file()
 ; return 0; }
 EOF
-if { (eval echo configure:11539: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:11535: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -11563,13 +11559,13 @@ else
 fi
 
 echo $ac_n "checking for POSIX ACL support""... $ac_c" 1>&6
-echo "configure:11567: checking for POSIX ACL support" >&5
+echo "configure:11563: checking for POSIX ACL support" >&5
 if eval "test \"`echo '$''{'samba_cv_HAVE_POSIX_ACLS'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 11573 "configure"
+#line 11569 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #include <sys/acl.h>
@@ -11577,7 +11573,7 @@ int main() {
  acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);
 ; return 0; }
 EOF
-if { (eval echo configure:11581: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:11577: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_HAVE_POSIX_ACLS=yes
 else
@@ -11600,6 +11596,10 @@ fi
     ;;
   *)
     echo "$ac_t""no" 1>&6
+	cat >> confdefs.h <<\EOF
+#define HAVE_NO_ACLS 1
+EOF
+
     ;;
   esac 
 else

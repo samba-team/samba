@@ -552,7 +552,7 @@ SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
 /* SAMR_Q_OPEN_DOMAIN */
 typedef struct q_samr_open_domain_info
 {
-	POLICY_HND connect_pol;   /* policy handle */
+	POLICY_HND pol;   /* policy handle */
 	uint32 flags;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - flags? */
 	DOM_SID2 dom_sid;         /* domain SID */
 

@@ -2655,9 +2655,9 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_stru
 void init_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
 BOOL samr_io_q_close_hnd(char *desc,  SAMR_Q_CLOSE_HND *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int depth);
-void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
-				POLICY_HND *connect_pol, uint32 rid,
-				DOM_SID *sid);
+void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u, 
+			     POLICY_HND *connect_pol, 
+			     uint32 access_mask, DOM_SID *sid);
 BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
 void init_samr_q_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u, POLICY_HND *user_pol);
@@ -2742,10 +2742,10 @@ void init_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_aliases, fstring *als_name, uint32 *num_als_usrs,
 		uint32 status);
 BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth);
-void init_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
-				POLICY_HND *pol,
-				uint32 unk_0, uint32 rid);
-BOOL samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int depth);
+void init_samr_q_open_user(SAMR_Q_OPEN_USER *q_u, POLICY_HND *pol,
+			   uint32 access_mask, uint32 rid);
+BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER *q_u, 
+			 prs_struct *ps, int depth);
 BOOL samr_io_r_open_user(char *desc,  SAMR_R_OPEN_USER *r_u, prs_struct *ps, int depth);
 void init_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				POLICY_HND *hnd);
@@ -2796,11 +2796,12 @@ void init_sam_user_info21(SAM_USER_INFO_21 *usr,
 	uint32 unknown_6);
 void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				uint16 switch_value, void *info, uint32 status);
-BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
+BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO *r_u, 
+			      prs_struct *ps, int depth);
 BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
-void init_samr_q_connect(SAMR_Q_CONNECT *q_u,
-				char *srv_name, uint32 unknown_0);
+void init_samr_q_connect(SAMR_Q_CONNECT *q_u, char *srv_name, 
+			 uint32 access_mask);
 BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int depth);
 void init_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u);

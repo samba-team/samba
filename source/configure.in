@@ -1948,7 +1948,6 @@ fi
 #################################################
 # check for POSIX ACL support
 
-AC_DEFINE(HAVE_NO_ACLS)
 AC_MSG_CHECKING(whether to support POSIX ACLs)
 AC_ARG_WITH(posix-acls,
 [  --with-posix-acls        Include POSIX ACL support
@@ -1969,6 +1968,7 @@ fi
     ;;
   *)
     AC_MSG_RESULT(no)
+	AC_DEFINE(HAVE_NO_ACLS)
     ;;
   esac ],
   AC_MSG_RESULT(no)

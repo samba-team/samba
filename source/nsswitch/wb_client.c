@@ -266,8 +266,8 @@ int winbind_initgroups(char *user, gid_t gid)
 
 	result = wb_getgroups(user, &groups);
 
-	DEBUG(10,("wb_getgroups: %s: result = %s\n", user, result == -1 ?
-		  "FAIL" : "SUCCESS"));
+	DEBUG(10,("winbind_getgroups: %s: result = %s\n", user, 
+		  result == -1 ? "FAIL" : "SUCCESS"));
 
 	if (result != -1) {
 		int ngroups = result, i;
@@ -303,6 +303,13 @@ int winbind_initgroups(char *user, gid_t gid)
 			result = -1;
 			goto done;
 		}
+
+	} else {
+		
+		/* The call failed.  Set errno to something so we don't get
+		   a bogus value from the last failed system call. */
+
+		errno = EIO;
 	}
 
 	/* Free response data if necessary */
