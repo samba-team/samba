@@ -78,7 +78,7 @@ url(http://samba.anu.edu.au/samba/)(http://samba.anu.edu.au/samba/).
 label(VERSION)
 manpagesection(VERSION)
 
-This man page is current for version 2.0 of Samba
+This man page is correct for version 2.0 of the Samba suite. 
 
 label(CONTRIBUTIONS)
 manpagesection(CONTRIBUTIONS)
