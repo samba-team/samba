@@ -1,15 +1,16 @@
 #!/bin/sh
+#
+# Copyright (C) Shirish A Kalele 2000
+#
 # Builds a Samba package from the samba distribution. 
 # By default, the package will be built to install samba in /usr/local
 # Change the INSTALL_BASE variable to change this: will modify the pkginfo 
 # and samba.server files to point to the new INSTALL_BASE
-# Pass the Samba distribution base directory to the packaging script
 #
 INSTALL_BASE=/usr/local
 
 add_dynamic_entries() 
 {
-  echo "Distr base: $DISTR_BASE" >&2
   # First build the codepages and append codepage entries to prototype
   echo "#\n# Codepages \n#"
   echo d none samba/lib/codepages 0755 root other
@@ -118,3 +119,4 @@ then
 	pkgtrans /tmp samba.pkg samba
 fi
 echo The samba package is in /tmp
+rm -f prototype
