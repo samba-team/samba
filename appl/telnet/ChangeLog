@@ -1,3 +1,8 @@
+2000-03-03  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/kerberos5.c (kerberos5_init): check that we do have a
+	keytab before saying that we will support KERBEROS5
+
 2000-02-12  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (tn): only set tos for AF_INET.  From
