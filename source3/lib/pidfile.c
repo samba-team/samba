@@ -35,7 +35,7 @@ pid_t pidfile_pid(char *name)
 	unsigned ret;
 	pstring pidFile;
 
-	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
+	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
 
 	fd = sys_open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 	if (fd == -1) {
@@ -68,10 +68,7 @@ pid_t pidfile_pid(char *name)
 	return 0;
 }
 
-/* Create a pid file in the lock directory. open it and leave it locked.
-   This must be done after a call to lp_load() as it uses the lp_lockdir()
-   function to generate the path to the pidfile. */
-
+/* create a pid file in the pid directory. open it and leave it locked */
 void pidfile_create(char *name)
 {
 	int     fd;
@@ -79,7 +76,7 @@ void pidfile_create(char *name)
 	pstring pidFile;
 	pid_t pid;
 
-	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
+	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
 
 	pid = pidfile_pid(name);
 	if (pid != 0) {

@@ -91,9 +91,10 @@ char **my_netbios_names;
 
 
 /****************************************************************************
-  find a suitable temporary directory. The result should be copied immediately
+ Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
-  ****************************************************************************/
+****************************************************************************/
+
 char *tmpdir(void)
 {
   char *p;
@@ -190,7 +191,7 @@ BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
   if (sys_stat(fname,sbuf) != 0) 
     return(False);
 
-  return(S_ISREG(sbuf->st_mode));
+	return((S_ISREG(sbuf->st_mode)) || (S_ISFIFO(sbuf->st_mode)));
 }
 
 /*******************************************************************
@@ -689,7 +690,7 @@ void become_daemon(void)
 
 
 /****************************************************************************
-put up a yes/no prompt
+ Put up a yes/no prompt
 ****************************************************************************/
 BOOL yesno(char *p)
 {
@@ -862,7 +863,7 @@ struct in_addr *interpret_addr2(const char *str)
 }
 
 /*******************************************************************
-  check if an IP is the 0.0.0.0
+ Check if an IP is the 0.0.0.0
   ******************************************************************/
 BOOL is_zero_ip(struct in_addr ip)
 {
@@ -871,7 +872,9 @@ BOOL is_zero_ip(struct in_addr ip)
   return(a == 0);
 }
 
-/* Set an IP to 0.0.0.0 */
+/*******************************************************************
+ Set an IP to 0.0.0.0
+ ******************************************************************/
 
 void zero_ip(struct in_addr *ip)
 {
@@ -1062,7 +1065,8 @@ char *uidtoname(uid_t uid)
 	struct passwd *pass;
 
 	pass = sys_getpwuid(uid);
-	if (pass) return(pass->pw_name);
+	if (pass)
+		return(pass->pw_name);
 	slprintf(name, sizeof(name) - 1, "%d",(int)uid);
 	return(name);
 }
@@ -1078,7 +1082,8 @@ char *gidtoname(gid_t gid)
 	struct group *grp;
 
 	grp = getgrgid(gid);
-	if (grp) return(grp->gr_name);
+	if (grp)
+		return(grp->gr_name);
 	slprintf(name,sizeof(name) - 1, "%d",(int)gid);
 	return(name);
 }
@@ -1408,10 +1413,10 @@ BOOL is_myname(char *s)
 
 /********************************************************************
  Return only the first IP address of our configured interfaces
- as a string.
- ********************************************************************/
+ as a string
+ *******************************************************************/
 
-const char *get_my_primary_ip (void)
+const char* get_my_primary_ip (void)
 {
 	static fstring ip_string;
 	int n;
@@ -1775,10 +1780,10 @@ int smb_mkstemp(char *template)
 #endif
 }
 
-
-/**
+/*****************************************************************
  malloc that aborts with smb_panic on fail or zero size.
-**/
+ *****************************************************************/  
+
 void *smb_xmalloc(size_t size)
 {
 	void *p;
@@ -1864,6 +1869,26 @@ char *lock_path(char *name)
 		mkdir(fname,0755);
 	}
 	
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+
+	return fname;
+}
+
+/*****************************************************************
+a useful function for returning a path in the Samba pid directory
+ *****************************************************************/
+char *pid_path(char *name)
+{
+	static pstring fname;
+
+	pstrcpy(fname,lp_piddir());
+	trim_string(fname,"","/");
+
+	if (!directory_exist(fname,NULL)) {
+		mkdir(fname,0755);
+	}
+
 	pstrcat(fname,"/");
 	pstrcat(fname,name);
 
