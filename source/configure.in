@@ -2828,29 +2828,6 @@ AC_SUBST(BUILD_POPT)
 AC_SUBST(FLAGS1)
 
 #################################################
-# check for the retrans/retry fields in _res from resolv.h
-
-AC_CACHE_CHECK(for presence of retrans/retry fields in res_state, ac_cv_retransretry,[
-AC_TRY_RUN( [
-#include <resolv.h>
-/* _res is a global defined in resolv.h */
-void main(void) {
-    _res.retrans = 2;
-    _res.retry = 1;
-    exit(0);
-}
-],[
-  ac_cv_retransretry="yes"
-],[
-  ac_cv_retransretry="no"
-],[
-  ac_cv_retransretry="no"
-])])
-if test "$ac_cv_retransretry" = "yes"; then
-  AC_DEFINE(HAVE_RESOLV_RETRANSRETRY, 1, [Define if resolv.h's res_state has the fields retrans/rety]) 
-fi
-
-#################################################
 # final configure stuff
 AC_MSG_CHECKING([configure summary])
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],

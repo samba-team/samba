@@ -286,10 +286,6 @@ typedef struct
 	BOOL bHideLocalUsers;
 	BOOL bUseMmap;
 	BOOL bUnixExtensions;
-#ifdef HAVE_RESOLV_RETRANSRETRY
-	int resolv_retrans;	/* Retransmission timeout for DNS lookups */
-	int resolv_retry;	/* Number of retries for DNS lookups */
-#endif
 	int name_cache_timeout;
 }
 global;
@@ -897,10 +893,6 @@ static struct parm_struct parm_table[] = {
 	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, 0},
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_SHARE},
 
-#if HAVE_RESOLV_RETRANSRETRY
-        {"dns resolve retrans", P_INTEGER, P_GLOBAL, &Globals.resolv_retrans, NULL, NULL, 0},
-        {"dns resolve retry", P_INTEGER, P_GLOBAL, &Globals.resolv_retry, NULL, NULL, 0},
-#endif
 	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, 0},
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
@@ -1458,11 +1450,6 @@ static void init_globals(void)
 
 	Globals.bHostMSDfs = False;
 
-#if HAVE_RESOLV_RETRANSRETRY
-        Globals.resolv_retrans = -1;
-        Globals.resolv_retry = -1;
-#endif
-
 	Globals.name_cache_timeout = 660; /* In seconds */
 
 	/*
@@ -1822,10 +1809,6 @@ FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
-#if HAVE_RESOLV_RETRANSRETRY
-FN_GLOBAL_INTEGER(lp_resolv_retrans, &Globals.resolv_retrans)
-FN_GLOBAL_INTEGER(lp_resolv_retry, &Globals.resolv_retry)
-#endif
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 
 /* local prototypes */

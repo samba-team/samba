@@ -13577,71 +13577,18 @@ fi
 
 
 #################################################
-# check for the retrans/retry fields in _res from resolv.h
-
-echo $ac_n "checking for presence of retrans/retry fields in res_state""... $ac_c" 1>&6
-echo "configure:13584: checking for presence of retrans/retry fields in res_state" >&5
-if eval "test \"`echo '$''{'ac_cv_retransretry'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  
-if test "$cross_compiling" = yes; then
-  
-  ac_cv_retransretry="no"
-
-else
-  cat > conftest.$ac_ext <<EOF
-#line 13595 "configure"
-#include "confdefs.h"
-
-#include <resolv.h>
-/* _res is a global defined in resolv.h */
-void main(void) {
-    _res.retrans = 2;
-    _res.retry = 1;
-    exit(0);
-}
-
-EOF
-if { (eval echo configure:13607: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
-then
-  
-  ac_cv_retransretry="yes"
-
-else
-  echo "configure: failed program was:" >&5
-  cat conftest.$ac_ext >&5
-  rm -fr conftest*
-  
-  ac_cv_retransretry="no"
-
-fi
-rm -fr conftest*
-fi
-
-fi
-
-echo "$ac_t""$ac_cv_retransretry" 1>&6
-if test "$ac_cv_retransretry" = "yes"; then
-  cat >> confdefs.h <<\EOF
-#define HAVE_RESOLV_RETRANSRETRY 1
-EOF
- 
-fi
-
-#################################################
 # final configure stuff
 echo $ac_n "checking configure summary""... $ac_c" 1>&6
-echo "configure:13636: checking configure summary" >&5
+echo "configure:13583: checking configure summary" >&5
 if test "$cross_compiling" = yes; then
   echo "configure: warning: cannot run when cross-compiling" 1>&2
 else
   cat > conftest.$ac_ext <<EOF
-#line 13641 "configure"
+#line 13588 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:13645: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:13592: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "$ac_t""yes" 1>&6
 else

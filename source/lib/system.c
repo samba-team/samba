@@ -482,17 +482,6 @@ apparent reason.
 struct hostent *sys_gethostbyname(const char *name)
 {
 
-#ifdef HAVE_RESOLV_RETRANSRETRY
-
-        /* Set the DNS retransmission and retry values */
-
-        if (lp_resolv_retrans() != -1)
-                _res.retrans = lp_resolv_retrans();
-
-        if (lp_resolv_retry() != -1)
-                _res.retry = lp_resolv_retry();
-#endif
-
 #ifdef REDUCE_ROOT_DNS_LOOKUPS
 	char query[256], hostname[256];
 	char *domain;

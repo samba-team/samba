@@ -275,7 +275,6 @@
 #undef _GNU_SOURCE
 #endif
 
-#undef HAVE_RESOLV_RETRANSRETRY
 #undef WITH_WINBIND_AUTH_CRAP
 
 /* The number of bytes in a int.  */
@@ -1138,7 +1137,4 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
-
-/* Define if resolv.h's res_state has the fields retrans/rety */
-#undef HAVE_RESOLV_RETRANSRETRY
 
