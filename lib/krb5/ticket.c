@@ -97,22 +97,24 @@ krb5_ticket_get_server(krb5_context context,
 }
 
 krb5_error_code
-krb5_ticket_get_authorization_data_type(krb5_context context, krb5_ticket *ticket,
-					int type, krb5_data *data)
+krb5_ticket_get_authorization_data_type(krb5_context context,
+					krb5_ticket *ticket,
+					int type,
+					krb5_data *data)
 {
+    AuthorizationData *ad;
     int i;
 
     data->length = 0;
     data->data = NULL;
 
-    if (ticket->ticket.authorization_data == NULL)
+    ad = ticket->ticket.authorization_data;
+    if (ad == NULL)
 	return ENOENT; /* XXX */
 
-    for (i = 0; i < ticket->ticket.authorization_data->len; i++) {
-	if (ticket->ticket.authorization_data->val[i].ad_type == type) {
-	    return copy_octet_string(&ticket->ticket.authorization_data->val[i].ad_data,
-				     data);
-	}
+    for (i = 0; i < ad->len; i++) {
+	if (ad->val[i].ad_type == type)
+	    return copy_octet_string(&ad->val[i].ad_data, data);
     }
     return ENOENT; /* XXX */
 }
