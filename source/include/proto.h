@@ -4682,7 +4682,7 @@ int vfswrap_sys_acl_free_qualifier(struct connection_struct *conn, void *qualifi
 
 /*The following definitions come from  smbd/vfs.c  */
 
-BOOL vfs_init(connection_struct *conn);
+BOOL smbd_vfs_init(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
 char *vfs_getwd(connection_struct *conn, char *unix_path);

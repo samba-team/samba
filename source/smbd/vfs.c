@@ -133,7 +133,7 @@ static BOOL vfs_init_default(connection_struct *conn)
 static BOOL vfs_init_custom(connection_struct *conn)
 {
 	int vfs_version = -1;
-    struct vfs_ops *ops, *(*init_fptr)(int *);
+    struct vfs_ops *ops, *(*init_fptr)(int *, struct vfs_ops *);
 
     DEBUG(3, ("Initialising custom vfs hooks from %s\n",
 	      lp_vfsobj(SNUM(conn))));
@@ -147,7 +147,7 @@ static BOOL vfs_init_custom(connection_struct *conn)
 
     /* Get handle on vfs_init() symbol */
 
-    init_fptr = (struct vfs_ops *(*)(int *))sys_dlsym(conn->dl_handle, "vfs_init");
+    init_fptr = (struct vfs_ops *(*)(int *, struct vfs_ops *))sys_dlsym(conn->dl_handle, "vfs_init");
 
     if (init_fptr == NULL) {
 		DEBUG(0, ("No vfs_init() symbol found in %s\n",
@@ -157,7 +157,9 @@ static BOOL vfs_init_custom(connection_struct *conn)
 
     /* Initialise vfs_ops structure */
 
-    if ((ops = init_fptr(&vfs_version)) == NULL) {
+	conn->vfs_ops = default_vfs_ops;
+
+    if ((ops = init_fptr(&vfs_version, &default_vfs_ops)) == NULL) {
         DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
 		return False;
     }
@@ -168,192 +170,9 @@ static BOOL vfs_init_custom(connection_struct *conn)
 		return False;
 	}
 
-    /* Fill in unused operations with default (disk based) ones.
-       There's probably a neater way to do this then a whole bunch of
-       if statements. */
-
-    memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
-
-    if (conn->vfs_ops.connect == NULL)
-		conn->vfs_ops.connect = default_vfs_ops.connect;
-
-    if (conn->vfs_ops.disconnect == NULL)
-		conn->vfs_ops.disconnect = default_vfs_ops.disconnect;
-
-    if (conn->vfs_ops.disk_free == NULL)
-		conn->vfs_ops.disk_free = default_vfs_ops.disk_free;
-
-    if (conn->vfs_ops.opendir == NULL)
-		conn->vfs_ops.opendir = default_vfs_ops.opendir;
-
-    if (conn->vfs_ops.readdir == NULL)
-		conn->vfs_ops.readdir = default_vfs_ops.readdir;
-
-    if (conn->vfs_ops.mkdir == NULL)
-		conn->vfs_ops.mkdir = default_vfs_ops.mkdir;
-
-    if (conn->vfs_ops.rmdir == NULL)
-		conn->vfs_ops.rmdir = default_vfs_ops.rmdir;
-
-    if (conn->vfs_ops.closedir == NULL)
-		conn->vfs_ops.closedir = default_vfs_ops.closedir;
-
-    if (conn->vfs_ops.open == NULL)
-		conn->vfs_ops.open = default_vfs_ops.open;
-
-    if (conn->vfs_ops.close == NULL)
-		conn->vfs_ops.close = default_vfs_ops.close;
-
-    if (conn->vfs_ops.read == NULL)
-		conn->vfs_ops.read = default_vfs_ops.read;
-
-    if (conn->vfs_ops.write == NULL)
-		conn->vfs_ops.write = default_vfs_ops.write;
-
-    if (conn->vfs_ops.lseek == NULL)
-		conn->vfs_ops.lseek = default_vfs_ops.lseek;
-
-    if (conn->vfs_ops.rename == NULL)
-		conn->vfs_ops.rename = default_vfs_ops.rename;
-
-    if (conn->vfs_ops.fsync == NULL)
-		conn->vfs_ops.fsync = default_vfs_ops.fsync;
-
-    if (conn->vfs_ops.stat == NULL)
-		conn->vfs_ops.stat = default_vfs_ops.stat;
-
-    if (conn->vfs_ops.fstat == NULL)
-		conn->vfs_ops.fstat = default_vfs_ops.fstat;
-
-    if (conn->vfs_ops.lstat == NULL)
-		conn->vfs_ops.lstat = default_vfs_ops.lstat;
-
-    if (conn->vfs_ops.unlink == NULL)
-		conn->vfs_ops.unlink = default_vfs_ops.unlink;
-
-    if (conn->vfs_ops.chmod == NULL)
-		conn->vfs_ops.chmod = default_vfs_ops.chmod;
-
-    if (conn->vfs_ops.fchmod == NULL)
-		conn->vfs_ops.fchmod = default_vfs_ops.fchmod;
-
-    if (conn->vfs_ops.chown == NULL)
-		conn->vfs_ops.chown = default_vfs_ops.chown;
-
-    if (conn->vfs_ops.fchown == NULL)
-		conn->vfs_ops.fchown = default_vfs_ops.fchown;
-
-    if (conn->vfs_ops.chdir == NULL)
-		conn->vfs_ops.chdir = default_vfs_ops.chdir;
-
-    if (conn->vfs_ops.getwd == NULL)
-		conn->vfs_ops.getwd = default_vfs_ops.getwd;
-
-    if (conn->vfs_ops.utime == NULL)
-		conn->vfs_ops.utime = default_vfs_ops.utime;
-
-    if (conn->vfs_ops.ftruncate == NULL)
-		conn->vfs_ops.ftruncate = default_vfs_ops.ftruncate;
-
-    if (conn->vfs_ops.lock == NULL)
-		conn->vfs_ops.lock = default_vfs_ops.lock;
-
-    if (conn->vfs_ops.symlink == NULL)
-		conn->vfs_ops.symlink = default_vfs_ops.symlink;
-
-    if (conn->vfs_ops.readlink == NULL)
-		conn->vfs_ops.readlink = default_vfs_ops.readlink;
-
-    if (conn->vfs_ops.link == NULL)
-		conn->vfs_ops.link = default_vfs_ops.link;
-
-    if (conn->vfs_ops.mknod == NULL)
-		conn->vfs_ops.mknod = default_vfs_ops.mknod;
-
-    if (conn->vfs_ops.fget_nt_acl == NULL)
-		conn->vfs_ops.fget_nt_acl = default_vfs_ops.fget_nt_acl;
-
-    if (conn->vfs_ops.get_nt_acl == NULL)
-		conn->vfs_ops.get_nt_acl = default_vfs_ops.get_nt_acl;
-
-    if (conn->vfs_ops.fset_nt_acl == NULL)
-		conn->vfs_ops.fset_nt_acl = default_vfs_ops.fset_nt_acl;
-
-    if (conn->vfs_ops.set_nt_acl == NULL)
-		conn->vfs_ops.set_nt_acl = default_vfs_ops.set_nt_acl;
-
-    /* POSIX ACL entries. */
-    if (conn->vfs_ops.chmod_acl == NULL)
-		conn->vfs_ops.chmod_acl = default_vfs_ops.chmod_acl;
-
-    if (conn->vfs_ops.fchmod_acl == NULL)
-		conn->vfs_ops.fchmod_acl = default_vfs_ops.fchmod_acl;
-
-    if (conn->vfs_ops.sys_acl_get_entry == NULL)
-                conn->vfs_ops.sys_acl_get_entry = default_vfs_ops.sys_acl_get_entry;
-
-    if (conn->vfs_ops.sys_acl_get_tag_type == NULL)
-                conn->vfs_ops.sys_acl_get_tag_type = default_vfs_ops.sys_acl_get_tag_type;
-
-    if (conn->vfs_ops.sys_acl_get_permset == NULL)
-                conn->vfs_ops.sys_acl_get_permset = default_vfs_ops.sys_acl_get_permset;
-
-    if (conn->vfs_ops.sys_acl_get_qualifier == NULL)
-                conn->vfs_ops.sys_acl_get_qualifier = default_vfs_ops.sys_acl_get_qualifier;
-
-    if (conn->vfs_ops.sys_acl_get_file == NULL)
-                conn->vfs_ops.sys_acl_get_file = default_vfs_ops.sys_acl_get_file;
-
-    if (conn->vfs_ops.sys_acl_get_fd == NULL)
-                conn->vfs_ops.sys_acl_get_fd = default_vfs_ops.sys_acl_get_fd;
-
-    if (conn->vfs_ops.sys_acl_clear_perms == NULL)
-                conn->vfs_ops.sys_acl_clear_perms = default_vfs_ops.sys_acl_clear_perms;
-
-    if (conn->vfs_ops.sys_acl_add_perm == NULL)
-                conn->vfs_ops.sys_acl_add_perm = default_vfs_ops.sys_acl_add_perm;
-
-    if (conn->vfs_ops.sys_acl_to_text == NULL)
-                conn->vfs_ops.sys_acl_to_text = default_vfs_ops.sys_acl_to_text;
-
-    if (conn->vfs_ops.sys_acl_init == NULL)
-                conn->vfs_ops.sys_acl_init = default_vfs_ops.sys_acl_init;
-
-    if (conn->vfs_ops.sys_acl_create_entry == NULL)
-                conn->vfs_ops.sys_acl_create_entry = default_vfs_ops.sys_acl_create_entry;
-
-    if (conn->vfs_ops.sys_acl_set_tag_type == NULL)
-                conn->vfs_ops.sys_acl_set_tag_type = default_vfs_ops.sys_acl_set_tag_type;
-
-    if (conn->vfs_ops.sys_acl_set_qualifier == NULL)
-                conn->vfs_ops.sys_acl_set_qualifier = default_vfs_ops.sys_acl_set_qualifier;
-
-    if (conn->vfs_ops.sys_acl_set_permset == NULL)
-                conn->vfs_ops.sys_acl_set_permset = default_vfs_ops.sys_acl_set_permset;
-
-    if (conn->vfs_ops.sys_acl_valid == NULL)
-                conn->vfs_ops.sys_acl_valid = default_vfs_ops.sys_acl_valid;
-
-    if (conn->vfs_ops.sys_acl_set_file == NULL)
-                conn->vfs_ops.sys_acl_set_file = default_vfs_ops.sys_acl_set_file;
-
-    if (conn->vfs_ops.sys_acl_set_fd == NULL)
-                conn->vfs_ops.sys_acl_set_fd = default_vfs_ops.sys_acl_set_fd;
-
-    if (conn->vfs_ops.sys_acl_delete_def_file == NULL)
-                conn->vfs_ops.sys_acl_delete_def_file = default_vfs_ops.sys_acl_delete_def_file;
-
-    if (conn->vfs_ops.sys_acl_get_perm == NULL)
-                conn->vfs_ops.sys_acl_get_perm = default_vfs_ops.sys_acl_get_perm;
-
-    if (conn->vfs_ops.sys_acl_free_text == NULL)
-                conn->vfs_ops.sys_acl_free_text = default_vfs_ops.sys_acl_free_text;
-
-    if (conn->vfs_ops.sys_acl_free_acl == NULL)
-                conn->vfs_ops.sys_acl_free_acl = default_vfs_ops.sys_acl_free_acl;
-
-    if (conn->vfs_ops.sys_acl_free_qualifier == NULL)
-                conn->vfs_ops.sys_acl_free_qualifier = default_vfs_ops.sys_acl_free_qualifier;
+	if (ops != &conn->vfs_ops) {
+		memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
+	}
 
     return True;
 }
@@ -363,7 +182,7 @@ static BOOL vfs_init_custom(connection_struct *conn)
  Generic VFS init.
 ******************************************************************/
 
-BOOL vfs_init(connection_struct *conn)
+BOOL smbd_vfs_init(connection_struct *conn)
 {
 	if (*lp_vfsobj(SNUM(conn))) {
 #ifdef HAVE_LIBDL
@@ -371,13 +190,13 @@ BOOL vfs_init(connection_struct *conn)
 		/* Loadable object file */
  
 		if (!vfs_init_custom(conn)) {
-			DEBUG(0, ("vfs_init: vfs_init_custom failed\n"));
+			DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed\n"));
 			return False;
 		}
 
 		return True;
 #else
-		DEBUG(0, ("vfs_init: No libdl present - cannot use VFS objects\n"));
+		DEBUG(0, ("smbd_vfs_init: No libdl present - cannot use VFS objects\n"));
 		return False;
 #endif
 	}

@@ -537,8 +537,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 	/* Initialise VFS function pointers */
 
-	if (!vfs_init(conn)) {
-		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
+	if (!smbd_vfs_init(conn)) {
+		DEBUG(0, ("smbd_vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
 		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		return NULL;
