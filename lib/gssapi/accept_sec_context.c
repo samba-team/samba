@@ -42,7 +42,6 @@ OM_uint32
 gsskrb5_register_acceptor_identity (const char *identity)
 {
     krb5_error_code ret;
-    char *p;
 
     ret = gssapi_krb5_init();
     if(ret)
@@ -54,13 +53,19 @@ gsskrb5_register_acceptor_identity (const char *identity)
 	krb5_kt_close(gssapi_krb5_context, gssapi_krb5_keytab);
 	gssapi_krb5_keytab = NULL;
     }
-    asprintf(&p, "FILE:%s", identity);
-    if(p == NULL) {
-	HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
-	return GSS_S_FAILURE;
+    if (identity == NULL) {
+	ret = krb5_kt_default(gssapi_krb5_context, &gssapi_krb5_keytab);
+    } else {
+	char *p;
+
+	asprintf(&p, "FILE:%s", identity);
+	if(p == NULL) {
+	    HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
+	    return GSS_S_FAILURE;
+	}
+	ret = krb5_kt_resolve(gssapi_krb5_context, p, &gssapi_krb5_keytab);
+	free(p);
     }
-    ret = krb5_kt_resolve(gssapi_krb5_context, p, &gssapi_krb5_keytab);
-    free(p);
     HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
     if(ret)
 	return GSS_S_FAILURE;
