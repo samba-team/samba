@@ -102,8 +102,22 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				char *machine = q;
 				char *user = skip_string(machine,1);
 
+				if (PTR_DIFF(user, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
 				getdc = skip_string(user,1);
+
+				if (PTR_DIFF(getdc, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
 				q = skip_string(getdc,1);
+
+				if (PTR_DIFF(q + 5, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
 				token = SVAL(q,3);
 
 				fstrcpy(reply_name,my_name); 
@@ -151,7 +165,17 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				}
 
 				getdc = skip_string(machine,1);
+
+				if (PTR_DIFF(getdc, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
 				q = skip_string(getdc,1);
+
+				if (PTR_DIFF(q, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
 				q = ALIGN2(q, buf);
 
 				/* At this point we can work out if this is a W9X or NT style
@@ -165,8 +189,18 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				} else {
 					unicomp = q;
 
+					if (PTR_DIFF(q, buf) >= len) {
+						DEBUG(0,("process_logon_packet: bad packet\n"));
+						return;
+					}
+
 					/* A full length (NT style) request */
 					q = skip_unibuf(unicomp, PTR_DIFF(buf + len, unicomp));
+
+					if (PTR_DIFF(q, buf) >= len) {
+						DEBUG(0,("process_logon_packet: bad packet\n"));
+						return;
+					}
 
 					if (len - PTR_DIFF(q, buf) > 8) {
 						/* with NT5 clients we can sometimes
@@ -180,6 +214,12 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 						}
 						q += 16;
 					}
+
+					if (PTR_DIFF(q + 8, buf) >= len) {
+						DEBUG(0,("process_logon_packet: bad packet\n"));
+						return;
+					}
+
 					ntversion = IVAL(q, 0);
 					lmnttoken = SVAL(q, 4);
 					lm20token = SVAL(q, 6);
@@ -240,10 +280,34 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				fstring asccomp;
 
 				q += 2;
+
+				if (PTR_DIFF(q, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				unicomp = q;
 				uniuser = skip_unibuf(unicomp, PTR_DIFF(buf+len, unicomp));
+
+				if (PTR_DIFF(uniuser, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				getdc = skip_unibuf(uniuser,PTR_DIFF(buf+len, uniuser));
+
+				if (PTR_DIFF(getdc, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				q = skip_string(getdc,1);
+
+				if (PTR_DIFF(q + 8, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				q += 4; /* Account Control Bits - indicating username type */
 				domainsidsize = IVAL(q, 0);
 				q += 4;
@@ -268,6 +332,11 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						q += dom_len + 1;
 					}
 					q += 16;
+				}
+
+				if (PTR_DIFF(q + 8, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
 				}
 
 				ntversion = IVAL(q, 0);
@@ -458,6 +527,11 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
           
 				/* Header */
           
+				if (PTR_DIFF(q + 16, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				low_serial = IVAL(q, 0); q += 4;     /* Low serial number */
 
 				q += 4;                   /* Date/time */
@@ -467,14 +541,42 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				/* Domain info */
           
 				q = skip_string(q, 1);    /* PDC name */
+
+				if (PTR_DIFF(q, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				q = skip_string(q, 1);    /* Domain name */
+
+				if (PTR_DIFF(q, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				q = skip_unibuf(q, PTR_DIFF(buf + len, q)); /* Unicode PDC name */
+
+				if (PTR_DIFF(q, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				q = skip_unibuf(q, PTR_DIFF(buf + len, q)); /* Unicode domain name */
           
 				/* Database info */
           
+				if (PTR_DIFF(q + 2, buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				db_count = SVAL(q, 0); q += 2;
-          
+
+				if (PTR_DIFF(q + (db_count*20), buf) >= len) {
+					DEBUG(0,("process_logon_packet: bad packet\n"));
+					return;
+				}
+
 				db_info = (struct sam_database_info *)
 						malloc(sizeof(struct sam_database_info) * db_count);
 
