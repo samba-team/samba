@@ -338,8 +338,8 @@ static void scan_copyfiles(FILE *fichier, char *chaine)
  	fprintf(stderr,"\tsubdir %s:%s\n",sub_dir[i][0],sub_dir[i][1]);
 #endif      
       	if (strcmp(sub_dir[i][0],part)==0)
-		pstrcpy(direc,sub_dir[i][1]);
-	i++;
+          pstrcpy(direc,sub_dir[i][1]);
+        i++;
       }	
       i=0;
       while (*buffer[i]!='\0') {
@@ -350,48 +350,84 @@ static void scan_copyfiles(FILE *fichier, char *chaine)
  * 
  * pscript.hlp =  pscript.hl_
  * hpdcmon.dll,hpdcmon.dl_
+ * MSVCRT.DLL,MSVCRT.DL_,,32
  * ctl3dv2.dll,ctl3dv2.dl_,ctl3dv2.tmp
  *
  * In the first 2 cases you want the first file name - in the last case
  * you only want the last file name (at least that is what a Win95
- * machine sent). This may still be wrong but at least I get the same list
+ * machine sent). In the third case you also want the first file name
+ * (detect by the last component being just a number ?).
+ * This may still be wrong but at least I get the same list
  * of files as seen on a printer test page.
  */
         part = strchr(buffer[i],'=');
         if (part) {
+          /*
+           * Case (1) eg. pscript.hlp =  pscript.hl_ - chop after the first name.
+           */
+
           *part = '\0';
-	  while (--part > buffer[i])
-	    if ((*part == ' ') || (*part =='\t')) *part = '\0';
-	    else break;
-	} else {
-	  part = strchr(buffer[i],',');
-	  if (part) {
-	    if ((mpart = strrchr(part+1,','))!=NULL) {
-		pstrcpy(buffer[i],mpart+1);
-	    } else
-		*part = '\0';
+
+          /*
+           * Now move back to the start and print that.
+           */
+
+          while (--part > buffer[i]) {
+            if ((*part == ' ') || (*part =='\t'))
+              *part = '\0';
+            else
+              break;
+          }
+        } else {
+          part = strchr(buffer[i],',');
+          if (part) {
+            /*
+             * Cases (2-4)
+             */
+
+            if ((mpart = strrchr(part+1,','))!=NULL) {
+              /*
+               * Second ',' - case 3 or 4.
+               * Check if the last part is just a number,
+               * if so we need the first part.
+               */
+
+              char *endptr = NULL;
+              BOOL isnumber = False;
+
+              mpart++;
+              (void)strtol(mpart, &endptr, 10);
+
+              isnumber = ((endptr > mpart) && isdigit(*mpart));
+              if(!isnumber)
+                pstrcpy(buffer[i],mpart+1);
+              else
+                *part = '\0';
+            } else {
+              *part = '\0';
+            }
             while (--part > buffer[i])
               if ((*part == ' ') || (*part =='\t')) *part = '\0';
               else break;
-	  }
-	}
-	if (*buffer[i] != ';') {
+          }
+	    }
+        if (*buffer[i] != ';') {
           if (strlen(files_to_copy) != 0)
             pstrcat(files_to_copy,",");
-	  pstrcat(files_to_copy,direc);
-	  pstrcat(files_to_copy,buffer[i]);
-	  fprintf(stderr,"%s%s\n",direc,buffer[i]);
-	}
-	i++;
-      } 
+          pstrcat(files_to_copy,direc);
+          pstrcat(files_to_copy,buffer[i]);
+          fprintf(stderr,"%s%s\n",direc,buffer[i]);
+        }
+        i++;
+      } /* end while */ 
     }
     part=strtok(NULL,",");
-    if (part)
+    if (part) {
       while( *part ==' ' && *part != '\0') {
- 	part++;
+        part++;
       }
-  }
-  while (part!=NULL);
+    }
+  } while (part!=NULL);
   fprintf(stderr,"\n");
 }
 
