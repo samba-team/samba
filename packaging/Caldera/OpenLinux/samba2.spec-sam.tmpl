@@ -291,7 +291,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-ldapsam \
 	--with-nisplussam \
 	--with-nisplushome \
-	--with-krb5=base-dir=/usr/athena
+	--with-krb5=/usr/athena
 
 make LOGFILEBASE=/var/log/samba.d everything nsswitch/libnss_wins.so
 
