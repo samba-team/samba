@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -703,6 +703,28 @@ krb5_get_in_cred(krb5_context context,
 		    preauth = my_preauth;
 		    free_KRB_ERROR(&error);
 		    continue;
+		}
+		if (error.e_text != NULL) {
+		    krb5_set_error_string(context, "%s", *error.e_text);
+		} else {
+		    char princname[256];
+
+		    switch (ret) {
+		    case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN :
+			krb5_unparse_name_fixed(context, creds->client,
+						princname, sizeof(princname));
+			krb5_set_error_string(context, "Client (%s) unknown",
+					      princname);
+			break;
+		    case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN :
+			krb5_unparse_name_fixed(context, creds->server,
+						princname, sizeof(princname));
+			krb5_set_error_string(context, "Server (%s) unknown",
+					      princname);
+			break;
+		    default :
+			;
+		    }
 		}
 		if(ret_as_reply)
 		    ret_as_reply->error = error;
