@@ -122,6 +122,26 @@ BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			printf("No form info returned");
 			return False;
 		}
+
+		{
+			struct spoolss_AddForm af;
+			struct spoolss_AddFormInfo1 form;
+
+			af.in.handle = handle;
+			af.in.level = 1;
+			form.flags = 2;
+			form.name = "testform3";
+			form.width = r.out.info->info1.width;
+			form.length = r.out.info->info1.length;
+			form.left = r.out.info->info1.left;
+			form.top = r.out.info->info1.top;
+			form.right = r.out.info->info1.right;
+			form.bottom = r.out.info->info1.bottom;
+			af.in.info.info1 = &form;
+
+			status = dcerpc_spoolss_AddForm(
+				p, mem_ctx, &af);
+		}
 	}
 
 	return True;
