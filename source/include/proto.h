@@ -6,7 +6,7 @@
 /*The following definitions come from  client/client.c  */
 
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs);
-struct cli_state *do_connect(char *server, char *share);
+struct cli_state *do_connect(char *server, char *share, int smb_port);
 
 /*The following definitions come from  client/clitar.c  */
 
@@ -575,6 +575,7 @@ int unistrcpy(char *dst, char *src);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
+int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
 BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,

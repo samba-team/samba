@@ -68,11 +68,11 @@ void cmd_svc_enum(struct client_info *info)
 
 	do
 	{
-	/* enumerate services */
-	res1 = res ? do_svc_enum_svcs(smb_cli, fnum,
-				&sc_man_pol,
-	                        0x00000030, 0x00000003,
-					0x00000080, &resume_hnd, &svcs) : False;
+		/* enumerate services */
+		res1 = res ? do_svc_enum_svcs(smb_cli, fnum,
+		                        &sc_man_pol,
+		                        0x00000030, 0x00000003,
+		                        0x00000080, &resume_hnd, &svcs) : False;
 
 	} while (resume_hnd != 0);
 

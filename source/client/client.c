@@ -1620,7 +1620,7 @@ static void process_stdin(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *do_connect(char *server, char *share)
+struct cli_state *do_connect(char *server, char *share, int smb_port)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
@@ -1643,15 +1643,15 @@ struct cli_state *do_connect(char *server, char *share)
 	make_nmb_name(&calling, global_myname, 0x0, "");
 	make_nmb_name(&called , server, name_type, "");
 
-	if (port == 0)
-	  port = 139;   /* If not set, set to 139, FIXME, NUMBERS BAD */
+	if (smb_port == 0)
+	  smb_port = 139;   /* If not set, set to 139, FIXME, NUMBERS BAD */
 
  again:
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) == 0) ||
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) == 0) ||
             !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
@@ -1722,7 +1722,7 @@ struct cli_state *do_connect(char *server, char *share)
 ****************************************************************************/
 static BOOL process(char *base_directory)
 {
-	cli = do_connect(desthost, service);
+	cli = do_connect(desthost, service, port);
 	if (!cli) {
 		return(False);
 	}
@@ -1837,9 +1837,9 @@ static void get_password_file(void)
 /****************************************************************************
 handle a -L query
 ****************************************************************************/
-static int do_host_query(char *query_host, int port)
+static int do_host_query(char *query_host, int smb_port)
 {
-	cli = do_connect(query_host, "IPC$");
+	cli = do_connect(query_host, "IPC$", smb_port);
 	if (!cli)
 		return 1;
 
@@ -1855,10 +1855,10 @@ static int do_host_query(char *query_host, int port)
 /****************************************************************************
 handle a tar operation
 ****************************************************************************/
-static int do_tar_op(int port, char *base_directory)
+static int do_tar_op(int smb_port, char *base_directory)
 {
 	int ret;
-	cli = do_connect(desthost, service);
+	cli = do_connect(desthost, service, smb_port);
 	if (!cli)
 		return 1;
 
