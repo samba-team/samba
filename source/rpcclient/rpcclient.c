@@ -240,6 +240,50 @@ void fetch_machine_sid(struct cli_state *cli)
 	exit(1);
 }
 
+/* List the available commands on a given pipe */
+
+static NTSTATUS cmd_listcommands(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, char **argv)
+{
+	struct cmd_list *tmp;
+        struct cmd_set *tmp_set;
+	int i;
+
+        /* Usage */
+
+        if (argc != 2) {
+                printf("Usage: %s <pipe>\n", argv[0]);
+                return NT_STATUS_OK;
+        }
+
+        /* Help on one command */
+
+	for (tmp = cmd_list; tmp; tmp = tmp->next) 
+	{
+		tmp_set = tmp->cmd_set;
+		
+		if (!StrCaseCmp(argv[1], tmp_set->name))
+		{
+			printf("Available commands on the %s pipe:\n\n", tmp_set->name);
+
+			i = 0;
+			tmp_set++;
+			while(tmp_set->name) {
+				printf("%20s", tmp_set->name);
+                                tmp_set++;
+				i++;
+				if (i%4 == 0)
+					printf("\n");
+			}
+			
+			/* drop out of the loop */
+			break;
+		}
+        }
+	printf("\n\n");
+
+	return NT_STATUS_OK;
+}
 
 /* Display help on commands */
 
@@ -336,6 +380,7 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "help", 	cmd_help, 	NULL,	"Get help on commands", "[command]" },
 	{ "?", 		cmd_help, 	NULL,	"Get help on commands", "[command]" },
 	{ "debuglevel", cmd_debuglevel, NULL,	"Set debug level", "level" },
+	{ "list",	cmd_listcommands, NULL,	"List available commands on <pipe>", "pipe" },
 	{ "exit", 	cmd_quit, 	NULL,	"Exit program", "" },
 	{ "quit", 	cmd_quit, 	NULL,	"Exit program", "" },
 
