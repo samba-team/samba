@@ -3888,11 +3888,10 @@ match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
 		}
 	}
 
-
-  check_stat:
-
 	/* If we get here we know ret == 0. */
 	SMB_ASSERT(ret == 0);
+
+  check_stat:
 
 	for (i = 0; i < current_user.ngroups; i++) {
 		if (current_user.groups[i] == psbuf->st_gid) {
@@ -3904,7 +3903,7 @@ match on owning group %u -> %s.\n", fname, (unsigned int)psbuf->st_gid, ret ? "c
 	}
 
 	if (i == current_user.ngroups) {
-		SMB_ASSERT(ret == 0);
+		SMB_ASSERT(ret != 1);
 		DEBUG(10,("check_posix_acl_group_write: file %s \
 failed to match on user or group in token.\n", fname ));
 	}
