@@ -201,6 +201,8 @@ SMBWRAPPER_OBJ = smbwrapper/open.o smbwrapper/stat.o \
 		smbwrapper/rename.o smbwrapper/utime.o smbwrapper/chown.o \
 		smbwrapper/chmod.o smbwrapper/lseek.o smbwrapper/getcwd.o \
 		smbwrapper/mkdir.o smbwrapper/rmdir.o smbwrapper/fchdir.o \
+		smbwrapper/opendir.o smbwrapper/readdir.o smbwrapper/telldir.o \
+		smbwrapper/seekdir.o smbwrapper/closedir.o \
 		$(LIBSMB_OBJ) $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(LIB_OBJ)
 
