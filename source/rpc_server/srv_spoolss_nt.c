@@ -677,6 +677,7 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 		return;
 	}
 
+	memcpy(msg, buf, len);
 	low = IVAL(msg,0);
 	high = IVAL(msg,4);
 
@@ -5698,6 +5699,7 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	pstring long_archi;
 	pstring short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
+	fstring asc_name, servername;
 
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 
@@ -5707,7 +5709,17 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
 
-	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", global_myname, short_archi);
+	/* use the name the client sent us */
+
+	unistr2_to_ascii(asc_name, name, sizeof(asc_name)-1);
+	if (asc_name[0] == '\\' && asc_name[1] == '\\')
+		fstrcpy(servername, asc_name);
+	else {
+		fstrcpy(servername, "\\\\");
+		fstrcat(servername, asc_name);
+	}
+
+	slprintf(path, sizeof(path)-1, "%s\\print$\\%s", servername, short_archi);
 
 	DEBUG(4,("printer driver directory: [%s]\n", path));
 
