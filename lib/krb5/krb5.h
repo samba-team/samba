@@ -285,8 +285,8 @@ typedef struct krb5_auth_context_data{
   krb5_cksumtype cksumtype;
   krb5_enctype enctype;
 
-  krb5_address local_address;
-  krb5_address remote_address;
+  krb5_address *local_address;
+  krb5_address *remote_address;
   krb5_keyblock key;
   krb5_keyblock local_subkey;
   krb5_keyblock remote_subkey;
@@ -421,6 +421,11 @@ int
 krb5_address_order(krb5_context context,
 		   const krb5_address *addr1,
 		   const krb5_address *addr2);
+
+krb5_error_code
+krb5_copy_address(krb5_context context,
+		  const krb5_address *inaddr,
+		  krb5_address *outaddr);
 
 krb5_error_code
 krb5_copy_addresses(krb5_context context,
@@ -726,7 +731,7 @@ krb5_get_krbhst (krb5_context context,
 
 krb5_error_code
 krb5_free_krbhst (krb5_context context,
-		  char *const *hostlist);
+		  char **hostlist);
 
 krb5_error_code
 krb5_get_host_realm(krb5_context context,
