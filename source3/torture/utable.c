@@ -80,3 +80,77 @@ BOOL torture_utable(int dummy)
 
 	return True;
 }
+
+
+static char *form_name(int c)
+{
+	static fstring fname;
+	smb_ucs2_t c2;
+	char *p;
+	int len;
+
+	fstrcpy(fname, "\\utable\\x");
+	p = fname+strlen(fname);
+	SSVAL(&c2, 0, c);
+
+	len = convert_string(CH_UCS2, CH_UNIX, 
+			     &c2, 2, 
+			     p, sizeof(fname)-strlen(fname));
+	p[len] = 0;
+	fstrcat(fname,"_a_long_extension");
+	return fname;
+}
+
+BOOL torture_casetable(int dummy)
+{
+	static struct cli_state cli;
+	char *fname;
+	int fnum;
+	int c;
+
+	printf("starting utable\n");
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	cli_mkdir(&cli, "\\utable");
+	cli_unlink(&cli, "\\utable\\*");
+
+	for (c=1; c < 0x10000; c++) {
+		fname = form_name(c);
+		fnum = cli_nt_create_full(&cli, fname, 
+					  GENERIC_ALL_ACCESS, 
+					  FILE_ATTRIBUTE_NORMAL,
+					  FILE_SHARE_NONE,
+					  FILE_CREATE, 0);
+
+		if (fnum == -1 && 
+		    NT_STATUS_EQUAL(cli_nt_error(&cli),NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/* found a character equivalence! */
+			int c2;
+			
+			fnum = cli_nt_create_full(&cli, fname, 
+						  GENERIC_ALL_ACCESS, 
+						  FILE_ATTRIBUTE_NORMAL,
+						  FILE_SHARE_NONE,
+						  FILE_OPEN, 0);
+			if (fnum == -1 || 
+			    cli_read(&cli, fnum, (char *)&c2, 0, sizeof(c2)) != sizeof(c2)) {
+				continue;
+			}
+
+			printf("%04x == %04x\n", c, c2);
+			cli_close(&cli, fnum);
+			continue;
+		}
+
+		cli_write(&cli, fnum, 0, (char *)&c, 0, sizeof(c));
+		cli_close(&cli, fnum);
+	}
+
+	cli_unlink(&cli, "\\utable\\*");
+	cli_rmdir(&cli, "\\utable");
+
+	return True;
+}

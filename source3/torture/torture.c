@@ -2990,6 +2990,7 @@ static struct {
 	{"TRANS2SCAN", torture_trans2_scan, 0},
 	{"NTTRANSSCAN", torture_nttrans_scan, 0},
 	{"UTABLE", torture_utable, 0},
+	{"CASETABLE", torture_casetable, 0},
 	{NULL, NULL, 0}};
 
 
