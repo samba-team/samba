@@ -3,6 +3,15 @@ dnl $Id$
 dnl
 
 AC_DEFUN(KRB_AIX,[
+aix=no
+case "$host" in 
+*-*-aix3*)
+	aix=3
+	;;
+*-*-aix4*)
+	aix=4
+	;;
+esac
 AM_CONDITIONAL(AIX, test "$aix" != no)dnl
 AM_CONDITIONAL(AIX4, test "$aix" = 4)
 aix_dynamic_afs=yes
