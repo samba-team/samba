@@ -606,6 +606,7 @@ extern int errno;
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
 #include "../tdb/tdb.h"
+#include "../tdb/spinlock.h"
 #include "talloc.h"
 #include "interfaces.h"
 #include "hash.h"
