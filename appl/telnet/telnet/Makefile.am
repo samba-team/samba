@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -I$(srcdir)/..
+INCLUDES += -I$(srcdir)/.. $(INCLUDE_krb4)
 
 bin_PROGRAMS = telnet
 
