@@ -397,7 +397,7 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 char *username, char *password,
-                                int validation_level)
+                                int logon_type)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_SAM_LOGON q;
@@ -406,9 +406,8 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         DOM_CRED clnt_creds, dummy_rtn_creds;
         extern pstring global_myname;
         NET_ID_INFO_CTR ctr;
-        uint8 chal[8];
-	unsigned char local_lm_response[24];
-	unsigned char local_nt_response[24];
+        NET_USER_INFO_3 user;
+        int validation_level = 3;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -427,19 +426,46 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
 	dummy_rtn_creds.timestamp.time = time(NULL);
 
-	generate_random_buffer(chal, 8, False);
+        ctr.switch_value = logon_type;
 
-        SMBencrypt(password, chal, local_lm_response);
-        SMBNTencrypt(password, chal, local_nt_response);
+        switch (logon_type) {
+        case INTERACTIVE_LOGON_TYPE: {
+                unsigned char lm_owf_user_pwd[16], nt_owf_user_pwd[16];
 
-        ctr.switch_value = NET_LOGON_TYPE;
-        init_id_info2(&ctr.auth.id2, lp_workgroup(), 0, 
-                      0xdead, 0xbeef, /* LUID? */
-                      username, global_myname, chal,
-                      local_lm_response, 24, local_nt_response, 24);
+                nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
+
+                init_id_info1(&ctr.auth.id1, lp_workgroup(), 0,
+                              0xdead, 0xbeef, /* LUID? */
+                              username, global_myname, 
+                              cli->sess_key, lm_owf_user_pwd,
+                              nt_owf_user_pwd);
+
+                break;
+        }
+        case NET_LOGON_TYPE: {
+                uint8 chal[8];
+                unsigned char local_lm_response[24];
+                unsigned char local_nt_response[24];
+
+                generate_random_buffer(chal, 8, False);
+
+                SMBencrypt(password, chal, local_lm_response);
+                SMBNTencrypt(password, chal, local_nt_response);
+
+                init_id_info2(&ctr.auth.id2, lp_workgroup(), 0, 
+                              0xdead, 0xbeef, /* LUID? */
+                              username, global_myname, chal,
+                              local_lm_response, 24, local_nt_response, 24);
+                break;
+        }
+        default:
+                DEBUG(0, ("switch value %d not supported\n", 
+                          ctr.switch_value));
+                break;
+        }
 
         init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname,
-                      &clnt_creds, &dummy_rtn_creds, ctr.switch_value,
+                      &clnt_creds, &dummy_rtn_creds, logon_type,
                       &ctr);
 
         /* Marshall data and send request */
@@ -451,6 +477,8 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	/* Unmarshall response */
+
+        r.user = &user;
 
 	if (!net_io_r_sam_logon("", &r, &rbuf, 0)) {
 		result = NT_STATUS_UNSUCCESSFUL;
