@@ -10,15 +10,36 @@
 	/******************/
 	/* Function: 0x00 */
 	typedef struct {
-		uint32 platform_id;          /* 0x0000 01f4 - unknown */
-		unistr *uni_compname;      /* unicode server name */
-		unistr *uni_lan_grp;      /* unicode domain name */
-		uint32 ver_major;          /* 4 - unknown */
-		uint32 ver_minor;          /* 0 - unknown */
+		uint32 platform_id;
+		unistr *server;
+		unistr *domain;
+		uint32 ver_major;
+		uint32 ver_minor;
 	} wks_Info100;
+
+	typedef struct {
+		uint32 platform_id;
+		unistr *server;
+		unistr *domain;
+		uint32 ver_major;
+		uint32 ver_minor;
+		unistr *unknown;
+	} wks_Info101;
+
+	typedef struct {
+		uint32 platform_id;
+		unistr *server;
+		unistr *domain;
+		uint32 ver_major;
+		uint32 ver_minor;
+		unistr *unknown;
+		uint32 unknown2;
+	} wks_Info102;
 
 	typedef union {
 		case (100) wks_Info100 *info100;
+		case (101) wks_Info101 *info101;
+		case (102) wks_Info102 *info102;
 	} wks_Info;
 
 	NTSTATUS wks_QueryInfo(

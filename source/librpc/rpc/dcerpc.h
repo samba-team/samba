@@ -37,6 +37,7 @@ struct dcerpc_pipe {
 	uint32 srv_max_xmit_frag;
 	uint32 srv_max_recv_frag;
 	struct cli_tree *tree;
+	unsigned flags;
 };
 
 /* dcerpc packet types */
@@ -50,6 +51,11 @@ struct dcerpc_pipe {
 #define DCERPC_PFC_FLAG_FIRST   0x01
 #define DCERPC_PFC_FLAG_LAST    0x02
 #define DCERPC_PFC_FLAG_NOCALL  0x20
+
+/* dcerpc pipe flags */
+#define DCERPC_DEBUG_PRINT_IN 1
+#define DCERPC_DEBUG_PRINT_OUT 2
+#define DCERPC_DEBUG_PRINT_BOTH (DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT)
 
 /*
   all dcerpc packets use this structure. 

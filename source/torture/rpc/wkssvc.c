@@ -27,19 +27,20 @@ static BOOL test_QueryInfo(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct wks_QueryInfo r;
-
-	printf("testing QueryInfo\n");
+	uint16 levels[] = {100, 101, 102};
+	int i;
 
 	r.in.server_name = dcerpc_server_name(p);
-	r.in.level = 100;
 
-	status = dcerpc_wks_QueryInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QueryInfo failed - %s\n", nt_errstr(status));
-		return False;
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		r.in.level = levels[i];
+		printf("testing QueryInfo level %u\n", r.in.level);
+		status = dcerpc_wks_QueryInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
+			return False;
+		}
 	}
-
-	NDR_PRINT_BOTH_DEBUG(wks_QueryInfo, &r);
 
 	return True;
 }
@@ -57,6 +58,8 @@ BOOL torture_rpc_wkssvc(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 	
 	if (!test_QueryInfo(p, mem_ctx)) {
 		ret = False;

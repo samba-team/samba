@@ -2,14 +2,35 @@
 
 struct wks_Info100 {
 	uint32 platform_id;
-	const char *uni_compname;
-	const char *uni_lan_grp;
+	const char *server;
+	const char *domain;
 	uint32 ver_major;
 	uint32 ver_minor;
 };
 
+struct wks_Info101 {
+	uint32 platform_id;
+	const char *server;
+	const char *domain;
+	uint32 ver_major;
+	uint32 ver_minor;
+	const char *unknown;
+};
+
+struct wks_Info102 {
+	uint32 platform_id;
+	const char *server;
+	const char *domain;
+	uint32 ver_major;
+	uint32 ver_minor;
+	const char *unknown;
+	uint32 unknown2;
+};
+
 union wks_Info {
 /* [case(100)] */ struct wks_Info100 *info100;
+/* [case(101)] */ struct wks_Info101 *info101;
+/* [case(102)] */ struct wks_Info102 *info102;
 };
 
 struct wks_QueryInfo {
