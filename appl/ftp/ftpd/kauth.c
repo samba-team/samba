@@ -88,7 +88,7 @@ store_ticket(KTEXT cip)
     len = strnlen(ptr, left);
     if (len == left)
 	return(INTK_BADPW);
-
+    
     /* extract server's instance */
     strcpy_truncate(sp.instance, ptr, sizeof(sp.instance));
     ptr += len + 1;
@@ -97,7 +97,7 @@ store_ticket(KTEXT cip)
     len = strnlen(ptr, left);
     if (len == left)
 	return(INTK_BADPW);
-
+    
     /* extract server's realm */
     strcpy_truncate(sp.realm, ptr, sizeof(sp.realm));
     ptr += len + 1;

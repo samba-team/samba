@@ -259,8 +259,11 @@ netflush(void)
 	 * old 4.2 client (and thus unable to survive TCP urgent data),
 	 * write the entire buffer in non-OOB mode.
 	 */
+#if 1 /* remove this to make it work between solaris 2.6 and linux */
 	if ((neturg == 0) || (not42 == 0)) {
+#endif
 	    n = write(net, nbackp, n);	/* normal write */
+#if 1 /* remove this to make it work between solaris 2.6 and linux */
 	} else {
 	    n = neturg - nbackp;
 	    /*
@@ -277,6 +280,7 @@ netflush(void)
 		n = send(net, nbackp, n, MSG_OOB);	/* URGENT data */
 	    }
 	}
+#endif
     }
     if (n < 0) {
 	if (errno == EWOULDBLOCK || errno == EINTR)

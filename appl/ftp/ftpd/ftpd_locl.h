@@ -158,7 +158,7 @@
 
 #ifdef SOCKS
 #include <socks.h>
-extern int LIBPREFIX(fclose)      __P((FILE *));
+extern int LIBPREFIX(fclose)      (FILE *);
 #endif
 
 int yyparse();

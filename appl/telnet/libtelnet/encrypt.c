@@ -67,11 +67,11 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <roken.h>
 #ifdef SOCKS
 #include <socks.h>
 #endif
 
-#include <roken.h>
 
 /*
  * These functions pointers point to the current routines

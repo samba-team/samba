@@ -68,11 +68,11 @@ RCSID("$Id$");
 #define Authenticator k5_Authenticator
 #include <krb5.h>
 #undef Authenticator
+#include <roken.h>
 #ifdef SOCKS
 #include <socks.h>
 #endif
 
-#include <roken.h>
 
 #include "encrypt.h"
 #include "auth.h"

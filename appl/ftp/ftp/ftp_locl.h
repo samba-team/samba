@@ -119,7 +119,12 @@
 
 #ifdef SOCKS
 #include <socks.h>
-extern int LIBPREFIX(fclose)      __P((FILE *));
+extern int LIBPREFIX(fclose)      (FILE *);
+
+/* This doesn't belong here. */
+struct tm *localtime(const time_t *);
+struct hostent  *gethostbyname(const char *);
+
 #endif
 
 #include "ftp_var.h"

@@ -42,13 +42,13 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <string.h>
 #endif
+#include <roken.h>
 #ifdef SOCKS
 #include <socks.h>
 #endif
 
 #include "encrypt.h"
 #include "misc-proto.h"
-#include <roken.h>
 
 #include <des.h>
 

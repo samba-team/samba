@@ -160,6 +160,9 @@
 
 #ifdef SOCKS
 #include <socks.h>
+/* This doesn't belong here. */
+struct tm *localtime(const time_t *);
+struct hostent  *gethostbyname(const char *);
 #endif
 
 #ifdef KRB4

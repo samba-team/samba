@@ -203,6 +203,7 @@ mk_auth(struct krb4_data *d, KTEXT adat,
     int ret;
     CREDENTIALS cred;
     char sname[SNAME_SZ], inst[INST_SZ], realm[REALM_SZ];
+
     strcpy_truncate(sname, service, sizeof(sname));
     strcpy_truncate(inst, krb_get_phost(host), sizeof(inst));
     strcpy_truncate(realm, krb_realmofhost(host), sizeof(realm));

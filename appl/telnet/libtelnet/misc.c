@@ -38,6 +38,7 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <roken.h>
 #ifdef SOCKS
 #include <socks.h>
 #endif
@@ -45,7 +46,6 @@ RCSID("$Id$");
 #include "auth.h"
 #include "encrypt.h"
 
-#include <roken.h>
 
 char *RemoteHostName;
 char *LocalHostName;

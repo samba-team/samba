@@ -1100,7 +1100,7 @@ yylex(void)
 #ifdef HAVE_SETPROCTITLE
 			if (strncasecmp(cbuf, "PASS", 4) != NULL)
 				setproctitle("%s: %s", proctitle, cbuf);
-#endif
+#endif /* HAVE_SETPROCTITLE */
 			if ((cp = strchr(cbuf, '\r'))) {
 				*cp++ = '\n';
 				*cp = '\0';
@@ -1385,7 +1385,8 @@ sizecmd(char *filename)
 			reply(550, "%s: not a plain file.", filename);
 		else
 			reply(213, "%lu", (unsigned long)stbuf.st_size);
-		break; }
+		break;
+	}
 	case TYPE_A: {
 		FILE *fin;
 		int c;
@@ -1411,7 +1412,8 @@ sizecmd(char *filename)
 		fclose(fin);
 
 		reply(213, "%lu", (unsigned long)count);
-		break; }
+		break;
+	}
 	default:
 		reply(504, "SIZE not implemented for Type %c.", "?AEIL"[type]);
 	}

@@ -70,11 +70,11 @@ RCSID("$Id$");
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <roken.h>
 #ifdef SOCKS
 #include <socks.h>
 #endif
 
-#include <roken.h>
 
 #include "encrypt.h"
 #include "auth.h"
