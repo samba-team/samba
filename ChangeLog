@@ -1,3 +1,11 @@
+2003-03-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/addr_families.c (krb5_print_address): make sure
+	print_addr is defined for the given address type; make addrports
+	printable
+
+	* kdc/string2key.c: print the used enctype for kerberos 5 keys
+
 2003-03-25  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/aes-test.c: add another arcfour test
@@ -357,6 +365,10 @@
 
 	* lib/krb5/mk_rep.c: free allocated storage; reported by Howard
 	Chu
+
+2002-12-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kdc_locl.h: remove old encrypt_v4_ticket prototype
 
 2002-12-02  Johan Danielsson  <joda@pdc.kth.se>
 
@@ -790,6 +802,19 @@
 
 	* lib/krb5/cache.c (krb5_cc_register): break out of loop when the
 	same type is found; spotted by Wynn Wilkes
+
+2002-05-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab_file.c: check size of entry before trying to
+	read 32-bit kvno; also fix typo in previous
+
+2002-05-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* include/Makefile.am: only add to INCLUDES
+
+	* lib/45/mk_req.c: fix for storage change
+
+	* lib/hdb/print.c: fix for storage change
 
 2002-05-15  Johan Danielsson  <joda@pdc.kth.se>
 
