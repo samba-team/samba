@@ -82,16 +82,6 @@ static vfs_op_tuple recycle_ops[] = {
 	{NULL,				SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
-static BOOL check_bool_param(const char *value)
-{
-	if (strwicmp(value, "yes") == 0 ||
-	    strwicmp(value, "true") == 0 ||
-	    strwicmp(value, "1") == 0)
-		return True;
-
-	return False;
-}
-
 /**
  * VFS initialisation function.
  *
@@ -170,7 +160,6 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 	recycle_bin_connections *recconn;
 	recycle_bin_connections *recconnbase;
 	recycle_bin_private_data *recdata;
-	char *servicename;
 	char *tmp_str;
 
 	DEBUG(10, ("Called for service %s (%d) as user %s\n", service, SNUM(conn), user));
@@ -206,49 +195,41 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 	recbin->maxsize = 0;
 
 	/* parse configuration options */
-	servicename = talloc_strdup(recbin->mem_ctx, lp_servicename(SNUM(conn)));
-	DEBUG(10, ("servicename = %s\n",servicename));
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "repository")) != NULL) {
+	if ((tmp_str = lp_parm_string(SNUM(conn), "vfs_recycle_bin", "repository")) != NULL) {
 		recbin->repository = talloc_sub_conn(recbin->mem_ctx, conn, tmp_str);
 		ALLOC_CHECK(recbin->repository, error);
 		trim_string(recbin->repository, "/", "/");
 		DEBUG(5, ("recycle.bin: repository = %s\n", recbin->repository));
 	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "keeptree")) != NULL) {
-		if (check_bool_param(tmp_str) == True)
-			recbin->keep_dir_tree = True;
-		DEBUG(5, ("recycle.bin: keeptree = %s\n", tmp_str));
+	
+	recbin->keep_dir_tree = lp_parm_bool(SNUM(conn), "vfs_recycle_bin", "keeptree");
+	DEBUG(5, ("recycle.bin: keeptree = %d\n", recbin->keep_dir_tree));
+	
+	recbin->versions = lp_parm_bool(SNUM(conn), "vfs_recycle_bin", "versions");
+	DEBUG(5, ("recycle.bin: versions = %d\n", recbin->versions));
+	
+	recbin->touch = lp_parm_bool(SNUM(conn), "vfs_recycle_bin", "touch");
+	DEBUG(5, ("recycle.bin: touch = %d\n", recbin->touch));
+
+	recbin->maxsize = lp_parm_ulong(SNUM(conn), "vfs_recycle_bin", "maxsize");
+	if (recbin->maxsize == 0) {
+		recbin->maxsize = -1;
+		DEBUG(5, ("recycle.bin: maxsize = -infinite-\n"));
+	} else {
+		DEBUG(5, ("recycle.bin: maxsize = %ld\n", (long int)recbin->maxsize));
 	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "versions")) != NULL) {
-		if (check_bool_param(tmp_str) == True)
-			recbin->versions = True;
-		DEBUG(5, ("recycle.bin: versions = %s\n", tmp_str));
-	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "touch")) != NULL) {
-		if (check_bool_param(tmp_str) == True)
-			recbin->touch = True;
-		DEBUG(5, ("recycle.bin: touch = %s\n", tmp_str));
-	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "maxsize")) != NULL) {
-		recbin->maxsize = strtoul(tmp_str, NULL, 10);
-		if (recbin->maxsize == 0) {
-			recbin->maxsize = -1;
-			DEBUG(5, ("recycle.bin: maxsize = -infinite-\n"));
-		} else {
-			DEBUG(5, ("recycle.bin: maxsize = %ld\n", (long int)recbin->maxsize));
-		}
-	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "exclude")) != NULL) {
+
+	if ((tmp_str = lp_parm_string(SNUM(conn), "vfs_recycle_bin", "exclude")) != NULL) {
 		recbin->exclude = talloc_strdup(recbin->mem_ctx, tmp_str);
 		ALLOC_CHECK(recbin->exclude, error);
 		DEBUG(5, ("recycle.bin: exclude = %s\n", recbin->exclude));
 	}
-	if ((tmp_str = lp_parm_string(servicename,"vfs_recycle_bin", "exclude_dir")) != NULL) {
+	if ((tmp_str = lp_parm_string(SNUM(conn), "vfs_recycle_bin", "exclude_dir")) != NULL) {
 		recbin->exclude_dir = talloc_strdup(recbin->mem_ctx, tmp_str);
 		ALLOC_CHECK(recbin->exclude_dir, error);
 		DEBUG(5, ("recycle.bin: exclude_dir = %s\n", recbin->exclude_dir));
 	}
-	if ((tmp_str = lp_parm_string(servicename,"vfs_recycle_bin", "noversions")) != NULL) {
+	if ((tmp_str = lp_parm_string(SNUM(conn), "vfs_recycle_bin", "noversions")) != NULL) {
 		recbin->noversions = talloc_strdup(recbin->mem_ctx, tmp_str);
 		ALLOC_CHECK(recbin->noversions, error);
 		DEBUG(5, ("recycle.bin: noversions = %s\n", recbin->noversions));
