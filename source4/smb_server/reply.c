@@ -2048,12 +2048,14 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	/* call the generic handler */
 	status = sesssetup_backend(req, &sess);
 
+	if (!NT_STATUS_IS_OK(status) && 
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		req_reply_error(req, status);
+		return;
+	}
+
 	/* construct reply */
 	req_setup_reply(req, 4, sess.spnego.out.secblob.length);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		req_setup_error(req, status);
-	}
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
