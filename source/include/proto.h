@@ -3790,7 +3790,7 @@ pipes_struct *get_rpc_pipe(int pnum);
 
 /*The following definitions come from  rpc_server/srv_pipe_srv.c  */
 
-BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start);
+BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start, prs_struct *resp);
 void close_msrpc_command_processor(void);
 void add_msrpc_command_processor(char* pipe_name,
 				char* process_name,

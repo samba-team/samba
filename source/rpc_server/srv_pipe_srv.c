@@ -43,20 +43,6 @@
 
 extern int DEBUGLEVEL;
 
-/*******************************************************************
- frees all temporary data used in construction of pdu
- ********************************************************************/
-static void rpcsrv_free_temp(rpcsrv_struct *l)
-{
-	prs_free_data(&l->data_i);		
-
-	prs_free_data(&l->rhdr );
-	prs_free_data(&l->rfault );
-	prs_free_data(&l->rauth  );
-	prs_free_data(&l->rverf  );
-	prs_free_data(&l->rntlm  );		
-}
-
 static void NTLMSSPcalc_p( rpcsrv_struct *p, unsigned char *data, int len)
 {
     unsigned char *hash = p->ntlmssp_hash;
@@ -91,14 +77,17 @@ static void NTLMSSPcalc_p( rpcsrv_struct *p, unsigned char *data, int len)
  headers and data sections.
 
  ********************************************************************/
-BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
+BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start, prs_struct *resp)
 {
+	BOOL ret;
 	char *data;
 	BOOL auth_verify = IS_BITS_SET_ALL(l->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SIGN);
 	BOOL auth_seal   = IS_BITS_SET_ALL(l->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SEAL);
 	uint32 data_len;
 	uint32 auth_len;
 	uint32 data_end = l->rdata.offset + (l->ntlmssp_auth ? (8 + 16) : 0);
+	prs_struct rhdr;
+	prs_struct rdata_i;
 
 	DEBUG(5,("create_rpc_reply: data_start: %d data_end: %d max_tsize: %d\n",
 	          data_start, data_end, l->hdr_ba.bba.max_tsize));
@@ -114,7 +103,7 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 		}
 	}
 
-	prs_init(&l->rhdr , 0x18, 4, False);
+	prs_init(&rhdr , 0, 4, False);
 
 	l->hdr.pkt_type = RPC_RESPONSE; /* mark header as an rpc response */
 
@@ -156,32 +145,34 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 		data_len = l->hdr.frag_len - 0x18;
 	}
 
-	l->rhdr.start = 0;
-	l->rhdr.end   = 0x18;
+	rhdr.start = 0;
+	rhdr.end   = 0x18;
 
 	DEBUG(10,("hdr flags: %x\n", l->hdr.flags));
 
 	/* store the header in the data stream */
-	smb_io_rpc_hdr     ("rhdr", &(l->hdr     ), &(l->rhdr), 0);
-	smb_io_rpc_hdr_resp("resp", &(l->hdr_resp), &(l->rhdr), 0);
+	smb_io_rpc_hdr     ("rhdr", &(l->hdr     ), &(rhdr), 0);
+	smb_io_rpc_hdr_resp("resp", &(l->hdr_resp), &(rhdr), 0);
 
 	/* don't use rdata: use rdata_i instead, which moves... */
 	/* make a pointer to the rdata data, NOT A COPY */
 
 	data = prs_data(&l->rdata, data_start);
-	prs_create(&l->rdata_i, data, data_len, l->rdata.align, l->rdata_i.io); 
-	l->rdata_i.offset = data_len;
+	prs_create(&rdata_i, data, data_len, l->rdata.align, rdata_i.io); 
+	rdata_i.offset = data_len;
 	l->rdata_offset += data_len;
 
-	prs_debug_out(&l->rdata_i, "rdata_i", 200);
+	prs_debug_out(&rdata_i, "rdata_i", 200);
 	prs_debug_out(&l->rdata, "rdata", 200);
 
 	if (auth_len > 0)
 	{
 		uint32 crc32 = 0;
+		prs_struct rauth;
+		prs_struct rverf;
 
-		prs_init(&l->rauth, 1024, 4, False);
-		prs_init(&l->rverf, 0x10, 4, False);
+		prs_init(&rauth, 0, 4, False);
+		prs_init(&rverf, 0, 4, False);
 
 		DEBUG(5,("create_rpc_reply: sign: %s seal: %s data %d auth %d\n",
 			 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, auth_len));
@@ -195,7 +186,7 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 		if (auth_seal || auth_verify)
 		{
 			make_rpc_hdr_auth(&l->auth_info, 0x0a, 0x06, 0x08, (auth_verify ? 1 : 0));
-			smb_io_rpc_hdr_auth("hdr_auth", &l->auth_info, &l->rauth, 0);
+			smb_io_rpc_hdr_auth("hdr_auth", &l->auth_info, &rauth, 0);
 		}
 
 		if (auth_verify)
@@ -203,29 +194,40 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 			char *auth_data;
 			l->ntlmssp_seq_num++;
 			make_rpc_auth_ntlmssp_chk(&l->ntlmssp_chk, NTLMSSP_SIGN_VERSION, crc32, l->ntlmssp_seq_num++);
-			smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(l->ntlmssp_chk), &l->rverf, 0);
-			auth_data = prs_data(&l->rverf, 4);
+			smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(l->ntlmssp_chk), &rverf, 0);
+			auth_data = prs_data(&rverf, 4);
 			NTLMSSPcalc_p(l, (uchar*)auth_data, 12);
 		}
-	}
+		prs_link(NULL       , &rhdr   , &rdata_i);
+		prs_link(&rhdr   , &rdata_i, &rauth  );
+		prs_link(&rdata_i, &rauth  , &rverf  );
+		prs_link(&rauth  , &rverf  , NULL       );
 
-	/* set up the data chain */
-	if (l->ntlmssp_auth)
-	{
-		prs_link(NULL       , &l->rhdr   , &l->rdata_i);
-		prs_link(&l->rhdr   , &l->rdata_i, &l->rauth  );
-		prs_link(&l->rdata_i, &l->rauth  , &l->rverf  );
-		prs_link(&l->rauth  , &l->rverf  , NULL       );
+		prs_init(resp, 0, 4, False);
+		ret = prs_copy(resp, &rhdr);
+
+		prs_free_data(&rauth  );
+		prs_free_data(&rverf  );
 	}
 	else
 	{
-		prs_link(NULL    , &l->rhdr   , &l->rdata_i);
-		prs_link(&l->rhdr, &l->rdata_i, NULL       );
+		prs_link(NULL , &rhdr   , &rdata_i);
+		prs_link(&rhdr, &rdata_i, NULL    );
+
+		prs_init(resp, 0, 4, False);
+		ret = prs_copy(resp, &rhdr);
 	}
 
-	prs_debug_out(&l->rdata, "rdata - after", 200);
+	prs_free_data(&rhdr );
 
-	return l->rhdr.data != NULL && l->rhdr.offset == 0x18;
+	if (IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST) ||
+	    l->hdr.pkt_type == RPC_BINDACK)
+	{
+		DEBUG(10,("create_rpc_reply: finished sending\n"));
+		prs_free_data(&l->rdata);
+	}
+
+	return ret;
 }
 
 static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l)
@@ -501,12 +503,16 @@ static BOOL api_pipe_bind_auth_resp(rpcsrv_struct *l)
 	return api_pipe_ntlmssp(l);
 }
 
-static BOOL api_pipe_fault_resp(rpcsrv_struct *l, uint32 status)
+static BOOL api_pipe_fault_resp(rpcsrv_struct *l, uint32 status,
+				prs_struct *resp)
 {
+	prs_struct rhdr;
+	prs_struct rfault;
+
 	DEBUG(5,("api_pipe_fault_resp: make response\n"));
 
-	prs_init(&(l->rhdr     ), 0x18, 4, False);
-	prs_init(&(l->rfault   ), 0x8 , 4, False);
+	prs_init(&(rhdr     ), 0, 4, False);
+	prs_init(&(rfault   ), 0, 4, False);
 
 	/***/
 	/*** set up the header, response header and fault status ***/
@@ -524,26 +530,38 @@ static BOOL api_pipe_fault_resp(rpcsrv_struct *l, uint32 status)
 	             0x20,
 	             0);
 
-	smb_io_rpc_hdr      ("hdr"  , &(l->hdr      ), &(l->rhdr), 0);
-	smb_io_rpc_hdr_resp ("resp" , &(l->hdr_resp ), &(l->rhdr), 0);
-	smb_io_rpc_hdr_fault("fault", &(l->hdr_fault), &(l->rfault), 0);
-	prs_realloc_data(&l->rhdr  , l->rhdr.offset  );
-	prs_realloc_data(&l->rfault, l->rfault.offset);
+	smb_io_rpc_hdr      ("hdr"  , &(l->hdr      ), &(rhdr), 0);
+	smb_io_rpc_hdr_resp ("resp" , &(l->hdr_resp ), &(rhdr), 0);
+	smb_io_rpc_hdr_fault("fault", &(l->hdr_fault), &(rfault), 0);
+	prs_realloc_data(&rhdr  , rhdr.offset  );
+	prs_realloc_data(&rfault, rfault.offset);
 
 	/***/
 	/*** link rpc header and fault together ***/
 	/***/
 
-	prs_link(NULL    , &l->rhdr  , &l->rfault);
-	prs_link(&l->rhdr, &l->rfault, NULL      );
+	prs_link(NULL    , &rhdr  , &rfault);
+	prs_link(&rhdr, &rfault, NULL      );
+
+	prs_init(resp, 0, 4, False);
+	if (!prs_copy(resp, &rhdr)) return False;
+	prs_free_data(&rfault);
+	prs_free_data(&rhdr);
 
 	return True;
 }
 
 static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, 
 				const char* ack_pipe_name,
+				prs_struct *resp,
 				enum RPC_PKT_TYPE pkt_type)
 {
+	BOOL ret;
+
+	prs_struct rhdr;
+	prs_struct rauth;
+	prs_struct rverf;
+	prs_struct rntlm;
 	uint16 assoc_gid;
 
 	l->ntlmssp_auth = False;
@@ -577,11 +595,11 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
-	prs_init(&(l->rdata), 1024, 4, False);
-	prs_init(&(l->rhdr ), 0x18, 4, False);
-	prs_init(&(l->rauth), 1024, 4, False);
-	prs_init(&(l->rverf), 0x08, 4, False);
-	prs_init(&(l->rntlm), 1024, 4, False);
+	prs_init(&(l->rdata), 0, 4, False);
+	prs_init(&(rhdr ), 0, 4, False);
+	prs_init(&(rauth), 0, 4, False);
+	prs_init(&(rverf), 0, 4, False);
+	prs_init(&(rntlm), 0, 4, False);
 
 	/***/
 	/*** do the bind ack first ***/
@@ -619,22 +637,22 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 		/*** authentication info ***/
 
 		make_rpc_hdr_auth(&l->auth_info, 0x0a, 0x06, 0, 1);
-		smb_io_rpc_hdr_auth("", &l->auth_info, &l->rverf, 0);
-		prs_realloc_data(&l->rverf, l->rverf.offset);
+		smb_io_rpc_hdr_auth("", &l->auth_info, &rverf, 0);
+		prs_realloc_data(&rverf, rverf.offset);
 
 		/*** NTLMSSP verifier ***/
 
 		make_rpc_auth_ntlmssp_verifier(&l->auth_verifier,
 		                       "NTLMSSP", NTLMSSP_CHALLENGE);
-		smb_io_rpc_auth_ntlmssp_verifier("", &l->auth_verifier, &l->rauth, 0);
-		prs_realloc_data(&l->rauth, l->rauth.offset);
+		smb_io_rpc_auth_ntlmssp_verifier("", &l->auth_verifier, &rauth, 0);
+		prs_realloc_data(&rauth, rauth.offset);
 
 		/* NTLMSSP challenge ***/
 
 		make_rpc_auth_ntlmssp_chal(&l->ntlmssp_chal,
 		                           0x000082b1, challenge);
-		smb_io_rpc_auth_ntlmssp_chal("", &l->ntlmssp_chal, &l->rntlm, 0);
-		prs_realloc_data(&l->rntlm, l->rntlm.offset);
+		smb_io_rpc_auth_ntlmssp_chal("", &l->ntlmssp_chal, &rntlm, 0);
+		prs_realloc_data(&rntlm, rntlm.offset);
 	}
 
 	/***/
@@ -643,11 +661,11 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 
 	make_rpc_hdr(&l->hdr, pkt_type, RPC_FLG_FIRST | RPC_FLG_LAST,
 	             l->hdr.call_id,
-	             l->rdata.offset + l->rverf.offset + l->rauth.offset + l->rntlm.offset + 0x10,
-	             l->rauth.offset + l->rntlm.offset);
+	             l->rdata.offset + rverf.offset + rauth.offset + rntlm.offset + 0x10,
+	             rauth.offset + rntlm.offset);
 
-	smb_io_rpc_hdr("", &l->hdr, &l->rhdr, 0);
-	prs_realloc_data(&l->rhdr, l->rdata.offset);
+	smb_io_rpc_hdr("", &l->hdr, &rhdr, 0);
+	prs_realloc_data(&rhdr, l->rdata.offset);
 
 	/***/
 	/*** link rpc header, bind acknowledgment and authentication responses ***/
@@ -655,23 +673,33 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 
 	if (l->ntlmssp_auth)
 	{
-		prs_link(NULL     , &l->rhdr , &l->rdata);
-		prs_link(&l->rhdr , &l->rdata, &l->rverf);
-		prs_link(&l->rdata, &l->rverf, &l->rauth);
-		prs_link(&l->rverf, &l->rauth, &l->rntlm);
-		prs_link(&l->rauth, &l->rntlm, NULL     );
+		prs_link(NULL     , &rhdr    , &l->rdata);
+		prs_link(&rhdr    , &l->rdata, &rverf   );
+		prs_link(&l->rdata, &rverf   , &rauth   );
+		prs_link(&rverf   , &rauth   , &rntlm   );
+		prs_link(&rauth   , &rntlm   , NULL     );
 	}
 	else
 	{
-		prs_link(NULL    , &l->rhdr , &l->rdata);
-		prs_link(&l->rhdr, &l->rdata, NULL     );
+		prs_link(NULL    , &rhdr , &l->rdata);
+		prs_link(&rhdr, &l->rdata, NULL     );
 	}
 
-	return True;
+	prs_init(resp, 0, 4, False);
+	ret = prs_copy(resp, &rhdr);
+
+	prs_free_data(&l->rdata);
+	prs_free_data(&rhdr );
+	prs_free_data(&rauth  );
+	prs_free_data(&rverf  );
+	prs_free_data(&rntlm  );		
+
+	return ret;
 }
 
 static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct *l, 
 				const char* name,
+				prs_struct *resp,
 				enum RPC_PKT_TYPE pkt_type)
 {
 	fstring ack_pipe_name;
@@ -718,7 +746,7 @@ static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct *l,
 			return False;
 		}
 	}
-	return srv_pipe_bind_and_alt_req(l, ack_pipe_name, pkt_type);
+	return srv_pipe_bind_and_alt_req(l, ack_pipe_name, resp, pkt_type);
 }
 
 /*
@@ -727,14 +755,14 @@ static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct *l,
  * or in the marshalling code. If it's in the later, then Samba
  * have the same bug.
  */
-static BOOL api_pipe_bind_req(rpcsrv_struct *l, const char* name)
+static BOOL api_pipe_bind_req(rpcsrv_struct *l, const char* name, prs_struct *resp)
 {
-	return api_pipe_bind_and_alt_req(l, name, RPC_BINDACK);
+	return api_pipe_bind_and_alt_req(l, name, resp, RPC_BINDACK);
 }
 
-static BOOL api_pipe_alt_req(rpcsrv_struct *l, const char* name)
+static BOOL api_pipe_alt_req(rpcsrv_struct *l, const char* name, prs_struct *resp)
 {
-	return api_pipe_bind_and_alt_req(l, name, RPC_ALTCONTRESP);
+	return api_pipe_bind_and_alt_req(l, name, resp, RPC_ALTCONTRESP);
 }
 
 static BOOL api_pipe_auth_process(rpcsrv_struct *l)
@@ -794,7 +822,8 @@ static BOOL api_pipe_auth_process(rpcsrv_struct *l)
 	return True;
 }
 
-static BOOL api_pipe_request(rpcsrv_struct *l, const char* name)
+static BOOL api_pipe_request(rpcsrv_struct *l, const char* name,
+				prs_struct *resp)
 {
 	int i = 0;
 
@@ -814,7 +843,15 @@ static BOOL api_pipe_request(rpcsrv_struct *l, const char* name)
 		    api_fd_commands[i]->fn != NULL)
 		{
 			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i]->pipe_clnt_name));
-			return api_fd_commands[i]->fn(l);
+			if (!api_fd_commands[i]->fn(l))
+			{
+				return False;
+			}
+			l->rdata_offset = 0;
+
+			/* create the rpc pdu */
+			return create_rpc_reply(l, 0, resp);
+
 		}
 	}
 	return False;
@@ -836,15 +873,8 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 		/* hmm, must need some more data.
 		 * create, flatten and return data in a single pdu
 		 */
-		if (!create_rpc_reply(l, l->rdata_offset)) return False;
-		if (!prs_copy(resp, &l->rhdr)) return False;
+		if (!create_rpc_reply(l, l->rdata_offset, resp)) return False;
 
-		if (IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST) ||
-		    l->hdr.pkt_type == RPC_BINDACK)
-		{
-			DEBUG(10,("rpc_redir_local: finished sending\n"));
-			prs_free_data(&l->rdata);
-		}
 		return True;
 	}
 
@@ -889,12 +919,12 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 	{
 		case RPC_BIND   :
 		{
-			reply = api_pipe_bind_req(l, name);
+			reply = api_pipe_bind_req(l, name, resp);
 			break;
 		}
 		case RPC_ALTCONT:
 		{
-			reply = api_pipe_alt_req(l, name);
+			reply = api_pipe_alt_req(l, name, resp);
  			break;
  		}
 		case RPC_REQUEST:
@@ -910,7 +940,7 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 			{
 				/* read the rpc header */
 				smb_io_rpc_hdr_req("req", &(l->hdr_req), &l->data_i, 0);
-				reply = api_pipe_request(l, name);
+				reply = api_pipe_request(l, name, resp);
 			}
 			break;
 		}
@@ -924,30 +954,21 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 
 	if (!reply)
 	{
-		reply = api_pipe_fault_resp(l, 0x1c010002);
+		reply = api_pipe_fault_resp(l, 0x1c010002, resp);
 	}
 	
 	if (reply)
 	{
 		/* flatten the data into a single pdu */
 		DEBUG(200,("rpc_redir_local: %d\n", __LINE__));
-		prs_init(resp, 0, 4, False);
 		prs_debug_out(resp    , "redir_local resp", 200);
-		prs_debug_out(&l->rhdr, "send_rcv rhdr", 200);
-		reply = prs_copy(resp, &l->rhdr);
 
-		if (IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST) ||
-		    l->hdr.pkt_type == RPC_BINDACK)
-		{
-			DEBUG(10,("rpc_redir_local: finished sending\n"));
-			prs_free_data(&l->rdata);
-		}
 		return True;
 	}
 
 	/* delete intermediate data used to set up the pdu.  leave
 	   rdata alone because that's got the rest of the data in it */
-	rpcsrv_free_temp(l);
+	prs_free_data(&l->data_i);		
 
 	return reply;
 }
@@ -1009,14 +1030,6 @@ BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
 
 	/* interpret the command */
 	if (!api_rpc_command(l, rpc_name, api_rpc_cmds))
-	{
-		return False;
-	}
-
-	l->rdata_offset = 0;
-
-	/* create the rpc header */
-	if (!create_rpc_reply(l, 0))
 	{
 		return False;
 	}
