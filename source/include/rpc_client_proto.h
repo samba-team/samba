@@ -319,7 +319,7 @@ BOOL samr_query_sec_obj(  const POLICY_HND *pol,
 				uint32 type,
 				SEC_DESC_BUF *buf);
 BOOL samr_open_user(  const POLICY_HND *pol,
-				uint32 unk_0, uint32 rid, 
+				uint32 access_mask, uint32 rid, 
 				POLICY_HND *user_pol);
 BOOL samr_open_alias(  const POLICY_HND *domain_pol,
 				uint32 flags, uint32 rid,
