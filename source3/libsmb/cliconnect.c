@@ -341,7 +341,7 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 	SSVAL(cli->outbuf,smb_vwv3,2);
-	SSVAL(cli->outbuf,smb_vwv4,0);
+	SSVAL(cli->outbuf,smb_vwv4,1);
 	SIVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv7,blob.length);
 	SIVAL(cli->outbuf,smb_vwv10,capabilities); 
@@ -710,17 +710,12 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		return False;
 	}
 
-	fstrcpy(cli->dev, "A:");
-
-	if (cli->protocol >= PROTOCOL_NT1) {
-		clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE);
-	}
+	clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE|STR_ASCII);
 
 	if (strcasecmp(share,"IPC$")==0) {
 		fstrcpy(cli->dev, "IPC");
 	}
 
-	/* only grab the device if we have a recent protocol level */
 	if (cli->protocol >= PROTOCOL_NT1 &&
 	    smb_buflen(cli->inbuf) == 3) {
 		/* almost certainly win95 - enable bug fixes */
@@ -844,7 +839,8 @@ BOOL cli_negprot(struct cli_state *cli)
 			cli->writebraw_supported = True;      
 		}
 		/* work out if they sent us a workgroup */
-		if (smb_buflen(cli->inbuf) > 8) {
+		if (!(cli->capabilities & CAP_EXTENDED_SECURITY) &&
+		    smb_buflen(cli->inbuf) > 8) {
 			clistr_pull(cli, cli->server_domain, 
 				    smb_buf(cli->inbuf)+8, sizeof(cli->server_domain),
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
