@@ -26,6 +26,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "libcli/raw/libcliraw.h"
 #include "smb_server/smb_server.h"
 

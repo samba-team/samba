@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "client.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "libcli/raw/libcliraw.h"
@@ -355,7 +356,7 @@ BOOL mask_match(struct smbcli_state *c, const char *string, char *pattern,
 /*******************************************************************
   decide if a file should be operated on
   ********************************************************************/
-static BOOL do_this_one(file_info *finfo)
+static BOOL do_this_one(struct file_info *finfo)
 {
 	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) return(True);
 
@@ -381,7 +382,7 @@ static BOOL do_this_one(file_info *finfo)
 /****************************************************************************
   display info about a file
   ****************************************************************************/
-static void display_finfo(file_info *finfo)
+static void display_finfo(struct file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
@@ -400,7 +401,7 @@ static void display_finfo(file_info *finfo)
 /****************************************************************************
    accumulate size of a file
   ****************************************************************************/
-static void do_du(file_info *finfo)
+static void do_du(struct file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		dir_total += finfo->size;
@@ -413,7 +414,7 @@ static char *do_list_queue = 0;
 static long do_list_queue_size = 0;
 static long do_list_queue_start = 0;
 static long do_list_queue_end = 0;
-static void (*do_list_fn)(file_info *);
+static void (*do_list_fn)(struct file_info *);
 
 /****************************************************************************
 functions for do_list_queue
@@ -532,7 +533,7 @@ static int do_list_queue_empty(void)
 /****************************************************************************
 a helper for do_list
   ****************************************************************************/
-static void do_list_helper(file_info *f, const char *mask, void *state)
+static void do_list_helper(struct file_info *f, const char *mask, void *state)
 {
 	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		if (do_list_dirs && do_this_one(f)) {
@@ -564,7 +565,7 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 /****************************************************************************
 a wrapper around smbcli_list that adds recursion
   ****************************************************************************/
-void do_list(const char *mask,uint16_t attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
+void do_list(const char *mask,uint16_t attribute,void (*fn)(struct file_info *),BOOL rec, BOOL dirs)
 {
 	static int in_do_list = 0;
 
@@ -879,7 +880,7 @@ static BOOL yesno(char *p)
 /****************************************************************************
   do a mget operation on one file
   ****************************************************************************/
-static void do_mget(file_info *finfo)
+static void do_mget(struct file_info *finfo)
 {
 	pstring rname;
 	pstring quest;
@@ -2546,7 +2547,7 @@ typedef struct {
 	int len;
 } completion_remote_t;
 
-static void completion_remote_filter(file_info *f, const char *mask, void *state)
+static void completion_remote_filter(struct file_info *f, const char *mask, void *state)
 {
 	completion_remote_t *info = (completion_remote_t *)state;
 

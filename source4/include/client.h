@@ -38,7 +38,7 @@
  * These definitions depend on smb.h
  */
 
-typedef struct file_info
+struct file_info
 {
 	uint64_t size;
 	uint16_t mode;
@@ -50,7 +50,7 @@ typedef struct file_info
 	time_t ctime;
 	const char *name;
 	char short_name[13*3]; /* the *3 is to cope with multi-byte */
-} file_info;
+};
 
 struct print_job_info
 {

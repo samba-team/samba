@@ -21,6 +21,7 @@
 */
 
 #include "include/includes.h"
+#include "events.h"
 #include "vfs_posix.h"
 
 /* the context for a single wait instance */

@@ -36,6 +36,7 @@
 
 
 #include "includes.h"
+#include "client.h"
 #include "clitar.h"
 #include "system/time.h"
 #include "system/iconv.h"
@@ -169,8 +170,8 @@ static int tarhandle;
 
 static void writetarheader(int f,  const char *aname, uint64_t size, time_t mtime,
 			   const char *amode, uint8_t ftype);
-static void do_atar(char *rname,const char *lname,file_info *finfo1);
-static void do_tar(file_info *finfo);
+static void do_atar(char *rname,const char *lname,struct file_info *finfo1);
+static void do_tar(struct file_info *finfo);
 static void oct_it(uint64_t value, int ndgs, char *p);
 static void fixtarname(char *tptr, const char *fp, int l);
 static int dotarbuf(int f, char *b, int n);
@@ -642,7 +643,7 @@ static void do_setrattr(char *name, uint16_t attr, int set)
 /****************************************************************************
 append one remote file to the tar file
 ***************************************************************************/
-static void do_atar(char *rname,const char *lname,file_info *finfo1)
+static void do_atar(char *rname,const char *lname,struct file_info *finfo1)
 {
   int fnum;
   uint64_t nread=0;
@@ -825,7 +826,7 @@ static void do_atar(char *rname,const char *lname,file_info *finfo1)
 /****************************************************************************
 Append single file to tar file (or not)
 ***************************************************************************/
-static void do_tar(file_info *finfo)
+static void do_tar(struct file_info *finfo)
 {
   pstring rname;
 

@@ -68,6 +68,7 @@
 #include "system/time.h"
 #include "system/select.h"
 #include "dlinklist.h"
+#include "events.h"
 
 /*
   create a event_context structure. This must be the first events
