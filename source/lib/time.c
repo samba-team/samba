@@ -27,7 +27,7 @@
   */
 
 
-int serverzone=0;
+static int serverzone=0;
 int extra_time_offset = 0;
 
 extern int DEBUGLEVEL;
