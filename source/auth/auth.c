@@ -361,12 +361,13 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 	}
 	
 	for (;*text_list; text_list++) { 
-		DEBUG(5,("make_auth_context_text_list: Attempting to find an auth method to match %s\n",
-					*text_list));
 			struct auth_init_function_entry *entry;
 			char *module_name = smb_xstrdup(*text_list);
 			char *module_params = NULL;
 			char *p;
+
+			DEBUG(5,("make_auth_context_text_list: Attempting to find an auth method to match %s\n",
+				 *text_list));
 
 			p = strchr(module_name, ':');
 			if (p) {
