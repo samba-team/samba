@@ -100,7 +100,7 @@ mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbrun smbstatus testparm testprns \
-      make_smbcodepage make_printerdef rpcclient
+      make_smbcodepage make_printerdef rpcclient smbsh smbwrapper.so
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/bin
 done
@@ -114,10 +114,6 @@ for i in smbd nmbd swat
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
-
-# Install smbwrapper stuff
-install -m755 -s source/smbwrapper/smbsh $RPM_BUILD_ROOT/usr/bin
-install -m755 -s source/smbwrapper/smbwrapper.so $RPM_BUILD_ROOT/usr/bin
 
 # Install level 1 man pages
 for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1
