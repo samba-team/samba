@@ -177,7 +177,8 @@ main(int argc, char **argv)
 	/* XXX better value? */
 	salt.saltvalue.data = NULL;
 	salt.saltvalue.length = 0;
-	des_read_pw_string(buf, sizeof(buf), "Master key: ", 1);
+	if(des_read_pw_string(buf, sizeof(buf), "Master key: ", 1))
+	    exit(1);
 	krb5_string_to_key_salt(context, key.keytype, buf, salt, &key);
     }
     
