@@ -423,6 +423,7 @@ typedef struct files_struct
 	BOOL print_file;
 	BOOL modified;
 	BOOL is_directory;
+	BOOL is_stat;
 	BOOL directory_delete_on_close;
 	char *fsp_name;
 } files_struct;
