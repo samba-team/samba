@@ -35,15 +35,10 @@
 
 RCSID("$Id$");
 
-static struct getargs args[] = {
-};
-
-static int num_args = sizeof(args) / sizeof(args[0]);
-
 static void
 usage(void)
 {
-    arg_printusage (args, num_args, "del_enctype", "principal enctypes...");
+    fprintf (stderr, "Usage: del_enctype principal enctypes...\n");
 }
 
 /*
