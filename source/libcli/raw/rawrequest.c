@@ -40,9 +40,11 @@ NTSTATUS cli_request_destroy(struct cli_request *req)
 	   _send() call fails completely */
 	if (!req) return NT_STATUS_UNSUCCESSFUL;
 
-	/* remove it from the list of pending requests (a null op if
-	   its not in the list) */
-	DLIST_REMOVE(req->transport->pending_requests, req);
+	if (req->transport) {
+		/* remove it from the list of pending requests (a null op if
+		   its not in the list) */
+		DLIST_REMOVE(req->transport->pending_requests, req);
+	}
 
 	/* ahh, its so nice to destroy a complex structure in such a
 	   simple way! */
@@ -306,11 +308,12 @@ BOOL cli_request_receive(struct cli_request *req)
 	/* keep receiving packets until this one is replied to */
 	while (!req->in.buffer) {
 		if (!cli_transport_select(req->transport)) {
+			req->status = NT_STATUS_UNSUCCESSFUL;
 			return False;
 		}
 
 		if (!cli_request_receive_next(req->transport)) {
-			cli_transport_close(req->transport);
+			cli_transport_dead(req->transport);
 			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 			return False;
 		}

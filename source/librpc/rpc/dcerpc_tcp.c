@@ -29,6 +29,18 @@ struct tcp_private {
 	uint32 port;
 };
 
+
+/*
+  mark the socket dead
+*/
+static void tcp_sock_dead(struct tcp_private *tcp)
+{
+	if (tcp && tcp->fd != -1) {
+		close(tcp->fd);
+		tcp->fd = -1;
+	}
+}
+
 static NTSTATUS tcp_raw_recv(struct dcerpc_pipe *p, 
 			     TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *blob)
@@ -45,7 +57,8 @@ static NTSTATUS tcp_raw_recv(struct dcerpc_pipe *p,
 
 	ret = read_data(tcp->fd, blob1.data, blob1.length);
 	if (ret != blob1.length) {
-		return NT_STATUS_NET_WRITE_FAULT;
+		tcp_sock_dead(tcp);
+		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 
 	/* this could be a ncacn_http endpoint - this doesn't work
@@ -54,7 +67,8 @@ static NTSTATUS tcp_raw_recv(struct dcerpc_pipe *p,
 		memmove(blob1.data, blob1.data+14, 2);
 		ret = read_data(tcp->fd, blob1.data+2, 14);
 		if (ret != 14) {
-			return NT_STATUS_NET_WRITE_FAULT;
+			tcp_sock_dead(tcp);
+			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 		}
 	}
 
@@ -74,7 +88,8 @@ static NTSTATUS tcp_raw_recv(struct dcerpc_pipe *p,
 
 	ret = read_data(tcp->fd, blob->data + blob1.length, frag_length - blob1.length);
 	if (ret != frag_length - blob1.length) {
-		return NT_STATUS_NET_WRITE_FAULT;
+		tcp_sock_dead(tcp);
+		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 
 	return NT_STATUS_OK;
@@ -90,7 +105,8 @@ static NTSTATUS tcp_full_request(struct dcerpc_pipe *p,
 
 	ret = write_data(tcp->fd, request_blob->data, request_blob->length);
 	if (ret != request_blob->length) {
-		return NT_STATUS_NET_WRITE_FAULT;
+		tcp_sock_dead(tcp);
+		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 
 	return tcp_raw_recv(p, mem_ctx, reply_blob);
@@ -120,7 +136,8 @@ static NTSTATUS tcp_initial_request(struct dcerpc_pipe *p,
 
 	ret = write_data(tcp->fd, blob->data, blob->length);
 	if (ret != blob->length) {
-		return NT_STATUS_NET_WRITE_FAULT;
+		tcp_sock_dead(tcp);
+		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 
 	return NT_STATUS_OK;
@@ -134,9 +151,7 @@ static NTSTATUS tcp_shutdown_pipe(struct dcerpc_pipe *p)
 {
 	struct tcp_private *tcp = p->transport.private;
 
-	if (tcp) {
-		close(tcp->fd);
-	}
+	tcp_sock_dead(tcp);
 
 	return NT_STATUS_OK;
 }

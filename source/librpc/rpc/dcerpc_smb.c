@@ -75,6 +75,7 @@ static NTSTATUS dcerpc_raw_recv(struct dcerpc_pipe *p,
 	DATA_BLOB payload;
 
 	status = smb_raw_trans_recv(req, mem_ctx, &trans);
+
 	/* STATUS_BUFFER_OVERFLOW means that there is more data
 	   available via SMBreadX */
 	if (!NT_STATUS_IS_OK(status) && 

@@ -187,6 +187,11 @@ ssize_t read_data(int fd, char *buffer, size_t N)
 	ssize_t ret;
 	size_t total=0;  
  
+	if (fd == -1) {
+		errno = EIO;
+		return -1;
+	}
+
 	while (total < N) {
 		ret = sys_read(fd,buffer + total,N - total);
 		if (ret == 0) {
@@ -208,6 +213,11 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 {
 	size_t total=0;
 	ssize_t ret;
+
+	if (fd == -1) {
+		errno = EIO;
+		return -1;
+	}
 
 	while (total < N) {
 		ret = sys_write(fd, buffer + total, N - total);

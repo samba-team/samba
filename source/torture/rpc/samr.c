@@ -701,30 +701,30 @@ static BOOL test_AddMemberToAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				  struct policy_handle *domain_handle,
 				  const struct dom_sid *domain_sid)
 {
-	struct samr_AddAliasMem r;
-	struct samr_DelAliasMem d;
+	struct samr_AddAliasMember r;
+	struct samr_DeleteAliasMember d;
 	NTSTATUS status;
 	BOOL ret = True;
 	struct dom_sid *sid;
 
 	sid = dom_sid_add_rid(mem_ctx, domain_sid, 512);
 
-	printf("testing AddAliasMem\n");
+	printf("testing AddAliasMember\n");
 	r.in.handle = alias_handle;
 	r.in.sid = sid;
 
-	status = dcerpc_samr_AddAliasMem(p, mem_ctx, &r);
+	status = dcerpc_samr_AddAliasMember(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("AddAliasMem failed - %s\n", nt_errstr(status));
+		printf("AddAliasMember failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
 
 	d.in.handle = alias_handle;
 	d.in.sid = sid;
 
-	status = dcerpc_samr_DelAliasMem(p, mem_ctx, &d);
+	status = dcerpc_samr_DeleteAliasMember(p, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("DelAliasMem failed - %s\n", nt_errstr(status));
+		printf("DelAliasMember failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
 
@@ -2177,6 +2177,8 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_AddGroupMember r;
 	struct samr_DeleteGroupMember d;
+	struct samr_QueryGroupMember q;
+	struct samr_SetMemberAttributesOfGroup s;
 	BOOL ret = True;
 	uint32 rid;
 
@@ -2214,6 +2216,25 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	/* this one is quite strange. I am using random inputs in the
+	   hope of triggering an error that might give us a clue */
+	s.in.handle = group_handle;
+	s.in.unknown1 = random();
+	s.in.unknown2 = random();
+
+	status = dcerpc_samr_SetMemberAttributesOfGroup(p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetMemberAttributesOfGroup failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	q.in.handle = group_handle;
+
+	status = dcerpc_samr_QueryGroupMember(p, mem_ctx, &q);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryGroupMember failed - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	status = dcerpc_samr_DeleteGroupMember(p, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2319,6 +2340,8 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(user_handle);
 	ZERO_STRUCT(alias_handle);
+	ZERO_STRUCT(group_handle);
+	ZERO_STRUCT(domain_handle);
 
 	printf("Testing OpenDomain\n");
 

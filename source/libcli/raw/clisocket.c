@@ -75,14 +75,24 @@ BOOL cli_sock_connect(struct cli_socket *sock, struct in_addr *ip, int port)
 
 
 /****************************************************************************
+ mark the socket as dead
+****************************************************************************/
+void cli_sock_dead(struct cli_socket *sock)
+{
+	if (sock->fd != -1) {
+		close(sock->fd);
+		sock->fd = -1;
+	}
+}
+
+/****************************************************************************
  reduce socket reference count - if it becomes zero then close
 ****************************************************************************/
 void cli_sock_close(struct cli_socket *sock)
 {
 	sock->reference_count--;
-	if (sock->reference_count <= 0 && sock->fd != -1) {
-		close(sock->fd);
-		sock->fd = -1;
+	if (sock->reference_count <= 0) {
+		cli_sock_dead(sock);
 	}
 }
 
@@ -99,6 +109,11 @@ void cli_sock_set_options(struct cli_socket *sock, const char *options)
 ****************************************************************************/
 ssize_t cli_sock_write(struct cli_socket *sock, const char *data, size_t len)
 {
+	if (sock->fd == -1) {
+		errno = EIO;
+		return -1;
+	}
+
 	return write_data(sock->fd, data, len);
 }
 
@@ -108,6 +123,11 @@ ssize_t cli_sock_write(struct cli_socket *sock, const char *data, size_t len)
 ****************************************************************************/
 ssize_t cli_sock_read(struct cli_socket *sock, char *data, size_t len)
 {
+	if (sock->fd == -1) {
+		errno = EIO;
+		return -1;
+	}
+
 	return read_data(sock->fd, data, len);
 }
 

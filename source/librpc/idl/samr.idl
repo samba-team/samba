@@ -54,7 +54,13 @@
 
 	/******************/
 	/* Function: 0x04 */
-	NTSTATUS samr_Shutdown ();
+
+	/*
+	  shutdown the SAM - once you call this the SAM will be dead
+	*/
+	NTSTATUS samr_Shutdown (
+		[in,ref]   policy_handle *handle
+		);
 
 	/******************/
 	/* Function: 0x05 */
@@ -401,13 +407,44 @@
 		[in]                      uint32 rid
 		);
 
+
 	/************************/
 	/* Function    0x19     */
-	NTSTATUS samr_QUERY_GROUPMEM();
+	/*
+	  this isn't really valid IDL, but it does work. I suspect
+	  I need to do some more pidl work to get this really right
+	*/
+	typedef struct {
+		uint32 count;
+		uint32 v[count];
+	} samr_intArray;
+
+	typedef struct {
+		samr_intArray *rids;
+		samr_intArray *unknown7;
+	} samr_ridArray;
+
+	NTSTATUS samr_QueryGroupMember(
+		[in,ref]  policy_handle *handle,
+		[out]     uint32 *count,
+		[out]     samr_ridArray rids
+		);
+
 
 	/************************/
 	/* Function    0x1a     */
-	NTSTATUS samr_SET_MEMBER_ATTRIBUTES_OF_GROUP();
+
+	/*
+	  win2003 seems to accept any data at all for the two integers
+	  below, and doesn't seem to do anything with them that I can
+	  see. Weird. I really expected the first integer to be a rid
+	  and the second to be the attributes for that rid member.
+	*/
+	NTSTATUS samr_SetMemberAttributesOfGroup(
+		[in,ref]  policy_handle *handle,
+		[in]      uint32 unknown1,
+		[in]      uint32 unknown2
+		);
 
 
 	/************************/
@@ -457,14 +494,14 @@
 
 	/************************/
 	/* Function    0x1f     */
-	NTSTATUS samr_AddAliasMem(
+	NTSTATUS samr_AddAliasMember(
 		[in,ref]  policy_handle *handle,
 		[in,ref]  dom_sid2      *sid
 		);
 
 	/************************/
 	/* Function    0x20     */
-	NTSTATUS samr_DelAliasMem(
+	NTSTATUS samr_DeleteAliasMember(
 		[in,ref] policy_handle *handle,
 		[in,ref] dom_sid2      *sid
 		);
@@ -1093,12 +1130,17 @@
 		[out]       dom_sid2      *sid
 		);
 
+
 	/************************/
 	/* Function    0x42     */
 	NTSTATUS samr_SET_DSRM_PASSWORD();
 
 	/************************/
 	/* Function    0x43     */
-	NTSTATUS samr_VALIDATE_PASSWORD();
 
+	/*
+	  I haven't been able to work out the format of this one yet.
+	  Seems to start with a switch level for a union?
+	*/
+	NTSTATUS samr_ValidatePassword();
 }
