@@ -914,7 +914,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 
 	if ((status == 0) && (num_entries < num_sam_entries))
 	{
-		status = 0x105; /* STATUS_MORE_ENTRIES */
+		status = NT_STATUS_MORE_ENTRIES;
 	}
 
 	make_samr_r_query_dispinfo(&r_e, num_entries, data_size,
