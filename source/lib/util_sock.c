@@ -663,10 +663,15 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
 	if (len < 0) {
 		DEBUG(10,("receive_smb: length < 0!\n"));
-		/* XXX: You might think that we ought to set
-		 * smb_read_error here, but apparently that breaks the
-		 * recursive main loop in oplock.c.  Global variables
-		 * suck. */
+
+		/*
+		 * Correct fix. smb_read_error may have already been
+		 * set. Only set it here if not already set. Global
+		 * variables still suck :-). JRA.
+		 */
+
+		if (smb_read_error == 0)
+			smb_read_error = READ_ERROR;
 		return False;
 	}
 
@@ -678,7 +683,15 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
 		DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
 		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
-			smb_read_error = READ_ERROR;
+
+			/*
+			 * Correct fix. smb_read_error may have already been
+			 * set. Only set it here if not already set. Global
+			 * variables still suck :-). JRA.
+			 */
+
+			if (smb_read_error == 0)
+				smb_read_error = READ_ERROR;
 			return False;
 		}
 	}
@@ -686,7 +699,8 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	if(len > 0) {
 		ret = read_socket_data(fd,buffer+4,len);
 		if (ret != len) {
-			smb_read_error = READ_ERROR;
+			if (smb_read_error == 0)
+				smb_read_error = READ_ERROR;
 			return False;
 		}
 	}
