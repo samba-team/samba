@@ -90,7 +90,7 @@ _krb5_xlock(krb5_context context, int fd, krb5_boolean exclusive,
 			      filename);
     else if(ret != 0)
 	krb5_set_error_string(context, "error locking cache file %s: %s",
-			      filename);
+			      filename, strerror(ret));
     return ret;
 }
 
