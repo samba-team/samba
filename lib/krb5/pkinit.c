@@ -166,6 +166,36 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
     return 0;
 }
 
+static krb5_error_code
+set_digest_alg(DigestAlgorithmIdentifier *id,
+	       const heim_oid *oid,
+	       void *param, size_t length)
+{
+    krb5_error_code ret;
+    if (param) {
+	id->parameters = malloc(sizeof(*id->parameters));
+	if (id->parameters == NULL)
+	    return ENOMEM;
+	id->parameters->data = malloc(length);
+	if (id->parameters->data == NULL) {
+	    free(id->parameters);
+	    id->parameters = NULL;
+	    return ENOMEM;
+	}
+	memcpy(id->parameters->data, param, length);
+    }
+    ret = copy_oid(oid, &id->algorithm);
+    if (ret) {
+	if (id->parameters) {
+	    free(id->parameters->data);
+	    free(id->parameters);
+	    id->parameters = NULL;
+	}
+	return ret;
+    }
+    return 0;
+}
+
 krb5_error_code
 _krb5_pk_create_sign(krb5_context context,
 		     const heim_oid *eContentType,
@@ -173,7 +203,6 @@ _krb5_pk_create_sign(krb5_context context,
 		     struct krb5_pk_identity *id,
 		     krb5_data *sd_data)
 {
-    const heim_oid *digest_oid;
     SignerInfo *signer_info;
     X509 *user_cert;
     heim_integer *serial;
@@ -272,37 +301,17 @@ _krb5_pk_create_sign(krb5_context context,
 	}
     }
 
-    if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE)
-	digest_oid = &heim_sha1_oid;
+    if ((context->pkinit_flags & KRB5_PKINIT_WIN2K) == 0)
+	ret = set_digest_alg(&signer_info->digestAlgorithm,
+			     &heim_sha1_oid,
+			     "\x05\x00", 2);
     else
-	digest_oid = &heim_sha1WithRSAEncryption_oid;
-    
-    ret = copy_oid(digest_oid, &signer_info->digestAlgorithm.algorithm);
-    signer_info->digestAlgorithm.parameters = NULL;
+	ret = set_digest_alg(&signer_info->digestAlgorithm,
+			     &heim_sha1_oid,
+			     NULL, 0);
     if (ret) {
 	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
 	goto out;
-    }
-
-    /* CMS really requires NULL, but Windows gets unhappy then */
-    if ((context->pkinit_flags & KRB5_PKINIT_WIN2K) == 0) {
-
-	signer_info->digestAlgorithm.parameters = 
-	    malloc(sizeof(*signer_info->digestAlgorithm.parameters));
-	if (signer_info->digestAlgorithm.parameters == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    ret = ENOMEM;
-	    goto out;
-	}
-	signer_info->digestAlgorithm.parameters->data = malloc(2);
-	if (signer_info->digestAlgorithm.parameters->data == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    ret = ENOMEM;
-	    goto out;
-	}
-	memcpy(signer_info->digestAlgorithm.parameters->data, "\x05\x00", 2);
-	signer_info->digestAlgorithm.parameters->length = 2;
     }
 
     signer_info->signedAttrs = NULL;
@@ -343,13 +352,18 @@ _krb5_pk_create_sign(krb5_context context,
 	goto out;
     }
 
-    if (context->pkinit_flags & KRB5_PKINIT_WIN2K)
-	digest_oid = &heim_sha1_oid;
+    if ((context->pkinit_flags & KRB5_PKINIT_WIN2K) == 0)
+	ret = set_digest_alg(&sd.digestAlgorithms.val[0],
+			     &heim_sha1_oid,
+			     "\x05\x00", 2);
     else
-	digest_oid = &heim_rsaEncryption_oid;
-
-    copy_oid(digest_oid, &sd.digestAlgorithms.val[0].algorithm);
-    sd.digestAlgorithms.val[0].parameters = NULL;
+	ret = set_digest_alg(&sd.digestAlgorithms.val[0],
+			     &heim_sha1_oid,
+			     NULL, 0);
+    if (ret) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	goto out;
+    }
 
     ALLOC(sd.certificates, 1);
     if (sd.certificates == NULL) {
