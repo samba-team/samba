@@ -128,7 +128,6 @@ add_history(char *p)
 int
 sl_loop (SL_cmd *cmds, char *prompt)
 {
-    char *buf;
     unsigned max_count;
     char **ptr;
 
