@@ -266,7 +266,7 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
  on failure.
 ****************************************************************************/
 
-int tdb_store_by_string(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
+int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 	
@@ -278,7 +278,7 @@ int tdb_store_by_string(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int
  free() on the result dptr.
 ****************************************************************************/
 
-TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, const char *keystr)
+TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
@@ -289,7 +289,7 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, const char *keystr)
  Delete an entry using a null terminated string key. 
 ****************************************************************************/
 
-int tdb_delete_by_string(TDB_CONTEXT *tdb, const char *keystr)
+int tdb_delete_bystring(TDB_CONTEXT *tdb, const char *keystr)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
