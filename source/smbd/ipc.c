@@ -1704,13 +1704,13 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
    * Check the parameter definition is correct.
    */
   if(!strequal(param + 2, "zsT")) {
-    DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %sn\n", param + 2));
+    DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
     return False;
   }
   p = skip_string(p, 1);
 
   if(!strequal(p, "B516B16")) {
-    DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %sn\n", p));
+    DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
     return False;
   }
   p = skip_string(p,1);
