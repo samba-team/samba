@@ -40,6 +40,9 @@
  * Author:	Jörgen Karlsson - d93-jka@nada.kth.se
  * Date:	June 1996
  */
+
+/* $Id$ */
+
 #ifndef PASSWD_DLG_H
 #define PASSWD_DLG_H
 
