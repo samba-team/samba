@@ -2688,13 +2688,16 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 		if (!lp_load(conf, True, False, False)) {
 
 			/*
-			 * Hmmm, what the hell do we do here ... we could not parse the
-			 * config file ... We must return an error ... and keep info around
-			 * about why we failed
+			 * Well, if that failed, try the dyn_CONFIGFILE
+			 * Which points to the standard locn, and if that
+			 * fails, silently ignore it and use the internal
+			 * defaults ...
 			 */
-			
-			errno = ENOENT; /* FIXME: Figure out the correct error response */
-			return NULL;
+
+		   if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+		      DEBUG(5, ("Could not load either config file: %s or %s\n",
+			     conf, dyn_CONFIGFILE));
+		   }
 		}
 
 		reopen_logs();  /* Get logging working ... */
