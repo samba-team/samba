@@ -167,7 +167,7 @@ AC_BROKEN(chown daemon err errx fchown getcwd getdtablesize)
 AC_BROKEN(getusershell inet_aton initgroups lstat memmove)
 AC_BROKEN(mkstemp putenv rcmd setegid setenv seteuid)
 AC_BROKEN(strcasecmp strdup strerror strftime strlwr)
-AC_BROKEN(strnlen strtok_r strupr unsetenv vsyslog verr)
+AC_BROKEN(strnlen strsep strtok_r strupr unsetenv vsyslog verr)
 AC_BROKEN(verrx vwarn vwarnx warn warnx)
 
 dnl AC_KRB_FUNC_GETCWD_BROKEN
