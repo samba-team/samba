@@ -61,6 +61,8 @@ Eric Young's @file{libdes}
 @item
 @file{popper}, @file{push} (a movemail equivalent)
 @item
+@file{ftp}, and @file{ftpd}
+@item
 a library @file{libkafs} for authenticating to AFS and a program
 @file{afslog} that uses it
 @item
