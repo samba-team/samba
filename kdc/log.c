@@ -44,9 +44,10 @@ static krb5_log_facility *logf;
 void
 kdc_openlog(krb5_config_section *cf)
 {
-    char **s, **p;
+    char **s = NULL, **p;
     krb5_initlog(context, "kdc", &logf);
-    s = krb5_config_get_strings(cf, "kdc", "logging", NULL);
+    if(cf)
+	s = krb5_config_get_strings(cf, "kdc", "logging", NULL);
 
     if(s == NULL)
 	s = krb5_config_get_strings(context->cf, "logging", "kdc", NULL);
