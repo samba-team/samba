@@ -72,13 +72,20 @@ krb5_mk_req_extended(krb5_context context,
          value specified by the user, but it's the easiest way to make
          the code use a compatible enctype */
       Ticket ticket;
+      int ticket_keytype;
+
       ret = decode_Ticket(in_creds->ticket.data, 
 			  in_creds->ticket.length, 
 			  &ticket, 
 			  NULL);
-      ret = krb5_auth_setenctype(context, 
-				 ac,
-				 ticket.enc_part.etype);
+      krb5_etype_to_keytype (context,
+			     ticket.enc_part.etype,
+			     &ticket_keytype);
+
+      if (ticket_keytype == in_creds->session.keytype)
+	  krb5_auth_setenctype(context, 
+			       ac,
+			       ticket.enc_part.etype);
       free_Ticket(&ticket);
   }
 
