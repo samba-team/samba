@@ -9,7 +9,7 @@ CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
-CFLAGS = @CFLAGS@ -I/usr/athena/include
+CFLAGS = @CFLAGS@
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -32,12 +32,16 @@ OBJECTS=auth.o encrypt.o genget.o \
 all: libtelnet.a
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I.. -I$(srcdir)/.. $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
+	-I../../../include -I$(srcdir)/../../../include -I.. -I$(srcdir)/.. $<
 
 
 libtelnet.a: $(OBJECTS)
 	$(AR) cr libtelnet.a $(OBJECTS)
 	$(RANLIB) libtelnet.a
+
+install:
+	@echo "Nothing to install in libtelnet"
 
 clean cleandir:
 	rm -f *.o *.a \#* *~ core
