@@ -861,10 +861,10 @@ int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 
 
 
 /****************************************************************************
-stat a file (actually a SMBgetattr call)
-This only fills in a few of the stat fields
+do a SMBgetatr call
 ****************************************************************************/
-BOOL cli_stat(struct cli_state *cli, char *fname, struct stat *st)
+BOOL cli_getatr(struct cli_state *cli, char *fname, 
+		int *attr, uint32 *size, time_t *t)
 {
 	char *p;
 
@@ -890,10 +890,55 @@ BOOL cli_stat(struct cli_state *cli, char *fname, struct stat *st)
 		return False;
 	}
 
-	memset(st, 0, sizeof(*st));
-	st->st_size = IVAL(cli->inbuf, smb_vwv3);
+	if (size) {
+		*size = IVAL(cli->inbuf, smb_vwv3);
+	}
 
-	st->st_mtime = make_unix_date3(cli->inbuf+smb_vwv1);
+	if (t) {
+		*t = make_unix_date3(cli->inbuf+smb_vwv1);
+	}
+
+	if (attr) {
+		*attr = SVAL(cli->inbuf,smb_vwv0);
+	}
+
+
+	return True;
+}
+
+
+/****************************************************************************
+do a SMBsetatr call
+****************************************************************************/
+BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,8,strlen(fname)+2,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBsetatr;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0, attr);
+	put_dos_date3(cli->outbuf,smb_vwv1, t);
+
+	p = smb_buf(cli->outbuf);
+	*p = 4;
+	strcpy(p+1, fname);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return False;
+	}
+	
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
 	return True;
 }
 
