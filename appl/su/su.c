@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -246,7 +246,7 @@ verify_unix(struct passwd *su)
     char *pw;
     int r;
     if(su->pw_passwd != NULL && *su->pw_passwd != '\0') {
-	sprintf(prompt, "%s's password: ", su->pw_name);
+	snprintf(prompt, sizeof(prompt), "%s's password: ", su->pw_name);
 	r = des_read_pw_string(pw_buf, sizeof(pw_buf), prompt, 0);
 	if(r != 0)
 	    exit(0);
