@@ -185,7 +185,7 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
 #define NLOOPS 200000
 #endif
 
-int main(int argc, char *argv[])
+ int main(int argc, const char *argv[])
 {
 	int i, seed=0;
 	int loops = NLOOPS;
