@@ -74,6 +74,24 @@ AC_DEFUN(AC_LIBTESTFUNC,
   esac
 ])
 
+dnl Define an AC_DEFINE with ifndef guard.
+dnl AC_N_DEFINE(VARIABLE [, VALUE])
+define(AC_N_DEFINE,
+[cat >> confdefs.h <<\EOF
+[#ifndef] $1
+[#define] $1 ifelse($#, 2, [$2], $#, 3, [$2], 1)
+[#endif]
+EOF
+])
+
+dnl Add an #include
+dnl AC_ADD_INCLUDE(VARIABLE)
+define(AC_ADD_INCLUDE,
+[cat >> confdefs.h <<\EOF
+[#include] $1
+EOF
+])
+
 ## libtool.m4 - Configure libtool for the target system. -*-Shell-script-*-
 ## Copyright (C) 1996-1999 Free Software Foundation, Inc.
 ## Originally by Gordon Matzigkeit <gord@gnu.ai.mit.edu>, 1996
