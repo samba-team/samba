@@ -101,6 +101,7 @@
 #include <krb5_err.h>
 #include <asn1_err.h>
 #include <hdb_err.h>
+#include <error.h>
 
 void		krb5_data_zero(krb5_data *);
 void 		krb5_data_free(krb5_data *);
