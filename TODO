@@ -4,11 +4,7 @@ $Id$
 
 * admin
 
-add some kind of remote admin protocol
-
-* kpasswdd
-
-configuration control for password expiration
+integrate with kadmin
 
 * appl
 
@@ -17,11 +13,6 @@ more programs here
 ** appl/popper
 
 Implement RFC1731 and 1734, pop over GSS-API
-
-** appl/rsh
-
-perhaps rsh and rshd should be able to handle the `traditional'
-  rsh-protocol as well.
 
 ** appl/telnet
 
@@ -91,8 +82,6 @@ add policies?
 fix to use rpc?
 
 ** lib/krb5
-
-fix addresses when there are no addresses
 
 replay cache not implemented
 
