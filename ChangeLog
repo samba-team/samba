@@ -1,5 +1,13 @@
 Thu Apr 15 11:34:38 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* kdc/connect.c: don't use data after clearing decriptor
+
+	* lib/krb5/auth_context.c: abort -> krb5_abortx
+
+	* lib/krb5/warn.c: add __attribute__; add *abort functions
+
+	* configure.in: check for __attribute__
+
 	* kdc/connect.c: log bogus requests
 
 Tue Apr 13 18:38:05 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
