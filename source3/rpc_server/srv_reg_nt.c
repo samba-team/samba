@@ -342,6 +342,9 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 {
 	NTSTATUS 		status = NT_STATUS_NO_SUCH_FILE;
 	fstring 		name;
+	char                    *value_ascii = "";
+	fstring                 value;
+	int                     value_length;
 	REGISTRY_KEY 		*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	REGISTRY_VALUE		*val = NULL;
 	REGISTRY_VALUE		emptyval;
@@ -380,15 +383,20 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_LANMANNT, strlen(REG_PT_LANMANNT)+1 );
+				value_ascii = REG_PT_LANMANNT;
 				break;
 			case ROLE_STANDALONE:
-				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_SERVERNT, strlen(REG_PT_SERVERNT)+1 );
+				value_ascii = REG_PT_SERVERNT;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_WINNT, strlen(REG_PT_WINNT)+1 );
+				value_ascii = REG_PT_WINNT;
 				break;
 		}
+		value_length = push_ucs2(value, value, value_ascii,
+					 sizeof(value),
+					 STR_TERMINATE|STR_NOALIGN);
+		regval_ctr_addvalue(&regvals, REGSTR_PRODUCTTYPE, REG_SZ,
+				    value, value_length);
 		
 		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
 		
