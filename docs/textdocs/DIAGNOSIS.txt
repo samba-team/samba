@@ -1,5 +1,5 @@
 !==
-!== DIAGNOSIS.txt for Samba release 2.0.8 17 Apr 2001
+!== DIAGNOSIS.txt for Samba release 2.0.9 08 May 2001
 !==
 Contributor:	Andrew Tridgell
 Updated:	November 1, 1999

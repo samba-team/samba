@@ -1,14 +1,14 @@
-              WHATS NEW IN Samba 2.0.8
+              WHATS NEW IN Samba 2.0.9
               ========================
 
-Samba 2.0.8 is a security bugfix release. Previous versions of Samba
+Samba 2.0.9 is a security bugfix release. Previous versions of Samba
 had a bug with the handling of temporary files that allows local users
 to destroy data on local devices. This bug was discovered during a
 routine security audit by Caldera. While no exploitation of this bug
 is known to have occurred it is fairly easy to exploit so sites with
 untrusted local users should take the threat seriously.
 
-The only changes in 2.0.8 are the security updates. This is to
+The only changes in 2.0.9 are the security updates. This is to
 maximise stability for those sites that cannot afford to risk any
 other sort of update. For most sites the Samba Team recommends that
 the new 2.2.x version of Samba be used instead, as that provides not
@@ -17,7 +17,10 @@ bug fixes.
 
 
 Samba Team
-April 2001
+May 2001
+
+NOTE: The Samba 2.0.8 release was supposed to fix this security hole,
+but didn't.
 
 
 
