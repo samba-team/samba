@@ -145,7 +145,9 @@ hdb_get_entry(krb5_context context,
     ent.principal = (krb5_principal)principal;
     ret = (*d->db->fetch)(context, d->db, HDB_F_DECRYPT, &ent);
     (*d->db->close)(context, d->db);
-    if(ret)
+    if(ret == HDB_ERR_NOENTRY)
+	return KRB5_KT_NOTFOUND;
+    else if(ret)
 	return ret;
     if(kvno && ent.kvno != kvno) {
 	hdb_free_entry(context, &ent);
