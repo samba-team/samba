@@ -81,10 +81,19 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	   logonserver.  We can avoid a 30-second timeout if the DC is down
 	   if the SAMLOGON request fails as it is only over UDP. */
 
+	/* we use a mutex to prevent two connections at once - when a NT PDC gets
+	   two connections where one hasn't completed a negprot yet it will send a 
+	   TCP reset to the first connection (tridge) */
+	if (!message_named_mutex(server)) {
+		DEBUG(1,("domain mutex failed for %s\n", server));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
 	/* Attempt connection */
-
 	result = cli_full_connection(cli, global_myname, server,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
+
+	message_named_mutex_release(server);
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
