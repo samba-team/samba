@@ -14,6 +14,6 @@
     When set to mandatory, SMB signing is required and if set 
     to disabled, SMB signing is not offered either.</para>
 
-    <para>Default: <command>client signing = False</command></para>
+    <para>Default: <command>server signing = False</command></para>
 </listitem>
 </samba:parameter>

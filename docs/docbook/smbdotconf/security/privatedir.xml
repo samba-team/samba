@@ -8,6 +8,6 @@
     and <filename moreinfo="none">secrets.tdb</filename>.
     </para>
 				
-    <para>Default :<command moreinfo="none">private dir = ${prefix}/private</command></para>
+    <para>Default: <command moreinfo="none">private dir = ${prefix}/private</command></para>
 </listitem>
 </samba:parameter>
