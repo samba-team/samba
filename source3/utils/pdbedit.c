@@ -32,7 +32,6 @@
 #include "includes.h"
 
 extern pstring global_myname;
-extern int DEBUGLEVEL;
 
 /*
  * Next two lines needed for SunOS and don't

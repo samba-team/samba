@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* these are kept here to keep the string_combinations function simple */
 static fstring this_user;
 #if !(defined(WITH_PAM) || defined(KRB4_AUTH) || defined(KRB5_AUTH))
@@ -896,6 +894,3 @@ NTSTATUS pass_check(struct passwd *pass, char *user, char *password,
 
 	return NT_STATUS_WRONG_PASSWORD;
 }
-
-
-

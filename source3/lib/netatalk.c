@@ -28,8 +28,6 @@
 
 #ifdef WITH_NETATALK
  
-extern int DEBUGLEVEL;
-
 /*****************
    ntalk_resourcepath: creates the path to the netatalk resource fork for
                         a given file
@@ -154,6 +152,5 @@ int ntalk_chmod(const char *fname, mode_t perms)
   chmod(buf, perms);
   return chmod(fname, perms);
 }
-
 
 #endif /* WITH_NETATALK */

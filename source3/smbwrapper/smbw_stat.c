@@ -21,10 +21,7 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern int smbw_busy;
-
 
 /***************************************************** 
 setup basic info in a stat structure

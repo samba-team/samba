@@ -49,7 +49,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct passdb_ops pdb_ops;
 
 static BOOL check_oem_password(char *user,

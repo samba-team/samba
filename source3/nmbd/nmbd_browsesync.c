@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "smb.h"
 
-extern int DEBUGLEVEL;
 extern struct in_addr ipzero;
 extern pstring global_myname;
 extern fstring global_myworkgroup;

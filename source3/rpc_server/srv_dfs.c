@@ -29,7 +29,6 @@
 
 #define MAX_MSDFS_JUNCTIONS 256
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /**********************************************************************
@@ -176,4 +175,3 @@ BOOL api_netdfs_rpc(pipes_struct *p)
 {
 	return api_rpcTNP(p, "api_netdfs_rpc", api_netdfs_cmds);
 }
-

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
 
 static int shm_id;
@@ -157,4 +155,3 @@ BOOL profile_setup(BOOL rdonly)
 	message_register(MSG_REQ_PROFILELEVEL, reqprofile_message);
 	return True;
 }
-

@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern char **my_netbios_names;
 extern fstring global_myworkgroup;
 

@@ -51,9 +51,6 @@ struct printif	cups_printif =
 		  cups_job_submit,
 		};
 
-extern int DEBUGLEVEL;
-
-
 /*
  * 'cups_passwd_cb()' - The CUPS password callback...
  */

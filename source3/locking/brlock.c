@@ -28,8 +28,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #define ZERO_ZERO 0
 
 /* This contains elements that differentiate locks. The smbpid is a

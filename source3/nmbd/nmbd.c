@@ -27,8 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern pstring debugf;
 pstring servicesf = CONFIGFILE;
 
@@ -878,4 +876,3 @@ static void usage(char *pname)
     x_fclose(dbf);
   return(0);
 } /* main */
-

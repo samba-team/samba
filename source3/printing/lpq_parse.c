@@ -20,8 +20,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
-
 
 static char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 			      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Err"};

@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -29,8 +28,6 @@
 #endif
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 /****************************************************************************
 do a REG Open Policy

@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
 update the encrypted smbpasswd file from the plaintext username and password
 
@@ -105,5 +103,3 @@ NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serve
 
 	return nt_status;
 }
-
-

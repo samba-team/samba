@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  This file wraps all differing system ACL interfaces into a consistent
  one based on the POSIX interface. It also returns the correct errors

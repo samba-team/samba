@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
  Check user is in correct domain if required
 ****************************************************************************/
@@ -257,4 +255,3 @@ BOOL password_ok(char *user, char *password, int pwlen)
 
 	return False;
 }
-

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static NTSTATUS cmd_netlogon_logon_ctrl2(struct cli_state *cli, int argc,
 				       char **argv)
 {

@@ -22,8 +22,6 @@
 #define NO_SYSLOG
 
 #include "includes.h"
-extern int DEBUGLEVEL;
-
 
 /****************************************************************************
 send an ack for an oplock break request
@@ -69,4 +67,3 @@ void cli_oplock_handler(struct cli_state *cli,
 {
 	cli->oplock_handler = handler;
 }
-

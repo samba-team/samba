@@ -26,8 +26,6 @@
 #include "rpc_parse.h"
 #include "nterr.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
 do a SPOOLSS Enum Printer Drivers
 ****************************************************************************/
@@ -818,5 +816,3 @@ uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIV
 	return r_o.status;
 
 }
-
-

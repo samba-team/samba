@@ -52,7 +52,6 @@
  * External Variables...
  */
 
-extern int DEBUGLEVEL;      /* Global debug level.                            */
 extern int case_default;    /* Are conforming 8.3 names all upper or lower?   */
 extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 
@@ -1540,4 +1539,3 @@ void mangle_test_code(void)
 }
 
 #endif /* TEST_MANGLE_CODE */
-

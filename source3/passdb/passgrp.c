@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  * NOTE. All these functions are abstracted into a structure
  * that points to the correct function for the selected database. JRA.
@@ -217,4 +215,3 @@ struct smb_passwd *getsmbgrpuid(uid_t smb_userid,
 {
 	return pwgrp_ops->getsmbgrpuid(smb_userid, grps, num_grps, alss, num_alss);
 }
-

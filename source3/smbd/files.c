@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static int real_max_open_files;
 
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < real_max_open_files))

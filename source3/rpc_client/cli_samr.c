@@ -21,15 +21,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
 #ifdef SYSLOG
 #undef SYSLOG
 #endif
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 /****************************************************************************
 do a SAMR query user groups

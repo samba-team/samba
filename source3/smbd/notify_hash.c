@@ -22,9 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-
 struct change_data {
 	time_t last_check_time; /* time we last checked this entry */
 	time_t modify_time; /* Info from the directory we're monitoring. */ 

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* error code stuff - put together by Merik Karman
    merik@blackadder.dsh.oz.au */
 
@@ -200,4 +198,3 @@ WERROR map_werror_from_unix(int error)
 	NTSTATUS status = map_nt_error_from_unix(error);
 	return ntstatus_to_werror(status);
 }
-

@@ -21,9 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-
 /****************************************************************************
  Read the a hosts.equiv or .rhosts file and check if it
  allows this user from this machine.
@@ -181,6 +178,3 @@ NTSTATUS check_rhosts_security(const auth_usersupplied_info *user_info,
 
 	return nt_status;
 }
-
-
-

@@ -35,9 +35,6 @@
 #include "includes.h"
 #include "smb.h"
 
-/* these live in util.c */
-extern int DEBUGLEVEL;
-
 /***********************************************
  Here we do a set of 'hard coded' checks for bad
  configuration settings.

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern userdom_struct current_user_info;
 extern uint16 global_oplock_port;
 extern BOOL global_client_failed_oplock_break;

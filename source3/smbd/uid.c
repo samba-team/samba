@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* what user is current? */
 extern struct current_user current_user;
 

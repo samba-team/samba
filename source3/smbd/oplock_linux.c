@@ -23,8 +23,6 @@
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
 
-extern int DEBUGLEVEL;
-
 static VOLATILE sig_atomic_t signals_received;
 static VOLATILE sig_atomic_t signals_processed;
 static VOLATILE sig_atomic_t fd_pending; /* the fd of the current pending signal */

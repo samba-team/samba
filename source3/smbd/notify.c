@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static struct cnotify_fns *cnotify;
 
 /****************************************************************************

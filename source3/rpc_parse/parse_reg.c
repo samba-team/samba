@@ -23,11 +23,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
-
-extern int DEBUGLEVEL;
-
 
 /*******************************************************************
  Inits a structure.
@@ -1682,4 +1678,3 @@ BOOL reg_io_r_abort_shutdown(char *desc, REG_R_ABORT_SHUTDOWN * r_s,
 
 	return True;
 }
-

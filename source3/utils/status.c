@@ -44,8 +44,6 @@ struct session_record{
   struct session_record *next;
 } *srecs;
 
-extern int DEBUGLEVEL;
-
 static pstring Ucrit_username = "";                   /* added by OH */
 static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 static int            Ucrit_MaxPid=0;                        /* added by OH */
@@ -680,4 +678,3 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 
 	return (0);
 }
-

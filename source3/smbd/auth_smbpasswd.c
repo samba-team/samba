@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
@@ -319,6 +317,3 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 	pdb_free_sam(&sampass);
 	return nt_status;
 }
-
-
-

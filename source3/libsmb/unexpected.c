@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static TDB_CONTEXT *tdbd = NULL;
 
 /* the key type used in the unexpeceted packet database */

@@ -36,7 +36,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 uint16 global_smbpid;
 
 /* the locking database handle */

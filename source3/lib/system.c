@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
    The idea is that this file will eventually have wrappers around all
    important system calls in samba. The aims are:

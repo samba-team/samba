@@ -26,8 +26,6 @@
 #include "rpc_parse.h"
 #include "rpcclient.h"
 
-extern int DEBUGLEVEL;
-
 #define DEBUG_TESTING
 
 extern FILE* out_hnd;
@@ -810,4 +808,3 @@ BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 le
 
         return True;
 }
-

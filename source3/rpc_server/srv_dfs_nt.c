@@ -27,7 +27,6 @@
 #include "includes.h"
 #include "nterr.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 #define MAX_MSDFS_JUNCTIONS 256

@@ -23,7 +23,6 @@
 #include "includes.h"
 
 extern pstring global_myname;
-extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
 
 /*
@@ -342,5 +341,3 @@ int main (int argc, char **argv)
 
 	return 0;
 }
-
-

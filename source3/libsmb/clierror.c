@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*****************************************************
  RAP error codes - a small start but will be extended.
 *******************************************************/
@@ -267,4 +265,3 @@ BOOL cli_is_dos_error(struct cli_state *cli)
 
         return cli_is_error(cli) && !(flgs2 & FLAGS2_32_BIT_ERROR_CODES);
 }
-

@@ -19,8 +19,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static int gotalarm;
 
 /***************************************************************

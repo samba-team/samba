@@ -21,10 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-extern int DEBUGLEVEL;
-
 #include "includes.h"
-
 
 /*******************************************************************
 dump a prs to a file

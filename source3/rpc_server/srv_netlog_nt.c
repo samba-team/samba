@@ -27,8 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
 extern pstring global_myname;

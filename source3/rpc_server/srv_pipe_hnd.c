@@ -21,14 +21,11 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
-
 
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
-extern int DEBUGLEVEL;
 static pipes_struct *chain_p;
 static int pipes_open;
 

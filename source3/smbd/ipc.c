@@ -28,7 +28,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern int max_send;
 
 extern fstring local_machine;

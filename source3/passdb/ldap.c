@@ -30,8 +30,6 @@
 #define ADD_USER 1
 #define MODIFY_USER 2
 
-extern int DEBUGLEVEL;
-
 /*******************************************************************
  open a connection to the ldap serve.
 ******************************************************************/	

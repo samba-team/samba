@@ -22,7 +22,6 @@
 #include "includes.h"
 
 #if HAVE_KERNEL_OPLOCKS_IRIX
-extern int DEBUGLEVEL;
 
 static int oplock_pipe_write = -1;
 static int oplock_pipe_read = -1;

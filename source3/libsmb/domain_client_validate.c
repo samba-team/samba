@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct in_addr ipzero;
 
 extern pstring global_myname;

@@ -22,8 +22,6 @@
 */
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static pstring cvtbuf;
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
