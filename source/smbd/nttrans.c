@@ -363,14 +363,18 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
 {
   int smb_open_mode = -1;
 
-  switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA) ) {
+  switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
   case FILE_READ_DATA:
     smb_open_mode = DOS_OPEN_RDONLY;
     break;
   case FILE_WRITE_DATA:
+  case FILE_APPEND_DATA:
+  case FILE_WRITE_DATA|FILE_APPEND_DATA:
     smb_open_mode = DOS_OPEN_WRONLY;
     break;
   case FILE_READ_DATA|FILE_WRITE_DATA:
+  case FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA:
+  case FILE_READ_DATA|FILE_APPEND_DATA:
     smb_open_mode = DOS_OPEN_RDWR;
     break;
   }
@@ -391,7 +395,7 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
 
   if (smb_open_mode == -1) {
     if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
-                              FILE_EXECUTE|FILE_READ_ATTRIBUTES|
+                              FILE_EXECUTE|FILE_READ_ATTRIBUTES|FILE_READ_EA|
                               FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS))
       smb_open_mode = DOS_OPEN_RDONLY;
     else {
