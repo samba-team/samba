@@ -84,7 +84,7 @@ BOOL secrets_store(const char *key, void *data, size_t size)
 
 /* delete a secets database entry
  */
-BOOL const secrets_delete(const char *key)
+BOOL secrets_delete(const char *key)
 {
 	TDB_DATA kbuf;
 	secrets_init();
