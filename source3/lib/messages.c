@@ -457,13 +457,13 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 	return True;
 }
 
-/** @} **/
+/**
+ * Lock the messaging tdb based on a string - this is used as a primitive
+ * form of mutex between smbd instances. 
+ *
+ * @param name A string identifying the name of the mutex.
+ */
 
-
-/*
-  lock the messaging tdb based on a string - this is used as a primitive form of mutex
-  between smbd instances. 
-*/
 BOOL message_named_mutex(const char *name)
 {
 	TDB_DATA key;
@@ -476,9 +476,12 @@ BOOL message_named_mutex(const char *name)
 	return (tdb_chainlock(tdb, key) == 0);
 }
 
-/*
-  unlock a named mutex
-*/
+/**
+ * Unlock a named mutex.
+ *
+ * @param name A string identifying the name of the mutex.
+ */
+
 void message_named_mutex_release(const char *name)
 {
 	TDB_DATA key;
@@ -488,3 +491,5 @@ void message_named_mutex_release(const char *name)
 
 	tdb_chainunlock(tdb, key);
 }
+
+/** @} **/
