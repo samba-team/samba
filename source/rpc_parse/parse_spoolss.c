@@ -4922,13 +4922,7 @@ BOOL make_spoolss_driver_info_3(
 /*******************************************************************
  make a BUFFER5 struct from a uint16*
  ******************************************************************/
-
-BOOL make_spoolss_buffer5(
-	TALLOC_CTX *mem_ctx,
-	BUFFER5 *buf5, 
-	uint32 len, 
-	uint16 *src
-)
+BOOL make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src)
 {
 
 	buf5->buf_len = len;

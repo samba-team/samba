@@ -2973,13 +2973,14 @@ static WERROR enum_all_printers_info_1_local(NEW_BUFFER *buffer, uint32 offered,
 *********************************************************************/
 static WERROR enum_all_printers_info_1_name(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	fstring temp;
+	char *s = name;
+	
 	DEBUG(4,("enum_all_printers_info_1_name\n"));	
 	
-	fstrcpy(temp, "\\\\");
-	fstrcat(temp, global_myname);
-
-	if (strequal(name, temp)) {
+	if ((name[0] == '\\') && (name[1] == '\\'))
+		s = name + 2;
+		
+	if (is_myname_or_ipaddr(s)) {
 		return enum_all_printers_info_1(PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
 	}
 	else
@@ -3145,20 +3146,16 @@ static WERROR enumprinters_level2( uint32 flags, fstring servername,
 			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
 {
-	fstring temp;
-	
-	fstrcpy(temp, "\\\\");
-	fstrcat(temp, global_myname);
+	char *s = servername;
 
 	if (flags & PRINTER_ENUM_LOCAL) {
-		if (strequal(servername, temp))
-			return enum_all_printers_info_2(buffer, offered, needed, returned);
-		else
 			return enum_all_printers_info_2(buffer, offered, needed, returned);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
-		if (strequal(servername, temp))
+		if ((servername[0] == '\\') && (servername[1] == '\\'))
+			s = servername + 2;
+		if (is_myname_or_ipaddr(s))
 			return enum_all_printers_info_2(buffer, offered, needed, returned);
 		else
 			return WERR_INVALID_NAME;
@@ -6071,7 +6068,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 #endif
 
 		SAFE_FREE(data);
-		data = NULL;
 
 		param_index=0;
 		biggest_valuesize=0;
@@ -6084,7 +6080,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 			DEBUG(6,("current values: [%d], [%d]\n", biggest_valuesize, biggest_datasize));
 
 			SAFE_FREE(data);
-			data = NULL;
 			param_index++;
 		}
 
@@ -6995,7 +6990,6 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 			type;
 	WERROR 		result;
 	uint8 		*data=NULL;
-	uint32 		i;
 	
 
 	DEBUG(4,("_spoolss_enumprinterdataex\n"));

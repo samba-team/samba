@@ -465,6 +465,7 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist);
 void free_namearray(name_compare_entry *name_array);
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
+BOOL is_myname_or_ipaddr(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
 void out_ascii(FILE *f, unsigned char *buf,int len);
@@ -3560,12 +3561,7 @@ BOOL make_spoolss_driver_info_3(
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
 	DRIVER_INFO_3 *info3
 );
-BOOL make_spoolss_buffer5(
-	TALLOC_CTX *mem_ctx,
-	BUFFER5 *buf5, 
-	uint32 len, 
-	uint16 *src
-);
+BOOL make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
