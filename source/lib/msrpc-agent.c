@@ -236,14 +236,15 @@ void start_msrpc_agent(char *pipe_name)
 		get_agent_sock,
 		process_cli_sock,
 		process_srv_sock,
-		pipe_name,
+		NULL,
 		NULL,
 		0
 	};
-	
+
 	if (fork() == 0)
 	{
 		/* child */
+		va.id = pipe_name;
 		start_agent(&va);
 	}
 }

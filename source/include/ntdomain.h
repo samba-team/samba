@@ -62,7 +62,7 @@
 	    (data)->struct_end != 0xdcdcdcdc) \
 	{ \
 		DEBUG(0,("uninitialised structure (%s, %d)\n", \
-		__FUNCTION__, __LINE__)); \
+		FUNCTION_MACRO, __LINE__)); \
 		sleep(30); \
 	} \
 }

@@ -3134,7 +3134,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		char *e = pwd_buf + sizeof(pwd_buf);
 
 		/* 1st session setup */
-		char pwd_data[34] =
+		uchar pwd_data[34] =
 		{
 			0x60, 0x40, 0x06, 0x06, 0x2b, 0x06, 0x01, 0x05,
 			0x05, 0x02, 0xa0, 0x36, 0x30, 0x34, 0xa0, 0x0e,
@@ -3144,7 +3144,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		};
 		/* 2nd session setup */
 #if 0
-		char pwd_data_2[8] =
+		uchar pwd_data_2[8] =
 		{
 			0xa1, 0x51, 0x30, 0x4f, 0xa2, 0x4d, 0x04, 0x4b
 		};

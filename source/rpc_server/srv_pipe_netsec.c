@@ -54,6 +54,7 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	RPC_HDR_AUTH  auth_info;
 	RPC_AUTH_NETSEC_CHK verf;
 	uchar sign[8];
+	static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
 
 	DEBUG(5,("api_netsec_create_pdu: data_start: %d data_end: %d max_tsize: %d\n",
 	          data_start, data_end, l->hdr_ba.bba.max_tsize));
@@ -133,7 +134,7 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	memset(sign, 0, sizeof(sign));
 	sign[3] = 0x01;
 
-	make_rpc_auth_netsec_chk(&verf, NETSEC_SIGNATURE, NULL, sign, NULL);
+	make_rpc_auth_netsec_chk(&verf, netsec_sig, NULL, sign, NULL);
 	ret = netsec_encode(a, &verf, data, data_len);
 
 	if (ret)

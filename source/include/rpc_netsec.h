@@ -44,7 +44,7 @@ typedef struct rpc_auth_netsec_resp_info
 } RPC_AUTH_NETSEC_RESP;
 
 #define NETSEC_SIGNATURE \
-(char[8]){ 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
+	{ 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
 
 /* attached to the end of encrypted rpc requests and responses */
 /* RPC_AUTH_NETSEC_CHK */

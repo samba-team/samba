@@ -109,6 +109,7 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	RPC_HDR_AUTH  auth_info;
 	RPC_AUTH_NETSEC_CHK verf;
 	uchar sign[8];
+	static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
 
 	a = (netsec_auth_struct *)cli_conn_get_auth_info(con);
 	if (a == NULL)
@@ -160,7 +161,7 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	memset(sign, 0, sizeof(sign));
 	sign[4] = 0x80;
 
-	make_rpc_auth_netsec_chk(&verf, NETSEC_SIGNATURE, NULL, sign, NULL);
+	make_rpc_auth_netsec_chk(&verf, netsec_sig, NULL, sign, NULL);
 
 	ret = netsec_encode(a, &verf, prs_data(&data_t, 0),
 	                              prs_buf_len(&data_t));

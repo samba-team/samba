@@ -111,12 +111,14 @@ checks an RPC_AUTH_NETSEC_CHK structure.
 ********************************************************************/
 BOOL rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk)
 {
+	static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
+
 	if (chk == NULL)
 	{
 		return False;
 	}
 
-	if (memcmp(chk, NETSEC_SIGNATURE, 8) != 0)
+	if (memcmp(chk, netsec_sig, 8) != 0)
 	{
 		return False;
 	}
