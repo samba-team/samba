@@ -34,8 +34,8 @@
 #define SHMEM_SIZE (1024*MAX_OPEN_FILES)
 #endif
 
-/* the max number of connections that the smbstatus program will show */
-#define MAXSTATUS 1000
+/* the max number of simultanous connections to the server by all clients */
+#define MAXSTATUS 100000
 
 /* max number of directories open at once */
 /* note that with the new directory code this no longer requires a
