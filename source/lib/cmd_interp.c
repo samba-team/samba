@@ -1132,6 +1132,14 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 
 	}
 
+	/* Internationialisation fixes - convert username and password to
+	   dos codepage. */
+
+	codepage_initialise(lp_client_code_page());
+
+	unix_to_dos(usr.ntc.user_name, True);
+	unix_to_dos(usr.ntc.domain, True);
+
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_INTER))
 	{
 		load_interfaces();
@@ -1334,8 +1342,6 @@ int command_main(int argc, char *argv[])
 	cmd_set_options &= ~CMD_NOPW;
 	cmd_set_options &= ~CMD_USER;
 	cmd_set_options &= ~CMD_PASS;
-
-	codepage_initialise(lp_client_code_page());
 
 	status = cmd_set(&cli_info, argc, argv);
 

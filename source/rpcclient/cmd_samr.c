@@ -1075,6 +1075,17 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		acb_info = ACB_WSTRUST;
 	}
 
+	/* Now this is weird.  The arguments have already been converted to
+	   dos codepage from the CNV_INPUT() statement in the process()
+	   function in cmd_interp.c  We need to convert them back to the
+	   unix code page as they are turned in to "fake unicode" by the
+	   TNG rpc code by being widened.  What should really happen is the
+	   various parameters are converted from dos codepage directly to
+	   unicode but that isn't the case at the moment. */
+
+	dos_to_unix(acct_name, True);
+	dos_to_unix(name, True);
+
 	while ((opt = getopt_long(argc, argv, "isj:p:w:L", NULL, NULL)) != EOF)
 	{
 		switch (opt)
@@ -1164,6 +1175,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		struct in_addr srv_ip;
 
 		fstrcpy(domain, join_dom_name);
+
 		if (!resolve_name(domain, &srv_ip, 0x1b) ||
 		    !lookup_pdc_name(global_myname, domain, &srv_ip, 
 				     srv_name))
