@@ -331,8 +331,17 @@ change (krb5_auth_context auth_context,
 	    free (ent.modified_by);
 	}
 	ent.modified_by = e;
-	if (ent.pw_end)
-	    *ent.pw_end = e->time + 3600; /* XXX - Change here! */
+	if (ent.pw_end){
+	    int t = krb5_config_get_time(context->cf, 
+					 "libdefaults", 
+					 "pw_expiration", NULL);
+	    if(t > 0)
+		*ent.pw_end = e->time + t;
+	    else{
+		free(ent.pw_end);
+		ent.pw_end = NULL;
+	    }
+	}
 	ret = db->store (context, db, 1, &ent);
     }
     krb5_data_free (&salt);
