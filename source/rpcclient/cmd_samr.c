@@ -863,7 +863,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, max_entries=250, num_entries, i;
+	uint32 start_idx=0, max_entries=250, max_size = 0xffff, num_entries, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 info_level = 1;
 	SAM_DISPINFO_CTR ctr;
@@ -872,9 +872,11 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	SAM_DISPINFO_3 info3;
 	SAM_DISPINFO_4 info4;
 	SAM_DISPINFO_5 info5;
+	int loop_count = 0;
+	BOOL got_params = False; /* Use get_query_dispinfo_params() or not? */
 
 	if (argc > 5) {
-		printf("Usage: %s [info level] [start index] [max entries] [access mask]\n", argv[0]);
+		printf("Usage: %s [info level] [start index] [max entries] [max size] [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
@@ -884,11 +886,18 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	if (argc >= 3)
                 sscanf(argv[2], "%i", &start_idx);
         
-	if (argc >= 4)
+	if (argc >= 4) {
                 sscanf(argv[3], "%i", &max_entries);
+		got_params = True;
+	}
 	
-	if (argc >= 5)
-                sscanf(argv[4], "%x", &access_mask);
+	if (argc >= 5) {
+                sscanf(argv[4], "%i", &max_size);
+		got_params = True;
+	}
+	
+	if (argc >= 6)
+                sscanf(argv[5], "%x", &access_mask);
 
 	/* Get sam policy handle */
 
@@ -938,9 +947,16 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 
 	while(1) {
 
+		if (!got_params)
+			get_query_dispinfo_params(
+				loop_count, &max_entries, &max_size);
+		
 		result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
 						 &start_idx, info_level,
-						 &num_entries, max_entries, &ctr);
+						 &num_entries, max_entries, 
+						 max_size, &ctr);
+
+		loop_count++;
 
 		if (!NT_STATUS_IS_OK(result) && !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) 
 			break;
