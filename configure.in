@@ -1049,7 +1049,6 @@ AC_OUTPUT(Makefile 			\
 	lib/kdfs/Makefile		\
 	lib/krb5/Makefile		\
 	lib/otp/Makefile		\
-	lib/roken/Makefile		\
 	lib/sl/Makefile			\
 	lib/vers/Makefile		\
 	lib/kdfs/Makefile		\
@@ -1082,6 +1081,8 @@ AC_OUTPUT(Makefile 			\
 	appl/dceutils/Makefile		\
 	doc/Makefile			\
 )
+
+AC_CONFIG_SUBDIRS(lib/roken)
 
 dnl
 dnl This is the release version name-number[beta]
