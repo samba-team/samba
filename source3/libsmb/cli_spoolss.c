@@ -460,7 +460,7 @@ NTSTATUS cli_spoolss_enum_printers(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
 
 	return result;	
 }
@@ -535,7 +535,7 @@ NTSTATUS cli_spoolss_enum_ports(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
 
 	return result;	
 }
@@ -605,7 +605,7 @@ NTSTATUS cli_spoolss_getprinter(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
 
 	return result;	
 }
@@ -735,7 +735,7 @@ NTSTATUS cli_spoolss_getprinterdriver (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
 
 	return result;	
 }
@@ -817,7 +817,7 @@ NTSTATUS cli_spoolss_enumprinterdrivers (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
 
 	return result;	
 }
@@ -890,7 +890,7 @@ NTSTATUS cli_spoolss_getprinterdriverdir (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
 
 	return result;	
 }
@@ -1124,7 +1124,7 @@ NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 		result = werror_to_ntstatus(r.status);
 
 	} while (NT_STATUS_V(result) == 
-		 NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+		 NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
 
  done:
 	prs_mem_free(&qbuf);
