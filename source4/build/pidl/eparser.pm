@@ -627,7 +627,7 @@ sub RewriteC($$$)
 
 	# Fix some internal variable declarations
 
-        s/uint(16|32) _level;/uint$1_t _level;/smg;
+        s/(u?)int(8|16|32) _level;/$1int$2_t _level;/smg;
         s/ndr_pull_([^\(]*)\(ndr,\ tree,\ hf_level,\ &_level\);
             /ndr_pull_$1(ndr, tree, hf_level_$1, &_level);/smgx;
 				
