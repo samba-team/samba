@@ -494,7 +494,7 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
  Create a UNIX user on demand.
 ****************************************************************************/
 
-int smb_create_user(char *unix_user)
+int smb_create_user(char *unix_user, char *homedir)
 {
   pstring add_script;
   int ret;
@@ -502,6 +502,8 @@ int smb_create_user(char *unix_user)
   pstrcpy(add_script, lp_adduser_script());
   if (! *add_script) return -1;
   pstring_sub(add_script, "%u", unix_user);
+  if (homedir)
+    pstring_sub(add_script, "%H", homedir);
   ret = smbrun(add_script,NULL,False);
   DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
   return ret;
@@ -565,6 +567,8 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
                             smb_apasswd, smb_apasslen, 
                             smb_ntpasswd, smb_ntpasslen);
   if(ret) {
+    struct passwd *pwd;
+
     /*
      * User validated ok against Domain controller.
      * If the admin wants us to try and create a UNIX
@@ -573,8 +577,21 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
      * level security as we never know if it was a failure
      * due to a bad password, or the user really doesn't exist.
      */
-    if(lp_adduser_script() && !smb_getpwnam(unix_user,True)) {
-      smb_create_user(unix_user);
+    if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True))) {
+      smb_create_user(unix_user, NULL);
+    }
+
+    if(lp_adduser_script() && pwd) {
+      SMB_STRUCT_STAT st;
+
+      /*
+       * Also call smb_create_user if the users home directory
+       * doesn't exist. Used with winbindd to allow the script to
+       * create the home directory for a user mapped with winbindd.
+       */
+
+      if (pwd->pw_shell && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
+        smb_create_user(unix_user, pwd->pw_dir);
     }
   }
 
@@ -591,6 +608,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
 {
   BOOL ret = False;
   BOOL user_exists = True;
+  struct passwd *pwd;
 
   if(lp_security() != SEC_DOMAIN)
     return False;
@@ -609,9 +627,23 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
      * If the admin wants us to try and create a UNIX
      * user on the fly, do so.
      */
-    if(user_exists && lp_adduser_script() && !smb_getpwnam(unix_user,True)) {
-      smb_create_user(unix_user);
+    if(user_exists && lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True))) {
+      smb_create_user(unix_user, NULL);
     }
+
+    if(lp_adduser_script() && pwd) {
+      SMB_STRUCT_STAT st;
+
+      /*
+       * Also call smb_create_user if the users home directory
+       * doesn't exist. Used with winbindd to allow the script to
+       * create the home directory for a user mapped with winbindd.
+       */
+
+      if (pwd->pw_shell && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
+        smb_create_user(unix_user, pwd->pw_dir);
+    }
+
   } else {
     /*
      * User failed to validate ok against Domain controller.
