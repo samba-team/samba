@@ -129,9 +129,6 @@ client_setup(krb5_context *context, int *argc, char **argv)
 static int
 proto (int sock, const char *hostname, const char *service)
 {
-    struct sockaddr_in remote, local;
-    int addrlen;
-    krb5_address remote_addr, local_addr;
     krb5_auth_context auth_context;
     krb5_error_code status;
     krb5_principal server;
@@ -146,38 +143,15 @@ proto (int sock, const char *hostname, const char *service)
     krb5_principal  principal;
     char ret_string[10];
 
-    addrlen = sizeof(local);
-    if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
-	|| addrlen != sizeof(local)) {
-	warn ("getsockname(%s)", hostname);
-	return 1;
-    }
-
-    addrlen = sizeof(remote);
-    if (getpeername (sock, (struct sockaddr *)&remote, &addrlen) < 0
-	|| addrlen != sizeof(remote)) {
-	warn ("getpeername(%s)", hostname);
-	return 1;
-    }
-
     status = krb5_auth_con_init (context, &auth_context);
     if (status) {
 	krb5_warn (context, status, "krb5_auth_con_init");
 	return 1;
     }
 
-    local_addr.addr_type      = AF_INET;
-    local_addr.address.length = sizeof(local.sin_addr);
-    local_addr.address.data   = &local.sin_addr;
-
-    remote_addr.addr_type      = AF_INET;
-    remote_addr.address.length = sizeof(remote.sin_addr);
-    remote_addr.address.data   = &remote.sin_addr;
-
-    status = krb5_auth_con_setaddrs (context,
-				     auth_context,
-				     &local_addr,
-				     &remote_addr);
+    status = krb5_auth_con_setaddrs_from_fd (context,
+					     auth_context,
+					     &sock);
     if (status) {
 	krb5_warn (context, status, "krb5_auth_con_setaddr");
 	return 1;
@@ -329,32 +303,35 @@ proto (int sock, const char *hostname, const char *service)
 static int
 doit (const char *hostname, int port, const char *service)
 {
-    struct in_addr **h;
-    struct hostent *hostent;
+    struct hostent *hostent = NULL;
+    char **h;
+    int error;
+    int af;
 
-    hostent = roken_gethostbyname (hostname);
-    if (hostent == NULL) {
-	warn ("gethostbyname '%s' failed: %s",
-	      hostname,
-	      hstrerror(h_errno));
-	return 1;
-    }
+#ifdef HAVE_IPV6    
+    if (hostent == NULL)
+	hostent = getipnodebyname (hostname, AF_INET6, 0, &error);
+#endif
+    if (hostent == NULL)
+	hostent = getipnodebyname (hostname, AF_INET, 0, &error);
 
-    for (h = (struct in_addr **)hostent->h_addr_list;
-	*h != NULL;
-	 ++h) {
-	struct sockaddr_in addr;
+    if (hostent == NULL)
+	errx(1, "gethostbyname '%s' failed: %s", hostname, hstrerror(error));
+
+    af = hostent->h_addrtype;
+
+    for (h = hostent->h_addr_list; *h != NULL; ++h) {
+	struct sockaddr_storage sa_ss;
+	struct sockaddr *sa = (struct sockaddr *)&sa_ss;
 	int s;
 
-	memset (&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port   = port;
-	addr.sin_addr   = **h;
+	sa->sa_family = af;
+	socket_set_address_and_port (sa, *h, port);
 
-	s = socket (AF_INET, SOCK_STREAM, 0);
+	s = socket (af, SOCK_STREAM, 0);
 	if (s < 0)
 	    err (1, "socket");
-	if (connect (s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+	if (connect (s, sa, socket_sockaddr_size(sa)) < 0) {
 	    warn ("connect(%s)", hostname);
 	    close (s);
 	    continue;

@@ -130,9 +130,6 @@ syslog_and_cont (const char *m, ...)
 static int
 proto (int sock, const char *service)
 {
-    struct sockaddr_in remote, local;
-    int addrlen;
-    krb5_address remote_addr, local_addr;
     krb5_auth_context auth_context;
     krb5_error_code status;
     krb5_principal server;
@@ -150,33 +147,14 @@ proto (int sock, const char *service)
     char ccname[MAXPATHLEN];
     struct passwd *pwd;
 
-    addrlen = sizeof(local);
-    if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
-	|| addrlen != sizeof(local))
-	syslog_and_die("getsockname: %s",strerror(errno));
-
-    addrlen = sizeof(remote);
-    if (getpeername (sock, (struct sockaddr *)&remote, &addrlen) < 0
-	|| addrlen != sizeof(remote))
-	syslog_and_die("getpeername: %s",strerror(errno));
-
     status = krb5_auth_con_init (context, &auth_context);
     if (status)
 	syslog_and_die("krb5_auth_con_init: %s",
 	      krb5_get_err_text(context, status));
 
-    local_addr.addr_type = AF_INET;
-    local_addr.address.length = sizeof(local.sin_addr);
-    local_addr.address.data   = &local.sin_addr;
-
-    remote_addr.addr_type = AF_INET;
-    remote_addr.address.length = sizeof(remote.sin_addr);
-    remote_addr.address.data   = &remote.sin_addr;
-
-    status = krb5_auth_con_setaddrs (context,
-				     auth_context,
-				     &local_addr,
-				     &remote_addr);
+    status = krb5_auth_con_setaddrs_from_fd (context,
+					     auth_context,
+					     &sock);
     if (status)
 	syslog_and_die("krb5_auth_con_setaddr: %s",
 	      krb5_get_err_text(context, status));
