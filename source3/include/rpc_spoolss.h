@@ -889,11 +889,34 @@ typedef struct driver_info_3
 }
 DRIVER_INFO_3;
 
+typedef struct driver_info_6
+{
+	uint32 version;
+	UNISTR name;
+	UNISTR architecture;
+	UNISTR driverpath;
+	UNISTR datafile;
+	UNISTR configfile;
+	UNISTR helpfile;
+	uint16 *dependentfiles;
+	UNISTR monitorname;
+	UNISTR defaultdatatype;
+	uint16* previousdrivernames;
+	NTTIME driver_date;
+	uint32 driver_version;
+	UNISTR mfgname;
+	UNISTR oem_url;
+	UNISTR hardware_id;
+	UNISTR provider;
+}
+DRIVER_INFO_6;
+
 typedef struct driver_info_info
 {
 	DRIVER_INFO_1 *info1;
 	DRIVER_INFO_2 *info2;
 	DRIVER_INFO_3 *info3;
+	DRIVER_INFO_6 *info6;
 }
 PRINTER_DRIVER_CTR;
 

@@ -306,7 +306,6 @@ typedef struct _cli_auth_fns cli_auth_fns;
 struct user_creds;
 struct cli_connection {
 
-        uint32                  num_connections;
         char                    *srv_name;
         char                    *pipe_name;
         struct user_creds       usr_creds;

@@ -772,6 +772,41 @@ BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name
 	
 	return True;
 }
+
+/*******************************************************************
+ free dynamically allocated members
+ ********************************************************************/
+void free_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u)
+{
+	switch (q_u->info.level)
+	{
+	case 1:
+		if (q_u->info.info_1 != NULL)
+		{
+			free(q_u->info.info_1);
+			q_u->info.info_1 = NULL;
+		}
+			break;
+	case 2:
+		if (q_u->info.info_2 != NULL)
+		{
+			free(q_u->info.info_2);
+			q_u->info.info_2 = NULL;
+		}
+		break;
+	case 3:
+		if (q_u->info.info_3 != NULL)
+		{
+			free(q_u->info.info_3);
+			q_u->info.info_3 = NULL;
+		}
+		break;
+	}
+
+	return;
+	
+}
+	
 /*******************************************************************
 create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
 *******************************************************************/
@@ -898,8 +933,7 @@ BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_
  ********************************************************************/
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
                                 const POLICY_HND *handle,
-                                const UNISTR2 *valuename,
-                                uint32 size)
+                                UNISTR2 *valuename, uint32 size)
 {
         if (q_u == NULL) return False;
 
@@ -4243,7 +4277,143 @@ void free_spool_printer_driver_info_level(SPOOL_PRINTER_DRIVER_INFO_LEVEL *il)
 }
 
 /*******************************************************************
-********************************************************************/  
+ init a SPOOL_Q_ADDPRINTERDRIVER struct
+ ******************************************************************/
+BOOL make_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, 
+				     const char* srv_name, uint32 level, 
+				     PRINTER_DRIVER_CTR *info)
+{
+	DEBUG(5,("make_spoolss_q_addprinterdriver\n"));
+	
+	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
+	init_unistr2(&q_u->server_name, srv_name, strlen(srv_name)+1);
+	
+	q_u->level = level;
+	
+	q_u->info.level = level;
+	q_u->info.ptr = (info!=NULL)?1:0;
+	switch (level)
+	{
+		/* info level 3 is supported by Windows 95/98, 
+		   WinNT and Win2k */
+		case 3 :
+			q_u->info.info_3=(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3*)
+				          malloc(sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
+			make_spool_driver_info_3(q_u->info.info_3, info->info3);
+			break;
+		
+		/* info level 6 is supported by WinME and Win2k */
+		case 6:
+			/* WRITEME!!  will add later  --jerry */
+			break;
+		default:
+			DEBUG(0,("make_spoolss_q_addprinterdriver: Unknown \
+info level [%d]\n", level));
+			break;
+	
+	}
+	
+	return True;
+}
+
+BOOL make_spool_driver_info_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+			      DRIVER_INFO_3 *info3)
+{
+	uint32		len = 0;
+	uint16		*ptr = info3->dependentfiles;
+	BOOL		done = False;
+	BOOL		null_char = False;
+
+	spool_drv_info->cversion	= info3->version;
+	spool_drv_info->name_ptr	= (info3->name.buffer!=NULL)?1:0;
+	spool_drv_info->environment_ptr	= (info3->architecture.buffer!=NULL)?1:0;
+	spool_drv_info->driverpath_ptr	= (info3->driverpath.buffer!=NULL)?1:0;
+	spool_drv_info->datafile_ptr	= (info3->datafile.buffer!=NULL)?1:0;
+	spool_drv_info->configfile_ptr	= (info3->configfile.buffer!=NULL)?1:0;
+	spool_drv_info->helpfile_ptr	= (info3->helpfile.buffer!=NULL)?1:0;
+	spool_drv_info->monitorname_ptr	= (info3->monitorname.buffer!=NULL)?1:0;
+	spool_drv_info->defaultdatatype_ptr	= (info3->defaultdatatype.buffer!=NULL)?1:0;
+
+	init_unistr2_from_unistr(&spool_drv_info->name, &info3->name);
+	init_unistr2_from_unistr(&spool_drv_info->environment, &info3->architecture);
+	init_unistr2_from_unistr(&spool_drv_info->driverpath, &info3->driverpath);
+	init_unistr2_from_unistr(&spool_drv_info->datafile, &info3->datafile);
+	init_unistr2_from_unistr(&spool_drv_info->configfile, &info3->configfile);
+	init_unistr2_from_unistr(&spool_drv_info->helpfile, &info3->helpfile);
+	init_unistr2_from_unistr(&spool_drv_info->monitorname, &info3->monitorname);
+	init_unistr2_from_unistr(&spool_drv_info->defaultdatatype, &info3->defaultdatatype);
+
+	while (!done)
+	{
+		switch (*ptr)
+		{
+			case 0:
+				/* the null_char BOOL is used to help locate
+				   two '\0's back to back */
+				if (null_char)
+					done = True;
+				else
+					null_char = True;
+				break;
+					
+			default:
+				null_char = False;
+				;;
+				break;				
+		}
+		len++;
+		ptr++;
+	}
+	spool_drv_info->dependentfiles_ptr = (info3->dependentfiles!=NULL)?1:0;
+	spool_drv_info->dependentfilessize = len;
+	make_spool_buffer5(&spool_drv_info->dependentfiles, len, info3->dependentfiles);
+	
+	return True;
+}	     
+
+void free_spool_driver_info_3 (SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *info)
+{
+	if (info != NULL)
+	{
+		free_spool_buffer5(&info->dependentfiles);
+	}
+	
+	return;
+}
+
+/*******************************************************************
+ make a BUFFER5 struct from a uint16*
+ ******************************************************************/
+BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src)
+{
+
+	buf5->buf_len = len;
+	if((buf5->buffer=(uint16*)malloc(sizeof(uint16)*len)) == NULL)
+	{
+		DEBUG(0,("make_spool_buffer5: Unable to malloc memory for buffer!\n"));
+		return False;
+	}
+	
+	memcpy(buf5->buffer, src, sizeof(uint16)*len);
+
+	return True;
+}
+
+
+void free_spool_buffer5(BUFFER5 *buf)
+{
+	if (buf != NULL)
+	{
+		free(buf->buffer);
+		buf->buffer = NULL;
+	}
+	
+	return;
+}
+
+/*******************************************************************
+ fill in the prs_struct for a ADDPRINTERDRIVER request PDU
+ ********************************************************************/  
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_addprinterdriver");
@@ -4854,6 +5024,7 @@ BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_st
 
 	return True;
 }
+
 
 /*******************************************************************
 ********************************************************************/  

@@ -181,7 +181,7 @@ void msrpc_sockopt(struct msrpc_state *msrpc, char *options)
 
 
 static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
-				const struct user_creds *usr)
+			       struct user_creds *usr)
 {
 	struct msrpc_state msrpc_redir;
 
@@ -247,7 +247,7 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 
 static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 				const char* pipe_name,
-				const struct user_creds *usr)
+				struct user_creds *usr)
 {
 	int sock;
 	fstring path;

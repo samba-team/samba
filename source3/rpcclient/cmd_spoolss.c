@@ -37,6 +37,49 @@ extern FILE* out_hnd;
 extern struct user_creds *usr_creds;
 
 /****************************************************************************
+function to do the mapping between the long architecture name and
+the short one.
+****************************************************************************/
+static BOOL get_short_archi(char *short_archi, char *long_archi)
+{
+        struct table {
+                char *long_archi;
+                char *short_archi;
+        };
+
+        struct table archi_table[]=
+        {
+                {"Windows 4.0",          "WIN40"    },
+                {"Windows NT x86",       "W32X86"   },
+                {"Windows NT R4000",     "W32MIPS"  },
+                {"Windows NT Alpha_AXP", "W32ALPHA" },
+                {"Windows NT PowerPC",   "W32PPC"   },
+                {NULL,                   ""         }
+        };
+
+        int i=-1;
+
+        DEBUG(107,("Getting architecture dependant directory\n"));
+        do {
+                i++;
+        } while ( (archi_table[i].long_archi!=NULL ) &&
+                  StrCaseCmp(long_archi, archi_table[i].long_archi) );
+
+        if (archi_table[i].long_archi==NULL) {
+                DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
+                return FALSE;
+        }
+
+        StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
+
+        DEBUGADD(108,("index: [%d]\n", i));
+        DEBUGADD(108,("long architecture: [%s]\n", long_archi));
+        DEBUGADD(108,("short architecture: [%s]\n", short_archi));
+
+        return TRUE;
+}
+
+/****************************************************************************
 nt spoolss query
 ****************************************************************************/
 uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[])
@@ -520,7 +563,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	/* check (and copy) the command line arguments */
         if (argc < 3) {
                 report(out_hnd, "spooladdprinterex <name> <driver> <port>\n");
-                return NT_STATUS_NOPROBLEMO;
+                return NT_STATUS_INVALID_PARAMETER;
         }
 	else
 	{
@@ -559,7 +602,6 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 			report (out_hnd, "cmd_spoolss_addprinterex: FAILED to enumerate ports\n");
 			return NT_STATUS_NOPROBLEMO;
 		}
-					
 	}
 	
 	/*
@@ -584,7 +626,6 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 		return NT_STATUS_NOPROBLEMO;
 	}
 	
-	 
 	/*
 	 * Need to build the PRINTER_INFO_2 struct here.
 	 * I think it would be better only to deal with a PRINTER_INFO_2
@@ -641,6 +682,196 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 ********************************************************************************/
 uint32 cmd_spoolss_addprinterdriver(struct client_info *info, int argc, char *argv[])
 {
+	PRINTER_DRIVER_CTR	driver_info;
+	DRIVER_INFO_3		info3;
+	fstring			arch;
+        fstring 		srv_name;
+	uint32			result = NT_STATUS_NO_PROBLEMO;
+	
+	/* parse the command arguements */
+	if (argc < 2)
+	{
+		report (out_hnd, "spooladdprinterdriver <arch>\\\n");
+		report (out_hnd, "\t<Long Printer Name>:<Driver File Name>:<Data File Name>:\\\n");
+    		report (out_hnd, "\t<Config File Name>:<Help File Name>:<Language Monitor Name>:\\\n");
+	    	report (out_hnd, "\t<Default Data Type>:<Comma Separated list of Files>\n");
 
-        return NT_STATUS_NOPROBLEMO;
+                return NT_STATUS_INVALID_PARAMETER;
+        }
+	else
+	{
+		ZERO_STRUCT(info3);
+		
+		/* get the enviorment for the driver */
+		if (!get_short_archi(arch, argv[1]))
+		{
+			report (out_hnd, "Unknown architechture [%s]\n", argv[1]);
+			return NT_STATUS_INVALID_PARAMETER;
+			
+		}
+		else
+		{
+			set_drv_info_3_env(&info3, arch);
+		}
+		
+		/* fill in the other struct members */
+		if (!init_drv_info_3_members(&info3, argv[2]))
+		{
+			report (out_hnd, "Invalid parameter list.\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+	
+	/* get the server name */
+        fstrcpy(srv_name, "\\\\");
+        fstrcat(srv_name, info->dest_host);
+        strupper(srv_name);
+	
+	/* call AddPrinterDriver() woth an info level 3 */
+	driver_info.info3 = &info3;
+	if ((result=spoolss_addprinterdriver(srv_name, 3, &driver_info)) != NT_STATUS_NO_PROBLEMO)
+	{
+		report( out_hnd, "spoolss_addprinterdriver: Add Printer failed [%d]\n",
+			result);
+	}
+	
+	free_drv_info_3(&info3);
+	
+        return result;
 }	
+
+/*******************************************************************************
+ set the version and environment fields of a DRIVER_INFO_3 struct
+ ******************************************************************************/
+void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
+{
+	if (strcmp(arch, "WIN40") == 0)
+	{
+		info->version = 0;
+		init_unistr(&info->architecture, "Windows 4.0");
+	}
+	else if (strcmp(arch, "W32X86") == 0)
+	{
+		info->version = 2;
+		init_unistr(&info->architecture, "Windows NT x86");
+	}
+	else if (strcmp(arch, "W32MIPS") == 0)
+	{
+		info->version = 2;
+		init_unistr(&info->architecture, "Windows NT R4000");
+	}
+	else if (strcmp(arch, "W32ALPHA") == 0)
+	{
+		info->version = 2;
+		init_unistr(&info->architecture, "Windows NT Alpha_AXP");
+	}
+	else if (strcmp(arch, "W32PPC") == 0)
+	{
+		info->version = 2;
+		init_unistr(&info->architecture, "Windows NT PowerPC");
+	}
+	else
+	{
+		DEBUG(0, ("set_drv_info_3_env: Unknown arch [%s]\n", arch));
+	}
+	
+	return;
+}
+
+/********************************************************************************
+ fill in the members of a DRIVER_INFO_3 struct using a character 
+ string in the form of
+ 	 <Long Printer Name>:<Driver File Name>:<Data File Name>:\
+	     <Config File Name>:<Help File Name>:<Language Monitor Name>:\
+	     <Default Data Type>:<Comma Separated list of Files> 
+ *******************************************************************************/
+BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args)
+{
+	char	*str, *str2;
+	uint32	len, i;
+	
+	/* <Long Printer Name> */
+	if ((str = strtok(args, ":")) == NULL)
+		return False;
+	else
+		init_unistr(&info->name, str);
+
+	/* <Driver File Name> */
+	if ((str = strtok(NULL, ":")) == NULL)
+		return False;
+	else
+		init_unistr(&info->driverpath, str);
+
+	/* <Data File Name > */
+	if ((str = strtok(NULL, ":")) == NULL)
+		return False;
+	else
+		init_unistr(&info->datafile, str);
+
+	/* <Config File Name> */
+	if ((str = strtok(NULL, ":")) == NULL)
+		return False;
+	else
+		init_unistr(&info->configfile, str);
+
+	/* <Help File Name> */
+	if ((str = strtok(NULL, ":")) == NULL)
+		return False;
+	else
+		init_unistr(&info->helpfile, str);
+
+	/* <Language Monitor Name> */
+	if ((str = strtok(NULL, ":")) == NULL)
+		return False;
+	else
+		init_unistr(&info->monitorname, str);
+
+	/* <Default Data Type> */
+	if ((str = strtok(NULL, ":")) == NULL)
+		return False;
+	else
+		init_unistr(&info->defaultdatatype, str);
+
+	/* <Comma Separated List of Dependent Files> */
+	str = strtok(NULL, ":");	/* get the list of dependent files */
+	str2 = str;			/* save the beginning of the string */
+	str = strtok(str, ",");		/* begin to strip out each filename */
+	len = 0;
+	while (str != NULL)
+	{
+		/* keep a cumlative count of the str lengths */
+		len += strlen(str)+1;
+		str = strtok(NULL, ",");
+	}
+
+	/* allocate the space; add one extra slot for a terminating NULL.
+	   Each filename is NULL terminated and the end contains a double
+	   NULL */
+	if ((info->dependentfiles=(uint16*)malloc((len+1)*sizeof(uint16))) == NULL)
+	{
+		DEBUG(0,("init_drv_info_3_members: Unable to malloc memory for dependenfiles\n"));
+		return False;
+	}
+	for (i=0; i<len; i++)
+	{
+		info->dependentfiles[i] = (uint16)str2[i];
+		info->dependentfiles[i] = info->dependentfiles[i] << 8;
+	}
+	info->dependentfiles[len+1] = '\0';
+
+	return True;
+}
+
+/*****************************************************************************
+ free any dynamically allocated members
+ ****************************************************************************/
+void free_drv_info_3 (DRIVER_INFO_3 *info)
+{
+	if (info->dependentfiles != NULL)
+	{
+		free(info->dependentfiles);
+		info->dependentfiles = NULL;
+	}
+	
+	return;
+}
