@@ -740,6 +740,7 @@ AC_OUTPUT(Makefile 			\
 	appl/popper/Makefile		\
 	appl/push/Makefile		\
 	appl/rsh/Makefile		\
+	appl/su/Makefile		\
 	appl/telnet/Makefile		\
 	appl/telnet/libtelnet/Makefile	\
 	appl/telnet/telnet/Makefile	\
