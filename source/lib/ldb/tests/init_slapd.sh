@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export PATH=/home/tridge/samba/openldap/prefix/sbin:/home/tridge/samba/openldap/prefix/bin:/home/tridge/samba/openldap/prefix/libexec:$PATH
+export PATH=/usr/sbin:$PATH
 
 rm -rf tests/tmp/db
 mkdir -p tests/tmp/db
