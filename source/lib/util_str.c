@@ -737,11 +737,6 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 	}
 }
 
-void fstring_sub(char *s,const char *pattern,const char *insert)
-{
-	string_sub(s, pattern, insert, sizeof(fstring));
-}
-
 void pstring_sub(char *s,const char *pattern,const char *insert)
 {
 	string_sub(s, pattern, insert, sizeof(pstring));
@@ -852,71 +847,6 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 		s = p + li;
 		ls += (li-lp);
 	}
-}
-
-/**
- Similar to all_string_sub but for unicode strings.
- Return a new allocated unicode string.
- similar to string_sub() but allows for any character to be substituted.
- Use with caution!
-**/
-
-smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
-				const smb_ucs2_t *insert)
-{
-	smb_ucs2_t *r, *rp;
-	const smb_ucs2_t *sp;
-	size_t	lr, lp, li, lt;
-
-	if (!insert || !pattern || !*pattern || !s)
-		return NULL;
-
-	lt = (size_t)strlen_w(s);
-	lp = (size_t)strlen_w(pattern);
-	li = (size_t)strlen_w(insert);
-
-	if (li > lp) {
-		const smb_ucs2_t *st = s;
-		int ld = li - lp;
-		while ((sp = strstr_w(st, pattern))) {
-			st = sp + lp;
-			lt += ld;
-		}
-	}
-
-	r = rp = (smb_ucs2_t *)malloc((lt + 1)*(sizeof(smb_ucs2_t)));
-	if (!r) {
-		DEBUG(0, ("all_string_sub_w: out of memory!\n"));
-		return NULL;
-	}
-
-	while ((sp = strstr_w(s, pattern))) {
-		memcpy(rp, s, (sp - s));
-		rp += ((sp - s) / sizeof(smb_ucs2_t));
-		memcpy(rp, insert, (li * sizeof(smb_ucs2_t)));
-		s = sp + lp;
-		rp += li;
-	}
-	lr = ((rp - r) / sizeof(smb_ucs2_t));
-	if (lr < lt) {
-		memcpy(rp, s, ((lt - lr) * sizeof(smb_ucs2_t)));
-		rp += (lt - lr);
-	}
-	*rp = 0;
-
-	return r;
-}
-
-smb_ucs2_t *all_string_sub_wa(smb_ucs2_t *s, const char *pattern,
-					     const char *insert)
-{
-	wpstring p, i;
-
-	if (!insert || !pattern || !s)
-		return NULL;
-	push_ucs2(NULL, p, pattern, sizeof(wpstring) - 1, STR_TERMINATE);
-	push_ucs2(NULL, i, insert, sizeof(wpstring) - 1, STR_TERMINATE);
-	return all_string_sub_w(s, p, i);
 }
 
 /**
@@ -1158,26 +1088,10 @@ char *binary_string(char *buf, int len)
 	return ret;
 }
 
-/**
- Just a typesafety wrapper for snprintf into a fstring.
-**/
-
- int fstr_sprintf(fstring s, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = vsnprintf(s, FSTRING_LEN, fmt, ap);
-	va_end(ap);
-	return ret;
-}
-
 #ifndef HAVE_STRNDUP
 /**
  Some platforms don't have strndup.
 **/
-
  char *strndup(const char *s, size_t n)
 {
 	char *ret;
@@ -1197,7 +1111,6 @@ char *binary_string(char *buf, int len)
 /**
  Some platforms don't have strnlen
 **/
-
  size_t strnlen(const char *s, size_t n)
 {
 	int i;
