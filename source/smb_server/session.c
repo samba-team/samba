@@ -27,16 +27,3 @@
 
 #include "includes.h"
 
-/* called when a session is created */
-BOOL session_claim(struct smbsrv_session *sess)
-{
-	DEBUG(0,("rewrite: Not doing session claim\n"));
-	return True;
-}
-
-/* called when a session is destroyed */
-void session_yield(struct smbsrv_session *sess)
-{
-	DEBUG(0,("rewrite: Not doing session yield\n"));
-}
-

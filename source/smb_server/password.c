@@ -56,8 +56,6 @@ void smbsrv_invalidate_vuid(struct smbsrv_connection *smb_conn, uint16_t vuid)
 	if (sess == NULL)
 		return;
 
-	session_yield(sess);
-
 	DLIST_REMOVE(smb_conn->sessions.session_list, sess);
 
 	/* clear the vuid from the 'cache' on each connection, and
@@ -143,15 +141,6 @@ uint16_t smbsrv_register_session(struct smbsrv_connection *smb_conn,
 
 	sess->smb_conn = smb_conn;
 	DLIST_ADD(smb_conn->sessions.session_list, sess);
-
-	/* we only need to do session_claim() when the session_setup is complete
-	 * for spnego session_info is NULL the first time
-	 */
-	if (session_info && !session_claim(sess)) {
-		DEBUG(1,("Failed to claim session for vuid=%d\n", sess->vuid));
-		smbsrv_invalidate_vuid(smb_conn, sess->vuid);
-		return UID_FIELD_INVALID;
-	}
 
 	return sess->vuid;
 }

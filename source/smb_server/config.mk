@@ -14,7 +14,6 @@ ADD_OBJ_FILES = \
 		smb_server/request.o \
 		smb_server/search.o \
 		smb_server/service.o \
-		smb_server/session.o \
 		smb_server/sesssetup.o \
 		smb_server/srvtime.o \
 		smb_server/trans2.o \
