@@ -67,15 +67,18 @@ BOOL idmap_init(const char *remote_backend)
 {
 	if (!local_map) {
 		idmap_reg_tdb(&local_map);
-		local_map->init();
+		if (NT_STATUS_IS_ERR(local_map->init())) {
+			DEBUG(0, ("idmap_init: could not load or create local backend!\n"));
+			return False;
+		}
 	}
 	
 	if (!remote_map && remote_backend && *remote_backend != 0) {
-		DEBUG(3, ("load_methods: using '%s' as remote backend\n", remote_backend));
+		DEBUG(3, ("idmap_init: using '%s' as remote backend\n", remote_backend));
 		
 		remote_map = get_methods(remote_backend);
 		if (!remote_map) {
-			DEBUG(0, ("load_methods: could not load remote backend '%s'\n", remote_backend));
+			DEBUG(0, ("idmap_init: could not load remote backend '%s'\n", remote_backend));
 			return False;
 		}
 		remote_map->init();

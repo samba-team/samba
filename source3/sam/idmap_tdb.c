@@ -60,7 +60,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 
 			if (hwm > idmap_state.uid_high) {
-				DEBUG(0, ("idmap Fatal Error: UID range full!!\n"));
+				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
@@ -75,7 +75,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 
 			if (hwm > idmap_state.gid_high) {
-				DEBUG(0, ("idmap Fatal Error: GID range full!!\n"));
+				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %u)\n", idmap_state.gid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
@@ -284,6 +284,16 @@ static NTSTATUS db_idmap_init(void)
 		}
 	}
 
+	if (!lp_idmap_uid(&idmap_state.uid_low, &idmap_state.uid_high)) {
+		DEBUG(0, ("idmap uid range missing or invalid\n"));
+		DEBUGADD(0, ("idmap will be unable to map foreign SIDs\n"));
+	}
+	
+	if (!lp_idmap_gid(&idmap_state.gid_low, &idmap_state.gid_high)) {
+		DEBUG(0, ("idmap gid range missing or invalid\n"));
+		DEBUGADD(0, ("idmap will be unable to map foreign SIDs\n"));
+	}
+	
 	return NT_STATUS_OK;
 }
 
