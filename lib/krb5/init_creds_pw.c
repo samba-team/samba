@@ -456,52 +456,6 @@ krb5_get_init_creds_password(krb5_context context,
 		goto out;
 	    password = buf;
 	    break;
-	case KRB5KDC_ERR_PREAUTH_REQUIRED : {
-	    if(kdc_reply.error.e_data) {
-		METHOD_DATA md;
-		int i;
-		decode_METHOD_DATA(kdc_reply.error.e_data->data, 
-				   kdc_reply.error.e_data->length, 
-				   &md, 
-				   NULL);
-		for(i = 0; i < md.len; i++){
-		    switch(md.val[i].padata_type){
-		    case pa_enc_timestamp:
-			if (pre_auth_types)
-			    free (pre_auth_types);
-			ALLOC(pre_auth_types, 2);
-			if (pre_auth_types == NULL) {
-			    free_METHOD_DATA(&md);
-			    goto out;
-			}
-			pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
-			pre_auth_types[1] = KRB5_PADATA_NONE;
-			break;
-		    case pa_etype_info:
-			preauth = &preauth2;
-			ALLOC_SEQ(preauth, 1);
-			preauth->val[0].type = KRB5_PADATA_ENC_TIMESTAMP;
-			krb5_decode_ETYPE_INFO(context,
-					       md.val[i].padata_value.data, 
-					       md.val[i].padata_value.length,
-					       &preauth->val[0].info,
-					       NULL);
-			break;
-		    }
-		}
-		free_METHOD_DATA(&md);
-	    } else {
-		if (pre_auth_types)
-		    free (pre_auth_types);
-		pre_auth_types = malloc(2 * sizeof(*pre_auth_types));
-		if (pre_auth_types == NULL)
-		    goto out;
-		pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
-		pre_auth_types[1] = KRB5_PADATA_NONE;
-	    }
-	    krb5_free_kdc_rep (context, &kdc_reply);
-	    break;
-	}
 	default:
 	    goto out;
 	}
