@@ -353,6 +353,7 @@ NTSTATUS create_security_token(TALLOC_CTX *mem_ctx,
 {
 	struct security_token *ptoken;
 	int i;
+	NTSTATUS status;
 
 	ptoken = security_token_initialise(mem_ctx);
 	if (ptoken == NULL) {
@@ -396,6 +397,13 @@ NTSTATUS create_security_token(TALLOC_CTX *mem_ctx,
 		if (check_sid_idx == ptoken->num_sids) {
 			ptoken->sids[ptoken->num_sids++] = groupSIDs[i];
 		}
+	}
+
+	/* setup the privilege mask for this token */
+	status = samdb_privilege_setup(ptoken);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(ptoken);
+		return status;
 	}
 	
 	debug_security_token(DBGC_AUTH, 10, ptoken);

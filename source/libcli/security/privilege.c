@@ -85,12 +85,22 @@ int sec_privilege_id(const char *name)
 
 
 /*
+  return a privilege mask given a privilege id
+*/
+uint64_t sec_privilege_mask(unsigned int privilege)
+{
+	uint64_t mask = 1;
+	mask <<= (privilege-1);
+	return mask;
+}
+
+
+/*
   return True if a security_token has a particular privilege bit set
 */
 BOOL sec_privilege_check(const struct security_token *token, unsigned int privilege)
 {
-	uint64_t mask = 1;
-	mask <<= (privilege-1);
+	uint64_t mask = sec_privilege_mask(privilege);
 	if (token->privilege_mask & mask) {
 		return True;
 	}
@@ -102,7 +112,5 @@ BOOL sec_privilege_check(const struct security_token *token, unsigned int privil
 */
 void sec_privilege_set(struct security_token *token, unsigned int privilege)
 {
-	uint64_t mask = 1;
-	mask <<= (privilege-1);
-	token->privilege_mask |= mask;
+	token->privilege_mask |= sec_privilege_mask(privilege);
 }

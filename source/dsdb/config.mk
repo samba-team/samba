@@ -6,6 +6,7 @@
 INIT_OBJ_FILES = \
 		dsdb/samdb/samdb.o
 ADD_OBJ_FILES = \
+		dsdb/samdb/samdb_privilege.o \
 		dsdb/common/flag_mapping.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \

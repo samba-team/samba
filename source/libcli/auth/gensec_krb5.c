@@ -716,6 +716,13 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 				= dom_sid_add_rid(session_info, sid, 
 						  logon_info->groups[ptoken->num_sids - 2].rid);
 		}
+
+		/* setup any privileges for this token */
+		nt_status = samdb_privilege_setup(ptoken);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(ptoken);
+			return nt_status;
+		}
 		
 		debug_security_token(DBGC_AUTH, 0, ptoken);
 		
