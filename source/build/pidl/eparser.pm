@@ -60,7 +60,7 @@ sub ParseFunctionPull($)
 	pidl "int $fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)\n{\n";
 
 	pidl "\tstruct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);\n";
-	pidl "\tstruct $fn->{NAME} *r = talloc_p(NULL, struct $fn->{NAME});\n";
+	pidl "\tstruct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});\n";
 	pidl "\tpidl_tree ptree;\n\n";
 
 	pidl "\tptree.proto_tree = tree;\n";
@@ -75,7 +75,7 @@ sub ParseFunctionPull($)
 	pidl "int $fn->{NAME}_resp(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)\n{\n";
 
 	pidl "\tstruct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);\n";
-	pidl "\tstruct $fn->{NAME} *r = talloc_p(NULL, struct $fn->{NAME});\n";
+	pidl "\tstruct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});\n";
 	pidl "\tpidl_tree ptree;\n\n";
 
 	pidl "\tptree.proto_tree = tree;\n";
