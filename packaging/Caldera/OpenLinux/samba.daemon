@@ -1,7 +1,0 @@
-IDENT=samba
-DESCRIPTIVE="SMB server processes (samba)"
-CONFIGURED="no"
-ONBOOT="no"
-OPTIONS_SMB="-D"
-OPTIONS_NMB="-D"
-OPTIONS_WINBD=""
