@@ -3319,7 +3319,12 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 {
 	char *pdata = *ppdata;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv15);
+
+	/* check for an invalid fid before proceeding */
 	
+	if (!fsp)                                
+		return(ERROR_DOS(ERRDOS,ERRbadfid));  
+
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
 		pdata = Realloc(*ppdata, 32);
