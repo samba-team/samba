@@ -52,6 +52,7 @@ case "${host}" in
 		LDSHARED="ld -b"
 		REAL_PICFLAGS="+z"
 	fi
+	lib_deps=no
 	;;
 *-*-linux*)
 	LDSHARED='$(CC) -shared -Wl,-soname,$(LIBNAME).so.'"${SHLIB_SONAME}"
