@@ -1,36 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
->How to Configure Samba 2.2 as a Primary Domain Controller</TITLE
+>How to Configure Samba as a NT4 Primary Domain Controller</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Type of installation"
+HREF="p544.html"><LINK
+REL="PREVIOUS"
+TITLE="Type of installation"
+HREF="p544.html"><LINK
+REL="NEXT"
+TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
+HREF="samba-bdc.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="p544.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="samba-bdc.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
 ><DIV
-CLASS="TITLEPAGE"
+CLASS="CHAPTER"
 ><H1
-CLASS="TITLE"
 ><A
 NAME="SAMBA-PDC"
->How to Configure Samba 2.2 as a Primary Domain Controller</A
-></H1
-><HR></DIV
+></A
+>Chapter 6. How to Configure Samba as a NT4 Primary Domain Controller</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Prerequisite Reading</A
-></H1
+NAME="AEN566"
+></A
+>6.1. Prerequisite Reading</H1
 ><P
 >Before you continue reading in this chapter, please make sure 
 that you are comfortable with configuring basic files services
@@ -53,26 +105,45 @@ of this HOWTO Collection.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN9"
->Background</A
-></H1
+NAME="AEN572"
+></A
+>6.2. Background</H1
 ><DIV
 CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
 ><P
-><B
->Note: </B
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Author's Note:</I
+></SPAN
 > This document is a combination 
 of David Bannon's "Samba 2.2 PDC HOWTO" and "Samba NT Domain FAQ". 
 Both documents are superseded by this one.</P
-></BLOCKQUOTE
+></TD
+></TR
+></TABLE
 ></DIV
 ><P
 >Versions of Samba prior to release 2.2 had marginal capabilities to act
@@ -186,12 +257,12 @@ concepts.  They will be mentioned only briefly here.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN48"
->Configuring the Samba Domain Controller</A
-></H1
+NAME="AEN611"
+></A
+>6.3. Configuring the Samba Domain Controller</H1
 ><P
 >The first step in creating a working Samba PDC is to 
 understand the parameters necessary in smb.conf.  I will not
@@ -398,13 +469,13 @@ Admins" style accounts.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN91"
->Creating Machine Trust Accounts and Joining Clients to the
-Domain</A
-></H1
+NAME="AEN654"
+></A
+>6.4. Creating Machine Trust Accounts and Joining Clients to the
+Domain</H1
 ><P
 >A machine trust account is a Samba account that is used to
 authenticate a client machine (rather than a user) to the Samba
@@ -472,12 +543,12 @@ CLASS="FILENAME"
 ></UL
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN110"
->Manual Creation of Machine Trust Accounts</A
-></H2
+NAME="AEN673"
+></A
+>6.4.1. Manual Creation of Machine Trust Accounts</H2
 ><P
 >The first step in manually creating a machine trust account is to
 manually create the corresponding Unix account in
@@ -522,6 +593,26 @@ CLASS="REPLACEABLE"
 >machine_name</I
 ></TT
 >$</B
+></P
+><P
+>On *BSD systems, this can be done using the 'chpass' utility:</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><B
+CLASS="COMMAND"
+>chpass -a "<TT
+CLASS="REPLACEABLE"
+><I
+>machine_name</I
+></TT
+>$:*:101:100::0:0:Workstation <TT
+CLASS="REPLACEABLE"
+><I
+>machine_name</I
+></TT
+>:/dev/null:/sbin/nologin"</B
 ></P
 ><P
 >The <TT
@@ -601,18 +692,30 @@ CLASS="WARNING"
 ></P
 ><TABLE
 CLASS="WARNING"
-BORDER="1"
 WIDTH="100%"
+BORDER="0"
 ><TR
 ><TD
+WIDTH="25"
 ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="CENTER"
 ><B
 >Join the client to the domain immediately</B
-></TD
+></TH
 ></TR
 ><TR
 ><TD
+>&nbsp;</TD
+><TD
 ALIGN="LEFT"
+VALIGN="TOP"
 ><P
 >	Manually creating a machine trust account using this method is the 
 	equivalent of creating a machine trust account on a Windows NT PDC using 
@@ -630,12 +733,12 @@ ALIGN="LEFT"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN145"
->"On-the-Fly" Creation of Machine Trust Accounts</A
-></H2
+NAME="AEN714"
+></A
+>6.4.2. "On-the-Fly" Creation of Machine Trust Accounts</H2
 ><P
 >The second (and recommended) way of creating machine trust accounts is
 simply to allow the Samba server to create them as needed when the client
@@ -667,12 +770,12 @@ CLASS="PROGRAMLISTING"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN154"
->Joining the Client to the Domain</A
-></H2
+NAME="AEN723"
+></A
+>6.4.3. Joining the Client to the Domain</H2
 ><P
 >The procedure for joining a client to the domain varies with the
 version of Windows.</P
@@ -681,9 +784,12 @@ version of Windows.</P
 ><UL
 ><LI
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Windows 2000</I
+></SPAN
 ></P
 ><P
 > When the user elects to join the client to a domain, Windows prompts for
@@ -706,9 +812,12 @@ CLASS="FILENAME"
 ></LI
 ><LI
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Windows NT</I
+></SPAN
 ></P
 ><P
 > If the machine trust account was created manually, on the
@@ -729,12 +838,12 @@ CLASS="EMPHASIS"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN169"
->Common Problems and Errors</A
-></H1
+NAME="AEN738"
+></A
+>6.5. Common Problems and Errors</H1
 ><P
 ></P
 ><P
@@ -742,9 +851,12 @@ NAME="AEN169"
 ><UL
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >I cannot include a '$' in a machine name.</I
+></SPAN
 >
 	</P
 ><P
@@ -768,11 +880,14 @@ CLASS="COMMAND"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >I get told "You already have a connection to the Domain...." 
 	or "Cannot join domain, the credentials supplied conflict with an 
 	existing set.." when creating a machine trust account.</I
+></SPAN
 >
 	</P
 ><P
@@ -799,9 +914,12 @@ CLASS="COMMAND"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >The system can not log you on (C000019B)....</I
+></SPAN
 >
 	</P
 ><P
@@ -828,10 +946,13 @@ CLASS="COMMAND"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >The machine trust account for this computer either does not 
 	exist or is not accessible.</I
+></SPAN
 >
 	</P
 ><P
@@ -865,10 +986,13 @@ CLASS="PARAMETER"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >When I attempt to login to a Samba Domain from a NT4/W2K workstation,
 	I get a message about my account being disabled.</I
+></SPAN
 >
 	</P
 ><P
@@ -924,12 +1048,12 @@ CLASS="FILENAME"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN217"
->System Policies and Profiles</A
-></H1
+NAME="AEN786"
+></A
+>6.6. System Policies and Profiles</H1
 ><P
 >Much of the information necessary to implement System Policies and
 Roving User Profiles in a Samba domain is the same as that for 
@@ -947,9 +1071,12 @@ Profiles and Policies in Windows NT 4.0</A
 ><UL
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >What about Windows NT Policy Editor?</I
+></SPAN
 >
 	</P
 ><P
@@ -961,14 +1088,20 @@ CLASS="FILENAME"
 CLASS="COMMAND"
 >poledit.exe</B
 >	which 
-	is included with NT Server but <I
+	is included with NT Server but <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >not NT Workstation</I
+></SPAN
 >. 
 	There is a Policy Editor on a NTws 
-	but it is not suitable for creating <I
+	but it is not suitable for creating <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >Domain Policies</I
+></SPAN
 >. 
 	Further, although the Windows 95 
 	Policy Editor can be installed on an NT Workstation/Server, it will not
@@ -1009,9 +1142,12 @@ CLASS="COMMAND"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >Can Win95 do Policies?</I
+></SPAN
 >
 	</P
 ><P
@@ -1036,9 +1172,12 @@ CLASS="FILENAME"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >How do I get 'User Manager' and 'Server Manager'</I
+></SPAN
 >
 	</P
 ><P
@@ -1086,12 +1225,12 @@ TARGET="_top"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN261"
->What other help can I get?</A
-></H1
+NAME="AEN830"
+></A
+>6.7. What other help can I get?</H1
 ><P
 >There are many sources of information available in the form 
 of mailing lists, RFC's and documentation.  The docs that come 
@@ -1102,10 +1241,13 @@ general SMB topics such as browsing.</P
 ><UL
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >What are some diagnostics tools I can use to debug the domain logon 
 	process and where can I	find them?</I
+></SPAN
 >
 	</P
 ><P
@@ -1175,10 +1317,13 @@ TARGET="_top"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >How do I install 'Network Monitor' on an NT Workstation 
 	or a Windows 9x box?</I
+></SPAN
 >
 	</P
 ><P
@@ -1293,9 +1438,12 @@ TARGET="_top"
 ></LI
 ><LI
 ><P
-> The <I
+> The <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >Development</I
+></SPAN
 > document 
 	on the Samba mirrors might mention your problem. If so,
 	it might mean that the developers are working on it.</P
@@ -1352,9 +1500,12 @@ TARGET="_top"
 ><UL
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >How do I get help from the mailing lists?</I
+></SPAN
 >
 	</P
 ><P
@@ -1429,9 +1580,12 @@ TARGET="_top"
 ></LI
 ><LI
 ><P
->You might include <I
+>You might include <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >partial</I
+></SPAN
 >
         log files written at a debug level set to as much as 20.  
         Please don't send the entire log but enough to give the context of the 
@@ -1453,9 +1607,12 @@ CLASS="EMPHASIS"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >How do I get off the mailing lists?</I
+></SPAN
 >
 	</P
 ><P
@@ -1488,27 +1645,46 @@ TARGET="_top"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN375"
->Domain Control for Windows 9x/ME</A
-></H1
+NAME="AEN944"
+></A
+>6.8. Domain Control for Windows 9x/ME</H1
 ><DIV
 CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
 ><P
-><B
->Note: </B
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 >The following section contains much of the original 
 DOMAIN.txt file previously included with Samba.  Much of 
-the material is based on what went into the book <I
+the material is based on what went into the book <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >Special 
 Edition, Using Samba</I
+></SPAN
 >, by Richard Sharpe.</P
-></BLOCKQUOTE
+></TD
+></TR
+></TABLE
 ></DIV
 ><P
 >A domain and a workgroup are exactly the same thing in terms of network
@@ -1603,12 +1779,12 @@ TYPE="1"
 ></OL
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN401"
->Configuration Instructions:	Network Logons</A
-></H2
+NAME="AEN970"
+></A
+>6.8.1. Configuration Instructions:	Network Logons</H2
 ><P
 >The main difference between a PDC and a Windows 9x logon 
 server configuration is that</P
@@ -1633,18 +1809,30 @@ CLASS="WARNING"
 ></P
 ><TABLE
 CLASS="WARNING"
-BORDER="1"
 WIDTH="100%"
+BORDER="0"
 ><TR
 ><TD
+WIDTH="25"
 ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="CENTER"
 ><B
 >security mode and master browsers</B
-></TD
+></TH
 ></TR
 ><TR
 ><TD
+>&nbsp;</TD
+><TD
 ALIGN="LEFT"
+VALIGN="TOP"
 ><P
 >There are a few comments to make in order to tie up some 
 loose ends.  There has been much debate over the issue of whether
@@ -1697,34 +1885,39 @@ for its domain.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN420"
->Configuration Instructions:	Setting up Roaming User Profiles</A
-></H2
+NAME="AEN989"
+></A
+>6.8.2. Configuration Instructions:	Setting up Roaming User Profiles</H2
 ><DIV
 CLASS="WARNING"
 ><P
 ></P
 ><TABLE
 CLASS="WARNING"
-BORDER="1"
 WIDTH="100%"
+BORDER="0"
 ><TR
 ><TD
+WIDTH="25"
 ALIGN="CENTER"
-><B
->Warning</B
-></TD
-></TR
-><TR
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
 ><TD
 ALIGN="LEFT"
+VALIGN="TOP"
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE!</I
+></SPAN
 > Roaming profiles support is different 
 for Win9X and WinNT.</P
 ></TD
@@ -1745,12 +1938,12 @@ including a separate field for the location of the user's profiles.
 This means that support for profiles is different for Win9X and WinNT.</P
 ><DIV
 CLASS="SECT3"
-><HR><H3
+><H3
 CLASS="SECT3"
 ><A
-NAME="AEN428"
->Windows NT Configuration</A
-></H3
+NAME="AEN997"
+></A
+>6.8.2.1. Windows NT Configuration</H3
 ><P
 >To support WinNT clients, in the [global] section of smb.conf set the
 following (for example):</P
@@ -1767,25 +1960,41 @@ If you are using a samba server for the profiles, you _must_ make the
 share specified in the logon path browseable. </P
 ><DIV
 CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
 ><P
-><B
->Note: </B
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 >[lkcl 26aug96 - we have discovered a problem where Windows clients can
 maintain a connection to the [homes] share in between logins.  The
 [homes] share must NOT therefore be used in a profile path.]</P
-></BLOCKQUOTE
+></TD
+></TR
+></TABLE
 ></DIV
 ></DIV
 ><DIV
 CLASS="SECT3"
-><HR><H3
+><H3
 CLASS="SECT3"
 ><A
-NAME="AEN436"
->Windows 9X Configuration</A
-></H3
+NAME="AEN1005"
+></A
+>6.8.2.2. Windows 9X Configuration</H3
 ><P
 >To support Win9X clients, you must use the "logon home" parameter. Samba has
 now been fixed so that "net use/home" now works as well, and it, too, relies
@@ -1811,12 +2020,12 @@ specified \\%L\%U for "logon home".</P
 ></DIV
 ><DIV
 CLASS="SECT3"
-><HR><H3
+><H3
 CLASS="SECT3"
 ><A
-NAME="AEN444"
->Win9X and WinNT Configuration</A
-></H3
+NAME="AEN1013"
+></A
+>6.8.2.3. Win9X and WinNT Configuration</H3
 ><P
 >You can support profiles for both Win9X and WinNT clients by setting both the
 "logon home" and "logon path" parameters. For example:</P
@@ -1828,24 +2037,40 @@ logon path = \\%L\profiles\%U</PRE
 ></P
 ><DIV
 CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
 ><P
-><B
->Note: </B
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 >I have not checked what 'net use /home' does on NT when "logon home" is
 set as above.</P
-></BLOCKQUOTE
+></TD
+></TR
+></TABLE
 ></DIV
 ></DIV
 ><DIV
 CLASS="SECT3"
-><HR><H3
+><H3
 CLASS="SECT3"
 ><A
-NAME="AEN451"
->Windows 9X Profile Setup</A
-></H3
+NAME="AEN1020"
+></A
+>6.8.2.4. Windows 9X Profile Setup</H3
 ><P
 >When a user first logs in on Windows 9X, the file user.DAT is created,
 as are folders "Start Menu", "Desktop", "Programs" and "Nethood".  
@@ -1950,9 +2175,12 @@ TYPE="1"
 ></LI
 ><LI
 ><P
->	<I
+>	<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >WARNING</I
+></SPAN
 > - before deleting the contents of the 
 	directory listed in
    the ProfilePath (this is likely to be c:\windows\profiles\username),
@@ -1997,30 +2225,46 @@ differences are with the equivalent samba trace.</P
 ></DIV
 ><DIV
 CLASS="SECT3"
-><HR><H3
+><H3
 CLASS="SECT3"
 ><A
-NAME="AEN487"
->Windows NT Workstation 4.0</A
-></H3
+NAME="AEN1056"
+></A
+>6.8.2.5. Windows NT Workstation 4.0</H3
 ><P
 >When a user first logs in to a Windows NT Workstation, the profile
 NTuser.DAT is created.  The profile location can be now specified
 through the "logon path" parameter.  </P
 ><DIV
 CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
 ><P
-><B
->Note: </B
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 >[lkcl 10aug97 - i tried setting the path to
 \\samba-server\homes\profile, and discovered that this fails because
 a background process maintains the connection to the [homes] share
 which does _not_ close down in between user logins.  you have to
 have \\samba-server\%L\profile, where user is the username created
 from the [homes] share].</P
-></BLOCKQUOTE
+></TD
+></TR
+></TABLE
 ></DIV
 ><P
 >There is a parameter that is now available for use with NT Profiles:
@@ -2051,11 +2295,25 @@ NT Help file also mentions that renaming NTuser.DAT to NTuser.MAN
 turns a profile into a mandatory one.</P
 ><DIV
 CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
 ><P
-><B
->Note: </B
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 >[lkcl 10aug97 - i notice that NT Workstation tells me that it is
 downloading a profile from a slow link.  whether this is actually the
 case, or whether there is some configuration issue, as yet unknown,
@@ -2074,17 +2332,19 @@ workstation for clear-text passwords].</P
 >[lkcl 25aug97 - more comments received about NT profiles: the case of
 the profile _matters_.  the file _must_ be called NTuser.DAT or, for
 a mandatory profile, NTuser.MAN].</P
-></BLOCKQUOTE
+></TD
+></TR
+></TABLE
 ></DIV
 ></DIV
 ><DIV
 CLASS="SECT3"
-><HR><H3
+><H3
 CLASS="SECT3"
 ><A
-NAME="AEN500"
->Windows NT Server</A
-></H3
+NAME="AEN1069"
+></A
+>6.8.2.6. Windows NT Server</H3
 ><P
 >There is nothing to stop you specifying any path that you like for the
 location of users' profiles.  Therefore, you could specify that the
@@ -2093,30 +2353,42 @@ that SMB server supports encrypted passwords.</P
 ></DIV
 ><DIV
 CLASS="SECT3"
-><HR><H3
+><H3
 CLASS="SECT3"
 ><A
-NAME="AEN503"
->Sharing Profiles between W95 and NT Workstation 4.0</A
-></H3
+NAME="AEN1072"
+></A
+>6.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</H3
 ><DIV
 CLASS="WARNING"
 ><P
 ></P
 ><TABLE
 CLASS="WARNING"
-BORDER="1"
 WIDTH="100%"
+BORDER="0"
 ><TR
 ><TD
+WIDTH="25"
 ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="CENTER"
 ><B
 >Potentially outdated or incorrect material follows</B
-></TD
+></TH
 ></TR
 ><TR
 ><TD
+>&nbsp;</TD
+><TD
 ALIGN="LEFT"
+VALIGN="TOP"
 ><P
 >I think this is all bogus, but have not deleted it. (Richard Sharpe)</P
 ></TD
@@ -2141,47 +2413,75 @@ unlikely to exist on a Win95-only host].</P
 NTuser.DAT files in the same profile directory.</P
 ><DIV
 CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
 ><P
-><B
->Note: </B
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 >[lkcl 25aug97 - there are some issues to resolve with downloading of
 NT profiles, probably to do with time/date stamps.  i have found that
 NTuser.DAT is never updated on the workstation after the first time that
 it is copied to the local workstation profile directory.  this is in
 contrast to w95, where it _does_ transfer / update profiles correctly].</P
-></BLOCKQUOTE
+></TD
+></TR
+></TABLE
 ></DIV
 ></DIV
 ></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN513"
->DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
-></H1
+NAME="AEN1082"
+></A
+>6.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</H1
 ><DIV
 CLASS="WARNING"
 ><P
 ></P
 ><TABLE
 CLASS="WARNING"
-BORDER="1"
 WIDTH="100%"
+BORDER="0"
 ><TR
 ><TD
+WIDTH="25"
 ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="CENTER"
 ><B
 >Possibly Outdated Material</B
-></TD
+></TH
 ></TR
 ><TR
 ><TD
+>&nbsp;</TD
+><TD
 ALIGN="LEFT"
+VALIGN="TOP"
 ><P
 >	This appendix was originally authored by John H Terpstra of 
 	the Samba Team and is included here for posterity.
@@ -2191,9 +2491,12 @@ ALIGN="LEFT"
 ></TABLE
 ></DIV
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE :</I
+></SPAN
 > 
 The term "Domain Controller" and those related to it refer to one specific
 method of authentication that can underly an SMB domain. Domain Controllers
@@ -2278,6 +2581,68 @@ have at least one Backup Domain Controller (BDC).</P
 each Domain Controlling participant will have an up to date SAM component
 within its registry.</P
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="p544.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="samba-bdc.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Type of installation</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="p544.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML
