@@ -12,9 +12,6 @@
 
 extern int DEBUGLEVEL;
 
-/* Delimiters for lists of daemons or clients. */
-static char *sep = ", \t";
-
 #define	FAIL		(-1)
 
 /* masked_match - match address against netnumber/netmask */
