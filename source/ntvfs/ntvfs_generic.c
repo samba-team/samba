@@ -913,7 +913,7 @@ NTSTATUS ntvfs_map_close(struct smbsrv_request *req, union smb_close *cl,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	switch (cl2->generic.level) {
+	switch (cl->generic.level) {
 	case RAW_CLOSE_CLOSE:
 		return NT_STATUS_INVALID_LEVEL;
 
