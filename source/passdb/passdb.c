@@ -27,6 +27,14 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
+const char *get_global_sam_name(void) 
+{
+	if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
+		return lp_workgroup();
+	}
+	return global_myname();
+}
+
 /*
  * This is set on startup - it defines the SID for this
  * machine, and therefore the SAM database for which it is
