@@ -1,4 +1,4 @@
-          WHATS NEW IN Samba (The Next Generation) 1.6
+          WHATS NEW IN Samba (The Next Generation) 1.7
           ============================================
 
 This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,
@@ -162,6 +162,8 @@ that time.  The use of Samba TNG as a file and print server is
 therefore not recommended, and can be avoided by setting user
 profiles and home directories to be on another Windows NT (tm) or
 compatible file server.
+
+This release now has Samba CVS main smbd code, as of April 3rd 2000.
 
 
 =====================================================================
