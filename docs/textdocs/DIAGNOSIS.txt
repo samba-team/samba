@@ -109,12 +109,31 @@ it is running, and check that the netbios-ssn port is in a LISTEN
 state using "netstat -a".
 
 If you get a "session request failed" then the server refused the
-connection. If it says "your server software is being unfriendly" then
+connection. If it says "Your server software is being unfriendly" then
 its probably because you have invalid command line parameters to smbd,
 or a similar fatal problem with the initial startup of smbd. Also
 check your config file (smb.conf) for syntax errors with "testparm"
 and that the various directories where samba keeps its log and lock
 files exist.
+
+There are a number of reasons for which smbd may refuse or decline
+a session request. The most common of these involve one or more of
+the following smb.conf file entries:
+	hosts deny = ALL
+	hosts allow = xxx.xxx.xxx.xxx/yy
+	bind interfaces only = Yes
+
+In the above, no allowance has been made for any session requests that
+will automatically translate to the loopback adaptor address 127.0.0.1.
+To solve this problem change these lines to:
+	hosts deny = ALL
+	hosts allow = xxx.xxx.xxx.xxx/yy 127.
+Do NOT use the "bind interfaces only" parameter where you may wish to
+use the samba password change facility, or where smbclient may need to
+access local service for name resolution or for local resource
+connections. (Note: the "bind interfaces only" parameter deficiency
+where it will not allow connections to the loopback address will be
+fixed soon).
 
 Another common cause of these two errors is having something already running 
 on port 139, such as Samba (ie: smbd is running from inetd already) or
