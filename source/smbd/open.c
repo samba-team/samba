@@ -199,6 +199,26 @@ uint16 fd_attempt_close(file_fd_struct *fd_ptr, int *err_ret)
 }
 
 /****************************************************************************
+ Shutdown a half-open filestruct. This allows open_file_shared to back out
+ on error.
+****************************************************************************/
+
+static void close_on_error(files_struct *fsp, connection_struct *conn)
+{
+  int err;
+
+  close_filestruct(fsp);
+
+  fd_attempt_close(fsp->fd_ptr,&err);
+
+  fsp->fd_ptr = NULL;
+
+  if (fsp->fsp_name) {
+    string_free(&fsp->fsp_name);
+  }
+}
+
+/****************************************************************************
 fd support routines - check that current user has permissions
 to open this file. Used when uid not found in optimization cache.
 This is really ugly code, as due to POSIX locking braindamage we must
@@ -603,7 +623,7 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 			if (*share_locked && lp_share_modes(SNUM(conn)))
 				unlock_share_entry( conn, fsp->fd_ptr->dev, 
 						    fsp->fd_ptr->inode, token);
-			close_file(fsp,False);   
+			close_on_error(fsp,conn);   
 			/* Share mode no longer locked. */
 			*share_locked = False;
 			errno = EACCES;

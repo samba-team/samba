@@ -2402,6 +2402,7 @@ BOOL check_plaintext_password(char *user,char *old_passwd,
 
 /*The following definitions come from  smbd/close.c  */
 
+void close_filestruct(files_struct *fsp);
 int close_file(files_struct *fsp, BOOL normal_close);
 
 /*The following definitions come from  smbd/conn.c  */

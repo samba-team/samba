@@ -451,7 +451,7 @@ static service sDefault =
 #endif
   True,  /* bShareModes */
   True,  /* bOpLocks */
-  True, /* bLevel2OpLocks */
+  False, /* bLevel2OpLocks */
   False, /* bOnlyUser */
   True,  /* bMangledNames */
   True,  /* bWidelinks */
