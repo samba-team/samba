@@ -994,6 +994,12 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
   process_pending_change_notify_queue(t);
 
   /*
+   * Ensure the print queue tdb doesn't grow too
+   * big by periodically scanning it.
+   */
+  process_print_queue(t);
+
+  /*
    * Now we are root, check if the log files need pruning.
    */
   if(need_to_check_log_size())
