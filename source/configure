@@ -10322,7 +10322,7 @@ fi
 fi
 
 echo "$ac_t""$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" 1>&6
-if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
+if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes" && test x"$target_cpu" != x"s390"; then
     cat >> confdefs.h <<\EOF
 #define HAVE_KERNEL_CHANGE_NOTIFY 1
 EOF
