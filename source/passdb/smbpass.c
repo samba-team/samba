@@ -165,41 +165,12 @@ void endsmbpwent(void *vp)
   DEBUG(7, ("endsmbpwent: closed password file.\n"));
 }
 
-/*************************************************************
- Routine to get the next 32 hex characters and turn them
- into a 16 byte array.
-**************************************************************/
-
-static int gethexpwd(char *p, char *pwd)
-{
-  int i;
-  unsigned char   lonybble, hinybble;
-  char           *hexchars = "0123456789ABCDEF";
-  char           *p1, *p2;
-
-  for (i = 0; i < 32; i += 2) {
-    hinybble = toupper(p[i]);
-    lonybble = toupper(p[i + 1]);
- 
-    p1 = strchr(hexchars, hinybble);
-    p2 = strchr(hexchars, lonybble);
-    if (!p1 || !p2)
-      return (False);
-    hinybble = PTR_DIFF(p1, hexchars);
-    lonybble = PTR_DIFF(p2, hexchars);
- 
-    pwd[i / 2] = (hinybble << 4) | lonybble;
-  }
-  return (True);
-}
-
 /*************************************************************************
  Routine to return the next entry in the smbpasswd list.
 
  do not call this function directly.  use passdb.c instead.
 
  *************************************************************************/
-
 struct smb_passwd *getsmbpwent(void *vp)
 {
   /* Static buffers we will return. */

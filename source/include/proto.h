@@ -2028,6 +2028,7 @@ void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
 char *dom_sid_to_string(DOM_SID *sid);
+int gethexpwd(char *p, char *pwd);
 
 /*The following definitions come from  web/cgi.c  */
 
