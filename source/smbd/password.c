@@ -915,13 +915,12 @@ BOOL check_hosts_equiv(char *user)
 }
 
 
-static struct cli_state pw_cli;
-
 /****************************************************************************
 return the client state structure
 ****************************************************************************/
 struct cli_state *server_client(void)
 {
+	static struct cli_state pw_cli;
 	return &pw_cli;
 }
 
@@ -930,6 +929,7 @@ support for server level security
 ****************************************************************************/
 struct cli_state *server_cryptkey(void)
 {
+	struct cli_state *cli;
 	fstring desthost;
 	struct in_addr dest_ip;
 	extern fstring local_machine;
@@ -937,7 +937,9 @@ struct cli_state *server_cryptkey(void)
         BOOL connected_ok = False;
 	struct nmb_name calling, called;
 
-	if (!cli_initialise(&pw_cli))
+	cli = server_client();
+
+	if (!cli_initialise(cli))
 		return NULL;
 
         p = lp_passwordserver();
@@ -955,7 +957,7 @@ struct cli_state *server_cryptkey(void)
 			continue;
 		}
 
-		if (cli_connect(&pw_cli, desthost, &dest_ip)) {
+		if (cli_connect(cli, desthost, &dest_ip)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
 			break;
@@ -964,38 +966,38 @@ struct cli_state *server_cryptkey(void)
 
 	if (!connected_ok) {
 		DEBUG(0,("password server not available\n"));
-		cli_shutdown(&pw_cli);
+		cli_shutdown(cli);
 		return NULL;
 	}
 
 	make_nmb_name(&calling, local_machine, 0x0 , scope);
 	make_nmb_name(&called , desthost     , 0x20, scope);
 
-	if (!cli_session_request(&pw_cli, &calling, &called))
+	if (!cli_session_request(cli, &calling, &called))
 	{
 		DEBUG(1,("%s rejected the session\n",desthost));
-		cli_shutdown(&pw_cli);
+		cli_shutdown(cli);
 		return NULL;
 	}
 
 	DEBUG(3,("got session\n"));
 
-	if (!cli_negprot(&pw_cli)) {
+	if (!cli_negprot(cli)) {
 		DEBUG(1,("%s rejected the negprot\n",desthost));
-		cli_shutdown(&pw_cli);
+		cli_shutdown(cli);
 		return NULL;
 	}
 
-	if (pw_cli.protocol < PROTOCOL_LANMAN2 ||
-	    !(pw_cli.sec_mode & 1)) {
+	if (cli->protocol < PROTOCOL_LANMAN2 ||
+	    !(cli->sec_mode & 1)) {
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
-		cli_shutdown(&pw_cli);
+		cli_shutdown(cli);
 		return NULL;
 	}
 
 	DEBUG(3,("password server OK\n"));
 
-	return &pw_cli;
+	return cli;
 }
 
 /****************************************************************************
@@ -1005,11 +1007,13 @@ BOOL server_validate(char *user, char *domain,
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen)
 {
+	struct cli_state *cli;
 	extern fstring local_machine;
         static unsigned char badpass[24];
+	cli = server_client();
 
-	if (!pw_cli.initialised) {
-		DEBUG(1,("password server %s is not connected\n", pw_cli.desthost));
+	if (!cli->initialised) {
+		DEBUG(1,("password server %s is not connected\n", cli->desthost));
 		return(False);
 	}  
 
@@ -1030,17 +1034,17 @@ BOOL server_validate(char *user, char *domain,
          * need to detect this as some versions of NT4.x are broken. JRA.
          */
 
-        if (cli_session_setup(&pw_cli, user, (char *)badpass, sizeof(badpass), 
+        if (cli_session_setup(cli, user, (char *)badpass, sizeof(badpass), 
                               (char *)badpass, sizeof(badpass), domain)) {
-	  if ((SVAL(pw_cli.inbuf,smb_vwv2) & 1) == 0) {
+	  if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
             DEBUG(0,("server_validate: password server %s allows users as non-guest \
-with a bad password.\n", pw_cli.desthost));
+with a bad password.\n", cli->desthost));
             DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
 use this machine as the password server.\n"));
-            cli_ulogoff(&pw_cli);
+            cli_ulogoff(cli);
             return False;
           }
-          cli_ulogoff(&pw_cli);
+          cli_ulogoff(cli);
         }
 
         /*
@@ -1048,15 +1052,15 @@ use this machine as the password server.\n"));
          * not guest enabled, we can try with the real password.
          */
 
-	if (!cli_session_setup(&pw_cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
-		DEBUG(1,("password server %s rejected the password\n", pw_cli.desthost));
+	if (!cli_session_setup(cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
+		DEBUG(1,("password server %s rejected the password\n", cli->desthost));
 		return False;
 	}
 
 	/* if logged in as guest then reject */
-	if ((SVAL(pw_cli.inbuf,smb_vwv2) & 1) != 0) {
-		DEBUG(1,("password server %s gave us guest only\n", pw_cli.desthost));
-                cli_ulogoff(&pw_cli);
+	if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
+		DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
+                cli_ulogoff(cli);
 		return(False);
 	}
 
@@ -1070,45 +1074,45 @@ use this machine as the password server.\n"));
          */
 
 	if (lp_net_wksta_user_logon()) {
-		DEBUG(3,("trying NetWkstaUserLogon with password server %s\n", pw_cli.desthost));
+		DEBUG(3,("trying NetWkstaUserLogon with password server %s\n", cli->desthost));
 
-                if (!cli_send_tconX(&pw_cli, "IPC$", "IPC", "", 1)) {
-                        DEBUG(0,("password server %s refused IPC$ connect\n", pw_cli.desthost));
-                        cli_ulogoff(&pw_cli);
+                if (!cli_send_tconX(cli, "IPC$", "IPC", "", 1)) {
+                        DEBUG(0,("password server %s refused IPC$ connect\n", cli->desthost));
+                        cli_ulogoff(cli);
                         return False;
                 }
 
-		if (!cli_NetWkstaUserLogon(&pw_cli,user,local_machine)) {
-			DEBUG(0,("password server %s failed NetWkstaUserLogon\n", pw_cli.desthost));
-			cli_tdis(&pw_cli);
-                        cli_ulogoff(&pw_cli);
+		if (!cli_NetWkstaUserLogon(cli,user,local_machine)) {
+			DEBUG(0,("password server %s failed NetWkstaUserLogon\n", cli->desthost));
+			cli_tdis(cli);
+                        cli_ulogoff(cli);
 			return False;
 		}
 
-		if (pw_cli.privilages == 0) {
-			DEBUG(0,("password server %s gave guest privilages\n", pw_cli.desthost));
-			cli_tdis(&pw_cli);
-                        cli_ulogoff(&pw_cli);
+		if (cli->privilages == 0) {
+			DEBUG(0,("password server %s gave guest privilages\n", cli->desthost));
+			cli_tdis(cli);
+                        cli_ulogoff(cli);
 			return False;
 		}
 
-		if (!strequal(pw_cli.eff_name, user)) {
+		if (!strequal(cli->eff_name, user)) {
 			DEBUG(0,("password server %s gave different username %s\n", 
-			 	pw_cli.desthost,
-			 	pw_cli.eff_name));
-			cli_tdis(&pw_cli);
-                        cli_ulogoff(&pw_cli);
+			 	cli->desthost,
+			 	cli->eff_name));
+			cli_tdis(cli);
+                        cli_ulogoff(cli);
 			return False;
 		}
-                cli_tdis(&pw_cli);
+                cli_tdis(cli);
 	}
         else {
-		DEBUG(3,("skipping NetWkstaUserLogon with password server %s\n", pw_cli.desthost));
+		DEBUG(3,("skipping NetWkstaUserLogon with password server %s\n", cli->desthost));
         }
 
-	DEBUG(3,("password server %s accepted the password\n", pw_cli.desthost));
+	DEBUG(3,("password server %s accepted the password\n", cli->desthost));
 
-        cli_ulogoff(&pw_cli);
+        cli_ulogoff(cli);
 
 	return(True);
 }
@@ -1251,7 +1255,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 	make_nmb_name(&calling, global_myname , 0x0 , scope);
 	make_nmb_name(&called , remote_machine, 0x20, scope);
 
-	if (!cli_session_request(&pw_cli, &calling, &called))
+	if (!cli_session_request(&cli, &calling, &called))
 	{
       DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
