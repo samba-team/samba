@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = no-dependencies
 
-INCLUDES = -I$(top_builddir)/include -I$(top_builddir)
+INCLUDES = -I$(top_builddir)/include
 
 lib_LIBRARIES = libhdb.a
 
