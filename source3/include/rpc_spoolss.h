@@ -908,7 +908,8 @@ typedef struct spool_q_getprinterdriver2
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-	uint32 unknown;
+	uint32 clientmajorversion;
+	uint32 clientminorversion;
 }
 SPOOL_Q_GETPRINTERDRIVER2;
 
@@ -916,8 +917,8 @@ typedef struct spool_r_getprinterdriver2
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
-	uint32 unknown0;
-	uint32 unknown1;
+	uint32 servermajorversion;
+	uint32 serverminorversion;
 	uint32 status;
 }
 SPOOL_R_GETPRINTERDRIVER2;

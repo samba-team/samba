@@ -1991,19 +1991,15 @@ static uint32 enumprinters_level2( uint32 flags, fstring servername,
 	fstrcat(temp, global_myname);
 
 	if (flags & PRINTER_ENUM_LOCAL) {
-		if (!strcmp(servername, temp)) {
-			fstrcat(temp, "\\");
+		if (!strcmp(servername, temp))
 			return enum_all_printers_info_2(temp, buffer, offered, needed, returned);
-		}
 		else
 			return enum_all_printers_info_2("", buffer, offered, needed, returned);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
-		if (!strcmp(servername, temp)) {
-			fstrcat(temp, "\\");
+		if (!strcmp(servername, temp))
 			return enum_all_printers_info_2(temp, buffer, offered, needed, returned);
-		}
 		else
 			return ERROR_INVALID_NAME;
 	}
@@ -2055,6 +2051,7 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 	 */
 
 	unistr2_to_ascii(name, servername, sizeof(name)-1);
+	strupper(name);
 
 	switch (level) {
 	case 1:
@@ -2391,8 +2388,10 @@ static uint32 getprinterdriver2_level1(pstring servername, pstring architecture,
 	/* check the required size. */	
 	*needed += spoolss_size_printer_driver_info_1(info);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	new_smb_io_printer_driver_info_1("", buffer, info, 0);	
@@ -2400,9 +2399,8 @@ static uint32 getprinterdriver2_level1(pstring servername, pstring architecture,
 	/* clear memory */
 	safe_free(info);
 
-	if (*needed > offered) {
+	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
-	}
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
@@ -2420,8 +2418,10 @@ static uint32 getprinterdriver2_level2(pstring servername, pstring architecture,
 	/* check the required size. */	
 	*needed += spoolss_size_printer_driver_info_2(info);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	new_smb_io_printer_driver_info_2("", buffer, info, 0);	
@@ -2429,9 +2429,8 @@ static uint32 getprinterdriver2_level2(pstring servername, pstring architecture,
 	/* clear memory */
 	safe_free(info);
 
-	if (*needed > offered) {
+	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
-	}
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
@@ -2449,8 +2448,10 @@ static uint32 getprinterdriver2_level3(pstring servername, pstring architecture,
 	/* check the required size. */	
 	*needed += spoolss_size_printer_driver_info_3(info);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	new_smb_io_printer_driver_info_3("", buffer, info, 0);	
@@ -2458,18 +2459,18 @@ static uint32 getprinterdriver2_level3(pstring servername, pstring architecture,
 	/* clear memory */
 	safe_free(info);
 
-	if (*needed > offered) {
+	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
-	}
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, uint32 unknown,
+uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, 
+				uint32 clientmajorversion, uint32 clientminorversion,
 				NEW_BUFFER *buffer, uint32 offered,
-				uint32 *needed, uint32 *unknown0, uint32 *unknown1)
+				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion)
 {
 	pstring servername;
 	fstring architecture;
@@ -2478,16 +2479,14 @@ uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_a
 	DEBUG(4,("_spoolss_getprinterdriver2\n"));
 
 	*needed=0;
-	*unknown0=0;
-	*unknown1=0;
+	*servermajorversion=0;
+	*serverminorversion=0;
 
 	pstrcpy(servername, global_myname);
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
 	if (!get_printer_snum(handle, &snum))
-	{
 		return NT_STATUS_INVALID_HANDLE;
-	}
 
 	switch (level) {
 	case 1:
@@ -3381,8 +3380,10 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 
 		*needed=buffer_size;		
 		
-		if (!alloc_buffer_size(buffer, buffer_size))
+		if (!alloc_buffer_size(buffer, buffer_size)){
+			safe_free(list);
 			return ERROR_INSUFFICIENT_BUFFER;
+		}
 
 		/* fill the buffer with the form structures */
 		for (i=0; i<*numofforms; i++)
@@ -3400,7 +3401,7 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 			
 	default:
 		safe_free(list);
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 	}
 
 }
@@ -3441,8 +3442,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 	ports=(PORT_INFO_1 *)malloc( (*returned+1) * sizeof(PORT_INFO_1) );
 	
-	for (snum=0; snum<n_services; snum++)
-	{
+	for (snum=0; snum<n_services; snum++) {
 		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUGADD(6,("Filling port number [%d]\n", i));
 			fill_port_1(&(ports[i]), lp_servicename(snum));
@@ -3451,18 +3451,18 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	}
 
 	/* check the required size. */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d]'s size\n", i));
 		*needed += spoolss_size_port_info_1(&(ports[i]));
 	}
 		
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(ports);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the ports structures */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d] to buffer\n", i));
 		new_smb_io_port_1("", buffer, &(ports[i]), 0);
 	}
@@ -3495,8 +3495,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 	ports=(PORT_INFO_2 *)malloc( (*returned+1) * sizeof(PORT_INFO_2) );
 	
-	for (snum=0; snum<n_services; snum++)
-	{
+	for (snum=0; snum<n_services; snum++) {
 		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUGADD(6,("Filling port number [%d]\n", i));
 			fill_port_2(&(ports[i]), lp_servicename(snum));
@@ -3505,18 +3504,18 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	}
 
 	/* check the required size. */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d]'s size\n", i));
 		*needed += spoolss_size_port_info_2(&(ports[i]));
 	}
 		
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(ports);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the ports structures */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d] to buffer\n", i));
 		new_smb_io_port_2("", buffer, &(ports[i]), 0);
 	}
@@ -3561,7 +3560,7 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
-				uint32 user_switch, const  SPOOL_USER_CTR *user,
+				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle)
 {
 	NT_PRINTER_INFO_LEVEL printer;	
@@ -3654,8 +3653,10 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	
 	*needed += spoolss_size_driverdir_info_1(info);							    
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	new_smb_io_driverdir_1("", buffer, info, 0);
 
@@ -3682,7 +3683,7 @@ uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environmen
 		return getprinterdriverdir_level_1(name, uni_environment, buffer, offered, needed);
 		break;
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -3767,7 +3768,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	 * the value len is wrong in NT sp3
 	 * that's the number of bytes not the number of unicode chars
 	 */
- 
+
 	if (!get_specific_param_by_index(printer, 2, idx, value, &data, &type, &data_len)) {
 		free_a_printer(printer, 2);
 		return ERROR_NO_MORE_ITEMS;
@@ -3792,7 +3793,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	/* the data is counted in bytes */
 	*out_max_data_len=in_data_len;
 	*data_out=(uint8 *)malloc(in_data_len*sizeof(uint8));
-	memcpy(*out_data, data, data_len);
+	memcpy(*data_out, data, data_len);
 	*out_data_len=data_len;
 
 	safe_free(data);
