@@ -119,12 +119,12 @@ int srvstr_pull(void *inbuf, char *dest, const void *src, int dest_len, int src_
 		dest_len = sizeof(pstring);
 	}
 
-	if (srvstr_align(inbuf, PTR_DIFF(src, inbuf))) {
+	if (!(flags & STR_ASCII) && srvstr_align(inbuf, PTR_DIFF(src, inbuf))) {
 		src++;
 		if (src_len > 0) src_len--;
 	}
 
-	if (!(flags & STR_UNICODE) && !UNICODE_FLAG()) {
+	if ((flags & STR_ASCII) || (!(flags & STR_UNICODE) && !UNICODE_FLAG())) {
 		/* the server doesn't want unicode */
 		if (flags & STR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);
