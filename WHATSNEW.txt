@@ -62,6 +62,17 @@ As we are using libtool in a slightly different way from usual,
 you may encounter run-time or compilation errors, so please repoty
 them to us.
 
+4). New SAM Database Daemons
+----------------------------
+
+The SAM database daemon, samrd, is being considered "legacy", and
+the aim is to replace it.  To this end, some new SAM database
+daemons are being developed - samrtdbd and samrnt5ldapd.
+They need to be run with their counterparts, netlogontdbd or
+netlogonnt5ldapd.  None of these are build as part of the standard
+make, they have to be explicitly built because they are in
+development.
+
 =====================================================================
 
 NOTE - Some important information
@@ -113,8 +124,8 @@ production environment, for at least the following reasons:
 1) nmbd is known to fork() every 20 minutes, resulting in an extra
 process that hangs around.  It has also been reported, in a large
 network neighbourhood environment with "wins support = no"
-and "wins server = x.x.x.x" to flood the WINS server with over
-1000 requests per second to resolve every single name in the
+and "wins server = x.x.x.x" to flood the WINS server with about
+3 requests per second to resolve every single name in the
 network neighbourhood.  Be Warned!
 
 You can avoid this by using a stable, production release of nmbd, such
