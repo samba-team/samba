@@ -426,7 +426,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
-	chunk_size = p->srv_max_recv_frag - DCERPC_REQUEST_LENGTH;
+	chunk_size = p->srv_max_recv_frag - (DCERPC_MAX_SIGN_SIZE+DCERPC_REQUEST_LENGTH);
 
 	pkt.ptype = DCERPC_PKT_REQUEST;
 	pkt.call_id = p->call_id++;

@@ -467,7 +467,9 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 		length = stub.length;
 		if (length + DCERPC_RESPONSE_LENGTH > call->dce->cli_max_recv_frag) {
-			length = call->dce->cli_max_recv_frag - DCERPC_RESPONSE_LENGTH;
+			/* the 32 is to cope with signing data */
+			length = call->dce->cli_max_recv_frag - 
+				(DCERPC_MAX_SIGN_SIZE+DCERPC_RESPONSE_LENGTH);
 		}
 
 		/* form the dcerpc response packet */
