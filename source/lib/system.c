@@ -179,11 +179,15 @@ A stat() wrapper that will deal with 64 bit filesizes.
 
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
+	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-  return stat64(fname, sbuf);
+	ret = stat64(fname, sbuf);
 #else
-  return stat(fname, sbuf);
+	ret = stat(fname, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -192,11 +196,15 @@ int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 {
+	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
-  return fstat64(fd, sbuf);
+	ret = fstat64(fd, sbuf);
 #else
-  return fstat(fd, sbuf);
+	ret = fstat(fd, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -205,11 +213,15 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
+	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
-  return lstat64(fname, sbuf);
+	ret = lstat64(fname, sbuf);
 #else
-  return lstat(fname, sbuf);
+	ret = lstat(fname, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
