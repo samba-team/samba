@@ -31,6 +31,8 @@ static struct cli_state current_cli;
 static fstring randomfname;
 static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
+static char *client_txt = "client_oplocks.txt";
+
 BOOL torture_showall = False;
 
 static double create_procs(BOOL (*fn)(int), BOOL *result);
@@ -38,12 +40,12 @@ static double create_procs(BOOL (*fn)(int), BOOL *result);
 
 static struct timeval tp1,tp2;
 
-static void start_timer(void)
+void start_timer(void)
 {
 	gettimeofday(&tp1,NULL);
 }
 
-static double end_timer(void)
+double end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
 	return((tp2.tv_sec - tp1.tv_sec) + 
@@ -60,7 +62,7 @@ static double end_timer(void)
    This function uses system5 shared memory. It takes advantage of a property
    that the memory is not destroyed if it is attached when the id is removed
    */
-static void *shm_setup(int size)
+void *shm_setup(int size)
 {
 	int shmid;
 	void *ret;
@@ -615,6 +617,9 @@ static BOOL run_readwritelarge(int dummy)
 	}
 
 int line_count = 0;
+int nbio_id;
+
+#define ival(s) strtol(s, NULL, 0)
 
 /* run a test that simulates an approximate netbench client load */
 static BOOL run_netbench(int client)
@@ -630,16 +635,18 @@ static BOOL run_netbench(int client)
 
 	cli = current_cli;
 
+	nbio_id = client;
+
 	cli_sockopt(&cli, sockops);
 
 	nb_setup(&cli);
 
-	slprintf(cname,sizeof(fname), "CLIENT%d", client);
+	slprintf(cname,sizeof(fname), "client%d", client);
 
-	f = fopen("client.txt", "r");
+	f = fopen(client_txt, "r");
 
 	if (!f) {
-		perror("client.txt");
+		perror(client_txt);
 		return False;
 	}
 
@@ -650,10 +657,8 @@ static BOOL run_netbench(int client)
 
 		/* printf("[%d] %s\n", line_count, line); */
 
-		all_string_sub(line,"CLIENT1", cname, sizeof(line));
+		all_string_sub(line,"client1", cname, sizeof(line));
 		
-		for (i=0;i<20;i++) params[i] = "";
-
 		/* parse the command parameters */
 		params[0] = strtok(line," ");
 		i = 0;
@@ -663,56 +668,50 @@ static BOOL run_netbench(int client)
 
 		if (i < 2) continue;
 
-		if (strcmp(params[1],"REQUEST") == 0) {
-			if (!strcmp(params[0],"SMBopenX")) {
-				fstrcpy(fname, params[5]);
-			} else if (!strcmp(params[0],"SMBclose")) {
-				nb_close(atoi(params[3]));
-			} else if (!strcmp(params[0],"SMBmkdir")) {
-				nb_mkdir(params[3]);
-			} else if (!strcmp(params[0],"CREATE")) {
-				nb_create(params[3], atoi(params[5]));
-			} else if (!strcmp(params[0],"SMBrmdir")) {
-				nb_rmdir(params[3]);
-			} else if (!strcmp(params[0],"SMBunlink")) {
-				fstrcpy(fname, params[3]);
-			} else if (!strcmp(params[0],"SMBmv")) {
-				nb_rename(params[3], params[5]);
-			} else if (!strcmp(params[0],"SMBgetatr")) {
-				fstrcpy(fname, params[3]);
-			} else if (!strcmp(params[0],"SMBwrite")) {
-				nb_write(atoi(params[3]), 
-					 atoi(params[5]), atoi(params[7]));
-			} else if (!strcmp(params[0],"SMBwritebraw")) {
-				nb_write(atoi(params[3]), 
-					 atoi(params[7]), atoi(params[5]));
-			} else if (!strcmp(params[0],"SMBreadbraw")) {
-				nb_read(atoi(params[3]), 
-					 atoi(params[7]), atoi(params[5]));
-			} else if (!strcmp(params[0],"SMBread")) {
-				nb_read(atoi(params[3]), 
-					 atoi(params[5]), atoi(params[7]));
-			}
+		if (!strncmp(params[0],"SMB", 3)) {
+			printf("ERROR: You are using a dbench 1 load file\n");
+			exit(1);
+		}
+
+		if (!strcmp(params[0],"NTCreateX")) {
+			nb_createx(params[1], ival(params[2]), ival(params[3]), 
+				   ival(params[4]));
+		} else if (!strcmp(params[0],"Close")) {
+			nb_close(ival(params[1]));
+		} else if (!strcmp(params[0],"Rename")) {
+			nb_rename(params[1], params[2]);
+		} else if (!strcmp(params[0],"Unlink")) {
+			nb_unlink(params[1]);
+		} else if (!strcmp(params[0],"Deltree")) {
+			nb_deltree(params[1]);
+		} else if (!strcmp(params[0],"Rmdir")) {
+			nb_rmdir(params[1]);
+		} else if (!strcmp(params[0],"QUERY_PATH_INFORMATION")) {
+			nb_qpathinfo(params[1]);
+		} else if (!strcmp(params[0],"QUERY_FILE_INFORMATION")) {
+			nb_qfileinfo(ival(params[1]));
+		} else if (!strcmp(params[0],"QUERY_FS_INFORMATION")) {
+			nb_qfsinfo(ival(params[1]));
+		} else if (!strcmp(params[0],"FIND_FIRST")) {
+			nb_findfirst(params[1]);
+		} else if (!strcmp(params[0],"WriteX")) {
+			nb_writex(ival(params[1]), 
+				  ival(params[2]), ival(params[3]), ival(params[4]));
+		} else if (!strcmp(params[0],"ReadX")) {
+			nb_readx(ival(params[1]), 
+				  ival(params[2]), ival(params[3]), ival(params[4]));
+		} else if (!strcmp(params[0],"Flush")) {
+			nb_flush(ival(params[1]));
 		} else {
-			if (!strcmp(params[0],"SMBopenX")) {
-				if (!strncmp(params[2], "ERR", 3)) continue;
-				nb_open(fname, atoi(params[3]), atoi(params[5]));
-			} else if (!strcmp(params[0],"SMBgetatr")) {
-				if (!strncmp(params[2], "ERR", 3)) continue;
-				nb_stat(fname, atoi(params[3]));
-			} else if (!strcmp(params[0],"SMBunlink")) {
-				if (!strncmp(params[2], "ERR", 3)) continue;
-				nb_unlink(fname);
-			}
+			printf("Unknown operation %s\n", params[0]);
+			exit(1);
 		}
 	}
 	fclose(f);
 
-	slprintf(fname,sizeof(fname), "CLIENTS/CLIENT%d", client);
+	slprintf(fname,sizeof(fname), "clients/client%d", client);
 	rmdir(fname);
-	rmdir("CLIENTS");
-
-	printf("+");	
+	rmdir("clients");
 
 	if (!torture_close_connection(&cli)) {
 		correct = False;
@@ -722,33 +721,25 @@ static BOOL run_netbench(int client)
 }
 
 
-/* run a test that simulates an approximate netbench w9X client load */
-static BOOL run_nbw95(int dummy)
+/* run a test that simulates an approximate netbench client load */
+static BOOL run_nbench(int dummy)
 {
 	double t;
 	BOOL correct = True;
+
+	nbio_shmem(nprocs);
+
+	nbio_id = -1;
+
+	signal(SIGALRM, nb_alarm);
+	alarm(1);
 	t = create_procs(run_netbench, &correct);
-	/* to produce a netbench result we scale accoding to the
-           netbench measured throughput for the run that produced the
-           sniff that was used to produce client.txt. That run used 2
-           clients and ran for 660 seconds to produce a result of
-           4MBit/sec. */
-	printf("Throughput %g MB/sec (NB=%g MB/sec  %g MBit/sec)\n", 
-	       132*nprocs/t, 0.5*0.5*nprocs*660/t, 2*nprocs*660/t);
+	alarm(0);
+
+	printf("\nThroughput %g MB/sec\n", 
+	       1.0e-6 * nbio_total() / t);
 	return correct;
 }
-
-/* run a test that simulates an approximate netbench wNT client load */
-static BOOL run_nbwnt(int dummy)
-{
-	double t;
-	BOOL correct = True;
-	t = create_procs(run_netbench, &correct);
-	printf("Throughput %g MB/sec (NB=%g MB/sec  %g MBit/sec)\n", 
-	       132*nprocs/t, 0.5*0.5*nprocs*660/t, 2*nprocs*660/t);
-	return correct;
-}
-
 
 
 /*
@@ -3077,8 +3068,7 @@ static struct {
 	{"TORTURE",run_torture,    FLAG_MULTIPROC},
 	{"RANDOMIPC", run_randomipc, 0},
 	{"NEGNOWAIT", run_negprot_nowait, 0},
-	{"NBW95",  run_nbw95, 0},
-	{"NBWNT",  run_nbwnt, 0},
+	{"NBENCH",  run_nbench, 0},
 	{"OPLOCK1",  run_oplock1, 0},
 	{"OPLOCK2",  run_oplock2, 0},
 	{"OPLOCK3",  run_oplock3, 0},
@@ -3159,6 +3149,7 @@ static void usage(void)
 	printf("\t-O socket_options\n");
 	printf("\t-m maximum protocol\n");
 	printf("\t-L use oplocks\n");
+	printf("\t-c CLIENT.TXT   specify client load file for NBENCH\n");
 	printf("\t-A showall\n");
 	printf("\n\n");
 
@@ -3258,6 +3249,9 @@ static void usage(void)
 			break;
 		case 'n':
 			fstrcpy(myname, optarg);
+			break;
+		case 'c':
+			client_txt = optarg;
 			break;
 		case 'U':
 			pstrcpy(username,optarg);
