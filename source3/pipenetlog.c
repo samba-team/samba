@@ -499,6 +499,8 @@ static void api_lsa_sam_logon( user_struct *vuser,
 
 	if (vuser != NULL)
 	{
+		DOM_GID gids[LSA_MAX_GROUPS];
+		int num_gids;
 		NTTIME dummy_time;
 		pstring logon_script;
 		pstring profile_path;
@@ -527,6 +529,8 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstrcpy(home_drive  , lp_logon_drive ());
 		pstrcpy(home_dir    , lp_logon_home  ());
 
+		num_gids = make_domain_gids(lp_domain_groups(), gids);
+
 		sam_logon_in_ssb = False;
 
 		pstrcpy(my_name     , myname           );
@@ -553,8 +557,8 @@ static void api_lsa_sam_logon( user_struct *vuser,
 
 		               vuser->uid, /* uint32 user_id */
 		               vuser->gid, /* uint32 group_id */
-		               0,    /* uint32 num_groups */
-		               NULL, /* DOM_GID *gids */
+		               num_gids,    /* uint32 num_groups */
+		               gids, /* DOM_GID *gids */
 		               0x20, /* uint32 user_flgs */
 
 		               NULL, /* char sess_key[16] */
