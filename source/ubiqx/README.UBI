@@ -7,8 +7,11 @@ If this file is not present, you can obtain a copy of the LGPL by writing
 to the Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 USA. 
 
-See http://www.interads.co.uk/~crh/ubiqx/ for more info and additional
-available modules. 
+The versions of the ubiqx modules distributed with Samba may have been
+modified for inclusion with Samba.  The main distribution, which contains
+additional available modules, can be found at: 
+
+  http://www.interads.co.uk/~crh/ubiqx/
 
 Chris Hertel
 Samba Team
