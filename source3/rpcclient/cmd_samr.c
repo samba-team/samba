@@ -1128,7 +1128,7 @@ void cmd_sam_enum_users(struct client_info *info)
 	/* read some users */
 	res = res ? samr_enum_dom_users(smb_cli, fnum, 
 	             &info->dom.samr_pol_open_domain,
-	             start_idx, acb_mask, unk_1, 0x80,
+	             start_idx, acb_mask, unk_1, 0x8000,
 	             &info->dom.sam, &info->dom.num_sam_entries) : False;
 
 	if (res && info->dom.num_sam_entries == 0)
