@@ -33,11 +33,11 @@
 static const char *				/* O - Password or NULL */
 cups_passwd_cb(const char *prompt)	/* I - Prompt */
 {
- /*
-  * Always return NULL to indicate that no password is available...
-  */
+	/*
+	 * Always return NULL to indicate that no password is available...
+	 */
 
-  return (NULL);
+	return (NULL);
 }
 
 static const char *cups_server(void)
@@ -54,11 +54,11 @@ static const char *cups_server(void)
 
 BOOL cups_cache_reload(void)
 {
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
 	ipp_attribute_t	*attr;		/* Current attribute */
-	cups_lang_t	*language;	/* Default language */
+	cups_lang_t	*language = NULL;	/* Default language */
 	char		*name,		/* printer-name attribute */
 			*info;		/* printer-info attribute */
 	static const char *requested[] =/* Requested attributes */
@@ -66,7 +66,7 @@ BOOL cups_cache_reload(void)
 			  "printer-name",
 			  "printer-info"
 			};       
-
+	BOOL ret = False;
 
 	DEBUG(5, ("reloading cups printcap cache\n"));
 
@@ -80,11 +80,10 @@ BOOL cups_cache_reload(void)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return False;
+		goto out;
 	}
 
        /*
@@ -118,16 +117,13 @@ BOOL cups_cache_reload(void)
 	* Do the request and get back a response...
 	*/
 
-	if ((response = cupsDoRequest(http, request, "/")) == NULL)
-	{
+	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
 		DEBUG(0,("Unable to get printer list - %s\n",
 			 ippErrorString(cupsLastError())));
-		httpClose(http);
-		return False;
+		goto out;
 	}
 
-	for (attr = response->attrs; attr != NULL;)
-	{
+	for (attr = response->attrs; attr != NULL;) {
 	       /*
 		* Skip leading attributes until we hit a printer...
 		*/
@@ -145,8 +141,7 @@ BOOL cups_cache_reload(void)
 		name       = NULL;
 		info       = NULL;
 
-		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER)
-		{
+		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER) {
         		if (strcmp(attr->name, "printer-name") == 0 &&
 			    attr->value_tag == IPP_TAG_NAME)
 				name = attr->values[0].string.text;
@@ -166,14 +161,12 @@ BOOL cups_cache_reload(void)
 			break;
 
 		if (!pcap_cache_add(name, info)) {
-			ippDelete(response);
-			httpClose(http);
-			return False;
+			goto out;
 		}
 	}
 
 	ippDelete(response);
-
+	response = NULL;
 
        /*
 	* Build a CUPS_GET_CLASSES request, which requires the following
@@ -184,12 +177,8 @@ BOOL cups_cache_reload(void)
 	*    requested-attributes
 	*/
 
-	request = ippNew();
-
 	request->request.op.operation_id = CUPS_GET_CLASSES;
 	request->request.op.request_id   = 1;
-
-	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
                      "attributes-charset", NULL, cupsLangEncoding(language));
@@ -206,16 +195,13 @@ BOOL cups_cache_reload(void)
 	* Do the request and get back a response...
 	*/
 
-	if ((response = cupsDoRequest(http, request, "/")) == NULL)
-	{
+	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
 		DEBUG(0,("Unable to get printer list - %s\n",
 			 ippErrorString(cupsLastError())));
-		httpClose(http);
-		return False;
+		goto out;
 	}
 
-	for (attr = response->attrs; attr != NULL;)
-	{
+	for (attr = response->attrs; attr != NULL;) {
 	       /*
 		* Skip leading attributes until we hit a printer...
 		*/
@@ -233,8 +219,7 @@ BOOL cups_cache_reload(void)
 		name       = NULL;
 		info       = NULL;
 
-		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER)
-		{
+		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER) {
         		if (strcmp(attr->name, "printer-name") == 0 &&
 			    attr->value_tag == IPP_TAG_NAME)
 				name = attr->values[0].string.text;
@@ -254,20 +239,27 @@ BOOL cups_cache_reload(void)
 			break;
 
 		if (!pcap_cache_add(name, info)) {
-			ippDelete(response);
-			httpClose(http);
-			return False;
+			goto out;
 		}
 	}
 
-	ippDelete(response);
+	ret = True;
 
-       /*
-        * Close the connection to the server...
-	*/
+ out:
 
-	httpClose(http);
-	return True;
+	if (request)
+		ippDelete(request);
+
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return ret;
 }
 
 
@@ -275,14 +267,13 @@ BOOL cups_cache_reload(void)
  * 'cups_job_delete()' - Delete a job.
  */
 
-static int
-cups_job_delete(int snum, struct printjob *pjob)
+static int cups_job_delete(int snum, struct printjob *pjob)
 {
-	int		ret;		/* Return value */
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
-	cups_lang_t	*language;	/* Default language */
+	int		ret = 1;		/* Return value */
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
+	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 
 
@@ -298,11 +289,10 @@ cups_job_delete(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return (1);
+		goto out;
 	}
 
        /*
@@ -339,25 +329,33 @@ cups_job_delete(int snum, struct printjob *pjob)
 	* Do the request and get back a response...
 	*/
 
-        ret = 1;
-
-	if ((response = cupsDoRequest(http, request, "/jobs")) != NULL)
-	{
-	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
+	if ((response = cupsDoRequest(http, request, "/jobs")) != NULL) {
+		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
+			DEBUG(0,("Unable to cancel job %d - %s\n", pjob->sysjob,
+				ippErrorString(cupsLastError())));
+		} else {
+			ret = 0;
+		}
+	} else {
 		DEBUG(0,("Unable to cancel job %d - %s\n", pjob->sysjob,
-			 ippErrorString(cupsLastError())));
-          else
-	  	ret = 0;
-
-	  ippDelete(response);
+			ippErrorString(cupsLastError())));
 	}
-	else
-	  DEBUG(0,("Unable to cancel job %d - %s\n", pjob->sysjob,
-		   ippErrorString(cupsLastError())));
 
-	httpClose(http);
+ out:
 
-	return (ret);
+	if (request)
+		ippDelete(request);
+
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return ret;
 }
 
 
@@ -365,14 +363,13 @@ cups_job_delete(int snum, struct printjob *pjob)
  * 'cups_job_pause()' - Pause a job.
  */
 
-static int
-cups_job_pause(int snum, struct printjob *pjob)
+static int cups_job_pause(int snum, struct printjob *pjob)
 {
-	int		ret;		/* Return value */
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
-	cups_lang_t	*language;	/* Default language */
+	int		ret = 1;		/* Return value */
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
+	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 
 
@@ -388,11 +385,10 @@ cups_job_pause(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return (1);
+		goto out;
 	}
 
        /*
@@ -429,25 +425,33 @@ cups_job_pause(int snum, struct printjob *pjob)
 	* Do the request and get back a response...
 	*/
 
-        ret = 1;
-
-	if ((response = cupsDoRequest(http, request, "/jobs")) != NULL)
-	{
-	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
+	if ((response = cupsDoRequest(http, request, "/jobs")) != NULL) {
+		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
+			DEBUG(0,("Unable to hold job %d - %s\n", pjob->sysjob,
+				ippErrorString(cupsLastError())));
+		} else {
+			ret = 0;
+		}
+	} else {
 		DEBUG(0,("Unable to hold job %d - %s\n", pjob->sysjob,
-			 ippErrorString(cupsLastError())));
-          else
-	  	ret = 0;
-
-	  ippDelete(response);
+			ippErrorString(cupsLastError())));
 	}
-	else
-	  DEBUG(0,("Unable to hold job %d - %s\n", pjob->sysjob,
-		   ippErrorString(cupsLastError())));
 
-	httpClose(http);
+ out:
 
-	return (ret);
+	if (request)
+		ippDelete(request);
+
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return ret;
 }
 
 
@@ -455,14 +459,13 @@ cups_job_pause(int snum, struct printjob *pjob)
  * 'cups_job_resume()' - Resume a paused job.
  */
 
-static int
-cups_job_resume(int snum, struct printjob *pjob)
+static int cups_job_resume(int snum, struct printjob *pjob)
 {
-	int		ret;		/* Return value */
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
-	cups_lang_t	*language;	/* Default language */
+	int		ret = 1;		/* Return value */
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
+	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 
 
@@ -478,11 +481,10 @@ cups_job_resume(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return (1);
+		goto out;
 	}
 
        /*
@@ -519,25 +521,33 @@ cups_job_resume(int snum, struct printjob *pjob)
 	* Do the request and get back a response...
 	*/
 
-        ret = 1;
-
-	if ((response = cupsDoRequest(http, request, "/jobs")) != NULL)
-	{
-	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
+	if ((response = cupsDoRequest(http, request, "/jobs")) != NULL) {
+		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
+			DEBUG(0,("Unable to release job %d - %s\n", pjob->sysjob,
+				ippErrorString(cupsLastError())));
+		} else {
+			ret = 0;
+		}
+	} else {
 		DEBUG(0,("Unable to release job %d - %s\n", pjob->sysjob,
-			 ippErrorString(cupsLastError())));
-          else
-	  	ret = 0;
-
-	  ippDelete(response);
+			ippErrorString(cupsLastError())));
 	}
-	else
-	  DEBUG(0,("Unable to release job %d - %s\n", pjob->sysjob,
-		   ippErrorString(cupsLastError())));
 
-	httpClose(http);
+ out:
 
-	return (ret);
+	if (request)
+		ippDelete(request);
+
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return ret;
 }
 
 
@@ -545,19 +555,18 @@ cups_job_resume(int snum, struct printjob *pjob)
  * 'cups_job_submit()' - Submit a job for printing.
  */
 
-static int
-cups_job_submit(int snum, struct printjob *pjob)
+static int cups_job_submit(int snum, struct printjob *pjob)
 {
-	int		ret;		/* Return value */
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
-	cups_lang_t	*language;	/* Default language */
+	int		ret = 1;		/* Return value */
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
+	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-	char 		*clientname; 	/* hostname of client for job-originating-host attribute */
+	char 		*clientname = NULL; 	/* hostname of client for job-originating-host attribute */
 	pstring		new_jobname;
 	int		num_options = 0; 
-	cups_option_t 	*options;
+	cups_option_t 	*options = NULL;
 
 	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -571,11 +580,10 @@ cups_job_submit(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return (1);
+		goto out;
 	}
 
        /*
@@ -643,28 +651,37 @@ cups_job_submit(int snum, struct printjob *pjob)
 
 	slprintf(uri, sizeof(uri) - 1, "/printers/%s", PRINTERNAME(snum));
 
-        ret = 1;
-	if ((response = cupsDoFileRequest(http, request, uri,
-	                                  pjob->filename)) != NULL)
-	{
-		if (response->request.status.status_code >= IPP_OK_CONFLICT)
+	if ((response = cupsDoFileRequest(http, request, uri, pjob->filename)) != NULL) {
+		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
 			DEBUG(0,("Unable to print file to %s - %s\n", PRINTERNAME(snum),
 			         ippErrorString(cupsLastError())));
-        	else
+		} else {
 			ret = 0;
-
-		ippDelete(response);
-	}
-	else
+		}
+	} else {
 		DEBUG(0,("Unable to print file to `%s' - %s\n", PRINTERNAME(snum),
 			 ippErrorString(cupsLastError())));
-
-	httpClose(http);
+	}
 
 	if ( ret == 0 )
 		unlink(pjob->filename);
 	/* else print_job_end will do it for us */
 
+ out:
+
+	if (request)
+		ippDelete(request);
+
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return ret;
 	return (ret);
 }
 
@@ -672,22 +689,21 @@ cups_job_submit(int snum, struct printjob *pjob)
  * 'cups_queue_get()' - Get all the jobs in the print queue.
  */
 
-static int
-cups_queue_get(const char *printer_name,
+static int cups_queue_get(const char *printer_name,
                enum printing_types printing_type,
                char *lpq_command,
                print_queue_struct **q, 
                print_status_struct *status)
 {
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
-	ipp_attribute_t	*attr;		/* Current attribute */
-	cups_lang_t	*language;	/* Default language */
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
+	ipp_attribute_t	*attr = NULL;		/* Current attribute */
+	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-	int		qcount,		/* Number of active queue entries */
-			qalloc;		/* Number of queue entries allocated */
-	print_queue_struct *queue,	/* Queue entries */
+	int		qcount = 0,		/* Number of active queue entries */
+			qalloc = 0;		/* Number of queue entries allocated */
+	print_queue_struct *queue = NULL,	/* Queue entries */
 			*temp;		/* Temporary pointer for queue */
 	const char	*user_name,	/* job-originating-user-name attribute */
 			*job_name;	/* job-name attribute */
@@ -712,6 +728,7 @@ cups_queue_get(const char *printer_name,
 			  "printer-state-message"
 			};
 
+	*q = NULL;
 
 	DEBUG(5,("cups_queue_get(%s, %p, %p)\n", printer_name, q, status));
 
@@ -725,11 +742,10 @@ cups_queue_get(const char *printer_name,
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return (0);
+		goto out;
 	}
 
        /*
@@ -773,22 +789,16 @@ cups_queue_get(const char *printer_name,
 	* Do the request and get back a response...
 	*/
 
-	if ((response = cupsDoRequest(http, request, "/")) == NULL)
-	{
+	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
 		DEBUG(0,("Unable to get jobs for %s - %s\n", uri,
 			 ippErrorString(cupsLastError())));
-		httpClose(http);
-		return (0);
+		goto out;
 	}
 
-	if (response->request.status.status_code >= IPP_OK_CONFLICT)
-	{
+	if (response->request.status.status_code >= IPP_OK_CONFLICT) {
 		DEBUG(0,("Unable to get jobs for %s - %s\n", uri,
 			 ippErrorString(response->request.status.status_code)));
-		ippDelete(response);
-		httpClose(http);
-
-		return (0);
+		goto out;
 	}
 
        /*
@@ -799,8 +809,7 @@ cups_queue_get(const char *printer_name,
 	qalloc = 0;
 	queue  = NULL;
 
-        for (attr = response->attrs; attr != NULL; attr = attr->next)
-	{
+        for (attr = response->attrs; attr != NULL; attr = attr->next) {
 	       /*
 		* Skip leading attributes until we hit a job...
 		*/
@@ -814,20 +823,16 @@ cups_queue_get(const char *printer_name,
 	       /*
 	        * Allocate memory as needed...
 		*/
-		if (qcount >= qalloc)
-		{
+		if (qcount >= qalloc) {
 			qalloc += 16;
 
 			temp = SMB_REALLOC_ARRAY(queue, print_queue_struct, qalloc);
 
-			if (temp == NULL)
-			{
+			if (temp == NULL) {
 				DEBUG(0,("cups_queue_get: Not enough memory!"));
-				ippDelete(response);
-				httpClose(http);
-
+				qcount = 0;
 				SAFE_FREE(queue);
-				return (0);
+				goto out;
 			}
 
 			queue = temp;
@@ -848,10 +853,8 @@ cups_queue_get(const char *printer_name,
 		user_name    = NULL;
 		job_name     = NULL;
 
-		while (attr != NULL && attr->group_tag == IPP_TAG_JOB)
-		{
-        		if (attr->name == NULL)
-			{
+		while (attr != NULL && attr->group_tag == IPP_TAG_JOB) {
+        		if (attr->name == NULL) {
 				attr = attr->next;
 				break;
 			}
@@ -891,12 +894,11 @@ cups_queue_get(const char *printer_name,
 		* See if we have everything needed...
 		*/
 
-		if (user_name == NULL || job_name == NULL || job_id == 0)
-		{
-        	  if (attr == NULL)
-		    break;
-		  else
-        	    continue;
+		if (user_name == NULL || job_name == NULL || job_id == 0) {
+			if (attr == NULL)
+				break;
+			else
+				continue;
 		}
 
 		temp->job      = job_id;
@@ -913,10 +915,11 @@ cups_queue_get(const char *printer_name,
 		qcount ++;
 
 		if (attr == NULL)
-        	  break;
+			break;
 	}
 
 	ippDelete(response);
+	response = NULL;
 
        /*
 	* Build an IPP_GET_PRINTER_ATTRIBUTES request, which requires the
@@ -928,12 +931,8 @@ cups_queue_get(const char *printer_name,
 	*    printer-uri
 	*/
 
-	request = ippNew();
-
 	request->request.op.operation_id = IPP_GET_PRINTER_ATTRIBUTES;
 	request->request.op.request_id   = 1;
-
-	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
                      "attributes-charset", NULL, cupsLangEncoding(language));
@@ -953,31 +952,25 @@ cups_queue_get(const char *printer_name,
 	* Do the request and get back a response...
 	*/
 
-	if ((response = cupsDoRequest(http, request, "/")) == NULL)
-	{
+	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
 		DEBUG(0,("Unable to get printer status for %s - %s\n", printer_name,
 			 ippErrorString(cupsLastError())));
-		httpClose(http);
 		*q = queue;
-		return (qcount);
+		goto out;
 	}
 
-	if (response->request.status.status_code >= IPP_OK_CONFLICT)
-	{
+	if (response->request.status.status_code >= IPP_OK_CONFLICT) {
 		DEBUG(0,("Unable to get printer status for %s - %s\n", printer_name,
 			 ippErrorString(response->request.status.status_code)));
-		ippDelete(response);
-		httpClose(http);
 		*q = queue;
-		return (qcount);
+		goto out;
 	}
 
        /*
         * Get the current printer status and convert it to the SAMBA values.
 	*/
 
-        if ((attr = ippFindAttribute(response, "printer-state", IPP_TAG_ENUM)) != NULL)
-	{
+        if ((attr = ippFindAttribute(response, "printer-state", IPP_TAG_ENUM)) != NULL) {
 		if (attr->values[0].integer == IPP_PRINTER_STOPPED)
 			status->status = LPSTAT_STOPPED;
 		else
@@ -988,16 +981,27 @@ cups_queue_get(const char *printer_name,
 	                             IPP_TAG_TEXT)) != NULL)
 	        fstrcpy(status->message, attr->values[0].string.text);
 
-        ippDelete(response);
-
        /*
         * Return the job queue...
 	*/
 
-	httpClose(http);
-
 	*q = queue;
-	return (qcount);
+
+ out:
+
+	if (request)
+		ippDelete(request);
+
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return qcount;
 }
 
 
@@ -1005,15 +1009,14 @@ cups_queue_get(const char *printer_name,
  * 'cups_queue_pause()' - Pause a print queue.
  */
 
-static int
-cups_queue_pause(int snum)
+static int cups_queue_pause(int snum)
 {
 	extern userdom_struct current_user_info;
-	int		ret;		/* Return value */
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
-	cups_lang_t	*language;	/* Default language */
+	int		ret = 1;		/* Return value */
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
+	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 
 
@@ -1029,11 +1032,10 @@ cups_queue_pause(int snum)
 	 * Try to connect to the server...
 	 */
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return (1);
+		goto out;
 	}
 
 	/*
@@ -1071,25 +1073,33 @@ cups_queue_pause(int snum)
 	* Do the request and get back a response...
 	*/
 
-        ret = 1;
-
-	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL)
-	{
-	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
+	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL) {
+		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
+			DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
+				ippErrorString(cupsLastError())));
+		} else {
+			ret = 0;
+		}
+	} else {
 		DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
-			 ippErrorString(cupsLastError())));
-          else
-	  	ret = 0;
-
-	  ippDelete(response);
+			ippErrorString(cupsLastError())));
 	}
-	else
-	  DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
-		   ippErrorString(cupsLastError())));
 
-	httpClose(http);
+ out:
 
-	return (ret);
+	if (request)
+		ippDelete(request);
+
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return ret;
 }
 
 
@@ -1097,15 +1107,14 @@ cups_queue_pause(int snum)
  * 'cups_queue_resume()' - Restart a print queue.
  */
 
-static int
-cups_queue_resume(int snum)
+static int cups_queue_resume(int snum)
 {
 	extern userdom_struct current_user_info;
-	int		ret;		/* Return value */
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
-	cups_lang_t	*language;	/* Default language */
+	int		ret = 1;		/* Return value */
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
+	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 
 
@@ -1121,11 +1130,10 @@ cups_queue_resume(int snum)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return (1);
+		goto out;
 	}
 
        /*
@@ -1163,25 +1171,33 @@ cups_queue_resume(int snum)
 	* Do the request and get back a response...
 	*/
 
-        ret = 1;
-
-	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL)
-	{
-	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
+	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL) {
+		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
+			DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
+				ippErrorString(cupsLastError())));
+		} else {
+			ret = 0;
+		}
+	} else {
 		DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
-			 ippErrorString(cupsLastError())));
-          else
-	  	ret = 0;
-
-	  ippDelete(response);
+			ippErrorString(cupsLastError())));
 	}
-	else
-	  DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
-		   ippErrorString(cupsLastError())));
 
-	httpClose(http);
+ out:
 
-	return (ret);
+	if (request)
+		ippDelete(request);
+
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return ret;
 }
 
 /*******************************************************************
