@@ -66,8 +66,15 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
+#if 0
+	ret = krb5_build_principal(context, &server, strlen(realm),
+				   realm, "HOST", "blu", NULL);
+#else
 	ret = krb5_build_principal(context, &server, strlen(realm),
 				   realm, service, NULL);
+#endif
+	krb5_princ_type(context, server) = KRB5_NT_PRINCIPAL;
+
 	if (ret) {
 		DEBUG(1,("krb5_build_principal failed (%s)\n", error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -365,6 +372,55 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 
 /****************************************************************************
+reply to a session setup spnego anonymous packet
+****************************************************************************/
+static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *outbuf,
+				  int length, int bufsize)
+{
+	char *user;
+	int sess_vuid;
+	gid_t gid;
+	uid_t uid;
+	char *full_name;
+	char *p;
+	const struct passwd *pw;
+
+	DEBUG(3,("Got anonymous request\n"));
+
+	user = lp_guestaccount(-1);
+
+	/* the password is good - let them in */
+	pw = smb_getpwnam(user,False);
+	if (!pw) {
+		DEBUG(1,("Guest username %s is invalid on this system\n",user));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+	gid = pw->pw_gid;
+	uid = pw->pw_uid;
+	full_name = pw->pw_gecos;
+
+	sess_vuid = register_vuid(uid,gid,user,user,lp_workgroup(),True,full_name);
+	
+	if (sess_vuid == -1) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	set_message(outbuf,4,0,True);
+	SSVAL(outbuf, smb_vwv3, 0);
+	p = smb_buf(outbuf);
+	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
+	set_message_end(outbuf,p);
+ 
+	SSVAL(outbuf,smb_uid,sess_vuid);
+	SSVAL(inbuf,smb_uid,sess_vuid);
+	
+	return chain_reply(inbuf,outbuf,length,bufsize);
+}
+
+
+/****************************************************************************
 reply to a session setup command
 ****************************************************************************/
 static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,char *outbuf,
@@ -381,9 +437,14 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 		
 	p = smb_buf(inbuf);
 
+	if (SVAL(inbuf, smb_vwv7) == 0) {
+		/* an anonymous request */
+		return reply_spnego_anonymous(conn, inbuf, outbuf, length, bufsize);
+	}
+
 	/* pull the spnego blob */
 	blob1 = data_blob(p, SVAL(inbuf, smb_vwv7));
-	
+
 #if 0
 	chdir("/home/tridge");
 	file_save("negotiate.dat", blob1.data, blob1.length);
