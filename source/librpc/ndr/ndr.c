@@ -608,6 +608,7 @@ NTSTATUS ndr_pull_struct_start(struct ndr_pull *ndr)
 	NDR_ALLOC(ndr, ofs);
 	ofs->offset = ndr->offset;
 	ofs->next = ndr->ofs_list;
+	ofs->base = 0;
 	ndr->ofs_list = ofs;
 	return NT_STATUS_OK;
 }
@@ -629,6 +630,7 @@ NTSTATUS ndr_push_struct_start(struct ndr_push *ndr)
 	NDR_PUSH_ALLOC(ndr, ofs);
 	ofs->offset = ndr->offset;
 	ofs->next = ndr->ofs_list;
+	ofs->base = 0;
 	ndr->ofs_list = ofs;
 	return NT_STATUS_OK;
 }
@@ -688,6 +690,7 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 		NDR_PUSH_ALLOC(ndr, ofs);
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		ofs->offset = ndr->offset;
+		ofs->base = ndr->ofs_list->offset;
 		NDR_CHECK(ndr_push_uint32(ndr, 0xFFFFFFFF));
 		ofs->next = NULL;
 		if (ndr->relative_list_end) {
@@ -713,7 +716,7 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		ndr_push_save(ndr, &save);
 		ndr->offset = ofs->offset;
-		NDR_CHECK(ndr_push_uint32(ndr, save.offset - ndr->ofs_list->offset));
+		NDR_CHECK(ndr_push_uint32(ndr, save.offset - ofs->base));
 		ndr_push_restore(ndr, &save);
 		NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	}
