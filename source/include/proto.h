@@ -191,7 +191,7 @@ int sys_getgroups(int setlen, gid_t *gidset);
 int sys_setgroups(int setlen, gid_t *gidset);
 struct passwd *sys_getpwnam(const char *name);
 struct passwd *sys_getpwuid(uid_t uid);
-FILE *sys_popen(const char *command, const char *mode, BOOL paraniod);
+FILE *sys_popen(const char *command, const char *mode, BOOL paranoid);
 int sys_pclose( FILE *fp);
 
 /*The following definitions come from  lib/talloc.c  */
