@@ -268,6 +268,24 @@ krb5_auth_getcksumtype(krb5_context context,
 }
 
 krb5_error_code
+krb5_auth_setenctype(krb5_context context,
+		     krb5_auth_context auth_context,
+		     krb5_enctype etype)
+{
+    auth_context->enctype = etype;
+    return 0;
+}
+
+krb5_error_code
+krb5_auth_getenctype(krb5_context context,
+		     krb5_auth_context auth_context,
+		     krb5_enctype *etype)
+{
+    *etype = auth_context->enctype;
+    return 0;
+}
+
+krb5_error_code
 krb5_auth_getlocalseqnumber(krb5_context context,
 			    krb5_auth_context auth_context,
 			    int32_t *seqnumber)
