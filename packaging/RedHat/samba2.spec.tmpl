@@ -26,6 +26,7 @@ Samba 3.0 also introduces UNICODE support and kerberos/ldap
 integration as a member server in a Windows 2000 domain.
 
 Please refer to the WHATSNEW.txt document for fixup information.
+docs directory for implementation details.
 
 %changelog
 * Mon Nov 18 2002 Gerald Carter <jerry@samba.org>
@@ -168,6 +169,9 @@ install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/samba/samba.stack
 install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/samba/samba.xinetd
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
+
+# Remove "*.old" files
+find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -392,6 +396,9 @@ fi
 %{prefix}/bin/smbgroupedit
 %{prefix}/bin/smbcacls
 %{prefix}/bin/pdbedit
+%{prefix}/bin/pam_smbpass.so
+%{prefix}/bin/smbmount
+%{prefix}/bin/smbumount
 %{prefix}/bin/tdbbackup
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
@@ -406,7 +413,10 @@ fi
 %{prefix}/share/swat/lang/*/help/*
 %{prefix}/share/swat/lang/*/images/*
 %{prefix}/share/swat/lang/*/include/*.html
+%{prefix}/share/swat/include/header.html
+%{prefix}/share/swat/include/footer.html
 %{prefix}/share/swat/using_samba/*
+%{prefix}/share/swat/README
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers
