@@ -425,103 +425,6 @@ static void api_spoolss_rfnpcnex(rpcsrv_struct *p, prs_struct *data,
 	spoolss_io_r_rfnpcnex("", &r_u, rdata, 0);
 }
 
-/********************************************************************
- * construct_printer_info_0
- * fill a printer_info_1 struct
- ********************************************************************/
-static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring servername)
-{
-	pstring chaine;
-	int count;
-	NT_PRINTER_INFO_LEVEL ntprinter;
-	
-	print_queue_struct *queue=NULL;
-	print_status_struct status;
-	bzero(&status,sizeof(status));	
-
-	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0)
-	{
-		return (False);
-	}
-
-	count=get_printqueue(snum, NULL, &queue, &status);
-	
-	/* the description and the name are of the form \\server\share */
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s",servername, ntprinter.info_2->printername);
-							    
-	make_unistr(&(printer->printername), chaine);
-	
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", servername);
-	make_unistr(&(printer->servername), chaine);
-	
-	printer->cjobs = count;
-	printer->attributes =   PRINTER_ATTRIBUTE_SHARED   \
-	                      | PRINTER_ATTRIBUTE_NETWORK  \
-			      | PRINTER_ATTRIBUTE_RAW_ONLY ;
-	printer->unknown0     = 0x1; /* pointer */
-	printer->unknown1     = 0x000A07CE; /* don't known */
-	printer->unknown2     = 0x00020005;
-	printer->unknown3     = 0x0006000D;
-	printer->unknown4     = 0x02180026;
-	printer->unknown5     = 0x09;
-	printer->unknown6     = 0x36;
-	printer->majorversion = 0x0004; /* NT 4 */
-	printer->buildversion = 0x0565; /* build 1381 */
-	printer->unknown7     = 0x1;
-	printer->unknown8     = 0x0;
-	printer->unknown9     = 0x2;
-	printer->unknown10    = 0x3;
-	printer->unknown11    = 0x0;
-	printer->unknown12    = 0x0;
-	printer->unknown13    = 0x0;
-	printer->unknown14    = 0x1;
-	printer->unknown15    = 0x024a; /*586 Pentium ? */
-	printer->unknown16    = 0x0;
-	printer->unknown17    = 0x423ed444;
-	printer->unknown18    = 0x0;
-	printer->status       = status.status;
-	printer->unknown20    = 0x0;
-	printer->unknown21    = 0x0648;
-	printer->unknown22    = 0x0;
-	printer->unknown23    = 0x5;
-
-	if (queue) free(queue);
-
-	free_a_printer(ntprinter, 2);
-	return (True);	
-}
-
-/********************************************************************
- * construct_printer_info_1
- * fill a printer_info_1 struct
- ********************************************************************/
-static BOOL construct_printer_info_1(PRINTER_INFO_1 *printer,int snum, pstring servername)
-{
-	pstring chaine;
-	NT_PRINTER_INFO_LEVEL ntprinter;
-	
-	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0)
-	{
-		return (False);
-	}
-	
-	printer->flags=PRINTER_ENUM_NAME;
-
-	/* the description and the name are of the form \\server\share */
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s,%s,%s",servername,
-							    ntprinter.info_2->printername,
-							    ntprinter.info_2->drivername,
-							    lp_comment(snum));
-	make_unistr(&(printer->description), chaine);
-	
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s", servername, ntprinter.info_2->printername);
-	make_unistr(&(printer->name), chaine);
-	
-	make_unistr(&(printer->comment), lp_comment(snum));
-	
-	free_a_printer(ntprinter, 2);
-	return (True);
-}
 
 /****************************************************************************
 ****************************************************************************/
@@ -583,67 +486,6 @@ static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
 	free_a_printer(printer, 2);
 }
 
-/********************************************************************
- * construct_printer_info_2
- * fill a printer_info_2 struct
- ********************************************************************/
-static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring servername)
-{
-	pstring chaine;
-	int count;
-	DEVICEMODE *devmode;
-	NT_PRINTER_INFO_LEVEL ntprinter;
-	
-	print_queue_struct *queue=NULL;
-	print_status_struct status;
-	bzero(&status, sizeof(status));	
-	count=get_printqueue(snum, NULL, &queue, &status);
-
-	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
-	{
-		return (False);
-	}	
-
-	snprintf(chaine, sizeof(chaine)-1, "\\\\%s", servername);
-	make_unistr(&(printer->servername), chaine);			/* servername*/
-	
-	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", servername, ntprinter.info_2->printername);
-	make_unistr(&(printer->printername), chaine);			/* printername*/
-
-	make_unistr(&(printer->sharename),      lp_servicename(snum));	/* sharename */
-
-	make_unistr(&(printer->portname),       lp_servicename(snum));		/* port */	
-	make_unistr(&(printer->drivername),     ntprinter.info_2->drivername);	/* drivername */
-		
-	make_unistr(&(printer->comment),        ntprinter.info_2->comment);	/* comment */	
-	make_unistr(&(printer->location),       ntprinter.info_2->location);	/* location */	
-	make_unistr(&(printer->sepfile),        ntprinter.info_2->sepfile);	/* separator file */
-	make_unistr(&(printer->printprocessor), ntprinter.info_2->printprocessor);/* print processor */
-	make_unistr(&(printer->datatype),       ntprinter.info_2->datatype);	/* datatype */	
-	make_unistr(&(printer->parameters),     ntprinter.info_2->parameters);	/* parameters (of print processor) */	
-
-	printer->attributes =   PRINTER_ATTRIBUTE_SHARED   \
-	                      | PRINTER_ATTRIBUTE_NETWORK  \
-			      | PRINTER_ATTRIBUTE_RAW_ONLY ;		/* attributes */
-
-	printer->priority        = ntprinter.info_2->priority;		/* priority */	
-	printer->defaultpriority = ntprinter.info_2->default_priority;	/* default priority */
-	printer->starttime       = ntprinter.info_2->starttime;		/* starttime */
-	printer->untiltime       = ntprinter.info_2->untiltime;		/* untiltime */
-	printer->status          = status.status;			/* status */
-	printer->cjobs           = count;				/* jobs */
-	printer->averageppm      = ntprinter.info_2->averageppm;	/* average pages per minute */
-			
-	devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE));
-	ZERO_STRUCTP(devmode);	
-	construct_dev_mode(devmode, snum, servername);			
-	printer->devmode=devmode;
-	
-	if (queue) free(queue);
-	free_a_printer(ntprinter, 2);
-	return (True);
-}
-
 
 /********************************************************************
  * api_spoolss_enumprinters
@@ -683,75 +525,6 @@ static void api_spoolss_enumprinters(rpcsrv_struct *p, prs_struct *data,
 	spoolss_io_r_enumprinters("",&r_u,rdata,0);
 }
 
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata)
-{
-	SPOOL_R_GETPRINTER r_u;
-	int snum;
-	pstring servername;
-	
-	pstrcpy(servername, global_myname);
-
-	get_printer_snum(&(q_u->handle),&snum);
-	
-	switch (q_u->level)
-	{
-		case 0:
-		{ 
-			PRINTER_INFO_0 *printer;
-			
-			printer=(PRINTER_INFO_0 *)malloc(sizeof(PRINTER_INFO_0));
-			
-			construct_printer_info_0(printer, snum, servername);
-			r_u.printer.info0=printer;
-			r_u.status=0x0000;
-			r_u.offered=q_u->offered;
-			r_u.level=q_u->level;
-			
-			spoolss_io_r_getprinter("",&r_u,rdata,0);
-			
-			free(printer);
-			
-			break;
-		}
-		case 1:
-		{
-			PRINTER_INFO_1 *printer;
-			
-			printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
-
-			construct_printer_info_1(printer, snum, servername);
-
-			r_u.printer.info1=printer;			
-			r_u.status=0x0000;
-			r_u.offered=q_u->offered;
-			r_u.level=q_u->level;
-			spoolss_io_r_getprinter("",&r_u,rdata,0);
-			
-			free(printer);
-				
-			break;
-		}
-		case 2:
-		{
-			PRINTER_INFO_2 *printer;
-			
-			printer=(PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));	
-			construct_printer_info_2(printer, snum, servername);
-			
-			r_u.printer.info2=printer;	
-			r_u.status=0x0000;
-			r_u.offered=q_u->offered;
-			r_u.level=q_u->level;
-			spoolss_io_r_getprinter("",&r_u,rdata,0);
-			
-			free_printer_info_2(printer);
-				
-			break;
-		}
-	}
-}
 
 /********************************************************************
  * api_spoolss_getprinter
@@ -762,10 +535,22 @@ static void api_spoolss_getprinter(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTER q_u;
-	
+	SPOOL_R_GETPRINTER r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	spoolss_io_q_getprinter("", &q_u, data, 0);
 
-	spoolss_reply_getprinter(&q_u, rdata);
+	r_u.status = _spoolss_getprinter(&q_u.handle, q_u.level,
+	                                &r_u.ctr, &q_u.offered, &r_u.needed);
+
+	memcpy(&r_u.handle, &q_u.handle, sizeof(&r_u.handle));
+	r_u.offered=q_u.offered;
+	r_u.level=q_u.level;
+	safe_free(q_u.buffer);
+
+	spoolss_io_r_getprinter("",&r_u,rdata,0);
 }
 
 /********************************************************************

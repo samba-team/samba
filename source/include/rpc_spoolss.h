@@ -837,20 +837,28 @@ typedef struct spool_q_getprinter
 
 } SPOOL_Q_GETPRINTER;
 
-typedef struct spool_r_getprinter
+typedef struct printer_info_info
 {
-	POLICY_HND handle;
-	uint32 level;
-	
-	uint32 offered;
-	uint32 needed;
-	uint32 status;
 	union {
 		PRINTER_INFO_0 *info0;
 		PRINTER_INFO_1 *info1;
 		PRINTER_INFO_2 *info2;
 		void *info;
 	} printer;
+
+} PRINTER_INFO;
+
+typedef struct spool_r_getprinter
+{
+	POLICY_HND handle;
+	uint32 level;
+
+	PRINTER_INFO ctr;
+
+	uint32 offered;
+	uint32 needed;
+	uint32 status;
+
 } SPOOL_R_GETPRINTER;
 
 struct s_notify_info_data_table

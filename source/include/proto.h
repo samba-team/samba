@@ -4881,7 +4881,11 @@ uint32 _spoolss_enumprinters(
 				uint32 *needed,
 				PRINTER_INFO_CTR *ctr,
 				uint32 *returned);
-uint32 _spoolss_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_getprinter( POLICY_HND *handle,
+				uint32 level,
+				PRINTER_INFO *ctr,
+				uint32 *offered,
+				uint32 *needed);
 uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rdata);
 uint32 _spoolss_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *rdata);
 uint32 _spoolss_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *rdata);
@@ -4974,6 +4978,12 @@ void status_page(void);
 /*The following definitions come from  winregd/winregd.c  */
 
 msrpc_service_fns *get_service_fns(void);
+
+/*The following definitions come from  wkssvcd/srv_wkssvc_nt.c  */
+
+uint32 _wks_query_info(WKS_Q_QUERY_INFO *q_u,
+				prs_struct *rdata,
+				int status);
 
 /*The following definitions come from  wkssvcd/wkssvcd.c  */
 

@@ -2172,21 +2172,21 @@ BOOL spoolss_io_r_getprinter(char *desc,
 		case 0:
 		{
 			PRINTER_INFO_0 *info;
-			info = r_u->printer.info0;
+			info = r_u->ctr.printer.info0;
 			bufsize_required += spoolss_size_printer_info_0(info);	
 			break;
 		}
 		case 1:
 		{
 			PRINTER_INFO_1 *info;
-			info = r_u->printer.info1;
+			info = r_u->ctr.printer.info1;
 			bufsize_required += spoolss_size_printer_info_1(info);	
 			break;
 		}
 		case 2:
 		{
 			PRINTER_INFO_2 *info;
-			info = r_u->printer.info2;
+			info = r_u->ctr.printer.info2;
 			bufsize_required += spoolss_size_printer_info_2(info);	
 			break;
 		}	
@@ -2216,7 +2216,7 @@ BOOL spoolss_io_r_getprinter(char *desc,
 	if (ps->io)
 	{
 		/* reading */
-		r_u->printer.info = Realloc(NULL, r_u->offered);
+		r_u->ctr.printer.info = Realloc(NULL, r_u->offered);
 	}
 
 	if (bufsize_required <= r_u->offered)
@@ -2230,37 +2230,52 @@ BOOL spoolss_io_r_getprinter(char *desc,
 			case 0:
 			{
 				PRINTER_INFO_0 *info;
-				info = r_u->printer.info0;
+				info = r_u->ctr.printer.info0;
 				smb_io_printer_info_0(desc, 
 						      info, 
 						      ps, 
 						      depth, 
 						      &start_offset, 
 						      &end_offset);
+				if (!ps->io)
+				{
+					/* writing */
+					free(info);
+				}
 				break;
 			}
 			case 1:
 			{
 				PRINTER_INFO_1 *info;
-				info = r_u->printer.info1;
+				info = r_u->ctr.printer.info1;
 				smb_io_printer_info_1(desc, 
 						      info, 
 						      ps, 
 						      depth, 
 						      &start_offset, 
 						      &end_offset);
+				if (!ps->io)
+				{
+					/* writing */
+					free(info);
+				}
 				break;
 			}
 			case 2:
 			{
 				PRINTER_INFO_2 *info;
-				info = r_u->printer.info2;
+				info = r_u->ctr.printer.info2;
 				smb_io_printer_info_2(desc, 
 						      info, 
 						      ps, 
 						      depth, 
 						      &start_offset, 
 						      &end_offset);
+				if (!ps->io)
+				{
+					/* writing */
+					free_printer_info_2(info);
+				}
 				break;
 			}
 		

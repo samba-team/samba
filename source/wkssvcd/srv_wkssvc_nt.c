@@ -61,7 +61,7 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
 The following definitions come from  rpc_client/cli_wkssvc.c 
 lkclXXXX ACTUALLY sean, i modified it from char* srv_name!!!
 
-uint32 wks_query_info( const UNISTR2 *srv_name, uint32 switch_value,
+ uint32 wks_query_info( const UNISTR2 *srv_name, uint32 switch_value,
 			WKS_INFO_100 *wks100);
 
  ********************************************************************/

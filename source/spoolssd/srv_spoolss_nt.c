@@ -1767,77 +1767,68 @@ uint32 _spoolss_enumprinters(
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata)
+uint32 _spoolss_getprinter( POLICY_HND *handle,
+				uint32 level,
+				PRINTER_INFO *ctr,
+				uint32 *offered,
+				uint32 *needed)
 {
-	SPOOL_R_GETPRINTER r_u;
 	int snum;
 	pstring servername;
 	
 	pstrcpy(servername, global_myname);
 
-	get_printer_snum(handle,&snum);
-	
+	if (!get_printer_snum(handle,&snum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	DEBUG(0,("_spoolss_getprinter: offered and needed params ignored\n"));
+
 	switch (level)
 	{
 		case 0:
 		{ 
 			PRINTER_INFO_0 *printer;
 			
-			printer=(PRINTER_INFO_0 *)malloc(sizeof(PRINTER_INFO_0));
-			
+			printer=(PRINTER_INFO_0*)malloc(sizeof(PRINTER_INFO_0));
 			construct_printer_info_0(printer, snum, servername);
-			printer.info0=printer;
-			status=0x0000;
-			offered=offered;
-			level=level;
+			ctr->printer.info0=printer;
 			
-			spoolss_io_r_getprinter("",&r_u,rdata,0);
-			
-			free(printer);
-			
-			break;
+			return 0x0;
 		}
 		case 1:
 		{
 			PRINTER_INFO_1 *printer;
 			
-			printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
-
+			printer=(PRINTER_INFO_1*)malloc(sizeof(PRINTER_INFO_1));
 			construct_printer_info_1(printer, snum, servername);
+			ctr->printer.info1=printer;			
 
-			printer.info1=printer;			
-			status=0x0000;
-			offered=offered;
-			level=level;
-			spoolss_io_r_getprinter("",&r_u,rdata,0);
-			
-			free(printer);
-				
-			break;
+			return 0x0;
 		}
 		case 2:
 		{
 			PRINTER_INFO_2 *printer;
 			
-			printer=(PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));	
+			printer=(PRINTER_INFO_2*)malloc(sizeof(PRINTER_INFO_2));	
 			construct_printer_info_2(printer, snum, servername);
-			
-			printer.info2=printer;	
-			status=0x0000;
-			offered=offered;
-			level=level;
-			spoolss_io_r_getprinter("",&r_u,rdata,0);
-			
-			free_printer_info_2(printer);
-				
+			ctr->printer.info2=printer;	
+
+			return 0x0;
+		}
+		default:
+		{
 			break;
 		}
 	}
+
+	return NT_STATUS_INVALID_INFO_CLASS;
 }
+
+#if 0
 
 /********************************************************************
  * construct_printer_driver_info_1
