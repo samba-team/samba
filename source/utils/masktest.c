@@ -34,15 +34,6 @@ static BOOL showall = False;
 static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
 
-char *standard_masks[] = {"*", "*.", "*.*", 
-			  ".*", "d2.??", "d2\">>", "??", 
-			  NULL};
-char *standard_files[] = {"abc", "abc.", ".abc", 
-			  "abc.def", "abc.de.f", 
-			  "d2.x", 
-			  NULL};
-
-
 static BOOL reg_match_one(char *pattern, char *file)
 {
 	if (strcmp(file,"..") == 0) file = ".";
@@ -177,74 +168,57 @@ void listfn(file_info *f, const char *s)
 }
 
 
-static void testpair(struct cli_state *cli1, struct cli_state *cli2,
-		     char *mask, char *file)
+static void testpair(struct cli_state *cli, char *mask, char *file)
 {
 	int fnum;
-	fstring res1, res2;
-	char *res3;
+	fstring res1;
+	char *res2;
 	static int count;
 	fstring short_name;
 
 	count++;
 
 	fstrcpy(res1, "---");
-	fstrcpy(res2, "---");
 
-
-	fnum = cli_open(cli1, file, O_CREAT|O_TRUNC|O_RDWR, 0);
+	fnum = cli_open(cli, file, O_CREAT|O_TRUNC|O_RDWR, 0);
 	if (fnum == -1) {
-		DEBUG(0,("Can't create %s on cli1\n", file));
+		DEBUG(0,("Can't create %s\n", file));
 		return;
 	}
-	cli_close(cli1, fnum);
-
-	fnum = cli_open(cli2, file, O_CREAT|O_TRUNC|O_RDWR, 0);
-	if (fnum == -1) {
-		DEBUG(0,("Can't create %s on cli2\n", file));
-		return;
-	}
-	cli_close(cli2, fnum);
+	cli_close(cli, fnum);
 
 	resultp = res1;
 	fstrcpy(short_name, "");
 	finfo = NULL;
-	cli_list(cli1, mask, aHIDDEN | aDIR, listfn);
+	cli_list(cli, mask, aHIDDEN | aDIR, listfn);
 	if (finfo) {
 		fstrcpy(short_name, finfo->short_name);
 		strlower(short_name);
 	}
 
-	res3 = reg_test(mask, file, short_name);
+	res2 = reg_test(mask, file, short_name);
 
-	resultp = res2;
-	cli_list(cli2, mask, aHIDDEN | aDIR, listfn);
-
-	if (showall || strcmp(res1, res3)) {
-		DEBUG(0,("%s %s %s %d mask=[%s] file=[%s] mfile=[%s]\n",
-			 res1, res2, res3, count, mask, file, short_name));
+	if (showall || strcmp(res1, res2)) {
+		DEBUG(0,("%s %s %d mask=[%s] file=[%s] mfile=[%s]\n",
+			 res1, res2, count, mask, file, short_name));
 	}
 
-	cli_unlink(cli1, file);
-	cli_unlink(cli2, file);
-
+	cli_unlink(cli, file);
 
 	if (count % 500 == 0) DEBUG(0,("%d\n", count));
 }
 
 static void test_mask(int argc, char *argv[], 
-		      struct cli_state *cli1, struct cli_state *cli2)
+		      struct cli_state *cli)
 {
 	pstring mask, file;
-	int l1, l2, i, j, l;
+	int l1, l2, i, l;
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
 
-	cli_mkdir(cli1, "masktest");
-	cli_mkdir(cli2, "masktest");
+	cli_mkdir(cli, "masktest");
 
-	cli_unlink(cli1, "\\masktest\\*");
-	cli_unlink(cli2, "\\masktest\\*");
+	cli_unlink(cli, "\\masktest\\*");
 
 	if (argc >= 2) {
 		while (argc >= 2) {
@@ -252,24 +226,12 @@ static void test_mask(int argc, char *argv[],
 			pstrcpy(file,"\\masktest\\");
 			pstrcat(mask, argv[0]);
 			pstrcat(file, argv[1]);
-			testpair(cli1, cli2, mask, file);
+			testpair(cli, mask, file);
 			argv += 2;
 			argc -= 2;
 		}
 		goto finished;
 	}
-
-#if 1
-	for (i=0; standard_masks[i]; i++) {
-		for (j=0; standard_files[j]; j++) {
-			pstrcpy(mask,"\\masktest\\");
-			pstrcpy(file,"\\masktest\\");
-			pstrcat(mask, standard_masks[i]);
-			pstrcat(file, standard_files[j]);
-			testpair(cli1, cli2, mask, file);
-		}
-	}
-#endif
 
 	while (1) {
 		l1 = 1 + random() % 20;
@@ -291,12 +253,11 @@ static void test_mask(int argc, char *argv[],
 		    strcmp(file+l,"..") == 0 ||
 		    strcmp(mask+l,"..") == 0) continue;
 
-		testpair(cli1, cli2, mask, file);
+		testpair(cli, mask, file);
 	}
 
  finished:
-	cli_rmdir(cli1, "\\masktest");
-	cli_rmdir(cli2, "\\masktest");
+	cli_rmdir(cli, "\\masktest");
 }
 
 
@@ -304,7 +265,7 @@ static void usage(void)
 {
 	printf(
 "Usage:\n\
-  masktest //server1/share1 //server2/share2 [options..]\n\
+  masktest //server/share [options..]\n\
   options:\n\
         -U user%%pass\n\
         -s seed\n\
@@ -314,7 +275,7 @@ static void usage(void)
 \n\
   This program tests wildcard matching between two servers. It generates\n\
   random pairs of filenames/masks and tests that they match in the same\n\
-  way on two servers\n\
+  way on the servers and internally\n\
 ", 
   filechars, maskchars);
 }
@@ -324,8 +285,8 @@ static void usage(void)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	char *share1, *share2;
-	struct cli_state *cli1, *cli2;	
+	char *share;
+	struct cli_state *cli;	
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
@@ -338,16 +299,14 @@ static void usage(void)
 
 	dbf = stderr;
 
-	if (argv[1][0] == '-' || argc < 3) {
+	if (argv[1][0] == '-' || argc < 2) {
 		usage();
 		exit(1);
 	}
 
-	share1 = argv[1];
-	share2 = argv[2];
+	share = argv[1];
 
-	all_string_sub(share1,"/","\\",0);
-	all_string_sub(share2,"/","\\",0);
+	all_string_sub(share,"/","\\",0);
 
 	setup_logging(argv[0],True);
 
@@ -404,20 +363,13 @@ static void usage(void)
 	DEBUG(0,("seed=%d\n", seed));
 	srandom(seed);
 
-	cli1 = connect_one(share1);
-	if (!cli1) {
-		DEBUG(0,("Failed to connect to %s\n", share1));
+	cli = connect_one(share);
+	if (!cli) {
+		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);
 	}
 
-	cli2 = connect_one(share2);
-	if (!cli2) {
-		DEBUG(0,("Failed to connect to %s\n", share2));
-		exit(1);
-	}
-
-
-	test_mask(argc, argv, cli1, cli2);
+	test_mask(argc, argv, cli);
 
 	return(0);
 }
