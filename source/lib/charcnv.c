@@ -833,6 +833,7 @@ size_t push_ascii_nstring(void *dest, const char *src)
 	size_t i, buffer_len, dest_len;
 	smb_ucs2_t *buffer;
 
+	conv_silent = True;
 	buffer_len = push_ucs2_allocate(&buffer, src);
 	if (buffer_len == (size_t)-1) {
 		smb_panic("failed to create UCS2 buffer");
@@ -854,6 +855,7 @@ size_t push_ascii_nstring(void *dest, const char *src)
 	((char *)dest)[dest_len] = '\0';
 
 	SAFE_FREE(buffer);
+	conv_silent = False;
 	return dest_len;
 }
 

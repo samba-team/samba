@@ -639,14 +639,14 @@ void sync_all_dmbs(time_t t)
      
 	/* count how many syncs we might need to do */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strncmp(lp_workgroup(), work->work_group, sizeof(nstring))) {
+		if (strcmp(lp_workgroup(), work->work_group)) {
 			count++;
 		}
 	}
 
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strncmp(lp_workgroup(), work->work_group, sizeof(nstring))) {
+		if (strcmp(lp_workgroup(), work->work_group)) {
 			fstring dmb_name;
 
 			if (((unsigned)sys_random()) % count != 0)
