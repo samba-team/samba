@@ -68,6 +68,7 @@ void process_name_release_request(struct subnet_record *subrec,
   struct name_record *namerec;
   int rcode = 0;
   
+  START_PROFILE(name_release);
   putip((char *)&owner_ip,&nmb->additional->rdata[2]);  
   
   if(!bcast)
@@ -84,7 +85,7 @@ received for name %s from IP %s on subnet %s. Error - should be sent to WINS ser
           nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name));      
 
     send_name_release_response(FMT_ERR, p);
-    return;
+    goto done;
   }
 
   DEBUG(3,("process_name_release_request: Name release on name %s, \
@@ -94,7 +95,7 @@ subnet %s from owner IP %s\n",
   
   /* If someone is releasing a broadcast group name, just ignore it. */
   if( group && !ismyip(owner_ip) )
-    return;
+    goto done;
 
   /*
    * Code to work around a bug in FTP OnNet software NBT implementation.
@@ -108,7 +109,7 @@ subnet %s from owner IP %s\n",
     DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \
 group release name %s from IP %s on subnet %s with no group bit set.\n",
         nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name ));
-    return;
+    goto done;
   }
 
   namerec = find_name_on_subnet(subrec, &nmb->question.question_name, FIND_ANY_NAME);
@@ -125,10 +126,12 @@ on subnet %s being rejected as it is one of our names.\n",
   }
 
   if(rcode == 0)
-    return;
+    goto done;
 
   /* Send a NAME RELEASE RESPONSE (pos/neg) see rfc1002.txt 4.2.10-11 */
   send_name_release_response(rcode, p);
+done:
+  END_PROFILE(name_release);
 }
 
 /****************************************************************************
@@ -164,6 +167,7 @@ void process_name_refresh_request(struct subnet_record *subrec,
   BOOL bcast = nmb->header.nm_flags.bcast;
   struct in_addr from_ip;
   
+  START_PROFILE(name_refresh);
   putip((char *)&from_ip,&nmb->additional->rdata[2]);
 
   if(!bcast)
@@ -181,7 +185,7 @@ received for name %s from IP %s on subnet %s.\n",
     DEBUG(0,("Error - should be sent to WINS server\n"));
     
     send_name_registration_response(FMT_ERR, 0, p);
-    return;
+    goto done;
   } 
 
   /* Just log a message. We really don't care about broadcast name
@@ -190,6 +194,8 @@ received for name %s from IP %s on subnet %s.\n",
   DEBUG(3,("process_name_refresh_request: Name refresh for name %s \
 IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
      
+done:
+  END_PROFILE(name_refresh);
 }
     
 /****************************************************************************
@@ -208,6 +214,7 @@ void process_name_registration_request(struct subnet_record *subrec,
   int ttl = nmb->additional->ttl;
   struct in_addr from_ip;
   
+  START_PROFILE(name_registration);
   putip((char *)&from_ip,&nmb->additional->rdata[2]);
   
   if(!bcast)
@@ -224,7 +231,7 @@ received for name %s from IP %s on subnet %s. Error - should be sent to WINS ser
           nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));      
 
     send_name_registration_response(FMT_ERR, 0, p);
-    return;
+    goto done;
   }
 
   DEBUG(3,("process_name_registration_request: Name registration for name %s \
@@ -258,7 +265,7 @@ IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet
          register a name that's a group name as a unique name */
 
       send_name_registration_response(ACT_ERR, 0, p);
-      return;
+      goto done;
     }
     else if(namerec != NULL)
     {
@@ -268,7 +275,7 @@ IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet
 
       DEBUG(3,("process_name_registration_request: Updated name record %s \
 with IP %s on subnet %s\n",nmb_namestr(&namerec->name),inet_ntoa(from_ip), subrec->subnet_name));
-      return;
+      goto done;
     }
   }
   else
@@ -282,9 +289,11 @@ with IP %s on subnet %s\n",nmb_namestr(&namerec->name),inet_ntoa(from_ip), subre
     {
       /* Disallow group names when we have a unique name. */
       send_name_registration_response(ACT_ERR, 0, p);  
-      return;  
+      goto done;  
     }  
   }
+done:
+  END_PROFILE(name_registration);
 }
 
 /****************************************************************************
@@ -328,6 +337,7 @@ void process_node_status_request(struct subnet_record *subrec, struct packet_str
   int names_added,i;
   struct name_record *namerec;
 
+  START_PROFILE(node_status);
   DEBUG(3,("process_node_status_request: status request for name %s from IP %s on \
 subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip),
           subrec->subnet_name));
@@ -339,7 +349,7 @@ subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip),
 subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
           inet_ntoa(p->ip), subrec->subnet_name));
 
-    return;
+    goto done;
   }
  
   /* this is not an exact calculation. the 46 is for the stats buffer
@@ -436,6 +446,8 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 		       0,                            /* ttl. */
                        rdata,                        /* data to send. */
                        PTR_DIFF(buf,rdata));         /* data length. */
+done:
+  END_PROFILE(node_status);
 }
 
 
@@ -464,6 +476,7 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
   int reply_data_len = 0;
   int i;
  
+  START_PROFILE(name_query);
   DEBUG(3,("process_name_query_request: Name query from %s on subnet %s for name %s\n", 
             inet_ntoa(p->ip), subrec->subnet_name, nmb_namestr(question)));
   
@@ -530,7 +543,7 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
             DEBUG(5,("process_name_query_request: name %s is a WINS proxy name and is also \
 on the same subnet (%s) as the requestor. Not replying.\n", 
                    nmb_namestr(&namerec->name), subrec->subnet_name ));
-            return;
+            goto done;
           }
         }   
       }     
@@ -549,7 +562,7 @@ on the same subnet (%s) as the requestor. Not replying.\n",
         if((prdata = (char *)malloc( namerec->data.num_ips * 6 )) == NULL)
         {
           DEBUG(0,("process_name_query_request: malloc fail !\n"));
-          return;
+          goto done;
         }
       }
 
@@ -576,14 +589,14 @@ on the same subnet (%s) as the requestor. Not replying.\n",
      bcast && (subrec != remote_broadcast_subnet))
   {
     make_wins_proxy_name_query_request( subrec, p, question );
-    return;
+    goto done;
   }
 
   if (!success && bcast)
   {
     if((prdata != rdata) && (prdata != NULL))
       free(prdata);
-    return; /* Never reply with a negative response to broadcasts. */
+    goto done; /* Never reply with a negative response to broadcasts. */
   }
 
   /* 
@@ -596,7 +609,7 @@ on the same subnet (%s) as the requestor. Not replying.\n",
   {
     if((prdata != rdata) && (prdata != NULL))
       free(prdata);
-    return;
+    goto done;
   }
 
   if (success)
@@ -622,4 +635,6 @@ on the same subnet (%s) as the requestor. Not replying.\n",
 
   if((prdata != rdata) && (prdata != NULL))
     free(prdata);
+done:
+  END_PROFILE(name_query);
 }

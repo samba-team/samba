@@ -591,30 +591,60 @@ int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_
 
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)
 {
-	return get_nt_acl(fsp, ppdesc);
+	size_t result;
+
+	START_PROFILE(fget_nt_acl);
+	result = get_nt_acl(fsp, ppdesc);
+	END_PROFILE(fget_nt_acl);
+	return result;
 }
 
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc)
 {
-	return get_nt_acl(fsp, ppdesc);
+	size_t result;
+
+	START_PROFILE(get_nt_acl);
+	result = get_nt_acl(fsp, ppdesc);
+	END_PROFILE(get_nt_acl);
+	return result;
 }
 
 BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
 {
-	return set_nt_acl(fsp, security_info_sent, psd);
+	BOOL result;
+
+	START_PROFILE(fset_nt_acl);
+	result = set_nt_acl(fsp, security_info_sent, psd);
+	END_PROFILE(fset_nt_acl);
+	return result;
 }
 
 BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
-	return set_nt_acl(fsp, security_info_sent, psd);
+	BOOL result;
+
+	START_PROFILE(set_nt_acl);
+	result = set_nt_acl(fsp, security_info_sent, psd);
+	END_PROFILE(set_nt_acl);
+	return result;
 }
 
 int vfswrap_chmod_acl(connection_struct *conn, char *name, mode_t mode)
 {
-	return chmod_acl(name, mode);
+	int result;
+
+	START_PROFILE(chmod_acl);
+	result = chmod_acl(name, mode);
+	END_PROFILE(chmod_acl);
+	return result;
 }
 
 int vfswrap_fchmod_acl(files_struct *fsp, int fd, mode_t mode)
 {
-	return fchmod_acl(fd, mode);
+	int result;
+
+	START_PROFILE(fchmod_acl);
+	result = fchmod_acl(fd, mode);
+	END_PROFILE(fchmod_acl);
+	return result;
 }

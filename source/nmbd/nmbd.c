@@ -776,6 +776,11 @@ static void usage(char *pname)
   if ( !reload_nmbd_services(False) )
     return(-1);
 
+  if (!profile_setup(False)) {
+	DEBUG(0,("ERROR: failed to setup profiling shared memory\n"));
+	return -1;
+  }
+
   codepage_initialise(lp_client_code_page());
 
   if(!init_structs())
