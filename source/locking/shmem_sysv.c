@@ -557,8 +557,9 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		while (hash_size > 1) {
 			sem_id = semget(SEMAPHORE_KEY, hash_size+1, 
 					IPC_CREAT|IPC_EXCL| SEMAPHORE_PERMS);
-			if (sem_id != -1 || errno != EINVAL) break;
-			hash_size--;
+			if (sem_id != -1 || 
+			    (errno != EINVAL && errno != ENOSPC)) break;
+			hash_size -= 5;
 		}
 
 		if (sem_id == -1) {
@@ -639,8 +640,9 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		while (shm_size > MIN_SHM_SIZE) {
 			shm_id = shmget(SHMEM_KEY, shm_size, 
 					IPC_CREAT | IPC_EXCL | IPC_PERMS);
-			if (shm_id != -1 || errno != EINVAL) break;
-			shm_size *= 0.9;
+			if (shm_id != -1 || 
+			    (errno != EINVAL && errno != ENOSPC)) break;
+			shm_size *= 0.8;
 		}
 		created_new = (shm_id != -1);
 	}
