@@ -46,9 +46,9 @@ BOOL SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBencrypt: lm#, challenge, response\n"));
-	dump_data(100, (char *)p21, 16);
-	dump_data(100, (const char *)c8, 8);
-	dump_data(100, (char *)p24, 24);
+	dump_data(100, p21, 16);
+	dump_data(100, c8, 8);
+	dump_data(100, p24, 24);
 #endif
 
 	return ret;
@@ -196,9 +196,9 @@ void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24)
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBNTencrypt: nt#, challenge, response\n"));
-	dump_data(100, (char *)p21, 16);
-	dump_data(100, (char *)c8, 8);
-	dump_data(100, (char *)p24, 24);
+	dump_data(100, p21, 16);
+	dump_data(100, c8, 8);
+	dump_data(100, p24, 24);
 #endif
 }
 

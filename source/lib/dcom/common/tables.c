@@ -46,14 +46,15 @@ const struct dcom_interface *dcom_interface_by_iid(const struct GUID *iid)
 	return NULL;
 }
 
-const void *dcom_vtable_by_clsid(const struct GUID *clsid)
+const struct dcom_class *dcom_class_by_clsid(const struct GUID *clsid)
 {
 	struct class_list *c = classes;
 
 	while(c) {
 
-		if (uuid_equal(clsid, &c->class.clsid))
+		if (uuid_equal(clsid, &c->class.clsid)) {
 			return &c->class;
+		}
 
 		c = c->next;
 	}

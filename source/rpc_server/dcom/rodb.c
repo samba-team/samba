@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Running object table functions
+   Running objects database
 
    Copyright (C) Jelmer Vernooij 2004
    
@@ -21,14 +21,19 @@
 */
 
 #include "includes.h"
+#include "rpc_server/dcerpc_server.h"
+#include "librpc/gen_ndr/ndr_rot.h"
+#include "rpc_server/common/common.h"
 
-struct dcom_interface_p *dcom_get_local_iface_p(struct GUID *ipid)
+struct tdb_wrap *openrodb(TALLOC_CTX *mem_ctx)
 {
-	/* FIXME: Call the local ROT and do a 
-	 * rot_get_interface_pointer call */
+	struct tdb_wrap *wrap;
+	char *rodb_name = NULL;
+	
+	asprintf(&rodb_name, "%s/rot.tdb", lp_lockdir());
+	wrap = tdb_wrap_open(mem_ctx, rodb_name, 0, 0, O_RDWR|O_CREAT, 0600);
+	SAFE_FREE(rodb_name);
 
-	/* FIXME: Perhaps have a local (thread-local) table with 
-	 * local DCOM objects so that not every DCOM call requires a lookup 
-	 * to the ROT? */
-	return NULL; 
+	return wrap;
 }
+

@@ -47,15 +47,13 @@ BOOL torture_dcom_simple(void)
 
 	mem_ctx = talloc_init("torture_dcom_simple");
 
-	dcom_init(&ctx, lp_parm_string(-1, "torture", "userdomain"),
-			  	lp_parm_string(-1, "torture", "username"), 
-				  lp_parm_string(-1, "torture", "password"));
+	torture_dcom_init(&ctx);
 
 	GUID_from_string(DCERPC_ISTREAM_UUID, &IID[0]);
 	GUID_from_string(DCERPC_IUNKNOWN_UUID, &IID[1]);
 	GUID_from_string(CLSID_SIMPLE, &clsid);
 	error = dcom_create_object(ctx, &clsid, 
-							  lp_parm_string(-1, "torture", "binding"), 2, IID,
+							  lp_parm_string(-1, "torture", "dcomhost"), 2, IID,
 							  &interfaces, 
 							  results);
 							  

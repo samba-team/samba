@@ -90,7 +90,7 @@ static NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_C
 {
 	uint16 opnum = dce_call->pkt.u.request.opnum;
 	struct GUID ipid = dce_call->pkt.u.request.object.object;
-	struct dcom_interface_p *iface = dcom_get_iface_p(&ipid);
+	struct dcom_interface_p *iface = dcom_get_local_iface_p(&ipid);
 	const struct dcom_$name\_vtable *vtable = iface->vtable;
 
 	dce_call->fault_code = 0;
