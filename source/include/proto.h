@@ -1260,8 +1260,8 @@ void unbecome_local_master_success(struct subnet_record *subrec,
                              struct in_addr released_ip);
 void unbecome_local_master_fail(struct subnet_record *subrec, struct response_record *rrec,
                        struct nmb_name *fail_name);
-void release_1d_name( struct subnet_record *subrec, char *workgroup_name);
-void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work);
+void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work,
+                                   BOOL force_new_election);
 void become_local_master_browser(struct subnet_record *subrec, struct work_record *work);
 void set_workgroup_local_master_browser_name( struct work_record *work, char *newname);
 
@@ -1335,8 +1335,6 @@ void refresh_my_names(time_t t);
 
 void set_samba_nb_type(void);
 BOOL ms_browser_name( char *name, int type );
-void update_name_in_namelist( struct subnet_record *subrec,
-                              struct name_record   *namerec );
 void remove_name_from_namelist( struct subnet_record *subrec, 
                                 struct name_record   *namerec );
 struct name_record *find_name_on_subnet( struct subnet_record *subrec,

@@ -75,12 +75,27 @@ static void add_subnet(struct subnet_record *subrec)
 
 /* CRH!!! */
 /* ************************************************************************** ** * This will go away when we move to a "real" database back-end.
+  Note that we cannot use memcmp here as we have no control
+  over how the struct nmb_name structures are packed in memory. JRA.
  * ************************************************************************** ** */
 int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
   {
   struct name_record *NR = (struct name_record *)Node;
+  struct nmb_name *nmbname = (struct nmb_name *)Item;
+  int ret;
 
-  return( memcmp( Item, &(NR->name), sizeof(struct nmb_name) ) );
+  if(nmb_name_equal( &NR->name, nmbname))
+    return 0;
+
+  ret = strcmp( nmbname->name, NR->name.name);
+  if(ret)
+    return ret;
+
+  ret = strcmp( nmbname->scope, NR->name.scope);
+  if(ret)
+    return ret;
+
+  return nmbname->name_type - NR->name.name_type;
   } /* namelist_entry_compare */
 /* CRH!!! */   
 

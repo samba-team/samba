@@ -26,6 +26,8 @@
 
 extern int DEBUGLEVEL;
 
+extern pstring scope;
+
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -58,7 +60,7 @@ static void send_election_dgram(struct subnet_record *subrec, char *workgroup_na
   p = skip_string(p,1);
   
   send_mailslot(False, BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
-                server_name, 0,
+                global_myname, 0,
                 workgroup_name, 0x1e,
                 subrec->bcast_ip, subrec->myip);
 }
@@ -117,7 +119,7 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
          not to become the local master, but we still need one,
          having detected that one doesn't exist.
        */
-      send_election_dgram(subrec, work->work_group, 0, 0, global_myname);
+      send_election_dgram(subrec, work->work_group, 0, 0, "");
     }
   }
 }
@@ -171,8 +173,8 @@ void run_elections(time_t t)
   
   struct subnet_record *subrec;
   
-  /* Send election packets once a second - note */
-  if (lastime && (t - lastime <= 0))
+  /* Send election packets once every 2 seconds - note */
+  if (lastime && (t - lastime < 2))
     return;
   
   lastime = t;
@@ -185,6 +187,20 @@ void run_elections(time_t t)
     {
       if (work->RunningElection)
       {
+        /*
+         * We can only run an election for a workgroup if we have
+         * registered the WORKGROUP<1e> name, as that's the name
+         * we must listen to.
+         */
+        struct nmb_name nmbname;
+
+        make_nmb_name(&nmbname, work->work_group, 0x1e, scope);
+        if(find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME)==NULL) {
+          DEBUG(8,("run_elections: Cannot send election packet yet as name %s not \
+yet registered on subnet %s\n", namestr(&nmbname), subrec->subnet_name ));
+          continue;
+        }
+
         send_election_dgram(subrec, work->work_group, work->ElectionCriterion,
                       t - StartupTime, global_myname);
 	      
@@ -308,7 +324,7 @@ is not my workgroup.\n", work->work_group, subrec->subnet_name ));
       DEBUG(3,("process_election: >>> Lost election for workgroup %s on subnet %s <<<\n",
             work->work_group, subrec->subnet_name ));
       if (AM_LOCAL_MASTER_BROWSER(work))
-        unbecome_local_master_browser(subrec, work);
+        unbecome_local_master_browser(subrec, work, False);
     }
   }
 }
@@ -335,12 +351,29 @@ BOOL check_elections(void)
       /* Only start an election if we are in the potential browser state. */
       if (work->needelection && !work->RunningElection && AM_POTENTIAL_MASTER_BROWSER(work))
       {
+        /*
+         * We can only run an election for a workgroup if we have
+         * registered the WORKGROUP<1e> name, as that's the name
+         * we must listen to.
+         */
+        struct nmb_name nmbname;
+
+        make_nmb_name(&nmbname, work->work_group, 0x1e, scope);
+        if(find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME)==NULL) {
+          DEBUG(8,("check_elections: Cannot send election packet yet as name %s not \
+yet registered on subnet %s\n", namestr(&nmbname), subrec->subnet_name ));
+          continue;
+        }
+
         DEBUG(3,("check_elections: >>> Starting election for workgroup %s on subnet %s <<<\n",
               work->work_group, subrec->subnet_name ));
 
         work->ElectionCount = 0;
         work->RunningElection = True;
         work->needelection = False;
+
+        /* Send a force election packet to begin. */
+        send_election_dgram(subrec, work->work_group, 0, 0, "");
       }
     }
   }

@@ -195,7 +195,7 @@ struct nisp_enum_info
 static void *startnisppwent(BOOL update)
 {
 	static struct nisp_enum_info res;
-	res.result = nisp_get_nis_list(lp_smb_pass_file());
+	res.result = nisp_get_nis_list(lp_smb_passwd_file());
 	res.enum_entry = 0;
 	return res.result != NULL ? &res : NULL;
 }

@@ -318,12 +318,10 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 
     /* We should demote ourself and force an election. */
 
-    unbecome_local_master_browser( subrec, work);
+    unbecome_local_master_browser( subrec, work, True);
 
     /* The actual election requests are handled in
        nmbd_election.c */
-
-    work->needelection = True;
     return;
   }  
 
@@ -722,10 +720,7 @@ request from %s IP %s state=0x%X\n",
       for (work = sr->workgrouplist; work; work = work->next)
       {
         if (AM_LOCAL_MASTER_BROWSER(work))
-        {
-          unbecome_local_master_browser(sr, work);
-          work->needelection = True;
-        }
+          unbecome_local_master_browser(sr, work, True);
       }
     }
   }

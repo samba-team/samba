@@ -125,7 +125,7 @@ static struct work_record *create_workgroup(char *name, int ttl)
   /* WfWg  uses 01040b01 */
   /* Win95 uses 01041501 */
   /* NTAS  uses ???????? */
-  work->ElectionCriterion  = (MAINTAIN_LIST)|(ELECTION_VERSION<<8); 
+  work->ElectionCriterion  = (MAINTAIN_LIST)|(BROWSER_ELECTION_VERSION<<8); 
   work->ElectionCriterion |= (lp_os_level() << 24);
   if (lp_domain_master())
     work->ElectionCriterion |= 0x80;

@@ -86,7 +86,7 @@ static void upcase_name( struct nmb_name *target, struct nmb_name *source )
  * Add a new or overwrite an existing namelist entry.
  * ************************************************************************** **
  */
-void update_name_in_namelist( struct subnet_record *subrec,
+static void update_name_in_namelist( struct subnet_record *subrec,
                               struct name_record   *namerec )
   {
   struct name_record *oldrec = NULL;
