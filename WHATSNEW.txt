@@ -1,10 +1,12 @@
-                   WHATS NEW IN Samba 3.0.1pre3
-                        November 14, 2003
-                  ==============================
+                    WHATS NEW IN Samba 3.0.1rc1
+                        December 4, 2003
+                  ===============================
 
-This is a preview release of the Samba 3.0.1 code base and is
-provided for testing only.  This release is *not* intended for
-production servers.  Use at your own risk.
+This is a release candidate snapshot of the Samba 3.0.1 code base 
+and is provided for testing only.  A release candidate (RC) means 
+that we are close to the the final, stable version and is provided
+for Quality Assurance (QA) purposes. This release is *not* intended 
+for production servers.  Use at your own risk.
 
 There have been several bug fixes since the 3.0.0 release that
 we feel are important to make available to the Samba community
@@ -15,15 +17,90 @@ exact updates.
 ######################################################################
 Changes
 #######
-Changes since 3.0.1pre2
+Changes since 3.0.1pre3
 -----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details:
 
-1)  Fix for pdbedit error code returns (bug 763).
+Removed Parameters
+  * hide local users
+  
+Added Parameters
+  * passwd chat timeout
 
-Changes since 3.0.1pre3
+1)  Fix for pdbedit error code returns (bug 763).
+2)  Make sure we only enumerate group mapping entries  (not 
+    /etc/group) even when doing local aliases.
+3)  Relax check on the pipe name in a dce/rpc bind response to work 
+    around issues with establishing trusts to a Windows 2003 domain.
+4)  Ensure we mangle names ending in '.' in hash2 mangling method.
+5)  Correct parsing issues with munged dial string.
+6)  Fix bugs in quota support for XFS.
+7)  Add a cleaner method for applications that need to provide name->SID
+    mappings to do this via NSS rather than having to know the
+    winbindd pipe protocol.
+8)  Adds a variant of the winbindd_getgroups() call called 
+    winbindd_getusersids() that provides direct SID->SIDs listing of a 
+    users supplementary groups. This is enough to allow non-Samba 
+    applications to do ACL checking.
+9)  Make sure we don't append the 'ldap suffix' when writing out the ldap 
+    XXX suffix values in SWAT (bug 328).
+10) Fix renames across file systems.
+11) Ensure that items in a list of strings containing whitespace are 
+    written out surrounded by single quotes.  This means that both 
+    double and single quotes are now used to surround strings in 
+    smb.conf (bug 481).
+12) Enable SWAT to correctly determine if winbindd is running (bug 
+    398).
+13) Include WWW-Authenticate field in 401 response for bad auth 
+    attempt (bug 629).
+14) Add support for NTLM2 (NTLMv2 session security).
+15) Add support for variable-length session keys.
+16) More privilege fixes for group enumeration in LDAP (bug 281).
+17) Use the dns name (or IP) as the originating client name when
+    using CUPS (bug 467).
+18) Fix various SMB signing bugs.
+19) Fix ACL propagation on a DFS root (bug 263).
+20) Disable NTLM2 for RPC pipes.
+21) Allow the client to specify the NTLM2 flags got NTLMSSP 
+    authentication.
+22) Change the name of the job passed off to cups from "Test Page" to 
+    "smbprn.00000033 Test Page" so that we can get the smb jobid back.  
+    This allow users to delete jobs with cups printing backend (partial 
+    work on bug 770).
+23) Fix build of winbindd with static pdb modules.
+24) Retrieve the correct ACL group bits if the file has an ACL 
+   (bug 802).
+25) Implement "net rpc group members": Get members of a domain group 
+    in human-readable format.
+26) Add MacOSX (Darwin) specific charset module code.
+27) Use samr_dispinfo(level == 1) for enumerating domain users so we 
+    can include the full name in gecos field (bug 587).
+28) Add support for winbind's NSS library on FeeeBSD 5.1 (bug 797).
+29) Implement 'net rpc group list [global|local|builtin]*' for a 
+    select listing of the respective user databases.
+30) Don't automatically set NT status code flag unless client tells 
+    us it can cope.
+31) Add 'net status [sessions|shares] [parseable]'.
+32) Don't mistake pre-existing UNIX jobs for smb jobs (remainder of  
+    bug 770).
+33) Add 'Replicator' and 'RAS Servers' to list of builtin SIDs 
+    (bug 608).
+34) Fix inverted logic in hosts allow/deny checks caused by s/strcmp/strequal/
+    (bug 846).
+35) Implement correct version SamrRemoveSidForeignDomain() (bug 252).
+36) Fix typo in 'hash' mangling algorithm.
+37) Support munged dial for ldapsam (bug 800).
+38) Fix process_incoming_data() to return the number of bytes handled this 
+    call whether we have a complete PDU or not; fixes bug with multiple 
+    PDU request rpc's broken over SMBwriteX calls each.
+39) Fix incorrect smb flags2 for connections to pre-NT servers (causes
+    smbclient to fail to OS2 for example) (bug 821).
+
+    
+
+Changes since 3.0.1pre4
 -----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
@@ -394,6 +471,7 @@ Removed Parameters (order alphabetically):
   * domain admin group
   * domain guest group
   * force unknown acl user
+  * hide local users
   * nt smb support
   * postscript
   * printer driver
@@ -428,6 +506,7 @@ New Parameters (new parameters have been grouped by function):
   --------------
   * auth methods
   * realm
+  * passwd chat timeout
 
   Protocol Options
   ----------------
