@@ -508,8 +508,9 @@ int main (int argc, char **argv)
 		{"import",	'i', POPT_ARG_STRING, &backend_in, 0, "import user accounts from this backend", NULL},
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
 		{"account-policy",	'P', POPT_ARG_STRING, &account_policy, 0,"value of an account policy (like maximum password age)",NULL},
-		{"value",       'V', POPT_ARG_LONG, &account_policy_value, 'V',"set the account policy to this value", NULL},
+		{"value",       'C', POPT_ARG_LONG, &account_policy_value, 'C',"set the account policy to this value", NULL},
 		{"account-control",	'c', POPT_ARG_STRING, &account_control, 0, "Values of account control", NULL},
+		POPT_COMMON_SAMBA
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{0,0,0,0}
