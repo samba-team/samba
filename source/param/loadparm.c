@@ -145,6 +145,7 @@ typedef struct
   char *szAnnounceVersion; /* This is initialised in init_globals */
   char *szNetbiosAliases;
   char *szDomainSID;
+  char *szDomainOtherSIDs;
   char *szDomainGroups;
   int max_log_size;
   int mangled_stack;
@@ -447,6 +448,7 @@ struct parm_struct
   {"valid chars",      P_STRING,  P_GLOBAL, &Globals.szValidChars,      handle_valid_chars},
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL},
   {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL},
+  {"domain other sids", P_USTRING, P_GLOBAL, &Globals.szDomainOtherSIDs, NULL},
   {"domain groups",    P_USTRING, P_GLOBAL, &Globals.szDomainGroups,    NULL},
   {"domain controller",P_STRING,  P_GLOBAL, &Globals.szDomainController,NULL},
   {"domain admin users",P_STRING,  P_GLOBAL, &Globals.szDomainAdminUsers, NULL},
@@ -638,7 +640,7 @@ static void init_globals(void)
   /* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
   string_set(&Globals.szLogonHome, "\\\\%N\\%U");
   string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
-  string_set(&Globals.szDomainGroups, "776/7");
+
   Globals.bLoadPrinters = True;
   Globals.bUseRhosts = False;
   Globals.max_packet = 65535;
@@ -867,7 +869,8 @@ FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
 FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 
-FN_GLOBAL_STRING(lp_domainsid,&Globals.szDomainSID)
+FN_GLOBAL_STRING(lp_domain_sid,&Globals.szDomainSID)
+FN_GLOBAL_STRING(lp_domain_other_sids,&Globals.szDomainOtherSIDs)
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_users,&Globals.szDomainAdminUsers)
 FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)

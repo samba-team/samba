@@ -73,9 +73,9 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_IVAL("num_auths ", depth, base, io, q, sid->num_auths); q += 4;
-	DBG_RW_CVAL("sid_no    ", depth, base, io, q, sid->sid_no); q++; 
-	DBG_RW_CVAL("num_auths ", depth, base, io, q, sid->num_auths); q++;
+	DBG_RW_IVAL("num_auths  ", depth, base, io, q, sid->num_auths); q += 4;
+	DBG_RW_CVAL("sid_rev_num", depth, base, io, q, sid->sid_rev_num); q++; 
+	DBG_RW_CVAL("num_auths  ", depth, base, io, q, sid->num_auths); q++;
 
 	for (i = 0; i < 6; i++)
 	{
@@ -487,8 +487,8 @@ char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int dept
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_IVAL("gid ", depth, base, io, q, gid->gid ); q += 4;
-	DBG_RW_IVAL("attr", depth, base, io, q, gid->attr); q += 4;
+	DBG_RW_IVAL("g_rid", depth, base, io, q, gid->g_rid); q += 4;
+	DBG_RW_IVAL("attr ", depth, base, io, q, gid->attr ); q += 4;
 
 	return q;
 }

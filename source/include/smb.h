@@ -341,15 +341,15 @@ typedef struct nttime_info
 } NTTIME;
  
 
-#define MAXSUBAUTHS 10 /* max sub authorities in a SID */
+#define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 
 /* DOM_SID - security id */
 typedef struct sid_info
 {
-  uint8  sid_no;                  /* SID revision number */
+  uint8  sid_rev_num;             /* SID revision number */
   uint8  num_auths;               /* number of sub-authorities */
   uint8  id_auth[6];              /* Identifier Authority */
-  uint16 sub_auths[MAXSUBAUTHS]; /* pointer to sub-authorities. */
+  uint16 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
 
 } DOM_SID;
 
@@ -517,7 +517,7 @@ typedef struct sam_info
 /* DOM_GID - group id + user attributes */
 typedef struct gid_info
 {
-  uint32 gid;  /* group id */
+  uint32 g_rid;  /* a group RID */
   uint32 attr;
 
 } DOM_GID;

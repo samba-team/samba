@@ -4294,6 +4294,26 @@ Return a ascii version of a unicode string
 Hack alert: uses fixed buffer(s) and only handles ascii strings
 ********************************************************************/
 #define MAXUNI 1024
+char *unistrn2(uint16 *buf, int len)
+{
+	static char lbufs[8][MAXUNI];
+	static int nexti;
+	char *lbuf = lbufs[nexti];
+	char *p;
+	nexti = (nexti+1)%8;
+	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len >= 0; len--, p++, buf++)
+	{
+		*p = *buf;
+	}
+	*p = 0;
+	return lbuf;
+}
+
+/*******************************************************************
+Return a ascii version of a unicode string
+Hack alert: uses fixed buffer(s) and only handles ascii strings
+********************************************************************/
+#define MAXUNI 1024
 char *unistr2(uint16 *buf)
 {
 	static char lbufs[8][MAXUNI];
@@ -4509,67 +4529,4 @@ char *tab_depth(int depth)
 	return spaces;
 }
 
-
-/* array lookup of well-known RID aliases.  the purpose of these escapes me.. */
-static struct
-{
-	uint32 rid;
-	char   *rid_name;
-
-} rid_lookups[] = 
-{
-	{ DOMAIN_ALIAS_RID_ADMINS       , "admins" },
-	{ DOMAIN_ALIAS_RID_USERS        , "users" },
-	{ DOMAIN_ALIAS_RID_GUESTS       , "guests" },
-	{ DOMAIN_ALIAS_RID_POWER_USERS  , "power_users" },
-
-	{ DOMAIN_ALIAS_RID_ACCOUNT_OPS  , "account_ops" },
-	{ DOMAIN_ALIAS_RID_SYSTEM_OPS   , "system_ops" },
-	{ DOMAIN_ALIAS_RID_PRINT_OPS    , "print_ops" },
-	{ DOMAIN_ALIAS_RID_BACKUP_OPS   , "backup_ops" },
-	{ DOMAIN_ALIAS_RID_REPLICATOR   , "replicator" },
-	{ 0                             , NULL }
-};
-
-int make_domain_gids(char *gids_str, DOM_GID *gids)
-{
-	char *ptr;
-	pstring s2;
-	int count;
-
-	DEBUG(4,("make_domain_gids: %s\n", gids_str));
-
-	if (gids_str == NULL || *gids_str == 0) return 0;
-
-	for (count = 0, ptr = gids_str; next_token(&ptr, s2, NULL) && count < LSA_MAX_GROUPS; count++) 
-	{
-		/* the entries are of the form GID/ATTR, ATTR being optional.*/
-		char *attr;
-		uint32 rid = 0;
-		int i;
-
-		attr = strchr(s2,'/');
-		if (attr) *attr++ = 0;
-		if (!attr || !*attr) attr = "7"; /* default value for attribute is 7 */
-
-		/* look up the RID string and see if we can turn it into a rid number */
-		for (i = 0; rid_lookups[i].rid_name != NULL; i++)
-		{
-			if (strequal(rid_lookups[i].rid_name, s2))
-			{
-				rid = rid_lookups[i].rid;
-				break;
-			}
-		}
-
-		if (rid == 0) rid = atoi(s2);
-
-		gids[count].gid  = rid;
-		gids[count].attr = atoi(attr);
-
-		DEBUG(5,("group id: %d attr: %d\n", gids[count].gid, gids[count].attr));
-	}
-
-	return count;
-}
 
