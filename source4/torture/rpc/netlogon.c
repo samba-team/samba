@@ -23,6 +23,164 @@
 #include "includes.h"
 
 
+#define TEST_MACHINE_NAME "torturetest"
+
+static struct {
+	struct dcerpc_pipe *p;
+	const char *machine_password;
+	struct policy_handle acct_handle;
+} join;
+
+/*
+  join the domain as a BDC
+*/
+static BOOL join_domain_bdc(TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct samr_Connect c;
+	struct samr_CreateUser2 r;
+	struct samr_OpenDomain o;
+	struct samr_LookupDomain l;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
+	struct policy_handle handle;
+	struct policy_handle domain_handle;
+	uint32 access_granted;
+	uint32 rid;
+	BOOL ret = True;
+	uint8 session_key[16];
+	struct samr_Name name;
+
+	printf("Connecting to SAMR\n");
+
+	status = torture_rpc_connection(&join.p, 
+					DCERPC_SAMR_NAME,
+					DCERPC_SAMR_UUID,
+					DCERPC_SAMR_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	c.in.system_name = NULL;
+	c.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	c.out.handle = &handle;
+
+	status = dcerpc_samr_Connect(join.p, mem_ctx, &c);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("samr_Connect failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("Opening domain %s\n", lp_workgroup());
+
+	name.name = lp_workgroup();
+	l.in.handle = &handle;
+	l.in.domain = &name;
+
+	status = dcerpc_samr_LookupDomain(join.p, mem_ctx, &l);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupDomain failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	o.in.handle = &handle;
+	o.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	o.in.sid = l.out.sid;
+	o.out.domain_handle = &domain_handle;
+
+	status = dcerpc_samr_OpenDomain(join.p, mem_ctx, &o);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenDomain failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("Creating machine account %s\n", TEST_MACHINE_NAME);
+
+again:
+	name.name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	r.in.handle = &domain_handle;
+	r.in.username = &name;
+	r.in.acct_flags = ACB_SVRTRUST;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.acct_handle = &join.acct_handle;
+	r.out.access_granted = &access_granted;
+	r.out.rid = &rid;
+
+	status = dcerpc_samr_CreateUser2(join.p, mem_ctx, &r);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS) &&
+	    test_DeleteUser_byname(join.p, mem_ctx, &domain_handle, name.name)) {
+		goto again;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateUser2 failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	join.machine_password = generate_random_str(8);
+
+	printf("Setting machine account password '%s'\n", join.machine_password);
+
+	s.in.handle = &join.acct_handle;
+	s.in.info = &u;
+	s.in.level = 24;
+
+	encode_pw_buffer(u.info24.password.data, join.machine_password, STR_UNICODE);
+	u.info24.pw_len = strlen(join.machine_password);
+
+	status = dcerpc_fetch_session_key(join.p, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return False;
+	}
+
+	SamOEMhash(u.info24.password.data, session_key, 516);
+
+	status = dcerpc_samr_SetUserInfo(join.p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	s.in.handle = &join.acct_handle;
+	s.in.info = &u;
+	s.in.level = 16;
+
+	u.info16.acct_flags = ACB_SVRTRUST;
+
+	printf("Resetting ACB flags\n");
+
+	status = dcerpc_samr_SetUserInfo(join.p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return ret;
+}
+
+/*
+  leave the domain as a BDC
+*/
+static BOOL leave_domain_bdc(TALLOC_CTX *mem_ctx)
+{
+	struct samr_DeleteUser d;
+	NTSTATUS status;
+
+	d.in.handle = &join.acct_handle;
+	d.out.handle = &join.acct_handle;
+
+	status = dcerpc_samr_DeleteUser(join.p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Delete of machine account failed\n");
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -30,7 +188,7 @@ static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.server_name = NULL;
 	r.in.username = lp_parm_string(-1, "torture", "username");
-	r.in.workstation = lp_netbios_name();
+	r.in.workstation = TEST_MACHINE_NAME;
 
 	printf("Testing LogonUasLogon\n");
 
@@ -51,7 +209,7 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.server_name = NULL;
 	r.in.username = lp_parm_string(-1, "torture", "username");
-	r.in.workstation = lp_netbios_name();
+	r.in.workstation = TEST_MACHINE_NAME;
 
 	printf("Testing LogonUasLogoff\n");
 
@@ -77,7 +235,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing ServerReqChallenge\n");
 
 	r.in.server_name = NULL;
-	r.in.computer_name = lp_netbios_name();
+	r.in.computer_name = TEST_MACHINE_NAME;
 	generate_random_buffer(r.in.credentials.data, sizeof(r.in.credentials.data), False);
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
@@ -86,7 +244,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	plain_pass = secrets_fetch_machine_password();
+	plain_pass = join.machine_password;
 	if (!plain_pass) {
 		printf("Unable to fetch machine password!\n");
 		return False;
@@ -98,9 +256,9 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  &a.in.credentials);
 
 	a.in.server_name = NULL;
-	a.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+	a.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
-	a.in.computer_name = lp_netbios_name();
+	a.in.computer_name = TEST_MACHINE_NAME;
 
 	printf("Testing ServerAuthenticate\n");
 
@@ -131,7 +289,7 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing ServerReqChallenge\n");
 
 	r.in.server_name = NULL;
-	r.in.computer_name = lp_netbios_name();
+	r.in.computer_name = TEST_MACHINE_NAME;
 	generate_random_buffer(r.in.credentials.data, sizeof(r.in.credentials.data), False);
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
@@ -140,7 +298,7 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	plain_pass = secrets_fetch_machine_password();
+	plain_pass = join.machine_password;
 	if (!plain_pass) {
 		printf("Unable to fetch machine password!\n");
 		return False;
@@ -152,9 +310,9 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  &a.in.credentials);
 
 	a.in.server_name = NULL;
-	a.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+	a.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
-	a.in.computer_name = lp_netbios_name();
+	a.in.computer_name = TEST_MACHINE_NAME;
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
 
@@ -198,7 +356,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	ninfo.logon_info.logon_id_low = 0;
 	ninfo.logon_info.logon_id_high = 0;
 	ninfo.logon_info.username.string = username;
-	ninfo.logon_info.workstation.string = lp_netbios_name();
+	ninfo.logon_info.workstation.string = TEST_MACHINE_NAME;
 	generate_random_buffer(ninfo.challenge, 
 			       sizeof(ninfo.challenge), False);
 	ninfo.nt.length = 24;
@@ -213,7 +371,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	creds_client_authenticator(&creds, &auth);
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.workstation = lp_netbios_name();
+	r.in.workstation = TEST_MACHINE_NAME;
 	r.in.credential = &auth;
 	r.in.authenticator = &auth2;
 	r.in.logon_level = 2;
@@ -251,9 +409,9 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+	r.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	r.in.secure_channel_type = SEC_CHAN_BDC;
-	r.in.computer_name = lp_netbios_name();
+	r.in.computer_name = TEST_MACHINE_NAME;
 
 	password = generate_random_str(8);
 	E_md4hash(password, r.in.new_password.data);
@@ -270,9 +428,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!secrets_store_machine_password(password)) {
-		printf("Failed to save machine password\n");
-	}
+	join.machine_password = password;
 
 	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
@@ -318,7 +474,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computername = lp_netbios_name();
+	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
 
@@ -380,7 +536,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computername = lp_netbios_name();
+	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
 
@@ -435,7 +591,7 @@ static BOOL test_AccountDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computername = lp_netbios_name();
+	r.in.computername = TEST_MACHINE_NAME;
 	ZERO_STRUCT(r.in.return_authenticator);
 	creds_client_authenticator(&creds, &r.in.credential);
 	ZERO_STRUCT(r.in.uas);
@@ -470,7 +626,7 @@ static BOOL test_AccountSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computername = lp_netbios_name();
+	r.in.computername = TEST_MACHINE_NAME;
 	ZERO_STRUCT(r.in.return_authenticator);
 	creds_client_authenticator(&creds, &r.in.credential);
 	ZERO_STRUCT(r.in.recordid);
@@ -666,7 +822,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computername = lp_netbios_name();
+	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
 
@@ -790,6 +946,11 @@ BOOL torture_rpc_netlogon(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 
+	if (!join_domain_bdc(mem_ctx)) {
+		printf("Failed to join as BDC\n");
+		return False;
+	}
+
 	status = torture_rpc_connection(&p, 
 					DCERPC_NETLOGON_NAME,
 					DCERPC_NETLOGON_UUID,
@@ -855,6 +1016,11 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
         torture_rpc_close(p);
+
+	if (!leave_domain_bdc(mem_ctx)) {
+		printf("Failed to delete BDC machine account\n");
+		return False;
+	}
 
 	return ret;
 }
