@@ -1,3 +1,20 @@
+Thu Jul 10 05:09:25 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/context.c: Move krb5_get_err_text, and krb5_init_ets
+ 	here.
+
+	* lib/error/error.c: Replace krb5_get_err_text with new function
+ 	com_right.
+
+	* lib/error/compile_et.awk: Avoid using static variables.
+
+	* lib/error/error.c: Don't use krb5_locl.h
+
+	* lib/error/error.h: Move definitions of error_table and
+ 	error_list from krb5.h.
+
+	* lib/error: Moved from lib/krb5.
+
 Wed Jul  9 07:42:04 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/encrypt.c: Temporary hack to avoid des_rand_data.
