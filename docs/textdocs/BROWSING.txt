@@ -1,5 +1,5 @@
 !==
-!== BROWSING.txt for Samba release 2.0.0-alpha1 31 Aug 1998
+!== BROWSING.txt for Samba release 2.0.0-alpha5 17 Sep 1998
 !==
 Author/s:	Many (Thanks to Luke, Jeremy, Andrew, etc.)
 Updated:	July 5, 1998
