@@ -87,7 +87,6 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 /* Add a trusted domain to our list of domains */
 
 static struct winbindd_domain *add_trusted_domain(char *domain_name,
-                                                  DOM_SID *domain_sid,
 						  struct winbindd_methods *methods)
 {
 	struct winbindd_domain *domain, *tmp;
@@ -110,7 +109,6 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
         
 	ZERO_STRUCTP(domain);
 	fstrcpy(domain->name, domain_name);
-	sid_copy(&domain->sid, domain_sid);
         domain->methods = methods;
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
@@ -126,130 +124,51 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
 
 BOOL get_domain_info(void)
 {
-	uint32 enum_ctx = 0, num_doms = 0;
-	char **domains = NULL;
-	DOM_SID *sids = NULL, domain_sid;
 	NTSTATUS result;
-	CLI_POLICY_HND *hnd;
-	int i;
-	fstring level5_dom;
-	BOOL rv = False;
 	TALLOC_CTX *mem_ctx;
 	extern struct winbindd_methods cache_methods;
+	struct winbindd_domain *domain;
+	DOM_SID *dom_sids;
+	char **names;
+	int num_domains = 0;
+
+	if (!(mem_ctx = talloc_init()))
+		return False;
+
+	domain = add_trusted_domain(lp_workgroup(), &cache_methods);
+
+	/* now we *must* get the domain sid for our primary domain. Go into a holding
+	   pattern until that is available */
+	result = cache_methods.domain_sid(domain, &domain->sid);
+	while (!NT_STATUS_IS_OK(result)) {
+		sleep(10);
+		DEBUG(1,("Retrying startup domain sid fetch for %s\n",
+			 domain->name));
+		result = cache_methods.domain_sid(domain, &domain->sid);
+	}
 
 	DEBUG(1, ("getting trusted domain list\n"));
 
-	if (!(mem_ctx = talloc_init()))
-		return False;
+	result = cache_methods.trusted_domains(domain, mem_ctx, &num_domains,
+					       &names, &dom_sids);
 
-	/* Add our workgroup - keep handle to look up trusted domains */
-
-	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-		goto done;
-
-	result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
-					&hnd->pol, 0x05, level5_dom, &domain_sid);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	add_trusted_domain(lp_workgroup(), &domain_sid, &cache_methods);
-	
-	/* Enumerate list of trusted domains */	
-
-	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-		goto done;
-
-	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
-					&hnd->pol, &enum_ctx, &num_doms, &domains, &sids);
-	
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-	
 	/* Add each domain to the trusted domain list */
-
-	for(i = 0; i < num_doms; i++)
-		add_trusted_domain(domains[i], &sids[i], &cache_methods);
-
-	rv = True;	
-
- done:
-
-	talloc_destroy(mem_ctx);
-
-	return rv;
-}
-
-
-/* Connect to a domain controller using get_any_dc_name() to discover 
-   the domain name and sid */
-
-BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
-{
-	fstring level5_dom;
-	uint32 enum_ctx = 0, num_doms = 0;
-	char **domains = NULL;
-	DOM_SID *sids = NULL;
-	CLI_POLICY_HND *hnd;
-	NTSTATUS result;
-	BOOL rv = False;
-	TALLOC_CTX *mem_ctx;
-        
-	DEBUG(1, ("looking up sid for domain %s\n", domain_name));
-        
-	if (!(mem_ctx = talloc_init()))
-		return False;
-        
-	if (!(hnd = cm_get_lsa_handle(domain_name)))
-		goto done;
-        
-	/* Do a level 5 query info policy if we are looking up the SID for
-		our own domain. */
-        
-	if (strequal(domain_name, lp_workgroup())) {
-                
-		result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
-						&hnd->pol, 0x05, level5_dom,
-						&domain->sid);
-                
-			rv = NT_STATUS_IS_OK(result);
-			goto done;
-	} 
-        
-	/* Use lsaenumdomains to get sid for this domain */
-        
-	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx, &hnd->pol,
-						&enum_ctx, &num_doms, &domains, &sids);
-        
-	/* Look for domain name */
-        
-	if (NT_STATUS_IS_OK(result) && domains && sids) {
-		BOOL found = False;
+	if (NT_STATUS_IS_OK(result)) {
 		int i;
-                
-		for(i = 0; i < num_doms; i++) {
-			if (strequal(domain_name, domains[i])) {
-				sid_copy(&domain->sid, &sids[i]);
-				found = True;
-				break;
+		for(i = 0; i < num_domains; i++) {
+			domain = add_trusted_domain(names[i], &cache_methods);
+			if (domain) {
+				sid_copy(&domain->sid, &dom_sids[i]);
 			}
 		}
-                
-		rv = found;
-		goto done;
 	}
-      
-	rv = False;             /* An error occured with a trusted domain */
-
- done:
 
 	talloc_destroy(mem_ctx);
-
-	return rv;
+	return True;
 }
 
-/* Lookup a sid in a domain from a name */
 
+/* Lookup a sid in a domain from a name */
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
 				 const char *name, DOM_SID *sid, enum SID_NAME_USE *type)
 {

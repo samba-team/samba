@@ -137,6 +137,17 @@ struct winbindd_methods {
 
 	/* return the current global sequence number */
 	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32 *seq);
+
+	/* enumerate trusted domains */
+	NTSTATUS (*trusted_domains)(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32 *num_domains,
+				    char ***names,
+				    DOM_SID **dom_sids);
+
+	/* find the domain sid */
+	NTSTATUS (*domain_sid)(struct winbindd_domain *domain,
+			       DOM_SID *sid);
 };
 
 /* Structures to hold per domain information */
