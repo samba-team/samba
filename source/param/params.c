@@ -196,7 +196,7 @@ static int Continuation( char *line, int pos )
   int pos2 = 0;
 
   pos--;
-  while( (pos >= 0) && isspace(line[pos]) )
+  while( (pos >= 0) && isspace((int)line[pos]) )
      pos--;
 
   /* we should recognize if `\` is part of a multibyte character or not. */
@@ -436,7 +436,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
           c = 0;
         else
           {
-          for( end = i; (end >= 0) && isspace(bufr[end]); end-- )
+          for( end = i; (end >= 0) && isspace((int)bufr[end]); end-- )
             ;
           c = mygetc( InFile );
           }
