@@ -751,7 +751,17 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 	strncpy_w(trust.private.uni_name, uni_name, 32);
 	
 	/* flags */
+	if (!flag) {
+		printf("No trust type flag given!\n");
+		return -1;
+	}
+
+	/* is it the correct one ? */
 	trust.private.flags = trustpw_flag(flag);
+	if (!trust.private.flags) {
+		printf("Unknown trust type flag!\n");
+		return -1;
+	}
 
 	/* trusting SID */
 	if (!dom_sid) {
@@ -796,7 +806,7 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 			
 	} else {
 		if (!string_to_sid(&trust.private.domain_sid, dom_sid)) {
-			printf("Error: wrong SID specified !\n");
+			printf("Error: incorrect SID specified !\n");
 			return -1;
 		}
 	}
@@ -814,10 +824,78 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 	nt_status = in->pdb_add_trust_passwd(in, &trust);
 			
 	talloc_destroy(mem_ctx);
-	if (NT_STATUS_IS_OK(nt_status))
+	if (NT_STATUS_IS_OK(nt_status)) {
 		return 0;
+
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
+		printf("Error: this functionality is not supported by your current passdb backend!\n");
+		return -1;
+	}
 	
 	return -1;
+}
+
+
+/**
+ * Update trust relationship password
+ *
+ * @param in initialised pdb_context
+ * @param dom_name trusting domain name given in command line
+ * @param dom_sid domain sid given in command line
+ * @param flag trust password type flag given in command line
+ *
+ * @return 0 on success, -1 otherwise
+ **/
+
+static int update_trustpw(struct pdb_context *in, const char *dom_name,
+                          const char *dom_sid, const char* flag)
+{
+	SAM_TRUST_PASSWD trust;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	char *givenpass = NULL;
+	time_t lct;
+
+	if (!dom_name) return -1;
+
+	/* fetch existing password to fill the structure before
+	   the changes themselves */
+	nt_status = in->pdb_gettrustpwnam(in, &trust, dom_name);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("Wrong domain name - seems non-existent!\n");
+		return -1;
+	}
+
+	/* domain sid */
+	if (dom_sid) {
+		/* copying sid to trust password structure */
+		if (!string_to_sid(&trust.private.domain_sid, dom_sid)) {
+			printf("Error: incorrect SID specified !\n");
+			return -1;
+		}
+	}
+
+	/* flags */
+	if (flag) {
+		trust.private.flags = trustpw_flag(flag);
+	}
+
+	/* password */
+	givenpass = getpass("password (type Enter to leave it untouched):");
+	if (strlen(givenpass))
+		strncpy(trust.private.pass, givenpass, FSTRING_LEN);
+
+	/* last change time */
+	lct = time(NULL);
+	trust.private.mod_time = lct;
+
+	/* update the trust password */
+	nt_status = in->pdb_update_trust_passwd(in, &trust);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("Coulnd't modify trust password\n");
+	}
+
+	return NT_STATUS_IS_OK(nt_status) ? 0 : -1;
 }
 
 
@@ -875,6 +953,36 @@ static int delete_machine_entry (struct pdb_context *in, const char *machinename
 
 	return 0;
 }
+
+
+/**
+ * Delete trust relationship password
+ *
+ * @param in intitialised pdb_context
+ * @param domain trusting domain name given in command line
+ *
+ * @return 0 on success, -1 otherwise
+ **/
+
+static int delete_trustpw(struct pdb_context *in, char* domain)
+{
+	SAM_TRUST_PASSWD trust;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	BOOL status = False;
+
+	/* unicode name and its null-termination */
+	trust.private.uni_name_len = strnlen(domain, 32);
+	domain[trust.private.uni_name_len] = 0;
+	push_ucs2(NULL, trust.private.uni_name, domain, 32, 0);
+
+	/* deletion is based on domain name only, so there's no need
+	   to fill the rest of the structure */
+	nt_status = in->pdb_delete_trust_passwd(in, &trust);
+	
+	status = NT_STATUS_IS_OK(nt_status) ? 0 : -1;
+	return status;
+}
+
 
 /*********************************************************
  Start here.
@@ -1165,7 +1273,17 @@ int main (int argc, char **argv)
 		/* trust password creation */
 		if (!(checkparms & ~(BIT_CREATE + BIT_TRUSTPW + BIT_TRUSTSID + BIT_TRUSTFLAGS))) {
 			return new_trustpw(bdef, trustpw, trustsid, trustflags);
-		}		
+		}
+
+		/* trust password modification */
+		if (!(checkparms & ~(BIT_MODIFY + BIT_TRUSTPW + BIT_TRUSTSID + BIT_TRUSTFLAGS))) {
+			return update_trustpw(bdef, trustpw, trustsid, trustflags);
+		}
+
+		/* trust password deletion */
+		if (!(checkparms & ~(BIT_DELETE + BIT_TRUSTPW + BIT_TRUSTSID + BIT_TRUSTFLAGS))) {
+			return delete_trustpw_entry(bdef, trustpw);
+		}
 	}
 	
 	
