@@ -399,6 +399,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 /****************************************************************************
  Reply to an NT create and X call.
 ****************************************************************************/
+
 int reply_ntcreate_and_X(connection_struct *conn,
 			 char *inbuf,char *outbuf,int length,int bufsize)
 {  
@@ -411,6 +412,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
 	uint32 fname_len = MIN(((uint32)SVAL(inbuf,smb_ntcreate_NameLength)),
 			       ((uint32)sizeof(fname)-1));
+    uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
 	int smb_ofun;
 	int smb_open_mode;
 	int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
@@ -449,8 +451,43 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	/*
 	 * Get the file name.
 	 */
-	StrnCpy(fname,smb_buf(inbuf),fname_len);
-	fname[fname_len] = '\0';
+
+    if(root_dir_fid != 0) {
+      /*
+       * This filename is relative to a directory fid.
+       */
+      files_struct *dir_fsp = file_fsp(inbuf,smb_ntcreate_RootDirectoryFid);
+      size_t dir_name_len;
+
+      if(!dir_fsp || !dir_fsp->is_directory)
+        return(ERROR(ERRDOS,ERRbadfid));
+
+      /*
+       * Copy in the base directory name.
+       */
+
+      pstrcpy( fname, dir_fsp->fsp_name );
+      dir_name_len = strlen(fname);
+
+      /*
+       * Ensure it ends in a '\'.
+       */
+
+      if(fname[dir_name_len-1] != '\\' && fname[dir_name_len-1] != '/') {
+        pstrcat(fname, "\\");
+        dir_name_len++;
+      }
+
+      if(fname_len + dir_name_len >= sizeof(pstring))
+        return(ERROR(ERRSRV,ERRfilespecs));
+
+      StrnCpy(&fname[dir_name_len], smb_buf(inbuf),fname_len);
+      fname[dir_name_len+fname_len] = '\0';
+
+    } else {
+	  StrnCpy(fname,smb_buf(inbuf),fname_len);
+      fname[fname_len] = '\0';
+    }
 	
 	/* If it's an IPC, use the pipe handler. */
 
@@ -694,6 +731,7 @@ static int call_nt_transact_create(connection_struct *conn,
   uint32 create_options = IVAL(params,32);
   uint32 fname_len = MIN(((uint32)IVAL(params,44)),
                          ((uint32)sizeof(fname)-1));
+  uint16 root_dir_fid = (uint16)IVAL(params,4);
   int smb_ofun;
   int smb_open_mode;
   int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
@@ -726,12 +764,48 @@ static int call_nt_transact_create(connection_struct *conn,
   if((smb_open_mode = map_share_mode( desired_access, share_access, file_attributes)) == -1)
     return(ERROR(ERRDOS,ERRbadaccess));
 
+
   /*
    * Get the file name.
    */
 
-  StrnCpy(fname,params+53,fname_len);
-  fname[fname_len] = '\0';
+  if(root_dir_fid != 0) {
+    /*
+     * This filename is relative to a directory fid.
+     */
+
+    files_struct *dir_fsp = file_fsp(params,4);
+    size_t dir_name_len;
+
+    if(!dir_fsp || !dir_fsp->is_directory)
+      return(ERROR(ERRDOS,ERRbadfid));
+
+    /*
+     * Copy in the base directory name.
+     */
+
+    pstrcpy( fname, dir_fsp->fsp_name );
+    dir_name_len = strlen(fname);
+
+    /*
+     * Ensure it ends in a '\'.
+     */
+
+    if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
+      pstrcat(fname, "\\");
+      dir_name_len++;
+    }
+
+    if(fname_len + dir_name_len >= sizeof(pstring))
+      return(ERROR(ERRSRV,ERRfilespecs));
+
+    StrnCpy(&fname[dir_name_len], params+53, fname_len);
+    fname[dir_name_len+fname_len] = '\0';
+
+  } else {
+    StrnCpy(fname,params+53,fname_len);
+    fname[fname_len] = '\0';
+  }
 
   /* If it's an IPC, use the pipe handler. */
   if (IS_IPC(conn)) {
