@@ -44,6 +44,7 @@ struct gensec_target {
 #define GENSEC_FEATURE_SESSION_KEY	0x00000001
 #define GENSEC_FEATURE_SIGN		0x00000002
 #define GENSEC_FEATURE_SEAL		0x00000004
+#define GENSEC_FEATURE_DCE_STYLE	0x00000008
 
 /* GENSEC mode */
 enum gensec_role

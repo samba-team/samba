@@ -232,6 +232,7 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 		DEBUG(3, ("Could not find GENSEC backend for auth_type=%d\n", (int)auth_type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE);
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 	}
