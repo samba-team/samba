@@ -277,8 +277,11 @@ BOOL torture_rpc_echo(int dummy)
 		return False;
 	}
 
-#if 1
 	if (!test_addone(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_sinkdata(p, mem_ctx)) {
 		ret = False;
 	}
 
@@ -290,11 +293,6 @@ BOOL torture_rpc_echo(int dummy)
 		ret = False;
 	}
 
-	if (!test_sinkdata(p, mem_ctx)) {
-		ret = False;
-	}
-#endif
-
 	if (!test_testcall(p, mem_ctx)) {
 		ret = False;
 	}
@@ -303,10 +301,11 @@ BOOL torture_rpc_echo(int dummy)
 		ret = False;
 	}
 
+/*
 	if (!test_sleep(p, mem_ctx)) {
 		ret = False;
 	}
-
+*/
 	printf("\n");
 	
 	talloc_destroy(mem_ctx);
