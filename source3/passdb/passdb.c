@@ -93,7 +93,7 @@ static void destroy_pdb_talloc(SAM_ACCOUNT **user)
 NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
 {
 	if (*user != NULL) {
-		DEBUG(0,("pdb_init_sam: SAM_ACCOUNT was non NULL\n"));
+		DEBUG(0,("pdb_init_sam_talloc: SAM_ACCOUNT was non NULL\n"));
 #if 0
 		smb_panic("non-NULL pointer passed to pdb_init_sam\n");
 #endif
@@ -108,7 +108,7 @@ NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
 	*user=(SAM_ACCOUNT *)talloc(mem_ctx, sizeof(SAM_ACCOUNT));
 
 	if (*user==NULL) {
-		DEBUG(0,("pdb_init_sam: error while allocating memory\n"));
+		DEBUG(0,("pdb_init_sam_talloc: error while allocating memory\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
