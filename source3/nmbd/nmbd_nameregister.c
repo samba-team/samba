@@ -155,131 +155,193 @@ name %s on subnet %s.\n", inet_ntoa(p->ip), nmb_namestr(answer_name), subrec->su
   remove_response_record(subrec, rrec);
 }
 
+
+/****************************************************************************
+ Deal with a timeout of a WINS registration request
+****************************************************************************/
+static void wins_registration_timeout(struct subnet_record *subrec,
+				      struct response_record *rrec)
+{
+	struct userdata_struct *userdata = rrec->userdata;
+
+	DEBUG(2,("register_name_timeout_response: WINS server at address %s is not responding.\n", 
+		 inet_ntoa(rrec->packet->ip)));
+
+	/* mark it temporarily dead */
+	wins_srv_died(rrec->packet->ip);
+
+	/* if we have some userdata then use that to work out what
+	   wins server to try next */
+	if (userdata) {
+		const char *tag = (const char *)userdata->data;
+		struct nmb_packet *sent_nmb = &rrec->packet->packet.nmb;
+		struct nmb_name *nmbname = &sent_nmb->question.question_name;
+
+		/* and try the next wins server in our failover list */
+		rrec->packet->ip = wins_srv_ip_tag(tag);
+
+		/* also update the UNICODE subnet IPs */
+		subrec->bcast_ip = subrec->mask_ip = subrec->myip = rrec->packet->ip;
+
+		DEBUG(6,("Retrying register of name %s with WINS server %s using tag '%s'\n",
+			 nmb_namestr(nmbname), inet_ntoa(rrec->packet->ip), tag));
+	}
+
+	/* Keep trying to contact the WINS server periodically. This allows
+	   us to work correctly if the WINS server is down temporarily when
+	   we come up. */
+	
+	/* Reset the number of attempts to zero and double the interval between
+	   retries. Max out at 5 minutes. */
+	rrec->repeat_count = 3;
+	rrec->repeat_interval *= 2;
+	if(rrec->repeat_interval > (5 * 60))
+		rrec->repeat_interval = (5 * 60);
+	rrec->repeat_time = time(NULL) + rrec->repeat_interval;
+	rrec->in_expiration_processing = False;
+	
+	DEBUG(5,("register_name_timeout_response: increasing WINS timeout to %d seconds.\n",
+		 (int)rrec->repeat_interval));
+
+	/* notice that we don't remove the response record. This keeps
+	   us trying to register with each of our failover wins
+	   servers until we succeed */	
+}
+
+
 /****************************************************************************
  Deal with a timeout when registering one of our names.
 ****************************************************************************/
 
 static void register_name_timeout_response(struct subnet_record *subrec,
-                       struct response_record *rrec)
+					   struct response_record *rrec)
 {
-  /*
-   * If we are registering unicast, then NOT getting a response is an
-   * error - we do not have the name. If we are registering broadcast,
-   * then we don't expect to get a response.
-   */
+	/*
+	 * If we are registering unicast, then NOT getting a response is an
+	 * error - we do not have the name. If we are registering broadcast,
+	 * then we don't expect to get a response.
+	 */
 
-  struct nmb_packet *sent_nmb = &rrec->packet->packet.nmb;
-  BOOL bcast = sent_nmb->header.nm_flags.bcast;
-  BOOL success = False;
-  struct nmb_name *question_name = &sent_nmb->question.question_name;
-  uint16 nb_flags = 0;
-  int ttl = 0;
-  struct in_addr registered_ip;
+	struct nmb_packet *sent_nmb = &rrec->packet->packet.nmb;
+	BOOL bcast = sent_nmb->header.nm_flags.bcast;
+	BOOL success = False;
+	struct nmb_name *question_name = &sent_nmb->question.question_name;
+	uint16 nb_flags = 0;
+	int ttl = 0;
+	struct in_addr registered_ip;
+	
+	if (bcast) {
+		if(rrec->num_msgs == 0) {
+			/* Not receiving a message is success for broadcast registration. */
+			success = True; 
 
-  if(bcast)
-  {
-    if(rrec->num_msgs == 0)
-    {
-      /* Not receiving a message is success for broadcast registration. */
-      success = True; 
+			/* Pull the success values from the original request packet. */
+			nb_flags = get_nb_flags(sent_nmb->additional->rdata);
+			ttl = sent_nmb->additional->ttl;
+			putip(&registered_ip,&sent_nmb->additional->rdata[2]);
+		}
+	} else {
+		/* Unicast - if no responses then it's an error. */
+		if(rrec->num_msgs == 0) {
+			wins_registration_timeout(subrec, rrec);
+			return;
+		}
 
-      /* Pull the success values from the original request packet. */
-      nb_flags = get_nb_flags(sent_nmb->additional->rdata);
-      ttl = sent_nmb->additional->ttl;
-      putip(&registered_ip,&sent_nmb->additional->rdata[2]);
-    }
-  }
-  else
-  {
-    /* Unicast - if no responses then it's an error. */
-    if(rrec->num_msgs == 0)
-    {
-      DEBUG(2,("register_name_timeout_response: WINS server at address %s is not \
-responding.\n", inet_ntoa(rrec->packet->ip)));
+		/* we got responses, but timed out?? bizarre. Treat it as failure. */
+	}
 
-      /* mark it temporarily dead */
-      wins_srv_died(rrec->packet->ip);
+	DEBUG(5,("register_name_timeout_response: %s in registering name %s on subnet %s.\n",
+		 success ? "success" : "failure", nmb_namestr(question_name), subrec->subnet_name));
+	if(success) {
+		/* Enter the registered name into the subnet name database before calling
+		   the success function. */
+		standard_success_register(subrec, rrec->userdata, question_name, nb_flags, ttl, registered_ip);
+		if( rrec->success_fn)
+			(*(register_name_success_function)rrec->success_fn)(subrec, rrec->userdata, question_name, nb_flags, ttl, registered_ip);
+	} else {
+		if( rrec->fail_fn)
+			(*(register_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name);
+		/* Remove the name. */
+		standard_fail_register( subrec, rrec, question_name);
+	}
 
-      /* and try the next wins server in our failover list */
-      rrec->packet->ip = wins_srv_ip();
+	/* Ensure we don't retry. */
+	remove_response_record(subrec, rrec);
+}
 
-      /* also update the UNICODE subnet IPs */
-      subrec->bcast_ip = subrec->mask_ip = subrec->myip = rrec->packet->ip;
 
-      /* Keep trying to contact the WINS server periodically. This allows
-         us to work correctly if the WINS server is down temporarily when
-         we come up. */
+/****************************************************************************
+initiate one multi-homed name registration packet
+****************************************************************************/
+static void multihomed_register_one(struct nmb_name *nmbname,
+				    uint16 nb_flags,
+				    register_name_success_function success_fn,
+				    register_name_fail_function fail_fn,
+				    struct in_addr ip,
+				    const char *tag)
+{
+	struct userdata_struct *userdata;
+	struct in_addr wins_ip = wins_srv_ip_tag(tag);
 
-      /* Reset the number of attempts to zero and double the interval between
-         retries. Max out at 5 minutes. */
-      rrec->repeat_count = 3;
-      rrec->repeat_interval *= 2;
-      if(rrec->repeat_interval > (5 * 60))
-        rrec->repeat_interval = (5 * 60);
-      rrec->repeat_time = time(NULL) + rrec->repeat_interval;
-      rrec->in_expiration_processing = False;
+	userdata = (struct userdata_struct *)malloc(sizeof(*userdata) + strlen(tag) + 1);
+	if (!userdata) {
+		DEBUG(0,("Failed to allocate userdata structure!\n"));
+		return;
+	}
+	ZERO_STRUCTP(userdata);
+	userdata->userdata_len = strlen(tag) + 1;
+	strlcpy(userdata->data, tag, userdata->userdata_len);	
 
-      DEBUG(5,("register_name_timeout_response: increasing WINS timeout to %d seconds.\n",
-              (int)rrec->repeat_interval));
-      return; /* Don't remove the response record. */
-    }
-  }
+	DEBUG(6,("Registering name %s with WINS server %s using tag '%s'\n",
+		 nmb_namestr(nmbname), inet_ntoa(wins_ip), tag));
 
-  DEBUG(5,("register_name_timeout_response: %s in registering name %s on subnet %s.\n",
-        success ? "success" : "failure", nmb_namestr(question_name), subrec->subnet_name));
-  if(success)
-  {
-    /* Enter the registered name into the subnet name database before calling
-       the success function. */
-    standard_success_register(subrec, rrec->userdata, question_name, nb_flags, ttl, registered_ip);
-    if( rrec->success_fn)
-      (*(register_name_success_function)rrec->success_fn)(subrec, rrec->userdata, question_name, nb_flags, ttl, registered_ip);
-  }
-  else
-  {
-    if( rrec->fail_fn)
-      (*(register_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name);
-    /* Remove the name. */
-    standard_fail_register( subrec, rrec, question_name);
-  }
-
-  /* Ensure we don't retry. */
-  remove_response_record(subrec, rrec);
+	if (queue_register_multihomed_name(unicast_subnet,
+					   register_name_response,
+					   register_name_timeout_response,
+					   success_fn,
+					   fail_fn,
+					   userdata,
+					   nmbname,
+					   nb_flags,
+					   ip,
+					   wins_ip) == NULL) {
+		DEBUG(0,("multihomed_register_one: Failed to send packet trying to register name %s IP %s\n", 
+			 nmb_namestr(nmbname), inet_ntoa(ip)));		
+	}
 }
 
 /****************************************************************************
  Try and register one of our names on the unicast subnet - multihomed.
 ****************************************************************************/
-
 static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
                                       register_name_success_function success_fn,
                                       register_name_fail_function fail_fn)
 {
-  /*
-     If we are adding a group name, we just send multiple
-     register name packets to the WINS server (this is an
-     internet group name.
+	/*
+	  If we are adding a group name, we just send multiple
+	  register name packets to the WINS server (this is an
+	  internet group name.
 
-     If we are adding a unique name, We need first to add 
-     our names to the unicast subnet namelist. This is 
-     because when a WINS server receives a multihomed 
-     registration request, the first thing it does is to 
-     send a name query to the registering machine, to see 
-     if it has put the name in it's local namelist.
-     We need the name there so the query response code in
-     nmbd_incomingrequests.c will find it.
+	  If we are adding a unique name, We need first to add 
+	  our names to the unicast subnet namelist. This is 
+	  because when a WINS server receives a multihomed 
+	  registration request, the first thing it does is to 
+	  send a name query to the registering machine, to see 
+	  if it has put the name in it's local namelist.
+	  We need the name there so the query response code in
+	  nmbd_incomingrequests.c will find it.
 
-     We are adding this name prematurely (we don't really
-     have it yet), but as this is on the unicast subnet
-     only we will get away with this (only the WINS server
-     will ever query names from us on this subnet).
-   */
-
+	  We are adding this name prematurely (we don't really
+	  have it yet), but as this is on the unicast subnet
+	  only we will get away with this (only the WINS server
+	  will ever query names from us on this subnet).
+	*/
 	int num_ips=0;
-	int i;
+	int i, t;
 	struct in_addr *ip_list = NULL;
 	struct subnet_record *subrec;
-	
+	char **wins_tags;
+
 	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec) )
 		num_ips++;
 	
@@ -288,7 +350,7 @@ static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
 		return True;
 	}
 
-	for( subrec = FIRST_SUBNET, i = 0; 
+	for (subrec = FIRST_SUBNET, i = 0; 
 	     subrec;
 	     subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec), i++ ) {
 		ip_list[i] = subrec->myip;
@@ -298,26 +360,20 @@ static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
 				  nb_flags, lp_max_ttl(), SELF_NAME,
 				  num_ips, ip_list);
 
-	/* Now try and register the name, num_ips times. On the last time use
-	   the given success and fail functions. */
-	
-	for (i = 0; i < num_ips; i++) {
-		if (queue_register_multihomed_name( unicast_subnet,
-						    register_name_response,
-						    register_name_timeout_response,
-						    (i == num_ips - 1) ? success_fn : NULL,
-						    (i == num_ips - 1) ? fail_fn : NULL,
-						    NULL,
-						    nmbname,
-						    nb_flags,
-						    ip_list[i]) == NULL) {
-			DEBUG(0,("multihomed_register_name: Failed to send packet trying to \
-register name %s IP %s\n", nmb_namestr(nmbname), inet_ntoa(ip_list[i]) ));
-			
-			SAFE_FREE(ip_list);
-			return True;
+	/* get the list of wins tags - we try to register for each of them */
+	wins_tags = wins_srv_tags();
+
+	/* Now try and register the name, num_ips times for each wins tag. */
+	for (t=0; wins_tags[t]; t++) {
+		for (i = 0; i < num_ips; i++) {
+			multihomed_register_one(nmbname, nb_flags,
+						success_fn, fail_fn,
+						ip_list[i],
+						wins_tags[t]);
 		}
 	}
+
+	wins_srv_tags_free(wins_tags);
 	
 	SAFE_FREE(ip_list);
 	

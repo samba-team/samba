@@ -519,64 +519,61 @@ struct response_record *queue_register_name( struct subnet_record *subrec,
 }
 
 /****************************************************************************
- Queue a multihomed register name packet to the broadcast address of a subnet.
+ Queue a multihomed register name packet to a given WINS server IP
 ****************************************************************************/
 
 struct response_record *queue_register_multihomed_name( struct subnet_record *subrec,
-                          response_function resp_fn,
-                          timeout_response_function timeout_fn,
-                          register_name_success_function success_fn,
-                          register_name_fail_function fail_fn,
-                          struct userdata_struct *userdata,
-                          struct nmb_name *nmbname,
-                          uint16 nb_flags,
-                          struct in_addr register_ip)
+							response_function resp_fn,
+							timeout_response_function timeout_fn,
+							register_name_success_function success_fn,
+							register_name_fail_function fail_fn,
+							struct userdata_struct *userdata,
+							struct nmb_name *nmbname,
+							uint16 nb_flags,
+							struct in_addr register_ip,
+							struct in_addr wins_ip)
 {
-  struct packet_struct *p;
-  struct response_record *rrec;
-  BOOL ret;
-     
-  /* Sanity check. */
-  if(subrec != unicast_subnet)
-  {
-    DEBUG(0,("queue_register_multihomed_name: should only be done on \
+	struct packet_struct *p;
+	struct response_record *rrec;
+	BOOL ret;
+	
+	/* Sanity check. */
+	if(subrec != unicast_subnet) {
+		DEBUG(0,("queue_register_multihomed_name: should only be done on \
 unicast subnet. subnet is %s\n.", subrec->subnet_name ));
-    return NULL;
-  }
+		return NULL;
+	}
 
-  if(assert_check_subnet(subrec))
-    return NULL;
+	if(assert_check_subnet(subrec))
+		return NULL;
      
-  if(( p = create_and_init_netbios_packet(nmbname, False, True,
-					  subrec->bcast_ip)) == NULL)
-    return NULL;
+	if ((p = create_and_init_netbios_packet(nmbname, False, True, wins_ip)) == NULL)
+		return NULL;
 
-  if (nb_flags & NB_GROUP)
-    ret = initiate_name_register_packet( p, nb_flags, &register_ip);
-  else
-    ret = initiate_multihomed_name_register_packet( p, nb_flags, &register_ip);
+	if (nb_flags & NB_GROUP)
+		ret = initiate_name_register_packet( p, nb_flags, &register_ip);
+	else
+		ret = initiate_multihomed_name_register_packet(p, nb_flags, &register_ip);
 
-  if(ret == False)
-  {  
-    p->locked = False;
-    free_packet(p);
-    return NULL;
-  }  
+	if (ret == False) {  
+		p->locked = False;
+		free_packet(p);
+		return NULL;
+	}  
   
-  if((rrec = make_response_record(subrec,    /* subnet record. */
-                p,                     /* packet we sent. */
-                resp_fn,               /* function to call on response. */
-                timeout_fn,            /* function to call on timeout. */
-                (success_function)success_fn,            /* function to call on operation success. */
-                (fail_function)fail_fn,               /* function to call on operation fail. */
-                userdata)) == NULL)
-  {  
-    p->locked = False;
-    free_packet(p);
-    return NULL;
-  }  
-  
-  return rrec;
+	if ((rrec = make_response_record(subrec,    /* subnet record. */
+					 p,                     /* packet we sent. */
+					 resp_fn,               /* function to call on response. */
+					 timeout_fn,            /* function to call on timeout. */
+					 (success_function)success_fn, /* function to call on operation success. */
+					 (fail_function)fail_fn,       /* function to call on operation fail. */
+					 userdata)) == NULL) {  
+		p->locked = False;
+		free_packet(p);
+		return NULL;
+	}  
+	
+	return rrec;
 }
 
 /****************************************************************************
