@@ -166,6 +166,14 @@ BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
 	return !data->has_error;
 }
 
+BOOL asn1_write_ContextSimple(ASN1_DATA *data, uint8 num, DATA_BLOB *blob)
+{
+	asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(num));
+	asn1_write(data, blob->data, blob->length);
+	asn1_pop_tag(data);
+	return !data->has_error;
+}
+
 /* write a BOOLEAN */
 BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
@@ -263,6 +271,10 @@ BOOL asn1_peek_uint8(ASN1_DATA *data, uint8 *v)
 BOOL asn1_peek_tag(ASN1_DATA *data, uint8 tag)
 {
 	uint8 b;
+
+	if (asn1_tag_remaining(data) <= 0) {
+		return False;
+	}
 
 	if (!asn1_peek(data, &b, sizeof(b)))
 		return False;
@@ -444,7 +456,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 	fstr_sprintf(el, " %u",  b%40);
 	pstrcat(oid, el);
 
-	while (asn1_tag_remaining(data) > 0) {
+	while (!data->has_error && asn1_tag_remaining(data) > 0) {
 		unsigned v = 0;
 		do {
 			asn1_read_uint8(data, &b);
@@ -458,7 +470,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 
 	*OID = strdup(oid);
 
-	return !data->has_error;
+	return (*OID && !data->has_error);
 }
 
 /* check that the next object ID is correct */
@@ -503,6 +515,22 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	int len;
 	ZERO_STRUCTP(blob);
 	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
+	len = asn1_tag_remaining(data);
+	if (len < 0) {
+		data->has_error = True;
+		return False;
+	}
+	*blob = data_blob(NULL, len);
+	asn1_read(data, blob->data, len);
+	asn1_end_tag(data);
+	return !data->has_error;
+}
+
+BOOL asn1_read_ContextSimple(ASN1_DATA *data, uint8 num, DATA_BLOB *blob)
+{
+	int len;
+	ZERO_STRUCTP(blob);
+	if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(num))) return False;
 	len = asn1_tag_remaining(data);
 	if (len < 0) {
 		data->has_error = True;

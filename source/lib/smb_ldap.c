@@ -4,6 +4,8 @@
    
    Copyright (C) Andrew Tridgell  2004
    Copyright (C) Volker Lendecke 2004
+   Copyright (C) Stefan Metzmacher 2004
+   Copyright (C) Simo Sorce 2004
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +30,7 @@
  *
  * LDAP filter parser -- main routine is ldap_parse_filter
  *
- * Shamelessly stolen and adapted from Samba 4.
+ * Shamelessly stolen and adapted from ldb.
  *
  ***************************************************************************/
 
@@ -791,8 +793,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 			asn1_push_tag(&data, r->mechanism | 0xa0);
 			asn1_write_OctetString(&data, r->creds.SASL.mechanism,
 					       strlen(r->creds.SASL.mechanism));
-			asn1_write_OctetString(&data, r->creds.SASL.creds.data,
-					       r->creds.SASL.creds.length);
+			asn1_write_OctetString(&data, r->creds.SASL.secblob.data,
+					       r->creds.SASL.secblob.length);
 			asn1_pop_tag(&data);
 			break;
 		default:
@@ -1061,7 +1063,7 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	asn1_read_enumerated(data, &result->resultcode);
 	asn1_read_OctetString_talloc(mem_ctx, data, &result->dn);
 	asn1_read_OctetString_talloc(mem_ctx, data, &result->errormessage);
-	if (asn1_tag_remaining(data) > 0) {
+	if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
 		asn1_start_tag(data, ASN1_CONTEXT(3));
 		asn1_read_OctetString_talloc(mem_ctx, data, &result->referral);
 		asn1_end_tag(data);
@@ -1266,9 +1268,26 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_BindResponse): {
 		struct ldap_BindResponse *r = &msg->r.BindResponse;
 		msg->type = LDAP_TAG_BindResponse;
-		ldap_decode_response(msg->mem_ctx,
-				     data, LDAP_TAG_BindResponse,
-				     &r->response);
+		asn1_start_tag(data, ASN1_APPLICATION(LDAP_TAG_BindResponse));
+		asn1_read_enumerated(data, &r->response.resultcode);
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.dn);
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.errormessage);
+		if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
+			asn1_start_tag(data, ASN1_CONTEXT(3));
+			asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.referral);
+			asn1_end_tag(data);
+		} else {
+			r->response.referral = NULL;
+		}
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(7))) {
+			DATA_BLOB tmp_blob = data_blob(NULL, 0);
+			asn1_read_ContextSimple(data, 7, &tmp_blob);
+			r->SASL.secblob = data_blob_talloc(msg->mem_ctx, tmp_blob.data, tmp_blob.length);
+			data_blob_free(&tmp_blob);
+		} else {
+			r->SASL.secblob = data_blob(NULL, 0);
+		}
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1731,8 +1750,9 @@ struct ldap_message *ldap_receive(struct ldap_connection *conn, int msgid,
 
 	while (True) {
 		struct asn1_data data;
-		result = new_ldap_message();
 		BOOL res;
+
+		result = new_ldap_message();
 
 		if (!asn1_read_sequence_until(conn->sock, &data, endtime))
 			return NULL;
@@ -1765,36 +1785,69 @@ struct ldap_message *ldap_transaction(struct ldap_connection *conn,
 	return ldap_receive(conn, request->messageid, NULL);
 }
 
-BOOL ldap_setup_connection(struct ldap_connection *conn,
-			   const char *url)
+int ldap_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
-	struct ldap_message *msg = new_ldap_message();
 	struct ldap_message *response;
-	BOOL result;
+	struct ldap_message *msg;
+	const char *dn, *pw;
+	int result = LDAP_OTHER;
 
-	if (msg == NULL)
-		return False;
+	if (conn == NULL)
+		return result;
 
-	if (!ldap_connect(conn, url)) {
-		destroy_ldap_message(msg);
-		return False;
+	if (userdn) {
+		dn = userdn;
+	} else {
+		if (conn->auth_dn) {
+			dn = conn->auth_dn;
+		} else {
+			dn = "";
+		}
 	}
 
-	msg->messageid = conn->next_msgid++;
-	msg->type = LDAP_TAG_BindRequest;
-	msg->r.BindRequest.version = 3;
-	msg->r.BindRequest.dn = conn->auth_dn;
-	msg->r.BindRequest.mechanism = LDAP_AUTH_MECH_SIMPLE;
-	msg->r.BindRequest.creds.password = conn->simple_pw;
+	if (password) {
+		pw = password;
+	} else {
+		if (conn->simple_pw) {
+			pw = conn->simple_pw;
+		} else {
+			pw = "";
+		}
+	}
 
-	if ((response = ldap_transaction(conn, msg)) == NULL)
-		return False;
+	msg =  new_ldap_simple_bind_msg(dn, pw);
+	if (!msg)
+		return result;
 
-	result = (response->r.BindResponse.response.resultcode == 0);
+	response = ldap_transaction(conn, msg);
+	if (!response) {
+		destroy_ldap_message(msg);
+		return result;
+	}
+		
+	result = response->r.BindResponse.response.resultcode;
 
 	destroy_ldap_message(msg);
 	destroy_ldap_message(response);
+
 	return result;
+}
+
+BOOL ldap_setup_connection(struct ldap_connection *conn,
+			   const char *url, const char *userdn, const char *password)
+{
+	int result;
+
+	if (!ldap_connect(conn, url)) {
+		return False;
+	}
+
+	result = ldap_bind_simple(conn, userdn, password);
+	if (result == LDAP_SUCCESS) {
+		return True;
+	}
+
+	return False;
 }
 
 static BOOL ldap_abandon_message(struct ldap_connection *conn, int msgid,

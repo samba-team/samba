@@ -402,7 +402,7 @@ static NTSTATUS ldap_idmap_init( char *params )
 	SAFE_FREE(dn);
 	SAFE_FREE(pw);
 
-	if (!ldap_setup_connection(ldap_conn, params))
+	if (!ldap_setup_connection(ldap_conn, params, NULL, NULL))
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/* see if the idmap suffix and sub entries exists */
