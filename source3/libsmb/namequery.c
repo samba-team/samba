@@ -1263,7 +1263,7 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *
 	/* If it's our domain then use the 'password server' parameter. */
 
 	if (strequal(domain, lp_workgroup())) {
-		char *p;
+		const char *p;
 		char *pserver = lp_passwordserver(); /* UNIX charset. */
 		fstring name;
 		int num_addresses = 0;
