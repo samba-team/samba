@@ -52,12 +52,15 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	if (!(cli = open_pipe_creds(computer_name, creds, 
 				    cli_spoolss_initialise, NULL))) {
-		fprintf(stderr, "could not initialise cli state\n");
+
+		/* Error state set in open_pipe_creds() */
+
 		goto done;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
-		fprintf(stderr, "unable to initialise talloc context\n");
+		PyErr_SetString(spoolss_error, 
+				"unable to initialise talloc context\n");
 		goto done;
 	}
 
@@ -98,11 +101,6 @@ PyObject *spoolss_closeprinter(PyObject *self, PyObject *args)
 	/* Call rpc function */
 
 	result = cli_spoolss_close_printer(hnd->cli, hnd->mem_ctx, &hnd->pol);
-
-	/* Cleanup samba stuf */
-
-	cli_shutdown(hnd->cli);
-	talloc_destroy(hnd->mem_ctx);
 
 	/* Return value */
 
