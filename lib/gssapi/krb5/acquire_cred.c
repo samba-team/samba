@@ -118,7 +118,7 @@ static OM_uint32 acquire_initiator_cred
 	if (kret)
 	    goto end;
 	kret = krb5_get_init_creds_opt_alloc(gssapi_krb5_context, &opt);
-	if (ret)
+	if (kret)
 	    goto end;
 	kret = krb5_get_init_creds_keytab(gssapi_krb5_context, &cred,
 	    handle->principal, keytab, 0, NULL, opt);
