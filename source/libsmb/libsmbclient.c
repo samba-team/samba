@@ -502,6 +502,8 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
 
   }
 
+  codepage_initialise(lp_client_code_page()); /* Get a codepage */
+
   reopen_logs();  /* Get logging working ... */
 
   /* 
@@ -1391,6 +1393,8 @@ int smbc_opendir(const char *fname)
   struct smbc_server *srv = NULL;
   struct in_addr rem_ip;
   int slot = 0;
+  uint8 eclass;
+  uint32 ecode;
 
   if (!smbc_initialized) {
 
@@ -1444,7 +1448,9 @@ int smbc_opendir(const char *fname)
   smbc_file_table[slot]->srv      = NULL;
   smbc_file_table[slot]->offset   = 0;
   smbc_file_table[slot]->file     = False;
-  smbc_file_table[slot]->dir_list = NULL;
+  smbc_file_table[slot]->dir_list = 
+    smbc_file_table[slot]->dir_next =
+    smbc_file_table[slot]->dir_end = NULL;
 
   if (server[0] == (char)0) {
 
@@ -1487,6 +1493,7 @@ int smbc_opendir(const char *fname)
 
       if (smbc_file_table[slot]) free(smbc_file_table[slot]);
       smbc_file_table[slot] = NULL;
+      errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
       return -1;
 
     }
@@ -1540,6 +1547,7 @@ int smbc_opendir(const char *fname)
 
 	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
 	  smbc_file_table[slot] = NULL;
+	  errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
 	  return -1;
 
 	}
@@ -1567,9 +1575,10 @@ int smbc_opendir(const char *fname)
 
 	  /* Now, list the servers ... */
 
-	  if (!cli_RNetShareEnum(&srv->cli, list_fn, 
-				 (void *)smbc_file_table[slot])) {
+	  if (cli_RNetShareEnum(&srv->cli, list_fn, 
+				(void *)smbc_file_table[slot]) < 0) {
 
+	    errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
 	    if (smbc_file_table[slot]) free(smbc_file_table[slot]);
 	    smbc_file_table[slot] = NULL;
 	    return -1;
