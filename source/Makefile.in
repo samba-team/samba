@@ -85,16 +85,16 @@ PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\"
 PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBASE)\"
 PATH_FLAGS = $(PATH_FLAGS5) $(PASSWD_FLAGS)
 
-WINBIND_PROGS = bin/wbinfo
-WINBIND_SPROGS = bin/winbindd
-WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
-WINBIND_LPROGS = @WINBIND_PAM_PROGS@ nsswitch/libnss_winbind.so
+WINBIND_PROGS = @WINBIND_TARGETS@
+WINBIND_SPROGS = @WINBIND_STARGETS@
+WINBIND_PAM_PROGS = @WINBIND_PAM_TARGETS@
+WINBIND_LPROGS = @WINBIND_LTARGETS@
 
 SPROGS = bin/smbd bin/nmbd bin/swat @WINBIND_STARGETS@
 PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/smbtree @RUNPROG@ @WINBIND_TARGETS@
 PROGS2 = bin/smbpasswd bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
-LPROGS = @WINBIND_LTARGETS@
+LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
 
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/pdbedit bin/smbgroupedit
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest bin/locktest2
@@ -450,7 +450,7 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS include/proto.h $(SPROGS) $(PROGS) $(SHLIBS) nsswitch
+all : SHOWFLAGS include/proto.h $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) $(SHLIBS)
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -476,7 +476,7 @@ debug2html : SHOWFLAGS bin/debug2html
 
 smbfilter : SHOWFLAGS bin/smbfilter
 
-nsswitch : SHOWFLAGS @WINBIND_TARGETS@ @WINBIND_STARGETS@ @WINBIND_LTARGETS@
+nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
