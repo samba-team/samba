@@ -60,6 +60,8 @@ SOURCES = \
 	memmove.c \
 	mini_inetd.c \
 	mkstemp.c \
+	parse_time.c \
+	parse_units.c \
 	putenv.c \
 	rcmd.c \
 	readv.c \
@@ -98,6 +100,8 @@ OBJECTS = \
 	k_getpwnam.o \
 	k_getpwuid.o \
 	mini_inetd.o \
+	parse_time.o \
+	parse_units.o \
 	signal.o \
 	snprintf.o \
 	strcasecmp.o \
