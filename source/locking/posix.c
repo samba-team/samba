@@ -637,7 +637,7 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
  Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
 ****************************************************************************/
 
-static uint32 map_lock_offset(uint32 high, uint32 low)
+uint32 map_lock_offset(uint32 high, uint32 low)
 {
 	unsigned int i;
 	uint32 mask = 0;
