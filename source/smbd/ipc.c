@@ -2762,13 +2762,14 @@ struct
   BOOL (*fn) ();
 } api_fd_commands [] =
   {
-    { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
 #ifdef NTDOMAIN
+    { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
+    { "SetNmdPpHndState",	"NETLOGON",	1,	api_LsarpcSNPHS },
     { "TransactNmPipe",	"lsarpc",	0x26,	api_ntLsarpcTNP },
     { "TransactNmPipe",	"NETLOGON",	0x26,	api_netlogrpcTNP },
-    { "SetNmdPpHndState",	"NETLOGON",	1,	api_netlogrpcTNP },
 #else
-    { "TransactNmPipe",	"lsarpc",	0x26,	api_LsarpcTNP },
+    { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
+    { "TransactNmPipe"  ,	"lsarpc",	0x26,	api_LsarpcTNP },
 #endif
     { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }
   };
