@@ -6,9 +6,9 @@ Mirror sites include:
 ftp://nimbus.anu.edu.au/pub/tridge/samba
 ftp://sunsite.auc.dk/pub/unix/networking/samba/
 ftp://src.doc.ic.ac.uk/packages/samba/
+ftp://choc.satech.net.au/pub/samba/
 ftp://ftp.warwick.ac.uk/pub/linux/sunsite.unc-mirror/system/Network/samba/
 ftp://sunsite.unc.edu/pub/Linux/system/Network/samba/
-ftp://ftp.choc.apana.org.au/pub/samba/
 ftp://ftp.uni-trier.de/pub/unix/network/samba/
 ftp://ftp.spectrum.titan.com/pub/samba/
 ftp://ftp.demon.co.uk/pub/unix/unix/samba/
@@ -28,4 +28,5 @@ ftp://quics.qnx.com/usr/free/staging/samba
 Http sites include:
 
 http://samba.canberra.edu.au/pub/samba
-http://www.choc.apana.org.au/pub/samba
+http://www.choc.satech.net.au/pub/samba/
+
