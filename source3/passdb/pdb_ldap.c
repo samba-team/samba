@@ -1198,8 +1198,11 @@ static void make_ldap_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		values = ldap_get_values(ldap_struct, existing, attribute);
 	}
 
+	/* all of our string attributes are case insensitive */
+	
 	if ((values != NULL) && (values[0] != NULL) &&
-	    strcmp(values[0], newval) == 0) {
+	    StrCaseCmp(values[0], newval) == 0) 
+	{
 		
 		/* Believe it or not, but LDAP will deny a delete and
 		   an add at the same time if the values are the
