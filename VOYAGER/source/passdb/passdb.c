@@ -355,19 +355,8 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username,
 	
 	/* see if we need to generate a new rid using the 2.2 algorithm */
 	if ( rid == 0 && lp_enable_rid_algorithm() ) {
-                /*
 		DEBUG(10,("pdb_init_sam_new: no RID specified.  Generating one via old algorithm\n"));
 		rid = fallback_pdb_uid_to_user_rid(pwd->pw_uid);
-                */
-                DEBUG(0,("calling winbind_allocate_rid\n"));
-                if (!winbind_allocate_rid(&rid)) {
-                   DEBUG(0,("winbind_allocate_rid failed\n"));
-                }
-                DEBUG(0,("New rid: %d\n",rid));
-                /* if ( !NT_STATUS_IS_OK(idmap_allocate_rid( &rid, ID_USERID)) ) {
-                      DEBUG(0,("pdb_init_sam_new: idmap_allocate_rid() failed!\n"));
-                }
-                */
 	}
 	
 	/* set the new SID */

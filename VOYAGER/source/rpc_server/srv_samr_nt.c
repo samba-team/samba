@@ -36,11 +36,6 @@
 
 extern DOM_SID global_sid_Builtin;
 
-extern rid_name domain_group_rids[];
-extern rid_name domain_alias_rids[];
-extern rid_name builtin_alias_rids[];
-
-
 typedef struct _disp_info {
 	BOOL user_dbloaded;
 	uint32 num_user_account;
@@ -3738,9 +3733,9 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, SAMR_R_CREATE_DOM_GROUP *r_u)
 {
 	DOM_SID dom_sid;
-	DOM_SID info_sid;
+	DOM_SID group_sid;
+	enum SID_NAME_USE type;
 	fstring name;
-	fstring sid_string;
 	struct group *grp;
 	struct samr_info *info;
 	uint32 acc_granted;
@@ -3762,7 +3757,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
 	/* check if group already exist */
-	if ((grp=getgrnam(name)) != NULL)
+	if (lookup_name(get_global_sam_name(), name, &group_sid, &type))
 		return NT_STATUS_GROUP_EXISTS;
 
 	/* we can create the UNIX group */
@@ -3773,17 +3768,10 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	if ((grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
-	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
+	gid_to_sid(&group_sid, gid);
+	sid_peek_rid(&group_sid, &r_u->rid);
 
-	/* add the group to the mapping table */
-	sid_copy(&info_sid, get_global_sam_sid());
-	sid_append_rid(&info_sid, r_u->rid);
-	sid_to_string(sid_string, &info_sid);
-
-	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL))
-		return NT_STATUS_ACCESS_DENIED;
-
-	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
+	if ((info = get_samr_info_by_sid(&group_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	/* get a (unique) handle.  open a policy on it. */

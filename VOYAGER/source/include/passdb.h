@@ -105,17 +105,6 @@ enum pdb_elements {
 	PDB_COUNT
 };
 
-enum pdb_group_elements {
-	PDB_GROUP_NAME,
-	PDB_GROUP_SID,
-	PDB_GROUP_SID_NAME_USE,
-	PDB_GROUP_MEMBERS,
-
-	/* this must be the last element */
-	PDB_GROUP_COUNT
-};
-
-
 enum pdb_value_state {
 	PDB_DEFAULT=0,
 	PDB_SET,
@@ -199,29 +188,6 @@ typedef struct sam_passwd
 	   are meant to use the pdb_...() functions. */
 	
 } SAM_ACCOUNT;
-
-typedef struct sam_group {
-	TALLOC_CTX *mem_ctx;
-	
-	void (*free_fn)(struct sam_group **);
-
-	struct pdb_methods *methods;
-
-	struct group_data {
-		/* initialization flags */
-		struct bitmap *change_flags;
-		struct bitmap *set_flags;
-
-		const char *name;		/* Windows group name string */
-
-		DOM_SID sid;			/* Group SID */
-		enum SID_NAME_USE sid_name_use;	/* Group type */
-
-		uint32 mem_num;			/* Number of member SIDs */
-		DOM_SID *members;		/* SID array */
-	} private;
-
-} SAM_GROUP;
 
 struct acct_info
 {
