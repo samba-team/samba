@@ -48,10 +48,10 @@ krb5_init_etype (krb5_context context,
 {
     int i;
     krb5_error_code ret;
-    const krb5_enctype *tmp;
+    krb5_enctype *tmp;
 
     if (etypes)
-	tmp = etypes;
+	tmp = (krb5_enctype*)etypes;
     else {
 	ret = krb5_get_default_in_tkt_etypes(context,
 					     &tmp);
@@ -181,15 +181,60 @@ extract_ticket(krb5_context context,
     return err;
 }
 
-/*
- *
- */
+
+static krb5_error_code
+make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
+{
+    PA_ENC_TS_ENC p;
+    u_char buf[1024];
+    size_t len;
+    EncryptedData encdata;
+    krb5_error_code ret;
+    
+    p.patimestamp = time(NULL);
+    p.pausec      = NULL;
+
+    ret = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
+			       sizeof(buf),
+			       &p,
+			       &len);
+    if (ret)
+	return ret;
+
+    /*
+     * According to the spec this is the only encryption method
+     * that must be supported so it's the safest choice.  On the
+     * other hand, old KDCs might not support it.
+     */
+
+    ret = krb5_encrypt_EncryptedData(context, 
+				     buf + sizeof(buf) - len,
+				     len,
+				     ETYPE_DES_CBC_MD5,
+				     key,
+				     &encdata);
+    if (ret)
+	return ret;
+		    
+    ret = encode_EncryptedData(buf + sizeof(buf) - 1,
+			       sizeof(buf),
+			       &encdata, 
+			       &len);
+    free_EncryptedData(&encdata);
+    if (ret)
+	return ret;
+    pa->padata_type = pa_enc_timestamp;
+    pa->padata_value.length = 0;
+    krb5_data_copy(&pa->padata_value,
+		   buf + sizeof(buf) - len,
+		   len);
+    return 0;
+}
 
 krb5_error_code
 krb5_get_in_tkt(krb5_context context,
 		krb5_flags options,
 		const krb5_addresses *addrs,
-/*		krb5_address *const *addrs,*/
 		const krb5_enctype *etypes,
 		const krb5_preauthtype *ptypes,
 		krb5_key_proc key_proc,
@@ -213,6 +258,7 @@ krb5_get_in_tkt(krb5_context context,
 	krb5_flags i;
 	KDCOptions f;
     } opts;
+    PA_DATA *pa;
     opts.i = options;
 
     memset(&a, 0, sizeof(a));
@@ -254,82 +300,36 @@ krb5_get_in_tkt(krb5_context context,
     a.req_body.enc_authorization_data = NULL;
     a.req_body.additional_tickets = NULL;
 
-    /* 
-     * moved the call of `key_proc' here so that the key is available
-     * when/if creating pre-authentication.  This will failed when
-     * using different encryption/string-to-key algorithms for the
-     * initial PA-ENC-TS-ENC and the decryption of the ticket.
-     */
-
-    salt.length = 0;
-    salt.data = NULL;
-    ret = krb5_get_salt (creds->client, &salt);
-
-    if (ret)
-	return ret;
-
-    ret = (*key_proc)(context, *(a.req_body.etype.val), &salt,
-		      keyseed, &key);
-    krb5_data_free (&salt);
-    if (ret)
-	return ret;
-    
     /* not sure this is the way to use `ptypes' */
     if (ptypes == NULL || *ptypes == KRB5_PADATA_NONE)
 	a.padata = NULL;
     else if (*ptypes ==  KRB5_PADATA_ENC_TIMESTAMP) {
-	PA_ENC_TS_ENC p;
-	u_char buf[1024];
-	struct timeval tv;
-	size_t len;
-	unsigned foo;
-	EncryptedData encdata;
-
-	gettimeofday (&tv, NULL);
-	p.patimestamp = tv.tv_sec;
-	foo = tv.tv_usec;
-	p.pausec      = &foo;
-
-	ret = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
-				   sizeof(buf),
-				   &p,
-				   &len);
-	if (ret)
-	  return ret;
-
 	a.padata = malloc(sizeof(*a.padata));
-	a.padata->len = 1;
-	a.padata->val = malloc(sizeof(*a.padata->val));
-	a.padata->val->padata_type = pa_enc_timestamp;
-	a.padata->val->padata_value.length = 0;
-
-	/*
-	 * According to the spec this is the only encryption method
-	 * that must be supported so it's the safest choice.  On the
-	 * other hand, old KDCs might not support it.
-	 */
-
-	encdata.etype = ETYPE_DES_CBC_MD5;
-	encdata.kvno  = NULL;
-	ret = krb5_encrypt (context,
-			    buf + sizeof(buf) - len,
-			    len,
-			    encdata.etype,
-			    key,
-			    &encdata.cipher);
+	a.padata->len = 2;
+	a.padata->val = calloc(a.padata->len, sizeof(*a.padata->val));
+	
+	/* make a v5 salted pa-data */
+	salt.length = 0;
+	salt.data = NULL;
+	ret = krb5_get_salt (creds->client, &salt);
+	
 	if (ret)
 	    return ret;
-
-	ret = encode_EncryptedData(buf + sizeof(buf) - 1,
-				   sizeof(buf),
-				   &encdata, 
-				   &len);
-	krb5_data_free(&encdata.cipher);
+	
+	ret = (*key_proc)(context, *(a.req_body.etype.val), &salt,
+			  keyseed, &key);
+	krb5_data_free (&salt);
 	if (ret)
 	    return ret;
-	krb5_data_copy(&a.padata->val->padata_value,
-		       buf + sizeof(buf) - len,
-		       len);
+	make_pa_enc_timestamp(context, &a.padata->val[0], key);
+	/* make a v4 salted pa-data */
+	salt.length = 0;
+	salt.data = NULL;
+	ret = (*key_proc)(context, *(a.req_body.etype.val), &salt,
+			  keyseed, &key);
+	if (ret)
+	    return ret;
+	make_pa_enc_timestamp(context, &a.padata->val[1], key);
     } else
 	return KRB5_PREAUTH_BAD_TYPE;
 
@@ -366,6 +366,30 @@ krb5_get_in_tkt(krb5_context context,
     }
     krb5_data_free(&resp);
     
+    pa = NULL;
+    if(rep.part1.padata){
+	int index = 0;
+	pa = krb5_find_padata(rep.part1.padata->val, rep.part1.padata->len, 
+			      pa_pw_salt, &index);
+    }
+    if(pa)
+	ret = (*key_proc)(context, *(a.req_body.etype.val), 
+			  &pa->padata_value, keyseed, &key);
+    else{
+	/* make a v5 salted pa-data */
+	salt.length = 0;
+	salt.data = NULL;
+	ret = krb5_get_salt (creds->client, &salt);
+	
+	if (ret)
+	    return ret;
+	ret = (*key_proc)(context, *(a.req_body.etype.val), &salt,
+			  keyseed, &key);
+	krb5_data_free (&salt);
+	if (ret)
+	    return ret;
+    }
+	
     ret = extract_ticket(context, &rep, creds, key, keyseed, 
 			 decrypt_proc, decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
