@@ -816,7 +816,20 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
  
   /* check it's a supported varient */
   if (!prefix_ok(str1,"zWrLh")) return False;
-  if (!check_printq_info(&desc,uLevel,str2,str3)) return False;
+  if (!check_printq_info(&desc,uLevel,str2,str3)) {
+    /*
+     * Patch from Scott Moomaw <scott@bridgewater.edu>
+     * to return the 'invalid info level' error if an
+     * unknown level was requested.
+     */
+    *rdata_len = 0;
+    *rparam_len = 6;
+    *rparam = REALLOC(*rparam,*rparam_len);
+    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
+    SSVAL(*rparam,2,0);
+    SSVAL(*rparam,4,0);
+    return(True);
+  }
  
   snum = lp_servicenumber(QueueName);
   if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
@@ -906,8 +919,21 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
  
   if (!prefix_ok(param_format,"WrLeh")) return False;
-  if (!check_printq_info(&desc,uLevel,output_format1,output_format2))
-    return False;
+  if (!check_printq_info(&desc,uLevel,output_format1,output_format2)) {
+    /*
+     * Patch from Scott Moomaw <scott@bridgewater.edu>
+     * to return the 'invalid info level' error if an
+     * unknown level was requested.
+     */
+    *rdata_len = 0;
+    *rparam_len = 6;
+    *rparam = REALLOC(*rparam,*rparam_len);
+    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
+    SSVAL(*rparam,2,0);
+    SSVAL(*rparam,4,0);
+    return(True);
+  }
+
   queuecnt = 0;
   for (i = 0; i < services; i++)
     if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i))

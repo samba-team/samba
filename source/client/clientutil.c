@@ -33,7 +33,7 @@ extern pstring global_myname;
 pstring password = "";
 pstring smb_login_passwd = "";
 pstring username="";
-pstring workgroup=WORKGROUP;
+pstring workgroup="";
 BOOL got_pass = False;
 BOOL no_pass = False;
 BOOL connect_as_printer = False;

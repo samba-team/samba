@@ -174,6 +174,12 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
     /* Get smb uid. */
 
     p++;		/* Go past ':' */
+
+    if(*p == '-') {
+      DEBUG(0, ("getsmbfilepwent: uids in the smbpasswd file must not be negative.\n"));
+      continue;
+    }
+
     if (!isdigit(*p)) {
       DEBUG(0, ("getsmbfilepwent: malformed password entry (uid not number)\n"));
       continue;

@@ -834,7 +834,7 @@ BOOL pdb_generate_sam_sid(void)
 	}
 
 	if (!directory_exist(sid_file, NULL)) {
-		if (dos_mkdir(sid_file, 0700) != 0) {
+		if (mkdir(sid_file, 0700) != 0) {
 			DEBUG(0,("can't create private directory %s : %s\n",
 				 sid_file, strerror(errno)));
 			return False;
@@ -955,8 +955,13 @@ BOOL pdb_generate_sam_sid(void)
 	 * The file is still empty and we have an exlusive lock on it.
 	 * Write out out SID data into the file.
 	 */
-	
-	if(fchmod(fd, 0644) < 0) {
+
+	/*
+	 * Use chmod here as some (strange) UNIX's don't
+	 * have fchmod. JRA.
+	 */	
+
+	if(chmod(sid_file, 0644) < 0) {
 		DEBUG(0,("unable to set correct permissions on file %s. \
 Error was %s\n", sid_file, strerror(errno) ));
 		close(fd);
