@@ -127,19 +127,19 @@ NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			(*trusts)[i].trust_attributes = r.domains.trusts[i].trust_attributes;
 			(*trusts)[i].guid = r.domains.trusts[i].guid;
 
-			if (&r.domains.trusts[i].sid_ptr) {
+			if (r.domains.trusts[i].sid_ptr) {
 				sid_copy(&(*trusts)[i].sid, &r.domains.trusts[i].sid.sid);
 			} else {
 				ZERO_STRUCT((*trusts)[i].sid);
 			}
 
-			if (&r.domains.trusts[i].netbios_ptr) {
+			if (r.domains.trusts[i].netbios_ptr) {
 				(*trusts)[i].netbios_domain = unistr2_tdup( mem_ctx, &r.domains.trusts[i].netbios_domain );
 			} else {
 				(*trusts)[i].netbios_domain = NULL;
 			}
 
-			if (&r.domains.trusts[i].dns_ptr) {
+			if (r.domains.trusts[i].dns_ptr) {
 				(*trusts)[i].dns_domain = unistr2_tdup( mem_ctx, &r.domains.trusts[i].dns_domain );
 			} else {
 				(*trusts)[i].dns_domain = NULL;
