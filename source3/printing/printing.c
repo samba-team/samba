@@ -577,12 +577,12 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
   static int base_prio;
  
   int count;
-  char TAB = '\011';  
+  char htab = '\011';  
   fstring tok[12];
 
   /* If a line begins with a horizontal TAB, it is a subline type */
   
-  if (line[0] == TAB) { /* subline */
+  if (line[0] == htab) { /* subline */
     /* check if it contains the base priority */
     if (!strncmp(line,"\tfence priority : ",18)) {
        base_prio=atoi(&line[18]);
