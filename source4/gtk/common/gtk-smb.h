@@ -34,7 +34,9 @@ struct _GtkRpcBindingDialog
 	GtkWidget *chk_sign;
 	GtkWidget *chk_seal;
 	GtkWidget *transport_tcp_ip;
+	GtkWidget *transport_ncalrpc;
 	GtkWidget *transport_smb;
+	GtkWidget *frame_host;
 	GtkWidget *entry_host;
 	GtkWidget *entry_username;
 	GtkWidget *entry_password;

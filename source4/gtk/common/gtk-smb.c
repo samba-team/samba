@@ -60,6 +60,11 @@ static void on_krb5_toggled(GtkToggleButton *togglebutton, GtkRpcBindingDialog *
 	gtk_widget_set_sensitive(d->entry_password, !gtk_toggle_button_get_active(togglebutton));
 }
 
+static void on_ncalrpc_toggled(GtkToggleButton *tb, GtkRpcBindingDialog *d)
+{
+	gtk_widget_set_sensitive(d->frame_host, !gtk_toggle_button_get_active(tb));
+}
+
 static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_dialog)
 {
 	GtkWidget *dialog_vbox1;
@@ -67,7 +72,6 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	GtkWidget *vbox6;
 	GtkWidget *frame_transport;
 	GtkWidget *label1;
-	GtkWidget *frame_host;
 	GtkWidget *hbox1;
 	GtkWidget *lbl_name;
 	GtkWidget *label2;
@@ -118,17 +122,27 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_tcp_ip), transport_smb_group);
 	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_tcp_ip));
 
+	gtk_rpc_binding_dialog->transport_ncalrpc = gtk_radio_button_new_with_mnemonic (NULL, "Local Host");
+	gtk_widget_show (gtk_rpc_binding_dialog->transport_ncalrpc);
+	gtk_box_pack_start (GTK_BOX (vbox6), gtk_rpc_binding_dialog->transport_ncalrpc, FALSE, FALSE, 0);
+	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_ncalrpc), transport_smb_group);
+	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_ncalrpc));
+
+	g_signal_connect ((gpointer) gtk_rpc_binding_dialog->transport_ncalrpc, "toggled",
+						  G_CALLBACK (on_ncalrpc_toggled),
+						  gtk_rpc_binding_dialog);
+
 	label1 = gtk_label_new ("Transport");
 	gtk_widget_show (label1);
 	gtk_frame_set_label_widget (GTK_FRAME (frame_transport), label1);
 
-	frame_host = gtk_frame_new (NULL);
-	gtk_widget_show (frame_host);
-	gtk_box_pack_start (GTK_BOX (vbox1), frame_host, TRUE, TRUE, 0);
+	gtk_rpc_binding_dialog->frame_host = gtk_frame_new (NULL);
+	gtk_widget_show (gtk_rpc_binding_dialog->frame_host);
+	gtk_box_pack_start (GTK_BOX (vbox1), gtk_rpc_binding_dialog->frame_host, TRUE, TRUE, 0);
 
 	hbox1 = gtk_hbox_new (FALSE, 0);
 	gtk_widget_show (hbox1);
-	gtk_container_add (GTK_CONTAINER (frame_host), hbox1);
+	gtk_container_add (GTK_CONTAINER (gtk_rpc_binding_dialog->frame_host), hbox1);
 
 	lbl_name = gtk_label_new ("Name");
 	gtk_widget_show (lbl_name);
@@ -151,7 +165,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 
 	label2 = gtk_label_new ("Host");
 	gtk_widget_show (label2);
-	gtk_frame_set_label_widget (GTK_FRAME (frame_host), label2);
+	gtk_frame_set_label_widget (GTK_FRAME (gtk_rpc_binding_dialog->frame_host), label2);
 
 	frame_security = gtk_frame_new (NULL);
 	gtk_widget_show (frame_security);
@@ -314,6 +328,8 @@ struct dcerpc_binding *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d
 	binding->host = talloc_strdup(mem_ctx, gtk_entry_get_text(GTK_ENTRY(d->entry_host)));
 	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->transport_tcp_ip))) {
 		binding->transport = NCACN_IP_TCP;
+	} else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->transport_ncalrpc))) {
+		binding->transport = NCALRPC;
 	} else {
 		binding->transport = NCACN_NP;
 	}
