@@ -348,6 +348,8 @@ strftime (char *buf, size_t maxsize, const char *format,
 #if defined(HAVE_STRUCT_TM_TM_GMTOFF)
 				(long)tm->tm_gmtoff
 #elif defined(HAVE_TIMEZONE)
+				tm->tm_isdst ?
+				(long)altzone :
 				(long)timezone
 #else
 #error Where in timezone chaos are you?
@@ -356,7 +358,16 @@ strftime (char *buf, size_t maxsize, const char *format,
 		break;
 	    case 'Z' :
 		ret = snprintf (buf, maxsize - n,
-				"%s", tm->tm_zone);
+				"%s",
+
+#if defined(HAVE_STRUCT_TM_TM_ZONE)
+				tm->tm_zone
+#elif defined(HAVE_TIMEZONE)
+				tzname[tm->tm_isdst]
+#else
+#error what?
+#endif
+		    );
 		break;
 	    case '\0' :
 		--format;
