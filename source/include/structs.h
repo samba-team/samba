@@ -104,6 +104,8 @@ struct dcesrv_endpoint;
 struct dcesrv_call_state;
 struct dcesrv_auth;
 
+union libnet_Join;
+union libnet_JoinDomain;
 union libnet_ChangePassword;
 union libnet_SetPassword;
 union libnet_find_pdc;
