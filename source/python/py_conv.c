@@ -68,7 +68,32 @@ PyObject *from_struct(void *s, struct pyconv *conv)
 
 			break;
 		}
+		case PY_STRING: {
+			char *str = (char *)s + conv[i].offset;
+
+			item = PyString_FromString(str);
+			PyDict_SetItemString(obj, conv[i].name, item);
+
+			break;
+		}
+		case PY_UID: {
+			uid_t *uid = (uid_t *)((char *)s + conv[i].offset);
+
+			item = PyInt_FromLong(*uid);
+			PyDict_SetItemString(obj, conv[i].name, item);
+
+			break;
+		}
+		case PY_GID: {
+			gid_t *gid = (gid_t *)((char *)s + conv[i].offset);
+
+			item = PyInt_FromLong(*gid);
+			PyDict_SetItemString(obj, conv[i].name, item);
+
+			break;
+		}
 		default:
+			
 			break;
 		}
 	}
