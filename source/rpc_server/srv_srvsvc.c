@@ -926,10 +926,11 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_srv_get_info(prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_srv_get_info(pipes_struct *p)
 {
 	SRV_Q_NET_SRV_GET_INFO q_n;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* grab the net server get info */
 	srv_io_q_net_srv_get_info("", &q_n, data, 0);
@@ -943,11 +944,12 @@ static BOOL api_srv_net_srv_get_info(prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_file_enum(prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_file_enum(pipes_struct *p)
 {
 	SRV_Q_NET_FILE_ENUM q_n;
 	SRV_FILE_INFO_CTR ctr;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	q_n.ctr = &ctr;
 
@@ -963,11 +965,12 @@ static BOOL api_srv_net_file_enum(prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_conn_enum(prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_conn_enum(pipes_struct *p)
 {
 	SRV_Q_NET_CONN_ENUM q_n;
 	SRV_CONN_INFO_CTR ctr;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	q_n.ctr = &ctr;
 
@@ -983,11 +986,12 @@ static BOOL api_srv_net_conn_enum(prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_sess_enum(prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_sess_enum(pipes_struct *p)
 {
 	SRV_Q_NET_SESS_ENUM q_n;
 	SRV_SESS_INFO_CTR ctr;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	q_n.ctr = &ctr;
 
@@ -1005,11 +1009,12 @@ static BOOL api_srv_net_sess_enum(prs_struct *data,
  RPC to enumerate shares.
 ********************************************************************/
 
-static BOOL api_srv_net_share_enum(prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_share_enum(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_ENUM q_n;
 	BOOL ret;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* Unmarshall the net server get enum. */
 	if(!srv_io_q_net_share_enum("", &q_n, data, 0)) {
@@ -1029,11 +1034,12 @@ static BOOL api_srv_net_share_enum(prs_struct *data,
  RPC to return share information.
 ********************************************************************/
 
-static BOOL api_srv_net_share_get_info(prs_struct *data,
-                                        prs_struct *rdata )
+static BOOL api_srv_net_share_get_info(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_GET_INFO q_n;
 	BOOL ret;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* Unmarshall the net server get info. */
 	if(!srv_io_q_net_share_get_info("", &q_n, data, 0)) {
@@ -1092,10 +1098,11 @@ static BOOL srv_reply_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_n,
 }
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_remote_tod(prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_remote_tod(pipes_struct *p)
 {
 	SRV_Q_NET_REMOTE_TOD q_n;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* grab the net server get enum */
 	srv_io_q_net_remote_tod("", &q_n, data, 0);
@@ -1125,9 +1132,9 @@ struct api_struct api_srv_cmds[] =
 /*******************************************************************
 receives a srvsvc pipe and responds.
 ********************************************************************/
-BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_srvsvc_rpc(pipes_struct *p)
 {
-	return api_rpcTNP(p, "api_srvsvc_rpc", api_srv_cmds, data);
+	return api_rpcTNP(p, "api_srvsvc_rpc", api_srv_cmds);
 }
 
 #undef OLD_NTDOMAIN

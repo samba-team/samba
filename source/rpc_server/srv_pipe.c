@@ -462,7 +462,7 @@ struct api_cmd
 {
   char * pipe_clnt_name;
   char * pipe_srv_name;
-  BOOL (*fn) (pipes_struct *, prs_struct *);
+  BOOL (*fn) (pipes_struct *);
 };
 
 static struct api_cmd api_fd_commands[] =
@@ -1116,7 +1116,7 @@ BOOL api_pipe_request(pipes_struct *p)
 		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
 		    api_fd_commands[i].fn != NULL) {
 			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i].pipe_clnt_name));
-			ret = api_fd_commands[i].fn(p, &p->in_data.data);
+			ret = api_fd_commands[i].fn(p);
 		}
 	}
 
@@ -1130,8 +1130,8 @@ BOOL api_pipe_request(pipes_struct *p)
  Calls the underlying RPC function for a named pipe.
  ********************************************************************/
 
-BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
-				prs_struct *rpc_in)
+BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, 
+		struct api_struct *api_rpc_cmds)
 {
 	int fn_num;
 	fstring name;
@@ -1141,7 +1141,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ", rpc_name, p->hdr_req.opnum));
 
 	slprintf(name, sizeof(name), "in_%s", rpc_name);
-	prs_dump(name, p->hdr_req.opnum, rpc_in);
+	prs_dump(name, p->hdr_req.opnum, &p->in_data.data);
 
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++) {
 		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL) {
@@ -1164,7 +1164,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	offset1 = prs_offset(&p->out_data.rdata);
 
 	/* do the actual command */
-	if(!api_rpc_cmds[fn_num].fn(rpc_in, &p->out_data.rdata)) {
+	if(!api_rpc_cmds[fn_num].fn(p)) {
 		DEBUG(0,("api_rpcTNP: %s: failed.\n", rpc_name));
 		prs_mem_free(&p->out_data.rdata);
 		return False;

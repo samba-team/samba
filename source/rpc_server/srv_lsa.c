@@ -281,8 +281,8 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 
 /* Call winbindd to convert sid to name */
 
-static BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
-			       uint8 *name_type)
+BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
+			uint8 *name_type)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -464,8 +464,11 @@ static BOOL lsa_reply_lookup_names(prs_struct *rdata,
  api_lsa_open_policy2
  ***************************************************************************/
 
-static BOOL api_lsa_open_policy2(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_open_policy2(pipes_struct *p)
 {
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
 	LSA_Q_OPEN_POL2 q_o;
 
 	ZERO_STRUCT(q_o);
@@ -488,8 +491,11 @@ static BOOL api_lsa_open_policy2(prs_struct *data, prs_struct *rdata)
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static BOOL api_lsa_open_policy(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_open_policy(pipes_struct *p)
 {
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
 	LSA_Q_OPEN_POL q_o;
 
 	ZERO_STRUCT(q_o);
@@ -512,9 +518,11 @@ static BOOL api_lsa_open_policy(prs_struct *data, prs_struct *rdata)
 /***************************************************************************
 api_lsa_enum_trust_dom
  ***************************************************************************/
-static BOOL api_lsa_enum_trust_dom(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_enum_trust_dom(pipes_struct *p)
 {
 	LSA_Q_ENUM_TRUST_DOM q_e;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(q_e);
 
@@ -531,13 +539,15 @@ static BOOL api_lsa_enum_trust_dom(prs_struct *data, prs_struct *rdata)
 /***************************************************************************
 api_lsa_query_info
  ***************************************************************************/
-static BOOL api_lsa_query_info(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_query_info(pipes_struct *p)
 {
 	LSA_Q_QUERY_INFO q_i;
 	DOM_SID domain_sid;
 	char *name = NULL;
 	DOM_SID *sid = NULL;
 	uint32 status_code = 0;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(q_i);
 
@@ -588,9 +598,12 @@ static BOOL api_lsa_query_info(prs_struct *data, prs_struct *rdata)
  api_lsa_lookup_sids
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_sids(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_lookup_sids(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_SIDS q_l;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
 	ZERO_STRUCT(q_l);
 
 	/* grab the info class and policy handle */
@@ -610,9 +623,12 @@ static BOOL api_lsa_lookup_sids(prs_struct *data, prs_struct *rdata)
  api_lsa_lookup_names
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_names(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_lookup_names(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_NAMES q_l;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
 	ZERO_STRUCT(q_l);
 
 	/* grab the info class and policy handle */
@@ -629,9 +645,11 @@ static BOOL api_lsa_lookup_names(prs_struct *data, prs_struct *rdata)
 /***************************************************************************
  api_lsa_close
  ***************************************************************************/
-static BOOL api_lsa_close(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_close(pipes_struct *p)
 {
 	LSA_R_CLOSE r_c;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(r_c);
 
@@ -647,11 +665,13 @@ static BOOL api_lsa_close(prs_struct *data, prs_struct *rdata)
 /***************************************************************************
  api_lsa_open_secret
  ***************************************************************************/
-static BOOL api_lsa_open_secret(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_open_secret(pipes_struct *p)
 {
 	/* XXXX this is NOT good */
 	size_t i;
 	uint32 dummy = 0;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	for(i =0; i < 4; i++) {
 		if(!prs_uint32("api_lsa_close", rdata, 1, &dummy)) {
@@ -689,9 +709,9 @@ static struct api_struct api_lsa_cmds[] =
 /***************************************************************************
  api_ntLsarpcTNP
  ***************************************************************************/
-BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_ntlsa_rpc(pipes_struct *p)
 {
-	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds, data);
+	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds);
 }
 
 #undef OLD_NTDOMAIN
