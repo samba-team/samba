@@ -190,6 +190,75 @@ krb5_cc_get_ops(krb5_context context, krb5_ccache id)
 }
 
 /*
+ * Expand variables in `str' into `res'
+ */
+
+krb5_error_code
+_krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
+{
+    size_t tlen, len = 0;
+    char *tmp, *tmp2, *append;
+
+    *res = NULL;
+
+    while (str && *str) {
+	tmp = strstr(str, "${");
+	if (tmp && tmp != str) {
+	    append = strndup(str, tmp - str);
+	    str = tmp;
+	} else if (tmp) {
+	    tmp2 = strchr(tmp, '}');
+	    if (tmp2 == NULL) {
+		free(*res);
+		*res = NULL;
+		krb5_set_error_string(context, "variable missing }");
+		return KRB5_CONFIG_BADFORMAT;
+	    }
+	    if (strncasecmp(tmp, "${uid}", 6) == 0)
+		asprintf(&append, "%u", (unsigned)getuid());
+	    else if (strncasecmp(tmp, "${time}", 7) == 0)
+		asprintf(&append, "%u", (unsigned)time(NULL));
+	    else if (strncasecmp(tmp, "${null}", 7) == 0)
+		append = strdup("");
+	    else {
+		free(*res);
+		*res = NULL;
+		krb5_set_error_string(context, 
+				      "expand default cache unknown "
+				      "variable \"%.*s\"",
+				      (int)(tmp2 - tmp) - 2, tmp + 2);
+		return KRB5_CONFIG_BADFORMAT;
+	    }
+	    if (append == NULL) {
+		free(*res);
+		res = NULL;
+		krb5_set_error_string(context, "malloc - out of memory");
+		return ENOMEM;
+	    }
+	    str = tmp2 + 1;
+	} else {
+	    append = (char *)str;
+	    str = NULL;
+	}
+
+	tlen = strlen(append);
+	tmp = realloc(*res, len + tlen + 1);
+	if (tmp == NULL) {
+	    free(*res);
+	    *res = NULL;
+	    krb5_set_error_string(context, "malloc - out of memory");
+	    return ENOMEM;
+	}
+	*res = tmp;
+	memcpy(*res + len, append, tlen + 1);
+	len = len + tlen;
+	if (str)
+	    free(append);
+    }    
+    return 0;
+}
+
+/*
  * Set the default cc name for `context' to `name'.
  */
 
@@ -202,14 +271,21 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
     if (name == NULL) {
 	const char *e = NULL;
 
-	if(!issuid())
+	if(!issuid()) {
 	    e = getenv("KRB5CCNAME");
-	if (e == NULL)
+	    if (e)
+		p = strdup(e);
+	}
+	if (e == NULL) {
 	    e = krb5_config_get_string(context, NULL, "libdefaults",
 				       "default_cc_name", NULL);
-	if (e)
-	    p = strdup(e);
-	else
+	    if (e) {
+		ret = _krb5_expand_default_cc_name(context, e, &p);
+		if (ret)
+		    return ret;
+	    }
+	}
+	if (e == NULL)
 	    asprintf(&p,"FILE:/tmp/krb5cc_%u", (unsigned)getuid());
     } else
 	p = strdup(name);
