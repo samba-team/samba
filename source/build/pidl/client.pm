@@ -21,7 +21,7 @@ sub ParseFunction($$)
 	$res .= "
 struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
 {
-	if (p->flags & DCERPC_DEBUG_PRINT_IN) {
+	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		NDR_PRINT_IN_DEBUG($name, r);
 	}
 	
@@ -38,7 +38,7 @@ NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *
 
 	status = dcerpc_ndr_request_recv(req);
 
-        if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
+        if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG($name, r);		
 	}
 ";

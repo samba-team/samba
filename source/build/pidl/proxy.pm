@@ -101,7 +101,7 @@ static struct rpc_request *dcom_proxy_$interface->{NAME}_$name\_send(struct dcom
 	r->in.ORPCthis.version.MajorVersion = COM_MAJOR_VERSION;
 	r->in.ORPCthis.version.MinorVersion = COM_MINOR_VERSION;
 
-	if (p->flags & DCERPC_DEBUG_PRINT_IN) {
+	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		NDR_PRINT_IN_DEBUG($name, r);		
 	}
 
@@ -123,7 +123,7 @@ static NTSTATUS dcom_proxy_$interface->{NAME}_$name(struct dcom_interface_p *d, 
 
 	status = dcerpc_ndr_request_recv(req);
 
-	if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
+	if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG($name, r);		
 	}
 	";

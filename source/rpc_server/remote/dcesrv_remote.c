@@ -105,7 +105,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	name = table->calls[opnum].name;
 	call = &table->calls[opnum];
 
-	if (private->c_pipe->flags & DCERPC_DEBUG_PRINT_IN) {
+	if (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);		
 	}
 
@@ -118,7 +118,8 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	if ((dce_call->fault_code == 0) && (private->c_pipe->flags & DCERPC_DEBUG_PRINT_OUT)) {
+	if ((dce_call->fault_code == 0) && 
+	    (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		ndr_print_function_debug(call->ndr_print, name, NDR_OUT, r);		
 	}
 
@@ -212,9 +213,9 @@ static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct d
 
 static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32_t if_version)
 {
-	struct dcerpc_interface_list *l;
+	const struct dcerpc_interface_list *l;
 
-	for (l=dcerpc_pipes;l;l=l->next) {
+	for (l=librpc_dcerpc_pipes();l;l=l->next) {
 		if (l->table->if_version == if_version &&
 			strcmp(l->table->uuid, uuid)==0) {
 			return remote_fill_interface(iface, l->table);
@@ -226,9 +227,9 @@ static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const ch
 
 static BOOL remote_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
-	struct dcerpc_interface_list *l;
+	const struct dcerpc_interface_list *l;
 
-	for (l=dcerpc_pipes;l;l=l->next) {
+	for (l=librpc_dcerpc_pipes();l;l=l->next) {
 		if (strcmp(l->table->name, name)==0) {
 			return remote_fill_interface(iface, l->table);
 		}

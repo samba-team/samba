@@ -339,7 +339,7 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	const char *workgroup, *workstation;
 	uint32_t negotiate_flags;
 
-	if (p->flags & DCERPC_SCHANNEL_128) {
+	if (p->conn->flags & DCERPC_SCHANNEL_128) {
 		negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	} else {
 		negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
@@ -424,46 +424,48 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct dcerpc_schannel_state *dce_schan_state;
 
-	status = gensec_client_start(p, &p->security_state.generic_state);
+	status = gensec_client_start(p, &p->conn->security_state.generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = gensec_set_username(p->security_state.generic_state, username);
+	status = gensec_set_username(p->conn->security_state.generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to set schannel username to %s: %s\n", username, nt_errstr(status)));
-		talloc_free(p->security_state.generic_state);
-		p->security_state.generic_state = NULL;
+		talloc_free(p->conn->security_state.generic_state);
+		p->conn->security_state.generic_state = NULL;
 		return status;
 	}
 	
-	status = gensec_set_domain(p->security_state.generic_state, domain);
+	status = gensec_set_domain(p->conn->security_state.generic_state, domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to set schannel domain to %s: %s\n", domain, nt_errstr(status)));
-		talloc_free(p->security_state.generic_state);
-		p->security_state.generic_state = NULL;
+		talloc_free(p->conn->security_state.generic_state);
+		p->conn->security_state.generic_state = NULL;
 		return status;
 	}
 	
-	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_SCHANNEL, dcerpc_auth_level(p));
+	status = gensec_start_mech_by_authtype(p->conn->security_state.generic_state, 
+					       DCERPC_AUTH_TYPE_SCHANNEL, 
+					       dcerpc_auth_level(p->conn));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start SCHANNEL GENSEC backend: %s\n", nt_errstr(status)));
-		talloc_free(p->security_state.generic_state);
-		p->security_state.generic_state = NULL;
+		talloc_free(p->conn->security_state.generic_state);
+		p->conn->security_state.generic_state = NULL;
 		return status;
 	}
 
-	dce_schan_state = p->security_state.generic_state->private_data;
+	dce_schan_state = p->conn->security_state.generic_state->private_data;
 	dce_schan_state->creds = talloc_reference(dce_schan_state, creds);
 
-	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_SCHANNEL, dcerpc_auth_level(p),
-				  uuid, version);
+	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_SCHANNEL, dcerpc_auth_level(p->conn),
+				   uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to bind to pipe with SCHANNEL: %s\n", nt_errstr(status)));
-		talloc_free(p->security_state.generic_state);
-		p->security_state.generic_state = NULL;
+		talloc_free(p->conn->security_state.generic_state);
+		p->conn->security_state.generic_state = NULL;
 		return status;
 	}
 
@@ -484,11 +486,11 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (p->flags & DCERPC_SCHANNEL_BDC) {
+	if (p->conn->flags & DCERPC_SCHANNEL_BDC) {
 		chan_type = SEC_CHAN_BDC;
-	} else if (p->flags & DCERPC_SCHANNEL_WORKSTATION) {
+	} else if (p->conn->flags & DCERPC_SCHANNEL_WORKSTATION) {
 		chan_type = SEC_CHAN_WKSTA;
-	} else if (p->flags & DCERPC_SCHANNEL_DOMAIN) {
+	} else if (p->conn->flags & DCERPC_SCHANNEL_DOMAIN) {
 		chan_type = SEC_CHAN_DOMAIN;
 	}
 

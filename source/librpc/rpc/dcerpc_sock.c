@@ -54,7 +54,7 @@ struct sock_private {
 /*
   mark the socket dead
 */
-static void sock_dead(struct dcerpc_pipe *p, NTSTATUS status)
+static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 {
 	struct sock_private *sock = p->transport.private;
 
@@ -80,7 +80,7 @@ static void sock_dead(struct dcerpc_pipe *p, NTSTATUS status)
 /*
   process send requests
 */
-static void sock_process_send(struct dcerpc_pipe *p)
+static void sock_process_send(struct dcerpc_connection *p)
 {
 	struct sock_private *sock = p->transport.private;
 
@@ -117,7 +117,7 @@ static void sock_process_send(struct dcerpc_pipe *p)
 /*
   process recv requests
 */
-static void sock_process_recv(struct dcerpc_pipe *p)
+static void sock_process_recv(struct dcerpc_connection *p)
 {
 	struct sock_private *sock = p->transport.private;
 	NTSTATUS status;
@@ -194,7 +194,7 @@ static void sock_process_recv(struct dcerpc_pipe *p)
 static void sock_io_handler(struct event_context *ev, struct fd_event *fde, 
 			    struct timeval t, uint16_t flags)
 {
-	struct dcerpc_pipe *p = fde->private;
+	struct dcerpc_connection *p = fde->private;
 	struct sock_private *sock = p->transport.private;
 
 	if (flags & EVENT_FD_WRITE) {
@@ -213,7 +213,7 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 /* 
    initiate a read request 
 */
-static NTSTATUS sock_send_read(struct dcerpc_pipe *p)
+static NTSTATUS sock_send_read(struct dcerpc_connection *p)
 {
 	struct sock_private *sock = p->transport.private;
 
@@ -227,7 +227,7 @@ static NTSTATUS sock_send_read(struct dcerpc_pipe *p)
 /* 
    send an initial pdu in a multi-pdu sequence
 */
-static NTSTATUS sock_send_request(struct dcerpc_pipe *p, DATA_BLOB *data, BOOL trigger_read)
+static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, BOOL trigger_read)
 {
 	struct sock_private *sock = p->transport.private;
 	struct sock_blob *blob;
@@ -261,7 +261,7 @@ static NTSTATUS sock_send_request(struct dcerpc_pipe *p, DATA_BLOB *data, BOOL t
 /* 
    return the event context so the caller can process asynchronously
 */
-static struct event_context *sock_event_context(struct dcerpc_pipe *p)
+static struct event_context *sock_event_context(struct dcerpc_connection *p)
 {
 	struct sock_private *sock = p->transport.private;
 
@@ -271,7 +271,7 @@ static struct event_context *sock_event_context(struct dcerpc_pipe *p)
 /* 
    shutdown sock pipe connection
 */
-static NTSTATUS sock_shutdown_pipe(struct dcerpc_pipe *p)
+static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p)
 {
 	sock_dead(p, NT_STATUS_OK);
 
@@ -281,7 +281,7 @@ static NTSTATUS sock_shutdown_pipe(struct dcerpc_pipe *p)
 /*
   return sock server name
 */
-static const char *sock_peer_name(struct dcerpc_pipe *p)
+static const char *sock_peer_name(struct dcerpc_connection *p)
 {
 	struct sock_private *sock = p->transport.private;
 	return sock->server_name;
@@ -290,7 +290,7 @@ static const char *sock_peer_name(struct dcerpc_pipe *p)
 /* 
    open a rpc connection using the generic socket library
 */
-static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_pipe **p, 
+static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c, 
 					const char *server,
 					uint32_t port, 
 					const char *type,
@@ -301,45 +301,40 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_pipe **p,
 	struct fd_event fde;
 	NTSTATUS status;
 
-	if (!(*p = dcerpc_pipe_init())) {
-                return NT_STATUS_NO_MEMORY;
-	}
- 
-	sock = talloc_p((*p), struct sock_private);
+	sock = talloc_p(c, struct sock_private);
 	if (!sock) {
-		talloc_free(*p);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = socket_create(type, SOCKET_TYPE_STREAM, &socket_ctx, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(*p);
+		talloc_free(sock);
 		return status;
 	}
 	talloc_steal(sock, socket_ctx);
 
 	status = socket_connect(socket_ctx, NULL, 0, server, port, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(*p);
+		talloc_free(sock);
 		return status;
 	}
 
 	/*
 	  fill in the transport methods
 	*/
-	(*p)->transport.transport = transport;
-	(*p)->transport.private = NULL;
+	c->transport.transport = transport;
+	c->transport.private = NULL;
 
-	(*p)->transport.send_request = sock_send_request;
-	(*p)->transport.send_read = sock_send_read;
-	(*p)->transport.event_context = sock_event_context;
-	(*p)->transport.recv_data = NULL;
+	c->transport.send_request = sock_send_request;
+	c->transport.send_read = sock_send_read;
+	c->transport.event_context = sock_event_context;
+	c->transport.recv_data = NULL;
 
-	(*p)->transport.shutdown_pipe = sock_shutdown_pipe;
-	(*p)->transport.peer_name = sock_peer_name;
+	c->transport.shutdown_pipe = sock_shutdown_pipe;
+	c->transport.peer_name = sock_peer_name;
 	
 	sock->sock = socket_ctx;
-	sock->server_name = talloc_strdup((*p), server);
+	sock->server_name = talloc_strdup(sock, server);
 	sock->event_ctx = event_context_init(sock);
 	sock->pending_send = NULL;
 	sock->recv.received = 0;
@@ -349,11 +344,11 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_pipe **p,
 	fde.fd = socket_get_fd(sock->sock);
 	fde.flags = 0;
 	fde.handler = sock_io_handler;
-	fde.private = *p;
+	fde.private = c;
 
 	sock->fde = event_add_fd(sock->event_ctx, &fde);
 
-	(*p)->transport.private = sock;
+	c->transport.private = sock;
 
 	/* ensure we don't get SIGPIPE */
 	BlockSignals(True,SIGPIPE);
@@ -364,31 +359,31 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_pipe **p,
 /* 
    open a rpc connection using tcp
 */
-NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p, const char *server, uint32_t port)
+NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_connection *c, const char *server, uint32_t port)
 {
 	NTSTATUS status;
 	
 	/* Try IPv6 first */
-	status = dcerpc_pipe_open_socket(p, server, port, "ipv6", NCACN_IP_TCP);
+	status = dcerpc_pipe_open_socket(c, server, port, "ipv6", NCACN_IP_TCP);
 	if (NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
-	return dcerpc_pipe_open_socket(p, server, port, "ipv4", NCACN_IP_TCP);
+	return dcerpc_pipe_open_socket(c, server, port, "ipv4", NCACN_IP_TCP);
 }
 
 /* 
    open a rpc connection to a unix socket 
 */
-NTSTATUS dcerpc_pipe_open_unix_stream(struct dcerpc_pipe **p, const char *path)
+NTSTATUS dcerpc_pipe_open_unix_stream(struct dcerpc_connection *c, const char *path)
 {
-	return dcerpc_pipe_open_socket(p, path, 0, "unix", NCACN_UNIX_STREAM);
+	return dcerpc_pipe_open_socket(c, path, 0, "unix", NCACN_UNIX_STREAM);
 }
 
 /* 
    open a rpc connection to a named pipe 
 */
-NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_pipe **p, const char *identifier)
+NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_connection *c, const char *identifier)
 {
 	NTSTATUS status;
 	char *canon, *full_path;
@@ -398,7 +393,7 @@ NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_pipe **p, const char *identifier)
 	string_replace(canon, '/', '\\');
 	full_path = talloc_asprintf(canon, "%s/%s", lp_ncalrpc_dir(), canon);
 
-	status = dcerpc_pipe_open_socket(p, full_path, 0, "unix", NCALRPC);
+	status = dcerpc_pipe_open_socket(c, full_path, 0, "unix", NCALRPC);
 	talloc_free(canon);
 
 	return status;

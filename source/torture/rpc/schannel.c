@@ -184,7 +184,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	status = dcerpc_schannel_creds(p_netlogon->security_state.generic_state, mem_ctx, &creds);
+	status = dcerpc_schannel_creds(p_netlogon->conn->security_state.generic_state, mem_ctx, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}

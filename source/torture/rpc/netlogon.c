@@ -1110,7 +1110,7 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	BOOL ret = True;
 
-	if (p->transport.transport != NCACN_NP) {
+	if (p->conn->transport.transport != NCACN_NP) {
 		return True;
 	}
 

@@ -649,7 +649,7 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 	BOOL ret = True;
 
 	/* only makes sense on SMB */
-	if (p->transport.transport != NCACN_NP) {
+	if (p->conn->transport.transport != NCACN_NP) {
 		return True;
 	}
 

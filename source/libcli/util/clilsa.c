@@ -76,8 +76,14 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 	}
 	lsa->ipc_tree->tid = tcon.tconx.out.cnum;
 
+	lsa->pipe = dcerpc_pipe_init(lsa);
+	if (lsa->pipe == NULL) {
+		talloc_free(lsa);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* open the LSA pipe */
-	status = dcerpc_pipe_open_smb(&lsa->pipe, lsa->ipc_tree, DCERPC_LSARPC_NAME);
+	status = dcerpc_pipe_open_smb(lsa->pipe->conn, lsa->ipc_tree, DCERPC_LSARPC_NAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lsa);
 		return status;
