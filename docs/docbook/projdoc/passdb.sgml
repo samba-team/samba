@@ -46,8 +46,12 @@
 	<para>These passwords can't be converted to unix style encrypted 
 	passwords. Because of that you can't use the standard unix 
 	user database, and you have to store the Lanman and NT hashes 
-	somewhere else. For more information, see the documentation 
-	about the <command>passdb backend = </command> parameter.
+	somewhere else. Also, windows stores some data for each user 
+	that is not stored by unix. Thus, samba has it's own user database.
+	This user database is maintained by a "passdb backend". Commonly
+	available backends are LDAP, plain text file, MySQL and nisplus.
+	For more information, see the documentation about the 
+	<command>passdb backend = </command> parameter.
 	</para>
 </sect1>
 
@@ -150,7 +154,7 @@
 	in the smbpasswd file. If you wish to make it similar to the unix 
 	<command>passwd</command> or <command>yppasswd</command> programs, 
 	install it in <filename>/usr/local/samba/bin/</filename> (or your 
-	main Samba binary directory).</para>
+	main Samba binary directory).</para> FIXME
 
 	<para><command>smbpasswd</command> now works in a client-server mode 
 	where it contacts the local smbd to change the user's password on its 
@@ -198,6 +202,11 @@
 FIXME
 </sect1>
 -->
+
+<sect1>
+<title>Plain text</title>
+FIXME
+</sect1>
 
 <sect1>
 <title>LDAP</title>
