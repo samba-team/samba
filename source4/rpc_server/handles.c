@@ -72,7 +72,7 @@ struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_state *dce,
 {
 	struct dcesrv_handle *h;
 
-	if (p->handle_type == 0 && uuid_all_zero(&p->uuid)) {
+	if (policy_handle_empty(p)) {
 		return dcesrv_handle_new(dce, handle_type);
 	}
 

@@ -54,3 +54,9 @@ BOOL uuid_equal(const struct GUID *u1, const struct GUID *u2)
 	}
 	return True;
 }
+
+BOOL policy_handle_empty(struct policy_handle *h) 
+{
+	return (h->handle_type == 0 && uuid_all_zero(&h->uuid));
+}
+
