@@ -2088,25 +2088,6 @@ static void sam_display_group_info(char *domain, DOM_SID *sid,
 	display_group_info_ctr(out_hnd, ACTION_FOOTER   , ctr);
 }
 
-static void query_groupinfo(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *pol_dom,
-				char *domain,
-				DOM_SID *sid,
-				uint32 group_rid,
-				void (*grp_inf)(char*, DOM_SID*, uint32, GROUP_INFO_CTR *))
-{
-	GROUP_INFO_CTR ctr;
-
-	/* send group info query */
-	if (get_samr_query_groupinfo(smb_cli, fnum,
-				      pol_dom,
-				      1, /* info level */
-	                              group_rid, &ctr))
-	{
-		grp_inf(domain, sid, group_rid, &ctr);
-	}
-}
-
 static void sam_display_group(char *domain, DOM_SID *sid,
 				uint32 group_rid, char *group_name)
 {
@@ -2126,13 +2107,32 @@ static void sam_display_group_members(char *domain, DOM_SID *sid,
 	display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
 }
 
+static void query_groupinfo(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *pol_dom,
+				char *domain,
+				DOM_SID *sid,
+				uint32 group_rid,
+				GROUP_INFO_FN(grp_inf))
+{
+	GROUP_INFO_CTR ctr;
+
+	/* send group info query */
+	if (get_samr_query_groupinfo(smb_cli, fnum,
+				      pol_dom,
+				      1, /* info level */
+	                              group_rid, &ctr))
+	{
+		grp_inf(domain, sid, group_rid, &ctr);
+	}
+}
+
 static void req_groupmem_info(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
 				char *domain,
 				DOM_SID *sid,
 				uint32 group_rid,
 				char *group_name,
-				void(*act_fn)(char*, DOM_SID*, uint32, char*, uint32, uint32*, char**, uint32*))
+				GROUP_MEM_FN(grp_mem))
 {
 	uint32 num_names = 0;
 	char **name = NULL;
@@ -2143,7 +2143,7 @@ static void req_groupmem_info(struct cli_state *cli, uint16 fnum,
 				&num_names, &rid_mem, &name, &type))
 	{
 
-		act_fn(domain, sid,
+		grp_mem(domain, sid,
 		       group_rid, group_name,
 		       num_names, rid_mem, name, type);
 
@@ -2161,9 +2161,9 @@ SAM groups query.
 uint32 msrpc_sam_enum_groups(struct client_info *info,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,
-				void (*grp_fn)(char*, DOM_SID*, uint32, char*),
-				void (*grp_inf_fn)(char*, DOM_SID*, uint32, GROUP_INFO_CTR *),
-				void(*grp_mem_fn)(char*, DOM_SID*, uint32, char*, uint32, uint32*, char**, uint32*))
+				GROUP_FN(grp_fn),
+				GROUP_INFO_FN(grp_inf_fn),
+				GROUP_MEM_FN(grp_mem_fn))
 {
 	uint16 fnum;
 	fstring srv_name;
