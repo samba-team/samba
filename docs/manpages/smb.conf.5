@@ -35,7 +35,7 @@ within a parameter value is retained verbatim.
 Any line beginning with a semicolon is ignored, as are lines containing 
 only whitespace.
 
-Any line ending in a \\ is "continued" on the next line in the
+Any line ending in a \e is "continued" on the next line in the
 customary unix fashion.
 
 The values following the equals sign in parameters are all either a string
@@ -212,6 +212,7 @@ could be used simply to limit access to a subset of your local printers.
 An alias, by the way, is defined as any component of the first entry of a 
 printcap record. Records are separated by newlines, components (if there are 
 more than one) are separated by vertical bar symbols ("|").
+.RE
 .SH PARAMETERS
 Parameters define the specific attributes of services.
 
@@ -221,7 +222,7 @@ permissible only in normal sections. For the purposes of the following
 descriptions the [homes] and [printers] sections will be considered normal.
 The letter 'G' in parentheses indicates that a parameter is specific to the
 [global] section. The letter 'S' indicates that a parameter can be
-specified in a secvice specific section. Note that all S parameters
+specified in a service specific section. Note that all S parameters
 can also be specified in the [global] section - in which case they
 will define the default behaviour for all services.
 
@@ -237,7 +238,7 @@ interpreted as "path = /tmp/john" if the user connected with the
 username john.
 
 These substitutions are mostly noted in the descriptions below, but
-there are some general substitions which apply whenever they might be
+there are some general substitutions which apply whenever they might be
 relevant. These are:
 
 %S = the name of the current service, if any
@@ -659,7 +660,7 @@ See testparm(1) for a way of testing your host access to see if it
 does what you expect.
 
 .B Default:
- 	none (ie., all hosts permitted access)
+ 	none (i.e., all hosts permitted access)
 
 .B Example:
  	allow hosts = 150.203.5. myhost.mynet.edu.au
@@ -854,7 +855,7 @@ access to services unless the specific services have their own lists to
 override this one. Where the lists conflict, the 'allow' list takes precedence.
 
 .B Default:
- 	none (ie., no hosts specifically excluded)
+ 	none (i.e., no hosts specifically excluded)
 
 .B Example:
   	deny hosts = 150.203.4. badhost.mynet.edu.au
@@ -910,11 +911,11 @@ Linux) that are either not of interest to clients or are infinitely deep
 of directories that the server should always show as empty.
 
 Note that Samba can be very fussy about the exact format of the "dont
-descend" entries. For example you ma need "./proc" instead of just
+descend" entries. For example you may need "./proc" instead of just
 "/proc". Experimentation is the best policy :-)
 
 .B Default:
- 	none (ie., all directories are OK to descend)
+ 	none (i.e., all directories are OK to descend)
 
 .B Example:
   	dont descend = /proc,/dev
@@ -922,7 +923,7 @@ descend" entries. For example you ma need "./proc" instead of just
 .SS encrypt passwords (G)
 
 This boolean controls whether encrypted passwords will be negotiated
-with the cient. Note that this option has no effect if you haven't
+with the client. Note that this option has no effect if you haven't
 compiled in the necessary des libraries and encryption code. It
 defaults to no.
 
@@ -1022,7 +1023,7 @@ See
 .B deny hosts.
 
 .SS group (S)
-This is an alias for "force group" and is only kept for compatability
+This is an alias for "force group" and is only kept for compatibility
 with old versions of Samba. It may be removed in future versions.
 
 .SS hosts equiv (G)
@@ -2572,6 +2573,13 @@ the uppercase and lowercase mappings appropriately.
 
 The above example allows filenames to have the swedish characters in
 them. 
+
+NOTE: It is actually quite difficult to correctly produce a "valid
+chars" line for a particular system. To automate the process
+tino@augsburg.net has written a package called "validchars" which will
+automatically produce a complete "valid chars" line for a given client
+system. Look in the examples subdirectory for this package.
+
 
 .SS valid users (S)
 This is a list of users that should be allowed to login to this
