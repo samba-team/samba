@@ -420,7 +420,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 
 #ifndef HAVE_VSYSLOG
 #ifdef HAVE_SYSLOG
- void vsyslog (int facility_priority, char *format, va_list arglist)
+ void vsyslog (int facility_priority, const char *format, va_list arglist)
 {
 	char *msg = NULL;
 	vasprintf(&msg, format, arglist);
