@@ -50,6 +50,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include <krb5.h>
 
@@ -57,5 +63,9 @@
 #include <getarg.h>
 
 extern krb5_context context;
+
+int kt_list(int argc, char **argv);
+int srvconv(int argc, char **argv);
+
 
 #endif /* __KTUTIL_LOCL_H__ */
