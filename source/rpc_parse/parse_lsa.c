@@ -474,7 +474,7 @@ void lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct *ps, in
 		prs_uint32(temp, ps, depth, &(trn->ptr_name[i])); /* pointer to translated name */
 	}
 
-	for (i = 0; i < trn->num_entries2; i++)
+	for (i = 0, i2 = 0; i < trn->num_entries2; i++)
 	{
 		if (trn->ptr_name[i] != 0)
 		{
