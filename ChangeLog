@@ -1,3 +1,10 @@
+Wed Oct 29 23:41:26 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/warn.c (_warnerr): handle the case of an illegal error
+ 	code
+
+	* kdc/kerberos5.c (encode_reply): return success
+
 Wed Oct 29 18:01:59 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos5.c (find_etype) Return correct index of selected
