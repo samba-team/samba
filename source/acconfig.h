@@ -159,3 +159,5 @@
 #undef MMAP_BLACKLIST
 #undef HAVE_CUPS
 #undef WITH_TDBSAM
+#undef LINUX_QUOTAS_1
+#undef LINUX_QUOTAS_2
