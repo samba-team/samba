@@ -631,7 +631,7 @@ dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsi
 				/* This isn't a real deferred packet as it's response will also increment
 				 * the sequence.
 				 */
-				srv_defer_sign_response(get_current_mid(), False);
+				srv_defer_sign_response(get_current_mid());
 
 				/* Oplock break - unlock to request it. */
 				unlock_share_entry(conn, dev, inode);
