@@ -145,6 +145,7 @@ notes:
 ";
 
 
+const char *pytdb_string_encoding = "cp850";
 
 
 /*
@@ -324,7 +325,7 @@ pytdbpack_str_850(PyObject *val_iter, PyObject *packed_list)
 		val_obj = NULL;
 	}
 
-	if (!(cp850_str = PyUnicode_AsEncodedString(unicode_obj, "cp850", NULL)))
+	if (!(cp850_str = PyUnicode_AsEncodedString(unicode_obj, pytdb_string_encoding, NULL)))
 		goto out;
 
 	if (!nul_str)
@@ -487,7 +488,7 @@ pytdbunpack(PyObject *self,
 
 
 static void
-unpack_err_too_short(void)
+pytdbunpack_err_too_short(void)
 {
 	PyErr_Format(PyExc_IndexError,
 		     __FUNCTION__ ": data too short for unpack format");
@@ -495,13 +496,13 @@ unpack_err_too_short(void)
 
 
 static PyObject *
-unpack_uint32(char **pbuf, int *plen)
+pytdbunpack_uint32(char **pbuf, int *plen)
 {
 	unsigned long v;
 	unsigned char *b;
 	
 	if (*plen < 4) {
-		unpack_err_too_short();
+		pytdbunpack_err_too_short();
 		return NULL;
 	}
 
@@ -515,13 +516,13 @@ unpack_uint32(char **pbuf, int *plen)
 }
 
 
-static PyObject *unpack_int16(char **pbuf, int *plen)
+static PyObject *pytdbunpack_int16(char **pbuf, int *plen)
 {
 	long v;
 	unsigned char *b;
 	
 	if (*plen < 2) {
-		unpack_err_too_short();
+		pytdbunpack_err_too_short();
 		return NULL;
 	}
 
@@ -536,7 +537,7 @@ static PyObject *unpack_int16(char **pbuf, int *plen)
 
 
 static PyObject *
-unpack_string(char **pbuf, int *plen)
+pytdbunpack_string(char **pbuf, int *plen)
 {
 	int len;
 	char *nul_ptr, *start;
@@ -545,7 +546,7 @@ unpack_string(char **pbuf, int *plen)
 	
 	nul_ptr = memchr(start, '\0', *plen);
 	if (!nul_ptr) {
-		unpack_err_too_short();
+		pytdbunpack_err_too_short();
 		return NULL;
 	}
 
@@ -554,12 +555,12 @@ unpack_string(char **pbuf, int *plen)
 	*pbuf += len + 1;	/* skip \0 */
 	*plen -= len + 1;
 
-	return PyString_FromStringAndSize(start, len);
+	return PyString_Decode(start, len, pytdb_string_encoding, NULL);
 }
 
 
 static PyObject *
-unpack_buffer(char **pbuf, int *plen, PyObject *val_list)
+pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 {
 	/* first get 32-bit len */
 	long slen;
@@ -568,7 +569,7 @@ unpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 	PyObject *str_obj = NULL, *len_obj = NULL;
 	
 	if (*plen < 4) {
-		unpack_err_too_short();
+		pytdbunpack_err_too_short();
 		return NULL;
 	}
 	
@@ -633,17 +634,17 @@ static PyObject *pytdbunpack_item(char ch,
 	PyObject *result;
 	
 	if (ch == 'w') {	/* 16-bit int */
-		result = unpack_int16(pbuf, plen);
+		result = pytdbunpack_int16(pbuf, plen);
 	}
 	else if (ch == 'd' || ch == 'p') { /* 32-bit int */
 		/* pointers can just come through as integers */
-		result = unpack_uint32(pbuf, plen);
+		result = pytdbunpack_uint32(pbuf, plen);
 	}
 	else if (ch == 'f' || ch == 'P') { /* nul-term string  */
-		result = unpack_string(pbuf, plen);
+		result = pytdbunpack_string(pbuf, plen);
 	}
 	else if (ch == 'B') { /* length, buffer */
-		return unpack_buffer(pbuf, plen, val_list);
+		return pytdbunpack_buffer(pbuf, plen, val_list);
 	}
 	else {
 		PyErr_Format(PyExc_ValueError,
