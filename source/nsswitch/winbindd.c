@@ -735,8 +735,6 @@ int main(int argc, char **argv)
 			*p = 0;
 	}
 
-	TimeInit();
-
 	if (!reload_services_file(False)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);

@@ -309,8 +309,6 @@ static struct cli_state *init_connection(struct cli_state *cli,
 
         load_interfaces();
 
-        TimeInit();
-
         /* Check arguments make sense */
 
         if (do_sam_sync && do_sam_repl) {

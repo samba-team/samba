@@ -716,8 +716,6 @@ static void usage(void)
 
 	load_interfaces();
 
-	TimeInit();
-
 	get_myname((*global_myname)?NULL:global_myname);
 	strupper(global_myname);
 	

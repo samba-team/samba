@@ -73,7 +73,6 @@ struct in_addr *lookup_backend(const char *name, int *count)
 	if (!initialised) {
 		initialised = 1;
 		DEBUGLEVEL = 0;
-		TimeInit();
 		setup_logging("nss_wins",True);
 		lp_load(dyn_CONFIGFILE,True,False,False);
 		load_interfaces();

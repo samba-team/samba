@@ -2450,8 +2450,6 @@ static int do_message_op(void)
 		}
 	}
 
-	TimeInit();
-
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
 	old_debug = DEBUGLEVEL;

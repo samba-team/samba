@@ -552,8 +552,6 @@ int main (int argc, char **argv)
 	char *profile_path = NULL;
 	char *smbpasswd = NULL;
 
-	TimeInit();
-	
 	setup_logging("tdbedit", True);
 
 	if (argc < 2) {

@@ -38,8 +38,6 @@ int main(int argc, char *argv[])
 {
    char *pszTemp;
 
-   TimeInit();
-
    setup_logging(argv[0],True);
 
    if (argc < 2 || argc > 3)

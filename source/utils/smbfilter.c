@@ -224,8 +224,6 @@ int main(int argc, char *argv[])
 	char *desthost;
 	pstring configfile;
 
-	TimeInit();
-
 	setup_logging(argv[0],True);
   
 	pstrcpy(configfile,dyn_CONFIGFILE);

@@ -199,8 +199,6 @@ int main(int argc,char *argv[])
   DEBUGLEVEL = 1;
   *lookup = 0;
 
-  TimeInit();
-
   setup_logging(argv[0],True);
 
   while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhART")) != EOF)

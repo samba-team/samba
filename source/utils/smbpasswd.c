@@ -900,8 +900,6 @@ int main(int argc, char **argv)
 	set_auth_parameters(argc, argv);
 #endif /* HAVE_SET_AUTH_PARAMETERS */
 
-	TimeInit();
-	
 	setup_logging("smbpasswd", True);
 	
 	if(!initialize_password_db(True)) {

@@ -568,8 +568,6 @@ static void usage(void)
 	argc -= NSERVERS;
 	argv += NSERVERS;
 
-	TimeInit();
-
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 

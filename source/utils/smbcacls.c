@@ -829,8 +829,6 @@ You can string acls together with spaces, commas or newlines\n\
 	argc -= 2;
 	argv += 2;
 
-	TimeInit();
-
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 

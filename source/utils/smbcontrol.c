@@ -379,7 +379,6 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 	extern int optind;
 	BOOL interactive = False;
 
-	TimeInit();
 	setup_logging(argv[0],True);
 	
 	if (argc < 2) usage(True);

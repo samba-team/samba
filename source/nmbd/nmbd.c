@@ -673,8 +673,6 @@ static void usage(char *pname)
 
   sys_srandom(time(NULL) ^ sys_getpid());
 
-  TimeInit();
-
   slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
   setup_logging( argv[0], False );
 
