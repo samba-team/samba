@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1995
+   Copyright (C) Andrew Tridgell 1994-1996
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,10 +18,16 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    
+   Module name: nameelect.c
+
    Revision History:
 
    14 jan 96: lkcl@pires.co.uk
    added multiple workgroup domain master support
+
+   04 jul 96: lkcl@pires.co.uk
+   added system to become a master browser by stages.
+
 
 */
 
@@ -75,7 +81,7 @@ void check_master_browser(void)
 	    {
 	      queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_MST_CHK,
 				   work->work_group,0x1d,0,0,
-				   True,False,d->bcast_ip);
+				   True,False,d->bcast_ip,d->bcast_ip);
 	    }
 	}
     }
@@ -134,7 +140,7 @@ void send_election(struct subnet_record *d, char *group,uint32 criterion,
 
   bzero(outbuf,sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = 8; /* election */
+  CVAL(p,0) = ANN_Election; /* election */
   p++;
 
   CVAL(p,0) = (criterion == 0 && timeup == 0) ? 0 : ELECTION_VERSION;
@@ -166,13 +172,13 @@ void name_unregister_work(struct subnet_record *d, char *name, int name_type)
 
     if (!(work = find_workgroupstruct(d, name, False))) return;
 
-    if (special_browser_name(name, name_type) ||
+    if (ms_browser_name(name, name_type) ||
         (AM_MASTER(work) && strequal(name, lp_workgroup()) == 0 &&
          (name_type == 0x1d || name_type == 0x1b)))
     {
       int remove_type = 0;
 
-      if (special_browser_name(name, name_type))
+      if (ms_browser_name(name, name_type))
         remove_type = SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER;
       if (name_type == 0x1d)
         remove_type = SV_TYPE_MASTER_BROWSER;
@@ -247,7 +253,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
   {
     case MST_NONE: /* while we were nothing but a server... */
     {
-      work->state = MST_WON; /* election win was successful */
+      work->state = MST_WON; /* ... an election win was successful */
 
       work->ElectionCriterion |= 0x5;
 
@@ -264,7 +270,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
     }
     case MST_WON: /* while nothing had happened except we won an election... */
     {
-      work->state = MST_MSB; /* registering MSBROWSE was successful */
+      work->state = MST_MSB; /* ... registering MSBROWSE was successful */
 
       /* add server entry on successful registration of MSBROWSE */
       add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
@@ -276,9 +282,9 @@ void become_master(struct subnet_record *d, struct work_record *work)
   
       break;
     }
-    case MST_MSB: /* while we were still only registered MSBROWSE state */
+    case MST_MSB: /* while we were still only registered MSBROWSE state... */
     {
-      work->state = MST_BROWSER; /* registering WORKGROUP(1d) was successful */
+      work->state = MST_BROWSER; /* ... registering WORKGROUP(1d) succeeded */
 
       /* update our server status */
       work->ServerType |= SV_TYPE_MASTER_BROWSER;
@@ -296,12 +302,16 @@ void become_master(struct subnet_record *d, struct work_record *work)
         /* add domain master name */
         add_my_name_entry(d,work->work_group,0x1b,NB_ACTIVE         );
       }
+      else
+      {
+        DEBUG(2,("samba not configured as a domain master: no third stage.\n"));
+      }
   
       break;
     }
     case MST_BROWSER: /* while we were still a master browser... */
     {
-      work->state = MST_DOMAIN; /* registering WORKGROUP(1b) was successful */
+      work->state = MST_DOMAIN; /* ... registering WORKGROUP(1b) succeeded */
 
       /* update our server status */
       if (lp_domain_master())
@@ -513,6 +523,11 @@ void process_election(struct packet_struct *p,char *buf)
 
 /****************************************************************************
   checks whether a browser election is to be run on any workgroup
+
+  this function really ought to return the time between election
+  packets (which depends on whether samba intends to be a domain
+  master or a master browser) in milliseconds.
+
   ***************************************************************************/
 BOOL check_elections(void)
 {

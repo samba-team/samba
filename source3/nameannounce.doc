@@ -1,0 +1,137 @@
+this module deals with announcements: the sending of announcement requests
+and the sending of announcements either to refresh other servers' records
+or as a response to announcement requests.
+
+
+/*************************************************************************
+  announce_master()
+  *************************************************************************/
+
+this function is responsible for announcing samba as a master browser
+to all known primary domain controllers.
+
+this announcement is sent out at CHECK_TIME_MST_ANNOUNCE minute
+intervals, only if samba is a master browser on one or more of
+its local interfaces.
+
+if no domain controller has been specified (lp_domain_controller())
+samba goes through its list of servers looking for primary domain
+controllers. when it finds one (other than itself) it will either
+initiate a NAME_QUERY_PDC_SRV_CHK by broadcast or with a WINS
+server. this will result in a NAME_STATUS_PDC_SRV_CHK, which
+will result in a sync browse list and an announcement
+ANN_MasterAnnounce being sent (see sync_server()).
+
+if a domain controller has been specified, samba will search for
+a primary domain controller for its workgroup (either by directed
+packet or by broadcast if it cannot resolve the domain controller
+name using DNS), which results in the same action as listed above.
+
+
+/*************************************************************************
+  announce_host()
+  *************************************************************************/
+
+this complex-looking function is responsible for announcing samba's
+existence to other servers by broadcast. the actual announcement
+is carried out by announce_server().
+
+the time period between samba's announcement will stretch from one
+minute to twelve minutes by one minute. if samba has received an
+announce request from a master browser, then it should answer at
+any random interval between zero and thirty seconds after the
+request is received. this is to ensure that the master browser
+does not get overloaded with responses!
+
+
+/*************************************************************************
+  announce_server()
+  *************************************************************************/
+
+this function is responsible for sending announcement packets.
+these packets are received by other servers, which will then
+update their records accordingly: what services we have, our
+name, our comment field and our time to live (to name a few).
+
+if we are a master browser, then using do_announce_host() we
+must send an announcement notifying members of that workgroup
+that we are their master browser, and another announcement
+indicating to all backup browsers and master browsers that
+we are a master browser.
+
+(note: if another master browser receives this announcement
+and thinks that it is also the master browser for this
+workgroup, it stops being a master browser and forces an
+election).
+
+if we are not a master browser, then we send an announcement
+notifying the master browser that we are a member of its
+workgroup.
+
+
+/*************************************************************************
+  remove_my_servers()
+  *************************************************************************/
+
+this function is responsible for informing other servers that
+samba is about to go down. it announces, on all subnets, that
+samba's time to live is zero and that it has no services.
+
+
+/*************************************************************************
+  do_announce_host()
+  *************************************************************************/
+
+this function is responsible for sending out an announcement
+MAILSLOT browse packet. it contains information such as the
+time to live, name of the server, services that the server
+offers etc.
+
+the format of this MAILSLOT browse packet is described in
+draft-heizer-cifs-v1-spec-00.txt 3.9.50.4.1 page 165-6.
+
+
+/*************************************************************************
+  announce_backup()
+  *************************************************************************/
+
+this function is responsible for getting master browsers and domain
+controllers to send us lists of backup servers. this is done by
+sending an ANN_GetBackupListReq browse mailslot.
+
+the master browser, or primary domain controller, should respond 
+with an ANN_GetBackupListResp browse mailslot containing the list
+of backup servers.
+
+
+/*************************************************************************
+  sync_server()
+  *************************************************************************/
+
+this function is responsible for initiating a sync browse list
+sequence and, if necessary, carrying out an ANN_MasterAnnouncement
+to the primary domain controller (that we are also sync'ing
+browse lists with).
+
+see nameservresp.c:response_name_status_check().
+
+
+/*************************************************************************
+  announce_request()
+  *************************************************************************/
+
+this function is responsible for sending an announcement request to
+another server. this server should respond with an announcement.
+
+if the announce request is sent to WORKGROUP(0x1e) then members of
+the workgroup will respond (with ANN_HostAnnounce packets)
+
+if the announce request is sent to WORKGROUP(0x1d) then the master
+browser of the workgroup should respond (ANN_LocalMasterAnnounce).
+this is untested.
+
+if the announce request is sent to ^1^2__MSBROWSE__^2(0x1) then
+(and this is pure speculation), all backup browsers and master
+browsers should respond with ANN_DomainAnnounce packets.
+this is untested.
+

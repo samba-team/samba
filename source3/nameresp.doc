@@ -1,12 +1,15 @@
 the netbios expected response code is a key part of samba's NetBIOS
 handling capabilities. it allows samba to carry on dealing with
 other things while expecting a response from one or more hosts.
+
 this allows samba to simultaneously deal with registering its names
 with another WINS server, register its names on its local subnets,
 query any hosts that have registered with samba in its capacity as
 a WINS server, and at a later date it will be also be able handle
 END-NODE CHALLENGES (see rfc1001.txt 15.2.2.2 and 15.2.2.3 - secured
-NBNS functionality). all at once!
+NBNS functionality).
+
+all at once!
 
 when a netbios packet is sent out by samba and it expects a response,
 a record of all the relevant information is kept (most importantly,
@@ -21,76 +24,15 @@ made (and therefore the type of response can be verified) and
 appropriate action can be taken.
 
 when no responses, after a number of retries, are not received, then
-samba may take appropriate action.
+samba may take appropriate action. this is a crucial part of samba's
+operation: for a key number of NetBIOS operations, no response is an
+implicit positive response.
 
-nameresp.c deals with the maintenance of the netbios response records:
-their creation, retransmission, and eventual removal.
+module nameresp deals with the initial transmission, re-transmission
+and time-out of netbios response records.
 
-
-/*************************************************************************
-  send_mailslot_reply()
-  *************************************************************************/
-
-this function is responsible for sending a MAILSLOT packet.
-
-it will _not_ send packets to the pseudo WINS subnet's address of 
-255.255.255.255: this would be disastrous.
-
-each packet sent out has a unique transaction identifier. this is done
-so that responses can be matched with the original purpose for the packet
-being sent out in the first place.
-
-
-/*************************************************************************
-  interpret_node_status()
-  *************************************************************************/
-
-this function is responsible for interpreting the raw data that comes in
-from a node status reply. in the process, it identifies both the server
-name and the workgroup name in the node status reply.
-
-it also updates information in the WINS name database if the names 
-received are not already in samba's records.
-
-
-/*************************************************************************
-  listen_for_packets()
-  *************************************************************************/
-
-this function is responsible for reading NMB and DGRAM packets, and then
-queueing them. it will normally time-out for NMBD_SELECT_LOOP seconds, but
-if there is an election currently running or we are expecting a response
-then this time is reduced to 1 second.
-
-note: the time-out period needs refining to the millisecond level.
-
-
-/*************************************************************************
-  queue_packet()
-  *************************************************************************/
-
-this function is responsible for queueing any NMB and DGRAM packets passed
-to it. these packets will be removed from the queue in run_packet_queue().
-
-
-/*************************************************************************
-  run_packet_queue()
-  *************************************************************************/
-
-this function is responsible for taking a packet off the queue, 
-identifying whether it is an NMB or a DGRAM packet, processing
-it accordingly and deleting it. this process continues until
-there are no more packets on the queue.
-
-
-/*************************************************************************
-  find_response_record()
-  *************************************************************************/
-
-this function is responsible for matching the unique response transaction
-id with an expected response record. as a side-effect of this search,
-it will find the subnet (or the WINS pseudo-subnet) that samba expected
-the response to come from.
+module namedbresp deals with the maintenance of the list of expected
+responses - creation, finding and removal.
 
 
 /*************************************************************************
@@ -103,22 +45,6 @@ be expected later (or not, as the case may be).
 
 if a response is received, response_netbios_packet() will deal with it.
 otherwise, it will be dealt with in expire_netbios_response_entries().
-
-
-/*************************************************************************
-  make_response_queue_record()
-  *************************************************************************/
-
-this function is responsible for creating a response record, which will
-be queued awaiting a response.
-
-the number of retries is set to 4, and the retry period set to 1 second.
-if no response is received, then the packet is re-transmitted, which is
-why so much information is stored in the response record.
-
-the number of expected responses queued is kept, so listen_for_packets()
-knows it must time-out after 1 second if one or more responses are
-expected.
 
 
 /*************************************************************************
@@ -135,17 +61,6 @@ responses on either of these attempts is a failure to register the
 name.
 
 this is NOT the case with a P node.
-
-
-/*************************************************************************
-  reply_netbios_packet()
-  *************************************************************************/
-
-this function is responsible for sending a reply to another NetBIOS
-packet from another host. it can be used to send a reply to a name
-registration, name release, name query or name status request.
-
-the reply can be either a positive or a negative one.
 
 
 /*************************************************************************
@@ -171,15 +86,6 @@ the expected response record is then deleted, and the number of expected
 responses reduced. when this count gets to zero, listen_for_packets()
 will no longer time-out for 1 second on account of expecting response
 packets.
-
-
-/*************************************************************************
-  initiate_netbios_packet()
-  *************************************************************************/
-
-this function is responsible for construction a netbios packet and sending
-it. if the packet has not had a unique transaction id allocated to it,
-then initiate_netbios_packet() will give it one.
 
 
 /*************************************************************************
@@ -225,6 +131,18 @@ samba should take this into account (see rfc1001.txt 10.3).
 remove_name_entry() issues this samba 'state'
 response_name_rel() deals with responses to NAME_RELEASE.
 
+- NAME_REGISTER_CHALLENGE
+
+when a samba 'state' of type NAME_REGISTER_CHALLENGE is sent, and a
+response is not received, it is assumed that the server being queried
+is either dead, deaf or unreachable. the host that wanted this
+unique name is then informed that it can have it (the name query
+challenge went unanswered) and that its registration of this name
+did in fact succeed.
+
+reply_name_reg() issues this samba 'state'
+response_name_query_register() deals with responses.
+
 - NAME_REGISTER
 
 when a samba 'state' of type NAME_REGISTER is sent, and a response is
@@ -241,21 +159,5 @@ response_name_reg() deals with responses to NAME_REGISTER.
 no action is taken for any other kinds of samba 'states' if a response
 is not received. this is not to say that action may not be appropriate,
 just that it's not been looked at yet :-)
-
-
-/*************************************************************************
-  add_response_record()
-  *************************************************************************/
-
-this function is responsible for adding the response record created by
-make_response_queue_record() into the appropriate response record queue.
-
-
-/*************************************************************************
-  update_name_trn_id()
-  *************************************************************************/
-
-this function is responsible for allocating unique transaction identifiers
-for each new packet sent on the network.
 
 

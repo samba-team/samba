@@ -178,7 +178,7 @@ static void start_sync_browse_entry(struct browse_cache_record *b)
       /* see response_netbios_packet() or expire_netbios_response_entries() */
       queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_SYNC,
 					   b->group,0x20,0,0,
-					   False,False,b->ip);
+					   False,False,b->ip,b->ip);
   }
 
   b->synced = True;
