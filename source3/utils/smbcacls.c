@@ -138,7 +138,7 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 	if (!open_policy_hnd() ||
 	    cli_lsa_lookup_names(&lsa_cli, &pol, 1, &str, &sids, &types, 
 				 &num_sids) != NT_STATUS_NOPROBLEMO) {
-		result = string_to_sid(sid, str);
+		result = False;
 		goto done;
 	}
 
@@ -345,7 +345,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 	SEC_ACL *dacl=NULL;
 	int revision=1;
 
-	while (next_token(&p, tok, " \t,\r\n", sizeof(tok))) {
+	while (next_token(&p, tok, "\t,\r\n", sizeof(tok))) {
 
 		if (strncmp(tok,"REVISION:", 9) == 0) {
 			revision = strtol(tok+9, NULL, 16);
@@ -531,6 +531,51 @@ static void owner_set(struct cli_state *cli, enum chown_mode change_mode, char *
 	cli_close(cli, fnum);
 }
 
+/* The MSDN is contradictory over the ordering of ACE entries in an ACL.
+   However NT4 gives a "The information may have been modified by a
+   computer running Windows NT 5.0" if denied ACEs do not appear before
+   allowed ACEs. */
+
+static void sort_acl(SEC_ACL *the_acl)
+{
+	SEC_ACE *tmp_ace;
+	int i, ace_ndx = 0;
+	BOOL do_denied = True;
+
+	tmp_ace = (SEC_ACE *)malloc(sizeof(SEC_ACE) * the_acl->num_aces);
+
+	if (!tmp_ace) return;
+
+ copy_aces:
+	
+	for (i = 0; i < the_acl->num_aces; i++) {
+
+		/* Copy denied ACEs */
+
+		if (do_denied &&
+		    the_acl->ace[i].type == SEC_ACE_TYPE_ACCESS_DENIED) {
+			tmp_ace[ace_ndx] = the_acl->ace[i];
+			ace_ndx++;
+		}
+
+		/* Copy other ACEs */
+
+		if (!do_denied &&
+		    the_acl->ace[i].type != SEC_ACE_TYPE_ACCESS_DENIED) {
+			tmp_ace[ace_ndx] = the_acl->ace[i];
+			ace_ndx++;
+		}
+	}
+
+	if (do_denied) {
+		do_denied = False;
+		goto copy_aces;
+	}
+
+	free(the_acl->ace);
+	the_acl->ace = tmp_ace;
+}
+
 /***************************************************** 
 set the ACLs on a file given an ascii description
 *******************************************************/
@@ -632,12 +677,20 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		free_sec_desc(&sd);
 	}
 
+	/* Denied ACE entries must come before allowed ones */
+
+	sort_acl(old->dacl);
+
+	/* Create new security descriptor and set it */
+
 	sd = make_sec_desc(old->revision, old->owner_sid, old->grp_sid, 
 			   NULL, old->dacl, &sd_size);
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
 	}
+
+	/* Clean up */
 
 	free_sec_desc(&sd);
 	free_sec_desc(&old);
