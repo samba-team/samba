@@ -343,6 +343,12 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
   } else {
     /* CHILD */
 
+    /*
+     * Lose any oplock capabilities.
+     */
+    set_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
+    set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
+
     /* make sure it doesn't freeze */
     alarm(20);
 

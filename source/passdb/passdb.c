@@ -558,7 +558,7 @@ uint16 pdb_decode_acct_ctrl(char *p)
 			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ } 
 			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ } 
 			case 'I': { acct_ctrl |= ACB_DOMTRUST ; break; /* 'I'nterdomain trust account. */ }
-            case ' ':
+            case ' ': { break; }
 			case ':':
 			case '\n':
 			case '\0': 

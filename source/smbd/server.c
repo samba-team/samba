@@ -240,6 +240,14 @@ max can be %d\n",
 				   that client substitutions will be
 				   done correctly in the process.  */
 				reset_globals_after_fork();
+
+                /*
+                 * Ensure this child has kernel oplock
+                 * capabilities, but not it's children.
+                 */
+                set_process_capability(KERNEL_OPLOCK_CAPABILITY, True);
+                set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
+
 				return True; 
 			}
 			/* The parent doesn't need this socket */
@@ -661,8 +669,6 @@ static void usage(char *pname)
 
 	DEBUG(3,( "loaded services\n"));
 
-    check_kernel_oplocks();
-
 	if (!is_daemon && !is_a_socket(0)) {
 		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
 		is_daemon = True;
@@ -672,6 +678,8 @@ static void usage(char *pname)
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon();
 	}
+
+    check_kernel_oplocks();
 
 	if (!directory_exist(lp_lockdir(), NULL)) {
 		mkdir(lp_lockdir(), 0755);

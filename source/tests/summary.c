@@ -24,5 +24,10 @@ main()
 	exit(1);
 #endif
 
+#if !((defined(HAVE_RANDOM) || defined(HAVE_RAND)) && (defined(HAVE_SRANDOM) || defined(HAVE_SRAND)))
+    printf("ERROR: No random or srandom routine!\n");
+    exit(1);
+#endif
+
 	exit(0);
 }

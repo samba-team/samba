@@ -1401,9 +1401,6 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_SAMB
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
 
-/* display info */
-enum action_type    { ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER };
-
 #ifdef WITH_SSL
 /* SSL version options */
 enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
@@ -1544,6 +1541,12 @@ extern int unix_ERR_code;
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 
+/*
+ * Capabilities abstracted for different systems.
+ */
+
+#define KERNEL_OPLOCK_CAPABILITY 0x1
+
 #if defined(HAVE_KERNEL_OPLOCKS)
 /*
  * Oplock break command code sent via the kernel interface.
@@ -1591,151 +1594,8 @@ struct nmb_name {
   unsigned int name_type;
 };
 
-struct cli_state {
-  int fd;
-  int cnum;
-  int pid;
-  int mid;
-  int uid;
-  int protocol;
-  int sec_mode;
-  int rap_error;
-  int privilages;
-
-  fstring eff_name;
-  fstring desthost;
-  fstring user_name;
-  fstring domain;
-
-  fstring share;
-  fstring dev;
-  struct nmb_name called;
-  struct nmb_name calling;
-  fstring full_dest_host_name;
-  struct in_addr dest_ip;
-
-  struct pwd_info pwd;
-  char cryptkey[8];
-  uint32 sesskey;
-  int serverzone;
-  uint32 servertime;
-  int readbraw_supported;
-  int writebraw_supported;
-  int timeout;
-  int max_xmit;
-  char *outbuf;
-  char *inbuf;
-  int bufsize;
-  int initialised;
-  /*
-   * Only used in NT domain calls.
-   */
-  uint32 nt_error;                   /* NT RPC error code. */
-  uint16 nt_pipe_fnum;               /* Pipe handle. */
-  unsigned char sess_key[16];        /* Current session key. */
-  DOM_CRED clnt_cred;                /* Client credential. */
-  fstring mach_acct;                 /* MYNAME$. */
-  fstring srv_name_slash;            /* \\remote server. */
-  fstring clnt_name_slash;            /* \\local client. */
-};
-
-struct acct_info
-{
-	fstring acct_name; /* account name */
-	uint32 smb_userid; /* domain-relative RID */
-};
-
-struct nt_client_info
-{
-	/************* \PIPE\NETLOGON stuff ******************/
-
-	fstring mach_acct;
-
-	uint8 sess_key[16];
-	DOM_CRED clnt_cred;
-	DOM_CRED rtn_cred;
-
-	NET_ID_INFO_CTR ctr;
-	NET_USER_INFO_3 user_info3;
-
-	/************** \PIPE\lsarpc stuff ********************/
-
-	POLICY_HND lsa_info_pol;
-
-	/* domain member */
-	fstring level3_dom;
-	fstring level3_sid;
-
-	/* domain controller */
-	fstring level5_dom;
-	fstring level5_sid;
-
-	/************** \PIPE\samr stuff  ********************/
-
-	POLICY_HND samr_pol_connect;
-	POLICY_HND samr_pol_open_domain;
-	POLICY_HND samr_pol_open_user;
-
-	struct acct_info *sam;
-	int num_sam_entries;
-};
-
-
-struct tar_client_info
-{
-	int blocksize;
-	BOOL inc;
-	BOOL reset;
-	BOOL excl;
-	char type;
-	int attrib;
-	char **cliplist;
-	int clipn;
-	int tp;
-	int num_files;
-	int buf_size;
-	int bytes_written;
-	char *buf;
-	int handle;
-	int print_mode;
-	char *file_mode;
-};
-
-struct client_info 
-{
-	struct in_addr dest_ip;
-	fstring dest_host;
-	fstring query_host;
-	uint8 name_type;
-
-	fstring myhostname;
-	fstring mach_acct;
-
-	pstring cur_dir;
-	pstring base_dir;
-	pstring file_sel;
-
-	fstring service;
-	fstring share;
-	fstring svc_type;
-
-	time_t newer_than;
-	int archive_level;
-	int dir_total;
-	int put_total_time_ms;
-	int put_total_size;
-	int get_total_time_ms;
-	int get_total_size;
-	int print_mode;
-	BOOL translation;
-	BOOL recurse_dir;
-	BOOL prompt;
-	BOOL lowercase;
-	BOOL abort_mget;
-
-	struct tar_client_info tar;
-	struct nt_client_info dom;
-};
+#include "client.h"
+#include "rpcclient.h"
 
 /*
  * Size of new password account encoding string. DO NOT CHANGE.

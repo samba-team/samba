@@ -557,7 +557,7 @@ static void usage(char *pname)
 
   StartupTime = time(NULL);
 
-  srandom(time(NULL) ^ getpid());
+  sys_srandom(time(NULL) ^ getpid());
 
   TimeInit();
 

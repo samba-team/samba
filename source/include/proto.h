@@ -183,6 +183,10 @@ char *dos_getwd(char *s);
 int sys_chown(char *fname,int uid,int gid);
 int sys_chroot(char *dname);
 struct hostent *sys_gethostbyname(char *name);
+BOOL set_process_capability( uint32 cap_flag, BOOL enable );
+BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable );
+long sys_random(void);
+void sys_srandom(unsigned int seed);
 
 /*The following definitions come from  lib/time.c  */
 

@@ -4328,6 +4328,19 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   errno = 0;
 
   ret = fcntl(fd,op,&lock);
+  if (errno == EFBIG)
+  {
+    if( DEBUGLVL( 0 ))
+    {
+      dbgtext("fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n", (double)offset,(double)count);
+      dbgtext("a 'file too large' error. This can happen when using 64 bit lock offsets\n");
+      dbgtext("on 32 bit NFS mounted file systems. Retrying with 32 bit truncated length.\n");
+    }
+    /* 32 bit NFS file system, retry with smaller offset */
+    errno = 0;
+    lock.l_len = count & 0xffffffff;
+    ret = fcntl(fd,op,&lock);
+  }
 
   if (errno != 0)
     DEBUG(3,("fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));

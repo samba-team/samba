@@ -123,6 +123,7 @@
 #undef STAT_STATVFS64
 #undef HAVE_LIBREADLINE
 #undef HAVE_KERNEL_OPLOCKS
+#undef HAVE_IRIX_SPECIFIC_CAPABILITIES
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -247,6 +248,12 @@
 /* Define if you have the putprpwnam function.  */
 #undef HAVE_PUTPRPWNAM
 
+/* Define if you have the rand function.  */
+#undef HAVE_RAND
+
+/* Define if you have the random function.  */
+#undef HAVE_RANDOM
+
 /* Define if you have the rdchk function.  */
 #undef HAVE_RDCHK
 
@@ -279,6 +286,12 @@
 
 /* Define if you have the sigprocmask function.  */
 #undef HAVE_SIGPROCMASK
+
+/* Define if you have the srand function.  */
+#undef HAVE_SRAND
+
+/* Define if you have the srandom function.  */
+#undef HAVE_SRANDOM
 
 /* Define if you have the stat64 function.  */
 #undef HAVE_STAT64
@@ -396,6 +409,9 @@
 
 /* Define if you have the <stropts.h> header file.  */
 #undef HAVE_STROPTS_H
+
+/* Define if you have the <sys/capability.h> header file.  */
+#undef HAVE_SYS_CAPABILITY_H
 
 /* Define if you have the <sys/dir.h> header file.  */
 #undef HAVE_SYS_DIR_H
