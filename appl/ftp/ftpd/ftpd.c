@@ -1338,7 +1338,7 @@ receive_data(FILE *instr, FILE *outstr)
 	    for(p = buf, q = buf; p < buf + cnt;) {
 		if(*p == '\n')
 		    bare_lfs++;
-		if(*p == '\r')
+		if(*p == '\r') {
 		    if(p == buf + cnt - 1){
 			cr_flag = 1;
 			p++;
@@ -1348,6 +1348,7 @@ receive_data(FILE *instr, FILE *outstr)
 			p += 2;
 			continue;
 		    }
+		}
 		*q++ = *p++;
 	    }
 	    fwrite(buf, q - buf, 1, outstr);
