@@ -2960,7 +2960,7 @@ static int cli_init_redirect(struct cli_state *cli,
 	char *in = cli->inbuf;
 	char *out = cli->outbuf;
 
-	slprintf(path, sizeof(path)-1, "/tmp/smb-agent/smb.%d", getuid());
+	slprintf(path, sizeof(path)-1, "/tmp/.smb.%d/agent", getuid());
 
 	if (strequal(srv_name, "*SMBSERVER"))
 	{
@@ -3023,8 +3023,10 @@ static int cli_init_redirect(struct cli_state *cli,
 	len = PTR_DIFF(p, data);
 	SIVAL(data, 0, len);
 
-	printf("data len: %d\n", len);
-	out_data(stdout, data, len, 80);
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("data len: %d\n", len));
+	dump_data(100, data, len);
+#endif
 
 	if (write(sock, data, len) <= 0)
 	{
@@ -3046,6 +3048,7 @@ static int cli_init_redirect(struct cli_state *cli,
 	cli->inbuf = in;
 	cli->outbuf = out;
 	cli->fd = sock;
+	cli->usr.reuse = False;
 
 	return sock;
 }
