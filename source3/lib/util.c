@@ -3862,12 +3862,13 @@ static char *automount_lookup(char *user_name)
 char *automount_server(char *user_name)
 {
 	static pstring server_name;
-
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
 	int home_server_len;
 
-	/* set to default of local machine */
+	/* use the local machine name as the default */
+	/* this will be the default if AUTOMOUNT is not used or fails */
 	pstrcpy(server_name, local_machine);
+
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
 
 	if (lp_nis_home_map())
 	{
@@ -3881,9 +3882,6 @@ char *automount_server(char *user_name)
 		strncpy(server_name, automount_value, home_server_len);
                 server_name[home_server_len] = '\0';
 	}
-#else
-	/* use the local machine name instead of the auto-map server */
-	pstrcpy(server_name, local_machine);
 #endif
 
 	DEBUG(4,("Home server: %s\n", server_name));
@@ -3899,12 +3897,14 @@ char *automount_server(char *user_name)
 char *automount_path(char *user_name)
 {
 	static pstring server_path;
-
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
 	char *home_path_start;
 
-	/* set to default of no string */
-	server_path[0] = 0;
+	/* use the passwd entry as the default */
+	/* this will be the default if AUTOMOUNT is not used or fails */
+	/* pstrcpy() copes with get_home_dir() returning NULL */
+	pstrcpy(server_path, get_home_dir(user_name));
+
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
 
 	if (lp_nis_home_map())
 	{
@@ -3917,10 +3917,6 @@ char *automount_path(char *user_name)
 		  strcpy(server_path, home_path_start+1);
 		}
 	}
-#else
-	/* use the passwd entry instead of the auto-map server entry */
-	/* pstrcpy() copes with get_home_dir() returning NULL */
-	pstrcpy(server_path, get_home_dir(user_name));
 #endif
 
 	DEBUG(4,("Home server path: %s\n", server_path));
