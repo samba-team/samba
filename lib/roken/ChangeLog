@@ -1,0 +1,5 @@
+Wed Oct 29 02:21:38 1997  Assar Westerlund  <assar@sics.se>
+
+	* roken.h: Add ugly macros for openlog, gethostbyname,
+ 	gethostbyaddr, and getservbyname for the benefit of Crays.  Add
+ 	default definition of MAXPATHLEN

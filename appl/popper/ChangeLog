@@ -1,0 +1,6 @@
+Wed Oct 29 02:09:24 1997  Assar Westerlund  <assar@sics.se>
+
+	* pop_pass.c: conditionalize OTP-support
+
+	* pop_init.c: conditionalize OTP-support
+
