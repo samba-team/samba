@@ -69,11 +69,23 @@ sl_match (SL_cmd *cmds, char *cmd, int exactp)
 void
 sl_help (SL_cmd *cmds, int argc, char **argv)
 {
-    SL_cmd *c;
+    SL_cmd *c, *prev_c;
 
     if (argc == 1) {
-	for (c = cmds; c->name; ++c)
-	    printf ("%s\t%s\n", c->name, c->usage ? c->usage : "");
+	prev_c = NULL;
+	for (c = cmds; c->name; ++c) {
+	    if (c->func) {
+		if(prev_c)
+		    printf ("\n\t%s%s", prev_c->usage ? prev_c->usage : "",
+			    prev_c->usage ? "\n" : "");
+		prev_c = c;
+		printf ("%s", c->name);
+	    } else
+		printf (", %s", c->name);
+	}
+	if(prev_c)
+	    printf ("\n\t%s%s", prev_c->usage ? prev_c->usage : "",
+		    prev_c->usage ? "\n" : "");
     } else { 
 	c = sl_match (cmds, argv[1], 0);
 	if (c == NULL)
