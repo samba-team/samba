@@ -920,7 +920,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 		struct samr_GetAliasMembership ga;
 		int i;
 
-		ga.in.alias_handle = &builtin_handle;
+		ga.in.domain_handle = &builtin_handle;
 
 		sids.num_sids = g.out.rids->count+2;
 		sids.sids = talloc_array_p(mem_ctx, struct lsa_SidPtr,
@@ -940,7 +940,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 			return status;
 
 		if (includeDomain) {
-			ga.in.alias_handle = &domain_handle;
+			ga.in.domain_handle = &domain_handle;
 			status = dcerpc_samr_GetAliasMembership(p, mem_ctx,
 								&ga);
 			if (!NT_STATUS_IS_OK(status))
