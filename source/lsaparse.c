@@ -68,6 +68,9 @@ char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int al
 			}
 		}
 	}
+
+	RW_IVAL(io, q, r_q->status, 0); q += 4;
+
 	return q;
 }
 
@@ -127,6 +130,8 @@ char* lsa_io_r_lookup_sids(BOOL io, LSA_R_LOOKUP_SIDS *r_s, char *q, char *base,
 
 	RW_IVAL(io, q, r_s->num_entries3, 0); q += 4;
 
+	RW_IVAL(io, q, r_s->status, 0); q += 4;
+
 	return q;
 }
 
@@ -182,6 +187,8 @@ char* lsa_io_r_lookup_rids(BOOL io, LSA_R_LOOKUP_RIDS *r_r, char *q, char *base,
 
 	RW_IVAL(io, q, r_r->num_entries3, 0); q += 4;
 
+	RW_IVAL(io, q, r_r->status, 0); q += 4;
+
 	return q;
 }
 
@@ -211,6 +218,8 @@ char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int a
 	q = align_offset(q, base, align);
     
 	q = smb_io_chal(io, &(r_c->srv_chal), q, base, align); /* server challenge */
+
+	RW_IVAL(io, q, r_c->status, 0); q += 4;
 
 	return q;
 }
@@ -244,6 +253,8 @@ char* lsa_io_r_auth_2(BOOL io, LSA_R_AUTH_2 *r_a, char *q, char *base, int align
 	q = smb_io_chal     (io, &(r_a->srv_chal), q, base, align); /* server challenge */
 	q = smb_io_neg_flags(io, &(r_a->srv_flgs), q, base, align);
 
+	RW_IVAL(io, q, r_a->status, 0); q += 4;
+
 	return q;
 }
 
@@ -273,6 +284,8 @@ char* lsa_io_r_srv_pwset(BOOL io, LSA_R_SRV_PWSET *r_s, char *q, char *base, int
 	q = align_offset(q, base, align);
     
 	q = smb_io_chal(io, &(r_s->srv_chal), q, base, align); /* server challenge */
+
+	RW_IVAL(io, q, r_s->status, 0); q += 4;
 
 	return q;
 }
@@ -349,6 +362,72 @@ char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int ali
 	return q;
 }
 
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+char* lsa_io_q_sam_logon(BOOL io, LSA_Q_SAM_LOGON *q_l, char *q, char *base, int align)
+{
+	if (q_l == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	q = smb_io_sam_info(io, &(q_l->sam_id), q, base, align);           /* domain SID */
+
+	return q;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+char* lsa_io_r_sam_logon(BOOL io, LSA_R_SAM_LOGON *r_l, char *q, char *base, int align)
+{
+	if (r_l == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_IVAL(io, q, r_l->buffer_creds, 0); q += 4; /* undocumented buffer pointer */
+	q = smb_io_cred(io, &(r_l->srv_creds), q, base, align); /* server credentials.  server time stamp appears to be ignored. */
+
+	RW_IVAL(io, q, r_l->buffer_user, 0); q += 4;
+	q = lsa_io_user_info(io, &(r_l->user), q, base, align);
+
+	RW_IVAL(io, q, r_l->auth_resp, 0); q += 4; /* 1 - Authoritative response; 0 - Non-Auth? */
+
+	RW_IVAL(io, q, r_l->status, 0); q += 4;
+
+	return q;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+char* lsa_io_q_sam_logoff(BOOL io, LSA_Q_SAM_LOGOFF *q_l, char *q, char *base, int align)
+{
+	if (q_l == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	q = smb_io_sam_info(io, &(q_l->sam_id), q, base, align);           /* domain SID */
+
+	return q;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, int align)
+{
+	if (r_l == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_IVAL(io, q, r_l->buffer_creds, 0); q += 4; /* undocumented buffer pointer */
+	q = smb_io_cred(io, &(r_l->srv_creds), q, base, align); /* server credentials.  server time stamp appears to be ignored. */
+
+	RW_IVAL(io, q, r_l->status, 0); q += 4;
+
+	return q;
+}
 
 #if 0
 /*******************************************************************
@@ -367,120 +446,3 @@ reads or writes a structure.
 #endif
 
 
-#if 0 /* to be done... */
-
-
-#define LSA_MAX_GROUPS 32
-
-/* LSA_USER_INFO */
-typedef struct lsa_q_user_info
-{
-	uint32 undoc_buffer;
-
-	NTTIME logon_time;            /* logon time */
-	NTTIME logoff_time;           /* logoff time */
-	NTTIME kickoff_time;          /* kickoff time */
-	NTTIME pass_last_set_time;    /* password last set time */
-	NTTIME pass_can_change_time;  /* password can change time */
-	NTTIME pass_must_change_time; /* password must change time */
-
-	UNIHDR hdr_user_name;    /* username unicode string header */
-	UNIHDR hdr_full_name;    /* user's full name unicode string header */
-	UNIHDR hdr_logon_script; /* logon script unicode string header */
-	UNIHDR hdr_profile_path; /* profile path unicode string header */
-	UNIHDR hdr_home_dir;     /* home directory unicode string header */
-	UNIHDR hdr_dir_drive;    /* home directory drive unicode string header */
-
-	uint16 logon_count;  /* logon count */
-	uint16 bad_pw_count; /* bad password count */
-
-	uint32 user_id;       /* User ID */
-	uint32 group_id;      /* Group ID */
-	uint32 num_groups;    /* num groups */
-	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
-	uint32 user_flgs;     /* user flags */
-
-	char sess_key[16]; /* unused user session key */
-
-	UNIHDR hdr_logon_srv; /* logon server unicode string header */
-	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
-
-	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
-	char padding[40];    /* unused padding bytes? */
-
-	uint32 num_sids; /* 0 - num_sids */
-	uint32 buffer_sids; /* NULL - undocumented pointer to SIDs. */
-	
-	UNISTR2 uni_user_name;    /* username unicode string */
-	UNISTR2 uni_full_name;    /* user's full name unicode string */
-	UNISTR2 uni_logon_script; /* logon script unicode string */
-	UNISTR2 uni_profile_path; /* profile path unicode string */
-	UNISTR2 uni_home_dir;     /* home directory unicode string */
-	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
-
-	uint32 num_groups2;        /* num groups */
-	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
-
-	UNISTR2 uni_logon_srv; /* logon server unicode string */
-	UNISTR2 uni_logon_dom; /* logon domain unicode string */
-
-	DOM_SID undoc_dom_sids[2]; /* undocumented - domain SIDs */
-	DOM_SID dom_sid;           /* domain SID */
-
-} LSA_USER_INFO;
-
-
-/* LSA_Q_SAM_LOGON */
-typedef struct lsa_q_sam_logon_info
-{
-    DOM_SAM_INFO sam_id;
-
-} LSA_Q_SAM_LOGON;
-
-/* LSA_R_SAM_LOGON */
-typedef struct lsa_r_sam_logon_info
-{
-    uint32 buffer_creds; /* undocumented buffer pointer */
-    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
-    
-    uint32 buffer_user;
-    LSA_USER_INFO user;
-
-    uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
-
-} LSA_R_SAM_LOGON;
-
-
-/* LSA_Q_SAM_LOGOFF */
-typedef struct lsa_q_sam_logoff_info
-{
-    DOM_SAM_INFO sam_id;
-
-} LSA_Q_SAM_LOGOFF;
-
-/* LSA_R_SAM_LOGOFF */
-typedef struct lsa_r_sam_logoff_info
-{
-    uint32 buffer_creds; /* undocumented buffer pointer */
-    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
-    
-} LSA_R_SAM_LOGOFF;
-
-#endif
-
-
-#if 0
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
- char* lsa_io_(BOOL io, *, char *q, char *base, int align)
-{
-	if (== NULL) return NULL;
-
-	q = align_offset(q, base, align);
-	
-	RW_IVAL(io, q, , 0); q += 4;
-
-	return q;
-}
-#endif

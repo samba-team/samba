@@ -502,6 +502,8 @@ typedef struct lsa_r_query_info
 		DOM_QUERY_5 id5;
     } dom;
 
+  uint32 status; /* return code */
+
 } LSA_R_QUERY_INFO;
 
 #define MAX_REF_DOMAINS 10
@@ -552,6 +554,8 @@ typedef struct lsa_r_lookup_sids
 
     uint32 num_entries3; 
 
+  uint32 status; /* return code */
+
 } LSA_R_LOOKUP_SIDS;
 
 /* DOM_NAME - XXXX not sure about this structure */
@@ -596,6 +600,8 @@ typedef struct lsa_r_lookup_rids
 
     uint32 num_entries3; 
 
+  uint32 status; /* return code */
+
 } LSA_R_LOOKUP_RIDS;
 
 
@@ -624,6 +630,8 @@ typedef struct lsa_r_req_chal_info
 {
     DOM_CHAL srv_chal; /* server challenge */
 
+  uint32 status; /* return code */
+
 } LSA_R_REQ_CHAL;
 
 
@@ -645,6 +653,8 @@ typedef struct lsa_r_auth2_info
     DOM_CHAL srv_chal;     /* server-calculated credentials */
     NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
 
+  uint32 status; /* return code */
+
 } LSA_R_AUTH_2;
 
 
@@ -660,6 +670,8 @@ typedef struct lsa_q_srv_pwset_info
 typedef struct lsa_r_srv_pwset_info
 {
     DOM_CHAL srv_chal;     /* server-calculated credentials */
+
+  uint32 status; /* return code */
 
 } LSA_R_SRV_PWSET;
 
@@ -741,6 +753,8 @@ typedef struct lsa_r_sam_logon_info
 
     uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
 
+  uint32 status; /* return code */
+
 } LSA_R_SAM_LOGON;
 
 
@@ -757,6 +771,8 @@ typedef struct lsa_r_sam_logoff_info
     uint32 buffer_creds; /* undocumented buffer pointer */
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
+  uint32 status; /* return code */
+
 } LSA_R_SAM_LOGOFF;
 
 /*
