@@ -166,6 +166,7 @@ typedef struct
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
+	char *szGuestaccount;
 	int max_log_size;
 	int mangled_stack;
 	int max_xmit;
@@ -286,7 +287,6 @@ typedef struct
 	char *szService;
 	char *szPath;
 	char *szUsername;
-	char *szGuestaccount;
 	char **szInvalidUsers;
 	char **szValidUsers;
 	char **szAdminUsers;
@@ -401,7 +401,6 @@ static service sDefault = {
 	NULL,			/* szService */
 	NULL,			/* szPath */
 	NULL,			/* szUsername */
-	NULL,			/* szGuestAccount  - this is set in init_globals() */
 	NULL,			/* szInvalidUsers */
 	NULL,			/* szValidUsers */
 	NULL,			/* szAdminUsers */
@@ -679,6 +678,7 @@ static struct parm_struct parm_table[] = {
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
+	{"guest account", P_STRING, P_GLOBAL, &Globals.szGuestaccount, NULL, NULL, FLAG_BASIC},
 	
 	{"pam password change", P_BOOL, P_GLOBAL, &Globals.bPamPasswordChange, NULL, NULL, 0},
 	{"passwd program", P_STRING, P_GLOBAL, &Globals.szPasswdProgram, NULL, NULL, 0},
@@ -698,7 +698,6 @@ static struct parm_struct parm_table[] = {
 	{"user", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, 0},
 	{"users", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, 0},
 	
-	{"guest account", P_STRING, P_LOCAL, &sDefault.szGuestaccount, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_GLOBAL},
 	{"invalid users", P_LIST, P_LOCAL, &sDefault.szInvalidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"valid users", P_LIST, P_LOCAL, &sDefault.szValidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"admin users", P_LIST, P_LOCAL, &sDefault.szAdminUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
@@ -1177,7 +1176,6 @@ static void init_globals(void)
 			    parm_table[i].ptr)
 				string_set(parm_table[i].ptr, "");
 
-		string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
 		string_set(&sDefault.fstype, FSTYPE_STRING);
 
 		init_printer_values();
@@ -1191,6 +1189,8 @@ static void init_globals(void)
 	string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, PRIVATE_DIR);
 	string_set(&Globals.szPassdbModulePath, "");
+
+	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 	
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
@@ -1483,6 +1483,7 @@ FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
 
+FN_GLOBAL_STRING(lp_guestaccount, &Globals.szGuestaccount)
 FN_GLOBAL_STRING(lp_addgroup_script, &Globals.szAddGroupScript)
 FN_GLOBAL_STRING(lp_delgroup_script, &Globals.szDelGroupScript)
 FN_GLOBAL_STRING(lp_addusertogroup_script, &Globals.szAddUserToGroupScript)
@@ -1620,7 +1621,6 @@ FN_LOCAL_STRING(lp_servicename, szService)
 FN_LOCAL_STRING(lp_pathname, szPath)
 FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
 FN_LOCAL_STRING(lp_username, szUsername)
-FN_LOCAL_STRING(lp_guestaccount, szGuestaccount)
 FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
 FN_LOCAL_LIST(lp_valid_users, szValidUsers)
 FN_LOCAL_LIST(lp_admin_users, szAdminUsers)

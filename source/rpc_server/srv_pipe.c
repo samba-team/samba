@@ -265,7 +265,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	int nt_pw_len;
 	int lm_pw_len;
 	fstring user_name;
-	fstring pipe_user_name;
 	fstring domain;
 	fstring wks;
 
@@ -326,14 +325,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	 * Allow guest access. Patch from Shirish Kalele <kalele@veritas.com>.
 	 */
 
-	if((strlen(user_name) == 0) && 
-	   (ntlmssp_resp->hdr_nt_resp.str_str_len==0))
-	{
-
-		fstrcpy(pipe_user_name, lp_guestaccount(-1));
-		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", pipe_user_name));
-
-	} else {
+	if (*user_name) {
 
 	 	/* 
 		 * Do the length checking only if user is not NULL.
@@ -367,8 +359,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	p->ntlmssp_auth_validated = NT_STATUS_IS_OK(nt_status);
 	
 	if (!p->ntlmssp_auth_validated) {
-		DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
-failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name ));
+		DEBUG(1,("api_pipe_ntlmssp_verify: User [%s]\\[%s] from machine %s \
+failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 		free_server_info(&server_info);
 		return False;
 	}
@@ -413,7 +405,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	}
 
 	fstrcpy(p->user_name, user_name);
-	fstrcpy(p->pipe_user_name, pipe_user_name);
+	fstrcpy(p->pipe_user_name, pdb_get_username(server_info->sam_account));
 	fstrcpy(p->domain, domain);
 	fstrcpy(p->wks, wks);
 
@@ -434,7 +426,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	p->pipe_user.gid = *pgid;
 
 	/* Set up pipe user group membership. */
-	initialise_groups(pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
+	initialise_groups(p->pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
 	get_current_groups( &p->pipe_user.ngroups, &p->pipe_user.groups);
 
 	if (server_info->ptok)

@@ -687,7 +687,7 @@ void free_server_info(auth_serversupplied_info **server_info)
 
 BOOL make_server_info_guest(auth_serversupplied_info **server_info) 
 {
-	struct passwd *pass = sys_getpwnam(lp_guestaccount(-1));
+	struct passwd *pass = sys_getpwnam(lp_guestaccount());
 	
 	if (pass) {
 		if (!make_server_info_pw(server_info, pass)) {

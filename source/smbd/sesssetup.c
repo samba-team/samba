@@ -383,7 +383,7 @@ static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *ou
 
 	nt_status = check_password(user_info, &server_info);
 
-	sess_vuid = register_vuid(server_info, lp_guestaccount(-1));
+	sess_vuid = register_vuid(server_info, lp_guestaccount());
 	free_server_info(&server_info);
   
 	if (sess_vuid == -1) {
@@ -644,7 +644,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	if (*user) {
 		pstrcpy(sub_user, user);
 	} else {
-		pstrcpy(sub_user, lp_guestaccount(-1));
+		pstrcpy(sub_user, lp_guestaccount());
 	}
 
 	pstrcpy(current_user_info.smb_name,sub_user);
