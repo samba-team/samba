@@ -801,21 +801,6 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 }
 
 /****************************************************************************
- Checks for SMB_TIME_NO_CHANGE and if not found calls interpret_long_date.
-****************************************************************************/
-
-time_t interpret_long_unix_date(char *p)
-{
-	DEBUG(10,("interpret_long_unix_date\n"));
-	if(IVAL(p,0) == SMB_TIME_NO_CHANGE_LO &&
-	   IVAL(p,4) == SMB_TIME_NO_CHANGE_HI) {
-		return -1;
-	} else {
-		return interpret_long_date(p);
-	}
-}
-
-/****************************************************************************
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
 
@@ -3331,7 +3316,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			tvs.modtime = MIN(write_time, changed_time);
 
-			if (write_time > tvs.modtime && write_time != 0xffffffff) {
+			if (write_time > tvs.modtime && write_time != (time_t)-1) {
 				tvs.modtime = write_time;
 			}
 			/* Prefer a defined time to an undefined one. */
@@ -3510,8 +3495,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			}
 			pdata+=24;          /* ctime & st_blocks are not changed */
-			tvs.actime = interpret_long_unix_date(pdata); /* access_time */
-			tvs.modtime = interpret_long_unix_date(pdata+8); /* modification_time */
+			tvs.actime = interpret_long_date(pdata); /* access_time */
+			tvs.modtime = interpret_long_date(pdata+8); /* modification_time */
 			pdata+=16;
 			set_owner = (uid_t)IVAL(pdata,0);
 			pdata += 8;
