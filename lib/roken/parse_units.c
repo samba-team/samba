@@ -107,7 +107,7 @@ parse_something (const char *s, const struct units *units,
 	    ++p;
 	    val = -1;
 	}
-	u_len = strcspn (p, "0123456789 \t");
+	u_len = strcspn (p, ", \t");
 	partial = 0;
 	partial_unit = NULL;
 	if (u_len > 1 && p[u_len - 1] == 's')
