@@ -65,8 +65,7 @@ chmod 755 ${SRCDIR}/filter-requires-samba_rh?.sh
 
 echo Getting Ready to build release package
 cd ${SPECDIR}
-#${RPM} -ba --clean --rmsource $SPECFILE
-${RPM} -ba -vv $SPECFILE
+${RPM} -ba --clean --rmsource $SPECFILE
 
 echo Done.
 
