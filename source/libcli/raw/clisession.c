@@ -391,6 +391,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session
 	s2.spnego.in.domain = parms->generic.in.domain;
 	s2.spnego.in.os = "Unix";
 	s2.spnego.in.lanman = "Samba";
+	s2.spnego.out.vuid = UID_FIELD_INVALID;
 
 	cli_temp_set_signing(session->transport);
 
@@ -437,7 +438,9 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session
 	}
 
 	while(1) {
+		session->vuid = s2.spnego.out.vuid;
 		status = smb_raw_session_setup(session, mem_ctx, &s2);
+		session->vuid = UID_FIELD_INVALID;
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			goto done;
