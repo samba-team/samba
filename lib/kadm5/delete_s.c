@@ -48,10 +48,11 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
     hdb_entry ent;
     ent.principal = princ;
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
-    if(ret) return ret;
+    if(ret) {
+	krb5_warn(context->context, ret, "opening database");
+	return ret;
+    }
     ret = context->db->delete(context->context, context->db, &ent);
     context->db->close(context->context, context->db);
-    if(ret == HDB_ERR_NOENTRY)
-	return KADM5_UNK_PRINC;
-    return ret;
+    return _kadm5_error_code(ret);
 }

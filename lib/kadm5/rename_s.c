@@ -96,10 +96,6 @@ out2:
     context->db->close(context->context, context->db);
     hdb_free_entry(context->context, &ent);
 out:
-    if(ret == HDB_ERR_NOENTRY)
-	return KADM5_UNK_PRINC;
-    if(ret == HDB_ERR_INUSE)
-	return KADM5_DUP;
-    return ret;
+    return _kadm5_error_code(ret);
 }
 

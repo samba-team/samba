@@ -101,8 +101,6 @@ out:
 	free(*new_keys);
 	*n_keys = 0;
     }
-    if(ret == HDB_ERR_NOENTRY)
-	return KADM5_UNK_PRINC;
-    return ret;
+    return _kadm5_error_code(ret);
 }
 

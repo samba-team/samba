@@ -57,7 +57,7 @@ kadm5_s_get_principal(void *server_handle,
     ret = context->db->fetch(context->context, context->db, &ent);
     context->db->close(context->context, context->db);
     if(ret == HDB_ERR_NOENTRY)
-	return KADM5_UNK_PRINC;
+	return _kadm5_error_code(ret);
 
 
     memset(out, 0, sizeof(*out));
@@ -170,5 +170,5 @@ kadm5_s_get_principal(void *server_handle,
 out:
     hdb_free_entry(context->context, &ent);
 
-    return ret;
+    return _kadm5_error_code(ret);
 }
