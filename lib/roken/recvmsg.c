@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -67,6 +67,7 @@ recvmsg(int s, struct msghdr *msg, int flags)
 	memcpy (iov->iov_base, p, cnt);
 	p += cnt;
 	nb -= cnt;
+	++iov;
     }
     free(buf);
     return ret;
