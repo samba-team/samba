@@ -2192,9 +2192,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 		if (size < sizeneeded) {
 			SMB_STRUCT_STAT st;
 			if (vfs_fstat(fsp,fsp->fd,&st) == 0)
-				size = st.st_size;
-			if (!fsp->can_write) 
-				fsp->size = size;
+				fsp->size = size = st.st_size;
 		}
 
 		if (startpos >= size)
