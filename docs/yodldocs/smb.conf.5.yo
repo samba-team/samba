@@ -2734,11 +2734,6 @@ which case the default is :
 
 tt(	lp -i %p-%j -H hold)
 
-or if the value of the link(bf("printing"))(printing) parameter is tt(HPUX),
-then the default is:
-
-tt(	disable %p)
-
 or if the value of the link(bf("printing"))(printing) parameter is tt(softq),
 then the default is:
 
@@ -2833,12 +2828,7 @@ See also the link(bf("printing"))(printing) parameter.
 value of the link(bf("printing"))(printing) parameter is tt(SYSV), in
 which case the default is :
 
-tt(	lpc start %p)
-
-or if the value of the link(bf("printing"))(printing) parameter is tt(HPUX),
-then the default is:
-
-tt(	enable %p)
+tt(	lp -i %p-%j -H resume)
 
 or if the value of the link(bf("printing"))(printing) parameter is tt(softq),
 then the default is:
