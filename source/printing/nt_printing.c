@@ -2971,7 +2971,6 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	uint32 access_granted, status, required_access = 0;
 	BOOL result;
 	char *pname;
-	int i;
 	extern struct current_user current_user;
 	
 	/* If user is NULL then use the current_user structure */
@@ -3011,13 +3010,20 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	       Manage Documents  0x00020000  PRINTER_ACE_MANAGE_DOCUMENTS
 	*/
 
-	switch (access_type) {
-	case PRINTER_ACCESS_USE:
-		required_access = PRINTER_ACE_PRINT;
-		break;
-	case PRINTER_ACCESS_ADMINISTER:
-		required_access = PRINTER_ACE_MANAGE_DOCUMENTS |
-			PRINTER_ACE_PRINT;
+    switch (access_type) {
+    case PRINTER_ACCESS_USE:
+	    required_access = PRINTER_ACE_PRINT;
+	    break;
+    case PRINTER_ACCESS_ADMINISTER:
+		/* 
+		 * This should be set to PRINTER_ACE_FULL_CONTROL, not to
+		 * (PRINTER_ACE_PRINT | PRINTER_ACE_MANAGE_DOCUMENTS).
+		 * Doing the latter gives anyone with both PRINTER_ACE_PRINT
+		 * and PRINTER_ACE_MANAGE_DOCUMENTS (in any combination of ACLs)
+		 * full control over all printer functions.  This isn't what 
+		 * we want.
+		 */
+		required_access = PRINTER_ACE_FULL_CONTROL; 
 		break;
 	case JOB_ACCESS_ADMINISTER:
 		required_access = PRINTER_ACE_MANAGE_DOCUMENTS;
@@ -3027,30 +3033,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 		result = False;
 		goto done;
 	}	
-
-	/* The ACE for Full Control in a printer security descriptor
-	   doesn't seem to map properly to the access checking model.  For
-	   it to work properly it should be the logical OR of all the other
-	   values, i.e PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT.
-	   This would cause the access check to simply fall out when we
-	   check against any subset of these bits.  To get things to work,
-	   change every ACE mask of PRINTER_ACE_FULL_CONTROL to
-	   PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT before
-	   performing the access check.  I'm sure there is a better way to
-	   do this! */
-
-	if (secdesc && secdesc->sec && secdesc->sec->dacl &&
-	    secdesc->sec->dacl->ace) {
-		for(i = 0; i < secdesc->sec->dacl->num_aces; i++) {
-			if (secdesc->sec->dacl->ace[i].info.mask ==
-			    PRINTER_ACE_FULL_CONTROL) {
-				secdesc->sec->dacl->ace[i].info.mask =
-					PRINTER_ACE_MANAGE_DOCUMENTS |
-					PRINTER_ACE_PRINT;
-			}
-		}
-	}
-
+	
 	if ((result = se_access_check(secdesc->sec, user, required_access,
 				      &access_granted, &status))) {
 		goto done;
