@@ -187,7 +187,8 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	uint8		*lm_pw;
 	uint8		*nt_pw;
 	uint32	time_t_len = sizeof (time_t);
-	char		null_pw[] = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+	uint32	lm_pw_len = 16;
+	uint32	nt_pw_len = 16;
 
 	/* do we have a valid SAM_ACCOUNT pointer? */
 	if (sampass == NULL)
@@ -242,12 +243,11 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	else workstations_len = 0;
 	
 	lm_pw = pdb_get_lanman_passwd(sampass);
-	if (!lm_pw) pdb_gethexpwd (null_pw, lm_pw);
+	if (!lm_pw) lm_pw_len = 0;
 	
 	nt_pw = pdb_get_nt_passwd(sampass);
-	if (!nt_pw) pdb_gethexpwd (null_pw, nt_pw);
+	if (!nt_pw) nt_pw_len = 0;
 		
-			
 	/* one time to get the size needed */
 	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING,
 		time_t_len, &logon_time,
@@ -270,8 +270,8 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 		munged_dial_len, munged_dial,
 		pdb_get_user_rid(sampass),
 		pdb_get_group_rid(sampass),
-		16, lm_pw,
-		16, nt_pw,
+		lm_pw_len, lm_pw,
+		nt_pw_len, nt_pw,
 		pdb_get_acct_ctrl(sampass),
 		pdb_get_unknown3(sampass),
 		pdb_get_logon_divs(sampass),
@@ -311,8 +311,8 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 		munged_dial_len, munged_dial,
 		pdb_get_user_rid(sampass),
 		pdb_get_group_rid(sampass),
-		16, lm_pw,
-		16, nt_pw,
+		lm_pw_len, lm_pw,
+		nt_pw_len, nt_pw,
 		pdb_get_acct_ctrl(sampass),
 		pdb_get_unknown3(sampass),
 		pdb_get_logon_divs(sampass),
