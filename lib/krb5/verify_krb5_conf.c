@@ -37,22 +37,66 @@
  */
 
 #include "krb5_locl.h"
+#include <getarg.h>
 RCSID("$Id$");
 
 /* verify krb5.conf */
 
+static int version_flag = 0;
+static int help_flag	= 0;
+
+static struct getargs args[] = {
+    {"version",	0,	arg_flag,	&version_flag,
+     "print version", NULL },
+    {"help",	0,	arg_flag,	&help_flag,
+     NULL, NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "[config-file]");
+    exit (ret);
+}
+
 int
 main(int argc, char **argv)
 {
-    const char *config_file;
+    const char *config_file = NULL;
     krb5_error_code ret;
     krb5_config_section *tmp_cf;
     unsigned lineno;
     char *error_message;
+    int optind = 0;
 
-    config_file = getenv("KRB5_CONFIG");
-    if (config_file == NULL)
-	config_file = krb5_config_file;
+    set_progname (argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc == 0) {
+	config_file = getenv("KRB5_CONFIG");
+	if (config_file == NULL)
+	    config_file = krb5_config_file;
+    } else if (argc == 1) {
+	config_file = argv[0];
+    } else {
+	usage (1);
+    }
     
     ret = krb5_config_parse_file_debug (config_file, &tmp_cf, &lineno,
 					&error_message);
