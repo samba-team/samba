@@ -747,7 +747,7 @@ remglob(char **argv, int doswitch)
 		return (cp);
 	}
 	if (ftemp == NULL) {
-		strcpy(temp, _PATH_TMP);
+		strcpy(temp, _PATH_TMP_XXX);
 		mktemp(temp);
 		oldverbose = verbose, verbose = 0;
 		oldhash = hash, hash = 0;

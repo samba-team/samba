@@ -37,8 +37,7 @@
 #include <paths.h>
 #endif
 
-#undef _PATH_TMP
-#define	_PATH_TMP	"/tmp/ftpXXXXXX"
+#define	_PATH_TMP_XXX	"/tmp/ftpXXXXXX"
 
 #ifndef _PATH_BSHELL
 #define _PATH_BSHELL	"/bin/sh"
