@@ -112,7 +112,6 @@ typedef struct
 	char *szPrivateDir;
 	char **szPassdbBackend;
 	char **szPreloadModules;
-	char **szSamBackend;
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szRealm;
