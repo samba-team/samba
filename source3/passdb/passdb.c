@@ -875,13 +875,11 @@ BOOL pdb_generate_sam_sid(void)
 	} 
   
 	/*
-	 * The file contains no data - we may need to generate our
-	 * own sid. Try the lp_domain_sid() first.
+	 * The file contains no data - we need to generate our
+	 * own sid.
 	 */
 	
-	if(*lp_domain_sid())
-		fstrcpy( sid_string, lp_domain_sid());
-	else {
+	{
 		/*
 		 * Generate the new sid data & turn it into a string.
 		 */

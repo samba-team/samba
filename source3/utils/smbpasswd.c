@@ -60,9 +60,9 @@ static int join_domain( char *domain, char *remote)
      domain if we are locally set up as a domain
      controller. */
 
-  if(lp_domain_controller() && strequal(lp_workgroup(), domain)) {
-    fprintf(stderr, "%s: Cannot join domain %s as we already configured as \
-domain controller for that domain.\n", prog_name, domain);
+  if(strequal(remote, global_myname)) {
+    fprintf(stderr, "%s: Cannot join domain %s as the domain controller name is our own. \
+We cannot be a domain controller for a domain and also be a domain member.\n", prog_name, domain);
     return 1;
   }
 
