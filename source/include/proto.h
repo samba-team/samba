@@ -1850,7 +1850,7 @@ int cups_printername_ok(char *name);
 /*The following definitions come from  printing/printfsp.c  */
 
 #if OLD_NTDOMAIN
-files_struct *print_fsp_open(connection_struct *conn);
+files_struct *print_fsp_open(connection_struct *conn, char *fname);
 void print_fsp_end(files_struct *fsp, BOOL normal_close);
 #endif
 

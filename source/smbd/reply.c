@@ -3179,7 +3179,7 @@ int reply_printopen(connection_struct *conn,
 	}
 
 	/* Open for exclusive use, write only. */
-	fsp = print_fsp_open(conn);
+	fsp = print_fsp_open(conn, NULL);
 
 	if (!fsp) {
 		END_PROFILE(SMBsplopen);
