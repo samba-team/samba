@@ -169,8 +169,11 @@
 #define SMB_ROUNDUP_ALLOCATION(s) ((s) ? (SMB_ROUNDUP((SMB_OFF_T)((s)+1), ((SMB_OFF_T)SMB_ROUNDUP_ALLOCATION_SIZE))) : 0 )
 
 /* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
-#define smb_buf(buf) (buf + smb_size + CVAL(buf,smb_wct)*2)
+#define smb_buf(buf) ((buf) + smb_size + CVAL(buf,smb_wct)*2)
 #define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
+
+/* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
+#define smb_bufrem(buf, p) (smb_buflen(buf)-PTR_DIFF(p, smb_buf(buf)))
 
 /* Note that chain_size must be available as an extern int to this macro. */
 #define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
