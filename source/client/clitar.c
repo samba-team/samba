@@ -1583,7 +1583,7 @@ static int read_inclusion_file(char *filename)
 Parse tar arguments. Sets tar_type, tar_excl, etc.
 ***************************************************************************/
 
-int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
+int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 {
 	int newOptind = Optind;
 	char tar_clipfl='\0';
