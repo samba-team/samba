@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan 
+ * Copyright (c) 1995-2004 Kungliga Tekniska Högskolan 
  * (Royal Institute of Technology, Stockholm, Sweden).  
  * All rights reserved.
  * 
@@ -49,10 +49,3 @@ getprogname(void)
     return __progname;
 }
 #endif /* HAVE_GETPROGNAME */
-
-const char *
-get_progname (void)
-{
-    return getprogname ();
-}
-

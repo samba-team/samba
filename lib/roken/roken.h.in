@@ -1,6 +1,6 @@
 /* -*- C -*- */
 /*
- * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -635,9 +635,6 @@ extern const char *__progname;
 
 void mini_inetd_addrinfo (struct addrinfo*);
 void mini_inetd (int port);
-
-void set_progname(char *argv0);
-const char *get_progname(void);
 
 #ifndef HAVE_LOCALTIME_R
 struct tm *

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan 
+ * Copyright (c) 1995-2004 Kungliga Tekniska Högskolan 
  * (Royal Institute of Technology, Stockholm, Sweden).  
  * All rights reserved.
  * 
@@ -59,9 +59,3 @@ setprogname(const char *argv0)
 #endif
 }
 #endif /* HAVE_SETPROGNAME */
-
-void
-set_progname(char *argv0)
-{
-    setprogname ((const char *)argv0);
-}
