@@ -931,6 +931,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	BOOL can_open = True;
 	BOOL bad_path = False;
 	NTSTATUS nt_status;
+	BOOL allow_long_path_components = (SVAL(inbuf,smb_flg2) & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
+
 	START_PROFILE(SMBsearch);
 
 	*mask = *directory = *fname = 0;
@@ -1030,7 +1032,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		if (ok) {
 			if ((dirtype&0x1F) == aVOLID) {	  
 				memcpy(p,status,21);
-				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
+				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),
+						0,aVOLID,0,!allow_long_path_components);
 				dptr_fill(p+12,dptr_num);
 				if (dptr_zero(p+12) && (status_len==0))
 					numentries = 1;
@@ -1050,7 +1053,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 					finished = !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
 					if (!finished) {
 						memcpy(p,status,21);
-						make_dir_struct(p,mask,fname,size,mode,date);
+						make_dir_struct(p,mask,fname,size, mode,date,
+								!allow_long_path_components);
 						dptr_fill(p+12,dptr_num);
 						numentries++;
 						p += DIR_STRUCT_SIZE;
@@ -1088,8 +1092,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	SCVAL(smb_buf(outbuf),0,5);
 	SSVAL(smb_buf(outbuf),1,numentries*DIR_STRUCT_SIZE);
 
-	if (Protocol >= PROTOCOL_NT1)
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
+	/* The replies here are never long name. */
+	SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) & (~FLAGS2_IS_LONG_NAME));
+	if (!allow_long_path_components) {
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) & (~FLAGS2_LONG_PATH_COMPONENTS));
+	}
 
 	/* This SMB *always* returns ASCII names. Remove the unicode bit in flags2. */
 	SSVAL(outbuf,smb_flg2, (SVAL(outbuf, smb_flg2) & (~FLAGS2_UNICODE_STRINGS)));
