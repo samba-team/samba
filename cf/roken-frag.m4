@@ -86,6 +86,7 @@ AC_CHECK_HEADERS([\
 	unistd.h				\
 	userconf.h				\
 	usersec.h				\
+	util.h					\
 	winsock.h				\
 ])
 	
@@ -224,6 +225,11 @@ AC_NEED_PROTO([
 #include <string.h>],
 vasnprintf)dnl
 fi
+
+AC_FIND_FUNC_NO_LIBS(pidfile,util,
+[#ifdef HAVE_UTIL_H
+#include <util.h>
+#endif],0)
 
 AC_BROKEN([					\
 	chown					\
