@@ -7,11 +7,14 @@ cd $1
 
 if test "$DATEDVERSION"; then
 	date=`date -u +%Y%m%d`
-	perl -i.old -p -e 's/AM_INIT_AUTOMAKE\(([^,]*),[^)]*\)/AM_INIT_AUTOMAKE\($1,'$date'\)/' configure.in
-	rm configure.in.old
+	ed -s configure.in << END
+/AC_INIT/s/AC_INIT(\([^,]*\), [^,]*, \(.*\))/AC_INIT(\1, $date, \2)/
+w
+q
+END
 fi
 
-ver=`sed -n 's/AM_INIT_AUTOMAKE(.*,\(.*\))/\1/p' configure.in`
+ver=`sed -n 's/AC_INIT([^,]*,\([^,]*\),.*/\1/p' configure.in`
 M="*   This is version $ver.   *"
 echo "$M" | sed -e 's/./*/g'
 echo "$M"
