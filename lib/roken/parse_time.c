@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -73,5 +73,5 @@ unparse_time (int t, char *s, size_t len)
 void
 print_time_table (FILE *f)
 {
-    return print_units_table (time_units, f);
+    print_units_table (time_units, f);
 }
