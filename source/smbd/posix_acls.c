@@ -3860,11 +3860,6 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 			goto check_stat;
 		}
 
-		/* If we don't have write permission this entry never matches. */
-		if (have_write == 0) {
-			continue;
-		}
-
 		switch(tagtype) {
 			case SMB_ACL_GROUP:
 			{
@@ -3874,11 +3869,17 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 				}
 				for (i = 0; i < current_user.ngroups; i++) {
 					if (current_user.groups[i] == *pgid) {
-						/* We're done now we have a gid match. */
-						ret = 1;
+						ret = have_write;
 						DEBUG(10,("check_posix_acl_group_write: file %s \
 match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
-						goto done;
+
+						/* If we don't have write permission this entry doesn't
+							terminate the enumeration of the entries. */
+						if (have_write) {
+							goto done;
+						}
+						/* But does terminate the group iteration. */
+						break;
 					}
 				}
 				break;
