@@ -33,6 +33,7 @@ extern char *OutBuffer;
 typedef struct {
   ubi_slNode msg_next;
   int com_type;
+  files_struct *fsp;
   time_t expire_time;
   int lock_num;
   char *inbuf;
@@ -52,6 +53,25 @@ static void free_blocking_lock_record(blocking_lock_record *blr)
 }
 
 /****************************************************************************
+ Get the files_struct given a particular queued SMB.
+*****************************************************************************/
+
+static files_struct *get_fsp_from_pkt(char *inbuf)
+{
+  switch(CVAL(inbuf,smb_com)) {
+  case SMBlock:
+  case SMBlockread:
+    return file_fsp(inbuf,smb_vwv0);
+  case SMBlockingX:
+    return file_fsp(inbuf,smb_vwv2);
+  default:
+    DEBUG(0,("get_fsp_from_pkt: PANIC - unknown type on blocking lock queue - exiting.!\n"));
+    exit_server("PANIC - unknown type on blocking lock queue");
+  }
+  return NULL; /* Keep compiler happy. */
+}
+
+/****************************************************************************
  Determine if this is a secondary element of a chained SMB.
   **************************************************************************/
 
@@ -67,7 +87,6 @@ static BOOL in_chained_smb(void)
 BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num)
 {
   blocking_lock_record *blr;
-  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
 
   if(in_chained_smb() ) {
     DEBUG(0,("push_blocking_lock_request: cannot queue a chained request (currently).\n"));
@@ -91,6 +110,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int 
   }
 
   blr->com_type = CVAL(inbuf,smb_com);
+  blr->fsp = get_fsp_from_pkt(inbuf);
   blr->expire_time = (lock_timeout == -1) ? (time_t)-1 : time(NULL) + (time_t)lock_timeout;
   blr->lock_num = lock_num;
   memcpy(blr->inbuf, inbuf, length);
@@ -98,8 +118,10 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int 
 
   ubi_slAddTail(&blocking_lock_queue, blr);
 
+
   DEBUG(3,("push_blocking_lock_request: lock request length=%d blocked with expiry time %d \
-for fnum = %d, name = %s\n", length, (int)blr->expire_time, fsp->fnum, fsp->fsp_name ));
+for fnum = %d, name = %s\n", length, (int)blr->expire_time, 
+        blr->fsp->fnum, blr->fsp->fsp_name ));
 
   return True;
 }
@@ -170,7 +192,7 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, int eclass, i
 static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ecode)
 {
   char *inbuf = blr->inbuf;
-  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
+  files_struct *fsp = blr->fsp;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint32 count, offset;
@@ -233,7 +255,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
   int eclass;
   uint32 ecode;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
-  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+  files_struct *fsp = blr->fsp;
 
   numtoread = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
@@ -298,7 +320,7 @@ static BOOL process_lock(blocking_lock_record *blr)
   int eclass;
   uint32 ecode;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
-  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+  files_struct *fsp = blr->fsp;
 
   count = IVAL(inbuf,smb_vwv1);
   offset = IVAL(inbuf,smb_vwv3);
@@ -348,7 +370,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 {
   char *inbuf = blr->inbuf;
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
-  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
+  files_struct *fsp = blr->fsp;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
@@ -429,25 +451,6 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
 }
 
 /****************************************************************************
- Get the files_struct given a particular queued SMB.
-*****************************************************************************/
-
-static files_struct *get_fsp_from_blr(blocking_lock_record *blr)
-{
-  switch(blr->com_type) {
-  case SMBlock:
-  case SMBlockread:
-    return file_fsp(blr->inbuf,smb_vwv0);
-  case SMBlockingX:
-    return file_fsp(blr->inbuf,smb_vwv2);
-  default:
-    DEBUG(0,("get_fsp_from_blr: PANIC - unknown type on blocking lock queue - exiting.!\n"));
-    exit_server("PANIC - unknown type on blocking lock queue");
-  }
-  return NULL; /* Keep compiler happy. */
-}
-
-/****************************************************************************
  Delete entries by fnum from the blocking lock pending queue.
 *****************************************************************************/
 
@@ -457,9 +460,11 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
   blocking_lock_record *prev = NULL;
 
   while(blr != NULL) {
-    files_struct *req_fsp = get_fsp_from_blr(blr);
+    if(blr->fsp->fnum == fsp->fnum) {
 
-    if(req_fsp == fsp) {
+      DEBUG(10,("remove_pending_lock_requests_by_fid - removing request type %d for \
+file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
+
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
@@ -481,6 +486,11 @@ void remove_pending_lock_requests_by_mid(int mid)
 
   while(blr != NULL) {
     if(SVAL(blr->inbuf,smb_mid) == mid) {
+      files_struct *fsp = blr->fsp;
+
+      DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
+file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
+
       blocking_lock_reply_error(blr,0,NT_STATUS_CANCELLED);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
@@ -511,14 +521,15 @@ void process_blocking_lock_queue(time_t t)
   while(blr != NULL) {
     connection_struct *conn = NULL;
     uint16 vuid;
-    files_struct *fsp = get_fsp_from_blr(blr);
+    files_struct *fsp = NULL;
 
     /*
-     * Ensure we don't have any old chain_fnum values
+     * Ensure we don't have any old chain_fsp values
      * sitting around....
      */
     chain_size = 0;
     file_chain_reset();
+    fsp = blr->fsp;
 
     conn = conn_find(SVAL(blr->inbuf,smb_tid));
     vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
