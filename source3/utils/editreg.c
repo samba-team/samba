@@ -491,6 +491,17 @@ typedef struct regf_struct_s {
                    (unsigned short)*((unsigned char *)(buf)+1)<<8| \
                    (unsigned short)*((unsigned char *)(buf)+0)) 
 
+#define OFF(f) ((f) + REGF_HDR_BLKSIZ + 4) 
+#define LOCN(base, f) ((base) + OFF(f))
+
+/* 
+ * All of the structures below actually have a four-byte lenght before them
+ * which always seems to be negative. The following macro retrieves that
+ * size as an integer
+ */
+
+#define BLK_SIZE(b) ((int)*(int *)(((int *)b)-1))
+
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
 
@@ -566,7 +577,7 @@ typedef struct sk_struct {
 } SK_HDR;
 
 #define OFF(f) ((f) + 0x1000 + 4) 
-#define LOCN(f) (base + OFF(f))
+#define LOCN(base, f) ((base) + OFF(f))
 
 typedef struct hash_struct {
   DWORD nk_off;
@@ -601,9 +612,6 @@ typedef struct vk_struct {
 #define REG_TYPE_BIN       3  
 #define REG_TYPE_DWORD     4
 #define REG_TYPE_MULTISZ   7
-
-#define OFF(f) ((f) + REGF_HDR_BLKSIZ + 4) 
-#define LOCN(base, f) ((base) + OFF(f))
 
 int nt_set_regf_input_file(REGF *regf, char *filename)
 {
@@ -688,16 +696,70 @@ REGF_HDR *nt_get_regf_hdr(REGF *regf)
   return (REGF_HDR *)regf->base;
 }
 
-int nt_get_hbin_hdr(REGF *regf, int hbin_offs)
+/*
+ * Validate a regf header
+ * For now, do nothing, but we should check the checksum
+ */
+int valid_regf_hdr(REGF_HDR *regf_hdr)
 {
+  if (!regf_hdr) return 0;
 
   return 1;
-} 
+}
+
+/*
+ * This routine is passed a NK_HDR pointer and retrieves the entire tree
+ * from there down. It return a REG_KEY *.
+ */
+REG_KEY *nt_get_key_tree(NK_HDR *nk_hdr, int size)
+{
+  REG_KEY *tmp;
+  int rec_size, name_len, clsname_len;
+  LF_HDR *lf_hdr;
+  VL_TYPE *vl;
+  char key_name[1024];
+
+  if (!nk_hdr) return NULL;
+
+  assert(size < 0);
+
+  name_len = SVAL(&nk_hdr->nam_len);
+  clsname_len = SVAL(&nk_hdr->clsnam_len);
+
+  /*
+   * The value of -size should be ge 
+   * (sizeof(NK_HDR) - 1 + name_len + clsname_len)
+   * The -1 accounts for the fact that we included the first byte of 
+   * the name in the structure.
+   */
+
+  if (-size < (sizeof(NK_HDR) - 1 + name_len + clsname_len)) {
+    fprintf(stderr, "Incorrect NK_HDR size: %d, %0X\n", -size, nk_hdr);
+    fprintf(stderr, "Sizeof NK_HDR: %d, name_len %d, clsname_len %d\n",
+	    sizeof(NK_HDR), name_len, clsname_len);
+    return NULL;
+  }
+
+  fprintf(stderr, "NK HDR: Name len: %d, class name len: %d\n", name_len,
+	  clsname_len);
+
+  /* Fish out the key name and process the LF list */
+
+  assert(name_len < sizeof(key_name));
+
+  strncpy(key_name, nk_hdr->key_nam, name_len);
+
+  fprintf(stderr, "Key name: %s\n", key_name);
+
+}
 
 int nt_load_registry(REGF *regf)
 {
   REGF_HDR *regf_hdr;
-  unsigned int regf_id;
+  unsigned int regf_id, hbin_id;
+  unsigned int hbin_off;
+  HBIN_HDR *hbin_hdr;
+  NK_HDR *first_key;
 
   /* Get the header */
 
@@ -713,11 +775,45 @@ int nt_load_registry(REGF *regf)
     return -1;
   }
 
+  /*
+   * Validate the header ...
+   */
+  if (!valid_regf_hdr(regf_hdr)) {
+    fprintf(stderr, "Registry file header does not validate: %s\n",
+	    regf->regfile_name);
+    return -1;
+  }
+
   /* Update the last mod date, and then go get the first NK record and on */
 
   TTTONTTIME(regf, IVAL(&regf_hdr->tim1), IVAL(&regf_hdr->tim2));
 
-  
+  /* 
+   * The hbin hdr seems to be just uninteresting garbage. Check that
+   * it is there, but that is all.
+   */
+
+  hbin_hdr = (HBIN_HDR *)(regf->base + REGF_HDR_BLKSIZ);
+
+  if ((hbin_id = IVAL(&hbin_hdr->HBIN_ID)) != REG_HBIN_ID) {
+    fprintf(stderr, "Unrecognized registry hbin hdr ID: %0X, %s\n", 
+	    hbin_id, regf->regfile_name);
+    return -1;
+  } 
+
+  /*
+   * Get a pointer to the first key from the hreg_hdr
+   */
+
+  first_key = (NK_HDR *)LOCN(regf->base, IVAL(&regf_hdr->first_key));
+
+  /*
+   * Now, get the registry tree by processing that NK recursively
+   */
+
+  regf->root = nt_get_key_tree(first_key, BLK_SIZE(first_key));
+
+  assert(regf->root != NULL);
 
   return 1;
 }
@@ -758,4 +854,10 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Could not load registry: %s\n", argv[1]);
     exit(4);
   }
+
+  /*
+   * At this point, we should have a registry in memory and should be able
+   * to iterate over it.
+   */
+
 }
