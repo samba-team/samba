@@ -397,9 +397,19 @@ struct poptOption popt_common_credentials[] = {
 	POPT_TABLEEND
 };
 
+void cmdline_set_username(const char *name)
+{
+	pstrcpy(cmdline_auth_info.username, name);
+}
+
 const char *cmdline_get_username(void)
 {
 	return cmdline_auth_info.username;
+}
+
+void cmdline_set_userdomain(const char *domain)
+{
+	pstrcpy(cmdline_auth_info.domain, domain);
 }
 
 const char *cmdline_get_userdomain(void)
@@ -430,4 +440,20 @@ const char *cmdline_get_userpassword(void)
 			cmdline_get_username());
 
 	return getpass(prompt);
+}
+
+void cmdline_set_userpassword(const char *pass)
+{
+	cmdline_auth_info.got_pass = True;
+	pstrcpy(cmdline_auth_info.password, pass);
+}
+
+void cmdline_set_use_kerberos(BOOL use_kerberos)
+{
+	cmdline_auth_info.use_kerberos = use_kerberos;
+}
+
+BOOL cmdline_get_use_kerberos(void)
+{
+	return cmdline_auth_info.use_kerberos;
 }
