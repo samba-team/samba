@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -75,7 +75,8 @@ get_cred(kafs_data *data, const char *name, const char *inst,
 }
 
 static krb5_error_code
-afslog_uid_int(kafs_data *data, const char *cell, uid_t uid)
+afslog_uid_int(kafs_data *data, const char *cell, uid_t uid,
+	       const char *homedir)
 {
     krb5_error_code ret;
     CREDENTIALS c;
@@ -83,7 +84,7 @@ afslog_uid_int(kafs_data *data, const char *cell, uid_t uid)
     struct krb5_kafs_data *d = data->data;
     
     if (cell == 0 || cell[0] == 0)
-	return _kafs_afslog_all_local_cells (data, uid);
+	return _kafs_afslog_all_local_cells (data, uid, homedir);
 
     ret = krb5_get_default_realm(d->context, &lrealm);
     if(ret || (d->realm && strcmp(d->realm, lrealm) == 0)){
