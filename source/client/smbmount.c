@@ -490,7 +490,7 @@ static void usage(void)
 
 This command is designed to be run from within /bin/mount by giving
 the option '-t smb'. For example:
-  mount -t smb -o user=tridge,passwd=foobar //fjall/test /data/test
+  mount -t smb -o username=tridge,password=foobar //fjall/test /data/test
 ");
 }
 

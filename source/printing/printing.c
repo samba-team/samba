@@ -51,11 +51,10 @@ print file name. Return NULL on error, else the passed buffer pointer.
 ****************************************************************************/
 static char *build_print_command(connection_struct *conn,
 				 char *command, 
-				 char *syscmd, char *filename1)
+				 char *syscmd, char *filename)
 {
 	int snum = SNUM(conn);
 	char *tstr;
-	pstring filename;
   
 	/* get the print command for the service. */
 	tstr = command;
@@ -73,13 +72,8 @@ static char *build_print_command(connection_struct *conn,
 		DEBUG(2,("WARNING! No placeholder for the filename in the print command for service %s!\n", SERVICE(snum)));
 	}
   
-	if (strstr(syscmd,"%s")) {
-		pstrcpy(filename,filename1);
-    
-		pstring_sub(syscmd, "%s", filename);
-	}
-  
-	pstring_sub(syscmd, "%f", filename1);
+	pstring_sub(syscmd, "%s", filename);
+	pstring_sub(syscmd, "%f", filename);
   
 	/* Does the service have a printername? If not, make a fake
            and empty */
