@@ -400,7 +400,7 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align)
 	RW_SVAL(io, q, rpc->frag_len, 0); q += 2;
 	RW_SVAL(io, q, rpc->auth_len, 0); q += 2;
 	RW_IVAL(io, q, rpc->call_id, 0); q += 4;
-	RW_SVAL(io, q, rpc->alloc_hint, 0); q += 2;
+	RW_IVAL(io, q, rpc->alloc_hint, 0); q += 4;
 	RW_CVAL(io, q, rpc->context_id, 0); q++;
 	RW_CVAL(io, q, rpc->reserved, 0); q++;
 
