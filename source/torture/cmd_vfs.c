@@ -490,8 +490,8 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	int ret;
 	const char *user;
 	const char *group;
-	struct passwd *pwd;
-	struct group *grp;
+	struct passwd *pwd = NULL;
+	struct group *grp = NULL;
 	SMB_STRUCT_STAT st;
 
 	if (argc != 2) {
@@ -533,6 +533,7 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
 	printf("  Change: %s", ctime(&(st.st_ctime)));
+
 	SAFE_FREE(pwd);
 	SAFE_FREE(grp);
 	return NT_STATUS_OK;
@@ -544,8 +545,8 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	int fd;
 	const char *user;
 	const char *group;
-	struct passwd *pwd;
-	struct group *grp;
+	struct passwd *pwd = NULL;
+	struct group *grp = NULL;
 	SMB_STRUCT_STAT st;
 
 	if (argc != 2) {
@@ -596,6 +597,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
 	printf("  Change: %s", ctime(&(st.st_ctime)));
+
 	SAFE_FREE(pwd);
 	SAFE_FREE(grp);
 	return NT_STATUS_OK;
@@ -606,8 +608,8 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 {
 	const char *user;
 	const char *group;
-	struct passwd *pwd;
-	struct group *grp;
+	struct passwd *pwd = NULL;
+	struct group *grp = NULL;
 	SMB_STRUCT_STAT st;
 
 	if (argc != 2) {
@@ -647,6 +649,7 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
 	printf("  Change: %s", ctime(&(st.st_ctime)));
+	
 	SAFE_FREE(pwd);
 	SAFE_FREE(grp);
 	return NT_STATUS_OK;
