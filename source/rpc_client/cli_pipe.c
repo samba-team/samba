@@ -307,6 +307,26 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 		prs_struct auth_verf;
 
 		if (auth_len != RPC_AUTH_NETSEC_CHK_LEN) {
+
+			if ( (auth_len == 12) &&
+			     (cli->auth_info.seq_num == 0) ) {
+
+				/* This is the reply to our bind. Ok,
+                                   the sequence number can wrap
+                                   around. But this only means that
+                                   every 4 billion request we
+                                   misdetect a wrong length in a
+                                   reply. This is an error condition
+                                   which will lead to failure anyway
+                                   later.
+
+				   The reply contains a
+				   RPC_AUTH_VERIFIER with no content
+				   (12 bytes), so ignore it.
+				*/
+				return True;
+			}
+
 			DEBUG(0,("rpc_auth_pipe: wrong schannel auth len %d\n", auth_len));
 			return False;
 		}
