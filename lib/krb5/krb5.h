@@ -141,6 +141,8 @@ typedef struct krb5_context_data *krb5_context;
 #ifdef USE_ASN1_PRINCIPAL
 typedef Realm krb5_realm;
 typedef Principal krb5_principal_data;
+typedef struct Principal *krb5_principal;
+typedef const struct Principal *krb5_const_principal;
 #else
 typedef krb5_data krb5_realm;
 typedef struct krb5_principal_data{
@@ -150,9 +152,9 @@ typedef struct krb5_principal_data{
   int ncomp;
 }krb5_principal_data;
 
-#endif
 typedef krb5_principal_data *krb5_principal;
 typedef const krb5_principal_data *krb5_const_principal;
+#endif
 
 
 typedef time_t krb5_time;
@@ -454,18 +456,18 @@ krb5_free_authenticator(krb5_context,
 			krb5_authenticator *authenticator);
 
 krb5_error_code
-krb5_auth_initvector(krb5_context context,
+krb5_auth_con_initivector(krb5_context context,
 		     krb5_auth_context auth_context);
 
 krb5_error_code
-krb5_set_initvector(krb5_context context,
-		    krb5_auth_context auth_context,
-		    krb5_pointer ivector);
+krb5_auth_con_setivector(krb5_context context,
+			 krb5_auth_context auth_context,
+			 krb5_pointer ivector);
 
 krb5_error_code
-krb5_set_rcache(krb5_context context,
-		krb5_auth_context auth_context,
-		krb5_rcache rcache);
+krb5_auth_con_setrcache(krb5_context context,
+			krb5_auth_context auth_context,
+			krb5_rcache rcache);
 
 krb5_error_code
 krb5_get_cred_from_kdc(krb5_context,
