@@ -631,7 +631,7 @@ static uint_t gen_alloc_size(void)
 /*
   generate an ea_struct
 */
-struct ea_struct gen_ea_struct(void)
+static struct ea_struct gen_ea_struct(void)
 {
 	struct ea_struct ea;
 	const char *names[] = {"EAONE", 

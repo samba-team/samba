@@ -21,10 +21,6 @@
 
 #include "includes.h"
 
-#ifndef MAXUNI
-#define MAXUNI 1024
-#endif
-
 /* these 3 tables define the unicode case handling.  They are loaded
    at startup either via mmap() or read() from the lib directory */
 static smb_ucs2_t *upcase_table;
@@ -162,74 +158,10 @@ void init_valid_table(void)
 }
 
 
-
-/*******************************************************************
- Write a string in (little-endian) unicode format. src is in
- the current DOS codepage. len is the length in bytes of the
- string pointed to by dst.
-
- if null_terminate is True then null terminate the packet (adds 2 bytes)
-
- the return value is the length in bytes consumed by the string, including the
- null termination if applied
-********************************************************************/
-
-size_t dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
-{
-	return push_ucs2(NULL, dst, src, len, 
-			 STR_UNICODE|STR_NOALIGN | (null_terminate?STR_TERMINATE:0));
-}
-
-
-/*******************************************************************
- Skip past a unicode string, but not more than len. Always move
- past a terminating zero if found.
-********************************************************************/
-
-char *skip_unibuf(char *src, size_t len)
-{
-    char *srcend = src + len;
-
-    while (src < srcend && SVAL(src,0))
-        src += 2;
-
-    if(!SVAL(src,0))
-        src += 2;
-
-    return src;
-}
-
-/* Copy a string from little-endian or big-endian unicode source (depending
- * on flags) to internal samba format destination
- */ 
-int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
-{
-	if (!src) return 0;
-	if(dest_len==-1) dest_len=MAXUNI-3;
-	return pull_ucs2(NULL, dest, src, dest_len, src_len, flags|STR_UNICODE|STR_NOALIGN);
-}
-
-/* Copy a string from a unistr2 source to internal samba format
-   destination.  Use this instead of direct calls to rpcstr_pull() to avoid
-   having to determine whether the source string is null terminated. */
-
-int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
-{
-        return pull_ucs2(NULL, dest, src->buffer, sizeof(fstring),
-                         src->uni_str_len * 2, 0);
-}
-
-/* Converts a string from internal samba format to unicode
- */ 
-int rpcstr_push(void* dest, const char *src, int dest_len, int flags)
-{
-	return push_ucs2(NULL, dest, src, dest_len, flags|STR_UNICODE|STR_NOALIGN);
-}
-
 /*******************************************************************
  Convert a (little-endian) UNISTR2 structure to an ASCII string
 ********************************************************************/
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
+static void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 {
 	if (str == NULL) {
 		*dest='\0';
@@ -267,22 +199,10 @@ char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
 
 
 /*******************************************************************
-Return a number stored in a buffer
-********************************************************************/
-
-uint32 buffer2_to_uint32(BUFFER2 *str)
-{
-	if (str->buf_len == 4)
-		return IVAL(str->buffer, 0);
-	else
-		return 0;
-}
-
-/*******************************************************************
  Convert a wchar to upper case.
 ********************************************************************/
 
-smb_ucs2_t toupper_w(smb_ucs2_t val)
+static smb_ucs2_t toupper_w(smb_ucs2_t val)
 {
 	return upcase_table[SVAL(&val,0)];
 }
@@ -291,7 +211,7 @@ smb_ucs2_t toupper_w(smb_ucs2_t val)
  Convert a wchar to lower case.
 ********************************************************************/
 
-smb_ucs2_t tolower_w( smb_ucs2_t val )
+static smb_ucs2_t tolower_w( smb_ucs2_t val )
 {
 	return lowcase_table[SVAL(&val,0)];
 
@@ -313,14 +233,6 @@ BOOL isupper_w(smb_ucs2_t c)
 	return lowcase_table[SVAL(&c,0)] != c;
 }
 
-
-/*******************************************************************
-determine if a character is valid in a 8.3 name
-********************************************************************/
-BOOL isvalid83_w(smb_ucs2_t c)
-{
-	return valid_table[SVAL(&c,0)] != 0;
-}
 
 /*******************************************************************
  Count the number of characters in a smb_ucs2_t string.
@@ -377,6 +289,14 @@ const smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	return NULL;
 }
 
+static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
+{
+	size_t n = 0;
+	while ((n < len) && *b && *a == *b) { a++; b++; n++;}
+	return (len - n)?(*a - *b):0;	
+}
+
+
 /*******************************************************************
 wide strstr()
 ********************************************************************/
@@ -431,22 +351,6 @@ BOOL strupper_w(smb_ucs2_t *s)
 	return ret;
 }
 
-int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
-{
-	while (*b && *a == *b) { a++; b++; }
-	return (*a - *b);
-	/* warning: if *a != *b and both are not 0 we retrun a random
-		greater or lesser than 0 number not realted to which
-		string is longer */
-}
-
-int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
-{
-	size_t n = 0;
-	while ((n < len) && *b && *a == *b) { a++; b++; n++;}
-	return (len - n)?(*a - *b):0;	
-}
-
 /*******************************************************************
 case insensitive string comparison
 ********************************************************************/
@@ -454,64 +358,6 @@ int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
 {
 	while (*b && toupper_w(*a) == toupper_w(*b)) { a++; b++; }
 	return (tolower_w(*a) - tolower_w(*b));
-}
-
-/*******************************************************************
-case insensitive string comparison, lenght limited
-********************************************************************/
-int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
-{
-	size_t n = 0;
-	while ((n < len) && *b && (toupper_w(*a) == toupper_w(*b))) { a++; b++; n++; }
-	return (len - n)?(tolower_w(*a) - tolower_w(*b)):0;
-}
-
-/*******************************************************************
-  compare 2 strings 
-********************************************************************/
-BOOL strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
-{
-	if (s1 == s2) return(True);
-	if (!s1 || !s2) return(False);
-  
-	return(strcasecmp_w(s1,s2)==0);
-}
-
-/*******************************************************************
-  compare 2 strings up to and including the nth char.
-  ******************************************************************/
-BOOL strnequal_w(const smb_ucs2_t *s1,const smb_ucs2_t *s2,size_t n)
-{
-  if (s1 == s2) return(True);
-  if (!s1 || !s2 || !n) return(False);
-  
-  return(strncasecmp_w(s1,s2,n)==0);
-}
-
-/*******************************************************************
-duplicate string
-********************************************************************/
-smb_ucs2_t *strdup_w(const smb_ucs2_t *src)
-{
-	return strndup_w(src, 0);
-}
-
-/* if len == 0 then duplicate the whole string */
-smb_ucs2_t *strndup_w(const smb_ucs2_t *src, size_t len)
-{
-	smb_ucs2_t *dest;
-	
-	if (!len) len = strlen_w(src);
-	dest = (smb_ucs2_t *)malloc((len + 1) * sizeof(smb_ucs2_t));
-	if (!dest) {
-		DEBUG(0,("strdup_w: out of memory!\n"));
-		return NULL;
-	}
-
-	memcpy(dest, src, len * sizeof(smb_ucs2_t));
-	dest[len] = 0;
-	
-	return dest;
 }
 
 /*******************************************************************
@@ -534,43 +380,6 @@ smb_ucs2_t *strncpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
 
 
 /*******************************************************************
-append a string of len bytes and add a terminator
-********************************************************************/
-
-smb_ucs2_t *strncat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
-{	
-	size_t start;
-	size_t len;	
-	
-	if (!dest || !src) return NULL;
-	
-	start = strlen_w(dest);
-	len = strnlen_w(src, max);
-
-	memcpy(&dest[start], src, len*sizeof(smb_ucs2_t));			
-	dest[start+len] = 0;
-	
-	return dest;
-}
-
-smb_ucs2_t *strcat_w(smb_ucs2_t *dest, const smb_ucs2_t *src)
-{	
-	size_t start;
-	size_t len;	
-	
-	if (!dest || !src) return NULL;
-	
-	start = strlen_w(dest);
-	len = strlen_w(src);
-
-	memcpy(&dest[start], src, len*sizeof(smb_ucs2_t));			
-	dest[start+len] = 0;
-	
-	return dest;
-}
-
-
-/*******************************************************************
 replace any occurence of oldc with newc in unicode string
 ********************************************************************/
 
@@ -581,40 +390,6 @@ void string_replace_w(smb_ucs2_t *s, smb_ucs2_t oldc, smb_ucs2_t newc)
 	}
 }
 
-/*******************************************************************
-trim unicode string
-********************************************************************/
-
-BOOL trim_string_w(smb_ucs2_t *s, const smb_ucs2_t *front,
-				  const smb_ucs2_t *back)
-{
-	BOOL ret = False;
-	size_t len, front_len, back_len;
-
-	if (!s || !*s) return False;
-
-	len = strlen_w(s);
-
-	if (front && *front) {
-		front_len = strlen_w(front);
-		while (len && strncmp_w(s, front, front_len) == 0) {
-			memmove(s, (s + front_len), (len - front_len + 1) * sizeof(smb_ucs2_t));
-			len -= front_len;
-			ret = True;
-		}
-	}
-	
-	if (back && *back) {
-		back_len = strlen_w(back);
-		while (len && strncmp_w((s + (len - back_len)), back, back_len) == 0) {
-			s[len - back_len] = 0;
-			len -= back_len;
-			ret = True;
-		}
-	}
-
-	return ret;
-}
 
 /*
   The *_wa() functions take a combination of 7 bit ascii
@@ -640,13 +415,6 @@ int strcmp_wa(const smb_ucs2_t *a, const char *b)
 	return (*a - UCS2_CHAR(*b));
 }
 
-int strncmp_wa(const smb_ucs2_t *a, const char *b, size_t len)
-{
-	size_t n = 0;
-	while ((n < len) && *b && *a == UCS2_CHAR(*b)) { a++; b++; n++;}
-	return (len - n)?(*a - UCS2_CHAR(*b)):0;
-}
-
 const smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
 {
 	while (*s != 0) {
@@ -658,140 +426,4 @@ const smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
 	}
 	return NULL;
 }
-
-const smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
-{
-	const smb_ucs2_t *r;
-	size_t inslen;
-
-	if (!s || !*s || !ins || !*ins) return NULL;
-	inslen = strlen(ins);
-	r = s;
-	while ((r = strchr_w(r, UCS2_CHAR(*ins)))) {
-		if (strncmp_wa(r, ins, inslen) == 0) return r;
-		r++;
-	}
-	return NULL;
-}
-
-/*******************************************************************
-copy a string with max len
-********************************************************************/
-
-smb_ucs2_t *strncpy_wa(smb_ucs2_t *dest, const char *src, const size_t max)
-{
-	smb_ucs2_t *ucs2_src;
-
-	if (!dest || !src) return NULL;
-	if (!(ucs2_src = acnv_uxu2(src)))
-		return NULL;
-	
-	strncpy_w(dest, ucs2_src, max);
-	SAFE_FREE(ucs2_src);
-	return dest;
-}
-
-/*******************************************************************
-convert and duplicate an ascii string
-********************************************************************/
-smb_ucs2_t *strdup_wa(const char *src)
-{
-	return strndup_wa(src, 0);
-}
-
-/* if len == 0 then duplicate the whole string */
-smb_ucs2_t *strndup_wa(const char *src, size_t len)
-{
-	smb_ucs2_t *dest, *s;
-
-	s = acnv_dosu2(src);	
-	if (!len) len = strlen_w(s);
-	dest = (smb_ucs2_t *)malloc((len + 1) * sizeof(smb_ucs2_t));
-	if (!dest) {
-		DEBUG(0,("strdup_w: out of memory!\n"));
-		SAFE_FREE(s);
-		return NULL;
-	}
-
-	memcpy(dest, src, len * sizeof(smb_ucs2_t));
-	dest[len] = 0;
-
-	SAFE_FREE(s);
-	return dest;
-}
-
-/*******************************************************************
-append a string of len bytes and add a terminator
-********************************************************************/
-
-smb_ucs2_t *strncat_wa(smb_ucs2_t *dest, const char *src, const size_t max)
-{
-	smb_ucs2_t *ucs2_src;
-
-	if (!dest || !src) return NULL;
-	if (!(ucs2_src = acnv_uxu2(src)))
-		return NULL;
-	
-	strncat_w(dest, ucs2_src, max);
-	SAFE_FREE(ucs2_src);
-	return dest;
-}
-
-smb_ucs2_t *strcat_wa(smb_ucs2_t *dest, const char *src)
-{	
-	smb_ucs2_t *ucs2_src;
-	
-	if (!dest || !src) return NULL;
-	if (!(ucs2_src = acnv_uxu2(src)))
-		return NULL;
-	
-	strcat_w(dest, ucs2_src);
-	SAFE_FREE(ucs2_src);
-	return dest;
-}
-
-BOOL trim_string_wa(smb_ucs2_t *s, const char *front,
-				  const char *back)
-{
-	wpstring f, b;
-
-	if (front) push_ucs2(NULL, f, front, sizeof(wpstring) - 1, STR_TERMINATE);
-	else *f = 0;
-	if (back) push_ucs2(NULL, b, back, sizeof(wpstring) - 1, STR_TERMINATE);
-	else *b = 0;
-	return trim_string_w(s, f, b);
-}
-
-/*******************************************************************
- returns the length in number of wide characters
- ******************************************************************/
-int unistrlen(uint16 *s)
-{
-	int len;
-
-	if (!s)
-		return -1;
-
-	for (len=0; *s; s++,len++);
-
-	return len;
-}
-
-/*******************************************************************
- Strcpy for unicode strings.  returns length (in num of wide chars)
-********************************************************************/
-
-int unistrcpy(uint16 *dst, uint16 *src)
-{
-	int num_wchars = 0;
-
-	while (*src) {
-		*dst++ = *src++;
-		num_wchars++;
-	}
-	*dst = 0;
-
-	return num_wchars;
-}
-
 

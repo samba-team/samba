@@ -70,34 +70,3 @@ void uuid_generate_random(GUID *out)
 	uu.time_hi_and_version = (uu.time_hi_and_version & 0x0FFF) | 0x4000;
 	uuid_pack(&uu, out);
 }
-
-char *guid_to_string(const GUID in)
-{
-	struct uuid uu;
-	char *out;
-
-	uuid_unpack(in, &uu);
-	
-	asprintf(&out, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-		 uu.time_low, uu.time_mid, uu.time_hi_and_version,
-		 uu.clock_seq[0], uu.clock_seq[1],
-		 uu.node[0], uu.node[1], uu.node[2], 
-		 uu.node[3], uu.node[4], uu.node[5]);
-
-	return out;
-}
-
-const char *uuid_string(TALLOC_CTX *mem_ctx, const GUID in)
-{
-	struct uuid uu;
-	char *out;
-
-	uuid_unpack(in, &uu);
-	out = talloc_asprintf(mem_ctx, 
-		 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-		 uu.time_low, uu.time_mid, uu.time_hi_and_version,
-		 uu.clock_seq[0], uu.clock_seq[1],
-		 uu.node[0], uu.node[1], uu.node[2], 
-		 uu.node[3], uu.node[4], uu.node[5]);
-	return out;
-}
