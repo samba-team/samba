@@ -353,7 +353,7 @@ sub _do_depend_libraries($)
 		#
 		# if it's not a library skip it
 		#
-		if ($CTX->{INPUT}{LIBRARIES}{$key}{BUILD} ne "SHARED" ) {
+		if ($CTX->{INPUT}{LIBRARIES}{$key}{ENABLE} ne "YES" ) {
 			next;
 		}
 

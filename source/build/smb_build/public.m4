@@ -67,9 +67,12 @@ dnl		)
 dnl
 dnl SMB_LIBRARY(
 dnl		1:name,
-dnl		2:obj_files,
-dnl		3:required_libs,
-dnl		4:required_subsystems
+dnl		2:major_version
+dnl		3:minor_version
+dnl		4:release_version
+dnl		5:obj_files,
+dnl		6:required_libs,
+dnl		7:required_subsystems
 dnl		)
 dnl
 dnl SMB_LIBRARY_MK(
@@ -354,9 +357,12 @@ AC_DEFUN([SMB_LIBRARY_ENABLE],
 
 dnl SMB_LIBRARY(
 dnl		1:name,
-dnl		2:obj_files,
-dnl		3:required_libs,
-dnl		4:required_subsystems
+dnl		2:major_version
+dnl		3:minor_version
+dnl		4:release_version
+dnl		5:obj_files,
+dnl		6:required_libs,
+dnl		7:required_subsystems
 dnl		)
 AC_DEFUN([SMB_LIBRARY],
 [
@@ -369,9 +375,12 @@ SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{NAME} = \"$1\";
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{OBJ_FILES}} = str2array(\"$2\");
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_LIBRARIES}} = str2array(\"$3\");
-@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_SUBSYSTEMS}} = str2array(\"$4\");
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MAJOR_VERSION} = \"$2\";
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MINOR_VERSION} = \"$3\";
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{RELEASE_VERSION} = \"$4\";
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{OBJ_FILES}} = str2array(\"$5\");
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_LIBRARIES}} = str2array(\"$6\");
+@{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_SUBSYSTEMS}} = str2array(\"$7\");
 #
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{ENABLE} = \"$[SMB_LIBRARY_ENABLE_][$1]\";
 # End Library $1
@@ -387,13 +396,16 @@ AC_DEFUN([SMB_LIBRARY_MK],
 [
 
 	if test -z "$[SMB_LIBRARY_ENABLE_][$1]"; then
-		[SMB_LIBRARY_ENABLE_][$1]="YES";
+		[SMB_LIBRARY_ENABLE_][$1]="NO";
 	fi
 
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 \$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{NAME} = \"$1\";
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MAJOR_VERSION} = library_get_var(\"$2\", \"$1\", \"MAJOR_VERSION\");
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{MINOR_VERSION} = library_get_var(\"$2\", \"$1\", \"MINOR_VERSION\");
+\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{RELEASE_VERSION} = library_get_var(\"$2\", \"$1\", \"RELEASE_VERSION\");
 @{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{OBJ_FILES}} = library_get_array(\"$2\", \"$1\", \"OBJ_FILES\");
 @{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_LIBRARIES}} = library_get_array(\"$2\", \"$1\", \"REQUIRED_LIBRARIES\");
 @{\$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$1}{REQUIRED_SUBSYSTEMS}} = library_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\");

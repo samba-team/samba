@@ -383,13 +383,18 @@ sub _prepare_library_obj_list($)
 #
 # $library_ctx -		the library context
 #
-# $library_ctx->{LIBRARY} -		the library name
-# $library_ctx->{STATIC_LIBRARY} -	the static library name
-# $library_ctx->{SHARED_LIBRARY} -	the shared library name
+# $library_ctx->{NAME} -		the library name
+#
 # $library_ctx->{DEPEND_LIST} -		the list of rules on which this library depends
+#
+# $library_ctx->{STATIC_LIBRARY_NAME} -	the static library name
 # $library_ctx->{STATIC_LINK_LIST} -	the list of objectfiles	which sould be linked
 #					to this static library
 # $library_ctx->{STATIC_LINK_FLAGS} -	linker flags used by this static library
+#
+# $library_ctx->{SHARED_LIBRARY_NAME} -	the shared library name
+# $library_ctx->{SHARED_LIBRARY_REALNAME} -	the shared library real name
+# $library_ctx->{SHARED_LIBRARY_SONAME} - the shared library soname
 # $library_ctx->{SHARED_LINK_LIST} -	the list of objectfiles and external libraries
 #					which sould be linked to this shared library
 # $library_ctx->{SHARED_LINK_FLAGS} -	linker flags used by this shared library
@@ -403,6 +408,7 @@ sub _prepare_library_rule($)
 	my $tmpstflag;
 	my $tmpshlink;
 	my $tmpshflag;
+	my $tmprules;
 	my $output;
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
@@ -413,9 +419,11 @@ sub _prepare_library_rule($)
 	$tmpshlink = array2oneperline($ctx->{SHARED_LINK_LIST});
 	$tmpshflag = array2oneperline($ctx->{SHARED_LINK_FLAGS});
 
+	$tmprules = "bin/$ctx->{STATIC_LIBRARY_NAME}";
+
 	$output = "
 ###################################
-# Start Library $ctx->{LIBRARY}
+# Start Library $ctx->{NAME}
 #
 LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 #
@@ -425,24 +433,37 @@ LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS =$tmpstflag
 LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
 LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
 #
-# Static $ctx->{STATIC_LIBRARY}
-bin/$ctx->{STATIC_LIBRARY}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+# Static $ctx->{STATIC_LIBRARY_NAME}
+bin/$ctx->{STATIC_LIBRARY_NAME}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(STLD) \$(STLD_FLAGS) \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS) \\
-		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)";
+		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
+";
 
-	if (defined($ctx->{SHARED_LIBRARY})) {
+	if (defined($ctx->{SHARED_LIBRARY_NAME})) {
 		$output .= "
-# Shared $ctx->{SHARED_LIBRARY}
-bin/$ctx->{SHARED_LIBRARY}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+# Shared $ctx->{SHARED_LIBRARY_REALNAME}
+bin/$ctx->{SHARED_LIBRARY_REALNAME}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
-		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST)";
+		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST)
+# Symlink $ctx->{SHARED_LIBRARY_SONAME}
+bin/$ctx->{SHARED_LIBRARY_SONAME}: bin/$ctx->{SHARED_LIBRARY_REALNAME} bin/.dummy
+	\@echo Symlink \$\@
+	\@ln -sf $ctx->{SHARED_LIBRARY_REALNAME} \$\@
+# Symlink $ctx->{SHARED_LIBRARY_NAME}
+bin/$ctx->{SHARED_LIBRARY_NAME}: bin/$ctx->{SHARED_LIBRARY_SONAME} bin/.dummy
+	\@echo Symlink \$\@
+	\@ln -sf $ctx->{SHARED_LIBRARY_SONAME} \$\@
+";
+		$tmprules .= " bin/$ctx->{SHARED_LIBRARY_NAME}"
 	}
-$output .= "
-# End Library $ctx->{LIBRARY}
+
+	$output .= "
+$ctx->{NAME}: $tmprules
+# End Library $ctx->{NAME}
 ###################################
 ";
 

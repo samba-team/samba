@@ -38,6 +38,17 @@ ADD_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start LIBRARY LIBLDB
+[LIBRARY::libldb]
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
+REQUIRED_SUBSYSTEMS = LIBLDB
+#
+# End LIBRARY LIBLDB
+################################################
+
+################################################
 # Start BINARY ldbadd
 [BINARY::ldbadd]
 OBJ_FILES= \

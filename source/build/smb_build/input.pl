@@ -6,6 +6,17 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+sub strtrim($)
+{
+	my $str = shift;
+	my @ar = ();
+
+	$str =~ s/^[\t\n ]*//g;
+
+	$str =~ s/[\t\n ]*$//g;
+
+	return $str;
+}
 
 sub str2array($)
 {
