@@ -155,17 +155,6 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	struct message_rec rec;
 	void *p;
 
-	/*
-	 * Do an early check for process exists - saves adding into a tdb
-	 * and deleting again if the target is not present. JRA.
-	 */
-
-	if (!process_exists(pid)) {
-		DEBUG(2,("message_send_pid: pid %d doesn't exist\n", (int)pid));
-		tdb_delete(tdb, message_key_pid(pid));
-		return False;
-	}
-
 	rec.msg_version = MESSAGE_VERSION;
 	rec.msg_type = msg_type;
 	rec.dest = pid;
