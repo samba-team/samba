@@ -842,6 +842,9 @@
 /* Define if you have the <lastlog.h> header file.  */
 #undef HAVE_LASTLOG_H
 
+/* Define if you have the <lber.h> header file.  */
+#undef HAVE_LBER_H
+
 /* Define if you have the <ldap.h> header file.  */
 #undef HAVE_LDAP_H
 
