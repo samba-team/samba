@@ -40,6 +40,10 @@
 
 RCSID("$Id$");
 
+#ifdef UTMPX_DOES_UTMP_LOGGING
+void utmp_login(char *tty, char *username, char *hostname) { return; }
+#else
+
 /* update utmp and wtmp - the BSD way */
 
 void utmp_login(char *tty, char *username, char *hostname)
@@ -119,3 +123,4 @@ void utmp_login(char *tty, char *username, char *hostname)
 	close(fd);
     }
 }
+#endif /* !UTMPX_DOES_UTMP_LOGGING */
