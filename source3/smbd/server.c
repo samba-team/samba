@@ -4356,7 +4356,6 @@ force write permissions on print services.
 #define TIME_INIT (1<<2)
 #define CAN_IPC (1<<3)
 #define AS_GUEST (1<<5)
-#define DONT_CHECK_ONLINE (1<<6)
 
 
 /* 
@@ -4378,15 +4377,15 @@ struct smb_message_struct
 
     /* CORE PROTOCOL */
 
-   {SMBnegprot,"SMBnegprot",reply_negprot,DONT_CHECK_ONLINE},
-   {SMBtcon,"SMBtcon",reply_tcon,DONT_CHECK_ONLINE},
-   {SMBtdis,"SMBtdis",reply_tdis,DONT_CHECK_ONLINE},
-   {SMBexit,"SMBexit",reply_exit,DONT_CHECK_ONLINE},
-   {SMBioctl,"SMBioctl",reply_ioctl,DONT_CHECK_ONLINE},
-   {SMBecho,"SMBecho",reply_echo,DONT_CHECK_ONLINE},
-   {SMBsesssetupX,"SMBsesssetupX",reply_sesssetup_and_X,DONT_CHECK_ONLINE},
-   {SMBtconX,"SMBtconX",reply_tcon_and_X,DONT_CHECK_ONLINE},
-   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, DONT_CHECK_ONLINE}, /* ulogoff doesn't give a valid TID */
+   {SMBnegprot,"SMBnegprot",reply_negprot,0},
+   {SMBtcon,"SMBtcon",reply_tcon,0},
+   {SMBtdis,"SMBtdis",reply_tdis,0},
+   {SMBexit,"SMBexit",reply_exit,0},
+   {SMBioctl,"SMBioctl",reply_ioctl,0},
+   {SMBecho,"SMBecho",reply_echo,0},
+   {SMBsesssetupX,"SMBsesssetupX",reply_sesssetup_and_X,0},
+   {SMBtconX,"SMBtconX",reply_tcon_and_X,0},
+   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
    {SMBgetatr,"SMBgetatr",reply_getatr,AS_USER},
    {SMBsetatr,"SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
    {SMBchkpth,"SMBchkpth",reply_chkpth,AS_USER},
@@ -4575,10 +4574,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	  /* does this protocol need to be run as guest? */
 	  if ((flags & AS_GUEST) && (!become_guest() || !check_access(-1)))
 	    return(ERROR(ERRSRV,ERRaccess));
-
-	  /* is this service online? */
-	  if (! (flags & DONT_CHECK_ONLINE) && ! lp_online(SNUM(cnum)))
-	    return(ERROR(ERRHRD,ERRnotready));
 
 	  last_inbuf = inbuf;
 
