@@ -106,9 +106,9 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     krb5_data data;
 
     if(encrypt_flag)
-	hdb_seal_keys(entry, msched5);
+	_hdb_seal_keys_int(entry, 0, msched5);
     if(decrypt_flag)
-	hdb_unseal_keys(entry, msched5);
+	_hdb_unseal_keys_int(entry, 0, msched5);
 
     ret = hdb_entry2value(context, entry, &data);
     if(ret) return ret;
@@ -152,7 +152,7 @@ v4_prop(void *arg, Principal *p)
     ent.kvno = p->key_version;
     ent.keys.len = 3;
     ent.keys.val = malloc(ent.keys.len * sizeof(*ent.keys.val));
-    ent.keys.val[0].mkvno = p->kdc_key_ver;
+    ent.keys.val[0].mkvno = NULL;
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
     ent.keys.val[0].salt->type = pa_pw_salt;
     ent.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
@@ -279,7 +279,7 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent, const char *cell)
     hdb.kvno = ntohl(ent->kvno);
     hdb.keys.len = 3;
     hdb.keys.val = malloc(hdb.keys.len * sizeof(*hdb.keys.val));
-    hdb.keys.val[0].mkvno = 0; /* XXX */
+    hdb.keys.val[0].mkvno = NULL;
     hdb.keys.val[0].salt = calloc(1, sizeof(*hdb.keys.val[0].salt));
     hdb.keys.val[0].salt->type = hdb_afs3_salt;
     hdb.keys.val[0].salt->salt.data = strdup(cell);
@@ -530,7 +530,7 @@ int main(int argc, char **argv)
 	} else
 #endif
 	{
-	    ret = hdb_foreach(context, db, v5_prop, &pd);
+	    ret = hdb_foreach(context, db, HDB_F_DECRYPT, v5_prop, &pd);
 	    if(ret)
 		krb5_err(context, 1, ret, "hdb_foreach");
 	}
@@ -588,7 +588,8 @@ int main(int argc, char **argv)
 #endif
 		else
 #endif
-		    ret = hdb_foreach(context, db, v5_prop, &pd);
+		    ret = hdb_foreach(context, db, HDB_F_DECRYPT, 
+				      v5_prop, &pd);
 	    }
 	    if(ret)
 		krb5_warn(context, ret, "krb5_sendauth");
