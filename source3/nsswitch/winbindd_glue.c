@@ -306,7 +306,7 @@ BOOL wb_get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
  done:
 	if (got_user_pol) cli_samr_close(pol->cli, pol->mem_ctx, &user_pol);
 
-	return (result != NT_STATUS_NOPROBLEMO);
+	return (result == NT_STATUS_NOPROBLEMO);
 }
 
 /****************************************************************************

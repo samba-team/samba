@@ -310,7 +310,7 @@ static BOOL get_any_dc_name(char *domain, fstring srv_name)
 
 	/* Lookup domain controller name */
 		
-	if (!get_dc_list(False, lp_workgroup(), &ip_list, &count))
+	if (!get_dc_list(False, domain, &ip_list, &count))
 		return False;
 		
 	/* Firstly choose a PDC/BDC who has the same network address as any
@@ -327,7 +327,7 @@ static BOOL get_any_dc_name(char *domain, fstring srv_name)
 	dc_ip = ip_list[i];
 	free(ip_list);
 		
-	if (!lookup_pdc_name(global_myname, lp_workgroup(), &dc_ip, srv_name))
+	if (!lookup_pdc_name(global_myname, domain, &dc_ip, srv_name))
 		return False;
 
 	return True;
@@ -430,8 +430,9 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 	    return False;
     }
 
-    if (strequal(domain->controller, server_state.controller)) {
-	    /* Do a level 5 query info policy */
+    /* Do a level 5 query info policy if we are looking up our own SID */
+
+    if (strequal(domain_name, lp_workgroup())) {
 	    return wb_lsa_query_info_pol(&server_state.lsa_handle, 0x05, 
 					 level5_dom, &domain->sid);
     } 
@@ -443,7 +444,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
     
     /* Look for domain name */
     
-    if (!res && domains && sids) {
+    if (res && domains && sids) {
             int found = False;
             int i;
 	    
