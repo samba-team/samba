@@ -465,7 +465,7 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 			STRING2 enc_secret;
 			memcpy(&enc_secret,  &(r_q.info.value.enc_secret), sizeof(STRING2));
 			memcpy(last_update, &(r_q.info.last_update),      sizeof(NTTIME));
-			if (!cli_get_usr_sesskey(hnd, sess_key))
+			if (!cli_get_sesskey(hnd, sess_key))
 			{
 				return False;
 			}

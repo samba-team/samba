@@ -192,6 +192,15 @@ BOOL cli_connection_init(const char* server_name, const char* pipe_name,
 /****************************************************************************
 obtain client state
 ****************************************************************************/
+BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
+				struct cli_connection **con)
+{
+	return False;
+}
+
+/****************************************************************************
+obtain client state
+****************************************************************************/
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con)
 {
 	return get_policy_con(pol, con);
@@ -216,7 +225,18 @@ BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 get a user session key associated with a connection associated with a
 policy handle.
 ****************************************************************************/
-BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar sess_key[16])
+BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16])
+{
+	memcpy(sess_key, con->cli->sess_key, sizeof(con->cli->sess_key));
+
+	return True;
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
+BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16])
 {
 	struct cli_connection *con = NULL;
 
@@ -225,7 +245,72 @@ BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar sess_key[16])
 		return False;
 	}
 
-	memcpy(sess_key, con->cli->sess_key, sizeof(con->cli->sess_key));
+	return cli_get_con_sesskey(con, sess_key);
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
+BOOL cli_get_sesskey_srv(const char* srv_name, uchar sess_key[16])
+{
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con))
+	{
+		return False;
+	}
+
+	return cli_get_con_sesskey(con, sess_key);
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
+void cli_con_gen_next_creds(struct cli_connection *con,
+				DOM_CRED *new_clnt_cred)
+{
+	gen_next_creds(con->cli, new_clnt_cred);
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
+void cli_con_get_cli_cred(struct cli_connection *con,
+				DOM_CRED *clnt_cred)
+{
+	memcpy(clnt_cred, &con->cli->clnt_cred, sizeof(*clnt_cred));
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
+BOOL cli_con_deal_with_creds(struct cli_connection *con,
+				DOM_CRED *rcv_srv_cred)
+{
+	return clnt_deal_with_creds(con->cli->sess_key, &con->cli->clnt_cred,
+				rcv_srv_cred);
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
+BOOL cli_con_set_creds(const char* srv_name, const uchar sess_key[16],
+				DOM_CRED *cred)
+{
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con))
+	{
+		return False;
+	}
+
+	memcpy(con->cli->sess_key, sess_key, 16);
+	memcpy(&con->cli->clnt_cred, cred, sizeof(*cred));
 
 	return True;
 }

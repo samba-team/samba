@@ -5673,7 +5673,7 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 		case 0x18:
 		{
 			uchar sess_key[16];
-			if (!cli_get_usr_sesskey(hnd, sess_key))
+			if (!cli_get_sesskey(hnd, sess_key))
 			{
 				return False;
 			}
@@ -5685,7 +5685,7 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 		case 0x17:
 		{
 			uchar sess_key[16];
-			if (!cli_get_usr_sesskey(hnd, sess_key))
+			if (!cli_get_sesskey(hnd, sess_key))
 			{
 				return False;
 			}

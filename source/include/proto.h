@@ -1791,9 +1791,21 @@ BOOL cli_connection_init_list(char* servers, const char* pipe_name,
 				struct cli_connection **con);
 BOOL cli_connection_init(const char* server_name, const char* pipe_name,
 				struct cli_connection **con);
+BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
+				struct cli_connection **con);
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
-BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
+BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
+BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
+BOOL cli_get_sesskey_srv(const char* srv_name, uchar sess_key[16]);
+void cli_con_gen_next_creds(struct cli_connection *con,
+				DOM_CRED *new_clnt_cred);
+void cli_con_get_cli_cred(struct cli_connection *con,
+				DOM_CRED *clnt_cred);
+BOOL cli_con_deal_with_creds(struct cli_connection *con,
+				DOM_CRED *rcv_srv_cred);
+BOOL cli_con_set_creds(const char* srv_name, const uchar sess_key[16],
+				DOM_CRED *cred);
 BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
@@ -1810,21 +1822,34 @@ BOOL event_readeventlog(POLICY_HND *hnd,
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
-uint32 cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
+uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
 				const char* trust_acct,
-				const char* srv_name,
 				unsigned char trust_pwd[16],
 				uint16 sec_chan);
-BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum,
-		      unsigned char *new_hashof_trust_pwd, uint16 sec_chan);
-BOOL cli_nt_login_interactive(struct cli_state *cli, uint16 fnum, char *domain, char *username, 
-                              uint32 luid_low, char *password,
-                              NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
-BOOL cli_nt_login_network(struct cli_state *cli, uint16 fnum, char *domain, char *username, 
-                          uint32 luid_low, char lm_chal[8], char lm_chal_resp[24],
-                          char nt_chal_resp[24],
-                          NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
-BOOL cli_nt_logoff(struct cli_state *cli, uint16 fnum, NET_ID_INFO_CTR *ctr);
+BOOL cli_nt_srv_pwset(const char* srv_name, const char* myhostname,
+				const char* trust_acct,
+				unsigned char *new_hashof_trust_pwd,
+				uint16 sec_chan);
+BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
+				const char *domain, const char *username, 
+				uint32 luid_low, char *password,
+				NET_ID_INFO_CTR *ctr,
+				NET_USER_INFO_3 *user_info3);
+BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
+				const char *domain, const char *username, 
+				uint32 luid_low, char lm_chal[8],
+				char lm_chal_resp[24],
+				char nt_chal_resp[24],
+				NET_ID_INFO_CTR *ctr,
+				NET_USER_INFO_3 *user_info3);
+BOOL cli_nt_logoff(const char* srv_name, const char* myhostname,
+				NET_ID_INFO_CTR *ctr);
+BOOL net_sam_sync(const char* srv_name, const char* myhostname,
+				const char* trust_acct,
+				uchar trust_passwd[16],
+				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
+				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
+				uint32 *num_deltas);
 
 /*The following definitions come from  rpc_client/cli_lsarpc.c  */
 
@@ -1864,31 +1889,29 @@ BOOL lsa_close(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
-BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 status_level);
-uint32 cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
+void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred);
+BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level);
+uint32 cli_net_auth2(const char *srv_name,
 				const char *trust_acct, 
-				const char *srv_name, uint16 sec_chan, 
+				uint16 sec_chan, 
 				uint32 neg_flags, DOM_CHAL *srv_chal);
-uint32 cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum, 
-				const char *srv_name,
+uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
 				DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum,
-		       uint8 hashed_mach_pwd[16], uint16 sec_chan_type);
-BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr, 
-                       NET_USER_INFO_3 *user_info3);
-BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr);
-BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum,
-				const char* srv_name,
+BOOL cli_net_srv_pwset(const char* srv_name,
+				const char* myhostname,
+				const char* trust_acct,
+				uint8 hashed_trust_pwd[16],
+				uint16 sec_chan_type);
+BOOL cli_net_sam_logon(const char* srv_name, const char* myhostname,
+				NET_ID_INFO_CTR *ctr, 
+				NET_USER_INFO_3 *user_info3);
+BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
+				NET_ID_INFO_CTR *ctr);
+BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
 				uint32 database_id,
 				uint32 *num_deltas,
 				SAM_DELTA_HDR *hdr_deltas,
 				SAM_DELTA_CTR *deltas);
-BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
-				const char* acct_name,
-				const char* srv_name,
-				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
-				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
-				uint32 *num_deltas);
 
 /*The following definitions come from  rpc_client/cli_netlogon_sync.c  */
 
@@ -2482,6 +2505,11 @@ BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
+BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, 
+				const char* srv_name,
+				uint32 function_code,
+				uint32 query_level,
+				uint32 switch_value);
 BOOL net_io_q_logon_ctrl2(char *desc,  NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth);
 BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
 				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
@@ -2508,23 +2536,27 @@ BOOL make_q_auth_2(NET_Q_AUTH_2 *q_a,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
 BOOL net_io_q_auth_2(char *desc,  NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth);
 BOOL net_io_r_auth_2(char *desc,  NET_R_AUTH_2 *r_a, prs_struct *ps, int depth);
-BOOL make_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name, 
-                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16]);
+BOOL make_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
+				const char *logon_srv, const char *acct_name, 
+                		uint16 sec_chan, const char *comp_name,
+				DOM_CRED *cred, char nt_cypher[16]);
 BOOL net_io_q_srv_pwset(char *desc,  NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth);
 BOOL net_io_r_srv_pwset(char *desc,  NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth);
-BOOL make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
+BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *wksta_name,
+				const char *user_name, const char *wksta_name,
 				char sess_key[16],
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16]);
-BOOL make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
-				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *wksta_name,
+BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
+				uint32 param_ctrl,
+				uint32 log_id_low, uint32 log_id_high,
+				const char *user_name, const char *wksta_name,
 				unsigned char lm_challenge[8],
 				unsigned char lm_chal_resp[24],
 				unsigned char nt_chal_resp[24]);
 BOOL make_sam_info(DOM_SAM_INFO *sam,
-				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
+				const char *logon_srv, const char *comp_name,
+				DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
 				NET_ID_INFO_CTR *ctr, uint16 validation_level);
 BOOL make_net_user_info3(NET_USER_INFO_3 *usr,

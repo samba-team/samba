@@ -33,11 +33,9 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct cli_state *smb_cli;
 extern struct user_credentials *usr_creds;
 
 extern FILE* out_hnd;
-extern pstring global_myname;
 
 
 /****************************************************************************
@@ -45,7 +43,6 @@ experimental nt login.
 ****************************************************************************/
 void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 {
-	uint16 nt_pipe_fnum;
 #if 0
 	extern BOOL global_machine_password_needs_changing;
 #endif
@@ -55,6 +52,12 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 	char *nt_password;
 	unsigned char trust_passwd[16];
+	fstring trust_acct;
+
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
 
 #if 0
 	/* machine account passwords */
@@ -93,7 +96,11 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 		nt_password = getpass("Enter NT Login password:");
 	}
 
-	DEBUG(5,("do_nt_login_test: username %s\n", nt_user_name));
+	DEBUG(5,("do_nt_login_test: username %s from: %s\n",
+	            nt_user_name, info->myhostname));
+
+	fstrcpy(trust_acct, info->myhostname);
+	fstrcat(trust_acct, "$");
 
 	res = res ? trust_get_passwd(trust_passwd, usr_creds->domain, info->myhostname) : False;
 
@@ -103,11 +110,9 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	                                info->myhostname, usr_creds->domain,
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
-	/* open NETLOGON session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
 
-	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum,
-	                               smb_cli->mach_acct, global_myname,
+	res = res ? cli_nt_setup_creds(srv_name, info->myhostname,
+	                               trust_acct, 
 	                               trust_passwd, SEC_CHAN_WKSTA) == 0x0 : False;
 
 #if 0
@@ -116,7 +121,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	{
 		unsigned char new_trust_passwd[16];
 		generate_random_buffer(new_trust_passwd, 16, True);
-		res = res ? cli_nt_srv_pwset(smb_cli, nt_pipe_fnum, new_trust_passwd, SEC_CHAN_WKSTA) : False;
+		res = res ? cli_nt_srv_pwset(srv_name, info->myhostname, new_trust_passwd, SEC_CHAN_WKSTA) : False;
 
 		if (res)
 		{
@@ -130,7 +135,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	memset(trust_passwd, 0, 16);
 
 	/* do an NT login */
-	res = res ? cli_nt_login_interactive(smb_cli, nt_pipe_fnum,
+	res = res ? cli_nt_login_interactive(srv_name, info->myhostname,
 	                 usr_creds->domain, nt_user_name,
 	                 getuid(), nt_password,
 	                 &info->dom.ctr, &info->dom.user_info3) : False;
@@ -141,10 +146,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	/* ok!  you're logged in!  do anything you like, then... */
 
 	/* do an NT logout */
-	res = res ? cli_nt_logoff(smb_cli, nt_pipe_fnum, &info->dom.ctr) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	res = res ? cli_nt_logoff(srv_name, info->myhostname, &info->dom.ctr) : False;
 
 	report(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
 		nt_user_name, BOOLSTR(res));
@@ -155,12 +157,15 @@ experimental nt login.
 ****************************************************************************/
 void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 {
-	uint16 nt_pipe_fnum;
-
 	char *nt_trust_dom;
 	BOOL res = True;
 	unsigned char trust_passwd[16];
 	fstring inter_dom_acct;
+
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
 
 	if (argc < 2)
 	{
@@ -177,17 +182,11 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 
 	res = res ? trust_get_passwd(trust_passwd, usr_creds->domain, nt_trust_dom) : False;
 
-	/* open NETLOGON session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
-
-	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum, inter_dom_acct,
-	                               global_myname, trust_passwd, 
+	res = res ? cli_nt_setup_creds(srv_name, info->myhostname, inter_dom_acct,
+	                               trust_passwd, 
 	                               SEC_CHAN_DOMAIN) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	report(out_hnd,"cmd_nt_login: credentials (%s) test succeeded: %s\n",
 		nt_trust_dom, BOOLSTR(res));
@@ -202,16 +201,24 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
 	uint32 num;
 	uchar trust_passwd[16];
-	extern pstring global_myname;
+	fstring srv_name;
+	fstring trust_acct;
 
-	if (!trust_get_passwd(trust_passwd, usr_creds->domain, global_myname))
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	fstrcpy(trust_acct, info->myhostname);
+	fstrcat(trust_acct, "$");
+
+	if (!trust_get_passwd(trust_passwd, usr_creds->domain, info->myhostname))
 	{
 		report(out_hnd, "cmd_sam_sync: no trust account password\n");
 		return;
 	}
 
-	if (do_sam_sync(smb_cli, trust_passwd,
-	    smb_cli->mach_acct, global_myname,
+	if (net_sam_sync(srv_name, info->myhostname,
+		trust_acct, trust_passwd,
 	    hdr_deltas, deltas, &num))
 	{
 		display_sam_sync(out_hnd, ACTION_HEADER   , hdr_deltas, deltas, num);

@@ -164,6 +164,30 @@ static BOOL net_io_netinfo_2(char *desc,  NETLOGON_INFO_2 *info, prs_struct *ps,
 }
 
 /*******************************************************************
+makes an NET_Q_LOGON_CTRL2 structure.
+********************************************************************/
+BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, 
+				const char* srv_name,
+				uint32 function_code,
+				uint32 query_level,
+				uint32 switch_value)
+{
+	if (q_l == NULL) return False;
+
+	DEBUG(5,("make_q_logon_ctrl2\n"));
+
+	q_l->ptr = 1;
+
+	make_unistr2(&(q_l->uni_server_name ), srv_name , strlen(srv_name )+1);
+
+	q_l->function_code = function_code;
+	q_l->query_level   = query_level;
+	q_l->switch_value  = switch_value;
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes an NET_Q_LOGON_CTRL2 structure.
 ********************************************************************/
 BOOL net_io_q_logon_ctrl2(char *desc,  NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth)
@@ -552,8 +576,10 @@ BOOL net_io_r_auth_2(char *desc,  NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL make_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name, 
-                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16])
+BOOL make_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
+				const char *logon_srv, const char *acct_name, 
+                		uint16 sec_chan, const char *comp_name,
+				DOM_CRED *cred, char nt_cypher[16])
 {
 	if (q_s == NULL || cred == NULL) return False;
 
@@ -634,9 +660,9 @@ static int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 /*******************************************************************
 makes a NET_ID_INFO_1 structure.
 ********************************************************************/
-BOOL make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
+BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *wksta_name,
+				const char *user_name, const char *wksta_name,
 				char sess_key[16],
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16])
 {
@@ -753,9 +779,10 @@ checking for a logon as it doesn't export the password
 hashes to anyone who has compromised the secure channel. JRA.
 ********************************************************************/
 
-BOOL make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
-				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *wksta_name,
+BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
+				uint32 param_ctrl,
+				uint32 log_id_low, uint32 log_id_high,
+				const char *user_name, const char *wksta_name,
 				unsigned char lm_challenge[8],
 				unsigned char lm_chal_resp[24],
 				unsigned char nt_chal_resp[24])
@@ -854,7 +881,8 @@ static BOOL net_io_id_info2(char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int 
 makes a DOM_SAM_INFO structure.
 ********************************************************************/
 BOOL make_sam_info(DOM_SAM_INFO *sam,
-				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
+				const char *logon_srv, const char *comp_name,
+				DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
 				NET_ID_INFO_CTR *ctr, uint16 validation_level)
 {

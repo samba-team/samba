@@ -1125,18 +1125,6 @@ BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name,
 	 * Setup the remote server name prefixed by \ and the machine account name.
 	 */
 
-	fstrcpy(cli->srv_name_slash, "\\\\");
-	fstrcat(cli->srv_name_slash, cli->desthost);
-	strupper(cli->srv_name_slash);
-
-	fstrcpy(cli->clnt_name_slash, "\\\\");
-	fstrcat(cli->clnt_name_slash, global_myname);
-	strupper(cli->clnt_name_slash);
-
-	fstrcpy(cli->mach_acct, global_myname);
-	fstrcat(cli->mach_acct, "$");
-	strupper(cli->mach_acct);
-
 	return True;
 }
 
