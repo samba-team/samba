@@ -889,7 +889,7 @@ static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 {
 	pstring temp_name;
 
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
+	snprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	data->notify_data.data.length=strlen(temp_name);
 	ascii_to_unistr((char *)data->notify_data.data.string, temp_name, sizeof(data->notify_data.data.string)-1);
@@ -2410,7 +2410,7 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info,
 
 	get_short_archi(short_archi,architecture);
 	
-	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
+	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\%s\\", servername, short_archi, driver.info_3->name);
 
 	info->version=driver.info_3->cversion;
 
@@ -2500,8 +2500,8 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 	
 	get_short_archi(short_archi, architecture);
 	
-	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
-	
+	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\%s\\", servername, short_archi, driver.info_3->name);
+
 	info->version=driver.info_3->cversion;
 
 	init_unistr( &(info->name),         driver.info_3->name );	
@@ -3747,6 +3747,48 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 	}
 }
 
+/****************************************************************************
+ Modify internal driver heirarchy.
+****************************************************************************/
+
+static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level)
+{
+	pstring path_old;
+	pstring path_new;
+	pstring short_archi;
+	int snum = snum = find_service("print$");
+	char *model = NULL;
+
+	*short_archi = '\0';
+	switch (level) {
+		case 3:
+			get_short_archi(short_archi, driver->info_3->environment);
+			model = driver->info_3->name;
+			break;
+		case 6:
+			get_short_archi(short_archi, driver->info_6->environment);
+			model = driver->info_6->name;
+			break;
+		default:
+			DEBUG(0,("modify_driver_heirarchy: unknown info level (%d)\n", level));
+			return ERROR_INVALID_LEVEL;
+			break;
+	}
+
+	slprintf(path_old, sizeof(path_old)-1, "%s/%s/TMP_%u", lp_pathname(snum), short_archi,
+		(unsigned int)sys_getpid());
+	slprintf(path_new, sizeof(path_new)-1, "%s/%s/%s", lp_pathname(snum), short_archi, model);
+
+	DEBUG(10,("_spoolss_addprinterdriver: old_path=%s, new_path=%s\n",
+			path_old, path_new ));
+	if (dos_rename(path_old, path_new) == -1) {
+		DEBUG(0,("modify_driver_heirarchy: rename failed (%s)\n", strerror(errno) ));
+		/* We need to clean up here.... - how ? */
+		return ERROR_ACCESS_DENIED; /* We need a generic mapping from NT errors here... */
+	}
+
+	return NT_STATUS_NO_PROBLEMO;
+}
 
 /****************************************************************************
 ****************************************************************************/
@@ -3755,13 +3797,19 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-
+	uint32 err;
 	ZERO_STRUCT(driver);
 	
 	convert_printer_driver_info(info, &driver, level);
 
 	if (add_a_printer_driver(driver, level)!=0)
 		return ERROR_ACCESS_DENIED;
+
+	if ((err = modify_driver_heirarchy(&driver, level)) != 0) {
+		safe_free(driver.info_3);
+		safe_free(driver.info_6);
+		return err;
+	}
 
 	safe_free(driver.info_3);
 	safe_free(driver.info_6);
@@ -3780,7 +3828,7 @@ static void fill_driverdir_1(DRIVER_DIRECTORY_1 *info, char *name)
 ****************************************************************************/
 static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environment, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
-	pstring chaine;
+	pstring path;
 	pstring long_archi;
 	pstring short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
@@ -3791,11 +3839,11 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 	get_short_archi(short_archi, long_archi);
 		
-	slprintf(chaine, sizeof(chaine)-1, "\\\\%s\\print$\\%s", global_myname, short_archi);
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s\\TMP_%u", global_myname, short_archi,
+		(unsigned int)sys_getpid());
+	DEBUG(4,("printer driver directory: [%s]\n", path));
 
-	DEBUG(4,("printer driver directory: [%s]\n", chaine));
-
-	fill_driverdir_1(info, chaine);
+	fill_driverdir_1(info, path);
 	
 	*needed += spoolss_size_driverdir_info_1(info);
 
