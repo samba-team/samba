@@ -1,5 +1,7 @@
 2002-09-09  Johan Danielsson  <joda@pdc.kth.se>
 
+	* auth-modules.m4: rename to rk_AUTH_MODULES
+
 	* auth-modules.m4: only include modules explicitly asked for
 
 2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
