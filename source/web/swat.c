@@ -421,7 +421,7 @@ static void commit_parameters(int snum)
 ****************************************************************************/
 static void image_link(char *name,char *hlink, char *src)
 {
-	printf("<A HREF=\"%s/%s\"><img src=\"/swat/%s\" alt=\"%s\"></A>\n", 
+	printf("<A HREF=\"%s/%s\"><img border=\"0\" src=\"/swat/%s\" alt=\"%s\"></A>\n", 
 	       cgi_baseurl(), hlink, src, name);
 }
 
