@@ -1480,6 +1480,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SIVAL(pdata,4,0); /* characteristics */
 			break;
 
+#ifdef WITH_QUOTAS
 		case SMB_FS_QUOTA_INFORMATION:
 		/* 
 		 * what we have to send --metze:
@@ -1550,6 +1551,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			
 			break;
 		}
+#endif /* WITH_QUOTAS */
 		case SMB_FS_OBJECTID_INFORMATION:
 			data_len = 64;
 			break;
@@ -1591,6 +1593,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 	return -1;
 }
 
+#ifdef WITH_QUOTAS
 /****************************************************************************
  Reply to a TRANS2_SETFSINFO (set filesystem info).
 ****************************************************************************/
@@ -1625,6 +1628,7 @@ static int call_trans2setfsinfo(connection_struct *conn,
 	}
 
 	fsp = file_fsp(params,0);
+
 	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
@@ -1701,6 +1705,7 @@ static int call_trans2setfsinfo(connection_struct *conn,
 
 	return outsize;
 }
+#endif /* WITH_QUOTAS */
 
 /****************************************************************************
  *  Utility function to set bad path error.
@@ -3487,13 +3492,14 @@ int reply_trans2(connection_struct *conn,
 		END_PROFILE_NESTED(Trans2_qfsinfo);
 	    break;
 
+#ifdef WITH_QUOTAS
 	case TRANSACT2_SETFSINFO:
 		START_PROFILE_NESTED(Trans2_setfsinfo);
 		outsize = call_trans2setfsinfo(conn, inbuf, outbuf, length, bufsize, 
 					  &params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_setfsinfo);
 		break;
-
+#endif
 	case TRANSACT2_QPATHINFO:
 	case TRANSACT2_QFILEINFO:
 		START_PROFILE_NESTED(Trans2_qpathinfo);
