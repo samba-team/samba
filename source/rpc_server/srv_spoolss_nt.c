@@ -855,30 +855,6 @@ static void receive_notify2_message(int msg_type, pid_t src, void *buf,
 	talloc_destroy(mem_ctx);
 }
 
-/***************************************************************************
- Server wrapper for cli_spoolss_routerreplyprinter() since the client 
- function can only send a single change notification at a time.
- 
- FIXME!!!  only handles one change currently (PRINTER_CHANGE_SET_PRINTER_DRIVER)
- --jerry
- **************************************************************************/
- 
-static WERROR srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TALLOC_CTX *mem_ctx,
-					POLICY_HND *pol, PRINTER_MESSAGE_INFO *info,
-					NT_PRINTER_INFO_LEVEL *printer)				
-{
-	WERROR result;
-	uint32 condition = 0x0;
-	
-	if (info->flags & PRINTER_MESSAGE_DRIVER)
-		condition = PRINTER_CHANGE_SET_PRINTER_DRIVER;
-	
-	result = cli_spoolss_routerreplyprinter(reply_cli, mem_ctx, pol, condition, 
-			printer->info_2->changeid);
-
-	return result;
-}
-
 /********************************************************************
  Send a message to ourself about new driver being installed
  so we can upgrade the information for each printer bound to this
@@ -1156,8 +1132,6 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 {
 	UNISTR2 *printername = NULL;
 	PRINTER_DEFAULT *printer_default = &q_u->printer_default;
-/*	uint32 user_switch = q_u->user_switch; - notused */
-/*	SPOOL_USER_CTR user_ctr = q_u->user_ctr; - notused */
 	POLICY_HND *handle = &r_u->handle;
 
 	fstring name;
@@ -3243,7 +3217,6 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-/*	SPOOL_NOTIFY_OPTION *option = q_u->option; - notused. */
 	SPOOL_NOTIFY_INFO *info = &r_u->info;
 
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
@@ -4812,7 +4785,6 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	UNISTR2 *uni_arch = &q_u->architecture;
 	uint32 level = q_u->level;
 	uint32 clientmajorversion = q_u->clientmajorversion;
-/*	uint32 clientminorversion = q_u->clientminorversion; - notused. */
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
@@ -4904,7 +4876,6 @@ WERROR _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPO
 WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, SPOOL_R_STARTDOCPRINTER *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-/* 	uint32 level = q_u->doc_info_container.level; - notused. */
 	DOC_INFO *docinfo = &q_u->doc_info_container.docinfo;
 	uint32 *jobid = &r_u->jobid;
 
@@ -5939,8 +5910,6 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJOBS *r_u)
 {	
 	POLICY_HND *handle = &q_u->handle;
-/*	uint32 firstjob = q_u->firstjob; - notused. */
-/*	uint32 numofjobs = q_u->numofjobs; - notused. */
 	uint32 level = q_u->level;
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
@@ -6287,7 +6256,6 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 
 WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u)
 {
-/*	UNISTR2 *name = &q_u->name; - notused. */
 	UNISTR2 *environment = &q_u->environment;
 	uint32 level = q_u->level;
 	NEW_BUFFER *buffer = NULL;
@@ -6344,7 +6312,6 @@ static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 
 WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
 {
-/*	POLICY_HND *handle = &q_u->handle; - notused. */
 	uint32 level = q_u->level;
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
@@ -6445,7 +6412,6 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 
 WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *r_u)
 {
-/*	POLICY_HND *handle = &q_u->handle; - notused. */
 	uint32 level = q_u->level;
 	UNISTR2 *uni_formname = &q_u->formname;
 	NEW_BUFFER *buffer = NULL;
@@ -6741,7 +6707,6 @@ static WERROR enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUMPORTS *r_u)
 {
-/*	UNISTR2 *name = &q_u->name; - notused. */
 	uint32 level = q_u->level;
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
@@ -6905,7 +6870,6 @@ WERROR _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_
 
 WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u, SPOOL_R_ADDPRINTERDRIVER *r_u)
 {
-/*	UNISTR2 *server_name = &q_u->server_name; - notused. */
 	uint32 level = q_u->level;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL *info = &q_u->info;
 	WERROR err = WERR_OK;
@@ -7453,7 +7417,6 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-/*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
 	nt_forms_struct tmpForm;
 	int snum;
