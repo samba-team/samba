@@ -136,9 +136,11 @@ uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
 	if (S_ISDIR(sbuf->st_mode))
 		result = aDIR | (result & aRONLY);
 
+#if defined (HAVE_STAT_ST_BLOCKS) && defined (HAVE_STAT_ST_BLKSIZE)
 	if (sbuf->st_size > sbuf->st_blocks * (SMB_OFF_T)sbuf->st_blksize) {
 		result |= FILE_ATTRIBUTE_SPARSE;
 	}
+#endif
  
 #ifdef S_ISLNK
 #if LINKS_READ_ONLY
