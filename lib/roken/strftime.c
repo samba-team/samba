@@ -64,15 +64,13 @@ static char *Bfmt[] = {
 
 static size_t gsize;
 static char *pt;
-#ifndef	__P
-#define	__P(x)	()
-#endif
-static int _add __P((char *));
-static int _conv __P((int, int, int));
+
+static int _add (char *);
+static int _conv (int, int, int);
 #ifdef	HAVE_MKTIME
-static int _secs __P((const struct tm *));
+static int _secs (const struct tm *);
 #endif	/* HAVE_MKTIME */
-static size_t _fmt __P((const char *, const struct tm *));
+static size_t _fmt (const char *, const struct tm *);
 
 size_t
 strftime(char *s, size_t maxsize, const char *format, const struct tm *t)

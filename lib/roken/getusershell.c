@@ -54,10 +54,6 @@ RCSID("$Id$");
 #include <sys/param.h>
 #endif
 
-#ifndef __P
-#define __P(X) X
-#endif
-
 #ifndef _PATH_SHELLS
 #define _PATH_SHELLS "/etc/shells"
 #endif
@@ -77,7 +73,7 @@ RCSID("$Id$");
 
 static char *okshells[] = { _PATH_BSHELL, _PATH_CSHELL, NULL };
 static char **curshell, **shells, *strings;
-static char **initshells __P((void));
+static char **initshells (void);
 
 /*
  * Get a list of shells from _PATH_SHELLS, if it exists.
