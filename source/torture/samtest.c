@@ -53,6 +53,24 @@ static char* next_command (char** cmdstr)
 	return command;
 }
 
+/* Load specified configuration file */
+static NTSTATUS cmd_conf(struct samtest_state *sam, TALLOC_CTX *mem_ctx,
+						 int argc, char **argv)
+{
+	if (argc != 2) {
+		printf("Usage: %s <smb.conf>\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (!lp_load(argv[1], False, True, False)) {
+		printf("Error loading \"%s\"\n", argv[1]);
+		return NT_STATUS_OK;
+	}
+
+	printf("\"%s\" successfully loaded\n", argv[1]);
+	return NT_STATUS_OK;
+}
+
 /* Display help on commands */
 static NTSTATUS cmd_help(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 			 int argc, char **argv)
@@ -143,6 +161,7 @@ static struct cmd_set samtest_commands[] = {
 
 	{ "help", 	cmd_help, 	"Get help on commands", "" },
 	{ "?", 		cmd_help, 	"Get help on commands", "" },
+	{ "conf",   cmd_conf,   "Load smb configuration file", "conf <smb.conf>" },
 	{ "debuglevel", cmd_debuglevel, "Set debug level", "" },
 	{ "exit", 	cmd_quit, 	"Exit program", "" },
 	{ "quit", 	cmd_quit, 	"Exit program", "" },
@@ -336,6 +355,7 @@ int main(int argc, char *argv[])
 	int 			opt;
 	static char		*cmdstr = "";
 	static char *opt_logfile=NULL;
+	static char *config_file = dyn_CONFIGFILE;
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
 	extern BOOL 		AllowDebugChange;
@@ -348,8 +368,9 @@ int main(int argc, char *argv[])
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon seperated cmds"},
+		{"command",	'e', POPT_ARG_STRING,	&cmdstr, 'e', "Execute semicolon seperated cmds"},
 		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout"},
+		{"configfile", 'c', POPT_ARG_STRING, &config_file, 0,"use different configuration file",NULL},
 		{ 0, 0, 0, 0}
 	};
 
@@ -374,6 +395,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if (!lp_load(config_file,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", config_file);
+		exit(1);
+	}
 
 	poptFreeContext(pc);
 
