@@ -22,22 +22,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/*  this module apparently provides an implementation of DCE/RPC over a
- *  named pipe (IPC$ connection using SMBtrans).  details of DCE/RPC
- *  documentation are available (in on-line form) from the X-Open group.
- *
- *  this module should provide a level of abstraction between SMB
- *  and DCE/RPC, while minimising the amount of mallocs, unnecessary
- *  data copies, and network traffic.
- *
- *  in this version, which takes a "let's learn what's going on and
- *  get something running" approach, there is additional network
- *  traffic generated, but the code should be easier to understand...
- *
- *  ... if you read the docs.  or stare at packets for weeks on end.
- *
- */
-
 #include "includes.h"
 #include "nterr.h"
 
@@ -178,6 +162,7 @@ static BOOL api_pipe_fault_resp(rpcsrv_struct *l, uint32 status,
 
 	hdr_resp.alloc_hint   = 0x0;
 	hdr_resp.cancel_count = 0x0;
+	hdr_resp.context_id   = 0x0;
 	hdr_resp.reserved     = 0x0;
 
 	make_rpc_hdr(&l->hdr, RPC_FAULT, RPC_FLG_NOCALL | RPC_FLG_FIRST | RPC_FLG_LAST,

@@ -38,7 +38,6 @@ BOOL make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
 	make_buf_unistr2(&(q_u->uni_srv_name), &(q_u->ptr_srv_name), server);
 	q_u->switch_value = switch_value;
 
-
 	return True;
 }
 

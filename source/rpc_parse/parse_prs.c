@@ -288,6 +288,7 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 
 	if (new_data != NULL)
 	{
+		memset(&new_data[buf->data_size], 0, new_size - buf->data_size);
 		buf->data = new_data;
 		buf->data_size = new_size;
 	}

@@ -22,22 +22,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/*  this module apparently provides an implementation of DCE/RPC over a
- *  named pipe (IPC$ connection using SMBtrans).  details of DCE/RPC
- *  documentation are available (in on-line form) from the X-Open group.
- *
- *  this module should provide a level of abstraction between SMB
- *  and DCE/RPC, while minimising the amount of mallocs, unnecessary
- *  data copies, and network traffic.
- *
- *  in this version, which takes a "let's learn what's going on and
- *  get something running" approach, there is additional network
- *  traffic generated, but the code should be easier to understand...
- *
- *  ... if you read the docs.  or stare at packets for weeks on end.
- *
- */
-
 #include "includes.h"
 #include "nterr.h"
 

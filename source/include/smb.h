@@ -1497,7 +1497,7 @@ char *strdup(char *s);
 /* Version 4.20 - To indicate that nmbd and browsing now works better */
 
 #define DEFAULT_MAJOR_VERSION 0x04
-#define DEFAULT_MINOR_VERSION 0x02
+#define DEFAULT_MINOR_VERSION 0x00
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
