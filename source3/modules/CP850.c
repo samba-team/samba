@@ -347,7 +347,7 @@ static const unsigned char from_ucs2[] = {
 };
 
 
-static size_t cp850_push(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t CP850_push(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
@@ -387,7 +387,7 @@ static size_t cp850_push(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t cp850_pull(void *cd, char **inbuf, size_t *inbytesleft,
+static size_t CP850_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
@@ -406,9 +406,9 @@ static size_t cp850_pull(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-struct charset_functions cp850_functions = {"CP850", cp850_pull, cp850_push};
+struct charset_functions CP850_functions = {"CP850", CP850_pull, CP850_push};
 
-NTSTATUS charset_cp850_init(void)
+NTSTATUS charset_CP850_init(void)
 {
-	return smb_register_charset(&cp850_functions);
+	return smb_register_charset(&CP850_functions);
 }
