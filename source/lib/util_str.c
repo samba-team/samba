@@ -1502,7 +1502,7 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 }
 
 
-#ifndef HAVE_STRNDUP
+#if !defined(HAVE_STRNDUP) || defined(BROKEN_STRNDUP)
 /**
  Some platforms don't have strndup.
 **/
@@ -1522,7 +1522,7 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 }
 #endif
 
-#ifndef HAVE_STRNLEN
+#if !defined(HAVE_STRNLEN) || defined(BROKEN_STRNLEN)
 /**
  Some platforms don't have strnlen
 **/

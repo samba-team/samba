@@ -1206,6 +1206,8 @@ if test "$enable_shared" = "yes"; then
 			fi
 
 			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE,[The size of a block])
+			AC_DEFINE(BROKEN_STRNLEN,1,[Does strnlen work correctly])
+			AC_DEFINE(BROKEN_STRNDUP,1,[Does strndup work correctly])
 			;;
 		*hpux*) AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
 			SHLIBEXT="sl"
