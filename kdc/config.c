@@ -335,7 +335,7 @@ configure(int argc, char **argv)
 #ifdef KRB4
     if(enable_v4 == -1)
 	enable_v4 = krb5_config_get_bool_default(context, NULL, FALSE, "kdc", 
-					 "enable-kerberos4", NULL);
+						 "enable-kerberos4", NULL);
 #else
 #define enable_v4 0
 #endif
@@ -377,8 +377,8 @@ configure(int argc, char **argv)
 	trpolicy = TRPOLICY_ALWAYS_CHECK;
     }
 	
-	krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
-				     "enforce-transited-policy", NULL);
+    krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
+				 "enforce-transited-policy", NULL);
 #ifdef KRB4
     if(v4_realm == NULL){
 	p = krb5_config_get_string (context, NULL, 
@@ -421,6 +421,40 @@ configure(int argc, char **argv)
 	require_preauth = 1;
     if (port_str == NULL)
 	port_str = "+";
+
+#ifdef PKINIT
+    enable_pkinit = krb5_config_get_bool_default(context, NULL, FALSE,
+						 "kdc",
+						 "enable-pkinit",
+						 NULL);
+    if (enable_pkinit) {
+	const char *key_file, *certificate_file, *ca_dir;
+
+	key_file = krb5_config_get_string(context, NULL,
+					  "kdc",
+					  "pki-key-file",
+					  NULL);
+	if (key_file == NULL)
+	    krb5_errx(context, 1, "pkinit enabled but no keyfile");
+
+	certificate_file = krb5_config_get_string(context, NULL,
+						  "kdc",
+						  "pki-certificate",
+						  NULL);
+	if (certificate_file == NULL)
+	    krb5_errx(context, 1, "pkinit enabled but no certificate");
+
+	ca_dir = krb5_config_get_string(context, NULL,
+					"kdc",
+					"pki-ca-dir",
+					NULL);
+	if (ca_dir == NULL)
+	    krb5_errx(context, 1, "pkinit enabled but no CA directory");
+
+	pk_initialize(certificate_file, key_file, ca_dir);
+    }
+#endif
+
 #ifdef KRB4
     if(v4_realm == NULL){
 	v4_realm = malloc(40); /* REALM_SZ */
