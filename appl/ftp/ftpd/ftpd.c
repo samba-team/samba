@@ -1187,18 +1187,22 @@ do_store(char *name, char *mode, int unique)
 		goto done;
 	set_buffer_size(fileno(din), 1);
 	if (receive_data(din, fout) == 0) {
+	    if((*closefunc)(fout) < 0)
+		perror_reply(552, name);
+	    else {
 		if (unique)
 			reply(226, "Transfer complete (unique file name:%s).",
 			    name);
 		else
 			reply(226, "Transfer complete.");
-	}
+	    }
+	} else
+	    (*closefunc)(fout);
 	fclose(din);
 	data = -1;
 	pdata = -1;
 done:
 	LOGBYTES(*mode == 'w' ? "put" : "append", name, byte_count);
-	(*closefunc)(fout);
 }
 
 static FILE *
