@@ -69,6 +69,12 @@ static int modify_record(struct ldb_context *ldb,
 	mod.num_elements = 0;
 	mod.elements = NULL;
 
+	msg2 = ldb_msg_canonicalize(ldb, msg2);
+	if (msg2 == NULL) {
+		fprintf(stderr, "Failed to canonicalise msg2\n");
+		return -1;
+	}
+	
 	/* look in msg2 to find elements that need to be added
 	   or modified */
 	for (i=0;i<msg2->num_elements;i++) {
@@ -295,6 +301,7 @@ static void usage(void)
 	printf("  -b basedn        choose baseDN\n");
 	printf("  -a               edit all records (expression 'objectclass=*')\n");
 	printf("  -e editor        choose editor (or $VISUAL or $EDITOR)\n");
+	printf("  -v               verbose mode)\n");
 	exit(1);
 }
 

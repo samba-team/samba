@@ -293,6 +293,18 @@ double ldb_msg_find_double(const struct ldb_message *msg,
 const char *ldb_msg_find_string(const struct ldb_message *msg, 
 				const char *attr_name,
 				const char *default_value);
+
+void ldb_msg_sort_elements(struct ldb_message *msg);
+
+void ldb_msg_free(struct ldb_context *ldb, struct ldb_message *msg);
+
+struct ldb_message *ldb_msg_copy(struct ldb_context *ldb, 
+				 const struct ldb_message *msg);
+
+struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb, 
+					 const struct ldb_message *msg);
+
+
 struct ldb_val ldb_val_dup(struct ldb_context *ldb,
 			   const struct ldb_val *v);
 
