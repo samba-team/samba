@@ -306,7 +306,7 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 		
 			string_to_sid(&everyone_sid, "S-1-1");
 
-			/* maybe need another 1 or 2 (S-1-5-20-0x220 and S-1-5-20-0x224) */
+			/* maybe need another 1 or 2 (S-1-5-0x20-0x220 and S-1-5-20-0x224) */
 			/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
 			make_dom_sid3(&(sid[0]), 0x035b, 0x0002, &everyone_sid);
 			make_dom_sid3(&(sid[1]), 0x0044, 0x0002, &user_sid);
@@ -456,7 +456,7 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 {
 	SAMR_R_ENUM_DOM_ALIASES r_e;
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	int num_entries;
+	int num_entries = 0;
 	DOM_SID sid;
 	fstring sid_str;
 	fstring sam_sid_str;
@@ -476,7 +476,7 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
 	/* well-known aliases */
-	if (strequal(sid_str, "S-1-5-20"))
+	if (strequal(sid_str, "S-1-5-32"))
 	{
 		char *name;
 		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
