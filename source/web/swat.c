@@ -1267,7 +1267,7 @@ static void printers_page(void)
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
-	int opt, rewrite_cfg_only=0;
+	int opt;
 	char *page;
 
 	fault_setup(NULL);
