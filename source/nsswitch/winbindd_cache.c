@@ -553,6 +553,8 @@ do_query:
 	retry = 0;
 	do {
 		status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
+		if (!NT_STATUS_IS_OK(status))
+			DEBUG(3, ("query_user_list returned 0x%08x, retrying\n", status));
 	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && 
 		 (retry++ < 1));
 
