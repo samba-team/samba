@@ -241,12 +241,12 @@ static NTSTATUS _rap_netshareenum(struct smbsrv_request *req,
 		switch(r.in.level) {
 		case 0:
 			NDR_OK(ndr_push_bytes(call->ndr_push_data,
-					      r.out.info[i].info0.name,
+					      (const uint8_t *)r.out.info[i].info0.name,
 					      sizeof(r.out.info[i].info0.name)));
 			break;
 		case 1:
 			NDR_OK(ndr_push_bytes(call->ndr_push_data,
-					      r.out.info[i].info1.name,
+					      (const uint8_t *)r.out.info[i].info1.name,
 					      sizeof(r.out.info[i].info1.name)));
 			NDR_OK(ndr_push_uint8(call->ndr_push_data,
 					      r.out.info[i].info1.pad));
@@ -324,12 +324,12 @@ static NTSTATUS _rap_netserverenum2(struct smbsrv_request *req,
 		switch(r.in.level) {
 		case 0:
 			NDR_OK(ndr_push_bytes(call->ndr_push_data,
-					      r.out.info[i].info0.name,
+					      (const uint8_t *)r.out.info[i].info0.name,
 					      sizeof(r.out.info[i].info0.name)));
 			break;
 		case 1:
 			NDR_OK(ndr_push_bytes(call->ndr_push_data,
-					      r.out.info[i].info1.name,
+					      (const uint8_t *)r.out.info[i].info1.name,
 					      sizeof(r.out.info[i].info1.name)));
 			NDR_OK(ndr_push_uint8(call->ndr_push_data,
 					      r.out.info[i].info1.version_major));
