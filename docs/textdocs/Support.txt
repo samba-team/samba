@@ -31,7 +31,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        6
-    EUROPE                                       25
+    EUROPE                                       27
 
 
 AFRICA
@@ -1022,6 +1022,23 @@ expertise: Wir verfuegen ueber umfangreiche Erfahrung mit Samba, vor allem
 Sample prices:  - Komplettpreise fuer Lingo nach Vereinbarung
                 - 120 DM/Stunde fuer Dienstleistung
                 - Schulung nach Vereinbarung
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+BERLIN - GERMANY
+
+Ing. Buero Buehler
+Dipl.-Ing. Frank Buehler
+Paul-Krause-Str. 5
+14129 Berlin
+Germany
+ 
+Phone: +49/(0)177/825 33 80            Fax: +49/(0)30/803-3039
+mailto:fb@hydmech.fb12.TU-Berlin.de
+
+We install and maintain small to middle sized Linux-Windows
+networks within the Berlin area and are available for consulting and
+questions about networking, Linux, database systems and electronics.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
