@@ -419,7 +419,7 @@ admin_get_next(krb5_context context,
 
     if (krbhst_empty(kd)
 	&& (kd->flags & KD_FALLBACK) == 0) {
-	fallback_get_hosts(context, kd, "fkerberos", port);
+	fallback_get_hosts(context, kd, "kerberos", port);
 	kd->flags |= KD_FALLBACK;
 	if(get_next(kd, host))
 	    return 0;
