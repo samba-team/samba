@@ -1599,7 +1599,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			acct_desc,
 			munged_dial,
 			workstations;
-	struct passwd	*pw;
 	uint32 		user_rid; 
 	uint8 		smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];

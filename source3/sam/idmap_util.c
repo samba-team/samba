@@ -175,7 +175,6 @@ NTSTATUS uid_to_sid(DOM_SID *sid, uid_t uid)
 NTSTATUS gid_to_sid(DOM_SID *sid, gid_t gid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	GROUP_MAP map;
 	unid_t id;
 	int flags;
 
@@ -272,7 +271,6 @@ NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	BOOL fallback = False;
-	uint32 rid;
 	unid_t id;
 	int flags;
 
