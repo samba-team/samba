@@ -56,6 +56,7 @@ my %as_req_addr;
 my %as_req_addr_nonlocal;
 my %as_req_client;
 my %as_req_server;
+my %client_uses_des;
 my $five24_req = 0;
 my %five24_req_addr;
 my %five24_req_addr_nonlocal;
@@ -286,6 +287,10 @@ topten(\%enctype_session);
 print "\tTop ten ticket enctypes:\n";
 topten(\%enctype_ticket);
 
+print "\tDistinct clients still uses DES: ", int(keys %client_uses_des), "\n";
+print "\tTop ten clients using DES:\n";
+topten(\%client_uses_des);
+
 print "\n";
 
 
@@ -340,12 +345,11 @@ sub process_line {
 		}
 	} elsif (/524-REQ (.*) from IPv[46]:([0-9\.:a-fA-F]+) for (.*)$/) {
 		$five24_req++;
+		$five24_req_client{$1}++;
+		$five24_req_server{$3}++;
 		$five24_req_addr{$2}++;
 		$five24_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
 		$last_addr = $2;
-
-		$five24_req_client{$1}++;
-		$five24_req_server{$3}++;
 	} elsif (/TCP data of strange type from IPv[46]:([0-9\.:a-fA-F]+)/) {
 		$strange_tcp_data{$1}++;
 	} elsif (/Lookup (.*) failed: No such entry in the database/) {
@@ -374,7 +378,19 @@ sub process_line {
 	} elsif (/524 cross-realm (.*) -> (.*) disabled/) {
 		$v4_cross++;
 		$v4_cross_realm{$1."->".$2}++;
-	} elsif (/Server not found in database \(krb4\)/) {
+	} elsif (/sending ([0-9]+) bytes to IPv[46]:([0-9\.:a-fA-F]+)/) {
+		$bw_addr{$2} += $1;
+	} elsif (/Using ([-a-z0-9]+)\/([-a-z0-9]+)/) {
+		$enctype_ticket{$1}++;
+		$enctype_session{$2}++;
+
+		my $ticket = $1;
+		my $session = $2;
+
+		if ($ticket =~ /des-cbc-(crc|md4|md5)/) {
+			$client_uses_des{$last_addr}++;
+		}
+
 	} elsif (/krb_rd_req: Incorrect network address/) {
 	} elsif (/krb_rd_req: Ticket expired \(krb_rd_req\)/) {
 	} elsif (/krb_rd_req: Can't decode authenticator \(krb_rd_req\)/) {
@@ -395,17 +411,13 @@ sub process_line {
 		# XXX
 	} elsif (/Failed to verify AP-REQ: Ticket expired/) {
 		# XXX 
+	} elsif (/Client not found in database:/) {
+		# XXX
+	} elsif (/Server not found in database \(krb4\)/) {
+	} elsif (/Server not found in database:/) {
+		# XXX
 	} elsif (/newsyslog.*logfile turned over/) {
 		# Nothing
-	} elsif (/Using ([-a-z0-9]+)\/([-a-z0-9]+)/) {
-		$enctype_ticket{$1}++;
-		$enctype_session{$2}++;
-	} elsif (/Client not found in database:/) {
-		# Nothing
-	} elsif (/Server not found in database:/) {
-		# Nothing
-	} elsif (/sending ([0-9]+) bytes to IPv[46]:([0-9\.:a-fA-F]+)/) {
-		$bw_addr{$2} += $1;
 	} elsif (/Requested flags:/) {
 		# Nothing
 	} elsif (/shutting down/) {
