@@ -369,7 +369,8 @@ fi
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
-# before other tests.
+# before other tests. Do NOT invoke AC_CHECK_HEADERS within this
+# case statement; its first reference must be unconditional.
 #
 case "$host_os" in
 # Try to work out if this is the native HPUX compiler that uses the -Ae flag.
@@ -581,27 +582,23 @@ main() {
 # is so horribly broken....
 #
     *darwin*)
-		AC_DEFINE(BROKEN_UNICODE_COMPOSE_CHARACTERS, 1, [Does this system use unicode compose characters])
+	AC_DEFINE(BROKEN_UNICODE_COMPOSE_CHARACTERS, 1, [Does this system use unicode compose characters])
 # Add Fink directories for various packages, like dlcompat.
 # Note: iconv does that explicitly below, but other packages
 # don't.
-		CPPFLAGS="$CPPFLAGS -I/sw/include"
-		LDFLAGS="$LDFLAGS -L/sw/lib"
+	CPPFLAGS="$CPPFLAGS -I/sw/include"
+	LDFLAGS="$LDFLAGS -L/sw/lib"
 
 # If we have dlsym_prepend_underscore (from Fink's dlcompat),
 # use that instead of plain dlsym.
 
-		AC_CHECK_LIB(dl,dlopen)
-		AC_CHECK_FUNCS(dlsym_prepend_underscore,[CPPFLAGS="$CPPFLAGS -Ddlsym=dlsym_prepend_underscore"])
+	AC_CHECK_LIB(dl,dlopen)
+	AC_CHECK_FUNCS(dlsym_prepend_underscore,[CPPFLAGS="$CPPFLAGS -Ddlsym=dlsym_prepend_underscore"])
 
-#Add a system specific charset module.
+# Add a system specific charset module.
 
-		default_shared_modules="$default_shared_modules charset_macosxfs"
-		old_CPPFLAGS="$CPPFLAGS"
-		CPPFLAGS="-Iinclude $CPPFLAGS" 
-		AC_CHECK_HEADERS([CoreFoundation/CFStringEncodingConverter.h], [], [AC_CHECK_HEADERS([CFStringEncodingConverter.h])])
-		CPPFLAGS="$old_CPPFLAGS"
-		;;
+	default_shared_modules="$default_shared_modules charset_macosxfs"
+	;;
     *hurd*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
@@ -641,6 +638,12 @@ AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h s
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
+
+# Look for Darwin headers
+old_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="-Iinclude $CPPFLAGS"
+AC_CHECK_HEADERS([CoreFoundation/CFStringEncodingConverter.h], [], [AC_CHECK_HEADERS([CFStringEncodingConverter.h])])
+CPPFLAGS="$old_CPPFLAGS"
 
 # In valgrind 1.0.x, it's just valgrind.h.  In 1.9.x+ there's a
 # subdirectory of headers.
