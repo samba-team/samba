@@ -265,7 +265,7 @@ static BOOL rw_torture(struct smbcli_state *c)
 
 
 	for (i=0;i<torture_numops;i++) {
-		uint_t n = (uint_t)sys_random()%10;
+		uint_t n = (uint_t)random()%10;
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
 		}
@@ -359,7 +359,7 @@ static BOOL rw_torture3(struct smbcli_state *c, const char *lockfname)
 
 	for (i = 0; i < sizeof(buf); i += sizeof(uint32_t))
 	{
-		SIVAL(buf, i, sys_random());
+		SIVAL(buf, i, random());
 	}
 
 	if (procnum == 0)
@@ -399,7 +399,7 @@ static BOOL rw_torture3(struct smbcli_state *c, const char *lockfname)
 
 		if (procnum == 0)
 		{
-			sent = ((uint_t)sys_random()%(20))+ 1;
+			sent = ((uint_t)random()%(20))+ 1;
 			if (sent > sizeof(buf) - count)
 			{
 				sent = sizeof(buf) - count;
@@ -480,7 +480,7 @@ static BOOL rw_torture2(struct smbcli_state *c1, struct smbcli_state *c2)
 
 	for (i=0;i<torture_numops;i++)
 	{
-		size_t buf_size = ((uint_t)sys_random()%(sizeof(buf)-1))+ 1;
+		size_t buf_size = ((uint_t)random()%(sizeof(buf)-1))+ 1;
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
 		}
@@ -2198,7 +2198,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 			const char *hostname=NULL, *sharename;
 
 			pid_t mypid = getpid();
-			sys_srandom(((int)mypid) ^ ((int)time(NULL)));
+			srandom(((int)mypid) ^ ((int)time(NULL)));
 
 			asprintf(&myname, "CLIENT%d", i);
 			lp_set_cmdline("netbios name", myname);
