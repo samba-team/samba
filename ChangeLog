@@ -1,3 +1,7 @@
+Sat Apr 18 21:13:06 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* appl/rsh/rsh.c: Don't try v5 if (only) `-4' is specified.
+
 Sat Apr 18 00:31:11 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/sock_principal.c: Save hostname.
