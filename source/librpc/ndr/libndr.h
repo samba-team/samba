@@ -115,6 +115,10 @@ struct ndr_print {
 /* used to check if alignment padding is zero */
 #define LIBNDR_FLAG_PAD_CHECK     (1<<18)
 
+/* used to indicate spoolss style relative pointers (relative to current
+   offset, not base) */
+#define LIBNDR_FLAG_RELATIVE_CURRENT  (1<<19)
+
 
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
