@@ -702,7 +702,7 @@ void check_log_size( void )
  * This is called by dbghdr() and format_debug_text().
  * ************************************************************************** **
  */
- int Debug1( char *format_str, ... )
+ int Debug1( const char *format_str, ... )
 {
   va_list ap;  
   int old_errno = errno;
@@ -897,7 +897,7 @@ void dbgflush( void )
  * ************************************************************************** **
  */
 
-BOOL dbghdr( int level, char *file, char *func, int line )
+BOOL dbghdr( int level, const char *file, const char *func, int line )
 {
   /* Ensure we don't lose any real errno value. */
   int old_errno = errno;
@@ -967,7 +967,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
  *
  * ************************************************************************** **
  */
- BOOL dbgtext( char *format_str, ... )
+ BOOL dbgtext( const char *format_str, ... )
   {
   va_list ap;
   pstring msgbuf;
