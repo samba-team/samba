@@ -459,6 +459,13 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   add_session_user(user);
 
+  /* Check if the given username was the guest user with no password.
+     We need to do this check after add_session_user() as that
+     call can potentially change the username (via map_user).
+   */
+
+  if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
+    guest = True;
 
   if (!guest && !(lp_security() == SEC_SERVER && server_validate(inbuf)) &&
       !check_hosts_equiv(user))
