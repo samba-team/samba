@@ -360,7 +360,7 @@ main(int argc, char **argv)
 
     for (i = argcc;i < argc; i++) {
 	ret = doit (argv[i], port, service);
-	warn ("%s %s", argv[i], ret ? "failed" : "ok");
+	warnx ("%s %s", argv[i], ret ? "failed" : "ok");
     }
     return(ret);
 }
