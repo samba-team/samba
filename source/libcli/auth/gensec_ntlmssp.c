@@ -28,6 +28,7 @@ struct gensec_ntlmssp_state {
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
 	struct ntlmssp_state *ntlmssp_state;
+	uint32 have_features;
 };
 
 
@@ -171,6 +172,7 @@ static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->ntlmssp_state = NULL;
 	gensec_ntlmssp_state->auth_context = NULL;
 	gensec_ntlmssp_state->server_info = NULL;
+	gensec_ntlmssp_state->have_features = 0;
 
 	talloc_set_destructor(gensec_ntlmssp_state, gensec_ntlmssp_destroy); 
 
@@ -341,6 +343,99 @@ static size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security)
 	return NTLMSSP_SIG_SIZE;
 }
 
+static NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security, 
+				    TALLOC_CTX *mem_ctx, 
+				    const DATA_BLOB *in, 
+				    DATA_BLOB *out)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	DATA_BLOB sig;
+	NTSTATUS nt_status;
+
+	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+
+		*out = data_blob_talloc(mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
+		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
+
+	        nt_status = ntlmssp_seal_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, 
+						out->data + NTLMSSP_SIG_SIZE, 
+						out->length - NTLMSSP_SIG_SIZE, 
+						out->data + NTLMSSP_SIG_SIZE, 
+						out->length - NTLMSSP_SIG_SIZE, 
+						&sig);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
+			memcpy(out->data, sig.data, NTLMSSP_SIG_SIZE);
+		}
+		return nt_status;
+
+	} else if ((gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
+		   || (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+
+		*out = data_blob_talloc(mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
+		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
+
+	        nt_status = ntlmssp_sign_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, 
+						out->data + NTLMSSP_SIG_SIZE, 
+						out->length - NTLMSSP_SIG_SIZE, 
+						out->data + NTLMSSP_SIG_SIZE, 
+						out->length - NTLMSSP_SIG_SIZE, 
+						&sig);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
+			memcpy(out->data, sig.data, NTLMSSP_SIG_SIZE);
+		}
+		return nt_status;
+
+	} else {
+		*out = *in;
+		return NT_STATUS_OK;
+	}
+}
+
+
+static NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security, 
+				      TALLOC_CTX *mem_ctx, 
+				      const DATA_BLOB *in, 
+				      DATA_BLOB *out)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	DATA_BLOB sig;
+
+	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		if (in->length < NTLMSSP_SIG_SIZE) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		sig.data = in->data;
+		sig.length = NTLMSSP_SIG_SIZE;
+
+		*out = data_blob_talloc(mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
+		
+	        return ntlmssp_unseal_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, 
+					     out->data, out->length, 
+					     out->data, out->length, 
+					     &sig);
+						  
+	} else if ((gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
+		   || (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+		if (in->length < NTLMSSP_SIG_SIZE) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		sig.data = in->data;
+		sig.length = NTLMSSP_SIG_SIZE;
+
+		*out = data_blob_talloc(mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
+		
+	        return ntlmssp_check_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, 
+					    out->data, out->length, 
+					    out->data, out->length, 
+					    &sig);
+	} else {
+		*out = *in;
+		return NT_STATUS_OK;
+	}
+}
+
 static NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
 					   DATA_BLOB *session_key)
 {
@@ -371,17 +466,19 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, T
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	
+	gensec_ntlmssp_state->have_features = 0;
 
 	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
-		gensec_security->have_features |= GENSEC_FEATURE_SIGN;
+		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SIGN;
 	}
 
 	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
-		gensec_security->have_features |= GENSEC_FEATURE_SEAL;
+		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SEAL;
 	}
 
 	if (gensec_ntlmssp_state->ntlmssp_state->session_key.data) {
-		gensec_security->have_features |= GENSEC_FEATURE_SESSION_KEY;
+		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SESSION_KEY;
 	}
 
 	return status;
@@ -418,6 +515,17 @@ static NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_secur
 	return NT_STATUS_OK;
 }
 
+static BOOL gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
+					uint32 feature)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	if (gensec_ntlmssp_state->have_features & feature) {
+		return True;
+	}
+
+	return False;
+}
+
 static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.name		= "ntlmssp",
 	.sasl_name	= "NTLM",
@@ -431,8 +539,11 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.sign_packet	= gensec_ntlmssp_sign_packet,
 	.check_packet	= gensec_ntlmssp_check_packet,
 	.unseal_packet	= gensec_ntlmssp_unseal_packet,
+	.wrap           = gensec_ntlmssp_wrap,
+	.unwrap         = gensec_ntlmssp_unwrap,
 	.session_key	= gensec_ntlmssp_session_key,
 	.session_info   = gensec_ntlmssp_session_info,
+	.have_feature   = gensec_ntlmssp_have_feature
 };
 
 

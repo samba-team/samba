@@ -162,6 +162,40 @@ static NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_securit
 				  sig);
 }
 
+static NTSTATUS gensec_spnego_wrap(struct gensec_security *gensec_security, 
+				   TALLOC_CTX *mem_ctx, 
+				   const DATA_BLOB *in, 
+				   DATA_BLOB *out)
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		DEBUG(1, ("gensec_spnego_wrap: wrong state for wrap\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	return gensec_wrap(spnego_state->sub_sec_security, 
+			   mem_ctx, in, out);
+}
+
+static NTSTATUS gensec_spnego_unwrap(struct gensec_security *gensec_security, 
+				     TALLOC_CTX *mem_ctx, 
+				     const DATA_BLOB *in, 
+				     DATA_BLOB *out)
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	return gensec_unwrap(spnego_state->sub_sec_security, 
+			     mem_ctx, in, out);
+}
+
 static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security) 
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
@@ -357,11 +391,11 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
 		return nt_status;
-	}
+	} 
 	talloc_free(spnego_state->sub_sec_security);
 	spnego_state->sub_sec_security = NULL;
 
-	DEBUG(1, ("Failed to setup SPNEGO netTokenInit request\n"));
+	DEBUG(1, ("Failed to setup SPNEGO negTokenInit request: %s\n", nt_errstr(nt_status)));
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
@@ -698,6 +732,18 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
+static BOOL gensec_spnego_have_feature(struct gensec_security *gensec_security,
+				       uint32 feature) 
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+	if (!spnego_state->sub_sec_security) {
+		return False;
+	}
+	
+	return gensec_have_feature(spnego_state->sub_sec_security, 
+				   feature);
+}
+
 static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.name		= "spnego",
 	.sasl_name	= "GSS-SPNEGO",
@@ -711,8 +757,11 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.sig_size	= gensec_spnego_sig_size,
 	.check_packet	= gensec_spnego_check_packet,
 	.unseal_packet	= gensec_spnego_unseal_packet,
+	.wrap           = gensec_spnego_wrap,
+	.unwrap         = gensec_spnego_unwrap,
 	.session_key	= gensec_spnego_session_key,
 	.session_info   = gensec_spnego_session_info,
+	.have_feature   = gensec_spnego_have_feature
 };
 
 NTSTATUS gensec_spnego_init(void)

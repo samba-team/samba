@@ -131,7 +131,7 @@ static void ldapsrv_init(struct server_service *service,
 void ldapsrv_consumed_from_buf(struct rw_buffer *buf,
 				   size_t length)
 {
-	memcpy(buf->data, buf->data+length, buf->length-length);
+	memmove(buf->data, buf->data+length, buf->length-length);
 	buf->length -= length;
 }
 
@@ -186,7 +186,8 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 {
 	NTSTATUS status;
 	DATA_BLOB tmp_blob;
-	DATA_BLOB creds;
+	DATA_BLOB wrapped;
+	DATA_BLOB unwrapped;
 	BOOL ret;
 	uint8_t *buf;
 	size_t buf_length, sasl_length;
@@ -194,9 +195,14 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	TALLOC_CTX *mem_ctx;
 	size_t nread;
 
-	if (!conn->gensec || !conn->session_info ||
-	   !(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) &&
-	     gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
+	if (!conn->gensec) {
+		return read_into_buf(sock, &conn->in_buffer);
+	}
+	if (!conn->session_info) {
+		return read_into_buf(sock, &conn->in_buffer);
+	}
+	if (!(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
+	      gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
 		return read_into_buf(sock, &conn->in_buffer);
 	}
 
@@ -236,47 +242,25 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 
 	sasl_length = RIVAL(buf, 0);
 
-	if (buf_length < (4 + sasl_length)) {
+	if ((buf_length - 4) < sasl_length) {
 		/* not enough yet */
 		talloc_free(mem_ctx);
 		return True;
 	}
 
-	creds.data = buf + 4;
-	creds.length = gensec_sig_size(conn->gensec);
+	wrapped.data = buf + 4;
+	wrapped.length = sasl_length;
 
-	if (creds.length > sasl_length) {
-		/* invalid packet? */
+	status = gensec_unwrap(conn->gensec, mem_ctx,
+			       &wrapped, 
+			       &unwrapped);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("gensec_unwrap: %s\n",nt_errstr(status)));
 		talloc_free(mem_ctx);
 		return False;
 	}
 
-	tmp_blob.data = buf + (4 + creds.length);
-	tmp_blob.length = (4 + sasl_length) - (4 + creds.length);
-
-	if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
-		status = gensec_unseal_packet(conn->gensec, mem_ctx,
-					      tmp_blob.data, tmp_blob.length,
-					      tmp_blob.data, tmp_blob.length,
-					      &creds);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("gensec_unseal_packet: %s\n",nt_errstr(status)));
-			talloc_free(mem_ctx);
-			return False;
-		}
-	} else {
-		status = gensec_check_packet(conn->gensec, mem_ctx,
-					      tmp_blob.data, tmp_blob.length,
-					      tmp_blob.data, tmp_blob.length,
-					      &creds);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("gensec_check_packet: %s\n",nt_errstr(status)));
-			talloc_free(mem_ctx);
-			return False;
-		}
-	}
-
-	ret = ldapsrv_append_to_buf(&conn->in_buffer, tmp_blob.data, tmp_blob.length);
+	ret = ldapsrv_append_to_buf(&conn->in_buffer, unwrapped.data, unwrapped.length);
 	if (!ret) {
 		talloc_free(mem_ctx);
 		return False;
@@ -311,17 +295,23 @@ static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 {
 	NTSTATUS status;
+	DATA_BLOB wrapped;
 	DATA_BLOB tmp_blob;
-	DATA_BLOB creds;
 	DATA_BLOB sasl;
 	size_t sendlen;
 	BOOL ret;
 	struct socket_context *sock = conn->connection->socket;
 	TALLOC_CTX *mem_ctx;
 
-	if (!conn->gensec || !conn->session_info ||
-	   !(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) &&
-	     gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
+
+	if (!conn->gensec) {
+		return write_from_buf(sock, &conn->out_buffer);
+	}
+	if (!conn->session_info) {
+		return write_from_buf(sock, &conn->out_buffer);
+	}
+	if (!(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
+	      gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
 		return write_from_buf(sock, &conn->out_buffer);
 	}
 
@@ -331,52 +321,37 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 		return False;
 	}
 
-	tmp_blob.data = conn->out_buffer.data;
-	tmp_blob.length = conn->out_buffer.length;
-
-	if (tmp_blob.length == 0) {
+	if (conn->out_buffer.length == 0) {
 		goto nodata;
 	}
 
-	if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
-		status = gensec_seal_packet(conn->gensec, mem_ctx,
-					    tmp_blob.data, tmp_blob.length,
-					    tmp_blob.data, tmp_blob.length,
-					    &creds);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("gensec_seal_packet: %s\n",nt_errstr(status)));
-			talloc_free(mem_ctx);
-			return False;
-		}
-	} else {
-		status = gensec_sign_packet(conn->gensec, mem_ctx,
-					    tmp_blob.data, tmp_blob.length,
-					    tmp_blob.data, tmp_blob.length,
-					    &creds);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("gensec_sign_packet: %s\n",nt_errstr(status)));
-			talloc_free(mem_ctx);
-			return False;
-		}		
+	tmp_blob.data = conn->out_buffer.data;
+	tmp_blob.length = conn->out_buffer.length;
+	status = gensec_wrap(conn->gensec, mem_ctx,
+			     &tmp_blob,
+			     &wrapped);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("gensec_wrap: %s\n",nt_errstr(status)));
+		talloc_free(mem_ctx);
+		return False;
 	}
 
-	sasl = data_blob_talloc(mem_ctx, NULL, 4 + creds.length + tmp_blob.length);
+	sasl = data_blob_talloc(mem_ctx, NULL, 4 + wrapped.length);
 	if (!sasl.data) {
 		DEBUG(0,("no memory\n"));
 		talloc_free(mem_ctx);
 		return False;
 	}
 
-	RSIVAL(sasl.data, 0, creds.length + tmp_blob.length);
-	memcpy(sasl.data + 4, creds.data, creds.length);
-	memcpy(sasl.data + 4 + creds.length, tmp_blob.data, tmp_blob.length);
+	RSIVAL(sasl.data, 0, wrapped.length);
+	memcpy(sasl.data + 4, wrapped.data, wrapped.length);
 
 	ret = ldapsrv_append_to_buf(&conn->sasl_out_buffer, sasl.data, sasl.length);
 	if (!ret) {
 		talloc_free(mem_ctx);
 		return False;
 	}
-	ldapsrv_consumed_from_buf(&conn->out_buffer, tmp_blob.length);
+	ldapsrv_consumed_from_buf(&conn->out_buffer, conn->out_buffer.length);
 nodata:
 	tmp_blob.data = conn->sasl_out_buffer.data;
 	tmp_blob.length = conn->sasl_out_buffer.length;

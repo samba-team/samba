@@ -81,9 +81,19 @@ struct gensec_security_ops {
 				  uint8_t *data, size_t length, 
 				  const uint8_t *whole_pdu, size_t pdu_length, 
 				  DATA_BLOB *sig);
+	NTSTATUS (*wrap)(struct gensec_security *gensec_security, 
+				  TALLOC_CTX *mem_ctx, 
+				  const DATA_BLOB *in, 
+				  DATA_BLOB *out); 
+	NTSTATUS (*unwrap)(struct gensec_security *gensec_security, 
+				  TALLOC_CTX *mem_ctx, 
+				  const DATA_BLOB *in, 
+				  DATA_BLOB *out); 
 	NTSTATUS (*session_key)(struct gensec_security *gensec_security, DATA_BLOB *session_key);
 	NTSTATUS (*session_info)(struct gensec_security *gensec_security, 
 				 struct auth_session_info **session_info); 
+	BOOL (*have_feature)(struct gensec_security *gensec_security,
+				    uint32 feature); 
 };
 	
 #define GENSEC_INTERFACE_VERSION 0
@@ -99,7 +109,6 @@ struct gensec_security {
 	enum gensec_role gensec_role;
 	BOOL subcontext;
 	uint32 want_features;
-	uint32 have_features;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

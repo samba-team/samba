@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
-
+#include "auth/auth.h"
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {
@@ -50,11 +50,12 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	struct ldap_BindRequest *req = &call->request.r.BindRequest;
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
+	struct ldapsrv_connection *conn;
 	int result;
 	const char *errstr;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS sasl_status;
-	/*BOOL ret;*/
+	BOOL ret;
 
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
 
@@ -69,7 +70,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		
 		gensec_set_target_service(call->conn->gensec, "ldap");
 
-		/*gensec_want_feature(call->conn->gensec, GENSEC_WANT_SIGN|GENSEC_WANT_SEAL);*/
+		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SIGN);
+		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SEAL);
 
 		status = gensec_start_mech_by_sasl_name(call->conn->gensec, req->creds.SASL.mechanism);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -85,6 +87,8 @@ reply:
 		return NT_STATUS_NO_MEMORY;
 	}
 	resp = &reply->msg.r.BindResponse;
+	
+	conn = call->conn;
 
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_update(call->conn->gensec, reply,
@@ -118,17 +122,14 @@ reply:
 		return status;
 	}
 
-/*	ret = ldapsrv_append_to_buf(&call->conn->sasl_out_buffer, call->conn->out_buffer.data, call->conn->out_buffer.length);
+	ret = ldapsrv_append_to_buf(&conn->sasl_out_buffer, conn->out_buffer.data, conn->out_buffer.length);
 	if (!ret) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ldapsrv_consumed_from_buf(&call->conn->out_buffer, call->conn->out_buffer.length);
-
-	status = gensec_session_info(call->conn->gensec, &call->conn->session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ldapsrv_consumed_from_buf(&conn->out_buffer, conn->out_buffer.length);
+	if (NT_STATUS_IS_OK(status)) {
+		status = gensec_session_info(conn->gensec, &conn->session_info);
 	}
-*/
 
 	return status;
 }

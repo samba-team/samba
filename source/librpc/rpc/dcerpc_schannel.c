@@ -289,10 +289,6 @@ static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 
 	dce_schan_state->state = DCERPC_SCHANNEL_STATE_START;
 	gensec_security->private_data = dce_schan_state;
-	gensec_security->have_features = 
-		GENSEC_FEATURE_SESSION_KEY | 
-		GENSEC_FEATURE_SIGN | 
-		GENSEC_FEATURE_SEAL;
 
 	talloc_set_destructor(dce_schan_state, dcerpc_schannel_destroy);
 	
@@ -513,6 +509,18 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 						 creds);
 }
 
+static BOOL dcerpc_schannel_have_feature(struct gensec_security *gensec_security,
+					  uint32 feature)
+{
+	if (feature & (GENSEC_FEATURE_SESSION_KEY | 
+		       GENSEC_FEATURE_SIGN | 
+		       GENSEC_FEATURE_SEAL)) {
+		return True;
+	}
+	return False;
+}
+
+
 static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
 	.name		= "dcerpc_schannel",
 	.auth_type	= DCERPC_AUTH_TYPE_SCHANNEL,
@@ -526,6 +534,7 @@ static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
 	.session_key	= dcerpc_schannel_session_key,
 	.session_info	= dcerpc_schannel_session_info,
 	.sig_size	= dcerpc_schannel_sig_size,
+	.have_feature  = dcerpc_schannel_have_feature
 };
 
 NTSTATUS gensec_dcerpc_schannel_init(void)
