@@ -503,10 +503,13 @@ Here is a list of all global parameters. See the section of
 each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
-\fIadd user script\fR
+\fIadd printer command\fR
 .TP 0.2i
 \(bu
-\fIaddprinter command\fR
+\fIadd share command\fR
+.TP 0.2i
+\(bu
+\fIadd user script\fR
 .TP 0.2i
 \(bu
 \fIallow trusted domains\fR
@@ -528,6 +531,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIchange notify timeout\fR
+.TP 0.2i
+\(bu
+\fIchange share command\fR
 .TP 0.2i
 \(bu
 \fIcharacter set\fR
@@ -569,10 +575,13 @@ each parameter for details. Note that some are synonyms.
 \fIdefault service\fR
 .TP 0.2i
 \(bu
-\fIdelete user script\fR
+\fIdelete printer command\fR
 .TP 0.2i
 \(bu
-\fIdeleteprinter command\fR
+\fIdelete share command\fR
+.TP 0.2i
+\(bu
+\fIdelete user script\fR
 .TP 0.2i
 \(bu
 \fIdfree command\fR
@@ -753,6 +762,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fInull passwords\fR
+.TP 0.2i
+\(bu
+\fIobey pam restrictions\fR
 .TP 0.2i
 \(bu
 \fIoplock break wait time\fR
@@ -1332,6 +1344,73 @@ each parameter for details. Note that some are synonyms.
 \fIwriteable\fR
 .SH "EXPLANATION OF EACH PARAMETER"
 .TP
+\fBadd printer command (G)\fR
+With the introduction of MS-RPC based printing
+support for Windows NT/2000 clients in Samba 2.2, The MS Add
+Printer Wizard (APW) icon is now also available in the 
+"Printers..." folder displayed a share listing. The APW
+allows for printers to be add remotely to a Samba or Windows 
+NT/2000 print server.
+
+For a Samba host this means that the printer must be 
+physically added to underlying printing system. The \fIadd 
+printer command\fR defines a script to be run which 
+will perform the necessary operations for adding the printer
+to the print system and to add the appropriate service definition 
+to the \fIsmb.conf\fR file in order that it can be 
+shared by \fBsmbd(8)\fR
+.
+
+The \fIadd printer command\fR is
+automatically invoked with the following parameter (in 
+order:
+.RS
+.TP 0.2i
+\(bu
+\fIprinter name\fR
+.TP 0.2i
+\(bu
+\fIshare name\fR
+.TP 0.2i
+\(bu
+\fIport name\fR
+.TP 0.2i
+\(bu
+\fIdriver name\fR
+.TP 0.2i
+\(bu
+\fIlocation\fR
+.TP 0.2i
+\(bu
+\fIWindows 9x driver location\fR
+.RE
+.PP
+All parameters are filled in from the PRINTER_INFO_2 structure sent 
+by the Windows NT/2000 client with one exception. The "Windows 9x
+driver location" parameter is included for backwards compatibility
+only. The remaining fields in the structure are generated from answers
+to the APW questions.
+.PP
+.PP
+Once the \fIadd printer command\fR has 
+been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to determine if the share defined by the APW
+exists. If the sharename is still invalid, then \fBsmbd
+\fRwill return an ACCESS_DENIED error to the client.
+.PP
+.PP
+See also \fI delete printer command\fR, \fIprinting\fR,
+\fIshow add
+printer wizard\fR
+.PP
+.PP
+Default: \fBnone\fR
+.PP
+.PP
+Example: \fBaddprinter command = /usr/bin/addprinter
+\fR.PP
+.TP
+\fBadd share command (G)\fR
+.TP
 \fBadd user script (G)\fR
 This is the full pathname to a script that will 
 be run \fBAS ROOT\fR by smbd(8)
@@ -1372,70 +1451,6 @@ Default: \fBadd user script = <empty string>
 \fR
 Example: \fBadd user script = /usr/local/samba/bin/add_user 
 %u\fR
-.TP
-\fBaddprinter command (G)\fR
-With the introduction of MS-RPC based printing
-support for Windows NT/2000 clients in Samba 2.2, The MS Add
-Printer Wizard (APW) icon is now also available in the 
-"Printers..." folder displayed a share listing. The APW
-allows for printers to be add remotely to a Samba or Windows 
-NT/2000 print server.
-
-For a Samba host this means that the printer must be 
-physically added to underlying printing system. The \fI addprinter command\fR defines a script to be run which 
-will perform the necessary operations for adding the printer
-to the print system and to add the appropriate service definition 
-to the \fIsmb.conf\fR file in order that it can be 
-shared by \fBsmbd(8)\fR
-.
-
-The \fIaddprinter command\fR is
-automatically invoked with the following parameter (in 
-order:
-.RS
-.TP 0.2i
-\(bu
-\fIprinter name\fR
-.TP 0.2i
-\(bu
-\fIshare name\fR
-.TP 0.2i
-\(bu
-\fIport name\fR
-.TP 0.2i
-\(bu
-\fIdriver name\fR
-.TP 0.2i
-\(bu
-\fIlocation\fR
-.TP 0.2i
-\(bu
-\fIWindows 9x driver location\fR
-.RE
-.PP
-All parameters are filled in from the PRINTER_INFO_2 structure sent 
-by the Windows NT/2000 client with one exception. The "Windows 9x
-driver location" parameter is included for backwards compatibility
-only. The remaining fields in the structure are generated from answers
-to the APW questions.
-.PP
-.PP
-Once the \fIaddprinter command\fR has 
-been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to determine if the share defined by the APW
-exists. If the sharename is still invalid, then \fBsmbd
-\fRwill return an ACCESS_DENIED error to the client.
-.PP
-.PP
-See also \fI deleteprinter command\fR, \fIprinting\fR,
-\fIshow add
-printer wizard\fR
-.PP
-.PP
-Default: \fBnone\fR
-.PP
-.PP
-Example: \fBaddprinter command = /usr/bin/addprinter
-\fR.PP
 .TP
 \fBadmin users (S)\fR
 This is a list of users who will be granted 
@@ -1620,6 +1635,8 @@ Default: \fBchange notify timeout = 60\fR
 Example: \fBchange notify timeout = 300\fR
 
 Would change the scan time to every 5 minutes.
+.TP
+\fBchange share command (G)\fR
 .TP
 \fBcharacter set (G)\fR
 This allows a smbd to map incoming filenames 
@@ -2022,6 +2039,33 @@ Example:
 .sp
 .fi
 .TP
+\fBdelete printer command (G)\fR
+With the introduction of MS-RPC based printer
+support for Windows NT/2000 clients in Samba 2.2, it is now 
+possible to delete printer at run time by issuing the 
+DeletePrinter() RPC call.
+
+For a Samba host this means that the printer must be 
+physically deleted from underlying printing system. The \fI deleteprinter command\fR defines a script to be run which 
+will perform the necessary operations for removing the printer
+from the print system and from \fIsmb.conf\fR.
+
+The \fIdelete printer command\fR is 
+automatically called with only one parameter: \fI "printer name"\fR.
+
+Once the \fIdelete printer command\fR has 
+been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to associated printer no longer exists. 
+If the sharename is still valid, then \fBsmbd
+\fRwill return an ACCESS_DENIED error to the client.
+
+See also \fI add printer command\fR, \fIprinting\fR,
+\fIshow add
+printer wizard\fR
+
+Default: \fBnone\fR
+
+Example: \fBdeleteprinter command = /usr/bin/removeprinter
+\fR.TP
 \fBdelete readonly (S)\fR
 This parameter allows readonly files to be deleted. 
 This is not normal DOS semantics, but is allowed by UNIX.
@@ -2031,6 +2075,8 @@ as rcs, where UNIX file ownership prevents changing file
 permissions, and DOS semantics prevent deletion of a read only file.
 
 Default: \fBdelete readonly = no\fR
+.TP
+\fBdelete share command (G)\fR
 .TP
 \fBdelete user script (G)\fR
 This is the full pathname to a script that will 
@@ -2085,33 +2131,6 @@ Default: \fBdelete user script = <empty string>
 Example: \fBdelete user script = /usr/local/samba/bin/del_user 
 %u\fR
 .TP
-\fBdeleteprinter command (G)\fR
-With the introduction of MS-RPC based printer
-support for Windows NT/2000 clients in Samba 2.2, it is now 
-possible to delete printer at run time by issuing the 
-DeletePrinter() RPC call.
-
-For a Samba host this means that the printer must be 
-physically deleted from underlying printing system. The \fI deleteprinter command\fR defines a script to be run which 
-will perform the necessary operations for removing the printer
-from the print system and from \fIsmb.conf\fR.
-
-The \fIdeleteprinter command\fR is 
-automatically called with only one parameter: \fI "printer name"\fR.
-
-Once the \fIdeleteprinter command\fR has 
-been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to associated printer no longer exists. 
-If the sharename is still valid, then \fBsmbd
-\fRwill return an ACCESS_DENIED error to the client.
-
-See also \fI addprinter command\fR, \fIprinting\fR,
-\fIshow add
-printer wizard\fR
-
-Default: \fBnone\fR
-
-Example: \fBdeleteprinter command = /usr/bin/removeprinter
-\fR.TP
 \fBdelete veto files (S)\fR
 This option is used when Samba is attempting to 
 delete a directory that contains one or more vetoed directories 
@@ -4295,6 +4314,18 @@ See also smbpasswd (5).
 
 Default: \fBnull passwords = no\fR
 .TP
+\fBobey pam restrictions (G)\fR
+When Samba 2.2 is configure to enable PAM support
+(i.e. --with-pam), this parameter will control whether or not Samba
+should obey PAM's account and session management directives. The 
+default behavior is to use PAM for clear text authentication only
+and to ignore any account or session management. Note that Samba
+always ignores PAM for authentication in the case of \fIencrypt passwords = yes\fR
+\&. The reason is that PAM modules cannot support the challenge/response
+authentication mechanism needed in the presence of SMB password encryption.
+
+Default: \fBobey pam restrictions = no\fR
+.TP
 \fBonly user (S)\fR
 This is a boolean option that controls whether 
 connections with usernames not in the \fIuser\fR 
@@ -4316,18 +4347,6 @@ See also the \fIuser\fR
 parameter.
 
 Default: \fBonly user = no\fR
-.TP
-\fBole locking compatibility (G)\fR
-This parameter allows an administrator to turn 
-off the byte range lock manipulation that is done within Samba to 
-give compatibility for OLE applications. Windows OLE applications 
-use byte range locking as a form of inter-process communication, by 
-locking ranges of bytes around the 2^32 region of a file range. This 
-can cause certain UNIX lock managers to crash or otherwise cause 
-problems. Setting this parameter to no means you 
-trust your UNIX lock manager to handle such cases correctly.
-
-Default: \fBole locking compatibility = yes\fR
 .TP
 \fBonly guest (S)\fR
 A synonym for \fI guest only\fR.

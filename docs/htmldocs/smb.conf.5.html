@@ -859,11 +859,11 @@ NAME="AEN253"
 ><LI
 ><P
 ><A
-HREF="#ADDUSERSCRIPT"
+HREF="#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->add user script</I
+>add printer command</I
 ></TT
 ></A
 ></P
@@ -871,11 +871,23 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#ADDPRINTERCOMMAND"
+HREF="#ADDSHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->addprinter command</I
+>add share command</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#ADDUSERSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>add user script</I
 ></TT
 ></A
 ></P
@@ -960,6 +972,18 @@ HREF="#CHANGENOTIFYTIMEOUT"
 CLASS="PARAMETER"
 ><I
 >change notify timeout</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#CHANGESHARECOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>change share command</I
 ></TT
 ></A
 ></P
@@ -1123,11 +1147,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#DELETEUSERSCRIPT"
+HREF="#DELETEPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->delete user script</I
+>delete printer command</I
 ></TT
 ></A
 ></P
@@ -1135,11 +1159,23 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#DELETEPRINTERCOMMAND"
+HREF="#DELETESHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->deleteprinter command</I
+>delete share command</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#DELETEUSERSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>delete user script</I
 ></TT
 ></A
 ></P
@@ -1860,6 +1896,18 @@ HREF="#NULLPASSWORDS"
 CLASS="PARAMETER"
 ><I
 >null passwords</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#OBEYPAMRESTRICTIONS"
+><TT
+CLASS="PARAMETER"
+><I
+>obey pam restrictions</I
 ></TT
 ></A
 ></P
@@ -2757,7 +2805,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN889"
+NAME="AEN905"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4176,7 +4224,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1361"
+NAME="AEN1377"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4185,6 +4233,184 @@ NAME="AEN1361"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+><A
+NAME="ADDPRINTERCOMMAND"
+></A
+>add printer command (G)</DT
+><DD
+><P
+>With the introduction of MS-RPC based printing
+		support for Windows NT/2000 clients in Samba 2.2, The MS Add
+		Printer Wizard (APW) icon is now also available in the 
+		"Printers..." folder displayed a share listing.  The APW
+		allows for printers to be add remotely to a Samba or Windows 
+		NT/2000 print server.</P
+><P
+>For a Samba host this means that the printer must be 
+		physically added to underlying printing system.  The <TT
+CLASS="PARAMETER"
+><I
+>add 
+		printer command</I
+></TT
+> defines a script to be run which 
+		will perform the necessary operations for adding the printer
+		to the print system and to add the appropriate service definition 
+		to the  <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file in order that it can be 
+		shared by <A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+>
+		</A
+>.</P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>add printer command</I
+></TT
+> is
+		automatically invoked with the following parameter (in 
+		order:</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>printer name</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>share name</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>port name</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>driver name</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>location</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>Windows 9x driver location</I
+></TT
+>
+			</P
+></LI
+></UL
+><P
+>All parameters are filled in from the PRINTER_INFO_2 structure sent 
+		by the Windows NT/2000 client with one exception.  The "Windows 9x
+		driver location" parameter is included for backwards compatibility
+		only.  The remaining fields in the structure are generated from answers
+		to the APW questions.</P
+><P
+>Once the <TT
+CLASS="PARAMETER"
+><I
+>add printer command</I
+></TT
+> has 
+		been executed, <B
+CLASS="COMMAND"
+>smbd</B
+> will reparse the <TT
+CLASS="FILENAME"
+>		smb.conf</TT
+> to determine if the share defined by the APW
+		exists.  If the sharename is still invalid, then <B
+CLASS="COMMAND"
+>smbd
+		</B
+> will return an ACCESS_DENIED error to the client.</P
+><P
+>See also <A
+HREF="#DELETEPRINTERCOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>		delete printer command</I
+></TT
+></A
+>, <A
+HREF="#PRINTING"
+><TT
+CLASS="PARAMETER"
+><I
+>printing</I
+></TT
+></A
+>,
+		<A
+HREF="#SHOWADDPRINTERWIZARD"
+><TT
+CLASS="PARAMETER"
+><I
+>show add
+		printer wizard</I
+></TT
+></A
+></P
+><P
+>Default: <EM
+>none</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>addprinter command = /usr/bin/addprinter
+		</B
+></P
+></DD
+><DT
+><A
+NAME="ADDSHARECOMMAND"
+></A
+>add share command (G)</DT
+><DD
+><P
+>		</P
+></DD
 ><DT
 ><A
 NAME="ADDUSERSCRIPT"
@@ -4328,174 +4554,6 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >add user script = /usr/local/samba/bin/add_user 
 		%u</B
-></P
-></DD
-><DT
-><A
-NAME="ADDPRINTERCOMMAND"
-></A
->addprinter command (G)</DT
-><DD
-><P
->With the introduction of MS-RPC based printing
-		support for Windows NT/2000 clients in Samba 2.2, The MS Add
-		Printer Wizard (APW) icon is now also available in the 
-		"Printers..." folder displayed a share listing.  The APW
-		allows for printers to be add remotely to a Samba or Windows 
-		NT/2000 print server.</P
-><P
->For a Samba host this means that the printer must be 
-		physically added to underlying printing system.  The <TT
-CLASS="PARAMETER"
-><I
->		addprinter command</I
-></TT
-> defines a script to be run which 
-		will perform the necessary operations for adding the printer
-		to the print system and to add the appropriate service definition 
-		to the  <TT
-CLASS="FILENAME"
->smb.conf</TT
-> file in order that it can be 
-		shared by <A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
->
-		</A
->.</P
-><P
->The <TT
-CLASS="PARAMETER"
-><I
->addprinter command</I
-></TT
-> is
-		automatically invoked with the following parameter (in 
-		order:</P
-><P
-></P
-><UL
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->printer name</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->share name</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->port name</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->driver name</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->location</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->Windows 9x driver location</I
-></TT
->
-			</P
-></LI
-></UL
-><P
->All parameters are filled in from the PRINTER_INFO_2 structure sent 
-		by the Windows NT/2000 client with one exception.  The "Windows 9x
-		driver location" parameter is included for backwards compatibility
-		only.  The remaining fields in the structure are generated from answers
-		to the APW questions.</P
-><P
->Once the <TT
-CLASS="PARAMETER"
-><I
->addprinter command</I
-></TT
-> has 
-		been executed, <B
-CLASS="COMMAND"
->smbd</B
-> will reparse the <TT
-CLASS="FILENAME"
->		smb.conf</TT
-> to determine if the share defined by the APW
-		exists.  If the sharename is still invalid, then <B
-CLASS="COMMAND"
->smbd
-		</B
-> will return an ACCESS_DENIED error to the client.</P
-><P
->See also <A
-HREF="#DELETEPRINTERCOMMAND"
-><TT
-CLASS="PARAMETER"
-><I
->		deleteprinter command</I
-></TT
-></A
->, <A
-HREF="#PRINTING"
-><TT
-CLASS="PARAMETER"
-><I
->printing</I
-></TT
-></A
->,
-		<A
-HREF="#SHOWADDPRINTERWIZARD"
-><TT
-CLASS="PARAMETER"
-><I
->show add
-		printer wizard</I
-></TT
-></A
-></P
-><P
->Default: <EM
->none</EM
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->addprinter command = /usr/bin/addprinter
-		</B
 ></P
 ></DD
 ><DT
@@ -5058,6 +5116,15 @@ CLASS="COMMAND"
 ></P
 ><P
 >Would change the scan time to every 5 minutes.</P
+></DD
+><DT
+><A
+NAME="CHANGESHARECOMMAND"
+></A
+>change share command (G)</DT
+><DD
+><P
+>		</P
 ></DD
 ><DT
 ><A
@@ -6040,6 +6107,102 @@ CLASS="PROGRAMLISTING"
 ></DD
 ><DT
 ><A
+NAME="DELETEPRINTERCOMMAND"
+></A
+>delete printer command (G)</DT
+><DD
+><P
+>With the introduction of MS-RPC based printer
+		support for Windows NT/2000 clients in Samba 2.2, it is now 
+		possible to delete printer at run time by issuing the 
+		DeletePrinter() RPC call.</P
+><P
+>For a Samba host this means that the printer must be 
+		physically deleted from underlying printing system.  The <TT
+CLASS="PARAMETER"
+><I
+>		deleteprinter command</I
+></TT
+> defines a script to be run which 
+		will perform the necessary operations for removing the printer
+		from the print system and from <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.
+		</P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>delete printer command</I
+></TT
+> is 
+		automatically called with only one parameter: <TT
+CLASS="PARAMETER"
+><I
+>		"printer name"</I
+></TT
+>.</P
+><P
+>Once the <TT
+CLASS="PARAMETER"
+><I
+>delete printer command</I
+></TT
+> has 
+		been executed, <B
+CLASS="COMMAND"
+>smbd</B
+> will reparse the <TT
+CLASS="FILENAME"
+>		smb.conf</TT
+> to associated printer no longer exists.  
+		If the sharename is still valid, then <B
+CLASS="COMMAND"
+>smbd
+		</B
+> will return an ACCESS_DENIED error to the client.</P
+><P
+>See also <A
+HREF="#ADDPRINTERCOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>		add printer command</I
+></TT
+></A
+>, <A
+HREF="#PRINTING"
+><TT
+CLASS="PARAMETER"
+><I
+>printing</I
+></TT
+></A
+>,
+		<A
+HREF="#SHOWADDPRINTERWIZARD"
+><TT
+CLASS="PARAMETER"
+><I
+>show add
+		printer wizard</I
+></TT
+></A
+></P
+><P
+>Default: <EM
+>none</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>deleteprinter command = /usr/bin/removeprinter
+		</B
+></P
+></DD
+><DT
+><A
 NAME="DELETEREADONLY"
 ></A
 >delete readonly (S)</DT
@@ -6056,6 +6219,15 @@ NAME="DELETEREADONLY"
 CLASS="COMMAND"
 >delete readonly = no</B
 ></P
+></DD
+><DT
+><A
+NAME="DELETESHARECOMMAND"
+></A
+>delete share command (G)</DT
+><DD
+><P
+>		</P
 ></DD
 ><DT
 ><A
@@ -6228,102 +6400,6 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >delete user script = /usr/local/samba/bin/del_user 
 		%u</B
-></P
-></DD
-><DT
-><A
-NAME="DELETEPRINTERCOMMAND"
-></A
->deleteprinter command (G)</DT
-><DD
-><P
->With the introduction of MS-RPC based printer
-		support for Windows NT/2000 clients in Samba 2.2, it is now 
-		possible to delete printer at run time by issuing the 
-		DeletePrinter() RPC call.</P
-><P
->For a Samba host this means that the printer must be 
-		physically deleted from underlying printing system.  The <TT
-CLASS="PARAMETER"
-><I
->		deleteprinter command</I
-></TT
-> defines a script to be run which 
-		will perform the necessary operations for removing the printer
-		from the print system and from <TT
-CLASS="FILENAME"
->smb.conf</TT
->.
-		</P
-><P
->The <TT
-CLASS="PARAMETER"
-><I
->deleteprinter command</I
-></TT
-> is 
-		automatically called with only one parameter: <TT
-CLASS="PARAMETER"
-><I
->		"printer name"</I
-></TT
->.</P
-><P
->Once the <TT
-CLASS="PARAMETER"
-><I
->deleteprinter command</I
-></TT
-> has 
-		been executed, <B
-CLASS="COMMAND"
->smbd</B
-> will reparse the <TT
-CLASS="FILENAME"
->		smb.conf</TT
-> to associated printer no longer exists.  
-		If the sharename is still valid, then <B
-CLASS="COMMAND"
->smbd
-		</B
-> will return an ACCESS_DENIED error to the client.</P
-><P
->See also <A
-HREF="#ADDPRINTERCOMMAND"
-><TT
-CLASS="PARAMETER"
-><I
->		addprinter command</I
-></TT
-></A
->, <A
-HREF="#PRINTING"
-><TT
-CLASS="PARAMETER"
-><I
->printing</I
-></TT
-></A
->,
-		<A
-HREF="#SHOWADDPRINTERWIZARD"
-><TT
-CLASS="PARAMETER"
-><I
->show add
-		printer wizard</I
-></TT
-></A
-></P
-><P
->Default: <EM
->none</EM
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->deleteprinter command = /usr/bin/removeprinter
-		</B
 ></P
 ></DD
 ><DT
@@ -11634,6 +11710,36 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="OBEYPAMRESTRICTIONS"
+></A
+>obey pam restrictions (G)</DT
+><DD
+><P
+>When Samba 2.2 is configure to enable PAM support
+		(i.e. --with-pam), this parameter will control whether or not Samba
+		should obey PAM's account and session management directives.  The 
+		default behavior is to use PAM for clear text authentication only
+		and to ignore any account or session management.  Note that Samba
+		always ignores PAM for authentication in the case of <A
+HREF="#ENCRYPTPASSWORDS"
+><TT
+CLASS="PARAMETER"
+><I
+>encrypt passwords = yes</I
+></TT
+>
+		</A
+>.  The reason is that PAM modules cannot support the challenge/response
+		authentication mechanism needed in the presence of SMB password encryption.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>obey pam restrictions = no</B
+></P
+></DD
+><DT
+><A
 NAME="ONLYUSER"
 ></A
 >only user (S)</DT
@@ -11690,30 +11796,6 @@ CLASS="PARAMETER"
 >Default: <B
 CLASS="COMMAND"
 >only user = no</B
-></P
-></DD
-><DT
-><A
-NAME="OLELOCKINGCOMPATIBILITY"
-></A
->ole locking compatibility (G)</DT
-><DD
-><P
->This parameter allows an administrator to turn 
- 		off the byte range lock manipulation that is done within Samba to 
-		give compatibility for OLE applications. Windows OLE applications 
-		use byte range locking as a form of inter-process communication, by 
-		locking ranges of bytes around the 2^32 region of a file range. This 
-		can cause certain UNIX lock managers to crash or otherwise cause 
-		problems. Setting this parameter to <TT
-CLASS="CONSTANT"
->no</TT
-> means you 
-		trust your UNIX lock manager to handle such cases correctly.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ole locking compatibility = yes</B
 ></P
 ></DD
 ><DT
@@ -17781,7 +17863,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5643"
+NAME="AEN5675"
 ></A
 ><H2
 >WARNINGS</H2
@@ -17811,7 +17893,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5649"
+NAME="AEN5681"
 ></A
 ><H2
 >VERSION</H2
@@ -17822,7 +17904,7 @@ NAME="AEN5649"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5652"
+NAME="AEN5684"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -17901,7 +17983,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5672"
+NAME="AEN5704"
 ></A
 ><H2
 >AUTHOR</H2
