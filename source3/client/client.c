@@ -1013,7 +1013,10 @@ static void do_put(char *rname,char *lname)
 		int ret;
 
 		if ((n = readfile(buf,1,n,f)) < 1) {
-			DEBUG(0,("Error reading local file\n"));
+			if((n == 0) && feof(f))
+				break; /* Empty local file. */
+
+			DEBUG(0,("Error reading local file: %s\n", strerror(errno) ));
 			break;
 		}
 
