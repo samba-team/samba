@@ -537,7 +537,7 @@ static service sDefault = {
 	False,			/* bUseClientDriver */
 	False,			/* bDefaultDevmode */
 	True,			/* bNTAclSupport */
-	False,			/* bUseSendfile */
+	True,			/* bUseSendfile */
 	False,			/* bProfileAcls */
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
