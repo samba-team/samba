@@ -22,6 +22,7 @@ OM_uint32 gss_accept_sec_context
   krb5_flags ap_options;
   OM_uint32 flags;
   krb5_ticket *ticket;
+  Checksum cksum;
 
   gssapi_krb5_init ();
 
@@ -40,6 +41,18 @@ OM_uint32 gss_accept_sec_context
   if (kret) {
     ret = GSS_S_FAILURE;
     goto failure;
+  }
+
+  {
+    int32_t tmp;
+
+    krb5_auth_con_getflags(gssapi_krb5_context,
+			   &(*context_handle)->auth_context,
+			   &tmp);
+    tmp |= KRB5_AUTH_CONTEXT_DO_SEQUENCE;
+    krb5_auth_con_setflags(gssapi_krb5_context,
+			   &(*context_handle)->auth_context,
+			   tmp);
   }
 
   ret = gssapi_krb5_decapsulate (input_token_buffer,
@@ -83,6 +96,27 @@ OM_uint32 gss_accept_sec_context
     flags |= GSS_C_MUTUAL_FLAG;
   flags |= GSS_C_CONF_FLAG;
   flags |= GSS_C_INTEG_FLAG;
+
+  kret = gssapi_krb5_create_8003_checksum (input_chan_bindings,
+					   flags,
+					   &cksum);
+
+  if (kret) {
+    ret = GSS_S_FAILURE;
+    goto failure;
+  }
+
+  {
+    Checksum *c2 = &(*context_handle)->auth_context->authenticator->cksum;
+    if (cksum.cksumtype != c2->cksumtype ||
+	cksum.checksum.length != c2->checksum.length ||
+	memcmp(cksum.checksum.data,
+	       c2->checksum.data,
+	       cksum.checksum.length)) {
+      ret = GSS_S_FAILURE;
+      goto failure;
+    }
+  }
 
   if (ret_flags)
     *ret_flags = flags;
