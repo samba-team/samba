@@ -423,6 +423,7 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain, NTSTATUS sta
 {
 	struct cache_entry *centry;
 	uint32 len;
+	fstring uname;
 
 	centry = centry_start(domain, status);
 	if (!centry) return;
@@ -431,7 +432,9 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain, NTSTATUS sta
 	centry_put_uint32(centry, type);
 	sid_linearize(centry->data + centry->ofs, len, sid);
 	centry->ofs += len;
-	centry_end(centry, "NS/%s/%s", domain->name, name);
+	fstrcpy(uname, name);
+	strupper(uname);
+	centry_end(centry, "NS/%s/%s", domain->name, uname);
 	centry_free(centry);
 }
 
@@ -610,10 +613,13 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
+	fstring uname;
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, name);
+	fstrcpy(uname, name);
+	strupper(uname);
+	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, uname);
 	if (!centry) goto do_query;
 	*type = centry_uint32(centry);
 	sid_parse(centry->data + centry->ofs, centry->len - centry->ofs, sid);
@@ -632,6 +638,9 @@ do_query:
 
 	/* and save it */
 	wcache_save_name_to_sid(domain, status, name, sid, *type);
+
+	/* We can't save the sid to name mapping as we don't know the
+	   correct case of the name without looking it up */
 
 	return status;
 }
@@ -674,6 +683,7 @@ do_query:
 	/* and save it */
 	refresh_sequence_number(domain, True);
 	wcache_save_sid_to_name(domain, status, sid, *name, *type, rid);
+	wcache_save_name_to_sid(domain, status, *name, sid, *type);
 
 	return status;
 }
@@ -891,5 +901,3 @@ struct winbindd_methods cache_methods = {
 	trusted_domains,
 	domain_sid
 };
-
-
