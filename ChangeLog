@@ -1,3 +1,8 @@
+1999-11-17  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_addrs.c (find_all_addresses): change code to
+ 	actually increment buf_size
+
 1999-11-14  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5.h (krb5_context_data): add `scan_interfaces'
