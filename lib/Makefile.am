@@ -10,4 +10,4 @@ dir_otp = otp
 endif
 
 SUBDIRS = roken editline com_err sl asn1 des krb5 \
-	kafs hdb kadm5 gssapi $(dir_45) $(dir_otp)
+	kafs hdb kadm5 gssapi auth $(dir_45) $(dir_otp)
