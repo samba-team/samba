@@ -70,6 +70,10 @@ void close_sock(void)
 	}
 }
 
+#define CONNECT_TIMEOUT 30
+#define WRITE_TIMEOUT CONNECT_TIMEOUT
+#define READ_TIMEOUT CONNECT_TIMEOUT
+
 /* Make sure socket handle isn't stdin, stdout or stderr */
 #define RECURSION_LIMIT 3
 
@@ -105,6 +109,14 @@ static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */)
 	return fd;
 }
 
+/****************************************************************************
+ Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
+ else
+ if SYSV use O_NDELAY
+ if BSD use FNDELAY
+ Set close on exec also.
+****************************************************************************/
+
 static int make_safe_fd(int fd) 
 {
 	int result, flags;
@@ -113,8 +125,32 @@ static int make_safe_fd(int fd)
 		close(fd);
 		return -1;
 	}
+
+	/* Socket should be nonblocking. */
+#ifdef O_NONBLOCK
+#define FLAG_TO_SET O_NONBLOCK
+#else
+#ifdef SYSV
+#define FLAG_TO_SET O_NDELAY
+#else /* BSD */
+#define FLAG_TO_SET FNDELAY
+#endif
+#endif
+
+	if ((flags = fcntl(new_fd, F_GETFL)) == -1) {
+		close(new_fd);
+		return -1;
+	}
+
+	flags |= FLAG_TO_SET;
+	if (fcntl(new_fd, F_SETFL, flags) == -1) {
+		close(new_fd);
+		return -1;
+	}
+
+#undef FLAG_TO_SET
+
 	/* Socket should be closed on exec() */
-	
 #ifdef FD_CLOEXEC
 	result = flags = fcntl(new_fd, F_GETFD, 0);
 	if (flags >= 0) {
@@ -137,6 +173,8 @@ static int winbind_named_pipe_sock(const char *dir)
 	struct stat st;
 	pstring path;
 	int fd;
+	int wait_time;
+	int slept;
 	
 	/* Check permissions on unix socket directory */
 	
@@ -185,10 +223,64 @@ static int winbind_named_pipe_sock(const char *dir)
 		return -1;
 	}
 
+	/* Set socket non-blocking and close on exec. */
+
 	if ((fd = make_safe_fd( fd)) == -1) {
 		return fd;
 	}
-	
+
+	for (wait_time = 0; connect(fd, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1;
+			wait_time += slept) {
+		struct timeval tv;
+		fd_set w_fds;
+		int ret;
+		int connect_errno = 0, errnosize;
+
+		if (wait_time >= CONNECT_TIMEOUT)
+			goto error_out;
+
+		switch (errno) {
+			case EINPROGRESS:
+				FD_ZERO(&w_fds);
+				FD_SET(fd, &w_fds);
+				tv.tv_sec = CONNECT_TIMEOUT - wait_time;
+				tv.tv_usec = 0;
+
+				ret = select(fd + 1, NULL, &w_fds, NULL, &tv);
+
+				if (ret > 0) {
+					errnosize = sizeof(connect_errno);
+
+					ret = getsockopt(fd, SOL_SOCKET,
+							SO_ERROR, &connect_errno, &errnosize);
+
+					if (ret >= 0 && connect_errno == 0) {
+						/* Connect succeed */
+						goto out;
+					}
+				}
+
+				slept = CONNECT_TIMEOUT;
+				break;
+			case EAGAIN:
+				slept = rand() % 3 + 1;
+				sleep(slept);
+				break;
+			default:
+				goto error_out;
+		}
+
+	}
+
+  out:
+
+	return fd;
+
+  error_out:
+
+	close(fd);
+	return -1;
+
 	if (connect(fd, (struct sockaddr *)&sunaddr, 
 		    sizeof(sunaddr)) == -1) {
 		close(fd);
