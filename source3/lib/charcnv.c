@@ -192,7 +192,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
 	i_len=srclen;
 	o_len=destlen;
-	retval = smb_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
+	retval = smb_iconv(descriptor, (char **)&inbuf, &i_len, &outbuf, &o_len);
 	if(retval==(size_t)-1) {
 	    	const char *reason="unknown error";
 		switch(errno) {
@@ -426,7 +426,7 @@ convert:
 	i_len = srclen;
 	o_len = destlen;
 	retval = smb_iconv(descriptor,
-			   &inbuf, &i_len,
+			   (char **)&inbuf, &i_len,
 			   &outbuf, &o_len);
 	if(retval == (size_t)-1) 		{
 	    	const char *reason="unknown error";
