@@ -1562,15 +1562,17 @@ try and browse available connections on a host
 ****************************************************************************/
 static BOOL list_servers(char *wk_grp)
 {
+	if (!cli->server_domain) return False;
+
         printf("\n\tServer               Comment\n");
         printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, workgroup, SV_TYPE_ALL, server_fn);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn);
 
         printf("\n\tWorkgroup            Master\n");
         printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, workgroup, SV_TYPE_DOMAIN_ENUM, server_fn);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn);
 	return True;
 }
 
