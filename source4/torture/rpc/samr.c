@@ -30,9 +30,13 @@ static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 */
 static void init_samr_Name(struct samr_Name *name, const char *s)
 {
-	name->name = s;
 	name->name_len = strlen_m(s)*2;
 	name->name_size = name->name_len;
+	if (name->name_len == 0) {
+		name->name = NULL;
+	} else {
+		name->name = s;
+	}
 }
 
 static BOOL test_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -77,25 +81,99 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			     struct policy_handle *handle)
 {
 	NTSTATUS status;
-	struct samr_SetUserInfo r;
+	struct samr_SetUserInfo s;
+	struct samr_QueryUserInfo q;
 	union samr_UserInfo u;
 	BOOL ret = True;
 
-	r.in.handle = handle;
-	r.in.level = 13;
-	r.in.info = &u;
+	s.in.handle = handle;
+	s.in.info = &u;
+	q.in.handle = handle;
+	q.out.info = &u;
 
-	printf("Testing SetUserInfo level %u\n", r.in.level);
+#define TESTCALL(call, r) \
+		status = dcerpc_samr_ ##call(p, mem_ctx, &r); \
+		if (!NT_STATUS_IS_OK(status)) { \
+			printf(#call " level %u failed - %s (line %d)\n", \
+			       r.in.level, nt_errstr(status), __LINE__); \
+			ret = False; \
+			break; \
+		}
 
-	init_samr_Name(&u.info13.description, "my description");
+#define STRING_EQUAL(s1, s2, field) \
+		if ((s1 && !s2) || (s2 && !s1) || strcmp(s1, s2)) { \
+			printf("Failed to set %s to '%s' (line %d)\n", \
+			       #field, s2, __LINE__); \
+			ret = False; \
+			break; \
+		}
+
+#define INT_EQUAL(i1, i2, field) \
+		if (i1 != i2) { \
+			printf("Failed to set %s to %u (line %d)\n", \
+			       #field, i2, __LINE__); \
+			ret = False; \
+			break; \
+		}
+
+#define TEST_USERINFO_NAME(lvl1, field1, lvl2, field2, value) do { \
+		printf("field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
+		q.in.level = lvl1; \
+		TESTCALL(QueryUserInfo, q) \
+		s.in.level = lvl1; \
+		u = *q.out.info; \
+		init_samr_Name(&u.info ## lvl1.field1, value); \
+		TESTCALL(SetUserInfo, s) \
+		init_samr_Name(&u.info ## lvl1.field1, ""); \
+		TESTCALL(QueryUserInfo, q); \
+		u = *q.out.info; \
+		STRING_EQUAL(u.info ## lvl1.field1.name, value, field1); \
+		q.in.level = lvl2; \
+		TESTCALL(QueryUserInfo, q) \
+		u = *q.out.info; \
+		STRING_EQUAL(u.info ## lvl2.field2.name, value, field2); \
+	} while (0)
+
+#define TEST_USERINFO_INT(lvl1, field1, lvl2, field2) do { \
+		printf("field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
+		q.in.level = lvl1; \
+		TESTCALL(QueryUserInfo, q) \
+		s.in.level = lvl1; \
+		u = *q.out.info; \
+		u.info ## lvl1.field1 = __LINE__; \
+		TESTCALL(SetUserInfo, s) \
+		u.info ## lvl1.field1 = 0; \
+		TESTCALL(QueryUserInfo, q); \
+		u = *q.out.info; \
+		INT_EQUAL(u.info ## lvl1.field1, __LINE__, field1); \
+		q.in.level = lvl2; \
+		TESTCALL(QueryUserInfo, q) \
+		u = *q.out.info; \
+		INT_EQUAL(u.info ## lvl2.field2, __LINE__, field1); \
+	} while (0)
 	
-	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo level %u failed - %s\n", 
-		       r.in.level, nt_errstr(status));
-		ret = False;
-	}
 
+	TEST_USERINFO_NAME(2, comment,  1, comment, "xx2-1 comment");
+	TEST_USERINFO_NAME(2, comment, 21, comment, "xx2-21 comment");
+
+	TEST_USERINFO_NAME(6, full_name,  1, full_name, "xx6-1 full_name");
+	TEST_USERINFO_NAME(6, full_name,  3, full_name, "xx6-3 full_name");
+	TEST_USERINFO_NAME(6, full_name,  5, full_name, "xx6-5 full_name");
+	TEST_USERINFO_NAME(6, full_name,  6, full_name, "xx6-6 full_name");
+	TEST_USERINFO_NAME(6, full_name,  8, full_name, "xx6-8 full_name");
+	TEST_USERINFO_NAME(6, full_name, 21, full_name, "xx6-21 full_name");
+	TEST_USERINFO_NAME(8, full_name, 21, full_name, "xx7-21 full_name");
+
+	TEST_USERINFO_NAME(11, logon_script, 21, logon_script, "xx11-21 logon_script");
+	TEST_USERINFO_NAME(12, profile, 21, profile, "xx12-21 profile");
+	TEST_USERINFO_NAME(13, description, 21, description, "xx13-21 description");
+	TEST_USERINFO_NAME(14, workstations, 21, workstations, "testworkstation");
+	TEST_USERINFO_NAME(20, callback, 21, callback, "xx20-21 callback");
+
+	TEST_USERINFO_INT(2, country_code, 21, country_code);
+	TEST_USERINFO_INT(2, code_page, 21, code_page);
+	TEST_USERINFO_INT(4, logon_hours[3], 5, logon_hours[3]);
+	
 	return ret;
 }
 

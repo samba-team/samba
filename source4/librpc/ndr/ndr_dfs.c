@@ -598,7 +598,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->stores, r->num_stores, sizeof(r->stores[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->stores, sizeof(r->stores[0]), r->num_stores, (ndr_pull_flags_fn_t)ndr_pull_dfs_StorageInfo));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -653,7 +655,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->stores, r->num_stores, sizeof(r->stores[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->stores, sizeof(r->stores[0]), r->num_stores, (ndr_pull_flags_fn_t)ndr_pull_dfs_StorageInfo));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -953,7 +957,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->s, r->count, sizeof(r->s[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->s, sizeof(r->s[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_dfs_Info1));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -984,7 +990,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->s, r->count, sizeof(r->s[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->s, sizeof(r->s[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_dfs_Info2));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1015,7 +1023,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->s, r->count, sizeof(r->s[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->s, sizeof(r->s[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_dfs_Info3));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1046,7 +1056,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->s, r->count, sizeof(r->s[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->s, sizeof(r->s[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_dfs_Info4));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1077,7 +1089,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->s, r->count, sizeof(r->s[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->s, sizeof(r->s[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_dfs_Info200));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1108,7 +1122,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->s, r->count, sizeof(r->s[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->s, sizeof(r->s[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_dfs_Info300));
+	}
 	}
 done:
 	return NT_STATUS_OK;

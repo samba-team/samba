@@ -1436,7 +1436,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetConn0));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1504,7 +1506,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetConn1));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1626,7 +1630,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetFile2));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1692,7 +1698,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetFile3));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1837,7 +1845,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetSess0));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1904,7 +1914,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetSess1));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1981,7 +1993,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetSess2));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2046,7 +2060,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetSess10));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2133,7 +2149,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetSess502));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2326,7 +2344,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetShare0));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2390,7 +2410,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetShare1));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2477,7 +2499,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetShare2));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2542,7 +2566,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetShare501));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2640,7 +2666,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetShare502));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2847,7 +2875,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->disk, r->size, sizeof(r->disk[0]));
+	{
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->disk, r->size));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2880,7 +2910,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetDisk0));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2967,7 +2999,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->addr, r->count, sizeof(r->addr[0]));
+	{
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->addr, r->count));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -3042,7 +3076,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetTransport0));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -3127,7 +3163,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetTransport1));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -3171,7 +3209,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetTransport2));
+	}
 	}
 done:
 	return NT_STATUS_OK;

@@ -1035,13 +1035,17 @@ NTSTATUS ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int ndr_flags, struct
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->panningwidth));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->panningheight));
 		NDR_ALLOC_N_SIZE(ndr, r->private, r->driverextra, sizeof(r->private[0]));
+	{
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->private, r->driverextra));
+	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_nstring(ndr, NDR_BUFFERS, &r->devicename));
 		NDR_CHECK(ndr_pull_nstring(ndr, NDR_BUFFERS, &r->formname));
+	{
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_BUFFERS, r->private, r->driverextra));
+	}
 done:
 	return NT_STATUS_OK;
 }

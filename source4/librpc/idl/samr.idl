@@ -457,8 +457,7 @@
 
 	typedef struct {
 		samr_Name comment;
-		uint32 unknown1;
-		uint32 unknown2;
+		samr_Name unknown; /* settable, but doesn't stick. probably obsolete */
 		uint16 country_code;
 		uint16 code_page;
 	} samr_UserInfo2;
