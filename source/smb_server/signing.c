@@ -110,6 +110,13 @@ BOOL srv_init_signing(struct smbsrv_connection *smb_conn)
 		smb_conn->signing.allow_smb_signing = True;
 		smb_conn->signing.mandatory_signing = True;
 		break;
+	case SMB_SIGNING_AUTO:
+		if (lp_domain_logons()) {
+			smb_conn->signing.allow_smb_signing = True;
+		} else {
+			smb_conn->signing.allow_smb_signing = False;
+		}
+		break;
 	}
 	return True;
 }

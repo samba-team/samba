@@ -33,7 +33,8 @@
 #define SMB_PORT2 139
 #define SMB_PORTS "445 139"
 
-enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, SMB_SIGNING_REQUIRED};
+enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, 
+			SMB_SIGNING_REQUIRED, SMB_SIGNING_AUTO};
 
 /* deny modes */
 #define DENY_DOS 0
