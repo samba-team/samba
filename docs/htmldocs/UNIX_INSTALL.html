@@ -1,0 +1,820 @@
+<HTML
+><HEAD
+><TITLE
+>How to Install and Test SAMBA</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="INSTALL"
+>How to Install and Test SAMBA</A
+></H1
+><HR></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3"
+>Step 0: Read the man pages</A
+></H1
+><P
+>The man pages distributed with SAMBA contain 
+	lots of useful info that will help to get you started. 
+	If you don't know how to read man pages then try 
+	something like:</P
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>nroff -man smbd.8 | more
+	</B
+></TT
+></P
+><P
+>Other sources of information are pointed to 
+	by the Samba web site,<A
+HREF="http://www.samba.org/"
+TARGET="_top"
+>	http://www.samba.org</A
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN11"
+>Step 1: Building the Binaries</A
+></H1
+><P
+>To do this, first run the program <B
+CLASS="COMMAND"
+>./configure
+	</B
+> in the source directory. This should automatically 
+	configure Samba for your operating system. If you have unusual 
+	needs then you may wish to run</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>./configure --help
+	</B
+></TT
+></P
+><P
+>first to see what special options you can enable.
+	Then executing</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make</B
+></TT
+></P
+><P
+>will create the binaries. Once it's successfully 
+	compiled you can use </P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make install</B
+></TT
+></P
+><P
+>to install the binaries and manual pages. You can 
+	separately install the binaries and/or man pages using</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make installbin
+	</B
+></TT
+></P
+><P
+>and</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make installman
+	</B
+></TT
+></P
+><P
+>Note that if you are upgrading for a previous version 
+	of Samba you might like to know that the old versions of 
+	the binaries will be renamed with a ".old" extension. You 
+	can go back to the previous version with</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make revert
+	</B
+></TT
+></P
+><P
+>if you find this version a disaster!</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN39"
+>Step 2: The all important step</A
+></H1
+><P
+>At this stage you must fetch yourself a 
+	coffee or other drink you find stimulating. Getting the rest 
+	of the install right can sometimes be tricky, so you will 
+	probably need it.</P
+><P
+>If you have installed samba before then you can skip 
+	this step.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN43"
+>Step 3: Create the smb configuration file.</A
+></H1
+><P
+>There are sample configuration files in the examples 
+	subdirectory in the distribution. I suggest you read them 
+	carefully so you can see how the options go together in 
+	practice. See the man page for all the options.</P
+><P
+>The simplest useful configuration file would be 
+	something like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	[global]
+	   workgroup = MYGROUP
+
+	   [homes]
+	      guest ok = no
+	      read only = no
+	</PRE
+></P
+><P
+>which would allow connections by anyone with an 
+	account on the server, using either their login name or 
+	"homes" as the service name. (Note that I also set the 
+	workgroup that Samba is part of. See BROWSING.txt for details)</P
+><P
+>Note that <B
+CLASS="COMMAND"
+>make install</B
+> will not install 
+	a <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. You need to create it 
+	yourself. </P
+><P
+>Make sure you put the smb.conf file in the same place 
+	you specified in the<TT
+CLASS="FILENAME"
+>Makefile</TT
+> (the default is to 
+	look for it in <TT
+CLASS="FILENAME"
+>/usr/local/samba/lib/</TT
+>).</P
+><P
+>For more information about security settings for the 
+	[homes] share please refer to the document UNIX_SECURITY.txt.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN57"
+>Step 4: Test your config file with 
+	<B
+CLASS="COMMAND"
+>testparm</B
+></A
+></H1
+><P
+>It's important that you test the validity of your
+	<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file using the testparm program. 
+	If testparm runs OK then it will list the loaded services. If 
+	not it will give an error message.</P
+><P
+>Make sure it runs OK and that the services look 
+	reasonable before proceeding. </P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN63"
+>Step 5: Starting the smbd and nmbd</A
+></H1
+><P
+>You must choose to start smbd and nmbd either
+	as daemons or from <B
+CLASS="COMMAND"
+>inetd</B
+>. Don't try
+	to do both!  Either you can put them in <TT
+CLASS="FILENAME"
+>	inetd.conf</TT
+> and have them started on demand
+	by <B
+CLASS="COMMAND"
+>inetd</B
+>, or you can start them as
+	daemons either from the command line or in <TT
+CLASS="FILENAME"
+>	/etc/rc.local</TT
+>. See the man pages for details
+	on the command line options. Take particular care to read
+	the bit about what user you need to be in order to start
+	Samba.  In many cases you must be root.</P
+><P
+>The main advantage of starting <B
+CLASS="COMMAND"
+>smbd</B
+>
+	and <B
+CLASS="COMMAND"
+>nmbd</B
+> using the recommended daemon method
+	is that they will respond slightly more quickly to an initial connection
+	request.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN73"
+>Step 5a: Starting from inetd.conf</A
+></H2
+><P
+>NOTE; The following will be different if 
+		you use NIS or NIS+ to distributed services maps.</P
+><P
+>Look at your <TT
+CLASS="FILENAME"
+>/etc/services</TT
+>. 
+		What is defined at port 139/tcp. If nothing is defined 
+		then add a line like this:</P
+><P
+><TT
+CLASS="USERINPUT"
+><B
+>netbios-ssn     139/tcp</B
+></TT
+></P
+><P
+>similarly for 137/udp you should have an entry like:</P
+><P
+><TT
+CLASS="USERINPUT"
+><B
+>netbios-ns	137/udp</B
+></TT
+></P
+><P
+>Next edit your <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> 
+		and add two lines something like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>		netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
+		netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
+		</PRE
+></P
+><P
+>The exact syntax of <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> 
+		varies between unixes. Look at the other entries in inetd.conf 
+		for a guide.</P
+><P
+>NOTE: Some unixes already have entries like netbios_ns 
+		(note the underscore) in <TT
+CLASS="FILENAME"
+>/etc/services</TT
+>. 
+		You must either edit <TT
+CLASS="FILENAME"
+>/etc/services</TT
+> or
+		<TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> to make them consistent.</P
+><P
+>NOTE: On many systems you may need to use the 
+		"interfaces" option in smb.conf to specify the IP address 
+		and netmask of your interfaces. Run <B
+CLASS="COMMAND"
+>ifconfig</B
+> 
+		as root if you don't know what the broadcast is for your
+		net. <B
+CLASS="COMMAND"
+>nmbd</B
+> tries to determine it at run 
+		time, but fails on some unixes. See the section on "testing nmbd" 
+		for a method of finding if you need to do this.</P
+><P
+>!!!WARNING!!! Many unixes only accept around 5 
+		parameters on the command line in <TT
+CLASS="FILENAME"
+>inetd.conf</TT
+>. 
+		This means you shouldn't use spaces between the options and 
+		arguments, or you should use a script, and start the script 
+		from <B
+CLASS="COMMAND"
+>inetd</B
+>.</P
+><P
+>Restart <B
+CLASS="COMMAND"
+>inetd</B
+>, perhaps just send 
+		it a HUP. If you have installed an earlier version of <B
+CLASS="COMMAND"
+>		nmbd</B
+> then you may need to kill nmbd as well.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN102"
+>Step 5b. Alternative: starting it as a daemon</A
+></H2
+><P
+>To start the server as a daemon you should create 
+		a script something like this one, perhaps calling 
+		it <TT
+CLASS="FILENAME"
+>startsmb</TT
+>.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>		#!/bin/sh
+		/usr/local/samba/bin/smbd -D 
+		/usr/local/samba/bin/nmbd -D 
+		</PRE
+></P
+><P
+>then make it executable with <B
+CLASS="COMMAND"
+>chmod 
+		+x startsmb</B
+></P
+><P
+>You can then run <B
+CLASS="COMMAND"
+>startsmb</B
+> by 
+		hand or execute it from <TT
+CLASS="FILENAME"
+>/etc/rc.local</TT
+>
+		</P
+><P
+>To kill it send a kill signal to the processes 
+		<B
+CLASS="COMMAND"
+>nmbd</B
+> and <B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+><P
+>NOTE: If you use the SVR4 style init system then 
+		you may like to look at the <TT
+CLASS="FILENAME"
+>examples/svr4-startup</TT
+>
+		script to make Samba fit into that system.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN118"
+>Step 6: Try listing the shares available on your 
+	server</A
+></H1
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>smbclient -L 
+	<TT
+CLASS="REPLACEABLE"
+><I
+>yourhostname</I
+></TT
+></B
+></TT
+></P
+><P
+>Your should get back a list of shares available on 
+	your server. If you don't then something is incorrectly setup. 
+	Note that this method can also be used to see what shares 
+	are available on other LanManager clients (such as WfWg).</P
+><P
+>If you choose user level security then you may find 
+	that Samba requests a password before it will list the shares. 
+	See the <B
+CLASS="COMMAND"
+>smbclient</B
+> man page for details. (you 
+	can force it to list the shares without a password by
+	adding the option -U% to the command line. This will not work 
+	with non-Samba servers)</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN127"
+>Step 7: Try connecting with the unix client</A
+></H1
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>smbclient <TT
+CLASS="REPLACEABLE"
+><I
+>	//yourhostname/aservice</I
+></TT
+></B
+></TT
+></P
+><P
+>Typically the <TT
+CLASS="REPLACEABLE"
+><I
+>yourhostname</I
+></TT
+> 
+	would be the name of the host where you installed <B
+CLASS="COMMAND"
+>	smbd</B
+>. The <TT
+CLASS="REPLACEABLE"
+><I
+>aservice</I
+></TT
+> is 
+	any service you have defined in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> 
+	file. Try your user name if you just have a [homes] section
+	in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.</P
+><P
+>For example if your unix host is bambi and your login 
+	name is fred you would type:</P
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>smbclient //bambi/fred
+	</B
+></TT
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN143"
+>Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
+	Win2k, OS/2, etc... client</A
+></H1
+><P
+>Try mounting disks. eg:</P
+><P
+><TT
+CLASS="PROMPT"
+>C:\WINDOWS\&#62; </TT
+><TT
+CLASS="USERINPUT"
+><B
+>net use d: \\servername\service
+	</B
+></TT
+></P
+><P
+>Try printing. eg:</P
+><P
+><TT
+CLASS="PROMPT"
+>C:\WINDOWS\&#62; </TT
+><TT
+CLASS="USERINPUT"
+><B
+>net use lpt1:
+	\\servername\spoolservice</B
+></TT
+></P
+><P
+><TT
+CLASS="PROMPT"
+>C:\WINDOWS\&#62; </TT
+><TT
+CLASS="USERINPUT"
+><B
+>print filename
+	</B
+></TT
+></P
+><P
+>Celebrate, or send me a bug report!</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN157"
+>What If Things Don't Work?</A
+></H1
+><P
+>If nothing works and you start to think "who wrote 
+	this pile of trash" then I suggest you do step 2 again (and 
+	again) till you calm down.</P
+><P
+>Then you might read the file DIAGNOSIS.txt and the 
+	FAQ. If you are still stuck then try the mailing list or 
+	newsgroup (look in the README for details). Samba has been 
+	successfully installed at thousands of sites worldwide, so maybe 
+	someone else has hit your problem and has overcome it. You could 
+	also use the WWW site to scan back issues of the samba-digest.</P
+><P
+>When you fix the problem PLEASE send me some updates to the
+	documentation (or source code) so that the next person will find it
+	easier. </P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN162"
+>Diagnosing Problems</A
+></H2
+><P
+>If you have installation problems then go to 
+		<TT
+CLASS="FILENAME"
+>DIAGNOSIS.txt</TT
+> to try to find the 
+		problem.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN166"
+>Scope IDs</A
+></H2
+><P
+>By default Samba uses a blank scope ID. This means 
+		all your windows boxes must also have a blank scope ID. 
+		If you really want to use a non-blank scope ID then you will 
+		need to use the -i &lt;scope&gt; option to nmbd, smbd, and 
+		smbclient. All your PCs will need to have the same setting for 
+		this to work. I do not recommend scope IDs.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN169"
+>Choosing the Protocol Level</A
+></H2
+><P
+>The SMB protocol has many dialects. Currently 
+		Samba supports 5, called CORE, COREPLUS, LANMAN1, 
+		LANMAN2 and NT1.</P
+><P
+>You can choose what maximum protocol to support 
+		in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. The default is 
+		NT1 and that is the best for the vast majority of sites.</P
+><P
+>In older versions of Samba you may have found it 
+		necessary to use COREPLUS. The limitations that led to 
+		this have mostly been fixed. It is now less likely that you 
+		will want to use less than LANMAN1. The only remaining advantage 
+		of COREPLUS is that for some obscure reason WfWg preserves 
+		the case of passwords in this protocol, whereas under LANMAN1, 
+		LANMAN2 or NT1 it uppercases all passwords before sending them,
+		forcing you to use the "password level=" option in some cases.</P
+><P
+>The main advantage of LANMAN2 and NT1 is support for 
+		long filenames with some clients (eg: smbclient, Windows NT 
+		or Win95). </P
+><P
+>See the smb.conf(5) manual page for more details.</P
+><P
+>Note: To support print queue reporting you may find 
+		that you have to use TCP/IP as the default protocol under 
+		WfWg. For some reason if you leave Netbeui as the default 
+		it may break the print queue reporting on some systems. 
+		It is presumably a WfWg bug.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN178"
+>Printing from UNIX to a Client PC</A
+></H2
+><P
+>To use a printer that is available via a smb-based 
+		server from a unix host you will need to compile the 
+		smbclient program. You then need to install the script 
+		"smbprint". Read the instruction in smbprint for more details.
+		</P
+><P
+>There is also a SYSV style script that does much 
+		the same thing called smbprint.sysv. It contains instructions.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN182"
+>Locking</A
+></H2
+><P
+>One area which sometimes causes trouble is locking.</P
+><P
+>There are two types of locking which need to be 
+		performed by a SMB server. The first is "record locking" 
+		which allows a client to lock a range of bytes in a open file. 
+		The second is the "deny modes" that are specified when a file 
+		is open.</P
+><P
+>Record locking semantics under Unix is very
+		different from record locking under Windows. Versions
+		of Samba before 2.2 have tried to use the native
+		fcntl() unix system call to implement proper record
+		locking between different Samba clients. This can not
+		be fully correct due to several reasons. The simplest
+		is the fact that a Windows client is allowed to lock a
+		byte range up to 2^32 or 2^64, depending on the client
+		OS. The unix locking only supports byte ranges up to
+		2^31. So it is not possible to correctly satisfy a
+		lock request above 2^31. There are many more
+		differences, too many to be listed here.</P
+><P
+>Samba 2.2 and above implements record locking
+		completely independent of the underlying unix
+		system. If a byte range lock that the client requests
+		happens to fall into the range 0-2^31, Samba hands
+		this request down to the Unix system. All other locks
+		can not be seen by unix anyway.</P
+><P
+>Strictly a SMB server should check for locks before 
+		every read and write call on a file. Unfortunately with the 
+		way fcntl() works this can be slow and may overstress the 
+		rpc.lockd. It is also almost always unnecessary as clients 
+		are supposed to independently make locking calls before reads 
+		and writes anyway if locking is important to them. By default 
+		Samba only makes locking calls when explicitly asked
+		to by a client, but if you set "strict locking = yes" then it will
+		make lock checking calls on every read and write. </P
+><P
+>You can also disable by range locking completely 
+		using "locking = no". This is useful for those shares that 
+		don't support locking or don't need it (such as cdroms). In 
+		this case Samba fakes the return codes of locking calls to 
+		tell clients that everything is OK.</P
+><P
+>The second class of locking is the "deny modes". These 
+		are set by an application when it opens a file to determine 
+		what types of access should be allowed simultaneously with 
+		its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
+		or DENY_ALL. There are also special compatibility modes called 
+		DENY_FCB and  DENY_DOS.</P
+><P
+>You can disable share modes using "share modes = no". 
+		This may be useful on a heavily loaded server as the share 
+		modes code is very slow. See also the FAST_SHARE_MODES 
+		option in the Makefile for a way to do full share modes 
+		very fast using shared memory (if your OS supports it).</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN192"
+>Mapping Usernames</A
+></H2
+><P
+>If you have different usernames on the PCs and 
+		the unix server then take a look at the "username map" option. 
+		See the smb.conf man page for details.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN195"
+>Other Character Sets</A
+></H2
+><P
+>If you have problems using filenames with accented 
+		characters in them (like the German, French or Scandinavian 
+		character sets) then I recommend you look at the "valid chars" 
+		option in smb.conf and also take a look at the validchars 
+		package in the examples directory.</P
+></DIV
+></DIV
+></DIV
+></BODY
+></HTML
+>
