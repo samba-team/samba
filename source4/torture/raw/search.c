@@ -896,8 +896,7 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (StrCaseCmp(name1, name2) > 0) {
 			printf("non-alphabetical order at entry %d  '%s' '%s'\n", 
 			       i, name1, name2);
-			printf("Server does not produce sorted directory listings\n");
-			ret = False;
+			printf("Server does not produce sorted directory listings (not an error)\n");
 			goto done;
 		}
 	}
