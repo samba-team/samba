@@ -330,7 +330,7 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 	char buf_rd[131072];
 	unsigned count;
 	unsigned countprev = 0;
-	unsigned sent = 0;
+	ssize_t sent = 0;
 	BOOL correct = True;
 
 	srandom(1);
@@ -382,7 +382,7 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 				sent = sizeof(buf) - count;
 			}
 
-			if (cli_write(c, fnum, 0, buf+count, count, sent) != sent) {
+			if (cli_write(c, fnum, 0, buf+count, count, (size_t)sent) != sent) {
 				printf("write failed (%s)\n", cli_errstr(c));
 				correct = False;
 			}
@@ -428,8 +428,8 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 	int fnum1;
 	int fnum2;
 	int i;
-	char buf[131072];
-	char buf_rd[131072];
+	uchar buf[131072];
+	uchar buf_rd[131072];
 	BOOL correct = True;
 	ssize_t bytes_read;
 
