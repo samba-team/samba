@@ -407,7 +407,7 @@ static BOOL process(struct client_info *info, char *cmd_str)
 	else
 		while (!feof(stdin))
 		{
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE
 			char *ret_line;
 #endif
 			pstring pline;
@@ -436,7 +436,7 @@ static BOOL process(struct client_info *info, char *cmd_str)
 				    sizeof(pline) - 1);
 			safe_strcat(pline, "]$ ", sizeof(pline) - 1);
 
-#ifndef HAVE_LIBREADLINE
+#ifndef HAVE_READLINE
 
 			/* display a prompt */
 			fprintf(out_hnd, "%s", CNV_LANG(pline));
@@ -450,7 +450,7 @@ static BOOL process(struct client_info *info, char *cmd_str)
 				break;
 			}
 
-#else /* HAVE_LIBREADLINE */
+#else /* HAVE_READLINE */
 
 			if (!(ret_line = readline(pline)))
 				break;
@@ -521,7 +521,7 @@ static void usage(char *pname)
 	fprintf(out_hnd, "\n");
 }
 
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE
 
 /****************************************************************************
 GNU readline completion functions
@@ -816,7 +816,7 @@ char *complete_samenum_grp(char *text, int state)
 	return NULL;
 }
 
-#endif /* HAVE_LIBREADLINE */
+#endif /* HAVE_READLINE */
 
 static void set_user_password(struct ntuser_creds *u,
 			      BOOL got_pass, char *password)
@@ -1397,7 +1397,7 @@ static void read_user_env(struct ntuser_creds *u)
 
 void readline_init(void)
 {
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE
 
 	/* Initialise GNU Readline */
 
@@ -1412,7 +1412,7 @@ void readline_init(void)
 #else
 	int x;
 	x = 0;			/* stop compiler warnings */
-#endif /* HAVE_LIBREADLINE */
+#endif /* HAVE_READLINE */
 }
 
 /****************************************************************************

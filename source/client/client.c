@@ -1570,7 +1570,7 @@ static void process_command_string(char *cmd)
 	}
 }	
 
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE
 
 /****************************************************************************
 GNU readline completion functions
@@ -1738,7 +1738,7 @@ static char *complete_cmd_null(char *text, int state)
     return NULL;
 }
 
-#endif /* HAVE_LIBREADLINE */
+#endif /* HAVE_READLINE */
 
 /****************************************************************************
 process commands on stdin
@@ -1746,7 +1746,7 @@ process commands on stdin
 static void process_stdin(void)
 {
 	pstring line;
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE
 	pstring promptline;
 #endif
 	char *ptr;
@@ -1755,7 +1755,7 @@ static void process_stdin(void)
 		fstring tok;
 		int i;
 
-#ifndef HAVE_LIBREADLINE
+#ifndef HAVE_READLINE
 
 		/* display a prompt */
 		DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
@@ -1767,7 +1767,7 @@ static void process_stdin(void)
 		if (!fgets(line,1000,stdin))
 			break;
 
-#else /* !HAVE_LIBREADLINE */
+#else /* !HAVE_READLINE */
 
 		/* Read input using GNU Readline */
 		
@@ -2315,7 +2315,7 @@ static int do_message_op(void)
 		exit(1);
 	}
 
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE
 
 	/* Initialise GNU Readline */
 	
@@ -2327,7 +2327,7 @@ static int do_message_op(void)
 	
 	using_history();
 
-#endif /* HAVE_LIBREADLINE */
+#endif /* HAVE_READLINE */
 
 	DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
 

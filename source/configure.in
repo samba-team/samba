@@ -309,6 +309,13 @@ if test "$ac_cv_header_readline_h" = "yes" ||
   AC_CHECK_LIB(readline,readline)
 fi
 
+AC_CACHE_CHECK([for readline],samba_cv_HAVE_READLINE,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/readline.c"],
+           samba_cv_HAVE_READLINE=yes,samba_cv_HAVE_READLINE=no,samba_cv_HAVE_READLINE=cross)])
+if test x"$samba_cv_HAVE_READLINE" = x"yes"; then
+    AC_DEFINE(HAVE_READLINE)
+fi
+
 
 # The following test taken from the cvs sources
 # If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
