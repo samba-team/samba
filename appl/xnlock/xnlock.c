@@ -27,6 +27,8 @@ RCSID("$Id$");
 #include <krb.h>
 #include <kafs.h>
 
+#include "roken.h"
+
 char *crypt(const char *, const char *);
 
 char inst[100];
@@ -523,6 +525,71 @@ countdown(XtPointer _t, XtIntervalId *_d)
     return;
 }
 
+static int
+verify_unix(char *user, char *password)
+{
+    struct passwd *pw;
+    
+    pw = k_getpwnam(user);
+    if(pw == NULL)
+	return -1;
+    if(strlen(pw->pw_passwd) == 0 && strlen(password) == 0)
+	return 0;
+    if(strcmp(crypt(password, pw->pw_passwd), pw->pw_passwd) == 0)
+    return 0;
+    return -1;
+}
+
+static int
+verify(char *password)
+{
+    int ret;
+
+    /*
+     * First try with root password, if allowed.
+     */
+    
+    if(appres.accept_root && verify_unix("root", password) == 0)
+	return 0;
+    /*
+     * Password that log out user
+     */
+    if (getuid() != 0 &&
+	geteuid() != 0 &&
+	(time(0) - locked_at) > ALLOW_LOGOUT &&
+	strncmp(password, LOGOUT_PASSWD, sizeof(LOGOUT_PASSWD)) == 0)
+	    {
+		signal(SIGHUP, SIG_IGN);
+		kill(-1, SIGHUP);
+		sleep(5);
+		/* If the X-server shut down then so will we, else
+		 * continue */
+		signal(SIGHUP, SIG_DFL);
+	    }
+    /*
+     * Try to verify as user with kerberos.
+     */
+
+    ret = krb_verify_user(name, inst, realm, password);
+    
+    if(ret == KSUCCESS){
+	if(k_hasafs())
+	    k_afsklog(0, 0);
+	return 0;
+    }
+
+    fprintf(stderr, "%s: Warning: %s\n", ProgName, 
+	    (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
+    
+    /*
+     * Try to verify as user.
+     */
+    if(verify_unix(name, password) == 0)
+	return 0;
+    return -1;
+}
+
+
 static void
 GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 {
@@ -533,6 +600,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     char c;
     KeySym keysym;
     int echolen;
+    int old_state = state;
 
     if (event->type == ButtonPress) {
 	x = event->x, y = event->y;
@@ -548,7 +616,6 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	cnt = 0;
 	time_left = 30;
 	countdown((XtPointer)&time_left, 0);
-	return;
     }
     if (event->type == KeyRelease) {
       keysym = XLookupKeysym(event, 0);
@@ -558,6 +625,9 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     }
     if (event->type != KeyPress)
 	return;
+
+    time_left = 30;
+    
     keysym = XLookupKeysym(event, 0);
     if (keysym == XK_Control_L || keysym == XK_Control_R) {
       is_ctrl = XNLOCK_CTRL;
@@ -567,65 +637,16 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	return;
     if (keysym == XK_Return || keysym == XK_Linefeed) {
 	passwd[cnt] = 0;
+	if(old_state == IS_MOVING)
+	    return;
 	XtRemoveTimeOut(timeout_id);
-	/*
-	 * First try with root password, if allowed.
-	 */
-	if (appres.accept_root &&
-	    (root_pw[0] == 0 && cnt == 0 ||
-	     cnt && root_pw[0] && !strcmp(crypt(passwd, root_pw), root_pw)))
+
+	if(verify(passwd) == 0)
 	    leave();
-	/*
-	 * Password that log out user
-	 */
-	if (    getuid() != 0
-	    && geteuid() != 0
-	    && (time(0) - locked_at) > ALLOW_LOGOUT
-	    && strncmp(passwd, LOGOUT_PASSWD, sizeof(LOGOUT_PASSWD)) == 0)
-	    {
-		signal(SIGHUP, SIG_IGN);
-		kill(-1, SIGHUP);
-		sleep(5);
-		/* If the X-server shut down then so will we, else
-		 * continue */
-		signal(SIGHUP, SIG_DFL);
-	    }
-	/*
-	 * Try to verify as user with kerberos.
-	 */
-	if (realm[0] != 0)
-	    {
-		if (KSUCCESS == krb_get_pw_in_tkt(name,
-						  inst,
-						  realm,
-						  "krbtgt",
-						  realm,
-						  DEFAULT_TKT_LIFE,
-						  passwd))
-		    {
-			int code;
-			if (k_hasafs())
-			    {
-				if ((code = k_afsklog(NULL, NULL)) != KSUCCESS
-				    && code != KDC_PR_UNKNOWN)
-				    fprintf(stderr,
-					    "%s: Warning %s\n",
-					    ProgName,
-					    krb_get_err_text(code));
-			    }
-			leave();
-		    }
-	    }
-	/*
-	 * Try to verify as user.
-	 */
-	if (!strcmp(crypt(passwd, pw->pw_passwd), pw->pw_passwd))
-	  leave();
 
 	XDrawImageString(dpy, XtWindow(widget), gc,
 	    time_x, time_y, FAIL_MSG, strlen(FAIL_MSG));
 	time_left = 0;
-	state = IS_MOVING;
 	timeout_id = XtAppAddTimeOut(app, 2000L, countdown, &time_left);
 	return;
     }
