@@ -60,7 +60,7 @@ static BOOL init_registry_data( void )
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet" );
 	regsubkey_ctr_addkey( &subkeys, "Control" );
-	regsubkey_ctr_addkey( &subkeys, "services" );
+	regsubkey_ctr_addkey( &subkeys, "Services" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
@@ -81,7 +81,7 @@ static BOOL init_registry_data( void )
 
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services" );
+	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services" );
 	regsubkey_ctr_addkey( &subkeys, "Netlogon" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
@@ -89,14 +89,14 @@ static BOOL init_registry_data( void )
 		
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon" );
-	regsubkey_ctr_addkey( &subkeys, "parameters" );
+	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Netlogon" );
+	regsubkey_ctr_addkey( &subkeys, "Parameters" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 		
 	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon/parameters" );
+	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Netlogon/Parameters" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 	
