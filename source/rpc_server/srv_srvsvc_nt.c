@@ -1569,7 +1569,7 @@ uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
  These disks would the disks listed by this function.
  Users could then create shares relative to these disks.  Watch out for moving these disks around.
  "Nigel Williams" <nigel@veritas.com>.
-/***********************************************************************************/
+***********************************************************************************/
 
 const char *server_disks[] = {"C:"};
 
