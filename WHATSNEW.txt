@@ -1,6 +1,17 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha9
+- nicer net error messages (tpot)
+- trust account patches (mimir)
+- solaris link option update (davecb)
+- added lsa_query_secobj() server fn (jfm)
+- spoolss changeid fix (jerry)
+- domain auth error fix (jmcd)
+- HPUX acl code (jra)
+- set filetime on close fix (jra)
+- allow select of org unit in ads join (tridge)
+
 Changes in alpha8
 - fixed compile of wb_client.c (tridge)
 - fixed net time to use localtime (tridge)
