@@ -31,6 +31,10 @@
 #define AFS_SYSCALL2	258
 #endif
 
+#if defined(__ultrix)
+#define AFS_SYSCALL	31
+#endif
+
 #if defined(__linux)
 /* Kent Engström <kent@lysator.liu.se> 1995-08-22
    Linux has no SIGSYS signal. Furthermore, the normal
