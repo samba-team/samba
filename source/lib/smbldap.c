@@ -306,7 +306,7 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 		return False;
 	}
 	
-	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, max_len) == (size_t)-1) {
+	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, max_len, False) == (size_t)-1) {
 		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
 			  attribute, values[0]));
 		ldap_value_free(values);

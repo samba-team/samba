@@ -453,17 +453,13 @@ static BOOL is_legal_name(const char *name)
 			/* Possible start of mb character. */
 			char mbc[2];
 			/*
-			 * We know the following will return 2 bytes. What
-			 * we need to know was if errno was set.
 			 * Note that if CH_UNIX is utf8 a string may be 3
 			 * bytes, but this is ok as mb utf8 characters don't
 			 * contain embedded ascii bytes. We are really checking
 			 * for mb UNIX asian characters like Japanese (SJIS) here.
 			 * JRA.
 			 */
-			errno = 0;
-			convert_string(CH_UNIX, CH_UCS2, name, 2, mbc, 2);
-			if (!errno) {
+			if (convert_string(CH_UNIX, CH_UCS2, name, 2, mbc, 2, False) == 2) {
 				/* Was a good mb string. */
 				name += 2;
 				continue;
