@@ -444,6 +444,9 @@
 /* Define to 1 if you have the `getdents' function. */
 #undef HAVE_GETDENTS
 
+/* Define to 1 of you have the `getdirentries' function */
+#undef HAVE_GETDIRENTRIES`
+
 /* Define to 1 if you have the `getgrent' function. */
 #undef HAVE_GETGRENT
 
