@@ -303,7 +303,7 @@ static BOOL test_EnumPorts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	status = dcerpc_spoolss_EnumPorts(p, mem_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumPorts failed -- %s\n", nt_errstr(status));
+		printf("EnumPorts failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -316,7 +316,7 @@ static BOOL test_EnumPorts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		status = dcerpc_spoolss_EnumPorts(p, mem_ctx, &r);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPorts failed -- %s\n", nt_errstr(status));
+			printf("EnumPorts failed - %s\n", nt_errstr(status));
 			return False;
 		}
 
@@ -325,6 +325,39 @@ static BOOL test_EnumPorts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			return False;
 		}
 	}
+
+	return True;
+}
+
+static BOOL test_AddPort(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct spoolss_AddPort r;
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", 
+					   dcerpc_server_name(p));
+	r.in.unknown = 0;
+	r.in.monitor_name = "foo";
+
+	printf ("Testing AddPort\n");
+
+	status = dcerpc_spoolss_AddPort(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddPort failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	/* win2k3 returns WERR_NOT_SUPPORTED */
+
+#if 0
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("AddPort failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+#endif
 
 	return True;
 }
@@ -1094,6 +1127,8 @@ BOOL torture_rpc_spoolss(void)
 	mem_ctx = talloc_init("torture_rpc_spoolss");
 
 	ret &= test_OpenPrinter_badnames(p, mem_ctx);
+
+	ret &= test_AddPort(p, mem_ctx);
 
 	ret &= test_EnumPorts(p, mem_ctx);
 

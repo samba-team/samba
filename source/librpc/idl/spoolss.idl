@@ -712,6 +712,9 @@
 	/******************/
 	/* Function: 0x25 */
 	WERROR spoolss_AddPort(
+	       [in] unistr *server_name,
+	       [in] uint32 unknown,
+	       [in] unistr monitor_name
 	);
 
 	/******************/
