@@ -847,6 +847,84 @@ static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, c
 	*modlist = mods;
 }
 
+/*******************************************************************
+ Delete complete object or objectclass and attrs from
+ object found in search_result depending on lp_ldap_del_only_sam
+******************************************************************/
+static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
+				     LDAPMessage *result,
+				     const char *objectclass,
+				     const char **attrs)
+{
+	int rc;
+	LDAPMessage *entry;
+	LDAPMod **mods = NULL;
+	char *name, *dn;
+	BerElement *ptr = NULL;
+
+	rc = ldap_count_entries(ldap_state->ldap_struct, result);
+
+	if (rc != 1) {
+		DEBUG(0, ("Entry must exist exactly once!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	entry = ldap_first_entry(ldap_state->ldap_struct, result);
+	dn    = ldap_get_dn(ldap_state->ldap_struct, entry);
+
+	if (!lp_ldap_del_only_sam()) {
+		NTSTATUS ret = NT_STATUS_OK;
+		rc = ldapsam_delete(ldap_state, dn);
+
+		if (rc != LDAP_SUCCESS) {
+			DEBUG(0, ("Could not delete object %s\n", dn));
+			ret = NT_STATUS_UNSUCCESSFUL;
+		}
+		ldap_memfree(dn);
+		return ret;
+	}
+
+	/* Ok, delete only the SAM attributes */
+
+	for (name = ldap_first_attribute(ldap_state->ldap_struct, entry, &ptr);
+	     name != NULL;
+	     name = ldap_next_attribute(ldap_state->ldap_struct, entry, ptr)) {
+
+		const char **attrib;
+
+		/* We are only allowed to delete the attributes that
+		   really exist. */
+
+		for (attrib = attrs; *attrib != NULL; attrib++) {
+			if (StrCaseCmp(*attrib, name) == 0) {
+				DEBUG(10, ("deleting attribute %s\n", name));
+				make_a_mod(&mods, LDAP_MOD_DELETE, name, NULL);
+			}
+		}
+
+		ldap_memfree(name);
+	}
+
+	if (ptr != NULL) {
+		ber_free(ptr, 0);
+	}
+	
+	make_a_mod(&mods, LDAP_MOD_DELETE, "objectClass", objectclass);
+
+	rc = ldapsam_modify(ldap_state, dn, mods);
+	ldap_mods_free(mods, 1);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0, ("could not delete attributes for %s, error: %s\n",
+			  dn, ldap_err2string(rc)));
+		ldap_memfree(dn);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ldap_memfree(dn);
+	return NT_STATUS_OK;
+}
+					  
 /* New Interface is being implemented here */
 
 /**********************************************************************
@@ -1772,9 +1850,13 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	const char *sname;
 	int rc;
-	char *dn;
-	LDAPMessage *entry;
 	LDAPMessage *result;
+	NTSTATUS ret;
+	const char *sam_user_attrs[] =
+	{ "lmPassword", "ntPassword", "pwdLastSet", "logonTime", "logoffTime",
+	  "kickoffTime", "pwdCanChange", "pwdMustChange", "acctFlags",
+	  "displayName", "smbHome", "homeDrive", "scriptPath", "profilePath",
+	  "userWorkstations", "primaryGroupID", "domain", "rid", NULL };
 
 	if (!sam_acct) {
 		DEBUG(0, ("sam_acct was NULL!\n"));
@@ -1790,30 +1872,10 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (ldap_count_entries (ldap_state->ldap_struct, result) == 0) {
-		DEBUG (0, ("User doesn't exit!\n"));
-		ldap_msgfree (result);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	entry = ldap_first_entry (ldap_state->ldap_struct, result);
-	dn = ldap_get_dn (ldap_state->ldap_struct, entry);
+	ret = ldapsam_delete_entry(ldap_state, result, "sambaAccount",
+				   sam_user_attrs);
 	ldap_msgfree(result);
-	
-	rc = ldapsam_delete(ldap_state, dn);
-
-	ldap_memfree (dn);
-	if (rc != LDAP_SUCCESS) {
-		char *ld_error;
-		ldap_get_option (ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
-		DEBUG (0,("failed to delete user with uid = %s with: %s\n\t%s\n",
-			sname, ldap_err2string (rc), ld_error));
-		free (ld_error);
-		return NT_STATUS_CANNOT_DELETE;
-	}
-
-	DEBUG (2,("successfully deleted uid = %s from the LDAP database\n", sname));
-	return NT_STATUS_OK;
+	return ret;
 }
 
 /**********************************************************************
@@ -2322,12 +2384,13 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 	pstring sidstring, filter;
-	int rc;
-	char *dn;
 	LDAPMessage *result;
-	LDAPMessage *entry;
-	LDAPMod **mods;
+	int rc;
+	NTSTATUS ret;
 
+	const char *sam_group_attrs[] = { "ntSid", "ntGroupType",
+					  "description", "displayName",
+					  NULL };
 	sid_to_string(sidstring, &sid);
 	snprintf(filter, sizeof(filter)-1,
 		 "(&(objectClass=sambaGroupMapping)(ntSid=%s))", sidstring);
@@ -2335,38 +2398,13 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 	rc = ldapsam_search_one_group(ldap_state, filter, &result);
 
 	if (rc != LDAP_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
-	if (ldap_count_entries(ldap_state->ldap_struct, result) != 1) {
-		DEBUG(0, ("Group must exist exactly once\n"));
-		ldap_msgfree(result);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	entry = ldap_first_entry(ldap_state->ldap_struct, result);
-	dn = ldap_get_dn(ldap_state->ldap_struct, entry);
-        ldap_msgfree(result);
-
-	mods = NULL;
-	make_a_mod(&mods, LDAP_MOD_DELETE, "objectClass", "sambaGroupMapping");
-	make_a_mod(&mods, LDAP_MOD_DELETE, "ntSid", NULL);
-	make_a_mod(&mods, LDAP_MOD_DELETE, "ntGroupType", NULL);
-	make_a_mod(&mods, LDAP_MOD_DELETE, "description", NULL);
-	make_a_mod(&mods, LDAP_MOD_DELETE, "displayName", NULL);
-	
-	rc = ldapsam_modify(ldap_state, dn, mods);
-
-	ldap_mods_free(mods, 1);
-
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(0, ("failed to delete group %s\n", sidstring));
-                return NT_STATUS_CANNOT_DELETE;
-	}
-
-	DEBUG(2, ("successfully delete group mapping %s in LDAP\n",
-		  sidstring));
-	return NT_STATUS_OK;
+	ret = ldapsam_delete_entry(ldap_state, result, "sambaGroupMapping",
+				   sam_group_attrs);
+	ldap_msgfree(result);
+	return ret;
 }
 
 static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
