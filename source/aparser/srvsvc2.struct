@@ -1,0 +1,655 @@
+module srvsvc
+
+option autoalign True
+option relative False
+option recurse True
+option foo blah
+
+#define BOOL uint32
+#define LONG uint32
+#define DWORD uint32
+#define STATUS uint32
+
+typedef struct _UNISTR2 {
+       uint32 max_len;
+       uint32 undoc;
+       uint32 str_len;
+       wchar  buffer[str_len];
+} UNISTR2;
+
+struct LPWSTR {
+       UNISTR2 *str;
+};
+
+
+
+	/* -- CHARACTER DEVICE INFORMATION -- */
+
+	typedef struct _CHARDEV_INFO_0 {
+		LPWSTR  pszName;
+	} CHARDEV_INFO_0;
+
+	typedef struct _CHARDEV_INFO_1 {
+		LPWSTR  pszName;
+		DWORD   dwStatus;
+		LPWSTR  pszUser;
+		DWORD   dwTime;
+	} CHARDEV_INFO_1;
+
+	typedef union _CHARDEV_INFO switch (DWORD dwLevel) ctr {
+		case 1: CHARDEV_INFO_0 *ci0;
+		case 2: CHARDEV_INFO_1 *ci1;
+	} CHARDEV_INFO;
+
+	typedef struct _CHARDEV_ENUM_0 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] CHARDEV_INFO_0 *ci0;
+	} CHARDEV_ENUM_0;
+
+	typedef struct _CHARDEV_ENUM_1 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] CHARDEV_INFO_1 *ci1;
+	} CHARDEV_ENUM_1;
+
+	typedef struct _CHARDEV_ENUM {
+		DWORD dwLevel;
+		[switch_is(dwLevel)] union {
+			[case(0)] CHARDEV_ENUM_0 *ce0;
+			[case(1)] CHARDEV_ENUM_1 *ce1;
+		} ctr;
+	} CHARDEV_ENUM;
+
+	STATUS NetrCharDevEnum(    /* Function 0x00 */
+	              [in,unique] LPWSTR        pszServer,
+	                 [in,out] CHARDEV_ENUM* pCharDevEnum,
+	                     [in] DWORD         dwMaxLen,
+	                    [out] DWORD*        dwEntries,
+	                 [in,out] DWORD*        hResume
+						 );
+
+	STATUS NetrCharDevGetInfo(     /* Function 0x01 */
+	              [in,unique] LPWSTR        pszServer,
+	                 [in,ref] LPWSTR        pszDevice,
+	                     [in] DWORD         dwLevel,
+	                    [out] CHARDEV_INFO* pCharDevInfo
+	                      );
+
+	STATUS NetrCharDevControl(     /* Function 0x02 */
+	              [in,unique] LPWSTR pszServer,
+	                 [in,ref] LPWSTR pszDevice,
+	                     [in] DWORD  dwOpcode
+	                      );
+
+	/* -- CHARACTER DEVICE QUEUE INFORMATION -- */
+
+	typedef struct _CHARDEVQ_INFO_0 {
+		LPWSTR  pszName;
+	} CHARDEVQ_INFO_0;
+
+	typedef struct _CHARDEVQ_INFO_1 {
+		LPWSTR  pszName;
+		DWORD   dwPriority;
+		LPWSTR  pszDevices;
+		DWORD   dwNumUsers;
+		DWORD   dwNumAhead;
+	} CHARDEVQ_INFO_1;
+
+	typedef union _CHARDEVQ_INFO switch (DWORD dwLevel) ctr {
+		case 1: CHARDEVQ_INFO_0 *ci0;
+		case 2: CHARDEVQ_INFO_1 *ci1;
+	} CHARDEVQ_INFO;
+
+	typedef struct _CHARDEVQ_ENUM_0 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] CHARDEVQ_INFO_0 *ci0;
+	} CHARDEVQ_ENUM_0;
+
+	typedef struct _CHARDEVQ_ENUM_1 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] CHARDEVQ_INFO_1 *ci1;
+	} CHARDEVQ_ENUM_1;
+
+	typedef struct _CHARDEVQ_ENUM {
+		DWORD dwLevel;
+		[switch_is(dwLevel)] union {
+			[case(0)] CHARDEVQ_ENUM_0 *ce0;
+			[case(1)] CHARDEVQ_ENUM_1 *ce1;
+		} ctr;
+	} CHARDEVQ_ENUM;
+
+	STATUS NetrCharDevQEnum(       /* Function 0x03 */
+	              [in,unique] LPWSTR         pszServer,
+	              [in,unique] LPWSTR         pszUser,
+	                 [in,out] CHARDEVQ_ENUM* pCharDevQEnum,
+	                     [in] DWORD          dwMaxLen,
+	                    [out] DWORD*         dwEntries,
+	                 [in,out] DWORD*         hResume
+						    );
+
+	STATUS NetrCharDevQGetInfo(    /* Function 0x04 */
+	              [in,unique] LPWSTR         pszServer,
+	                 [in,ref] LPWSTR         pszQueue,
+	                 [in,ref] LPWSTR         pszUser,
+	                     [in] DWORD          dwLevel,
+	                    [out] CHARDEVQ_INFO* pCharDevQInfo
+	                           );
+
+	STATUS NetrCharDevQSetInfo(    /* Function 0x05 */
+	              [in,unique] LPWSTR         pszServer,
+	                 [in,ref] LPWSTR         pszQueue,
+	                     [in] DWORD          dwLevel,
+	                     [in] CHARDEVQ_INFO* pCharDevQInfo,
+	                 [in,out] DWORD*         dwParmError
+	                           );
+
+	STATUS NetrCharDevQPurge(      /* Function 0x06 */
+	              [in,unique] LPWSTR pszServer,
+	                 [in,ref] LPWSTR pszQueue
+	                         );
+
+	STATUS NetrCharDevQPurgeSelf(  /* Function 0x07 */
+	              [in,unique] LPWSTR pszServer,
+				     [in,ref] LPWSTR pszQueue,
+				     [in,ref] LPWSTR pszComputer
+	                             );
+
+	/* -- CONNECTION INFORMATION -- */
+
+	typedef struct _CONNECTION_INFO_0 {
+		DWORD  dwConnID;
+	} CONNECTION_INFO_0;
+
+	typedef struct _CONNECTION_INFO_1 {
+		DWORD  dwConnID;
+		DWORD  dwType;
+		DWORD  dwNumOpens;
+		DWORD  dwNumUsers;
+		DWORD  dwTime;
+		LPWSTR pszUser;
+		LPWSTR pszShare;
+	} CONNECTION_INFO_1;
+
+	typedef struct _CONNECTION_ENUM_0 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] CONNECTION_INFO_0 *ci0;
+	} CONNECTION_ENUM_0;
+
+	typedef struct _CONNECTION_ENUM_1 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] CONNECTION_INFO_1 *ci1;
+	} CONNECTION_ENUM_1;
+
+	typedef struct _CONNECTION_ENUM {
+		DWORD dwLevel;
+		[switch_is(dwLevel)] union {
+			[case(0)] CONNECTION_ENUM_0 *ce0;
+			[case(1)] CONNECTION_ENUM_1 *ce1;
+		} ctr;
+	} CONNECTION_ENUM;
+
+	STATUS NetrConnectionEnum(     /* Function 0x08 */
+	              [in,unique] LPWSTR           pszServer,
+	              [in,unique] LPWSTR           pszClient,
+	                 [in,out] CONNECTION_ENUM* pConnectionEnum,
+	                     [in] DWORD            dwMaxLen,
+	                    [out] DWORD*           dwEntries,
+	                 [in,out] DWORD*           hResume
+	                          );
+
+	/* -- FILE INFORMATION -- */
+
+	typedef struct _FILE_INFO_2 {
+		DWORD  dwFileID;
+	} FILE_INFO_2;
+
+	typedef struct _FILE_INFO_3 {
+		DWORD  dwFileID;
+		DWORD  dwPermissions;
+		DWORD  dwNumLocks;
+		LPWSTR pszPath;
+		LPWSTR pszUser;
+	} FILE_INFO_3;
+
+	typedef union _FILE_INFO switch (DWORD dwLevel) ctr {
+		case 2: FILE_INFO_2 *fi2;
+		case 3: FILE_INFO_3 *fi3;
+	} FILE_INFO;
+
+	typedef struct _FILE_ENUM_2 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] FILE_INFO_2 *fi2;
+	} FILE_ENUM_2;
+
+	typedef struct _FILE_ENUM_3 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] FILE_INFO_3 *fi3;
+	} FILE_ENUM_3;
+
+	typedef struct _FILE_ENUM {
+		DWORD dwLevel;
+		[switch_is(dwLevel)] union {
+			[case(2)] FILE_ENUM_2 *fe2;
+			[case(3)] FILE_ENUM_3 *fe3;
+		} ctr;
+	} FILE_ENUM;
+
+	STATUS NetrFileEnum(           /* Function 0x09 */
+	              [in,unique] LPWSTR     pszServer,
+	              [in,unique] LPWSTR     pszBasePath,
+	              [in,unique] LPWSTR     pszUser,
+	                 [in,out] FILE_ENUM* pFileEnum,
+	                     [in] DWORD      dwMaxLen,
+	                    [out] DWORD*     dwEntries,
+	                 [in,out] DWORD*     hResume
+	                     );
+
+	STATUS NetrFileGetInfo(        /* Function 0x0A */
+	              [in,unique] LPWSTR     pszServer,
+	                     [in] DWORD      dwFileID,
+	                     [in] DWORD      dwLevel,
+	                    [out] FILE_INFO* pFileInfo
+	                       );
+
+	STATUS NetrFileClose(          /* Function 0x0B */
+	              [in,unique] LPWSTR pszServer,
+	                     [in] DWORD  dwFileID
+	                     );
+
+	/* -- SESSION INFORMATION -- */
+
+	typedef struct _SESSION_INFO_0 {
+		LPWSTR  pszClient;
+	} SESSION_INFO_0;
+
+	typedef struct _SESSION_INFO_1 {
+		LPWSTR  pszClient;
+		LPWSTR  pszUser;
+		DWORD   dwOpens;
+		DWORD   dwTime;
+		DWORD   dwIdleTime;
+		DWORD   dwUserFlags;
+	} SESSION_INFO_1;
+
+	typedef struct _SESSION_INFO_2 {
+		LPWSTR  pszClient;
+		LPWSTR  pszUser;
+		DWORD   dwOpens;
+		DWORD   dwTime;
+		DWORD   dwIdleTime;
+		DWORD   dwUserFlags;
+	    LPWSTR  pszClientType;
+	} SESSION_INFO_2;
+
+	typedef struct _SESSION_ENUM_0 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] SESSION_INFO_0 *si0;
+	} SESSION_ENUM_0;
+
+	typedef struct _SESSION_ENUM_1 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] SESSION_INFO_1 *si1;
+	} SESSION_ENUM_1;
+
+	typedef struct _SESSION_ENUM_2 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] SESSION_INFO_2 *si2;
+	} SESSION_ENUM_2;
+
+	typedef struct _SESSION_ENUM {
+		DWORD dwLevel;
+		[switch_is(dwLevel)] union {
+			[case(0)] SESSION_ENUM_0 *se0;
+			[case(1)] SESSION_ENUM_1 *se1;
+			[case(2)] SESSION_ENUM_2 *se2;
+		} ctr;
+	} SESSION_ENUM;
+
+	STATUS NetrSessionEnum(        /* Function 0x0C */
+	              [in,unique] LPWSTR        pszServer,
+	              [in,unique] LPWSTR        pszClient,
+	              [in,unique] LPWSTR        pszUser,
+	                 [in,out] SESSION_ENUM* pFileEnum,
+	                     [in] DWORD         dwMaxLen,
+	                    [out] DWORD*        dwEntries,
+	                 [in,out] DWORD*        hResume	
+	                     );
+
+	STATUS NetrSessionDel(         /* Function 0x0D */
+	              [in,unique] LPWSTR pszServer,
+	                 [in,ref] LPWSTR pszClient,
+	                 [in,ref] LPWSTR pszUser
+	                      );
+
+	/* -- SHARE INFORMATION -- */
+
+	typedef struct _SHARE_INFO_0 {
+		LPWSTR  pszName;
+	} SHARE_INFO_0;
+
+	typedef struct _SHARE_INFO_1 {
+		LPWSTR  pszName;
+		DWORD   dwType;
+		LPWSTR  pszComment;
+	} SHARE_INFO_1;
+
+	typedef struct _SHARE_INFO_2 {
+		LPWSTR  pszName;
+		DWORD   dwType;
+		LPWSTR  pszComment;
+		DWORD   dwPermissions;
+		DWORD   dwMaxUses;
+		DWORD   dwCurrentUses;
+		LPWSTR  pszPath;
+		LPWSTR  pszPasswd;
+	} SHARE_INFO_2;
+
+	typedef union _SHARE_INFO switch (DWORD dwLevel) ctr {
+		case 0: SHARE_INFO_0 *si0;
+		case 1: SHARE_INFO_1 *si1;
+		case 2: SHARE_INFO_2 *si2;
+	} SHARE_INFO;
+
+	typedef struct _SHARE_ENUM_0 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] SHARE_INFO_0 *si0;
+	} SHARE_ENUM_0;
+
+	typedef struct _SHARE_ENUM_1 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] SHARE_INFO_1 *si1;
+	} SHARE_ENUM_1;
+
+	typedef struct _SHARE_ENUM_2 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] SHARE_INFO_2 *si2;
+	} SHARE_ENUM_2;
+
+	typedef struct _SHARE_ENUM {
+		DWORD dwLevel;
+		[switch_is(dwLevel)] union {
+			[case(0)] SHARE_ENUM_0 *se0;
+			[case(1)] SHARE_ENUM_1 *se1;
+			[case(2)] SHARE_ENUM_2 *se2;
+		} ctr;
+	} SHARE_ENUM;
+
+	STATUS NetrShareAdd(           /* Function 0x0E */
+	              [in,unique] LPWSTR      pszServer,
+	                     [in] DWORD       dwLevel,
+	                    [out] SHARE_INFO* pShareInfo,
+	                 [in,out] DWORD*      dwParmError
+	                    );
+
+	STATUS NetrShareEnum(          /* Function 0x0F */
+	              [in,unique] LPWSTR       pszServer,
+	                 [in,out] SHARE_ENUM*  pShareEnum,
+	                     [in] DWORD        dwMaxLen,
+	                    [out] DWORD*       dwEntries,
+	                 [in,out] DWORD*       hResume
+						 );
+
+	STATUS NetrShareGetInfo(       /* Function 0x10 */
+	              [in,unique] LPWSTR       pszServer,
+	                 [in,ref] LPWSTR       pszShare,
+	                     [in] DWORD        dwLevel,
+	                    [out] SHARE_INFO*  pShareInfo
+	                      );
+
+	STATUS NetrShareSetInfo(       /* Function 0x11 */
+	              [in,unique] LPWSTR       pszServer,
+	                 [in,ref] LPWSTR       pszShare,
+	                     [in] DWORD        dwLevel,
+	                     [in] SHARE_INFO*  pShareInfo,
+	                     [in] DWORD        dwReserved
+	                      );
+
+	STATUS NetrShareDel(           /* Function 0x12 */
+	              [in,unique] LPWSTR pszServer,
+	                 [in,ref] LPWSTR pszShare,
+	                     [in] DWORD  dwReserved
+	                    );
+
+	STATUS NetrShareDelSticky(     /* Function 0x13 */
+	              [in,unique] LPWSTR pszServer,
+	                 [in,ref] LPWSTR pszShare,
+	                     [in] DWORD  dwReserved
+	                          );
+
+	STATUS NetrShareCheck(         /* Function 0x14 */
+	              [in,unique] LPWSTR pszServer,
+	                 [in,ref] LPWSTR pszDevice,
+	                    [out] DWORD* dwType
+	                      );
+
+	/* --- SERVER INFORMATION --- */
+
+	typedef struct _SERVER_INFO_100 {
+		DWORD  dwPlatformID;
+		LPWSTR pszName;
+	} SERVER_INFO_100;
+
+	typedef struct _SERVER_INFO_101 {
+	    DWORD  dwPlatformID;
+	    LPWSTR pszName;
+	    DWORD  dwVerMajor;
+	    DWORD  dwVerMinor;
+	    DWORD  dwType;
+	    LPWSTR pszComment;
+	} SERVER_INFO_101;
+
+	typedef struct _SERVER_INFO_102 {
+	    DWORD  dwPlatformID;
+	    LPWSTR pszName;
+	    DWORD  dwVerMajor;
+	    DWORD  dwVerMinor;
+	    DWORD  dwType;
+	    LPWSTR pszComment;
+		DWORD  dwUsers;
+		LONG   lDisc;
+		BOOL   bHidden;
+		DWORD  dwAnnounce;
+		DWORD  dwAnnDelta;
+		DWORD  dwLicenses;
+		LPWSTR pszUserPath;
+	} SERVER_INFO_102;
+
+	typedef union _SERVER_INFO switch (DWORD dwLevel) ctr {
+		case 100: SERVER_INFO_100 *sv100;
+		case 101: SERVER_INFO_101 *sv101;
+		case 102: SERVER_INFO_102 *sv102;
+	} SERVER_INFO;
+
+	STATUS NetrServerGetInfo(      /* Function 0x15 */
+	              [in,unique] LPWSTR       pszServerName,
+	                     [in] DWORD        dwLevel,
+	                    [out] SERVER_INFO* pServerInfo
+	                      );
+
+	STATUS NetrServerSetInfo(      /* Function 0x16 */
+	              [in,unique] LPWSTR       pszServerName,
+	                     [in] DWORD        dwLevel,
+	                     [in] SERVER_INFO* pServerInfo,
+	                     [in] DWORD        dwReserved
+	                      );
+
+	typedef struct _DISK_INFO {
+		LPWSTR  pszName;
+	} DISK_INFO;
+
+	typedef struct _DISK_ENUM {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] DISK_INFO *di;
+	} DISK_ENUM;
+
+	STATUS NetrServerDiskEnum(     /* Function 0x17 */
+	              [in,unique] LPWSTR       pszServer,
+	                     [in] DWORD        dwLevel,
+	                 [in,out] DISK_ENUM*   pDiskEnum,
+	                     [in] DWORD        dwMaxLen,
+	                    [out] DWORD*       dwEntries,
+	                 [in,out] DWORD*       hResume
+	                          );
+
+	typedef struct _STAT_SERVER {
+		DWORD dwStart;
+		DWORD dwFOpens;
+		DWORD dwDevOpens;
+		DWORD dwJobsQueued;
+		DWORD dwSOpens;
+		DWORD dwSTimedOut;
+		DWORD dwSErrors;
+		DWORD dwPWErrors;
+		DWORD dwPermErrors;
+		DWORD dwSysErrors;
+		DWORD dwBytesSentLow;
+		DWORD dwBytesSentHigh;
+		DWORD dwBytesRcvdLow;
+		DWORD dwBytesRcvdHigh;
+		DWORD dwAVResponse;
+		DWORD dwReqBufNeed;
+		DWORD dwBigBufNeed;
+	} STAT_SERVER;
+
+	STATUS NetrServerStatisticsGet( /* Function 0x18 */
+	              [in,unique] LPWSTR       pszServer,
+	                     [in] DWORD        dwLevel,
+	                     [in] DWORD        dwOptions,
+	                    [out] STAT_SERVER* pStatServer
+	                               );
+
+	typedef struct _TRANSPORT_INFO_0 {
+		LPWSTR  pszName;
+	} TRANSPORT_INFO_0;
+
+	typedef union _TRANSPORT_INFO switch (DWORD dwLevel) ctr {
+		case 0: TRANSPORT_INFO_0 *ti0;
+	} TRANSPORT_INFO;
+
+	typedef struct _TRANSPORT_ENUM_0 {
+		DWORD   dwEntries;
+		[size_is(dwEntries)] TRANSPORT_INFO_0 *ti0;
+	} TRANSPORT_ENUM_0;
+
+	typedef struct _TRANSPORT_ENUM {
+		DWORD dwLevel;
+		[switch_is(dwLevel)] union {
+			[case(0)] TRANSPORT_ENUM_0 *te0;
+		} ctr;
+	} TRANSPORT_ENUM;
+
+	STATUS NetrServerTransportAdd( /* Function 0x19 */
+	              [in,unique] LPWSTR          pszServer,
+	                     [in] DWORD           dwLevel,
+	                    [out] TRANSPORT_INFO* pTransportInfo
+	                              );
+
+	STATUS NetrServerTransportEnum( /* Function 0x1a */
+	              [in,unique] LPWSTR          pszServer,
+	                 [in,out] TRANSPORT_ENUM* pTransportEnum,
+	                     [in] DWORD           dwMaxLen,
+	                    [out] DWORD*          dwEntries,
+	                 [in,out] DWORD*          hResume
+	                               );
+
+	STATUS NetrServerTransportDel( /* Function 0x1b */
+	              [in,unique] LPWSTR          pszServer,
+	                     [in] DWORD           dwLevel,
+	                    [out] TRANSPORT_INFO* pTransportInfo
+	                              );
+
+	typedef struct _TIME_OF_DAY {
+		DWORD dwElapsedTime;
+		DWORD dwMsecs;
+		DWORD dwHours;
+		DWORD dwMins;
+		DWORD dwSecs;
+		DWORD dwHunds;
+		LONG  lTimeZone;
+		DWORD dwInterval;
+		DWORD dwDay;
+		DWORD dwMonth;
+		DWORD dwYear;
+		DWORD dwWeekday;
+	} TIME_OF_DAY;
+
+	STATUS NetrRemoteTOD(          /* Function 0x1c */
+	              [in,unique] LPWSTR       pszServer,
+	                    [out] TIME_OF_DAY* pTOD
+	);
+
+	STATUS NetrServerSetServiceBits( /* Function 0x1d */
+	              [in,unique] LPWSTR pszServer,
+	                     [in] DWORD  hServiceStatus, /* ?? */
+	                     [in] DWORD  dwServiceBits,
+	                     [in] BOOL   bSetBitsOn,
+	                     [in] BOOL   bUpdateImmediately
+	                               );
+
+	/* --- PATH INFORMATION --- */
+
+	STATUS NetprPathType(          /* Function 0x1e */
+	                          void /* Not known */
+	                     );
+
+	STATUS NetprPathCanonicalize(  /* Function 0x1f */
+	                          void /* Not known */
+	                             );
+
+	STATUS NetprPathCompare(       /* Function 0x20 */
+	                          void /* Not known */
+	                        );
+
+	STATUS NetprNameValidate(      /* Function 0x21 */
+	                          void /* Not known */
+	                         );
+
+	STATUS NetprNameCanonicalize(  /* Function 0x22 */
+	                          void /* Not known */
+	                             );
+
+	STATUS NetprNameCompare(       /* Function 0x23 */
+	                          void /* Not known */
+	                        );
+
+	/* --- LATER ADDITIONS --- */
+
+	STATUS NetrShareEnumSticky(    /* Function 0x24 */
+	              [in,unique] LPWSTR       pszServer,
+	                 [in,out] SHARE_ENUM*  pShareEnum,
+	                     [in] DWORD        dwMaxLen,
+	                    [out] DWORD*       dwEntries,
+	                 [in,out] DWORD*       hResume
+	                           );
+
+	STATUS NetrShareDelStart(      /* Function 0x25 */
+	              [in,unique] LPWSTR pszServer,
+	                 [in,ref] LPWSTR pszShare,
+	                     [in] DWORD  dwReserved /* ? */
+	                         );
+
+	STATUS NetrShareDelCommit(     /* Function 0x26 */
+	              [in,unique] LPWSTR pszServer
+	                          );
+
+	STATUS NetrpGetFileSecurity(   /* Function 0x27 */
+	                          void /* Not known */
+	                            );
+
+	STATUS NetrpSetFileSecurity(   /* Function 0x28 */
+	                          void /* Not known */
+	                            );
+
+	STATUS NetrServerTransportAddEx( /* Function 0x29 */
+	              [in,unique] LPWSTR          pszServer,
+	                     [in] DWORD           dwLevel,
+	                    [out] TRANSPORT_INFO* pTransportInfo
+	                                );
+
+	STATUS NetrServerSetServiceBitsEx( /* Function 0x30 */
+	              [in,unique] LPWSTR pszServer,
+	                     [in] DWORD  hServiceStatus, /* ?? */
+	                     [in] DWORD  dwServiceBits,
+	                     [in] BOOL   bSetBitsOn,
+	                     [in] BOOL   bUpdateImmediately
+	                                  );
+

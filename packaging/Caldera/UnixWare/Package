@@ -1,0 +1,40 @@
+#!/bin/ksh
+#
+# Now create the actual pkgadd installable datastream
+#
+# invoke with -n as the first argument to get this script to tell
+# you what it would do without doing anything
+#
+
+V=
+[ "$1" = "-n" ] && V=echo
+
+$V cd dist
+PKGNAME=samba
+PKGBLD=`pwd`
+[ "$V" = "echo" ] && PKGBLD=$PKGBLD/dist
+
+PKGCOMPRESS="-c"
+#PKGBLOCKLIM=2876
+PKGBLOCKLIM=6200
+
+##############################################################################
+#
+#	make filesystem-type package in directory ./$PKGNAME/
+#	(source files reside in ./root)
+#
+#       don't use PKGBLOCKLIM for now
+#
+$V pkgmk    -o $PKGCOMPRESS -d $PKGBLD -r $PKGBLD
+#pkgmk    -o $PKGCOMPRESS -l $PKGBLOCKLIM -d $PKGBLD -r $PKGBLD
+#pkgmk    -o $PKGCOMPRESS -l $PKGBLOCKLIM -d $PKGBLD -r $PKGBLD/root
+
+#
+#	make $PKGNAME.pkg datastream-type package
+#
+$V pkgtrans -s $PKGBLD $PKGBLD/$PKGNAME.pkg $PKGNAME
+
+#
+#	remove filesystem-type package
+#
+#rm -rf $PKGBLD/$PKGNAME

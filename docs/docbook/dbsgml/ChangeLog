@@ -1,0 +1,85 @@
+2000-06-19  Norman Walsh  <ndw@nwalsh.com>
+
+	* 40chg.txt: Added notes about comment and interfacedefinition
+
+	* 41chg.txt: New file.
+
+	* 50issues.txt, dbcent.mod, dbgenent.mod, dbhier.mod, dbnotn.mod, dbpool.mod, docbook.cat, docbook.dcl, readme.txt: 
+	Updated version numbers to 4.1
+
+	* dbhier.mod, dbpool.mod: Removed 4.0 future use comments
+
+	* docbook.cat: Fixed version number in comment
+
+	* docbook.dtd: DocBook V4.1 released.
+
+2000-05-18  Norman Walsh  <ndw@nwalsh.com>
+
+	* 40chg.txt, dbcent.mod, dbgenent.mod, dbhier.mod, dbnotn.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd, readme.txt: 
+	Removed references to beta6
+
+	* docbook.dtd: DocBook V4.0 released.
+
+2000-04-10  Norman Walsh  <ndw@nwalsh.com>
+
+	* 40chg.txt, dbcent.mod, dbgenent.mod, dbhier.mod, dbnotn.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd, readme.txt: 
+	Updated release date and version to 4.0beta6
+
+	* dbpool.mod: Added support for EBNF hook; fixed equation content bug
+
+2000-04-03  Norman Walsh  <ndw@nwalsh.com>
+
+	* 40chg.txt: Added note about renaming DocInfo to *Info.
+
+	* 40chg.txt, dbcent.mod, dbgenent.mod, dbhier.mod, dbnotn.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd, readme.txt: 
+	Updated version numbers
+
+2000-03-24  Norman Walsh  <ndw@nwalsh.com>
+
+	* 40chg.txt, dbcent.mod, dbgenent.mod, dbhier.mod, dbnotn.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd, readme.txt: 
+	Updated version numbers
+
+	* 50issues.txt: Added note about PE reorg
+
+	* dbefsyn.mod: Removed
+
+	* dbpool.mod: Removed ELEMENT from comments to ease text searching of the DTD.
+	Merged dbefsyn.mod into dbpool.mod
+	Added Modifier as an optional element at the end of MethodSynopsis
+	and MethodParam.
+
+2000-03-07  Norman Walsh  <ndw@nwalsh.com>
+
+	* 40chg.txt, dbcent.mod, dbgenent.mod, dbhier.mod, dbnotn.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd, readme.txt: 
+	Updated internal versions to beta3
+
+2000-03-03  Norman Walsh  <ndw@nwalsh.com>
+
+	* dbpool.mod: Removed erroneous comment about inline synopses
+
+2000-03-02  Norman Walsh  <ndw@nwalsh.com>
+
+	* 30chg.txt, 31chg.txt, 40issues.txt, 50issues.txt, announce.txt, cals-tbl.dtd, dbcent.mod, dbgenent.mod, dbhier.mod, dbnotn.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd, readme.txt: 
+	Version 3.1
+
+	* 30chg.txt, 40issues.txt, announce.txt, cals-tbl.dtd, dbgenent.mod, dbhier.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd: 
+	branches:  1.1.1;
+	Initial revision
+
+	* 30chg.txt, 40issues.txt, announce.txt, cals-tbl.dtd, dbgenent.mod, dbhier.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd: 
+	New file.
+
+	* 31chg.txt, 40chg.txt, 40issues.txt, 50issues.txt, cals-tbl.dtd, dbcent.mod, dbefsyn.mod, dbgenent.mod, dbhier.mod, dbnotn.mod, dbpool.mod, docbook.cat, docbook.dcl, docbook.dtd, readme.txt: 
+	Version 4.0beta2
+
+	* 50issues.txt: Added warning about exchange table model
+
+	* dbefsyn.mod, dbpool.mod: Added ooclass, oointerface, and ooexception as wrappers for modifiers
+	and names in classsynopsis. Also allow them inline.
+	
+	Fixed SGML PE parsing problem with hook PEs.
+
+	* dbhier.mod, dbpool.mod: Added hook PEs for future module extension
+
+	* dbpool.mod, docbook.dtd: Removed reference to sgml-features PE
+

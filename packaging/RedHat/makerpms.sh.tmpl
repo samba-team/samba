@@ -1,0 +1,38 @@
+#!/bin/sh
+# Copyright (C) John H Terpstra 1998
+# Updated for RPM 3 by Jochen Wiedmann, joe@ispsoft.de
+# Changed for a generic tar file rebuild by abartlet@pcug.org.au
+USERID=`id -u`
+GRPID=`id -g`
+VERSION='PVERSION'
+
+rm -f ../../samba2.*.spec
+
+case `rpm --version | awk '{print $3}'` in
+    2.*)
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba2.rpm2.spec
+       cp samba2.rpm2.spec ../../
+       ;;
+    3.*)
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba2.rpm3.spec
+       cp samba2.rpm3.spec ../../
+       ;;
+    4.*)
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2.spec > samba2.rpm4.spec
+       cp samba2.rpm4.spec ../../
+       ;;
+    *)
+       echo "Unknown RPM version: `rpm --version`"
+       exit 1
+       ;;
+esac
+
+( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
+( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
+( cd ../../.. ; tar --exclude=CVS -czvf samba-${VERSION}.tar.gz samba-${VERSION}/samba2.*.spec samba-${VERSION} )
+
+rpm -ta -v ../../../samba-${VERSION}.tar.gz
+
+
+
+

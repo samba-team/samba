@@ -1,0 +1,589 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   Wrap disk only vfs functions to sidestep dodgy compilers.
+   Copyright (C) Tim Potter 1998
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+
+/* Check for NULL pointer parameters in vfswrap_* functions */
+
+#define VFS_CHECK_NULL
+
+/* We don't want to have NULL function pointers lying around.  Someone
+   is sure to try and execute them.  These stubs are used to prevent
+   this possibility. */
+
+int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user)
+{
+    return 0;    /* Return >= 0 for success */
+}
+
+void vfswrap_dummy_disconnect(connection_struct *conn)
+{
+}
+
+/* Disk operations */
+
+SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
+			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+{
+    SMB_BIG_UINT result;
+
+#ifdef VFS_CHECK_NULL
+    if ((path == NULL) || (bsize == NULL) || (dfree == NULL) ||
+	(dsize == NULL)) {
+	
+	smb_panic("NULL pointer passed to vfswrap_disk_free() function\n");
+    }
+#endif
+
+    result = sys_disk_free(path, small_query, bsize, dfree, dsize);
+    return result;
+}
+    
+/* Directory operations */
+
+DIR *vfswrap_opendir(connection_struct *conn, char *fname)
+{
+    DIR *result;
+
+    START_PROFILE(syscall_opendir);
+
+#ifdef VFS_CHECK_NULL
+    if (fname == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_opendir()\n");
+    }
+#endif
+
+    result = opendir(fname);
+    END_PROFILE(syscall_opendir);
+    return result;
+}
+
+struct dirent *vfswrap_readdir(connection_struct *conn, DIR *dirp)
+{
+    struct dirent *result;
+
+    START_PROFILE(syscall_readdir);
+
+#ifdef VFS_CHECK_NULL
+    if (dirp == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_readdir()\n");
+    }
+#endif
+
+    result = readdir(dirp);
+    END_PROFILE(syscall_readdir);
+    return result;
+}
+
+int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
+{
+    int result;
+
+    START_PROFILE(syscall_mkdir);
+
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_mkdir()\n");
+    }
+#endif
+
+    result = mkdir(path, mode);
+
+	if (result == 0) {
+		/*
+		 * We need to do this as the default behavior of POSIX ACLs	
+		 * is to set the mask to be the requested group permission
+		 * bits, not the group permission bits to be the requested
+		 * group permission bits. This is not what we want, as it will
+		 * mess up any inherited ACL bits that were set. JRA.
+		 */
+		int saved_errno = errno; /* We may get ENOSYS */
+		if (conn->vfs_ops.chmod_acl != NULL) {
+			if ((conn->vfs_ops.chmod_acl(conn, path, mode) == -1) && (errno == ENOSYS))
+				errno = saved_errno;
+		}
+	}
+
+    END_PROFILE(syscall_mkdir);
+    return result;
+}
+
+int vfswrap_rmdir(connection_struct *conn, char *path)
+{
+    int result;
+
+    START_PROFILE(syscall_rmdir);
+
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_rmdir()\n");
+    }
+#endif
+
+    result = rmdir(path);
+    END_PROFILE(syscall_rmdir);
+    return result;
+}
+
+int vfswrap_closedir(connection_struct *conn, DIR *dirp)
+{
+    int result;
+
+    START_PROFILE(syscall_closedir);
+
+#ifdef VFS_CHECK_NULL
+    if (dirp == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_closedir()\n");
+    }
+#endif
+
+    result = closedir(dirp);
+    END_PROFILE(syscall_closedir);
+    return result;
+}
+
+/* File operations */
+    
+int vfswrap_open(connection_struct *conn, char *fname, int flags, mode_t mode)
+{
+    int result;
+
+    START_PROFILE(syscall_open);
+
+#ifdef VFS_CHECK_NULL
+    if (fname == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_open()\n");
+    }
+#endif
+
+    result = sys_open(fname, flags, mode);
+    END_PROFILE(syscall_open);
+    return result;
+}
+
+int vfswrap_close(files_struct *fsp, int fd)
+{
+    int result;
+
+    START_PROFILE(syscall_close);
+
+    result = close(fd);
+    END_PROFILE(syscall_close);
+    return result;
+}
+
+ssize_t vfswrap_read(files_struct *fsp, int fd, char *data, size_t n)
+{
+    ssize_t result;
+
+    START_PROFILE_BYTES(syscall_read, n);
+
+#ifdef VFS_CHECK_NULL
+    if (data == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_read()\n");
+    }
+#endif
+
+    result = read(fd, data, n);
+    END_PROFILE(syscall_read);
+    return result;
+}
+
+ssize_t vfswrap_write(files_struct *fsp, int fd, char *data, size_t n)
+{
+    ssize_t result;
+
+    START_PROFILE_BYTES(syscall_write, n);
+
+#ifdef VFS_CHECK_NULL
+    if (data == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_write()\n");
+    }
+#endif
+
+    result = write(fd, data, n);
+    END_PROFILE(syscall_write);
+    return result;
+}
+
+SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
+{
+    SMB_OFF_T result;
+
+    START_PROFILE(syscall_lseek);
+
+    result = sys_lseek(filedes, offset, whence);
+    END_PROFILE(syscall_lseek);
+    return result;
+}
+
+int vfswrap_rename(connection_struct *conn, char *old, char *new)
+{
+    int result;
+
+    START_PROFILE(syscall_rename);
+
+#ifdef VFS_CHECK_NULL
+    if ((old == NULL) || (new == NULL)) {
+	smb_panic("NULL pointer passed to vfswrap_rename()\n");
+    }
+#endif
+
+    result = rename(old, new);
+    END_PROFILE(syscall_rename);
+    return result;
+}
+
+int vfswrap_fsync(files_struct *fsp, int fd)
+{
+#ifdef HAVE_FSYNC
+    int result;
+
+    START_PROFILE(syscall_fsync);
+
+    result = fsync(fd);
+    END_PROFILE(syscall_fsync);
+    return result;
+#else
+	return 0;
+#endif
+}
+
+int vfswrap_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf)
+{
+    int result;
+
+    START_PROFILE(syscall_stat);
+
+#ifdef VFS_CHECK_NULL
+    if ((fname == NULL) || (sbuf == NULL)) {
+	smb_panic("NULL pointer passed to vfswrap_stat()\n");
+    }
+#endif
+
+    result = sys_stat(fname, sbuf);
+    END_PROFILE(syscall_stat);
+    return result;
+}
+
+int vfswrap_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
+{
+    int result;
+
+    START_PROFILE(syscall_fstat);
+
+#ifdef VFS_CHECK_NULL
+    if (sbuf == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_fstat()\n");
+    }
+#endif
+
+    result = sys_fstat(fd, sbuf);
+    END_PROFILE(syscall_fstat);
+    return result;
+}
+
+int vfswrap_lstat(connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf)
+{
+    int result;
+
+    START_PROFILE(syscall_lstat);
+
+#ifdef VFS_CHECK_NULL
+    if ((path == NULL) || (sbuf == NULL)) {
+	smb_panic("NULL pointer passed to vfswrap_lstat()\n");
+    }
+#endif
+
+    result = sys_lstat(path, sbuf);
+    END_PROFILE(syscall_lstat);
+    return result;
+}
+
+int vfswrap_unlink(connection_struct *conn, char *path)
+{
+    int result;
+
+    START_PROFILE(syscall_unlink);
+
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_unlink()\n");
+    }
+#endif
+
+    result = unlink(path);
+    END_PROFILE(syscall_unlink);
+    return result;
+}
+
+int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode)
+{
+    int result;
+
+    START_PROFILE(syscall_chmod);
+
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_chmod()\n");
+    }
+#endif
+
+	/*
+	 * We need to do this due to the fact that the default POSIX ACL
+	 * chmod modifies the ACL *mask* for the group owner, not the
+	 * group owner bits directly. JRA.
+	 */
+
+	
+	if (conn->vfs_ops.chmod_acl != NULL) {
+		int saved_errno = errno; /* We might get ENOSYS */
+		if ((result = conn->vfs_ops.chmod_acl(conn, path, mode)) == 0) {
+			END_PROFILE(syscall_chmod);
+			return result;
+		}
+		/* Error - return the old errno. */
+		errno = saved_errno;
+	}
+
+    result = chmod(path, mode);
+    END_PROFILE(syscall_chmod);
+    return result;
+}
+
+int vfswrap_fchmod(files_struct *fsp, int fd, mode_t mode)
+{
+    int result;
+	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+	
+    START_PROFILE(syscall_fchmod);
+
+	/*
+	 * We need to do this due to the fact that the default POSIX ACL
+	 * chmod modifies the ACL *mask* for the group owner, not the
+	 * group owner bits directly. JRA.
+	 */
+	
+	if (vfs_ops->fchmod_acl != NULL) {
+		int saved_errno = errno; /* We might get ENOSYS */
+		if ((result = vfs_ops->fchmod_acl(fsp, fd, mode)) == 0) {
+			END_PROFILE(syscall_chmod);
+			return result;
+		}
+		/* Error - return the old errno. */
+		errno = saved_errno;
+	}
+
+    result = fchmod(fd, mode);
+    END_PROFILE(syscall_fchmod);
+    return result;
+}
+
+int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid)
+{
+    int result;
+
+    START_PROFILE(syscall_chown);
+
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_chown()\n");
+    }
+#endif
+
+    result = sys_chown(path, uid, gid);
+    END_PROFILE(syscall_chown);
+    return result;
+}
+
+int vfswrap_fchown(files_struct *fsp, int fd, uid_t uid, gid_t gid)
+{
+    int result;
+
+    START_PROFILE(syscall_fchown);
+
+    result = fchown(fd, uid, gid);
+    END_PROFILE(syscall_fchown);
+    return result;
+}
+
+int vfswrap_chdir(connection_struct *conn, char *path)
+{
+    int result;
+
+    START_PROFILE(syscall_chdir);
+
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_chdir()\n");
+    }
+#endif
+
+    result = chdir(path);
+    END_PROFILE(syscall_chdir);
+    return result;
+}
+
+char *vfswrap_getwd(connection_struct *conn, char *path)
+{
+    char *result;
+
+    START_PROFILE(syscall_getwd);
+
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_getwd()\n");
+    }
+#endif
+
+    result = sys_getwd(path);
+    END_PROFILE(syscall_getwd);
+    return result;
+}
+
+int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times)
+{
+    int result;
+
+    START_PROFILE(syscall_utime);
+
+#ifdef VFS_CHECK_NULL
+    if ((path == NULL) || (times == NULL)) {
+	smb_panic("NULL pointer passed to vfswrap_utime()\n");
+    }
+#endif
+
+    result = utime(path, times);
+    END_PROFILE(syscall_utime);
+    return result;
+}
+
+int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
+{
+	int result = -1;
+    START_PROFILE(syscall_ftruncate);
+
+#ifdef HAVE_FTRUNCATE_EXTEND
+	result = sys_ftruncate(fd, len);
+    END_PROFILE(syscall_ftruncate);
+    return result;
+#else
+
+	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
+		extend a file with ftruncate. Provide alternate implementation
+		for this */
+
+	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+	SMB_STRUCT_STAT st;
+	char c = 0;
+	SMB_OFF_T currpos;
+
+	currpos = vfs_ops->lseek(fsp, (SMB_OFF_T)0, SEEK_CUR);
+	if(currpos == -1) {
+		goto done;
+	}
+
+	/* Do an fstat to see if the file is longer than
+		the requested size (call ftruncate),
+		or shorter, in which case seek to len - 1 and write 1
+		byte of zero */
+	if(vfs_ops->fstat(fsp, &st)<0) {
+		goto done;
+	}
+
+#ifdef S_ISFIFO
+	if (S_ISFIFO(st.st_mode)) {
+		result = 0;
+		goto done;
+	}
+#endif
+
+	if(st.st_size == len) {
+		result = 0;
+		goto done;
+	}
+
+	if(st.st_size > len) {
+		/* Yes this is *deliberately* sys_ftruncate ! JRA */
+		result = sys_ftruncate(fd, len);
+		goto done;
+	}
+
+	if(vfs_ops->lseek(fsp, len-1, SEEK_SET) != len -1) {
+		goto done;
+	}
+
+	if(vfs_ops->write(fsp, &c, 1)!=1) {
+		goto done;
+	}
+
+	/* Seek to where we were */
+	if(vfs_ops->lseek(fsp, currpos, SEEK_SET) != currpos) {
+		goto done;
+	}
+  done:
+
+    END_PROFILE(syscall_ftruncate);
+    return result;
+#endif
+
+}
+
+BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+{
+    BOOL result;
+
+    START_PROFILE(syscall_fcntl_lock);
+
+    result =  fcntl_lock(fd, op, offset, count,type);
+    END_PROFILE(syscall_fcntl_lock);
+    return result;
+}
+
+size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)
+{
+	return get_nt_acl(fsp, ppdesc);
+}
+
+size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc)
+{
+	return get_nt_acl(fsp, ppdesc);
+}
+
+BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+{
+	return set_nt_acl(fsp, security_info_sent, psd);
+}
+
+BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
+{
+	return set_nt_acl(fsp, security_info_sent, psd);
+}
+
+int vfswrap_chmod_acl(connection_struct *conn, char *name, mode_t mode)
+{
+	return chmod_acl(name, mode);
+}
+
+int vfswrap_fchmod_acl(files_struct *fsp, int fd, mode_t mode)
+{
+	return fchmod_acl(fd, mode);
+}

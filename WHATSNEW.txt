@@ -1,0 +1,111 @@
+              WHATS NEW IN Samba 2.2.0
+              ========================
+
+This is the official Samba 2.2.0 release. This version of Samba provides
+the following new features and enhancements.
+
+Integration between Windows oplocks and NFS file opens (IRIX and Linux
+2.4 kernel only). This gives complete data and locking integrity between
+Windows and UNIX file access to the same data files.
+
+Ability to act as an authentication source for Windows 2000 clients as
+well as for NT4.x clients.
+
+Integration with the winbind daemon that provides a single
+sign on facility for UNIX servers in Windows 2000/NT4 networks
+driven by a Windows 2000/NT4 PDC. winbind is not included in
+this release, it currently must be obtained separately. We are
+committed to including winbind in a future Samba 2.2.x release.
+
+Support for native Windows 2000/NT4 printing RPCs. This includes
+support for automatic printer driver download.
+
+Support for server supported Access Control Lists (ACLs).
+This release contains support for the following filesystems: 
+
+    Solaris 2.6+ 
+    SGI Irix 
+    Linux Kernel with ACL patch from http://acl.bestbits.at
+	Linux Kernel with XFS ACL support.
+	Caldera/SCO UnixWare
+	IBM AIX
+	FreeBSD (with external patch)
+
+Other platforms will be supported as resources are
+available to test and implement the encessary modules. If
+you are interested in writing the support for a particular
+ACL filesystem, please join the samba-technical mailing
+list and coordinate your efforts. 
+ 
+On PAM (Pluggable Authentication Module) based systems - better debugging
+messages and encrypted password users now have access control verified via
+PAM - Note: Authentication still uses the encrypted password database.
+ 
+Rewritten internal locking semantics for more robustness.
+This release supports full 64 bit locking semantics on all
+(even 32 bit) platforms. SMB locks are mapped onto POSIX
+locks (32 bit or 64 bit) as the underlying system allows.
+
+Conversion of various internal flat data structures to use
+database records for increased performance and
+flexibility. 
+
+Support for acting as a MS-DFS (Distributed File System) server.
+
+Support for manipulating Samba shares using Windows client tools
+(server manager). Per share security can be set using these tools
+and Samba will obey the access restrictions applied.
+
+Samba profiling support (see below).
+
+Compile time option for enabling a (Virtual file system) VFS layer 
+to allow non-disk resources to be exported as Windows filesystems
+(such as databases etc.).
+
+The documentation in this release has been updated and converted
+from Yodl to DocBook 4.1. There are many new parameters since 2.0.7
+and some defaults have changed.
+
+Profiling support.
+------------------
+Support for collection of profile information. A shared 
+memory area has been created which contains counters for
+the number of calls to and the amount of time spent in
+various system calls and smb transactions. See the file
+profile.h for a complete listing of the information 
+collected. Sample code for a samba pmda (collection agent
+for Performance Co-Pilot) has been included in the pcp
+directory. 
+
+To enable the profile data collection code in samba, you 
+must compile samba with profile support (run configure with 
+the --with-profile option). On startup, collection of data
+is disabled. To begin collecting data use the smbcontrol
+program to turn on profiling (see the smbcontrol man page).
+Profile information collection can be enabled for all smbd
+processes or one or more selected processes. The profiling
+data collected is the aggragate for all processes that have
+profiling enabled.
+
+With samba compiled for profile data collection, you may see
+a very slight degradation in performance even with profiling
+collection turned off. On initial tests with NetBench on an
+SGI Origin 200 server, this degradation was not measureable 
+with profile collection off compared to no profile collection
+compiled into samba. 
+
+With count profile collection enabled on all clients, the 
+degradation was less than 2%. With full profile collection 
+enabled on all clients, the degradation was about 8.5%. 
+
+=====================================================================
+
+If you think you have found a bug please email a report to :
+
+        samba@samba.org
+
+As always, all bugs are our responsibility.
+
+Regards,
+
+        The Samba Team.  

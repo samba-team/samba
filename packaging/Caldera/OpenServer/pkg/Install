@@ -1,0 +1,1 @@
+custom -p SKUNK2000:Samba -i -z `pwd`/archives/FLOPPY

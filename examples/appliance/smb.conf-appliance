@@ -1,0 +1,8 @@
+[global]
+	workgroup = DOMAIN
+	security = domain
+	encrypt passwords = true
+	stat cache = false
+	winbind uid = 10000-20000
+	winbind gid = 10000-20000
+	password server = PDC

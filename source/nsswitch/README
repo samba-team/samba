@@ -1,0 +1,13 @@
+This extension provides a "wins" module for NSS on glibc2/Linux.  This
+allows you to use a WINS entry in /etc/nsswitch.conf for hostname
+resolution, allowing you to resolve netbios names via start unix
+gethostbyname() calls. The end result is that you can use netbios
+names as host names in unix apps.
+
+1) run configure
+2) run "make nsswitch"
+3) cp nsswitch/libnss_wins.so /lib/libnss_wins.so.2
+4) add a wins entry to the hosts line in /etc/nsswitch.conf
+5) use it
+
+tridge@linuxcare.com

@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# Create /var/spool/samba, setup swat to be run out of inetd on port 901,
+# initialize the lmhosts file and create the codepage load files
+#
+# Written 10-Aug-1999 by Ronald Joe Record (rr@sco.com)
+#
+
+SPOOL=/var/spool/samba
+SVCS=/etc/services
+INET=/etc/inetd.conf
+PREFIX=/usr/local/samba
+LMHOST=/etc/lmhosts
+
+[ -d $SPOOL ] || {
+     mkdir -p $SPOOL
+     chmod 1777 $SPOOL
+}
+
+grep swat $SVCS > /dev/null || {
+     echo "swat    901/tcp    # Samba Web Administration Tool " >> $SVCS
+}
+
+grep swat $INET > /dev/null || {
+     echo "swat stream tcp nowait root /usr/local/samba/bin/swat swat " >> $INET
+}
+
+if [ -f $LMHOST ]
+then
+    grep localhost $LMHOST > /dev/null || {
+        echo 127.0.0.1 localhost >> $LMHOST
+    }
+else
+    echo 127.0.0.1 localhost > $LMHOST
+fi
+
+#
+# Build codepage load files
+#
+
+cd ${PREFIX}/lib/codepages
+for i in 437 737 775 850 852 861 866 932 936 949 950 1251
+do
+   ${PREFIX}/bin/make_smbcodepage c $i \
+   ${PREFIX}/lib/codepages/src/codepage_def.$i \
+   ${PREFIX}/lib/codepages/codepage.$i
+done
+for i in 437 737 850 852 861 866 932 936 949 950 \
+         ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
+do
+   ${PREFIX}/bin/make_unicodemap $i \
+   ${PREFIX}/lib/codepages/src/CP$i.TXT \
+   ${PREFIX}/lib/codepages/unicode_map.$i
+done
+
+kill -1 `ps -e | grep inetd | awk ' { print $1 } '`
