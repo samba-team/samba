@@ -356,10 +356,13 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
     
     if(n != pa.len) {
 	char *name;
-	krb5_unparse_name(context, client->principal, &name);
+	ret = krb5_unparse_name(context, client->principal, &name);
+	if (ret)
+	    name = "<unparse_name failed>";
 	kdc_log(0, "internal error in get_pa_etype_info(%s): %d != %d", 
 		name, n, pa.len);
-	free(name);
+	if (ret == 0)
+	    free(name);
 	pa.len = n;
     }
 
@@ -492,10 +495,13 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
     
     if(n != pa.len) {
 	char *name;
-	krb5_unparse_name(context, client->principal, &name);
+	ret = krb5_unparse_name(context, client->principal, &name);
+	if (ret)
+	    name = "<unparse_name failed>";
 	kdc_log(0, "internal error in get_pa_etype_info(%s): %d != %d", 
 		name, n, pa.len);
-	free(name);
+	if (ret == 0)
+	    free(name);
 	pa.len = n;
     }
 
@@ -633,8 +639,8 @@ as_rep(KDC_REQ *req,
     krb5_enctype cetype, setype;
     EncTicketPart et;
     EncKDCRepPart ek;
-    krb5_principal client_princ, server_princ;
-    char *client_name, *server_name;
+    krb5_principal client_princ = NULL, server_princ = NULL;
+    char *client_name = NULL, *server_name = NULL;
     krb5_error_code ret = 0;
     const char *e_text = NULL;
     krb5_crypto crypto;
@@ -643,27 +649,31 @@ as_rep(KDC_REQ *req,
     memset(&rep, 0, sizeof(rep));
 
     if(b->sname == NULL){
-	server_name = "<unknown server>";
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No server in request";
     } else{
 	principalname2krb5_principal (&server_princ, *(b->sname), b->realm);
-	krb5_unparse_name(context, server_princ, &server_name);
+	ret = krb5_unparse_name(context, server_princ, &server_name);
+    }
+    if (ret) {
+	kdc_log(0, "AS-REQ malformed server name from %s", from);
+	goto out;
     }
     
     if(b->cname == NULL){
-	client_name = "<unknown client>";
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No client in request";
     } else {
 	principalname2krb5_principal (&client_princ, *(b->cname), b->realm);
-	krb5_unparse_name(context, client_princ, &client_name);
+	ret = krb5_unparse_name(context, client_princ, &client_name);
     }
+    if (ret) {
+	kdc_log(0, "AS-REQ malformed client name from %s", from);
+	goto out;
+    }
+
     kdc_log(0, "AS-REQ %s from %s for %s", 
 	    client_name, from, server_name);
-
-    if(ret)
-	goto out;
 
     ret = db_fetch(client_princ, &client);
     if(ret){
@@ -1073,9 +1083,11 @@ as_rep(KDC_REQ *req,
 	ret = 0;
     }
   out2:
-    krb5_free_principal(context, client_princ);
+    if (client_princ)
+	krb5_free_principal(context, client_princ);
     free(client_name);
-    krb5_free_principal(context, server_princ);
+    if (server_princ)
+	krb5_free_principal(context, server_princ);
     free(server_name);
     if(client)
 	free_ent(client);
@@ -1596,12 +1608,16 @@ tgs_rep2(KDC_REQ_BODY *b,
     ret = db_fetch(princ, &krbtgt);
 
     if(ret) {
+	krb5_error_code ret2;
 	char *p;
-	krb5_unparse_name(context, princ, &p);
+	ret = krb5_unparse_name(context, princ, &p);
+	if (ret2 != 0)
+	    p = "<unparse_name failed>";
 	krb5_free_principal(context, princ);
 	kdc_log(0, "Ticket-granting ticket not found in database: %s: %s",
 		p, krb5_get_err_text(context, ret));
-	free(p);
+	if (ret2 == 0)
+	    free(p);
 	ret = KRB5KRB_AP_ERR_NOT_US;
 	goto out2;
     }
@@ -1610,13 +1626,16 @@ tgs_rep2(KDC_REQ_BODY *b,
        *ap_req.ticket.enc_part.kvno != krbtgt->kvno){
 	char *p;
 
-	krb5_unparse_name (context, princ, &p);
+	ret = krb5_unparse_name (context, princ, &p);
 	krb5_free_principal(context, princ);
+	if (ret != 0)
+	    p = "<unparse_name failed>";
 	kdc_log(0, "Ticket kvno = %d, DB kvno = %d (%s)", 
 		*ap_req.ticket.enc_part.kvno,
 		krbtgt->kvno,
 		p);
-	free (p);
+	if (ret == 0)
+	    free (p);
 	ret = KRB5KRB_AP_ERR_BADKEYVER;
 	goto out2;
     }
@@ -1800,9 +1819,13 @@ tgs_rep2(KDC_REQ_BODY *b,
 	}
 
 	principalname2krb5_principal(&sp, *s, r);
-	krb5_unparse_name(context, sp, &spn);	
+	ret = krb5_unparse_name(context, sp, &spn);	
+	if (ret)
+	    goto out;
 	principalname2krb5_principal(&cp, tgt->cname, tgt->crealm);
-	krb5_unparse_name(context, cp, &cpn);
+	ret = krb5_unparse_name(context, cp, &cpn);
+	if (ret)
+	    goto out;
 	unparse_flags (KDCOptions2int(b->kdc_options), KDCOptions_units,
 		       opt_str, sizeof(opt_str));
 	if(*opt_str)
@@ -1827,7 +1850,9 @@ tgs_rep2(KDC_REQ_BODY *b,
 			free(spn);
 			krb5_make_principal(context, &sp, r, 
 					    KRB5_TGS_NAME, new_rlm, NULL);
-			krb5_unparse_name(context, sp, &spn);	
+			ret = krb5_unparse_name(context, sp, &spn);	
+			if (ret)
+			    goto out;
 			goto server_lookup;
 		    }
 		}
@@ -1840,7 +1865,9 @@ tgs_rep2(KDC_REQ_BODY *b,
 		    free(spn);
 		    krb5_make_principal(context, &sp, r, KRB5_TGS_NAME,
 					realms[0], NULL);
-		    krb5_unparse_name(context, sp, &spn);
+		    ret = krb5_unparse_name(context, sp, &spn);
+		    if (ret)
+			goto out;
 		    krb5_free_host_realm(context, realms);
 		    goto server_lookup;
 		}
