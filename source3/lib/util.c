@@ -1082,7 +1082,7 @@ char *gidtoname(gid_t gid)
 }
 
 /*******************************************************************
- Convert a user name into a uid. If winbindd is present uses this.
+ Convert a user name into a uid. 
 ********************************************************************/
 
 uid_t nametouid(char *name)
@@ -1091,21 +1091,22 @@ uid_t nametouid(char *name)
 	char *p;
 	uid_t u;
 
+	pass = getpwnam_alloc(name);
+	if (pass) {
+		u = pass->pw_uid;
+		passwd_free(&pass);
+		return u;
+	}
+
 	u = (uid_t)strtol(name, &p, 0);
 	if ((p != name) && (*p == '\0'))
 		return u;
 
-	pass = getpwnam_alloc(name);
-	if (pass) {
-		return(pass->pw_uid);
-		passwd_free(&pass);
-	}
 	return (uid_t)-1;
 }
 
 /*******************************************************************
- Convert a name to a gid_t if possible. Return -1 if not a group. If winbindd
- is present does a shortcut lookup...
+ Convert a name to a gid_t if possible. Return -1 if not a group. 
 ********************************************************************/
 
 gid_t nametogid(const char *name)
@@ -2120,92 +2121,6 @@ BOOL unix_wild_match(char *pattern, char *string)
 		return True;
 
 	return unix_do_match(p2, s2) == 0;	
-}
-
-/*******************************************************************
- free() a data blob
-*******************************************************************/
-static void free_data_blob(DATA_BLOB *d)
-{
-	if ((d) && (d->free)) {
-		SAFE_FREE(d->data);
-	}
-}
-
-/*******************************************************************
- construct a data blob, must be freed with data_blob_free()
- you can pass NULL for p and get a blank data blob
-*******************************************************************/
-DATA_BLOB data_blob(const void *p, size_t length)
-{
-	DATA_BLOB ret;
-
-	if (!length) {
-		ZERO_STRUCT(ret);
-		return ret;
-	}
-
-	if (p) {
-		ret.data = smb_xmemdup(p, length);
-	} else {
-		ret.data = smb_xmalloc(length);
-	}
-	ret.length = length;
-	ret.free = free_data_blob;
-	return ret;
-}
-
-/*******************************************************************
- construct a data blob, using supplied TALLOC_CTX
-*******************************************************************/
-DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
-{
-	DATA_BLOB ret;
-
-	if (!p || !length) {
-		ZERO_STRUCT(ret);
-		return ret;
-	}
-
-	ret.data = talloc_memdup(mem_ctx, p, length);
-	if (ret.data == NULL)
-		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
-
-	ret.length = length;
-	ret.free = NULL;
-	return ret;
-}
-
-/*******************************************************************
-free a data blob
-*******************************************************************/
-void data_blob_free(DATA_BLOB *d)
-{
-	if (d) {
-		if (d->free) {
-			(d->free)(d);
-		}
-		ZERO_STRUCTP(d);
-	}
-}
-
-/*******************************************************************
-clear a DATA_BLOB's contents
-*******************************************************************/
-void data_blob_clear(DATA_BLOB *d)
-{
-	if (d->data) {
-		memset(d->data, 0, d->length);
-	}
-}
-
-/*******************************************************************
-free a data blob and clear its contents
-*******************************************************************/
-void data_blob_clear_free(DATA_BLOB *d)
-{
-	data_blob_clear(d);
-	data_blob_free(d);
 }
 
 #ifdef __INSURE__
