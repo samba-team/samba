@@ -206,8 +206,8 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		return NSD_NEXT;
 	}
 	switch ((int)rq->f_cmd_data) {
-	    case WINBINDD_GETPWNAM_FROM_UID:
-	    case WINBINDD_GETPWNAM_FROM_USER:
+	    case WINBINDD_GETPWUID:
+	    case WINBINDD_GETPWNAM:
 		snprintf(result,1023,"%s:%s:%d:%d:%s:%s:%s\n",
 			pw->pw_name,
 			pw->pw_passwd,
@@ -217,8 +217,8 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			pw->pw_dir,
 			pw->pw_shell);
 		break;
-	    case WINBINDD_GETGRNAM_FROM_GROUP:
-	    case WINBINDD_GETGRNAM_FROM_GID:
+	    case WINBINDD_GETGRNAM:
+	    case WINBINDD_GETGRGID:
 		if (gr->num_gr_mem && response.extra_data)
 			members = response.extra_data;
 		else
@@ -394,20 +394,20 @@ int lookup(nsd_file_t *rq)
 
 	if (strcasecmp(map,"passwd.byuid") == 0) {
 	    request->data.uid = atoi(key);
-	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM_FROM_UID;
+	    rq->f_cmd_data = (void *)WINBINDD_GETPWUID;
 	} else if (strcasecmp(map,"passwd.byname") == 0) {
 	    strncpy(request->data.username, key, 
 		sizeof(request->data.username) - 1);
 	    request->data.username[sizeof(request->data.username) - 1] = '\0';
-	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM_FROM_USER; 
+	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM; 
 	} else if (strcasecmp(map,"group.byname") == 0) {
 	    strncpy(request->data.groupname, key, 
 		sizeof(request->data.groupname) - 1);
 	    request->data.groupname[sizeof(request->data.groupname) - 1] = '\0';
-	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM_FROM_GROUP; 
+	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM; 
 	} else if (strcasecmp(map,"group.bygid") == 0) {
 	    request->data.gid = atoi(key);
-	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM_FROM_GID;
+	    rq->f_cmd_data = (void *)WINBINDD_GETGRGID;
 	} else {
 		/*
 		 * Don't understand this map - just return not found
