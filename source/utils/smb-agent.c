@@ -218,11 +218,15 @@ static void agent_child(int c)
 					DEBUG(0,("client closed connection\n"));
 					exit(0);
 				}
-				if (!send_smb(s->fd, packet))
+				/* ignore keep-alives */
+				if (CVAL(packet, 0) != 0x85)
 				{
-					DEBUG(0,("server is dead\n"));
-					exit(1);
-				}			
+					if (!send_smb(s->fd, packet))
+					{
+						DEBUG(0,("server is dead\n"));
+						exit(1);
+					}			
+				}
 			}
 		}
 		if (s != NULL && FD_ISSET(s->fd, &fds))
@@ -258,12 +262,14 @@ static void start_agent(void)
 {
 	int s, c;
 	struct sockaddr_un sa;
+	fstring path;
+	slprintf(path, sizeof(path)-1, "/tmp/smb-agent/smb.%d", getuid());
 
 	CatchChild();
 
 	/* start listening on unix socket */
-	
-	mkdir("/tmp/smb-agent", 700);
+	mkdir("/tmp/smb-agent", 777);
+
 	s = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (s < 0)
@@ -274,27 +280,35 @@ static void start_agent(void)
 
 	ZERO_STRUCT(sa);
 	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, "/tmp/smb-agent/smb.sock",
-	            sizeof(sa.sun_path)-1);
+	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
 
 	if (bind(s, (struct sockaddr*) &sa, sizeof(sa)) < 0)
 	{
 		fprintf(stderr, "socket bind to %s failed\n", sa.sun_path);
 		close(s);
-		remove("/tmp/smb-agent/smb.sock");
+		remove(path);
 		exit(1);
 	}
 
-	if (s == -1) {
+	if (chmod(path, S_IRUSR|S_IWUSR|S_ISVTX) < 0)
+	{
+		fprintf(stderr, "chmod on %s failed\n", sa.sun_path);
+		close(s);
+		remove(path);
+		exit(1);
+	}
+
+	if (s == -1)
+	{
 		DEBUG(0,("bind failed\n"));
-		remove("/tmp/smb-agent/smb.sock");
+		remove(path);
 		exit(1);
 	}
 
 	if (listen(s, 5) == -1)
 	{
 		DEBUG(0,("listen failed\n"));
-		remove("/tmp/smb-agent/smb.sock");
+		remove(path);
 	}
 
 	while (1)
@@ -325,23 +339,65 @@ static void start_agent(void)
 	}
 }
 
+/****************************************************************************
+usage on the program
+****************************************************************************/
+static void usage(char *pname)
+{
+  printf("Usage: %s [-D]", pname);
+
+  printf("\nVersion %s\n",VERSION);
+  printf("\t-D 		run as a daemon\n");
+  printf("\t-h 		usage\n");
+  printf("\n");
+}
 
 int main(int argc, char *argv[])
 {
 	pstring configfile;
+	BOOL is_daemon = False;
+	int opt;
+	extern pstring debugf;
 
 	TimeInit();
 
-	setup_logging(argv[0],True);
+	pstrcpy(configfile,CONFIGFILE);
+ 
+	while ((opt = getopt(argc, argv, "Dh")) != EOF)
+	{
+		switch (opt)
+		{
+			case 'D':
+			{
+				is_daemon = True;
+				break;
+			}
+			case 'h':
+			default:
+			{
+				usage(argv[0]);
+				break;
+			}
+		}
+	}
+
+	slprintf(debugf, sizeof(debugf)-1, "log.%s", argv[0]);
+	setup_logging(argv[0], !is_daemon);
   
 	charset_initialise();
 
-	pstrcpy(configfile,CONFIGFILE);
- 
-	if (!lp_load(configfile,True,False,False)) {
+	if (!lp_load(configfile,True,False,False))
+	{
 		DEBUG(0,("Unable to load config file\n"));
 	}
 
+	if (is_daemon)
+	{
+		DEBUG(0,("%s: becoming daemon\n", argv[0]));
+		become_daemon();
+	}
+
 	start_agent();
+
 	return 0;
 }
