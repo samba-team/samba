@@ -435,6 +435,7 @@ static int messaging_destructor(void *msg_ctx)
 {
 	struct messaging_state *msg = msg_ctx;
 	event_remove_fd(msg->event.ev, msg->event.fde);
+	unlink(msg->path);
 	return 0;
 }
 
