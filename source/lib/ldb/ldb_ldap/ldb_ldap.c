@@ -498,8 +498,6 @@ static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 static int lldb_lock(struct ldb_module *module, const char *lockname)
 {
-	struct ldb_context *ldb = module->ldb;
-	struct lldb_private *lldb = module->private_data;
 	int ret = 0;
 
 	if (lockname == NULL) {
@@ -513,8 +511,6 @@ static int lldb_lock(struct ldb_module *module, const char *lockname)
 
 static int lldb_unlock(struct ldb_module *module, const char *lockname)
 {
-	struct ldb_context *ldb = module->ldb;
-	struct lldb_private *lldb = module->private_data;
 	int ret = 0;
 
 	if (lockname == NULL) {
