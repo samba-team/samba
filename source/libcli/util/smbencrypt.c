@@ -61,15 +61,17 @@ BOOL SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
 void E_md4hash(const char *passwd, uint8_t p16[16])
 {
 	int len;
-	smb_ucs2_t wpwd[129];
+	smb_ucs2_t *wpwd;
 	
-	/* Password must be converted to NT unicode - null terminated. */
-	push_ucs2(NULL, wpwd, (const char *)passwd, 256, STR_UNICODE|STR_NOALIGN|STR_TERMINATE);
-	/* Calculate length in bytes */
-	len = strlen_w(wpwd) * sizeof(int16_t);
+	TALLOC_CTX *mem_ctx = talloc_init("E_md4hash");
+	SMB_ASSERT(mem_ctx);
 
+	len = push_ucs2_talloc(mem_ctx, &wpwd, passwd);
+	SMB_ASSERT(len >= 2);
+	
+	len -= 2;
 	mdfour(p16, (uint8_t *)wpwd, len);
-	ZERO_STRUCT(wpwd);	
+	talloc_free(mem_ctx);
 }
 
 /**
@@ -114,16 +116,22 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 	size_t domain_byte_len;
 
 	HMACMD5Context ctx;
-
-	user_byte_len = push_ucs2_allocate(&user, user_in);
-	if (user_byte_len == (size_t)-1) {
-		DEBUG(0, ("push_uss2_allocate() for user returned -1 (probably malloc() failure)\n"));
+	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in); 
+	if (!mem_ctx) {
 		return False;
 	}
 
-	domain_byte_len = push_ucs2_allocate(&domain, domain_in);
-	if (domain_byte_len == (size_t)-1) {
-		DEBUG(0, ("push_uss2_allocate() for domain returned -1 (probably malloc() failure)\n"));
+	user_byte_len = push_ucs2_talloc(mem_ctx, &user, user_in);
+	if (user_byte_len == (ssize_t)-1) {
+		DEBUG(0, ("push_uss2_talloc() for user returned -1 (probably talloc() failure)\n"));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	domain_byte_len = push_ucs2_talloc(mem_ctx, &domain, domain_in);
+	if (domain_byte_len == (ssize_t)-1) {
+		DEBUG(0, ("push_ucs2_talloc() for domain returned -1 (probably talloc() failure)\n"));
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -152,8 +160,7 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 	dump_data(100, kr_buf, 16);
 #endif
 
-	SAFE_FREE(user);
-	SAFE_FREE(domain);
+	talloc_free(mem_ctx);
 	return True;
 }
 
@@ -407,7 +414,7 @@ BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 	uint8_t new_pw[512];
 	size_t new_pw_len;
 
-	new_pw_len = push_string(NULL, new_pw,
+	new_pw_len = push_string(new_pw,
 				 password, 
 				 sizeof(new_pw), string_flags);
 	
@@ -459,7 +466,7 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 	}
 
 	/* decode into the return buffer.  Buffer length supplied */
- 	*new_pw_len = pull_string(NULL, new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
+ 	*new_pw_len = pull_string(new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
 				  byte_len, string_flags);
 
 #ifdef DEBUG_PASSWORD

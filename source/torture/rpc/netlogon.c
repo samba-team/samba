@@ -796,17 +796,15 @@ static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	nt_response = data_blob_talloc(samlogon_state->mem_ctx, unicodepw, 
 				       strlen_w(((void *)unicodepw))*sizeof(smb_ucs2_t));
 
-	password = strdup_upper(samlogon_state->password);
+	password = strupper_talloc(samlogon_state->mem_ctx, samlogon_state->password);
 
 	if ((convert_string_talloc(samlogon_state->mem_ctx, CH_UNIX, 
 				   CH_DOS, password,
 				   strlen(password)+1, 
-				   (const void**)&dospw)) == -1) {
-		DEBUG(0, ("push_ascii_allocate failed!\n"));
+				   (void**)&dospw)) == -1) {
+		DEBUG(0, ("convert_string_talloc failed!\n"));
 		exit(1);
 	}
-
-	SAFE_FREE(password);
 
 	lm_response = data_blob_talloc(samlogon_state->mem_ctx, dospw, strlen(dospw));
 

@@ -202,7 +202,7 @@ static BOOL scan_trans2(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(NULL, &param[6], fname, sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(&param[6], fname, sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
 
 	status = try_trans2_len(cli, "fname", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -213,7 +213,7 @@ static BOOL scan_trans2(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(NULL, &param[6], "\\newfile.dat", sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(&param[6], "\\newfile.dat", sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
 
 	status = try_trans2_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -225,7 +225,7 @@ static BOOL scan_trans2(struct smbcli_state *cli, int op, int level,
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(NULL, &param[2], "\\testdir", sizeof(pstring)-3, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(&param[2], "\\testdir", sizeof(pstring)-3, STR_TERMINATE|STR_UNICODE);
 
 	status = try_trans2_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -441,7 +441,7 @@ static BOOL scan_nttrans(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(NULL, &param[6], fname, -1, STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(&param[6], fname, -1, STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "fname", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -452,7 +452,7 @@ static BOOL scan_nttrans(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(NULL, &param[6], "\\newfile.dat", -1, STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(&param[6], "\\newfile.dat", -1, STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -464,7 +464,7 @@ static BOOL scan_nttrans(struct smbcli_state *cli, int op, int level,
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(NULL, &param[2], "\\testdir", -1, STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(&param[2], "\\testdir", -1, STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);

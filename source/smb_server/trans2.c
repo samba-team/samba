@@ -143,10 +143,10 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
 		alignment = 1;
 		if (dest_len > 0) {
 			SCVAL(trans->out.data.data + offset, 0, 0);
-			ret = push_string(NULL, trans->out.data.data + offset + 1, str->s, dest_len-1, flags);
+			ret = push_string(trans->out.data.data + offset + 1, str->s, dest_len-1, flags);
 		}
 	} else {
-		ret = push_string(NULL, trans->out.data.data + offset, str->s, dest_len, flags);
+		ret = push_string(trans->out.data.data + offset, str->s, dest_len, flags);
 	}
 
 	/* sometimes the string needs to be terminated, but the length
