@@ -16,6 +16,7 @@
 * Incremental propagation::     
 * Salting::
 * Cross realm::
+* Transit policy::
 * Setting up DNS::
 @end menu
 
@@ -509,7 +510,7 @@ the cell appended to the password.
 
 @end itemize
 
-@node Cross realm, Setting up DNS , Salting, Setting up a realm
+@node Cross realm, Transit policy , Salting, Setting up a realm
 @section Cross realm
 @cindex Cross realm
 
@@ -574,7 +575,52 @@ May  3 14:10:54  May  3 23:55:54  host/hummel.it.su.se@@SU.SE
 @end cartouche
 @end example
 
-@node Setting up DNS, , Cross realm, Setting up a realm
+@node Transit policy, Setting up DNS , Cross realm, Setting up a realm
+@section Transit policy
+@cindex Transit policy
+
+If you want to use cross realm authentication over an intermediate
+realm it must be explicitly allowed by either the KDCs or the server
+receiving the request. This is done in @file{krb5.conf} in the
+@code{[capaths]} section.
+
+When the a ticket is transited a though a realm to another realm, the
+destination realm adds it peer to the ``transited-realms'' field in
+the ticket. The field is unorded, this is since there is no way to
+know if one of the transited-realms changed the order of the list.
+
+The syntax for @code{[capaths]} section:
+
+@example
+@cartouche
+[capaths]
+        CLIENT-REALM = @{ SERVER-REALM = PERMITTED-CROSS-REALMS ... @}
+@end cartouche
+@end example
+
+The realm @code{STACKEN.KTH.SE} allows clients from @code{SU.SE} and
+@code{DSV.SU.SE} to cross in. Since @code{STACKEN.KTH.SE} only have
+cross realm with @code{KTH.SE}, and @code{DSV.SU.SE} only have cross
+realm with @code{SU.SE} they need to use both @code{SU.SE} and
+@code{KTH.SE} as transit realms.
+
+@example
+@cartouche
+[capaths]
+	SU.SE = @{
+                    STACKEN.KTH.SE = KTH.SE
+	@}
+	DSV.SU.SE = @{
+                    STACKEN.KTH.SE = KTH.SE SU.SE
+	@}
+
+@end cartouche
+@end example
+
+@c To test the cross realm configuration, use:
+@c    kmumble transit-check client server transit-realms ...
+
+@node Setting up DNS, , Transit policy, Setting up a realm
 @section Setting up DNS
 @cindex Setting up DNS
 
