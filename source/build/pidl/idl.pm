@@ -1666,9 +1666,9 @@ sub
 #line 24 "build/pidl/idl.yp"
 {$_[3] => {
                "TYPE" => "COCLASS", 
-			   "PROPERTIES" => $_[1],
-		       "NAME" => $_[3],
-		       "DATA" => $_[5],
+	       "PROPERTIES" => $_[1],
+	       "NAME" => $_[3],
+	       "DATA" => $_[5],
           }}
 	],
 	[#Rule 5
@@ -1686,10 +1686,10 @@ sub
 #line 38 "build/pidl/idl.yp"
 {$_[3] => {
                "TYPE" => "INTERFACE", 
-			   "PROPERTIES" => $_[1],
-		       "NAME" => $_[3],
-			   "BASE" => $_[4],
-		       "DATA" => $_[6],
+	       "PROPERTIES" => $_[1],
+	       "NAME" => $_[3],
+	       "BASE" => $_[4],
+	       "DATA" => $_[6],
           }}
 	],
 	[#Rule 8
