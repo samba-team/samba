@@ -180,24 +180,47 @@ krb5_cc_get_type(krb5_context context,
 }
 
 /*
- * Return a pointer to a static string containing the default ccache name.
+ * Set the default cc name for `context' to `name'.
+ */
+
+krb5_error_code
+krb5_cc_set_default_name(krb5_context context, const char *name)
+{
+    krb5_error_code ret = 0;
+    char *p;
+
+    if (name == NULL) {
+	char *e;
+	e = getenv("KRB5CCNAME");
+	if (e)
+	    p = strdup(e);
+	else
+	    asprintf(&p,"FILE:/tmp/krb5cc_%u", (unsigned)getuid());
+    } else
+	p = strdup(name);
+
+    if (p == NULL)
+	return ENOMEM;
+
+    if (context->default_cc_name)
+	free(context->default_cc_name);
+
+    context->default_cc_name = p;
+
+    return ret;
+}
+
+/*
+ * Return a pointer to a context static string containing the default ccache name.
  */
 
 const char*
 krb5_cc_default_name(krb5_context context)
 {
-    static char name[1024];
-    char *p;
+    if (context->default_cc_name == NULL)
+	krb5_cc_set_default_name(context, NULL);
 
-    p = getenv("KRB5CCNAME");
-    if(p)
-	strlcpy (name, p, sizeof(name));
-    else
-	snprintf(name,
-		 sizeof(name),
-		 "FILE:/tmp/krb5cc_%u",
-		 (unsigned)getuid());
-    return name;
+    return context->default_cc_name;
 }
 
 /*
@@ -209,9 +232,11 @@ krb5_error_code
 krb5_cc_default(krb5_context context,
 		krb5_ccache *id)
 {
-    return krb5_cc_resolve(context, 
-			   krb5_cc_default_name(context), 
-			   id);
+    const char *p = krb5_cc_default_name(context);
+
+    if (p)
+	return ENOMEM;
+    return krb5_cc_resolve(context, p, id);
 }
 
 /*
