@@ -153,6 +153,38 @@ static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid,
 		return False;
 	}
 
+	/* Some debugging stuff */
+
+	if (DEBUGLEVEL >= 3) {
+		fstring ace_sid_str, sid_str;
+		fstring ace_name, ace_name_dom, name, name_dom;
+		uint8 name_type;
+		
+		sid_to_string(sid_str, sid);
+		sid_to_string(ace_sid_str, &ace->sid);
+
+	        if (!winbind_lookup_sid(sid, name_dom, name, &name_type)) {
+			fstrcpy(name_dom, "UNKNOWN");
+			fstrcpy(name, "UNKNOWN");
+		}
+
+		if (!winbind_lookup_sid(&ace->sid, ace_name_dom, ace_name, 
+					&name_type)) {
+			fstrcpy(ace_name_dom, "UNKNOWN");
+			fstrcpy(ace_name, "UNKNOWN");
+		}
+
+		DEBUG(3, ("checking %s ACE sid %s (%s%s%s) mask 0x%08x "
+			  "against sid %s (%s%s%s)\n",
+			  (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? 
+			  "allowed" : ((ace->type ==
+					SEC_ACE_TYPE_ACCESS_DENIED) ?
+				       "denied" : "unknown"),
+			  ace_sid_str, ace_name_dom, lp_winbind_separator(),
+			  ace_name, mask, sid_str, name_dom,
+			  lp_winbind_separator(), name));
+	}
+
 	/* Only owner allowed write-owner rights */
 
 	if (!is_owner) {
@@ -178,6 +210,7 @@ static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid,
 				if (ace_grant(mask, acc_desired, 
 					      acc_granted)) {
 					*status = NT_STATUS_NO_PROBLEMO;
+					DEBUG(3, ("access granted\n"));
 					return True;
 				}
 			}
@@ -199,6 +232,7 @@ static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid,
 				if (ace_deny(mask, acc_desired, 
 					     acc_granted)) {
 					*status = NT_STATUS_ACCESS_DENIED;
+					DEBUG(3, ("access denied\n"));
 					return True;
 				}
 			}
@@ -240,7 +274,6 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 {
 	DOM_SID user_sid, group_sid;
 	DOM_SID **group_sids = NULL;
-	BOOL is_owner;
 	int i, j, ngroup_sids = 0;
 	SEC_ACL *acl;
 	uint8 check_ace_type;
@@ -279,24 +312,47 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 		DEBUG(3, ("could not lookup sid for uid %d\n", uid));
 	}
 
+	/* If we're the owner, then we can do anything */
+
+	if (sid_equal(&user_sid, sd->owner_sid)) {
+		*status = NT_STATUS_NOPROBLEMO;
+		*acc_granted = acc_desired;
+		acc_desired = 0;
+
+                goto done;
+	}
+
 	/* Create group sid */
 
 	if (!winbind_gid_to_sid(gid, &group_sid)) {
 		DEBUG(3, ("could not lookup sid for gid %d\n", gid));
 	}
 
-	/* Preparation: check owner sid, create array of group sids */
+	/* Create array of group sids */
 
-	is_owner = sid_equal(&user_sid, sd->owner_sid);
 	add_sid_to_array(&ngroup_sids, &group_sids, &group_sid);
 
 	for (i = 0; i < ngroups; i++) {
-		if (groups[i] != gid &&
-		    winbind_gid_to_sid(groups[i], &group_sid)) {
-			add_sid_to_array(&ngroup_sids, &group_sids, 
-					 &group_sid);
-		} else {
-			DEBUG(3, ("could not lookup sid for gid %d\n", gid));
+		if (groups[i] != gid) {
+			if (winbind_gid_to_sid(groups[i], &group_sid)) {
+
+				/* If we're a group member then we can also
+				   do anything */
+
+				if (sid_equal(&group_sid, sd->grp_sid)) {
+					*status = NT_STATUS_NOPROBLEMO;
+					*acc_granted = acc_desired;
+					acc_desired = 0;
+
+					goto done;
+				}
+
+				add_sid_to_array(&ngroup_sids, &group_sids, 
+						 &group_sid);
+			} else {
+				DEBUG(3, ("could not lookup sid for gid %d\n", 
+					  gid));
+			}
 		}
 	}
 
@@ -335,7 +391,7 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 		/* Check user sid */
 
                 if (ace->type == check_ace_type &&
-		    check_ace(ace, is_owner, &user_sid, &acc_desired,
+		    check_ace(ace, False, &user_sid, &acc_desired,
 			      acc_granted, status)) {
 			goto done;
                 }
