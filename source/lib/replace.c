@@ -468,3 +468,15 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return ret;	
 }
 #endif
+
+
+#ifndef HAVE_STRTOULL
+ unsigned long long int strtoull(const char *str, char **endptr, int base)
+{
+#ifdef HAVE_STRTOUQ
+	return strtouq(str, endptr, base);
+#else
+#error "system must support 64 bit integer read from strings"
+#endif
+}
+#endif
