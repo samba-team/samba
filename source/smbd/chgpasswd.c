@@ -227,10 +227,10 @@ static int expect(int master,char *expected,char *buf)
 
 static void pwd_sub(char *buf)
 {
-	fstring_sub(buf,"\\n","\n");
-	fstring_sub(buf,"\\r","\r");
-	fstring_sub(buf,"\\s"," ");
-	fstring_sub(buf,"\\t","\t");
+	all_string_sub(buf,"\\n","\n",0);
+	all_string_sub(buf,"\\r","\r",0);
+	all_string_sub(buf,"\\s"," ",0);
+	all_string_sub(buf,"\\t","\t",0);
 }
 
 static void writestring(int fd,char *s)
@@ -448,8 +448,9 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
   }
 
   pstring_sub(passwordprogram,"%u",name);
-  all_string_sub(passwordprogram,"%o",oldpass,sizeof(pstring));
-  all_string_sub(passwordprogram,"%n",newpass,sizeof(pstring));
+  /* note that we do NOT substitute the %o and %n in the password program
+     as this would open up a security hole where the user could use
+     a new password containing shell escape characters */
 
   pstring_sub(chatsequence,"%u",name);
   all_string_sub(chatsequence,"%o",oldpass,sizeof(pstring));
