@@ -72,7 +72,8 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *name,
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
 
-enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) 
+enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
+						 *state) 
 {
     uint32 name_type, user_rid, group_rid;
     SAM_USERINFO_CTR user_info;
@@ -270,7 +271,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
         /* Skip domains other than WINBINDD_DOMAIN environment variable */
 
         if ((strcmp(state->request.domain, "") != 0) &&
-            (strcmp(state->request.domain, tmp->name) != 0)) {
+	    !check_domain_env(state->request.domain, tmp->name)) {
                 continue;
         }
 
@@ -436,7 +437,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		   variable */ 
 
 		if ((strcmp(state->request.domain, "") != 0) &&
-		    (strcmp(state->request.domain, domain->name) != 0)) {
+		    !check_domain_env(state->request.domain, domain->name)) {
 			continue;
 		}
 

@@ -621,7 +621,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
         /* Skip domains other than WINBINDD_DOMAIN environment variable */
 
         if ((strcmp(state->request.domain, "") != 0) &&
-            (strcmp(state->request.domain, tmp->name) != 0)) {
+            !check_domain_env(state->request.domain, tmp->name)) {
                 continue;
         }
 
@@ -795,7 +795,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		   variable */ 
 
 		if ((strcmp(state->request.domain, "") != 0) &&
-		    (strcmp(state->request.domain, domain->name) != 0)) {
+		    !check_domain_env(state->request.domain, domain->name)) {
 			continue;
 		}
 

@@ -95,7 +95,8 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 
-enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) ;
+enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
+						 *state) ;
 enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state 
                                                 *state);
 enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state);
@@ -136,4 +137,5 @@ uint32 domain_sequence_number(char *domain_name);
 BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
                              uint16 info_level, uint32 *num_entries,
                              SAM_DISPINFO_CTR *ctr);
+BOOL check_domain_env(char *domain_env, char *domain);
 #endif /* _WINBINDD_PROTO_H_ */

@@ -737,3 +737,17 @@ BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
 
 	return res;
 }
+
+/* Check if a domain is present in a comma-separated list of domains */
+
+BOOL check_domain_env(char *domain_env, char *domain)
+{
+	fstring name;
+	char *tmp = domain_env;
+
+	while(next_token(&tmp, name, ",", sizeof(fstring))) {
+		return strequal(name, domain);
+	}
+
+	return False;
+}
