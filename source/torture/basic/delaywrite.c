@@ -122,6 +122,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	const char *fname = BASEDIR "\\torture_file.txt";
 	NTSTATUS status;
 	int fnum1 = -1;
+	int fnum2 = -1;
 	BOOL ret = True;
 	ssize_t written;
 	time_t t;
@@ -259,7 +260,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	/* Once the time was set using setfileinfo then it stays set - writes
 	   don't have any effect. But make sure. */
 
-	while (time(NULL) < t+40) {
+	while (time(NULL) < t+15) {
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -279,8 +280,170 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 	
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		printf("Server did not update write time?!\n");
+		printf("Server did not update write time\n");
 	}
+
+	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
+	if (fnum2 == -1) {
+		printf("Failed to open %s\n", fname);
+		return False;
+	}
+	
+	printf("Doing a 10 byte write to extend the file via second fd and see if this changes the last write time.\n");
+
+	written =  smbcli_write(cli->tree, fnum2, 0, "0123456789", 11, 10);
+
+	if (written != 10) {
+		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		return False;
+	}
+
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return False;
+	}
+	printf("write time %s\n", 
+	       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+		printf("Server updated write_time\n");
+	}
+
+	printf("Closing the first fd to see if write time updated.\n");
+	smbcli_close(cli->tree, fnum1);
+	fnum1 = -1;
+
+	printf("Doing a 10 byte write to extend the file via second fd and see if this changes the last write time.\n");
+
+	written =  smbcli_write(cli->tree, fnum2, 0, "0123456789", 21, 10);
+
+	if (written != 10) {
+		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		return False;
+	}
+
+	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo1.basic_info.in.fnum = fnum2;
+	finfo2 = finfo1;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return False;
+	}
+	printf("write time %s\n", 
+	       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+		printf("Server updated write_time\n");
+	}
+
+	t = time(NULL);
+
+	/* Once the time was set using setfileinfo then it stays set - writes
+	   don't have any effect. But make sure. */
+
+	while (time(NULL) < t+15) {
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = False;
+			break;
+		}
+		printf("write time %s\n", 
+		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+			printf("Server updated write_time after %d seconds\n",
+			       (int)(time(NULL) - t));
+			break;
+		}
+		sleep(1);
+		fflush(stdout);
+	}
+	
+	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
+		printf("Server did not update write time\n");
+	}
+
+	printf("Closing both fd's to see if write time updated.\n");
+
+	smbcli_close(cli->tree, fnum2);
+	fnum2 = -1;
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("Failed to open %s\n", fname);
+		return False;
+	}
+
+	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo1.basic_info.in.fnum = fnum1;
+	finfo2 = finfo1;
+
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return False;
+	}
+	
+	printf("Second open initial write time %s\n", 
+	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
+
+	sleep(10);
+	printf("Doing a 10 byte write to extend the file to see if this changes the last write time.\n");
+
+	written =  smbcli_write(cli->tree, fnum1, 0, "0123456789", 31, 10);
+
+	if (written != 10) {
+		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		return False;
+	}
+
+	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo1.basic_info.in.fnum = fnum1;
+	finfo2 = finfo1;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return False;
+	}
+	printf("write time %s\n", 
+	       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+		printf("Server updated write_time\n");
+	}
+
+	t = time(NULL);
+
+	/* Once the time was set using setfileinfo then it stays set - writes
+	   don't have any effect. But make sure. */
+
+	while (time(NULL) < t+15) {
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = False;
+			break;
+		}
+		printf("write time %s\n", 
+		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+			printf("Server updated write_time after %d seconds\n",
+			       (int)(time(NULL) - t));
+			break;
+		}
+		sleep(1);
+		fflush(stdout);
+	}
+	
+	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
+		printf("Server did not update write time\n");
+	}
+
 
 	/* One more test to do. We should read the filetime via findfirst on the
 	   second connection to ensure it's the same. This is very easy for a Windows
@@ -403,6 +566,9 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	if (finfo1.basic_info.out.write_time !=
 	    finfo2.basic_info.out.write_time) {
 		printf("(%s) write_time changed\n", __location__);
+		printf("write time conn 1 = %s, conn 2 = %s\n", 
+		       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time),
+		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
 		ret = False;
 		goto done;
 	}
