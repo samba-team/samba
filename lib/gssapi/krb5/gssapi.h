@@ -208,6 +208,9 @@ typedef OM_uint32 gss_qop_t;
  */
 #define GSS_C_QOP_DEFAULT 0
 
+#define GSS_KRB5_CONF_C_QOP_DES		0x0100
+#define GSS_KRB5_CONF_C_QOP_DES3_KD	0x0200
+
 /*
  * Expiration time of 2^32-1 seconds means infinite lifetime for a
  * credential or security context
