@@ -511,15 +511,17 @@ main (int argc, char **argv)
 					    &opt);
     }
 #ifdef KRB4
-    if (ret == KRB5KRB_AP_ERR_V4_REPLY) {
+    if (ret == KRB5KRB_AP_ERR_V4_REPLY || ret == KRB5_KDC_UNREACH) {
 	int exit_val;
 
 	exit_val = do_v4_fallback (context, principal, ticket_life,
 				   use_keytab, keytab_str,
 				   passwd, sizeof(passwd));
 	memset(passwd, 0, sizeof(passwd));
-	krb5_free_context (context);
-	return exit_val;
+	if (exit_val = 0 || ret == KRB5KRB_AP_ERR_V4_REPLY) {
+	    krb5_free_context (context);
+	    return exit_val;
+	}
     }
 #endif
     memset(passwd, 0, sizeof(passwd));
