@@ -168,8 +168,7 @@ BOOL rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size)
 
 void rpcbuf_move(RPC_BUFFER *src, RPC_BUFFER **dest)
 {
-	if ( !src )
-		return;
+	SMB_ASSERT( src != NULL );
 
 	prs_switch_type(&src->prs, MARSHALL);
 	if(!prs_set_offset(&src->prs, 0))
