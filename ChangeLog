@@ -1,5 +1,7 @@
 Sat Jul 12 15:03:16 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/get_addrs.c: Fix ip4 address extraction.
+
 	* kuser/klist.c: Add verbose flag, and split main into smaller
  	pieces.
 
