@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
