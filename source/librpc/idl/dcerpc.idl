@@ -102,6 +102,7 @@ interface dcerpc
 
 	const uint8 DCERPC_AUTH_TYPE_NONE     = 0;
 	const uint8 DCERPC_AUTH_TYPE_KRB5     = 1;
+	const uint8 DCERPC_AUTH_TYPE_SPNEGO   = 9;
 	const uint8 DCERPC_AUTH_TYPE_NTLMSSP  = 10;
 	const uint8 DCERPC_AUTH_TYPE_SCHANNEL = 68;
 	
