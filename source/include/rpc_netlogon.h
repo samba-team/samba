@@ -298,7 +298,7 @@ typedef struct net_q_logon_ctrl2_info
 	uint32       	query_level;   
 	union {
 		CTRL_DATA_INFO_5 info5;
-		CTRL_DATA_INFO_6 info6;;
+		CTRL_DATA_INFO_6 info6;
 	} info;
 	
 } NET_Q_LOGON_CTRL2;
