@@ -171,7 +171,7 @@ make-roken.c: roken.h.in roken.awk
 
 print_version.lo: print_version.h
 
-print_version.h: make-print-version
-	./make-print-version print_version.h
+print_version.h: make-print-version$(EXEEXT)
+	./make-print-version$(EXEEXT) print_version.h
 
 make-print-version.o: $(top_builddir)/include/version.h
