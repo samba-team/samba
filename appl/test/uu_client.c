@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -51,7 +51,7 @@ proto (int sock, const char *hostname, const char *service)
     krb5_ccache ccache;
     krb5_auth_context auth_context;
     krb5_error_code status;
-    krb5_principal client, server;
+    krb5_principal client;
     krb5_data data;
     krb5_data packet;
     krb5_creds mcred, cred;
@@ -130,14 +130,6 @@ proto (int sock, const char *hostname, const char *service)
     if(status)
 	krb5_err(context, 1, status, "krb5_auth_con_setuserkey");
     
-    status = krb5_sname_to_principal (context,
-				      hostname,
-				      service,
-				      KRB5_NT_SRV_HST,
-				      &server);
-    if (status)
-	krb5_err(context, 1, status, "krb5_sname_to_principal");
-
     status = krb5_recvauth(context, &auth_context, &sock, 
 			   VERSION, client, 0, NULL, NULL);
 

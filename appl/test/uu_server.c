@@ -50,7 +50,6 @@ proto (int sock, const char *service)
     krb5_ccache ccache;
     krb5_auth_context auth_context;
     krb5_error_code status;
-    char hostname[MAXHOSTNAMELEN];
     krb5_data packet;
     krb5_data data;
     krb5_data client_name;
@@ -86,9 +85,6 @@ proto (int sock, const char *service)
     if (status)
 	errx (1, "krb5_auth_con_setaddr: %s",
 	      krb5_get_err_text(context, status));
-
-    if(gethostname (hostname, sizeof(hostname)) < 0)
-	err (1, "gethostname");
 
     status = krb5_read_message(context, &sock, &client_name);
     if(status)
