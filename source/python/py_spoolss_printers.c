@@ -203,8 +203,9 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 	if ((level_obj = PyDict_GetItemString(info, "level"))) {
 
 		if (!PyInt_Check(level_obj)) {
-			DEBUG(0, ("** level not an integer\n"));
-			goto error;
+			PyErr_SetString(spoolss_error, 
+					"level not an integer");
+			return NULL;
 		}
 
 		level = PyInt_AsLong(level_obj);
@@ -212,14 +213,13 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 		/* Only level 2, 3 supported by NT */
 
 		if (level != 2 && level != 3) {
-			DEBUG(0, ("** unsupported info level\n"));
-			goto error;
+			PyErr_SetString(spoolss_error,
+					"unsupported info level");
+			return NULL;
 		}
 
 	} else {
-		DEBUG(0, ("** no level info\n"));
-	error:
-		PyErr_SetString(spoolss_error, "invalid info");
+		PyErr_SetString(spoolss_error, "no info level present");
 		return NULL;
 	}
 
@@ -232,8 +232,22 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 		ctr.printers_2 = &pinfo.printers_2;
 
 		if (!py_to_PRINTER_INFO_2(&pinfo.printers_2, info,
-					  hnd->mem_ctx))
-			goto error;
+					  hnd->mem_ctx)){
+			PyErr_SetString(spoolss_error, 
+					"error converting printer to info 2");
+			return NULL;
+		}
+
+		break;
+	case 3:
+		ctr.printers_3 = &pinfo.printers_3;
+
+		if (!py_to_PRINTER_INFO_3(&pinfo.printers_3, info,
+					  hnd->mem_ctx)) {
+			PyErr_SetString(spoolss_error,
+					"error converting to printer info 3");
+			return NULL;
+		}
 
 		break;
 	default:
