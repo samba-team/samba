@@ -255,7 +255,7 @@ typedef char fstring[FSTRING_LEN];
 #define PIPE_WINREG   "\\PIPE\\winreg"
 #define PIPE_WKSSVC   "\\PIPE\\wkssvc"
 #define PIPE_NETLOGON "\\PIPE\\NETLOGON"
-#define PIPE_SVCCTL   "\\PIPE\\SVCCTL"
+#define PIPE_SVCCTL   "\\PIPE\\svcctl"
 #define PIPE_NTLSA    "\\PIPE\\ntlsa"
 #define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
 #define PIPE_LSASS    "\\PIPE\\lsass"

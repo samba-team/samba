@@ -24,7 +24,6 @@
 extern int DEBUGLEVEL;
 
 time_t smb_last_time=(time_t)0;
-static struct pipes_struct static_pipe;
 
 char *InBuffer = NULL;
 char *OutBuffer = NULL;
@@ -73,10 +72,9 @@ extern int max_send;
 The timeout is in milli seconds
 ****************************************************************************/
 
-static BOOL receive_message_or_smb(char *buffer, int buffer_len, 
+static BOOL receive_message_or_msrpc(int c, char *buffer, int buffer_len, 
                                    int timeout, BOOL *got_smb)
 {
-  extern int Client;
   fd_set fds;
   int selrtn;
   struct timeval to;
@@ -96,13 +94,13 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len,
    */
 
   FD_ZERO(&fds);
-  FD_SET(Client,&fds);
+  FD_SET(c,&fds);
   maxfd = 0;
 
   to.tv_sec = timeout / 1000;
   to.tv_usec = (timeout % 1000) * 1000;
 
-  selrtn = sys_select(MAX(maxfd,Client)+1,&fds,NULL, timeout>0?&to:NULL);
+  selrtn = sys_select(MAX(maxfd,c)+1,&fds,NULL, timeout>0?&to:NULL);
 
   /* Check if error */
   if(selrtn == -1) {
@@ -117,42 +115,12 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len,
     return False;
   }
 
-  if (FD_ISSET(Client,&fds))
+  if (FD_ISSET(c,&fds))
   {
     *got_smb = True;
-    return receive_smb(Client, buffer, 0);
+    return receive_smb(c, buffer, 0);
   }
 	return False;
-}
-
-/****************************************************************************
-Get the next SMB packet, doing the local message processing automatically.
-****************************************************************************/
-
-BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
-{
-  BOOL got_smb = False;
-  BOOL ret;
-
-  do
-  {
-    ret = receive_message_or_smb(inbuf,bufsize,timeout,&got_smb);
-
-    if(ret && !got_smb)
-    {
-      continue;
-    }
-
-    if(ret && (CVAL(inbuf,0) == 0x85))
-    {
-      /* Keepalive packet. */
-      got_smb = False;
-    }
-
-  }
-  while(ret && !got_smb);
-
-  return ret;
 }
 
 
@@ -179,11 +147,11 @@ force write permissions on print services.
 /****************************************************************************
 do a switch on the message type, and return the response size
 ****************************************************************************/
-static int do_message(char *inbuf,char *outbuf,int size,int bufsize)
+static int do_message(pipes_struct *p,
+				char *inbuf,char *outbuf,int size,int bufsize)
 {
 	static int pid= -1;
 
-	pipes_struct *p = &static_pipe;
 	prs_struct pd;
 	int outsize = -1;
 
@@ -213,12 +181,13 @@ static int do_message(char *inbuf,char *outbuf,int size,int bufsize)
 /****************************************************************************
   construct a reply to the incoming packet
 ****************************************************************************/
-static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
+static int construct_reply(pipes_struct *p,
+				char *inbuf,char *outbuf,int size,int bufsize)
 {
   int outsize = 0;
   smb_last_time = time(NULL);
 
-  outsize = do_message(inbuf,outbuf,size,bufsize) + 4;
+  outsize = do_message(p, inbuf,outbuf,size,bufsize) + 4;
 
   if(outsize > 4)
     _smb_setlen(outbuf,outsize - 4);
@@ -230,9 +199,8 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   process an smb from the client - split out from the process() code so
   it can be used by the oplock break code.
 ****************************************************************************/
-void process_smb(char *inbuf, char *outbuf)
+static void process_msrpc(pipes_struct *p, int c, char *inbuf, char *outbuf)
 {
-  extern int Client;
   static int trans_num;
   int32 len = smb_len(inbuf);
   int nread = len + 4;
@@ -242,11 +210,11 @@ void process_smb(char *inbuf, char *outbuf)
 	     deny parameters before doing any parsing of the packet
 	     passed to us by the client.  This prevents attacks on our
 	     parsing code from hosts not in the hosts allow list */
-	  if (!check_access(Client, lp_hostsallow(-1), lp_hostsdeny(-1))) {
+	  if (!check_access(c, lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		  /* send a negative session response "not listining on calling
 		   name" */
 		  DEBUG( 1, ( "Connection denied from %s\n",
-			      client_addr(Client) ) );
+			      client_addr(c) ) );
 		  exit_server("connection denied");
 	  }
   }
@@ -264,7 +232,7 @@ void process_smb(char *inbuf, char *outbuf)
   }
 #endif
 
-  nread = construct_reply(inbuf,outbuf,nread,max_send);
+  nread = construct_reply(p, inbuf,outbuf,nread,max_send);
       
   if(nread > 0) 
   {
@@ -276,19 +244,20 @@ void process_smb(char *inbuf, char *outbuf)
                  nread, smb_len(outbuf)));
     }
     else
-      send_smb(Client,outbuf);
+      send_smb(c,outbuf);
   }
   trans_num++;
 }
 
-
-BOOL get_user_creds(struct user_creds *usr)
+/****************************************************************************
+ reads user credentials from the socket
+****************************************************************************/
+BOOL get_user_creds(int c, struct user_creds *usr)
 {
 	pstring buf;
 	int rl;
 	uint32 len;
 	BOOL new_con = False;
-	extern int Client;
 	uint32 status;
 
 	CREDS_CMD cmd;
@@ -300,7 +269,7 @@ BOOL get_user_creds(struct user_creds *usr)
 
 	DEBUG(10,("get_user_creds: first request\n"));
 
-	rl = read(Client, &buf, sizeof(len));
+	rl = read(c, &buf, sizeof(len));
 
 	if (rl != sizeof(len))
 	{
@@ -317,7 +286,7 @@ BOOL get_user_creds(struct user_creds *usr)
 		return False;
 	}
 
-	rl = read(Client, buf, len);
+	rl = read(c, buf, len);
 
 	if (rl < 0)
 	{
@@ -370,7 +339,7 @@ BOOL get_user_creds(struct user_creds *usr)
 
 	status = new_con ? 0x0 : 0x1;
 
-	if (write(Client, &status, sizeof(status)) !=
+	if (write(c, &status, sizeof(status)) !=
 	    sizeof(status))
 	{
 		return False;
@@ -380,22 +349,18 @@ BOOL get_user_creds(struct user_creds *usr)
 }
 
 /****************************************************************************
-  process commands from the client
+  initialise from pipe
 ****************************************************************************/
-void lsarpcd_process(void)
+BOOL msrpcd_init(int c, pipes_struct *p)
 {
 	struct user_creds usr;
 	gid_t *groups = NULL;
 
-	ZERO_STRUCT(static_pipe);
-
-	fstrcpy(static_pipe.name, "lsarpc");
-	
-	if (!get_user_creds(&usr))
+	if (!get_user_creds(c, &usr))
 	{
 		DEBUG(0,("authentication failed\n"));
 		free_user_creds(&usr);
-		return;
+		return False;
 	}
 
 	if (usr.uxs.num_grps != 0)
@@ -404,7 +369,7 @@ void lsarpcd_process(void)
 		groups = malloc(usr.uxs.num_grps * sizeof(groups[0]));
 		if (groups == NULL)
 		{
-			return;
+			return False;
 		}
 		for (i = 0; i < usr.uxs.num_grps; i++)
 		{
@@ -412,7 +377,7 @@ void lsarpcd_process(void)
 		}
 	}
 		
-	static_pipe.vuid = create_vuid(usr.uxs.uid, usr.uxs.gid,
+	p->vuid = create_vuid(usr.uxs.uid, usr.uxs.gid,
 	                               usr.uxs.num_grps, groups,
 	                               usr.uxc.user_name,
 	                               usr.uxc.requested_name,
@@ -420,23 +385,34 @@ void lsarpcd_process(void)
 	                               usr.uxc.guest,
 	                               usr.ntc.pwd.sess_key);
 
-	if (static_pipe.vuid == UID_FIELD_INVALID)
+	if (p->vuid == UID_FIELD_INVALID)
 	{
-		return;
+		return False;
 	}
 
 	free_user_creds(&usr);
 
-	become_vuser(static_pipe.vuid);
-
-	static_pipe.l = malloc(sizeof(*static_pipe.l));
-	if (static_pipe.l == NULL)
+	if (!become_vuser(p->vuid))
 	{
-		return;
+		return False;
 	}
 
-	ZERO_STRUCTP(static_pipe.l);
+	p->l = malloc(sizeof(*p->l));
+	if (p->l == NULL)
+	{
+		return False;
+	}
 
+	ZERO_STRUCTP(p->l);
+
+	return True;
+}
+
+/****************************************************************************
+  process commands from the client
+****************************************************************************/
+void msrpcd_process(int c, pipes_struct *p)
+{
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   if ((InBuffer == NULL) || (OutBuffer == NULL)) 
@@ -459,7 +435,7 @@ void lsarpcd_process(void)
     errno = 0;      
 
     for (counter=SMBD_SELECT_LOOP; 
-          !receive_message_or_smb(InBuffer,BUFFER_SIZE,
+          !receive_message_or_msrpc(c, InBuffer,BUFFER_SIZE,
                                   SMBD_SELECT_LOOP*1000,&got_smb); 
           counter += SMBD_SELECT_LOOP)
     {
@@ -485,9 +461,6 @@ void lsarpcd_process(void)
       }
 
       t = time(NULL);
-
-      /* become root again if waiting */
-      unbecome_vuser();
 
       /* check for smb.conf reload */
       if (counter >= service_load_counter + SMBD_RELOAD_CHECK)
@@ -523,6 +496,6 @@ void lsarpcd_process(void)
     }
 
     if(got_smb)
-      process_smb(InBuffer, OutBuffer);
+      process_msrpc(p, c, InBuffer, OutBuffer);
   }
 }

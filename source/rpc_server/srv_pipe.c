@@ -231,8 +231,6 @@ static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l)
 	size_t wks_len;
 	BOOL anonymous = False;
 
-	struct smb_passwd *smb_pass = NULL;
-	
 	memset(null_pwd, 0, sizeof(null_pwd));
 
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
@@ -304,19 +302,13 @@ static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l)
 	else
 	{
 		DEBUG(5,("user: %s domain: %s wks: %s\n", l->user_name, l->domain, l->wks));
-		become_root(True);
-		smb_pass = getsmbpwnam(l->user_name);
-		l->ntlmssp_validated = pass_check_smb(smb_pass, l->domain,
+		become_root(False);
+		l->ntlmssp_validated = check_domain_security(l->user_name, l->domain,
 				      (uchar*)l->ntlmssp_chal.challenge,
 				      lm_owf, lm_owf_len,
 				      nt_owf, nt_owf_len,
-				      NULL, l->user_sess_key);
-		unbecome_root(True);
-
-		if (smb_pass != NULL)
-		{
-			pwd = smb_pass->smb_passwd;
-		}
+				      l->user_sess_key);
+		unbecome_root(False);
 	}
 
 	if (l->ntlmssp_validated && pwd != NULL)
@@ -463,20 +455,6 @@ static struct api_cmd* add_api_cmd_to_array(uint32 *len,
 				
 }
 
-#if 0
-{
-    { "lsarpc",   "lsass",   api_ntlsa_rpc },
-    { "samr",     "lsass",   api_samr_rpc },
-    { "srvsvc",   "ntsvcs",  api_srvsvc_rpc },
-    { "wkssvc",   "ntsvcs",  api_wkssvc_rpc },
-    { "browser",  "ntsvcs",  api_brs_rpc },
-    { "svcctl",   "ntsvcs",  api_svcctl_rpc },
-    { "NETLOGON", "lsass",   api_netlog_rpc },
-    { "winreg",   "winreg",  api_reg_rpc },
-    { "spoolss",  "spoolss", api_spoolss_rpc },
-    { NULL,       NULL,      NULL }
-};
-#endif
 
 void close_msrpc_command_processor(void)
 {

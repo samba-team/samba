@@ -334,6 +334,13 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 
 		return True;
 	}
+	if (strequal(mach_name, global_myname))
+	{
+		DEBUG(0,("get_md4pw: *** LOOPBACK DETECTED - USING NULL KEY ***\n"));
+		memset(md4pw, 0, 16);
+		return True;
+	}
+
 	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
 	return False;
 }

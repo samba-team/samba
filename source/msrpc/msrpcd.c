@@ -22,12 +22,9 @@
 #include "includes.h"
 #include "trans2.h"
 
-pstring servicesf = CONFIGFILE;
+extern pstring servicesf;
 extern pstring debugf;
-extern fstring global_myworkgroup;
-extern fstring global_sam_name;
 extern pstring global_myname;
-extern dfs_internal dfs_struct;
 
 int am_parent = 1;
 
@@ -40,17 +37,11 @@ int last_message = -1;
 extern pstring scope;
 extern int DEBUGLEVEL;
 
-extern pstring user_socket_options;
-
-#ifdef WITH_DFS
-extern int dcelogin_atmost_once;
-#endif /* WITH_DFS */
-
-
 extern fstring remote_machine;
-extern pstring OriginalDir;
 extern pstring myhostname;
+extern pstring pipe_name;
 
+extern pstring OriginalDir;
 
 /****************************************************************************
   when exiting, take the whole family
@@ -71,37 +62,20 @@ static void  killkids(void)
 
 
 /****************************************************************************
-  open the socket communication
-****************************************************************************/
-static BOOL open_sockets_inetd(void)
-{
-	extern int Client;
-	extern int ClientPort;
-
-	/* Started from inetd. fd 0 is the socket. */
-	/* We will abort gracefully when the client or remote system 
-	   goes away */
-	Client = dup(0);
-	ClientPort = SMB_PORT;
-	
-	/* close our standard file descriptors */
-	close_low_fds();
-	
-	set_socket_options(Client,"SO_KEEPALIVE");
-	set_socket_options(Client,user_socket_options);
-
-	return True;
-}
-
-/****************************************************************************
   open and listen to a socket
 ****************************************************************************/
-static int open_server_socket(int port, uint32 ipaddr)
+static int open_server_socket(void)
 {
 	int s;
+	fstring dir;
+	fstring path;
 
-	s = open_socket_in(SOCK_STREAM, port, 0, ipaddr);
-	if(s == -1)
+	slprintf(dir, sizeof(dir)-1, "/tmp/.msrpc");
+	slprintf(path, sizeof(path)-1, "%s/%s", dir, pipe_name);
+
+	s = create_pipe_socket(dir, 0777, path, 0777);
+
+	if (s == -1)
 		return -1;
 		/* ready to listen */
 	if (listen(s, 5) == -1) {
@@ -115,23 +89,16 @@ static int open_server_socket(int port, uint32 ipaddr)
 /****************************************************************************
   open the socket communication
 ****************************************************************************/
-static BOOL open_sockets(BOOL is_daemon,int port,int port445)
+static int open_sockets(BOOL is_daemon)
 {
-	extern int Client;
-	extern int ClientPort;
+	int ClientMSRPC;
 	int num_interfaces = iface_count();
-	int fd_listenset[FD_SETSIZE];
+	int fd_listenset;
 	fd_set listen_set;
 	int s;
-	int i;
 
 	memset(&fd_listenset, 0, sizeof(fd_listenset));
 
-	if (!is_daemon) {
-		return open_sockets_inetd();
-	}
-
-		
 #ifdef HAVE_ATEXIT
 	{
 		static int atexit_set;
@@ -148,59 +115,24 @@ static BOOL open_sockets(BOOL is_daemon,int port,int port445)
 		
 	FD_ZERO(&listen_set);
 
-	if(lp_interfaces() && lp_bind_interfaces_only()) {
-		/* We have been given an interfaces line, and been 
-		   told to only bind to those interfaces. Create a
-		   socket per interface and bind to only these.
-		*/
-		
-		if(num_interfaces * 2 > FD_SETSIZE) {
-			DEBUG(0,("open_sockets: Too many interfaces specified to bind to. Number was %d \
-max can be %d\n", 
-				 num_interfaces, FD_SETSIZE));
-			return False;
-		}
-		
-		/* Now open a listen socket for each of the
-		   interfaces. */
-		for(i = 0; i < num_interfaces; i++) {
-			struct in_addr *ifip = iface_n_ip(i);
-			
-			if(ifip == NULL) {
-				DEBUG(0,("open_sockets: interface %d has NULL IP address !\n", i));
-				continue;
-			}
-			s = fd_listenset[i * 2] = open_server_socket(port, ifip->s_addr);
-			if(s == -1) return False;
-			FD_SET(s,&listen_set);
-			s = fd_listenset[i * 2 + 1] = open_server_socket(port445, ifip->s_addr);
-			if(s == -1) return False;
-			FD_SET(s,&listen_set);
-		}
-	} else {
-		/* Just bind to 0.0.0.0 - accept connections
-		   from anywhere. */
-		num_interfaces = 1;
-		
-		/* open an incoming socket */
-		s = open_server_socket(port, interpret_addr(lp_socket_address()));
-		if (s == -1)
-			return(False);
-		fd_listenset[0] = s;
-		FD_SET(s,&listen_set);
-#if 0
-		s = open_server_socket(port445, interpret_addr(lp_socket_address()));
-		if (s == -1)
-			return(False);
-		fd_listenset[1] = s;
-		FD_SET(s,&listen_set);
-#endif
-	} 
+	/* Just bind to 0.0.0.0 - accept connections
+	   from anywhere. */
+	num_interfaces = 1;
+	
+	/* open an incoming socket */
+	s = open_server_socket();
+	if (s == -1)
+		return -1;
+	fd_listenset = s;
+	FD_SET(s,&listen_set);
 
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
 	DEBUG(2,("waiting for a connection\n"));
-	while (1) {
+	while (1)
+	{
+		struct sockaddr_un addr;
+		int in_addrlen = sizeof(addr);
 		fd_set lfds;
 		int num;
 		
@@ -214,146 +146,70 @@ max can be %d\n",
 		
 		/* Find the sockets that are read-ready -
 		   accept on these. */
-		for( ; num > 0; num--) {
-			struct sockaddr addr;
-			int in_addrlen = sizeof(addr);
 			
-			s = -1;
-			for(i = 0; i < num_interfaces; i++) {
-				if(FD_ISSET(fd_listenset[i * 2],&lfds)) {
-					s = fd_listenset[i * 2];
-					ClientPort = SMB_PORT;
-					break;
-				}
-#if 0
-				if(FD_ISSET(fd_listenset[i * 2 + 1],&lfds)) {
-					s = fd_listenset[i * 2 + 1];
-					ClientPort = SMB_PORT2;
-					break;
-				}
-#endif
-			}
+		s = -1;
+		if(FD_ISSET(fd_listenset,&lfds))
+		{
+			s = fd_listenset;
+		}
 
-			/* Clear this so we don't look
-			   at it again. */
-			FD_CLR(s,&lfds);
+		/* Clear this so we don't look at it again. */
+		FD_CLR(s,&lfds);
 
-			Client = accept(s,&addr,&in_addrlen);
+		ClientMSRPC = accept(s,(struct sockaddr*)&addr,&in_addrlen);
+		
+		if (ClientMSRPC == -1 && errno == EINTR)
+			continue;
+		
+		if (ClientMSRPC == -1)
+		{
+			DEBUG(0,("open_sockets: accept: %s\n",
+				 strerror(errno)));
+			continue;
+		}
+		
+		if (ClientMSRPC != -1 && fork()==0)
+		{
+			/* Child code ... */
 			
-			if (Client == -1 && errno == EINTR)
-				continue;
+			/* close the listening socket(s) */
+			close(fd_listenset);
 			
-			if (Client == -1) {
-				DEBUG(0,("open_sockets: accept: %s\n",
-					 strerror(errno)));
-				continue;
-			}
+			/* close our standard file
+			   descriptors */
+			close_low_fds();
+			am_parent = 0;
 			
-			if (Client != -1 && fork()==0) {
-				/* Child code ... */
-				
-				/* close the listening socket(s) */
-				for(i = 0; i < num_interfaces; i++)
-					close(fd_listenset[i]);
-				
-				/* close our standard file
-				   descriptors */
-				close_low_fds();
-				am_parent = 0;
-				
-				set_socket_options(Client,"SO_KEEPALIVE");
-				set_socket_options(Client,user_socket_options);
-				
-				/* Reset global variables in util.c so
-				   that client substitutions will be
-				   done correctly in the process.  */
-				reset_globals_after_fork();
+			/* Reset global variables in util.c so
+			   that client substitutions will be
+			   done correctly in the process.  */
+			reset_globals_after_fork();
 
-                /*
-                 * Ensure this child has kernel oplock
-                 * capabilities, but not it's children.
-                 */
-                set_process_capability(KERNEL_OPLOCK_CAPABILITY, True);
-                set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
+			return ClientMSRPC; 
+		}
+		/* The parent doesn't need this socket */
+		close(ClientMSRPC); 
 
-				return True; 
-			}
-			/* The parent doesn't need this socket */
-			close(Client); 
+		/* Force parent to check log size after
+		 * spawning child.  Fix from
+		 * klausr@ITAP.Physik.Uni-Stuttgart.De.  The
+		 * parent daemon will log to logserver.smb.  It
+		 * writes only two messages for each child
+		 * started/finished. But each child writes,
+		 * say, 50 messages also in logserver.smb,
+		 * begining with the debug_count of the
+		 * parent, before the child opens its own log
+		 * file logserver.client. In a worst case
+		 * scenario the size of logserver.smb would be
+		 * checked after about 50*50=2500 messages
+		 * (ca. 100kb).
+		 * */
+		force_check_log_size();
 
-			/* Force parent to check log size after
-			 * spawning child.  Fix from
-			 * klausr@ITAP.Physik.Uni-Stuttgart.De.  The
-			 * parent smbd will log to logserver.smb.  It
-			 * writes only two messages for each child
-			 * started/finished. But each child writes,
-			 * say, 50 messages also in logserver.smb,
-			 * begining with the debug_count of the
-			 * parent, before the child opens its own log
-			 * file logserver.client. In a worst case
-			 * scenario the size of logserver.smb would be
-			 * checked after about 50*50=2500 messages
-			 * (ca. 100kb).
-			 * */
-			force_check_log_size();
- 
-		} /* end for num */
 	} /* end while 1 */
 
-/* NOTREACHED	return True; */
+/* NOTREACHED */
 }
-
-/****************************************************************************
-  reload the services file
-  **************************************************************************/
-BOOL reload_services(BOOL test)
-{
-	BOOL ret;
-
-	if (lp_loaded()) {
-		pstring fname;
-		pstrcpy(fname,lp_configfile());
-		if (file_exist(fname,NULL) && !strcsequal(fname,servicesf)) {
-			pstrcpy(servicesf,fname);
-			test = False;
-		}
-	}
-
-	reopen_logs();
-
-	if (test && !lp_file_list_changed())
-		return(True);
-
-	lp_killunused(conn_snum_used);
-
-	ret = lp_load(servicesf,False,False,True);
-
-	load_printers();
-
-	/* perhaps the config filename is now set */
-	if (!test)
-		reload_services(True);
-
-	reopen_logs();
-
-	load_interfaces();
-
-	{
-		extern int Client;
-		if (Client != -1) {      
-			set_socket_options(Client,"SO_KEEPALIVE");
-			set_socket_options(Client,user_socket_options);
-		}
-	}
-
-	reset_mangled_cache();
-
-	/* this forces service parameters to be flushed */
-	become_service(NULL,True);
-
-	return(ret);
-}
-
 
 
 /****************************************************************************
@@ -429,10 +285,8 @@ void exit_server(char *reason)
 	if (!firsttime) exit(0);
 	firsttime = 0;
 
-	unbecome_user();
+	unbecome_vuser();
 	DEBUG(2,("Closing connections\n"));
-
-	conn_close_all();
 
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
@@ -443,7 +297,6 @@ void exit_server(char *reason)
 	if (!reason) {   
 		int oldlevel = DEBUGLEVEL;
 		DEBUGLEVEL = 10;
-		DEBUG(0,("Last message was %s\n",smb_fn_name(last_message)));
 		if (last_inbuf)
 			show_msg(last_inbuf);
 		DEBUGLEVEL = oldlevel;
@@ -473,15 +326,14 @@ void exit_server(char *reason)
 ****************************************************************************/
 static void init_structs(void)
 {
+#if 0
 	conn_init();
-	file_init();
+#endif
 	init_rpc_pipe_hnd(); /* for RPC pipes */
 	if (!init_policy_hnd(MAX_SERVER_POLICY_HANDLES)) 
 	{
 		exit_server("could not allocate policy handles\n");
 	}
-	init_dptrs();
-	init_dfs_table();
 }
 
 /****************************************************************************
@@ -510,34 +362,17 @@ static void usage(char *pname)
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc,char *argv[])
+int msrpc_main(int argc,char *argv[])
 {
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
-	int port = SMB_PORT;
-	int port445 = SMB_PORT2;
 	int opt;
 	extern char *optarg;
+	int ClientMSRPC = -1;
+	pipes_struct static_pipe;
 	
-#ifdef HAVE_SET_AUTH_PARAMETERS
-	set_auth_parameters(argc,argv);
-#endif
-
-#ifdef HAVE_SETLUID
-	/* needed for SecureWare on SCO */
-	setluid(0);
-#endif
-
-	append_log = True;
-
-	TimeInit();
-
-	pstrcpy(debugf,SMBLOGFILE);  
-
-	pstrcpy(remote_machine, "smb");
-
-	setup_logging(argv[0],False);
+	pstrcpy(remote_machine, pipe_name);
 
 	charset_initialise();
 
@@ -572,12 +407,8 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:i:l:s:d:Dp:h?Paof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "i:l:s:d:Dh?Paof:")) )
 		switch (opt)  {
-		case 'O':
-			pstrcpy(user_socket_options,optarg);
-			break;
-
 		case 'i':
 			pstrcpy(scope,optarg);
 			break;
@@ -616,10 +447,6 @@ static void usage(char *pname)
 				DEBUGLEVEL = atoi(optarg);
 			break;
 
-		case 'p':
-			port = atoi(optarg);
-			break;
-
 		case 'h':
 		case '?':
 			usage(argv[0]);
@@ -633,8 +460,8 @@ static void usage(char *pname)
 
 	reopen_logs();
 
-	DEBUG(1,( "smbd version %s started.\n", VERSION));
-	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1998\n"));
+	DEBUG(1,( "%s version %s started.\n", argv[0], VERSION));
+	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1999\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
@@ -668,53 +495,7 @@ static void usage(char *pname)
 	}
 	strupper(global_myname);
 
-#ifdef WITH_SSL
-	{
-		extern BOOL sslEnabled;
-		sslEnabled = lp_ssl_enabled();
-		if(sslEnabled)
-			sslutil_init(True);
-	}
-#endif        /* WITH_SSL */
-
 	codepage_initialise(lp_client_code_page());
-
-	if (!pwdb_initialise(True))
-	{
-		exit(1);
-	}
-
-	if(!initialise_sam_password_db())
-	{
-		exit(1);
-	}
-
-	if(!initialise_passgrp_db())
-	{
-		exit(1);
-	}
-
-	if(!initialise_group_db())
-	{
-		exit(1);
-	}
-
-	if(!initialise_alias_db())
-	{
-		exit(1);
-	}
-
-	if(!initialise_builtin_db())
-	{
-		exit(1);
-	}
-
-	if (!get_member_domain_sid())
-	{
-		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",
-		          lp_passwordserver()));
-		exit(1);
-	}
 
 	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 	
@@ -746,18 +527,19 @@ static void usage(char *pname)
 		become_daemon();
 	}
 
-	check_kernel_oplocks();
-
 	if (!directory_exist(lp_lockdir(), NULL)) {
 		mkdir(lp_lockdir(), 0755);
 	}
 
 	if (is_daemon) {
-		pidfile_create("smbd");
+		pidfile_create(pipe_name);
 	}
 
-	if (!open_sockets(is_daemon,port,port445))
-		exit(1);
+	ClientMSRPC = open_sockets(is_daemon);
+	if (ClientMSRPC == -1)
+	{
+		exit_server("open socket failed");
+	}
 
 	if (!locking_init(0))
 		exit(1);
@@ -770,12 +552,19 @@ static void usage(char *pname)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
 
-	/* Setup the oplock IPC socket. */
-	if( !open_oplock_ipc() )
-		exit(1);
+	msrpc_service_init();
 
-	smbd_process();
-	close_sockets();
+	ZERO_STRUCT(static_pipe);
+	fstrcpy(static_pipe.name, pipe_name);
+	if (msrpcd_init(ClientMSRPC, &static_pipe))
+	{
+		reload_services(False);
+		msrpcd_process(ClientMSRPC, &static_pipe);
+	}
+	if (ClientMSRPC != -1)
+	{
+		close(ClientMSRPC);
+	}
 	
 	exit_server("normal exit");
 	return(0);

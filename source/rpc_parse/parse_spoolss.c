@@ -2024,8 +2024,11 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 
 	PRINTER_INFO_1 *info1;
 	PRINTER_INFO_2 *info2;
+	fstring tmp;
 
-	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinters");
+	slprintf(tmp, sizeof(tmp)-1, "spoolss_io_r_enumprinters %d", r_u->level);
+
+	prs_debug(ps, depth, desc, tmp);
 	depth++;
 	prs_align(ps);
 	prs_uint32("pointer", ps, depth, &useless_ptr);

@@ -42,6 +42,7 @@ void free_void_array(uint32 num_entries, void **entries,
 void* add_copy_to_array(uint32 *len, void ***array, const void *item,
 	void*(item_dup)(const void*), BOOL alloc_anyway)
 {
+	void* copy = NULL;
 	if (len == NULL || array == NULL)
 	{
 		return NULL;
@@ -49,14 +50,10 @@ void* add_copy_to_array(uint32 *len, void ***array, const void *item,
 
 	if (item != NULL || alloc_anyway)
 	{
-		void* copy = NULL;
-		if (item != NULL || alloc_anyway)
-		{
-			copy = item_dup(item);
-		}
-		add_item_to_array(len, array, copy);
+		copy = item_dup(item);
+		return add_item_to_array(len, array, copy);
 	}
-	return NULL;
+	return copy;
 }
 
 void* add_item_to_array(uint32 *len, void ***array, void *item)

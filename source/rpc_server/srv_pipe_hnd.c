@@ -135,14 +135,13 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
 	}
 
-	if (strequal(pipe_name, "lsarpc"))
+	m = msrpc_use_add(pipe_name, &usr, False);
+	if (m == NULL)
 	{
-		m = msrpc_use_add(pipe_name, &usr, False);
-		if (m == NULL)
-		{
-			DEBUG(5,("open pipes: msrpc redirect failed\n"));
-			return NULL;
-		}
+		DEBUG(5,("open pipes: msrpc redirect failed\n"));
+		return NULL;
+	}
+#if 0
 	}
 	else
 	{
@@ -164,6 +163,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		memcpy(l->user_sess_key, vuser->user_sess_key,
 		       sizeof(l->user_sess_key));
 	}
+#endif
 
 	p = (pipes_struct *)malloc(sizeof(*p));
 	if (!p) return NULL;

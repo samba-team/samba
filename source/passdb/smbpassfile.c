@@ -243,13 +243,13 @@ BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *mynam
    * Get the trust account password.
    */
   if(!trust_password_lock( domain, myname, False)) {
-    DEBUG(0,("domain_client_validate: unable to open the trust account password file for \
+    DEBUG(0,("trust_get_passwd: unable to open the trust account password file for \
 trust %s in domain %s.\n", myname, domain ));
     return False;
   }
 
   if(get_trust_account_password( trust_passwd, &lct) == False) {
-    DEBUG(0,("domain_client_validate: unable to read the trust account password for \
+    DEBUG(0,("trust_get_passwd: unable to read the trust account password for \
 trust %s in domain %s.\n", myname, domain ));
     trust_password_unlock();
     return False;
