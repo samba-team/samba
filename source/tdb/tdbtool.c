@@ -253,7 +253,10 @@ static void show_tdb(void)
 	key.dsize = strlen(k)+1;
 
 	dbuf = tdb_fetch(tdb, key);
-	if (!dbuf.dptr) terror("fetch failed");
+	if (!dbuf.dptr) {
+		terror("fetch failed");
+		return;
+	}
 	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
 	print_rec(tdb, key, dbuf, NULL);
 }
