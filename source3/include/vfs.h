@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    VFS structures and parameters
    Copyright (C) Tim Potter 1999
    

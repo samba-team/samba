@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0.
+   Unix SMB/CIFS implementation.
    Samba utility functions. ADS stuff
    Copyright (C) Alexey Kotovich 2002
    
