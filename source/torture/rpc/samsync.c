@@ -781,7 +781,7 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	struct samsync_trusted_domain *new = talloc_p(samsync_state, struct samsync_trusted_domain);
 	struct lsa_OpenTrustedDomain t;
 	struct policy_handle trustdom_handle;
-	struct lsa_QueryInfoTrustedDomain q;
+	struct lsa_QueryTrustedDomainInfo q;
 	union lsa_TrustedDomainInfo *info[4];
 	int levels [] = {1, 3};
 	int i;
@@ -803,7 +803,7 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	for (i=0; i< ARRAY_SIZE(levels); i++) {
 		q.in.trustdom_handle = &trustdom_handle;
 		q.in.level = levels[i];
-		status = dcerpc_lsa_QueryInfoTrustedDomain(samsync_state->p_lsa, mem_ctx, &q);
+		status = dcerpc_lsa_QueryTrustedDomainInfo(samsync_state->p_lsa, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryInfoTrustedDomain level %d failed - %s\n", 
 			       levels[i], nt_errstr(status));
