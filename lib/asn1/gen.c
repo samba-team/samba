@@ -40,7 +40,7 @@ close_generate ()
 void
 generate_constant (Symbol *s)
 {
-  fprintf (headerfile, "static const int %s = %d;\n\n",
+  fprintf (headerfile, "enum { %s = %d };\n\n",
 	   s->gen_name, s->constant);
 }
 

@@ -3,6 +3,10 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AC_CONFIG_HEADER(config.h)
 
+AC_CANONICAL_HOST
+CANONICAL_HOST=$host
+AC_SUBST(CANONICAL_HOST)
+
 PACKAGE=heimdal
 VERSION=0.0
 AC_SUBST(PACKAGE)
@@ -18,6 +22,8 @@ AC_PROG_RANLIB
 AC_PROG_MAKE_SET
 AC_LN_S
 AC_ARG_PROGRAM
+
+CFLAGS="-g"
 
 dnl Checks for libraries.
 

@@ -41,14 +41,15 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 transform = @program_transform_name@
 
 AUTOMAKE_OPTIONS = foreign no-dependencies
-SUBDIRS	= lib include kuser
+SUBDIRS	= include lib kuser
 ACLOCAL = aclocal.m4
 ACCONFIG = acconfig.h
 CONFIG_HEADER_IN = config.h.in
 mkinstalldirs = $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = ./config.h
-DIST_COMMON = Makefile.am Makefile.in acconfig.h aclocal.m4 config.h.in \
-configure configure.in install-sh mkinstalldirs stamp-h.in
+DIST_COMMON = Makefile.am Makefile.in acconfig.h aclocal.m4 config.guess \
+config.h.in config.sub configure configure.in install-sh mkinstalldirs \
+stamp-h.in
 
 
 PACKAGE = @PACKAGE@

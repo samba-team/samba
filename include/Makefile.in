@@ -1,4 +1,4 @@
-HEADERS = krb5.h asn1.h des.h md4.h bits.h cache.h config_file.h
+HEADERS = krb5.h asn1.h des.h md4.h bits.h cache.h keytab.h config_file.h
 
 srcdir	= @srcdir@
 VPATH	= $(srcdir)

@@ -324,5 +324,15 @@ krb-priv INTEGER ::= 21 -- Private (encrypted) application message
 krb-cred INTEGER ::= 22 -- Private (encrypted) message to forward credentials
 krb-error INTEGER ::= 30 -- Error response
 
+-- pa-data types
+
+pa-tgs-req INTEGER ::= 1 --
+
+-- checksumtypes
+
+CRC32 INTEGER ::= 1 -- 
+rsa-md4 INTEGER ::= 2 --
+
+
 
 END

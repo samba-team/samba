@@ -9,6 +9,8 @@
 #undef HAVE_U_INT32_T
 #undef HAVE_U_INT64_T
 
+#undef VOID_RETSIGTYPE
+
 #ifdef VOID_RETSIGTYPE
 #define SIGRETURN(x) return
 #else

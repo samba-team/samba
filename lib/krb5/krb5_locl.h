@@ -57,7 +57,19 @@ krb5_sendto_kdc (krb5_context context,
 		 const krb5_data *realm,
 		 krb5_data *receive);
 
+krb5_error_code
+krb5_build_ap_req (krb5_context context,
+		   krb5_creds *cred,
+		   krb5_flags ap_options,
+		   krb5_data authenticator,
+		   krb5_data *ret);
 
+krb5_error_code
+krb5_build_authenticator (krb5_context context,
+			  krb5_principal client,
+			  Checksum *cksum,
+			  Authenticator **auth,
+			  krb5_data *result);
 
 #define ALLOC(N, X) ((X*)malloc((N) * sizeof(X)))
 #define FREE(X) do{if(X)free(X);}while(0)

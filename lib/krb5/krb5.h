@@ -28,7 +28,7 @@ typedef int krb5_boolean;
 
 typedef int32_t krb5_error_code;
 
-
+typedef int krb5_kvno;
 
 typedef void *krb5_pointer;
 typedef const void *krb5_const_pointer;
@@ -70,17 +70,22 @@ typedef enum krb5_preauthtype {
 
 
 typedef enum krb5_address_type { 
-  KRB5_ADDRESS_INET = 2
+    KRB5_ADDRESS_INET = 2
 } krb5_address_type;
 
+enum {
+  AP_OPTS_USE_SESSION_KEY = 1,
+  AP_OPTS_MUTUAL_REQUIRED = 2
+};
+
 typedef struct krb5_address{
-  krb5_address_type type;
-  krb5_data address;
+    int16_t type;
+    krb5_data address;
 } krb5_address;
 
 typedef struct krb5_addresses {
-  int number;
-  krb5_address *addrs;
+    int number;
+    krb5_address *addrs;
 } krb5_addresses;
 
 typedef enum krb5_keytype { KEYTYPE_DES } krb5_keytype;
@@ -130,28 +135,27 @@ typedef const krb5_principal_data *krb5_const_principal;
 
 typedef krb5_data krb5_realm;
 
-typedef struct krb5_ticket{
-  int kvno;
-  krb5_principal sprinc;
-  krb5_data enc_part;
-  krb5_data enc_part2;
-  krb5_enctype etype;
-}krb5_ticket;
+typedef struct krb5_ticket {
+    krb5_principal server;
+    krb5_data enc_part;
+    krb5_data enc_part2;
+} krb5_ticket;
+
 
 #define KRB5_PARSE_MALFORMED 17
 #define KRB5_PROG_ETYPE_NOSUPP 4711
 
 typedef struct krb5_creds {
-  krb5_principal client;
-  krb5_principal server;
-  krb5_keyblock session;
-  krb5_times times;
-  krb5_ticket ticket;
+    krb5_principal client;
+    krb5_principal server;
+    krb5_keyblock session;
+    krb5_times times;
+    krb5_data ticket;
 
-  krb5_ticket second_ticket; /* ? */
-  krb5_data authdata; /* ? */
-  krb5_addresses addresses;
-  
+    krb5_data second_ticket; /* ? */
+    krb5_data authdata; /* ? */
+    krb5_addresses addresses;
+    
 } krb5_creds;
 
 
@@ -184,10 +188,19 @@ typedef struct krb5_cc_cursor{
   int fd;
 }krb5_cc_cursor;
 
-typedef struct krb5_keytab{
-  int dummy;
-}krb5_keytab;
+struct krb5_keytab_data {
+  char *filename;
+};
 
+typedef struct krb5_keytab_data *krb5_keytab;
+
+typedef struct krb5_keytab_entry {
+  int foo;
+} krb5_keytab_entry;
+
+typedef struct krb5_kt_cursor {
+  int foo;
+} krb5_kt_cursor;
 
 typedef struct krb5_auth_context{
   int32_t flags;
@@ -223,6 +236,14 @@ typedef struct {
 krb5_error_code
 krb5_init_context(krb5_context *context);
 
+krb5_error_code
+krb5_auth_con_init(krb5_context context,
+		   krb5_auth_context **auth_context);
+
+krb5_error_code
+krb5_auth_con_free(krb5_context context,
+		   krb5_auth_context *auth_context,
+		   krb5_flags flags);
 
 krb5_error_code
 krb5_get_cred_from_kdc(krb5_context,
@@ -237,7 +258,7 @@ krb5_get_credentials(krb5_context context,
 		     krb5_flags options,
 		     krb5_ccache ccache,
 		     krb5_creds *in_creds,
-		     krb5_creds *out_creds);
+		     krb5_creds **out_creds);
 
 typedef krb5_error_code (*krb5_key_proc)(krb5_context context,
 					 krb5_keytype type,
@@ -299,6 +320,17 @@ krb5_rd_req(krb5_context context,
 	    krb5_flags *ap_req_options,
 	    krb5_ticket **ticket);
 
+typedef EncAPRepPart krb5_ap_rep_enc_part;
+
+krb5_error_code
+krb5_rd_rep(krb5_context context,
+	    krb5_auth_context *auth_context,
+	    const krb5_data *inbuf,
+	    krb5_ap_rep_enc_part **repl);
+
+void
+krb5_free_ap_rep_enc_part (krb5_context context,
+			   krb5_ap_rep_enc_part *val);
 
 krb5_error_code
 krb5_parse_name(krb5_context context,
@@ -408,6 +440,7 @@ krb5_string_to_key (char *str,
 
 #include "cache.h"
 
+#include "keytab.h"
 
 #endif /* __KRB5_H__ */
 

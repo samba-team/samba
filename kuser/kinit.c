@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <krb5.h>
 
 int
@@ -30,13 +31,15 @@ main (int argc, char **argv)
   cred.client = principal;
   cred.times.endtime = time (NULL) + 4711;
 
-  err = krb5_build_principal (context,
-			      &cred.server,
-			      principal->realm.length,
-			      principal->realm.data,
-			      "krbtgt",
-			      principal->realm.data,
-			      NULL);
+  err = krb5_build_principal_ext (context,
+				  &cred.server,
+				  principal->realm.length,
+				  principal->realm.data,
+				  strlen("krbtgt"),
+				  "krbtgt",
+				  principal->realm.length, 
+				  principal->realm.data,
+				  NULL);
   if (err)
     abort ();
   cred.server->type = KRB5_NT_SRV_INST;
@@ -51,8 +54,8 @@ main (int argc, char **argv)
 				       &cred,
 				       NULL);
   if (err)
-    abort ();
-
+      abort ();
+  
   krb5_free_context (context);
   return 0;
 }

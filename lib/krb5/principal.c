@@ -228,16 +228,51 @@ krb5_principal_set_component(krb5_principal p, int n, void *data, size_t len)
 }
 
 
-krb5_error_code
-krb5_build_principal_va(krb5_context context,
-			krb5_principal *principal,
-			int rlen,
-			const char *realm,
-			va_list ap)
+static void
+va_ext_princ(krb5_principal p, va_list ap)
+{
+    int n = 0;
+    while(1){
+	char *s;
+	int len;
+	len  = va_arg(ap, int);
+	if(len == 0)
+	    break;
+	s = va_arg(ap, char*);
+	krb5_principal_set_component(p, n, s, len);
+	n++;
+    }
+    p->ncomp = n;
+}
+
+static void
+va_princ(krb5_principal p, va_list ap)
+{
+    int n = 0;
+    while(1){
+	char *s;
+	int len;
+	s = va_arg(ap, char*);
+	if(s == NULL)
+	    break;
+	len = strlen(s);
+	krb5_principal_set_component(p, n, s, len);
+	n++;
+    }
+    p->ncomp = n;
+}
+
+
+static krb5_error_code
+build_principal(krb5_context context,
+		krb5_principal *principal,
+		int rlen,
+		const char *realm,
+		void (*func)(krb5_principal, va_list),
+		va_list ap)
 {
     krb5_principal p;
     int n;
-    char *s;
   
     if(krb5_principal_alloc(&p))
 	return ENOMEM;
@@ -248,17 +283,30 @@ krb5_build_principal_va(krb5_context context,
 	return ENOMEM;
     }
   
-    n = 0;
-    while(1){
-	s = va_arg(ap, char*);
-	if(s == NULL)
-	    break;
-	krb5_principal_set_component(p, n, s, strlen(s));
-	n++;
-    }
-    p->ncomp = n;
+    (*func)(p, ap);
     *principal = p;
     return 0;
+}
+
+krb5_error_code
+krb5_build_principal_va(krb5_context context, 
+			krb5_principal *principal, 
+			int rlen,
+			const char *realm,
+			va_list ap)
+{
+    return build_principal(context, principal, rlen, realm, va_princ, ap);
+}
+
+/* Not part of MIT K5 API */
+krb5_error_code
+krb5_build_principal_va_ext(krb5_context context, 
+			    krb5_principal *principal, 
+			    int rlen,
+			    const char *realm,
+			    va_list ap)
+{
+    return build_principal(context, principal, rlen, realm, va_ext_princ, ap);
 }
 
 
@@ -269,8 +317,12 @@ krb5_build_principal_ext(krb5_context context,
 			 const char *realm,
 			 ...)
 {
-    fprintf(stderr, "krb5_build_principal_ext: not implemented\n");
-    abort();
+    krb5_error_code ret;
+    va_list ap;
+    va_start(ap, realm);
+    ret = krb5_build_principal_va_ext(context, principal, rlen, realm, ap);
+    va_end(ap);
+    return ret;
 }
 
 

@@ -8,8 +8,12 @@ krb5_get_krbhst (krb5_context context,
      krb5_error_code err;
      char buf[BUFSIZ];
      char *val;
-     
-     sprintf (buf, "realms %.*s kdc", (int)realm->length, (char*)realm->data);
+
+     memset(buf, 0, sizeof(buf));
+     strcpy(buf, "realms ");
+     strncat(buf, (char*)realm->data, realm->length);
+     strcat(buf, " kdc");
+
      err = krb5_get_config_tag (context->cf, buf, &val);
      if (err)
 	  return err;

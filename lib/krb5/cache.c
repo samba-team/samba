@@ -246,7 +246,7 @@ store_keyblock(int fd, krb5_keyblock p)
 static krb5_error_code
 ret_keyblock(int fd, krb5_keyblock *p)
 {
-    ret_int32(fd, (int32_t*)&p->keytype);
+    ret_int32(fd, (int32_t*)&p->keytype); /* keytype + etype */
     ret_data(fd, &p->contents);
     return 0;
 }
@@ -274,7 +274,7 @@ ret_times(int fd, krb5_times *times)
 static krb5_error_code
 store_address(int fd, krb5_address p)
 {
-    store_int32(fd, p.type);
+    store_int16(fd, p.type);
     store_data(fd, p.address);
     return 0;
 }
@@ -282,7 +282,7 @@ store_address(int fd, krb5_address p)
 static krb5_error_code
 ret_address(int fd, krb5_address *adr)
 {
-    ret_int32(fd, (int32_t*)&adr->type);
+    ret_int16(fd, (int16_t*)&adr->type);
     ret_data(fd, &adr->address);
     return 0;
 }
@@ -305,20 +305,6 @@ ret_addrs(int fd, krb5_addresses *adr)
     adr->addrs = ALLOC(adr->number, krb5_address);
     for(i = 0; i < adr->number; i++)
 	ret_address(fd, &adr->addrs[i]);
-    return 0;
-}
-
-static krb5_error_code
-store_ticket(int fd, krb5_ticket p)
-{
-    store_data(fd, p.enc_part);
-    return 0;
-}
-
-static krb5_error_code
-ret_ticket(int fd, krb5_ticket *tkt)
-{
-    ret_data(fd, &tkt->enc_part);
     return 0;
 }
 
@@ -430,8 +416,8 @@ krb5_cc_store_cred(krb5_context context,
     store_int32(fd, 0); /* flags */
     store_addrs(fd, creds->addresses);
     store_authdata(fd, creds->authdata);
-    store_ticket(fd, creds->ticket);
-    store_ticket(fd, creds->second_ticket);
+    store_data(fd, creds->ticket);
+    store_data(fd, creds->second_ticket);
     close(fd);
     return 0; /* XXX */
 }
@@ -440,19 +426,30 @@ static krb5_error_code
 krb5_cc_read_cred (int fd,
 		   krb5_creds *creds)
 {
+    int ret;
     int8_t dummy8;
     int32_t dummy32;
 
-    return ret_principal (fd, &creds->client) || 
-	ret_principal (fd, &creds->server) ||
-	ret_keyblock (fd, &creds->session) || 
-	ret_times (fd, &creds->times) || 
-	ret_int8 (fd, &dummy8) || 
-	ret_int32 (fd, &dummy32) || 
-	ret_addrs (fd, &creds->addresses) || 
-	ret_authdata (fd, &creds->authdata) || 
-	ret_ticket (fd, &creds->ticket) || 
-	ret_ticket (fd, &creds->second_ticket);
+    ret = ret_principal (fd, &creds->client);
+    if(ret) return ret;
+    ret = ret_principal (fd, &creds->server);
+    if(ret) return ret;
+    ret = ret_keyblock (fd, &creds->session);
+    if(ret) return ret;
+    ret = ret_times (fd, &creds->times);
+    if(ret) return ret;
+    ret = ret_int8 (fd, &dummy8);
+    if(ret) return ret;
+    ret = ret_int32 (fd, &dummy32);
+    if(ret) return ret;
+    ret = ret_addrs (fd, &creds->addresses);
+    if(ret) return ret;
+    ret = ret_authdata (fd, &creds->authdata);
+    if(ret) return ret;
+    ret = ret_data (fd, &creds->ticket);
+    if(ret) return ret;
+    ret = ret_data (fd, &creds->second_ticket);
+    return ret;
 }
 
 krb5_error_code
@@ -462,7 +459,17 @@ krb5_cc_retrieve_cred(krb5_context context,
 		      krb5_creds *mcreds,
 		      krb5_creds *creds)
 {
-    return 0; /* XXX */
+    krb5_error_code ret;
+    krb5_cc_cursor cursor;
+    krb5_cc_get_first(context, id, &cursor);
+    while((ret = krb5_cc_get_next(context, id, creds, &cursor)) == 0){
+	if(krb5_principal_compare(context, mcreds->server, creds->server)){
+	    ret = 0;
+	    break;
+	}
+    }
+    krb5_cc_end_get(context, id, &cursor);
+    return ret;
 }
 
 krb5_error_code
@@ -527,7 +534,15 @@ krb5_cc_get_first(krb5_context context,
 		  krb5_ccache id,
 		  krb5_cc_cursor *cursor)
 {
-    return 0; /* XXX */
+    int fd;
+    int16_t tag;
+    krb5_principal principal;
+    
+    fd = open(krb5_cc_get_name (context, id), O_RDONLY);
+    cursor->fd = fd;
+    ret_int16(fd, &tag);
+    ret_principal(fd, &principal);
+    return 0;
 }
 
 krb5_error_code
@@ -536,7 +551,7 @@ krb5_cc_get_next(krb5_context context,
 		 krb5_creds *creds,
 		 krb5_cc_cursor *cursor)
 {
-    return 0; /* XXX */
+    return krb5_cc_read_cred(cursor->fd, creds);
 }
 
 krb5_error_code
@@ -544,7 +559,8 @@ krb5_cc_end_get(krb5_context context,
 		krb5_ccache id,
 		krb5_cc_cursor *cursor)
 {
-    return 0; /* XXX */
+    close(cursor->fd);
+    return 0;
 }
 
 krb5_error_code

@@ -5,6 +5,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "der.h"
 
@@ -209,7 +210,7 @@ generalizedtime2time (char *s, time_t *t)
   tm.tm_isdst = 0;
 
   *t = mktime(&tm);
-#if 0 /* XXX */
+#if 1 /* XXX */
   *t -= timezone;
 #endif
 }
@@ -219,6 +220,7 @@ decode_generalized_time (unsigned char *p, int len, void *data)
 {
   time_t *t = (time_t *)data;
   krb5_data k;
+  char times[32]; /* XXX */
   int ret = 0;
   int l;
 
@@ -234,7 +236,9 @@ decode_generalized_time (unsigned char *p, int len, void *data)
   p += l;
   len -= l;
   ret += l;
-  generalizedtime2time (k.data, t);
+  strncpy(times, (char*)k.data, k.len);
+  times[k.len] = 0;
+  generalizedtime2time (times, t);
   free (k.data);
   return ret;
 }
