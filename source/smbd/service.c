@@ -486,6 +486,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	    /* Loadable object file */
 
 	    if (!vfs_init_custom(conn)) {
+	    	DEBUG(0, ("vfs_init failed\n"));
+		    conn_free(conn);
 			return NULL;
 	    }
 #else /* HAVE_LIBDL */
