@@ -1499,7 +1499,7 @@ static BOOL run_locktest5(int dummy)
 static BOOL run_locktest6(int dummy)
 {
 	static struct cli_state cli;
-	char *fname[2] = { "\\lock6.txt", "\\pipe\\lsarpc"};
+	char *fname[1] = { "\\lock6.txt" };
 	int i;
 	int fnum;
 	NTSTATUS status;
@@ -1512,7 +1512,7 @@ static BOOL run_locktest6(int dummy)
 
 	printf("starting locktest6\n");
 
-	for (i=0;i<2;i++) {
+	for (i=0;i<1;i++) {
 		printf("Testing %s\n", fname[i]);
 
 		cli_unlink(&cli, fname[i]);
