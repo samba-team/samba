@@ -1435,7 +1435,7 @@ void smb_panic(const char *why)
  A readdir wrapper which just returns the file name.
 ********************************************************************/
 
-char *readdirname(DIR *p)
+const char *readdirname(DIR *p)
 {
 	SMB_STRUCT_DIRENT *ptr;
 	char *dname;
