@@ -763,7 +763,7 @@ objectClass: userTemplate
 cn: TemplateUser
 name: TemplateUser
 instanceType: 4
-userAccountControl: 0x222
+userAccountControl: 0x202
 badPwdCount: 0
 codePage: 0
 countryCode: 0
@@ -775,6 +775,48 @@ primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
 sAMAccountType: 0x30000000
+
+dn: CN=TemplateMemberServer,CN=Templates,${BASEDN}
+objectClass: top
+objectClass: computer
+objectClass: Template
+objectClass: userTemplate
+cn: TemplateMemberServer
+name: TemplateMemberServer
+instanceType: 4
+userAccountControl: 0x1002
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 0
+primaryGroupID: 513
+accountExpires: -1
+logonCount: 0
+sAMAccountType: 0x30000001
+
+dn: CN=TemplateDomainController,CN=Templates,${BASEDN}
+objectClass: top
+objectClass: computer
+objectClass: Template
+objectClass: userTemplate
+cn: TemplateDomainController
+name: TemplateDomainController
+instanceType: 4
+userAccountControl: 0x2002
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 0
+primaryGroupID: 513
+accountExpires: -1
+logonCount: 0
+sAMAccountType: 0x30000001
 
 dn: CN=TemplateGroup,CN=Templates,${BASEDN}
 objectClass: top

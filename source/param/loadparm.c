@@ -932,7 +932,7 @@ static void init_globals(void)
 	string_set(&sDefault.fstype, FSTYPE_STRING);
 	string_set(&sDefault.ntvfs_handler, "default");
 
-	Globals.dcerpc_ep_servers = str_list_make("epmapper srvsvc wkssvc rpcecho samr", NULL);
+	Globals.dcerpc_ep_servers = str_list_make("epmapper srvsvc wkssvc rpcecho samr netlogon", NULL);
 
 	Globals.AuthMethods = str_list_make("guest sam_ignoredomain", NULL);
 

@@ -1,9 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
-   ads (active directory) utility library
+   helper mapping functions for the SAMDB server
    
    Copyright (C) Stefan (metze) Metzmacher 2002
-   Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Andrew Tridgell 2004
   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,57 +25,54 @@
 /* 
 translated the ACB_CTRL Flags to UserFlags (userAccountControl) 
 */ 
-uint32 ads_acb2uf(uint16 acb)
-{
-	uint32 uf = 0x00000000;
-	
-	if (acb & ACB_DISABLED) 	uf |= UF_ACCOUNTDISABLE;
-	if (acb & ACB_HOMDIRREQ) 	uf |= UF_HOMEDIR_REQUIRED;
-	if (acb & ACB_PWNOTREQ) 	uf |= UF_PASSWD_NOTREQD;	
-	if (acb & ACB_TEMPDUP) 		uf |= UF_TEMP_DUPLICATE_ACCOUNT;	
-	if (acb & ACB_NORMAL)	 	uf |= UF_NORMAL_ACCOUNT;
-	if (acb & ACB_MNS) 		uf |= UF_MNS_LOGON_ACCOUNT;
-	if (acb & ACB_DOMTRUST) 	uf |= UF_INTERDOMAIN_TRUST_ACCOUNT;
-	if (acb & ACB_WSTRUST) 		uf |= UF_WORKSTATION_TRUST_ACCOUNT;
-	if (acb & ACB_SVRTRUST) 	uf |= UF_SERVER_TRUST_ACCOUNT;
-	if (acb & ACB_PWNOEXP) 		uf |= UF_DONT_EXPIRE_PASSWD;
-	if (acb & ACB_AUTOLOCK) 	uf |= UF_LOCKOUT;
+/* mapping between ADS userAccountControl and SAMR acct_flags */
+static const struct {
+	uint32 uf;
+	uint16 acb;
+} acct_flags_map[] = {
+	{ UF_ACCOUNTDISABLE, ACB_DISABLED },
+	{ UF_HOMEDIR_REQUIRED, ACB_HOMDIRREQ },
+	{ UF_PASSWD_NOTREQD, ACB_PWNOTREQ },
+	{ UF_TEMP_DUPLICATE_ACCOUNT, ACB_TEMPDUP },
+	{ UF_NORMAL_ACCOUNT, ACB_NORMAL },
+	{ UF_MNS_LOGON_ACCOUNT, ACB_MNS },
+	{ UF_INTERDOMAIN_TRUST_ACCOUNT, ACB_DOMTRUST },
+	{ UF_WORKSTATION_TRUST_ACCOUNT, ACB_WSTRUST },
+	{ UF_SERVER_TRUST_ACCOUNT, ACB_SVRTRUST },
+	{ UF_DONT_EXPIRE_PASSWD, ACB_PWNOEXP },
+	{ UF_LOCKOUT, ACB_AUTOLOCK }
+};
 
-	return uf;
+uint32 samdb_acb2uf(uint16 acb)
+{
+	uint32 i, ret = 0;
+	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
+		if (acct_flags_map[i].acb & acb) {
+			ret |= acct_flags_map[i].uf;
+		}
+	}
+	return ret;
 }
 
 /*
 translated the UserFlags (userAccountControl) to ACB_CTRL Flags
 */
-uint16 ads_uf2acb(uint32 uf)
+uint16 samdb_uf2acb(uint32 uf)
 {
-	uint16 acb = 0x0000;
-	
-	if (uf & UF_ACCOUNTDISABLE) 		acb |= ACB_DISABLED;
-	if (uf & UF_HOMEDIR_REQUIRED) 		acb |= ACB_HOMDIRREQ;
-	if (uf & UF_PASSWD_NOTREQD) 		acb |= ACB_PWNOTREQ;	
-	if (uf & UF_MNS_LOGON_ACCOUNT) 		acb |= ACB_MNS;
-	if (uf & UF_DONT_EXPIRE_PASSWD)		acb |= ACB_PWNOEXP;
-	if (uf & UF_LOCKOUT) 			acb |= ACB_AUTOLOCK;
-	
-	switch (uf & UF_ACCOUNT_TYPE_MASK)
-	{
-		case UF_TEMP_DUPLICATE_ACCOUNT:		acb |= ACB_TEMPDUP;break;	
-		case UF_NORMAL_ACCOUNT:	 		acb |= ACB_NORMAL;break;
-		case UF_INTERDOMAIN_TRUST_ACCOUNT: 	acb |= ACB_DOMTRUST;break;
-		case UF_WORKSTATION_TRUST_ACCOUNT:	acb |= ACB_WSTRUST;break;
-		case UF_SERVER_TRUST_ACCOUNT: 		acb |= ACB_SVRTRUST;break;
-		/*Fix Me: what should we do here? */
-		default: 				acb |= ACB_NORMAL;break;
+	uint32 i;
+	uint16 ret = 0;
+	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
+		if (acct_flags_map[i].uf & uf) {
+			ret |= acct_flags_map[i].acb;
+		}
 	}
-
-	return acb;
+	return ret;
 }
 
 /* 
 get the accountType from the UserFlags
 */
-uint32 ads_uf2atype(uint32 uf)
+uint32 samdb_uf2atype(uint32 uf)
 {
 	uint32 atype = 0x00000000;
 		
@@ -91,7 +88,7 @@ uint32 ads_uf2atype(uint32 uf)
 /* 
 get the accountType from the groupType
 */
-uint32 ads_gtype2atype(uint32 gtype)
+uint32 samdb_gtype2atype(uint32 gtype)
 {
 	uint32 atype = 0x00000000;
 	
@@ -121,7 +118,7 @@ uint32 ads_gtype2atype(uint32 gtype)
 }
 
 /* turn a sAMAccountType into a SID_NAME_USE */
-enum SID_NAME_USE ads_atype_map(uint32 atype)
+enum SID_NAME_USE samdb_atype_map(uint32 atype)
 {
 	switch (atype & 0xF0000000) {
 	case ATYPE_GLOBAL_GROUP:

@@ -416,6 +416,68 @@ uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	return count;
 }
 
+NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+				uint8 **lm_pwd, uint8 **nt_pwd) 
+{
+
+	const char *unicodePwd = samdb_result_string(msg, "unicodePwd", NULL);
+	
+	struct samr_Hash *lmPwdHash, *ntPwdHash;
+	if (unicodePwd) {
+		if (nt_pwd) {
+			ntPwdHash = talloc_p(mem_ctx, struct samr_Hash);
+			if (!ntPwdHash) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			
+			E_md4hash(unicodePwd, ntPwdHash->hash);
+			*nt_pwd = ntPwdHash->hash;
+		}
+
+		if (lm_pwd) {
+			BOOL lm_hash_ok;
+		
+			lmPwdHash = talloc_p(mem_ctx, struct samr_Hash);
+			if (!lmPwdHash) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			
+			/* compute the new nt and lm hashes */
+			lm_hash_ok = E_deshash(unicodePwd, lmPwdHash->hash);
+			
+			if (lm_hash_ok) {
+				*lm_pwd = lmPwdHash->hash;
+			} else {
+				*lm_pwd = NULL;
+			}
+		}
+	} else {
+		if (nt_pwd) {
+			int num_nt;
+			num_nt = samdb_result_hashes(mem_ctx, msg, "ntPwdHash", &ntPwdHash);
+			if (num_nt == 0) {
+				nt_pwd = NULL;
+			} else if (num_nt > 1) {
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			} else {
+				*nt_pwd = ntPwdHash[0].hash;
+			}
+		}
+		if (lm_pwd) {
+			int num_lm;
+			num_lm = samdb_result_hashes(mem_ctx, msg, "lmPwdHash", &lmPwdHash);
+			if (num_lm == 0) {
+				*lm_pwd = NULL;
+			} else if (num_lm > 1) {
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			} else {
+				*lm_pwd = lmPwdHash[0].hash;
+			}
+		}
+		
+	}
+	return NT_STATUS_OK;
+}
 
 /*
   pull a samr_LogonHours structutre from a result set. 
@@ -438,36 +500,13 @@ struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_
 	return hours;
 }
 
-/* mapping between ADS userAccountControl and SAMR acct_flags */
-static const struct {
-	uint32 uf, acb;
-} acct_flags_map[] = {
-	{ UF_ACCOUNTDISABLE, ACB_DISABLED },
-	{ UF_HOMEDIR_REQUIRED, ACB_HOMDIRREQ },
-	{ UF_PASSWD_NOTREQD, ACB_PWNOTREQ },
-	{ UF_TEMP_DUPLICATE_ACCOUNT, ACB_TEMPDUP },
-	{ UF_NORMAL_ACCOUNT, ACB_NORMAL },
-	{ UF_MNS_LOGON_ACCOUNT, ACB_MNS },
-	{ UF_INTERDOMAIN_TRUST_ACCOUNT, ACB_DOMTRUST },
-	{ UF_WORKSTATION_TRUST_ACCOUNT, ACB_WSTRUST },
-	{ UF_SERVER_TRUST_ACCOUNT, ACB_SVRTRUST },
-	{ UF_DONT_EXPIRE_PASSWD, ACB_PWNOEXP },
-	{ UF_LOCKOUT, ACB_AUTOLOCK }
-};
-
 /*
   pull a set of account_flags from a result set. 
 */
-uint32 samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
+uint16 samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
 {
 	uint_t userAccountControl = ldb_msg_find_uint(msg, attr, 0);
-	uint32 i, ret = 0;
-	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
-		if (acct_flags_map[i].uf & userAccountControl) {
-			ret |= acct_flags_map[i].acb;
-		}
-	}
-	return ret;
+	return samdb_uf2acb(userAccountControl);
 }
 
 /*
@@ -707,13 +746,7 @@ int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 int samdb_msg_add_acct_flags(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			     const char *attr_name, uint32 v)
 {
-	uint_t i, flags = 0;
-	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
-		if (acct_flags_map[i].acb & v) {
-			flags |= acct_flags_map[i].uf;
-		}
-	}
-	return samdb_msg_add_uint(ctx, mem_ctx, msg, attr_name, flags);
+	return samdb_msg_add_uint(ctx, mem_ctx, msg, attr_name, samdb_acb2uf(v));
 }
 
 /*
@@ -808,7 +841,8 @@ static BOOL samdb_password_complexity_ok(const char *pass)
 */
 NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 			    const char *user_dn, const char *domain_dn,
-			    struct ldb_message *mod, const char *new_pass)
+			    struct ldb_message *mod, const char *new_pass,
+			    BOOL user_change)
 {
 	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
 					    "ntPwdHistory", "unicodePwd", 
@@ -863,14 +897,62 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	minPwdLength =     samdb_result_uint(res[0],   "minPwdLength", 0);
 	minPwdAge =        samdb_result_double(res[0], "minPwdAge", 0);
 
-	/* are all password changes disallowed? */
-	if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
-		return NT_STATUS_PASSWORD_RESTRICTION;
-	}
+	/* compute the new nt and lm hashes */
+	lm_hash_ok = E_deshash(new_pass, lmNewHash.hash);
+	E_md4hash(new_pass, ntNewHash.hash);
 
-	/* can this user change password? */
-	if (userAccountControl & UF_PASSWD_CANT_CHANGE) {
-		return NT_STATUS_PASSWORD_RESTRICTION;
+	if (user_change) {
+		/* are all password changes disallowed? */
+		if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+		
+		/* can this user change password? */
+		if (userAccountControl & UF_PASSWD_CANT_CHANGE) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+		
+		/* yes, this is a minus. The ages are in negative 100nsec units! */
+		if (pwdLastSet - minPwdAge > now_double) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+
+		/* check the immediately past password */
+		if (pwdHistoryLength > 0) {
+			if (lm_hash_ok && memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0) {
+				return NT_STATUS_PASSWORD_RESTRICTION;
+			}
+			if (memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
+				return NT_STATUS_PASSWORD_RESTRICTION;
+			}
+		}
+		
+		/* check the password history */
+		lmPwdHistory_len = MIN(lmPwdHistory_len, pwdHistoryLength);
+		ntPwdHistory_len = MIN(ntPwdHistory_len, pwdHistoryLength);
+		
+		if (pwdHistoryLength > 0) {
+			if (unicodePwd && strcmp(unicodePwd, new_pass) == 0) {
+				return NT_STATUS_PASSWORD_RESTRICTION;
+			}
+			if (lm_hash_ok && memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0) {
+				return NT_STATUS_PASSWORD_RESTRICTION;
+			}
+			if (memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
+				return NT_STATUS_PASSWORD_RESTRICTION;
+			}
+		}
+		
+		for (i=0;lm_hash_ok && i<lmPwdHistory_len;i++) {
+			if (memcmp(lmNewHash.hash, lmPwdHistory[i].hash, 16) == 0) {
+				return NT_STATUS_PASSWORD_RESTRICTION;
+			}
+		}
+		for (i=0;i<ntPwdHistory_len;i++) {
+			if (memcmp(ntNewHash.hash, ntPwdHistory[i].hash, 16) == 0) {
+				return NT_STATUS_PASSWORD_RESTRICTION;
+			}
+		}
 	}
 
 	/* check the various password restrictions */
@@ -878,56 +960,10 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_PASSWORD_RESTRICTION;
 	}
 
-	/* yes, this is a minus. The ages are in negative 100nsec units! */
-	if (pwdLastSet - minPwdAge > now_double) {
-		return NT_STATUS_PASSWORD_RESTRICTION;
-	}
-
 	/* possibly check password complexity */
 	if (pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
 	    !samdb_password_complexity_ok(new_pass)) {
 		return NT_STATUS_PASSWORD_RESTRICTION;
-	}
-
-	/* compute the new nt and lm hashes */
-	lm_hash_ok = E_deshash(new_pass, lmNewHash.hash);
-	E_md4hash(new_pass, ntNewHash.hash);
-
-	/* check the immediately past password */
-	if (pwdHistoryLength > 0) {
-		if (lm_hash_ok && memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0) {
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-		if (memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-	}
-
-	/* check the password history */
-	lmPwdHistory_len = MIN(lmPwdHistory_len, pwdHistoryLength);
-	ntPwdHistory_len = MIN(ntPwdHistory_len, pwdHistoryLength);
-
-	if (pwdHistoryLength > 0) {
-		if (unicodePwd && strcmp(unicodePwd, new_pass) == 0) {
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-		if (lm_hash_ok && memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0) {
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-		if (memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-	}
-
-	for (i=0;lm_hash_ok && i<lmPwdHistory_len;i++) {
-		if (memcmp(lmNewHash.hash, lmPwdHistory[i].hash, 16) == 0) {
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-	}
-	for (i=0;i<ntPwdHistory_len;i++) {
-		if (memcmp(ntNewHash.hash, ntPwdHistory[i].hash, 16) == 0) {
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
 	}
 
 #define CHECK_RET(x) do { if (x != 0) return NT_STATUS_NO_MEMORY; } while(0)
