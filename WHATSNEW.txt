@@ -65,6 +65,10 @@ o   Luke Howard <lukeh@PADL.COM>
     * Fix segfault in session setup reply caused by a early free().
 
 
+o   Stoian Ivanov <sdr@bultra.com>
+    * Implement grepable output for smbclient -L.
+
+
 o   Volker Lendecke <vl@samba.org>
     * Add a German translation for SWAT.
     * Fix a segfaults in winbindd.
