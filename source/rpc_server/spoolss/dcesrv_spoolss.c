@@ -22,700 +22,966 @@
 
 #include "includes.h"
 #include "rpc_server/common/common.h"
-#include "rpc_server/spoolss/dcesrv_spoolss.h"
 
-static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, 
-				   TALLOC_CTX *mem_ctx, 
-				   struct spoolss_EnumPrinters *r)
+/* 
+  spoolss_EnumPrinters 
+*/
+static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPrinters *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_OpenPrinter(struct dcesrv_call_state *dce_call,
-				  TALLOC_CTX *mem_ctx, 
-				  struct spoolss_OpenPrinter *r)
+
+/* 
+  spoolss_OpenPrinter 
+*/
+static WERROR spoolss_OpenPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_OpenPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_SetJob(struct dcesrv_call_state *dce_call,
-			     TALLOC_CTX *mem_ctx, 
-			     struct spoolss_SetJob *r)
+
+/* 
+  spoolss_SetJob 
+*/
+static WERROR spoolss_SetJob(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_SetJob *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_GetJob(struct dcesrv_call_state *dce_call,
-			     TALLOC_CTX *mem_ctx, 
-			     struct spoolss_GetJob *r)
+/* 
+  spoolss_GetJob 
+*/
+static WERROR spoolss_GetJob(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetJob *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_EnumJobs(struct dcesrv_call_state *dce_call,
-			       TALLOC_CTX *mem_ctx, 
-			       struct spoolss_EnumJobs *r)
+
+/* 
+  spoolss_EnumJobs 
+*/
+static WERROR spoolss_EnumJobs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumJobs *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddPrinter(struct dcesrv_call_state *dce_call,
-				 TALLOC_CTX *mem_ctx, 
-				 struct spoolss_AddPrinter *r)
+
+/* 
+  spoolss_AddPrinter 
+*/
+static WERROR spoolss_AddPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_DeletePrinter(struct dcesrv_call_state *dce_call,
-				    TALLOC_CTX *mem_ctx, 
-				    struct spoolss_DeletePrinter *r)
+/* 
+  spoolss_DeletePrinter 
+*/
+static WERROR spoolss_DeletePrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_SetPrinter(struct dcesrv_call_state *dce_call,
-				 TALLOC_CTX *mem_ctx, 
-				 struct spoolss_SetPrinter *r)
+
+/* 
+  spoolss_SetPrinter 
+*/
+static WERROR spoolss_SetPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_SetPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_GetPrinter(struct dcesrv_call_state *dce_call,
-				 TALLOC_CTX *mem_ctx, 
-				 struct spoolss_GetPrinter *r)
+
+/* 
+  spoolss_GetPrinter 
+*/
+static WERROR spoolss_GetPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_AddPrinterDriver(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx, 
-				       struct spoolss_AddPrinterDriver *r)
+/* 
+  spoolss_AddPrinterDriver 
+*/
+static WERROR spoolss_AddPrinterDriver(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPrinterDriver *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_EnumPrinterDrivers(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx, 
-					 struct spoolss_EnumPrinterDrivers *r)
+
+/* 
+  spoolss_EnumPrinterDrivers 
+*/
+static WERROR spoolss_EnumPrinterDrivers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPrinterDrivers *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_GetPrinterDriver(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx, 
-				       struct spoolss_GetPrinterDriver *r)
+
+/* 
+  spoolss_GetPrinterDriver 
+*/
+static WERROR spoolss_GetPrinterDriver(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetPrinterDriver *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_GetPrinterDriverDirectory(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_GetPrinterDriverDirectory *r)
+/* 
+  spoolss_GetPrinterDriverDirectory 
+*/
+static WERROR spoolss_GetPrinterDriverDirectory(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetPrinterDriverDirectory *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_DeletePrinterDriver(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_DeletePrinterDriver *r)
+
+/* 
+  spoolss_DeletePrinterDriver 
+*/
+static WERROR spoolss_DeletePrinterDriver(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrinterDriver *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddPrintProcessor(struct dcesrv_call_state *dce_call,
-					TALLOC_CTX *mem_ctx, 
-					struct spoolss_AddPrintProcessor *r)
+
+/* 
+  spoolss_AddPrintProcessor 
+*/
+static WERROR spoolss_AddPrintProcessor(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPrintProcessor *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_EnumPrintProcessors(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_EnumPrintProcessors *r)
+/* 
+  spoolss_EnumPrintProcessors 
+*/
+static WERROR spoolss_EnumPrintProcessors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPrintProcessors *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_GetPrintProcessorDirectory(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_GetPrintProcessorDirectory *r)
+
+/* 
+  spoolss_GetPrintProcessorDirectory 
+*/
+static WERROR spoolss_GetPrintProcessorDirectory(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetPrintProcessorDirectory *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_StartDocPrinter(struct dcesrv_call_state *dce_call,
-				      TALLOC_CTX *mem_ctx, 
-				      struct spoolss_StartDocPrinter *r)
+
+/* 
+  spoolss_StartDocPrinter 
+*/
+static WERROR spoolss_StartDocPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_StartDocPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_StartPagePrinter(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx, 
-				       struct spoolss_StartPagePrinter *r)
+/* 
+  spoolss_StartPagePrinter 
+*/
+static WERROR spoolss_StartPagePrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_StartPagePrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_WritePrinter(struct dcesrv_call_state *dce_call,
-				   TALLOC_CTX *mem_ctx, 
-				   struct spoolss_WritePrinter *r)
+
+/* 
+  spoolss_WritePrinter 
+*/
+static WERROR spoolss_WritePrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_WritePrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_EndPagePrinter(struct dcesrv_call_state *dce_call,
-				     TALLOC_CTX *mem_ctx, 
-				     struct spoolss_EndPagePrinter *r)
+
+/* 
+  spoolss_EndPagePrinter 
+*/
+static WERROR spoolss_EndPagePrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EndPagePrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_AbortPrinter(struct dcesrv_call_state *dce_call,
-				   TALLOC_CTX *mem_ctx, 
-				   struct spoolss_AbortPrinter *r)
+/* 
+  spoolss_AbortPrinter 
+*/
+static WERROR spoolss_AbortPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AbortPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_ReadPrinter(struct dcesrv_call_state *dce_call,
-				  TALLOC_CTX *mem_ctx, 
-				  struct spoolss_ReadPrinter *r)
+
+/* 
+  spoolss_ReadPrinter 
+*/
+static WERROR spoolss_ReadPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_ReadPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_EndDocPrinter(struct dcesrv_call_state *dce_call,
-				    TALLOC_CTX *mem_ctx, 
-				    struct spoolss_EndDocPrinter *r)
+
+/* 
+  spoolss_EndDocPrinter 
+*/
+static WERROR spoolss_EndDocPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EndDocPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_AddJob(struct dcesrv_call_state *dce_call,
-			     TALLOC_CTX *mem_ctx, 
-			     struct spoolss_AddJob *r)
+/* 
+  spoolss_AddJob 
+*/
+static WERROR spoolss_AddJob(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddJob *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_ScheduleJob(struct dcesrv_call_state *dce_call,
-				  TALLOC_CTX *mem_ctx, 
-				  struct spoolss_ScheduleJob *r)
+
+/* 
+  spoolss_ScheduleJob 
+*/
+static WERROR spoolss_ScheduleJob(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_ScheduleJob *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_GetPrinterData(struct dcesrv_call_state *dce_call,
-				     TALLOC_CTX *mem_ctx, 
-				     struct spoolss_GetPrinterData *r)
+
+/* 
+  spoolss_GetPrinterData 
+*/
+static WERROR spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetPrinterData *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_SetPrinterData(struct dcesrv_call_state *dce_call,
-				     TALLOC_CTX *mem_ctx, 
-				     struct spoolss_SetPrinterData *r)
+/* 
+  spoolss_SetPrinterData 
+*/
+static WERROR spoolss_SetPrinterData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_SetPrinterData *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_WaitForPrinterChange(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_WaitForPrinterChange *r)
+
+/* 
+  spoolss_WaitForPrinterChange 
+*/
+static WERROR spoolss_WaitForPrinterChange(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_WaitForPrinterChange *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_ClosePrinter(struct dcesrv_call_state *dce_call,
-				   TALLOC_CTX *mem_ctx, 
-				   struct spoolss_ClosePrinter *r)
+
+/* 
+  spoolss_ClosePrinter 
+*/
+static WERROR spoolss_ClosePrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_ClosePrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_AddForm(struct dcesrv_call_state *dce_call,
-			      TALLOC_CTX *mem_ctx, 
-			      struct spoolss_AddForm *r)
+/* 
+  spoolss_AddForm 
+*/
+static WERROR spoolss_AddForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddForm *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_DeleteForm(struct dcesrv_call_state *dce_call,
-				 TALLOC_CTX *mem_ctx, 
-				 struct spoolss_DeleteForm *r)
+
+/* 
+  spoolss_DeleteForm 
+*/
+static WERROR spoolss_DeleteForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeleteForm *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_GetForm(struct dcesrv_call_state *dce_call,
-			      TALLOC_CTX *mem_ctx, 
-			      struct spoolss_GetForm *r)
+
+/* 
+  spoolss_GetForm 
+*/
+static WERROR spoolss_GetForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetForm *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_SetForm(struct dcesrv_call_state *dce_call,
-			      TALLOC_CTX *mem_ctx, 
-			      struct spoolss_SetForm *r)
+/* 
+  spoolss_SetForm 
+*/
+static WERROR spoolss_SetForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_SetForm *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call,
-				TALLOC_CTX *mem_ctx, 
-				struct spoolss_EnumForms *r)
+
+/* 
+  spoolss_EnumForms 
+*/
+static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumForms *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call,
-				TALLOC_CTX *mem_ctx, 
-				struct spoolss_EnumPorts *r)
+
+/* 
+  spoolss_EnumPorts 
+*/
+static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPorts *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_EnumMonitors(struct dcesrv_call_state *dce_call,
-				   TALLOC_CTX *mem_ctx, 
-				   struct spoolss_EnumMonitors *r)
+/* 
+  spoolss_EnumMonitors 
+*/
+static WERROR spoolss_EnumMonitors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumMonitors *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddPort(struct dcesrv_call_state *dce_call,
-			      TALLOC_CTX *mem_ctx, 
-			      struct spoolss_AddPort *r)
+
+/* 
+  spoolss_AddPort 
+*/
+static WERROR spoolss_AddPort(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPort *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_ConfigurePort(struct dcesrv_call_state *dce_call,
-				    TALLOC_CTX *mem_ctx, 
-				    struct spoolss_ConfigurePort *r)
+
+/* 
+  spoolss_ConfigurePort 
+*/
+static WERROR spoolss_ConfigurePort(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_ConfigurePort *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_DeletePort(struct dcesrv_call_state *dce_call,
-				 TALLOC_CTX *mem_ctx, 
-				 struct spoolss_DeletePort *r)
+/* 
+  spoolss_DeletePort 
+*/
+static WERROR spoolss_DeletePort(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePort *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_CreatePrinterIC(struct dcesrv_call_state *dce_call,
-				      TALLOC_CTX *mem_ctx, 
-				      struct spoolss_CreatePrinterIC *r)
+
+/* 
+  spoolss_CreatePrinterIC 
+*/
+static WERROR spoolss_CreatePrinterIC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_CreatePrinterIC *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_PlayGDIScriptOnPrinterIC(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_PlayGDIScriptOnPrinterIC *r)
+
+/* 
+  spoolss_PlayGDIScriptOnPrinterIC 
+*/
+static WERROR spoolss_PlayGDIScriptOnPrinterIC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_PlayGDIScriptOnPrinterIC *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_DeletePrinterIC(struct dcesrv_call_state *dce_call,
-				      TALLOC_CTX *mem_ctx, 
-				      struct spoolss_DeletePrinterIC *r)
+/* 
+  spoolss_DeletePrinterIC 
+*/
+static WERROR spoolss_DeletePrinterIC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrinterIC *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddPrinterConnection(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_AddPrinterConnection *r)
+
+/* 
+  spoolss_AddPrinterConnection 
+*/
+static WERROR spoolss_AddPrinterConnection(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPrinterConnection *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_DeletePrinterConnection(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_DeletePrinterConnection *r)
+
+/* 
+  spoolss_DeletePrinterConnection 
+*/
+static WERROR spoolss_DeletePrinterConnection(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrinterConnection *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_PrinterMessageBox(struct dcesrv_call_state *dce_call,
-					TALLOC_CTX *mem_ctx, 
-					struct spoolss_PrinterMessageBox *r)
+/* 
+  spoolss_PrinterMessageBox 
+*/
+static WERROR spoolss_PrinterMessageBox(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_PrinterMessageBox *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddMonitor(struct dcesrv_call_state *dce_call,
-				 TALLOC_CTX *mem_ctx, 
-				 struct spoolss_AddMonitor *r)
+
+/* 
+  spoolss_AddMonitor 
+*/
+static WERROR spoolss_AddMonitor(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddMonitor *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_DeleteMonitor(struct dcesrv_call_state *dce_call,
-				    TALLOC_CTX *mem_ctx, 
-				    struct spoolss_DeleteMonitor *r)
+
+/* 
+  spoolss_DeleteMonitor 
+*/
+static WERROR spoolss_DeleteMonitor(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeleteMonitor *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_DeletePrintProcessor(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_DeletePrintProcessor *r)
+/* 
+  spoolss_DeletePrintProcessor 
+*/
+static WERROR spoolss_DeletePrintProcessor(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrintProcessor *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddPrintProvidor(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx, 
-				       struct spoolss_AddPrintProvidor *r)
+
+/* 
+  spoolss_AddPrintProvidor 
+*/
+static WERROR spoolss_AddPrintProvidor(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPrintProvidor *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_DeletePrintProvidor(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_DeletePrintProvidor *r)
+
+/* 
+  spoolss_DeletePrintProvidor 
+*/
+static WERROR spoolss_DeletePrintProvidor(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrintProvidor *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_EnumPrintProcDataTypes(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_EnumPrintProcDataTypes *r)
+/* 
+  spoolss_EnumPrintProcDataTypes 
+*/
+static WERROR spoolss_EnumPrintProcDataTypes(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPrintProcDataTypes *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_ResetPrinter(struct dcesrv_call_state *dce_call,
-				   TALLOC_CTX *mem_ctx, 
-				   struct spoolss_ResetPrinter *r)
+
+/* 
+  spoolss_ResetPrinter 
+*/
+static WERROR spoolss_ResetPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_ResetPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_GetPrinterDriver2(struct dcesrv_call_state *dce_call,
-					TALLOC_CTX *mem_ctx, 
-					struct spoolss_GetPrinterDriver2 *r)
+
+/* 
+  spoolss_GetPrinterDriver2 
+*/
+static WERROR spoolss_GetPrinterDriver2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetPrinterDriver2 *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_FindFirstPrinterChangeNotification(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_FindFirstPrinterChangeNotification *r)
+/* 
+  spoolss_FindFirstPrinterChangeNotification 
+*/
+static WERROR spoolss_FindFirstPrinterChangeNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_FindFirstPrinterChangeNotification *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_FindNextPrinterChangeNotification(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_FindNextPrinterChangeNotification *r)
+
+/* 
+  spoolss_FindNextPrinterChangeNotification 
+*/
+static WERROR spoolss_FindNextPrinterChangeNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_FindNextPrinterChangeNotification *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_FindClosePrinterNotify(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_FindClosePrinterNotify *r)
+
+/* 
+  spoolss_FindClosePrinterNotify 
+*/
+static WERROR spoolss_FindClosePrinterNotify(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_FindClosePrinterNotify *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_RouterFindFirstPrinterChangeNotificationOld(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_RouterFindFirstPrinterChangeNotificationOld *r)
+/* 
+  spoolss_RouterFindFirstPrinterChangeNotificationOld 
+*/
+static WERROR spoolss_RouterFindFirstPrinterChangeNotificationOld(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RouterFindFirstPrinterChangeNotificationOld *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_ReplyOpenPrinter(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx, 
-				       struct spoolss_ReplyOpenPrinter *r)
+
+/* 
+  spoolss_ReplyOpenPrinter 
+*/
+static WERROR spoolss_ReplyOpenPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_ReplyOpenPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_RouterReplyPrinter(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx, 
-					 struct spoolss_RouterReplyPrinter *r)
+
+/* 
+  spoolss_RouterReplyPrinter 
+*/
+static WERROR spoolss_RouterReplyPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RouterReplyPrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_ReplyClosePrinter(struct dcesrv_call_state *dce_call,
-					TALLOC_CTX *mem_ctx, 
-					struct spoolss_ReplyClosePrinter *r)
+/* 
+  spoolss_ReplyClosePrinter 
+*/
+static WERROR spoolss_ReplyClosePrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_ReplyClosePrinter *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddPortEx(struct dcesrv_call_state *dce_call,
-				TALLOC_CTX *mem_ctx, 
-				struct spoolss_AddPortEx *r)
+
+/* 
+  spoolss_AddPortEx 
+*/
+static WERROR spoolss_AddPortEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPortEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_RouterFindFirstPrinterChangeNotification(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_RouterFindFirstPrinterChangeNotification *r)
+
+/* 
+  spoolss_RouterFindFirstPrinterChangeNotification 
+*/
+static WERROR spoolss_RouterFindFirstPrinterChangeNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RouterFindFirstPrinterChangeNotification *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_SpoolerInit(struct dcesrv_call_state *dce_call,
-				  TALLOC_CTX *mem_ctx, 
-				  struct spoolss_SpoolerInit *r)
+/* 
+  spoolss_SpoolerInit 
+*/
+static WERROR spoolss_SpoolerInit(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_SpoolerInit *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_ResetPrinterEx(struct dcesrv_call_state *dce_call,
-				     TALLOC_CTX *mem_ctx, 
-				     struct spoolss_ResetPrinterEx *r)
+
+/* 
+  spoolss_ResetPrinterEx 
+*/
+static WERROR spoolss_ResetPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_ResetPrinterEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
+
+/* 
+  spoolss_RemoteFindFirstPrinterChangeNotifyEx 
+*/
+static WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_RouterRefreshPrinterChangeNotification(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_RouterRefreshPrinterChangeNotification *r)
+/* 
+  spoolss_RouterRefreshPrinterChangeNotification 
+*/
+static WERROR spoolss_RouterRefreshPrinterChangeNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RouterRefreshPrinterChangeNotification *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_RemoteFindNextPrinterChangeNotifyEx(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+
+/* 
+  spoolss_RemoteFindNextPrinterChangeNotifyEx 
+*/
+static WERROR spoolss_RemoteFindNextPrinterChangeNotifyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_44(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_44 *r)
+
+/* 
+  spoolss_44 
+*/
+static WERROR spoolss_44(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_44 *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call,
-				    TALLOC_CTX *mem_ctx, 
-				    struct spoolss_OpenPrinterEx *r)
+/* 
+  spoolss_OpenPrinterEx 
+*/
+static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_OpenPrinterEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddPrinterEx(struct dcesrv_call_state *dce_call,
-				   TALLOC_CTX *mem_ctx, 
-				   struct spoolss_AddPrinterEx *r)
+
+/* 
+  spoolss_AddPrinterEx 
+*/
+static WERROR spoolss_AddPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPrinterEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_47(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_47 *r)
+
+/* 
+  spoolss_47 
+*/
+static WERROR spoolss_47(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_47 *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_EnumPrinterData(struct dcesrv_call_state *dce_call,
-				      TALLOC_CTX *mem_ctx, 
-				      struct spoolss_EnumPrinterData *r)
+/* 
+  spoolss_EnumPrinterData 
+*/
+static WERROR spoolss_EnumPrinterData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPrinterData *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_DeletePrinterData(struct dcesrv_call_state *dce_call,
-					TALLOC_CTX *mem_ctx, 
-					struct spoolss_DeletePrinterData *r)
+
+/* 
+  spoolss_DeletePrinterData 
+*/
+static WERROR spoolss_DeletePrinterData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrinterData *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_4a(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_4a *r)
+
+/* 
+  spoolss_4a 
+*/
+static WERROR spoolss_4a(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_4a *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_4b(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_4b *r)
+/* 
+  spoolss_4b 
+*/
+static WERROR spoolss_4b(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_4b *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_4c(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_4c *r)
+
+/* 
+  spoolss_4c 
+*/
+static WERROR spoolss_4c(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_4c *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_SetPrinterDataEx(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx, 
-				       struct spoolss_SetPrinterDataEx *r)
+
+/* 
+  spoolss_SetPrinterDataEx 
+*/
+static WERROR spoolss_SetPrinterDataEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_SetPrinterDataEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_GetPrinterDataEx(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx, 
-				       struct spoolss_GetPrinterDataEx *r)
+/* 
+  spoolss_GetPrinterDataEx 
+*/
+static WERROR spoolss_GetPrinterDataEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetPrinterDataEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_EnumPrinterDataEx(struct dcesrv_call_state *dce_call,
-					TALLOC_CTX *mem_ctx, 
-					struct spoolss_EnumPrinterDataEx *r)
+
+/* 
+  spoolss_EnumPrinterDataEx 
+*/
+static WERROR spoolss_EnumPrinterDataEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPrinterDataEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_EnumPrinterKey(struct dcesrv_call_state *dce_call,
-				     TALLOC_CTX *mem_ctx, 
-				     struct spoolss_EnumPrinterKey *r)
+
+/* 
+  spoolss_EnumPrinterKey 
+*/
+static WERROR spoolss_EnumPrinterKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPrinterKey *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_DeletePrinterDataEx(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_DeletePrinterDataEx *r)
+/* 
+  spoolss_DeletePrinterDataEx 
+*/
+static WERROR spoolss_DeletePrinterDataEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrinterDataEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_DeletePrinterKey(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx, 
-				       struct spoolss_DeletePrinterKey *r)
+
+/* 
+  spoolss_DeletePrinterKey 
+*/
+static WERROR spoolss_DeletePrinterKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrinterKey *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_53(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_53 *r)
+
+/* 
+  spoolss_53 
+*/
+static WERROR spoolss_53(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_53 *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_DeletePrinterDriverEx(
-	struct dcesrv_call_state *dce_call,
-	TALLOC_CTX *mem_ctx, 
-	struct spoolss_DeletePrinterDriverEx *r)
+/* 
+  spoolss_DeletePrinterDriverEx 
+*/
+static WERROR spoolss_DeletePrinterDriverEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePrinterDriverEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_55(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_55 *r)
+
+/* 
+  spoolss_55 
+*/
+static WERROR spoolss_55(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_55 *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_56(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_56 *r)
+
+/* 
+  spoolss_56 
+*/
+static WERROR spoolss_56(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_56 *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_57(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_57 *r)
+/* 
+  spoolss_57 
+*/
+static WERROR spoolss_57(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_57 *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_58(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_58 *r)
+
+/* 
+  spoolss_58 
+*/
+static WERROR spoolss_58(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_58 *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_AddPrinterDriverEx(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx, 
-					 struct spoolss_AddPrinterDriverEx *r)
+
+/* 
+  spoolss_AddPrinterDriverEx 
+*/
+static WERROR spoolss_AddPrinterDriverEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPrinterDriverEx *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_5a(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_5a *r)
+/* 
+  spoolss_5a 
+*/
+static WERROR spoolss_5a(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_5a *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_5b(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_5b *r)
+
+/* 
+  spoolss_5b 
+*/
+static WERROR spoolss_5b(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_5b *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_5c(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_5c *r)
+
+/* 
+  spoolss_5c 
+*/
+static WERROR spoolss_5c(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_5c *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
-static WERROR spoolss_5d(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_5d *r)
+/* 
+  spoolss_5d 
+*/
+static WERROR spoolss_5d(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_5d *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_5e(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_5e *r)
+
+/* 
+  spoolss_5e 
+*/
+static WERROR spoolss_5e(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_5e *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static WERROR spoolss_5f(struct dcesrv_call_state *dce_call,
-			 TALLOC_CTX *mem_ctx, 
-			 struct spoolss_5f *r)
+
+/* 
+  spoolss_5f 
+*/
+static WERROR spoolss_5f(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_5f *r)
 {
-	return WERR_BADFUNC;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_spoolss_s.c"
