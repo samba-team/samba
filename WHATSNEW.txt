@@ -1,5 +1,5 @@
-                   WHATS NEW IN Samba 3.0.1pre1
-                         October 10, 2003
+                   WHATS NEW IN Samba 3.0.1pre2
+                         November 7, 2003
                   ==============================
 
 This is a preview release of the Samba 3.0.1 code base and is 
@@ -15,13 +15,110 @@ exact updates.
 ######################################################################
 Changes
 #######
-
-Changes since 3.0.0
--------------------
+Changes since 3.0.1pre1
+-----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details:
 
+1)  Match Samba 2.2 behavior; make ACB_NORMAL the default ACB value.
+2)  Updated Japanese welcome file in SWAT.
+3)  Fix to  nt-time <-> unix-time functions reversible.
+4)  Ensure that winbindd uses the the escaped DN when querying
+    an AD ldap server.
+5)  Fix portability issues when compiling (bug 505, 550)
+6)  Compile fix for tdbbackup when Samba needs to override 
+    non-C99 compliant implementations of snprintf().
+7)  Use @PICSUFFIX@ instead of .po in Makefile.in (bug 574).
+8)  Make sure we break out of samsync loop on error.
+9)  Ensure error code path doesn't free unmalloc()'d memory
+    (bug 628).
+10) Add configure test for krb5_keytab_entry keyblock vs key 
+    member (bug 636).
+11) Fixed spinlocks.
+12) Modified testparm so that all output so all debug output goes 
+    to stderr, and all file processing goes to stdout.
+13) Fix error return code for BUFFER_TOO_SMALL in smbcacls 
+    and smbcquotas.
+14) Fix "NULL dest in safe_strcpy()" log message by ensuring that 
+    we have a devmode before copying a string to the devicename.
+15) Support mapping REALM.COM\user to a local user account (without 
+    running winbindd)  for compatibility with 2.2.x release.
+16) Ensure we don't use mmap() on blacklisted systems.
+17) fixed a number of bugs and memory leaks in the AIX 
+    winbindd shim
+18) Call initgroups() in SWAT before becomming the user so that
+    secondary group permissions can be used when writing to 
+    smb.conf.
+19) Fix signing problems when reverse connecting back to a 
+    client for printer notify
+20) Fix signing problems caused by a miss-sequence bug.
+21) Missing map in errormap for ERROR_MORE_DATA -> ERRDOS, ERRmoredata.
+    Fixes NEXUS tools running on Win9x clients (bug 64).
+22) Don't leave the domain field uninitialized in cli_lsa.c if some 
+    SID could not be mapped.
+23) Fix segfault in mount.cifs helper when there is no options 
+    specified during mount.
+24) Change the \n after the password prompt to go to tty instead 
+    of stdout (bug 668).
+25) Stop net -P from prompting for machine account password (bug 451).
+26) Change in behavior to Not only change the effective uid but also 
+    the real uid when becoming unprivileged.
+27) Cope with Exchange 5.5 cleartext pop password auth.
+28) New files for support of initshutdown pipe.  Win2k doesn't 
+    respond properly to all requests on the winreg pipe, so we need 
+    to handle this new pipe (bug 534).
+29) Added more va_copy() checks in configure.in.
+30) Include fixes for libsmbclient build problems.
+31) Missing UNIX -> DOS codepage conversion in lanman.c.
+32) Allow DFMS-S filenames can now have arbitrary case (bug 667).
+33) Parameterize the listen backlog in smbd and make it larger by
+    default. A backlog of 5 is way too small these days.
+34) Check for an invalid fid before dereferencing the fsp pointer
+    (bug 696).
+35) Remove invalid memory frees and return codes in pdb_ldap.c.
+36) Prompt for password when invoking --set-auth-user and no 
+    password is given.
+37) Bind the nmbd sending socket to the 'socket address'.
+38) Re-order link command for smbd, rpcclient and smbpasswd to ensure 
+    $LDFLAGS occurs before any library specification (bug 661).
+39) Fix large number of printf() calls for 64-bit size_t.
+40) Fix AC_CHECK_MEMBER so that SLES8 does correctly finds the 
+    keyblock in the krb5 structs.
+41) Remove #include <compat.h> in hopes to avoid problems with 
+    apache header files.
+42) COrrect winbindd build problems on HP-UX 11
+43) Lowercase netgroups lookups (bug 703).
+44) Use the actual size of the buffer in strftime instead of a made 
+    up value which just happens to be less than sizeof(fstring).  
+    (bug 713).
+45) Add ldaplibs to pdbedit link line (bug 651).
+46) Fix crash bug in smbclient completion (bug 659).
+47) Fix packet length for browse list reply (bug 771).
+48) Fix coredump in cli_get_backup_list().
+49) Make sure that we expand %N (bug 612).
+50) Allow rpcclient adddriver command to specify printer driver 
+    version (bug 514).
+51) Compile tdbdump by default.
+52) Apply patches to fix iconv detection for FreeBSD.
+53) Do not allow the 'guest account' to be added to a passdb backend 
+    using smbpasswd or pdbedit (bug 624).
+54) Save LDFLAGS during iconv detection (bug 57).
+55) Run krb5 logins through the username map if the winbindd 
+    lookup fails (bug 698).
+56) Add const for lp_set_name_resolve_order() to avoid compiler warnings
+    (bug 471).
+57) Add support for the %i macro in smb.conf to stand in for the for 
+    the local IP address to which a client connected.
+58) Allow winbindd to match local accounts to domain SID when 
+    'winbind trusted domains only = yes' (bug 680).
+59) Remove code in idmap_ldap that searches the user suffix and group 
+    suffix.  It's not needed and provides inconsistent functionality 
+    from the tdb backend.
+    
+    
+Changes since 3.0.0
+-------------------
 
 Modified parameters
   * mangled map (deprecated)
