@@ -118,6 +118,19 @@ typedef struct {
 
 } DS_DOMAIN_TRUSTS;
 
+struct ds_domain_trust {
+	/* static portion of structure */
+	uint32		flags;
+	uint32		parent_index;
+	uint32		trust_type;
+	uint32		trust_attributes;
+	GUID		guid;
+	
+	DOM_SID	sid;
+	char *netbios_domain;
+	char *dns_domain;
+};
+
 typedef struct {
 
 	uint32			ptr;
