@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
  * that points to the correct function for the selected database. JRA.
  */
 
-static struct groupdb_ops *gpdb_ops;
+static struct groupdb_ops *gpdb_ops = NULL;
 
 /***************************************************************
  Initialise the group db operations.
@@ -47,8 +47,8 @@ BOOL initialise_group_db(void)
   gpdb_ops =  nisplus_initialise_group_db();
 #elif defined(WITH_LDAP)
   gpdb_ops = ldap_initialise_group_db();
-#else 
-  gpdb_ops = file_initialise_group_db();
+#elif defined(USE_SMBUNIX_DB)
+  gpdb_ops = unix_initialise_group_db();
 #endif 
 
   return (gpdb_ops != NULL);
@@ -383,3 +383,51 @@ void gpdb_init_grp(DOMAIN_GRP *grp)
 	ZERO_STRUCTP(grp);
 }
 
+/*************************************************************************
+ turns a list of groups into a string.
+*************************************************************************/
+BOOL make_group_line(char *p, int max_len,
+				DOMAIN_GRP *grp,
+				DOMAIN_GRP_MEMBER **mem, int *num_mem)
+{
+	int i;
+	int len;
+	len = slprintf(p, max_len-1, "%s:%s:%d:", grp->name, grp->comment, grp->rid);
+
+	if (len == -1)
+	{
+		DEBUG(0,("make_group_line: cannot create entry\n"));
+		return False;
+	}
+
+	p += len;
+	max_len -= len;
+
+	if (mem == NULL || num_mem == NULL)
+	{
+		return True;
+	}
+
+	for (i = 0; i < (*num_mem); i++)
+	{
+		len = strlen((*mem)[i].name);
+		p = safe_strcpy(p, (*mem)[i].name, max_len); 
+
+		if (p == NULL)
+		{
+			DEBUG(0, ("make_group_line: out of space for groups!\n"));
+			return False;
+		}
+
+		max_len -= len;
+
+		if (i != (*num_mem)-1)
+		{
+			*p = ',';
+			p++;
+			max_len--;
+		}
+	}
+
+	return True;
+}
