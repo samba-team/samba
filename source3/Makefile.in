@@ -76,7 +76,8 @@ FLAGS  = $(FLAGS5) $(PASSWD_FLAGS)
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
 PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage
-PROGS = $(PROGS1) $(PROGS2) bin/nmblookup bin/make_printerdef 
+MPROGS = @MPROGS@
+PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
 SCRIPTS = script/smbtar script/addtosmbpass
 
@@ -192,6 +193,15 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
+MOUNT_OBJ = client/smbmount.o client/clientutil.o \
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+
+MNT_OBJ = client/smbmnt.o \
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+
+UMOUNT_OBJ = client/smbumount.o \
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
 
@@ -243,6 +253,18 @@ bin/rpcclient: $(RPCCLIENT_OBJ)
 bin/smbclient: $(CLIENT_OBJ) 
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/smbmount: $(MOUNT_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LIBS)
+
+bin/smbmnt: $(MNT_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LIBS)
+
+bin/smbumount: $(UMOUNT_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LIBS)
 
 bin/testparm: $(TESTPARM_OBJ)
 	@echo Linking $@
