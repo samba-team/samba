@@ -16,8 +16,14 @@ krb5_auth_con_init(krb5_context context,
     if (!p->authenticator)
 	return ENOMEM;
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
+
+    /*
+     * These choices use checksum and encryption methods from the
+     * spec.  Hopefully they are supported by all implementations.
+     */
+
     p->cksumtype = CKSUMTYPE_RSA_MD5_DES;
-    p->enctype   = ETYPE_DES_CBC_CRC;
+    p->enctype   = ETYPE_DES_CBC_MD5;
     p->local_address = NULL;
     p->remote_address = NULL;
     *auth_context = p;
