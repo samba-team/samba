@@ -597,6 +597,7 @@ dnl or do we have a variable `timezone' ?
 dnl
 
 rk_CHECK_VAR(timezone,[#include <time.h>])
+rk_CHECK_VAR(altzone,[#include <time.h>])
 
 AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
 AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
