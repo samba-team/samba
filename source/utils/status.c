@@ -45,6 +45,7 @@ struct session_record{
 } *srecs;
 
 extern FILE *dbf;
+extern BOOL AllowDebugChange;
 
 static pstring Ucrit_username = "";                   /* added by OH */
 static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
@@ -578,6 +579,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	
 	charset_initialise();
 	
+	AllowDebugChange = False;
 	DEBUGLEVEL = 0;
 	dbf = stderr;
 	
