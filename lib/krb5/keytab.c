@@ -90,7 +90,7 @@ krb5_kt_resolve(krb5_context context,
 	    break;
     }
     if(i == context->num_kt_types) {
-	krb5_set_error_string(context, "unknown keytype type %.*s", 
+	krb5_set_error_string(context, "unknown keytab type %.*s", 
 			      (int)type_len, type);
 	return KRB5_KT_UNKNOWN_TYPE;
     }
