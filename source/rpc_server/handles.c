@@ -30,9 +30,6 @@
 static int dcesrv_handle_destructor(void *ptr)
 {
 	struct dcesrv_handle *h = ptr;
-	if (h->destroy) {
-		h->destroy(h->context, h);
-	}
 	DLIST_REMOVE(h->context->handles, h);
 	talloc_free(h);
 	return 0;
@@ -52,7 +49,6 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_context *contex
 		return NULL;
 	}
 	h->data = NULL;
-	h->destroy = NULL;
 	h->context = context;
 
 	h->wire_handle.handle_type = handle_type;
