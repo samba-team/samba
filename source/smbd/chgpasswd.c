@@ -921,7 +921,7 @@ BOOL check_plaintext_password(char *user, char *old_passwd,
 	DEBUG(100, ("check_plaintext_password: old_ntpw \n"));
 	dump_data(100, old_ntpw, 16);
 	DEBUG(100, ("check_plaintext_password: lanman_passwd \n"));
-	dump_data(100, pdb_get_lanman_passwd, 16);
+	dump_data(100, pdb_get_lanman_passwd(sampass), 16);
 	DEBUG(100, ("check_plaintext_password: old_pw\n"));
 	dump_data(100, old_pw, 16);
 #endif
