@@ -61,6 +61,9 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
 		eclass = unix_ERR_class;
 		ecode = unix_ERR_code;
 		ntstatus = unix_ERR_ntstatus;
+		unix_ERR_class = SMB_SUCCESS;
+		unix_ERR_code = 0;
+		unix_ERR_ntstatus = NT_STATUS_OK;
 	} else {
 		while (unix_dos_nt_errmap[i].dos_class != 0) {
 			if (unix_dos_nt_errmap[i].unix_error == errno) {
@@ -90,9 +93,10 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 	if (errno != 0)
 		DEBUG(3,("error string = %s\n",strerror(errno)));
   
-	unix_ERR_class = SMB_SUCCESS;
-	unix_ERR_code = 0;
-	unix_ERR_ntstatus = NT_STATUS_OK;
+#if defined(DEVELOPER)
+	if (unix_ERR_class != SMB_SUCCESS || unix_ERR_code != 0 || !NT_STATUS_IS_OK(unix_ERR_ntstatus))
+		smb_panic("logic error in error processing");
+#endif
 
 	/*
 	 * We can explicitly force 32 bit error codes even when the

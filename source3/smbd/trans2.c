@@ -1785,12 +1785,9 @@ int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint
 			err, (int)bad_path ));
 
 	if(err == ENOENT) {
-		unix_ERR_class = ERRDOS;
 		if (bad_path) {
-			unix_ERR_code = ERRbadpath;
 			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 		} else {
-			unix_ERR_code = ERRbadfile;
 			return ERROR_NT(NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		}
 	}
