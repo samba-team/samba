@@ -793,7 +793,7 @@ static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 	 */
 
 	if (conn->admin_user)
-		return True;
+		return False;
 
 	/* If we can't stat it does not show it */
 	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0))
