@@ -29,6 +29,7 @@
 #define SRV_NET_FILE_ENUM          0x09
 #define SRV_NET_FILE_CLOSE         0x0b
 #define SRV_NET_SESS_ENUM          0x0c
+#define SRV_NET_SESS_DEL           0x0d
 #define SRV_NET_SHARE_ADD          0x0e
 #define SRV_NET_SHARE_ENUM_ALL     0x0f
 #define SRV_NET_SHARE_GET_INFO     0x10
@@ -192,6 +193,27 @@ typedef struct r_net_sess_enum_info
 	WERROR status;               /* return status */
 
 } SRV_R_NET_SESS_ENUM;
+
+/* SRV_Q_NET_SESS_DEL */
+typedef struct q_net_sess_del
+{
+	uint32 ptr_srv_name;         /* pointer (to server name?) */
+	UNISTR2 uni_srv_name;        /* server name */
+
+	uint32 ptr_cli_name;         /* pointer (to qualifier name) */
+	UNISTR2 uni_cli_name;        /* qualifier name "\\qualifier" */
+
+	uint32 ptr_user_name;         /* pointer (to user name */
+	UNISTR2 uni_user_name;        /* user name */
+
+} SRV_Q_NET_SESS_DEL;
+
+/* SRV_R_NET_SESS_DEL */
+typedef struct r_net_sess_del
+{
+	WERROR status;               /* return status */
+
+} SRV_R_NET_SESS_DEL;
 
 /* CONN_INFO_0 (pointers to level 0 connection info strings) */
 typedef struct ptr_conn_info0

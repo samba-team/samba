@@ -166,6 +166,34 @@ static BOOL api_srv_net_sess_enum(pipes_struct *p)
 }
 
 /*******************************************************************
+ Delete session.
+********************************************************************/
+
+static BOOL api_srv_net_sess_del(pipes_struct *p)
+{
+	SRV_Q_NET_SESS_DEL q_u;
+	SRV_R_NET_SESS_DEL r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the net server get enum */
+	if (!srv_io_q_net_sess_del("", &q_u, data, 0))
+		return False;
+
+	/* construct reply.  always indicate success */
+	r_u.status = _srv_net_sess_del(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if (!srv_io_r_net_sess_del("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  RPC to enumerate shares.
 ********************************************************************/
 
@@ -530,6 +558,7 @@ static struct api_struct api_srv_cmds[] =
 {
       { "SRV_NET_CONN_ENUM"         , SRV_NET_CONN_ENUM         , api_srv_net_conn_enum          },
       { "SRV_NET_SESS_ENUM"         , SRV_NET_SESS_ENUM         , api_srv_net_sess_enum          },
+      { "SRV_NET_SESS_DEL"          , SRV_NET_SESS_DEL          , api_srv_net_sess_del           },
       { "SRV_NET_SHARE_ENUM_ALL"    , SRV_NET_SHARE_ENUM_ALL    , api_srv_net_share_enum_all     },
       { "SRV_NET_SHARE_ENUM"        , SRV_NET_SHARE_ENUM        , api_srv_net_share_enum         },
       { "SRV_NET_SHARE_ADD"         , SRV_NET_SHARE_ADD         , api_srv_net_share_add          },
