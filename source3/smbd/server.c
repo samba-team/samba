@@ -2441,7 +2441,7 @@ static void process_smb(char *inbuf, char *outbuf)
 static BOOL open_oplock_ipc()
 {
   struct sockaddr_in sock_name;
-  int name_len = sizeof(sock_name);
+  int len = sizeof(sock_name);
 
   DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
 
@@ -2456,7 +2456,7 @@ address %x. Error was %s\n", htonl(INADDR_LOOPBACK), strerror(errno)));
   }
 
   /* Find out the transient UDP port we have been allocated. */
-  if(getsockname(oplock_sock, (struct sockaddr *)&sock_name, &name_len)<0)
+  if(getsockname(oplock_sock, (struct sockaddr *)&sock_name, &len)<0)
   {
     DEBUG(0,("open_oplock_ipc: Failed to get local UDP port. Error was %s\n",
             strerror(errno)));
@@ -2473,7 +2473,7 @@ address %x. Error was %s\n", htonl(INADDR_LOOPBACK), strerror(errno)));
 /****************************************************************************
   process an oplock break message.
 ****************************************************************************/
-static BOOL process_local_message(int oplock_sock, char *buffer, int buf_size)
+static BOOL process_local_message(int sock, char *buffer, int buf_size)
 {
   int32 msg_len;
   int16 from_port;
@@ -2543,7 +2543,7 @@ oplocks. Returning success.\n"));
         toaddr.sin_port = htons(from_port);
         toaddr.sin_family = AF_INET;
 
-        if(sendto( oplock_sock, msg_start, OPLOCK_BREAK_MSG_LEN, 0,
+        if(sendto( sock, msg_start, OPLOCK_BREAK_MSG_LEN, 0,
                 (struct sockaddr *)&toaddr, sizeof(toaddr)) < 0) 
         {
           DEBUG(0,("process_local_message: sendto process %d failed. Errno was %s\n",
