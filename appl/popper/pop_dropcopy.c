@@ -12,6 +12,22 @@ RCSID("$Id$");
  *  save a stream pointer for it.
  */
 
+void
+changeuser(POP *p, struct passwd *pwd)
+{
+    /* Now we run as the user. */
+    if (pwd) {
+    	setuid(pwd->pw_uid);
+    	setgid(pwd->pw_gid);
+    }
+#ifdef DEBUG
+    if(p->debug)
+	pop_log(p, POP_DEBUG,"uid = %u, gid = %u",
+	       (unsigned)getuid(),
+	       (unsigned)getgid());
+#endif /* DEBUG */
+}
+
 int
 pop_dropcopy(POP *p, struct passwd *pwp)
 {
@@ -65,17 +81,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     fclose(tf);
     unlink(template);
 
-    /* Now we run as the user. */
-    if (pwp) {
-    	setuid(pwp->pw_uid);
-    	setgid(pwp->pw_gid);
-    }
-#ifdef DEBUG
-    if(p->debug)
-       pop_log(p, POP_DEBUG,"uid = %u, gid = %u",
-	       (unsigned)getuid(),
-	       (unsigned)getgid());
-#endif /* DEBUG */
+    changeuser(p, pwp);
 
     /* Open for append,  this solves the crash recovery problem */
     if ((dfd = open(p->temp_drop,O_RDWR|O_APPEND|O_CREAT,0600)) == -1){
