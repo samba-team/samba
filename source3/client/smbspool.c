@@ -115,7 +115,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     copies = atoi(argv[4]);
 
  /*
-  * Fine the URI...
+  * Find the URI...
   */
 
   if (strncmp(argv[0], "smb://", 6) == 0)
@@ -205,11 +205,33 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
   load_interfaces();
 
-  if ((cli = smb_connect(workgroup, server, printer, username, password)) == NULL)
+  do
   {
-    perror("ERROR: Unable to connect to SAMBA host");
-    return (1);
+    if ((cli = smb_connect(workgroup, server, printer, username, password)) == NULL)
+    {
+      if (getenv("CLASS") == NULL)
+      {
+        perror("ERROR: Unable to connect to SAMBA host, will retry in 60 seconds...");
+        sleep (60);
+      }
+      else
+      {
+        perror("ERROR: Unable to connect to SAMBA host, trying next printer...");
+        return (1);
+      }
+    }
   }
+  while (cli == NULL);
+
+ /*
+  * Now that we are connected to the server, ignore SIGTERM so that we
+  * can finish out any page data the driver sends (e.g. to eject the
+  * current page...  Only ignore SIGTERM if we are printing data from
+  * stdin (otherwise you can't cancel raw jobs...)
+  */
+
+  if (argc < 7)
+    CatchSignal(SIGTERM, SIG_IGN);
 
  /*
   * Queue the job...
