@@ -2200,7 +2200,7 @@ if test x"$with_ads_support" = x"yes"; then
   AC_CHECK_HEADERS(krb5.h)
 
   if test x"$ac_cv_header_krb5_h" = x"no"; then
-    AC_MSG_ERROR([Active Directory cannot be supported without krb5.h])
+    AC_MSG_WARN([Active Directory cannot be supported without krb5.h])
   fi
 
   # now check for gssapi headers.  This is also done here to allow for
