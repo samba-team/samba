@@ -39,7 +39,7 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
   [
     MD4_CTX md4;
     MD5_CTX md5;
-    SHA1_CTX sha1;
+    SHA_CTX sha1;
 
     MD4_Init(&md4);
     MD5_Init(&md5);
@@ -82,7 +82,7 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
   [
     MD4_CTX md4;
     MD5_CTX md5;
-    SHA1_CTX sha1;
+    SHA_CTX sha1;
 
     MD4_Init(&md4);
     MD5_Init(&md5);
