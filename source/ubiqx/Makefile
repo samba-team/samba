@@ -6,8 +6,10 @@
 ###########################################################################
 
 THIS_LIB = libubiqx.a
-THIS_OBJ = ubi_dLinkList.o
-LIB_INCS = ubi_dLinkList.h
+THIS_OBJ = ubi_AVLtree.o ubi_SplayTree.o ubi_BinTree.o \
+           ubi_dLinkList.o ubi_StackQueue.o ubi_sLinkList.o
+LIB_INCS = ubi_AVLtree.h ubi_SplayTree.h ubi_BinTree.h \
+           ubi_dLinkList.h ubi_StackQueue.h ubi_sLinkList.h
 
 export THIS_LIB
 export THIS_OBJ
@@ -17,3 +19,8 @@ include ../Makefile.lib
 
 proto:
 	@echo Prototype for $@ are not automatically generated
+
+
+
+
+
