@@ -128,7 +128,7 @@ krb5_error_code do_kaserver (unsigned char*, size_t, krb5_data*, const char*,
 
 #ifdef PKINIT
 typedef struct pk_client_params pk_client_params;
-krb5_error_code pk_initialize(const char *, const char *, const char *);
+krb5_error_code pk_initialize(const char *, const char *);
 krb5_error_code pk_rd_padata(krb5_context, KDC_REQ *,
 			     PA_DATA *, pk_client_params **);
 krb5_error_code	pk_mk_pa_reply(krb5_context,
