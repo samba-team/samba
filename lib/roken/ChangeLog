@@ -1,7 +1,15 @@
+2001-09-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* socket.c: restrict is a keyword
+
 2001-09-03  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (EXTRA_libroken_la_SOURCES): add vis.hin to help
 	solaris make
+
+2001-08-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: use LDADD directly
 
 2001-08-28  Assar Westerlund  <assar@sics.se>
 
