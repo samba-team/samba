@@ -201,8 +201,8 @@ int net_groupmap_add(int argc, const char **argv)
 			}		
 		}
 		else if ( !StrnCaseCmp(argv[i], "sid", strlen("sid")) ) {
-			fstrcpy( sid_string, get_string_param( argv[i] ) );
-			if ( !sid_string[0] ) {
+			fstrcpy( string_sid, get_string_param( argv[i] ) );
+			if ( !string_sid[0] ) {
 				d_printf("must supply a SID\n");
 				return -1;
 			}		
@@ -237,13 +237,13 @@ int net_groupmap_add(int argc, const char **argv)
 		}
 	}
 
-	if ( !ntgroup[0] || (!rid && !sid_string[0]} || sid_type==SID_NAME_UNKNOWN ) {
+	if ( !ntgroup[0] || (!rid && !string_sid[0]) || sid_type==SID_NAME_UNKNOWN ) {
 		d_printf("Usage: net groupmap add {rid=<int>|sid=<string>} name=<string>| type=<domain|local|builtin> [comment=<string>]\n");
 		return -1;
 	}
 	
 	/* append the rid to our own domain/machine SID if we don't have a full SID */
-	if ( !sid_string[0] ) {
+	if ( !string_sid[0] ) {
 		sid_copy(&sid, get_global_sam_sid());
 		sid_append_rid(&sid, rid);
 		sid_to_string(string_sid, &sid);
