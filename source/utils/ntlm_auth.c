@@ -436,7 +436,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 						    lp_winbind_separator(), session_info->server_info->account_name);
 			talloc_destroy(session_info->mem_ctx);
 		}
-	} else if ((*gensec_state)->gensec_role == GENSEC_SERVER) {
+	} else if ((*gensec_state)->gensec_role == GENSEC_CLIENT) {
 		reply_code = "AF";
 		reply_arg = NULL;
 	} else {
@@ -447,14 +447,18 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	case GSS_SPNEGO_SERVER:
 		if (out_base64) {
 			x_fprintf(x_stdout, "%s %s %s\n", reply_code, out_base64, reply_arg);
-		} else {
+		} else if (reply_arg) {
 			x_fprintf(x_stdout, "%s %s\n", reply_code, reply_arg);
+		} else {
+			x_fprintf(x_stdout, "%s\n", reply_code);
 		}
 	default:
 		if (out_base64) {
 			x_fprintf(x_stdout, "%s %s\n", reply_code, out_base64);
-		} else {
+		} else if (reply_arg) {
 			x_fprintf(x_stdout, "%s %s\n", reply_code, reply_arg);
+		} else {
+			x_fprintf(x_stdout, "%s\n", reply_code);
 		}
 	}
 
