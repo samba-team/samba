@@ -67,7 +67,7 @@ typedef struct gss_ctx_id_t_desc_struct {
   struct krb5_auth_context_data *auth_context;
   gss_name_t source, target;
   OM_uint32 flags;
-  enum { LOCAL = 1, OPEN = 2} more_flags;
+  enum { LOCAL = 1, OPEN = 2, COMPAT_OLD_DES3 = 4 } more_flags;
   struct krb5_ticket *ticket;
 } gss_ctx_id_t_desc;
 
