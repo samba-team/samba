@@ -67,6 +67,10 @@
  *  crh; may 1998
  */
 
+#ifdef HAVE_INCLUDES_H
+#include "../includes.h"
+#endif
+
 #ifndef NULL
 #include <stddef.h>
 #endif
