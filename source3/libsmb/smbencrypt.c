@@ -255,7 +255,7 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
 	dump_data(100, buffer, 516);
 #endif
 
-	if ((*new_pw_len) < 0 || (*new_pw_len) > new_pwrd_size - 1) {
+	if (((int)*new_pw_len) < 0 || (*new_pw_len) > new_pwrd_size - 1) {
 		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", (*new_pw_len)));
 		return False;
 	}

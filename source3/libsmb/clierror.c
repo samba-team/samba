@@ -96,7 +96,7 @@ char *cli_errstr(struct cli_state *cli)
 
 	if (nt_rpc_error)
 	{
-		char *nt_msg = get_nt_error_msg(nt_rpc_error);
+		char *nt_msg = (char *)get_nt_error_msg(nt_rpc_error);
 
 		if (nt_msg == NULL)
 		{
