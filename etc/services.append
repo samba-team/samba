@@ -15,8 +15,8 @@ kerberos-adm	749/udp				# v5 kadmin
 kerberos-adm	749/tcp				# v5 kadmin
 kerberos-iv	750/udp		kdc		# Kerberos authentication--udp
 kerberos-iv	750/tcp		kdc		# Kerberos authentication--tcp
-kerberos_master 751/udp				# Kerberos authentication
-kerberos_master 751/tcp				# Kerberos authentication
+kerberos_master 751/udp				# v4 kadmin
+kerberos_master 751/tcp				# v4 kadmin
 krb_prop	754/tcp		hprop		# Kerberos slave propagation
 kpop		1109/tcp			# Pop with Kerberos
 eklogin		2105/tcp			# Kerberos encrypted rlogin
