@@ -38,6 +38,9 @@
 
 /* $Id$ */
 
+#ifndef _OTP_H
+#define _OTP_H
+
 #include <stdlib.h>
 
 enum {OTPKEYSIZE = 8};
@@ -95,3 +98,5 @@ void *otp_db_open (void);
 void otp_db_close (void *);
 int otp_put (void *, OtpContext *ctx);
 int otp_get (void *, OtpContext *ctx);
+
+#endif /* _OTP_H */
