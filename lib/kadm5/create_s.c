@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,9 +40,6 @@
 
 RCSID("$Id$");
 
-#define REQUIRED_MASK (KADM5_PRINCIPAL)
-#define FORBIDDEN_MASK (KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME | KADM5_MOD_NAME | KADM5_MKVNO | KADM5_AUX_ATTRIBUTES | KADM5_POLICY_CLR | KADM5_LAST_SUCCESS | KADM5_LAST_FAILED | KADM5_FAIL_AUTH_COUNT | KADM5_KEY_DATA)
-
 static kadm5_ret_t
 get_default(kadm5_server_context *context, krb5_principal princ, 
 	    kadm5_principal_ent_t def)
@@ -58,38 +55,101 @@ get_default(kadm5_server_context *context, krb5_principal princ,
     return ret;
 }
 
+static kadm5_ret_t
+create_principal(kadm5_server_context *context,
+		 kadm5_principal_ent_t princ,
+		 u_int32_t mask,
+		 hdb_entry *ent,
+		 u_int32_t required_mask,
+		 u_int32_t forbidden_mask)
+{
+    kadm5_ret_t ret;
+    kadm5_principal_ent_rec defrec, *defent;
+    
+    if((mask & required_mask) != required_mask)
+	return KADM5_BAD_MASK;
+    if((mask & forbidden_mask))
+	return KADM5_BAD_MASK;
+    if((mask & KADM5_POLICY) && strcmp(princ->policy, "default"))
+	/* XXX no real policies for now */
+	return KADM5_UNK_POLICY;
+    memset(ent, 0, sizeof(*ent));
+    ret  = krb5_copy_principal(context->context, princ->principal, 
+			       &ent->principal);
+    if(ret)
+	return ret;
+    
+    defent = &defrec;
+    ret = get_default(context, princ->principal, defent);
+    if(ret)
+	defent = NULL;
+    ret = _kadm5_setup_entry(ent, princ, defent, mask);
+    if(defent)
+	kadm5_free_principal_ent(context, defent);
+    
+    ent->created_by.time = time(NULL);
+    ret = krb5_copy_principal(context->context, context->caller, 
+			      &ent->created_by.principal);
+
+    return ret;
+}
+
+kadm5_ret_t
+kadm5_s_create_principal_with_key(void *server_handle,
+				  kadm5_principal_ent_t princ,
+				  u_int32_t mask)
+{
+    kadm5_ret_t ret;
+    hdb_entry ent;
+    kadm5_server_context *context = server_handle;
+
+    ret = create_principal(context, princ, mask, &ent,
+			   KADM5_PRINCIPAL | KADM5_KEY_DATA,
+			   KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME 
+			   | KADM5_MOD_NAME | KADM5_MKVNO 
+			   | KADM5_AUX_ATTRIBUTES 
+			   | KADM5_POLICY_CLR | KADM5_LAST_SUCCESS 
+			   | KADM5_LAST_FAILED | KADM5_FAIL_AUTH_COUNT);
+    if(ret)
+	goto out;
+
+    ret = _kadm5_set_keys2(&ent, princ->n_key_data, princ->key_data);
+    if(ret)
+	goto out;
+    
+    kadm5_log_create (context, &ent);
+
+    ret = context->db->open(context->context, context->db, O_RDWR, 0);
+    if(ret)
+	goto out;
+    ret = context->db->store(context->context, context->db, 0, &ent);
+    context->db->close(context->context, context->db);
+out:
+    hdb_free_entry(context->context, &ent);
+    return _kadm5_error_code(ret);
+}
+				  
+
 kadm5_ret_t
 kadm5_s_create_principal(void *server_handle,
 			 kadm5_principal_ent_t princ, 
 			 u_int32_t mask,
 			 char *password)
 {
-    kadm5_server_context *context;
-    hdb_entry ent;
     kadm5_ret_t ret;
-    kadm5_principal_ent_rec defrec, *defent;
-    context = server_handle;
-    if((mask & REQUIRED_MASK) != REQUIRED_MASK)
-	return KADM5_BAD_MASK;
-    if((mask & FORBIDDEN_MASK))
-	return KADM5_BAD_MASK;
-    if((mask & KADM5_POLICY) && strcmp(princ->policy, "default"))
-	/* XXX no real policies for now */
-	return KADM5_UNK_POLICY;
-    memset(&ent, 0, sizeof(ent));
-    ret  = krb5_copy_principal(context->context, princ->principal, 
-			       &ent.principal);
+    hdb_entry ent;
+    kadm5_server_context *context = server_handle;
+
+    ret = create_principal(context, princ, mask, &ent,
+			   KADM5_PRINCIPAL,
+			   KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME 
+			   | KADM5_MOD_NAME | KADM5_MKVNO 
+			   | KADM5_AUX_ATTRIBUTES | KADM5_KEY_DATA
+			   | KADM5_POLICY_CLR | KADM5_LAST_SUCCESS 
+			   | KADM5_LAST_FAILED | KADM5_FAIL_AUTH_COUNT);
     if(ret)
-	return ret;
-    
-    defent = &defrec;
-    ret = get_default(server_handle, princ->principal, defent);
-    if(ret)
-	defent = NULL;
-    ret = _kadm5_setup_entry(&ent, princ, defent, mask);
-    if(defent)
-	kadm5_free_principal_ent(server_handle, defent);
-    
+	goto out;
+
     /* XXX this should be fixed */
     ent.keys.len = 4;
     ent.keys.val = calloc(ent.keys.len, sizeof(*ent.keys.val));
@@ -106,13 +166,6 @@ kadm5_s_create_principal(void *server_handle,
     ent.keys.val[2].salt->type = hdb_pw_salt;
     ent.keys.val[3].key.keytype = ETYPE_DES3_CBC_SHA1;
     ret = _kadm5_set_keys(context, &ent, password);
-
-    ent.created_by.time = time(NULL);
-    ret = krb5_copy_principal(context->context, context->caller, 
-			      &ent.created_by.principal);
-
-    if(ret) 
-	goto out;
 
     kadm5_log_create (context, &ent);
 
