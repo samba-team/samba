@@ -96,6 +96,8 @@ struct ldapsam_privates {
 	
 	/* configuration items */
 	int schema_ver;
+
+	char *domain_dn;
 };
 
 /**********************************************************************
@@ -2885,7 +2887,7 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int poli
 	LDAPMessage *entry = NULL;
 	int count;
 	int rc;
-	pstring filter, base;
+	pstring filter;
 	char **vals;
 	const char *policy_string = NULL;
 	int tmp_val;
@@ -2915,12 +2917,13 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int poli
 		     LDAP_OBJ_ACCOUNT_POLICY, 
 		     get_attr_key2string(acctpol_attr_list,
 					 LDAP_ATTR_ACCOUNT_POLICY_NAME), policy_string);
-
-	pstr_sprintf(base, "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		get_global_sam_name(), lp_ldap_suffix());
+	
+	if (!ldap_state->domain_dn) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 search:		
-	rc = smbldap_search(ldap_state->smbldap_state, base,
+	rc = smbldap_search(ldap_state->smbldap_state, ldap_state->domain_dn,
 			    LDAP_SCOPE_ONELEVEL, filter, attrs, 0, &result);
 
 	if (rc != LDAP_SUCCESS) 
@@ -2995,7 +2998,7 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 	LDAPMessage *entry = NULL;
 	int count;
 	int rc;
-	pstring filter, base, dn;
+	pstring filter, dn;
 	int modop;
 	LDAPMod **mods = NULL;
 	fstring value_string;
@@ -3029,10 +3032,11 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 		     get_attr_key2string(acctpol_attr_list,
 					 LDAP_ATTR_ACCOUNT_POLICY_NAME), policy_string);
 
-	pstr_sprintf(base, "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		get_global_sam_name(), lp_ldap_suffix());
-		
-	rc = smbldap_search(ldap_state->smbldap_state, base,
+	if (!ldap_state->domain_dn) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	rc = smbldap_search(ldap_state->smbldap_state, ldap_state->domain_dn,
 			    LDAP_SCOPE_ONELEVEL, filter, attrs, 0, &result);
 
 	if (rc != LDAP_SUCCESS) 
@@ -3069,10 +3073,9 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 
 		modop = LDAP_MOD_ADD;
 
-		pstr_sprintf(dn, "%s=%s,%s=%s,%s",
+		pstr_sprintf(dn, "%s=%s,%s",
  			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), policy_string,
-			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), get_global_sam_name(),
-			lp_ldap_suffix());
+			ldap_state->domain_dn);
 
 		smbldap_set_mod( &mods, modop, "objectClass", LDAP_OBJ_ACCOUNT_POLICY );
 
@@ -3130,6 +3133,9 @@ static void free_private_data(void **vp)
 	if ((*ldap_state)->result != NULL) {
 		ldap_msgfree((*ldap_state)->result);
 		(*ldap_state)->result = NULL;
+	}
+	if ((*ldap_state)->domain_dn != NULL) {
+		SAFE_FREE((*ldap_state)->domain_dn);
 	}
 
 	*ldap_state = NULL;
@@ -3252,6 +3258,7 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 	DOM_SID ldap_domain_sid;
 	DOM_SID secrets_domain_sid;
 	pstring domain_sid_string;
+	char *dn;
 
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common(pdb_context, pdb_method, location))) {
 		return nt_status;
@@ -3289,6 +3296,12 @@ and will risk BDCs having inconsistant SIDs\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+	if (!dn) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ldap_state->domain_dn = smb_xstrdup(dn);
 	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
 				 domain_sid_string)) {
