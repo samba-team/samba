@@ -44,6 +44,13 @@ fi
 
 
 AC_CANONICAL_SYSTEM
+
+dnl Add #include for broken IRIX header files
+  case "$host_os" in
+	*irix*) AC_ADD_INCLUDE(<standards.h>)
+	;;
+esac
+
 AC_VALIDATE_CACHE_SYSTEM_TYPE
 SAMBA_MAINTAINER_MODE
 
@@ -482,7 +489,6 @@ case "$host_os" in
 		*bsd*) LDSHFLAGS="-shared -Bshareable"
 		;;
 		*irix*) AC_DEFINE(IRIX)
-			AC_N_DEFINE(_SGIAPI_)
 			case "$host_os" in
 			*irix6*) AC_DEFINE(IRIX6)
 			;;
