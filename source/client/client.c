@@ -2531,6 +2531,27 @@ static int do_message_op(void)
 }
 
 
+/**
+ * Process "-L hostname" option.
+ *
+ * We don't actually do anything yet -- we just stash the name in a
+ * global variable and do the query when all options have been read.
+ **/
+static void remember_query_host(const char *arg,
+				pstring query_host)
+{
+	char *slash;
+	
+	while (*arg == '\\' || *arg == '/')
+		arg++;
+	pstrcpy(query_host, arg);
+	if ((slash = strchr(query_host, '/'))
+	    || (slash = strchr(query_host, '\\'))) {
+		*slash = 0;
+	}
+}
+
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -2811,10 +2832,7 @@ static int do_message_op(void)
 			break;
 
 		case 'L':
-			p = optarg;
-			while(*p == '\\' || *p == '/')
-				p++;
-			pstrcpy(query_host,p);
+			remember_query_host(optarg, query_host);
 			break;
 		case 't':
 			pstrcpy(term_code, optarg);
