@@ -41,10 +41,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	char *realm, *client, *p;
 	const struct passwd *pw;
 	char *user;
-	gid_t gid;
-	uid_t uid;
-	char *full_name;
 	int sess_vuid;
+	auth_serversupplied_info *server_info = NULL;
 
 	realm = lp_realm();
 
@@ -101,11 +99,15 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		DEBUG(1,("Username %s is invalid on this system\n",user));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
-	gid = pw->pw_gid;
-	uid = pw->pw_uid;
-	full_name = pw->pw_gecos;
+
+	if (!make_server_info_pw(&server_info,pw)) {
+		DEBUG(1,("make_server_info_from_pw failed!\n"));
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	
-	sess_vuid = register_vuid(uid,gid,user,user,realm,False, full_name);
+	sess_vuid = register_vuid(server_info, user, False);
+
+	free_server_info(&server_info);
 
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
