@@ -294,9 +294,6 @@ k_afsklog(char *cell, char *krealm)
   char *lrealm; /* local realm */
   char CELL[64];
 
-  if (!k_hasafs())
-    return KSUCCESS;
-
   if (cell == 0 || cell[0] == 0)
     return k_afsklog_all_local_cells (krealm);
   foldup(CELL, cell);
