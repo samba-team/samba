@@ -360,7 +360,7 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 {
 	BOOL got_group_pol = False;
 	POLICY_HND group_pol;
-	uint32 result;
+	uint32 result, i, total_names = 0;
 
 	if ((result = cli_samr_open_group(pol->cli, pol->mem_ctx,
 					  &pol->handle, MAXIMUM_ALLOWED_ACCESS,
@@ -376,15 +376,49 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 	    != NT_STATUS_NOPROBLEMO)
 		goto done;
 
-	if ((result = cli_samr_lookup_rids(pol->cli, pol->mem_ctx,
-					   &pol->handle, 1000, /* ??? */
-					   *num_names, *rid_mem,
-					   num_names, names, name_types))
-	    != NT_STATUS_NOPROBLEMO)
-		goto done;
+        /* Call cli_samr_lookup_rids() in bunches of ~1000 rids to avoid
+           crashing NT4. */
+
+#define MAX_LOOKUP_RIDS 900
+
+        *names = talloc(pol->mem_ctx, *num_names * sizeof(char *));
+        *name_types = talloc(pol->mem_ctx, *num_names * sizeof(uint32));
+
+        for (i = 0; i < *num_names; i += MAX_LOOKUP_RIDS) {
+                int num_lookup_rids = MIN(*num_names - i, MAX_LOOKUP_RIDS);
+                uint32 tmp_num_names = 0;
+                char **tmp_names = NULL;
+                uint32 *tmp_types = NULL;
+
+                /* Lookup a chunk of rids */
+
+                result = cli_samr_lookup_rids(pol->cli, pol->mem_ctx,
+                                              &pol->handle, 1000, /* flags */
+                                              num_lookup_rids,
+                                              &(*rid_mem)[i],
+                                              &tmp_num_names,
+                                              &tmp_names, &tmp_types);
+
+                if (result != NT_STATUS_NOPROBLEMO)
+                        goto done;
+
+                /* Copy result into array.  The talloc system will take
+                   care of freeing the temporary arrays later on. */
+
+                memcpy(&(*names)[i], tmp_names, sizeof(char *) * 
+                       tmp_num_names);
+
+                memcpy(&(*name_types)[i], tmp_types, sizeof(uint32) *
+                       tmp_num_names);
+
+                total_names += tmp_num_names;
+        }
+
+        *num_names = total_names;
 
  done:
-	if (got_group_pol) cli_samr_close(pol->cli, pol->mem_ctx, &group_pol);
+	if (got_group_pol) 
+                cli_samr_close(pol->cli, pol->mem_ctx, &group_pol);
 
 	return (result == NT_STATUS_NOPROBLEMO);	
 }
