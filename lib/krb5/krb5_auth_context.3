@@ -40,6 +40,8 @@
 .Nm krb5_auth_con_free ,
 .Nm krb5_auth_con_setflags ,
 .Nm krb5_auth_con_getflags ,
+.Nm krb5_auth_con_addflags,
+.Nm krb5_auth_con_removeflags,
 .Nm krb5_auth_con_setaddrs ,
 .Nm krb5_auth_con_setaddrs_from_fd ,
 .Nm krb5_auth_con_getaddrs ,
@@ -90,6 +92,20 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fo krb5_auth_con_getflags
 .Fa "krb5_context context"
 .Fa "krb5_auth_context auth_context"
+.Fa "int32_t *flags"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_auth_con_addflags
+.Fa "krb5_context context"
+.Fa "krb5_auth_context auth_context"
+.Fa "int32_t addflags"
+.Fa "int32_t *flags"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_auth_con_removeflags
+.Fa "krb5_context context"
+.Fa "krb5_auth_context auth_context"
+.Fa "int32_t removelags"
 .Fa "int32_t *flags"
 .Fc
 .Ft krb5_error_code
@@ -174,9 +190,11 @@ The
 structure must be freed by
 .Fn krb5_auth_con_free .
 .Pp
-.Fn krb5_auth_con_getflags
+.Fn krb5_auth_con_getflags ,
+.Fn krb5_auth_con_setflags ,
+.Fn krb5_auth_con_addflags 
 and
-.Fn krb5_auth_con_setflags
+.Fn krb5_auth_con_removeflags
 gets and modifies the flags for a
 .Nm krb5_auth_context
 structure. Possible flags to set are:
@@ -195,6 +213,18 @@ and
 .Xr krb5_mk_safe 3 .
 Setting this flag requires that parameter to be passed to these
 functions.
+.Pp
+The flags
+.Dv KRB5_AUTH_CONTEXT_DO_TIME
+also modifies the behavior the function
+.Fn krb5_get_forwarded_creds 
+by removing the timestamp in the forward credential message, this have
+backward compatibility problems since not all versions of the heimdal
+supports timeless credentional messages.
+Is very useful since it always the sender of the message to cache
+forward message and thus avoiding a round trip to the KDC for each
+time a credential is forwarded.
+The same functionality can be obtained by using address-less tickets.
 .\".It Dv KRB5_AUTH_CONTEXT_PERMIT_ALL
 .El
 .Pp
