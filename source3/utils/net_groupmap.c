@@ -180,7 +180,7 @@ int net_groupmap_add(int argc, const char **argv)
 	fstring string_sid = "";
 	fstring type = "";
 	fstring ntcomment = "";
-	enum SID_NAME_USE sid_type = SID_NAME_UNKNOWN;
+	enum SID_NAME_USE sid_type = SID_NAME_DOM_GRP;
 	uint32 rid = 0;	
 	gid_t gid;
 	int i;
@@ -245,8 +245,8 @@ int net_groupmap_add(int argc, const char **argv)
 		}
 	}
 
-	if ( !unixgrp[0] || (!rid && !string_sid[0]) || sid_type==SID_NAME_UNKNOWN ) {
-		d_printf("Usage: net groupmap add {rid=<int>|sid=<string>} unixgroup=<string> type=<domain|local|builtin> [ntgroup=<string>] [comment=<string>]\n");
+	if ( !unixgrp[0] || (!rid && !string_sid[0]) ) {
+		d_printf("Usage: net groupmap add {rid=<int>|sid=<string>} unixgroup=<string> [type=<domain|local|builtin>] [ntgroup=<string>] [comment=<string>]\n");
 		return -1;
 	}
 	
