@@ -75,7 +75,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
 		return;
 	}
 
-	transfer_file(tmp_fd,outfd,st.st_size);
+	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
 	close(tmp_fd);
 	close(outfd);
   }
@@ -90,15 +90,17 @@ static int close_filestruct(files_struct *fsp)
 	connection_struct *conn = fsp->conn;
 	int ret = 0;
     
-	if(flush_write_cache(fsp, CLOSE_FLUSH) == -1)
-		ret = -1;
+	if (fsp->fd != -1) {
+		if(flush_write_cache(fsp, CLOSE_FLUSH) == -1)
+			ret = -1;
 
-	delete_write_cache(fsp);
+		delete_write_cache(fsp);
+	}
 
 	fsp->is_directory = False; 
-	fsp->stat_open = False; 
     
 	conn->num_files_open--;
+	SAFE_FREE(fsp->wbmpx_ptr);
 
 	return ret;
 }    
@@ -261,22 +263,6 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 }
 
 /****************************************************************************
- Close a file opened with null permissions in order to read permissions.
-****************************************************************************/
-
-static int close_statfile(files_struct *fsp, BOOL normal_close)
-{
-	close_filestruct(fsp);
-	
-	if (fsp->fsp_name)
-		string_free(&fsp->fsp_name);
-	
-	file_free(fsp);
-
-	return 0;
-}
-
-/****************************************************************************
  Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
@@ -284,7 +270,5 @@ int close_file(files_struct *fsp, BOOL normal_close)
 {
 	if(fsp->is_directory)
 		return close_directory(fsp, normal_close);
-	else if(fsp->stat_open)
-		return close_statfile(fsp, normal_close);
 	return close_normal_file(fsp, normal_close);
 }
