@@ -505,7 +505,7 @@ const DOM_SID *map_wk_name_to_sid(const char *name, DOM_SID *sid, uint32 *type)
 	}
 
 	DEBUGADD(7, ("map_wk_name_to_sid: %s not found\n", name));
-	return False;
+	return NULL;
 }
 
 /**************************************************************************
