@@ -106,7 +106,7 @@ void E_md4hash(uchar *passwd, uchar *p16)
 }
 
 /* Does both the NT and LM owfs of a user's password */
-void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
+void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 {
 	char passwd[130];
 

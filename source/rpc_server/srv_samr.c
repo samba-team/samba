@@ -1948,20 +1948,35 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
  ********************************************************************/
 static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 {
-	static struct sam_passwd *pwd;
-	fstring new_pw;
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+	static uchar nt_hash[16];
+	static uchar lm_hash[16];
+	pstring new_pw;
+
+	if (pwd == NULL)
+	{
+		return False;
+	}
+
+	pwdb_init_sam(&new_pwd);
+	copy_sam_passwd(&new_pwd, pwd);
+
 	if (!decode_pw_buffer(id24->pass, new_pw, sizeof(new_pw), True))
 	{
 		return False;
 	}
+
 #ifdef DEBUG_PASSWORD
 	DEBUG(0,("New Password: %s\n", new_pw));
 #endif
-#if 0
-	return mod_sam21pwd_entry(&pwd, True);
-#else
-	return True;
-#endif
+
+	nt_lm_owf_gen(new_pw, nt_hash, lm_hash);
+
+	new_pwd.smb_passwd    = lm_hash;
+	new_pwd.smb_nt_passwd = nt_hash;
+
+	return mod_sam21pwd_entry(&new_pwd, True);
 }
 
 /*******************************************************************
@@ -2031,7 +2046,6 @@ static void samr_reply_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 			case 24:
 			{
 				SAM_USER_INFO_24 *id24 = q_u->info.id24;
-				nt_lm_owf_gen("test", nt_pwd, lm_pwd);
 				SamOEMhash(id24->pass, user_sess_key, True);
 				status = set_user_info_24(id24, rid) ? 0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 				break;
@@ -2526,7 +2540,7 @@ static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
 		pstring msg_str;
 
 		if (!local_password_change(user_name, True,
-		          q_u->acb_info | ACB_DISABLED, 0xffff,
+		          q_u->acb_info, 0xffff,
 		          NULL,
 		          err_str, sizeof(err_str),
 		          msg_str, sizeof(msg_str)))
