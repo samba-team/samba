@@ -160,7 +160,7 @@ BOOL torture_rpc_scanner(int dummy)
 		printf("\nTesting pipe '%s'\n", dcerpc_pipes[i]->name);
 
 		if (b.transport == NCACN_IP_TCP) {
-			status = dcerpc_epm_map(mem_ctx, &b, 
+			status = dcerpc_epm_map_binding(mem_ctx, &b, 
 							 dcerpc_pipes[i]->uuid,
 							 dcerpc_pipes[i]->if_version);
 			if (!NT_STATUS_IS_OK(status)) {
