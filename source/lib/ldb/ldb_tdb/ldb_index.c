@@ -769,7 +769,6 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 	if (ret == 0) {
 		/* it wasn't indexed. Did we have an earlier error? If we did then
 		   its gone now */
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "ERROR: dn_key %s was not indexed\n", dn_key);
 		ldb_free(ldb, dn_key);
 		return 0;
 	}
