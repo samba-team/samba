@@ -212,7 +212,6 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 	struct lsa_TransNameArray names;
 	uint32 count = sids->num_sids;
 	NTSTATUS status;
-	int i;
 
 	printf("\nTesting LookupSids\n");
 
@@ -312,7 +311,6 @@ static BOOL test_EnumAccountRights(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_EnumAccountRights r;
 	struct lsa_RightSet rights;
-	int i;
 
 	printf("Testing EnumAccountRights\n");
 
@@ -434,7 +432,6 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 	struct lsa_EnumPrivs r;
 	struct lsa_PrivArray privs1;
 	uint32 resume_handle = 0;
-	int i;
 
 	printf("\ntesting EnumPrivs\n");
 
@@ -465,7 +462,6 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 {
 	struct lsa_EnumTrustDom r;
 	NTSTATUS status;
-	int i;
 	uint32 resume_handle = 0;
 	struct lsa_DomainList domains;
 
@@ -508,7 +504,7 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_DEBUG(lsa_AuditLogInfo, &r.out.info->audit_log);
+	NDR_PRINT_UNION_DEBUG(lsa_PolicyInformation, r.in.level, r.out.info);
 
 	return True;
 }
