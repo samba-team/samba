@@ -1,5 +1,7 @@
 2001-06-21  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/krbhst.c (fallback_get_hosts): do not copy trailing
+	dot of hostname add some comments
 	* lib/krb5/krbhst.c: use getaddrinfo instead of dns_lookup when
 	testing for kerberos.REALM.  this allows reusing that information
 	when actually contacting the server and thus avoids one DNS lookup
