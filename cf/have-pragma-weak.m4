@@ -30,7 +30,7 @@ fi
 rm -rf conftest*
 ])
 if test "$ac_have_pragma_weak" = "yes"; then
-	AC_DEFINE(HAVE_PRAGMA_WEAK, 1)dnl
+	AC_DEFINE(HAVE_PRAGMA_WEAK, 1, [Define this if your compiler supports \`#pragma weak.'])dnl
 fi
 AC_MSG_RESULT($ac_have_pragma_weak)
 fi
