@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 	int i;
 	int iters = 1;
 	
-	char *ret;
+	const char *ret = NULL;
 
 	/* Needed to initialize character set */
 	lp_load("/dev/null", True, False, False);
@@ -28,6 +28,9 @@ int main(int argc, char *argv[])
 	for (i = 0; i < iters; i++) {
 		ret = strstr_m(argv[1], argv[2]);
 	}
+
+	if (ret == NULL)
+		ret = "(null)";
 
 	printf("%s\n", ret);
 	
