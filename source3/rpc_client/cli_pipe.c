@@ -29,7 +29,9 @@
 
 extern struct pipe_id_info pipe_names[];
 
-static void get_auth_type_level(int pipe_auth_flags, int *auth_type, int *auth_level) 
+/* convert pipe auth flags into the RPC auth type and level */
+
+void get_auth_type_level(int pipe_auth_flags, int *auth_type, int *auth_level) 
 {
 	*auth_type = 0;
 	*auth_level = 0;
@@ -938,7 +940,6 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		uint32 data_len, send_size;
 		uint8 flags = 0;
 		uint32 auth_padding = 0;
-		RPC_AUTH_NETSEC_CHK verf;
 		DATA_BLOB sign_blob;
 
 		/*
@@ -1022,13 +1023,9 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 
 			}
 			else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {	
-				static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
-				static const uchar nullbytes[8] = { 0,0,0,0,0,0,0,0 };
 				size_t parse_offset_marker;
+				RPC_AUTH_NETSEC_CHK verf;
 				DEBUG(10,("SCHANNEL seq_num=%d\n", cli->auth_info.seq_num));
-				
-				init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes,
-							 nullbytes, nullbytes);
 				
 				netsec_encode(&cli->auth_info, 
 					      cli->pipe_auth_flags,
@@ -1277,8 +1274,10 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
 	prs_init(&rpc_out, RPC_HEADER_LEN + RPC_HDR_AUTHA_LEN, /* need at least this much */ 
 		 cli->mem_ctx, MARSHALL);
 
-	create_rpc_bind_resp(cli, rpc_call_id,
-	                     &rpc_out);
+	if (!NT_STATUS_IS_OK(create_rpc_bind_resp(cli, rpc_call_id,
+						  &rpc_out))) {
+		return False;
+	}
 
 	if ((ret = cli_write(cli, cli->nt_pipe_fnum, 0x8, prs_data_p(&rpc_out), 
 			0, (size_t)prs_offset(&rpc_out))) != (ssize_t)prs_offset(&rpc_out)) {
@@ -1493,9 +1492,7 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 				   const uchar trust_password[16])
 {
 	NTSTATUS result;	
-	/* The 7 here seems to be required to get Win2k not to downgrade us
-	   to NT4.  Actually, anything other than 1ff would seem to do... */
-	uint32 neg_flags = 0x000701ff;
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	int fnum;
 
 	cli_nt_netlogon_netsec_session_close(cli);
@@ -1584,13 +1581,11 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 }
 
 
-NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan,
+NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan, int auth_flags,
 			     const uchar trust_password[16])
 {
 	NTSTATUS result;	
-	/* The 7 here seems to be required to get Win2k not to downgrade us
-	   to NT4.  Actually, anything other than 1ff would seem to do... */
-	uint32 neg_flags = 0x000701ff;
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	cli->pipe_auth_flags = 0;
 
 	if (lp_client_schannel() == False) {
@@ -1632,7 +1627,7 @@ NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan,
 	cli->nt_pipe_fnum = 0;
 
 	/* doing schannel, not per-user auth */
-	cli->pipe_auth_flags = AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
+	cli->pipe_auth_flags = auth_flags;
 
 	return NT_STATUS_OK;
 }
