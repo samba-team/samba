@@ -3554,7 +3554,7 @@ static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,cha
 
 
 
-struct
+const static struct
 {
   char *name;
   int id;
