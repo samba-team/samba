@@ -29,6 +29,9 @@ krb5_error_code
 krb5_free_krbhst (krb5_context context,
 		  char *const *hostlist)
 {
-     free ((void*)hostlist);
-     return 0; /* XXX */
+    char *const*p;
+    for(p = hostlist; *p; p++)
+	free(*p);
+    free ((void*)hostlist);
+    return 0; /* XXX */
 }
