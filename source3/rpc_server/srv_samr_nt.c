@@ -1242,6 +1242,18 @@ uint32 _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_
 
     DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
+ 
+	(void)map_username(user_name);
+ 
+	/*
+	 * Do any UNIX username case mangling.
+	 */
+	(void)Get_Pwnam( user_name, True);
+
     if (!pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
                          q_u->nt_newpass.pass, q_u->nt_oldhash.hash))
         r_u->status = NT_STATUS_WRONG_PASSWORD;
