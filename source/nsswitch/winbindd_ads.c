@@ -427,7 +427,6 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	char *exp;
 	char *sidstr;
 	uint32 atype;
-	char *s;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(3,("ads: sid_to_name\n"));
@@ -449,13 +448,54 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	s = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
-	*name = talloc_strdup(mem_ctx, s);
+	*name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
 	*type = ads_atype_map(atype);
 
 	status = NT_STATUS_OK;
 
 	DEBUG(3,("ads sid_to_name mapped %s\n", *name));
+
+done:
+	if (msg) ads_msgfree(ads, msg);
+
+	return status;
+}
+
+
+/* convert a sid to a distnguished name */
+static NTSTATUS sid_to_distinguished_name(struct winbindd_domain *domain,
+					  TALLOC_CTX *mem_ctx,
+					  DOM_SID *sid,
+					  char **dn)
+{
+	ADS_STRUCT *ads = NULL;
+	const char *attrs[] = {"distinguishedName", NULL};
+	ADS_STATUS rc;
+	void *msg = NULL;
+	char *exp;
+	char *sidstr;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(3,("ads: sid_to_distinguished_name\n"));
+
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
+
+	sidstr = sid_binstring(sid);
+	asprintf(&exp, "(objectSid=%s)", sidstr);
+	rc = ads_search_retry(ads, &msg, exp, attrs);
+	free(exp);
+	free(sidstr);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("sid_to_distinguished_name ads_search: %s\n", ads_errstr(rc)));
+		goto done;
+	}
+
+	*dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
+
+	status = NT_STATUS_OK;
+
+	DEBUG(3,("ads sid_to_distinguished_name mapped %s\n", *dn));
 
 done:
 	if (msg) ads_msgfree(ads, msg);
@@ -614,13 +654,12 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				uint32 **name_types)
 {
 	DOM_SID group_sid;
-	char *sidstr;
 	const char *attrs[] = {"sAMAccountName", "objectSid", "sAMAccountType", NULL};
 	ADS_STATUS rc;
 	int count;
 	void *res=NULL, *msg=NULL;
 	ADS_STRUCT *ads = NULL;
-	char *exp;
+	char *exp, *dn = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	*num_names = 0;
@@ -629,13 +668,17 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (!ads) goto done;
 
 	sid_from_rid(domain, group_rid, &group_sid);
-	sidstr = sid_binstring(&group_sid);
+	status = sid_to_distinguished_name(domain, mem_ctx, &group_sid, &dn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3,("Failed to find distinguishedName for %s\n", sid_string_static(&group_sid)));
+		return status;
+	}
+
 	/* search for all users who have that group sid as primary group or as member */
 	asprintf(&exp, "(&(objectCategory=user)(|(primaryGroupID=%d)(memberOf=%s)))",
-		 group_rid, sidstr);
+		 group_rid, dn);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
-	free(sidstr);
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -692,6 +735,11 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	if (!ads) return NT_STATUS_UNSUCCESSFUL;
 
 	rc = ads_USN(ads, seq);
+	if (!ADS_ERR_OK(rc)) {
+		/* its a dead connection */
+		ads_destroy(&ads);
+		domain->private = NULL;
+	}
 	return ads_ntstatus(rc);
 }
 
