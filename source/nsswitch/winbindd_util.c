@@ -64,6 +64,11 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name)
 
     DEBUG(1, ("adding trusted domain %s\n", domain_name));
 
+    if ((domain = find_domain_from_name(domain_name))) {
+	    DEBUG(3, ("domain already added to list\n"));
+	    return domain;
+    }
+
     /* Create new domain entry */
 
     if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL) {
@@ -175,34 +180,73 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 
 /* Shut down connections to all domain controllers */
 
-void winbindd_kill_connections(void)
+void winbindd_kill_connections(struct winbindd_domain *domain)
+{
+	BOOL is_server = False;
+	struct winbindd_domain *server_domain;
+
+	/* Find pointer to domain of pdc */
+
+	server_domain = find_domain_from_name(lp_workgroup());
+	if (!server_domain) return;
+
+	/* If NULL passed, use pdc */
+
+	if (!domain) {
+		domain = server_domain;
+	}
+
+	if (domain == server_domain || 
+	    strequal(domain->name, lp_workgroup())) {
+		is_server = True;
+	}
+
+	DEBUG(1, ("killing connections to domain %s\n", domain->name));
+
+	if (is_server) {
+		server_state.pwdb_initialised = False;
+		server_state.lsa_handle_open = False;
+		lsa_close(&server_state.lsa_handle);
+	}
+	
+	/* Close domain sam handles but don't free them as this
+	   severely traumatises the getent state.  The connections
+	   will be reopened later. */
+
+	if (domain->sam_dom_handle_open) {
+		samr_close(&domain->sam_dom_handle);
+		domain->sam_dom_handle_open = False;
+	}
+	
+	if (domain->sam_handle_open) {
+		samr_close(&domain->sam_handle);
+		domain->sam_handle_open = False;
+	}
+}
+
+/* Kill connections to all servers */
+
+void winbindd_kill_all_connections(void)
 {
 	struct winbindd_domain *domain;
 
-	DEBUG(1,("killing winbindd connections\n"));
+	/* Iterate over domain list */
 
-	server_state.pwdb_initialised = False;
-	server_state.lsa_handle_open = False;
-	lsa_close(&server_state.lsa_handle);
-	
 	domain = domain_list;
 
-	while(domain) {
+	while (domain) {
 		struct winbindd_domain *next;
 
-		if (domain->sam_dom_handle_open) {
-			samr_close(&domain->sam_dom_handle);
-			domain->sam_dom_handle_open = False;
-		}
-		if (domain->sam_handle_open) {
-			samr_close(&domain->sam_handle);
-			domain->sam_handle_open = False;
-		}
+		/* Kill conections */
 
-		DLIST_REMOVE(domain_list, domain);
+		winbindd_kill_connections(domain);
+
+		/* Remove domain from list */
+
 		next = domain->next;
-
+		DLIST_REMOVE(domain_list, domain);
 		free(domain);
+
 		domain = next;
 	}
 }
@@ -225,7 +269,7 @@ void establish_connections(BOOL force_reestablish)
 	if (server_state.pwdb_initialised &&
 	    server_state.lsa_handle_open &&
 	    !rpc_hnd_ok(&server_state.lsa_handle)) {
-		winbindd_kill_connections();
+		winbindd_kill_connections(NULL);
 	}
 
 	if (!server_state.pwdb_initialised) {
@@ -554,14 +598,14 @@ static BOOL parse_id_list(char *paramstr, BOOL is_user)
     /* Give a nicer error message if no parameters specified */
 
     if (strequal(paramstr, "")) {
-        DEBUG(0, ("winbid %s parameter missing\n", is_user ? "uid" : "gid"));
+        DEBUG(0, ("winbind %s parameter missing\n", is_user ? "uid" : "gid"));
         return False;
     }
     
     /* Parse entry */
 
     if (sscanf(paramstr, "%u-%u", &id_low, &id_high) != 2) {
-        DEBUG(0, ("winbid %s parameter invalid\n", 
+        DEBUG(0, ("winbind %s parameter invalid\n", 
                   is_user ? "uid" : "gid"));
         return False;
     }
@@ -598,7 +642,7 @@ BOOL winbindd_param_init(void)
     }
     
     if (server_state.gid_low > server_state.gid_high) {
-        DEBUG(0, ("gid range for invalid\n"));
+        DEBUG(0, ("gid range invalid\n"));
         return False;
     }
     
@@ -695,7 +739,7 @@ uint32 domain_sequence_number(char *domain_name)
 
 		/* If this fails, something bad has gone wrong */
 
-		winbindd_kill_connections();
+		winbindd_kill_connections(domain);
 
 		DEBUG(2,("domain sequence query failed\n"));
 		return DOM_SEQUENCE_NONE;

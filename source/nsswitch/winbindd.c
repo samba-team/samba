@@ -25,7 +25,7 @@
 
 /* List of all connected clients */
 
-static struct winbindd_cli_state *client_list;
+struct winbindd_cli_state *client_list;
 static int num_clients;
 
 /* Reload configuration */
@@ -553,7 +553,7 @@ static void process_loop(int accept_sock)
 			/* Close and re-open all connections.  This will also
 			   refresh the trusted domains list */
 
-			winbindd_kill_connections();
+			winbindd_kill_all_connections();
 			establish_connections(True); /* Force re-establish */
 
 			do_sighup = False;
