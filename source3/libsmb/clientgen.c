@@ -58,6 +58,13 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		}
 	}
 
+        /* If the server is not responding, note that now */
+
+        if (!ret) {
+                close(cli->fd);
+                cli->fd = -1;
+        }
+
 	return ret;
 }
 
@@ -76,6 +83,8 @@ BOOL cli_send_smb(struct cli_state *cli)
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
 		if (ret <= 0) {
+                        close(cli->fd);
+                        cli->fd = -1;
 			DEBUG(0,("Error writing %d bytes to client. %d\n",
 				 (int)len,(int)ret));
 			return False;
