@@ -1266,16 +1266,6 @@ BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_name)
 }
 
 /****************************************************************************
- Set ntlmssp negotiation flags.
- ****************************************************************************/
-
-void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
-{
-	cli->ntlmssp_cli_flgs = ntlmssp_flgs;
-}
-
-
-/****************************************************************************
  Open a session.
  ****************************************************************************/
 
