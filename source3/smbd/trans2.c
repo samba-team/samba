@@ -3550,7 +3550,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if (fsp) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
 					fsp->fnum, fsp->fsp_name, base_name ));
-				status = rename_internals_fsp(conn, fsp, base_name, overwrite);
+				status = rename_internals_fsp(conn, fsp, base_name, 0, overwrite);
 			} else {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 					fname, newname ));
