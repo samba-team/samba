@@ -524,7 +524,7 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
   }
 
   while (!buf && size>0) {
-    buf = (char *)Realloc(buf,size+8);
+    buf = (char *)malloc(buf,size+8);
     if (!buf) size /= 2;
   }
 
