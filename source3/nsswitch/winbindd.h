@@ -205,18 +205,4 @@ typedef struct {
 
 #define DOM_SEQUENCE_NONE ((uint32)-1)
 
-/* SETENV */
-#if HAVE_SETENV
-#define SETENV(name, value, overwrite) setenv(name,value,overwrite)
-#elif HAVE_PUTENV
-#define SETENV(name, value, overwrite)					 \
-{									 \
-	fstring envvar;							 \
-	slprintf(envvar, sizeof(fstring), "%s=%s", name, value);	 \
-	putenv(envvar);							 \
-}
-#else
-#define SETENV(name, value, overwrite) ;
-#endif
-
 #endif /* _WINBINDD_H */
