@@ -691,6 +691,8 @@ int winbind_setup_common(void)
 
 	}
 
+	namecache_enable();	/* Enable netbios namecache */
+
 	/* Get list of domains we look up requests for.  This includes the
 	   domain which we are a member of as well as any trusted
 	   domains. */ 
