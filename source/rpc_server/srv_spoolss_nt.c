@@ -962,60 +962,60 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		{
 			SPOOLSS_NOTIFY_MSG	*msg = &messages[i];
 			
-		/* Are we monitoring this event? */
+			/* Are we monitoring this event? */
 
-		if (!is_monitoring_event(p, msg->type, msg->field))
-			continue;
+			if (!is_monitoring_event(p, msg->type, msg->field))
+				continue;
 
 			
-		DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
-			msg->type, msg->field, p->dev.handlename));
+			DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
+				msg->type, msg->field, p->dev.handlename));
 
-		/* 
-		 * if the is a printer notification handle and not a job notification 
-		 * type, then set the id to 0.  Other wise just use what was specified
-		 * in the message.  
-		 *
-		 * When registering change notification on a print server handle 
-		 * we always need to send back the id (snum) matching the printer
-		 * for which the change took place.  For change notify registered
-		 * on a printer handle, this does not matter and the id should be 0.
-		 *
-		 * --jerry
-		 */
+			/* 
+			 * if the is a printer notification handle and not a job notification 
+			 * type, then set the id to 0.  Other wise just use what was specified
+			 * in the message.  
+			 *
+			 * When registering change notification on a print server handle 
+			 * we always need to send back the id (snum) matching the printer
+			 * for which the change took place.  For change notify registered
+			 * on a printer handle, this does not matter and the id should be 0.
+			 *
+			 * --jerry
+			 */
 
-		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
-			id = 0;
-		else
-		id = msg->id;
+			if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
+				id = 0;
+			else
+				id = msg->id;
 
 
-		/* Convert unix jobid to smb jobid */
+			/* Convert unix jobid to smb jobid */
 
 			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) 
 			{
-			id = sysjob_to_jobid(msg->id);
+				id = sysjob_to_jobid(msg->id);
 
-			if (id == -1) {
-				DEBUG(3, ("no such unix jobid %d\n", msg->id));
-				goto done;
+				if (id == -1) {
+					DEBUG(3, ("no such unix jobid %d\n", msg->id));
+					goto done;
+				}
 			}
-		}
 
 			construct_info_data( &data[data_len], msg->type, msg->field, id );
 
-		switch(msg->type) {
-		case PRINTER_NOTIFY_TYPE:
+			switch(msg->type) {
+			case PRINTER_NOTIFY_TYPE:
 				if ( !printer_notify_table[msg->field].fn )
-				goto done;
-					printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
+					goto done;
+				printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
 				
-			break;
+				break;
 			
-		case JOB_NOTIFY_TYPE:
+			case JOB_NOTIFY_TYPE:
 				if ( !job_notify_table[msg->field].fn )
-				goto done;
-					job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
+					goto done;
+				job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
 
 				break;
 
