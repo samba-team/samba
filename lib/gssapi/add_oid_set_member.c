@@ -41,7 +41,7 @@ OM_uint32 gss_add_oid_set_member (
             gss_OID_set * oid_set
            )
 {
-  gss_OID *tmp;
+  gss_OID tmp;
   size_t n;
   OM_uint32 res;
   int present;
