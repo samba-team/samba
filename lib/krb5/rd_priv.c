@@ -47,22 +47,22 @@ krb5_rd_priv(krb5_context context,
 	     krb5_data *outbuf,
 	     /*krb5_replay_data*/ void *outdata)
 {
-  krb5_error_code r;
+  krb5_error_code ret;
   KRB_PRIV priv;
   EncKrbPrivPart part;
   size_t len;
   krb5_data plain;
   krb5_keyblock *key;
 
-  r = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
-  if (r) 
+  ret = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
+  if (ret) 
       goto failure;
   if (priv.pvno != 5) {
-      r = KRB5KRB_AP_ERR_BADVERSION;
+      ret = KRB5KRB_AP_ERR_BADVERSION;
       goto failure;
   }
   if (priv.msg_type != krb_priv) {
-      r = KRB5KRB_AP_ERR_MSG_TYPE;
+      ret = KRB5KRB_AP_ERR_MSG_TYPE;
       goto failure;
   }
 
@@ -75,18 +75,18 @@ krb5_rd_priv(krb5_context context,
   else
       key = auth_context->keyblock;
 
-  r = krb5_decrypt (context,
-		    priv.enc_part.cipher.data,
-		    priv.enc_part.cipher.length,
-		    priv.enc_part.etype,
-		    key,
-		    &plain);
-  if (r) 
+  ret = krb5_decrypt (context,
+		      priv.enc_part.cipher.data,
+		      priv.enc_part.cipher.length,
+		      priv.enc_part.etype,
+		      key,
+		      &plain);
+  if (ret) 
       goto failure;
 
-  r = decode_EncKrbPrivPart (plain.data, plain.length, &part, &len);
+  ret = decode_EncKrbPrivPart (plain.data, plain.length, &part, &len);
   krb5_data_free (&plain);
-  if (r) 
+  if (ret) 
       goto failure;
   
   /* check sender address */
@@ -96,7 +96,7 @@ krb5_rd_priv(krb5_context context,
       && !krb5_address_compare (context,
 				auth_context->remote_address,
 				part.s_address)) {
-      r = KRB5KRB_AP_ERR_BADADDR;
+      ret = KRB5KRB_AP_ERR_BADADDR;
       goto failure_part;
   }
 
@@ -107,7 +107,7 @@ krb5_rd_priv(krb5_context context,
       && !krb5_address_compare (context,
 				auth_context->local_address,
 				part.r_address)) {
-      r = KRB5KRB_AP_ERR_BADADDR;
+      ret = KRB5KRB_AP_ERR_BADADDR;
       goto failure_part;
   }
 
@@ -119,7 +119,7 @@ krb5_rd_priv(krb5_context context,
     if (part.timestamp == NULL ||
 	part.usec      == NULL ||
 	abs(*part.timestamp - sec) > context->max_skew) {
-	r = KRB5KRB_AP_ERR_SKEW;
+	ret = KRB5KRB_AP_ERR_SKEW;
 	goto failure_part;
     }
   }
@@ -130,13 +130,13 @@ krb5_rd_priv(krb5_context context,
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     if (part.seq_number == NULL ||
 	*part.seq_number != ++auth_context->remote_seqnumber) {
-      r = KRB5KRB_AP_ERR_BADORDER;
+      ret = KRB5KRB_AP_ERR_BADORDER;
       goto failure_part;
     }
   }
 
-  r = krb5_data_copy (outbuf, part.user_data.data, part.user_data.length);
-  if (r)
+  ret = krb5_data_copy (outbuf, part.user_data.data, part.user_data.length);
+  if (ret)
       goto failure_part;
 
   free_EncKrbPrivPart (&part);
@@ -148,5 +148,5 @@ failure_part:
 
 failure:
   free_KRB_PRIV (&priv);
-  return r;
+  return ret;
 }
