@@ -1,3 +1,10 @@
+2003-07-23  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: always include v4 symbols
+	
+	* afskrb.c: provide dummy krb_ function to there is no need to
+	bump major
+
 2003-06-22  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* afskrb5.c (v5_convert): rename one of the two c to cred4
