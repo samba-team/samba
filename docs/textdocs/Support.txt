@@ -27,11 +27,11 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                28
+    AMERICA - USA                                30
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       29
+    EUROPE                                       31
     MIDDLE EAST                                   1
 
 AFRICA
@@ -149,6 +149,22 @@ Client: WinNT, Win95, WfWg, Win 3.1 & LAN WorkPlace.
 
 AMERICA - USA
 =============
+
+------------------------------------------------------------------------------
+ARIZONA - USA
+
+Stephen Greenberg
+Nick Temple
+Coactiv Systems Inc.
+4625 S. Lakeshore Drive, suite 401
+Tempe, AZ  85282
+(602) 345 4114
+(602) 345 4105 fax
+steveg@coactiv.net
+
+We are LAN/WAN integrators who specialize in the standard fare (i.e. Novell 
+and NT) as well as UNIX, NTRIGUE and SAMBA.
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 BAY AREA, SILICON VALLEY  CALIFORNIA - USA
@@ -514,6 +530,26 @@ Sample prices:
 
      Upon request, usually US$50-$100/hour. Educational discounts
 available.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+OREGON - USA
+
+Warren Birnbaum
+Birnbaum Associates
+2934 N.E. 18th Avenue
+Portland, OR 97212
+Phone: 503-282-6329
+Fax: 503-288-7074
+birnbaum@teleport.com
+
+I have been supporting Samba in commercial installations for several 
+years on HP-UX and Solaris server platforms. I have installed Samba on 
+over 80 servers used by over 7000 users. I am a contributor to Samba 
+source code.  
+
+I can provide Samba installation, configuration, and custom coding
+as well as on-going support.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1407,6 +1443,24 @@ We can offer a solid experience with:
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+ITALY
+
+InfoTecna di Cesana D. & C. s.n.c.
+Via Cesana e Villa, 29
+20046 Biassono (Mi)
+
+Tel: ++39 39 2324054
+Fax: ++39 39 2324054
+
+e-mail: infotecn@tin.it
+URL: http://space.tin.it/internet/dsbragio
+
+We provide Samba support along with generic Linux support. Specifically we
+have implemented a powerful Fax servicing system for Samba with Win95/NT
+clients. Details could be found at our URL, currently, only in Italian.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 PALERMO - ITALY
 
 Francesco Cardinale
@@ -1441,6 +1495,25 @@ Solaris
 Digital Unix
 
 Macintosh
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+VICENZA - ITALY
+
+Company: AVnet srl
+Address: via Fogazzaro, 2
+         36015 SCHIO (VI)
+         ITALY
+phone:   0445/511445
+fax:     0445/511449
+contact: Giovanni Panozzo
+
+e-mail:  samba@avnet.it
+
+
+AVnet provides consulting and support on all problems
+regarding unix-to-win networking. We operate as ISP and we
+offer in depth TCP/IP knowledge for lan, intranet and WANs.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1536,21 +1609,17 @@ publishing related usage.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-ITALY
+WROCLAW - POLAND
 
-InfoTecna di Cesana D. & C. s.n.c.
-Via Cesana e Villa, 29
-20046 Biassono (Mi)
+Name: Sergiusz Pawlowicz
+Institute: Wroclaw University of Technology
+Mail: room 120A, Prusa 53/55, Wroclaw 50-370, Poland
+Tel: +48(71)206450
+Fax: +48(71)212448
+E-mail: ser@pwr.wroc.pl
+WWW: http://www.arch.pwr.wroc.pl/
+------------------------------------------------------------------------------
 
-Tel: ++39 39 2324054
-Fax: ++39 39 2324054
-
-e-mail: infotecn@tin.it
-URL: http://space.tin.it/internet/dsbragio
-
-We provide Samba support along with generic Linux support. Specifically we
-have implemented a powerful Fax servicing system for Samba with Win95/NT
-clients. Details could be found at our URL, currently, only in Italian.
 ------------------------------------------------------------------------------
 VETLANDA - SWEDEN
 
