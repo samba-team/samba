@@ -21,7 +21,6 @@
 		<arg choice="opt">-b &lt;buffer size&gt;</arg>
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-D Directory</arg>
-		<arg choice="opt">-S server</arg>
 		<arg choice="opt">-U username</arg>
 		<arg choice="opt">-W workgroup</arg>
 		<arg choice="opt">-M &lt;netbios name&gt;</arg>
@@ -216,7 +215,8 @@
 		<term>-i scope</term>
 		<listitem><para>This specifies a NetBIOS scope that smbclient will 
 		use to communicate with when generating NetBIOS names. For details 
-		on the use of NetBIOS scopes, see <filename>rfc1001.txt</filename> and <filename>rfc1002.txt</filename>.
+		on the use of NetBIOS scopes, see <filename>rfc1001.txt</filename> 
+		and <filename>rfc1002.txt</filename>.
 		NetBIOS scopes are <emphasis>very</emphasis> rarely used, only set 
 		this parameter if you are the system administrator in charge of all 
 		the NetBIOS systems you communicate with. </para></listitem>
