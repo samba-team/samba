@@ -149,6 +149,31 @@ krb5_etype_to_string(krb5_context context,
 }
 
 krb5_error_code
+krb5_keytype_to_etypes(krb5_context context,
+		       krb5_keytype keytype,
+		       krb5_enctype **etypes)
+{
+    krb5_enctype *tmp;
+    struct encryption_type *e;
+    int i;
+
+    *etypes = malloc((num_etypes + 1) * sizeof(*etypes));
+    if (*etypes == NULL)
+	return ENOMEM;
+    i = 0;
+    for (e = em; e < em + num_etypes; ++e)
+	if (e->keytype == keytype)
+	    (*etypes)[i++] = e->type;
+    tmp = realloc (*etypes, i * sizeof(*etypes));
+    if (tmp == NULL) {
+	free (*etypes);
+	return ENOMEM;
+    }
+    *etypes = tmp;
+    return 0;
+}
+
+krb5_error_code
 krb5_etype_to_keytype(krb5_context context,
 		      krb5_enctype etype,
 		      krb5_keytype *keytype)
