@@ -954,9 +954,9 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	make_a_mod(mods, ldap_op, "primaryGroupID", temp);
 
 	/* displayName, cn, and gecos should all be the same
-	   *  most easily accomplished by giving them the same OID
-	   *  gecos isn't set here b/c it should be handled by the 
-	   *  add-user script
+	 *  most easily accomplished by giving them the same OID
+	 *  gecos isn't set here b/c it should be handled by the 
+	 *  add-user script
 	 */
 
 	make_a_mod(mods, ldap_op, "displayName", pdb_get_fullname(sampass));
@@ -1730,8 +1730,23 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 
 	if (location) {
 		ldap_state->uri = talloc_strdup(pdb_context->mem_ctx, location);
+#ifdef WITH_LDAP_SAMCONFIG
 	} else {
-		ldap_state->uri = "ldap://localhost";
+		int ldap_port = lp_ldap_port();
+			
+		/* remap default port is no SSL */
+		if ( (lp_ldap_ssl() == LDAP_SSL_OFF) && (ldap_port == 636) ) {
+			ldap_port = 389;
+		}
+
+		ldap_state->uri = talloc_asprintf(pdb_context->mem_ctx, "%s://%s:%d", lp_ldap_ssl() ? "ldap" : "ldaps", lp_ldap_server(), ldap_port);
+		if (!ldap_state->uri) {
+			return NT_STATUS_NO_MEMORY;
+		}
+#else
+	} else {
+		ldap_state->uri = "ldaps://localhost";
+#endif
 	}
 
 	(*pdb_method)->private_data = ldap_state;
