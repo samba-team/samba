@@ -21,22 +21,6 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/iconv.h"
-#include "librpc/gen_ndr/tables.h"
-
-static const struct dcerpc_interface_table *find_pipe(const char *pipe_name)
-{
-	int i;
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (strcmp(dcerpc_pipes[i]->name, pipe_name) == 0) {
-			break;
-		}
-	}
-	if (!dcerpc_pipes[i]) {
-		printf("pipe '%s' not in table\n", pipe_name);
-		exit(1);
-	}
-	return dcerpc_pipes[i];
-}
 
 static const struct dcerpc_interface_call *find_function(
 	const struct dcerpc_interface_table *p,
@@ -62,14 +46,14 @@ static const struct dcerpc_interface_call *find_function(
 
 static void show_pipes(void)
 {
-	int i;
+	struct dcerpc_interface_list *p;
 	printf("\nYou must specify a pipe\n");
 	printf("known pipes are:\n");
-	for (i=0;dcerpc_pipes[i];i++) {
-		if(dcerpc_pipes[i]->helpstring) {
-			printf("\t%s - %s\n", dcerpc_pipes[i]->name, dcerpc_pipes[i]->helpstring);
+	for (p=dcerpc_pipes;p;p=p->next) {
+		if(p->table->helpstring) {
+			printf("\t%s - %s\n", p->table->name, p->table->helpstring);
 		} else {
-			printf("\t%s\n", dcerpc_pipes[i]->name);
+			printf("\t%s\n", p->table->name);
 		}
 	}
 	exit(1);
@@ -109,11 +93,11 @@ static void show_functions(const struct dcerpc_interface_table *p)
 		POPT_TABLEEND
 	};
 
-	ndrdump_init_subsystems;
-
 	DEBUGLEVEL = 10;
 
 	setup_logging("ndrdump", DEBUG_STDOUT);
+
+	ndrdump_init_subsystems;
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
 	
@@ -130,7 +114,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 		exit(1);
 	}
 
-	p = find_pipe(pipe_name);
+	p = idl_iface_by_name(pipe_name);
 
 	function = poptGetArg(pc);
 	inout = poptGetArg(pc);

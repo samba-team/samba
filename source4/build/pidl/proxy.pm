@@ -37,7 +37,7 @@ sub ParseRegFunc($)
 {
 	my $interface = shift;
 
-	$res .= "NTSTATUS dcom_$interface->{NAME}_init(void)
+	$res .= "static NTSTATUS dcom_$interface->{NAME}_init(void)
 {
 	struct dcom_interface iface;
 ";

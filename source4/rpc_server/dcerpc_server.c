@@ -24,7 +24,6 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_oxidresolver.h"
-#include "librpc/gen_ndr/tables.h"
 #include "auth/auth.h"
 #include "dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
