@@ -388,7 +388,9 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 
 
 /**
- * The linked list is allocated on the supplied talloc context, caller gets to destory
+ * Get trusted domains info from secrets.tdb.
+ *
+ * The linked list is allocated on the supplied talloc context, caller gets to destroy
  * when done.
  *
  * @param ctx Allocation context
@@ -409,10 +411,11 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 	int start_idx;
 	uint32 idx = 0;
 	size_t size;
+	fstring dom_name;
 	struct trusted_dom_pass *pass;
 	NTSTATUS status;
 
-	secrets_init();
+	if (!secrets_init()) return NT_STATUS_ACCESS_DENIED;
 
 	*num_domains = 0;
 	start_idx = *enum_ctx;
@@ -455,6 +458,10 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 			SAFE_FREE(pass);
 			continue;
 		}
+		
+		pull_ucs2_fstring(dom_name, pass->uni_name);
+		DEBUG(18, ("Fetched secret record num %d.\nDomain name: %s, SID: %s\n",
+			   idx, dom_name, sid_string_static(&pass->domain_sid)));
 
 		SAFE_FREE(secrets_key);
 
@@ -475,6 +482,10 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 			dom->name = talloc_strdup_w(ctx, pass->uni_name);
 			
 			(*domains)[idx - start_idx] = dom;
+			
+			DEBUG(18, ("Secret record is in required range.\n
+				   start_idx = %d, max_num_domains = %d. Added to returned array.\n",
+				   start_idx, max_num_domains));
 
 			*enum_ctx = idx + 1;
 			(*num_domains)++;
@@ -487,6 +498,10 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 				/* this is the last entry in the whole enumeration */
 				status = NT_STATUS_OK;
 			}
+		} else {
+			DEBUG(18, ("Secret is outside the required range.\n
+				   start_idx = %d, max_num_domains = %d. Not added to returned array\n",
+				   start_idx, max_num_domains));
 		}
 		
 		idx++;
