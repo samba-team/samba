@@ -25,8 +25,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 static int pong_count;
 
 /****************************************************************************

@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;

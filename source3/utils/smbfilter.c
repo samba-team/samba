@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 #define SECURITY_MASK 0
 #define SECURITY_SET  0
 

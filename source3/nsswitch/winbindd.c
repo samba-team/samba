@@ -24,8 +24,6 @@
 
 #include "winbindd.h"
 
-#include "module_dummy.h"
-
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = False;
 

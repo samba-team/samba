@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 static pstring server;
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather

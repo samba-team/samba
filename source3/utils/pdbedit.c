@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-#define HAVE_SMB_REGISTER_PASSDB
-#include "module_dummy.h"
-
 #define BIT_BACKEND	0x00000004
 #define BIT_VERBOSE	0x00000008
 #define BIT_SPSTYLE	0x00000010
