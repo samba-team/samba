@@ -313,8 +313,8 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
   pdb_set_workstations(pw_buf, ENTRY_VAL(obj, NPF_WORKSTATIONS));
   pdb_set_munged_dial(pw_buf, NULL);
 
-  pdb_set_uid(pw_buf, &atoi(ENTRY_VAL(obj, NPF_UID)));
-  pdb_set_gid(pw_buf, &atoi(ENTRY_VAL(obj, NPF_SMB_GRPID)));
+  pdb_set_uid(pw_buf, atoi(ENTRY_VAL(obj, NPF_UID)));
+  pdb_set_gid(pw_buf, atoi(ENTRY_VAL(obj, NPF_SMB_GRPID)));
   pdb_set_user_rid(pw_buf, atoi(ENTRY_VAL(obj, NPF_USER_RID)));
   pdb_set_group_rid(pw_buf, atoi(ENTRY_VAL(obj, NPF_GROUP_RID)));
 

@@ -69,6 +69,9 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
+	user->init_flag		    = FLAG_SAM_UNINIT;
+	user->uid = user->gid	    = -1;
+
 	user->logon_time            = (time_t)0;
 	user->pass_last_set_time    = (time_t)0;
 	user->pass_can_change_time  = (time_t)0;
@@ -135,16 +138,19 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 	pdb_set_username(*new_sam_acct, pwd->pw_name);
 	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
 
-	pdb_set_uid(*new_sam_acct, &pwd->pw_uid);
-	pdb_set_gid(*new_sam_acct, &pwd->pw_gid);
-
+	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
+	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
+	
 	pdb_set_user_rid(*new_sam_acct, pdb_uid_to_user_rid(pwd->pw_uid));
 
 	/* call the mapping code here */
 	if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
 		sid_peek_rid(&map.sid, &rid);
-	} else
+	} 
+	else {
 		rid=pdb_gid_to_group_rid(pwd->pw_gid);
+	}
+		
 	pdb_set_group_rid(*new_sam_acct, rid);
 
 	pstrcpy(str, lp_logon_path());
@@ -187,9 +193,6 @@ static BOOL pdb_free_sam_contents(SAM_ACCOUNT *user)
 	SAFE_FREE(user->nt_pw);
 	SAFE_FREE(user->lm_pw);
 
-	SAFE_FREE(user->uid);
-	SAFE_FREE(user->gid);
-	
 	return True;	
 }
 
@@ -1186,20 +1189,20 @@ uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
 		return (-1);
 }
 
-uid_t *pdb_get_uid (const SAM_ACCOUNT *sampass)
+uid_t pdb_get_uid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->uid);
 	else
-		return (NULL);
+		return (-1);
 }
 
-gid_t *pdb_get_gid (const SAM_ACCOUNT *sampass)
+gid_t pdb_get_gid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->gid);
 	else
-		return (NULL);
+		return (-1);
 }
 
 const char* pdb_get_username (const SAM_ACCOUNT *sampass)
@@ -1403,59 +1406,25 @@ BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours)
 	return True;
 }
 
-/*********************************************************************
- Set the user's UNIX uid, as a pointer to malloc'ed memory.
- ********************************************************************/
-
-BOOL pdb_set_uid (SAM_ACCOUNT *sampass, const uid_t *uid)
+BOOL pdb_set_uid (SAM_ACCOUNT *sampass, const uid_t uid)
 {
 	if (!sampass)
 		return False;
 	
-	if (!uid) {
-		/* Allow setting to NULL */
-		SAFE_FREE(sampass->uid);
-		return True;
-	}
-
-	if (sampass->uid!=NULL)
-		DEBUG(4,("pdb_set_nt_passwd: uid non NULL overwritting ?\n"));
-	else
-		sampass->uid=(uid_t *)malloc(sizeof(uid_t));
-	
-	if (sampass->uid==NULL)
-		return False;
-
-	*sampass->uid = *uid; 
+	sampass->uid = uid;
+	sampass->init_flag |= FLAG_SAM_UID; 
 
 	return True;
 
 }
 
-/*********************************************************************
- Set the user's UNIX gid, as a pointer to malloc'ed memory.
- ********************************************************************/
-
-BOOL pdb_set_gid (SAM_ACCOUNT *sampass, const gid_t *gid)
+BOOL pdb_set_gid (SAM_ACCOUNT *sampass, const gid_t gid)
 {
 	if (!sampass)
 		return False;
-	
-	if (!gid) {
-		/* Allow setting to NULL */
-		SAFE_FREE(sampass->gid);
-		return True;
-	}
-
-	if (sampass->gid!=NULL)
-		DEBUG(4,("pdb_set_nt_passwd: gid non NULL overwritting ?\n"));
-	else
-		sampass->gid=(gid_t *)malloc(sizeof(gid_t));
-	
-	if (sampass->gid==NULL)
-		return False;
-
-	*sampass->gid = *gid; 
+		
+	sampass->gid = gid; 
+	sampass->init_flag |= FLAG_SAM_GID; 
 
 	return True;
 
