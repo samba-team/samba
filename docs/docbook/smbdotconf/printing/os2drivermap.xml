@@ -14,7 +14,7 @@
     LaserJet 5L</command>.</para>
 		
     <para>The need for the file is due to the printer driver namespace 
-		problem described in <link linkiend="printing"/>.  For more details on OS/2 clients, please 
+		problem described in <link linkend="printing"/>.  For more details on OS/2 clients, please 
 		refer to <link linkend="Other-Clients"/>.</para>
 
     <para>Default: <command moreinfo="none">os2 driver map = &lt;empty string&gt;</command></para>
