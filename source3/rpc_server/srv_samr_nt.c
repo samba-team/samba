@@ -68,6 +68,7 @@ struct generic_mapping usr_generic_mapping = {USER_READ, USER_WRITE, USER_EXECUT
 struct generic_mapping grp_generic_mapping = {GROUP_READ, GROUP_WRITE, GROUP_EXECUTE, GROUP_ALL_ACCESS};
 struct generic_mapping ali_generic_mapping = {ALIAS_READ, ALIAS_WRITE, ALIAS_EXECUTE, ALIAS_ALL_ACCESS};
 
+static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size);
 
 /*******************************************************************
  Checks if access to an object should be granted, and returns that
