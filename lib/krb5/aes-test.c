@@ -46,12 +46,13 @@ hex_dump_data(krb5_data *data)
     unsigned char *p = data->data;
     int i, j;
 
-    for (i = j = 0; i < data->length; i++, j++) {
+    for (i = j = 0; i < data->length; i++) {
 	printf("%02x ", p[i]);
 	if (j > 15) {
 	    printf("\n");
 	    j = 0;
-	}
+	} else
+	    j++;
     }
     if (j != 0)
 	printf("\n");
@@ -612,6 +613,49 @@ krb_enc(krb5_context context,
     return 0;
 }
 
+static int
+krb_enc_mit(krb5_context context,
+	    krb5_enctype enctype,
+	    krb5_keyblock *key,
+	    unsigned usage,
+	    krb5_data *cipher, 
+	    krb5_data *clear)
+{
+    krb5_error_code ret;
+    krb5_enc_data e;
+    krb5_data decrypt;
+    size_t len;
+
+    e.kvno = 0;
+    e.enctype = enctype;
+    e.ciphertext = *cipher;
+
+    ret = krb5_c_decrypt(context, *key, usage, NULL, &e, &decrypt);
+    if (ret)
+	return ret;
+
+    if (decrypt.length != clear->length ||
+	memcmp(decrypt.data, clear->data, decrypt.length) != 0) {
+	krb5_warnx(context, "clear text not same");
+	return EINVAL;
+    }
+
+    krb5_data_free(&decrypt);
+
+    ret = krb5_c_encrypt_length(context, enctype, clear->length, &len);
+    if (ret)
+	return ret;
+
+    if (len != cipher->length) {
+	krb5_warnx(context, "c_encrypt_length wrong %d != %d",
+		   len, cipher->length);
+	return EINVAL;
+    }
+
+    return 0;
+}
+
+
 struct {
     krb5_enctype enctype;
     unsigned usage;
@@ -671,9 +715,17 @@ krb_enc_test(krb5_context context)
 		       
 	if (ret) {
 	    failed = 1;
-	    printf("failed with %d\n", ret);
+	    printf("krb_enc failed with %d\n", ret);
 	}
 	krb5_crypto_destroy(context, crypto);
+
+	ret = krb_enc_mit(context, krbencs[i].enctype, &kb, 
+			  krbencs[i].usage, &cipher, &plain);
+	if (ret) {
+	    failed = 1;
+	    printf("krb_enc_mit failed with %d\n", ret);
+	}
+
     }
 
     return failed;
