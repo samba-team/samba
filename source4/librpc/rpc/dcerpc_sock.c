@@ -199,6 +199,7 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 
 	if (flags & EVENT_FD_WRITE) {
 		sock_process_send(p);
+		return;
 	}
 
 	if (sock->sock == NULL) {
