@@ -500,6 +500,13 @@
 
 	/* Function:    0x2d */
 	NTSTATUS UNK_GET_CONNUSER ();
+
+	/**********************/
 	/* Function:          0x2e */
-	NTSTATUS QUERYINFO2 ();
+
+	NTSTATUS lsa_QueryInfoPolicy2(
+		[in,ref]                 policy_handle *handle,
+		[in]                     uint16 level,
+		[out,switch_is(level)]   lsa_PolicyInformation *info
+		);
 }

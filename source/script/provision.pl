@@ -27,7 +27,8 @@ sub randguid()
 	my $r3 = int(rand(2**16));
 	my $r4 = int(rand(2**16));
 	my $r5 = int(rand(2**32));
-	return sprintf("%08x-%04x-%04x-%04x-%08x", $r1, $r2, $r3, $r4, $r5);
+	my $r6 = int(rand(2**16));
+	return sprintf("%08x-%04x-%04x-%04x-%08x%04x", $r1, $r2, $r3, $r4, $r5, $r6);
 }
 
 sub randsid()
@@ -61,6 +62,10 @@ sub substitute($)
 
 	if ($var eq "DOMAIN") {
 		return $domain;
+	}
+
+	if ($var eq "REALM") {
+		return $realm;
 	}
 
 	if ($var eq "HOSTNAME") {

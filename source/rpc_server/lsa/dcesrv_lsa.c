@@ -139,10 +139,10 @@ static NTSTATUS lsa_ChangePassword(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 
 /* 
-  lsa_OpenPolicy 
+  lsa_OpenPolicy2
 */
-static NTSTATUS lsa_OpenPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-			       struct lsa_OpenPolicy *r)
+static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			       struct lsa_OpenPolicy2 *r)
 {
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *handle;
@@ -198,6 +198,25 @@ static NTSTATUS lsa_OpenPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	return NT_STATUS_OK;
 }
 
+/* 
+  lsa_OpenPolicy
+  a wrapper around lsa_OpenPolicy2
+*/
+static NTSTATUS lsa_OpenPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				struct lsa_OpenPolicy *r)
+{
+	struct lsa_OpenPolicy2 r2;
+
+	r2.in.system_name = NULL;
+	r2.in.attr = r->in.attr;
+	r2.in.access_mask = r->in.access_mask;
+	r2.out.handle = r->out.handle;
+
+	return lsa_OpenPolicy2(dce_call, mem_ctx, &r2);
+}
+
+
+
 
 /*
   fill in the AccountDomain info
@@ -221,11 +240,36 @@ static NTSTATUS lsa_info_AccountDomain(struct lsa_policy_state *state, TALLOC_CT
 	return NT_STATUS_OK;
 }
 
-/* 
-  lsa_QueryInfoPolicy 
+/*
+  fill in the DNS domain info
 */
-static NTSTATUS lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				    struct lsa_QueryInfoPolicy *r)
+static NTSTATUS lsa_info_DNS(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
+			     struct lsa_DnsDomainInfo *info)
+{
+	const char * const attrs[] = { "name", "dnsDomain", "objectGUID", "objectSid", NULL };
+	int ret;
+	struct ldb_message **res;
+
+	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
+			   "dn=%s", state->domain_dn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	info->name.name       = samdb_result_string(res[0],           "name", NULL);
+	info->dns_domain.name = samdb_result_string(res[0],           "dnsDomain", NULL);
+	info->dns_forest.name = samdb_result_string(res[0],           "dnsDomain", NULL);
+	info->domain_guid     = samdb_result_guid(res[0],             "objectGUID");
+	info->sid             = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
+
+	return NT_STATUS_OK;
+}
+
+/* 
+  lsa_QueryInfoPolicy2
+*/
+static NTSTATUS lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				     struct lsa_QueryInfoPolicy2 *r)
 {
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
@@ -244,13 +288,35 @@ static NTSTATUS lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, TALLOC_C
 	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
+	case LSA_POLICY_INFO_DOMAIN:
 	case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
 		return lsa_info_AccountDomain(state, mem_ctx, &r->out.info->account_domain);
+
+	case LSA_POLICY_INFO_DNS:
+		return lsa_info_DNS(state, mem_ctx, &r->out.info->dns);
 	}
 
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
+/* 
+  lsa_QueryInfoPolicy 
+*/
+static NTSTATUS lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				    struct lsa_QueryInfoPolicy *r)
+{
+	struct lsa_QueryInfoPolicy2 r2;
+	NTSTATUS status;
+
+	r2.in.handle = r->in.handle;
+	r2.in.level = r->in.level;
+	
+	status = lsa_QueryInfoPolicy2(dce_call, mem_ctx, &r2);
+
+	r->out.info = r2.out.info;
+
+	return status;
+}
 
 /* 
   lsa_SetInfoPolicy 
@@ -613,30 +679,10 @@ static NTSTATUS RETRPRIVDATA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 
 
 /* 
-  lsa_OpenPolicy2 
-*/
-static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_OpenPolicy2 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   UNK_GET_CONNUSER 
 */
 static NTSTATUS UNK_GET_CONNUSER(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct UNK_GET_CONNUSER *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  QUERYINFO2 
-*/
-static NTSTATUS QUERYINFO2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct QUERYINFO2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
