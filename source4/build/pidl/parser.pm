@@ -334,14 +334,14 @@ sub ParseElementPushScalar($$$)
 
 	start_flags($e);
 
+	if (my $value = util::has_property($e, "value")) {
+		pidl "\t$cprefix$var_prefix$e->{NAME} = $value;\n";
+	}
+
 	if (util::has_property($e, "relative")) {
 		pidl "\tNDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, $var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE}));\n";
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
-	} elsif (my $value = util::has_property($e, "value")) {
-		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $value));\n";
-	} elsif (defined $e->{VALUE}) {
-		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $e->{VALUE}));\n";
 	} elsif (util::need_wire_pointer($e)) {
 		pidl "\tNDR_CHECK(ndr_push_ptr(ndr, $var_prefix$e->{NAME}));\n";
 	} elsif (util::need_alloc($e)) {
@@ -375,9 +375,7 @@ sub ParseElementPrintScalar($$)
 		return;
 	}
 
-	if (defined $e->{VALUE}) {
-		pidl "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $e->{VALUE});\n";
-	} elsif (util::has_direct_buffers($e)) {
+	if (util::has_direct_buffers($e)) {
 		pidl "\tndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});\n";
 		pidl "\tndr->depth++;\n";
 		ParseElementPrintBuffer($e, $var_prefix);
@@ -478,8 +476,6 @@ sub ParseElementPullScalar($$$)
 
 	if (util::has_property($e, "relative")) {
 		pidl "\tNDR_CHECK(ndr_pull_relative(ndr, (const void **)&$var_prefix$e->{NAME}, sizeof(*$var_prefix$e->{NAME}), (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
-	} elsif (defined $e->{VALUE}) {
-		pidl "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $e->{VALUE}));\n";
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {

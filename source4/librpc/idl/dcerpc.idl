@@ -84,17 +84,17 @@ interface dcerpc
 	} dcerpc_pkt_type;
 
 	typedef [nodiscriminant] union {
-		[case(DCERPC_PKT_REQUEST)] dcerpc_request request;
+		[case(DCERPC_PKT_REQUEST)]  dcerpc_request  request;
 		[case(DCERPC_PKT_RESPONSE)] dcerpc_response response;
-		[case(DCERPC_PKT_BIND)] dcerpc_bind bind;
+		[case(DCERPC_PKT_BIND)]     dcerpc_bind     bind;
 		[case(DCERPC_PKT_BIND_ACK)] dcerpc_bind_ack bind_ack;
-		[case(DCERPC_PKT_FAULT)] dcerpc_fault fault;
+		[case(DCERPC_PKT_FAULT)]    dcerpc_fault    fault;
 	} dcerpc_payload;
 
 
 	/* pfc_flags values */
-	const uint8 DCERPC_PFC_FLAG_FIRST = 0x01;
-	const uint8 DCERPC_PFC_FLAG_LAST  = 0x02;
+	const uint8 DCERPC_PFC_FLAG_FIRST  = 0x01;
+	const uint8 DCERPC_PFC_FLAG_LAST   = 0x02;
 	const uint8 DCERPC_PFC_FLAG_NOCALL = 0x20;
 
 	typedef [public] struct {
