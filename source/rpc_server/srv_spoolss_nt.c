@@ -8889,7 +8889,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	 * --jerry
 	 */
 	 
-	unistr2_to_dos(key, &q_u->key, sizeof(key) - 1);
+	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
 	if ( !strlen(key) ) {
 		result = WERR_INVALID_PARAM;
 		goto done;
