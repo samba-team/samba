@@ -896,6 +896,10 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   return True;
 }
 
+/*
+ * Stub functions - implemented in terms of others.
+ */
+
 static BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
  	return mod_smbfilepwd_entry(pdb_sam_to_smb(pwd), override);
@@ -948,5 +952,5 @@ struct passdb_ops *file_initialize_password_db(void)
 }
 
 #else
-static void dummy_function(void) { } /* stop some compilers complaining */
+ void dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_SMBPASS_DB */

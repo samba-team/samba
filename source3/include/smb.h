@@ -637,17 +637,6 @@ struct shmem_ops {
 /*
  * Each implementation of the password database code needs
  * to support the following operations.
- *
- * either the get/mod/add-smbXXX or the get/mod/add-sam21XXX functions
- * are optional, but not both.  conversion routines will be called
- * if only one of each is supported.  the preference is to provide
- * full getsam21pwXXX functionality.
- *
- * e.g: provide a getsam21pwnam() function but set getsmbpwnam() to NULL:
- * passdb.c will automatically call getsam21pwnam() and then call the
- * sam21-to-smb conversion routine if the passdb.c::getsmbpwnam() function
- * is called.
- *
  */
 
 struct passdb_ops {

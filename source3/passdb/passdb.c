@@ -324,7 +324,7 @@ struct sam_passwd *iterate_getsam21pwnam(char *name)
 }
 
 /************************************************************************
- Utility function to search sam passwd by uid.  use this if your database
+ Utility function to search sam passwd by rid.  use this if your database
  does not have search facilities.
 
  search capability by both rid and uid are needed as the rid <-> uid
