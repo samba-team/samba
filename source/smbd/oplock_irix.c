@@ -1,3 +1,4 @@
+#include "includes.h"
 #define OLD_NTDOMAIN 1
 #if HAVE_KERNEL_OPLOCKS_IRIX
 
@@ -21,9 +22,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-
-#include "includes.h"
-
+extern int smb_read_error;
 extern int DEBUGLEVEL;
 
 
@@ -226,8 +225,8 @@ should be %d).\n", msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
         memcpy((char *)inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(*inode));
         memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
 
-        DEBUG(5,("process_local_message: kernel oplock break request for \
-file dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode));
+        DEBUG(5,("process_local_message: kernel oplock break request for file \
+dev = %x, inode = %.0f\n", (unsigned int)*dev, (double)*inode));
 
 	return True;
 }

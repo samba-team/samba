@@ -76,7 +76,7 @@ sma_alloc_region(size_t page_size, int num_pages)
   }  
 
   address = (void*)region;
-  (char *)address += info_size;
+  address = (void*)((char *)address+info_size);
 
   memset(region, 0, info_size);
   region->region_size = region_size;

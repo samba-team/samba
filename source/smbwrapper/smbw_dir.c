@@ -146,7 +146,10 @@ static void smbw_printjob_add(struct print_job_info *job)
 	finfo.mtime = job->t;
 	finfo.atime = job->t;
 	finfo.ctime = job->t;
-	finfo.uid = nametouid(job->user);
+	if (!nametouid(job->user,&finfo.uid)) {
+		DEBUG(0,("ERROR: smbw_printjob_add nametouid failed - name = %s\n", job->user));
+	}
+		
 	finfo.mode = aRONLY;
 	finfo.size = job->size;
 
