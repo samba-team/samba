@@ -216,7 +216,7 @@ void cli_shutdown(struct cli_state *cli)
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
-	data_blob_free(cli->secblob);
+	data_blob_free(&cli->secblob);
 
 	if (cli->mem_ctx)
 		talloc_destroy(cli->mem_ctx);

@@ -22,6 +22,259 @@
 
 #include "includes.h"
 
+
+/****************************************************************************
+send a security blob via a session setup reply
+****************************************************************************/
+static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
+				 DATA_BLOB blob)
+{
+	char *p;
+
+	set_message(outbuf,4,0,True);
+
+	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
+	   that we aren't finished yet */
+
+	SIVAL(outbuf, smb_rcls, NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED));
+	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
+	SSVAL(outbuf, smb_vwv3, blob.length);
+	p = smb_buf(outbuf);
+	memcpy(p, blob.data, blob.length);
+	p += blob.length;
+	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
+	set_message_end(outbuf,p);
+	
+	return send_smb(smbd_server_fd(),outbuf);
+}
+
+
+
+
+/****************************************************************************
+reply to a session setup spnego negotiate packet
+****************************************************************************/
+static int reply_spnego_negotiate(connection_struct *conn, char *outbuf,
+				  DATA_BLOB blob1)
+{
+	char *OIDs[ASN1_MAX_OIDS];
+	DATA_BLOB secblob;
+	int i;
+	uint32 ntlmssp_command, neg_flags;
+	DATA_BLOB sess_key, chal, spnego_chal;
+	uint8 cryptkey[8];
+
+	/* parse out the OIDs and the first sec blob */
+	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+	
+	for (i=0;OIDs[i];i++) {
+		DEBUG(3,("Got OID %s\n", OIDs[i]));
+		free(OIDs[i]);
+	}
+	DEBUG(3,("Got secblob of size %d\n", secblob.length));
+
+	/* parse the NTLMSSP packet */
+#if 0
+	file_save("secblob.dat", secblob.data, secblob.length);
+#endif
+
+	msrpc_parse(&secblob, "CddB",
+		    "NTLMSSP",
+		    &ntlmssp_command,
+		    &neg_flags,
+		    &sess_key);
+
+	data_blob_free(&secblob);
+	data_blob_free(&sess_key);
+
+	if (ntlmssp_command != NTLMSSP_NEGOTIATE) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	DEBUG(3,("Got neg_flags=%08x\n", neg_flags));
+
+	last_challenge(cryptkey);
+
+	/* Give them the challenge. For now, ignore neg_flags and just
+	   return the flags we want. Obviously this is not correct */
+	
+	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
+		NTLMSSP_NEGOTIATE_LM_KEY | 
+		NTLMSSP_NEGOTIATE_NTLM;
+
+	msrpc_gen(&chal, "Cddddbdddd",
+		  "NTLMSSP", 
+		  NTLMSSP_CHALLENGE,
+		  0,
+		  0x30, /* ?? */
+		  neg_flags,
+		  cryptkey, 8,
+		  0, 0, 0,
+		  0x3000); /* ?? */
+
+	if (!spnego_gen_challenge(&spnego_chal, &chal, &chal)) {
+		DEBUG(3,("Failed to generate challenge\n"));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	/* now tell the client to send the auth packet */
+	reply_sesssetup_blob(conn, outbuf, spnego_chal);
+
+	data_blob_free(&chal);
+	data_blob_free(&spnego_chal);
+
+	/* and tell smbd that we have already replied to this packet */
+	return -1;
+}
+
+	
+/****************************************************************************
+reply to a session setup spnego auth packet
+****************************************************************************/
+static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
+			     int length, int bufsize,
+			     DATA_BLOB blob1)
+{
+	DATA_BLOB auth;
+	char *workgroup, *user, *machine;
+	DATA_BLOB lmhash, nthash, sess_key;
+	uint32 ntlmssp_command, neg_flags;
+	NTSTATUS nt_status;
+	int sess_vuid;
+	gid_t gid;
+	uid_t uid;
+	char *full_name;
+	char *p;
+	const struct passwd *pw;
+
+	if (!spnego_parse_auth(blob1, &auth)) {
+		file_save("auth.dat", blob1.data, blob1.length);
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	/* now the NTLMSSP encoded auth hashes */
+	if (!msrpc_parse(&auth, "CdBBUUUBd", 
+			 "NTLMSSP", 
+			 &ntlmssp_command, 
+			 &lmhash,
+			 &nthash,
+			 &workgroup, 
+			 &user, 
+			 &machine,
+			 &sess_key,
+			 &neg_flags)) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	data_blob_free(&auth);
+	data_blob_free(&sess_key);
+	
+	DEBUG(3,("Got user=[%s] workgroup=[%s] machine=[%s] len1=%d len2=%d\n",
+		 user, workgroup, machine, lmhash.length, nthash.length));
+
+#if 0
+	file_save("nthash1.dat", nthash.data, nthash.length);
+	file_save("lmhash1.dat", lmhash.data, lmhash.length);
+#endif
+
+	nt_status = pass_check_smb(user, user, 
+				   workgroup, machine,
+				   lmhash.data,
+				   lmhash.length,
+				   nthash.data,
+				   nthash.length);
+
+	data_blob_free(&nthash);
+	data_blob_free(&lmhash);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ERROR_NT(nt_status);
+	}
+
+	/* the password is good - let them in */
+	pw = smb_getpwnam(user,False);
+	if (!pw) {
+		DEBUG(1,("Username %s is invalid on this system\n",user));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+	gid = pw->pw_gid;
+	uid = pw->pw_uid;
+	full_name = pw->pw_gecos;
+
+	sess_vuid = register_vuid(uid,gid,user,user,workgroup,False, full_name);
+
+	free(user);
+	free(workgroup);
+	free(machine);
+	
+	if (sess_vuid == -1) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	set_message(outbuf,4,0,True);
+	SSVAL(outbuf, smb_vwv3, 0);
+	p = smb_buf(outbuf);
+	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
+	set_message_end(outbuf,p);
+ 
+	SSVAL(outbuf,smb_uid,sess_vuid);
+	SSVAL(inbuf,smb_uid,sess_vuid);
+	
+	return chain_reply(inbuf,outbuf,length,bufsize);
+}
+
+
+/****************************************************************************
+reply to a session setup command
+****************************************************************************/
+static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,char *outbuf,
+					int length,int bufsize)
+{
+	uint8 *p;
+	DATA_BLOB blob1;
+	extern uint32 global_client_caps;
+	int ret;
+
+	chdir("/home/tridge");
+
+	if (global_client_caps == 0) {
+		global_client_caps = IVAL(inbuf,smb_vwv10);
+	}
+		
+	p = smb_buf(inbuf);
+
+	/* pull the spnego blob */
+	blob1 = data_blob(p, SVAL(inbuf, smb_vwv7));
+	
+	if (blob1.data[0] == ASN1_APPLICATION(0)) {
+		/* its a negTokenTarg packet */
+		ret = reply_spnego_negotiate(conn, outbuf, blob1);
+		data_blob_free(&blob1);
+		return ret;
+	}
+
+	if (blob1.data[0] == ASN1_CONTEXT(1)) {
+		/* its a auth packet */
+		ret = reply_spnego_auth(conn, inbuf, outbuf, length, bufsize, blob1);
+		data_blob_free(&blob1);
+		return ret;
+	}
+
+	/* what sort of packet is this? */
+	DEBUG(1,("Unknown packet in reply_sesssetup_and_X_spnego\n"));
+
+	data_blob_free(&blob1);
+
+	return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+}
+
+
 /****************************************************************************
 reply to a session setup command
 ****************************************************************************/
@@ -53,6 +306,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	BOOL doencrypt = global_encrypted_passwords_negotiated;
 	START_PROFILE(SMBsesssetupX);
 	
+	if (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY) {
+		/* it's a SPNEGO session setup */
+		return reply_sesssetup_and_X_spnego(conn, inbuf, outbuf, length, bufsize);
+	}
+
 	*smb_apasswd = *smb_ntpasswd = 0;
 	
 	smb_bufsize = SVAL(inbuf,smb_vwv2);

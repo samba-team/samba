@@ -31,11 +31,12 @@ static  struct {
 prots[] = 
     {
       {PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
+      {PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
+      {PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
       {PROTOCOL_LANMAN1,"LANMAN1.0"},
-      {PROTOCOL_LANMAN1,"Windows for Workgroups 3.1a"},
       {PROTOCOL_LANMAN2,"LM1.2X002"},
-      {PROTOCOL_NT1,"Samba"},
-      {PROTOCOL_NT1,"LANMAN2.1"},
+      {PROTOCOL_LANMAN2,"Samba"},
+      {PROTOCOL_NT1,"NT LANMAN 1.0"},
       {PROTOCOL_NT1,"NT LM 0.12"},
       {-1,NULL}
     };
@@ -394,7 +395,7 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principle, c
 	blob2 = cli_session_setup_blob(cli, negTokenTarg);
 
 	/* we don't need this blob for kerberos */
-	data_blob_free(blob2);
+	data_blob_free(&blob2);
 
 	return !cli_is_error(cli);
 }
@@ -428,12 +429,12 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 
 	/* and wrap it in a SPNEGO wrapper */
 	msg1 = gen_negTokenTarg(mechs, blob);
-	data_blob_free(blob);		
+	data_blob_free(&blob);
 
 	/* now send that blob on its way */
 	blob = cli_session_setup_blob(cli, msg1);
 
-	data_blob_free(msg1); 
+	data_blob_free(&msg1);
 
 	if (!NT_STATUS_EQUAL(cli_nt_error(cli), NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return False;
@@ -445,18 +446,25 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 
 	/* the server gives us back two challenges */
 	if (!spnego_parse_challenge(blob, &chal1, &chal2)) {
+		DEBUG(3,("Failed to parse challenges\n"));
 		return False;
 	}
 
-	data_blob_free(blob);		
+	data_blob_free(&blob);
 
 	/* encrypt the password with the challenge */
 	memcpy(challenge, chal1.data + 24, 8);
 	SMBencrypt(pass, challenge,lmhash);
 	SMBNTencrypt(pass, challenge,nthash);
 
-	data_blob_free(chal1);
-	data_blob_free(chal2);
+#if 0
+	file_save("nthash.dat", nthash, 24);
+	file_save("lmhash.dat", lmhash, 24);
+	file_save("chal1.dat", chal1.data, chal1.length);
+#endif
+
+	data_blob_free(&chal1);
+	data_blob_free(&chal2);
 
 	/* this generates the actual auth packet */
 	msrpc_gen(&blob, "CdBBUUUBd", 
@@ -473,13 +481,13 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 	/* wrap it in SPNEGO */
 	auth = spnego_gen_auth(blob);
 
-	data_blob_free(blob);
+	data_blob_free(&blob);
 
 	/* now send the auth packet and we should be done */
 	blob = cli_session_setup_blob(cli, auth);
 
-	data_blob_free(auth);
-	data_blob_free(blob);
+	data_blob_free(&auth);
+	data_blob_free(&blob);
 
 	return !cli_is_error(cli);
 }

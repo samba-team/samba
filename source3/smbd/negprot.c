@@ -30,7 +30,7 @@ BOOL global_encrypted_passwords_negotiated;
 /****************************************************************************
 reply for the core protocol
 ****************************************************************************/
-static int reply_corep(char *outbuf)
+static int reply_corep(char *inbuf, char *outbuf)
 {
 	int outsize = set_message(outbuf,1,0,True);
 
@@ -43,7 +43,7 @@ static int reply_corep(char *outbuf)
 /****************************************************************************
 reply for the coreplus protocol
 ****************************************************************************/
-static int reply_coreplus(char *outbuf)
+static int reply_coreplus(char *inbuf, char *outbuf)
 {
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int outsize = set_message(outbuf,13,0,True);
@@ -62,7 +62,7 @@ static int reply_coreplus(char *outbuf)
 /****************************************************************************
 reply for the lanman 1.0 protocol
 ****************************************************************************/
-static int reply_lanman1(char *outbuf)
+static int reply_lanman1(char *inbuf, char *outbuf)
 {
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
@@ -100,7 +100,7 @@ static int reply_lanman1(char *outbuf)
 /****************************************************************************
 reply for the lanman 2.0 protocol
 ****************************************************************************/
-static int reply_lanman2(char *outbuf)
+static int reply_lanman2(char *inbuf, char *outbuf)
 {
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
@@ -154,10 +154,44 @@ static int reply_lanman2(char *outbuf)
 }
 
 
+
+/* 
+   generate the spnego negprot reply blob. Return the number of bytes used
+*/
+static int negprot_spnego(char *p, uint8 cryptkey[8])
+{
+	DATA_BLOB blob;
+	extern pstring global_myname;
+	uint8 guid[16];
+	const char *OIDs[] = {OID_NTLMSSP, 
+#if 0
+			      /* not till we add kerberos in the server */
+			      OID_KERBEROS5_OLD,
+#endif
+			      NULL};
+	char *principle;
+	int len;
+
+	memset(guid, 0, 16);
+	safe_strcpy(guid, global_myname, 16);
+	strlower(guid);
+
+	asprintf(&principle, "%s$@%s", guid, lp_realm());
+	blob = spnego_gen_negTokenInit(guid, OIDs, principle);
+	free(principle);
+
+	memcpy(p, blob.data, blob.length);
+	len = blob.length;
+	data_blob_free(&blob);
+	return len;
+}
+
+		
+
 /****************************************************************************
 reply for the nt protocol
 ****************************************************************************/
-static int reply_nt1(char *outbuf)
+static int reply_nt1(char *inbuf, char *outbuf)
 {
 	/* dual names + lock_and_read + nt SMBs + remote API calls */
 	int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|
@@ -166,10 +200,10 @@ static int reply_nt1(char *outbuf)
 	int secword=0;
 	time_t t = time(NULL);
 	struct cli_state *cli = NULL;
-	char cryptkey[8];
-	char crypt_len = 0;
+	uint8 cryptkey[8];
 	char *p, *q;
-	
+	BOOL negotiate_spnego = False;
+
 	global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
 	if (lp_security() == SEC_SERVER) {
@@ -177,6 +211,14 @@ static int reply_nt1(char *outbuf)
 		cli = server_cryptkey();
 	} else {
 		DEBUG(5,("not attempting password server validation\n"));
+		/* do spnego in user level security if the client
+		   supports it and we can do encrypted passwords */
+		if (global_encrypted_passwords_negotiated && 
+		    lp_security() == SEC_USER &&
+		    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
+			negotiate_spnego = True;
+			capabilities |= CAP_EXTENDED_SECURITY;
+		}
 	}
 	
 	if (cli) {
@@ -187,7 +229,6 @@ static int reply_nt1(char *outbuf)
 	}
 	
 	if (global_encrypted_passwords_negotiated) {
-		crypt_len = 8;
 		if (!cli) {
 			generate_next_challenge(cryptkey);
 		} else {
@@ -224,7 +265,6 @@ static int reply_nt1(char *outbuf)
 	set_message(outbuf,17,0,True);
 	
 	CVAL(outbuf,smb_vwv1) = secword;
-	SSVALS(outbuf,smb_vwv16+1,crypt_len);
 	
 	Protocol = PROTOCOL_NT1;
 	
@@ -238,8 +278,15 @@ static int reply_nt1(char *outbuf)
 	SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
 	
 	p = q = smb_buf(outbuf);
-	if (global_encrypted_passwords_negotiated) memcpy(p, cryptkey, 8);
-	p += 8;
+	if (!negotiate_spnego) {
+		if (global_encrypted_passwords_negotiated) memcpy(p, cryptkey, 8);
+		SSVALS(outbuf,smb_vwv16+1,8);
+		p += 8;
+	} else {
+		int len = negprot_spnego(p, cryptkey);
+		SSVALS(outbuf,smb_vwv16+1,len);
+		p += len;
+	}
 	p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
 			 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 	
@@ -322,7 +369,7 @@ protocol [LANMAN2.1]
 static struct {
   char *proto_name;
   char *short_name;
-  int (*proto_reply_fn)(char *);
+  int (*proto_reply_fn)(char *, char *);
   int protocol_level;
 } supported_protocols[] = {
   {"NT LANMAN 1.0",           "NT1",      reply_nt1,      PROTOCOL_NT1},
@@ -441,7 +488,7 @@ int reply_negprot(connection_struct *conn,
     extern fstring remote_proto;
     fstrcpy(remote_proto,supported_protocols[protocol].short_name);
     reload_services(True);          
-    outsize = supported_protocols[protocol].proto_reply_fn(outbuf);
+    outsize = supported_protocols[protocol].proto_reply_fn(inbuf, outbuf);
     DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
   }
   else {

@@ -1913,9 +1913,9 @@ DATA_BLOB data_blob(void *p, size_t length)
 /*******************************************************************
 free a data blob
 *******************************************************************/
-void data_blob_free(DATA_BLOB d)
+void data_blob_free(DATA_BLOB *d)
 {
-	SAFE_FREE(d.data);
+	SAFE_FREE(d->data);
 }
 
 
