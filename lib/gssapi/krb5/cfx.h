@@ -47,7 +47,7 @@ typedef struct gss_cfx_mic_token_desc_struct {
 } gss_cfx_mic_token_desc, *gss_cfx_mic_token;
 
 typedef struct gss_cfx_wrap_token_desc_struct {
-	u_char TOK_ID[2]; /* 05 04 */
+	u_char TOK_ID[2]; /* 04 05 */
 	u_char Flags;
 	u_char Filler;
 	u_char EC[2];
@@ -56,7 +56,7 @@ typedef struct gss_cfx_wrap_token_desc_struct {
 } gss_cfx_wrap_token_desc, *gss_cfx_wrap_token;
 
 typedef struct gss_cfx_delete_token_desc_struct {
-	u_char TOK_ID[2]; /* 04 05 */
+	u_char TOK_ID[2]; /* 05 04 */
 	u_char Flags;
 	u_char Filler[5];
 	u_char SND_SEQ[8];
