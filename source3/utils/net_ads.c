@@ -55,6 +55,8 @@ int net_ads_usage(int argc, const char **argv)
 "\n\tperform a raw LDAP search and dump the results\n"
 "\nnet ads dn"\
 "\n\tperform a raw LDAP search and dump attributes of a particular DN\n"
+"\nnet ads keytab"\
+"\n\tcreates and updates the kerberos system keytab file\n"
 		);
 	return -1;
 }
@@ -738,9 +740,9 @@ int net_ads_join(int argc, const char **argv)
 			d_printf("Using the name [%s] from the server.\n", short_domain_name);
 			d_printf("You should set \"workgroup = %s\" in smb.conf.\n", short_domain_name);
 		}
-	}
-	else
+	} else {
 		short_domain_name = lp_workgroup();
+	}
 	
 	d_printf("Using short domain name -- %s\n", short_domain_name);
 	
@@ -769,12 +771,18 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 	
+	/* Now build the keytab, using the same ADS connection */
+	if (lp_use_kerberos_keytab() && ads_keytab_create_default(ads)) {
+		DEBUG(1,("Error creating host keytab!\n"));
+	}
+
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
 
 	SAFE_FREE(password);
 	SAFE_FREE(machine_account);
-	if ( ctx )
+	if ( ctx ) {
 		talloc_destroy(ctx);
+	}
 	return 0;
 }
 
@@ -1001,116 +1009,123 @@ static int net_ads_printer(int argc, const char **argv)
 
 static int net_ads_password(int argc, const char **argv)
 {
-    ADS_STRUCT *ads;
-    const char *auth_principal = opt_user_name;
-    const char *auth_password = opt_password;
-    char *realm = NULL;
-    char *new_password = NULL;
-    char *c, *prompt;
-    const char *user;
-    ADS_STATUS ret;
+	ADS_STRUCT *ads;
+	const char *auth_principal = opt_user_name;
+	const char *auth_password = opt_password;
+	char *realm = NULL;
+	char *new_password = NULL;
+	char *c, *prompt;
+	const char *user;
+	ADS_STATUS ret;
 
-    if (opt_user_name == NULL || opt_password == NULL) {
-	    d_printf("You must supply an administrator username/password\n");
-	    return -1;
-    }
+	if (opt_user_name == NULL || opt_password == NULL) {
+		d_printf("You must supply an administrator username/password\n");
+		return -1;
+	}
 
+	if (argc < 1) {
+		d_printf("ERROR: You must say which username to change password for\n");
+		return -1;
+	}
+
+	user = argv[0];
+	if (!strchr_m(user, '@')) {
+		asprintf(&c, "%s@%s", argv[0], lp_realm());
+		user = c;
+	}
+
+	use_in_memory_ccache();    
+	c = strchr(auth_principal, '@');
+	if (c) {
+		realm = ++c;
+	} else {
+		realm = lp_realm();
+	}
+
+	/* use the realm so we can eventually change passwords for users 
+	in realms other than default */
+	if (!(ads = ads_init(realm, NULL, NULL))) {
+		return -1;
+	}
+
+	/* we don't actually need a full connect, but it's the easy way to
+		fill in the KDC's addresss */
+	ads_connect(ads);
     
-    if (argc < 1) {
-	    d_printf("ERROR: You must say which username to change password for\n");
-	    return -1;
-    }
+	if (!ads || !ads->config.realm) {
+		d_printf("Didn't find the kerberos server!\n");
+		return -1;
+	}
 
-    user = argv[0];
-    if (!strchr(user, '@')) {
-	    asprintf(&c, "%s@%s", argv[0], lp_realm());
-	    user = c;
-    }
+	if (argv[1]) {
+		new_password = (char *)argv[1];
+	} else {
+		asprintf(&prompt, "Enter new password for %s:", user);
+		new_password = getpass(prompt);
+		free(prompt);
+	}
 
-    use_in_memory_ccache();    
-    c = strchr(auth_principal, '@');
-    if (c) {
-	    realm = ++c;
-    } else {
-	    realm = lp_realm();
-    }
-
-    /* use the realm so we can eventually change passwords for users 
-    in realms other than default */
-    if (!(ads = ads_init(realm, NULL, NULL))) return -1;
-
-    /* we don't actually need a full connect, but it's the easy way to
-       fill in the KDC's addresss */
-    ads_connect(ads);
-    
-    if (!ads || !ads->config.realm) {
-	    d_printf("Didn't find the kerberos server!\n");
-	    return -1;
-    }
-
-    if (argv[1]) {
-	   new_password = (char *)argv[1];
-    } else {
-	   asprintf(&prompt, "Enter new password for %s:", user);
-	   new_password = getpass(prompt);
-	   free(prompt);
-    }
-
-    ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
+	ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
 				auth_password, user, new_password, ads->auth.time_offset);
-    if (!ADS_ERR_OK(ret)) {
-	d_printf("Password change failed :-( ...\n");
+	if (!ADS_ERR_OK(ret)) {
+		d_printf("Password change failed :-( ...\n");
+		ads_destroy(&ads);
+		return -1;
+	}
+
+	d_printf("Password change for %s completed.\n", user);
 	ads_destroy(&ads);
-	return -1;
-    }
 
-    d_printf("Password change for %s completed.\n", user);
-    ads_destroy(&ads);
-
-    return 0;
+	return 0;
 }
-
 
 int net_ads_changetrustpw(int argc, const char **argv)
 {    
-    ADS_STRUCT *ads;
-    char *host_principal;
-    char *hostname;
-    ADS_STATUS ret;
+	ADS_STRUCT *ads;
+	char *host_principal;
+	fstring my_fqdn;
+	ADS_STATUS ret;
 
-    if (!secrets_init()) {
-	    DEBUG(1,("Failed to initialise secrets database\n"));
-	    return -1;
-    }
+	if (!secrets_init()) {
+		DEBUG(1,("Failed to initialise secrets database\n"));
+		return -1;
+	}
 
-    net_use_machine_password();
+	net_use_machine_password();
 
-    use_in_memory_ccache();
+	use_in_memory_ccache();
 
-    if (!(ads = ads_startup())) {
-	    return -1;
-    }
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
-    hostname = strdup(global_myname());
-    strlower_m(hostname);
-    asprintf(&host_principal, "%s@%s", hostname, ads->config.realm);
-    SAFE_FREE(hostname);
-    d_printf("Changing password for principal: HOST/%s\n", host_principal);
+	name_to_fqdn(my_fqdn, global_myname());
+	strlower_m(my_fqdn);
+	asprintf(&host_principal, "%s@%s", my_fqdn, ads->config.realm);
+	d_printf("Changing password for principal: HOST/%s\n", host_principal);
+
+	ret = ads_change_trust_account_password(ads, host_principal);
+
+	if (!ADS_ERR_OK(ret)) {
+		d_printf("Password change failed :-( ...\n");
+		ads_destroy(&ads);
+		SAFE_FREE(host_principal);
+		return -1;
+	}
     
-    ret = ads_change_trust_account_password(ads, host_principal);
+	d_printf("Password change for principal HOST/%s succeeded.\n", host_principal);
 
-    if (!ADS_ERR_OK(ret)) {
-	d_printf("Password change failed :-( ...\n");
+	if (lp_use_kerberos_keytab()) {
+		d_printf("Attempting to update system keytab with new password.\n");
+		if (ads_keytab_create_default(ads)) {
+			d_printf("Failed to update system keytab.\n");
+		}
+	}
+
 	ads_destroy(&ads);
 	SAFE_FREE(host_principal);
-	return -1;
-    }
-    
-    d_printf("Password change for principal HOST/%s succeeded.\n", host_principal);
-    ads_destroy(&ads);
-    SAFE_FREE(host_principal);
 
-    return 0;
+	return 0;
 }
 
 /*
@@ -1230,6 +1245,86 @@ static int net_ads_dn(int argc, const char **argv)
 	return 0;
 }
 
+static int net_ads_keytab_usage(int argc, const char **argv)
+{
+	d_printf(
+		"net ads keytab <COMMAND>\n"\
+"<COMMAND> can be either:\n"\
+"  CREATE    Creates a fresh keytab\n"\
+"  ADD       Adds new service principal\n"\
+"  FLUSH     Flushes out all keytab entries\n"\
+"  HELP      Prints this help message\n"\
+"The ADD command will take arguments, the other commands\n"\
+"will not take any arguments.   The arguments given to ADD\n"\
+"should be a list of principals to add.  For example, \n"\
+"   net ads keytab add srv1 srv2\n"\
+"will add principals for the services srv1 and srv2 to the\n"\
+"system's keytab.\n"\
+"\n"
+		);
+	return -1;
+}
+
+static int net_ads_keytab_flush(int argc, const char **argv)
+{
+	int ret;
+	ADS_STRUCT *ads;
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+	ret = ads_keytab_flush(ads);
+	ads_destroy(&ads);
+	return ret;
+}
+
+static int net_ads_keytab_add(int argc, const char **argv)
+{
+	int i;
+	int ret = 0;
+	ADS_STRUCT *ads;
+
+	d_printf("Processing principals to add...\n");
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+	for (i = 0; i < argc; i++) {
+		ret |= ads_keytab_add_entry(ads, argv[i]);
+	}
+	ads_destroy(&ads);
+	return ret;
+}
+
+static int net_ads_keytab_create(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	int ret;
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+	ret = ads_keytab_create_default(ads);
+	ads_destroy(&ads);
+	return ret;
+}
+
+int net_ads_keytab(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"CREATE", net_ads_keytab_create},
+		{"ADD", net_ads_keytab_add},
+		{"FLUSH", net_ads_keytab_flush},
+		{"HELP", net_ads_keytab_usage},
+		{NULL, NULL}
+	};
+
+	if (!lp_use_kerberos_keytab()) {
+		d_printf("\nWarning: \"use kerberos keytab\" must be set to \"true\" in order to \
+use keytab functions.\n");
+	}
+
+	return net_run_function(argc, argv, func, net_ads_keytab_usage);
+}
 
 int net_ads_help(int argc, const char **argv)
 {
@@ -1269,6 +1364,7 @@ int net_ads(int argc, const char **argv)
 		{"DN", net_ads_dn},
 		{"WORKGROUP", net_ads_workgroup},
 		{"LOOKUP", net_ads_lookup},
+		{"KEYTAB", net_ads_keytab},
 		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};
@@ -1278,10 +1374,15 @@ int net_ads(int argc, const char **argv)
 
 #else
 
-static int net_ads_noads(void)
+static int net_ads_noads(int argc, const char **argv)
 {
 	d_printf("ADS support not compiled in\n");
 	return -1;
+}
+
+int net_ads_keytab(int argc, const char **argv)
+{
+	return net_ads_noads();
 }
 
 int net_ads_usage(int argc, const char **argv)
