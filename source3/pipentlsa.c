@@ -300,10 +300,20 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
+	int    pkttype;
+	uint32 call_id;
+	uint16 opnum;
+
+	if (data == NULL)
+	{
+		DEBUG(2, ("api_ntLsarpcTNP: NULL data parameter\n"));
+		return False;
+	}
+
 	/* really should decode these using an RPC_HDR structure */
-	int    pkttype = CVAL(data,  2);
-	uint32 call_id = CVAL(data, 12);
-	uint16 opnum   = SVAL(data, 22);
+	pkttype = CVAL(data,  2);
+	call_id = CVAL(data, 12);
+	opnum   = SVAL(data, 22);
 
 	if (pkttype == RPC_BIND) /* RPC BIND */
 	{

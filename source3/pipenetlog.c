@@ -624,33 +624,38 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-	/* really should decode these using an RPC_HDR structure */
-	int pkttype    = CVAL(data, 2);
-	uint32 call_id = SVAL(data,12);
-	uint16 opnum   = SVAL(data,22);
-
 	user_struct *vuser;
 
-	if (pkttype == RPC_BIND) /* RPC BIND */
+	RPC_HDR hdr;
+
+	if (data == NULL)
 	{
-		DEBUG(4,("netlogon rpc bind %x\n",pkttype));
+		DEBUG(2,("api_netlogrpcTNP: NULL data received\n"));
+		return False;
+	}
+
+	smb_io_rpc_hdr(True, &hdr, data, data, 4, 5);
+
+	if (hdr.pkt_type == RPC_BIND) /* RPC BIND */
+	{
+		DEBUG(4,("netlogon rpc bind %x\n",hdr.pkt_type));
 		LsarpcTNP1(data,rdata,rdata_len);
 		return True;
 	}
 
-	DEBUG(4,("netlogon TransactNamedPipe op %x\n",opnum));
+	DEBUG(4,("netlogon TransactNamedPipe op %x\n",hdr.reserved));
 
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return False;
 
 	DEBUG(3,("Username of UID %d is %s\n", vuser->uid, vuser->name));
 
-	switch (opnum)
+	switch (hdr.reserved)
 	{
 		case LSA_REQCHAL:
 		{
 			DEBUG(3,("LSA_REQCHAL\n"));
 			api_lsa_req_chal(cnum, uid, vuser, param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -658,7 +663,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_AUTH2\n"));
 			api_lsa_auth_2(vuser, param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -666,7 +671,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_SRVPWSET\n"));
 			api_lsa_srv_pwset(vuser, param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -674,7 +679,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_SAMLOGON\n"));
 			api_lsa_sam_logon(vuser, param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -682,13 +687,13 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_SAMLOGOFF\n"));
 			api_lsa_sam_logoff(vuser, param, data, rdata, rdata_len);
-			create_rpc_reply(call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
 		default:
 		{
-  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", opnum));
+  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", hdr.reserved));
 			break;
 		}
 	}

@@ -188,12 +188,23 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-  int    pkttype = CVAL(data, 2);
-  uint32 call_id = SVAL(data,12);
-  uint16 opnum   = SVAL(data,22);
-
   extern pstring myname;
   char *q;
+
+  int    pkttype;
+  uint32 call_id;
+  uint16 opnum;
+
+  if (data == NULL)
+  {
+    DEBUG(2,("api_srvsvcTNP: NULL data parameter\n"));
+    return False;
+  }
+
+  /* really should decode these with a RPC_HDR structure */
+  pkttype = CVAL(data, 2);
+  call_id = SVAL(data,12);
+  opnum   = SVAL(data,22);
 
   if (pkttype == RPC_BIND) /* RPC BIND */
   {

@@ -713,7 +713,7 @@ BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
 char *dom_sid_to_string(DOM_SID *sid);
 int make_dom_sids(char *sids_str, DOM_SID *sids, int max_sids);
 int make_dom_gids(char *gids_str, DOM_GID *gids);
-int create_rpc_request(uint32 call_id, uint16 op_num, char *q, int data_len);
+int create_rpc_request(uint32 call_id, uint8 op_num, char *q, int data_len);
 int create_rpc_reply(uint32 call_id, char *q, int data_len);
 
 /*The following definitions come from  predict.c  */
@@ -915,7 +915,7 @@ char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
 char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);
 void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len, int opnum);
+				uint32 call_id, int data_len, uint8 opnum);
 char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int depth);
 char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
