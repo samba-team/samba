@@ -814,7 +814,7 @@ static BOOL run_locktest1(int dummy)
 		return False;
 	} else {
 		if (!check_error(__LINE__, &cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 	t2 = time(NULL);
 
@@ -832,7 +832,7 @@ static BOOL run_locktest1(int dummy)
 		return False;
 	} else {
 		if (!check_error(__LINE__, &cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
 	if (!cli_close(&cli1, fnum1)) {
@@ -1016,7 +1016,7 @@ static BOOL run_locktest2(int dummy)
 		correct = False;
 	} else {
 		if (!check_error(__LINE__, &cli, ERRDOS, ERRlock, 
-				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
 	if (!cli_lock(&cli, fnum1, 100, 4, 0, WRITE_LOCK)) {
@@ -1033,8 +1033,8 @@ static BOOL run_locktest2(int dummy)
 		correct = False;
 	} else {
 		if (!check_error(__LINE__, &cli, 
-				 ERRDOS, ERRnotlocked, 
-				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
+				 ERRDOS, ERRlock, 
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
 	if (cli_unlock(&cli, fnum1, 0, 8)) {
@@ -1042,8 +1042,8 @@ static BOOL run_locktest2(int dummy)
 		correct = False;
 	} else {
 		if (!check_error(__LINE__, &cli, 
-				 ERRDOS, ERRnotlocked, 
-				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
+				 ERRDOS, ERRlock, 
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
 	if (cli_lock(&cli, fnum3, 0, 4, 0, WRITE_LOCK)) {
@@ -2482,14 +2482,15 @@ static BOOL run_deletetest(int dummy)
 	}
 	
 	cli_sockopt(&cli1, sockops);
-	
+
 	/* Test 1 - this should *NOT* delete the file on close. */
 	
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 	
 	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, DELETE_ON_CLOSE_FLAG);
+				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 
+				   DELETE_ON_CLOSE_FLAG);
 	
 	if (fnum1 == -1) {
 		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
@@ -2520,7 +2521,8 @@ static BOOL run_deletetest(int dummy)
 	cli_unlink(&cli1, fname);
 	
 	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_ALL_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, 
+				   FILE_OVERWRITE_IF, 0);
 	
 	if (fnum1 == -1) {
 		printf("[2] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
@@ -2548,13 +2550,12 @@ static BOOL run_deletetest(int dummy)
 	} else
 		printf("second delete on close test succeeded.\n");
 	
-	
 	/* Test 3 - ... */
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 
 	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
+				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
 
 	if (fnum1 == -1) {
 		printf("[3] open - 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
