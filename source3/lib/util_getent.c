@@ -25,6 +25,7 @@
  Returns a single linked list of group entries.
  Use grent_free() to free it after use.
 ****************************************************************/
+
 struct sys_grent * getgrent_list(void)
 {
 	struct sys_grent *glist;
@@ -40,66 +41,72 @@ struct sys_grent * getgrent_list(void)
 	
 	setgrent();
 	grp = getgrent();
-	while (grp != NULL)
-	{
+	while (grp != NULL) {
 		int i,num;
 		
-		bzero (gent, sizeof(struct sys_grent));
-		if (grp->gr_name) gent->gr_name = strdup(grp->gr_name);
-		if (grp->gr_passwd) gent->gr_passwd = strdup(grp->gr_passwd);
+		memset(gent, '\0', sizeof(struct sys_grent));
+		if (grp->gr_name) {
+			if ((gent->gr_name = strdup(grp->gr_name)) == NULL)
+				goto err;
+		}
+		if (grp->gr_passwd) {
+			if ((gent->gr_passwd = strdup(grp->gr_passwd)) == NULL)
+				goto err;
+		}
 		gent->gr_gid = grp->gr_gid;
 		
 		/* number of strings in gr_mem */
-		for (num = 0; grp->gr_mem[num];	num++);
+		for (num = 0; grp->gr_mem[num];	num++)
+			;
 		
 		/* alloc space for gr_mem string pointers */
-		gent->gr_mem = (char **) malloc(num+1 * sizeof(char *));
-		if (gent->gr_mem == NULL) {
-			DEBUG(0, ("Out of memory in getgrent_list!\n"));
-			endgrent();
-			grent_free(glist);
-			return NULL;
+		if ((gent->gr_mem = (char **) malloc(num+1 * sizeof(char *))) == NULL)
+			goto err;
+
+		for (i=0; i < num; i++) {
+			if ((gent->gr_mem[i] = strdup(grp->gr_mem[i])) == NULL)
+				goto err;
 		}
-		for (i=0; i < num; i++)
-			gent->gr_mem[i] = strdup(grp->gr_mem[i]);
 		gent->gr_mem[num] = NULL;
 		
 		grp = getgrent();
-		if (grp)
-		{
+		if (grp) {
 			gent->next = (struct sys_grent *) malloc(sizeof(struct sys_grent));
-			if (gent->next == NULL) {
-				DEBUG(0, ("Out of memory in getgrent_list!\n"));
-				endgrent();
-				grent_free(glist);
-				return NULL;
-			}
+			if (gent->next == NULL)
+				goto err;
 			gent = gent->next;
 		}
 	}
 	
 	endgrent();
 	return glist;
+
+  err:
+
+	endgrent();
+	DEBUG(0, ("Out of memory in getgrent_list!\n"));
+	grent_free(glist);
+	return NULL;
 }
 
 /****************************************************************
  Free the single linked list of group entries made by
  getgrent_list()
 ****************************************************************/
+
 void grent_free (struct sys_grent *glist)
 {
-	while (glist)
-	{
+	while (glist) {
 		char **ary;
 		struct sys_grent *temp;
 		
-		if (glist->gr_name) free(glist->gr_name);
-		if (glist->gr_passwd) free(glist->gr_passwd);
-		if (glist->gr_mem)
-		{
+		if (glist->gr_name)
+			free(glist->gr_name);
+		if (glist->gr_passwd)
+			free(glist->gr_passwd);
+		if (glist->gr_mem) {
 			ary = glist->gr_mem;
-			while (*ary)
-			{
+			while (*ary) {
 				free(*ary);
 				ary++;
 			}
@@ -115,6 +122,7 @@ void grent_free (struct sys_grent *glist)
  Returns a single linked list of passwd entries.
  Use pwent_free() to free it after use.
 ****************************************************************/
+
 struct sys_pwent * getpwent_list(void)
 {
 	struct sys_pwent *plist;
@@ -130,28 +138,36 @@ struct sys_pwent * getpwent_list(void)
 	
 	setpwent();
 	pwd = getpwent();
-	while (pwd != NULL)
-	{
-		bzero (pent, sizeof(struct sys_pwent));
-		if (pwd->pw_name) pent->pw_name = strdup(pwd->pw_name);
-		if (pwd->pw_passwd) pent->pw_passwd = strdup(pwd->pw_passwd);
+	while (pwd != NULL) {
+		memset(pent, '\0', sizeof(struct sys_pwent));
+		if (pwd->pw_name) {
+			if ((pent->pw_name = strdup(pwd->pw_name)) == NULL)
+				goto err;
+		}
+		if (pwd->pw_passwd) {
+			if ((pent->pw_passwd = strdup(pwd->pw_passwd)) == NULL)
+				goto err;
+		}
 		pent->pw_uid = pwd->pw_uid;
 		pent->pw_gid = pwd->pw_gid;
-		if (pwd->pw_gecos) pent->pw_name = strdup(pwd->pw_gecos);
-		if (pwd->pw_dir) pent->pw_name = strdup(pwd->pw_dir);
-		if (pwd->pw_shell) pent->pw_name = strdup(pwd->pw_shell);
+		if (pwd->pw_gecos) {
+			if ((pent->pw_name = strdup(pwd->pw_gecos)) == NULL)
+				goto err;
+		}
+		if (pwd->pw_dir) {
+			if ((pent->pw_name = strdup(pwd->pw_dir)) == NULL)
+				goto err;
+		}
+		if (pwd->pw_shell) {
+			if ((pent->pw_name = strdup(pwd->pw_shell)) == NULL)
+				goto err;
+		}
 
-		
 		pwd = getpwent();
-		if (pwd)
-		{
+		if (pwd) {
 			pent->next = (struct sys_pwent *) malloc(sizeof(struct sys_pwent));
-			if (pent->next == NULL) {
-				DEBUG(0, ("Out of memory in getgrent_list!\n"));
-				endpwent();
-				pwent_free(plist);
-				return NULL;
-			}
+			if (pent->next == NULL)
+				goto err;
 			pent = pent->next;
 		}
 	}
@@ -159,27 +175,37 @@ struct sys_pwent * getpwent_list(void)
 	endpwent();
 	return plist;
 
+  err:
+
+	endpwent();
+	DEBUG(0, ("Out of memory in getpwent_list!\n"));
+	pwent_free(plist);
+	return NULL;
 }
 
 /****************************************************************
  Free the single linked list of passwd entries made by
  getpwent_list()
 ****************************************************************/
+
 void pwent_free (struct sys_pwent *plist)
 {
-	while (plist)
-	{
+	while (plist) {
 		struct sys_pwent *temp;
 		
-		if (plist->pw_name) free(plist->pw_name);
-		if (plist->pw_passwd) free(plist->pw_passwd);
-		if (plist->pw_gecos) free(plist->pw_gecos);
-		if (plist->pw_dir) free(plist->pw_dir);
-		if (plist->pw_shell) free(plist->pw_shell);
+		if (plist->pw_name)
+			free(plist->pw_name);
+		if (plist->pw_passwd)
+			free(plist->pw_passwd);
+		if (plist->pw_gecos)
+			free(plist->pw_gecos);
+		if (plist->pw_dir)
+			free(plist->pw_dir);
+		if (plist->pw_shell)
+			free(plist->pw_shell);
 
 		temp = plist->next;
 		free(plist);
 		plist = temp;
 	}
 }
-
