@@ -192,9 +192,9 @@ pop_pass (POP *p)
 		 return pop_msg(p, POP_FAILURE,
 				"Password incorrect");
 	 }
-	 pop_log(p, POP_INFO, "login from %s as %s",
-		 p->ipaddr, p->user);
     }
+    pop_log(p, POP_INFO, "login from %s as %s",
+	    p->ipaddr, p->user);
 
     /*  Build the name of the user's maildrop */
     snprintf(p->drop_name, sizeof(p->drop_name), "%s/%s", POP_MAILDIR, p->user);
