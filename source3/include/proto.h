@@ -145,6 +145,7 @@ int ms_fnmatch(char *pattern, char *string);
 BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout);
 BOOL msrpc_send(int fd, prs_struct *ps);
 BOOL msrpc_receive(int fd, prs_struct *ps);
+void ncalrpc_l_shutdown(struct msrpc_local *msrpc);
 BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
 void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);
@@ -402,10 +403,11 @@ void file_lines_slashcont(char **lines);
 
 /*The following definitions come from  lib/util_seaccess.c  */
 
-BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
-		     uint32 acc_req, uint32 prev_grant_acc,
-		     uint32 * acc_grant,
-		     uint32 * status);
+BOOL winbind_uid_to_sid(uid_t uid, DOM_SID *sid);
+BOOL winbind_gid_to_sid(gid_t gid, DOM_SID *sid);
+BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
+		     gid_t *groups, uint32 acc_desired, 
+		     uint32 *acc_granted, uint32 *status);
 
 /*The following definitions come from  lib/util_sec.c  */
 
@@ -1252,6 +1254,9 @@ void close_sock(void);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
+enum nss_status winbindd_request(int req_type, 
+				 struct winbindd_request *request,
+				 struct winbindd_response *response);
 
 /*The following definitions come from  param/loadparm.c  */
 
@@ -1650,7 +1655,8 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
 BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
-BOOL print_access_check(int snum, uint16 vuid, uint32 required_access);
+BOOL print_access_check(struct current_user *user, int snum, 
+			uint32 required_access);
 
 /*The following definitions come from  printing/pcap.c  */
 
@@ -1683,19 +1689,19 @@ int print_job_fd(int jobid);
 char *print_job_fname(int jobid);
 BOOL print_job_set_place(int jobid, int place);
 BOOL print_job_set_name(int jobid, char *name);
-BOOL print_job_delete(uint16 vuid, int jobid);
-BOOL print_job_pause(uint16 vuid, int jobid);
-BOOL print_job_resume(uint16 vuid, int jobid);
+BOOL print_job_delete(struct current_user *user, int jobid);
+BOOL print_job_pause(struct current_user *user, int jobid);
+BOOL print_job_resume(struct current_user *user, int jobid);
 int print_job_write(int jobid, const char *buf, int size);
-int print_job_start(int snum, uint16 vuid, char *jobname);
+int print_job_start(struct current_user *user, int snum, char *jobname);
 BOOL print_job_end(int jobid);
 int print_queue_status(int snum, 
 		       print_queue_struct **queue,
 		       print_status_struct *status);
 int print_queue_snum(char *qname);
-BOOL print_queue_pause(int snum, uint16 vuid);
-BOOL print_queue_resume(int snum, uint16 vuid);
-BOOL print_queue_purge(int snum, uint16 vuid);
+BOOL print_queue_pause(struct current_user *user, int snum);
+BOOL print_queue_resume(struct current_user *user, int snum);
+BOOL print_queue_purge(struct current_user *user, int snum);
 
 /*The following definitions come from  profile/profile.c  */
 
@@ -2927,8 +2933,9 @@ uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_a
 				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion);
 uint32 _spoolss_startpageprinter(const POLICY_HND *handle);
 uint32 _spoolss_endpageprinter(const POLICY_HND *handle);
-uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
-				 uint32 vuid, DOC_INFO *docinfo, uint32 *jobid);
+uint32 _spoolss_startdocprinter(const POLICY_HND *handle, uint32 level,
+				pipes_struct *p, DOC_INFO *docinfo, 
+				uint32 *jobid);
 uint32 _spoolss_enddocprinter(const POLICY_HND *handle);
 uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 				uint32 buffer_size,
@@ -2938,7 +2945,7 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   DEVMODE_CTR devmode_ctr,
 			   SEC_DESC_BUF *secdesc_ctr,
-			   uint32 command, uint16 vuid);
+			   uint32 command, pipes_struct *p);
 uint32 _spoolss_fcpn(const POLICY_HND *handle);
 uint32 _spoolss_addjob(const POLICY_HND *handle, uint32 level,
 			NEW_BUFFER *buffer, uint32 offered);
@@ -2949,7 +2956,7 @@ uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid);
 uint32 _spoolss_setjob( const POLICY_HND *handle,
 				uint32 jobid,
 				uint32 level,
-		                uint32 vuid,
+		                pipes_struct *p,
 				JOB_INFO *ctr,
 				uint32 command);
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,

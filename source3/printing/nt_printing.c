@@ -370,13 +370,10 @@ static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 static uint32 get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 info;
-	int snum;
 
 	ZERO_STRUCT(info);
 
-	snum = lp_servicenumber(in_prt);
-
-	fstrcpy(info.name, lp_printerdriver(snum));
+	fstrcpy(info.name, in_prt);
 	fstrcpy(info.defaultdatatype, "RAW");
 	
 	fstrcpy(info.driverpath, "");

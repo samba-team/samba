@@ -785,7 +785,7 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	ts->queue[i].job = jobid;
 	ts->queue[i].size = pjob.size;
 	ts->queue[i].status = pjob.status;
-	ts->queue[i].priority = 0;
+	ts->queue[i].priority = 1;
 	ts->queue[i].time = pjob.starttime;
 	fstrcpy(ts->queue[i].user, pjob.user);
 	fstrcpy(ts->queue[i].file, pjob.jobname);
