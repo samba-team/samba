@@ -42,9 +42,6 @@ extern int ClientNMB;
 /* this is our domain/workgroup/server database */
 extern struct subnet_record *subnetlist;
 
-/* machine comment for host announcements */
-extern  pstring ServerComment;
-
 extern int  updatecount;
 extern int  workgroup_count;
 
@@ -307,7 +304,7 @@ void announce_host(void)
   pstring comment;
   char *my_name;
 
-  StrnCpy(comment, *ServerComment ? ServerComment : "NoComment", 43);
+  StrnCpy(comment, lp_serverstring(), 43);
 
   my_name = *myname ? myname : "NoName";
 

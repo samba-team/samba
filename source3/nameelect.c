@@ -43,9 +43,6 @@ extern pstring myname;
 extern struct in_addr ipzero;
 extern struct in_addr ipgrp;
 
-/* machine comment for host announcements */
-extern  pstring ServerComment;
-
 /* here are my election parameters */
 
 extern time_t StartupTime;
@@ -266,7 +263,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
       /* update our server status */
       work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
-      add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+      add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
 
       /* add special browser name */
       add_my_name_entry(d,MSBROWSE        ,0x01,nb_type|NB_ACTIVE|NB_GROUP);
@@ -295,7 +292,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
       /* update our server status */
       work->ServerType |= SV_TYPE_MASTER_BROWSER;
-      add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+      add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
 
       if (work->serverlist == NULL) /* no servers! */
       {
@@ -344,7 +341,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
         if (lp_domain_logons())
 	    {
           work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
-          add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+          add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
         }
 
         /* add domain master name */
@@ -380,7 +377,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
 	    }
 
 		work->ServerType |= update_type;
-        add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+		add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
 
 		for (d1 = subnetlist; d1; d1 = d1->next)
 		{

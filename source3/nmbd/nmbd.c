@@ -44,9 +44,6 @@ extern pstring myname;
 /* are we running as a daemon ? */
 static BOOL is_daemon = False;
 
-/* machine comment for host announcements */
-pstring ServerComment="";
-
 /* what server type are we currently */
 
 time_t StartupTime =0;
@@ -507,13 +504,6 @@ static void usage(char *pname)
     load_hosts_file(host_file);
     DEBUG(3,("Loaded hosts file\n"));
   }
-
-
-
-  if (!*ServerComment)
-    strcpy(ServerComment,"Samba %v");
-  string_sub(ServerComment,"%v",VERSION);
-  string_sub(ServerComment,"%h",myhostname);
 
   add_my_names();
 

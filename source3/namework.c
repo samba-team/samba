@@ -48,9 +48,6 @@ extern int workgroup_count; /* total number of workgroups we know about */
 /* this is our domain/workgroup/server database */
 extern struct subnet_record *subnetlist;
 
-/* machine comment for host announcements */
-extern  pstring ServerComment;
-
 extern int  updatecount;
 
 /* what server type are we currently */

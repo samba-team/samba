@@ -37,7 +37,6 @@ extern int DEBUGLEVEL;
 
 extern pstring scope;
 extern pstring myname;
-extern pstring ServerComment;
 extern struct in_addr ipzero;
 extern struct in_addr ipgrp;
 
