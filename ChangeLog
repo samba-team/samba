@@ -1,3 +1,8 @@
+2003-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb.c (find_dynamic_method): if there isn't a prefix,
+	don't load anything
+
 2003-06-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb.c: Dynamic backend loading, based on patch from Luke
