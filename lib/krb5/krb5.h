@@ -99,11 +99,13 @@ enum {
 
 typedef HostAddress krb5_address;
 
-/* typedef HostAddresses krb5_addresses; */
+typedef HostAddresses krb5_addresses;
+#if 0
 typedef struct krb5_addresses {
     int number;
     krb5_address *addrs;
 } krb5_addresses;
+#endif
 
 typedef enum krb5_keytype { KEYTYPE_DES = 1 } krb5_keytype;
 
@@ -395,10 +397,17 @@ krb5_auth_getauthenticator(krb5_context context,
 			   krb5_auth_context auth_context,
 			   krb5_authenticator *authenticator);
 
+#if 0
 krb5_boolean
 krb5_address_search(krb5_context context,
 		    const krb5_address *addr,
 		    krb5_address *const *addrlist);
+#endif
+
+krb5_boolean
+krb5_address_search(krb5_context context,
+		    const krb5_address *addr,
+		    const krb5_addresses *addrlist);
 
 krb5_boolean
 krb5_address_compare(krb5_context context,
@@ -418,6 +427,10 @@ krb5_copy_addresses(krb5_context context,
 krb5_error_code
 krb5_free_address(krb5_context context,
 		  krb5_address *address);
+
+krb5_error_code
+krb5_free_addresses(krb5_context context,
+		    krb5_addresses *addresses);
 
 void
 krb5_free_authenticator(krb5_context,
@@ -734,7 +747,6 @@ extern const char krb5_config_file[];
 extern const char krb5_defkeyname[];
 
 void krb5_free_context(krb5_context context);
-
 
 krb5_error_code
 krb5_get_all_client_addrs (krb5_addresses *res);
