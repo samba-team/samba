@@ -1220,7 +1220,7 @@ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_d
 	return NT_STATUS_OK;
 }
 
-static void dcesrv_init(struct server_service *service, const struct model_ops *model_ops)
+static void dcesrv_init(struct server_service *service)
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
@@ -1235,7 +1235,9 @@ static void dcesrv_init(struct server_service *service, const struct model_ops *
 		return;
 	}
 
-	dcesrv_sock_init(service, model_ops, dce_ctx);
+	service->service.private_data = dce_ctx;
+
+	dcesrv_sock_init(service);
 
 	return;	
 }
@@ -1255,18 +1257,6 @@ static void dcesrv_send(struct server_connection *srv_conn,
 			struct timeval t, uint16_t flags)
 {
 	dcesrv_sock_send(srv_conn, t, flags);
-}
-
-static void dcesrv_close(struct server_connection *srv_conn, const char *reason)
-{
-	dcesrv_sock_close(srv_conn, reason);
-	return;	
-}
-
-static void dcesrv_exit(struct server_service *service, const char *reason)
-{
-	dcesrv_sock_exit(service, reason);
-	return;	
 }
 
 /* the list of currently registered DCERPC endpoint servers.
@@ -1350,15 +1340,24 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 	return &critical_sizes;
 }
 
-static const struct server_service_ops dcesrv_ops = {
+static const struct server_stream_ops dcesrv_stream_ops = {
 	.name			= "rpc",
-	.service_init		= dcesrv_init,
+	.socket_init		= NULL,
 	.accept_connection	= dcesrv_accept,
 	.recv_handler		= dcesrv_recv,
 	.send_handler		= dcesrv_send,
 	.idle_handler		= NULL,
-	.close_connection	= dcesrv_close,
-	.service_exit		= dcesrv_exit,
+	.close_connection	= NULL
+};
+
+const struct server_stream_ops *dcesrv_get_stream_ops(void)
+{
+	return &dcesrv_stream_ops;
+}
+
+static const struct server_service_ops dcesrv_ops = {
+	.name			= "rpc",
+	.service_init		= dcesrv_init,
 };
 
 const struct server_service_ops *dcesrv_get_ops(void)

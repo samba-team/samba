@@ -53,24 +53,22 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 	server_terminate_connection(dce_conn->srv_conn, reason);
 }
 
-static void add_socket_rpc_unix(struct server_service *service,
-				const struct model_ops *model_ops,
-				struct dcesrv_context *dce_ctx,
-				struct dcesrv_endpoint *e)
+static void add_socket_rpc_unix(struct server_service *service, struct dcesrv_endpoint *e)
 {
-	struct server_socket *sock;
+	struct dcesrv_context *dce_ctx = service->service.private_data;
+	struct server_stream_socket *stream_socket;
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
 
-	sock = service_setup_socket(service,model_ops, "unix", e->ep_description.endpoint, &port);
-	if (!sock) {
-		DEBUG(0,("service_setup_socket(path=%s) failed\n",e->ep_description.endpoint));
+	stream_socket = service_setup_stream_socket(service, dcesrv_get_stream_ops(), "unix", e->ep_description.endpoint, &port);
+	if (!stream_socket) {
+		DEBUG(0,("service_setup_stream_socket(path=%s) failed\n",e->ep_description.endpoint));
 		return;
 	}
 
-	dcesrv_sock = talloc_p(sock, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_p(stream_socket, struct dcesrv_socket_context);
 	if (!dcesrv_sock) {
-		DEBUG(0,("talloc_p(sock->mem_ctx, struct dcesrv_socket_context) failed\n"));
+		DEBUG(0,("talloc_p(stream_socket, struct dcesrv_socket_context) failed\n"));
 		return;
 	}
 
@@ -78,15 +76,13 @@ static void add_socket_rpc_unix(struct server_service *service,
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= dce_ctx;
 
-	sock->private_data = dcesrv_sock;
+	stream_socket->stream.private_data = dcesrv_sock;
 }
 
-static void add_socket_rpc_ncalrpc(struct server_service *service,
-							const struct model_ops *model_ops,
-							struct dcesrv_context *dce_ctx, 
-							struct dcesrv_endpoint *e)
+static void add_socket_rpc_ncalrpc(struct server_service *service, struct dcesrv_endpoint *e)
 {
-	struct server_socket *sock;
+	struct dcesrv_context *dce_ctx = service->service.private_data;
+	struct server_stream_socket *stream_socket;
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
 	char *full_path;
@@ -100,15 +96,15 @@ static void add_socket_rpc_ncalrpc(struct server_service *service,
 
 	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(), e->ep_description.endpoint);
 
-	sock = service_setup_socket(service,model_ops, "unix", full_path, &port);
-	if (!sock) {
-		DEBUG(0,("service_setup_socket(identifier=%s,path=%s) failed\n",e->ep_description.endpoint, full_path));
+	stream_socket = service_setup_stream_socket(service, dcesrv_get_stream_ops(), "unix", full_path, &port);
+	if (!stream_socket) {
+		DEBUG(0,("service_setup_stream_socket(identifier=%s,path=%s) failed\n",e->ep_description.endpoint, full_path));
 		return;
 	}
 
-	dcesrv_sock = talloc_p(sock, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_p(stream_socket, struct dcesrv_socket_context);
 	if (!dcesrv_sock) {
-		DEBUG(0,("talloc_p(sock->mem_ctx, struct dcesrv_socket_context) failed\n"));
+		DEBUG(0,("talloc_p(stream_socket, struct dcesrv_socket_context) failed\n"));
 		return;
 	}
 
@@ -116,7 +112,7 @@ static void add_socket_rpc_ncalrpc(struct server_service *service,
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= dce_ctx;
 
-	sock->private_data = dcesrv_sock;
+	stream_socket->stream.private_data = dcesrv_sock;
 
 	return;
 }
@@ -125,12 +121,11 @@ static void add_socket_rpc_ncalrpc(struct server_service *service,
   add a socket address to the list of events, one event per dcerpc endpoint
 */
 static void add_socket_rpc_tcp_iface(struct server_service *service, 
-				     const struct model_ops *model_ops,
-				     struct dcesrv_context *dce_ctx, 
 				     struct dcesrv_endpoint *e,
 				     struct ipv4_addr *ifip)
 {
-	struct server_socket *sock;
+	struct dcesrv_context *dce_ctx = service->service.private_data;
+	struct server_stream_socket *stream_socket;
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 0;
 	char *ip_str = talloc_strdup(service, sys_inet_ntoa(*ifip));
@@ -138,9 +133,9 @@ static void add_socket_rpc_tcp_iface(struct server_service *service,
 	if (e->ep_description.endpoint) 
 		port = atoi(e->ep_description.endpoint);
 
-	sock = service_setup_socket(service,model_ops, "ipv4", ip_str, &port);
-	if (!sock) {
-		DEBUG(0,("service_setup_socket(port=%u) failed\n",port));
+	stream_socket = service_setup_stream_socket(service, dcesrv_get_stream_ops(), "ipv4", ip_str, &port);
+	if (!stream_socket) {
+		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) failed\n", ip_str, port));
 		return;
 	}
 
@@ -148,9 +143,9 @@ static void add_socket_rpc_tcp_iface(struct server_service *service,
 		e->ep_description.endpoint = talloc_asprintf(dce_ctx, "%d", port);
 	}
 
-	dcesrv_sock = talloc_p(sock, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_p(stream_socket, struct dcesrv_socket_context);
 	if (!dcesrv_sock) {
-		DEBUG(0,("talloc_p(sock->mem_ctx, struct dcesrv_socket_context) failed\n"));
+		DEBUG(0,("talloc_p(stream_socket, struct dcesrv_socket_context) failed\n"));
 		return;
 	}
 
@@ -158,17 +153,14 @@ static void add_socket_rpc_tcp_iface(struct server_service *service,
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= dce_ctx;
 
-	sock->private_data = dcesrv_sock;
+	stream_socket->stream.private_data = dcesrv_sock;
 
 	talloc_free(ip_str);
 
 	return;
 }
 
-static void add_socket_rpc_tcp(struct server_service *service,
-							const struct model_ops *model_ops,
-							struct dcesrv_context *dce_ctx, 
-							struct dcesrv_endpoint *e)
+static void add_socket_rpc_tcp(struct server_service *service, struct dcesrv_endpoint *e)
 {
 	/* Add TCP/IP sockets */
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
@@ -179,12 +171,12 @@ static void add_socket_rpc_tcp(struct server_service *service,
 			if (ifip == NULL) {
 				continue;
 			}
-			add_socket_rpc_tcp_iface(service, model_ops, dce_ctx, e, ifip);
+			add_socket_rpc_tcp_iface(service, e, ifip);
 		}
 	} else {
 		struct ipv4_addr ifip;
 		ifip = interpret_addr2(lp_socket_address());
-		add_socket_rpc_tcp_iface(service, model_ops, dce_ctx, e, &ifip);
+		add_socket_rpc_tcp_iface(service, e, &ifip);
 	}
 
 	return;
@@ -193,8 +185,9 @@ static void add_socket_rpc_tcp(struct server_service *service,
 /****************************************************************************
  Open the listening sockets for RPC over NCACN_IP_TCP/NCALRPC/NCACN_UNIX_STREAM
 ****************************************************************************/
-void dcesrv_sock_init(struct server_service *service, const struct model_ops *model_ops, struct dcesrv_context *dce_ctx)
+void dcesrv_sock_init(struct server_service *service)
 {
+	struct dcesrv_context *dce_ctx = service->service.private_data;
 	struct dcesrv_endpoint *e;
 
 	DEBUG(1,("dcesrv_sock_init\n"));
@@ -207,15 +200,15 @@ void dcesrv_sock_init(struct server_service *service, const struct model_ops *mo
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
 		switch (e->ep_description.transport) {
 		case NCACN_UNIX_STREAM:
-			add_socket_rpc_unix(service, model_ops, dce_ctx, e);
+			add_socket_rpc_unix(service, e);
 			break;
 		
 		case NCALRPC:
-			add_socket_rpc_ncalrpc(service, model_ops, dce_ctx, e);
+			add_socket_rpc_ncalrpc(service, e);
 			break;
 
 		case NCACN_IP_TCP:
-			add_socket_rpc_tcp(service, model_ops, dce_ctx, e);
+			add_socket_rpc_tcp(service, e);
 			break;
 
 		default:
@@ -229,7 +222,7 @@ void dcesrv_sock_init(struct server_service *service, const struct model_ops *mo
 void dcesrv_sock_accept(struct server_connection *srv_conn)
 {
 	NTSTATUS status;
-	struct dcesrv_socket_context *dcesrv_sock = srv_conn->server_socket->private_data;
+	struct dcesrv_socket_context *dcesrv_sock = srv_conn->stream_socket->stream.private_data;
 	struct dcesrv_connection *dcesrv_conn = NULL;
 
 	DEBUG(5,("dcesrv_sock_accept\n"));
@@ -245,7 +238,7 @@ void dcesrv_sock_accept(struct server_connection *srv_conn)
 		return;
 	}
 
-	srv_conn->private_data = dcesrv_conn;
+	srv_conn->connection.private_data = dcesrv_conn;
 
 	return;	
 }
@@ -253,7 +246,7 @@ void dcesrv_sock_accept(struct server_connection *srv_conn)
 void dcesrv_sock_recv(struct server_connection *conn, struct timeval t, uint16_t flags)
 {
 	NTSTATUS status;
-	struct dcesrv_connection *dce_conn = conn->private_data;
+	struct dcesrv_connection *dce_conn = conn->connection.private_data;
 	DATA_BLOB tmp_blob;
 	size_t nread;
 
@@ -292,7 +285,7 @@ void dcesrv_sock_recv(struct server_connection *conn, struct timeval t, uint16_t
 
 void dcesrv_sock_send(struct server_connection *conn, struct timeval t, uint16_t flags)
 {
-	struct dcesrv_connection *dce_conn = conn->private_data;
+	struct dcesrv_connection *dce_conn = conn->connection.private_data;
 	NTSTATUS status;
 
 	DEBUG(10,("dcesrv_sock_send\n"));
@@ -307,22 +300,5 @@ void dcesrv_sock_send(struct server_connection *conn, struct timeval t, uint16_t
 		conn->event.fde->flags &= ~EVENT_FD_WRITE;
 	}
 
-	return;
-}
-
-void dcesrv_sock_close(struct server_connection *conn, const char *reason)
-{
-	struct dcesrv_connection *dce_conn = conn->private_data;
-
-	DEBUG(5,("dcesrv_sock_close: %s\n",reason));
-
-	talloc_free(dce_conn);
-
-	return;
-}
-
-void dcesrv_sock_exit(struct server_service *service, const char *reason)
-{
-	DEBUG(1,("dcesrv_sock_exit: %s\n",reason));
 	return;
 }

@@ -150,7 +150,7 @@ struct substitute_context {
 struct smbsrv_connection {
 	/* a count of the number of packets we have received. We
 	 * actually only care about zero/non-zero at this stage */
-	unsigned pkt_count;
+	//unsigned pkt_count;
 
 	/* context that has been negotiated between the client and server */
 	struct {
@@ -213,6 +213,7 @@ struct smbsrv_connection {
 	} tree;
 
 	/* the context associated with open files on an smb socket */
+#if 0
 	struct {
 		struct files_struct *files; /* open files */
 	
@@ -228,7 +229,7 @@ struct smbsrv_connection {
 		/* limit for maximum open files */
 		int real_max_open_files;
 	} file;
-
+#endif
 	/* context associated with currently valid session setups */
 	struct {
 		/* this holds info on session vuids that are already validated for this VC */
@@ -236,11 +237,6 @@ struct smbsrv_connection {
 		uint16_t next_vuid; /* initialise to VUID_OFFSET */
 		int num_validated_vuids;
 	} sessions;
-
-	/* this holds long term state specific to the printing subsystem */
-	struct {
-		struct notify_queue *notify_queue_head;
-	} print;
 
 	/* the server_context holds a linked list of pending requests,
 	 * this is used for blocking locks and requests blocked due to oplock
@@ -251,7 +247,7 @@ struct smbsrv_connection {
 		/* the request itself - needs to be freed */
 		struct smbsrv_request *request;
 	} *requests;
-
+#if 0
 	/* the timers context contains info on when we last did various
 	 * functions */
 	struct {
@@ -264,13 +260,10 @@ struct smbsrv_connection {
 		/* when we last checked the smb.conf for auto-reload */
 		time_t last_smb_conf_reload;
 	} timers;
-
+#endif
 	struct smb_signing_context signing;
 
-	struct substitute_context substitute;
-
-	/* the pid of the process handling this session */
-	pid_t pid;
+//	struct substitute_context substitute;
 	
 	struct server_connection *connection;
 

@@ -24,12 +24,6 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 
-static void exit_server(const char *reason)
-{
-	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
-	exit(0);
-}
-
 /****************************************************************************
  main server.
 ****************************************************************************/
@@ -41,10 +35,10 @@ static int binary_smbd_main(int argc,const char *argv[])
 	BOOL log_stdout = False;
 	int opt;
 	poptContext pc;
-	struct server_context *srv_ctx;
+	struct server_context *server;
 	const char *model = "standard";
 	struct poptOption long_options[] = {
-		POPT_AUTOHELP
+	POPT_AUTOHELP
 	POPT_COMMON_SAMBA
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" , NULL },
 	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)", NULL},
@@ -52,6 +46,7 @@ static int binary_smbd_main(int argc,const char *argv[])
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout", NULL },
 	{"port", 'p', POPT_ARG_STRING, NULL, 0, "Listen on the specified ports", "PORTS"},
 	{"model", 'M', POPT_ARG_STRING, &model, True, "Select process model", "MODEL"},
+	POPT_COMMON_VERSION
 	POPT_TABLEEND
 	};
 	
@@ -77,7 +72,7 @@ static int binary_smbd_main(int argc,const char *argv[])
 	}
 	setup_logging(argv[0], log_stdout?DEBUG_STDOUT:DEBUG_FILE);
 
-	fault_setup((void (*)(void *))exit_server);
+	fault_setup(NULL);
 	
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
@@ -105,7 +100,7 @@ static int binary_smbd_main(int argc,const char *argv[])
 	reopen_logs();
 
 	DEBUG(0,("smbd version %s started.\n", SAMBA_VERSION_STRING));
-	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2004\n"));
+	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2005\n"));
 
 	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4 || sizeof(uint64_t) < 8) {
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
@@ -142,15 +137,21 @@ static int binary_smbd_main(int argc,const char *argv[])
 
 	init_subsystems();
 
+	smbd_process_init();
+
 	DEBUG(0,("Using %s process model\n", model));
-	srv_ctx = server_service_startup(model);
-	if (!srv_ctx) {
+	server = server_service_startup(model, lp_server_services());
+	if (!server) {
 		DEBUG(0,("Starting Services failed.\n"));
 		return 1;
 	}
 
 	/* wait for events */
-	return event_loop_wait(srv_ctx->events);
+	event_loop_wait(server->event.ctx);
+
+	server_service_shutdown(server, "exit");
+
+	return 0;
 }
 
  int main(int argc, const char *argv[])

@@ -50,24 +50,15 @@ REQUIRED_SUBSYSTEMS = \
 # End SUBSYSTEM SERVER
 #######################
 
-#######################
-# Start SUBSYSTEM SERVER
-[SUBSYSTEM::SERVER]
-INIT_OBJ_FILES = \
-		smbd/server.o
-ADD_OBJ_FILES = \
-		smbd/rewrite.o
-REQUIRED_SUBSYSTEMS = \
-		PROCESS_MODEL \
-		SERVER_SERVICE
-# End SUBSYSTEM SERVER
-#######################
-
 #################################
 # Start BINARY smbd
 [BINARY::smbd]
+OBJ_FILES = \
+		smbd/server.o \
+		smbd/rewrite.o
 REQUIRED_SUBSYSTEMS = \
-		SERVER \
+		PROCESS_MODEL \
+		SERVER_SERVICE \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC

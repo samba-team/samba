@@ -27,7 +27,7 @@
 /*
   setup the events for the chosen process model
 */
-const struct model_ops *process_model_startup(const char *model)
+const struct model_ops *process_model_startup(struct server_context *srv_ctx, const char *model)
 {
 	const struct model_ops *ops;
 
@@ -37,7 +37,7 @@ const struct model_ops *process_model_startup(const char *model)
 		exit(-1);
 	}
 
-	ops->model_startup();
+	ops->model_init(srv_ctx);
 
 	return ops;
 }
