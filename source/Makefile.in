@@ -302,6 +302,7 @@ LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
 
 SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 		rpc_server/srv_spoolss.o \
+		spoolssd/srv_spoolss_nt.o \
 		passdb/smbpassfile.o \
 		printing/nt_printing.o 
 

@@ -4843,6 +4843,81 @@ int smbw_stat(const char *fname, struct stat *st);
 
 msrpc_service_fns *get_service_fns(void);
 
+/*The following definitions come from  spoolssd/srv_spoolss_nt.c  */
+
+void init_printer_hnd(void);
+uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
+
+				uint32  unknown0, uint32  cbbuf,
+				uint32  devmod, uint32  access_required,
+				uint32  unknown1, uint32  unknown2,
+				uint32  unknown3, uint32  unknown4,
+				uint32  unknown5, uint32  unknown6,
+				uint32  unknown7, uint32  unknown8,
+				uint32  unknown9, uint32  unknown10,
+				const UNISTR2 *station, const UNISTR2 *username,
+				POLICY_HND *handle);
+uint32 _spoolss_closeprinter(POLICY_HND *handle);
+uint32 _spoolss_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *rdata)                                ;
+uint32 _spoolss_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, prs_struct *rdata);
+uint32 _spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_location(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_devmode(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_datatype(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_security_desc(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_attributes(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_default_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_start_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_until_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_job_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_job_size(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 _spoolss_notify_job_position(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+uint32 size_of_notify_info_data(uint16 type, uint16 field);
+BOOL type_of_notify_info_data(uint16 type, uint16 field);
+uint32 _spoolss_rfnpcnex(SPOOL_Q_RFNPCNEX *q_u, prs_struct *rdata);
+uint32 _spoolss_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rdata);
+uint32 _spoolss_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rdata);
+uint32 _spoolss_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_setprinter(SPOOL_Q_SETPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_fcpn(SPOOL_Q_FCPN *q_u, prs_struct *rdata);
+uint32 _spoolss_addjob(SPOOL_Q_ADDJOB *q_u, prs_struct *rdata);
+uint32 _spoolss_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata);
+uint32 _spoolss_schedulejob(SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *rdata);
+uint32 _spoolss_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata);
+uint32 _spoolss_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *rdata);
+uint32 _spoolss_enumforms(SPOOL_Q_ENUMFORMS *q_u, prs_struct *rdata);
+uint32 _spoolss_enumports(SPOOL_Q_ENUMPORTS *q_u, prs_struct *rdata);
+uint32 _spoolss_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *rdata);
+uint32 _spoolss_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *rdata);
+uint32 _spoolss_getprinterdriverdirectory(SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *rdata);
+uint32 _spoolss_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *rdata);
+uint32 _spoolss_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *rdata);
+uint32 _spoolss_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata);
+uint32 _spoolss_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata);
+uint32 _spoolss_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *rdata);
+uint32 _spoolss_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *rdata);
+uint32 _spoolss_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata);
+
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
 msrpc_service_fns *get_service_fns(void);
