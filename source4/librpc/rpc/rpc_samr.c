@@ -213,12 +213,12 @@ NTSTATUS dcerpc_samr_CREATE_DOM_ALIAS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_ENUM_DOM_ALIASES(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_ENUM_DOM_ALIASES *r)
+NTSTATUS dcerpc_samr_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_EnumDomainAliases *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_ENUM_DOM_ALIASES, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_ENUM_DOM_ALIASES,
-				    (ndr_pull_fn_t) ndr_pull_samr_ENUM_DOM_ALIASES,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_ENUMDOMAINALIASES, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_EnumDomainAliases,
+				    (ndr_pull_fn_t) ndr_pull_samr_EnumDomainAliases,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -479,12 +479,12 @@ NTSTATUS dcerpc_samr_GET_MEMBERS_IN_ALIAS(struct dcerpc_pipe *p, TALLOC_CTX *mem
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_OPEN_USER(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_OPEN_USER *r)
+NTSTATUS dcerpc_samr_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_OpenUser *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_OPEN_USER, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_OPEN_USER,
-				    (ndr_pull_fn_t) ndr_pull_samr_OPEN_USER,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_OPENUSER, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_OpenUser,
+				    (ndr_pull_fn_t) ndr_pull_samr_OpenUser,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -507,12 +507,12 @@ NTSTATUS dcerpc_samr_DELETE_DOM_USER(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_QUERY_USERINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_QUERY_USERINFO *r)
+NTSTATUS dcerpc_samr_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_QueryUserInfo *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_QUERY_USERINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_QUERY_USERINFO,
-				    (ndr_pull_fn_t) ndr_pull_samr_QUERY_USERINFO,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_QUERYUSERINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_QueryUserInfo,
+				    (ndr_pull_fn_t) ndr_pull_samr_QueryUserInfo,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

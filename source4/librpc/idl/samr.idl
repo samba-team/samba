@@ -223,7 +223,13 @@
 
 	/************************/
 	/* Function    0x0f     */
-	NTSTATUS samr_ENUM_DOM_ALIASES();
+	NTSTATUS samr_EnumDomainAliases(
+		[in,ref]      policy_handle *handle,
+		[in,out,ref]  uint32 *resume_handle,
+		[in]          uint32 max_size,
+		[out]         samr_SamArray *sam,
+		[out,ref]     uint32 num_entries
+		);
 
 	/************************/
 	/* Function    0x10     */
@@ -299,7 +305,12 @@
 
 	/************************/
 	/* Function    0x22     */
-	NTSTATUS samr_OPEN_USER();
+	NTSTATUS samr_OpenUser(
+		[in,ref]      policy_handle *handle,
+		[in]          uint32 access_mask,
+		[in]          uint32 rid,
+		[out,ref]     policy_handle *acct_handle
+		);
 
 	/************************/
 	/* Function    0x23     */
@@ -307,7 +318,23 @@
 
 	/************************/
 	/* Function    0x24     */
-	NTSTATUS samr_QUERY_USERINFO();
+	typedef struct {
+		samr_Name username;
+		samr_Name full_name;
+		uint32 primary_group_rid;
+		samr_Name description;
+		samr_Name comment;
+	} samr_UserInfo1;
+
+	typedef union {
+		case(1) samr_UserInfo1 info1;
+	} samr_UserInfo;
+
+	NTSTATUS samr_QueryUserInfo(
+		[in,ref]                  policy_handle *handle,
+		[in]                      uint16 level,
+		[out,switch_is(level)]    samr_UserInfo *info
+		);
 
 	/************************/
 	/* Function    0x25     */
