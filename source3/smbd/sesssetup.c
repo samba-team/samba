@@ -85,6 +85,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
+#if 0
+	if (tkt->enc_part2) {
+		file_save("/tmp/authdata.dat", 
+			  tkt->enc_part2->authorization_data[0]->contents,
+			  tkt->enc_part2->authorization_data[0]->length);
+	}
+#endif
+
 	if ((ret = krb5_unparse_name(context, tkt->enc_part2->client,
 				     &client))) {
 		DEBUG(3,("krb5_unparse_name failed (%s)\n", 
