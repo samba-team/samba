@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Printing problems</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+REL="HOME"
+TITLE="Samba FAQ"
+HREF="samba-faq.html"><LINK
+REL="PREVIOUS"
+TITLE="Features"
+HREF="faq-features.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Samba FAQ</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="faq-features.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+>&nbsp;</TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="FAQ-PRINTING"
+></A
+>Chapter 7. Printing problems</H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN359"
+>7.1. setdriver or cupsaddsmb failes</A
+></H1
+><P
+>setdriver expects the following setup:
+
+<P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>you are a printer admin, or root. this is the smb.conf printer admin group, not the Printer Operators group in NT. I've not tried the latter, but I don't believe it will work based on the current code.</TD
+></TR
+><TR
+><TD
+>printer admins has to be defined in [global]</TD
+></TR
+><TR
+><TD
+>upload the driver files to \\server\print$\w32x86 and win40 as appropriate. DON'T put them in the 0 or 2 subdirectories.</TD
+></TR
+><TR
+><TD
+>Make sure that the user you're connecting as is able to write to the print$ directories</TD
+></TR
+><TR
+><TD
+>Use adddriver (with appropriate parameters) to create the driver. note, this will not just update samba's notion of drivers, it will also move the files from the w32x86 and win40 directories to an appropriate subdirectory (based on driver version, I think, but not important enough for me to find out)</TD
+></TR
+><TR
+><TD
+>Use setdriver to associate the driver with a printer</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+>&#13;</P
+><P
+>The setdriver call will fail if the printer doesn't already exist in
+samba's view of the world. Either create the printer in cups and
+restart samba, or create an add printer command (see smb.conf doco)
+and use RPC calls to create a printer. NB the add printer command MUST
+return a single line of text indicating which port the printer was
+added on. If it doesn't, Samba won't reload the printer
+definitions. Although samba doesn't really support the notion of
+ports, suitable add printer command and enumport command settings can
+allow you pretty good remote control of the samba printer setup.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="faq-features.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-faq.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>&nbsp;</TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Features</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>&nbsp;</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
