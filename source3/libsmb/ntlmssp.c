@@ -573,6 +573,7 @@ NTSTATUS ntlmssp_client_end(NTLMSSP_CLIENT_STATE **ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx = (*ntlmssp_state)->mem_ctx;
 
+	data_blob_free(&(*ntlmssp_state)->session_key);
 	talloc_destroy(mem_ctx);
 	*ntlmssp_state = NULL;
 	return NT_STATUS_OK;
