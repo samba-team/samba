@@ -416,7 +416,6 @@ UNISTR2 *unistr2_assign_ascii_str(UNISTR2 *str, const char *buf)
 
 void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
 {
-	BOOL found;
 	uint32 i;
 
 	if (from == NULL || from->buffer==NULL)
