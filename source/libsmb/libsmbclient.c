@@ -1807,7 +1807,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
-                            user, sizeof(path),
+                            user, sizeof(user),
                             password, sizeof(password),
                             options, sizeof(options))) {
 	        DEBUG(4, ("no valid path\n"));
