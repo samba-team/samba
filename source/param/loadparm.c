@@ -1485,10 +1485,7 @@ static void init_globals(void)
 
 	Globals.bDNSproxy = True;
 
-	/*
-	 * smbd will check at runtime to see if this value
-	 * will really be used or not.
-	 */
+	/* this just means to use them if they exist */
 	Globals.bKernelOplocks = True;
 
 #if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
@@ -1824,6 +1821,7 @@ FN_GLOBAL_BOOL(lp_nt_acl_support, &Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
 FN_GLOBAL_BOOL(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
+FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
@@ -2958,7 +2956,7 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
 	if (!bInGlobalSection && bGlobalOnly)
 		return (True);
 
-	DEBUGADD(3, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
+	DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
 
 	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
 				pszParmName, pszParmValue));
@@ -3532,7 +3530,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	bRetval = pm_process(n2, do_section, do_parameter);
 
 	/* finish up the last section */
-	DEBUG(3, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
+	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
 	if (bRetval)
 		if (iServiceIndex >= 0)
 			bRetval = service_ok(iServiceIndex);
@@ -3846,38 +3844,6 @@ void lp_set_name_resolve_order(char *new_order)
 {
 	Globals.szNameResolveOrder = new_order;
 }
-
-/***********************************************************
- Set the flag that says if kernel oplocks are available 
- (called by smbd).
-************************************************************/
-
-static BOOL kernel_oplocks_available = False;
-
-void lp_set_kernel_oplocks(BOOL val)
-{
-	/*
-	 * Only set this to True if kerenl
-	 * oplocks are really available and were
-	 * turned on in the smb.conf file.
-	 */
-
-	if (Globals.bKernelOplocks && val)
-		kernel_oplocks_available = True;
-	else
-		kernel_oplocks_available = False;
-}
-
-/***********************************************************
- Return True if kernel oplocks are available and were turned
- on in smb.conf.
-************************************************************/
-
-BOOL lp_kernel_oplocks(void)
-{
-	return kernel_oplocks_available;
-}
-
 
 /***********************************************************
 see if the user has set a wildcard PDC name. This is true if
