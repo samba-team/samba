@@ -343,6 +343,8 @@ void cli_calculate_mac_key(struct cli_state *cli, const unsigned char *ntpasswd,
 	E_md4hash(ntpasswd,&cli->sign_info.mac_key[0]);
 	memcpy(&cli->sign_info.mac_key[16],resp,24);
 	cli->sign_info.mac_key_len = 40;
+	cli->sign_info.use_smb_signing = True;
+
 }
 
 /***********************************************************
@@ -353,6 +355,14 @@ void cli_caclulate_sign_mac(struct cli_state *cli)
 {
 	unsigned char calc_md5_mac[16];
 	struct MD5Context md5_ctx;
+
+	if (!cli->sign_info.use_smb_signing) {
+		return;
+	}
+
+	/* These calls are INCONPATIBLE with SMB signing */
+	cli->readbraw_supported = False;
+	cli->writebraw_supported = False;      
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.

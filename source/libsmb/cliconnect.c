@@ -144,9 +144,6 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	char *p;
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 
-	/* Guest cannot use SMB signing. */
-	cli->sign_info.use_smb_signing = False;
-
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
@@ -201,9 +198,6 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	char *p;
 
 	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE|STR_ASCII);
-
-	/* Plaintext password cannot use SMB signing. */
-	cli->sign_info.use_smb_signing = False;
 
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
@@ -275,10 +269,13 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		ntpasslen = 24;
 		SMBencrypt((uchar *)pass,cli->secblob.data,(uchar *)pword);
 		SMBNTencrypt((uchar *)pass,cli->secblob.data,(uchar *)ntpword);
-		cli_calculate_mac_key(cli, (uchar *)pass, (uchar *)ntpword);
 	} else {
 		memcpy(pword, pass, passlen);
 		memcpy(ntpword, ntpass, ntpasslen);
+	}
+
+	if (cli->sign_info.negotiated_smb_signing) {
+		cli_calculate_mac_key(cli, (uchar *)pass, (uchar *)ntpword);
 	}
 
 	/* send a session setup command */
@@ -311,10 +308,15 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 
 	show_msg(cli->inbuf);
 
+	if (cli_is_error(cli) || SVAL(cli->inbuf,smb_vwv2) /* guest */) {
+		/* We only use it if we have a successful non-guest connect */
+		cli->sign_info.use_smb_signing = False;
+	}
+
 	if (cli_is_error(cli)) {
 		return False;
 	}
-	
+
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
 	
@@ -345,9 +347,6 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
-
-	/* Extended security cannot use SMB signing (for now). */
-	cli->sign_info.use_smb_signing = False;
 
 	set_message(cli->outbuf,12,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
@@ -813,6 +812,11 @@ BOOL cli_negprot(struct cli_state *cli)
 	int numprots;
 	int plength;
 
+	if (cli->sign_info.use_smb_signing) {
+		DEBUG(0, ("Cannot send negprot again, particularly after setting up SMB Signing\n"));
+		return False;
+	}
+
 	if (cli->protocol < PROTOCOL_NT1) {
 		cli->use_spnego = False;
 	}
@@ -879,10 +883,10 @@ BOOL cli_negprot(struct cli_state *cli)
 
 		/* A way to attempt to force SMB signing */
 		if (getenv("CLI_FORCE_SMB_SIGNING"))
-			cli->sign_info.use_smb_signing = True;
-
-		if (cli->sign_info.use_smb_signing && !(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED))
-			cli->sign_info.use_smb_signing = False;
+			cli->sign_info.negotiated_smb_signing = True;
+                                   
+		if (cli->sign_info.negotiated_smb_signing && !(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED))
+			cli->sign_info.negotiated_smb_signing = False;
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;
@@ -896,13 +900,11 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);
 		cli->writebraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x2) != 0);
 		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
-		cli->sign_info.use_smb_signing = False;
 	} else {
 		/* the old core protocol */
 		cli->use_spnego = False;
 		cli->sec_mode = 0;
 		cli->serverzone = TimeDiff(time(NULL));
-		cli->sign_info.use_smb_signing = False;
 	}
 
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
@@ -928,6 +930,11 @@ BOOL cli_session_request(struct cli_state *cli,
 
 	/* 445 doesn't have session request */
 	if (cli->port == 445) return True;
+
+	if (cli->sign_info.use_smb_signing) {
+		DEBUG(0, ("Cannot send session resquest again, particularly after setting up SMB Signing\n"));
+		return False;
+	}
 
 	/* send a session request (RFC 1002) */
 	memcpy(&(cli->calling), calling, sizeof(*calling));

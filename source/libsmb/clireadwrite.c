@@ -128,6 +128,11 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 }
 
 #if 0  /* relies on client_recieve_smb(), now a static in libsmb/clientgen.c */
+
+/* This call is INCOMPATIBLE with SMB signing.  If you remove the #if 0
+   you must fix ensure you don't attempt to sign the packets - data
+   *will* be currupted */
+
 /****************************************************************************
 Issue a single SMBreadraw and don't wait for a reply.
 ****************************************************************************/
@@ -135,6 +140,12 @@ Issue a single SMBreadraw and don't wait for a reply.
 static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
 			   size_t size, int i)
 {
+
+	if (!cli->sign_info.use_smb_signing) {
+		DEBUG(0, ("Cannot use readraw and SMB Signing\n"));
+		return False;
+	}
+	
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 

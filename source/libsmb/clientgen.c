@@ -120,8 +120,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 	if (cli->fd == -1)
 		return False;
 
-	if (SVAL(cli->outbuf,smb_flg2) & FLAGS2_SMB_SECURITY_SIGNATURES)
-		cli_caclulate_sign_mac(cli);
+	cli_caclulate_sign_mac(cli);
 
 	len = smb_len(cli->outbuf) + 4;
 
