@@ -421,10 +421,10 @@ create_and_write_cookie (char *xauthfile,
      auth.name_length = strlen(auth.name);
      auth.data_length = cookie_sz;
      auth.data = (char*)cookie;
-#ifdef HAVE_OPENSSL
+#ifdef KRB5
      krb5_generate_random_block (cookie, cookie_sz);
 #else
-     des_rand_data (cookie, cookie_sz);
+     krb_generate_random_block (cookie, cookie_sz);
 #endif
 
      strlcpy(xauthfile, "/tmp/AXXXXXX", xauthfile_size);
