@@ -2581,6 +2581,7 @@ like strdup but for memory
 void *memdup(void *p, size_t size)
 {
 	void *p2;
+	if (size == 0) return NULL;
 	p2 = malloc(size);
 	if (!p2) return NULL;
 	memcpy(p2, p, size);
