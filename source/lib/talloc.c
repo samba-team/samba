@@ -178,7 +178,7 @@ char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
 	len = vsnprintf(NULL, 0, fmt, ap);
 	va_end(ap);
 	
-	ret = talloc(t, len);
+	ret = talloc(t, len+1);
 	if (!ret) return NULL;
 
 	va_start(ap, fmt);
