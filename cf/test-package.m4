@@ -101,7 +101,7 @@ if test "$with_$1" != no; then
 		done
 		if test "$ires" -a "$lres" -a "$with_$1" != "no"; then
 			INCLUDE_$1="-I$ires"
-			LIB_$1="-L$lres $3"
+			LIB_$1="-L$lres $3 $4"
 			found=yes
 			AC_MSG_RESULT([headers $ires, libraries $lres])
 		fi
