@@ -101,7 +101,8 @@ fullpath(const char *p)
 	}
 
         if (realpath(p, path) == NULL) {
-		fprintf(stderr,"Failed to find real path for mount point\n");
+		fprintf(stderr,"Failed to find real path for mount point %s: %s\n",
+			p, strerror(errno));
 		exit(1);
 	}
 	return strdup(path);
