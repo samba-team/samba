@@ -97,7 +97,11 @@ krb5_error_code hdb_init_db(krb5_context, HDB*);
 
 krb5_error_code hdb_set_master_key (krb5_context context,
 				    HDB *db,
-				    const char *keyfile);
+				    EncryptionKey key);
+
+krb5_error_code hdb_set_master_keyfile (krb5_context context,
+					HDB *db,
+					const char *keyfile);
 
 krb5_error_code hdb_clear_master_key (krb5_context context,
 				      HDB *db);
