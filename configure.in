@@ -512,7 +512,7 @@ elif test "$ac_cv_func_el_init" = yes; then
 	AC_DEFINE(HAVE_READLINE, 1)
 
 	editline_OBJS=edit_compat.o
-	LIB_readline='$(top_builddir)/lib/editline/libeditline.la '"$LIB_el_init"' $(LIB_tgetent)'
+	LIB_readline='$(top_builddir)/lib/editline/libeditline.a '"$LIB_el_init"' $(LIB_tgetent)'
 
 	INCLUDE_readline='-I$(top_builddir)/lib/editline -I$(top_srcdir)/lib/editline'
 elif test "$ac_cv_func_readline" = yes; then
@@ -523,7 +523,7 @@ elif test "$ac_cv_func_readline" = yes; then
 else
 	AC_DEFINE(HAVE_READLINE, 1)
 	editline_OBJS="editline.o complete.o sysunix.o"
-	LIB_readline='$(top_builddir)/lib/editline/libeditline.la $(LIB_tgetent)'
+	LIB_readline='$(top_builddir)/lib/editline/libeditline.a $(LIB_tgetent)'
 	INCLUDE_readline='-I$(top_builddir)/lib/editline -I$(top_srcdir)/lib/editline'
 fi
 AC_SUBST(LIB_tgetent)
