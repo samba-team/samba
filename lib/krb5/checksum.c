@@ -102,7 +102,7 @@ MD4_DES_verify (void *p, size_t len, const krb5_keyblock *keyblock,
     md4_update(&md4, p, len);
     md4_finito(&md4, res);
 
-    return memcmp (res, other + 8, 16);
+    return memcmp (res, (u_char *)other + 8, 16);
 }
 
 static void
@@ -152,7 +152,7 @@ MD5_DES_verify (void *p, size_t len, const krb5_keyblock *keyblock,
     md5_update(&md5, p, len);
     md5_finito(&md5, res);
 
-    return memcmp (res, other + 8, 16);
+    return memcmp (res, (u_char *)other + 8, 16);
 }
 
 static struct checksum_type cm[] = {
