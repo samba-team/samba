@@ -272,6 +272,15 @@ int initgroups(const char *name, gid_t basegid);
 int fchown(int fd, uid_t owner, gid_t group);
 #endif
 
+#ifndef HAVE_DAEMON
+int daemon(int nochdir, int noclose);
+#endif
+
+#ifndef HAVE_INNETGR
+int innetgr(const char *netgroup, const char *machine, 
+	    const char *user, const char *domain);
+#endif
+
 #ifndef HAVE_CHOWN
 int chown(const char *path, uid_t owner, gid_t group);
 #endif
