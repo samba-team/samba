@@ -8639,7 +8639,7 @@ EOF
 			BLDSHARED="true"
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-h "
-			if test "${ac_cv_prog_CC}" = "gcc"; then
+			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 			else
 				PICFLAG="-KPIC"
@@ -8685,7 +8685,7 @@ EOF
 			LDSHFLAGS="-set_version sgi1.0 -shared"
 			SONAMEFLAG="-soname "
 			SHLD="\${LD}" 
-			if test "${ac_cv_prog_CC}" = "gcc"; then
+			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 			else 
 				PICFLAG="-KPIC"
