@@ -126,7 +126,7 @@ void set_werror_exception(int status)
 }
 
 %typemap(freearg) TALLOC_CTX * {
-	talloc_free($1);
+//	talloc_free($1);
 }
 
 %typemap(argout) struct dcerpc_pipe ** {
