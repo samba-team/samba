@@ -2,9 +2,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1998,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Jean François Micouleau      1998-1999.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Jean François Micouleau      1998-2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -836,25 +836,18 @@ static void api_spoolss_setprinter(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_fcpn(SPOOL_Q_FCPN *q_u, prs_struct *rdata)
-{
-	SPOOL_R_FCPN r_u;
-	
-	r_u.status=0x0;
-
-	spoolss_io_r_fcpn("",&r_u,rdata,0);		
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_fcpn(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_FCPN q_u;
-	
-	spoolss_io_q_fcpn("", &q_u, data, 0);
+	SPOOL_R_FCPN r_u;
 
-	spoolss_reply_fcpn(&q_u, rdata);
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	spoolss_io_q_fcpn("", &q_u, data, 0);
+	r_u.status = _spoolss_fcpn(&q_u.handle);
+	spoolss_io_r_fcpn("",&r_u,rdata,0);		
 }
 
 /****************************************************************************
