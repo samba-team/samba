@@ -79,6 +79,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 {
 	struct talloc_chunk *tc;
+	void *new_ptr;
 
 	/* size zero is equivalent to free() */
 	if (size == 0)
@@ -90,13 +91,13 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 
 	for (tc=t->list; tc; tc=tc->next) {
 		if (tc->ptr == ptr) {
-			ptr = Realloc(ptr, size);
-			if (ptr) {
+			new_ptr = Realloc(ptr, size);
+			if (new_ptr) {
 				t->total_alloc_size += (size - tc->size);
 				tc->size = size;
-				tc->ptr = ptr;
+				tc->ptr = new_ptr;
 			}
-			return ptr;
+			return new_ptr;
 		}
 	}
 	return NULL;
