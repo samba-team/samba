@@ -1,3 +1,7 @@
+2003-05-05  Assar Westerlund  <assar@kth.se>
+
+	* crypto.m4: define OPENSSL_DES_LIBDES_COMPATIBILITY
+
 2003-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* crypto.m4: check if libcrypto needs -lnsl or -lsocket

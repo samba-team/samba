@@ -1,3 +1,7 @@
+2003-05-05  Assar Westerlund  <assar@kth.se>
+
+	* include/make_crypto.c (main): include aes.h if ENABLE_AES
+
 2003-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* make-release: when fixing a valid cvs tag from release name
