@@ -121,7 +121,7 @@ static uint32 do_cmd(struct cmd_set *cmd_entry, char *cmd)
 	char *p = cmd, **argv = NULL;
 	uint32 result;
 	pstring buf;
-	int argc = 0, i;
+	int argc = 1, i;
 
 	next_token(&p, buf, " ", sizeof(buf));
 
@@ -142,15 +142,16 @@ static uint32 do_cmd(struct cmd_set *cmd_entry, char *cmd)
 		/* Create argument list */
 
 		argv = (char **)malloc(sizeof(char *) * argc);
+
 		if (!argv) {
 			fprintf(stderr, "out of memoryx\n");
 			return 0;
 		}
 					
-		argc = 1;
 		p = cmd;
 		next_token(&p, buf, " ", sizeof(buf));
 		argv[0] = strdup(buf);
+		argc = 1;
 					
 		goto again;
 	}
@@ -200,7 +201,7 @@ static uint32 process_cmd(char *cmd)
 	}
 
  done:
-	if (!found) {
+	if (!found && buf[0]) {
 		printf("command not found: %s\n", buf);
 		return 0;
 	}
@@ -210,7 +211,6 @@ static uint32 process_cmd(char *cmd)
 	}
 
 	return result;
-
 }
 
 /* Print usage information */
@@ -238,7 +238,7 @@ static void usage(char *pname)
 	BOOL got_pass = False;
 	BOOL have_ip = False;
 	int opt;
-	pstring cmdstr, servicesf = CONFIGFILE;
+	pstring cmdstr = "", servicesf = CONFIGFILE;
 	extern FILE *dbf;
 
 	setlinebuf(stdout);
@@ -248,13 +248,22 @@ static void usage(char *pname)
 
 #ifdef HAVE_LIBREADLINE
 	/* Allow conditional parsing of the ~/.inputrc file. */
-	rl_readline_name = "smbclient";
+	rl_readline_name = "rpcclient";
 #endif    
 	
 	DEBUGLEVEL = 2;
 
-	TimeInit();
+	/* Load smb.conf file */
+
+	if (!lp_load(servicesf,True,False,False)) {
+		fprintf(stderr, "Can't load %s\n", servicesf);
+	}
+
+	codepage_initialise(lp_client_code_page());
 	charset_initialise();
+	load_interfaces();
+
+	TimeInit();
 
 	/* Parse options */
 
@@ -308,15 +317,6 @@ static void usage(char *pname)
 		}
 	}
 
-	/* Load smb.conf file */
-
-	if (!lp_load(servicesf,True,False,False)) {
-		fprintf(stderr, "Can't load %s\n", servicesf);
-	}
-
-	codepage_initialise(lp_client_code_page());
-	load_interfaces();
-
 	/* Load command lists */
 
 	add_command_set(rpcclient_commands);
@@ -343,6 +343,8 @@ static void usage(char *pname)
 	while(1) {
 		pstring prompt, cmd;
 		uint32 result;
+
+		ZERO_STRUCT(cmd);
 		
 		slprintf(prompt, sizeof(prompt) - 1, "rpcclient> ");
 
