@@ -90,7 +90,7 @@
 </sect1>
 
 <sect1>
-	<title><anchor id="SMBPASSWDFILEFORMAT">The smbpasswd file</title>
+	<title><anchor id="SMBPASSWDFILEFORMAT"/>The smbpasswd file</title>
 	
 	<para>In order for Samba to participate in the above protocol 
 	it must be able to look up the 16 byte hashed values given a user name.
@@ -102,11 +102,11 @@
 	/etc/passwd</filename> and the <filename>smbpasswd</filename> file, 
 	a utility, <command>mksmbpasswd.sh</command>, is provided to generate
 	a smbpasswd file from a UNIX <filename>/etc/passwd</filename> file.
-	</para
+	</para>
 
 
 	<para>To generate the smbpasswd file from your <filename>/etc/passwd
-	</filename> file use the following command :</para>
+	</filename> file use the following command:</para>
 	
 	<para><prompt>$ </prompt><userinput>cat /etc/passwd | mksmbpasswd.sh
 	&gt; /usr/local/samba/private/smbpasswd</userinput></para>
