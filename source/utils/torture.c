@@ -47,21 +47,21 @@ static BOOL open_connection(struct cli_state *c)
 {
 	struct nmb_name called, calling;
 
+	ZERO_STRUCTP(c);
+
+	make_nmb_name(&calling, myname, 0x0, "");
+	make_nmb_name(&called , host, 0x20, "");
+
 	if (!cli_initialise(c) || !cli_connect(c, host, NULL)) {
 		printf("Failed to connect with %s\n", host);
 		return False;
 	}
 
-	make_nmb_name(&calling, myname, 0x0, "");
-	make_nmb_name(&called , host, 0x20, "");
-
 	if (!cli_session_request(c, &calling, &called)) {
-		printf("%s rejected the session\n",host);
 		cli_shutdown(c);
+		printf("%s rejected the session\n",host);
 		return False;
 	}
-
-	c->protocol = max_protocol;
 
 	if (!cli_negprot(c)) {
 		printf("%s rejected the negprot (%s)\n",host, cli_errstr(c));
@@ -69,15 +69,16 @@ static BOOL open_connection(struct cli_state *c)
 		return False;
 	}
 
-	if (!cli_session_setup(c, username, password, strlen(password),
-			       "", 0, workgroup)) {
-		printf("%s rejected the sessionsetup (%s)\n", host, cli_errstr(c));
+	if (!cli_session_setup(c, username, 
+			       password, strlen(password),
+			       password, strlen(password),
+			       workgroup)) {
 		cli_shutdown(c);
+		printf("%s rejected the sessionsetup (%s)\n", host, cli_errstr(c));
 		return False;
 	}
 
-	if (!cli_send_tconX(c, share, 
-			    strstr(share,"IPC$")?"IPC":"A:", 
+	if (!cli_send_tconX(c, share, "?????",
 			    password, strlen(password)+1)) {
 		printf("%s refused tree connect (%s)\n", host, cli_errstr(c));
 		cli_shutdown(c);
@@ -556,6 +557,59 @@ static void run_locktest3(int numops)
 
 
 /*
+test whether fnums and tids open on one VC are available on another (a major
+security hole)
+*/
+static void run_fdpasstest(void)
+{
+	static struct cli_state cli1, cli2;
+	char *fname = "\\fdpass.tst";
+	int fnum1;
+	pstring buf;
+
+	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+		return;
+	}
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	printf("starting fdpasstest\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	if (cli_write(&cli1, fnum1, 0, "hello world\n", 0, 13) != 13) {
+		printf("write failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	cli2.vuid = cli1.vuid;
+	cli2.cnum = cli1.cnum;
+	cli2.pid = cli1.pid;
+
+
+	if (cli_read(&cli2, fnum1, buf, 0, 13) == 13) {
+		printf("read succeeded! nasty security hole [%s]\n",
+		       buf);
+		return;
+	}
+
+	cli_close(&cli1, fnum1);
+	cli_unlink(&cli1, fname);
+
+	close_connection(&cli1);
+	close_connection(&cli2);
+
+	printf("finished fdpasstest\n");
+}
+
+
+/*
   This test checks that 
 
   1) the server does not allow an unlink on a file that is open
@@ -1003,6 +1057,7 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 	printf("host=%s share=%s user=%s myname=%s\n", 
 	       host, share, username, myname);
 
+	run_fdpasstest();
 	run_locktest1();
 	run_locktest2();
 	run_locktest3(numops);
