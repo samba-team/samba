@@ -53,7 +53,7 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = 
@@ -71,9 +71,9 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
 	q.query_secdesc.in.secinfo_flags = 
-		OWNER_SECURITY_INFORMATION | 
-		GROUP_SECURITY_INFORMATION | 
-		DACL_SECURITY_INFORMATION;
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd = q.query_secdesc.out.sd;
@@ -84,7 +84,7 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	ace.flags = 0;
-	ace.access_mask = STD_RIGHT_ALL_ACCESS;
+	ace.access_mask = SEC_STD_ALL;
 	ace.trustee = *test_sid;
 
 	status = security_descriptor_dacl_add(sd, &ace);
@@ -154,7 +154,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = 
@@ -179,9 +179,9 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
 	q.query_secdesc.in.secinfo_flags = 
-		OWNER_SECURITY_INFORMATION | 
-		GROUP_SECURITY_INFORMATION | 
-		DACL_SECURITY_INFORMATION;
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd = q.query_secdesc.out.sd;
@@ -194,7 +194,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	ace.flags = 0;
-	ace.access_mask = STD_RIGHT_ALL_ACCESS;
+	ace.access_mask = SEC_STD_ALL;
 	ace.trustee = *test_sid;
 
 	status = security_descriptor_dacl_add(sd, &ace);

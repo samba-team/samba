@@ -258,7 +258,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
-		if (!(f->access_mask & STD_RIGHT_DELETE_ACCESS)) {
+		if (!(f->access_mask & SEC_STD_DELETE)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		create_options = h->create_options;
@@ -322,7 +322,8 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			}
 		} else {
 			int ret;
-			if (f->access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
+			if (f->access_mask & 
+			    (SEC_FILE_WRITE_DATA|SEC_FILE_APPEND_DATA)) {
 				ret = ftruncate(h->fd, newstats.st.st_size);
 			} else {
 				ret = truncate(h->name->full_name, newstats.st.st_size);

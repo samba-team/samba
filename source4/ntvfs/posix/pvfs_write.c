@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 
 /*
@@ -48,7 +49,7 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	if (!(f->access_mask & SA_RIGHT_FILE_WRITE_APPEND)) {
+	if (!(f->access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA))) {
 		return NT_STATUS_ACCESS_VIOLATION;
 	}
 

@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define BASEDIR "\\teststreams"
 
@@ -108,7 +109,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_WRITE_DATA;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = 0;
@@ -187,7 +188,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = sname2;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE;
-	io.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FULL_CONTROL;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);

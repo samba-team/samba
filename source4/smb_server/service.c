@@ -161,25 +161,6 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 
 	tcon->service = snum;
 
-	/*
-	 * New code to check if there's a share security descripter
-	 * added from NT server manager. This is done after the
-	 * smb.conf checks are done as we need a uid and token. JRA.
-	 *
-	 */
-
-	if (!share_access_check(req, tcon, snum, SA_RIGHT_FILE_WRITE_DATA)) {
-		if (!share_access_check(req, tcon, snum, SA_RIGHT_FILE_READ_DATA)) {
-			/* No access, read or write. */
-			DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
-				  lp_servicename(snum)));
-			conn_free(req->smb_conn, tcon);
-			return NT_STATUS_ACCESS_DENIED;
-		} else {
-			tcon->read_only = True;
-		}
-	}
-
 	/* init ntvfs function pointers */
 	status = ntvfs_init_connection(req, type);
 	if (!NT_STATUS_IS_OK(status)) {

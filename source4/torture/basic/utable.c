@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/iconv.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 BOOL torture_utable(void)
 {
@@ -148,13 +149,13 @@ BOOL torture_casetable(void)
 		fname = form_name(c);
 		fnum = smbcli_nt_create_full(cli->tree, fname, 0,
 #if 0
-					  SEC_RIGHT_MAXIMUM_ALLOWED, 
+					     SEC_RIGHT_MAXIMUM_ALLOWED, 
 #else
-					  GENERIC_RIGHTS_FILE_ALL_ACCESS,
+					     SEC_RIGHTS_FULL_CONTROL,
 #endif
-					  FILE_ATTRIBUTE_NORMAL,
-					  NTCREATEX_SHARE_ACCESS_NONE,
-					  NTCREATEX_DISP_OPEN_IF, 0, 0);
+					     FILE_ATTRIBUTE_NORMAL,
+					     NTCREATEX_SHARE_ACCESS_NONE,
+					     NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 		if (fnum == -1) {
 			printf("Failed to create file with char %04x\n", c);
