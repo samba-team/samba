@@ -453,6 +453,25 @@ static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 							num_entries, unix_only);
 }
 
+static NTSTATUS context_enum_group_members(struct pdb_context *context,
+					   TALLOC_CTX *mem_ctx,
+					   const DOM_SID *group,
+					   uint32 **member_rids,
+					   int *num_members)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->enum_group_members(context->pdb_methods,
+							mem_ctx, group,
+							member_rids,
+							num_members);
+}
+
 static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
 					       const char *username,
 					       gid_t primary_gid,
@@ -737,6 +756,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
 	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
 	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
+	(*context)->pdb_enum_group_members = context_enum_group_members;
 	(*context)->pdb_enum_group_memberships = context_enum_group_memberships;
 
 	(*context)->pdb_find_alias = context_find_alias;
@@ -1058,6 +1078,21 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 						      rmap, num_entries, unix_only));
 }
 
+NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
+				const DOM_SID *sid,
+				uint32 **member_rids,
+				int *num_members)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb_context->pdb_enum_group_members(pdb_context, mem_ctx, sid, 
+						   member_rids, num_members);
+}
+
 NTSTATUS pdb_enum_group_memberships(const char *username, gid_t primary_gid,
 				    DOM_SID **sids, gid_t **gids,
 				    int *num_groups)
@@ -1259,6 +1294,116 @@ static void pdb_default_endsampwent(struct pdb_methods *methods)
 	return; /* NT_STATUS_NOT_IMPLEMENTED; */
 }
 
+static void add_uid_to_array_unique(TALLOC_CTX *mem_ctx,
+				    uid_t uid, uid_t **uids, int *num)
+{
+	int i;
+
+	for (i=0; i<*num; i++) {
+		if ((*uids)[i] == uid)
+			return;
+	}
+	
+	*uids = TALLOC_REALLOC_ARRAY(mem_ctx, *uids, uid_t, *num+1);
+
+	if (*uids == NULL)
+		return;
+
+	(*uids)[*num] = uid;
+	*num += 1;
+}
+
+static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **uids,
+			   int *num)
+{
+	struct group *grp;
+	char **gr;
+	struct sys_pwent *userlist, *user;
+ 
+	*uids = NULL;
+	*num = 0;
+
+	/* We only look at our own sam, so don't care about imported stuff */
+
+	winbind_off();
+
+	if ((grp = getgrgid(gid)) == NULL) {
+		winbind_on();
+		return False;
+	}
+
+	/* Primary group members */
+
+	userlist = getpwent_list();
+
+	for (user = userlist; user != NULL; user = user->next) {
+		if (user->pw_gid != gid)
+			continue;
+		add_uid_to_array_unique(mem_ctx, user->pw_uid, uids, num);
+	}
+
+	pwent_free(userlist);
+
+	/* Secondary group members */
+
+	for (gr = grp->gr_mem; (*gr != NULL) && ((*gr)[0] != '\0'); gr += 1) {
+		struct passwd *pw = getpwnam(*gr);
+
+		if (pw == NULL)
+			continue;
+		add_uid_to_array_unique(mem_ctx, pw->pw_uid, uids, num);
+	}
+
+	winbind_on();
+
+	return True;
+}
+
+NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
+					TALLOC_CTX *mem_ctx,
+					const DOM_SID *group,
+					uint32 **member_rids,
+					int *num_members)
+{
+	gid_t gid;
+	uid_t *uids;
+	int i, num_uids;
+
+	*member_rids = NULL;
+	*num_members = 0;
+
+	if (!NT_STATUS_IS_OK(sid_to_gid(group, &gid)))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	if(!get_memberuids(mem_ctx, gid, &uids, &num_uids))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	if (num_uids == 0)
+		return NT_STATUS_OK;
+
+	*member_rids = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_uids);
+
+	for (i=0; i<num_uids; i++) {
+		DOM_SID sid;
+
+		if (!NT_STATUS_IS_OK(uid_to_sid(&sid, uids[i]))) {
+			DEBUG(1, ("Could not map member uid to SID\n"));
+			continue;
+		}
+
+		if (!sid_check_is_in_our_domain(&sid)) {
+			DEBUG(1, ("Inconsistent SAM -- group member uid not "
+				  "in our domain\n"));
+			continue;
+		}
+
+		sid_peek_rid(&sid, &(*member_rids)[*num_members]);
+		*num_members += 1;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods) 
 {
 	*methods = TALLOC_P(mem_ctx, struct pdb_methods);
@@ -1285,6 +1430,7 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
 	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
 	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
+	(*methods)->enum_group_members = pdb_default_enum_group_members;
 	(*methods)->enum_group_memberships = pdb_default_enum_group_memberships;
 	(*methods)->find_alias = pdb_default_find_alias;
 	(*methods)->create_alias = pdb_default_create_alias;
