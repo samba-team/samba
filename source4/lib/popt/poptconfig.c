@@ -5,7 +5,8 @@
 #include "system.h"
 #include "poptint.h"
 
-static void configLine(poptContext con, char * line) {
+static void configLine(poptContext con, char * line)
+{
     int nameLength = strlen(con->appName);
     char * opt;
     struct poptAlias alias;
@@ -54,7 +55,8 @@ static void configLine(poptContext con, char * line) {
     }
 }
 
-int poptReadConfigFile(poptContext con, const char * fn) {
+ int poptReadConfigFile(poptContext con, const char * fn)
+{
     char * file=NULL, * chptr, * end;
     char * buf=NULL, * dst;
     int fd, rc;
@@ -118,7 +120,8 @@ int poptReadConfigFile(poptContext con, const char * fn) {
     return 0;
 }
 
-int poptReadDefaultConfig(poptContext con, /*@unused@*/ int useEnv) {
+ int poptReadDefaultConfig(poptContext con, /*@unused@*/ int useEnv)
+{
     char * fn, * home;
     int rc;
 
@@ -139,4 +142,3 @@ int poptReadDefaultConfig(poptContext con, /*@unused@*/ int useEnv) {
 
     return 0;
 }
-

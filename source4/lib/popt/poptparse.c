@@ -6,7 +6,7 @@
 
 #define POPT_ARGV_ARRAY_GROW_DELTA 5
 
-int poptDupArgv(int argc, const char **argv,
+ int poptDupArgv(int argc, const char **argv,
 		int * argcPtr, const char *** argvPtr)
 {
     size_t nb = (argc + 1) * sizeof(*argv);
@@ -35,7 +35,7 @@ int poptDupArgv(int argc, const char **argv,
     return 0;
 }
 
-int poptParseArgvString(const char * s, int * argcPtr, const char *** argvPtr)
+ int poptParseArgvString(const char * s, int * argcPtr, const char *** argvPtr)
 {
     const char * src;
     char quote = '\0';
