@@ -329,7 +329,7 @@ static void commit_parameters(int snum)
 	char *v;
 
 	while ((parm = lp_next_parameter(snum, &i, 1))) {
-		sprintf(label, "parm_%s", make_parm_name(parm->label));
+		slprintf(label, sizeof(label)-1, "parm_%s", make_parm_name(parm->label));
 		if ((v = cgi_variable(label))) {
 			if (parm->flags & FLAG_HIDE) continue;
 			commit_parameter(snum, parm, v); 
