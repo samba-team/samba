@@ -1,0 +1,8 @@
+The new smbmount syntax (as of Samba 2.0.6) allows a symlink to be
+created from /sbin/mount.smb to smbmount. This allows mount to
+recognise a filesystem type of smb. 
+
+This means you can use smbmount with autofs by just specifying smb as
+the filesystem type. See the smbmount man page for a full list of
+options.
+
