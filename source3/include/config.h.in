@@ -208,7 +208,6 @@
 #undef HAVE_UNIXWARE_ACLS
 #undef HAVE_SOLARIS_ACLS
 #undef HAVE_IRIX_ACLS
-#undef HAVE_XFS_ACLS
 #undef HAVE_AIX_ACLS
 #undef HAVE_NO_ACLS
 #undef HAVE_LIBPAM
@@ -738,9 +737,6 @@
 
 /* Define if you have the yp_get_default_domain function.  */
 #undef HAVE_YP_GET_DEFAULT_DOMAIN
-
-/* Define if you have the <acl/acl.h> header file.  */
-#undef HAVE_ACL_ACL_H
 
 /* Define if you have the <arpa/inet.h> header file.  */
 #undef HAVE_ARPA_INET_H

@@ -1850,7 +1850,6 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
 	if (!local_password_change(mach_acct, local_flags, NULL, err_str,
 	    sizeof(err_str), msg_str, sizeof(msg_str))) {
 		DEBUG(0, ("%s\n", err_str));
-		close_policy_hnd(p, user_pol);
 		pdb_free_sam(sam_pass);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1860,21 +1859,18 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
  	unbecome_root();
  	if (ret == False) {
 		/* account doesn't exist: say so */
-		close_policy_hnd(p, user_pol);
 		pdb_free_sam(sam_pass);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Get the domain SID stored in the domain policy */
 	if(!get_lsa_policy_samr_sid(p, &dom_pol, &sid)) {
-		close_policy_hnd(p, user_pol);
 		pdb_free_sam(sam_pass);
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* append the user's RID to it */
 	if(!sid_append_rid(&sid, pdb_get_user_rid(sam_pass) )) {
-		close_policy_hnd(p, user_pol);
 		pdb_free_sam(sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}

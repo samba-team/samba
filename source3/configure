@@ -2852,7 +2852,7 @@ else
 fi
 done
 
-for ac_hdr in sys/acl.h sys/cdefs.h glob.h acl/acl.h
+for ac_hdr in sys/acl.h sys/cdefs.h glob.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -12619,41 +12619,6 @@ EOF
 
 				fi
 			fi
-			echo $ac_n "checking for XFS ACL support""... $ac_c" 1>&6
-echo "configure:12624: checking for XFS ACL support" >&5
-if eval "test \"`echo '$''{'samba_cv_HAVE_XFS_ACLS'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  
-			cat > conftest.$ac_ext <<EOF
-#line 12630 "configure"
-#include "confdefs.h"
-#include <sys/types.h>
-#include <acl/acl.h>
-int main() {
- char test_str[13] = SGI_ACL_FILE; 
-; return 0; }
-EOF
-if { (eval echo configure:12638: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-  rm -rf conftest*
-  samba_cv_HAVE_XFS_ACLS=yes
-else
-  echo "configure: failed program was:" >&5
-  cat conftest.$ac_ext >&5
-  rm -rf conftest*
-  samba_cv_XFS_POSIX_ACLS=no
-fi
-rm -f conftest*
-fi
-
-echo "$ac_t""$samba_cv_HAVE_XFS_ACLS" 1>&6
-			if test x"$samba_cv_HAVE_XFS_ACLS" = x"yes"; then
-				echo "$ac_t""Using XFS ACLs" 1>&6
-				cat >> confdefs.h <<\EOF
-#define HAVE_XFS_ACLS 1
-EOF
-
-			fi
             ;;
         esac
         ;;
@@ -12679,7 +12644,7 @@ fi
 # check whether winbind is supported on this platform
 
 echo $ac_n "checking whether to compile winbind""... $ac_c" 1>&6
-echo "configure:12683: checking whether to compile winbind" >&5
+echo "configure:12648: checking whether to compile winbind" >&5
 
 case "$host_os" in 
         *linux*|*solaris*)
@@ -12719,11 +12684,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 12723 "configure"
+#line 12688 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:12727: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:12692: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
