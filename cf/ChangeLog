@@ -1,3 +1,8 @@
+2001-06-17  Assar Westerlund  <assar@sics.se>
+
+	* roken-frag.m4 (AC_BROKEN): test for
+	emalloc,ecalloc,erealloc,estrdup
+
 2001-03-26  Assar Westerlund  <assar@sics.se>
 
 	* broken-glob.m4: also test for GLOB_LIMIT
