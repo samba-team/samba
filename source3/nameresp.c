@@ -176,13 +176,10 @@ static void dead_netbios_entry(struct subnet_record *d,
 	  }
 	  if (n->num_msgs == 0)
 	  {
-	    if (ismyip(n->send_ip))
-	    {
-          struct work_record *work = find_workgroupstruct(d,n->name.name,False);
-          if (work && d)
-          {
-		    become_domain_master(d,work);
-          }
+        struct work_record *work = find_workgroupstruct(d,n->name.name,False);
+        if (work && d)
+        {
+          become_domain_master(d,work);
         }
 	  }
 	  break;
