@@ -35,6 +35,19 @@ DOM_SID global_machine_sid;
 /*
  * NOTE. All these functions are abstracted into a structure
  * that points to the correct function for the selected database. JRA.
+ *
+ * NOTE.  for the get/mod/add functions, there are two sets of functions.
+ * one supports struct sam_passwd, the other supports struct smb_passwd.
+ * for speed optimisation it is best to support both these sets.
+ * 
+ * it is, however, optional to support one set but not the other: there
+ * is conversion-capability built in to passdb.c, and run-time error
+ * detection for when neither are supported.
+ * 
+ * password database writers are recommended to implement the sam_passwd
+ * functions in a first pass, as struct sam_passwd contains more
+ * information, needed by the NT Domain support.  lkcl.
+ * 
  */
 
 static struct passdb_ops *pdb_ops;
@@ -115,8 +128,10 @@ struct smb_passwd *iterate_getsmbpwnam(char *name)
 
 BOOL initialize_password_db(void)
 {
-  if(pdb_ops)
+  if (pdb_ops)
+  {
     return True;
+  }
 
 #ifdef USE_NISPLUS_DB
   pdb_ops =  nisplus_initialize_password_db();
@@ -141,6 +156,7 @@ BOOL initialize_password_db(void)
  from this function may be used to enumerate struct sam_passwd
  entries as well as struct smb_passwd entries. This may need
  to change. JRA.
+
 ****************************************************************/
 
 void *startsmbpwent(BOOL update)
@@ -169,7 +185,19 @@ void endsmbpwent(void *vp)
 
 struct smb_passwd *getsmbpwent(void *vp)
 {
-  return pdb_ops->getsmbpwent(vp);
+	if (pdb_ops->getsmbpwent == NULL && pdb_ops->getsam21pwent == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("getsmbpwent: getsmbpwent() and getsam21pwent() not supported!\n"));
+		return NULL;
+	}
+	if (pdb_ops->getsmbpwent != NULL)
+	{
+		return pdb_ops->getsmbpwent(vp);
+	}
+	return pdb_sam_to_smb(pdb_ops->getsam21pwent(vp));
 }
 
 /*************************************************************************
@@ -210,7 +238,19 @@ BOOL setsmbpwpos(void *vp, unsigned long tok)
 
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 {
-  return pdb_ops->add_smbpwd_entry(newpwd);
+	if (pdb_ops->add_smbpwd_entry == NULL && pdb_ops->add_sam21pwd_entry == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("add_smbpwd_entry: add_smbpwd_entry() and add_sam21pwd_entry() not supported!\n"));
+		return False;
+	}
+	if (pdb_ops->add_smbpwd_entry != NULL)
+	{
+ 	 	return pdb_ops->add_smbpwd_entry(newpwd);
+	}
+ 	return pdb_ops->add_sam21pwd_entry(pdb_smb_to_sam(newpwd));
 }
 
 /************************************************************************
@@ -224,7 +264,19 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 {
-  return pdb_ops->mod_smbpwd_entry(pwd, override);
+	if (pdb_ops->mod_smbpwd_entry == NULL && pdb_ops->mod_sam21pwd_entry == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("mod_smbpwd_entry: mod_smbpwd_entry() and mod_sam21pwd_entry() not supported!\n"));
+		return False;
+	}
+	if (pdb_ops->mod_smbpwd_entry != NULL)
+	{
+ 	 	return pdb_ops->mod_smbpwd_entry(pwd, override);
+	}
+ 	return pdb_ops->mod_sam21pwd_entry(pdb_smb_to_sam(pwd), override);
 }
 
 /************************************************************************
@@ -233,7 +285,19 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 
 struct smb_passwd *getsmbpwnam(char *name)
 {
-  return pdb_ops->getsmbpwnam(name);
+	if (pdb_ops->getsmbpwnam == NULL && pdb_ops->getsam21pwnam == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("getsmbpwnam: getsmbpwnam() and getsam21pwnam() not supported!\n"));
+		return NULL;
+	}
+	if (pdb_ops->getsam21pwnam != NULL)
+	{
+		return pdb_ops->getsmbpwnam(name);
+	}
+	return pdb_sam_to_smb(getsam21pwnam(name));
 }
 
 /************************************************************************
@@ -242,7 +306,19 @@ struct smb_passwd *getsmbpwnam(char *name)
 
 struct smb_passwd *getsmbpwuid(uid_t smb_userid)
 {
-  return pdb_ops->getsmbpwuid(smb_userid);
+	if (pdb_ops->getsmbpwuid == NULL && pdb_ops->getsam21pwrid == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("getsmbpwuid: getsmbpwuid() and getsam21pwrid() not supported!\n"));
+		return NULL;
+	}
+	if (pdb_ops->getsmbpwuid != NULL)
+	{
+		return pdb_ops->getsmbpwuid(smb_userid);
+	}
+	return pdb_sam_to_smb(pdb_ops->getsam21pwuid(pdb_uid_to_user_rid(smb_userid)));
 }
 
 /*
@@ -285,9 +361,50 @@ struct sam_passwd *iterate_getsam21pwnam(char *name)
 /************************************************************************
  Utility function to search sam passwd by uid.  use this if your database
  does not have search facilities.
+
+ search capability by both rid and uid are needed as the rid <-> uid
+ mapping may be non-monotonic.  
+
 *************************************************************************/
 
-struct sam_passwd *iterate_getsam21pwuid(uint32 uid)
+struct sam_passwd *iterate_getsam21pwrid(uint32 rid)
+{
+	struct sam_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("iterate_getsam21pwrid: search by rid: %x\n", rid));
+
+	/* Open the smb password file - not for update. */
+	fp = startsmbpwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("iterate_getsam21pwrid: unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsam21pwent(fp)) != NULL && pwd->user_rid != rid)
+      ;
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("iterate_getsam21pwrid: found by user_rid: %x\n", rid));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
+/************************************************************************
+ Utility function to search sam passwd by uid.  use this if your database
+ does not have search facilities.
+
+ search capability by both rid and uid are needed as the rid <-> uid
+ mapping may be non-monotonic.  
+
+*************************************************************************/
+
+struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
 {
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
@@ -316,12 +433,27 @@ struct sam_passwd *iterate_getsam21pwuid(uint32 uid)
 }
 
 /*************************************************************************
+ Routine to return a display info structure, by rid
+ *************************************************************************/
+struct sam_disp_info *getsamdisprid(uint32 rid)
+{
+	if (pdb_ops->getsamdisprid != NULL)
+	{
+		return pdb_ops->getsamdisprid(rid);
+	}
+	return pdb_sam_to_dispinfo(pdb_ops->getsam21pwrid(rid));
+}
+
+/*************************************************************************
  Routine to return the next entry in the sam passwd list.
  *************************************************************************/
-
 struct sam_disp_info *getsamdispent(void *vp)
 {
-  return pdb_sam_to_dispinfo(pdb_ops->getsam21pwent(vp));
+	if (pdb_ops->getsamdispent != NULL)
+	{
+		return pdb_ops->getsamdispent(vp);
+	}
+	return pdb_sam_to_dispinfo(pdb_ops->getsam21pwent(vp));
 }
 
 /*************************************************************************
@@ -330,7 +462,19 @@ struct sam_disp_info *getsamdispent(void *vp)
 
 struct sam_passwd *getsam21pwent(void *vp)
 {
-  return pdb_ops->getsam21pwent(vp);
+	if (pdb_ops->getsmbpwent == NULL && pdb_ops->getsam21pwent == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("getsmbpwent: getsmbpwent() and getsam21pwent() not supported!\n"));
+		return NULL;
+	}
+	if (pdb_ops->getsam21pwent != NULL)
+	{
+		return pdb_ops->getsam21pwent(vp);
+	}
+	return pdb_smb_to_sam(pdb_ops->getsmbpwent(vp));
 }
 
 /************************************************************************
@@ -339,7 +483,19 @@ struct sam_passwd *getsam21pwent(void *vp)
 
 BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 {
-  return pdb_ops->add_sam21pwd_entry(newpwd);
+	if (pdb_ops->add_smbpwd_entry == NULL && pdb_ops->add_sam21pwd_entry == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("add_smbpwd_entry: add_smbpwd_entry() and add_sam21pwd_entry() not supported!\n"));
+		return False;
+	}
+	if (pdb_ops->add_sam21pwd_entry != NULL)
+	{
+		return pdb_ops->add_sam21pwd_entry(newpwd);
+	}
+ 	return pdb_ops->add_smbpwd_entry(pdb_sam_to_smb(newpwd));
 }
 
 /************************************************************************
@@ -353,7 +509,19 @@ BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 
 BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
-  return pdb_ops->mod_sam21pwd_entry(pwd, override);
+	if (pdb_ops->mod_smbpwd_entry == NULL && pdb_ops->mod_sam21pwd_entry == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("mod_smbpwd_entry: mod_smbpwd_entry() and mod_sam21pwd_entry() not supported!\n"));
+		return False;
+	}
+	if (pdb_ops->mod_sam21pwd_entry != NULL)
+	{
+		return pdb_ops->mod_sam21pwd_entry(pwd, override);
+	}
+ 	return pdb_ops->mod_smbpwd_entry(pdb_sam_to_smb(pwd), override);
 }
 
 
@@ -363,16 +531,61 @@ BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 
 struct sam_passwd *getsam21pwnam(char *name)
 {
-  return pdb_ops->getsam21pwnam(name);
+	if (pdb_ops->getsmbpwnam == NULL && pdb_ops->getsam21pwnam == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("getsam21pwnam: getsmbpwnam() and getsam21pwnam() not supported!\n"));
+		return NULL;
+	}
+	if (pdb_ops->getsam21pwnam != NULL)
+	{
+		return pdb_ops->getsam21pwnam(name);
+	}
+	return pdb_smb_to_sam(getsmbpwnam(name));
+}
+
+/************************************************************************
+ Routine to search sam passwd by rid.  
+*************************************************************************/
+
+struct sam_passwd *getsam21pwrid(uint32 rid)
+{
+	if (pdb_ops->getsmbpwuid == NULL && pdb_ops->getsam21pwrid == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("getsam21pwrid: getsmbpwuid() and getsam21pwrid() not supported!\n"));
+		return NULL;
+	}
+	if (pdb_ops->getsam21pwrid != NULL)
+	{
+		return pdb_ops->getsam21pwrid(rid);
+	}
+	return pdb_smb_to_sam(pdb_ops->getsmbpwuid(pdb_user_rid_to_uid(rid)));
 }
 
 /************************************************************************
  Routine to search sam passwd by uid.  
 *************************************************************************/
 
-struct sam_passwd *getsam21pwuid(uint32 uid)
+struct sam_passwd *getsam21pwuid(uid_t uid)
 {
-  return pdb_ops->getsam21pwuid(uid);
+	if (pdb_ops->getsmbpwuid == NULL && pdb_ops->getsam21pwrid == NULL)
+	{
+		/* must have one or the other: this is an error by the password
+		   database implementor for the back-end you are using.
+		 */
+		DEBUG(0,("getsam21pwuid: getsmbpwuid() and getsam21pwrid() not supported!\n"));
+		return NULL;
+	}
+	if (pdb_ops->getsam21pwuid != NULL)
+	{
+		return pdb_ops->getsam21pwuid(uid);
+	}
+	return pdb_smb_to_sam(pdb_ops->getsmbpwuid(uid));
 }
 
 
@@ -885,25 +1098,25 @@ Error was %s\n", sid_file, strerror(errno) ));
  converts NT User RID to a UNIX uid.
  ********************************************************************/
 
-uint32 pdb_user_rid_to_uid(uint32 u_rid)
+uid_t pdb_user_rid_to_uid(uint32 u_rid)
 {
-	return (u_rid - 1000);
+	return (uid_t)(u_rid - 1000);
 }
 
 /*******************************************************************
  converts NT Group RID to a UNIX uid.
  ********************************************************************/
 
-uint32 pdb_group_rid_to_gid(uint32 u_gid)
+gid_t pdb_group_rid_to_gid(uint32 g_rid)
 {
-	return (u_gid - 1000);
+	return (gid_t)(g_rid - 1000);
 }
 
 /*******************************************************************
  converts UNIX uid to an NT User RID.
  ********************************************************************/
 
-uint32 pdb_uid_to_user_rid(uint32 uid)
+uint32 pdb_uid_to_user_rid(uid_t uid)
 {
 	return (uint32)(uid + 1000);
 }
@@ -912,7 +1125,7 @@ uint32 pdb_uid_to_user_rid(uint32 uid)
  converts NT Group RID to a UNIX uid.
  ********************************************************************/
 
-uint32 pdb_gid_to_group_rid(uint32 gid)
+uint32 pdb_gid_to_group_rid(gid_t gid)
 {
 	return (uint32)(gid + 1000);
 }
@@ -924,5 +1137,9 @@ uint32 pdb_gid_to_group_rid(uint32 gid)
 BOOL pdb_rid_is_user(uint32 rid)
 {
   /* Punt for now - we need to look at the encoding here. JRA. */
+  /* lkcl i understand that NT attaches an enumeration to a RID
+   * such that it can be identified as either a user, group etc
+   * type.  there are 5 such categories, and they are documented.
+   */
   return True;
 }

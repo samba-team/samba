@@ -637,6 +637,17 @@ struct shmem_ops {
 /*
  * Each implementation of the password database code needs
  * to support the following operations.
+ *
+ * either the get/mod/add-smbXXX or the get/mod/add-sam21XXX functions
+ * are optional, but not both.  conversion routines will be called
+ * if only one of each is supported.  the preference is to provide
+ * full getsam21pwXXX functionality.
+ *
+ * e.g: provide a getsam21pwnam() function but set getsmbpwnam() to NULL:
+ * passdb.c will automatically call getsam21pwnam() and then call the
+ * sam21-to-smb conversion routine if the passdb.c::getsmbpwnam() function
+ * is called.
+ *
  */
 
 struct passdb_ops {
@@ -647,12 +658,14 @@ struct passdb_ops {
   void (*endsmbpwent)(void *);
   unsigned long (*getsmbpwpos)(void *);
   BOOL (*setsmbpwpos)(void *, unsigned long);
+
   /*
    * smb password database query functions.
    */
   struct smb_passwd *(*getsmbpwnam)(char *);
   struct smb_passwd *(*getsmbpwuid)(uid_t);
   struct smb_passwd *(*getsmbpwent)(void *);
+
   /*
    * smb password database modification functions.
    */
@@ -664,11 +677,24 @@ struct passdb_ops {
    */
   struct sam_passwd *(*getsam21pwent)(void *);
 
+  /*
+   * sam password database query functions.
+   */
   struct sam_passwd *(*getsam21pwnam)(char *);
-  struct sam_passwd *(*getsam21pwuid)(uint32);
+  struct sam_passwd *(*getsam21pwuid)(uid_t);
+  struct sam_passwd *(*getsam21pwrid)(uint32);
 
+  /*
+   * sam password database modification functions.
+   */
   BOOL (*add_sam21pwd_entry)(struct sam_passwd *);
   BOOL (*mod_sam21pwd_entry)(struct sam_passwd *, BOOL);
+
+  /*
+   * sam query display info functions.
+   */
+  struct sam_disp_info *(*getsamdisprid)(uint32);
+  struct sam_disp_info *(*getsamdispent)(void *);
 };
 
 /* this is used for smbstatus */
