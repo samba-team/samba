@@ -575,8 +575,8 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	snprintf(new_id_str, sizeof(new_id_str), "%u", 
 		 ((id_type & ID_USERID) ? id->uid : id->gid) + 1);
 		 
-	ldap_set_mod( &mods, LDAP_MOD_DELETE, type, id_str );		 
-	ldap_set_mod( &mods, LDAP_MOD_ADD, type, new_id_str );
+	smbldap_set_mod( &mods, LDAP_MOD_DELETE, type, id_str );		 
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, type, new_id_str );
 	
 	rc = ldap_modify_s(ldap_state.ldap_struct, dn, mods);
 
@@ -829,9 +829,9 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	snprintf(id_str, sizeof(id_str), "%u", ((id_type & ID_USERID) ? id.uid : id.gid));	
 	sid_to_string( sid_str, sid );
 	
-	ldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDMAP_ENTRY );
-	ldap_set_mod( &mods, LDAP_MOD_ADD, type, id_str );
-	ldap_set_mod( &mods, LDAP_MOD_ADD, 
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDMAP_ENTRY );
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, type, id_str );
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, 
 		get_attr_key2string(sidmap_attr_list, LDAP_ATTR_SID), sid_str );
 
 	do {
@@ -910,10 +910,10 @@ static NTSTATUS ldap_idmap_init( char *params )
 		snprintf( uid_str, sizeof(uid_str), "%d", luid );
 		snprintf( gid_str, sizeof(gid_str), "%d", lgid );
 
-		ldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDPOOL );
-		ldap_set_mod( &mods, LDAP_MOD_ADD, 
+		smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDPOOL );
+		smbldap_set_mod( &mods, LDAP_MOD_ADD, 
 			get_attr_key2string(idpool_attr_list, LDAP_ATTR_UIDNUMBER), uid_str );
-		ldap_set_mod( &mods, LDAP_MOD_ADD,
+		smbldap_set_mod( &mods, LDAP_MOD_ADD,
 			get_attr_key2string(idpool_attr_list, LDAP_ATTR_GIDNUMBER), gid_str );
 		
 		do {
@@ -931,15 +931,15 @@ static NTSTATUS ldap_idmap_init( char *params )
 
 	mods = NULL;
 	snprintf( dn, sizeof(dn), "%s,%s", IDMAP_USER_SUFFIX, lp_ldap_idmap_suffix() );
-	ldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_OU );
-	ldap_set_mod( &mods, LDAP_MOD_ADD, "ou", "idmap people" );
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_OU );
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, "ou", "idmap people" );
 	ldap_add_s(ldap_state.ldap_struct, dn, mods);
 	ldap_mods_free( mods, True );
 	
 	mods = NULL;
 	snprintf( dn, sizeof(dn), "%s,%s", IDMAP_GROUP_SUFFIX, lp_ldap_idmap_suffix() );
-	ldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_OU );
-	ldap_set_mod( &mods, LDAP_MOD_ADD, "ou", "idmap group" );
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_OU );
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, "ou", "idmap group" );
 	ldap_add_s(ldap_state.ldap_struct, dn, mods);
 	ldap_mods_free( mods, True );
 #endif 	
