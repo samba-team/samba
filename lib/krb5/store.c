@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -629,7 +629,7 @@ bitswap32(int32_t b)
  */
 
 krb5_error_code
-_krb5_store_creds_internal(krb5_storage *sp, krb5_creds *creds, int v0_6)
+krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
 {
     int ret;
 
@@ -649,15 +649,14 @@ _krb5_store_creds_internal(krb5_storage *sp, krb5_creds *creds, int v0_6)
 				enc-tkt-in-skey bit from KDCOptions */
     if(ret)
 	return ret;
-    if (v0_6) {
+
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER))
 	ret = krb5_store_int32(sp, creds->flags.i);
-	if(ret)
-	    return ret;
-    } else {
+    else
 	ret = krb5_store_int32(sp, bitswap32(TicketFlags2int(creds->flags.b)));
-	if(ret)
-	    return ret;
-    }
+    if(ret)
+	return ret;
+
     ret = krb5_store_addrs(sp, creds->addresses);
     if(ret)
 	return ret;
@@ -669,28 +668,6 @@ _krb5_store_creds_internal(krb5_storage *sp, krb5_creds *creds, int v0_6)
 	return ret;
     ret = krb5_store_data(sp, creds->second_ticket);
     return ret;
-}
-
-/*
- * store `creds' on `sp' returning error or zero
- */
-
-krb5_error_code
-krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
-{
-    return _krb5_store_creds_internal(sp, creds, 0);
-}
-
-krb5_error_code
-_krb5_store_creds_heimdal_0_7(krb5_storage *sp, krb5_creds *creds)
-{
-    return _krb5_store_creds_internal(sp, creds, 0);
-}
-
-krb5_error_code
-_krb5_store_creds_heimdal_pre_0_7(krb5_storage *sp, krb5_creds *creds)
-{
-    return _krb5_store_creds_internal(sp, creds, 1);
 }
 
 krb5_error_code

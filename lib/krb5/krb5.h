@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -455,6 +455,7 @@ typedef Authenticator krb5_donot_replay;
 #define KRB5_STORAGE_BYTEORDER_BE			0x00 /* default */
 #define KRB5_STORAGE_BYTEORDER_LE			0x20
 #define KRB5_STORAGE_BYTEORDER_HOST			0x40
+#define KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER		0x80
 
 struct krb5_storage_data;
 typedef struct krb5_storage_data krb5_storage;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -405,13 +405,12 @@ fcc_store_cred(krb5_context context,
 	sp = krb5_storage_from_fd(fd);
 	krb5_storage_set_eof_code(sp, KRB5_CC_END);
 	storage_set_flags(context, sp, FCACHE(id)->version);
-	if (krb5_config_get_bool_default(context, NULL, TRUE,
-					 "libdefaults",
-					 "fcc-mit-ticketflags",
-					 NULL))
-	    ret = _krb5_store_creds_heimdal_0_7(sp, creds);
-	else
-	    ret = _krb5_store_creds_heimdal_pre_0_7(sp, creds);
+	if (!krb5_config_get_bool_default(context, NULL, TRUE,
+					  "libdefaults",
+					  "fcc-mit-ticketflags",
+					  NULL))
+	    krb5_storage_set_flags(sp, KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER);
+	ret = krb5_store_creds(sp, creds);
 	krb5_storage_free(sp);
     }
     fcc_unlock(context, fd);
