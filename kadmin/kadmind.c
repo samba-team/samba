@@ -81,70 +81,6 @@ usage(int ret)
     exit (ret);
 }
 
-static kadm5_ret_t
-kadm5_server_send(krb5_context context, krb5_auth_context ac, 
-		  krb5_storage *sp, int fd)
-{
-    unsigned char buf[1024];
-    size_t len;
-    krb5_data in, out;
-    kadm5_ret_t ret;
-    len = sp->seek(sp, 0, SEEK_CUR);
-    sp->seek(sp, 0, SEEK_SET);
-    if(len > sizeof(buf))
-	return ENOMEM;
-    sp->fetch(sp, buf, len);
-    in.data = buf;
-    in.length = len;
-    ret = krb5_mk_priv(context, ac, &in, &out, NULL);
-    if(ret)
-	return ret;
-    buf[0] = (out.length >> 24) & 0xff;
-    buf[1] = (out.length >> 16) & 0xff;
-    buf[2] = (out.length >> 8) & 0xff;
-    buf[3] = out.length & 0xff;
-    krb5_net_write(context, &fd, buf, 4);
-    krb5_net_write(context, &fd, out.data, out.length);
-    krb5_data_free(&out);
-    return 0;
-}
-
-static kadm5_ret_t
-kadm5_server_recv(krb5_context context, krb5_auth_context ac, 
-		  krb5_storage *sp, int fd)
-{
-    unsigned char buf[1024];
-    size_t len;
-    krb5_data in, out;
-    kadm5_ret_t ret;
-
-    ret = krb5_net_read(context, &fd, buf, 4);
-    if(ret == 0)
-	exit(1);
-    if(ret < 0)
-	krb5_err(context, 1, errno, "krb5_net_read");
-    if(ret != 4)
-	krb5_errx(context, 1, "krb5_net_read(4) = %d", ret);
-    len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-    if(len > sizeof(buf))
-	return ENOMEM;
-    ret = krb5_net_read(context, &fd, buf, len);
-    if(ret < 0)
-	krb5_err(context, 1, errno, "krb5_net_read");
-    if(ret != len)
-	krb5_errx(context, 1, "krb5_net_read(%d) = %d", len, ret);
-	
-    in.data = buf;
-    in.length = len;
-    ret = krb5_rd_priv(context, ac, &in, &out, NULL);
-    if(ret)
-	return ret;
-    sp->store(sp, out.data, out.length);
-    sp->seek(sp, 0, SEEK_SET);
-    krb5_data_free(&out);
-    return 0;
-}
-
 int
 main(int argc, char **argv)
 {
@@ -193,7 +129,7 @@ main(int argc, char **argv)
 	    if(debug_port == 0)
 		debug_port = krb5_getportbyname (context, "kerberos-adm", 
 						 "tcp", 749);
-	    mini_inetd(htons(debug_port));
+	    mini_inetd(debug_port);
 	}
 	if(realm)
 	    krb5_set_default_realm(context, realm); /* XXX */
