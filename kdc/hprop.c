@@ -452,7 +452,7 @@ int main(int argc, char **argv)
 	usage(0);
     
     if(version_flag){
-	fprintf(stderr, "%s (%s)\n", __progname, heimdal_version);
+	print_version(NULL);
 	exit(0);
     }
 

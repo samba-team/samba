@@ -242,11 +242,8 @@ pop_init(POP *p,int argcount,char **argmessage)
 	exit(0);
     }
     if(version_flag){
-#ifdef KRB5
-	krb5_errx(p->context, 0, "%s", heimdal_version);
-#else
-	errx(0, "%s", VERSION);
-#endif
+	print_version(NULL);
+	exit(0);
     }
 
     argcount -= optind;

@@ -338,7 +338,7 @@ main (int argc, char **argv)
 	usage (0);
 
     if(version_flag){
-	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	print_version(NULL);
 	exit(0);
     }
 

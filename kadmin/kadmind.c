@@ -108,8 +108,10 @@ main(int argc, char **argv)
     if (help_flag)
 	usage (0);
 
-    if (version_flag)
-	krb5_errx(context, 0, "%s", heimdal_version);
+    if (version_flag) {
+	print_version(NULL);
+	exit(0);
+    }
 
     argc -= optind;
     argv += optind;

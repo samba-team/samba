@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,8 +78,10 @@ common_setup(krb5_context *context, int *argc, char **argv,
 
     if(help_flag)
 	(*usage)(0, args, num_args);
-    if(version_flag)
-	krb5_errx(*context, 0, "%s", heimdal_version);
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
+    }
     
     if(port_str){
 	struct servent *s = roken_getservbyname(port_str, "tcp");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -75,7 +75,7 @@ main (int argc, char **argv)
 	usage (0);
   
     if(version_flag){
-	printf("%s (%s)\n", __progname, heimdal_version);
+	print_version(NULL);
 	exit(0);
     }
   

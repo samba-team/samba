@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -192,8 +192,10 @@ main(int argc, char **argv)
 	usage(1);
     if(help_flag)
 	usage(0);
-    if(version_flag)
-	krb5_errx(context, 0, "%s", heimdal_version);
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
+    }
     if(unlog_flag){
 	k_unlog();
 	exit(0);
