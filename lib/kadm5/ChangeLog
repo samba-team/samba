@@ -1,3 +1,15 @@
+2000-07-22  Assar Westerlund  <assar@sics.se>
+
+	* keys.c: new file with _kadm5_free_keys, _kadm5_init_keys
+
+	* set_keys.c (free_keys, init_keys): elevate to internal kadm5
+	functions
+
+	* chpass_s.c (kadm5_s_chpass_principal_cond): new function
+	* Makefile.am (C_SOURCES): add keys.c
+	* init_c.c: remove unused variable and handle some parameters
+	being NULL
+
 2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ipropd_slave.c: no need to call gethostname, since
