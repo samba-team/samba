@@ -270,6 +270,12 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"brsinfo",
+		cmd_brs_query_info,
+		"Browser Query Info",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
 		"wksinfo",
 		cmd_wks_query_info,
 		"Workstation Query Info",
