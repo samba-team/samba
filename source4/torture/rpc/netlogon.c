@@ -1728,7 +1728,7 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
-BOOL torture_rpc_netlogon(int dummy)
+BOOL torture_rpc_netlogon(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

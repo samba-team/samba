@@ -26,7 +26,7 @@
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-BOOL torture_raw_sfileinfo(int dummy)
+BOOL torture_raw_sfileinfo(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;
@@ -516,7 +516,7 @@ done:
 /* 
    look for the w2k3 setpathinfo STANDARD bug
 */
-BOOL torture_raw_sfileinfo_bug(int dummy)
+BOOL torture_raw_sfileinfo_bug(void)
 {
 	struct smbcli_state *cli;
 	TALLOC_CTX *mem_ctx;

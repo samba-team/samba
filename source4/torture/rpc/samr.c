@@ -3153,7 +3153,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL torture_rpc_samr(int dummy)
+BOOL torture_rpc_samr(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

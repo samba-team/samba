@@ -132,7 +132,7 @@ static BOOL test_JobAdd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_rpc_atsvc(int dummy)
+BOOL torture_rpc_atsvc(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

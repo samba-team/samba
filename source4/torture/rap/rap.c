@@ -423,7 +423,7 @@ static BOOL test_rap(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	return res;
 }
 
-BOOL torture_raw_rap(int dummy)
+BOOL torture_raw_rap(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

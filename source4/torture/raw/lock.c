@@ -664,7 +664,7 @@ done:
 /* 
    basic testing of lock calls
 */
-BOOL torture_raw_lock(int dummy)
+BOOL torture_raw_lock(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

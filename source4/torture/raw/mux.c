@@ -251,7 +251,7 @@ done:
 /* 
    basic testing of multiplexing notify
 */
-BOOL torture_raw_mux(int dummy)
+BOOL torture_raw_mux(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

@@ -25,7 +25,7 @@
 /*
   Test rename on files open with share delete and no share delete.
  */
-BOOL torture_test_rename(int dummy)
+BOOL torture_test_rename(void)
 {
 	struct smbcli_state *cli1;
 	const char *fname = "\\test.txt";

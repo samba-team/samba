@@ -107,7 +107,7 @@ static union smb_fsinfo *find(const char *name)
    Some of the consistency tests assume that the target filesystem is
    quiescent, which is sometimes hard to achieve
 */
-BOOL torture_raw_qfsinfo(int dummy)
+BOOL torture_raw_qfsinfo(void)
 {
 	struct smbcli_state *cli;
 	int i;

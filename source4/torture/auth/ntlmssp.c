@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-BOOL torture_ntlmssp_self_check(int dummy) 
+BOOL torture_ntlmssp_self_check(void) 
 {
 	struct ntlmssp_state *ntlmssp_state;
 	DATA_BLOB data;

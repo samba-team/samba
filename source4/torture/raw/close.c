@@ -23,7 +23,7 @@
 
 /* basic testing of all RAW_CLOSE_* calls 
 */
-BOOL torture_raw_close(int dummy)
+BOOL torture_raw_close(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

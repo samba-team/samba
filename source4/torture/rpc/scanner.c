@@ -127,7 +127,7 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 }
 
 
-BOOL torture_rpc_scanner(int dummy)
+BOOL torture_rpc_scanner(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

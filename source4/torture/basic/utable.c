@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-BOOL torture_utable(int dummy)
+BOOL torture_utable(void)
 {
 	struct smbcli_state *cli;
 	fstring fname;
@@ -114,7 +114,7 @@ static char *form_name(int c)
 	return fname;
 }
 
-BOOL torture_casetable(int dummy)
+BOOL torture_casetable(void)
 {
 	static struct smbcli_state *cli;
 	char *fname;

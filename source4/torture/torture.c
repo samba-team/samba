@@ -529,7 +529,7 @@ static BOOL rw_torture2(struct smbcli_state *c1, struct smbcli_state *c2)
 	return correct;
 }
 
-static BOOL run_readwritetest(int dummy)
+static BOOL run_readwritetest(void)
 {
 	struct smbcli_state *cli1, *cli2;
 	BOOL test1, test2 = True;
@@ -577,7 +577,7 @@ static BOOL run_readwritemulti(struct smbcli_state *cli, int dummy)
   this checks to see if a secondary tconx can use open files from an
   earlier tconx
  */
-static BOOL run_tcon_test(int dummy)
+static BOOL run_tcon_test(void)
 {
 	struct smbcli_state *cli;
 	const char *fname = "\\tcontest.tmp";
@@ -732,7 +732,7 @@ static BOOL tcon_devtest(struct smbcli_state *cli,
 /*
  checks for correct tconX support
  */
-static BOOL run_tcon_devtype_test(int dummy)
+static BOOL run_tcon_devtype_test(void)
 {
 	struct smbcli_state *cli1 = NULL;
 	BOOL retry;
@@ -800,7 +800,7 @@ static BOOL run_tcon_devtype_test(int dummy)
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
 */
-static BOOL run_fdpasstest(int dummy)
+static BOOL run_fdpasstest(void)
 {
 	struct smbcli_state *cli1, *cli2;
 	const char *fname = "\\fdpass.tst";
@@ -861,7 +861,7 @@ static BOOL run_fdpasstest(int dummy)
 
   1) the server does not allow an unlink on a file that is open
 */
-static BOOL run_unlinktest(int dummy)
+static BOOL run_unlinktest(void)
 {
 	struct smbcli_state *cli;
 	const char *fname = "\\unlink.tst";
@@ -1080,7 +1080,7 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 }
 
 /* send smb negprot commands, not reading the response */
-static BOOL run_negprot_nowait(int dummy)
+static BOOL run_negprot_nowait(void)
 {
 	int i;
 	struct smbcli_state *cli, *cli2;
@@ -1144,7 +1144,7 @@ static BOOL run_negprot_nowait(int dummy)
 /*
   This checks how the getatr calls works
 */
-static BOOL run_attrtest(int dummy)
+static BOOL run_attrtest(void)
 {
 	struct smbcli_state *cli;
 	int fnum;
@@ -1215,7 +1215,7 @@ static BOOL run_attrtest(int dummy)
 /*
   This checks a couple of trans2 calls
 */
-static BOOL run_trans2test(int dummy)
+static BOOL run_trans2test(void)
 {
 	struct smbcli_state *cli;
 	int fnum;
@@ -1352,7 +1352,7 @@ static BOOL run_trans2test(int dummy)
 /*
   print out server properties
  */
-static BOOL run_properties(int dummy)
+static BOOL run_properties(void)
 {
 	struct smbcli_state *cli;
 	BOOL correct = True;
@@ -1398,7 +1398,7 @@ static BOOL run_properties(int dummy)
 /*
   Test ntcreate calls made by xcopy
  */
-static BOOL run_xcopy(int dummy)
+static BOOL run_xcopy(void)
 {
 	struct smbcli_state *cli1;
 	const char *fname = "\\test.txt";
@@ -1441,7 +1441,7 @@ static BOOL run_xcopy(int dummy)
 /*
   see how many RPC pipes we can open at once
 */
-static BOOL run_pipe_number(int dummy)
+static BOOL run_pipe_number(void)
 {
 	struct smbcli_state *cli1;
 	const char *pipe_name = "\\WKSSVC";
@@ -1479,7 +1479,7 @@ static BOOL run_pipe_number(int dummy)
   used for testing performance when there are N idle users
   already connected
  */
- static BOOL torture_holdcon(int dummy)
+ static BOOL torture_holdcon(void)
 {
 	int i;
 	struct smbcli_state **cli;
@@ -1529,7 +1529,7 @@ static BOOL run_pipe_number(int dummy)
   Try with a wrong vuid and check error message.
  */
 
-static BOOL run_vuidtest(int dummy)
+static BOOL run_vuidtest(void)
 {
 	struct smbcli_state *cli;
 	const char *fname = "\\vuid.tst";
@@ -1595,7 +1595,7 @@ static BOOL run_vuidtest(int dummy)
 /*
   Test open mode returns on read-only files.
  */
- static BOOL run_opentest(int dummy)
+ static BOOL run_opentest(void)
 {
 	static struct smbcli_state *cli1;
 	static struct smbcli_state *cli2;
@@ -2085,7 +2085,7 @@ error_test80:
 /*
   sees what IOCTLs are supported
  */
-BOOL torture_ioctl_test(int dummy)
+BOOL torture_ioctl_test(void)
 {
 	struct smbcli_state *cli;
 	uint16_t device, function;
@@ -2141,7 +2141,7 @@ BOOL torture_ioctl_test(int dummy)
 /*
   tries variants of chkpath
  */
-BOOL torture_chkpath_test(int dummy)
+BOOL torture_chkpath_test(void)
 {
 	struct smbcli_state *cli;
 	int fnum;
@@ -2398,8 +2398,8 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 
 static struct {
 	const char *name;
-	BOOL (*fn)(int);
-	uint_t flags;
+	BOOL (*fn)(void);
+	BOOL (*multi_fn)(struct smbcli_state *, int );
 } torture_ops[] = {
 	/* base tests */
 	{"BASE-FDPASS", run_fdpasstest, 0},
@@ -2423,9 +2423,9 @@ static struct {
 	{"BASE-TCONDEV",  run_tcon_devtype_test, 0},
 	{"BASE-VUID", run_vuidtest, 0},
 	{"BASE-RW1",  run_readwritetest, 0},
-	{"BASE-RW2",  run_readwritemulti, FLAG_MULTIPROC},
+	{"BASE-RW2",  NULL, run_readwritemulti},
 	{"BASE-OPEN", run_opentest, 0},
-	{"BASE-DEFER_OPEN", run_deferopen, FLAG_MULTIPROC},
+	{"BASE-DEFER_OPEN", NULL, run_deferopen},
 	{"BASE-XCOPY", run_xcopy, 0},
 	{"BASE-RENAME", torture_test_rename, 0},
 	{"BASE-DELETE", torture_test_delete, 0},
@@ -2439,7 +2439,7 @@ static struct {
 	/* benchmarking tests */
 	{"BENCH-HOLDCON",  torture_holdcon, 0},
 	{"BENCH-NBENCH",  torture_nbench, 0},
-	{"BENCH-TORTURE",run_torture,    FLAG_MULTIPROC},
+	{"BENCH-TORTURE", NULL, run_torture},
 
 	/* RAW smb tests */
 	{"RAW-QFSINFO", torture_raw_qfsinfo, 0},
@@ -2469,7 +2469,7 @@ static struct {
 	{"SCAN-NTTRANS", torture_nttrans_scan, 0},
 	{"SCAN-ALIASES", torture_trans2_aliases, 0},
 	{"SCAN-SMB", torture_smb_scan, 0},
-	{"SCAN-MAXFID", run_maxfidtest, FLAG_MULTIPROC},
+	{"SCAN-MAXFID", NULL, run_maxfidtest},
 	{"SCAN-UTABLE", torture_utable, 0},
 	{"SCAN-CASETABLE", torture_casetable, 0},
 	{"SCAN-PIPE_NUMBER", run_pipe_number, 0},
@@ -2537,9 +2537,10 @@ static BOOL run_test(const char *name)
 			matched = True;
 			init_iconv();
 			printf("Running %s\n", torture_ops[i].name);
-			if (torture_ops[i].flags & FLAG_MULTIPROC) {
+			if (torture_ops[i].multi_fn) {
 				BOOL result;
-				t = torture_create_procs(torture_ops[i].fn, &result);
+				t = torture_create_procs(torture_ops[i].multi_fn, 
+							 &result);
 				if (!result) { 
 					ret = False;
 					printf("TEST %s FAILED!\n", torture_ops[i].name);
@@ -2547,7 +2548,7 @@ static BOOL run_test(const char *name)
 					 
 			} else {
 				start_timer();
-				if (!torture_ops[i].fn(0)) {
+				if (!torture_ops[i].fn()) {
 					ret = False;
 					printf("TEST %s FAILED!\n", torture_ops[i].name);
 				}
@@ -2713,7 +2714,7 @@ static BOOL is_binding_string(const char *binding_string)
 	load_interfaces();
 	srandom(time(NULL));
 
-	argv_new = (const char **)poptGetArgs(pc);
+	argv_new = discard_const_p(char *, poptGetArgs(pc));
 
 	argc_new = argc;
 	for (i=0; i<argc; i++) {

@@ -33,7 +33,7 @@
 
 */
 
-BOOL torture_multi_bind(int dummy) 
+BOOL torture_multi_bind(void) 
 {
 	struct dcerpc_pipe *p;
 	const char *domain = lp_parm_string(-1, "torture", "userdomain");
