@@ -323,23 +323,6 @@ FILE *sys_fopen(const char *path, const char *type)
 #endif
 }
 
-#if defined(HAVE_MMAP)
-
-/*******************************************************************
- An mmap() wrapper that will deal with 64 bit filesizes.
-********************************************************************/
-
-void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T offset)
-{
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_MMAP64)
-  return mmap64(addr, len, prot, flags, fd, offset);
-#else
-  return mmap(addr, len, prot, flags, fd, offset);
-#endif
-}
-
-#endif /* HAVE_MMAP */
-
 /*******************************************************************
  A readdir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/

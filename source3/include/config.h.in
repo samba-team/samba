@@ -98,7 +98,6 @@
 #undef OSF1
 #undef NEXT2
 #undef RELIANTUNIX
-#undef HAVE_SHARED_MMAP
 #undef HAVE_MMAP
 #undef HAVE_FCNTL_LOCK
 #undef HAVE_FTRUNCATE_EXTEND
@@ -537,9 +536,6 @@
 
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME
-
-/* Define if you have the mmap64 function.  */
-#undef HAVE_MMAP64
 
 /* Define if you have the open64 function.  */
 #undef HAVE_OPEN64
