@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -58,6 +58,7 @@ _kadm5_set_keys(kadm5_server_context *context,
 				  "kadmin", "use_v4_salt", NULL))){
 	    /* zap old salt, possibly keeping version 4 salts */
 	    free_Salt(key->salt);
+	    free (key->salt);
 	    key->salt = NULL;
 	}
 	krb5_free_keyblock_contents(context->context, &key->key);
