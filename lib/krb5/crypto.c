@@ -322,7 +322,7 @@ DES3_string_to_key(krb5_context context,
     
     len = password.length + salt.saltvalue.length;
     str = malloc(len);
-    if(str == NULL)
+    if(len != 0 && str == NULL)
 	return ENOMEM;
     memcpy(str, password.data, password.length);
     memcpy(str + password.length, salt.saltvalue.data, salt.saltvalue.length);
@@ -370,9 +370,10 @@ DES3_string_to_key_derived(krb5_context context,
 {
     krb5_error_code ret;
     size_t len = password.length + salt.saltvalue.length;
-    char *s = malloc(len);
+    char *s;
 
-    if(s == NULL)
+    s = malloc(len);
+    if(len != 0 && s == NULL)
 	return ENOMEM;
     memcpy(s, password.data, password.length);
     memcpy(s + password.length, salt.saltvalue.data, salt.saltvalue.length);
@@ -1733,7 +1734,7 @@ decrypt_internal_derived(krb5_context context,
     unsigned long l;
     
     p = malloc(len);
-    if(p == NULL)
+    if(len != 0 && p == NULL)
 	return ENOMEM;
     memcpy(p, data, len);
 
@@ -1795,7 +1796,7 @@ decrypt_internal(krb5_context context,
     
     checksum_sz = CHECKSUMSIZE(et->cksumtype);
     p = malloc(len);
-    if(p == NULL)
+    if(len != 0 && p == NULL)
 	return ENOMEM;
     memcpy(p, data, len);
     
@@ -2033,12 +2034,12 @@ derive_key(krb5_context context,
 	void *c = malloc(len);
 	size_t res_len = (kt->bits + 7) / 8;
 
-	if(c == NULL)
+	if(len != 0 && c == NULL)
 	    return ENOMEM;
 	memcpy(c, constant, len);
 	(*et->encrypt)(key, c, len, 1);
 	k = malloc(res_len);
-	if(k == NULL)
+	if(res_len != 0 && k == NULL)
 	    return ENOMEM;
 	_krb5_n_fold(c, len, k, res_len);
 	free(c);
