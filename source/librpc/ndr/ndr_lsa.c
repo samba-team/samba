@@ -1179,14 +1179,84 @@ NTSTATUS ndr_pull_ENUMACCTWITHRIGHT(struct ndr_pull *ndr, struct ENUMACCTWITHRIG
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_ENUMACCTRIGHTS(struct ndr_push *ndr, struct ENUMACCTRIGHTS *r)
+static NTSTATUS ndr_push_lsa_RightAttribute(struct ndr_push *ndr, int ndr_flags, struct lsa_RightAttribute *r)
 {
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_ptr(ndr, r->name));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->name) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->name));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_RightAttribute(struct ndr_pull *ndr, int ndr_flags, struct lsa_RightAttribute *r)
+{
+	uint32 _ptr_name;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_name));
+	if (_ptr_name) {
+		NDR_ALLOC(ndr, r->name);
+	} else {
+		r->name = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->name) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->name));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_RightSet(struct ndr_push *ndr, int ndr_flags, struct lsa_RightSet *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint32(ndr, r->count));
+	NDR_CHECK(ndr_push_ptr(ndr, r->names));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->names) {
+		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->names, sizeof(r->names[0]), r->count, (ndr_push_flags_fn_t)ndr_push_lsa_Name));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_RightSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_RightSet *r)
+{
+	uint32 _ptr_names;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_names));
+	if (_ptr_names) {
+		NDR_ALLOC(ndr, r->names);
+	} else {
+		r->names = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->names) {
+		NDR_ALLOC_N_SIZE(ndr, r->names, r->count, sizeof(r->names[0]));
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_Name));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_lsa_EnumAccountRights(struct ndr_push *ndr, struct lsa_EnumAccountRights *r)
+{
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_dom_sid2(ndr, r->in.sid));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_ENUMACCTRIGHTS(struct ndr_pull *ndr, struct ENUMACCTRIGHTS *r)
+NTSTATUS ndr_pull_lsa_EnumAccountRights(struct ndr_pull *ndr, struct lsa_EnumAccountRights *r)
 {
+	NDR_CHECK(ndr_pull_lsa_RightSet(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.rights));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;

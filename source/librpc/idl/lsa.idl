@@ -288,8 +288,24 @@
 	NTSTATUS DELETEOBJECT ();
 	/* Function:   0x23 */
 	NTSTATUS ENUMACCTWITHRIGHT ();
+
 	/* Function:      0x24 */
-	NTSTATUS ENUMACCTRIGHTS ();
+	typedef struct {
+		unistr *name;
+	} lsa_RightAttribute;
+	
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_Name *names;
+	} lsa_RightSet;
+	
+	NTSTATUS lsa_EnumAccountRights (
+		[in,ref]     policy_handle *handle,
+		[in,ref]     dom_sid2 *sid,
+		[out,ref]    lsa_RightSet *rights
+		);
+
+
 	/* Function:       0x25 */
 	NTSTATUS ADDACCTRIGHTS ();
 	/* Function:    0x26 */
