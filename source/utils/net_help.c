@@ -122,13 +122,25 @@ int net_help_share(int argc, const char **argv)
 	 "on target server\n\n"
 	 "net [<method>] share ADD <name=serverpath> [misc. options] [targets]"
 	 "\n\tAdds a share from a server (makes the export active)\n\n"
-	 "net [<method>] share DELETE <sharename> [misc. options] [targets]\n"
-	 "\n\tDeletes a share from a server (makes the export inactive)\n");
+	 "net [<method>] share DELETE <sharename> [misc. options] [targets]"
+	 "\n\tDeletes a share from a server (makes the export inactive)\n\n"
+	 "net [<method>] share MIGRATE FILES <sharename> [misc. options] [targets]"
+	 "\n\tMigrates files from remote to local server\n\n"
+	 "net [<method>] share MIGRATE SHARES <sharename> [misc. options] [targets]"
+	 "\n\tMigrates shares from remote to local server\n\n"
+/*	 "net [<method>] share MIGRATE SECURITY <sharename> [misc. options] [targets]"
+	 "\n\tMigrates share-ACLs from remote to local server\n\n" */
+	 "net [<method>] share MIGRATE ALL <sharename> [misc. options] [targets]"
+	 "\n\tMigrates shares (including directories, files) from remote\n"
+	 "\tto local server\n\n"
+	);
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
 	d_printf(
 	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
-	 "\t-M or --maxusers=<num>\t\tmax users allowed for share\n");
+	 "\t-M or --maxusers=<num>\t\tmax users allowed for share\n"
+	 "\t-a or --acls\t\t\tcopies ACLs as well\n"
+	 "\t-e or --exclude\t\t\tlist of shares to be excluded from mirroring\n");
 	return -1;
 }
 
@@ -148,6 +160,31 @@ int net_help_file(int argc, const char **argv)
 	net_common_flags_usage(argc, argv);
 	return -1;
 }
+
+int net_help_printer(int argc, const char **argv)
+{
+	d_printf("net rpc printer LIST [printer]\n"\
+		 "\tlists all printers on print-server\n\n");
+	d_printf("net rpc printer DRIVER [printer]\n"\
+		 "\tlists all printer-drivers on print-server\n\n");
+	d_printf("net rpc printer MIGRATE PRINTERS [printer]"\
+		 "\n\tmigrates printers from remote to local server\n\n");
+	d_printf("net rpc printer MIGRATE SETTINGS [printer]"\
+		 "\n\tmigrates printer-settings from remote to local server\n\n");
+	d_printf("net rpc printer MIGRATE DRIVERS [printer]"\
+		 "\n\tmigrates printer-drivers from remote to local server\n\n");
+	d_printf("net rpc printer MIGRATE FORMS [printer]"\
+		 "\n\tmigrates printer-forms from remote to local server\n\n");
+	d_printf("net rpc printer MIGRATE SECURITY [printer]"\
+		 "\n\tmigrates printer-ACLs from remote to local server\n\n");
+	d_printf("net rpc printer MIGRATE ALL [printer]\n"\
+		 "\tmigrates drivers, forms, queues, settings and acls from\n"\
+		 "\tremote to local print-server\n\n");
+	net_common_methods_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
+	return -1;
+}
+
 
 int net_help_status(int argc, const char **argv)
 {

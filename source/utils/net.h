@@ -62,6 +62,8 @@ extern BOOL opt_localgroup;
 extern BOOL opt_domaingroup;
 extern const char *opt_newntname;
 extern int opt_rid;
+extern int opt_acls;
+extern const char *opt_exclude;
 
 extern BOOL opt_have_ip;
 extern struct in_addr opt_dest_ip;

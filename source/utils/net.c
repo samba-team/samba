@@ -78,6 +78,8 @@ BOOL opt_localgroup = False;
 BOOL opt_domaingroup = False;
 const char *opt_newntname = "";
 int opt_rid = 0;
+int opt_acls = 0;
+const char *opt_exclude = NULL;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
@@ -126,12 +128,13 @@ int net_run_function(int argc, const char **argv, struct functable *table,
 	return usage_fn(argc, argv);
 }
 
-
 /****************************************************************************
-connect to \\server\ipc$  
+connect to \\server\service 
 ****************************************************************************/
-NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
-					const char *server_name)
+NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
+					const char *server_name, 
+					const char *service_name, 
+					const char *service_type)
 {
 	NTSTATUS nt_status;
 
@@ -144,7 +147,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 	
 	nt_status = cli_full_connection(c, NULL, server_name, 
 					server_ip, opt_port,
-					"IPC$", "IPC",  
+					service_name, service_type,  
 					opt_user_name, opt_workgroup,
 					opt_password, 0, Undefined, NULL);
 	
@@ -171,6 +174,16 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 	}
 }
 
+
+/****************************************************************************
+connect to \\server\ipc$  
+****************************************************************************/
+NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
+					const char *server_name)
+{
+	return connect_to_service(c, server_ip, server_name, "IPC$", "IPC");
+}
+
 /****************************************************************************
 connect to \\server\ipc$ anonymously
 ****************************************************************************/
@@ -192,6 +205,40 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 		return nt_status;
 	}
 }
+
+/**
+ * Connect the local server and open a given pipe
+ *
+ * @param cli_local		A cli_state to the local spoolss-server
+ * @param pipe			The pipe to open
+ * @param got_pipe		boolean to that stores if got a pipe
+ *
+ * @return Normal NTSTATUS return.
+ **/
+NTSTATUS connect_local_pipe(struct cli_state **cli_local, int pipe, BOOL *got_pipe)
+{
+	NTSTATUS nt_status;
+	extern struct in_addr loopback_ip;
+	char *server_name = strdup("127.0.0.1");
+	struct cli_state *cli_tmp = NULL;
+
+	/* make a connection to smbd via loopback */
+	nt_status = connect_to_ipc(&cli_tmp, &loopback_ip, server_name);
+	if (!NT_STATUS_IS_OK(nt_status)) 
+		return nt_status;
+
+	if (!cli_nt_session_open(cli_tmp, pipe)) {
+		DEBUG(0, ("couldn't not initialise spoolss pipe\n"));
+		cli_shutdown(cli_tmp);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	*cli_local = cli_tmp;
+	*got_pipe = True;
+
+	return nt_status;
+}
+
 
 /****************************************************************************
  Use the local machine's password for this session
@@ -690,6 +737,9 @@ static struct functable net_func[] = {
 		{"domain",      'D', POPT_ARG_NONE,   &opt_domaingroup},
 		{"ntname",      'N', POPT_ARG_STRING, &opt_newntname},
 		{"rid",         'R', POPT_ARG_INT,    &opt_rid},
+		/* Options for 'net rpc share migrate' */
+		{"acls",	'a', POPT_ARG_NONE,   &opt_acls},
+		{"exclude",	'e', POPT_ARG_STRING, &opt_exclude},
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}

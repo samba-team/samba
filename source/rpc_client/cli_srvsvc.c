@@ -269,7 +269,8 @@ WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				const char *netname, uint32 type, 
 				const char *remark, uint32 perms, 
 				uint32 max_uses, uint32 num_uses, 
-				const char *path, const char *passwd)
+				const char *path, const char *passwd,
+				int level, SEC_DESC *sd)
 {
 	prs_struct qbuf, rbuf;
 	SRV_Q_NET_SHARE_ADD q;
@@ -285,7 +286,8 @@ WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	init_srv_q_net_share_add(&q,cli->srv_name_slash, netname, type, remark,
-				 perms, max_uses, num_uses, path, passwd);
+				 perms, max_uses, num_uses, path, passwd, 
+				 level, sd);
 
 	/* Marshall data and send request */
 

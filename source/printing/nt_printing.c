@@ -209,6 +209,7 @@ struct table_node {
 #define SPL_ARCH_W32MIPS	"W32MIPS"
 #define SPL_ARCH_W32ALPHA	"W32ALPHA"
 #define SPL_ARCH_W32PPC		"W32PPC"
+#define SPL_ARCH_IA64		"IA64"
 
 static const struct table_node archi_table[]= {
 
@@ -217,6 +218,7 @@ static const struct table_node archi_table[]= {
 	{"Windows NT R4000",     SPL_ARCH_W32MIPS,	2 },
 	{"Windows NT Alpha_AXP", SPL_ARCH_W32ALPHA,	2 },
 	{"Windows NT PowerPC",   SPL_ARCH_W32PPC,	2 },
+	{"Windows IA64",   	 SPL_ARCH_IA64,		3 },
 	{NULL,                   "",		-1 }
 };
 
