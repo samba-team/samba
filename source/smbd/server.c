@@ -540,6 +540,8 @@ void exit_server(char *reason)
 
 	invalidate_all_vuids();
 
+	print_notify_send_messages();	
+
 	/* delete our entry in the connections database. */
 	yield_connection(NULL,"");
 
