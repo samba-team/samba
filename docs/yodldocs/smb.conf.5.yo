@@ -505,7 +505,13 @@ it() link(bf(config file))(configfile)
 
 it() link(bf(deadtime))(deadtime)
 
+it() link(bf(debug hires timestamp))(debughirestimestamp)
+
+it() link(bf(debug pid))(debugpid)
+
 it() link(bf(debug timestamp))(debugtimestamp)
+
+it() link(bf(debug uid))(debuguid)
 
 it() link(bf(debuglevel))(debuglevel)
 
@@ -1592,6 +1598,22 @@ tt(	deadtime = 0)
   bf(Example:)
 tt(	deadtime = 15)
 
+label(debughirestimestamp)
+dit(bf(debug hires timestamp (G)))
+
+Sometimes the timestamps in the log messages are needed with a
+resolution of higher that seconds, this boolean parameter adds
+microsecond resolution to the timestamp message header when turned on.
+
+Note that the parameter link(bf(debug timestamp))(debugtimestamp)
+must be on for this to have an effect.
+
+  bf(Default:)
+tt( debug hires timestamp = No)
+
+  bf(Example:)
+tt( debug hires timestamp = Yes)
+
 label(debugtimestamp)
 dit(bf(debug timestamp (G)))
 
@@ -1605,6 +1627,39 @@ tt(	debug timestamp = Yes)
 
   bf(Example:)
 tt(	debug timestamp = No)
+
+label(debugpid)
+dit(bf(debug pid (G)))
+
+When using only one log file for more then one forked smbd-process
+there may be hard to follow which process outputs which message.
+This boolean parameter is adds the process-id to the timestamp message
+headers in the logfile when turned on.
+
+Note that the parameter link(bf(debug timestamp))(debugtimestamp)
+must be on for this to have an effect.
+
+  bf(Default:)
+tt(	debug pid = No)
+
+  bf(Example:)
+tt(	debug pid = Yes)
+
+label(debuguid)
+dit(bf(debug uid (G)))
+
+Samba is sometimes run as root and sometime run as the connected
+user, this boolean parameter inserts the current euid, egid, uid
+and gid to the timestamp message headers in the log file if turned on.
+
+Note that the parameter link(bf(debug timestamp))(debugtimestamp)
+must be on for this to have an effect.
+
+  bf(Default:)
+tt(	debug uid = No)
+
+  bf(Example:)
+tt(	debug uid = Yes)
 
 label(debuglevel)
 dit(bf(debug level (G)))
@@ -3354,34 +3409,9 @@ See the section on link(bf("NAME MANGLING"))(NAMEMANGLING).
 label(manglelocks)
 dit(bf(mangle locks (S)))
 
-This option is new with Samba 2.0.4 and above. It only has an effect on locking
-when Samba is running on a 32-bit platform such as Linux (2.0, 2.2) on x86 but not on
-64-bit platforms such as IRIX, Solaris 2.7 and above, AIX 4.2 etc.
-
-This option was introduced as NT clients have a bug in that they still send 64-bit
-lock requests to servers like Samba on 32-bit platforms that have explicitly 
-told the client that they do not support 64-bit file access.
-
-If this option is set to "True" (the default) on a 32-bit system then Samba
-will truncate any lock length greater than 31 bits (the POSIX limit on 32-bit
-systems) and then attempt to mangle the lock offset from a 64-bit value to a
-high 32 bit value. It does this by examining the number of bits set in the
-top 32 bits, looking at the lower 31 bits starting from the 31st bit going
-downward (the POSIX limit on 32-bit systems) for a range of zero bits that
-this can be mapped into and then mapping the upper set bits into the lower
-set bits.
-
-If no space can be found then a locking error is returned to the client.
-
-Note that this option has bf(NO) effect on 64 bit systems. It should not
-be turned off on 32 bit systems unless it can be shown that this is causing
-a locking problem for a client application.
-
-  bf(Default:)
-tt(		mangle locks = Yes)
-
-  bf(Example:)
-tt(		mangle locks = No)
+This option is was introduced with Samba 2.0.4 and above and has been
+removed in Samba 2.0.6 as Samba now dynamically configures such things
+on 32 bit systems.
 
 label(mangledmap)
 dit(bf(mangled map (S)))

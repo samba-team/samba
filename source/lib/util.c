@@ -2191,7 +2191,7 @@ void standard_sub_basic(char *str)
 			case 'L' : string_sub(p,"%L", local_machine,l); break;
 			case 'M' : string_sub(p,"%M", client_name(Client),l); break;
 			case 'R' : string_sub(p,"%R", remote_proto,l); break;
-			case 'T' : string_sub(p,"%T", timestring(),l); break;
+			case 'T' : string_sub(p,"%T", timestring(False),l); break;
 			case 'U' : string_sub(p,"%U", username,l); break;
 			case 'a' : string_sub(p,"%a", remote_arch,l); break;
 			case 'd' :
