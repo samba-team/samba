@@ -20,6 +20,15 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/*************************************************************
+ Ever wonder where Luke comes up with some of these names?
+
+	(N)etwork (C)omputing (A)rchitechture ???
+
+ get it?   --jerry
+*************************************************************/
+
+
 #define NO_SYSLOG
 
 #include "includes.h"
