@@ -22,7 +22,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -138,14 +137,15 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *a
 	/* Now we need to return a non-NULL address for the ace list even
 	   if the number of aces required is zero.  This is because there
 	   is a distinct difference between a NULL ace and an ace with zero
-	   entries in it.  This is achieved by always making the number of
-	   bytes allocated by talloc() positive.  Heh. */
+	   entries in it.  This is achieved by checking that num_aces is a
+	   positive number. */
 
-	if((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces + 1))
-	   == NULL) {
+	if ((num_aces) && 
+            ((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces)) 
+             == NULL)) {
 		return NULL;
 	}
-
+        
 	for (i = 0; i < num_aces; i++) {
 		dst->ace[i] = ace_list[i]; /* Structure copy. */
 		dst->size += ace_list[i].size;
@@ -298,9 +298,10 @@ BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
 {
 	int i, j;
 
-	/* Trivial case */
+	/* Trivial cases */
 
 	if (!s1 && !s2) return True;
+	if (!s1 || !s2) return False;
 
 	/* Check top level stuff */
 
@@ -544,7 +545,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			offset = SD_HEADER_SIZE;
 
 		dst->off_sacl = offset;
-		offset += ((sacl->size + 3) & ~3);
+		offset += ((dst->sacl->size + 3) & ~3);
 	}
 
 	if (dst->dacl != NULL) {
@@ -553,7 +554,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			offset = SD_HEADER_SIZE;
 
 		dst->off_dacl = offset;
-		offset += ((dacl->size + 3) & ~3);
+		offset += ((dst->dacl->size + 3) & ~3);
 	}
 
 	*sd_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);
