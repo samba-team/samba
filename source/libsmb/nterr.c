@@ -527,11 +527,9 @@ BOOL get_safe_nt_error_msg(uint32 nt_code, char *msg, size_t len)
 
 	slprintf(msg, len-1, "NT code %08x", nt_code);
 
-        nt_code &= 0xFFFF;
-
 	while (nt_errs[idx].nt_errstr != NULL)
 	{
-		if (nt_errs[idx].nt_errcode == nt_code)
+		if ((nt_errs[idx].nt_errcode & 0xFFFF) == (nt_code & 0xFFFF))
 		{
 			safe_strcpy(msg, nt_errs[idx].nt_errstr, len);
 			return True;

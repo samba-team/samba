@@ -344,8 +344,6 @@ static uint32 do_command(struct client_info *info, char *line)
 		return False;
 	}
 
-	cmd_set_options = 0x0;
-
 	if ((i = process_tok(cmd_argv[0])) >= 0)
 	{
 		int argc = ((int)cmd_argc)-1;
@@ -1336,7 +1334,14 @@ int command_main(int argc, char *argv[])
 	if (IS_BITS_SET_SOME(cmd_set_options, CMD_HELP|CMD_STR))
 	{
 		free_connections();
-		exit(status);
+
+		if (status) {
+			pstring msg;
+			get_safe_nt_error_msg(status, msg, sizeof(msg));
+			report(out_hnd, "Exit Status: %s\n", msg);
+		}
+		/* unix only has 8 bit error codes - blergh */
+		exit(status & 0xFF);
 	}
 
 	DEBUG(3, ("%s client started (version %s)\n",
@@ -1349,6 +1354,12 @@ int command_main(int argc, char *argv[])
 	free_cmd_set_array(num_commands, commands);
 	num_commands = 0;
 	commands = NULL;
+	
+	if (status) {
+		pstring msg;
+		get_safe_nt_error_msg(status, msg, sizeof(msg));
+		report(out_hnd, "Exit Status: %s\n", msg);
+	}
 
 	return status;
 }
