@@ -91,8 +91,8 @@ BOOL get_unixbuiltin_members(struct group *grp,
 
 		fstrcpy(name, unix_name);
 
-		if (!lookupsmbgrpnam(name, &gmep) &&
-		    !lookupsmbpwnam (name, &gmep))
+		if (!lookupsmbpwnam (name, &gmep) &&
+		    !lookupsmbgrpnam(name, &gmep))
 		{
 			continue;
 		}
