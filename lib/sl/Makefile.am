@@ -34,7 +34,7 @@ ssinclude_HEADERS = ss.h
 
 CLEANFILES = lex.c parse.c parse.h snprintf.c strtok_r.c strdup.c strupr.c getprogname.c
 
-$(mk_cmds_OBJECTS): parse.h
+$(mk_cmds_OBJECTS): parse.h parse.c
 
 LDADD =						\
 	$(LIB_roken)				\
