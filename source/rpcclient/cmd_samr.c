@@ -884,6 +884,93 @@ static uint32 cmd_samr_query_dominfo(struct cli_state *cli, int argc,
 	return result;
 }
 
+/* Create domain user */
+
+static uint32 cmd_samr_create_dom_user(struct cli_state *cli, int argc, 
+				       char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	BOOL got_connect_pol = False, got_domain_pol = False, 
+		got_user_pol = False;
+	TALLOC_CTX *mem_ctx;
+	fstring server;
+	char *acct_name;
+	uint16 acb_info;
+	uint32 unknown, user_rid;
+
+	if (argc != 2) {
+		printf("Usage: %s username\n", argv[0]);
+		return 0;
+	}
+
+	acct_name = argv[1];
+
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0, ("cmd_samr_query_dispinfo: talloc_init returned "
+			  "NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	fetch_domain_sid(cli);
+
+	/* Initialise RPC connection */
+
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper(server);
+
+	/* Get sam policy handle */
+
+	if ((result = cli_samr_connect(cli, mem_ctx, server, 
+				       MAXIMUM_ALLOWED_ACCESS, 
+				       &connect_pol)) 
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_connect_pol = True;
+
+	/* Get domain policy handle */
+
+	if ((result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					   MAXIMUM_ALLOWED_ACCESS,
+					   &domain_sid, &domain_pol))
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_domain_pol = True;
+
+	/* Create domain user */
+
+	acb_info = ACB_NORMAL;
+	unknown = 0xe005000b; /* No idea what this is - a permission mask? */
+
+	if ((result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
+					       acct_name, acb_info, unknown,
+					       &user_pol, &user_rid))
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_user_pol = True;
+
+ done:
+	if (got_user_pol) cli_samr_close(cli, mem_ctx, &user_pol);
+	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
+	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
+
+	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
@@ -898,5 +985,6 @@ struct cmd_set samr_commands[] = {
 	{ "querydominfo", 	cmd_samr_query_dominfo, 	"Query domain info" },
 	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       "Enumerate domain groups" },
 
+	{ "createdomuser",      cmd_samr_create_dom_user,       "Create domain user" },
 	{ NULL, NULL, NULL }
 };
