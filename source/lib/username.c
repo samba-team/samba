@@ -352,7 +352,8 @@ static BOOL user_in_unix_group_list(char *user,char *gname)
 	struct group *gptr;
 	char **member;  
 	struct passwd *pass = NULL;
-
+	fstring unix_user;
+	
  	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n", user, gname));
 
  	/*
@@ -360,38 +361,17 @@ static BOOL user_in_unix_group_list(char *user,char *gname)
  	 * group is implicit and often not listed in the group database.
  	 */
 
-	/* Check local username in preference to winbind user.  If we have
-	   a local printer admin with the same username as a domain admin,
-	   checking the winbind name first will give access denied. */
-
-	if (!name_is_local(user)) {
-		char *local_user = strchr(user, *lp_winbind_separator()) + 1;
-		fstring unix_local_user;
-
-		fstrcpy(unix_local_user, local_user);
-		dos_to_unix(unix_local_user, True);
-
-		pass = Get_Pwnam(unix_local_user, False);
-
-		if (!pass)
-			DEBUG(10, ("getpwnam(%s) on local name failed, trying domain\n", unix_local_user));
-	}
  
 	/* Since user_in_list() is passed strings in dos codepage for
 	   printer admin access checks, we must convert before doing a
 	   getpwnam(). */
 
-	if (!pass) {
-		fstring unix_user;
-
-		fstrcpy(unix_user, user);
-		dos_to_unix(unix_user, True);
+	fstrcpy(unix_user, user);
+	dos_to_unix(unix_user, True);		
+	pass = Get_Pwnam(unix_user, True);
 		
-		pass = Get_Pwnam(unix_user, True);
-		
-		if (!pass)
-			DEBUG(10, ("getpwnam(%s) failed\n", unix_user));
-	}
+	if (!pass)
+		DEBUG(10, ("getpwnam(%s) failed\n", unix_user));
 
  	if (pass) {
  		if (strequal(gname, gidtoname(pass->pw_gid))) {
@@ -399,6 +379,7 @@ static BOOL user_in_unix_group_list(char *user,char *gname)
  			return True;
  		}
  	}
+
  
  	if ((gptr = (struct group *)getgrnam(gname)) == NULL) {
  		DEBUG(10,("user_in_unix_group_list: no such group %s\n", gname ));
