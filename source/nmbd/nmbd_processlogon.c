@@ -44,10 +44,11 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   pstring outbuf;
   int code;
   uint16 token = 0;
-  uint32 ntversion;
-  uint16 lmnttoken;
-  uint16 lm20token;
+  uint32 ntversion = 0;
+  uint16 lmnttoken = 0;
+  uint16 lm20token = 0;
   uint32 domainsidsize;
+  BOOL short_request = False;
   char *getdc;
   char *uniuser; /* Unicode user name. */
   pstring ascuser;
@@ -120,12 +121,21 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       q = skip_unicode_string(q, 1);
 
-      ntversion = IVAL(q, 0);
-      q += 4;
-      lmnttoken = SVAL(q, 0);
-      q += 2;
-      lm20token = SVAL(q, 0);
-      q += 2;
+      if ((buf - q) >= len) {    /* Check for a short request */
+
+        short_request = True;
+
+      }
+      else { /* A full length request */
+
+        ntversion = IVAL(q, 0);
+        q += 4;
+        lmnttoken = SVAL(q, 0);
+        q += 2;
+        lm20token = SVAL(q, 0);
+        q += 2;
+
+      }
 
       /* Construct reply. */
 
@@ -135,10 +145,11 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       fstrcpy(reply_name,my_name);
       fstrcpy(q, reply_name);
-
       q = skip_string(q, 1); /* PDC name */
 
-      if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
+      /* PDC and domain name */
+      if (!short_request)  /* Make a full reply */
+      {
         q = align2(q, buf);
 
         dos_PutUniCode(q, my_name, sizeof(pstring)); /* PDC name */
@@ -154,6 +165,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
         SSVAL(q, 0, lm20token);
         q += 2;
       }
+
+      /* RJS, 21-Feb-2000, we send a short reply if the request was short */
 
       DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",

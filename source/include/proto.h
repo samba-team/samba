@@ -2210,7 +2210,7 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
 BOOL create_next_pdu(pipes_struct *p);
-BOOL rpc_command(pipes_struct *p, char *input_data, int data_len);
+BOOL rpc_command(pipes_struct *p, char *in_data, int data_len);
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
 				prs_struct *rpc_in);
 
@@ -2219,7 +2219,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 void set_pipe_handle_offset(int max_open_files);
 void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
-BOOL pipe_init_outgoing_data( pipes_struct *p);
+BOOL pipe_init_outgoing_data(output_data *o_data);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
 ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n);
