@@ -280,8 +280,8 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     krb5_auth_con_getlocalseqnumber(gssapi_krb5_context,
 				    context_handle->auth_context,
 				    &seq_number);
-    gssapi_encode_om_uint32(seq_number, &token->SND_SEQ[0]);
-    gssapi_encode_om_uint32(0,	&token->SND_SEQ[4]);
+    gssapi_encode_be_om_uint32(0,          &token->SND_SEQ[0]);
+    gssapi_encode_be_om_uint32(seq_number, &token->SND_SEQ[4]);
     krb5_auth_con_setlocalseqnumber(gssapi_krb5_context,
 				    context_handle->auth_context,
 				    ++seq_number);
@@ -463,8 +463,8 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     /*
      * Check sequence number
      */
-    gssapi_decode_om_uint32(&token->SND_SEQ[0], &seq_number_lo);
-    gssapi_decode_om_uint32(&token->SND_SEQ[4], &seq_number_hi);
+    gssapi_decode_be_om_uint32(&token->SND_SEQ[0], &seq_number_hi);
+    gssapi_decode_be_om_uint32(&token->SND_SEQ[4], &seq_number_lo);
     if (seq_number_hi) {
 	/* no support for 64-bit sequence numbers */
 	*minor_status = ERANGE;
@@ -656,8 +656,8 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     krb5_auth_con_getlocalseqnumber(gssapi_krb5_context,
 				    context_handle->auth_context,
 				    &seq_number);
-    gssapi_encode_om_uint32(seq_number, &token->SND_SEQ[0]);
-    gssapi_encode_om_uint32(0,          &token->SND_SEQ[4]);
+    gssapi_encode_be_om_uint32(0,          &token->SND_SEQ[0]);
+    gssapi_encode_be_om_uint32(seq_number, &token->SND_SEQ[4]);
     krb5_auth_con_setlocalseqnumber(gssapi_krb5_context,
 				    context_handle->auth_context,
 				    ++seq_number);
@@ -748,8 +748,8 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
     /*
      * Check sequence number
      */
-    gssapi_decode_om_uint32(&token->SND_SEQ[0], &seq_number_lo);
-    gssapi_decode_om_uint32(&token->SND_SEQ[4], &seq_number_hi);
+    gssapi_decode_be_om_uint32(&token->SND_SEQ[0], &seq_number_hi);
+    gssapi_decode_be_om_uint32(&token->SND_SEQ[4], &seq_number_lo);
     if (seq_number_hi) {
 	*minor_status = ERANGE;
 	return GSS_S_UNSEQ_TOKEN;
