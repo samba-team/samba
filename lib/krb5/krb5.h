@@ -87,7 +87,6 @@ typedef enum krb5_cksumtype {
 } krb5_cksumtype;
 
 
-
 typedef enum krb5_enctype { 
   ETYPE_NULL			= 0,
   ETYPE_DES_CBC_CRC		= 1,
@@ -105,7 +104,6 @@ typedef enum krb5_preauthtype {
   KRB5_PADATA_NONE		= 0,
   KRB5_PADATA_AP_REQ,
   KRB5_PADATA_TGS_REQ		= 1,
-  KRB5_PADATA_PW_SALT		= 3,
   KRB5_PADATA_ENC_TIMESTAMP	= 2,
   KRB5_PADATA_ENC_SECURID
 } krb5_preauthtype;
@@ -289,6 +287,7 @@ typedef struct krb5_context_data {
     struct krb5_log_facility *warn_dest;
     krb5_cc_ops *cc_ops;
     int num_ops;
+    krb5_boolean ktype_is_etype;
 } krb5_context_data;
 
 enum {
