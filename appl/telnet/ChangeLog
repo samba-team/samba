@@ -1,3 +1,12 @@
+2000-02-06  Assar Westerlund  <assar@sics.se>
+
+	* telnet/ring.h (ring_encrypt): better proto
+	* telnet/ring.c (ring_encrypt): better proto
+
+2000-02-04  Assar Westerlund  <assar@sics.se>
+
+	* telnet/telnet_locl.h: klduge-around KLUDGELINEMODE
+
 2000-01-18  Assar Westerlund  <assar@sics.se>
 
 	* libtelnet/misc.c (auth_encrypt_user): const-ify
