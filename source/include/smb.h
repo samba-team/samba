@@ -58,8 +58,7 @@ typedef int BOOL;
 #define SMB_SECONDARY_WAIT (60*1000)
 
 /* Debugging stuff */
-
-#include <debug.h>
+#include "debug.h"
 
 /* this defines the error codes that receive_smb can put in smb_read_error */
 #define READ_TIMEOUT 1
@@ -164,6 +163,7 @@ implemented */
 #define ERRbadshare 32		/* Share mode on file conflict with open mode */
 #define ERRlock 33		/* Lock request conflicts with existing lock */
 #define ERRunsup 50		/* Request unsupported, returned by Win 95, RJS 20Jun98 */
+#define ERRnosuchshare 67	/* You specified an invalid share name */
 #define ERRfilexists 80		/* File in operation already exists */
 #define ERRcannotopen 110	/* Cannot open the file specified */
 #define ERRunknownlevel 124
@@ -174,11 +174,19 @@ implemented */
 #define ERRnotconnected 233	/* No process on other end of named pipe */
 #define ERRmoredata 234		/* More data to be returned */
 #define ERRbaddirectory 267	/* Invalid directory name in a path. */
-#define ERROR_EAS_DIDNT_FIT 275	/* Extended attributes didn't fit */
-#define ERROR_EAS_NOT_SUPPORTED 282	/* Extended attributes not supported */
-#define ERROR_NOTIFY_ENUM_DIR 1022	/* Buffer too small to return change notify. */
 #define ERRunknownipc 2142
 
+#define ERROR_ACCESS_DENIED		  (5)
+#define ERROR_INVALID_PARAMETER		 (87)
+#define ERROR_INSUFFICIENT_BUFFER	(122)
+#define ERROR_INVALID_NAME		(123)
+#define ERROR_INVALID_LEVEL		(124)
+#define ERROR_NO_MORE_ITEMS		(259)
+#define ERROR_EAS_DIDNT_FIT		(275)	/* Extended attributes didn't fit */
+#define ERROR_EAS_NOT_SUPPORTED		(282)	/* Extended attributes not supported */
+#define ERROR_NOTIFY_ENUM_DIR	       (1022)	/* Buffer too small to return change notify. */
+#define ERROR_INVALID_PRINTER_NAME     (1801)
+#define ERROR_INVALID_DATATYPE	       (1804)
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66		/* don't support ipc */
@@ -282,7 +290,8 @@ typedef struct nttime_info
 	uint32 low;
 	uint32 high;
 
-} NTTIME;
+}
+NTTIME;
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001	/* 1 = User account disabled */
@@ -377,7 +386,8 @@ typedef struct sid_info
 	 */
 	uint32 sub_auths[MAXSUBAUTHS];	/* pointer to sub-authorities. */
 
-} DOM_SID;
+}
+DOM_SID;
 
 
 typedef struct group_name_info
@@ -390,8 +400,7 @@ typedef struct group_name_info
 	uint32 type;
 	uint32 unix_id;
 
-}
-DOM_NAME_MAP;
+} DOM_NAME_MAP;
 
 /* map either local aliases, domain groups or builtin aliases */
 typedef enum
@@ -412,8 +421,7 @@ typedef struct local_grp_member_info
 	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 	fstring name;		/* matches with sid: must be of the form "DOMAIN\account" */
 
-}
-LOCAL_GRP_MEMBER;
+} LOCAL_GRP_MEMBER;
 
 /* enumerate these to get list of local groups */
 
@@ -424,8 +432,7 @@ typedef struct local_grp_info
 	fstring comment;
 	uint32 rid;		/* alias rid */
 
-}
-LOCAL_GRP;
+} LOCAL_GRP;
 
 /*** query a domain group, get a list of these: shows who is in that group ***/
 
@@ -437,8 +444,7 @@ typedef struct domain_grp_member_info
 	uint32 rid;		/* rid of domain group member */
 	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 
-}
-DOMAIN_GRP_MEMBER;
+} DOMAIN_GRP_MEMBER;
 
 /*** enumerate these to get list of domain groups ***/
 
@@ -450,8 +456,7 @@ typedef struct domain_grp_info
 	uint32 rid;		/* group rid */
 	uint8 attr;		/* attributes forced to be set to 0x7: SE_GROUP_xxx */
 
-}
-DOMAIN_GRP;
+} DOMAIN_GRP;
 
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
@@ -464,7 +469,8 @@ DOM_CHAL;
 typedef struct time_info
 {
 	uint32 time;
-} UTIME;
+}
+UTIME;
 
 /* DOM_CREDs - timestamped client or server credentials */
 typedef struct cred_info
@@ -483,8 +489,7 @@ typedef struct
 	int32 wr_error;		/* Cached errors */
 	BOOL wr_mode;		/* write through mode) */
 	BOOL wr_discard;	/* discard all further data */
-}
-write_bmpx_struct;
+} write_bmpx_struct;
 
 typedef struct write_cache
 {
@@ -493,8 +498,7 @@ typedef struct write_cache
 	size_t alloc_size;
 	size_t data_size;
 	char *data;
-}
-write_cache;
+} write_cache;
 
 /*
  * Structure used to indirect fd's from the files_struct.
@@ -515,8 +519,7 @@ typedef struct file_fd_struct
 	int fd_writeonly;
 	int real_open_flags;
 	BOOL delete_on_close;
-}
-file_fd_struct;
+} file_fd_struct;
 
 typedef struct files_struct
 {
@@ -545,8 +548,7 @@ typedef struct files_struct
 	BOOL directory_delete_on_close;
 	BOOL stat_open;
 	char *fsp_name;
-}
-files_struct;
+} files_struct;
 
 /*
  * Structure used to keep directory state information around.
@@ -570,8 +572,7 @@ typedef struct
 {
 	char *name;
 	BOOL is_wild;
-}
-name_compare_entry;
+} name_compare_entry;
 
 /* Include VFS stuff */
 
@@ -600,7 +601,7 @@ typedef struct connection_struct
 	char *connectpath;
 	char *origpath;
 	struct vfs_ops vfs_ops;	/* Filesystem operations */
-	struct vfs_connection_struct *vfs_conn;
+	struct vfs_connection_struct *vfs_conn;	/* VFS specific connection stuff */
 
 	char *user;		/* name of user who *opened* this connection */
 
@@ -625,8 +626,7 @@ typedef struct connection_struct
 	name_compare_entry *veto_list;	/* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list;	/* Per-share list of files to refuse oplocks on. */
 
-}
-connection_struct;
+} connection_struct;
 
 /* Domain controller authentication protocol info */
 struct dcinfo
@@ -644,7 +644,7 @@ struct dcinfo
 enum
 { LPQ_QUEUED, LPQ_PAUSED, LPQ_SPOOLING, LPQ_PRINTING };
 
-typedef struct
+typedef struct _print_queue_struct
 {
 	int job;
 	int size;
@@ -653,8 +653,7 @@ typedef struct
 	time_t time;
 	char user[30];
 	char file[100];
-}
-print_queue_struct;
+} print_queue_struct;
 
 enum
 { LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR };
@@ -663,8 +662,7 @@ typedef struct
 {
 	fstring message;
 	int status;
-}
-print_status_struct;
+} print_status_struct;
 
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct
@@ -689,7 +687,7 @@ struct interface
 /* struct returned by get_share_modes */
 typedef struct
 {
-	int pid;
+	pid_t pid;
 	uint16 op_port;
 	uint16 op_type;
 	int share_mode;
@@ -1025,7 +1023,7 @@ struct locking_data
 typedef enum
 {
 	P_BOOL, P_BOOLREV, P_CHAR, P_INTEGER, P_OCTAL,
-	P_STRING, P_USTRING, P_GSTRING, P_UGSTRING, P_ENUM, P_PTR, P_SEP
+	P_STRING, P_USTRING, P_GSTRING, P_UGSTRING, P_ENUM, P_SEP
 }
 parm_type;
 
@@ -1069,8 +1067,7 @@ struct parm_struct
 		int ivalue;
 		char *svalue;
 		char cvalue;
-	}
-	def;
+	} def;
 };
 
 struct bitmap
@@ -1628,7 +1625,7 @@ char *strdup(char *s);
 #define FLAGS2_32_BIT_ERROR_CODES     0x4000
 #define FLAGS2_UNICODE_STRINGS        0x8000
 
-#define FLAGS2_WIN2K_SIGNATURE        0xC852 /* Hack alert ! For now... JRA. */
+#define FLAGS2_WIN2K_SIGNATURE        0xC852	/* Hack alert ! For now... JRA. */
 
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
@@ -1855,7 +1852,8 @@ typedef struct
 	uint32 pid;
 	uint16 vuid;
 
-} vuser_key;
+}
+vuser_key;
 
 struct use_info
 {
@@ -1885,8 +1883,7 @@ typedef struct
 
 	NET_USER_INFO_3 usr;
 
-}
-user_struct;
+} user_struct;
 
 struct current_user
 {
@@ -2006,8 +2003,7 @@ typedef struct subst_creds
 	fstring myhostname;
 	fstring remote_machine;
 
-}
-CREDS_SUBST;
+} CREDS_SUBST;
 
 #include "rpc_creds.h"
 
@@ -2058,8 +2054,7 @@ typedef struct netsec_creds
 
 	uchar sess_key[16];	/* NETLOGON session key */
 
-}
-netsec_creds;
+} netsec_creds;
 
 struct policy;
 struct bitmap;
