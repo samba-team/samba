@@ -1,4 +1,9 @@
-2005-01-08  Love Hörquist Åstrand  <lha@it.su.se>
+2005-04-04  Love Hörquist Åstrand <lha@it.su.se>
+
+	* load.c: max-life and max-renew is of unsigned int in asn1
+	compiler, use that for the parser too
+
+2005-01-08 Love Hörquist Åstrand <lha@it.su.se>
 
 	* dump-format.txt: text dump format
 
