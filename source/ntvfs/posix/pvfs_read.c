@@ -48,7 +48,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	if (!(f->access_mask & SA_RIGHT_FILE_READ_DATA)) {
+	if (!(f->access_mask & SA_RIGHT_FILE_READ_EXEC)) {
 		return NT_STATUS_ACCESS_VIOLATION;
 	}
 
