@@ -62,7 +62,7 @@ dnl dbopen is used by db1/db2
 
 dnl test for ndbm compatability
 
-  AC_FIND_FUNC_NO_LIBS2(dbm_firstkey, $ac_cv_funclib_dbopen, [
+  AC_FIND_FUNC_NO_LIBS2(dbm_firstkey, $ac_cv_funclib_dbopen $ac_cv_funclib_db_create, [
   #include <stdio.h>
   #define DB_DBM_HSEARCH 1
   #include <db.h>
