@@ -842,6 +842,26 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   if (init_package(&desc,1,count)) {
 	  desc.subcount = count;
 	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
+  } else if(uLevel == 0) {
+	/*
+	 * This is a *disgusting* hack.
+	 * This is *so* bad that even I'm embarrassed (and I
+	 * have no shame). Here's the deal :
+ 	 * Until we get the correct SPOOLSS code into smbd
+ 	 * then when we're running with NT SMB support then
+ 	 * NT makes this call with a level of zero, and then
+ 	 * immediately follows it with an open request to
+ 	 * the \\SRVSVC pipe. If we allow that open to
+ 	 * succeed then NT barfs when it cannot open the
+ 	 * \\SPOOLSS pipe immediately after and continually
+ 	 * whines saying "Printer name is invalid" forever
+ 	 * after. If we cause *JUST THIS NEXT OPEN* of \\SRVSVC
+ 	 * to fail, then NT downgrades to using the downlevel code
+ 	 * and everything works as well as before. I hate
+ 	 * myself for adding this code.... JRA.
+ 	 */
+
+	fail_next_srvsvc_open();
   }
 
   *rdata_len = desc.usedlen;
