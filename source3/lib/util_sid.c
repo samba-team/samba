@@ -61,7 +61,7 @@ NT_USER_TOKEN anonymous_token = {
 
 static DOM_SID system_sid_array[4];
 NT_USER_TOKEN system_token = {
-    4,
+    1,
     system_sid_array
 };
 
@@ -134,10 +134,7 @@ void generate_wellknown_sids(void)
 	sid_copy( &anonymous_token.user_sids[2], &global_sid_Anonymous);
 
 	/* Create the system token. */
-	sid_copy( &system_token.user_sids[0], &global_sid_World);
-	sid_copy( &system_token.user_sids[1], &global_sid_Authenticated_Users);
-	sid_copy( &system_token.user_sids[2], &global_sid_Builtin_Administrators);
-	sid_copy( &system_token.user_sids[3], &global_sid_System);
+	sid_copy( &system_token.user_sids[0], &global_sid_System);
 	
 	initialised = True;
 }
