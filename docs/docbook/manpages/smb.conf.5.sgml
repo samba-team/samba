@@ -7544,7 +7544,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="UTMP">utmp</term>
+		<term><anchor id="UTMP">utmp (G)</term>
 		<listitem><para>This boolean parameter is only available if 
 		Samba has been configured and compiled  with the option <command>
 		--with-utmp</command>. If set to <constant>true</constant> then Samba will attempt

@@ -155,7 +155,7 @@ appropriate values for your site):</para>
 <para>The <ulink url="smb.conf.5.html#WRITELIST"><parameter>
 write list</parameter></ulink> is used to allow administrative 
 level user accounts to have write access in order to update files 
-on the share.  See the <ulink url="smb./conf.5.html">smb.conf(5) 
+on the share.  See the <ulink url="smb.conf.5.html">smb.conf(5) 
 man page</ulink> for more information on configuring file shares.</para>
 	
 <para>The requirement for <ulink url="smb.conf.5.html#GUESTOK"><command>guest 
