@@ -119,7 +119,7 @@ auth_login(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
 	    sprintf(tkt, "%s%d", TKT_ROOT, pw->pw_uid);
 	    ret = doit(pamh, user, "", resp->resp, tkt);
 	    if(ret == PAM_SUCCESS)
-		chown(tkt, pw->pw_uid, pw->pw_uid);
+		chown(tkt, pw->pw_uid, pw->pw_gid);
 	}else
 	    ret = PAM_USER_UNKNOWN;
 	memset(resp->resp, 0, strlen(resp->resp));
@@ -167,7 +167,7 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
 	sprintf(tkt, "%s_%s_to_%s", TKT_ROOT, pw->pw_name, user);
 	ret = doit(pamh, pr.name, pr.instance, resp->resp, tkt);
 	if(ret == PAM_SUCCESS)
-	    chown(tkt, pw->pw_uid, pw->pw_uid);
+	    chown(tkt, pw->pw_uid, pw->pw_gid);
 	memset(resp->resp, 0, strlen(resp->resp));
 	free(resp->resp);
 	free(resp);
