@@ -710,6 +710,10 @@ static struct functable net_func[] = {
 		exit(1);
 
 	load_interfaces();
+	
+	/* this makes sure that when we do things like call scripts, 
+	   that it won't assert becouse we are not root */
+	sec_init();
 
 	if (opt_machine_pass) {
 		char *user = NULL;
