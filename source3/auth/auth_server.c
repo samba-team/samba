@@ -29,7 +29,7 @@ extern userdom_struct current_user_info;
  Support for server level security.
 ****************************************************************************/
 
-static struct cli_state *server_cryptkey(void)
+static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 {
 	struct cli_state *cli = NULL;
 	fstring desthost;
@@ -43,7 +43,7 @@ static struct cli_state *server_cryptkey(void)
 	/* security = server just can't function with spnego */
 	cli->use_spnego = False;
 
-        pserver = strdup(lp_passwordserver());
+        pserver = talloc_strdup(mem_ctx, lp_passwordserver());
 	p = pserver;
 
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
@@ -66,8 +66,6 @@ static struct cli_state *server_cryptkey(void)
 			break;
 		}
 	}
-
-	SAFE_FREE(pserver);
 
 	if (!connected_ok) {
 		DEBUG(0,("password server not available\n"));
@@ -136,9 +134,11 @@ static void send_server_keepalive(void **private_data_pointer)
  Get the challenge out of a password server.
 ****************************************************************************/
 
-static DATA_BLOB auth_get_challenge_server(void **my_private_data, const struct authsupplied_info *auth_info) 
+static DATA_BLOB auth_get_challenge_server(void **my_private_data, 
+					   TALLOC_CTX *mem_ctx,
+					   const struct authsupplied_info *auth_info) 
 {
-	struct cli_state *cli = server_cryptkey();
+	struct cli_state *cli = server_cryptkey(mem_ctx);
 	
 	if (cli) {
 		DEBUG(3,("using password server validation\n"));
@@ -175,9 +175,10 @@ static DATA_BLOB auth_get_challenge_server(void **my_private_data, const struct 
 ****************************************************************************/
 
 static NTSTATUS check_smbserver_security(void *my_private_data, 
-				  const auth_usersupplied_info *user_info, 
-				  const auth_authsupplied_info *auth_info,
-				  auth_serversupplied_info **server_info)
+					 TALLOC_CTX *mem_ctx,
+					 const auth_usersupplied_info *user_info, 
+					 const auth_authsupplied_info *auth_info,
+					 auth_serversupplied_info **server_info)
 {
 	struct cli_state *cli;
 	static unsigned char badpass[24];
@@ -202,7 +203,7 @@ static NTSTATUS check_smbserver_security(void *my_private_data,
 	
 	if (cli) {
 	} else {
-		cli = server_cryptkey();
+		cli = server_cryptkey(mem_ctx);
 		locally_made_cli = True;
 	}
 

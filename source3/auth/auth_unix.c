@@ -83,7 +83,8 @@ static BOOL update_smbpassword_file(char *user, char *password)
  * unless the account has a null password.
  **/
 
-NTSTATUS check_unix_security(void *my_private_data,
+NTSTATUS check_unix_security(void *my_private_data, 
+			     TALLOC_CTX *mem_ctx,
 			     const auth_usersupplied_info *user_info, 
 			     const auth_authsupplied_info *auth_info,
 			     auth_serversupplied_info **server_info)

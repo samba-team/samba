@@ -34,9 +34,10 @@ NSS_STATUS winbindd_request(int req_type,
 /* Authenticate a user with a challenge/response */
 
 static NTSTATUS check_winbind_security(void *my_private_data,
-				const auth_usersupplied_info *user_info, 
-				const auth_authsupplied_info *auth_info,
-				auth_serversupplied_info **server_info)
+				       TALLOC_CTX *mem_ctx,
+				       const auth_usersupplied_info *user_info, 
+				       const auth_authsupplied_info *auth_info,
+				       auth_serversupplied_info **server_info)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;

@@ -95,7 +95,7 @@ typedef struct authsupplied_info {
 	DATA_BLOB challenge; 
 
 	/* Who set this up in the first place? */ 
-	char *challenge_set_by; \
+	char *challenge_set_by; 
 
 	struct auth_methods *challenge_set_method; 
 	/* What order are the various methods in?   Try to stop it changing under us */ 
@@ -108,11 +108,14 @@ typedef struct auth_methods
 	char *name; /* What name got this module */
 
 	NTSTATUS (*auth)(void *my_private_data, 
+			 TALLOC_CTX *mem_ctx,
 			 const auth_usersupplied_info *user_info, 
 			 const struct authsupplied_info *auth_info,
 			 auth_serversupplied_info **server_info);
 
-	DATA_BLOB (*get_chal)(void **my_private_data, const struct authsupplied_info *auth_info);
+	DATA_BLOB (*get_chal)(void **my_private_data, 
+			      TALLOC_CTX *mem_ctx, 
+			      const struct authsupplied_info *auth_info);
 	
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;

@@ -216,9 +216,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/process.o smbd/service.o smbd/error.o \
 	    printing/printfsp.o lib/util_seaccess.o smbd/srvstr.o \
             smbd/build_options.o \
-	    rpc_client/cli_trust.o \
-	    rpc_client/cli_netlogon.o \
-	    rpc_client/cli_login.o \
+	    smbd/change_trust_pw.o \
 	    rpc_client/cli_spoolss_notify.o
 
 

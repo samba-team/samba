@@ -27,22 +27,23 @@ BOOL global_machine_password_needs_changing = False;
 extern pstring global_myname;
 extern userdom_struct current_user_info;
 
-/***********************************************************************
- Connect to a remote machine for domain security authentication
- given a name or IP address.
- ***********************************************************************/
+/**
+ * Connect to a remote server for domain security authenticaion.
+ *
+ * @param cli the cli to return containing the active connection
+ * @param server either a machine name or text IP address to
+ *               connect to.
+ * @param trust_password the trust password to establish the
+ *                       credentials with.
+ *
+ **/
 
-static BOOL connect_to_domain_password_server(struct cli_state *pcli, 
-					      char *server, unsigned char *trust_passwd)
+static NTSTATUS connect_to_domain_password_server(struct cli_state **cli, 
+						  char *server, unsigned char *trust_passwd)
 {
 	struct in_addr dest_ip;
 	fstring remote_machine;
         NTSTATUS result;
-
-	if (cli_initialise(pcli) == NULL) {
-		DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
-		return False;
-	}
 
 	if (is_ipaddress(server)) {
 		struct in_addr to_ip;
@@ -51,13 +52,13 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
 		   a password server anyways */
 		if ((to_ip.s_addr=inet_addr(server)) == 0xFFFFFFFF) {
 			DEBUG (0,("connect_to_domain_password_server: inet_addr(%s) returned 0xFFFFFFFF!\n", server));
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 		if (!name_status_find("*", 0x20, 0x20, to_ip, remote_machine)) {
 			DEBUG(0, ("connect_to_domain_password_server: Can't "
 				  "resolve name for IP %s\n", server));
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
 		fstrcpy(remote_machine, server);
@@ -68,69 +69,20 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
 
 	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
 		DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", remote_machine));
-		cli_shutdown(pcli);
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
   
 	if (ismyip(dest_ip)) {
 		DEBUG(1,("connect_to_domain_password_server: Password server loop - not using password server %s\n",
 			 remote_machine));
-		cli_shutdown(pcli);
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
   
-	if (!cli_connect(pcli, remote_machine, &dest_ip)) {
-		DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-		cli_shutdown(pcli);
-		return False;
-	}
-  
-	if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
-		DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
-session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-		return False;
-	}
-  
-	pcli->protocol = PROTOCOL_NT1;
-
-	if (!cli_negprot(pcli)) {
-		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the negotiate protocol. \
-Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-		cli_shutdown(pcli);
-		return False;
-	}
-
-	if (pcli->protocol != PROTOCOL_NT1) {
-		DEBUG(0,("connect_to_domain_password_server: machine %s didn't negotiate NT protocol.\n",
-			 remote_machine));
-		cli_shutdown(pcli);
-		return False;
-	}
-
-	/*
-	 * Do an anonymous session setup.
-	 */
-
-	if (!cli_session_setup(pcli, "", "", 0, "", 0, "")) {
-		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-		cli_shutdown(pcli);
-		return False;
-	}
-
-	if (!(pcli->sec_mode & 1)) {
-		DEBUG(1,("connect_to_domain_password_server: machine %s isn't in user level security mode\n",
-			 remote_machine));
-		cli_shutdown(pcli);
-		return False;
-	}
-
-	if (!cli_send_tconX(pcli, "IPC$", "IPC", "", 1)) {
-		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the tconX on the IPC$ share. \
-Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-		cli_shutdown(pcli);
-		return False;
+	result = cli_full_connection(cli, global_myname, server,
+				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
+	
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
 	/*
@@ -146,34 +98,34 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 	 * into account also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.
 	 */
 
-	if(cli_nt_session_open(pcli, PIPE_NETLOGON) == False) {
+	if(cli_nt_session_open(*cli, PIPE_NETLOGON) == False) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
-		cli_nt_session_close(pcli);
-		cli_ulogoff(pcli);
-		cli_shutdown(pcli);
-		return False;
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
+		cli_nt_session_close(*cli);
+		cli_ulogoff(*cli);
+		cli_shutdown(*cli);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result = cli_nt_setup_creds(pcli, trust_passwd);
+	result = new_cli_nt_setup_creds(*cli, trust_passwd);
 
         if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", remote_machine, get_nt_error_msg(result)));
-		cli_nt_session_close(pcli);
-		cli_ulogoff(pcli);
-		cli_shutdown(pcli);
-		return(False);
+		cli_nt_session_close(*cli);
+		cli_ulogoff(*cli);
+		cli_shutdown(*cli);
+		return result;
 	}
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /***********************************************************************
  Utility function to attempt a connection to an IP address of a DC.
 ************************************************************************/
 
-static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, 
+static NTSTATUS attempt_connect_to_dc(struct cli_state **cli, struct in_addr *ip, 
 				  unsigned char *trust_passwd)
 {
 	fstring dc_name;
@@ -183,26 +135,26 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip,
 	 */
 
 	if (is_zero_ip(*ip))
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 
 	if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 
-	return connect_to_domain_password_server(pcli, dc_name, trust_passwd);
+	return connect_to_domain_password_server(cli, dc_name, trust_passwd);
 }
 
 /***********************************************************************
  We have been asked to dynamcially determine the IP addresses of
  the PDC and BDC's for this DOMAIN, and query them in turn.
 ************************************************************************/
-static BOOL find_connect_pdc(struct cli_state *pcli, 
-			     unsigned char *trust_passwd, 
-			     time_t last_change_time)
+static NTSTATUS find_connect_pdc(struct cli_state **cli, 
+				unsigned char *trust_passwd, 
+				time_t last_change_time)
 {
 	struct in_addr *ip_list = NULL;
 	int count = 0;
 	int i;
-	BOOL connected_ok = False;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	time_t time_now = time(NULL);
 	BOOL use_pdc_only = False;
 
@@ -218,7 +170,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
 		use_pdc_only = True;
 
 	if (!get_dc_list(use_pdc_only, lp_workgroup(), &ip_list, &count))
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 
 	/*
 	 * Firstly try and contact a PDC/BDC who has the same
@@ -228,7 +180,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
 		if(!is_local_net(ip_list[i]))
 			continue;
 
-		if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd))) 
+		if(NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, &ip_list[i], trust_passwd))) 
 			break;
 		
 		zero_ip(&ip_list[i]); /* Tried and failed. */
@@ -237,10 +189,10 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
 	/*
 	 * Secondly try and contact a random PDC/BDC.
 	 */
-	if(!connected_ok) {
+	if(!NT_STATUS_IS_OK(nt_status)) {
 		i = (sys_random() % count);
 
-		if (!(connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
+		if (!NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, &ip_list[i], trust_passwd)))
                         zero_ip(&ip_list[i]); /* Tried and failed. */
 	}
 
@@ -248,21 +200,20 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
 	 * Finally go through the IP list in turn, ignoring any addresses
 	 * we have already tried.
 	 */
-	if(!connected_ok) {
+	if(!NT_STATUS_IS_OK(nt_status)) {
 		/*
 		 * Try and connect to any of the other IP addresses in the PDC/BDC list.
 		 * Note that from a WINS server the #1 IP address is the PDC.
 		 */
 		for(i = 0; i < count; i++) {
-			if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
+			if (NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, &ip_list[i], trust_passwd)))
 				break;
 		}
 	}
 
 	SAFE_FREE(ip_list);
 
-
-	return connected_ok;
+	return nt_status;
 }
 
 /***********************************************************************
@@ -271,19 +222,17 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
  use it, otherwise figure out a server from the 'password server' param.
 ************************************************************************/
 
-static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info, 
+static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
+				       const auth_usersupplied_info *user_info, 
 				       uchar chal[8],
 				       auth_serversupplied_info **server_info, 
 				       char *server, unsigned char *trust_passwd,
 				       time_t last_change_time)
 {
 	fstring remote_machine;
-	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
-	struct cli_state cli;
-	uint32 smb_uid_low;
-	BOOL connected_ok = False;
-	NTSTATUS status;
+	struct cli_state *cli;
+	NTSTATUS nt_status;
 	struct passwd *pass;
 
 	/*
@@ -294,25 +243,20 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 	 * see if they were valid.
 	 */
 
-	ZERO_STRUCT(cli);
-
-	while (!connected_ok &&
+	while (!NT_STATUS_IS_OK(nt_status) &&
 	       next_token(&server,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 		if(strequal(remote_machine, "*")) {
-			connected_ok = find_connect_pdc(&cli, trust_passwd, last_change_time);
+			nt_status = find_connect_pdc(&cli, trust_passwd, last_change_time);
 		} else {
-			connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
+			nt_status = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
 		}
 	}
 
-	if (!connected_ok) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-		cli_shutdown(&cli);
-		return NT_STATUS_LOGON_FAILURE;
+		cli_shutdown(cli);
+		return nt_status;
 	}
-
-	/* We really don't care what LUID we give the user. */
-	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
 	ZERO_STRUCT(info3);
 
@@ -321,43 +265,50 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
          * in the info3 structure.  
          */
 
-	status = cli_nt_login_network(&cli, user_info, chal, smb_uid_low, 
-				      &ctr, &info3);
+	nt_status = cli_netlogon_sam_network_logon(cli, mem_ctx,
+						   user_info->internal_username.str, user_info->domain.str, 
+						   user_info->wksta_name.str, chal, 
+						   user_info->lm_resp, user_info->nt_resp, 
+						   &info3);
         
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->smb_name.str,
-                         user_info->domain.str, cli.srv_name_slash, 
-                         get_nt_error_msg(status)));
+                         user_info->domain.str, cli->srv_name_slash, 
+                         get_nt_error_msg(nt_status)));
 	} else {
                 char *dom_user;
 
                 /* Check DOMAIN\username first to catch winbind users, then
                    just the username for local users. */
 
-                asprintf(&dom_user, "%s%s%s", user_info->domain.str,
-                         lp_winbind_separator(),
-                         user_info->internal_username.str);
+                dom_user = talloc_asprintf(mem_ctx, "%s%s%s", user_info->domain.str,
+					   lp_winbind_separator(),
+					   user_info->internal_username.str);
+		
+		if (!dom_user) {
+			DEBUG(0, ("talloc_asprintf failed!\n"));
+			nt_status = NT_STATUS_NO_MEMORY;
+		} else { 
 
-                if (!(pass = Get_Pwnam(dom_user)))
-                        pass = Get_Pwnam(user_info->internal_username.str);
-
-                free(dom_user);
-
-		if (pass) {
-			make_server_info_pw(server_info, pass);
-			if (!server_info) {
-				status = NT_STATUS_NO_MEMORY;
+			if (!(pass = Get_Pwnam(dom_user)))
+				pass = Get_Pwnam(user_info->internal_username.str);
+			
+			if (pass) {
+				make_server_info_pw(server_info, pass);
+				if (!server_info) {
+					nt_status = NT_STATUS_NO_MEMORY;
+				}
+			} else {
+				nt_status = NT_STATUS_NO_SUCH_USER;
 			}
-		} else {
-			status = NT_STATUS_NO_SUCH_USER;
 		}
 	}
 
 	/* Store the user group information in the server_info returned to the caller. */
 	
-	if (NT_STATUS_IS_OK(status) && (info3.num_groups2 != 0)) {
+	if (NT_STATUS_IS_OK(nt_status) && (info3.num_groups2 != 0)) {
 		DOM_SID domain_sid;
 		int i;
 		NT_USER_TOKEN *ptok;
@@ -365,7 +316,7 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 
 		if ((pserver_info->ptok = malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
 			DEBUG(0, ("domain_client_validate: out of memory allocating rid group membership\n"));
-			status = NT_STATUS_NO_MEMORY;
+			nt_status = NT_STATUS_NO_MEMORY;
 			free_server_info(server_info);
 			goto done;
 		}
@@ -375,14 +326,14 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 
 		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
 			DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
-			status = NT_STATUS_NO_MEMORY;
+			nt_status = NT_STATUS_NO_MEMORY;
 			free_server_info(server_info);
 			goto done;
 		}
  
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
 			DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
-			status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			nt_status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 			free_server_info(server_info);
 			goto done;
 		}
@@ -404,7 +355,7 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 		if(cli_nt_logoff(&cli, &ctr) == False) {
 			DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
-			status = NT_STATUS_LOGON_FAILURE;
+			nt_status = NT_STATUS_LOGON_FAILURE;
 		}
 	}
 #endif /* 0 */
@@ -415,10 +366,10 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 	   to allocate the other_sids and gids structures has been deleted - so
 	   these pointers are no longer valid..... */
 
-	cli_nt_session_close(&cli);
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
-	return status;
+	cli_nt_session_close(cli);
+	cli_ulogoff(cli);
+	cli_shutdown(cli);
+	return nt_status;
 }
 
 /****************************************************************************
@@ -426,6 +377,7 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 ****************************************************************************/
 
 static NTSTATUS check_ntdomain_security(void *my_private_data,
+					TALLOC_CTX *mem_ctx,
 					const auth_usersupplied_info *user_info, 
 					const auth_authsupplied_info *auth_info,
 					auth_serversupplied_info **server_info)
@@ -461,7 +413,7 @@ static NTSTATUS check_ntdomain_security(void *my_private_data,
 	{
 		DEBUG(0, ("check_domain_security: could not fetch trust account password for domain %s\n", lp_workgroup()));
 		unbecome_root();
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	unbecome_root();
@@ -481,9 +433,9 @@ static NTSTATUS check_ntdomain_security(void *my_private_data,
 	if (! *pserver) pserver = "*";
 	p = pserver;
 
-	nt_status = domain_client_validate(user_info, (uchar *)auth_info->challenge.data,server_info, 
+	nt_status = domain_client_validate(mem_ctx, user_info, (uchar *)auth_info->challenge.data,server_info, 
 					   p, trust_passwd, last_change_time);
-
+	
 	return nt_status;
 }
 
