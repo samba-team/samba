@@ -1517,7 +1517,7 @@ enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(inbuf,outbuf,defclass,deferror,__LINE__)
 
-#define ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
+#define SMB_ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
 
 /*
  * Global value meaing that the smb_uid field should be
