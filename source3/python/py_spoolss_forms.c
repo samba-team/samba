@@ -84,8 +84,8 @@ PyObject *spoolss_hnd_getform(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|i", kwlist, 
-					 &form_name, &level))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s|i", kwlist, &form_name, &level))
 		return NULL;
 	
 	/* Call rpc function */
@@ -129,8 +129,9 @@ PyObject *spoolss_hnd_setform(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|i", kwlist, 
-					 &PyDict_Type, &py_form, &level))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "O!|i", kwlist, &PyDict_Type, &py_form,
+		    &level))
 		return NULL;
 	
 	/* Call rpc function */

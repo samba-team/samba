@@ -95,8 +95,8 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
 	char *logfilename = NULL;
 	static char *kwlist[] = {"interactive", "logfilename", NULL};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "|is", kwlist,
-					 &interactive, &logfilename))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "|is", kwlist, &interactive, &logfilename))
 		return NULL;
 	
 	if (interactive && logfilename) {
@@ -119,18 +119,19 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
 }
 
 /* Return a cli_state to a RPC pipe on the given server.  Use the
-   credentials passed if not NULL.  Set an exception and return NULL if
-   there was an error creating the connection. */
+   credentials passed if not NULL.  If an error occurs errstr is set to a
+   string describing the error and NULL is returned.  If set, errstr must
+   be freed by calling free(). */
 
-struct cli_state *open_pipe_creds(char *system_name, PyObject *creds, 
-				  cli_pipe_fn *connect_fn)
+struct cli_state *open_pipe_creds(char *server, PyObject *creds, 
+				  cli_pipe_fn *connect_fn, char **errstr)
 {
 	struct ntuser_creds nt_creds;
 	struct cli_state *cli;
 	
 	cli = (struct cli_state *)malloc(sizeof(struct cli_state));
 	if (!cli) {
-		PyErr_SetString(PyExc_RuntimeError, "out of memory");
+		*errstr = strdup("out of memory");
 		return NULL;
 	}
 
@@ -156,13 +157,7 @@ struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 
 		if (!username_obj || !domain_obj || !password_obj) {
 		creds_error:
-
-			/* TODO: Either pass in the exception for the
-			   module calling open_pipe_creds() or have a
-			   global samba python module exception. */
-
-			PyErr_SetString(PyExc_RuntimeError, 
-					"invalid credentials");
+			*errstr = strdup("invalid credentials");
 			return NULL;
 		}
 
@@ -193,24 +188,12 @@ struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 
 	/* Now try to connect */
 
-	if (!connect_fn(cli, system_name, &nt_creds)) {
-		if (cli) {
-			NTSTATUS error = cli_nt_error(cli);
-
-			/* Raise an exception if something went wrong.
-  			   FIXME: This should be a more appropriate
-  			   exception than PyExc_RuntimeError */
-
-			if (!NT_STATUS_IS_OK(error))
-				PyErr_SetObject(PyExc_RuntimeError,
-						py_ntstatus_tuple(error));
-			else
-				PyErr_SetString(PyExc_RuntimeError,
-						"error connecting to pipe");
-		}
-		
+	if (!connect_fn(cli, server, &nt_creds)) {
+		*errstr = strdup("error connecting to RPC pipe");
 		return NULL;
 	}
+
+	*errstr = NULL;
 
 	return cli;
 }

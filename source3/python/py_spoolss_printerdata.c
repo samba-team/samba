@@ -100,7 +100,7 @@ PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *k
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &value))
-	    return NULL;
+		return NULL;
 
 	/* Call rpc function */
 
@@ -132,8 +132,8 @@ PyObject *spoolss_hnd_setprinterdata(PyObject *self, PyObject *args, PyObject *k
 	uint32 data_size, data_type;
 	WERROR werror;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", kwlist,
-					 &PyDict_Type, &py_data))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "O!", kwlist, &PyDict_Type, &py_data))
 		return NULL;
 	
 	if (!py_to_printerdata(&value, &data_type, &data, &data_size, py_data))
@@ -209,7 +209,7 @@ PyObject *spoolss_hnd_deleteprinterdata(PyObject *self, PyObject *args, PyObject
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &value))
-	    return NULL;
+		return NULL;
 
 	/* Call rpc function */
 

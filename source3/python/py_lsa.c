@@ -53,7 +53,7 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 				PyObject *kw) 
 {
 	static char *kwlist[] = { "servername", "creds", "access", NULL };
-	char *server_name;
+	char *server, *errstr;
 	PyObject *creds = NULL, *result;
 	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
 	struct cli_state *cli;
@@ -62,17 +62,20 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 	POLICY_HND hnd;
 
 	if (!PyArg_ParseTupleAndKeywords(
-		args, kw, "s|O!i", kwlist, &server_name, &PyDict_Type,
-		&creds, &desired_access))
+		    args, kw, "s|O!i", kwlist, &server, &PyDict_Type,
+		    &creds, &desired_access))
 		return NULL;
 
-	if (!(cli = open_pipe_creds(server_name, creds, cli_lsa_initialise))) {
-		fprintf(stderr, "could not initialise cli state\n");
+	if (!(cli = open_pipe_creds(
+		      server, creds, cli_lsa_initialise, &errstr))) {
+		PyErr_SetString(lsa_error, errstr);
+		free(errstr);
 		return NULL;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
-		fprintf(stderr, "unable to initialise talloc context\n");
+		PyErr_SetString(
+			lsa_error, "unable to initialise talloc context\n");
 		return NULL;
 	}
 

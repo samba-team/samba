@@ -21,7 +21,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 				   PyObject *kw);
 PyObject *spoolss_addprinterdriverex(PyObject *self, PyObject *args,
-				     PyObject *kw);
+					     PyObject *kw);
 PyObject *spoolss_deleteprinterdriver(PyObject *self, PyObject *args,
 				      PyObject *kw);
 PyObject *spoolss_deleteprinterdriverex(PyObject *self, PyObject *args,

@@ -96,8 +96,8 @@ PyObject *spoolss_hnd_setjob(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "ii|i", kwlist, &jobid,
-					 &command, &level))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "ii|i", kwlist, &jobid, &command, &level))
 		return NULL;
 	
 	/* Call rpc function */
@@ -127,8 +127,8 @@ PyObject *spoolss_hnd_getjob(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "i|i", kwlist, &jobid,
-					 &level))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "i|i", kwlist, &jobid, &level))
 		return NULL;
 	
 	/* Call rpc function */
@@ -228,8 +228,8 @@ PyObject *spoolss_hnd_startdocprinter(PyObject *self, PyObject *args, PyObject *
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", kwlist,
-		&PyDict_Type, &doc_info))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "O!", kwlist, &PyDict_Type, &doc_info))
 		return NULL;
 	
 	/* Check document_info parameter */
@@ -362,8 +362,8 @@ PyObject *spoolss_hnd_writeprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", kwlist,
-					 &PyString_Type, &data))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "O!", kwlist, &PyString_Type, &data))
 		return NULL;
 	
 	/* Call rpc function */
