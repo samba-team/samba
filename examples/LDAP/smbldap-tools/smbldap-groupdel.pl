@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# $Id: smbldap-groupdel.pl,v 1.1.6.3 2003/12/04 21:59:19 jerry Exp $
+#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -30,23 +32,22 @@ use smbldap_tools;
 use smbldap_conf;
 
 #####################
-
 use Getopt::Std;
 my %Options;
 
 my $ok = getopts('?', \%Options);
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
-	print "Usage: $0 groupname\n";
-	print "  -?	show this help message\n";
-	exit (1);
+  print "Usage: $0 groupname\n";
+  print "  -?	show this help message\n";
+  exit (1);
 }
 
 my $_groupName = $ARGV[0];
 
 my $dn_line;
 if (!defined($dn_line = get_group_dn($_groupName))) {
-    print "$0: group $_groupName doesn't exist\n";
-    exit (6);
+  print "$0: group $_groupName doesn't exist\n";
+  exit (6);
 }
 
 my $dn = get_dn_from_line($dn_line);
@@ -56,7 +57,7 @@ group_del($dn);
 my $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 
 if ($nscd_status == 0) {
-   system "/etc/init.d/nscd restart > /dev/null 2>&1";
+  system "/etc/init.d/nscd restart > /dev/null 2>&1";
 }
 
 #if (defined($dn_line = get_group_dn($_groupName))) {
