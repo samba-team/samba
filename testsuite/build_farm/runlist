@@ -1,0 +1,3 @@
+TEST_ALL="basicsmb-sharelist basicsmb-sharesec basicsmb-usersec basicsmb-shareguest torture-FDPASS torture-LOCK1 torture-LOCK2 torture-LOCK3 torture-LOCK4 torture-LOCK5 torture-UNLINK torture-BROWSE torture-ATTR torture-TRANS2 torture-TORTURE torture-OPLOCK1 torture-OPLOCK3 torture-DIR torture-DENY1 torture-DENY2 torture-TCON torture-RW1 torture-RW2 torture-OPEN torture-DELETE"
+
+#basicsmb-serversec

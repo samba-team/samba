@@ -1,0 +1,64 @@
+test_smb_conf_setup() {
+	cat basicsmb.smb.conf.template | \
+              sed "s|PREFIX|$prefix|g" | \
+	      sed "s|BUILD_FARM|$pwd|g" | \
+	      sed "s|WHOAMI|$whoami|g" | \
+	      sed "s|LOGLEVEL|$loglevel|g" \
+        > $prefix/lib/smb.conf
+
+	echo "127.0.0.1    localhost">$prefix/lib/lmhosts
+    echo "127.0.0.1    SHARE">>$prefix/lib/lmhosts
+    echo "127.0.0.1    USER">>$prefix/lib/lmhosts
+    echo "127.0.0.1    SERVER">>$prefix/lib/lmhosts
+    echo "127.0.0.1    DOMAIN">>$prefix/lib/lmhosts
+    cp basicsmb.smb.conf.share $prefix/lib/smb.conf.share
+    cp basicsmb.smb.conf.user $prefix/lib/smb.conf.user
+    cp basicsmb.smb.conf.server $prefix/lib/smb.conf.server
+    cp basicsmb.smb.conf.domain $prefix/lib/smb.conf.domain
+    touch $prefix/lib/smb.conf.
+    touch $prefix/lib/smb.conf.localhost
+}
+
+test_smbpasswd() {
+	test_smbpasswd_password="$1"
+	rm -f $prefix/private/smbpasswd
+	echo "( echo $test_smbpasswd_password ; echo $test_smbpasswd_password; ) | $prefix/bin/smbpasswd -L -s -a $whoami"
+	( echo $password ; echo $password; ) | $prefix/bin/smbpasswd -L -s -a $whoami
+	status=$?
+	if [ $status = 0 ]; then
+	    echo "smbpasswd correctly set inital password ($test_smbpasswd_password)"
+	else
+	    echo "smbpasswd failed to set inital password ($test_smbpasswd_password)! (status $status)"
+	    return 1
+	fi
+	return 0
+}
+
+test_listfilesauth() {
+	remote_name="$1"
+	echo $prefix/bin/smbclient//$remote_name/samba  -n buildclient -U$whoami%$password -c 'ls'
+	$prefix/bin/smbclient //$remote_name/samba  -n buildclient -U$whoami%$password -c 'ls'
+	status=$?
+	if [ $status = 0 ]; then
+		echo "listed files OK"
+	else 
+		echo "listing files with smbd failed with status $status"
+		return 1
+	fi
+	return 0
+}
+
+test_listfilesnpw() {
+	remote_name="$1"
+	echo $prefix/bin/smbclient //$remote_name/samba -n buildclient -U$whoami%  -c 'ls'
+	$prefix/bin/smbclient //$remote_name/samba -n buildclient -U$whoami% -c 'ls'
+	status=$?
+	if [ $status = 0 ]; then
+		echo "smbd listed files with NO PASSWORD on an authenticated share!"
+		return 1
+	else 
+		echo "listing files with smbd failed with status $status (correct)"
+	fi
+	return 0
+}
+
