@@ -12,8 +12,6 @@ Quick start
 
 Run:
 
-autoreconf
-./configure
 make all
 
 What are DocBook documents doing in the Samba Distribution ?
@@ -53,10 +51,12 @@ The Tools
 
 To generate the docs, you need to have the following packages installed:
 
- * autoconf
+ * GNU Make
+ * GNU autoconf
  * docbook-utils
  * xsltproc
  * pngtopnm and pnmtops (from the netpbm utilities)
+ * dia
 
 For generating PDF (thru LaTeX):
  * db2latex (from http://db2latex.sf.net/). Make sure to get CVS version
@@ -65,12 +65,26 @@ For generating PDF (thru LaTeX):
  * pdflatex
  * thumbpdf
 
+For generating PDF (thru FO):
+ * fop (http://xml.apache.org/fop/)
+
 For generating PostScript (thru LaTeX):
+ * db2latex
  * latex
  * dvips 
 
 For generating ASCII:
  * html2text
+
+For generating Palm-viewable docs:
+ * plucker-build
+
+For generating texi files:
+ * docbook2x-texi
+ * makeinfo
+
+For validating:
+ * xmllint
 
 This directory now contains a ./configure script and Makefile to 
 support the automated building of man pages (including HTML versions), and 
