@@ -333,8 +333,9 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	BOOL result = False;
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_methods *methods;
+	int i;
 
-	if (ent->got_all_sam_entries)
+	if (ent->num_sam_entries)
 		return False;
 
 	if (!(mem_ctx = talloc_init()))
@@ -348,65 +349,53 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	ent->num_sam_entries = 0;
 	
 	/* Call query_user_list to get a list of usernames and user rids */
+	num_entries = 0;
 
-	do {
-		int i;
-					
-		num_entries = 0;
-
-		status = methods->query_user_list(ent->domain, mem_ctx,
-						 &ent->dispinfo_ndx, 
-						 &num_entries, &info);
+	status = methods->query_user_list(ent->domain, mem_ctx,
+					  &num_entries, &info);
 		
-		if (num_entries) {
-			struct getpwent_user *tnl;
+	if (num_entries) {
+		struct getpwent_user *tnl;
+		
+		tnl = (struct getpwent_user *)Realloc(name_list, 
+						      sizeof(struct getpwent_user) *
+						      (ent->num_sam_entries + 
+						       num_entries));
+		
+		if (!tnl) {
+			DEBUG(0,("get_sam_user_entries: Realloc failed.\n"));
+			SAFE_FREE(name_list);
+			goto done;
+		} else
+			name_list = tnl;
+	}
 
-			tnl = (struct getpwent_user *)Realloc(name_list, 
-					    sizeof(struct getpwent_user) *
-					    (ent->num_sam_entries + 
-					     num_entries));
-
-			if (!tnl) {
-				DEBUG(0,("get_sam_user_entries: Realloc failed.\n"));
-				SAFE_FREE(name_list);
-                                goto done;
-			} else
-				name_list = tnl;
+	for (i = 0; i < num_entries; i++) {
+		/* Store account name and gecos */
+		if (!info[i].acct_name) {
+			fstrcpy(name_list[ent->num_sam_entries + i].name, "");
+		} else {
+			fstrcpy(name_list[ent->num_sam_entries + i].name, 
+				info[i].acct_name); 
 		}
-
-		for (i = 0; i < num_entries; i++) {
-			/* Store account name and gecos */
-			if (!info[i].acct_name) {
-				fstrcpy(name_list[ent->num_sam_entries + i].name, "");
-			} else {
-				fstrcpy(name_list[ent->num_sam_entries + i].name, 
-					info[i].acct_name); 
-			}
-			if (!info[i].full_name) {
-				fstrcpy(name_list[ent->num_sam_entries + i].gecos, "");
-			} else {
-				fstrcpy(name_list[ent->num_sam_entries + i].gecos, 
-					info[i].full_name); 
-			}
-
-			/* User and group ids */
-			name_list[ent->num_sam_entries+i].user_rid = info[i].user_rid;
-			name_list[ent->num_sam_entries+i].group_rid = info[i].group_rid;
+		if (!info[i].full_name) {
+			fstrcpy(name_list[ent->num_sam_entries + i].gecos, "");
+		} else {
+			fstrcpy(name_list[ent->num_sam_entries + i].gecos, 
+				info[i].full_name); 
 		}
 		
-		ent->num_sam_entries += num_entries;
-
-		if (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES))
-			break;
-
-	} while (ent->num_sam_entries < MAX_FETCH_SAM_ENTRIES);
+		/* User and group ids */
+		name_list[ent->num_sam_entries+i].user_rid = info[i].user_rid;
+		name_list[ent->num_sam_entries+i].group_rid = info[i].group_rid;
+	}
+		
+	ent->num_sam_entries += num_entries;
 	
 	/* Fill in remaining fields */
 	
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	ent->got_all_sam_entries = (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES));
-
 	result = ent->num_sam_entries > 0;
 
  done:
@@ -552,8 +541,8 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 	for (domain = domain_list; domain; domain = domain->next) {
 		NTSTATUS status;
-		uint32 start_ndx = 0;
 		struct winbindd_methods *methods;
+		int i;
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
@@ -565,51 +554,45 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		methods = domain->methods;
 
 		/* Query display info */
+		status = methods->query_user_list(domain, mem_ctx, 
+						  &num_entries, &info);
 
-		do {
-			int i;
+		if (num_entries == 0)
+			continue;
 
-			status = methods->query_user_list(domain, mem_ctx, &start_ndx, 
-							 &num_entries, &info);
-
-			if (num_entries == 0)
-				continue;
-
-			/* Allocate some memory for extra data */
-			total_entries += num_entries;
+		/* Allocate some memory for extra data */
+		total_entries += num_entries;
 			
-			ted = Realloc(extra_data, sizeof(fstring) * 
-					     total_entries);
+		ted = Realloc(extra_data, sizeof(fstring) * total_entries);
 			
-			if (!ted) {
-				DEBUG(0,("winbindd_list_users: failed to enlarge buffer!\n"));
-				SAFE_FREE(extra_data);
-				goto done;
-			} else 
-				extra_data = ted;
+		if (!ted) {
+			DEBUG(0,("winbindd_list_users: failed to enlarge buffer!\n"));
+			SAFE_FREE(extra_data);
+			goto done;
+		} else 
+			extra_data = ted;
 			
-			/* Pack user list into extra data fields */
+		/* Pack user list into extra data fields */
 			
-			for (i = 0; i < num_entries; i++) {
-				fstring acct_name, name;
-
-				if (!info[i].acct_name) {
-					fstrcpy(acct_name, "");
-				} else {
-					fstrcpy(acct_name, info[i].acct_name);
-				}
-                                                 
-				slprintf(name, sizeof(name) - 1, "%s%s%s",
-					 domain->name, lp_winbind_separator(),
-					 acct_name);
-
+		for (i = 0; i < num_entries; i++) {
+			fstring acct_name, name;
+			
+			if (!info[i].acct_name) {
+				fstrcpy(acct_name, "");
+			} else {
+				fstrcpy(acct_name, info[i].acct_name);
+			}
+			
+			slprintf(name, sizeof(name) - 1, "%s%s%s",
+				 domain->name, lp_winbind_separator(),
+				 acct_name);
+			
 				/* Append to extra data */
-				memcpy(&extra_data[extra_data_len], name, 
-				       strlen(name));
-				extra_data_len += strlen(name);
-				extra_data[extra_data_len++] = ',';
-			}   
-		} while (NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+			memcpy(&extra_data[extra_data_len], name, 
+			       strlen(name));
+			extra_data_len += strlen(name);
+			extra_data[extra_data_len++] = ',';
+		}   
         }
 
 	/* Assign extra_data fields in response structure */

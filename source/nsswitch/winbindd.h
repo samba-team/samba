@@ -51,9 +51,8 @@ struct getent_state {
 	struct getent_state *prev, *next;
 	void *sam_entries;
 	uint32 sam_entry_index, num_sam_entries;
-	uint32 dispinfo_ndx;
 	uint32 grp_query_start_ndx;
-	BOOL got_all_sam_entries, got_sam_entries;
+	BOOL got_all_grp_entries, got_sam_entries;
 	struct winbindd_domain *domain;
 };
 
@@ -94,7 +93,7 @@ struct winbindd_methods {
 	/* get a list of users, returning a WINBIND_USERINFO for each one */
 	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 *start_ndx, uint32 *num_entries, 
+				   uint32 *num_entries, 
 				   WINBIND_USERINFO **info);
 
 	/* get a list of groups */
