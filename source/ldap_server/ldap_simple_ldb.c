@@ -510,12 +510,111 @@ reply:
 	return ldapsrv_queue_reply(call, compare_r);
 }
 
+NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r)
+{
+	void *local_ctx;
+	struct ldap_dn *olddn, *newrdn, *newsuperior;
+	struct ldap_Result *modifydn;
+	struct ldapsrv_reply *modifydn_r;
+	int ldb_ret;
+	struct samdb_context *samdb;
+	const char *errstr = NULL;
+	int result = LDAP_SUCCESS;
+	const char *newdn;
+	char *parentdn = NULL;
+
+	local_ctx = talloc_named(call, 0, "sldb_ModifyDN local memory context");
+	ALLOC_CHECK(local_ctx);
+
+	samdb = samdb_connect(local_ctx);
+	ALLOC_CHECK(samdb);
+
+	olddn = ldap_parse_dn(local_ctx, r->dn);
+	VALID_DN_SYNTAX(olddn,2);
+
+	newrdn = ldap_parse_dn(local_ctx, r->newrdn);
+	VALID_DN_SYNTAX(newrdn,1);
+
+	DEBUG(10, ("sldb_ModifyDN: olddn: [%s]\n", olddn->dn));
+	DEBUG(10, ("sldb_ModifyDN: newrdn: [%s]\n", newrdn->dn));
+
+	/* we can't handle the rename if we should not remove the old dn */
+	if (!r->deleteolddn) {
+		result = LDAP_UNWILLING_TO_PERFORM;
+		errstr = "Old RDN must be deleted";
+		goto reply;
+	}
+
+	if (newrdn->comp_num > 1) {
+		result = LDAP_NAMING_VIOLATION;
+		errstr = "Error new RDN invalid";
+		goto reply;
+	}
+
+	if (r->newsuperior) {
+		newsuperior = ldap_parse_dn(local_ctx, r->newsuperior);
+		VALID_DN_SYNTAX(newsuperior,0);
+		DEBUG(10, ("sldb_ModifyDN: newsuperior: [%s]\n", newsuperior->dn));
+		
+		if (newsuperior->comp_num < 1) {
+			result = LDAP_AFFECTS_MULTIPLE_DSAS;
+			errstr = "Error new Superior DN invalid";
+			goto reply;
+		}
+		parentdn = newsuperior->dn;
+	}
+
+	if (!parentdn) {
+		int i;
+		parentdn = talloc_strdup(local_ctx, olddn->components[1]->component);
+		ALLOC_CHECK(parentdn);
+		for(i=2; i < olddn->comp_num; i++) {
+			char *old = parentdn;
+			parentdn = talloc_asprintf(local_ctx, "%s,%s", old, olddn->components[i]->component);
+			ALLOC_CHECK(parentdn);
+			talloc_free(old);
+		}
+	}
+	newdn = talloc_asprintf(local_ctx, "%s,%s", newrdn->dn, parentdn);
+	ALLOC_CHECK(newdn);
+
+reply:
+	modifydn_r = ldapsrv_init_reply(call, LDAP_TAG_ModifyDNResponse);
+	ALLOC_CHECK(modifydn_r);
+
+	if (result == LDAP_SUCCESS) {
+		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
+		ldb_ret = ldb_rename(samdb->ldb, olddn->dn, newdn);
+		if (ldb_ret == 0) {
+			result = LDAP_SUCCESS;
+			errstr = NULL;
+		} else {
+			/* currently we have no way to tell if there was an internal ldb error
+			 * or if the object was not found, return the most probable error
+			 */
+			result = LDAP_NO_SUCH_OBJECT;
+			errstr = ldb_errstring(samdb->ldb);
+		}
+	}
+
+	modifydn = &modifydn_r->msg.r.ModifyDNResponse;
+	modifydn->dn = NULL;
+	modifydn->resultcode = result;
+	modifydn->errormessage = (errstr?talloc_strdup(modifydn_r,errstr):NULL);
+	modifydn->referral = NULL;
+
+	talloc_free(local_ctx);
+
+	return ldapsrv_queue_reply(call, modifydn_r);
+}
+
 static const struct ldapsrv_partition_ops sldb_ops = {
 	.Search		= sldb_Search,
 	.Add		= sldb_Add,
 	.Del		= sldb_Del,
 	.Modify		= sldb_Modify,
-	.Compare	= sldb_Compare
+	.Compare	= sldb_Compare,
+	.ModifyDN	= sldb_ModifyDN
 };
 
 const struct ldapsrv_partition_ops *ldapsrv_get_sldb_partition_ops(void)
