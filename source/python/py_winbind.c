@@ -35,28 +35,6 @@ NSS_STATUS winbindd_request(int req_type,
 			    struct winbindd_request *request,
 			    struct winbindd_response *response);
 
-/* FIXME: grr this needs to be a fn in a library somewhere */
-
-static BOOL parse_domain_user(const char *domuser, fstring domain, 
-			      fstring user)
-{
-	char *p = strchr(domuser,*lp_winbind_separator());
-
-	if (!(p || lp_winbind_use_default_domain()))
-		return False;
-	
-	if(!p && lp_winbind_use_default_domain()) {
-		fstrcpy(user, domuser);
-		fstrcpy(domain, lp_workgroup());
-	} else {
-		fstrcpy(user, p+1);
-		fstrcpy(domain, domuser);
-		domain[PTR_DIFF(p, domuser)] = 0;
-	}
-	strupper(domain);
-	return True;
-}
-
 /*
  * Name <-> SID conversion
  */
@@ -135,6 +113,73 @@ static PyObject *winbind_sid_to_name(PyObject *self, PyObject *args)
 }
 
 /*
+ * Enumerate users/groups
+ */
+
+/* Enumerate domain users */
+
+static PyObject *winbind_enum_domain_users(PyObject *self, PyObject *args)
+{
+	struct winbindd_response response;
+	PyObject *result;
+
+	if (!PyArg_ParseTuple(args, ""))
+		return NULL;
+
+	ZERO_STRUCT(response);
+
+	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+
+	result = PyList_New(0);
+
+	if (response.extra_data) {
+		char *extra_data = response.extra_data;
+		fstring name;
+
+		while (next_token(&extra_data, name, ",", sizeof(fstring)))
+			PyList_Append(result, PyString_FromString(name));
+	}
+
+	return result;
+}
+
+/* Enumerate domain groups */
+
+static PyObject *winbind_enum_domain_groups(PyObject *self, PyObject *args)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	PyObject *result = NULL;
+
+	if (!PyArg_ParseTuple(args, ""))
+		return NULL;
+
+	ZERO_STRUCT(response);
+
+	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+
+	result = PyList_New(0);
+
+	if (response.extra_data) {
+		char *extra_data = response.extra_data;
+		fstring name;
+
+		while (next_token(&extra_data, name, ",", sizeof(fstring)))
+			PyList_Append(result, PyString_FromString(name));
+	}
+
+	return result;
+}
+
+/*
  * Method dispatch table
  */
 
@@ -147,6 +192,14 @@ static PyMethodDef winbind_methods[] = {
 
 	{ "sid_to_name", winbind_sid_to_name, METH_VARARGS,
 	  "Convert a sid to a name" },
+
+	/* Enumerate users/groups */
+
+	{ "enum_domain_users", winbind_enum_domain_users, METH_VARARGS,
+	  "Enumerate domain users" },
+
+	{ "enum_domain_groups", winbind_enum_domain_groups, METH_VARARGS,
+	  "Enumerate domain groups" },
 
 	{ NULL }
 };
@@ -166,4 +219,6 @@ void initwinbind(void)
 
 	winbind_error = PyErr_NewException("winbind.error", NULL, NULL);
 	PyDict_SetItemString(dict, "error", winbind_error);
+
+	py_samba_init();
 }
