@@ -537,7 +537,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 			DEBUG(2, ("Secrets record %s is invalid!\n", secrets_key));
 			if (size) SAFE_FREE(packed_pass);
 
-			return NT_STATUS_UNSUCCESSFUL;
+			continue;
 		}
 		
 		/* packed representation isn't needed anymore */
