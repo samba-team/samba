@@ -1,126 +1,145 @@
-.TH NMBLOOKUP 1 "09 Oct 1998" "nmblookup 2.0.0-alpha11"
-.SH NAME
-nmblookup \- NBT client used to lookup netbios names
-.SH SYNOPSIS
-.B nmblookup
-[
-.B \-M
-] [
-.B \-R
-] [
-.B \-S
-] [
-.B \-r
-] [
-.B \-A
-] [
-.B \-B
-.I broadcast address
-] [
-.B \-U
-.I unicast address
-] [
-.B \-d
-.I debuglevel
-]
-.B name
-.SH DESCRIPTION
-This program is part of the Samba suite.
-
-.B nmblookup
-is used to find out NetBIOS names in a network.
-.SH OPTIONS
-.B \-d
-.I debuglevel
-
-.RS 3
-This option sets the debug level. See
-.BR smb.conf (5).
-.RE
-
-.B \-B
-.I broadcast address
-.RS 3
-
-Send the query to the broadcast address
-.I broadcast address.
-The default behavior of nmblookup is to send the query to the broadcast
-address of the primary network interface.
-.RE
-
-.B \-U
-.I unicast address
-.RS 3
-
-Do a unicast query to the specified address or host
-.I unicast address.
-This is needed to query a WINS server.
-.RE
-
-.B \-M
-
-.RS 3
-Searches for a master browser.
-.RE
-
-.B \-R
-
-.RS 3
-Do a recursive lookup (needed to direct the query to the WINS portion
-of the server rather than the broadcast portion.)
-
-.RE
-
-.B \-S
-
-.RS 3
-Lookup node status as well.
-.RE
-
-.B \-r
-
-.RS 3
-Use root port 137 (Win95 only replies to this.)
-.RE
-
-.B \-A
-
-.RS 3
-Do a node status on <name> as an IP Address.
-.RE
-
-.SH EXAMPLES
-
-.B nmblookup
-can be used to query a WINS server (in the same way
-.B nslookup
-is used to query DNS servers). To query a WINS server,
-.B nmblookup
-must be called like this:
-
-.B nmblookup
--U server -R 'query'
-
-For example, running '
-.B nmblookup
--U samba.anu.edu.au -R IRIX#1B' would query the WINS server
-samba.anu.edu.au for the domain master browser (1B name) for the 
-IRIX workgroup.
-
-.SH VERSION
-
-This man page is (mostly) correct for version 1.9.16 of the Samba
-suite, plus some of the recent patches to it. These notes will
-necessarily lag behind development of the software, so it is possible
-that your version of the server has extensions or parameter semantics
-that differ from or are not covered by this man page. Please notify
-these to the address below for rectification.
-.SH SEE ALSO
-.BR samba (8), 
-.BR nmbd (8), 
-.BR smb.conf (5)
-.SH CREDITS
-The original Samba software and related utilities were created by 
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Andrew is also the Keeper
-of the Source for this project.
-
+.TH "nmblookup" "1" "23 Oct 1998" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
+nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS names
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBnmblookup\fP [-M] [-R] [-S] [-r] [-A] [-h] [-B broadcast address] [-U unicast address] [-d debuglevel] [-s smb config file] [-i NetBIOS scope] name
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+This program is part of the \fBSamba\fP suite\&.
+.PP 
+\fBnmblookup\fP is used to query NetBIOS names and map them to IP
+addresses in a network using NetBIOS over TCP/IP queries\&. The options
+allow the name queries to be directed at a particlar IP broadcast area
+or to a particular machine\&. All queries are done over UDP\&.
+.PP 
+.SH "OPTIONS" 
+.PP 
+.IP 
+.IP "\fB-M\fP" 
+Searches for a master browser\&. This is done by doing a
+broadcast lookup on the special name \f(CW__MSBROWSE__\fP\&.
+.IP 
+.IP "\fB-R\fP" 
+Set the recursion desired bit in the packet to do a
+recursive lookup\&. This is used when sending a name query to a machine
+running a WINS server and the user wishes to query the names in the
+WINS server\&.  If this bit is unset the normal (broadcast responding)
+NetBIOS processing code on a machine is used instead\&. See rfc1001,
+rfc1002 for details\&.
+.IP 
+.IP "\fB-S\fP" 
+Once the name query has returned an IP address then do a
+node status query as well\&.
+.IP 
+.IP "\fB-r\fP" 
+Try and bind to UDP port 137 to send and receive UDP
+datagrams\&. The reason for this option is a bug in Windows 95 where it
+ignores the source port of the requesting packet and only replies to
+UDP port 137\&. Unfortunately, on most UNIX systems root privillage is
+needed to bind to this port, and in addition, if the
+\fBnmbd\fP daemon is running on this machine it also
+binds to this port\&.
+.IP 
+.IP "\fB-A\fP" 
+Interpret <name> as an IP Address and do a node status
+query on this address\&.
+.IP 
+.IP "\fB-h\fP" 
+Print a help (usage) message\&.
+.IP 
+.IP "\fB-B broadcast address\fP" 
+Send the query to the given broadcast
+address\&. Without this option the default behavior of nmblookup is to
+send the query to the broadcast address of the primary network
+interface as either auto-detected or defined in the 
+\fBinterfaces\fP parameter of the 
+\fBsmb\&.conf (5)\fP file\&.
+.IP 
+.IP "\fB-U unicast address\fP" 
+Do a unicast query to the specified
+address or host \f(CW"unicast address"\fP\&. This option (along with the
+\fB-R\fP option) is needed to query a WINS server\&.
+.IP 
+.IP "\fB-d debuglevel\fP" 
+debuglevel is an integer from 0 to 10\&.
+.IP 
+The default value if this parameter is not specified is zero\&.
+.IP 
+The higher this value, the more detail will be logged about the
+activities of \fBnmblookup\fP\&. At level 0, only critical errors and
+serious warnings will be logged\&.
+.IP 
+Levels above 1 will generate considerable amounts of log data, and
+should only be used when investigating a problem\&. Levels above 3 are
+designed for use only by developers and generate HUGE amounts of
+data, most of which is extremely cryptic\&.
+.IP 
+Note that specifying this parameter here will override the \fBlog
+level\fP parameter in the \fBsmb\&.conf
+(5)\fP file\&.
+.IP 
+.IP "\fB-s smb\&.conf\fP" 
+This parameter specifies the pathname to the
+Samba configuration file, smb\&.conf\&. This file controls all aspects of
+the Samba setup on the machine and smbclient also needs to read this
+file\&.
+.IP 
+.IP "\fB-i scope\fP" 
+This specifies a NetBIOS scope that smbclient will use
+to communicate with when generating NetBIOS names\&. For details on the
+use of NetBIOS scopes, see rfc1001\&.txt and rfc1002\&.txt\&. NetBIOS scopes
+are \fIvery\fP rarely used, only set this parameter if you are the
+system administrator in charge of all the NetBIOS systems you
+communicate with\&.
+.IP 
+.IP "\fBname\fP" 
+This is the NetBIOS name being queried\&. Depending upon
+the previous options this may be a NetBIOS name or IP address\&. If a
+NetBIOS name then the different name types may be specified by
+appending \f(CW#<type>\fP to the name\&.
+.IP 
+.PP 
+.SH "EXAMPLES" 
+.PP 
+\fBnmblookup\fP can be used to query a WINS server (in the same way \&.B
+nslookup is used to query DNS servers)\&. To query a WINS server,
+nmblookup must be called like this:
+.PP 
+\f(CWnmblookup -U server -R \'name\'\fP
+.PP 
+For example, running :
+.PP 
+\f(CWnmblookup -U samba\&.anu\&.edu\&.au -R IRIX#1B\'\fP
+.PP 
+would query the WINS server samba\&.anu\&.edu\&.au for the domain master
+browser (1B name type) for the IRIX workgroup\&.
+.PP 
+.SH "VERSION" 
+.PP 
+This man page is correct for version 2\&.0 of the Samba suite\&.
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBsamba (7)\fP, \fBnmbd (8)\fP,
+\fBsmb\&.conf (5)\fP
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell (samba-bugs@samba\&.anu\&.edu\&.au)\&. Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed\&.
+.PP 
+The original Samba man pages were written by Karl Auer\&. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2\&.0 release by Jeremy
+Allison, \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+.PP 
+See \fBsamba (7)\fP to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc\&.
+.PP 

@@ -1,86 +1,69 @@
-.TH SMBSTATUS 1 "09 Oct 1998" "smbstatus 2.0.0-alpha11"
-.SH NAME
+.TH "smbstatus" "1" "23 Oct 1998" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
 smbstatus \- report on current Samba connections
-.SH SYNOPSIS
-.B smbstatus
-[
-.B \-b
-] [
-.B \-d
-] [
-.B \-L
-] [
-.B \-p
-] [
-.B \-S
-] [
-.B \-s
-.I configuration file
-] [
-.b \-u
-.i username
-]
-.SH DESCRIPTION
-This program is part of the Samba suite.
-
-.B smbstatus
-is a very simple program to list the current Samba connections.
-
-Just run the program and the output is self explanatory.
-.SH OPTIONS
-.B \-b
-gives brief output.
-
-.B \-d
-gives verbose output.
-
-.B \-L
-causes smbstatus to only list locks.
-
-.B \-p
-print a list of
-.B smbd
-processes and exit. Useful for scripting.
-
-.B \-S
-causes smbstatus to only list shares.
-
-.B \-s
-.I configuration file
-.RS 3
-The default configuration file name is determined at compile time.
-The file specified contains the configuration details required by the server.
-See
-.BR smb.conf (5)
-for more information.
-
-.B \-u
-.I username
-selects information relevant to .B username only.
-
-.RE
-.SH ENVIRONMENT VARIABLES
-Not applicable.
-.SH INSTALLATION
-The location of the server and its support files is a matter for individual
-system administrators. The following are thus suggestions only.
-
-It is recommended that the
-.B smbstatus
-program be installed under the /usr/local/samba hierarchy, in a directory readable
-by all, writeable only by root. The program itself should be executable by all.
-.SH VERSION
-This man page is (mostly) correct for version 1.9.00 of the Samba suite, plus some
-of the recent patches to it. These notes will necessarily lag behind 
-development of the software, so it is possible that your version of 
-the program has extensions or parameter semantics that differ from or are not 
-covered by this man page. Please notify these to the address below for 
-rectification.
-.SH SEE ALSO
-.BR smb.conf (5),
-.BR smbd (8)
-
-See
-.BR smb.conf (5)
-for a full list of contributors and details on how to 
-submit bug reports, comments etc.
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBsmbstatus\fP [-b] [-d] [-L] [-p] [-S] [-s configuration file] [-u username]
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+This program is part of the \fBSamba\fP suite\&.
+.PP 
+\fBsmbstatus\fP is a very simple program to list the current Samba
+connections\&.
+.PP 
+.SH "OPTIONS" 
+.PP 
+.IP 
+.IP "\fB-b\fP" 
+gives brief output\&.
+.IP 
+.IP "\fB-d\fP" 
+gives verbose output\&.
+.IP 
+.IP "\fB-L\fP" 
+causes smbstatus to only list locks\&.
+.IP 
+.IP "\fB-p\fP" 
+print a list of \fBsmbd\fP
+processes and exit\&. Useful for scripting\&.
+.IP 
+.IP "\fB-S\fP" 
+causes smbstatus to only list shares\&.
+.IP 
+.IP "\fB-s configuration file\fP" 
+The default configuration file name is
+determined at compile time\&. The file specified contains the
+configuration details required by the server\&. See \fBsmb\&.conf
+(5)\fP for more information\&.
+.IP 
+.IP "\fB-u username\fP" 
+selects information relevant to \fIusername\fP
+only\&.
+.IP 
+.PP 
+.SH "VERSION" 
+.PP 
+This man page is correct for version 2\&.0 of the Samba suite\&.
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBsmb\&.conf (5)\fP, \fBsmbd (8)\fP
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed\&.
+.PP 
+The original Samba man pages were written by Karl Auer\&. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2\&.0 release by Jeremy
+Allison, \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+.PP 
+See \fBsamba (7)\fP to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc\&.
