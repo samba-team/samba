@@ -20,12 +20,19 @@ non-trapdoor system\n");
         if (getuid() != 0) exit(1);
         if (geteuid() != 0) exit(1);
 #elif defined(HAVE_SETREUID)
-		if (setreuid(1,1) != 0) exit(1);
-		if (getuid() != 1) exit(1);
-		if (geteuid() != 1) exit(1);
-		if (setreuid(0,0) != 0) exit(1);
-		if (getuid() != 0) exit(1);
-		if (geteuid() != 0) exit(1);
+	/* Set real uid to 1. */
+	if (setreuid(1,-1) != 0) exit(1); 
+	if (getuid() != 1) exit(1); 
+	/* Go back to root. */
+	if (setreuid(0,-1) != 0) exit(1);
+	if (getuid() != 0) exit(1);
+	/* Now set euid to 1. */
+	if (setreuid(-1,1) != 0) exit(1);
+	if (geteuid() != 1) exit(1);
+	/* Go back to root. */
+	if (setreuid(0,0) != 0) exit(1);
+	if (getuid() != 0) exit(1);
+	if (geteuid() != 0) exit(1);
 #else
         if (seteuid(1) != 0) exit(1);
         if (geteuid() != 1) exit(1);
@@ -41,12 +48,12 @@ non-trapdoor system\n");
         if (getgid() != 0) exit(1);
         if (getegid() != 0) exit(1);
 #elif defined(HAVE_SETREGID)
-		if (setregid(1,1) != 0) exit(1);
-		if (getgid() != 1) exit(1);
-		if (getegid() != 1) exit(1);
-		if (setregid(0,0) != 0) exit(1);
-		if (getgid() != 0) exit(1);
-		if (getegid() != 0) exit(1);
+	if (setregid(1,1) != 0) exit(1);
+	if (getgid() != 1) exit(1);
+	if (getegid() != 1) exit(1);
+	if (setregid(0,0) != 0) exit(1);
+	if (getgid() != 0) exit(1);
+	if (getegid() != 0) exit(1);
 #else
         if (setegid(1) != 0) exit(1);
         if (getegid() != 1) exit(1);
