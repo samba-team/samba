@@ -56,6 +56,10 @@
 
 	* lib/asn1/der.h: update universal tags
 
+1999-09-22  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/asn1_print.c (loop): print length of octet string
+
 1999-09-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* admin/ktutil.c (kt_get): add `--help'
