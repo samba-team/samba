@@ -100,10 +100,16 @@ find_all_addresses (krb5_addresses *res)
 		    switch (ifr->ifr_addr.sa_family) {
 #ifdef AF_INET
 		    case AF_INET: {
+			unsigned char addr[4];
+			struct sockaddr_in *sin;
 			res->val[j].addr_type = AF_INET;
+			/* This is somewhat XXX */
+			sin = (struct sockaddr_in*)&ifr->ifr_addr;
+			memcpy(addr, 
+			       &sin->sin_addr, 
+			       4);
 			err = krb5_data_copy(&res->val[j].address,
-					     &ifr->ifr_addr,
-					     sizeof(struct sockaddr_in));
+					     addr, 4);
 			if (err) {
 			    close (fd);
 			    free (res->val);
