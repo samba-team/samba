@@ -461,16 +461,16 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	 */
 
 	/* extract filename and path */
-	path_name = (char *)malloc(PATH_MAX);
-	ALLOC_CHECK(path_name, done);
-	safe_strcpy(path_name, file_name, PATH_MAX - 1);
-	base = strrchr(path_name, '/');
+	base = strrchr(file_name, '/');
 	if (base == NULL) {
 		base = file_name;
-		safe_strcpy(path_name, "/", PATH_MAX - 1);
+		path_name = strdup("/");
+		ALLOC_CHECK(path_name, done);
 	}
 	else {
-		*base = '\0';
+		path_name = strdup(file_name);
+		ALLOC_CHECK(path_name, done);
+		path_name[base - file_name] = '\0';
 		base++;
 	}
 
@@ -494,15 +494,13 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 		goto done;
 	}
 
-	temp_name = (char *)malloc(PATH_MAX);
-	ALLOC_CHECK(temp_name, done);
-	safe_strcpy(temp_name, recbin->repository, PATH_MAX -1 );
-
 	/* see if we need to recreate the original directory structure in the recycle bin */
 	if (recbin->keep_dir_tree == True) {
-		safe_strcat(temp_name, "/", PATH_MAX -1 );
-		safe_strcat(temp_name, path_name, PATH_MAX - 1);
+		asprintf(&temp_name, "%s/%s", recbin->repository, path_name);
+	} else {
+		temp_name = strdup(recbin->repository);
 	}
+	ALLOC_CHECK(temp_name, done);
 
 	exist = recycle_directory_exist(conn, temp_name);
 	if (exist) {
