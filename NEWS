@@ -1,3 +1,8 @@
+Changes in release 0.0o:
+
+ * FTP with GSSAPI support.
+ * Bug fixes.
+
 Changes in release 0.0n:
 
  * Incremental database propagation.
