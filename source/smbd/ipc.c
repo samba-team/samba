@@ -3159,6 +3159,7 @@ static struct api_cmd api_fd_commands[] =
 static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 {
 	BOOL ntlmssp_auth = False;
+	uint16 assoc_gid;
 	fstring ack_pipe_name;
 	int i = 0;
 
@@ -3214,10 +3215,19 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	/*** do the bind ack first ***/
     /***/
 
+	if (ntlmssp_auth)
+	{
+		assoc_gid = 0x7a77;
+	}
+	else
+	{
+		assoc_gid = p->hdr_rb.bba.assoc_gid;
+	}
+
 	make_rpc_hdr_ba(&p->hdr_ba,
 	                p->hdr_rb.bba.max_tsize,
 	                p->hdr_rb.bba.max_rsize,
-	                p->hdr_rb.bba.assoc_gid,
+	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
 	                &(p->hdr_rb.transfer));

@@ -154,6 +154,20 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 
 /****************************************************************************
+ writes data to a pipe.
+ ****************************************************************************/
+int write_pipe(pipes_struct *p, char *data, int n)
+{
+	DEBUG(6,("write_pipe: %x", p->pnum));
+
+	DEBUG(6,("name: %s open: %s len: %d",
+		 p->name, BOOLSTR(p->open), n));
+
+	return -1;
+}
+
+
+/****************************************************************************
  reads data from a pipe.
 
  headers are interspersed with the data at regular intervals.  by the time

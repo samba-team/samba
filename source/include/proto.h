@@ -1489,6 +1489,7 @@ void prs_init(prs_struct *ps, uint32 size,
 				uint8 align, uint32 margin,
 				BOOL io);
 void prs_mem_free(prs_struct *ps);
+void prs_link(prs_struct *ps, prs_struct const *const to);
 void prs_align(prs_struct *ps);
 BOOL prs_grow(prs_struct *ps);
 BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
@@ -1827,6 +1828,7 @@ void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
+int write_pipe(pipes_struct *p, char *data, int n);
 int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
@@ -2160,6 +2162,7 @@ BOOL domain_client_validate( char *user, char *domain,
 
 int reply_open_pipe_and_X(connection_struct *conn,
 			  char *inbuf,char *outbuf,int length,int bufsize);
+int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 

@@ -329,7 +329,7 @@ struct smb_message_struct
    
    {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
    {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER | CAN_IPC },
-   {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER},
+   {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER | CAN_IPC },
    {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER},
    
    {SMBffirst,"SMBffirst",reply_search,AS_USER},

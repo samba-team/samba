@@ -106,6 +106,50 @@ int reply_open_pipe_and_X(connection_struct *conn,
 
 
 /****************************************************************************
+  reply to a write and X
+
+  This code is basically stolen from reply_write_and_X with some
+  wrinkles to handle pipes.
+****************************************************************************/
+int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
+{
+	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
+	uint32 smb_offs = IVAL(inbuf,smb_vwv3);
+	size_t numtowrite = SVAL(inbuf,smb_vwv10);
+	BOOL write_through = BITSETW(inbuf+smb_vwv7, 0);
+	int nwritten = -1;
+	int smb_doff = SVAL(inbuf, smb_vwv11);
+	char *data;
+
+	if (!p) return(ERROR(ERRDOS,ERRbadfid));
+
+	data = smb_buf(inbuf) + smb_doff;
+
+	if (numtowrite == 0)
+	{
+		nwritten = 0;
+	}
+	else
+	{
+		nwritten = write_pipe(p, data, numtowrite);
+	}
+
+	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0))
+	{
+		return (UNIXERROR(ERRDOS,ERRnoaccess));
+	}
+  
+	set_message(outbuf,6,0,True);
+
+	SSVAL(outbuf,smb_vwv2,nwritten);
+  
+	DEBUG(3,("writeX-IPC pnum=%04x nwritten=%d\n",
+		 p->pnum, nwritten));
+
+	return chain_reply(inbuf,outbuf,length,bufsize);
+}
+
+/****************************************************************************
   reply to a read and X
 
   This code is basically stolen from reply_read_and_X with some
@@ -134,11 +178,12 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 	SSVAL(smb_buf(outbuf),-2,nread);
   
-	DEBUG(3,("readX pnum=%04x min=%d max=%d nread=%d\n",
+	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
 		 p->pnum, smb_mincnt, smb_maxcnt, nread));
 
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
+
 /****************************************************************************
   reply to a close
 ****************************************************************************/
