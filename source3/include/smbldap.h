@@ -138,6 +138,8 @@ struct smbldap_state {
 
 	time_t last_use;
 	smb_event_id_t event_id;
+
+	struct timeval last_rebind;
 };
 
 #endif 	/* HAVE_LDAP */
