@@ -35,18 +35,6 @@ _syscall5(int, afs_syscall, int, subcall,
 	  char *, cmarg,
 	  int, follow);
 
-char *afs_cell(void)
-{
-	static char *cell = NULL;
-
-	if (cell == NULL) {
-		cell = strdup(lp_realm());
-		strlower_m(cell);
-	}
-
-	return cell;
-}
-
 struct ClearToken {
 	uint32 AuthHandle;
 	char HandShakeKey[8];
@@ -65,7 +53,8 @@ struct ClearToken {
   to avoid. 
 */
 
-static BOOL afs_settoken(char *username, const struct ClearToken *ctok,
+static BOOL afs_settoken(const char *username, const char *cell,
+			 const struct ClearToken *ctok,
 			 char *v4tkt_data, int v4tkt_length)
 {
 	int ret;
@@ -94,13 +83,13 @@ static BOOL afs_settoken(char *username, const struct ClearToken *ctok,
 	memcpy(p, &tmp, sizeof(uint32));
 	p += sizeof(uint32);
 
-	tmp = strlen(afs_cell());
+	tmp = strlen(cell);
 	if (tmp >= MAXKTCREALMLEN) {
 		DEBUG(1, ("Realm too long\n"));
 		return False;
 	}
 
-	strncpy(p, afs_cell(), tmp);
+	strncpy(p, cell, tmp);
 	p += tmp;
 	*p = 0;
 	p +=1;
@@ -135,12 +124,14 @@ static BOOL afs_settoken(char *username, const struct ClearToken *ctok,
   For the comments "Alice" is the User to be auth'ed, and "Bob" is the
   AFS server.  */
 
-BOOL afs_login(char *username)
+BOOL afs_login(connection_struct *conn)
 {
 	fstring ticket;
 	char *p = ticket;
 	uint32 len;
 	struct afs_key key;
+	pstring afs_username;
+	char *cell;
 
 	struct ClearToken ct;
 
@@ -148,13 +139,28 @@ BOOL afs_login(char *username)
 
 	des_key_schedule key_schedule;
 
-	DEBUG(10, ("Trying to log into AFS for user %s@%s\n",
-		   username, afs_cell()));
+	pstrcpy(afs_username, lp_afs_username_map());
+	standard_sub_conn(conn, afs_username, sizeof(afs_username));
+
+	cell = strchr(afs_username, '@');
+
+	if (cell == NULL) {
+		DEBUG(1, ("AFS username doesn't contain a @, "
+			  "could not find cell\n"));
+		return False;
+	}
+
+	*cell = '\0';
+	cell += 1;
+	strlower_m(cell);
+
+	DEBUG(10, ("Trying to log into AFS for user %s@%s\n", 
+		   afs_username, cell));
 
 	if (!secrets_init()) 
 		return False;
 
-	if (!secrets_fetch_afs_key(afs_cell(), &key)) {
+	if (!secrets_fetch_afs_key(cell, &key)) {
 		DEBUG(5, ("Could not fetch AFS service key\n"));
 		return False;
 	}
@@ -172,14 +178,20 @@ BOOL afs_login(char *username)
 	p += 1;
 
 	/* "Alice", the client username */
-	strncpy(p, username, sizeof(ticket)-PTR_DIFF(p,ticket)-1);
+	strncpy(p, afs_username, sizeof(ticket)-PTR_DIFF(p,ticket)-1);
 	p += strlen(p)+1;
 	strncpy(p, "", sizeof(ticket)-PTR_DIFF(p,ticket)-1);
 	p += strlen(p)+1;
-	strncpy(p, afs_cell(), sizeof(ticket)-PTR_DIFF(p,ticket)-1);
+	strncpy(p, cell, sizeof(ticket)-PTR_DIFF(p,ticket)-1);
 	p += strlen(p)+1;
 
-	ct.ViceId = getuid();
+	/* As long as we still only use the effective UID we need to set the
+	 * token for it here as well. This involves patching AFS in two
+	 * places. Once we start using the real uid where we have the
+	 * setresuid function, we can use getuid() here which would be more
+	 * correct. */
+
+	ct.ViceId = geteuid();
 	DEBUG(10, ("Creating Token for uid %d\n", ct.ViceId));
 
 	/* Alice's network layer address. At least Openafs-1.2.10
@@ -235,12 +247,12 @@ BOOL afs_login(char *username)
 
 	ZERO_STRUCT(key);
 
-	return afs_settoken(username, &ct, ticket, len);
+	return afs_settoken(afs_username, cell, &ct, ticket, len);
 }
 
 #else
 
-BOOL afs_login(char *username)
+BOOL afs_login(connection_struct *conn)
 {
 	return True;
 }

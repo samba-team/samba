@@ -126,6 +126,7 @@ typedef struct
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szRealm;
+	char *szAfsUsernameMap;
 	char *szUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
@@ -413,6 +414,7 @@ typedef struct
 	BOOL bUseSendfile;
 	BOOL bProfileAcls;
 	BOOL bMap_acl_inherit;
+	BOOL bAfs_Share;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -533,6 +535,7 @@ static service sDefault = {
 	False,			/* bUseSendfile */
 	False,			/* bProfileAcls */
 	False,			/* bMap_acl_inherit */
+	False,			/* bAfs_Share */
 	
 	NULL,			/* Parametric options */
 
@@ -762,6 +765,7 @@ static struct parm_struct parm_table[] = {
 #ifdef WITH_ADS
 	{"realm", P_USTRING, P_GLOBAL, &Globals.szRealm, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 #endif
+	{"afs username map", P_USTRING, P_GLOBAL, &Globals.szAfsUsernameMap, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"netbios name", P_USTRING, P_GLOBAL, &Globals.szNetbiosName, handle_netbios_name, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, handle_netbios_aliases,  NULL, FLAG_ADVANCED}, 
 	{"netbios scope", P_USTRING, P_GLOBAL, &Globals.szNetbiosScope, handle_netbios_scope,  NULL, FLAG_ADVANCED}, 
@@ -890,6 +894,7 @@ static struct parm_struct parm_table[] = {
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, FLAG_ADVANCED}, 
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as,  FLAG_ADVANCED}, 
 	{"map acl inherit", P_BOOL, P_LOCAL, &sDefault.bMap_acl_inherit, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"afs share", P_BOOL, P_LOCAL, &sDefault.bAfs_Share, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, FLAG_ADVANCED}, 
 	{"max xmit", P_INTEGER, P_GLOBAL, &Globals.max_xmit, NULL, NULL, FLAG_ADVANCED}, 
 
@@ -1634,6 +1639,7 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
+FN_GLOBAL_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
@@ -1871,6 +1877,7 @@ FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
+FN_LOCAL_BOOL(lp_afs_share, bAfs_Share)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)

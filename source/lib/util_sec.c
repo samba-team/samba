@@ -183,6 +183,10 @@ void gain_root_group_privilege(void)
 void set_effective_uid(uid_t uid)
 {
 #if USE_SETRESUID
+        /* On Systems which have this function, would it not be more
+         * appropriate to also set the real uid by doing
+         * setresuid(uid,uid,-1)? This would make patching AFS
+         * unnecessary. See comment in lib/afs.c. */
 	setresuid(-1,uid,-1);
 #endif
 
