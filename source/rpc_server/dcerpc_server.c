@@ -64,6 +64,19 @@ static struct dcesrv_endpoint *find_endpoint(struct dcesrv_context *dce_ctx,
 }
 
 /*
+  find a registered context_id from a bind or alter_context
+*/
+static struct dcesrv_connection_context *dcesrv_find_context(struct dcesrv_connection *conn, 
+								   uint32_t context_id)
+{
+	struct dcesrv_connection_context *c;
+	for (c=conn->contexts;c;c=c->next) {
+		if (c->context_id == context_id) return c;
+	}
+	return NULL;
+}
+
+/*
   see if a uuid and if_version match to an interface
 */
 static BOOL interface_match(const struct dcesrv_interface *if1,
@@ -84,7 +97,7 @@ static BOOL interface_match(const struct dcesrv_interface *if1,
   find the interface operations on an endpoint
 */
 static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoint *endpoint,
-						       const struct dcesrv_interface *iface)
+						     const struct dcesrv_interface *iface)
 {
 	struct dcesrv_if_list *ifl;
 	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
@@ -264,14 +277,18 @@ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 static int dcesrv_endpoint_destructor(void *ptr)
 {
 	struct dcesrv_connection *p = ptr;
-	if (p->iface) {
-		p->iface->unbind(p, p->iface);
+
+	while (p->contexts) {
+		struct dcesrv_connection_context *c = p->contexts;
+
+		DLIST_REMOVE(p->contexts, c);
+
+		if (c->iface) {
+			c->iface->unbind(c, c->iface);
+		}
+		talloc_free(c);
 	}
 
-	/* destroy any handles */
-	while (p->handles) {
-		dcesrv_handle_destroy(p, p->handles);
-	}
 
 	return 0;
 }
@@ -291,11 +308,9 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 
 	(*p)->dce_ctx = dce_ctx;
 	(*p)->endpoint = ep;
-	(*p)->iface = NULL;
-	(*p)->private = NULL;
+	(*p)->contexts = NULL;
 	(*p)->call_list = NULL;
 	(*p)->cli_max_recv_frag = 0;
-	(*p)->handles = NULL;
 	(*p)->partial_input = data_blob(NULL, 0);
 	(*p)->auth_state.auth_info = NULL;
 	(*p)->auth_state.gensec_security = NULL;
@@ -443,9 +458,18 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 	uint32_t result=0, reason=0;
+	uint32_t context_id;
+	const struct dcesrv_interface *iface;
 
 	if (call->pkt.u.bind.num_contexts != 1 ||
 	    call->pkt.u.bind.ctx_list[0].num_transfer_syntaxes < 1) {
+		return dcesrv_bind_nak(call, 0);
+	}
+
+	context_id = call->pkt.u.bind.ctx_list[0].context_id;
+
+	/* you can't bind twice on one context */
+	if (dcesrv_find_context(call->conn, context_id) != NULL) {
 		return dcesrv_bind_nak(call, 0);
 	}
 
@@ -465,12 +489,28 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	call->conn->iface = find_interface_by_uuid(call->conn->endpoint, uuid, if_version);
-	if (!call->conn->iface) {
+	iface = find_interface_by_uuid(call->conn->endpoint, uuid, if_version);
+	if (iface == NULL) {
 		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid, if_version));
 		/* we don't know about that interface */
 		result = DCERPC_BIND_PROVIDER_REJECT;
 		reason = DCERPC_BIND_REASON_ASYNTAX;		
+	}
+
+	if (iface) {
+		/* add this context to the list of available context_ids */
+		struct dcesrv_connection_context *context = talloc(call->conn, 
+								   struct dcesrv_connection_context);
+		if (context == NULL) {
+			return dcesrv_bind_nak(call, 0);
+		}
+		context->conn = call->conn;
+		context->iface = iface;
+		context->context_id = context_id;
+		context->private = NULL;
+		context->handles = NULL;
+		DLIST_ADD(call->conn->contexts, context);
+		call->context = context;
 	}
 
 	if (call->conn->cli_max_recv_frag == 0) {
@@ -492,10 +532,9 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	pkt.u.bind_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
-	if (call->conn->iface) {
+	if (iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
-		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", 
-								   call->conn->iface->name);
+		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", iface->name);
 	} else {
 		pkt.u.bind_ack.secondary_address = "";
 	}
@@ -514,15 +553,16 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	if (call->conn->iface) {
-		status = call->conn->iface->bind(call, call->conn->iface);
+	if (iface) {
+		status = iface->bind(call, iface);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n", uuid, if_version, nt_errstr(status)));
+			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n", 
+				 uuid, if_version, nt_errstr(status)));
 			return dcesrv_bind_nak(call, 0);
 		}
 	}
 
-	rep = talloc_p(call, struct dcesrv_call_reply);
+	rep = talloc(call, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -630,12 +670,16 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	NTSTATUS status;
 	DATA_BLOB stub;
 	uint32_t total_length;
+	struct dcesrv_connection_context *context;
 
 	call->fault_code = 0;
 
-	if (!call->conn->iface) {
+	context = dcesrv_find_context(call->conn, call->pkt.u.request.context_id);
+	if (context == NULL) {
 		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
 	}
+
+	call->context = context;
 
 	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call);
 	if (!pull) {
@@ -651,7 +695,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* unravel the NDR for the packet */
-	status = call->conn->iface->ndr_pull(call, call, pull, &r);
+	status = context->iface->ndr_pull(call, call, pull, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, call->fault_code);
 	}
@@ -663,7 +707,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* call the dispatch function */
-	status = call->conn->iface->dispatch(call, call, r);
+	status = context->iface->dispatch(call, call, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, call->fault_code);
 	}
@@ -683,7 +727,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = call->conn->iface->ndr_push(call, call, push, r);
+	status = context->iface->ndr_push(call, call, push, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, call->fault_code);
 	}
@@ -697,7 +741,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		struct dcesrv_call_reply *rep;
 		struct dcerpc_packet pkt;
 
-		rep = talloc_p(call, struct dcesrv_call_reply);
+		rep = talloc(call, struct dcesrv_call_reply);
 		if (!rep) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -787,13 +831,14 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	struct dcesrv_call_state *call;
 	DATA_BLOB blob;
 
-	call = talloc_p(dce_conn, struct dcesrv_call_state);
+	call = talloc(dce_conn, struct dcesrv_call_state);
 	if (!call) {
 		talloc_free(dce_conn->partial_input.data);
 		return NT_STATUS_NO_MEMORY;
 	}
 	call->conn = dce_conn;
 	call->replies = NULL;
+	call->context = NULL;
 
 	blob = dce_conn->partial_input;
 	blob.length = dcerpc_get_frag_length(&blob);

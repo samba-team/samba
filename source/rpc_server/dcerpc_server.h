@@ -44,8 +44,7 @@ struct dcesrv_interface {
 	NTSTATUS (*bind)(struct dcesrv_call_state *, const struct dcesrv_interface *);
 
 	/* this function is called when the client disconnects the endpoint */
-	void (*unbind)(struct dcesrv_connection *, const struct dcesrv_interface *);
-
+	void (*unbind)(struct dcesrv_connection_context *, const struct dcesrv_interface *);
 
 	/* the ndr_pull function for the chosen interface.
 	 */
@@ -67,6 +66,7 @@ struct dcesrv_interface {
 struct dcesrv_call_state {
 	struct dcesrv_call_state *next, *prev;
 	struct dcesrv_connection *conn;
+	struct dcesrv_connection_context *context;
 	struct dcerpc_packet pkt;
 
 	DATA_BLOB input;
@@ -85,9 +85,10 @@ struct dcesrv_call_state {
 /* a dcerpc handle in internal format */
 struct dcesrv_handle {
 	struct dcesrv_handle *next, *prev;
+	struct dcesrv_connection_context *context;
 	struct policy_handle wire_handle;
 	void *data;
-	void (*destroy)(struct dcesrv_connection *, struct dcesrv_handle *);
+	void (*destroy)(struct dcesrv_connection_context *, struct dcesrv_handle *);
 };
 
 /* hold the authentication state information */
@@ -96,6 +97,24 @@ struct dcesrv_auth {
 	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
 	NTSTATUS (*session_key)(struct dcesrv_connection *, DATA_BLOB *session_key);
+};
+
+struct dcesrv_connection_context {
+	struct dcesrv_connection_context *next, *prev;
+	uint32_t context_id;
+
+	/* the connection this is on */
+	struct dcesrv_connection *conn;
+
+	/* the ndr function table for the chosen interface */
+	const struct dcesrv_interface *iface;
+
+	/* private data for the interface implementation */
+	void *private;
+
+	/* current rpc handles - this is really the wrong scope for
+	   them, but it will do for now */
+	struct dcesrv_handle *handles;
 };
 
 
@@ -107,21 +126,14 @@ struct dcesrv_connection {
 	/* the endpoint that was opened */
 	const struct dcesrv_endpoint *endpoint;
 
-	/* the ndr function table for the chosen interface */
-	const struct dcesrv_interface *iface;
+	/* a list of established context_ids */
+	struct dcesrv_connection_context *contexts;
 
 	/* the state of the current calls */
 	struct dcesrv_call_state *call_list;
 
 	/* the maximum size the client wants to receive */
 	uint32_t cli_max_recv_frag;
-
-	/* private data for the interface implementation */
-	void *private;
-
-	/* current rpc handles - this is really the wrong scope for
-	   them, but it will do for now */
-	struct dcesrv_handle *handles;
 
 	DATA_BLOB partial_input;
 
