@@ -59,7 +59,7 @@ static void cleanup_tmp_files(void)
 		 * Don't try to delete . and ..
 		 */
 		if (strcmp(de->d_name, ".") != 0 &&
-		    strcmp(de->d_name, "..")) {
+		    strcmp(de->d_name, "..") != 0) {
 		    char *fname = talloc_asprintf(mem_ctx, "%s/%s", path, de->d_name);
 		    int ret = unlink(fname);
 		    if (ret == -1 &&
