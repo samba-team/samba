@@ -340,7 +340,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   char *start, *end;
   pstring dirpath;
   pstring orig_path;
-  int saved_errno;
   BOOL component_was_mangled = False;
   BOOL name_has_wildcard = False;
 #if 0
@@ -454,8 +453,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
     return(True);
   }
 
-  saved_errno = errno;
-
   DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n",
         name, dirpath, start));
 
@@ -465,7 +462,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    */
 
   if (case_sensitive && !is_mangled(name) && 
-      !lp_strip_dot() && !use_mangled_map && (saved_errno != ENOENT))
+      !lp_strip_dot() && !use_mangled_map)
     return(False);
 
   if(strchr(start,'?') || strchr(start,'*'))

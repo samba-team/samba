@@ -893,10 +893,10 @@ detected - re-writing to be decimal 21 instead.\n" ));
 			sid_to_string(sid_string, &global_sam_sid);
 			if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0) {
 				DEBUG(0,("unable to seek file file %s. Error was %s\n",
-                 sid_file, strerror(errno) ));
+					 sid_file, strerror(errno) ));
 				close(fd);
 				return False;
-	        }
+			}
 		} else {
 			close(fd);
 			return True;

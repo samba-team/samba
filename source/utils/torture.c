@@ -1146,6 +1146,62 @@ static void run_oplock(int dummy)
 }
 
 
+static void list_fn(file_info *finfo, const char *name)
+{
+	
+}
+
+/*
+  test directory listing speed
+ */
+static void run_dirtest(int dummy)
+{
+	int i;
+	static struct cli_state cli;
+	int fnum;
+	double t1;
+
+	printf("starting directory test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	cli_sockopt(&cli, sockops);
+
+	srandom(0);
+	for (i=0;i<numops;i++) {
+		fstring fname;
+		slprintf(fname, sizeof(fname), "%x", random());
+		fnum = cli_open(&cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+		if (fnum == -1) {
+			fprintf(stderr,"Failed to open %s\n", fname);
+			return;
+		}
+		cli_close(&cli, fnum);
+	}
+
+	t1 = end_timer();
+
+	printf("Matched %d\n", cli_list(&cli, "a*.*", 0, list_fn));
+	printf("Matched %d\n", cli_list(&cli, "b*.*", 0, list_fn));
+	printf("Matched %d\n", cli_list(&cli, "xyzabc", 0, list_fn));
+
+	printf("dirtest core %g seconds\n", end_timer() - t1);
+
+	srandom(0);
+	for (i=0;i<numops;i++) {
+		fstring fname;
+		slprintf(fname, sizeof(fname), "%x", random());
+		cli_unlink(&cli, fname);
+	}
+
+	close_connection(&cli);
+
+	printf("finished dirtest\n");
+}
+
+
 
 static double create_procs(void (*fn)(int))
 {
@@ -1245,6 +1301,7 @@ static struct {
 	{"NBW95",  run_nbw95, 0},
 	{"NBWNT",  run_nbwnt, 0},
 	{"OPLOCK",  run_oplock, 0},
+	{"DIR",  run_dirtest, 0},
 	{NULL, NULL, 0}};
 
 
