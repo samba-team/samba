@@ -95,8 +95,9 @@ static char *messaging_path(TALLOC_CTX *mem_ctx, servid_t server_id)
 */
 static void messaging_dispatch(struct messaging_state *msg, struct messaging_rec *rec)
 {
-	struct dispatch_fn *d;
-	for (d=msg->dispatch;d;d=d->next) {
+	struct dispatch_fn *d, *next;
+	for (d=msg->dispatch;d;d=next) {
+		next = d->next;
 		if (d->msg_type == rec->header.msg_type) {
 			d->fn(msg, d->private, d->msg_type, rec->header.from, &rec->data);
 		}

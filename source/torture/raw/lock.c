@@ -460,7 +460,7 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	printf("Testing lock cancel\n");
+	printf("Testing LOCKING_ANDX_CANCEL_LOCK\n");
 	io.generic.level = RAW_LOCK_LOCKX;
 	
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -484,6 +484,8 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	t = time(NULL);
+
+	printf("testing cancel by CANCEL_LOCK\n");
 
 	/* setup a timed lock */
 	io.lockx.in.timeout = 10000;
@@ -525,6 +527,132 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 
+	printf("testing cancel by unlock\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.timeout = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	io.lockx.in.timeout = 5000;
+	req = smb_raw_lock_send(cli->tree, &io);
+	if (req == NULL) {
+		printf("Failed to setup timed lock (%s)\n", __location__);
+		ret = False;
+		goto done;
+	}
+
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smbcli_request_simple_recv(req);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (time(NULL) > t+2) {
+		printf("lock cancel by unlock was not immediate (%s)\n", __location__);
+		ret = False;
+		goto done;
+	}
+
+
+	printf("testing cancel by close\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.timeout = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	io.lockx.in.timeout = 10000;
+	req = smb_raw_lock_send(cli->tree, &io);
+	if (req == NULL) {
+		printf("Failed to setup timed lock (%s)\n", __location__);
+		ret = False;
+		goto done;
+	}
+
+	smbcli_close(cli->tree, fnum);
+
+	status = smbcli_request_simple_recv(req);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	if (time(NULL) > t+2) {
+		printf("lock cancel by unlock was not immediate (%s)\n", __location__);
+		ret = False;
+		goto done;
+	}
+	
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+
+/*
+  test LOCKING_ANDX_CHANGE_LOCKTYPE
+*/
+static BOOL test_changetype(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_lock io;
+	struct smb_lock_entry lock[2];
+	NTSTATUS status;
+	BOOL ret = True;
+	int fnum;
+	char c = 0;
+	const char *fname = BASEDIR "\\test.txt";
+
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+		return False;
+	}
+
+	printf("Testing LOCKING_ANDX_CHANGE_LOCKTYPE\n");
+	io.generic.level = RAW_LOCK_LOCKX;
+	
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+		ret = False;
+		goto done;
+	}
+
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.fnum = fnum;
+	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].pid = cli->session->pid;
+	lock[0].offset = 100;
+	lock[0].count = 10;
+	io.lockx.in.locks = &lock[0];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (smbcli_write(cli->tree, fnum, 0, &c, 100, 1) == 1) {
+		printf("allowed write on read locked region (%s)\n", __location__);
+		ret = False;
+		goto done;
+	}
+
+	/* windows server don't seem to support this */
+	io.lockx.in.mode = LOCKING_ANDX_CHANGE_LOCKTYPE;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+
+	if (smbcli_write(cli->tree, fnum, 0, &c, 100, 1) == 1) {
+		printf("allowed write after lock change (%s)\n", __location__);
+		ret = False;
+		goto done;
+	}
+
 done:
 	smbcli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
@@ -552,6 +680,7 @@ BOOL torture_raw_lock(int dummy)
 	ret &= test_lock(cli, mem_ctx);
 	ret &= test_pidhigh(cli, mem_ctx);
 	ret &= test_async(cli, mem_ctx);
+	ret &= test_changetype(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
