@@ -109,7 +109,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* rpc variables */
 
 	POLICY_HND lsa_pol, sam_pol, domain_pol, user_pol;
-	DOM_SID domain_sid;
+	DOM_SID *domain_sid;
 	uint32 user_rid;
 
 	/* Password stuff */
@@ -127,7 +127,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	NTSTATUS result;
 	int retval = 1;
-	fstring domain;
+	char *domain;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
 	char *acct_name;
@@ -178,7 +178,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		      "error opening lsa policy handle");
 
 	CHECK_RPC_ERR(cli_lsa_query_info_policy(cli, mem_ctx, &lsa_pol,
-						5, domain, &domain_sid),
+						5, &domain, &domain_sid),
 		      "error querying info policy");
 
 	cli_lsa_close(cli, mem_ctx, &lsa_pol);
@@ -199,7 +199,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	
 	CHECK_RPC_ERR(cli_samr_open_domain(cli, mem_ctx, &sam_pol,
 					   SEC_RIGHTS_MAXIMUM_ALLOWED,
-					   &domain_sid, &domain_pol),
+					   domain_sid, &domain_pol),
 		      "could not open domain");
 
 	/* Create domain user */
@@ -339,7 +339,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	strupper_m(domain);
 
-	if (!secrets_store_domain_sid(domain, &domain_sid)) {
+	if (!secrets_store_domain_sid(domain, domain_sid)) {
 		DEBUG(0, ("error storing domain sid for %s\n", domain));
 		goto done;
 	}
