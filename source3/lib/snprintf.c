@@ -816,7 +816,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
  void vsyslog (int facility_priority, char *format, va_list arglist)
 {
 	char *msg = NULL;
-	vasprintf(&msg, format, argslist);
+	vasprintf(&msg, format, arglist);
         if (!msg)
                 return;
         syslog(facility_priority, "%s", msg);
