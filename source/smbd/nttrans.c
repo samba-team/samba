@@ -643,6 +643,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		/*
 		 * This filename is relative to a directory fid.
 		 */
+		pstring rel_fname;
 		files_struct *dir_fsp = file_fsp(inbuf,smb_ntcreate_RootDirectoryFid);
 		size_t dir_name_len;
 
@@ -695,11 +696,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			dir_name_len++;
 		}
 
-		srvstr_get_path(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, 0, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, rel_fname, smb_buf(inbuf), sizeof(rel_fname), 0, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
+		pstrcat(fname, rel_fname);
 	} else {
 		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1207,7 +1209,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		/*
 		 * This filename is relative to a directory fid.
 		 */
-
 		files_struct *dir_fsp = file_fsp(params,4);
 		size_t dir_name_len;
 
