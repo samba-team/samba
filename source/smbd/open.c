@@ -33,14 +33,14 @@ fd support routines - attempt to do a dos_open
 static int fd_attempt_open(struct connection_struct *conn, char *fname, 
 			   int flags, mode_t mode)
 {
-  int fd = conn->vfs_ops.open(fname,flags,mode);
+  int fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
 
   /* Fix for files ending in '.' */
   if((fd == -1) && (errno == ENOENT) &&
      (strchr(fname,'.')==NULL))
     {
       pstrcat(fname,".");
-      fd = conn->vfs_ops.open(fname,flags,mode);
+      fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
     }
 
 #if (defined(ENAMETOOLONG) && defined(HAVE_PATHCONF))
@@ -71,7 +71,7 @@ static int fd_attempt_open(struct connection_struct *conn, char *fname,
           char tmp = p[max_len];
 
           p[max_len] = '\0';
-          if ((fd = conn->vfs_ops.open(fname,flags,mode)) == -1)
+          if ((fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode)) == -1)
             p[max_len] = tmp;
         }
     }
@@ -494,7 +494,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     pstrcpy(dname,fname);
     p = strrchr(dname,'/');
     if (p) *p = 0;
-    if (conn->vfs_ops.disk_free(dname,False,&dum1,&dum2,&dum3) < 
+    if (conn->vfs_ops.disk_free(dos_to_unix(dname,False),False,&dum1,&dum2,&dum3) < 
 	(SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
       int err;
       if(fd_attempt_close(fsp, &err) == 0)
@@ -797,7 +797,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   int deny_mode = GET_DENY_MODE(share_mode);
   BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
   SMB_STRUCT_STAT sbuf;
-  BOOL file_existed = vfs_file_exist(conn, dos_to_unix(fname,False), &sbuf);
+  BOOL file_existed = vfs_file_exist(conn, fname, &sbuf);
   BOOL share_locked = False;
   BOOL fcbopen = False;
   int token = 0;
@@ -1192,7 +1192,8 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 				return -1;
 			}
 
-			if(conn->vfs_ops.mkdir(dos_to_unix(fname, False), unix_mode(conn,aDIR, fname)) < 0) {
+			if(conn->vfs_ops.mkdir(dos_to_unix(fname, False), 
+                                               unix_mode(conn,aDIR, fname)) < 0) {
 				DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
 				return -1;

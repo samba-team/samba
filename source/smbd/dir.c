@@ -670,7 +670,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
   Dir *dirp;
   char *n;
-  DIR *p = conn->vfs_ops.opendir(name);
+  DIR *p = conn->vfs_ops.opendir(dos_to_unix(name,False));
   int used=0;
 
   if (!p) return(NULL);
@@ -684,10 +684,14 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 
   while ((n = vfs_readdirname(conn, p)))
   {
-    int l = strlen(n)+1;
+    int l;
+    pstring zn;
+  
+    pstrcpy(zn, unix_to_dos(n,True));
+    l = strlen(zn)+1;
 
     /* If it's a vetoed file, pretend it doesn't even exist */
-    if (use_veto && conn && IS_VETO_PATH(conn, n)) continue;
+    if (use_veto && conn && IS_VETO_PATH(conn, zn)) continue;
 
     if (used + l > dirp->mallocsize) {
       int s = MAX(used+l,used+2000);
@@ -701,7 +705,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
       dirp->mallocsize = s;
       dirp->current = dirp->data;
     }
-    pstrcpy(dirp->data+used,n);
+    pstrcpy(dirp->data+used,zn);
     used += l;
     dirp->numentries++;
   }
