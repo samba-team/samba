@@ -400,6 +400,9 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 					    blob->length - 
 					    p->security_state.auth_info->credentials.length,
 					    &creds2);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		memcpy(blob->data + blob->length - creds2.length, creds2.data, creds2.length);
 		break;
 
@@ -412,6 +415,9 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 					    blob->length - 
 					    p->security_state.auth_info->credentials.length,
 					    &creds2);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		memcpy(blob->data + blob->length - creds2.length, creds2.data, creds2.length);
 		break;
 
