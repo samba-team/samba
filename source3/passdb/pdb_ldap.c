@@ -2157,10 +2157,10 @@ static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 {
 	pstring filter;
 
-	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%d))",
 		LDAP_OBJ_GROUPMAP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
-		(unsigned long)gid);
+		gid);
 
 	return ldapsam_getgroup(methods, filter, map);
 }
@@ -2513,10 +2513,10 @@ static int ldapsam_search_one_group_by_gid(struct ldapsam_privates *ldap_state,
 {
 	pstring filter;
 
-	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%lu))", 
+	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%d))", 
 		LDAP_OBJ_POSIXGROUP, LDAP_OBJ_IDMAP_ENTRY,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
-		(unsigned long)gid);
+		gid);
 
 	return ldapsam_search_one_group(ldap_state, filter, result);
 }
@@ -2566,7 +2566,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		ldap_msgfree(result);
 
 		pstrcpy( suffix, lp_ldap_idmap_suffix() );
-		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%u))",
+		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%d))",
 			     LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_GIDNUMBER,
 			     map->gid);
 		
