@@ -784,6 +784,31 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	return (path);
 }
 
+BOOL canonicalize_path(connection_struct *conn, pstring path)
+{
+#ifdef REALPATH_TAKES_NULL
+	char *resolved_name = SMB_VFS_REALPATH(conn,path,NULL);
+	if (!resolved_name) {
+		return False;
+	}
+	pstrcpy(path, resolved_name);
+	SAFE_FREE(resolved_name);
+	return True;
+#else
+#ifdef PATH_MAX
+        char resolved_name_buf[PATH_MAX+1];
+#else
+        pstring resolved_name_buf;
+#endif
+	char *resolved_name = SMB_VFS_REALPATH(conn,path,resolved_name_buf);
+	if (!resolved_name) {
+		return False;
+	}
+	pstrcpy(path, resolved_name);
+	return True;
+#endif /* REALPATH_TAKES_NULL */
+}
+
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
  it is below dir in the heirachy. This uses realpath.
@@ -879,7 +904,7 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 	}
 
 	if (strncmp(conn->connectpath, resolved_name, con_path_len) != 0) {
-		DEBUG(2, ("reduce_name: Bad access attemt: %s is a symlink outside the share path", fname));
+		DEBUG(2, ("reduce_name: Bad access attempt: %s is a symlink outside the share path", fname));
 		if (free_resolved_name)
 			SAFE_FREE(resolved_name);
 		return False;

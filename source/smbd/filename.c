@@ -135,7 +135,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 		if (SMB_VFS_STAT(conn,name,&st) == 0) {
 			*pst = st;
 		}
-		DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
+		DEBUG(5,("conversion finished \"\" -> %s\n",name));
 		return(True);
 	}
 
