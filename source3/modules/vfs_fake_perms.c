@@ -44,184 +44,41 @@
 static struct vfs_ops default_vfs_ops;   /* For passthrough operation */
 static struct smb_vfs_handle_struct *fake_perms_handle; /* use fake_perms_handle->data for storing per-instance private data */
 
-static int fake_perms_connect(struct connection_struct *conn, const char *service, const char *user)    
-{
-	return default_vfs_ops.connect(conn, service, user);
-}
-
-static void fake_perms_disconnect(struct connection_struct *conn)
-{
-	default_vfs_ops.disconnect(conn);
-}
-
-static SMB_BIG_UINT fake_perms_disk_free(struct connection_struct *conn, const char *path,
-	BOOL small_query, SMB_BIG_UINT *bsize,
-	SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
-{
-	return default_vfs_ops.disk_free(conn, path, small_query, bsize, 
-					 dfree, dsize);
-}
-
-static DIR *fake_perms_opendir(struct connection_struct *conn, const char *fname)
-{
-	return default_vfs_ops.opendir(conn, fname);
-}
-
-static struct dirent *fake_perms_readdir(struct connection_struct *conn, DIR *dirp)
-{
-	return default_vfs_ops.readdir(conn, dirp);
-}
-
-static int fake_perms_mkdir(struct connection_struct *conn, const char *path, mode_t mode)
-{
-	return default_vfs_ops.mkdir(conn, path, mode);
-}
-
-static int fake_perms_rmdir(struct connection_struct *conn, const char *path)
-{
-	return default_vfs_ops.rmdir(conn, path);
-}
-
-static int fake_perms_closedir(struct connection_struct *conn, DIR *dir)
-{
-	return default_vfs_ops.closedir(conn, dir);
-}
-
-static int fake_perms_open(struct connection_struct *conn, const char *fname, int flags, mode_t mode)
-{
-	return default_vfs_ops.open(conn, fname, flags, mode);
-}
-
-static int fake_perms_close(struct files_struct *fsp, int fd)
-{
-	return default_vfs_ops.close(fsp, fd);
-}
-
-static ssize_t fake_perms_read(struct files_struct *fsp, int fd, void *data, size_t n)
-{
-	return default_vfs_ops.read(fsp, fd, data, n);
-}
-
-static ssize_t fake_perms_write(struct files_struct *fsp, int fd, const void *data, size_t n)
-{
-	return default_vfs_ops.write(fsp, fd, data, n);
-}
-
-static SMB_OFF_T fake_perms_lseek(struct files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
-{
-	return default_vfs_ops.lseek(fsp, filedes, offset, whence);
-}
-
-static int fake_perms_rename(struct connection_struct *conn, const char *old, const char *new)
-{
-	return default_vfs_ops.rename(conn, old, new);
-}
-
-static int fake_perms_fsync(struct files_struct *fsp, int fd)
-{
-	return default_vfs_ops.fsync(fsp, fd);
-}
-
 static int fake_perms_stat(struct connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf)
 {
 	int ret = default_vfs_ops.stat(conn, fname, sbuf);
-	extern struct current_user current_user;
-	
-	if (S_ISDIR(sbuf->st_mode)) {
-		sbuf->st_mode = S_IFDIR | S_IRWXU;
-	} else {
-		sbuf->st_mode = S_IRWXU;
+	if (ret == 0) {
+		extern struct current_user current_user;
+		
+		if (S_ISDIR(sbuf->st_mode)) {
+			sbuf->st_mode = S_IFDIR | S_IRWXU;
+		} else {
+			sbuf->st_mode = S_IRWXU;
+		}
+		sbuf->st_uid = current_user.uid;
+		sbuf->st_gid = current_user.gid;
 	}
-	sbuf->st_uid = current_user.uid;
-	sbuf->st_gid = current_user.gid;
 	return ret;
 }
 
 static int fake_perms_fstat(struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
 {
-	return default_vfs_ops.fstat(fsp, fd, sbuf);
+	int ret = default_vfs_ops.fstat(fsp, fd, sbuf);
+	if (ret == 0) {
+		extern struct current_user current_user;
+		
+		if (S_ISDIR(sbuf->st_mode)) {
+			sbuf->st_mode = S_IFDIR | S_IRWXU;
+		} else {
+			sbuf->st_mode = S_IRWXU;
+		}
+		sbuf->st_uid = current_user.uid;
+		sbuf->st_gid = current_user.gid;
+	}
+	return ret;
 }
 
-static int fake_perms_lstat(struct connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
-{
-	return default_vfs_ops.lstat(conn, path, sbuf);
-}
-
-static int fake_perms_unlink(struct connection_struct *conn, const char *path)
-{
-	return default_vfs_ops.unlink(conn, path);
-}
-
-static int fake_perms_chmod(struct connection_struct *conn, const char *path, mode_t mode)
-{
-	return default_vfs_ops.chmod(conn, path, mode);
-}
-
-static int fake_perms_fchmod(struct files_struct *fsp, int fd, mode_t mode)
-{
-	return default_vfs_ops.fchmod(fsp, fd, mode);
-}
-
-static int fake_perms_chown(struct connection_struct *conn, const char *path, uid_t uid, gid_t gid)
-{
-	return default_vfs_ops.chown(conn, path, uid, gid);
-}
-
-static int fake_perms_fchown(struct files_struct *fsp, int fd, uid_t uid, gid_t gid)
-{
-	return default_vfs_ops.fchown(fsp, fd, uid, gid);
-}
-
-static int fake_perms_chdir(struct connection_struct *conn, const char *path)
-{
-	return default_vfs_ops.chdir(conn, path);
-}
-
-static char *fake_perms_getwd(struct connection_struct *conn, char *buf)
-{
-	return default_vfs_ops.getwd(conn, buf);
-}
-
-static int fake_perms_utime(struct connection_struct *conn, const char *path, struct utimbuf *times)
-{
-	return default_vfs_ops.utime(conn, path, times);
-}
-
-static int fake_perms_ftruncate(struct files_struct *fsp, int fd, SMB_OFF_T offset)
-{
-	return default_vfs_ops.ftruncate(fsp, fd, offset);
-}
-
-static BOOL fake_perms_lock(struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
-{
-	return default_vfs_ops.lock(fsp, fd, op, offset, count, type);
-}
-
-static BOOL fake_perms_symlink(struct connection_struct *conn, const char *oldpath, const char *newpath)
-{
-	return default_vfs_ops.symlink(conn, oldpath, newpath);
-}
-
-static BOOL fake_perms_readlink(struct connection_struct *conn, const char *path, char *buf, size_t bufsiz)
-{
-	return default_vfs_ops.readlink(conn, path, buf, bufsiz);
-}
-
-static int fake_perms_link(struct connection_struct *conn, const char *oldpath, const char *newpath)
-{
-	return default_vfs_ops.link(conn, oldpath, newpath);
-}
-
-static int fake_perms_mknod(struct connection_struct *conn, const char *path, mode_t mode, SMB_DEV_T dev)
-{
-	return default_vfs_ops.mknod(conn, path, mode, dev);
-}
-
-static char *fake_perms_realpath(struct connection_struct *conn, const char *path, char *resolved_path)
-{
-	return default_vfs_ops.realpath(conn, path, resolved_path);
-}
-
+#if 0
 static size_t fake_perms_fget_nt_acl(struct files_struct *fsp, int fd, struct security_descriptor_info **ppdesc)
 {
 	return default_vfs_ops.fget_nt_acl(fsp, fd, ppdesc);
@@ -361,56 +218,14 @@ static int fake_perms_sys_acl_free_qualifier(struct connection_struct *conn, voi
 {
 	return default_vfs_ops.sys_acl_free_qualifier(conn, qualifier, tagtype);
 }
-
+#endif
 
 /* VFS operations structure */
 
 static vfs_op_tuple fake_perms_ops[] = {
 
-	/* Disk operations */
-
-	{fake_perms_connect,			SMB_VFS_OP_CONNECT, 		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_disconnect,		SMB_VFS_OP_DISCONNECT,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_disk_free,		SMB_VFS_OP_DISK_FREE,		SMB_VFS_LAYER_TRANSPARENT},
-	
-	/* Directory operations */
-
-	{fake_perms_opendir,			SMB_VFS_OP_OPENDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_readdir,			SMB_VFS_OP_READDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_mkdir,			SMB_VFS_OP_MKDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_rmdir,			SMB_VFS_OP_RMDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_closedir,			SMB_VFS_OP_CLOSEDIR,		SMB_VFS_LAYER_TRANSPARENT},
-
-	/* File operations */
-
-	{fake_perms_open,			SMB_VFS_OP_OPEN,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_close,			SMB_VFS_OP_CLOSE,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_read,			SMB_VFS_OP_READ,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_write,			SMB_VFS_OP_WRITE,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_lseek,			SMB_VFS_OP_LSEEK,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_rename,			SMB_VFS_OP_RENAME,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_fsync,			SMB_VFS_OP_FSYNC,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_stat,			SMB_VFS_OP_STAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_fstat,			SMB_VFS_OP_FSTAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_lstat,			SMB_VFS_OP_LSTAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_unlink,			SMB_VFS_OP_UNLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_chmod,			SMB_VFS_OP_CHMOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_fchmod,			SMB_VFS_OP_FCHMOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_chown,			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_fchown,			SMB_VFS_OP_FCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_chdir,			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_getwd,			SMB_VFS_OP_GETWD,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_utime,			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_ftruncate,		SMB_VFS_OP_FTRUNCATE,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_lock,			SMB_VFS_OP_LOCK,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_symlink,			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_readlink,			SMB_VFS_OP_READLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_link,			SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_mknod,			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{fake_perms_realpath,			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_TRANSPARENT},
-
 	/* NT File ACL operations */
-
+#if 0
 	{fake_perms_fget_nt_acl,		SMB_VFS_OP_FGET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 	{fake_perms_get_nt_acl,		SMB_VFS_OP_GET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 	{fake_perms_fset_nt_acl,		SMB_VFS_OP_FSET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
@@ -443,7 +258,10 @@ static vfs_op_tuple fake_perms_ops[] = {
 	{fake_perms_sys_acl_free_text,	SMB_VFS_OP_SYS_ACL_FREE_TEXT,		SMB_VFS_LAYER_TRANSPARENT},
 	{fake_perms_sys_acl_free_acl,		SMB_VFS_OP_SYS_ACL_FREE_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 	{fake_perms_sys_acl_free_qualifier,	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,	SMB_VFS_LAYER_TRANSPARENT},
+#endif
 	
+	{fake_perms_stat,	SMB_VFS_OP_STAT,	SMB_VFS_LAYER_TRANSPARENT},
+	{fake_perms_fstat,	SMB_VFS_OP_FSTAT,	SMB_VFS_LAYER_TRANSPARENT},
 	{NULL,	SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
