@@ -2,7 +2,8 @@ Changes in release 0.6
 
 * The DES3 GSS-API mechanism has been changed to inter-operate with
   other GSSAPI implementations. See man page for gssapi(3) how to turn
-  on compatibility, this will be default in next major release.
+  on generation of correct MIC messages. Next major release of heimdal 
+  will generate correct by default.
 
 * More complete GSS-API support
 
