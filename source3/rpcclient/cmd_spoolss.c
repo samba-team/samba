@@ -298,11 +298,10 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
                                           TALLOC_CTX *mem_ctx,
                                           int argc, char **argv)
 {
-	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
+	WERROR                  result;
 	uint32			info_level = 1;
 	PRINTER_INFO_CTR	ctr;
-	int 			returned;
-	uint32			i = 0;
+	uint32			i = 0, num_printers, needed;
 
 	if (argc > 2) 
 	{
@@ -316,35 +315,38 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 
 	/* Enumerate printers  -- Should we enumerate types other 
 	   than PRINTER_ENUM_LOCAL?  Maybe accept as a parameter?  --jerry */
-	ZERO_STRUCT(ctr);
-	result = cli_spoolss_enum_printers(cli, mem_ctx, PRINTER_ENUM_LOCAL, 
-					   info_level, &returned, &ctr);
 
-	if (NT_STATUS_IS_OK(result)) 
-	{
-		if (!returned)
+	ZERO_STRUCT(ctr);
+
+	result = cli_spoolss_enum_printers(
+		cli, mem_ctx, 0, &needed, PRINTER_ENUM_LOCAL, 
+		info_level, &num_printers, &ctr);
+
+	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+		result = cli_spoolss_enum_printers(
+			cli, mem_ctx, needed, NULL, PRINTER_ENUM_LOCAL, 
+			info_level, &num_printers, &ctr);
+
+	if (W_ERROR_IS_OK(result)) {
+		if (!num_printers)
 			printf ("No Printers printers returned.\n");
 	
 		switch(info_level) {
 		case 0:
-			for (i=0; i<returned; i++) {
-				display_print_info_0(&(ctr.printers_0[i]));
-			}
+			for (i=0; i < num_printers; i++)
+				display_print_info_0(&ctr.printers_0[i]);
 			break;
 		case 1:
-			for (i=0; i<returned; i++) {
-				display_print_info_1(&(ctr.printers_1[i]));
-			}
+			for (i=0; i < num_printers; i++)
+				display_print_info_1(&ctr.printers_1[i]);
 			break;
 		case 2:
-			for (i=0; i<returned; i++) {
-				display_print_info_2(&(ctr.printers_2[i]));
-			}
+			for (i=0; i < num_printers; i++)
+				display_print_info_2(&ctr.printers_2[i]);
 			break;
 		case 3:
-			for (i=0; i<returned; i++) {
-				display_print_info_3(&(ctr.printers_3[i]));
-			}
+			for (i=0; i < num_printers; i++)
+				display_print_info_3(&ctr.printers_3[i]);
 			break;
 		default:
 			printf("unknown info level %d\n", info_level);
@@ -352,7 +354,7 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 		}
 	}
 
-	return result;
+	return werror_to_ntstatus(result);
 }
 
 /****************************************************************************
@@ -389,11 +391,11 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 /* Enumerate ports */
 
 static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli, 
-                                       TALLOC_CTX *mem_ctx,
-                                       int argc, char **argv)
+				       TALLOC_CTX *mem_ctx, int argc, 
+				       char **argv)
 {
-	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
-	uint32                  info_level = 1;
+	WERROR         		result;
+	uint32                  needed, info_level = 1;
 	PORT_INFO_CTR 		ctr;
 	int 			returned;
 	
@@ -402,23 +404,28 @@ static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 	
-	if (argc == 2) {
+	if (argc == 2)
 		info_level = atoi(argv[1]);
-	}
 
 	/* Enumerate ports */
+
 	ZERO_STRUCT(ctr);
 
-	result = cli_spoolss_enum_ports(cli, mem_ctx, info_level, &returned, &ctr);
+	result = cli_spoolss_enum_ports(cli, mem_ctx, 0, &needed, info_level, 
+					&returned, &ctr);
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+		result = cli_spoolss_enum_ports(cli, mem_ctx, needed, NULL,
+						info_level, &returned, &ctr);
+
+	if (W_ERROR_IS_OK(result)) {
 		int i;
 
 		for (i = 0; i < returned; i++) {
 			switch (info_level) {
 			case 1:
 				display_port_info_1(&ctr.port.info_1[i]);
-			break;
+				break;
 			case 2:
 				display_port_info_2(&ctr.port.info_2[i]);
 				break;
@@ -428,8 +435,8 @@ static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli,
 			}
 		}
 	}
-
-	return result;
+	
+	return werror_to_ntstatus(result);
 }
 
 /***********************************************************************
