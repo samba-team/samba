@@ -3,15 +3,15 @@ SHELL = /bin/sh
 srcdir = @srcdir@
 VPATH = @srcdir@
 
+XINCS = @X_CFLAGS@
+XLIBS = @X_LIBS@ @X_PRE_LIBS@ -lXt -lX11 @X_EXTRA_LIBS@
+
 CC = @CC@
 RANLIB = @RANLIB@
 DEFS = @DEFS@
-CFLAGS = @CFLAGS@
+CFLAGS = $(XINCS) @CFLAGS@
+LIBS = $(XLIBS) @LIBS@
 INSTALL = @INSTALL@
-LIBS = @LIBS@
-
-XINCS=-I/usr/X11R6     -I/usr/include/X11R5 -I/usr/local/include
-XLIBS=-L/usr/X11R6/lib -L/usr/lib/X11R5     -L/usr/local/lib -lXt -lXext -lX11
 
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
@@ -36,7 +36,7 @@ Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) $(XINCS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
 	$(MKDIRHIER) $(bindir)
@@ -68,6 +68,6 @@ dist: $(DISTFILES)
 
 
 xnlock: xnlock.o
-	$(CC) $(LDFLAGS) -o $@ xnlock.o $(XLIBS) ../../lib/kafs/libkafs.a ../../lib/krb/libkrb.a ../../lib/des/libdes.a $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ xnlock.o ../../lib/kafs/libkafs.a ../../lib/krb/libkrb.a ../../lib/des/libdes.a $(LIBS)
 
 $(OBJECTS): ../../config.h
