@@ -29,6 +29,7 @@ exec_prefix=\@exec_prefix\@
 VPATH=\@srcdir\@
 srcdir=\@srcdir\@
 builddir=\@builddir\@
+eparserdir=\@eparserdir\@
 
 BASEDIR= \@prefix\@
 BINDIR = \@bindir\@
@@ -36,6 +37,7 @@ SBINDIR = \@sbindir\@
 LIBDIR = \@libdir\@
 CONFIGDIR = \@configdir\@
 VARDIR = \@localstatedir\@
+
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -125,7 +127,10 @@ idl_full: build/pidl/idl.pm
 	CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" script/build_idl.sh FULL
 
 idl: build/pidl/idl.pm
-	\@CPP=\"\@CPP\@\" script/build_idl.sh
+	\@CPP=\"\@CPP\@\" script/build_idl.sh PARTIAL
+
+eparser_idl: build/pidl/idl.pm
+	CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" EPARSERPREFIX=\"\$(eparserdir)\" script/build_idl.sh EPARSER 
 
 build/pidl/idl.pm: build/pidl/idl.yp
 	-yapp -s build/pidl/idl.yp
