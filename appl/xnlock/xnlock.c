@@ -9,6 +9,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #include "protos.h"
+#define KERBEROS
 #endif
 
 #include <stdio.h>
@@ -24,6 +25,10 @@
 #ifdef KERBEROS
 #include <krb.h>
 #include <kafs.h>
+
+char inst[100];
+char name[100];
+char realm[REALM_SZ + 1];
 #endif
 
 char STRING[] = "****************";
@@ -383,7 +388,7 @@ move(XtPointer _p, XtIntervalId *_id)
 static void
 post_prompt_box(Window window)
 {
-    char s[32];
+    char s[64];
     int width = (Width / 3);
     int height = font_height(font) * 6;
     int box_x, box_y;
@@ -397,7 +402,14 @@ post_prompt_box(Window window)
     box_x = prompt_x - 105;
     box_y = prompt_y - 3 * font_height(font);
 
+#ifdef KERBEROS
+    if (inst[0] == 0)
+	sprintf (s, "User: %s@%s", name, realm);
+    else
+	sprintf (s, "User: %s.%s@%s", name, inst, realm);
+#else
     sprintf (s, "User: %s", pw->pw_name);
+#endif
     /* erase current guy -- text message may still exist */
     XSetForeground(dpy, gc, Black);
     XFillRectangle(dpy, window, gc, x, y, 64, 64);
@@ -518,33 +530,28 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	 * Try to verify as user.
 	 */
 #ifdef KERBEROS
-	{
-	  char realm[REALM_SZ];
-	  if (krb_get_lrealm(realm, 1) == KSUCCESS)
+	if (realm[0] != 0)
 	    {
-	      if (KSUCCESS ==
-		  krb_get_pw_in_tkt(pw->pw_name,
-				    "",
-				    realm,
-				    "krbtgt",
-				    realm,
-				    DEFAULT_TKT_LIFE,
-				    passwd))
-		{
-		  if (k_hasafs())
+		if (KSUCCESS == krb_get_pw_in_tkt(name,
+						  inst,
+						  realm,
+						  "krbtgt",
+						  realm,
+						  DEFAULT_TKT_LIFE,
+						  passwd))
 		    {
-		      int k_errno;
-
-		      if ((k_errno = k_afsklog(NULL)) != KSUCCESS)
-			fprintf(stderr,
-				"%s: Warning %s\n",
-				ProgName,
-				krb_err_txt[k_errno]);
+			int code;
+			if (k_hasafs())
+			    {
+				if ((code = k_afsklog(NULL, realm)) != KSUCCESS)
+				    fprintf(stderr,
+					    "%s: Warning %s\n",
+					    ProgName,
+					    krb_err_txt[code]);
+			    }
+			leave();
 		    }
-		  leave();
-		}
 	    }
-	}
 #endif /* KERBEROS */
 	if (!strcmp(crypt(passwd, pw->pw_passwd), pw->pw_passwd))
 	  leave();
@@ -763,6 +770,34 @@ main (int argc, char **argv)
     if (!(pw = getpwuid(getuid())))
 	printf("%s: Intruder alert!\n", ProgName), exit(1);
 
+#ifdef KERBEROS
+    {
+	int code;
+	char *file;
+	strcpy(name, pw->pw_name); /* Unix name is default name */
+	if ((file =  getenv("KRBTKFILE")) == 0)
+	    file = TKT_FILE;  
+	if (tf_init(file, R_TKT_FIL) == KSUCCESS)
+	    {
+		(void) tf_close();
+		if ((code = krb_get_tf_realm(file, realm)) == KSUCCESS &&
+		    (code = tf_init(file, R_TKT_FIL)) == KSUCCESS &&
+		    (code = tf_get_pname(name)) == KSUCCESS &&
+		    (code = tf_get_pinst(inst)) == KSUCCESS)
+		    {
+			(void) tf_close(); /* Alles gut */
+			dest_tkt(); /* Nuke old ticket file */
+		    }
+		else
+		    {
+			code = krb_get_lrealm(realm, 1);
+			if (code != KSUCCESS)
+			    realm[0] = 0; /* No kerberos today */
+		    }
+	    }
+    }
+#endif /* KERBEROS */
+    
     XtToolkitInitialize();
     app = XtCreateApplicationContext();
     dpy = XtOpenDisplay(app, NULL,
