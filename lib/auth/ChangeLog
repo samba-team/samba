@@ -10,6 +10,11 @@
 
 	* pam/Makefile.am: actually build the pam module
 
+2001-09-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* sia/Makefile.am: also don't compress krb5 library, at least
+	siacfg fails with compressed libraries
+
 2001-09-13  Assar Westerlund  <assar@sics.se>
 
 	* sia/sia.c: move krb5_error_code inside a ifdef KRB5
