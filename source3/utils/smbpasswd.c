@@ -193,16 +193,18 @@ static char *prompt_for_new_password(BOOL stdin_get)
 	p = get_pass("New SMB password:", stdin_get);
 
 	fstrcpy(new_passwd, p);
+	safe_free(p);
 
 	p = get_pass("Retype new SMB password:", stdin_get);
 
 	if (strcmp(p, new_passwd)) {
 		fprintf(stderr, "Mismatch - password unchanged.\n");
 		ZERO_ARRAY(new_passwd);
+		safe_free(p);
 		return NULL;
 	}
 
-	return xstrdup(p);
+	return p;
 }
 
 
@@ -249,7 +251,7 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 static int process_root(int argc, char *argv[])
 {
 	struct passwd  *pwd;
-	int ch;
+	int result = 0, ch;
 	BOOL joining_domain = False;
 	int local_flags = 0;
 	BOOL stdin_passwd_get = False;
@@ -417,7 +419,8 @@ static int process_root(int argc, char *argv[])
 	
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, local_flags)) {
 		fprintf(stderr,"Failed to modify password entry for user %s\n", user_name);
-		return 1;
+		result = 1;
+		goto done;
 	} 
 
 	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) {
@@ -429,7 +432,10 @@ static int process_root(int argc, char *argv[])
 			printf(" User has no password flag set.");
 		printf("\n");
 	}
-	return 0;
+
+ done:
+	safe_free(new_passwd);
+	return result;
 }
 
 
@@ -439,7 +445,7 @@ handle password changing for non-root
 static int process_nonroot(int argc, char *argv[])
 {
 	struct passwd  *pwd = NULL;
-	int ch;
+	int result = 0, ch;
 	BOOL stdin_passwd_get = False;
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
@@ -514,11 +520,18 @@ static int process_nonroot(int argc, char *argv[])
 
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, 0)) {
 		fprintf(stderr,"Failed to change password for %s\n", user_name);
-		return 1;
+		result = 1;
+		goto done;
 	}
 
 	printf("Password changed for user %s\n", user_name);
-	return 0;
+
+ done:
+	safe_free(old_passwd);
+	safe_free(new_passwd);
+	safe_free(user_name);
+
+	return result;
 }
 
 
