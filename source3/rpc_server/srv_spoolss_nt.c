@@ -285,7 +285,6 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 
 	if (*lp_deleteprinter_cmd()) {
 
-		pid_t local_pid = sys_getpid();
 		char *cmd = lp_deleteprinter_cmd();
 		char *path;
 		pstring tmp_file;
@@ -296,13 +295,13 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
 			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
 		else
-			path = tmpdir();
+			path = lp_lockdir();
 		
 		/* Printer->dev.handlename equals portname equals sharename */
 		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
 					Printer->dev.handlename);
 		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
-        slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+        slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%s", path, generate_random_str(16));
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
@@ -4133,7 +4132,6 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 ****************************************************************************/
 static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 {
-	pid_t local_pid = sys_getpid();
 	char *cmd = lp_addprinter_cmd();
 	char *path;
 	char **qlines;
@@ -4146,15 +4144,15 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
 		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
 	else
-		path = tmpdir();
+		path = lp_lockdir();
 
 	/* build driver path... only 9X architecture is needed for legacy reasons */
 	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
 			global_myname);
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
-	
-	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+
+	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%s", path, generate_random_str(16));
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
@@ -5418,7 +5416,6 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	int i=0;
 
 	if (*lp_enumports_cmd()) {
-		pid_t local_pid = sys_getpid();
 		char *cmd = lp_enumports_cmd();
 		char *path;
 		char **qlines;
@@ -5430,9 +5427,9 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
 			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
 		else
-			path = tmpdir();
+			path = lp_lockdir();
 
-		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%s", path, generate_random_str(16));
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 
 		unlink(tmp_file);
@@ -5516,7 +5513,6 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	int i=0;
 
 	if (*lp_enumports_cmd()) {
-		pid_t local_pid = sys_getpid();
 		char *cmd = lp_enumports_cmd();
 		char *path;
 		char **qlines;
@@ -5528,9 +5524,9 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
 			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
 		else
-			path = tmpdir();
+			path = lp_lockdir();
 
-		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%s", path, generate_random_str(16));
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 2);
 
 		unlink(tmp_file);

@@ -126,6 +126,7 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 /*The following definitions come from  lib/genrand.c  */
 
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
+char *generate_random_str(size_t len);
 
 /*The following definitions come from  lib/getsmbpass.c  */
 
@@ -1882,9 +1883,8 @@ BOOL pdb_generate_sam_sid(void);
 
 /*The following definitions come from  passdb/pampass.c  */
 
-BOOL PAM_session(BOOL instance, const connection_struct *conn, char *tty);
+BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty);
 BOOL pam_passcheck(char * user, char * password);
-BOOL pam_passcheck( char * user, char * password );
 
 /*The following definitions come from  passdb/pass_check.c  */
 
