@@ -251,6 +251,7 @@ char *lp_domain_hostsallow(void);
 char *lp_domain_hostsdeny(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
+BOOL lp_we_are_a_wins_server(void);
 BOOL lp_wins_proxy(void);
 BOOL lp_local_master(void);
 BOOL lp_domain_controller(void);
