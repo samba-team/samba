@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,8 @@
 #define _SYMBOL_H
 
 enum typetype { TInteger, TOctetString, TBitString, TSequence, TSequenceOf,
-		TGeneralizedTime, TGeneralString, TApplication, TType };
+		TGeneralizedTime, TGeneralString, TApplication, TType, 
+		TUInteger };
 
 typedef enum typetype Typetype;
 

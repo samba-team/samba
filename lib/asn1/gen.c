@@ -224,6 +224,10 @@ define_type (int level, char *name, Type *t, int typedefp)
 	space(level);
 	fprintf (headerfile, "int %s;\n", name);
 	break;
+    case TUInteger:
+	space(level);
+	fprintf (headerfile, "unsigned int %s;\n", name);
+	break;
     case TOctetString:
 	space(level);
 	fprintf (headerfile, "octet_string %s;\n", name);
