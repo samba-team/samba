@@ -1,3 +1,7 @@
+1999-11-12  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c (args): use arg_counter for `l'
+	
 1999-11-04  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ls.c (S_ISSOCK, S_ISLNK): fallback definitions for systems
