@@ -30,7 +30,7 @@ e swat /etc/inet/inetd.conf=packaging/Solaris/inetd.conf ? ? ?
 # Create the samba subtree. (Usually /usr/local/samba )
 #
 d none samba 0755 root other
-d none samba/var 0700 root other
+d none samba/var 0711 root other
 d none samba/bin 0755 root other
 d none samba/lib 0755 root other
 d none samba/docs 0755 root other
