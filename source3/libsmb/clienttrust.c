@@ -57,7 +57,8 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
 	make_nmb_name(&called , remote_machine, 0x20, scope);
 
 	if (cli_nt_setup_creds(srv_name, global_myname, trust_acct,
-	                       orig_trust_passwd_hash, sec_chan) != 0x0)
+	                       orig_trust_passwd_hash, sec_chan,
+	                       srv_name) != 0x0)
 	{
 		return False;
 	} 

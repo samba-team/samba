@@ -91,19 +91,6 @@ char* add_chars_to_array(uint32 *len, char ***array, const char *name)
 				
 }
 
-void free_con_array(uint32 num_entries, struct cli_connection **entries)
-{
-	void(*fn)(void*) = (void(*)(void*))&cli_connection_free;
-	free_void_array(num_entries, (void**)entries, *fn);
-}
-
-struct cli_connection* add_con_to_array(uint32 *len, struct cli_connection ***array, struct cli_connection *con)
-{
-	return (struct cli_connection*)add_item_to_array(len,
-	                     (void***)array, (void*)con);
-				
-}
-
 static uint32 *uint32_dup(const uint32* from)
 {
 	if (from != NULL)
