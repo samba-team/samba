@@ -129,6 +129,9 @@ typedef struct
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szValidChars;
+	char *szWorkgroup; /* Used by testparm. */
+	char *szNetbiosName; /* Used by testparm. */
+	char *szNetbiosScope; /* Used by testparm. */
 	char *szNetbiosAliases;
 	char *szDomainAdminGroup;
 	char *szDomainGuestGroup;
@@ -713,10 +716,10 @@ static struct parm_struct parm_table[] = {
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING },
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_DOS_STRING},
-	{"workgroup", P_USTRING, P_GLOBAL, NULL, handle_workgroup, NULL, FLAG_BASIC},
-	{"netbios name", P_UGSTRING, P_GLOBAL, NULL, handle_netbios_name, NULL, FLAG_BASIC },
+	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkgroup, handle_workgroup, NULL, FLAG_BASIC},
+	{"netbios name", P_UGSTRING, P_GLOBAL,  &Globals.szNetbiosName, handle_netbios_name, NULL, FLAG_BASIC },
 	{"netbios aliases", P_STRING, P_GLOBAL, &Globals.szNetbiosAliases, handle_netbios_aliases, NULL, 0},
-	{"netbios scope", P_UGSTRING, P_GLOBAL, NULL, handle_netbios_scope, NULL, 0},
+	{"netbios scope", P_UGSTRING, P_GLOBAL, &Globals.szNetbiosScope, handle_netbios_scope, NULL, 0},
 	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_DOS_STRING},
 	{"interfaces", P_STRING, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC},
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, 0},
@@ -1279,7 +1282,12 @@ static void init_globals(void)
 	 */
 	string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
 
+	set_global_myname_unix(myhostname());
+	string_set(&Globals.szNetbiosName,global_myname_unix());
+
 	set_global_myworkgroup_unix(WORKGROUP);
+	string_set(&Globals.szWorkgroup, lp_workgroup_unix());
+
 	string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
 	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
 	string_set(&Globals.szLockDir, LOCKDIR);
