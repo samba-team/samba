@@ -1,3 +1,7 @@
+Tue Mar 16 22:28:37 1999  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c: krb_verify_user_multiple -> krb_verify_user
+
 Thu Mar 11 14:54:59 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* ftp/Makefile.in: WFLAGS
