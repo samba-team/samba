@@ -911,77 +911,29 @@ static void srv_reply_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n,
 }
 
 /*******************************************************************
-net server get info
-********************************************************************/
-static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
-				prs_struct *rdata)
-{
-	SRV_R_NET_SRV_GET_INFO r_n;
-	uint32 status = 0x0;
-	SRV_INFO_CTR ctr;
-
-
-	DEBUG(5,("srv_net_srv_get_info: %d\n", __LINE__));
-
-	switch (q_n->switch_value)
-	{
-		case 102:
-		{
-			make_srv_info_102(&ctr.srv.sv102,
-			                  500, /* platform id */
-			                  global_myname,
-			                  lp_serverstring(),
-			                  lp_major_announce_version(),
-			                  lp_minor_announce_version(),
-			                  lp_default_server_announce(),
-			                  0xffffffff, /* users */
-			                  0xf, /* disc */
-			                  0, /* hidden */
-			                  240, /* announce */
-			                  3000, /* announce delta */
-			                  100000, /* licenses */
-			                  "c:\\"); /* user path */
-			break;
-		}
-		case 101:
-		{
-			make_srv_info_101(&ctr.srv.sv101,
-			                  500, /* platform id */
-			                  global_myname,
-			                  lp_major_announce_version(),
-			                  lp_minor_announce_version(),
-			                  lp_default_server_announce(),
-			                  lp_serverstring());
-			break;
-		}
-		default:
-		{
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-			break;
-		}
-	}
-
-	/* set up the net server get info structure */
-	make_srv_r_net_srv_get_info(&r_n, q_n->switch_value, &ctr, status);
-
-	/* store the response in the SMB stream */
-	srv_io_r_net_srv_get_info("", &r_n, rdata, 0);
-
-	DEBUG(5,("srv_net_srv_get_info: %d\n", __LINE__));
-}
-
-/*******************************************************************
 ********************************************************************/
 static void api_srv_net_srv_get_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SRV_GET_INFO q_n;
+	SRV_R_NET_SRV_GET_INFO r_n;
+	SRV_INFO_CTR ctr;
+	uint32 status;
+
+	ZERO_STRUCT(q_n);
+	ZERO_STRUCT(r_n);
 
 	/* grab the net server get info */
 	srv_io_q_net_srv_get_info("", &q_n, data, 0);
 
-	/* construct reply.  always indicate success */
-	srv_reply_net_srv_get_info(&q_n, rdata);
+	status = _srv_net_srv_get_info( &q_n.uni_srv_name, q_n.switch_value,
+					&ctr );
+
+        /* set up the net server get info structure */
+        make_srv_r_net_srv_get_info(&r_n, q_n.switch_value, &ctr, status);
+
+        /* store the response in the SMB stream */
+        srv_io_r_net_srv_get_info("", &r_n, rdata, 0);
 }
 
 

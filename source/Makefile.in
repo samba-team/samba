@@ -271,6 +271,7 @@ WKSSVCD_OBJ1 = wkssvcd/wkssvcd.o \
 		wkssvcd/srv_wkssvc_nt.o
 
 SRVSVCD_OBJ1 = srvsvcd/srvsvcd.o \
+		srvsvcd/srv_srvsvc_nt.o \
 		passdb/smbpassfile.o \
 		rpc_server/srv_srvsvc.o
 
