@@ -1125,11 +1125,45 @@ AC_ARG_WITH(nisplus-home,
 AC_MSG_CHECKING(whether to use SSL)
 AC_ARG_WITH(ssl,
 [  --with-ssl     Include SSL support
-  --without-ssl  Don't include SSL support (default)],
+  --without-ssl  Don't include SSL support (default)
+  --with-sslinc=DIR Where the SSL includes are (defaults to /usr/local/ssl)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_SSL)
+    withval="/usr/local/ssl"     # default
+
+    if test "${with_sslinc+set}" = set; then
+
+	withval="$with_sslinc"
+	case "$withval" in
+	yes|no)
+	  echo "configure: warning: --with-sslinc called without argument - will use default" 1>&w
+	  CFLAGS="-I/usr/local/ssl/include $CFLAGS"
+	  LIBS="-lssl -lcrypto $LIBS"
+	  LDFLAGS="=L/usr/local/ssl/lib $LDFLAGS"
+	;;
+        * )
+          CFLAGS="-I${withval}/include $CFLAGS"
+	  LIBS="-lssl -l crypto $LIBS"
+  	  LDFLAGS="-L${withval}/lib $LDFLAGS"
+	;;
+	esac
+
+    else
+
+	CFLAGS="-I/usr/local/ssl/include $CFLAGS"   
+	LIBS="-lssl -lcrypto $LIBS"
+	LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
+
+    fi
+
+    if test ! -d ${withval}; then
+      { echo "configure: error: called with --with-ssl, but ssl base directory ${withval} does not exist or is not a directory. Aborting config" 1>&2; exit 1 }
+    fi 
+
+    CFLAGS="-DHAVE_CRYPT_DECL $CFLAGS"  # Damn, SSLeay defines its own
+
     ;;
   *)
     AC_MSG_RESULT(no)
