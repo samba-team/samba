@@ -2249,7 +2249,9 @@ BOOL pdb_update_bad_password_count(SAM_ACCOUNT *sampass, BOOL *updated)
 	if (time(NULL) > (LastBadPassword + (time_t)resettime*60)){
 		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
-		if (updated) *updated = True;
+		if (updated) {
+			*updated = True;
+		}
 	}
 
 	return True;
@@ -2267,7 +2269,8 @@ BOOL pdb_update_autolock_flag(SAM_ACCOUNT *sampass, BOOL *updated)
 	if (!sampass) return False;
  
 	if (!(pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK)) {
-		DEBUG(9, ("Account not autolocked, no check needed\n"));
+		DEBUG(9, ("pdb_update_autolock_flag: Account %s not autolocked, no check needed\n",
+			pdb_get_username(sampass)));
 		return True;
 	}
 
@@ -2278,20 +2281,30 @@ BOOL pdb_update_autolock_flag(SAM_ACCOUNT *sampass, BOOL *updated)
 
 	/* First, check if there is a duration to compare */
 	if ((duration == (uint32) -1)  || (duration == 0)) {
-		DEBUG(9, ("No reset duration, can't reset autolock\n"));
+		DEBUG(9, ("pdb_update_autolock_flag: No reset duration, can't reset autolock\n"));
 		return True;
 	}
 		      
 	LastBadPassword = pdb_get_bad_password_time(sampass);
-	DEBUG(7, ("LastBadPassword=%d, duration=%d, current time =%d.\n",
-		  (uint32)LastBadPassword, duration*60, (uint32)time(NULL)));
+	DEBUG(7, ("pdb_update_autolock_flag: Account %s, LastBadPassword=%d, duration=%d, current time =%d.\n",
+		  pdb_get_username(sampass), (uint32)LastBadPassword, duration*60, (uint32)time(NULL)));
+
+	if (LastBadPassword == (time_t)0) {
+		DEBUG(1,("pdb_update_autolock_flag: Account %s administratively locked out with no \
+bad password time. Leaving locked out.\n",
+			pdb_get_username(sampass) ));
+			return True;
+	}
+
 	if ((time(NULL) > (LastBadPassword + (time_t) duration * 60))) {
 		pdb_set_acct_ctrl(sampass,
 				  pdb_get_acct_ctrl(sampass) & ~ACB_AUTOLOCK,
 				  PDB_CHANGED);
 		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
-		if (updated) *updated = True;
+		if (updated) {
+			*updated = True;
+		}
 	}
 	
 	return True;
