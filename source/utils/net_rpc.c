@@ -2534,7 +2534,7 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 		goto done;
 
 	/* connect local PI_SRVSVC */
-        nt_status = connect_local_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
+        nt_status = connect_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 
@@ -2802,7 +2802,9 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 	BOOL got_src_share = False;
 	BOOL got_dst_share = False;
 	pstring mask;
-	extern struct in_addr loopback_ip;
+	char *dst = NULL;
+
+	dst = strdup(opt_destination?opt_destination:"127.0.0.1");
 
 	init_enum_hnd(&hnd, 0);
 
@@ -2872,8 +2874,8 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 
 
 	        /* open share destination */
-		nt_status = connect_to_service(&cli_share_dst, &loopback_ip, 
-					       "127.0.0.1", netname, "A:");
+		nt_status = connect_to_service(&cli_share_dst, NULL, 
+					       dst, netname, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;
 
