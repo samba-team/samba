@@ -141,6 +141,36 @@ static BOOL api_srv_net_sess_enum(pipes_struct *p)
  RPC to enumerate shares.
 ********************************************************************/
 
+static BOOL api_srv_net_share_enum_all(pipes_struct *p)
+{
+	SRV_Q_NET_SHARE_ENUM q_u;
+	SRV_R_NET_SHARE_ENUM r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* Unmarshall the net server get enum. */
+	if(!srv_io_q_net_share_enum("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_share_enum_all: Failed to unmarshall SRV_Q_NET_SHARE_ENUM.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_share_enum_all(p, &q_u, &r_u);
+
+	if (!srv_io_r_net_share_enum("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_share_enum_all: Failed to marshall SRV_R_NET_SHARE_ENUM.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ RPC to enumerate shares.
+********************************************************************/
+
 static BOOL api_srv_net_share_enum(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_ENUM q_u;
@@ -262,6 +292,7 @@ struct api_struct api_srv_cmds[] =
 {
 	{ "SRV_NETCONNENUM"       , SRV_NETCONNENUM       , api_srv_net_conn_enum    },
 	{ "SRV_NETSESSENUM"       , SRV_NETSESSENUM       , api_srv_net_sess_enum    },
+	{ "SRV_NETSHAREENUM_ALL"  , SRV_NETSHAREENUM_ALL  , api_srv_net_share_enum_all   },
 	{ "SRV_NETSHAREENUM"      , SRV_NETSHAREENUM      , api_srv_net_share_enum   },
 	{ "SRV_NET_SHARE_GET_INFO", SRV_NET_SHARE_GET_INFO, api_srv_net_share_get_info },
 	{ "SRV_NET_SHARE_SET_INFO", SRV_NET_SHARE_SET_INFO, api_srv_net_share_set_info },

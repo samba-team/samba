@@ -29,12 +29,13 @@
 #define SRV_NETCONNENUM        0x08
 #define SRV_NETFILEENUM        0x09
 #define SRV_NETSESSENUM        0x0c
-#define SRV_NETSHAREENUM       0x0f
+#define SRV_NETSHAREENUM_ALL   0x0f
 #define SRV_NET_SHARE_GET_INFO 0x10
 #define SRV_NET_SHARE_SET_INFO 0x11
 #define SRV_NET_SRV_GET_INFO   0x15
 #define SRV_NET_SRV_SET_INFO   0x16
 #define SRV_NET_REMOTE_TOD     0x1c
+#define SRV_NETSHAREENUM       0x24
 
 /* SESS_INFO_0 (pointers to level 0 session info strings) */
 typedef struct ptr_sess_info0
