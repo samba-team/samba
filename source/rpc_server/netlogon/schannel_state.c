@@ -33,12 +33,13 @@ static struct ldb_wrap *schannel_db_connect(TALLOC_CTX *mem_ctx)
 	char *path;
 	struct ldb_wrap *ldb;
 
-	path = lock_path(mem_ctx, "schannel.ldb");
+	path = smbd_tmp_path(mem_ctx, "schannel.ldb");
 	if (!path) {
 		return NULL;
 	}
 	
 	ldb = ldb_wrap_connect(mem_ctx, path, 0, NULL);
+	talloc_free(path);
 	if (!ldb) {
 		return NULL;
 	}

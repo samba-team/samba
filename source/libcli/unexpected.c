@@ -44,15 +44,13 @@ void unexpected_packet(struct packet_struct *p)
 	struct unexpected_key key;
 	char buf[1024];
 	int len=0;
-	TALLOC_CTX *mem_ctx;
 
 	if (!tdbd) {
-		mem_ctx = talloc_init("receive_unexpected");
-		if (!mem_ctx) return;
-		tdbd = tdb_wrap_open(NULL, lock_path(mem_ctx, "unexpected.tdb"), 0, 
+		char *path = smbd_tmp_path(NULL, "unexpected.tdb");
+		tdbd = tdb_wrap_open(NULL, path, 0, 
 				     TDB_DEFAULT,
 				     O_RDWR | O_CREAT, 0644);
-		talloc_destroy(mem_ctx);
+		talloc_free(path);
 		if (!tdbd) {
 			return;
 		}
@@ -150,13 +148,12 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 					 const char *mailslot_name)
 {
 	struct tdb_wrap *tdb2;
-	TALLOC_CTX *mem_ctx;
+	char *path;
 
-	mem_ctx = talloc_init("receive_unexpected");
-	if (!mem_ctx) return NULL;
-	tdb2 = tdb_wrap_open(mem_ctx, lock_path(mem_ctx, "unexpected.tdb"), 0, 0, O_RDONLY, 0);
+	path = smbd_tmp_path(NULL, "unexpected.tdb");
+	tdb2 = tdb_wrap_open(NULL, path, 0, 0, O_RDONLY, 0);
+	talloc_free(path);
 	if (!tdb2) {
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
@@ -167,7 +164,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 
 	tdb_traverse(tdb2->tdb, traverse_match, NULL);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(tdb2);
 
 	return matched_packet;
 }

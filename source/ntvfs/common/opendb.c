@@ -86,7 +86,7 @@ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid,
 		return NULL;
 	}
 
-	path = lock_path(odb, "openfiles.tdb");
+	path = smbd_tmp_path(odb, "openfiles.tdb");
 	odb->w = tdb_wrap_open(odb, path, 0,  
 			       TDB_DEFAULT,
 			       O_RDWR|O_CREAT, 0600);

@@ -85,7 +85,7 @@ static char *messaging_path(TALLOC_CTX *mem_ctx, servid_t server_id)
 {
 	char *name = talloc_asprintf(mem_ctx, "messaging/msg.%u", (unsigned)server_id);
 	char *ret;
-	ret = lock_path(mem_ctx, name);
+	ret = smbd_tmp_path(mem_ctx, name);
 	talloc_free(name);
 	return ret;
 }
@@ -449,7 +449,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id
 	}
 
 	/* create the messaging directory if needed */
-	msg->path = lock_path(msg, "messaging");
+	msg->path = smbd_tmp_path(msg, "messaging");
 	mkdir(msg->path, 0700);
 	talloc_free(msg->path);
 

@@ -702,7 +702,6 @@ char *name_to_fqdn(TALLOC_CTX *mem_ctx, const char *name)
 /*****************************************************************
  A useful function for returning a path in the Samba lock directory.
 *****************************************************************/  
-
 char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname, *dname;
@@ -733,6 +732,30 @@ char *lib_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname;
 	fname = talloc_asprintf(mem_ctx, "%s/%s", dyn_LIBDIR, name);
+	return fname;
+}
+
+/*
+  return a path in the smbd.tmp directory, where all temporary file
+  for smbd go. If NULL is passed for name then return the directory 
+  path itself
+*/
+char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
+{
+	char *fname, *dname;
+
+	dname = lock_path(mem_ctx, "smbd.tmp");
+	if (!directory_exist(dname,NULL)) {
+		mkdir(dname,0755);
+	}
+
+	if (name == NULL) {
+		return dname;
+	}
+
+	fname = talloc_asprintf(mem_ctx, "%s/%s", dname, name);
+	talloc_free(dname);
+
 	return fname;
 }
 
