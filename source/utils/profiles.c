@@ -391,6 +391,8 @@ typedef struct acl_struct {
 
 #define OFF(f) (0x1000 + (f) + 4) 
 
+void print_sid(DOM_SID *sid);
+
 /* Compare two SIDs for equality */
 int compare_sid(DOM_SID *s1, DOM_SID *s2)
 {
@@ -405,6 +407,45 @@ int compare_sid(DOM_SID *s1, DOM_SID *s2)
   return !bcmp((char *)&s1->id_auth, (char *)&s2->id_auth,
 		6 + sa1 * 4);
 
+}
+
+/*
+ * Quick and dirty to read a SID in S-1-5-21-x-y-z-rid format and 
+ * construct a DOM_SID
+ */
+int get_sid(DOM_SID *sid, char *sid_str)
+{
+  int i = 0, auth;
+  char *lstr; 
+
+  if (strncmp(sid_str, "S-1-5", 5)) {
+    fprintf(stderr, "Does not conform to S-1-5...: %s\n", sid_str);
+    return 0;
+  }
+
+  /* We only allow strings of form S-1-5... */
+
+  sid->sid_rev_num = 1;
+  sid->id_auth[5] = 5;
+
+  lstr = sid_str + 5;
+
+  while (1) {
+    if (!lstr || !lstr[0] || sscanf(lstr, "-%d", &auth) == 0) {
+      if (i < 4) {
+	fprintf(stderr, "Not of form -d-d...: %s, %u\n", lstr, i);
+	return 0;
+      }
+      sid->num_auths=i;
+      print_sid(sid);
+      return 1;
+    }
+
+    sid->sub_auths[i++] = auth;
+    lstr = strchr(lstr + 1, '-'); 
+  }
+
+  return 1;
 }
 
 /* 
@@ -449,12 +490,12 @@ void print_acl(ACL *acl, char *prefix)
   }
 } 
 
-void usage(void)
+void usage(voi)
 {
   fprintf(stderr, "usage: profiles [-c <OLD-SID> -n <NEW-SID>] <profilefile>\n");
   fprintf(stderr, "Version: %s\n", VERSION);
-  fprintf(stderr, "\n\t-c S-1-5-21-z-y-x-oldrid provides SID to change");
-  fprintf(stderr, "\n\t-n S-1-5-21-a-b-c-newrid provides SID to change to");
+  fprintf(stderr, "\n\t-c S-1-5-21-z-y-x-oldrid - provides SID to change");
+  fprintf(stderr, "\n\t-n S-1-5-21-a-b-c-newrid - provides SID to change to");
   fprintf(stderr, "\n\t\tBoth must be present if the other is.");
   fprintf(stderr, "\n\t\tIf neither present, just report the SIDs found\n");
 }
@@ -463,7 +504,10 @@ DOM_SID old_sid, new_sid;
 
 int main(int argc, char *argv[])
 {
-  int i, fd, aces, start = 0;
+  extern char *optarg;
+  extern int optind;
+  int opt;
+  int i, fd, aces, start = 0, change = 0, new = 0;
   int verbose = 0;
   int process_sids = 0;
   void *base;
@@ -486,16 +530,49 @@ int main(int argc, char *argv[])
    * Now, process the arguments
    */
 
-  fd = open(argv[1], O_RDWR, 0000);
+  while ((opt = getopt(argc, argv, "c:n:")) != EOF) {
+    switch (opt) {
+    case 'c':
+      change = 1;
+      if (!get_sid(&old_sid, optarg)) {
+	fprintf(stderr, "Argument to -c should be a SID in form of S-1-5-...\n");
+	usage();
+	exit(254);
+      }
+      break;
+
+    case 'n':
+      new = 1;
+      if (!get_sid(&new_sid, optarg)) {
+	fprintf(stderr, "Argument to -n should be a SID in form of S-1-5-...\n");
+	usage();
+	exit(253);
+      }
+
+      break;
+
+    default:
+      usage();
+      exit(255);
+    }
+  }
+
+  if ((!change & new) || (change & !new)) {
+    fprintf(stderr, "You must specify both -c and -n if one or the other is set!\n");
+    usage();
+    exit(252);
+  }
+
+  fd = open(argv[optind], O_RDWR, 0000);
 
   if (fd < 0) {
-    fprintf(stderr, "Could not open %s: %s\n", argv[1], 
+    fprintf(stderr, "Could not open %s: %s\n", argv[optind], 
 	strerror(errno));
     exit(2);
   }
 
   if (fstat(fd, &sbuf) < 0) {
-    fprintf(stderr, "Could not stat file %s, %s\n", argv[1],
+    fprintf(stderr, "Could not stat file %s, %s\n", argv[optind],
 	strerror(errno));
     exit(3);
   }
@@ -508,7 +585,7 @@ int main(int argc, char *argv[])
   base = mmap(&start, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
   if ((int)base == -1) {
-    fprintf(stderr, "Could not mmap file: %s, %s\n", argv[1],
+    fprintf(stderr, "Could not mmap file: %s, %s\n", argv[optind],
 	strerror(errno));
     exit(4);
   }
@@ -518,7 +595,7 @@ int main(int argc, char *argv[])
   if (verbose) fprintf(stdout, "Registry file size: %u\n", sbuf.st_size);
 
   if (regf_hdr->REGF_ID != REG_REGF_ID) {
-    fprintf(stderr, "Incorrect Registry file (doesn't have header ID): %s\n", argv[1]);
+    fprintf(stderr, "Incorrect Registry file (doesn't have header ID): %s\n", argv[optind]);
     exit(5);
   }
 
@@ -532,7 +609,7 @@ int main(int argc, char *argv[])
    */
 
   if (hbin_hdr->HBIN_ID != REG_HBIN_ID) {
-    fprintf(stderr, "Incorrect hbin hdr: %s\n", argv[1]);
+    fprintf(stderr, "Incorrect hbin hdr: %s\n", argv[optind]);
     exit(6);
   } 
 
@@ -542,7 +619,7 @@ int main(int argc, char *argv[])
   nk_hdr = (NK_HDR *)(base + 0x1000 + regf_hdr->first_key + 4);
 
   if (nk_hdr->NK_ID != REG_NK_ID) {
-    fprintf(stderr, "Incorrect NK Header: %s\n", argv[1]);
+    fprintf(stderr, "Incorrect NK Header: %s\n", argv[optind]);
     exit(7);
   }
 
