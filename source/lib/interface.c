@@ -234,8 +234,8 @@ BOOL interfaces_changed(void)
 
 	n = get_interfaces(ifaces, MAX_INTERFACES);
 
-	if (n != total_probed ||
-	    memcmp(ifaces, probed_ifaces, sizeof(ifaces[0])*n)) {
+	if ((n > 0 )&& (n != total_probed ||
+	    memcmp(ifaces, probed_ifaces, sizeof(ifaces[0])*n))) {
 		return True;
 	}
 	

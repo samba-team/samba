@@ -1806,6 +1806,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode);
 /*The following definitions come from  profile/profile.c  */
 
 void profile_message(int msg_type, pid_t src, void *buf, size_t len);
+void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL profile_setup(BOOL rdonly);
 
 /*The following definitions come from  rpc_client/cli_connect.c  */
@@ -3945,6 +3946,9 @@ void clean_fname(char *name);
 char *smbw_parse_path(const char *fname, char *server, char *share, char *path);
 int smbw_path(const char *path);
 int smbw_errno(struct cli_state *c);
+void get_envvar_auth_data(char *server, char *share, char **workgroup,
+			  char **username, char **password);
+void smbw_set_auth_data_fn(smbw_get_auth_data_fn fn);
 struct smbw_server *smbw_server(char *server, char *share);
 struct smbw_file *smbw_file(int fd);
 int smbw_open(const char *fname, int flags, mode_t mode);

@@ -334,6 +334,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
+	if (crec.cnum == -1) return 0;
 	message_send_pid(crec.pid, msg_all.msg_type, msg_all.buf, msg_all.len);
 	return 0;
 }

@@ -54,20 +54,39 @@ void profile_message(int msg_type, pid_t src, void *buf, size_t len)
 	case 0:		/* turn off profiling */
 		do_profile_flag = False;
 		do_profile_times = False;
+		DEBUG(1,("INFO: Profiling turned OFF from pid %d\n", (int)src));
 		break;
 	case 1:		/* turn on counter profiling only */
 		do_profile_flag = True;
 		do_profile_times = False;
+		DEBUG(1,("INFO: Profiling counts turned ON from pid %d\n", (int)src));
 		break;
 	case 2:		/* turn on complete profiling */
 		do_profile_flag = True;
 		do_profile_times = True;
+		DEBUG(1,("INFO: Full profiling turned ON from pid %d\n", (int)src));
 		break;
 	case 3:		/* reset profile values */
 		memset((char *)profile_p, 0, sizeof(*profile_p));
+		DEBUG(1,("INFO: Profiling values cleared from pid %d\n", (int)src));
 		break;
 	}
-	DEBUG(1,("Profile level set to %d from pid %d\n", level, (int)src));
+}
+
+/****************************************************************************
+receive a request profile level message
+****************************************************************************/
+void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
+{
+        int level;
+
+#ifdef WITH_PROFILE
+	level = 1 + (do_profile_flag?2:0) + (do_profile_times?4:0);
+#else
+	level = 0;
+#endif
+	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %d\n",src));
+	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int));
 }
 
 /*******************************************************************
@@ -137,6 +156,7 @@ BOOL profile_setup(BOOL rdonly)
 
 	profile_p = &profile_h->stats;
 	message_register(MSG_PROFILE, profile_message);
+	message_register(MSG_REQ_PROFILELEVEL, reqprofile_message);
 	return True;
 }
 

@@ -140,7 +140,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 		switch ((c = *fmt++)) {
 		case 'w':
 			len = 2;
-			w = va_arg(ap, uint16);
+			w = (uint16)va_arg(ap, int);
 			if (bufsize >= len) {
 				SSVAL(buf, 0, w);
 			}

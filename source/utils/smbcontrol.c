@@ -29,6 +29,7 @@ static struct {
 	{"force-election", MSG_FORCE_ELECTION},
 	{"ping", MSG_PING},
 	{"profile", MSG_PROFILE},
+	{"profilelevel", MSG_REQ_PROFILELEVEL},
 	{"debuglevel", MSG_REQ_DEBUGLEVEL},
 	{"printer-notify", MSG_PRINTER_NOTIFY},
 	{NULL, -1}
@@ -59,6 +60,7 @@ static int pong_count;
 static BOOL got_level;
 static BOOL pong_registered = False;
 static BOOL debuglevel_registered = False;
+static BOOL profilelevel_registered = False;
 
 
 /****************************************************************************
@@ -79,6 +81,34 @@ void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
         memcpy(&level, buf, sizeof(int));
 
 	printf("Current debug level of PID %d is %d\n",src,level);
+	got_level = True;
+}
+
+/****************************************************************************
+Prints out the current Profile level returned by MSG_PROFILELEVEL
+****************************************************************************/
+void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
+{
+        int level;
+	char *s;
+        memcpy(&level, buf, sizeof(int));
+
+	if (level) {
+	    switch (level) {
+	    case 1:
+		s = "off";
+		break;
+	    case 3:
+		s = "count only";
+		break;
+	    case 7:
+		s = "count and time";
+		break;
+	    }
+	    printf("Profiling %s on PID %d\n",s,src);
+	} else {
+	    printf("Profiling not available on PID %d\n",src);
+	}
 	got_level = True;
 }
 
@@ -174,6 +204,25 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 			return(False);
 		}
 		send_message(dest, MSG_FORCE_ELECTION, NULL, 0);
+		break;
+
+	case MSG_REQ_PROFILELEVEL:
+		if (!profilelevel_registered) {
+		    message_register(MSG_PROFILELEVEL, profilelevel_function);
+		    profilelevel_registered = True;
+		}
+		got_level = False;
+		retval = send_message(dest, MSG_REQ_PROFILELEVEL, NULL, 0);
+		if (retval) {
+			timeout_start = time(NULL);
+			while (!got_level) {
+				message_dispatch();
+				if ((time(NULL) - timeout_start) > MAX_WAIT) {
+					fprintf(stderr,"profilelevel timeout\n");
+					break;
+				}
+			}
+		}
 		break;
 
 	case MSG_REQ_DEBUGLEVEL:
