@@ -1,5 +1,103 @@
-              WHATS NEW IN Samba 2.2.0
-              ========================
+              WHATS NEW IN Samba 2.2.1:  8th July 2001
+              ========================================
+
+SECURITY FIX
+============
+
+This is a security bugfix release for Samba 2.2.0. This release provides the
+following two changes *ONLY* from the 2.2.0 release.
+
+1). Fix for the security hole discovered by Michal Zalewski (lcamtuf@bos.bindview.com)
+    and described in the security advisory below.
+2). Fix for the hosts allow/hosts deny parameters not being honoured.
+
+No other changes are being made for this release to ensure a security fix only.
+For new functionality (including these security fixes) download Samba 2.2.1
+when it is available.
+
+The security advisory follows :
+
+
+                IMPORTANT: Security bugfix for Samba
+                ------------------------------------
+
+June 23rd 2001
+
+
+Summary
+-------
+
+A serious security hole has been discovered in all versions of Samba
+that allows an attacker to gain root access on the target machine for
+certain types of common Samba configuration.
+
+The immediate fix is to edit your smb.conf configuration file and
+remove all occurances of the macro "%m". Replacing occurances of %m
+with %I is probably the best solution for most sites.
+
+Details
+-------
+
+A remote attacker can use a netbios name containing unix path
+characters which will then be substituted into the %m macro wherever
+it occurs in smb.conf. This can be used to cause Samba to create a log
+file on top of an important system file, which in turn can be used to
+compromise security on the server.
+
+The most commonly used configuration option that can be vulnerable to
+this attack is the "log file" option. The default value for this
+option is VARDIR/log.smbd. If the default is used then Samba is not
+vulnerable to this attack.
+
+The security hole occurs when a log file option like the following is
+used:
+
+  log file = /var/log/samba/%m.log
+
+In that case the attacker can use a locally created symbolic link to
+overwrite any file on the system. This requires local access to the
+server.
+
+If your Samba configuration has something like the following:
+
+  log file = /var/log/samba/%m
+
+Then the attacker could successfully compromise your server remotely
+as no symbolic link is required. This type of configuration is very
+rare.
+
+The most commonly used log file configuration containing %m is the
+distributed in the sample configuration file that comes with Samba:
+
+  log file = /var/log/samba/log.%m
+
+in that case your machine is not vulnerable to this attack unless you
+happen to have a subdirectory in /var/log/samba/ which starts with the
+prefix "log."
+
+Credit
+------
+
+Thanks to Michal Zalewski (lcamtuf@bos.bindview.com) for finding this
+vulnerability.
+
+
+New Release
+-----------
+
+While we recommend that vulnerable sites immediately change their
+smb.conf configuration file to prevent the attack we will also be
+making new releases of Samba within the next 24 hours to properly fix
+the problem. Please see http://www.samba.org/ for the new releases.
+
+Please report any attacks to the appropriate authority.
+
+        The Samba Team
+        security@samba.org
+
+---------------------------------------------------------------------------
+
+The release notes for 2.2.0 follow :
 
 This is the official Samba 2.2.0 release. This version of Samba provides
 the following new features and enhancements.
