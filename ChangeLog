@@ -1,3 +1,19 @@
+Wed Jul  9 01:15:38 1997  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.c: new flag `-f'
+
+	* lib/asn1/k5.asn1: Made HostAddresses = SEQUENCE OF HostAddress
+
+	* acinclude.m4: Added AC_KRB_STRUCT_SOCKADDR_SA_LEN
+
+	* lib/krb5/krb5.h: krb5_addresses == HostAddresses.  Changed all
+ 	users.
+
+	* lib/krb5/get_addrs.c: figure out all local addresses, possibly
+ 	even IPv6!
+
+	* lib/krb5/checksum.c: table-driven checksum
+
 Mon Jul  7 11:15:51 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/roken/vsyslog.c: new file
