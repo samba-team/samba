@@ -411,7 +411,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli,
 	POLICY_HND user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_desired = 0x000f000f;
-
+	
 	DOM_SID sid;
 	uint32 count=0;
 	LUID_ATTR *set;

@@ -285,10 +285,13 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	SIVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv7,mode);
 
-	/*
-	 * THe following is still wrong ...
-	 */
 	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
+	/*
+	 * According to CIFS-TR-1p00, this following field should only
+	 * be set if CAP_LARGE_WRITEX is set. We should check this
+	 * locally. However, this check might already have been
+	 * done by our callers.
+	 */
 	SSVAL(cli->outbuf,smb_vwv9,((size>>16)&1));
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,

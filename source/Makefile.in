@@ -543,7 +543,7 @@ TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 # now the rules...
 ######################################################################
 all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-	$(TORTURE_PROGS) @EXTRA_ALL_TARGETS@
+	@EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -1014,7 +1014,7 @@ TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(VFS_MODULES) $(PDB_MODULES) .headers.stamp
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(VFS_MODULES) $(PDB_MODULES) $(TORTURE_PROGS) .headers.stamp
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're

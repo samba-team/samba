@@ -249,9 +249,9 @@ static int expect(int master, char *issue, char *expected)
 		nread = 0;
 		buffer[nread] = 0;
 
-		while ((len = read_with_timeout(master, buffer + nread, 1,
-						sizeof(buffer) - nread - 1,
-						timeout)) > 0) {
+		while ((len = read_socket_with_timeout(master, buffer + nread, 1,
+						       sizeof(buffer) - nread - 1,
+						       timeout)) > 0) {
 			nread += len;
 			buffer[nread] = 0;
 
@@ -862,6 +862,10 @@ static NTSTATUS check_oem_password(const char *user,
 	 */
 
 	new_pw_len = IVAL(lmdata, 512);
+
+	DEBUG(0, ("** new_pw_len = %d, new_passwd_size = %d\n",
+		  new_pw_len, new_passwd_size));
+
 	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1) {
 		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
 		pdb_free_sam(&sampass);
