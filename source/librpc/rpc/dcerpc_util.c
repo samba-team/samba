@@ -69,7 +69,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 		return NT_STATUS_OK;
 	}
 
-	status = dcerpc_pipe_open_tcp(&p, server, EPMAPPER_PORT);
+	status = dcerpc_pipe_open_tcp(&p, server, EPMAPPER_PORT, AF_UNSPEC );
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -542,7 +542,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 		DEBUG(1,("Mapped to DCERPC/TCP port %u\n", port));
 	}
 
-	status = dcerpc_pipe_open_tcp(p, binding->host, port);
+	status = dcerpc_pipe_open_tcp(p, binding->host, port, AF_UNSPEC);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to connect to %s:%d\n", binding->host, port));
                 return status;

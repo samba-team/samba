@@ -280,32 +280,56 @@ static const char *tcp_peer_name(struct dcerpc_pipe *p)
 */
 NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p, 
 			      const char *server,
-			      uint32_t port)
+			      uint32_t port, 
+				  int family)
 {
 	struct tcp_private *tcp;
-	int fd;
-	struct in_addr addr;
+	int fd, gai_error;
 	struct fd_event fde;
+	struct addrinfo hints, *res, *tmpres;
+	char portname[16];
 
 	if (port == 0) {
 		port = EPMAPPER_PORT;
 	}
 
-	addr.s_addr = interpret_addr(server);
-	if (addr.s_addr == 0) {
+	memset(&hints, 0, sizeof(struct addrinfo));
+
+	hints.ai_family = family;
+	hints.ai_socktype = SOCK_STREAM;
+
+	snprintf(portname, sizeof(portname)-1, "%d", port);
+	
+	gai_error = getaddrinfo(server, portname, &hints, &res);
+	if (gai_error < 0) 
+	{
+		DEBUG(0, ("Unable to connect to %s:%d : %s\n", server, port, gai_strerror(gai_error)));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	fd = open_socket_out(SOCK_STREAM, &addr, port, 30000);
+	tmpres = res;
+	
+	while (tmpres) {
+		fd = socket(tmpres->ai_family, tmpres->ai_socktype, tmpres->ai_protocol);
+
+		if(fd >= 0) {
+			if (connect(fd, tmpres->ai_addr, tmpres->ai_addrlen) == 0)	
+				break; 
+			fd = -1;
+		}
+
+		tmpres = tmpres->ai_next;
+	}
+
+	freeaddrinfo(res);
+	
 	if (fd == -1) {
 		return NT_STATUS_PORT_CONNECTION_REFUSED;
 	}
 
 	set_socket_options(fd, lp_socket_options());
 
-	set_blocking(fd, False);
-
-        if (!(*p = dcerpc_pipe_init())) {
+    if (!(*p = dcerpc_pipe_init())) {
                 return NT_STATUS_NO_MEMORY;
 	}
  
