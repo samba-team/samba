@@ -147,7 +147,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       if (!lp_domain_master())
       {  
          /* We're not Primary Domain Controller -- ignore this */
-         goto done;
+         return;
       }
 
       getdc = skip_string(machine,1);
