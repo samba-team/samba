@@ -22,9 +22,9 @@
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
 
-static VOLATILE sig_atomic_t signals_received;
+static SIG_ATOMIC_T signals_received;
 #define FD_PENDING_SIZE 100
-static VOLATILE sig_atomic_t fd_pending_array[FD_PENDING_SIZE];
+static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
 
 #ifndef F_SETLEASE
 #define F_SETLEASE	1024
@@ -53,7 +53,7 @@ static VOLATILE sig_atomic_t fd_pending_array[FD_PENDING_SIZE];
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
 	if (signals_received < FD_PENDING_SIZE - 1) {
-		fd_pending_array[signals_received] = (sig_atomic_t)info->si_fd;
+		fd_pending_array[signals_received] = (SIG_ATOMIC_T)info->si_fd;
 		signals_received++;
 	} /* Else signal is lost. */
 	sys_select_signal();
@@ -131,10 +131,10 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 	BlockSignals(True, RT_SIGNAL_LEASE);
 	fd = fd_pending_array[0];
 	fsp = file_find_fd(fd);
-	fd_pending_array[0] = (sig_atomic_t)-1;
+	fd_pending_array[0] = (SIG_ATOMIC_T)-1;
 	if (signals_received > 1)
-		memmove(&fd_pending_array[0], &fd_pending_array[1],
-			sizeof(sig_atomic_t)*(signals_received-1));
+		memmove((void *)&fd_pending_array[0], (void *)&fd_pending_array[1],
+			sizeof(SIG_ATOMIC_T)*(signals_received-1));
 	signals_received--;
 	/* now we can receive more signals */
 	BlockSignals(False, RT_SIGNAL_LEASE);

@@ -24,8 +24,8 @@
 #if HAVE_KERNEL_CHANGE_NOTIFY
 
 #define FD_PENDING_SIZE 20
-static VOLATILE sig_atomic_t fd_pending_array[FD_PENDING_SIZE];
-static VOLATILE sig_atomic_t signals_received;
+static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
+static SIG_ATOMIC_T signals_received;
 
 #ifndef DN_ACCESS
 #define DN_ACCESS       0x00000001      /* File accessed in directory */
@@ -71,7 +71,7 @@ struct change_data {
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
 	if (signals_received < FD_PENDING_SIZE - 1) {
-		fd_pending_array[signals_received] = (sig_atomic_t)info->si_fd;
+		fd_pending_array[signals_received] = (SIG_ATOMIC_T)info->si_fd;
 		signals_received++;
 	} /* Else signal is lost. */
 	sys_select_signal();
@@ -99,10 +99,10 @@ static BOOL kernel_check_notify(connection_struct *conn, uint16 vuid, char *path
 						path, i, (int)fd_pending_array[i], (int)signals_received ));
 
 			close((int)fd_pending_array[i]);
-			fd_pending_array[i] = (sig_atomic_t)-1;
+			fd_pending_array[i] = (SIG_ATOMIC_T)-1;
 			if (signals_received - i - 1) {
-				memmove(&fd_pending_array[i], &fd_pending_array[i+1],
-						sizeof(sig_atomic_t)*(signals_received-i-1));
+				memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
+						sizeof(SIG_ATOMIC_T)*(signals_received-i-1));
 			}
 			data->directory_handle = -1;
 			signals_received--;
@@ -128,10 +128,10 @@ static void kernel_remove_notify(void *datap)
 		for (i = 0; i < signals_received; i++) {
 			if (fd == (int)fd_pending_array[i]) {
 				close(fd);
-				fd_pending_array[i] = (sig_atomic_t)-1;
+				fd_pending_array[i] = (SIG_ATOMIC_T)-1;
 				if (signals_received - i - 1) {
-					memmove(&fd_pending_array[i], &fd_pending_array[i+1],
-							sizeof(sig_atomic_t)*(signals_received-i-1));
+					memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
+							sizeof(SIG_ATOMIC_T)*(signals_received-i-1));
 				}
 				data->directory_handle = -1;
 				signals_received--;
