@@ -51,16 +51,18 @@
 #define SAM_DELTA_GROUP_MEM    0x08 /* Group membership */
 #define SAM_DELTA_ALIAS_INFO   0x09 /* Local groups */
 #define SAM_DELTA_ALIAS_MEM    0x0C /* Local group membership */
-#define SAM_DELTA_DOM_INFO     0x0D /* Privilige stuff */
-#define SAM_DELTA_UNK0E_INFO   0x0e /* Privilige stuff */
-#define SAM_DELTA_PRIVS_INFO   0x10 /* Privilige stuff */
-#define SAM_DELTA_UNK12_INFO   0x12 /* Privilige stuff */
+#define SAM_DELTA_DOM_INFO     0x0D /* Privilege stuff */
+#define SAM_DELTA_UNK0E_INFO   0x0e /* Privilege stuff */
+#define SAM_DELTA_PRIVS_INFO   0x10 /* Privilege stuff */
+#define SAM_DELTA_UNK12_INFO   0x12 /* Privilege stuff */
 #define SAM_DELTA_SAM_STAMP    0x16 /* Some kind of journal record? */
 
 /* SAM database types */
 #define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
+#define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and g/* SAM database types */
+#define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
 #define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and groups */
-#define SAM_DATABASE_PRIVS     0x02 /* Priviliges? */
+#define SAM_DATABASE_PRIVS     0x02 /* Privileges */
 
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */
