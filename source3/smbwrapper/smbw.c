@@ -360,20 +360,26 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
+	make_nmb_name(&calling, global_myname, 0x0, "");
+	make_nmb_name(&called , server, 0x20, "");
+
+ again:
 	/* have to open a new connection */
 	if (!cli_initialise(&c) || !cli_connect(&c, server, NULL)) {
 		errno = ENOENT;
 		return NULL;
 	}
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
-	make_nmb_name(&called , server, 0x20, "");
-
 	if (!cli_session_request(&c, &calling, &called)) {
 		cli_shutdown(&c);
+		if (strcmp(called.name, "*SMBSERVER")) {
+			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
+			goto again;
+		}
 		errno = ENOENT;
 		return NULL;
 	}
+
 
 	if (!cli_negprot(&c)) {
 		cli_shutdown(&c);
