@@ -60,6 +60,7 @@ BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   char **rparam, uint32 *rparam_count,
                   char **rdata, uint32 *rdata_count);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
+BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(char *, uint32, char *));
 BOOL cli_session_setup(struct cli_state *cli, 
@@ -222,6 +223,44 @@ int reply_trans(char *inbuf,char *outbuf, int size, int bufsize);
 void interpret_coding_system(char *str);
 void initialize_multibyte_vectors( int client_codepage);
 
+/*The following definitions come from  lib/rpc/client/cli_login.c  */
+
+BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16]);
+BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd);
+BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
+                              uint32 smb_userid_low, char *password,
+                              NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
+BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
+                          uint32 smb_userid_low, char lm_chal[8], char lm_chal_resp[24],
+                          char nt_chal_resp[24],
+                          NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
+BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
+
+/*The following definitions come from  lib/rpc/client/cli_netlogon.c  */
+
+BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level);
+BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+                   uint32 neg_flags, DOM_CHAL *srv_chal);
+BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
+BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16]);
+BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+                       NET_USER_INFO_3 *user_info3);
+BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
+
+/*The following definitions come from  lib/rpc/client/cli_pipe.c  */
+
+uint32 get_rpc_call_id(void);
+BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, 
+                  prs_struct *param , prs_struct *data,
+                  prs_struct *rparam, prs_struct *rdata);
+BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
+                      prs_struct *data, prs_struct *rdata);
+BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint16 device_state);
+BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
+                   RPC_IFACE *abstract, RPC_IFACE *transfer, BOOL ntlmssp_auth);
+BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted);
+void nt_session_close(struct cli_state *cli);
+
 /*The following definitions come from  lib/rpc/parse/parse_lsa.c  */
 
 void make_lsa_trans_name(LSA_TRANS_NAME *trn, uint32 sid_name_use, char *name, uint32 idx);
@@ -347,9 +386,8 @@ void make_q_auth_2(NET_Q_AUTH_2 *q_a,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
 void net_io_q_auth_2(char *desc,  NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth);
 void net_io_r_auth_2(char *desc,  NET_R_AUTH_2 *r_a, prs_struct *ps, int depth);
-void make_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char sess_key[16],
-		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
-		DOM_CRED *cred, char nt_cypher[16]);
+void make_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name, 
+                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16]);
 void net_io_q_srv_pwset(char *desc,  NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth);
 void net_io_r_srv_pwset(char *desc,  NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth);
 void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
@@ -1707,7 +1745,7 @@ void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out);
 void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out);
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
-void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key);
+void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw);
 void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 
 /*The following definitions come from  smbencrypt.c  */

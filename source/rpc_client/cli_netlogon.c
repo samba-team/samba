@@ -34,10 +34,29 @@ extern pstring global_myname;
 extern fstring global_myworkgroup;
 
 /****************************************************************************
+Generate the next creds to use.
+****************************************************************************/
+
+static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
+{
+  /*
+   * Create the new client credentials.
+   */
+
+  cli->clnt_cred.timestamp.time = time(NULL);
+
+  memcpy(new_clnt_cred, &cli->clnt_cred, sizeof(*new_clnt_cred));
+
+  /* Calculate the new credentials. */
+  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
+              new_clnt_cred->timestamp, &(new_clnt_cred->challenge));
+}
+
+/****************************************************************************
 do a LSA Logon Control2
 ****************************************************************************/
 
-BOOL do_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
+BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
 {
   prs_struct rbuf;
   prs_struct buf; 
@@ -224,38 +243,33 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
   return valid_chal;
 }
 
-#if 0
 /***************************************************************************
-do a LSA Server Password Set
+LSA Server Password Set.
 ****************************************************************************/
 
-BOOL do_net_srv_pwset(struct cli_state *cli, uint16 fnum,
-                      uchar sess_key[16], DOM_CRED *sto_clnt_cred,
-                      char *logon_srv, char *mach_acct, uint16 sec_chan_type,
-                      char *comp_name, DOM_CRED *clnt_cred, DOM_CRED *srv_cred,
-                      uint8 nt_owf_new_mach_pwd[16])
+BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
 {
   prs_struct rbuf;
   prs_struct buf; 
+  DOM_CRED new_clnt_cred;
   NET_Q_SRV_PWSET q_s;
-  BOOL valid_cred = False;
+  BOOL ok = False;
+  uint16 sec_chan_type = 2;
 
-  if (srv_cred == NULL || clnt_cred == NULL)
-    return False;
+  gen_next_creds( cli, &new_clnt_cred);
 
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
 
-
   /* create and send a MSRPC command with api NET_SRV_PWSET */
 
-  DEBUG(4,("LSA Server Password Set: srv:%s acct:%s sc: %d mc: %s clnt %s %lx\n",
-           cli->srv_name_slash, mach_acct, sec_chan_type, comp_name,
-           credstr(clnt_cred->challenge.data), clnt_cred->timestamp.time));
+  DEBUG(4,("cli_net_srv_pwset: srv:%s acct:%s sc: %d mc: %s clnt %s %lx\n",
+           cli->srv_name_slash, cli->mach_acct, sec_chan_type, global_myname,
+           credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
 
   /* store the parameters */
-  make_q_srv_pwset(&q_s, sess_key, logon_srv, mach_acct, sec_chan_type,
-                   comp_name, clnt_cred, nt_owf_new_mach_pwd);
+  make_q_srv_pwset(&q_s, cli->srv_name_slash, cli->mach_acct, sec_chan_type,
+                   global_myname, &new_clnt_cred, hashed_mach_pwd);
 
   /* turn parameters into data stream */
   net_io_q_srv_pwset("", &q_s,  &buf, 0);
@@ -264,7 +278,6 @@ BOOL do_net_srv_pwset(struct cli_state *cli, uint16 fnum,
   if (rpc_api_pipe_req(cli, NET_SRVPWSET, &buf, &rbuf))
   {
     NET_R_SRV_PWSET r_s;
-    BOOL ok;
 
     net_io_r_srv_pwset("", &r_s, &rbuf, 0);
     ok = (rbuf.offset != 0);
@@ -277,31 +290,26 @@ BOOL do_net_srv_pwset(struct cli_state *cli, uint16 fnum,
       ok = False;
     }
 
-    if (ok)
+    /* Update the credentials. */
+    if (clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_cred)) == 0)
     {
-      if (clnt_deal_with_creds(sess_key, sto_clnt_cred, &(r_s.srv_cred)))
-      {
-        DEBUG(5, ("do_net_srv_pwset: server credential check OK\n"));
-        /* ok, at last: we're happy. return the challenge */
-        memcpy(srv_cred, &(r_s.srv_cred), sizeof(r_s.srv_cred));
-        valid_cred = True;
-      }
-      else
-      {
-        DEBUG(5, ("do_net_srv_pwset: server credential check failed\n"));
-      }
+      /*
+       * Server replied with bad credential. Fail.
+       */
+      DEBUG(0,("cli_net_srv_pwset: server %s replied with bad credential (bad machine \
+password ?).\n", cli->desthost ));
+      ok = False;
     }
   }
 
   prs_mem_free(&rbuf);
   prs_mem_free(&buf );
 
-  return valid_cred;
+  return ok;
 }
-#endif
 
 /***************************************************************************
-LSA SAM Logon.
+LSA SAM Logon - interactive or network.
 ****************************************************************************/
 
 BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
@@ -314,17 +322,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
   NET_Q_SAM_LOGON q_s;
   BOOL ok = False;
 
-  /*
-   * Create the new client credentials.
-   */
-
-  cli->clnt_cred.timestamp.time = time(NULL);
-
-  memcpy(&new_clnt_cred, &cli->clnt_cred, sizeof(new_clnt_cred));
-
-  /* Calculate the new credentials. */
-  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
-              new_clnt_cred.timestamp, &(new_clnt_cred.challenge));
+  gen_next_creds( cli, &new_clnt_cred);
 
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
@@ -400,17 +398,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
   uint16 validation_level = 3;
   BOOL ok = False;
 
-  /*
-   * Create the new client credentials.
-   */
-
-  cli->clnt_cred.timestamp.time = time(NULL);
-
-  memcpy(&new_clnt_cred, &cli->clnt_cred, sizeof(new_clnt_cred));
-
-  /* Calculate the new credentials. */
-  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
-              new_clnt_cred.timestamp, &(new_clnt_cred.challenge));
+  gen_next_creds( cli, &new_clnt_cred);
 
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
@@ -453,7 +441,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
        */
       DEBUG(0,("cli_net_sam_logoff: server %s replied with bad credential (bad machine \
 password ?).\n", cli->desthost ));
-        ok = False;
+      ok = False;
     }
   }
 

@@ -516,11 +516,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
     passlen2 = MIN(passlen2, MAX_PASS_LEN);
 
-#ifdef DOMAIN_CLIENT
     if(doencrypt || ((lp_security() == SEC_SERVER) || (lp_security() == SEC_DOMAIN))) {
-#else /* DOMAIN_CLIENT */
-    if(doencrypt || lp_security() == SEC_SERVER) {
-#endif /* DOMAIN_CLIENT */
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
       memcpy(smb_apasswd,p,smb_apasslen);
@@ -608,12 +604,10 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 		  server_validate(user, domain, 
 				  smb_apasswd, smb_apasslen, 
 				  smb_ntpasswd, smb_ntpasslen)) &&
-#ifdef DOMAIN_CLIENT
                 !(lp_security() == SEC_DOMAIN &&
                   domain_client_validate(user, domain,
                                   smb_apasswd, smb_apasslen,
                                   smb_ntpasswd, smb_ntpasslen)) &&
-#endif /* DOMAIN_CLIENT */
       !check_hosts_equiv(user))
     {
 

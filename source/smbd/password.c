@@ -32,6 +32,7 @@ extern int Protocol;
 static pstring session_users="";
 
 extern pstring global_myname;
+extern fstring global_myworkgroup;
 
 /* these are kept here to keep the string_combinations function simple */
 static char this_user[100]="";
@@ -1865,7 +1866,6 @@ use this machine as the password server.\n"));
 	return(True);
 }
 
-#ifdef DOMAIN_CLIENT
 /***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
  key from the machine password.
@@ -1875,17 +1875,20 @@ BOOL domain_client_validate( char *user, char *domain,
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen)
 {
-  unsigned char local_lm_hash[21];
-  unsigned char local_nt_hash[21];
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
   unsigned char local_nt_reponse[24];
-  BOOL encrypted = True;
+  unsigned char machine_passwd[16];
+  time_t lct;
   fstring remote_machine;
   char *p;
   struct in_addr dest_ip;
+  NET_ID_INFO_CTR ctr;
+  NET_USER_INFO_3 info3;
   struct cli_state cli;
+  uint32 smb_uid_low;
   BOOL connected_ok = False;
+  void *vp;
 
   /* 
    * Check that the requested domain is not our own machine name.
@@ -1909,14 +1912,9 @@ BOOL domain_client_validate( char *user, char *domain,
      */
 
     DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
-    encrypted = False;
-    memset(local_lm_hash, '\0', sizeof(local_lm_hash));
-    E_P16((uchar *) smb_apasswd, local_lm_hash);
-    memset(local_nt_hash, '\0', sizeof(local_nt_hash));
-    E_md4hash((uchar *) smb_ntpasswd, local_nt_hash);
     generate_random_buffer( local_challenge, 8, False);
-    E_P24(local_lm_hash, local_challenge, local_lm_response);
-    E_P24(local_nt_hash, local_challenge, local_nt_reponse);
+    SMBencrypt( smb_apasswd, local_challenge, local_lm_response);
+    SMBNTencrypt( smb_ntpasswd, local_challenge, local_nt_reponse);
     smb_apasslen = 24;
     smb_ntpasslen = 24;
     smb_apasswd = (char *)local_lm_response;
@@ -1935,12 +1933,41 @@ BOOL domain_client_validate( char *user, char *domain,
   }
 
   /*
+   * Get the machine account password.
+   */
+  if((vp = machine_password_lock( global_myworkgroup, global_myname, False)) == NULL) {
+    DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
+machine %s in domain %s.\n", global_myname, global_myworkgroup ));
+    return False;
+  }
+
+  if(get_machine_account_password( vp, machine_passwd, &lct) == False) {
+    DEBUG(0,("domain_client_validate: unable to read the machine account password for \
+machine %s in domain %s.\n", global_myname, global_myworkgroup ));
+    machine_password_unlock(vp);
+    return False;
+  }
+
+  machine_password_unlock(vp);
+
+  /* 
+   * Here we should check the last change time to see if the machine
+   * password needs changing..... TODO... JRA. 
+   */
+
+  /*
    * At this point, smb_apasswd points to the lanman response to
    * the challenge in local_challenge, and smb_ntpasswd points to
    * the NT response to the challenge in local_challenge. Ship
    * these over the secure channel to a domain controller and
    * see if they were valid.
    */
+
+  memset(&cli, '\0', sizeof(struct cli_state));
+  if(cli_initialise(&cli) == False) {
+    DEBUG(0,("domain_client_validate: unable to initialize client connection.\n"));
+    return False;
+  }
 
   /*
    * Treat each name in the 'password server =' line as a potential
@@ -1963,8 +1990,6 @@ BOOL domain_client_validate( char *user, char *domain,
       continue;
     }
       
-    memset(&cli, '\0', sizeof(struct cli_state));
-
     if (!cli_connect(&cli, remote_machine, &dest_ip)) {
       DEBUG(0,("domain_client_validate: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
@@ -2032,7 +2057,6 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     return False;
   }
 
-#if 0 /* for now... JRA */
   /*
    * Ok - we have an anonymous connection to the IPC$ share.
    * Now start the NT Domain stuff :-).
@@ -2041,14 +2065,49 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
   if(cli_nt_session_open(&cli, PIPE_NETLOGON, False) == False) {
     DEBUG(0,("domain_client_validate: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_close(&cli, fnum);
+    cli_close(&cli, cli.nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False; 
   }
 
-  if(cli_nt_setup_creds(&cli,) HERE 
-#endif
-  return False;
+  if(cli_nt_setup_creds(&cli, machine_passwd) == False) {
+    DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
+%s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_ulogoff(&cli);
+    cli_shutdown(&cli);
+    return False;
+  }
+
+  /* We really don't care what LUID we give the user. */
+  generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+
+  if(cli_nt_login_network(&cli, domain, user, smb_uid_low, local_challenge,
+                          smb_apasswd, smb_ntpasswd, &ctr, &info3) == False) {
+    DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
+%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));
+    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_ulogoff(&cli);
+    cli_shutdown(&cli);
+    return False;
+  }
+
+  /*
+   * Here, if we really want it, we have lots of info about the user in info3.
+   */
+
+  if(cli_nt_logoff(&cli, &ctr) == False) {
+    DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
+%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
+    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_ulogoff(&cli);
+    cli_shutdown(&cli);
+    return False;
+  }
+
+  cli_close(&cli, cli.nt_pipe_fnum);
+  cli_ulogoff(&cli);
+  cli_shutdown(&cli);
+  return True;
 }
-#endif /* DOMAIN_CLIENT */
