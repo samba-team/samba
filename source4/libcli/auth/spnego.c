@@ -41,7 +41,7 @@ struct spnego_state {
 	uint_t ref_count;
 	enum spnego_message_type expected_packet;
 	enum spnego_message_type state_position;
-	negResult_t result;
+	enum spnego_negResult result;
 	struct gensec_security *sub_sec_security;
 };
 
@@ -184,6 +184,11 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				return nt_status;
 			}
+			/* forward the user info to the sub context */
+			spnego_state->sub_sec_security->user = gensec_security->user;
+			spnego_state->sub_sec_security->password_callback = gensec_security->password_callback;
+			spnego_state->sub_sec_security->password_callback_private = gensec_security->password_callback_private;
+			/* select the sub context */
 			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
 							     all_ops[i]->oid);
 			if (!NT_STATUS_IS_OK(nt_status)) {
@@ -218,11 +223,16 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			int i;
 			NTSTATUS nt_status;
 			
-			for (i=0; mechType[i]; i++) {
+			for (i=0; mechType && mechType[i]; i++) {
 				nt_status = gensec_client_start(&spnego_state->sub_sec_security);
 				if (!NT_STATUS_IS_OK(nt_status)) {
 					break;
 				}
+				/* forward the user info to the sub context */
+				spnego_state->sub_sec_security->user = gensec_security->user;
+				spnego_state->sub_sec_security->password_callback = gensec_security->password_callback;
+				spnego_state->sub_sec_security->password_callback_private = gensec_security->password_callback_private;
+				/* select the sub context */
 				nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
 								     mechType[i]);
 				if (!NT_STATUS_IS_OK(nt_status)) {
@@ -250,7 +260,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 					break;
 				}
 			}
-			if (!mechType[i]) {
+			if (!mechType || !mechType[i]) {
 				DEBUG(1, ("SPENGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
 			}
 
@@ -308,7 +318,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
 				spnego_out.negTokenTarg.supportedMech 
 					= spnego_state->sub_sec_security->ops->oid;
-;
 				spnego_out.negTokenTarg.responseToken = unwrapped_out;
 				spnego_out.negTokenTarg.mechListMIC = null_data_blob;
 				
