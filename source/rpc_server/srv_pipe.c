@@ -40,6 +40,9 @@
 
 #include "includes.h"
 
+extern struct pipe_id_info pipe_names[];
+extern struct current_user current_user;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -751,7 +754,6 @@ BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
                     RPC_IFACE* transfer, uint32 context_id)
 {
-	extern struct pipe_id_info pipe_names[];
 	char *pipe_name = p->name;
 	int i=0;
 	fstring pname;
@@ -1427,7 +1429,6 @@ struct current_user *get_current_user(struct current_user *user, pipes_struct *p
 	if (p->ntlmssp_auth_validated) {
 		memcpy(user, &p->pipe_user, sizeof(struct current_user));
 	} else {
-		extern struct current_user current_user;
 		memcpy(user, &current_user, sizeof(struct current_user));
 	}
 

@@ -39,6 +39,7 @@
 		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
 		  SA_RIGHT_USER_SET_LOC_COM )
 
+extern DOM_SID global_sid_World;
 extern DOM_SID global_sid_Builtin;
 
 extern rid_name domain_group_rids[];
@@ -80,7 +81,6 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
                                      struct generic_mapping *map,
 				     DOM_SID *sid, uint32 sid_access )
 {
-	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid, act_sid, domadmin_sid;
 	SEC_ACE ace[5];		/* at most 5 entries */
 	SEC_ACCESS mask;

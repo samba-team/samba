@@ -23,6 +23,7 @@
 /* From lib/error.c */
 extern struct unix_error_map unix_dos_nt_errmap[];
 
+extern uint32 global_client_caps;
 /* these can be set by some functions to override the error codes */
 static int override_ERR_class;
 static int override_ERR_code;
@@ -114,7 +115,6 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code, NTSTATUS def_s
 int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
 {
 	int outsize = set_message(outbuf,0,0,True);
-	extern uint32 global_client_caps;
 	BOOL force_nt_status = False;
 	BOOL force_dos_status = False;
 

@@ -30,6 +30,8 @@ int last_message = -1;
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
+extern char *last_inbuf;
+extern struct auth_context *negprot_global_auth_context;
 extern pstring user_socket_options;
 extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
@@ -598,8 +600,6 @@ static BOOL dump_core(void)
 void exit_server(const char *reason)
 {
 	static int firsttime=1;
-	extern char *last_inbuf;
-	extern struct auth_context *negprot_global_auth_context;
 
 	if (!firsttime)
 		exit(0);

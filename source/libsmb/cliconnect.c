@@ -23,6 +23,7 @@
 
 #include "includes.h"
 
+extern pstring user_socket_options;
 
 static const struct {
 	int prot;
@@ -1200,7 +1201,6 @@ BOOL cli_session_request(struct cli_state *cli,
 {
 	char *p;
 	int len = 4;
-	extern pstring user_socket_options;
 
 	memcpy(&(cli->calling), calling, sizeof(*calling));
 	memcpy(&(cli->called ), called , sizeof(*called ));
@@ -1290,7 +1290,6 @@ BOOL cli_session_request(struct cli_state *cli,
 
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
-	extern pstring user_socket_options;
 	int name_type = 0x20;
 	char *p;
 

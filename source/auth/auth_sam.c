@@ -23,6 +23,8 @@
 
 #include "includes.h"
 
+extern struct timeval smb_last_time;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
@@ -74,7 +76,6 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 static BOOL logon_hours_ok(SAM_ACCOUNT *sampass)
 {
 	/* In logon hours first bit is Sunday from 12AM to 1AM */
-	extern struct timeval smb_last_time;
 	const uint8 *hours;
 	struct tm *utctime;
 	uint8 bitmask, bitpos;

@@ -33,6 +33,8 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 extern PRIVS privs[];
+extern DOM_SID global_sid_World;
+extern DOM_SID global_sid_Builtin;
 
 struct lsa_info {
 	DOM_SID sid;
@@ -314,8 +316,6 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 
 static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *sd_size)
 {
-	extern DOM_SID global_sid_World;
-	extern DOM_SID global_sid_Builtin;
 	DOM_SID local_adm_sid;
 	DOM_SID adm_sid;
 

@@ -58,6 +58,7 @@ BOOL bLoaded = False;
 
 extern userdom_struct current_user_info;
 extern pstring user_socket_options;
+extern enum protocol_types Protocol;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -4359,7 +4360,6 @@ const char *lp_printcapname(void)
 
 BOOL lp_use_sendfile(int snum)
 {
-	extern enum protocol_types Protocol;
 	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
 	if (Protocol < PROTOCOL_NT1) {
 		return False;

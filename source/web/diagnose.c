@@ -23,6 +23,8 @@
 
 #ifdef WITH_WINBIND
 
+extern struct in_addr loopback_ip;
+
 NSS_STATUS winbindd_request(int req_type,
 			struct winbindd_request *request,
 			struct winbindd_response *response);
@@ -39,7 +41,6 @@ BOOL winbindd_running(void)
    response */
 BOOL nmbd_running(void)
 {
-	extern struct in_addr loopback_ip;
 	int fd, count, flags;
 	struct in_addr *ip_list;
 
@@ -64,7 +65,6 @@ BOOL nmbd_running(void)
 BOOL smbd_running(void)
 {
 	static struct cli_state cli;
-	extern struct in_addr loopback_ip;
 
 	if (!cli_initialise(&cli))
 		return False;

@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+extern struct in_addr lastip;
+extern int lastport;
+
 int num_good_sends = 0;
 int num_good_receives = 0;
 
@@ -692,8 +695,6 @@ void free_packet(struct packet_struct *packet)
 struct packet_struct *parse_packet(char *buf,int length,
 				   enum packet_type packet_type)
 {
-	extern struct in_addr lastip;
-	extern int lastport;
 	struct packet_struct *p;
 	BOOL ok=False;
 
