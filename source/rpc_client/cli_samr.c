@@ -1747,7 +1747,7 @@ NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS rpccli_samr_lookup_rids(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, 
-				 POLICY_HND *domain_pol, uint32 flags,
+				 POLICY_HND *domain_pol,
 				 uint32 num_rids, uint32 *rids, 
 				 uint32 *num_names, char ***names,
 				 uint32 **name_types)
@@ -1775,8 +1775,7 @@ NTSTATUS rpccli_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	/* Marshall data and send request */
 
-	init_samr_q_lookup_rids(mem_ctx, &q, domain_pol, flags,
-				num_rids, rids);
+	init_samr_q_lookup_rids(mem_ctx, &q, domain_pol, 1000, num_rids, rids);
 
 	if (!samr_io_q_lookup_rids("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req_int(cli, SAMR_LOOKUP_RIDS, &qbuf, &rbuf)) {
@@ -1823,13 +1822,13 @@ NTSTATUS rpccli_samr_lookup_rids(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                              POLICY_HND *domain_pol, uint32 flags,
+                              POLICY_HND *domain_pol,
                               uint32 num_rids, uint32 *rids, 
                               uint32 *num_names, char ***names,
                               uint32 **name_types)
 {
 	return rpccli_samr_lookup_rids(&cli->pipes[PI_SAMR], mem_ctx, 
-				       domain_pol, flags, num_rids, rids, 
+				       domain_pol, num_rids, rids, 
 				       num_names, names, name_types);
 }
 

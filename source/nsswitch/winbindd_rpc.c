@@ -591,7 +591,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
                 /* Lookup a chunk of rids */
 
                 result = rpccli_samr_lookup_rids(cli, mem_ctx,
-						 &dom_pol, 1000, /* flags */
+						 &dom_pol,
 						 num_lookup_rids,
 						 &rid_mem[i],
 						 &tmp_num_names,
