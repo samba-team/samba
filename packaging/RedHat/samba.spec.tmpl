@@ -158,7 +158,7 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 
 # Install winbind shared libraries
 install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
-( cd $RPM_BUILD_ROOT/lib; ln -sf libnss_winbind.so libnss_winbind.so.2; )
+( cd $RPM_BUILD_ROOT/lib; ln -sf libnss_winbind.so libnss_winbind.so.2 )
 install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 
 # Install pam_smbpass.so
@@ -445,6 +445,6 @@ MANDIR_MACRO/man8/*
 %dir /var/log/samba
 %dir /var/run/samba
 %attr(1777,root,root) %dir /var/spool/samba
-%attr(-,root,root) /lib/libnss_winbind.so
+%attr(-,root,root) /lib/libnss_winbind.so*
 %attr(-,root,root) /lib/security/pam_winbind.so
 %attr(-,root,root) /lib/security/pam_smbpass.so
