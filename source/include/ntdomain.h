@@ -131,6 +131,10 @@ typedef struct pipes_struct
 	/* When replying to an SMBtrans, this is the maximum amount of
            data that can be sent in the initial reply. */
 	int max_trans_reply;
+
+	/* remote, server-side rpc redirection */
+	struct msrpc_state *m;
+
 } pipes_struct;
 
 struct api_struct

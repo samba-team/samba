@@ -65,6 +65,30 @@ BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io)
 }
 
 /*******************************************************************
+ read from a socket into memory.
+ ********************************************************************/
+BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout)
+{
+	BOOL ok;
+	size_t prev_size = ps->buffer_size;
+	if (!prs_grow(ps, len))
+	{
+		return False;
+	}
+
+	if (timeout > 0)
+	{
+		ok = (read_with_timeout(fd, &ps->data_p[prev_size],
+		                            len, len,timeout) == len);
+	}
+	else 
+	{
+		ok = (read_data(fd, &ps->data_p[prev_size], len) == len);
+	}
+	return ok;
+}
+
+/*******************************************************************
  Delete the memory in a parse structure - if we own it.
  ********************************************************************/
 
