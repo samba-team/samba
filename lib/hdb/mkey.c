@@ -490,6 +490,7 @@ hdb_set_master_keyfile (krb5_context context,
     if (ret) {
 	if (ret != ENOENT)
 	    return ret;
+	krb5_clear_error_string(context);
 	return 0;
     }
     db->master_key = key;
