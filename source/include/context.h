@@ -334,9 +334,6 @@ struct server_context {
 	/* the pid of the process handling this session */
 	pid_t pid;
 	
-	/* pointer make to smbd daemon context */
-	struct smbd_context *smbd;
-	
 	/* pointer to list of events that we are waiting on */
 	struct event_context *events;
 
