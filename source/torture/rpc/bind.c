@@ -72,8 +72,17 @@ BOOL torture_multi_bind(void)
 	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
 						   domain, username, password);
-	} else if (username && username[0] && (binding->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
-		status = dcerpc_bind_auth_ntlm(p, pipe_uuid, pipe_version, domain, username, password);
+	} else if (username && username[0]) {
+		uint8_t auth_type;
+		if (binding->flags & DCERPC_AUTH_SPNEGO) {
+			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+		} else {
+			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+		}
+
+		status = dcerpc_bind_auth_password(p, pipe_uuid, pipe_version, 
+						   domain, username, password, 
+						   auth_type);
 	} else {    
 		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
 	}

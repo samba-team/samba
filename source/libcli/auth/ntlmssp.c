@@ -1257,13 +1257,14 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_sign_init(ntlmssp_state))) {
+	nt_status = ntlmssp_sign_init(ntlmssp_state);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", 
 			  nt_errstr(nt_status)));
 		return nt_status;
 	}
 
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	return nt_status;
 }
 
 NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmssp_state)
