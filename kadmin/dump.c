@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -69,9 +69,10 @@ append_hex(char *str, krb5_data *data)
 {
     int i, s = 1;
     char *p;
+
     p = data->data;
     for(i = 0; i < data->length; i++)
-	if(!isalnum(p[i]) && p[i] != '.'){
+	if(!isalnum((unsigned char)p[i]) && p[i] != '.'){
 	    s = 0;
 	    break;
 	}
