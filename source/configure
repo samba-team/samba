@@ -11671,7 +11671,7 @@ fi
 ###############################################
 # test for where we get crypt() from, but only
 # if not using PAM
-if test $with_pam != yes; then
+if test "$with_pam" != yes; then
 for ac_func in crypt
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
