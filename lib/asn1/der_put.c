@@ -143,18 +143,13 @@ der_put_general_string (unsigned char *p, size_t len,
 			general_string *str, size_t *size)
 {
     size_t slen = strlen(*str);
-    size_t l;
-    int e;
 
     if (len < slen)
 	return ASN1_OVERFLOW;
     p -= slen;
     len -= slen;
     memcpy (p+1, *str, slen);
-    e = der_put_length (p, len, slen, &l);
-    if(e)
-	return e;
-    *size = slen + l;
+    *size = slen;
     return 0;
 }
 
@@ -162,18 +157,12 @@ int
 der_put_octet_string (unsigned char *p, size_t len, 
 		      octet_string *data, size_t *size)
 {
-    size_t l;
-    int e;
-
     if (len < data->length)
 	return ASN1_OVERFLOW;
     p -= data->length;
     len -= data->length;
     memcpy (p+1, data->data, data->length);
-    e = der_put_length (p, len, data->length, &l);
-    if(e)
-	return e;
-    *size = l + data->length;
+    *size = data->length;
     return 0;
 }
 
@@ -256,6 +245,12 @@ encode_general_string (unsigned char *p, size_t len,
     p -= l;
     len -= l;
     ret += l;
+    e = der_put_length (p, len, l, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
     e = der_put_tag (p, len, UNIV, PRIM, UT_GeneralString, &l);
     if (e)
 	return e;
@@ -275,6 +270,12 @@ encode_octet_string (unsigned char *p, size_t len,
     int e;
 
     e = der_put_octet_string (p, len, k, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_length (p, len, l, &l);
     if (e)
 	return e;
     p -= l;
