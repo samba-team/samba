@@ -407,11 +407,12 @@ krb5_get_init_creds_password(krb5_context context,
 
     if (password == NULL) {
 	krb5_prompt prompt;
-	char *p;
+	char *p, *q;
 
 	krb5_unparse_name (context, this_cred.client, &p);
-	asprintf (&prompt.prompt, "%s's Password: ", p);
+	asprintf (&q, "%s's Password: ", p);
 	free (p);
+	prompt.prompt = q;
 	password_data.data   = buf;
 	password_data.length = sizeof(buf);
 	prompt.hidden = 1;
@@ -419,7 +420,7 @@ krb5_get_init_creds_password(krb5_context context,
 	prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
 
 	ret = (*prompter) (context, data, NULL, NULL, 1, &prompt);
-	free (prompt.prompt);
+	free (q);
 	if (ret) {
 	    memset (buf, 0, sizeof(buf));
 	    ret = KRB5_LIBOS_PWDINTR;
