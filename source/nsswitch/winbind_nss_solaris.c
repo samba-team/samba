@@ -256,7 +256,23 @@ _nss_winbind_getgrgid_solwrap(nss_backend_t* be, void* args)
 static NSS_STATUS
 _nss_winbind_getgroupsbymember_solwrap(nss_backend_t* be, void* args)
 {
+	int errnop;
+	struct nss_groupsbymem *gmem = (struct nss_groupsbymem *)args;
+
 	NSS_DEBUG("_nss_winbind_getgroupsbymember");
+
+	_nss_winbind_initgroups_dyn(gmem->username,
+		gmem->gid_array[0], /* Primary Group */
+		&gmem->numgids,
+		&gmem->maxgids,
+		&gmem->gid_array,
+		gmem->maxgids,
+		&errnop);
+
+	/*
+	* Always return NOTFOUND so nsswitch will get info from all
+	* the database backends specified in the nsswitch.conf file.
+	*/
 	return NSS_STATUS_NOTFOUND;
 }
 
