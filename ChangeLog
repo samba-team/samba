@@ -1,7 +1,35 @@
+2003-06-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb.c: Dynamic backend loading, based on patch from Luke
+	Howard <lukeh@PADL.COM>
+
+	* lib/hdb/hdb.h: add struct hdb_so_method and
+	HDB_INTERFACE_VERSION
+
+2003-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/mk_req_ext.c (krb5_mk_req_internal): when using
+	arcfour-hmac-md5, use an unkeyed checksum (rsa-md5), since
+	Microsoft calculates the keyed checksum with the subkey of the
+	authenticator.
+
+	* kuser/kinit.c: write out v4 credential caches with
+	_krb5_krb_tf_setup
+
+	* lib/krb5/krb5-v4compat.h: add _krb5_krb_tf_setup
+
+	* lib/krb5/convert_creds.c (_krb5_krb_tf_setup): create/append v4
+	credential to a new krb4 ticket file
+	
 2003-06-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5_kuserok.3: put Nd argument in double quotes since
 	it contains more than 9 words; from wiz
+
+2003-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/verify_krb5_conf.c: add missing " within #if 0, from
+	stefan sokoll <stefansokoll@yahoo.de>
 
 2003-06-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
