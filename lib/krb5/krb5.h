@@ -331,8 +331,8 @@ typedef struct krb5_auth_context_data {
     krb5_address *local_address;
     krb5_address *remote_address;
     krb5_keyblock *keyblock;
-    krb5_keyblock local_subkey;
-    krb5_keyblock remote_subkey;
+    krb5_keyblock *local_subkey;
+    krb5_keyblock *remote_subkey;
 
     int32_t local_seqnumber;
     int32_t remote_seqnumber;
