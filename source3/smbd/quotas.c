@@ -367,7 +367,14 @@ DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %d, dfree %d, dsize %d\n"
 
 #ifdef        __FreeBSD__
 #include <ufs/ufs/quota.h>
-#else
+#elif         AIX
+/* AIX quota patch from Ole Holm Nielsen <ohnielse@fysik.dtu.dk> */
+#include <jfs/quota.h>
+/* AIX 4.X: Rename members of the dqblk structure (ohnielse@fysik.dtu.dk) */
+#define dqb_curfiles dqb_curinodes
+#define dqb_fhardlimit dqb_ihardlimit
+#define dqb_fsoftlimit dqb_isoftlimit
+#else /* !__FreeBSD__ && !AIX */
 #include <sys/quota.h>
 #include <devnm.h>
 #endif
@@ -380,7 +387,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   uid_t euser_id;
   int r;
   struct dqblk D;
-#ifndef __FreeBSD__
+#if !defined(__FreeBSD__) && !defined(AIX)
   char dev_disk[256];
   struct stat S;
   /* find the block device file */
@@ -401,13 +408,17 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     if (setresuid(user_id,-1,-1))
       DEBUG(5,("Unable to reset uid to %d\n", user_id));
   }
-#else
+#else /* USE_SETRES */
 #if defined(__FreeBSD__)
   r= quotactl(path,Q_GETQUOTA,euser_id,(char *) &D);
-#else
+#elif defined(AIX)
+  /* AIX has both USER and GROUP quotas: 
+     Get the USER quota (ohnielse@fysik.dtu.dk) */
+  r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
+#else /* !__FreeBSD__ && !AIX */
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-#endif
-#endif
+#endif /* !__FreeBSD__ && !AIX */
+#endif /* USE_SETRES */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
   *bsize = 1024;

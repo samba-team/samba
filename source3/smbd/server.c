@@ -224,7 +224,9 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
 	result |= aHIDDEN;
     }
 
-  if (is_hidden_path(SNUM(cnum), path))
+  /* Optimization : Only call is_hidden_path if it's not already
+     hidden. */
+  if (!(result & aHIDDEN) && is_hidden_path(SNUM(cnum), path))
   {
     result |= aHIDDEN;
   }
@@ -4189,7 +4191,7 @@ static void usage(char *pname)
   reopen_logs();
 
   DEBUG(2,("%s smbd version %s started\n",timestring(),VERSION));
-  DEBUG(2,("Copyright Andrew Tridgell 1992-1995\n"));
+  DEBUG(2,("Copyright Andrew Tridgell 1992-1997\n"));
 
 #ifndef NO_GETRLIMIT
 #ifdef RLIMIT_NOFILE

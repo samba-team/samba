@@ -491,7 +491,7 @@ static void usage(char *pname)
     }
 
   DEBUG(1,("%s netbios nameserver version %s started\n",timestring(),VERSION));
-  DEBUG(1,("Copyright Andrew Tridgell 1994\n"));
+  DEBUG(1,("Copyright Andrew Tridgell 1994-1997\n"));
 
   get_myname(myhostname,NULL);
 

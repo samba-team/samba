@@ -1,3 +1,24 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   Samba utility functions
+   Copyright (C) Andrew Tridgell 1992-1997
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
 /* fork a child process to exec passwd and write to its
 * tty to change a users password. This is running as the
 * user who is attempting to change the password.
@@ -38,22 +59,22 @@ extern int DEBUGLEVEL;
 static int findpty(char **slave)
 {
   int master;
-#ifdef SVR4
+#if defined(SVR4) || defined(SUNOS5)
   extern char *ptsname();
-#else
+#else /* defined(SVR4) || defined(SUNOS5) */
   static char line[12];
   void *dirp;
   char *dpname;
-#endif
+#endif /* defined(SVR4) || defined(SUNOS5) */
   
-#ifdef SVR4
+#if defined(SVR4) || defined(SUNOS5)
   if ((master = open("/dev/ptmx", O_RDWR)) >= 1) {
     grantpt(master);
     unlockpt(master);
     *slave = ptsname(master);
     return (master);
   }
-#else
+#else /* defined(SVR4) || defined(SUNOS5) */
   strcpy( line, "/dev/ptyXX" );
 
   dirp = OpenDir(-1, "/dev", True);
@@ -73,7 +94,7 @@ static int findpty(char **slave)
     }
   }
   CloseDir(dirp);
-#endif
+#endif /* defined(SVR4) || defined(SUNOS5) */
   return (-1);
 }
 
@@ -87,9 +108,9 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram)
 
 #ifdef USE_SETRES
   setresuid(0,0,0);
-#else
+#else /* USE_SETRES */
   setuid(0);
-#endif
+#endif /* USE_SETRES */
 
   /* Start new session - gets rid of controlling terminal. */
   if (setsid() < 0) {
@@ -103,15 +124,15 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram)
 	     slavedev));
     return(False);
   }
-#ifdef SVR4
+#if defined(SVR4) || defined(SUNOS5)
   ioctl(slave, I_PUSH, "ptem");
   ioctl(slave, I_PUSH, "ldterm");
-#else
+#else /* defined(SVR4) || defined(SUNOS5) */
   if (ioctl(slave,TIOCSCTTY,0) <0) {
      DEBUG(3,("Error in ioctl call for slave pty\n"));
      /* return(False); */
   }
-#endif
+#endif /* defined(SVR4) || defined(SUNOS5) */
 
   /* Close master. */
   close(master);

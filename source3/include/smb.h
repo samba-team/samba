@@ -916,6 +916,6 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define COPYBUF_SIZE (8*1024)
 
 /* service-based parameter - files are not visible, but are accessible */
-#define DEFAULT_FILES_TO_HIDE "*/.*"
+#define DEFAULT_FILES_TO_HIDE ".*"
 
 /* _SMB_H */

@@ -736,6 +736,9 @@ BOOL smb_shm_unlock_hash_entry( unsigned int entry );
 BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
 		   int *bytes_overhead);
+smb_shm_offset_t smb_shm_alloc(int size);
+smb_shm_offset_t smb_shm_addr2offset(void *addr);
+smb_shm_offset_t smb_shm_get_userdef_off(void);
 
 /*The following definitions come from  smbencrypt.c  */
 
@@ -951,7 +954,6 @@ void ajt_panic(void);
 char *readdirname(void *p);
 BOOL is_hidden_path(int snum, char *name);
 BOOL is_vetoed_name(int snum, char *name);
-BOOL is_in_path(char *name, char *namelist);
 BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
 int file_lock(char *name,int timeout);
 void file_unlock(int fd);

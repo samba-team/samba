@@ -3432,31 +3432,32 @@ char *readdirname(void *p)
   return(dname);
 }
 
+/*
+ * Utility function used by is_hidden_path() and is_vetoed_name()
+ * to decide if the last component of a path matches a (possibly
+ * wildcarded) entry in a namelist.
+ */
 
-BOOL is_hidden_path(int snum, char *name)
+static BOOL is_in_path(char *name, char *namelist)
 {
-   return is_in_path(name, lp_hide_files(snum));
-}
-
-BOOL is_vetoed_name(int snum, char *name)
-{
-   return is_in_path(name, lp_veto_files(snum));
-}
-
-BOOL is_in_path(char *name, char *namelist)
-{
-
+  pstring last_component;
+  char *p;
   char *nameptr = namelist;
   char *name_end;
 
   DEBUG(5, ("is_in_path: %s list: %s\n", name, namelist));
 
   /* if we have no list it's obviously not in the path */
-  if((nameptr == NULL ) || (*nameptr == '\0')) 
+  if((nameptr == NULL ) || ((nameptr != NULL) && (*nameptr == '\0'))) 
   {
     DEBUG(5,("is_in_path: no name list.  return False\n"));
     return False;
   }
+
+  /* Get the last component of the unix name. */
+  p = strrchr(name, '/');
+  strncpy(last_component, p ? p : name, sizeof(last_component)-1);
+  last_component[sizeof(last_component)-1] = '\0'; 
 
   /* now, we need to find the names one by one and check them
      they can contain spaces and all sorts of stuff so we
@@ -3469,9 +3470,6 @@ BOOL is_in_path(char *name, char *namelist)
      i changed it to a '\', after examining the code, and seeing
      that unix_convert is called before check_path and dos_mode.
      unix_convert changes, in the path, all dos '\'s to unix '/'s.
-
-     therefore, users might want to match against '/'s in the path,
-     and therefore '\' must be used as the separator.
 
      the alternatives are:
 
@@ -3502,7 +3500,7 @@ BOOL is_in_path(char *name, char *namelist)
       }
 
       /* look for a match. */
-      if (mask_match(name, nameptr, case_sensitive, False))
+      if (mask_match(last_component, nameptr, case_sensitive, False))
       {
          DEBUG(5,("is_in_path: mask match succeeded\n"));
          return True;
@@ -3522,6 +3520,16 @@ BOOL is_in_path(char *name, char *namelist)
   DEBUG(5,("is_in_path: not found\n"));
 
   return False;
+}
+
+BOOL is_hidden_path(int snum, char *name)
+{
+   return is_in_path(name, lp_hide_files(snum));
+}
+
+BOOL is_vetoed_name(int snum, char *name)
+{
+   return is_in_path(name, lp_veto_files(snum));
 }
 
 /****************************************************************************
