@@ -2964,7 +2964,7 @@ fi
 
 
 dictpath="/usr/lib/cracklib_dict"
-
+with_cracklib=yes
 ###############################################
 # test for where we get FaciestCheck from
 AC_MSG_CHECKING(where to use cracklib from (default=$dictpath))
