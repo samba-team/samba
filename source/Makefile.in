@@ -1201,7 +1201,7 @@ bin/config_ldap.@SHLIBEXT@: $(CONFIG_LDAP_OBJ:.o=.@PICSUFFIX@)
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WBINFO_OBJ) $(LIBS) @POPTLIBS@ -lcrypto
+	@$(LINK) -o $@ $(WBINFO_OBJ) $(LIBS) @POPTLIBS@
 
 bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
