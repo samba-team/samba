@@ -1,5 +1,14 @@
 1999-05-08  Assar Westerlund  <assar@sics.se>
 
+	* kxd.c (doit_passive): handle error code from
+ 	create_and_write_cookie
+
+	* kx.c (doit_active): handle error code from
+ 	create_and_write_cookie
+
+	* common.c (create_and_write_cookie): try to return better (and
+ 	correct) errors.  Based on a patch from Love <lha@e.kth.se>
+
 	* common.c (try_pie): more braces
 	(match_local_auth): new function
 	(find_auth_cookie): new function
