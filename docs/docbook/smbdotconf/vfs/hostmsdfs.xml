@@ -3,7 +3,7 @@
                  advanced="1" developer="1"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-        If set to <constant>yes</constant>, Samba will act as a Dfs
+        <para>If set to <constant>yes</constant>, Samba will act as a Dfs
 	server, and allow Dfs-aware clients to browse Dfs trees hosted
 	on the server.</para>
 
