@@ -137,7 +137,7 @@ void nb_unlink(char *fname)
 
 
 void nb_createx(char *fname, 
-		unsigned create_options, unsigned create_disposition, int handle, int no_err)
+		unsigned create_options, unsigned create_disposition, int handle)
 {
 	int fd, i;
 	uint32 desired_access;
@@ -157,7 +157,7 @@ void nb_createx(char *fname,
 	if (fd == -1 && handle != -1) {
 		printf("ERROR: cli_nt_create_full failed for %s - %s\n",
 		       fname, cli_errstr(c));
-		if (!no_err) exit(1);
+		exit(1);
 	}
 	if (fd != -1 && handle == -1) {
 		printf("ERROR: cli_nt_create_full succeeded for %s\n", fname);
@@ -206,15 +206,10 @@ void nb_readx(int handle, int offset, int size, int ret_size)
 	children[nbio_id].bytes_in += ret_size;
 }
 
-void nb_close(int handle, int no_err)
+void nb_close(int handle)
 {
 	int i;
-	if (no_err) {
-		i = ne_find_handle(handle);
-		if (i < 0) return;
-	}
-	else
-		i = find_handle(handle);
+	i = find_handle(handle);
 	if (!cli_close(c, ftable[i].fd)) {
 		printf("(%d) close failed on handle %d\n", line_count, handle);
 		exit(1);
