@@ -710,7 +710,6 @@ char *mktemp(char *); /* No standard include */
 #include <strings.h>
 #include <sys/dir.h>
 #include <sys/vfs.h>
-#define bzero(b,len) memset(b,0,len)
 #define NO_UTIMBUF
 #include <libc.h>
 #define NOSTRDUP
@@ -722,6 +721,7 @@ char *mktemp(char *); /* No standard include */
 #define SIGNAL_CAST (void (*)(int))
 #define WAIT3_CAST1 (union wait *)
 #define HAVE_GMTOFF
+#define O_NONBLOCK O_NDELAY
 #endif
 
 
