@@ -459,96 +459,106 @@ static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
-		       const struct winbindd_domain *domain,
-		       struct dc_name_ip **dcs, int *num_dcs)
+/*******************************************************************
+ convert an ip to a name
+*******************************************************************/
+
+static void dcip_to_name( const char *domainname, const char *realm, struct in_addr ip, fstring name )
 {
-	struct ip_service *iplist = NULL;
-	int i, num = 0;
+	/* try node status request first */
 
-	if (!internal_resolve_name(domain->name, 0x1c, &iplist, &num,
-				   lp_name_resolve_order()))
-		return False;
+	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) )
+		return;
 
-	/* Now try to find the server names of at least one IP address, hosts
-	 * not replying are cached as such */
+	/* backup in case the ads stuff fails */
 
-	for (i=0; i<num; i++) {
+	fstrcpy( name, inet_ntoa(ip) );
 
-		fstring dcname;
+#ifdef WITH_ADS
+	/* for active directory servers, try to get the ldap server name.
+	   None of these failure should be considered critical for now */
 
-		if (!name_status_find(domain->name, 0x1c, 0x20, iplist[i].ip,
-				      dcname))
-			continue;
+	if ( lp_security() == SEC_ADS ) 
+	{
+		ADS_STRUCT *ads;
+		ADS_STATUS status;
 
-		if (add_one_dc_unique(mem_ctx, domain->name, dcname,
-				      iplist[i].ip, dcs, num_dcs)) {
-			/* One DC responded, so we assume that he will also
-			   work on 139/445 */
-			break;
+		ads = ads_init( realm, domainname, NULL );
+		ads->auth.flags |= ADS_AUTH_NO_BIND;
+
+		if ( !ads_try_connect( ads, inet_ntoa(ip), LDAP_PORT ) )  {
+			ads_destroy( &ads );
+			return;
 		}
+
+		status = ads_server_info(ads);
+		if ( !ADS_ERR_OK(status) ) {
+			ads_destroy( &ads );
+			return;
+		}
+
+		fstrcpy(name, ads->config.ldap_server_name);
+
+		ads_destroy( &ads );
 	}
+#endif
 
-	SAFE_FREE(iplist);
-
-	return True;
+	return;
 }
+
+
+/*******************************************************************
+ Retreive a list of IP address for domain controllers.  Fill in 
+ the dcs[]  with results.
+*******************************************************************/
 
 static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs)
 {
 	fstring dcname;
-	struct in_addr ip;
-	BOOL is_our_domain;
+	struct  in_addr ip;
+	struct  ip_service *ip_list = NULL;
+	int     iplist_size = 0;
+	int     i;
+	BOOL    is_our_domain;
 
-	const char *p;
 
 	is_our_domain = strequal(domain->name, lp_workgroup());
 
-	if (!is_our_domain && get_dc_name_via_netlogon(domain, dcname, &ip) &&
-	    add_one_dc_unique(mem_ctx, domain->name, dcname, ip, dcs, num_dcs))
-			return True;
-
-	if (!is_our_domain) {
-		/* NETLOGON to our own domain could not give us a DC name
-		 * (which is an error), fall back to looking up domain#1c */
-		return get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
+	if ( !is_our_domain 
+		&& get_dc_name_via_netlogon(domain, dcname, &ip) 
+		&& add_one_dc_unique(mem_ctx, domain->name, dcname, ip, dcs, num_dcs) )
+	{
+		return True;
 	}
 
-	if (must_use_pdc(domain->name) && get_pdc_ip(domain->name, &ip)) {
-
-		if (!name_status_find(domain->name, 0x1b, 0x20, ip, dcname))
-			return False;
-
-		if (add_one_dc_unique(mem_ctx, domain->name,
-				      dcname, ip, dcs, num_dcs))
+	if ( is_our_domain 
+		&& must_use_pdc(domain->name) 
+		&& get_pdc_ip(domain->name, &ip)) 
+	{
+		if (add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip), ip, dcs, num_dcs)) 
 			return True;
 	}
 
-	p = lp_passwordserver();
+	/* try standard netbios queries first */
 
-	if (*p == 0)
-		return get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
+	get_sorted_dc_list(domain->name, &ip_list, &iplist_size, False);
 
-	while (next_token(&p, dcname, LIST_SEP, sizeof(dcname))) {
+	/* check for security = ads and use DNS if we can */
 
-		if (strequal(dcname, "*")) {
-			get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
-			continue;
-		}
+	if ( iplist_size==0 && lp_security() == SEC_ADS ) 
+		get_sorted_dc_list(domain->alt_name, &ip_list, &iplist_size, True);
 
-		if (!resolve_name(dcname, &ip, 0x20))
-			continue;
+	/* now add to the dc array.  We'll wait until the last minute 
+	   to look up the name of the DC.  But we fill in the char* for 
+	   the ip now in to make the failed connection cache work */
 
-		/* Even if we got the dcname, double check the name to use for
-		 * the netlogon auth2 */
-
-		if (!name_status_find(domain->name, 0x1c, 0x20, ip, dcname))
-			continue;
-
-		add_one_dc_unique(mem_ctx, domain->name, dcname, ip,
-				  dcs, num_dcs);
+	for ( i=0; i<iplist_size; i++ ) {
+		add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip), 
+			ip_list[i].ip, dcs, num_dcs);
 	}
+
+	SAFE_FREE( ip_list );
 
 	return True;
 }
@@ -560,7 +570,7 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
 
-	char **dcnames = NULL;
+	const char **dcnames = NULL;
 	int num_dcnames = 0;
 
 	struct sockaddr_in *addrs = NULL;
@@ -587,17 +597,24 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	if ((num_dcnames == 0) || (num_dcnames != num_addrs))
 		return False;
 
-	if (!open_any_socket_out(addrs, num_addrs, 10000, &fd_index, fd)) {
+	if ( !open_any_socket_out(addrs, num_addrs, 10000, &fd_index, fd) ) 
+	{
 		for (i=0; i<num_dcs; i++) {
 			add_failed_connection_entry(domain->name,
-						    dcs[i].name,
-						    NT_STATUS_UNSUCCESSFUL);
+				dcs[i].name, NT_STATUS_UNSUCCESSFUL);
 		}
 		return False;
 	}
 
-	fstrcpy(dcname, dcnames[fd_index]);
 	*addr = addrs[fd_index];
+
+	/* if we have no name on the server or just an IP address for 
+	   the name, now try to get the name */
+
+	if ( is_ipaddress(dcnames[fd_index]) || *dcnames[fd_index] == '\0' )
+		dcip_to_name( domain->name, domain->alt_name, addr->sin_addr, dcname );
+	else
+		fstrcpy(dcname, dcnames[fd_index]);
 
 	return True;
 }
@@ -883,6 +900,11 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	
 done:
 	
+	DEBUG(3,("add_trusted_domain: %s is an %s %s domain\n", domain->name,
+		domain->active_directory ? "ADS" : "NT4",
+		domain->native_mode ? "native mode" :
+		((domain->active_directory && !domain->native_mode) ? "mixed mode" : "")));
+
 	/* close the connection;  no other calls use this pipe and it is called only
 	   on reestablishing the domain list   --jerry */
 	
