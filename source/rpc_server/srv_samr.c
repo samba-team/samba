@@ -6,7 +6,6 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Hewlett-Packard Company           1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,15 +56,18 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 	if (pw_buf == NULL) return False;
 
 	vp = startsmbpwent(False);
-	if (!vp) {
+	if (!vp)
+	{
 		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
 		return False;
 	}
 
-	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries) {
+	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries)
+	{
 		int user_name_len;
 
-		if (start_idx > 0) {
+		if (start_idx > 0)
+		{
 			/* skip the requested number of entries.
 			   not very efficient, but hey...
 			 */
@@ -80,7 +82,8 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
 
 		/* Now check if the NT compatible password is available. */
-		if (pwd->smb_nt_passwd != NULL) {
+		if (pwd->smb_nt_passwd != NULL)
+		{
 			memcpy( pw_buf[(*num_entries)].nt_pwd , pwd->smb_nt_passwd, 16);
 		}
 
@@ -90,10 +93,13 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		          (*num_entries), pwd->smb_name,
 		          pwd->user_rid, pwd->acct_ctrl));
 
-		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask)) {
+		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
+		{
 			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
 			(*num_entries)++;
-		} else {
+		}
+		else
+		{
 			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
 		}
 
@@ -101,232 +107,6 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 	}
 
 	endsmbpwent(vp);
-
-	return (*num_entries) > 0;
-}
-
-/*******************************************************************
- This function uses the username map file and tries to map a UNIX
- user name to an DOS name.  (Sort of the reverse of the
- map_username() function.)  Since more than one DOS name can map
- to the UNIX name, to reverse the mapping you have to specify
- which corresponding DOS name you want; that's where the name_idx
- parameter comes in.  Returns the string requested or NULL if it
- fails or can't complete the request for any reason.  This doesn't
- handle group names (starting with '@') or names starting with
- '+' or '&'.  If they are encountered, they are skipped.
-********************************************************************/
-
-static char *unmap_unixname(char *unix_user_name, int name_idx)
-{
-	FILE *f;
-	char *mapfile = lp_username_map();
-	char *s;
-	pstring buf;
-	static pstring tok;
-
-	if (!*unix_user_name) return NULL;
-	if (!*mapfile) return NULL;
-
-	f = sys_fopen(mapfile,"r");
-	if (!f) {
-		DEBUG(0,("unmap_unixname: can't open username map %s\n", mapfile));
-		return NULL;
-	}
-
-	DEBUG(5,("unmap_unixname: scanning username map %s, index: %d\n", mapfile, name_idx));
-
-	while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
-		char *unixname = s;
-		char *dosname = strchr(unixname,'=');
-
-		if (!dosname)
-			continue;
-
-		*dosname++ = 0;
-
-		while (isspace(*unixname))
-			unixname++;
-		if ('!' == *unixname) {
-			unixname++;
-			while (*unixname && isspace(*unixname))
-				unixname++;
-		}
-    
-		if (!*unixname || strchr("#;",*unixname))
-			continue;
-
-		if (strncmp(unixname, unix_user_name, strlen(unix_user_name)))
-			continue;
-
-		/* We have matched the UNIX user name */
-
-		while(next_token(&dosname, tok, LIST_SEP, sizeof(tok))) {
-			if (!strchr("@&+", *tok)) {
-				name_idx--;
-				if (name_idx < 0 ) {
-					break;
-				}
-			}
-		}
-
-		if (name_idx >= 0) {
-			DEBUG(0,("unmap_unixname: index too high - not that many DOS names\n"));
-			fclose(f);
-			return NULL;
-		} else {
-			fclose(f);
-			return tok;
-		}
-	}
-
-	DEBUG(0,("unmap_unixname: Couldn't find the UNIX user name\n"));
-	fclose(f);
-	return NULL;
-}
-
-/*******************************************************************
- This function sets up a list of users taken from the list of
- users that UNIX knows about, as well as all the user names that
- Samba maps to a valid UNIX user name.  (This should work with
- /etc/passwd or NIS.)
-********************************************************************/
-
-static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
-				int start_idx,
-				int *total_entries, int *num_entries,
-				int max_num_entries,
-				uint16 acb_mask)
-{
-	static struct passwd *pwd = NULL;
-	static uint32 pw_rid;
-	static BOOL orig_done = False;
-	static int current_idx = 0;
-	static int mapped_idx = 0;
-
-	DEBUG(5, ("get_passwd_entries: retrieving a list of UNIX users\n"));
-
-	(*num_entries) = 0;
-	(*total_entries) = 0;
-
-	if (pw_buf == NULL) return False;
-
-	if (current_idx == 0) {
-		setpwent();
-	}
-
-	/* These two cases are inefficient, but should be called very rarely */
-	/* they are the cases where the starting index isn't picking up      */
-	/* where we left off last time.  It is efficient when it starts over */
-	/* at zero though.                                                   */
-	if (start_idx > current_idx) {
-		/* We aren't far enough; advance to start_idx */
-		while (current_idx < start_idx) {
-			char *unmap_name;
-
-			if(!orig_done) {
-				if ((pwd = getpwent()) == NULL) break;
-				current_idx++;
-				orig_done = True;
-			}
-
-			while (((unmap_name = unmap_unixname(pwd->pw_name, mapped_idx)) != NULL) && 
-			        (current_idx < start_idx)) {
-				current_idx++;
-				mapped_idx++;
-			}
-
-			if (unmap_name == NULL) {
-				orig_done = False;
-				mapped_idx = 0;
-			}
-		}
-	} else if (start_idx < current_idx) {
-		/* We are already too far; start over and advance to start_idx */
-		endpwent();
-		setpwent();
-		current_idx = 0;
-		mapped_idx = 0;
-		orig_done = False;
-		while (current_idx < start_idx) {
-			char *unmap_name;
-
-			if(!orig_done) {
-				if ((pwd = getpwent()) == NULL) break;
-				current_idx++;
-				orig_done = True;
-			}
-
-			while (((unmap_name = unmap_unixname(pwd->pw_name, mapped_idx)) != NULL) && 
-			        (current_idx < start_idx)) {
-				current_idx++;
-				mapped_idx++;
-			}
-
-			if (unmap_name == NULL) {
-				orig_done = False;
-				mapped_idx = 0;
-			}
-		}
-	}
-
-	/* now current_idx == start_idx */
-	while ((*num_entries) < max_num_entries) {
-		int user_name_len;
-		char *unmap_name;
-
-		/* This does the original UNIX user itself */
-		if(!orig_done) {
-			if ((pwd = getpwent()) == NULL) break;
-			user_name_len = strlen(pwd->pw_name);
-			pw_rid = pdb_uid_to_user_rid(pwd->pw_uid);
-			init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->pw_name, user_name_len);
-			init_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
-			pw_buf[(*num_entries)].user_rid = pw_rid;
-			memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
-
-			pw_buf[(*num_entries)].acb_info = ACB_NORMAL;
-
-			DEBUG(5, ("get_passwd_entries: entry idx %d user %s, rid 0x%x\n", (*num_entries), pwd->pw_name, pw_rid));
-
-			(*num_entries)++;
-			(*total_entries)++;
-			current_idx++;
-			orig_done = True;
-		}
-
-		/* This does all the user names that map to the UNIX user */
-		while (((unmap_name = unmap_unixname(pwd->pw_name, mapped_idx)) != NULL) && 
-		        (*num_entries < max_num_entries)) {
-			user_name_len = strlen(unmap_name);
-			init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), unmap_name, user_name_len);
-			init_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
-			pw_buf[(*num_entries)].user_rid = pw_rid;
-			memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
-
-			pw_buf[(*num_entries)].acb_info = ACB_NORMAL;
-
-			DEBUG(5, ("get_passwd_entries: entry idx %d user %s, rid 0x%x\n", (*num_entries), pwd->pw_name, pw_rid));
-
-			(*num_entries)++;
-			(*total_entries)++;
-			current_idx++;
-			mapped_idx++;
-		}
-
-		if (unmap_name == NULL) {
-			/* done with 'aliases', go on to next UNIX user */
-			orig_done = False;
-			mapped_idx = 0;
-		}
-	}
-
-	if (pwd == NULL) {
-		/* totally done, reset everything */
-		endpwent();
-		current_idx = 0;
-		mapped_idx = 0;
-	}
 
 	return (*num_entries) > 0;
 }
@@ -676,6 +456,7 @@ static BOOL api_samr_enum_dom_groups( uint16 vuid, prs_struct *data, prs_struct 
 	return True;
 }
 
+
 /*******************************************************************
  samr_reply_enum_dom_aliases
  ********************************************************************/
@@ -688,7 +469,6 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	DOM_SID sid;
 	fstring sid_str;
 	fstring sam_sid_str;
-	struct group *grp;
 
 	r_e.status = 0x0;
 	r_e.num_entries = 0;
@@ -717,22 +497,10 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	}
 	else if (strequal(sid_str, sam_sid_str))
 	{
-		char *name;
 		/* local aliases */
-		/* we return the UNIX groups here.  This seems to be the right */
-		/* thing to do, since NT member servers return their local     */
-                /* groups in the same situation.                               */
-		setgrent();
-
-		while (num_entries < MAX_SAM_ENTRIES && ((grp = getgrent()) != NULL))
-		{
-			name = grp->gr_name;
-			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name));
-			pass[num_entries].user_rid = pdb_gid_to_group_rid(grp->gr_gid);
-			num_entries++;
-		}
-
-		endgrent();
+		/* oops!  there's no code to deal with this */
+		DEBUG(3,("samr_reply_enum_dom_aliases: enum of aliases in our domain not supported yet\n"));
+		num_entries = 0;
 	}
 		
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
@@ -793,7 +561,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 	if (r_e.status == 0x0)
 	{
 		become_root(True);
-		got_pwds = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
+		got_pwds = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
 		unbecome_root(True);
 
 		switch (q_u->switch_level)
@@ -824,7 +592,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 		}
 	}
 
-	if (r_e.status == 0)
+	if (r_e.status == 0 && got_pwds)
 	{
 		init_samr_r_query_dispinfo(&r_e, switch_level, &ctr, r_e.status);
 	}
@@ -881,7 +649,7 @@ static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 	}
 
 	init_samr_r_query_aliasinfo(&r_e, q_u->switch_level,
-	                    "local UNIX group",
+	                    "<account description>",
 		                r_e.status);
 
 	/* store the response in the SMB stream */
