@@ -193,8 +193,8 @@ interface epmapper
 		epm_floor floors[num_floors];
 	} epm_towers;
 
-	typedef struct {
-		[value(ndr_size_epm_towers(&r->towers))] uint32  tower_length;
+	typedef [gensize] struct {
+		[value(ndr_size_epm_towers(0, &r->towers,ndr->flags))] uint32  tower_length;
 		[subcontext(4)] epm_towers towers;
 	} epm_twr_t;
 

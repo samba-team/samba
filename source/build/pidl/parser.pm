@@ -2,6 +2,7 @@
 # Samba4 parser generator for IDL structures
 # Copyright tridge@samba.org 2000-2003
 # Copyright tpot@samba.org 2001
+# Copyright jelmer@samba.org 2004
 # released under the GNU GPL
 
 package IdlParser;
@@ -830,6 +831,65 @@ sub ParseStructPull($)
 	end_flags($struct);
 }
 
+#####################################################################
+# calculate size of ndr struct
+
+sub ParseStructNdrSize($)
+{
+	my $t = shift;
+	my $static = fn_prefix($t);
+	my $sizevar;
+
+	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, struct $t->{NAME} *r, int flags)\n";
+	pidl "{\n";
+
+	if (util::has_property($t->{DATA}, "flag")) {
+		
+		pidl "\tflags = flags | " . $t->{DATA}->{PROPERTIES}->{flag} . ";\n";	
+	}
+
+	pidl "\tif(!r) return 0;\n";
+
+	pidl "\tret = NDR_SIZE_ALIGN(ret, " . struct_alignment($t->{DATA}) . ", flags);\n";
+
+	for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+		my $switch = "";
+
+		if (util::has_property($e, "subcontext")) {
+			pidl "\tret += $e->{PROPERTIES}->{subcontext}; /* Subcontext length */\n";
+		}
+
+		if (util::has_property($e, "switch_is")) {
+			$switch = ", r->$e->{PROPERTIES}->{switch_is}";
+		}
+
+		if ($e->{POINTERS} > 0) {
+			pidl "\tret = ndr_size_ptr(ret, &r->$e->{NAME}, flags); \n";
+		} elsif (util::is_inline_array($e)) {
+			$sizevar = find_size_var($e, util::array_size($e), "r->");
+			pidl "\t{\n";
+			pidl "\t\tint i;\n";
+			pidl "\t\tfor(i = 0; i < $sizevar; i++) {\n";
+			pidl "\t\t\tret = ndr_size_$e->{TYPE}(ret, &r->" . $e->{NAME} . "[i], flags);\n";
+			pidl "\t\t}\n";
+			pidl "\t}\n";
+		} else {
+			pidl "\tret = ndr_size_$e->{TYPE}(ret, &r->$e->{NAME}$switch, flags); \n";
+		}
+	}
+	
+	# Add lengths of relative members
+	for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+		next unless (util::has_property($e, "relative"));
+
+		pidl "\tif (r->$e->{NAME}) {\n";
+		pidl "\t\tret = ndr_size_$e->{TYPE}(ret, r->$e->{NAME}, flags); \n"; 
+		pidl "\t}\n";
+	}
+
+	pidl "\treturn ret;\n";
+	pidl "}\n\n";
+}
 
 #####################################################################
 # parse a union - push side
@@ -982,6 +1042,43 @@ sub ParseUnionPull($)
 }
 
 #####################################################################
+# calculate size of ndr union
+
+sub ParseUnionNdrSize($)
+{
+	my $t = shift;
+	my $static = fn_prefix($t);
+
+	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, union $t->{NAME} *data, uint16 level, int flags)\n";
+	pidl "{\n";
+	if (util::has_property($t->{DATA}, "flag")) {
+		pidl "\tflags = flags | " . $t->{DATA}->{PROPERTIES}->{flag} . ";\n";	
+	}
+	pidl "\tif(!data) return 0;\n\n";
+	
+	pidl "\tret = NDR_SIZE_ALIGN(ret, " . union_alignment($t->{DATA}) . ", flags);\n";
+
+	pidl "\tswitch(level) {\n";
+
+	for my $e (@{$t->{DATA}->{DATA}}) {
+		if ($e->{TYPE} eq "UNION_ELEMENT") {
+			
+			if ($e->{CASE} eq "default") {
+				pidl "\t\tdefault:";
+			} else { 
+				pidl "\t\tcase $e->{CASE}:";
+			}
+			
+			pidl " return ndr_size_$e->{DATA}->{TYPE}(ret, &data->$e->{DATA}->{NAME}, flags); \n";
+
+		}
+	}
+	pidl "\t}\n";
+	pidl "\treturn ret;\n";
+	pidl "}\n\n";
+}
+
+#####################################################################
 # parse a type
 sub ParseTypePush($)
 {
@@ -1104,6 +1201,23 @@ sub ParseTypedefPrint($)
 		ParseTypePrint($e->{DATA});
 		pidl "}\n\n";
 	}
+}
+
+#####################################################################
+## calculate the size of a structure
+sub ParseTypedefNdrSize($)
+{
+	my($t) = shift;
+	if (! $needed{"ndr_size_$t->{NAME}"}) {
+		return;
+	}
+	
+	($t->{DATA}->{TYPE} eq "STRUCT") &&
+		ParseStructNdrSize($t);
+
+	($t->{DATA}->{TYPE} eq "UNION") &&
+		ParseUnionNdrSize($t);
+
 }
 
 #####################################################################
@@ -1413,7 +1527,10 @@ sub ParseInterface($)
 	    }
 	}
 
-
+	foreach my $d (@{$data}) {
+		($d->{TYPE} eq "TYPEDEF") && 
+			ParseTypedefNdrSize($d);
+	}
 
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
@@ -1461,7 +1578,12 @@ sub NeededTypedef($)
 		$needed{"pull_$t->{NAME}"} = 1;
 		$needed{"push_$t->{NAME}"} = 1;		
 	}
+
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
+		if (util::has_property($t->{DATA}, "gensize")) {
+			$needed{"ndr_size_$t->{NAME}"} = 1;
+		}
+
 		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
 			$e->{PARENT} = $t->{DATA};
 			if ($needed{"pull_$t->{NAME}"}) {
@@ -1469,6 +1591,9 @@ sub NeededTypedef($)
 			}
 			if ($needed{"push_$t->{NAME}"}) {
 				$needed{"push_$e->{TYPE}"} = 1;
+			}
+			if ($needed{"ndr_size_$t->{NAME}"}) {
+				$needed{"ndr_size_$e->{TYPE}"} = 1;
 			}
 		}
 	}
@@ -1481,6 +1606,9 @@ sub NeededTypedef($)
 				}
 				if ($needed{"push_$t->{NAME}"}) {
 					$needed{"push_$e->{DATA}->{TYPE}"} = 1;
+				}
+				if ($needed{"ndr_size_$t->{NAME}"}) {
+					$needed{"ndr_size_$e->{DATA}->{TYPE}"} = 1;
 				}
 			}
 		}

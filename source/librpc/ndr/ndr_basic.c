@@ -1130,3 +1130,15 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
 	ndr->offset += length;
 	return NT_STATUS_OK;
 }
+
+uint32 ndr_size_DATA_BLOB(int ret, const DATA_BLOB *data, int flags)
+{
+	return ret + data->length;
+}
+
+uint32 ndr_size_string(int ret, const char **string, int flags) 
+{
+	/* FIXME: Is this correct for all strings ? */
+	if(!(*string)) return ret;
+	return ret+strlen(*string)+1;
+}

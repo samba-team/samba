@@ -23,58 +23,6 @@
 #include "includes.h"
 
 /*
-  this ndr_size_* stuff should really be auto-generated ....
-*/
-
-static size_t ndr_size_epm_floor(struct epm_floor *fl)
-{
-	size_t ret = 5;
-	if (fl->lhs.protocol == EPM_PROTOCOL_UUID) {
-		ret += 18;
-	} else {
-		ret += fl->lhs.info.lhs_data.length;
-	}
-	switch (fl->lhs.protocol) {
-	case EPM_PROTOCOL_TCP: 
-	case EPM_PROTOCOL_UDP: 
-	case EPM_PROTOCOL_HTTP:
-	case EPM_PROTOCOL_UUID:
-		ret += 2; 
-		break;
-	case EPM_PROTOCOL_IP:
-		ret += 4;
-		break;
-	case EPM_PROTOCOL_NCADG:
-	case EPM_PROTOCOL_NCACN:
-	case EPM_PROTOCOL_NCALRPC:
-		ret += 2;
-		break;
-
-	case EPM_PROTOCOL_SMB:
-		ret += strlen(fl->rhs.smb.unc)+1;
-		break;
-	case EPM_PROTOCOL_PIPE:
-		ret += strlen(fl->rhs.pipe.path)+1;
-		break;
-	case EPM_PROTOCOL_NETBIOS:
-		ret += strlen(fl->rhs.netbios.name)+1;
-		break;
-	}
-	
-	return ret;
-}
-
-size_t ndr_size_epm_towers(struct epm_towers *towers)
-{
-	size_t ret = 2;
-	int i;
-	for (i=0;i<towers->num_floors;i++) {
-		ret += ndr_size_epm_floor(&towers->floors[i]);
-	}
-	return ret;
-}
-
-/*
   work out what TCP port to use for a given interface on a given host
 */
 NTSTATUS dcerpc_epm_map_tcp_port(const char *server, 
