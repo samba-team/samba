@@ -26,12 +26,13 @@ NTSTATUS smb_load_module(const char *module_name)
 {
 	void *handle;
 	init_module_function *init;
+	NTSTATUS nt_status;
 
 	/* Always try to use LAZY symbol resolving; if the plugin has 
 	 * backwards compatibility, there might be symbols in the 
 	 * plugin referencing to old (removed) functions
 	 */
-	handle = dlopen(module_name, RTLD_LAZY | RTLD_GLOBAL);
+	handle = dlopen(module_name, RTLD_LAZY);
 
 	if(!handle) {
 		DEBUG(0, ("Error loading module '%s': %s\n", module_name, sys_dlerror()));
@@ -45,11 +46,11 @@ NTSTATUS smb_load_module(const char *module_name)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	init();
+	nt_status = init();
 
 	DEBUG(2, ("Module '%s' loaded\n", module_name));
 
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 #else /* HAVE_DLOPEN */
