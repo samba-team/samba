@@ -470,7 +470,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
 	  pstrcpy(pathreal,path);
 	  pstrcat(path,fname);
 	  pstrcat(pathreal,dname);
-	  if (dos_stat(pathreal,&sbuf) != 0) 
+	  if (conn->vfs_ops.stat(dos_to_unix(pathreal, False), &sbuf) != 0) 
 	    {
 	      DEBUG(5,("Couldn't stat 1 [%s]\n",path));
 	      continue;
@@ -518,7 +518,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
   Dir *dirp;
   char *n;
-  DIR *p = dos_opendir(name);
+  DIR *p = conn->vfs_ops.opendir(name);
   int used=0;
 
   if (!p) return(NULL);
@@ -530,7 +530,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
   dirp->pos = dirp->numentries = dirp->mallocsize = 0;
   dirp->data = dirp->current = NULL;
 
-  while ((n = dos_readdirname(p)))
+  while ((n = vfs_readdirname(conn, p)))
   {
     int l = strlen(n)+1;
 
