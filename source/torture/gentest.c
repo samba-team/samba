@@ -171,7 +171,7 @@ static BOOL connect_servers(void)
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
 			       servers[i].username, j);
-			status = smbcli_full_connection(&servers[i].cli[j],
+			status = smbcli_full_connection(NULL, &servers[i].cli[j],
 						     "gentest",
 						     servers[i].server_name, NULL, 
 						     servers[i].share_name, "?????", 

@@ -151,7 +151,8 @@ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
   a convenient function to establish a smbcli_tree from scratch, using reasonable default
   parameters
 */
-NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree, 
+NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
+				     struct smbcli_tree **ret_tree, 
 				     const char *my_name, 
 				     const char *dest_host, int port,
 				     const char *service, const char *service_type,
@@ -172,7 +173,7 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 
 	*ret_tree = NULL;
 
-	sock = smbcli_sock_init();
+	sock = smbcli_sock_init(parent_ctx);
 	if (!sock) {
 		return NT_STATUS_NO_MEMORY;
 	}

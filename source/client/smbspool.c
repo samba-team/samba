@@ -279,7 +279,7 @@ smb_connect(const char *workgroup,		/* I - Workgroup */
 
   myname = get_myname();  
   	
-  nt_status = smbcli_full_connection(&c, myname, server, NULL, 0, share, "?????", 
+  nt_status = smbcli_full_connection(NULL, &c, myname, server, NULL, 0, share, "?????", 
 				  username, workgroup, password, 0, NULL);
   
   free(myname);

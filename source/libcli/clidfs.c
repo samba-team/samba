@@ -244,7 +244,7 @@ int smbcli_dfs_open_connection(struct smbcli_client* cluster,
 		return -1;
 
 	c = cluster->cli[i];
-	if (NT_STATUS_IS_ERR(smbcli_full_connection(&c,
+	if (NT_STATUS_IS_ERR(smbcli_full_connection(NULL, &c,
 			     NULL, host, NULL, 0,
 			     share, "?????",
 			     cluster->username, cluster->workgroup, 

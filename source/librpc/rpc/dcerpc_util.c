@@ -460,12 +460,12 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	}
 	    
 	if (!username || !username[0]) {
-		status = smbcli_full_connection(&cli, lp_netbios_name(),
+		status = smbcli_full_connection(NULL, &cli, lp_netbios_name(),
 					     binding->host, NULL, 
 					     "ipc$", "?????", 
 					     "", "", NULL, 0, &retry);
 	} else {
-		status = smbcli_full_connection(&cli, lp_netbios_name(),
+		status = smbcli_full_connection(NULL, &cli, lp_netbios_name(),
 					     binding->host, NULL, 
 					     "ipc$", "?????", 
 					     username, domain,
@@ -486,7 +486,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	
 	/* this ensures that the reference count is decremented so
 	   a pipe close will really close the link */
-	talloc_free(cli->tree);
 	talloc_steal(*p, cli);
 
 	(*p)->flags = binding->flags;

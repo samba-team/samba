@@ -38,7 +38,6 @@ struct ipc_private {
 	/* a list of open pipes */
 	struct pipe_state {
 		struct pipe_state *next, *prev;
-		TALLOC_CTX *mem_ctx;
 		const char *pipe_name;
 		uint16_t fnum;
 		struct dcesrv_connection *dce_conn;
@@ -85,10 +84,9 @@ again:
 */
 static void pipe_shutdown(struct ipc_private *private, struct pipe_state *p)
 {
-	TALLOC_CTX *mem_ctx = private->pipe_list->mem_ctx;
-	dcesrv_endpoint_disconnect(private->pipe_list->dce_conn);
-	DLIST_REMOVE(private->pipe_list, private->pipe_list);
-	talloc_destroy(mem_ctx);
+	talloc_free(p->dce_conn);
+	DLIST_REMOVE(private->pipe_list, p);
+	talloc_destroy(p);
 }
 
 
@@ -199,33 +197,25 @@ static NTSTATUS ipc_open_generic(struct smbsrv_request *req, const char *fname,
 				 struct pipe_state **ps)
 {
 	struct pipe_state *p;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	struct dcesrv_ep_description ep_description;
 	struct auth_session_info *session_info = NULL;
 	NTVFS_GET_PRIVATE(ipc_private, private, req);
 
-	mem_ctx = talloc_init("ipc_open '%s'", fname);
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	p = talloc(mem_ctx, sizeof(struct pipe_state));
+	p = talloc_p(private, struct pipe_state);
 	if (!p) {
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	p->mem_ctx = mem_ctx;
 
-	p->pipe_name = talloc_strdup(mem_ctx, fname);
+	p->pipe_name = talloc_strdup(p, fname);
 	if (!p->pipe_name) {
-		talloc_destroy(mem_ctx);
+		talloc_free(p);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	p->fnum = find_next_fnum(private);
 	if (p->fnum == 0) {
-		talloc_destroy(mem_ctx);
+		talloc_free(p);
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
@@ -261,7 +251,7 @@ static NTSTATUS ipc_open_generic(struct smbsrv_request *req, const char *fname,
 						session_info,
 						&p->dce_conn);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(p);
 		return status;
 	}
 

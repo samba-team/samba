@@ -27,7 +27,7 @@ BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server)
 {
 	struct smbcli_socket *sock;
 
-	sock = smbcli_sock_init();
+	sock = smbcli_sock_init(cli);
 	if (!sock) return False;
 
 	if (!smbcli_sock_connect_byname(sock, server, 0)) {
@@ -149,17 +149,18 @@ NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename,
 /*
   easy way to get to a fully connected smbcli_state in one call
 */
-NTSTATUS smbcli_full_connection(struct smbcli_state **ret_cli, 
-			     const char *myname,
-			     const char *host,
-			     struct in_addr *ip,
-			     const char *sharename,
-			     const char *devtype,
-			     const char *username,
-			     const char *domain,
-			     const char *password,
-			     uint_t flags,
-			     BOOL *retry)
+NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
+				struct smbcli_state **ret_cli, 
+				const char *myname,
+				const char *host,
+				struct in_addr *ip,
+				const char *sharename,
+				const char *devtype,
+				const char *username,
+				const char *domain,
+				const char *password,
+				uint_t flags,
+				BOOL *retry)
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status;
@@ -177,21 +178,23 @@ NTSTATUS smbcli_full_connection(struct smbcli_state **ret_cli,
 		username = talloc_strdup(mem_ctx, p+1);
 	}
 
-	status = smbcli_tree_full_connection(&tree, myname, host, 0, sharename, devtype,
+	status = smbcli_tree_full_connection(parent_ctx,
+					     &tree, myname, host, 0, sharename, devtype,
 					     username, domain, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	(*ret_cli) = smbcli_state_init();
+	(*ret_cli) = smbcli_state_init(parent_ctx);
 
-	(*ret_cli)->tree = talloc_reference(*ret_cli, tree);
-	talloc_free(tree);
+	(*ret_cli)->tree = tree;
 	(*ret_cli)->session = tree->session;
 	(*ret_cli)->transport = tree->session->transport;
-
+	talloc_steal(*ret_cli, tree->session->transport->socket);
+	
 done:
 	talloc_free(mem_ctx);
+
 	return status;
 }
 
@@ -207,11 +210,11 @@ NTSTATUS smbcli_tdis(struct smbcli_state *cli)
 /****************************************************************************
  Initialise a client state structure.
 ****************************************************************************/
-struct smbcli_state *smbcli_state_init(void)
+struct smbcli_state *smbcli_state_init(TALLOC_CTX *mem_ctx)
 {
 	struct smbcli_state *cli;
 
-	cli = talloc_p(NULL, struct smbcli_state);
+	cli = talloc_p(mem_ctx, struct smbcli_state);
 	if (cli) {
 		ZERO_STRUCTP(cli);
 	}

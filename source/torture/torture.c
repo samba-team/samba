@@ -43,7 +43,7 @@ static struct smbcli_state *open_nbt_connection(void)
 	make_nmb_name(&calling, lp_netbios_name(), 0x0);
 	choose_called_name(&called, host, 0x20);
 
-	cli = smbcli_state_init();
+	cli = smbcli_state_init(NULL);
 	if (!cli) {
 		printf("Failed initialize smbcli_struct to connect with %s\n", host);
 		return NULL;
@@ -93,7 +93,8 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 	if (use_kerberos)
 		flags |= SMBCLI_FULL_CONNECTION_USE_KERBEROS;
 
-	status = smbcli_full_connection(c, lp_netbios_name(),
+	status = smbcli_full_connection(NULL,
+					c, lp_netbios_name(),
 					hostname, NULL, 
 					sharename, "?????", 
 					username, username[0]?userdomain:"",
@@ -857,7 +858,8 @@ static BOOL run_tcon_devtype_test(int dummy)
 	const char *userdomain = lp_parm_string(-1, "torture", "userdomain");
 	const char *password = lp_parm_string(-1, "torture", "password");
 	
-	status = smbcli_full_connection(&cli1, lp_netbios_name(),
+	status = smbcli_full_connection(NULL,
+					&cli1, lp_netbios_name(),
 					host, NULL, 
 					share, "?????",
 					username, userdomain,

@@ -169,7 +169,7 @@ static NTSTATUS connect_to_domain_password_server(struct smbcli_state **cli,
 		return NT_STATUS_NO_LOGON_SERVERS;
 	
 	/* Attempt connection */
-	result = smbcli_full_connection(cli, lp_netbios_name(), remote_machine,
+	result = smbcli_full_connection(NULL, cli, lp_netbios_name(), remote_machine,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "",0, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {

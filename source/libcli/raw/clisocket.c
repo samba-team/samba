@@ -37,11 +37,11 @@ static int sock_destructor(void *ptr)
 /*
   create a smbcli_socket context
 */
-struct smbcli_socket *smbcli_sock_init(void)
+struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx)
 {
 	struct smbcli_socket *sock;
 
-	sock = talloc_p(NULL, struct smbcli_socket);
+	sock = talloc_p(mem_ctx, struct smbcli_socket);
 	if (!sock) {
 		return NULL;
 	}

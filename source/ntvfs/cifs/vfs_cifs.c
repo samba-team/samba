@@ -122,13 +122,14 @@ static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename, 
 
 	ntvfs_set_private(req->tcon, depth, private);
 
-	status = smbcli_tree_full_connection(&private->tree, 
-					  "vfs_cifs",
-					  host,
-					  0,
-					  remote_share, "?????",
-					  user, domain,
-					  pass);
+	status = smbcli_tree_full_connection(private,
+					     &private->tree, 
+					     "vfs_cifs",
+					     host,
+					     0,
+					     remote_share, "?????",
+					     user, domain,
+					     pass);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

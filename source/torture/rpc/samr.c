@@ -2887,30 +2887,40 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Connect4 r4;
 	struct samr_Connect5 r5;
 	union samr_ConnectInfo info;
-	BOOL ret = True;
+	struct policy_handle h;
+	BOOL ret = True, got_handle = False;
 
 	printf("testing samr_Connect\n");
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.out.connect_handle = handle;
+	r.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		got_handle = True;
+		*handle = h;
 	}
 
 	printf("testing samr_Connect2\n");
 
 	r2.in.system_name = NULL;
 	r2.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r2.out.connect_handle = handle;
+	r2.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect2(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect2 failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		if (got_handle) {
+			test_Close(p, mem_ctx, handle);
+		}
+		got_handle = True;
+		*handle = h;
 	}
 
 	printf("testing samr_Connect3\n");
@@ -2918,12 +2928,18 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r3.in.system_name = NULL;
 	r3.in.unknown = 0;
 	r3.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r3.out.connect_handle = handle;
+	r3.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect3(p, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect3 failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		if (got_handle) {
+			test_Close(p, mem_ctx, handle);
+		}
+		got_handle = True;
+		*handle = h;
 	}
 
 	printf("testing samr_Connect4\n");
@@ -2931,12 +2947,18 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r4.in.system_name = "";
 	r4.in.unknown = 0;
 	r4.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r4.out.connect_handle = handle;
+	r4.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect4(p, mem_ctx, &r4);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect4 failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		if (got_handle) {
+			test_Close(p, mem_ctx, handle);
+		}
+		got_handle = True;
+		*handle = h;
 	}
 
 	printf("testing samr_Connect5\n");
@@ -2949,12 +2971,18 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r5.in.level = 1;
 	r5.in.info = &info;
 	r5.out.info = &info;
-	r5.out.connect_handle = handle;
+	r5.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect5(p, mem_ctx, &r5);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect5 failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		if (got_handle) {
+			test_Close(p, mem_ctx, handle);
+		}
+		got_handle = True;
+		*handle = h;
 	}
 
 	return ret;
