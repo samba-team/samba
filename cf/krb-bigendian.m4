@@ -9,10 +9,10 @@ dnl it when cross-compiling
 
 AC_DEFUN(KRB_C_BIGENDIAN, [
 AC_ARG_ENABLE(bigendian,
-[  --enable-bigendian	the target is big endian],
+	AC_HELP_STRING([--enable-bigendian],[the target is big endian]),
 krb_cv_c_bigendian=yes)
 AC_ARG_ENABLE(littleendian,
-[  --enable-littleendian	the target is little endian],
+	AC_HELP_STRING([--enable-littleendian],[the target is little endian]),
 krb_cv_c_bigendian=no)
 AC_CACHE_CHECK(whether byte order is known at compile time,
 krb_cv_c_bigendian_compile,

@@ -1,21 +1,22 @@
 dnl $Id$
 dnl
-dnl AC_TEST_PACKAGE_NEW(package,headers,libraries,extra libs,default locations, conditional)
+dnl AC_TEST_PACKAGE_NEW(package,headers,libraries,extra libs,
+dnl			default locations, conditional, config-program)
 
 AC_DEFUN(AC_TEST_PACKAGE,[AC_TEST_PACKAGE_NEW($1,[#include <$2>],$4,,$5)])
 
 AC_DEFUN(AC_TEST_PACKAGE_NEW,[
 AC_ARG_WITH($1,
-[  --with-$1=dir                use $1 in dir])
+	AC_HELP_STRING([--with-$1=dir],[use $1 in dir]))
 AC_ARG_WITH($1-lib,
-[  --with-$1-lib=dir            use $1 libraries in dir],
+	AC_HELP_STRING([--with-$1-lib=dir],[use $1 libraries in dir]),
 [if test "$withval" = "yes" -o "$withval" = "no"; then
   AC_MSG_ERROR([No argument for --with-$1-lib])
 elif test "X$with_$1" = "X"; then
   with_$1=yes
 fi])
 AC_ARG_WITH($1-include,
-[  --with-$1-include=dir        use $1 headers in dir],
+	AC_HELP_STRING([--with-$1-include=dir],[use $1 headers in dir]),
 [if test "$withval" = "yes" -o "$withval" = "no"; then
   AC_MSG_ERROR([No argument for --with-$1-include])
 elif test "X$with_$1" = "X"; then

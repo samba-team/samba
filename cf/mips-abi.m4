@@ -6,7 +6,7 @@ dnl value.
 
 AC_DEFUN(AC_MIPS_ABI, [
 AC_ARG_WITH(mips_abi,
-[  --with-mips-abi=abi     ABI to use for IRIX (32, n32, or 64)])
+	AC_HELP_STRING([--with-mips-abi=abi],[ABI to use for IRIX (32, n32, or 64)]))
 
 case "$host_os" in
 irix*)

@@ -10,7 +10,7 @@ dnl AC_ROKEN(version,directory-to-try,roken-dir,fallback-library,fallback-cppfla
 AC_DEFUN(AC_ROKEN, [
 
 AC_ARG_WITH(roken,
-[  --with-roken=dir	use the roken library in dir],
+	AC_HELP_STRING([--with-roken=dir],[use the roken library in dir]),
 [if test "$withval" = "no"; then
   AC_MSG_ERROR(roken is required)
 fi])
