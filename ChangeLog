@@ -1,3 +1,13 @@
+2000-11-15  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/send_to_kdc.c (recv_loop): check `fd' for being too
+	large to be able to select on
+
+2000-11-13  Assar Westerlund  <assar@sics.se>
+
+	* lib/hdb/ndbm.c: handle both ndbm.h and gdbm/ndbm.h
+	* lib/hdb/hdb.c: handle both ndbm.h and gdbm/ndbm.h
+
 2000-11-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/hpropd.8: remove extra .Xc
@@ -9,6 +19,17 @@
 2000-10-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/524.c: fix log messge
+
+2000-10-08  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswdd.c (add_new_tcp): check for the socket fd being
+	too large to select on
+	* kdc/connect.c (add_new_tcp): check for the socket fd being too
+	large to selct on
+	* kdc/connect.c (loop): check that the socket fd is not too large
+	to select on
+
+	* kdc/kaserver.c (do_authenticate): check for time skew
 
 2000-10-01  Assar Westerlund  <assar@sics.se>
 
