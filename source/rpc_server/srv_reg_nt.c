@@ -604,7 +604,7 @@ WERROR _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 	
 	/* message */
 	rpcstr_pull (message, unimsg.buffer, sizeof(message), unimsg.uni_str_len*2,0);
-		/* security check */
+	/* security check */
 	alpha_strcpy (chkmsg, message, NULL, sizeof(message));
 	/* timeout */
 	fstr_sprintf(timeout, "%d", q_u->timeout);
@@ -617,12 +617,23 @@ WERROR _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 
 	if(*shutdown_script) {
 		int shutdown_ret;
+		SE_PRIV se_shutdown = SE_REMOTE_SHUTDOWN;
+		BOOL can_shutdown;
+		
+		can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_shutdown );
+		
+		/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
+		if ( can_shutdown )
+			become_root();
 		all_string_sub(shutdown_script, "%m", chkmsg, sizeof(shutdown_script));
 		all_string_sub(shutdown_script, "%t", timeout, sizeof(shutdown_script));
 		all_string_sub(shutdown_script, "%r", r, sizeof(shutdown_script));
 		all_string_sub(shutdown_script, "%f", f, sizeof(shutdown_script));
 		shutdown_ret = smbrun(shutdown_script,NULL);
 		DEBUG(3,("_reg_shutdown: Running the command `%s' gave %d\n",shutdown_script,shutdown_ret));
+		if ( can_shutdown )
+			unbecome_root();
+		/********** END SeRemoteShutdownPrivilege BLOCK **********/
 	}
 
 	return status;
@@ -641,8 +652,20 @@ WERROR _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABO
 
 	if(*abort_shutdown_script) {
 		int abort_shutdown_ret;
+		SE_PRIV se_shutdown = SE_REMOTE_SHUTDOWN;
+		BOOL can_shutdown;
+		
+		can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_shutdown );
+		
+		/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
+		if ( can_shutdown )
+			become_root();
 		abort_shutdown_ret = smbrun(abort_shutdown_script,NULL);
 		DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",abort_shutdown_script,abort_shutdown_ret));
+		if ( can_shutdown )
+			unbecome_root();
+		/********** END SeRemoteShutdownPrivilege BLOCK **********/
+		
 	}
 
 	return status;
