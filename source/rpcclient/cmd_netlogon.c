@@ -296,25 +296,6 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 	if (argc == 6)
                 sscanf(argv[5], "%i", &auth_level);
 
-        /* Authenticate ourselves with the domain controller */
-
-        if (!secrets_init()) {
-                fprintf(stderr, "Unable to initialise secrets database\n");
-                return result;
-        }
-
-	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
-		fprintf(stderr, "could not fetch trust account password\n");
-		goto done;
-	}        
-
-        result = cli_nt_setup_creds(cli, get_sec_chan(), trust_passwd, &neg_flags, auth_level);
-
-        if (!NT_STATUS_IS_OK(result)) {
-                fprintf(stderr, "Error initialising session creds\n");
-                goto done;
-        }
-
         /* Perform the sam logon */
 
         result = cli_netlogon_sam_logon(cli, mem_ctx, username, password, logon_type);
