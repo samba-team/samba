@@ -40,6 +40,10 @@ static BOOL masked_match(const char *tok, const char *slash, const char *s)
 		DEBUG(0,("access: bad net/mask access control: %s\n", tok));
 		return (False);
 	}
+	
+	/* convert to network byte order */
+	mask = htonl(mask);
+	
 	return ((addr & mask) == net);
 }
 
