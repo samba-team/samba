@@ -348,15 +348,15 @@
 
 	typedef struct {
 		uint32 level;
-		uint32 level2;
 		[switch_is(level)] srvsvc_NetShareSubCtr subctr;
 	} srvsvc_NetShareCtr;
 	
 	WERROR srvsvc_NetShareEnumAll(
-		[in]   unistr *server_unc,
+		[in]       unistr *server_unc,
+		[in]       uint32 level,
 		[in,out]   srvsvc_NetShareCtr ctr,
-		[in]   uint32 preferred_len,
-		[out]   uint32 total,
+		[in]       uint32 preferred_len,
+		[out]      uint32 totalentries,
 		[in,out]   uint32 *resume_handle
 		);
 
@@ -590,11 +590,15 @@
 
 	/******************/
 	/* Function: 0x24 */
+	/* Note, there must be some way to return entries read vs 
+	   total entries ... */
 	WERROR srvsvc_NetShareEnum(
-		[in]   unistr *server_unc,
+		[in]       unistr *server_unc,
+	 	[in]	   uint32 level,
 		[in,out]   srvsvc_NetShareCtr ctr,
-		[in]   uint32 preferred_len,
-		[out]   uint32 total,
+		[in]       uint32 preferred_len,
+		[out]	   uint32 entriesread,  
+		[out]      uint32 totalentries,
 		[in,out]   uint32 *resume_handle
 		);
 
