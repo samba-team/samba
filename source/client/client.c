@@ -1869,6 +1869,21 @@ static int cmd_lowercase(void)
 }
 
 /****************************************************************************
+ Toggle the case sensitive flag.
+****************************************************************************/
+
+static int cmd_setcase(void)
+{
+	BOOL orig_case_sensitive = cli_set_case_sensitive(cli, False);
+
+	cli_set_case_sensitive(cli, !orig_case_sensitive);
+	DEBUG(2,("filename case sensitivity is now %s\n",!orig_case_sensitive ?
+		"on":"off"));
+
+	return 0;
+}
+
+/****************************************************************************
  Toggle the recurse flag.
 ****************************************************************************/
 
@@ -2179,6 +2194,7 @@ static struct
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
   {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
+  {"case_sensitive",cmd_setcase,"toggle the case sensitive flag to server",{COMPL_NONE,COMPL_NONE}},
   {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
   {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
   {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},

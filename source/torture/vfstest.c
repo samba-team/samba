@@ -466,7 +466,7 @@ BOOL reload_services(BOOL test)
 	reset_stat_cache();
 
 	/* this forces service parameters to be flushed */
-	set_current_service(NULL,True);
+	set_current_service(NULL,0,True);
 
 	return (ret);
 }
