@@ -36,7 +36,10 @@ static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filen
 	}
 
 	dir->count = 0;
-	dir->unix_path = name->full_name;
+	dir->unix_path = talloc_strdup(dir, name->full_name);
+	if (!dir->unix_path) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	dir->names = talloc_array_p(dir, const char *, 1);
 	if (!dir->names) {
@@ -81,7 +84,11 @@ NTSTATUS pvfs_list(struct pvfs_state *pvfs, struct pvfs_filename *name, struct p
 	}
 	
 	dir->count = 0;
-	dir->unix_path = name->full_name;
+	dir->unix_path = talloc_strdup(dir, name->full_name);
+	if (!dir->unix_path) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
 	dir->names = talloc(dir, 0);
 	if (!dir->names) {
 		return NT_STATUS_NO_MEMORY;
