@@ -287,6 +287,23 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 }
 
 /**
+ * Return the NTLMSSP master session key
+ * 
+ * @param ntlmssp_state NTLMSSP State
+ */
+
+NTSTATUS ntlmssp_session_key(struct ntlmssp_state *ntlmssp_state,
+			     DATA_BLOB *session_key)
+{
+	if (!ntlmssp_state->session_key.data) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+	*session_key = ntlmssp_state->session_key;
+
+	return NT_STATUS_OK;
+}
+
+/**
  * End an NTLMSSP state machine
  * 
  * @param ntlmssp_state NTLMSSP State, free()ed by this function
