@@ -179,7 +179,7 @@ login (char *host)
     if(sec_login(host))
 	printf("\n*** Using plaintext user and password ***\n\n");
     else{
-	printf("Kerberos authentication successful.\n\n");
+	printf("Authentication successful.\n\n");
     }
 
     if (ruserpass (host, &user, &pass, &acct) < 0) {
@@ -606,7 +606,7 @@ copy_stream (FILE * from, FILE * to)
 }
 
 void
-sendrequest (char *cmd, char *local, char *remote, int printnames)
+sendrequest (char *cmd, char *local, char *remote, char *lmode, int printnames)
 {
     struct stat st;
     struct timeval start, stop;
@@ -615,7 +615,7 @@ sendrequest (char *cmd, char *local, char *remote, int printnames)
     int (*closefunc) (FILE *);
     RETSIGTYPE (*oldintr)(), (*oldintp)();
     long bytes = 0, hashbytes = HASHBYTES;
-    char *lmode;
+    char *rmode;
 
     if (verbose && printnames) {
 	if (local && strcmp (local, "-") != 0)
@@ -653,7 +653,7 @@ sendrequest (char *cmd, char *local, char *remote, int printnames)
 	fin = stdin;
     else if (*local == '|') {
 	oldintp = signal (SIGPIPE, SIG_IGN);
-	fin = popen (local + 1, "r");
+	fin = popen (local + 1, lmode);
 	if (fin == NULL) {
 	    warn ("%s", local + 1);
 	    signal (SIGINT, oldintr);
@@ -663,7 +663,7 @@ sendrequest (char *cmd, char *local, char *remote, int printnames)
 	}
 	closefunc = pclose;
     } else {
-	fin = fopen (local, "r");
+	fin = fopen (local, lmode);
 	if (fin == NULL) {
 	    warn ("local: %s", local);
 	    signal (SIGINT, oldintr);
@@ -720,7 +720,7 @@ sendrequest (char *cmd, char *local, char *remote, int printnames)
 	    return;
 	}
 	restart_point = 0;
-	lmode = "r+w";
+	rmode = "r+w";
     }
     if (remote) {
 	if (command ("%s %s", cmd, remote) != PRELIM) {
@@ -739,7 +739,7 @@ sendrequest (char *cmd, char *local, char *remote, int printnames)
 		(*closefunc)(fin);
 	    return;
 	}
-    dout = dataconn(lmode);
+    dout = dataconn(rmode);
     if (dout == NULL)
 	goto abort;
     set_buffer_size (fileno (dout), 0);
