@@ -396,7 +396,7 @@
 		to change your config based on what the client calls you. Your 
 		server can have a "dual personality".</para>
 
-                <para>Note that this paramater is not available when Samba listens
+                <para>Note that this parameter is not available when Samba listens
                 on port 445, as clients no longer send this information </para>
                 </listitem>
 
@@ -5108,7 +5108,7 @@
                 (eg --with-tdbsam) at configure time.
 		</para>
 
-                <para>This paramater is in two parts, the backend's name, and a 'location'
+                <para>This parameter is in two parts, the backend's name, and a 'location'
                 string that has meaning only to that particular backed.  These are separated
                 by a : character.</para>
 
