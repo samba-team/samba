@@ -1,9 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    
-   Copyright (C) Andrew Tridgell 1992-2004
-   Copyright (C) Simo Sorce      2001-2002
-   Copyright (C) Martin Pool     2003
+   Copyright (C) Andrew Tridgell 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,136 +19,106 @@
 */
 
 #include "includes.h"
-#include "system/network.h"
 
-/**
- List of Strings manipulation functions
-**/
-
-#define S_LIST_ABS 16 /* List Allocation Block Size */
-
-char **str_list_make(const char *string, const char *sep)
+/*
+  build a null terminated list of strings from a input string and a
+  separator list. The sepatator list must contain characters less than
+  or equal to 0x2f for this to work correctly on multi-byte strings
+*/
+char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
-	char **list, **rlist;
-	const char *str;
-	char *s;
-	int num, lsize;
-	pstring tok;
-	
-	if (!string || !*string)
-		return NULL;
-	s = strdup(string);
-	if (!s) {
-		DEBUG(0,("str_list_make: Unable to allocate memory"));
+	int num_elements = 0;
+	char **ret = NULL;
+
+	if (sep == NULL) {
+		sep = LIST_SEP;
+	}
+
+	ret = talloc_realloc(mem_ctx, NULL, char *, 1);
+	if (ret == NULL) {
 		return NULL;
 	}
-	if (!sep) sep = LIST_SEP;
-	
-	num = lsize = 0;
-	list = NULL;
-	
-	str = s;
-	while (next_token(&str, tok, sep, sizeof(tok))) {		
-		if (num == lsize) {
-			lsize += S_LIST_ABS;
-			rlist = realloc_p(list, char *, lsize + 1);
-			if (!rlist) {
-				DEBUG(0,("str_list_make: Unable to allocate memory"));
-				str_list_free(&list);
-				SAFE_FREE(s);
-				return NULL;
-			} else
-				list = rlist;
-			memset (&list[num], 0, ((sizeof(char**)) * (S_LIST_ABS +1)));
-		}
+
+	while (string && *string) {
+		size_t len = strcspn(string, sep);
+		char **ret2;
 		
-		list[num] = strdup(tok);
-		if (!list[num]) {
-			DEBUG(0,("str_list_make: Unable to allocate memory"));
-			str_list_free(&list);
-			SAFE_FREE(s);
+		if (len == 0) {
+			string += strspn(string, sep);
+			continue;
+		}
+
+		ret2 = talloc_realloc(mem_ctx, ret, char *, num_elements+2);
+		if (ret2 == NULL) {
+			talloc_free(ret);
 			return NULL;
 		}
-	
-		num++;	
+		ret = ret2;
+
+		ret[num_elements] = talloc_strndup(ret, string, len);
+		if (ret[num_elements] == NULL) {
+			talloc_free(ret);
+			return NULL;
+		}
+
+		num_elements++;
+		string += len;
 	}
-	
-	SAFE_FREE(s);
-	return list;
+
+	ret[num_elements] = NULL;
+
+	return ret;
 }
 
-BOOL str_list_copy(char ***dest, const char **src)
+/*
+  return the number of elements in a string list
+*/
+size_t str_list_length(const char **list)
 {
-	char **list, **rlist;
-	int num, lsize;
-	
-	*dest = NULL;
-	if (!src)
-		return False;
-	
-	num = lsize = 0;
-	list = NULL;
-		
-	while (src[num]) {
-		if (num == lsize) {
-			lsize += S_LIST_ABS;
-			rlist = realloc_p(list, char *, lsize + 1);
-			if (!rlist) {
-				DEBUG(0,("str_list_copy: Unable to re-allocate memory"));
-				str_list_free(&list);
-				return False;
-			} else
-				list = rlist;
-			memset (&list[num], 0, ((sizeof(char **)) * (S_LIST_ABS +1)));
-		}
-		
-		list[num] = strdup(src[num]);
-		if (!list[num]) {
-			DEBUG(0,("str_list_copy: Unable to allocate memory"));
-			str_list_free(&list);
-			return False;
-		}
-
-		num++;
-	}
-	
-	*dest = list;
-	return True;	
+	size_t ret;
+	for (ret=0;list && list[ret];ret++) /* noop */ ;
+	return ret;
 }
 
-/**
+
+/*
+  copy a string list
+*/
+char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
+{
+	int i;
+	char **ret = talloc_array(mem_ctx, char *, str_list_length(list)+1);
+	if (ret == NULL) return NULL;
+
+	for (i=0;list && list[i];i++) {
+		ret[i] = talloc_strdup(ret, list[i]);
+		if (ret[i] == NULL) {
+			talloc_free(ret);
+			return NULL;
+		}
+	}
+	ret[i] = NULL;
+	return ret;
+}
+
+/*
    Return true if all the elements of the list match exactly.
- **/
-BOOL str_list_compare(char **list1, char **list2)
+ */
+BOOL str_list_equal(const char **list1, const char **list2)
 {
-	int num;
+	int i;
 	
-	if (!list1 || !list2)
+	if (list1 == NULL || list2 == NULL) {
 		return (list1 == list2); 
-	
-	for (num = 0; list1[num]; num++) {
-		if (!list2[num])
-			return False;
-		if (!strcsequal(list1[num], list2[num]))
-			return False;
 	}
-	if (list2[num])
-		return False; /* if list2 has more elements than list1 fail */
 	
+	for (i=0;list1[i] && list2[i];i++) {
+		if (strcmp(list1[i], list2[i]) != 0) {
+			return False;
+		}
+	}
+	if (list1[i] || list2[i]) {
+		return False;
+	}
 	return True;
 }
-
-void str_list_free(char ***list)
-{
-	char **tlist;
-	
-	if (!list || !*list)
-		return;
-	tlist = *list;
-	for(; *tlist; tlist++)
-		SAFE_FREE(*tlist);
-	SAFE_FREE(*list);
-}
-
-
-
