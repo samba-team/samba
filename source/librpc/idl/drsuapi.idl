@@ -15,11 +15,11 @@ interface drsuapi
 	typedef [flag(NDR_PAHEX)] struct {
 		[range(1,10000)] uint32 length;
 		[size_is(length)] uint8 data[];
-	} drsuapi_BindInfo;
+	} drsuapi_DsBindInfo;
 
 	NTSTATUS drsuapi_DsBind(
 		[in]	    GUID *server_guid,
-		[in,out]    drsuapi_BindInfo *bind_info,
+		[in,out]    drsuapi_DsBindInfo *bind_info,
 		[out,ref]   policy_handle *bind_handle
 		);
 
