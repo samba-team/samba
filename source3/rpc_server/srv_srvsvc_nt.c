@@ -253,8 +253,12 @@ static BOOL delete_share_security(int snum)
 static BOOL read_only_share_sd(SEC_DESC *psd)
 {
 	int i;
-	SEC_ACL *ps_dacl = psd->dacl;
+	SEC_ACL *ps_dacl = NULL;
 
+	if (!psd)
+		return True;
+
+	ps_dacl = psd->dacl;
 	if (!ps_dacl)
 		return True;
 
@@ -267,6 +271,32 @@ static BOOL read_only_share_sd(SEC_DESC *psd)
 	}
 
 	return True;
+}
+
+/*******************************************************************
+ Map any generic bits to file specific bits.
+********************************************************************/
+
+void map_generic_share_sd_bits(SEC_DESC *psd)
+{
+	extern struct generic_mapping file_generic_mapping;
+	int i;
+	SEC_ACL *ps_dacl = NULL;
+
+	if (!psd)
+		return;
+
+	ps_dacl = psd->dacl;
+	if (!ps_dacl)
+		return;
+
+	for (i = 0; i < ps_dacl->num_aces; i++) {
+		SEC_ACE *psa = &ps_dacl->ace[i];
+		uint32 orig_mask = psa->info.mask;
+
+		se_map_generic(&psa->info.mask, &file_generic_mapping);
+		psa->info.mask |= orig_mask;
+	}	
 }
 
 /*******************************************************************
@@ -1200,6 +1230,9 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	r_u->switch_value = 0;
 
+	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$"))
+		return NT_STATUS_BAD_NETWORK_NAME;
+
 	snum = find_service(share_name);
 
 	/* Does this share exist ? */
@@ -1220,16 +1253,26 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info2.info_2.type;
 		read_only = False; /* No SD means "Everyone full access. */
+		psd = NULL;
 		break;
 	case 502:
 		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info502.info_502.type;
 		psd = q_u->info.share.info502.info_502_str.sd;
+		map_generic_share_sd_bits(psd);
 		read_only = read_only_share_sd(psd);
 		break;
 	case 1005:
 		return ERROR_ACCESS_DENIED;
+	case 1501:
+		fstrcpy(pathname, lp_pathname(snum));
+		fstrcpy(comment, lp_comment(snum));
+		psd = q_u->info.share.info1501.sdb->sec;
+		map_generic_share_sd_bits(psd);
+		read_only = read_only_share_sd(psd);
+		type = STYPE_DISKTREE;
+		break;
 	default:
 		DEBUG(5,("_srv_net_share_set_info: unsupported switch value %d\n", q_u->info_level));
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -1267,6 +1310,8 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 		/* Send SIGHUP to process group. */
 		kill(0, SIGHUP);
+	} else {
+		DEBUG(10,("_srv_net_share_set_info: No change to share name (%s)\n", share_name ));
 	}
 
 	/* Replace SD if changed. */
@@ -1335,6 +1380,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info502.info_502.type;
 		psd = q_u->info.share.info502.info_502_str.sd;
+		map_generic_share_sd_bits(psd);
 		read_only = read_only_share_sd(psd);
 		break;
 	case 1005:

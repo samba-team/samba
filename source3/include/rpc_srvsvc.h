@@ -339,7 +339,6 @@ typedef struct str_share_info502
 } SH_INFO_502_STR;
 
 /* SRV_SHARE_INFO_502 */
-/* SRV_SHARE_INFO_2 */
 typedef struct share_info_502_info
 {
 	SH_INFO_502 info_502;
@@ -352,6 +351,12 @@ typedef struct share_info_1005_info
 {
   uint32 dfs_root_flag; 
 } SRV_SHARE_INFO_1005;
+
+/* SRV_SHARE_INFO_1501 */
+typedef struct share_info_1501_info
+{
+	SEC_DESC_BUF *sdb;
+} SRV_SHARE_INFO_1501;
 
 /* SRV_SHARE_INFO_CTR */
 typedef struct srv_share_info_ctr_info
@@ -413,6 +418,8 @@ typedef struct q_net_share_get_info_info
 
 } SRV_Q_NET_SHARE_GET_INFO;
 
+/* JRA. NB. We also need level 1004 and 1006 here. */
+
 /* SRV_SHARE_INFO */
 typedef struct srv_share_info {
 	uint32 switch_value;
@@ -423,6 +430,7 @@ typedef struct srv_share_info {
 		SRV_SHARE_INFO_2 info2;
 		SRV_SHARE_INFO_502 info502;
         SRV_SHARE_INFO_1005 info1005;
+        SRV_SHARE_INFO_1501 info1501;
 	} share;
 } SRV_SHARE_INFO;
 
@@ -433,8 +441,6 @@ typedef struct r_net_share_get_info_info
 	uint32 status;
 
 } SRV_R_NET_SHARE_GET_INFO;
-
-/* JRA. NB. We also need level 1004, 1006 and 1501 here. */
 
 /* SRV_Q_NET_SHARE_SET_INFO */
 typedef struct q_net_share_set_info_info
