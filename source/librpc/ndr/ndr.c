@@ -433,34 +433,46 @@ NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char 
   we use magic in pidl to make them easier to cope with
 */
 NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr, 
-					   size_t sub_size,
+					   size_t header_size,
+					   ssize_t size_is,
 					   struct ndr_pull *ndr2)
 {
 	ndr2->flags = ndr->flags;
 
-	switch (sub_size) {
+	switch (header_size) {
 	case 0: {
-		uint32_t size = ndr->data_size - ndr->offset;
-		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
+		uint32_t content_size = ndr->data_size - ndr->offset;
+		if (size_is >= 0) {
+			content_size = size_is;
+		}
+		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, content_size));
 		break;
 	}
 
 	case 2: {
-		uint16_t size;
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &size));
-		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
+		uint16_t content_size;
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &content_size));
+		if (size_is >= 0 && size_is != content_size) {
+			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d", 
+						size_is, content_size);
+		}
+		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, content_size));
 		break;
 	}
 
 	case 4: {
-		uint32_t size;
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &size));
-		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
+		uint32_t content_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &content_size));
+		if (size_is >= 0 && size_is != content_size) {
+			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d", 
+						size_is, content_size);
+		}
+		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, content_size));
 		break;
 	}
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext size %d", 
-				      sub_size);
+		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) header_size %d", 
+				      header_size);
 	}
 	return NT_STATUS_OK;
 }
@@ -469,10 +481,21 @@ NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
   push a subcontext header 
 */
 NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr, 
-					   size_t sub_size,
+					   size_t header_size,
+					   ssize_t size_is,
 					   struct ndr_push *ndr2)
 {
-	switch (sub_size) {
+	if (size_is >= 0) {
+		ssize_t padding_len = size_is - ndr2->offset;
+		if (padding_len > 0) {
+			NDR_CHECK(ndr_push_zero(ndr2, padding_len));
+		} else if (padding_len < 0) {
+			return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PUSH) content_size %d is larger than size_is(%d)",
+					      ndr2->offset, size_is);
+		}
+	}
+
+	switch (header_size) {
 	case 0: 
 		break;
 
@@ -485,8 +508,8 @@ NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr,
 		break;
 
 	default:
-		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext size %d", 
-				      sub_size);
+		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext header size %d", 
+				      header_size);
 	}
 	return NT_STATUS_OK;
 }
