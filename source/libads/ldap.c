@@ -130,7 +130,7 @@ again:
 	
 	pstrcpy( realm, c_realm );
 
-	DEBUG(6,("ads_try_dns: looking for %s realm '%s'\n", 
+	DEBUG(6,("ads_find_dc: looking for %s '%s'\n", 
 		(got_realm ? "realm" : "domain"), realm));
 
 	if ( !get_sorted_dc_list(realm, &ip_list, &count, got_realm) ) {
@@ -147,14 +147,20 @@ again:
 	for ( i=0; i<count; i++ ) {
 		/* since this is an ads conection request, default to LDAP_PORT is not set */
 		int port = (ip_list[i].port!=PORT_NONE) ? ip_list[i].port : LDAP_PORT;
+		fstring server;
 		
-		if ( ads_try_connect(ads, inet_ntoa(ip_list[i].ip), port) ) {
+		fstrcpy( server, inet_ntoa(ip_list[i].ip) );
+		
+		if ( !NT_STATUS_IS_OK(check_negative_conn_cache(realm, server)) )
+			continue;
+			
+		if ( ads_try_connect(ads, server, port) ) {
 			SAFE_FREE(ip_list);
 			return True;
 		}
 		
 		/* keep track of failures */
-		add_failed_connection_entry( realm, inet_ntoa(ip_list[i].ip), NT_STATUS_UNSUCCESSFUL );
+		add_failed_connection_entry( realm, server, NT_STATUS_UNSUCCESSFUL );
 	}
 
 	SAFE_FREE(ip_list);
