@@ -193,12 +193,14 @@ krb5_to4 (krb5_ccache id)
 	if (ret)
 	    return;
 
-	krb5_make_principal(context, &mcred.server,
-			    princ->realm,
-			    "krbtgt",
-			    princ->realm,
-			    NULL);
+	ret = krb5_make_principal(context, &mcred.server,
+				  princ->realm,
+				  "krbtgt",
+				  princ->realm,
+				  NULL);
 	krb5_free_principal (context, princ);
+	if (ret)
+	    return ret;
 
 	ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
 	if(ret == 0) {
