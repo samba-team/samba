@@ -1,0 +1,224 @@
+--- lmhosts
++++ lmhosts	2000/08/28 07:32:33
+@@ -0,0 +1,8 @@
++# This file provides the same function that the 
++# lmhosts file does for Windows.
++# It provides another way to map netbios names to ip addresses.
++# See the section on 'name resolve order' in the manual page to
++# smb.conf for more information.
++
++# Sample entry:
++# 192.168.1.1 samba
+--- mount.smbfs
++++ mount.smbfs	2000/08/28 07:32:55
+@@ -0,0 +1,14 @@
++#!/bin/sh
++#
++# Copyright (c) 1999 SuSE GmbH Nuernberg, Germany.  All rights reserved.
++#
++# Author: Carsten Hoeger <choeger@suse.de>
++#
++# /sbin/mount.smbfs
++#
++# I'm called by the mount-command and smbmount want's to get
++# called by me, so lets do it.
++#
++# P.S.: This is a very very raw solution and I don't know, if this
++# is intentionally.
++smbmount "$@"
+--- rc
++++ rc	2000/08/28 07:32:33
+@@ -0,0 +1,53 @@
++#! /bin/sh
++# Copyright (c) 1996 StarDivision GmbH. All rights reserved.
++# Copyright (c) 1996 S.u.S.E. Gmbh Fuerth, Germany. All rights reserved.
++#
++# Author: Bastian Epting, StarDivision GmbH <be@stardivision.de>
++#      Florian La Roche, <florian@suse.de>
++#      Volker Lendecke, <vl@suse.de>
++#
++
++. /etc/rc.config
++
++# Determine the base and follow a runlevel link name.
++base=${0##*/}
++link=${base#*[SK][0-9][0-9]}
++
++# Force execution if not called by a runlevel directory.
++test $link = $base && START_SMB=yes
++test "$START_SMB" = "yes" || exit 0
++
++# The echo return value for success (defined in /etc/rc.config).
++return=$rc_done
++case "$1" in
++    start)
++        echo -n "Starting SMB services:"
++        startproc /usr/sbin/nmbd -D || return=$rc_failed
++        startproc /usr/sbin/smbd -D || return=$rc_failed
++        echo -e "$return"
++        ;;
++    stop)
++        echo -n "Shutting down SMB services:"
++        killproc -TERM /usr/sbin/nmbd || return=$rc_failed
++        killproc -TERM /usr/sbin/smbd || return=$rc_failed
++        echo -e "$return"
++        ;;
++    restart|reload)
++	echo -n "Reloading SMB services:"
++	killproc -HUP /usr/sbin/nmbd || return=$rc_failed
++	killproc -HUP /usr/sbin/smbd || return=$rc_failed
++	echo -e "$return"
++	;;
++    status)
++	echo -n "Checking for service smb: "
++	checkproc /usr/sbin/nmbd && echo -n "OK " || echo -n "No process "
++	checkproc /usr/sbin/smbd && echo "OK " || echo "No process"
++	;;
++    *)
++        echo "Usage: $0 {start|stop|restart|reload|status}"
++        exit 1
++esac
++
++# Inform the caller not only verbosely and set an exit status.
++test "$return" = "$rc_done" || exit 1
++exit 0
+--- rc.config.samba
++++ rc.config.samba	2000/08/28 07:32:33
+@@ -0,0 +1,5 @@
++#
++# start samba? ("yes" or "no")
++# Windows 95 / NT  -  File- and Printservices
++#
++START_SMB="no"
+--- smb.conf
++++ smb.conf	2000/08/28 07:32:33
+@@ -0,0 +1,80 @@
++;
++; /etc/smb.conf
++;
++; Copyright (c) 1999 SuSE GmbH Nuernberg, Germany.
++;
++[global]
++   workgroup = arbeitsgruppe
++   guest account = nobody
++   keep alive = 30
++   os level = 2
++   kernel oplocks = false
++   security = user
++
++; Uncomment the following, if you want to use an existing
++; NT-Server to authenticate users, but don't forget that
++; you also have to create them locally!!!
++;  security = server
++;  password server = 192.168.1.10
++;  encrypt passwords = yes
++
++   printing = bsd
++   printcap name = /etc/printcap
++   load printers = yes
++
++   socket options = TCP_NODELAY
++
++   map to guest = Bad User
++
++; Uncomment this, if you want to integrate your server
++; into an existing net e.g. with NT-WS to prevent nettraffic
++;  local master = no   
++
++; Please uncomment the following entry and replace the 
++; ip number and netmask with the correct numbers for
++; your ethernet interface.
++;   interfaces = 192.168.1.1/255.255.255.0
++   
++; If you want Samba to act as a wins server, please set
++; 'wins support = yes'
++   wins support = no
++
++; If you want Samba to use an existing wins server,
++; please uncomment the following line and replace
++; the dummy with the wins server's ip number.
++;   wins server = 192.168.1.1
++
++; Do you wan't samba to act as a logon-server for
++; your windows 95/98 clients, so uncomment the
++; following:
++;   logon script =%U.bat
++;   domain logons = yes
++;   domain master = yes
++; [netlogon]
++;   path = /netlogon
++
++
++[homes]
++   comment = Heimatverzeichnis
++   browseable = no
++   read only = no
++   create mode = 0750
++
++; The following share gives all users access to the Server's CD drive,
++; assuming it is mounted under /cd. To enable this share, please remove
++; the semicolons before the lines
++;
++; [cdrom]
++;   comment = Linux CD-ROM
++;   path = /cdrom
++;   read only = yes
++;   locking = no
++
++[printers]
++   comment = All Printers
++   browseable = no
++   printable = yes
++   public = no
++   read only = yes
++   create mode = 0700
++   directory = /tmp
+--- smbfs
++++ smbfs	2000/08/28 07:32:33
+@@ -0,0 +1,40 @@
++#! /bin/bash
++# Copyright (c) 1996 SuSE GmbH Nuernberg, Germany.  All rights reserved.
++#
++# Author: Thomas Fehr <fehr@suse.de>, 1999
++#
++# /sbin/init.d/smbfs
++#
++
++smbfs=no
++if [ `cat /proc/mounts | grep " smbfs " | wc -l` -gt 0 ]
++then
++    smbfs=yes
++fi
++
++return=$rc_done
++case "$1" in
++    start|reload)
++	;;
++    stop)
++	if [ "$smbfs" = "yes" ]
++	then
++	    echo -n "Remove SMB File System"
++	    #
++	    # Unmount in background because during long timeouts
++	    #
++	    umount -at smbfs &
++	    sleep 2
++	    echo -e "$return"
++	fi
++	;;
++    restart)
++	$0 stop && $0 start || return=$rc_failed
++	;;
++    status)
++	;;
++    *)
++	echo "Usage: $0 {start|stop|status|reload|restart}"
++	exit 1
++esac
++exit 0
+--- smbpasswd
++++ smbpasswd	2000/08/28 07:32:33
+@@ -0,0 +1,3 @@
++# Sample smbpasswd file.
++# To use this, set 'encrypt passwords = yes' in the [global]-section
++# of /etc/smb.conf
