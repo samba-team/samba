@@ -1,3 +1,8 @@
+2003-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: add description on how to turn on v4, 524 and
+	kaserver support
+
 2003-03-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/verify_krb5_conf.c (appdefaults_entries): add afslog
