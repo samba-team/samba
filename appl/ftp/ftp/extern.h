@@ -165,3 +165,9 @@ extern int	NCMDS;
 extern char 	username[32];
 extern char	myhostname[];
 extern char	*mydomain;
+
+void afslog (int, char **);
+void kauth (int, char **);
+void kdestroy (int, char **);
+void klist (int, char **);
+void krbtkfile (int, char **);
