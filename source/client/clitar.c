@@ -434,7 +434,7 @@ Write two zero blocks at end of file
 ****************************************************************************/
 static void dotareof(int f)
 {
-  SMB_STRUCT_STAT stbuf;
+  struct stat stbuf;
   /* Two zero blocks at end of file, write out full buffer */
 
   if (dry_run)
@@ -443,7 +443,7 @@ static void dotareof(int f)
   (void) dozerobuf(f, TBLOCK);
   (void) dozerobuf(f, TBLOCK);
 
-  if (sys_fstat(f, &stbuf) == -1)
+  if (fstat(f, &stbuf) == -1)
     {
       DEBUG(0, ("Couldn't stat file handle\n"));
       return;
@@ -1721,10 +1721,10 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 	DEBUG(0,("Option N must be followed by valid file name\n"));
 	return 0;
       } else {
-	SMB_STRUCT_STAT stbuf;
+	struct stat stbuf;
 	extern time_t newer_than;
 	
-	if (sys_stat(argv[Optind], &stbuf) == 0) {
+	if (stat(argv[Optind], &stbuf) == 0) {
 	  newer_than = stbuf.st_mtime;
 	  DEBUG(1,("Getting files newer than %s",
 		   asctime(localtime(&newer_than))));
@@ -1879,8 +1879,8 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 	}
 	tarhandle=-1;
       } else
-    if ((tar_type=='x' && (tarhandle = sys_open(argv[Optind], O_RDONLY, 0)) == -1)
-	|| (tar_type=='c' && (tarhandle=sys_creat(argv[Optind], 0644)) < 0))
+    if ((tar_type=='x' && (tarhandle = open(argv[Optind], O_RDONLY, 0)) == -1)
+	|| (tar_type=='c' && (tarhandle=creat(argv[Optind], 0644)) < 0))
       {
 	DEBUG(0,("Error opening local file %s - %s\n",
 		 argv[Optind], strerror(errno)));

@@ -682,7 +682,7 @@ void reply_readbraw(struct smbsrv_request *req)
 	/* the 64 bit variant */
 	if (req->in.wct == 10) {
 		uint32_t offset_high = IVAL(req->in.vwv, VWV(8));
-		io.readbraw.in.offset |= (((SMB_OFF_T)offset_high) << 32);
+		io.readbraw.in.offset |= (((off_t)offset_high) << 32);
 	}
 
 	/* before calling the backend we setup the raw buffer. This

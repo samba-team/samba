@@ -102,7 +102,7 @@ static NTSTATUS nbench_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	asprintf(&logname, "/tmp/nbenchlog%d.%u", ntvfs->depth, getpid());
-	nprivates->log_fd = sys_open(logname, O_WRONLY|O_CREAT|O_APPEND, 0644);
+	nprivates->log_fd = open(logname, O_WRONLY|O_CREAT|O_APPEND, 0644);
 	free(logname);
 
 	if (nprivates->log_fd == -1) {

@@ -82,28 +82,6 @@ typedef int BOOL;
 #define LEVEL_II_OPLOCK_BREAK_CMD 0x3
 #define ASYNC_LEVEL_II_OPLOCK_BREAK_CMD 0x4
 
-/*
- * Capabilities abstracted for different systems.
- */
-
-#define KERNEL_OPLOCK_CAPABILITY 0x1
-
-/*
- * Oplock break command code sent via the kernel interface (if it exists).
- *
- * Form of this is :
- *
- *  0     2       2+devsize 2+devsize+inodesize
- *  +----+--------+--------+----------+
- *  | cmd| dev    |  inode |  fileid  |
- *  +----+--------+--------+----------+
- */
-#define KERNEL_OPLOCK_BREAK_DEV_OFFSET 2
-#define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define KERNEL_OPLOCK_BREAK_FILEID_OFFSET (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
-#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
-
-
 #define CMD_REPLY 0x8000
 
 #include "smb_macros.h"

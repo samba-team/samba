@@ -475,119 +475,8 @@ typedef int socklen_t;
 #endif
 
 /*
- * Types for devices, inodes and offsets.
- */
-
-#ifndef SMB_DEV_T
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_DEV64_T)
-#    define SMB_DEV_T dev64_t
-#  else
-#    define SMB_DEV_T dev_t
-#  endif
-#endif
-
-/*
- * Setup the correctly sized inode type.
- */
-
-#ifndef SMB_INO_T
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)
-#    define SMB_INO_T ino64_t
-#  else
-#    define SMB_INO_T ino_t
-#  endif
-#endif
-
-#ifndef LARGE_SMB_INO_T
-#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
-#    define LARGE_SMB_INO_T 1
-#  endif
-#endif
-
-#ifdef LARGE_SMB_INO_T
-#define SINO_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#else 
-#define SINO_T(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
-#endif
-
-#ifndef SMB_OFF_T
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)
-#    define SMB_OFF_T off64_t
-#  else
-#    define SMB_OFF_T off_t
-#  endif
-#endif
-
-/*
- * Set the define that tells us if we can do 64 bit
- * NT SMB calls.
- */
-
-#ifndef LARGE_SMB_OFF_T
-#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
-#    define LARGE_SMB_OFF_T 1
-#  endif
-#endif
-
-/*
  * Type for stat structure.
  */
-
-#ifndef SMB_STRUCT_STAT
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
-#    define SMB_STRUCT_STAT struct stat64
-#  else
-#    define SMB_STRUCT_STAT struct stat
-#  endif
-#endif
-
-/*
- * Type for dirent structure.
- */
-
-#ifndef SMB_STRUCT_DIRENT
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIRENT64)
-#    define smb_dirent dirent64
-#  else
-#    define smb_dirent dirent
-#  endif
-#endif
-
-/*
- * Defines for 64 bit fcntl locks.
- */
-
-#ifndef SMB_STRUCT_FLOCK
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
-#    define SMB_STRUCT_FLOCK struct flock64
-#  else
-#    define SMB_STRUCT_FLOCK struct flock
-#  endif
-#endif
-
-#ifndef SMB_F_SETLKW
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
-#    define SMB_F_SETLKW F_SETLKW64
-#  else
-#    define SMB_F_SETLKW F_SETLKW
-#  endif
-#endif
-
-#ifndef SMB_F_SETLK
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
-#    define SMB_F_SETLK F_SETLK64
-#  else
-#    define SMB_F_SETLK F_SETLK
-#  endif
-#endif
-
-#ifndef SMB_F_GETLK
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
-#    define SMB_F_GETLK F_GETLK64
-#  else
-#    define SMB_F_GETLK F_GETLK
-#  endif
-#endif
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -970,53 +859,10 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #define LOG_DEBUG       7       /* debug-level messages */
 #endif
 
-/* NetBSD doesn't have these */
-#ifndef SHM_R
-#define SHM_R 0400
-#endif
-
-#ifndef SHM_W
-#define SHM_W 0200
-#endif
-
-#if HAVE_KERNEL_SHARE_MODES
-#ifndef LOCK_MAND 
-#define LOCK_MAND	32	/* This is a mandatory flock */
-#define LOCK_READ	64	/* ... Which allows concurrent read operations */
-#define LOCK_WRITE	128	/* ... Which allows concurrent write operations */
-#define LOCK_RW		192	/* ... Which allows concurrent read & write ops */
-#endif
-#endif
-
 extern int DEBUGLEVEL;
-
-#define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
-
-
-#ifdef GLIBC_HACK_FCNTL64
-/* this is a gross hack. 64 bit locking is completely screwed up on
-   i386 Linux in glibc 2.1.95 (which ships with RedHat 7.0). This hack
-   "fixes" the problem with the current 2.4.0test kernels 
-*/
-#define fcntl fcntl64
-#undef F_SETLKW 
-#undef F_SETLK 
-#define F_SETLK 13
-#define F_SETLKW 14
-#endif
-
-
-/* Needed for sys_dlopen/sys_dlsym/sys_dlclose */
-#ifndef RTLD_GLOBAL
-#define RTLD_GLOBAL 0
-#endif
 
 #ifndef RTLD_LAZY
 #define RTLD_LAZY 0
-#endif
-
-#ifndef RTLD_NOW
-#define RTLD_NOW 0
 #endif
 
 /* needed for some systems without iconv. Doesn't really matter
@@ -1026,9 +872,6 @@ extern int DEBUGLEVEL;
 #endif
 
 /* add varargs prototypes with printf checking */
-int fdprintf(int , const char *, ...) PRINTF_ATTRIBUTE(2,3);
-int d_printf(const char *, ...) PRINTF_ATTRIBUTE(1,2);
-int d_fprintf(FILE *f, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #ifndef HAVE_SNPRINTF_DECL
 int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
@@ -1036,19 +879,10 @@ int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
-void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
-
-int pstr_sprintf(pstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-int fstr_sprintf(fstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-
-int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
-
-int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
 /* we used to use these fns, but now we have good replacements
    for snprintf and vsnprintf */
 #define slprintf snprintf
-#define vslprintf vsnprintf
 
 
 /* we need to use __va_copy() on some platforms */

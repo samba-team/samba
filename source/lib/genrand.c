@@ -118,7 +118,7 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
 	unsigned char tmp_md4[16];
 	int fd, n;
 
-	fd = sys_open(fname,O_RDONLY,0);
+	fd = open(fname,O_RDONLY,0);
 	if (fd == -1)
 		return;
 
@@ -152,7 +152,7 @@ static int do_reseed(BOOL use_fd, int fd)
 		if (fd != -1)
 			return fd;
 
-		fd = sys_open( "/dev/urandom", O_RDONLY,0);
+		fd = open( "/dev/urandom", O_RDONLY,0);
 		if(fd >= 0)
 			return fd;
 	}

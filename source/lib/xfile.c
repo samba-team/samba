@@ -109,7 +109,7 @@ XFILE *x_fopen(const char *fname, int flags, mode_t mode)
 
 	ret->open_flags = flags;
 
-	ret->fd = sys_open(fname, flags, mode);
+	ret->fd = open(fname, flags, mode);
 	if (ret->fd == -1) {
 		SAFE_FREE(ret);
 		return NULL;
@@ -379,5 +379,5 @@ off_t x_tseek(XFILE *f, off_t offset, int whence)
 	}
 
 	f->flags &= ~X_FLAG_EOF;
-	return (off_t)sys_lseek(f->fd, offset, whence);
+	return lseek(f->fd, offset, whence);
 }

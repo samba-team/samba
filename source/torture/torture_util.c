@@ -167,6 +167,15 @@ void *shm_setup(int size)
 	int shmid;
 	void *ret;
 
+/* NetBSD doesn't have these */
+#ifndef SHM_R
+#define SHM_R 0400
+#endif
+
+#ifndef SHM_W
+#define SHM_W 0200
+#endif
+
 	shmid = shmget(IPC_PRIVATE, size, SHM_R | SHM_W);
 	if (shmid == -1) {
 		printf("can't get shared memory\n");
