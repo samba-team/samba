@@ -80,7 +80,7 @@ static BOOL lsa_io_trans_name(const char *desc, LSA_TRANS_NAME *trn, prs_struct 
 static BOOL lsa_io_dom_r_ref(const char *desc, DOM_R_REF *r_r, prs_struct *ps, 
 			     int depth)
 {
-	int i;
+	unsigned int i;
 
 	prs_debug(ps, depth, desc, "lsa_io_dom_r_ref");
 	depth++;
@@ -531,7 +531,7 @@ BOOL lsa_io_q_enum_trust_dom(const char *desc, LSA_Q_ENUM_TRUST_DOM *q_e,
 void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context,
 			   uint32 req_num_domains, uint32 num_domains, TRUSTDOM **td)
 {
-	int i;
+	unsigned int i;
 
         DEBUG(5, ("init_r_enum_trust_dom\n"));
 	
@@ -851,7 +851,7 @@ static void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen,
 static BOOL lsa_io_sid_enum(const char *desc, LSA_SID_ENUM *sen, prs_struct *ps, 
 			    int depth)
 {
-	int i;
+	unsigned int i;
 
 	prs_debug(ps, depth, desc, "lsa_io_sid_enum");
 	depth++;
@@ -967,7 +967,7 @@ BOOL lsa_io_q_lookup_sids(const char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *
 static BOOL lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn,
                 prs_struct *ps, int depth)
 {
-	int i;
+	unsigned int i;
 
 	prs_debug(ps, depth, desc, "lsa_io_trans_names");
 	depth++;
@@ -1063,7 +1063,7 @@ makes a structure.
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
 			 POLICY_HND *hnd, int num_names, const char **names)
 {
-	int i;
+	unsigned int i;
 
 	DEBUG(5, ("init_q_lookup_names\n"));
 
@@ -1102,7 +1102,7 @@ reads or writes a structure.
 BOOL lsa_io_q_lookup_names(const char *desc, LSA_Q_LOOKUP_NAMES *q_r, 
 			   prs_struct *ps, int depth)
 {
-	int i;
+	unsigned int i;
 
 	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names");
 	depth++;
@@ -1166,7 +1166,7 @@ reads or writes a structure.
 BOOL lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *r_r, 
 			   prs_struct *ps, int depth)
 {
-	int i;
+	unsigned int i;
 
 	prs_debug(ps, depth, desc, "lsa_io_r_lookup_names");
 	depth++;

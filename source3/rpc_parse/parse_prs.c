@@ -938,7 +938,7 @@ BOOL prs_buffer2(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
 
 BOOL prs_string2(BOOL charmode, const char *name, prs_struct *ps, int depth, STRING2 *str)
 {
-	int i;
+	unsigned int i;
 	char *q = prs_mem_get(ps, str->str_max_len);
 	if (q == NULL)
 		return False;
@@ -1035,7 +1035,7 @@ BOOL prs_unistr3(BOOL charmode, const char *name, UNISTR3 *str, prs_struct *ps, 
 
 BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 {
-	int len = 0;
+	unsigned int len = 0;
 	unsigned char *p = (unsigned char *)str->buffer;
 	uint8 *start;
 	char *q;

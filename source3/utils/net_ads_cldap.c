@@ -59,7 +59,7 @@ struct cldap_netlogon_reply {
 */
 static unsigned pull_netlogon_string(struct netlogon_string *ret,const char *d)
 {
-	char *p = (char *)d;
+	const char *p = (const char *)d;
 
 	ZERO_STRUCTP(ret);
 
@@ -140,7 +140,7 @@ static int send_cldap_netlogon(int sock, const char *domain,
 		return -1;
 	}
 
-	if (write(sock, data.data, data.length) != data.length) {
+	if (write(sock, data.data, data.length) != (ssize_t)data.length) {
 		d_printf("failed to send cldap query (%s)\n", strerror(errno));
 	}
 
@@ -233,7 +233,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 */
 static void netlogon_string_free(struct netlogon_string *str)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < str->comp_len; ++i) {
 		SAFE_FREE(str->component[i]);
@@ -259,7 +259,7 @@ static void cldap_reply_free(struct cldap_netlogon_reply *reply)
 static void d_print_netlogon_string(const char *label, 
 				    struct netlogon_string *str)
 {
-	int i;
+	unsigned int i;
 
 	if (str->comp_len) {
 		d_printf("%s", label);

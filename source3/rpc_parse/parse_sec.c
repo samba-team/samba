@@ -159,7 +159,7 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 
 NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, unsigned *num, DOM_SID *sid, uint32 mask)
 {
-	int i = 0;
+	unsigned int i = 0;
 	
 	if (!ctx || !new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
 
@@ -185,7 +185,7 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, unsigned 
 
 NTSTATUS sec_ace_mod_sid(SEC_ACE *ace, size_t num, DOM_SID *sid, uint32 mask)
 {
-	int i = 0;
+	unsigned int i = 0;
 
 	if (!ace || !sid)  return NT_STATUS_INVALID_PARAMETER;
 
@@ -202,14 +202,14 @@ NTSTATUS sec_ace_mod_sid(SEC_ACE *ace, size_t num, DOM_SID *sid, uint32 mask)
  delete SID from ACL
 ********************************************************************/
 
-NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, size_t *num, DOM_SID *sid)
+static NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, uint32 *num, DOM_SID *sid)
 {
-	int i     = 0;
-	int n_del = 0;
+	unsigned int i     = 0;
+	unsigned int n_del = 0;
 
 	if (!ctx || !new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
 
-	if((new[0] = (SEC_ACE *) talloc_zero(ctx, *num * sizeof(SEC_ACE))) == 0)
+	if((new[0] = (SEC_ACE *) talloc_zero(ctx, (*num) * sizeof(SEC_ACE))) == 0)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < *num; i ++) {
@@ -283,7 +283,7 @@ SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src)
 
 BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 {
-	int i;
+	unsigned int i;
 	uint32 old_offset;
 	uint32 offset_acl_size;
 	SEC_ACL *psa;
@@ -407,7 +407,7 @@ BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
 
 BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
 {
-	int i, j;
+	unsigned int i, j;
 
 	/* Trivial cases */
 
