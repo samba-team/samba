@@ -12,18 +12,7 @@ both platforms.
 #define HYPER_T hyper
 
 
-FIXED ARRAY
------------
-
-A fixed array looks like this:
-
-	typedef struct {
-		long s[4];
-	} Struct1;
-
-the NDR representation looks just like 4 separate long
-declarations. The array size is not encoded on the wire.
-
+Let's look at the mutliple ways you can encode an array.
 
 CONFORMANT ARRAYS
 -----------------
@@ -101,7 +90,9 @@ A fixed array looks like this:
 	    long s[10];
     } Struct1;
 
-It appears on the wire with no array length.
+The NDR representation looks just like 4 separate long
+declarations. The array size is not encoded on the wire.
+
 
 pidl also supports "inline" arrays, which are not part of the IDL/NDR
 standard. These are declared like this:
