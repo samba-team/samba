@@ -1600,7 +1600,7 @@ struct smb_copy {
 };
 
 
-/* struct for transact2 call */
+/* struct for transact/transact2 call */
 struct smb_trans2 {
 	struct {
 		uint16 max_param;
@@ -1610,6 +1610,7 @@ struct smb_trans2 {
 		uint32 timeout;
 		uint8  setup_count;
 		uint16 *setup;
+		char *trans_name; /* SMBtrans only */
 		DATA_BLOB params;
 		DATA_BLOB data;
 	} in;

@@ -194,20 +194,32 @@ failed:
 	return cli_request_destroy(req);
 }
 
+NTSTATUS smb_raw_trans_recv(struct cli_request *req,
+			     TALLOC_CTX *mem_ctx,
+			     struct smb_trans2 *parms)
+{
+	return smb_raw_trans2_recv(req, mem_ctx, parms);
+}
 
 /****************************************************************************
- trans2 raw async interface - only BLOBs used in this interface.
-note that this doesn't yet support multi-part requests
+ trans/trans2 raw async interface - only BLOBs used in this interface.
+ note that this doesn't yet support multi-part requests
 ****************************************************************************/
-struct cli_request *smb_raw_trans2_send(struct cli_tree *tree,
-					struct smb_trans2 *parms)
+struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
+					       struct smb_trans2 *parms,
+					       uint8 command)
 {
-	uint8 command = SMBtrans2;
 	int wct = 14 + parms->in.setup_count;
 	struct cli_request *req; 
 	char *outdata,*outparam;
 	int i;
-	const int padding = 3;
+	int padding;
+	size_t namelen = 0;
+
+	if (command == SMBtrans)
+		padding = 1;
+	else
+		padding = 3;
 	
 	req = cli_request_setup(tree, command, wct, padding);
 	if (!req) {
@@ -231,9 +243,12 @@ struct cli_request *smb_raw_trans2_send(struct cli_tree *tree,
 	SIVAL(req->out.vwv,VWV(6),parms->in.timeout);
 	SSVAL(req->out.vwv,VWV(8),0); /* reserved */
 	SSVAL(req->out.vwv,VWV(9),parms->in.params.length);
-	SSVAL(req->out.vwv,VWV(10),PTR_DIFF(outparam,req->out.hdr));
+	if (command == SMBtrans && parms->in.trans_name)
+		namelen = cli_req_append_string(req, parms->in.trans_name, 
+						STR_TERMINATE);
+	SSVAL(req->out.vwv,VWV(10),PTR_DIFF(outparam,req->out.hdr)+namelen);
 	SSVAL(req->out.vwv,VWV(11),parms->in.data.length);
-	SSVAL(req->out.vwv,VWV(12),PTR_DIFF(outdata,req->out.hdr));
+	SSVAL(req->out.vwv,VWV(12),PTR_DIFF(outdata,req->out.hdr)+namelen);
 	SSVAL(req->out.vwv,VWV(13),parms->in.setup_count);
 	for (i=0;i<parms->in.setup_count;i++)	{
 		SSVAL(req->out.vwv,VWV(14)+i*2,parms->in.setup[i]);
@@ -253,6 +268,23 @@ struct cli_request *smb_raw_trans2_send(struct cli_tree *tree,
 	return req;
 }
 
+/****************************************************************************
+ trans/trans2 raw async interface - only BLOBs used in this interface.
+note that this doesn't yet support multi-part requests
+****************************************************************************/
+
+struct cli_request *smb_raw_trans_send(struct cli_tree *tree,
+				       struct smb_trans2 *parms)
+{
+	return smb_raw_trans_send_backend(tree, parms, SMBtrans);
+}
+
+struct cli_request *smb_raw_trans2_send(struct cli_tree *tree,
+				       struct smb_trans2 *parms)
+{
+	return smb_raw_trans_send_backend(tree, parms, SMBtrans2);
+}
+
 /*
   trans2 synchronous blob interface
 */
@@ -266,6 +298,19 @@ NTSTATUS smb_raw_trans2(struct cli_tree *tree,
 	return smb_raw_trans2_recv(req, mem_ctx, parms);
 }
 
+
+/*
+  trans synchronous blob interface
+*/
+NTSTATUS smb_raw_trans(struct cli_tree *tree,
+		       TALLOC_CTX *mem_ctx,
+		       struct smb_trans2 *parms)
+{
+	struct cli_request *req;
+	req = smb_raw_trans_send(tree, parms);
+	if (!req) return NT_STATUS_UNSUCCESSFUL;
+	return smb_raw_trans_recv(req, mem_ctx, parms);
+}
 
 /****************************************************************************
   receive a SMB nttrans response allocating the necessary memory
