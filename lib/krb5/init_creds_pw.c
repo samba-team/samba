@@ -1089,7 +1089,7 @@ process_pa_data_to_md(krb5_context context,
     (*out_md)->len = 0;
     (*out_md)->val = NULL;
     
-    if (in_md->len == 0) {
+    if (in_md->len != 0) {
 	struct pa_info_data paid, *ppaid;
 
 	memset(&paid, 0, sizeof(paid));
@@ -1209,6 +1209,13 @@ init_cred_loop(krb5_context context,
      * KRB5_PA_ENC_TIMESTAMP.
      */
 
+    /* Set a new nonce. */
+    krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
+    ctx->nonce &= 0xffffffff;
+    ctx->as_req.req_body.nonce = ctx->nonce;
+    krb5_generate_random_block (&ctx->pk_nonce, sizeof(ctx->pk_nonce));
+    ctx->pk_nonce &= 0xffffffff;
+
 #define MAX_PA_COUNTER 3 
 
     ctx->pa_counter = 0;
@@ -1223,11 +1230,6 @@ init_cred_loop(krb5_context context,
 	}
 
 	/* Set a new nonce. */
-	krb5_generate_random_block (&ctx->pk_nonce, sizeof(ctx->pk_nonce));
-	ctx->pk_nonce &= 0xffffffff;
-
-	krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
-	ctx->nonce &= 0xffffffff;
 	ctx->as_req.req_body.nonce = ctx->nonce;
 
 	/* fill_in_md_data */
@@ -1278,16 +1280,20 @@ init_cred_loop(krb5_context context,
 		free_METHOD_DATA(&md);
 		memset(&md, 0, sizeof(md));
 
-		ret = decode_METHOD_DATA(error.e_data->data, 
-					 error.e_data->length, 
-					 &md, 
-					 NULL);
+		if (error.e_data) {
+		    ret = decode_METHOD_DATA(error.e_data->data, 
+					     error.e_data->length, 
+					     &md, 
+					     NULL);
+		    if (ret)
+			krb5_set_error_string(context,
+					      "failed to decode METHOD DATA");
+		} else {
+		    /* XXX guess what the server want here add add md */
+		}
 		krb5_free_error_contents(context, &error);
-		if (ret) {
-		    krb5_set_error_string(context,
-					  "failed to decode METHOD DATA");
+		if (ret)
 		    goto out;
-		} 
 	    } else if (ret == KRB5KRB_ERR_RESPONSE_TOO_BIG) {
 		if (send_to_kdc_flags & KRB5_KRBHST_FLAGS_LARGE_MSG) {
 		    if (ret_as_reply)
