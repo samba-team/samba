@@ -322,12 +322,12 @@ static int reply_spnego_negotiate(connection_struct *conn,
 			  "U",
 			  lp_workgroup());
 
-		fstrcpy(dnsdomname, lp_realm());
+		fstrcpy(dnsdomname, (SEC_ADS == lp_security())?lp_realm():"");
 		strlower(dnsdomname);
 
 		fstrcpy(dnsname, global_myname);
 		fstrcat(dnsname, ".");
-		fstrcat(dnsname, lp_realm());
+		fstrcat(dnsname, dnsdomname);
 		strlower(dnsname);
 
 		msrpc_gen(&struct_blob, "aaaaa",
