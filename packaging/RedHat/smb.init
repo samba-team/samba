@@ -45,7 +45,6 @@ case "$1" in
   status)
 	status smbd
 	status nmbd
-	status winbindd
 	;;
   restart)
 	echo -n "Restarting SMB services: "
