@@ -660,13 +660,6 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
   int old_deny_mode = GET_DENY_MODE(share->share_mode);
 
   /*
-   * Setup the potential error to return.
-   */
-
-  unix_ERR_class = ERRDOS;
-  unix_ERR_code = ERRbadshare;
-
-  /*
    * Don't allow any open once the delete on close flag has been
    * set.
    */
@@ -675,6 +668,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
   {
     DEBUG(5,("check_share_mode: Failing open on file %s as delete on close flag is set.\n",
           fname ));
+    unix_ERR_class = ERRDOS;
     unix_ERR_code = ERRnoaccess;
     return False;
   }
@@ -683,6 +677,10 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
   {
     DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
                deny_mode,old_deny_mode,old_open_mode,fname));
+
+    unix_ERR_class = ERRDOS;
+    unix_ERR_code = ERRbadshare;
+
     return False;
   }
 
@@ -698,6 +696,10 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
       DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
                 deny_mode,old_deny_mode,old_open_mode,
                 share->pid,fname, fcbopen, *flags, access_allowed));
+
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadshare;
+
       return False;
     }
 
