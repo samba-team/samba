@@ -408,7 +408,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		
 		num_received += received;
 		
-		if (CVAL(cli->inbuf,smb_rcls) != 0) break;
+		if (cli_is_error(cli)) break;
 	}
 
 	if (!first) {
@@ -436,7 +436,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		cli_setup_bcc(cli, p);
 		cli_send_smb(cli);
 		if (!cli_receive_smb(cli)) {
-			DEBUG(0,("Error closing search: %s\n",smb_errstr(cli->inbuf)));
+			DEBUG(0,("Error closing search: %s\n",cli_errstr(cli)));
 		}
 	}
 

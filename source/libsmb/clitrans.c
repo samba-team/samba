@@ -89,7 +89,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
 		if (!cli_receive_smb(cli) || 
-		    CVAL(cli->inbuf,smb_rcls) != 0) {
+		    cli_is_error(cli)) {
 			return(False);
 		}      
 
@@ -307,7 +307,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
 		if (!cli_receive_smb(cli) || 
-		    CVAL(cli->inbuf,smb_rcls) != 0) {
+		    cli_is_error(cli)) {
 			return(False);
 		}      
 
