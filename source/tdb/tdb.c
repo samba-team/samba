@@ -175,10 +175,10 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 	fl.l_len = 1;
 	fl.l_pid = 0;
 
-	if (fcntl(tdb->fd,lck_type,&fl)) {
+	if (fcntl(tdb->fd,lck_type,&fl) == -1) {
 		if (!probe) {
-			TDB_LOG((tdb, 5,"tdb_brlock failed at offset %d rw_type=%d lck_type=%d\n", 
-				 offset, rw_type, lck_type));
+			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
+				 tdb->fd, offset, rw_type, lck_type));
 		}
 		/* errno set by fcntl */
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
@@ -202,7 +202,7 @@ static int tdb_lock(TDB_CONTEXT *tdb, int list, int ltype)
 	if (tdb->locked[list+1].count == 0) {
 		if (!tdb->read_only && tdb->header.rwlocks) {
 			if (tdb_spinlock(tdb, list, ltype)) {
-				TDB_LOG((tdb, 0, "tdb_lock spinlock on list ltype=%d\n", 
+				TDB_LOG((tdb, 0, "tdb_lock spinlock failed on list ltype=%d\n", 
 					   list, ltype));
 				return -1;
 			}
