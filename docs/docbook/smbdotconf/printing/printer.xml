@@ -1,9 +1,0 @@
-<samba:parameter name="printer"
-                 context="S"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Synonym for <link linkend="PRINTERNAME"><parameter moreinfo="none">
-    printer name</parameter></link>.</para>
-</listitem>
-</samba:parameter>

@@ -1,9 +1,0 @@
-<samba:parameter name="auto services"
-                 context="G"
-                 advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-	<para>This is a synonym for the <link linkend="PRELOAD">
-	<parameter moreinfo="none">preload</parameter></link>.</para>
-</listitem>
-</samba:parameter>
