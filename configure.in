@@ -1050,11 +1050,12 @@ AC_OUTPUT(Makefile 			\
 	lib/hdb/Makefile		\
 	lib/kadm5/Makefile		\
 	lib/kafs/Makefile		\
+	lib/kdfs/Makefile		\
 	lib/krb5/Makefile		\
 	lib/otp/Makefile		\
 	lib/roken/Makefile		\
 	lib/sl/Makefile			\
-	lib/kdfs/Makefile		\
+	lib/vers/Makefile		\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
 	kadmin/Makefile			\
