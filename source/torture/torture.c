@@ -2435,6 +2435,7 @@ static struct {
 	/* nbt tests */
 	{"NBT-REGISTER", torture_nbt_register, 0},
 	{"NBT-WINS", torture_nbt_wins, 0},
+	{"NBT-WINSREPLICATION", torture_nbt_winsreplication, 0},
 
 	{NULL, NULL, 0}};
 
