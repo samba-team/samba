@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -143,7 +143,7 @@ configure(int argc, char **argv)
 	goto end;
     
     if(keyfile == NULL){
-	p = krb5_config_get_string (cf, 
+	p = krb5_config_get_string (context, cf, 
 				    "kdc",
 				    "key-file",
 				    NULL);
@@ -152,7 +152,7 @@ configure(int argc, char **argv)
     }
 
     if(database == NULL){
-	p = krb5_config_get_string (cf, "kdc", "database", NULL);
+	p = krb5_config_get_string (context, cf, "kdc", "database", NULL);
 	if(p) database = strdup(p);
     }
     
@@ -161,7 +161,8 @@ configure(int argc, char **argv)
     }
 
     if(max_request == 0){
-	p = krb5_config_get_string (cf, 
+	p = krb5_config_get_string (context,
+				    cf, 
 				    "kdc",
 				    "max-request",
 				    NULL);
@@ -170,18 +171,19 @@ configure(int argc, char **argv)
     }
     
     if(require_preauth == -1)
-	require_preauth = krb5_config_get_bool(cf, "kdc", 
+	require_preauth = krb5_config_get_bool(context, cf, "kdc", 
 					       "require-preauth", NULL);
 
     if(port_str == NULL){
-	p = krb5_config_get_string(cf, "kdc", "ports", NULL);
+	p = krb5_config_get_string(context, cf, "kdc", "ports", NULL);
 	port_str = (char*)p;
     }
     if(enable_http == -1)
-	enable_http = krb5_config_get_bool(cf, "kdc", "enable-http", NULL);
+	enable_http = krb5_config_get_bool(context, cf, "kdc", 
+					   "enable-http", NULL);
 #ifdef KRB4
     if(v4_realm == NULL){
-	p = krb5_config_get_string (cf, 
+	p = krb5_config_get_string (context, cf, 
 				    "kdc",
 				    "v4-realm",
 				    NULL);
@@ -190,7 +192,7 @@ configure(int argc, char **argv)
     }
 #endif
 
-    kdc_warn_pwexpire = krb5_config_get_time (cf,
+    kdc_warn_pwexpire = krb5_config_get_time (context, cf,
 					      "kdc",
 					      "kdc_warn_pwexpire",
 					      NULL);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -332,7 +332,7 @@ change (krb5_auth_context auth_context,
 	}
 	ent.modified_by = e;
 	if (ent.pw_end){
-	    int t = krb5_config_get_time(context->cf, 
+	    int t = krb5_config_get_time(context, NULL,
 					 "libdefaults", 
 					 "pw_expiration", NULL);
 	    if(t > 0)

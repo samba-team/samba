@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -1045,7 +1045,8 @@ is_krbtgt(PrincipalName *p)
 static Realm
 find_rpath(Realm r)
 {
-    const char *new_realm = krb5_config_get_string(context->cf, 
+    const char *new_realm = krb5_config_get_string(context,
+						   NULL,
 						   "libdefaults", 
 						   "capath", 
 						   r, 

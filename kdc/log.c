@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,16 +47,17 @@ kdc_openlog(krb5_config_section *cf)
     char **s = NULL, **p;
     krb5_initlog(context, "kdc", &logf);
     if(cf)
-	s = krb5_config_get_strings(cf, "kdc", "logging", NULL);
+	s = krb5_config_get_strings(context, cf, "kdc", "logging", NULL);
 
     if(s == NULL)
-	s = krb5_config_get_strings(context->cf, "logging", "kdc", NULL);
+	s = krb5_config_get_strings(context, NULL, "logging", "kdc", NULL);
     if(s){
 	for(p = s; *p; p++)
 	    krb5_addlog_dest(context, logf, *p);
 	krb5_config_free_strings(s);
     }else
 	krb5_addlog_dest(context, logf, "0-1/FILE:" HDB_DB_DIR "/kdc.log");
+    krb5_set_warn_dest(context, logf);
 }
 
 char*

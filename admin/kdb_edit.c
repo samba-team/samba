@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -169,7 +169,11 @@ main(int argc, char **argv)
 	config_file = HDB_DB_DIR "/kdc.conf";
 
     if(krb5_config_parse_file(config_file, &cf) == 0) {
-	const char *p = krb5_config_get_string (cf, "kdc", "key-file", NULL);
+	const char *p = krb5_config_get_string (context, 
+						cf, 
+						"kdc", 
+						"key-file", 
+						NULL);
 	if (p)
 	    keyfile = strdup(p);
     }
