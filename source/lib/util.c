@@ -2712,6 +2712,62 @@ char *get_trusted_serverlist(const char* domain)
 }
 
 /**********************************************************
+ Map the Active Directory userAccountControl attribute to
+ SMB account control bits. The attribute is stored in the
+ directory as an integer.
+ **********************************************************/
+NTDS_USER_FLAG_ENUM pwdb_acct_ctrl_to_ad(uint16 smbac)
+{
+	NTDS_USER_FLAG_ENUM adac;
+
+	adac = 0;
+
+	adac |= NTDS_UF_TRUSTED_FOR_DELEGATION; /* | NTDS_UF_USE_DES_KEY_ONLY; */
+
+	if (smbac & ACB_DISABLED) adac |= NTDS_UF_ACCOUNTDISABLE;
+	if (smbac & ACB_HOMDIRREQ) adac |= NTDS_UF_HOMEDIR_REQUIRED;
+	if (smbac & ACB_PWNOTREQ) adac |= NTDS_UF_PASSWD_NOTREQD;
+	if (smbac & ACB_TEMPDUP) adac |= NTDS_UF_TEMP_DUPLICATE_ACCOUNT;
+	if (smbac & ACB_NORMAL) adac |= NTDS_UF_NORMAL_ACCOUNT;
+	if (smbac & ACB_MNS) adac |= NTDS_UF_MNS_LOGON_ACCOUNT;
+	if (smbac & ACB_DOMTRUST) adac |= NTDS_UF_INTERDOMAIN_TRUST_ACCOUNT;
+	if (smbac & ACB_WSTRUST) adac |= NTDS_UF_WORKSTATION_TRUST_ACCOUNT;
+	if (smbac & ACB_SVRTRUST) adac |= NTDS_UF_SERVER_TRUST_ACCOUNT;
+	if (smbac & ACB_PWNOEXP) adac |= NTDS_UF_DONT_EXPIRE_PASSWD;
+	if (smbac & ACB_AUTOLOCK) adac |= NTDS_UF_LOCKOUT;
+	if (smbac & ACB_PWLOCK) adac |= NTDS_UF_PASSWD_CANT_CHANGE;
+
+	return adac;
+}
+
+/**********************************************************
+ Map the Active Directory userAccountControl attribute to
+ SMB account control bits. The attribute is stored in the
+ directory as an integer.
+ **********************************************************/
+uint16 pwdb_acct_ctrl_from_ad(NTDS_USER_FLAG_ENUM adac)
+{
+	int smbac;
+
+	smbac = 0;
+
+	if (adac & NTDS_UF_ACCOUNTDISABLE) adac |= ACB_DISABLED;
+	if (adac & NTDS_UF_HOMEDIR_REQUIRED) adac |= ACB_HOMDIRREQ;;
+	if (adac & NTDS_UF_PASSWD_NOTREQD) adac |= ACB_PWNOTREQ;
+	if (adac & NTDS_UF_TEMP_DUPLICATE_ACCOUNT) adac |= ACB_TEMPDUP;
+	if (adac & NTDS_UF_NORMAL_ACCOUNT) adac |= ACB_NORMAL;
+	if (adac & NTDS_UF_MNS_LOGON_ACCOUNT) adac |= ACB_MNS;
+	if (adac & NTDS_UF_INTERDOMAIN_TRUST_ACCOUNT) adac |= ACB_DOMTRUST;
+	if (adac & NTDS_UF_WORKSTATION_TRUST_ACCOUNT) adac |= ACB_WSTRUST;
+	if (adac & NTDS_UF_SERVER_TRUST_ACCOUNT) adac |= ACB_SVRTRUST;
+	if (adac & NTDS_UF_DONT_EXPIRE_PASSWD) adac |= ACB_PWNOEXP;
+	if (adac & NTDS_UF_LOCKOUT) adac |= ACB_AUTOLOCK;
+	if (adac & NTDS_UF_PASSWD_CANT_CHANGE) adac |= ACB_PWLOCK;
+
+	return smbac;
+}
+
+/**********************************************************
  Encode the account control bits into a string.
  length = length of string to encode into (including terminating
  null). length *MUST BE MORE THAN 2* !

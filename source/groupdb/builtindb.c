@@ -46,6 +46,8 @@ BOOL initialise_builtin_db(void)
 
 #ifdef WITH_NISPLUS
   bidb_ops =  nisplus_initialise_builtin_db();
+#elif defined(WITH_NT5LDAP)
+  bidb_ops = nt5ldap_initialise_builtin_db();
 #elif defined(WITH_LDAP)
   bidb_ops = ldap_initialise_builtin_db();
 #elif defined(USE_SMBUNIX_DB)

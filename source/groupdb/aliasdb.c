@@ -46,6 +46,8 @@ BOOL initialise_alias_db(void)
 
 #ifdef WITH_NISPLUS
   aldb_ops =  nisplus_initialise_alias_db();
+#elif defined(WITH_NT5LDAP)
+  aldb_ops = nt5ldap_initialise_alias_db();
 #elif defined(WITH_LDAP)
   aldb_ops = ldap_initialise_alias_db();
 #elif defined(USE_SMBUNIX_DB)

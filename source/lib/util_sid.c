@@ -275,7 +275,7 @@ static BOOL read_sid_from_file(int fd, char *sid_file, DOM_SID *sid)
   }
 
 	sid_to_string(sid_str, sid);
-	DEBUG(5,("read_sid_from_file: sid %s\n", sid_str));
+	DEBUG(5,("read_sid_from_file %s: sid %s\n", sid_file, sid_str));
 
   return True;
 }

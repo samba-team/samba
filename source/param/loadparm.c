@@ -151,12 +151,19 @@ typedef struct
   char *szDriverFile;
   char *szNameResolveOrder;
   char *szDfsMap;
-#ifdef WITH_LDAP
+#if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
   char *szLdapServer;
-  char *szLdapSuffix;
   char *szLdapBindAs;
   char *szLdapPasswdFile; 
+  char *szLdapSuffix;
 #endif /* WITH_LDAP */
+#ifdef WITH_NT5LDAP
+  char *szLdapUrl;
+  char *szLdapRealm;
+  char *szLdapComputersSubcontext;
+  char *szLdapUsersSubcontext;
+  char *szLdapBuiltinSubcontext;
+#endif /* WITH_NT5LDAP */
   char *szPanicAction;
   char *szNtForms;
   char *szNtDriverFile;  
@@ -188,8 +195,9 @@ typedef struct
   int change_notify_timeout;
   int stat_cache_size;
   int map_to_guest;
-#ifdef WITH_LDAP
+#if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
   int ldap_port;
+  int ldap_protocol_version;
 #endif /* WITH_LDAP */
 #ifdef WITH_SSL
   int sslVersion;
@@ -775,15 +783,24 @@ static struct parm_struct parm_table[] =
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_GLOBAL},
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_GLOBAL},
 
-#ifdef WITH_LDAP
+#if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
   {"Ldap Options", P_SEP, P_SEPARATOR},
 
   {"ldap server",      P_STRING,  P_GLOBAL, &Globals.szLdapServer,      NULL,   NULL,  0},
+  {"ldap realm",       P_STRING,  P_GLOBAL, &Globals.szLdapRealm,       NULL,   NULL,  0},
   {"ldap port",        P_INTEGER, P_GLOBAL, &Globals.ldap_port,         NULL,   NULL,  0},
   {"ldap suffix",      P_STRING,  P_GLOBAL, &Globals.szLdapSuffix,      NULL,   NULL,  0},
   {"ldap bind as",     P_STRING,  P_GLOBAL, &Globals.szLdapBindAs,      NULL,   NULL,  0},
   {"ldap passwd file", P_STRING,  P_GLOBAL, &Globals.szLdapPasswdFile,  NULL,   NULL,  0},
 #endif /* WITH_LDAP */
+
+#ifdef WITH_NT5LDAP
+  {"ldap protocol version", P_INTEGER, P_GLOBAL, &Globals.ldap_protocol_version, NULL,   NULL,  0},
+  {"ldap url",         P_STRING,  P_GLOBAL, &Globals.szLdapUrl,         NULL,   NULL,  0},
+  {"ldap users subcontext",      P_STRING,  P_GLOBAL, &Globals.szLdapComputersSubcontext,      NULL,   NULL,  0},
+  {"ldap builtin subcontext",    P_STRING,  P_GLOBAL, &Globals.szLdapUsersSubcontext,          NULL,   NULL,  0},
+  {"ldap computers subcontext",  P_STRING,  P_GLOBAL, &Globals.szLdapBuiltinSubcontext,        NULL,   NULL,  0},
+#endif /* WITH_NT5LDAP */
 
 #if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
   {"MySQL Options", P_SEP, P_SEPARATOR},
@@ -968,11 +985,20 @@ static void init_globals(void)
   Globals.bStatCache = True; /* use stat cache by default */
   Globals.map_to_guest = 0; /* By Default, "Never" */
 
-#ifdef WITH_LDAP
+#if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
   /* default values for ldap */
   string_set(&Globals.szLdapServer, "localhost");
   Globals.ldap_port=389;
+  Globals.ldap_protocol_version=LDAP_VERSION2;
 #endif /* WITH_LDAP */
+
+#ifdef WITH_NT5LDAP
+  string_set(&Globals.szLdapUrl, NULL);
+  string_set(&Globals.szLdapRealm, NULL);
+  string_set(&Globals.szLdapComputersSubcontext, "cn=computers,");
+  string_set(&Globals.szLdapBuiltinSubcontext, "cn=builtin,");
+  string_set(&Globals.szLdapUsersSubcontext, "cn=users,");
+#endif /* WITH_NT5LDAP */
 
 #ifdef WITH_SSL
   Globals.sslVersion = SMB_SSL_V23;
@@ -1297,12 +1323,20 @@ FN_GLOBAL_STRING(lp_nt_forms,&Globals.szNtForms)
 FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
 FN_GLOBAL_STRING(lp_dfs_map,&Globals.szDfsMap)
 
-#ifdef WITH_LDAP
+#if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
 FN_GLOBAL_STRING(lp_ldap_suffix,&Globals.szLdapSuffix);
 FN_GLOBAL_STRING(lp_ldap_bind_as,&Globals.szLdapBindAs);
 FN_GLOBAL_STRING(lp_ldap_passwd_file,&Globals.szLdapPasswdFile);
 #endif /* WITH_LDAP */
+
+#ifdef WITH_NT5LDAP
+FN_GLOBAL_STRING(lp_ldap_url,&Globals.szLdapUrl);
+FN_GLOBAL_STRING(lp_ldap_realm,&Globals.szLdapRealm);
+FN_GLOBAL_STRING(lp_ldap_computers_subcontext,&Globals.szLdapComputersSubcontext);
+FN_GLOBAL_STRING(lp_ldap_users_subcontext,&Globals.szLdapUsersSubcontext);
+FN_GLOBAL_STRING(lp_ldap_builtin_subcontext,&Globals.szLdapBuiltinSubcontext);
+#endif /* WITH_NT5LDAP */
 
 #ifdef WITH_SSL
 FN_GLOBAL_INTEGER(lp_ssl_version,&Globals.sslVersion);
@@ -1382,8 +1416,9 @@ FN_GLOBAL_INTEGER(lp_change_notify_timeout,&Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_stat_cache_size,&Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest,&Globals.map_to_guest)
 
-#ifdef WITH_LDAP
+#if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
+FN_GLOBAL_INTEGER(lp_ldap_protocol_version,&Globals.ldap_protocol_version)
 #endif /* WITH_LDAP */
 
 /* user-dependent parameters */ 
@@ -3115,3 +3150,5 @@ BOOL lp_preferred_master(void)
 
 	return Globals.bPreferredMaster;
 }
+
+

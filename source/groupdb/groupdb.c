@@ -46,6 +46,8 @@ BOOL initialise_group_db(void)
 
 #ifdef WITH_NISPLUS
   gpdb_ops =  nisplus_initialise_group_db();
+#elif defined(WITH_NT5LDAP)
+  gpdb_ops = nt5ldap_initialise_group_db();
 #elif defined(WITH_LDAP)
   gpdb_ops = ldap_initialise_group_db();
 #elif defined(USE_SMBUNIX_DB)

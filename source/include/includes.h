@@ -330,6 +330,13 @@
 #endif
 #endif /* HAVE_NETGROUP */
 
+#if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
+#include <lber.h>
+#include <ldap.h>
+#else
+#define LDAPMod void
+#endif
+
 #if defined(HAVE_MYSQL_H)
 #include <mysql.h>
 #else
@@ -635,7 +642,7 @@ union semun {
 #endif
 #endif
 
-#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP))
+#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP) && !defined(WITH_NT5LDAP))
 #define USE_SMBPASS_DB 1
 #define USE_SMBUNIX_DB 1
 #endif

@@ -49,6 +49,9 @@
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
 
+/* MS AD prototypes */
+#include "sam.h"
+
 /* 
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.

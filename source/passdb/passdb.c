@@ -68,6 +68,8 @@ BOOL initialise_password_db(void)
 
 #ifdef WITH_NISPLUS
   pwdb_ops =  nisplus_initialise_password_db();
+#elif defined(WITH_NT5LDAP)
+  pwdb_ops = nt5ldap_initialise_password_db();
 #elif defined(WITH_LDAP)
   pwdb_ops = ldap_initialise_password_db();
 #elif defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)

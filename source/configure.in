@@ -1018,6 +1018,44 @@ AC_ARG_WITH(ldap,
 )
 
 #################################################
+# check for a LDAP password database
+AC_MSG_CHECKING(whether to use LDAP password database)
+AC_ARG_WITH(nt5ldap,
+[  --with-nt5ldap     Include NT5 LDAP support
+  --without-nt5ldap  Don't include NT5 LDAP support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_NT5LDAP)
+    LIBS="$LIBS -lldap -llber"
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for a LDAP password database
+AC_MSG_CHECKING(whether to use LDAP password database)
+AC_ARG_WITH(nt5ldap,
+[  --with-nt5ldap     Include NT5 LDAP support
+  --without-nt5ldap  Don't include NT5 LDAP support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_NT5LDAP)
+    LIBS="$LIBS -lldap -llber"
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
 # check for a NISPLUS password database
 AC_MSG_CHECKING(whether to use NISPLUS password database)
 AC_ARG_WITH(nisplus,

@@ -230,15 +230,16 @@ GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 		groupdb/groupfile.o groupdb/aliasfile.o \
 		groupdb/groupunix.o groupdb/aliasunix.o groupdb/builtinunix.o \
 		groupdb/groupldap.o groupdb/aliasldap.o groupdb/builtinldap.o \
+		groupdb/groupnt5ldap.o groupdb/aliasnt5ldap.o groupdb/builtinnt5ldap.o \
 		passdb/passgrp.o passdb/smbpassgroup.o \
-		passdb/smbpassgroupunix.o passdb/passgrpldap.o
+		passdb/smbpassgroupunix.o passdb/passgrpldap.o passdb/passgrpnt5ldap.o
 
-SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o passdb/mysqlsampass.o
+SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o passdb/mysqlsampass.o passdb/sampassnt5ldap.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
-             passdb/pass_check.o passdb/ldap.o passdb/nispass.o \
-             passdb/smbpasschange.o passdb/mysqlpass.o \
-             lib/util_pwdb.o lib/domain_namemap.o
+             passdb/pass_check.o passdb/ldap.o passdb/ldapdb.o passdb/nt5ldap.o passdb/nispass.o \
+             passdb/smbpasschange.o passdb/mysqlpass.o passdb/smbpassnt5ldap.o \
+             lib/util_pwdb.o lib/domain_namemap.o 
 
 SIDDB_OBJ = lib/sids.o
 
@@ -293,6 +294,20 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		lib/passcheck.o \
 		smbd/chgpasswd.o
 
+SAMRTDBD_OBJ1 = samrd/samrtdbd.o \
+		rpc_server/srv_pipe_ntlmssp.o \
+		rpc_server/srv_samr.o \
+		passdb/smbpassfile.o \
+		lib/sursalgdomonly.o \
+		lib/util_pwdb.o lib/domain_namemap.o \
+		samrd/srv_samr_tdb_init.o \
+		samrd/srv_samr_dom_tdb.o \
+		samrd/srv_samr_sam_tdb.o \
+		samrd/srv_samr_usr_tdb.o \
+		samrd/srv_samr_grp_tdb.o \
+		samrd/srv_samr_als_tdb.o \
+		samrd/srv_samr_tdb.o
+
 NETLOGONTDBD_OBJ1 = netlogond/netlogond.o \
 		netlogond/creds_db.o \
 		netlogond/srv_netlogon_nt.o \
@@ -310,19 +325,19 @@ NETLOGONTDBD_OBJ1 = netlogond/netlogond.o \
 		samrd/srv_samr_tdb.o
 
 
-SAMRTDBD_OBJ1 = samrd/samrtdbd.o \
+SAMRNT5LDAPD_OBJ1 = samrd/samrnt5ldapd.o \
 		rpc_server/srv_pipe_ntlmssp.o \
 		rpc_server/srv_samr.o \
 		passdb/smbpassfile.o \
 		lib/sursalgdomonly.o \
+		lib/sursalgnt5ldap.o \
 		lib/util_pwdb.o lib/domain_namemap.o \
-		samrd/srv_samr_tdb_init.o \
-		samrd/srv_samr_dom_tdb.o \
-		samrd/srv_samr_sam_tdb.o \
-		samrd/srv_samr_usr_tdb.o \
-		samrd/srv_samr_grp_tdb.o \
-		samrd/srv_samr_als_tdb.o \
-		samrd/srv_samr_tdb.o
+		samrd/srv_samr_usr_nt5ldap.o \
+		samrd/srv_samr_dom_nt5ldap.o \
+		samrd/srv_samr_nt5ldap.o
+#		samrd/srv_samr_sam_nt5ldap.o \
+#		samrd/srv_samr_grp_nt5ldap.o \
+#		samrd/srv_samr_als_nt5ldap.o \
 
 SAMRD_OBJ1 = samrd/samrd.o \
 		rpc_server/srv_lookup.o \
@@ -354,6 +369,7 @@ SMBD_OBJ = $(SMBD_OBJ1) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) 
+
 SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
@@ -396,6 +412,12 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
 NETLOGOND_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
 SAMRTDBD_OBJ = $(MSRPCD_OBJ) $(SAMRTDBD_OBJ1) \
+           $(RPC_SRVUTIL_OBJ) \
+           $(LOCKING_OBJ) \
+           $(SIDDB_OBJ) \
+		$(PROFILE_OBJ) 
+
+SAMRNT5LDAPD_OBJ = $(MSRPCD_OBJ) $(SAMRNT5LDAPD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
@@ -528,6 +550,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
 		$(SAMRD_OBJ1) \
 		$(SAMRTDBD_OBJ1) \
+		$(SAMRNT5LDAPD_OBJ1) \
 		$(SRVSVCD_OBJ1) $(WKSSVCD_OBJ1) $(BROWSERD_OBJ1) \
 		$(SPOOLSSD_OBJ1) $(NETLOGOND_OBJ1) \
 		$(LSARPCD_OBJ1) $(SMBD_OBJ) $(NMBD_OBJ) \
@@ -734,6 +757,10 @@ bin/samrd: $(SAMRD_LIBS) $(SAMRD_OBJ) bin/.dummy
 bin/samrtdbd: $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SAMRTDBD_OBJ) $(SAMBA_LIBS) $(UBIQXLIB) $(LIBS)
+
+bin/samrnt5ldapd: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRNT5LDAPD_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(SAMRNT5LDAPD_OBJ) $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(LIBS)
 
 bin/nmbd: $(NMBD_LIBS) $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@

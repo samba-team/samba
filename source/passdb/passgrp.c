@@ -49,6 +49,8 @@ BOOL initialise_passgrp_db(void)
 
 #ifdef WITH_NISPLUS
   pwgrp_ops =  nisplus_initialise_password_grp();
+#elif defined(WITH_NT5LDAP)
+  pwgrp_ops = nt5ldap_initialise_password_grp();
 #elif defined(WITH_LDAP)
   pwgrp_ops = ldap_initialise_password_grp();
 #elif defined(USE_SMBUNIX_DB)

@@ -1,0 +1,476 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 2.0.
+   LDAP local group database for SAMBA
+   Copyright (C) Matthew Chapman 1998
+   Copyright (C) Luke Howard 2000
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+ */
+
+#include "includes.h"
+
+#ifdef WITH_NT5LDAP
+
+#include <lber.h>
+#include <ldap.h>
+#include "ldapdb.h"
+
+extern int DEBUGLEVEL;
+
+/* Static structure filled for requests */
+static LOCAL_GRP localgrp;
+
+/***************************************************************
+  Begin/end smbgrp enumeration.
+ ****************************************************************/
+
+static void *
+nt5ldapalias_enumfirst (BOOL update)
+{
+	LDAPDB_DECLARE_HANDLE (hds);
+	fstring filter;
+
+	if (lp_server_role () == ROLE_DOMAIN_NONE)
+		return NULL;
+
+	if (!ldapdb_open (&hds))
+		return NULL;
+
+	slprintf (filter, sizeof (filter) - 1, "(&(objectClass=Group)(groupType=%d))",
+		  NTDS_GROUP_TYPE_DOMAIN_LOCAL_GROUP | NTDS_GROUP_TYPE_SECURITY_ENABLED);
+	if (!ldapdb_search (hds, NULL, filter, NULL, LDAP_NO_LIMIT))
+	{
+		ldapdb_close (&hds);
+		return NULL;
+	}
+
+	return hds;
+}
+
+static void 
+nt5ldapalias_enumclose (void *vp)
+{
+	LDAPDB *hds = (LDAPDB *) vp;
+
+	ldapdb_close (&hds);
+}
+
+/*************************************************************************
+  Save/restore the current position in a query
+ *************************************************************************/
+
+static SMB_BIG_UINT 
+nt5ldapalias_getdbpos (void *vp)
+{
+	return 0;
+}
+
+static BOOL 
+nt5ldapalias_setdbpos (void *vp, SMB_BIG_UINT tok)
+{
+	return False;
+}
+
+
+/*************************************************************************
+  Return limited smb_passwd information, and group membership.
+ *************************************************************************/
+
+static LOCAL_GRP *
+nt5ldapalias_getgrpbynam (const char *name,
+			  LOCAL_GRP_MEMBER ** members, int *num_membs)
+{
+	fstring filter;
+	BOOL ret;
+	LDAPDB_DECLARE_HANDLE (hds);
+
+	if (!ldapdb_open (&hds))
+		return (NULL);
+
+	slprintf (filter, sizeof (filter) - 1,
+	    "(&(objectClass=Group)(sAMAccountName=%s)(groupType=%d))", name,
+		  NTDS_GROUP_TYPE_DOMAIN_LOCAL_GROUP | NTDS_GROUP_TYPE_SECURITY_ENABLED);
+	if (!ldapdb_search (hds, NULL, filter, NULL, 1))
+	{
+		ldapdb_close (&hds);
+		return NULL;
+	}
+
+	ret = nt5ldap_make_local_grp (hds, &localgrp, members, num_membs, 0);
+
+	ldapdb_close (&hds);
+
+	return ret ? &localgrp : NULL;
+}
+
+static LOCAL_GRP *
+nt5ldapalias_getgrpbygid (gid_t grp_id,
+			  LOCAL_GRP_MEMBER ** members, int *num_membs)
+{
+	fstring filter;
+	BOOL ret;
+	LDAPDB_DECLARE_HANDLE (hds);
+
+	if (!ldapdb_open (&hds))
+		return (NULL);
+
+	slprintf (filter, sizeof (filter) - 1,
+	       "(&(objectClass=Group)(gidNumber=%d)(groupType=%d))", grp_id,
+		  NTDS_GROUP_TYPE_DOMAIN_LOCAL_GROUP | NTDS_GROUP_TYPE_SECURITY_ENABLED);
+	if (!ldapdb_search (hds, NULL, filter, NULL, 1))
+	{
+		ldapdb_close (&hds);
+		return NULL;
+	}
+
+	ret = nt5ldap_make_local_grp (hds, &localgrp, members, num_membs, 0);
+
+	ldapdb_close (&hds);
+
+	return ret ? &localgrp : NULL;
+}
+
+static LOCAL_GRP *
+nt5ldapalias_getgrpbyrid (uint32 grp_rid,
+			  LOCAL_GRP_MEMBER ** members, int *num_membs)
+{
+	fstring filter;
+	fstring sidfilter;
+	BOOL ret;
+	LDAPDB_DECLARE_HANDLE (hds);
+
+	if (!ldapdb_open (&hds))
+	{
+		return NULL;
+	}
+
+	if (!ldapdb_make_rid_filter ("objectSid", grp_rid, sidfilter))
+	{
+		return NULL;
+	}
+
+	slprintf (filter, sizeof (filter) - 1,
+		  "(&(objectClass=Group)(%s)(groupType=%d))", sidfilter,
+		  NTDS_GROUP_TYPE_DOMAIN_LOCAL_GROUP | NTDS_GROUP_TYPE_SECURITY_ENABLED);
+	if (!ldapdb_search (hds, NULL, filter, NULL, 1))
+	{
+		ldapdb_close (&hds);
+		return NULL;
+	}
+
+	ret = nt5ldap_make_local_grp (hds, &localgrp, members, num_membs, 0);
+
+	ldapdb_close (&hds);
+
+	return ret ? &localgrp : NULL;
+}
+
+static LOCAL_GRP *
+nt5ldapalias_getcurrentgrp (void *vp,
+			    LOCAL_GRP_MEMBER ** members, int *num_membs)
+{
+	BOOL ret = False;
+
+	do
+	{
+		if ((ret = nt5ldap_make_local_grp ((LDAPDB *)vp, &localgrp, members, num_membs, 0)) == True)
+			break;
+	}
+	while (ldapdb_seq((LDAPDB *)vp) == True);
+
+	return ret ? &localgrp : NULL;
+}
+
+
+/*************************************************************************
+  Add/modify/delete aliases.
+ *************************************************************************/
+
+static BOOL 
+nt5ldapalias_addgrp (LOCAL_GRP * group)
+{
+	LDAPMod **mods = NULL;
+	BOOL ret;
+	LDAPDB_DECLARE_HANDLE (hds);
+
+	if (!ldapdb_open (&hds))
+	{
+		return False;
+	}
+
+	if (!ldapdb_allocate_rid (hds, &group->rid))
+	{
+		DEBUG (0, ("RID generation failed\n"));
+		return False;
+	}
+
+	if (!nt5ldap_local_grp_mods (group, &mods, LDAP_MOD_ADD, 0))
+	{
+		ret = False;
+	}
+	else
+	{
+		ret = ldapdb_update (hds, lp_ldap_builtin_subcontext (), "cn", group->name, mods, True);
+	}
+
+	ldapdb_close (&hds);
+
+	return ret;
+}
+
+static BOOL 
+nt5ldapalias_modgrp (LOCAL_GRP * group)
+{
+	LDAPMod **mods = NULL;
+	BOOL ret;
+	LDAPDB_DECLARE_HANDLE (hds);
+
+	if (!ldapdb_open (&hds))
+	{
+		return False;
+	}
+
+	if (!nt5ldap_local_grp_mods (group, &mods, LDAP_MOD_REPLACE, 0))
+	{
+		ret = False;
+	}
+	else
+	{
+		ret = ldapdb_update (hds, lp_ldap_builtin_subcontext (), "cn", group->name, mods, False);
+	}
+
+	ldapdb_close (&hds);
+
+	return ret;
+}
+
+static BOOL 
+nt5ldapalias_delgrp (uint32 grp_rid)
+{
+	pstring dn;
+	LDAPDB_DECLARE_HANDLE (hds);
+	BOOL ret;
+
+	if (!ldapdb_open (&hds))
+	{
+		return False;
+	}
+
+	if (!ldapdb_rid_to_dn (hds, grp_rid, dn))
+	{
+		ldapdb_close (&hds);
+		return False;
+	}
+
+	ret = ldapdb_delete (hds, dn);
+
+	ldapdb_close (&hds);
+
+	return ret;
+}
+
+
+/*************************************************************************
+  Add users to/remove users from aliases.
+ *************************************************************************/
+
+static BOOL 
+nt5ldapalias_addmem (uint32 grp_rid, const DOM_SID * user_sid)
+{
+	LDAPMod **mods = NULL;
+	BOOL ret;
+	LDAPDB_DECLARE_HANDLE (hds);
+	pstring userdn, groupdn;
+
+	if (!ldapdb_open (&hds))
+	{
+		return False;
+	}
+
+	if (!ldapdb_rid_to_dn (hds, grp_rid, groupdn))
+	{
+		ldapdb_close (&hds);
+		return False;
+	}
+
+	if (!nt5ldap_local_grp_member_mods (user_sid, &mods, LDAP_MOD_ADD, userdn))
+	{
+		ret = False;
+	}
+	else
+	{
+		ret = ldapdb_commit (hds, groupdn, mods, False);
+	}
+
+	if (ret == True)
+	{
+		mods = NULL;
+		ret = ldapdb_queue_mod (&mods, LDAP_MOD_ADD, "memberOf", groupdn) &&
+			ldapdb_commit (hds, userdn, mods, False);
+	}
+
+	ldapdb_close (&hds);
+
+	return ret;
+}
+
+static BOOL 
+nt5ldapalias_delmem (uint32 grp_rid, const DOM_SID * user_sid)
+{
+	LDAPMod **mods = NULL;
+	BOOL ret;
+	LDAPDB_DECLARE_HANDLE (hds);
+	pstring userdn, groupdn;
+
+	if (!ldapdb_open (&hds))
+	{
+		return False;
+	}
+
+	if (!ldapdb_rid_to_dn (hds, grp_rid, groupdn))
+	{
+		ldapdb_close (&hds);
+		return False;
+	}
+
+	if (!nt5ldap_local_grp_member_mods (user_sid, &mods, LDAP_MOD_DELETE, userdn))
+	{
+		ret = False;
+	}
+	else
+	{
+		ret = ldapdb_commit (hds, groupdn, mods, False);
+	}
+
+	if (ret == True)
+	{
+		mods = NULL;
+		ret = ldapdb_queue_mod (&mods, LDAP_MOD_DELETE, "memberOf", groupdn) &&
+			ldapdb_commit (hds, userdn, mods, False);
+	}
+
+	ldapdb_close (&hds);
+
+	return ret;
+}
+
+
+/*************************************************************************
+  Return aliases that a user is in.
+ *************************************************************************/
+
+static BOOL 
+nt5ldapalias_getusergroups (const char *name, LOCAL_GRP ** groups,
+			    int *num_grps)
+{
+	LOCAL_GRP *grouplist;
+	fstring filter;
+	int i, ngroups;
+	pstring dn;
+	LDAPDB_DECLARE_HANDLE (hds);
+
+	if (!ldapdb_open (&hds))
+	{
+		return False;
+	}
+
+	if (!ldapdb_ntname_to_dn (hds, name, dn))
+	{
+		ldapdb_close (&hds);
+		return False;
+	}
+
+	slprintf (filter, sizeof (pstring) - 1, "(&(objectClass=Group)(member=%s)(groupType=%d))", dn,
+		  NTDS_GROUP_TYPE_DOMAIN_LOCAL_GROUP | NTDS_GROUP_TYPE_SECURITY_ENABLED);
+
+	(void) ldapdb_set_synchronous (hds, True);
+	if (!ldapdb_search (hds, NULL, filter, NULL, LDAP_NO_LIMIT))
+	{
+		ldapdb_close (&hds);
+		return False;
+	}
+
+	if (!ldapdb_count_entries (hds, &ngroups))
+	{
+		ldapdb_close (&hds);
+		return False;
+	}
+
+	grouplist = calloc (ngroups, sizeof (LOCAL_GRP));
+	if (grouplist == NULL)
+	{
+		ldapdb_close (&hds);
+		return False;
+	}
+
+	*num_grps = 0;
+
+	for (i = 0; i < ngroups; i++)
+	{
+		if (nt5ldap_make_local_grp (hds, &grouplist[*num_grps], NULL, NULL, 0))
+		{
+			(*num_grps)++;
+		}
+		if (!ldapdb_seq (hds))
+		{
+			break;
+		}
+	}
+
+	ldapdb_close (&hds);
+
+	*groups = grouplist;
+
+	return True;
+}
+
+
+static struct aliasdb_ops nt5ldapalias_ops =
+{
+	nt5ldapalias_enumfirst,
+	nt5ldapalias_enumclose,
+	nt5ldapalias_getdbpos,
+	nt5ldapalias_setdbpos,
+
+	nt5ldapalias_getgrpbynam,
+	nt5ldapalias_getgrpbygid,
+	nt5ldapalias_getgrpbyrid,
+	nt5ldapalias_getcurrentgrp,
+
+	nt5ldapalias_addgrp,
+	nt5ldapalias_modgrp,
+	nt5ldapalias_delgrp,
+
+	nt5ldapalias_addmem,
+	nt5ldapalias_delmem,
+
+	nt5ldapalias_getusergroups
+};
+
+struct aliasdb_ops *
+nt5ldap_initialise_alias_db (void)
+{
+	return &nt5ldapalias_ops;
+}
+
+#else
+void aliasldap_dummy_function (void);
+void 
+aliasldap_dummy_function (void)
+{
+}				/* stop some compilers complaining */
+#endif
