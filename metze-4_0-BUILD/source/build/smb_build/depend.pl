@@ -80,5 +80,85 @@ sub create_depend_output($)
 
 	_do_depend_binaries($CTX);
 
+	$CTX->{OUTPUT}{PROTO} = ();
+	@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}} = ();
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{SUBSYSTEMS}}) {
+		my $name = $CTX->{OUTPUT}{SUBSYSTEMS}{$key}{NAME};
+
+		@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{OBJ_LIST}} = ();
+		push(@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{OBJ_LIST}},@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{INIT_OBJ_FILES}});
+		push(@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{OBJ_LIST}},@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{ADD_OBJ_FILES}});
+
+		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(SUBSYSTEM_$name\_OBJS)");
+	}
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
+		if ($CTX->{OUTPUT}{SHARED_MODULES}{$key}{BUILD} eq "NOT" ) {
+			next;
+		}
+
+		my $name = $CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME};
+
+		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}} = ();
+		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}},@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{INIT_OBJ_FILES}});
+		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}},@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{ADD_OBJ_FILES}});
+
+		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(MODULE_$name\_OBJS)");
+	}
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
+		my $name = $CTX->{OUTPUT}{LIBRARIES}{$key}{NAME};
+
+		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{OBJ_LIST}} = @{$CTX->{OUTPUT}{LIBRARIES}{$key}{OBJ_FILES}};
+
+		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(LIBRARY_$name\_OBJS)");
+	}
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
+		my $name = $CTX->{OUTPUT}{BINARIES}{$key}{NAME};
+
+		@{$CTX->{OUTPUT}{BINARIES}{$key}{OBJ_LIST}} = @{$CTX->{OUTPUT}{BINARIES}{$key}{OBJ_FILES}};
+
+		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(BINARY_$name\_OBJS)");
+
+	}
+
+#########################################################
+	$CTX->{OUTPUT}{TARGETS}{ALL} = ();
+	$CTX->{OUTPUT}{TARGETS}{ALL}{TARGET} = "all";
+	@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}} = ();
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
+		my $name = $CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME};
+
+		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{MODULE} = $CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME}.".so";
+		
+		push(@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}},"bin/".$CTX->{OUTPUT}{SHARED_MODULES}{$key}{MODULE});
+
+		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{DEPEND_LIST}} = ();
+		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{DEPEND_LIST}},"\$(MODULE_$name\_OBJS)");
+
+		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_LIST}} = ();
+		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_LIST}},"\$(MODULE_$name\_OBJS)");
+		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_LIST}},"\$(MODULE_$name\_LIBS)");
+
+		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_FLAGS} = "-Wl,-soname=$name.so";
+	}
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
+		my $name = $CTX->{OUTPUT}{BINARIES}{$key}{NAME};
+
+		$CTX->{OUTPUT}{BINARIES}{$key}{BINARY} = $CTX->{OUTPUT}{BINARIES}{$key}{NAME};
+
+		@{$CTX->{OUTPUT}{BINARIES}{$key}{DEPEND_LIST}} = ();
+		push(@{$CTX->{OUTPUT}{BINARIES}{$key}{DEPEND_LIST}},"\$(BINARY_$name\_DEPEND_LIST)");
+
+		@{$CTX->{OUTPUT}{BINARIES}{$key}{LINK_LIST}} = ();
+		push(@{$CTX->{OUTPUT}{BINARIES}{$key}{LINK_LIST}},"\$(BINARY_$name\_LINK_LIST)");
+
+		$CTX->{OUTPUT}{BINARIES}{$key}{LINK_FLAGS} = "";
+	}
+
 	return;
 }

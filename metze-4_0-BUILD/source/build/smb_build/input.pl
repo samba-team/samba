@@ -58,10 +58,13 @@ sub _check_modules($)
 
 		if ($chosen_build eq "DEFAULT") {
 			if ($default_build eq "SHARED") {
+				$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "SHARED";
 				printf("Module: %s...SHARED\n",$mod);
 			} elsif ($default_build eq "STATIC") {
+				$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "STATIC";
 				printf("Module: %s...STATIC\n",$mod);
 			} else {
+				$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "NOT";
 				printf("Module: %s...NOT\n",$mod);
 				next;
 			}

@@ -40,7 +40,7 @@ sub _prepare_compiler_linker($)
 
 	$output = "
 CC=\@CC\@
-CC_FLAGS=\@CFLAGS\@ \@CPPFLAGS\@
+CC_FLAGS=-I./include -I./ -I./lib \@CFLAGS\@ \@CPPFLAGS\@
 
 LD=\@CC\@
 LD_FLAGS=\@LDFLAGS\@ \@CFLAGS\@
@@ -73,6 +73,23 @@ sub _prepare_SUFFIXES($)
 	$output = "
 .SUFFIXES:
 .SUFFIXES: .c .o .h .gch .a .so
+";
+	return $output;
+}
+
+sub _prepare_IDL($)
+{
+	my $ctx = shift;
+	my $output;
+
+	$output = "
+idl_full: build/pidl/idl.pm
+	CPP=\"\@CPP\@\" script/build_idl.sh FULL
+
+idl: build/pidl/idl.pm
+	\@CPP=\"\@CPP\@\" script/build_idl.sh
+
+basics: idl proto_exists
 ";
 	return $output;
 }
@@ -148,9 +165,57 @@ sub array2oneperline($)
 			next;
 		}
 
-		$output .= " \\\n\t";
+		$output .= " \\\n\t\t";
 		$output .= $str;
 	}
+
+	return $output;
+}
+
+sub array2oneline($)
+{
+	my $array = shift;
+	my $i;
+	my $output = "";
+
+	foreach my $str (@{$array}) {
+		if (!defined($str)) {
+			next;
+		}
+
+		$output .= $str;
+		$output .= " ";
+	}
+
+	return $output;
+}
+
+###########################################################
+# This function creates a object file list for a subsystem
+#
+# $output = _prepare_subsystem_obj_list($subsystem_ctx)
+#
+# $subsystem_ctx -		the subsystem context
+#
+# $subsystem_ctx->{SUBSYSTEM} -	the subsystem name
+# $subsystem_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this subsystem
+#
+# $output -		the resulting output buffer
+sub _prepare_subsystem_obj_list($)
+{
+	my $ctx = shift;
+	my $tmplist;
+	my $output;
+
+	$tmplist = array2oneperline($ctx->{OBJ_LIST});
+
+	$output = "
+###################################
+# Start Subsystem $ctx->{NAME} OBJ LIST
+SUBSYSTEM_$ctx->{NAME}_OBJS =$tmplist
+# End Subsystem $ctx->{NAME} OBJ LIST
+###################################
+";
 
 	return $output;
 }
@@ -176,9 +241,9 @@ sub _prepare_module_obj_list($)
 
 	$output = "
 ###################################
-# Start Module $ctx->{MODULE} OBJ LIST
-MODULE_$ctx->{MODULE}_OBJS =$tmplist
-# End Module $ctx->{MODULE} OBJ LIST
+# Start Module $ctx->{NAME} OBJ LIST
+MODULE_$ctx->{NAME}_OBJS =$tmplist
+# End Module $ctx->{NAME} OBJ LIST
 ###################################
 ";
 
@@ -202,16 +267,20 @@ MODULE_$ctx->{MODULE}_OBJS =$tmplist
 sub _prepare_module_rule($)
 {
 	my $ctx = shift;
+	my $tmpdepend;
+	my $tmplink;
 	my $output;
+
+	$tmpdepend = array2oneline($ctx->{DEPEND_LIST});
+	$tmplink = array2oneperline($ctx->{LINK_LIST});
 
 	$output = "
 ###################################
 # Start Module $ctx->{MODULE}
-bin/$ctx->{MODULE}: $ctx->{DEPEND_LIST} bin/.dummy
+bin/$ctx->{MODULE}: basics $tmpdepend bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
-		$ctx->{LINK_FLAGS} \\
-		$ctx->{LINK_LIST}
+		$ctx->{LINK_FLAGS} $tmplink
 # Module $ctx->{MODULE}
 ###################################
 ";
@@ -240,9 +309,9 @@ sub _prepare_library_obj_list($)
 
 	$output = "
 ###################################
-# Start Library $ctx->{LIBRARY} OBJ LIST
-LIBRARY_$ctx->{LIBRARY}_OBJS =$tmplist
-# End Library $ctx->{LIBRARY} OBJ LIST
+# Start Library $ctx->{NAME} OBJ LIST
+LIBRARY_$ctx->{NAME}_OBJS =$tmplist
+# End Library $ctx->{NAME} OBJ LIST
 ###################################
 ";
 
@@ -271,14 +340,19 @@ LIBRARY_$ctx->{LIBRARY}_OBJS =$tmplist
 sub _prepare_library_rule($)
 {
 	my $ctx = shift;
+	my $tmpdepend;
+	my $tmplink;
 	my $output;
+
+	$tmpdepend = array2oneline($ctx->{DEPEND_LIST});
+	$tmplink = array2oneperline($ctx->{LINK_LIST});
 
 	$output = "
 ###################################
 # Start Library $ctx->{LIBRARY}
 #
 # Static $ctx->{STATIC_LIBRARY}
-bin/$ctx->{STATIC_LIBRARY}: $ctx->{DEPEND_LIST} bin/.dummy
+bin/$ctx->{STATIC_LIBRARY}: basics $tmpdepend bin/.dummy
 	\@echo Linking \$\@
 	\@\$(STLD) \$(STLD_FLAGS) \$\@ \\
 		$ctx->{STATIC_LINK_FLAGS} \\
@@ -287,7 +361,7 @@ bin/$ctx->{STATIC_LIBRARY}: $ctx->{DEPEND_LIST} bin/.dummy
 	if (defined($ctx->{SHARED_LIBRARY})) {
 		$output .= "
 # Shared $ctx->{SHARED_LIBRARY}
-bin/$ctx->{SHARED_LIBRARY}: $ctx->{DEPEND_LIST} bin/.dummy
+bin/$ctx->{SHARED_LIBRARY}: basics $tmpdepend basics bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		$ctx->{SHARED_LINK_FLAGS} \\
@@ -322,9 +396,9 @@ sub _prepare_binary_obj_list($)
 
 	$output = "
 ###################################
-# Start Binary $ctx->{BINARY} OBJ LIST
-BINARY_$ctx->{BINARY}_OBJS =$tmplist
-# End Binary $ctx->{BINARY} OBJ LIST
+# Start Binary $ctx->{NAME} OBJ LIST
+BINARY_$ctx->{NAME}_OBJS =$tmplist
+# End Binary $ctx->{NAME} OBJ LIST
 ###################################
 ";
 
@@ -348,18 +422,105 @@ BINARY_$ctx->{BINARY}_OBJS =$tmplist
 sub _prepare_binary_rule($)
 {
 	my $ctx = shift;
+	my $tmpdepend;
+	my $tmplink;
 	my $output;
+
+	$tmpdepend = array2oneline($ctx->{DEPEND_LIST});
+	$tmplink = array2oneperline($ctx->{LINK_LIST});
 
 	$output = "
 ###################################
 # Start Binary $ctx->{BINARY}
-bin/$ctx->{BINARY}: $ctx->{DEPEND_LIST} bin/.dummy
+bin/$ctx->{BINARY}: basics $tmpdepend bin/.dummy
 	\@echo Linking \$\@
 	\@\$(LD) \$(LD_FLAGS) -o \$\@ \\
-		$ctx->{LINK_FLAGS} \\
-		$ctx->{LINK_LIST}
+		$ctx->{LINK_FLAGS} $tmplink
 # End Binary $ctx->{BINARY}
 ###################################
+";
+
+	return $output;
+}
+
+###########################################################
+# This function creates a object file list for make proto
+#
+# $output = _prepare_proto_obj_list($proto_ctx)
+#
+# $proto_ctx -		the proto context
+
+# $proto_ctx->{OBJ_LIST} -	the list of objectfiles which sould be scanned by make proto
+#
+# $output -		the resulting output buffer
+sub _prepare_proto_obj_list($)
+{
+	my $ctx = shift;
+	my $tmplist;
+	my $output;
+
+	$tmplist = array2oneperline($ctx->{OBJ_LIST});
+
+	$output = "
+###################################
+# Start PROTO OBJ LIST
+PROTO_OBJS =$tmplist
+# End PROTO OBJ LIST
+###################################
+";
+
+	return $output;
+}
+
+sub _prepare_proto_rules()
+{
+	my $output = "";
+
+	$output .= "
+# Making this target will just make sure that the prototype files
+# exist, not necessarily that they are up to date.  Since they're
+# removed by 'make clean' this will always be run when you do anything
+# afterwards.
+proto_exists: \$(builddir)/include/proto.h \$(builddir)/include/build_env.h
+
+delheaders:
+	@/bin/rm -f \$(builddir)/include/proto.h include/build_env.h:
+
+include/proto.h:
+	\@cd \$(srcdir) && \$(SHELL) script/mkproto.sh \$(PERL) \\
+	  -h _PROTO_H_ \$(builddir)/include/proto.h \\
+	  \$(PROTO_OBJS)
+
+include/build_env.h:
+	\@echo Building include/build_env.h
+	\@cd \$(srcdir) && \$(SHELL) script/build_env.sh \$(srcdir) \$(builddir) \$(CC) > \$(builddir)/include/build_env.h
+
+# 'make headers' or 'make proto' calls a subshell because we need to
+# make sure these commands are executed in sequence even for a
+# parallel make.
+headers: delheaders \$(builddir)/include/proto.h \$(builddir)/include/build_env.h
+
+proto: idl headers 
+
+proto_test:
+	\@[ -f \$(builddir)/include/proto.h ] || \$(MAKE) proto
+
+clean: delheaders
+	-rm -f *.o */*.o */*/*.o */*/*/*.o bin/*
+	-rm -rf librpc/gen_*
+
+distclean: clean
+	-rm -f bin/.dummy
+	-rm -f include/config.h 
+	-rm -f Makefile*
+	-rm -f config.status 
+	-rm -f config.log config.cache
+
+realdistclean: distclean
+	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
+	-rm -f include/config.h.in
+	-rm -f lib/version.h
+	-rm -f configure
 ";
 
 	return $output;
@@ -368,12 +529,15 @@ bin/$ctx->{BINARY}: $ctx->{DEPEND_LIST} bin/.dummy
 sub _prepare_make_target($)
 {
 	my $ctx = shift;
+	my $tmpdepend;
 	my $output;
+
+	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
 	$output = "
 ###################################
 # Start Target $ctx->{TARGET}
-$ctx->{TARGET}: $ctx->{DEPEND_LIST}
+$ctx->{TARGET}: $tmpdepend
 # End Target $ctx->{TARGET}
 ###################################
 ";
@@ -386,23 +550,23 @@ sub _prepare_obj_lists($)
 	my $CTX = shift;
 	my $output = "";
 
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{SUBSYSTEMS}}) {
+		$output .= _prepare_subsystem_obj_list(\%{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}});
+	}
+
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
-
-		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{MODULE} = $CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME};
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}} = ();
-		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}},@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{INIT_OBJ_FILES}});
-		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}},@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{ADD_OBJ_FILES}});
-
 		$output .= _prepare_module_obj_list(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
 	}
 
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
+		$output .= _prepare_library_obj_list(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
+	}
+
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
-
-		$CTX->{OUTPUT}{BINARIES}{$key}{BINARY} = $CTX->{OUTPUT}{BINARIES}{$key}{NAME};
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{OBJ_LIST}} = @{$CTX->{OUTPUT}{BINARIES}{$key}{OBJ_FILES}};
-
 		$output .= _prepare_binary_obj_list(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
 	}
+
+	$output .= _prepare_proto_obj_list(\%{$CTX->{OUTPUT}{PROTO}});
 
 	return $output;
 }
@@ -419,6 +583,23 @@ sub _prepare_rule_lists($)
 {
 	my $CTX = shift;
 	my $output = "";
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
+		$output .= _prepare_module_rule(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
+	}
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
+		#$output .= _prepare_library_rule(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
+	}
+
+	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
+		$output .= _prepare_binary_rule(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
+	}
+
+	my $idl_ctx;
+	$output .= _prepare_IDL($idl_ctx);
+
+	$output .= _prepare_proto_rules();
 
 	return $output;
 }
@@ -466,35 +647,7 @@ sub _prepare_makefile_in($)
 
 	$output .= _prepare_rule_lists($CTX);
 
-	my $libldb_ldap_ctx;
-	$libldb_ldap_ctx->{MODULE} = "libldb_ldap.so";
-	$libldb_ldap_ctx->{DEPEND_LIST} = "\$(MODULE_libldb_ldap_OBJS)";
-	$libldb_ldap_ctx->{LINK_LIST} = "\$(MODULE_libldb_ldap_OBJS) \$(MODULE_libldb_ldap_LIBS)";
-	$libldb_ldap_ctx->{LINK_FLAGS} = "-Wl,-soname=libldb_ldap.so";
-	$output .= _prepare_module_rule($libldb_ldap_ctx);
-
-	my $libsmb_ctx;
-	$libsmb_ctx->{LIBRARY} = "libsmb";
-	$libsmb_ctx->{STATIC_LIBRARY} = "libsmb.a";
-	$libsmb_ctx->{SHARED_LIBRARY} = "libsmb.so";
-	$libsmb_ctx->{DEPEND_LIST} = "\$(LIBRARY_libsmb_OBJS)";
-	$libsmb_ctx->{STATIC_LINK_LIST} = "\$(LIBRARY_libsmb_OBJS)";
-	$libsmb_ctx->{STATIC_LINK_FLAGS} = "";
-	$libsmb_ctx->{SHARED_LINK_LIST} = "\$(LIBRARY_libsmb_OBJS) \$(LIBRARY_libsmb_LIBS)";
-	$libsmb_ctx->{SHARED_LINK_FLAGS} = "-Wl,-soname=libsmb.so.1.0.0";
-	$output .= _prepare_library_rule($libsmb_ctx);
-
-	my $smbd_ctx;
-	$smbd_ctx->{BINARY} = "smbd";
-	$smbd_ctx->{DEPEND_LIST} = "\$(BINARY_smbd_OBJS) build/tests/trivial.o";
-	$smbd_ctx->{LINK_LIST} = "\$(BINARY_smbd_OBJS) build/tests/trivial.o \$(BINARY_smbd_LIBS)";
-	$smbd_ctx->{LINK_FLAGS} = "";
-	$output .= _prepare_binary_rule($smbd_ctx);
-
-	my $target_ctx;
-	$target_ctx->{TARGET} = "all";
-	$target_ctx->{DEPEND_LIST} = "bin/libldb_ldap.so bin/libsmb.a bin/libsmb.so bin/smbd";
-	$output .= _prepare_make_target($target_ctx);
+	$output .= _prepare_make_target(\%{$CTX->{OUTPUT}{TARGETS}{ALL}});
 
 	return $output;
 }
