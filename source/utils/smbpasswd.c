@@ -100,7 +100,7 @@ static int join_domain(char *domain, char *remote)
 	 * Create the machine account password file.
 	 */
 	if(!trust_password_lock( domain, global_myname, True)) {
-		fprintf(stderr, "unable to open the machine account password file for \
+		fprintf(stderr, "Unable to open the machine account password file for \
 machine %s in domain %s.\n", global_myname, domain); 
 		return 1;
 	}
@@ -110,7 +110,7 @@ machine %s in domain %s.\n", global_myname, domain);
 	 */
 	
 	if(!set_trust_account_password( orig_trust_passwd_hash)) {              
-		fprintf(stderr, "unable to write the machine account password for \
+		fprintf(stderr, "Unable to write the machine account password for \
 machine %s in domain %s.\n", global_myname, domain);
 		trust_password_unlock();
 		return 1;
@@ -210,6 +210,7 @@ static char *prompt_for_new_password(BOOL stdin_get)
 
 	if (strcmp(p, new_passwd)) {
 		fprintf(stderr, "Mismatch - password unchanged.\n");
+		ZERO_ARRAY(new_passwd);
 		return NULL;
 	}
 
@@ -519,7 +520,7 @@ static int process_nonroot(int argc, char *argv[])
 	}
 	
 	if (!new_passwd) {
-		printf("unable to get new password\n");
+		printf("Unable to get new password.\n");
 		exit(0);
 	}
 

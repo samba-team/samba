@@ -44,6 +44,33 @@ case "$host_os" in
     *aix4*)
       CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
       ;;    
+#
+# Tests needed for SINIX large file support.
+#
+    *sysv4*)
+      if test $host = mips-sni-sysv4 ; then
+        AC_MSG_CHECKING([for LFS support])
+        old_CPPFLAGS="$CPPFLAGS"
+        CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
+        AC_TRY_RUN([
+#include <unistd.h>
+main () {
+#if _LFS64_LARGEFILE == 1
+exit(0);
+#else
+exit(1);
+#endif
+}], [SINIX_LFS_SUPPORT=yes], [SINIX_LFS_SUPPORT=no])
+        CPPFLAGS="$old_CPPFLAGS"
+        if test x$SINIX_LFS_SUPPORT = xyes ; then
+          CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
+          CFLAGS="`getconf LFS64_CFLAGS` $CFLAGS"
+          LDFLAGS="`getconf LFS64_LDFLAGS` $LDFLAGS"
+          LIBS="`getconf LFS64_LIBS` $LIBS"
+        fi
+      AC_MSG_RESULT([$SINIX_LFS_SUPPORT])
+      fi
+    ;;
 esac
 
 AC_INLINE
@@ -192,8 +219,9 @@ AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getne
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf )
 AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64 fopen64)
 AC_CHECK_FUNCS(atexit grantpt dup2 lseek64 ftruncate64)
-AC_CHECK_FUNCS(fseek64 ftell64 setluid yp_get_default_domain getpwanam)
-AC_CHECK_FUNCS(srandom random srand rand setenv mmap64)
+AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid yp_get_default_domain getpwanam)
+AC_CHECK_FUNCS(srandom random srand rand setenv mmap64 strcasecmp)
+
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
 
@@ -211,6 +239,62 @@ AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readd
 AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
 AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
 AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
+
+#
+# stat64 family may need <sys/stat.h> on some systems, notably ReliantUNIX
+#
+
+if test x$ac_cv_func_stat64 = xno ; then
+  AC_MSG_CHECKING([for stat64 in <sys/stat.h>])
+  AC_TRY_LINK([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/stat.h>
+], [struct stat64 st64; exit(stat64(".",&st64));], [ac_cv_func_stat64=yes])
+  AC_MSG_RESULT([$ac_cv_func_stat64])
+  if test x$ac_cv_func_stat64 = xyes ; then
+    AC_DEFINE(HAVE_STAT64)
+  fi
+fi
+
+if test x$ac_cv_func_lstat64 = xno ; then
+  AC_MSG_CHECKING([for lstat64 in <sys/stat.h>])
+  AC_TRY_LINK([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/stat.h>
+], [struct stat64 st64; exit(lstat64(".",&st64));], [ac_cv_func_lstat64=yes])
+  AC_MSG_RESULT([$ac_cv_func_lstat64])
+  if test x$ac_cv_func_lstat64 = xyes ; then
+    AC_DEFINE(HAVE_LSTAT64)
+  fi
+fi
+
+if test x$ac_cv_func_fstat64 = xno ; then
+  AC_MSG_CHECKING([for fstat64 in <sys/stat.h>])
+  AC_TRY_LINK([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/stat.h>
+], [struct stat64 st64; exit(fstat64(0,&st64));], [ac_cv_func_fstat64=yes])
+  AC_MSG_RESULT([$ac_cv_func_fstat64])
+  if test x$ac_cv_func_fstat64 = xyes ; then
+    AC_DEFINE(HAVE_FSTAT64)
+  fi
+fi
+
+#
+# If no strcasecmp, check for it in some known places
+# It is in -lresolv on ReliantUNIX
+#   -lresolve *must* follow -lnsl for name resolution to work properly
+#
+
+if test x$ac_cv_func_strcasecmp = xno ; then
+  AC_CHECK_LIB(resolv,strcasecmp,[LIBS="$LIBS -lresolv"])
+fi
 
 #
 # Check for the functions putprpwnam, set_auth_parameters,
@@ -304,7 +388,11 @@ if test x"$samba_cv_SIZEOF_OFF_T" = x"yes"; then
 fi
 
 AC_CACHE_CHECK([for off64_t],samba_cv_HAVE_OFF64_T,[
-AC_TRY_RUN([#include <stdio.h>
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdio.h>
 #include <sys/stat.h>
 main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
 samba_cv_HAVE_OFF64_T=yes,samba_cv_HAVE_OFF64_T=no,samba_cv_HAVE_OFF64_T=cross)])
@@ -322,7 +410,11 @@ if test x"$samba_cv_SIZEOF_INO_T" = x"yes"; then
 fi
 
 AC_CACHE_CHECK([for ino64_t],samba_cv_HAVE_INO64_T,[
-AC_TRY_RUN([#include <stdio.h>
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdio.h>
 #include <sys/stat.h>
 main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
 samba_cv_HAVE_INO64_T=yes,samba_cv_HAVE_INO64_T=no,samba_cv_HAVE_INO64_T=cross)])
@@ -607,6 +699,9 @@ fi
 
 AC_CACHE_CHECK([for 64 bit fcntl locking],samba_cv_HAVE_STRUCT_FLOCK64,[
 AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -912,6 +1007,48 @@ AC_ARG_WITH(quotas,
 AC_SUBST(QUOTAOBJS)
 
 #################################################
+# set private directory location
+AC_ARG_WITH(privatedir,
+[  --with-privatedir=DIR     Where to put smbpasswd ($(prefix)/private)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-privatedir called without argument - will use default])
+    privatedir='${prefix}/private'
+  ;;
+  * )
+    privatedir="$withval"
+    ;;
+  esac
+  AC_SUBST(privatedir)],
+  [privatedir='${prefix}/private'
+   AC_SUBST(privatedir)]
+)
+
+#################################################
+# set SWAT directory location
+AC_ARG_WITH(swatdir,
+[  --with-swatdir=DIR     Where to put SWAT files ($(prefix)/swat)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-swatdir called without argument - will use default])
+    swatdir='${prefix}/swat'
+  ;;
+  * )
+    swatdir="$withval"
+    ;;
+  esac
+  AC_SUBST(swatdir)],
+  [swatdir='${prefix}/swat'
+   AC_SUBST(swatdir)]
+)
+
+#################################################
 # these tests are taken from the GNU fileutils package
 AC_CHECKING(how to get filesystem space usage)
 space=no
@@ -921,12 +1058,15 @@ if test $space = no; then
   # SVR4
   AC_CACHE_CHECK([statvfs64 function (SVR4)], fu_cv_sys_stat_statvfs64,
   [AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/statvfs.h>
   main ()
   {
     struct statvfs64 fsd;
-    exit (statfs64 (".", &fsd));
+    exit (statvfs64 (".", &fsd));
   }],
   fu_cv_sys_stat_statvfs64=yes,
   fu_cv_sys_stat_statvfs64=no,

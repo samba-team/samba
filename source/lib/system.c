@@ -273,6 +273,8 @@ FILE *sys_fopen(const char *path, const char *type)
 #endif
 }
 
+#if defined(HAVE_SHARED_MMAP)
+
 /*******************************************************************
  An mmap() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
@@ -285,6 +287,8 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T of
   return mmap(addr, len, prot, flags, fd, offset);
 #endif
 }
+
+#endif /* HAVE_SHARED_MMAP */
 
 /*******************************************************************
 The wait() calls vary between systems

@@ -27,7 +27,7 @@ BINDIR = @bindir@
 # the previous releases of Samba
 SBINDIR = @bindir@
 LIBDIR = @libdir@
-VARDIR = $(BASEDIR)/var
+VARDIR = @localstatedir@
 MANDIR = @mandir@
 
 # The permissions to give the executables
@@ -42,11 +42,14 @@ CONFIGFILE = $(LIBDIR)/smb.conf
 LMHOSTSFILE = $(LIBDIR)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
 PASSWD_PROGRAM = /bin/passwd
-SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
-SMB_PASSWD_PROGRAM = $(BINDIR)/smbpasswd
+# This is where smbpasswd et al go
+PRIVATEDIR = @privatedir@
+
+SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
+SMB_PASSGRP_FILE = $(PRIVATEDIR)/smbpassgrp
 
 # This is where SWAT images and help files go
-SWATDIR = $(BASEDIR)/swat
+SWATDIR = @swatdir@
 
 # the directory where lock files go
 LOCKDIR = $(VARDIR)/locks

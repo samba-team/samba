@@ -476,6 +476,9 @@ EOF
 		echo ns32k-sni-sysv
 	fi
 	exit 0 ;;
+	*:ReliantUNIX-*:*:*)
+	echo mips-sni-sysv4
+	exit 0 ;;
     mc68*:A/UX:*:*)
 	echo m68k-apple-aux${UNAME_RELEASE}
 	exit 0 ;;
