@@ -357,7 +357,7 @@ static BOOL start_dir(connection_struct *conn,char *directory)
  finished with that one.
 ****************************************************************************/
 
-static void dptr_old_close_oldest(void)
+static void dptr_close_oldest(BOOL old)
 {
   dptr_struct *dptr;
 
@@ -373,12 +373,14 @@ static void dptr_old_close_oldest(void)
   }
 
   /*
-   * Close the oldest oldhandle dnum (ie. 1 < dnum < 256) that
-   * does not have expect_close set.
+   * If 'old' is true, close the oldest oldhandle dnum (ie. 1 < dnum < 256) that
+   * does not have expect_close set. If 'old' is false, close
+   * one of the new dnum handles.
    */
 
   for(; dptr; dptr = dptr->prev) {
-    if (dptr->dnum < 256 && !dptr->expect_close) {
+    if ((old && (dptr->dnum < 256) && !dptr->expect_close) ||
+        (!old && (dptr->dnum > 255))) {
       dptr_close_internal(dptr);
       return;
     }
@@ -429,7 +431,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
        * finished with that one.
        */
 
-      dptr_old_close_oldest();
+      dptr_close_oldest(True);
 
       /* Now try again... */
       dptr->dnum = bitmap_find(dptr_bmap, 0);
@@ -450,9 +452,24 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
     dptr->dnum = bitmap_find(dptr_bmap, 255);
 
     if(dptr->dnum == -1 || dptr->dnum < 255) {
-      DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
-      free((char *)dptr);
-      return -1;
+
+      /*
+       * Try and close the oldest handle close in the hope that
+       * the client has finished with that one. This will only
+       * happen in the case of the Win98 client bug where it leaks
+       * directory handles.
+       */
+
+      dptr_close_oldest(False);
+
+      /* Now try again... */
+      dptr->dnum = bitmap_find(dptr_bmap, 255);
+
+      if(dptr->dnum == -1 || dptr->dnum < 255) {
+        DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
+        free((char *)dptr);
+        return -1;
+      }
     }
   }
 
