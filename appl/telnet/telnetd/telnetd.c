@@ -673,7 +673,6 @@ doit(struct sockaddr *who, int who_len)
     int addr_sz;
     const char *tmp;
     int af;
-    struct sockaddr_in mapped_sin;
 
     /*
      * Find an available pty to use.
