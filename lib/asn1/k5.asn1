@@ -114,7 +114,10 @@ ENCTYPE ::= INTEGER {
 	ETYPE_DES_PCBC_NONE(-0x1003),
 	ETYPE_DIGEST_MD5_NONE(-0x1004),		-- private use, lukeh@padl.com
 	ETYPE_CRAM_MD5_NONE(-0x1005),		-- private use, lukeh@padl.com
-	ETYPE_RC2_CBC_NONE(-0x1005)
+	ETYPE_RC2_CBC_NONE(-0x1005),
+	ETYPE_AES128_CBC_NONE(-0x1006),
+	ETYPE_AES192_CBC_NONE(-0x1007),
+	ETYPE_AES256_CBC_NONE(-0x1008)
 }
 
 -- this is sugar to make something ASN1 does not have: unsigned
