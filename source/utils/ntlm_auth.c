@@ -51,6 +51,8 @@ static unsigned char *lm_response;
 static size_t lm_response_len;
 static unsigned char *nt_response;
 static size_t nt_response_len;
+static int request_lm_key;
+static int request_nt_key;
 
 static char *password;
 
@@ -197,7 +199,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state)
 	memcpy(request.data.auth_crap.lm_resp, ntlmssp_state->lm_resp.data, 
 	       MIN(ntlmssp_state->lm_resp.length, sizeof(request.data.auth_crap.lm_resp)));
         
-	memcpy(request.data.auth_crap.nt_resp, ntlmssp_state->lm_resp.data,
+	memcpy(request.data.auth_crap.nt_resp, ntlmssp_state->nt_resp.data,
 	       MIN(ntlmssp_state->nt_resp.length, sizeof(request.data.auth_crap.nt_resp)));
         
         request.data.auth_crap.lm_resp_len = ntlmssp_state->lm_resp.length;
@@ -217,9 +219,27 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state)
 static void manage_squid_ntlmssp_request(enum squid_mode squid_mode, 
 					 char *buf, int length) 
 {
-	static NTLMSSP_STATE *ntlmssp_state;
+	static NTLMSSP_STATE *ntlmssp_state = NULL;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
+
+	if (strlen(buf) < 2) {
+		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (strlen(buf) > 3) {
+		request = base64_decode_data_blob(buf + 3);
+	} else if (strcmp(buf, "YR") == 0) {
+		request = data_blob(NULL, 0);
+		if (ntlmssp_state)
+			ntlmssp_server_end(&ntlmssp_state);
+	} else {
+		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
 
 	if (!ntlmssp_state) {
 		ntlmssp_server_start(&ntlmssp_state);
@@ -228,15 +248,8 @@ static void manage_squid_ntlmssp_request(enum squid_mode squid_mode,
 		ntlmssp_state->get_global_myname = get_winbind_netbios_name;
 	}
 
-	if (strlen(buf) < 3) {
-		x_fprintf(x_stdout, "BH\n");
-		return;
-	}
-	
-	request = base64_decode_data_blob(buf + 3);
-	
-	DEBUG(0, ("got NTLMSSP packet:\n"));
-	dump_data(0, request.data, request.length);
+	DEBUG(10, ("got NTLMSSP packet:\n"));
+	dump_data(10, request.data, request.length);
 
 	nt_status = ntlmssp_server_update(ntlmssp_state, request, &reply);
 	
@@ -245,10 +258,13 @@ static void manage_squid_ntlmssp_request(enum squid_mode squid_mode,
 		x_fprintf(x_stdout, "TT %s\n", reply_base64);
 		SAFE_FREE(reply_base64);
 		data_blob_free(&reply);
+		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
+		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
 	} else {
 		x_fprintf(x_stdout, "AF %s\\%s\n", ntlmssp_state->domain, ntlmssp_state->user);
+		DEBUG(10, ("NTLMSSP OK!\n"));
 	}
 
 	data_blob_free(&request);
@@ -287,10 +303,11 @@ static void manage_squid_request(enum squid_mode squid_mode)
 	int length;
 	char *c;
 	static BOOL err;
-  
-	if (x_fgets(buf, sizeof(buf)-1, x_stdin) == NULL) {
-		DEBUG(1, ("fgets() failed! dying..... errno=%d (%s)\n", errno,
-			  strerror(errno)));
+
+	/* this is not a typo - x_fgets doesn't work too well under squid */
+	if (fgets(buf, sizeof(buf)-1, stdin) == NULL) {
+		DEBUG(1, ("fgets() failed! dying..... errno=%d (%s)\n", ferror(stdin),
+			  strerror(ferror(stdin))));
 		exit(1);    /* BIIG buffer */
 	}
     
@@ -341,11 +358,21 @@ static BOOL check_auth_crap(void)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
+	char *lm_key;
+	char *nt_key;
+	static uint8 zeros[16];
+
         NSS_STATUS result;
 	/* Send off request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+
+	if (request_lm_key) 
+		request.data.auth_crap.flags |= WINBIND_PAM_LMKEY;
+
+	if (request_nt_key) 
+		request.data.auth_crap.flags |= WINBIND_PAM_NTKEY;
 
 	fstrcpy(request.data.auth_crap.user, username);
 
@@ -373,6 +400,27 @@ static BOOL check_auth_crap(void)
 		 response.data.auth.nt_status_string, 
 		 response.data.auth.nt_status);
 
+	if (response.data.auth.nt_status == 0) {
+		if (request_lm_key 
+		    && (memcmp(zeros, response.data.auth.first_8_lm_hash, 
+			      sizeof(response.data.auth.first_8_lm_hash)) != 0)) {
+			hex_encode(response.data.auth.first_8_lm_hash, 
+				   sizeof(response.data.auth.first_8_lm_hash),
+				   &lm_key);
+			d_printf("LM_KEY: %s\n", lm_key);
+			SAFE_FREE(lm_key);
+		}
+		if (request_nt_key 
+		    && (memcmp(zeros, response.data.auth.nt_session_key, 
+			      sizeof(response.data.auth.nt_session_key)) != 0)) {
+			hex_encode(response.data.auth.nt_session_key, 
+				   sizeof(response.data.auth.nt_session_key), 
+				   &nt_key);
+			d_printf("NT_KEY: %s\n", nt_key);
+			SAFE_FREE(nt_key);
+		}
+	}
+
         return result == NSS_STATUS_SUCCESS;
 }
 
@@ -386,67 +434,10 @@ enum {
 	OPT_RESPONSE,
 	OPT_LM,
 	OPT_NT,
-	OPT_PASSWORD
+	OPT_PASSWORD,
+	OPT_LM_KEY,
+	OPT_NT_KEY
 };
-
-/*************************************************************
- Routine to set hex password characters into an allocated array.
-**************************************************************/
-
-static void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
-{
-	int i;
-	char *hex_buffer;
-
-	*out_hex_buffer = smb_xmalloc((len*2)+1);
-	hex_buffer = *out_hex_buffer;
-
-	for (i = 0; i < len; i++)
-		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
-}
-
-/*************************************************************
- Routine to get the 32 hex characters and turn them
- into a 16 byte array.
-**************************************************************/
-
-static BOOL hex_decode(const char *hex_buf_in, unsigned char **out_buffer, size_t *size)
-{
-	int i;
-	size_t hex_buf_in_len = strlen(hex_buf_in);
-	unsigned char  partial_byte_hex;
-	unsigned char  partial_byte;
-	const char     *hexchars = "0123456789ABCDEF";
-	char           *p;
-	BOOL           high = True;
-	
-	if (!hex_buf_in) 
-		return (False);
-	
-	*size = (hex_buf_in_len + 1) / 2;
-
-	*out_buffer = smb_xmalloc(*size);
-	
-	for (i = 0; i < hex_buf_in_len; i++) {
-		partial_byte_hex = toupper(hex_buf_in[i]);
-
-		p = strchr(hexchars, partial_byte_hex);
-
-		if (!p)
-			return (False);
-
-		partial_byte = PTR_DIFF(p, hexchars);
-
-		if (high) {
-			(*out_buffer)[i / 2] = (partial_byte << 4);
-		} else {
-			(*out_buffer)[i / 2] |= partial_byte;
-		}
-		high = !high;
-	}
-	return (True);
-}
-
 
 int main(int argc, const char **argv)
 {
@@ -464,6 +455,8 @@ int main(int argc, const char **argv)
 		{ "lm-response", 0, POPT_ARG_STRING, &hex_lm_response, OPT_LM, "LM Response to the challenge (HEX encoded)"},
 		{ "nt-response", 0, POPT_ARG_STRING, &hex_nt_response, OPT_NT, "NT or NTLMv2 Response to the challenge (HEX encoded)"},
 		{ "password", 0, POPT_ARG_STRING, &password, OPT_PASSWORD, "User's plaintext password"},		
+		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retreive LM session key"},
+		{ "request-nt-key", 0, POPT_ARG_NONE, &request_nt_key, OPT_NT_KEY, "Retreive NT session key"},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
@@ -491,20 +484,27 @@ int main(int argc, const char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_CHALLENGE:
-			if (!hex_decode(hex_challenge, &challenge, &challenge_len)) {
-				fprintf(stderr, "hex decode of %s failed!\n", hex_challenge);
+			challenge_len = strlen(hex_challenge);
+			challenge = smb_xmalloc((challenge_len+1)/2);
+			if ((challenge_len = strhex_to_str(challenge, challenge_len, hex_challenge)) != 8) {
+				fprintf(stderr, "hex decode of %s failed (only got %u bytes)!\n", 
+					hex_challenge, challenge_len);
 				exit(1);
 			}
 			break;
 		case OPT_LM: 
-			if (!hex_decode(hex_lm_response, &lm_response, &lm_response_len)) {
-				fprintf(stderr, "hex decode of %s failed!\n", lm_response);
+			lm_response_len = strlen(hex_lm_response);
+			lm_response = smb_xmalloc((lm_response_len+1)/2);
+			if ((lm_response_len = strhex_to_str(lm_response, lm_response_len, hex_lm_response)) != 24) {
+				fprintf(stderr, "hex decode of %s failed!\n", hex_lm_response);
 				exit(1);
 			}
 			break;
-		case OPT_NT:
-			if (!hex_decode(hex_lm_response, &lm_response, &lm_response_len)) {
-				fprintf(stderr, "hex decode of %s failed!\n", lm_response);
+		case OPT_NT: 
+			nt_response_len = strlen(hex_nt_response);
+			nt_response = smb_xmalloc((nt_response_len+1)/2);
+			if ((nt_response_len = strhex_to_str(nt_response, nt_response_len, hex_nt_response)) < 24) {
+				fprintf(stderr, "hex decode of %s failed!\n", hex_nt_response);
 				exit(1);
 			}
 			break;

@@ -603,8 +603,12 @@ char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
 		*dest = 0;
 		return(dest);
 	}
-	while (n-- && (*d++ = *src++))
-		;
+	
+	while (n-- && (*d = *src)) {
+		d++;
+		src++;
+	}
+
 	*d = 0;
 	return(dest);
 }
@@ -679,6 +683,22 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 		p2 = NULL;
 	}
 	return num_chars;
+}
+
+/**
+ * Routine to print a buffer as HEX digits, into an allocated string.
+ */
+
+void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
+{
+	int i;
+	char *hex_buffer;
+
+	*out_hex_buffer = smb_xmalloc((len*2)+1);
+	hex_buffer = *out_hex_buffer;
+
+	for (i = 0; i < len; i++)
+		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
 }
 
 /**

@@ -259,6 +259,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
 	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
 	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
+	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir, "WINBINDD_PRIV_PIPE_DIR" },
 
 	/* WINS functions */
 
@@ -305,7 +306,7 @@ static void process_request(struct winbindd_cli_state *state)
 
 /* Process a new connection by adding it to the client connection list */
 
-static void new_connection(int listen_sock)
+static void new_connection(int listen_sock, BOOL privilaged)
 {
 	struct sockaddr_un sunaddr;
 	struct winbindd_cli_state *state;
@@ -335,6 +336,8 @@ static void new_connection(int listen_sock)
 	state->sock = sock;
 
 	state->last_access = time(NULL);	
+
+	state->privilaged = privilaged;
 
 	/* Add to connection list */
 	
@@ -547,7 +550,7 @@ static void process_loop(void)
 	while (1) {
 		struct winbindd_cli_state *state;
 		fd_set r_fds, w_fds;
-		int maxfd, listen_sock, selret;
+		int maxfd, listen_sock, listen_priv_sock, selret;
 		struct timeval timeout;
 
 		/* Handle messages */
@@ -566,17 +569,19 @@ static void process_loop(void)
 		/* Initialise fd lists for select() */
 
 		listen_sock = open_winbindd_socket();
+		listen_priv_sock = open_winbindd_priv_socket();
 
-		if (listen_sock == -1) {
+		if (listen_sock == -1 || listen_priv_sock == -1) {
 			perror("open_winbind_socket");
 			exit(1);
 		}
 
-		maxfd = listen_sock;
+		maxfd = MAX(listen_sock, listen_priv_sock);
 
 		FD_ZERO(&r_fds);
 		FD_ZERO(&w_fds);
 		FD_SET(listen_sock, &r_fds);
+		FD_SET(listen_priv_sock, &r_fds);
 
 		timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 		timeout.tv_usec = 0;
@@ -653,7 +658,22 @@ static void process_loop(void)
 						break;
 					}
 				}
-				new_connection(listen_sock);
+				/* new, non-privilaged connection */
+				new_connection(listen_sock, False);
+			}
+            
+			if (FD_ISSET(listen_priv_sock, &r_fds)) {
+				while (winbindd_num_clients() > WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
+					DEBUG(5,("winbindd: Exceeding %d client connections, removing idle connection.\n",
+						WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+					if (!remove_idle_client()) {
+						DEBUG(0,("winbindd: Exceeding %d client connections, no idle connection found\n",
+							WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+						break;
+					}
+				}
+				/* new, privilaged connection */
+				new_connection(listen_priv_sock, True);
 			}
             
 			/* Process activity on client connections */

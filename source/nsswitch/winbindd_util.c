@@ -453,9 +453,15 @@ void fill_domain_username(fstring name, const char *domain, const char *user)
  * Winbindd socket accessor functions
  */
 
+char *get_winbind_priv_pipe_dir(void) 
+{
+	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
+}
+
 /* Open the winbindd socket */
 
 static int _winbindd_socket = -1;
+static int _winbindd_priv_socket = -1;
 
 int open_winbindd_socket(void)
 {
@@ -469,6 +475,18 @@ int open_winbindd_socket(void)
 	return _winbindd_socket;
 }
 
+int open_winbindd_priv_socket(void)
+{
+	if (_winbindd_priv_socket == -1) {
+		_winbindd_priv_socket = create_pipe_sock(
+			get_winbind_priv_pipe_dir(), WINBINDD_SOCKET_NAME, 0750);
+		DEBUG(10, ("open_winbindd_priv_socket: opened socket fd %d\n",
+			   _winbindd_priv_socket));
+	}
+
+	return _winbindd_priv_socket;
+}
+
 /* Close the winbindd socket */
 
 void close_winbindd_socket(void)
@@ -478,6 +496,12 @@ void close_winbindd_socket(void)
 			   _winbindd_socket));
 		close(_winbindd_socket);
 		_winbindd_socket = -1;
+	}
+	if (_winbindd_priv_socket != -1) {
+		DEBUG(10, ("close_winbindd_socket: closing socket fd %d\n",
+			   _winbindd_priv_socket));
+		close(_winbindd_priv_socket);
+		_winbindd_priv_socket = -1;
 	}
 }
 
