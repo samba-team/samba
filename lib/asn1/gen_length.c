@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,6 +56,9 @@ length_type (const char *name, const Type *t, const char *variable)
       break;
   case TInteger:
       length_primitive ("integer", name, variable);
+      break;
+  case TUInteger:
+      length_primitive ("unsigned", name, variable);
       break;
   case TOctetString:
       length_primitive ("octet_string", name, variable);
