@@ -102,31 +102,14 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 	NTSTATUS status;
 	struct pvfs_filename *name;
 
-	switch (io->generic.level) {
-	case RAW_SEARCH_SEARCH:
+	if (io->generic.level == RAW_SEARCH_SEARCH) {
 		max_count     = io->search_first.in.max_count;
 		search_attrib = io->search_first.in.search_attrib;
 		pattern       = io->search_first.in.pattern;
-		break;
-
-	case RAW_SEARCH_STANDARD:
-	case RAW_SEARCH_EA_SIZE:
-	case RAW_SEARCH_DIRECTORY_INFO:
-	case RAW_SEARCH_FULL_DIRECTORY_INFO:
-	case RAW_SEARCH_NAME_INFO:
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
-	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
-	case RAW_SEARCH_UNIX_INFO:
+	} else {
 		max_count     = io->t2ffirst.in.max_count;
 		search_attrib = io->t2ffirst.in.search_attrib;
 		pattern       = io->t2ffirst.in.pattern;
-		break;
-
-	case RAW_SEARCH_FCLOSE:
-	case RAW_SEARCH_GENERIC:
-		DEBUG(0,("WARNING: Invalid search class %d in pvfs_search_first\n", io->generic.level));
-		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	/* resolve the cifs name to a posix name */
@@ -232,7 +215,94 @@ NTSTATUS pvfs_search_next(struct smbsrv_request *req, union smb_search_next *io,
 			  void *search_private, 
 			  BOOL (*callback)(void *, union smb_search_data *))
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+#if 0
+	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	struct search_state *search;
+	union smb_search_data file;
+	uint_t max_count;
+	uint16_t handle;
+	int i;
+
+	if (io->generic.level == RAW_SEARCH_SEARCH) {
+		max_count     = io->search_next.in.max_count;
+		search_attrib = io->search_next.in.search_attrib;
+	} else {
+		handle = io->t2fnext.in.handle;
+	}
+
+	if (io->generic.level != RAW_SEARCH_BOTH_DIRECTORY_INFO) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	for (search=private->search; search; search = search->next) {
+		if (search->handle == io->t2fnext.in.handle) break;
+	}
+	
+	if (!search) {
+		/* we didn't find the search handle */
+		return NT_STATUS_FOOBAR;
+	}
+
+	dir = search->dir;
+
+	/* the client might be asking for something other than just continuing
+	   with the search */
+	if (!(io->t2fnext.in.flags & FLAG_TRANS2_FIND_CONTINUE) &&
+	    (io->t2fnext.in.flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) &&
+	    io->t2fnext.in.last_name && *io->t2fnext.in.last_name) {
+		/* look backwards first */
+		for (i=search->current_index; i > 0; i--) {
+			if (strcmp(io->t2fnext.in.last_name, dir->files[i-1].name) == 0) {
+				search->current_index = i;
+				goto found;
+			}
+		}
+
+		/* then look forwards */
+		for (i=search->current_index+1; i <= dir->count; i++) {
+			if (strcmp(io->t2fnext.in.last_name, dir->files[i-1].name) == 0) {
+				search->current_index = i;
+				goto found;
+			}
+		}
+	}
+
+found:	
+	max_count = search->current_index + io->t2fnext.in.max_count;
+
+	if (max_count > dir->count) {
+		max_count = dir->count;
+	}
+
+	for (i = search->current_index; i < max_count;i++) {
+		ZERO_STRUCT(file);
+		unix_to_nt_time(&file.both_directory_info.create_time, dir->files[i].st.st_ctime);
+		unix_to_nt_time(&file.both_directory_info.access_time, dir->files[i].st.st_atime);
+		unix_to_nt_time(&file.both_directory_info.write_time,  dir->files[i].st.st_mtime);
+		unix_to_nt_time(&file.both_directory_info.change_time, dir->files[i].st.st_mtime);
+		file.both_directory_info.name.s = dir->files[i].name;
+		file.both_directory_info.short_name.s = dir->files[i].name;
+		file.both_directory_info.size = dir->files[i].st.st_size;
+		file.both_directory_info.attrib = pvfs_unix_to_dos_attrib(dir->files[i].st.st_mode);
+
+		if (!callback(search_private, &file)) {
+			break;
+		}
+	}
+
+	io->t2fnext.out.count = i - search->current_index;
+	io->t2fnext.out.end_of_search = (i == dir->count) ? 1 : 0;
+
+	search->current_index = i;
+
+	/* work out if we are going to keep the search state */
+	if ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE) ||
+	    ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && (i == dir->count))) {
+		DLIST_REMOVE(private->search, search);
+		talloc_free(search);
+	}
+#endif
+	return NT_STATUS_OK;
 }
 
 /* close a search */

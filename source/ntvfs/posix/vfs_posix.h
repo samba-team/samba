@@ -92,9 +92,9 @@ struct pvfs_dir {
 /* the state of a search started with pvfs_search_first() */
 struct pvfs_search_state {
 	struct pvfs_search_state *next, *prev;
-	uint16_t search_attrib;
 	uint16_t handle;
 	uint_t current_index;
+	uint16_t search_attrib;
 	struct pvfs_dir *dir;
 };
 

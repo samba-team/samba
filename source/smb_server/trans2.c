@@ -885,6 +885,8 @@ static void find_fill_info(struct smbsrv_request *req,
 
 	switch (state->level) {
 	case RAW_SEARCH_SEARCH:
+	case RAW_SEARCH_FFIRST:
+	case RAW_SEARCH_FUNIQUE:
 	case RAW_SEARCH_GENERIC:
 		/* handled elsewhere */
 		break;
@@ -926,6 +928,8 @@ static void find_fill_info(struct smbsrv_request *req,
 		SIVAL(data, 22, file->ea_size.ea_size);
 		trans2_append_data_string(req, trans, &file->ea_size.name, 
 					  ofs + 26, STR_LEN8BIT | STR_NOALIGN);
+		trans2_grow_data(req, trans, trans->out.data.length + 1);
+		trans->out.data.data[trans->out.data.length-1] = 0;
 		break;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
