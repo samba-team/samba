@@ -55,6 +55,7 @@
 extern int case_default;    /* Are conforming 8.3 names all upper or lower?   */
 extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 
+
 /* -------------------------------------------------------------------------- **
  * Other stuff...
  *
@@ -110,6 +111,13 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
  */
 
 char magic_char = '~';
+
+
+#if 1
+
+
+
+
 
 static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
 #define MANGLE_BASE       ( (sizeof(basechars)/sizeof(char)) - 1 )
@@ -964,6 +972,9 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 	return(True);
 } /* name_map_mangle */
 
+#endif
+
+
 
 
 /* -------------------------------------------------------------------- */
@@ -988,7 +999,8 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#if 1
+#if 0
+
 #define MANGLE_TDB_VERSION		"20010927"
 #define MANGLE_TDB_FILE_NAME		"mangle.tdb"
 #define MANGLED_PREFIX			"MANGLED_"
@@ -1428,9 +1440,142 @@ done:
 	return mangled;
 }
 
+
+
+
+/* backward compatibility functions */
+
+BOOL is_mangled(char *s)
+{
+	smb_ucs2_t *u2, *res;
+	size_t u2len;
+	BOOL ret = False;
+	
+	u2len = (strlen(s) + 1) * sizeof(smb_ucs2_t);
+	u2 = (smb_ucs2_t *)malloc(u2len);
+	if (!u2)
+	{
+		DEBUG(0,("is_mangled: out of memory!\n"));
+		return ret;
+	}
+	dos_to_ucs2(u2, s, u2len);
+	
+	res = unmangle(u2);
+	if (res) ret = True;
+	SAFE_FREE(res);
+	SAFE_FREE(u2);
+	return ret;
+}
+
+BOOL is_8_3(char *fname, BOOL check_case)
+{
+	smb_ucs2_t *u2, *pref = 0, *ext = 0;
+	char *s1 = 0, *s2;
+	size_t u2len;
+	BOOL ret = False;
+
+	u2len = (strlen(fname) + 1) * sizeof(smb_ucs2_t);
+	u2 = (smb_ucs2_t *)malloc(u2len);
+	if (!u2)
+	{
+		DEBUG(0,("is_8_3: out of memory!\n"));
+		goto done;
+	}
+	s1 = (char *) malloc(u2len * 2);
+	if (!s1)
+	{
+		DEBUG(0,("is_8_3: out of memory!\n"));
+		goto done;
+	}
+	s2 = s1 + u2len;
+	dos_to_ucs2(u2, fname, u2len);
+	
+
+	if (!mangle_get_prefix(u2, &pref, &ext)) goto done;
+	if (strlen_w(pref) > 8) goto done;
+
+	ucs2_to_dos(s1, u2, u2len);
+	ucs2_to_dos83(s2, u2, u2len);
+	
+	if (strncmp(s1, s2, u2len)) goto done;
+	else ret = True;
+	
+done:
+	SAFE_FREE(u2);
+	SAFE_FREE(s1);
+	SAFE_FREE(pref);
+	SAFE_FREE(ext);
+}
+
+void reset_mangled_cache(void)
+{
+	DEBUG(10,("reset_mangled_cache: compatibility function, remove me!\n"));
+}
+
+BOOL check_mangled_cache(char *s)
+{
+	smb_ucs2_t *u2, *res;
+	size_t slen, u2len;
+	BOOL ret = False;
+	
+	DEBUG(10,("check_mangled_cache: I'm so ugly, please remove me!\n"));
+
+	slen = strlen(s);
+	u2len = (slen + 1) * sizeof(smb_ucs2_t);
+	u2 = (smb_ucs2_t *)malloc(u2len);
+	if (!u2)
+	{
+		DEBUG(0,("check_mangled_cache: out of memory!\n"));
+		return ret;
+	}
+	dos_to_ucs2(u2, s, u2len);
+	
+	res = unmangle(u2);
+	if (res)
+	{
+		ucs2_to_dos (s, res, slen); /* ugly, but must be done this way */
+		ret = True;
+	}
+	SAFE_FREE(res);
+	SAFE_FREE(u2);
+	return ret;
+}
+
+void mangle_name_83(char *s)
+{
+	smb_ucs2_t *u2, *res;
+	size_t slen, u2len;
+	BOOL ret = False;
+	
+	DEBUG(10,("mangle_name_83: I'm so ugly, please remove me!\n"));
+
+	slen = strlen(s);
+	u2len = (slen + 1) * sizeof(smb_ucs2_t);
+	u2 = (smb_ucs2_t *)malloc(u2len);
+	if (!u2)
+	{
+		DEBUG(0,("mangle_name_83: out of memory!\n"));
+		return;
+	}
+	dos_to_ucs2(u2, s, u2len);
+	
+	res = _mangle(u2);
+	if (res) ucs2_to_dos (s, res, slen); /* ugly, but must be done this way */
+	SAFE_FREE(res);
+	SAFE_FREE(u2);
+}
+
+BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
+{
+	DEBUG(10,("name_map_mangle: I'm so ugly, please remove me!\n"));
+
+	mangle_name_83(OutName);
+	return True;
+}
+
 #endif /* 0 */
 
-#if 1 /* TEST_MANGLE_CODE */
+#if 0 /* TEST_MANGLE_CODE */
 
 #define LONG		"this_is_a_long_file_name"
 #define	LONGM		"this_~01"
