@@ -55,43 +55,15 @@
 #include <grp.h>
 #endif
 
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <pwd.h>
-
-#ifdef HAVE_NSS_COMMON_H
-/* Sun Solaris */
-
-#include <nss_common.h>
-#include <nss_dbdefs.h>
-#include <nsswitch.h>
-
-typedef nss_status_t NSS_STATUS;
-
-#define NSS_STATUS_SUCCESS     NSS_SUCCESS
-#define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
-#define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
-#define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
-
-#elif HAVE_NSS_H
-/* GNU */
-
-#include <nss.h>
-
-typedef enum nss_status NSS_STATUS;
-
-#else /* Nothing's defined. Neither gnu nor sun */
-
-typedef enum
-{
-  NSS_STATUS_SUCCESS,
-  NSS_STATUS_NOTFOUND,
-  NSS_STATUS_UNAVAIL,
-  NSS_STATUS_TRYAGAIN
-} NSS_STATUS;
-
-#endif
+#include "nsswitch/nss.h"
 
 /* Declarations for functions in winbind_nss.c
    needed in winbind_nss_solaris.c (solaris wrapper to nss) */

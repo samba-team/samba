@@ -34,7 +34,7 @@ static TDB_CONTEXT *idmap_tdb;
 
 /* Allocate either a user or group id from the pool */
 
-static BOOL allocate_id(int *id, BOOL isgroup)
+static BOOL allocate_id(uid_t *id, BOOL isgroup)
 {
     int hwm;
 
@@ -68,7 +68,7 @@ static BOOL allocate_id(int *id, BOOL isgroup)
 
 /* Get an id from a rid */
 
-static BOOL get_id_from_rid(char *domain_name, uint32 rid, int *id,
+static BOOL get_id_from_rid(char *domain_name, uint32 rid, uid_t *id,
                             BOOL isgroup)
 {
     TDB_DATA data, key;

@@ -379,7 +379,7 @@ WINBINDD_OBJ = \
 		$(GROUPDB_OBJ) $(PROFILE_OBJ) \
 		$(NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ)
 
-WBINFO_OBJ = nsswitch/wbinfo.o
+WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o
 
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o
 
