@@ -77,6 +77,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	RPC_HDR_RESP hdr_resp;
 	BOOL auth_verify = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
 	BOOL auth_seal   = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL) != 0);
+	uint32 ss_padding_len = 0;
 	uint32 data_len;
 	uint32 data_space_available;
 	uint32 data_len_left;
@@ -140,24 +141,30 @@ BOOL create_next_pdu(pipes_struct *p)
 	hdr_resp.alloc_hint = data_len_left;
 
 	/*
+	 * Work out if this PDU will be the last.
+	 */
+
+	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
+		p->hdr.flags |= RPC_FLG_LAST;
+		if ((auth_seal || auth_verify) && (data_len_left % 8)) {
+			ss_padding_len = 8 - (data_len_left % 8);
+			DEBUG(10,("create_next_pdu: adding sign/seal padding of %u\n",
+				ss_padding_len ));
+		}
+	}
+
+	/*
 	 * Set up the header lengths.
 	 */
 
 	if (p->ntlmssp_auth_validated) {
-		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len +
+		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len + ss_padding_len +
 					RPC_HDR_AUTH_LEN + RPC_AUTH_NTLMSSP_CHK_LEN;
 		p->hdr.auth_len = RPC_AUTH_NTLMSSP_CHK_LEN;
 	} else {
 		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len;
 		p->hdr.auth_len = 0;
 	}
-
-	/*
-	 * Work out if this PDU will be the last.
-	 */
-
-	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata))
-		p->hdr.flags |= RPC_FLG_LAST;
 
 	/*
 	 * Init the parse struct to point at the outgoing
@@ -192,6 +199,17 @@ BOOL create_next_pdu(pipes_struct *p)
 		return False;
 	}
 
+	/* Copy the sign/seal padding data. */
+	if (ss_padding_len) {
+		char pad[8];
+		memset(pad, '\0', 8);
+		if (!prs_append_data(&outgoing_pdu, pad, ss_padding_len)) {
+			DEBUG(0,("create_next_pdu: failed to add %u bytes of pad data.\n", (unsigned int)ss_padding_len));
+			prs_mem_free(&outgoing_pdu);
+			return False;
+		}
+	}
+
 	/*
 	 * Set data to point to where we copied the data into.
 	 */
@@ -202,18 +220,18 @@ BOOL create_next_pdu(pipes_struct *p)
 		uint32 crc32 = 0;
 
 		DEBUG(5,("create_next_pdu: sign: %s seal: %s data %d auth %d\n",
-			 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, p->hdr.auth_len));
+			 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len + ss_padding_len, p->hdr.auth_len));
 
 		if (auth_seal) {
-			crc32 = crc32_calc_buffer(data, data_len);
-			NTLMSSPcalc_p(p, (uchar*)data, data_len);
+			crc32 = crc32_calc_buffer(data, data_len + ss_padding_len);
+			NTLMSSPcalc_p(p, (uchar*)data, data_len + ss_padding_len);
 		}
 
 		if (auth_seal || auth_verify) {
 			RPC_HDR_AUTH auth_info;
 
 			init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, NTLMSSP_AUTH_LEVEL, 
-					(auth_verify ? RPC_HDR_AUTH_LEN : 0), (auth_verify ? 1 : 0));
+					(auth_verify ? ss_padding_len : 0), (auth_verify ? 1 : 0));
 			if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
 				DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_AUTH.\n"));
 				prs_mem_free(&outgoing_pdu);
