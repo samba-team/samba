@@ -212,8 +212,7 @@
     does not support them.  However note that if encrypted passwords have been 
     negotiated then Samba cannot revert back to checking the UNIX password file, 
     it must have a valid <filename moreinfo="none">smbpasswd</filename> file to check 
-    users against. See the documentation file in the <filename moreinfo="none">docs/</filename> directory 
-    <filename moreinfo="none">ENCRYPTION.txt</filename> for details on how to set this up.</para>
+	users against. See the chapter about the User Database in the Samba HOWTO Collection for details on how to set this up.</para>
 
     <para><emphasis>Note</emphasis> this mode of operation has
     significant pitfalls, due to the fact that is activly initiates a
