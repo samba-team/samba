@@ -126,37 +126,32 @@ NTSTATUS ntvfs_init_connection(struct smbsrv_request *req, enum ntvfs_type type)
 	struct ntvfs_context *ctx;
 
 	if (!handlers) {
-		return NT_STATUS_FOOBAR;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ctx = talloc_p(req->tcon, struct ntvfs_context);
-	if (!ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ctx = talloc(req->tcon, struct ntvfs_context);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
 	ctx->type = type;
 	ctx->modules = NULL;
 
 	for (i=0; handlers[i]; i++) {
 		struct ntvfs_module_context *ntvfs;
 
-		ntvfs = talloc_p(ctx, struct ntvfs_module_context);
-		if (!ntvfs) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		ntvfs = talloc(ctx, struct ntvfs_module_context);
+		NT_STATUS_HAVE_NO_MEMORY(ntvfs);
 
 		ntvfs->ops = ntvfs_backend_byname(handlers[i], ctx->type);
 		if (!ntvfs->ops) {
 			DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n",
 				handlers[i], ctx->type));
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 		ntvfs->depth = i;
 		DLIST_ADD_END(ctx->modules, ntvfs, struct ntvfs_module_context *);
 	}
 
 	if (!ctx->modules) {
-		talloc_free(ctx);
-		return NT_STATUS_FOOBAR;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	req->tcon->ntvfs_ctx = ctx;
