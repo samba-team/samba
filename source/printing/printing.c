@@ -132,11 +132,13 @@ static pid_t local_pid;
 
 static int get_queue_status(int, print_status_struct *);
 
+/* There can be this many printing tdb's open, plus any locked ones. */
 #define MAX_PRINT_DBS_OPEN 1
 
 struct tdb_print_db {
 	struct tdb_print_db *next, *prev;
 	TDB_CONTEXT *tdb;
+	int locked;
 	fstring printer_name;
 };
 
@@ -149,7 +151,7 @@ static struct tdb_print_db *print_db_head;
 
 static struct tdb_print_db *get_print_db_byname(const char *printername)
 {
-	struct tdb_print_db *p, *last_entry;
+	struct tdb_print_db *p = NULL, *last_entry = NULL;
 	int num_open = 0;
 	pstring printdb_path;
 
@@ -161,20 +163,28 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 		num_open++;
 		last_entry = p;
 	}
+
 	/* Not found. */
 	if (num_open >= MAX_PRINT_DBS_OPEN) {
-		/* Recycle the last entry. */
+		/* Try and recycle the last entry. */
 		DLIST_PROMOTE(print_db_head, last_entry);
-		if (print_db_head->tdb) {
-			if (tdb_close(print_db_head->tdb)) {
-				DEBUG(0,("get_print_db: Failed to close tdb for printer %s\n",
-							print_db_head->printer_name ));
-				return NULL;
+
+		for (p = print_db_head; p; p = p->next) {
+			if (p->locked)
+				continue;
+			if (p->tdb) {
+				if (tdb_close(print_db_head->tdb)) {
+					DEBUG(0,("get_print_db: Failed to close tdb for printer %s\n",
+								print_db_head->printer_name ));
+					return NULL;
+				}
+				ZERO_STRUCTP(p);
+				DLIST_PROMOTE(print_db_head, p);
 			}
 		}
-		p = print_db_head;
-		ZERO_STRUCTP(p);
-	} else {
+	}
+       
+	if (!p)	{
 		/* Create one. */
 		p = (struct tdb_print_db *)malloc(sizeof(struct tdb_print_db));
 		if (!p) {
@@ -202,6 +212,30 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 	}
 	fstrcpy(p->printer_name, printername);
 	return p;
+}
+
+/****************************************************************************
+ Lock a pdb entry by string.
+****************************************************************************/
+
+static int pdb_entry_lock(struct tdb_print_db *pdb, char *key)
+{
+	if (pdb->locked == 0) {
+		if (tdb_lock_bystring(pdb->tdb, key) == -1)
+			return -1;
+	}
+	pdb->locked++;
+}
+
+/****************************************************************************
+ Unlock a pdb entry by string.
+****************************************************************************/
+
+static void pdb_entry_unlock(struct tdb_print_db *pdb, char *key)
+{
+	pdb->locked--;
+	if (pdb->locked == 0)
+		tdb_unlock_bystring(pdb->tdb, key);
 }
 
 /****************************************************************************
@@ -235,12 +269,15 @@ BOOL print_backend_init(void)
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (!pdb)
 			continue;
-		tdb_lock_bystring(pdb->tdb, sversion);
+		if (pdb_entry_lock(pdb, sversion) == -1) {
+			DEBUG(0,("print_backend_init: Failed to open printer %s database\n", lp_const_servicename(snum) ));
+			return False;
+		}
 		if (tdb_fetch_int32(pdb->tdb, sversion) != PRINT_DATABASE_VERSION) {
 			tdb_traverse(pdb->tdb, tdb_traverse_delete_fn, NULL);
 			tdb_store_int32(pdb->tdb, sversion, PRINT_DATABASE_VERSION);
 		}
-		tdb_unlock_bystring(pdb->tdb, sversion);
+		pdb_entry_unlock(pdb, sversion);
 	}
 
 	/* select the appropriate printing interface... */
@@ -746,7 +783,10 @@ static void print_queue_update(int snum)
 	/* Lock the queue for the database update */
 
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
-	tdb_lock_bystring(pdb->tdb, keystr);
+	if (pdb_entry_lock(pdb, keystr) == -1) {
+		DEBUG(0,("print_queue_update: Failed to lock printer %s database\n", printer_name));
+		return;
+	}
 
 	/*
 	 * Ensure that no one else got in here.
@@ -758,7 +798,7 @@ static void print_queue_update(int snum)
 		/*
 		 * Someone else is doing the update, exit.
 		 */
-		tdb_unlock_bystring(pdb->tdb, keystr);
+		pdb_entry_unlock(pdb, keystr);
 		return;
 	}
 
@@ -774,7 +814,7 @@ static void print_queue_update(int snum)
 	 * the update.
 	 */
 
-	tdb_unlock_bystring(pdb->tdb, keystr);
+	pdb_entry_unlock(pdb, keystr);
 
 	/*
 	 * Update the cache time FIRST ! Stops others even
@@ -1335,7 +1375,10 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 	fstrcpy(pjob.queuename, lp_const_servicename(snum));
 
 	/* lock the database */
-	tdb_lock_bystring(pdb->tdb, "INFO/nextjob");
+	if (pdb_entry_lock(pdb, "INFO/nextjob") == -1) {
+		DEBUG(0,("print_job_start: failed to lock printing database %s\n", printername ));
+		return (uint32)-1;
+	}
 
 	next_jobid = tdb_fetch_int32(pdb->tdb, "INFO/nextjob");
 	if (next_jobid == -1)
@@ -1378,7 +1421,7 @@ to open spool file %s.\n", pjob.filename));
 
 	pjob_store(snum, jobid, &pjob);
 
-	tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
+	pdb_entry_unlock(pdb, "INFO/nextjob");
 
 	/*
 	 * If the printer is marked as postscript output a leading
@@ -1397,7 +1440,7 @@ to open spool file %s.\n", pjob.filename));
 	if (jobid != -1)
 		pjob_delete(snum, jobid);
 
-	tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
+	pdb_entry_unlock(pdb, "INFO/nextjob");
 
 	DEBUG(3, ("print_job_start: returning fail. Error = %s\n", strerror(errno) ));
 	return -1;
