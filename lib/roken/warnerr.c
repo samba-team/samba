@@ -73,8 +73,10 @@ void
 warnerr(int doerrno, const char *fmt, va_list ap)
 {
     int sverrno = errno;
-    if(__progname != NULL){
-	fprintf(stderr, "%s", __progname);
+    const char *progname = getprogname();
+
+    if(progname != NULL){
+	fprintf(stderr, "%s", progname);
 	if(fmt != NULL || doerrno)
 	    fprintf(stderr, ": ");
     }
