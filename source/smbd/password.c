@@ -153,7 +153,7 @@ char *validated_username(uint16 vuid)
 /****************************************************************************
 Setup the groups a user belongs to.
 ****************************************************************************/
-int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
+static int get_unixgroups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
 {
 	int i,ngroups;
 	gid_t grp = 0;
@@ -180,7 +180,7 @@ int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_gro
 
 	if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL)
 	{
-		DEBUG(0,("setup_groups malloc fail !\n"));
+		DEBUG(0,("get_unixgroups malloc fail !\n"));
 		return -1;
 	}
 
@@ -263,7 +263,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
-  setup_groups(unix_name,uid,gid,
+  get_unixgroups(unix_name,uid,gid,
 	       &vuser->n_groups,
 	       &vuser->groups);
 
@@ -1000,21 +1000,19 @@ struct cli_state *server_cryptkey(void)
 	}
 
 	make_nmb_name(&calling, local_machine, 0x0 , scope);
+	make_nmb_name(&called , desthost     , 0x20, scope);
 
-    if(strlen(desthost) > 15)
-	{
-		DEBUG(1,("server_cryptkey: %s is too long for a password server NetBIOS \
-name, using *SMBSERVER for the connection.\n", desthost ));
-		make_nmb_name(&called , "*SMBSERVER", 0x20, scope);
-	}
-	else
-		make_nmb_name(&called , desthost     , 0x20, scope);
-
-	if (!cli_session_request(cli, &calling, &called))
-	{
-		DEBUG(1,("%s rejected the session\n",desthost));
+	if (!cli_session_request(cli, &calling, &called)) {
+		/* try with *SMBSERVER if the first name fails */
 		cli_shutdown(cli);
-		return NULL;
+		make_nmb_name(&called , "*SMBSERVER", 0x20, scope);
+		if (!cli_initialise(cli) ||
+		    !cli_connect(cli, desthost, &dest_ip) ||
+		    !cli_session_request(cli, &calling, &called)) {
+			DEBUG(1,("%s rejected the session\n",desthost));
+			cli_shutdown(cli);
+			return NULL;
+		}
 	}
 
 	DEBUG(3,("got session\n"));
@@ -1150,15 +1148,10 @@ BOOL domain_client_validate( char *user, char *domain,
   unsigned char local_lm_response[24];
   unsigned char local_nt_reponse[24];
   unsigned char trust_passwd[16];
-  fstring remote_machine;
-  char *p;
-  struct in_addr dest_ip;
   NET_ID_INFO_CTR ctr;
   NET_USER_INFO_3 info3;
   struct cli_state cli;
   uint32 smb_uid_low;
-  BOOL connected_ok = False;
-  struct nmb_name calling, called;
 
   /* 
    * Check that the requested domain is not our own machine name.
@@ -1219,102 +1212,9 @@ BOOL domain_client_validate( char *user, char *domain,
    * see if they were valid.
    */
 
-  ZERO_STRUCT(cli);
-
-  if(cli_initialise(&cli) == False) {
-    DEBUG(0,("domain_client_validate: unable to initialize client connection.\n"));
-    return False;
-  }
-
-  /*
-   * Treat each name in the 'password server =' line as a potential
-   * PDC/BDC. Contact each in turn and try and authenticate.
-   */
-
-  p = lp_passwordserver();
-  while(p && next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
-
-    standard_sub_basic(remote_machine);
-    strupper(remote_machine);
- 
-    if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
-      DEBUG(1,("domain_client_validate: Can't resolve address for %s\n", remote_machine));
-      continue;
-    }   
-    
-    if (ismyip(dest_ip)) {
-      DEBUG(1,("domain_client_validate: Password server loop - not using password server %s\n",remote_machine));
-      continue;
-    }
-      
-    if (!cli_connect(&cli, remote_machine, &dest_ip)) {
-      DEBUG(0,("domain_client_validate: unable to connect to SMB server on \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      continue;
-    }
-    
-	make_nmb_name(&calling, global_myname , 0x0 , scope);
-	make_nmb_name(&called , remote_machine, 0x20, scope);
-
-	if (!cli_session_request(&cli, &calling, &called))
+	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
 	{
-      DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-    
-    cli.protocol = PROTOCOL_NT1;
-
-    if (!cli_negprot(&cli)) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the negotiate protocol. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-    
-    if (cli.protocol != PROTOCOL_NT1) {
-      DEBUG(0,("domain_client_validate: machine %s didn't negotiate NT protocol.\n",
-                     remote_machine));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    /* 
-     * Do an anonymous session setup.
-     */
-
-    if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }      
-
-    if (!(cli.sec_mode & 1)) {
-      DEBUG(1,("domain_client_validate: machine %s isn't in user level security mode\n",
-                 remote_machine));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the tconX on the IPC$ share. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    /*
-     * We have an anonymous connection to IPC$.
-     */
-    connected_ok = True;
-    break;
-  }
-
-  if (!connected_ok) {
     DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-    cli_shutdown(&cli);
     return False;
   }
 
@@ -1325,7 +1225,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 
   if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
     DEBUG(0,("domain_client_validate: unable to open the domain client session to \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
@@ -1334,7 +1234,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
 
   if(cli_nt_setup_creds(&cli, trust_passwd) == False) {
     DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+%s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
@@ -1349,7 +1249,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
                           ((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
                           &ctr, &info3) == False) {
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));
+%s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
@@ -1369,7 +1269,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
 
   if(cli_nt_logoff(&cli, &ctr) == False) {
     DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
+%s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));        
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
