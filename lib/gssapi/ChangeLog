@@ -1,0 +1,9 @@
+Wed Apr  7 14:05:15 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* display_status.c: set minor_status
+
+	* init_sec_context.c: set minor_status
+
+	* lib/gssapi/init.c: remove donep (check gssapi_krb5_context
+ 	directly)
+

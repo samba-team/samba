@@ -1,3 +1,16 @@
+Wed Apr  7 16:15:21 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* ftp/gssapi.c (gss_auth): call gss_display_status to get a sane
+ 	error message; return AUTH_{CONTINUE,ERROR}, where appropriate
+
+	* ftp/krb4.c: return AUTH_{CONTINUE,ERROR}, where appropriate
+
+	* ftp/security.c (sec_login): if mechanism returns AUTH_CONTINUE,
+ 	just continue with the next mechanism, this fixes the case of
+ 	having GSSAPI fail because of non-existant of expired tickets
+
+	* ftp/security.h: add AUTH_{OK,CONTINUE,ERROR}
+
 Thu Apr  1 16:59:04 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* ftpd/Makefile.am: don't run check-local
