@@ -1,0 +1,122 @@
+/* 
+   ldb database library
+
+   Copyright (C) Andrew Tridgell  2004
+
+     ** NOTE! The following LGPL license applies to the ldb
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
+   
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
+/*
+ *  Name: ldb
+ *
+ *  Component: ldbsearch
+ *
+ *  Description: utility for ldb search - modelled on ldapsearch
+ *
+ *  Author: Andrew Tridgell
+ */
+
+#include "includes.h"
+#include <getopt.h>
+
+ int main(int argc, char * const argv[])
+{
+	static struct ldb_context *ldb;
+	struct ldb_message **msgs;
+	int ret, i;
+	const char *expression;
+	const char * const *attrs = NULL;
+	const char *ldb_url;
+	const char *basedn = NULL;
+	int opt;
+	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
+
+	ldb_url = getenv("LDB_URL");
+	if (!ldb_url) {
+		ldb_url = "tdb://test.ldb";
+	}
+
+	while ((opt = getopt(argc, argv, "b:H:s:")) != EOF) {
+		switch (opt) {
+		case 'b':
+			basedn = optarg;
+			break;
+
+		case 'H':
+			ldb_url = optarg;
+			break;
+
+		case 's':
+			if (strcmp(optarg, "base") == 0) {
+				scope = LDB_SCOPE_BASE;
+			} else if (strcmp(optarg, "sub") == 0) {
+				scope = LDB_SCOPE_SUBTREE;
+			} else if (strcmp(optarg, "one") == 0) {
+				scope = LDB_SCOPE_ONELEVEL;
+			}
+			break;
+		}
+	}
+
+	argc -= optind;
+	argv += optind;
+
+	if (argc < 1) {
+		printf("Usage: ldbsearch <expression> [attrs...]\n");
+		exit(1);
+	}
+
+	if (argc > 1) {
+		attrs = argv+1;
+	}
+
+	expression = argv[0];
+
+	ldb = ldb_connect(ldb_url, 0, NULL);
+
+	if (!ldb) {
+		perror("ldb_connect");
+		exit(1);
+	}
+
+	ret = ldb_search(ldb, basedn, scope, expression, attrs, &msgs);
+
+	if (ret == -1) {
+		printf("search failed\n");
+		exit(1);
+	}
+
+	printf("# returned %d records\n", ret);
+
+	for (i=0;i<ret;i++) {
+		printf("# record %d\n", i+1);
+		ldif_write_file(stdout, msgs[i]);
+	}
+
+	if (ret > 0) {
+		ret = ldb_search_free(ldb, msgs);
+		if (ret == -1) {
+			fprintf(stderr, "search_free failed\n");
+			exit(1);
+		}
+	}
+
+	ldb_close(ldb);
+	return 0;
+}
