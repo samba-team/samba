@@ -1,5 +1,5 @@
-#ifndef __MISSING_H__
-#define __MISSING_H__
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -13,4 +13,4 @@
 
 #include "base64.h"
 
-#endif /* __MISSING_H__ */
+#endif /* __COMMON_H__ */

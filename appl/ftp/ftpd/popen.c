@@ -50,6 +50,7 @@ static char rcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
 #endif
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 
 #include <errno.h>
@@ -59,6 +60,8 @@ static char rcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <sys/resource.h>
 
 #include "extern.h"
 
@@ -82,11 +85,30 @@ ftpd_popen(char *program, char *type)
 		return (NULL);
 
 	if (!pids) {
-		if ((fds = getdtablesize()) <= 0)
-			return (NULL);
-		if ((pids = (int *)malloc((u_int)(fds * sizeof(int)))) == NULL)
-			return (NULL);
-		memset(pids, 0, fds * sizeof(int));
+
+	    /* This is really ugly. One would have hoped that
+	     * getdtablesize would be dead and buried, and that
+	     * getrlimit would be available everywhere. However, in
+	     * AIX getrlimit is available, but there is no
+	     * RLIMIT_NOFILE to be found. So we have to use
+	     * getdtablesize if it is available.  
+	     *
+	     * (and besides this function is ugly and should be
+	     * rewritten, in modern unices there is no such thing as a
+	     * maximum filedescriptor)
+	     */
+
+#ifdef HAVE_GETDTABLESIZE
+	    fds = getdtablesize();
+#else
+	    struct rlimit r;
+	    if(getrlimit(RLIMIT_NOFILE, &r) < 0)
+		return NULL;
+	    fds = r.rlim_cur;
+#endif
+	    pids = (int*)calloc(fds, sizeof(int));
+	    if(!pids)
+		return NULL;
 	}
 	if (pipe(pdes) < 0)
 		return (NULL);
@@ -113,7 +135,7 @@ ftpd_popen(char *program, char *type)
 	gargv[gargc] = NULL;
 
 	iop = NULL;
-	switch(pid = vfork()) {
+	switch(pid = fork()) {
 	case -1:			/* error */
 		(void)close(pdes[0]);
 		(void)close(pdes[1]);

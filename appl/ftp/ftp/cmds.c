@@ -803,6 +803,7 @@ status(int argc, char **argv)
 		}
 		pswitch(0);
 	}
+	sec_status();
 	printf("Mode: %s; Type: %s; Form: %s; Structure: %s\n",
 		modename, typename, formname, structname);
 	printf("Verbose: %s; Bell: %s; Prompting: %s; Globbing: %s\n", 
@@ -1003,7 +1004,7 @@ lcd(int argc, char **argv)
 		code = -1;
 		return;
 	}
-	if (getwd(buf) != NULL)
+	if (getcwd(buf, sizeof(buf)) != NULL)
 		printf("Local directory now %s\n", buf);
 	else
 		warnx("getwd: %s", buf);

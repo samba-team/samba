@@ -165,6 +165,12 @@ login(char *host)
 	int n, aflag = 0;
 
 	user = pass = acct = 0;
+
+	if(do_klogin(host))
+	    printf("\n*** Using plaintext user and password ***\n\n");
+	else
+	    printf("Kerberos login successful.\n\n");
+
 	if (ruserpass(host, &user, &pass, &acct) < 0) {
 		code = -1;
 		return (0);
@@ -188,10 +194,6 @@ login(char *host)
 			user = myname;
 		else
 			user = tmp;
-	}
-	if(strcmp(user, "ftp") && strcmp(user, "anonymous")){
-	    if(do_klogin(host) < 0)
-		fprintf(stderr, "Resorting to plaintext user and password.\n");
 	}
 	strcpy(username, user);
 	n = command("USER %s", user);
@@ -284,6 +286,7 @@ int
 getreply(int expecteof)
 {
     char *p;
+    char *lead_string;
     int c;
     struct sigaction sa, osa;
     char buf[1024];
@@ -326,16 +329,19 @@ getreply(int expecteof)
 		if(code == 631){
 		    krb4_read_mic(buf);
 		    sscanf(buf, "%d", &code);
-		    fprintf(stdout, "S:");
+		    lead_string = "S:";
 		} else if(code == 632){
 		    krb4_read_enc(buf);
 		    sscanf(buf, "%d", &code);
-		    fprintf(stdout, "P:");
+		    lead_string = "P:";
 		}else if(code == 633){
-		    fprintf(stdout, "Confidentiality is meaningless:\n");
+		    printf("Received confidential reply!\n");
 		}else if(auth_complete)
-		    fprintf(stdout, "!!"); /* clear text */
-		fprintf(stdout, "%s\n", buf);
+		    lead_string = "!!";
+		else
+		    lead_string = "";
+		if(verbose > 0 || (verbose > -1 && code > 499))
+		    fprintf(stdout, "%s%s\n", lead_string, buf);
 		if(buf[3] == ' '){
 		    strcpy(reply_string, buf);
 		    if (code < 200)
@@ -1095,7 +1101,7 @@ initconn(void)
 			goto bad;
 		}
 
-		bzero((char*)&data_addr, sizeof(data_addr));
+		memset(&data_addr, 0, sizeof(data_addr));
 		data_addr.sin_family = AF_INET;
 		a = (char *)&data_addr.sin_addr.s_addr;
 		a[0] = a0 & 0xff;

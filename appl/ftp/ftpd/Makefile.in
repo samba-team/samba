@@ -17,7 +17,10 @@ prefix 	= @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-ATHENA = /usr/athena
+ATHENA	= /usr/athena
+
+LDFLAGS	= @LDFLAGS@
+LIBS	= @LIBS@
 
 ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o
 
@@ -30,7 +33,7 @@ install:
 
 
 ftpd: $(ftpd_OBJS) ../common/libcommon.a
-	$(CC) -o ftpd $(ftpd_OBJS) ../common/libcommon.a -L$(ATHENA)/lib -lkafs -lkrb -ldes
+	$(CC) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LDFLAGS) $(LIBS)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<

@@ -34,7 +34,7 @@ ftp: $(ftp_OBJS) ../common/libcommon.a
 	$(CC) -o ftp $(ftp_OBJS) ../common/libcommon.a -L$(ATHENA)/lib -lkrb -ldes $(LIBS)
 
 clean cleandir:
-	rm -f *~ *.o core ftpd ftpcmd.c \#*
+	rm -f *~ *.o core ftp \#*
 
 distclean: 
 	rm -f Makefile

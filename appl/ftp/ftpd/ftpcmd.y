@@ -50,6 +50,8 @@ static char rcsid[] = "$NetBSD: ftpcmd.y,v 1.6 1995/06/03 22:46:45 mycroft Exp $
 #endif
 #endif /* not lint */
 
+#include <sys/types.h>
+
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -80,6 +82,25 @@ static	int cmd_form;
 static	int cmd_bytesz;
 char	cbuf[512];
 char	*fromname;
+
+struct tab {
+	char	*name;
+	short	token;
+	short	state;
+	short	implemented;	/* 1 if command is implemented */
+	char	*help;
+};
+
+extern struct tab cmdtab[];
+extern struct tab sitetab[];
+
+static char	*copy __P((char *));
+static void	 help __P((struct tab *, char *));
+static struct tab *
+		 lookup __P((struct tab *, char *));
+static void	 sizecmd __P((char *));
+static void	 toolong __P((int));
+static int	 yylex __P((void));
 
 %}
 
@@ -800,14 +821,6 @@ extern jmp_buf errcatch;
 #define	SITECMD	7	/* SITE command */
 #define	NSTR	8	/* Number followed by a string */
 
-struct tab {
-	char	*name;
-	short	token;
-	short	state;
-	short	implemented;	/* 1 if command is implemented */
-	char	*help;
-};
-
 struct tab cmdtab[] = {		/* In order defined in RFC 765 */
 	{ "USER", USER, STR1, 1,	"<sp> username" },
 	{ "PASS", PASS, ZSTR1, 1,	"<sp> password" },
@@ -881,14 +894,6 @@ struct tab sitetab[] = {
 	{ NULL,   0,    0,    0,	0 }
 };
 
-static char	*copy __P((char *));
-static void	 help __P((struct tab *, char *));
-static struct tab *
-		 lookup __P((struct tab *, char *));
-static void	 sizecmd __P((char *));
-static void	 toolong __P((int));
-static int	 yylex __P((void));
-
 static struct tab *
 lookup(struct tab *p, char *cmd)
 {
@@ -916,7 +921,7 @@ getline(char *s, int n)
 	  strncpy(s, ftp_command, n);
 	  if (debug)
 	    syslog(LOG_DEBUG, "command: %s", s);
-#if 0
+#ifdef XXX
 	  fprintf(stderr, "%s\n", s);
 #endif
 	  return s;
@@ -972,7 +977,7 @@ getline(char *s, int n)
 			syslog(LOG_DEBUG, "command: %.*s", len, s);
 		}
 	}
-#if 0
+#ifdef XXX
 	fprintf(stderr, "%s\n", s);
 #endif
 	return (s);

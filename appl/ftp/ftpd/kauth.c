@@ -4,6 +4,7 @@
 
 
 #include <sys/time.h>
+#include <sys/types.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +26,7 @@ static char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
 
 static int
 save_tkt(char *user, char *instance, char *realm, void *arg, 
-	 key_proc_t key_proc, KTEXT *cipp)
+	 int (*key_proc)(char*, char*, char*, void*, des_cblock*), KTEXT *cipp)
 {
     local_time = time(0);
     memmove(&cip, *cipp, sizeof(cip));

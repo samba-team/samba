@@ -28,13 +28,13 @@ all: libcommon.a
 
 libcommon.a: $(libcommon_OBJS)
 	ar cr libcommon.a $(libcommon_OBJS)
-	ranlib libcommon.a
+	$(RANLIB) libcommon.a
 
 
 install:
 
 clean cleandir:
-	rm -f *~ *.o ftp core \#*
+	rm -f *~ *.o libcommon.a core \#*
 
 distclean: 
 	rm -f Makefile

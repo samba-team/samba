@@ -1,8 +1,6 @@
 #ifndef __VSYSLOG_H__
 #define __VSYSLOG_H__
 
-#ifndef HAVE_VSYSLOG
-void vsyslog(int pri, const char *fmt, ...);
-#endif
+void vsyslog(int pri, const char *fmt, va_list ap);
 
 #endif /* __VSYSLOG_H__ */

@@ -147,18 +147,15 @@ int	notickets = 1;
 char	*krbtkfile_env = NULL;
 #endif 
 
-char *getusershell(void);
-int endusershell(void);
-int setusershell(void);
-
 #ifdef sun
 extern char *optarg;
 extern int optind, opterr;
 
 int fclose(FILE*);
 char* crypt(char*, char*);
-char* getwd(char*);
 #endif
+
+char *getusershell(void);
 
 /*
  * Timeout intervals for retrying connections
@@ -171,9 +168,9 @@ char* getwd(char*);
 int	swaitmax = SWAITMAX;
 int	swaitint = SWAITINT;
 
-#ifdef HASSETPROCTITLE
+#ifdef HAVE_SETPROCTITLE
 char	proctitle[BUFSIZ];	/* initial part of title */
-#endif /* HASSETPROCTITLE */
+#endif /* HAVE_SETPROCTITLE */
 
 #define LOGCMD(cmd, file) \
 	if (logging > 1) \
@@ -224,7 +221,7 @@ curdir(void)
 #define LINE_MAX 1024
 #endif
 
-static void conn_wait(void)
+static void conn_wait(int port)
 {
     int s, t;
     struct sockaddr_in sa;
@@ -233,7 +230,7 @@ static void conn_wait(void)
 
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     memset(&sa, 0, sizeof(sa));
-    sa.sin_port = htons(21);
+    sa.sin_port = port; /* in network byteorder */
     sa.sin_addr.s_addr = INADDR_ANY;
     bind(s, (struct sockaddr*)&sa, sizeof(sa));
     listen(s, 5);
@@ -258,52 +255,49 @@ main(int argc, char **argv, char **envp)
 	char *cp, line[LINE_MAX];
 	FILE *fd;
 
+	int not_inetd = 0;
+	int port;
+	struct servent *sp;
+	    
 	char tkfile[1024];
 
-#if 0
-	conn_wait();
-#endif
+	/* detach from and tickets and tokens */
 
 	sprintf(tkfile, "/tmp/ftp_%d", getpid());
-	setenv("KRBTKFILE", tkfile);
+	krb_set_tkt_string(tkfile);
 	if(k_hasafs())
 	    k_setpag();
-	/*
-	 * LOG_NDELAY sets up the logging connection immediately,
-	 * necessary for anonymous ftp's that chroot and can't do it later.
-	 */
-	openlog("ftpd", LOG_PID | LOG_NDELAY, LOG_FTP);
-	addrlen = sizeof(his_addr);
-	if (getpeername(0, (struct sockaddr *)&his_addr, &addrlen) < 0) {
-		syslog(LOG_ERR, "getpeername (%s): %m",argv[0]);
-		exit(1);
-	}
-	addrlen = sizeof(ctrl_addr);
-	if (getsockname(0, (struct sockaddr *)&ctrl_addr, &addrlen) < 0) {
-		syslog(LOG_ERR, "getsockname (%s): %m",argv[0]);
-		exit(1);
-	}
-#ifdef IP_TOS
-	tos = IPTOS_LOWDELAY;
-	if (setsockopt(0, IPPROTO_IP, IP_TOS, (char *)&tos, sizeof(int)) < 0)
-		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
-#endif
-	data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
-	debug = 0;
 
-	/* set this here so klogin can use it... */
-	(void)sprintf(ttyline, "ftp%d", getpid());
+	sp = getservbyname("ftp", "tcp");
+	if(sp)
+	    port = sp->s_port;
+	else
+	    port = htons(21);
 
-	while ((ch = getopt(argc, argv, "dlt:T:u:v")) != EOF) {
+	while ((ch = getopt(argc, argv, "dilp:t:T:u:v")) != EOF) {
 		switch (ch) {
 		case 'd':
 			debug = 1;
 			break;
 
+		case 'i':
+		    not_inetd = 1;
+		    break;
 		case 'l':
 			logging++;	/* > 1 == extra logging */
 			break;
 
+		case 'p':
+		    sp = getservbyname(optarg, "tcp");
+		    if(sp)
+			port = sp->s_port;
+		    else
+			if(isdigit(optarg[0]))
+			    port = htons(atoi(optarg));
+			else
+			    warnx("bad value for -p");
+		    break;
+		    
 		case 't':
 			timeout = atoi(optarg);
 			if (maxtimeout < timeout)
@@ -337,6 +331,38 @@ main(int argc, char **argv, char **envp)
 			break;
 		}
 	}
+
+	if(not_inetd)
+	    conn_wait(port);
+
+
+	/*
+	 * LOG_NDELAY sets up the logging connection immediately,
+	 * necessary for anonymous ftp's that chroot and can't do it later.
+	 */
+	openlog("ftpd", LOG_PID | LOG_NDELAY, LOG_FTP);
+	addrlen = sizeof(his_addr);
+	if (getpeername(0, (struct sockaddr *)&his_addr, &addrlen) < 0) {
+		syslog(LOG_ERR, "getpeername (%s): %m",argv[0]);
+		exit(1);
+	}
+	addrlen = sizeof(ctrl_addr);
+	if (getsockname(0, (struct sockaddr *)&ctrl_addr, &addrlen) < 0) {
+		syslog(LOG_ERR, "getsockname (%s): %m",argv[0]);
+		exit(1);
+	}
+#ifdef IP_TOS
+	tos = IPTOS_LOWDELAY;
+	if (setsockopt(0, IPPROTO_IP, IP_TOS, (char *)&tos, sizeof(int)) < 0)
+		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
+#endif
+	data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
+	debug = 0;
+
+	/* set this here so klogin can use it... */
+	(void)sprintf(ttyline, "ftp%d", getpid());
+
+
 	/*	(void) freopen(_PATH_DEVNULL, "w", stderr); */
 	(void) signal(SIGPIPE, lostconn);
 	(void) signal(SIGCHLD, SIG_IGN);
@@ -625,23 +651,23 @@ int do_login(int code, char *passwd)
 	}
 	if (guest) {
 		reply(code, "Guest login ok, access restrictions apply.");
-#ifdef HASSETPROCTITLE
+#ifdef HAVE_SETPROCTITLE
 		snprintf(proctitle, sizeof(proctitle),
 		    "%s: anonymous/%.*s", remotehost,
 		    sizeof(proctitle) - sizeof(remotehost) -
 		    sizeof(": anonymous/"), passwd);
 		setproctitle(proctitle);
-#endif /* HASSETPROCTITLE */
+#endif /* HAVE_SETPROCTITLE */
 		if (logging)
 			syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s, %s",
 			    remotehost, passwd);
 	} else {
 		reply(code, "User %s logged in.", pw->pw_name);
-#ifdef HASSETPROCTITLE
+#ifdef HAVE_SETPROCTITLE
 		snprintf(proctitle, sizeof(proctitle),
 		    "%s: %s", remotehost, pw->pw_name);
 		setproctitle(proctitle);
-#endif /* HASSETPROCTITLE */
+#endif /* HAVE_SETPROCTITLE */
 		if (logging)
 			syslog(LOG_INFO, "FTP LOGIN FROM %s as %s",
 			    remotehost, pw->pw_name);
@@ -1378,12 +1404,21 @@ removedir(char *name)
 void
 pwd(void)
 {
-	char path[MAXPATHLEN + 1];
+    char path[MAXPATHLEN + 1];
+    char *ret;
 
-	if (getwd(path) == (char *)NULL)
-		reply(550, "%s.", path);
-	else
-		reply(257, "\"%s\" is current directory.", path);
+    /* SunOS has a broken getcwd that does popen(pwd) (!!!), this
+     * failes miserably when running chroot 
+     */
+#if defined(HAVE_GETCWD) && !defined(BROKEN_GETCWD)
+    ret = getcwd(path, sizeof(path));
+#else
+    ret = getwd(path);
+#endif
+    if (ret == NULL)
+	reply(550, "%s.", strerror(errno));
+    else
+	reply(257, "\"%s\" is current directory.", path);
 }
 
 char *
@@ -1421,10 +1456,10 @@ dolog(struct sockaddr_in *sin)
 	else
 		(void) strncpy(remotehost, inet_ntoa(sin->sin_addr),
 		    sizeof(remotehost));
-#ifdef HASSETPROCTITLE
+#ifdef HAVE_SETPROCTITLE
 	snprintf(proctitle, sizeof(proctitle), "%s: connected", remotehost);
 	setproctitle(proctitle);
-#endif /* HASSETPROCTITLE */
+#endif /* HAVE_SETPROCTITLE */
 
 	if (logging)
 		syslog(LOG_INFO, "connection from %s", remotehost);
@@ -1664,10 +1699,9 @@ send_file_list(char *whichf)
 		while ((dir = readdir(dirp)) != NULL) {
 			char nbuf[MAXPATHLEN];
 
-			if (dir->d_name[0] == '.' && dir->d_namlen == 1)
+			if (!strcmp(dir->d_name, "."))
 				continue;
-			if (dir->d_name[0] == '.' && dir->d_name[1] == '.' &&
-			    dir->d_namlen == 2)
+			if (!strcmp(dir->d_name, ".."))
 				continue;
 
 			sprintf(nbuf, "%s/%s", dirname, dir->d_name);

@@ -58,7 +58,7 @@ void kauth(int argc, char **argv)
     sprintf(buf, "Password for %s:", name);
     des_read_password(&key, buf, 0);
 
-    des_set_key(&key, schedule);
+    des_key_sched(&key, schedule);
     
     des_pcbc_encrypt((des_cblock*)tkt.dat, (des_cblock*)tkt.dat, tkt.length, 
 		     schedule, &key, DES_DECRYPT);

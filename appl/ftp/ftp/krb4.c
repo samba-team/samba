@@ -22,6 +22,54 @@ static int command_prot;
 static int auth_pbsz;
 static int data_prot;
 
+
+static struct {
+    int level;
+    char *name;
+} level_names[] = {
+    { prot_clear, "clear" },
+    { prot_safe, "safe" },
+    { prot_confidential, "confidential" },
+    { prot_private, "private" }
+};
+
+static char *level_to_name(int level)
+{
+    int i;
+    for(i = 0; i < sizeof(level_names) / sizeof(level_names[0]); i++)
+	if(level_names[i].level == level)
+	    return level_names[i].name;
+    return "unknown";
+}
+
+static int name_to_level(char *name)
+{
+    int i;
+    for(i = 0; i < sizeof(level_names) / sizeof(level_names[0]); i++)
+	if(!strncasecmp(level_names[i].name, name, strlen(name)))
+	    return level_names[i].level;
+    return -1;
+}
+
+void sec_status(void)
+{
+    if(auth_complete){
+	printf("Using KERBEROS_V4 for authentication.\n");
+
+	command_prot = prot_private; /* this variable is not used */
+
+	printf("Using %s command channel.\n", 
+	       level_to_name(command_prot));
+
+	printf("Using %s data channel.\n", 
+	       level_to_name(data_prot));
+	if(auth_pbsz > 0)
+	    printf("Protection buffer size: %d.\n", auth_pbsz);
+    }else{
+	printf("Not using any security mechanism.\n");
+    }
+}
+
 void sec_prot(int argc, char **argv)
 {
     int s;
@@ -38,15 +86,14 @@ void sec_prot(int argc, char **argv)
 	code = -1;
 	return;
     }
-    if(!strcmp(argv[1], "clear"))
-	level = prot_clear;
+    level = name_to_level(argv[1]);
     
-    if(!strcmp(argv[1], "safe"))
-	level = prot_safe;
+    if(level == prot_confidential){
+	printf("Confidential protection is not defined for Kerberos.\n");
+	code = -1;
+	return;
+    }
 
-    if(!strcmp(argv[1], "private"))
-	level = prot_private;
-    
     if(level == -1){
 	fprintf(stderr, "ehu?\n");
 	code = -1;
@@ -232,7 +279,7 @@ int
 sec_fflush(FILE *F)
 {
     if(data_prot){
-	if(index){
+	if(p_index){
 	    sec_write(fileno(F), p_buf, p_index);
 	    p_index = 0;
 	}
@@ -299,6 +346,10 @@ do_klogin(char *host)
     int checksum;
     int tmp;
 
+    int old_verbose = verbose;
+
+    verbose = 0;
+    printf("Trying KERBEROS_V4...\n");
     ret = command("AUTH KERBEROS_V4");
     if(ret != CONTINUE){
 	if(code == 504){
@@ -308,6 +359,7 @@ do_klogin(char *host)
 	}else if(ret == ERROR)
 	    fprintf(stderr, "The server doesn't understand the FTP "
 		    "security extentions.\n");
+	verbose = old_verbose;
 	return -1;
     }
 
@@ -317,6 +369,7 @@ do_klogin(char *host)
 	ret = do_auth("rcmd", host, checksum);
     if(ret){
 	fprintf(stderr, "%s\n", krb_get_err_text(ret));
+	verbose = old_verbose;
 	return ret;
     }
 
@@ -326,18 +379,21 @@ do_klogin(char *host)
 
     if(ret != COMPLETE){
 	fprintf(stderr, "Server didn't accept auth data.");
+	verbose = old_verbose;
 	return -1;
     }
 
     p = strstr(reply_string, "ADAT=");
     if(!p){
 	fprintf(stderr, "Remote host didn't send adat reply.");
+	verbose = old_verbose;
 	return -1;
     }
     p+=5;
     len = base64_decode(p, adat);
     if(len < 0){
 	fprintf(stderr, "Failed to decode base64 from server.");
+	verbose = old_verbose;
 	return -1;
     }
     ret = krb_rd_safe(adat, len, &key, 
@@ -345,15 +401,18 @@ do_klogin(char *host)
     if(ret){
 	fprintf(stderr, "Error reading reply from server: %s.", 
 	      krb_get_err_text(ret));
+	verbose = old_verbose;
 	return -1;
     }
     memmove(&tmp, msg_data.app_data, 4);
     tmp = ntohl(tmp);
     if(tmp - checksum != 1){
 	fprintf(stderr, "Bad checksum returned from server.");
+	verbose = old_verbose;
 	return -1;
     }
     auth_complete = 1;
+    verbose = old_verbose;
     return 0;
 }
 
