@@ -816,6 +816,9 @@
 /* Define if you have the <rpcsvc/ypclnt.h> header file.  */
 #undef HAVE_RPCSVC_YPCLNT_H
 
+/* Define if you have the <security/_pam_macros.h> header file.  */
+#undef HAVE_SECURITY__PAM_MACROS_H
+
 /* Define if you have the <security/pam_appl.h> header file.  */
 #undef HAVE_SECURITY_PAM_APPL_H
 
