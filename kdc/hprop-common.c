@@ -64,9 +64,6 @@ krb5_error_code
 recv_priv(krb5_context context, krb5_auth_context ac, int fd, krb5_data *out)
 {
     krb5_error_code ret;
-    unsigned char tmp[4];
-    unsigned char *buf;
-    size_t len;
     krb5_data data;
 
     ret = krb5_read_message (context, &fd, &data);
