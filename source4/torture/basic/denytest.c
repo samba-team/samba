@@ -21,6 +21,9 @@
 #include "includes.h"
 
 extern BOOL torture_showall;
+extern int torture_failures;
+
+#define CHECK_MAX_FAILURES(label) do { if (++failures >= torture_failures) goto label; } while (0)
 
 enum deny_result {A_0=0, A_X=1, A_R=2, A_W=3, A_RW=5};
 
@@ -1411,6 +1414,7 @@ BOOL torture_denytest1(int dummy)
 	BOOL correct = True;
 	struct timeval tv, tv_start;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
+	int failures=0;
 
 	if (!torture_open_connection(&cli1)) {
 		return False;
@@ -1459,10 +1463,6 @@ BOOL torture_denytest1(int dummy)
 			}
 		}
 
-		if (res != denytable1[i].result) {
-			correct = False;
-		}
-
 		if (torture_showall || res != denytable1[i].result) {
 			int64_t tdif;
 			GetTimeOfDay(&tv);
@@ -1479,10 +1479,16 @@ BOOL torture_denytest1(int dummy)
 			       resultstr(denytable1[i].result));
 		}
 
+		if (res != denytable1[i].result) {
+			correct = False;
+			CHECK_MAX_FAILURES(failed);
+		}
+
 		smbcli_close(cli1->tree, fnum1);
 		smbcli_close(cli1->tree, fnum2);
 	}
 
+failed:
 	for (i=0;i<2;i++) {
 		smbcli_unlink(cli1->tree, fnames[i]);
 	}
@@ -1491,7 +1497,7 @@ BOOL torture_denytest1(int dummy)
 		correct = False;
 	}
 	
-	printf("finshed denytest1\n");
+	printf("finshed denytest1 (%d failures)\n", failures);
 	return correct;
 }
 
@@ -1507,6 +1513,7 @@ BOOL torture_denytest2(int dummy)
 	BOOL correct = True;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
 	struct timeval tv, tv_start;
+	int failures=0;
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -1553,10 +1560,6 @@ BOOL torture_denytest2(int dummy)
 			}
 		}
 
-		if (res != denytable2[i].result) {
-			correct = False;
-		}
-
 		if (torture_showall || res != denytable2[i].result) {
 			int64_t tdif;
 			GetTimeOfDay(&tv);
@@ -1573,10 +1576,16 @@ BOOL torture_denytest2(int dummy)
 			       resultstr(denytable2[i].result));
 		}
 
+		if (res != denytable2[i].result) {
+			correct = False;
+			CHECK_MAX_FAILURES(failed);
+		}
+
 		smbcli_close(cli1->tree, fnum1);
 		smbcli_close(cli2->tree, fnum2);
 	}
-		
+
+failed:		
 	for (i=0;i<2;i++) {
 		smbcli_unlink(cli1->tree, fnames[i]);
 	}
@@ -1588,7 +1597,7 @@ BOOL torture_denytest2(int dummy)
 		correct = False;
 	}
 	
-	printf("finshed denytest2\n");
+	printf("finshed denytest2 (%d failures)\n", failures);
 	return correct;
 }
 
