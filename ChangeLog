@@ -4,6 +4,9 @@
 
 1999-12-06  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/changepw.c (krb5_change_password): use the correct
+ 	address
+
 	* lib/krb5/Makefile.am: bump version to 6:0:1
 
 	* lib/asn1/Makefile.am: bump version to 1:4:0
