@@ -274,6 +274,7 @@ generalizedtime2time (char *s, time_t *t)
 {
     struct tm tm;
 
+    memset(&tm, 0, sizeof(tm));
     sscanf (s, "%04d%02d%02d%02d%02d%02dZ",
 	    &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour,
 	    &tm.tm_min, &tm.tm_sec);
