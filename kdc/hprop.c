@@ -37,6 +37,11 @@
  */
 
 #include "hprop.h"
+#ifdef KRB4
+#define Principal Principal4
+#include <krb.h>
+#include <krb_db.h>
+#endif
 
 RCSID("$Id$");
 
@@ -58,7 +63,7 @@ int open_socket(const char *hostname)
     }
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_port = krb5_getportbyname ("hprop", "tcp", htons(4712));
+    sin.sin_port = krb5_getportbyname ("hprop", "tcp", htons(HPROP_PORT));
     memcpy(&sin.sin_addr, hp->h_addr, hp->h_length);
     if(connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
 	warn("connect");
@@ -69,40 +74,12 @@ int open_socket(const char *hostname)
 }
 
 struct prop_data{
+    krb5_context context;
     krb5_auth_context auth_context;
     int sock;
 };
 
 int hdb_entry2value(krb5_context, hdb_entry*, krb5_data*);
-
-krb5_error_code 
-send_priv(krb5_context context, krb5_auth_context ac,
-	  krb5_data *data, int fd)
-{
-    krb5_data packet;
-    krb5_error_code ret;
-    unsigned char net_len[4];
-
-    ret = krb5_mk_priv (context,
-			ac,
-			data,
-			&packet,
-			NULL);
-    if (ret)
-	return ret;
-    
-    net_len[0] = (packet.length >> 24) & 0xff;
-    net_len[1] = (packet.length >> 16) & 0xff;
-    net_len[2] = (packet.length >> 8) & 0xff;
-    net_len[3] = packet.length & 0xff;
-	
-    if (krb5_net_write (context, fd, net_len, 4) != 4)
-	ret = errno;
-    else if (krb5_net_write (context, fd, packet.data, packet.length) != packet.length)
-	ret =  errno;
-    krb5_data_free(&packet);
-    return ret;
-}
 
 krb5_error_code
 func(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
@@ -119,14 +96,91 @@ func(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     return ret;
 }
 
+#ifdef KRB4
+static des_cblock mkey;
+static des_key_schedule msched;
+static char realm[REALM_SZ];
+
+static int
+conv_db(void *arg, Principal *p)
+{
+    struct prop_data *pd = arg;
+    hdb_entry ent;
+    krb5_error_code ret;
+
+    memset(&ent, 0, sizeof(ent));
+
+    krb5_425_conv_principal(pd->context, p->name, p->instance, realm,
+			    &ent.principal);
+
+    ent.keys.len = 1;
+    ALLOC(ent.keys.val);
+    ent.keys.val[0].mkvno = p->kdc_key_ver;
+    ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
+    ent.kvno = p->key_version;
+    ent.keys.val[0].key.keytype = KEYTYPE_DES;
+    krb5_data_alloc(&ent.keys.val[0].key.keyvalue, sizeof(des_cblock));
+    
+    {
+	unsigned char *key = ent.keys.val[0].key.keyvalue.data;
+	memcpy(key, &p->key_low, 4);
+	memcpy(key + 4, &p->key_high, 4);
+	kdb_encrypt_key(key, key, &mkey, msched, 0);
+    }
+    hdb_seal_key(&ent.keys.val[0], msched);
+
+    ALLOC(ent.max_life);
+    *ent.max_life = krb_life_to_time(0, p->max_life);
+
+    ALLOC(ent.pw_end);
+    *ent.pw_end = p->exp_date;
+    ret = krb5_make_principal(context, &ent.created_by.principal,
+			      realm,
+			      "kadmin",
+			      "hprop",
+			      NULL);
+    ent.created_by.time = time(NULL);
+    ALLOC(ent.modified_by);
+    krb5_425_conv_principal(context, p->mod_name, p->mod_instance, realm,
+			    &ent.modified_by->principal);
+    ent.modified_by->time = p->mod_date;
+
+    ent.flags.forwardable = 1;
+    ent.flags.renewable = 1;
+    ent.flags.proxiable = 1;
+    ent.flags.postdate = 1;
+    ent.flags.client = 1;
+    ent.flags.server = 1;
+
+    {
+	krb5_data data;
+	ret = hdb_entry2value(context, &ent, &data);
+	if(ret) return ret;
+	
+	ret = send_priv(pd->context, pd->auth_context, &data, pd->sock);
+	krb5_data_free(&data);
+	return ret;
+    }
+}
+
+#endif
+
 static getarg_strings slaves;
 static int version_flag;
 static int help_flag;
 static char *ktname = HPROP_KEYTAB;
+static char *database;
+#ifdef KRB4
+static int v4_db;
+#endif
 
 struct getargs args[] = {
 #if 0
     { "slave",   's',  arg_strings, &slaves, "slave server", "host" },
+#endif
+    { "database", 'd', arg_string, &database, "database", "file" },
+#ifdef KRB4
+    { "v4-db",    '4', arg_flag, &v4_db, "use version 4 database" },
 #endif
     { "keytab",  'k',  arg_string, &ktname, "keytab to use for authentication", "keytab" },
     { "version",   0,  arg_flag, &version_flag, NULL, NULL },
@@ -144,6 +198,7 @@ void usage(int ret)
 int main(int argc, char **argv)
 {
     krb5_error_code ret;
+    int e;
     krb5_context context;
     krb5_auth_context ac;
     krb5_principal client;
@@ -175,9 +230,6 @@ int main(int argc, char **argv)
     if(ret)
 	exit(1);
 
-    ret = hdb_open(context, &db, NULL, O_RDONLY, 0);
-    if(ret) krb5_err(context, 1, ret, "hdb_open");
-
     ret = krb5_kt_resolve(context, ktname, &keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_resolve");
     
@@ -202,6 +254,23 @@ int main(int argc, char **argv)
     ret = krb5_cc_store_cred(context, ccache, &creds);
     if(ret) krb5_err(context, 1, ret, "krb5_cc_store_cred");
     
+#ifdef KRB4
+    if(v4_db){
+	e = kerb_db_set_name (database);
+	if(e) krb5_errx(context, 1, "kerb_db_set_name: %s", krb_get_err_text(e));
+	e = kdb_get_master_key(0, &mkey, msched);
+	if(e) krb5_errx(context, 1, "kdb_get_master_key: %s", krb_get_err_text(e));
+	e = krb_get_lrealm(realm, 1);
+	if(e) krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
+    }else
+#endif
+	{
+	    ret = hdb_open(context, &db, database, O_RDONLY, 0);
+	    if(ret) krb5_err(context, 1, ret, "hdb_open");
+	}
+
+    
+
     for(i = optind; i < argc; i++){
 	fd = open_socket(argv[i]);
 	if(fd < 0)
@@ -234,12 +303,19 @@ int main(int argc, char **argv)
 	    close(fd);
 	    continue;
 	}
+
 	{
 	    struct prop_data pd;
+	    pd.context = context;
 	    pd.auth_context = ac;
 	    pd.sock = fd;
 	
-	    ret = hdb_foreach(context, db, func, &pd);
+#ifdef KRB4
+	    if(v4_db)
+		e = kerb_db_iterate ((k_iter_proc_t)conv_db, NULL);
+	    else
+#endif
+		ret = hdb_foreach(context, db, func, &pd);
 	}
 	if(ret)
 	    krb5_warn(context, ret, "krb5_sendauth");
@@ -250,6 +326,14 @@ int main(int argc, char **argv)
 	    ret = send_priv(context, ac, &data, fd);
 	}
 
+	{
+	    krb5_data data;
+	    ret = recv_priv(context, ac, fd, &data);
+	    if(ret) krb5_warn(context, ret, "recv_priv");
+	    if(data.length != 0)
+		krb5_data_free(&data); /* XXX */
+	}
+	
 	if(ret) krb5_warn(context, ret, "send_priv");
 	krb5_auth_con_free(context, ac);
 	close(fd);
