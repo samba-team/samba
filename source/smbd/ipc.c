@@ -269,7 +269,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	/* First find out the name of this file. */
 	if (suwcnt != 2) {
 		DEBUG(0,("Unexpected named pipe transaction.\n"));
-		return(-1);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	/* Get the file handle and hence the file name. */
@@ -290,7 +290,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		}
 
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
-		return api_no_reply(outbuf, mdrcnt);
+		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
 	}
 
 	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)\n", subcommand, p->name, pnum));
@@ -315,6 +315,8 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		/* Set Named Pipe Handle state */
 		reply = api_SNPHS(outbuf, p, params, tpscnt);
 		break;
+	default:
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	if (!reply)
