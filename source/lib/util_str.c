@@ -1226,12 +1226,12 @@ char *binary_string(char *buf, int len)
 	return ret;
 }
 
-#if 0
+
 /**
  Just a typesafety wrapper for snprintf into a fstring.
 **/
 
-static int fstr_sprintf(fstring s, const char *fmt, ...)
+int fstr_sprintf(fstring s, const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
@@ -1241,7 +1241,7 @@ static int fstr_sprintf(fstring s, const char *fmt, ...)
 	va_end(ap);
 	return ret;
 }
-#endif
+
 
 #ifndef HAVE_STRNDUP
 /**
