@@ -27,7 +27,7 @@
 /*
  * This function is not in the Heimdal mainline.
  */
-krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds)
+ krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds)
 {
 	krb5_error_code ret;
 	int32_t sec, usec;
@@ -44,7 +44,7 @@ krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_
 #endif
 
 #if defined(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES) && !defined(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES)
-krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc)
+ krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc)
 {
 	return krb5_set_default_in_tkt_etypes(ctx, enc);
 }
@@ -52,7 +52,7 @@ krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype
 
 #if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
 /* HEIMDAL */
-void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
+ void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
 {
 	pkaddr->addr_type = KRB5_ADDRESS_INET;
 	pkaddr->address.length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
@@ -60,14 +60,14 @@ void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
 }
 #elif defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS)
 /* MIT */
-void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
+ void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
 {
 	pkaddr->addrtype = ADDRTYPE_INET;
 	pkaddr->length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
 	pkaddr->contents = (char *)&(((struct sockaddr_in *)paddr)->sin_addr);
 }
 #else
-__ERROR__XX__UNKNOWN_ADDRTYPE
+ __ERROR__XX__UNKNOWN_ADDRTYPE
 #endif
 
 /*
