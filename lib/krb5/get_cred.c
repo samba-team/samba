@@ -113,19 +113,19 @@ init_tgs_req (krb5_context context,
     t->pvno = 5;
     t->msg_type = krb_tgs_req;
     if (in_creds->session.keytype) {
-	krb5_enctype foo[2];
+	krb5_enctype *foo;
 
-	ret = krb5_keytype_to_etype(context,
-				    in_creds->session.keytype,
-				    &foo[0]);
-	if(ret)
+	ret = krb5_keytype_to_etypes(context,
+				     in_creds->session.keytype,
+				     &foo);
+	if (ret)
 	    return ret;
-	foo[1] = 0;
 
 	ret = krb5_init_etype(context,
 			      &t->req_body.etype.len,
 			      &t->req_body.etype.val,
 			      foo);
+	free (foo);
     } else {
 	ret = krb5_init_etype(context, 
 			      &t->req_body.etype.len, 
