@@ -629,7 +629,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		(*sid_mem)[j] = rid_to_talloced_sid(domain, mem_ctx, (rid_mem)[j]);
 	}
 	
-	if (!*names || !*name_types) {
+	if (*num_names>0 && (!*names || !*name_types)) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
