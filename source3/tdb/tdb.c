@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell              1999-2000
    Copyright (C) Luke Kenneth Casson Leighton      2000
    Copyright (C) Paul `Rusty' Russell		   2000
-   Copyright (C) Jeremy Allison			   2000
+   Copyright (C) Jeremy Allison			   2000-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1018,37 +1018,35 @@ const char *tdb_errorstr(TDB_CONTEXT *tdb)
 
 /* update an entry in place - this only works if the new data size
    is <= the old data size and the key exists.
-   on failure return -1
+   on failure return -1.
 */
+
 static int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 {
 	struct list_struct rec;
 	tdb_off rec_ptr;
-	int ret = -1;
 
 	/* find entry */
-	if (!(rec_ptr = tdb_find_lock(tdb, key, F_WRLCK, &rec)))
+	if (!(rec_ptr = tdb_find(tdb, key, tdb_hash(&key), &rec)))
 		return -1;
 
 	/* must be long enough key, data and tailer */
 	if (rec.rec_len < key.dsize + dbuf.dsize + sizeof(tdb_off)) {
 		tdb->ecode = TDB_SUCCESS; /* Not really an error */
-		goto out;
+		return -1;
 	}
 
 	if (tdb_write(tdb, rec_ptr + sizeof(rec) + rec.key_len,
 		      dbuf.dptr, dbuf.dsize) == -1)
-		goto out;
+		return -1;
 
 	if (dbuf.dsize != rec.data_len) {
 		/* update size */
 		rec.data_len = dbuf.dsize;
-		ret = rec_write(tdb, rec_ptr, &rec);
-	} else
-		ret = 0;
- out:
-	tdb_unlock(tdb, BUCKET(rec.full_hash), F_WRLCK);
-	return ret;
+		return rec_write(tdb, rec_ptr, &rec);
+	}
+ 
+	return 0;
 }
 
 /* find an entry in the database given a key */
@@ -1471,6 +1469,133 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	SAFE_FREE(p); 
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	return ret;
+fail:
+	ret = -1;
+	goto out;
+}
+
+/* Attempt to append data to an entry in place - this only works if the new data size
+   is <= the old data size and the key exists.
+   on failure return -1. Record must be locked before calling.
+*/
+static int tdb_append_inplace(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
+{
+	struct list_struct rec;
+	tdb_off rec_ptr;
+
+	/* find entry */
+	if (!(rec_ptr = tdb_find(tdb, key, tdb_hash(&key), &rec)))
+		return -1;
+
+	/* Append of 0 is always ok. */
+	if (new_dbuf.dsize == 0)
+		return 0;
+
+	/* must be long enough for key, old data + new data and tailer */
+	if (rec.rec_len < key.dsize + rec.data_len + new_dbuf.dsize + sizeof(tdb_off)) {
+		/* No room. */
+		tdb->ecode = TDB_SUCCESS; /* Not really an error */
+		return -1;
+	}
+
+	if (tdb_write(tdb, rec_ptr + sizeof(rec) + rec.key_len + rec.data_len,
+		      new_dbuf.dptr, new_dbuf.dsize) == -1)
+		return -1;
+
+	/* update size */
+	rec.data_len += new_dbuf.dsize;
+	return rec_write(tdb, rec_ptr, &rec);
+}
+
+/* Append to an entry. Create if not exist. */
+
+int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
+{
+	struct list_struct rec;
+	u32 hash;
+	tdb_off rec_ptr;
+	char *p = NULL;
+	int ret = 0;
+	size_t new_data_size = 0;
+
+	/* find which hash bucket it is in */
+	hash = tdb_hash(&key);
+	if (!tdb_keylocked(tdb, hash))
+		return -1;
+	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
+		return -1;
+
+	/* first try in-place. */
+	if (tdb_append_inplace(tdb, key, new_dbuf) == 0)
+		goto out;
+
+	/* reset the error code potentially set by the tdb_append_inplace() */
+	tdb->ecode = TDB_SUCCESS;
+
+	/* find entry */
+	if (!(rec_ptr = tdb_find(tdb, key, hash, &rec))) {
+		if (tdb->ecode != TDB_ERR_NOEXIST)
+			goto fail;
+
+		/* Not found - create. */
+
+		ret = tdb_store(tdb, key, new_dbuf, TDB_INSERT);
+		goto out;
+	}
+
+	new_data_size = rec.data_len + new_dbuf.dsize;
+
+	/* Copy key+old_value+value *before* allocating free space in case malloc
+	   fails and we are left with a dead spot in the tdb. */
+
+	if (!(p = (char *)malloc(key.dsize + new_data_size))) {
+		tdb->ecode = TDB_ERR_OOM;
+		goto fail;
+	}
+
+	/* Copy the key in place. */
+	memcpy(p, key.dptr, key.dsize);
+
+	/* Now read the old data into place. */
+	if (rec.data_len &&
+		tdb_read(tdb, rec_ptr + sizeof(rec) + rec.key_len, p + key.dsize, rec.data_len, 0) == -1)
+			goto fail;
+
+	/* Finally append the new data. */
+	if (new_dbuf.dsize)
+		memcpy(p+key.dsize+rec.data_len, new_dbuf.dptr, new_dbuf.dsize);
+
+	/* delete any existing record - if it doesn't exist we don't
+           care.  Doing this first reduces fragmentation, and avoids
+           coalescing with `allocated' block before it's updated. */
+
+	tdb_delete(tdb, key);
+
+	if (!(rec_ptr = tdb_allocate(tdb, key.dsize + new_data_size, &rec)))
+		goto fail;
+
+	/* Read hash top into next ptr */
+	if (ofs_read(tdb, TDB_HASH_TOP(hash), &rec.next) == -1)
+		goto fail;
+
+	rec.key_len = key.dsize;
+	rec.data_len = new_data_size;
+	rec.full_hash = hash;
+	rec.magic = TDB_MAGIC;
+
+	/* write out and point the top of the hash chain at it */
+	if (rec_write(tdb, rec_ptr, &rec) == -1
+	    || tdb_write(tdb, rec_ptr+sizeof(rec), p, key.dsize+new_data_size)==-1
+	    || ofs_write(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1) {
+		/* Need to tdb_unallocate() here */
+		goto fail;
+	}
+
+ out:
+	SAFE_FREE(p); 
+	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
+	return ret;
+
 fail:
 	ret = -1;
 	goto out;
