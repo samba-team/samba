@@ -7,8 +7,7 @@ dnl - own-built libdes
 
 AC_DEFUN([KRB_CRYPTO],[
 crypto_lib=unknown
-AC_ARG_WITH(openssl,
-[  --with-openssl=dir	if you want to use openssl's libcrypto in dir])
+AC_WITH_ALL([openssl])
 
 DIR_des=
 
@@ -20,11 +19,13 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
   save_LIBS="$LIBS"
   INCLUDE_des=
   LIB_des=
-  if test "$with_openssl" != ""; then
+  if test "$with_openssl_include" != ""; then
     INCLUDE_des="-I${with_openssl}/include"
-    CPPFLAGS="${INCLUDE_des} ${CPPFLAGS}"
+  fi
+  if test "$with_openssl_lib" != ""; then
     LIB_des="-L${with_openssl}/lib"
   fi
+  CPPFLAGS="${INCLUDE_des} ${CPPFLAGS}"
   LIB_des="${LIB_des} -lcrypto"
   LIB_des_a="$LIB_des"
   LIB_des_so="$LIB_des"
