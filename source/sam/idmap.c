@@ -96,7 +96,7 @@ NTSTATUS smb_register_idmap(int version, const char *name, struct idmap_methods 
  Initialise idmap cache and a remote backend (if configured).
 **********************************************************************/
 
-BOOL idmap_init(const char *remote_backend)
+BOOL idmap_init(const char **remote_backend)
 {
 	if (!backends)
 		static_init_idmap;
@@ -115,8 +115,9 @@ BOOL idmap_init(const char *remote_backend)
 		}
 	}
 	
-	if (!remote_map && remote_backend && *remote_backend != 0) {
-		char *rem_backend = smb_xstrdup(remote_backend);
+	if ((remote_map == NULL) && (remote_backend != NULL) &&
+	    (*remote_backend != NULL) && (**remote_backend != '\0'))  {
+		char *rem_backend = smb_xstrdup(*remote_backend);
 		fstring params = "";
 		char *pparams;
 		
