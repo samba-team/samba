@@ -197,13 +197,13 @@ int main(int argc, char *argv[])
 	srand(seed);
 	start_timer();
 	for (i=0;i<loops;i++) addrec_gdbm();
-	printf("gdbm took %g secs\n", end_timer());
+	printf("gdbm got %.2f ops/sec\n", i/end_timer());
 #endif
 
 	srand(seed);
 	start_timer();
 	for (i=0;i<loops;i++) addrec_db();
-	printf("tdb took %g secs\n", end_timer());
+	printf("tdb got %.2f ops/sec\n", i/end_timer());
 
 	compare_db();
 
