@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,6 +53,14 @@ RCSID("$Id$");
 #include "rfc2459_asn1.h"
 #include "cms_asn1.h"
 #include "pkinit_asn1.h"
+
+enum {
+    COMPAT_WIN2K = 1,
+    COMPAT_19 = 2,
+    COMPAT_25 = 4
+};
+
+
 
 #define OPENSSL_ASN1_MALLOC_ENCODE(T, B, BL, S, R)			\
 {									\
@@ -364,11 +372,36 @@ _krb5_pk_create_sign(krb5_context context,
 }
 
 static krb5_error_code
-build_auth_pack(krb5_context context,
-                unsigned nonce,
-		DH *dh,
-		const KDC_REQ_BODY *body,
-		AuthPack_19 *a)
+build_auth_pack_win2k(krb5_context context,
+                      unsigned nonce,
+                      const KDC_REQ_BODY *body,
+                      AuthPack_Win2k *a)
+{
+    krb5_error_code ret;
+    krb5_timestamp sec;
+    int32_t usec;
+
+    /* fill in PKAuthenticator */
+    ret = copy_PrincipalName(body->sname, &a->pkAuthenticator.kdcName);
+    if (ret)
+	return ret;
+    ret = copy_Realm(&body->realm, &a->pkAuthenticator.kdcRealm);
+    if (ret)
+	return ret;
+
+    krb5_us_timeofday(context, &sec, &usec);
+    a->pkAuthenticator.ctime = sec;
+    a->pkAuthenticator.cusec = usec;
+    a->pkAuthenticator.nonce = nonce;
+
+    return 0;
+}
+
+static krb5_error_code
+build_auth_pack_19(krb5_context context,
+		   unsigned nonce,
+		   const KDC_REQ_BODY *body,
+		   AuthPack_19 *a)
 {
     size_t buf_size, len;
     krb5_cksumtype cksum;
@@ -379,12 +412,8 @@ build_auth_pack(krb5_context context,
 
     krb5_clear_error_string(context);
 
-#if 0
     /* XXX some PACKETCABLE needs implemetations need md5 */
     cksum = CKSUMTYPE_RSA_MD5;
-#else
-    cksum = CKSUMTYPE_SHA1;
-#endif
 
     krb5_us_timeofday(context, &sec, &usec);
     a->pkAuthenticator.ctime = sec;
@@ -403,6 +432,46 @@ build_auth_pack(krb5_context context,
 			       buf,
 			       len,
 			       &a->pkAuthenticator.paChecksum);
+    free(buf);
+
+    return ret;
+}
+
+static krb5_error_code
+build_auth_pack(krb5_context context,
+		unsigned nonce,
+		DH *dh,
+		const KDC_REQ_BODY *body,
+		AuthPack *a)
+{
+    size_t buf_size, len;
+    krb5_error_code ret;
+    void *buf;
+    krb5_timestamp sec;
+    int32_t usec;
+    Checksum checksum;
+
+    krb5_clear_error_string(context);
+
+    memset(&checksum, 0, sizeof(checksum));
+
+    krb5_us_timeofday(context, &sec, &usec);
+    a->pkAuthenticator.ctime = sec;
+    a->pkAuthenticator.nonce = nonce;
+
+    ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, body, &len, ret);
+    if (ret)
+	return ret;
+    if (buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+
+    ret = krb5_create_checksum(context,
+			       NULL,
+			       0,
+			       CKSUMTYPE_SHA1,
+			       buf,
+			       len,
+			       &checksum);
     free(buf);
 
     if (ret == 0 && dh) {
@@ -484,32 +553,6 @@ build_auth_pack(krb5_context context,
     return ret;
 }
 
-static krb5_error_code
-build_auth_pack_win2k(krb5_context context,
-                      unsigned nonce,
-                      const KDC_REQ_BODY *body,
-                      AuthPack_Win2k *a)
-{
-    krb5_error_code ret;
-    krb5_timestamp sec;
-    int32_t usec;
-
-    /* fill in PKAuthenticator */
-    ret = copy_PrincipalName(body->sname, &a->pkAuthenticator.kdcName);
-    if (ret)
-	return ret;
-    ret = copy_Realm(&body->realm, &a->pkAuthenticator.kdcRealm);
-    if (ret)
-	return ret;
-
-    krb5_us_timeofday(context, &sec, &usec);
-    a->pkAuthenticator.ctime = sec;
-    a->pkAuthenticator.cusec = usec;
-    a->pkAuthenticator.nonce = nonce;
-
-    return 0;
-}
-
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_mk_ContentInfo(krb5_context context,
 			const krb5_data *buf, 
@@ -534,15 +577,16 @@ _krb5_pk_mk_ContentInfo(krb5_context context,
 
 static krb5_error_code
 pk_mk_padata(krb5_context context,
-	     int win2k_compat,
+	     int compat,
 	     krb5_pk_init_ctx ctx,
 	     const KDC_REQ_BODY *req_body,
 	     unsigned nonce,
 	     METHOD_DATA *md)
 {
+    struct ContentInfo content_info;
     krb5_error_code ret;
     const heim_oid *oid;
-    PA_PK_AS_REQ_19 req;
+    PA_PK_AS_REQ req;
     size_t size;
     krb5_data buf, sd_buf;
     int pa_type;
@@ -550,8 +594,9 @@ pk_mk_padata(krb5_context context,
     krb5_data_zero(&buf);
     krb5_data_zero(&sd_buf);
     memset(&req, 0, sizeof(req));
+    memset(&content_info, 0, sizeof(content_info));
 
-    if (win2k_compat) {
+    if (compat & COMPAT_WIN2K) {
 	AuthPack_Win2k ap;
 
 	memset(&ap, 0, sizeof(ap));
@@ -573,12 +618,12 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkcs7_data();
-    } else {
+    } else if (compat & COMPAT_19) {
 	AuthPack_19 ap;
 	
 	memset(&ap, 0, sizeof(ap));
 
-	ret = build_auth_pack(context, nonce, ctx->dh, req_body, &ap);
+	ret = build_auth_pack_19(context, nonce, req_body, &ap);
 	if (ret) {
 	    free_AuthPack_19(&ap);
 	    goto out;
@@ -594,7 +639,29 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkauthdata();
-    }
+    } else if (compat & COMPAT_25) {
+	AuthPack ap;
+	
+	memset(&ap, 0, sizeof(ap));
+
+	ret = build_auth_pack(context, nonce, ctx->dh, req_body, &ap);
+	if (ret) {
+	    free_AuthPack(&ap);
+	    goto out;
+	}
+
+	ASN1_MALLOC_ENCODE(AuthPack, buf.data, buf.length, &ap, &size, ret);
+	free_AuthPack(&ap);
+	if (ret) {
+	    krb5_set_error_string(context, "AuthPack: %d", ret);
+	    goto out;
+	}
+	if (buf.length != size)
+	    krb5_abortx(context, "internal ASN1 encoder error");
+
+	oid = oid_id_pkauthdata();
+    } else
+	krb5_abortx(context, "internal pkinit error");
 
     ret = _krb5_pk_create_sign(context,
 			       oid,
@@ -606,26 +673,26 @@ pk_mk_padata(krb5_context context,
 	goto out;
 
     ret = _krb5_pk_mk_ContentInfo(context, &sd_buf, oid_id_pkcs7_signedData(), 
-				  &req.signedAuthPack);
+				  &content_info);
     krb5_data_free(&sd_buf);
     if (ret)
 	goto out;
 
     /* XXX tell the kdc what CAs the client is willing to accept */
     req.trustedCertifiers = NULL;
-    req.kdcCert = NULL;
-    req.encryptionCert = NULL;
-  
-    if (win2k_compat) {
+    req.kdcPkId = NULL;
+
+    if (compat & COMPAT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ_WIN;
+
 	memset(&winreq, 0, sizeof(winreq));
 
 	ASN1_MALLOC_ENCODE(ContentInfo,
 			   winreq.signed_auth_pack.data,
 			   winreq.signed_auth_pack.length,
-			   &req.signedAuthPack,
+			   &content_info,
 			   &size,
 			   ret);
 	if (ret)
@@ -636,10 +703,30 @@ pk_mk_padata(krb5_context context,
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_Win2k, buf.data, buf.length,
 			   &winreq, &size, ret);
 	free_PA_PK_AS_REQ_Win2k(&winreq);
-    } else {
+
+    } else if (compat & COMPAT_19) {
+	PA_PK_AS_REQ_19 req_19;
+
 	pa_type = KRB5_PADATA_PK_AS_REQ;
+
+	memset(&req_19, 0, sizeof(req_19));
+
+	copy_ContentInfo(&content_info, &req_19.signedAuthPack);
+	req_19.kdcCert = NULL;
+	req_19.trustedCertifiers = NULL;
+	req_19.encryptionCert = NULL;
+
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_19, buf.data, buf.length,
+			   &req_19, &size, ret);
+
+	free_PA_PK_AS_REQ_19(&req_19);
+
+    } else {
+
+	pa_type = KRB5_PADATA_PK_AS_REQ;
+	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ, buf.data, buf.length,
 			   &req, &size, ret);
+
     }
     if (ret) {
 	krb5_set_error_string(context, "PA-PK-AS-REQ %d", ret);
@@ -652,6 +739,8 @@ pk_mk_padata(krb5_context context,
     if (ret)
 	free(buf.data);
  out:
+    free_ContentInfo(&content_info);
+
     return ret;
 }
 
@@ -680,13 +769,18 @@ _krb5_pk_mk_padata(krb5_context context,
 	win2k_compat = 1;
 
     if (win2k_compat) {
-	ret = pk_mk_padata(context, 1, ctx, req_body, nonce, md);
+	ret = pk_mk_padata(context, COMPAT_WIN2K, ctx, req_body, nonce, md);
 	if (ret)
 	    goto out;
     }
-    ret = pk_mk_padata(context, 0, ctx, req_body, nonce, md);
+    ret = pk_mk_padata(context, COMPAT_19, ctx, req_body, nonce, md);
     if (ret)
 	goto out;
+#if 0
+    ret = pk_mk_padata(context, COMPAT_25, ctx, req_body, nonce, md);
+    if (ret)
+	goto out;
+#endif
 
     provisioning_server =
 	krb5_config_get_string(context, NULL,
