@@ -512,24 +512,14 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 
 	/* Search all sharenames first as this is easier than pulling 
 	   the printer_info_2 off of disk */
-
-	for (snum=0; !found && snum<n_services; snum++) {
-
-		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
-			continue;
-		
-		/* ------ sharename ------ */
-
-		fstrcpy(sname, lp_servicename(snum));
-
-		DEBUGADD(10, ("share: %s\n",sname));
-		
-		if ( strequal(sname, aprinter) ) {
-			found = True;
-		}
+	
+	snum = find_service(aprinter);
+	
+	if ( lp_snum_ok(snum) && lp_print_ok(snum) ) {
+		found = True;
+		fstrcpy( sname, aprinter );
 	}
 
-	
 	/* do another loop to look for printernames */
 	
 	for (snum=0; !found && snum<n_services; snum++) {
