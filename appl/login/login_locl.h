@@ -45,6 +45,7 @@
 #include <config.h>
 #endif
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <syslog.h>
@@ -55,6 +56,9 @@
 #include <pwd.h>
 #include <roken.h>
 #include <getarg.h>
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
