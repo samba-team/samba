@@ -1161,3 +1161,67 @@ NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *
 
 	return NT_STATUS_OK;
 }
+
+/*********************************************************
+ Set an extended attribute on a pathname.
+*********************************************************/
+
+BOOL cli_set_ea(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len)
+{
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
+	uint16 setup = TRANSACT2_SETPATHINFO;
+	char param[sizeof(pstring)+6];
+	char *data = NULL;
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+	size_t srclen = 2*(strlen(path)+1);
+	size_t ea_namelen = strlen(ea_name);
+
+	memset(param, 0, sizeof(param));
+	SSVAL(param,0,SMB_INFO_SET_EA);
+	p = &param[6];
+
+	p += clistr_push(cli, p, path, MIN(srclen, sizeof(param)-6), STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	data_len = 4 + ea_namelen + 1 + ea_len;
+	data = malloc(data_len);
+	if (!data) {
+		return False;
+	}
+	p = data;
+	SCVAL(p, 0, 0); /* EA flags. */
+	SCVAL(p, 1, ea_namelen);
+	SSVAL(p, 2, ea_len);
+	memcpy(p+4, ea_name, ea_namelen+1); /* Copy in the name. */
+	memcpy(p+4+ea_namelen+1, ea_val, ea_len);
+	data_len = 4 + ea_namelen + 1 + ea_len;
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                          /* fid, flags */
+		&setup, 1, 0,                   /* setup, length, max */
+		param, param_len, 2,            /* param, length, max */
+		(char *)&data,  data_len, cli->max_xmit /* data, length, max */
+		)) {
+			return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
+	}
+
+	SAFE_FREE(data);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return True;
+}
+
+BOOL cli_get_ea(struct cli_state *cli, const char *path, const char *ea_name, char **value, size_t *val_len)
+{
+	return False;
+}
