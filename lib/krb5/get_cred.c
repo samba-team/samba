@@ -64,15 +64,11 @@ krb5_get_credentials (krb5_context context,
      */
 
     memset(&a, 0, sizeof(a));
-
-    ret = krb5_get_default_in_tkt_etypes (context,
-					  (krb5_enctype**)&a.req_body.etype.val);
-    if (ret)
-	return ret;
-    a.req_body.etype.len = 1;
-
+    krb5_init_etype (context,
+		     &a.req_body.etype.len,
+		     &a.req_body.etype.val,
+		     NULL);
     a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
-
     ret = krb5_get_all_client_addrs (a.req_body.addresses);
     if (ret)
 	return ret;
