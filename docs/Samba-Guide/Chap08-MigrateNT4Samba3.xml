@@ -425,13 +425,16 @@
 	      </indexterm>
 		Edit the &smb.conf; file to temporarily change the parameter 
 		<smbconfoption><name>domain master</name><value>No</value></smbconfoption> so
-		the Samba server functions as a BDC for the purpose of migration.
+		the Samba server functions as a BDC for the purpose of migration. Also, temporarily
+		(only during domain account migration) comment out the lines that specify deletion
+		scripts (delete user script, etc.).
                 </para></step>
 
 	  <step><para><indexterm>
 		<primary>preload.LDIF</primary>
 	      </indexterm>
 		Create a file called <filename>preload.LDIF</filename> as shown in <link linkend="ch8-LDIF"/>.
+		Edit the contents so that the domain name and SID are correct for the site being installed.
 		</para></step>
 
 	  <step><para><indexterm>
@@ -449,7 +452,7 @@ added: "ou=People,dc=abmas,dc=biz" (00000003)
 added: "ou=Computers,dc=abmas,dc=biz" (00000004)
 added: "ou=Groups,dc=abmas,dc=biz" (00000005)
 added: "ou=Idmap,dc=abmas,dc=biz" (00000006)
-added: "ou=Domains,dc=abmas,dc=biz" (00000007)
+added: "sambaDomainName=MEGANET,dc=abmas,dc=biz" (00000007)
 </screen>
 		</para></step>
 
@@ -616,36 +619,29 @@ objectClass: organization
 dc: abmas
 o: Abmas Demo
 description: POSIX and Samba LDAP Identity Database
-structuralObjectClass: organization
-
-dn: cn=Manager,dc=abmas,dc=biz
-objectClass: organizationalRole
-cn: Manager
-description: Directory Manager
-structuralObjectClass: organizationalRole
 
 dn: ou=People,dc=abmas,dc=biz
 objectClass: top
 objectClass: organizationalUnit
 ou: People
-structuralObjectClass: organizationalUnit
 
 dn: ou=Groups,dc=abmas,dc=biz
 objectClass: top
 objectClass: organizationalUnit
 ou: Groups
-structuralObjectClass: organizationalUnit
 
 dn: ou=Idmap,dc=abmas,dc=biz
 objectClass: top
 objectClass: organizationalUnit
 ou: Idmap
-structuralObjectClass: organizationalUnit
 
-dn: ou=Domains,dc=abmas,dc=biz
-objectClass: organizationalUnit
-ou: Domains
-structuralObjectClass: organizationalUnit
+dn: sambaDomainName=MEGANET2,dc=abmas,dc=biz
+objectClass: sambaDomain
+objectClass: sambaUnixIdPool
+sambaDomainName: MEGANET
+sambaSID: S-1-5-21-1988699175-926296742-1295600288
+uidNumber: 1000
+gidNumber: 1000
 </screen>
 </example>
 
@@ -711,6 +707,14 @@ Creating unix group: 'Domain Users'
 Creating unix group: 'Domain Guests'
 Creating unix group: 'Engineers'
 Creating unix group: 'Marketoids'
+Creating unix group: 'Account Operators'
+Creating unix group: 'Administrators'
+Creating unix group: 'Backup Operators'
+Creating unix group: 'Guests'
+Creating unix group: 'Print Operators'
+Creating unix group: 'Replicator'
+Creating unix group: 'Server Operators'
+Creating unix group: 'Users'
 Creating account: Administrator
 Creating account: Guest
 Creating account: oldnt4pdc$
@@ -731,14 +735,6 @@ Group members of Marketoids: Administrator,jacko(primary),
 Creating unix group: 'Gnomes'
 Fetching BUILTIN database
 SAM_DELTA_DOMAIN_INFO not handled
-Creating unix group: 'Account Operators'
-Creating unix group: 'Administrators'
-Creating unix group: 'Backup Operators'
-Creating unix group: 'Guests'
-Creating unix group: 'Print Operators'
-Creating unix group: 'Replicator'
-Creating unix group: 'Server Operators'
-Creating unix group: 'Users'
 </screen>
 		</para></step>
 
@@ -788,8 +784,8 @@ sleeth:~ # pdbedit -Lv maryk
 Unix username:        maryk
 NT username:          maryk
 Account Flags:        [UX         ]
-User SID:             S-1-5-21-5672968813-926296742-3245673225-1003
-Primary Group SID:    S-1-5-21-5672968813-926296742-3245673225-1007
+User SID:             S-1-5-21-1988699175-926296742-1295600288-1003
+Primary Group SID:    S-1-5-21-1988699175-926296742-1295600288-1007
 Full Name:            Mary Kathleen
 Home Directory:       \\diamond\maryk
 HomeDir Drive:        X:
