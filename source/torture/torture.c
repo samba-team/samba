@@ -4055,7 +4055,7 @@ static void usage(void)
 	get_myname(myname);
 
 	if (*username == 0 && getenv("LOGNAME")) {
-	  pstrcpy(username,getenv("LOGNAME"));
+	  fstrcpy(username,getenv("LOGNAME"));
 	}
 
 	argc--;
@@ -4110,11 +4110,11 @@ static void usage(void)
 #endif
 			break;
 		case 'U':
-			pstrcpy(username,optarg);
+			fstrcpy(username,optarg);
 			p = strchr_m(username,'%');
 			if (p) {
 				*p = 0;
-				pstrcpy(password, p+1);
+				fstrcpy(password, p+1);
 				gotpass = 1;
 			}
 			break;
@@ -4128,7 +4128,7 @@ static void usage(void)
 	while (!gotpass) {
 		p = getpass("Password:");
 		if (p) {
-			pstrcpy(password, p);
+			fstrcpy(password, p);
 			gotpass = 1;
 		}
 	}

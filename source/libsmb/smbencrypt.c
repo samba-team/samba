@@ -122,33 +122,33 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 	smb_ucs2_t *user;
 	smb_ucs2_t *domain;
 	
-	int user_byte_len;
-	int domain_byte_len;
+	size_t user_byte_len;
+	size_t domain_byte_len;
 
 	HMACMD5Context ctx;
 
 	user_byte_len = push_ucs2_allocate(&user, user_in);
-	if (user_byte_len < 0) {
-		DEBUG(0, ("push_ucs2_allocate() for user returned %d (probably malloc() failure)\n", user_byte_len));
+	if (user_byte_len == (size_t)-1) {
+		DEBUG(0, ("push_uss2_allocate() for user returned -1 (probably malloc() failure)\n"));
 		return False;
 	}
 
 	domain_byte_len = push_ucs2_allocate(&domain, domain_in);
-	if (domain_byte_len < 0) {
-		DEBUG(0, ("push_ucs2_allocate() for domain returned %d (probably malloc() failure)\n", domain_byte_len));
+	if (domain_byte_len == (size_t)-1) {
+		DEBUG(0, ("push_uss2_allocate() for domain returned -1 (probably malloc() failure)\n"));
 		return False;
 	}
 
 	strupper_w(user);
 	strupper_w(domain);
 
+	SMB_ASSERT(user_byte_len >= 2);
+	SMB_ASSERT(domain_byte_len >= 2);
+
 	/* We don't want null termination */
 	user_byte_len = user_byte_len - 2;
 	domain_byte_len = domain_byte_len - 2;
 	
-	SMB_ASSERT(user_byte_len >= 0);
-	SMB_ASSERT(domain_byte_len >= 0);
-
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
 	hmac_md5_update((const unsigned char *)user, user_byte_len, &ctx);
 	hmac_md5_update((const unsigned char *)domain, domain_byte_len, &ctx);

@@ -718,7 +718,7 @@ static struct cli_state *connect_one(const char *share)
 	if (!got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			pstrcpy(password, pass);
+			fstrcpy(password, pass);
 			got_pass = True;
 		}
 	}
@@ -806,7 +806,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 		if ((p=strchr_m(username,'%'))) {
 			*p = 0;
-			pstrcpy(password,p+1);
+			fstrcpy(password,p+1);
 			got_pass = True;
 			memset(strchr_m(getenv("USER"), '%') + 1, 'X',
 			       strlen(password));
@@ -820,7 +820,7 @@ You can string acls together with spaces, commas or newlines\n\
 			p = strchr_m(username,'%');
 			if (p) {
 				*p = 0;
-				pstrcpy(password, p+1);
+				fstrcpy(password, p+1);
 				got_pass = 1;
 			}
 			break;

@@ -193,14 +193,14 @@ static struct cli_state *connect_one(char *share, int snum)
 	if (!got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			pstrcpy(password[0], pass);
-			pstrcpy(password[1], pass);
+			fstrcpy(password[0], pass);
+			fstrcpy(password[1], pass);
 		}
 	}
 
 	if (got_pass == 1) {
-		pstrcpy(password[1], password[0]);
-		pstrcpy(username[1], username[0]);
+		fstrcpy(password[1], password[0]);
+		fstrcpy(username[1], username[0]);
 	}
 
 	if (!cli_session_setup(c, username[snum], 
@@ -591,8 +591,8 @@ static void usage(void)
 	load_interfaces();
 
 	if (getenv("USER")) {
-		pstrcpy(username[0],getenv("USER"));
-		pstrcpy(username[1],getenv("USER"));
+		fstrcpy(username[0],getenv("USER"));
+		fstrcpy(username[1],getenv("USER"));
 	}
 
 	seed = time(NULL);
@@ -613,11 +613,11 @@ static void usage(void)
 				d_printf("Max of 2 usernames\n");
 				exit(1);
 			}
-			pstrcpy(username[got_pass],optarg);
+			fstrcpy(username[got_pass],optarg);
 			p = strchr_m(username[got_pass],'%');
 			if (p) {
 				*p = 0;
-				pstrcpy(password[got_pass], p+1);
+				fstrcpy(password[got_pass], p+1);
 				got_pass++;
 			}
 			break;
