@@ -559,39 +559,6 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 	return True;
 }
 
-/**********************************************************************
- Release the memory held by a SPOOL_NOTIFY_INFO_DATA
- *********************************************************************/
-static void free_notify_data(SPOOL_NOTIFY_INFO_DATA *data, uint32 len)
-{
-	uint32 i;
-
-	DEBUG(10,("free_notify_data: enter\n"));
-
-	if (!data) {
-		DEBUG(10,("free_notify_data: NULL data pointer\n"));
-		return;
-	}
-
-	DEBUG(10,("free_notify_data: number of entries in array = [%d]\n", len));
-
-	for (i=0; i<len; i++)
-	{
-		if (data[i].size == POINTER && data[i].notify_data.data.length)
-		{
-			DEBUG(10,("free_notify_data: free string data of length [%d]\n",
-				data[i].notify_data.data.length));
-			SAFE_FREE(data[i].notify_data.data.string);
-		}
-
-	}
-
-	SAFE_FREE(data);
-
-	DEBUG(10,("free_notify_data: exit\n"));
-}
-
-
 /***************************************************************************
  Send a notify to the client.
 ****************************************************************************/
@@ -706,9 +673,11 @@ done:
 	prs_mem_free(&buf);
 	prs_mem_free(&rbuf);
 	free_a_printer(&printer, 2);
-#if 0	/* JERRY */
-	free_notify_data(notify_data, idx);
-#endif
+	/*
+	 * The memory allocated in this array is talloc'd so we only need
+	 * free the array here. JRA.
+	 */
+	SAFE_FREE(notify_data);
 
 	return W_ERROR_IS_OK(*status);
 }
@@ -1184,7 +1153,7 @@ WERROR _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 
 	result = delete_printer_handle(p, handle);
 
-	update_c_setprinter(FALSE);
+	update_c_setprinter(False);
 
 	if (W_ERROR_IS_OK(result)) {
 		srv_spoolss_sendnotify(Printer->dev.handlename, 0, PRINTER_CHANGE_DELETE_PRINTER);
