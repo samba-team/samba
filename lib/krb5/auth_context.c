@@ -129,9 +129,9 @@ krb5_auth_con_setaddrs(krb5_context context,
 }
 
 krb5_error_code
-krb5_auth_con_setaddrs_from_fd (krb5_context context,
-				krb5_auth_context auth_context,
-				void *p_fd)
+krb5_auth_con_genaddrs(krb5_context context, 
+		       krb5_auth_context auth_context, 
+		       int infd, int flags)
 {
     int fd = *((int *)p_fd);
     krb5_error_code ret;
@@ -142,36 +142,59 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
     struct sockaddr *remote = (struct sockaddr *)&ss_remote;
     socklen_t len;
 
-    if (auth_context->local_address == NULL) {
-	len = sizeof(ss_local);
-	if(getsockname(fd, local, &len) < 0) {
-	    ret = errno;
-	    goto out;
+    if(flags & KRB5_AUTH_CONTEXT_GENERATE_LOCAL_ADDR) {
+	if (auth_context->local_address == NULL) {
+	    len = sizeof(ss_local);
+	    if(getsockname(fd, local, &len) < 0) {
+		ret = errno;
+		goto out;
+	    }
+	    krb5_sockaddr2address (local, &local_k_address);
+	    if(flags & KRB5_AUTH_CONTEXT_GENERATE_LOCAL_FULL_ADDR) {
+		krb5_sockaddr2port (local, &auth_context->local_port);
+	    } else
+		auth_context->local_port = 0;
+	    lptr = &local_k_address;
 	}
-	krb5_sockaddr2address (local, &local_k_address);
-	krb5_sockaddr2port (local, &auth_context->local_port);
-	lptr = &local_k_address;
     }
-    if (auth_context->remote_address == NULL) {
+    if(flags & KRB5_AUTH_CONTEXT_GENERATE_REMOTE_ADDR) {
 	len = sizeof(ss_remote);
 	if(getpeername(fd, remote, &len) < 0) {
 	    ret = errno;
 	    goto out;
 	}
 	krb5_sockaddr2address (remote, &remote_k_address);
-	krb5_sockaddr2port (remote, &auth_context->remote_port);
+	if(flags & KRB5_AUTH_CONTEXT_GENERATE_REMOTE_FULL_ADDR) {
+	    krb5_sockaddr2port (remote, &auth_context->remote_port);
+	} else
+	    auth_context->remote_port = 0;
 	rptr = &remote_k_address;
     }
     ret = krb5_auth_con_setaddrs (context,
 				  auth_context,
 				  lptr,
 				  rptr);
-out:
+  out:
     if (lptr)
 	krb5_free_address (context, lptr);
     if (rptr)
 	krb5_free_address (context, rptr);
     return ret;
+
+}
+
+krb5_error_code
+krb5_auth_con_setaddrs_from_fd (krb5_context context,
+				krb5_auth_context auth_context,
+				void *p_fd)
+{
+    int fd = *(int*)p_fd;
+    int flags = 0;
+    if(auth_context->local_address == NULL)
+	flags |= KRB5_AUTH_CONTEXT_GENERATE_LOCAL_FULL_ADDR;
+    if(auth_context->remote_address == NULL)
+	flags |= KRB5_AUTH_CONTEXT_GENERATE_REMOTE_FULL_ADDR;
+    return krb5_auth_con_genaddrs(context, auth_context, fd, flags);
 }
 
 krb5_error_code
