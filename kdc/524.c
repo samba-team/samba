@@ -118,7 +118,8 @@ verify_flags (const EncTicketPart *et,
 
 /*
  * set the `et->caddr' to the most appropriate address to use, where
- * `addr' is the address the request was received from.  */
+ * `addr' is the address the request was received from.
+ */
 
 static krb5_error_code
 set_address (EncTicketPart *et,
@@ -126,29 +127,37 @@ set_address (EncTicketPart *et,
 	     const char *from)
 {
     krb5_error_code ret;
-    krb5_address v4_addr;
+    krb5_address *v4_addr;
 
-    ret = krb5_sockaddr2address(addr, &v4_addr);
+    v4_addr = malloc (sizeof(*v4_addr));
+    if (v4_addr == NULL)
+	return ENOMEM;
+
+    ret = krb5_sockaddr2address(addr, v4_addr);
     if(ret) {
+	free (v4_addr);
 	kdc_log(0, "Failed to convert address (%s)", from);
 	return ret;
     }
 	    
-    if (et->caddr && !krb5_address_search (context, &v4_addr, et->caddr)) {
+    if (et->caddr && !krb5_address_search (context, v4_addr, et->caddr)) {
 	kdc_log(0, "Incorrect network address (%s)", from);
-	krb5_free_address(context, &v4_addr);
+	krb5_free_address(context, v4_addr);
+	free (v4_addr);
 	return KRB5KRB_AP_ERR_BADADDR;
     }
-    if(v4_addr.addr_type == KRB5_ADDRESS_INET) {
+    if(v4_addr->addr_type == KRB5_ADDRESS_INET) {
 	/* we need to collapse the addresses in the ticket to a
 	   single address; best guess is to use the address the
 	   connection came from */
 	
 	free_HostAddresses(et->caddr);
-	et->caddr->val = &v4_addr;
+	et->caddr->val = v4_addr;
 	et->caddr->len = 1;
-    } else
-	krb5_free_address(context, &v4_addr);
+    } else {
+	krb5_free_address(context, v4_addr);
+	free(v4_addr);
+    }
     return 0;
 }
 
