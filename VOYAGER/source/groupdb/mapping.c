@@ -505,9 +505,6 @@ static NTSTATUS alias_memberships(const DOM_SID *sid, DOM_SID **sids, int *num)
 	TDB_DATA kbuf, dbuf;
 	const char *p;
 
-	*num = 0;
-	*sids = NULL;
-
 	if (!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
 		return NT_STATUS_ACCESS_DENIED;

@@ -312,7 +312,11 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info,
 		return NT_STATUS_OK;
 	}
 
+	/* Domain groups are provided from nss without winbind, winbind does
+	 * the aliases. */
+	winbind_off();
 	glist = getgrent_list(NULL, NULL);
+	winbind_on();
 
 	info->disp_info.num_group_account = 0;
 
@@ -1349,6 +1353,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 	DOM_SID pol_sid;
 	fstring sid_str;
 	uint32  acc_granted;
+	fstring domain_name;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -1366,10 +1371,22 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		return r_u->status;
 	}
 
+	if (sid_check_is_builtin(&pol_sid)) {
+		fstrcpy(domain_name, "BUILTIN");
+	} else if (sid_check_is_domain(&pol_sid)) {
+		fstrcpy(domain_name, get_global_sam_name());
+	} else {
+		DEBUG(1, ("lookup in wrong domain: %s\n",
+			  sid_string_static(&pol_sid)));
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	if (num_rids > MAX_SAM_ENTRIES) {
 		num_rids = MAX_SAM_ENTRIES;
 		DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
 	}
+
+	
 
 	DEBUG(5,("_samr_lookup_names: looking name on SID %s\n", sid_to_string(sid_str, &pol_sid)));
 	
@@ -1383,7 +1400,9 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 	        rid [i] = 0xffffffff;
 	        type[i] = SID_NAME_UNKNOWN;
 
-		ret = rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
+		ret = rpcstr_pull(name, q_u->uni_name[i].buffer,
+				  sizeof(name),
+				  q_u->uni_name[i].uni_str_len*2, 0);
 
  		/*
 		 * we are only looking for a name
@@ -1397,9 +1416,11 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		 * to the local_lookup_name function.
 		 */
 		 
-            	if ((ret > 0) && local_lookup_name(name, &sid, &local_type)) {
+            	if ((ret > 0) && lookup_name(domain_name, name, &sid,
+					     &local_type)) {
+
                 	sid_split_rid(&sid, &local_rid);
-				
+
 			if (sid_equal(&sid, &pol_sid)) {
 				rid[i]=local_rid;
 
@@ -3076,16 +3097,36 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	return r_u->status;
 }
 
+static void add_rid_to_array_unique(uint32 rid, uint32 **rids, int *num)
+{
+	int i;
+
+	for (i=0; i<*num; i++) {
+		if ((*rids)[i] == rid)
+			return;
+	}
+	
+	*rids = Realloc(*rids, (*num+1) * sizeof(uint32));
+
+	if (*rids == NULL)
+		return;
+
+	(*rids)[*num] = rid;
+	*num += 1;
+}
+
 /*********************************************************************
  _samr_query_aliasmem
 *********************************************************************/
 
 NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-	int num_groups = 0, tmp_num_groups=0;
-	uint32 *rids=NULL, *new_rids=NULL, *tmp_rids=NULL;
 	struct samr_info *info = NULL;
-	int i,j;
+	int i;
+	DOM_SID *aliases;
+	int num_aliases;
+	uint32 *rids;
+	int num_rids;
 		
 	NTSTATUS ntstatus1;
 	NTSTATUS ntstatus2;
@@ -3129,41 +3170,29 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	    !sid_check_is_builtin(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
+	aliases = NULL;
+	num_aliases = 0;
 
 	for (i=0; i<q_u->num_sids1; i++) {
-
-		r_u->status=get_alias_user_groups(p->mem_ctx, &info->sid, &tmp_num_groups, &tmp_rids, &(q_u->sid[i].sid));
-
-		/*
-		 * if there is an error, we just continue as
-		 * it can be an unfound user or group
-		 */
-		if (!NT_STATUS_IS_OK(r_u->status)) {
-			DEBUG(10,("_samr_query_useraliases: an error occured while getting groups\n"));
-			continue;
-		}
-
-		if (tmp_num_groups==0) {
-			DEBUG(10,("_samr_query_useraliases: no groups found\n"));
-			continue;
-		}
-
-		new_rids=(uint32 *)talloc_realloc(p->mem_ctx, rids, (num_groups+tmp_num_groups)*sizeof(uint32));
-		if (new_rids==NULL) {
-			DEBUG(0,("_samr_query_useraliases: could not realloc memory\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-		rids=new_rids;
-
-		for (j=0; j<tmp_num_groups; j++)
-			rids[j+num_groups]=tmp_rids[j];
-		
-		safe_free(tmp_rids);
-		
-		num_groups+=tmp_num_groups;
+		become_root();
+		pdb_enum_alias_memberships(&(q_u->sid[i].sid),
+					   &aliases, &num_aliases);
+		unbecome_root();
 	}
-	
-	init_samr_r_query_useraliases(r_u, num_groups, rids, NT_STATUS_OK);
+
+	rids = NULL;
+	num_rids = 0;
+
+	for (i=0; i<num_aliases; i++) {
+		uint32 alias_rid;
+
+		if (!sid_peek_check_rid(&info->sid, &aliases[i], &alias_rid))
+			continue;
+
+		add_rid_to_array_unique(alias_rid, &rids, &num_rids);
+	}
+
+	init_samr_r_query_useraliases(r_u, num_rids, rids, NT_STATUS_OK);
 	return NT_STATUS_OK;
 }
 
@@ -3174,6 +3203,7 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_QUERY_ALIASMEM *r_u)
 {
 	int i;
+	BOOL res;
 
 	int num_sids = 0;
 	DOM_SID2 *sid;
@@ -3194,7 +3224,11 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	DEBUG(10, ("sid is %s\n", sid_string_static(&alias_sid)));
 
-	if (!pdb_enum_aliasmem(&alias_sid, &sids, &num_sids))
+	become_root();
+	res = pdb_enum_aliasmem(&alias_sid, &sids, &num_sids);
+	unbecome_root();
+
+	if (!res)
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_SID2) * num_sids);	

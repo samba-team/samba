@@ -1867,7 +1867,8 @@ rpc_list_alias_members(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 					 &num_members, &alias_sids);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Couldn't list alias members\n");
+		d_printf("Couldn't list alias members: %s\n",
+			 nt_errstr(result));
 		return result;
 	}
 

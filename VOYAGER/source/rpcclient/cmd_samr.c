@@ -497,6 +497,19 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 	return result;
 }
 
+void add_sid2_to_array(const DOM_SID2 *sid, DOM_SID2 **sids, int *num)
+{
+	*sids = Realloc(*sids, ((*num)+1) * sizeof(**sids));
+
+	if (*sids == NULL)
+		return;
+
+	(*sids)[*num] = *sid;
+	*num += 1;
+
+	return;
+}
+
 /* Query aliases a user is a member of */
 
 static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli, 
@@ -509,22 +522,20 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	fstring			server;
-	DOM_SID			tmp_sid;
-	DOM_SID2		sid;
 	DOM_SID global_sid_Builtin;
+
+	DOM_SID2 *sids;
+	int num_sids;
 
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
-	if ((argc < 3) || (argc > 4)) {
-		printf("Usage: %s builtin|domain rid [access mask]\n", argv[0]);
+	if (argc < 3) {
+		printf("Usage: %s builtin|domain <rid> \n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	sscanf(argv[2], "%i", &user_rid);
 	
-	if (argc > 3)
-		sscanf(argv[3], "%x", &access_mask);
-
 	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper_m(server);
 		
@@ -548,11 +559,29 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	sid_copy(&tmp_sid, &domain_sid);
-	sid_append_rid(&tmp_sid, user_rid);
-	init_dom_sid2(&sid, &tmp_sid);
+	sids = NULL;
+	num_sids = 0;
 
-	result = cli_samr_query_useraliases(cli, mem_ctx, &domain_pol, 1, &sid, &num_aliases, &alias_rids);
+	for (i=2; i<argc; i++) {
+		DOM_SID tmp;
+		DOM_SID2 sid2;
+		uint32 rid;
+
+		if (sscanf(argv[i], "%i", &rid) == 1) {
+			sid_copy(&tmp, &domain_sid);
+			sid_append_rid(&tmp, rid);
+		} else if (!string_to_sid(&tmp, argv[i])) {
+			printf("Could not convert %s\n", argv[i]);
+			continue;
+		}
+
+		init_dom_sid2(&sid2, &tmp);
+		add_sid2_to_array(&sid2, &sids, &num_sids);
+	}
+
+	result = cli_samr_query_useraliases(cli, mem_ctx, &domain_pol,
+					    num_sids, sids, &num_aliases,
+					    &alias_rids);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
