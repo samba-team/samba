@@ -71,7 +71,7 @@ feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.
 
 
-Changes in alpha23:
+Changes in alpha24:
 -------------------
 
   LDAP Schema Changes
@@ -160,3 +160,4 @@ Changes in alpha23:
 33) Revert from wins.tdb back to wins.dat (flat text file)
 34) More Trust relationship fixes
 35) More quota fixes (including server support for NT quota info levels)
+36) VFS API has been stabilized and is feature full for final release
