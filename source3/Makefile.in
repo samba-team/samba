@@ -811,11 +811,17 @@ Makefile: $(srcdir)/Makefile.in config.status
 test_prefix=/tmp/test-samba
 # Run regression suite using the external "satyr" framework
 check:
-	-rm -rf $(test_prefix)/lib
-	mkdir $(test_prefix)/lib -p ./testdir 
-	PATH=$(builddir)/bin:$(PATH) \
-	SATYR_SUITEDIR=../testsuite/build_farm/ prefix=$(test_prefix) \
-	testdir=./testdir $(SHELL) satyr
+	@echo "sorry, samba self-test without installation does not work yet"
+	@echo "Please try specifying a scratch directory to"
+	@echo "      ./configure --prefix DIR"
+	@echo "then run \"make install installcheck\""
+	exit 1
+
+# 	-rm -rf $(test_prefix)/lib
+# 	mkdir $(test_prefix)/lib -p ./testdir 
+# 	PATH=$(builddir)/bin:$(PATH) \
+# 	SATYR_SUITEDIR=../testsuite/build_farm/ prefix=$(test_prefix) \
+# 	testdir=./testdir $(SHELL) satyr
 
 # Run regression suite on the installed version.
 
