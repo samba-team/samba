@@ -2448,3 +2448,73 @@ BOOL samr_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 	return valid_close;
 }
 
+/****************************************************************************
+do a SAMR query display info
+****************************************************************************/
+BOOL samr_query_dispinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain, uint16 level,
+				uint32 *num_entries,
+				SAM_DISPINFO_CTR *ctr)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_QUERY_DISPINFO q_o;
+	BOOL valid_query = False;
+
+	DEBUG(4,("SAMR Query Display Info.  level: %d\n", level));
+
+	if (pol_open_domain == NULL || num_entries == NULL || ctr == NULL ||
+	    level == 0)
+	{
+		return False;
+	}
+
+	/* create and send a MSRPC command with api SAMR_QUERY_DISPINFO */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_query_dispinfo(&q_o, pol_open_domain, level, 0, 0xffffffff);
+
+	/* turn parameters into data stream */
+	samr_io_q_query_dispinfo("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SAMR_QUERY_DISPINFO, &data, &rdata))
+	{
+		SAMR_R_QUERY_DISPINFO r_o;
+		BOOL p;
+
+		/* get user info */
+		r_o.ctr = ctr;
+
+		samr_io_r_query_dispinfo("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_QUERY_DISPINFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p && r_o.switch_level != level)
+		{
+			DEBUG(0,("SAMR_R_QUERY_DISPINFO: received incorrect level %d\n",
+			          r_o.switch_level));
+		}
+
+		if (p && r_o.ptr_entries != 0)
+		{
+			valid_query = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
+}
+
