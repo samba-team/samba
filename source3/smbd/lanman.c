@@ -1660,6 +1660,131 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
 }
 
 
+/****************************************************************************
+  view list of groups available
+  ****************************************************************************/
+static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+  			      int mdrcnt,int mprcnt,
+  			      char **rdata,char **rparam,
+  			      int *rdata_len,int *rparam_len)
+{
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *p = skip_string(str2,1);
+	int uLevel = SVAL(p,0);
+	int buf_len = SVAL(p,2);
+	char *p2;
+	int count=0;
+	int total=0,counted=0;
+	BOOL missed = False;
+	int i;
+	int data_len, fixed_len, string_len;
+	int f_len = 0, s_len = 0;
+
+	if (!prefix_ok(str1,"WrLeh")) return False;
+  
+	/* check it's a supported variant */
+	switch( uLevel )
+	{
+		case 0: 
+			p2 = "B21"; 
+			break;
+		default: 
+			return False;
+	}
+
+	if (strcmp(p2,str2) != 0) return False;
+
+	*rdata_len = mdrcnt + 1024;
+	*rdata = REALLOC(*rdata,*rdata_len);
+
+	SSVAL(*rparam,0,NERR_Success);
+	SSVAL(*rparam,2,0);		/* converter word */
+
+	p = *rdata;
+
+	/* XXXX we need a real SAM database some day */
+	pstrcpy(p,"Users"); p += 21; count++;
+	pstrcpy(p,"Domain Users"); p += 21; count++;
+	pstrcpy(p,"Guests"); p += 21; count++;
+	pstrcpy(p,"Domain Guests"); p += 21; count++;
+
+	*rdata_len = PTR_DIFF(p,*rdata);
+
+	*rparam_len = 8;
+	*rparam = REALLOC(*rparam,*rparam_len);
+
+	SSVAL(*rparam,4,count);	/* is this right?? */
+	SSVAL(*rparam,6,count);	/* is this right?? */
+
+	DEBUG(3,("api_RNetGroupEnum gave %d entries\n", count));
+
+	return(True);
+}
+
+/****************************************************************************
+  view list of groups available
+  ****************************************************************************/
+static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+  			      int mdrcnt,int mprcnt,
+  			      char **rdata,char **rparam,
+  			      int *rdata_len,int *rparam_len)
+{
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *p = skip_string(str2,1);
+	int uLevel = SVAL(p,0);
+	int buf_len = SVAL(p,2);
+	char *p2;
+	int count=0;
+	int total=0,counted=0;
+	BOOL missed = False;
+	int i;
+	int data_len, fixed_len, string_len;
+	int f_len = 0, s_len = 0;
+
+	if (!prefix_ok(str1,"WrLeh")) return False;
+  
+	/* check it's a supported variant */
+	switch( uLevel )
+	{
+		case 0: 
+			p2 = "B21"; 
+			break;
+		default: 
+			return False;
+	}
+
+	if (strcmp(p2,str2) != 0) return False;
+
+	*rdata_len = mdrcnt + 1024;
+	*rdata = REALLOC(*rdata,*rdata_len);
+
+	SSVAL(*rparam,0,NERR_Success);
+	SSVAL(*rparam,2,0);		/* converter word */
+
+	p = *rdata;
+
+	/* XXXX we need a real SAM database some day */
+	pstrcpy(p,"Users"); p += 21; count++;
+	pstrcpy(p,"Domain Users"); p += 21; count++;
+	pstrcpy(p,"Guests"); p += 21; count++;
+	pstrcpy(p,"Domain Guests"); p += 21; count++;
+
+	*rdata_len = PTR_DIFF(p,*rdata);
+
+	*rparam_len = 8;
+	*rparam = REALLOC(*rparam,*rparam_len);
+
+	SSVAL(*rparam,4,count);	/* is this right?? */
+	SSVAL(*rparam,6,count);	/* is this right?? */
+
+	DEBUG(3,("api_RNetUserEnum gave %d entries\n", count));
+
+	return(True);
+}
+
+
 
 /****************************************************************************
   get the time of day info
@@ -3262,7 +3387,9 @@ struct
   {"RNetShareEnum",	0,	api_RNetShareEnum,0},
   {"RNetShareGetInfo",	1,	api_RNetShareGetInfo,0},
   {"RNetServerGetInfo",	13,	api_RNetServerGetInfo,0},
+  {"RNetGroupEnum",	47,	api_RNetGroupEnum,0},
   {"RNetGroupGetUsers", 52,	api_RNetGroupGetUsers,0},
+  {"RNetUserEnum", 	53,	api_RNetUserEnum,0},
   {"RNetUserGetInfo",	56,	api_RNetUserGetInfo,0},
   {"NetUserGetGroups",	59,	api_NetUserGetGroups,0},
   {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
