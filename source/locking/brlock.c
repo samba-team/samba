@@ -292,10 +292,8 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	dbuf.dptr = NULL;
 
 #if !ZERO_ZERO
-	if (start == 0 && size == 0) {
+	if (start == 0 && size == 0)
 		DEBUG(0,("client sent 0/0 lock - please report this\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 #endif
 
 	tdb_chainlock(tdb, kbuf);
