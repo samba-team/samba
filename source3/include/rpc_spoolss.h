@@ -62,13 +62,10 @@
 /*
  * Unimplement Win2k specific RPC's
 
-/* 
-   seen strings - DsSpooler, DsForms, etc...
-   Enumeration?  Returns DRIVER_INFO_6 fields
-*/
-#define SPOOLSS_UNKNOWN_1				0x4f	
-
+#define SPOOLSS_ENUMPRINTERDATAEX			0x4f	
+#define SPOOLSS_DELETEPRINTERDATAEX			0x51
 #define SPOOLSS_ADDPRINTERDRIVEREX			0x59
+*/
 
 /* those are implemented */
 #define SPOOLSS_ENUMPRINTERS				0x00
