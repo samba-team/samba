@@ -580,7 +580,8 @@ typedef struct connection_struct
 	char *origpath;
 
 	struct vfs_ops vfs_ops;                   /* Filesystem operations */
-	struct vfs_connection_struct *vfs_conn;   /* VFS specific connection stuff */
+	/* Handle on dlopen() call */
+	void *dl_handle;
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */
@@ -616,13 +617,6 @@ struct current_user
 	NT_USER_TOKEN *nt_user_token;
 };
 
-/*
- * Reasons for cache flush.
- */
-
-#define NUM_FLUSH_REASONS 8 /* Keep this in sync with the enum below. */
-enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
-			OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };
 /* Defines for the sent_oplock_break field above. */
 #define NO_BREAK_SENT 0
 #define EXCLUSIVE_BREAK_SENT 1

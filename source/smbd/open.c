@@ -41,13 +41,13 @@ static int fd_open(struct connection_struct *conn, char *fname,
 	flags |= O_NONBLOCK;
 #endif
 
-	fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
+	fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
 
 	/* Fix for files ending in '.' */
 	if((fd == -1) && (errno == ENOENT) &&
 	   (strchr(fname,'.')==NULL)) {
 		pstrcat(fname,".");
-		fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
+		fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
 	}
 
 	DEBUG(10,("fd_open: name %s, mode = %d, fd = %d. %s\n", fname, (int)mode, fd,
@@ -138,7 +138,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		return False;
 	}
 
-	if (conn->vfs_ops.fstat(fsp->fd, &sbuf) == -1) {
+	if (conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf) == -1) {
 		DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
 		fd_close(conn, fsp);
 		return False;
@@ -213,7 +213,7 @@ static int truncate_unless_locked(struct connection_struct *conn, files_struct *
 		unix_ERR_code = ERRlock;
 		return -1;
 	} else {
-		return conn->vfs_ops.ftruncate(fsp->fd,0); 
+		return conn->vfs_ops.ftruncate(fsp,fsp->fd,0); 
 	}
 }
 
@@ -792,7 +792,7 @@ files_struct *open_file_stat(connection_struct *conn,
 	if(!fsp)
 		return NULL;
 
-	if(conn->vfs_ops.stat(dos_to_unix(fname, False), pst) < 0) {
+	if(conn->vfs_ops.stat(conn,dos_to_unix(fname, False), pst) < 0) {
 		DEBUG(0,("open_file_stat: unable to stat name = %s. Error was %s\n",
 			 fname, strerror(errno) ));
 		file_free(fsp);
@@ -862,7 +862,7 @@ files_struct *open_directory(connection_struct *conn,
 	if(!fsp)
 		return NULL;
 
-	if(conn->vfs_ops.stat(dos_to_unix(fname, False), &st) == 0) {
+	if(conn->vfs_ops.stat(conn,dos_to_unix(fname, False), &st) == 0) {
 		got_stat = True;
 	}
 
@@ -983,7 +983,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   SMB_DEV_T dev;
   SMB_INO_T inode;
 
-  if (conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf) == -1)
+  if (conn->vfs_ops.stat(conn,dos_to_unix(fname,False),&sbuf) == -1)
     return(True);
 
   dev = sbuf.st_dev;

@@ -204,7 +204,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		/*
 		 * No POSIX to worry about, just close.
 		 */
-		ret = conn->vfs_ops.close(fsp->fd);
+		ret = conn->vfs_ops.close(fsp,fsp->fd);
 		fsp->fd = -1;
 		return ret;
 	}
@@ -259,7 +259,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n", (unsigned int)count ));
 
 		for(i = 0; i < count; i++) {
-			if (conn->vfs_ops.close(fd_array[i]) == -1) {
+			if (conn->vfs_ops.close(fsp,fd_array[i]) == -1) {
 				saved_errno = errno;
 			}
 		}
@@ -279,7 +279,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	 * Finally close the fd associated with this fsp.
 	 */
 
-	ret = conn->vfs_ops.close(fsp->fd);
+	ret = conn->vfs_ops.close(fsp,fsp->fd);
 
 	if (saved_errno != 0) {
         errno = saved_errno;
@@ -408,7 +408,7 @@ static BOOL does_lock_overlap(SMB_OFF_T start1, SMB_OFF_T size1, SMB_OFF_T start
 	if (start1 >= start2 && start1 <= start2 + size2)
 		return True;
 
-	if (start1 < start2 && start1 + size1 > start2);
+	if (start1 < start2 && start1 + size1 > start2)
 		return True;
 
 	return False;
@@ -688,7 +688,7 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fd,op,(double)offset,(double)count,type));
 
-	ret = conn->vfs_ops.lock(fsp->fd,op,offset,count,type);
+	ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
 
 	if (!ret && (errno == EFBIG)) {
 		if( DEBUGLVL( 0 )) {
@@ -699,7 +699,7 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 		/* 32 bit NFS file system, retry with smaller offset */
 		errno = 0;
 		count &= 0x7fffffff;
-		ret = conn->vfs_ops.lock(fsp->fd,op,offset,count,type);
+		ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
 	}
 
 	/* A lock query - just return. */
@@ -727,7 +727,7 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 
 				count = (orig_count & 0x7FFFFFFF);
 				offset = (SMB_OFF_T)map_lock_offset(off_high, off_low);
-				ret = conn->vfs_ops.lock(fsp->fd,op,offset,count,type);
+				ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
 				if (!ret) {
 					if (errno == EINVAL) {
 						DEBUG(3,("posix_fcntl_lock: locking not supported? returning True\n"));

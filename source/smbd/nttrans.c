@@ -892,13 +892,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	if(fsp->is_directory) {
-		if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False), &sbuf) != 0) {
+		if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name, False), &sbuf) != 0) {
 			close_file(fsp,True);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
+		if (conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -1223,7 +1223,7 @@ static int call_nt_transact_create(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
 
-    if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
+    if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name, False),
 	     &sbuf) != 0) {
       close_file(fsp,True);
       restore_case_semantics(file_attributes);
@@ -1293,13 +1293,13 @@ static int call_nt_transact_create(connection_struct *conn,
       } 
   
       if(fsp->is_directory) {
-          if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf) != 0) {
+          if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name,False), &sbuf) != 0) {
               close_file(fsp,True);
               restore_case_semantics(file_attributes);
               return(ERROR(ERRDOS,ERRnoaccess));
           }
       } else {
-          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
+          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
               close_file(fsp,False);
               restore_case_semantics(file_attributes);
               return(ERROR(ERRDOS,ERRnoaccess));
@@ -1611,6 +1611,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   files_struct *fsp = NULL;
   uint32 security_info_sent = 0;
   TALLOC_CTX *mem_ctx;
+  BOOL ret;
 
   if(!lp_nt_acl_support())
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1659,7 +1660,9 @@ security descriptor.\n"));
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (!set_nt_acl(fsp, security_info_sent, psd)) {
+  ret = set_nt_acl( fsp, security_info_sent, psd);
+
+  if (!ret) {
 	free_sec_desc(&psd);
     talloc_destroy(mem_ctx);
 	return(UNIXERROR(ERRDOS,ERRnoaccess));

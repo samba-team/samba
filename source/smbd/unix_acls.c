@@ -59,6 +59,7 @@ static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w
 	return sa;
 }
 
+#if 0
 /****************************************************************************
  Validate a SID.
 ****************************************************************************/
@@ -88,6 +89,7 @@ static BOOL validate_unix_sid( DOM_SID *psid, uint32 *prid, DOM_SID *sd_sid)
 
   return True;
 }
+#endif
 
 /****************************************************************************
  Map NT perms to UNIX.
@@ -355,7 +357,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
         return 0;
       }
     } else {
-      if(fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
+      if(fsp->conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
         return 0;
       }
     }
@@ -455,19 +457,11 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
    * Get the current state of the file.
    */
 
-  if(fsp->is_directory) {
+  if(fsp->is_directory || fsp->fd == -1) {
     if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0)
       return False;
   } else {
-
-    int ret;
-
-    if(fsp->fd == -1)
-      ret = vfs_stat(fsp->conn,fsp->fsp_name,&sbuf);
-    else
-      ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
-
-    if(ret != 0)
+    if(conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0)
       return False;
   }
 
@@ -512,7 +506,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
       if(fsp->fd == -1)
         ret = vfs_stat(fsp->conn, fsp->fsp_name, &sbuf);
       else
-        ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
+        ret = conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf);
   
       if(ret != 0)
         return False;
@@ -558,7 +552,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
       DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
             fsp->fsp_name, (unsigned int)perms ));
 
-      if(conn->vfs_ops.chmod(dos_to_unix(fsp->fsp_name, False), perms) == -1) {
+      if(conn->vfs_ops.chmod(conn,dos_to_unix(fsp->fsp_name, False), perms) == -1) {
         DEBUG(3,("call_nt_transact_set_security_desc: chmod %s, 0%o failed. Error = %s.\n",
               fsp->fsp_name, (unsigned int)perms, strerror(errno) ));
         return False;

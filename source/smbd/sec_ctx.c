@@ -272,12 +272,13 @@ BOOL push_sec_ctx(void)
 
 	sec_ctx_stack_ndx++;
 
-	DEBUG(3, ("push_sec_ctx() : sec_ctx_stack_ndx = %d\n", sec_ctx_stack_ndx ));
-
 	ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 
 	ctx_p->uid = geteuid();
 	ctx_p->gid = getegid();
+
+ 	DEBUG(3, ("push_sec_ctx(%d, %d) : sec_ctx_stack_ndx = %d\n", 
+ 		  ctx_p->uid, ctx_p->gid, sec_ctx_stack_ndx ));
 
 	ctx_p->token = dup_nt_token(sec_ctx_stack[sec_ctx_stack_ndx-1].token);
 

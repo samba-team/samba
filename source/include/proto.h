@@ -3761,7 +3761,6 @@ int sslutil_negotiate_ssl(int fd, int msg_type);
 
 /*The following definitions come from  smbd/statcache.c  */
 
-void print_stat_cache_statistics(void);
 void stat_cache_add( char *full_orig_name, char *orig_translated_path);
 BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath, 
 		       char **start, SMB_STRUCT_STAT *pst);
@@ -3801,49 +3800,44 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
-int vfswrap_dummy_connect(struct vfs_connection_struct *conn, char *service,
-			  char *user);
-void vfswrap_dummy_disconnect(void);
-SMB_BIG_UINT vfswrap_disk_free(char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
+int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user);
+void vfswrap_dummy_disconnect(connection_struct *conn);
+SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-DIR *vfswrap_opendir(char *fname);
-struct dirent *vfswrap_readdir(DIR *dirp);
-int vfswrap_mkdir(char *path, mode_t mode);
-int vfswrap_rmdir(char *path);
-int vfswrap_closedir(DIR *dirp);
-int vfswrap_open(char *fname, int flags, mode_t mode);
-int vfswrap_close(int fd);
-ssize_t vfswrap_read(int fd, char *data, size_t n);
-ssize_t vfswrap_write(int fd, char *data, size_t n);
-SMB_OFF_T vfswrap_lseek(int filedes, SMB_OFF_T offset, int whence);
-int vfswrap_rename(char *old, char *new);
-int vfswrap_fsync(int fd);
-int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf);
-int vfswrap_fstat(int fd, SMB_STRUCT_STAT *sbuf);
-int vfswrap_lstat(char *path, 
-		  SMB_STRUCT_STAT *sbuf);
-int vfswrap_unlink(char *path);
-int vfswrap_chmod(char *path, mode_t mode);
-int vfswrap_chown(char *path, uid_t uid, gid_t gid);
-int vfswrap_chdir(char *path);
-char *vfswrap_getwd(char *path);
-int vfswrap_utime(char *path, struct utimbuf *times);
-int vfswrap_ftruncate(int fd, SMB_OFF_T offset);
-BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-size_t vfswrap_get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
-BOOL vfswrap_set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+DIR *vfswrap_opendir(connection_struct *conn, char *fname);
+struct dirent *vfswrap_readdir(connection_struct *conn, DIR *dirp);
+int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode);
+int vfswrap_rmdir(connection_struct *conn, char *path);
+int vfswrap_closedir(connection_struct *conn, DIR *dirp);
+int vfswrap_open(connection_struct *conn, char *fname, int flags, mode_t mode);
+int vfswrap_close(files_struct *fsp, int fd);
+ssize_t vfswrap_read(files_struct *fsp, int fd, char *data, size_t n);
+ssize_t vfswrap_write(files_struct *fsp, int fd, char *data, size_t n);
+SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
+int vfswrap_rename(connection_struct *conn, char *old, char *new);
+int vfswrap_fsync(files_struct *fsp, int fd);
+int vfswrap_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf);
+int vfswrap_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);
+int vfswrap_lstat(connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf);
+int vfswrap_unlink(connection_struct *conn, char *path);
+int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode);
+int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid);
+int vfswrap_chdir(connection_struct *conn, char *path);
+char *vfswrap_getwd(connection_struct *conn, char *path);
+int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times);
+int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T offset);
+BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
+size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
+BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);
+BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd);
 
 /*The following definitions come from  smbd/vfs.c  */
 
 int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
-int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
-int vfs_unlink(connection_struct *conn, char *fname);
-int vfs_chmod(connection_struct *conn, char *fname,mode_t mode);
-int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid);
-int vfs_chdir(connection_struct *conn, char *fname);
 char *vfs_getwd(connection_struct *conn, char *unix_path);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
