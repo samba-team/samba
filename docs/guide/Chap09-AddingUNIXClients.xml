@@ -1147,6 +1147,38 @@ aliases:        files
    HAVE_KRB5_STRING_TO_KEY
    HAVE_KRB5_STRING_TO_KEY_SALT
    HAVE_LIBKRB5
+</screen>
+		The above output was obtained on a SuSE Linux system and shows the output for
+		Samba that has been compiled and linked with the Heimdal Kerberos libraries.
+		The following is a typical output that will be found on a Red Hat Linux system that
+		has been linked with the MIT Kerberos libraries:
+<screen>
+&rootprompt; cd /usr/sbin
+&rootprompt; smbd -b | grep KRB
+   HAVE_KRB5_H
+   HAVE_ADDRTYPE_IN_KRB5_ADDRESS
+   HAVE_KRB5
+   HAVE_KRB5_AUTH_CON_SETUSERUSERKEY
+   HAVE_KRB5_ENCRYPT_DATA
+   HAVE_KRB5_FREE_DATA_CONTENTS
+   HAVE_KRB5_FREE_KTYPES
+   HAVE_KRB5_GET_PERMITTED_ENCTYPES
+   HAVE_KRB5_KEYTAB_ENTRY_KEY
+   HAVE_KRB5_LOCATE_KDC
+   HAVE_KRB5_MK_REQ_EXTENDED
+   HAVE_KRB5_PRINCIPAL2SALT
+   HAVE_KRB5_PRINC_COMPONENT
+   HAVE_KRB5_SET_DEFAULT_TGS_KTYPES
+   HAVE_KRB5_SET_REAL_TIME
+   HAVE_KRB5_STRING_TO_KEY
+   HAVE_KRB5_TKT_ENC_PART2
+   HAVE_KRB5_USE_ENCTYPE
+   HAVE_LIBGSSAPI_KRB5
+   HAVE_LIBKRB5
+</screen>
+		You can validate that Samba has been compiled and linked with LDAP support
+		by executing:
+<screen>
 &rootprompt; smbd -b | grep LDAP
 massive:/usr/sbin # smbd -b | grep LDAP
    HAVE_LDAP_H
