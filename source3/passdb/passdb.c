@@ -1249,7 +1249,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	   the GROUP_MAP object */
 	   
 	become_root();
-	pdb_getgrsid(&group, *psid);
+	ret = pdb_getgrsid(&group, *psid);
 	unbecome_root();
 	
 	if ( !ret ) {
