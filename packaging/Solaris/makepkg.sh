@@ -32,6 +32,16 @@ add_dynamic_entries()
     fi
   done
 
+ # add libraries to /lib for winbind
+  echo "#\n# Libraries \n#"
+    if [ -f $DISTR_BASE/source/nsswitch/libnss_winbind.so ] ; then
+ 	echo f none /usr/lib/libnss_winbind.so=source/nsswitch/libnss_winbind.so 0755 root other
+ 	echo s none /usr/lib/libnss_winbind.so.1=/usr/lib/libnss_winbind.so 0755 root other
+ 	echo s none /usr/lib/libnss_winbind.so.2=/usr/lib/libnss_winbind.so 0755 root other
+ 	echo s none /usr/lib/nss_winbind.so.1=/usr/lib/libnss_winbind.so 0755 root other
+ 	echo s none /usr/lib/nss_winbind.so.2=/usr/lib/libnss_winbind.so 0755 root other
+    fi
+
   # Add the manpages
   echo "#\n# man pages \n#"
   echo d none /usr ? ? ?
