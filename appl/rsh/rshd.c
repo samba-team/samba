@@ -363,6 +363,8 @@ recv_krb5_auth (int s, u_char *buf,
 	do_encrypt = 1;
 	memmove (cmd, cmd + 3, strlen(cmd) - 2);
     } else {
+	if(do_encrypt)
+	    fatal (s, "Encryption required");
 	do_encrypt = 0;
     }
 
