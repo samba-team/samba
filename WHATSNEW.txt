@@ -1,6 +1,6 @@
                    =============================
-                   Release Notes for Samba 3.0.8
-                             Nov 7, 2004
+                   Release Notes for Samba 3.0.9
+                             Nov 15, 2004
                    =============================
 
 This is the latest stable release of Samba. This is the version
@@ -8,6 +8,36 @@ that production Samba servers should be running for all
 current bug-fixes.  There have been several important issues
 fixes since the 3.0.7 release.  See the "Changes" section for
 details on exact updates.
+
+Common bugs fixed in 3.0.9 include:
+
+  o 
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.8
+-------------------
+
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+
+
+Changes for older versions follow below:
+
+      --------------------------------------------------
+                   =============================
+                   Release Notes for Samba 3.0.8
+                             Nov 7, 2004
+                   =============================
 
 Common bugs fixed in 3.0.8 include:
 
@@ -23,8 +53,9 @@ Common bugs fixed in 3.0.8 include:
   o Fixes for kerberos interoperability with Windows 200x 
     domains when using DES keys.
   o Fix for CAN-2004-0930 -- smbd remote DoS vulnerability.
+  o Fix for CAN-2004-0882 -- possible buffer overrun in smbd.
 
-  
+    
 New features included in the 3.0.8 release are:
 
   o New migration functionality added the the net tool
@@ -73,87 +104,16 @@ map functionality:
 Changes
 #######
 
-Changes since 3.0.8pre2
------------------------
-    Parameter Name              	Action
-    --------------              	------
-    sendfile				disabled by default
-
-
-commits
--------
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 1651: Adapted patch from Nalin Dahyabhai for ensuring 
-      that all of the appropriate service principal names are set 
-      upon joining an AD domain.
-    * Fix the correct use of resume name in the trans2 code.
-    * BUG 1717: Adapted patch from Nalin Dahyabhai to detect the
-      correct salt used when generated the DES key after joining an 
-      AD domain.
-    * Enhanced krb5 detection routines in the autoconf scripts.
-
-
-o   Gerald Carter <jerry@samba.org>
-    * Packaging fixes for Solaris, Redhat, & Fedora.
-
-
-o   Nalin Dahyabhai <nalin@redhat.com>
-    * SMB signing fix for 56-bit DES session keys.
-    
-
-o   Guenther Deschner <gd@samba.org> 
-    * BUG 1661: Fix build with recent heimdal releases.
-    * Prevent idmap_rid from making unnecessary calls to domain 
-      controllers for trusted domains.
-    
-
-o   SATOH Fumiyasu <fumiya@samba.gr.jp>
-    * BUG 1498: Ensure that acl entries are stored in the correct 
-      order.
-
-
-o   Brett Funderburg <brett@deepfile.com>
-    * BUG 1884: Fixes for the Python bindings to use the value
-      of the desired_access filed passed into the lsa_open_policy()
-      routines.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * Memory leak fixes.
-    * Fix checks for the local pid of an smbd process after 
-      reopening tdbs.
-
-o   Herb Lewis <herb@samba.org>
-    * Added tdbtool to be built by default.
-
-
-o   Luke Mewburn <lukem@NetBSD.org>
-    * BUG 1782: Prevent testparm from displaying parameter synonyms.
-
-
-o   Narayana Pattipati <narayana.pattipati@wipro.com>
-    * Solaris autoconf detection fixes.
-
-
-o   Matt Selsky <selsky@columbia.edu>
-    * BUG 350: use autoconf 2.57 feature for checking header file
-      preprocessing (fixes configure warnings on Solaris).
-
-
-o   Michael Sweet <mike@easysw.com>
-    * BUG 1892: Updated smbspool for use with newer CUPS libraries.
-
-
 Changes since 3.0.7
 -------------------
 
 smb.conf changes
 ----------------
-
     Parameter Name              	Action
     --------------              	------
     force printername			New
+    sendfile				disabled by default
+
 
 commits
 -------
@@ -192,7 +152,16 @@ o   Jeremy Allison <jra@samba.org>
     * Ensure we pass most of the new lock tests except for the cancel 
       lock which is yet to be added (merged from Samba 4 branch).
     * BUG 1947: Fix incorrect use of getpwnam() etc. interface.
-    * BUG 1956: Ensure errno is saved and restored consistently on a normal_close.
+    * BUG 1956: Ensure errno is saved and restored consistently on a 
+      normal_close.
+    * BUG 1651: Adapted patch from Nalin Dahyabhai for ensuring 
+      that all of the appropriate service principal names are set 
+      upon joining an AD domain.
+    * Fix the correct use of resume name in the trans2 code.
+    * BUG 1717: Adapted patch from Nalin Dahyabhai to detect the
+      correct salt used when generated the DES key after joining an 
+      AD domain.
+    * Enhanced krb5 detection routines in the autoconf scripts.
   
 
 o   Andrew Bartlett <abartlet@samba.org>
@@ -242,6 +211,7 @@ o   Gerald Carter <jerry@samba.org>
       apply after authentication has succeeded.
     * Cosmetic fix for getent output -- lowercase the username only 
       and not the complete domain\username string.
+    * Packaging fixes for Solaris, Redhat, & Fedora.
 
     
 o   Sean Chandler <sean.chandler@verizon.net>
@@ -251,6 +221,10 @@ o   Sean Chandler <sean.chandler@verizon.net>
 o   Darren Chew <darrenc@vicscouts.asn.au>
     * Solaris packaging fixes.
     
+
+o   Nalin Dahyabhai <nalin@redhat.com>
+    * SMB signing fix for 56-bit DES session keys.
+
 
 o   Guenther Deschner <gd@samba.org> 
     * add IA64 to the architecture table of printer-drivers.
@@ -291,6 +265,9 @@ o   Guenther Deschner <gd@samba.org>
       over msrpc setprinter calls inside the net-tool. 
     * Add the idmap_rid module (written in conjunction with 
       Sumit Bose <sbose@suse.de>).
+    * BUG 1661: Fix build with recent heimdal releases.
+    * Prevent idmap_rid from making unnecessary calls to domain 
+      controllers for trusted domains.
 
 
 o   Arthur van Dongen <avdongen@xs4all.nl>
@@ -319,6 +296,8 @@ o   Steve French <sfrench@us.ibm.com>
 o   Satoh Fumiyasu <fumiya@samba.gr.jp>
     * BUG 1732: Limit share names returned by RAP based on windows 
       character width, not unix character width.
+    * BUG 1498: Ensure that acl entries are stored in the correct 
+      order.
 
 
 o   Brett Funderburg <brett@deepfile.com>
@@ -328,6 +307,9 @@ o   Brett Funderburg <brett@deepfile.com>
       representation.
     * Return an error if a Netapp filer returns NT_STATUS_ACCESS_DENIED
       when trying to return the security descriptor for a file.
+    * BUG 1884: Fixes for the Python bindings to use the value
+      of the desired_access filed passed into the lsa_open_policy()
+      routines.
 
  
 o   Michael Gravey <michel.gravey@optogone.com>
@@ -387,6 +369,13 @@ o   Volker Lendecke <vl@samba.org>
       in order to support scanning a file server's share and list 
       all users who have permission to connect there.
     * Allow for multiple DC's to be named as #1c names in lmhosts.
+    * Memory leak fixes.
+    * Fix checks for the local pid of an smbd process after 
+      reopening tdbs.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Added tdbtool to be built by default.
 
 
 o   Love <lha@stacken.kth.se>
@@ -413,6 +402,10 @@ o   Sean McGrath
       for libsmbclient.
 
 
+o   Luke Mewburn <lukem@NetBSD.org>
+    * BUG 1782: Prevent testparm from displaying parameter synonyms.
+
+
 o   Stefan Metzmacher <metze@samba.org>    
     * Fix crash in smbcquotas and smbcacls caused by setup_logging().
     * Fix client quota support.
@@ -430,6 +423,10 @@ o   Henrik Nordstrom <hno@squid-cache.org>
       when the groups array must be enlarged.
 
 
+o   Narayana Pattipati <narayana.pattipati@wipro.com>
+    * Solaris autoconf detection fixes.
+
+
 o   Tim Potter <tpot@samba.org>
     * BUG 1360: (correct fix) Use -Wl when passing flags to 
       the linker.
@@ -445,6 +442,11 @@ o   Tim Potter <tpot@samba.org>
     * BUG 1888: Remove '..' from all pre-processor commands.
     * BUG 1903: Change some #if DEBUG_PASSWORD's to #ifdef 
       DEBUG_PASSWORD.
+
+
+o   Matt Selsky <selsky@columbia.edu>
+    * BUG 350: use autoconf 2.57 feature for checking header file
+      preprocessing (fixes configure warnings on Solaris).
 
 
 o   Richard Renard <rrenard@idealx.com>
@@ -490,9 +492,6 @@ o   Josef Zlomek
 o   Igor Zhbanov <bsg@uniyar.ac.ru>
     * BUG 1797: Prevent winbind and nmbd from ignoring the "-l" 
       option.
-
-
-Changes for older versions follow below:
 
       --------------------------------------------------
                   =============================
