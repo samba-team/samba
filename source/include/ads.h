@@ -29,4 +29,5 @@ typedef struct {
 #define UF_SERVER_TRUST_ACCOUNT         0x2000
 
 /* account types */
-#define ATYPE_NORMAL_GROUP               0x10000000
+#define ATYPE_GROUP               0x10000000
+#define ATYPE_USER                0x30000000
