@@ -37,7 +37,7 @@ void pidfile_create(char *name)
 	pstring pidFile;
 	int pid;
 
-	sprintf(pidFile, "%s/%s.pid", lp_lockdir(), name);
+	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
 	pid = pidfile_pid(name);
 	if (pid > 0 && process_exists(pid)) {
@@ -76,7 +76,7 @@ int pidfile_pid(char *name)
 	pstring pidFile;
 	unsigned ret;
 
-	sprintf(pidFile, "%s/%s.pid", lp_lockdir(), name);
+	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
 	f = fopen(pidFile, "r");
 	if (!f) {

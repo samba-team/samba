@@ -420,7 +420,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
       return(1);
     }
 
-  sprintf(syscmd,"%s %d %d \"(%s 2>&1) > %s\"",
+  slprintf(syscmd,sizeof(syscmd)-1,"%s %d %d \"(%s 2>&1) > %s\"",
 	  path,uid,gid,cmd,
 	  outfile?outfile:"/dev/null");
 

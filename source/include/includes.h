@@ -237,6 +237,7 @@ Here come some platform specific sections
 #define USE_SETSID
 #define HAVE_BZERO
 #define HAVE_MEMMOVE
+#define HAVE_VSNPRINTF
 #define USE_SIGPROCMASK
 #define USE_WAITPID
 #define USE_SYSV_IPC

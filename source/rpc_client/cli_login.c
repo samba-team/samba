@@ -52,7 +52,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
   /**************** Long-term Session key **************/
 
   /* calculate the session key */
-  cred_session_key(&clnt_chal, &srv_chal, mach_pwd, cli->sess_key);
+  cred_session_key(&clnt_chal, &srv_chal, (char *)mach_pwd, cli->sess_key);
   bzero(cli->sess_key+8, 8);
 
   /******************* Authenticate 2 ********************/
@@ -113,7 +113,7 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
 
   DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
-  nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
+  nt_lm_owf_gen(password, (char *)nt_owf_user_pwd, (char *)lm_owf_user_pwd);
 
 #ifdef DEBUG_PASSWORD
 
@@ -134,7 +134,7 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
   make_id_info1(&ctr->auth.id1, domain, 0, 
                 smb_userid_low, 0,
                 username, cli->clnt_name_slash,
-                cli->sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
+                (char *)cli->sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
 
   /* Ensure we overwrite all the plaintext password
      equivalents. */
@@ -170,7 +170,7 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
   make_id_info2(&ctr->auth.id2, domain, 0, 
                 smb_userid_low, 0,
                 username, cli->clnt_name_slash,
-                lm_chal, lm_chal_resp, nt_chal_resp);
+                (uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
 
   /* Send client sam-logon request - update credentials on success. */
   return cli_net_sam_logon(cli, ctr, user_info3);

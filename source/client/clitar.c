@@ -2129,7 +2129,7 @@ int process_tar(char *inbuf, char *outbuf)
   switch(tar_type) {
   case 'x':
 
-#ifdef 0
+#if 0
     do_tarput2();
 #else
     do_tarput();

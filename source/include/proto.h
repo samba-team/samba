@@ -1806,6 +1806,11 @@ BOOL machine_password_delete( char *domain, char *name );
 BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
 BOOL set_machine_account_password( unsigned char *md4_new_pwd);
 
+/*The following definitions come from  snprintf.c  */
+
+int vslprintf(char *str, int n, char *format, va_list ap);
+int slprintf(char *str, int n, char *format, ...);
+
 /*The following definitions come from  status.c  */
 
 void Ucrit_addUsername(pstring username);

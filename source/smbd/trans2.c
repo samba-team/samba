@@ -772,7 +772,7 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
   send_trans2_replies( outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata));
 
   if ((! *directory) && dptr_path(dptr_num))
-    sprintf(directory,"(%s)",dptr_path(dptr_num));
+    slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
   DEBUG(4,("%s %s mask=%s directory=%s cnum=%d dirtype=%d numentries=%d\n",
 	timestring(),
@@ -985,7 +985,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
   send_trans2_replies( outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata));
 
   if ((! *directory) && dptr_path(dptr_num))
-    sprintf(directory,"(%s)",dptr_path(dptr_num));
+    slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
   DEBUG(3,("%s %s mask=%s directory=%s cnum=%d dirtype=%d numentries=%d\n",
 	   timestring(),
