@@ -234,7 +234,7 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 	/* Find pointer to domain of pdc */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strequal(domain->name, tmp->name)) {
+		if (strequal(lp_workgroup(), tmp->name)) {
 			server_domain = tmp;
 			break;
 		}
@@ -259,6 +259,7 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 		server_state.pwdb_initialised = False;
 		server_state.lsa_handle_open = False;
 		lsa_close(&server_state.lsa_handle);
+                DEBUG(0, ("** closing lsa_handle_open\n"));
 	}
 	
 	/* Close domain sam handles but don't free them as this
@@ -318,6 +319,7 @@ void establish_connections(BOOL force_reestablish)
 
 	t = time(NULL);
 	if ((t - lastt < WINBINDD_ESTABLISH_LOOP) && !force_reestablish) {
+                DEBUG(0, ("** timeout not reached\n"));
 		return;
 	}
 	lastt = t;
@@ -391,6 +393,18 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 	    DEBUG(0, ("Could not resolve domain controller for domain %s\n",
 		      domain_name));
 	    return False;
+    }
+
+    if (!server_state.lsa_handle_open) { 
+            server_state.lsa_handle_open =
+                    lsa_open_policy(server_state.controller, 
+                                    &server_state.lsa_handle, 
+                                    False, SEC_RIGHTS_MAXIMUM_ALLOWED);
+            if (!server_state.lsa_handle_open) {
+                    DEBUG(0, ("Could not open lsa handle on %s\n",
+                              server_state.controller));
+                    return False;
+            }
     }
 
     if (strequal(domain->controller, server_state.controller)) {

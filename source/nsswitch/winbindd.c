@@ -277,7 +277,10 @@ static void process_request(struct winbindd_cli_state *state)
 
 	/* Process command */
 
-	if (!server_state.lsa_handle_open) return;
+	if (!server_state.lsa_handle_open) {
+                DEBUG(5, ("lsa handle not open, ignoring request\n"));
+                return;
+        }
 
 	for (table = dispatch_table; table->fn; table++) {
 		if (state->request.cmd == table->cmd) {
