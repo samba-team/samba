@@ -1,5 +1,7 @@
 Sat Feb 13 17:12:53 1999  Assar Westerlund  <assar@sics.se>
 
+	* emalloc.c, erealloc.c, estrup.c: new files
+
 	* roken.h.in (mkstemp, gethostname): also includes prototypes if
  	they are needed.
 
