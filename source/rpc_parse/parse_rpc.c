@@ -607,15 +607,15 @@ BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai)
 
 void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
-				uint8 stub_type_len,
+				uint8 padding,
 				uint32 ptr)
 {
 	rai->auth_type     = auth_type; /* nt lm ssp 0x0a */
 	rai->auth_level    = auth_level; /* 0x06 */
-	rai->stub_type_len = stub_type_len; /* 0x00 */
-	rai->padding       = 0; /* padding 0x00 */
+	rai->padding       = padding;
+	rai->reserved      = 0;
 
-	rai->unknown       = ptr; /* non-zero pointer to something */
+	rai->auth_context  = ptr; /* non-zero pointer to something */
 }
 
 /*******************************************************************
@@ -637,12 +637,11 @@ BOOL smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, in
 		return False;
 	if(!prs_uint8 ("auth_level   ", ps, depth, &rai->auth_level)) /* 0x06 */
 		return False;
-	if(!prs_uint8 ("stub_type_len", ps, depth, &rai->stub_type_len))
-		return False;
 	if(!prs_uint8 ("padding      ", ps, depth, &rai->padding))
 		return False;
-
-	if(!prs_uint32("unknown      ", ps, depth, &rai->unknown)) /* 0x0014a0c0 */
+	if(!prs_uint8 ("reserved     ", ps, depth, &rai->reserved))
+		return False;
+	if(!prs_uint32("auth_context ", ps, depth, &rai->auth_context))
 		return False;
 
 	return True;
