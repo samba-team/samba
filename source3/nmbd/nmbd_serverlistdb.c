@@ -111,7 +111,7 @@ struct server_record *find_server_in_workgroup(struct work_record *work, char *n
   Remove a server entry from this workgroup.
   ****************************************************************************/
 
-static void remove_server_from_workgroup(struct work_record *work, struct server_record *servrec)
+void remove_server_from_workgroup(struct work_record *work, struct server_record *servrec)
 {
   if (servrec->prev)
     servrec->prev->next = servrec->next;
@@ -311,11 +311,17 @@ void write_browse_list(time_t t, BOOL force_write)
   BOOL list_changed = force_write;
   static time_t lasttime = 0;
     
-  if (!lasttime)
-    lasttime = t;
-  if (t - lasttime < 5)
-    return;
+  /* Always dump if we're being told to by a signal. */
+  if(force_write == False)
+  {
+    if (!lasttime)
+      lasttime = t;
+    if (t - lasttime < 5)
+      return;
+  }
 
+  dump_workgroups(force_write);
+ 
   for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
   {
     if(subrec->work_changed)
@@ -331,8 +337,6 @@ void write_browse_list(time_t t, BOOL force_write)
   lasttime = t;
   updatecount++;
     
-  dump_workgroups();
- 
   pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
   strcat(fname,"/");

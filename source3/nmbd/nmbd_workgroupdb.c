@@ -293,22 +293,23 @@ on subnet %s\n", name, subrec->subnet_name));
   Dump a copy of the workgroup database into the log file.
   **************************************************************************/
 
-void dump_workgroups(void)
+void dump_workgroups(BOOL force_write)
 {
   struct subnet_record *subrec;
-  
+  int debuglevel = force_write ? 0 : 4;
+ 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
   {
     if (subrec->workgrouplist)
     {
       struct work_record *work;
 	  
-      DEBUG(4,("dump_workgroups: dump workgroup on subnet %15s: ", subrec->subnet_name));
-      DEBUG(4,(" netmask=%15s:\n", inet_ntoa(subrec->mask_ip)));
+      DEBUG(debuglevel,("dump_workgroups: dump workgroup on subnet %15s: ", subrec->subnet_name));
+      DEBUG(debuglevel,(" netmask=%15s:\n", inet_ntoa(subrec->mask_ip)));
 	  
       for (work = subrec->workgrouplist; work; work = work->next)
       {
-        DEBUG(4,("\t%s(%d) current master browser = %s\n", work->work_group, 
+        DEBUG(debuglevel,("\t%s(%d) current master browser = %s\n", work->work_group, 
                   work->token, 
                   *work->local_master_browser_name ? work->local_master_browser_name : "UNKNOWN" ));
         if (work->serverlist)
@@ -316,7 +317,7 @@ void dump_workgroups(void)
           struct server_record *servrec;		  
           for (servrec = work->serverlist; servrec; servrec = servrec->next)
           {
-            DEBUG(4,("\t\t%s %8x (%s)\n",
+            DEBUG(debuglevel,("\t\t%s %8x (%s)\n",
                   servrec->serv.name, servrec->serv.type, servrec->serv.comment));
           }
         }
