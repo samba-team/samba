@@ -2143,6 +2143,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,SHADOW_COPY_DATA);
 		if (shadow_data == NULL) {
 			DEBUG(0,("talloc_zero() failed!\n"));
+			talloc_destroy(shadow_mem_ctx);
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
 		
@@ -2310,7 +2311,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 
 	/* access check */
 	if (current_user.uid != 0) {
-		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
+		DEBUG(1,("get_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
