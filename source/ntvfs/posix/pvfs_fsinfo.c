@@ -61,6 +61,7 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 	fs->generic.out.quota_flags = 0;
 	fs->generic.out.volume_name = talloc_strdup(req, pvfs->share_name);
 	fs->generic.out.fs_type = req->tcon->fs_type;
+	ZERO_STRUCT(fs->generic.out.guid);
 
 	return NT_STATUS_OK;
 }
