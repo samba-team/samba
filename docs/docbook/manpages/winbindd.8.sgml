@@ -316,12 +316,6 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	winbindd</command> to become aware of new trust relationships between 
 	servers, it must be sent a SIGHUP signal. </para>
 
-	<para>Client processes resolving names through the <command>winbindd</command>
-	nsswitch module read an environment variable named <envar>
-	$WINBINDD_DOMAIN</envar>.  If this variable contains a comma separated
-	list of Windows NT domain names, then winbindd will only resolve users
-	and groups within those Windows NT domains. </para>
-
 	<para>PAM is really easy to misconfigure.  Make sure you know what 
 	you are doing when modifying PAM configuration files.  It is possible 
 	to set up PAM such that you can no longer log into your system. </para>
@@ -383,6 +377,21 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 		winbind client will only attempt to connect to the winbindd daemon 
 		if both the <filename>/tmp/.winbindd</filename> directory
 		and <filename>/tmp/.winbindd/pipe</filename> file are owned by 
+		root. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>$LOCKDIR/winbindd_privilaged/pipe</term>
+	        <listitem><para>The UNIX pipe over which 'privilaged' clients 
+                communicate with the <command>winbindd</command> program.  For security 
+                reasons, access to some winbindd functions - like those needed by 
+                the <command>ntlm_auth</command> utility - is restricted.  By default,
+                only users in the 'root' group will get this access, however the administrator
+                may change the group permissions on $LOCKDIR/winbindd_privilaged to allow
+                programs like 'squid' to use ntlm_auth.
+		Note that the winbind client will only attempt to connect to the winbindd daemon 
+		if both the <filename>$LOCKDIR/winbindd_privilaged</filename> directory
+		and <filename>$LOCKDIR/winbindd_privilaged/pipe</filename> file are owned by 
 		root. </para></listitem>
 		</varlistentry>
 
