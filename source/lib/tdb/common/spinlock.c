@@ -38,11 +38,11 @@
 #include <time.h>
 #include <signal.h>
 #include "tdb.h"
-#include "spinlock.h"
 
 #define DEBUG
 #else
 #include "includes.h"
+#include "lib/tdb/include/tdb.h"
 #endif
 
 #ifdef USE_SPINLOCKS

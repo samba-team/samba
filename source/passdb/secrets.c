@@ -23,6 +23,7 @@
    such as the local SID and machine trust password */
 
 #include "includes.h"
+#include "lib/tdb/include/tdbutil.h"
 #include "secrets.h"
 
 #undef DBGC_CLASS
