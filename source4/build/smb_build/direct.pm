@@ -10,7 +10,8 @@ sub Subsystem($$)
 	my $name = shift;
 	my $data = shift;
 	$data->{NAME} = $name;
-	%{$SMB_BUILD_CTX->{INPUT}{SUBSYSTEM}{$name}} = %{$data};
+	$data->{TYPE} = "SUBSYSTEM";
+	%{$SMB_BUILD_CTX->{INPUT}{$name}} = %{$data};
 }
 
 sub Module($$)
@@ -18,7 +19,8 @@ sub Module($$)
 	my $name = shift;
 	my $data = shift;
 	$data->{NAME} = $name;
-	%{$SMB_BUILD_CTX->{INPUT}{MODULES}{$name}} = %{$data};
+	$data->{TYPE} = "MODULE";
+	%{$SMB_BUILD_CTX->{INPUT}{$name}} = %{$data};
 }
 
 sub ExternalLibrary($$)
@@ -26,7 +28,8 @@ sub ExternalLibrary($$)
 	my $name = shift;
 	my $data = shift;
 	$data->{NAME} = $name;
-	%{$SMB_BUILD_CTX->{INPUT}{EXT_LIBS}{$name}} = %{$data};
+	$data->{TYPE} = "EXT_LIB";
+	%{$SMB_BUILD_CTX->{INPUT}{$name}} = %{$data};
 }
 
 sub Library($$)
@@ -34,7 +37,8 @@ sub Library($$)
 	my $name = shift;
 	my $data = shift;
 	$data->{NAME} = $name;
-	%{$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{$name}} = %{$data};
+	$data->{TYPE} = "LIBRARY";
+	%{$SMB_BUILD_CTX->{INPUT}{$name}} = %{$data};
 }
 
 sub Binary($$)
@@ -42,22 +46,13 @@ sub Binary($$)
 	my $name = shift;
 	my $data = shift;
 	$data->{NAME} = $name;
-	%{$SMB_BUILD_CTX->{INPUT}{BINARIES}{$name}} = %{$data};
+	$data->{TYPE} = "BINARY";
+	%{$SMB_BUILD_CTX->{INPUT}{$name}} = %{$data};
 }
 
-sub DisableModule($)
+sub Disable($)
 {
-	$SMB_BUILD_CTX->{INPUT}{MODULES}{shift}{ENABLE} = "NO";
-}
-
-sub DisableBinary($)
-{
-	$SMB_BUILD_CTX->{INPUT}{BINARIES}{shift}{ENABLE} = "NO";
-}
-
-sub DisableLibrary($)
-{
-	$SMB_BUILD_CTX->{INPUT}{LIBRARIES}{shift}{ENABLE} = "NO";
+	$SMB_BUILD_CTX->{INPUT}{shift}{ENABLE} = "NO";
 }
 
 1;

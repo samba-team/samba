@@ -24,14 +24,16 @@ sub _add_define_section($)
 
 sub _prepare_smb_build_h($)
 {
-	my $CTX = shift;
-	my $output = "";
+	my $depend = shift;
+	my @defines = ();
 
 	#
 	# loop over all subsystems
 	#
-	foreach my $key (sort keys %{$CTX->{DEPEND}{SUBSYSTEMS}}) {
-		my $NAME = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
+	foreach my $key (values %{$depend}) {
+		next if $key->{TYPE} ne "SUBSYSTEM";
+
+		my $NAME = $key->{NAME};
 		my $DEFINE = ();
 		my $name = lc($NAME);
 
@@ -41,23 +43,25 @@ sub _prepare_smb_build_h($)
 		$DEFINE->{COMMENT} = "SUBSYSTEM $NAME INIT";
 		$DEFINE->{KEY} = $name . "_init_static_modules";
 		$DEFINE->{VAL} = "do { \\\n";
-		foreach my $subkey (@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{INIT_FUNCTIONS}}) {
+		foreach my $subkey (@{$key->{MODULE_INIT_FUNCTIONS}}) {
 			$DEFINE->{VAL} .= "\t\textern NTSTATUS $subkey(void); \\\n";
 		}
 		
-		foreach my $subkey (@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{INIT_FUNCTIONS}}) {
+		foreach my $subkey (@{$key->{MODULE_INIT_FUNCTIONS}}) {
 			$DEFINE->{VAL} .= "\t\t$subkey(); \\\n";
 		}
 		$DEFINE->{VAL} .= "\t} while(0)";
 		
-		push(@{$CTX->{OUTPUT}{SMB_BUILD_H}},$DEFINE);
+		push(@defines,$DEFINE);
 	}
 
 	#
 	# loop over all binaries
 	#
-	foreach my $key (sort keys %{$CTX->{DEPEND}{BINARIES}}) {
-		my $NAME = $CTX->{INPUT}{BINARIES}{$key}{NAME};
+	foreach my $key (values %{$depend}) {
+		next if ($key->{TYPE} ne "BINARY");
+
+		my $NAME = $key->{NAME};
 		my $DEFINE = ();
 		my $name = lc($NAME);
 
@@ -67,22 +71,28 @@ sub _prepare_smb_build_h($)
 		$DEFINE->{COMMENT} = "BINARY $NAME INIT";
 		$DEFINE->{KEY} = $name . "_init_subsystems";
 		$DEFINE->{VAL} = "do { \\\n";
-		foreach my $subkey (@{$CTX->{DEPEND}{BINARIES}{$key}{INIT_FUNCTIONS}}) {
+		foreach my $subkey (@{$key->{SUBSYSTEM_INIT_FUNCTIONS}}) {
+			$DEFINE->{VAL} .= "\t\textern NTSTATUS $subkey(void); \\\n";
+		}
+	
+		foreach my $subkey (@{$key->{SUBSYSTEM_INIT_FUNCTIONS}}) {
 			$DEFINE->{VAL} .= "\t\tif (NT_STATUS_IS_ERR($subkey())) exit(1); \\\n";
 		}
 		$DEFINE->{VAL} .= "\t} while(0)";
 		
-		push(@{$CTX->{OUTPUT}{SMB_BUILD_H}},$DEFINE);
+		push(@defines,$DEFINE);
 	}
 
 	#
 	# Shared modules
 	#
-	foreach my $key (sort keys %{$CTX->{INPUT}{MODULES}}) {
-		next if ($CTX->{INPUT}{MODULES}{$key}{BUILD} ne "SHARED");
+	foreach my $key (values %{$depend}) {
+		next if $key->{TYPE} ne "MODULE";
+		next if $key->{ENABLE} ne "YES";
+		next if $key->{OUTPUT_TYPE} ne "SHARED_LIBRARY";
 
-		my $name = $CTX->{INPUT}{MODULES}{$key}{NAME};
-		my $func = $CTX->{INPUT}{MODULES}{$key}{INIT_FUNCTION};
+		my $name = $key->{NAME};
+		my $func = $key->{INIT_FUNCTION};
 		next if $func eq "";
 
 		my $DEFINE = ();
@@ -91,13 +101,14 @@ sub _prepare_smb_build_h($)
 		$DEFINE->{KEY} = $func;
 		$DEFINE->{VAL} = "init_module";
 
-		push(@{$CTX->{OUTPUT}{SMB_BUILD_H}},$DEFINE);
+		push(@defines,$DEFINE);
 	}
 
 	#
 	# loop over all SMB_BUILD_H define sections
 	#
-	foreach my $key (@{$CTX->{OUTPUT}{SMB_BUILD_H}}) {
+	my $output = "";
+	foreach my $key (@defines) {
 		$output .= _add_define_section($key);
 	}
 
@@ -120,17 +131,13 @@ sub create_smb_build_h($)
 
 	$output .= _prepare_smb_build_h($CTX);
 
-	#
-	# TODO: check if directory include/ exists
-	#
-
-	open(SMB_BUILD_H,"> include/smb_build.h") || die ("Can't open include/smb_build.h\n");
+	open(SMB_BUILD_H,"> $input::srcdir/include/smb_build.h") || die ("Can't open include/smb_build.h\n");
 
 	print SMB_BUILD_H $output;
 
 	close(SMB_BUILD_H);
 
-	print "config.smb_build.pl: creating include/smb_build.h\n";
+	print "config.smb_build.pl: creating $input::srcdir/include/smb_build.h\n";
 	return;	
 }
 1;
