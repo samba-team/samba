@@ -51,6 +51,7 @@ echo "$0: running script/mkversion.sh"
 ./script/mkversion.sh || exit 1
 
 rm -rf autom4te*.cache
+rm -f configure include/config.h*
 
 echo "$0: running $AUTOHEADER"
 $AUTOHEADER || exit 1
