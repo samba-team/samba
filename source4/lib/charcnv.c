@@ -52,6 +52,7 @@ static const char *charset_name(charset_t ch)
 	else if (ch == CH_DOS) ret = lp_dos_charset();
 	else if (ch == CH_DISPLAY) ret = lp_display_charset();
 	else if (ch == CH_UTF8) ret = "UTF8";
+	else if (ch == CH_UCS2BE) ret = "UCS-2BE";
 
 	if (!ret || !*ret) ret = "ASCII";
 	return ret;
