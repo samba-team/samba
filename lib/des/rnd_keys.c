@@ -173,9 +173,7 @@ sigALRM(int sig)
 #endif
 #endif
 
-#ifdef HAVE_RANDOM
-
-void
+static void
 des_not_rand_data(unsigned char *data, int size)
 {
   int i;
@@ -186,12 +184,11 @@ des_not_rand_data(unsigned char *data, int size)
     data[i] ^= random() % 0x100;
 }
 
-#endif
-
 #if !defined(WIN32) && !defined(__EMX__) && !defined(__OS2__)
 
 #ifndef HAVE_SETITIMER
-void pacemaker(struct timeval *tv)
+static void
+pacemaker(struct timeval *tv)
 {
     fd_set fds;
     pid_t pid;
@@ -281,7 +278,7 @@ des_rand_data(unsigned char *data, int size)
 void
 des_rand_data(unsigned char *p, int s)
 {
-  return des_not_rand_data (p, s);
+  des_not_rand_data (p, s);
 }
 #endif
 
