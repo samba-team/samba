@@ -47,7 +47,7 @@ static int io_bufsize = 64512;
 static int name_type = 0x20;
 static int max_protocol = PROTOCOL_NT1;
 
-static int process_tok(fstring tok);
+static int process_tok(pstring tok);
 static int cmd_help(void);
 
 /* 30 second timeout on most commands */
@@ -284,7 +284,7 @@ static int do_cd(char *newdir)
 
 static int cmd_cd(void)
 {
-	fstring buf;
+	pstring buf;
 	int rc = 0;
 
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
@@ -572,7 +572,7 @@ static int cmd_dir(void)
 {
 	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 	int rc;
 	
@@ -612,7 +612,7 @@ static int cmd_du(void)
 {
 	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 	int rc;
 	
@@ -866,13 +866,13 @@ static void do_mget(file_info *finfo)
 
 static int cmd_more(void)
 {
-	fstring rname,lname,pager_cmd;
+	pstring rname,lname,pager_cmd;
 	char *pager;
 	int fd;
 	int rc = 0;
 
-	fstrcpy(rname,cur_dir);
-	fstrcat(rname,"\\");
+	pstrcpy(rname,cur_dir);
+	pstrcat(rname,"\\");
 	
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
 	fd = smb_mkstemp(lname);
@@ -909,7 +909,7 @@ static int cmd_mget(void)
 {
 	uint16 attribute = aSYSTEM | aHIDDEN;
 	pstring mget_mask;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 
 	*mget_mask = 0;
@@ -963,7 +963,7 @@ static BOOL do_mkdir(char *name)
 
 static BOOL do_altname(char *name)
 {
-	fstring altname;
+	pstring altname;
 	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
 		d_printf("%s getting alt name for %s\n",
 			 cli_errstr(cli),name);
@@ -993,7 +993,7 @@ static int cmd_quit(void)
 static int cmd_mkdir(void)
 {
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
   
 	pstrcpy(mask,cur_dir);
@@ -1035,7 +1035,7 @@ static int cmd_mkdir(void)
 static int cmd_altname(void)
 {
 	pstring name;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
   
 	pstrcpy(name,cur_dir);
@@ -1187,7 +1187,7 @@ static int cmd_put(void)
 {
 	pstring lname;
 	pstring rname;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 	
 	pstrcpy(rname,cur_dir);
@@ -1349,7 +1349,7 @@ static int file_find(struct file_list **list, const char *directory,
 
 static int cmd_mput(void)
 {
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 	
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
@@ -1447,7 +1447,7 @@ static int do_cancel(int job)
 
 static int cmd_cancel(void)
 {
-	fstring buf;
+	pstring buf;
 	int job; 
 
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
@@ -1536,7 +1536,7 @@ static void do_del(file_info *finfo)
 static int cmd_del(void)
 {
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	uint16 attribute = aSYSTEM | aHIDDEN;
 
 	if (recurse)
@@ -1561,7 +1561,7 @@ static int cmd_del(void)
 static int cmd_open(void)
 {
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	
 	pstrcpy(mask,cur_dir);
 	
@@ -1584,7 +1584,7 @@ static int cmd_open(void)
 static int cmd_rmdir(void)
 {
 	pstring mask;
-	fstring buf;
+	pstring buf;
   
 	pstrcpy(mask,cur_dir);
 	
@@ -1609,7 +1609,7 @@ static int cmd_rmdir(void)
 static int cmd_link(void)
 {
 	pstring src,dest;
-	fstring buf,buf2;
+	pstring buf,buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1643,7 +1643,7 @@ static int cmd_link(void)
 static int cmd_symlink(void)
 {
 	pstring src,dest;
-	fstring buf,buf2;
+	pstring buf,buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1679,7 +1679,7 @@ static int cmd_chmod(void)
 {
 	pstring src;
 	mode_t mode;
-	fstring buf, buf2;
+	pstring buf, buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1715,7 +1715,7 @@ static int cmd_chown(void)
 	pstring src;
 	uid_t uid;
 	gid_t gid;
-	fstring buf, buf2, buf3;
+	pstring buf, buf2, buf3;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1751,7 +1751,7 @@ static int cmd_chown(void)
 static int cmd_rename(void)
 {
 	pstring src,dest;
-	fstring buf,buf2;
+	pstring buf,buf2;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -1780,7 +1780,7 @@ static int cmd_rename(void)
 static int cmd_hardlink(void)
 {
 	pstring src,dest;
-	fstring buf,buf2;
+	pstring buf,buf2;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -1820,7 +1820,7 @@ static int cmd_prompt(void)
 
 static int cmd_newer(void)
 {
-	fstring buf;
+	pstring buf;
 	BOOL ok;
 	SMB_STRUCT_STAT sbuf;
 
@@ -1847,7 +1847,7 @@ static int cmd_newer(void)
 
 static int cmd_archive(void)
 {
-	fstring buf;
+	pstring buf;
 
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		archive_level = atoi(buf);
@@ -1937,7 +1937,7 @@ static int cmd_printmode(void)
 
 static int cmd_lcd(void)
 {
-	fstring buf;
+	pstring buf;
 	pstring d;
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
@@ -1982,7 +1982,7 @@ static int cmd_reput(void)
 {
 	pstring local_name;
 	pstring remote_name;
-	fstring buf;
+	pstring buf;
 	char *p = buf;
 	SMB_STRUCT_STAT st;
 	
@@ -2126,7 +2126,7 @@ static int cmd_vuid(void)
 static int cmd_logon(void)
 {
 	pstring l_username, l_password;
-	fstring buf,buf2;
+	pstring buf,buf2;
   
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		d_printf("logon <username> [<password>]\n");
@@ -2236,7 +2236,7 @@ static struct
  abbreviations.
 ******************************************************************/
 
-static int process_tok(fstring tok)
+static int process_tok(pstring tok)
 {
 	int i = 0, matches = 0;
 	int cmd=0;
@@ -2269,7 +2269,7 @@ static int process_tok(fstring tok)
 static int cmd_help(void)
 {
 	int i=0,j;
-	fstring buf;
+	pstring buf;
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		if ((i = process_tok(buf)) >= 0)
@@ -2306,7 +2306,7 @@ static int process_command_string(char *cmd)
 	
 	while (cmd[0] != '\0')    {
 		char *p;
-		fstring tok;
+		pstring tok;
 		int i;
 		
 		if ((p = strchr_m(cmd, ';')) == 0) {
@@ -2569,8 +2569,8 @@ static void process_stdin(void)
 	const char *ptr;
 
 	while (1) {
-		fstring tok;
-		fstring the_prompt;
+		pstring tok;
+		pstring the_prompt;
 		char *cline;
 		pstring line;
 		int i;
@@ -2613,11 +2613,11 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	struct nmb_name called, calling;
 	const char *server_n;
 	struct in_addr ip;
-	fstring servicename;
+	pstring servicename;
 	char *sharename;
 	
 	/* make a copy so we don't modify the global string 'service' */
-	fstrcpy(servicename, share);
+	pstrcpy(servicename, share);
 	sharename = servicename;
 	if (*sharename == '\\') {
 		server = sharename+2;
@@ -2853,7 +2853,7 @@ static int do_message_op(void)
  int main(int argc,char *argv[])
 {
 	extern BOOL AllowDebugChange;
-	fstring base_directory;
+	pstring base_directory;
 	int opt;
 	pstring query_host;
 	BOOL message = False;
@@ -2971,7 +2971,7 @@ static int do_message_op(void)
 			}
 			break;
 		case 'D':
-			fstrcpy(base_directory,poptGetOptArg(pc));
+			pstrcpy(base_directory,poptGetOptArg(pc));
 			break;
 		case 'g':
 			grepable=True;
