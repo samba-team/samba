@@ -190,11 +190,11 @@ that is normally used to create new Unix accounts.  The following is an example 
 </para>
 
 <para>
-<prompt>root# </prompt><userinput>/usr/sbin/useradd -g 100 -d /dev/null -c <replaceable>"machine nickname"</replaceable> -s /bin/false <replaceable>machine_name</replaceable>$ </userinput>
+&rootprompt;<userinput>/usr/sbin/useradd -g 100 -d /dev/null -c <replaceable>"machine nickname"</replaceable> -s /bin/false <replaceable>machine_name</replaceable>$ </userinput>
 </para>
 
 <para>
-<prompt>root# </prompt><userinput>passwd -l <replaceable>machine_name</replaceable>$</userinput>
+&rootprompt;<userinput>passwd -l <replaceable>machine_name</replaceable>$</userinput>
 </para>
 
 <para>
@@ -202,7 +202,7 @@ On *BSD systems, this can be done using the <command>chpass</command> utility:
 </para>
 
 <para>
-<prompt>root# </prompt><userinput>chpass -a "<replaceable>machine_name</replaceable>$:*:101:100::0:0:Workstation <replaceable>machine_name</replaceable>:/dev/null:/sbin/nologin"</userinput>
+&rootprompt;<userinput>chpass -a "<replaceable>machine_name</replaceable>$:*:101:100::0:0:Workstation <replaceable>machine_name</replaceable>:/dev/null:/sbin/nologin"</userinput>
 </para>
 
 <para>
@@ -212,9 +212,9 @@ home directory. For example a machine named 'doppy' would have an
 <filename>/etc/passwd</filename> entry like this:
 </para>
 
-<para>
+<programlisting>
 doppy$:x:505:501:<replaceable>machine_nickname</replaceable>:/dev/null:/bin/false
-</para>
+</programlisting>
 
 <para>
 Above, <replaceable>machine_nickname</replaceable> can be any
@@ -234,9 +234,9 @@ as shown here:
 </para>
 
 <para>
-<programlisting>
-<prompt>root# </prompt><userinput>smbpasswd -a -m <replaceable>machine_name</replaceable></userinput>
-</programlisting>
+<screen>
+&rootprompt;<userinput>smbpasswd -a -m <replaceable>machine_name</replaceable></userinput>
+</screen>>
 </para>
 
 <para>
@@ -287,7 +287,7 @@ Launch the <command>srvmgr.exe</command> (Server Manager for Domains) and follow
 <procedure>
 <title>Server Manager Account Machine Account Management</title>
 	<step><para>
-			From the menu select <guimenu>Computer</guimenu>
+	From the menu select <guimenu>Computer</guimenu>
 	</para></step>
 
 	<step><para>
@@ -375,9 +375,9 @@ with the version of Windows:
 
 	<para>
 	The name of the account that is used to create domain member machine accounts can be
-	anything the network administrator may choose. If it is other than <command>root</command>
+	anything the network administrator may choose. If it is other than <emphasis>root</emphasis>
 	then this is easily mapped to root using the file pointed to be the &smb.conf; parameter
-	<emphasis>username map =</emphasis> <command>/etc/samba/smbusers</command>.
+	<parameter>username map = /etc/samba/smbusers</parameter>.
 	</para>
 
 	<para>
@@ -394,17 +394,17 @@ with the version of Windows:
 	<para>
 	If the machine trust account was created manually, on the
 	Identification Changes menu enter the domain name, but do not
-	check the box "Create a Computer Account in the Domain."  In this case,
-	the existing machine trust account is used to join the machine to
-	the domain.
+	check the box <guilabel>Create a Computer Account in the Domain</guilabel>.
+	In this case, the existing machine trust account is used to join the machine 
+	to the domain.
 	</para>
 
 	<para>
 	If the machine trust account is to be created
 	on-the-fly, on the Identification Changes menu enter the domain
-	name, and check the box "Create a Computer Account in the Domain."  In
-	this case, joining the domain proceeds as above for Windows 2000
-	(i.e., you must supply a Samba administrative account when
+	name, and check the box <guilabel>Create a Computer Account in the 
+	Domain</guilabel>.  In this case, joining the domain proceeds as above
+	for Windows 2000 (i.e., you must supply a Samba administrative account when
 	prompted).
 	</para>
 </sect3>
@@ -472,7 +472,7 @@ now use domain security.
 
 <para>
 Change (or add) your <ulink url="smb.conf.5.html#SECURITY">
-<parameter>security =</parameter></ulink> line in the [global] section 
+<parameter>security</parameter></ulink> line in the [global] section 
 of your &smb.conf; to read:
 </para>
 
@@ -698,7 +698,7 @@ In case samba can't figure out your ads server using your realm name, use the
 </para>
 
 <note><para>
-You do &not; need a smbpasswd file, and older clients will be authenticated as 
+You do <strong>not</strong> need a smbpasswd file, and older clients will be authenticated as 
 if <parameter>security = domain</parameter>, although it won't do any harm and 
 allows you to have local users not in the domain. It is expected that the above 
 required options will change soon when active directory integration will get 
@@ -734,8 +734,8 @@ requested realm while getting initial credentials</errorname> error
 
 <note><para>
 Time between the two servers must be synchronized.  You will get a
-"kinit(v5): Clock skew too great while getting initial credentials" if the time
-difference is more than five minutes. 
+<errorname>kinit(v5): Clock skew too great while getting initial credentials</errorname>
+if the time difference is more than five minutes. 
 </para></note>
 
 <para>
@@ -750,7 +750,7 @@ followed by the realm.
 The easiest way to ensure you get this right is to add a 
 <filename>/etc/hosts</filename> entry mapping the IP address of your KDC to 
 its netbios name. If you don't get this right then you will get a 
-"local error" when you try to join the realm.
+<errorname>local error</errorname> when you try to join the realm.
 </para>
 
 <para>
@@ -779,12 +779,12 @@ As a user that has write permission on the Samba private directory
 
 <para>
 <variablelist>
-	<varlistentry><term>ADS support not compiled in</term>
+	<varlistentry><term><errorname>ADS support not compiled in</errorname></term>
 	<listitem><para>Samba must be reconfigured (remove config.cache) and recompiled
 	(make clean all install) after the kerberos libs and headers are installed.
 	</para></listitem></varlistentry>
 
-	<varlistentry><term>net join prompts for user name</term>
+	<varlistentry><term><errorname>net join prompts for user name</errorname></term>
 	<listitem><para>You need to login to the domain using <userinput>kinit
 	<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput>.
 	<replaceable>USERNAME</replaceable> must be a user who has rights to add a machine
@@ -834,7 +834,7 @@ install, to create the right encoding types
 </para>
 
 <para>
-w2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
+W2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
 their defaults DNS setup. Maybe fixed in service packs?
 </para>
 
@@ -877,14 +877,14 @@ the old account and then to add the machine with a new name.
 
 <para>
 Adding a Windows 200x or XP Professional machine to the Samba PDC Domain fails with a
-message that, "The machine could not be added at this time, there is a network problem.
-Please try again later." Why?
+message that, <errorname>The machine could not be added at this time, there is a network problem.
+Please try again later.</errorname> Why?
 </para>
 
 <para>
-You should check that there is an <emphasis>add machine script</emphasis> in your &smb.conf;
+You should check that there is an <parameter>add machine script</parameter> in your &smb.conf;
 file. If there is not, please add one that is appropriate for your OS platform. If a script
-has been defined you will need to debug it's operation. Increase the <emphasis>log level</emphasis>
+has been defined you will need to debug it's operation. Increase the <parameter>log level</parameter>
 in the &smb.conf; file to level 10, then try to rejoin the domain. Check the logs to see which
 operation is failing.
 </para>

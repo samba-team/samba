@@ -326,9 +326,9 @@ Those wishing to use more elaborate or capable logon processing system should ch
 </para>
 
 <simplelist>
-	<member>http://www.craigelachie.org/rhacer/ntlogon</member>
-	<member>http://www.kixtart.org</member>
-	<member>http://support.microsoft.com/default.asp?scid=kb;en-us;189105</member>
+	<member><ulink url="http://www.craigelachie.org/rhacer/ntlogon">http://www.craigelachie.org/rhacer/ntlogon</ulink></member>
+	<member><ulink url="http://www.kixtart.org">http://www.kixtart.org</ulink></member>
+	<member><ulink url="http://support.microsoft.com/default.asp?scid=kb;en-us;189105">http://support.microsoft.com/default.asp?scid=kb;en-us;189105</ulink></member>
 </simplelist>
 
 <sect2>

@@ -1,5 +1,11 @@
 <chapter id="pam">
 <chapterinfo>
+	<author>
+		<firstname>Stephen</firstname><surname>Langasek</surname>
+		<affiliation>
+			<address><email>vorlon@netexpress.net</email></address>
+		</affiliation>
+	</author>
 	&author.jht;
     <pubdate> (Jun 21 2001) </pubdate>
 </chapterinfo>
@@ -102,8 +108,8 @@ hashes. This database is stored in either
 Samba implementation for your Unix/Linux system. The 
 <filename>pam_smbpass.so</filename> module is provided by 
 Samba version 2.2.1 or later. It can be compiled by specifying the 
-<command>--with-pam_smbpass</command> options when running Samba's
-<filename>configure</filename> script.  For more information
+<option>--with-pam_smbpass</option> options when running Samba's
+<command>configure</command> script.  For more information
 on the <filename>pam_smbpass</filename> module, see the documentation
 in the <filename>source/pam_smbpass</filename> directory of the Samba 
 source distribution.
@@ -176,7 +182,7 @@ The following is from the on-line help for this option in SWAT;
 
 <para>
 When Samba is configured to enable PAM support (i.e. 
-<constant>--with-pam</constant>), this parameter will 
+<option>--with-pam</option>), this parameter will 
 control whether or not Samba should obey PAM's account 
 and session management directives. The default behavior 
 is to use PAM for clear text authentication only and to 
@@ -188,7 +194,7 @@ authentication mechanism needed in the presence of SMB
 password encryption. 
 </para>
 
-<para>Default: <command>obey pam restrictions = no</command></para>
+<para>Default: <parameter>obey pam restrictions = no</parameter></para>
 
 </sect2>
 
@@ -204,7 +210,7 @@ generic interface to authentication mechanisms.
 </para>
 
 <para>
-For more information on PAM, see http://ftp.kernel.org/pub/linux/libs/pam/
+	For more information on PAM, see <ulink url="http://ftp.kernel.org/pub/linux/libs/pam/">The linux PAM homepage</ulink>.
 </para>
 
 <para>
@@ -214,52 +220,41 @@ concerned about the presence of suid root binaries on your system, it is
 recommended that you use pam_winbind instead.
 </para>
 
-<para><programlisting>
+<para>
 Options recognized by this module are as follows:
+<table>
+	<tgroup cols="2" align="left">
+	<tbody>
+		<row><entry>debug</entry><entry>log more debugging info</entry></row>
+		<row><entry>audit</entry><entry>like debug, but also logs unknown usernames</entry></row>
+		<row><entry>use_first_pass</entry><entry>don't prompt the user for passwords; take them from PAM_ items instead</entry></row>
+		<row><entry>try_first_pass</entry><entry>try to get the password from a previous PAM module, fall back to prompting the user</entry></row>
+		<row><entry>use_authtok</entry><entry>like try_first_pass, but *fail* if the new PAM_AUTHTOK has not been previously set. (intended for stacking password modules only)</entry></row>
+		<row><entry>not_set_pass</entry><entry>don't make passwords used by this module available to other modules.</entry></row>
+		<row><entry>nodelay</entry><entry>don't insert ~1 second delays on authentication failure.</entry></row>
+		<row><entry>nullok</entry><entry>null passwords are allowed.</entry></row>
+		<row><entry>nonull</entry><entry>null passwords are not allowed. Used to override the Samba configuration.</entry></row>
+		<row><entry>migrate</entry><entry>only meaningful in an "auth" context; used to update smbpasswd file with a password used for successful authentication.</entry></row>
+		<row><entry>smbconf=<replaceable>file</replaceable></entry><entry>specify an alternate path to the &smb.conf; file.</entry></row>
+	</tbody>
+</tgroup>
+</table>
+</para>
 
-        debug           -       log more debugging info
-        audit           -       like debug, but also logs unknown usernames
-        use_first_pass  -       don't prompt the user for passwords;
-                                take them from PAM_ items instead
-        try_first_pass  -       try to get the password from a previous
-                                PAM module, fall back to prompting the user
-        use_authtok     -       like try_first_pass, but *fail* if the new
-                                PAM_AUTHTOK has not been previously set.
-                                (intended for stacking password modules only)
-        not_set_pass    -       don't make passwords used by this module
-                                available to other modules.
-        nodelay         -       don't insert ~1 second delays on authentication
-                                failure.
-        nullok          -       null passwords are allowed.
-        nonull          -       null passwords are not allowed. Used to
-                                override the Samba configuration.
-        migrate         -       only meaningful in an "auth" context;
-                                used to update smbpasswd file with a
-                                password used for successful authentication.
-        smbconf=&lt; file &gt;  -     specify an alternate path to the smb.conf
-                                file.
-</programlisting></para>
-
-<para><programlisting>
+<para>
 Thanks go to the following people:
+<simplelist>
+	<member><ulink url="mailto:morgan@transmeta.com">Andrew Morgan</ulink>, for providing the Linux-PAM
+	framework, without which none of this would have happened</member>
 
-	* Andrew Morgan &lt; morgan@transmeta.com &gt;, for providing the Linux-PAM
-	framework, without which none of this would have happened
+	<member><ulink url="gafton@redhat.com">Christian Gafton</ulink> and Andrew Morgan again, for the
+	pam_pwdb module upon which pam_smbpass was originally based</member>
 
-	* Christian Gafton &lt; gafton@redhat.com &gt; and Andrew Morgan again, for the
-	pam_pwdb module upon which pam_smbpass was originally based
-
-	* Luke Leighton &lt; lkcl@switchboard.net &gt; for being receptive to the idea,
+	<member><ulink url="lkcl@switchboard.net">Luke Leighton</ulink> for being receptive to the idea,
 	and for the occasional good-natured complaint about the project's status
-	that keep me working on it :)
-
-	* and of course, all the other members of the Samba team
-	&lt;http://www.samba.org/samba/team.html&gt;, for creating a great product
-	and for giving this project a purpose
-
-	---------------------
-	Stephen Langasek &lt; vorlon@netexpress.net &gt;
-</programlisting></para>
+	that keep me working on it :)</member>
+</simplelist>.
+</para>
 
 <para>
 The following are examples of the use of pam_smbpass.so in the format of Linux

@@ -112,7 +112,7 @@ here is incomplete - you are warned.
 	Use the Group Policy Editor to create a policy file that specifies the location of
 	user profiles and/or the <filename>My Documents</filename> etc.  stuff. Then
 	save these settings in a file called <filename>Config.POL</filename> that needs to
-	be placed in the root of the [NETLOGON] share. If Win98 is configured to log onto
+	be placed in the root of the <parameter>[NETLOGON]</parameter> share. If Win98 is configured to log onto
 	the Samba Domain, it will automatically read this file and update the Win9x/Me registry
 	of the machine as it logs on.
 	</para>
@@ -152,7 +152,7 @@ here is incomplete - you are warned.
 	</para>
 
 	<para>
-	You need <filename>poledit.exe, common.adm</filename> and <filename>winnt.adm</filename>.
+	You need <filename>poledit.exe</filename>, <filename>common.adm</filename> and <filename>winnt.adm</filename>.
 	It is convenient to put the two *.adm files in  the <filename>c:\winnt\inf</filename> 
 	directory which is where the binary will look for them unless told otherwise. Note also that that
 	directory is normally 'hidden'.
@@ -202,7 +202,7 @@ here is incomplete - you are warned.
 	The older NT4 style registry based policies are known as <emphasis>Administrative Templates</emphasis>
 	in MS Windows 2000/XP Group Policy Objects (GPOs). The later includes ability to set various security
 	configurations, enforce Internet Explorer browser settings, change and redirect aspects of the
-	users' desktop (including: the location of <emphasis>My Documents</emphasis> files (directory), as
+	users' desktop (including: the location of <filename>My Documents</filename> files (directory), as
 	well as intrinsics of where menu items will appear in the Start menu). An additional new
 	feature is the ability to make available particular software Windows applications to particular
 	users and/or groups.
@@ -239,14 +239,14 @@ here is incomplete - you are warned.
 		<title>Administration of Win2K / XP Policies</title>
 
 		<para>
-		Instead of using the tool called "The System Policy Editor", commonly called Poledit (from the
-		executable name poledit.exe), GPOs are created and managed using a Microsoft Management Console
-		(MMC) snap-in as follows:</para>
+		Instead of using the tool called <application>The System Policy Editor</application>, commonly called Poledit (from the
+		executable name <command>poledit.exe</command>), <acronym>GPOs</acronym> are created and managed using a 
+		<application>Microsoft Management Console</application> <acronym>(MMC)</acronym> snap-in as follows:</para>
 		<procedure>
 		<step>
 		<para>
-		Go to the Windows 200x / XP menu <filename>Start->Programs->Administrative Tools</filename>
-			and select the MMC snap-in called "Active Directory Users and Computers"
+		Go to the Windows 200x / XP menu <guimenu>Start->Programs->Administrative Tools</guimenu>
+		and select the MMC snap-in called <guimenuitem>Active Directory Users and Computers</guimenuitem>
 		</para>
 		</step>
 
@@ -256,12 +256,12 @@ here is incomplete - you are warned.
 		</para></step>
 
 		<step><para>
-		Now left click on the Group Policy tab, then left click on the New tab. Type a name
+		Now left click on the <guilabel>Group Policy</guilabel> tab, then left click on the New tab. Type a name
 		for the new policy you will create.
 		</para></step>
 
 		<step><para>
-		Now left click on the Edit tab to commence the steps needed to create the GPO.
+		Now left click on the <guilabel>Edit</guilabel> tab to commence the steps needed to create the GPO.
 		</para></step>
 		</procedure>
 
@@ -360,7 +360,8 @@ Common restrictions that are frequently used includes:
 
 	<para>
 	With a Samba Domain Controller, the new tools for managing of user account and policy information includes:
-	<filename>smbpasswd, pdbedit, net, rpcclient.</filename>. The administrator should read the
+	<command>smbpasswd</command>, <command>pdbedit</command>, <command>net</command>, <command>rpcclient</command>. 
+	The administrator should read the
 	man pages for these tools and become familiar with their use.
 	</para>
 

@@ -20,7 +20,7 @@
 	The first immediate reason to use the group mapping on a Samba PDC, is that
 	the <parameter>domain admin group</parameter> has been removed and should no longer
 	be specified in &smb.conf;. This parameter was used to give the listed users membership
-	in the "Domain Admins" Windows group which gave local admin rights on their workstations
+	in the <constant>Domain Admins</constant> Windows group which gave local admin rights on their workstations
 	(in default configurations).
 	</para>
 	</warning>
@@ -40,8 +40,8 @@
 
 	<para>
 	Administrators should be aware that where &smb.conf; group interface scripts make
-	direct calls to the Unix/Linux system tools (eg: the shadow utilities, <command>groupadd,
-	groupdel, groupmod</command>) then the resulting Unix/Linux group names will be subject
+	direct calls to the Unix/Linux system tools (eg: the shadow utilities, <command>groupadd</command>,
+	<command>groupdel</command>, <command>groupmod</command>) then the resulting Unix/Linux group names will be subject
 	to any limits imposed by these tools. If the tool does NOT allow upper case characters
 	or space characters, then the creation of an MS Windows NT4 / 200x style group of
 	<parameter>Engineering Managers</parameter> will attempt to create an identically named
@@ -67,10 +67,11 @@
 <title>Discussion</title>
 
 	<para>
-	When installing MS Windows NT4 / 200x on a computer, the installation program creates default
-	users and groups. Notably the 'Administrators' group, and gives to that group privileges necessary
-	privilidges to perform essential system tasks. eg: Ability to change the date and time or to
-	kill any process (or close too) running on the local machine.
+	When installing <application>MS Windows NT4 / 200x</application> on a computer, the installation
+	program creates default users and groups. Notably the <constant>Administrators</constant> group,
+	and gives to that group privileges necessary privilidges to perform essential system tasks.
+	eg: Ability to change the date and time or to kill any process (or close too) running on the
+	local machine.
 	</para>
 	
 	<para>
@@ -100,9 +101,9 @@
 		look like:
 		</para>
 
-		<para><screen>
+		<para><programlisting>
 		domadm:x:502:joe,john,mary
-		</screen>
+		</programlisting>
 		</para></listitem>
 
 		<listitem><para>
@@ -155,7 +156,8 @@
 		</para>
 
 		<para>
-		<screen>&rootprompt; net groupmap list
+		<screen>
+		&rootprompt; <userinput>net groupmap list</userinput>
 		System Administrators (S-1-5-21-2547222302-1596225915-2414751004-1002) -> sysadmin
 		Domain Admins (S-1-5-21-2547222302-1596225915-2414751004-512) -> domadmin
 		Domain Users (S-1-5-21-2547222302-1596225915-2414751004-513) -> domuser
@@ -180,15 +182,16 @@
 	</para>
 
 	<sect2>
-	<title>Sample smb.conf add group script</title>
+	<title>Sample &smb.conf; add group script</title>
 
 		<para>
 		A script to great complying group names for use by the samba group interfaces:
 		</para>
 
-<para>
-<screen>
-Script name: smbgrpadd.sh
+		<para>
+<example>
+	<title>smbgrpadd.sh</title>
+<programlisting>
 
 #!/bin/bash
 
@@ -203,14 +206,15 @@ cat /etc/group | sed s/smbtmpgrp00/$1/g > /etc/group
 # Now return the GID as would normally happen.
 echo $thegid
 exit 0
-</screen>
+</programlisting>
+</example>
 </para>
 
 		<para>
 		The &smb.conf; entry for the above script would look like:
-		<screen>
+		<programlisting>
 		add group script = /path_to_tool/smbgrpadd.sh %g
-		</screen>
+		</programlisting>
 		</para>
 
 	</sect2>
@@ -224,7 +228,7 @@ exit 0
 	</para>
 
 <para>
-<screen>
+<programlisting>
 #!/bin/bash
 
 net groupmap modify ntgroup="Domain Admins" unixgroup=ntadmin
@@ -247,7 +251,7 @@ net groupmap modify ntgroup="Power Users" unixgroup=sys
 #net groupmap add ntgroup="Engineers"  unixgroup=Engineers    type=d
 #net groupmap add ntgroup="Marketoids" unixgroup=Marketoids   type=d
 #net groupmap add ntgroup="Gnomes"     unixgroup=Gnomes       type=d
-</screen>
+</programlisting>
 </para>
 
 	<para>
