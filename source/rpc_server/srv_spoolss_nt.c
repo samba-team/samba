@@ -298,11 +298,6 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_BADFID;
 	}
 
-	if (del_a_printer(Printer->dev.handlename) != 0) {
-		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
-		return WERR_BADFID;
-	}
-
 	/* Check calling user has permission to delete printer.  Note that
 	   since we set the snum parameter to -1 only administrators can
 	   delete the printer.  This stops people with the Full Control
@@ -311,6 +306,11 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 	if (!print_access_check(NULL, -1, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("printer delete denied by security descriptor\n"));
 		return WERR_ACCESS_DENIED;
+	}
+
+	if (del_a_printer(Printer->dev.handlename) != 0) {
+		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
+		return WERR_BADFID;
 	}
 
 	if (*lp_deleteprinter_cmd()) {
