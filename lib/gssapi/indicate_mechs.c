@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,12 +42,14 @@ OM_uint32 gss_indicate_mechs
 {
   *mech_set = malloc(sizeof(**mech_set));
   if (*mech_set == NULL) {
+    *minor_status = ENOMEM;
     return GSS_S_FAILURE;
   }
   (*mech_set)->count = 1;
   (*mech_set)->elements = malloc((*mech_set)->count * sizeof(gss_OID_desc));
   if ((*mech_set)->elements == NULL) {
     free (*mech_set);
+    *minor_status = ENOMEM;
     return GSS_S_FAILURE;
   }
   (*mech_set)->elements[0] = *GSS_KRB5_MECHANISM;

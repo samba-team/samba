@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -50,13 +50,16 @@ OM_uint32 gss_display_name
   kret = krb5_unparse_name (gssapi_krb5_context,
 			    input_name,
 			    &buf);
-  if (kret)
+  if (kret) {
+    *minor_status = kret;
     return GSS_S_FAILURE;
+  }
   len = strlen (buf);
   output_name_buffer->length = len;
   output_name_buffer->value  = malloc(len + 1);
   if (output_name_buffer->value == NULL) {
     free (buf);
+    *minor_status = ENOMEM;
     return GSS_S_FAILURE;
   }
   memcpy (output_name_buffer->value, buf, len);

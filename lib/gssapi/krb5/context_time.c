@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,6 +56,7 @@ OM_uint32 gss_context_time
 
     kret = krb5_timeofday(gssapi_krb5_context, &timeret);
     if (kret) {
+	*minor_status = kret;
         return GSS_S_FAILURE;
     }
 

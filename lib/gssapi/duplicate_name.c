@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,8 +48,10 @@ OM_uint32 gss_duplicate_name (
   kret = krb5_copy_principal (gssapi_krb5_context,
 			      src_name,
 			      dest_name);
-  if (kret)
+  if (kret) {
+    *minor_status = kret;
     return GSS_S_FAILURE;
-  else
+  } else {
     return GSS_S_COMPLETE;
+  }
 }

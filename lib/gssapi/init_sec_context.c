@@ -447,6 +447,7 @@ repl_mutual
     ret = gssapi_krb5_decapsulate (input_token, &indata, "\x02\x00");
     if (ret) {
 				/* XXX - Handle AP_ERROR */
+	*minor_status = 0;
 	return GSS_S_FAILURE;
     }
 
@@ -454,8 +455,10 @@ repl_mutual
 			(*context_handle)->auth_context,
 			&indata,
 			&repl);
-    if (kret)
+    if (kret) {
+	*minor_status = kret;
 	return GSS_S_FAILURE;
+    }
     krb5_free_ap_rep_enc_part (gssapi_krb5_context,
 			       repl);
 

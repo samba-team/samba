@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,6 +42,7 @@ OM_uint32 gss_create_empty_oid_set (
 {
   *oid_set = malloc(sizeof(**oid_set));
   if (*oid_set == NULL) {
+    *minor_status = ENOMEM;
     return GSS_S_FAILURE;
   }
   (*oid_set)->count = 0;
