@@ -146,7 +146,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5d]: pam auth crap domain: %s user: %s\n", state->pid,
 		  state->request.data.auth_crap.domain, state->request.data.auth_crap.user));
 
-	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for %s", state->request.data.auth.user))) {
+	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for %s", state->request.data.auth_crap.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -157,7 +157,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	} else if (lp_winbind_use_default_domain()) {
 		domain = talloc_strdup(mem_ctx, lp_workgroup());
 	} else {
-		DEBUG(5,("no domain specified with username (%s) - failing auth\n", state->request.data.auth.user));
+		DEBUG(5,("no domain specified with username (%s) - failing auth\n", state->request.data.auth_crap.user));
 		result = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
