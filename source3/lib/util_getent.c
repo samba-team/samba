@@ -299,38 +299,3 @@ void free_userlist(struct sys_userlist *list_head)
 		SAFE_FREE(old_head);
 	}
 }
-
-
-/*
-  return a full list of groups for a user
-
-  returns the number of groups the user is a member of. The return will include the
-  users primary group.
-
-  remember to free the resulting gid_t array
-
-  NOTE! you must be root to call this function on some systems
-*/
-int getgroups_user(const char *user, gid_t **groups)
-{
-	struct passwd *pwd;
-	int ngrp, max_grp;
-
-	pwd = getpwnam(user);
-	if (!pwd) return -1;
-
-	max_grp = groups_max();
-	(*groups) = (gid_t *)malloc(sizeof(gid_t) * max_grp);
-	if (! *groups) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ngrp = getgrouplist(user, pwd->pw_gid, *groups, &max_grp);
-	if (ngrp <= 0) {
-		free(*groups);
-		return ngrp;
-	}
-
-	return ngrp;
-}
