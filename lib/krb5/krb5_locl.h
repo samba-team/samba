@@ -106,14 +106,4 @@ extract_ticket(krb5_context context,
 	       krb5_decrypt_proc decrypt_proc,
 	       krb5_const_pointer decryptarg);
 
-void krb5_NULL_checksum(void *p, size_t len, void *result);
-
-void krb5_MD4_checksum(void *p, size_t len, void *result);
-
-void krb5_MD5_checksum(void *p, size_t len, void *result);
-
-void krb5_SHA1_checksum(void *p, size_t len, void *result);
-
-void krb5_CRC_checksum(void *p, size_t len, void *result);
-
 #endif /* __KRB5_LOCL_H__ */
