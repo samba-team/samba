@@ -295,6 +295,33 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 #endif
 }
 
+DATA_BLOB NTLMv2_generate_response(uchar ntlm_v2_hash[16],
+				   DATA_BLOB server_chal, size_t client_chal_length)
+{
+	uchar ntlmv2_response[16];
+	DATA_BLOB ntlmv2_client_data;
+	DATA_BLOB final_response;
+	
+	/* NTLMv2 */
+
+	/* We also get to specify some random data */
+	ntlmv2_client_data = data_blob(NULL, client_chal_length);
+	generate_random_buffer(ntlmv2_client_data.data, ntlmv2_client_data.length, False);
+	
+	/* Given that data, and the challenge from the server, generate a response */
+	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, ntlmv2_client_data, ntlmv2_response);
+	
+	/* put it into nt_response, for the code below to put into the packet */
+	final_response = data_blob(NULL, ntlmv2_client_data.length + sizeof(ntlmv2_response));
+	memcpy(final_response.data, ntlmv2_response, sizeof(ntlmv2_response));
+	/* after the first 16 bytes is the random data we generated above, so the server can verify us with it */
+	memcpy(final_response.data + sizeof(ntlmv2_response), ntlmv2_client_data.data, ntlmv2_client_data.length);
+	data_blob_free(&ntlmv2_client_data);
+
+	return final_response;
+}
+
+
 /***********************************************************
  encode a password buffer.  The caller gets to figure out 
  what to put in it.
