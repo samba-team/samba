@@ -2728,7 +2728,7 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	extern pstring scope;
 	fstring remote_machine;
 	struct in_addr dest_ip;
-	struct nmb_name calling, called;
+	struct nmb_name calling, called, stupid_smbserver_called;
 	BOOL connected_ok = False;
 
 	/*
@@ -2763,11 +2763,19 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 
 		make_nmb_name(&calling, global_myname , 0x0 , scope);
 		make_nmb_name(&called , remote_machine, 0x20, scope);
+		/* stupid microsoft destruction of the ability of netbios
+		 * to provide multiple netbios servers on one host.
+		 */
+		make_nmb_name(&stupid_smbserver_called , "*SMBSERVER", 0x20, scope);
 
 		pwd_set_nullpwd(&cli->pwd);
 
 		if (!cli_establish_connection(cli, remote_machine, &dest_ip,
 					      &calling, &called,
+					      "IPC$", "IPC", 
+					      False, True) &&
+		    !cli_establish_connection(cli, remote_machine, &dest_ip,
+					      &calling, &stupid_smbserver_called,
 					      "IPC$", "IPC", 
 					      False, True))
 		{
@@ -2775,7 +2783,8 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 			continue;
 		}      
 
-		if (!IS_BITS_SET_ALL(cli->sec_mode, 1))
+		if (cli->protocol < PROTOCOL_LANMAN2 ||
+		    !IS_BITS_SET_ALL(cli->sec_mode, 1))
 		{
 			DEBUG(1,("cli_connect_serverlist: machine %s isn't in user level security mode\n",
 				  remote_machine));

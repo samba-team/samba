@@ -909,81 +909,11 @@ support for server level security
 ****************************************************************************/
 struct cli_state *server_cryptkey(void)
 {
-	struct cli_state *cli;
-	fstring desthost;
-	struct in_addr dest_ip;
-	extern fstring local_machine;
-	char *p;
-        BOOL connected_ok = False;
-	struct nmb_name calling, called;
-
-	cli = server_client();
-
-	if (!cli_initialise(cli))
-		return NULL;
-
-        p = lp_passwordserver();
-        while(p && next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
-		standard_sub_basic(desthost);
-		strupper(desthost);
-
-                if(!resolve_name( desthost, &dest_ip, 0x20)) {
-                        DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
-                        continue;
-                }
-
-		if (ismyip(dest_ip)) {
-			DEBUG(1,("Password server loop - disabling password server %s\n",desthost));
-			continue;
-		}
-
-		if (cli_connect(cli, desthost, &dest_ip)) {
-			DEBUG(3,("connected to password server %s\n",desthost));
-			connected_ok = True;
-			break;
-		}
+	if (cli_connect_serverlist(server_client(), lp_passwordserver()))
+	{
+		return server_client();
 	}
-
-	if (!connected_ok) {
-		DEBUG(0,("password server not available\n"));
-		cli_shutdown(cli);
-		return NULL;
-	}
-
-	make_nmb_name(&calling, local_machine, 0x0 , scope);
-	make_nmb_name(&called , desthost     , 0x20, scope);
-
-	if (!cli_session_request(cli, &calling, &called)) {
-		/* try with *SMBSERVER if the first name fails */
-		cli_shutdown(cli);
-		make_nmb_name(&called , "*SMBSERVER", 0x20, scope);
-		if (!cli_initialise(cli) ||
-		    !cli_connect(cli, desthost, &dest_ip) ||
-		    !cli_session_request(cli, &calling, &called)) {
-			DEBUG(1,("%s rejected the session\n",desthost));
-			cli_shutdown(cli);
-			return NULL;
-		}
-	}
-
-	DEBUG(3,("got session\n"));
-
-	if (!cli_negprot(cli)) {
-		DEBUG(1,("%s rejected the negprot\n",desthost));
-		cli_shutdown(cli);
-		return NULL;
-	}
-
-	if (cli->protocol < PROTOCOL_LANMAN2 ||
-	    !(cli->sec_mode & 1)) {
-		DEBUG(1,("%s isn't in user level security mode\n",desthost));
-		cli_shutdown(cli);
-		return NULL;
-	}
-
-	DEBUG(3,("password server OK\n"));
-
-	return cli;
+	return NULL;
 }
 
 /****************************************************************************
