@@ -689,11 +689,10 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	char *ldap_exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *sidstr;
+	const char *attrs[] = {"member", NULL};
 	char **members;
 	int i, num_members;
 	fstring sid_string;
-	const char *attr = "member";
-	BOOL more_values;
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, sid_string_static(group_sid)));
 
@@ -710,56 +709,33 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	/* search for all members of the group */
 	asprintf(&ldap_exp, "(objectSid=%s)",sidstr);
+	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
+	free(ldap_exp);
+	free(sidstr);
 
-	members = NULL;
-	num_members = 0;
-	more_values = True;
-
-	while (more_values) {
-
-		int num_this_time;
-		char **new_members;
-		const char *attrs[] = {attr, NULL};
-
-		rc = ads_search_retry(ads, &res, ldap_exp, attrs);
-
-		if (!ADS_ERR_OK(rc) || !res) {
-			DEBUG(1,("query_user_list ads_search: %s\n",
-				 ads_errstr(rc)));
-			goto done;
-		}
-
-		count = ads_count_replies(ads, res);
-		if (count == 0)
-			break;
-
-		new_members = ads_pull_strings_range(ads, mem_ctx, res,
-						     "member",
-						     &num_this_time,
-						     &more_values);
-
-		if ((new_members == NULL) || (num_this_time == 0))
-			break;
-
-		members = talloc_realloc(mem_ctx, members,
-					 sizeof(*members) *
-					 (num_members+num_this_time));
-
-		if (members == NULL)
-			break;
-
-		memcpy(members+num_members, new_members,
-		       sizeof(new_members)*num_this_time);
-
-		num_members += num_this_time;
-
-		attr = talloc_asprintf(mem_ctx,
-				       "member;range=%d-*", num_members);
+	if (!ADS_ERR_OK(rc) || !res) {
+		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
+		goto done;
 	}
-		
+
+	count = ads_count_replies(ads, res);
+	if (count == 0) {
+		status = NT_STATUS_OK;
+		goto done;
+	}
+
+	members = ads_pull_strings(ads, mem_ctx, res, "member");
+	if (!members) {
+		/* no members? ok ... */
+		status = NT_STATUS_OK;
+		goto done;
+	}
+
 	/* now we need to turn a list of members into rids, names and name types 
 	   the problem is that the members are in the form of distinguised names
 	*/
+	for (i=0;members[i];i++) /* noop */ ;
+	num_members = i;
 
 	(*sid_mem) = talloc_zero(mem_ctx, sizeof(**sid_mem) * num_members);
 	(*name_types) = talloc_zero(mem_ctx, sizeof(**name_types) * num_members);
@@ -786,9 +762,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	status = NT_STATUS_OK;
 	DEBUG(3,("ads lookup_groupmem for sid=%s\n", sid_to_string(sid_string, group_sid)));
 done:
-	SAFE_FREE(ldap_exp);
-	SAFE_FREE(sidstr);
-
 	if (res) 
 		ads_msgfree(ads, res);
 
