@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="findsmb">
+<refentry id="smbspool">
 
 <refmeta>
 	<refentrytitle>smbspool</refentrytitle>
@@ -8,7 +8,7 @@
 
 
 <refnamediv>
-	<refname>nmblookup</refname>
+	<refname>smbspool</refname>
 	<refpurpose>send print file to an SMB printer</refpurpose>
 </refnamediv>
 
