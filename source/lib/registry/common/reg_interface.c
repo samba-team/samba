@@ -191,7 +191,10 @@ WERROR reg_import_hive(struct registry_context *h, const char *backend, const ch
 
 	if(!W_ERROR_IS_OK(werr)) return werr;
 	
-	if(!ret->root) return WERR_GENERAL_FAILURE;
+	if(!ret->root) {
+		DEBUG(0, ("Backend %s didn't provide root key!\n", backend));
+		return WERR_GENERAL_FAILURE;
+	}
 
 	ret->root->hive = ret;
 	ret->root->name = NULL;
