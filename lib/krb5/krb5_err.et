@@ -199,7 +199,7 @@ error_code KRB5_ERR_BAD_HOSTNAME,	"Hostname cannot be canonicalized"
 error_code KRB5_ERR_HOST_REALM_UNKNOWN,	"Cannot determine realm for host"
 error_code KRB5_SNAME_UNSUPP_NAMETYPE,	"Conversion to service principal undefined for name type"
 
-error_code KRB5KRB_AP_ERR_V4_REPLY, "Initial Ticket response appears to be Version 4 error"
+error_code KRB5KRB_AP_ERR_V4_REPLY, "Initial Ticket response appears to be Version 4"
 error_code KRB5_REALM_CANT_RESOLVE,	"Cannot resolve KDC for requested realm"
 error_code KRB5_TKT_NOT_FORWARDABLE,	"Requesting ticket can't get forwardable tickets"
 error_code KRB5_FWD_BAD_PRINCIPAL, "Bad principal name while trying to forward credentials"
