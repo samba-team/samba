@@ -331,10 +331,12 @@ connection_struct *make_connection(char *service,char *password,
 	connection_struct *conn;
 
 	fstring user;
+	ZERO_STRUCT(user);
 
 	strlower(service);
 
 	snum = find_service(service);
+
 	if (snum < 0) {
 		if (strequal(service,"IPC$") || strequal(service,"ADMIN$")) {
 			DEBUG(3,("refusing IPC connection\n"));
@@ -384,6 +386,8 @@ connection_struct *make_connection(char *service,char *password,
 		*status = NT_STATUS_WRONG_PASSWORD;
 		return NULL;
 	}
+
+	add_session_user(user);
   
 	conn = conn_new();
 	if (!conn) {
@@ -423,7 +427,7 @@ connection_struct *make_connection(char *service,char *password,
 	conn->nt_user_token = NULL;
 	
 	set_read_only(conn);
-
+	
 	set_admin_user(conn);
 
 	/*
@@ -555,6 +559,16 @@ connection_struct *make_connection(char *service,char *password,
 		return NULL;
 	}
 
+	if (!become_user(conn, conn->vuid)) {
+		/* No point continuing if they fail the basic checks */
+		DEBUG(0,("Can't become connected user!\n"));
+		conn_free(conn);
+		*status = NT_STATUS_LOGON_FAILURE;
+		return NULL;
+	}
+
+/* ROOT Activities: */	
+	become_root();
 	/* check number of connections */
 	if (!claim_connection(conn,
 			      lp_servicename(SNUM(conn)),
@@ -563,9 +577,12 @@ connection_struct *make_connection(char *service,char *password,
 		DEBUG(1,("too many connections - rejected\n"));
 		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		conn_free(conn);
+		unbecome_root();
+		unbecome_user();
 		return NULL;
 	}  
-		
+
+	/* Preexecs are done here as they might make the dir we are to ChDir to below */
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(SNUM(conn))) {
 		int ret;
@@ -575,26 +592,40 @@ connection_struct *make_connection(char *service,char *password,
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
-			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			DEBUG(1,("root preexec gave %d - failing connection\n", ret));
 			yield_connection(conn,
 					 lp_servicename(SNUM(conn)),
 					 lp_max_connections(SNUM(conn)));
 			conn_free(conn);
 			*status = NT_STATUS_UNSUCCESSFUL;
+			unbecome_root();
+			unbecome_user();
 			return NULL;
 		}
 	}
-	
-	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("Can't become connected user!\n"));
-		yield_connection(conn,
-				 lp_servicename(SNUM(conn)),
-				 lp_max_connections(SNUM(conn)));
-		conn_free(conn);
-		*status = NT_STATUS_WRONG_PASSWORD;
-		return NULL;
+	unbecome_root();
+
+/* USER Activites: */
+	/* Remember that a different vuid can connect later without these checks... */
+
+	/* Preexecs are done here as they might make the dir we are to ChDir to below */
+	/* execute any "preexec = " line */
+	if (*lp_preexec(SNUM(conn))) {
+		int ret;
+		pstring cmd;
+		pstrcpy(cmd,lp_preexec(SNUM(conn)));
+		standard_sub_conn(conn,cmd);
+		ret = smbrun(cmd,NULL);
+		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			unbecome_user();
+			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+			conn_free(conn);
+			*status = NT_STATUS_UNSUCCESSFUL;
+			return NULL;
+		}
 	}
-	
+
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
 			 remote_machine, conn->client_address,
@@ -621,39 +652,19 @@ connection_struct *make_connection(char *service,char *password,
 	}
 #endif
 	
-	add_session_user(user);
-		
-	/* execute any "preexec = " line */
-	if (*lp_preexec(SNUM(conn))) {
-		int ret;
-		pstring cmd;
-		pstrcpy(cmd,lp_preexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd);
-		ret = smbrun(cmd,NULL);
-		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
-			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
-			conn_free(conn);
-			*status = NT_STATUS_UNSUCCESSFUL;
-			return NULL;
-		}
-	}
-
 	/*
 	 * Print out the 'connected as' stuff here as we need
-	 * to know the effective uid and gid we will be using.
+	 * to know the effective uid and gid we will be using
+	 * (at least initially).
 	 */
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", remote_machine, conn->client_address );
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
-		dbgtext( "as user %s ", user );
+		dbgtext( "initially as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
-	
-	/* we've finished with the sensitive stuff */
-	unbecome_user();
 	
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
@@ -665,9 +676,17 @@ connection_struct *make_connection(char *service,char *password,
 	/* Invoke VFS make connection hook */
 
 	if (conn->vfs_ops.connect) {
-		if (conn->vfs_ops.connect(conn, service, user) < 0)
+		if (conn->vfs_ops.connect(conn, service, user) < 0) {
+			DEBUG(0,("make_connection: VFS make connection failed!\n"));
+			*status = NT_STATUS_UNSUCCESSFUL;
+			unbecome_user();
+			conn_free(conn);
 			return NULL;
+		}
 	}
+
+	/* we've finished with the sensitive stuff */
+	unbecome_user();
             
 	return(conn);
 }
