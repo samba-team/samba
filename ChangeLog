@@ -1,4 +1,44 @@
+2004-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/config.c: add --disable-DES
+	
+	* kdc/kdc.8: document --detach and --disable-DES
+	
+	* kdc/kerberos5.c: check if enctype is disabled before using it
+	
+	* lib/krb5/crypto.c: add support for disabling checksum/encryption
+	types
+
+	* tools/kdc-log-analyze.pl: add more cases
+	
+	* kdc/connect.c: on strange tcp error; log local port number and
+	socket type
+	
+	* lib/asn1/der.h: fix prototype of encode_utf8string
+	
+	* lib/asn1/gen.c: catch CHOICE and generate dummy placeholder
+	
+	* lib/asn1/lex.l: added dummy parsing of CHOICE
+	
+	* lib/asn1/parse.y: added dummy parsing of CHOICE
+	
+	* lib/asn1/k5.asn1: drop SMTP_NAME
+	
 2004-03-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/Makefile.am: support building ldap backend as module
+	sort asn1 hdb files
+	
+	* lib/hdb/hdb.c: when building ldap as a shared module, don't
+	include it in the list
+
+	* configure.in: add --enable-hdb-openldap-module
+	
+	* lib/hdb/hdb-ldap.c: make ldap possible to build as a shared
+	module
+
+	* lib/hdb/mkey.c: add hdb_{,un}seal_key{,_mkey} from Andrew
+	Bartlett <abartlet@samba.org>
 
 	* lib/krb5/crypto.c (decrypt_internal_special): do not not modify
 	the original data test case from Ronnie Sahlberg
