@@ -68,3 +68,45 @@ NTSTATUS ndr_push_rpcecho_echodata(struct ndr_push *ndr,
 	NDR_CHECK(ndr_push_bytes(ndr, r->in.data, r->in.len));
 	return NT_STATUS_OK;
 }
+
+/*
+  parse a sinkdata
+*/
+NTSTATUS ndr_pull_rpcecho_sinkdata(struct ndr_pull *ndr, 
+				   struct rpcecho_sinkdata *r)
+{
+	return NT_STATUS_OK;
+}
+
+/*
+  push a sinkdata
+*/
+NTSTATUS ndr_push_rpcecho_sinkdata(struct ndr_push *ndr, 
+				   struct rpcecho_sinkdata *r)
+{
+	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_bytes(ndr, r->in.data, r->in.len));
+	return NT_STATUS_OK;
+}
+
+/*
+  parse a sourcedata
+*/
+NTSTATUS ndr_pull_rpcecho_sourcedata(struct ndr_pull *ndr, 
+				   struct rpcecho_sourcedata *r)
+{
+	NDR_CHECK(ndr_pull_u32(ndr, &r->out.len));
+	NDR_CHECK(ndr_pull_bytes(ndr, &r->out.data, r->out.len));
+	return NT_STATUS_OK;
+}
+
+/*
+  push a sourcedata
+*/
+NTSTATUS ndr_push_rpcecho_sourcedata(struct ndr_push *ndr, 
+				   struct rpcecho_sourcedata *r)
+{
+	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
+	return NT_STATUS_OK;
+}

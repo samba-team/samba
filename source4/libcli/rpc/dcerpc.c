@@ -199,7 +199,7 @@ static NTSTATUS dcerpc_pull_response(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	stub_len = blob->length - ((*offset) + hdr->auth_length);
 	BLOB_CHECK_BOUNDS(blob, *offset, stub_len);
 	pkt->stub_data = data_blob_talloc(mem_ctx, blob->data + (*offset), stub_len);
-	if (!pkt->stub_data.data) {
+	if (stub_len != 0 && !pkt->stub_data.data) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	(*offset) += stub_len;
