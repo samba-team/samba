@@ -184,11 +184,11 @@ int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups)
 
 	(*p_groups) = groups;
 
-	DEBUG(3,("%s is in %d groups\n",user,ngroups));
-	for (i=0;i<ngroups;i++) {
-		DEBUG(3,("%d ",(int)groups[i]));
+	DEBUG( 3, ( "%s is in %d groups: ", user, ngroups ) );
+	for (i = 0; i < ngroups; i++ ) {
+		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
 	}
-	DEBUG(3,("\n"));
+	DEBUG( 3, ( "\n" ) );
 
 	return 0;
 }
