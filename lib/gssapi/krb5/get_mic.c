@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -86,7 +86,7 @@ mic_des
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
   des_set_key (&deskey, schedule);
-  des_cbc_cksum ((const void *)hash, (void *)hash, sizeof(hash),
+  des_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 schedule, &zero);
   memcpy (p - 8, hash, 8);	/* SGN_CKSUM */
 
@@ -105,7 +105,7 @@ mic_des
 	  4);
 
   des_set_key (&deskey, schedule);
-  des_cbc_encrypt ((const void *)p, (void *)p, 8,
+  des_cbc_encrypt ((void *)p, (void *)p, 8,
 		   schedule, (des_cblock *)(p + 8), DES_ENCRYPT);
 
   krb5_auth_setlocalseqnumber (gssapi_krb5_context,
