@@ -148,7 +148,7 @@ get_des_key(hdb_entry *principal, krb5_boolean is_server,
 	else if(v5_key)
 	    *ret_key = v5_key;
 	else if(is_server && server_key)
-	    return server_key;
+	    *ret_key = server_key;
 	else
 	    return KERB_ERR_NULL_KEY;
     } else {
@@ -159,7 +159,7 @@ get_des_key(hdb_entry *principal, krb5_boolean is_server,
 	else  if(v5_key)
 	    *ret_key = v5_key;
 	else if(is_server && server_key)
-	    return server_key;
+	    *ret_key = server_key;
 	else
 	    return KERB_ERR_NULL_KEY;
     }
