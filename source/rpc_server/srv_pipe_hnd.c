@@ -322,11 +322,10 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	}
 
 	/*
-	 * If there's not data in the incoming buffer and it's a
-	 * request PDU this should be the start of a new RPC.
+	 * If there's not data in the incoming buffer this should be the start of a new RPC.
 	 */
 
-	if((p->hdr.pkt_type == RPC_REQUEST) && (prs_offset(&p->in_data.data) == 0)) {
+	if(prs_offset(&p->in_data.data) == 0) {
 
 		if (!(p->hdr.flags & RPC_FLG_FIRST)) {
 			/*
@@ -348,6 +347,9 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 
 		p->endian = rpc_in.bigendian_data;
 
+		DEBUG(5,("unmarshall_rpc_header: using %sendian RPC\n",
+				p->endian == RPC_LITTLE_ENDIAN ? "little-" : "big-" ));
+
 	} else {
 
 		/*
@@ -356,7 +358,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 		 */
 
 		if (p->endian != rpc_in.bigendian_data) {
-			DEBUG(0,("unmarshall_rpc_header: FIRST endianness flag different in next PDU !\n"));
+			DEBUG(0,("unmarshall_rpc_header: FIRST endianness flag (%d) different in next PDU !\n", (int)p->endian));
 			set_incoming_fault(p);
 			prs_mem_free(&rpc_in);
 			return -1;
