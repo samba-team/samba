@@ -74,7 +74,6 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--localstatedir=/var \
 	--with-codepagedir=%{prefix}/share/samba/codepages \
 	--with-configdir=/etc/samba \
-	--with-lockdir=/var/lock/samba \
 	--with-swatdir=%{prefix}/share/swat \
 	--with-quotas \
 	--with-smbmount \
@@ -102,7 +101,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/codepages/src 
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/man/{man1,man5,man7,man8}
-mkdir -p $RPM_BUILD_ROOT/var/lock/samba
+mkdir -p $RPM_BUILD_ROOT/var/cache/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 
@@ -235,8 +234,8 @@ if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
 
     # We want to remove the browse.dat file
-    if [ -e /var/lock/samba/browse.dat ]; then
-	    rm -f /var/lock/samba/browse.dat
+    if [ -e /var/cache/samba/browse.dat ]; then
+	    rm -f /var/cache/samba/browse.dat
     fi
 fi
 
@@ -249,8 +248,8 @@ if [ $1 = 0 ] ; then
     if [ -e /var/log/samba ]; then
       rm -rf /var/log/samba
     fi
-    if [ -e /var/lock/samba ]; then
-      rm -rf /var/lock/samba
+    if [ -e /var/cache/samba ]; then
+      rm -rf /var/cache/samba
     fi
 
     # Remove swat entries from /etc/inetd.conf and /etc/services
@@ -292,7 +291,7 @@ fi
 %attr(-,root,root) %dir /etc/samba/
 %attr(-,root,root) %dir /usr/share/samba/codepages/*
 %attr(-,root,root) %dir /usr/share/samba/codepages/src/*
-%attr(-,root,root) %dir /var/lock/samba
+%attr(-,root,root) %dir /var/cache/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
 

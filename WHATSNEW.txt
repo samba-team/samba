@@ -86,6 +86,8 @@ Changes in 2.2.1
 29). Swat fixes for being run with xinetd that doesn't set the umask.
 30). Fix for slow writes with Win9x Explorer clients. Emulates Microsoft
      TCP stack early ack specification error.
+31). Changed lock & persistant tdb directory to /var/cache/samba by default on
+     RedHat and Mandrake as they clear the /var/lock/samba directory on reboot.
 
 Older release notes for Samba 2.2.x follow.
 
