@@ -571,7 +571,7 @@ static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			  struct policy_handle *handle)
+				 struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_EnumPrinterData r;
@@ -617,6 +617,38 @@ static BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	return True;
 }
+
+static BOOL test_EnumPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				   struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_EnumPrinterDataEx r;
+
+	r.in.handle = handle;
+	r.in.key_name = "PrinterDriverData";
+	r.in.buf_size = 0;
+
+	printf("Testing EnumPrinterDataEx\n");
+
+	status = dcerpc_spoolss_EnumPrinterDataEx(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumPrinterDataEx failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	r.in.buf_size = r.out.buf_size;
+
+	status = dcerpc_spoolss_EnumPrinterDataEx(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumPrinterDataEx failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 
 static BOOL test_DeletePrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle, 
@@ -904,6 +936,10 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_EnumPrinterData(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_EnumPrinterDataEx(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
