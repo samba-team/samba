@@ -526,6 +526,7 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 			return -1;
 		}
 
+		ret = 0;
 		if (ltdb_message_match(module, &msg, tree, base, scope) == 1) {
 			ret = ltdb_add_attr_results(module, &msg, attrs, &count, res);
 		}
