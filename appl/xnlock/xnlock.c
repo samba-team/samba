@@ -72,7 +72,6 @@ int		time_left, prompt_x, prompt_y, time_x, time_y;
 unsigned long	interval;
 Pixmap		left0, left1, right0, right1, left_front,
 		right_front, front, down;
-int test;
 
 #define MAXLINES 40
 
@@ -85,6 +84,8 @@ char LOGOUT_PASSWD[] = "LOGOUT"; /* when given password "xx" */
 time_t locked_at;
 
 struct appres_t {
+    Pixel bg;
+    Pixel fg;
     XFontStruct *font;
     Boolean ignore_passwd;
     Boolean do_reverse;
@@ -94,8 +95,15 @@ struct appres_t {
 } appres;
 
 static XtResource resources[] = {
+    { XtNbackground, XtCBackground, XtRPixel, sizeof(Pixel), 
+      XtOffsetOf(struct appres_t, bg), XtRString, "black" },
+
+    { XtNforeground, XtCForeground, XtRPixel, sizeof(Pixel), 
+      XtOffsetOf(struct appres_t, fg), XtRString, "white" },
+
     { XtNfont, XtCFont, XtRFontStruct, sizeof (XFontStruct *),
-      XtOffsetOf(struct appres_t, font), XtRImmediate, NULL },
+      XtOffsetOf(struct appres_t, font), 
+      XtRString, "-*-new century schoolbook-*-*-*-18-*" },
 
     { "ignorePasswd", "IgnorePasswd", XtRBoolean, sizeof(Boolean),
       XtOffsetOf(struct appres_t,ignore_passwd),XtRImmediate,(XtPointer)False },
@@ -104,7 +112,7 @@ static XtResource resources[] = {
       XtOffsetOf(struct appres_t, accept_root), XtRImmediate, (XtPointer)True },
 
     { "text", "Text", XtRString, sizeof(String),
-      XtOffsetOf(struct appres_t, text), XtRImmediate, NULL },
+      XtOffsetOf(struct appres_t, text), XtRString, "I'm out running around." },
     
     { "program", "Program", XtRString, sizeof(String),
       XtOffsetOf(struct appres_t, text_prog), XtRImmediate, NULL },
@@ -116,17 +124,11 @@ static XtResource resources[] = {
       XtOffsetOf(struct appres_t,no_screensaver), XtRImmediate, (XtPointer)False },
 };
 
-String fallback[]={ 
-    "*font	 : -*-new century schoolbook-*-*-*-18-*",
-    "*background : black",
-    "*foreground : white",
-    "*text	 : I'm out running around.",
-    0 
-};
-
-Widget *xshell, *xcore;
-
 static XrmOptionDescRec options[] = {
+    { "-fg", ".foreground", XrmoptionSepArg, NULL }, 
+    { "-foreground", ".foreground", XrmoptionSepArg, NULL }, 
+    { "-fn", ".font", XrmoptionSepArg, NULL }, 
+    { "-font", ".font", XrmoptionSepArg, NULL }, 
     { "-ip", ".ignorePasswd", XrmoptionNoArg, "True" },
     { "-noip", ".ignorePasswd", XrmoptionNoArg, "False" },
     { "-ar",  ".acceptRootPasswd", XrmoptionNoArg, "True" },
@@ -139,7 +141,6 @@ get_words(void)
 {
     FILE *pp = NULL;
     static char buf[BUFSIZ];
-    register char *p = buf;
 
     if(appres.text_prog){
 	pp = popen(appres.text_prog, "r");
@@ -184,7 +185,6 @@ void usage(void)
 static void
 init_words (int argc, char **argv)
 {
-    int c;
     char buf[BUFSIZ];
     int i = 0;
 
@@ -278,6 +278,8 @@ walk(int dir)
     static int up = 1;
     static Pixmap frame;
 
+    XSetForeground(dpy, gc, White);
+    XSetBackground(dpy, gc, Black);
     if (dir & (LEFT|RIGHT)) { /* left/right movement (mabye up/down too) */
 	up = -up; /* bouncing effect (even if hit a wall) */
 	if (dir & LEFT) {
@@ -415,9 +417,12 @@ post_prompt_box(Window window)
     if (height < 100)
 	height = 100;
 
-    time_x = prompt_x = Width / 3;
+    if(width < 105 + font->max_bounds.width*MAX_PASSWD_LENGTH)
+	width = 105 + font->max_bounds.width*MAX_PASSWD_LENGTH;
+    box_x = (Width - width) / 2;
+    time_x = prompt_x = box_x + 105;
+
     time_y = prompt_y = Height / 2;
-    box_x = prompt_x - 105;
     box_y = prompt_y - 3 * font_height(font);
 
     if (inst[0] == 0)
@@ -431,9 +436,9 @@ post_prompt_box(Window window)
     /* Clear area in middle of screen for prompt box */
     XSetForeground(dpy, gc, White);
     XFillRectangle(dpy, window, gc, box_x, box_y, width, height);
-    XSetForeground(dpy, gc, Black);
 
     /* make a box that's 5 pixels thick. Then add a thin box inside it */
+    XSetForeground(dpy, gc, Black);
     XSetLineAttributes(dpy, gc, 5, 0, 0, 0);
     XDrawRectangle(dpy, window, gc, box_x+5, box_y+5, width-10, height-10);
     XSetLineAttributes(dpy, gc, 0, 0, 0, 0);
@@ -445,7 +450,7 @@ post_prompt_box(Window window)
     /* set background for copyplane and DrawImageString; need reverse video */
     XSetBackground(dpy, gc, White);
     XCopyPlane(dpy, right0, window, gc, 0,0, 64,64,
-	box_x + 20, box_y + (height - 64)/2, 1L);
+	       box_x + 20, box_y + (height - 64)/2, 1L);
     prompt_x += XTextWidth(font, PROMPT, strlen(PROMPT));
     time_y += 2*font_height(font);
 }
@@ -521,7 +526,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     KeySym keysym;
 
     if (event->type == ButtonPress) {
-	x = event->x, y = event->y, test = 2;
+	x = event->x, y = event->y;
 	return;
     }
     if (state == IS_MOVING) {
@@ -687,12 +692,10 @@ talk(int force_erase)
 	if (talking == 2) {
 	    XSetForeground(dpy, gc, Black);
 	    XDrawString(dpy, XtWindow(widget), gc, X, Y, words, strlen(words));
-	    XSetForeground(dpy, gc, White);
 	} else if (talking == 1) {
 	    XSetForeground(dpy, gc, Black);
 	    XFillRectangle(dpy, XtWindow(widget), gc, s_rect.x-5, s_rect.y-5,
 			   s_rect.width+10, s_rect.height+10);
-	    XSetForeground(dpy, gc, White);
 	}
 	talking = 0;
 	if (!force_erase)
@@ -701,6 +704,7 @@ talk(int force_erase)
 					 NULL);
 	return;
     }
+    XSetForeground(dpy, gc, White);
     talking = 1;
     walk(FRONT);
     p = strcpy(buf, words);
@@ -767,15 +771,16 @@ talk(int force_erase)
     XSetForeground(dpy, gc, White);
     XFillRectangle(dpy, XtWindow(widget), gc,
        s_rect.x-5, s_rect.y-5, s_rect.width+10, s_rect.height+10);
-    XSetForeground(dpy, gc, Black);
 
     /* make a box that's 5 pixels thick. Then add a thin box inside it */
+    XSetForeground(dpy, gc, Black);
     XSetLineAttributes(dpy, gc, 5, 0, 0, 0);
     XDrawRectangle(dpy, XtWindow(widget), gc,
-	s_rect.x, s_rect.y, s_rect.width-1, s_rect.height-1);
+		   s_rect.x, s_rect.y, s_rect.width-1, s_rect.height-1);
     XSetLineAttributes(dpy, gc, 0, 0, 0, 0);
     XDrawRectangle(dpy, XtWindow(widget), gc,
-	s_rect.x + 7, s_rect.y + 7, s_rect.width - 15, s_rect.height - 15);
+		   s_rect.x + 7, s_rect.y + 7, s_rect.width - 15, 
+		   s_rect.height - 15);
 
     X = 15;
     Y = 15 + font_height(font);
@@ -793,6 +798,8 @@ talk(int force_erase)
 static unsigned long
 look(void)
 {
+    XSetForeground(dpy, gc, White);
+    XSetBackground(dpy, gc, Black);
     if (rand() % 3) {
 	XCopyPlane(dpy, (rand() & 1)? down : front, XtWindow(widget), gc,
 	    0, 0, 64,64, x, y, 1L);
@@ -816,12 +823,8 @@ int
 main (int argc, char **argv)
 {
     register int i;
-    int foo;
     Widget override;
     XGCValues gcvalues;
-    char **list;
-
-    int nscr;
 
     srand(getpid());
     for (i = 0; i < (sizeof(STRING)-2); i++)
@@ -873,13 +876,17 @@ main (int argc, char **argv)
     
 
     override = XtVaAppInitialize(&app, "XNlock", options, XtNumber(options),
-				 &argc, argv, fallback, 
+				 &argc, argv, NULL, 
 				 XtNoverrideRedirect, True, 
 				 NULL);
     
     XtVaGetApplicationResources(override,(XtPointer)&appres,
 				resources,XtNumber(resources),
 				NULL);
+    /* the background is black and the little guy is white */
+    Black = appres.bg;
+    White = appres.fg;
+
     dpy = XtDisplay(override);
     
     if (dpy == 0)
@@ -891,44 +898,49 @@ main (int argc, char **argv)
     Width = DisplayWidth(dpy, DefaultScreen(dpy)) + 2;
     Height = DisplayHeight(dpy, DefaultScreen(dpy)) + 2;
     
-    nscr = ScreenCount(dpy) - 1;
-    
-    if(nscr > 0){
-      xshell = (Widget*)malloc(nscr*sizeof(Widget));
-      xcore = (Widget*)malloc(nscr*sizeof(Widget));
-    }
+    for(i = 0; i < ScreenCount(dpy); i++){
+	Widget shell, core;
 
-    for(i = 0; i < nscr; i++){
-      char name[32];
-      sprintf(name, "xnlock%d", i+1);
-      xshell[i] = XtVaAppCreateShell(NULL, NULL, /*name, "XNlock", */
-				     applicationShellWidgetClass, dpy, 
-				     XtNscreen, ScreenOfDisplay(dpy, i+1), 
-				     XtNoverrideRedirect, True, 
-				     XtNx, -1, 
-				     XtNy, -1,
-				     NULL);
+	struct xxx{
+	    Pixel bg;
+	}res;
+	
+	XtResource Res[] = {
+	    { XtNbackground, XtCBackground, XtRPixel, sizeof(Pixel),
+	      XtOffsetOf(struct xxx, bg), XtRString, "black" }
+	};
+
+	if(i == DefaultScreen(dpy))
+	    continue;
       
-      xcore[i] = XtVaCreateManagedWidget("_foo", widgetClass, xshell[i], 
-					 XtNwidth, Width,
-					 XtNheight, Height, 
-					 NULL);
-      XtRealizeWidget(xshell[i]);
+	shell = XtVaAppCreateShell(NULL,NULL, applicationShellWidgetClass, dpy, 
+				   XtNscreen, ScreenOfDisplay(dpy, i), 
+				   XtNoverrideRedirect, True, 
+				   XtNx, -1, 
+				   XtNy, -1,
+				   NULL);
+      
+	XtVaGetApplicationResources(shell, (XtPointer)&res, 
+				    Res, XtNumber(Res),
+				    NULL);
+
+	core = XtVaCreateManagedWidget("_foo", widgetClass, shell,
+				       XtNwidth, DisplayWidth(dpy, i),
+				       XtNheight, DisplayHeight(dpy, i),
+				       XtNbackground, res.bg, 
+				       NULL);
+	XtRealizeWidget(shell);
     }
 
     widget = XtVaCreateManagedWidget("_foo", widgetClass, override,
 				     XtNwidth,	Width,
 				     XtNheight,	Height,
+				     XtNbackground, Black, 
 				     NULL);
 
     init_words(--argc, ++argv);
     init_images();
 
-    /* the background is black and the little guy is white */
-    XtVaGetValues(override,
-		  XtNbackground, &Black,
-		  XtNforeground, &White,
-		  NULL);
     gcvalues.foreground = Black;
     gcvalues.background = White;
 
