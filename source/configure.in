@@ -133,6 +133,7 @@ AC_SUBST(SHELL)
 AC_SUBST(RUNPROG)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
+AC_SUBST(SONAMEFLAG)
 AC_SUBST(SHLD) 
 AC_SUBST(HOST_OS)
 AC_SUBST(PAM_MOD)
@@ -774,6 +775,7 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
+SONAMEFLAG="#"
 SHLD="\${CC}" 
 PICFLAG=""
 PICSUFFIX="po.o"
@@ -788,6 +790,7 @@ case "$host_os" in
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			PICFLAG="-fPIC"
+			SONAMEFLAG="-Wl,-soname="
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*solaris*) AC_DEFINE(SUNOS5)
@@ -2442,7 +2445,7 @@ fi
 # If we don't have all of these then disable large
 # file support.
 #
-AC_MSG_CHECKING(checking if large file support can be enabled)
+AC_MSG_CHECKING(if large file support can be enabled)
 AC_TRY_COMPILE([
 #if defined(HAVE_LONGLONG) && (defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8)))
 #include <sys/types.h>

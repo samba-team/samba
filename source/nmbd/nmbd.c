@@ -53,8 +53,9 @@ time_t StartupTime = 0;
 extern struct in_addr ipzero;
 
 /**************************************************************************** **
-  catch a sigterm
+ Catch a sigterm.
  **************************************************************************** */
+
 static void sig_term(int sig)
 {
   BlockSignals(True,SIGTERM);
@@ -78,8 +79,9 @@ static void sig_term(int sig)
 } /* sig_term */
 
 /**************************************************************************** **
- catch a sighup
+ Catch a sighup.
  **************************************************************************** */
+
 static VOLATILE sig_atomic_t reload_after_sighup = False;
 
 static void sig_hup(int sig)
@@ -98,11 +100,11 @@ static void sig_hup(int sig)
 
 } /* sig_hup */
 
-
 #if DUMP_CORE
 /**************************************************************************** **
- prepare to dump a core file - carefully!
+ Prepare to dump a core file - carefully!
  **************************************************************************** */
+
 static BOOL dump_core(void)
 {
   char *p;
@@ -138,10 +140,10 @@ static BOOL dump_core(void)
 } /* dump_core */
 #endif
 
-
 /**************************************************************************** **
- possibly continue after a fault
+ Possibly continue after a fault.
  **************************************************************************** */
+
 static void fault_continue(void)
 {
 #if DUMP_CORE
@@ -150,8 +152,9 @@ static void fault_continue(void)
 } /* fault_continue */
 
 /**************************************************************************** **
- expire old names from the namelist and server list
+ Expire old names from the namelist and server list.
  **************************************************************************** */
+
 static void expire_names_and_servers(time_t t)
 {
   static time_t lastrun = 0;
@@ -179,10 +182,10 @@ static void expire_names_and_servers(time_t t)
   expire_workgroups_and_servers(t);
 } /* expire_names_and_servers */
 
-
 /************************************************************************** **
-reload the list of network interfaces
+ Reload the list of network interfaces.
  ************************************************************************** */
+
 static BOOL reload_interfaces(time_t t)
 {
 	static time_t lastt;
@@ -259,11 +262,10 @@ static BOOL reload_interfaces(time_t t)
 	return False;
 }
 
-
-
 /**************************************************************************** **
-  reload the services file
+ Reload the services file.
  **************************************************************************** */
+
 static BOOL reload_nmbd_services(BOOL test)
 {
   BOOL ret;
@@ -308,6 +310,7 @@ cannot be set in the smb.conf file. nmbd aborting.\n"));
 /**************************************************************************** **
  The main select loop.
  **************************************************************************** */
+
 static void process(void)
 {
   BOOL run_election;
@@ -506,10 +509,10 @@ static void process(void)
   }
 } /* process */
 
-
 /**************************************************************************** **
- open the socket communication
+ Open the socket communication.
  **************************************************************************** */
+
 static BOOL open_sockets(BOOL isdaemon, int port)
 {
   /* The sockets opened here will be used to receive broadcast
@@ -539,10 +542,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   return( True );
 } /* open_sockets */
 
-
 /**************************************************************************** **
- initialise connect, service and file structs
+ Initialise connect, service and file structs.
  **************************************************************************** */
+
 static BOOL init_structs(void)
 {
   extern fstring local_machine;
@@ -625,8 +628,9 @@ static BOOL init_structs(void)
 } /* init_structs */
 
 /**************************************************************************** **
- usage on the program
+ Usage on the program.
  **************************************************************************** */
+
 static void usage(char *pname)
 {
 
@@ -649,8 +653,9 @@ static void usage(char *pname)
 
 
 /**************************************************************************** **
- main program
+ Main program.
  **************************************************************************** */
+
  int main(int argc,char *argv[])
 {
   int opt;
@@ -894,4 +899,3 @@ static void usage(char *pname)
     fclose(dbf);
   return(0);
 } /* main */
-
