@@ -71,6 +71,61 @@ static void api_svc_close( uint16 vuid, prs_struct *data,
 
 
 /*******************************************************************
+ svc_reply_open_service
+ ********************************************************************/
+static void svc_reply_open_service(SVC_Q_OPEN_SERVICE *q_u,
+				prs_struct *rdata)
+{
+	uint32 status     = 0;
+	POLICY_HND pol;
+	SVC_R_OPEN_SERVICE r_u;
+	fstring name;
+
+	DEBUG(5,("svc_open_service: %d\n", __LINE__));
+
+	if (status == 0x0 && find_lsa_policy_by_hnd(&q_u->scman_pol) == -1)
+	{
+		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (status == 0x0 && !open_lsa_policy_hnd(&pol))
+	{
+		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+	}
+
+	fstrcpy(name, unistr2_to_str(&q_u->uni_srv_name));
+
+	if (status == 0x0)
+	{
+		DEBUG(5,("svc_open_service: %s\n", name));
+		/* lkcl XXXX do a check on the name, here */
+	}
+
+	if (status == 0x0 && !set_lsa_policy_reg_name(&pol, name))
+	{
+		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+	}
+
+	make_svc_r_open_service(&r_u, &pol, status);
+
+	/* store the response in the SMB stream */
+	svc_io_r_open_service("", &r_u, rdata, 0);
+
+	DEBUG(5,("svc_open_service: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ api_svc_open_service
+ ********************************************************************/
+static void api_svc_open_service( uint16 vuid, prs_struct *data,
+                                    prs_struct *rdata )
+{
+	SVC_Q_OPEN_SERVICE q_u;
+	svc_io_q_open_service("", &q_u, data, 0);
+	svc_reply_open_service(&q_u, rdata);
+}
+
+/*******************************************************************
  svc_reply_open_sc_man
  ********************************************************************/
 static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
@@ -145,7 +200,7 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 	int buf_size = 0;
 	int i = get_enum_hnd(&q_u->resume_hnd);
 	uint32 resume_hnd = 0;
-	int max_buf_size = 0x80;
+	int max_buf_size = 0x10000;
 
 	ZERO_STRUCT(r_u);
 
@@ -161,7 +216,6 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 		DEBUG(5,("svc_enum_svcs_status:\n"));
 		while (dummy_services[i] != NULL)
 		{
-		
 			ENUM_SRVC_STATUS *svc = NULL;
 
 			buf_size += strlen(dummy_services[i] + 1) * 2;
@@ -170,12 +224,15 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 			DEBUG(10,("buf_size: %d q_u->buf_size: %d\n",
 			           buf_size, q_u->buf_size));
 
+			if (buf_size >= max_buf_size)
+			{
+				resume_hnd = i;
+				break;
+			}
+
 			if (buf_size > q_u->buf_size)
 			{
-				if (buf_size >= max_buf_size)
-				{
-					resume_hnd = i;
-				}
+				dos_status = ERRmoredata;
 				break;
 			}
 
@@ -238,10 +295,11 @@ static void api_svc_enum_svcs_status( uint16 vuid, prs_struct *data,
  ********************************************************************/
 static struct api_struct api_svc_cmds[] =
 {
-	{ "SVC_CLOSE"        , SVC_CLOSE        , api_svc_close        },
-	{ "SVC_OPEN_SC_MAN"  , SVC_OPEN_SC_MAN  , api_svc_open_sc_man  },
+	{ "SVC_CLOSE"           , SVC_CLOSE           , api_svc_close            },
+	{ "SVC_OPEN_SC_MAN"     , SVC_OPEN_SC_MAN     , api_svc_open_sc_man      },
+	{ "SVC_OPEN_SERVICE"    , SVC_OPEN_SERVICE    , api_svc_open_service     },
 	{ "SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS, api_svc_enum_svcs_status },
-	{ NULL,                0                , NULL                 }
+	{ NULL                  , 0                   , NULL                     }
 };
 
 /*******************************************************************

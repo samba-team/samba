@@ -96,6 +96,131 @@ void svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, i
 }
 
 /*******************************************************************
+ make_svc_q_open_service
+ ********************************************************************/
+void make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
+				POLICY_HND *hnd,
+				char *server,
+				uint32 des_access)  
+{
+	DEBUG(5,("make_svc_q_open_service\n"));
+
+	memcpy(&(q_u->scman_pol), hnd, sizeof(q_u->scman_pol));
+	make_unistr2(&(q_u->uni_srv_name), server, strlen(server)+1);
+	q_u->des_access = des_access;
+
+}
+
+/*******************************************************************
+reads or writes a SVC_Q_OPEN_SERVICE structure.
+********************************************************************/
+void svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_q_open_service");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("", &(q_u->scman_pol), ps, depth);
+	prs_align(ps);
+
+	smb_io_unistr2("", &(q_u->uni_srv_name), 1, ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("des_access", ps, depth, &(q_u->des_access));
+	prs_align(ps);
+}
+
+/*******************************************************************
+ make_svc_r_open_service
+ ********************************************************************/
+void make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
+				uint32 status)  
+{
+	DEBUG(5,("make_svc_r_unknown_0: %d\n", __LINE__));
+
+	memcpy(&(r_u->pol), hnd, sizeof(r_u->pol));
+	r_u->status = status;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_r_open_service");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("", &(r_u->pol), ps, depth);
+
+	prs_uint32("status      ", ps, depth, &(r_u->status));
+}
+
+/*******************************************************************
+ make_svc_query_svc_cfg
+ ********************************************************************/
+void make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
+				uint32 service_type, uint32 start_type,
+				uint32 error_control,
+				char* bin_path_name, char* load_order_grp, 
+				uint32 tag_id,
+				char* dependencies, char* service_start_name,
+				char* disp_name)
+{
+	DEBUG(5,("make_svc_query_svc_cfg\n"));
+
+	q_u->service_type = service_type;
+	q_u->start_type = start_type;
+	q_u->error_control = error_control;
+	make_buf_unistr2(&(q_u->uni_bin_path_name     ), &(q_u->ptr_bin_path_name     ), bin_path_name     );
+	make_buf_unistr2(&(q_u->uni_load_order_grp    ), &(q_u->ptr_load_order_grp    ), load_order_grp    );
+	q_u->tag_id = tag_id;
+	make_buf_unistr2(&(q_u->uni_dependencies      ), &(q_u->ptr_dependencies      ), dependencies      );
+	make_buf_unistr2(&(q_u->uni_service_start_name), &(q_u->ptr_service_start_name), service_start_name);
+	make_buf_unistr2(&(q_u->uni_display_name      ), &(q_u->ptr_display_name      ), disp_name         );
+}
+
+/*******************************************************************
+reads or writes a QUERY_SERVICE_CONFIG structure.
+********************************************************************/
+void svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_query_svc_cfg");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("service_type          ", ps, depth, &(q_u->service_type          ));
+	prs_uint32("start_type            ", ps, depth, &(q_u->start_type            ));
+	prs_uint32("error_control         ", ps, depth, &(q_u->error_control         ));
+	prs_uint32("ptr_bin_path_name     ", ps, depth, &(q_u->ptr_bin_path_name     ));
+	prs_uint32("ptr_load_order_grp    ", ps, depth, &(q_u->ptr_load_order_grp    ));
+	prs_uint32("tag_id                ", ps, depth, &(q_u->tag_id                ));
+	prs_uint32("ptr_dependencies      ", ps, depth, &(q_u->ptr_dependencies      ));
+	prs_uint32("ptr_service_start_name", ps, depth, &(q_u->ptr_service_start_name));
+	prs_uint32("ptr_display_name      ", ps, depth, &(q_u->ptr_display_name      ));
+
+	smb_io_unistr2("uni_bin_path_name     ", &(q_u->uni_bin_path_name     ), q_u->ptr_bin_path_name     , ps, depth); 
+	prs_align(ps);
+	smb_io_unistr2("uni_load_order_grp    ", &(q_u->uni_load_order_grp    ), q_u->ptr_load_order_grp    , ps, depth); 
+	prs_align(ps);
+	smb_io_unistr2("uni_dependencies      ", &(q_u->uni_dependencies      ), q_u->ptr_dependencies      , ps, depth); 
+	prs_align(ps);
+	smb_io_unistr2("uni_service_start_name", &(q_u->uni_service_start_name), q_u->ptr_service_start_name, ps, depth); 
+	prs_align(ps);
+	smb_io_unistr2("uni_display_name      ", &(q_u->uni_display_name      ), q_u->ptr_display_name      , ps, depth); 
+	prs_align(ps);
+}
+
+/*******************************************************************
 makes an SVC_Q_ENUM_SVCS_STATUS structure.
 ********************************************************************/
 void make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
@@ -330,6 +455,67 @@ void svc_io_svc_status(char *desc,  SVC_STATUS *svc, prs_struct *ps, int depth)
 	prs_uint32("svc_specific_exit_code", ps, depth, &(svc->svc_specific_exit_code));
 	prs_uint32("check_point", ps, depth, &(svc->check_point));
 	prs_uint32("wait_hint", ps, depth, &(svc->wait_hint));
+}
+
+/*******************************************************************
+makes an SVC_Q_QUERY_SVC_CONFIG structure.
+********************************************************************/
+void make_svc_q_query_svc_config(SVC_Q_QUERY_SVC_CONFIG *q_c, POLICY_HND *hnd,
+				uint32 buf_size)
+{
+	if (q_c == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_svc_q_query_svc_config\n"));
+
+	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+	q_c->buf_size = buf_size;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void svc_io_q_query_svc_config(char *desc,  SVC_Q_QUERY_SVC_CONFIG *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_q_query_svc_config");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("", &(q_u->pol), ps, depth); 
+	prs_align(ps);
+	prs_uint32("buf_size", ps, depth, &(q_u->buf_size));
+}
+
+/*******************************************************************
+makes an SVC_R_QUERY_SVC_CONFIG structure.
+********************************************************************/
+void make_svc_r_query_svc_config(SVC_R_QUERY_SVC_CONFIG *r_c, 
+				uint32 buf_size)
+{
+	if (r_c == NULL) return;
+
+	DEBUG(5,("make_svc_r_query_svc_config\n"));
+
+	r_c->buf_size = buf_size;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_r_query_svc_config");
+	depth++;
+
+	prs_align(ps);
+
+	svc_io_query_svc_cfg("cfg", r_u->cfg, ps, depth); 
+	prs_uint32("buf_size", ps, depth, &(r_u->buf_size));
+	prs_uint32("status  ", ps, depth, &(r_u->status  ));
 }
 
 /*******************************************************************

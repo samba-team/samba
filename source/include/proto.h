@@ -2504,6 +2504,22 @@ void svc_io_q_open_sc_man(char *desc, SVC_Q_OPEN_SC_MAN *q_u, prs_struct *ps, in
 void make_svc_r_open_sc_man(SVC_R_OPEN_SC_MAN *r_u, POLICY_HND *hnd,
 				uint32 status)  ;
 void svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, int depth);
+void make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
+				POLICY_HND *hnd,
+				char *server,
+				uint32 des_access)  ;
+void svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth);
+void make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
+				uint32 status)  ;
+void svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth);
+void make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
+				uint32 service_type, uint32 start_type,
+				uint32 error_control,
+				char* bin_path_name, char* load_order_grp, 
+				uint32 tag_id,
+				char* dependencies, char* service_start_name,
+				char* display_name);
+void svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth);
 void make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
 				uint32 service_type, uint32 service_state,
 				uint32 buf_size, uint32 resume_hnd );

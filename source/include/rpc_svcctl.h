@@ -28,6 +28,8 @@
 /* svcctl pipe */
 #define SVC_OPEN_SC_MAN      0x0f
 #define SVC_ENUM_SVCS_STATUS 0x0e
+#define SVC_QUERY_SVC_CONFIG 0x11
+#define SVC_OPEN_SERVICE     0x10
 #define SVC_CLOSE            0x00
 
 
@@ -51,6 +53,45 @@ typedef struct r_svc_open_sc_man_info
 	uint32 status;             /* return status */
 
 } SVC_R_OPEN_SC_MAN;
+
+/* SVC_Q_OPEN_SERVICE */
+typedef struct q_svc_open_service_info
+{
+	POLICY_HND scman_pol;
+	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
+	uint32 des_access;            /* 0x80000004 - SC_MANAGER_xxxx */
+
+} SVC_Q_OPEN_SERVICE;
+
+/* SVC_R_OPEN_SERVICE */
+typedef struct r_svc_open_service_info
+{
+	POLICY_HND pol;
+	uint32 status;             /* return status */
+
+} SVC_R_OPEN_SERVICE;
+
+
+/* QUERY_SERVICE_CONFIG */
+typedef struct query_service_config_info
+{
+	uint32 service_type;
+	uint32 start_type;
+	uint32 error_control;
+	uint32 ptr_bin_path_name; 
+	uint32 ptr_load_order_grp; 
+	uint32 tag_id;
+	uint32 ptr_dependencies;
+	uint32 ptr_service_start_name;
+	uint32 ptr_display_name;
+
+	UNISTR2 uni_bin_path_name;
+	UNISTR2 uni_load_order_grp;
+	UNISTR2 uni_dependencies;
+	UNISTR2 uni_service_start_name;
+	UNISTR2 uni_display_name;
+
+} QUERY_SERVICE_CONFIG;
 
 /* SVC_STATUS */
 typedef struct svc_status_info
@@ -96,6 +137,25 @@ typedef struct r_svc_enum_svcs_status_info
 	uint32 dos_status; /* return status, DOS error code (wow!) */
 
 } SVC_R_ENUM_SVCS_STATUS;
+
+
+/* SVC_Q_QUERY_SVC_CONFIG */
+typedef struct q_svc_query_svc_cfg_info
+{
+	POLICY_HND pol;
+	uint32 buf_size;
+
+} SVC_Q_QUERY_SVC_CONFIG;
+
+
+/* SVC_R_QUERY_SVC_CONFIG */
+typedef struct r_svc_query_svc_cfg_info
+{
+	QUERY_SERVICE_CONFIG *cfg;
+	uint32 buf_size;
+	uint32 status;             /* return status */
+
+} SVC_R_QUERY_SVC_CONFIG;
 
 
 /* SVC_Q_CLOSE */
