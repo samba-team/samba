@@ -599,7 +599,25 @@ static void api_net_sam_logon( uint16 vuid,
 	DOM_CRED srv_cred;
 	struct sam_passwd *sam_pass = NULL;
 	UNISTR2 *uni_samlogon_user = NULL;
+	UNISTR2 *uni_domain = NULL;
 	fstring nt_username;
+
+	NTTIME logon_time           ;
+	NTTIME logoff_time          ;
+	NTTIME kickoff_time         ;
+	NTTIME pass_last_set_time   ;
+	NTTIME pass_can_change_time ;
+	NTTIME pass_must_change_time;
+
+	fstring nt_name     ;
+	fstring full_name   ;
+	fstring logon_script;
+	fstring profile_path;
+	fstring home_dir    ;
+	fstring dir_drive   ;
+
+	uint32 user_rid ;
+	uint32 group_rid;
 
 	user_struct *vuser = NULL;
 
@@ -630,6 +648,7 @@ static void api_net_sam_logon( uint16 vuid,
 			case INTERACTIVE_LOGON_TYPE:
 			{
 				uni_samlogon_user = &(q_l.sam_id.ctr->auth.id1.uni_user_name);
+				uni_domain        = &(q_l.sam_id.ctr->auth.id1.uni_domain_name);
 
 				DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", global_sam_name));
 				break;
@@ -637,6 +656,7 @@ static void api_net_sam_logon( uint16 vuid,
 			case NET_LOGON_TYPE:
 			{
 				uni_samlogon_user = &(q_l.sam_id.ctr->auth.id2.uni_user_name);
+				uni_domain        = &(q_l.sam_id.ctr->auth.id2.uni_domain_name);
 
 				DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", global_sam_name));
 				break;
@@ -654,9 +674,12 @@ static void api_net_sam_logon( uint16 vuid,
 
 	if (status == 0)
 	{
-		pstrcpy(nt_username, unistrn2(uni_samlogon_user->buffer,
-		                                uni_samlogon_user->uni_str_len));
-
+		fstrcpy(nt_username, unistr2_to_str(uni_samlogon_user));
+#if 0
+		slprintf(nt_username, sizeof(nt_username), "%s\\%s",
+		         unistr2_to_str(uni_domain),
+		         unistr2_to_str(uni_samlogon_user));
+#endif
 		DEBUG(3,("User:[%s]\n", nt_username));
 
 		become_root(True);
@@ -672,6 +695,26 @@ static void api_net_sam_logon( uint16 vuid,
 		{
 			status =  0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
 		}
+	}
+
+	if (status == 0x0)
+	{
+		logon_time            = sam_pass->logon_time;
+		logoff_time           = sam_pass->logoff_time;
+		kickoff_time          = sam_pass->kickoff_time;
+		pass_last_set_time    = sam_pass->pass_last_set_time;
+		pass_can_change_time  = sam_pass->pass_can_change_time;
+		pass_must_change_time = sam_pass->pass_must_change_time;
+
+		fstrcpy(nt_name     , sam_pass->nt_name);
+		fstrcpy(full_name   , sam_pass->full_name);
+		fstrcpy(logon_script, sam_pass->logon_script);
+		fstrcpy(profile_path, sam_pass->profile_path);
+		fstrcpy(home_dir    , sam_pass->home_dir);
+		fstrcpy(dir_drive   , sam_pass->dir_drive);
+
+		user_rid  = sam_pass->user_rid;
+		group_rid = sam_pass->group_rid;
 	}
 
 	/* validate password - if required */
@@ -705,7 +748,7 @@ static void api_net_sam_logon( uint16 vuid,
 	if (status == 0)
 	{
 		int num_gids = 0;
-		DOMAIN_GRP *grp_mem;
+		DOMAIN_GRP *grp_mem = NULL;
 
 		/* set up pointer indicating user/password failed to be found */
 		usr_info.ptr_user_info = 0;
@@ -721,25 +764,25 @@ static void api_net_sam_logon( uint16 vuid,
 			num_gids = make_dom_gids(grp_mem, num_gids, &gids);
 
 			make_net_user_info3(&usr_info,
-				&sam_pass->logon_time,
-				&sam_pass->logoff_time,
-				&sam_pass->kickoff_time,
-				&sam_pass->pass_last_set_time,
-				&sam_pass->pass_can_change_time,
-				&sam_pass->pass_must_change_time,
+				&logon_time,
+				&logoff_time,
+				&kickoff_time,
+				&pass_last_set_time,
+				&pass_can_change_time,
+				&pass_must_change_time,
 
-				sam_pass->nt_name         , /* user_name */
-				sam_pass->full_name       , /* full_name */
-				sam_pass->logon_script    , /* logon_script */
-				sam_pass->profile_path    , /* profile_path */
-				sam_pass->home_dir        , /* home_dir */
-				sam_pass->dir_drive       , /* dir_drive */
+				nt_name         , /* user_name */
+				full_name       , /* full_name */
+				logon_script    , /* logon_script */
+				profile_path    , /* profile_path */
+				home_dir        , /* home_dir */
+				dir_drive       , /* dir_drive */
 
 				0, /* logon_count */
 				0, /* bad_pw_count */
 
-				sam_pass->user_rid   , /* RID user_id */
-				sam_pass->group_rid  , /* RID group_id */
+				user_rid   , /* RID user_id */
+				group_rid  , /* RID group_id */
 				num_gids,    /* uint32 num_groups */
 				gids    , /* DOM_GID *gids */
 				0x20    , /* uint32 user_flgs (?) */

@@ -126,12 +126,15 @@ struct sam_passwd *getsam21pwent(void *vp)
  does not have search facilities.
 *************************************************************************/
 
-struct sam_passwd *iterate_getsam21pwntnam(const char *name)
+struct sam_passwd *iterate_getsam21pwntnam(const char *ntname)
 {
+	fstring nt_name;
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("search by name: %s\n", name));
+	DEBUG(10, ("search by name: %s\n", ntname));
+
+	fstrcpy(nt_name, ntname);
 
 	/* Open the smb password database - not for update. */
 	fp = startsmbpwent(False);
@@ -142,14 +145,14 @@ struct sam_passwd *iterate_getsam21pwntnam(const char *name)
 		return NULL;
 	}
 
-	while ((pwd = getsam21pwent(fp)) != NULL && !strequal(pwd->nt_name, name))
+	while ((pwd = getsam21pwent(fp)) != NULL && !strequal(pwd->nt_name, nt_name))
 	{
 		DEBUG(10, ("iterate: %s 0x%x\n", pwd->nt_name, pwd->user_rid));
 	}
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("found by name: %s\n", name));
+		DEBUG(10, ("found by name: %s\n", nt_name));
 	}
 
 	endsmbpwent(fp);
@@ -436,6 +439,9 @@ struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam)
 	if (sam->unix_uid  == (uid_t)-1 ) sam->unix_uid  = (uid_t)gmep.unix_id;
 	if (sam->user_rid  == 0xffffffff) sid_split_rid(&gmep.sid, &sam->user_rid);
 
+	DEBUG(10,("pwdb_sam_map_name: found unix user %s nt %s uid %d rid 0x%x\n",
+	           sam->unix_name, sam->nt_name, sam->unix_uid, sam->user_rid));
+
 	/*
 	 * group details
 	 */
@@ -510,6 +516,9 @@ you will get this warning only once (for all trust accounts)\n", unix_name));
 
 	if (sam->unix_gid  == (gid_t)-1 ) sam->unix_gid  = (gid_t)gmep.unix_id;
 	if (sam->group_rid == 0xffffffff) sid_split_rid(&gmep.sid, &sam->group_rid);
+
+	DEBUG(10,("pwdb_sam_map_name: found gid %d and group rid 0x%x for unix user %s\n",
+	           sam->unix_gid, sam->group_rid, sam->unix_name));
 
 	return sam;
 }

@@ -283,6 +283,13 @@ BOOL generate_sam_sid(char *domain_name)
 	uchar raw_sid_data[12];
 
 	pstrcpy(sid_file, lp_smb_passwd_file());
+
+	if (sid_file[0] == 0)
+	{
+		DEBUG(0,("cannot find smb passwd file\n"));
+		return False;
+	}
+
 	p = strrchr(sid_file, '/');
 	if (p != NULL)
 	{
@@ -456,10 +463,10 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
 
 	if ((*nt_domain)[0] == 0)
 	{
-		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n",
-		          global_sam_name));
 		free(*nt_domain);
 		(*nt_domain) = strdup(global_sam_name);
+		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n",
+		          (*nt_domain)));
 		sid_copy(sid, &global_sam_sid);
 		return True;
 	}

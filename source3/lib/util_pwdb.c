@@ -141,7 +141,6 @@ uint32 lookup_wk_user_name(const char *user_name, const char *domain,
 
 	if (usr_name != NULL)
 	{
-		sid_copy(sid, &global_sid_S_1_5_20);
 		sid_append_rid(sid, domain_user_rids[i].rid);
 		return 0;
 	}
