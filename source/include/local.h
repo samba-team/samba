@@ -72,11 +72,6 @@
 /* wchar separators for lists */
 #define LIST_SEP_W wchar_list_sep
 
-#ifndef LOCKDIR
-/* this should have been set in the Makefile */
-#define LOCKDIR "/tmp/samba"
-#endif
-
 /* this is where browse lists are kept in the lock dir */
 #define SERVER_LIST "browse.dat"
 

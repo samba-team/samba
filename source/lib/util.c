@@ -1782,13 +1782,18 @@ char *lock_path(char *name)
 	return fname;
 }
 
-/*****************************************************************
-a useful function for returning a path in the Samba lib directory
- *****************************************************************/  
+
+/**
+ * @brief Returns an absolute path to a file in the Samba lib directory.
+ *
+ * @param name File to find, relative to LIBDIR.
+ *
+ * @retval Pointer to a static #pstring containing the full path.
+ **/
 char *lib_path(char *name)
 {
 	static pstring fname;
-	snprintf(fname, sizeof(fname), "%s/%s", LIBDIR, name);
+	snprintf(fname, sizeof(fname), "%s/%s", dyn_LIBDIR, name);
 	return fname;
 }
 
