@@ -47,11 +47,6 @@
 #define SYSLOG_FACILITY LOG_DAEMON
 #endif
 
-/* Default size of shared memory used for share mode locking */
-#ifndef SHMEM_SIZE
-#define SHMEM_SIZE (1024*1024)
-#endif
-
 /* 
  * Default number of maximum open files per smbd. This is
  * also limited by the maximum available file descriptors

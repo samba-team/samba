@@ -188,7 +188,6 @@ typedef struct
 	int ReadSize;
 	int lm_announce;
 	int lm_interval;
-	int shmem_size;
 	int client_code_page;
 	int announce_as;	/* This is initialised in init_globals */
 	int machine_password_timeout;
@@ -770,7 +769,6 @@ static struct parm_struct parm_table[] = {
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_PRINT},
 	{"read size", P_INTEGER, P_GLOBAL, &Globals.ReadSize, NULL, NULL, 0},
 	
-	{"shared mem size", P_INTEGER, P_GLOBAL, &Globals.shmem_size, NULL, NULL, 0},
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, 0},
 	{"stat cache size", P_INTEGER, P_GLOBAL, &Globals.stat_cache_size, NULL, NULL, 0},
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_SHARE},
@@ -1071,7 +1069,6 @@ static void init_globals(void)
 	Globals.ReadSize = 16 * 1024;
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
-	Globals.shmem_size = SHMEM_SIZE;
 	Globals.stat_cache_size = 50;	/* Number of stat translations we'll keep */
 	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
 	Globals.bUnixRealname = True;
@@ -1437,7 +1434,6 @@ FN_GLOBAL_INTEGER(lp_maxmux, &Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, &Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_readsize, &Globals.ReadSize)
-FN_GLOBAL_INTEGER(lp_shmem_size, &Globals.shmem_size)
 FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)

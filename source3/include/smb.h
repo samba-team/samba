@@ -680,35 +680,6 @@ typedef struct
 #define SHAREMODE_FN(fn) \
 	void (*fn)(share_mode_entry *, char*)
 
-/* each implementation of the share mode code needs
-   to support the following operations */
-struct share_ops {
-	BOOL (*stop_mgmt)(void);
-	BOOL (*lock_entry)(connection_struct *, SMB_DEV_T , SMB_INO_T , int *);
-	BOOL (*unlock_entry)(connection_struct *, SMB_DEV_T , SMB_INO_T , int );
-	int (*get_entries)(connection_struct *, int , SMB_DEV_T , SMB_INO_T , share_mode_entry **);
-	void (*del_entry)(int , files_struct *);
-	BOOL (*set_entry)(int, files_struct *, uint16 , uint16 );
-    BOOL (*mod_entry)(int, files_struct *, void (*)(share_mode_entry *, SMB_DEV_T, SMB_INO_T, void *), void *);
-	int (*forall)(void (*)(share_mode_entry *, char *));
-	void (*status)(FILE *);
-};
-
-/* each implementation of the shared memory code needs
-   to support the following operations */
-struct shmem_ops {
-	BOOL (*shm_close)( void );
-	int (*shm_alloc)(int );
-	BOOL (*shm_free)(int );
-	int (*get_userdef_off)(void);
-	void *(*offset2addr)(int );
-	int (*addr2offset)(void *addr);
-	BOOL (*lock_hash_entry)(unsigned int);
-	BOOL (*unlock_hash_entry)( unsigned int );
-	BOOL (*get_usage)(int *,int *,int *);
-	unsigned (*hash_size)(void);
-};
-
 /*
  * Each implementation of the password database code needs
  * to support the following operations.
