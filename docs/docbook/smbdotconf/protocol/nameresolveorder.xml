@@ -5,7 +5,8 @@
 <listitem>
     <para>This option is used by the programs in the Samba 
     suite to determine what naming services to use and in what order 
-    to resolve host names to IP addresses. The option takes a space 
+    to resolve host names to IP addresses. Its main purpose to is to
+    control how netbios name resolution is performed.  The option takes a space 
     separated string of name resolution options.</para>
 
     <para>The options are: &quot;lmhosts&quot;, &quot;host&quot;,
@@ -16,7 +17,8 @@
 	<listitem>
 	    <para><constant>lmhosts</constant> : Lookup an IP 
 	    address in the Samba lmhosts file. If the line in lmhosts has 
-	    no name type attached to the NetBIOS name (see the <ulink url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
+	    no name type attached to the NetBIOS name (see the <ulink 
+            url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
 	    any name type matches for lookup.</para>
 	</listitem>
 
@@ -26,9 +28,10 @@
 	    </filename>, NIS, or DNS lookups. This method of name resolution 
 	    is operating system depended for instance on IRIX or Solaris this 
 	    may be controlled by the <filename moreinfo="none">/etc/nsswitch.conf</filename> 
-	    file.  Note that this method is only used if the NetBIOS name 
-	    type being queried is the 0x20 (server) name type, otherwise 
-	    it is ignored.</para>
+	    file.  Note that this method is used only if the NetBIOS name 
+	    type being queried is the 0x20 (server) name type or 0x1c (domain controllers). 
+            The latter case is only useful for active directory domains and results in a DNS
+            query for the SRV RR entry matching _ldap._tcp.domain.</para>
 	</listitem>
 
 	<listitem>
@@ -59,6 +62,9 @@
     it is advised to use following settings for <parameter moreinfo="none">name resolve order</parameter>:</para>
 
     <para><command moreinfo="none">name resolve order = wins bcast</command></para>
+
+    <para>DC lookups will still be done via DNS, but fallbacks to netbios names will
+    not inundate your DNS servers with needless querys for DOMAIN<0x1c> lookups.</para>
     
 </listitem>
 </samba:parameter>
