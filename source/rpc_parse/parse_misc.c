@@ -697,7 +697,7 @@ BOOL smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
  Inits a BUFFER2 structure.
 ********************************************************************/
 
-void init_buffer2(BUFFER2 *str, const uint8 *buf, int len)
+void init_buffer2(BUFFER2 *str, const uint8 *buf, size_t len)
 {
 	ZERO_STRUCTP(str);
 
@@ -1050,7 +1050,7 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 BOOL init_unistr2_array(UNISTR2_ARRAY *array, 
 		       uint32 count, const char **strings)
 {
-	int i;
+	unsigned int i;
 
 	array->count = count;
 	array->ref_id = count?1:0;
@@ -1078,7 +1078,7 @@ BOOL init_unistr2_array(UNISTR2_ARRAY *array,
 ********************************************************************/
 BOOL smb_io_unistr2_array(const char *desc, UNISTR2_ARRAY *array, prs_struct *ps, int depth)
 {
-	int i;
+	unsigned int i;
 
 	prs_debug(ps, depth, desc, "smb_io_unistr2_array");
 	depth++;
