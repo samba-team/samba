@@ -423,7 +423,7 @@ static BOOL pac_io_pac_signature_data(const char *desc,
 	if (!prs_uint32("type", ps, depth, &data->type))
 		return False;
 	if (UNMARSHALLING(ps)) {
-		data->signature = prs_alloc_mem(ps, siglen);
+		data->signature = (unsigned char *)prs_alloc_mem(ps, siglen);
 		if (!data->signature) {
 			DEBUG(3, ("No memory available\n"));
 			return False;
@@ -601,7 +601,7 @@ PAC_DATA *decode_pac_data(DATA_BLOB *auth_data, TALLOC_CTX *ctx)
 
 	DEBUG(5,("dump_pac_data\n"));
 	prs_init(&ps, pac_data_blob.length, ctx, UNMARSHALL);
-	prs_copy_data_in(&ps, pac_data_blob.data, pac_data_blob.length);
+	prs_copy_data_in(&ps, (char *)pac_data_blob.data, pac_data_blob.length);
 	prs_set_offset(&ps, 0);
 
 	data_blob_free(&pac_data_blob);

@@ -393,7 +393,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		dump_data(100, plaintext_password.data, plaintext_password.length);
 #endif
 
-		SMBencrypt( (const uchar *)plaintext_password.data, (const uchar*)chal, local_lm_response);
+		SMBencrypt( (const char *)plaintext_password.data, (const uchar*)chal, local_lm_response);
 		local_lm_blob = data_blob(local_lm_response, 24);
 		
 		/* We can't do an NT hash here, as the password needs to be

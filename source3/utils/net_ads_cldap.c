@@ -240,7 +240,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 		return -1;
 	}
 
-	p = os3.data;
+	p = (char *)os3.data;
 
 	reply->type = IVAL(p, 0); p += 4;
 	reply->flags = IVAL(p, 0); p += 4;
@@ -248,25 +248,25 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	memcpy(&reply->guid.info, p, GUID_SIZE);
 	p += GUID_SIZE;
 
-	p += pull_netlogon_string(reply->forest, p, os3.data);
-	p += pull_netlogon_string(reply->unk0, p, os3.data);
-	p += pull_netlogon_string(reply->domain, p, os3.data);
-	p += pull_netlogon_string(reply->hostname, p, os3.data);
-	p += pull_netlogon_string(reply->netbios_domain, p, os3.data);
-	p += pull_netlogon_string(reply->unk1, p, os3.data);
-	p += pull_netlogon_string(reply->netbios_hostname, p, os3.data);
-	p += pull_netlogon_string(reply->unk2, p, os3.data);
+	p += pull_netlogon_string(reply->forest, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->unk0, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->domain, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->hostname, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->netbios_domain, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->unk1, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->netbios_hostname, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->unk2, p, (const char *)os3.data);
 
 	if (reply->type == SAMLOGON_AD_R) {
-		p += pull_netlogon_string(reply->user_name, p, os3.data);
+		p += pull_netlogon_string(reply->user_name, p, (const char *)os3.data);
 	} else {
 		*reply->user_name = 0;
 	}
 
-	p += pull_netlogon_string(reply->unk3, p, os3.data);
-	p += pull_netlogon_string(reply->site_name, p, os3.data);
-	p += pull_netlogon_string(reply->unk4, p, os3.data);
-	p += pull_netlogon_string(reply->site_name_2, p, os3.data);
+	p += pull_netlogon_string(reply->unk3, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->site_name, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->unk4, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->site_name_2, p, (const char *)os3.data);
 
 	reply->version = IVAL(p, 0);
 	reply->lmnt_token = SVAL(p, 4);

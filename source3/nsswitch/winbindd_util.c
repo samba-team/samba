@@ -176,7 +176,7 @@ void add_trusted_domains( struct winbindd_domain *domain )
 	
 	/* ask the DC what domains it trusts */
 	
-	result = domain->methods->trusted_domains(domain, mem_ctx, &num_domains,
+	result = domain->methods->trusted_domains(domain, mem_ctx, (unsigned int *)&num_domains,
 		&names, &alt_names, &dom_sids);
 		
 	if ( NT_STATUS_IS_OK(result) ) {

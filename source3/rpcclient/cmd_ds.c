@@ -54,7 +54,7 @@ static NTSTATUS cmd_ds_enum_domain_trusts(struct cli_state *cli,
 	NTSTATUS 		result;
 	uint32 			flags = 0x1;
 	DS_DOMAIN_TRUSTS	 *trusts = NULL;
-	int 			num_domains = 0;
+	unsigned int 			num_domains = 0;
 	
 	result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, 
 		&trusts, &num_domains );

@@ -41,7 +41,7 @@ NTSTATUS smb_load_module(const char *module_name)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	init = sys_dlsym(handle, "init_module");
+	init = (init_module_function *)sys_dlsym(handle, "init_module");
 
 	/* we must check sys_dlerror() to determine if it worked, because
            sys_dlsym() can validly return NULL */

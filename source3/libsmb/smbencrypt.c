@@ -81,7 +81,7 @@ void E_deshash(const char *passwd, uchar p16[16])
 	push_ascii(dospwd, passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
 
 	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
-	E_P16(dospwd, p16);
+	E_P16((const unsigned char *)dospwd, p16);
 
 	ZERO_STRUCT(dospwd);	
 }

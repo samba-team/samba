@@ -1986,8 +1986,8 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	POLICY_HND connect_hnd;
 	
 	/* trusted domains listing variables */
-	int enum_ctx = 0;
-	int num_domains, i, pad_len, col_len = 20;
+	unsigned int num_domains, enum_ctx = 0;
+	int i, pad_len, col_len = 20;
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
 	fstring pdc_name, dummy;
