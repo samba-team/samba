@@ -66,8 +66,8 @@ krb5_etype2keytype(krb5_context context,
     return 0;
 }
 
-static void
-generate_random_block(void *buf, size_t len)
+void
+krb5_generate_random_block(void *buf, size_t len)
 {
     des_cblock tmp;
     unsigned char *p = buf;
@@ -103,7 +103,7 @@ krb5_do_encrypt(krb5_context context,
     p = calloc(1, sz);
     if (p == NULL)
 	return ENOMEM;
-    generate_random_block(p, et->confoundersize); /* XXX */
+    krb5_generate_random_block(p, et->confoundersize); /* XXX */
     memcpy(p + et->confoundersize + checksumsize, ptr, len);
 
     krb5_create_checksum(context, et->cksumtype, p, sz, &cksum);
