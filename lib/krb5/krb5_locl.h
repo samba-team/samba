@@ -24,6 +24,9 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#ifdef HAVE_NETINET_IN6_H
+#include <netinet/in6.h>
+#endif
 #include <netdb.h>
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
@@ -93,5 +96,15 @@ extract_ticket(krb5_context context,
 	       krb5_const_pointer keyseed,
 	       krb5_decrypt_proc decrypt_proc,
 	       krb5_const_pointer decryptarg);
+
+void krb5_NULL_checksum(void *p, size_t len, void *result);
+
+void krb5_MD4_checksum(void *p, size_t len, void *result);
+
+void krb5_MD5_checksum(void *p, size_t len, void *result);
+
+void krb5_SHA1_checksum(void *p, size_t len, void *result);
+
+void krb5_CRC_checksum(void *p, size_t len, void *result);
 
 #endif /* __KRB5_LOCL_H__ */
