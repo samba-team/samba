@@ -4340,6 +4340,10 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 
 	if(!prs_uint32("version", ps, depth, &il->version))
 		return False;
+#if 0
+	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
+		return False;
+#endif
 	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
 		return False;
 	if(!prs_uint32("environment_ptr", ps, depth, &il->environment_ptr))
@@ -4385,30 +4389,37 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 	if(!prs_align(ps))
 		return False;
+
 	if(!smb_io_unistr2("environment", &il->environment, il->environment_ptr, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
+
 	if(!smb_io_unistr2("driverpath", &il->driverpath, il->driverpath_ptr, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
+
 	if(!smb_io_unistr2("datafile", &il->datafile, il->datafile_ptr, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
+
 	if(!smb_io_unistr2("configfile", &il->configfile, il->configfile_ptr, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
+
 	if(!smb_io_unistr2("helpfile", &il->helpfile, il->helpfile_ptr, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
+
 	if(!smb_io_unistr2("monitorname", &il->monitorname, il->monitorname_ptr, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
+
 	if(!smb_io_unistr2("defaultdatatype", &il->defaultdatatype, il->defaultdatatype_ptr, ps, depth))
 		return False;
 	if(!prs_align(ps))

@@ -1003,6 +1003,8 @@ int print_queue_status(int snum,
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum)) print_queue_update(snum);
+
+	*queue = NULL;
 	
 	/*
 	 * Count the number of entries.
@@ -1010,6 +1012,9 @@ int print_queue_status(int snum,
 	tsc.count = 0;
 	tsc.snum = snum;
 	tdb_traverse(tdb, traverse_count_fn_queue, (void *)&tsc);
+
+	if (tsc.count == 0)
+		return 0;
 
 	/* Allocate the queue size. */
 	if (( tstruct.queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*tsc.count))
