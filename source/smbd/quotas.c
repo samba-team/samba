@@ -373,7 +373,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 #include <ufs/quota.h>
 
 /****************************************************************************
-try to get the disk space from disk quotas - OFS1 version
+try to get the disk space from disk quotas - OSF1 version
 ****************************************************************************/
 
 BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
