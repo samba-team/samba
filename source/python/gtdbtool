@@ -244,7 +244,11 @@ if len(sys.argv) != 2:
     print "Usage: gdbtool <tdbfile>"
     sys.exit(1)
 
-t = tdb.open(sys.argv[1])
+try:
+    t = tdb.open(sys.argv[1])
+except tdb.error, t:
+    print "gtdbtool: error opening %s: %s" % (sys.argv[1], t)
+    sys.exit(1)
 
 # Create user interface
 
@@ -268,5 +272,11 @@ w.register_display_value_fn("PRINTERS/", convert_to_hex)
 # Show user interface
 
 w.build_ui("gtdbtool: %s" % sys.argv[1])
+
+# Override Python's handling of ctrl-c so we can break out of the gui
+# from the command line.
+
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 mainloop()
