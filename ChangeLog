@@ -1,3 +1,22 @@
+Sat Aug 30 18:48:19 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/connect.c: Add timeout to select, and log about expired tcp
+ 	connections.
+
+	* kdc/config.c: Add `database' option.
+
+	* kdc/hpropd.c: Log about duplicate entries.
+
+	* lib/hdb/{db,ndbm}.c: Use common routines.
+
+	* lib/hdb/common.c: Implement more generic fetch/store/delete
+ 	functions.
+
+	* lib/hdb/hdb.h: Add `replace' parameter to store.
+	
+	* kdc/connect.c: Set filedecriptor to -1 on allocated decriptor
+ 	entries.
+
 Fri Aug 29 02:45:46 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/45/mk_req.c: implementation of krb_mk_req that uses 524
