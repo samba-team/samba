@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -83,12 +83,14 @@ rtbl_destroy (rtbl_t table)
 
 	for (j = 0; j < c->num_rows; j++)
 	    free (c->rows[j].data);
+	free (c->rows);
 	free (c->header);
 	free (c->prefix);
 	free (c);
     }
     free (table->column_prefix);
     free (table->columns);
+    free (table);
 }
 
 int
