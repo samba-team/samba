@@ -30,6 +30,27 @@ extern int global_oplock_break;
 extern uint32 global_client_caps;
 extern pstring global_myname;
 
+#define get_file_size(sbuf) (sbuf.st_size)
+
+/* given a stat buffer return the allocated size on disk, taking into
+   account sparse files */
+
+SMB_OFF_T get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+{
+	SMB_OFF_T ret;
+#if defined(HAVE_STAT_ST_BLKSIZE) && defined(HAVE_STAT_ST_BLOCKS)
+	ret = sbuf->st_blksize * (SMB_OFF_T)sbuf->st_blocks;
+#elif defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+	ret = (SMB_OFF_T)STAT_ST_BLOCKSIZE * (SMB_OFF_T)sbuf->st_blocks;
+#else
+	ret = get_file_size(*sbuf);
+#endif
+	if (!ret && fsp && fsp->initial_allocation_size)
+		ret = fsp->initial_allocation_size;
+	ret = SMB_ROUNDUP(ret,SMB_ROUNDUP_ALLOCATION_SIZE);
+	return ret;
+}
+
 /****************************************************************************
   Send the required number of replies back.
   We assume all fields other than the data fields are
@@ -257,7 +278,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
-	size = sbuf.st_size;
+	size = get_file_size(sbuf);
 	fmode = dos_mode(conn,fname,&sbuf);
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
@@ -565,8 +586,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				continue;
 			}
 
-			size = sbuf.st_size;
-			allocation_size = SMB_ROUNDUP(sbuf.st_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+			size = get_file_size(sbuf);
+			allocation_size = get_allocation_size(NULL,&sbuf);
 			mdate = sbuf.st_mtime;
 			adate = sbuf.st_atime;
 			cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
@@ -758,15 +779,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,reskey); p+= 4;    /* Used for continuing search. */
 
 			/* Begin of SMB_QUERY_FILE_UNIX_BASIC */
-			SOFF_T(p,0,sbuf.st_size);             /* File size 64 Bit */
+			SOFF_T(p,0,get_file_size(sbuf));             /* File size 64 Bit */
 			p+= 8;
 
-#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-			SOFF_T(p,0,sbuf.st_blocks*STAT_ST_BLOCKSIZE); /* Number of bytes used on disk - 64 Bit */
-#else
-			/* Can't get the value - fake it using size. */
-			SOFF_T(p,0,sbuf.st_size);             /* Number of bytes used on disk - 64 Bit */
-#endif
+			SOFF_T(p,0,get_allocation_size(NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			p+= 8;
 
 			put_long_date(p,sbuf.st_ctime);       /* Creation Time 64 Bit */
@@ -1600,7 +1616,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	int mode=0;
 	SMB_OFF_T size=0;
 	SMB_OFF_T allocation_size = 0;
-	SMB_OFF_T initial_allocation_size = 0;
 	unsigned int data_size;
 	SMB_STRUCT_STAT sbuf;
 	pstring fname1;
@@ -1613,13 +1628,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	BOOL bad_path = False;
 	BOOL delete_pending = False;
 	time_t c_time;
+	files_struct *fsp = NULL;
 
 	if (!params)
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 
 	if (tran_call == TRANSACT2_QFILEINFO) {
-		files_struct *fsp;
-
 		if (total_params < 4)
 			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
@@ -1673,8 +1687,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 			delete_pending = fsp->delete_on_close;
-			if (fsp->initial_allocation_size)
-				initial_allocation_size = fsp->initial_allocation_size;
 		}
 	} else {
 		/* qpathinfo */
@@ -1725,12 +1737,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	l = strlen(p);  
 	mode = dos_mode(conn,fname,&sbuf);
 	fullpathname = fname;
-	size = sbuf.st_size;
-	if (size == 0 && initial_allocation_size)
-		allocation_size = initial_allocation_size;
-	else
-		allocation_size = SMB_ROUNDUP(size,SMB_ROUNDUP_ALLOCATION_SIZE);
-
+	size = get_file_size(sbuf);
+	allocation_size = get_allocation_size(fsp,&sbuf);
 	if (mode & aDIR)
 		size = 0;
 
@@ -2059,15 +2067,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 		DEBUG(4,("call_trans2qfilepathinfo: st_mode=%o\n",(int)sbuf.st_mode));
 
-		SOFF_T(pdata,0,sbuf.st_size);             /* File size 64 Bit */
+		SOFF_T(pdata,0,get_file_size(sbuf));             /* File size 64 Bit */
 		pdata += 8;
 
-#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-		SOFF_T(pdata,0,sbuf.st_blocks*STAT_ST_BLOCKSIZE); /* Number of bytes used on disk - 64 Bit */
-#else
-		/* Can't get the value - fake it using size. */
-		SOFF_T(pdata,0,sbuf.st_size);             /* Number of bytes used on disk - 64 Bit */
-#endif
+		SOFF_T(pdata,0,get_allocation_size(fsp,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 		pdata += 8;
 
 		put_long_date(pdata,sbuf.st_ctime);       /* Creation Time 64 Bit */
@@ -2423,7 +2426,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		sbuf.st_mtime = fsp->pending_modtime;
 	}
 
-	size = sbuf.st_size;
+	size = get_file_size(sbuf);
 	tvs.modtime = sbuf.st_mtime;
 	tvs.actime = sbuf.st_atime;
 	dosmode = dos_mode(conn,fname,&sbuf);
@@ -2531,7 +2534,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			if (allocation_size)
 				allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
 
-			if(allocation_size != sbuf.st_size) {
+			if(allocation_size != get_file_size(sbuf)) {
 				SMB_STRUCT_STAT new_sbuf;
  
 				DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new allocation size to %.0f\n",
@@ -2576,7 +2579,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 					return ERROR_NT(NT_STATUS_DISK_FULL);
 
 				/* Allocate can trucate size... */
-				size = new_sbuf.st_size;
+				size = get_file_size(new_sbuf);
 			}
 
 			break;
@@ -2836,7 +2839,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		 * changing the size of a file.
 		 */
 		if (!size)
-			size = sbuf.st_size;
+			size = get_file_size(sbuf);
 	}
 
 	/*
@@ -2881,7 +2884,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 	}
 
-	if(size != sbuf.st_size) {
+	if(size != get_file_size(sbuf)) {
 
 		int ret;
 

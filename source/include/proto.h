@@ -4728,6 +4728,7 @@ BOOL reset_stat_cache( void );
 
 /* The following definitions come from smbd/trans2.c  */
 
+SMB_OFF_T get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 time_t interpret_long_unix_date(char *p);
 NTSTATUS set_bad_path_error(int err, BOOL bad_path);
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
