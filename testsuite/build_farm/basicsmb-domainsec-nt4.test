@@ -8,9 +8,9 @@ test_joindomain_nt4() {
         $prefix/bin/net rpc join oldstyle -S localhost
 	status=$?
 	if [ $status = 0 ]; then
-	    echo "'net rpc join oldstyle' correctly joined the domain ($workgroup)"
+	    echo "'net rpc join oldstyle' correctly joined the domain"
 	else
-	    echo "'net rpc join oldstyle' failed to join the domain ($workgroup)! (status $status)"
+	    echo "'net rpc join oldstyle' failed to join the domain! (status $status)"
 	    return 1
 	fi
 	return 0
