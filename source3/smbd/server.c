@@ -2810,6 +2810,10 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
 static void process_smb(char *inbuf, char *outbuf)
 {
   extern int Client;
+#ifdef USE_SSL
+  extern BOOL sslEnabled;     /* don't use function for performance reasons */
+  static int sslConnected = 0;
+#endif /* USE_SSL */
   static int trans_num;
   int msg_type = CVAL(inbuf,0);
   int32 len = smb_len(inbuf);
@@ -2833,6 +2837,18 @@ static void process_smb(char *inbuf, char *outbuf)
 
   DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
   DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
+
+#ifdef USE_SSL
+    if(sslEnabled && !sslConnected){
+        sslConnected = sslutil_negotiate_ssl(Client, msg_type);
+        if(sslConnected < 0){   /* an error occured */
+            exit_server("SSL negotiation failed");
+        }else if(sslConnected){
+            trans_num++;
+            return;
+        }
+    }
+#endif  /* USE_SSL */
 
 #ifdef WITH_VTP
   if(trans_num == 1 && VT_Check(inbuf)) 
@@ -5424,6 +5440,15 @@ static void usage(char *pname)
 
   if (!reload_services(False))
     return(-1);	
+
+#ifdef USE_SSL
+  {
+    extern BOOL sslEnabled;
+    sslEnabled = lp_ssl_enabled();
+    if(sslEnabled)
+      sslutil_init(True);
+  }
+#endif        /* USE_SSL */
 
   codepage_initialise(lp_client_code_page());
 

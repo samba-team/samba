@@ -338,6 +338,10 @@ BOOL cli_send_session_request(char *inbuf,char *outbuf)
   _smb_setlen(outbuf,len);
   CVAL(outbuf,0) = 0x81;
 
+#ifdef USE_SSL
+retry:
+#endif /* USE_SSL */
+
   send_smb(Client,outbuf);
   DEBUG(5,("Sent session request\n"));
 
@@ -373,6 +377,15 @@ BOOL cli_send_session_request(char *inbuf,char *outbuf)
       return cli_send_session_request(inbuf,outbuf);
     } /* C. Hoch 9/14/95 End */
 
+#ifdef USE_SSL
+    if(CVAL(inbuf,0) == 0x83 && CVAL(inbuf,4) == 0x8e) {       /* use ssl */
+              fprintf(stderr, "Making secure connection\n");
+        if(!sslutil_fd_is_ssl(Client)){
+            if(sslutil_connect(Client) == 0)
+                goto retry;
+        }
+    }
+#endif
 
   if (CVAL(inbuf,0) != 0x82)
     {

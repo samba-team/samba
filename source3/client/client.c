@@ -3588,6 +3588,10 @@ static void usage(char *pname)
 
   interpret_coding_system(term_code);
 
+#ifdef USE_SSL
+  sslutil_init(0);
+#endif
+
   pstrcpy(workgroup,lp_workgroup());
 
   load_interfaces();

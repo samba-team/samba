@@ -29,6 +29,13 @@
 #endif
 #endif
 
+#ifdef USE_SSL
+#include <ssl.h>
+#undef Realloc  /* SSLeay defines this and samba has a function of this name */
+extern SSL  *ssl;
+extern int  sslFd;
+#endif  /* USE_SSL */
+
 pstring scope = "";
 
 int DEBUGLEVEL = 1;
@@ -639,6 +646,10 @@ void set_socket_options(int fd, char *options)
 ****************************************************************************/
 void close_sockets(void )
 {
+#ifdef USE_SSL
+  sslutil_disconnect(Client);
+#endif /* USE_SSL */
+
   close(Client);
   Client = 0;
 }
@@ -2137,7 +2148,16 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
     if (mincnt == 0) mincnt = maxcnt;
 
     while (nread < mincnt) {
+#ifdef USE_SSL
+      if(fd == sslFd){
+        readret = SSL_read(ssl, buf + nread, maxcnt - nread);
+      }else{
+        readret = read(fd, buf + nread, maxcnt - nread);
+      }
+#else /* USE_SSL */
       readret = read(fd, buf + nread, maxcnt - nread);
+#endif /* USE_SSL */
+
       if (readret == 0) {
 	smb_read_error = READ_EOF;
 	return -1;
@@ -2182,7 +2202,16 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
 	return -1;
       }
       
-      readret = read(fd, buf+nread, maxcnt-nread);
+#ifdef USE_SSL
+    if(fd == sslFd){
+      readret = SSL_read(ssl, buf + nread, maxcnt - nread);
+    }else{
+      readret = read(fd, buf + nread, maxcnt - nread);
+    }
+#else /* USE_SSL */
+    readret = read(fd, buf+nread, maxcnt-nread);
+#endif /* USE_SSL */
+
       if (readret == 0) {
 	/* we got EOF on the file descriptor */
 	smb_read_error = READ_EOF;
@@ -2265,18 +2294,29 @@ int read_data(int fd,char *buffer,int N)
   smb_read_error = 0;
 
   while (total < N)
-    {
+  {
+#ifdef USE_SSL
+    if(fd == sslFd){
+      ret = SSL_read(ssl, buffer + total, N - total);
+    }else{
       ret = read(fd,buffer + total,N - total);
-      if (ret == 0) {
-	smb_read_error = READ_EOF;
-	return 0;
-      }
-      if (ret == -1) {
-	smb_read_error = READ_ERROR;
-	return -1;
-      }
-      total += ret;
     }
+#else /* USE_SSL */
+    ret = read(fd,buffer + total,N - total);
+#endif /* USE_SSL */
+
+    if (ret == 0)
+    {
+      smb_read_error = READ_EOF;
+      return 0;
+    }
+    if (ret == -1)
+    {
+      smb_read_error = READ_ERROR;
+      return -1;
+    }
+    total += ret;
+  }
   return total;
 }
 
@@ -2290,14 +2330,22 @@ int write_data(int fd,char *buffer,int N)
   int ret;
 
   while (total < N)
-    {
+  {
+#ifdef USE_SSL
+    if(fd == sslFd){
+      ret = SSL_write(ssl,buffer + total,N - total);
+    }else{
       ret = write(fd,buffer + total,N - total);
-
-      if (ret == -1) return -1;
-      if (ret == 0) return total;
-
-      total += ret;
     }
+#else /* USE_SSL */
+    ret = write(fd,buffer + total,N - total);
+#endif /* USE_SSL */
+
+    if (ret == -1) return -1;
+    if (ret == 0) return total;
+
+    total += ret;
+  }
   return total;
 }
 
