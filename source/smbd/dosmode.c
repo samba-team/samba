@@ -344,9 +344,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 			return(-1);
 	}
 
-	if (!get_acl_group_bits(conn, fname, &st->st_mode)) {
-		return(-1);
-	}
+	get_acl_group_bits(conn, fname, &st->st_mode);
 
 	if (S_ISDIR(st->st_mode))
 		dosmode |= aDIR;
