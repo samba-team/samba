@@ -240,32 +240,8 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 
 #define MAX_HOURS_LEN 32
 
-#ifndef MAXSUBAUTHS
-#define MAXSUBAUTHS 15 /* max sub authorities in a SID */
-#endif
-
 /* for compatibility */
 #define SID_NAME_USE samr_SidType
-
-/**
- * @brief Security Identifier
- *
- * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
- **/
-typedef struct sid_info
-{
-  uint8  sid_rev_num;             /**< SID revision number */
-  uint8  num_auths;               /**< Number of sub-authorities */
-  uint8  id_auth[6];              /**< Identifier Authority */
-  /*
-   *  Pointer to sub-authorities.
-   *
-   * @note The values in these uint32's are in *native* byteorder, not
-   * neccessarily little-endian...... JRA.
-   */
-  uint32 sub_auths[MAXSUBAUTHS];  
-
-} DOM_SID;
 
 /*
  * The complete list of SIDS belonging to this user.
