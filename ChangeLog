@@ -1,3 +1,9 @@
+2004-12-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/hpropd.8: spelling, from OpenBSD
+	
+	* kdc/kdc.8: use keeps for options, From OpenBSD k
+	
 2004-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: document --random-key and the need to do backup
