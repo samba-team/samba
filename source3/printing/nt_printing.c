@@ -613,7 +613,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	int buflen, len, ret;
 	TDB_DATA kbuf, dbuf;
 	NTTIME time_nt;
-	time_t time_unix;
+	time_t time_unix = time(NULL);
 	
 	/* 
 	 * in addprinter: no servername and the printer is the name
@@ -1502,6 +1502,8 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		SEC_DESC *psd = NULL;
 		size_t size;
 
+		nt_printing_getsec(printername, &old_secdesc_ctr);
+
 		/* Pick out correct owner and group sids */
 
 		owner_sid = secdesc_ctr->sec->owner_sid ?
@@ -1526,6 +1528,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		/* Free up memory */
 
 		free_sec_desc(&psd);
+		free_sec_desc_buf(&old_secdesc_ctr);
 	}
 
 	if (!new_secdesc_ctr) {
