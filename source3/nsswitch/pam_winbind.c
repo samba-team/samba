@@ -482,6 +482,27 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
     /* should not be reached */
     return PAM_IGNORE;
 }
+PAM_EXTERN
+int pam_sm_open_session(pam_handle_t *pamh, int flags,
+                int argc, const char **argv)
+{
+        /* parse arguments */
+        int ctrl = _pam_parse(argc, argv);
+        if (ctrl & WINBIND_DEBUG_ARG)
+              _pam_log(LOG_DEBUG,"libpam_winbind:pam_sm_open_session handler");
+        return PAM_SUCCESS;
+}
+PAM_EXTERN
+int pam_sm_close_session(pam_handle_t *pamh, int flags,
+                int argc, const char **argv)
+{
+        /* parse arguments */
+        int ctrl = _pam_parse(argc, argv);
+        if (ctrl & WINBIND_DEBUG_ARG)
+              _pam_log(LOG_DEBUG,"libpam_winbind:pam_sm_close_session handler");
+        return PAM_SUCCESS;
+}
+
 
 
 PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
@@ -650,8 +671,8 @@ struct pam_module _pam_winbind_modstruct = {
      pam_sm_authenticate,
      pam_sm_setcred,
      pam_sm_acct_mgmt,
-     NULL,
-     NULL,
+     pam_sm_open_session,
+     pam_sm_close_session,
      pam_sm_chauthtok
 };
 

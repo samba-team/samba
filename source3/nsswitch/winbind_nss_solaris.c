@@ -10,12 +10,14 @@
 #include <sys/param.h>
 #include <string.h>
 #include <pwd.h>
-#include <syslog.h>
-#include <sys/syslog.h>
 #include "includes.h"
+#include <syslog.h>
+#if !defined(HPUX)
+#include <sys/syslog.h>
+#endif /*hpux*/
 #include "winbind_nss_config.h"
 
-#ifdef HAVE_NSS_COMMON_H 
+#if defined(HAVE_NSS_COMMON_H) || defined(HPUX) 
 
 #undef NSS_DEBUG
 
