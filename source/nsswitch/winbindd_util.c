@@ -197,20 +197,22 @@ void rescan_trusted_domains(BOOL force)
 			
 			if ( sid_equal(&dom_sids[i], &null_sid) ) {
 			
-				 new_domain = find_domain_from_name(names[i]);
+				new_domain = find_domain_from_name(names[i]);
 				 
-				 /* this should never happen */
-				 if ( !domain) { 	
-				 	DEBUG(0,("rescan_trust_domains: can't find the domain I just added! [%s]\n",
+				/* this should never happen */
+				if ( !new_domain ) { 	
+					DEBUG(0,("rescan_trust_domains: can't find the domain I just added! [%s]\n",
 						names[i]));
 					break;
-				 }
+				}
 				 
-				 result = domain->methods->domain_sid( new_domain, &new_domain->sid );
+				/* call the cache method; which will operate on the winbindd_domain \
+				   passed in and choose either rpc or ads as appropriate */
+
+				result = domain->methods->domain_sid( new_domain, &new_domain->sid );
 				 
-				 if ( NT_STATUS_IS_OK(result) )
+				if ( NT_STATUS_IS_OK(result) )
 				 	sid_copy( &dom_sids[i], &domain->sid );
-			
 			}
 			
 			/* store trusted domain in the cache */
