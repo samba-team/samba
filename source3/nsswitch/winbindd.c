@@ -55,17 +55,17 @@ static BOOL reload_services_file(BOOL test)
 	return(ret);
 }
 
-static void winbindd_dump_status(void)
+static void winbindd_status(void)
 {
 	struct winbindd_cli_state *tmp;
 
-	DEBUG(0, ("Global status for winbindd:\n"));
+	DEBUG(0, ("winbindd status:\n"));
 
 	/* Print client state information */
 	
 	DEBUG(0, ("\t%d clients currently active\n", num_clients));
 	
-	if (DEBUGLEVEL >= 2) {
+	if (DEBUGLEVEL >= 2 && num_clients) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = client_list; tmp; tmp = tmp->next) {
 			DEBUG(2, ("\t\tpid %d, sock %d, rbl %d, wbl %d\n",
@@ -79,9 +79,10 @@ static void winbindd_dump_status(void)
 
 static void do_print_winbindd_status(void)
 {
-	winbindd_dump_status();
-	winbindd_idmap_dump_status();
-	winbindd_cache_dump_status();
+	winbindd_status();
+	winbindd_idmap_status();
+	winbindd_cache_status();
+        winbindd_cm_status();
 }
 
 /* Flush client cache */

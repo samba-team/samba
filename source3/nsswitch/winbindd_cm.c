@@ -74,6 +74,36 @@ enum sam_pipe_type {
         SAM_PIPE_GROUP          /* A handle on a group */
 };
 
+/* Return a string description of a SAM pipe type */
+
+static char *pipe_type(enum sam_pipe_type pt)
+{
+        char *msg;
+
+        switch (pt) {
+        case SAM_PIPE_BASIC:
+                msg = "BASIC";
+                break;
+        case SAM_PIPE_DOM:
+                msg = "DOMAIN";
+                break;
+        case SAM_PIPE_USER:
+                msg = "USER";
+                break;
+        case SAM_PIPE_GROUP:
+                msg = "GROUP";
+                break;
+        default:
+                msg = "??";
+                break;
+        }
+
+        return msg;
+}
+
+/* Global list of connections.  Initially a DLIST but can become a hash
+   table or whatever later. */
+
 struct winbindd_cm_conn {
         struct winbindd_cm_conn *prev, *next;
         fstring domain;
@@ -82,14 +112,15 @@ struct winbindd_cm_conn {
         struct cli_state *cli;
         POLICY_HND pol;
 
-        /* Specific pipe stuff - move into a union? */
+        /* Pipe-specific properties for this instance */
 
-        enum sam_pipe_type sam_pipe_type; /* Domain, user, group etc  */
-        uint32 user_rid, group_rid;
+        union {
+                struct {
+                        enum sam_pipe_type pipe_type;
+                        uint32 rid;
+                } samr;
+        } pipe_data;
 };
-
-/* Global list of connections.  Initially a DLIST but can become a hash
-   table or whatever later. */
 
 struct winbindd_cm_conn *cm_conns = NULL;
 
@@ -260,7 +291,7 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_BASIC) {
+                    conn->pipe_data.samr.pipe_type == SAM_PIPE_BASIC) {
 
                         if (!connection_ok(conn))
                                 return NULL;
@@ -314,7 +345,7 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_DOM) {
+                    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM) {
 
                         if (!connection_ok(conn))
                                 return NULL;
@@ -331,7 +362,7 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_BASIC)
+                    conn->pipe_data.samr.pipe_type == SAM_PIPE_BASIC)
                         basic_conn = conn;
         }
         
@@ -345,7 +376,7 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
         fstrcpy(conn->controller, basic_conn->controller);
         fstrcpy(conn->pipe_name, basic_conn->pipe_name);
 
-        conn->sam_pipe_type = SAM_PIPE_DOM;
+        conn->pipe_data.samr.pipe_type = SAM_PIPE_DOM;
         conn->cli = basic_conn->cli;
 
         result = cli_samr_open_domain(conn->cli, conn->cli->mem_ctx,
@@ -381,8 +412,8 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_USER &&
-                    conn->user_rid == user_rid) {
+                    conn->pipe_data.samr.pipe_type == SAM_PIPE_USER &&
+                    conn->pipe_data.samr.rid == user_rid) {
 
                         if (!connection_ok(conn))
                                 return NULL;
@@ -399,7 +430,7 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_DOM)
+                    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM)
                         basic_conn = conn;
         }
         
@@ -418,9 +449,9 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
         fstrcpy(conn->controller, basic_conn->controller);
         fstrcpy(conn->pipe_name, basic_conn->pipe_name);
         
-        conn->sam_pipe_type = SAM_PIPE_USER;
+        conn->pipe_data.samr.pipe_type = SAM_PIPE_USER;
         conn->cli = basic_conn->cli;
-        conn->user_rid = user_rid;
+        conn->pipe_data.samr.rid = user_rid;
 
         result = cli_samr_open_user(conn->cli, conn->cli->mem_ctx,
                                     &basic_conn->pol, des_access, user_rid,
@@ -455,8 +486,8 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_GROUP &&
-                    conn->group_rid == group_rid) {
+                    conn->pipe_data.samr.pipe_type == SAM_PIPE_GROUP &&
+                    conn->pipe_data.samr.rid == group_rid) {
 
                         if (!connection_ok(conn))
                                 return NULL;
@@ -473,7 +504,7 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_DOM)
+                    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM)
                         basic_conn = conn;
         }
         
@@ -492,9 +523,9 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
         fstrcpy(conn->controller, basic_conn->controller);
         fstrcpy(conn->pipe_name, basic_conn->pipe_name);
         
-        conn->sam_pipe_type = SAM_PIPE_GROUP;
+        conn->pipe_data.samr.pipe_type = SAM_PIPE_GROUP;
         conn->cli = basic_conn->cli;
-        conn->group_rid = group_rid;
+        conn->pipe_data.samr.rid = group_rid;
 
         result = cli_samr_open_group(conn->cli, conn->cli->mem_ctx,
                                     &basic_conn->pol, des_access, group_rid,
@@ -542,4 +573,62 @@ struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd)
         /* We only want the client handle from this structure */
 
         return conn.cli;
+}
+
+/* Dump the current connection status */
+
+static void dump_conn_list(void)
+{
+        struct winbindd_cm_conn *con;
+
+        DEBUG(0, ("\tDomain          Controller      Pipe\n"));
+
+        for(con = cm_conns; con; con = con->next) {
+                char *msg;
+
+                /* Display pipe info */
+                
+                asprintf(&msg, "\t%-15s %-15s %-16s", con->domain, 
+                         con->controller, con->pipe_name);
+                
+                /* Display sam specific info */
+                
+                if (strequal(con->pipe_name, PIPE_SAMR)) {
+                        char *msg2;
+                        
+                        asprintf(&msg2, "%s %-7s", msg, 
+                                 pipe_type(con->pipe_data.samr.pipe_type));
+
+                        free(msg);
+                        msg = msg2;
+                }
+                
+                if (strequal(con->pipe_name, PIPE_SAMR) &&
+                    (con->pipe_data.samr.pipe_type == SAM_PIPE_USER ||
+                     con->pipe_data.samr.pipe_type == SAM_PIPE_GROUP)) {
+                        char *msg2;
+
+                        asprintf(&msg2, "%s %4xh", msg, 
+                                 con->pipe_data.samr.rid);
+
+                        free(msg);
+                        msg = msg2;
+                }
+
+                DEBUG(0, ("%s\n", msg));
+                free(msg);
+        }
+}
+
+void winbindd_cm_status(void)
+{
+        /* List open connections */
+
+        DEBUG(0, ("winbindd connection manager status:\n"));
+
+        if (cm_conns)
+                dump_conn_list();
+        else
+                DEBUG(0, ("\tNo active connections\n"));
+
 }
