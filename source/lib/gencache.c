@@ -83,10 +83,10 @@ BOOL gencache_init(void)
  
 BOOL gencache_shutdown(void)
 {
-	/* tdb_close routine returns 0 on successful close */
+	/* tdb_close routine returns -1 on error */
 	if (!cache) return False;
 	DEBUG(5, ("Closing cache file\n"));
-	return tdb_close(cache) ? False : True;
+	return tdb_close(cache) != -1;
 }
 
 
@@ -127,7 +127,7 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	SAFE_FREE(keybuf.dptr);
 	SAFE_FREE(databuf.dptr);
 	
-	return ret == 0 ? True : False;
+	return ret == 0;
 }
 
 
@@ -182,7 +182,7 @@ BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 	SAFE_FREE(keybuf.dptr);
 	SAFE_FREE(databuf.dptr);
 	
-	return ret == 0 ? True : False;
+	return ret == 0;
 }
  
 
@@ -211,7 +211,7 @@ BOOL gencache_del(const char *keystr)
 	ret = tdb_delete(cache, keybuf);
 	
 	SAFE_FREE(keybuf.dptr);
-	return ret == 0 ? True : False;
+	return ret == 0;
 }
 
 
