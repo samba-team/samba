@@ -143,7 +143,7 @@ static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 	} else {
 		pea->name = ea_name;
 	}
-	pea->value.data = val;
+	pea->value.data = (unsigned char *)val;
 	pea->value.length = (size_t)sizeret;
 	return True;
 }
@@ -1485,12 +1485,18 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	/* 
 	 * If there are no matching entries we must return ERRDOS/ERRbadfile - 
-	 * from observation of NT.
+	 * from observation of NT. NB. This changes to ERRDOS,ERRnofiles if
+	 * the protocol level is less than NT1. Tested with smbclient. JRA.
+	 * This should fix the OS/2 client bug #2335.
 	 */
 
 	if(numentries == 0) {
 		dptr_close(&dptr_num);
-		return ERROR_DOS(ERRDOS,ERRbadfile);
+		if (Protocol < PROTOCOL_NT1) {
+			return ERROR_DOS(ERRDOS,ERRnofiles);
+		} else {
+			return ERROR_BOTH(NT_STATUS_NO_SUCH_FILE,ERRDOS,ERRbadfile);
+		}
 	}
 
 	/* At this point pdata points to numentries directory entries. */
@@ -1569,7 +1575,17 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 
 	srvstr_get_path(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE, &ntstatus, True);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		return ERROR_NT(ntstatus);
+		/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
+		   complain (it thinks we're asking for the directory above the shared
+		   path or an invalid name). Catch this as the resume name is only compared, never used in
+		   a file access. JRA. */
+		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
+			pstrcpy(resume_name, "..");
+		} else if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_OBJECT_NAME_INVALID)) {
+			pstrcpy(resume_name, ".");
+		} else {
+			return ERROR_NT(ntstatus);
+		}
 	}
 
 	DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, \
@@ -1775,7 +1791,10 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
-			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);	
+			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+				return(UNIXERROR(ERRHRD,ERRgeneral));
+			}
+
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
 				SMB_BIG_UINT factor = block_size/bsize;
@@ -1867,7 +1886,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
-			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);
+			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+				return(UNIXERROR(ERRHRD,ERRgeneral));
+			}
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
 				SMB_BIG_UINT factor = block_size/bsize;
@@ -1897,7 +1918,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
-			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);
+			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+				return(UNIXERROR(ERRHRD,ERRgeneral));
+			}
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
 				SMB_BIG_UINT factor = block_size/bsize;

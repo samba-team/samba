@@ -152,7 +152,7 @@ int net_help_share(int argc, const char **argv)
 	 "\t-M or --maxusers=<num>\t\tmax users allowed for share\n"
 	 "\t      --acls\t\t\tcopies ACLs as well\n"
 	 "\t      --attrs\t\t\tcopies DOS Attributes as well\n"
-	 "\t      --timestampes\t\tpreserve timestampes while copying files\n"
+	 "\t      --timestamps\t\tpreserve timestamps while copying files\n"
 	 "\t      --destination\t\tmigration target server (default: localhost)\n"
 	 "\t-e or --exclude\t\t\tlist of shares to be excluded from mirroring\n"
 	 "\t-v or --verbose\t\t\tgive verbose output\n");
