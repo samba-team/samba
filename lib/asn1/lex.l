@@ -46,8 +46,13 @@
 #endif
 #include "symbol.h"
 #include "parse.h"
+#include "gen_locl.h"
 
-void error_message(char *, ...);
+void error_message(const char *, ...)
+#ifdef HAVE___ATTRIBUTE__
+__attribute__ ((format (printf, 1, 2)))
+#endif
+;
 
 static unsigned lineno = 1;
 
@@ -74,11 +79,11 @@ EXTERNAL		{ return EXTERNAL; }
 "["			{ return *yytext; }
 "]"			{ return *yytext; }
 ::=			{ return EEQUAL; }
---[^\n]*\n		{ ; }
+--[^\n]*\n		{ ++lineno; }
 -?[0-9]+		{ yylval.constant = atoi(yytext); return CONSTANT; }
 [A-Za-z][-A-Za-z0-9_]*	{ yylval.name =  strdup (yytext); return IDENTIFIER; }
 [ \t]			;
-\n			{ lineno++; }
+\n			{ ++lineno; }
 \.\.			{ return DOTDOT; }
 .			{ error_message("Ignoring char(%c)\n", *yytext); }
 %%
@@ -92,12 +97,12 @@ yywrap ()
 #endif
 
 void
-error_message (char *format, ...)
+error_message (const char *format, ...)
 {
      va_list args;
 
      va_start (args, format);
-     fprintf (stderr, ":%d: ", lineno);
+     fprintf (stderr, "%s:%d: ", filename(), lineno);
      vfprintf (stderr, format, args);
      va_end (args);
 }
