@@ -4,11 +4,12 @@
 RPMDIR=`rpm --showrc | awk '/^rpmdir/ { print $3}'`
 SPECDIR=`rpm --showrc | awk '/^specdir/ { print $3}'`
 SRCDIR=`rpm --showrc | awk '/^sourcedir/ { print $3}'`
+USERID=`id -u`
+GRPID=`id -g`
 
+( cd ../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba-PVERSION )
 ( cd ../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION )
 cp -a *.spec $SPECDIR
 cp -a *.patch smb.* samba.log $SRCDIR
-cd $SRCDIR
-chown -R root.root samba-PVERSION
 cd $SPECDIR
 rpm -ba -v samba2.spec
