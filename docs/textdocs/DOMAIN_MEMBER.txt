@@ -1,5 +1,5 @@
 !==
-!== DOMAIN_MEMBER.txt for Samba release TNG-alpha 11 Apr 2000
+!== DOMAIN_MEMBER.txt for Samba release TNG-alpha 13 Apr 2000
 !==
 
 TITLE INFORMATION: Joining an NT Domain with Samba 2.0 

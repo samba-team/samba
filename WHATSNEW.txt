@@ -1,4 +1,4 @@
-          WHATS NEW IN Samba (The Next Generation) 2.3
+          WHATS NEW IN Samba (The Next Generation) 2.4
           ============================================
 
 This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,
@@ -14,16 +14,6 @@ need to use any Windows NT Workstations on your network in the near
 future, you will not need Samba TNG or any of its functionality,
 and your assistance is not being solicited in the development of
 this project.
-
-[lkcl: There is, however, a large enough Windows 9x user-base
-to warrant ensuring that Samba TNG remains compatible, it's just that
-personally i will not touch it with a ten foot barge pole (I got
-as far as setting up a vmware session called win98, and it's still
-empty).  This is a personal view, not held by any other Samba
-Team members who are cracking the whip in my direction, and I
-keep getting into trouble over this.  I apologise sincerely and
-wholeheartedly to all Windows 9x users for any offense and
-inconvenience I may have caused to anyone using this stupid OS.]
 
 
 Major changes in Samba TNG

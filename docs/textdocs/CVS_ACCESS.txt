@@ -1,5 +1,5 @@
 !==
-!== CVS_ACCESS.txt for Samba release TNG-alpha 11 Apr 2000
+!== CVS_ACCESS.txt for Samba release TNG-alpha 13 Apr 2000
 !==
 Contributor:    Modified from the Web pages by Jeremy Allison.
 Date:           23 Dec 1997

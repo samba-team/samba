@@ -1,5 +1,5 @@
 !==
-!== GOTCHAS.txt for Samba release TNG-alpha 11 Apr 2000
+!== GOTCHAS.txt for Samba release TNG-alpha 13 Apr 2000
 !==
 This file lists Gotchas to watch out for:
 =========================================================================
