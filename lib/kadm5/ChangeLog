@@ -1,3 +1,8 @@
+2001-08-13  Johan Danielsson  <joda@pdc.kth.se>
+
+	* set_keys.c: add easier afs configuration, defaulting to the
+	local realm in lower case; also try to remove duplicate salts
+
 2001-07-12  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: add required library dependencies

@@ -1,5 +1,7 @@
 2001-08-10  Johan Danielsson  <joda@pdc.kth.se>
 
+	* util.c: do something to handle C-c in prompts
+
 	* load.c: remove unused etypes code, and add parsing of the
 	generation field
 
