@@ -822,7 +822,7 @@ void process_smb(char *inbuf, char *outbuf)
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG( 1, ( "Connection denied from %s\n",
 			      client_addr() ) );
-		  send_smb(smbd_server_fd(),(char *)buf);
+		  (void)send_smb(smbd_server_fd(),(char *)buf);
 		  exit_server("connection denied");
 	  }
   }
@@ -860,7 +860,8 @@ void process_smb(char *inbuf, char *outbuf)
                  nread, smb_len(outbuf)));
     }
     else
-      send_smb(smbd_server_fd(),outbuf);
+      if (!send_smb(smbd_server_fd(),outbuf))
+        exit_server("process_smb: send_smb failed.\n");
   }
   trans_num++;
 }

@@ -128,7 +128,8 @@ void send_trans_reply(char *outbuf,
 	SSVAL(outbuf,smb_vwv9,0);
 
 	show_msg(outbuf);
-	send_smb(smbd_server_fd(),outbuf);
+	if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("send_trans_reply: send_smb failed.\n");
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -161,7 +162,8 @@ void send_trans_reply(char *outbuf,
 		SSVAL(outbuf,smb_vwv9,0);
 
 		show_msg(outbuf);
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("send_trans_reply: send_smb failed.\n");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
@@ -424,7 +426,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		show_msg(outbuf);
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_trans: send_smb failed.\n");
 	}
 
 	/* receive the rest of the trans packet */

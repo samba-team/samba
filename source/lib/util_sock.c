@@ -661,8 +661,10 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 
 	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
 		DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
-		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2))
-			exit(1);
+		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
+			smb_read_error = READ_ERROR;
+			return False;
+		}
 	}
 
 	if(len > 0) {
@@ -711,55 +713,27 @@ BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 }
 
 /****************************************************************************
-  send an null session message to a fd
-****************************************************************************/
-
-BOOL send_null_session_msg(int fd)
-{
-  ssize_t ret;
-  uint32 blank = 0;
-  size_t len = 4;
-  size_t nwritten=0;
-  char *buffer = (char *)&blank;
-
-  while (nwritten < len)
-  {
-    ret = write_socket(fd,buffer+nwritten,len - nwritten);
-    if (ret <= 0)
-    {
-      DEBUG(0,("send_null_session_msg: Error writing %d bytes to client. %d. Exiting\n",(int)len,(int)ret));
-      exit(1);
-    }
-    nwritten += ret;
-  }
-
-  DEBUG(10,("send_null_session_msg: sent 4 null bytes to client.\n"));
-  return True;
-}
-
-/****************************************************************************
   send an smb to a fd 
 ****************************************************************************/
 
 BOOL send_smb(int fd,char *buffer)
 {
-  size_t len;
-  size_t nwritten=0;
-  ssize_t ret;
-  len = smb_len(buffer) + 4;
+	size_t len;
+	size_t nwritten=0;
+	ssize_t ret;
+	len = smb_len(buffer) + 4;
 
-  while (nwritten < len)
-  {
-    ret = write_socket(fd,buffer+nwritten,len - nwritten);
-    if (ret <= 0)
-    {
-      DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",(int)len,(int)ret));
-      exit(1);
-    }
-    nwritten += ret;
-  }
+	while (nwritten < len) {
+		ret = write_socket(fd,buffer+nwritten,len - nwritten);
+		if (ret <= 0) {
+			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
+				(int)len,(int)ret, strerror(errno) ));
+			return False;
+		}
+		nwritten += ret;
+	}
 
-  return True;
+	return True;
 }
 
 /****************************************************************************
