@@ -498,14 +498,8 @@ static BOOL api_spoolss_setprinter(prs_struct *data, prs_struct *rdata)
 	}
 	
 	r_u.status = _spoolss_setprinter(&q_u.handle, q_u.level, &q_u.info,
-	                                 q_u.devmode_ctr, q_u.command);
-	
-	/* now, we can free the memory */
-	if (q_u.info.level==2 && q_u.info.info_ptr!=0)
-		safe_free(q_u.info.info_2);
-		
-	if (q_u.devmode_ctr.devmode_ptr!=0)
-		safe_free(q_u.devmode_ctr.devmode);
+	                                 q_u.devmode_ctr, &q_u.secdesc_ctr, 
+					 q_u.command);
 	
 	if(!spoolss_io_r_setprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setprinter: unable to marshall SPOOL_R_SETPRINTER.\n"));

@@ -194,13 +194,13 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 		case 'd':
 			len = 4;
 			d = va_arg(ap, uint32 *);
-			if (bufsize >= len) goto no_space;
+			if (bufsize < len) goto no_space;
 			*d = IVAL(buf, 0);
 			break;
 		case 'p':
 			len = 4;
 			p = va_arg(ap, void **);
-			if (bufsize >= len) goto no_space;
+			if (bufsize < len) goto no_space;
 			*p = (void *)IVAL(buf, 0);
 			break;
 		case 'f':
@@ -213,14 +213,14 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 			i = va_arg(ap, int *);
 			b = va_arg(ap, char **);
 			len = 4;
-			if (bufsize >= len) {
-				*i = IVAL(buf, 0);
-				len += *i;
-				if (bufsize >= len) {
-					*b = (char *)malloc(*i);
-					memcpy(*b, buf+4, *i);
-				}
-			}
+			if (bufsize < len) goto no_space;
+			*i = IVAL(buf, 0);
+			if (! *i) break;
+			len += *i;
+			if (bufsize < len) goto no_space;
+			*b = (char *)malloc(*i);
+			if (! *b) goto no_space;
+			memcpy(*b, buf+4, *i);
 			break;
 		default:
 			DEBUG(0,("Unknown tdb_unpack format %c in %s\n", 
@@ -240,3 +240,35 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 }
 
 
+/* useful function to store a structure in rpc wire format */
+int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
+{
+	TDB_DATA kbuf, dbuf;
+	kbuf.dptr = keystr;
+	kbuf.dsize = strlen(keystr)+1;
+	dbuf.dptr = ps->data_p;
+	dbuf.dsize = ps->data_offset;
+
+	return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+}
+
+/* useful function to fetch a structure into rpc wire format */
+int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
+{
+	TDB_DATA kbuf, dbuf;
+	kbuf.dptr = keystr;
+	kbuf.dsize = strlen(keystr)+1;
+
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (!dbuf.dptr) return -1;
+
+	ZERO_STRUCTP(ps);
+	ps->io = UNMARSHALL;
+	ps->align = 4;
+	ps->data_p = dbuf.dptr;
+	ps->data_offset = 0;
+	ps->buffer_size = dbuf.dsize;
+	ps->grow_size = dbuf.dsize;
+
+	return 0;
+}
