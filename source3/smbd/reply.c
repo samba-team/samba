@@ -1081,6 +1081,9 @@ int reply_search(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
       }
   }
 
+  /* Convert the formatted mask. (This code lives in trans2.c) */
+  mask_convert(mask);
+
   {
     for (p=mask; *p; p++)
       {
