@@ -123,7 +123,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 	if (!cli_receive_nt_trans(cli, 
 				  &rparam, &rparam_count,
 				  &rdata, &rdata_count)) {
-		DEBUG(1,("Failed to recv NT_TRANSACT_SET_SECURITY_DESC\n"));
+		DEBUG(1,("NT_TRANSACT_SET_SECURITY_DESC failed\n"));
 		return False;
 	}
 
