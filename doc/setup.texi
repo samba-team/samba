@@ -594,7 +594,9 @@ The syntax for @code{[capaths]} section:
 @example
 @cartouche
 [capaths]
-        CLIENT-REALM = @{ SERVER-REALM = PERMITTED-CROSS-REALMS ... @}
+        CLIENT-REALM = @{
+                SERVER-REALM = PERMITTED-CROSS-REALMS ...
+        @}
 @end cartouche
 @end example
 
@@ -611,7 +613,7 @@ realm with @code{SU.SE} they need to use both @code{SU.SE} and
                     STACKEN.KTH.SE = KTH.SE
 	@}
 	DSV.SU.SE = @{
-                    STACKEN.KTH.SE = KTH.SE SU.SE
+                    STACKEN.KTH.SE = SU.SE KTH.SE
 	@}
 
 @end cartouche
