@@ -223,10 +223,12 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 
  ok:
 	tdb_chainunlock(tdb, kbuf);
+	errno = 0;                    /* paranoia */
 	return message_notify(pid);
 
  failed:
 	tdb_chainunlock(tdb, kbuf);
+	errno = 0;                    /* paranoia */
 	return False;
 }
 
@@ -366,7 +368,19 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
 	if (crec.cnum != -1) return 0;
-	message_send_pid(crec.pid, msg_all->msg_type, msg_all->buf, msg_all->len, msg_all->duplicates);
+
+	/* if the msg send fails because the pid was not found (i.e. smbd died), 
+	 * the msg has already been deleted from the messages.tdb.*/
+	if (!message_send_pid(crec.pid, msg_all->msg_type, msg_all->buf, msg_all->len,
+							msg_all->duplicates)) {
+		
+		/* if the pid was not found delete the entry from connections.tdb */
+		if (errno == ESRCH) {
+			DEBUG(2,("pid %d doesn't exist - deleting connections %d [%s]\n",
+					crec.pid, crec.cnum, crec.name));
+			tdb_delete(the_tdb, kbuf);
+		}
+	}
 	return 0;
 }
 
