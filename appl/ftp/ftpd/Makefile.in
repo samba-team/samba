@@ -22,8 +22,8 @@ MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
 INSTALL = @INSTALL@
 
 prefix 	= @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
+exec_prefix = @exec_prefix@
+libexecdir = @libexecdir@
 
 ATHENA = ../../..
 
@@ -51,9 +51,15 @@ all: ftpd
 	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(prefix)/libexec
-	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/libexec; done
+	$(MKINSTALLDIRS) $(libexecdir)
+	for x in $(PROGS); do \
+	  $(INSTALL) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
 
+uninstall:
+	for x in $(PROGS); do \
+	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 ftpd: $(ftpd_OBJS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBOTP) $(LIBDES) $(LIBROKEN) $(LIBS) $(LIBROKEN)

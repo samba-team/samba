@@ -19,8 +19,10 @@ INSTALL_DATA	= @INSTALL_DATA@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+transform=@program_transform_name@
 
 PICFLAGS = @PICFLAGS@
  
@@ -65,10 +67,16 @@ mdtest.o: mdtest.c
 install: all
 	$(MKINSTALLDIRS) $(libdir)
 	$(INSTALL) -m 0555 $(LIB) $(libdir)
-	$(MKINSTALLDIRS) $(prefix)/bin
-	for x in $(PROGS2INSTALL); do $(INSTALL) $$x $(prefix)/bin; done
+	$(MKINSTALLDIRS) $(bindir)
+	for x in $(PROGS2INSTALL); do \
+	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 uninstall:
+	rm -f $(libdir)/$(LIB)
+	for x in $(PROGS2INSTALL); do \
+	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 TAGS: $(LIBSRC)
 	etags $(LIBSRC)

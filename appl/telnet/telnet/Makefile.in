@@ -19,8 +19,8 @@ MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 PROGS = telnet
 
 prefix = @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
+bindir = @bindir@
+transform=@program_transform_name@
 
 SOURCES=authenc.c commands.c main.c network.c ring.c \
 	sys_bsd.c telnet.c terminal.c \
@@ -47,8 +47,15 @@ telnet: $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ @LIB_setupterm@ $(LIBROKEN)
 
 install: all
-	$(MKINSTALLDIRS) $(prefix)/bin
-	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/bin; done
+	$(MKINSTALLDIRS) $(bindir)
+	for x in $(PROGS); do \
+	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	done
+
+uninstall:
+	for x in $(PROGS); do \
+	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)

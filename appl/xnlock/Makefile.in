@@ -21,9 +21,11 @@ INSTALL_DATA = @INSTALL_DATA@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
-bindir = $(exec_prefix)/bin
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+bindir = @bindir@
+mandir = @mandir@
+transform=@program_transform_name@
 
 X_PROGS_BIN = xnlock
 
@@ -47,14 +49,22 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
-	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
-	$(MKINSTALLDIRS) $(prefix)/man/man1
+	for x in $(PROG_BIN); do 
+	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	done
+	$(MKINSTALLDIRS) $(mandir)/man1
 	(cd $(srcdir); \
 	for x in $(MAN1); do \
-		$(INSTALL_DATA) $$x $(prefix)/man/man1/`echo $$x | sed 's/\.man/.1/'`; \
+	  $(INSTALL_DATA) $$x $(mandir)/man1/`echo $$x | echo $(transform) | sed 's/\.man/.1/'`; \
 	done)
-
+n
 uninstall:
+	for x in $(PROG_BIN); do 
+	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	done
+	for x in $(MAN1); do \
+	  rm -f $(mandir)/man1/`echo $$x | echo $(transform) | sed 's/\.man/.1/'`; \
+	done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)

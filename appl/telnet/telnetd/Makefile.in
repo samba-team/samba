@@ -19,9 +19,9 @@ INSTALL = @INSTALL@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
-bindir = $(exec_prefix)/bin
+exec_prefix = @exec_prefix@
+libexecdir = @libexecdir@
+transform=@program_transform_name@
 
 PROGS = telnetd
 
@@ -50,8 +50,15 @@ telnetd: $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
 
 install: all
-	$(MKINSTALLDIRS) $(prefix)/libexec
-	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/libexec; done
+	$(MKINSTALLDIRS) $(libexecdir)
+	for x in $(PROGS); do \
+	  $(INSTALL) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
+
+uninstall:
+	for x in $(PROGS); do \
+	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)

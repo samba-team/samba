@@ -18,10 +18,11 @@ LIBS = $(XLIBS) @LIBS@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
-libexecdir = $(exec_prefix)/libexec
-bindir = $(exec_prefix)/bin
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+libexecdir = @libexecdir@
+bindir = @bindir@
+transform=@program_transform_name@
 
 X_PROGS_BIN = kx rxterm rxtelnet
 X_PROGS_LIBEXEC = kxd
@@ -50,10 +51,20 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
-	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
-	for x in $(PROG_LIBEXEC); do $(INSTALL) $$x $(libexecdir); done
+	for x in $(PROG_BIN); do \
+	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	done
+	for x in $(PROG_LIBEXEC); do \
+	  $(INSTALL) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 uninstall:
+	for x in $(PROG_BIN); do \
+	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	done
+	for x in $(PROG_LIBEXEC); do \
+	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)

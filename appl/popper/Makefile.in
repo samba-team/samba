@@ -16,9 +16,10 @@ LIBS = @LIBS@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
-bindir = $(exec_prefix)/bin
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+bindir = @bindir@
+transform=@program_transform_name@
 
 PROG_BIN	= 
 PROG_LIBEXEC	= popper
@@ -50,9 +51,14 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
-	for x in $(PROG_LIBEXEC); do $(INSTALL) $$x $(prefix)/libexec; done
+	for x in $(PROG_LIBEXEC); do \
+	  $(INSTALL) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 uninstall:
+	for x in $(PROG_LIBEXEC); do \
+	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
