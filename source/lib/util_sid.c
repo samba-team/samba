@@ -369,7 +369,7 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
   pstring tok;
-  char *p. *q;
+  char *p, *q;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia;
 
