@@ -26,20 +26,20 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 				     PyObject *kw)
 {
 	WERROR werror;
-	PyObject *result = Py_None, *creds = NULL;
+	PyObject *result = NULL, *creds = NULL;
 	PRINTER_DRIVER_CTR ctr;
 	int level = 1, i;
 	uint32 needed, num_drivers;
 	char *arch = "Windows NT x86", *server, *errstr;
-	static char *kwlist[] = {"server", "creds", "level", "arch", NULL};
+	static char *kwlist[] = {"server", "level", "creds", "arch", NULL};
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|O!is", kwlist, &server, &PyDict_Type,
-		    &creds, &level, &arch))
+		    args, kw, "s|iO!s", kwlist, &server, &level, &PyDict_Type,
+		    &creds, &arch))
 		return NULL;
 	
 	/* Call rpc function */
@@ -53,7 +53,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(
-			spoolss_error, "unable to initialise talloc context\n");
+			spoolss_error, "unable to init talloc context\n");
 		goto done;
 	}	
 
@@ -72,7 +72,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	}
 
 	/* Return value */
-	
+
 	switch (level) {
 	case 1:
 		result = PyDict_New();
@@ -151,9 +151,8 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 
 		break;
 	default:
-		PyErr_SetString(spoolss_error, "unknown info level returned");
-		result = NULL;
-		break;
+		PyErr_SetString(spoolss_error, "unknown info level");
+		goto done;
 	}
 	
  done:
@@ -163,7 +162,6 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 
-	Py_INCREF(result);
 	return result;
 }
 
@@ -229,9 +227,9 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 				      PyObject *kw)
 {
 	WERROR werror;
-	PyObject *result = Py_None, *creds = NULL;
+	PyObject *result = NULL, *creds = NULL;
 	DRIVER_DIRECTORY_CTR ctr;
-	uint32 needed, level;
+	uint32 needed, level = 1;
 	char *arch = "Windows NT x86", *server, *errstr;
 	static char *kwlist[] = {"server", "level", "arch", "creds", NULL};
 	struct cli_state *cli = NULL;
@@ -255,7 +253,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(
-			spoolss_error, "unable to initialise talloc context\n");
+			spoolss_error, "unable to init talloc context\n");
 		goto done;
 	}	
 
@@ -268,7 +266,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
-		return NULL;
+		goto done;
 	}
 
 	/* Return value */
@@ -276,7 +274,12 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	switch (level) {
 	case 1:
 		py_from_DRIVER_DIRECTORY_1(&result, ctr.info1);
+		PyDict_SetItemString(
+			result, "level", PyInt_FromLong(1));
 		break;
+	default:
+		PyErr_SetString(spoolss_error, "unknown info level");
+		goto done;	
 	}
 	
  done:
@@ -286,7 +289,6 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 
-	Py_INCREF(result);
 	return result;
 }
 
@@ -315,7 +317,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(
-			spoolss_error, "unable to initialise talloc context\n");
+			spoolss_error, "unable to init talloc context\n");
 		return NULL;
 	}
 
