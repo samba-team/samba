@@ -124,7 +124,7 @@ static BOOL          ct_initialized = False;
 #define isbasechar(C) ( (chartest[ ((C) & 0xff) ]) & BASECHAR_MASK )
 #define isillegal(C) ( (chartest[ ((C) & 0xff) ]) & ILLEGAL_MASK )
 
-static ubi_cacheRoot mangled_cache[1] = { { { 0 }, 0, 0, 0, 0, 0, 0} };
+static ubi_cacheRoot mangled_cache[1] =  { { { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0 } };
 static BOOL          mc_initialized   = False;
 #define MANGLED_CACHE_MAX_ENTRIES 0
 #define MANGLED_CACHE_MAX_MEMORY  16384

@@ -504,6 +504,7 @@ static void usage(char *pname)
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
+	BOOL specified_logfile = False;
 	int port = SMB_PORT;
 	int opt;
 	extern char *optarg;
@@ -536,6 +537,7 @@ static void usage(char *pname)
 			break;
 
 		case 'l':
+			specified_logfile = True;
 			pstrcpy(debugf,optarg);
 			break;
 
@@ -597,7 +599,8 @@ static void usage(char *pname)
 
 	TimeInit();
 
-	pstrcpy(debugf,SMBLOGFILE);  
+	if(!specified_logfile)
+		pstrcpy(debugf,SMBLOGFILE);  
 
 	pstrcpy(remote_machine, "smb");
 
@@ -714,10 +717,16 @@ static void usage(char *pname)
 		pidfile_create("smbd");
 	}
 
-	if (!locking_init(0))
+	if (!open_sockets(is_daemon,port))
 		exit(1);
 
-	if (!open_sockets(is_daemon,port))
+	/*
+	 * Note that this call should be done after the fork() call
+	 * in open_sockets(), as some versions of the locking shared
+	 * memory code register openers in a flat file.
+	 */ 
+
+	if (!locking_init(0))
 		exit(1);
 
 	if(!initialize_password_db())
