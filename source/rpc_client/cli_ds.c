@@ -22,8 +22,8 @@
 
 /* implementations of client side DsXXX() functions */
 
-NTSTATUS cli_ds_getprimarydominfo( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-						uint16 level, DS_DOMINFO_CTR *ctr)
+NTSTATUS cli_ds_getprimarydominfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				  uint16 level, DS_DOMINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	DS_Q_GETPRIMDOMINFO q;
@@ -41,8 +41,7 @@ NTSTATUS cli_ds_getprimarydominfo( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	q.level = level;
 	
 	if (!ds_io_q_getprimdominfo("", &q, &qbuf, 0) 
-		|| !rpc_api_pipe_req(cli, DS_GETPRIMDOMINFO, &qbuf, &rbuf)) 
-	{
+	    || !rpc_api_pipe_req(cli, DS_GETPRIMDOMINFO, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -54,10 +53,21 @@ NTSTATUS cli_ds_getprimarydominfo( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 	
-	memcpy( ctr, &r.info, sizeof(DS_DOMINFO_CTR) );
+	/* Return basic info - if we are requesting at info != 1 then
+	   there could be trouble. */ 
+
 	result = r.status;
+
+	if (ctr) {
+		ctr->basic = talloc(mem_ctx, sizeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC));
+		if (!ctr->basic)
+			goto done;
+		memcpy(ctr->basic, &r.info.basic, sizeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC));
+	}
 	
 done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
 	return result;
 }
-
