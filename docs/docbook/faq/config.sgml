@@ -8,4 +8,18 @@ When you have a user in 'admin users', samba will always do file operations for
 this user as 'root', even if 'force user' has been set.
 </para>
 </sect1>
+
+<sect1>
+<title>I have just installed samba and I'm trying to log in from Windows, but samba refuses all logins!</title>
+
+<para>
+Newer windows clients(NT4, 2000, XP) send encrypted passwords. Samba can't compare these 
+passwords to the unix password database, so it needs it's own user database. You can 
+add users to this database using "smbpasswd -a user-name".
+</para>
+
+<para>
+See also the "User database" chapter of the samba HOWTO Collection.
+</para>
+</sect1>
 </chapter>
