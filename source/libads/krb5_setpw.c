@@ -178,47 +178,39 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 	return 0;
 }
 
+static const struct kpasswd_errors {
+	int result_code;
+	const char *error_string;
+} kpasswd_errors[] = {
+	{KRB5_KPASSWD_MALFORMED, "Malformed request error"},
+	{KRB5_KPASSWD_HARDERROR, "Server error"},
+	{KRB5_KPASSWD_AUTHERROR, "Authentication error"},
+	{KRB5_KPASSWD_SOFTERROR, "Password change rejected"},
+	{KRB5_KPASSWD_ACCESSDENIED, "Client does not have proper authorization"},
+	{KRB5_KPASSWD_BAD_VERSION, "Protocol version not supported"},
+	{KRB5_KPASSWD_INITIAL_FLAG_NEEDED, "Authorization ticket must have initial flag set"},
+	{KRB5_KPASSWD_POLICY_REJECT, "Password rejected due to policy requirements"},
+	{KRB5_KPASSWD_BAD_PRINCIPAL, "Target principal does not exist"},
+	{KRB5_KPASSWD_ETYPE_NOSUPP, "Unsupported encryption type"},
+	{0, NULL}
+};
+
 static krb5_error_code krb5_setpw_result_code_string(krb5_context context,
 						     int result_code,
 						     const char **code_string)
 {
-   switch (result_code) {
-   case KRB5_KPASSWD_MALFORMED:
-      *code_string = "Malformed request error";
-      break;
-   case KRB5_KPASSWD_HARDERROR:
-      *code_string = "Server error";
-      break;
-   case KRB5_KPASSWD_AUTHERROR:
-      *code_string = "Authentication error";
-      break;
-   case KRB5_KPASSWD_SOFTERROR:
-      *code_string = "Password change rejected";
-      break;
-   case KRB5_KPASSWD_ACCESSDENIED:
-      *code_string = "Client does not have proper authorization";
-      break;
-   case KRB5_KPASSWD_BAD_VERSION:
-      *code_string = "Protocol version not supported";
-      break;
-   case KRB5_KPASSWD_INITIAL_FLAG_NEEDED:
-      *code_string = "Authorization ticket must have initial flag set";
-      break;
-   case KRB5_KPASSWD_POLICY_REJECT:
-      *code_string = "Password rejected due to policy requirements";
-      break;
-   case KRB5_KPASSWD_BAD_PRINCIPAL:
-      *code_string = "Target principal does not exist";
-      break;
-   case KRB5_KPASSWD_ETYPE_NOSUPP:
-      *code_string = "Unsupported encryption type";
-      break;
-   default:
-      *code_string = "Password change failed";
-      break;
-   }
+        unsigned int idx = 0;
 
-   return(0);
+	while (kpasswd_errors[idx].error_string != NULL) {
+		if (kpasswd_errors[idx].result_code == 
+                    result_code) {
+			*code_string = kpasswd_errors[idx].error_string;
+			return 0;
+		}
+		idx++;
+	}
+	*code_string = "Password change failed";
+        return (0);
 }
 
 static krb5_error_code parse_setpw_reply(krb5_context context, 
