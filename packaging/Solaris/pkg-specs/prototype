@@ -1,0 +1,186 @@
+#
+# The prototype file for the Samba package.
+#
+# Information files.
+# 
+i pkginfo=./pkginfo
+i copyright=./copyright
+#
+# Stuff that goes into the system areas of the filesystem.
+#
+d none /etc ? ? ?
+d none /etc/init.d ? ? ?
+f none /etc/init.d/samba.server=packaging/Solaris/pkg-specs/samba.server 0744 root sys
+d none /etc/rc3.d ? ? ?
+l none /etc/rc3.d/S95samba.server=/etc/init.d/samba.server
+#
+# Stuff put into the samba subtree. (Usually /usr/local/samba )
+#
+d none samba 0755 root other
+d none samba/var 0755 root other
+# 
+# Binaries
+#
+d none samba/bin 0755 root other
+f none samba/bin/smbd=source/bin/smbd 0755 root other
+f none samba/bin/nmbd=source/bin/nmbd 0755 root other
+f none samba/bin/swat=source/bin/swat 0755 root other
+f none samba/bin/smbclient=source/bin/smbclient 0755 root other
+f none samba/bin/testparm=source/bin/testparm 0755 root other
+f none samba/bin/testprns=source/bin/testprns 0755 root other
+f none samba/bin/smbstatus=source/bin/smbstatus 0755 root other
+f none samba/bin/rpcclient=source/bin/rpcclient 0755 root other
+f none samba/bin/smbpasswd=source/bin/smbpasswd 0755 root other    
+f none samba/bin/make_smbcodepage=source/bin/make_smbcodepage 0755 root other
+f none samba/bin/nmblookup=source/bin/nmblookup 0755 root other
+f none samba/bin/make_printerdef=source/bin/make_printerdef 0755 root other
+#
+# Scripts
+#
+f none samba/bin/smbtar=source/script/smbtar 0755 root other
+f none samba/bin/addtosmbpass=source/script/addtosmbpass 0755 root other
+f none samba/bin/convert_smbpasswd=source/script/convert_smbpasswd 0755 root other
+#
+# man pages
+#
+d none samba/man 0755 root other
+d none samba/man/man1 0755 root other
+d none samba/man/man5 0755 root other
+d none samba/man/man7 0755 root other
+d none samba/man/man8 0755 root other
+f none samba/man/man1/make_smbcodepage.1=docs/manpages/make_smbcodepage.1 0644 root other
+f none samba/man/man1/nmblookup.1=docs/manpages/nmblookup.1 0644 root other
+f none samba/man/man1/smbclient.1=docs/manpages/smbclient.1 0644 root other
+f none samba/man/man1/smbrun.1=docs/manpages/smbrun.1 0644 root other
+f none samba/man/man1/smbsh.1=docs/manpages/smbsh.1 0644 root other
+f none samba/man/man1/smbstatus.1=docs/manpages/smbstatus.1 0644 root other
+f none samba/man/man1/smbtar.1=docs/manpages/smbtar.1 0644 root other
+f none samba/man/man1/testparm.1=docs/manpages/testparm.1 0644 root other
+f none samba/man/man1/testprns.1=docs/manpages/testprns.1 0644 root other
+f none samba/man/man5/lmhosts.5=docs/manpages/lmhosts.5 0644 root other
+f none samba/man/man5/smb.conf.5=docs/manpages/smb.conf.5 0644 root other
+f none samba/man/man5/smbpasswd.5=docs/manpages/smbpasswd.5 0644 root other
+f none samba/man/man7/samba.7=docs/manpages/samba.7 0644 root other
+f none samba/man/man8/nmbd.8=docs/manpages/nmbd.8 0644 root other
+f none samba/man/man8/smbd.8=docs/manpages/smbd.8 0644 root other
+f none samba/man/man8/smbmnt.8=docs/manpages/smbmnt.8 0644 root other
+f none samba/man/man8/smbmount.8=docs/manpages/smbmount.8 0644 root other
+f none samba/man/man8/smbpasswd.8=docs/manpages/smbpasswd.8 0644 root other
+f none samba/man/man8/smbumount.8=docs/manpages/smbumount.8 0644 root other
+f none samba/man/man8/swat.8=docs/manpages/swat.8 0644 root other
+#
+# Stuff that goes into lib
+#
+d none samba/lib 0755 root other
+f none samba/lib/smb.conf=examples/smb.conf.default 0644 root other
+d none samba/lib/codepages 0755 root other
+f none samba/lib/codepages/codepage.437=source/codepages/codepage.437 0644 root other
+f none samba/lib/codepages/codepage.737=source/codepages/codepage.737 0644 root other
+f none samba/lib/codepages/codepage.850=source/codepages/codepage.850 0644 root other
+f none samba/lib/codepages/codepage.852=source/codepages/codepage.852 0644 root other
+f none samba/lib/codepages/codepage.861=source/codepages/codepage.861 0644 root other
+f none samba/lib/codepages/codepage.932=source/codepages/codepage.932 0644 root other
+f none samba/lib/codepages/codepage.866=source/codepages/codepage.866 0644 root other
+f none samba/lib/codepages/codepage.949=source/codepages/codepage.949 0644 root other
+f none samba/lib/codepages/codepage.950=source/codepages/codepage.950 0644 root other
+f none samba/lib/codepages/codepage.936=source/codepages/codepage.936 0644 root other
+d none samba/lib/regeditscripts 0755 root other
+f none samba/lib/regeditscripts/NT4_PlainPassword.reg=docs/NT4_PlainPassword.reg 0444 root other
+f none samba/lib/regeditscripts/Win95_PlainPassword.reg=docs/Win95_PlainPassword.reg 0444 root other
+f none samba/lib/regeditscripts/Win98_PlainPassword.reg=docs/Win98_PlainPassword.reg 0444 root other
+#
+# SWAT
+#
+d none samba/swat 0755 root other
+d none samba/swat/images 0755 root other
+f none samba/swat/images/globals.gif=swat/images/globals.gif 0644 root other
+f none samba/swat/images/home.gif=swat/images/home.gif 0644 root other
+f none samba/swat/images/passwd.gif=swat/images/passwd.gif 0644 root other
+f none samba/swat/images/printers.gif=swat/images/printers.gif 0644 root other
+f none samba/swat/images/samba.gif=swat/images/samba.gif 0644 root other
+f none samba/swat/images/shares.gif=swat/images/shares.gif 0644 root other
+f none samba/swat/images/status.gif=swat/images/status.gif 0644 root other
+f none samba/swat/images/viewconfig.gif=swat/images/viewconfig.gif 0644 root other
+d none samba/swat/help 0755 root other
+f none samba/swat/help/welcome.html=swat/help/welcome.html 0644 root other
+d none samba/swat/include 0755 root other
+f none samba/swat/include/footer.html=swat/include/footer.html 0644 root other
+f none samba/swat/include/header.html=swat/include/header.html 0644 root other
+#
+# HTML Docs
+#
+d none samba/htmldocs 0755 root other
+f none samba/htmldocs/DOMAIN_MEMBER.html=docs/htmldocs/DOMAIN_MEMBER.html 0644 root other
+f none samba/htmldocs/NT_Security.html=docs/htmldocs/NT_Security.html 0644 root other
+f none samba/htmldocs/lmhosts.5.html=docs/htmldocs/lmhosts.5.html 0644 root other
+f none samba/htmldocs/make_smbcodepage.1.html=docs/htmldocs/make_smbcodepage.1.html 0644 root other
+f none samba/htmldocs/nmbd.8.html=docs/htmldocs/nmbd.8.html 0644 root other
+f none samba/htmldocs/nmblookup.1.html=docs/htmldocs/nmblookup.1.html 0644 root other
+f none samba/htmldocs/samba.7.html=docs/htmldocs/samba.7.html 0644 root other
+f none samba/htmldocs/smb.conf.5.html=docs/htmldocs/smb.conf.5.html 0644 root other
+f none samba/htmldocs/smbclient.1.html=docs/htmldocs/smbclient.1.html 0644 root other
+f none samba/htmldocs/smbd.8.html=docs/htmldocs/smbd.8.html 0644 root other
+f none samba/htmldocs/smbpasswd.5.html=docs/htmldocs/smbpasswd.5.html 0644 root other
+f none samba/htmldocs/smbpasswd.8.html=docs/htmldocs/smbpasswd.8.html 0644 root other
+f none samba/htmldocs/smbrun.1.html=docs/htmldocs/smbrun.1.html 0644 root other
+f none samba/htmldocs/smbsh.1.html=docs/htmldocs/smbsh.1.html 0644 root other
+f none samba/htmldocs/smbstatus.1.html=docs/htmldocs/smbstatus.1.html 0644 root other
+f none samba/htmldocs/smbtar.1.html=docs/htmldocs/smbtar.1.html 0644 root other
+f none samba/htmldocs/swat.8.html=docs/htmldocs/swat.8.html 0644 root other
+f none samba/htmldocs/testparm.1.html=docs/htmldocs/testparm.1.html 0644 root other
+f none samba/htmldocs/testprns.1.html=docs/htmldocs/testprns.1.html 0644 root other
+#
+# Text Docs
+#
+!default 0644 root other
+d none samba/textdocs 0755 root other
+f none samba/textdocs/Application_Serving.txt=docs/textdocs/Application_Serving.txt
+f none samba/textdocs/BROWSING-Config.txt=docs/textdocs/BROWSING-Config.txt
+f none samba/textdocs/BROWSING.txt=docs/textdocs/BROWSING.txt
+f none samba/textdocs/BUGS.txt=docs/textdocs/BUGS.txt
+f none samba/textdocs/CRLF-LF-Conversions.txt=docs/textdocs/CRLF-LF-Conversions.txt
+f none samba/textdocs/CVS_ACCESS.txt=docs/textdocs/CVS_ACCESS.txt
+f none samba/textdocs/DHCP-Server-Configuration.txt=docs/textdocs/DHCP-Server-Configuration.txt
+f none samba/textdocs/DIAGNOSIS.txt=docs/textdocs/DIAGNOSIS.txt
+f none samba/textdocs/DNIX.txt=docs/textdocs/DNIX.txt
+f none samba/textdocs/DOMAIN.txt=docs/textdocs/DOMAIN.txt
+f none samba/textdocs/DOMAIN_CONTROL.txt=docs/textdocs/DOMAIN_CONTROL.txt
+f none samba/textdocs/DOMAIN_MEMBER.txt=docs/textdocs/DOMAIN_MEMBER.txt
+f none samba/textdocs/ENCRYPTION.txt=docs/textdocs/ENCRYPTION.txt
+f none samba/textdocs/Faxing.txt=docs/textdocs/Faxing.txt
+f none samba/textdocs/File-Cacheing.txt=docs/textdocs/File-Cacheing.txt
+f none samba/textdocs/GOTCHAS.txt=docs/textdocs/GOTCHAS.txt
+f none samba/textdocs/HINTS.txt=docs/textdocs/HINTS.txt
+f none samba/textdocs/INSTALL.sambatar=docs/textdocs/INSTALL.sambatar
+f none samba/textdocs/MIRRORS.txt=docs/textdocs/MIRRORS.txt
+f none samba/textdocs/Macintosh_Clients.txt=docs/textdocs/Macintosh_Clients.txt
+f none samba/textdocs/NTDOMAIN.txt=docs/textdocs/NTDOMAIN.txt
+f none samba/textdocs/NT_Security.txt=docs/textdocs/NT_Security.txt
+f none samba/textdocs/NetBIOS.txt=docs/textdocs/NetBIOS.txt
+f none samba/textdocs/OS2-Client-HOWTO.txt=docs/textdocs/OS2-Client-HOWTO.txt
+f none samba/textdocs/PRINTER_DRIVER.txt=docs/textdocs/PRINTER_DRIVER.txt
+f none samba/textdocs/PROFILES.txt=docs/textdocs/PROFILES.txt
+f none samba/textdocs/PROJECTS=docs/textdocs/PROJECTS
+f none samba/textdocs/Passwords.txt=docs/textdocs/Passwords.txt
+f none samba/textdocs/Printing.txt=docs/textdocs/Printing.txt
+f none samba/textdocs/README.DCEDFS=docs/textdocs/README.DCEDFS
+f none samba/textdocs/README.jis=docs/textdocs/README.jis
+f none samba/textdocs/README.sambatar=docs/textdocs/README.sambatar
+f none samba/textdocs/README.smbmount=docs/textdocs/README.smbmount
+f none samba/textdocs/Recent-FAQs.txt=docs/textdocs/Recent-FAQs.txt
+f none samba/textdocs/RoutedNetworks.txt=docs/textdocs/RoutedNetworks.txt
+f none samba/textdocs/SCO.txt=docs/textdocs/SCO.txt
+f none samba/textdocs/SMBTAR.notes=docs/textdocs/SMBTAR.notes
+f none samba/textdocs/SSLeay.txt=docs/textdocs/SSLeay.txt
+f none samba/textdocs/Speed.txt=docs/textdocs/Speed.txt
+f none samba/textdocs/Speed2.txt=docs/textdocs/Speed2.txt
+f none samba/textdocs/Support.txt=docs/textdocs/Support.txt
+f none samba/textdocs/Tracing.txt=docs/textdocs/Tracing.txt
+f none samba/textdocs/UNIX-SMB.txt=docs/textdocs/UNIX-SMB.txt
+f none samba/textdocs/UNIX_INSTALL.txt=docs/textdocs/UNIX_INSTALL.txt
+f none samba/textdocs/UNIX_SECURITY.txt=docs/textdocs/UNIX_SECURITY.txt
+f none samba/textdocs/Win95.txt=docs/textdocs/Win95.txt
+f none samba/textdocs/WinNT.txt=docs/textdocs/WinNT.txt
+f none samba/textdocs/cifsntdomain.txt=docs/textdocs/cifsntdomain.txt
+f none samba/textdocs/security_level.txt=docs/textdocs/security_level.txt
+## END

@@ -1,0 +1,22 @@
+#!/bin/sh
+# Pass the build base directory to the packaging script
+#
+if [ $# = 0 ]
+then
+	echo "Usage: $0 BUILD_BASE_DIRECTORY\n"
+	exit 1
+fi
+BUILDBASE=$1
+# Build the codepages before packaging
+CODEPAGELIST="437 737 850 852 861 932 866 949 950 936"
+for p in $CODEPAGELIST; do
+	echo Creating codepage file $BUILDBASE/source/codepages/codepage.$p
+	$BUILDBASE/source/bin/make_smbcodepage c $p $BUILDBASE/source/codepages/codepage_def.$p $BUILDBASE/source/codepages/codepage.$p
+done
+
+pkgmk -o -d /tmp -b $1 -f prototype
+if [ $? = 0 ]
+then
+	pkgtrans /tmp samba.pkg samba
+fi
+echo The samba package is in /tmp
