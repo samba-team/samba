@@ -932,53 +932,54 @@ BOOL cli_establish_connection(struct cli_state *cli,
 BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
                                      struct in_addr *pdest_ip)
 {
-  struct nmb_name calling, called;
+	struct nmb_name calling, called;
 
-  make_nmb_name(&calling, srchost, 0x0);
+	make_nmb_name(&calling, srchost, 0x0);
 
-  /*
-   * If the called name is an IP address
-   * then use *SMBSERVER immediately.
-   */
+	/*
+	 * If the called name is an IP address
+	 * then use *SMBSERVER immediately.
+	 */
 
-  if(is_ipaddress(desthost))
-    make_nmb_name(&called, "*SMBSERVER", 0x20);
-  else
-    make_nmb_name(&called, desthost, 0x20);
+	if(is_ipaddress(desthost))
+		make_nmb_name(&called, "*SMBSERVER", 0x20);
+	else
+		make_nmb_name(&called, desthost, 0x20);
 
-  if (!cli_session_request(cli, &calling, &called)) {
-    struct nmb_name smbservername;
+	if (!cli_session_request(cli, &calling, &called)) {
+	
+		struct nmb_name smbservername;
 
-    make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
+		make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
 
-    /*
-     * If the name wasn't *SMBSERVER then
-     * try with *SMBSERVER if the first name fails.
-     */
+		/*
+		 * If the name wasn't *SMBSERVER then
+		 * try with *SMBSERVER if the first name fails.
+		 */
 
-    if (nmb_name_equal(&called, &smbservername)) {
+		if (nmb_name_equal(&called, &smbservername)) {
 
-        /*
-         * The name used was *SMBSERVER, don't bother with another name.
-         */
+			/*
+			 * The name used was *SMBSERVER, don't bother with another name.
+			 */
 
-        DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER \
-with error %s.\n", desthost, cli_errstr(cli) ));
-	    cli_shutdown(cli);
-		return False;
+			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER with error %s.\n", 
+				desthost, cli_errstr(cli) ));
+			cli_shutdown(cli);
+			return False;
+		}
+
+		cli_shutdown(cli);
+
+		if (!cli_initialise(cli) || !cli_connect(cli, desthost, pdest_ip) ||
+       			!cli_session_request(cli, &calling, &smbservername)) 
+		{
+			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER with error %s\n", 
+				desthost, cli_errstr(cli) ));
+			cli_shutdown(cli);
+			return False;
+		}
 	}
 
-    cli_shutdown(cli);
-
-    if (!cli_initialise(cli) ||
-        !cli_connect(cli, desthost, pdest_ip) ||
-        !cli_session_request(cli, &calling, &smbservername)) {
-          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
-name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
-          cli_shutdown(cli);
-          return False;
-    }
-  }
-
-  return True;
+	return True;
 }
