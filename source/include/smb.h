@@ -781,7 +781,7 @@ struct parm_struct
 #endif /* LOCKING_VERSION */
 
 /* these are useful macros for checking validity of handles */
-#define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_OPEN_FILES))
+#define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_FNUMS))
 #define OPEN_FNUM(fnum)    (VALID_FNUM(fnum) && Files[fnum].open && !Files[fnum].is_directory)
 #define VALID_CNUM(cnum)   (((cnum) >= 0) && ((cnum) < MAX_CONNECTIONS))
 #define OPEN_CNUM(cnum)    (VALID_CNUM(cnum) && Connections[cnum].open)

@@ -42,6 +42,8 @@
    file handle per directory, but large numbers do use more memory */
 #define MAX_OPEN_DIRECTORIES 64
 
+#define MAX_FNUMS (MAX_OPEN_FILES+MAX_OPEN_DIRECTORIES)
+
 /* Default size of shared memory used for share mode locking */
 #ifndef SHMEM_SIZE
 #define SHMEM_SIZE (1024*(MAX_OPEN_FILES+MAX_OPEN_DIRECTORIES))

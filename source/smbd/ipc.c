@@ -1983,7 +1983,7 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	
         become_root(True);
 
-	for (i=0;i<MAX_OPEN_FILES;i++)
+	for (i=0;i<MAX_FNUMS;i++)
 	  if (Files[i].open && Files[i].print_file)
 	    {
 	      pstring wd;
