@@ -62,6 +62,7 @@
 #undef HAVE_REMSH
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF
+#undef ssize_t
 #undef ino_t
 #undef ssize_t
 #undef HAVE_CONNECT
@@ -95,6 +96,7 @@
 #undef STAT_STATFS3_OSF1
 #undef STAT_STATFS4
 #undef STAT_STATVFS
+#undef STAT_STATVFS64
 #undef HAVE_NETMASK_IFREQ
 #undef HAVE_NETMASK_AIX
 #undef HAVE_CRYPT
@@ -146,6 +148,12 @@
 
 /* Define if you have the chroot function.  */
 #undef HAVE_CHROOT
+
+/* Define if you have the connect function.  */
+#undef HAVE_CONNECT
+
+/* Define if you have the crypt function.  */
+#undef HAVE_CRYPT
 
 /* Define if you have the crypt16 function.  */
 #undef HAVE_CRYPT16
@@ -224,6 +232,9 @@
 
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME
+
+/* Define if you have the pam_authenticate function.  */
+#undef HAVE_PAM_AUTHENTICATE
 
 /* Define if you have the pathconf function.  */
 #undef HAVE_PATHCONF
@@ -462,9 +473,6 @@
 /* Define if you have the <utime.h> header file.  */
 #undef HAVE_UTIME_H
 
-/* Define if you have the crypt library (-lcrypt).  */
-#undef HAVE_LIBCRYPT
-
 /* Define if you have the dl library (-ldl).  */
 #undef HAVE_LIBDL
 
@@ -476,9 +484,6 @@
 
 /* Define if you have the nsl_s library (-lnsl_s).  */
 #undef HAVE_LIBNSL_S
-
-/* Define if you have the pam library (-lpam).  */
-#undef HAVE_LIBPAM
 
 /* Define if you have the readline library (-lreadline).  */
 #undef HAVE_LIBREADLINE

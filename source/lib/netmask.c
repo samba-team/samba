@@ -314,6 +314,7 @@ this one is for AIX
 }
 
 #else /* a dummy version */
+struct in_addr; /* it may not have been declared before */
  int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask)
 {
 	return -1;

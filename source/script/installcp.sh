@@ -1,8 +1,10 @@
 #!/bin/sh
-LIBDIR=$1
-CODEPAGEDIR=$2
-BINDIR=$3
+srcdir=$1
+LIBDIR=$2
+CODEPAGEDIR=$3
+BINDIR=$4
 
+shift
 shift
 shift
 shift
@@ -20,7 +22,7 @@ done
 
 for p in $*; do
  echo Creating codepage file $CODEPAGEDIR/codepage.$p
- $BINDIR/make_smbcodepage c $p codepages/codepage_def.$p $CODEPAGEDIR/codepage.$p
+ $BINDIR/make_smbcodepage c $p ${srcdir}/codepages/codepage_def.$p $CODEPAGEDIR/codepage.$p
 done
 
 

@@ -19,6 +19,8 @@ INSTALLCMD=@INSTALL@
 VPATH=@srcdir@
 srcdir=@srcdir@
 SHELL=/bin/sh
+AUTOCONF=autoconf
+AUTOHEADER=autoheader
 
 .SUFFIXES:
 .SUFFIXES: .c .o
@@ -65,7 +67,7 @@ SMBRUN = $(BINDIR)/smbrun
 
 
 PASSWD_FLAGS = -DSMB_PASSWD=\"$(SMB_PASSWD)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\"
-FLAGS1 = $(CFLAGS) -I$(srcdir)/include -I$(srcdir)/ubiqx -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
+FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
 FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\"
@@ -260,17 +262,21 @@ bin/smbtorture: $(SMBTORTURE_OBJ)
 
 install: installbin installman installscripts installcp installswat
 
-installbin: all
+installdirs:
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
+	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(CODEPAGEDIR)
+
+installbin: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
 
-installscripts:
+installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
-installcp:
-	@$(SHELL) $(srcdir)/script/installcp.sh $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
+installcp: installdirs
+	@$(SHELL) $(srcdir)/script/installcp.sh $(srcdir) $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
 
-installswat:
+installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 # revert to the previously installed version
@@ -297,7 +303,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	rm -f core */*.o */*~ *~ config.cache $(PROGS) $(SPROGS)
+	-rm -f core */*~ *~ */*.o
 
 proto:
 	@echo rebuilding include/proto.h
@@ -310,6 +316,11 @@ ctags:
 	ctags `find . -name "*.[ch]"`
 
 realclean: clean
+	-rm -f config.log $(PROGS) $(SPROGS)
+
+distclean: realclean
+	-rm -f include/config.h include/stamp-h */dummy Makefile
+	-rm -f config.status config.cache
 
 # this target is really just for my use. It only works on a limited
 # range of machines and is used to produce a list of potentially
@@ -318,3 +329,24 @@ finddead:
 	nm */*.o |grep 'U ' | awk '{print $$2}' | sort -u > nmused.txt
 	nm */*.o |grep 'T ' | awk '{print $$3}' | sort -u > nmfns.txt
 	comm -13 nmused.txt nmfns.txt 
+
+# when configure.in is updated, reconfigure
+$(srcdir)/configure: $(srcdir)/configure.in
+	cd $(srcdir) && $(AUTOCONF)
+config.status: $(srcdir)/configure
+	$(SHELL) ./config.status --recheck
+Makefile: $(srcdir)/Makefile.in config.status
+	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+# note that nothing depends on config.h, so will probably be rebuilt
+# only when explicitly requested
+include/config.h: include/stamp-h
+	@:
+include/stamp-h: $(srcdir)/include/config.h.in config.status
+	CONFIG_FILES= CONFIG_HEADERS=include/config.h $(SHELL) ./config.status
+	@ls -l config.status $(srcdir)/include/config.h.in > include/stamp-h
+$(srcdir)/include/config.h.in: $(srcdir)/include/stamp-h.in
+	@:
+$(srcdir)/include/stamp-h.in: $(srcdir)/acconfig.h $(srcdir)/configure.in
+	cd $(srcdir) && $(AUTOHEADER)
+	@cd $(srcdir) && ls -l acconfig.h configure.in > include/stamp-h.in
