@@ -538,7 +538,7 @@ dynconfig.po: dynconfig.c Makefile
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with @PICFLAG@ and -32
-	@$(CC) -32 -I. -I$(srcdir) $(FLAGS32) @PICFLAG@ -c $< \
+	@$(CC) -32 -I. -I$(srcdir) $(FLAGS32) $(PATH_FLAGS) @PICFLAG@ -c $< \
 	  -o $*.po32.o 
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po32$$%.o%'` $@.o
 	@mv $*.po32.o $@
