@@ -172,6 +172,7 @@ interface dcerpc
 	const uint8 DCERPC_PFC_FLAG_FIRST  = 0x01;
 	const uint8 DCERPC_PFC_FLAG_LAST   = 0x02;
 	const uint8 DCERPC_PFC_FLAG_NOCALL = 0x20;
+	const uint8 DCERPC_PFC_FLAG_ORPC   = 0x80;
 
 	/* these offsets are needed by the signing code */
 	const uint8 DCERPC_DREP_OFFSET     =  4;
