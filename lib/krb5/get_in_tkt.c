@@ -111,6 +111,7 @@ extract_ticket(krb5_context context,
 	       krb5_creds *creds,		
 	       krb5_keyblock *key,
 	       krb5_const_pointer keyseed,
+	       krb5_addresses *addr,
 	       krb5_decrypt_proc decrypt_proc,
 	       krb5_const_pointer decryptarg)
 {
@@ -158,8 +159,12 @@ extract_ticket(krb5_context context,
     if(rep->part2.caddr)
 	copy_HostAddresses(rep->part2.caddr, &creds->addresses);
     else {
-	creds->addresses.len = 0;
-	creds->addresses.val = NULL;
+	if(addr)
+	    copy_HostAddresses(addr, &creds->addresses);
+	else{
+	    creds->addresses.len = 0;
+	    creds->addresses.val = NULL;
+	}
     }
     creds->flags.b = rep->part2.flags;
 	  
@@ -387,7 +392,7 @@ krb5_get_in_tkt(krb5_context context,
     }
 	
     ret = extract_ticket(context, &rep, creds, key, keyseed, 
-			 decrypt_proc, decryptarg);
+			 NULL, decrypt_proc, decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_data_free (&key->keyvalue);
     free (key);
