@@ -438,7 +438,8 @@ static void add_to_do_list_queue(const char* entry)
 	}
 	if (do_list_queue)
 	{
-		memcpy(do_list_queue + do_list_queue_end, entry, strlen(entry) + 1);
+		safe_strcpy_base(do_list_queue + do_list_queue_end, 
+				 entry, do_list_queue, do_list_queue_size);
 		do_list_queue_end = new_end;
 		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
 			 entry, (int)do_list_queue_start, (int)do_list_queue_end));
