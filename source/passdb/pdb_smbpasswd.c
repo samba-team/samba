@@ -1352,7 +1352,7 @@ static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 	fp = startsmbfilepwent(smbpasswd_state->smbpasswd_file, PWF_READ, &(smbpasswd_state->pw_file_lock_depth));
 
 	if (fp == NULL) {
-		DEBUG(0, ("unable to open passdb database.\n"));
+		DEBUG(0, ("Unable to open passdb database.\n"));
 		return nt_status;
 	}
 
@@ -1412,7 +1412,7 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUN
 	fp = startsmbfilepwent(smbpasswd_state->smbpasswd_file, PWF_READ, &(smbpasswd_state->pw_file_lock_depth));
 
 	if (fp == NULL) {
-		DEBUG(0, ("unable to open passdb database.\n"));
+		DEBUG(0, ("Unable to open passdb database.\n"));
 		return nt_status;
 	}
 
