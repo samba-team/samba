@@ -26,10 +26,18 @@ static pstring cvtbuf;
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 
-/****************************************************************************
- Return the name of a charset to give to iconv().
-****************************************************************************/
+/**
+ * @file
+ *
+ * Character set conversion routines.
+ *
+ * @sa lib/iconv.c
+ **/
 
+
+/**
+ * Return the name of a charset to give to iconv().
+ **/
 static const char *charset_name(charset_t ch)
 {
 	const char *ret = NULL;
@@ -56,9 +64,9 @@ static void lazy_initialize_conv(void)
 	}
 }
 
-/****************************************************************************
+/**
  Initialize iconv conversion descriptors.
-****************************************************************************/
+**/
 
 void init_iconv(void)
 {
@@ -109,7 +117,7 @@ void init_iconv(void)
  * @param srclen length of the source string in bytes
  * @param dest pointer to destination string (multibyte or singlebyte)
  * @param destlen maximal length allowed for string
- * @retval the number of bytes occupied in the destination
+ * @returns the number of bytes occupied in the destination
  **/
 
 size_t convert_string(charset_t from, charset_t to,
@@ -170,7 +178,7 @@ size_t convert_string(charset_t from, charset_t to,
  * @param dest always set at least to NULL
  * @note -1 is not accepted for srclen.
  *
- * @retval Size in bytes of the converted string; or -1 in case of error.
+ * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
 
 size_t convert_string_allocate(charset_t from, charset_t to,
@@ -242,6 +250,7 @@ convert:
 	return destlen;
 }
 
+
 /**
  * Convert between character sets, allocating a new buffer using talloc for the result.
  *
@@ -249,9 +258,8 @@ convert:
  * @param dest always set at least to NULL 
  * @note -1 is not accepted for srclen.
  *
- * @retval Size in bytes of the converted string; or -1 in case of error.
+ * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
-
 size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest)
 {
@@ -298,16 +306,20 @@ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 }
 
 
-/****************************************************************************
-copy a string from a char* unix src to a dos codepage string destination
-return the number of bytes occupied by the string in the destination
-flags can have:
-  STR_TERMINATE means include the null termination
-  STR_UPPER     means uppercase in the destination
-dest_len is the maximum length in bytes allowed in the destination. If dest_len
-is -1 then no maxiumum is used
-****************************************************************************/
-
+/**
+ * Copy a string from a char* unix src to a dos codepage string destination.
+ *
+ * @return the number of bytes occupied by the string in the destination.
+ *
+ * @param flags can include
+ * <dl>
+ * <dt>STR_TERMINATE</dt> <dd>means include the null termination</dd>
+ * <dt>STR_UPPER</dt> <dd>means uppercase in the destination</dd>
+ * </dl>
+ *
+ * @param dest_len the maximum length in bytes allowed in the
+ * destination.  If @p dest_len is -1 then no maximum is used.
+ **/
 size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len = strlen(src);
@@ -344,16 +356,21 @@ size_t push_pstring(void *dest, const char *src)
 	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
 }
 
-/****************************************************************************
- Copy a string from a dos codepage source to a unix char* destination.
- Flags can have:
-   STR_TERMINATE means the string in src is null terminated.
- if STR_TERMINATE is set then src_len is ignored.
- src_len is the length of the source area in bytes.
- Return the number of bytes occupied by the string in src.
- The resulting string in "dest" is always null terminated.
-****************************************************************************/
-
+/**
+ * Copy a string from a dos codepage source to a unix char* destination.
+ *
+ * The resulting string in "dest" is always null terminated.
+ *
+ * @param flags can have:
+ * <dl>
+ * <dt>STR_TERMINATE</dt>
+ * <dd>STR_TERMINATE means the string in @p src
+ * is null terminated, and src_len is ignored.</dd>
+ * </dl>
+ *
+ * @param src_len is the length of the source area in bytes.
+ * @returns the number of bytes occupied by the string in @p src.
+ **/
 size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
@@ -390,17 +407,22 @@ size_t pull_ascii_fstring(char *dest, const void *src)
 	return pull_ascii(dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
 
-/****************************************************************************
- Copy a string from a char* src to a unicode destination.
- Return the number of bytes occupied by the string in the destination.
- Flags can have:
-  STR_TERMINATE means include the null termination.
-  STR_UPPER     means uppercase in the destination.
-  STR_NOALIGN   means don't do alignment.
- dest_len is the maximum length allowed in the destination. If dest_len
- is -1 then no maxiumum is used.
-****************************************************************************/
-
+/**
+ * Copy a string from a char* src to a unicode destination.
+ *
+ * @returns the number of bytes occupied by the string in the destination.
+ *
+ * @param flags can have:
+ *
+ * <dl>
+ * <dt>STR_TERMINATE <dd>means include the null termination.
+ * <dt>STR_UPPER     <dd>means uppercase in the destination.
+ * <dt>STR_NOALIGN   <dd>means don't do alignment.
+ * </dl>
+ *
+ * @param dest_len is the maximum length allowed in the
+ * destination. If dest_len is -1 then no maxiumum is used.
+ **/
 size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t len=0;
@@ -434,15 +456,16 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	return len;
 }
 
+
 /**
- * Copy a string from a unix char* src to a UCS2 destination, allocating a buffer using talloc
+ * Copy a string from a unix char* src to a UCS2 destination,
+ * allocating a buffer using talloc().
  *
  * @param dest always set at least to NULL 
  *
- * @retval The number of bytes occupied by the string in the destination
+ * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-
 size_t push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
@@ -451,12 +474,13 @@ size_t push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 	return convert_string_talloc(ctx, CH_UNIX, CH_UCS2, src, src_len, (void **)dest);
 }
 
+
 /**
  * Copy a string from a unix char* src to a UCS2 destination, allocating a buffer
  *
  * @param dest always set at least to NULL 
  *
- * @retval The number of bytes occupied by the string in the destination
+ * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
 
@@ -468,7 +492,7 @@ size_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
 	return convert_string_allocate(CH_UNIX, CH_UCS2, src, src_len, (void **)dest);	
 }
 
-/****************************************************************************
+/**
  Copy a string from a char* src to a UTF-8 destination.
  Return the number of bytes occupied by the string in the destination
  Flags can have:
@@ -476,7 +500,7 @@ size_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
   STR_UPPER     means uppercase in the destination
  dest_len is the maximum length allowed in the destination. If dest_len
  is -1 then no maxiumum is used.
-****************************************************************************/
+**/
 
 size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 {
@@ -514,7 +538,7 @@ size_t push_utf8_pstring(void *dest, const char *src)
  *
  * @param dest always set at least to NULL 
  *
- * @retval The number of bytes occupied by the string in the destination
+ * @returns The number of bytes occupied by the string in the destination
  **/
 
 size_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
@@ -530,7 +554,7 @@ size_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  *
  * @param dest always set at least to NULL 
  *
- * @retval The number of bytes occupied by the string in the destination
+ * @returns The number of bytes occupied by the string in the destination
  **/
 
 size_t push_utf8_allocate(char **dest, const char *src)
@@ -541,7 +565,7 @@ size_t push_utf8_allocate(char **dest, const char *src)
 	return convert_string_allocate(CH_UNIX, CH_UTF8, src, src_len, (void **)dest);	
 }
 
-/****************************************************************************
+/**
  Copy a string from a ucs2 source to a unix char* destination.
  Flags can have:
   STR_TERMINATE means the string in src is null terminated.
@@ -550,7 +574,7 @@ size_t push_utf8_allocate(char **dest, const char *src)
  src_len is the length of the source area in bytes
  Return the number of bytes occupied by the string in src.
  The resulting string in "dest" is always null terminated.
-****************************************************************************/
+**/
 
 size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
@@ -602,7 +626,7 @@ size_t pull_ucs2_fstring(char *dest, const void *src)
  *
  * @param dest always set at least to NULL 
  *
- * @retval The number of bytes occupied by the string in the destination
+ * @returns The number of bytes occupied by the string in the destination
  **/
 
 size_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src)
@@ -617,7 +641,7 @@ size_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src)
  *
  * @param dest always set at least to NULL 
  *
- * @retval The number of bytes occupied by the string in the destination
+ * @returns The number of bytes occupied by the string in the destination
  **/
 
 size_t pull_ucs2_allocate(void **dest, const smb_ucs2_t *src)
@@ -627,7 +651,7 @@ size_t pull_ucs2_allocate(void **dest, const smb_ucs2_t *src)
 	return convert_string_allocate(CH_UCS2, CH_UNIX, src, src_len, dest);	
 }
 
-/****************************************************************************
+/**
  Copy a string from a utf-8 source to a unix char* destination.
  Flags can have:
   STR_TERMINATE means the string in src is null terminated.
@@ -635,7 +659,7 @@ size_t pull_ucs2_allocate(void **dest, const smb_ucs2_t *src)
  src_len is the length of the source area in bytes
  Return the number of bytes occupied by the string in src.
  The resulting string in "dest" is always null terminated.
-****************************************************************************/
+**/
 
 size_t pull_utf8(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
@@ -677,7 +701,7 @@ size_t pull_utf8_fstring(char *dest, const void *src)
  *
  * @param dest always set at least to NULL 
  *
- * @retval The number of bytes occupied by the string in the destination
+ * @returns The number of bytes occupied by the string in the destination
  **/
 
 size_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
@@ -692,7 +716,7 @@ size_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  *
  * @param dest always set at least to NULL 
  *
- * @retval The number of bytes occupied by the string in the destination
+ * @returns The number of bytes occupied by the string in the destination
  **/
 
 size_t pull_utf8_allocate(void **dest, const char *src)
@@ -702,7 +726,7 @@ size_t pull_utf8_allocate(void **dest, const char *src)
 	return convert_string_allocate(CH_UTF8, CH_UNIX, src, src_len, dest);	
 }
  
-/****************************************************************************
+/**
  Copy a string from a char* src to a unicode or ascii
  dos codepage destination choosing unicode or ascii based on the 
  flags in the SMB buffer starting at base_ptr.
@@ -714,7 +738,7 @@ size_t pull_utf8_allocate(void **dest, const char *src)
   STR_NOALIGN   means don't do alignment.
  dest_len is the maximum length allowed in the destination. If dest_len
  is -1 then no maxiumum is used.
-****************************************************************************/
+**/
 
 size_t push_string(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
@@ -727,7 +751,7 @@ size_t push_string(const void *base_ptr, void *dest, const char *src, size_t des
 }
 
 
-/****************************************************************************
+/**
  Copy a string from a unicode or ascii source (depending on
  the packet flags) to a char* destination.
  Flags can have:
@@ -739,7 +763,7 @@ size_t push_string(const void *base_ptr, void *dest, const char *src, size_t des
  src_len is the length of the source area in bytes.
  Return the number of bytes occupied by the string in src.
  The resulting string in "dest" is always null terminated.
-****************************************************************************/
+**/
 
 size_t pull_string(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
@@ -761,12 +785,12 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	return 0;
 }
 
-/****************************************************************************
+/**
  Convert from ucs2 to unix charset and return the
  allocated and converted string or NULL if an error occurred.
  You must provide a zero terminated string.
  The returning string will be zero terminated.
-****************************************************************************/
+**/
 
 char *acnv_u2ux(const smb_ucs2_t *src)
 {
@@ -782,12 +806,12 @@ char *acnv_u2ux(const smb_ucs2_t *src)
 		return dest;
 }
 
-/****************************************************************************
+/**
  Convert from unix to ucs2 charset and return the
  allocated and converted string or NULL if an error occurred.
  You must provide a zero terminated string.
  The returning string will be zero terminated.
-****************************************************************************/
+**/
 
 smb_ucs2_t *acnv_uxu2(const char *src)
 {
@@ -803,12 +827,12 @@ smb_ucs2_t *acnv_uxu2(const char *src)
 		return dest;
 }
 
-/****************************************************************************
+/**
  Convert from ucs2 to dos charset and return the
  allocated and converted string or NULL if an error occurred.
  You must provide a zero terminated string.
  The returning string will be zero terminated.
-****************************************************************************/
+**/
 
 char *acnv_u2dos(const smb_ucs2_t *src)
 {
@@ -824,12 +848,12 @@ char *acnv_u2dos(const smb_ucs2_t *src)
 		return dest;
 }
 
-/****************************************************************************
+/**
  Convert from dos to ucs2 charset and return the
  allocated and converted string or NULL if an error occurred.
  You must provide a zero terminated string.
  The returning string will be zero terminated.
-****************************************************************************/
+**/
 
 smb_ucs2_t *acnv_dosu2(const char *src)
 {
