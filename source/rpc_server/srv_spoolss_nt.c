@@ -743,7 +743,7 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
                    notifications. */
 
 		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER )  &&
-		    ( strequal(msg->printer, p->dev.handlename) != 0) )
+		    ( !strequal(msg->printer, p->dev.handlename) ) )
 			continue;
 
 		DEBUG(10,("Our printer\n"));
