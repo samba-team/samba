@@ -162,6 +162,11 @@ typedef struct krb5_times{
   krb5_time renew_till;
 } krb5_times;
 
+typedef union {
+    TicketFlags b;
+    krb5_flags i;
+} krb5_ticket_flags;
+
 
 typedef struct krb5_creds {
     krb5_principal client;
@@ -169,11 +174,10 @@ typedef struct krb5_creds {
     krb5_keyblock session;
     krb5_times times;
     krb5_data ticket;
-
-    krb5_data second_ticket; /* ? */
-    krb5_data authdata; /* ? */
+    krb5_data second_ticket;
+    krb5_data authdata; /* huh? */
     krb5_addresses addresses;
-    
+    krb5_ticket_flags flags;
 } krb5_creds;
 
 typedef struct krb5_cc_ops{
@@ -306,7 +310,6 @@ typedef struct krb5_auth_context_data{
   krb5_rcache rcache;
   
 }krb5_auth_context_data, *krb5_auth_context;
-
 
 typedef struct {
   KDC_REP part1;
