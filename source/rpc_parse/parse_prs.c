@@ -673,15 +673,15 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 	if (q == NULL)
 		return False;
 
+	/* If the string is empty, we don't have anything to stream */
+	if (str->uni_str_len==0)
+		return True;
+
 	if (UNMARSHALLING(ps)) {
 		str->buffer = (uint16 *)prs_alloc_mem(ps,str->uni_max_len * sizeof(uint16));
 		if (str->buffer == NULL)
 			return False;
 	}
-
-	/* If the string is empty, we don't have anything to stream */
-	if (str->uni_str_len==0)
-		return True;
 
 	p = (char *)str->buffer;
 
