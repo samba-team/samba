@@ -55,12 +55,12 @@ sub ArrayFromPython($$)
     }
 
     $result .= "\tif (!PyDict_GetItemString(obj, \"$e->{NAME}\")) {\n";
-    $result .= "\t\tPyErr_Format(PyExc_ValueError, \"Expecting key '%s'\", \"$e->{NAME}\");\n";
+    $result .= "\t\tPyErr_Format(PyExc_ValueError, \"Expecting key '$e->{NAME}'\");\n";
     $result .= "\t\treturn NULL;\n";
     $result .= "\t}\n\n";
 
     $result .= "\tif (!PyList_Check(PyDict_GetItemString(obj, \"$e->{NAME}\"))) {\n";
-    $result .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting list value for key '%s'\", \"$e->{NAME}\");\n";
+    $result .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting list value for key '$e->{NAME}'\");\n";
     $result .= "\t\treturn NULL;\n";
     $result .= "\t}\n\n";
 
