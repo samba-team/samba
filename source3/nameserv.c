@@ -66,11 +66,11 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
   if ((n2 = find_name_search(&d, &n.name, FIND_SELF, ipzero)))
   {
     /* check name isn't already being de-registered */
-    if (NAME_DEREG(n2->nb_flags))
+    if (NAME_DEREG(n2->ip_flgs[0].nb_flags))
       return;
 
     /* mark the name as in the process of deletion. */
-    n2->nb_flags &= NB_DEREG;
+    n2->ip_flgs[0].nb_flags &= NB_DEREG;
   }
 
   if (ip_equal(d->bcast_ip, ipgrp))
@@ -196,14 +196,14 @@ void add_my_names(void)
 	add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
 	add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
 
-	if (lp_domain_logons()) {
-	  /* 0x1c is used to find logon servers for a domain */
-	  add_my_name_entry(d, lp_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
-	}
+    if (lp_domain_logons()) {
+	/* XXXX the 0x1c is apparently something to do with domain logons */
+	  add_my_name_entry(d, my_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
+    }
   }
   if (lp_domain_master() && (d = find_subnet(ipgrp)))
   {
-    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), True);
+    struct work_record *work = find_workgroupstruct(d, my_workgroup(), True);
     if (work && work->state == MST_NONE)
     {
       work->state = MST_DOMAIN_NONE;
@@ -256,7 +256,8 @@ void refresh_my_names(time_t t)
       if (n->source == SELF && n->refresh_time < time(NULL) && 
           n->death_time != 0)
       {
-        add_my_name_entry(d,n->name.name,n->name.name_type,n->nb_flags);
+        add_my_name_entry(d,n->name.name,n->name.name_type,
+                          n->ip_flgs[0].nb_flags);
       }
     }
   }
@@ -301,7 +302,7 @@ void query_refresh_names(void)
 		/* only do unique, registered names */
 
 		if (n->source != REGISTER) continue;
-		if (!NAME_GROUP(n->nb_flags)) continue;
+		if (!NAME_GROUP(n->ip_flgs[0].nb_flags)) continue;
 
 		if (n->refresh_time < t)
 		{
@@ -310,7 +311,7 @@ void query_refresh_names(void)
     	  queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_CONFIRM,
 				n->name.name, n->name.name_type,
 				0,0,0,NULL,NULL,
-				False,False,n->ip,n->ip);
+				False,False,n->ip_flgs[0].ip,n->ip_flgs[0].ip);
 		  count++;
 		}
 

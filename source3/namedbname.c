@@ -228,25 +228,50 @@ void dump_names(void)
   for (d = subnetlist; d; d = d->next)
    for (n = d->namelist; n; n = n->next)
     {
-      if (f && ip_equal(d->bcast_ip, ipgrp) && n->source == REGISTER)
-      {
-	/* XXXX i have little imagination as to how to output nb_flags as
-	   anything other than as a hexadecimal number :-) */
-
-        fprintf(f, "%s#%02x %s %2x %ld\n",
-		n->name.name,n->name.name_type, /* XXXX ignore scope for now */
-		inet_ntoa(n->ip),
-		n->nb_flags,
-		n->death_time);
-      }
+      int i;
 
 	  DEBUG(3,("%15s ", inet_ntoa(d->bcast_ip)));
 	  DEBUG(3,("%15s ", inet_ntoa(d->mask_ip)));
-      DEBUG(3,("%-19s %15s NB=%2x TTL=%ld \n",
+      DEBUG(3,("%-19s TTL=%ld ",
 	       namestr(&n->name),
-	       inet_ntoa(n->ip),
-	       n->nb_flags,
-           n->death_time?n->death_time-t:0));
+	       n->death_time?n->death_time-t:0));
+
+        for (i = 0; i < n->num_ips; i++)
+        {
+           DEBUG(3,("%15s NB=%2x ",
+						inet_ntoa(n->ip_flgs[i].ip),
+						n->ip_flgs[i].nb_flags));
+
+        }
+		DEBUG(3,("\n"));
+
+      if (f && ip_equal(d->bcast_ip, ipgrp) && n->source == REGISTER)
+      {
+        fstring data;
+
+      /* XXXX i have little imagination as to how to output nb_flags as
+         anything other than as a hexadecimal number :-) */
+
+        sprintf(data, "%s#%02x %ld",
+	       n->name.name,n->name.name_type, /* XXXX ignore scope for now */
+	       n->death_time);
+	    fprintf(f, "%s", data);
+        for (i = 0; i < n->num_ips; i++)
+        {
+           DEBUG(3,("%15s NB=%2x ",
+						inet_ntoa(n->ip_flgs[i].ip),
+						n->ip_flgs[i].nb_flags));
+
+           sprintf(data, "%s %2x ",
+						inet_ntoa(n->ip_flgs[i].ip),
+						n->ip_flgs[i].nb_flags);
+   
+		   fprintf(f, "%s", data);
+        }
+		DEBUG(3,("\n"));
+		fprintf(f, "\n");
+      }
+
     }
 
   fclose(f);
@@ -291,12 +316,12 @@ void load_netbios_names(void)
       int type = 0;
       int nb_flags;
       time_t ttd;
-      struct in_addr ipaddr;
+	  struct in_addr ipaddr;
 
-      enum name_source source;
+	  enum name_source source;
 
       char *ptr;
-      int count = 0;
+	  int count = 0;
 
       char *p;
 
@@ -304,24 +329,24 @@ void load_netbios_names(void)
 
       if (*line == '#') continue;
 
-      ptr = line;
+	ptr = line;
 
-      if (next_token(&ptr,name_str    ,NULL)) ++count;
-      if (next_token(&ptr,ip_str      ,NULL)) ++count;
-      if (next_token(&ptr,nb_flags_str,NULL)) ++count;
-      if (next_token(&ptr,ttd_str     ,NULL)) ++count;
-      
-      if (count <= 0) continue;
-      
-      if (count != 4) {
-	DEBUG(0,("Ill formed wins line"));
-	DEBUG(0,("[%s]: name#type ip nb_flags abs_time\n",line));
-	continue;
-      }
-      
+	if (next_token(&ptr,name_str    ,NULL)) ++count;
+	if (next_token(&ptr,ip_str      ,NULL)) ++count;
+	if (next_token(&ptr,ttd_str     ,NULL)) ++count;
+	if (next_token(&ptr,nb_flags_str,NULL)) ++count;
+
+	if (count <= 0) continue;
+
+	if (count != 4) {
+	  DEBUG(0,("Ill formed wins line"));
+	  DEBUG(0,("[%s]: name#type ip nb_flags abs_time\n",line));
+	  continue;
+	}
+
       /* netbios name. # divides the name from the type (hex): netbios#xx */
       strcpy(name,name_str);
-      
+
       p = strchr(name,'#');
 
       if (p) {
@@ -418,10 +443,19 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 
   bzero((char *)n,sizeof(*n));
 
+  n->num_ips = 1; /* XXXX ONLY USE THIS FUNCTION FOR ONE ENTRY */
+  n->ip_flgs = (struct nmb_ip*)malloc(sizeof(*n->ip_flgs) * n->num_ips);
+  if (!n->ip_flgs)
+  {
+     free(n);
+     return NULL;
+  }
+
   make_nmb_name(&n->name,name,type,scope);
 
   if ((n2 = find_name_search(&d, &n->name, search, new_only?ipzero:ip)))
   {
+    free(n->ip_flgs);
     free(n);
     if (new_only || (n2->source==SELF && source!=SELF)) return n2;
     n = n2;
@@ -431,8 +465,10 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
      n->death_time = time(NULL)+ttl*3;
   n->refresh_time = time(NULL)+GET_TTL(ttl);
 
-  n->ip = ip;
-  n->nb_flags = nb_flags;
+  /* XXXX only one entry expected with this function */
+  n->ip_flgs[0].ip = ip;
+  n->ip_flgs[0].nb_flags = nb_flags;
+
   n->source = source;
   
   if (!n2) add_name(d,n);
@@ -469,6 +505,7 @@ void expire_names(time_t t)
 		  
 		  if (d->namelist == n) d->namelist = n->next; 
 		  
+		  free(n->ip_flgs);
 		  free(n);
 		}
 		  else
@@ -506,7 +543,7 @@ struct name_record *search_for_name(struct subnet_record **d,
   if (!n)
     {
       struct in_addr dns_ip;
-      uint32 a;
+      unsigned long a;
       
       /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
       if (!dns_type && name_type != 0x1b)
@@ -551,7 +588,7 @@ struct name_record *search_for_name(struct subnet_record **d,
       return NULL;
     }
   
-  DEBUG(3,("OK %s\n",inet_ntoa(n->ip)));      
+  DEBUG(3,("OK %s\n",inet_ntoa(n->ip_flgs[0].ip)));      
   
   return n;
 }
