@@ -79,9 +79,13 @@ krb5_error_code as_rep (KDC_REQ*, krb5_data*, const char*, struct sockaddr*);
 void configure (int, char**);
 hdb_entry* db_fetch (krb5_principal);
 void free_ent(hdb_entry *);
-void kdc_log (int, const char*, ...);
-char* kdc_log_msg (int, const char*, ...);
-char* kdc_log_msg_va (int, const char*, va_list);
+void kdc_log (int, const char*, ...)
+    __attribute__ ((format (printf, 2,3)));
+
+char* kdc_log_msg (int, const char*, ...)
+    __attribute__ ((format (printf, 2,3)));
+char* kdc_log_msg_va (int, const char*, va_list)
+    __attribute__ ((format (printf, 2,0)));
 void kdc_openlog (krb5_config_section*);
 void loop (void);
 void set_master_key (EncryptionKey);
