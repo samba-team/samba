@@ -27,11 +27,11 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     1
-    AMERICA - USA                                15
+    AMERICA - USA                                19
     ASIA                                          1
-    AUSTRALIA & NEW ZEALAND                      15
+    AUSTRALIA & NEW ZEALAND                      16
     CANADA                                        6
-    EUROPE                                       20
+    EUROPE                                       21
 
 
 AFRICA
@@ -189,6 +189,24 @@ Hartwell Corporation
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+SOUTHERN CALIFORNIA - USA
+
+Yuri Diomin
+Yuri Software
+13791 Ruette Le Parc, Ste. C
+Del Mar, CA 92014
+Phone: 619-350-8541
+Fax: 619-350-7641
+yuri@yurisw.com
+http://www.yurisw.com
+
+We have been supporting Samba in commercial installations for several years 
+on a variety of client and server platforms. We have extensive experience 
+in all aspects of UNIX-Windows connectivity solutions for mixed platform 
+corporate setups. We are a contributor to Samba source code.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 FORT COLLINS, CO - USA
 
 Granite Computing Solutions
@@ -217,7 +235,21 @@ Providing custom Internet and networking solutions.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-MIAMI, FL - USA
+KANSAS - USA
+
+NT Integrators
+2400 W. 31st Street
+Lawrence, KS 66046
+USA
+913-842-1100
+http://www.ntintegrators.com/
+email: watts@sunflower.com
+
+My consulting company does NT/Linux/Samba/etc support.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+FLORIDA - USA
 
 Swaney & Associates, Inc.
 ATTN: 	Stephen Swaney
@@ -231,6 +263,25 @@ Specializing in:
 	UNIX to PC connectivity
 	Market Data systems
 	Messaging Systems (Sendmail & Microsoft Exchange)
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+FLORIDA - USA
+
+Progressive Computer Concepts, Inc.
+1371 Cassat Avenue
+Jacksonville, FL 32205
+info@progressive-comp.com
+800-580-2640 - 904-389-3236 - 904-389-6584 fax
+
+Related Products and Services:
+  ncLinux (Network Computer) consulting, installations, and turnkey
+  networks.  Multi-user NT and Samba consulting, installation and
+  administration (both remote and onsite), Internet and Intranet
+  connectivity, LAN and WAN, firewall installation, security,
+  troubleshooting and training, custom LAN/WAN/Intranet business
+  systems development, WWW/CGI development (e.g. database gateways,
+  catalogs).
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -293,6 +344,21 @@ Sample prices:
 
      Upon request, usually US$50-$100/hour. Educational discounts
 available.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+TEXAS - USA
+
+Jody Winston
+xprt Computer Consulting, Inc.
+731 Voyager
+Houston, TX 77062
+(281) 480 8649, jody@sccsi.com
+
+We have been supporting software from the Free Software Foundation and
+other groups such as Linux for over 8 years.  The base rate is 150.00
+US dollars per hour.  Please contact us for more information on our
+rates and services.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -452,6 +518,21 @@ Cybersource specialises in TCP/IP network integration and Open Systems
 administration.  Cybersource is an Australian-owned and operated 
 company, with clients including some of Australia's largest financial,
 petrochemical and state government organisations.  
+-----------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+MELBOURNE - AUSTRALIA
+
+Company Name    DARX Consulting
+Postal Address  PO Box 12329
+                                A'Beckett St PO
+                                Melbourne 3000
+Area of Service Melb Metro and SE Suburbs
+Phone                   +61 3 9822 1216
+Email                   info@darx.com.au
+
+We provide setup and support of samba based systems as well as
+Novell/NT Systems.
 -----------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -936,6 +1017,19 @@ Volker Lendecke, one of our our founders and a Samba Team member,
 has gained a lot of SMB/CIFS and NetWare experience writing smbfs and 
 ncpfs, the Linux kernel file systems that enable Linux to access 
 Windows NT and other SMB/CIFS servers, and NetWare Servers.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+GREIFSWALD - GERMANY
+
+Mr. Frank Rautenberg, Mr. Heiko Boesel, Mr. Jan Holz
+UniCon Computersysteme GmbH
+Ziegelhof 20
+D-17489 Greifswald
+email: samba@unicon-gmbh.com
+www: http://www.unicon-gmbh.com
+
+We use Samba and we provide support for our customers.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
