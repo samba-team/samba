@@ -58,11 +58,12 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
 	if(longp)
 	    strlcat(string, "= Ns", len);
 	strlcat(string, " Ar ", len);
-    }else
+    } else {
 	if (longp)
 	    strlcat (string, "=", len);
 	else
 	    strlcat (string, " ", len);
+    }
 
     if (arg->arg_help)
 	s = arg->arg_help;
@@ -70,6 +71,8 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
 	s = "integer";
     else if (arg->type == arg_string)
 	s = "string";
+    else if (arg->type == arg_strings)
+	s = "strings";
     else if (arg->type == arg_double)
 	s = "float";
     else
