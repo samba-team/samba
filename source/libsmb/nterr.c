@@ -534,6 +534,7 @@ nt_err_code_struct nt_errs[] =
 	{ "NT_STATUS_TOO_MANY_LINKS", NT_STATUS_TOO_MANY_LINKS },
 	{ "NT_STATUS_QUOTA_LIST_INCONSISTENT", NT_STATUS_QUOTA_LIST_INCONSISTENT },
 	{ "NT_STATUS_FILE_IS_OFFLINE", NT_STATUS_FILE_IS_OFFLINE },
+        { "NT_STATUS_NO_MORE_ENTRIES", NT_STATUS_NO_MORE_ENTRIES },
 	{ NULL, NT_STATUS(0) }
 };
 
@@ -548,8 +549,8 @@ char *get_nt_error_msg(NTSTATUS nt_code)
 	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if ((NT_STATUS_V(nt_errs[idx].nt_errcode) & 0xFFFFFF) == 
-                    (NT_STATUS_V(nt_code) & 0xFFFFFF)) {
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
+                    NT_STATUS_V(nt_code)) {
                         return nt_errs[idx].nt_errstr;
 		}
 		idx++;
