@@ -556,7 +556,7 @@ krb5_get_credentials_with_flags(krb5_context context,
 				krb5_creds **out_creds)
 {
     krb5_error_code ret;
-    krb5_creds *tgt, **tgts;
+    krb5_creds **tgts;
     int i;
     
     *out_creds = calloc(1, sizeof(**out_creds));
