@@ -163,8 +163,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	status = domain->methods->query_user(domain, mem_ctx, name_user, user_rid,
-					     &user_info);
+	status = domain->methods->query_user(domain, mem_ctx, user_rid, &user_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
@@ -259,8 +258,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 		return WINBINDD_ERROR;
 	}
 
-	status = domain->methods->query_user(domain, mem_ctx, user_name, user_rid, 
-					     &user_info);
+	status = domain->methods->query_user(domain, mem_ctx, user_rid, &user_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));

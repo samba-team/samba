@@ -89,39 +89,51 @@ typedef struct {
    I'm just starting small
  */
 struct winbindd_methods {
+	/* get a list of users, returning a WINBIND_USERINFO for each one */
 	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   uint32 *start_ndx, uint32 *num_entries, 
 				   WINBIND_USERINFO **info);
 
+	/* get a list of groups */
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    uint32 *start_ndx, uint32 *num_entries, 
 				    struct acct_info **info);
 
+	/* convert one user or group name to a sid */
 	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
 				const char *name,
 				DOM_SID *sid,
 				enum SID_NAME_USE *type);
 
+	/* convert a sid to a user or group name */
 	NTSTATUS (*sid_to_name)(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				DOM_SID *sid,
 				char **name,
 				enum SID_NAME_USE *type);
 
-	/* query_user is a bit strange. The backend has a choice of
-           doing the lookup by user name or rid */
+	/* lookup user info for a given rid */
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
 			       TALLOC_CTX *mem_ctx, 
-			       const char *user_name, uint32 user_rid, 
+			       uint32 user_rid, 
 			       WINBIND_USERINFO *user_info);
 
-	/* the backend can also choose for this function */
+	/* lookup all groups that a user is a member of. The backend
+	   can also choose to lookup by username or rid for this
+	   function */
 	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
-				      const char *user_name, uint32 user_rid, 
+				      uint32 user_rid, 
 				      uint32 *num_groups, uint32 **user_gids);
+
+	/* find all members of the group with the specified group_rid */
+	NTSTATUS (*lookup_groupmem)(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32 group_rid, uint32 *num_names, 
+				    uint32 **rid_mem, char ***names, 
+				    uint32 **name_types);
 };
 
 /* Structures to hold per domain information */

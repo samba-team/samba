@@ -156,11 +156,11 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 /*
   convert a domain SID to a user or group name
 */
-NTSTATUS winbindd_rpc_sid_to_name(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  DOM_SID *sid,
-				  char **name,
-				  enum SID_NAME_USE *type)
+static NTSTATUS sid_to_name(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
+			    DOM_SID *sid,
+			    char **name,
+			    enum SID_NAME_USE *type)
 {
 	CLI_POLICY_HND *hnd;
 	char **names;
@@ -187,7 +187,7 @@ NTSTATUS winbindd_rpc_sid_to_name(struct winbindd_domain *domain,
 /* Lookup user information from a rid or username. */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
-			   const char *user_name, uint32 user_rid, 
+			   uint32 user_rid, 
 			   WINBIND_USERINFO *user_info)
 {
 	CLI_POLICY_HND *hnd;
@@ -224,8 +224,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
 
-	user_info->acct_name = talloc_strdup(mem_ctx, user_name);
 	user_info->group_rid = ctr->info.id21->group_rid;
+	user_info->acct_name = unistr2_tdup(mem_ctx, 
+					    &ctr->info.id21->uni_user_name);
 	user_info->full_name = unistr2_tdup(mem_ctx, 
 					    &ctr->info.id21->uni_full_name);
 
@@ -243,7 +244,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const char *user_name, uint32 user_rid, 
+				  uint32 user_rid, 
 				  uint32 *num_groups, uint32 **user_gids)
 {
 	CLI_POLICY_HND *hnd;
@@ -300,13 +301,116 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 }
 
 
+/* Lookup group membership given a rid.   */
+static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 group_rid, uint32 *num_names, 
+				uint32 **rid_mem, char ***names, 
+				uint32 **name_types)
+{
+        CLI_POLICY_HND *hnd;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        uint32 i, total_names = 0;
+        POLICY_HND dom_pol, group_pol;
+        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+        BOOL got_dom_pol = False, got_group_pol = False;
+
+        /* Get sam handle */
+
+        if (!(hnd = cm_get_sam_handle(domain->name)))
+                goto done;
+
+        /* Get domain handle */
+
+        result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+                                      des_access, &domain->sid, &dom_pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                goto done;
+
+        got_dom_pol = True;
+
+        /* Get group handle */
+
+        result = cli_samr_open_group(hnd->cli, mem_ctx, &dom_pol,
+                                     des_access, group_rid, &group_pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                goto done;
+
+        got_group_pol = True;
+
+        /* Step #1: Get a list of user rids that are the members of the
+           group. */
+
+        result = cli_samr_query_groupmem(hnd->cli, mem_ctx,
+                                         &group_pol, num_names, rid_mem,
+                                         name_types);
+
+        if (!NT_STATUS_IS_OK(result))
+                goto done;
+
+        /* Step #2: Convert list of rids into list of usernames.  Do this
+           in bunches of ~1000 to avoid crashing NT4.  It looks like there
+           is a buffer overflow or something like that lurking around
+           somewhere. */
+
+#define MAX_LOOKUP_RIDS 900
+
+        *names = talloc(mem_ctx, *num_names * sizeof(char *));
+        *name_types = talloc(mem_ctx, *num_names * sizeof(uint32));
+
+        for (i = 0; i < *num_names; i += MAX_LOOKUP_RIDS) {
+                int num_lookup_rids = MIN(*num_names - i, MAX_LOOKUP_RIDS);
+                uint32 tmp_num_names = 0;
+                char **tmp_names = NULL;
+                uint32 *tmp_types = NULL;
+
+                /* Lookup a chunk of rids */
+
+                result = cli_samr_lookup_rids(hnd->cli, mem_ctx,
+                                              &dom_pol, 1000, /* flags */
+                                              num_lookup_rids,
+                                              &(*rid_mem)[i],
+                                              &tmp_num_names,
+                                              &tmp_names, &tmp_types);
+
+                if (!NT_STATUS_IS_OK(result))
+                        goto done;
+
+                /* Copy result into array.  The talloc system will take
+                   care of freeing the temporary arrays later on. */
+
+                memcpy(&(*names)[i], tmp_names, sizeof(char *) * 
+                       tmp_num_names);
+
+                memcpy(&(*name_types)[i], tmp_types, sizeof(uint32) *
+                       tmp_num_names);
+
+                total_names += tmp_num_names;
+        }
+
+        *num_names = total_names;
+
+ done:
+        if (got_group_pol)
+                cli_samr_close(hnd->cli, mem_ctx, &group_pol);
+
+        if (got_dom_pol)
+                cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+        return result;
+}
+
+
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
 	query_user_list,
 	enum_dom_groups,
 	name_to_sid,
-	winbindd_rpc_sid_to_name,
+	sid_to_name,
 	query_user,
-	lookup_usergroups
+	lookup_usergroups,
+	lookup_groupmem
 };
 
