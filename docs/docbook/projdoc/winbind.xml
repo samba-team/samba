@@ -18,6 +18,7 @@
 		</affiliation>
 	</author>
 	&author.jelmer;
+	&author.jht;
 	</authorgroup>
 	<pubdate>27 June 2002</pubdate>
 </chapterinfo>
@@ -25,7 +26,7 @@
 <title>Unified Logons between Windows NT and UNIX using Winbind</title>
 
 <sect1>
-	<title>Abstract</title>
+	<title>Features and Benefits</title>
 
 	<para>Integration of UNIX and Microsoft Windows NT through 
 	a unified logon has been considered a "holy grail" in heterogeneous 
@@ -337,8 +338,8 @@ the winbind services which come with SAMBA 3.0.
 <title>Introduction</title>
 
 <para>
-This HOWTO describes the procedures used to get winbind up and 
-running on my RedHat 7.1 system.  Winbind is capable of providing access 
+This section describes the procedures used to get winbind up and 
+running on a RedHat 7.1 system.  Winbind is capable of providing access 
 and authentication control for Windows Domain users through an NT 
 or Win2K PDC for 'regular' services, such as telnet a nd ftp, as
 well for SAMBA services.
@@ -1124,7 +1125,19 @@ configured in the pam.conf.
 </sect1>
 
 <sect1>
-	<title>Limitations</title>
+<title>Conclusion</title>
+
+	<para>The winbind system, through the use of the Name Service 
+	Switch, Pluggable Authentication Modules, and appropriate 
+	Microsoft RPC calls have allowed us to provide seamless 
+	integration of Microsoft Windows NT domain users on a
+	UNIX system. The result is a great reduction in the administrative 
+	cost of running a mixed UNIX and NT network.</para>
+	
+</sect1>
+
+<sect1>
+<title>Common Errors</title>
 	
 	<para>Winbind has a number of limitations in its current 
 	released version that we hope to overcome in future 
@@ -1151,19 +1164,6 @@ configured in the pam.conf.
 		that may be been set for Windows NT users, this is
 		instead up to the PDC to enforce.</para></listitem>
 	</itemizedlist>
-</sect1>
-
-
-<sect1>
-	<title>Conclusion</title>
-
-	<para>The winbind system, through the use of the Name Service 
-	Switch, Pluggable Authentication Modules, and appropriate 
-	Microsoft RPC calls have allowed us to provide seamless 
-	integration of Microsoft Windows NT domain users on a
-	UNIX system. The result is a great reduction in the administrative 
-	cost of running a mixed UNIX and NT network.</para>
-	
 </sect1>
 
 </chapter>

@@ -7,10 +7,29 @@
 <title>Advanced Network Manangement</title>
 
 <para>
-This section attempts to document peripheral issues that are of great importance to network
+This section documents peripheral issues that are of great importance to network
 administrators who want to improve network resource access control, to automate the user
 environment, and to make their lives a little easier.
 </para>
+
+<sect1>
+<title>Features and Benefits</title>
+
+<para>
+Often the difference between a working network environment and a well appreciated one can
+best be measured by the <emphasis>little things</emphasis> that makes everything work more
+harmoniously. A key part of every network environment solution is the ability to remotely
+manage MS Windows workstations, to remotely access the Samba server, to provide customised
+logon scripts, as well as other house keeping activities that help to sustain more reliable
+network operations.
+</para>
+
+<para>
+This chapter presents information on each of these area. They are placed here, and not in
+other chapters, for ease of reference.
+</para>
+
+</sect1>
 
 <sect1>
 <title>Remote Server Administration</title>
@@ -47,6 +66,151 @@ from <ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">ftp://ft
 </para>
 
 </sect1>
+
+<sect1>
+<title>Remote Desktop Management</title>
+
+<para>
+There are a number of possible remote desktop management solutions that range from free
+through costly. Do not let that put you off. Sometimes the most costly solutions is the
+most cost effective. In any case, you will need to draw your own conclusions as to which
+is the best tool in your network environment.
+</para>
+
+	<sect2>
+	<title>Remote Management from NoMachines.Com</title>
+
+	<para>
+	The following information was posted to the Samba mailing list at Apr 3 23:33:50 GMT 2003.
+	It is presented in full (with author details omitted for privacy reasons).
+	<para>
+
+<para>
+<screen>
+&gt; I have a wounderfull linux/samba server running as pdc for a network.
+&gt; Now I would like to add remote desktop capabilites so that
+&gt; users outside could login to the system and get their desktop up from
+&gt; home or another country..
+&gt;
+&gt; Is there a way to acomplish this? Do I need a windows terminal server?
+&gt; Do I need to configure it so that it is a member of the domain or a
+&gt; BDC,PDC? Are there any hacks for MS Windows XP to enable remote login even if
+&gt; the computer is in a domain?
+&gt;
+&gt; Any ideas/experience would be appreciated :)
+</screen>
+</para>
+
+	<para>
+	Answer provided: Check out the new offer from NoMachine, "NX" software:
+	<ulink url="http://www.nomachine.com/">http://www.nomachine.com/</ulink>.
+	</para>
+
+	<para>
+	It implements a very easy-to-use interface to the remote X protocol as
+	well as incorporating VNC/RFB and rdesktop/RDP into it, but at a speed
+	performance much better than anything you may have ever seen...
+	</para>
+
+	<para>
+	Remote X is not new at all -- but what they did achieve successfully is
+	a new way of compression and caching technologies which makes the thing
+	fast enough to run even over slow modem/ISDN connections.
+	</para>
+
+	<para>
+	I could testdrive their (public) RedHat machine in Italy, over a loaded
+	internet connection, with enabled thumbnail previews in KDE konqueror
+	which popped up immediately on "mouse-over". From inside that (remote X)
+	session I started a rdesktop session on another, a Windows XP machine.
+	To test the performance, I played Pinball. I am proud to announce here
+	that my score was 631750 points at first try...
+	</para>
+
+	<para>
+	NX performs better on my local LAN than any of the other "pure"
+	connection methods I am using from time to time: TightVNC, rdesktop or
+	remote X. It is even faster than a direct crosslink connection between
+	two nodes.
+	</para>
+
+	<para>
+	I even got sound playing from the remote X app to my local boxes, and
+	had a working "copy'n'paste" from an NX  window (running a KDE session
+	in Italy) to my Mozilla mailing agent... These guys are certainly doing
+	something right!
+	</para>
+
+	<para>
+	I recommend to testdrive NX to anybody with a only a remote interest
+	in remote computing
+	<ulink url="http://www.nomachine.com/testdrive.php">http://www.nomachine.com/testdrive.php</ulink>.
+	</para>
+
+	<para>
+	Just download the free of charge client software (available for RedHat,
+	SuSE, Debian and Windows) and be up and running within 5 minutes (they
+	need to send you your account data, though, because you are assigned
+	a real Unix account on their testdrive.nomachine.com box...
+	</para>
+
+	<para>
+	They plan to get to the point were you can have NX application servers
+	running as a cluster of nodes, and users simply start an NX session locally,
+	and can select applications to run transparently (apps may even run on
+	another NX node, but pretend to be on the same as used for initial login,
+	because it displays in the same window.... well, you also can run it
+	fullscreen, and after a short time you forget that it is a remote session
+	at all).
+	</para>
+
+	<para>
+	Now the best thing at the end: all the core compression and caching
+	technologies are released under the GPL and available as source code
+	to anybody who wants to build on it! These technolgies are working,
+	albeit started from the command line only (and very inconvenient to
+	use in order to get a fully running remote X session up and running....)
+	</para>
+
+	<para>
+	To answer your questions:
+	</para>
+
+	<itemizedlist>
+		<listitem><para>
+		You don't need to install a terminal server; XP has RDP support built in.
+		</para></listitem>
+
+		<listitem><para>
+		NX is much cheaper than Citrix -- and comparable in performance, probably faster
+		</para></listitem>
+
+		<listitem><para>
+		You don't need to hack XP -- it just works
+		</para></listitem>
+
+		<listitem><para>
+		You log into the XP box from remote transparently (and I think there is no
+		need to change anything to get a connection, even if authentication is against a domain)
+		</para></listitem>
+
+		<listitem><para>
+		The NX core technologies are all Open Source and released under the GPL --
+		you can today use a (very inconvenient) commandline to use it at no cost,
+		but you can buy a comfortable (proprietary) NX GUI frontend for money
+		</para></listitem>
+
+		<listitem><para>
+		NoMachine are encouraging and offering help to OSS/Free Software implementations
+		for such a frontend too, even if it means competition to them (they have written
+		to this effect even to the LTSP, KDE and GNOME developer mailing lists)
+		</para></listitem>
+	</itemizedlist>
+
+	</sect2>
+
+</sect1>
+
 <sect1>
 <title>Network Logon Script Magic</title>
 
@@ -181,4 +345,14 @@ See the documentation in the <ulink url="http://support.microsoft.com/default.as
 </sect2>
 
 </sect1>
+
+<sect1>
+<title>Common Errors</title>
+
+<para>
+Stuff goes here.
+</para>
+
+</sect1>
+
 </chapter>
