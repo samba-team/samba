@@ -211,11 +211,10 @@ static BOOL interpret_node_status(struct subnet_record *d,
 				char *p, struct nmb_name *name,int t,
 			   char *serv_name, struct in_addr ip, BOOL bcast)
 {
-  int level = t==0x20 ? 4 : 0;
   int numnames = CVAL(p,0);
   BOOL found = False;
 
-  DEBUG(level,("received %d names\n",numnames));
+  DEBUG(4,("received %d names\n",numnames));
 
   p += 1;
 
@@ -286,9 +285,9 @@ static BOOL interpret_node_status(struct subnet_record *d,
 	    }
 	}
       
-      DEBUG(level,("\t%s(0x%x)\t%s\n",qname,type,flags));
+      DEBUG(4,("\t%s(0x%x)\t%s\n",qname,type,flags));
     }
-  DEBUG(level,("num_good_sends=%d num_good_receives=%d\n",
+  DEBUG(4,("num_good_sends=%d num_good_receives=%d\n",
 	       IVAL(p,20),IVAL(p,24)));
   return found;
 }
