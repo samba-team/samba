@@ -144,19 +144,11 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_creds.o
 
-RPC_CLIENT_OBJ = \
-		rpc_client/cli_login.o    \
-		rpc_client/cli_netlogon.o \
-		rpc_client/cli_pipe.o     \
-		rpc_client/cli_lsarpc.o   \
-		rpc_client/cli_wkssvc.o   \
-		rpc_client/cli_srvsvc.o   \
-		rpc_client/cli_samr.o  \
-		rpc_client/cli_reg.o \
-		rpc_client/cli_spoolss_notify.o \
-		rpc_client/cli_connect.o \
-		rpc_client/cli_use.o \
-		rpc_client/ncacn_np_use.o \
+
+RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
+		rpc_client/cli_lsarpc.o rpc_client/cli_connect.o \
+		rpc_client/cli_use.o rpc_client/cli_login.o \
+		rpc_client/cli_spoolss_notify.o rpc_client/ncacn_np_use.o \
 		lib/util_list.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
@@ -334,8 +326,8 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
-	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ) \
-	    $(LIBMSRPC_OBJ)
+	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1) \
+	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
@@ -691,14 +683,9 @@ uninstallcp:
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@
 
-proto: rpc_client_proto
+proto: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
-
-rpc_client_proto:
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
-	  -h _RPC_CLIENT_PROTO_H_ include/rpc_client_proto.h \
-	  $(RPC_CLIENT_OBJ)
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
