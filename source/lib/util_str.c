@@ -1111,6 +1111,26 @@ char *strrchr_m(const char *s, char c)
 	return (char *)(s+strlen(s2));
 }
 
+/***********************************************************************
+ Return the equivalent of doing strrchr 'n' times - always going
+ backwards.
+***********************************************************************/
+
+char *strnrchr_m(const char *s, char c, unsigned int n)
+{
+	wpstring ws;
+	pstring s2;
+	smb_ucs2_t *p;
+
+	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
+	p = strnrchr_w(ws, UCS2_CHAR(c), n);
+	if (!p)
+		return NULL;
+	*p = 0;
+	pull_ucs2_pstring(s2, ws);
+	return (char *)(s+strlen(s2));
+}
+
 /**
  Convert a string to lower case.
 **/
