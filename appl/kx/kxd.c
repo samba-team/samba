@@ -86,11 +86,11 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      int status;
      KTEXT_ST ticket;
      AUTH_DAT auth;
+     char user[ANAME_SZ + 1];
      char instance[INST_SZ + 1];
      struct sockaddr_in thisaddr, thataddr;
      int addrlen;
      char version[KRB_SENDAUTH_VLEN];
-     char *username;
      u_char ok = 0;
      struct passwd *passwd;
 
@@ -113,13 +113,13 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	 strncmp(version, KXVERSION, KRB_SENDAUTH_VLEN) != 0) {
 	  return 1;
      }
-     passwd = k_getpwnam (auth.pname);
+     if (krb_net_read (sock, user, sizeof(user)) != sizeof(user))
+	  return 1;
+     passwd = k_getpwnam (user);
      if (passwd == NULL)
 	  return fatal (sock, "Cannot find uid");
-     username = strdup (passwd->pw_name);
-     if (kuserok(&auth, username) != 0)
+     if (kuserok(&auth, user) != 0)
 	  return fatal (sock, "Permission denied");
-     free (username);
      if (setgid (passwd->pw_gid) ||
 	 initgroups(passwd->pw_name, passwd->pw_gid) ||
 	 setuid(passwd->pw_uid)) {
