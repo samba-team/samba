@@ -317,7 +317,9 @@ krb5_get_default_in_tkt_etypes(krb5_context context,
 const char *
 krb5_get_err_text(krb5_context context, krb5_error_code code)
 {
-    const char *p = com_right(context->et_list, code);
+    const char *p = NULL;
+    if(context != NULL)
+	p = com_right(context->et_list, code);
     if(p == NULL)
 	p = strerror(code);
     return p;
