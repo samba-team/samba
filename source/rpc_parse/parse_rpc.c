@@ -692,6 +692,7 @@ void init_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 
 BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth)
 {
+	uint32 start_offset = prs_offset(ps);
 	if (neg == NULL)
 		return False;
 
@@ -718,8 +719,7 @@ BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_stru
 
 		old_offset = prs_offset(ps);
 
-		/* lkclXXXX HACK! */
-		if(!prs_set_offset(ps, neg->hdr_myname.buffer + 0x50))
+		if(!prs_set_offset(ps, neg->hdr_myname.buffer + start_offset - 12))
 			return False;
 
 		if(!prs_uint8s(True, "myname", ps, depth, (uint8*)neg->myname, 
@@ -728,8 +728,7 @@ BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_stru
 
 		old_offset += neg->hdr_myname.str_str_len;
 
-		/* lkclXXXX HACK! */
-		if(!prs_set_offset(ps, neg->hdr_domain.buffer + 0x50))
+		if(!prs_set_offset(ps, neg->hdr_domain.buffer + start_offset - 12))
 			return False;
 
 		if(!prs_uint8s(True, "domain", ps, depth, (uint8*)neg->domain, 
@@ -915,7 +914,7 @@ BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		old_offset = prs_offset(ps);
 
-		if(!prs_set_offset(ps, rsp->hdr_domain.buffer + 0x1c))
+		if(!prs_set_offset(ps, rsp->hdr_domain.buffer + 0xc))
 			return False;
 
 		if(!prs_uint8s(True , "domain  ", ps, depth, (uint8*)rsp->domain,
@@ -924,7 +923,7 @@ BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		old_offset += rsp->hdr_domain.str_str_len;
 
-		if(!prs_set_offset(ps, rsp->hdr_usr.buffer + 0x1c))
+		if(!prs_set_offset(ps, rsp->hdr_usr.buffer + 0xc))
 			return False;
 
 		if(!prs_uint8s(True , "user    ", ps, depth, (uint8*)rsp->user,
@@ -933,7 +932,7 @@ BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		old_offset += rsp->hdr_usr.str_str_len;
 
-		if(!prs_set_offset(ps, rsp->hdr_wks.buffer + 0x1c))
+		if(!prs_set_offset(ps, rsp->hdr_wks.buffer + 0xc))
 			return False;
 
 		if(!prs_uint8s(True, "wks     ", ps, depth, (uint8*)rsp->wks,
@@ -942,7 +941,7 @@ BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		old_offset += rsp->hdr_wks.str_str_len;
 
-		if(!prs_set_offset(ps, rsp->hdr_lm_resp.buffer + 0x1c))
+		if(!prs_set_offset(ps, rsp->hdr_lm_resp.buffer + 0xc))
 			return False;
 
 		if(!prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp,
@@ -951,7 +950,7 @@ BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		old_offset += rsp->hdr_lm_resp.str_str_len;
 
-		if(!prs_set_offset(ps, rsp->hdr_nt_resp.buffer + 0x1c))
+		if(!prs_set_offset(ps, rsp->hdr_nt_resp.buffer + 0xc))
 			return False;
 
 		if(!prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp,
@@ -962,7 +961,7 @@ BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		if (rsp->hdr_sess_key.str_str_len != 0) {
 
-			if(!prs_set_offset(ps, rsp->hdr_sess_key.buffer + 0x1c))
+			if(!prs_set_offset(ps, rsp->hdr_sess_key.buffer + 0x10))
 				return False;
 
 			old_offset += rsp->hdr_sess_key.str_str_len;
