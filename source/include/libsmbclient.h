@@ -26,6 +26,10 @@
 #ifndef SMBCLIENT_H_INCLUDED
 #define SMBCLIENT_H_INCLUDED
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*-------------------------------------------------------------------*/
 /* The following are special comments to instruct DOXYGEN (automated 
  * documentation tool:
@@ -550,13 +554,7 @@ struct _SMBCCTX {
  *
  * @note            Do not forget to smbc_init_context() the returned SMBCCTX pointer !
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 SMBCCTX * smbc_new_context(void);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup misc
  * Delete a SBMCCTX (a context) acquired from smbc_new_context().
@@ -579,13 +577,8 @@ SMBCCTX * smbc_new_context(void);
  *                  just before exit()'ing. When shutdown_ctx is 0, this function can be
  *                  use in periodical cleanup functions for example.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup misc
  * Initialize a SBMCCTX (a context).
@@ -605,13 +598,8 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
  *                  but it might leak memory on smbc_context_init() failure. Avoid this.
  *                  You'll have to call smbc_free_context() yourself on failure.  
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 SMBCCTX * smbc_init_context(SMBCCTX * context);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup misc
  * Initialize the samba client library.
@@ -631,13 +619,7 @@ SMBCCTX * smbc_init_context(SMBCCTX * context);
  *
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_init(smbc_get_auth_data_fn fn, int debug);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup misc
  * Set or retrieve the compatibility library's context pointer
@@ -661,13 +643,7 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug);
  *                  authentication functions have been freed, if necessary.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 SMBCCTX * smbc_set_context(SMBCCTX * new_context);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup file
  * Open a file on an SMB server.
@@ -720,13 +696,8 @@ SMBCCTX * smbc_set_context(SMBCCTX * new_context);
  *                  try again with an empty username and password. This 
  *                  often gets mapped to the guest account on some machines.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 int smbc_open(const char *furl, int flags, mode_t mode);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup file
  * Create a file on an SMB server.
@@ -759,13 +730,8 @@ int smbc_open(const char *furl, int flags, mode_t mode);
  * @see             smbc_open()
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 int smbc_creat(const char *furl, mode_t mode);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup file
  * Read from a file using an opened file handle.
@@ -787,13 +753,8 @@ int smbc_creat(const char *furl, mode_t mode);
  * @see             smbc_open(), smbc_write()
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 ssize_t smbc_read(int fd, void *buf, size_t bufsize);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup file
  * Write to a file using an opened file handle.
@@ -815,13 +776,8 @@ ssize_t smbc_read(int fd, void *buf, size_t bufsize);
  * @see             smbc_open(), smbc_read()
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 ssize_t smbc_write(int fd, void *buf, size_t bufsize);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup file
  * Seek to a specific location in a file.
@@ -851,13 +807,8 @@ ssize_t smbc_write(int fd, void *buf, size_t bufsize);
  * 
  * @todo Are errno values complete and correct?
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 off_t smbc_lseek(int fd, off_t offset, int whence);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup file
  * Close an open file handle.
@@ -870,13 +821,8 @@ off_t smbc_lseek(int fd, off_t offset, int whence);
  *
  * @see             smbc_open(), smbc_creat()
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_close(int fd);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * Unlink (delete) a file or directory.
@@ -899,13 +845,8 @@ int smbc_close(int fd);
  *
  * @todo Are errno values complete and correct?
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_unlink(const char *furl);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * Rename or move a file or directory.
@@ -947,13 +888,8 @@ int smbc_unlink(const char *furl);
  *       share?  I say no... NOTE. I agree for the moment.
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_rename(const char *ourl, const char *nurl);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * Open a directory used to obtain directory entries.
@@ -975,13 +911,8 @@ int smbc_rename(const char *ourl, const char *nurl);
  * @see             smbc_getdents(), smbc_readdir(), smbc_closedir()
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_opendir(const char *durl);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * Close a directory handle opened by smbc_opendir().
@@ -993,13 +924,8 @@ int smbc_opendir(const char *durl);
  *
  * @see             smbc_opendir()
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_closedir(int dh);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * Get multiple directory entries.
@@ -1027,13 +953,8 @@ int smbc_closedir(int dh);
  *
  * @todo Add example code so people know how to parse buffers.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_getdents(unsigned int dh, struct smbc_dirent *dirp, int count);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * Get a single directory entry.
@@ -1047,13 +968,8 @@ int smbc_getdents(unsigned int dh, struct smbc_dirent *dirp, int count);
  *
  * @see             smbc_dirent, smbc_getdents(), smbc_open()
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 struct smbc_dirent* smbc_readdir(unsigned int dh);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * Get the current directory offset.
@@ -1075,13 +991,8 @@ struct smbc_dirent* smbc_readdir(unsigned int dh);
  * @see             smbc_readdir()
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 off_t smbc_telldir(int dh);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * lseek on directories.
@@ -1105,13 +1016,7 @@ off_t smbc_telldir(int dh);
  *
  * @todo In what does the reture and errno values mean?
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_lseekdir(int fd, off_t offset);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup directory
  * Create a directory.
@@ -1134,13 +1039,8 @@ int smbc_lseekdir(int fd, off_t offset);
  * @see             smbc_rmdir()
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_mkdir(const char *durl, mode_t mode);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup directory
  * Remove a directory.
@@ -1160,13 +1060,8 @@ int smbc_mkdir(const char *durl, mode_t mode);
  *
  * @todo Are errno values complete and correct?
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_rmdir(const char *durl);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Get information about a file or directory.
@@ -1187,13 +1082,8 @@ int smbc_rmdir(const char *durl);
  * @see             Unix stat()
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_stat(const char *url, struct stat *st);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Get file information via an file descriptor.
@@ -1213,13 +1103,8 @@ int smbc_stat(const char *url, struct stat *st);
  * @see             smbc_stat(), Unix stat()
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_fstat(int fd, struct stat *st);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribue
  * Change the ownership of a file or directory.
@@ -1244,13 +1129,8 @@ int smbc_fstat(int fd, struct stat *st);
  * @todo How do we abstract owner and group uid and gid?
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_chown(const char *url, uid_t owner, gid_t group);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Change the permissions of a file.
@@ -1272,13 +1152,7 @@ int smbc_chown(const char *url, uid_t owner, gid_t group);
  *
  * @todo Are errno values complete and correct?
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_chmod(const char *url, mode_t mode);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup attribute
  * Change the last modification time on a file
@@ -1295,13 +1169,7 @@ int smbc_chmod(const char *url, mode_t mode);
  *                  - EPERM  Permission was denied.
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_utimes(const char *url, struct timeval *tbuf);
-#ifdef __cplusplus
-}
-#endif
 
 #ifdef HAVE_UTIME_H
 /**@ingroup attribute
@@ -1320,13 +1188,7 @@ int smbc_utimes(const char *url, struct timeval *tbuf);
  *                  - EPERM  Permission was denied.
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_utime(const char *fname, struct utimbuf *utbuf);
-#ifdef __cplusplus
-}
-#endif
 #endif
 
 /**@ingroup attribute
@@ -1428,17 +1290,12 @@ int smbc_utime(const char *fname, struct utimbuf *utbuf);
  *                    sYsTeM.nt_sEc_desc.owNER
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_setxattr(const char *url,
                   const char *name,
                   const void *value,
                   size_t size,
                   int flags);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Set extended attributes for a file.  This is used for modifying a file's
@@ -1543,17 +1400,12 @@ int smbc_setxattr(const char *url,
  *                    sYsTeM.nt_sEc_desc.owNER
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_lsetxattr(const char *url,
                    const char *name,
                    const void *value,
                    size_t size,
                    int flags);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Set extended attributes for a file.  This is used for modifying a file's
@@ -1655,17 +1507,12 @@ int smbc_lsetxattr(const char *url,
  *                    sYsTeM.nt_sEc_desc.owNER
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_fsetxattr(int fd,
                    const char *name,
                    const void *value,
                    size_t size,
                    int flags);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Get extended attributes for a file.
@@ -1723,16 +1570,11 @@ int smbc_fsetxattr(int fd,
  *                            extended attributes
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_getxattr(const char *url,
                   const char *name,
                   const void *value,
                   size_t size);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Get extended attributes for a file.  The POSIX function which this maps to
@@ -1793,16 +1635,11 @@ int smbc_getxattr(const char *url,
  *                            extended attributes
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_lgetxattr(const char *url,
                    const char *name,
                    const void *value,
                    size_t size);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Get extended attributes for a file.
@@ -1861,16 +1698,11 @@ int smbc_lgetxattr(const char *url,
  *                            extended attributes
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_fgetxattr(int fd,
                    const char *name,
                    const void *value,
                    size_t size);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Remove extended attributes for a file.  This is used for modifying a file's
@@ -1915,14 +1747,9 @@ int smbc_fgetxattr(int fd,
  *                            extended attributes
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_removexattr(const char *url,
                      const char *name);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Remove extended attributes for a file.  This is used for modifying a file's
@@ -1970,14 +1797,9 @@ int smbc_removexattr(const char *url,
  *                            extended attributes
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_lremovexattr(const char *url,
                       const char *name);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * Remove extended attributes for a file.  This is used for modifying a file's
@@ -2023,14 +1845,9 @@ int smbc_lremovexattr(const char *url,
  *                            extended attributes
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_fremovexattr(int fd,
                       const char *name);
-#ifdef __cplusplus
-}
-#endif
+
 
 /**@ingroup attribute
  * List the supported extended attribute names associated with a file
@@ -2062,15 +1879,9 @@ int smbc_fremovexattr(int fd,
  *                  extended attributes at all.  Whether this is a feature or
  *                  a bug is yet to be decided.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_listxattr(const char *url,
                    char *list,
                    size_t size);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup attribute
  * List the supported extended attribute names associated with a file The
@@ -2106,15 +1917,9 @@ int smbc_listxattr(const char *url,
  *                  extended attributes at all.  Whether this is a feature or
  *                  a bug is yet to be decided.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_llistxattr(const char *url,
                     char *list,
                     size_t size);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup attribute
  * List the supported extended attribute names associated with a file
@@ -2147,15 +1952,9 @@ int smbc_llistxattr(const char *url,
  *                  extended attributes at all.  Whether this is a feature or
  *                  a bug is yet to be decided.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_flistxattr(int fd,
                     char *list,
                     size_t size);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup print
  * Print a file given the name in fname. It would be a URL ...
@@ -2172,13 +1971,7 @@ int smbc_flistxattr(int fd,
  *                  and errors returned by smbc_open
  *
  */                                     
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_print_file(const char *fname, const char *printq);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup print
  * Open a print file that can be written to by other calls. This simply
@@ -2193,13 +1986,7 @@ int smbc_print_file(const char *fname, const char *printq);
  *                  - all errors returned by smbc_open
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_open_print_job(const char *fname);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup print
  * List the print jobs on a print share, for the moment, pass a callback 
@@ -2212,13 +1999,7 @@ int smbc_open_print_job(const char *fname);
  *                  - EINVAL fname was NULL or smbc_init not called
  *                  - EACCES ???
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup print
  * Delete a print job 
@@ -2232,13 +2013,7 @@ int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn);
  *
  * @todo    what errno values are possible here?
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_unlink_print_job(const char *purl, int id);
-#ifdef __cplusplus
-}
-#endif
 
 /**@ingroup callback
  * Remove a server from the cached server list it's unused.
@@ -2250,10 +2025,8 @@ int smbc_unlink_print_job(const char *purl, int id);
  * @return On success, 0 is returned. 1 is returned if the server could not
  *         be removed. Also useable outside libsmbclient.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv);
+
 #ifdef __cplusplus
 }
 #endif
