@@ -694,6 +694,14 @@ dynconfig.po: dynconfig.c Makefile
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@
 @POBAD_CC@	@mv $*.po.o $@
 
+smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/build_env.h include/proto.h
+	@echo Compiling $*.c
+	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@
+
+smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
+	@echo Generating $@
+	@$(AWK) -f $(srcdir)/script/mkbuildoptions.awk > $(builddir)/smbd/build_options.c < $(srcdir)/include/config.h.in
+
 .c.po: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
@@ -1225,7 +1233,7 @@ modules_clean:
 # afterwards.
 proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
 	nsswitch/winbindd_proto.h web/swat_proto.h \
-	client/client_proto.h utils/net_proto.h
+	client/client_proto.h utils/net_proto.h smbd/build_options.c
 
 delheaders:
 	@echo Removing prototype headers
@@ -1233,18 +1241,19 @@ delheaders:
 	@/bin/rm -f $(srcdir)/include/wrepld_proto.h $(srcdir)/nsswitch/winbindd_proto.h 
 	@/bin/rm -f $(srcdir)/web/swat_proto.h
 	@/bin/rm -f $(srcdir)/client/client_proto.h $(srcdir)/utils/net_proto.h
+	@/bin/rm -f $(srcdir)/smbd/build_options.c
 
 	@/bin/rm -f include/proto.h include/build_env.h include/wrepld_proto.h \
 	            nsswitch/winbindd_proto.h web/swat_proto.h \
-		    client/client_proto.h utils/net_proto.h
+		    client/client_proto.h utils/net_proto.h smbd/build_options.c
 
-include/proto.h:
+include/proto.h: smbd/build_options.c
 	@echo Building include/proto.h
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
 	  -h _PROTO_H_ $(builddir)/include/proto.h \
 	  $(PROTO_OBJ)
 
-include/build_env.h:
+include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
 	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
@@ -1279,6 +1288,7 @@ utils/net_proto.h:
 # parallel make.
 headers: 
 	$(MAKE) delheaders; \
+	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/proto.h; \
 	$(MAKE) include/build_env.h; \
 	$(MAKE) include/wrepld_proto.h; \
