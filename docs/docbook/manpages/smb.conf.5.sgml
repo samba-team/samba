@@ -7629,7 +7629,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="USERMMAP">use mmap (G)</term>
+		<term><anchor id="USEMMAP">use mmap (G)</term>
 		<listitem><para>This global parameter determines if the tdb internals of Samba can
 		depend on mmap working correctly on the running system. Samba requires a coherent
 		mmap/read-write system memory cache. Currently only HPUX does not have such a
