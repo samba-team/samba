@@ -352,9 +352,15 @@ AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
     AC_TRY_COMPILE([
 #include <stdio.h>],
 [
-   #define X_FOOBAR(x) ((FOOBAR) { x })
    typedef struct {unsigned x;} FOOBAR;
-   FOOBAR f = X_FOOBAR(1);   
+   #define X_FOOBAR(x) ((FOOBAR) { x })
+   #define FOO_ONE X_FOOBAR(1)
+   FOOBAR f = FOO_ONE;   
+   static struct {
+	FOOBAR y; 
+	} f2[] = {
+		{FOO_ONE}
+	};   
 ],
 	samba_cv_immediate_structures=yes,samba_cv_immediate_structures=no)])
 if test x"$samba_cv_immediate_structures" = x"yes"; then
@@ -988,6 +994,11 @@ void foo(const char *format, ...) {
        va_list ap;
        int len;
        char buf[5];
+
+       va_start(ap, format);
+       len = vsnprintf(buf, 0, format, ap);
+       va_end(ap);
+       if (len != 5) exit(1);
 
        va_start(ap, format);
        len = vsnprintf(0, 0, format, ap);
