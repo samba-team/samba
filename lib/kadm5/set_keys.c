@@ -60,20 +60,21 @@ const krb5_enctype all_etypes[] = {
 
 static krb5_error_code
 parse_key_set(krb5_context context, const char *key, 
-	      const krb5_enctype **enctypes, size_t *num_enctypes, 
+	      krb5_enctype **ret_enctypes, size_t *ret_num_enctypes, 
 	      krb5_salt *salt, krb5_principal principal)
 {
     const char *p;
     char buf[3][256];
     int num_buf = 0;
-    int i;
-    static krb5_enctype e; /* XXX */
+    int i, num_enctypes = 0;
+    krb5_enctype e;
+    const krb5_enctype *enctypes = NULL;
     krb5_error_code ret;
     
     p = key;
 
-    *enctypes = NULL;
-    *num_enctypes = 0;
+    *ret_enctypes = NULL;
+    *ret_num_enctypes = 0;
 
     /* split p in a list of :-separated strings */
     for(num_buf = 0; num_buf < 3; num_buf++)
@@ -84,24 +85,24 @@ parse_key_set(krb5_context context, const char *key,
     salt->saltvalue.length = 0;
 
     for(i = 0; i < num_buf; i++) {
-	if(*enctypes == NULL) {
+	if(enctypes == NULL) {
 	    /* this might be a etype specifier */
 	    /* XXX there should be a string_to_etypes handling
 	       special cases like `des' and `all' */
 	    if(strcmp(buf[i], "des") == 0) {
-		*enctypes = all_etypes;
-		*num_enctypes = 3;
+		enctypes = all_etypes;
+		num_enctypes = 3;
 		continue;
 	    } else if(strcmp(buf[i], "des3") == 0) {
 		e = ETYPE_DES3_CBC_SHA1;
-		*enctypes = &e;
-		*num_enctypes = 1;
+		enctypes = &e;
+		num_enctypes = 1;
 		continue;
 	    } else {
 		ret = krb5_string_to_enctype(context, buf[i], &e);
 		if (ret == 0) {
-		    *enctypes = &e;
-		    *num_enctypes = 1;
+		    enctypes = &e;
+		    num_enctypes = 1;
 		    continue;
 		}
 	    }
@@ -113,15 +114,15 @@ parse_key_set(krb5_context context, const char *key,
 	    /* XXX should perhaps use string_to_salttype, but that
 	       interface sucks */
 	    if(strcmp(buf[i], "pw-salt") == 0) {
-		if(*enctypes == NULL) {
-		    *enctypes = all_etypes;
-		    *num_enctypes = sizeof(all_etypes)/sizeof(all_etypes[0]);
+		if(enctypes == NULL) {
+		    enctypes = all_etypes;
+		    num_enctypes = sizeof(all_etypes)/sizeof(all_etypes[0]);
 		}
 		salt->salttype = KRB5_PW_SALT;
 	    } else if(strcmp(buf[i], "afs3-salt") == 0) {
-		if(*enctypes == NULL) {
-		    *enctypes = all_etypes;
-		    *num_enctypes = 3;
+		if(enctypes == NULL) {
+		    enctypes = all_etypes;
+		    num_enctypes = 3;
 		}
 		salt->salttype = KRB5_AFS3_SALT;
 	    }
@@ -138,7 +139,7 @@ parse_key_set(krb5_context context, const char *key,
 	}
     }
     
-    if(*enctypes == NULL || salt->salttype == 0) {
+    if(enctypes == NULL || salt->salttype == 0) {
 	krb5_set_error_string(context, "bad value for default_keys `%s'", key);
 	return EINVAL;
     }
@@ -159,6 +160,15 @@ parse_key_set(krb5_context context, const char *key,
 	    salt->saltvalue.length = strlen(*realm);
 	}
     }
+
+    *ret_enctypes = malloc(sizeof(enctypes[0]) * num_enctypes);
+    if (*ret_enctypes == NULL) {
+	krb5_free_salt(context, *salt);
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    memcpy(*ret_enctypes, enctypes, sizeof(enctypes[0]) * num_enctypes);
+    *ret_num_enctypes = num_enctypes;
 
     return 0;
 }
@@ -250,7 +260,7 @@ _kadm5_generate_key_set(krb5_context context, krb5_principal principal,
     for(kp = ktypes; kp && *kp; kp++) {
 	const char *p;
 	krb5_salt salt;
-	const krb5_enctype *enctypes;
+	krb5_enctype *enctypes;
 	size_t num_enctypes;
 
 	p = *kp;
@@ -296,11 +306,13 @@ _kadm5_generate_key_set(krb5_context context, krb5_principal principal,
 		ret = add_enctype_to_key_set(&key_set, nkeyset, enctypes[i], 
 					     no_salt ? NULL : &salt);
 		if (ret) {
+		    free(enctypes);
 		    krb5_free_salt(context, salt);
 		    goto out;
 		}
 	    }
 	}
+	free(enctypes);
 	krb5_free_salt(context, salt);
     }
     
@@ -360,11 +372,11 @@ _kadm5_set_keys(kadm5_server_context *context,
     }
 
     if(ret) {
-	_kadm5_free_keys (context, num_keys, keys);
+	_kadm5_free_keys (context->context, num_keys, keys);
 	return ret;
     }
     
-    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
+    _kadm5_free_keys (context->context, ent->keys.len, ent->keys.val);
     ent->keys.val = keys;
     ent->keys.len = num_keys;
     return 0;
@@ -416,12 +428,12 @@ _kadm5_set_keys2(kadm5_server_context *context,
 	} else
 	    keys[i].salt = NULL;
     }
-    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
+    _kadm5_free_keys (context->context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = keys;
     return 0;
  out:
-    _kadm5_free_keys (context, len, keys);
+    _kadm5_free_keys (context->context, len, keys);
     return ret;
 }
 
@@ -456,12 +468,12 @@ _kadm5_set_keys3(kadm5_server_context *context,
 	    goto out;
 	keys[i].salt = NULL;
     }
-    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
+    _kadm5_free_keys (context->context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = keys;
     return 0;
  out:
-    _kadm5_free_keys (context, len, keys);
+    _kadm5_free_keys (context->context, len, keys);
     return ret;
 }
 
@@ -503,7 +515,7 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
    kblock = malloc(num_keys * sizeof(kblock[0]));
    if (kblock == NULL) {
 	ret = ENOMEM;
-	_kadm5_free_keys (context, num_keys, keys);
+	_kadm5_free_keys (context->context, num_keys, keys);
 	return ret;
    }
    memset(kblock, 0, num_keys * sizeof(kblock[0]));
@@ -546,11 +558,11 @@ out:
 	for (i = 0; i < num_keys; ++i)
 	    krb5_free_keyblock_contents (context->context, &kblock[i]);
 	free(kblock);
-	_kadm5_free_keys (context, num_keys, keys);
+	_kadm5_free_keys (context->context, num_keys, keys);
 	return ret;
    }
    
-   _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
+   _kadm5_free_keys (context->context, ent->keys.len, ent->keys.val);
    ent->keys.val = keys;
    ent->keys.len = num_keys;
    *new_keys     = kblock;
