@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -125,14 +125,21 @@ krb5_cc_gen_new(krb5_context context,
     return p->ops->gen_new(context, id);
 }
 
-char*
+const char*
 krb5_cc_get_name(krb5_context context,
 		 krb5_ccache id)
 {
     return id->ops->get_name(context, id);
 }
 
-char*
+const char*
+krb5_cc_get_type(krb5_context context,
+		 krb5_ccache id)
+{
+    return id->ops->prefix;
+}
+
+const char*
 krb5_cc_default_name(krb5_context context)
 {
     static char name[1024];
