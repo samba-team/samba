@@ -378,6 +378,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_pam.o   \
 		nsswitch/winbindd_sid.o   \
 		nsswitch/winbindd_misc.o  \
+		nsswitch/winbindd_wins.o  \
 		nsswitch/winbindd_cm.o
 
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
