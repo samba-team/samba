@@ -127,13 +127,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli);
 
-	if (res)
-	{
-		DEBUG(5,("cmd_nt_login: login test succeeded\n"));
-	}
-	else
-	{
-		DEBUG(5,("cmd_nt_login: login test failed\n"));
-	}
+	fprintf(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
+		nt_user_name, BOOLSTR(res));
 }
 
