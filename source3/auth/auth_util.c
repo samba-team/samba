@@ -980,8 +980,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* and create (by appending rids) the 'domain' sids */
 	for (i = 0; i < info3->num_groups2; i++) {
-		sid_copy(&all_group_SIDs[i+n_lgroupSIDs+1], &(info3->dom_sid.sid));
-		if (!sid_append_rid(&all_group_SIDs[i+n_lgroupSIDs+1], info3->gids[i].g_rid)) {
+		sid_copy(&all_group_SIDs[i+n_lgroupSIDs], &(info3->dom_sid.sid));
+		if (!sid_append_rid(&all_group_SIDs[i+n_lgroupSIDs], info3->gids[i].g_rid)) {
 			nt_status = NT_STATUS_INVALID_PARAMETER;
 			DEBUG(3,("create_nt_token_info3: could not append additional group rid 0x%x\n",
 				info3->gids[i].g_rid));			
