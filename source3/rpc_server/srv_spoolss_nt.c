@@ -4213,18 +4213,12 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
-	char *path;
 	char **qlines;
 	pstring command;
 	pstring driverlocation;
 	int numlines;
 	int ret;
 	int fd;
-
-	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
-		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
-	else
-		path = lp_lockdir();
 
 	/* build driver path... only 9X architecture is needed for legacy reasons */
 	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
@@ -5494,17 +5488,11 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 	if (*lp_enumports_cmd()) {
 		char *cmd = lp_enumports_cmd();
-		char *path;
 		char **qlines;
 		pstring command;
 		int numlines;
 		int ret;
 		int fd;
-
-		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
-			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
-		else
-			path = lp_lockdir();
 
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 

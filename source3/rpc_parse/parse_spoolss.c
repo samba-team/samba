@@ -3568,13 +3568,13 @@ BOOL make_spoolss_q_setprinter(
 		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
 		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
 		q_u->secdesc_ctr->sec = secdesc;
-	
+
 		q_u->devmode_ctr.devmode_ptr = (devmode != NULL) ? 1 : 0;
 		q_u->devmode_ctr.size = sizeof(DEVICEMODE) + (3*sizeof(uint32));
 		q_u->devmode_ctr.devmode = devmode;
 #else
 		q_u->secdesc_ctr = NULL;
-		
+	
 		q_u->devmode_ctr.devmode_ptr = 0;
 		q_u->devmode_ctr.size = 0;
 		q_u->devmode_ctr.devmode = NULL;
