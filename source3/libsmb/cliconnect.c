@@ -151,12 +151,7 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 	if (cli->use_level_II_oplocks)
 		capabilities |= CAP_LEVEL_II_OPLOCKS;
 
-	if (cli->capabilities & CAP_UNICODE)
-		capabilities |= CAP_UNICODE;
-
-	if (cli->capabilities & CAP_LARGE_FILES)
-		capabilities |= CAP_LARGE_FILES;
-
+	capabilities |= (cli->capabilities & (CAP_UNICODE|CAP_LARGE_FILES|CAP_LARGE_READX|CAP_LARGE_WRITEX));
 	return capabilities;
 }
 
@@ -1132,6 +1127,14 @@ BOOL cli_negprot(struct cli_state *cli)
 			cli->sign_info.mandatory_signing = True;
 		} else if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
 			cli->sign_info.negotiated_smb_signing = True;
+		}
+
+		if (cli->capabilities & (CAP_LARGE_READX|CAP_LARGE_WRITEX)) {
+			SAFE_FREE(cli->outbuf);
+			SAFE_FREE(cli->inbuf);
+			cli->outbuf = (char *)SMB_MALLOC(CLI_MAX_LARGE_READX_SIZE+SAFETY_MARGIN);
+			cli->inbuf = (char *)SMB_MALLOC(CLI_MAX_LARGE_READX_SIZE+SAFETY_MARGIN);
+			cli->bufsize = CLI_MAX_LARGE_READX_SIZE;
 		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
