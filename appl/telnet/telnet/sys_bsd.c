@@ -774,11 +774,9 @@ process_rings(int netin,
     int returnValue = 0;
     static struct timeval TimeValue = { 0 };
 
-    if (netin >= FD_SETSIZE
-	|| netout >= FD_SETSIZE
-	|| netex >= FD_SETSIZE
-	|| ttyin >= FD_SETSIZE
-	|| ttyout >= FD_SETSIZE)
+    if (net >= FD_SETSIZE
+	|| tout >= FD_SETSIZE
+	|| tin >= FD_SETSIZE)
 	errx (1, "fd too large");
 
     if (netout) {
