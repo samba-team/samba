@@ -54,6 +54,26 @@ krb5_verify_init_creds_opt_set_ap_req_nofail(krb5_verify_init_creds_opt *options
     options->ap_req_nofail = ap_req_nofail;
 }
 
+/*
+ *
+ */
+
+static krb5_boolean
+fail_verify_is_ok (krb5_context context,
+		   krb5_verify_init_creds_opt *options)
+{
+    if ((options->flags & KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL
+	&& options->ap_req_nofail == 1)
+	|| krb5_config_get_bool (context,
+				 NULL,
+				 "libdefaults",
+				 "verify_ap_req_nofail",
+				 NULL))
+	return FALSE;
+    else
+	return TRUE;
+}
+
 krb5_error_code
 krb5_verify_init_creds(krb5_context context,
 		       krb5_creds *creds,
@@ -128,8 +148,11 @@ krb5_verify_init_creds(krb5_context context,
 				    local_ccache,
 				    &match_cred,
 				    &new_creds);
-	if (ret)
+	if (ret) {
+	    if (fail_verify_is_ok (context, options))
+		ret = 0;
 	    goto cleanup;
+	}
     } else
 	new_creds = creds;
 
@@ -146,35 +169,16 @@ krb5_verify_init_creds(krb5_context context,
     if (ret)
 	goto cleanup;
 
-    ret = krb5_kt_get_entry (context,
-			     keytab,
-			     server,
-			     0,
-			     KEYTYPE_DES,
-			     &entry);
-    if (ret) {
-	if (((options->flags & KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL) && 
-	     options->ap_req_nofail == 1) || 
-	    krb5_config_get_bool (context,
-				  NULL,
-				  "libdefaults",
-				  "verify_ap_req_nofail",
-				  NULL)) {
-	    goto cleanup;
-	} else {
-	    ret = 0;
-	    goto cleanup;
-	}
-    }
+    ret = krb5_rd_req (context,
+		       &auth_context,
+		       &req,
+		       server,
+		       keytab,
+		       0,
+		       NULL);
 
-    ret = krb5_rd_req_with_keyblock (context,
-				     &auth_context,
-				     &req,
-				     server,
-				     &entry.keyblock,
-				     0,
-				     NULL);
-
+    if (ret == KRB5_KT_NOTFOUND && fail_verify_is_ok (context, options))
+	ret = 0;
 cleanup:
     if (auth_context)
 	krb5_auth_con_free (context, auth_context);
