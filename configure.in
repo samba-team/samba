@@ -285,7 +285,6 @@ AC_CHECK_HEADERS([\
 	sys/str_tty.h				\
 	sys/stream.h				\
 	sys/stropts.h				\
-	sys/strtty.h				\
 	sys/syscall.h				\
 	sys/termio.h				\
 	sys/timeb.h				\
@@ -307,6 +306,11 @@ AC_CHECK_HEADERS(term.h, , , -)
 AC_CHECK_HEADERS(net/if.h, , , [AC_INCLUDES_DEFAULT
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif])
+
+AC_CHECK_HEADERS(sys/strtty.h, , , [AC_INCLUDES_DEFAULT
+#if HAVE_SYS_STREAM_H
+#include <sys/stream.h>
 #endif])
 
 AC_CHECK_HEADERS(security/pam_modules.h, , , [AC_INCLUDES_DEFAULT
