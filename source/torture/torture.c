@@ -829,7 +829,7 @@ static BOOL run_locktest1(int dummy)
 
 	printf("Testing lock timeouts\n");
 	t1 = time(NULL);
-	if (cli_lock(&cli2, fnum3, 0, 4, 10*1000, WRITE_LOCK)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, (1 + (random() % 20)) * 1000, WRITE_LOCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		return False;
 	} else {
