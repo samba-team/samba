@@ -270,6 +270,139 @@ BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		  struct policy_handle *handle, uint32 job_id)
+{
+	NTSTATUS status;
+	struct spoolss_GetJob r;
+	uint32 buf_size;
+
+	r.in.handle = handle;
+	r.in.job_id = job_id;
+	r.in.level = 1;
+	r.in.buffer = NULL;
+	buf_size = 0;
+	r.in.buf_size = r.out.buf_size = &buf_size;
+
+	printf("Testing GetJob\n");
+
+	status = dcerpc_spoolss_GetJob(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetJob failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_GetJob(p, mem_ctx, &r);
+
+		if (!r.out.info) {
+			printf("No job info returned");
+			return False;
+		}
+	}
+
+	return True;
+}
+
+BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		 struct policy_handle *handle, uint32 job_id, uint32 command)
+{
+	NTSTATUS status;
+	struct spoolss_SetJob r;
+
+	r.in.handle = handle;
+	r.in.job_id = job_id;
+	r.in.level = 0;
+	r.in.command = command;
+
+	printf("Testing SetJob\n");
+
+	status = dcerpc_spoolss_SetJob(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetJob failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		   struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_EnumJobs r;
+	uint32 buf_size;
+
+	r.in.handle = handle;
+	r.in.firstjob = 0;
+	r.in.numjobs = 0xffffffff;
+	r.in.level = 1;
+	r.in.buffer = NULL;
+	buf_size = 0;
+	r.in.buf_size = &buf_size;
+	r.out.buf_size = &buf_size;
+
+	printf("Testing EnumJobs\n");
+
+	status = dcerpc_spoolss_EnumJobs(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumJobs failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+		union spoolss_JobInfo *info;
+		int j;
+
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_EnumJobs(p, mem_ctx, &r);
+
+		if (!r.out.buffer) {
+			printf("No jobs returned");
+			return True;
+		}
+
+		status = pull_spoolss_JobInfoArray(
+			r.out.buffer, mem_ctx, r.in.level, r.out.count,
+			&info);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumJobsArray parse failed - %s\n",
+			       nt_errstr(status));
+			return False;
+		}
+
+		for (j = 0; j < r.out.count; j++) {
+			printf("Job %d\n", j);
+			NDR_PRINT_UNION_DEBUG(
+				spoolss_JobInfo, r.in.level, &info[j]);
+		}
+
+		for (j = 0; j < r.out.count; j++) {
+			test_GetJob(p, mem_ctx, handle, info[j].info1.job_id);
+			test_SetJob(
+				p, mem_ctx, handle, info[j].info1.job_id, 1);
+		}
+
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("EnumJobs failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle)
 {
@@ -404,6 +537,10 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_EnumPrinterData(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_EnumJobs(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
