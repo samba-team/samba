@@ -2898,7 +2898,7 @@ label(level2oplocks)
 dit(bf(level2 oplocks (S)))
 
 This parameter (new in Samba 2.0.5) controls whether Samba supports
-level2 (read-only) oplocks on a share. In Samba 2.0.4 this parameter
+level2 (read-only) oplocks on a share. In Samba 2.0.5 this parameter
 defaults to "False" as the code is new, but will default to "True"
 in a later release.
 
