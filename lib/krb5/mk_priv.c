@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,6 +39,10 @@
 #include <krb5_locl.h>
 
 RCSID("$Id$");
+
+/*
+ *
+ */
 
 krb5_error_code
 krb5_mk_priv(krb5_context context,
@@ -103,7 +107,7 @@ krb5_mk_priv(krb5_context context,
 
   do {
       ret = encode_EncKrbPrivPart (buf + buf_size - 1, buf_size,
-				 &part, &len);
+				   &part, &len);
       if (ret) {
 	  if (ret == ASN1_OVERFLOW) {
 	      u_char *tmp;
