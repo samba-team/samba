@@ -254,6 +254,7 @@ main(int argc, char **argv)
 	if (p)
 	    keyfile = strdup(p);
     }
+    krb5_clear_error_string (context);
 
     memset(&conf, 0, sizeof(conf));
     if(realm) {
