@@ -324,7 +324,13 @@
 	/******************/
 	/* Function: 0x1e */
 	WERROR winreg_InitiateSystemShutdownEx(
-		);
+		[in] uint16 *hostname,
+		[in] winreg_String *message,
+		[in] uint32 timeout,
+		[in] uint8 force_apps,
+		[in] uint8 reboot,
+		[in] uint32 reason
+	);
 
 	/******************/
 	/* Function: 0x1f */
