@@ -40,7 +40,6 @@ uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
 	prs_struct buf; 
 	SPOOL_Q_ENUMPRINTERS q_o;
 	SPOOL_R_ENUMPRINTERS r_o;
-	BOOL valid_pol = False;
 
 	struct cli_connection *con = NULL;
 
@@ -209,9 +208,9 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
 /****************************************************************************
 do a SPOOLSS Open Printer Ex
 ****************************************************************************/
-BOOL spoolss_open_printer_ex(  char *printername,
-			 char *datatype, uint32 access_required,
-			 char *station,  char *username,
+BOOL spoolss_open_printer_ex(  const char *printername,
+			 const char *datatype, uint32 access_required,
+			 const char *station,  const char *username,
 			POLICY_HND *hnd)
 {
 	prs_struct rbuf;
@@ -330,3 +329,61 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
 
 	return valid_close;
 }
+
+/****************************************************************************
+do a SPOOLSS Get printer datas
+****************************************************************************/
+uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
+			uint32 in_size, 
+			uint32 *type,
+			uint32 *out_size,
+			uint8 *data,
+			uint32 *needed)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SPOOL_Q_GETPRINTERDATA q_o;
+	SPOOL_R_GETPRINTERDATA r_o;
+
+	if (hnd == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
+
+	/* create and send a MSRPC command with api SPOOLSS_GETPRINTERDATA */
+
+	DEBUG(5,("SPOOLSS Get Printer data)\n"));
+
+	make_spoolss_q_getprinterdata(&q_o, hnd, valuename, in_size);
+
+	/* turn parameters into data stream */
+	if (!spoolss_io_q_getprinterdata("", &q_o, &buf, 0)) {
+		prs_free_data(&rbuf);
+		prs_free_data(&buf );
+	}
+	
+	if(!rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDATA, &buf, &rbuf)) {
+		prs_free_data(&rbuf);
+		prs_free_data(&buf );
+	}
+	
+	ZERO_STRUCT(r_o);
+	prs_free_data(&buf );
+
+	r_o.data=data;
+
+	if(!spoolss_io_r_getprinterdata("", &r_o, &rbuf, 0)) {
+		prs_free_data(&rbuf);
+	}
+	
+	*type=r_o.type;
+	*out_size=r_o.size;
+	*needed=r_o.needed;
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
+
+	return r_o.status;
+}
+

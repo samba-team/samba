@@ -178,6 +178,7 @@ LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ)
 
 LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o libsmb/unexpected.o
 
+
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/clidomain.o \
 	libsmb/clifile.o libsmb/cliprint.o libsmb/clierror.o \
 	libsmb/climessage.o libsmb/cliconnect.o \
@@ -237,6 +238,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_svcctl.o \
 		rpc_client/cli_samr.o   \
 		rpc_client/msrpc_samr.o   \
+		rpc_client/msrpc_spoolss.o   \
 		rpc_client/msrpc_netlogon.o   \
 		rpc_client/msrpc_lsarpc.o   \
 		rpc_client/cli_atsvc.o \

@@ -2995,54 +2995,49 @@ void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
-void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_test(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_delete_dom_alias(struct client_info *info, int argc,
+uint32 cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_test(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 			      char *argv[]);
-void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_create_dom_trusting(struct client_info *info, int argc,
+uint32 cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 				 char *argv[]);
 uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_create_dom_alias(struct client_info *info, int argc,
+uint32 cmd_sam_create_dom_alias(struct client_info *info, int argc,
 			      char *argv[]);
-void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_delete_dom_group(struct client_info *info, int argc,
+uint32 cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_delete_dom_group(struct client_info *info, int argc,
 			      char *argv[]);
-void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_create_dom_group(struct client_info *info, int argc,
+uint32 cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_create_dom_group(struct client_info *info, int argc,
 			      char *argv[]);
-void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_query_group(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_query_user(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[]);
-void cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_enum_users(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_query_group(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_query_user(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_query_alias(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
-BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, uint32 level, PRINTER_INFO_CTR ctr);
-void cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
-void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[]);
-BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
-				const char* station, const char* user_name, 
-				uint32 level,
-				void ***ctr, JOB_INFO_FN(fn));
-void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
-BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, const char* station, const char* user_name );
-void cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_getprinterdata(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
 

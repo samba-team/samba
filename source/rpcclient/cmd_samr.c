@@ -135,7 +135,7 @@ static void sam_display_user(const char *domain, const DOM_SID *sid,
 /****************************************************************************
 SAM password change
 ****************************************************************************/
-void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	char *pwd;
@@ -157,7 +157,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (argc >= 2)
@@ -196,7 +196,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	if (!strequal(new_passwd, new_passwd2))
 	{
 		report(out_hnd, "New passwords differ!\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* establish a connection. */
@@ -204,18 +204,17 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 				   lm_oldhash, nt_oldhash, new_passwd))
 	{
 		report(out_hnd, "NT Password changed OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		report(out_hnd, "NT Password change FAILED\n");
-	}
+	report(out_hnd, "NT Password change FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 experimental SAM encryted rpc test connection
 ****************************************************************************/
-void cmd_sam_test(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_test(struct client_info *info, int argc, char *argv[])
 {
 	struct cli_connection *con = NULL;
 	fstring srv_name;
@@ -250,17 +249,16 @@ void cmd_sam_test(struct client_info *info, int argc, char *argv[])
 	if (res)
 	{
 		DEBUG(5, ("cmd_sam_test: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_test: failed\n"));
-	}
+	DEBUG(5, ("cmd_sam_test: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 Lookup domain in SAM server.
 ****************************************************************************/
-void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	char *domain;
@@ -276,7 +274,7 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd, "lookupdomain: <name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	domain = argv[1];
@@ -300,12 +298,11 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 
 		sid_to_string(str_sid, &dom_sid);
 		report(out_hnd, "Domain:\t%s\tSID:\t%s\n", domain, str_sid);
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_lookup_domain: failed\n"));
-		report(out_hnd, "Lookup Domain: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_lookup_domain: failed\n"));
+	report(out_hnd, "Lookup Domain: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
@@ -339,7 +336,7 @@ static void fill_domain_sid(const char *srv_name,
 /****************************************************************************
 Lookup names in SAM server.
 ****************************************************************************/
-void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 {
 	int opt;
 	fstring srv_name;
@@ -366,7 +363,7 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "samlookupnames [-d <domain>] <name> [<name> ...]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	while ((opt = getopt_long(argc, argv, "d:", NULL, NULL)) != EOF)
@@ -389,7 +386,7 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -405,7 +402,7 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "samlookupnames [-d <domain>] <name> [<name> ...]\n");
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* establish a connection. */
@@ -426,15 +423,6 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	if (res1)
 	{
-		DEBUG(5, ("cmd_sam_lookup_names: query succeeded\n"));
-	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_lookup_names: query failed\n"));
-	}
-
-	if (res1)
-	{
 		for (i = 0; i < num_rids; i++)
 		{
 			report(out_hnd, "RID: %s -> %d (%d: %s)\n",
@@ -445,12 +433,19 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	safe_free(rids);
 	safe_free(types);
+	if (res1)
+	{
+		DEBUG(5, ("cmd_sam_lookup_names: query succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
+	}
+	DEBUG(5, ("cmd_sam_lookup_names: query failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 Lookup rids in SAM server.
 ****************************************************************************/
-void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 {
 	int opt;
 	fstring srv_name;
@@ -477,7 +472,7 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "samlookuprids [-d <domain>] <rid> [<rid> ...]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	while ((opt = getopt(argc, argv, "d:")) != EOF)
@@ -500,7 +495,7 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -513,7 +508,7 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "samlookuprids [-d <domain>] <rid> [<rid> ...]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	num_rids = 0;
@@ -523,7 +518,7 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 		rids = Realloc(rids, sizeof(rids[0]) * (num_rids + 1));
 		if (rids == NULL)
 		{
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		rids[num_rids] = get_number(argv[num_rids]);
 		num_rids++;
@@ -547,15 +542,6 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 
 	if (res1)
 	{
-		DEBUG(5, ("cmd_sam_lookup_rids: query succeeded\n"));
-	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_lookup_rids: query failed\n"));
-	}
-
-	if (res1)
-	{
 		for (i = 0; i < num_names; i++)
 		{
 			report(out_hnd, "Name: %s -> %d (%d: %s)\n",
@@ -566,14 +552,21 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 
 	safe_free(rids);
 	safe_free(types);
-
 	free_char_array(num_names, names);
+
+	if (res1)
+	{
+		DEBUG(5, ("cmd_sam_lookup_rids: query succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
+	}
+	DEBUG(5, ("cmd_sam_lookup_rids: query failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 SAM delete alias member.
 ****************************************************************************/
-void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -604,7 +597,7 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -612,7 +605,7 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "delaliasmem: <alias rid> [member sid1] [member sid2] ...\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	argc--;
@@ -655,22 +648,21 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res && res1 && res2)
+	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_del_aliasmem: succeeded\n"));
 		report(out_hnd, "Delete Domain Alias Member: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_del_aliasmem: failed\n"));
-		report(out_hnd, "Delete Domain Alias Member: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_del_aliasmem: failed\n"));
+	report(out_hnd, "Delete Domain Alias Member: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 SAM delete alias.
 ****************************************************************************/
-void cmd_sam_delete_dom_alias(struct client_info *info, int argc,
+uint32 cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 			      char *argv[])
 {
 	fstring srv_name;
@@ -706,14 +698,14 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
 		report(out_hnd, "delalias <alias name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	name = argv[1];
@@ -759,22 +751,21 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res && res1 && res2)
+	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_delete_dom_alias: succeeded\n"));
 		report(out_hnd, "Delete Domain Alias: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_delete_dom_alias: failed\n"));
-		report(out_hnd, "Delete Domain Alias: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_delete_dom_alias: failed\n"));
+	report(out_hnd, "Delete Domain Alias: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 SAM add alias member.
 ****************************************************************************/
-void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -813,7 +804,7 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -821,7 +812,7 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "addaliasmem <alias name> [member name1] [member name2] ...\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	num_names = argc - 1;
@@ -892,21 +883,17 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (sids != NULL)
-	{
-		free(sids);
-	}
+	safe_free(sids);
 
-	if (res && res1 && res2)
+	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_add_aliasmem: succeeded\n"));
 		report(out_hnd, "Add Domain Alias Member: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_add_aliasmem: failed\n"));
-		report(out_hnd, "Add Domain Alias Member: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_add_aliasmem: failed\n"));
+	report(out_hnd, "Add Domain Alias Member: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
@@ -914,7 +901,7 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 SAM create domain user.
 ****************************************************************************/
-void cmd_sam_create_dom_trusting(struct client_info *info, int argc,
+uint32 cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 				 char *argv[])
 {
 	fstring local_domain;
@@ -943,7 +930,7 @@ void cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -951,7 +938,7 @@ void cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 	{
 		report(out_hnd,
 		       "createtrusting: <Domain Name> <PDC Name> [password]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	argc--;
@@ -991,11 +978,10 @@ void cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 				      acct_name, ACB_WSTRUST, &user_rid))
 	{
 		report(out_hnd, "Create Domain User: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		report(out_hnd, "Create Domain User: FAILED\n");
-	}
+	report(out_hnd, "Create Domain User: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 #endif
 
@@ -1313,14 +1299,14 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	memset(&upw, 0, sizeof(upw));
 
-		return status;
+	return status;
 }
 
 
 /****************************************************************************
 SAM create domain alias.
 ****************************************************************************/
-void cmd_sam_create_dom_alias(struct client_info *info, int argc,
+uint32 cmd_sam_create_dom_alias(struct client_info *info, int argc,
 			      char *argv[])
 {
 	fstring srv_name;
@@ -1351,7 +1337,7 @@ void cmd_sam_create_dom_alias(struct client_info *info, int argc,
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -1360,7 +1346,7 @@ void cmd_sam_create_dom_alias(struct client_info *info, int argc,
 	{
 		report(out_hnd,
 		       "createalias: <acct name> [acct description]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	acct_name = argv[1];
@@ -1394,23 +1380,22 @@ void cmd_sam_create_dom_alias(struct client_info *info, int argc,
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res && res1)
+	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_create_dom_alias: succeeded\n"));
 		report(out_hnd, "Create Domain Alias: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_create_dom_alias: failed\n"));
-		report(out_hnd, "Create Domain Alias: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_create_dom_alias: failed\n"));
+	report(out_hnd, "Create Domain Alias: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 SAM delete group member.
 ****************************************************************************/
-void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -1441,7 +1426,7 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -1449,7 +1434,7 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "delgroupmem: <group rid> [member rid1] [member rid2] ...\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	argc--;
@@ -1491,23 +1476,22 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res && res1 && res2)
+	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_del_groupmem: succeeded\n"));
 		report(out_hnd, "Add Domain Group Member: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_del_groupmem: failed\n"));
-		report(out_hnd, "Add Domain Group Member: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_del_groupmem: failed\n"));
+	report(out_hnd, "Add Domain Group Member: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 SAM delete user.
 ****************************************************************************/
-void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -1542,14 +1526,14 @@ void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
 		report(out_hnd, "deluser <user name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	name = argv[1];
@@ -1599,23 +1583,22 @@ void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res && res1 && res2)
+	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_delete_dom_user: succeeded\n"));
 		report(out_hnd, "Delete Domain User: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_delete_dom_user: failed\n"));
-		report(out_hnd, "Delete Domain User: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_delete_dom_user: failed\n"));
+	report(out_hnd, "Delete Domain User: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 SAM delete group.
 ****************************************************************************/
-void cmd_sam_delete_dom_group(struct client_info *info, int argc,
+uint32 cmd_sam_delete_dom_group(struct client_info *info, int argc,
 			      char *argv[])
 {
 	fstring srv_name;
@@ -1651,14 +1634,14 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc,
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
 		report(out_hnd, "delgroup <group name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	name = argv[1];
@@ -1704,23 +1687,22 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc,
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res && res1 && res2)
+	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_delete_dom_group: succeeded\n"));
 		report(out_hnd, "Delete Domain Group: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_delete_dom_group: failed\n"));
-		report(out_hnd, "Delete Domain Group: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_delete_dom_group: failed\n"));
+	report(out_hnd, "Delete Domain Group: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 SAM add group member.
 ****************************************************************************/
-void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -1766,7 +1748,7 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -1774,7 +1756,7 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "addgroupmem <group name> [member name1] [member name2] ...\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	argc--;
@@ -1841,15 +1823,9 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 		report(out_hnd,
 		       "%s is a local alias, not a group.  Use addaliasmem command instead\n",
 		       group_name);
-		if (group_rids != NULL)
-		{
-			free(group_rids);
-		}
-		if (group_types != NULL)
-		{
-			free(group_types);
-		}
-		return;
+		safe_free(group_rids);
+		safe_free(group_types);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	res1 = res2 ? samr_query_lookup_names(&pol_dom, 0x000003e8,
 					      num_names, names,
@@ -1886,39 +1862,27 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	free_char_array(num_names, names);
 #endif
 
-	if (res && res1 && res2)
+	safe_free(group_rids);
+	safe_free(group_types);
+	safe_free(rids);
+	safe_free(types);
+
+	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_add_groupmem: succeeded\n"));
 		report(out_hnd, "Add Domain Group Member: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_add_groupmem: failed\n"));
-		report(out_hnd, "Add Domain Group Member: FAILED\n");
-	}
-	if (group_rids != NULL)
-	{
-		free(group_rids);
-	}
-	if (group_types != NULL)
-	{
-		free(group_types);
-	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
+	DEBUG(5, ("cmd_sam_add_groupmem: failed\n"));
+	report(out_hnd, "Add Domain Group Member: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 SAM create domain group.
 ****************************************************************************/
-void cmd_sam_create_dom_group(struct client_info *info, int argc,
+uint32 cmd_sam_create_dom_group(struct client_info *info, int argc,
 			      char *argv[])
 {
 	fstring srv_name;
@@ -1949,7 +1913,7 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc,
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -1957,7 +1921,7 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc,
 	{
 		report(out_hnd,
 		       "creategroup: <acct name> [acct description]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	acct_name = argv[1];
@@ -1992,22 +1956,21 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc,
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res && res1)
+	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_create_dom_group: succeeded\n"));
 		report(out_hnd, "Create Domain Group: OK\n");
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_create_dom_group: failed\n"));
-		report(out_hnd, "Create Domain Group: FAILED\n");
-	}
+	DEBUG(5, ("cmd_sam_create_dom_group: failed\n"));
+	report(out_hnd, "Create Domain Group: FAILED\n");
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 experimental SAM users enum.
 ****************************************************************************/
-void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 {
 	BOOL request_user_info = False;
 	BOOL request_group_info = False;
@@ -2015,6 +1978,7 @@ void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 	struct acct_info *sam = NULL;
 	uint32 num_sam_entries = 0;
 	int opt;
+	BOOL res1;
 
 	fstring srv_name;
 	fstring domain;
@@ -2036,7 +2000,7 @@ void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -2064,7 +2028,7 @@ void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Enumerate Users\n");
 
-	msrpc_sam_enum_users(srv_name, domain, &sid1,
+	res1 = msrpc_sam_enum_users(srv_name, domain, &sid1,
 			     &sam, &num_sam_entries,
 			     sam_display_user,
 			     request_user_info ? sam_display_user_info : NULL,
@@ -2073,17 +2037,20 @@ void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 			     request_alias_info ? sam_display_group_members :
 			     NULL);
 
-	if (sam != NULL)
+	safe_free(sam);
+
+	if (res1)
 	{
-		free(sam);
+		return NT_STATUS_NOPROBLEMO;
 	}
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 experimental SAM group query members.
 ****************************************************************************/
-void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -2113,14 +2080,14 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
 		report(out_hnd, "samgroupmem <name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	group_name = argv[1];
@@ -2155,32 +2122,26 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 					 sam_display_group_members);
 	}
 
+	safe_free(rids);
+	safe_free(types);
+
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
 	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_query_group: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_query_group: failed\n"));
-	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
+	DEBUG(5, ("cmd_sam_query_group: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 experimental SAM group query.
 ****************************************************************************/
-void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -2210,14 +2171,14 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
 		report(out_hnd, "samgroup <name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	group_name = argv[1];
@@ -2249,33 +2210,26 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 				       &sid, rids[0], sam_display_group_info);
 	}
 
+	safe_free(rids);
+	safe_free(types);
+
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
 	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_query_group: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_query_group: failed\n"));
-	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
-
+	DEBUG(5, ("cmd_sam_query_group: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 experimental SAM query security object.
 ****************************************************************************/
-void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -2305,14 +2259,14 @@ void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
 		report(out_hnd, "samquerysec <name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	user_name = argv[1];
@@ -2366,31 +2320,25 @@ void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 		res1 = False;
 	}
 
+	safe_free(rids);
+	safe_free(types);
+
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
 	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_query_sec_obj: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_query_sec_obj: failed\n"));
-	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
+	DEBUG(5, ("cmd_sam_query_sec_obj: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 experimental SAM user query.
 ****************************************************************************/
-void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -2426,14 +2374,14 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
 		report(out_hnd, "samuser <name> [-u] [-g] [-a]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	user_name = argv[1];
@@ -2508,32 +2456,26 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 		res1 = False;
 	}
 
+	safe_free(rids);
+	safe_free(types);
+
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
 	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_query_user: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_query_user: failed\n"));
-	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
+	DEBUG(5, ("cmd_sam_query_user: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 experimental SAM user set.
 ****************************************************************************/
-void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -2574,7 +2516,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -2582,7 +2524,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "samuserset2 <name> [-s <acb_bits>] [-c <acb_bits]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	argc--;
@@ -2694,6 +2636,10 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
+	safe_free(rids);
+	safe_free(types);
+	free_samr_userinfo_ctr(&ctr);
+
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
@@ -2701,21 +2647,17 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd, "Set User Info: OK\n");
 		DEBUG(5, ("cmd_sam_query_user: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		report(out_hnd, "Set User Info: Failed\n");
-		DEBUG(5, ("cmd_sam_query_user: failed\n"));
-	}
-	safe_free(rids);
-	safe_free(types);
-	free_samr_userinfo_ctr(&ctr);
+	report(out_hnd, "Set User Info: Failed\n");
+	DEBUG(5, ("cmd_sam_query_user: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 experimental SAM user set.
 ****************************************************************************/
-void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -2752,7 +2694,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -2762,7 +2704,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	if (argc == 0)
 	{
 		report(out_hnd, "samuserset <name> [-p password]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	safe_strcpy(user_name, argv[0], sizeof(user_name) - 1);
@@ -2885,6 +2827,8 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	}
 
 	free_samr_userinfo_ctr(&ctr);
+	safe_free(rids);
+	safe_free(types);
 
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
@@ -2893,21 +2837,11 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd, "Set User Info: OK\n");
 		DEBUG(5, ("cmd_sam_query_user: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		report(out_hnd, "Set User Info: Failed\n");
-		DEBUG(5, ("cmd_sam_query_user: failed\n"));
-	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
-	free_samr_userinfo_ctr(&ctr);
+	report(out_hnd, "Set User Info: Failed\n");
+	DEBUG(5, ("cmd_sam_query_user: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 static void sam_display_disp_info(const char *domain, const DOM_SID *sid,
@@ -2924,7 +2858,7 @@ static void sam_display_disp_info(const char *domain, const DOM_SID *sid,
 /****************************************************************************
 experimental SAM query display info.
 ****************************************************************************/
-void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -2951,7 +2885,7 @@ void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 		{
 			fprintf(out_hnd,
 				"please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -2969,17 +2903,16 @@ void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 	{
 
 		DEBUG(5, ("cmd_sam_query_dispinfo: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_query_dispinfo: failed\n"));
-	}
+	DEBUG(5, ("cmd_sam_query_dispinfo: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 experimental SAM domain info query.
 ****************************************************************************/
-void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 {
 	fstring domain;
 	fstring sid;
@@ -3003,7 +2936,7 @@ void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -3016,17 +2949,16 @@ void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5, ("cmd_sam_query_dominfo: succeeded\n"));
 		sam_display_dom_info(domain, &sid1, switch_value, &ctr);
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_query_dominfo: failed\n"));
-	}
+	DEBUG(5, ("cmd_sam_query_dominfo: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 experimental SAM alias query members.
 ****************************************************************************/
-void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -3050,7 +2982,7 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd, "samaliasmem [DOMAIN\\]<name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	fstrcpy(domain, info->dom.level5_dom);
@@ -3062,7 +2994,7 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -3107,32 +3039,26 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 					 sam_display_alias_members);
 	}
 
+	safe_free(rids);
+	safe_free(types);
+
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
 	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_query_alias: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_query_alias: failed\n"));
-	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
+	DEBUG(5, ("cmd_sam_query_alias: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 experimental SAM alias query.
 ****************************************************************************/
-void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring domain;
@@ -3162,14 +3088,14 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
 		report(out_hnd, "samalias <name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	alias_name = argv[1];
@@ -3201,38 +3127,33 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 				       &sid, rids[0], sam_display_alias_info);
 	}
 
+	safe_free(rids);
+	safe_free(types);
+
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
 	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_query_alias: succeeded\n"));
+		return NT_STATUS_NOPROBLEMO;
 	}
-	else
-	{
-		DEBUG(5, ("cmd_sam_query_alias: failed\n"));
-	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
+	DEBUG(5, ("cmd_sam_query_alias: failed\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
 /****************************************************************************
 SAM aliases query.
 ****************************************************************************/
-void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 {
 	BOOL request_member_info = False;
 	BOOL request_alias_info = False;
 	struct acct_info *sam = NULL;
 	uint32 num_sam_entries = 0;
 	int opt;
+	BOOL res1;
 
 	fstring domain;
 	fstring srv_name;
@@ -3277,13 +3198,13 @@ void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	report(out_hnd, "SAM Enumerate Aliases\n");
 
-	msrpc_sam_enum_aliases(srv_name, domain, &sid1,
+	res1 = msrpc_sam_enum_aliases(srv_name, domain, &sid1,
 			       &sam, &num_sam_entries,
 			       sam_display_alias,
 			       request_alias_info ? sam_display_alias_info :
@@ -3291,22 +3212,25 @@ void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 			       request_member_info ? sam_display_alias_members
 			       : NULL);
 
-	if (sam != NULL)
+	safe_free(sam);
+	if (res1)
 	{
-		free(sam);
+		return NT_STATUS_NOPROBLEMO;
 	}
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 experimental SAM groups enum.
 ****************************************************************************/
-void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 {
 	BOOL request_member_info = False;
 	BOOL request_group_info = False;
 	struct acct_info *sam = NULL;
 	uint32 num_sam_entries = 0;
 	int opt;
+	BOOL res1;
 
 	fstring srv_name;
 	fstring domain;
@@ -3328,7 +3252,7 @@ void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -3351,7 +3275,7 @@ void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Enumerate Groups\n");
 
-	msrpc_sam_enum_groups(srv_name, domain, &sid1,
+	res1 = msrpc_sam_enum_groups(srv_name, domain, &sid1,
 			      &sam, &num_sam_entries,
 			      sam_display_group,
 			      request_group_info ? sam_display_group_info :
@@ -3359,21 +3283,25 @@ void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 			      request_member_info ? sam_display_group_members
 			      : NULL);
 
-	if (sam != NULL)
+	safe_free(sam);
+
+	if (res1)
 	{
-		free(sam);
+		return NT_STATUS_NOPROBLEMO;
 	}
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
 experimental SAM domains enum.
 ****************************************************************************/
-void cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[])
 {
 	BOOL request_domain_info = False;
 	struct acct_info *sam = NULL;
 	uint32 num_sam_entries = 0;
 	int opt;
+	BOOL res1;
 
 	fstring srv_name;
 
@@ -3395,15 +3323,17 @@ void cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Enumerate Domains\n");
 
-	msrpc_sam_enum_domains(srv_name,
+	res1 = msrpc_sam_enum_domains(srv_name,
 			       &sam, &num_sam_entries,
 			       request_domain_info ? NULL :
 			       sam_display_domain,
 			       request_domain_info ? sam_display_dom_info :
 			       NULL);
 
-	if (sam != NULL)
+	safe_free(sam);
+	if (res1)
 	{
-		free(sam);
+		return NT_STATUS_NOPROBLEMO;
 	}
+	return NT_STATUS_UNSUCCESSFUL;
 }

@@ -386,11 +386,17 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
 			uint32 *valuelen, uint16 *value, uint32 *rvaluelen, 
 			uint32 *type, 
 			uint32 *datalen, uint8 *data, uint32 *rdatalen);
-BOOL spoolss_open_printer_ex(  char *printername,
-			 char *datatype, uint32 access_required,
-			 char *station,  char *username,
+BOOL spoolss_open_printer_ex(  const char *printername,
+			 const char *datatype, uint32 access_required,
+			 const char *station,  const char *username,
 			POLICY_HND *hnd);
 BOOL spoolss_closeprinter(POLICY_HND *hnd);
+uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
+			uint32 in_size, 
+			uint32 *type,
+			uint32 *out_size,
+			uint8 *data,
+			uint32 *needed);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
@@ -698,6 +704,22 @@ BOOL msrpc_sam_ntpasswd_set(const char* srv_name, const char *user,
 BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
 				const char *user_name, uint16 info_level,
 				SAM_USERINFO_CTR *ctr);
+
+/*The following definitions come from  rpc_client/msrpc_spoolss.c  */
+
+BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, uint32 level, PRINTER_INFO_CTR ctr);
+uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
+				const char* station, 
+				const char* user_name, 
+				const char* value_name, 
+				uint32 *type,
+				NEW_BUFFER *buffer,
+				void *fn) ;
+BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
+				const char* station, const char* user_name, 
+				uint32 level,
+				void ***ctr, JOB_INFO_FN(fn));
+BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, const char* station, const char* user_name );
 
 /*The following definitions come from  rpc_client/ncacn_np_use.c  */
 

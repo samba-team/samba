@@ -87,6 +87,33 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
 BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
 BOOL vuid_init_db(void);
 
+/*The following definitions come from  libsmb/cliconnect.c  */
+
+BOOL cli_session_setup_x(struct cli_state *cli, 
+				char *user, 
+				char *pass, int passlen,
+				char *ntpass, int ntpasslen,
+				char *user_domain);
+BOOL cli_session_setup(struct cli_state *cli, 
+				char *user,
+				char *pass, int passlen,
+				char *ntpass, int ntpasslen,
+				char *user_domain);
+BOOL cli_ulogoff(struct cli_state *cli);
+BOOL cli_send_tconX(struct cli_state *cli, 
+		    char *share, char *dev, char *pass, int passlen);
+BOOL cli_tdis(struct cli_state *cli);
+BOOL cli_negprot(struct cli_state *cli);
+BOOL cli_session_request(struct cli_state *cli,
+			 struct nmb_name *calling, struct nmb_name *called);
+BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
+BOOL cli_reestablish_connection(struct cli_state *cli);
+BOOL cli_establish_connection(struct cli_state *cli, 
+				const char *dest_host, struct in_addr *dest_ip,
+				struct nmb_name *calling, struct nmb_name *called,
+				char *service, char *service_type,
+				BOOL do_shutdown, BOOL do_tcon);
+
 /*The following definitions come from  libsmb/clidomain.c  */
 
 char *get_trusted_serverlist(const char *domain);
@@ -99,9 +126,10 @@ BOOL get_any_dc_name(const char *domain, char *srv_name);
 /*The following definitions come from  libsmb/clientgen.c  */
 
 int cli_set_port(struct cli_state *cli, int port);
-char *cli_errstr(struct cli_state *cli);
+BOOL cli_receive_smb(struct cli_state *cli);
+BOOL cli_send_smb(struct cli_state *cli);
+void cli_setup_packet(struct cli_state *cli);
 void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
-BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen);
 void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen);
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
                            char *name, int pipe_name_len, 
@@ -124,24 +152,6 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
 int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *));
-BOOL cli_session_setup_x(struct cli_state *cli, 
-				char *user, 
-				char *pass, int passlen,
-				char *ntpass, int ntpasslen,
-				char *user_domain);
-BOOL cli_session_setup(struct cli_state *cli, 
-				char *user,
-				char *pass, int passlen,
-				char *ntpass, int ntpasslen,
-				char *user_domain);
-BOOL cli_ulogoff(struct cli_state *cli);
-BOOL cli_send_tconX(struct cli_state *cli, 
-		    char *share, char *dev, char *pass, int passlen);
-BOOL cli_tdis(struct cli_state *cli);
-BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
-BOOL cli_unlink(struct cli_state *cli, char *fname);
-BOOL cli_mkdir(struct cli_state *cli, char *dname);
-BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_create(struct cli_state *cli, const char *fname);
 int cli_open(struct cli_state *cli, const char *fname,
 				int flags, int share_mode);
@@ -175,31 +185,40 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	     void (*fn)(file_info *, const char *));
 BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password);
-BOOL cli_negprot(struct cli_state *cli);
-BOOL cli_session_request(struct cli_state *cli,
-			 struct nmb_name *calling, struct nmb_name *called);
-BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
+void cli_close_socket(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
-BOOL cli_reestablish_connection(struct cli_state *cli);
-BOOL cli_establish_connection(struct cli_state *cli, 
-				const char *dest_host, struct in_addr *dest_ip,
-				struct nmb_name *calling, struct nmb_name *called,
-				char *service, char *service_type,
-				BOOL do_shutdown, BOOL do_tcon);
-int cli_printjob_del(struct cli_state *cli, int job);
-int cli_print_queue(struct cli_state *cli, 
-		    void (*fn)(struct print_job_info *));
 BOOL cli_chkpath(struct cli_state *cli, char *path);
+BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+
+/*The following definitions come from  libsmb/clierror.c  */
+
+BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen);
+char *cli_errstr(struct cli_state *cli);
+int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
+
+/*The following definitions come from  libsmb/clifile.c  */
+
+BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
+BOOL cli_unlink(struct cli_state *cli, char *fname);
+BOOL cli_mkdir(struct cli_state *cli, char *dname);
+BOOL cli_rmdir(struct cli_state *cli, char *dname);
+
+/*The following definitions come from  libsmb/climessage.c  */
+
 BOOL cli_message_start(struct cli_state *cli, char *host, char *username, 
 			      int *grp);
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
-BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+
+/*The following definitions come from  libsmb/cliprint.c  */
+
+int cli_print_queue(struct cli_state *cli, 
+		    void (*fn)(struct print_job_info *));
+int cli_printjob_del(struct cli_state *cli, int job);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
