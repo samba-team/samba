@@ -1519,23 +1519,35 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	grp_names = g_new(char *, num_rids);
+	if (grp_names == NULL)
+	{
+		free(*types);
+		(*types) = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
+
 
 	for (i = 0; i < num_rids; i++)
 	{
 		uint32 status1;
 		DOM_SID sid;
+		fstring tmpname;
+
 		sid_copy(&sid, &pol_sid);
 		sid_append_rid(&sid, rids[i]);
 
-		status1 = lookup_sid(&sid, grp_names[i], &(*types)[i]);
+		status1 = lookup_sid(&sid, tmpname, &(*types)[i]);
 
 		if (status1 == 0)
 		{
 			found_one = True;
+			grp_names[i] = strdup(tmpname);
 		}
 		else
 		{
 			(*types)[i] = SID_NAME_UNKNOWN;
+			grp_names[i] = NULL;
 		}
 	}
 
@@ -1547,6 +1559,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol,
 	(*num_names) = num_rids;
 	make_samr_lookup_rids(num_rids, grp_names, hdr_name, uni_name);
 
+	free_char_array(num_rids, grp_names);
 	return NT_STATUS_NOPROBLEMO;
 }
 
