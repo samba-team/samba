@@ -642,19 +642,26 @@ static BOOL test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupPrivDisplayName r;
 	NTSTATUS status;
+	/* produce a reasonable range of language output without screwing up
+	   terminals */
+	uint16 language_id = (random() % 4) + 0x409;
 
 	printf("testing LookupPrivDisplayName(%s)\n", priv_name->name);
 	
 	r.in.handle = handle;
 	r.in.name = priv_name;
+	r.in.language_id = &language_id;
+	r.out.language_id = &language_id;
 	r.in.unknown = 0;
-	r.in.unknown2 = 0;
 
 	status = dcerpc_lsa_LookupPrivDisplayName(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupPrivDisplayName failed - %s\n", nt_errstr(status));
 		return False;
 	}
+	printf("%s -> \"%s\"  (language 0x%x/0x%x)\n", 
+	       priv_name->name, r.out.disp_name->name, 
+	       *r.in.language_id, *r.out.language_id);
 
 	return True;
 }
