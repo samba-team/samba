@@ -647,6 +647,7 @@ PAM_NTDOM_OBJ = pam_ntdom/pam_ntdom_auth.o \
 		pam_ntdom/support.o \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
+
 PAM_NTDOM_LIBS = $(SAMBA_LIBS)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/common.po
@@ -785,7 +786,7 @@ rpctorture : CHECK bin/rpctorture
 
 smbfilter : CHECK bin/smbfilter
 
-nsswitch: CHECK nsswitch/libnss_winbind.so bin/winbindd nsswitch/pam_winbind.so
+nsswitch: CHECK nsswitch/libnss_winbind.so bin/winbindd @pam_modules@
 
 check: all nsswitch
 	$(RUNTEST) $(RUNTESTDEFAULTFLAGS) $(RUNTESTFLAGS)

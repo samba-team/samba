@@ -1294,6 +1294,7 @@ AC_ARG_WITH(pam,
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_PAM)
     LIBS="$LIBS -lpam"
+    pam_modules="$pam_modules nsswitch/pam_winbind.so"
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1301,7 +1302,7 @@ AC_ARG_WITH(pam,
   esac ],
   AC_MSG_RESULT(no)
 )
-
+AC_SUBST(pam_modules)
 
 #################################################
 # check for a LDAP password database
