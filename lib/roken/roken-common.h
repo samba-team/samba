@@ -125,4 +125,11 @@
 #define __attribute__(x)
 #endif
 
+#if IRIX != 4 /* fix for compiler bug */
+#ifdef RETSIGTYPE
+typedef RETSIGTYPE (*SigAction)(/* int??? */);
+SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
+#endif
+#endif
+
 #endif /* __ROKEN_COMMON_H__ */
