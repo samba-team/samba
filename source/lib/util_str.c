@@ -164,9 +164,10 @@ int StrnCaseCmp(const char *s, const char *t, size_t n)
 }
 
 /**
- Compare 2 strings.
-**/
-
+ * Compare 2 strings.
+ *
+ * @note The comparison is case-insensitive.
+ **/
 BOOL strequal(const char *s1, const char *s2)
 {
 	if (s1 == s2)
@@ -178,9 +179,10 @@ BOOL strequal(const char *s1, const char *s2)
 }
 
 /**
- Compare 2 strings up to and including the nth char.
-**/
-
+ * Compare 2 strings up to and including the nth char.
+ *
+ * @note The comparison is case-insensitive.
+ **/
 BOOL strnequal(const char *s1,const char *s2,size_t n)
 {
   if (s1 == s2)
