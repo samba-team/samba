@@ -83,6 +83,7 @@
 #endif
 #include <err.h>
 #include <roken.h>
+#include <getarg.h>
 #include <krb5.h>
 
 #define KPASSWD_PORT 464
