@@ -5132,7 +5132,7 @@ Samba.</para>
 
 	</sect2>
 
-	<sect2>
+	<sect2 id="root-ask-loop">
 		<title><quote>cupsaddsmb</quote> Keeps Asking for Root Password in Never-ending Loop</title>
 
 		<para>Have you <smbconfoption><name>security</name><value>user</value></smbconfoption>? Have
@@ -5147,7 +5147,12 @@ Samba.</para>
 		If the error is: <quote>tree connect failed: NT_STATUS_BAD_NETWORK_NAME</quote>, 
 		you may have forgotten to create the <filename>/etc/samba/drivers</filename> directory.
 		</para>
+	</sect2>
 
+	<sect2>
+		<title><quote>cupsaddsmb</quote> or <quote>rpcclient addriver</quote> Keeps Giving WERR_BAD_PASSWORD</title>
+
+		<para>See <link linkend="root-ask-loop">the previous common error</link>.</para>
 	</sect2>
 
 	<sect2>
@@ -5459,15 +5464,3 @@ files from the Adobe Web site.</para></sect2>
 </sect1>
 
 </chapter>
-
-
-
-
-
-
-
-
-
-
-
-
