@@ -206,7 +206,7 @@ iruserok(u_int32_t raddr, int superuser, const char *ruser, const char *luser)
 	FILE *hostf;
 	uid_t uid;
 	int first;
-	char pbuf[MAXPATHLEN];
+	char pbuf[MaxPathLen];
 
 	first = 1;
 	hostf = superuser ? NULL : fopen(_PATH_HEQUIV, "r");
