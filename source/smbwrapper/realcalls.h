@@ -35,90 +35,94 @@
 
 #ifdef HAVE__OPENDIR
 #define real_opendir(fn)            	(_opendir(fn))
+#elif SYS_opendir
+#define real_opendir(fn)		((DIR *)syscall(SYS_opendir,(fn)))
 #elif HAVE___OPENDIR
 #define real_opendir(fn)            	(__opendir(fn))
-#else
-#define real_opendir(fn)		((DIR *)syscall(SYS_opendir,(fn)))
 #endif
 
 #ifdef HAVE__READDIR
 #define real_readdir(d)            	(_readdir(d))
+#elif SYS_readdir
+#define real_readdir(d)		(syscall(SYS_readdir,(d)))
 #elif HAVE___READDIR
 #define real_readdir(d)            	(__readdir(d))
-#else
-#define real_readdir(d)		(syscall(SYS_readdir,(d)))
-#endif
-
-#ifdef HAVE__TELLDIR
-#define real_telldir(d)            	(_telldir(d))
-#elif HAVE___TELLDIR
-#define real_telldir(d)            	(__telldir(d))
-#else
-#define real_telldir(d)		(syscall(SYS_telldir,(d)))
 #endif
 
 #ifdef HAVE__CLOSEDIR
 #define real_closedir(d)            	(_closedir(d))
+#elif SYS_closedir
+#define real_closedir(d)		(syscall(SYS_closedir,(d)))
 #elif HAVE___CLOSEDIR
 #define real_closedir(d)            	(__closedir(d))
-#else
-#define real_closedir(d)		(syscall(SYS_closedir,(d)))
 #endif
 
 #ifdef HAVE__SEEKDIR
 #define real_seekdir(d,l)            	(_seekdir(d,l))
+#elif SYS_seekdir
+#define real_seekdir(d,l)		(syscall(SYS_seekdir,(d),(l)))
 #elif HAVE___SEEKDIR
 #define real_seekdir(d)            	(__seekdir(d,l))
 #else
-#define real_seekdir(d,l)		(syscall(SYS_seekdir,(d),(l)))
+#define NO_SEEKDIR
+#endif
+
+#ifdef HAVE__TELLDIR
+#define real_telldir(d)            	(_telldir(d))
+#elif SYS_telldir
+#define real_telldir(d)		(syscall(SYS_telldir,(d)))
+#elif HAVE___TELLDIR
+#define real_telldir(d)            	(__telldir(d))
+#else
+#define NO_TELLDIR
 #endif
 
 #ifdef HAVE__DUP
 #define real_dup(d)            	(_dup(d))
+#elif SYS_dup
+#define real_dup(d)		(syscall(SYS_dup,(d)))
 #elif HAVE___DUP
 #define real_dup(d)            	(__dup(d))
-#else
-#define real_dup(d)		(syscall(SYS_dup,(d)))
 #endif
 
 #ifdef HAVE__DUP2
 #define real_dup2(d1,d2)            	(_dup2(d1,d2))
+#elif SYS_dup2
+#define real_dup2(d1,d2)		(syscall(SYS_dup2,(d1),(d2)))
 #elif HAVE___DUP2
 #define real_dup2(d1,d2)            	(__dup2(d1,d2))
-#else
-#define real_dup2(d1,d2)		(syscall(SYS_dup2,(d1),(d2)))
 #endif
 
 #ifdef HAVE__GETCWD
 #define real_getcwd(b,s)            	(_getcwd(b,s))
+#elif SYS_getcwd
+#define real_getcwd(b,s)		(syscall(SYS_getcwd,(b),(s)))
 #elif HAVE___GETCWD
 #define real_getcwd(b,s)            	(__getcwd(b,s))
-#else
-#define real_getcwd(b,s)		(syscall(SYS_getcwd,(b),(s)))
 #endif
 
 #ifdef HAVE__STAT
 #define real_stat(fn,st)            	(_stat(fn,st))
+#elif SYS_stat
+#define real_stat(fn,st)		(syscall(SYS_stat,(fn),(st)))
 #elif HAVE___STAT
 #define real_stat(fn,st)            	(__stat(fn,st))
-#else
-#define real_stat(fn,st)		(syscall(SYS_stat,(fn),(st)))
 #endif
 
 #ifdef HAVE__LSTAT
 #define real_lstat(fn,st)            	(_lstat(fn,st))
+#elif SYS_lstat
+#define real_lstat(fn,st)		(syscall(SYS_lstat,(fn),(st)))
 #elif HAVE___LSTAT
 #define real_lstat(fn,st)            	(__lstat(fn,st))
-#else
-#define real_lstat(fn,st)		(syscall(SYS_lstat,(fn),(st)))
 #endif
 
 #ifdef HAVE__FSTAT
 #define real_fstat(fd,st)            	(_fstat(fd,st))
+#elif SYS_fstat
+#define real_fstat(fd,st)		(syscall(SYS_fstat,(fd),(st)))
 #elif HAVE___FSTAT
 #define real_fstat(fd,st)            	(__fstat(fd,st))
-#else
-#define real_fstat(fd,st)		(syscall(SYS_fstat,(fd),(st)))
 #endif
 
 
