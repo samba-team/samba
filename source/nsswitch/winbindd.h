@@ -94,7 +94,10 @@ struct winbindd_methods {
 				   uint32 *start_ndx, uint32 *num_entries, 
 				   WINBIND_DISPINFO **info);
 
-
+	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32 *start_ndx, uint32 *num_entries, 
+				    struct acct_info **info);
 };
 
 /* Structures to hold per domain information */
