@@ -165,8 +165,8 @@ void do_announce_host(int command,
 	StrnCpy(p+5,server_name,16);
 	strupper(p+5);
 
-	CVAL(p,21) = MAJOR_VERSION; /* major version */
-	CVAL(p,22) = MINOR_VERSION; /* minor version */
+	CVAL(p,21) = lp_major_announce_version(); /* major version */
+	CVAL(p,22) = lp_minor_announce_version(); /* minor version */
 
 	SIVAL(p,23,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
 	/* browse version: got from NT/AS 4.00  - Value defined in smb.h (JHT)*/
@@ -485,7 +485,7 @@ void announce_remote(time_t t)
   pstring s2;
   struct in_addr addr;
   char *comment,*workgroup;
-  int stype = DFLT_SERVER_TYPE;
+  int stype = lp_default_server_announce();
 
   if (last_time && t < last_time + REMOTE_ANNOUNCE_INTERVAL)
     return;

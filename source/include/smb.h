@@ -844,8 +844,8 @@ char *Strstr(char *s, char *p);
 /*		- Reappeared in 1.9.16p11 with fixed smbd services */
 /* Version 4.20 - To indicate that nmbd and browsing now works better */
 
-#define MAJOR_VERSION 0x04
-#define MINOR_VERSION 0x02
+#define DEFAULT_MAJOR_VERSION 0x04
+#define DEFAULT_MINOR_VERSION 0x02
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f

@@ -1682,7 +1682,7 @@ static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
       struct srv_info_struct *servers=NULL;
       int i,count;
       pstring comment;
-      uint32 servertype=DFLT_SERVER_TYPE;
+      uint32 servertype= lp_default_server_announce();
 
       strcpy(comment,lp_serverstring());
 
@@ -1696,8 +1696,8 @@ static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
       }
       if (servers) free(servers);
 
-      SCVAL(p,0,MAJOR_VERSION);
-      SCVAL(p,1,MINOR_VERSION);
+      SCVAL(p,0,lp_major_announce_version());
+      SCVAL(p,1,lp_minor_announce_version());
       SIVAL(p,2,servertype);
 
       if (mdrcnt == struct_len) {
@@ -1777,8 +1777,8 @@ static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
   p2 = skip_string(p2,1);
   p += 4;
 
-  SCVAL(p,0,MAJOR_VERSION); /* system version - e.g 4 in 4.1 */
-  SCVAL(p,1,MINOR_VERSION); /* system version - e.g .1 in 4.1 */
+  SCVAL(p,0,lp_major_announce_version()); /* system version - e.g 4 in 4.1 */
+  SCVAL(p,1,lp_minor_announce_version()); /* system version - e.g .1 in 4.1 */
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));

@@ -135,6 +135,7 @@ typedef struct
   char *szRemoteAnnounce;
   char *szSocketAddress;
   char *szNISHomeMapName;
+  char *szAnnounceVersion; /* This is initialised in init_globals */
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -154,6 +155,7 @@ typedef struct
   int shmem_size;
   int shmem_hash_size;
   int client_code_page;
+  int announce_as;   /* This is initialised in init_globals */
   BOOL bDNSproxy;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
@@ -350,7 +352,7 @@ static int iNumServices = 0;
 static int iServiceIndex = 0;
 static BOOL bInGlobalSection = True;
 static BOOL bGlobalOnly = False;
-
+static int default_server_announce;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
@@ -363,6 +365,7 @@ static BOOL handle_security(char *pszParmValue,int *val);
 static BOOL handle_case(char *pszParmValue,int *val);
 static BOOL handle_printing(char *pszParmValue,int *val);
 static BOOL handle_character_set(char *pszParmValue,int *val);
+static BOOL handle_announce_as(char *pszParmValue, int *val);
 #ifdef KANJI
 static BOOL handle_coding_system(char *pszParmValue,int *val);
 #endif /* KANJI */
@@ -385,6 +388,7 @@ struct parm_struct
   {"printing",         P_INTEGER, P_GLOBAL, &Globals.printing,handle_printing},
   {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL},
   {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL},
+  {"announce as",      P_INTEGER, P_GLOBAL, &Globals.announce_as,      handle_announce_as},
   {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL},
   {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL},
   {"read prediction",  P_BOOL,    P_GLOBAL, &Globals.bReadPrediction,   NULL},
@@ -430,6 +434,7 @@ struct parm_struct
   {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL},
   {"socket address",   P_STRING,  P_GLOBAL, &Globals.szSocketAddress,   NULL},
   {"homedir map",      P_STRING,  P_GLOBAL, &Globals.szNISHomeMapName,  NULL},
+  {"announce version", P_STRING,  P_GLOBAL, &Globals.szAnnounceVersion, NULL},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL},
@@ -602,6 +607,8 @@ static void init_globals(void)
   string_set(&Globals.szSocketAddress, "0.0.0.0");
   sprintf(s,"Samba %s",VERSION);
   string_set(&Globals.szServerString,s);
+  sprintf(s,"%d.%d", DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION);
+  string_set(&Globals.szAnnounceVersion,s);
   Globals.bLoadPrinters = True;
   Globals.bUseRhosts = False;
   Globals.max_packet = 65535;
@@ -629,6 +636,7 @@ static void init_globals(void)
   Globals.ReadSize = 16*1024;
   Globals.shmem_size = SHMEM_SIZE;
   Globals.shmem_hash_size = SHMEM_HASH_SIZE;
+  Globals.announce_as = ANNOUNCE_AS_NT;
   Globals.bUnixRealname = False;
 #if (defined(NETGROUP) && defined(AUTOMOUNT))
   Globals.bNISHomeMap = False;
@@ -822,6 +830,7 @@ FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
+FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
@@ -866,6 +875,7 @@ FN_GLOBAL_INTEGER(lp_maxdisksize,&Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime,&Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_syslog,&Globals.syslog)
 FN_GLOBAL_INTEGER(lp_client_code_page,&Globals.client_code_page)
+FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
 
 FN_LOCAL_STRING(lp_preexec,szPreExec)
 FN_LOCAL_STRING(lp_postexec,szPostExec)
@@ -1124,6 +1134,8 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
   iSERVICE(i).bRead_only = False;
   /* No share modes on printer services. */
   iSERVICE(i).bShareModes = False;
+  /* Printer services must be printable. */
+  iSERVICE(i).bPrint_ok = True;
   
   DEBUG(3,("adding printer service %s\n",pszPrintername));
   
@@ -1433,9 +1445,9 @@ handle the interpretation of the default case
 ***************************************************************************/
 static BOOL handle_case(char *pszParmValue,int *val)
 {
-  if (strequal(pszParmValue,"LOWER"))
+  if (strnequal(pszParmValue,"LOWER", 5))
     *val = CASE_LOWER;
-  else if (strequal(pszParmValue,"UPPER"))
+  else if (strnequal(pszParmValue,"UPPER", 5))
     *val = CASE_UPPER;
   return(True);
 }
@@ -1445,22 +1457,36 @@ handle the interpretation of the printing system
 ***************************************************************************/
 static BOOL handle_printing(char *pszParmValue,int *val)
 {
-  if (strequal(pszParmValue,"sysv"))
+  if (strnequal(pszParmValue,"sysv", 4))
     *val = PRINT_SYSV;
-  else if (strequal(pszParmValue,"aix"))
+  else if (strnequal(pszParmValue,"aix", 3))
     *val = PRINT_AIX;
-  else if (strequal(pszParmValue,"hpux"))
+  else if (strnequal(pszParmValue,"hpux", 4))
     *val = PRINT_HPUX;
-  else if (strequal(pszParmValue,"bsd"))
+  else if (strnequal(pszParmValue,"bsd", 3))
     *val = PRINT_BSD;
-  else if (strequal(pszParmValue,"qnx"))
+  else if (strnequal(pszParmValue,"qnx",3))
     *val = PRINT_QNX;
-  else if (strequal(pszParmValue,"plp"))
+  else if (strnequal(pszParmValue,"plp", 3))
     *val = PRINT_PLP;
-  else if (strequal(pszParmValue,"lprng"))
+  else if (strnequal(pszParmValue,"lprng", 5))
     *val = PRINT_LPRNG;
   return(True);
 }
+
+/***************************************************************************
+handle the announce as parameter
+***************************************************************************/
+static BOOL handle_announce_as(char *pszParmValue,int *val)
+{
+  if (strnequal(pszParmValue,"NT", 2))
+    *val = ANNOUNCE_AS_NT;
+  else if (strnequal(pszParmValue,"win95", 5))
+    *val = ANNOUNCE_AS_WIN95;
+  else if (strnequal(pszParmValue,"WfW", 3))
+    *val = ANNOUNCE_AS_WFW;
+  return True;
+} 
 
 /***************************************************************************
 handle the valid chars lines
@@ -1963,7 +1989,8 @@ BOOL lp_load(char *pszFname,BOOL global_only)
 {
   pstring n2;
   BOOL bRetval;
-  
+  static void set_default_server_announce_type(void);
+ 
   add_to_file_list(pszFname);
 
   bRetval = False;
@@ -1991,6 +2018,8 @@ BOOL lp_load(char *pszFname,BOOL global_only)
     lp_add_all_printers();
 
   lp_add_ipc();
+
+  set_default_server_announce_type();
 
   bLoaded = True;
 
@@ -2058,3 +2087,104 @@ char *volume_label(int snum)
   if (!*ret) return(lp_servicename(snum));
   return(ret);
 }
+
+#if 0
+/*
+ * nmbd only loads the global section. There seems to be no way to
+ * determine exactly is a service is printable by only looking at the
+ * [global] section so for now always announce as a print server. This
+ * will need looking at in the future. Jeremy (jallison@whistle.com).
+ */
+/*******************************************************************
+ Return true if any printer services are defined.
+  ******************************************************************/
+static BOOL lp_printer_services(void)
+{
+  int iService;
+
+  for (iService = iNumServices - 1; iService >= 0; iService--)
+      if (VALID(iService) && iSERVICE(iService).bPrint_ok)
+          return True;
+  return False;
+}
+#endif
+
+/*******************************************************************
+ Set the server type we will announce as via nmbd.
+********************************************************************/
+static void set_default_server_announce_type()
+{
+  default_server_announce = (SV_TYPE_WORKSTATION | SV_TYPE_SERVER |
+                              SV_TYPE_SERVER_UNIX | SV_TYPE_PRINTQ_SERVER);
+  if(lp_announce_as() == ANNOUNCE_AS_NT)
+    default_server_announce |= (SV_TYPE_SERVER_NT | SV_TYPE_NT);
+  else if(lp_announce_as() == ANNOUNCE_AS_WIN95)
+    default_server_announce |= SV_TYPE_WIN95_PLUS;
+  else if(lp_announce_as() == ANNOUNCE_AS_WFW)
+    default_server_announce |= SV_TYPE_WFW;
+  default_server_announce |= (lp_time_server() ? SV_TYPE_TIME_SOURCE : 0);
+/*
+ * nmbd only loads the [global] section. There seems to be no way to
+ * determine exactly if any service is printable by only looking at the
+ * [global] section so for now always announce as a print server. This
+ * will need looking at in the future. Jeremy (jallison@whistle.com).
+ */
+#if 0
+  default_server_announce |= (lp_printer_services() ? SV_TYPE_PRINTQ_SERVER : 0);
+#endif
+}
+
+/*******************************************************************
+ Get the default server type we will announce as via nmbd.
+********************************************************************/
+int lp_default_server_announce(void)
+{
+  return default_server_announce;
+}
+
+/*******************************************************************
+ Split the announce version into major and minor numbers.
+********************************************************************/
+int lp_major_announce_version(void)
+{
+  static BOOL got_major = False;
+  static int major_version = DEFAULT_MAJOR_VERSION;
+  char *vers;
+  char *p;
+
+  if(got_major)
+    return major_version;
+
+  got_major = True;
+  if((vers = lp_announce_version()) == NULL)
+    return major_version;
+  
+  if((p = strchr(vers, '.')) == 0)
+    return major_version;
+
+  *p = '\0';
+  major_version = atoi(vers);
+  return major_version;
+}
+
+int lp_minor_announce_version(void)
+{
+  static BOOL got_minor = False;
+  static int minor_version = DEFAULT_MINOR_VERSION;
+  char *vers;
+  char *p;
+
+  if(got_minor)
+    return minor_version;
+
+  got_minor = True;
+  if((vers = lp_announce_version()) == NULL)
+    return minor_version;
+  
+  if((p = strchr(vers, '.')) == 0)              
+    return minor_version;
+    
+  p++;
+  minor_version = atoi(p);
+  return minor_version;
+}  
