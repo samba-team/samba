@@ -608,7 +608,9 @@ TORTURE_PROGS = bin/smbtorture \\
 		bin/gentest \\
 		bin/locktest \\
 		bin/masktest \\
-		bin/ndrdump
+		bin/ndrdump \\
+		bin/net \\
+		bin/nmblookup
 
 LDB_PROGS = 	bin/ldbadd \\
 		bin/ldbdel \\
