@@ -233,7 +233,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	TDB_DATA keybuf, databuf;
 
 	/* fail completely if get null pointers passed */
-	SMB_ASSERT(keystr && valstr && timeout);
+	SMB_ASSERT(keystr);
 
 	if (!gencache_init())
 		return False;
@@ -244,21 +244,42 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	
 	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {
 		char* entry_buf = strndup(databuf.dptr, databuf.dsize);
-		*valstr = (char*)malloc(sizeof(char) * (databuf.dsize - TIMEOUT_LEN));
+		char *v;
+		time_t t;
+
+		v = (char*)malloc(sizeof(char) * 
+				  (databuf.dsize - TIMEOUT_LEN));
 				
 		SAFE_FREE(databuf.dptr);
-		sscanf(entry_buf, CACHE_DATA_FMT, (int*)timeout, *valstr);
+		sscanf(entry_buf, CACHE_DATA_FMT, (int*)&t, v);
 		SAFE_FREE(entry_buf);
 
-		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, timeout = %s\n",
-		           *timeout > time(NULL) ? "valid" : "expired", keystr, *valstr,
-		           ctime(timeout)));
-		return *timeout > time(NULL);
+		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
+			   "timeout = %s\n", t > time(NULL) ? "valid" :
+			   "expired", keystr, v, ctime(&t)));
+
+		if (valstr)
+			*valstr = v;
+		else
+			SAFE_FREE(v);
+
+		if (timeout)
+			*timeout = t;
+
+		return t > time(NULL);
+
 	} else {
 		SAFE_FREE(databuf.dptr);
-		*valstr = NULL;
-		timeout = NULL;
-		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", keystr));
+
+		if (valstr)
+			*valstr = NULL;
+
+		if (timeout)
+			timeout = NULL;
+
+		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", 
+			   keystr));
+
 		return False;
 	}
 }
@@ -322,4 +343,3 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	
 	tdb_search_list_free(first_node);
 }
-
