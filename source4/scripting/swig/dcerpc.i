@@ -352,6 +352,8 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 	$1 = &temp_data_blob;
 }
 
+const char *dcerpc_server_name(struct dcerpc_pipe *p);
+
 %include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/lsa.i"
 %include "librpc/gen_ndr/samr.i"
