@@ -324,7 +324,7 @@ static BOOL listening(struct packet_struct *p,struct nmb_name *n)
   struct name_record *n1;
 
   /* We explicitly don't search WINS here - this will be done
-     in find_name_search is it was a packet from a non-local subnet. */
+     in find_name_search if it was a packet from a non-local subnet. */
   d = find_subnet(p->ip);
 
   n1 = find_name_search(&d,n,FIND_LOCAL|FIND_WINS|FIND_SELF,p->ip);
@@ -345,13 +345,21 @@ static void process_dgram(struct packet_struct *p)
 
   /* if we aren't listening to the destination name then ignore the packet */
   if (!listening(p,&dgram->dest_name))
+  {
+    DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s(%x) from %s\n",
+           dgram->dest_name.name, dgram->dest_name.name_type, inet_ntoa(p->ip)));
     return;
-
+  }
 
   if (dgram->header.msg_type != 0x10 &&
       dgram->header.msg_type != 0x11 &&
-      dgram->header.msg_type != 0x12) {
+      dgram->header.msg_type != 0x12) 
+  {
     /* don't process error packets etc yet */
+    DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s(%d) from %s as it is \
+           an error packet of type %x\n",
+           dgram->dest_name.name, dgram->dest_name.name_type, 
+           inet_ntoa(p->ip), dgram->header.msg_type));
     return;
   }
 
@@ -364,7 +372,7 @@ static void process_dgram(struct packet_struct *p)
   len = SVAL(buf,smb_vwv11);
   buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 
-  DEBUG(4,("datagram from %s to %s for %s of type %d len=%d\n",
+  DEBUG(4,("process_dgram: datagram from %s to %s for %s of type %d len=%d\n",
 	   namestr(&dgram->source_name),namestr(&dgram->dest_name),
 	   smb_buf(buf),CVAL(buf2,0),len));
 

@@ -51,8 +51,12 @@ extern uint16 nb_type; /* samba's NetBIOS type */
   note: the name will _always_ be removed
   XXXX at present, the name is removed _even_ if a WINS server says keep it.
 
+  If direct is True then the name being removed must have been a direct name
+  add. This is done for special names such as DOMAIN<1b>. Just delete it
+  without any network release traffic.
+
   ****************************************************************************/
-void remove_name_entry(struct subnet_record *d, char *name,int type)
+void remove_name_entry(struct subnet_record *d, char *name,int type, BOOL direct)
 {
   /* XXXX BUG: if samba is offering WINS support, it should still broadcast
       a de-registration packet to the local subnet before removing the
@@ -83,7 +87,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
 
   if (ip_equal(d->bcast_ip, wins_ip))
   {
-    if (!lp_wins_support())
+    if (!lp_wins_support() && !direct)
     {
       /* not a WINS server: we have to release them on the network */
       queue_netbios_pkt_wins(ClientNMB,NMB_REL,NAME_RELEASE,
@@ -93,8 +97,9 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
   }
   else
   {
-    /* local interface: release them on the network */
-    queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
+    if(!direct)
+      /* local interface: release them on the network */
+      queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
 			 name, type, 0, 0,0,NULL,NULL,
 			 True, True, d->bcast_ip, d->bcast_ip);
   }
@@ -103,12 +108,16 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
 
 /****************************************************************************
   add an entry to the name list
-  
+  If the direct BOOL is set then no network traffic is done for the add - it
+  is just blasted into the subnet entry with a zero TTL - it will not
+  expire and has not been legitimately claimed. This is *only* done if
+  we are a WINS server or for a special name such as DOMAIN<1b>.
+ 
   big note: our name will _always_ be added (if there are no objections).
   it's just a matter of when this will be done (e.g after a time-out).
 
   ****************************************************************************/
-void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
+void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags, BOOL direct)
 {
   BOOL re_reg = False;
   struct nmb_name n;
@@ -128,15 +137,14 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
 
   if (ip_equal(d->bcast_ip, wins_ip))
   {
-    if (lp_wins_support())
+    if (lp_wins_support() || direct)
     {
       /* we are a WINS server. */
-      /* XXXX assume that if we are a WINS server that we are therefore
-         not pointing to another WINS server as well. this may later NOT
-         actually be true
-       */
-
-      DEBUG(4,("samba as WINS server adding: "));
+      if(lp_wins_support())
+        DEBUG(4,("add_my_name_entry: samba as WINS server adding: "));
+      else
+        DEBUG(4,("add_my_name_entry: direct name entry : adding: "));
+        
       /* this will call add_netbios_entry() */
       name_register_work(d, name, type, nb_flags,0, ipzero, False);
     }
@@ -154,11 +162,23 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
   }
   else
   {
-    /* broadcast the packet, but it comes from ipzero */
-  	queue_netbios_packet(d,ClientNMB,
-				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
-			     name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
-			     True, True, d->bcast_ip, ipzero);
+    if(direct)
+    {
+      /* Just enter the name to be the ip address of the subnet
+         via name_register_work to ensure all side effects are done.
+       */
+      DEBUG(4,("add_my_name_entry: direct name entry : adding: "));
+      /* this will call add_netbios_entry() */
+      name_register_work(d, name, type, nb_flags,0, d->myip, False);
+    }
+    else
+    {
+      /* broadcast the packet, but it comes from ipzero */
+      queue_netbios_packet(d,ClientNMB,
+	 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
+         name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
+	 True, True, d->bcast_ip, ipzero);
+    }
   }
 }
 
@@ -210,34 +230,47 @@ void add_domain_names(time_t t)
 browser on workgroup %s %s\n",
                   timestring(), myworkgroup, inet_ntoa(d->bcast_ip)));
 
-        if (lp_wins_support())
+        if(d == wins_subnet)
         {
-          /* use the wins server's capabilities (indirectly).  if
-             someone has already registered the domain<1b> name with 
-             the WINS server, then the WINS server's job is to _check_
-             that the owner still wants it, before giving it away.
-           */
+          if (lp_wins_support())
+          {
+            /* use the wins server's capabilities (indirectly).  if
+               someone has already registered the domain<1b> name with 
+               the WINS server, then the WINS server's job is to _check_
+               that the owner still wants it, before giving it away.
+             */
                
-          DEBUG(1,("%s initiating becoming domain master for %s\n",
+            DEBUG(1,("%s initiating becoming domain master for %s\n",
           		timestring(), myworkgroup));
-          become_domain_master(d, work);
+            become_domain_master(d, work);
+          }
+          else
+          {
+            /* send out a query to establish whether there's a 
+               domain controller on the WINS subnet.  if not,
+               we can become a domain controller.
+               it's only polite that we check, before claiming the
+               NetBIOS name 0x1b.
+             */
+
+            DEBUG(0,("add_domain_names:querying WINS for domain master \
+on workgroup %s\n", myworkgroup));
+
+            queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,NAME_QUERY_DOMAIN,
+            			myworkgroup, 0x1b,
+          			0, 0,0,NULL,NULL,
+          			False, False, ipzero, ipzero);
+          }
         }
         else
         {
-          /* send out a query to establish whether there's a 
-             domain controller on the WINS subnet.  if not,
-             we can become a domain controller.
-             it's only polite that we check, before claiming the
-             NetBIOS name 0x1b.
-           */
-
-          DEBUG(0,("add_domain_names:querying WINS for domain master \
-on workgroup %s\n", myworkgroup));
-
-          queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,NAME_QUERY_DOMAIN,
-          			myworkgroup, 0x1b,
-          			0, 0,0,NULL,NULL,
-          			False, False, ipzero, ipzero);
+          DEBUG(0,("add_domain_names:querying subnet %s for domain master \
+on workgroup %s\n", inet_ntoa(d->bcast_ip), myworkgroup));
+          queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_DOMAIN,
+                              myworkgroup, 0x1b,
+                              0, 0,0,NULL,NULL,
+                              True, False,
+                              d->bcast_ip, d->bcast_ip);
         }
       }
     }
@@ -261,10 +294,9 @@ void add_my_names(void)
   {
     BOOL wins = (lp_wins_support() && (d == wins_subnet));
 
-    add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
-    add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);
-    add_my_name_entry(d, myname,0x00,nb_type|NB_ACTIVE);
-    add_my_name_entry(d, myname,0x1f,nb_type|NB_ACTIVE);
+    add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE,False);
+    add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE,False);
+    add_my_name_entry(d, myname,0x00,nb_type|NB_ACTIVE,False);
     
     /* these names are added permanently (ttl of zero) and will NOT be
        refreshed with the WINS server  */
@@ -295,7 +327,7 @@ void remove_my_names()
 				/* get all SELF names removed from the WINS server's database */
 				/* XXXX note: problem occurs if this removes the wrong one! */
 
-				remove_name_entry(d,n->name.name, n->name.name_type);
+				remove_name_entry(d,n->name.name, n->name.name_type,False);
 			}
 		}
 	}
@@ -313,14 +345,14 @@ void refresh_my_names(time_t t)
   {
     struct name_record *n;
 	  
-	for (n = d->namelist; n; n = n->next)
+    for (n = d->namelist; n; n = n->next)
     {
       /* each SELF name has an individual time to be refreshed */
       if (n->source == SELF && n->refresh_time < t && 
           n->death_time != 0)
       {
         add_my_name_entry(d,n->name.name,n->name.name_type,
-                          n->ip_flgs[0].nb_flags);
+                          n->ip_flgs[0].nb_flags,False);
 	/* they get a new lease on life :-) */
 	n->death_time += GET_TTL(0);
 	n->refresh_time += GET_TTL(0);

@@ -1358,7 +1358,7 @@ BOOL check_file_sharing(int cnum,char *fname)
     if (old_shares[i].share_mode != DENY_DOS)
       goto free_and_exit;
 
-    if(old_shares[i].pid != pid);
+    if(old_shares[i].pid != pid)
       goto free_and_exit;
   }
 

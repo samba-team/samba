@@ -37,7 +37,11 @@ extern int ClientNMB;
 extern int DEBUGLEVEL;
 
 extern pstring scope;
+extern fstring myworkgroup;
 extern struct in_addr ipzero;
+extern struct in_addr wins_ip;
+extern struct in_addr ipzero;
+
 
 #define GET_TTL(ttl) ((ttl)?MIN(ttl,lp_max_ttl()):lp_max_ttl())
 
@@ -99,7 +103,20 @@ static void response_name_reg(struct nmb_name *ans_name,
   
   DEBUG(4,("response name registration received!\n"));
   
+#if 1
+  /* This code is neccesitated due to bugs in earlier versions of
+     Samba (up to 1.9.16p11). They respond to a broadcast
+     name registration of WORKGROUP<1b> when they should
+     not. Hence, until these versions are gone, we should
+     treat such errors as success for this particular
+     case only. jallison@whistle.com.
+   */
+  if ( ((d != wins_subnet) && (nmb->header.rcode == 6) && strequal(myworkgroup, name) &&
+         (type == 0x1b)) ||
+       (nmb->header.rcode == 0 && nmb->answers->rdata))
+#else
   if (nmb->header.rcode == 0 && nmb->answers->rdata)
+#endif
   {
     /* IMPORTANT: see expire_netbios_response_entries() */
 
@@ -489,6 +506,55 @@ static void response_name_query_sync(struct nmb_packet *nmb,
     }
 }
 
+/****************************************************************************
+  response from a name query for DOMAIN<1b>
+  NAME_QUERY_DOMAIN is dealt with here - we are trying to become a domain
+  master browser and WINS replied - check it's our address.
+  ****************************************************************************/
+static void response_name_query_domain(struct nmb_name *ans_name,
+                struct nmb_packet *nmb,
+                struct response_record *n, struct subnet_record *d)
+{
+  DEBUG(4, ("response_name_query_domain: Got %s response from %s for query \
+for %s\n", nmb->header.rcode == 0 ? "success" : "failure",
+           inet_ntoa(n->send_ip), namestr(ans_name)));
+
+  /* Check the name is correct and ip address returned is our own. If it is then we
+     just remove the response record.
+   */
+  if (name_equal(&n->name, ans_name) && (nmb->header.rcode == 0) && (nmb->answers->rdata))
+  {
+    struct in_addr found_ip;
+
+    putip((char*)&found_ip,&nmb->answers->rdata[2]);
+    /* Samba 1.9.16p11 servers seem to return the broadcast address for this
+       query. */
+    if (ismyip(found_ip) || ip_equal(wins_ip, found_ip) || ip_equal(ipzero, found_ip))
+    {
+      DEBUG(4, ("response_name_query_domain: WINS server returned our ip \
+address. Pretending we never received response.\n"));
+      n->num_msgs = 0;
+      n->repeat_count = 0;
+      n->repeat_time = 0;
+    }
+    else
+    {
+      DEBUG(0,("response_name_query_domain: WINS server already has a \
+domain master browser registered %s at address %s\n", 
+           namestr(ans_name), inet_ntoa(found_ip)));
+    }
+  }
+  else
+  {
+    /* Negative/incorrect response. No domain master
+       browser was registered - pretend we didn't get this response.
+     */
+    n->num_msgs = 0;
+    n->repeat_count = 0;
+    n->repeat_time = 0;
+  }
+
+}
 
 /****************************************************************************
   report the response record type
@@ -521,6 +587,7 @@ void debug_state_type(int state)
     case NAME_QUERY_SYNC_LOCAL   : DEBUG(4,("NAME_QUERY_SYNC_LOCAL\n")); break;
     case NAME_QUERY_SYNC_REMOTE  : DEBUG(4,("NAME_QUERY_SYNC_REMOTE\n")); break;
     case NAME_QUERY_ANNOUNCE_HOST: DEBUG(4,("NAME_QUERY_ANNCE_HOST\n"));break;
+    case NAME_QUERY_DOMAIN       : DEBUG(4,("NAME_QUERY_DOMAIN\n")); break;
       
     case NAME_REGISTER           : DEBUG(4,("NAME_REGISTER\n")); break;
     case NAME_REGISTER_CHALLENGE : DEBUG(4,("NAME_REGISTER_CHALLENGE\n"));break;
@@ -593,7 +660,7 @@ static BOOL response_problem_check(struct response_record *n,
 		      {
 		      case NAME_QUERY_FIND_MST:
 			{
-			  /* query for ^1^2__MSBROWSE__^2^1 expect 
+			  /* query for ^1^2__MSBROWSE__^2^1 expect
 			     lots of responses */
 			  return False;
 			}
@@ -768,7 +835,22 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
 		  namestr(&n->name), inet_ntoa(n->send_ip)));
 	break;
       }
-    
+   
+    case NAME_QUERY_DOMAIN:
+      {
+        /* We were asking to be a domain master browser, and someone
+           replied. If it was the WINS server and the IP it is
+           returning is our own - then remove the record and pretend
+           we didn't get a response. Else we do nothing and let 
+           dead_netbios_entry deal with it. 
+           We can only become domain master browser
+           when no broadcast responses are received and WINS
+           either contains no entry for the DOMAIN<1b> name or
+           contains our IP address.
+         */
+        response_name_query_domain(ans_name, nmb, n, d);
+        break;
+      }
     default:
       {
 	DEBUG(1,("unknown state type received in response_netbios_packet\n"));
