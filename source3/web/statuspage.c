@@ -220,45 +220,46 @@ void status_page(void)
 	int autorefresh=0;
 	int refresh_interval=30;
 	TDB_CONTEXT *tdb;
+	int nr_running=0;
 
 	smbd_pid = pidfile_pid("smbd");
 
-	if (cgi_variable("smbd_restart")) {
+	if (cgi_variable("smbd_restart") || cgi_variable("all_restart")) {
 		stop_smbd();
 		start_smbd();
 	}
 
-	if (cgi_variable("smbd_start")) {
+	if (cgi_variable("smbd_start") || cgi_variable("all_start")) {
 		start_smbd();
 	}
 
-	if (cgi_variable("smbd_stop")) {
+	if (cgi_variable("smbd_stop") || cgi_variable("all_stop")) {
 		stop_smbd();
 	}
 
-	if (cgi_variable("nmbd_restart")) {
+	if (cgi_variable("nmbd_restart") || cgi_variable("all_restart")) {
 		stop_nmbd();
 		start_nmbd();
 	}
-	if (cgi_variable("nmbd_start")) {
+	if (cgi_variable("nmbd_start") || cgi_variable("all_start")) {
 		start_nmbd();
 	}
 
-	if (cgi_variable("nmbd_stop")) {
+	if (cgi_variable("nmbd_stop")|| cgi_variable("all_stop")) {
 		stop_nmbd();
 	}
 
 #ifdef WITH_WINBIND
-	if (cgi_variable("winbindd_restart")) {
+	if (cgi_variable("winbindd_restart") || cgi_variable("all_restart")) {
 		stop_winbindd();
 		start_winbindd();
 	}
 
-	if (cgi_variable("winbindd_start")) {
+	if (cgi_variable("winbindd_start") || cgi_variable("all_start")) {
 		start_winbindd();
 	}
 
-	if (cgi_variable("winbindd_stop")) {
+	if (cgi_variable("winbindd_stop") || cgi_variable("all_stop")) {
 		stop_winbindd();
 	}
 #endif
@@ -314,6 +315,7 @@ void status_page(void)
 	d_printf("<tr><td>%s</td><td>%s</td>\n", _("smbd:"), smbd_running()?_("running"):_("not running"));
 	if (geteuid() == 0) {
 	    if (smbd_running()) {
+		nr_running++;
 		d_printf("<td><input type=submit name=\"smbd_stop\" value=\"%s\"></td>\n", _("Stop smbd"));
 	    } else {
 		d_printf("<td><input type=submit name=\"smbd_start\" value=\"%s\"></td>\n", _("Start smbd"));
@@ -326,11 +328,25 @@ void status_page(void)
 	d_printf("<tr><td>%s</td><td>%s</td>\n", _("nmbd:"), nmbd_running()?_("running"):_("not running"));
 	if (geteuid() == 0) {
 	    if (nmbd_running()) {
+		nr_running++;
 		d_printf("<td><input type=submit name=\"nmbd_stop\" value=\"%s\"></td>\n", _("Stop nmbd"));
 	    } else {
 		d_printf("<td><input type=submit name=\"nmbd_start\" value=\"%s\"></td>\n", _("Start nmbd"));
 	    }
 	    d_printf("<td><input type=submit name=\"nmbd_restart\" value=\"%s\"></td>\n", _("Restart nmbd"));
+#ifndef WITH_WINBIND
+	    if (nr_running >= 1) {
+	        /* stop, restart all */
+		d_printf("</tr><tr><td></td><td></td>\n");
+		d_printf("<td><input type=submit name=\"all_stop\" value=\"%s\"></td>\n", _("Stop All"));
+		d_printf("<td><input type=submit name=\"all_restart\" value=\"%s\"></td>\n", _("Restart All"));
+	    }
+	    else if (nr_running == 0) {
+	    	/* start all */
+		d_printf("</tr><tr><td></td><td></td>\n");
+		d_printf("<td><input type=submit name=\"all_start\" value=\"%s\"></td>\n", _("Start All"));
+	    }    
+#endif	    
 	}
 	d_printf("</tr>\n");
 
@@ -339,11 +355,24 @@ void status_page(void)
 	d_printf("<tr><td>%s</td><td>%s</td>\n", _("winbindd:"), winbindd_running()?_("running"):_("not running"));
 	if (geteuid() == 0) {
 	    if (winbindd_running()) {
+		nr_running++;
 		d_printf("<td><input type=submit name=\"winbindd_stop\" value=\"%s\"></td>\n", _("Stop winbindd"));
 	    } else {
 		d_printf("<td><input type=submit name=\"winbindd_start\" value=\"%s\"></td>\n", _("Start winbindd"));
 	    }
 	    d_printf("<td><input type=submit name=\"winbindd_restart\" value=\"%s\"></td>\n", _("Restart winbindd"));
+	    if (nr_running >= 1) {
+	        /* stop, restart all */
+		d_printf("</tr><tr><td></td><td></td>\n");
+		d_printf("<td><input type=submit name=\"all_stop\" value=\"%s\"></td>\n", _("Stop All"));
+		d_printf("<td><input type=submit name=\"all_restart\" value=\"%s\"></td>\n", _("Restart All"));
+	    }
+	    else if (nr_running == 0) {
+	    	/* start all */
+		d_printf("</tr><tr><td></td><td></td>\n");
+		d_printf("<td><input type=submit name=\"all_start\" value=\"%s\"></td>\n", _("Start All"));
+	    }
+		
 	}
 	d_printf("</tr>\n");
 #endif
