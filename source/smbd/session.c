@@ -99,6 +99,13 @@ BOOL session_claim(uint16 vuid)
 	sessionid.id_num = i;
 	sessionid.pid = pid;
 
+	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str, sessionid.hostname)) {
+		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
+				sessionid.username, sessionid.id_str));
+		tdb_delete(tdb, key);
+		return False;
+	}
+
 	dlen = tdb_pack(dbuf, sizeof(dbuf), "fffdd",
 			sessionid.username, sessionid.hostname, sessionid.id_str,
 			sessionid.id_num, sessionid.pid);
@@ -109,15 +116,6 @@ BOOL session_claim(uint16 vuid)
 		DEBUG(1,("session_claim: unable to create session id record\n"));
 		return False;
 	}
-
-#if WITH_PAM
-	if (!smb_pam_session(True, sessionid.username, sessionid.id_str, sessionid.hostname)) {
-		DEBUG(1,("smb_pam_session rejected the session for %s [%s]\n",
-			 sessionid.username, sessionid.id_str));
-		tdb_delete(tdb, key);
-		return False;
-	}
-#endif
 
 #if WITH_UTMP	
 	if (lp_utmp()) {
@@ -169,9 +167,7 @@ void session_yield(uint16 vuid)
 	}
 #endif
 
-#if WITH_PAM
-	smb_pam_session(False, sessionid.username, sessionid.id_str, sessionid.hostname);
-#endif
+	smb_pam_close_session(sessionid.username, sessionid.id_str, sessionid.hostname);
 
 	tdb_delete(tdb, key);
 }

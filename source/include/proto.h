@@ -2022,9 +2022,11 @@ BOOL pdb_generate_sam_sid(void);
 
 /*The following definitions come from  passdb/pampass.c  */
 
-BOOL smb_pam_session(BOOL flag, const char *in_user, char *tty, char *rhost);
-BOOL smb_pam_accountcheck(char * user);
-BOOL smb_pam_passcheck(char * user, char * password);
+BOOL smb_pam_claim_session(char *user, char *tty, char *rhost);
+BOOL smb_pam_close_session(char *user, char *tty, char *rhost);
+uint32 smb_pam_accountcheck(char * user);
+uint32 smb_pam_passcheck(char * user, char * password);
+BOOL smb_pam_passchange(char * user, char * oldpassword, char * newpassword);
 
 /*The following definitions come from  passdb/pass_check.c  */
 
@@ -3883,6 +3885,7 @@ void process_blocking_lock_queue(time_t t);
 
 /*The following definitions come from  smbd/chgpasswd.c  */
 
+BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL check_lanman_password(char *user, uchar * pass1,

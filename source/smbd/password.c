@@ -453,25 +453,21 @@ BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
 
 	user_name = pdb_get_username(sampass);
 	
-	DEBUG(4,("Checking SMB password for user %s\n",user_name));
+	DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n",user_name));
 
 	if(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
-		DEBUG(1,("account for user %s was disabled.\n", user_name));
+		DEBUG(1,("smb_password_ok: account for user %s was disabled.\n", user_name));
 		return(False);
 	}
 
-	if (chal == NULL)
-	{
-		DEBUG(5,("use last SMBnegprot challenge\n"));
-		if (!last_challenge(challenge))
-		{
-			DEBUG(1,("no challenge done - password failed\n"));
+	if (chal == NULL) {
+		DEBUG(5,("smb_password_ok: use last SMBnegprot challenge\n"));
+		if (!last_challenge(challenge)) {
+			DEBUG(1,("smb_password_ok: no challenge done - password failed\n"));
 			return False;
 		}
-	}
-	else
-	{
-		DEBUG(5,("challenge received\n"));
+	} else {
+		DEBUG(5,("smb_password_ok: challenge received\n"));
 		memcpy(challenge, chal, 8);
 	}
 
@@ -482,34 +478,32 @@ BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
 		DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-		if (smb_password_check((char *)nt_pass, (uchar *)nt_pw, challenge)) 
-		{
-			DEBUG(4,("NT MD4 password check succeeded\n"));
+		if (smb_password_check((char *)nt_pass, (uchar *)nt_pw, challenge)) {
+			DEBUG(4,("smb_password_ok: NT MD4 password check succeeded\n"));
 			return(True);
 		}
-		DEBUG(4,("NT MD4 password check failed\n"));
+		DEBUG(4,("smb_password_ok: NT MD4 password check failed\n"));
 	}
 
 	/* Try against the lanman password. pdb_get_lanman_passwd(sampass) == NULL 
 	   means no password, allow access. */
 
-	DEBUG(4,("Checking LM MD4 password\n"));
-
 	lm_pw = pdb_get_lanman_passwd(sampass);
 	
 	if((lm_pw == NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ)) 
 	{
-		DEBUG(4,("no password required for user %s\n",user_name));
+		DEBUG(4,("smb_password_ok: no password required for user %s\n",user_name));
 		return True;
 	}
 
-	if((lm_pw != NULL) && smb_password_check((char *)lm_pass,(uchar *)lm_pw, challenge)) 
-	{
-		DEBUG(4,("LM MD4 password check succeeded\n"));
-		return(True);
+	if(lp_lanman_auth() && (lm_pw != NULL)) {
+		DEBUG(4,("smb_password_ok: Checking LM password\n"));
+		if(smb_password_check((char *)lm_pass,(uchar *)lm_pw, challenge)) {
+			DEBUG(4,("smb_password_ok: LM password check succeeded\n"));
+			return(True);
+		}
+		DEBUG(4,("smb_password_ok: LM password check failed\n"));
 	}
-
-	DEBUG(4,("LM MD4 password check failed\n"));
 
 	return False;
 }
