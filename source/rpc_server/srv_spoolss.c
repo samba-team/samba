@@ -382,61 +382,24 @@ static void api_spoolss_closeprinter(rpcsrv_struct *p, prs_struct *data,
 }
 
 /********************************************************************
- * api_spoolss_reply_rffpcnex
- *
- * called from api_spoolss_rffpcnex (see this to understand)
- ********************************************************************/
-static void spoolss_reply_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, prs_struct *rdata)
-{
-	SPOOL_R_RFFPCNEX r_u;
-	
-	r_u.status = 0x0000;
-
-	spoolss_io_r_rffpcnex("",&r_u,rdata,0);
-}
-
-/********************************************************************
  * api_spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
- * called from the spoolss dispatcher
- *
- * jfmxxxx: before replying OK: status=0
- * should do a rpc call to the workstation asking ReplyOpenPrinter
- * have to code it, later.
- *
- * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  ********************************************************************/
 static void api_spoolss_rffpcnex(rpcsrv_struct *p, prs_struct *data, 
                                   prs_struct *rdata)
 {
 	SPOOL_Q_RFFPCNEX q_u;
-	
-	int i,j,k;
+	SPOOL_R_RFFPCNEX r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
 	spoolss_io_q_rffpcnex("", &q_u, data, 0);
 
-	/* store the notify value in the printer struct */
-
-	i=find_printer_index_by_hnd(&(q_u.handle));
-
-	Printer[i].number_of_notify=q_u.option.count;
-
-	DEBUG(3,("Copying %x notify option info\n",Printer[i].number_of_notify));
-
-	for (j=0;j<Printer[i].number_of_notify;j++)
-	{
-		Printer[i].notify_info[j].count=q_u.option.type[j].count;
-		Printer[i].notify_info[j].type=q_u.option.type[j].type	;
-		
-		DEBUG(4,("Copying %x info fields of type %x\n",
-		         Printer[i].notify_info[j].count,
-			 Printer[i].notify_info[j].type));
-		for(k=0;k<Printer[i].notify_info[j].count;k++)
-		{
-			Printer[i].notify_info[j].fields[k]=q_u.option.type[j].fields[k];
-		}
-	}
-	spoolss_reply_rffpcnex(&q_u,rdata);
+	r_u.status = _spoolss_rffpcnex(&q_u.handle, q_u.flags,
+	                               q_u.options, &q_u.localmachine,
+	                               q_u.printerlocal, &q_u.option);
+	spoolss_io_r_rffpcnex("",&r_u,rdata,0);
 }
 
 /*******************************************************************

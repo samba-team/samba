@@ -4863,7 +4863,11 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 				uint8 **data,
 				uint32 *numeric_data,
 				uint32 *needed);
-uint32 _spoolss_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, prs_struct *rdata);
+uint32 _spoolss_rffpcnex(const POLICY_HND *handle,
+				uint32 flags, uint32 options,
+				const UNISTR2 *localmachine,
+				uint32	printerlocal,
+				SPOOL_NOTIFY_OPTION *option);
 uint32 _spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
 uint32 _spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
 uint32 _spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
