@@ -111,7 +111,7 @@ BOOL torture_dirtest2(void)
 		char *fname;
 		asprintf(&fname, "\\LISTDIR\\f%d", i);
 		fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
-					     SEC_RIGHTS_FULL_CONTROL,
+					     SEC_RIGHTS_FILE_ALL,
 					     FILE_ATTRIBUTE_ARCHIVE,
 					     NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
 					     NTCREATEX_DISP_OVERWRITE_IF, 0, 0);

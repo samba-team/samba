@@ -151,7 +151,7 @@ BOOL torture_casetable(void)
 #if 0
 					     SEC_RIGHT_MAXIMUM_ALLOWED, 
 #else
-					     SEC_RIGHTS_FULL_CONTROL,
+					     SEC_RIGHTS_FILE_ALL,
 #endif
 					     FILE_ATTRIBUTE_NORMAL,
 					     NTCREATEX_SHARE_ACCESS_NONE,

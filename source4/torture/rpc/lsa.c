@@ -52,7 +52,7 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.system_name = &system_name;
 	r.in.attr = &attr;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
 
 	status = dcerpc_lsa_OpenPolicy(p, mem_ctx, &r);
@@ -89,7 +89,7 @@ static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.system_name = "\\";
 	r.in.attr = &attr;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
 	status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &r);
@@ -403,7 +403,7 @@ static BOOL test_CreateAccount(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.sid = newsid;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.acct_handle = &acct_handle;
 
 	status = dcerpc_lsa_CreateAccount(p, mem_ctx, &r);
@@ -439,7 +439,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.info = &trustinfo;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.dom_handle = &dom_handle;
 
 	status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
@@ -484,7 +484,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	init_lsa_String(&r.in.name, secname);
 
 	r.in.handle = handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.sec_handle = &sec_handle;
 
 	status = dcerpc_lsa_CreateSecret(p, mem_ctx, &r);
@@ -494,7 +494,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	}
 
 	r2.in.handle = handle;
-	r2.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r2.in.name = r.in.name;
 	r2.out.sec_handle = &sec_handle2;
 
@@ -643,7 +643,7 @@ static BOOL test_OpenAccount(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.sid = sid;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.acct_handle = &acct_handle;
 
 	status = dcerpc_lsa_OpenAccount(p, mem_ctx, &r);
@@ -870,7 +870,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		
 		trust.in.handle = handle;
 		trust.in.sid = domains.domains[i].sid;
-		trust.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+		trust.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		trust.out.trustdom_handle = &trustdom_handle;
 
 		status = dcerpc_lsa_OpenTrustedDomain(p, mem_ctx, &trust);
@@ -905,7 +905,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 
 		trust_by_name.in.handle = handle;
 		trust_by_name.in.name = domains.domains[i].name;
-		trust_by_name.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+		trust_by_name.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		trust_by_name.out.trustdom_handle = &trustdom_handle;
 		
 		status = dcerpc_lsa_OpenTrustedDomainByName(p, mem_ctx, &trust_by_name);

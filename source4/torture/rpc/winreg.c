@@ -348,7 +348,7 @@ static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	unknown.unknown0 = 0x84e0;
 	unknown.unknown1 = 0x0000;
 	r.in.unknown = &unknown;
-	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
 	status = dcerpc_winreg_OpenHKLM(p, mem_ctx, &r);
@@ -379,7 +379,7 @@ static BOOL test_OpenHKU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	unknown.unknown0 = 0x84e0;
 	unknown.unknown1 = 0x0000;
 	r.in.unknown = &unknown;
-	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
 	status = dcerpc_winreg_OpenHKU(p, mem_ctx, &r);
@@ -405,7 +405,7 @@ static BOOL test_OpenHKCR(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	unknown.unknown0 = 0x84e0;
 	unknown.unknown1 = 0x0000;
 	r.in.unknown = &unknown;
-	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
 	status = dcerpc_winreg_OpenHKCR(p, mem_ctx, &r);
@@ -479,7 +479,7 @@ static BOOL test_OpenHKCU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	unknown.unknown0 = 0x84e0;
 	unknown.unknown1 = 0x0000;
 	r.in.unknown = &unknown;
-	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
 	status = dcerpc_winreg_OpenHKCU(p, mem_ctx, &r);

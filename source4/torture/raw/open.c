@@ -621,7 +621,7 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
 	io.ntcreatex.in.root_fid = 0;
-	io.ntcreatex.in.access_mask = SEC_RIGHTS_FULL_CONTROL;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 1024*1024;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
@@ -707,7 +707,7 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* create a directory */
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
-	io.ntcreatex.in.access_mask = SEC_RIGHTS_FULL_CONTROL;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
@@ -719,7 +719,7 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_rmdir(cli->tree, fname);
 	smbcli_unlink(cli->tree, fname);
 
-	io.ntcreatex.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
@@ -794,7 +794,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
 	io.ntcreatex.in.root_fid = 0;
-	io.ntcreatex.in.access_mask = SEC_RIGHTS_FULL_CONTROL;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 1024*1024;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
@@ -882,7 +882,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* create a directory */
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
-	io.ntcreatex.in.access_mask = SEC_RIGHTS_FULL_CONTROL;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
@@ -894,7 +894,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_rmdir(cli->tree, fname);
 	smbcli_unlink(cli->tree, fname);
 
-	io.ntcreatex.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;

@@ -71,24 +71,36 @@ interface security
 	const int SEC_REG_NOTIFY           = 0x00000010;
 	const int SEC_REG_CREATE_LINK      = 0x00000020;
 
-	/* common combinations of bits */
-	const int SEC_RIGHTS_FULL_CONTROL = SEC_STD_ALL | SEC_FILE_ALL;
+	/* generic->specific mappings for files */
+	const int SEC_RIGHTS_FILE_READ    = SEC_STD_READ_CONTROL | 
+	                                    SEC_STD_SYNCHRONIZE | 
+					    SEC_FILE_READ_DATA | 
+                                            SEC_FILE_READ_ATTRIBUTE | 
+                                            SEC_FILE_READ_EA;
 
-	const int SEC_RIGHTS_FILE_READ = SEC_STD_READ_CONTROL | 
-	                                 SEC_STD_SYNCHRONIZE | 
-					 SEC_FILE_READ_DATA | 
-                                         SEC_FILE_READ_ATTRIBUTE | 
-                                         SEC_FILE_READ_EA;
+	const int SEC_RIGHTS_FILE_WRITE   = SEC_STD_READ_CONTROL | 
+	                                    SEC_STD_SYNCHRONIZE | 
+					    SEC_FILE_WRITE_DATA | 
+                                            SEC_FILE_WRITE_ATTRIBUTE | 
+                                            SEC_FILE_WRITE_EA |
+                                            SEC_FILE_APPEND_DATA;
+	
+	const int SEC_RIGHTS_FILE_EXECUTE = SEC_STD_SYNCHRONIZE | 
+	                                    SEC_STD_READ_CONTROL | 
+	                                    SEC_FILE_READ_ATTRIBUTE | 
+                                            SEC_FILE_EXECUTE;
 
-	const int SEC_RIGHTS_FILE_WRITE = SEC_STD_READ_CONTROL | 
-	                                  SEC_STD_SYNCHRONIZE | 
-					  SEC_FILE_WRITE_DATA | 
-                                          SEC_FILE_WRITE_ATTRIBUTE | 
-                                          SEC_FILE_WRITE_EA |
-                                          SEC_FILE_APPEND_DATA;
+	const int SEC_RIGHTS_FILE_ALL     = SEC_STD_ALL | SEC_FILE_ALL;
 
-	const int SEC_RIGHTS_MAXIMUM_ALLOWED = SEC_FLAG_MAXIMUM_ALLOWED;
+	/* generic->specific mappings for directories (same as files) */
+	const int SEC_RIGHTS_DIR_READ     = SEC_RIGHTS_FILE_READ;
+	const int SEC_RIGHTS_DIR_WRITE    = SEC_RIGHTS_FILE_WRITE;
+	const int SEC_RIGHTS_DIR_EXECUTE  = SEC_RIGHTS_FILE_EXECUTE;
+	const int SEC_RIGHTS_DIR_ALL      = SEC_RIGHTS_FILE_ALL;
 
+
+	/***************************************************************/
+	/* WELL KNOWN SIDS */
 
 	/* a NULL sid */
 	const string SID_NULL = "S-1-0-0";

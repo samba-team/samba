@@ -151,7 +151,7 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 	}
 
 	o.in.connect_handle = samsync_state->connect_handle;
-	o.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	o.in.sid = l.out.sid;
 	o.out.domain_handle = domain_handle;
 	
@@ -410,7 +410,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	}
 
 	r.in.domain_handle = samsync_state->domain_handle[database_id];
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.user_handle = &user_handle;
 
@@ -612,7 +612,7 @@ static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 	}
 
 	r.in.domain_handle = samsync_state->domain_handle[database_id];
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.alias_handle = &alias_handle;
 
@@ -661,7 +661,7 @@ static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 	}
 
 	r.in.domain_handle = samsync_state->domain_handle[database_id];
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.group_handle = &group_handle;
 
@@ -720,7 +720,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	DLIST_ADD(samsync_state->secrets, new);
 
 	o.in.handle = samsync_state->lsa_handle;
-	o.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	o.in.name.string = name;
 	o.out.sec_handle = &sec_handle;
 
@@ -805,7 +805,7 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	new->sid = talloc_reference(new, dom_sid);
 
 	t.in.handle = samsync_state->lsa_handle;
-	t.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	t.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	t.in.sid = dom_sid;
 	t.out.trustdom_handle = &trustdom_handle;
 
@@ -862,7 +862,7 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	BOOL *found_priv_in_lsa;
 
 	a.in.handle = samsync_state->lsa_handle;
-	a.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	a.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	a.in.sid = dom_sid;
 	a.out.acct_handle = &acct_handle;
 
@@ -1212,7 +1212,7 @@ BOOL torture_rpc_samsync(void)
 	samsync_state->connect_handle = talloc_zero_p(samsync_state, struct policy_handle);
 	samsync_state->lsa_handle = talloc_zero_p(samsync_state, struct policy_handle);
 	c.in.system_name = NULL;
-	c.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	c.out.connect_handle = samsync_state->connect_handle;
 
 	status = dcerpc_samr_Connect(samsync_state->p_samr, mem_ctx, &c);
@@ -1276,7 +1276,7 @@ BOOL torture_rpc_samsync(void)
 
 	r.in.system_name = "\\";
 	r.in.attr = &attr;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = samsync_state->lsa_handle;
 
 	status = dcerpc_lsa_OpenPolicy2(samsync_state->p_lsa, mem_ctx, &r);
