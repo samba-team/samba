@@ -789,15 +789,17 @@ deleting it.\n", fname));
   {
     /* New file - just use a single_entry. */
     if((buf = (char *)malloc(SMF_HEADER_LENGTH + 
-                  strlen(fsp->fsp_name) + 1 + SMF_ENTRY_LENGTH)) == NULL)
+                  strlen(fsp->fsp_name) + strlen(fsp->conn->connectpath) + 2 + SMF_ENTRY_LENGTH)) == NULL)
     {
       DEBUG(0,("ERROR: set_share_mode: malloc failed for single entry.\n"));
       return False;
     }
     SIVAL(buf,SMF_VERSION_OFFSET,LOCKING_VERSION);
     SIVAL(buf,SMF_NUM_ENTRIES_OFFSET,0);
-    SSVAL(buf,SMF_FILENAME_LEN_OFFSET,strlen(fsp->fsp_name) + 1);
-    pstrcpy(buf + SMF_HEADER_LENGTH, fsp->fsp_name);
+    SSVAL(buf,SMF_FILENAME_LEN_OFFSET,strlen(fsp->fsp_name) + strlen(fsp->conn->connectpath) + 2);
+    pstrcpy(buf + SMF_HEADER_LENGTH, fsp->conn->connectpath);
+    pstrcat(buf + SMF_HEADER_LENGTH, "/");
+    pstrcat(buf + SMF_HEADER_LENGTH, fsp->fsp_name);
   }
 
   num_entries = IVAL(buf,SMF_NUM_ENTRIES_OFFSET);

@@ -430,7 +430,7 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
     /* We must create a share_mode_record */
     share_mode_record *new_mode_p = NULL;
     int new_offset = shmops->shm_alloc(sizeof(share_mode_record) +
-				   strlen(fsp->fsp_name) + 1);
+				   strlen(fsp->fsp_name) + strlen(fsp->conn->connectpath) + 2);
     if(new_offset == 0) {
 	    DEBUG(0,("ERROR:set_share_mode shmops->shm_alloc fail!\n"));
 	    return False;
@@ -441,7 +441,9 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
     new_mode_p->st_ino = inode;
     new_mode_p->num_share_mode_entries = 0;
     new_mode_p->share_mode_entries = 0;
-    pstrcpy(new_mode_p->file_name, fsp->fsp_name);
+    pstrcpy(new_mode_p->file_name, fsp->conn->connectpath);
+    pstrcat(new_mode_p->file_name, "/");
+    pstrcat(new_mode_p->file_name, fsp->fsp_name);
 
     /* Chain onto the start of the hash chain (in the hope we will be used first). */
     new_mode_p->next_offset = mode_array[hash_entry];
