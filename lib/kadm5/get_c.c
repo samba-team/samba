@@ -56,10 +56,16 @@ kadm5_c_get_principal(void *server_handle,
     krb5_store_principal(sp, princ);
     krb5_store_int32(sp, mask);
     ret = _kadm5_client_send(context, sp);
+    if(ret) {
+	krb5_storage_free(sp);
+	return ret;
+    }
     sp->seek(sp, SEEK_SET, 0);
     ret = _kadm5_client_recv(context, sp);
-    krb5_ret_int32(sp, &tmp);
-    ret = tmp;
+    if(ret == 0) {
+	krb5_ret_int32(sp, &tmp);
+	ret = tmp;
+    }
     if(ret == 0)
 	kadm5_ret_principal_ent(sp, out);
     krb5_storage_free(sp);
