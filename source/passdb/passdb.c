@@ -1311,9 +1311,6 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, hourslen;
 	BOOL ret = True;
-	uid_t uid = -1;
-	gid_t gid = -1;
-	struct passwd *pw = NULL;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
@@ -1369,55 +1366,37 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
 
-
-	if ( (pw=Get_Pwnam(username)) != NULL ) {
-		uid = pw->pw_uid;
-		gid = pw->pw_gid;
-	}
-
 	if (homedir) {
 		pdb_set_homedir(sampass, homedir, PDB_SET);
 	}
 	else {
 		pdb_set_homedir(sampass, 
-				talloc_sub_specified(sampass->mem_ctx, 
-						       lp_logon_home(),
-						       username, domain, 
-						       uid, gid),
-				PDB_DEFAULT);
+			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
+			PDB_DEFAULT);
 	}
 
 	if (dir_drive) 	
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else {
 		pdb_set_dir_drive(sampass, 
-				  talloc_sub_specified(sampass->mem_ctx, 
-							 lp_logon_drive(),
-							 username, domain, 
-							 uid, gid),
-				  PDB_DEFAULT);
+			talloc_sub_basic(sampass->mem_ctx,  username, lp_logon_drive()),
+			PDB_DEFAULT);
 	}
 
 	if (logon_script) 
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	else {
 		pdb_set_logon_script(sampass, 
-				     talloc_sub_specified(sampass->mem_ctx, 
-							    lp_logon_script(),
-							    username, domain, 
-							    uid, gid),
-				  PDB_DEFAULT);
+			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()),
+			PDB_DEFAULT);
 	}
 	
 	if (profile_path) {	
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	} else {
 		pdb_set_profile_path(sampass, 
-				     talloc_sub_specified(sampass->mem_ctx, 
-							    lp_logon_path(),
-							    username, domain, 
-							    uid, gid),
-				     PDB_DEFAULT);
+			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_path()),
+			PDB_DEFAULT);
 	}
 
 	pdb_set_acct_desc(sampass, acct_desc, PDB_SET);
