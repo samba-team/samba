@@ -1,5 +1,7 @@
 Fri Sep  5 14:19:38 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/verify_user.c: Use get_init_creds/verify_init_creds.
+
 	* lib/kafs: Move functions common to krb/krb5 modules to new file,
  	and make things more modular.
 
