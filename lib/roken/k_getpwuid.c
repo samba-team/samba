@@ -24,6 +24,8 @@ k_getpwuid (uid_t uid)
 	       p->pw_passwd = spwd->sp_pwdp;
 	  endspent ();
      }
+#else
+     endpwent ();
 #endif
      return p;
 }

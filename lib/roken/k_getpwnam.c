@@ -24,6 +24,8 @@ k_getpwnam (char *user)
 	       p->pw_passwd = spwd->sp_pwdp;
 	  endspent ();
      }
+#else
+     endpwent ();
 #endif
      return p;
 }
