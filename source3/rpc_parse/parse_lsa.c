@@ -708,7 +708,7 @@ static BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		d_q->auditsettings = (uint32)talloc(ps->mem_ctx, d_q->count2 * sizeof(uint32));
+		d_q->auditsettings = (uint32 *)talloc(ps->mem_ctx, d_q->count2 * sizeof(uint32));
 	}
 
 	if (d_q->auditsettings == NULL) {
