@@ -152,6 +152,9 @@ static void free_key_data(krb5_context context, struct key_data *key);
  *                                                          *
  ************************************************************/
 
+static HEIMDAL_MUTEX crypto_mutex = HEIMDAL_MUTEX_INITIALIZER;
+
+
 static void
 krb5_DES_random_key(krb5_context context,
 	       krb5_keyblock *key)
@@ -3194,12 +3197,14 @@ krb5_generate_random_block(void *buf, size_t len)
 {
     static int rng_initialized = 0;
     
+    HEIMDAL_MUTEX_lock(&crypto_mutex);
     if (!rng_initialized) {
 	if (seed_something())
 	    krb5_abortx(NULL, "Fatal: could not seed the random number generator");
 	
 	rng_initialized = 1;
     }
+    HEIMDAL_MUTEX_unlock(&crypto_mutex);
     RAND_bytes(buf, len);
 }
 
@@ -3214,12 +3219,15 @@ krb5_generate_random_block(void *buf, size_t len)
     int i;
     static int initialized = 0;
 
+    HEIMDAL_MUTEX_lock(&crypto_mutex);
     if(!initialized) {
 	des_new_random_key(&key);
 	des_set_key(&key, schedule);
 	memset(&key, 0, sizeof(key));
 	des_new_random_key(&counter);
+	initialized = 1;
     }
+    HEIMDAL_MUTEX_unlock(&crypto_mutex);
     while(len > 0) {
 	des_ecb_encrypt(&counter, &out, schedule, DES_ENCRYPT);
 	for(i = 7; i >=0; i--)
