@@ -271,11 +271,10 @@ static int process_root(int argc, char *argv[])
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
-	while ((ch = getopt(argc, argv, "a:x:d:e:mnj:r:sR:D:U:")) != EOF) {
+	while ((ch = getopt(argc, argv, "ax:d:e:mnj:r:sR:D:U:")) != EOF) {
 		switch(ch) {
 		case 'a':
 			local_flags |= LOCAL_ADD_USER;
-			user_name = optarg;
 			break;
 		case 'x':
 			local_flags |= LOCAL_DELETE_USER;
@@ -297,6 +296,7 @@ static int process_root(int argc, char *argv[])
 		case 'n':
 			local_flags |= LOCAL_SET_NO_PASSWORD;
 			new_passwd = "NO PASSWORD";
+			break;
 		case 'j':
 			new_domain = optarg;
 			strupper(new_domain);
@@ -327,7 +327,6 @@ static int process_root(int argc, char *argv[])
 	
 	argc -= optind;
 	argv += optind;
-
 
 	/*
 	 * Ensure add/delete user and either remote machine or join domain are
