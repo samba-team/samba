@@ -242,6 +242,7 @@ common_auth(sia_collect_func_t *collect,
 	struct passwd pw, *pwd, fpw, *fpwd;
 	char pwbuf[1024], fpwbuf[1024];
 	struct state *s = (struct state*)entity->mech[pkgind];
+	int secure;
 	
 	if(getpwnam_r(name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0){
 	    SIA_DEBUG(("DEBUG", "failed to getpwnam(%s)", name));
@@ -282,8 +283,13 @@ common_auth(sia_collect_func_t *collect,
 		       toname, toinst, realm, name));
 	    return SIADFAIL;
 	}
+	if (getuid () == 0)
+	    secure = KRB_VERIFY_SECURE;
+	else
+	    secure = KRB_VERIFY_NOT_SECURE;
+
 	ret = krb_verify_user(toname, toinst, realm,
-			      entity->password, getuid() == 0, NULL);
+			      entity->password, secure, NULL);
 	if(ret){
 	    SIA_DEBUG(("DEBUG", "krb_verify_user: %s", krb_get_err_text(ret)));
 	    if(ret != KDC_PR_UNKNOWN)
