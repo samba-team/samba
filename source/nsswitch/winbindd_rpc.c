@@ -315,6 +315,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	result = cli_samr_query_userinfo(hnd->cli, mem_ctx, &user_pol, 
 					 0x15, &ctr);
 
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
 	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
 	got_user_pol = False;
 
