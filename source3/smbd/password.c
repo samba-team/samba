@@ -1947,7 +1947,8 @@ BOOL domain_client_validate( char *user, char *domain,
    * Next, check that the passwords given were encrypted.
    */
 
-  if(smb_apasslen != 24 || smb_ntpasslen != 24) {
+  if(((smb_apasslen != 24) && (smb_apasslen != 0)) || 
+     ((smb_ntpasslen != 24) && (smb_ntpasslen != 0))) {
 
     /*
      * Not encrypted - do so.
@@ -2129,7 +2130,9 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
   generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
   if(cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
-                          smb_apasswd, smb_ntpasswd, &ctr, &info3) == False) {
+                          ((smb_apasslen != 0) ? smb_apasswd : NULL),
+                          ((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
+                          &ctr, &info3) == False) {
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));
     cli_nt_session_close(&cli);
