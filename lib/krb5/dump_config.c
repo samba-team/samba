@@ -39,6 +39,9 @@ RCSID("$Id$");
 static void
 print_tree(struct krb5_config_binding *b, int level)
 {
+    if (b == NULL)
+	return;
+
     printf("%*s%s%s%s", level * 4, "", 
 	   (level == 0) ? "[" : "", b->name, (level == 0) ? "]" : "");
     if(b->type == krb5_config_list) {
