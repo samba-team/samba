@@ -10,6 +10,7 @@
 #include "config.h"
 #include "protos.h"
 #define KERBEROS
+RCSID("$Header$");
 #endif
 
 #include <stdio.h>
