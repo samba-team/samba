@@ -1101,7 +1101,7 @@ static void init_globals(void)
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
-	Globals.bUseSpnego = False;
+	Globals.bUseSpnego = True;
 
 	Globals.server_signing = False;
 
