@@ -157,6 +157,16 @@ in workgroup %s on subnet %s\n",
      */
     become_domain_master_browser_bcast(work->work_group);
   }
+  else
+  {
+    /*
+     * Now we are a domain master on a broadcast subnet, we need to add
+     * the WORKGROUP<1b> name to the unicast subnet so that we can answer
+     * unicast requests sent to this name. This bug wasn't found for a while
+     * as it is strange to have a DMB without using WINS. JRA.
+     */
+    insert_permanent_name_into_unicast(subrec, registered_name, nb_flags);
+  }
 }
 
 /****************************************************************************
