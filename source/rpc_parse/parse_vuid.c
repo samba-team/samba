@@ -100,22 +100,6 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 	uint32 gid = (uint32)r_u->gid;
 	uint32 *groups = NULL;
 
-	if (r_u->n_groups != 0)
-	{
-		groups = g_new(uint32, r_u->n_groups);
-		if (groups == NULL)
-		{
-			return False;
-		}
-	}
-	if (UNMARSHALLING(ps))
-	{
-		for (i = 0; i < r_u->n_groups; i++)
-		{
-			groups[i] = (uint32)r_u->groups[i];
-		}
-	}
-
 	if (r_u == NULL)
 		return False;
 
@@ -143,9 +127,16 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 	prs_uint32("guest", ps, depth, &(r_u->guest));
 
 	prs_uint32("n_groups", ps, depth, &(r_u->n_groups));
+
 	if (r_u->n_groups != 0)
 	{
-		if (MARSHALLING(ps))
+		groups = g_new(uint32, r_u->n_groups);
+		if (groups == NULL)
+		{
+			vuid_free_user_struct(r_u);
+			return False;
+		}
+		if (UNMARSHALLING(ps))
 		{
 			/* reading */
 			r_u->groups = g_new(gid_t, r_u->n_groups);
@@ -157,16 +148,23 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 			return False;
 		}
 	}
-	else if (MARSHALLING(ps))
+	else if (UNMARSHALLING(ps))
 	{
 		r_u->groups = NULL;
+	}
+
+	if (MARSHALLING(ps))
+	{
+		for (i = 0; i < r_u->n_groups; i++)
+		{
+			groups[i] = (uint32)r_u->groups[i];
+		}
 	}
 	for (i = 0; i < r_u->n_groups; i++)
 	{
 		prs_uint32("", ps, depth, &groups[i]);
 	}
-
-	if (MARSHALLING(ps))
+	if (UNMARSHALLING(ps))
 	{
 		for (i = 0; i < r_u->n_groups; i++)
 		{
