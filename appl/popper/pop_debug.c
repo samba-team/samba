@@ -208,10 +208,6 @@ main(int argc, char **argv)
 {
     int port = 0;
     int ret = 1;
-    char *host;
-    struct hostent *hp;
-    int s;
-    struct sockaddr_in sa;
     int optind = 0;
 
     set_progname(argv[0]);
