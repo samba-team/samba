@@ -248,11 +248,10 @@ char* regsubkey_ctr_specific_key( REGSUBKEY_CTR *ctr, uint32 key_index )
 
 void regsubkey_ctr_destroy( REGSUBKEY_CTR *ctr )
 {
-	if ( ctr )
-		talloc_destroy( ctr->ctx );
-		
-	ctr->num_subkeys  = 0;
-	ctr->subkeys      = NULL;
+	if ( ctr ) {
+		talloc_destroy( ctr->ctx );	
+		ZERO_STRUCTP( ctr );
+	}
 }
 
 
@@ -285,10 +284,9 @@ int regval_ctr_numvals( REGVAL_CTR *ctr )
 
 void regval_ctr_destroy( REGVAL_CTR *ctr )
 {
-	if ( ctr )
+	if ( ctr ) {
 		talloc_destroy( ctr->ctx );
-		
-	ctr->num_values  = 0;
-	ctr->values      = NULL;
+		ZERO_STRUCTP( ctr );
+	}
 }
 

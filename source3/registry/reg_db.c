@@ -43,12 +43,14 @@ static BOOL init_registry_data( void )
 
 	/* HKEY_LOCAL_MACHINE */
 	
+	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	regsubkey_ctr_addkey( &subkeys, "SYSTEM" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 		
+	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM" );
 	regsubkey_ctr_addkey( &subkeys, "CurrentControlSet" );
@@ -56,6 +58,7 @@ static BOOL init_registry_data( void )
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 		
+	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet" );
 	regsubkey_ctr_addkey( &subkeys, "Control" );
@@ -64,6 +67,7 @@ static BOOL init_registry_data( void )
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 
+	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control" );
 	regsubkey_ctr_addkey( &subkeys, "Print" );
@@ -77,6 +81,7 @@ static BOOL init_registry_data( void )
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 
+	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services" );
 	regsubkey_ctr_addkey( &subkeys, "Netlogon" );
@@ -84,6 +89,7 @@ static BOOL init_registry_data( void )
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 		
+	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon" );
 	regsubkey_ctr_addkey( &subkeys, "parameters" );
