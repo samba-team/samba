@@ -24,17 +24,6 @@
 
 #include "includes.h"
 
-#ifdef TNG
-	#define prs_uint16 _prs_uint16
-	#define prs_uint32 _prs_uint32
-	#define prs_uint8s _prs_uint8s
-	#define prs_uint16s _prs_uint16s
-	#define prs_unistr _prs_unistr
-	#define init_unistr2 make_unistr2
-	#define init_buf_unistr2 make_buf_unistr2
-#endif
-
-
 extern int DEBUGLEVEL;
 /*******************************************************************
 return the length of a UNISTR string.
@@ -325,7 +314,7 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 	prs_debug(ps, depth, desc, "smb_io_notify_info_data");
 	depth++;
 
-	how_many_words=data->size;	
+	how_many_words=data->size;
 	if (how_many_words==POINTER) {
 		how_many_words=TWO_VALUE;
 	}
@@ -784,6 +773,26 @@ BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_
 
 	return True;
 }
+
+/*******************************************************************
+ * make a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
+                                const POLICY_HND *handle,
+                                const UNISTR2 *valuename,
+                                uint32 size)
+{
+        if (q_u == NULL) return False;
+
+        DEBUG(5,("make_spoolss_q_getprinterdata\n"));
+
+        q_u->handle = *handle;
+        copy_unistr2(&q_u->valuename, valuename);
+        q_u->size = size;
+
+        return True;
+}
+
 
 /*******************************************************************
  * read a structure.
@@ -3252,6 +3261,24 @@ BOOL new_spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS 
 	return True;		
 }
 
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
+                                const char *name,
+                                const char *environment,
+                                uint32 level,
+                                NEW_BUFFER *buffer, uint32 offered)
+{
+        init_buf_unistr2(&q_u->name, &q_u->name_ptr, name);
+        init_buf_unistr2(&q_u->environment, &q_u->environment_ptr, environment);
+
+        q_u->level=level;
+        q_u->buffer=buffer;
+        q_u->offered=offered;
+
+        return True;
+}
 
 /*******************************************************************
  Parse a SPOOL_Q_ENUMPRINTERDRIVERS structure.
@@ -4207,6 +4234,27 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 
 	return True;
 }
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_getprinterdriverdir(SPOOL_Q_GETPRINTERDRIVERDIR *q_u,
+                                fstring servername, fstring env_name, uint32 level,
+                                NEW_BUFFER *buffer, uint32 offered)
+{
+        q_u->name_ptr = (servername != NULL) ? 1 : 0;
+        init_unistr2(&(q_u->name), servername, strlen(servername));
+
+        q_u->environment_ptr = (env_name != NULL) ? 1 : 0;
+        init_unistr2(&(q_u->environment), env_name, strlen(env_name));
+
+        q_u->level=level;
+        q_u->buffer=buffer;
+        q_u->offered=offered;
+
+        return True;
+}
+
 
 /*******************************************************************
  Parse a SPOOL_Q_GETPRINTERDRIVERDIR structure.
