@@ -337,8 +337,8 @@ uint32 cmd_spoolss_getprinterdata(struct client_info *info, int argc, char *argv
                                 printer_name, station, value_name));
 
         status = msrpc_spoolss_getprinterdata( printer_name, station,
-                                "Administrateur",
-                                /*usr_creds->ntc.user_name,*/
+                                /* "Administrateur", */
+                                usr_creds->ntc.user_name,
                                 value_name, &type,
                                 &ctr, NULL);
 
