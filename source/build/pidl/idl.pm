@@ -1917,7 +1917,7 @@ sub _Error {
 	my $last_token = $_[0]->YYData->{LAST_TOKEN};
 	my $file = $_[0]->YYData->{INPUT_FILENAME};
 	
-	print "Syntax error at $file:$line near '$last_token'\n";
+	print "$file:$line: Syntax error near '$last_token'\n";
 }
 
 sub _Lexer($)
