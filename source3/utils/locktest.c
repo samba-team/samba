@@ -454,6 +454,7 @@ static void usage(void)
 "Usage:\n\
   locktest //server1/share1 //server2/share2 [options..]\n\
   options:\n\
+        -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
         -o numops\n\
@@ -497,6 +498,7 @@ static void usage(void)
 
 	TimeInit();
 	charset_initialise();
+	codepage_initialise(lp_client_code_page());
 
 	lp_load(servicesf,True,False,False);
 	load_interfaces();
@@ -507,7 +509,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:aA")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aAW:")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -533,6 +535,9 @@ static void usage(void)
 		case 'h':
 			usage();
 			exit(1);
+		case 'W':
+			pstrcpy(workgroup, optarg);
+			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
 			exit(1);
