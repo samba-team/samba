@@ -436,6 +436,8 @@ check_section(krb5_context context, const char *path, krb5_config_section *cf,
 	}
 	if(e->name == NULL) {
 	    krb5_warnx(context, "%s: unknown entry", local);
+	    for(e = entries; e->name != NULL; e++)
+		krb5_warnx(context, "  %s", e->name);
 	    error |= 1;
 	}
 	free(local);
@@ -443,6 +445,29 @@ check_section(krb5_context context, const char *path, krb5_config_section *cf,
     return error;
 }
 
+
+static void
+dump_config(int level, krb5_config_section *top)
+{
+    krb5_config_section *x;
+    for(x = top; x; x = x->next) {
+	switch(x->type) {
+	case krb5_config_list:
+	    if(level == 0) {
+		printf("[%s]\n", x->name);
+	    } else {
+		printf("%*s%s = {\n", 4 * level, " ", x->name);
+	    }
+	    dump_config(level + 1, x->u.list);
+	    if(level > 0)
+		printf("%*s}\n", 4 * level);
+	    break;
+	case krb5_config_string:
+	    printf("%*s%s = %s\n", 4 * level, " ", x->name, x->u.string);
+	    break;
+	}
+    }
+}
 
 int
 main(int argc, char **argv)
@@ -452,6 +477,7 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_config_section *tmp_cf;
     int optind = 0;
+    int dump_config_file = 1;
 
     setprogname (argv[0]);
 
@@ -488,6 +514,9 @@ main(int argc, char **argv)
 	krb5_warn (context, ret, "krb5_config_parse_file");
 	return 1;
     }
+
+    if(dump_config_file)
+	dump_config(0, tmp_cf);
 
     return check_section(context, "", tmp_cf, toplevel_sections);
 }
