@@ -44,6 +44,10 @@
 #include <gssapi.h>
 #include <assert.h>
 
+#ifdef HAVE_GSSAPI_CFX
+#include "cfx.h"
+#endif
+
 /*
  *
  */
@@ -57,7 +61,7 @@ typedef struct gss_ctx_id_t_desc_struct {
   enum { LOCAL = 1, OPEN = 2, 
 	 COMPAT_OLD_DES3 = 4, COMPAT_OLD_DES3_SELECTED = 8 } more_flags;
   struct krb5_ticket *ticket;
-  time_t lifetime;
+  OM_uint32 lifetime;
   HEIMDAL_MUTEX ctx_id_mutex;
   struct gss_msg_order *order;
 } gss_ctx_id_t_desc;
@@ -119,34 +123,63 @@ gssapi_krb5_verify_8003_checksum (
 		      OM_uint32 *flags,
                       krb5_data *fwd_data);
 
-OM_uint32
-gssapi_krb5_encapsulate(
-			OM_uint32 *minor_status,
-			const krb5_data *in_data,
-			gss_buffer_t output_token,
-			u_char *type);
-
-OM_uint32
-gssapi_krb5_decapsulate(
-			OM_uint32 *minor_status,
-			gss_buffer_t input_token_buffer,
-			krb5_data *out_data,
-			char *type);
+void
+_gssapi_encap_length (size_t data_len,
+		      size_t *len,
+		      size_t *total_len,
+		      const gss_OID mech);
 
 void
 gssapi_krb5_encap_length (size_t data_len,
 			  size_t *len,
-			  size_t *total_len);
+			  size_t *total_len,
+			  const gss_OID mech);
+
+
+
+OM_uint32
+_gssapi_encapsulate(OM_uint32 *minor_status,
+		    const krb5_data *in_data,
+		    gss_buffer_t output_token,
+		    const gss_OID mech);
+
+
+OM_uint32
+gssapi_krb5_encapsulate(OM_uint32 *minor_status,    
+			const krb5_data *in_data,
+			gss_buffer_t output_token,
+			const u_char *type,
+			const gss_OID mech);
+
+OM_uint32
+gssapi_krb5_decapsulate(OM_uint32 *minor_status,
+			gss_buffer_t input_token_buffer,
+			krb5_data *out_data,
+			char *type,
+			gss_OID oid);
 
 u_char *
 gssapi_krb5_make_header (u_char *p,
 			 size_t len,
-			 u_char *type);
+			 const u_char *type,
+			 const gss_OID mech);
+
+u_char *
+_gssapi_make_mech_header(u_char *p,
+			 size_t len,
+			 const gss_OID mech);
+
+OM_uint32
+_gssapi_verify_mech_header(u_char **str,
+			   size_t total_len,
+			   gss_OID oid);
 
 OM_uint32
 gssapi_krb5_verify_header(u_char **str,
 			  size_t total_len,
-			  char *type);
+			  u_char *type,
+			  gss_OID oid);
+
 
 OM_uint32
 gss_verify_mic_internal(OM_uint32 * minor_status,
