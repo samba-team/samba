@@ -4,13 +4,6 @@ RCSID("$Id$");
 
 char *prog;
 
-static u_int32_t display_num;
-static char xauthfile[MaxPathLen];
-static u_char cookie[16];
-static size_t cookie_len;
-
-#define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
-
 /*
  * Signal handler that justs waits for the children when they die.
  */
@@ -148,6 +141,7 @@ doit_conn (int fd, struct sockaddr_in *thataddr,
 	   des_cblock *key, des_key_schedule schedule)
 {
   int sock;
+  int one = 1;
 
   sock = socket (AF_INET, SOCK_STREAM, 0);
   if (sock < 0) {
@@ -155,6 +149,9 @@ doit_conn (int fd, struct sockaddr_in *thataddr,
     sprintf (msg, "socket: %s", strerror(errno));
     return fatal (sock, msg);
   }
+#ifdef TCP_NODELAY
+  setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+#endif
   if (connect (sock, (struct sockaddr *)thataddr,
 	       sizeof(*thataddr)) < 0) {
     abort ();
@@ -176,90 +173,6 @@ check_user_console ()
      if (getuid() != sb.st_uid)
 	  return fatal (0, "Permission denied");
      return 0;
-}
-
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif
-
-static int
-create_and_write_cookie (char *xauthfile,
-			 u_char *cookie,
-			 size_t sz)
-{
-     Xauth auth;
-     char tmp[64];
-     FILE *f;
-     char hostname[MaxHostNameLen];
-     struct in_addr loopback;
-     struct hostent *h;
-
-     k_gethostname (hostname, sizeof(hostname));
-     loopback.s_addr = htonl(INADDR_LOOPBACK);
-     
-     auth.family = FamilyLocal;
-     auth.address = hostname;
-     auth.address_length = strlen(auth.address);
-     sprintf (tmp, "%d", display_num);
-     auth.number_length = strlen(tmp);
-     auth.number = tmp;
-     auth.name = COOKIE_TYPE;
-     auth.name_length = strlen(auth.name);
-     auth.data_length = sz;
-     auth.data = (char*)cookie;
-     des_rand_data (cookie, sz);
-     cookie_len = sz;
-
-     f = fopen(xauthfile, "w");
-     if(XauWriteAuth(f, &auth) == 0) {
-	  fclose(f);
-	  return 1;
-     }
-
-     h = gethostbyname (hostname);
-     if (h == NULL) {
-	  fclose (f);
-	  return 1;
-     }
-
-     /*
-      * I would like to write a cookie for localhost:n here, but some
-      * stupid code in libX11 will not look for cookies of that type,
-      * so we are forced to use FamilyWild instead.
-      */
-
-     auth.family  = FamilyWild;
-     auth.address_length = 0;
-
-#if 0 /* XXX */
-     auth.address = (char *)&loopback;
-     auth.address_length = sizeof(loopback);
-#endif
-
-     if (XauWriteAuth(f, &auth) == 0) {
-	  fclose (f);
-	  return 1;
-     }
-
-     if(fclose(f))
-	  return 1;
-     return 0;
-}
-
-/*
- * Some simple controls on the address and corresponding socket
- */
-
-static int
-suspicious_address (int sock, struct sockaddr_in addr)
-{
-    char data[40];
-    int len = sizeof(data);
-    
-
-    return addr.sin_addr.s_addr != htonl(INADDR_LOOPBACK)
-	|| getsockopt (sock, IPPROTO_IP, IP_OPTIONS, data, &len) < 0
-	|| len != 0;
 }
 
 static int
@@ -285,12 +198,11 @@ doit(int sock, int tcpp)
 	  sprintf (tmp, "%u", display_num);
 	  if (krb_net_write (sock, tmp, sizeof(tmp)) != sizeof(tmp))
 	       return 1;
-	  strncpy(xauthfile, tempnam("/tmp", NULL), sizeof(xauthfile));
-	  if (krb_net_write (sock, xauthfile, sizeof(xauthfile)) !=
-	      sizeof(xauthfile))
+	  strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
+	  if (krb_net_write (sock, xauthfile, xauthfile_size) !=
+	      xauthfile_size)
 	       return 1;
-	  if(create_and_write_cookie (xauthfile, cookie,
-				      sizeof(cookie)))
+	  if(create_and_write_cookie (xauthfile, cookie, cookie_len))
 	       return 1;
 	  {
 	      char tmp[6];
@@ -304,6 +216,7 @@ doit(int sock, int tcpp)
 	       pid_t child;
 	       int fd;
 	       int zero = 0;
+	       int one = 1;
 	       fd_set fds;
 	       
 	       FD_ZERO(&fds);
@@ -340,6 +253,9 @@ doit(int sock, int tcpp)
 			 sprintf (msg, "accept: %s\n", strerror (errno));
 			 return fatal (sock, msg);
 		    }
+#ifdef TCP_NODELAY
+	       setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+#endif
 	       child = fork ();
 	       if (child < 0) {
 		    char msg[200];
