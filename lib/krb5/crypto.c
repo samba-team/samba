@@ -55,6 +55,7 @@ struct krb5_crypto_data {
     struct key_data key;
     int num_key_usage;
     struct key_usage *key_usage;
+    void *params;
 };
 
 #define CRYPTO_ETYPE(C) ((C)->et->type)
@@ -80,14 +81,17 @@ struct key_type {
     const char *name;
     size_t bits;
     size_t size;
+    size_t minsize;
     size_t schedule_size;
 #if 0
     krb5_enctype best_etype;
 #endif
     void (*random_key)(krb5_context, krb5_keyblock*);
-    void (*schedule)(krb5_context, struct key_data *);
+    void (*schedule)(krb5_context, struct key_data *, const void *);
     struct salt_type *string_to_key;
     void (*random_to_key)(krb5_context, krb5_keyblock*, const void*, size_t);
+    krb5_error_code (*get_params)(krb5_context, const krb5_data *,
+				  void **, krb5_data *);
 };
 
 struct checksum_type {
@@ -172,7 +176,8 @@ krb5_DES_random_key(krb5_context context,
 
 static void
 krb5_DES_schedule(krb5_context context,
-	     struct key_data *key)
+		  struct key_data *key,
+		  const void *params)
 {
     DES_set_key(key->key->keyvalue.data, key->schedule->data);
 }
@@ -367,7 +372,8 @@ DES3_random_key(krb5_context context,
 
 static void
 DES3_schedule(krb5_context context,
-	      struct key_data *key)
+	      struct key_data *key,
+	      const void *params)
 {
     DES_cblock *k = key->key->keyvalue.data;
     DES_key_schedule *s = key->schedule->data;
@@ -519,14 +525,9 @@ DES3_random_to_key(krb5_context context,
  */
 
 static void
-ARCFOUR_random_key(krb5_context context, krb5_keyblock *key)
-{
-    krb5_generate_random_block (key->keyvalue.data,
-				key->keyvalue.length);
-}
-
-static void
-ARCFOUR_schedule(krb5_context context, struct key_data *kd)
+ARCFOUR_schedule(krb5_context context, 
+		 struct key_data *kd,
+		 const void *params)
 {
     RC4_set_key (kd->schedule->data,
 		 kd->key->keyvalue.length, kd->key->keyvalue.data);
@@ -731,7 +732,9 @@ struct krb5_aes_schedule {
 };
 
 static void
-AES_schedule(krb5_context context, struct key_data *kd)
+AES_schedule(krb5_context context,
+	     struct key_data *kd,
+	     const void *params)
 {
     struct krb5_aes_schedule *key = kd->schedule->data;
     int bits = kd->key->keyvalue.length * 8;
@@ -740,6 +743,73 @@ AES_schedule(krb5_context context, struct key_data *kd)
     AES_set_encrypt_key(kd->key->keyvalue.data, bits, &key->ekey);
     AES_set_decrypt_key(kd->key->keyvalue.data, bits, &key->dkey);
 }
+
+/*
+ * RC2
+ */
+
+struct _RC2_params {
+    int maximum_effective_key;
+};
+
+static krb5_error_code
+rc2_get_params(krb5_context context,
+	       const krb5_data *data,
+	       void **params,
+	       krb5_data *ivec)
+{
+    RC2CBCParameter rc2params;
+    struct _RC2_params *p;
+    krb5_error_code ret;
+    size_t size;
+
+    ret = decode_RC2CBCParameter(data->data, data->length, &rc2params, &size);
+    if (ret) {
+	krb5_set_error_string(context, "Can't decode RC2 parameters");
+	return ret;
+    }
+    p = malloc(sizeof(*p));
+    if (p == NULL) {
+	free_RC2CBCParameter(&rc2params);
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }
+    /* XXX  */
+    switch(rc2params.rc2ParameterVersion) {
+    case 160:
+	p->maximum_effective_key = 40;
+	break;
+    case 120:
+	p->maximum_effective_key = 64;
+	break;
+    case 58:
+	p->maximum_effective_key = 128;
+	break;
+	
+    }
+    if (ivec)
+	ret = copy_octet_string(&rc2params.iv, ivec);
+    free_RC2CBCParameter(&rc2params);
+    *params = p;
+
+    return ret;
+}
+
+static void
+rc2_schedule(krb5_context context,
+	     struct key_data *kd,
+	     const void *params)
+{
+    const struct _RC2_params *p = params;
+    int maximum_effective_key = 128;
+    if (p)
+	maximum_effective_key = p->maximum_effective_key;
+    RC2_set_key (kd->schedule->data,
+		 kd->key->keyvalue.length,
+		 kd->key->keyvalue.data,
+		 maximum_effective_key);
+}
+
 
 /*
  *
@@ -758,6 +828,7 @@ struct key_type keytype_null = {
     0,
     0,
     0,
+    0,
     NULL,
     NULL,
     NULL
@@ -767,6 +838,7 @@ struct key_type keytype_des = {
     KEYTYPE_DES,
     "des",
     56,
+    sizeof(DES_cblock),
     sizeof(DES_cblock),
     sizeof(DES_key_schedule),
     krb5_DES_random_key,
@@ -780,6 +852,7 @@ struct key_type keytype_des3 = {
     "des3",
     168,
     3 * sizeof(DES_cblock), 
+    3 * sizeof(DES_cblock), 
     3 * sizeof(DES_key_schedule), 
     DES3_random_key,
     DES3_schedule,
@@ -791,6 +864,7 @@ struct key_type keytype_des3_derived = {
     KEYTYPE_DES3,
     "des3",
     168,
+    3 * sizeof(DES_cblock),
     3 * sizeof(DES_cblock),
     3 * sizeof(DES_key_schedule), 
     DES3_random_key,
@@ -805,6 +879,7 @@ struct key_type keytype_aes128 = {
     "aes-128",
     128,
     16,
+    16,
     sizeof(struct krb5_aes_schedule),
     NULL,
     AES_schedule,
@@ -815,6 +890,7 @@ struct key_type keytype_aes256 = {
     KEYTYPE_AES256,
     "aes-256",
     256,
+    32,
     32,
     sizeof(struct krb5_aes_schedule),
     NULL,
@@ -828,10 +904,25 @@ struct key_type keytype_arcfour = {
     "arcfour",
     128,
     16,
+    16,
     sizeof(RC4_KEY),
-    ARCFOUR_random_key,
+    NULL,
     ARCFOUR_schedule,
     arcfour_salt
+};
+
+struct key_type keytype_rc2 = {
+    KEYTYPE_RC2,
+    "rc2",
+    128,
+    16,
+    1,
+    sizeof(RC2_KEY),
+    NULL,
+    rc2_schedule,
+    NULL, /* XXX salt */
+    NULL,
+    rc2_get_params
 };
 
 struct key_type *keytypes[] = {
@@ -1184,7 +1275,8 @@ krb5_generate_random_keyblock(krb5_context context,
 
 static krb5_error_code
 _key_schedule(krb5_context context,
-	      struct key_data *key)
+	      struct key_data *key,
+	      const void *params)
 {
     krb5_error_code ret;
     struct encryption_type *et = _find_enctype(key->key->keytype);
@@ -1205,7 +1297,7 @@ _key_schedule(krb5_context context,
 	key->schedule = NULL;
 	return ret;
     }
-    (*kt->schedule)(context, key);
+    (*kt->schedule)(context, key, params);
     return 0;
 }
 
@@ -1873,7 +1965,7 @@ get_checksum_key(krb5_context context,
 	*key = &crypto->key; 
     }
     if(ret == 0)
-	ret = _key_schedule(context, *key);
+	ret = _key_schedule(context, *key, crypto->params);
     return ret;
 }
 
@@ -2347,6 +2439,29 @@ AES_CTS_encrypt(krb5_context context,
 #endif /* ENABLE_AES */
 
 /*
+ * RC2
+ */
+
+static krb5_error_code 
+RC2_CBC_encrypt(krb5_context context,
+                struct key_data *key, 
+                void *data,
+                size_t len,  
+                krb5_boolean encrypt, 
+                int usage,
+                void *ivec)
+{
+    unsigned char local_ivec[8];
+    RC2_KEY *s = key->schedule->data; 
+    if(ivec == NULL) {
+        ivec = &local_ivec;
+        memset(local_ivec, 0, sizeof(local_ivec));
+    }
+    RC2_cbc_encrypt(data, data, len, s, ivec, encrypt);
+    return 0;
+}
+
+/*
  * section 6 of draft-brezak-win2k-krb-rc4-hmac-03
  *
  * warning: not for small children
@@ -2708,6 +2823,19 @@ static struct encryption_type enctype_des3_cbc_none = {
     F_PSEUDO,
     DES3_CBC_encrypt,
 };
+static struct encryption_type enctype_rc2_cbc_none = {
+    ETYPE_RC2_CBC_NONE,
+    "rc2-cbc-none",
+    8,
+    8,
+    0,
+    &keytype_rc2,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    RC2_CBC_encrypt,
+};
+
 
 static struct encryption_type *etypes[] = {
     &enctype_null,
@@ -2725,7 +2853,8 @@ static struct encryption_type *etypes[] = {
     &enctype_des_cbc_none,
     &enctype_des_cfb64_none,
     &enctype_des_pcbc_none,
-    &enctype_des3_cbc_none
+    &enctype_des3_cbc_none,
+    &enctype_rc2_cbc_none
 };
 
 static unsigned num_etypes = sizeof(etypes) / sizeof(etypes[0]);
@@ -2986,7 +3115,7 @@ encrypt_internal_derived(krb5_context context,
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret)
 	goto fail;
-    ret = _key_schedule(context, dkey);
+    ret = _key_schedule(context, dkey, crypto->params);
     if(ret)
 	goto fail;
 #ifdef CRYPTO_DEBUG
@@ -3052,7 +3181,7 @@ encrypt_internal(krb5_context context,
 	goto fail;
     memcpy(p + et->confoundersize, cksum.checksum.data, cksum.checksum.length);
     free_Checksum(&cksum);
-    ret = _key_schedule(context, &crypto->key);
+    ret = _key_schedule(context, &crypto->key, crypto->params);
     if(ret)
 	goto fail;
 #ifdef CRYPTO_DEBUG
@@ -3152,7 +3281,7 @@ decrypt_internal_derived(krb5_context context,
 	free(p);
 	return ret;
     }
-    ret = _key_schedule(context, dkey);
+    ret = _key_schedule(context, dkey, crypto->params);
     if(ret) {
 	free(p);
 	return ret;
@@ -3219,7 +3348,7 @@ decrypt_internal(krb5_context context,
     }
     memcpy(p, data, len);
     
-    ret = _key_schedule(context, &crypto->key);
+    ret = _key_schedule(context, &crypto->key, crypto->params);
     if(ret) {
 	free(p);
 	return ret;
@@ -3518,7 +3647,9 @@ derive_key(krb5_context context,
     krb5_error_code ret = 0;
     
     struct key_type *kt = et->keytype;
-    ret = _key_schedule(context, key);
+    /* since RC2 is only the weird crypto alg with parameter and this
+     * function not defined with work with RC2, this is ok */
+    ret = _key_schedule(context, key, NULL);
     if(ret)
 	return ret;
     if(et->blocksize * 8 < kt->bits || 
@@ -3682,7 +3813,7 @@ krb5_crypto_init(krb5_context context,
 			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
-    if((*crypto)->et->keytype->size != key->keyvalue.length) {
+    if((*crypto)->et->keytype->minsize > key->keyvalue.length) {
 	free(*crypto);
 	*crypto = NULL;
 	krb5_set_error_string (context, "encryption key has bad length");
@@ -3697,6 +3828,7 @@ krb5_crypto_init(krb5_context context,
     (*crypto)->key.schedule = NULL;
     (*crypto)->num_key_usage = 0;
     (*crypto)->key_usage = NULL;
+    (*crypto)->params = NULL;
     return 0;
 }
 
@@ -3726,8 +3858,33 @@ krb5_crypto_destroy(krb5_context context,
 	free_key_usage(context, &crypto->key_usage[i]);
     free(crypto->key_usage);
     free_key_data(context, &crypto->key);
+    free(crypto->params);
     free (crypto);
     return 0;
+}
+
+krb5_error_code
+krb5_crypto_get_params(krb5_context context,
+		       krb5_crypto crypto,
+		       const krb5_data *params,
+		       krb5_data *ivec)
+{
+    krb5_error_code (*sp)(krb5_context, const krb5_data *, 
+			  void **, krb5_data *);
+    sp = crypto->et->keytype->get_params;
+    if (sp == NULL) {
+	size_t size;
+	if (ivec == NULL)
+	    return 0;
+	return decode_CBCParameter(params->data, params->length, ivec, &size);
+    }
+    if (crypto->params) {
+	krb5_set_error_string(context,
+			      "krb5_crypto_set_params called "
+			      "more than once");
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    return (*sp)(context, params, &crypto->params, ivec);
 }
 
 krb5_error_code
