@@ -111,8 +111,8 @@ BOOL session_claim(uint16 vuid)
 	}
 
 #if WITH_PAM
-	if (!pam_session(True, sessionid.username, sessionid.id_str, sessionid.hostname)) {
-		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
+	if (!smb_pam_session(True, sessionid.username, sessionid.id_str, sessionid.hostname)) {
+		DEBUG(1,("smb_pam_session rejected the session for %s [%s]\n",
 			 sessionid.username, sessionid.id_str));
 		tdb_delete(tdb, key);
 		return False;
@@ -167,7 +167,7 @@ void session_yield(uint16 vuid)
 #endif
 
 #if WITH_PAM
-	pam_session(False, sessionid.username, sessionid.id_str, sessionid.hostname);
+	smb_pam_session(False, sessionid.username, sessionid.id_str, sessionid.hostname);
 #endif
 
 	tdb_delete(tdb, key);

@@ -1922,9 +1922,9 @@ BOOL pdb_generate_sam_sid(void);
 
 /*The following definitions come from  passdb/pampass.c  */
 
-BOOL pam_session(BOOL flag, const char *in_user, char *tty, char *rhost);
-BOOL pam_accountcheck(char * user);
-BOOL pam_passcheck(char * user, char * password);
+BOOL smb_pam_session(BOOL flag, const char *in_user, char *tty, char *rhost);
+BOOL smb_pam_accountcheck(char * user);
+BOOL smb_pam_passcheck(char * user, char * password);
 
 /*The following definitions come from  passdb/pass_check.c  */
 

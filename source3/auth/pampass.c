@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) John H Terpsta 1999-2001
    Copyright (C) Andrew Bartlett 2001
+   Copyright (C) Jeremy Allison 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -58,7 +59,7 @@ static char *PAM_password;
 /*
  * PAM error handler.
  */
-static BOOL pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, int dbglvl)
+static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, int dbglvl)
 {
 
 	if( pam_error != PAM_SUCCESS) {
@@ -74,7 +75,7 @@ static BOOL pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, int 
  * echo off means password.
  */
 
-static int PAM_conv(int num_msg,
+static int smb_pam_conv(int num_msg,
 		    const struct pam_message **msg,
 		    struct pam_response **resp,
 		    void *appdata_ptr)
@@ -122,21 +123,21 @@ static int PAM_conv(int num_msg,
 	return PAM_SUCCESS;
 }
 
-static struct pam_conv PAM_conversation = {
-	&PAM_conv,
+static struct pam_conv smb_pam_conversation = {
+	&smb_pam_conv,
 	NULL
 };
 
 /* 
  * PAM Closing out cleanup handler
  */
-static BOOL proc_pam_end(pam_handle_t *pamh)
+static BOOL smb_pam_end(pam_handle_t *pamh)
 {
 	int pam_error;
        
 	if( pamh != NULL ) {
 		pam_error = pam_end(pamh, 0);
-		if(pam_error_handler(pamh, pam_error, "End Cleanup Failed", 2) == True) {
+		if(smb_pam_error_handler(pamh, pam_error, "End Cleanup Failed", 2) == True) {
 			DEBUG(4, ("PAM: PAM_END OK.\n"));
 			return True;
 		}
@@ -148,15 +149,15 @@ static BOOL proc_pam_end(pam_handle_t *pamh)
 /*
  * Start PAM authentication for specified account
  */
-static BOOL proc_pam_start(pam_handle_t **pamh, char *user, char *rhost)
+static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost)
 {
 	int pam_error;
 
 	DEBUG(4,("PAM: Init user: %s\n", user));
 
-	pam_error = pam_start("samba", user, &PAM_conversation, pamh);
-	if( !pam_error_handler(*pamh, pam_error, "Init Failed", 0)) {
-		proc_pam_end(*pamh);
+	pam_error = pam_start("samba", user, &smb_pam_conversation, pamh);
+	if( !smb_pam_error_handler(*pamh, pam_error, "Init Failed", 0)) {
+		smb_pam_end(*pamh);
 		return False;
 	}
 
@@ -169,16 +170,16 @@ static BOOL proc_pam_start(pam_handle_t **pamh, char *user, char *rhost)
 #ifdef PAM_RHOST
 	DEBUG(4,("PAM: setting rhost to: %s\n", rhost));
 	pam_error = pam_set_item(*pamh, PAM_RHOST, rhost);
-	if(!pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {
-		proc_pam_end(*pamh);
+	if(!smb_pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {
+		smb_pam_end(*pamh);
 		return False;
 	}
 #endif
 #ifdef PAM_TTY
 	DEBUG(4,("PAM: setting tty\n"));
 	pam_error = pam_set_item(*pamh, PAM_TTY, "samba");
-	if (!pam_error_handler(*pamh, pam_error, "set tty failed", 0)) {
-		proc_pam_end(*pamh);
+	if (!smb_pam_error_handler(*pamh, pam_error, "set tty failed", 0)) {
+		smb_pam_end(*pamh);
 		return False;
 	}
 #endif
@@ -189,7 +190,7 @@ static BOOL proc_pam_start(pam_handle_t **pamh, char *user, char *rhost)
 /*
  * PAM Authentication Handler
  */
-static BOOL pam_auth(pam_handle_t *pamh, char *user, char *password)
+static BOOL smb_pam_auth(pam_handle_t *pamh, char *user, char *password)
 {
 	int pam_error;
 
@@ -225,8 +226,8 @@ static BOOL pam_auth(pam_handle_t *pamh, char *user, char *password)
 		default:
 			DEBUG(0, ("PAM: UNKNOWN ERROR while authenticating user %s\n", user));
 	}
-	if(!pam_error_handler(pamh, pam_error, "Authentication Failure", 2)) {
-		proc_pam_end(pamh);
+	if(!smb_pam_error_handler(pamh, pam_error, "Authentication Failure", 2)) {
+		smb_pam_end(pamh);
 		return False;
 	}
 	/* If this point is reached, the user has been authenticated. */
@@ -236,7 +237,7 @@ static BOOL pam_auth(pam_handle_t *pamh, char *user, char *password)
 /* 
  * PAM Account Handler
  */
-static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL pam_auth)
+static BOOL smb_pam_account(pam_handle_t *pamh, char * user, char * password, BOOL pam_auth)
 {
 	int pam_error;
 
@@ -264,8 +265,8 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL p
 		default:
 			DEBUG(0, ("PAM: UNKNOWN ERROR for User: %s\n", user));
 	}
-	if(!pam_error_handler(pamh, pam_error, "Account Check Failed", 2)) {
-		proc_pam_end(pamh);
+	if(!smb_pam_error_handler(pamh, pam_error, "Account Check Failed", 2)) {
+		smb_pam_end(pamh);
 		return False;
 	}
 
@@ -303,8 +304,8 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL p
 		default:
 			DEBUG(0, ("PAM: Error Condition Unknown in pam_setcred function call!"));
 	}
-	if(!pam_error_handler(pamh, pam_error, "Set Credential Failure", 2)) {
-		proc_pam_end(pamh);
+	if(!smb_pam_error_handler(pamh, pam_error, "Set Credential Failure", 2)) {
+		smb_pam_end(pamh);
 		return False;
 	}
 	
@@ -316,7 +317,7 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL p
 /*
  * PAM Internal Session Handler
  */
-static BOOL proc_pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL flag)
+static BOOL smb_internal_pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL flag)
 {
 	int pam_error;
 
@@ -326,22 +327,22 @@ static BOOL proc_pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL fla
 #ifdef PAM_TTY
 	DEBUG(4,("PAM: tty set to: %s\n", tty));
 	pam_error = pam_set_item(pamh, PAM_TTY, tty);
-	if (!pam_error_handler(pamh, pam_error, "set tty failed", 0)) {
-		proc_pam_end(pamh);
+	if (!smb_pam_error_handler(pamh, pam_error, "set tty failed", 0)) {
+		smb_pam_end(pamh);
 		return False;
 	}
 #endif
 
 	if (flag) {
 		pam_error = pam_open_session(pamh, PAM_SILENT);
-		if (!pam_error_handler(pamh, pam_error, "session setup failed", 0)) {
-			proc_pam_end(pamh);
+		if (!smb_pam_error_handler(pamh, pam_error, "session setup failed", 0)) {
+			smb_pam_end(pamh);
 			return False;
 		}
 	} else {
 		pam_error = pam_close_session(pamh, PAM_SILENT);
-		if (!pam_error_handler(pamh, pam_error, "session close failed", 0)) {
-			proc_pam_end(pamh);
+		if (!smb_pam_error_handler(pamh, pam_error, "session close failed", 0)) {
+			smb_pam_end(pamh);
 			return False;
 		}
 	}
@@ -351,29 +352,26 @@ static BOOL proc_pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL fla
 /*
  * PAM Externally accessible Session handler
  */
-BOOL pam_session(BOOL flag, const char *in_user, char *tty, char *rhost)
+BOOL smb_pam_session(BOOL flag, const char *in_user, char *tty, char *rhost)
 {
 	pam_handle_t *pamh = NULL;
 	char * user;
 
-	user = malloc(strlen(in_user)+1);
+	user = strdup(in_user);
 	if ( user == NULL ) {
 		DEBUG(0, ("PAM: PAM_session Malloc Failed!\n"));
 		return False;
 	}
 
-	/* This is freed by PAM */
-	StrnCpy(user, in_user, strlen(in_user)+1);
-
-	if (!proc_pam_start(&pamh, user, rhost)) {
-		proc_pam_end(pamh);
+	if (!smb_pam_start(&pamh, user, rhost)) {
+		smb_pam_end(pamh);
 		return False;
 	}
 
-	if (proc_pam_session(pamh, user, tty, flag)) {
-		return proc_pam_end(pamh);
+	if (smb_internal_pam_session(pamh, user, tty, flag)) {
+		return smb_pam_end(pamh);
 	} else {
-		proc_pam_end(pamh);
+		smb_pam_end(pamh);
 		return False;
 	}
 }
@@ -381,16 +379,16 @@ BOOL pam_session(BOOL flag, const char *in_user, char *tty, char *rhost)
 /*
  * PAM Externally accessible Account handler
  */
-BOOL pam_accountcheck(char * user)
+BOOL smb_pam_accountcheck(char * user)
 {
 	pam_handle_t *pamh = NULL;
 
 	PAM_username = user;
 	PAM_password = NULL;
 
-	if( proc_pam_start(&pamh, user, NULL)) {
-		if ( pam_account(pamh, user, NULL, False)) {
-			return( proc_pam_end(pamh));
+	if( smb_pam_start(&pamh, user, NULL)) {
+		if ( smb_pam_account(pamh, user, NULL, False)) {
+			return( smb_pam_end(pamh));
 		}
 	}
 	DEBUG(0, ("PAM: Account Validation Failed - Rejecting User!\n"));
@@ -400,17 +398,17 @@ BOOL pam_accountcheck(char * user)
 /*
  * PAM Password Validation Suite
  */
-BOOL pam_passcheck(char * user, char * password)
+BOOL smb_pam_passcheck(char * user, char * password)
 {
 	pam_handle_t *pamh = NULL;
 
 	PAM_username = user;
 	PAM_password = password;
 
-	if( proc_pam_start(&pamh, user, NULL)) {
-		if ( pam_auth(pamh, user, password)) {
-			if ( pam_account(pamh, user, password, True)) {
-				return( proc_pam_end(pamh));
+	if( smb_pam_start(&pamh, user, NULL)) {
+		if ( smb_pam_auth(pamh, user, password)) {
+			if ( smb_pam_account(pamh, user, password, True)) {
+				return( smb_pam_end(pamh));
 			}
 		}
 	}
@@ -421,7 +419,7 @@ BOOL pam_passcheck(char * user, char * password)
 #else
 
 /* If PAM not used, no PAM restrictions on accounts. */
- BOOL pam_accountcheck(char * user)
+ BOOL smb_pam_accountcheck(char * user)
 {
 	return True;
 }

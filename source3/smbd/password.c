@@ -632,7 +632,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 		 */
 
 		if (ret)
-			return pam_accountcheck(user);
+			return smb_pam_accountcheck(user);
 	} 
 
 	return pass_check(user, password, pwlen, pwd, 
