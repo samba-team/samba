@@ -38,8 +38,8 @@ build_symlink_command   = @build_symlink_command@
 install_symlink_command = @install_symlink_command@
 
 LIBNAME = $(LIBPREFIX)com_err
-#LIBEXT = a Always build archive library!
-LIBEXT = @LIBEXT@
+#LIBEXT = @LIBEXT@ Always build archive library!
+LIBEXT = a
 SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 LDSHARED = @LDSHARED@
