@@ -125,7 +125,7 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
 
 #endif
 
-  DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
+  DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
   /* indicate an "interactive" login */
   ctr->switch_value = INTERACTIVE_LOGON_TYPE;

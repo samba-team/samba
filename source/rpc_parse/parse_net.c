@@ -705,7 +705,8 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
-
+    int nt_chal_resp_len = ((nt_chal_resp != NULL) ? 24 : 0);
+    int lm_chal_resp_len = ((lm_chal_resp != NULL) ? 24 : 0);
 	unsigned char lm_owf[24];
 	unsigned char nt_owf[24];
 
@@ -737,15 +738,15 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	}
 
 	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
-	make_str_hdr(&(id->hdr_nt_chal_resp), 24, 24, nt_chal_resp != NULL ? 1 : 0);
-	make_str_hdr(&(id->hdr_lm_chal_resp), 24, 24, lm_chal_resp != NULL ? 1 : 0);
+	make_str_hdr(&(id->hdr_nt_chal_resp), 24, nt_chal_resp_len, nt_chal_resp != NULL ? 1 : 0);
+	make_str_hdr(&(id->hdr_lm_chal_resp), 24, lm_chal_resp_len, lm_chal_resp != NULL ? 1 : 0);
 
 	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
 	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
 	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
 
-	make_string2(&(id->nt_chal_resp ), (char *)nt_chal_resp , nt_chal_resp != NULL ? 24 : 0);
-	make_string2(&(id->lm_chal_resp ), (char *)lm_chal_resp , lm_chal_resp != NULL ? 24 : 0);
+	make_string2(&(id->nt_chal_resp ), (char *)nt_chal_resp , nt_chal_resp_len);
+	make_string2(&(id->lm_chal_resp ), (char *)lm_chal_resp , lm_chal_resp_len);
 }
 
 /*******************************************************************
