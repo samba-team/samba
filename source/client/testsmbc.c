@@ -55,11 +55,13 @@ void auth_fn(char *server, char *share,
 
 int main(int argc, char *argv[])
 {
-  int err, fd;
+  int err, fd, dh1, dh2, dh3, dsize, dirc;
   const char *file = "smb://samba/public/testfile.txt";
   const char *file2 = "smb://samba/public/testfile2.txt";
   const char *workgroup = "sambanet";
   char buff[256];
+  char dirbuf[512];
+  struct smbc_dirent *dirp;
   struct stat st1, st2;
 
   err = smbc_init(auth_fn, workgroup,  10); /* Initialize things */
@@ -67,6 +69,121 @@ int main(int argc, char *argv[])
   if (err < 0) {
 
     fprintf(stderr, "Initializing the smbclient library ...: %s\n", strerror(errno));
+
+  }
+
+  if (argc > 1) {
+
+    if ((dh1 = smbc_opendir("smb://"))<1) {
+
+      fprintf(stderr, "Could not open directory: smb://: %s\n",
+	      strerror(errno));
+
+      exit(1);
+
+    }
+
+    if ((dh2 = smbc_opendir("smb://sambanet")) < 0) {
+
+      fprintf(stderr, "Could not open directory: smb://sambanet: %s\n",
+	      strerror(errno));
+
+      exit(1);
+
+    }
+
+    if ((dh3 = smbc_opendir("smb://samba")) < 0) {
+
+      fprintf(stderr, "Could not open directory: smb://samba: %s\n",
+	      strerror(errno));
+
+      exit(1);
+
+    }
+
+    fprintf(stdout, "Directory handles: %u, %u, %u\n", dh1, dh2, dh3);
+
+    /* Now, list those directories, but in funny ways ... */
+
+    dirp = (struct smbc_dirent *)dirbuf;
+
+    if ((dirc = smbc_getdents(dh1, dirp, sizeof(dirbuf))) < 0) {
+
+      fprintf(stderr, "Problems getting directory entries: %s\n",
+	      strerror(errno));
+
+      exit(1);
+
+    }
+
+    /* Now, process the list of names ... */
+
+    fprintf(stdout, "Directory listing, size = %u\n", dirc);
+
+    while (dirc > 0) {
+
+      dsize = sizeof(struct smbc_dirent) + dirp->namelen + dirp->commentlen + 1;
+      fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
+	      dirp->smbc_type, dirp->name, dirp->comment);
+
+      (char *)dirp += dsize;
+      (char *)dirc -= dsize;
+
+    }
+
+    dirp = (struct smbc_dirent *)dirbuf;
+
+    if ((dirc = smbc_getdents(dh2, dirp, sizeof(dirbuf))) < 0) {
+
+      fprintf(stderr, "Problems getting directory entries: %s\n",
+	      strerror(errno));
+
+      exit(1);
+
+    }
+
+    /* Now, process the list of names ... */
+
+    fprintf(stdout, "\nDirectory listing, size = %u\n", dirc);
+
+    while (dirc > 0) {
+
+      dsize = sizeof(struct smbc_dirent) + dirp->namelen + dirp->commentlen + 1;
+      fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
+	      dirp->smbc_type, dirp->name, dirp->comment);
+
+      (char *)dirp += dsize;
+      (char *)dirc -= dsize;
+
+    }
+
+    dirp = (struct smbc_dirent *)dirbuf;
+
+    if ((dirc = smbc_getdents(dh3, dirp, sizeof(dirbuf))) < 0) {
+
+      fprintf(stderr, "Problems getting directory entries: %s\n",
+	      strerror(errno));
+
+      exit(1);
+
+    }
+
+    /* Now, process the list of names ... */
+
+    fprintf(stdout, "Directory listing, size = %u\n", dirc);
+
+    while (dirc > 0) {
+
+      dsize = sizeof(struct smbc_dirent) + dirp->namelen + dirp->commentlen + 1;
+      fprintf(stdout, "\nDir Ent, Type: %u, Name: %s, Comment: %s\n",
+	      dirp->smbc_type, dirp->name, dirp->comment);
+
+      (char *)dirp += dsize;
+      (char *)dirc -= dsize;
+
+    }
+
+    exit(1);
 
   }
 

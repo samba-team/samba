@@ -39,6 +39,12 @@ struct smbc_server {
   BOOL no_pathinfo2;
 };
 
+/* Keep directory entries in a list */
+struct smbc_dir_list {
+  struct smbc_dir_list *next;
+  struct smbc_dirent *dirent;
+};
+
 struct smbc_file {
   int cli_fd; 
   int smbc_fd;
@@ -46,21 +52,26 @@ struct smbc_file {
   off_t offset;
   struct smbc_server *srv;
   BOOL file;
+  struct smbc_dir_list *dir_list, *dir_end, *dir_next;
+  int dir_type, dir_error;
 };
 
+extern BOOL in_client;
 static int smbc_initialized = 0;
 static smbc_get_auth_data_fn smbc_auth_fn = NULL;
 static int smbc_debug;
 static int smbc_start_fd;
 static int smbc_max_fd = 10000;
 static struct smbc_file **smbc_file_table;
+static struct smbc_server *smbc_srvs;
+static pstring  my_netbios_name;
 
 /*
  * Clean up a filename by removing redundent stuff 
  */
 
 static void
-clean_fname(char *name)
+smbc_clean_fname(char *name)
 {
   char *p, *p2;
   int l;
@@ -153,8 +164,11 @@ clean_fname(char *name)
 /*
  * Function to parse a path and turn it into components
  *
- * We accept smb://server/share/path...
- * We also accept //server/share/path ...
+ * We accept smb://[[[domain;]user[:password@]]server[/share[/path[/file]]]]
+ * 
+ * smb://       means show all the workgroups
+ * smb://name/  means, if name<1D> exists, list servers in workgroup,
+ *              else, if name<20> exists, list all shares for server ...
  */
 
 static const char *smbc_prefix = "smb:";
@@ -167,6 +181,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path)
   int len;
   fstring workgroup;
 
+  server[0] = share[0] = path[0] = (char)0;
   pstrcpy(s, fname);
 
   /*  clean_fname(s);  causing problems ... */
@@ -186,7 +201,10 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path)
 
   }
 
-  p += 2;  /* Skip the // or \\ */
+  p += 2;  /* Skip the // or \\  */
+
+  if (*p == (char)0)
+    return 0;
 
   /* ok, its for us. Now parse out the server, share etc. */
 
@@ -195,13 +213,15 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path)
     return -1;
 
   }
+
+  if (*p == (char)0) return 0;  /* That's it ... */
   
   if (!next_token(&p, share, "/", sizeof(fstring))) {
 
     return -1;
 
   }
-  
+
   pstrcpy(path, p);
   
   all_string_sub(path, "/", "\\", 0);
@@ -232,9 +252,6 @@ int smbc_errno(struct cli_state *c)
  * Connect to a server, possibly on an existing connection
  */
 
-static struct smbc_server *smbc_srvs;
-static pstring  my_netbios_name;
-
 struct smbc_server *smbc_server(char *server, char *share)
 {
   struct smbc_server *srv=NULL;
@@ -252,7 +269,15 @@ struct smbc_server *smbc_server(char *server, char *share)
   ip = ipzero;
   ZERO_STRUCT(c);
 
-  smbc_auth_fn(server, share, &workgroup, &username, &password);
+  if (strncmp(share, "IPC$", 4))  /* IPC$ should not need a pwd ... */
+    smbc_auth_fn(server, share, &workgroup, &username, &password);
+  else {
+
+    workgroup = lp_workgroup();  /* Is this relevant here? */
+    username = "";
+    password = "";
+
+  }
 
   /* try to use an existing connection */
   for (srv=smbc_srvs;srv;srv=srv->next) {
@@ -394,8 +419,9 @@ struct smbc_server *smbc_server(char *server, char *share)
 int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
 {
   static pstring workgroup;
+  pstring conf;
   int p, pid;
-  char *user = NULL, *host = NULL;
+  char *user = NULL, *host = NULL, *home = NULL;
 
   smbc_initialized = 1;
   smbc_auth_fn = fn;
@@ -421,7 +447,28 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
 
   /* Here we would open the smb.conf file if needed ... */
 
-  /* To do soon ... try $HOME/.smb/smb.conf first ... */
+  home = getenv("HOME");
+
+  slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
+
+    load_interfaces();  /* Load the list of interfaces ... */
+
+  in_client = True; /* FIXME, make a param */
+
+  
+
+  if (!lp_load(conf, True, False, False)) {
+
+    /*
+     * Hmmm, what the hell do we do here ... we could not parse the
+     * config file ... We must return an error ... and keep info around
+     * about why we failed
+     */
+    /*
+    errno = ENOENT; /* Hmmm, what error resp does lp_load return ? */
+    return -1;
+
+  }
 
   /* 
    * Now initialize the file descriptor array and figure out what the
@@ -462,8 +509,6 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
 
   if (!smbc_file_table)
     return ENOMEM;
-
-  smbc_start_fd = 100000;  /* FIXME: Figure it out */
 
   return 0;  /* Success */
 
@@ -519,12 +564,21 @@ int smbc_open(const char *fname, int flags, mode_t mode)
     while (smbc_file_table[slot])
       slot++;
 
-    if (slot > smbc_max_fd) return ENOMEM; /* FIXME, is this best? */
+    if (slot > smbc_max_fd) {
+
+      errno = ENOMEM; /* FIXME, is this best? */
+      return -1;
+
+    }
 
     smbc_file_table[slot] = malloc(sizeof(struct smbc_file));
 
-    if (!smbc_file_table[slot])
-      return ENOMEM;
+    if (!smbc_file_table[slot]) {
+
+      errno = ENOMEM;
+      return -1;
+
+    }
 
     fd = cli_open(&srv->cli, path, flags, DENY_NONE);
 
@@ -547,7 +601,7 @@ int smbc_open(const char *fname, int flags, mode_t mode)
     int eno = 0;
 
     eno = smbc_errno(&srv->cli);
-    fd = smbc_dir_open(fname);
+    fd = smbc_opendir(fname);
     if (fd < 0) errno = eno;
     return fd;
 
@@ -648,7 +702,7 @@ ssize_t smbc_write(int fd, void *buf, size_t count)
 
   return ret;  /* Success, 0 bytes of data ... */
 }
-
+ 
 /*
  * Routine to close() a file ...
  */
@@ -1077,12 +1131,321 @@ int smbc_fstat(int fd, struct stat *st)
 
 /*
  * Routine to open a directory
+ *
+ * We want to allow:
+ *
+ * smb: which should list all the workgroups available
+ * smb:workgroup
+ * smb:workgroup//server
+ * smb://server
+ * smb://server/share
  */
 
-int smbc_dir_open(const char *fname)
+static void smbc_remove_dir(struct smbc_file *dir)
 {
+  for (dir->dir_next = dir->dir_list; 
+       dir->dir_next != NULL; 
+       dir->dir_next = dir->dir_next->next) {
+
+    if (dir->dir_next->dirent) free(dir->dir_next->dirent);
+    free(dir->dir_next);
+
+  }
+
+  dir->dir_list = dir->dir_end = dir->dir_next = NULL;
+
+}
+
+static int add_dirent(struct smbc_file *dir, const char *name, const char *comment, uint32 type)
+{
+  struct smbc_dirent *dirent;
+
+  /*
+   * Allocate space for the dirent, which must be increased by the 
+   * size of the name and the comment and 1 for the null on the comment.
+   * The null on the name is already accounted for.
+   */
+
+  dirent = malloc(sizeof(struct smbc_dirent) + (name?strlen(name):0) +
+		  (comment?strlen(comment):0) + 1); 
+    
+  if (!dirent) {
+
+    dir->dir_error = ENOMEM;
+    return -1;
+
+  }
+
+  if (dir->dir_list == NULL) {
+
+    dir->dir_list = malloc(sizeof(struct smbc_dir_list));
+    if (!dir->dir_list) {
+
+      free(dirent);
+      dir->dir_error = ENOMEM;
+      return -1;
+
+    }
+
+    dir->dir_end = dir->dir_next = dir->dir_list;
+
+  }
+  else {
+
+    dir->dir_end->next = malloc(sizeof(struct smbc_dir_list));
+
+    if (!dir->dir_end) {
+
+      free(dirent);
+      dir->dir_error = ENOMEM;
+      return -1;
+
+    }
+
+    dir->dir_end = dir->dir_end->next;
+    dir->dir_end->next = NULL;
+
+  }
+
+  dir->dir_end->dirent = dirent;
+
+  dirent->smbc_type = dir->dir_type;
+  dirent->namelen = (name?strlen(name):0);
+  dirent->commentlen = (comment?strlen(comment):0);
+
+  strncpy(dirent->name, (name?name:""), dirent->namelen + 1);
+
+  dirent->comment = (char *)(&dirent->name + dirent->namelen + 1);
+  strncpy(dirent->comment, (comment?comment:""), dirent->commentlen + 1);
 
   return 0;
+
+}
+
+static void
+list_fn(const char *name, uint32 type, const char *comment, void *state)
+{
+
+  if (add_dirent((struct smbc_file *)state, name, comment, type) < 0) {
+
+    /* An error occurred, what do we do? */
+
+  }
+
+}
+
+int smbc_opendir(const char *fname)
+{
+  struct in_addr addr;
+  fstring server, share;
+  pstring path;
+  struct smbc_server *srv = NULL;
+  struct in_addr rem_ip;
+  int slot = 0;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  if (!fname) {
+    
+    errno = EINVAL;
+    return -1;
+
+  }
+
+  if (smbc_parse_path(fname, server, share, path)) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+
+  /* Get a file entry ... */
+
+  slot = 0;
+
+  while (smbc_file_table[slot])
+    slot++;
+
+  if (slot > smbc_max_fd) {
+
+    errno = ENOMEM;
+    return -1; /* FIXME, ... move into a func */
+      
+  }
+
+  smbc_file_table[slot] = malloc(sizeof(struct smbc_file));
+
+  if (!smbc_file_table[slot]) {
+
+    errno = ENOMEM;
+    return -1;
+
+  }
+
+  smbc_file_table[slot]->cli_fd   = 0;
+  smbc_file_table[slot]->smbc_fd  = slot + smbc_start_fd;
+  smbc_file_table[slot]->fname    = strdup(fname);
+  smbc_file_table[slot]->srv      = NULL;
+  smbc_file_table[slot]->offset   = 0;
+  smbc_file_table[slot]->file     = False;
+  smbc_file_table[slot]->dir_list = NULL;
+
+  if (server[0] == (char)0) {
+
+    if (share[0] != (char)0 || path[0] != (char)0) {
+    
+      errno = EINVAL;
+      if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+      smbc_file_table[slot] = NULL;
+      return -1;
+
+    }
+
+    /* We have server and share and path empty ... so list the workgroups */
+
+    /*    fprintf(stderr, "Workgroup is: %s\n", lp_workgroup()); */
+    cli_get_backup_server(my_netbios_name, lp_workgroup(), server, sizeof(server));
+
+    smbc_file_table[slot]->dir_type = SMBC_WORKGROUP;
+
+  /*
+   * Get a connection to IPC$ on the server if we do not already have one
+   */
+
+    srv = smbc_server(server, "IPC$");
+
+    if (!srv) {
+
+      if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+      smbc_file_table[slot] = NULL;
+      return -1;
+
+    }
+
+    smbc_file_table[slot]->srv = srv;
+
+    /* Now, list the stuff ... */
+
+    if (!cli_NetServerEnum(&srv->cli, lp_workgroup(), 0x80000000, list_fn,
+			   (void *)smbc_file_table[slot])) {
+
+      if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+      smbc_file_table[slot] = NULL;
+      return -1;
+
+    }
+  }
+  else { /* Server not an empty string ... Check the rest and see what gives */
+
+    if (share[0] == (char)0) {
+
+      if (path[0] != (char)0) { /* Should not have empty share with path */
+
+	errno = EINVAL;
+	if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	smbc_file_table[slot] = NULL;
+	return -1;
+	
+      }
+
+      /* Check to see if <server><1D> translates, or <server><20> translates */
+
+      if (resolve_name(server, &rem_ip, 0x1d)) { /* Found LMB */
+
+	smbc_file_table[slot]->dir_type = SMBC_SERVER;
+
+	/*
+	 * Get the backup list ...
+	 */
+
+	cli_get_backup_server(my_netbios_name, server, server, sizeof(server));
+
+	/*
+	 * Get a connection to IPC$ on the server if we do not already have one
+	 */
+
+	srv = smbc_server(server, "IPC$");
+
+	if (!srv) {
+
+	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	  smbc_file_table[slot] = NULL;  /* FIXME: Memory leaks ... */
+	  return -1;
+
+	}
+
+	smbc_file_table[slot]->srv = srv;
+
+	/* Now, list the servers ... */
+
+	if (!cli_NetServerEnum(&srv->cli, lp_workgroup(), 0x0000FFFE, list_fn,
+			       (void *)smbc_file_table[slot])) {
+
+	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	  smbc_file_table[slot] = NULL;
+	  return -1;
+
+	}
+
+      }
+      else {
+
+	if (resolve_name(server, &rem_ip, 0x20)) {
+
+	  /* Now, list the shares ... */
+
+	  smbc_file_table[slot]->dir_type = SMBC_FILE_SHARE;
+
+	  srv = smbc_server(server, "IPC$");
+
+	  if (!srv) {
+
+	    if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	    smbc_file_table[slot] = NULL;
+	    return -1;
+
+	  }
+
+	  smbc_file_table[slot]->srv = srv;
+
+	  /* Now, list the servers ... */
+
+	  if (!cli_RNetShareEnum(&srv->cli, list_fn, 
+				 (void *)smbc_file_table[slot])) {
+
+	    if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	    smbc_file_table[slot] = NULL;
+	    return -1;
+
+	  }
+
+	}
+	else {
+
+	  errno = EINVAL;
+	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	  smbc_file_table[slot] = NULL;
+	  return -1;
+
+	}
+
+      }
+
+    }
+    else { /* The server and share are specified ... work from there ... */
+
+
+
+    }
+
+  }
+
+  return smbc_file_table[slot]->smbc_fd;
 
 }
 
@@ -1101,10 +1464,81 @@ int smbc_closedir(int fd)
  * Routine to get a directory entry
  */
 
-int smbc_getdents(unsigned int fd, struct dirent *dirp, int count)
+int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 {
+  struct smbc_file *fe;
+  struct smbc_dir_list *dir;
+  int rem = count, reqd;
 
-  return 0;
+  /* Check that all is ok first ... */
+
+  if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
+
+    errno = EBADF;
+    return -1;
+
+  }
+
+  fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (fe->file != False) { /* FIXME, should be dir, perhaps */
+
+    errno = ENOTDIR;
+    return -1;
+
+  }
+
+  /* 
+   * Now, retrieve the number of entries that will fit in what was passed
+   * We have to figure out if the info is in the list, or we need to 
+   * send a request to the server to get the info.
+   */
+
+  while ((dir = fe->dir_next)) {
+    struct smbc_dirent *dirent;
+
+    if (!dir->dirent) {
+
+      errno = ENOENT;  /* Bad error */
+      return -1;
+
+    }
+
+    if (rem < (reqd = (sizeof(struct smbc_dirent) + dir->dirent->namelen + 
+			 dir->dirent->commentlen + 1))) {
+
+      if (rem < count) { /* We managed to copy something */
+
+	errno = 0;
+	return count - rem;
+
+      }
+      else { /* Nothing copied ... */
+
+	errno = EINVAL;  /* Not enough space ... */
+	return -1;
+
+      }
+
+    }
+
+    dirent = dir->dirent;
+
+    bcopy(dirent, dirp, reqd); /* Copy the data in ... */
+    
+    dirp->comment = (char *)(&dirp->name + dirent->namelen + 1);
+
+    (char *)dirp += reqd;
+
+    rem -= reqd;
+
+    fe->dir_next = dir = dir -> next;
+  }
+
+  if (rem == count)
+    return 0;
+  else 
+    return count - rem;
 
 }
 
