@@ -76,7 +76,8 @@ krb4_authenticate (kx_context *kc, int s)
 	struct in_addr natAddr;
 
 	if (krb_get_our_ip_for_realm(krb_realmofhost(kc->host),
-				     &natAddr) == KSUCCESS)
+				     &natAddr) == KSUCCESS
+	    || krb_get_our_ip_for_realm (NULL, &natAddr) == KSUCCESS)
 	    kc->thisaddr.sin_addr = natAddr;
     }
 #endif
