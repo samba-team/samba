@@ -50,6 +50,7 @@ init_des_key(hdb_entry *ent)
     memset(k, 0, sizeof(*k));
     krb5_generate_random_keyblock(context, KEYTYPE_DES, &k->key);
     seal_key(k);
+    ent->kvno++;
 }
 
 void
@@ -243,13 +244,14 @@ edit_entry(hdb_entry *ent)
     get_flags ("Flags", &ent->flags);
 }
 
-void
+int
 set_password(hdb_entry *ent)
 {
     char buf[128];
     int i;
 
-    des_read_pw_string(buf, sizeof(buf), "Password:", 1);
+    if(des_read_pw_string(buf, sizeof(buf), "Password:", 1))
+	return -1;
     for (i = 0; i < ent->keys.len; ++i)
 	free_Key (&ent->keys.val[i]);
     free (ent->keys.val);
@@ -262,4 +264,5 @@ set_password(hdb_entry *ent)
 	ent->keys.val = calloc(1, sizeof(*ent->keys.val));
 	set_keys(ent, buf);
     }
+    return 0;
 }
