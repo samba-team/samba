@@ -1,5 +1,7 @@
 2002-01-07  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/crypto.c (create_checksum): make usage `unsigned' (it's
+	not really a krb5_key_usage).  From Ben Harris <bjh21@netbsd.org>
 	* lib/krb5/get_in_tkt.c: use krb5_enctype consistently.  From Ben
 	Harris <bjh21@netbsd.org>
 	* lib/krb5/crypto.c: use krb5_enctype consistently.  From Ben
