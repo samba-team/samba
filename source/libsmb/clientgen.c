@@ -766,7 +766,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 	uint8 eclass;
 	uint32 ecode;
 	char *p;
-	BOOL esec = cli->capabilities & CAP_EXTENDED_SECURITY;
+	BOOL esec = IS_BITS_SET_ALL(cli->capabilities, CAP_EXTENDED_SECURITY);
 
 	DEBUG(100,("cli_session_setup.  extended security: %s\n",
 	            BOOLSTR(esec)));
