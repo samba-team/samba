@@ -25,30 +25,30 @@
   separator list. The sepatator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings
 */
-char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	int num_elements = 0;
-	char **ret = NULL;
+	const char **ret = NULL;
 
 	if (sep == NULL) {
 		sep = LIST_SEP;
 	}
 
-	ret = talloc_realloc(mem_ctx, NULL, char *, 1);
+	ret = talloc_realloc(mem_ctx, NULL, const char *, 1);
 	if (ret == NULL) {
 		return NULL;
 	}
 
 	while (string && *string) {
 		size_t len = strcspn(string, sep);
-		char **ret2;
+		const char **ret2;
 		
 		if (len == 0) {
 			string += strspn(string, sep);
 			continue;
 		}
 
-		ret2 = talloc_realloc(mem_ctx, ret, char *, num_elements+2);
+		ret2 = talloc_realloc(mem_ctx, ret, const char *, num_elements+2);
 		if (ret2 == NULL) {
 			talloc_free(ret);
 			return NULL;
@@ -84,10 +84,10 @@ size_t str_list_length(const char **list)
 /*
   copy a string list
 */
-char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
+const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 {
 	int i;
-	char **ret = talloc_array(mem_ctx, char *, str_list_length(list)+1);
+	const char **ret = talloc_array(mem_ctx, const char *, str_list_length(list)+1);
 	if (ret == NULL) return NULL;
 
 	for (i=0;list && list[i];i++) {
