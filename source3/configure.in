@@ -2491,8 +2491,9 @@ AC_ARG_WITH(included-popt,
                 ;;
   esac ],
 )
-if test x"$INCLUDED_POPT" = x"no"; then
-    AC_CHECK_LIB(popt, poptGetContext, ,INCLUDED_POPT=yes)
+if test x"$INCLUDED_POPT" != x"yes"; then
+    AC_CHECK_LIB(popt, poptGetContext,
+	         INCLUDED_POPT=no, INCLUDED_POPT=yes)
 fi
 
 if test x"$INCLUDED_POPT" = x"yes"; then
