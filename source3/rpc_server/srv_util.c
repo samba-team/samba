@@ -150,6 +150,83 @@ int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
   return count;
 }
 
+/*******************************************************************
+ gets a domain user's groups
+ ********************************************************************/
+BOOL new_get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SAM_ACCOUNT *sam_pass)
+{
+	GROUP_MAP *map=NULL;
+	int i, num, num_entries, cur_gid=0;
+	struct group *grp;
+	DOM_GID *gids;
+	fstring user_name;
+	uint32 grid;
+	uint32 tmp_rid;
+
+	fstrcpy(user_name, pdb_get_username(sam_pass));
+	grid=pdb_get_group_rid(sam_pass);
+
+	DEBUG(10,("new_get_domain_user_groups: searching domain groups [%s] is a member of\n", user_name));
+
+	/* first get the list of the domain groups */
+	if (!enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
+		return False;
+	DEBUG(10,("new_get_domain_user_groups: there are %d mapped groups\n", num_entries));
+
+
+	/* 
+	 * alloc memory. In the worse case, we alloc memory for nothing.
+	 * but I prefer to alloc for nothing
+	 * than reallocing everytime.
+	 */
+	gids = (DOM_GID *)talloc(ctx, sizeof(DOM_GID) *  num_entries);	
+
+	/* for each group, check if the user is a member of*/
+	for(i=0; i<num_entries; i++) {
+		if ((grp=getgrgid(map[i].gid)) == NULL) {
+			/* very weird !!! */
+			DEBUG(5,("new_get_domain_user_groups: gid %d doesn't exist anymore !\n", (int)map[i].gid));
+			continue;
+		}
+
+		for(num=0; grp->gr_mem[num]!=NULL; num++) {
+			if(strcmp(grp->gr_mem[num], user_name)==0) {
+				/* we found the user, add the group to the list */
+				sid_peek_rid(&map[i].sid, &(gids[cur_gid].g_rid));
+				gids[cur_gid].attr=map[i].sid_name_use;
+				DEBUG(10,("new_get_domain_user_groups: user found in group %s\n", map[i].nt_name));
+				cur_gid++;
+				break;
+			}
+		}
+	}
+
+	/* we have checked the groups */
+	/* we must now check the gid of the user or the primary group rid, that's the same */
+	for (i=0; i<cur_gid && grid!=gids[i].g_rid; i++)
+		;
+	
+	/* the user's gid is already there */
+	if (i!=cur_gid) {
+		goto done;
+	}
+
+	for(i=0; i<num_entries; i++) {
+		sid_peek_rid(&map[i].sid, &tmp_rid);
+		if (tmp_rid==grid) {
+			gids[cur_gid].g_rid=tmp_rid;
+			gids[cur_gid].attr=map[i].sid_name_use;
+			DEBUG(10,("new_get_domain_user_groups: primary gid of user found in group %s\n", map[i].nt_name));
+			cur_gid++;
+			goto done; /* leave the loop early */
+		}
+	}
+
+ done:
+ 	*pgids=gids;
+	*numgroups=cur_gid;
+	safe_free(map);
+}
 
 /*******************************************************************
  gets a domain user's groups

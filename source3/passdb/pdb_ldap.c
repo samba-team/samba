@@ -585,8 +585,7 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, const SAM_ACCO
 	if ( !sampass->group_rid) {
 		GROUP_MAP map;
 	
-		if (get_group_map_from_gid(pdb_get_gid(sampass), &map)) {
-			free_privilege(&map.priv_set);
+		if (get_group_map_from_gid(pdb_get_gid(sampass), &map, MAPPING_WITHOUT_PRIV)) {
 			sid_peek_rid(&map.sid, &sampass->group_rid);
 		}
 		else 

@@ -501,8 +501,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
 		rid=pdb_get_group_rid(sampass);
 
 		if (rid==0) {
-			if (get_group_map_from_gid(pdb_get_gid(sampass), &map)) {
-				free_privilege(&map.priv_set);
+			if (get_group_map_from_gid(pdb_get_gid(sampass), &map, MAPPING_WITHOUT_PRIV)) {
 				sid_peek_rid(&map.sid, &rid);
 			} else 
 				rid=pdb_gid_to_group_rid(pdb_get_gid(sampass));

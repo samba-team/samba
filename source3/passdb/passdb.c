@@ -143,8 +143,7 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 	pdb_set_user_rid(*new_sam_acct, pdb_uid_to_user_rid(pwd->pw_uid));
 
 	/* call the mapping code here */
-	if(get_group_map_from_gid(pwd->pw_gid, &map)) {
-		free_privilege(&map.priv_set);
+	if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
 		sid_peek_rid(&map.sid, &rid);
 	} else
 		rid=pdb_gid_to_group_rid(pwd->pw_gid);
@@ -405,8 +404,7 @@ BOOL pdb_name_to_rid(const char *user_name, uint32 *u_rid, uint32 *g_rid)
 
 	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
 	/* map it ! */
-	if (get_group_map_from_gid(pw->pw_gid, &map)) {
-		free_privilege(&map.priv_set);
+	if (get_group_map_from_gid(pw->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
 		sid_peek_rid(&map.sid, g_rid);
 	} else 
 		*g_rid = pdb_gid_to_group_rid(pw->pw_gid);
@@ -491,13 +489,16 @@ BOOL pdb_rid_is_user(uint32 rid)
  Convert a rid into a name. Used in the lookup SID rpc.
  ********************************************************************/
 
-BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
+BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use)
 {
-	BOOL is_user = pdb_rid_is_user(rid);
+	uint32 rid;
+	BOOL is_user;
 
+	sid_peek_rid(sid, &rid);
+	is_user = pdb_rid_is_user(rid);
 	*psid_name_use = SID_NAME_UNKNOWN;
 
-	DEBUG(5,("local_lookup_rid: looking up %s RID %u.\n", is_user ? "user" :
+	DEBUG(5,("local_lookup_sid: looking up %s RID %u.\n", is_user ? "user" :
 			"group", (unsigned int)rid));
 
 	if(is_user) {
@@ -529,7 +530,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 			*psid_name_use = SID_NAME_USER;
 
-			DEBUG(5,("local_lookup_rid: looking up uid %u %s\n", (unsigned int)uid,
+			DEBUG(5,("local_lookup_sid: looking up uid %u %s\n", (unsigned int)uid,
 				pass ? "succeeded" : "failed" ));
 
 			if(!pass) {
@@ -539,7 +540,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 			fstrcpy(name, pass->pw_name);
 
-			DEBUG(5,("local_lookup_rid: found user %s for rid %u\n", name,
+			DEBUG(5,("local_lookup_sid: found user %s for rid %u\n", name,
 				(unsigned int)rid ));
 		}
 
@@ -547,11 +548,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		gid_t gid;
 		struct group *gr; 
 		GROUP_MAP map;
-		DOM_SID local_sid;
 		
-		sid_copy(&local_sid, &global_sam_sid);
-		sid_append_rid(&local_sid, rid);
-
 		/* 
 		 * Don't try to convert the rid to a name if running
 		 * in appliance mode
@@ -561,10 +558,9 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 			return False;
 
 		/* check if it's a mapped group */
-		if (get_group_map_from_sid(local_sid, &map)) {
-			free_privilege(&map.priv_set);
+		if (get_group_map_from_sid(*sid, &map, MAPPING_WITHOUT_PRIV)) {
 			if (map.gid!=-1) {
-				DEBUG(5,("local_local_rid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
+				DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
 				fstrcpy(name, map.nt_name);
 				*psid_name_use = map.sid_name_use;
 				return True;
@@ -576,17 +572,17 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 		*psid_name_use = SID_NAME_ALIAS;
 
-		DEBUG(5,("local_local_rid: looking up gid %u %s\n", (unsigned int)gid,
+		DEBUG(5,("local_lookup_sid: looking up gid %u %s\n", (unsigned int)gid,
 			gr ? "succeeded" : "failed" ));
 
 		if(!gr) {
 			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
-			return True;
+			return False;
 		}
 
 		fstrcpy( name, gr->gr_name);
 
-		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name,
+		DEBUG(5,("local_lookup_sid: found group %s for rid %u\n", name,
 			(unsigned int)rid ));
 	}
 
@@ -647,8 +643,7 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 		GROUP_MAP map;
 		
 		/* check if it's a mapped group */
-		if (get_group_map_from_ntname(user, &map)) {
-			free_privilege(&map.priv_set);
+		if (get_group_map_from_ntname(user, &map, MAPPING_WITHOUT_PRIV)) {
 			if (map.gid!=-1) {
 				/* yes it's a mapped group to a valid unix group */
 				sid_copy(&local_sid, &map.sid);
@@ -675,8 +670,7 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 			 * JFM, 30/11/2001
 			 */
 			
-			if(get_group_map_from_gid(grp->gr_gid, &map)){
-				free_privilege(&map.priv_set);
+			if(get_group_map_from_gid(grp->gr_gid, &map, MAPPING_WITHOUT_PRIV)){
 				return False;
 			}
 
@@ -759,8 +753,7 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 
 	sid_copy(psid, &global_sam_sid);
 	
-	if (get_group_map_from_gid(gid, &map)) {
-		free_privilege(&map.priv_set);
+	if (get_group_map_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
 		sid_copy(psid, &map.sid);
 	}
 	else {
@@ -801,8 +794,7 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	if (pdb_rid_is_user(rid))
 		return False;
 
-	if (get_group_map_from_sid(*psid, &map)) {
-		free_privilege(&map.priv_set);
+	if (get_group_map_from_sid(*psid, &map, MAPPING_WITHOUT_PRIV)) {
 
 		/* the SID is in the mapping table but not mapped */
 		if (map.gid==-1)

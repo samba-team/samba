@@ -582,6 +582,53 @@ BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 
 
 /*****************************************************************
+ Check if the SID is our domain SID (S-1-5-21-x-y-z).
+*****************************************************************/  
+BOOL sid_check_is_domain(const DOM_SID *sid)
+{
+	return sid_equal(sid, &global_sam_sid);
+}
+
+
+/*****************************************************************
+ Check if the SID is the builtin SID (S-1-5-32).
+*****************************************************************/  
+BOOL sid_check_is_builtin(const DOM_SID *sid)
+{
+	return sid_equal(sid, &global_sid_Builtin);
+}
+
+
+/*****************************************************************
+ Check if the SID is our domain SID (S-1-5-21-x-y-z).
+*****************************************************************/  
+BOOL sid_check_is_in_our_domain(const DOM_SID *sid)
+{
+	DOM_SID dom_sid;
+	uint32 rid;
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+	
+	return sid_equal(&dom_sid, &global_sam_sid);
+}
+
+/*****************************************************************
+ Check if the SID is our domain SID (S-1-5-21-x-y-z).
+*****************************************************************/  
+BOOL sid_check_is_in_builtin(const DOM_SID *sid)
+{
+	DOM_SID dom_sid;
+	uint32 rid;
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+	
+	return sid_equal(&dom_sid, &global_sid_Builtin);
+}
+
+
+/*****************************************************************
  Calculates size of a sid.
 *****************************************************************/  
 
@@ -608,7 +655,7 @@ BOOL non_mappable_sid(DOM_SID *sid)
 	if (sid_equal(&dom, &global_sid_Builtin))
 		return True;
 
-    if (sid_equal(&dom, &global_sid_Creator_Owner_Domain))
+	if (sid_equal(&dom, &global_sid_Creator_Owner_Domain))
 		return True;
  
 	if (sid_equal(&dom, &global_sid_NT_Authority))

@@ -252,7 +252,7 @@ free a privilege list
 BOOL free_privilege(PRIVILEGE_SET *priv_set)
 {
 	if (priv_set->count==0) {
-		DEBUG(10,("free_privilege: count=0, nothing to clear ?\n"));
+		DEBUG(100,("free_privilege: count=0, nothing to clear ?\n"));
 		return False;
 	}
 
@@ -485,7 +485,7 @@ BOOL default_group_mapping(void)
 /****************************************************************************
 return the sid and the type of the unix group
 ****************************************************************************/
-BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
+BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf;
 	pstring key;
@@ -533,6 +533,10 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 		return False;
 	}
 
+	/* we don't want the privileges */
+	if (with_priv==MAPPING_WITHOUT_PRIV)
+		free_privilege(set);
+
 	sid_copy(&map->sid, &sid);
 	
 	return True;
@@ -542,7 +546,7 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 /****************************************************************************
 return the sid and the type of the unix group
 ****************************************************************************/
-BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
+BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -575,7 +579,7 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 	
 		set->set=(LUID_ATTR *)malloc(set->count*sizeof(LUID_ATTR));
 		if (set->set==NULL) {
-			DEBUG(0,("get_group_map_from_sid: could not allocate memory for privileges\n"));
+			DEBUG(0,("get_group_map_from_gid: could not allocate memory for privileges\n"));
 			return False;
 		}
 
@@ -589,9 +593,12 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 			continue;
 		}
 
-		if (gid==map->gid)
+		if (gid==map->gid) {
+			if (!with_priv)
+				free_privilege(&map->priv_set);
 			return True;
-
+		}
+		
 		free_privilege(set);
 	}
 
@@ -601,7 +608,7 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 /****************************************************************************
 return the sid and the type of the unix group
 ****************************************************************************/
-BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
+BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -634,7 +641,7 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
 	
 		set->set=(LUID_ATTR *)malloc(set->count*sizeof(LUID_ATTR));
 		if (set->set==NULL) {
-			DEBUG(0,("get_group_map_from_sid: could not allocate memory for privileges\n"));
+			DEBUG(0,("get_group_map_from_ntname: could not allocate memory for privileges\n"));
 			return False;
 		}
 
@@ -648,8 +655,11 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
 			continue;
 		}
 
-		if (StrCaseCmp(name, map->nt_name)==0)
+		if (StrCaseCmp(name, map->nt_name)==0) {
+			if (!with_priv)
+				free_privilege(&map->priv_set);
 			return True;
+		}
 
 		free_privilege(set);
 	}
@@ -692,7 +702,7 @@ BOOL group_map_remove(DOM_SID sid)
 enumerate the group mapping
 ****************************************************************************/
 BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
-			int *num_entries, BOOL unix_only)
+			int *num_entries, BOOL unix_only, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -744,17 +754,20 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 		SAFE_FREE(dbuf.dptr);
 		if (ret != dbuf.dsize) {
+			DEBUG(11,("enum_group_mapping: error in memory size\n"));
 			free_privilege(set);
 			continue;
 		}
 
 		/* list only the type or everything if UNKNOWN */
 		if (sid_name_use!=SID_NAME_UNKNOWN  && sid_name_use!=map.sid_name_use) {
+			DEBUG(11,("enum_group_mapping: group %s is not of the requested type\n", map.nt_name));
 			free_privilege(set);
 			continue;
 		}
 		
 		if (unix_only==ENUM_ONLY_MAPPED && map.gid==-1) {
+			DEBUG(11,("enum_group_mapping: group %s is non mapped\n", map.nt_name));
 			free_privilege(set);
 			continue;
 		}
@@ -762,6 +775,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		string_to_sid(&map.sid, string_sid);
 		
 		decode_sid_name_use(group_type, map.sid_name_use);
+		DEBUG(11,("enum_group_mapping: returning group %s of type %s\n", map.nt_name ,group_type));
 
 		mapt=(GROUP_MAP *)Realloc((*rmap), (entries+1)*sizeof(GROUP_MAP));
 		if (!mapt) {
@@ -782,6 +796,8 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		mapt[entries].priv_set.count=set->count;
 		mapt[entries].priv_set.control=set->control;
 		mapt[entries].priv_set.set=set->set;
+		if (!with_priv)
+			free_privilege(&(mapt[entries].priv_set));
 
 		entries++;
 	}
@@ -860,31 +876,39 @@ void convert_priv_to_text(PRIVILEGE_SET *se_priv, char *privilege)
 
 /* get a domain group from it's SID */
 
-BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
 
 	DEBUG(10, ("get_domain_group_from_sid\n"));
 
 	/* if the group is NOT in the database, it CAN NOT be a domain group */
-	if(!get_group_map_from_sid(sid, map))
+	if(!get_group_map_from_sid(sid, map, with_priv))
 		return False;
 
 	DEBUG(10, ("get_domain_group_from_sid: SID found in the TDB\n"));
 
 	/* if it's not a domain group, continue */
-	if (map->sid_name_use!=SID_NAME_DOM_GRP)
+	if (map->sid_name_use!=SID_NAME_DOM_GRP) {
+		if (with_priv)
+			free_privilege(&map->priv_set);
 		return False;
+	}
 
 	DEBUG(10, ("get_domain_group_from_sid: SID is a domain group\n"));
  	
-	if (map->gid==-1)
+	if (map->gid==-1) {
+		if (with_priv)
+			free_privilege(&map->priv_set);
 		return False;
+	}
 
 	DEBUG(10, ("get_domain_group_from_sid: SID is mapped to gid:%d\n",map->gid));
 
 	if ( (grp=getgrgid(map->gid)) == NULL) {
 		DEBUG(10, ("get_domain_group_from_sid: gid DOESN'T exist in UNIX security\n"));
+		if (with_priv)
+			free_privilege(&map->priv_set);
 		return False;
 	}
 
@@ -896,20 +920,29 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 /* get a local (alias) group from it's SID */
 
-BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
 
 	/* The group is in the mapping table */
-	if(get_group_map_from_sid(sid, map)) {
-		if (map->sid_name_use!=SID_NAME_ALIAS)
+	if(get_group_map_from_sid(sid, map, with_priv)) {
+		if (map->sid_name_use!=SID_NAME_ALIAS) {
+			if (with_priv)
+				free_privilege(&map->priv_set);
 			return False;
- 	
-		if (map->gid==-1)
+ 		}
+		
+		if (map->gid==-1) {
+			if (with_priv)
+				free_privilege(&map->priv_set);
 			return False;
+		}
 
-		if ( (grp=getgrgid(map->gid)) == NULL)
+		if ( (grp=getgrgid(map->gid)) == NULL) {
+			if (with_priv)
+				free_privilege(&map->priv_set);
 			return False;
+		}
 	} else {
 		/* the group isn't in the mapping table.
 		 * make one based on the unix information */
@@ -937,21 +970,30 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 /* get a builtin group from it's SID */
 
-BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
 
-	if(!get_group_map_from_sid(sid, map))
+	if(!get_group_map_from_sid(sid, map, with_priv))
 		return False;
 
-	if (map->sid_name_use!=SID_NAME_WKN_GRP)
+	if (map->sid_name_use!=SID_NAME_WKN_GRP) {
+		if (with_priv)
+			free_privilege(&map->priv_set);
 		return False;
+	}
 
-	if (map->gid==-1)
+	if (map->gid==-1) {
+		if (with_priv)
+			free_privilege(&map->priv_set);
 		return False;
+	}
 
-	if ( (grp=getgrgid(map->gid)) == NULL)
+	if ( (grp=getgrgid(map->gid)) == NULL) {
+		if (with_priv)
+			free_privilege(&map->priv_set);
 		return False;
+	}
 
 	return True;
 }
@@ -961,7 +1003,7 @@ BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 /****************************************************************************
 Returns a GROUP_MAP struct based on the gid.
 ****************************************************************************/
-BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
+BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
 
@@ -971,7 +1013,7 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 	/*
 	 * make a group map from scratch if doesn't exist.
 	 */
-	if (!get_group_map_from_gid(gid, map)) {
+	if (!get_group_map_from_gid(gid, map, with_priv)) {
 		map->gid=gid;
 		map->sid_name_use=SID_NAME_ALIAS;
 		map->systemaccount=PR_ACCESS_FROM_NETWORK;

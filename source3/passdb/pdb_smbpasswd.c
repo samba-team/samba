@@ -1225,8 +1225,7 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 		uint32 rid;
 		GROUP_MAP map;
 	
-		if (get_group_map_from_gid(pwfile->pw_gid, &map)) {
-			free_privilege(&map.priv_set);
+		if (get_group_map_from_gid(pwfile->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
 			sid_peek_rid(&map.sid, &rid);
 		}
 		else 

@@ -524,7 +524,7 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 		if (sid_equal(&global_sam_sid, &tmp_sid)) {
 
 			return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-				local_lookup_rid(rid, name, name_type);
+				local_lookup_sid(sid, name, name_type);
 		}
 	}
 
