@@ -51,12 +51,23 @@ Updates to smbtar
 -----------------
 
 The following changes were developed by Richard Sharpe for Canon Information
-Systems Research Australia (CISRA).
+Systems Research Australia (CISRA). The Samba Team would like to thank
+Canon Information Systems Research Australia for their funding this
+effort, as such sponsorship advances the Samba project significantly.
 
   1. Restore can now restore files with long file names
   2. Save now saves directory information so that we can restore
      directory creation times
   3. tar now accepts both UNIX path names and DOS path names.
+
+New document in docs/ directory
+-------------------------------
+
+A new document, PROFILES.txt has been added to the docs/ directory.
+This is still a work in progress (currently consisting of a series 
+of email exchanges) and will be updated over the coming releases.
+The document covers the task of getting roving profiles to work with
+a Samba server with Windows 95 and Windows NT clients.
 
 Bugfixes added since 1.9.18p3
 -----------------------------
