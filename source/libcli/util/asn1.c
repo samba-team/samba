@@ -534,7 +534,7 @@ BOOL asn1_check_OID(struct asn1_data *data, const char *OID)
 		data->has_error = True;
 		return False;
 	}
-	talloc_free(id);
+	talloc_free(discard_const(id));
 	return True;
 }
 

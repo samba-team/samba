@@ -44,7 +44,8 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 
 	if (!(user_info->internal_username.str 
 	      && *user_info->internal_username.str)) {
-		nt_status = make_server_info_guest(auth_context, server_info);
+		nt_status = make_server_info_guest(discard_const(auth_context), 
+						   server_info);
 	}
 
 	return nt_status;
