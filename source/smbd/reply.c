@@ -1861,7 +1861,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 /****************************************************************************
   reply to a lockread (core+ protocol)
 ****************************************************************************/
-int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsiz)
+int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length, int dum_buffsiz)
 {
   int nread = -1;
   char *data;
@@ -1882,8 +1882,18 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
   
-  if(!do_lock( fsp, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode))
+  if(!do_lock( fsp, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode)) {
+    if(ecode == ERRlock) {
+      /*
+       * A blocking lock was requested. Package up
+       * this smb into a queued request and push it
+       * onto the blocking lock queue.
+       */
+      if(push_blocking_lock_request(inbuf, length, -1, 0))
+        return -1;
+    }
     return (ERROR(eclass,ecode));
+  }
 
   nread = read_file(fsp,data,startpos,numtoread);
 
@@ -2449,7 +2459,7 @@ int reply_writeclose(connection_struct *conn,
   reply to a lock
 ****************************************************************************/
 int reply_lock(connection_struct *conn,
-	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+	       char *inbuf,char *outbuf, int length, int dum_buffsize)
 {
 	int outsize = set_message(outbuf,0,0,True);
 	uint32 count,offset;
@@ -2466,8 +2476,18 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d ofs=%d cnt=%d\n",
 		 fsp->fd_ptr->fd, fsp->fnum, offset, count));
 
-	if (!do_lock(fsp, conn, count, offset, F_WRLCK, &eclass, &ecode))
-		return (ERROR(eclass,ecode));
+	if (!do_lock(fsp, conn, count, offset, F_WRLCK, &eclass, &ecode)) {
+      if(ecode == ERRlock) {
+        /*
+         * A blocking lock was requested. Package up
+         * this smb into a queued request and push it
+         * onto the blocking lock queue.
+         */
+        if(push_blocking_lock_request(inbuf, length, -1, 0))
+          return -1;
+      }
+      return (ERROR(eclass,ecode));
+    }
 
 	return(outsize);
 }
@@ -3564,6 +3584,8 @@ dev = %x, inode = %x\n",
   for(i = 0; i < (int)num_ulocks; i++) {
     count = IVAL(data,SMB_LKLEN_OFFSET(i));
     offset = IVAL(data,SMB_LKOFF_OFFSET(i));
+    DEBUG(10,("reply_lockingX: unlock start=%d, len=%d for file %s\n",
+          (int)offset, (int)count, fsp->fsp_name ));
     if(!do_unlock(fsp,conn,count,offset,&eclass, &ecode))
       return ERROR(eclass,ecode);
   }
@@ -3578,9 +3600,10 @@ dev = %x, inode = %x\n",
   for(i = 0; i < (int)num_locks; i++) {
     count = IVAL(data,SMB_LKLEN_OFFSET(i)); 
     offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
+    DEBUG(10,("reply_lockingX: lock start=%d, len=%d for file %s\n",
+          (int)offset, (int)count, fsp->fsp_name ));
     if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode)) {
-#if 0 /* JRATEST */
       if((ecode == ERRlock) && (lock_timeout != 0)) {
         /*
          * A blocking lock was requested. Package up
@@ -3590,7 +3613,6 @@ dev = %x, inode = %x\n",
         if(push_blocking_lock_request(inbuf, length, lock_timeout, i))
           return -1;
       }
-#endif /* JRATEST */
       break;
     }
   }

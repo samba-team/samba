@@ -2134,8 +2134,8 @@ void invalidate_read_prediction(int fd);
 BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout);
 void process_smb(char *inbuf, char *outbuf);
 char *smb_fn_name(int type);
-int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 void construct_reply_common(char *inbuf,char *outbuf);
+int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 void smbd_process(void);
 
@@ -2171,7 +2171,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
-int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsiz);
+int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length, int dum_buffsiz);
 int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
@@ -2187,7 +2187,7 @@ int reply_close(connection_struct *conn,
 int reply_writeclose(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_lock(connection_struct *conn,
-	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+	       char *inbuf,char *outbuf, int length, int dum_buffsize);
 int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_tdis(connection_struct *conn, 
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);

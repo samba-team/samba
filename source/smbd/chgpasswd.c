@@ -308,6 +308,7 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
 
   if ((pid = fork()) < 0) {
     DEBUG(3,("Cannot fork() child for password change: %s",name));
+    close(master);
     return(False);
   }
 
@@ -317,6 +318,9 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
       DEBUG(3,("Child failed to change password: %s\n",name));
       kill(pid, SIGKILL); /* be sure to end this process */
     }
+
+    close(master);
+
     if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
       DEBUG(3,("The process is no longer waiting!\n\n"));
       return(False);
