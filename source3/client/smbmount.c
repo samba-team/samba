@@ -153,6 +153,9 @@ static struct cli_state *do_connection(char *the_service)
 		return NULL;
 	}
 
+	/* SPNEGO doesn't work till we get NTSTATUS error support */
+	c->use_spnego = False;
+
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
 		DEBUG(0,("%d: session request to %s failed (%s)\n", 
