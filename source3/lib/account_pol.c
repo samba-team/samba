@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  account policy storage
  *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Andrew Bartlett              2002
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,6 +32,7 @@ BOOL init_account_policy(void)
 {
 	static pid_t local_pid;
 	char *vstring = "INFO/version";
+	uint32 version;
 
 	if (tdb && local_pid == sys_getpid())
 		return True;
@@ -44,9 +46,9 @@ BOOL init_account_policy(void)
 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, vstring);
-	if (tdb_fetch_int32(tdb, vstring) != DATABASE_VERSION) {
+	if (!tdb_fetch_uint32(tdb, vstring, &version) || version != DATABASE_VERSION) {
 		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_int32(tdb, vstring, DATABASE_VERSION);
+		tdb_store_uint32(tdb, vstring, DATABASE_VERSION);
 		
 		account_policy_set(AP_MIN_PASSWORD_LEN, MINPASSWDLENGTH);   /* 5 chars minimum             */
 		account_policy_set(AP_PASSWORD_HISTORY, 0);		    /* don't keep any old password */
@@ -63,33 +65,50 @@ BOOL init_account_policy(void)
 	return True;
 }
 
+static const struct {
+	int field;
+	char *string;
+} account_policy_names[] = {
+	{AP_MIN_PASSWORD_LEN, "min password length"},
+	{AP_PASSWORD_HISTORY, "password history"},
+	{AP_USER_MUST_LOGON_TO_CHG_PASS, "user must logon to change password"},
+	{AP_MAX_PASSWORD_AGE, "maximum password age"},
+	{AP_MIN_PASSWORD_AGE,"minimum password age"},
+	{AP_LOCK_ACCOUNT_DURATION, "lockout duration"},
+	{AP_RESET_COUNT_TIME, "reset count minutes"},
+	{AP_BAD_ATTEMPT_LOCKOUT, "bad lockout attempt"},
+	{AP_TIME_TO_LOGOUT, "disconnect time"},
+	{0, NULL}
+};
+
 /****************************************************************************
+Get the account policy name as a string from its #define'ed number
 ****************************************************************************/
 
-static char *decode_account_policy_name(int field)
+static const char *decode_account_policy_name(int field)
 {
-	switch (field) {
-		case AP_MIN_PASSWORD_LEN:
-			return "min password length";
-		case AP_PASSWORD_HISTORY:
-			return "password history";
-		case AP_USER_MUST_LOGON_TO_CHG_PASS:
-			return "user must logon to change password";
-		case AP_MAX_PASSWORD_AGE:
-			return "maximum password age";
-		case AP_MIN_PASSWORD_AGE:
-			return "minimum password age";
-		case AP_LOCK_ACCOUNT_DURATION:
-			return "lockout duration";
-		case AP_RESET_COUNT_TIME:
-			return "reset count minutes";
-		case AP_BAD_ATTEMPT_LOCKOUT:
-			return "bad lockout attempt";
-		case AP_TIME_TO_LOGOUT:
-			return "disconnect time";
-		default:
-			return "undefined value";
+	int i;
+	for (i=0; account_policy_names[i].string; i++) {
+		if (field == account_policy_names[i].field)
+			return account_policy_names[i].string;
 	}
+	return NULL;
+
+}
+
+/****************************************************************************
+Get the account policy name as a string from its #define'ed number
+****************************************************************************/
+
+int account_policy_name_to_feildnum(const char *name)
+{
+	int i;
+	for (i=0; account_policy_names[i].string; i++) {
+		if (strcmp(name, account_policy_names[i].string) == 0)
+			return account_policy_names[i].field;
+	}
+	return 0;
+
 }
 
 
@@ -101,8 +120,17 @@ BOOL account_policy_get(int field, uint32 *value)
 
 	init_account_policy();
 
+	*value = 0;
+
 	fstrcpy(name, decode_account_policy_name(field));
-	*value=tdb_fetch_int32(tdb, name);
+	if (!*name) {
+		DEBUG(1, ("account_policy_get: Field %d is not a valid account policy type!  Cannot get, returning 0.\n", field));
+		return False;
+	}
+	if (!tdb_fetch_uint32(tdb, name, value)) {
+		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for feild %d (%s), returning 0", field, name));
+		return False;
+	}
 	DEBUG(10,("account_policy_get: %s:%d\n", name, *value));
 	return True;
 }
@@ -117,8 +145,16 @@ BOOL account_policy_set(int field, uint32 value)
 	init_account_policy();
 
 	fstrcpy(name, decode_account_policy_name(field));
-	if ( tdb_store_int32(tdb, name, value)== -1)
+	if (!*name) {
+		DEBUG(1, ("Field %d is not a valid account policy type!  Cannot set.\n", field));
 		return False;
+	}
+
+	if (!tdb_store_uint32(tdb, name, value)) {
+		DEBUG(1, ("tdb_store_uint32 failed for feild %d (%s) on value %u", field, name, value));
+		return False;
+	}
+
 	DEBUG(10,("account_policy_set: %s:%d\n", name, value));
 	
 	return True;
