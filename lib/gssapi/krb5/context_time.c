@@ -65,7 +65,6 @@ OM_uint32 gss_context_time
             OM_uint32 * time_rec
            )
 {
-    krb5_timestamp timeret;
     OM_uint32 lifetime;
     OM_uint32 major_status;
 
