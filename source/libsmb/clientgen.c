@@ -3466,38 +3466,6 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	return True;
 }
 
-BOOL cli_connect_auth(struct cli_state *cli,
-				const char* desthost,
-				struct in_addr *dest_ip,
-				const struct ntuser_creds *usr)
-{
-	extern pstring global_myname;
-	struct nmb_name calling, called;
-
-	ZERO_STRUCTP(cli);
-	if (!cli_initialise(cli))
-	{
-		DEBUG(0,("unable to initialise client connection.\n"));
-		return False;
-	}
-
-	make_nmb_name(&calling, global_myname, 0x0 );
-	make_nmb_name(&called , desthost     , 0x20);
-
-	cli_init_creds(cli, usr);
-
-	if (!cli_establish_connection(cli, desthost, dest_ip,
-				      &calling, &called,
-				      "IPC$", "IPC", 
-				      False, True))
-	{
-		cli_shutdown(cli);
-		return False;
-	}
-
-	return True;
-}
-
 /****************************************************************************
   cancel a print job
   ****************************************************************************/

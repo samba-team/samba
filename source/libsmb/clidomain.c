@@ -26,6 +26,80 @@
 
 extern int DEBUGLEVEL;
 
+/****************************************************************************
+ * make a connection to a server.
+ ****************************************************************************/
+static BOOL cli_connect_auth(struct cli_state *cli,
+				const char* desthost,
+				struct in_addr *dest_ip,
+				const struct ntuser_creds *usr)
+{
+	extern pstring global_myname;
+	struct nmb_name calling, called;
+
+	ZERO_STRUCTP(cli);
+	if (!cli_initialise(cli))
+	{
+		DEBUG(0,("unable to initialise client connection.\n"));
+		return False;
+	}
+
+	make_nmb_name(&calling, global_myname, 0x0 );
+	make_nmb_name(&called , desthost     , 0x20);
+
+	cli_init_creds(cli, usr);
+
+	if (!cli_establish_connection(cli, desthost, dest_ip,
+				      &calling, &called,
+				      "IPC$", "IPC", 
+				      False, True))
+	{
+		cli_shutdown(cli);
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+ obtains a list of PDCs / BDCs to contact, given the domain name.
+ return result is char*, comma-separated: PDC, BDC1, BDC2 ...
+****************************************************************************/
+char *get_trusted_serverlist(const char *domain)
+{
+	pstring tmp;
+	static pstring srv_list;
+	char *trusted_list = lp_trusted_domains();
+
+	if (domain == NULL ||
+	    strequal(domain, "") || strequal(lp_workgroup(), domain))
+	{
+		pstrcpy(srv_list, lp_passwordserver());
+		DEBUG(10, ("local domain server list: %s\n", srv_list));
+		return srv_list;
+	}
+
+	if (!next_token(&trusted_list, tmp, NULL, sizeof(tmp)))
+	{
+		return NULL;
+	}
+
+	do
+	{
+		fstring trust_dom;
+		split_at_first_component(tmp, trust_dom, '=', srv_list);
+
+		if (strequal(domain, trust_dom))
+		{
+			DEBUG(10, ("trusted: %s\n", srv_list));
+			return srv_list;
+		}
+
+	}
+	while (next_token(NULL, tmp, NULL, sizeof(tmp)));
+
+	return NULL;
+}
 
 /****************************************************************************
  connect to one of multiple servers: don't care which
