@@ -352,20 +352,9 @@ BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 		return False;
 	}
 
-	if (user_in_list(user_name, lp_domain_guest_users()))
-	{
-		*u_rid = DOMAIN_USER_RID_GUEST;
-	}
-	else if (user_in_list(user_name, lp_domain_admin_users()))
-	{
-		*u_rid = DOMAIN_USER_RID_ADMIN;
-	}
-	else
-	{
-		/* turn the unix UID into a Domain RID.  this is what the posix
-		   sub-system does (adds 1000 to the uid) */
-		*u_rid = pdb_uid_to_user_rid(pw->pw_uid);
-	}
+	/* turn the unix UID into a Domain RID.  this is what the posix
+	   sub-system does (adds 1000 to the uid) */
+	*u_rid = pdb_uid_to_user_rid(pw->pw_uid);
 
 	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
 	*g_rid = pdb_gid_to_group_rid(pw->pw_gid);
@@ -454,13 +443,11 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		if(rid == DOMAIN_USER_RID_ADMIN) {
 			pstring admin_users;
 			char *p = admin_users;
-			pstrcpy( admin_users, lp_domain_admin_users());
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Administrator");
 		} else if (rid == DOMAIN_USER_RID_GUEST) {
 			pstring guest_users;
 			char *p = guest_users;
-			pstrcpy( guest_users, lp_domain_guest_users());
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Guest");
 		} else {

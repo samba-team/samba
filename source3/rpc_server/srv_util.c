@@ -162,9 +162,6 @@ void get_domain_user_groups(char *domain_groups, char *user)
 
 	if (domain_groups == NULL || user == NULL) return;
 
-	/* any additional groups this user is in.  e.g power users */
-	pstrcpy(domain_groups, lp_domain_groups());
-
 	/* can only be a user or a guest.  cannot be guest _and_ admin */
 	if (user_in_list(user, lp_domain_guest_group()))
 	{
