@@ -134,6 +134,11 @@ component of the user's NIS auto.home entry.  Obviously,
 you will need to be running Samba on the user's home
 server as well as the one they just logged in on.
 
+The RPC Domain code has been moved into a separate directory
+rpc_pipe/, and a GLPL License issued specifically for code
+in this directory.  This is so that people can use this
+code in other projects.
+
 
 New parameters in smb.conf.
 ---------------------------
