@@ -344,6 +344,8 @@ void sid_copy(DOM_SID *dst, const DOM_SID *src)
 {
 	int i;
 
+	memset((char *)dst, '\0', sizeof(DOM_SID));
+
 	dst->sid_rev_num = src->sid_rev_num;
 	dst->num_auths = src->num_auths;
 

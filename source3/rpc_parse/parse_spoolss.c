@@ -1694,7 +1694,7 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_1");
 	depth++;	
@@ -1718,7 +1718,7 @@ BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
 	depth++;	
@@ -2355,6 +2355,7 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	uint32 size=0;
 		
 	size += 4;
+	/* JRA !!!! TESTME - WHAT ABOUT prs_align.... !!! */
 	size += sec_desc_size( info->secdesc );
 	
 	size+=size_of_device_mode( info->devmode );
@@ -2389,6 +2390,7 @@ return the size required by a struct in the stream
 uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info)
 {
 	/* The 4 is for the self relative pointer.. */
+	/* JRA !!!! TESTME - WHAT ABOUT prs_align.... !!! */
 	return 4 + (uint32)sec_desc_size( info->secdesc );
 }
 

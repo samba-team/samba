@@ -413,7 +413,7 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 			if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 				continue;
 		
-			DEBUGADD(5,("share:%s\n",lp_servicename(snum)));
+			DEBUGADD(5,("set_printer_hnd_printername: share:%s\n",lp_servicename(snum)));
 
 			if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
 				continue;
@@ -441,7 +441,9 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 	}
 	
 	snum--;
-	DEBUGADD(4,("Printer found: %s -> %s[%x]\n",printer->info_2->printername, lp_servicename(snum),snum));
+	DEBUGADD(4,("set_printer_hnd_printername: Printer found: %s -> %s[%x]\n",
+			printer->info_2->printername, lp_servicename(snum),snum));
+
 	ZERO_STRUCT(Printer->dev.printername);
 	strncpy(Printer->dev.printername, lp_servicename(snum), strlen(lp_servicename(snum)));
 	
@@ -1667,11 +1669,11 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	
 	/* the description and the name are of the form \\server\share */
 	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s",servername, ntprinter->info_2->printername);
-							    
-	init_unistr(&(printer->printername), chaine);
+
+	init_unistr(&printer->printername, chaine);
 	
 	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", servername);
-	init_unistr(&(printer->servername), chaine);
+	init_unistr(&printer->servername, chaine);
 	
 	printer->cjobs = count;
 	printer->total_jobs = 0;
@@ -1801,8 +1803,8 @@ static DEVICEMODE *construct_dev_mode(int snum, char *servername)
 		goto fail;
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
-	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, 
-	                                                 printer->info_2->printername);
+	snprintf(adevice, sizeof(adevice), "%s", printer->info_2->printername);
+
 	init_unistr(&devmode->devicename, adevice);
 
 	snprintf(aform, sizeof(aform), ntdevmode->formname);
