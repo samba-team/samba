@@ -5,40 +5,42 @@ Contributor: Christian Starkjohann <cs@obdev.at>
 Date:        May 29, 1998
 Status:      
 
+Comment: Updated by Lutz Jaenicke <Lutz.Jaenicke@aet.TU-Cottbus.DE>
+Date:	 July 16, 2001
+
 Subject:     Compiling and using samba with SSL support
 ============================================================================
 
-What is SSL and SSLeay?
-=======================
+What is SSL and SSLeay/OpenSSL?
+===============================
 SSL (Secure Socket Layer) is a protocol for encrypted and authenticated data
 transport. It is used by secure web servers for shopping malls, telebanking
 and things like that.
 
-SSLeay is a free implementation of the SSL protocol. It is available from
+SSLeay is a free implementation of the SSL protocol. The successor of it is
+OpenSSL, available from
 
-    ftp://ftp.psy.uq.oz.au/pub/Crypto/SSL/
+    http://www.openssl.org/
 
-The current version while these lines are written is 0.9.0. Encryption is
-plagued by legal problems of all kinds. For a discussion of these please
-read the documentation of SSLeay, which is available at
+The current version while these lines are written is 0.9.6b. In some countries
+encryption is plagued by legal problems, even though things have relaxed a
+lot in the last years.
 
-    http://www.psy.uq.edu.au/~ftp/Crypto/
-
-To compile samba with SSL support, you must first compile and install SSLeay.
-SSLeay consists of a library (which can be linked to other applications like
+To compile samba with SSL support, you must first compile and install OpenSSL.
+At least version 0.9.5 of OpenSSL is required. Version 0.9.6b is the latest
+version and is strongly recommended.
+OpenSSL consists of a library (which can be linked to other applications like
 samba) and several utility programs needed for key generation, certification
-etc. SSLeay installs to /usr/local/ssl/ by default.
+etc. OpenSSL installs to /usr/local/ssl/ by default.
 
 
-Compiling samba with SSLeay
-===========================
-1. Get and install SSLeay. The rest of this documentation assumes that you
+Compiling samba with OpenSSL
+============================
+1. Get and install OpenSSL. The rest of this documentation assumes that you
    have installed it at the default location, which is /usr/local/ssl/.
-   I have used SSLeay 0.9.0, but samba will probably also work with other
-   versions (but not with versions older than 0.6).
-2. Modify the Makefile. At the end of the configurable section you can find
-   the SSL definitions. You can find them quickly by searching for SSL_ROOT.
-   Unremark the definitions and modify SSL_ROOT if necessary.
+2. Call "configure" with the "--with-ssl" flag. If OpenSSL is not installed in
+   the default directory, you can use the "--with-sslinc" and "--with-ssllib"
+   flags to specify the location.
 3. Compile and install as usual.
 
 
@@ -127,10 +129,25 @@ ssl compatibility       = no
    compatibility with other SSL implementations. This is probably not
    desirable because currently no clients with SSL implementations other than
    SSLeay exist.
+ssl entropy file        =
+   Specifies a file from which processes will read "random bytes" on startup.
+   In order to seed the internal pseudo random number generator, entropy
+   must be provided. On system with a /dev/urandom device file, the processes
+   will retrieve its entropy from the kernel. On systems without kernel
+   entropy support, a file can be supplied that will be read on startup
+   and that will be used to seed the PRNG.
+ssl entropy bytes	= 256
+   Number of bytes that will be read from entropy file. If -1 is given, the
+   complete file will be read.
+ssl egd socket		=
+   Location of the communiation socket of an EGD or PRNGD daemon, from which
+   entropy can be retrieved. This option can be used instead of or together
+   with the "ssl entropy file" directive. 255bytes of entropy will be
+   retrieved from the daemon.
 
 
-Running samba with SSLeay
-=========================
+Running samba with OpenSSL
+==========================
 Samba is started as usual. The daemon will ask for the private key's pass
 phrase before it goes to background if the private key has been encrypted.
 If you start smbd from inetd, this won't work. Therefore you must not encrypt
@@ -227,58 +244,57 @@ What are the implications of this certificate structure?
 
 
 ###########################################################################
-Setting up files and directories for SSLeay
+Setting up files and directories for OpenSSL
 ###########################################################################
 
 The first thing you should do is to change your PATH environment variable to
-include the bin directory of SSLeay. E.g.:
+include the bin directory of OpenSSL. E.g.:
 
     PATH=$PATH:/usr/local/ssl/bin   
 
-Then you should set up SSLeay's random number generator. The state of this
-random number generator is held in the file ".rnd" in your home directory. To
-set a reasonable random seed, you need random data. Create a random file with
+If your system's kernel supports a /dev/urandom device, all OpenSSL operations
+will automatically retrieve its entropy from it. If your system does not
+support /dev/urandom, you may install an EGD/PRNGD daemon for entropy
+supply or can generate seed from reading files (that should contain information
+unpredictable/unknown to attackers). Use the "-rand" option to the openssl
+commands to specify the entropy source (if /dev/urandom is not available).
+
+OpenSSL additionally keeps random seed in the $HOME/.rnd file. You can
+initialize this file using:
     
-    cat >/tmp/rfile.txt
+    openssl rand -rand /tmp/rfile.txt > $HOME/.rnd
+    rm -f /tmp/rfile.txt	# nobody must know!!
 
-Then type random keys on your keyboard for about one minute. Then type the
-EOF character (^D) to terminate input. You may also use your favorite editor
-to create the random file, of course. Now you can create a dummy key to
-initialize the random number generator:
-    
-    ssleay genrsa -rand /tmp/rfile.txt > /dev/null
-    rm -f /tmp/rfile.txt
+or
 
-Don't forget to delete the file /tmp/rfile.txt. It's more or less equivalent
-to your private key!
-
+    openssl rand -rand /path/to/egd-socket > $HOME/.rnd
 
 How to create a keypair
 =======================
 This is done with 'genrsa' for RSA keys and 'gendsa' for DSA keys. For an RSA
-key with 512 bits which is written to the file "key.pem" type:
+key with 1024 bits which is written to the file "key.pem" type:
 
-    ssleay genrsa -des3 512 > key.pem
+    openssl genrsa -des3 -rand /path/to/source 1024 > key.pem
 
 You will be asked for a pass phrase to protect this key. If you don't want to
 protect your private key with a pass phrase, just omit the parameter "-des3".
-If you want a different key size, replace the parameter "512". You really
+If you want a different key size, replace the parameter "1024". You really
 should use a pass phrase.
 
 If you want to remove the pass phrase from a key use:
 
-    ssleay rsa -in key.pem -out newkey.pem
+    openssl rsa -in key.pem -out newkey.pem
 
 And to add or change a pass phrase:
 
-    ssleay rsa -des3 -in key.pem -out newkey.pem
+    openssl rsa -des3 -in key.pem -out newkey.pem
 
 
 How to create a dummy certificate
 =================================
 If you still have your keypair in the file "key.pem", the command
 
-    ssleay req -new -x509 -key key.pem -out cert.pem
+    openssl req -new -x509 -key key.pem -out cert.pem
 
 will write a self-signed dummy certificate to the file "cert.pem". This can
 be used for testing or if only encryption and no certification is needed.
@@ -297,7 +313,7 @@ your server in the field "Common Name". The certificate signing request is
 created from the keypair with the following command (assuming that the key
 pair is still in "key.pem"):
 
-    ssleay req -new -key key.pem -out csr.pem
+    openssl req -new -key key.pem -out csr.pem
 
 This command will ask you for the information which must be included in the
 certificate and will write the signing request to the file "csr.pem". This
@@ -350,7 +366,7 @@ parameter "-config <cfg-file>". Make also sure that the configuration file
 contains the correct path to the CA database. If all this is set up properly,
 you can sign the request in the file "csr.pem" with the command:
 
-    ssleay ca -policy policy_anything -days 365 -infiles csr.pem >cert.pem
+    openssl ca -policy policy_anything -days 365 -infiles csr.pem >cert.pem
 
 The resulting certificate (and additional information) will be in "cert.pem".
 If you want the certificate to be valid for a period different from 365 days,
@@ -380,7 +396,7 @@ the CA's certificate is in the file "cacert.pem" and the CA is known as
 
     cp cacert.pem /usr/local/ssl/cers/myCA.pem
     cd /usr/local/ssl/certs
-    ln -s myCA.pem `ssleay x509 -noout -hash < myCA.pem`.0
+    ln -s myCA.pem `openssl x509 -noout -hash < myCA.pem`.0
 
 The last command creates a link from the hashed name to the real file.
 
