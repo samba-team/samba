@@ -22,16 +22,10 @@ are pointed to by the Samba web site, http://samba.anu.edu.au/samba.
 
 STEP 1. Building the binaries
 
-To do this, first edit the file source/Makefile. You will find that
-the Makefile has an entry for most unixes and you need to uncomment
-the one that matches your operating system.
-
-You should also edit the section at the top of the Makefile which
-determines where things will be installed. You need to get this right
-before compilation as Samba needs to find some things at runtime
-(smbrun in particular). There are also settings for where you want
-your log files etc. Make sure you get these right, and that the
-directories exist.
+To do this, first run the program ./configure in the source
+directory. This should automatically configure Samba for your
+operating system. If you have unusual needs then you may wish to run
+"./configure --help" first to see what special options you can enable.
 
 Then type "make". This will create the binaries.
 
