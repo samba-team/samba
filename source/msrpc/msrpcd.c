@@ -363,8 +363,10 @@ int msrpc_main(int argc,char *argv[])
 	extern char *optarg;
 	int ClientMSRPC = -1;
 	msrpc_pipes_struct p;
+	fstring service_name;
 	
 	pstrcpy(remote_machine, pipe_name);
+	split_at_last_component(argv[0], NULL, '/', service_name);
 
 	charset_initialise();
 
@@ -453,7 +455,7 @@ int msrpc_main(int argc,char *argv[])
 
 	reopen_logs();
 
-	DEBUG(1,( "%s version %s started.\n", argv[0], VERSION));
+	DEBUG(1,( "%s version %s started.\n", service_name, VERSION));
 	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1999\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
@@ -526,9 +528,7 @@ int msrpc_main(int argc,char *argv[])
 
 	if (is_daemon)
 	{
-		fstring prog_name;
-		split_at_last_component(argv[0], NULL, '/', prog_name);
-		pidfile_create(prog_name);
+		pidfile_create(service_name);
 	}
 
 	ClientMSRPC = open_sockets(is_daemon);
@@ -548,7 +548,7 @@ int msrpc_main(int argc,char *argv[])
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
 
-	msrpc_service_init(argv[0]);
+	msrpc_service_init(service_name);
 	dbgflush();
 
 	ZERO_STRUCT(p);
