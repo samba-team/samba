@@ -2510,3 +2510,16 @@ BOOL lsa_io_r_enum_acct_with_right(const char *desc, LSA_R_ENUM_ACCT_WITH_RIGHT 
 
 	return True;
 }
+
+/*******************************************************************
+ Inits an LSA_R_ENUM_ACCT_WITH_RIGHT structure.
+********************************************************************/
+void init_r_enum_acct_with_right(LSA_R_ENUM_ACCT_WITH_RIGHT *r_c, 
+				 uint32 count,
+				 DOM_SID *sids)
+{
+	DEBUG(5, ("init_r_enum_acct_with_right\n"));
+
+	r_c->count = count;
+	init_sid_array(&r_c->sids, count, sids);
+}

@@ -1283,6 +1283,35 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 }
 
 /***************************************************************************
+return a list of SIDs for a particular privilege
+ ***************************************************************************/
+NTSTATUS _lsa_enum_acct_with_right(pipes_struct *p, 
+				   LSA_Q_ENUM_ACCT_WITH_RIGHT *q_u, 
+				   LSA_R_ENUM_ACCT_WITH_RIGHT *r_u)
+{
+	struct lsa_info *info=NULL;
+	char *right;
+	DOM_SID *sids = NULL;
+	uint32 count = 0;
+
+	r_u->status = NT_STATUS_OK;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+	right = unistr2_tdup(p->mem_ctx, &q_u->right);
+
+	DEBUG(5,("lsa_enum_acct_with_right on right %s\n", right));
+
+	/* no backend db yet .... */
+
+	init_r_enum_acct_with_right(r_u, count, sids);
+
+	return r_u->status;
+}
+
+/***************************************************************************
  add privileges to a acct by SID
  ***************************************************************************/
 NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R_ADD_ACCT_RIGHTS *r_u)
