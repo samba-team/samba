@@ -308,7 +308,7 @@ static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enu
 		*p = '\0';
 
 	if ((domain = find_domain_from_name(domain_str)) == NULL)
-        return False;
+                return False;
 
 	if (!winbindd_fetch_sid_cache_entry(domain, name, &sid_ret))
 		return False;
@@ -364,7 +364,7 @@ static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enu
 	sid_split_rid(&domain_sid, &rid);
 
 	if ((domain = find_domain_from_sid(&domain_sid)) == NULL)
-        return False;
+                return False;
 
 	sid_to_string(sid_str, sid);
 
