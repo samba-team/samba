@@ -53,7 +53,7 @@
 
 #include "includes.h"
 
-#if 0
+#if 1
 #define M_DEBUG(level, x) DEBUG(level, x)
 #else
 #define M_DEBUG(level, x)
