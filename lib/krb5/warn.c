@@ -41,53 +41,92 @@
 
 RCSID("$Id$");
 
+static krb5_error_code
+_warnerr(krb5_context context, int doexit, int eval, int do_errtext, krb5_error_code code, 
+	int level, const char *fmt, va_list ap)
+{
+    char xfmt[7] = "";
+    const char *args[2], **arg;
+    char *msg = NULL;
+    
+    arg = args;
+    if(fmt){
+	strcat(xfmt, "%s: ");
+	vasprintf(&msg, fmt, ap);
+	if(msg == NULL)
+	    return ENOMEM;
+	*arg++ = msg;
+    }
+    if(do_errtext){
+	strcat(xfmt, "%s");
+	*arg++ = krb5_get_err_text(context, code);
+    }
+	
+    if(context->warn_dest)
+	krb5_log(context, context->warn_dest, level, xfmt, args[0], args[1]);
+    else
+	warnx(xfmt, args[0], args[1]);
+    if(doexit)
+	exit(eval);
+    return 0;
+}
+
+#define FUNC(DO_EXIT, EVAL, DO_ERRTEXT, CODE, LEVEL) 					\
+	krb5_error_code ret;								\
+	va_list ap;									\
+	va_start(ap, fmt);								\
+	ret = _warnerr(context, DO_EXIT, EVAL, DO_ERRTEXT, CODE, LEVEL, fmt, ap);	\
+	va_end(ap);									\
+	return ret;
 
 krb5_error_code
 krb5_vwarn(krb5_context context, krb5_error_code code, const char *fmt, va_list ap)
 {
-    char *msg;
-    vasprintf(&msg, fmt, ap);
-    if(msg == NULL)
-	return ENOMEM;
-    if(context->warn_dest)
-	krb5_log(context, context->warn_dest, 0, "%s: %s", 
-		 msg, krb5_get_err_text(context, code));
-    else 
-	warnx("%s: %s", msg, krb5_get_err_text(context, code));
-    free(msg);
-    return 0;
+    return _warnerr(context, 0, 0, 1, code, 1, fmt, ap);
 }
+
 
 krb5_error_code
 krb5_warn(krb5_context context, krb5_error_code code, const char *fmt, ...)
 {
-    krb5_error_code ret;
-    va_list ap;
-    va_start(ap, fmt);
-    ret = krb5_vwarn(context, code, fmt, ap);
-    va_end(ap);
-    return ret;
+    FUNC(0, 0, 1, code, 1);
 }
 
 krb5_error_code
 krb5_vwarnx(krb5_context context, const char *fmt, va_list ap)
 {
-    if(context->warn_dest)
-	krb5_vlog(context, context->warn_dest, 0, fmt, ap);
-    else
-	vwarnx(fmt, ap);
-    return 0;
+    return _warnerr(context, 0, 0, 0, 0, 1, fmt, ap);
 }
 
 krb5_error_code
 krb5_warnx(krb5_context context, const char *fmt, ...)
 {
-    krb5_error_code ret;
-    va_list ap;
-    va_start(ap, fmt);
-    ret = krb5_vwarnx(context, fmt, ap);
-    va_end(ap);
-    return ret;
+    FUNC(0, 0, 0, 0, 1);
+}
+
+krb5_error_code
+krb5_verr(krb5_context context, int eval, krb5_error_code code, const char *fmt, va_list ap)
+{
+    return _warnerr(context, 1, eval, 1, code, 1, fmt, ap);
+}
+
+
+krb5_error_code
+krb5_err(krb5_context context, int eval, krb5_error_code code, const char *fmt, ...)
+{
+    FUNC(1, eval, 1, code, 1);
+}
+
+krb5_error_code
+krb5_verrx(krb5_context context, int eval, const char *fmt, va_list ap)
+{
+    return _warnerr(context, 1, eval, 0, 0, 1, fmt, ap);
+}
+
+krb5_error_code
+krb5_errx(krb5_context context, int eval, const char *fmt, ...)
+{
+    FUNC(1, eval, 0, 0, 1);
 }
 
 krb5_error_code
