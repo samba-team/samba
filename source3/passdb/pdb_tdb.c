@@ -542,7 +542,7 @@ static BOOL tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user
 		/* increment to next in line */
 		tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
 
-	/* do we have an valid interation pointer? */
+	/* do we have an valid iteration pointer? */
 	if(tdb_state->passwd_tdb == NULL) {
 		DEBUG(0,("pdb_get_sampwent: Bad TDB Context pointer.\n"));
 		return False;

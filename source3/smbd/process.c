@@ -152,7 +152,7 @@ static void async_processing(char *buffer, int buffer_len)
   Returns False on timeout or error.
   Else returns True.
 
-The timeout is in milli seconds
+The timeout is in milliseconds
 ****************************************************************************/
 
 static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)

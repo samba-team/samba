@@ -92,7 +92,7 @@ static int process_options(int argc, char **argv, int local_flags)
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehmnjr:sw:R:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehminjr:sw:R:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_flags |= LOCAL_AM_ROOT;
@@ -416,9 +416,11 @@ static int process_root(int local_flags)
 				exit(1);
 			}
 		}
+		
+		/* prepare uppercased and '$' terminated username */
 		slprintf(buf, sizeof(buf) - 1, "%s$", user_name);
 		fstrcpy(user_name, buf);
-
+		
 	} else {
 		
 		if (remote_machine != NULL) {
