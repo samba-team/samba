@@ -41,10 +41,8 @@
 #ifndef __KAFS_H
 #define __KAFS_H
 
-#if 0
-#include <sys/cdefs.h>
-#include <ktypes.h>
-#endif
+#include <bits.h>
+
 /* sys/ioctl.h must be included manually before kafs.h */
 
 /*
@@ -84,8 +82,12 @@ struct ClearToken {
 
 int k_hasafs __P((void));
 
-int k_afsklog __P((const char *cell, const char *realm));
-int k_afsklog_uid __P((const char *cell, const char *realm, uid_t uid));
+int krb_afslog __P((const char *cell, const char *realm));
+int krb_afslog_uid __P((const char *cell, const char *realm, uid_t uid));
+/* compat */
+#define k_afsklog krb_afslog
+#define k_afsklog_uid krb_afslog_uid
+
 int k_pioctl __P((char *a_path,
 		  int o_opcode,
 		  struct ViceIoctl *a_paramsP,
@@ -93,6 +95,27 @@ int k_pioctl __P((char *a_path,
 int k_unlog __P((void));
 int k_setpag __P((void));
 int k_afs_cell_of_file __P((const char *path, char *cell, int len));
+
+/* XXX */
+#ifdef KFAILURE
+#define KRB_H_INCLUDED
+#endif
+
+#ifdef KRB5_RECVAUTH_IGNORE_VERSION
+#define KRB5_H_INCLUDED
+#endif
+
+#ifdef KRB_H_INCLUDED
+int kafs_settoken __P((const char*, uid_t, CREDENTIALS*));
+#endif
+
+#ifdef KRB5_H_INCLUDED
+krb5_error_code krb5_afslog_uid __P((krb5_context, krb5_ccache,
+				     const char*, krb5_const_realm, uid_t));
+krb5_error_code krb5_afslog __P((krb5_context, krb5_ccache, 
+				 const char*, krb5_const_realm));
+#endif
+
 
 #define _PATH_VICE		"/usr/vice/etc/"
 #define _PATH_THISCELL 		_PATH_VICE "ThisCell"
