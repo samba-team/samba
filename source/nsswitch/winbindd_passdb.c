@@ -294,7 +294,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, const DOM_SID const *sids,
+				   uint32 num_sids, const DOM_SID *sids,
 				   uint32 *num_aliases, uint32 **rids)
 {
 	BOOL result;
