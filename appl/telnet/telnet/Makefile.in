@@ -35,7 +35,7 @@ LIBKRB		= -L../../../lib/krb -lkrb
 LIBDES		= -L../../../lib/des -ldes
 LIBROKEN	= -L../../../lib/roken -lroken
 
-KLIB=$(LIBKRB) $(LIBDES) $(LIBROKEN)
+KLIB=$(LIBKRB) $(LIBDES)
 
 
 all: telnet
@@ -44,7 +44,7 @@ all: telnet
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I.. -I../../.. -I$(srcdir)/.. $<
 
 telnet: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS) @LIB_tgetent@ @LIB_setupterm@
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ @LIB_setupterm@ $(LIBROKEN)
 
 install: all
 	$(MKINSTALLDIRS) $(prefix)/bin

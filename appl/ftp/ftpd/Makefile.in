@@ -56,7 +56,7 @@ install: all
 
 
 ftpd: $(ftpd_OBJS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBOTP) $(LIBDES) $(LIBROKEN) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBOTP) $(LIBDES) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<

@@ -63,12 +63,13 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-OLIB=-L../../lib/otp -lotp -L../../lib/des -ldes -L../../lib/roken -lroken
+OLIB=-L../../lib/otp -lotp -L../../lib/des -ldes
+LIBROKEN=-L../../lib/roken -lroken
 
 otp: $(OBJECTS_OTP)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTP) $(OLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTP) $(OLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 otpprint: $(OBJECTS_OTPPRINT)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../config.h

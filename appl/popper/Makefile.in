@@ -74,10 +74,11 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken
+KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes
+LIBROKEN=-L../../lib/roken -lroken
 OTPLIB=-L../../lib/otp -lotp
 
 popper: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(OTPLIB) $(KLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(OTPLIB) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../config.h

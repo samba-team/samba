@@ -77,13 +77,14 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-KLIB= -L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken
+KLIB= -L../../lib/krb -lkrb -L../../lib/des -ldes
+LIBROKEN=-L../../lib/roken -lroken
 
 kx: $(OBJECTS_KX)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) $(KLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 kxd: $(OBJECTS_KXD)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) $(KLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 rxterm: rxterm.in
 	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxterm.in > $@
