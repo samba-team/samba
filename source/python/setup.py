@@ -4,6 +4,7 @@
 # Module packaging setup for Samba python extensions
 #
 # Copyright (C) Tim Potter, 2002
+# Copyright (C) Martin Pool, 2002
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -70,9 +71,16 @@ setup(
                     samba_srcdir + "ubiqx", samba_srcdir + "smbwrapper",
                     samba_srcdir + "popt", "/usr/kerberos/include",
                     "/usr/local/include"],
+
+    # Get the "samba" directory of Python source.  At the moment this
+    # just contains the __init__ file that makes it work as a
+    # subpackage.  This is needed even though everything else is an
+    # extension module.
+    package_dir = {"samba": os.path.join(samba_srcdir, "python", "samba")},
+    packages = ["samba"],
     
     # Module list
-    
+    ext_package = "samba", 
     ext_modules = [
 
     # SPOOLSS pipe module
