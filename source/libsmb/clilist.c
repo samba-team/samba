@@ -283,7 +283,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* put in a length for the last entry, to ensure we can chain entries 
 		   into the next packet */
-		for (p2=p,i=0;i<(ff_searchcount-1);i++) {
+		for (p2=p,i=0;i<ff_searchcount;i++) {
 			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
 		}
 		SSVAL(p2,0,data_len - PTR_DIFF(p2,p));
