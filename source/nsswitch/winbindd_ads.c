@@ -51,46 +51,51 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       uint32 *start_ndx, uint32 *num_entries, 
 			       WINBIND_USERINFO **info)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
 			       "userAccountControl", NULL};
 	int rc, i, count;
-	void *res;
-	void *msg;
+	void *res = NULL;
+	void *msg = NULL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(3,("ads: query_user_list\n"));
 
 	if ((*start_ndx) != 0) {
-		DEBUG(1,("ads backend start_ndx not implemented\n"));
-		return NT_STATUS_NOT_IMPLEMENTED;
+		DEBUG(1,("ads backend start_ndx not implemented!\n"));
+		status = NT_STATUS_NOT_IMPLEMENTED;
+		goto done;
 	}
 
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_connect(ads);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_search(ads, &res, "(objectclass=user)", attrs);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
 		DEBUG(1,("query_user_list: No users found\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	(*info) = talloc(mem_ctx, count * sizeof(**info));
-	if (!*info) return NT_STATUS_NO_MEMORY;
+	if (!*info) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	i = 0;
 
@@ -128,10 +133,14 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	}
 
 	(*num_entries) = i;
+	status = NT_STATUS_OK;
 
-	ads_destroy(&ads);
+done:
+	if (res) ads_msgfree(ads, res);
+	if (msg) ads_msgfree(ads, msg);
+	if (ads) ads_destroy(&ads);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /* list all domain groups */
@@ -140,46 +149,51 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				uint32 *start_ndx, uint32 *num_entries, 
 				struct acct_info **info)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", 
 			       "sAMAccountType", NULL};
 	int rc, i, count;
-	void *res;
-	void *msg;
+	void *res = NULL;
+	void *msg = NULL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(3,("ads: enum_dom_groups\n"));
 
 	if ((*start_ndx) != 0) {
 		DEBUG(1,("ads backend start_ndx not implemented\n"));
-		return NT_STATUS_NOT_IMPLEMENTED;
+		status = NT_STATUS_NOT_IMPLEMENTED;
+		goto done;
 	}
 
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_connect(ads);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_search(ads, &res, "(objectclass=group)", attrs);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
 		DEBUG(1,("query_user_list: No users found\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	(*info) = talloc(mem_ctx, count * sizeof(**info));
-	if (!*info) return NT_STATUS_NO_MEMORY;
+	if (!*info) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	i = 0;
 
@@ -213,9 +227,14 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	(*num_entries) = i;
 
-	ads_destroy(&ads);
+	status = NT_STATUS_OK;
 
-	return NT_STATUS_OK;
+done:
+	if (res) ads_msgfree(ads, res);
+	if (msg) ads_msgfree(ads, msg);
+	if (ads) ads_destroy(&ads);
+
+	return status;
 }
 
 
@@ -225,30 +244,32 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    DOM_SID *sid,
 			    enum SID_NAME_USE *type)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"objectSid", "sAMAccountType", NULL};
 	int rc, count;
-	void *res;
+	void *res = NULL;
 	char *exp;
 	uint32 t;
 	fstring name2, dom2;
-	
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
 	/* sigh. Need to fix interface to give us a raw name */
-	if (!parse_domain_user(name, dom2, name2))
-		return NT_STATUS_UNSUCCESSFUL;
+	if (!parse_domain_user(name, dom2, name2)) {
+		goto done;
+	}
 
 	DEBUG(3,("ads: name_to_sid\n"));
 
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_connect(ads);
 	if (rc) {
 		DEBUG(1,("name_to_sid ads_connect: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	asprintf(&exp, "(sAMAccountName=%s)", name2);
@@ -256,31 +277,34 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	free(exp);
 	if (rc) {
 		DEBUG(1,("name_to_sid ads_search: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count != 1) {
 		DEBUG(1,("name_to_sid: %s not found\n", name));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
 		DEBUG(1,("No sid for %s !?\n", name));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	if (!ads_pull_uint32(ads, res, "sAMAccountType", &t)) {
 		DEBUG(1,("No sAMAccountType for %s !?\n", name));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	*type = ads_atype_map(t);
 
-	ads_destroy(&ads);
+	status = NT_STATUS_OK;
 
+done:
+	if (res) ads_msgfree(ads, res);
+	if (ads) ads_destroy(&ads);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /* convert a sid to a user or group name */
@@ -290,27 +314,28 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "sAMAccountType", NULL};
 	int rc;
-	void *msg;
+	void *msg = NULL;
 	char *exp;
 	char *sidstr;
 	uint32 atype;
 	char *s;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(3,("ads: sid_to_name\n"));
 
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_connect(ads);
 	if (rc) {
 		DEBUG(1,("sid_to_name ads_connect: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	sidstr = ads_sid_binstring(sid);
@@ -320,18 +345,23 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	free(sidstr);
 	if (rc) {
 		DEBUG(1,("sid_to_name ads_search: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype)) {
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	s = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
 	*name = talloc_asprintf(mem_ctx, "%s%s%s", domain->name, lp_winbind_separator(), s);
 	*type = ads_atype_map(atype);
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+done:
+	if (msg) ads_msgfree(ads, msg);
+	if (ads) ads_destroy(&ads);
+
+	return status;
 }
 
 
@@ -341,14 +371,15 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			   uint32 user_rid, 
 			   WINBIND_USERINFO *info)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
 			       "userAccountControl", NULL};
 	int rc, count;
-	void *msg;
+	void *msg = NULL;
 	char *exp;
 	DOM_SID sid;
 	char *sidstr;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(3,("ads: query_user\n"));
 
@@ -357,13 +388,13 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_connect(ads);
 	if (rc) {
 		DEBUG(1,("query_user ads_connect: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	sidstr = ads_sid_binstring(&sid);
@@ -373,38 +404,40 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	free(sidstr);
 	if (rc) {
 		DEBUG(1,("query_user(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	count = ads_count_replies(ads, msg);
 	if (count != 1) {
 		DEBUG(1,("query_user(rid=%d): Not found\n", user_rid));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	info->acct_name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 	if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 		DEBUG(1,("No sid for %d !?\n", user_rid));
-		goto error;
+		goto done;
 	}
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &info->group_rid)) {
 		DEBUG(1,("No primary group for %d !?\n", user_rid));
-		goto error;
+		goto done;
 	}
 	
 	if (!sid_peek_rid(&sid, &info->user_rid)) {
 		DEBUG(1,("No rid for %d !?\n", user_rid));
-		goto error;
+		goto done;
 	}
 
-	ads_destroy(&ads);
+	status = NT_STATUS_OK;
 
-	return NT_STATUS_OK;
-error:
-	ads_destroy(&ads);
-	return NT_STATUS_UNSUCCESSFUL;
+done:
+	if (msg) ads_msgfree(ads, msg);
+	if (ads) ads_destroy(&ads);
+
+	return status;
 }
+
 
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
@@ -412,11 +445,11 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  uint32 user_rid, 
 				  uint32 *num_groups, uint32 **user_gids)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"distinguishedName", NULL};
 	const char *attrs2[] = {"tokenGroups", "primaryGroupID", NULL};
 	int rc, count;
-	void *msg;
+	void *msg = NULL;
 	char *exp;
 	char *user_dn;
 	DOM_SID *sids;
@@ -424,6 +457,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	uint32 primary_group;
 	DOM_SID sid;
 	char *sidstr;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(3,("ads: lookup_usergroups\n"));
 
@@ -434,13 +468,13 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_connect(ads);
 	if (rc) {
 		DEBUG(1,("lookup_usergroups ads_connect: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	sidstr = ads_sid_binstring(&sid);
@@ -450,7 +484,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	free(sidstr);
 	if (rc) {
 		DEBUG(1,("lookup_usergroups(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	user_dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
@@ -458,12 +492,12 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	rc = ads_search_dn(ads, &msg, user_dn, attrs2);
 	if (rc) {
 		DEBUG(1,("lookup_usergroups(rid=%d) ads_search tokenGroups: %s\n", user_rid, ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group)) {
 		DEBUG(1,("No primary group for rid=%d !?\n", user_rid));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids) + 1;
@@ -477,8 +511,12 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		(*num_groups)++;
 	}
 
-	ads_destroy(&ads);
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+done:
+	if (msg) ads_msgfree(ads, msg);
+	if (ads) ads_destroy(&ads);
+
+	return status;
 }
 
 
@@ -492,22 +530,23 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	char *sidstr;
 	const char *attrs[] = {"sAMAccountName", "objectSid", "sAMAccountType", NULL};
 	int rc, count;
-	void *res, *msg;
-	ADS_STRUCT *ads;
+	void *res=NULL, *msg=NULL;
+	ADS_STRUCT *ads = NULL;
 	char *exp;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	*num_names = 0;
 
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	rc = ads_connect(ads);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	sid_from_rid(domain, group_rid, &group_sid);
@@ -516,14 +555,17 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	asprintf(&exp, "(&(objectclass=user)(|(primaryGroupID=%d)(memberOf=%s)))",
 		 group_rid, sidstr);
 	rc = ads_search(ads, &res, exp, attrs);
+	free(exp);
+	free(sidstr);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
 	(*rid_mem) = talloc(mem_ctx, sizeof(uint32) * count);
@@ -551,9 +593,13 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		(*num_names)++;
 	}	
 
-	ads_destroy(&ads);
+	status = NT_STATUS_OK;
+done:
+	if (msg) ads_msgfree(ads, msg);
+	if (res) ads_msgfree(ads, res);
+	if (ads) ads_destroy(&ads);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /* the ADS backend methods are exposed via this structure */
