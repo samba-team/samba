@@ -40,7 +40,10 @@
 
 #define CREATE_ACCESS_READ      READ_CONTROL_ACCESS
 
-
+/*We should test for this in configure ... */
+#ifndef ENOTSUP
+#define ENOTSUP EOPNOTSUPP
+#endif
 
 /*
  * Functions exported by libsmb_cache.c that we need here
@@ -610,15 +613,15 @@ SMBCSRV *smbc_server(SMBCCTX *context,
  * connection.  This works similarly to smbc_server().
  */
 SMBCSRV *smbc_attr_server(SMBCCTX *context,
-                         const char *server, const char *share, 
-                         fstring workgroup,
-                         fstring username, fstring password)
+                          const char *server, const char *share, 
+                          fstring workgroup,
+                          fstring username, fstring password,
+                          POLICY_HND *pol)
 {
         struct in_addr ip;
 	struct cli_state *ipc_cli;
         NTSTATUS nt_status;
 	SMBCSRV *ipc_srv=NULL;
-        POLICY_HND pol;
 
         /*
          * See if we've already created this special connection.  Reference
@@ -666,7 +669,7 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                                                 ipc_cli->mem_ctx,
                                                 True, 
                                                 GENERIC_EXECUTE_ACCESS,
-                                                &pol);
+                                                pol);
         
                 if (!NT_STATUS_IS_OK(nt_status)) {
                         errno = smbc_errno(context, ipc_cli);
@@ -3362,7 +3365,8 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 	}
 
         ipc_srv = smbc_attr_server(context, server, share,
-                                   workgroup, user, password);
+                                   workgroup, user, password,
+                                   &pol);
         if (!ipc_srv) {
                 return -1;
         }
@@ -3493,7 +3497,8 @@ int smbc_getxattr_ctx(SMBCCTX *context,
         }
 
         ipc_srv = smbc_attr_server(context, server, share,
-                                   workgroup, user, password);
+                                   workgroup, user, password,
+                                   &pol);
         if (!ipc_srv) {
                 return -1;
         }
@@ -3575,13 +3580,15 @@ int smbc_removexattr_ctx(SMBCCTX *context,
         }
 
         ipc_srv = smbc_attr_server(context, server, share,
-                                   workgroup, user, password);
+                                   workgroup, user, password,
+                                   &pol);
         if (!ipc_srv) {
                 return -1;
         }
         
         ipc_srv = smbc_attr_server(context, server, share,
-                                   workgroup, user, password);
+                                   workgroup, user, password,
+                                   &pol);
         if (!ipc_srv) {
                 return -1;
         }
