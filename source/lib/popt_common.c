@@ -33,7 +33,7 @@ static void debug_callback(poptContext con,
 	switch(opt->val) {
 	case 'd':
 		if (arg) {
-			DEBUGLEVEL = atoi(arg);
+			debug_parse_levels(arg);
 			AllowDebugChange = False;
 		}
 
@@ -43,7 +43,7 @@ static void debug_callback(poptContext con,
 
 struct poptOption popt_common_debug[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, debug_callback },
-	{ "debuglevel", 'd', POPT_ARG_INT, NULL, 'd', "Set debug level", 
+	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", 
 	  "DEBUGLEVEL" },
 	{ 0 }
 };
