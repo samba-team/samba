@@ -131,7 +131,10 @@ uint32 check_password(const auth_usersupplied_info *user_info, auth_serversuppli
 	}
 	
 	if (nt_status == NT_STATUS_NOPROBLEMO) {
+		/* We might not be root if we are an RPC call */
+		become_root();
 		nt_status = smb_pam_accountcheck(user_info->smb_username.str);
+		unbecome_root();
 	}
 
 	if (nt_status == NT_STATUS_NOPROBLEMO) {
