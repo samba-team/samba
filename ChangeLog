@@ -1,3 +1,8 @@
+2000-02-28  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/context.c (init_context_from_config_file): change
+	rfc2052 default to no.  2782 says that underscore should be used.
+
 2000-02-24  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/fcache.c (fcc_initialize, fcc_store_cred): verify that
@@ -11,6 +16,8 @@
 
 2000-02-22  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am: set version to 9:2:0
+	
 	* lib/krb5/expand_hostname.c (krb5_expand_hostname_realms): copy
 	the correct hostname
 
