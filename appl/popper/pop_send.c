@@ -84,7 +84,7 @@ pop_send(POP *p)
     }
     
     /*  Display the number of bytes in the message */
-    pop_msg(p,POP_SUCCESS,"%u octets",mp->length);
+    pop_msg(p, POP_SUCCESS, "%ld octets", mp->length);
 
     /*  Position to the start of the message */
     fseek(p->drop,mp->offset,0);

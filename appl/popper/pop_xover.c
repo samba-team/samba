@@ -9,8 +9,9 @@ pop_xover (POP *p)
     int		            i;
 
     pop_msg(p,POP_SUCCESS,
-	    "%u messages (%u octets)",
-            p->msg_count-p->msgs_deleted,p->drop_size-p->bytes_deleted);
+	    "%d messages (%ld octets)",
+            p->msg_count-p->msgs_deleted,
+	    p->drop_size-p->bytes_deleted);
     
     /*  Loop through the message information list.  Skip deleted messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++) {

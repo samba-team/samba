@@ -93,8 +93,16 @@ void enc(char*);
 int auth_read(int, void*, int);
 int auth_write(int, void*, int);
 
-void auth_vprintf(const char *fmt, va_list ap);
-void auth_printf(const char *fmt, ...);
+void auth_vprintf(const char *fmt, va_list ap)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 1, 0)))
+#endif
+;
+void auth_printf(const char *fmt, ...)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 1, 2)))
+#endif
+;
 
 void new_ftp_command(char *command);
 

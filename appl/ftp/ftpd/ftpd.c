@@ -1543,6 +1543,13 @@ fatal(char *s)
 }
 
 static void
+int_reply(int, char *, const char *, va_list)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 3, 0)))
+#endif
+;
+
+static void
 int_reply(int n, char *c, const char *fmt, va_list ap)
 {
   char buf[10240];

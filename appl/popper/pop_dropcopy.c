@@ -71,7 +71,10 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     	setgid(pwp->pw_gid);
     }
 #ifdef DEBUG
-    if(p->debug)pop_log(p,POP_DEBUG,"uid = %d, gid = %d",getuid(),getgid());
+    if(p->debug)
+       pop_log(p, POP_DEBUG,"uid = %u, gid = %u",
+	       (unsigned)getuid(),
+	       (unsigned)getgid());
 #endif /* DEBUG */
 
     /* Open for append,  this solves the crash recovery problem */

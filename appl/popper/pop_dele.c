@@ -36,8 +36,9 @@ pop_dele (POP *p)
 
 #ifdef DEBUG
     if(p->debug)
-        pop_log(p,POP_DEBUG,"Deleting message %u at offset %u of length %u\n",
-            mp->number,mp->offset,mp->length);
+        pop_log(p, POP_DEBUG,
+		"Deleting message %u at offset %ld of length %ld\n",
+		mp->number, mp->offset, mp->length);
 #endif /* DEBUG */
 
     /*  Update the messages_deleted and bytes_deleted counters */

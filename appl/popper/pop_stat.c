@@ -15,10 +15,12 @@ int
 pop_stat (POP *p)
 {
 #ifdef DEBUG
-    if (p->debug) pop_log(p,POP_DEBUG,"%d message(s) (%d octets).",
+    if (p->debug) pop_log(p,POP_DEBUG,"%d message(s) (%ld octets).",
 			  p->msg_count-p->msgs_deleted,
 			  p->drop_size-p->bytes_deleted);
 #endif /* DEBUG */
     return (pop_msg (p,POP_SUCCESS,
-        "%u %u",p->msg_count-p->msgs_deleted,p->drop_size-p->bytes_deleted));
+		     "%d %ld",
+		     p->msg_count-p->msgs_deleted,
+		     p->drop_size-p->bytes_deleted));
 }

@@ -133,7 +133,7 @@ pop_dropinfo(POP *p)
 #ifdef DEBUG
             if(p->debug)
                 pop_log(p, POP_DEBUG,
-			"Msg %d at offset %u being added to list",
+			"Msg %d at offset %ld being added to list",
 			mp->number, mp->offset);
 #endif /* DEBUG */
         }else if(in_header){
@@ -191,8 +191,8 @@ pop_dropinfo(POP *p)
         int i;
         for (i = 0, mp = p->mlp; i < p->msg_count; i++, mp++)
 #ifdef UIDL
-            pop_log(p,POP_DEBUG,
-                "Msg %d at offset %d is %d octets long and has %u lines and id %s.",
+	    pop_log(p,POP_DEBUG,
+		    "Msg %d at offset %ld is %ld octets long and has %u lines and id %s.",
                     mp->number,mp->offset,mp->length,mp->lines, mp->msg_id);
 #else	
             pop_log(p,POP_DEBUG,

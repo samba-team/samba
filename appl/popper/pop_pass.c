@@ -93,6 +93,6 @@ pop_pass (POP *p)
 
     /*  Authorization completed successfully */
     return (pop_msg (p, POP_SUCCESS,
-		     "%s has %d message(s) (%d octets).",
+		     "%s has %d message(s) (%ld octets).",
 		     p->user, p->msg_count, p->drop_size));
 }

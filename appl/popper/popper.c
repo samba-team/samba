@@ -75,14 +75,16 @@ main (int argc, char **argv)
 
     for (p.CurrentState=auth1;p.CurrentState!=halt&&p.CurrentState!=error;) {
         if (hangup) {
-            pop_msg(&p,POP_FAILURE,"POP hangup",p.myhost);
+            pop_msg(&p, POP_FAILURE, "POP hangup: %s", p.myhost);
             if (p.CurrentState > auth2 && !pop_updt(&p))
-                pop_msg(&p,POP_FAILURE,"POP mailbox update failed.",p.myhost);
+                pop_msg(&p, POP_FAILURE,
+			"POP mailbox update failed: %s", p.myhost);
             p.CurrentState = error;
-        } else if (tgets(message,MAXLINELEN,p.input,pop_timeout) == NULL) {
-	    pop_msg(&p,POP_FAILURE,"POP timeout",p.myhost);
+        } else if (tgets(message, MAXLINELEN, p.input, pop_timeout) == NULL) {
+	    pop_msg(&p, POP_FAILURE, "POP timeout: %s", p.myhost);
 	    if (p.CurrentState > auth2 && !pop_updt(&p))
-                pop_msg(&p,POP_FAILURE,"POP mailbox update failed!",p.myhost);
+                pop_msg(&p,POP_FAILURE,
+			"POP mailbox update failed: %s", p.myhost);
             p.CurrentState = error;
         }
         else {

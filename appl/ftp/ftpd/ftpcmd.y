@@ -1373,7 +1373,7 @@ sizecmd(char *filename)
 		if (stat(filename, &stbuf) < 0 || !S_ISREG(stbuf.st_mode))
 			reply(550, "%s: not a plain file.", filename);
 		else
-			reply(213, "%qu", stbuf.st_size);
+			reply(213, "%lu", (unsigned long)stbuf.st_size);
 		break; }
 	case TYPE_A: {
 		FILE *fin;

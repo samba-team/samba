@@ -58,6 +58,15 @@ childhandler (int sig)
 }
 
 static void
+fatal(int, des_cblock *, des_key_schedule,
+      struct sockaddr_in *, struct sockaddr_in *,
+      char *format, ...)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 6, 7)))
+#endif
+;
+
+static void
 fatal (int fd, des_cblock *key, des_key_schedule schedule,
        struct sockaddr_in *thisaddr,
        struct sockaddr_in *thataddr,

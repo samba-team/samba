@@ -28,6 +28,6 @@ pop_rset (POP *p)
     /*  Reset the last-message-access flag */
     p->last_msg = 0;
 
-    return (pop_msg(p,POP_SUCCESS,"Maildrop has %u messages (%u octets)",
-        p->msg_count,p->drop_size));
+    return (pop_msg(p,POP_SUCCESS,"Maildrop has %u messages (%ld octets)",
+		    p->msg_count, p->drop_size));
 }
