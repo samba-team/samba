@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,12 +32,108 @@
  */
 
 #include "krb5_locl.h"
+#include <dirent.h>
 
 RCSID("$Id$");
 
 /*
  * Return TRUE iff `principal' is allowed to login as `luser'.
  */
+
+static krb5_error_code
+check_one_file(krb5_context context, 
+	       const char *filename, 
+	       struct passwd *pwd,
+	       krb5_principal principal, 
+	       krb5_boolean *result)
+{
+    FILE *f;
+    char buf[BUFSIZ];
+    krb5_error_code ret;
+    struct stat st;
+    
+    *result = FALSE;
+
+    f = fopen (filename, "r");
+    if (f == NULL)
+	return errno;
+    
+    /* check type and mode of file */
+    if (fstat(fileno(f), &st) != 0) {
+	fclose (f);
+	return errno;
+    }
+    if (S_ISDIR(st.st_mode)) {
+	fclose (f);
+	return EISDIR;
+    }
+    if (st.st_uid != pwd->pw_uid && st.st_uid != 0) {
+	fclose (f);
+	return EACCES;
+    }
+    if ((st.st_mode & (S_IWGRP | S_IWOTH)) != 0) {
+	fclose (f);
+	return EACCES;
+    }
+
+    while (fgets (buf, sizeof(buf), f) != NULL) {
+	krb5_principal tmp;
+
+	if(buf[strcspn(buf, "\n")] != '\n') {
+	    int c;
+	    c = fgetc(f);
+	    if(c != EOF) {
+		while(c != EOF && c != '\n')
+		    c = fgetc(f);
+		/* line was too long, so ignore it */
+		continue;
+	    }
+	}
+	buf[strcspn(buf, "\n")] = '\0';
+	ret = krb5_parse_name (context, buf, &tmp);
+	if (ret)
+	    continue;
+	*result = krb5_principal_compare (context, principal, tmp);
+	krb5_free_principal (context, tmp);
+	if (*result) {
+	    fclose (f);
+	    return 0;
+	}
+    }
+    fclose (f);
+    return 0;
+}
+
+static krb5_boolean
+match_local_principals(krb5_context context,
+		       krb5_principal principal,
+		       const char *luser)
+{
+    krb5_error_code ret;
+    krb5_realm *realms, *r;
+    krb5_boolean result = FALSE;
+    
+    /* multi-component principals can never match */
+    if(krb5_principal_get_comp_string(context, principal, 1) != NULL)
+	return FALSE;
+
+    ret = krb5_get_default_realms (context, &realms);
+    if (ret)
+	return FALSE;
+	
+    for (r = realms; *r != NULL; ++r) {
+	if(strcmp(krb5_principal_get_realm(context, principal),
+		  *r) != 0)
+	    continue;
+	if(strcmp(krb5_principal_get_comp_string(context, principal, 0),
+		  luser) == 0) {
+	    result = TRUE;
+	    break;
+	}
+    }
+    krb5_free_host_realm (context, realms);
+    return result;
+}
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_kuserok (krb5_context context,
@@ -46,62 +142,45 @@ krb5_kuserok (krb5_context context,
 {
     char buf[BUFSIZ];
     struct passwd *pwd;
-    FILE *f;
-    krb5_realm *realms, *r;
     krb5_error_code ret;
-    krb5_boolean b;
+    krb5_boolean result = FALSE;
 
     pwd = getpwnam (luser);	/* XXX - Should use k_getpwnam? */
     if (pwd == NULL)
 	return FALSE;
 
-    ret = krb5_get_default_realms (context, &realms);
+    /* check user's ~/.k5login */
+    snprintf (buf, sizeof(buf), "%s/.k5login", pwd->pw_dir);
+    ret = check_one_file(context, buf, pwd, principal, &result);
+
+    /* but if it doesn't exist, allow all principals
+       matching <localuser>@<LOCALREALM> */
+    if(ret == ENOENT)
+	return match_local_principals(context, principal, luser);
+
+#if notyet
+    /* on the other hand, if it's a directory, check all files
+       contained therein */
+    if (ret == EISDIR) {
+	DIR *d = opendir(buf);
+	struct dirent *dent;
+	char buf2[BUFSIZ];
+
+	if(d == NULL)
+	    return FALSE;
+	while((dent = readdir(d)) != NULL) {
+	    if(strcmp(dent->d_name, ".") == 0 ||
+	       strcmp(dent->d_name, "..") == 0)
+		continue;
+	    snprintf(buf2, sizeof(buf2), "%s/%s", buf, dent->d_name);
+	    ret = check_one_file(context, buf2, pwd, principal, &result);
+	    if(ret == 0 && result == TRUE)
+		break;
+	}
+	closedir(d);
+    }
+#endif
     if (ret)
 	return FALSE;
-
-    for (r = realms; *r != NULL; ++r) {
-	krb5_principal local_principal;
-
-	ret = krb5_build_principal (context,
-				    &local_principal,
-				    strlen(*r),
-				    *r,
-				    luser,
-				    NULL);
-	if (ret) {
-	    krb5_free_host_realm (context, realms);
-	    return FALSE;
-	}
-
-	b = krb5_principal_compare (context, principal, local_principal);
-	krb5_free_principal (context, local_principal);
-	if (b) {
-	    krb5_free_host_realm (context, realms);
-	    return TRUE;
-	}
-    }
-    krb5_free_host_realm (context, realms);
-
-    snprintf (buf, sizeof(buf), "%s/.k5login", pwd->pw_dir);
-    f = fopen (buf, "r");
-    if (f == NULL)
-	return FALSE;
-    while (fgets (buf, sizeof(buf), f) != NULL) {
-	krb5_principal tmp;
-
-	buf[strcspn(buf, "\n")] = '\0';
-	ret = krb5_parse_name (context, buf, &tmp);
-	if (ret) {
-	    fclose (f);
-	    return FALSE;
-	}
-	b = krb5_principal_compare (context, principal, tmp);
-	krb5_free_principal (context, tmp);
-	if (b) {
-	    fclose (f);
-	    return TRUE;
-	}
-    }
-    fclose (f);
-    return FALSE;
+    return result;
 }
