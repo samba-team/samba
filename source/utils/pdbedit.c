@@ -202,7 +202,6 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
-	BOOL updated_autolock = False, updated_badpw = False;
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
 		return -1;
@@ -214,19 +213,6 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 		fprintf (stderr, "Username not found!\n");
 		pdb_free_sam(&sam_pwent);
 		return -1;
-	}
-
-	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock))
-		DEBUG(2,("pdb_update_autolock_flag failed.\n"));
-
-	if (!pdb_update_bad_password_count(sam_pwent, &updated_badpw))
-		DEBUG(2,("pdb_update_bad_password_count failed.\n"));
-
-	if (updated_autolock || updated_badpw) {
-		become_root();
-		if(!pdb_update_sam_account(sam_pwent))
-			DEBUG(1, ("Failed to modify entry.\n"));
-		unbecome_root();
 	}
 
 	ret=print_sam_info (sam_pwent, verbosity, smbpwdstyle);
@@ -310,6 +296,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 			  const char *user_sid, const char *group_sid,
 			  const BOOL badpw)
 {
+	BOOL updated_autolock = False, updated_badpw = False;
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
 	
@@ -322,6 +309,14 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		return -1;
 	}
 	
+	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock)) {
+		DEBUG(2,("pdb_update_autolock_flag failed.\n"));
+	}
+
+	if (!pdb_update_bad_password_count(sam_pwent, &updated_badpw)) {
+		DEBUG(2,("pdb_update_bad_password_count failed.\n"));
+	}
+
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname, PDB_CHANGED);
 	if (homedir)
@@ -384,7 +379,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		pdb_set_bad_password_count(sam_pwent, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sam_pwent, 0, PDB_CHANGED);
 	}
-	
+
 	if (NT_STATUS_IS_OK(in->pdb_update_sam_account (in, sam_pwent)))
 		print_user_info (in, username, True, False);
 	else {
