@@ -860,33 +860,23 @@ BOOL torture_rpc_drsuapi(void)
 
 	ZERO_STRUCT(priv);
 
-	if (!test_DsBind(p, mem_ctx, &priv)) {
-		ret = False;
+	ret &= test_DsBind(p, mem_ctx, &priv);
+
+	ret &= test_DsGetDCInfo(p, mem_ctx, &priv);
+
+	ret &= test_DsCrackNames(p, mem_ctx, &priv);
+
+	ret &= test_DsWriteAccountSpn(p, mem_ctx, &priv);
+
+	ret &= test_DsReplicaGetInfo(p, mem_ctx, &priv);
+
+	if (lp_parm_int(-1, "torture", "dangerous") == 1) {
+		ret &= test_DsReplicaSync(p, mem_ctx, &priv);
+	} else {
+		printf("DsReplicaSync disabled - enable dangerous tests to use\n");
 	}
 
-	if (!test_DsGetDCInfo(p, mem_ctx, &priv)) {
-		ret = False;
-	}
-
-	if (!test_DsCrackNames(p, mem_ctx, &priv)) {
-		ret = False;
-	}
-
-	if (!test_DsWriteAccountSpn(p, mem_ctx, &priv)) {
-		ret = False;
-	}
-
-	if (!test_DsReplicaGetInfo(p, mem_ctx, &priv)) {
-		ret = False;
-	}
-
-	if (!test_DsReplicaSync(p, mem_ctx, &priv)) {
-		ret = False;
-	}
-
-	if (!test_DsUnbind(p, mem_ctx, &priv)) {
-		ret = False;
-	}
+	ret &= test_DsUnbind(p, mem_ctx, &priv);
 
 	talloc_destroy(mem_ctx);
 
