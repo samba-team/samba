@@ -122,7 +122,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
 
   /* create and send a MSRPC command with api NET_AUTH2 */
 
-  DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %lx\n",
+  DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
          cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
          credstr(cli->clnt_cred.challenge.data), neg_flags));
 
@@ -171,7 +171,7 @@ password ?).\n", cli->desthost ));
     if (ok && r_a.srv_flgs.neg_flags != q_a.clnt_flgs.neg_flags)
     {
       /* report different neg_flags */
-      DEBUG(0,("cli_net_auth2: error neg_flags (q,r) differ - (%lx,%lx)\n",
+      DEBUG(0,("cli_net_auth2: error neg_flags (q,r) differ - (%x,%x)\n",
           q_a.clnt_flgs.neg_flags, r_a.srv_flgs.neg_flags));
       ok = False;
     }
@@ -264,7 +264,7 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
 
   /* create and send a MSRPC command with api NET_SRV_PWSET */
 
-  DEBUG(4,("cli_net_srv_pwset: srv:%s acct:%s sc: %d mc: %s clnt %s %lx\n",
+  DEBUG(4,("cli_net_srv_pwset: srv:%s acct:%s sc: %d mc: %s clnt %s %x\n",
            cli->srv_name_slash, cli->mach_acct, sec_chan_type, global_myname,
            credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
 
@@ -331,7 +331,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
 
   /* create and send a MSRPC command with api NET_SAMLOGON */
 
-  DEBUG(4,("cli_net_sam_logon: srv:%s mc:%s clnt %s %lx ll: %d\n",
+  DEBUG(4,("cli_net_sam_logon: srv:%s mc:%s clnt %s %x ll: %d\n",
              cli->srv_name_slash, global_myname, 
              credstr(new_clnt_cred.challenge.data), cli->clnt_cred.timestamp.time,
              ctr->switch_value));
@@ -416,7 +416,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 
   /* create and send a MSRPC command with api NET_SAMLOGOFF */
 
-  DEBUG(4,("cli_net_sam_logoff: srv:%s mc:%s clnt %s %lx ll: %d\n",
+  DEBUG(4,("cli_net_sam_logoff: srv:%s mc:%s clnt %s %x ll: %d\n",
             cli->srv_name_slash, global_myname,
             credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time,
             ctr->switch_value));

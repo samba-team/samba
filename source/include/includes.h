@@ -464,4 +464,10 @@ time_t mktime(struct tm *t);
 int ftruncate(int f,long l);
 #endif
 
+#if (defined(HAVE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
+/* stupid glibc */
+int setresuid(uid_t ruid, uid_t euid, uid_t suid);
+int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
+#endif
+
 #endif /* _INCLUDES_H */

@@ -165,7 +165,7 @@ responding.\n", inet_ntoa(rrec->packet->ip)));
       rrec->repeat_time = time(NULL) + rrec->repeat_interval;
 
       DEBUG(5,("release_name_timeout_response: increasing WINS timeout to %d seconds.\n",
-              rrec->repeat_interval));
+              (int)rrec->repeat_interval));
       return; /* Don't remove the response record. */
     }
   }

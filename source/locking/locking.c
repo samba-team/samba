@@ -33,7 +33,6 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-extern connection_struct Connections[];
 extern files_struct Files[];
 extern int Client;
 
@@ -147,12 +146,9 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
-  int cnum;
   int lock_num = blr->lock_num;
   char *data;
   int i;
-
-  cnum = SVAL(inbuf,smb_tid);
 
   data = smb_buf(inbuf) + 10*num_ulocks;
 
@@ -164,7 +160,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int
   for(i = blr->lock_num; i >= 0; i--) {
     count = IVAL(data,SMB_LKLEN_OFFSET(i));
     offset = IVAL(data,SMB_LKOFF_OFFSET(i));
-    do_unlock(fnum,cnum,count,offset,&dummy1,&dummy2);
+    do_unlock(fnum,conn,count,offset,&dummy1,&dummy2);
   }
 
   construct_reply_common(inbuf, outbuf);
@@ -185,13 +181,10 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
-  int cnum;
   int lock_num = blr->lock_num;
   char *data;
   int eclass=0;
   uint32 ecode=0;
-
-  cnum = SVAL(inbuf,smb_tid);
 
   data = smb_buf(inbuf) + 10*num_ulocks;
 
@@ -203,7 +196,7 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
   for(; blr->lock_num < num_locks; blr->lock_num++) {
     count = IVAL(data,SMB_LKLEN_OFFSET(blr->lock_num));
     offset = IVAL(data,SMB_LKOFF_OFFSET(blr->lock_num));
-    if(!do_lock(fnum,cnum,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
+    if(!do_lock(fnum,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode))
       break;
   }
@@ -214,8 +207,8 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
      * Success - we got all the locks.
      */
 
-    DEBUG(3,("blocking_lock_record_process fnum=%d cnum=%d type=%d num_locks=%d\n",
-          fnum, cnum, (unsigned int)locktype, num_locks) );
+    DEBUG(3,("blocking_lock_record_process fnum=%d type=%d num_locks=%d\n",
+          fnum, (unsigned int)locktype, num_locks) );
 
     blocking_lock_reply_success(blr);
     return True;
@@ -260,7 +253,6 @@ void process_blocking_lock_queue(time_t t)
 
   while(blr != NULL) {
     int fnum = GETFNUM(blr->inbuf,smb_vwv2);
-    int cnum = SVAL(blr->inbuf,smb_tid);
     files_struct *fsp = &Files[fnum];
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
                   SVAL(blr->inbuf,smb_uid);
@@ -282,7 +274,7 @@ void process_blocking_lock_queue(time_t t)
       continue;
     }
 
-    if(!become_user(&Connections[cnum],cnum,vuid)) {
+    if(!become_user(conn,vuid)) {
       DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
             vuid ));
       /*
@@ -294,9 +286,8 @@ void process_blocking_lock_queue(time_t t)
       continue;
     }
 
-    if(!become_service(cnum,True)) {
-      DEBUG(0,("process_blocking_lock_queue: Unable to become service cnum=%d. \
-Error was %s.\n", cnum, strerror(errno) ));
+    if(!become_service(conn,True)) {
+      DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
       /*
        * Remove the entry and return an error to the client.
        */
@@ -365,39 +356,39 @@ static int map_lock_type( files_struct *fsp, int lock_type)
 /****************************************************************************
  Utility function called to see if a file region is locked.
 ****************************************************************************/
-
-BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset, int lock_type)
+BOOL is_locked(int fnum,connection_struct *conn,
+	       uint32 count,uint32 offset, int lock_type)
 {
-  int snum = SNUM(cnum);
-  files_struct *fsp = &Files[fnum];
+	int snum = SNUM(conn);
+	files_struct *fsp = &Files[fnum];
 
-  if (count == 0)
-    return(False);
+	if (count == 0)
+		return(False);
 
-  if (!lp_locking(snum) || !lp_strict_locking(snum))
-    return(False);
+	if (!lp_locking(snum) || !lp_strict_locking(snum))
+		return(False);
 
-  /*
-   * Note that most UNIX's can *test* for a write lock on
-   * a read-only fd, just not *set* a write lock on a read-only
-   * fd. So we don't need to use map_lock_type here.
-   */
-
-  return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,lock_type));
+	/*
+	 * Note that most UNIX's can *test* for a write lock on
+	 * a read-only fd, just not *set* a write lock on a read-only
+	 * fd. So we don't need to use map_lock_type here.
+	 */
+	
+	return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,lock_type));
 }
 
 
 /****************************************************************************
  Utility function called by locking requests.
 ****************************************************************************/
-
-BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int lock_type,
+BOOL do_lock(int fnum,connection_struct *conn,
+	     uint32 count,uint32 offset,int lock_type,
              int *eclass,uint32 *ecode)
 {
   BOOL ok = False;
   files_struct *fsp = &Files[fnum];
 
-  if (!lp_locking(SNUM(cnum)))
+  if (!lp_locking(SNUM(conn)))
     return(True);
 
   if (count == 0) {
@@ -406,7 +397,7 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int lock_type,
     return False;
   }
 
-  if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->cnum == cnum))
+  if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->conn == conn))
     ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,
                     map_lock_type(fsp,lock_type));
 
@@ -422,16 +413,16 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int lock_type,
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
-
-BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode)
+BOOL do_unlock(int fnum,connection_struct *conn,
+	       uint32 count,uint32 offset,int *eclass,uint32 *ecode)
 {
   BOOL ok = False;
   files_struct *fsp = &Files[fnum];
 
-  if (!lp_locking(SNUM(cnum)))
+  if (!lp_locking(SNUM(conn)))
     return(True);
 
-  if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->cnum == cnum))
+  if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->conn == conn))
     ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);
    
   if (!ok) {
@@ -481,29 +472,29 @@ BOOL locking_end(void)
 /*******************************************************************
  Lock a hash bucket entry.
 ******************************************************************/
-
-BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok)
+BOOL lock_share_entry(connection_struct *conn,
+		      uint32 dev, uint32 inode, int *ptok)
 {
-	return share_ops->lock_entry(cnum, dev, inode, ptok);
+	return share_ops->lock_entry(conn, dev, inode, ptok);
 }
 
 /*******************************************************************
  Unlock a hash bucket entry.
 ******************************************************************/
-
-BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, int token)
+BOOL unlock_share_entry(connection_struct *conn,
+			uint32 dev, uint32 inode, int token)
 {
-	return share_ops->unlock_entry(cnum, dev, inode, token);
+	return share_ops->unlock_entry(conn, dev, inode, token);
 }
 
 /*******************************************************************
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
-
-int get_share_modes(int cnum, int token, uint32 dev, uint32 inode, 
+int get_share_modes(connection_struct *conn, 
+		    int token, uint32 dev, uint32 inode, 
 		    share_mode_entry **shares)
 {
-	return share_ops->get_entries(cnum, token, dev, inode, shares);
+	return share_ops->get_entries(conn, token, dev, inode, shares);
 }
 
 /*******************************************************************

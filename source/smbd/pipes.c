@@ -58,10 +58,10 @@ extern struct pipe_id_info pipe_names[];
   This code is basically stolen from reply_open_and_X with some
   wrinkles to handle pipes.
 ****************************************************************************/
-int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
+int reply_open_pipe_and_X(connection_struct *conn,
+			  char *inbuf,char *outbuf,int length,int bufsize)
 {
   pstring fname;
-  uint16 cnum = SVAL(inbuf, smb_tid);
   uint16 vuid = SVAL(inbuf, smb_uid);
   int pnum = -1;
   int smb_ofun = SVAL(inbuf,smb_vwv8);
@@ -95,7 +95,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   DEBUG(3,("Known pipe %s opening.\n",fname));
   smb_ofun |= 0x10;		/* Add Create it not exists flag */
 
-  pnum = open_rpc_pipe_hnd(fname, cnum, vuid);
+  pnum = open_rpc_pipe_hnd(fname, conn, vuid);
   if (pnum < 0) return(ERROR(ERRSRV,ERRnofids));
 
   /* Prepare the reply */
@@ -134,12 +134,9 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   uint32 smb_offs = IVAL(inbuf,smb_vwv3);
   int smb_maxcnt = SVAL(inbuf,smb_vwv5);
   int smb_mincnt = SVAL(inbuf,smb_vwv6);
-  int cnum;
   int nread = -1;
   char *data;
   BOOL ok = False;
-
-  cnum = SVAL(inbuf,smb_tid);
 
 /*
   CHECK_FNUM(fnum,cnum);
@@ -161,8 +158,8 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
   SSVAL(smb_buf(outbuf),-2,nread);
   
-  DEBUG( 3, ( "readX pnum=%04x cnum=%d min=%d max=%d nread=%d\n",
-	      pnum, cnum, smb_mincnt, smb_maxcnt, nread ) );
+  DEBUG(3,("readX pnum=%04x min=%d max=%d nread=%d\n",
+	    pnum, smb_mincnt, smb_maxcnt, nread));
 
   set_chain_pnum(pnum);
 
@@ -171,15 +168,14 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to a close
 ****************************************************************************/
-int reply_pipe_close(char *inbuf,char *outbuf)
+int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 {
   int pnum = get_rpc_pipe_num(inbuf,smb_vwv0);
-  int cnum = SVAL(inbuf,smb_tid);
   int outsize = set_message(outbuf,0,0,True);
 
-  DEBUG(5,("reply_pipe_close: pnum:%x cnum:%x\n", pnum, cnum));
+  DEBUG(5,("reply_pipe_close: pnum:%x\n", pnum));
 
-  if (!close_rpc_pipe_hnd(pnum, cnum)) return(ERROR(ERRDOS,ERRbadfid));
+  if (!close_rpc_pipe_hnd(pnum, conn)) return(ERROR(ERRDOS,ERRbadfid));
 
   return(outsize);
 }

@@ -58,6 +58,12 @@ AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
 echo yes; AC_DEFINE(HAVE_ERRNO_DECL),
 echo no)
 
+# stupid glibc has the functions but no declaration. grrrr.
+echo $ac_n "checking for setresuid declaration $ac_c"
+AC_TRY_COMPILE([#include <unistd.h>],[int i = setresuid],
+echo yes; AC_DEFINE(HAVE_SETRESUID_DECL),
+echo no)
+
 AC_FUNC_MEMCMP
 
 ###############################################

@@ -297,12 +297,12 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
 
   fchk=unoct(hb->dbuf.chksum, sizeof(hb->dbuf.chksum));
 
-  DEBUG(5, ("checksum totals chk=%d fchk=%d chksum=%s\n",
+  DEBUG(5, ("checksum totals chk=%ld fchk=%ld chksum=%s\n",
 	    chk, fchk, hb->dbuf.chksum));
 
   if (fchk != chk)
     {
-      DEBUG(0, ("checksums don't match %d %d\n", fchk, chk));
+      DEBUG(0, ("checksums don't match %ld %ld\n", fchk, chk));
 /*      for (i = 0; i < sizeof(hb -> dummy); i++) {
 	fprintf(stdout, "%2X ", hb -> dummy[i]);
       }
@@ -840,7 +840,7 @@ static BOOL smbshut(file_info2 finfo, int fnum, char *inbuf, char *outbuf)
   SSVAL(outbuf,smb_vwv0,fnum);
   put_dos_date3(outbuf,smb_vwv1,finfo.mtime);
   
-  DEBUG(3,("Setting date to %s (0x%X)",
+  DEBUG(3,("Setting date to %s (0x%lX)",
 	   asctime(LocalTime(&finfo.mtime)),
 	   finfo.mtime));
   
@@ -1517,7 +1517,7 @@ static void unfixtarname(char *tptr, char *fp, int l, BOOL first)
    * dos \'s in path. Kill any absolute path names. But only if first!
    */
 
-  DEBUG(5, ("firstb=%X, secondb=%X, len=%i\n", tptr, fp, l));
+  DEBUG(5, ("firstb=%lX, secondb=%lX, len=%i\n", tptr, fp, l));
 
   if (first) {
     if (*fp == '.') {
@@ -1829,7 +1829,8 @@ static void do_tarput()
 	      finfo.name = NULL;
 
 	    }
-	    DEBUG(5, ("Tarbuf=%X, buffer=%X, endofbuf=%X\n", tarbuf, buffer_p, endofbuffer));
+	    DEBUG(5, ("Tarbuf=%X, buffer=%X, endofbuf=%X\n", 
+		      (int)tarbuf, (int)buffer_p, (int)endofbuffer));
 	    switch (readtarheader((union hblock *) buffer_p, &finfo, cur_dir))
 	      {
 	      case -2:             /* something dodgy but not fatal about this */
@@ -1899,7 +1900,8 @@ static void do_tarput()
 	      cp = longname + strlen(cur_dir);
 	      file_len = finfo.size;
 
-	      DEBUG(5, ("longname=%0X, cp=%0X, file_len=%i\n", longname, cp, file_len));
+	      DEBUG(5, ("longname=%0X, cp=%0X, file_len=%i\n", 
+			(int)longname, (int)cp, file_len));
 
 	      while (file_len > 0) {
 
@@ -1917,7 +1919,7 @@ static void do_tarput()
 		cp = cp + strlen(cp); /* Move to end of string */
 		buffer_p += TBLOCK;
 		file_len -= TBLOCK;
-		DEBUG(5, ("cp=%0X, file_len=%i\n", cp, file_len));
+		DEBUG(5, ("cp=%0X, file_len=%i\n", (int)cp, file_len));
 		next_header = 1;  /* Force read of next header */
 
 	      }
@@ -2045,7 +2047,7 @@ static void do_tarput()
 	    }
 	  if (fsize % TBLOCK) buffer_p+=TBLOCK - (fsize % TBLOCK);
 	  DEBUG(5, ("buffer_p is now %d (psn=%d)\n",
-		    (long) buffer_p, (long)(buffer_p - tarbuf)));
+		    (int) buffer_p, (int)(buffer_p - tarbuf)));
 	  ntarf++;
 	  fsize=0;
 

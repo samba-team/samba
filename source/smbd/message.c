@@ -78,7 +78,7 @@ static void msg_deliver(void)
       string_sub(s,"%s",name);
       string_sub(s,"%f",msgfrom);
       string_sub(s,"%t",msgto);
-      standard_sub(-1,s);
+      standard_sub_basic(s);
       smbrun(s,NULL,False);
     }
 
@@ -90,7 +90,8 @@ static void msg_deliver(void)
 /****************************************************************************
   reply to a sends
 ****************************************************************************/
-int reply_sends(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_sends(connection_struct *conn,
+		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int len;
   char *orig,*dest,*msg;
@@ -128,7 +129,8 @@ int reply_sends(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a sendstrt
 ****************************************************************************/
-int reply_sendstrt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_sendstrt(connection_struct *conn,
+		   char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   char *orig,*dest;
   int outsize = 0;
@@ -155,7 +157,8 @@ int reply_sendstrt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a sendtxt
 ****************************************************************************/
-int reply_sendtxt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_sendtxt(connection_struct *conn,
+		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int len;
   int outsize = 0;
@@ -183,7 +186,8 @@ int reply_sendtxt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a sendend
 ****************************************************************************/
-int reply_sendend(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_sendend(connection_struct *conn,
+		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
 
@@ -192,7 +196,7 @@ int reply_sendend(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   outsize = set_message(outbuf,0,0,True);
 
-  DEBUG( 3, ( "%s SMBsendend\n" ) );
+  DEBUG(3,("SMBsendend\n"));
 
   msg_deliver();
 

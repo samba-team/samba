@@ -40,7 +40,7 @@ static int chain_pnum = -1;
 pipes_struct Pipes[MAX_OPEN_PIPES];
 
 #define P_OPEN(p) ((p)->open)
-#define P_OK(p,c) (P_OPEN(p) && (c)==((p)->cnum))
+#define P_OK(p,c) (P_OPEN(p) && (c)==((p)->conn))
 #define VALID_PNUM(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PIPES))
 #define OPEN_PNUM(pnum)    (VALID_PNUM(pnum) && P_OPEN(&(Pipes[pnum])))
 #define PNUM_OK(pnum,c) (OPEN_PNUM(pnum) && (c)==Pipes[pnum].cnum)
@@ -93,44 +93,43 @@ void init_rpc_pipe_hnd(void)
 /****************************************************************************
   find first available file slot
 ****************************************************************************/
-int open_rpc_pipe_hnd(char *pipe_name, int cnum, uint16 vuid)
+int open_rpc_pipe_hnd(char *pipe_name, connection_struct *conn, uint16 vuid)
 {
 	int i;
 	/* we start at 1 here for an obscure reason I can't now remember,
 	but I think is important :-) */
-	for (i = 1; i < MAX_OPEN_PIPES; i++)
-	{
-		if (!Pipes[i].open)
-		{
-			Pipes[i].open = True;
-			Pipes[i].device_state = 0;
-			Pipes[i].cnum = cnum;
-			Pipes[i].uid  = vuid;
-
-			Pipes[i].rhdr.data  = NULL;
-			Pipes[i].rdata.data = NULL;
-			Pipes[i].rhdr.offset  = 0;
-			Pipes[i].rdata.offset = 0;
-
-			Pipes[i].file_offset     = 0;
-			Pipes[i].hdr_offsets     = 0;
-			Pipes[i].frag_len_left   = 0;
-			Pipes[i].next_frag_start = 0;
-
-			fstrcpy(Pipes[i].name, pipe_name);
-
-			DEBUG(4,("Opened pipe %s with handle %x\n",
-			           pipe_name, i + PIPE_HANDLE_OFFSET));
-
-			set_chain_pnum(i);
-
-			return(i);
-		}
+	for (i = 1; i < MAX_OPEN_PIPES; i++) {
+		if (!Pipes[i].open) break;
 	}
 
-	DEBUG(1,("ERROR! Out of pipe structures - perhaps increase MAX_OPEN_PIPES?\n"));
+	if (i == MAX_OPEN_PIPES) {
+		DEBUG(1,("ERROR! Out of pipe structures\n"));
+		return(-1);
+	}
 
-	return(-1);
+	Pipes[i].open = True;
+	Pipes[i].device_state = 0;
+	Pipes[i].conn = conn;
+	Pipes[i].uid  = vuid;
+	
+	Pipes[i].rhdr.data  = NULL;
+	Pipes[i].rdata.data = NULL;
+	Pipes[i].rhdr.offset  = 0;
+	Pipes[i].rdata.offset = 0;
+	
+	Pipes[i].file_offset     = 0;
+	Pipes[i].hdr_offsets     = 0;
+	Pipes[i].frag_len_left   = 0;
+	Pipes[i].next_frag_start = 0;
+	
+	fstrcpy(Pipes[i].name, pipe_name);
+	
+	DEBUG(4,("Opened pipe %s with handle %x\n",
+		 pipe_name, i + PIPE_HANDLE_OFFSET));
+	
+	set_chain_pnum(i);
+	
+	return(i);
 }
 
 /****************************************************************************
@@ -151,9 +150,8 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 
 	if (VALID_PNUM(pnum - PIPE_HANDLE_OFFSET))
 	{
-		DEBUG(6,("name: %s cnum: %d open: %s pos: %d len: %d",
+		DEBUG(6,("name: %s open: %s pos: %d len: %d",
 		          p->name,
-		          p->cnum,
 		          BOOLSTR(p->open),
 		          pos, n));
 	}
@@ -269,9 +267,8 @@ BOOL get_rpc_pipe(int pnum, pipes_struct **p)
 
 	if (VALID_PNUM(pnum - PIPE_HANDLE_OFFSET))
 	{
-		DEBUG(6,("name: %s cnum: %d open: %s ",
+		DEBUG(6,("name: %s open: %s ",
 		          Pipes[pnum - PIPE_HANDLE_OFFSET].name,
-		          Pipes[pnum - PIPE_HANDLE_OFFSET].cnum,
 		          BOOLSTR(Pipes[pnum - PIPE_HANDLE_OFFSET].open)));
 	}
 	if (OPEN_PNUM(pnum - PIPE_HANDLE_OFFSET))
@@ -306,8 +303,8 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)
 
 	if (P_OPEN(p))
 	{
-		DEBUG(3,("%s Setting pipe device state=%x on pipe (name=%s cnum=%d)\n",
-		         timestring(), device_state, p->name, p->cnum));
+		DEBUG(3,("%s Setting pipe device state=%x on pipe (name=%s)\n",
+		         timestring(), device_state, p->name));
 
 		p->device_state = device_state;
    
@@ -315,8 +312,8 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)
 	}
 	else
 	{
-		DEBUG(3,("%s Error setting pipe device state=%x (name=%s cnum=%d)\n",
-		          timestring(), device_state, p->name, p->cnum));
+		DEBUG(3,("%s Error setting pipe device state=%x (name=%s)\n",
+		          timestring(), device_state, p->name));
 		return False;
 	}
 }
@@ -324,32 +321,30 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)
 /****************************************************************************
   close an rpc pipe
 ****************************************************************************/
-BOOL close_rpc_pipe_hnd(int pnum, int cnum)
+BOOL close_rpc_pipe_hnd(int pnum, connection_struct *conn)
 {
 	pipes_struct *p = NULL;
 	get_rpc_pipe(pnum, &p);
-  /* mapping is PIPE_HANDLE_OFFSET up... */
+	/* mapping is PIPE_HANDLE_OFFSET up... */
 
-  if (p != NULL && P_OK(p, cnum))
-  {
-    DEBUG(3,("%s Closed pipe name %s pnum=%x cnum=%d\n",
-	   timestring(),Pipes[pnum-PIPE_HANDLE_OFFSET].name, pnum,cnum));
+	if (p != NULL && P_OK(p, conn)) {
+		DEBUG(3,("%s Closed pipe name %s pnum=%x\n",
+			 timestring(),Pipes[pnum-PIPE_HANDLE_OFFSET].name,
+			 pnum));
   
-    p->open = False;
-
-	p->rdata.offset = 0;
-	p->rhdr.offset = 0;
-	mem_buf_free(&(p->rdata.data));
-	mem_buf_free(&(p->rhdr .data));
-
-    return True;
-  }
-  else
-  {
-    DEBUG(3,("%s Error closing pipe pnum=%x cnum=%d\n",
-	   timestring(),pnum, cnum));
-    return False;
-  }
+		p->open = False;
+		
+		p->rdata.offset = 0;
+		p->rhdr.offset = 0;
+		mem_buf_free(&(p->rdata.data));
+		mem_buf_free(&(p->rhdr .data));
+		
+		return True;
+	} else {
+		DEBUG(3,("%s Error closing pipe pnum=%x\n",
+			 timestring(),pnum));
+		return False;
+	}
 }
 
 /****************************************************************************

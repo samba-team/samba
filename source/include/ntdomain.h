@@ -55,7 +55,7 @@ typedef struct
 
 typedef struct
 {
-	int cnum; 
+	connection_struct *conn;
 	int uid;
 	BOOL open; /* open connection */
 	uint16 device_state;
@@ -79,7 +79,6 @@ typedef struct
 	uint32 hdr_offsets;
 	uint32 frag_len_left;
 	uint32 next_frag_start;
-
 } pipes_struct;
 
 struct acct_info

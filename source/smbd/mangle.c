@@ -418,31 +418,6 @@ BOOL is_8_3( char *fname, BOOL check_case )
   return( True );
   } /* is_8_3 */
 
-/* ************************************************************************** **
- * Provide a checksum on a string
- *
- *  Input:  s - the nul-terminated character string for which the checksum
- *              will be calculated.
- *
- *  Output: The checksum value calculated for s.
- *
- * ************************************************************************** **
- */
-int str_checksum( char *s )
-  {
-  int res = 0;
-  int c;
-  int i=0;
-
-  while( *s )
-    {
-    c = *s;
-    res ^= (c << (i % 15)) ^ (c >> (15-(i%15)));
-    s++;
-    i++;
-    }
-  return(res);
-  } /* str_checksum */
 
 /* ************************************************************************** **
  * Compare two cache keys and return a value indicating their ordinal

@@ -37,7 +37,6 @@
 #ifdef FAST_SHARE_MODES
 
 extern int DEBUGLEVEL;
-extern connection_struct Connections[];
 extern files_struct Files[];
 
 static struct shmem_ops *shmops;
@@ -79,15 +78,17 @@ static BOOL shm_stop_share_mode_mgmt(void)
 /*******************************************************************
   lock a hash bucket entry in shared memory for share_mode management 
   ******************************************************************/
-static BOOL shm_lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok)
+static BOOL shm_lock_share_entry(connection_struct *conn,
+				 uint32 dev, uint32 inode, int *ptok)
 {
-  return shmops->lock_hash_entry(HASH_ENTRY(dev, inode));
+	return shmops->lock_hash_entry(HASH_ENTRY(dev, inode));
 }
 
 /*******************************************************************
   unlock a hash bucket entry in shared memory for share_mode management 
   ******************************************************************/
-static BOOL shm_unlock_share_entry(int cnum, uint32 dev, uint32 inode, int token)
+static BOOL shm_unlock_share_entry(connection_struct *conn,
+				   uint32 dev, uint32 inode, int token)
 {
   return shmops->unlock_hash_entry(HASH_ENTRY(dev, inode));
 }
@@ -95,7 +96,8 @@ static BOOL shm_unlock_share_entry(int cnum, uint32 dev, uint32 inode, int token
 /*******************************************************************
 get all share mode entries in shared memory for a dev/inode pair.
 ********************************************************************/
-static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode, 
+static int shm_get_share_modes(connection_struct *conn,
+			       int token, uint32 dev, uint32 inode, 
 			       share_mode_entry **old_shares)
 {
   int *mode_array;
@@ -426,7 +428,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     /* We must create a share_mode_record */
     share_mode_record *new_mode_p = NULL;
     int new_offset = shmops->shm_alloc(sizeof(share_mode_record) +
-				   strlen(fs_p->name) + 1);
+				   strlen(fs_p->fsp_name) + 1);
     if(new_offset == 0) {
 	    DEBUG(0,("ERROR:set_share_mode shmops->shm_alloc fail!\n"));
 	    return False;
@@ -437,7 +439,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     new_mode_p->st_ino = inode;
     new_mode_p->num_share_mode_entries = 0;
     new_mode_p->share_mode_entries = 0;
-    pstrcpy(new_mode_p->file_name, fs_p->name);
+    pstrcpy(new_mode_p->file_name, fs_p->fsp_name);
 
     /* Chain onto the start of the hash chain (in the hope we will be used first). */
     new_mode_p->next_offset = mode_array[hash_entry];
@@ -446,7 +448,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     file_scanner_p = new_mode_p;
 
     DEBUG(3,("set_share_mode: Created share record for %s (dev %d inode %d)\n", 
-	     fs_p->name, dev, inode));
+	     fs_p->fsp_name, dev, inode));
   }
  
   /* Now create the share mode entry */ 
@@ -485,7 +487,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   file_scanner_p->num_share_mode_entries += 1;
 
   DEBUG(3,("set_share_mode: Created share entry for %s with mode 0x%X pid=%d\n",
-	   fs_p->name, fs_p->share_mode, new_entry_p->e.pid));
+	   fs_p->fsp_name, fs_p->share_mode, new_entry_p->e.pid));
 
   return(True);
 }

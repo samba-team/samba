@@ -2752,7 +2752,7 @@ static BOOL unix_do_match(char *str, char *regexp, int case_sig)
       while(*str) {
 	while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
 	  str++;
-	if(do_match(str,p,case_sig))
+	if(unix_do_match(str,p,case_sig))
 	  return True;
 	if(!*str)
 	  return False;
@@ -2846,8 +2846,8 @@ static BOOL unix_mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   }
   }
 
-  matched = do_match(sbase,ebase,case_sig) && 
-    (trans2 || do_match(sext,eext,case_sig));
+  matched = unix_do_match(sbase,ebase,case_sig) && 
+    (trans2 || unix_do_match(sext,eext,case_sig));
 
   DEBUG(8,("unix_mask_match returning %d\n", matched));
 
@@ -4134,6 +4134,67 @@ void standard_sub_basic(char *str)
 	return;
 }
 
+
+/****************************************************************************
+do some standard substitutions in a string
+****************************************************************************/
+void standard_sub(connection_struct *conn,char *str)
+{
+	char *p, *s, *home;
+
+	for (s=str; (p=strchr(s, '%'));s=p) {
+		switch (*(p+1)) {
+		case 'H': 
+			if ((home = get_home_dir(conn->user))) {
+				string_sub(p,"%H",home);
+			} else {
+				p += 2;
+			}
+			break;
+			
+		case 'P': 
+			string_sub(p,"%P",conn->connectpath); 
+			break;
+			
+		case 'S': 
+			string_sub(p,"%S",
+				   lp_servicename(SNUM(conn))); 
+			break;
+			
+		case 'g': 
+			string_sub(p,"%g",
+				   gidtoname(conn->gid)); 
+			break;
+		case 'u': 
+			string_sub(p,"%u",conn->user); 
+			break;
+			
+			/* Patch from jkf@soton.ac.uk Left the %N (NIS
+			 * server name) in standard_sub_basic as it is
+			 * a feature for logon servers, hence uses the
+			 * username.  The %p (NIS server path) code is
+			 * here as it is used instead of the default
+			 * "path =" string in [homes] and so needs the
+			 * service name, not the username.  */
+		case 'p': 
+			string_sub(p,"%p",
+				   automount_path(lp_servicename(SNUM(conn)))); 
+			break;
+		case '\0': 
+			p++; 
+			break; /* don't run off the end of the string 
+				*/
+			
+		default: p+=2; 
+			break;
+		}
+	}
+	
+	standard_sub_basic(str);
+}
+
+
+
 /*******************************************************************
 are two IPs on the same subnet?
 ********************************************************************/
@@ -5064,3 +5125,28 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
 
   return True;
 }
+
+/*****************************************************************************
+ * Provide a checksum on a string
+ *
+ *  Input:  s - the nul-terminated character string for which the checksum
+ *              will be calculated.
+ *
+ *  Output: The checksum value calculated for s.
+ *
+ * ****************************************************************************
+ */
+int str_checksum(char *s)
+{
+	int res = 0;
+	int c;
+	int i=0;
+	
+	while(*s) {
+		c = *s;
+		res ^= (c << (i % 15)) ^ (c >> (15-(i%15)));
+		s++;
+		i++;
+	}
+	return(res);
+} /* str_checksum */

@@ -88,12 +88,12 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
-          lib/util.o lib/genrand.o lib/username.o lib/access.o 
+          lib/util.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
 
-PARAM_OBJ = param/loadparm.o param/params.o param/pcap.o smbd/print_svid.o 
+PARAM_OBJ = param/loadparm.o param/params.o 
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
              libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
@@ -118,18 +118,19 @@ LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
-             passdb/pass_check.o
+             passdb/pass_check.o passdb/ldap.o passdb/nispass.o 
 
 SMBD_OBJ1 = smbd/server.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o \
-            smbd/groupname.o smbd/ipc.o passdb/ldap.o smbd/mangle.o \
-            smbd/message.o passdb/nispass.o smbd/nttrans.o \
-            smbd/pipes.o smbd/predict.o smbd/printing.o \
+            smbd/groupname.o smbd/ipc.o smbd/mangle.o \
+            smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
             smbd/quotas.o smbd/reply.o smbd/ssl.o smbd/trans2.o smbd/uid.o 
+
+PRINTING_OBJ = param/pcap.o smbd/print_svid.o smbd/printing.o
 
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(LOCKING_OBJ) $(PASSDB_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(LIB_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -167,7 +168,7 @@ STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(UBIQX_OBJ) \
+TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
                $(LIB_OBJ)
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \

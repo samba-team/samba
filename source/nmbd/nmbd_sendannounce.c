@@ -398,7 +398,8 @@ void announce_myself_to_domain_master_browser(time_t t)
   if ((t-announce_timer_last) < (CHECK_TIME_MST_ANNOUNCE * 60))
   {
     DEBUG(10,("announce_myself_to_domain_master_browser: t (%d) - last(%d) < %d\n",
-               t, announce_timer_last, CHECK_TIME_MST_ANNOUNCE * 60 ));
+	      (int)t, (int)announce_timer_last, 
+	      CHECK_TIME_MST_ANNOUNCE * 60 ));
     return;
   }
 

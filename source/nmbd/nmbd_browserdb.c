@@ -124,7 +124,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
     Debug1( "nmbd_browserdb:create_browser_in_lmb_cache()\n" );
     Debug1( "  Added lmb cache entry for workgroup %s ", browc->work_group );
     Debug1( "name %s IP %s ", browc->lmb_name, inet_ntoa(ip) );
-    Debug1( "ttl %d\n", browc->death_time );
+    Debug1( "ttl %d\n", (int)browc->death_time );
     }
   
   return( browc );
