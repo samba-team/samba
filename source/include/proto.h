@@ -789,6 +789,15 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			      uint32 *num_domains, char ***domain_names, 
 			      DOM_SID **domain_sids);
 
+/* The following definitions come from libsmb/cli_netlogon.c  */
+
+struct cli_state *cli_netlogon_initialise(struct cli_state *cli, 
+					  char *system_name,
+					  struct ntuser_creds *creds);
+void cli_netlogon_shutdown(struct cli_state *cli);
+uint32 cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				uint32 query_level);
+
 /* The following definitions come from libsmb/cli_samr.c  */
 
 struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
@@ -935,6 +944,15 @@ uint32 cli_spoolss_deleteprinterdriver (
 	char			*arch,
 	char			*driver
 );
+
+/* The following definitions come from libsmb/cli_srvsvc.c  */
+
+struct cli_state *cli_svrsvc_initialise(struct cli_state *cli, 
+					char *system_name,
+					struct ntuser_creds *creds);
+void cli_srvsvc_shutdown(struct cli_state *cli);
+uint32 cli_srvsvc_net_srv_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   uint32 switch_value, SRV_INFO_CTR *ctr);
 
 /* The following definitions come from libsmb/cliconnect.c  */
 
@@ -2575,10 +2593,21 @@ BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
 /* The following definitions come from rpc_parse/parse_net.c  */
 
 BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth);
-void init_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
-				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
-				uint32 tc_status, char *trusted_domain_name);
+void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, char *srv_name,
+			    uint32 query_level);
+void init_net_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
+			    uint32 flags, uint32 pdc_status, 
+			    uint32 logon_attempts, uint32 tc_status, 
+			    char *trusted_domain_name);
 BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth);
+BOOL net_io_q_logon_ctrl(char *desc, NET_Q_LOGON_CTRL *q_l, prs_struct *ps, 
+			 int depth);
+void init_net_q_logon_ctrl(NET_Q_LOGON_CTRL *q_l, char *srv_name,
+			   uint32 query_level);
+void init_net_r_logon_ctrl(NET_R_LOGON_CTRL *r_l, uint32 query_level,
+			   uint32 flags, uint32 pdc_status);
+BOOL net_io_r_logon_ctrl(char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps, 
+			 int depth);
 void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 			uint32 num_doms, char *dom_name);
 BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth);
@@ -3684,6 +3713,8 @@ BOOL api_netlog_rpc(pipes_struct *p);
 
 /* The following definitions come from rpc_server/srv_netlog_nt.c  */
 
+uint32 _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u, 
+		       NET_R_LOGON_CTRL *r_u);
 uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u);
 uint32 _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u);
 uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u);
@@ -3880,6 +3911,9 @@ uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO 
 /* The following definitions come from rpcclient/cmd_lsarpc.c  */
 
 
+/* The following definitions come from rpcclient/cmd_netlogon.c  */
+
+
 /* The following definitions come from rpcclient/cmd_samr.c  */
 
 void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1);
@@ -3888,6 +3922,9 @@ void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1);
 
 BOOL get_short_archi(char *short_archi, char *long_archi);
 void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
+
+/* The following definitions come from rpcclient/cmd_srvsvc.c  */
+
 
 /* The following definitions come from rpcclient/rpcclient.c  */
 
