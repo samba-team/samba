@@ -66,12 +66,9 @@ static struct charset_functions *charsets = NULL;
 static struct charset_functions *find_charset_functions(const char *name) 
 {
 	struct charset_functions *c = charsets;
-	pstring stripped;
 
-	module_path_get_name(name, stripped);
-	
 	while(c) {
-		if (strcasecmp(stripped, c->name) == 0) {
+		if (strcasecmp(name, c->name) == 0) {
 			return c;
 		}
 		c = c->next;
@@ -86,12 +83,10 @@ BOOL smb_register_charset(struct charset_functions *funcs)
 
 	DEBUG(5, ("Attempting to register new charset %s\n", funcs->name));
 	/* Check whether we already have this charset... */
-	while(c) {
-		if(!strcasecmp(c->name, funcs->name)){ 
-			DEBUG(2, ("Duplicate charset %s, not registering\n", funcs->name));
-			return False;
-		}
-		c = c->next;
+
+	if (find_charset_functions(funcs->name)) {
+		DEBUG(2, ("Duplicate charset %s, not registering\n", funcs->name));
+		return False;
 	}
 
 	funcs->next = funcs->prev = NULL;
