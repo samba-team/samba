@@ -1732,8 +1732,8 @@ void make_enc_hash(SAMR_ENC_HASH *hsh, char hash[16]);
 void samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
 void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 				char *dest_host, char *user_name,
-				char lm_newpass[516], char nt_oldhash[16],
-				char nt_newpass[516], char lm_oldhash[16]);
+				char nt_newpass[516], char nt_oldhash[16],
+				char lm_newpass[516], char lm_oldhash[16]);
 void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
 void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
 
@@ -1904,6 +1904,7 @@ void cmd_lsa_lookup_sids(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
+void cmd_sam_ntchange_pwd(struct client_info *info);
 void cmd_sam_test(struct client_info *info);
 void cmd_sam_enum_users(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
