@@ -117,7 +117,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		return ret;
 	}
 
-	if (!cli_check_sign_mac(cli, True)) {
+	if (!cli_check_sign_mac(cli)) {
 		DEBUG(0, ("SMB Signature verification failed on incoming packet!\n"));
 		cli->smb_rw_error = READ_BAD_SIG;
 		close(cli->fd);

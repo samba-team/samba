@@ -627,9 +627,9 @@ void cli_calculate_sign_mac(struct cli_state *cli)
  *         which had a bad checksum, True otherwise.
  */
  
-BOOL cli_check_sign_mac(struct cli_state *cli, BOOL must_be_ok) 
+BOOL cli_check_sign_mac(struct cli_state *cli) 
 {
-	if (!cli->sign_info.check_incoming_message(cli->inbuf, &cli->sign_info, must_be_ok)) {
+	if (!cli->sign_info.check_incoming_message(cli->inbuf, &cli->sign_info, True)) {
 		free_signing_context(&cli->sign_info);	
 		return False;
 	}
