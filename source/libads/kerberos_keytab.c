@@ -225,7 +225,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		DEBUG(3,("ads_keytab_add_entry: adding keytab entry for (%s) with encryption type (%d) and version (%d)\n",
 			princ_s, enctypes[i], kt_entry.vno));
 		ret = krb5_kt_add_entry(context, keytab, &kt_entry);
-		krb5_free_keyblock(context, keyp);
+		krb5_free_keyblock_contents(context, keyp);
 		ZERO_STRUCT(kt_entry);
 		if (ret) {
 			DEBUG(1,("ads_keytab_add_entry: adding entry to keytab failed (%s)\n", error_message(ret)));
