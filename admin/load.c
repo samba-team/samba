@@ -42,14 +42,14 @@ RCSID("$Id$");
 
 struct entry{
     char *principal;
-    char *kvno;
-    char *keytype;
     char *key;
     char *max_life;
     char *max_renew;
-    char *last_change;
-    char *changed_by;
-    char *expires;
+    char *created;
+    char *modified;
+    char *valid_start;
+    char *valid_end;
+    char *pw_end;
     char *flags;
 };
 
@@ -63,11 +63,15 @@ skip_next(char *p)
     return p;
 }
 
-time_t
-str2time(char *s)
+time_t*
+parse_time(time_t *t, char *s)
 {
     int year, month, date, hour, minute, second;
     struct tm tm;
+    if(strcmp(s, "-") == 0)
+	return NULL;
+    if(t == NULL)
+	t = malloc(sizeof(*t));
     sscanf(s, "%04d%02d%02d%02d%02d%02d", 
 	   &year, &month, &date, &hour, &minute, &second);
     tm.tm_year = year - 1900;
@@ -77,13 +81,108 @@ str2time(char *s)
     tm.tm_min = minute;
     tm.tm_sec = second;
     tm.tm_isdst = 0;
-    return timegm(&tm);
+    *t = timegm(&tm);
+    return t;
+}
+
+unsigned*
+parse_integer(unsigned *u, char *s)
+{
+    if(u == NULL)
+	u = malloc(sizeof(*u));
+    sscanf(s, "%u", u);
+    return u;
+}
+
+static void
+parse_keys(hdb_entry *ent, char *str)
+{
+    char *save = NULL;
+    Key *key;
+    int tmp;
+    char *p;
+    int i;
+    p = strtok_r(str, ":", &save);
+    sscanf(p, "%d", &tmp);
+    ent->kvno = tmp;
+    p = strtok_r(NULL, ":", &save);
+    while(p){
+	Key *key;
+	key = realloc(ent->keys.val, 
+		      (ent->keys.len + 1) * sizeof(*ent->keys.val));
+	if(key == NULL)
+	    abort();
+	ent->keys.val = key;
+	key = ent->keys.val + ent->keys.len;
+	ent->keys.len++;
+	sscanf(p, "%d", &tmp);
+	key->mkvno = tmp;
+	p = strtok_r(NULL, ":", &save);
+	sscanf(p, "%d", &tmp);
+	key->key.keytype = tmp;
+	p = strtok_r(NULL, ":", &save);
+	krb5_data_alloc(&key->key.keyvalue, (strlen(p) - 1) / 2 + 1);
+	for(i = 0; i < strlen(p); i += 2){
+	    sscanf(p + i, "%02x", &tmp);
+	    ((u_char*)key->key.keyvalue.data)[i / 2] = tmp;
+	}
+	p = strtok_r(NULL, ":", &save);
+	if(strcmp(p, "-") != 0){
+	    key->salt = malloc(sizeof(*key->salt));
+	    krb5_data_alloc(key->salt, (strlen(p) - 1) / 2 + 1);
+	    for(i = 0; i < strlen(p); i += 2){
+		sscanf(p + i, "%02x", &tmp);
+		((u_char*)key->salt->data)[i / 2] = tmp;
+	    }
+	}
+	p = strtok_r(NULL, ":", &save);
+    }
+}
+
+static Event*
+parse_event(Event *ev, char *str)
+{
+    char *save = NULL;
+    char *p;
+    if(strcmp(str, "-") == 0)
+	return NULL;
+    if(ev == NULL)
+	ev = malloc(sizeof(*ev));
+    memset(ev, 0, sizeof(*ev));
+    p = strtok_r(str, ":", &save);
+    parse_time(&ev->time, p);
+    p = strtok_r(NULL, ":", &save);
+    krb5_parse_name(context, p, &ev->principal);
+    return ev;
+}
+
+static HDBFlags
+parse_flags(char *str)
+{
+    unsigned i;
+    HDBFlags f;
+    parse_integer(&i, str);
+    f.initial = i & 1;
+    i >>= 1;
+    f.forwardable = i & 1;
+    i >>= 1;
+    f.proxiable = i & 1;
+    i >>= 1;
+    f.renewable = i & 1;
+    i >>= 1;
+    f.postdate = i & 1;
+    i >>= 1;
+    f.server = i & 1;
+    i >>= 1;
+    f.client = i & 1;
+    i >>= 1;
+    f.invalid = i & 1;
+    return f;
 }
 
 static void
 doit(char *filename, int merge)
 {
-#if 0
     FILE *f;
     HDB *db;
     char s[1024];
@@ -122,13 +221,23 @@ doit(char *filename, int merge)
 	    }
 	}
 	p = skip_next(p);
-	e.kvno = p;
-	while(*p && isdigit(*p)) p++;
-	*p++ = 0;
-	e.keytype = p;
-	while(*p && isdigit(*p)) p++;
-	*p++ = 0;
+	
 	e.key = p;
+	p = skip_next(p);
+
+	e.created = p;
+	p = skip_next(p);
+
+	e.modified = p;
+	p = skip_next(p);
+
+	e.valid_start = p;
+	p = skip_next(p);
+
+	e.valid_end = p;
+	p = skip_next(p);
+
+	e.pw_end = p;
 	p = skip_next(p);
 
 	e.max_life = p;
@@ -137,54 +246,36 @@ doit(char *filename, int merge)
 	e.max_renew = p;
 	p = skip_next(p);
 
-	e.last_change = p;
-	p = skip_next(p);
-
-	e.changed_by = p;
-	p = skip_next(p);
-
-	e.expires = p;
-	p = skip_next(p);
-
 	e.flags = p;
 	p = skip_next(p);
 
-	{
-	    krb5_principal p;
-	    err = krb5_parse_name(context, e.principal, &p);
-		if(err){
-		    fprintf(stderr, "%s:%s:%s (%s)\n", 
-			    filename, 
-			    line,
-			    krb5_get_err_text(context, err),
-			    e.principal);
-		    continue;
-		}
-		ent.principal = *p;
-		free(p);
+	memset(&ent, 0, sizeof(ent));
+	err = krb5_parse_name(context, e.principal, &ent.principal);
+	if(err){
+	    fprintf(stderr, "%s:%s:%s (%s)\n", 
+		    filename, 
+		    line,
+		    krb5_get_err_text(context, err),
+		    e.principal);
+	    continue;
 	}
 	
-	ent.keyblock.keytype = KEYTYPE_DES;
-	ent.keyblock.keyvalue.data = malloc(strlen(e.key)/2+1);
-	for(i = 0; i < strlen(e.key); i += 2){
-	    unsigned tmp;
-	    sscanf(e.key + i, "%2x", &tmp);
-	    ((unsigned char *)ent.keyblock.keyvalue.data)[i/2] = tmp;
-	}
-	ent.keyblock.keyvalue.length = i / 2;
-	ent.kvno = atoi(e.kvno);
-	ent.max_life = atoi(e.max_life);
-	ent.max_renew = atoi(e.max_renew);
-	ent.last_change = str2time(e.last_change);
-	krb5_parse_name(context, e.changed_by, &ent.changed_by);
-	ent.expires = str2time(e.expires);
-	ent.flags.i = atoi(e.flags); /* XXX */
+	parse_keys(&ent, e.key);
+	
+	parse_event(&ent.created_by, e.created);
+	ent.modified_by = parse_event(NULL, e.modified);
+	ent.valid_start = parse_time(NULL, e.valid_start);
+	ent.valid_end = parse_time(NULL, e.valid_end);
+	ent.pw_end = parse_time(NULL, e.pw_end);
+	ent.max_life = parse_integer(NULL, e.max_life);
+	ent.max_renew = parse_integer(NULL, e.max_renew);
+	
+	ent.flags = parse_flags(e.flags);
 	db->store(context, db, &ent);
 	hdb_free_entry (context, &ent);
     }
     db->close(context, db);
     fclose(f);
-#endif
 }
 
 int
