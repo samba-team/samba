@@ -743,10 +743,15 @@ BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
  Inits a NET_Q_SRV_PWSET.
 ********************************************************************/
 
-void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name, 
-                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16])
+void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *sess_key, char *acct_name, 
+                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char hashed_mach_pwd[16])
 {
+	unsigned char nt_cypher[16];
+	
 	DEBUG(5,("init_q_srv_pwset\n"));
+	
+	/* Process the new password. */
+	cred_hash3( nt_cypher, hashed_mach_pwd, sess_key, 1);
 
 	init_clnt_info(&q_s->clnt_id, logon_srv, acct_name, sec_chan, comp_name, cred);
 

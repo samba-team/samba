@@ -81,11 +81,11 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 }
 
 
-static int run_rpc_command(const char *pipe_name, 
+static int run_rpc_command(const char *pipe_name, int conn_flags,
 			   rpc_command_fn fn,
 			   int argc, const char **argv) 
 {
-	struct cli_state *cli = net_make_ipc_connection(0);
+	struct cli_state *cli = net_make_ipc_connection(conn_flags);
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid = net_get_remote_domain_sid(cli);
@@ -103,6 +103,8 @@ static int run_rpc_command(const char *pipe_name,
 	
 	nt_status = fn(domain_sid, cli, mem_ctx, argc, argv);
 	
+	DEBUG(5, ("rpc command function returned %s\n", get_nt_error_msg(nt_status)));
+
 	if (cli->nt_pipe_fnum)
 		cli_nt_session_close(cli);
 	
@@ -160,9 +162,62 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
 	return result;
 }
 
+static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				       int argc, const char **argv) {
+	
+	return trust_pw_find_change_and_store_it(cli, mem_ctx, opt_target_workgroup);
+}
+
+static int rpc_changetrustpw(int argc, const char **argv) 
+{
+	return run_rpc_command(PIPE_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_changetrustpw_internals,
+			       argc, argv);
+}
+
+static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				       int argc, const char **argv) {
+	
+	extern pstring global_myname;
+	fstring trust_passwd;
+	unsigned char orig_trust_passwd_hash[16];
+
+	fstrcpy(trust_passwd, global_myname);
+	strlower(trust_passwd);
+	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
+
+	return trust_pw_change_and_store_it(cli, mem_ctx, orig_trust_passwd_hash);
+}
+
+static int rpc_join_oldstyle(int argc, const char **argv) 
+{
+	return run_rpc_command(PIPE_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_join_oldstyle_internals,
+			       argc, argv);
+}
+
+static int rpc_join_usage(int argc, const char **argv) 
+{	
+	d_printf("  net rpc join \t to join a domain with admin username & password\n");
+	d_printf("  net rpc join oldstyle \t to join a domain created in server manager\n");
+	return -1;
+}
+
+static int rpc_join(int argc, const char **argv) 
+{
+	struct functable func[] = {
+		{"oldstyle", rpc_join_oldstyle},
+		{NULL, NULL}
+	};
+	
+	if (argc == 0) {
+		return net_rpc_join(argc, argv);
+	}
+
+	return net_run_function(argc, argv, func, rpc_join_usage);
+}
+
 static int rpc_user_add(int argc, const char **argv) 
 {
-	return run_rpc_command(PIPE_SAMR, rpc_user_add_internals,
+	return run_rpc_command(PIPE_SAMR, 0, rpc_user_add_internals,
 			       argc, argv);
 }
 
@@ -188,15 +243,18 @@ static int rpc_user(int argc, const char **argv)
 
 int net_rpc_usage(int argc, const char **argv) 
 {
-	d_printf("  net rpc join \tto join a domin \n");
+	d_printf("  net rpc join \tto join a domain \n");
+	d_printf("  net rpc user \tto add, delete and list users\n");
+	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
 	return -1;
 }
 
 int net_rpc(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"join", net_rpc_join},
+		{"join", rpc_join},
 		{"user", rpc_user},
+		{"changetrustpw", rpc_changetrustpw},
 		{NULL, NULL}
 	};
 	return net_run_function(argc, argv, func, net_rpc_usage);

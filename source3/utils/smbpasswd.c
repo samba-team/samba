@@ -50,7 +50,6 @@ static void usage(void)
 	printf("extra options when run by root or in local mode:\n");
 	printf("  -L                   local mode (must be first option)\n");
 	printf("  -R ORDER             name resolve order\n");
-	printf("  -j DOMAIN            join domain name\n");
 	printf("  -a                   add user\n");
 	printf("  -x                   delete user\n");
 	printf("  -d                   disable user\n");
@@ -60,67 +59,6 @@ static void usage(void)
 
 	exit(1);
 }
-
-/*********************************************************
-Join a domain.
-**********************************************************/
-static int join_domain(char *domain, char *remote)
-{
-	pstring remote_machine;
-	fstring trust_passwd;
-	unsigned char orig_trust_passwd_hash[16];
-	BOOL ret;
-
-	pstrcpy(remote_machine, remote ? remote : "");
-	fstrcpy(trust_passwd, global_myname);
-	strlower(trust_passwd);
-	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
-
-	/* Ensure that we are not trying to join a
-	   domain if we are locally set up as a domain
-	   controller. */
-
-	if(strequal(remote, global_myname)) {
-		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
-		return 1;
-	}
-
-	/*
-	 * Write the old machine account password.
-	 */
-	
-	if(!secrets_store_trust_account_password(domain,  orig_trust_passwd_hash)) {              
-		fprintf(stderr, "Unable to write the machine account password for \
-machine %s in domain %s.\n", global_myname, domain);
-		return 1;
-	}
-	
-	/*
-	 * If we are given a remote machine assume this is the PDC.
-	 */
-	
-	if(remote == NULL) {
-		pstrcpy(remote_machine, lp_passwordserver());
-	}
-
-	if(!*remote_machine) {
-		fprintf(stderr, "No password server list given in smb.conf - \
-unable to join domain.\n");
-		return 1;
-	}
-
-	ret = change_trust_account_password( domain, remote_machine);
-	
-	if(!ret) {
-		trust_password_delete(domain);
-		fprintf(stderr,"Unable to join domain %s.\n",domain);
-	} else {
-		printf("Joined domain %s.\n",domain);
-	}
-	
-	return (int)ret;
-}
-
 
 static void set_line_buffering(FILE *f)
 {
@@ -241,11 +179,10 @@ static int process_root(int argc, char *argv[])
 {
 	struct passwd  *pwd;
 	int result = 0, ch;
-	BOOL joining_domain = False, got_pass = False, got_username = False;
+	BOOL got_pass = False, got_username = False;
 	int local_flags = LOCAL_SET_PASSWORD;
 	BOOL stdin_passwd_get = False;
 	fstring user_name, user_password;
-	char *new_domain = NULL;
 	char *new_passwd = NULL;
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
@@ -255,7 +192,7 @@ static int process_root(int argc, char *argv[])
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "axdehmnj:r:sR:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "axdehmnjr:sR:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = True;
@@ -278,14 +215,9 @@ static int process_root(int argc, char *argv[])
 		case 'm':
 			local_flags |= LOCAL_TRUST_ACCOUNT;
 			break;
-		case 'n':
-			local_flags |= LOCAL_SET_NO_PASSWORD;
-			local_flags &= ~LOCAL_SET_PASSWORD;
-			break;
 		case 'j':
-			new_domain = optarg;
-			strupper(new_domain);
-			joining_domain = True;
+			d_printf("See 'net rpc join' for this functionality\n");
+			exit(1);
 			break;
 		case 'r':
 			remote_machine = optarg;
@@ -334,46 +266,14 @@ static int process_root(int argc, char *argv[])
 	 */	
 	if(((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) || 
 	   ((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) && 
-		((remote_machine != NULL) || joining_domain))) {
+		(remote_machine != NULL))) {
 		usage();
 	}
 	
 	/* Only load interfaces if we are doing network operations. */
 
-	if (joining_domain || remote_machine) {
+	if (remote_machine) {
 		load_interfaces();
-	}
-
-	/* Join a domain */
-
-	if (joining_domain) {
-
-		if (argc != 0)
-			usage();
-
-		/* Are we joining by specifing an admin username and
-		   password? */
-
-		if (user_name[0]) {
-
-			/* Get administrator password if not specified */
-
-			if (!got_pass) {
-				char *pass = getpass("Password: ");
-
-				if (pass)
-					pstrcpy(user_password, pass);
-			}
-				
-			d_printf("use net rpc join to do this now.\n");
-			return 1;
-			
-		} else {
-
-			/* Or just with the server manager? */
-
-			return join_domain(new_domain, remote_machine);
-		}
 	}
 
 	/*
@@ -435,45 +335,46 @@ static int process_root(int argc, char *argv[])
 
 		slprintf(buf, sizeof(buf)-1, "%s$", user_name);
 		fstrcpy(user_name, buf);
-	}
-
-	if (remote_machine != NULL) {
-		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
-	}
-	
-	if (!(local_flags & LOCAL_SET_PASSWORD)) {
-
-		/*
-		 * If we are trying to enable a user, first we need to find out
-		 * if they are using a modern version of the smbpasswd file that
-		 * disables a user by just writing a flag into the file. If so
-		 * then we can re-enable a user without prompting for a new
-		 * password. If not (ie. they have a no stored password in the
-		 * smbpasswd file) then we need to prompt for a new password.
-		 */
-
-		if(local_flags & LOCAL_ENABLE_USER) {
-			SAM_ACCOUNT *sampass = NULL;
-			BOOL ret;
-			
-			pdb_init_sam(&sampass);
-			ret = pdb_getsampwnam(sampass, user_name);
-			if((sampass != False) && (pdb_get_lanman_passwd(sampass) == NULL)) {
-				local_flags |= LOCAL_SET_PASSWORD;
-			}
-			pdb_free_sam(&sampass);
-		}
-	}
-
-	if(local_flags & LOCAL_SET_PASSWORD) {
-		new_passwd = prompt_for_new_password(stdin_passwd_get);
+	} else {
 		
-		if(!new_passwd) {
-			fprintf(stderr, "Unable to get new password.\n");
-			exit(1);
+		if (remote_machine != NULL) {
+			old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
+		}
+		
+		if (!(local_flags & LOCAL_SET_PASSWORD)) {
+			
+			/*
+			 * If we are trying to enable a user, first we need to find out
+			 * if they are using a modern version of the smbpasswd file that
+			 * disables a user by just writing a flag into the file. If so
+			 * then we can re-enable a user without prompting for a new
+			 * password. If not (ie. they have a no stored password in the
+			 * smbpasswd file) then we need to prompt for a new password.
+			 */
+			
+			if(local_flags & LOCAL_ENABLE_USER) {
+				SAM_ACCOUNT *sampass = NULL;
+				BOOL ret;
+				
+				pdb_init_sam(&sampass);
+				ret = pdb_getsampwnam(sampass, user_name);
+				if((sampass != False) && (pdb_get_lanman_passwd(sampass) == NULL)) {
+					local_flags |= LOCAL_SET_PASSWORD;
+				}
+				pdb_free_sam(&sampass);
+			}
+		}
+		
+		if(local_flags & LOCAL_SET_PASSWORD) {
+			new_passwd = prompt_for_new_password(stdin_passwd_get);
+			
+			if(!new_passwd) {
+				fprintf(stderr, "Unable to get new password.\n");
+				exit(1);
+			}
 		}
 	}
-	
+
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, local_flags)) {
 		fprintf(stderr,"Failed to modify password entry for user %s\n", user_name);
 		result = 1;

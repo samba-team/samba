@@ -148,7 +148,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
 	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_dfs.o \
-	       libsmb/cli_reg.o \
+	       libsmb/cli_reg.o libsmb/trust_passwd.o\
 	       rpc_client/cli_pipe.o libsmb/cli_pipe_util.o
 
 LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
@@ -175,7 +175,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 
 
 RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
-	rpc_client/cli_login.o rpc_client/cli_trust.o \
+	rpc_client/cli_login.o \
 	rpc_client/cli_spoolss_notify.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
@@ -214,7 +214,12 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/posix_acls.o \
 	    smbd/process.o smbd/service.o smbd/error.o \
 	    printing/printfsp.o lib/util_seaccess.o smbd/srvstr.o \
-            smbd/build_options.o
+            smbd/build_options.o \
+	    rpc_client/cli_trust.o \
+	    rpc_client/cli_netlogon.o \
+	    rpc_client/cli_login.o \
+	    rpc_client/cli_spoolss_notify.o
+
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				printing/print_cups.o printing/print_generic.o \
@@ -225,10 +230,11 @@ PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o
 MSDFS_OBJ = msdfs/msdfs.o 
 
 SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
-           $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 	   $(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
-	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ)
+	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) $(LIBMSRPC_OBJ)
+
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
@@ -248,9 +254,9 @@ NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
-           $(PARAM_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
-           smbwrapper/shared.o
+           $(PARAM_OBJ) $(PASSDB_OBJ) \
+	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
+	   smbwrapper/shared.o
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -275,8 +281,7 @@ TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
-                $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ) \
-		libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_pipe_util.o
+                $(UBIQX_OBJ) $(LIB_OBJ)
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
 		$(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ)
@@ -322,8 +327,8 @@ CLIENT_OBJ = client/client.o client/clitar.o \
 NET_OBJ = utils/net.o utils/net_ads.o utils/net_rap.o utils/net_rpc.o \
 	utils/net_rpc_join.o \
 	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
-	$(GROUPDB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-	$(NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ)
+	$(GROUPDB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) 
+
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 

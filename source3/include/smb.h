@@ -1648,4 +1648,10 @@ typedef struct {
 	void *cd_direct, *cd_pull, *cd_push;
 } *smb_iconv_t;
 
+/* The maximum length of a trust account password.
+   Used when we randomly create it, 15 char passwords
+   exceed NT4's max password length */
+
+#define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
+
 #endif /* _SMB_H */

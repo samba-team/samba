@@ -163,7 +163,7 @@ static BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **se
 		if (!*server_name) {
 			*server_name = strdup(inet_ntoa(dest_ip));
 		}
-	} else if (server_name) {
+	} else if (*server_name) {
 		/* resolve the IP address */
 		if (!resolve_name(*server_name, server_ip, 0x20))  {
 			DEBUG(1,("Unable to resolve server name\n"));
@@ -404,6 +404,8 @@ static struct functable net_func[] = {
                         *p2 = 0;
 	}
 	
+	strupper(global_myname);
+
 	load_interfaces();
 
 	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_usage);
