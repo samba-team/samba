@@ -1,3 +1,7 @@
+2004-09-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ipropd_master.c: add help strings to some options
+	
 2004-09-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* chpass_s.c: deal with changed prototype for _kadm5_free_keys

@@ -11,6 +11,19 @@
 	* common.c (init_ivecs): if we don't have an errsock the ivecs
 	should point to the same data
 	
+	* rshd.c: if we don't have an errsock, dup stdout to stderr (this
+	would normally be done by inetd, but not by mini_inetd).
+	
+	* rshd.c: move keepalive setting to after setting up sockets
+	
+2004-02-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rsh.1: reorder and document some options
+
+	* rsh_locl.h: include kafs.h if krb4 || krb5
+
+	* rsh.c: reorder some options
+
 2003-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rsh.1: document -d
