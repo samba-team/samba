@@ -611,6 +611,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		*status = NT_STATUS_LOGON_FAILURE;
 		return NULL;
 	}
+
+	/* the %U substitution may have changed */
+	reload_services(True);
 	
 	/* Remember that a different vuid can connect later without these checks... */
 	
