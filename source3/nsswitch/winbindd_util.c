@@ -159,9 +159,8 @@ BOOL init_domain_list(void)
 		int i;
 		for(i = 0; i < num_domains; i++) {
 			domain = add_trusted_domain(names[i], &cache_methods);
-			if (domain) {
-				sid_copy(&domain->sid, &dom_sids[i]);
-			}
+			if (!domain) continue;
+			sid_copy(&domain->sid, &dom_sids[i]);
 			DEBUG(1,("Added domain %s (%s)\n", 
 				 domain->name, 
 				 sid_string_static(&domain->sid)));
