@@ -74,7 +74,7 @@ sub find_size_var($$)
 		return $size;
 	}
 
-	if ($size =~ /ndr->/) {
+	if ($size =~ /ndr->|\(/) {
 		return $size;
 	}
 
@@ -370,6 +370,10 @@ sub ParseElementPrintScalar($$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my $cprefix = util::c_push_prefix($e);
+
+	if (util::has_property($e, "noprint")) {
+		return;
+	}
 
 	if (defined $e->{VALUE}) {
 		pidl "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $e->{VALUE});\n";

@@ -31,6 +31,16 @@
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 
+
+/*
+  work out the number of bytes needed to align on a n byte boundary
+*/
+size_t ndr_align_size(uint32 offset, size_t n)
+{
+	if ((offset & (n-1)) == 0) return 0;
+	return n - (offset & (n-1));
+}
+
 /*
   initialise a ndr parse structure from a data blob
 */

@@ -1,6 +1,7 @@
 #define STR_ASCII    LIBNDR_FLAG_STR_ASCII
 #define STR_LEN4     LIBNDR_FLAG_STR_LEN4
 #define STR_SIZE4    LIBNDR_FLAG_STR_SIZE4
+#define STR_SIZE2    LIBNDR_FLAG_STR_SIZE2
 #define STR_NOTERM   LIBNDR_FLAG_STR_NOTERM
 #define STR_NULLTERM LIBNDR_FLAG_STR_NULLTERM
 
@@ -37,5 +38,15 @@
 */
 #define ascstr2       [flag(STR_ASCII|STR_LEN4)]            string
 
+/*
+  an ascii string prefixed with [size], 16 bits
+  null terminated
+*/
+#define ascstr3       [flag(STR_ASCII|STR_SIZE2)]            string
 
-#define NDR_NOALIGN LIBNDR_FLAG_NOALIGN
+
+#define NDR_NOALIGN   LIBNDR_FLAG_NOALIGN
+#define NDR_REMAINING LIBNDR_FLAG_REMAINING
+#define NDR_ALIGN2    LIBNDR_FLAG_ALIGN2
+#define NDR_ALIGN4    LIBNDR_FLAG_ALIGN4
+#define NDR_ALIGN8    LIBNDR_FLAG_ALIGN8
