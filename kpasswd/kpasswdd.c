@@ -40,7 +40,13 @@
 #include <hdb.h>
 RCSID("$Id$");
 
+static krb5_context context;
+static krb5_log_facility *log_facility;
+
 static sig_atomic_t exit_flag = 0;
+
+#define KPASSWDD_LOG_ERR  0
+#define KPASSWDD_LOG_INFO 1
 
 static void
 syslog_and_die (const char *m, ...)
@@ -48,7 +54,7 @@ syslog_and_die (const char *m, ...)
     va_list args;
 
     va_start(args, m);
-    vsyslog (LOG_ERR, m, args);
+    krb5_vlog (context, log_facility, KPASSWDD_LOG_ERR, m, args);
     va_end(args);
     exit (1);
 }
@@ -104,7 +110,9 @@ send_reply (int s,
     iov[2].iov_len        = rest->length;
 
     if (sendmsg (s, &msghdr, 0) < 0)
-	syslog (LOG_ERR, "sendmsg: %m");
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "sendmsg: %s",
+		  strerror(errno));
 }
 
 static int
@@ -121,15 +129,15 @@ make_result (krb5_data *data,
 			     expl);
 
     if (data->data == NULL) {
-	syslog (LOG_ERR, "Out of memory generating error reply");
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "Out of memory generating error reply");
 	return 1;
     }
     return 0;
 }
 
 static void
-reply_error (krb5_context context,
-	     krb5_principal server,
+reply_error (krb5_principal server,
 	     int s,
 	     struct sockaddr_in *addr,
 	     krb5_error_code error_code,
@@ -153,9 +161,9 @@ reply_error (krb5_context context,
 			 &error_data);
     krb5_data_free (&e_data);
     if (ret) {
-	syslog (LOG_ERR,
-		"Could not even generate error reply: %s",
-		krb5_get_err_text (context, ret));
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "Could not even generate error reply: %s",
+		  krb5_get_err_text (context, ret));
 	return;
     }
     send_reply (s, addr, NULL, &error_data);
@@ -163,8 +171,7 @@ reply_error (krb5_context context,
 }
 
 static void
-reply_priv (krb5_context context,
-	    krb5_auth_context auth_context,
+reply_priv (krb5_auth_context auth_context,
 	    int s,
 	    struct sockaddr_in *addr,
 	    u_int16_t result_code,
@@ -179,9 +186,9 @@ reply_priv (krb5_context context,
 		       &auth_context,
 		       &ap_rep_data);
     if (ret) {
-	syslog (LOG_ERR,
-		"Could not even generate error reply: %s",
-		krb5_get_err_text (context, ret));
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "Could not even generate error reply: %s",
+		  krb5_get_err_text (context, ret));
 	return;
     }
 
@@ -195,9 +202,9 @@ reply_priv (krb5_context context,
 			NULL);
     krb5_data_free (&e_data);
     if (ret) {
-	syslog (LOG_ERR,
-		"Could not even generate error reply: %s",
-		krb5_get_err_text (context, ret));
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "Could not even generate error reply: %s",
+		  krb5_get_err_text (context, ret));
 	return;
     }
     send_reply (s, addr, &ap_rep_data, &krb_priv_data);
@@ -206,8 +213,7 @@ reply_priv (krb5_context context,
 }
 
 static void
-change (krb5_context context,
-	krb5_auth_context auth_context,
+change (krb5_auth_context auth_context,
 	krb5_principal principal,
 	int s,
 	struct sockaddr_in *addr,
@@ -222,19 +228,22 @@ change (krb5_context context,
 
     krb5_unparse_name (context, principal, &c);
 
-    syslog (LOG_INFO, "Changing password for %s", c);
+    krb5_log (context, log_facility, KPASSWDD_LOG_INFO,
+	      "Changing password for %s", c);
     free (c);
 
     if (pwd_data->length < 6) {	/* XXX */
-	syslog (LOG_ERR, "Password too short");
-	reply_priv (context, auth_context, s, addr, 4, "password too short");
+	krb5_log (context, log_facility,
+		  KPASSWDD_LOG_ERR, "Password too short");
+	reply_priv (auth_context, s, addr, 4, "password too short");
 	return;
     }
 
     ret = hdb_open (context, &db, database, O_RDWR, 0600);
     if (ret) {
-	syslog (LOG_ERR, "hdb_open: %s", krb5_get_err_text(context, ret));
-	reply_priv (context, auth_context, s, addr, 2, "hdb_open failed");
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "hdb_open: %s", krb5_get_err_text(context, ret));
+	reply_priv (auth_context, s, addr, 2, "hdb_open failed");
 	return;
     }
 
@@ -244,15 +253,17 @@ change (krb5_context context,
     
     switch (ret) {
     case HDB_ERR_NOENTRY:
-	syslog (LOG_ERR, "not found in database");
-	reply_priv (context, auth_context, s, addr, 2,
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "not found in database");
+	reply_priv (auth_context, s, addr, 2,
 		    "entry not found in database");
 	goto out;
     case 0:
 	break;
     default :
-	syslog (LOG_ERR, "dbfetch: %s", krb5_get_err_text(context, ret));
-	reply_priv (context, auth_context, s, addr, 2,
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "dbfetch: %s", krb5_get_err_text(context, ret));
+	reply_priv (auth_context, s, addr, 2,
 		    "db_fetch failed");
 	goto out;
     }
@@ -292,12 +303,13 @@ change (krb5_context context,
     }
     krb5_free_keyblock (context, &new_keyblock);
 
-    if (ret == -1) {
-	syslog (LOG_ERR, "dbstore: %m");
-	reply_priv (context, auth_context, s, addr, 2,
+    if (ret) {
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "dbstore: %s", krb5_get_err_text (context, ret));
+	reply_priv (auth_context, s, addr, 2,
 		    "db_store failed");
     } else {
-	reply_priv (context, auth_context, s, addr, 0, "password changed");
+	reply_priv (auth_context, s, addr, 0, "password changed");
     }
 out:
     hdb_free_entry (context, &ent);
@@ -305,8 +317,7 @@ out:
 }
 
 static int
-verify (krb5_context context,
-	krb5_auth_context *auth_context,
+verify (krb5_auth_context *auth_context,
 	krb5_principal server,
 	krb5_ticket **ticket,
 	krb5_data *out_data,
@@ -324,13 +335,15 @@ verify (krb5_context context,
     pkt_ver = (msg[2] << 8) | (msg[3]);
     ap_req_len = (msg[4] << 8) | (msg[5]);
     if (pkt_len != len) {
-	syslog (LOG_ERR, "Strange len: %d != %d", pkt_len, len);
-	reply_error (context, server, s, addr, 0, 1, "bad length");
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "Strange len: %d != %d", pkt_len, len);
+	reply_error (server, s, addr, 0, 1, "bad length");
 	return 1;
     }
     if (pkt_ver != 0x0001) {
-	syslog (LOG_ERR, "Bad version (%d)", pkt_ver);
-	reply_error (context, server, s, addr, 0, 1, "bad version");
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "Bad version (%d)", pkt_ver);
+	reply_error (server, s, addr, 0, 1, "bad version");
 	return 1;
     }
 
@@ -345,15 +358,16 @@ verify (krb5_context context,
 		       NULL,
 		       ticket);
     if (ret) {
-	syslog (LOG_ERR, "krb5_rd_req: %s",
-		krb5_get_err_text(context, ret));
-	reply_error (context, server, s, addr, ret, 3, "rd_req failed");
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR, "krb5_rd_req: %s",
+		  krb5_get_err_text(context, ret));
+	reply_error (server, s, addr, ret, 3, "rd_req failed");
 	return 1;
     }
 
     if (!(*ticket)->ticket.flags.initial) {
-	syslog (LOG_ERR, "initial flag not set");
-	reply_error (context, server, s, addr, ret, 1,
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "initial flag not set");
+	reply_error (server, s, addr, ret, 1,
 		     "initial flag not set");
 	goto out;
     }
@@ -367,9 +381,9 @@ verify (krb5_context context,
 			NULL);
     
     if (ret) {
-	syslog (LOG_ERR, "krb5_rd_priv: %s",
-		krb5_get_err_text(context, ret));
-	reply_error (context, server, s, addr, ret, 3, "rd_priv failed");
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR, "krb5_rd_priv: %s",
+		  krb5_get_err_text(context, ret));
+	reply_error (server, s, addr, ret, 3, "rd_priv failed");
 	goto out;
     }
     return 0;
@@ -379,8 +393,7 @@ out:
 }
 
 static void
-process (krb5_context context,
-	 krb5_principal server,
+process (krb5_principal server,
 	 int s,
 	 void *this_addr,
 	 struct sockaddr_in *other_addr,
@@ -397,8 +410,9 @@ process (krb5_context context,
 
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret) {
-	syslog (LOG_ERR, "krb5_auth_con_init: %s",
-		krb5_get_err_text(context, ret));
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "krb5_auth_con_init: %s",
+		  krb5_get_err_text(context, ret));
 	return;
     }
 
@@ -418,15 +432,15 @@ process (krb5_context context,
 				  &local_addr,
 				  &remote_addr);
     if (ret) {
-	syslog (LOG_ERR, "krb5_auth_con_setaddr: %s",
-		krb5_get_err_text(context, ret));
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "krb5_auth_con_setaddr: %s",
+		  krb5_get_err_text(context, ret));
 	goto out;
     }
 
-    if (verify (context, &auth_context, server, &ticket, &out_data,
+    if (verify (&auth_context, server, &ticket, &out_data,
 		s, other_addr, msg, len) == 0) {
-	change (context,
-		auth_context,
+	change (auth_context,
 		ticket->client,
 		s,
 		other_addr,
@@ -444,9 +458,7 @@ static int
 doit (int port)
 {
     krb5_error_code ret;
-    krb5_context context;
     krb5_principal server;
-    struct sockaddr_in addr;
     int *sockets;
     int maxfd;
     char *realm;
@@ -454,25 +466,18 @@ doit (int port)
     unsigned n, i;
     fd_set real_fdset;
 
-    ret = krb5_init_context (&context);
-    if (ret)
-	syslog_and_die ("krb5_init_context: %s",
-			krb5_get_err_text(context, ret));
-
     ret = krb5_get_default_realm (context, &realm);
     if (ret)
 	syslog_and_die ("krb5_get_default_realm: %s",
 			krb5_get_err_text(context, ret));
 
-    ret = krb5_build_principal_ext (context,
-				    &server,
-				    strlen(realm),
-				    realm,
-				    strlen("kadmin"),
-				    "kadmin",
-				    strlen("changepw"),
-				    "changepw",
-				    NULL);
+    ret = krb5_build_principal (context,
+				&server,
+				strlen(realm),
+				realm,
+				"kadmin",
+				"changepw",
+				NULL);
     if (ret)
 	syslog_and_die ("krb5_build_principal_ext: %s",
 			krb5_get_err_text(context, ret));
@@ -508,7 +513,6 @@ doit (int port)
     }
 
     while(exit_flag == 0) {
-	u_char buf[BUFSIZ];
 	int ret;
 	struct fd_set fdset = real_fdset;
 
@@ -532,7 +536,7 @@ doit (int port)
 			break;
 		    else
 			syslog_and_die ("recvfrom: %m");
-		process (context, server, sockets[i],
+		process (server, sockets[i],
 			 addrs.val[i].address.data, &other_addr, buf, ret);
 	    }
     }
@@ -551,8 +555,10 @@ sigterm(int sig)
 int
 main (int argc, char **argv)
 {
+    krb5_init_context (&context);
+
     set_progname (argv[0]);
-    openlog ("kpasswdd", LOG_ODELAY | LOG_PID, LOG_AUTH);
+    krb5_openlog (context, "kpasswdd", &log_facility);
 
     signal (SIGINT, sigterm);
 
