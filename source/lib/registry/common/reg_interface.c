@@ -30,9 +30,9 @@ static struct reg_init_function_entry *backends = NULL;
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name);
 
 /* Register new backend */
-NTSTATUS registry_register(void *_function)  
+NTSTATUS registry_register(const void *_function)  
 {
-	struct registry_ops *functions = _function;
+	const struct registry_ops *functions = _function;
 	struct reg_init_function_entry *entry = backends;
 
 	if (!functions || !functions->name) {
@@ -97,7 +97,6 @@ WERROR reg_open(const char *backend, const char *location, const char *credentia
 	struct reg_init_function_entry *entry;
 	TALLOC_CTX *mem_ctx;
 	REG_HANDLE *ret;
-	NTSTATUS status;
 	WERROR werr;
 	
 	entry = reg_find_backend_entry(backend);

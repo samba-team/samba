@@ -128,8 +128,6 @@ static WERROR rpc_close_registry(REG_HANDLE *h)
 static WERROR rpc_key_put_rpc_data(REG_KEY *k, struct rpc_key_data **data)
 {
     struct winreg_OpenKey r;
-	int i;
-	struct rpc_data *mydata = k->handle->backend_data;
 	WERROR error;
 	REG_KEY *hivekey;
 	struct rpc_key_data *mykeydata;
@@ -254,7 +252,6 @@ static WERROR rpc_get_subkey_by_index(REG_KEY *parent, int n, REG_KEY **subkey)
 	struct winreg_EnumKeyNameRequest keyname;
 	struct winreg_String classname;
 	struct winreg_Time tm;
-	struct rpc_data *mydata = parent->handle->backend_data;
 	struct rpc_key_data *mykeydata = parent->backend_data;
 	WERROR error;
 	NTSTATUS status;

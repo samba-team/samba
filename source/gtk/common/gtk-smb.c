@@ -47,9 +47,9 @@ void gtk_show_ntstatus(GtkWidget *win, NTSTATUS status)
 static void on_browse_activate  (GtkButton     *button,  gpointer         user_data)
 {
 	GtkRpcBindingDialog *rbd = user_data;
-	GtkSelectHostDialog *shd = gtk_select_host_dialog_new(TRUE);
+	GtkWidget *shd = gtk_select_host_dialog_new(TRUE);
 	if(gtk_dialog_run(GTK_DIALOG(shd)) == GTK_RESPONSE_ACCEPT) {
-		gtk_entry_set_text(GTK_ENTRY(rbd->entry_host), gtk_select_host_dialog_get_host(shd));
+		gtk_entry_set_text(GTK_ENTRY(rbd->entry_host), gtk_select_host_dialog_get_host(GTK_SELECT_HOST_DIALOG(shd)));
 	}
 	
 	gtk_widget_destroy(GTK_WIDGET(shd));
@@ -61,8 +61,6 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	GtkWidget *vbox1;
 	GtkWidget *vbox6;
 	GtkWidget *frame_transport;
-	GtkWidget *hbox2;
-	GtkWidget *lbl_transport;
 	GtkWidget *label1;
 	GtkWidget *frame_host;
 	GtkWidget *hbox1;
@@ -285,7 +283,6 @@ const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pip
 	const char *transport;
 	const char *host;
 	char *options = NULL;
-	char *binding = NULL;
 
 	/* Format: TRANSPORT:host:[\pipe\foo,foo,foo] */
 
@@ -318,7 +315,6 @@ GtkWidget *create_gtk_samba_about_dialog (char *appname)
 {
   GtkWidget *samba_about_dialog;
   GtkWidget *dialog_vbox1;
-  GtkWidget *image1;
   GtkWidget *label1;
   GtkWidget *label3;
   GtkWidget *label2;

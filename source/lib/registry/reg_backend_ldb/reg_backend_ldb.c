@@ -89,15 +89,13 @@ static WERROR ldb_add_key(REG_KEY *p, const char *name, uint32_t access_mask, SE
 static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 {
 	struct ldb_context *c = k->handle->backend_data;
-	char *path;
 	int ret, i, j;
 	struct ldb_message **msg;
-	REG_KEY *key = NULL;
 
 	ret = ldb_search(c, (char *)k->backend_data, LDB_SCOPE_ONELEVEL, "(key=*)", NULL,&msg);
 
 	if(ret < 0) {
-		DEBUG(0, ("Error getting subkeys for '%s': %s\n", k->backend_data, ldb_errstring(c)));
+		DEBUG(0, ("Error getting subkeys for '%s': %s\n", (char *)k->backend_data, ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
 
@@ -126,15 +124,13 @@ static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 static WERROR ldb_fetch_values(REG_KEY *k, int *count, REG_VAL ***values)
 {
 	struct ldb_context *c = k->handle->backend_data;
-	char *path;
 	int ret, i, j;
 	struct ldb_message **msg;
-	REG_KEY *key = NULL;
 
 	ret = ldb_search(c, (char *)k->backend_data, LDB_SCOPE_ONELEVEL, "(value=*)", NULL,&msg);
 
 	if(ret < 0) {
-		DEBUG(0, ("Error getting values for '%s': %s\n", k->backend_data, ldb_errstring(c)));
+		DEBUG(0, ("Error getting values for '%s': %s\n", (char *)k->backend_data, ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
 
@@ -170,9 +166,8 @@ static WERROR ldb_get_hive(REG_HANDLE *h, int num, REG_KEY **key)
 static WERROR ldb_open_key(REG_HANDLE *h, int num, const char *name, REG_KEY **key)
 {
 	struct ldb_context *c = h->backend_data;
-	char *path;
 	struct ldb_message **msg;
-	char *ldap_path, *new_ldap_path;
+	char *ldap_path;
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_init("ldb_path");
 	if(num != 0) return WERR_NO_MORE_ITEMS;
