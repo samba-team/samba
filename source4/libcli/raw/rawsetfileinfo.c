@@ -164,10 +164,10 @@ static struct smbcli_request *smb_raw_setfileinfo_blob_send(struct smbcli_tree *
  Very raw set path info - takes data blob
 ****************************************************************************/
 static struct smbcli_request *smb_raw_setpathinfo_blob_send(struct smbcli_tree *tree,
-							 TALLOC_CTX *mem_ctx,
-							 const char *fname,
-							 uint16_t info_level,
-							 DATA_BLOB *blob)
+							    TALLOC_CTX *mem_ctx,
+							    const char *fname,
+							    uint16_t info_level,
+							    DATA_BLOB *blob)
 {
 	struct smb_trans2 tp;
 	uint16_t setup = TRANSACT2_SETPATHINFO;
@@ -180,15 +180,15 @@ static struct smbcli_request *smb_raw_setpathinfo_blob_send(struct smbcli_tree *
 	tp.in.max_data = 0;
 	tp.in.setup = &setup;
 	
-	tp.in.params = data_blob_talloc(mem_ctx, NULL, 4);
+	tp.in.params = data_blob_talloc(mem_ctx, NULL, 6);
 	if (!tp.in.params.data) {
 		return NULL;
 	}
 	SSVAL(tp.in.params.data, 0, info_level);
-	SSVAL(tp.in.params.data, 2, 0);
+	SIVAL(tp.in.params.data, 2, 0);
 	smbcli_blob_append_string(tree->session, mem_ctx, 
-			       &tp.in.params,
-			       fname, STR_TERMINATE);
+				  &tp.in.params,
+				  fname, STR_TERMINATE);
 
 	tp.in.data = *blob;
 
