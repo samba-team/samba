@@ -76,16 +76,16 @@ hookup (const char *host, int port)
 	code = -1;
 	return NULL;
     }
-    if (ai->ai_canonname != NULL)
-	strlcpy (hostnamebuf, ai->ai_canonname, sizeof(hostnamebuf));
-    else
-	strlcpy (hostnamebuf, host, sizeof(hostnamebuf));
+    strlcpy (hostnamebuf, host, sizeof(hostnamebuf));
     hostname = hostnamebuf;
 
     for (a = ai; a != NULL; a = a->ai_next) {
 	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0)
 	    continue;
+
+	if (a->ai_canonname != NULL)
+	    strlcpy (hostnamebuf, a->ai_canonname, sizeof(hostnamebuf));
 
 	memcpy (hisctladdr, a->ai_addr, a->ai_addrlen);
 	
