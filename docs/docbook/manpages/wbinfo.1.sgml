@@ -17,7 +17,7 @@
 		<command>wbinfo</command>
 		<arg choice="opt">-u</arg>
 		<arg choice="opt">-g</arg>
-!		<arg choice="opt">-i ip</arg>
+		<arg choice="opt">-i ip</arg>
 		<arg choice="opt">-N netbios-name</arg>
 		<arg choice="opt">-n name</arg>
 		<arg choice="opt">-s sid</arg>

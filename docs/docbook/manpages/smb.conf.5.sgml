@@ -2862,7 +2862,7 @@
 		system print command such as <command>lpr(1)</command> or <command>
 		lp(1)</command>.</para>
 
-	        <para>This paramater does not accept % macros, because
+	        <para>This parameter does not accept % macros, because
 	        many parts of the system require this value to be
 	        constant for correct operation.</para>
 		
@@ -3475,7 +3475,7 @@
 			<parameter>ldap	server</parameter>.  Only
 			available when the backwards-compatiblity <command>
 			--with-ldapsam</command> option is specified
-			to configure.  See <link linkend="PASSDBBACKEND"><paramater>passdb backend</parameter></link></para></listitem>
+			to configure.  See <link linkend="PASSDBBACKEND"><parameter>passdb backend</parameter></link></para></listitem>
 		</itemizedlist>		
 		
 		<para>Default : <command>ldap ssl = start_tls</command></para>
@@ -5387,8 +5387,8 @@
 		        <para>LDAP connections should be secured where
                         possible.  This may be done using either
                         Start-TLS (see <link linkend="LDAPSSL">
-                        <parameter>ldap ssl</parameter>) or by
-                        specifying <paramater>ldaps://</paramater> in
+                        <parameter>ldap ssl</parameter></link>) or by
+                        specifying <parameter>ldaps://</parameter> in
                         the URL argument.  
                         </para></listitem>
 			
@@ -7499,7 +7499,8 @@
 		<varlistentry>
 		<term><anchor id="UNICODE">unicode (G)</term>
 		<listitem><para>Specifies whether Samba should try 
-		to use unicode on the wire by default. 
+		to use unicode on the wire by default. Note: This does NOT
+		mean that samba will assume that the unix machine uses unicode!
 		</para>
 
 		<para>Default: <command>unicode = yes</command></para>
@@ -7515,6 +7516,7 @@
 		</para>
 
 		<para>Default: <command>unix charset = ASCII</command></para>
+		<para>Example: <command>unix charset = UTF8</command></para>
 		</listitem>
 		</varlistentry>
 
