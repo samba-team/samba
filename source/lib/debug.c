@@ -156,6 +156,7 @@ static const char *default_classname_table[] = {
 	"sam",               /* DBGC_SAM          */
 	"auth",              /* DBGC_AUTH         */
 	"winbind",           /* DBGC_WINBIND      */
+	"vfs",		     /* DBGC_VFS	  */
 	NULL
 };
 

@@ -20,6 +20,10 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_VFS
+
+
 /* Check for NULL pointer parameters in vfswrap_* functions */
 
 /* We don't want to have NULL function pointers lying around.  Someone

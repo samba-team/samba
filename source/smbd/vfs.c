@@ -24,6 +24,10 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_VFS
+
+
 /* Some structures to help us initialise the vfs operations table */
 
 struct vfs_syminfo {
