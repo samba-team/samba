@@ -55,6 +55,7 @@ BOOL check_access(int sock, char *allow_list, char *deny_list);
 struct bitmap *bitmap_allocate(int n);
 BOOL bitmap_set(struct bitmap *bm, unsigned i);
 BOOL bitmap_clear(struct bitmap *bm, unsigned i);
+BOOL bitmap_query(struct bitmap *bm, unsigned i);
 int bitmap_find(struct bitmap *bm, unsigned ofs);
 
 /*The following definitions come from  lib/charcnv.c  */

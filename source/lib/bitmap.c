@@ -81,7 +81,7 @@ BOOL bitmap_clear(struct bitmap *bm, unsigned i)
 /****************************************************************************
 query a bit in a bitmap
 ****************************************************************************/
-static BOOL bitmap_query(struct bitmap *bm, unsigned i)
+BOOL bitmap_query(struct bitmap *bm, unsigned i)
 {
 	if (i >= bm->n) return False;
 	if (bm->b[i/32] & (1<<(i%32))) {
