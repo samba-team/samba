@@ -108,28 +108,27 @@ main(int argc, char **argv)
 		strcpy(home, pw->pw_dir);
 	}
 	if (argc > 0) {
-		char *xargv[5];
-
-		if (setjmp(toplevel))
-			exit(0);
-		signal(SIGINT, intr);
-		signal(SIGPIPE, lostpeer);
-		xargv[0] = argv[0]; /* or should this be "ftp"? */
-		xargv[1] = argv[0];
-		xargv[2] = argv[1];
-		xargv[3] = argv[2];
-		xargv[4] = NULL;
-		setpeer(argc+1, xargv);
+	    char *xargv[5];
+	    
+	    if (setjmp(toplevel))
+		exit(0);
+	    signal(SIGINT, intr);
+	    signal(SIGPIPE, lostpeer);
+	    xargv[0] = (char*)__progname;
+	    xargv[1] = argv[0];
+	    xargv[2] = argv[1];
+	    xargv[3] = argv[2];
+	    xargv[4] = NULL;
+	    setpeer(argc+1, xargv);
 	}
-	if (setjmp(toplevel) == 0) {
-	        top = 1;
-		signal(SIGINT, intr);
-		signal(SIGPIPE, lostpeer);
-	} else
-	        top = 0;
+	top = setjmp(toplevel) == 0;
+	if (top) {
+	    signal(SIGINT, intr);
+	    signal(SIGPIPE, lostpeer);
+	}
 	for (;;) {
-		cmdscanner(top);
-		top = 1;
+	    cmdscanner(top);
+	    top = 1;
 	}
 }
 
@@ -140,35 +139,39 @@ intr(int sig)
 	longjmp(toplevel, 1);
 }
 
+#ifndef SHUT_RDWR
+#define SHUT_RDWR 2
+#endif
+
 RETSIGTYPE
 lostpeer(int sig)
 {
 
-	if (connected) {
-		if (cout != NULL) {
-			shutdown(fileno(cout), 1+1);
-			fclose(cout);
-			cout = NULL;
-		}
-		if (data >= 0) {
-			shutdown(data, 1+1);
-			close(data);
-			data = -1;
-		}
-		connected = 0;
+    if (connected) {
+	if (cout != NULL) {
+	    shutdown(fileno(cout), SHUT_RDWR);
+	    fclose(cout);
+	    cout = NULL;
 	}
-	pswitch(1);
-	if (connected) {
-		if (cout != NULL) {
-			shutdown(fileno(cout), 1+1);
-			fclose(cout);
-			cout = NULL;
-		}
-		connected = 0;
+	if (data >= 0) {
+	    shutdown(data, SHUT_RDWR);
+	    close(data);
+	    data = -1;
 	}
-	proxflag = 0;
-	pswitch(0);
-	SIGRETURN(0);
+	connected = 0;
+    }
+    pswitch(1);
+    if (connected) {
+	if (cout != NULL) {
+	    shutdown(fileno(cout), SHUT_RDWR);
+	    fclose(cout);
+	    cout = NULL;
+	}
+	connected = 0;
+    }
+    proxflag = 0;
+    pswitch(0);
+    SIGRETURN(0);
 }
 
 /*

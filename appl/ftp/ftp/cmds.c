@@ -768,7 +768,8 @@ remglob(char **argv, int doswitch)
 		}
 	}
 	if (fgets(buf, sizeof (buf), ftemp) == NULL) {
-		fclose(ftemp), ftemp = NULL;
+		fclose(ftemp);
+		ftemp = NULL;
 		return (NULL);
 	}
 	if ((cp = strchr(buf, '\n')) != NULL)
@@ -1211,7 +1212,7 @@ shell(int argc, char **argv)
 		exit(1);
 	}
 	if (pid > 0)
-		while (wait(&status) != pid)
+		while (waitpid(-1, 0, &status) != pid)
 			;
 	signal(SIGINT, old1);
 	signal(SIGQUIT, old2);
@@ -1930,13 +1931,13 @@ void
 restart(int argc, char **argv)
 {
 
-	if (argc != 2)
-		printf("restart: offset not specified\n");
-	else {
-		off_t restart_point = atol(argv[1]);
-		printf("restarting at %ld. %s\n", (long)restart_point,
-		       "execute get, put or append to initiate transfer");
-	}
+    if (argc != 2)
+	printf("restart: offset not specified\n");
+    else {
+	restart_point = atol(argv[1]);
+	printf("restarting at %ld. %s\n", (long)restart_point,
+	       "execute get, put or append to initiate transfer");
+    }
 }
 
 /* show remote system type */
