@@ -1,3 +1,7 @@
+2004-09-13  Love  <lha@stacken.kth.se>
+
+	* resolve-test.c: add --version/--help
+	
 2004-09-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: make resolve-test a noinst program
