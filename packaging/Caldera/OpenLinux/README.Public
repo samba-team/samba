@@ -1,0 +1,9 @@
+This directory is exported to any windows computer, if the daemon
+"SMB server processes (samba)" is started, and the distributed
+configuration is used. So be careful with the data you put into
+this directory.
+
+The default configuration restricts the access rights for read only
+access.
+
+2001-01-16,  Klaus Singvogel,  Caldera (Deutschland) GmbH.

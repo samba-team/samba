@@ -1,0 +1,11 @@
+--- samba/source/Makefile.in.orig	Tue Oct 31 17:37:44 2000
++++ samba/source/Makefile.in	Thu Nov 16 11:56:01 2000
+@@ -451,7 +451,7 @@
+ 
+ bin/smbmount: $(MOUNT_OBJ) bin/.dummy
+ 	@echo Linking $@
+-	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LIBS)
++	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) -lnsl
+ 
+ bin/smbmnt: $(MNT_OBJ) bin/.dummy
+ 	@echo Linking $@

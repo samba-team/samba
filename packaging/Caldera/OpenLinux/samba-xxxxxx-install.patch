@@ -1,0 +1,12 @@
+--- samba/source/script/installbin.sh.orig	Thu Nov 16 11:49:39 2000
++++ samba/source/script/installbin.sh	Thu Nov 16 11:28:37 2000
+@@ -34,7 +34,8 @@
+ 
+  # this is a special case, mount needs this in a specific location
+  if [ $p2 = smbmount ]; then
+-   ln -sf $BINDIR/$p2 /sbin/mount.smbfs
++   mv $BINDIR/$p2 `dirname $BASEDIR`/sbin/mount.smbfs    # a move is faster than copy
++   ln -s `dirname $BASEDIR`/sbin/mount.smbfs $BINDIR/$p2
+  fi
+ done
+ 
