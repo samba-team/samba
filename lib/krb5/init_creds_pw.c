@@ -477,10 +477,11 @@ krb5_get_init_creds_password(krb5_context context,
 			preauth = &preauth2;
 			ALLOC_SEQ(preauth, 1);
 			preauth->val[0].type = KRB5_PADATA_ENC_TIMESTAMP;
-			decode_PA_KEY_INFO(md.val[i].padata_value.data, 
-					   md.val[i].padata_value.length,
-					   &preauth->val[0].info,
-					   NULL);
+			krb5_decode_PA_KEY_INFO(context,
+						md.val[i].padata_value.data, 
+						md.val[i].padata_value.length,
+						&preauth->val[0].info,
+						NULL);
 			break;
 		    }
 		}
