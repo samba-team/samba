@@ -958,6 +958,8 @@ SPOOL_Q_ADDJOB;
 
 typedef struct spool_r_addjob
 {
+	NEW_BUFFER *buffer;
+	uint32 needed;
 	uint32 status;
 }
 SPOOL_R_ADDJOB;
