@@ -264,11 +264,13 @@ create_and_write_cookie (char *xauthfile,
      auth.data = (char*)cookie;
      des_rand_data (cookie, sz);
 
-     strncpy(xauthfile, "/tmp/AXXXXX", size);
+     strncpy(xauthfile, "/tmp/AXXXXXX", size);
      xauthfile[size-1] = 0;
      fd = mkstemp(xauthfile);
-     if(fd < 0)
-	 return 1;
+     if(fd < 0) {
+	 syslog(LOG_ERR, "create_and_write_cookie: mkstemp: %m");
+         return 1;
+     }
      f = fdopen(fd, "r+");
      if(f == NULL){
 	 close(fd);

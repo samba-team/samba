@@ -365,8 +365,14 @@ doit(int sock, int tcpp)
 	  else
 	       snprintf (display, display_size, ":%u", display_num);
 	  if(create_and_write_cookie (xauthfile, xauthfile_size, 
-				      cookie, cookie_len))
-	      return 1;
+				      cookie, cookie_len)) {
+             syslog(LOG_ERR, "create_and_write_cookie: %m");
+             fatal (sock, &key, schedule, &me, &him,
+                    "Cookie-creation failed with: %s",
+		    strerror(errno));
+             cleanup();
+	     return 1;
+	  }
 
 	  p = msg;
 	  *p++ = ACK;
@@ -382,6 +388,7 @@ doit(int sock, int tcpp)
 	  if(write_encrypted (sock, msg, p - msg, schedule, &key,
 			      &me, &him) < 0) {
 	      syslog (LOG_ERR, "write: %m");
+	      cleanup();
 	      return 1;
 	  }
 	  for (;;) {
