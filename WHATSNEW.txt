@@ -18,19 +18,30 @@ exact updates.
 Common bugs fixed in this 3.0.5rc1 include:
 
   o Corrupt workgroup names in nmbd's browse.dat.
+
   o Sharing violation errors commonly seen when opening
     when serving Microsoft Office documents from a Samba 
     file share.
+
   o Browsing problems caused by an apostrophe (') in the 
     computer's description field.
+
   o Problems creating special file types from UNIX CIFS 
     clients and enabling 'unix extensions'.
+
 
 New features introduced in this release include:
 
   o Using a cups server other than localhost.
+
   o Maintaining the service principal entry in the system 
     keytab for integration with other kerberized services.
+    Please refer to the 'use kerberos keytab' entry in 
+    smb.conf(5).  When using the heimdal kerberos libraries,
+    you must also specify the following in /etc/krb5.conf:
+    [libdefaults]
+       default_keytab_name = FILE:/etc/krb5.keytab
+
   o Support for maintaining individual printer names
     stored separately from the printer's sharename.
 
