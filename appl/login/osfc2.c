@@ -36,7 +36,7 @@
  * SUCH DAMAGE. 
  */
 
-#include "bsd_locl.h"
+#include "login_locl.h"
 RCSID("$Id$");
 
 int
