@@ -1,3 +1,22 @@
+Wed Sep 10 21:20:17 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kerberos5.c: Fixes for cross-realm, including (but not
+ 	limited to):
+	  - allow client to be non-existant (should probably check for
+	    "local realm")
+	  - if server isn't found and it is a request for a krbtgt, try to
+ 	    find a realm on the way to the requested realm
+	  - update the transited encoding iff 
+	    client-realm != server-realm != tgt-realm
+
+	* lib/krb5/get_cred.c: Several fixes for cross-realm.
+
+Tue Sep  9 15:59:20 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/string2key.c: Fix password handling.
+
+	* lib/krb5/encrypt.c: krb5_key_to_string
+
 Tue Sep  9 07:46:05 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_addrs.c: rewrote.  Now should be able to handle
