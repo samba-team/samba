@@ -1256,7 +1256,15 @@ This integer value controls what level Samba advertises itself as for browse
 elections. See BROWSING.txt for details. <P>
  
 <H3><A NAME="passwd chat debug">passwd chat debug (G)</A></H3>
-<B>Default: </B> passwd chat debug = No <P>
+This boolean specifies if the passwd chat script parameter is run
+in 'debug' mode. In this mode the strings passed to and received from the
+passwd chat are printed in the smbd log with a debug level of 100. This
+is a dangerous option as it will allow plaintext passwords to be seen
+in the smbd log. It is available to help Samba admins debug their passwd
+chat scripts and should be turned off after this has been done. This parameter
+is off by default. <P>
+<B>Example:</B> passwd chat debug = Yes <P>
+<B>Default:</B> passwd chat debug = No <P>
 
 <H3><A NAME="passwd chat">passwd chat (G)</A></H3>
 This string controls the "chat" conversation that takes places 
@@ -1904,6 +1912,20 @@ Windows clients. <P>
 <B>Default:</B> time server = No <P>
 <B>Example:</B> time server = Yes <P>
  
+<H3><A NAME="unix password sync">unix password sync (G)</A></H3>
+This boolean parameter controlls whether Samba attempts to synchronise the
+UNIX password with the SMB password when the encrypted SMB password in
+the smbpasswd file is changed. If this is set to Yes the 
+<A HREF="#passwd program">passwd program</A>
+program is called *AS ROOT* - to allow the new UNIX password to be set
+without access to the old UNIX password (as the SMB password has change
+code has no access to the old password cleartext, only the new). By default
+this is set to No. <P>
+See also <A HREF="#passwd program">passwd program</A>, 
+<A HREF="#passwd chat">passwd chat</A> <P>
+<B>Default:</B> unix password sync = No <P>
+<B>Example:</B> unix password sync = Yes <P>
+
 <H3><A NAME="unix realname">unix realname (G)</A></H3>
 This boolean parameter when set causes samba to supply the real name field 
 from the unix password file to the client. This is useful for setting up mail 
@@ -1912,6 +1934,23 @@ clients and WWW browsers on systems used by more than one person. <P>
 <B>Example:</B> unix realname = Yes <P>
  
 <H3><A NAME="update encrypted">update encrypted (S)</A></H3>
+This boolean parameter allows a user logging on with a plaintext password to 
+have their encrypted (hashed) password in the smbpasswd file to be updated 
+automatically as they log on. This option allows a site to migrate from 
+plaintext password authentication (users  authenticate with plaintext 
+password over the wire, and are checked against a UNIX account database) to 
+encrypted password authentication (the SMB challenge/response authentication 
+mechanism) without forcing all users to re-enter their passwords via smbpasswd 
+at the time the change is made. This is a convenience option to allow the 
+change over to encrypted passwords to be made over a longer period. Once all 
+users have encrypted representations of their passwords in the smbpasswd file \
+this parameter should be set to "No". <P>
+In order for this parameter to work correctly the 
+i<A HREF="#encrypt passwords">encrypt passwords</A> must be set to "No" when 
+this parameter is set to "Yes". <P>
+Note that even when this parameter is set a user authenticating to smbd must 
+still enter a valid password in order to connect correctly, and to update their
+hashed (smbpasswd) passwords. <P>
 <B>Default:</B> update encrypted = No <P>
 
 <H3><A NAME="use rhosts">use rhosts (S)</A></H3>
