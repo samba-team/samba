@@ -436,6 +436,7 @@ extern struct passwd *getpwnam();
 #define USE_GETCWD
 #define USE_SETSID
 #define USE_SYSV_IPC
+#define NO_SEMUN
 #endif
 
 
