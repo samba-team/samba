@@ -52,7 +52,6 @@ NTSTATUS ads_ntstatus(ADS_STATUS rc)
 */
 const char *ads_errstr(ADS_STATUS status)
 {
-	gss_buffer_desc msg1, msg2;
 	uint32 minor;
 	int msg_ctx;
 	static char *ret;
@@ -71,6 +70,8 @@ const char *ads_errstr(ADS_STATUS status)
 	case ADS_ERROR_KRB5: 
 		return error_message(status.rc);
 	case ADS_ERROR_GSS:
+	{
+		gss_buffer_desc msg1, msg2;
 		msg1.value = NULL;
 		msg2.value = NULL;
 		gss_display_status(&minor, status.rc, GSS_C_GSS_CODE,
@@ -81,6 +82,7 @@ const char *ads_errstr(ADS_STATUS status)
 		gss_release_buffer(&minor, &msg1);
 		gss_release_buffer(&minor, &msg2);
 		return ret;
+	}
 #endif
 	default:
 		return "Unknown ADS error type!? (not compiled in?)";
