@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -2266,7 +2266,8 @@ usage2arcfour (krb5_context context, int *usage)
 	*usage = 1;
 	return 0;
     case KRB5_KU_TICKET :
-	*usage = 8;
+	*usage = 2;
+	return 0;
     case KRB5_KU_AS_REP_ENC_PART :
 	*usage = 8;
 	return 0;
@@ -2385,7 +2386,7 @@ static struct encryption_type enctype_arcfour_hmac_md5 = {
     8,
     &keytype_arcfour,
     &checksum_hmac_md5,
-    &checksum_hmac_md5_enc,
+    /* &checksum_hmac_md5_enc */ NULL,
     F_SPECIAL,
     ARCFOUR_encrypt
 };
