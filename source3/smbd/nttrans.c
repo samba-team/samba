@@ -1555,8 +1555,13 @@ int reply_ntrename(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
+	if (ms_has_wild(oldname)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+	}
+
 	p++;
-	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, True);
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1575,6 +1580,11 @@ int reply_ntrename(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			clear_cached_errors();
+			return -1;
+		}
 		return ERROR_NT(status);
 	}
 
