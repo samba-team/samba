@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -228,6 +228,21 @@ pacemaker(struct timeval *tv)
 }
 #endif
 
+#ifdef HAVE_SIGACTION
+/* XXX ugly hack, should perhaps use function from roken */
+static RETSIGTYPE 
+(*fake_signal(int sig, RETSIGTYPE (*f)(int)))(int)
+{
+    struct sigaction sa, osa;
+    sa.sa_handler = f;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sigaction(sig, &sa, &osa);
+    return osa.sa_handler;
+}
+#define signal(S, F) fake_signal((S), (F))
+#endif
+
 /*
  * Generate size bytes of "random" data using timed interrupts.
  * It takes about 40ms/byte random data.
@@ -237,11 +252,8 @@ void
 des_rand_data(unsigned char *data, int size)
 {
     struct itimerval tv, otv;
-#ifdef HAVE_SIGACTION
-    struct sigaction sa, osa;
-#else
     RETSIGTYPE (*osa)(int);
-#endif
+    RETSIGTYPE (*ochld)(int);
     int i, j;
 #ifndef HAVE_SETITIMER
     pid_t pid;
@@ -270,15 +282,7 @@ des_rand_data(unsigned char *data, int size)
     gsize = size;
     igdata = 0;
 
-#ifdef HAVE_SIGACTION
-    /* Setup signal handler */
-    sa.sa_handler = sigALRM;
-    sa.sa_flags = 0;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGALRM, &sa, &osa);
-#else
     osa = signal(SIGALRM, sigALRM);
-#endif
   
     /* Start timer */
     tv.it_value.tv_sec = 0;
@@ -287,8 +291,10 @@ des_rand_data(unsigned char *data, int size)
 #ifdef HAVE_SETITIMER
     setitimer(ITIMER_REAL, &tv, &otv);
 #else
+    ochld = signal(SIGCHLD, SIG_IGN);
     pid = fork();
     if(pid == -1){
+	signal(SIGCHLD, ochld != SIG_ERR ? ochld : SIG_DFL);
 	des_not_rand_data(data, size);
 	return;
     }
@@ -306,13 +312,10 @@ des_rand_data(unsigned char *data, int size)
     setitimer(ITIMER_REAL, &otv, 0);
 #else
     kill(pid, SIGKILL);
-    waitpid(pid, NULL, 0);
+    while(waitpid(pid, NULL, 0) != pid);
+    signal(SIGCHLD, ochld != SIG_ERR ? ochld : SIG_DFL);
 #endif
-#ifdef HAVE_SIGACTION
-    sigaction(SIGALRM, &osa, 0);
-#else
     signal(SIGALRM, osa != SIG_ERR ? osa : SIG_DFL);
-#endif
 }
 #else
 void
