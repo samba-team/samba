@@ -286,7 +286,6 @@ PyObject *DATA_BLOB_to_python(DATA_BLOB obj)
 %}
 
 %include "samba.i"
-%include "status_codes.i"
 
 %pythoncode %{
 	NTSTATUS = _dcerpc.NTSTATUS
@@ -370,7 +369,8 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 		set_ntstatus_exception(NT_STATUS_V(result));
 		return NULL;
 	}
-	if (!W_ERROR_IS_OK(arg3->out.result)) {
+	if (!W_ERROR_IS_OK(arg3->out.result) && 
+	    !(W_ERROR_EQUAL(arg3->out.result, WERR_INSUFFICIENT_BUFFER))) {
 		set_werror_exception(W_ERROR_V(arg3->out.result));
 		return NULL;
 	}
@@ -378,3 +378,5 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 
 %include "librpc/gen_ndr/winreg.i"
 %include "librpc/gen_ndr/spoolss.i"
+
+%include "status_codes.i"
