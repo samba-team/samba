@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 	int loops = NLOOPS;
 
 	for (i=0;i<NPROC-1;i++) {
-		if (sys_fork() == 0) break;
+		if (fork() == 0) break;
 	}
 
 	db = tdb_open("test.tdb", 0, TDB_CLEAR_IF_FIRST, 
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 		fatal("db open failed");
 	}
 
-	srand(seed + sys_getpid());
+	srand(seed + getpid());
 	for (i=0;i<loops;i++) addrec_db();
 
 	printf("traversed %d records\n", tdb_traverse(db, NULL, NULL));
