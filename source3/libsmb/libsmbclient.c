@@ -121,7 +121,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
   if (*p == '/') {
 
-    strncpy(server, lp_workgroup(), 16); /* FIXME: Danger here */
+    strncpy(server, (char *)lp_workgroup(), 16); /* FIXME: Danger here */
     return 0;
 
   }
@@ -412,7 +412,7 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
   }
 
-  if (smbc_initialize) { /* Don't go through this if we have already done it */
+  if (smbc_initialized) { /* Don't go through this if we have already done it */
 
     return 0;
 
