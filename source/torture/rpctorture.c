@@ -285,7 +285,11 @@ enum client_action
 	ZERO_STRUCT(cli_info.dom.level5_sid);
 	pstrcpy(cli_info.dom.level5_dom, "");
 
-	smb_cli->nt_pipe_fnum   = 0xffff;
+	{
+		int i;
+		for (i=0; i<PI_MAX_PIPES; i++)
+			smb_cli->nt_pipe_fnum[i]   = 0xffff;
+	}
 
 	setup_logging(pname, True);
 
