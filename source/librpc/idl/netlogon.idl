@@ -172,6 +172,10 @@ interface netlogon
 		netr_LMSessionKey LMSessKey;
 		uint32 AccountControl;
 		uint32 unknown[7];
+	} netr_SamBaseInfo;
+
+	typedef struct {
+		netr_SamBaseInfo base;
 	} netr_SamInfo2;
 
 	typedef struct {
@@ -180,69 +184,18 @@ interface netlogon
 	} netr_SidAttr;
 
 	typedef struct {
-		NTTIME last_logon;
-		NTTIME last_logoff;
-		NTTIME acct_expiry;
-		NTTIME last_password_change;
-		NTTIME allow_password_change;
-		NTTIME force_password_change;
-		netr_String account_name;
-		netr_String full_name;
-		netr_String logon_script;
-		netr_String profile_path;
-		netr_String home_directory;
-		netr_String home_drive;
-		uint16 logon_count;
-		uint16 bad_password_count;
-		uint32 rid;
-		uint32 primary_gid;
-		uint32 group_count;
-		[size_is(group_count)] netr_GroupMembership *groupids;
-		uint32 acct_flags;
-		netr_UserSessionKey key;
-		netr_String logon_server;
-		netr_String domain;
-		dom_sid2 *domain_sid;
-		netr_LMSessionKey LMSessKey;
-		uint32 AccountControl;
-		uint32 unknown[7];
+		netr_SamBaseInfo base;
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
 	} netr_SamInfo3;
 
-
 	typedef struct {
-		NTTIME last_logon;
-		NTTIME last_logoff;
-		NTTIME acct_expiry;
-		NTTIME last_password_change;
-		NTTIME allow_password_change;
-		NTTIME force_password_change;
-		netr_String account_name;
-		netr_String full_name;
-		netr_String logon_script;
-		netr_String profile_path;
-		netr_String home_directory;
-		netr_String home_drive;
-		uint16 logon_count;
-		uint16 bad_password_count;
-		uint32 rid;
-		uint32 primary_gid;
-		uint32 group_count;
-		[size_is(group_count)] netr_GroupMembership *groupids;
-		uint32 acct_flags;
-		netr_UserSessionKey key;
-		netr_String logon_server;
-		netr_String domain;
-		dom_sid2 *domain_sid;
-		netr_LMSessionKey LMSessKey;
-		uint32 AccountControl;
-		uint32 unknown1[9];
-		netr_String forest;
-		netr_String principle;
-		uint32 unknown4[18];
+		netr_SamBaseInfo base;
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
+		netr_String forest;
+		netr_String principle;
+		uint32 unknown4[20];
 	} netr_SamInfo6;
 
 	typedef struct {

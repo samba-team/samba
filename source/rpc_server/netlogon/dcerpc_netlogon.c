@@ -495,8 +495,10 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	NTSTATUS nt_status;
 	const uint8_t *chal;
 	static const char zeros[16];
+	struct netr_SamBaseInfo *sam;
 	struct netr_SamInfo2 *sam2;
-	struct netr_SamInfo3 *sam;
+	struct netr_SamInfo3 *sam3;
+	struct netr_SamInfo6 *sam6;
 	
 	if (!pipe_state) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
@@ -570,7 +572,9 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	}
 	free_auth_context(&auth_context);
 
-	sam = talloc_p(mem_ctx, struct netr_SamInfo3);
+	sam = talloc_p(mem_ctx, struct netr_SamBaseInfo);
+
+	ZERO_STRUCTP(sam);
 	
 	sam->last_logon = server_info->last_logon;
 	sam->last_logoff = server_info->last_logoff;
@@ -603,17 +607,6 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	sam->domain_sid->num_auths--;
 
 	sam->AccountControl = 0;
-
-	sam->unknown1 = 0;
-	sam->unknown2 = 0;
-	sam->unknown3 = 0;
-	sam->unknown4 = 0;
-	sam->unknown5 = 0;
-	sam->unknown6 = 0;
-	sam->unknown7 = 0;
-
-	sam->sidcount = 0;
-	sam->sids = NULL;
 	
 	if (server_info->user_session_key.length == sizeof(sam->key.key)) {
 		memcpy(sam->key.key, server_info->user_session_key.data, sizeof(sam->key.key));
@@ -646,60 +639,29 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 
 	switch (r->in.validation_level) {
 	case 2:
-	{
 		sam2 = talloc_p(mem_ctx, struct netr_SamInfo2);
+		ZERO_STRUCTP(sam2);
+		sam2->base = *sam;
 		r->out.validation.sam2 = sam2;
-		sam2->last_logon = sam->last_logon;
-		sam2->last_logoff = sam->last_logoff;
-		sam2->acct_expiry = sam->acct_expiry;
-		
-		sam2->last_password_change = sam->last_password_change;
-		sam2->allow_password_change = sam->allow_password_change;
-		sam2->force_password_change = sam->force_password_change;
-
-		sam2->account_name = sam->account_name;
-		sam2->full_name = sam->full_name;
-		sam2->logon_script = sam->logon_script;
-		sam2->profile_path = sam->profile_path;
-		sam2->home_directory = sam->home_directory;
-		sam2->home_drive = sam->home_drive;
-	
-		sam2->logon_count = sam->logon_count;
-		sam2->bad_password_count = sam->bad_password_count;
-		sam2->rid = sam->rid;
-		sam2->primary_gid = sam->primary_gid;
-		sam2->group_count = sam->group_count;
-		sam2->groupids = sam->groupids;
-	
-		sam2->acct_flags = sam->acct_flags;
-	
-		sam2->key = sam->key;
-
-		sam2->logon_server = sam->logon_server;
-	
-		sam2->domain = sam->domain;
-	
-		sam2->domain_sid = sam->domain_sid;
-		
-		sam2->LMSessKey = sam->LMSessKey;
-	
-		sam2->AccountControl = sam->AccountControl;
-
-		sam2->unknown1 = sam->unknown1;
-		sam2->unknown2 = sam->unknown2;
-		sam2->unknown3 = sam->unknown3;
-		sam2->unknown4 = sam->unknown4;
-		sam2->unknown5 = sam->unknown5;
-		sam2->unknown6 = sam->unknown6;
-		sam2->unknown7 = sam->unknown7;
-
 		break;
-	}
+
 	case 3:
-	{
-		r->out.validation.sam3 = sam;
+		sam3 = talloc_p(mem_ctx, struct netr_SamInfo3);
+		ZERO_STRUCTP(sam3);
+		sam3->base = *sam;
+		r->out.validation.sam3 = sam3;
 		break;
-	}
+
+	case 6:
+		sam6 = talloc_p(mem_ctx, struct netr_SamInfo6);
+		ZERO_STRUCTP(sam6);
+		sam6->base = *sam;
+		sam6->forest.string = sam->domain.string;
+		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s", 
+							 sam->account_name.string, sam->domain.string);
+		r->out.validation.sam6 = sam6;
+		break;
+
 	default:
 		break;
 	}
