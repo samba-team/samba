@@ -19,7 +19,7 @@ WHAT IS SMB?
 This is a big question. 
 
 The very short answer is that it is the protocol by which a lot of
-PC-related machines share files and printers and other informatiuon
+PC-related machines share files and printers and other information
 such as lists of available files and printers. Operating systems that
 support this natively include Windows NT, OS/2, and Linux and add on
 packages that achieve the same thing are available for DOS, Windows,
