@@ -28,7 +28,7 @@
 #include "dlinklist.h"
 
 /* we over allocate the data buffer to prevent too many realloc calls */
-#define REQ_OVER_ALLOCATION 256
+#define REQ_OVER_ALLOCATION 0
 
 /* assume that a character will not consume more than 3 bytes per char */
 #define MAX_BYTES_PER_CHAR 3
