@@ -2042,6 +2042,7 @@ char *lp_mysql_user(void);
 char *lp_mysql_passfile(void);
 char *lp_mysql_db(void);
 char *lp_mysql_table(void);
+int lp_winbind_cache_time(void);
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
