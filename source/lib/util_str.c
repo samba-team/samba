@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static char *last_ptr=NULL;
+static const char *last_ptr=NULL;
 
 void set_first_token(char *ptr)
 {
@@ -35,9 +35,9 @@ Based on a routine by GJC@VILLAGE.COM.
 Extensively modified by Andrew.Tridgell@anu.edu.au
 ****************************************************************************/
 
-BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
+BOOL next_token(const char **ptr,char *buff,const char *sep, size_t bufsize)
 {
-	char *s;
+	const char *s;
 	BOOL quoted;
 	size_t len=1;
 
@@ -81,9 +81,9 @@ BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 Convert list of tokens to array; dependent on above routine.
 Uses last_ptr from above - bit of a hack.
 ****************************************************************************/
-char **toktocliplist(int *ctok, char *sep)
+char **toktocliplist(int *ctok, const char *sep)
 {
-  char *s=last_ptr;
+  char *s= (char *)last_ptr;
   int ictok=0;
   char **ret, **iret;
 
@@ -322,7 +322,7 @@ BOOL strcsequal(const char *s1,const char *s2)
 /***************************************************************************
 Do a case-insensitive, whitespace-ignoring string compare.
 ***************************************************************************/
-int strwicmp(char *psz1, char *psz2)
+int strwicmp(const char *psz1, const char *psz2)
 {
 	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
 	/* appropriate value. */
@@ -1069,7 +1069,7 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	size_t i;
 	size_t num_chars = 0;
 	unsigned char   lonybble, hinybble;
-	char           *hexchars = "0123456789ABCDEF";
+	const char           *hexchars = "0123456789ABCDEF";
 	char           *p1 = NULL, *p2 = NULL;
 
 	for (i = 0; i < len && strhex[i] != 0; i++)
@@ -1111,7 +1111,7 @@ check if a string is part of a list
 BOOL in_list(char *s,char *list,BOOL casesensitive)
 {
   pstring tok;
-  char *p=list;
+  const char *p=list;
 
   if (!list) return(False);
 
@@ -1328,7 +1328,7 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
 /****************************************************************************
 write an octal as a string
 ****************************************************************************/
-char *octal_string(int i)
+const char *octal_string(int i)
 {
 	static char ret[64];
 	if (i == -1) {

@@ -484,8 +484,8 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 
 struct api_cmd
 {
-  char * pipe_clnt_name;
-  char * pipe_srv_name;
+  const char * pipe_clnt_name;
+  const char * pipe_srv_name;
   BOOL (*fn) (pipes_struct *);
 };
 
@@ -1179,7 +1179,7 @@ BOOL api_pipe_request(pipes_struct *p)
  Calls the underlying RPC function for a named pipe.
  ********************************************************************/
 
-BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, 
+BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name, 
 		struct api_struct *api_rpc_cmds)
 {
 	int fn_num;

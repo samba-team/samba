@@ -558,7 +558,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 static BOOL init_structs(void)
 {
   extern fstring local_machine;
-  char *p, *ptr;
+  char *p;
+  const char *ptr;
   int namecount;
   int n;
   int nodup;

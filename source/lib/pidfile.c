@@ -30,7 +30,7 @@
 
 /* return the pid in a pidfile. return 0 if the process (or pidfile)
    does not exist */
-pid_t pidfile_pid(char *name)
+pid_t pidfile_pid(const char *name)
 {
 	int fd;
 	char pidstr[20];
@@ -71,7 +71,7 @@ pid_t pidfile_pid(char *name)
 }
 
 /* create a pid file in the pid directory. open it and leave it locked */
-void pidfile_create(char *name)
+void pidfile_create(const char *name)
 {
 	int     fd;
 	char    buf[20];

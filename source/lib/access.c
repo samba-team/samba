@@ -11,7 +11,7 @@
 #include "includes.h"
 
 /* Delimiters for lists of daemons or clients. */
-static char *sep = ", \t";
+static const char *sep = ", \t";
 
 #define	FAIL		(-1)
 

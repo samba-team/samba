@@ -128,7 +128,7 @@ void pwd_set_nullpwd(struct pwd_info *pwd)
  Stores a cleartext password.
  ****************************************************************************/
 
-void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
+void pwd_set_cleartext(struct pwd_info *pwd, const char *clr)
 {
 	pwd_init(pwd);
 	fstrcpy(pwd->password, clr);

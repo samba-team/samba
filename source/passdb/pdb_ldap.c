@@ -912,7 +912,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT * user)
 /**********************************************************************
 Get SAM_ACCOUNT entry from LDAP by username 
 *********************************************************************/
-BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname)
+BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
 {
 	LDAP *ldap_struct;
 	LDAPMessage *result;
@@ -1010,7 +1010,7 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 Delete entry from LDAP for username 
 *********************************************************************/
 
-BOOL pdb_delete_sam_account(char *sname)
+BOOL pdb_delete_sam_account(const char *sname)
 {
 	int rc;
 	char *dn;

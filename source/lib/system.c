@@ -1277,7 +1277,7 @@ void *sys_dlopen(const char *name, int flags)
 #endif
 }
 
-void *sys_dlsym(void *handle, char *symbol)
+void *sys_dlsym(void *handle, const char *symbol)
 {
 #if defined(HAVE_DLSYM)
     return dlsym(handle, symbol);

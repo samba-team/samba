@@ -29,7 +29,7 @@ extern pstring global_myname;
 struct msg_info_table {
 	uint32 msg;
 	uint32 field;
-	char*  name;
+	const char *name;
 	void (*construct_fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
 		print_queue_struct *queue,
 		NT_PRINTER_INFO_LEVEL *printer, TALLOC_CTX *mem_ctx);

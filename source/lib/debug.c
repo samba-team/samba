@@ -129,7 +129,7 @@ static BOOL    log_overflow   = False;
 * white space. There must be one name for each DBGC_<class name>, and they 
 * must be in the table in the order of DBGC_<class name>.. 
 */
-char *classname_table[] = {
+const char *classname_table[] = {
 	"all",               /* DBGC_ALL; index references traditional DEBUGLEVEL */
 	"tdb",               /* DBGC_TDB	*/
 	"printdrivers",      /* DBGC_PRINTDRIVERS */
@@ -144,7 +144,7 @@ char *classname_table[] = {
 /****************************************************************************
 utility access to debug class names's
 ****************************************************************************/
-char* debug_classname_from_index(int ndx)
+const char* debug_classname_from_index(int ndx)
 {
 	return classname_table[ndx];
 }
@@ -278,7 +278,7 @@ void debug_message_send(pid_t pid, int level)
  * get ready for syslog stuff
  * ************************************************************************** **
  */
-void setup_logging(char *pname, BOOL interactive)
+void setup_logging(const char *pname, BOOL interactive)
 {
 	message_register(MSG_DEBUG, debug_message);
 
@@ -464,7 +464,7 @@ void check_log_size( void )
  * This is called by dbghdr() and format_debug_text().
  * ************************************************************************** **
  */
- int Debug1( char *format_str, ... )
+ int Debug1( const char *format_str, ... )
 {
   va_list ap;  
   int old_errno = errno;
@@ -662,7 +662,7 @@ void dbgflush( void )
  * ************************************************************************** **
  */
 
-BOOL dbghdr( int level, char *file, char *func, int line )
+BOOL dbghdr( int level, const char *file, const char *func, int line )
 {
   /* Ensure we don't lose any real errno value. */
   int old_errno = errno;
@@ -732,7 +732,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
  *
  * ************************************************************************** **
  */
- BOOL dbgtext( char *format_str, ... )
+ BOOL dbgtext( const char *format_str, ... )
   {
   va_list ap;
   pstring msgbuf;

@@ -1016,7 +1016,8 @@ struct cli_state *server_cryptkey(void)
 	struct cli_state *cli;
 	fstring desthost;
 	struct in_addr dest_ip;
-	char *p, *pserver;
+	char *pserver;
+	const char *p;
 	BOOL connected_ok = False;
 
 	cli = server_client();
@@ -1490,7 +1491,8 @@ BOOL domain_client_validate( char *user, char *domain,
 	unsigned char local_nt_response[24];
 	unsigned char trust_passwd[16];
 	fstring remote_machine;
-	char *p, *pserver;
+	const char *p;
+	const char *pserver;
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
 	struct cli_state *pcli = NULL;

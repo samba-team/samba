@@ -42,7 +42,7 @@ void init_reg_q_open_hkcr(REG_Q_OPEN_HKCR *q_o,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_open_hkcr(const char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -73,7 +73,7 @@ BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int d
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_open_hkcr(const char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -110,7 +110,7 @@ void init_reg_q_open_hklm(REG_Q_OPEN_HKLM * q_o,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL reg_io_q_open_hklm(char *desc, REG_Q_OPEN_HKLM * r_q, prs_struct *ps,
+BOOL reg_io_q_open_hklm(const char *desc, REG_Q_OPEN_HKLM * r_q, prs_struct *ps,
 			int depth)
 {
 	if (r_q == NULL)
@@ -141,7 +141,7 @@ BOOL reg_io_q_open_hklm(char *desc, REG_Q_OPEN_HKLM * r_q, prs_struct *ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL reg_io_r_open_hklm(char *desc, REG_R_OPEN_HKLM * r_r, prs_struct *ps,
+BOOL reg_io_r_open_hklm(const char *desc, REG_R_OPEN_HKLM * r_r, prs_struct *ps,
 			int depth)
 {
 	if (r_r == NULL)
@@ -176,7 +176,7 @@ void init_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol)
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_flush_key(const char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -197,7 +197,7 @@ BOOL reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int d
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_flush_key(const char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -256,7 +256,7 @@ static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec, SEC_DES
 ********************************************************************/
 
 void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
-				char *name, char *class, SEC_ACCESS *sam_access,
+				const char *name, const char *class, SEC_ACCESS *sam_access,
 				SEC_DESC_BUF *sec_buf)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
@@ -289,7 +289,7 @@ void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_create_key(const char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -345,7 +345,7 @@ BOOL reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_create_key(const char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -373,7 +373,7 @@ BOOL reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int
 ********************************************************************/
 
 void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
-				char *name)
+				const char *name)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	ZERO_STRUCTP(q_c);
@@ -388,7 +388,7 @@ void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_delete_val(const char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -417,7 +417,7 @@ BOOL reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, i
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_delete_val(const char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -439,7 +439,7 @@ BOOL reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, i
 ********************************************************************/
 
 void init_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
-				char *name)
+				const char *name)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	ZERO_STRUCTP(q_c);
@@ -454,7 +454,7 @@ void init_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_delete_key(const char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -482,7 +482,7 @@ BOOL reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_delete_key(const char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -517,7 +517,7 @@ void init_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_query_key(const char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -546,7 +546,7 @@ BOOL reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int d
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_query_key(const char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -601,7 +601,7 @@ void init_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd)
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_unk_1a(const char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -622,7 +622,7 @@ BOOL reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth)
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_unk_1a(const char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -658,7 +658,7 @@ void init_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_open_hku(const char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -687,7 +687,7 @@ BOOL reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int dep
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_open_hku(const char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -722,7 +722,7 @@ void init_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd)
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_q_close(const char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -745,7 +745,7 @@ BOOL reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
+BOOL reg_io_r_close(const char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -786,7 +786,7 @@ void init_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol, SEC_DESC_BU
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_set_key_sec(const char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -815,7 +815,7 @@ BOOL reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, i
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_set_key_sec(const char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -856,7 +856,7 @@ void init_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_get_key_sec(const char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -901,7 +901,7 @@ makes a structure.
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_get_key_sec(const char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -967,7 +967,7 @@ BOOL init_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char* val_name)
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_info(const char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -1056,7 +1056,7 @@ BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_info(const char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -1140,7 +1140,7 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int depth)
+BOOL reg_io_q_enum_val(const char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int depth)
 {
 	if (q_q == NULL)
 		return False;
@@ -1198,7 +1198,7 @@ BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int d
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_enum_val(const char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -1256,7 +1256,7 @@ makes a structure.
 ********************************************************************/
 
 void init_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
-				char *val_name, uint32 type,
+				const char *val_name, uint32 type,
 				BUFFER3 *val)
 {
 	int val_len = strlen(val_name) + 1;
@@ -1276,7 +1276,7 @@ void init_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, int depth)
+BOOL reg_io_q_create_val(const char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, int depth)
 {
 	if (q_q == NULL)
 		return False;
@@ -1311,7 +1311,7 @@ BOOL reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, i
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_create_val(const char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -1355,7 +1355,7 @@ void init_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx)
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth)
+BOOL reg_io_q_enum_key(const char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth)
 {
 	if (q_q == NULL)
 		return False;
@@ -1409,7 +1409,7 @@ BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int dep
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_enum_key(const char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -1466,7 +1466,7 @@ makes a structure.
 ********************************************************************/
 
 void init_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
-				char *key_name, uint32 unk)
+				const char *key_name, uint32 unk)
 {
 	int len_name = strlen(key_name)+1;
 
@@ -1483,7 +1483,7 @@ void init_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_open_entry(const char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
@@ -1527,7 +1527,7 @@ void init_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_open_entry(const char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
@@ -1571,7 +1571,7 @@ void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL reg_io_q_shutdown(char *desc, REG_Q_SHUTDOWN * q_s, prs_struct *ps,
+BOOL reg_io_q_shutdown(const char *desc, REG_Q_SHUTDOWN * q_s, prs_struct *ps,
 		       int depth)
 {
 	if (q_s == NULL)
@@ -1608,7 +1608,7 @@ BOOL reg_io_q_shutdown(char *desc, REG_Q_SHUTDOWN * q_s, prs_struct *ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL reg_io_r_shutdown(char *desc, REG_R_SHUTDOWN * r_s, prs_struct *ps,
+BOOL reg_io_r_shutdown(const char *desc, REG_R_SHUTDOWN * r_s, prs_struct *ps,
 		       int depth)
 {
 	if (r_s == NULL)
@@ -1639,7 +1639,7 @@ void init_reg_q_abort_shutdown(REG_Q_ABORT_SHUTDOWN * q_s)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL reg_io_q_abort_shutdown(char *desc, REG_Q_ABORT_SHUTDOWN * q_s,
+BOOL reg_io_q_abort_shutdown(const char *desc, REG_Q_ABORT_SHUTDOWN * q_s,
 			     prs_struct *ps, int depth)
 {
 	if (q_s == NULL)
@@ -1663,7 +1663,7 @@ BOOL reg_io_q_abort_shutdown(char *desc, REG_Q_ABORT_SHUTDOWN * q_s,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL reg_io_r_abort_shutdown(char *desc, REG_R_ABORT_SHUTDOWN * r_s,
+BOOL reg_io_r_abort_shutdown(const char *desc, REG_R_ABORT_SHUTDOWN * r_s,
 			     prs_struct *ps, int depth)
 {
 	if (r_s == NULL)

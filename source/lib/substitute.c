@@ -258,7 +258,7 @@ void standard_sub_basic(char *str, int len)
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str, int len)
+void standard_sub_advanced(int snum, char *user, const char *connectpath, gid_t gid, char *str, int len)
 {
 	char *p, *s, *home;
 

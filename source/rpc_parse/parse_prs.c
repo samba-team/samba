@@ -26,7 +26,7 @@
 /*******************************************************************
 dump a prs to a file
  ********************************************************************/
-void prs_dump(char *name, int v, prs_struct *ps)
+void prs_dump(const char *name, int v, prs_struct *ps)
 {
 	int fd, i;
 	pstring fname;
@@ -55,7 +55,7 @@ void prs_dump(char *name, int v, prs_struct *ps)
  XXXX side-effect of this function is to increase the debug depth XXXX
 
  ********************************************************************/
-void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
+void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
 {
 	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->data_offset, fn_name, desc));
 }
@@ -516,7 +516,7 @@ void prs_force_dynamic(prs_struct *ps)
  Stream a uint8.
  ********************************************************************/
 
-BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
+BOOL prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
 {
 	char *q = prs_mem_get(ps, 1);
 	if (q == NULL)
@@ -538,7 +538,7 @@ BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
  Stream a uint16.
  ********************************************************************/
 
-BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
+BOOL prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 {
 	char *q = prs_mem_get(ps, sizeof(uint16));
 	if (q == NULL)
@@ -567,7 +567,7 @@ BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
  Stream a uint32.
  ********************************************************************/
 
-BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
+BOOL prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 {
 	char *q = prs_mem_get(ps, sizeof(uint32));
 	if (q == NULL)
@@ -596,7 +596,7 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
  Stream a NTSTATUS
  ********************************************************************/
 
-BOOL prs_ntstatus(char *name, prs_struct *ps, int depth, NTSTATUS *status)
+BOOL prs_ntstatus(const char *name, prs_struct *ps, int depth, NTSTATUS *status)
 {
 	char *q = prs_mem_get(ps, sizeof(uint32));
 	if (q == NULL)
@@ -626,7 +626,7 @@ BOOL prs_ntstatus(char *name, prs_struct *ps, int depth, NTSTATUS *status)
  Stream a WERROR
  ********************************************************************/
 
-BOOL prs_werror(char *name, prs_struct *ps, int depth, WERROR *status)
+BOOL prs_werror(const char *name, prs_struct *ps, int depth, WERROR *status)
 {
 	char *q = prs_mem_get(ps, sizeof(uint32));
 	if (q == NULL)
@@ -657,7 +657,7 @@ BOOL prs_werror(char *name, prs_struct *ps, int depth, WERROR *status)
  Stream an array of uint8s. Length is number of uint8s.
  ********************************************************************/
 
-BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
+BOOL prs_uint8s(BOOL charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
 {
 	int i;
 	char *q = prs_mem_get(ps, len);
@@ -690,7 +690,7 @@ BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *dat
  Stream an array of uint16s. Length is number of uint16s.
  ********************************************************************/
 
-BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
+BOOL prs_uint16s(BOOL charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
 {
 	int i;
 	char *q = prs_mem_get(ps, len * sizeof(uint16));
@@ -734,7 +734,7 @@ BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *d
  output must be little-endian, if marshalling, input must be little-endian.
  ********************************************************************/
 
-static void dbg_rw_punival(BOOL charmode, char *name, int depth, prs_struct *ps,
+static void dbg_rw_punival(BOOL charmode, const char *name, int depth, prs_struct *ps,
 							char *in_buf, char *out_buf, int len)
 {
 	int i;
@@ -771,7 +771,7 @@ static void dbg_rw_punival(BOOL charmode, char *name, int depth, prs_struct *ps,
  Stream a unistr. Always little endian.
  ********************************************************************/
 
-BOOL prs_uint16uni(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
+BOOL prs_uint16uni(BOOL charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
 {
 	char *q = prs_mem_get(ps, len * sizeof(uint16));
 	if (q == NULL)
@@ -787,7 +787,7 @@ BOOL prs_uint16uni(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 
  Stream an array of uint32s. Length is number of uint32s.
  ********************************************************************/
 
-BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
+BOOL prs_uint32s(BOOL charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
 {
 	int i;
 	char *q = prs_mem_get(ps, len * sizeof(uint32));
@@ -831,7 +831,7 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
  in uint16 chars. The unicode string is already in little-endian format.
  ********************************************************************/
 
-BOOL prs_buffer5(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER5 *str)
+BOOL prs_buffer5(BOOL charmode, const char *name, prs_struct *ps, int depth, BUFFER5 *str)
 {
 	char *p;
 	char *q = prs_mem_get(ps, str->buf_len * sizeof(uint16));
@@ -862,7 +862,7 @@ BOOL prs_buffer5(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER5 *
  in byte chars. String is in little-endian format.
  ********************************************************************/
 
-BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
+BOOL prs_buffer2(BOOL charmode, const char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
 	char *p;
 	char *q = prs_mem_get(ps, str->buf_len);
@@ -888,7 +888,7 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
  in uint8 chars.
  ********************************************************************/
 
-BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str)
+BOOL prs_string2(BOOL charmode, const char *name, prs_struct *ps, int depth, STRING2 *str)
 {
 	int i;
 	char *q = prs_mem_get(ps, str->str_max_len);
@@ -928,7 +928,7 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
  in uint16 chars. The unicode string is already in little-endian format.
  ********************************************************************/
 
-BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
+BOOL prs_unistr2(BOOL charmode, const char *name, prs_struct *ps, int depth, UNISTR2 *str)
 {
 	char *p;
 	char *q = prs_mem_get(ps, str->uni_str_len * sizeof(uint16));
@@ -959,7 +959,7 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
  in uint16 chars. The unicode string is already in little-endian format.
  ********************************************************************/
 
-BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
+BOOL prs_unistr3(BOOL charmode, const char *name, UNISTR3 *str, prs_struct *ps, int depth)
 {
 	char *p;
 	char *q = prs_mem_get(ps, str->uni_str_len * sizeof(uint16));
@@ -985,7 +985,7 @@ BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int de
  in little-endian format then do it as a stream of bytes.
  ********************************************************************/
 
-BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
+BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 {
 	int len = 0;
 	unsigned char *p = (unsigned char *)str->buffer;
@@ -1105,7 +1105,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
  not include the null-termination character.
  ********************************************************************/
 
-BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, int len, int max_buf_size)
+BOOL prs_string(const char *name, prs_struct *ps, int depth, char *str, int len, int max_buf_size)
 {
 	char *q;
 	int i;
@@ -1142,7 +1142,7 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, int len, int m
  uint16 should be stored, or gets the size if reading.
  ********************************************************************/
 
-BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
+BOOL prs_uint16_pre(const char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
 {
 	*offset = ps->data_offset;
 	if (UNMARSHALLING(ps)) {
@@ -1162,7 +1162,7 @@ BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint3
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
 
-BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
+BOOL prs_uint16_post(const char *name, prs_struct *ps, int depth, uint16 *data16,
 				uint32 ptr_uint16, uint32 start_offset)
 {
 	if (MARSHALLING(ps)) {
@@ -1189,7 +1189,7 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
  uint32 should be stored, or gets the size if reading.
  ********************************************************************/
 
-BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
+BOOL prs_uint32_pre(const char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
 {
 	*offset = ps->data_offset;
 	if (UNMARSHALLING(ps) && (data32 != NULL)) {
@@ -1206,7 +1206,7 @@ BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint3
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
 
-BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
+BOOL prs_uint32_post(const char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size)
 {
 	if (MARSHALLING(ps)) {

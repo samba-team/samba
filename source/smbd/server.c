@@ -498,7 +498,7 @@ static void decrement_smbd_process_count(void)
  Exit the server.
 ****************************************************************************/
 
-void exit_server(char *reason)
+void exit_server(const char *reason)
 {
 	static int firsttime=1;
 	extern char *last_inbuf;

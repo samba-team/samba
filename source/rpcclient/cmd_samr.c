@@ -94,7 +94,7 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	}
 }
 
-static char *display_time(NTTIME nttime)
+static const char *display_time(NTTIME nttime)
 {
 	static fstring string;
 
@@ -1005,7 +1005,7 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol;
 	uint32 flags = 0x000003e8; /* Unknown */
 	uint32 num_rids, num_names, *name_types, *rids;
-	char **names;
+	const char **names;
 	int i;
 	DOM_SID global_sid_Builtin;
 
@@ -1045,7 +1045,7 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 	/* Look up names */
 
 	num_names = argc - 2;
-	names = (char **)talloc(mem_ctx, sizeof(char *) * num_names);
+	names = (const char **)talloc(mem_ctx, sizeof(char *) * num_names);
 
 	for (i = 0; i < argc - 2; i++)
 		names[i] = argv[i + 2];
@@ -1166,7 +1166,7 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli,
 		uint32 flags = 0x000003e8; /* Unknown */
 
 		result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-					       flags, 1, &argv[1],
+					       flags, 1, (const char **)&argv[1],
 					       &num_rids, &user_rids,
 					       &name_types);
 

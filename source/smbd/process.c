@@ -348,7 +348,7 @@ force write permissions on print services.
 */
 struct smb_message_struct
 {
-  char *name;
+  const char *name;
   int (*fn)(connection_struct *conn, char *, char *, int, int);
   int flags;
 }
@@ -616,7 +616,7 @@ struct smb_message_struct
 /*******************************************************************
 dump a prs to a file
  ********************************************************************/
-static void smb_dump(char *name, int type, char *data, ssize_t len)
+static void smb_dump(const char *name, int type, const char *data, ssize_t len)
 {
 	int fd, i;
 	pstring fname;
@@ -916,9 +916,9 @@ void process_smb(char *inbuf, char *outbuf)
 /****************************************************************************
 return a string containing the function name of a SMB command
 ****************************************************************************/
-char *smb_fn_name(int type)
+const char *smb_fn_name(int type)
 {
-	static char *unknown_name = "SMBunknown";
+	static const char *unknown_name = "SMBunknown";
 
 	if (smb_messages[type].name == NULL)
 		return(unknown_name);

@@ -37,8 +37,8 @@
    arguemnts to DEBUG() right. We have got them wrong too often in the 
    past.
  */
-int  Debug1( char *, ... ) PRINTF_ATTRIBUTE(1,2);
-BOOL dbgtext( char *, ... ) PRINTF_ATTRIBUTE(1,2);
+int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
+BOOL dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 
 /* If we have these macros, we can add additional info to the header. */
 #ifdef HAVE_FILE_MACRO

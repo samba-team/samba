@@ -353,7 +353,7 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
 /****************************************************************************
 load from a pipe into memory
 ****************************************************************************/
-char *file_pload(char *syscmd, size_t *size)
+char *file_pload(const char *syscmd, size_t *size)
 {
 	int fd, n;
 	char *p, *tp;
@@ -415,7 +415,7 @@ char *fd_load(int fd, size_t *size)
 /****************************************************************************
 load a file into memory
 ****************************************************************************/
-char *file_load(char *fname, size_t *size)
+char *file_load(const char *fname, size_t *size)
 {
 	int fd;
 	char *p;
@@ -479,7 +479,7 @@ load a file into memory and return an array of pointers to lines in the file
 must be freed with file_lines_free(). If convert is true calls unix_to_dos on
 the list.
 ****************************************************************************/
-char **file_lines_load(char *fname, int *numlines, BOOL convert)
+char **file_lines_load(const char *fname, int *numlines, BOOL convert)
 {
 	char *p;
 	size_t size;
@@ -512,7 +512,7 @@ load a pipe into memory and return an array of pointers to lines in the data
 must be freed with file_lines_free(). If convert is true calls unix_to_dos on
 the list.
 ****************************************************************************/
-char **file_lines_pload(char *syscmd, int *numlines, BOOL convert)
+char **file_lines_pload(const char *syscmd, int *numlines, BOOL convert)
 {
 	char *p;
 	size_t size;

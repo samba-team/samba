@@ -451,7 +451,7 @@ BOOL user_in_group_list(char *user,char *gname)
 BOOL user_in_list(char *user,char *list)
 {
 	pstring tok;
-	char *p=list;
+	const char *p=list;
 
 	DEBUG(10,("user_in_list: checking user %s in list %s\n", user, list));
 

@@ -24,7 +24,7 @@
 extern BOOL AllowDebugChange;
 
 static struct {
-	char *name;
+	const char *name;
 	int value;
 } msg_types[] = {
 	{"debug", MSG_DEBUG},
@@ -100,7 +100,7 @@ Prints out the current Profile level returned by MSG_PROFILELEVEL
 void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
 {
         int level;
-	char *s=NULL;
+	const char *s=NULL;
         memcpy(&level, buf, sizeof(int));
 
 	if (level) {

@@ -112,10 +112,10 @@ struct pipe_id_info
 {
 	/* the names appear not to matter: the syntaxes _do_ matter */
 
-	char *client_pipe;
+	const char *client_pipe;
 	RPC_IFACE abstr_syntax; /* this one is the abstract syntax id */
 
-	char *server_pipe;  /* this one is the secondary syntax name */
+	const char *server_pipe;  /* this one is the secondary syntax name */
 	RPC_IFACE trans_syntax; /* this one is the primary syntax id */
 };
 

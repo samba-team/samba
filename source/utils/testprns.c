@@ -39,7 +39,7 @@ extern FILE *dbf;
 
 int main(int argc, char *argv[])
 {
-   char *pszTemp;
+   const char *pszTemp;
 
    TimeInit();
 

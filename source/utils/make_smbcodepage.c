@@ -151,7 +151,7 @@ static BOOL parse_bool(char *buf, unsigned char *bp)
  * Print a parse error and exit.
  */
 
-static void parse_error(char *buf, char *msg)
+static void parse_error(char *buf, const char *msg)
 {
   fprintf(stderr, "%s: %s whilst parsing line \n%s\n", prog_name,
           msg, buf);
@@ -243,7 +243,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
   for(i = 0; i < num_lines; i++)
   {
     char token_buf[512];
-    char *p = buf;
+    const char *p = buf;
     unsigned char b = 0;
 
     /* Get the 'lower' value. */

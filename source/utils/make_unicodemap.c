@@ -202,7 +202,7 @@ static int do_compile(const char *codepage, const char *input_file, const char *
 
   for(i = 0; i < num_lines; i++) {
     char token_buf[512];
-    char *p = buf;
+    const char *p = buf;
     uint16 cp = 0;
     uint16 ucs2 = 0;
 

@@ -285,7 +285,7 @@ static void pwd_sub(char *buf)
 	all_string_sub(buf, "\\t", "\t", 0);
 }
 
-static int talktochild(int master, char *seq)
+static int talktochild(int master, const char *seq)
 {
 	int count = 0;
 	fstring issue, expected;
@@ -453,7 +453,7 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 }
 
 
-BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
+BOOL chgpasswd(char *name, const char *oldpass, const char *newpass, BOOL as_root)
 {
 	pstring passwordprogram;
 	pstring chatsequence;
@@ -558,7 +558,7 @@ the string %%u, and the given string %s does not.\n", passwordprogram ));
 
 #else /* ALLOW_CHANGE_PASSWORD */
 
-BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
+BOOL chgpasswd(char *name, const char *oldpass, const char *newpass, BOOL as_root)
 {
 	DEBUG(0, ("Password changing not compiled in (user=%s)\n", name));
 	return (False);

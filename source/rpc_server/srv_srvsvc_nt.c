@@ -122,7 +122,7 @@ static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
 BOOL share_info_db_init(void)
 {
 	static pid_t local_pid;
-	char *vstring = "INFO/version";
+	const char *vstring = "INFO/version";
 	int32 vers_id;
  
 	if (share_tdb && local_pid == sys_getpid())
@@ -634,7 +634,7 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
  fill in a sess info level 1 structure.
  ********************************************************************/
 
-static void init_srv_sess_0_info(SESS_INFO_0 *se0, SESS_INFO_0_STR *str0, char *name)
+static void init_srv_sess_0_info(SESS_INFO_0 *se0, SESS_INFO_0_STR *str0, const char *name)
 {
 	init_srv_sess_info0(se0, name);
 	init_srv_sess_info0_str(str0, name);
@@ -686,7 +686,7 @@ static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
  ********************************************************************/
 
 static void init_srv_sess_1_info(SESS_INFO_1 *se1, SESS_INFO_1_STR *str1,
-				char *name, char *user,
+				const char *name, const char *user,
 				uint32 num_opens,
 				uint32 open_time, uint32 idle_time,
 				uint32 usr_flgs)
@@ -844,7 +844,7 @@ static void init_srv_conn_info_0(SRV_CONN_INFO_0 *ss0, uint32 *snum, uint32 *sto
 static void init_srv_conn_1_info(CONN_INFO_1 *se1, CONN_INFO_1_STR *str1,
 				uint32 id, uint32 type,
 				uint32 num_opens, uint32 num_users, uint32 open_time,
-				char *usr_name, char *net_name)
+				const char *usr_name, const char *net_name)
 {
 	init_srv_conn_info1(se1 , id, type, num_opens, num_users, open_time, usr_name, net_name);
 	init_srv_conn_info1_str(str1, usr_name, net_name);
@@ -955,7 +955,7 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 
 static void init_srv_file_3_info(FILE_INFO_3 *fl3, FILE_INFO_3_STR *str3,
 				uint32 fnum, uint32 perms, uint32 num_locks,
-				char *path_name, char *user_name)
+				const char *path_name, const char *user_name)
 {
 	init_srv_file_info3(fl3 , fnum, perms, num_locks, path_name, user_name);
 	init_srv_file_info3_str(str3, path_name, user_name);
@@ -1639,6 +1639,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	fstring null_pw;
+	fstring dev;
 	pstring filename;
 	pstring qualname;
 	files_struct *fsp = NULL;
@@ -1660,12 +1661,13 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
+	fstrcpy(dev, "A:");
 
 	get_current_user(&user, p);
 	fstrcpy(user_name, uidtoname(user.uid));
 
 	become_root();
-	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+	conn = make_connection(qualname, user_name, null_pw, 0, dev, user.vuid, &ecode);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1746,6 +1748,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	pstring filename;
 	pstring qualname;
 	fstring null_pw;
+	fstring dev;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	BOOL bad_path;
@@ -1765,12 +1768,13 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
+	fstrcpy(dev, "A:");
 
 	get_current_user(&user, p);
 	fstrcpy(user_name, uidtoname(user.uid));
 
 	become_root();
-	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+	conn = make_connection(qualname, user_name, null_pw, 0, dev, user.vuid, &ecode);
 	unbecome_root();
 
 	if (conn == NULL) {

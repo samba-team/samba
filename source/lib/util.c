@@ -92,9 +92,9 @@ char **my_netbios_names;
  as it may be overwritten by a subsequent call.
 ****************************************************************************/
 
-char *tmpdir(void)
+const char *tmpdir(void)
 {
-	char *p;
+	const char *p;
 	if ((p = getenv("TMPDIR")))
 		return p;
 	return "/tmp";
@@ -122,7 +122,7 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
  Like atoi but gets the value up to the separator character.
 ****************************************************************************/
 
-char *Atoic(char *p, int *n, char *c)
+const char *Atoic(const char *p, int *n, const char *c)
 {
 	if (!isdigit((int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
@@ -146,7 +146,7 @@ char *Atoic(char *p, int *n, char *c)
  Reads a list of numbers.
  *************************************************************************/
 
-char *get_numlist(char *p, uint32 **num, int *count)
+const char *get_numlist(const char *p, uint32 **num, int *count)
 {
 	int val;
 
@@ -194,7 +194,7 @@ BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
  Check a files mod time.
 ********************************************************************/
 
-time_t file_modtime(char *fname)
+time_t file_modtime(const char *fname)
 {
 	SMB_STRUCT_STAT st;
   
@@ -416,7 +416,7 @@ void unix_clean_name(char *s)
 /****************************************************************************
   make a dir struct
 ****************************************************************************/
-void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date)
+void make_dir_struct(char *buf,const char *mask,const char *fname,SMB_OFF_T size,int mode,time_t date)
 {  
   char *p;
   pstring mask2;
@@ -1085,7 +1085,7 @@ gid_t nametogid(char *name)
 /*******************************************************************
 something really nasty happened - panic!
 ********************************************************************/
-void smb_panic(char *why)
+void smb_panic(const char *why)
 {
 	char *cmd = lp_panic_action();
 	if (cmd && *cmd) {
@@ -1137,7 +1137,7 @@ char *readdirname(DIR *p)
  of a path matches a (possibly wildcarded) entry in a namelist.
 ********************************************************************/
 
-BOOL is_in_path(char *name, name_compare_entry *namelist)
+BOOL is_in_path(const char *name, name_compare_entry *namelist)
 {
   pstring last_component;
   char *p;
@@ -1386,7 +1386,7 @@ const char* get_my_primary_ip (void)
 
 BOOL is_myname_or_ipaddr(char *s)
 {
-	char *ptr;
+	const char *ptr;
 	pstring nbname;
 	
 	/* optimize for the common case */
@@ -1689,7 +1689,7 @@ int set_maxfiles(int requested_max)
 /*****************************************************************
  splits out the start of the key (HKLM or HKU) and the rest of the key
  *****************************************************************/  
-BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
+BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 {
 	pstring tmp;
 
@@ -1829,7 +1829,7 @@ char *myhostname(void)
 /*****************************************************************
 a useful function for returning a path in the Samba lock directory
  *****************************************************************/  
-char *lock_path(char *name)
+char *lock_path(const char *name)
 {
 	static pstring fname;
 
@@ -1918,7 +1918,7 @@ BOOL ms_has_wild(char *s)
  a wrapper that handles case sensitivity and the special handling
    of the ".." name
  *******************************************************************/
-BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
+BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
 {
 	fstring p2, s2;
 	if (strcmp(string,"..") == 0) string = ".";

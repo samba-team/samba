@@ -39,7 +39,7 @@ void init_dfs_q_dfs_exist(DFS_Q_DFS_EXIST *q_d)
  Read/write a DFS_Q_DFS_EXIST structure - dummy...
  ************************************************************/
 
-BOOL dfs_io_q_dfs_exist(char *desc, DFS_Q_DFS_EXIST *q_d, prs_struct *ps, int depth)
+BOOL dfs_io_q_dfs_exist(const char *desc, DFS_Q_DFS_EXIST *q_d, prs_struct *ps, int depth)
 {
 	if(q_d == NULL)
 		return False;
@@ -53,7 +53,7 @@ BOOL dfs_io_q_dfs_exist(char *desc, DFS_Q_DFS_EXIST *q_d, prs_struct *ps, int de
  Read/write a DFS_R_DFS_EXIST structure
  ************************************************************/
 
-BOOL dfs_io_r_dfs_exist(char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps, int depth)
+BOOL dfs_io_r_dfs_exist(const char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps, int depth)
 {
 	if(q_d == NULL)
 		return False;
@@ -74,8 +74,8 @@ BOOL dfs_io_r_dfs_exist(char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps, int de
 Make a DFS_Q_DFS_REMOVE structure
 *******************************************************************/
 
-BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath, 
-			   char *servername, char *sharename)
+BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, const char *entrypath, 
+			   const char *servername, const char *sharename)
 {
 	DEBUG(5,("init_dfs_q_dfs_remove\n"));
 	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
@@ -89,7 +89,7 @@ BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath,
 Read/write a DFS_Q_DFS_REMOVE structure
 *******************************************************************/
 
-BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps, int depth)
+BOOL dfs_io_q_dfs_remove(const char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps, int depth)
 {
 	if(q_d == NULL)
 		return False;
@@ -129,7 +129,7 @@ BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps, int 
 Read/write a DFS_R_DFS_REMOVE structure
 *******************************************************************/
 
-BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps, int depth)
+BOOL dfs_io_r_dfs_remove(const char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps, int depth)
 {
 	if(r_d == NULL)	
 		return False;
@@ -147,8 +147,8 @@ BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps, int 
 Make a DFS_Q_DFS_ADD structure
 *******************************************************************/
 
-BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
-			char *sharename, char *comment, uint32 flags)
+BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, const char *entrypath, const char *servername,
+			const char *sharename, const char *comment, uint32 flags)
 {
 	DEBUG(5,("init_dfs_q_dfs_add\n"));
 	q_d->ptr_DfsEntryPath = q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
@@ -170,7 +170,7 @@ BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
  Read/write a DFS_Q_DFS_ADD structure
  ************************************************************/
 
-BOOL dfs_io_q_dfs_add(char *desc, DFS_Q_DFS_ADD *q_d, prs_struct *ps, int depth)
+BOOL dfs_io_q_dfs_add(const char *desc, DFS_Q_DFS_ADD *q_d, prs_struct *ps, int depth)
 {
 	if(q_d == NULL)
 		return False;
@@ -215,7 +215,7 @@ BOOL dfs_io_q_dfs_add(char *desc, DFS_Q_DFS_ADD *q_d, prs_struct *ps, int depth)
  Read/write a DFS_R_DFS_ADD structure 
  ************************************************************/
 
-BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps, int depth)
+BOOL dfs_io_r_dfs_add(const char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps, int depth)
 {
 	if(r_d == NULL)
 		return False;
@@ -229,8 +229,8 @@ BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps, int depth)
 	return True;
 }
 
-BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, char *entrypath,
-			     char *servername, char *sharename, 
+BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, const char *entrypath,
+			     const char *servername, const char *sharename, 
 			     uint32 info_level)
 {
 	DEBUG(5,("init_dfs_q2_get_info\n"));
@@ -246,7 +246,7 @@ BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, char *entrypath,
  Read/write a DFS_Q_GET_INFO structure
  ************************************************************/
 
-BOOL dfs_io_q_dfs_get_info(char* desc, DFS_Q_DFS_GET_INFO* q_i, prs_struct* ps, int depth)
+BOOL dfs_io_q_dfs_get_info(const char* desc, DFS_Q_DFS_GET_INFO* q_i, prs_struct* ps, int depth)
 {
 	if(q_i == NULL)
 		return False;
@@ -286,7 +286,7 @@ BOOL dfs_io_q_dfs_get_info(char* desc, DFS_Q_DFS_GET_INFO* q_i, prs_struct* ps, 
  Read/write a DFS_R_GET_INFO structure
  ************************************************************/
 
-BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i, prs_struct* ps, int depth)
+BOOL dfs_io_r_dfs_get_info(const char* desc, DFS_R_DFS_GET_INFO* r_i, prs_struct* ps, int depth)
 {
 	if(r_i == NULL)
 		return False;
@@ -325,7 +325,7 @@ BOOL init_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr)
  Read or write the DFS_Q_DFS_ENUM structure 
  ************************************************************/
 
-BOOL dfs_io_q_dfs_enum(char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps, int depth)
+BOOL dfs_io_q_dfs_enum(const char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps, int depth)
 {
 	if(q_d == NULL)
 		return False;
@@ -362,7 +362,7 @@ BOOL dfs_io_q_dfs_enum(char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps, int dept
  Read/write a DFS_INFO_CTR structure
  ************************************************************/
 
-BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries, uint32 level, prs_struct* ps, int depth)
+BOOL dfs_io_dfs_info_ctr(const char *desc, DFS_INFO_CTR* ctr, uint32 num_entries, uint32 level, prs_struct* ps, int depth)
 {
 	int i=0;
 
@@ -462,7 +462,7 @@ BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries, uint
  Read/write a DFS_R_DFS_ENUM structure
  ************************************************************/
 
-BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int depth)
+BOOL dfs_io_r_dfs_enum(const char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int depth)
 {
 	DFS_INFO_CTR *ctr;
 	if(q_d == NULL)
@@ -504,7 +504,7 @@ BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int dept
 	return True;
 }
 
-BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3, prs_struct *ps, int depth)
+BOOL dfs_io_dfs_storage_info(const char *desc, DFS_INFO_3* info3, prs_struct *ps, int depth)
 {
 	int i=0;
 	if(info3 == NULL)

@@ -80,7 +80,7 @@ rid_name domain_group_rids[] =
 
 int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
 {
-  char *ptr;
+  const char *ptr;
   pstring s2;
   int count;
   DOM_GID *gids;
@@ -110,14 +110,16 @@ int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
        count++) 
   {
     /* the entries are of the form GID/ATTR, ATTR being optional.*/
-    char *attr;
+    const char *attr = NULL;
+    char *pattr = NULL;
     uint32 rid = 0;
     int i;
 
-    attr = strchr(s2,'/');
-    if (attr)
-      *attr++ = 0;
+    pattr = strchr(s2,'/');
+    if (pattr)
+      *pattr++ = 0;
 
+    attr = pattr;
     if (!attr || !*attr)
       attr = "7"; /* default value for attribute is 7 */
 
@@ -295,7 +297,7 @@ NTSTATUS local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
  ********************************************************************/
 NTSTATUS local_lookup_group_rid(char *group_name, uint32 *rid)
 {
-	char *grp_name;
+	const char *grp_name;
 	int i = -1; /* start do loop at -1 */
 
 	do /* find, if it exists, a group rid for the group name*/
@@ -314,7 +316,7 @@ NTSTATUS local_lookup_group_rid(char *group_name, uint32 *rid)
  ********************************************************************/
 NTSTATUS local_lookup_alias_rid(char *alias_name, uint32 *rid)
 {
-	char *als_name;
+	const char *als_name;
 	int i = -1; /* start do loop at -1 */
 
 	do /* find, if it exists, a alias rid for the alias name*/

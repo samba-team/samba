@@ -102,7 +102,7 @@ static void get_random_stream(unsigned char *data, size_t datasize)
  Note that the hash is not initialised.
 *****************************************************************/
 
-static void do_filehash(char *fname, unsigned char *the_hash)
+static void do_filehash(const char *fname, unsigned char *the_hash)
 {
 	unsigned char buf[1011]; /* deliberate weird size */
 	unsigned char tmp_md4[16];

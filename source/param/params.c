@@ -233,7 +233,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
   int   c;
   int   i;
   int   end;
-  char *func  = "params.c:Section() -";
+  const char *func  = "params.c:Section() -";
 
   i = 0;      /* <i> is the offset of the next free byte in bufr[] and  */
   end = 0;    /* <end> is the current "end of string" offset.  In most  */
@@ -339,7 +339,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
   int   i       = 0;    /* Position within bufr. */
   int   end     = 0;    /* bufr[end] is current end-of-string. */
   int   vstart  = 0;    /* Starting position of the parameter value. */
-  char *func    = "params.c:Parameter() -";
+  const char *func    = "params.c:Parameter() -";
 
   /* Read the parameter name. */
   while( 0 == vstart )  /* Loop until we've found the start of the value. */
@@ -527,7 +527,7 @@ static myFILE *OpenConfFile( char *FileName )
    * ------------------------------------------------------------------------ **
    */
   {
-  char *func = "params.c:OpenConfFile() -";
+  const char *func = "params.c:OpenConfFile() -";
   extern BOOL in_client;
   int lvl = in_client?1:0;
   myFILE *ret;
@@ -568,7 +568,7 @@ BOOL pm_process( char *FileName,
   {
   int   result;
   myFILE *InFile;
-  char *func = "params.c:pm_process() -";
+  const char *func = "params.c:pm_process() -";
 
   InFile = OpenConfFile( FileName );          /* Open the config file. */
   if( NULL == InFile )

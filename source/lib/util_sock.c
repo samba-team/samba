@@ -51,7 +51,7 @@ BOOL is_a_socket(int fd)
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
 typedef struct smb_socket_option {
-	char *name;
+	const char *name;
 	int level;
 	int option;
 	int value;
@@ -117,7 +117,7 @@ static void print_socket_options(int s)
  Set user socket options.
 ****************************************************************************/
 
-void set_socket_options(int fd, char *options)
+void set_socket_options(int fd, const char *options)
 {
 	fstring tok;
 

@@ -207,7 +207,7 @@ static BOOL wbinfo_list_domains(void)
 	/* Display response */
 
 	if (response.extra_data) {
-		char *extra_data = (char *)response.extra_data;
+		const char *extra_data = (const char *)response.extra_data;
 
 		while(next_token(&extra_data, name, ",", sizeof(fstring)))
 			printf("%s\n", name);
@@ -523,7 +523,7 @@ static BOOL wbinfo_auth_crap(char *username)
 static BOOL print_domain_users(void)
 {
 	struct winbindd_response response;
-	char *extra_data;
+	const char *extra_data;
 	fstring name;
 
 	/* Send request to winbind daemon */
@@ -539,7 +539,7 @@ static BOOL print_domain_users(void)
 	if (!response.extra_data)
 		goto done;
 
-	extra_data = (char *)response.extra_data;
+	extra_data = (const char *)response.extra_data;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring)))
 		printf("%s\n", name);
@@ -558,7 +558,7 @@ done:
 static BOOL print_domain_groups(void)
 {
 	struct winbindd_response response;
-	char *extra_data;
+	const char *extra_data;
 	fstring name;
 
 	ZERO_STRUCT(response);
@@ -572,7 +572,7 @@ static BOOL print_domain_groups(void)
 	if (!response.extra_data)
 		goto done;
 
-	extra_data = (char *)response.extra_data;
+	extra_data = (const char *)response.extra_data;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring)))
 		printf("%s\n", name);

@@ -1335,7 +1335,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
  call getpwnam() for unix account information until we have found
  the correct entry
  ***************************************************************/
-BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username)
+BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 {
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
@@ -1475,7 +1475,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sampass, BOOL override)
 	return True;
 }
 
-BOOL pdb_delete_sam_account (char* username)
+BOOL pdb_delete_sam_account (const char* username)
 {
 	return del_smbfilepwd_entry(username);
 }

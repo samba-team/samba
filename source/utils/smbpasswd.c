@@ -40,8 +40,8 @@ static BOOL stdin_passwd_get = False;
 static fstring user_name, user_password;
 static char *new_domain = NULL;
 static char *new_passwd = NULL;
-static char *old_passwd = NULL;
-static char *remote_machine = NULL;
+static const char *old_passwd = NULL;
+static const char *remote_machine = NULL;
 static pstring servicesf = CONFIGFILE;
 
 #ifdef WITH_LDAP_SAM
@@ -340,7 +340,7 @@ Join a domain using the administrator username and password
                 goto done; \
         }
 
-static int join_domain_byuser(char *domain, char *remote,
+static int join_domain_byuser(char *domain, const char *remote,
 			      char *username, char *password)
 {
 	/* libsmb variables */
@@ -497,7 +497,7 @@ static int join_domain_byuser(char *domain, char *remote,
 	if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_USER_EXISTS)) {
 		uint32 num_rids, *name_types, *user_rids;
 		uint32 flags = 0x3e8;
-		char *names;
+		const char *names;
 		
 		/* Look up existing rid */
 		
@@ -628,7 +628,7 @@ static int join_domain_byuser(char *domain, char *remote,
 Join a domain. Old server manager method.
 **********************************************************/
 
-static int join_domain(char *domain, char *remote)
+static int join_domain(char *domain, const char *remote)
 {
 	pstring pdc_name;
 	fstring trust_passwd;
@@ -708,7 +708,7 @@ machine %s in domain %s.\n", global_myname, domain);
 	return 0;
 }
 
-static int set_domain_sid_from_dc( char *domain, char *remote )
+static int set_domain_sid_from_dc( char *domain, const char *remote )
 {
 	pstring pdc_name;
 	DOM_SID domain_sid;
@@ -784,7 +784,7 @@ static char *stdin_new_passwd(void)
  Used if the '-s' option is set to silently get passwords
  to enable scripting.
 *************************************************************/
-static char *get_pass( char *prompt, BOOL stdin_get)
+static char *get_pass( const char *prompt, BOOL stdin_get)
 {
 	char *p;
 	if (stdin_get) {
@@ -828,7 +828,7 @@ static char *prompt_for_new_password(BOOL stdin_get)
 *************************************************************/
 
 static BOOL password_change(const char *rem_machine, char *usr_name, 
-			    char *old_pwd, char *new_pwd, int loc_flags)
+			    const char *old_pwd, char *new_pwd, int loc_flags)
 {
 	BOOL ret;
 	pstring err_str;

@@ -39,7 +39,7 @@
 
 /* Table to map the driver version */
 /* to OS */
-char * drv_ver_to_os[] = {
+const char * drv_ver_to_os[] = {
 	"WIN9X",   /* driver version/cversion 0 */
 	"",        /* unused ? */
 	"WINNT",   /* driver version/cversion 2 */
@@ -47,8 +47,8 @@ char * drv_ver_to_os[] = {
 };
 
 struct table_node {
-	char    *long_archi;
-	char    *short_archi;
+	const char    *long_archi;
+	const char    *short_archi;
 	int     version;
 };
 
@@ -1245,7 +1245,7 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 	return result;
 }
 
-BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
+BOOL convert_devicemode(const char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode)
 {
 	NT_DEVICEMODE *nt_devmode = *pp_nt_devmode;
@@ -2365,7 +2365,7 @@ static void spoolss_notify_job_status_string(int snum,
 	 * Now we're returning job status codes we just return a "" here. JRA.
 	 */
 
-	char *p = "";
+	const char *p = "";
 	pstring temp;
 	uint32 len;
 
@@ -2520,7 +2520,7 @@ struct s_notify_info_data_table
 {
 	uint16 type;
 	uint16 field;
-	char *name;
+	const char *name;
 	uint32 size;
 	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
 		    print_queue_struct *queue,
@@ -4099,7 +4099,7 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 {
 	int i=0;
 	int j=0;
-	char *v;
+	const char *v;
 	pstring line;
 	uint16 *tuary;
 
@@ -6240,7 +6240,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_port_1(PORT_INFO_1 *port, char *name)
+static void fill_port_1(PORT_INFO_1 *port, const char *name)
 {
 	init_unistr(&port->port_name, name);
 }
@@ -6248,7 +6248,7 @@ static void fill_port_1(PORT_INFO_1 *port, char *name)
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_port_2(PORT_INFO_2 *port, char *name)
+static void fill_port_2(PORT_INFO_2 *port, const char *name)
 {
 	init_unistr(&port->port_name, name);
 	init_unistr(&port->monitor_name, "Local Monitor");

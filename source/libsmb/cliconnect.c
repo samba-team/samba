@@ -43,8 +43,8 @@ static const struct {
  Do an old lanman2 style session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user, 
-				      char *pass, int passlen)
+static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user, 
+				      const char *pass, int passlen)
 {
 	fstring pword;
 	char *p;
@@ -184,8 +184,8 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
  Do a NT1 plaintext session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user, 
-					char *pass, char *workgroup)
+static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user, 
+					const char *pass, const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	fstring pword;
@@ -240,10 +240,10 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
  Do a NT1 NTLM/LM encrypted session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user, 
-				  char *pass, int passlen,
-				  char *ntpass, int ntpasslen,
-				  char *workgroup)
+static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user, 
+				  const char *pass, int passlen,
+				  const char *ntpass, int ntpasslen,
+				  const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	fstring pword, ntpword;
@@ -320,10 +320,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 ****************************************************************************/
 
 BOOL cli_session_setup(struct cli_state *cli, 
-		       char *user, 
-		       char *pass, int passlen,
-		       char *ntpass, int ntpasslen,
-		       char *workgroup)
+		       const char *user, 
+		       const char *pass, int passlen,
+		       const char *ntpass, int ntpasslen,
+		       const char *workgroup)
 {
 	char *p;
 	fstring user2;
@@ -799,9 +799,9 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 ****************************************************************************/
 
 BOOL cli_establish_connection(struct cli_state *cli, 
-				char *dest_host, struct in_addr *dest_ip,
+				const char *dest_host, struct in_addr *dest_ip,
 				struct nmb_name *calling, struct nmb_name *called,
-				char *service, char *service_type,
+				const char *service, const char *service_type,
 				BOOL do_shutdown, BOOL do_tcon)
 {
 	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s]\n",
@@ -918,8 +918,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
  Initialise client credentials for authenticated pipe access.
 ****************************************************************************/
 
-static void init_creds(struct ntuser_creds *creds, char* username,
-		       char* domain, char* password, int pass_len)
+static void init_creds(struct ntuser_creds *creds, const char* username,
+		       const char* domain, const char* password, int pass_len)
 {
 	ZERO_STRUCTP(creds);
 
@@ -940,9 +940,9 @@ static void init_creds(struct ntuser_creds *creds, char* username,
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
 			     const char *my_name, const char *dest_host, 
 			     struct in_addr *dest_ip, int port,
-			     char *service, char *service_type,
-			     char *user, char *domain, 
-			     char *password, int pass_len) 
+			     const char *service, const char *service_type,
+			     const char *user, const char *domain, 
+			     const char *password, int pass_len) 
 {
 	struct ntuser_creds creds;
 	NTSTATUS nt_status;
@@ -1015,7 +1015,7 @@ again:
 
 	if (service) {
 		if (!cli_send_tconX(cli, service, service_type,
-				    (char*)password, pass_len)) {
+				    password, pass_len)) {
 			DEBUG(1,("failed tcon_X\n"));
 			nt_status = cli_nt_error(cli);
 			cli_shutdown(cli);
@@ -1036,7 +1036,7 @@ again:
  Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
 ****************************************************************************/
 
-BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost, const char *desthost,
                                      struct in_addr *pdest_ip)
 {
 	struct nmb_name calling, called;

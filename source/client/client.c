@@ -644,8 +644,9 @@ static void do_get(char *rname,char *lname)
 	struct timeval tp_start;
 	int read_size = io_bufsize;
 	uint16 attr;
-	size_t size;
-	off_t nread = 0;
+	size_t old_size = 0;
+	SMB_BIG_UINT size = 0;
+	SMB_BIG_UINT nread = 0;
 
 	GetTimeOfDay(&tp_start);
 
@@ -671,9 +672,8 @@ static void do_get(char *rname,char *lname)
 		return;
 	}
 
-
 	if (!cli_qfileinfo(cli, fnum, 
-			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
+			   &attr, &old_size, NULL, NULL, NULL, NULL, NULL) &&
 	    !cli_getattrE(cli, fnum, 
 			  &attr, &size, NULL, NULL, NULL)) {
 		DEBUG(0,("getattrib: %s\n",cli_errstr(cli)));
@@ -1877,10 +1877,10 @@ static BOOL list_servers(char *wk_grp)
  */
 struct
 {
-  char *name;
+  const char *name;
   void (*fn)(void);
-  char *description;
-  char compl_args[2];      /* Completion argument info */
+  const char *description;
+  const char compl_args[2];      /* Completion argument info */
 } commands[] = 
 {
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
@@ -1993,7 +1993,7 @@ process a -c command string
 static void process_command_string(char *cmd)
 {
 	pstring line;
-	char *ptr;
+	const char *ptr;
 
 	/* establish the connection if not already */
 	
@@ -2110,7 +2110,7 @@ process commands on stdin
 ****************************************************************************/
 static void process_stdin(void)
 {
-	char *ptr;
+	const char *ptr;
 
 	while (1) {
 		fstring tok;
@@ -2148,11 +2148,11 @@ static void process_stdin(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *do_connect(char *server, char *share)
+struct cli_state *do_connect(const char *server, const char *share)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
-	char *server_n;
+	const char *server_n;
 	struct in_addr ip;
 	fstring servicename;
 	char *sharename;

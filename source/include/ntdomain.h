@@ -246,7 +246,7 @@ typedef struct pipes_struct
 
 struct api_struct
 {  
-  char *name;
+  const char *name;
   uint8 opnum;
   BOOL (*fn) (pipes_struct *);
 };
@@ -254,7 +254,7 @@ struct api_struct
 typedef struct
 {  
 	uint32 rid;
-	char *name;
+	const char *name;
 
 } rid_name;
 

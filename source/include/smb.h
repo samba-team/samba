@@ -727,7 +727,7 @@ enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
 
 struct enum_list {
 	int value;
-	char *name;
+	const char *name;
 };
 
 #define BRLOCK_FN_CAST() \
@@ -740,11 +740,11 @@ struct enum_list {
 				 br_off start, br_off size)
 struct parm_struct
 {
-	char *label;
+	const char *label;
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	BOOL (*special)(char *, char **);
+	BOOL (*special)(const char *, char **);
 	struct enum_list *enum_list;
 	unsigned flags;
 	union {

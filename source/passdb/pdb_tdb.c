@@ -528,7 +528,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
  Lookup a name in the SAM TDB
 ******************************************************************/
 
-BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
+BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 {
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	data, key;
@@ -641,7 +641,7 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-BOOL pdb_delete_sam_account(char *sname)
+BOOL pdb_delete_sam_account(const char *sname)
 {
 	SAM_ACCOUNT	*sam_pass = NULL;
 	TDB_CONTEXT 	*pwd_tdb;

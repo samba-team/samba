@@ -164,7 +164,7 @@ load the list of network interfaces
 ****************************************************************************/
 void load_interfaces(void)
 {
-	char *ptr;
+	const char *ptr;
 	fstring token;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];

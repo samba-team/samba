@@ -348,7 +348,7 @@ BOOL pdb_gethexpwd(char *p, unsigned char *pwd)
 {
 	int i;
 	unsigned char   lonybble, hinybble;
-	char           *hexchars = "0123456789ABCDEF";
+	const char           *hexchars = "0123456789ABCDEF";
 	char           *p1, *p2;
 	
 	if (!p)
@@ -481,12 +481,12 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 	if(is_user) {
 		if(rid == DOMAIN_USER_RID_ADMIN) {
-			char *p = lp_admin_users(-1);
+			const char *p = lp_admin_users(-1);
 			*psid_name_use = SID_NAME_USER;
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Administrator");
 		} else if (rid == DOMAIN_USER_RID_GUEST) {
-			char *p = lp_guestaccount(-1);
+			const char *p = lp_guestaccount(-1);
 			*psid_name_use = SID_NAME_USER;
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Guest");
@@ -871,8 +871,8 @@ void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
  changed to DOS codepage before hashing.
  *************************************************************/
 
-BOOL local_password_change(char *user_name, int local_flags,
-			   char *new_passwd, 
+BOOL local_password_change(const char *user_name, int local_flags,
+			   const char *new_passwd, 
 			   char *err_str, size_t err_str_len,
 			   char *msg_str, size_t msg_str_len)
 {
