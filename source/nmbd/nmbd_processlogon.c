@@ -102,7 +102,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       send_mailslot(True, getdc, 
                     outbuf,PTR_DIFF(q,outbuf),
 		    global_myname, 0x0,
-                    dgram->source_name.name,
+					machine,
                     dgram->source_name.name_type,
                     p->ip, *iface_ip(p->ip), p->port);  
       break;
