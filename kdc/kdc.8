@@ -10,15 +10,13 @@ Kerberos 5 server
 .Sh SYNOPSIS
 .Nm
 .Op Fl c Ar file
-.Op Fl k Ar file
-.Op Fl l Ar file
-.Op Fl p
-.Op Fl r Ar realm
 .Op Fl -config-file= Ns Ar file
+.Op Fl k Ar file
 .Op Fl -key-file= Ns Ar file
-.Op Fl -log-file= Ns Ar file
 .Op Fl -log-level= Ns Ar number
+.Op Fl p
 .Op Fl -no-require-preauth
+.Op Fl r Ar realm
 .Op Fl -v4-realm= Ns Ar realm
 
 .Sh DESCRIPTION
@@ -40,9 +38,6 @@ The location of the master-key file. All keys in the database is
 encrypted with this master key. The use of a master key is currently
 optional, so there is no default. 
 .Em "Don't specify a master key file if your database is not encrypted."
-.It Fl l Ar file
-.It Fl -log-file= Ns Ar file
-The file where the KDC logs its activities.
 .It Fl -log-level= Ns Ar number
 What level of information you want logged. The default is 0, and logs
 only requests and any errors when parsing them. You can turn off
@@ -63,9 +58,15 @@ requests. The database can contain any number of realms, but since the
 version 4 protocol doesn't contain a realm for the server, it must be
 explicitly specified. The default is whatever is returned by
 .Fn krb_get_lrealm .
-This option is only availabe if the program has been compiled with
-version 4 support.
+This option is only availabe if the KDC has been compiled with version
+4 support.
 .El
+.Pp
+All activities (as specified by the log level), are logged to one or
+more destinations, see the logging section of the
+.Xr krb5.conf 5
+manual page. The entity used for logging is
+.Nm kdc .
 .Sh CONFIGURATION FILE
 The configuration file has the same syntax as the 
 .Pa krb5.conf
@@ -82,7 +83,7 @@ that has to be specified as:
 .Dl require-preauth = no
 .Pp
 (in fact you can specify the option as
-.Fl -require-preauth= Ns Ar no
+.Fl -require-preauth=no
 as well).
 .Pp
 An example of a config file:
@@ -90,7 +91,7 @@ An example of a config file:
 [kdc]
 	require-preauth = no
 	v4-realm = FOO.SE
-	log-file = /var/log/kdc.log
+	key-file = /key-file
 .Ed
 .Sh SEE ALSO
 .Xr kinit 1
