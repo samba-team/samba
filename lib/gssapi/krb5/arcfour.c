@@ -228,8 +228,8 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 			   const gss_buffer_t message_buffer,
 			   const gss_buffer_t token_buffer,
 			   gss_qop_t * qop_state,
-			   char *type,
-			   krb5_keyblock *key)
+			   krb5_keyblock *key,
+			   char *type)
 {
     krb5_error_code ret;
     int32_t seq_number;

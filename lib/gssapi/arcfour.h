@@ -83,7 +83,7 @@ OM_uint32 _gssapi_verify_mic_arcfour(OM_uint32 *minor_status,
 				     const gss_buffer_t message_buffer,
 				     const gss_buffer_t token_buffer,
 				     gss_qop_t *qop_state,
-				     char *type,
-				     krb5_keyblock *key);
+				     krb5_keyblock *key,
+				     char *type);
 
 #endif /* GSSAPI_ARCFOUR_H_ */
