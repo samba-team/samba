@@ -902,77 +902,108 @@ static BOOL run_locktest1(int dummy)
 }
 
 /*
- checks for correct tconX support
+  this checks to see if a secondary tconx can use open files from an
+  earlier tconx
  */
 static BOOL run_tcon_test(int dummy)
 {
-	static struct cli_state *cli1;
+	static struct cli_state *cli;
 	const char *fname = "\\tcontest.tmp";
 	int fnum1;
-	uint16 cnum;
+	uint16 cnum1, cnum2, cnum3;
+	uint16 vuid1, vuid2;
 	char buf[4];
+	BOOL ret = True;
 
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
-	cli_sockopt(cli1, sockops);
+	cli_sockopt(cli, sockops);
 
 	printf("starting tcontest\n");
 
-	cli_unlink(cli1, fname);
+	cli_unlink(cli, fname);
 
-	fnum1 = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
-	if (fnum1 == -1)
-	{
-		printf("open of %s failed (%s)\n", fname, cli_errstr(cli1));
+	fnum1 = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(cli));
 		return False;
 	}
 
-	cnum = cli1->cnum;
+	cnum1 = cli->cnum;
+	vuid1 = cli->vuid;
 
-	if (cli_write(cli1, fnum1, 0, buf, 130, 4) != 4)
-	{
-		printf("write failed (%s)", cli_errstr(cli1));
+	if (cli_write(cli, fnum1, 0, buf, 130, 4) != 4) {
+		printf("initial write failed (%s)", cli_errstr(cli));
 		return False;
 	}
 
-	if (!cli_send_tconX(cli1, share, "?????",
+	if (!cli_send_tconX(cli, share, "?????",
 			    password, strlen(password)+1)) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
-		           cli_errstr(cli1));
-		cli_shutdown(cli1);
+		           cli_errstr(cli));
+		cli_shutdown(cli);
 		return False;
 	}
 
-	if (cli_write(cli1, fnum1, 0, buf, 130, 4) == 4)
-	{
-		printf("write succeeded (%s)", cli_errstr(cli1));
+	cnum2 = cli->cnum;
+	cnum3 = MAX(cnum1, cnum2) + 1; /* any invalid number */
+	vuid2 = cli->vuid + 1;
+
+	/* try a write with the wrong tid */
+	cli->cnum = cnum2;
+
+	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
+		printf("server allows write with wrong TID\n");
+	} else {
+		printf("* server fails write with wrong TID : %s\n", cli_errstr(cli));
+		ret = False;
+	}
+
+
+	/* try a write with an invalid tid */
+	cli->cnum = cnum3;
+
+	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
+		printf("server allows write with invalid TID\n");
+	} else {
+		printf("* server fails write with invalid TID : %s\n", cli_errstr(cli));
+		ret = False;
+	}
+
+	/* try a write with an invalid vuid */
+	cli->vuid = vuid2;
+	cli->cnum = cnum1;
+
+	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
+		printf("server allows write with invalid VUID\n");
+	} else {
+		printf("* server fails write with invalid VUID : %s\n", cli_errstr(cli));
+		ret = False;
+	}
+
+	cli->cnum = cnum1;
+	cli->vuid = vuid1;
+
+	if (!cli_close(cli, fnum1)) {
+		printf("close failed (%s)\n", cli_errstr(cli));
 		return False;
 	}
 
-	if (cli_close(cli1, fnum1)) {
-		printf("close2 succeeded (%s)\n", cli_errstr(cli1));
+	cli->cnum = cnum2;
+
+	if (!cli_tdis(cli)) {
+		printf("secondary tdis failed (%s)\n", cli_errstr(cli));
 		return False;
 	}
 
-	if (!cli_tdis(cli1)) {
-		printf("tdis failed (%s)\n", cli_errstr(cli1));
+	cli->cnum = cnum1;
+
+	if (!torture_close_connection(cli)) {
 		return False;
 	}
 
-	cli1->cnum = cnum;
-
-	if (!cli_close(cli1, fnum1)) {
-		printf("close2 failed (%s)\n", cli_errstr(cli1));
-		return False;
-	}
-
-	if (!torture_close_connection(cli1)) {
-		return False;
-	}
-
-	printf("Passed tcontest\n");
-	return True;
+	return ret;
 }
 
 
