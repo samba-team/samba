@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB Signing Code
-   Copyright (C) Jeremy Allison 2002.
+   Copyright (C) Jeremy Allison 2003.
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2002-2003
    
    This program is free software; you can redistribute it and/or modify
@@ -219,6 +219,8 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 	 * We do this here, to avoid modifying the packet.
 	 */
 
+	DEBUG(10,("simple_packet_signature: sequence number %u\n", seq_number ));
+
 	SIVAL(sequence_buf, 0, seq_number);
 	SIVAL(sequence_buf, 4, 0);
 
@@ -249,10 +251,10 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 
 
 /***********************************************************
- SMB signing - Simple implementation - send the MAC.
+ SMB signing - Client implementation - send the MAC.
 ************************************************************/
 
-static void simple_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
+static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	unsigned char calc_md5_mac[16];
 	struct smb_basic_signing_context *data = si->signing_context;
@@ -262,7 +264,7 @@ static void simple_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 
 	/* JRA Paranioa test - we should be able to get rid of this... */
 	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(1, ("simple_sign_outgoing_message: Logic error. Can't check signature on short packet! smb_len = %u\n",
+		DEBUG(1, ("client_sign_outgoing_message: Logic error. Can't check signature on short packet! smb_len = %u\n",
 					smb_len(outbuf) ));
 		abort();
 	}
@@ -272,7 +274,7 @@ static void simple_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 
 	simple_packet_signature(data, outbuf, data->send_seq_num, calc_md5_mac);
 
-	DEBUG(10, ("simple_sign_outgoing_message: sent SMB signature of\n"));
+	DEBUG(10, ("client_sign_outgoing_message: sent SMB signature of\n"));
 	dump_data(10, calc_md5_mac, 8);
 
 	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
@@ -281,19 +283,17 @@ static void simple_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	Uncomment this to test if the remote server actually verifies signatures...*/
 
 	data->send_seq_num++;
-#if 1 /* JRATEST */
 	store_sequence_for_reply(&data->outstanding_packet_list, 
 				 SVAL(outbuf,smb_mid),
 				 data->send_seq_num);
 	data->send_seq_num++;
-#endif /* JRATEST */
 }
 
 /***********************************************************
- SMB signing - Simple implementation - check a MAC sent by server.
+ SMB signing - Client implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL simple_check_incoming_message(char *inbuf, struct smb_sign_info *si)
+static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 {
 	BOOL good;
 	uint32 reply_seq_number;
@@ -306,20 +306,15 @@ static BOOL simple_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		return True;
 
 	if (smb_len(inbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(1, ("simple_check_incoming_message: Can't check signature on short packet! smb_len = %u\n", smb_len(inbuf)));
+		DEBUG(1, ("client_check_incoming_message: Can't check signature on short packet! smb_len = %u\n", smb_len(inbuf)));
 		return False;
 	}
 
-#if 1 /* JRATEST */
 	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
 				    SVAL(inbuf, smb_mid), 
 				    &reply_seq_number)) {
 		return False;
 	}
-#else /* JRATEST */
-	reply_seq_number = data->send_seq_num;
-	data->send_seq_num++;
-#endif /* JRATEST */
 
 	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
 
@@ -327,10 +322,10 @@ static BOOL simple_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 	
 	if (!good) {
-		DEBUG(5, ("simple_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
+		DEBUG(5, ("client_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
 		dump_data(5, calc_md5_mac, 8);
 		
-		DEBUG(5, ("simple_check_incoming_message: BAD SIG: got SMB signature of\n"));
+		DEBUG(5, ("client_check_incoming_message: BAD SIG: got SMB signature of\n"));
 		dump_data(5, server_sent_mac, 8);
 	}
 	return signing_good(inbuf, si, good);
@@ -383,8 +378,17 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	data->mac_key = data_blob(NULL, response.length + 16);
 
 	memcpy(&data->mac_key.data[0], user_session_key, 16);
-	if (response.length)
+
+	DEBUG(10, ("cli_simple_set_signing: user_session_key\n"));
+	dump_data(10, user_session_key, 16);
+
+	if (response.length) {
 		memcpy(&data->mac_key.data[16],response.data, response.length);
+		DEBUG(10, ("cli_simple_set_signing: response_data\n"));
+		dump_data(10, response.data, response.length);
+	} else {
+		DEBUG(10, ("cli_simple_set_signing: NULL response_data\n"));
+	}
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;
@@ -392,8 +396,8 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	/* Initialise the list of outstanding packets */
 	data->outstanding_packet_list = NULL;
 
-	cli->sign_info.sign_outgoing_message = simple_sign_outgoing_message;
-	cli->sign_info.check_incoming_message = simple_check_incoming_message;
+	cli->sign_info.sign_outgoing_message = client_sign_outgoing_message;
+	cli->sign_info.check_incoming_message = client_check_incoming_message;
 	cli->sign_info.free_signing_context = simple_free_signing_context;
 
 	return True;
@@ -487,6 +491,94 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
 		return False;
 	}
 	return True;
+}
+
+/***********************************************************
+ SMB signing - Server implementation - send the MAC.
+************************************************************/
+
+static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
+{
+	unsigned char calc_md5_mac[16];
+	struct smb_basic_signing_context *data = si->signing_context;
+
+	if (!si->doing_signing)
+		return;
+
+	/* JRA Paranioa test - we should be able to get rid of this... */
+	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
+		DEBUG(1, ("srv_sign_outgoing_message: Logic error. Can't check signature on short packet! smb_len = %u\n",
+					smb_len(outbuf) ));
+		abort();
+	}
+
+	/* mark the packet as signed - BEFORE we sign it...*/
+	mark_packet_signed(outbuf);
+
+	simple_packet_signature(data, outbuf, data->send_seq_num, calc_md5_mac);
+
+	DEBUG(10, ("srv_sign_outgoing_message: sent SMB signature of\n"));
+	dump_data(10, calc_md5_mac, 8);
+
+	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
+
+/*	cli->outbuf[smb_ss_field+2]=0; 
+	Uncomment this to test if the remote server actually verifies signatures...*/
+
+	data->send_seq_num++;
+#if 0 /* JRATEST */
+	store_sequence_for_reply(&data->outstanding_packet_list, 
+				 SVAL(outbuf,smb_mid),
+				 data->send_seq_num);
+	data->send_seq_num++;
+#endif /* JRATEST */
+}
+
+/***********************************************************
+ SMB signing - Server implementation - check a MAC sent by server.
+************************************************************/
+
+static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
+{
+	BOOL good;
+	uint32 reply_seq_number;
+	unsigned char calc_md5_mac[16];
+	unsigned char *server_sent_mac;
+
+	struct smb_basic_signing_context *data = si->signing_context;
+
+	if (!si->doing_signing)
+		return True;
+
+	if (smb_len(inbuf) < (smb_ss_field + 8 - 4)) {
+		DEBUG(1, ("srv_check_incoming_message: Can't check signature on short packet! smb_len = %u\n", smb_len(inbuf)));
+		return False;
+	}
+
+#if 0 /* JRATEST */
+	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
+				    SVAL(inbuf, smb_mid), 
+				    &reply_seq_number)) {
+		return False;
+	}
+#else /* JRATEST */
+	reply_seq_number = data->send_seq_num;
+	data->send_seq_num++;
+#endif /* JRATEST */
+
+	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
+
+	server_sent_mac = &inbuf[smb_ss_field];
+	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
+	
+	if (!good) {
+		DEBUG(5, ("srv_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
+		dump_data(5, calc_md5_mac, 8);
+		
+		DEBUG(5, ("srv_check_incoming_message: BAD SIG: got SMB signature of\n"));
+		dump_data(5, server_sent_mac, 8);
+	}
+	return signing_good(inbuf, si, good);
 }
 
 /***********************************************************
@@ -612,7 +704,7 @@ void srv_set_signing(const uchar user_session_key[16], const DATA_BLOB response)
 	/* Initialise the list of outstanding packets */
 	data->outstanding_packet_list = NULL;
 
-	srv_sign_info.sign_outgoing_message = simple_sign_outgoing_message;
-	srv_sign_info.check_incoming_message = simple_check_incoming_message;
+	srv_sign_info.sign_outgoing_message = srv_sign_outgoing_message;
+	srv_sign_info.check_incoming_message = srv_check_incoming_message;
 	srv_sign_info.free_signing_context = simple_free_signing_context;
 }
