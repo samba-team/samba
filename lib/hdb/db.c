@@ -127,6 +127,7 @@ DB_seq(krb5_context context, HDB *db, hdb_entry *entry, int flag)
 
     data.data = key.data;
     data.length = key.size;
+    entry->principal = malloc(sizeof(*entry->principal));
     hdb_key2principal(context, &data, &entry->principal);
     data.data = value.data;
     data.length = value.size;

@@ -131,7 +131,8 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
 	return KRB5_HDB_NOENTRY;
     data.data = key.dptr;
     data.length = key.dsize;
-    hdb_key2principal(context, &data, &entry->principal);
+    entry->principal = malloc(sizeof(*entry->principal));
+    hdb_key2principal(context, &data, entry->principal);
     value = dbm_fetch(d, key);
     /* krb5_data_free(&data); */
     data.data = value.dptr;
