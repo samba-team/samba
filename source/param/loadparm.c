@@ -179,6 +179,22 @@ typedef struct
 #ifdef USE_LDAP
   int ldap_port;
 #endif /* USE_LDAP */
+#ifdef USE_SSL
+  int sslVersion;
+  char *sslHostsRequire;
+  char *sslHostsResign;
+  char *sslCaCertDir;
+  char *sslCaCertFile;
+  char *sslCert;
+  char *sslPrivKey;
+  char *sslClientCert;
+  char *sslClientPrivKey;
+  char *sslCiphers;
+  BOOL sslEnabled;
+  BOOL sslReqClientCert;
+  BOOL sslReqServerCert;
+  BOOL sslCompatibility;
+#endif /* USE_SSL */
   BOOL bDNSproxy;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
@@ -432,6 +448,11 @@ static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "uppe
 
 static struct enum_list enum_lm_announce[] = {{0, "False"}, {1, "True"}, {2, "Auto"}, {-1, NULL}};
 
+#ifdef USE_SSL
+static struct enum_list enum_ssl_version[] = {{SMB_SSL_V2, "ssl2"}, {SMB_SSL_V3, "ssl3"}
+  {SMB_SSL_V23, "ssl2or3"}, {SMB_SSL_TLS1, "tls1"}, {-1, NULL}};
+#endif
+
 /* note that we do not initialise the defaults union - it is not allowed in ANSI C */
 static struct parm_struct parm_table[] =
 {
@@ -498,6 +519,24 @@ static struct parm_struct parm_table[] =
   {"allow hosts",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL,  0},
   {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_PRINT},
   {"deny hosts",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  0},
+
+#ifdef USE_SSL
+  {"Secure Socket Layer Options", P_SEP, P_SEPARATOR},
+  {"ssl",              P_BOOL,    P_GLOBAL, &Globals.sslEnabled,        NULL,   NULL,  0 },
+  {"ssl hosts",        P_STRING,  P_GLOBAL, &Globals.sslHostsRequire,   NULL,   NULL,  0 },
+  {"ssl hosts resign", P_STRING,  P_GLOBAL, &Globals.sslHostsResign,   NULL,   NULL,  0} ,
+  {"ssl CA certDir",   P_STRING,  P_GLOBAL, &Globals.sslCaCertDir,      NULL,   NULL,  0 },
+  {"ssl CA certFile",  P_STRING,  P_GLOBAL, &Globals.sslCaCertFile,     NULL,   NULL,  0 },
+  {"ssl server cert",  P_STRING,  P_GLOBAL, &Globals.sslCert,           NULL,   NULL,  0 },
+  {"ssl server key",   P_STRING,  P_GLOBAL, &Globals.sslPrivKey,        NULL,   NULL,  0 },
+  {"ssl client cert",  P_STRING,  P_GLOBAL, &Globals.sslClientCert,     NULL,   NULL,  0 },
+  {"ssl client key",   P_STRING,  P_GLOBAL, &Globals.sslClientPrivKey,  NULL,   NULL,  0 },
+  {"ssl require clientcert",  P_BOOL,  P_GLOBAL, &Globals.sslReqClientCert, NULL,   NULL ,  0},
+  {"ssl require servercert",  P_BOOL,  P_GLOBAL, &Globals.sslReqServerCert, NULL,   NULL ,  0},
+  {"ssl ciphers",      P_STRING,  P_GLOBAL, &Globals.sslCiphers,        NULL,   NULL,  0 },
+  {"ssl version",      P_ENUM,    P_GLOBAL, &Globals.sslVersion,        NULL,   enum_ssl_version, 0},
+  {"ssl compatibility", P_BOOL,    P_GLOBAL, &Globals.sslCompatibility, NULL,   NULL,  0 },
+#endif        /* USE_SSL */
 
   {"Logging Options", P_SEP, P_SEPARATOR},
   {"log level",        P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  FLAG_BASIC},
@@ -790,6 +829,23 @@ static void init_globals(void)
   Globals.ldap_port=389;
 #endif /* USE_LDAP */
 
+#ifdef USE_SSL
+  Globals.sslVersion = SMB_SSL_V23;
+  Globals.sslHostsRequire = NULL;
+  Globals.sslHostsResign = NULL;
+  Globals.sslCaCertDir = NULL;
+  Globals.sslCaCertFile = NULL;
+  Globals.sslCert = NULL;
+  Globals.sslPrivKey = NULL;
+  Globals.sslClientCert = NULL;
+  Globals.sslClientPrivKey = NULL;
+  Globals.sslCiphers = NULL;
+  Globals.sslEnabled = False;
+  Globals.sslReqClientCert = False;
+  Globals.sslReqServerCert = False;
+  Globals.sslCompatibility = False;
+#endif        /* USE_SSL */
+
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
 
@@ -1002,6 +1058,23 @@ FN_GLOBAL_STRING(lp_ldap_filter,&Globals.szLdapFilter);
 FN_GLOBAL_STRING(lp_ldap_root,&Globals.szLdapRoot);
 FN_GLOBAL_STRING(lp_ldap_rootpasswd,&Globals.szLdapRootPassword);
 #endif /* USE_LDAP */
+
+#ifdef USE_SSL
+FN_GLOBAL_INTEGER(lp_ssl_version,&Globals.sslVersion);
+FN_GLOBAL_STRING(lp_ssl_hosts,&Globals.sslHostsRequire);
+FN_GLOBAL_STRING(lp_ssl_hosts_resign,&Globals.sslHostsResign);
+FN_GLOBAL_STRING(lp_ssl_cacertdir,&Globals.sslCaCertDir);
+FN_GLOBAL_STRING(lp_ssl_cacertfile,&Globals.sslCaCertFile);
+FN_GLOBAL_STRING(lp_ssl_cert,&Globals.sslCert);
+FN_GLOBAL_STRING(lp_ssl_privkey,&Globals.sslPrivKey);
+FN_GLOBAL_STRING(lp_ssl_client_cert,&Globals.sslClientCert);
+FN_GLOBAL_STRING(lp_ssl_client_privkey,&Globals.sslClientPrivKey);
+FN_GLOBAL_STRING(lp_ssl_ciphers,&Globals.sslCiphers);
+FN_GLOBAL_BOOL(lp_ssl_enabled,&Globals.sslEnabled);
+FN_GLOBAL_BOOL(lp_ssl_reqClientCert,&Globals.sslReqClientCert);
+FN_GLOBAL_BOOL(lp_ssl_reqServerCert,&Globals.sslReqServerCert);
+FN_GLOBAL_BOOL(lp_ssl_compatibility,&Globals.sslCompatibility);
+#endif        /* USE_SSL */
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)

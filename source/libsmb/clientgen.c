@@ -1633,11 +1633,24 @@ BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 	_smb_setlen(cli->outbuf,len);
 	CVAL(cli->outbuf,0) = 0x81;
 
+#ifdef USE_SSL
+retry:
+#endif /* USE_SSL */
+
 	send_smb(cli->fd,cli->outbuf);
 	DEBUG(5,("Sent session request\n"));
 
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
+
+#ifdef USE_SSL
+    if(CVAL(cli->inbuf,0) == 0x83 && CVAL(cli->inbuf,4) == 0x8e){ /* use ssl */
+        if(!sslutil_fd_is_ssl(cli->fd)){
+            if(sslutil_connect(cli->fd) == 0)
+                goto retry;
+        }
+    }
+#endif /* USE_SSL */
 
 	if (CVAL(cli->inbuf,0) != 0x82) {
                 /* This is the wrong place to put the error... JRA. */

@@ -1290,6 +1290,10 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_SAMB
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
 
+#ifdef USE_SSL
+/* SSL version options */
+enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
+#endif /* USE_SSL */
 
 /* Macros to get at offsets within smb_lkrng and smb_unlkrng
    structures. We cannot define these as actual structures
