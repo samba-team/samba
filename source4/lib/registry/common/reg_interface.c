@@ -426,7 +426,7 @@ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, struct registry_key *parent, const 
 	return WERR_OK;
 }
 
-WERROR reg_val_set(struct registry_key *key, const char *value, uint32 type, void *data, int len)
+WERROR reg_val_set(struct registry_key *key, const char *value, uint32_t type, void *data, int len)
 {
 	/* A 'real' set function has preference */
 	if (key->hive->functions->set_value) 
@@ -470,7 +470,7 @@ WERROR reg_key_flush(struct registry_key *key)
 	return WERR_OK;
 }
 
-WERROR reg_key_subkeysizes(struct registry_key *key, uint32 *max_subkeylen, uint32 *max_subkeysize)
+WERROR reg_key_subkeysizes(struct registry_key *key, uint32_t *max_subkeylen, uint32_t *max_subkeysize)
 {
 	int i = 0; 
 	struct registry_key *subkey;
@@ -495,7 +495,7 @@ WERROR reg_key_subkeysizes(struct registry_key *key, uint32 *max_subkeylen, uint
 	return WERR_OK;
 }
 
-WERROR reg_key_valuesizes(struct registry_key *key, uint32 *max_valnamelen, uint32 *max_valbufsize)
+WERROR reg_key_valuesizes(struct registry_key *key, uint32_t *max_valnamelen, uint32_t *max_valbufsize)
 {
 	int i = 0; 
 	struct registry_value *value;
