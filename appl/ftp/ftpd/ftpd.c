@@ -911,11 +911,10 @@ done:
 
 /* filename sanity check */
 
-static const char good_chars[] = "+-=_,.";
-
 int 
 filename_check(char *filename)
 {
+  static const char good_chars[] = "+-=_,.";
     char *p;
 
     p = strrchr(filename, '/');
@@ -946,7 +945,7 @@ store(char *name, char *mode, int unique)
 	struct stat st;
 	int (*closefunc) (FILE *);
 
-	if(filename_check(name))
+	if(guest && filename_check(name))
 	    return;
 	if (unique && stat(name, &st) == 0 &&
 	    (name = gunique(name)) == NULL) {
@@ -1528,7 +1527,7 @@ makedir(char *name)
 {
 
 	LOGCMD("mkdir", name);
-	if(filename_check(name))
+	if(guest && filename_check(name))
 	    return;
 	if (mkdir(name, 0777) < 0)
 		perror_reply(550, name);
@@ -1584,7 +1583,7 @@ renamecmd(char *from, char *to)
 {
 
 	LOGCMD2("rename", from, to);
-	if(filename_check(to))
+	if(guest && filename_check(to))
 	    return;
 	if (rename(from, to) < 0)
 		perror_reply(550, "rename");
