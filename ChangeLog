@@ -1,3 +1,7 @@
+2000-02-23  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.2q
+
 2000-02-22  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/expand_hostname.c (krb5_expand_hostname_realms): copy
