@@ -67,6 +67,7 @@ struct count_stat {
 	pid_t mypid;
 	int curr_connections;
 	char *name;
+	BOOL Clear;
 };
 
 /****************************************************************************
@@ -80,11 +81,11 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
  
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
  
-    if (crec.cnum == -1)
+	if (crec.cnum == -1)
 		return 0;
 
 	/* if the pid was not found delete the entry from connections.tdb */
-	if (!process_exists(crec.pid) && (errno == ESRCH)) {
+	if (cs->Clear && !process_exists(crec.pid)) {
 		DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
 			(unsigned int)crec.pid, crec.cnum, crec.name));
 		tdb_delete(the_tdb, kbuf);
@@ -106,8 +107,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	struct connections_key key;
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
-	BOOL db_locked = False;
-	BOOL ret = True;
 
 	if (!tdb) {
 		tdb = tdb_open(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST, 
@@ -126,28 +125,20 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		cs.mypid = sys_getpid();
 		cs.curr_connections = 0;
 		cs.name = lp_servicename(SNUM(conn));
+		cs.Clear = Clear;
 
 		/*
-		 * Go through and count the connections with the db locked. This is
-		 * slow but essentially what 2.0.x did. JRA.
+		 * Go through and count the connections
 		 */
-
-		if (tdb_lockall(tdb))
-			return False;
-
-		db_locked = True;
-
 		if (tdb_traverse(tdb, count_fn, &cs) == -1) {
 			DEBUG(0,("claim_connection: traverse of connections.tdb failed.\n"));
-			ret = False;
-			goto out;
+			return False;
 		}
 
 		if (cs.curr_connections >= max_connections) {
 			DEBUG(1,("claim_connection: Max connections (%d) exceeded for %s\n",
 				max_connections, name ));
-			ret = False;
-			goto out;
+			return False;
 		}
 	}
 
@@ -182,14 +173,9 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	dbuf.dsize = sizeof(crec);
 
 	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0)
-		ret = False;
+		return False;
 
-  out:
-
-	if (db_locked)
-		tdb_unlockall(tdb);
-
-	return ret;
+	return True;
 }
 
 #if 0
