@@ -92,6 +92,7 @@ BOOL is_8_3(char *fname)
   DEBUG(5,("checking %s for 8.3\n",fname));
 
   if (case_mangle)
+#ifndef YOSTW
     switch (case_default)
       {
       case CASE_LOWER:
@@ -101,6 +102,10 @@ BOOL is_8_3(char *fname)
 	if (strhaslower(fname)) return(False);
 	break;
       }
+#endif
+#ifdef YOSTW
+	if (strhasupper(fname) && strhaslower(fname)) return(False);
+#endif
 
   /* can't be longer than 12 chars */
   if (len == 0 || len > 12)
