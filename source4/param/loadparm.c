@@ -1926,6 +1926,7 @@ static BOOL service_ok(int iService)
 			DEBUG(0, ("WARNING: [%s] service MUST be printable!\n",
 			       ServicePtrs[iService]->szService));
 			ServicePtrs[iService]->bPrint_ok = True;
+			update_server_announce_as_printserver();
 		}
 		/* [printers] service must also be non-browsable. */
 		if (ServicePtrs[iService]->bBrowseable)
@@ -3245,6 +3246,9 @@ static void set_default_server_announce_type(void)
 
 	if (lp_host_msdfs())
 		default_server_announce |= SV_TYPE_DFS_SERVER;
+
+	/* TODO: only announce us as print server when we are a print server */
+	default_server_announce |= SV_TYPE_PRINTQ_SERVER;
 }
 
 /***********************************************************
