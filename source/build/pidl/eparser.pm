@@ -822,12 +822,18 @@ sub type2ft($)
     return "FT_BYTES";
 }
 
-sub type2base($)
+# Determine the display base for an element
+
+sub elementbase($)
 {
-    my($t) = shift;
+    my($e) = shift;
+
+    if (my $base = util::has_property($e, "display")) {
+	return "BASE_" . uc($base);
+    }
  
-    return "BASE_DEC", if ($t eq "uint32") or ($t eq "uint16") or
-	($t eq "uint8");
+    return "BASE_DEC", if ($e->{TYPE} eq "uint32") or 
+	($e->{TYPE} eq "uint16") or ($e->{TYPE} eq "uint8");
     return "BASE_NONE";
 }
 
@@ -857,8 +863,8 @@ sub NeededFunction($)
 			'name' => field2name($e->{NAME}),
 			'type' => $e->{TYPE},
 			'ft'   => type2ft($e->{TYPE}),
-			'base' => type2base($e->{TYPE})
-			};
+			'base' => elementbase($e)
+			}, if !defined($needed{"hf_$e->{NAME}_$e->{TYPE}"});
 		    $e->{PARENT} = $fn;
 		} else {
 		    $needed{"ett_$e->{TYPE}"} = 1;
@@ -887,7 +893,7 @@ sub NeededTypedef($)
 			'name' => field2name($e->{NAME}),
 			'type' => $e->{TYPE},
 			'ft'   => type2ft($e->{TYPE}),
-			'base' => type2base($e->{TYPE})
+			'base' => elementbase($e)
 			};
 		    
 		    $e->{PARENT} = $t->{DATA};
