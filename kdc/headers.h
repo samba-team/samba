@@ -86,11 +86,6 @@
 #include <getarg.h>
 #include <base64.h>
 #include <parse_units.h>
-#ifdef HAVE_OPENSSL
-#include <openssl/des.h>
-#else
-#include <des.h>
-#endif
 #include <krb5.h>
 #include <krb5_locl.h>
 #include <hdb.h>
