@@ -581,7 +581,7 @@ set user socket options
 ****************************************************************************/
 void set_socket_options(int fd, char *options)
 {
-  string tok;
+  fstring tok;
 
   while (next_token(&options,tok," \t,"))
     {
@@ -4789,6 +4789,7 @@ safe string copy into a fstring
 void fstrcpy(char *dest, char *src)
 {
     int maxlength = sizeof(fstring) - 1;
+    int len;
     if (!dest) {
         DEBUG(0,("ERROR: NULL dest in fstrcpy\n"));
         return;
@@ -4798,14 +4799,17 @@ void fstrcpy(char *dest, char *src)
         *dest = 0;
         return;
     }  
+
+    len = strlen(src);
+
+    if (len > maxlength) {
+	    DEBUG(0,("ERROR: string overflow by %d in fstrcpy [%.50s]\n",
+		     len-maxlength, src));
+	    len = maxlength;
+    }
       
-    while (maxlength-- && *src)
-        *dest++ = *src++;
-    *dest = 0;
-    if (*src) {
-        DEBUG(0,("ERROR: string overflow by %d in fstrcpy\n",
-             strlen(src)));
-    }    
+    memcpy(dest, src, len);
+    dest[len] = 0;
 }   
 
 /*******************************************************************
@@ -4814,23 +4818,27 @@ safe string copy into a pstring
 void pstrcpy(char *dest, char *src)
 {
     int maxlength = sizeof(pstring) - 1;
+    int len;
     if (!dest) {
         DEBUG(0,("ERROR: NULL dest in pstrcpy\n"));
         return;
     }
-   
+
     if (!src) {
         *dest = 0;
         return;
+    }  
+
+    len = strlen(src);
+
+    if (len > maxlength) {
+	    DEBUG(0,("ERROR: string overflow by %d in pstrcpy [%.50s]\n",
+		     len-maxlength, src));
+	    len = maxlength;
     }
-   
-    while (maxlength-- && *src)
-        *dest++ = *src++;
-    *dest = 0;
-    if (*src) {
-        DEBUG(0,("ERROR: string overflow by %d in pstrcpy\n",
-             strlen(src)));
-    }
+      
+    memcpy(dest, src, len);
+    dest[len] = 0;
 }  
 
 
