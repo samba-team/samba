@@ -654,24 +654,21 @@ if len==0 then the string cannot be extended. This is different from the old
 use of len==0 which was for no length checks to be done.
 ****************************************************************************/
 
-void string_sub(char *s,const char *pattern,const char *insert, size_t len)
+void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
 
-	if (!insert || !pattern || !s)
+	if (!insert || !pattern || !*pattern || !s)
 		return;
 
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 
-	if (!*pattern)
-		return;
-
 	if (len == 0)
 		len = ls;
-	
+
 	while (lp <= ls && (p = strstr(s,pattern))) {
 		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
@@ -711,6 +708,71 @@ void fstring_sub(char *s,const char *pattern,const char *insert)
 void pstring_sub(char *s,const char *pattern,const char *insert)
 {
 	string_sub(s, pattern, insert, sizeof(pstring));
+}
+
+/* similar to string_sub, but it will accept only allocated strings
+ * and may realloc them so pay attention at what you pass on no
+ * pointers inside strings, no pstrings or const must be passed
+ * as string.
+ */
+
+char *realloc_string_sub(char *string, const char *pattern, const char *insert)
+{
+	char *p, *in;
+	char *s;
+	ssize_t ls,lp,li,ld, i;
+
+	if (!insert || !pattern || !*pattern || !string || !*string)
+		return NULL;
+
+	s = string;
+
+	in = strdup(insert);
+	if (!in) {
+		DEBUG(0, ("realloc_string_sub: out of memory!\n"));
+		return NULL;
+	}
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
+	ld = li - lp;
+	for (i=0;i<li;i++) {
+		switch (in[i]) {
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
+			case '$':
+			case '%':
+			case '\r':
+			case '\n':
+				in[i] = '_';
+			default:
+				/* ok */
+				break;
+		}
+	}
+	
+	while ((p = strstr(s,pattern))) {
+		if (ld > 0) {
+			char *t = Realloc(string, ls + ld + 1);
+			if (!t) {
+				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
+				SAFE_FREE(in);
+				return NULL;
+			}
+			string = t;
+			s = t + (p - s);
+		}
+		if (li != lp) {
+			memmove(p+li,p+lp,strlen(p+lp)+1);
+		}
+		memcpy(p, in, li);
+		s = p + li;
+		ls += ld;
+	}
+	SAFE_FREE(in);
+	return string;
 }
 
 /****************************************************************************
@@ -928,6 +990,20 @@ void strlower_m(char *s)
 }
 
 /*******************************************************************
+  duplicate convert a string to lower case
+********************************************************************/
+char *strdup_lower(char *s)
+{
+	char *t = strdup(s);
+	if (t == NULL) {
+		DEBUG(0, ("strdup_lower: Out of memory!\n"));
+		return NULL;
+	}
+	strlower_m(t);
+	return t;
+}
+
+/*******************************************************************
   convert a string to upper case
 ********************************************************************/
 void strupper_m(char *s)
@@ -945,6 +1021,20 @@ void strupper_m(char *s)
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
+}
+
+/*******************************************************************
+  convert a string to upper case
+********************************************************************/
+char *strdup_upper(char *s)
+{
+	char *t = strdup(s);
+	if (t == NULL) {
+		DEBUG(0, ("strdup_upper: Out of memory!\n"));
+		return NULL;
+	}
+	strupper_m(t);
+	return t;
 }
 
 /*
