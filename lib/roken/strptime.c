@@ -310,10 +310,8 @@ strptime (const char *buf, const char *format, struct tm *timeptr)
 		buf = s;
 		break;
 	    case 'n' :
-		if (*buf == '\n')
-		    ++buf;
-		else
-		    return NULL;
+		while (isspace (*buf))
+		    buf++;
 		break;
 	    case 'p' :
 		ret = match_string (&buf, ampm);
@@ -345,10 +343,8 @@ strptime (const char *buf, const char *format, struct tm *timeptr)
 		buf = s;
 		break;
 	    case 't' :
-		if (*buf == '\t')
-		    ++buf;
-		else
-		    return NULL;
+		while (isspace (*buf))
+		    buf++;
 		break;
 	    case 'T' :		/* %H:%M:%S */
 	    case 'X' :
