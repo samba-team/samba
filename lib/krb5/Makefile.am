@@ -102,6 +102,7 @@ libkrb5_la_SOURCES = \
 	rd_safe.c \
 	read_message.c \
 	recvauth.c \
+	replay.c \
 	send_to_kdc.c \
 	sendauth.c \
 	set_default_realm.c \
