@@ -418,6 +418,13 @@ size_t dos_struni2(char *dst, const char *src, size_t max_len)
 				val = ((val << 8) | (src[1] & 0xff));
 
 			SSVAL(dst,0,doscp_to_ucs2[val]);
+
+			/* If the second byte of this unicode char is 
+			   non-zero, then this is probably a i18n bug */
+
+			if (*(dst+1) != 0)
+				DEBUG(0, ("dos_unistr2(): high byte set, probable unicode bug!\n"));
+
 			if (skip)
 				src += skip;
 			else
