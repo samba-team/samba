@@ -128,7 +128,7 @@ gssapi_krb5_set_error_string (void)
     else {
 	/* ignore failures, will use status code instead */
 	ctx->error_string = strdup(e); 
-	krb5_free_error_string(e);
+	krb5_free_error_string(gssapi_krb5_context, e);
     }
     HEIMDAL_MUTEX_unlock(&ctx->mutex);
 }
