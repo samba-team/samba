@@ -501,7 +501,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         {
           pstrcpy( sesssetup_user, vuser->requested_name);
 		vuid_free_user_struct(vuser);
-	}
+        }
       }
 
       /* does this protocol need to be run as root? */
@@ -974,6 +974,18 @@ void smbd_process(void)
 
     /* free up temporary memory */
     lp_talloc_free();
+
+    /*
+     * If reload_after_sighup == True then we got a SIGHUP
+     * and are being asked to reload. Fix from <branko.cibej@hermes.si>
+     */
+    if (reload_after_sighup) {
+	    /* become root */
+	    unbecome_user();
+	    DEBUG(1,("Reloading services after SIGHUP\n"));
+	    reload_services(False);
+	    reload_after_sighup = False;
+    }
 
     while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout,&got_smb))
     {
