@@ -121,6 +121,8 @@ des_rand_data(unsigned char *data, int size)
 {
   int i;
 
+  srandom (time (NULL));
+
   for(i = 0; i < size; ++i)
     data[i] = random() % 0x100;
 }
