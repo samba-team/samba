@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,7 +54,7 @@ static struct krb5_mcache *mcc_head;
 
 #define MCC_CURSOR(C) ((struct link*)(C))
 
-static char*
+static const char*
 mcc_get_name(krb5_context context,
 	     krb5_ccache id)
 {
