@@ -527,7 +527,7 @@ printoption(register char *fmt, register int option)
 }
 
     void
-printsub(char direction, unsigned char *pointer, int length)
+printsub(int direction, unsigned char *pointer, int length)
         		          	/* '<' or '>' */
                  	         	/* where suboption data sits */
        			       		/* length of suboption data */
