@@ -3309,6 +3309,12 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 static BOOL init_trustpw_from_ldap(struct ldapsam_privates* ldap_state, SAM_TRUST_PASSWD *trust,
                                    LDAPMessage *entry)
 {
+	BOOL ret;
+	pstring value;
+	unsigned char pass[16];
+	DOM_SID dom_sid;
+	time_t lct;
+
 	if (!ldap_state || !trust || !entry) {
 		DEBUG(0, ("init_trustpw_from_ldap: NULL pointer passed!\n"));
 		return False;
@@ -3318,6 +3324,62 @@ static BOOL init_trustpw_from_ldap(struct ldapsam_privates* ldap_state, SAM_TRUS
 		DEBUG(0, ("init_trustpw_from_ldap: ldap_state->smbldap_state->ldap_struct is NULL!\n"));
 		return False;
 	}
+
+	/* Domain name */
+	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
+					   value, sizeof(value));
+	if (!ret) {
+		DEBUG(1, ("No attribute %s found\n", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN)));
+		return False;
+	}
+	pdb_set_tp_domain_name_c(trust, value);
+
+	/* Trust password hash */
+	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_NTPW),
+					   value, sizeof(value));
+	if (!ret) {
+		DEBUG(1, ("No attribute %s found\n", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_NTPW)));
+		return False;
+	}
+	pdb_gethexpwd(value, pass);
+	memset((char*)value, 0, strlen(value) + 1);
+	pdb_set_tp_pass(trust, pass);
+
+	/* Flags */
+	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_TRUST_PASSWD_FLAGS),
+					   value, sizeof(value));
+	if (!ret) {
+		DEBUG(1, ("No attribute %s found\n",
+			  get_attr_key2string(trustpw_attr_list, LDAP_ATTR_TRUST_PASSWD_FLAGS)));
+		return False;
+	}
+	pdb_set_tp_flags(trust, atoi(value));
+
+	/* Domain SID */
+	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_SID),
+					   value, sizeof(value));
+	if (!ret) {
+		DEBUG(1, ("No attribute %s found\n", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_SID)));
+		return False;
+	}
+	string_to_sid(&dom_sid, value);
+	pdb_set_tp_domain_sid(trust, &dom_sid);
+
+	/* Last change time */
+	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_PWD_LAST_SET),
+					   value, sizeof(value));
+	if (!ret) {
+		DEBUG(1, ("No attribute %s found\n",
+			  get_attr_key2string(trustpw_attr_list, LDAP_ATTR_PWD_LAST_SET)));
+		return False;
+	}
+	lct = (time_t) atoi(value);
+	pdb_set_tp_mod_time(trust, lct);
 
 	return True;
 }
@@ -3361,6 +3423,11 @@ static NTSTATUS ldapsam_settrustpwent(struct pdb_methods *methods)
 
 static void ldapsam_endtrustpwent(struct pdb_methods *methods)
 {
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates*)methods->private_data;
+	if (ldap_state->result) {
+		ldap_msgfree(ldap_state->result);
+		ldap_state->result = NULL;
+	}
 }
 
 
@@ -3392,9 +3459,63 @@ static NTSTATUS ldapsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PAS
 }
 
 
+/**
+ * Performs searching of trust password object by domain name.
+ *
+ * @param methods passdb backend methods related to current context
+ * @param trust trust password structure used by password backend
+ * @param name trust password's domain name
+ * @return nt status code of operation
+ */
+
 static NTSTATUS ldapsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const char *name)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates*)methods->private_data;
+	int rc, count;
+	pstring filter;
+	char **attr_list;
+	BOOL ret;
+
+	/* Preparing search filter and starting LDAP searching */
+	pstr_sprintf(filter, "(&(sambaDomainName=%s)(objectclass=%s))",
+	             name, LDAP_OBJ_TRUST_PASSWORD);
+	attr_list = get_attr_list(trustpw_attr_list);
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, attr_list,
+	                           &ldap_state->result);
+	free_attr_list(attr_list);
+
+	if (rc != LDAP_SUCCESS) {
+		ldap_msgfree(ldap_state->result);
+		ldap_state->result = NULL;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Counting number of entries returned - should be only one */
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, ldap_state->result);
+	if (count < 1) {
+		DEBUG(0, ("No entries found with filter \"%s\"\n", filter));
+		ldap_msgfree(ldap_state->result);
+		return NT_STATUS_NOT_FOUND;
+
+	} else if (count > 1) {
+		DEBUG(0, ("More than one entry found with filter \"%s\" (count = %d)\n",
+			  filter, count));
+		ldap_msgfree(ldap_state->result);
+		return NT_STATUS_UNSUCCESSFUL;
+
+	}
+	DEBUG(2, ("One entry found with filter \"%s\"\n", filter));
+
+	ldap_state->entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+	                                     ldap_state->result);
+	ldap_state->index = 0;
+
+	/* Filling trust password structure */
+	ret = init_trustpw_from_ldap(ldap_state, trust, ldap_state->entry);
+	ldap_msgfree(ldap_state->result);
+	ldap_state->result = NULL;
+
+	return (ret) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 
