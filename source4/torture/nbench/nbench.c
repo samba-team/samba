@@ -139,6 +139,8 @@ again:
 				 status);
 		} else if (!strcmp(params[0],"Flush")) {
 			nb_flush(ival(params[1]), status);
+		} else if (!strcmp(params[0],"Sleep")) {
+			nb_sleep(ival(params[1]), status);
 		} else {
 			printf("[%d] Unknown operation %s\n", nbench_line_count, params[0]);
 		}
