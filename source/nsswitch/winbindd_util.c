@@ -24,6 +24,8 @@
 #include "winbindd.h"
 #include "sids.h"
 
+/* Return true if the SAM domain handles are open and responding */
+
 BOOL domain_handles_open(struct winbindd_domain *domain)
 {
 	return domain->sam_handle_open &&
@@ -32,13 +34,17 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 		rpc_hnd_ok(&domain->sam_dom_handle);
 }
 
+/* Call name_query() from the clientgen library to resolve a domain
+   controller for a domain name. */
+
 static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
 {
 	struct in_addr ip;
 	extern pstring global_myname;
 	
-	/* if its our primary domain and password server is not '*' then use the
-	   password server parameter */
+	/* if its our primary domain and password server is not '*' then
+	   use the password server parameter */
+
 	if (strcmp(domain_name,lp_workgroup()) == 0 && !lp_wildcard_dc()) {
 		fstrcpy(domain_controller, lp_passwordserver());
 		return True;
@@ -46,9 +52,11 @@ static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
 
 	if (!resolve_name(domain_name, &ip, 0x1B)) return False;
 
-	return lookup_pdc_name(global_myname, domain_name, &ip, domain_controller);
+	return lookup_pdc_name(global_myname, domain_name, &ip, 
+			       domain_controller);
 }
 
+/* Add a trusted domain to our list of domains */
 
 static struct winbindd_domain *add_trusted_domain(char *domain_name)
 {
@@ -78,6 +86,7 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name)
 }
 
 /* Look up global info for the winbind daemon */
+
 static BOOL get_trusted_domains(void)
 {
 	uint32 enum_ctx = 0;
@@ -91,7 +100,8 @@ static BOOL get_trusted_domains(void)
 
 	/* Add our workgroup - keep handle to look up trusted domains */
 	if (!add_trusted_domain(lp_workgroup())) {
-		DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
+		DEBUG(0, ("could not add record for domain %s\n", 
+			  lp_workgroup()));
 		return False;
 	}
 	
@@ -104,7 +114,8 @@ static BOOL get_trusted_domains(void)
         /* Add each domain to the trusted domain list */
 	for(i = 0; i < num_doms; i++) {
 		if (!add_trusted_domain(domains[i])) {
-			DEBUG(0, ("could not add record for domain %s\n", domains[i]));
+			DEBUG(0, ("could not add record for domain %s\n", 
+				  domains[i]));
 			result = False;
 		}
 	}
@@ -116,8 +127,8 @@ static BOOL get_trusted_domains(void)
 	return True;
 }
 
-
 /* Open sam and sam domain handles to a domain and cache the results */
+
 static BOOL open_sam_handles(struct winbindd_domain *domain)
 {
 	/* Get domain info */
@@ -127,7 +138,8 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	}
 
 	if ((domain->sam_handle_open && !rpc_hnd_ok(&domain->sam_handle)) ||
-	    (domain->sam_dom_handle_open && !rpc_hnd_ok(&domain->sam_dom_handle))) {
+	    (domain->sam_dom_handle_open && 
+	     !rpc_hnd_ok(&domain->sam_dom_handle))) {
 		domain->got_domain_info = get_domain_info(domain);
 		if (domain->sam_dom_handle_open) {
 			samr_close(&domain->sam_dom_handle);
@@ -142,7 +154,8 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	/* Open sam handle if it isn't already open */
 	if (!domain->sam_handle_open) {
 		domain->sam_handle_open = 
-			samr_connect(domain->controller, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+			samr_connect(domain->controller, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED, 
 				     &domain->sam_handle);
 		if (!domain->sam_handle_open) return False;
 	}
@@ -151,7 +164,8 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	if (!domain->sam_dom_handle_open) {
 		domain->sam_dom_handle_open =
 			samr_open_domain(&domain->sam_handle, 
-					 SEC_RIGHTS_MAXIMUM_ALLOWED, &domain->sid, 
+					 SEC_RIGHTS_MAXIMUM_ALLOWED, 
+					 &domain->sid, 
 					 &domain->sam_dom_handle);
 		if (!domain->sam_dom_handle_open) return False;
 	}
@@ -159,7 +173,9 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	return True;
 }
 
-static void winbindd_kill_connections(void)
+/* Shut down connections to all domain controllers */
+
+void winbindd_kill_connections(void)
 {
 	struct winbindd_domain *domain;
 
@@ -169,7 +185,11 @@ static void winbindd_kill_connections(void)
 	server_state.lsa_handle_open = False;
 	lsa_close(&server_state.lsa_handle);
 	
-	for (domain=domain_list; domain; domain=domain->next) {
+	domain = domain_list;
+
+	while(domain) {
+		struct winbindd_domain *next;
+
 		if (domain->sam_dom_handle_open) {
 			samr_close(&domain->sam_dom_handle);
 			domain->sam_dom_handle_open = False;
@@ -178,19 +198,27 @@ static void winbindd_kill_connections(void)
 			samr_close(&domain->sam_handle);
 			domain->sam_handle_open = False;
 		}
+
 		DLIST_REMOVE(domain_list, domain);
+		next = domain->next;
+
 		free(domain);
+		domain = next;
 	}
 }
 
-void establish_connections(void) 
+/* Attempt to connect to all domain controllers we know about */
+
+void establish_connections(BOOL force_reestablish) 
 {
 	struct winbindd_domain *domain;
 	static time_t lastt;
 	time_t t;
 
 	t = time(NULL);
-	if (t - lastt < WINBINDD_ESTABLISH_LOOP) return;
+	if ((t - lastt < WINBINDD_ESTABLISH_LOOP) && !force_reestablish) {
+		return;
+	}
 	lastt = t;
 
 	/* maybe the connection died - if so then close up and restart */
@@ -203,7 +231,8 @@ void establish_connections(void)
 	if (!server_state.pwdb_initialised) {
 		fstrcpy(server_state.controller, lp_passwordserver());
 		if (lp_wildcard_dc()) {
-			if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
+			if (!resolve_dc_name(lp_workgroup(), 
+					     server_state.controller)) {
 				return;
 			}
 		}
@@ -215,7 +244,8 @@ void establish_connections(void)
 	/* Open lsa handle if it isn't already open */
 	if (!server_state.lsa_handle_open) {
 		server_state.lsa_handle_open =
-			lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
+			lsa_open_policy(server_state.controller, 
+					&server_state.lsa_handle, 
 					False, SEC_RIGHTS_MAXIMUM_ALLOWED);
 		if (!server_state.lsa_handle_open) return;
 
@@ -230,9 +260,9 @@ void establish_connections(void)
 	}
 }
 
-
 /* Connect to a domain controller using get_any_dc_name() to discover 
    the domain name and sid */
+
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 {
     fstring level5_dom;
@@ -288,7 +318,6 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 
     return res;
 }
-
 
 /* Lookup domain controller and sid for a domain */
 
@@ -407,7 +436,8 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
 {
 	if (!domain_handles_open(domain)) return False;
 
-	return get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, user_rid, user_info);
+	return get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, 
+				       user_rid, user_info);
 }                                   
 
 /* Lookup group information from a rid */
@@ -417,7 +447,8 @@ BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
 {
 	if (!domain_handles_open(domain)) return False;
 
-	return get_samr_query_groupinfo(&domain->sam_dom_handle, 1, group_rid, info);
+	return get_samr_query_groupinfo(&domain->sam_dom_handle, 1, 
+					group_rid, info);
 }
 
 /* Lookup group membership given a rid */
@@ -429,8 +460,8 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
 {
 	if (!domain_handles_open(domain)) return False;
     
-	return sam_query_groupmem(&domain->sam_dom_handle, group_rid, num_names, 
-				  rid_mem, names, name_types);
+	return sam_query_groupmem(&domain->sam_dom_handle, group_rid, 
+				  num_names, rid_mem, names, name_types);
 }
 
 /* Lookup alias membership given a rid */
@@ -601,8 +632,12 @@ static struct cmdstr_table cmdstr_table[] = {
 
 	{ WINBINDD_PAM_AUTH, "pam auth" },
 	{ WINBINDD_PAM_CHAUTHTOK, "pam chauthtok" },
+
+	/* List things */
+
         { WINBINDD_LIST_USERS, "list users" },
         { WINBINDD_LIST_GROUPS, "list groups" },
+	{ WINBINDD_LIST_TRUSTDOM, "list trusted domains" },
 
 	/* SID related functions */
 
@@ -615,6 +650,10 @@ static struct cmdstr_table cmdstr_table[] = {
 	{ WINBINDD_SID_TO_GID, "sid to gid " },
 	{ WINBINDD_GID_TO_SID, "gid to sid" },
 	{ WINBINDD_UID_TO_SID, "uid to sid" },
+
+	/* Miscellaneous other stuff */
+
+	{ WINBINDD_CHECK_MACHACC, "check machine acct pw" },
 
 	/* End of list */
 
@@ -640,8 +679,8 @@ char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 	return result;
 };
 
-
 /* parse a string of the form DOMAIN/user into a domain and a user */
+
 void parse_domain_user(char *domuser, fstring domain, fstring user)
 {
 	char *p;
@@ -661,6 +700,7 @@ void parse_domain_user(char *domuser, fstring domain, fstring user)
 }
 
 /* find the sequence number for a domain */
+
 uint32 domain_sequence_number(char *domain_name)
 {
 	struct winbindd_domain *domain;
@@ -692,12 +732,8 @@ BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
 
 	if (!domain_handles_open(domain)) return False;
 
-	DEBUG(0, ("query_dispinfo(%s)\n", domain->name));
-
 	res = samr_query_dispinfo(&domain->sam_dom_handle, info_level,
 				  num_entries, ctr);
-
-	DEBUG(0, ("got %d entries\n", *num_entries));
 
 	return res;
 }
