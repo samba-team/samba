@@ -459,8 +459,6 @@ handle a http authentication line
 static int cgi_handle_authorization(char *line)
 {
 	char *p, *user, *pass;
-	struct passwd *pwd;
-	int ret=0;
 
 	if (strncasecmp(line,"Basic ", 6)) {
 		cgi_setup_error("401 Bad Authorization", "", 
@@ -478,20 +476,13 @@ static int cgi_handle_authorization(char *line)
 	pass = p+1;
 
 	/* currently only allow connections as root */
-	if (strcasecmp(user,"root")) {
+	if (strcmp(user,"root")) {
 		cgi_setup_error("401 Bad Authorization", "", 
 				"incorrect username/password");
 	}
-	
-	pwd = getpwnam(user);
 
-	if (!strcmp((char *)crypt(pass, pwd->pw_passwd),pwd->pw_passwd)) {
-		ret = 1;
-	}
 
-	memset(pass, 0, strlen(pass));
-
-	return ret;
+	return password_ok(user, pass, strlen(pass), NULL);
 }
 
 
