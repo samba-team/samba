@@ -1,5 +1,9 @@
 1999-11-04  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am: bump version to 5:0:0 to be safe
+ 	(krb5_context_data has changed and some code do (might) access
+ 	fields directly)
+
 	* lib/krb5/krb5.h (krb5_context_data): add `etypes_des'
 
 	* lib/krb5/get_cred.c (init_tgs_req): use

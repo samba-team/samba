@@ -1,3 +1,11 @@
+Changes in release 0.2d:
+
+ * new configuration option [libdefaults]default_etypes_des
+ * internal ls in ftpd builds without KRB4
+ * kx/rsh/push/pop_debug tries v5 and v4 consistenly
+ * build bug fixes
+ * other bug fixes
+
 Changes in release 0.2c:
 
  * bug fixes (see ChangeLog's for details)
