@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 #include "smb_server/smb_server.h"
 
 
@@ -615,11 +616,11 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 
 	case RAW_FILEINFO_ALL_EAS:
 		list_size = ea_list_size(st->all_eas.out.num_eas,
-							st->all_eas.out.eas);
-			trans2_setup_reply(req, trans, 2, list_size, 0);
-			SSVAL(trans->out.params.data, 0, 0);
-			ea_put_list(trans->out.data.data, 
-				    st->all_eas.out.num_eas, st->all_eas.out.eas);
+						  st->all_eas.out.eas);
+		trans2_setup_reply(req, trans, 2, list_size, 0);
+		SSVAL(trans->out.params.data, 0, 0);
+		ea_put_list(trans->out.data.data, 
+			    st->all_eas.out.num_eas, st->all_eas.out.eas);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
@@ -1349,76 +1350,53 @@ static NTSTATUS trans2_backend(struct smbsrv_request *req, struct smb_trans2 *tr
 	return NT_STATUS_FOOBAR;
 }
 
-/****************************************************************************
- Reply to an SMBtrans or SMBtrans2 request
-****************************************************************************/
-void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
+
+/*
+  send a continue request
+*/
+static void reply_trans_continue(struct smbsrv_request *req, uint8_t command, 
+				 struct smb_trans2 *trans)
 {
-	struct smb_trans2 trans;
-	int i;
-	uint16_t param_ofs, data_ofs;
-	uint16_t param_count, data_count;
+	struct smbsrv_trans_partial *tp;
+	int count;
+
+	/* make sure they don't flood us */
+	for (count=0,tp=req->smb_conn->trans_partial;tp;tp=tp->next) count++;
+	if (count > 100) {
+		req_reply_error(req, NT_STATUS_INSUFFICIENT_RESOURCES);
+		return;
+	}
+
+	tp = talloc_p(req, struct smbsrv_trans_partial);
+
+	tp->req = talloc_reference(tp, req);
+	tp->trans = trans;
+	tp->command = command;
+
+	DLIST_ADD(req->smb_conn->trans_partial, tp);
+
+	/* send a 'please continue' reply */
+	req_setup_reply(req, 0, 0);
+	req_send_reply(req);
+}
+
+
+/*
+  answer a reconstructed trans request
+*/
+static void reply_trans_complete(struct smbsrv_request *req, uint8_t command, 
+				 struct smb_trans2 *trans)
+{
 	uint16_t params_left, data_left;
-	uint16_t param_total, data_total;
 	uint8_t *params, *data;
 	NTSTATUS status;
-
-	/* parse request */
-	if (req->in.wct < 14) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
-		return;
-	}
-
-	param_total          = SVAL(req->in.vwv, VWV(0));
-	data_total           = SVAL(req->in.vwv, VWV(1));
-	trans.in.max_param   = SVAL(req->in.vwv, VWV(2));
-	trans.in.max_data    = SVAL(req->in.vwv, VWV(3));
-	trans.in.max_setup   = CVAL(req->in.vwv, VWV(4));
-	trans.in.flags       = SVAL(req->in.vwv, VWV(5));
-	trans.in.timeout     = IVAL(req->in.vwv, VWV(6));
-	param_count          = SVAL(req->in.vwv, VWV(9));
-	param_ofs            = SVAL(req->in.vwv, VWV(10));
-	data_count           = SVAL(req->in.vwv, VWV(11));
-	data_ofs             = SVAL(req->in.vwv, VWV(12));
-	trans.in.setup_count = CVAL(req->in.vwv, VWV(13));
-
-	if (req->in.wct != 14 + trans.in.setup_count) {
-		req_reply_dos_error(req, ERRSRV, ERRerror);
-		return;
-	}
-
-	/* parse out the setup words */
-	trans.in.setup = talloc_array_p(req, uint16_t, trans.in.setup_count);
-	if (trans.in.setup_count && !trans.in.setup) {
-		req_reply_error(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-	for (i=0;i<trans.in.setup_count;i++) {
-		trans.in.setup[i] = SVAL(req->in.vwv, VWV(14+i));
-	}
-
-	if (command == SMBtrans) {
-		req_pull_string(req, &trans.in.trans_name, req->in.data, -1, STR_TERMINATE);
-	}
-
-	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans.in.params) ||
-	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans.in.data)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
-		return;
-	}
-
-	/* is it a partial request? if so, then send a 'send more' message */
-	if (param_total > param_count ||
-	    data_total > data_count) {
-		DEBUG(0,("REWRITE: not handling partial trans requests!\n"));
-		return;
-	}
+	int i;
 
 	/* its a full request, give it to the backend */
 	if (command == SMBtrans) {
-		status = ntvfs_trans(req, &trans);
+		status = ntvfs_trans(req, trans);
 	} else {
-		status = trans2_backend(req, &trans);
+		status = trans2_backend(req, trans);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1426,13 +1404,12 @@ void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 		return;
 	}
 
-	params_left = trans.out.params.length;
-	data_left   = trans.out.data.length;
-	params      = trans.out.params.data;
-	data        = trans.out.data.data;
+	params_left = trans->out.params.length;
+	data_left   = trans->out.data.length;
+	params      = trans->out.params.data;
+	data        = trans->out.data.data;
 
-
-	req_setup_reply(req, 10 + trans.out.setup_count, 0);
+	req_setup_reply(req, 10 + trans->out.setup_count, 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		req_setup_error(req, status);
@@ -1468,22 +1445,22 @@ void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 
 		req_grow_data(this_req, this_param + this_data + (align1 + align2));
 
-		SSVAL(this_req->out.vwv, VWV(0), trans.out.params.length);
-		SSVAL(this_req->out.vwv, VWV(1), trans.out.data.length);
+		SSVAL(this_req->out.vwv, VWV(0), trans->out.params.length);
+		SSVAL(this_req->out.vwv, VWV(1), trans->out.data.length);
 		SSVAL(this_req->out.vwv, VWV(2), 0);
 
 		SSVAL(this_req->out.vwv, VWV(3), this_param);
 		SSVAL(this_req->out.vwv, VWV(4), align1 + PTR_DIFF(this_req->out.data, this_req->out.hdr));
-		SSVAL(this_req->out.vwv, VWV(5), PTR_DIFF(params, trans.out.params.data));
+		SSVAL(this_req->out.vwv, VWV(5), PTR_DIFF(params, trans->out.params.data));
 
 		SSVAL(this_req->out.vwv, VWV(6), this_data);
 		SSVAL(this_req->out.vwv, VWV(7), align1 + align2 + 
 		      PTR_DIFF(this_req->out.data + this_param, this_req->out.hdr));
-		SSVAL(this_req->out.vwv, VWV(8), PTR_DIFF(data, trans.out.data.data));
+		SSVAL(this_req->out.vwv, VWV(8), PTR_DIFF(data, trans->out.data.data));
 
-		SSVAL(this_req->out.vwv, VWV(9), trans.out.setup_count);
-		for (i=0;i<trans.out.setup_count;i++) {
-			SSVAL(this_req->out.vwv, VWV(10+i), trans.out.setup[i]);
+		SSVAL(this_req->out.vwv, VWV(9), trans->out.setup_count);
+		for (i=0;i<trans->out.setup_count;i++) {
+			SSVAL(this_req->out.vwv, VWV(10+i), trans->out.setup[i]);
 		}
 
 		memset(this_req->out.data, 0, align1);
@@ -1505,28 +1482,213 @@ void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 }
 
 
-/****************************************************************************
- Reply to an SMBtrans2
-****************************************************************************/
+/*
+  Reply to an SMBtrans or SMBtrans2 request
+*/
+void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
+{
+	struct smb_trans2 *trans;
+	int i;
+	uint16_t param_ofs, data_ofs;
+	uint16_t param_count, data_count;
+	uint16_t param_total, data_total;
+
+	trans = talloc_p(req, struct smb_trans2);
+	if (trans == NULL) {
+		req_reply_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	/* parse request */
+	if (req->in.wct < 14) {
+		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	param_total           = SVAL(req->in.vwv, VWV(0));
+	data_total            = SVAL(req->in.vwv, VWV(1));
+	trans->in.max_param   = SVAL(req->in.vwv, VWV(2));
+	trans->in.max_data    = SVAL(req->in.vwv, VWV(3));
+	trans->in.max_setup   = CVAL(req->in.vwv, VWV(4));
+	trans->in.flags       = SVAL(req->in.vwv, VWV(5));
+	trans->in.timeout     = IVAL(req->in.vwv, VWV(6));
+	param_count           = SVAL(req->in.vwv, VWV(9));
+	param_ofs             = SVAL(req->in.vwv, VWV(10));
+	data_count            = SVAL(req->in.vwv, VWV(11));
+	data_ofs              = SVAL(req->in.vwv, VWV(12));
+	trans->in.setup_count = CVAL(req->in.vwv, VWV(13));
+
+	if (req->in.wct != 14 + trans->in.setup_count) {
+		req_reply_dos_error(req, ERRSRV, ERRerror);
+		return;
+	}
+
+	/* parse out the setup words */
+	trans->in.setup = talloc_array_p(req, uint16_t, trans->in.setup_count);
+	if (trans->in.setup_count && !trans->in.setup) {
+		req_reply_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	for (i=0;i<trans->in.setup_count;i++) {
+		trans->in.setup[i] = SVAL(req->in.vwv, VWV(14+i));
+	}
+
+	if (command == SMBtrans) {
+		req_pull_string(req, &trans->in.trans_name, req->in.data, -1, STR_TERMINATE);
+	}
+
+	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans->in.params) ||
+	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans->in.data)) {
+		req_reply_error(req, NT_STATUS_FOOBAR);
+		return;
+	}
+
+	/* is it a partial request? if so, then send a 'send more' message */
+	if (param_total > param_count || data_total > data_count) {
+		reply_trans_continue(req, command, trans);
+		return;
+	}
+
+	reply_trans_complete(req, command, trans);
+}
+
+
+/*
+  Reply to an SMBtranss2 request
+*/
+static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
+{
+	struct smbsrv_trans_partial *tp;
+	struct smb_trans2 *trans = NULL;
+	uint16_t param_ofs, data_ofs;
+	uint16_t param_count, data_count;
+	uint16_t param_disp, data_disp;
+	uint16_t param_total, data_total;
+	DATA_BLOB params, data;
+
+	for (tp=req->smb_conn->trans_partial;tp;tp=tp->next) {
+		if (tp->command == command &&
+		    SVAL(tp->req->in.hdr, HDR_MID) == SVAL(req->in.hdr, HDR_MID)) {
+			break;
+		}
+	}
+
+	if (tp == NULL) {
+		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	trans = tp->trans;
+
+	/* parse request */
+	if (req->in.wct < 8) {
+		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	param_total           = SVAL(req->in.vwv, VWV(0));
+	data_total            = SVAL(req->in.vwv, VWV(1));
+	param_count           = SVAL(req->in.vwv, VWV(2));
+	param_ofs             = SVAL(req->in.vwv, VWV(3));
+	param_disp            = SVAL(req->in.vwv, VWV(4));
+	data_count            = SVAL(req->in.vwv, VWV(5));
+	data_ofs              = SVAL(req->in.vwv, VWV(6));
+	data_disp             = SVAL(req->in.vwv, VWV(7));
+
+	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &params) ||
+	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &data)) {
+		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	/* only allow contiguous requests */
+	if ((param_count != 0 &&
+	     param_disp != trans->in.params.length) ||
+	    (data_count != 0 && 
+	     data_disp != trans->in.data.length)) {
+		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;		
+	}
+
+	/* add to the existing request */
+	if (param_count != 0) {
+		trans->in.params.data = talloc_realloc_p(trans, 
+							 trans->in.params.data, 
+							 uint8_t, 
+							 param_disp + param_count);
+		if (trans->in.params.data == NULL) {
+			goto failed;
+		}
+		trans->in.params.length = param_disp + param_count;
+	}
+
+	if (data_count != 0) {
+		trans->in.data.data = talloc_realloc_p(trans, 
+						       trans->in.data.data, 
+						       uint8_t, 
+						       data_disp + data_count);
+		if (trans->in.data.data == NULL) {
+			goto failed;
+		}
+		trans->in.data.length = data_disp + data_count;
+	}
+
+	memcpy(trans->in.params.data + param_disp, params.data, params.length);
+	memcpy(trans->in.data.data + data_disp, data.data, data.length);
+
+	/* the sequence number of the reply is taken from the last secondary
+	   response */
+	tp->req->seq_num = req->seq_num;
+
+	/* we don't reply to Transs2 requests */
+	talloc_free(req);
+
+	if (trans->in.params.length == param_total &&
+	    trans->in.data.length == data_total) {
+		/* its now complete */
+		reply_trans_complete(tp->req, command, trans);
+		DLIST_REMOVE(tp->req->smb_conn->trans_partial, tp);
+		talloc_free(tp);
+	}
+	return;
+
+failed:	
+	req_reply_error(tp->req, NT_STATUS_NO_MEMORY);
+	DLIST_REMOVE(req->smb_conn->trans_partial, tp);
+	talloc_free(req);
+	talloc_free(tp);
+}
+
+
+/*
+  Reply to an SMBtrans2
+*/
 void reply_trans2(struct smbsrv_request *req)
 {
 	reply_trans_generic(req, SMBtrans2);
 }
 
-/****************************************************************************
- Reply to an SMBtrans
-****************************************************************************/
+/*
+  Reply to an SMBtrans
+*/
 void reply_trans(struct smbsrv_request *req)
 {
 	reply_trans_generic(req, SMBtrans);
 }
 
-/****************************************************************************
- Reply to an SMBtranss2 request
-****************************************************************************/
-void reply_transs2(struct smbsrv_request *req)
+/*
+  Reply to an SMBtranss request
+*/
+void reply_transs(struct smbsrv_request *req)
 {
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	reply_transs_generic(req, SMBtrans);
 }
 
+/*
+  Reply to an SMBtranss2 request
+*/
+void reply_transs2(struct smbsrv_request *req)
+{
+	reply_transs_generic(req, SMBtrans2);
+}
 
