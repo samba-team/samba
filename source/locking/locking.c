@@ -472,7 +472,7 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 	struct locking_data *data;
 	int i, del_count=0;
 	share_mode_entry *shares;
-	ssize_t count;
+	ssize_t count = 0;
 
 	if (ppse)
 		*ppse = NULL;
