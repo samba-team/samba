@@ -320,7 +320,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 		      krb_unparse_name_long(adat.pname, 
 					    adat.pinst, 
 					    adat.prealm), 
-		      UserNameRequested);
+		      UserNameRequested ? UserNameRequested : "<nobody>");
 	    if (msg == NULL)
 		Data(ap, KRB_REJECT, NULL, 0);
 	    else {
