@@ -3,6 +3,7 @@
    test suite for spoolss rpc operations
 
    Copyright (C) Tim Potter 2003
+   Copyright (C) Stefan Metzmacher 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,610 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
+
+struct test_spoolss_context {
+	struct dcerpc_pipe *p;
+
+	/* for EnumPorts */
+	uint32_t port_count[3];
+	union spoolss_PortInfo **ports[3];
+
+	/* for EnumPrinterDrivers */
+	uint32_t driver_count[7];
+	union spoolss_DriverInfo **drivers[7];
+
+	/* for EnumMonitors */
+	uint32_t monitor_count[3];
+	union spoolss_MonitorInfo **monitors[3];
+
+	/* for EnumPrintProcessors */
+	uint32_t print_processor_count[2];
+	union spoolss_PrintProcessorInfo **print_processors[2];
+
+	/* for EnumPrinters */
+	uint32_t printer_count[6];
+	union spoolss_PrinterInfo **printers[6];
+};
+
+#define COMPARE_STRING(c,r,e) do {\
+	BOOL _ok = True;\
+	if (c.e && !r.e) _ok = False;\
+	if (!c.e && r.e) _ok = False;\
+	if (c.e && r.e && strcmp_safe(c.e, r.e) != 0) _ok = False;\
+	if (!_ok){\
+		printf("%s: " #c "." #e " [%s] doesn't match " #r "." #e " [%s]\n",\
+			__location__, c.e, r.e);\
+		ret = False;\
+	}\
+} while(0)
+
+#define COMPARE_UINT16(c,r,e) do {\
+	if (c.e != r.e){\
+		printf("%s: " #c "." #e "  0x%08X (%u) doesn't match " #r "." #e " 0x%08X (%u)\n",\
+			__location__, c.e, c.e, r.e, r.e);\
+		ret = False;\
+	}\
+} while(0)
+
+#define COMPARE_UINT32(c,r,e) do {\
+	if (c.e != r.e){\
+		printf("%s: " #c "." #e "  0x%04X (%u) doesn't match " #r "." #e " 0x%04X (%u)\n",\
+			__location__, c.e, c.e, r.e, r.e);\
+		ret = False;\
+	}\
+} while(0)
+
+#define COMPARE_UINT64(c,r,e) do {\
+	if (c.e != r.e){\
+		printf("%s: " #c "." #e "  0x%08X%08X (%llu) doesn't match " #r "." #e " 0x%08X%08X (%llu)\n",\
+			__location__, (uint32_t)(c.e >> 32), (uint32_t)(c.e & 0xFFFFFFFF), c.e,\
+			(uint32_t)(r.e >> 32), (uint32_t)(r.e & 0xFFFFFFFF), r.e);\
+		ret = False;\
+	}\
+} while(0)
+
+/* TODO: ! */
+#define COMPARE_SEC_DESC(c,r,e)
+#define COMPARE_SPOOLSS_TIME(c,r,e)
+#define COMPARE_STRING_ARRAY(c,r,e)
+
+static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
+{
+	NTSTATUS status;
+	struct spoolss_EnumPorts r;
+	uint16_t levels[] = { 1, 2 };
+	int i, j;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		DATA_BLOB blob;
+		uint32_t buf_size = 0;
+
+		r.in.servername = "";
+		r.in.level = level;
+		r.in.buffer = NULL;
+		buf_size = 0;
+		r.in.buf_size = &buf_size;
+		r.out.buf_size = &buf_size;
+
+		printf("Testing EnumPorts level %u\n", r.in.level);
+
+		status = dcerpc_spoolss_EnumPorts(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumPorts failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			printf("EnumPorts unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		blob = data_blob_talloc(ctx, NULL, buf_size);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_EnumPorts(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumPorts failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("EnumPorts failed - %s\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		ctx->port_count[level]	= r.out.count;
+		ctx->ports[level]	= r.out.info;
+	}
+
+	for (i=1;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		int old_level = levels[i-1];
+		if (ctx->port_count[level] != ctx->port_count[old_level]) {
+			printf("EnumPorts level[%d] returns [%u] ports, but level[%d] returns [%u]\n",
+				level, ctx->port_count[level], old_level, ctx->port_count[old_level]);
+			ret = False;
+		}
+	}
+	/* if the array sizes are not the same we would maybe segfault in the following code */
+	if (!ret) return ret;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		for (j=0;j<ctx->port_count[level];j++) {
+			union spoolss_PortInfo *cur = &ctx->ports[level][0][j];
+			union spoolss_PortInfo *ref = &ctx->ports[2][0][j];
+			switch (level) {
+			case 1:
+				COMPARE_STRING(cur->info1, ref->info2, port_name);
+				break;
+			case 2:
+				/* level 2 is our reference, and it makes no sense to compare it to itself */
+				break;
+			}
+		}
+	}
+
+	return True;
+}
+
+static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
+{
+	NTSTATUS status;
+	struct spoolss_EnumPrinterDrivers r;
+	uint16_t levels[] = { 1, 2, 3, 4, 5, 6 };
+	int i, j;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		DATA_BLOB blob;
+		uint32_t buf_size = 0;
+
+		r.in.server = "";
+		r.in.environment = "Windows NT x86";
+		r.in.level = level;
+		r.in.buffer = NULL;
+		buf_size = 0;
+		r.in.buf_size = &buf_size;
+		r.out.buf_size = &buf_size;
+
+		printf("Testing EnumPrinterDrivers level %u\n", r.in.level);
+
+		status = dcerpc_spoolss_EnumPrinterDrivers(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumPrinterDrivers failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			printf("EnumPrinterDrivers unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		blob = data_blob_talloc(ctx, NULL, buf_size);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_EnumPrinterDrivers(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumPrinterDrivers failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("EnumPrinterDrivers failed - %s\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		ctx->driver_count[level]	= r.out.count;
+		ctx->drivers[level]		= r.out.info;
+	}
+
+	for (i=1;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		int old_level = levels[i-1];
+		if (ctx->driver_count[level] != ctx->driver_count[old_level]) {
+			printf("EnumPrinterDrivers level[%d] returns [%u] drivers, but level[%d] returns [%u]\n",
+				level, ctx->driver_count[level], old_level, ctx->driver_count[old_level]);
+			ret = False;
+		}
+	}
+	/* if the array sizes are not the same we would maybe segfault in the following code */
+	if (!ret) return ret;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		for (j=0;j<ctx->driver_count[level];j++) {
+			union spoolss_DriverInfo *cur = &ctx->drivers[level][0][j];
+			union spoolss_DriverInfo *ref = &ctx->drivers[6][0][j];
+			switch (level) {
+			case 1:
+				COMPARE_STRING(cur->info1, ref->info6, driver_name);
+				break;
+			case 2:
+				COMPARE_UINT32(cur->info2, ref->info6, version);
+				COMPARE_STRING(cur->info2, ref->info6, driver_name);
+				COMPARE_STRING(cur->info2, ref->info6, architecture);
+				COMPARE_STRING(cur->info2, ref->info6, driver_path);
+				COMPARE_STRING(cur->info2, ref->info6, data_file);
+				COMPARE_STRING(cur->info2, ref->info6, config_file);
+				break;
+			case 3:
+				COMPARE_UINT32(cur->info3, ref->info6, version);
+				COMPARE_STRING(cur->info3, ref->info6, driver_name);
+				COMPARE_STRING(cur->info3, ref->info6, architecture);
+				COMPARE_STRING(cur->info3, ref->info6, driver_path);
+				COMPARE_STRING(cur->info3, ref->info6, data_file);
+				COMPARE_STRING(cur->info3, ref->info6, config_file);
+				COMPARE_STRING(cur->info3, ref->info6, help_file);
+				COMPARE_STRING_ARRAY(cur->info3, ref->info6, dependent_files);
+				COMPARE_STRING(cur->info3, ref->info6, monitor_name);
+				COMPARE_STRING(cur->info3, ref->info6, default_datatype);
+				break;
+			case 4:
+				COMPARE_UINT32(cur->info4, ref->info6, version);
+				COMPARE_STRING(cur->info4, ref->info6, driver_name);
+				COMPARE_STRING(cur->info4, ref->info6, architecture);
+				COMPARE_STRING(cur->info4, ref->info6, driver_path);
+				COMPARE_STRING(cur->info4, ref->info6, data_file);
+				COMPARE_STRING(cur->info4, ref->info6, config_file);
+				COMPARE_STRING(cur->info4, ref->info6, help_file);
+				COMPARE_STRING_ARRAY(cur->info4, ref->info6, dependent_files);
+				COMPARE_STRING(cur->info4, ref->info6, monitor_name);
+				COMPARE_STRING(cur->info4, ref->info6, default_datatype);
+				COMPARE_STRING_ARRAY(cur->info4, ref->info6, previous_names);
+				break;
+			case 5:
+				COMPARE_UINT32(cur->info5, ref->info6, version);
+				COMPARE_STRING(cur->info5, ref->info6, driver_name);
+				COMPARE_STRING(cur->info5, ref->info6, architecture);
+				COMPARE_STRING(cur->info5, ref->info6, driver_path);
+				COMPARE_STRING(cur->info5, ref->info6, data_file);
+				COMPARE_STRING(cur->info5, ref->info6, config_file);
+				/*COMPARE_UINT32(cur->info5, ref->info6, driver_attributes);*/
+				/*COMPARE_UINT32(cur->info5, ref->info6, config_version);*/
+				/*TODO: ! COMPARE_UINT32(cur->info5, ref->info6, driver_version); */
+				break;
+			case 6:
+				/* level 6 is our reference, and it makes no sense to compare it to itself */
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
+{
+	NTSTATUS status;
+	struct spoolss_EnumMonitors r;
+	uint16_t levels[] = { 1, 2 };
+	int i, j;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		DATA_BLOB blob;
+		uint32_t buf_size = 0;
+
+		r.in.servername = "";
+		r.in.level = level;
+		r.in.buffer = NULL;
+		buf_size = 0;
+		r.in.buf_size = &buf_size;
+		r.out.buf_size = &buf_size;
+
+		printf("Testing EnumMonitors level %u\n", r.in.level);
+
+		status = dcerpc_spoolss_EnumMonitors(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumMonitors failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			printf("EnumMonitors unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		blob = data_blob_talloc(ctx, NULL, buf_size);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_EnumMonitors(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumMonitors failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("EnumMonitors failed - %s\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		ctx->monitor_count[level]	= r.out.count;
+		ctx->monitors[level]		= r.out.info;
+	}
+
+	for (i=1;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		int old_level = levels[i-1];
+		if (ctx->monitor_count[level] != ctx->monitor_count[old_level]) {
+			printf("EnumMonitors level[%d] returns [%u] monitors, but level[%d] returns [%u]\n",
+				level, ctx->monitor_count[level], old_level, ctx->monitor_count[old_level]);
+			ret = False;
+		}
+	}
+	/* if the array sizes are not the same we would maybe segfault in the following code */
+	if (!ret) return ret;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		for (j=0;j<ctx->monitor_count[level];j++) {
+			union spoolss_MonitorInfo *cur = &ctx->monitors[level][0][j];
+			union spoolss_MonitorInfo *ref = &ctx->monitors[2][0][j];
+			switch (level) {
+			case 1:
+				COMPARE_STRING(cur->info1, ref->info2, monitor_name);
+				break;
+			case 2:
+				/* level 2 is our reference, and it makes no sense to compare it to itself */
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
+{
+	NTSTATUS status;
+	struct spoolss_EnumPrintProcessors r;
+	uint16_t levels[] = { 1 };
+	int i, j;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		DATA_BLOB blob;
+		uint32_t buf_size = 0;
+
+		r.in.servername = "";
+		r.in.environment = "Windows NT x86";
+		r.in.level = level;
+		r.in.buffer = NULL;
+		buf_size = 0;
+		r.in.buf_size = &buf_size;
+		r.out.buf_size = &buf_size;
+
+		printf("Testing EnumPrintProcessors level %u\n", r.in.level);
+
+		status = dcerpc_spoolss_EnumPrintProcessors(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumPrintProcessors failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			printf("EnumPrintProcessors unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		blob = data_blob_talloc(ctx, NULL, buf_size);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_EnumPrintProcessors(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumPrintProcessors failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("EnumPrintProcessors failed - %s\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		ctx->print_processor_count[level]	= r.out.count;
+		ctx->print_processors[level]		= r.out.info;
+	}
+
+	for (i=1;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		int old_level = levels[i-1];
+		if (ctx->print_processor_count[level] != ctx->print_processor_count[old_level]) {
+			printf("EnumPrintProcessors level[%d] returns [%u] print_processors, but level[%d] returns [%u]\n",
+				level, ctx->print_processor_count[level], old_level, ctx->print_processor_count[old_level]);
+			ret = False;
+		}
+	}
+	/* if the array sizes are not the same we would maybe segfault in the following code */
+	if (!ret) return ret;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		for (j=0;j<ctx->print_processor_count[level];j++) {
+#if 0
+			union spoolss_PrintProcessorInfo *cur = &ctx->print_processors[level][0][j];
+			union spoolss_PrintProcessorInfo *ref = &ctx->print_processors[1][0][j];
+#endif
+			switch (level) {
+			case 1:
+				/* level 1 is our reference, and it makes no sense to compare it to itself */
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
+{
+	struct spoolss_EnumPrinters r;
+	NTSTATUS status;
+	uint16_t levels[] = { 0, 1, 2, 4, 5 };
+	int i, j;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		DATA_BLOB blob;
+		uint32_t buf_size = 0;
+
+		r.in.flags	= PRINTER_ENUM_LOCAL;
+		r.in.server	= "";
+		r.in.level	= level;
+		r.in.buffer	= NULL;
+		r.in.buf_size	= &buf_size;
+		r.out.buf_size	= &buf_size;
+
+		printf("\nTesting EnumPrinters level %u\n", r.in.level);
+
+		status = dcerpc_spoolss_EnumPrinters(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumPrinters failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			printf("EnumPrinters unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		blob = data_blob_talloc(ctx, NULL, buf_size);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		status = dcerpc_spoolss_EnumPrinters(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EnumPrinters failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("EnumPrinters failed - %s\n", 
+			       win_errstr(r.out.result));
+			continue;
+		}
+
+		ctx->printer_count[level]	= r.out.count;
+		ctx->printers[level]		= r.out.info;
+	}
+
+	for (i=1;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		int old_level = levels[i-1];
+		if (ctx->printer_count[level] != ctx->printer_count[old_level]) {
+			printf("EnumPrinters level[%d] returns [%u] printers, but level[%d] returns [%u]\n",
+				level, ctx->printer_count[level], old_level, ctx->printer_count[old_level]);
+			ret = False;
+		}
+	}
+	/* if the array sizes are not the same we would maybe segfault in the following code */
+	if (!ret) return ret;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		for (j=0;j<ctx->printer_count[level];j++) {
+			union spoolss_PrinterInfo *cur = &ctx->printers[level][0][j];
+			union spoolss_PrinterInfo *ref = &ctx->printers[2][0][j];
+			switch (level) {
+			case 0:
+				COMPARE_STRING(cur->info0, ref->info2, printername);
+				COMPARE_STRING(cur->info0, ref->info2, servername);
+				COMPARE_UINT32(cur->info0, ref->info2, cjobs);
+				/*COMPARE_UINT32(cur->info0, ref->info2, total_jobs);
+				COMPARE_UINT32(cur->info0, ref->info2, total_bytes);
+				COMPARE_SPOOLSS_TIME(cur->info0, ref->info2, spoolss_Time time);		
+				COMPARE_UINT32(cur->info0, ref->info2, global_counter);
+				COMPARE_UINT32(cur->info0, ref->info2, total_pages);
+				COMPARE_UINT32(cur->info0, ref->info2, version);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown10);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown11);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown12);
+				COMPARE_UINT32(cur->info0, ref->info2, session_counter);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown14);
+				COMPARE_UINT32(cur->info0, ref->info2, printer_errors);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown16);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown17);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown18);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown19);
+				COMPARE_UINT32(cur->info0, ref->info2, change_id);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown21);*/
+				COMPARE_UINT32(cur->info0, ref->info2, status);
+				/*COMPARE_UINT32(cur->info0, ref->info2, unknown23);
+				COMPARE_UINT32(cur->info0, ref->info2, c_setprinter);
+				COMPARE_UINT16(cur->info0, ref->info2, unknown25);
+				COMPARE_UINT16(cur->info0, ref->info2, unknown26);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown27);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown28);
+				COMPARE_UINT32(cur->info0, ref->info2, unknown29);*/
+				break;
+			case 1:
+				/*COMPARE_UINT32(cur->info1, ref->info2, flags);*/
+				/*COMPARE_STRING(cur->info1, ref->info2, name);*/
+				/*COMPARE_STRING(cur->info1, ref->info2, description);*/
+				COMPARE_STRING(cur->info1, ref->info2, comment);
+				break;
+			case 2:
+				/* level 2 is our reference, and it makes no sense to compare it to itself */
+				break;
+			case 4:
+				COMPARE_STRING(cur->info4, ref->info2, printername);
+				COMPARE_STRING(cur->info4, ref->info2, servername);
+				COMPARE_UINT32(cur->info4, ref->info2, attributes);
+				break;
+			case 5:
+				COMPARE_STRING(cur->info5, ref->info2, printername);
+				COMPARE_STRING(cur->info5, ref->info2, portname);
+				COMPARE_UINT32(cur->info5, ref->info2, attributes);
+				/*COMPARE_UINT32(cur->info5, ref->info2, device_not_selected_timeout);
+				COMPARE_UINT32(cur->info5, ref->info2, transmission_retry_timeout);*/
+				break;
+			}
+		}
+	}
+
+	/* TODO:
+	 * 	- verify that the port of a printer was in the list returned by EnumPorts
+	 */
+
+	return ret;
+}
 
 static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle)
@@ -284,7 +889,7 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static BOOL test_EnumPorts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_EnumPorts_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct spoolss_EnumPorts r;
@@ -975,7 +1580,7 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
@@ -1095,8 +1700,8 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 #endif
-	
-static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+
+static BOOL test_EnumPrinterDrivers_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_EnumPrinterDrivers r;
 	NTSTATUS status;
@@ -1164,6 +1769,7 @@ BOOL torture_rpc_spoolss(void)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
+	struct test_spoolss_context *ctx;
 
 	mem_ctx = talloc_init("torture_rpc_spoolss");
 
@@ -1177,15 +1783,28 @@ BOOL torture_rpc_spoolss(void)
 		return False;
 	}
 
+	ctx = talloc_zero(mem_ctx, struct test_spoolss_context);
+	ctx->p	= p;
+
+	ret &= test_EnumPorts(ctx);
+
+	ret &= test_EnumPrinterDrivers(ctx);
+
+	ret &= test_EnumMonitors(ctx);
+
+	ret &= test_EnumPrintProcessors(ctx);
+
+	ret &= test_EnumPrinters(ctx);
+
 	ret &= test_OpenPrinter_badnames(p, mem_ctx);
 
 	ret &= test_AddPort(p, mem_ctx);
 
-	ret &= test_EnumPorts(p, mem_ctx);
+	ret &= test_EnumPorts_old(p, mem_ctx);
 
-	ret &= test_EnumPrinters(p, mem_ctx);
+	ret &= test_EnumPrinters_old(p, mem_ctx);
 
-	ret &= test_EnumPrinterDrivers(p, mem_ctx);
+	ret &= test_EnumPrinterDrivers_old(p, mem_ctx);
 
 	talloc_free(mem_ctx);
 
