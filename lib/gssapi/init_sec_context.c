@@ -851,6 +851,10 @@ spnego_initial
 				   &mech_token,
 				   ret_flags,
 				   time_rec);
+    if (GSS_ERROR(sub)) {
+	free_NegTokenInit(&ni);
+	return sub;
+    }
     if (mech_token.length != 0) {
 	ALLOC(ni.mechToken, 1);
 	if (ni.mechToken == NULL) {
@@ -861,7 +865,9 @@ spnego_initial
 	}
 	ni.mechToken->length = mech_token.length;
 	ni.mechToken->data   = mech_token.value;
-    }
+    } else
+	ni.mechToken = NULL;
+
     /* XXX ignore mech list mic for now */
     ni.mechListMIC = NULL;
 
