@@ -2713,6 +2713,7 @@ if test x"$with_ads_support" != x"no"; then
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
   AC_CHECK_LIB_EXT(krb5, KRB5_LIBS, krb5_mk_req_extended)
+  AC_CHECK_LIB_EXT(krb5, KRB5_LIBS, krb5_kt_compare)
 
   ########################################################
   # now see if we can find the gssapi libs in standard paths
@@ -2815,6 +2816,18 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_AP_OPTS_USE_SUBKEY" = x"yes"; then
     AC_DEFINE(HAVE_AP_OPTS_USE_SUBKEY,1,
               [Whether the AP_OPTS_USE_SUBKEY ap option is available])
+  fi
+
+  AC_CACHE_CHECK([for KV5M_KEYTAB],
+                 samba_cv_HAVE_KV5M_KEYTAB,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keytab_entry entry; entry.magic = KV5M_KEYTAB;],
+      samba_cv_HAVE_KV5M_KEYTAB=yes,
+      samba_cv_HAVE_KV5M_KEYTAB=no)])
+
+  if test x"$samba_cv_HAVE_KV5M_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_KV5M_KEYTAB,1,
+             [Whether the KV5M_KEYTAB option is available])
   fi
 
   AC_CACHE_CHECK([for the krb5_princ_component macro],
@@ -2953,6 +2966,28 @@ AC_ARG_WITH(smbmount,
   esac ],
   AC_MSG_RESULT(no)
 )
+
+AC_CACHE_CHECK([for WRFILE: keytab support],
+                samba_cv_HAVE_WRFILE_KEYTAB,[
+    AC_TRY_RUN([
+#include<krb5.h>
+  main()
+  {
+    krb5_context context;
+    krb5_keytab keytab;
+
+    krb5_init_context(&context);
+    if (krb5_kt_resolve(context, "WRFILE:api", &keytab))
+      exit(0);
+    exit(1);
+  }],
+  samba_cv_HAVE_WRFILE_KEYTAB=no,
+  samba_cv_HAVE_WRFILE_KEYTAB=yes)])
+
+  if test x"$samba_cv_HAVE_WRFILE_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_WRFILE_KEYTAB,1,
+               [Whether the WRFILE:-keytab is supported])
+  fi
 
 
 #################################################
