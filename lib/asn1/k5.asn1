@@ -26,10 +26,16 @@ HostAddress ::=     SEQUENCE  {
                     address[1]               OCTET STRING
 }
 
-HostAddresses ::=   SEQUENCE OF SEQUENCE {
-                    addr-type[0]             INTEGER,
-                    address[1]               OCTET STRING
-}
+-- This is from RFC1510.
+--
+-- HostAddresses ::=   SEQUENCE OF SEQUENCE {
+--                     addr-type[0]             INTEGER,
+--                     address[1]               OCTET STRING
+-- }
+
+-- This seems much better.
+HostAddresses ::=	SEQUENCE OF HostAddress
+
 
 KerberosTime ::=   GeneralizedTime -- Specifying UTC time zone (Z)
 
