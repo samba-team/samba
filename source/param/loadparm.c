@@ -328,6 +328,7 @@ typedef struct
 	char *szVfsObjectFile;
 	char *szVfsOptions;
 	char *szVfsPath;
+	char *szMSDfsProxy;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
 	int iWriteCacheSize;
@@ -447,6 +448,7 @@ static service sDefault = {
 	NULL,			/* vfs object */
 	NULL,			/* vfs options */
 	NULL,			/* vfs path */
+	NULL,                   /* szMSDfsProxy */
 	0,			/* iMinPrintSpace */
 	1000,			/* iMaxPrintJobs */
 	0,			/* iWriteCacheSize */
@@ -1091,6 +1093,7 @@ static struct parm_struct parm_table[] = {
 
 	
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
+	{"msdfs proxy", P_STRING, P_LOCAL, &sDefault.szMSDfsProxy, NULL, NULL, FLAG_SHARE},
 	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
@@ -1739,6 +1742,7 @@ FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
 FN_LOCAL_STRING(lp_vfs_options, szVfsOptions)
 FN_LOCAL_STRING(lp_vfs_path, szVfsPath)
+FN_LOCAL_STRING(lp_msdfs_proxy, szMSDfsProxy)
 static FN_LOCAL_STRING(lp_volume, volume)
 FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
 FN_LOCAL_STRING(lp_veto_files, szVetoFiles)

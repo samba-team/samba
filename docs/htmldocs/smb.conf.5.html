@@ -16,7 +16,9 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMB.CONF">smb.conf</H1
+NAME="SMB.CONF"
+></A
+>smb.conf</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -3994,6 +3996,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#MSDFSPROXY"
+><TT
+CLASS="PARAMETER"
+><I
+>msdfs proxy</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#MSDFSROOT"
 ><TT
 CLASS="PARAMETER"
@@ -4656,7 +4670,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1513"
+NAME="AEN1517"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -12529,6 +12543,46 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="MSDFSPROXY"
+></A
+>msdfs proxy (S)</DT
+><DD
+><P
+>This parameter indicates that the share is a
+		stand-in for another CIFS share whose location is specified by
+		the value of the parameter. When clients attempt to connect to
+		this share, they are redirected to the proxied share using
+		the SMB-Dfs protocol.</P
+><P
+>Only Dfs roots can act as proxy shares. Take a look at the
+		<A
+HREF="#MSDFSROOT"
+><TT
+CLASS="PARAMETER"
+><I
+>msdfs root</I
+></TT
+></A
+>
+		and
+		<A
+HREF="#HOSTMSDFS"
+><TT
+CLASS="PARAMETER"
+><I
+>host msdfs</I
+></TT
+></A
+>
+		options to find out how to set up a Dfs root share.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>msdfs proxy = \otherserver\someshare</B
+></P
+></DD
+><DT
+><A
 NAME="MSDFSROOT"
 ></A
 >msdfs root (S)</DT
@@ -12547,9 +12601,9 @@ CLASS="CONSTANT"
 		Dfs links are specified  in  the share directory by symbolic 
 		links of the form <TT
 CLASS="FILENAME"
->msdfs:serverA\shareA,serverB\shareB
-		</TT
-> and so on.  For more information on setting up a Dfs tree 
+>msdfs:serverA\shareA,serverB\shareB</TT
+>
+		and so on.  For more information on setting up a Dfs tree 
 		on Samba,  refer to <A
 HREF="msdfs_setup.html"
 TARGET="_top"
@@ -19432,7 +19486,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6147"
+NAME="AEN6163"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19462,7 +19516,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6153"
+NAME="AEN6169"
 ></A
 ><H2
 >VERSION</H2
@@ -19473,7 +19527,7 @@ NAME="AEN6153"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6156"
+NAME="AEN6172"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19552,7 +19606,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6176"
+NAME="AEN6192"
 ></A
 ><H2
 >AUTHOR</H2
