@@ -360,7 +360,10 @@ case "$host_os" in
 # compile work using gcc 2.7 and 2.8, whereas using the Sun
 # recommendation makes the compile fail on gcc2.7. JRA.
 #
+# Solaris uses SYSV printing.  Make sure to set that here.  --jerry
+#
 	*solaris*)
+		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		case `uname -r` in
 			5.0*|5.1*|5.2*|5.3*|5.5*)
 	  			AC_MSG_RESULT([no large file support])
@@ -389,6 +392,12 @@ case "$host_os" in
 			fi
 			;;
 		esac
+		;;
+#
+# IRIX uses SYSV printing.  Make sure to set that here
+#
+	*irix*)
+		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		;;
 #
 # VOS may need to have POSIX support and System V compatibility enabled.
@@ -1055,7 +1064,6 @@ if test "$enable_shared" = "yes"; then
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*irix*) AC_DEFINE(IRIX,1,[Whether the host os is irix])
-			AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 			case "$host_os" in
 			*irix6*) AC_DEFINE(IRIX6,1,[Whether the host os is irix6])
 			;;
