@@ -38,6 +38,7 @@
 .Nm krb5_ticket ,
 .Nm krb5_free_ticket ,
 .Nm krb5_copy_ticket ,
+.Nm krb5_ticket_get_authorization_data_type ,
 .Nm krb5_ticket_get_client ,
 .Nm krb5_ticket_get_server
 .Nd kerberos 5 ticket access and handling functions.
@@ -58,6 +59,13 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "const krb5_ticket *from"
 .Fa "krb5_ticket **to"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_ticket_get_authorization_data_type
+.Fa "krb5_context context"
+.Fa "krb5_ticket *ticket"
+.Fa "int type"
+.Fa "krb5_data *data"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_ticket_get_client
@@ -95,6 +103,16 @@ The result
 .Fa to
 should be freed with
 .Fn krb5_free_ticket .
+.Pp
+.Fn krb5_ticket_get_authorization_data_type
+fetches the authorization data of the type
+.Fa type
+from the
+.Fa ticket .
+If there isn't any authorization data of type
+.Fa type ,
+.Dv ENOENT
+is returned.
 .Pp
 .Fn krb5_ticket_get_client
 and
