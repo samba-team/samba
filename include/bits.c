@@ -42,6 +42,7 @@ RCSID("$Id$");
 #endif
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <ctype.h>
 
 void strupr(char *s)
@@ -99,19 +100,44 @@ try_unsigned(FILE *f, int len)
     fprintf(f, "/* There is no %d bit type */\n", len);
 }
 
+static int
+print_bt(FILE *f, int flag)
+{
+    if(flag == 0){
+	fprintf(f, "/* For compatibility with various type definitions */\n");
+	fprintf(f, "#ifndef __BIT_TYPES_DEFINED__\n");
+	fprintf(f, "#define __BIT_TYPES_DEFINED__\n");
+	fprintf(f, "\n");
+    }
+    return 1;
+}
+
 int main(int argc, char **argv)
 {
     FILE *f;
+    int flag;
+    char *fn, *hb;
     
-    if(argc < 2)
+    if(argc < 2){
+	fn = "bits.h";
+	hb = "__BITS_H__";
 	f = stdout;
-    else
+    } else {
+	char *p;
+	fn = argv[1];
+	hb = malloc(strlen(fn) + 5);
+	sprintf(hb, "__%s__", fn);
+	for(p = hb; *p; p++){
+	    if(!isalnum(*p))
+		*p = '_';
+	}
 	f = fopen(argv[1], "w");
-    fprintf(f, "/*\n");
-    fprintf(f, " * bits.h -- this file was generated for %s\n", HOST); 
-    fprintf(f, " */\n\n");
-    fprintf(f, "#ifndef __BITS_H__\n");
-    fprintf(f, "#define __BITS_H__\n");
+    }
+    fprintf(f, "/* %s -- this file was generated for %s by\n", fn, HOST);
+    fprintf(f, "   %*s    %s */\n\n", strlen(fn), "", 
+	    "$Id$");
+    fprintf(f, "#ifndef %s\n", hb);
+    fprintf(f, "#define %s\n", hb);
     fprintf(f, "\n");
 #ifdef HAVE_SYS_TYPES_H
     fprintf(f, "#include <sys/types.h>\n");
@@ -126,40 +152,50 @@ int main(int argc, char **argv)
     fprintf(f, "#include <netinet/in6_machtypes.h>\n");
 #endif
     fprintf(f, "\n");
-    fprintf(f, "/* For compatibility with various type definitions */\n");
-    fprintf(f, "#ifndef __BIT_TYPES_DEFINED__\n");
-    fprintf(f, "#define __BIT_TYPES_DEFINED__\n");
-    fprintf(f, "\n");
 
+    flag = 0;
 #ifndef HAVE_INT8_T
+    flag = print_bt(f, flag);
     try_signed (f, 8);
 #endif /* HAVE_INT8_T */
 #ifndef HAVE_INT16_T
+    flag = print_bt(f, flag);
     try_signed (f, 16);
 #endif /* HAVE_INT16_T */
 #ifndef HAVE_INT32_T
+    flag = print_bt(f, flag);
     try_signed (f, 32);
 #endif /* HAVE_INT32_T */
+#if 0
 #ifndef HAVE_INT64_T
+    flag = print_bt(f, flag);
     try_signed (f, 64);
 #endif /* HAVE_INT64_T */
+#endif
 
 #ifndef HAVE_U_INT8_T
+    flag = print_bt(f, flag);
     try_unsigned (f, 8);
 #endif /* HAVE_INT8_T */
 #ifndef HAVE_U_INT16_T
+    flag = print_bt(f, flag);
     try_unsigned (f, 16);
 #endif /* HAVE_U_INT16_T */
 #ifndef HAVE_U_INT32_T
+    flag = print_bt(f, flag);
     try_unsigned (f, 32);
 #endif /* HAVE_U_INT32_T */
+#if 0
 #ifndef HAVE_U_INT64_T
+    flag = print_bt(f, flag);
     try_unsigned (f, 64);
 #endif /* HAVE_U_INT64_T */
+#endif
 
-    fprintf(f, "\n");
-    fprintf(f, "#endif /* __BIT_TYPES_DEFINED__ */\n");
-    fprintf(f, "\n");
-    fprintf(f, "#endif /* __BITS_H__ */\n");
+    if(flag){
+	fprintf(f, "\n");
+	fprintf(f, "#endif /* __BIT_TYPES_DEFINED__ */\n\n");
+    }
+    fprintf(f, "#endif /* %s */\n", hb);
     return 0;
 }
