@@ -84,6 +84,9 @@ parse_something (const char *s, const struct units *units,
 	size_t u_len;
 	unsigned partial;
 
+	while(isspace(*p) || *p == ',')
+	    ++p;
+
 	val = strtod (p, &next); /* strtol(p, &next, 0); */
 	if (val == 0 && p == next)
 	    if(accept_no_val_p)
