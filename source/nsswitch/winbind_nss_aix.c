@@ -1,3 +1,27 @@
+/* 
+   Unix SMB/CIFS implementation.
+
+   AIX loadable authentication mmodule, providing identification 
+   routines against Samba winbind/Windows NT Domain
+
+   Copyright (C) Tim Potter 2003
+   Copyright (C) Steve Roylance 2003
+   
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+   
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+   
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the
+   Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA  02111-1307, USA.   
+*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -8,8 +32,75 @@
 
 #define MAX_GETPWENT_USERS 250
 #define MAX_GETGRENT_USERS 250
+/* #define WB_AIX_DEBUG */
 
-BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
+static struct passwd *fill_pwent(struct winbindd_pw *pw)
+{
+	struct passwd *result;
+
+	if (!(result = malloc(sizeof(struct passwd))))
+		goto out;
+		
+	ZERO_STRUCTP(result);
+
+	/* User name */
+
+	if ((result->pw_name = malloc(strlen(pw->pw_name) + 1)) == NULL)
+		goto out;
+	
+	strcpy(result->pw_name, pw->pw_name);
+
+	/* Password */
+
+	if ((result->pw_passwd = malloc(strlen(pw->pw_passwd) + 1)) == NULL)
+		goto out;
+	
+	strcpy(result->pw_passwd, pw->pw_passwd);
+        
+	/* [ug]id */
+
+	result->pw_uid = pw->pw_uid;
+	result->pw_gid = pw->pw_gid;
+
+	/* GECOS */
+
+	if ((result->pw_gecos = malloc(strlen(pw->pw_gecos) + 1)) == NULL)
+		goto out;
+
+	strcpy(result->pw_gecos, pw->pw_gecos);
+	
+	/* Home directory */
+	
+	if ((result->pw_dir = malloc(strlen(pw->pw_dir) + 1)) == NULL)
+		goto out;
+
+	strcpy(result->pw_dir, pw->pw_dir);
+
+	/* Logon shell */
+	
+	if ((result->pw_shell = malloc(strlen(pw->pw_shell) + 1)) == NULL)
+		goto out;
+	
+	strcpy(result->pw_shell, pw->pw_shell);
+#ifdef WB_AIX_DEBUG
+	printf("wb_aix - returning filled pwent %s, %d\n", result->pw_name, result->pw_uid);
+#endif
+	return result;
+	
+	/* A memory allocation failed, undo succesfull allocations and
+           return NULL */
+
+out:
+	SAFE_FREE(result->pw_dir);
+	SAFE_FREE(result->pw_gecos);
+	SAFE_FREE(result->pw_passwd);
+	SAFE_FREE(result->pw_name);
+	SAFE_FREE(result);	
+
+	return NULL;
+}
+
+static BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
 {
 	char *s;
 	BOOL quoted;
@@ -44,78 +135,6 @@ BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
 	return(True);
 }
 
-static struct passwd *fill_pwent(struct winbindd_pw *pw)
-{
-	struct passwd *result;
-
-	if (!(result = malloc(sizeof(struct passwd)))) {
-		return NULL; 
-	}
-	memset(result, 0, sizeof(struct passwd));
-
-	/* User name */
-
-	if ((result->pw_name = malloc(strlen(pw->pw_name) + 1)) == NULL) {
-
-		/* Out of memory */
-		
-		return NULL;
-	}
-	
-	strcpy(result->pw_name, pw->pw_name);
-
-	/* Password */
-
-	if ((result->pw_passwd = malloc(strlen(pw->pw_passwd) + 1)) == NULL) {
-
-		/* Out of memory */
-
-		return NULL;
-	}
-	
-	strcpy(result->pw_passwd, pw->pw_passwd);
-        
-	/* [ug]id */
-
-	result->pw_uid = pw->pw_uid;
-	result->pw_gid = pw->pw_gid;
-
-	/* GECOS */
-
-	if ((result->pw_gecos = malloc(strlen(pw->pw_gecos) + 1)) == NULL) {
-
-		/* Out of memory */
-
-		return NULL;
-	}
-
-	strcpy(result->pw_gecos, pw->pw_gecos);
-	
-	/* Home directory */
-	
-	if ((result->pw_dir = malloc(strlen(pw->pw_dir) + 1)) == NULL) {
-
-		/* Out of memory */
-
-		return NULL;
-	}
-
-	strcpy(result->pw_dir, pw->pw_dir);
-
-	/* Logon shell */
-	
-	if ((result->pw_shell = malloc(strlen(pw->pw_shell) + 1)) == NULL) {
-		
-		/* Out of memory */
-
-		return NULL;
-	}
-	
-	strcpy(result->pw_shell, pw->pw_shell);
-
-	return result;
-}
-
 static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 {
 	fstring name;
@@ -123,30 +142,22 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 	char *tst;
 	struct group *result;
 	
-	if (!(result = malloc(sizeof(struct group)))) {
-		return NULL; 
-	}
-	memset(result, 0, sizeof(struct group));
+	if (!(result = malloc(sizeof(struct group))))
+		goto out;
+
+	ZERO_STRUCTP(result);
 
 	/* Group name */
 
-	if ((result->gr_name = malloc(strlen(gr->gr_name) + 1)) == NULL) {
-
-		/* Out of memory */
-
-		return NULL;
-	}
+	if ((result->gr_name = malloc(strlen(gr->gr_name) + 1)) == NULL)
+		goto out;
 
 	strcpy(result->gr_name, gr->gr_name);
 
 	/* Password */
 
-	if ((result->gr_passwd = malloc(strlen(gr->gr_passwd) + 1)) == NULL) {
-
-		/* Out of memory */
-		
-		return NULL;
-	}
+	if ((result->gr_passwd = malloc(strlen(gr->gr_passwd) + 1)) == NULL)
+		goto out;
 
 	strcpy(result->gr_passwd, gr->gr_passwd);
 
@@ -168,12 +179,9 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 		return result;
 	}
 	
-	if ((tst = malloc(((gr->num_gr_mem + 1) * sizeof(char *)))) == NULL) {
-
-		/* Out of memory */
-
-		return NULL;
-	}
+	if ((tst = malloc(((gr->num_gr_mem + 1) * sizeof(char *)))) == NULL)
+		goto out;
+		
 	result->gr_mem = (char **)tst;
 
 	/* Start looking at extra data */
@@ -186,10 +194,10 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
         
 		if (((result->gr_mem)[i] = 
 		     malloc(strlen(name) + 1)) == NULL) {
-            
-			/* Out of memory */
-            
-			return NULL;
+            		for ( i -= 1; i >= 0; i--)
+				SAFE_FREE((result->gr_mem)[i]);
+			goto out;
+
 		}        
         
 		strcpy((result->gr_mem)[i], name);
@@ -200,7 +208,21 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 
 	(result->gr_mem)[i] = NULL;
 
+#ifdef WB_AIX_DEBUG
+	printf("wb_aix - returning filled grent %s, %d\n", result->gr_name, result->gr_gid);
+#endif
 	return result;
+	
+	/* A memory allocation failed, undo succesfull allocations and
+           return NULL */
+
+out:
+	SAFE_FREE(tst);
+	SAFE_FREE(result->gr_passwd);
+	SAFE_FREE(result->gr_name);
+	SAFE_FREE(result);
+
+	return NULL;
 }
 
 
@@ -210,20 +232,25 @@ wb_aix_getgrgid (gid_t gid)
 {
 /* take a group id and return a filled struct group */
 	
-	NSS_STATUS ret;
 	struct winbindd_response response;
 	struct winbindd_request request;
 
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
+#ifdef WB_AIX_DEBUG
+	printf("wb_aix - getgrid for %d\n", gid);
+#endif
 	
 	request.data.gid = gid;
 
-	ret = winbindd_request(WINBINDD_GETGRGID, &request, &response);
-
-	if (ret == NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_GETGRGID, &request, &response)
+			== NSS_STATUS_SUCCESS) {
+#ifdef WB_AIX_DEBUG
+		printf("wb_aix - returned from winbind_request\n");
+#endif
 		return fill_grent(&response.data.gr, response.extra_data);
 	}
+	
 	return NULL;
 }
 
@@ -232,23 +259,29 @@ wb_aix_getgrnam (const char *name)
 {
 /* take a group name and return a filled struct group */
 
-	NSS_STATUS ret;
 	struct winbindd_response response;
 	struct winbindd_request request;
 	
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
 
+#ifdef WB_AIX_DEBUG
+	printf("wb_aix - getgrnam for %s\n", name);
+#endif
+
 	strncpy(request.data.groupname, name, 
 		sizeof(request.data.groupname));
 	request.data.groupname
 		[sizeof(request.data.groupname) - 1] = '\0';
 
-	ret = winbindd_request(WINBINDD_GETGRNAM, &request, &response);
 
-	if (ret == NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_GETGRNAM, &request, &response)
+			== NSS_STATUS_SUCCESS) {
+#ifdef WB_AIX_DEBUG
+		printf("wb_aix - returned from winbind_request\n");
+#endif
 		return fill_grent(&response.data.gr, response.extra_data);
-	}
+	}	
 	return NULL;	
 }
 
@@ -258,23 +291,28 @@ wb_aix_getgrset (const char *user)
 /* 	take a username and return a string containing a comma-separated list of 
 	group id numbers to which the user belongs */
 	
-	NSS_STATUS ret;
 	struct winbindd_response response;
 	struct winbindd_request request;
 	
 	char *tmpbuf, *result;
 	int i, idx = 0;
-	
+
+#ifdef WB_AIX_DEBUG
+	printf("wb_aix - getgrset for %s\n", user);
+#endif
 	strncpy(request.data.username, user, 
 		sizeof(request.data.username) - 1);
 	request.data.username
 		[sizeof(request.data.username) - 1] = '\0';
 
-	ret = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
 	
-	if (ret == NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_GETGROUPS, &request, &response)
+			== NSS_STATUS_SUCCESS) {
 		int num_gids = response.data.num_entries;
 		gid_t *gid_list = (gid_t *)response.extra_data;
+#ifdef WB_AIX_DEBUG
+		printf("wb_aix - returned from winbind_request\n");
+#endif
 		
 		/* allocate a space large enough to contruct the string */
 		if (!(tmpbuf = malloc(num_gids*12))) {
@@ -293,7 +331,7 @@ wb_aix_getgrset (const char *user)
 			return tmpbuf;
 		}
 		strcpy(result, tmpbuf);
-		free(tmpbuf);
+		SAFE_FREE(tmpbuf);
 		return result;
 	}
 	return NULL;
@@ -304,18 +342,23 @@ wb_aix_getpwuid (uid_t uid)
 {
 /* take a uid and return a filled struct passwd */
 	
-	NSS_STATUS ret;
 	struct winbindd_response response;
 	struct winbindd_request request;
 	
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
+
+#ifdef WB_AIX_DEBUG
+	printf("wb_aix - getpwid for %d\n", uid);
+#endif
 		
 	request.data.uid = uid;
-	
-	ret = winbindd_request(WINBINDD_GETPWUID, &request, &response);
-	
-	if (ret == NSS_STATUS_SUCCESS) {
+		
+	if (winbindd_request(WINBINDD_GETPWUID, &request, &response)
+			== NSS_STATUS_SUCCESS) {
+#ifdef WB_AIX_DEBUG
+		printf("wb_aix - returned from winbind_request\n");
+#endif
 		return fill_pwent(&response.data.pw);
 	}
 	return NULL;	
@@ -326,22 +369,26 @@ wb_aix_getpwnam (const char *name)
 {
 /* take a username and return a filled struct passwd */
 
-	NSS_STATUS ret;
 	struct winbindd_response response;
 	struct winbindd_request request;
 	
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
-
+#ifdef WB_AIX_DEBUG
+	printf("wb_aix - getpwnam for %s\n", name);
+#endif
 	strncpy(request.data.username, name, 
 		sizeof(request.data.username) - 1);
 	request.data.username
 		[sizeof(request.data.username) - 1] = '\0';
 
-	ret = winbindd_request(WINBINDD_GETPWNAM, &request, &response);
 
-	if (ret == NSS_STATUS_SUCCESS) {
-		return fill_pwent(&response.data.pw);
+	if (winbindd_request(WINBINDD_GETPWNAM, &request, &response)
+			== NSS_STATUS_SUCCESS) {
+#ifdef WB_AIX_DEBUG
+		printf("wb_aix - returned from winbind_request\n");
+#endif		
+	return fill_pwent(&response.data.pw);
 	}
 	return NULL;
 }
@@ -351,20 +398,14 @@ wb_aix_init (struct secmethod_table *methods)
 {
 	memset(methods, 0, sizeof(*methods));
 
-	/* identification methods */
+	/* identification methods, this is the minimum requried for a
+	working module */
     
 	methods->method_getgrgid = wb_aix_getgrgid;
 	methods->method_getgrnam = wb_aix_getgrnam;
 	methods->method_getgrset = wb_aix_getgrset;
 	methods->method_getpwnam = wb_aix_getpwnam;
 	methods->method_getpwuid = wb_aix_getpwuid;
-    
-	/* support methods 
-	methods->method_open = wb_aix_open;
-	methods->method_close = wb_aix_close;
-	*/
-	
+
 	return AUTH_SUCCESS;
 }
-
-
