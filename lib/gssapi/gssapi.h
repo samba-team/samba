@@ -760,6 +760,11 @@ OM_uint32 gss_unseal
  * kerberos mechanism specific functions
  */
 
+OM_uint32
+gss_krb5_ccache_name(OM_uint32 * /*minor_status*/, 
+		     const char * /*name */,
+		     const char ** /*out_name */);
+
 OM_uint32 gsskrb5_register_acceptor_identity
         (const char */*identity*/);
 
