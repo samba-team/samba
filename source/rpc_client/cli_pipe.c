@@ -37,15 +37,10 @@ extern pstring global_myname;
 /********************************************************************
  rpc pipe call id 
  ********************************************************************/
-static uint32 call_id = 0;
 static uint32 get_rpc_call_id(void)
 {
+  static uint32 call_id = 0;
   return ++call_id;
-}
-
-static uint32 reset_rpc_call_id(void)
-{
-	call_id = 0;
 }
 
 /*******************************************************************
@@ -372,7 +367,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
                                 prs_struct *rhdr_auth,
                                 prs_struct *auth_req,
                                 prs_struct *auth_ntlm,
-				uint32 call_id,
+				uint32 rpc_call_id,
                                 RPC_IFACE *abstract, RPC_IFACE *transfer,
                                 char *my_name, char *domain, uint32 neg_flags)
 {
@@ -410,7 +405,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 	}
 
 	/* create the request RPC_HDR */
-	make_rpc_hdr(&hdr, RPC_BIND, 0x0, call_id,
+	make_rpc_hdr(&hdr, RPC_BIND, 0x0, rpc_call_id,
 	             (auth_req  != NULL ? auth_req ->offset : 0) +
 	             (auth_ntlm != NULL ? auth_ntlm->offset : 0) +
 	             (rhdr_auth != NULL ? rhdr_auth->offset : 0) +
@@ -456,7 +451,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,
 				uint32 ntlmssp_cli_flgs,
-				uint32 call_id,
+				uint32 rpc_call_id,
 				prs_struct *rhdr,
                                 prs_struct *rhdr_autha,
                                 prs_struct *auth_resp)
@@ -489,7 +484,7 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 	mem_realloc_data(auth_resp->data, auth_resp->offset);
 
 	/* create the request RPC_HDR */
-	make_rpc_hdr(&hdr, RPC_BINDRESP, 0x0, call_id,
+	make_rpc_hdr(&hdr, RPC_BINDRESP, 0x0, rpc_call_id,
 	             auth_resp->offset + rhdr_autha->offset + 0x10,
 	             auth_resp->offset);
 
@@ -800,7 +795,6 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	prs_struct hdr;
 	prs_struct hdr_rb;
 	prs_struct hdr_auth;
-	prs_struct hdr_autha;
 	prs_struct auth_req;
 	prs_struct auth_ntlm;
 	prs_struct data;
@@ -809,7 +803,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 
 	BOOL valid_ack = False;
 	BOOL ntlmssp_auth = cli->ntlmssp_cli_flgs != 0;
-	uint32 call_id;
+	uint32 rpc_call_id;
 
 	if (pipe_name == NULL || abstract == NULL || transfer == NULL)
 	{
@@ -829,12 +823,12 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	prs_init(&rdata    , 0   , 4, SAFETY_MARGIN, True);
 	prs_init(&rparam   , 0   , 4, SAFETY_MARGIN, True);
 
-	call_id = get_rpc_call_id();
+	rpc_call_id = get_rpc_call_id();
 	create_rpc_bind_req(&hdr, &hdr_rb,
 	                    ntlmssp_auth ? &hdr_auth : NULL,
 	                    ntlmssp_auth ? &auth_req : NULL,
 	                    ntlmssp_auth ? &auth_ntlm : NULL,
-	                    call_id,
+	                    rpc_call_id,
 	                    abstract, transfer,
 	                    global_myname, cli->domain, cli->ntlmssp_cli_flgs);
 
@@ -897,7 +891,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 			create_rpc_bind_resp(&cli->pwd, cli->domain,
 			                     cli->user_name, global_myname, 
 			                     cli->ntlmssp_cli_flgs,
-			                     call_id,
+			                     rpc_call_id,
 			                     &hdra, &hdr_autha, &auth_resp);
 			                    
 			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL);
@@ -938,8 +932,6 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	prs_mem_free(&rdata    );
 	prs_mem_free(&rparam   );
 
-	reset_rpc_call_id();
-
 	return valid_ack;
 }
 
@@ -952,8 +944,6 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
 	int fnum;
-
-	reset_rpc_call_id();
 
 	/******************* open the pipe *****************/
 	if (IS_BITS_SET_ALL(cli->capabilities, CAP_NT_SMBS))
@@ -1006,7 +996,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 		                    NTLMSSP_NEGOTIATE_00001000 |
 		                    NTLMSSP_NEGOTIATE_00002000;
  */
-		DEBUG(5,("cli_nt_session_open: neg_flags: %lx\n",
+		DEBUG(5,("cli_nt_session_open: neg_flags: %x\n",
 		         cli->ntlmssp_cli_flgs));
 	}
 

@@ -113,7 +113,6 @@ void cmd_sam_test(struct client_info *info)
 	fstring srv_name;
 	fstring domain;
 	fstring sid;
-	char *new_passwd;
 	BOOL res = True;
 
 	fstrcpy(sid   , info->dom.level5_sid);

@@ -222,5 +222,7 @@ BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16], BO
 	dump_data(100, data, 516);
 #endif
 	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, True);
+
+	return True;
 }
 
