@@ -40,6 +40,8 @@ DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner */
 DOM_SID global_sid_Creator_Owner;    /* Creator Owner */
 DOM_SID global_sid_NT_Authority;    /* NT Authority */
 
+const DOM_SID *global_sid_everyone = &global_sid_World;
+
 typedef struct _known_sid_users {
 	uint32 rid;
 	uint8 sid_name_use;
