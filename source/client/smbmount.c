@@ -158,7 +158,7 @@ static struct cli_state *do_connection(char *the_service)
 	c->use_spnego = False;
 
 	/* The kernel doesn't yet know how to sign it's packets */
-	c->sign_info->allow_smb_signing = False;
+	c->sign_info.allow_smb_signing = False;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
