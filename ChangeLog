@@ -1,5 +1,20 @@
 Sat Feb  8 15:59:56 1997  Assar Westerlund  <assar@pdc.kth.se>
 
+	* lib/asn1/parse.y: ifdef HAVE_STRDUP
+
+	* lib/asn1/lex.l: ifdef strdup
+	brange-dead version of list of special characters to make stupid
+ 	lex accept it.
+
+	* lib/asn1/gen.c: A DER integer should really be a `unsigned'
+
+	* lib/asn1/der_put.c: A DER integer should really be a `unsigned'
+
+	* lib/asn1/der_get.c: A DER integer should really be a `unsigned'
+
+	* lib/krb5/error/Makefile.am: It seems "$(SHELL) ./compile_et" is
+ 	needed.
+
 	* lib/krb/mk_rep.c, lib/krb/rd_req.c, lib/krb/store.c,
  	lib/krb/store.h: new files.
 
