@@ -1,5 +1,11 @@
 #include "kuser_locl.h"
+RCSID("$Id$");
 
+static void
+usage (void)
+{
+    errx (1, "Usage: %s [-f] [principal]", __progname);
+}
 
 int
 main (int argc, char **argv)
@@ -11,6 +17,25 @@ main (int argc, char **argv)
   krb5_principal server;
   krb5_creds cred;
   krb5_preauthtype pre_auth[] = {KRB5_PADATA_ENC_TIMESTAMP};
+  int c;
+  int forwardable = 0;
+  krb5_flags options = 0;
+
+  set_progname (argv[0]);
+
+  while ((c = getopt (argc, argv, "f")) != EOF) {
+      switch (c) {
+      case 'f':
+	  forwardable = 1;
+	  options = 1;		/* XXX */
+	  break;
+      default:
+	  usage ();
+      }
+  }
+  argc -= optind;
+  argv += optind;
+
 
   err = krb5_init_context (&context);
   if (err)
@@ -20,8 +45,8 @@ main (int argc, char **argv)
   if (err)
       errx (1, "%s", krb5_get_err_text(context, err));
   
-  if(argv[1]){
-      err = krb5_parse_name (context, argv[1], &principal);
+  if(argv[0]){
+      err = krb5_parse_name (context, argv[0], &principal);
       if (err)
 	  errx (1, "%s", krb5_get_err_text(context, err));
       
@@ -74,7 +99,7 @@ main (int argc, char **argv)
 #endif
 
   err = krb5_get_in_tkt_with_password (context,
-				       0,
+				       options,
 				       NULL,
 				       NULL,
 				       /*NULL*/ pre_auth,
@@ -83,7 +108,8 @@ main (int argc, char **argv)
 				       &cred,
 				       NULL);
   if (err)
-      errx (1, "%s", krb5_get_err_text(context, err));
+      errx (1, "krb5_get_in_tkt_with_password: %s",
+	    krb5_get_err_text(context, err));
   
   krb5_free_context (context);
   return 0;
