@@ -159,7 +159,7 @@ nextitem(char *current)
 	return current+3;
     case SB:		/* loop forever looking for the SE */
 	{
-	    register char *look = current+2;
+	    char *look = current+2;
 
 	    for (;;) {
 		if ((*look++&0xff) == IAC) {
@@ -194,7 +194,7 @@ nextitem(char *current)
     void
 netclear(void)
 {
-    register char *thisitem, *next;
+    char *thisitem, *next;
     char *good;
 #define	wewant(p)	((nfrontp > p) && ((*p&0xff) == IAC) && \
 				((*(p+1)&0xff) != EC) && ((*(p+1)&0xff) != EL))
@@ -323,7 +323,7 @@ netflush(void)
  *    len - How many bytes to write
  */
 	void
-writenet(register unsigned char *ptr, register int len)
+writenet(unsigned char *ptr, int len)
 {
 	/* flush buffer if no room for new data) */
 	if ((&netobuf[BUFSIZ] - nfrontp) < len) {
@@ -375,7 +375,7 @@ char editedhost[32];
 
 void edithost(char *pat, char *host)
 {
-	register char *res = editedhost;
+	char *res = editedhost;
 
 	if (!pat)
 		pat = "";
@@ -413,7 +413,7 @@ void edithost(char *pat, char *host)
 static char *putlocation;
 
 	void
-putstr(register char *s)
+putstr(char *s)
 {
 
 	while (*s)
@@ -517,7 +517,7 @@ void putf(char *cp, char *where)
  * Print telnet options and commands in plain text, if possible.
  */
 	void
-printoption(register char *fmt, register int option)
+printoption(char *fmt, int option)
 {
 	if (TELOPT_OK(option))
 		sprintf(nfrontp, "%s %s\r\n", fmt, TELOPT(option));
@@ -535,7 +535,7 @@ printsub(int direction, unsigned char *pointer, int length)
                  	         	/* where suboption data sits */
        			       		/* length of suboption data */
 {
-    register int i;
+    int i;
     char buf[512];
 
 	if (!(diagnostic & TD_OPTIONS))
@@ -546,7 +546,7 @@ printsub(int direction, unsigned char *pointer, int length)
 					direction == '<' ? "recv" : "send");
 	    nfrontp += strlen(nfrontp);
 	    if (length >= 3) {
-		register int j;
+		int j;
 
 		i = pointer[length-2];
 		j = pointer[length-1];
@@ -811,8 +811,8 @@ printsub(int direction, unsigned char *pointer, int length)
 	    break;
 
 	case TELOPT_STATUS: {
-	    register char *cp;
-	    register int j, k;
+	    char *cp;
+	    int j, k;
 
 	    sprintf(nfrontp, "STATUS");
 	    nfrontp += strlen(nfrontp);
@@ -927,7 +927,7 @@ printsub(int direction, unsigned char *pointer, int length)
 	    env_common:
 		nfrontp += strlen(nfrontp);
 		{
-		    register int noquote = 2;
+		    int noquote = 2;
 		    for (i = 2; i < length; i++ ) {
 			switch (pointer[i]) {
 			case NEW_ENV_VAR:
@@ -1167,9 +1167,9 @@ printsub(int direction, unsigned char *pointer, int length)
  * Dump a data buffer in hex and ascii to the output data stream.
  */
 	void
-printdata(register char *tag, register char *ptr, register int cnt)
+printdata(char *tag, char *ptr, int cnt)
 {
-	register int i;
+	int i;
 	char xbuf[30];
 
 	while (cnt) {

@@ -56,7 +56,7 @@ pop_dropinfo(POP *p)
     char                    buffer[BUFSIZ];         /*  Read buffer */
     MsgInfoList         *   mp;                     /*  Pointer to message 
                                                         info list */
-    register int            msg_num;                /*  Current message 
+    int			    msg_num;                /*  Current message 
                                                         counter */
     int                     nchar;                  /*  Bytes written/read */
 #ifdef UIDL

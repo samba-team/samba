@@ -132,7 +132,7 @@ setneturg()
     int
 netflush()
 {
-    register int n, n1;
+    int n, n1;
 
 #if	defined(ENCRYPTION)
     if (encrypt_output)

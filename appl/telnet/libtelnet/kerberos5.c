@@ -574,7 +574,7 @@ kerberos5_printsub(data, cnt, buf, buflen)
 	int cnt, buflen;
 {
 	char lbuf[32];
-	register int i;
+	int i;
 
 	buf[buflen-1] = '\0';		/* make sure its NULL terminated */
 	buflen -= 1;

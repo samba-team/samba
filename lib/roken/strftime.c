@@ -264,8 +264,8 @@ static int
 _secs(const struct tm *t)
 {
 	static char buf[15];
-	register time_t s;
-	register char *p;
+	time_t s;
+	char *p;
 	struct tm tmp;
 
 	/* Make a copy, mktime(3) modifies the tm struct. */
@@ -281,7 +281,7 @@ static int
 _conv(int n, int digits, int pad)
 {
 	static char buf[10];
-	register char *p;
+	char *p;
 
 	for (p = buf + sizeof(buf) - 2; n > 0 && p > buf; n /= 10, --digits)
 		*p-- = n % 10 + '0';
@@ -292,7 +292,7 @@ _conv(int n, int digits, int pad)
 
 static int
 _add(str)
-	register char *str;
+	char *str;
 {
 	for (;; ++pt, --gsize) {
 		if (!gsize)

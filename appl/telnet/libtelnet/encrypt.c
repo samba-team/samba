@@ -241,7 +241,7 @@ EncryptEnable(char *type, char *mode)
 int
 EncryptDisable(char *type, char *mode)
 {
-    register Encryptions *ep;
+    Encryptions *ep;
     int ret = 0;
 
     if (isprefix(type, "help") || isprefix(type, "?")) {
@@ -274,7 +274,7 @@ EncryptDisable(char *type, char *mode)
 int
 EncryptType(char *type, char *mode)
 {
-    register Encryptions *ep;
+    Encryptions *ep;
     int ret = 0;
 
     if (isprefix(type, "help") || isprefix(type, "?")) {
@@ -305,7 +305,7 @@ EncryptType(char *type, char *mode)
 int
 EncryptStart(char *mode)
 {
-    register int ret = 0;
+    int ret = 0;
     if (mode) {
 	if (isprefix(mode, "input"))
 	    return(EncryptStartInput());
@@ -512,7 +512,7 @@ encrypt_not(void)
 void
 encrypt_support(unsigned char *typelist, int cnt)
 {
-    register int type, use_type = 0;
+    int type, use_type = 0;
     Encryptions *ep;
 
     /*
@@ -553,7 +553,7 @@ void
 encrypt_is(unsigned char *data, int cnt)
 {
     Encryptions *ep;
-    register int type, ret;
+    int type, ret;
 
     if (--cnt < 0)
 	return;
@@ -597,7 +597,7 @@ void
 encrypt_reply(unsigned char *data, int cnt)
 {
     Encryptions *ep;
-    register int ret, type;
+    int ret, type;
 
     if (--cnt < 0)
 	return;
@@ -736,7 +736,7 @@ void encrypt_keyid(struct key_info *kp, unsigned char *keyid, int len)
 {
     Encryptions *ep;
     int dir = kp->dir;
-    register int ret = 0;
+    int ret = 0;
 
     if (!(ep = (*kp->getcrypt)(*kp->modep))) {
 	if (len == 0)
@@ -826,8 +826,8 @@ void
 encrypt_start_output(int type)
 {
     Encryptions *ep;
-    register unsigned char *p;
-    register int i;
+    unsigned char *p;
+    int i;
 
     if (!(ep = findencryption(type))) {
 	if (encrypt_debug_mode) {
@@ -902,8 +902,8 @@ encrypt_send_end(void)
 void
 encrypt_send_request_start(void)
 {
-    register unsigned char *p;
-    register int i;
+    unsigned char *p;
+    int i;
 
     p = &str_start[3];
     *p++ = ENCRYPT_REQSTART;
@@ -972,7 +972,7 @@ void
 encrypt_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 {
     Encryptions *ep;
-    register int type = data[1];
+    int type = data[1];
 
     for (ep = encryptions; ep->type && ep->type != type; ep++)
 	;

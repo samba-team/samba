@@ -14,9 +14,10 @@ RCSID("$Id$");
 int
 pop_msg(POP *p, int stat, char *format, ...)
 {
-    register char   *   mp;
+    char	       *mp;
     char                message[MAXLINELEN];
     va_list             ap;
+
     va_start(ap, format);
     
     /*  Point to the message buffer */

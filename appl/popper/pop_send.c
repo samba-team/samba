@@ -46,8 +46,8 @@ int
 pop_send(POP *p)
 {
     MsgInfoList         *   mp;         /*  Pointer to message info list */
-    register int            msg_num;
-    register int            msg_lines;
+    int		            msg_num;
+    int			    msg_lines;
     char                    buffer[MAXMSGLINELEN];
 #ifdef RETURN_PATH_HANDLING
     char		*   return_path_adr;

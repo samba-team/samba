@@ -16,7 +16,7 @@ int
 pop_parse(POP *p, char *buf)
 {
     char            *   mp;
-    register int        i;
+    int        i;
     
     /*  Loop through the POP command array */
     for (mp = buf, i = 0; ; i++) {

@@ -25,9 +25,9 @@ pop_updt (POP *p)
 
     MsgInfoList         *   mp;                     /*  Pointer to message 
                                                         info list */
-    register int            msg_num;                /*  Current message 
+    int		            msg_num;                /*  Current message 
                                                         counter */
-    register int            status_written;         /*  Status header field 
+    int			    status_written;         /*  Status header field 
                                                         written */
     int                     nchar;                  /* Bytes read/written */
 

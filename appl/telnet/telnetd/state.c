@@ -87,7 +87,7 @@ unsigned char *subsave;
 	void
 telrcv(void)
 {
-	register int c;
+	int c;
 	static int state = TS_DATA;
 
 	while (ncc > 0) {
@@ -1073,14 +1073,14 @@ int env_ovalue = -1;
 	void
 suboption(void)
 {
-    register int subchar;
+    int subchar;
 
     DIAG(TD_OPTIONS, {netflush(); printsub('<', subpointer, SB_LEN()+2);});
 
     subchar = SB_GET();
     switch (subchar) {
     case TELOPT_TSPEED: {
-	register int xspeed, rspeed;
+	int xspeed, rspeed;
 
 	if (his_state_is_wont(TELOPT_TSPEED))	/* Ignore if option disabled */
 		break;
@@ -1118,7 +1118,7 @@ suboption(void)
 
 	while ((terminaltype < (terminalname + sizeof terminalname-1)) &&
 								    !SB_EOF()) {
-	    register int c;
+	    int c;
 
 	    c = SB_GET();
 	    if (isupper(c)) {
@@ -1132,7 +1132,7 @@ suboption(void)
     }  /* end of case TELOPT_TTYPE */
 
     case TELOPT_NAWS: {
-	register int xwinsize, ywinsize;
+	int xwinsize, ywinsize;
 
 	if (his_state_is_wont(TELOPT_NAWS))	/* Ignore if option disabled */
 		break;
@@ -1157,7 +1157,7 @@ suboption(void)
 
 #ifdef	LINEMODE
     case TELOPT_LINEMODE: {
-	register int request;
+	int request;
 
 	if (his_state_is_wont(TELOPT_LINEMODE))	/* Ignore if option disabled */
 		break;
@@ -1237,8 +1237,8 @@ suboption(void)
     case TELOPT_NEW_ENVIRON:
 #endif
     case TELOPT_OLD_ENVIRON: {
-	register int c;
-	register char *cp, *varp, *valp;
+	int c;
+	char *cp, *varp, *valp;
 
 	if (SB_EOF())
 		return;
@@ -1269,7 +1269,7 @@ suboption(void)
 	     * reversed.
 	     */
 	    if (env_ovar < 0) {
-		register int last = -1;		/* invalid value */
+		int last = -1;		/* invalid value */
 		int empty = 0;
 		int got_var = 0, got_value = 0, got_uservar = 0;
 
@@ -1503,8 +1503,8 @@ doclientstat(void)
 send_status(void)
 {
 	unsigned char statusbuf[256];
-	register unsigned char *ncp;
-	register unsigned char i;
+	unsigned char *ncp;
+	unsigned char i;
 
 	ncp = statusbuf;
 

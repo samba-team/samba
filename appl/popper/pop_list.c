@@ -15,8 +15,8 @@ int
 pop_list (POP *p)
 {
     MsgInfoList         *   mp;         /*  Pointer to message info list */
-    register int            i;
-    register int            msg_num;
+    int		            i;
+    int			    msg_num;
 
     /*  Was a message number provided? */
     if (p->parm_count > 0) {

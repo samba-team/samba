@@ -114,7 +114,7 @@ init_terminal()
 ttyflush(drop)
     int drop;
 {
-    register int n, n0, n1;
+    int n, n0, n1;
 
     n0 = ring_full_count(&ttyoring);
     if ((n1 = n = ring_full_consecutive(&ttyoring)) > 0) {
@@ -204,7 +204,7 @@ setconnmode(force)
 #ifdef	ENCRYPTION
     static int enc_passwd = 0;
 #endif
-    register int newmode;
+    int newmode;
 
     newmode = getconnmode()|(force?MODE_FORCE:0);
 

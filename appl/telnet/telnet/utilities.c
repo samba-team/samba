@@ -72,7 +72,7 @@ int	prettydump;
 void
 upcase(char *argument)
 {
-    register int c;
+    int c;
 
     while ((c = *argument) != 0) {
 	if (islower(c)) {
@@ -187,7 +187,7 @@ printoption(char *direction, int cmd, int option)
 		else
 		    fprintf(NetTrace, "%s IAC %d", direction, option);
 	} else {
-		register char *fmt;
+		char *fmt;
 		fmt = (cmd == WILL) ? "WILL" : (cmd == WONT) ? "WONT" :
 			(cmd == DO) ? "DO" : (cmd == DONT) ? "DONT" : 0;
 		if (fmt) {
@@ -213,7 +213,7 @@ printoption(char *direction, int cmd, int option)
 void
 optionstatus(void)
 {
-    register int i;
+    int i;
     extern char will_wont_resp[], do_dont_resp[];
 
     for (i = 0; i < 256; i++) {
@@ -290,7 +290,7 @@ optionstatus(void)
 void
 printsub(char direction, unsigned char *pointer, int length)
 {
-    register int i;
+    int i;
     char buf[512];
     extern int want_status_response;
 
@@ -300,7 +300,7 @@ printsub(char direction, unsigned char *pointer, int length)
 	    fprintf(NetTrace, "%s IAC SB ",
 				(direction == '<')? "RCVD":"SENT");
 	    if (length >= 3) {
-		register int j;
+		int j;
 
 		i = pointer[length-2];
 		j = pointer[length-1];
@@ -651,8 +651,8 @@ printsub(char direction, unsigned char *pointer, int length)
 	    break;
 
 	case TELOPT_STATUS: {
-	    register char *cp;
-	    register int j, k;
+	    char *cp;
+	    int j, k;
 
 	    fprintf(NetTrace, "STATUS");
 
@@ -765,7 +765,7 @@ printsub(char direction, unsigned char *pointer, int length)
 		fprintf(NetTrace, "INFO ");
 	    env_common:
 		{
-		    register int noquote = 2;
+		    int noquote = 2;
 		    for (i = 2; i < length; i++ ) {
 			switch (pointer[i]) {
 			case NEW_ENV_VALUE:

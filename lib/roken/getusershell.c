@@ -111,8 +111,8 @@ setusershell()
 static char **
 initshells()
 {
-	register char **sp, *cp;
-	register FILE *fp;
+	char **sp, *cp;
+	FILE *fp;
 	struct stat statb;
 
 	if (shells != NULL)

@@ -58,7 +58,7 @@ static unsigned char	slcbuf[NSLC*6];	/* buffer for slc negotiation */
 	void
 send_slc()
 {
-	register int i;
+	int i;
 
 	/*
 	 * Send out list of triplets of special characters
@@ -82,7 +82,7 @@ send_slc()
 	void
 default_slc()
 {
-	register int i;
+	int i;
 
 	for (i = 1; i <= NSLC; i++) {
 		slctab[i].current.val = slctab[i].defset.val;
@@ -107,7 +107,7 @@ default_slc()
 	void
 get_slc_defaults(void)
 {
-	register int i;
+	int i;
 
 	init_termbuf();
 
@@ -128,8 +128,8 @@ get_slc_defaults(void)
  */
 	void
 add_slc(func, flag, val)
-	register char func, flag;
-	register cc_t val;
+	char func, flag;
+	cc_t val;
 {
 
 	if ((*slcptr++ = (unsigned char)func) == 0xff)
@@ -153,7 +153,7 @@ add_slc(func, flag, val)
  */
 	void
 start_slc(getit)
-	register int getit;
+	int getit;
 {
 
 	slcchange = 0;
@@ -172,9 +172,9 @@ start_slc(getit)
  */
 	int
 end_slc(bufp)
-	register unsigned char **bufp;
+	unsigned char **bufp;
 {
-	register int len;
+	int len;
 	void netflush();
 
 	/*
@@ -219,10 +219,10 @@ end_slc(bufp)
  */
 	void
 process_slc(func, flag, val)
-	register unsigned char func, flag;
-	register cc_t val;
+	unsigned char func, flag;
+	cc_t val;
 {
-	register int hislevel, mylevel, ack;
+	int hislevel, mylevel, ack;
 
 	/*
 	 * Ensure that we know something about this function
@@ -285,10 +285,10 @@ process_slc(func, flag, val)
  */
 	void
 change_slc(func, flag, val)
-	register char func, flag;
-	register cc_t val;
+	char func, flag;
+	cc_t val;
 {
-	register int hislevel, mylevel;
+	int hislevel, mylevel;
 
 	hislevel = flag & SLC_LEVELBITS;
 	mylevel = slctab[func].defset.flag & SLC_LEVELBITS;
@@ -396,7 +396,7 @@ cc_t oldeofc = '\004';
 	void
 check_slc()
 {
-	register int i;
+	int i;
 
 	for (i = 1; i <= NSLC; i++) {
 #if VEOF == VMIN
@@ -438,12 +438,12 @@ check_slc()
  */
 	void
 do_opt_slc(ptr, len)
-	register unsigned char *ptr;
-	register int len;
+	unsigned char *ptr;
+	int len;
 {
-	register unsigned char func, flag;
+	unsigned char func, flag;
 	cc_t val;
-	register unsigned char *end = ptr + len;
+	unsigned char *end = ptr + len;
 
 	if (terminit()) {  /* go ahead */
 		while (ptr < end) {

@@ -15,7 +15,7 @@ int
 pop_rset (POP *p)
 {
     MsgInfoList     *   mp;         /*  Pointer to the message info list */
-    register int        i;
+    int		        i;
 
     /*  Unmark all the messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++)

@@ -615,9 +615,9 @@ TerminalSpeeds(ispeed, ospeed)
     long *ospeed;
 {
 #ifdef	DECODE_BAUD
-    register struct termspeeds *tp;
+    struct termspeeds *tp;
 #endif	/* DECODE_BAUD */
-    register long in, out;
+    long in, out;
 
     out = cfgetospeed(&old_tc);
     in = cfgetispeed(&old_tc);
@@ -797,7 +797,7 @@ sys_telnet_init()
 process_rings(netin, netout, netex, ttyin, ttyout, poll)
     int poll;		/* If 0, then block until something to do */
 {
-    register int c;
+    int c;
 		/* One wants to be a bit careful about setting returnValue
 		 * to one, since a one implies we did some useful work,
 		 * and therefore probably won't be called to block next

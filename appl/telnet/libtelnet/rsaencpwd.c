@@ -257,7 +257,7 @@ rsaencpwd_is(ap, data, cnt)
 		 * the challenge, and verify it when the response comes back.
 		 */
 		if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_ONE_WAY) {
-		  register int i;
+		  int i;
 
 
 		  time(&now);
@@ -412,7 +412,7 @@ rsaencpwd_printsub(data, cnt, buf, buflen)
 	int cnt, buflen;
 {
 	char lbuf[32];
-	register int i;
+	int i;
 
 	buf[buflen-1] = '\0';		/* make sure its NULL terminated */
 	buflen -= 1;
@@ -485,7 +485,7 @@ prkey(msg, key)
 	char *msg;
 	unsigned char *key;
 {
-	register int i;
+	int i;
 	printf("%s:", msg);
 	for (i = 0; i < 8; i++)
 		printf(" %3d", key[i]);

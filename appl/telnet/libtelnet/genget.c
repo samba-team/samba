@@ -50,7 +50,7 @@ int
 isprefix(char *s1, char *s2)
 {
     char *os1;
-    register char c1, c2;
+    char c1, c2;
 
     if (*s1 == '\0')
 	return(-1);
@@ -74,8 +74,8 @@ genget(char *name, char **table, int stlen)
      /* name entry in table */
 	   	      
 {
-    register char **c, **found;
-    register int n;
+    char **c, **found;
+    int n;
 
     if (name == 0)
 	return 0;

@@ -62,7 +62,7 @@ getopt(nargc, nargv, ostr)
 	const char *ostr;
 {
 	static char *place = EMSG;		/* option letter processing */
-	register char *oli;			/* option letter list index */
+	char *oli;			/* option letter list index */
 	char *p;
 
 	if (optreset || !*place) {		/* update scanning pointer */

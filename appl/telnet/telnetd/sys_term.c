@@ -827,7 +827,7 @@ struct termspeeds {
 tty_tspeed(int val)
 {
 #ifdef	DECODE_BAUD
-	register struct termspeeds *tp;
+	struct termspeeds *tp;
 
 	for (tp = termspeeds; (tp->speed != -1) && (val > tp->speed); tp++)
 		;
@@ -843,7 +843,7 @@ tty_tspeed(int val)
 tty_rspeed(int val)
 {
 #ifdef	DECODE_BAUD
-	register struct termspeeds *tp;
+	struct termspeeds *tp;
 
 	for (tp = termspeeds; (tp->speed != -1) && (val > tp->speed); tp++)
 		;
@@ -932,7 +932,7 @@ static void maybe_push_modules(int fd, char **modules)
  */
 void getptyslave(void)
 {
-	register int t = -1;
+	int t = -1;
 
 # ifdef	LINEMODE
 	int waslm;
@@ -1093,7 +1093,7 @@ void getptyslave(void)
 
 int cleanopen(char *line)
 {
-	register int t;
+	int t;
 
 #ifdef STREAMSPTY
 	if (!really_stream)
@@ -1133,7 +1133,7 @@ int cleanopen(char *line)
 # endif
 # if	defined(CRAY) && defined(TCVHUP)
 	{
-		register int i;
+		int i;
 		(void) signal(SIGHUP, SIG_IGN);
 		(void) ioctl(t, TCVHUP, (char *)0);
 		(void) signal(SIGHUP, SIG_DFL);
@@ -1219,7 +1219,7 @@ int login_tty(int t)
 	void
 startslave(char *host, int autologin, char *autoname)
 {
-	register int i;
+	int i;
 	char name[256];
 
 #if	defined(AUTHENTICATION)
@@ -1254,7 +1254,7 @@ startslave(char *host, int autologin, char *autoname)
 		 * signal to child to tell when done.  Child waits for signal
 		 * before doing anything important.
 		 */
-		register int pid = i;
+		int pid = i;
 		void sigjob P((int));
 
 		setpgrp();
@@ -1354,14 +1354,14 @@ int addarg(struct arg_val*, char*);
 
 void start_login(char *host, int autologin, char *name)
 {
-	register char *cp;
+	char *cp;
 	struct arg_val argv;
 	extern char *getenv(const char *);
 
 #ifdef	HAVE_UTMPX
 	char id_buf[3];
 	int ptynum;
-	register int pid = getpid();
+	int pid = getpid();
 	struct utmpx utmpx;
 #endif
 
@@ -1465,7 +1465,7 @@ void start_login(char *host, int autologin, char *name)
 		 */
 
 		if (ourpty > 2) {
-			register char *cp;
+			char *cp;
 			char speed[128];
 			int isecho, israw, xpty, len;
 			extern int def_rspeed;
@@ -1538,7 +1538,7 @@ void start_login(char *host, int autologin, char *name)
 		addarg(&argv, getenv("USER"));
 #if	defined(LOGIN_ARGS) && defined(NO_LOGIN_P)
 		{
-			register char **cpp;
+			char **cpp;
 			for (cpp = environ; *cpp; cpp++) {
 				addarg(&argv, *cpp);
 			}
@@ -1653,7 +1653,7 @@ static
 void
 rmut(void)
 {
-	register f;
+	f;
 	int found = 0;
 	struct utmp *u, *utmp;
 	int nutmp;
@@ -1760,7 +1760,7 @@ cleanup(int sig)
 {
 #  ifdef CRAY
     static int incleanup = 0;
-    register int t;
+    int t;
     int child_status; /* status of child process as returned by waitpid */
     int flags = WNOHANG|WUNTRACED;
     
@@ -1904,8 +1904,8 @@ static int gotsigjob = 0;
 sigjob(sig)
 	int sig;
 {
-	register int jid;
-	register struct jobtemp *jp;
+	int jid;
+	struct jobtemp *jp;
 
 	while ((jid = waitjob(NULL)) != -1) {
 		if (jid == 0) {
@@ -1948,11 +1948,11 @@ jid_getutid(jid)
  */
 	int
 cleantmp(wtp)
-	register struct utmp *wtp;
+	struct utmp *wtp;
 {
 	struct utmp *utp;
 	static int first = 1;
-	register int mask, omask, ret;
+	int mask, omask, ret;
 	extern struct utmp *getutid P((const struct utmp *_Id));
 
 
@@ -1989,9 +1989,9 @@ cleantmp(wtp)
 
 	int
 jobend(jid, path, user)
-	register int jid;
-	register char *path;
-	register char *user;
+	int jid;
+	char *path;
+	char *user;
 {
 	static int saved_jid = 0;
 	static int pty_saved_jid = 0;
@@ -2051,9 +2051,9 @@ jobend(jid, path, user)
  * Fork a child process to clean up the TMPDIR
  */
 cleantmpdir(jid, tpath, user)
-	register int jid;
-	register char *tpath;
-	register char *user;
+	int jid;
+	char *tpath;
+	char *user;
 {
 	switch(fork()) {
 	case -1:

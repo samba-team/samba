@@ -47,9 +47,9 @@ static
 int
 __icheckhost(u_int32_t raddr, const char *lhost)
 {
-	register struct hostent *hp;
-	register u_long laddr;
-	register char **pp;
+	struct hostent *hp;
+	u_long laddr;
+	char **pp;
 
 	/* Try for raw ip address first. */
 	if (isdigit(*lhost) && (long)(laddr = inet_addr(lhost)) != -1)
@@ -84,7 +84,7 @@ static
 int
 __ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser, const char *ruser)
 {
-	register char *user, *p;
+	char *user, *p;
 	int ch;
 	char buf[MaxHostNameLen + 128];		/* host + login */
 	char hname[MaxHostNameLen];
@@ -210,7 +210,7 @@ __ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser, const char *ruser)
 int
 iruserok(u_int32_t raddr, int superuser, const char *ruser, const char *luser)
 {
-	register char *cp;
+	char *cp;
 	struct stat sbuf;
 	struct passwd *pwd;
 	FILE *hostf;

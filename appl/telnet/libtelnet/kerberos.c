@@ -432,7 +432,7 @@ void
 kerberos4_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 {
     char lbuf[32];
-    register int i;
+    int i;
 
     buf[buflen-1] = '\0';		/* make sure its NULL terminated */
     buflen -= 1;
@@ -523,7 +523,7 @@ prkey(msg, key)
      char *msg;
      unsigned char *key;
 {
-    register int i;
+    int i;
     printf("%s:", msg);
     for (i = 0; i < 8; i++)
 	printf(" %3d", key[i]);

@@ -985,7 +985,7 @@ char *
 getline(char *s, int n)
 {
 	int c;
-	register char *cs;
+	char *cs;
 
 	cs = s;
 /* tmpline may contain saved command from urgent mode interruption */
@@ -1036,8 +1036,8 @@ getline(char *s, int n)
 			/* Don't syslog passwords */
 			syslog(LOG_DEBUG, "command: %.5s ???", s);
 		} else {
-			register char *cp;
-			register int len;
+			char *cp;
+			int len;
 
 			/* Don't syslog trailing CR-LF */
 			len = strlen(s);

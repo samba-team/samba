@@ -17,7 +17,7 @@ parsetos(name, proto)
 char	*name;
 char	*proto;
 {
-	register char	*c;
+	char	*c;
 	int		tos;
 	struct tosent	*tosp;
 

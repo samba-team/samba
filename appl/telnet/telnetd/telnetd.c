@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 {
 	struct sockaddr_in from;
 	int on = 1, fromlen;
-	register int ch;
+	int ch;
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
 	int tos = -1;
 #endif
@@ -999,7 +999,7 @@ telnet(f, p)
 
 #ifdef  TIOCNOTTY
 	{
-		register int t;
+		int t;
 		t = open(_PATH_TTY, O_RDWR);
 		if (t >= 0) {
 			(void) ioctl(t, TIOCNOTTY, (char *)0);
@@ -1058,7 +1058,7 @@ telnet(f, p)
 	nfd = ((f > p) ? f : p) + 1;
 	for (;;) {
 		fd_set ibits, obits, xbits;
-		register int c;
+		int c;
 
 		if (ncc < 0 && pcc < 0)
 			break;
