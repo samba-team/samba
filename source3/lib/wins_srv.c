@@ -89,7 +89,7 @@
 typedef struct
   {
   ubi_slNode     node;      /* Linked list node structure.                  */
-  time_t         mourning;  /* If > current time then  server is dead, Jim. */
+  time_t         mourning;  /* If > current time then server is dead, Jim.  */
   char          *server;    /* DNS name or IP of NBNS server to query.      */
   struct in_addr ip_addr;   /* Cache translated IP.                         */
   } list_entry;
@@ -120,6 +120,7 @@ BOOL wins_srv_load_list( char *src )
    *          to the ip_addr field of the entry.  Don't bother to to a host
    *          name lookup on all names now.  They're done as needed in
    *          wins_srv_ip().
+   * ------------------------------------------------------------------------ **
    */
   {
   list_entry   *entry;
@@ -148,14 +149,24 @@ BOOL wins_srv_load_list( char *src )
     else
       {
       entry->mourning = 0;
+      /* Create a copy of the server name and store it in the list. */
       if( NULL == (entry->server = strdup( wins_id_bufr )) )
         {
         free( entry );
-        DEBUG( 0, ("wins_srv_load_list(): strdup(\"%s\") failed.\n", wins_id_bufr) );
+        DEBUG( 0,
+          ("wins_srv_load_list(): strdup(\"%s\") failed.\n", wins_id_bufr) );
         }
       else
         {
-        /* Add server to list. */
+        /* Add server to list.
+         * If the server name was actually an IP address we will store that
+         * too.  It it was a DNS name, we will wait until we need to use
+         * the WINS server before doing the DNS lookup.  Since this may be
+         * a list, and since we will reload the list whenever smb.conf is
+         * reloaded, there's no point in trying to look up names until we
+         * need them.  ...of course, once we do the lookup we will cache
+         * the result.  See wins_srv_ip().
+         */
         if( is_ipaddress( wins_id_bufr ) )
           entry->ip_addr = *interpret_addr2( wins_id_bufr );
         else
@@ -167,7 +178,8 @@ BOOL wins_srv_load_list( char *src )
     }
 
   count = ubi_slCount( wins_srv_list );
-  DEBUGADD( 4, ( "%d WINS server%s listed.\n", (int)count, (1==count)?"":"s" ) );
+  DEBUGADD( 4,
+    ( "%d WINS server%s listed.\n", (int)count, (1==count)?"":"s" ) );
 
   return( (count > 0) ? True : False );
   } /* wins_srv_load_list */
@@ -175,6 +187,19 @@ BOOL wins_srv_load_list( char *src )
 
 struct in_addr wins_srv_ip( void )
   /* ------------------------------------------------------------------------ **
+   * Return the IP address of an NBNS (WINS) server thought to be active.
+   *
+   *  Input:  none.
+   *
+   *  Output: An IP address in struct in_addr form.
+   *
+   *  Notes:  This function will return the IP address of the first available
+   *          NBNS (WINS) server.  The order of the list is determined in
+   *          smb.conf.  If all of the WINS servers have been marked 'dead'
+   *          then the zero IP (0.0.0.0) is returned.  The zero IP is not a
+   *          valid Unicast address on any system.
+   *
+   * ------------------------------------------------------------------------ **
    */
   {
   time_t      now     = time(NULL);
@@ -202,16 +227,61 @@ struct in_addr wins_srv_ip( void )
   } /* wins_srv_ip */
 
 
+char *wins_srv_name( void )
+  /* ------------------------------------------------------------------------ **
+   * Return the name of first live WINS server in the list.
+   *
+   *  Input:  none.
+   *
+   *  Output: A pointer to a string containing either the DNS name or IP
+   *          address of the WINS server as given in the WINS SERVER
+   *          parameter in smb.conf, or NULL if no (live) WINS servers are
+   *          in the list.
+   *
+   *  Notes:  This function will return the name of the first available
+   *          NBNS (WINS) server.  The order of the list is determined in
+   *          smb.conf.  If all of the WINS servers have been marked 'dead'
+   *          then NULL is returned.
+   *
+   *        - This function does not verify that the name can be mapped to
+   *          an IP address, or that the WINS server is running.
+   *
+   * ------------------------------------------------------------------------ **
+   */
+  {
+  time_t      now     = time(NULL);
+  list_entry *entry   = (list_entry *)ubi_slFirst( wins_srv_list );
+   
+  while( NULL != entry )
+    {
+    if( now >= entry->mourning )
+      return( entry->server );          /* Found a live one. */
+    entry = (list_entry *)ubi_slNext( entry );
+    }
+   
+  /* If there are no live entries, return NULL. */
+  return( NULL );
+  } /* wins_srv_name */
+
+
 void wins_srv_died( struct in_addr boothill_ip )
   /* ------------------------------------------------------------------------ **
    * Called to indicate that a specific WINS server has died.
+   *
+   *  Input:  boothill_ip - IP address of an NBNS (WINS) server that has
+   *                        failed.
+   *
+   *  Notes:  This function marks the record 'dead' for NECROMANCYCLE
+   *          seconds.  
+   *
+   * ------------------------------------------------------------------------ **
    */
   {
   list_entry *entry;
 
   if( zero_ip( boothill_ip ) )
     {
-    DEBUG( 4, ("wins_srv_died(): Got request to mark zero IP down.\n") );
+    DEBUG( 4, ("wins_srv_died(): Invalid request to mark zero IP down.\n") );
     return;
     }
 
@@ -242,6 +312,7 @@ void wins_srv_died( struct in_addr boothill_ip )
 unsigned long wins_srv_count( void )
   /* ------------------------------------------------------------------------ **
    * Return the total number of entries in the list, dead or alive.
+   * ------------------------------------------------------------------------ **
    */
   {
   unsigned long count = ubi_slCount( wins_srv_list );
