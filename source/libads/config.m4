@@ -427,6 +427,7 @@ if test x"$with_ads_support" != x"no"; then
     AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
     AC_MSG_CHECKING(whether Active Directory and KRB5 support is used)
     AC_MSG_RESULT(yes)
+    with_ads_support=yes
     SMB_EXT_LIB_ENABLE(KRB5,YES)
   else
     if test x"$with_ads_support" = x"yes"; then
