@@ -3446,6 +3446,10 @@ BOOL samr_io_q_query_useraliases(char *desc, SAMR_Q_QUERY_USERALIASES * q_u,
 		return False;
 	if(!prs_uint32("ptr      ", ps, depth, &q_u->ptr))
 		return False;
+
+	if (q_u->ptr==0)
+		return True;
+
 	if(!prs_uint32("num_sids2", ps, depth, &q_u->num_sids2))
 		return False;
 
@@ -3562,8 +3566,7 @@ BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
 		return False;
 
 	if (r_u->ptr != 0) {
-		if(!samr_io_rids("rids", &r_u->num_entries2, &r_u->rid, ps,
-			     depth))
+		if(!samr_io_rids("rids", &r_u->num_entries2, &r_u->rid, ps, depth))
 			return False;
 	}
 
@@ -3775,18 +3778,23 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 		return False;
 	if(!prs_uint32("ptr_names ", ps, depth, &r_u->ptr_names))
 		return False;
-	if(!prs_uint32("num_names2", ps, depth, &r_u->num_names2))
-		return False;
 
-	if (UNMARSHALLING(ps) && (r_u->ptr_names != 0) && (r_u->num_names1 != 0)) {
-		r_u->hdr_name = (UNIHDR *) prs_alloc_mem(ps, r_u->num_names2 * sizeof(r_u->hdr_name[0]));
-		if (r_u->hdr_name == NULL)
+	if (r_u->ptr_names != 0) {
+
+		if(!prs_uint32("num_names2", ps, depth, &r_u->num_names2))
 			return False;
 
-		r_u->uni_name = (UNISTR2 *)prs_alloc_mem(ps, r_u->num_names2 * sizeof(r_u->uni_name[0]));
-		if (r_u->uni_name == NULL)
-			return False;
 
+		if (UNMARSHALLING(ps) && (r_u->num_names2 != 0)) {
+			r_u->hdr_name = (UNIHDR *) prs_alloc_mem(ps, r_u->num_names2 * sizeof(r_u->hdr_name[0]));
+			if (r_u->hdr_name == NULL)
+				return False;
+
+			r_u->uni_name = (UNISTR2 *)prs_alloc_mem(ps, r_u->num_names2 * sizeof(r_u->uni_name[0]));
+			if (r_u->uni_name == NULL)
+				return False;
+		}
+		
 		for (i = 0; i < r_u->num_names2; i++) {
 			slprintf(tmp, sizeof(tmp) - 1, "hdr[%02d]  ", i);
 			if(!smb_io_unihdr("", &r_u->hdr_name[i], ps, depth))
@@ -3794,25 +3802,29 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 		}
 		for (i = 0; i < r_u->num_names2; i++) {
 			slprintf(tmp, sizeof(tmp) - 1, "str[%02d]  ", i);
-			if(!smb_io_unistr2("", &r_u->uni_name[i],
-				       r_u->hdr_name[i].buffer, ps, depth))
+			if(!smb_io_unistr2("", &r_u->uni_name[i], r_u->hdr_name[i].buffer, ps, depth))
 				return False;
 		}
-	}
 
+	}
+	
 	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("num_types1", ps, depth, &r_u->num_types1))
 		return False;
 	if(!prs_uint32("ptr_types ", ps, depth, &r_u->ptr_types))
 		return False;
-	if(!prs_uint32("num_types2", ps, depth, &r_u->num_types2))
-		return False;
 
-	if (UNMARSHALLING(ps) && (r_u->ptr_types != 0) && (r_u->num_types1 != 0)) {
-		r_u->type = (uint32 *)prs_alloc_mem(ps, r_u->num_types2 * sizeof(r_u->type[0]));
-		if (r_u->type == NULL)
+	if (r_u->ptr_types != 0) {
+
+		if(!prs_uint32("num_types2", ps, depth, &r_u->num_types2))
 			return False;
+
+		if (UNMARSHALLING(ps) && (r_u->num_types2 != 0)) {
+			r_u->type = (uint32 *)prs_alloc_mem(ps, r_u->num_types2 * sizeof(r_u->type[0]));
+			if (r_u->type == NULL)
+				return False;
+		}
 
 		for (i = 0; i < r_u->num_types2; i++) {
 			slprintf(tmp, sizeof(tmp) - 1, "type[%02d]  ", i);

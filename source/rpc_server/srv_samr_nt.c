@@ -1174,7 +1174,7 @@ makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 
 static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring names[],
-									UNIHDR **pp_hdr_name, UNISTR2 **pp_uni_name)
+	    UNIHDR **pp_hdr_name, UNISTR2 **pp_uni_name)
 {
 	uint32 i;
 	UNIHDR *hdr_name;
@@ -1191,19 +1191,19 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 		uni_name = (UNISTR2 *)talloc(ctx,sizeof(UNISTR2)*num_names);
 		if (uni_name == NULL)
 			return False;
-    }
+	}
 
-    for (i = 0; i < num_names; i++) {
-        int len = names[i] != NULL ? strlen(names[i]) : 0;
-        DEBUG(10, ("names[%d]:%s\n", i, names[i]));
-        init_uni_hdr(&hdr_name[i], len);
-        init_unistr2(&uni_name[i], names[i], len);
-    }
+	for (i = 0; i < num_names; i++) {
+		int len = names[i] != NULL ? strlen(names[i]) : 0;
+		DEBUG(10, ("names[%d]:%s\n", i, names[i]));
+		init_uni_hdr(&hdr_name[i], len);
+		init_unistr2(&uni_name[i], names[i], len);
+	}
 
 	*pp_uni_name = uni_name;
 	*pp_hdr_name = hdr_name;
 
-    return True;
+	return True;
 }
 
 /*******************************************************************
@@ -1217,28 +1217,28 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
-    int num_rids = q_u->num_rids1;
-    int i;
+	int num_rids = q_u->num_rids1;
+	int i;
 
-    r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_NOPROBLEMO;
 
-    DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
+	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
-    /* find the policy handle.  open a policy on it. */
-    if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid))
-        return NT_STATUS_INVALID_HANDLE;
+	/* find the policy handle.  open a policy on it. */
+	if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid))
+		return NT_STATUS_INVALID_HANDLE;
 
-    if (num_rids > MAX_SAM_ENTRIES) {
-        num_rids = MAX_SAM_ENTRIES;
-        DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_rids));
-    }
+	if (num_rids > MAX_SAM_ENTRIES) {
+		num_rids = MAX_SAM_ENTRIES;
+		DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_rids));
+	}
 
 	r_u->status = NT_STATUS_NONE_MAPPED;
 
-    for (i = 0; i < num_rids; i++) {
-        fstring tmpname;
-        fstring domname;
-       	DOM_SID sid;
+	for (i = 0; i < num_rids; i++) {
+		fstring tmpname;
+		fstring domname;
+		DOM_SID sid;
    		enum SID_NAME_USE type;
 
 		group_attrs[i] = SID_NAME_UNKNOWN;
@@ -1249,7 +1249,7 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 			sid_append_rid(&sid, q_u->rid[i]);
 
 			if (lookup_sid(&sid, domname, tmpname, &type)) {
-    			r_u->status = NT_STATUS_NOPROBLEMO;
+				r_u->status = NT_STATUS_NOPROBLEMO;
 				group_attrs[i] = (uint32)type;
 				fstrcpy(group_names[i],tmpname);
 			}
@@ -1259,11 +1259,11 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, group_names, &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
 
-    init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, group_attrs);
+	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, group_attrs);
 
-    DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
+	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -2296,8 +2296,8 @@ uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SE
 
 uint32 _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-	DEBUG(0,("_samr_query_useraliases: Not yet implemented.\n"));
-	return False;
+  DEBUG(0,("_samr_query_useraliases: Not yet implemented.\n"));
+  return False;
 }
 
 /*********************************************************************
