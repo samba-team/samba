@@ -1,0 +1,88 @@
+the netbios expected response code is a key part of samba's NetBIOS
+handling capabilities. it allows samba to carry on dealing with
+other things while expecting a response from one or more hosts.
+this allows samba to simultaneously deal with registering its names
+with another WINS server, register its names on its local subnets,
+query any hosts that have registered with samba in its capacity as
+a WINS server, and at a later date it will be also be able handle
+END-NODE CHALLENGES (see rfc1001.txt 15.2.2.2 and 15.2.2.3 - secured
+NBNS functionality). all at once!
+
+when a netbios packet is sent out by samba and it expects a response,
+a record of all the relevant information is kept (most importantly,
+the unique transaction id associated which will come back to us in
+a response packet is recorded, and also recorded is the reason that
+the original packet was sent out by samba in the first place!).
+
+if a response is received, then the unique transaction identifier 
+returned in the response packet is searched for in the expected
+response records. the record indicates why the initial request was
+made (and therefore the type of response can be verified) and
+appropriate action can be taken.
+
+when no responses, after a number of retries, are not received, then
+samba may take appropriate action.
+
+nameresp.c deals with the maintenance of the netbios response records:
+their creation, retransmission, and eventual removal.
+
+
+/*************************************************************************
+  dead_netbios_entry()
+  *************************************************************************/
+
+this function is responsible for dealing with the case when a NetBIOS
+response to a packet sent out by samba was not received. for certain
+transactions, this may be normal. for others, under certain conditions
+it may constitute either an error or a problem with or failure of one
+or more hosts.
+
+- NAME_QUERY_CONFIRM
+
+when a samba 'command' of type NAME_QUERY_CONFIRM is sent, a response
+may or may not be forthcoming. if no response is received to a unique
+name, then the record is removed from samba's WINS database. non-unique
+names are simply expected to die off on a time-to-live basis (see
+rfc1001.txt 15.1.3.4)
+
+query_refresh_names() issues this samba 'command'
+response_name_query_sync() deals with responses to NAME_QUERY_CONFIRM.
+
+- NAME_QUERY_MST_CHK
+
+when a samba 'command' of type NAME_QUERY_MST_CHK is sent, and a response
+is not received, this implies that a master browser will have failed.
+remedial action may need to be taken, for example if samba is a member
+of that workgroup and it is also a potential master browser it could
+force an election.
+
+check_master_browser() issues this samba 'command'.
+response_process() does nothing if a response is received. this is normal.
+
+- NAME_RELEASE
+
+when a samba 'command' of type NAME_RELEASE is sent, and a response is
+not received, it is assumed to be acceptable to release the name. if the
+original response was sent to another WINS server, then that WINS server
+may be inaccessible or may have failed. if so, then at a later date
+samba should take this into account (see rfc1001.txt 10.3).
+
+remove_name_entry() issues this samba 'command'
+response_name_rel() deals with responses to NAME_RELEASE.
+
+- NAME_REGISTER
+
+when a samba 'command' of type NAME_REGISTER is sent, and a response is
+not received, if the registration was done by broadcast, it is assumed
+that there are no objections to the registration of this name, and samba
+adds the name to the appropriate subnet record name database. if the
+registration was point-to-point (i.e with another WINS server) then that
+WINS server may be inaccessible or may have failed. if so, then at a later
+date samba should take this into account (see rfc1001.txt 10.3).
+
+add_my_name_entry() issues this samba 'command'
+response_name_reg() deals with responses to NAME_REGISTER.
+
+no action is taken for any other kinds of samba 'commands' if a response
+is not received. this is not to say that action may not be appropriate,
+just that it's not been looked at yet :-)
