@@ -76,7 +76,6 @@ int reply_special(char *inbuf,char *outbuf)
 	pstring name1,name2;
 	extern fstring remote_machine;
 	extern fstring local_machine;
-	char *p;
 	int len;
 	char name_type = 0;
 	
@@ -99,21 +98,18 @@ int reply_special(char *inbuf,char *outbuf)
 			 name1,name2));      
 
 		fstrcpy(remote_machine,name2);
+		remote_machine[15] = 0;
 		trim_string(remote_machine," "," ");
-		p = strchr(remote_machine,' ');
 		strlower(remote_machine);
-		if (p) *p = 0;
 
 		fstrcpy(local_machine,name1);
-		trim_string(local_machine," "," ");
 		len = strlen(local_machine);
 		if (len == 16) {
 			name_type = local_machine[15];
 			local_machine[15] = 0;
 		}
-		p = strchr(local_machine,' ');
+		trim_string(local_machine," "," ");
 		strlower(local_machine);
-		if (p) *p = 0;
 
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
@@ -1443,7 +1439,11 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int fnum = -1;
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
-  BOOL oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
+  /* Breakout the oplock request bits so we can set the
+     reply bits separately. */
+  BOOL ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
+  BOOL core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+  BOOL oplock_request = ex_oplock_request | core_oplock_request;
 #if 0
   int open_flags = SVAL(inbuf,smb_vwv2);
   int smb_sattr = SVAL(inbuf,smb_vwv4); 
@@ -1510,13 +1510,29 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+  /* If the caller set the extended oplock request bit
+     and we granted one (by whatever means) - set the
+     correct bit for extended oplock reply.
+   */
+
+  if (ex_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
+  }
+
+  if(ex_oplock_request && fsp->granted_oplock) {
+    smb_action |= EXTENDED_OPLOCK_GRANTED;
+  }
+
+  /* If the caller set the core oplock request bit
+     and we granted one (by whatever means) - set the
+     correct bit for core oplock reply.
+   */
+
+  if (core_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
-  if(fsp->granted_oplock) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
+  if(core_oplock_request && fsp->granted_oplock) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
@@ -3354,12 +3370,21 @@ int reply_mv(char *inbuf,char *outbuf)
 
 	    error = ERRnoaccess;
 	    sprintf(fname,"%s/%s",directory,dname);
-	    if (!can_rename(fname,cnum)) continue;
+	    if (!can_rename(fname,cnum)) {
+		    DEBUG(6,("rename %s refused\n", fname));
+		    continue;
+	    }
 	    pstrcpy(destname,newname);
 
-	    if (!resolve_wildcards(fname,destname)) continue;
+	    if (!resolve_wildcards(fname,destname)) {
+		    DEBUG(6,("resolve_wildcards %s %s failed\n", 
+			     fname, destname));
+		    continue;
+	    }
 
 	    if (file_exist(destname,NULL)) {
+		    DEBUG(6,("file_exist %s\n", 
+			     destname));
 	      error = 183;
 	      continue;
 	    }
@@ -3691,7 +3716,14 @@ dev = %x, inode = %x\n",
 
     /* if this is a pure oplock break request then don't send a reply */
     if (num_locks == 0 && num_ulocks == 0)
+    {
+      /* Sanity check - ensure a pure oplock break is not a
+         chained request. */
+      if(CVAL(inbuf,smb_vwv0) != 0xff)
+        DEBUG(0,("reply_lockingX: Error : pure oplock break is a chained %d request !\n",
+                 (unsigned int)CVAL(inbuf,smb_vwv0) ));
 	    return -1;
+    }
   }
 
   /* Data now points at the beginning of the list

@@ -24,7 +24,7 @@
 extern int DEBUGLEVEL;
 
 struct in_addr ipzero;
-struct in_addr wins_ip;
+struct in_addr allones_ip;
 struct in_addr loopback_ip;
 static struct in_addr default_ip;
 static struct in_addr default_bcast;
@@ -33,7 +33,7 @@ static BOOL got_ip=False;
 static BOOL got_bcast=False;
 static BOOL got_nmask=False;
 
-struct interface *local_interfaces  = NULL;
+static struct interface *local_interfaces  = NULL;
 
 struct interface *last_iface;
 
@@ -155,7 +155,7 @@ static void get_broadcast(struct in_addr *if_ipaddr,
       }
     }
   }
-#elif defined(__FreeBSD__) || defined(NETBSD) || defined(AMIGA) || defined(_AIX41)
+#elif defined(__FreeBSD__) || defined(NETBSD) || defined(AMIGA) || defined(_AIX41) || defined(__OpenBSD__)
   ifc.ifc_len = sizeof(buff);
   ifc.ifc_buf = buff;
   if (ioctl(sock, SIOCGIFCONF, &ifc) < 0) {
@@ -262,7 +262,7 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
   struct in_addr ip;
 
   ipzero = *interpret_addr2("0.0.0.0");
-  wins_ip = *interpret_addr2("255.255.255.255");
+  allones_ip = *interpret_addr2("255.255.255.255");
   loopback_ip = *interpret_addr2("127.0.0.1");
 
   while (next_token(&ptr,token,NULL)) {
@@ -425,6 +425,33 @@ int iface_count(void)
 }
 
 /****************************************************************************
+ True if we have two or more interfaces.
+  **************************************************************************/
+BOOL we_are_multihomed()
+{
+  static int multi = -1;
+
+  if(multi == -1)
+    multi = (iface_count() > 1 ? True : False);
+
+  return multi;
+}
+
+/****************************************************************************
+  return the Nth interface
+  **************************************************************************/
+struct interface *get_interface(int n)
+{ 
+  struct interface *i;
+  
+  for (i=local_interfaces;i && n;i=i->next)
+    n--;
+
+  if (i) return i;
+  return NULL;
+}
+
+/****************************************************************************
   return IP of the Nth interface
   **************************************************************************/
 struct in_addr *iface_n_ip(int n)
@@ -453,7 +480,9 @@ static struct interface *iface_find(struct in_addr ip)
 }
 
 /* these 3 functions return the ip/bcast/nmask for the interface
-   most appropriate for the given ip address */
+   most appropriate for the given ip address. If they can't find
+   an appropriate interface they return the requested field of the
+   first known interface. */
 
 struct in_addr *iface_bcast(struct in_addr ip)
 {

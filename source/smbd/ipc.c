@@ -63,8 +63,6 @@ extern fstring myworkgroup;
 #define QNLEN 12		/* queue name maximum length */
 
 extern int Client;
-extern int oplock_sock;
-extern int smb_read_error;
 
 static BOOL api_Unsupported(int cnum,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
@@ -3002,7 +3000,8 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 				smb_io_rpc_hdr_ba("", False, &hdr_ba, &rdata, &rdata_len, 0);
 
 				/* then do the header, now we know the length */
-				make_rpc_hdr(&hdr, RPC_BINDACK, 0x0, hdr.call_id, rdata_len);
+				make_rpc_hdr(&hdr, RPC_BINDACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+				             hdr.call_id, rdata_len);
 
 				p = 0x0;
 				smb_io_rpc_hdr("", False, &hdr, &rdata, &p, 0);
@@ -3246,7 +3245,7 @@ static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
 /****************************************************************************
   reply to a SMBtrans
   ****************************************************************************/
-int reply_trans(char *inbuf,char *outbuf, int size, int bufsize)
+int reply_trans(char *inbuf,char *outbuf)
 {
   fstring name;
 
@@ -3309,18 +3308,12 @@ int reply_trans(char *inbuf,char *outbuf, int size, int bufsize)
   /* receive the rest of the trans packet */
   while (pscnt < tpscnt || dscnt < tdscnt)
     {
-      BOOL ret;
       int pcnt,poff,dcnt,doff,pdisp,ddisp;
       
-      ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,SMB_SECONDARY_WAIT);
-
-      if ((ret && (CVAL(inbuf, smb_com) != SMBtrans)) || !ret)
+      if (!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT) ||
+	  CVAL(inbuf, smb_com) != SMBtrans)
 	{
-          if(ret)
-            DEBUG(0,("reply_trans: Invalid secondary trans packet\n"));
-          else
-            DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
-              (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
+	  DEBUG(2,("Invalid secondary trans2 packet\n"));
 	  if (params) free(params);
 	  if (data) free(data);
 	  if (setup) free(setup);

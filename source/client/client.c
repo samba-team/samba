@@ -58,19 +58,6 @@ extern int ipc_tidx;
 
 FILE *out_hnd = stdout;
 
-static BOOL setup_term_code (char *code)
-{
-    int new;
-    new = interpret_coding_system (code, UNKNOWN_CODE);
-    if (new != UNKNOWN_CODE)
-	{
-		coding_system = new;
-		return True;
-    }
-    return False;
-
-}
-
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
@@ -806,16 +793,6 @@ enum client_action
 	}
 
 	codepage_initialise(lp_client_code_page());
-
-	if(lp_client_code_page() == KANJI_CODEPAGE)
-	{
-		if (!setup_term_code (term_code))
-		{
-			fprintf(out_hnd, "%s: unknown terminal code name\n", optarg);
-			usage (pname);
-			exit (1);
-		}
-	}
 
 	if (*cli_info.workgroup == 0) strcpy(cli_info.workgroup,lp_workgroup());
 

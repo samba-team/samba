@@ -143,7 +143,7 @@ char *find_desc(FILE *fichier,char *text)
   char *chaine;
   char *long_desc;
   char *short_desc;
-  char *crap;
+  char *crap = NULL;
   char *p;
 
   int found=0;

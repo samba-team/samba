@@ -22,28 +22,29 @@
 
 extern int DEBUGLEVEL;
 
-
 /***************************************************************************
-  add a DNS result to the name cache
-  ****************************************************************************/
+  Add a DNS result to the name cache.
+****************************************************************************/
+
 static struct name_record *add_dns_result(struct nmb_name *question, struct in_addr addr)
 {
   int name_type = question->name_type;
   char *qname = question->name;
-
+  
+  
   if (!addr.s_addr) {
     /* add the fail to WINS cache of names. give it 1 hour in the cache */
-    DEBUG(3,("Negative DNS answer for %s\n", qname));
-    add_netbios_entry(wins_client_subnet,qname,name_type,NB_ACTIVE,60*60,
-                      DNSFAIL,addr,True);
+    DEBUG(3,("add_dns_result: Negative DNS answer for %s\n", qname));
+    add_name_to_subnet(wins_server_subnet,qname,name_type,
+                       NB_ACTIVE, 60*60, DNSFAIL_NAME, 1, &addr);
     return NULL;
   }
 
   /* add it to our WINS cache of names. give it 2 hours in the cache */
-  DEBUG(3,("DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
+  DEBUG(3,("add_dns_result: DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
 
-  return add_netbios_entry(wins_client_subnet,qname,name_type,NB_ACTIVE,
-                           2*60*60,DNS,addr, True);
+  return add_name_to_subnet(wins_server_subnet,qname,name_type,
+                            NB_ACTIVE, 2*60*60, DNS_NAME, 1, &addr);
 }
 
 
@@ -101,6 +102,23 @@ static void asyncdns_process(void)
 	_exit(0);
 }
 
+/**************************************************************************** **
+  catch a sigterm
+  We need a separate term handler here so we don't release any 
+  names that our parent is going to release, or overwrite a 
+  WINS db that our parent is going to write.
+ **************************************************************************** */
+
+static int sig_term()
+{
+  BlockSignals(True,SIGTERM);
+ 
+  DEBUG(0,("async dns child. Got SIGTERM: going down...\n"));
+
+  exit(0);
+  /* Keep compiler happy.. */
+  return 0;
+}
 
 /***************************************************************************
   create a child process to handle DNS lookups
@@ -128,6 +146,11 @@ void start_async_dns(void)
 	fd_in = fd2[0];
 	fd_out = fd1[1];
 
+	signal(SIGUSR2, SIG_IGN);
+	signal(SIGUSR1, SIG_IGN);
+	signal(SIGHUP, SIG_IGN);
+        signal( SIGTERM, SIGNAL_CAST sig_term );
+
 	asyncdns_process();
 }
 
@@ -138,7 +161,7 @@ check if a particular name is already being queried
 static BOOL query_current(struct query_record *r)
 {
 	return dns_current &&
-		name_equal(&r->name, 
+		nmb_name_equal(&r->name, 
 			   &dns_current->packet.nmb.question.question_name);
 }
 
@@ -162,23 +185,35 @@ void run_dns_queue(void)
 {
 	struct query_record r;
 	struct packet_struct *p, *p2;
+	struct name_record *namerec;
+	int size;
 
 	if (fd_in == -1)
 		return;
 
-	if (read_data(fd_in, (char *)&r, sizeof(r)) != sizeof(r)) {
-		DEBUG(0,("Incomplete DNS answer from child!\n"));
-		fd_in = -1;
+	if (!process_exists(child_pid)) {
+		close(fd_in);
+		start_async_dns();
+	}
+
+	if ((size=read_data(fd_in, (char *)&r, sizeof(r))) != sizeof(r)) {
+		if (size) {
+			DEBUG(0,("Incomplete DNS answer from child!\n"));
+			fd_in = -1;
+		}
 		return;
 	}
 
-	add_dns_result(&r.name, r.result);
+	namerec = add_dns_result(&r.name, r.result);
 
 	if (dns_current) {
 		if (query_current(&r)) {
-			DEBUG(3,("DNS calling reply_name_query\n"));
+			DEBUG(3,("DNS calling send_wins_name_query_response\n"));
 			in_dns = 1;
-			reply_name_query(dns_current);
+                        if(namerec == NULL)
+                          send_wins_name_query_response(NAM_ERR, dns_current, NULL);
+                        else
+			  send_wins_name_query_response(0,dns_current,namerec);
 			in_dns = 0;
 		}
 
@@ -193,10 +228,13 @@ void run_dns_queue(void)
 		struct nmb_packet *nmb = &p->packet.nmb;
 		struct nmb_name *question = &nmb->question.question_name;
 
-		if (name_equal(question, &r.name)) {
-			DEBUG(3,("DNS calling reply_name_query\n"));
+		if (nmb_name_equal(question, &r.name)) {
+			DEBUG(3,("DNS calling send_wins_name_query_response\n"));
 			in_dns = 1;
-			reply_name_query(p);
+                        if(namerec == NULL)
+			  send_wins_name_query_response(NAM_ERR, p, NULL);
+                        else
+                          send_wins_name_query_response(0,p,namerec);
 			in_dns = 0;
 			p->locked = False;
 
@@ -266,7 +304,6 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n)
 {
-	int name_type = question->name_type;
 	char *qname = question->name;
 	struct in_addr dns_ip;
 
@@ -275,6 +312,10 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 	dns_ip.s_addr = interpret_addr(qname);
 
 	*n = add_dns_result(question, dns_ip);
+        if(*n == NULL)
+          send_wins_name_query_response(NAM_ERR, p, NULL);
+        else
+          send_wins_name_query_response(0, p, *n);
 	return False;
 }
 #endif

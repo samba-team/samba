@@ -467,8 +467,20 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
     return(True);
   }      
 
+#if 0 
+  /* 
+   * This code I believe is incorrect - and commenting it out
+   * is the correct fix for the bug mentioned below in the
+   * comment 'name2 here was changed to dname - since 1.9.16p2 - not sure of reason (jra)'.
+   * The incoming name can be mangled, and if we de-mangle it
+   * here it will not compare correctly against the filename (name2)
+   * read from the directory and then mangled by the name_map_mangle()
+   * call. We need to mangle both names or neither.
+   * (JRA).
+   */
   if (mangled)
     check_mangled_stack(name);
+#endif 
 
   /* open the directory */
   if (!(cur_dir = OpenDir(cnum, path, True))) 
@@ -1154,6 +1166,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   struct stat statbuf;
   file_fd_struct *fd_ptr;
   files_struct *fsp = &Files[fnum];
+  int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
 
   fsp->open = False;
   fsp->fd_ptr = 0;
@@ -1163,12 +1176,32 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   pstrcpy(fname,fname1);
 
   /* check permissions */
-  if ((flags != O_RDONLY) && !CAN_WRITE(cnum) && !Connections[cnum].printer)
-    {
+
+  /*
+   * This code was changed after seeing a client open request 
+   * containing the open mode of (DENY_WRITE/read-only) with
+   * the 'create if not exist' bit set. The previous code
+   * would fail to open the file read only on a read-only share
+   * as it was checking the flags parameter  directly against O_RDONLY,
+   * this was failing as the flags parameter was set to O_RDONLY|O_CREAT.
+   * JRA.
+   */
+
+  if (!CAN_WRITE(cnum) && !Connections[cnum].printer) {
+    /* It's a read-only share - fail if we wanted to write. */
+    if(accmode != O_RDONLY) {
       DEBUG(3,("Permission denied opening %s\n",fname));
       check_for_pipe(fname);
       return;
     }
+    else if(flags & O_CREAT) {
+      /* We don't want to write - but we must make sure that O_CREAT
+         doesn't create the file if we have write access into the
+         directory.
+       */
+      flags &= ~O_CREAT;
+    }
+  }
 
   /* this handles a bug in Win95 - it doesn't say to create the file when it 
      should */
@@ -1205,8 +1238,6 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
    * reference count (fd_get_already_open increments the ref_count).
    */
   if((fd_ptr = fd_get_already_open(sbuf))!= 0) {
-
-    int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
 
     /* File was already open. */
     if((flags & O_CREAT) && (flags & O_EXCL)) {
@@ -1341,6 +1372,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
       fsp->print_file = Connections[cnum].printer;
       fsp->modified = False;
       fsp->granted_oplock = False;
+      fsp->sent_oplock_break = False;
       fsp->cnum = cnum;
       string_set(&fsp->name,dos_to_unix(fname,False));
       fsp->wbmpx_ptr = NULL;      
@@ -1487,6 +1519,11 @@ void close_file(int fnum, BOOL normal_close)
   /* check for magic scripts */
   if (normal_close)
     check_magic(fnum,cnum);
+
+  if(fs_p->granted_oplock == True)
+    global_oplocks_open--;
+
+  fs_p->sent_oplock_break = False;
 
   DEBUG(2,("%s %s closed file %s (numopen=%d)\n",
 	   timestring(),Connections[cnum].user,fs_p->name,
@@ -1695,9 +1732,9 @@ int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
         (access_allowed == AREAD && *flags == O_WRONLY) ||
         (access_allowed == AWRITE && *flags == O_RDONLY))
     {
-      DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s) = %d\n",
+      DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
                 deny_mode,old_deny_mode,old_open_mode,
-                share->pid,fname, access_allowed));
+                share->pid,fname, fcbopen, *flags, access_allowed));
       return False;
     }
 
@@ -1943,9 +1980,11 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
          be extended to level II oplocks (multiple reader
          oplocks). */
 
-      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(cnum)))
+      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(cnum)) && 
+	      !IS_VETO_OPLOCK_PATH(cnum,fname))
       {
         fs_p->granted_oplock = True;
+        fs_p->sent_oplock_break = False;
         global_oplocks_open++;
         port = oplock_port;
 
@@ -2536,7 +2575,7 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
           return True; 
         }
         close(Client); /* The parent doesn't need this socket */
-#endif /* NO_FORK_DEBUG */
+#endif /*NO_FORK_DEBUG */
       } /* end for num */
     } /* end while 1 */
   } /* end if is_daemon */
@@ -2602,6 +2641,8 @@ static void process_smb(char *inbuf, char *outbuf)
 
   if (msg_type == 0)
     show_msg(inbuf);
+  else if(msg_type == 0x85)
+    return; /* Keepalive packet. */
 
   nread = construct_reply(inbuf,outbuf,nread,max_send);
       
@@ -2795,22 +2836,6 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   DEBUG(3,("%s oplock_break: called for dev = %x, inode = %x. Current \
 global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
 
-  if(inbuf == NULL)
-  {
-    inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-    if(inbuf == NULL) {
-      DEBUG(0,("oplock_break: malloc fail for input buffer.\n"));
-      return False;
-    } 
-    outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-    if(outbuf == NULL) {
-      DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
-      free(inbuf);
-      inbuf = NULL;
-      return False;
-    }
-  } 
-
   /* We need to search the file open table for the
      entry containing this dev and inode, and ensure
      we have an oplock on it. */
@@ -2818,18 +2843,19 @@ global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
   {
     if(OPEN_FNUM(fnum))
     {
+      if((Files[fnum].fd_ptr->dev == dev) && (Files[fnum].fd_ptr->inode == inode) &&
+         (Files[fnum].open_time.tv_sec == tval->tv_sec) && 
+         (Files[fnum].open_time.tv_usec == tval->tv_usec)) {
       fsp = &Files[fnum];
-      if((fsp->fd_ptr->dev == dev) && (fsp->fd_ptr->inode == inode) &&
-         (fsp->open_time.tv_sec == tval->tv_sec) && 
-         (fsp->open_time.tv_usec == tval->tv_usec))
         break;
     }
+  }
   }
 
   if(fsp == NULL)
   {
     /* The file could have been closed in the meantime - return success. */
-    DEBUG(3,("%s oplock_break: cannot find open file with dev = %x, inode = %x (fnum = %d) \
+    DEBUG(0,("%s oplock_break: cannot find open file with dev = %x, inode = %x (fnum = %d) \
 allowing break to succeed.\n", timestring(), dev, inode, fnum));
     return True;
   }
@@ -2845,14 +2871,41 @@ allowing break to succeed.\n", timestring(), dev, inode, fnum));
 
   if(!fsp->granted_oplock)
   {
-    DEBUG(3,("%s oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. \
-Allowing break to succeed regardless.\n", timestring(), fsp->name, fnum, dev, inode));
+    DEBUG(0,("%s oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. Allowing break to succeed regardless.\n", timestring(), fsp->name, fnum, dev, inode));
     return True;
+  }
+
+  /* mark the oplock break as sent - we don't want to send twice! */
+  if (fsp->sent_oplock_break)
+  {
+    DEBUG(0,("%s oplock_break: ERROR: oplock_break already sent for file %s (fnum = %d, dev = %x, inode = %x)\n", timestring(), fsp->name, fnum, dev, inode));
+
+    /* We have to fail the open here as we cannot send another oplock break on this
+       file whilst we are awaiting a response from the client - neither can we
+       allow another open to succeed while we are waiting for the client. */
+    return False;
   }
 
   /* Now comes the horrid part. We must send an oplock break to the client,
      and then process incoming messages until we get a close or oplock release.
+     At this point we know we need a new inbuf/outbuf buffer pair.
+     We cannot use these staticaly as we may recurse into here due to
+     messages crossing on the wire.
    */
+
+  if((inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN))==NULL)
+  {
+    DEBUG(0,("oplock_break: malloc fail for input buffer.\n"));
+    return False;
+  }
+
+  if((outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN))==NULL)
+  {
+    DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
+    free(inbuf);
+    inbuf = NULL;
+    return False;
+  }
 
   /* Prepare the SMBlockingX message. */
   bzero(outbuf,smb_size);
@@ -2871,6 +2924,10 @@ Allowing break to succeed regardless.\n", timestring(), fsp->name, fnum, dev, in
  
   send_smb(Client, outbuf);
 
+  /* Remember we just sent an oplock break on this file. */
+  fsp->sent_oplock_break = True;
+
+  /* We need this in case a readraw crosses on the wire. */
   global_oplock_break = True;
  
   /* Process incoming messages. */
@@ -2906,10 +2963,6 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
     }
     process_smb(inbuf, outbuf);
 
-    /* We only need this in case a readraw crossed on the wire. */
-    if(global_oplock_break)
-      global_oplock_break = False;
-
     /*
      * Die if we go over the time limit.
      */
@@ -2924,6 +2977,14 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
       break;
     }
   }
+
+  /* Free the buffers we've been using to recurse. */
+  free(inbuf);
+  free(outbuf);
+
+  /* We need this in case a readraw crossed on the wire. */
+  if(global_oplock_break)
+    global_oplock_break = False;
 
   /*
    * If the client did not respond we must die.
@@ -2944,9 +3005,9 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
        from the sharemode. */
     /* Paranoia.... */
     fsp->granted_oplock = False;
-  }
-
+    fsp->sent_oplock_break = False;
   global_oplocks_open--;
+  }
 
   /* Santity check - remove this later. JRA */
   if(global_oplocks_open < 0)
@@ -3107,6 +3168,39 @@ oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
   DEBUG(3,("%s request_oplock_break: broke oplock.\n", timestring()));
 
   return True;
+}
+
+/****************************************************************************
+Get the next SMB packet, doing the local message processing automatically.
+****************************************************************************/
+
+BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout)
+{
+  BOOL got_smb = False;
+  BOOL ret;
+
+  do
+  {
+    ret = receive_message_or_smb(smbfd,oplockfd,inbuf,bufsize,
+                                 timeout,&got_smb);
+
+    if(ret && !got_smb)
+    {
+      /* Deal with oplock break requests from other smbd's. */
+      process_local_message(oplock_sock, inbuf, bufsize);
+      continue;
+    }
+
+    if(ret && (CVAL(inbuf,0) == 0x85))
+    {
+      /* Keepalive packet. */
+      got_smb = False;
+    }
+
+  }
+  while(ret && !got_smb);
+
+  return ret;
 }
 
 /****************************************************************************
@@ -3417,6 +3511,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   pcon->dirptr = NULL;
   pcon->veto_list = NULL;
   pcon->hide_list = NULL;
+  pcon->veto_oplock_list = NULL;
   string_set(&pcon->dirpath,"");
   string_set(&pcon->user,user);
 
@@ -3567,6 +3662,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   {
     set_namearray( &pcon->veto_list, lp_veto_files(SNUM(cnum)));
     set_namearray( &pcon->hide_list, lp_hide_files(SNUM(cnum)));
+    set_namearray( &pcon->veto_oplock_list, lp_veto_oplocks(SNUM(cnum)));
   }
 
   {
@@ -3577,8 +3673,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 			    lp_servicename(SNUM(cnum)),user,
 			    pcon->uid,
 			    pcon->gid,
-			    (int)getpid(),
-				BOOLSTR(pcon->read_only)));
+			    (int)getpid(), BOOLSTR(pcon->read_only)));
   }
 
   return(cnum);
@@ -3591,11 +3686,32 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 int find_free_file(void )
 {
   int i;
-  /* we start at 1 here for an obscure reason I can't now remember,
-     but I think is important :-) */
-  for (i=1;i<MAX_OPEN_FILES;i++)
-    if (!Files[i].open)
+	static int first_file;
+
+	/* we want to give out file handles differently on each new
+	   connection because of a common bug in MS clients where they try to
+	   reuse a file descriptor from an earlier smb connection. This code
+	   increases the chance that the errant client will get an error rather
+	   than causing corruption */
+	if (first_file == 0) {
+		first_file = (getpid() ^ (int)time(NULL)) % MAX_OPEN_FILES;
+		if (first_file == 0) first_file = 1;
+	}
+
+	for (i=first_file;i<MAX_OPEN_FILES;i++)
+		if (!Files[i].open) {
+			memset(&Files[i], 0, sizeof(Files[i]));
       return(i);
+		}
+
+	/* returning a file handle of 0 is a bad idea - so we start at 1 */
+	for (i=1;i<first_file;i++)
+		if (!Files[i].open) {
+			memset(&Files[i], 0, sizeof(Files[i]));
+			return(i);
+		}
+
+
   DEBUG(1,("ERROR! Out of file structures - perhaps increase MAX_OPEN_FILES?\n"));
   return(-1);
 }
@@ -3768,7 +3884,7 @@ int reply_nt1(char *outbuf)
   int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS;
 /*
   other valid capabilities which we may support at some time...
-                     CAP_LARGE_FILES|CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
+                     CAP_LARGE_FILES|CAP_NT_SMBS|
                      CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
  */
 
@@ -4101,6 +4217,7 @@ void close_cnum(int cnum, uint16 vuid)
 
   free_namearray(Connections[cnum].veto_list);
   free_namearray(Connections[cnum].hide_list);
+  free_namearray(Connections[cnum].veto_oplock_list);
 
   string_set(&Connections[cnum].user,"");
   string_set(&Connections[cnum].dirpath,"");
@@ -4378,7 +4495,15 @@ void standard_sub(int cnum,char *str)
 			{
 				pstring home;
 				get_home_server_and_dir(Connections[cnum].user, NULL, home);
-				string_sub(p,"%H",home);
+				if (home[0] != 0)
+				{
+					string_sub(p,"%H",home);
+				}
+				else
+				{
+					/* skip the %H: do it later.  maybe.  maybe never */
+					p += 2;
+				}
 
 				break;
 			}
@@ -5017,7 +5142,9 @@ static void usage(char *pname)
   int port = SMB_PORT;
   int opt;
   extern char *optarg;
-  char pidFile[100] = { 0 };
+  char pidFile[100];
+
+  *pidFile = '\0';
 
 #ifdef NEED_AUTH_PARAMETERS
   set_auth_parameters(argc,argv);
@@ -5158,6 +5285,17 @@ static void usage(char *pname)
   signal(SIGHUP,SIGNAL_CAST sig_hup);
 #endif
   
+  /* Setup the signals that allow the debug log level
+     to by dynamically changed. */
+ 
+#if defined(SIGUSR1)
+  signal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+#endif /* SIGUSR1 */
+   
+#if defined(SIGUSR2)
+  signal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+#endif /* SIGUSR2 */
+
   DEBUG(3,("%s loaded services\n",timestring()));
 
   if (!is_daemon && !is_a_socket(0))
@@ -5171,6 +5309,10 @@ static void usage(char *pname)
       DEBUG(3,("%s becoming a daemon\n",timestring()));
       become_daemon();
     }
+
+  if (!directory_exist(lp_lockdir(), NULL)) {
+	  mkdir(lp_lockdir(), 0755);
+  }
 
   if (*pidFile)
     {

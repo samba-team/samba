@@ -781,6 +781,10 @@ Hence we make a direct return to avoid a second chance!!!
   return(linux_bigcrypt(password,this_salt,this_crypted));
 #endif
 
+#ifdef HPUX_10_TRUSTED
+  return(bigcrypt(password,this_salt,this_crypted));
+#endif
+
 #ifdef NO_CRYPT
   DEBUG(1,("Warning - no crypt available\n"));
   return(False);

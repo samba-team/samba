@@ -347,7 +347,7 @@ static time_t announce_timer_last=0;
  immediately.
  ****************************************************************************/
 
-void reset_announce_timer(void)
+void reset_announce_timer()
 {
   announce_timer_last = time(NULL) - (CHECK_TIME_MST_ANNOUNCE * 60);
 }
@@ -516,5 +516,39 @@ void announce_remote(time_t t)
 		     name,stype,comment);    
     }
   }
+}
 
+/****************************************************************************
+  do all the "remote" browse synchronisation stuff.
+  These are used to put our browse lists into remote browse lists.
+  **************************************************************************/
+void browse_sync_remote(time_t t)
+{
+  char *s,*ptr;
+  static time_t last_time = 0;
+  pstring s2;
+  struct in_addr addr;
+
+  if (last_time && t < last_time + REMOTE_ANNOUNCE_INTERVAL)
+    return;
+
+  last_time = t;
+
+  s = lp_remote_browse_sync();
+  if (!*s) return;
+
+  for (ptr=s; next_token(&ptr,s2,NULL); ) 
+  {
+    /* the entries are of the form a.b.c.d */
+    int n;
+
+    addr = *interpret_addr2(s2);
+    
+    /* Announce all our names including aliases */
+    for (n=0; my_netbios_names[n]; n++) 
+    {
+      char *name = my_netbios_names[n];
+      do_announce_request(name, "*", ANN_MasterAnnouncement, 0x20, 0, addr);
+    }
+  }
 }

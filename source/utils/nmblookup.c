@@ -77,7 +77,9 @@ static void usage(void)
   printf("Version %s\n",VERSION);
   printf("\t-d debuglevel         set the debuglevel\n");
   printf("\t-B broadcast address  the address to use for broadcasts\n");
+  printf("\t-U unicast   address  the address to use for unicast\n");
   printf("\t-M                    searches for a master browser\n");
+  printf("\t-R                    set recursion desired in packet\n");
   printf("\t-S                    lookup node status as well\n");
   printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
   printf("\t-A                    Do a node status on <name> as an IP Address\n");
@@ -103,17 +105,18 @@ int main(int argc,char *argv[])
   BOOL use_bcast = True;
   BOOL got_bcast = False;
   BOOL lookup_by_ip = False;
-  
+  BOOL recursion_desired = False;
+
   DEBUGLEVEL = 1;
   *lookup = 0;
 
   TimeInit();
 
-  setup_logging(argv[0], True, False);
+  setup_logging(argv[0],True,True);
 
   charset_initialise();
 
-  while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhA")) != EOF)
+  while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhAR")) != EOF)
     switch (opt)
       {
       case 'B':
@@ -137,6 +140,9 @@ int main(int argc,char *argv[])
 	break;
       case 'S':
 	find_status = True;
+	break;
+      case 'R':
+	recursion_desired = True;
 	break;
       case 'd':
 	DEBUGLEVEL = atoi(optarg);
@@ -180,9 +186,10 @@ int main(int argc,char *argv[])
 
   for (i=optind;i<argc;i++)
   {
-      int retries = 2;
+      int j, count, retries = 2;
       char *p;
       struct in_addr ip;
+      struct in_addr *ip_list;
 
       fstrcpy(lookup,argv[i]);
 
@@ -213,26 +220,23 @@ int main(int argc,char *argv[])
 	retries = 1;
       }
 
-      if (name_query(ServerFD,lookup,lookup_type,use_bcast,True,
-		     bcast_addr,&ip,NULL)) 
-      {
-        printf("%s %s\n",inet_ntoa(ip),lookup);
-
-        /* We can only do find_status if the ip address returned
-           was valid - ie. name_query returned true.
-         */
-	if (find_status) 
-	{
-	      printf("Looking up status of %s\n",inet_ntoa(ip));
-	      name_status(ServerFD,lookup,lookup_type,True,ip,NULL,NULL,NULL);
-	      printf("\n");
-	}
-      }
-      else
-      {
-        printf("name_query failed to find name %s\n", lookup);
+      if ((ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,recursion_desired,
+				bcast_addr,&count,NULL))) {
+	      for (j=0;j<count;j++)
+		      printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
+	      
+	      /* We can only do find_status if the ip address returned
+		 was valid - ie. name_query returned true.
+		 */
+	      if (find_status) {
+		      printf("Looking up status of %s\n",inet_ntoa(ip_list[0]));
+		      name_status(ServerFD,lookup,lookup_type,True,ip_list[0],NULL,NULL,NULL);
+		      printf("\n");
+	      }
+      } else {
+	      printf("name_query failed to find name %s\n", lookup);
       }
   }
-
+  
   return(0);
 }

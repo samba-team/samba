@@ -586,19 +586,15 @@ void become_logon_server(struct subnet_record *d, struct work_record *work)
 void unbecome_local_master(struct subnet_record *d, struct work_record *work,
 				int remove_type)
 {
-  int new_server_type = work->ServerType;
-
   /* can only remove master types with this function */
-  remove_type &= SV_TYPE_MASTER_BROWSER;
 
-  new_server_type &= ~remove_type;
-
-  if (remove_type)
+  if (remove_type & SV_TYPE_MASTER_BROWSER)
   {
     DEBUG(2,("Becoming local non-master for %s\n",work->work_group));
   
     /* no longer a master browser of any sort */
 
+    work->ServerType &= ~SV_TYPE_MASTER_BROWSER;
     work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
     work->ElectionCriterion &= ~0x4;
     work->mst_state = MST_POTENTIAL;
@@ -618,19 +614,14 @@ void unbecome_local_master(struct subnet_record *d, struct work_record *work,
 void unbecome_domain_master(struct subnet_record *d, struct work_record *work,
 				int remove_type)
 {
-  int new_server_type = work->ServerType;
-
   DEBUG(2,("Becoming domain non-master for %s\n",work->work_group));
   
   /* can only remove master or domain types with this function */
-  remove_type &= SV_TYPE_DOMAIN_MASTER;
-
-  new_server_type &= ~remove_type;
-
-  if (remove_type)
+  if (remove_type & SV_TYPE_DOMAIN_MASTER)
   {
     /* no longer a domain master browser of any sort */
 
+    work->ServerType &= ~SV_TYPE_DOMAIN_MASTER;
     work->dom_state = DOMAIN_NONE;
 
     /* announce ourselves as no longer active as a master browser on
@@ -658,19 +649,15 @@ void unbecome_domain_master(struct subnet_record *d, struct work_record *work,
 void unbecome_logon_server(struct subnet_record *d, struct work_record *work,
 				int remove_type)
 {
-  int new_server_type = work->ServerType;
-
   DEBUG(2,("Becoming logon non-server for %s\n",work->work_group));
   
   /* can only remove master or domain types with this function */
-  remove_type &= SV_TYPE_DOMAIN_MEMBER;
 
-  new_server_type &= ~remove_type;
-
-  if (remove_type)
+  if (remove_type & SV_TYPE_DOMAIN_MEMBER)
   {
     /* no longer a master browser of any sort */
 
+    work->ServerType &= ~SV_TYPE_DOMAIN_MEMBER;
     work->log_state = LOGON_NONE;
 
     remove_name_entry(d,work->work_group,0x1c);    

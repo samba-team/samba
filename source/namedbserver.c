@@ -58,24 +58,20 @@ void remove_old_servers(struct work_record *work, time_t t,
   /* expire old entries in the serverlist */
   for (s = work->serverlist; s; s = nexts)
     {
-      if (remove_all || (s->death_time && (t == -1 || s->death_time < t)))
-	{
-	  DEBUG(3,("Removing dead server %s\n",s->serv.name));
-	  updatedlists = True;
-	  nexts = s->next;
+	    nexts = s->next;
+	    if (remove_all || 
+		(s->death_time && (t == -1 || s->death_time < t))) {
+		    DEBUG(3,("Removing dead server %s\n",s->serv.name));
+		    updatedlists = True;
 	  
-	  if (s->prev) s->prev->next = s->next;
-	  if (s->next) s->next->prev = s->prev;
+		    if (s->prev) s->prev->next = s->next;
+		    if (s->next) s->next->prev = s->prev;
 	  
-	  if (work->serverlist == s) 
-	    work->serverlist = s->next; 
+		    if (work->serverlist == s) 
+			    work->serverlist = s->next; 
 
-	  free(s);
-	}
-      else
-	{
-	  nexts = s->next;
-	}
+		    free(s);
+	    }
     }
 }
 

@@ -996,8 +996,10 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 			e.pid = SVAL(p,SME_PID_OFFSET);
 			e.op_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
 
-			fn(&e, fname);
-			count++;
+			if (process_exists(e.pid)) {
+				fn(&e, fname);
+				count++;
+			}
 		} /* end for i */
 
 		if(buf)

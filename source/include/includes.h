@@ -193,7 +193,7 @@
 #include <pwdadj.h>
 #endif
 
-#if defined(SHADOW_PWD) && !defined(NETBSD) && !defined(FreeBSD) && !defined(CONVEX)
+#if defined(SHADOW_PWD) && !defined(NETBSD) && !defined(FreeBSD) && !defined(CONVEX) && !defined(__OpenBSD__)
 #include <shadow.h>
 #endif
 
@@ -523,7 +523,21 @@ char *mktemp(char *); /* No standard include */
 #define HAVE_GETGRNAM 1
 #endif 
 
-
+#ifdef __OpenBSD__
+#include <strings.h>
+#include <netinet/tcp.h>
+#define NO_GETSPNAM
+#define SIGNAL_CAST (void (*)())
+#define USE_DIRECT
+#define REPLACE_INNETGR
+#define HAVE_BZERO
+#define HAVE_PATHCONF
+#define HAVE_GETGRNAM 1
+#define HAVE_GETTIMEOFDAY
+#define HAVE_MEMMOVE
+#define USE_GETCWD
+#define USE_SETSID
+#endif 
 
 #ifdef AIX
 #include <strings.h>
@@ -1073,6 +1087,23 @@ struct spwd { /* fake shadow password structure */
 #endif
 #endif
 
+/* This defines the name of the printcap file. It is MOST UNLIKELY that
+   this will change BUT! Specifying a file with the format of a printcap
+   file but containing only a subset of the printers actually in your real 
+   printcap file is a quick-n-dirty way to allow dynamic access to a subset
+   of available printers.
+*/
+#ifndef PRINTCAP_NAME
+#ifdef AIX
+#define PRINTCAP_NAME "/etc/qconfig"
+#elif defined(SYSV)
+#define PRINTCAP_NAME "lpstat"
+#else
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+#endif
+
+
 #ifdef USE_SYSV_IPC
 #include <sys/ipc.h>
 #include <sys/sem.h>
@@ -1268,51 +1299,8 @@ extern int errno;
 #define strcpy(dest,src) StrCpy(dest,src)
 #endif
 
-
-/* possibly wrap the malloc calls */
-#if WRAP_MALLOC
-
-/* undo the old malloc def if necessary */
-#ifdef malloc
-#define xx_old_malloc malloc
-#undef malloc
-#endif
-
-#define malloc(size) malloc_wrapped(size,__FILE__,__LINE__)
-
-/* undo the old realloc def if necessary */
-#ifdef realloc
-#define xx_old_realloc realloc
-#undef realloc
-#endif
-
-#define realloc(ptr,size) realloc_wrapped(ptr,size,__FILE__,__LINE__)
-
-/* undo the old free def if necessary */
-#ifdef free
-#define xx_old_free free
-#undef free
-#endif
-
-#define free(ptr) free_wrapped(ptr,__FILE__,__LINE__)
-
-/* and the malloc prototypes */
-void *malloc_wrapped(int,char *,int);
-void *realloc_wrapped(void *,int,char *,int);
-void free_wrapped(void *,char *,int);
-
-#endif
-
-
-#if WRAP_MEMCPY
-/* undo the old memcpy def if necessary */
-#ifdef memcpy
-#define xx_old_memcpy memcpy
-#undef memcpy
-#endif
-
-#define memcpy(d,s,l) memcpy_wrapped(d,s,l,__FILE__,__LINE__)
-void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
+#if MEM_MAN
+#include "mem_man/mem_man.h"
 #endif
 
 #endif

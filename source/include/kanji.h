@@ -108,6 +108,30 @@
 extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
 extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 
+/*
+ * The following is needed for AIX systems that have
+ * their own #defines for strchr, strrchr, strstr
+ * and strtok.
+ */
+
+#ifdef strchr
+#undef strchr
+#endif /* strchr */
+
+#ifdef strrchr
+#undef strrchr
+#endif /* strrchr */
+
+#ifdef strstr
+#undef strstr
+#endif /* strstr */
+
+#ifdef strtok
+#undef strtok
+#endif /* strtok */
+
+/* Ensure we use our definitions. */
+
 #define strchr sj_strchr
 #define strrchr sj_strrchr
 #define strstr sj_strstr
@@ -124,8 +148,6 @@ extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 #define HEX_CODE (5)
 #define CAP_CODE (6)
 #define DOSV_CODE SJIS_CODE
-
-int interpret_coding_system (char *str, int def);
 
 #define unix_to_dos(x,y) unix2dos_format(x,y)
 #define dos_to_unix(x,y) dos2unix_format(x,y)

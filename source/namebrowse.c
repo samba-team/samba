@@ -26,6 +26,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 
 extern int ClientNMB;
 
@@ -71,22 +72,17 @@ void expire_browse_cache(time_t t)
   /* expire old entries in the serverlist */
   for (b = browserlist; b; b = nextb)
     {
-      if (b->synced && b->sync_time < t)
-	{
-	  DEBUG(3,("Removing dead cached browser %s\n",b->name));
-	  nextb = b->next;
+	    nextb = b->next;
+	    if (b->synced && b->sync_time < t) {
+		    DEBUG(3,("Removing dead cached browser %s\n",b->name));
 	  
-	  if (b->prev) b->prev->next = b->next;
-	  if (b->next) b->next->prev = b->prev;
+		    if (b->prev) b->prev->next = b->next;
+		    if (b->next) b->next->prev = b->prev;
 	  
-	  if (browserlist == b) browserlist = b->next; 
-	  
-	  free(b);
-	}
-      else
-	{
-	  nextb = b->next;
-	}
+		    if (browserlist == b) browserlist = b->next; 
+		    
+		    free(b);
+	    }
     }
 }
 

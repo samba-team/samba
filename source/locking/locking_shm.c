@@ -72,7 +72,7 @@ static int read_only;
   ******************************************************************/
 static BOOL shm_stop_share_mode_mgmt(void)
 {
-   return shmops->close();
+   return shmops->shm_close();
 }
 
 /*******************************************************************
@@ -150,7 +150,7 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
       file_prev_p->next_offset = file_scanner_p->next_offset;
-    shmops->free(shmops->addr2offset(file_scanner_p));
+    shmops->shm_free(shmops->addr2offset(file_scanner_p));
     return (0);
   }
 
@@ -208,7 +208,7 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
 
       DEBUG(0,("get_share_modes: process %d no longer exists\n", pid));
 
-      shmops->free(shmops->addr2offset(delete_entry_p));
+      shmops->shm_free(shmops->addr2offset(delete_entry_p));
     } 
     else
     {
@@ -243,7 +243,7 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
       file_prev_p->next_offset = file_scanner_p->next_offset;
-    shmops->free(shmops->addr2offset(file_scanner_p));
+    shmops->shm_free(shmops->addr2offset(file_scanner_p));
   }
 
   DEBUG(5,("get_share_modes: file with dev %d inode %d -> %d entries\n",
@@ -314,7 +314,7 @@ static void shm_del_share_mode(int token, int fnum)
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
       file_prev_p->next_offset = file_scanner_p->next_offset;
-    shmops->free(shmops->addr2offset(file_scanner_p));
+    shmops->shm_free(shmops->addr2offset(file_scanner_p));
     return;
   }
 
@@ -351,7 +351,7 @@ static void shm_del_share_mode(int token, int fnum)
       file_scanner_p->share_mode_entries = entry_scanner_p->next_share_mode_entry;
     else
       entry_prev_p->next_share_mode_entry = entry_scanner_p->next_share_mode_entry;
-    shmops->free(shmops->addr2offset(entry_scanner_p));
+    shmops->shm_free(shmops->addr2offset(entry_scanner_p));
 
     /* PARANOIA TEST */
     if(file_scanner_p->num_share_mode_entries < 0)
@@ -370,7 +370,7 @@ static void shm_del_share_mode(int token, int fnum)
         mode_array[hash_entry] = file_scanner_p->next_offset;
       else
         file_prev_p->next_offset = file_scanner_p->next_offset;
-      shmops->free(shmops->addr2offset(file_scanner_p));
+      shmops->shm_free(shmops->addr2offset(file_scanner_p));
     }
   }
   else
@@ -424,10 +424,10 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   {
     /* We must create a share_mode_record */
     share_mode_record *new_mode_p = NULL;
-    int new_offset = shmops->alloc(sizeof(share_mode_record) +
+    int new_offset = shmops->shm_alloc(sizeof(share_mode_record) +
 				   strlen(fs_p->name) + 1);
     if(new_offset == 0) {
-	    DEBUG(0,("ERROR:set_share_mode shmops->alloc fail!\n"));
+	    DEBUG(0,("ERROR:set_share_mode shmops->shm_alloc fail!\n"));
 	    return False;
     }
     new_mode_p = shmops->offset2addr(new_offset);
@@ -449,14 +449,14 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   }
  
   /* Now create the share mode entry */ 
-  new_entry_offset = shmops->alloc(sizeof(shm_share_mode_entry));
+  new_entry_offset = shmops->shm_alloc(sizeof(shm_share_mode_entry));
   if(new_entry_offset == 0) {
 	  int delete_offset = mode_array[hash_entry];
-	  DEBUG(0,("ERROR:set_share_mode: shmops->alloc fail 1!\n"));
+	  DEBUG(0,("ERROR:set_share_mode: shmops->shm_alloc fail 1!\n"));
 	  /* Unlink the damaged record */
 	  mode_array[hash_entry] = file_scanner_p->next_offset;
 	  /* And delete it */
-	  shmops->free( delete_offset );
+	  shmops->shm_free( delete_offset );
 	  return False;
   }
 
@@ -551,7 +551,7 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
       file_prev_p->next_offset = file_scanner_p->next_offset;
-    shmops->free(shmops->addr2offset(file_scanner_p));
+    shmops->shm_free(shmops->addr2offset(file_scanner_p));
     return False;
   }
 
@@ -619,14 +619,16 @@ static int shm_share_forall(void (*fn)(share_mode_entry *, char *))
 
 			while(entry_scanner_p != 0) {
 				
-				fn(&entry_scanner_p->e, 
-				   file_scanner_p->file_name);
+				if (process_exists(entry_scanner_p->e.pid)) {
+					fn(&entry_scanner_p->e, 
+					   file_scanner_p->file_name);
+					count++;
+				}
 
 				entry_scanner_p = 
 					(shm_share_mode_entry *)
 					shmops->offset2addr(
 							    entry_scanner_p->next_share_mode_entry);
-				count++;
 			} /* end while entry_scanner_p */
 			file_scanner_p = (share_mode_record *)
 				shmops->offset2addr(file_scanner_p->next_offset);

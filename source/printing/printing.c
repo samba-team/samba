@@ -832,7 +832,7 @@ static BOOL parse_lpq_entry(int snum,char *line,
 {
   BOOL ret;
 
-  switch (lp_printing())
+  switch (lp_printing(snum))
     {
     case PRINT_SYSV:
       ret = parse_lpq_sysv(line,buf,first);
@@ -887,18 +887,21 @@ static BOOL parse_lpq_entry(int snum,char *line,
 	  if (strstr(line,stat0_strings[i])) {
 	    StrnCpy(status->message,line,sizeof(status->message)-1);
 	    status->status=LPSTAT_OK;
+	    return ret;
 	  }
       case LPSTAT_STOPPED:
 	for (i=0; stat1_strings[i]; i++)
 	  if (strstr(line,stat1_strings[i])) {
 	    StrnCpy(status->message,line,sizeof(status->message)-1);
 	    status->status=LPSTAT_STOPPED;
+	    return ret;
 	  }
       case LPSTAT_ERROR:
 	for (i=0; stat2_strings[i]; i++)
 	  if (strstr(line,stat2_strings[i])) {
 	    StrnCpy(status->message,line,sizeof(status->message)-1);
 	    status->status=LPSTAT_ERROR;
+	    return ret;
 	  }
 	break;
       }
