@@ -127,68 +127,73 @@ BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine)
 	return True;
 }
 
-/***************************************************************************
+/*
+ * SPOOLSS Client RPC's used by servers as the notification
+ * back channel
+ */
+
+ /***************************************************************************
  do a reply open printer
 ****************************************************************************/
 
-BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, WERROR *status, POLICY_HND *handle)
+NTSTATUS cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				char *printer, uint32 localprinter, uint32 type, 
+				POLICY_HND *handle)
 {
+	NTSTATUS result;
+	
 	prs_struct rbuf;
 	prs_struct buf; 
 
 	SPOOL_Q_REPLYOPENPRINTER q_s;
 	SPOOL_R_REPLYOPENPRINTER r_s;
 
-	prs_init(&buf, 1024, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
+	prs_init(&buf, 1024, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api SPOOLSS_REPLYOPENPRINTER */
-/*
-	DEBUG(4,("cli_spoolss_reply_open_printer: srv:%s acct:%s sc: %d mc: %s clnt %s %x\n",
-           cli->srv_name_slash, cli->mach_acct, sec_chan_type, global_myname,
-           credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
-*/
+	
 	/* store the parameters */
 	make_spoolss_q_replyopenprinter(&q_s, printer, localprinter, type);
 
 	/* turn parameters into data stream */
 	if(!spoolss_io_q_replyopenprinter("", &q_s,  &buf, 0)) {
-		DEBUG(0,("cli_spoolss_reply_open_printer: Error : failed to marshall NET_Q_SRV_PWSET struct.\n"));
-		prs_mem_free(&buf);
-		prs_mem_free(&rbuf);
-		return False;
+		DEBUG(0,("cli_spoolss_reply_open_printer: Error : failed to marshall SPOOL_Q_REPLYOPENPRINTER struct.\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* send the data on \PIPE\ */
 	if (!rpc_api_pipe_req(cli, SPOOLSS_REPLYOPENPRINTER, &buf, &rbuf)) {
-		prs_mem_free(&buf);
-		prs_mem_free(&rbuf);
-		return False;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
-
-	prs_mem_free(&buf);
 	
 	/* turn data stream into parameters*/
 	if(!spoolss_io_r_replyopenprinter("", &r_s, &rbuf, 0)) {
-		prs_mem_free(&rbuf);
-		return False;
+		DEBUG(0,("cli_spoolss_reply_open_printer: Error : failed to unmarshall SPOOL_R_REPLYOPENPRINTER struct.\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 	
+	memcpy(handle, &r_s.handle, sizeof(r_s.handle));
+	result = werror_to_ntstatus(r_s.status);
+
+done:
+	prs_mem_free(&buf);
 	prs_mem_free(&rbuf);
 
-	memcpy(handle, &r_s.handle, sizeof(r_s.handle));
-	*status=r_s.status;
-
-	return True;
+	return result;
 }
 
 /***************************************************************************
  do a reply open printer
 ****************************************************************************/
 
-BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, 
-				     WERROR *status)
+NTSTATUS cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					POLICY_HND *handle)
 {
+	NTSTATUS result;
 	prs_struct rbuf;
 	prs_struct buf; 
 
@@ -199,41 +204,227 @@ BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle,
 	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api  */
-/*
-	DEBUG(4,("cli_spoolss_reply_open_printer: srv:%s acct:%s sc: %d mc: %s clnt %s %x\n",
-           cli->srv_name_slash, cli->mach_acct, sec_chan_type, global_myname,
-           credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
-*/
+	
 	/* store the parameters */
 	make_spoolss_q_reply_closeprinter(&q_s, handle);
 
 	/* turn parameters into data stream */
 	if(!spoolss_io_q_replycloseprinter("", &q_s,  &buf, 0)) {
 		DEBUG(0,("cli_spoolss_reply_close_printer: Error : failed to marshall SPOOL_Q_REPLY_CLOSEPRINTER struct.\n"));
-		prs_mem_free(&buf);
-		prs_mem_free(&rbuf);
-		return False;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* send the data on \PIPE\ */
 	if (!rpc_api_pipe_req(cli, SPOOLSS_REPLYCLOSEPRINTER, &buf, &rbuf)) {
-		prs_mem_free(&buf);
-		prs_mem_free(&rbuf);
-		return False;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
-	prs_mem_free(&buf);
-	
 	/* turn data stream into parameters*/
 	if(!spoolss_io_r_replycloseprinter("", &r_s, &rbuf, 0)) {
-		prs_mem_free(&rbuf);
-		return False;
+		DEBUG(0,("cli_spoolss_reply_close_printer: Error : failed to marshall SPOOL_R_REPLY_CLOSEPRINTER struct.\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 	
+
+	result = werror_to_ntstatus(r_s.status);
+	
+done:
+	prs_mem_free(&buf);
 	prs_mem_free(&rbuf);
 
-	*status=r_s.status;
+	return result;
+}
 
-	return True;
+ 
+/*********************************************************************
+ This SPOOLSS_ROUTERREPLYPRINTER function is used to send a change 
+ notification event when the registration **did not** use 
+ SPOOL_NOTIFY_OPTION_TYPE structure to specify the events to monitor.
+ Also see cli_spolss_reply_rrpcn()
+ *********************************************************************/
+ 
+NTSTATUS cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					POLICY_HND *pol, uint32 condition, uint32 changd_id)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ROUTERREPLYPRINTER q;
+        SPOOL_R_ROUTERREPLYPRINTER r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+
+	/* Initialise input parameters */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+
+	/* write the request */
+	make_spoolss_q_routerreplyprinter(&q, pol, condition, changd_id);
+
+	/* Marshall data and send request */
+	if (!spoolss_io_q_routerreplyprinter ("", &q, &qbuf, 0)) {
+		DEBUG(0,("cli_spoolss_routerreplyprinter: Unable to marshall SPOOL_Q_ROUTERREPLYPRINTER!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+		
+		
+	if (!rpc_api_pipe_req (cli, SPOOLSS_ROUTERREPLYPRINTER, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+	if (!spoolss_io_r_routerreplyprinter ("", &r, &rbuf, 0)) {
+		DEBUG(0,("cli_spoolss_routerreplyprinter: Unable to unmarshall SPOOL_R_ROUTERREPLYPRINTER!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+		
+	/* Return output parameters */
+	result = werror_to_ntstatus(r.status);
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
+
+/**********************************************************************************
+ Build the SPOOL_NOTIFY_INFO_DATA entries based upon the flags which have been set
+ *********************************************************************************/
+
+static int build_notify_data (TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer, uint32 flags, 
+			SPOOL_NOTIFY_INFO_DATA **notify_data)
+{
+	SPOOL_NOTIFY_INFO_DATA *data;
+	uint32 idx = 0;
+
+	/* Changing the printer driver */
+		
+	if (flags & PRINTER_MESSAGE_DRIVER) {
+		DEBUG(10,("build_notify_data: PRINTER_MESSAGE_DRIVER set on [%s][%d]\n",
+			printer->info_2->printername, idx));
+		if ((data=Realloc(*notify_data, (idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+			DEBUG(0,("build_notify_data: Realloc() failed with size [%d]!\n",
+				(idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA)));
+			return -1;
+		}
+		*notify_data = data;
+
+		/* clear memory */
+		memset(*notify_data+idx, 0x0, sizeof(SPOOL_NOTIFY_INFO_DATA));
+
+		/*
+		 * 'id' (last param here) is undefined when type == PRINTER_NOTIFY_TYPE
+		 * See PRINTER_NOTIFY_INFO_DATA entries in MSDN
+		 * --jerry
+		 */
+		construct_info_data(*notify_data+idx, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME, 0x00);
+
+		spoolss_notify_driver_name(-1, *notify_data+idx, NULL, printer, ctx);
+		idx++;
+	}
+	
+	return idx;
+}
+
+/*********************************************************************
+ This SPOOLSS_ROUTERREPLYPRINTER function is used to send a change 
+ notification event when the registration **did** use 
+ SPOOL_NOTIFY_OPTION_TYPE structure to specify the events to monitor
+ Also see cli_spoolss_routereplyprinter()
+ *********************************************************************/
+
+NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					POLICY_HND *handle, PRINTER_MESSAGE_INFO *info,
+					NT_PRINTER_INFO_LEVEL *printer)
+{
+	prs_struct rbuf;
+	prs_struct buf;
+
+	SPOOL_NOTIFY_INFO 	notify_info;
+	SPOOL_NOTIFY_INFO_DATA	*notify_data = NULL;
+	uint32 			data_len;
+
+	NTSTATUS result;
+
+	SPOOL_Q_REPLY_RRPCN q_s;
+	SPOOL_R_REPLY_RRPCN r_s;
+
+	if (!info) {
+		DEBUG(5,("cli_spoolss_reply_rrpcn: NULL printer message info pointer!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+		
+	prs_init(&buf, 1024, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0,   mem_ctx, UNMARSHALL );
+
+	ZERO_STRUCT(notify_info);
+
+	/*
+	 * See comments in _spoolss_setprinter() about PRINTER_CHANGE_XXX
+	 * events.  --jerry
+	 */
+	DEBUG(10,("cli_spoolss_reply_rrpcn: PRINTER_MESSAGE flags = 0x%8x\n", info->flags));
+
+	data_len = build_notify_data(mem_ctx, printer, info->flags, &notify_data);
+	if (info->flags && (data_len == -1)) {
+		DEBUG(0,("cli_spoolss_reply_rrpcn: Failed to build SPOOL_NOTIFY_INFO_DATA [flags == 0x%x] for printer [%s]\n",
+			info->flags, info->printer_name));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	notify_info.version = 0x2;
+	notify_info.flags   = 0x00020000;	/* ?? */
+	notify_info.count   = data_len;
+	notify_info.data    = notify_data;
+
+	/* create and send a MSRPC command with api  */
+	/* store the parameters */
+
+	make_spoolss_q_reply_rrpcn(&q_s, handle, info->low, info->high, &notify_info);
+
+	/* turn parameters into data stream */
+	if(!spoolss_io_q_reply_rrpcn("", &q_s,  &buf, 0)) {
+		DEBUG(0,("cli_spoolss_reply_rrpcn: Error : failed to marshall SPOOL_Q_REPLY_RRPCN struct.\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* send the data on \PIPE\ */
+	if (!rpc_api_pipe_req(cli, SPOOLSS_RRPCN, &buf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+
+	/* turn data stream into parameters*/
+	if(!spoolss_io_r_reply_rrpcn("", &r_s, &rbuf, 0)) {
+		DEBUG(0,("cli_spoolss_reply_rrpcn: Error : failed to unmarshall SPOOL_R_REPLY_RRPCN struct.\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	result = werror_to_ntstatus(r_s.status);
+
+done:
+	prs_mem_free(&buf);
+	prs_mem_free(&rbuf);
+	/*
+	 * The memory allocated in this array is talloc'd so we only need
+	 * free the array here. JRA.
+	 */
+	SAFE_FREE(notify_data);
+	
+	return result;
 }
 
