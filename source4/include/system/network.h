@@ -57,6 +57,10 @@
 #include <net/if.h>
 #endif
 
+#ifdef DEVELOPER
+#define SOCKET_WRAPPER_REPLACE
+#include "lib/socket_wrapper.h"
+#endif
 
 #ifdef REPLACE_INET_NTOA
 #define inet_ntoa rep_inet_ntoa

@@ -33,6 +33,14 @@ ADD_OBJ_FILES = \
 ##############################
 
 ##############################
+# Start SUBSYSTEM SOCKET_WRAPPER
+[SUBSYSTEM::SOCKET_WRAPPER]
+NOPROTO = YES
+INIT_OBJ_FILES = lib/socket_wrapper.o
+# End SUBSYSTEM SOCKET_WRAPPER
+##############################
+
+##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
 INIT_OBJ_FILES = lib/version.o
@@ -68,7 +76,8 @@ ADD_OBJ_FILES = \
 		lib/gendb.o \
 		lib/credentials.o
 REQUIRED_SUBSYSTEMS = \
-		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC
+		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC \
+		SOCKET_WRAPPER
 # End SUBSYSTEM LIBBASIC
 ##############################
 
