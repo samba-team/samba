@@ -1,5 +1,3 @@
-# $Id: smbldap-groupmod.pl,v 1.1.8.1 2003/08/28 16:59:51 jerry Exp $
-#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
