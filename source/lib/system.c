@@ -583,6 +583,9 @@ int sys_setgroups(int setlen, gid_t *gidset)
 struct saved_pw {
 	fstring 	pw_name;
 	fstring 	pw_passwd;
+	fstring		pw_gecos;
+	pstring		pw_dir;
+	pstring		pw_shell;
 	struct passwd pass;
 };
 
@@ -594,6 +597,26 @@ static int num_lookups; /* Counter so we don't always use cache. */
 #define PW_RET_CACHE_MAX_LOOKUPS 100
 #endif
 
+static void copy_pwent(struct saved_pw *dst, struct passwd *pass)
+{
+	memcpy((char *)&dst->pass, pass, sizeof(struct passwd));
+
+	fstrcpy(dst->pw_name, pass->pw_name);
+	dst->pass.pw_name = dst->pw_name;
+
+	fstrcpy(dst->pw_passwd, pass->pw_passwd);
+	dst->pass.pw_passwd = dst->pw_passwd;
+
+	fstrcpy(dst->pw_gecos, pass->pw_gecos);
+	dst->pass.pw_gecos = dst->pw_gecos;
+
+	pstrcpy(dst->pw_dir, pass->pw_dir);
+	dst->pass.pw_dir = dst->pw_dir;
+
+	pstrcpy(dst->pw_shell, pass->pw_shell);
+	dst->pass.pw_shell = dst->pw_shell;
+}
+
 static struct passwd *setup_pwret(struct passwd *pass)
 {
 	if (pass == NULL) {
@@ -604,25 +627,13 @@ static struct passwd *setup_pwret(struct passwd *pass)
 		return NULL;
 	}
 
-	/* this gets the uid, gid and null pointers */
-
-	memcpy((char *)&pw_mod.pass, pass, sizeof(struct passwd));
-	fstrcpy(pw_mod.pw_name, pass->pw_name);
-	pw_mod.pass.pw_name = pw_mod.pw_name;
-	fstrcpy(pw_mod.pw_passwd, pass->pw_passwd);
-	pw_mod.pass.pw_passwd = pw_mod.pw_passwd;
-
+	copy_pwent( &pw_mod, pass);
 
 	if (pass != &pw_cache.pass) {
 
 		/* If it's a cache miss we must also refill the cache. */
 
-		memcpy((char *)&pw_cache.pass, pass, sizeof(struct passwd));
-		fstrcpy(pw_cache.pw_name, pass->pw_name);
-		pw_cache.pass.pw_name = pw_cache.pw_name;
-		fstrcpy(pw_cache.pw_passwd, pass->pw_passwd);
-		pw_cache.pass.pw_passwd = pw_cache.pw_passwd;
-
+		copy_pwent( &pw_cache, pass);
 		num_lookups = 1;
 
 	} else {
