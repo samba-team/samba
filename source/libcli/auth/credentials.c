@@ -172,7 +172,7 @@ void creds_des_decrypt(struct creds_CredentialState *creds, struct samr_Password
 /*
   ARCFOUR encrypt/decrypt a password buffer using the session key
 */
-void creds_arcfour_crypt(struct creds_CredentialState *creds, char *data, size_t len)
+void creds_arcfour_crypt(struct creds_CredentialState *creds, uint8_t *data, size_t len)
 {
 	DATA_BLOB session_key = data_blob(creds->session_key, 16);
 
