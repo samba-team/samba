@@ -1443,11 +1443,6 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 	SAM_ACCOUNT *smbpass=NULL;
 	BOOL ret;
 
-	if (!pdb_rid_is_user(user_rid)) {
-		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
-		return False;
-	}
-
 	pdb_init_sam(&smbpass);
 
 	become_root();
@@ -1524,11 +1519,6 @@ static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, uint32 user_rid)
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
 
-	if (!pdb_rid_is_user(user_rid)) {
-		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
-		return False;
-	}
-
 	pdb_init_sam(&sampass);
 
 	become_root();
@@ -1561,11 +1551,6 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
-
-	if (!pdb_rid_is_user(user_rid)) {
-		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
-		return False;
-	}
 
 	pdb_init_sam(&sampass);
 
