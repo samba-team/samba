@@ -916,6 +916,9 @@ static void print_queue_update(int snum)
 
 	SAFE_FREE(tstruct.queue);
 
+	DEBUG(10,("print_queue_update: printer %s INFO/total_jobs = %d\n",
+				printer_name, tstruct.total_jobs ));
+
 	tdb_store_int32(pdb->tdb, "INFO/total_jobs", tstruct.total_jobs);
 
 	get_queue_status(snum, &old_status);
@@ -1732,6 +1735,9 @@ to open spool file %s.\n", pjob.filename));
 	}
 
 	pjob_store(snum, jobid, &pjob);
+
+	/* Ensure we keep a rough count of the number of total jobs... */
+	tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, 1);
 
 	release_print_db(pdb);
 
