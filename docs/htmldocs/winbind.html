@@ -13,8 +13,8 @@ REL="UP"
 TITLE="Optional configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="Printing Support"
-HREF="printing.html"><LINK
+TITLE="CUPS Printing Support"
+HREF="cups-printing.html"><LINK
 REL="NEXT"
 TITLE="Improved browsing in samba"
 HREF="improved-browsing.html"></HEAD
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="printing.html"
+HREF="cups-printing.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="WINBIND"
 ></A
->Chapter 14. Unified Logons between Windows NT and UNIX using Winbind</H1
+>Chapter 16. Unified Logons between Windows NT and UNIX using Winbind</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2263"
->14.1. Abstract</A
+NAME="AEN2685"
+>16.1. Abstract</A
 ></H1
 ><P
 >Integration of UNIX and Microsoft Windows NT through 
@@ -107,8 +107,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2267"
->14.2. Introduction</A
+NAME="AEN2689"
+>16.2. Introduction</A
 ></H1
 ><P
 >It is well known that UNIX and Microsoft Windows NT have 
@@ -161,8 +161,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2280"
->14.3. What Winbind Provides</A
+NAME="AEN2702"
+>16.3. What Winbind Provides</A
 ></H1
 ><P
 >Winbind unifies UNIX and Windows NT account management by 
@@ -203,8 +203,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2287"
->14.3.1. Target Uses</A
+NAME="AEN2709"
+>16.3.1. Target Uses</A
 ></H2
 ><P
 >Winbind is targeted at organizations that have an 
@@ -227,8 +227,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2291"
->14.4. How Winbind Works</A
+NAME="AEN2713"
+>16.4. How Winbind Works</A
 ></H1
 ><P
 >The winbind system is designed around a client/server 
@@ -247,8 +247,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2296"
->14.4.1. Microsoft Remote Procedure Calls</A
+NAME="AEN2718"
+>16.4.1. Microsoft Remote Procedure Calls</A
 ></H2
 ><P
 >Over the last few years, efforts have been underway 
@@ -273,8 +273,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2300"
->14.4.2. Microsoft Active Directory Services</A
+NAME="AEN2722"
+>16.4.2. Microsoft Active Directory Services</A
 ></H2
 ><P
 >                Since late 2001, Samba has gained the ability to
@@ -292,8 +292,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2303"
->14.4.3. Name Service Switch</A
+NAME="AEN2725"
+>16.4.3. Name Service Switch</A
 ></H2
 ><P
 >The Name Service Switch, or NSS, is a feature that is 
@@ -372,8 +372,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2319"
->14.4.4. Pluggable Authentication Modules</A
+NAME="AEN2741"
+>16.4.4. Pluggable Authentication Modules</A
 ></H2
 ><P
 >Pluggable Authentication Modules, also known as PAM, 
@@ -421,8 +421,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2327"
->14.4.5. User and Group ID Allocation</A
+NAME="AEN2749"
+>16.4.5. User and Group ID Allocation</A
 ></H2
 ><P
 >When a user or group is created under Windows NT 
@@ -447,8 +447,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2331"
->14.4.6. Result Caching</A
+NAME="AEN2753"
+>16.4.6. Result Caching</A
 ></H2
 ><P
 >An active system can generate a lot of user and group 
@@ -470,8 +470,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2334"
->14.5. Installation and Configuration</A
+NAME="AEN2756"
+>16.5. Installation and Configuration</A
 ></H1
 ><P
 >Many thanks to John Trostel <A
@@ -484,21 +484,13 @@ for providing the HOWTO for this section.</P
 >This HOWTO describes how to get winbind services up and running 
 to control access and authenticate users on your Linux box using 
 the winbind services which come with SAMBA 2.2.2.</P
-><P
->There is also some Solaris specific information in 
-<TT
-CLASS="FILENAME"
->docs/textdocs/Solaris-Winbind-HOWTO.txt</TT
->.
-Future revisions of this document will incorporate that
-information.</P
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2341"
->14.5.1. Introduction</A
+NAME="AEN2761"
+>16.5.1. Introduction</A
 ></H2
 ><P
 >This HOWTO describes the procedures used to get winbind up and 
@@ -556,8 +548,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2354"
->14.5.2. Requirements</A
+NAME="AEN2774"
+>16.5.2. Requirements</A
 ></H2
 ><P
 >If you have a samba configuration file that you are currently 
@@ -626,8 +618,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2368"
->14.5.3. Testing Things Out</A
+NAME="AEN2788"
+>16.5.3. Testing Things Out</A
 ></H2
 ><P
 >Before starting, it is probably best to kill off all the SAMBA 
@@ -671,8 +663,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2379"
->14.5.3.1. Configure and compile SAMBA</A
+NAME="AEN2799"
+>16.5.3.1. Configure and compile SAMBA</A
 ></H3
 ><P
 >The configuration and compilation of SAMBA is pretty straightforward.
@@ -737,8 +729,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2398"
->14.5.3.2. Configure <TT
+NAME="AEN2818"
+>16.5.3.2. Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
 > and the 
@@ -842,8 +834,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2431"
->14.5.3.3. Configure smb.conf</A
+NAME="AEN2851"
+>16.5.3.3. Configure smb.conf</A
 ></H3
 ><P
 >Several parameters are needed in the smb.conf file to control 
@@ -917,8 +909,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2447"
->14.5.3.4. Join the SAMBA server to the PDC domain</A
+NAME="AEN2867"
+>16.5.3.4. Join the SAMBA server to the PDC domain</A
 ></H3
 ><P
 >Enter the following command to make the SAMBA server join the 
@@ -955,8 +947,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2458"
->14.5.3.5. Start up the winbindd daemon and test it!</A
+NAME="AEN2878"
+>16.5.3.5. Start up the winbindd daemon and test it!</A
 ></H3
 ><P
 >Eventually, you will want to modify your smb startup script to 
@@ -971,6 +963,21 @@ CLASS="PROMPT"
 > <B
 CLASS="COMMAND"
 >/usr/local/samba/bin/winbindd</B
+></P
+><P
+>Winbindd can now also run in 'dual daemon mode'. This will make it 
+run as 2 processes. The first will answer all requests from the cache,
+thus making responses to clients faster. The other will
+update the cache for the query that the first has just responded.
+Advantage of this is that responses stay accurate and are faster. 
+You can enable dual daemon mode by adding '-B' to the commandline:</P
+><P
+><SAMP
+CLASS="PROMPT"
+>root#</SAMP
+> <B
+CLASS="COMMAND"
+>/usr/local/samba/bin/winbindd -B</B
 ></P
 ><P
 >I'm always paranoid and like to make sure the daemon 
@@ -1076,16 +1083,16 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2494"
->14.5.3.6. Fix the init.d startup scripts</A
+NAME="AEN2918"
+>16.5.3.6. Fix the init.d startup scripts</A
 ></H3
 ><DIV
 CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2496"
->14.5.3.6.1. Linux</A
+NAME="AEN2920"
+>16.5.3.6.1. Linux</A
 ></H4
 ><P
 >The <B
@@ -1149,8 +1156,22 @@ CLASS="PROGRAMLISTING"
 }</PRE
 ></P
 ><P
+>If you would like to run winbindd in dual daemon mode, replace 
+the line 
+<PRE
+CLASS="PROGRAMLISTING"
+>        daemon /usr/local/samba/bin/winbindd</PRE
+>
+
+in the example above with:
+
+<PRE
+CLASS="PROGRAMLISTING"
+>        daemon /usr/local/samba/bin/winbindd -B</PRE
+>.</P
+><P
 >The 'stop' function has a corresponding entry to shut down the 
-services and look s like this:</P
+services and looks like this:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -1180,8 +1201,8 @@ CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2513"
->14.5.3.6.2. Solaris</A
+NAME="AEN2940"
+>16.5.3.6.2. Solaris</A
 ></H4
 ><P
 >On solaris, you need to modify the 
@@ -1245,14 +1266,27 @@ echo Starting Winbind Daemon
    ;;
 esac</PRE
 ></P
+><P
+>Again, if you would like to run samba in dual daemon mode, replace 
+<PRE
+CLASS="PROGRAMLISTING"
+>   /usr/local/samba/bin/winbindd</PRE
+>
+
+in the script above with:
+
+<PRE
+CLASS="PROGRAMLISTING"
+>   /usr/local/samba/bin/winbindd -B</PRE
+></P
 ></DIV
 ><DIV
 CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2520"
->14.5.3.6.3. Restarting</A
+NAME="AEN2950"
+>16.5.3.6.3. Restarting</A
 ></H4
 ><P
 >If you restart the <B
@@ -1275,8 +1309,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2526"
->14.5.3.7. Configure Winbind and PAM</A
+NAME="AEN2956"
+>16.5.3.7. Configure Winbind and PAM</A
 ></H3
 ><P
 >If you have made it this far, you know that winbindd and samba are working
@@ -1333,8 +1367,8 @@ CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2543"
->14.5.3.7.1. Linux/FreeBSD-specific PAM configuration</A
+NAME="AEN2973"
+>16.5.3.7.1. Linux/FreeBSD-specific PAM configuration</A
 ></H4
 ><P
 >The <TT
@@ -1462,8 +1496,8 @@ CLASS="SECT4"
 ><H4
 CLASS="SECT4"
 ><A
-NAME="AEN2576"
->14.5.3.7.2. Solaris-specific configuration</A
+NAME="AEN3006"
+>16.5.3.7.2. Solaris-specific configuration</A
 ></H4
 ><P
 >The /etc/pam.conf needs to be changed. I changed this file so that my Domain
@@ -1549,8 +1583,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2583"
->14.6. Limitations</A
+NAME="AEN3013"
+>16.6. Limitations</A
 ></H1
 ><P
 >Winbind has a number of limitations in its current 
@@ -1591,8 +1625,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2593"
->14.7. Conclusion</A
+NAME="AEN3023"
+>16.7. Conclusion</A
 ></H1
 ><P
 >The winbind system, through the use of the Name Service 
@@ -1619,7 +1653,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="printing.html"
+HREF="cups-printing.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -1647,7 +1681,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Printing Support</TD
+>CUPS Printing Support</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

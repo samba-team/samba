@@ -80,7 +80,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN227"
+NAME="AEN234"
 >3.1. Introduction</A
 ></H1
 ><P
@@ -121,7 +121,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN234"
+NAME="AEN241"
 >3.2. Important Notes About Security</A
 ></H1
 ><P
@@ -182,6 +182,10 @@ CLASS="EMPHASIS"
 >Other Microsoft operating systems which also exhibit 
 		this behavior includes</P
 ><P
+> These versions of MS Windows do not support full domain
+		security protocols, although they may log onto a domain environment.
+		Of these Only MS Windows XP Home does NOT support domain logons.</P
+><P
 ></P
 ><TABLE
 BORDER="0"
@@ -202,7 +206,43 @@ BORDER="0"
 ></TR
 ><TR
 ><TD
->Windows 2000</TD
+>Windows Me</TD
+></TR
+><TR
+><TD
+>Windows XP Home</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+><P
+> The following versions of MS Windows fully support domain
+		security protocols.</P
+><P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>Windows NT 3.5x</TD
+></TR
+><TR
+><TD
+>Windows NT 4.0</TD
+></TR
+><TR
+><TD
+>Windows 2000 Professional</TD
+></TR
+><TR
+><TD
+>Windows 200x Server/Advanced Server</TD
+></TR
+><TR
+><TD
+>Windows XP Professional</TD
 ></TR
 ></TBODY
 ></TABLE
@@ -220,6 +260,21 @@ CLASS="EMPHASIS"
 		SMB Challenge/Response mechanism described here.  Enabling
 		clear text authentication does not disable the ability
 		of the client to participate in encrypted authentication.</P
+><P
+>MS Windows clients will cache the encrypted password alone.
+		Even when plain text passwords are re-enabled, through the appropriate
+		registry change, the plain text password is NEVER cached. This means that
+		in the event that a network connections should become disconnected (broken)
+		only the cached (encrypted) password will be sent to the resource server
+		to affect a auto-reconnect. If the resource server does not support encrypted
+		passwords the auto-reconnect will fail. <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>USE OF ENCRYPTED PASSWORDS
+		IS STRONGLY ADVISED.</I
+></SPAN
+></P
 ></TD
 ></TR
 ></TABLE
@@ -229,7 +284,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN249"
+NAME="AEN267"
 >3.2.1. Advantages of SMB Encryption</A
 ></H2
 ><P
@@ -239,19 +294,24 @@ BORDER="0"
 ><TBODY
 ><TR
 ><TD
->plain text passwords are not passed across 
+>Plain text passwords are not passed across 
 			the network. Someone using a network sniffer cannot just 
 			record passwords going to the SMB server.</TD
 ></TR
 ><TR
 ><TD
 >WinNT doesn't like talking to a server 
-			that isn't using SMB encrypted passwords. It will refuse 
+			that SM not support encrypted passwords. It will refuse 
 			to browse the server if the server is also in user level 
 			security mode. It will insist on prompting the user for the 
 			password on each connection, which is very annoying. The
 			only things you can do to stop this is to use SMB encryption.
 			</TD
+></TR
+><TR
+><TD
+>Encrypted password support allows auto-matic share
+			(resource) reconnects.</TD
 ></TR
 ></TBODY
 ></TABLE
@@ -263,7 +323,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN254"
+NAME="AEN273"
 >3.2.2. Advantages of non-encrypted passwords</A
 ></H2
 ><P
@@ -273,20 +333,19 @@ BORDER="0"
 ><TBODY
 ><TR
 ><TD
->plain text passwords are not kept 
-			on disk. </TD
+>Plain text passwords are not kept 
+			on disk, and are NOT cached in memory. </TD
 ></TR
 ><TR
 ><TD
->uses same password file as other unix 
+>Uses same password file as other unix 
 			services such as login and ftp</TD
 ></TR
 ><TR
 ><TD
->you are probably already using other 
-			services (such as telnet and ftp) which send plain text 
-			passwords over the net, so sending them for SMB isn't 
-			such a big deal.</TD
+>Use of other services (such as telnet and ftp) which
+			send plain text passwords over the net, so sending them for SMB
+			isn't such a big deal.</TD
 ></TR
 ></TBODY
 ></TABLE
@@ -299,7 +358,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN260"
+NAME="AEN279"
 >3.3. The smbpasswd Command</A
 ></H1
 ><P
@@ -311,8 +370,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >yppasswd</B
 > programs.
-	It maintains the two 32 byte password fields 
-	in the passdb backend. </P
+	It maintains the two 32 byte password fields in the passdb backend. </P
 ><P
 ><B
 CLASS="COMMAND"
@@ -403,7 +461,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN291"
+NAME="AEN310"
 >3.4. Plain text</A
 ></H1
 ><P
@@ -423,7 +481,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN296"
+NAME="AEN315"
 >3.5. TDB</A
 ></H1
 ><P
@@ -436,7 +494,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN299"
+NAME="AEN318"
 >3.6. LDAP</A
 ></H1
 ><DIV
@@ -444,7 +502,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN301"
+NAME="AEN320"
 >3.6.1. Introduction</A
 ></H2
 ><P
@@ -512,7 +570,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN321"
+NAME="AEN340"
 >3.6.2. Introduction</A
 ></H2
 ><P
@@ -621,15 +679,16 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN350"
+NAME="AEN369"
 >3.6.3. Supported LDAP Servers</A
 ></H2
 ><P
->The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
-2.0 server and client libraries.  The same code should be able to work with
-Netscape's Directory Server and client SDK. However, due to lack of testing
-so far, there are bound to be compile errors and bugs.  These should not be
-hard to fix. If you are so inclined, please be sure to forward all patches to
+>The LDAP samdb code in 2.2.3 (and later) has been developed and tested
+using the OpenLDAP 2.0 server and client libraries. 
+The same code should be able to work with Netscape's Directory Server
+and client SDK. However, due to lack of testing so far, there are bound
+to be compile errors and bugs.  These should not be hard to fix.
+If you are so inclined, please be sure to forward all patches to
 <A
 HREF="samba-patches@samba.org"
 TARGET="_top"
@@ -646,7 +705,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN355"
+NAME="AEN374"
 >3.6.4. Schema and Relationship to the RFC 2307 posixAccount</A
 ></H2
 ><P
@@ -703,7 +762,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN367"
+NAME="AEN386"
 >3.6.5. Configuring Samba with LDAP</A
 ></H2
 ><DIV
@@ -711,7 +770,7 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN369"
+NAME="AEN388"
 >3.6.5.1. OpenLDAP configuration</A
 ></H3
 ><P
@@ -793,7 +852,7 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN386"
+NAME="AEN405"
 >3.6.5.2. Configuring Samba</A
 ></H3
 ><P
@@ -909,7 +968,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN414"
+NAME="AEN433"
 >3.6.6. Accounts and Groups management</A
 ></H2
 ><P
@@ -934,7 +993,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN419"
+NAME="AEN438"
 >3.6.7. Security and sambaAccount</A
 ></H2
 ><P
@@ -1013,7 +1072,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN439"
+NAME="AEN458"
 >3.6.8. LDAP specials attributes for sambaAccounts</A
 ></H2
 ><P
@@ -1220,7 +1279,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN509"
+NAME="AEN528"
 >3.6.9. Example LDIF Entries for a sambaAccount</A
 ></H2
 ><P
@@ -1279,7 +1338,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN517"
+NAME="AEN536"
 >3.7. MySQL</A
 ></H1
 ><DIV
@@ -1287,7 +1346,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN519"
+NAME="AEN538"
 >3.7.1. Building</A
 ></H2
 ><P
@@ -1308,7 +1367,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN525"
+NAME="AEN544"
 >3.7.2. Creating the database</A
 ></H2
 ><P
@@ -1344,7 +1403,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN535"
+NAME="AEN554"
 >3.7.3. Configuring</A
 ></H2
 ><P
@@ -1455,7 +1514,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN552"
+NAME="AEN571"
 >3.7.4. Using plaintext passwords or encrypted password</A
 ></H2
 ><P
@@ -1470,7 +1529,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN557"
+NAME="AEN576"
 >3.7.5. Getting non-column data from the table</A
 ></H2
 ><P
@@ -1496,7 +1555,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN565"
+NAME="AEN584"
 >3.8. Passdb XML plugin</A
 ></H1
 ><DIV
@@ -1504,7 +1563,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN567"
+NAME="AEN586"
 >3.8.1. Building</A
 ></H2
 ><P
@@ -1524,7 +1583,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN573"
+NAME="AEN592"
 >3.8.2. Usage</A
 ></H2
 ><P

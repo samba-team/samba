@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Samba as a NT4 or Win2k Primary Domain Controller</TITLE
+>Samba as an NT4 or Win2k Primary Domain Controller</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
@@ -13,7 +13,7 @@ REL="UP"
 TITLE="Type of installation"
 HREF="type.html"><LINK
 REL="PREVIOUS"
-TITLE="User and Share security level (for servers not in a domain)"
+TITLE="Samba as Stand-Alone server (User and Share security level)"
 HREF="securitylevels.html"><LINK
 REL="NEXT"
 TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-PDC"
 ></A
->Chapter 5. Samba as a NT4 or Win2k Primary Domain Controller</H1
+>Chapter 6. Samba as an NT4 or Win2k Primary Domain Controller</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN625"
->5.1. Prerequisite Reading</A
+NAME="AEN705"
+>6.1. Prerequisite Reading</A
 ></H1
 ><P
 >Before you continue reading in this chapter, please make sure 
@@ -96,98 +96,42 @@ CLASS="FILENAME"
 >smb.conf(5)</TT
 ></A
 > 
-manpage and the <A
-HREF="ENCRYPTION.html"
-TARGET="_top"
->Encryption chapter</A
-> 
-of this HOWTO Collection.</P
+manpage.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN631"
->5.2. Background</A
+NAME="AEN710"
+>6.2. Background</A
 ></H1
-><DIV
-CLASS="NOTE"
 ><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Author's Note:</I
-></SPAN
-> This document is a combination 
-of David Bannon's "Samba 2.2 PDC HOWTO" and "Samba NT Domain FAQ". 
-Both documents are superseded by this one.</P
-></TD
-></TR
-></TABLE
-></DIV
-><P
->Versions of Samba prior to release 2.2 had marginal capabilities to act
-as a Windows NT 4.0 Primary Domain Controller
-
-(PDC).  With Samba 2.2.0, we are proud to announce official support for
-Windows NT 4.0-style domain logons from Windows NT 4.0 and Windows 
-2000 clients.  This article outlines the steps
-necessary for configuring Samba as a PDC.  It is necessary to have a
-working Samba server prior to implementing the PDC functionality.  If
-you have not followed the steps outlined in <A
-HREF="UNIX_INSTALL.html"
-TARGET="_top"
-> UNIX_INSTALL.html</A
->, please make sure
-that your server is configured correctly before proceeding.  Another
-good resource in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5) man
-page</A
->. The following functionality should work in 2.2:</P
+>This article outlines the steps necessary for configuring Samba as a PDC.
+It is necessary to have a working Samba server prior to implementing the
+PDC functionality.</P
 ><P
 ></P
 ><UL
 ><LI
 ><P
->	domain logons for Windows NT 4.0/2000 clients.
+>	domain logons for Windows NT 4.0 / 200x / XP Professional clients.
 	</P
 ></LI
 ><LI
 ><P
->	placing a Windows 9x client in user level security
+>	placing Windows 9x / Me clients in user level security
 	</P
 ></LI
 ><LI
 ><P
 >	retrieving a list of users and groups from a Samba PDC to
-	Windows 9x/NT/2000 clients
+	Windows 9x / Me / NT / 200x / XP Professional clients
 	</P
 ></LI
 ><LI
 ><P
->	roving (roaming) user profiles
+>	roaming user profiles
 	</P
 ></LI
 ><LI
@@ -197,7 +141,7 @@ page</A
 ></LI
 ></UL
 ><P
->The following pieces of functionality are not included in the 2.2 release:</P
+>The following functionalities are new to the Samba 3.0 release:</P
 ><P
 ></P
 ><UL
@@ -208,13 +152,19 @@ page</A
 ></LI
 ><LI
 ><P
->	SAM replication with Windows NT 4.0 Domain Controllers
-	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
+>	Adding users via the User Manager for Domains
 	</P
 ></LI
+></UL
+><P
+>The following functionalities are NOT provided by Samba 3.0:</P
+><P
+></P
+><UL
 ><LI
 ><P
->	Adding users via the User Manager for Domains
+>	SAM replication with Windows NT 4.0 Domain Controllers
+	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
 	</P
 ></LI
 ><LI
@@ -225,13 +175,22 @@ page</A
 ></LI
 ></UL
 ><P
->Please note that Windows 9x clients are not true members of a domain
+>Please note that Windows 9x / Me / XP Home clients are not true members of a domain
 for reasons outlined in this article.  Therefore the protocol for
 support Windows 9x-style domain logons is completely different
-from NT4 domain logons and has been officially supported for some 
+from NT4 / Win2k type domain logons and has been officially supported for some 
 time.</P
 ><P
->Implementing a Samba PDC can basically be divided into 2 broad
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>MS Windows XP Home edition is NOT able to join a domain and does not permit
+the use of domain logons.</I
+></SPAN
+></P
+><P
+>Implementing a Samba PDC can basically be divided into 3 broad
 steps.</P
 ><P
 ></P
@@ -244,8 +203,12 @@ TYPE="1"
 ></LI
 ><LI
 ><P
->	Creating machine trust accounts	and joining clients 
-	to the domain
+>	Creating machine trust accounts	and joining clients to the domain
+	</P
+></LI
+><LI
+><P
+>	Adding and managing domain user accounts
 	</P
 ></LI
 ></OL
@@ -253,27 +216,26 @@ TYPE="1"
 >There are other minor details such as user profiles, system
 policies, etc...  However, these are not necessarily specific
 to a Samba PDC as much as they are related to Windows NT networking
-concepts.  They will be mentioned only briefly here.</P
+concepts.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN670"
->5.3. Configuring the Samba Domain Controller</A
+NAME="AEN748"
+>6.3. Configuring the Samba Domain Controller</A
 ></H1
 ><P
 >The first step in creating a working Samba PDC is to 
-understand the parameters necessary in smb.conf.  I will not
-attempt to re-explain the parameters here as they are more that
-adequately covered in <A
+understand the parameters necessary in smb.conf. Here we
+attempt to explain the parameters that are covered in
+<A
 HREF="smb.conf.5.html"
 TARGET="_top"
 > the smb.conf
 man page</A
->.  For convenience, the parameters have been
-linked with the actual smb.conf description.</P
+>.</P
 ><P
 >Here is an example <TT
 CLASS="FILENAME"
@@ -351,8 +313,7 @@ TARGET="_top"
 >logon path</A
 > = \\%N\profiles\%u
     
-    ; where is a user's home directory and where should it
-    ; be mounted at?
+    ; where is a user's home directory and where should it be mounted at?
     <A
 HREF="smb.conf.5.html#LOGONDRIVE"
 TARGET="_top"
@@ -450,25 +411,17 @@ CLASS="FILENAME"
 ></LI
 ></UL
 ><P
->As Samba 2.2 does not offer a complete implementation of group mapping
+>Samba 3.0 offers a complete implementation of group mapping
 between Windows NT groups and Unix groups (this is really quite
-complicated to explain in a short space), you should refer to the
-<A
-HREF="smb.conf.5.html#DOMAINADMINGROUP"
-TARGET="_top"
->domain admin
-group</A
-> smb.conf parameter for information of creating "Domain
-Admins" style accounts.</P
+complicated to explain in a short space).</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN713"
->5.4. Creating Machine Trust Accounts and Joining Clients to the
-Domain</A
+NAME="AEN790"
+>6.4. Creating Machine Trust Accounts and Joining Clients to the Domain</A
 ></H1
 ><P
 >A machine trust account is a Samba account that is used to
@@ -480,14 +433,127 @@ Account."</P
 secure communication with the Domain Controller.  This is a security
 feature to prevent an unauthorized machine with the same NetBIOS name
 from joining the domain and gaining access to domain user/group
-accounts.  Windows NT and 2000 clients use machine trust accounts, but
-Windows 9x clients do not.  Hence, a Windows 9x client is never a true
-member of a domain because it does not possess a machine trust
-account, and thus has no shared secret with the domain controller.</P
+accounts.  Windows NT, 200x, XP Professional clients use machine trust
+accounts, but Windows 9x / Me / XP Home clients do not.  Hence, a
+Windows 9x / Me / XP Home  client is never a true member of a domain
+because it does not possess a machine trust account, and thus has no
+shared secret with the domain controller.</P
 ><P
 >A Windows PDC stores each machine trust account in the Windows
-Registry.  A Samba PDC, however, stores each machine trust account 
-in two parts, as follows:
+Registry. A Samba-3 PDC also has to stoe machine trust account information
+in a suitable back-end data store. With Samba-3 there can be multiple back-ends
+for this including:</P
+><P
+></P
+><UL
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>smbpaswd</I
+></SPAN
+> - the plain ascii file stored used by
+	earlier versions of Samba. This file configuration option requires
+	a Unix/Linux system account for EVERY entry (ie: both for user and for
+	machine accounts). This file will be located in the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>private</I
+></SPAN
+>
+	directory (default is /usr/local/samba/lib/private or on linux /etc/samba).
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>smbpasswd_nua</I
+></SPAN
+> - This file is independant of the
+	system wide user accounts. The use of this back-end option requires
+	specification of the "non unix account range" option also. It is called
+	smbpasswd and will be located in the <TT
+CLASS="FILENAME"
+>private</TT
+> directory.
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>tdbsam</I
+></SPAN
+> - a binary database backend that will be
+	stored in the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>private</I
+></SPAN
+> directory in a file called
+	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>passwd.tdb</I
+></SPAN
+>. The key benefit of this binary format
+	file is that it can store binary objects that can not be accomodated
+	in the traditional plain text smbpasswd file.
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>tdbsam_nua</I
+></SPAN
+> like the smbpasswd_nua option above, this
+	file allows the creation of arbitrary user and machine accounts without
+	requiring that account to be added to the system (/etc/passwd) file. It
+	too requires the specification of the "non unix account range" option
+	in the [globals] section of the smb.conf file.
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ldapsam</I
+></SPAN
+> - An LDAP based back-end. Permits the
+	LDAP server to be specified. eg: ldap://localhost or ldap://frodo.murphy.com
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ldapsam_nua</I
+></SPAN
+> - LDAP based back-end with no unix
+	account requirement, like smbpasswd_nua and tdbsam_nua above.
+	</P
+></LI
+></UL
+><P
+>A Samba PDC, however, stores each machine trust account in two parts,
+as follows:
 
 <P
 ></P
@@ -540,8 +606,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN732"
->5.4.1. Manual Creation of Machine Trust Accounts</A
+NAME="AEN833"
+>6.4.1. Manual Creation of Machine Trust Accounts</A
 ></H2
 ><P
 >The first step in manually creating a machine trust account is to
@@ -710,8 +776,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN773"
->5.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
+NAME="AEN874"
+>6.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
 ></H2
 ><P
 >The second (and recommended) way of creating machine trust accounts is
@@ -747,8 +813,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN782"
->5.4.3. Joining the Client to the Domain</A
+NAME="AEN883"
+>6.4.3. Joining the Client to the Domain</A
 ></H2
 ><P
 >The procedure for joining a client to the domain varies with the
@@ -815,8 +881,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN797"
->5.5. Common Problems and Errors</A
+NAME="AEN898"
+>6.5. Common Problems and Errors</A
 ></H1
 ><P
 ></P
@@ -1021,8 +1087,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN845"
->5.6. System Policies and Profiles</A
+NAME="AEN946"
+>6.6. System Policies and Profiles</A
 ></H1
 ><P
 >Much of the information necessary to implement System Policies and
@@ -1198,8 +1264,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN889"
->5.7. What other help can I get?</A
+NAME="AEN990"
+>6.7. What other help can I get?</A
 ></H1
 ><P
 >There are many sources of information available in the form 
@@ -1618,8 +1684,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1003"
->5.8. Domain Control for Windows 9x/ME</A
+NAME="AEN1104"
+>6.8. Domain Control for Windows 9x/ME</A
 ></H1
 ><DIV
 CLASS="NOTE"
@@ -1752,8 +1818,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1029"
->5.8.1. Configuration Instructions:	Network Logons</A
+NAME="AEN1130"
+>6.8.1. Configuration Instructions:	Network Logons</A
 ></H2
 ><P
 >The main difference between a PDC and a Windows 9x logon 
@@ -1858,8 +1924,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1048"
->5.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
+NAME="AEN1149"
+>6.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
 ></H2
 ><DIV
 CLASS="WARNING"
@@ -1911,8 +1977,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1056"
->5.8.2.1. Windows NT Configuration</A
+NAME="AEN1157"
+>6.8.2.1. Windows NT Configuration</A
 ></H3
 ><P
 >To support WinNT clients, in the [global] section of smb.conf set the
@@ -1962,8 +2028,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1064"
->5.8.2.2. Windows 9X Configuration</A
+NAME="AEN1165"
+>6.8.2.2. Windows 9X Configuration</A
 ></H3
 ><P
 >To support Win9X clients, you must use the "logon home" parameter. Samba has
@@ -1993,8 +2059,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1072"
->5.8.2.3. Win9X and WinNT Configuration</A
+NAME="AEN1173"
+>6.8.2.3. Win9X and WinNT Configuration</A
 ></H3
 ><P
 >You can support profiles for both Win9X and WinNT clients by setting both the
@@ -2038,8 +2104,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1079"
->5.8.2.4. Windows 9X Profile Setup</A
+NAME="AEN1180"
+>6.8.2.4. Windows 9X Profile Setup</A
 ></H3
 ><P
 >When a user first logs in on Windows 9X, the file user.DAT is created,
@@ -2198,8 +2264,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1115"
->5.8.2.5. Windows NT Workstation 4.0</A
+NAME="AEN1216"
+>6.8.2.5. Windows NT Workstation 4.0</A
 ></H3
 ><P
 >When a user first logs in to a Windows NT Workstation, the profile
@@ -2312,8 +2378,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1128"
->5.8.2.6. Windows NT Server</A
+NAME="AEN1229"
+>6.8.2.6. Windows NT Server</A
 ></H3
 ><P
 >There is nothing to stop you specifying any path that you like for the
@@ -2326,8 +2392,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1131"
->5.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
+NAME="AEN1232"
+>6.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
 ></H3
 ><DIV
 CLASS="WARNING"
@@ -2419,8 +2485,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1141"
->5.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
+NAME="AEN1242"
+>6.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></H1
 ><DIV
 CLASS="WARNING"
@@ -2596,7 +2662,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->User and Share security level (for servers not in a domain)</TD
+>Samba as Stand-Alone server (User and Share security level)</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

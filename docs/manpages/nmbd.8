@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "24 March 2003" "" ""
+.TH "NMBD" "8" "30 March 2003" "" ""
 
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
@@ -145,36 +145,6 @@ level file.
 File name for log/debug files. The extension
 ".client" will be appended. The log file is
 never removed by the client.
-.TP
-\fB-n <primary NetBIOS name>\fR
-This option allows you to override
-the NetBIOS name that Samba uses for itself. This is identical
-to setting the \fINetBIOS
-name\fR parameter in the \fBsmb.conf\fR(5) file.  However, a command
-line setting will take precedence over settings in
-\fBsmb.conf\fR(5).
-.TP
-\fB-i <scope>\fR
-This specifies a NetBIOS scope that
-\fBnmblookup\fR will use to communicate with when
-generating NetBIOS names. For details on the use of NetBIOS
-scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes are
-\fBvery\fR rarely used, only set this parameter
-if you are the system administrator in charge of all the
-NetBIOS systems you communicate with.
-.TP
-\fB-W|--workgroup=domain\fR
-Set the SMB domain of the username.   This
-overrides the default domain which is the domain defined in
-smb.conf.  If the domain specified is the same as the servers 
-NetBIOS name, it causes the client to log on using the servers local 
-SAM (as opposed to the Domain SAM). 
-.TP
-\fB-O socket options\fR
-TCP socket options to set on the client
-socket. See the socket options parameter in
-the \fBsmb.conf\fR(5) manual page for the list of valid
-options. 
 .TP
 \fB-p <UDP port number>\fR
 UDP port number is a positive integer value.

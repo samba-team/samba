@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "24 March 2003" "" ""
+.TH "SMB.CONF" "5" "30 March 2003" "" ""
 
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
@@ -661,6 +661,9 @@ each parameter for details.  Note that some are synonyms.
 \fIldap admin dn\fR
 .TP 0.2i
 \(bu
+\fIldap delete dn\fR
+.TP 0.2i
+\(bu
 \fIldap del only sam attr\fR
 .TP 0.2i
 \(bu
@@ -872,6 +875,9 @@ each parameter for details.  Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIpreload\fR
+.TP 0.2i
+\(bu
+\fIpreload modules\fR
 .TP 0.2i
 \(bu
 \fIprintcap\fR
@@ -2525,7 +2531,7 @@ DOS SMB clients assume the server has
 the same charset as they do. This option specifies which 
 charset Samba should talk to DOS clients.
 
-The default depends on which charsets you have instaled. 
+The default depends on which charsets you have installed. 
 Samba tries to use charset 850 but falls back to ASCII in 
 case it is not available. Run \fBtestparm\fR(1) to check the default on your system.
 .TP
@@ -3350,10 +3356,13 @@ to accmplish this.
 .TP
 \fB>ldap del only sam attr (G)\fR
 This parameter specifies whether a delete
-operation in the ldapsam deletes only the Samba-specific
-attributes or the complete LDAP entry.
+operation in the ldapsam deletes the complete entry or only the attributes
+specific to Samba.
 
-Default : \fBldap del only sam attr = yes\fR
+Default : \fBldap delete dn = no\fR
+.TP
+\fB>ldap del only sam attr (G)\fR
+Inverted synonym for \fI  ldap delete dn\fR.
 .TP
 \fB>ldap filter (G)\fR
 This parameter specifies the RFC 2254 compliant LDAP search filter.
@@ -5329,6 +5338,18 @@ printcap file loaded then the   \fIload printers\fR option is easier.
 Default: \fBno preloaded services\fR
 
 Example: \fBpreload = fred lp colorlp\fR
+.TP
+\fB>preload modules (G)\fR
+This is a list of paths to modules that should 
+be loaded into smbd before a client connects. This improves 
+the speed of smbd when reacting to new connections somewhat. 
+
+It is recommended to only use this option on heavy-performance 
+servers.
+
+Default: \fBpreload modules = \fR
+
+Example: \fBpreload modules = /usr/lib/samba/passdb/mysql.so\fR
 .TP
 \fB>preserve case (S)\fR
 This controls if new filenames are created
