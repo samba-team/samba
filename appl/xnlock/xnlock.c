@@ -1064,10 +1064,14 @@ main (int argc, char **argv)
     }
 
     XtRealizeWidget(override);
-    XGrabPointer(dpy, XtWindow(widget), TRUE, 0, GrabModeAsync,
-		 GrabModeAsync, XtWindow(widget), None, CurrentTime);
-    XGrabKeyboard(dpy, XtWindow(widget), TRUE, GrabModeAsync,
-		  GrabModeAsync, CurrentTime);
+    if((i = XGrabPointer(dpy, XtWindow(widget), True, 0, GrabModeAsync,
+			 GrabModeAsync, XtWindow(widget), 
+			 None, CurrentTime)) != 0) 
+	errx(1, "Failed to grab pointer (%d)", i);
+	
+    if((i = XGrabKeyboard(dpy, XtWindow(widget), True, GrabModeAsync,
+			  GrabModeAsync, CurrentTime)) != 0)
+	errx(1, "Failed to grab keyboard (%d)", i);
     ScreenSaver(1);
     XtAppMainLoop(app);
     exit(0);
