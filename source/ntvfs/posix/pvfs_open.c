@@ -34,8 +34,6 @@
 #define PVFS_MIN_NEW_FNUM  0x200
 #define PVFS_MIN_DIR_FNUM  0x300
 
-#define SHARING_VIOLATION_DELAY 1000000
-
 /*
   find open file handle given fnum
 */
@@ -540,7 +538,7 @@ static NTSTATUS pvfs_open_setup_retry(struct smbsrv_request *req,
 	r->io = io;
 	r->f = f;
 	r->req = req;
-	r->end_time = timeval_current_ofs(0, SHARING_VIOLATION_DELAY);
+	r->end_time = timeval_current_ofs(0, pvfs->sharing_violation_delay);
 	r->open_flags = open_flags;
 
 	/* setup a pending lock */

@@ -50,6 +50,9 @@ struct pvfs_state {
 	/* a list of pending async requests. Needed to support
 	   ntcancel */
 	struct pvfs_wait *wait_list;
+
+	/* the sharing violation timeout */
+	uint_t sharing_violation_delay;
 };
 
 
