@@ -155,7 +155,7 @@ int init_wins_partner_table(void)
 	char **partner = lp_list_make(lp_wins_partners());
 
 	if (partner==NULL) {
-		DEBUG(0,("wrepld: no partner list, exiting\n"));
+		DEBUG(0,("wrepld: no partner list in smb.conf, exiting\n"));
 		exit_server("normal exit");
 		return(0);
 	}

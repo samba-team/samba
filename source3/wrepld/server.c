@@ -263,7 +263,7 @@ static BOOL create_listen_fdset(void)
 			set_socket_options(s,user_socket_options);
       
 			if (listen(s, 5) == -1) {
-				DEBUG(0,("listen: %s\n",strerror(errno)));
+				DEBUG(5,("listen: %s\n",strerror(errno)));
 				close(s);
 				return False;
 			}
