@@ -54,10 +54,6 @@ typedef int BOOL;
 #define DEF_CREATE_MASK (0755)
 #endif
 
-#ifndef PRINTCAP_NAME
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
 

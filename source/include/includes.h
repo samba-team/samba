@@ -29,6 +29,7 @@
 
 #ifdef AIX
 #define DEFAULT_PRINTING PRINT_AIX
+#define PRINTCAP_NAME "/etc/qconfig"
 #endif
 
 #ifdef HPUX
@@ -543,8 +544,10 @@ extern int errno;
 #ifndef DEFAULT_PRINTING
 #ifdef SYSV
 #define DEFAULT_PRINTING PRINT_SYSV
+#define PRINTCAP_NAME "lpstat"
 #else
 #define DEFAULT_PRINTING PRINT_BSD
+#define PRINTCAP_NAME "/etc/printcap"
 #endif
 #endif
 
