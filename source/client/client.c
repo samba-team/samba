@@ -1909,7 +1909,7 @@ static int cmd_privileges(const char **cmd_ptr)
 	unsigned i;
 
 	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-		d_printf("lookupsid <sid>\n");
+		d_printf("privileges <sid|name>\n");
 		talloc_free(mem_ctx);
 		return 1;
 	}
@@ -1935,6 +1935,107 @@ static int cmd_privileges(const char **cmd_ptr)
 
 	for (i=0;i<rights.count;i++) {
 		d_printf("\t%s\n", rights.names[i].string);
+	}
+
+	talloc_free(mem_ctx);
+
+	return 0;
+}
+
+
+/****************************************************************************
+add privileges for a user
+****************************************************************************/
+static int cmd_addprivileges(const char **cmd_ptr)
+{
+	fstring buf;
+	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	NTSTATUS status;
+	struct dom_sid *sid;
+	struct lsa_RightSet rights;
+
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		d_printf("addprivileges <sid> <privilege...>\n");
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	sid = dom_sid_parse_talloc(mem_ctx, buf);
+	if (sid == NULL) {
+		const char *sid_str;
+		status = smblsa_lookup_name(cli, buf, mem_ctx, &sid_str);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("lsa_LookupNames - %s\n", nt_errstr(status));
+			talloc_free(mem_ctx);
+			return 1;
+		}
+		sid = dom_sid_parse_talloc(mem_ctx, sid_str);
+	}
+
+	ZERO_STRUCT(rights);
+	while (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		rights.names = talloc_realloc_p(mem_ctx, rights.names, 
+						struct lsa_String, rights.count+1);
+		rights.names[rights.count].string = talloc_strdup(mem_ctx, buf);
+		rights.count++;
+	}
+
+
+	status = smblsa_sid_add_privileges(cli, sid, mem_ctx, &rights);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("lsa_AddAccountRights - %s\n", nt_errstr(status));
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	talloc_free(mem_ctx);
+
+	return 0;
+}
+
+/****************************************************************************
+delete privileges for a user
+****************************************************************************/
+static int cmd_delprivileges(const char **cmd_ptr)
+{
+	fstring buf;
+	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	NTSTATUS status;
+	struct dom_sid *sid;
+	struct lsa_RightSet rights;
+
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		d_printf("delprivileges <sid> <privilege...>\n");
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	sid = dom_sid_parse_talloc(mem_ctx, buf);
+	if (sid == NULL) {
+		const char *sid_str;
+		status = smblsa_lookup_name(cli, buf, mem_ctx, &sid_str);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("lsa_LookupNames - %s\n", nt_errstr(status));
+			talloc_free(mem_ctx);
+			return 1;
+		}
+		sid = dom_sid_parse_talloc(mem_ctx, sid_str);
+	}
+
+	ZERO_STRUCT(rights);
+	while (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		rights.names = talloc_realloc_p(mem_ctx, rights.names, 
+						struct lsa_String, rights.count+1);
+		rights.names[rights.count].string = talloc_strdup(mem_ctx, buf);
+		rights.count++;
+	}
+
+
+	status = smblsa_sid_del_privileges(cli, sid, mem_ctx, &rights);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("lsa_RemoveAccountRights - %s\n", nt_errstr(status));
+		talloc_free(mem_ctx);
+		return 1;
 	}
 
 	talloc_free(mem_ctx);
@@ -2492,6 +2593,7 @@ static struct
 } commands[] = 
 {
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+  {"addprivileges",cmd_addprivileges,"<sid|user> <privilege...> add privileges for a user",{COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"acl",cmd_acl,"<file> show file ACL",{COMPL_NONE,COMPL_NONE}},
   {"allinfo",cmd_allinfo,"<file> show all possible info about a file",{COMPL_NONE,COMPL_NONE}},
@@ -2501,6 +2603,7 @@ static struct
   {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
   {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"delprivileges",cmd_delprivileges,"<sid|user> <privilege...> remove privileges for a user",{COMPL_NONE,COMPL_NONE}},
   {"deltree",cmd_deltree,"<dir> delete a whole directory tree",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},

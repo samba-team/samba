@@ -1084,6 +1084,9 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 
 	ret = samdb_modify(state->sam_ctx, mem_ctx, &msg);
 	if (ret != 0) {
+		if (ldb_flag == LDB_FLAG_MOD_DELETE) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
