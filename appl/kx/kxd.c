@@ -141,7 +141,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      if (status != KSUCCESS) {
 	 syslog (LOG_ERR, "krb_recvauth: %s",
 		 krb_get_err_text(status));
-	 exit(1)
+	 exit(1);
      }
      if( strncmp(version, KX_VERSION, KRB_SENDAUTH_VLEN) != 0) {
 	 /* Try to be nice to old kx's */
