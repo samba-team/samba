@@ -165,6 +165,7 @@ static int version_flag;
 static int print_dump;
 static char *database = HDB_DEFAULT_DB;
 static int from_stdin;
+static char *local_realm=NULL;
 #ifdef KRB4
 static int v4dump;
 #endif
@@ -178,6 +179,7 @@ struct getargs args[] = {
 #ifdef KRB4
     { "v4dump",       '4',  arg_flag, &v4dump, "create v4 type DB" },
 #endif
+    { "realm", 'R', arg_string, &local_realm, "realm", "realm" },
     { "version",    0, arg_flag, &version_flag, NULL, NULL },
     { "help",    'h',  arg_flag, &help_flag, NULL, NULL}
 };
@@ -239,6 +241,9 @@ main(int argc, char **argv)
 	exit(0);
     }
     
+    if(local_realm)
+      krb5_set_default_realm(context,local_realm); 
+
     argc -= optind;
     argv += optind;
 
@@ -282,7 +287,14 @@ main(int argc, char **argv)
 				      KRB5_NT_SRV_HST, &server);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_sname_to_principal");
-	
+    
+        if (local_realm) {
+           krb5_realm my_realm;
+           krb5_get_default_realm(context,&my_realm);
+
+           krb5_princ_set_realm(context,server,&my_realm);
+        }
+
 	ret = krb5_kt_default(context, &keytab);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_kt_default");
