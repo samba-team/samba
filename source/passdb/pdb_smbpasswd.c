@@ -1580,7 +1580,7 @@ static NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **p
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_smbpasswd_init(void)
+NTSTATUS passdb_smbpasswd_init(void)
 {
 	NTSTATUS ret;
 	struct passdb_ops ops;
