@@ -1423,6 +1423,7 @@ FN_LOCAL_STRING(lp_dfsmap,szDfsMap)
 FN_LOCAL_BOOL(lp_dfsmap_loaded,bDfsMapLoaded)
 #endif
 
+FN_LOCAL_BOOL(lp_autoloaded,autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close,bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close,bRootpreexecClose)
 FN_LOCAL_BOOL(lp_revalidate,bRevalidate)
@@ -2802,21 +2803,9 @@ void lp_killunused(BOOL (*snumused)(int ))
 {
 	int i;
 	for (i=0;i<iNumServices;i++) {
-		BOOL killthisone;
-
 		if (!VALID(i)) continue;
 
-		killthisone = (!snumused || !snumused(i));
-
-		/* we also want to remove autoloaded printers that are no longer
-		   in /etc/printcap */
-		if (!killthisone && 
-		    iSERVICE(i).autoloaded && iSERVICE(i).bPrint_ok && 
-		    !pcap_printername_ok(iSERVICE(i).szPrintername, NULL)) {
-			killthisone = True;
-		}
-
-		if (killthisone) {
+		if (!snumused || !snumused(i)) {
 			iSERVICE(i).valid = False;
 			free_service(pSERVICE(i));
 		}
