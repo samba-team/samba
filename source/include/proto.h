@@ -656,6 +656,44 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 BOOL do_nt_login(char *desthost, char *myhostname,
 				int Client, int cnum);
 
+/*The following definitions come from  ntclientlsa.c  */
+
+BOOL do_lsa_open_policy(uint16 fnum, uint32 call_id,
+			char *server_name, LSA_POL_HND *hnd);
+BOOL do_lsa_query_info_pol(uint16 fnum, uint32 call_id,
+			LSA_POL_HND *hnd, uint16 info_class,
+			fstring domain_name, pstring domain_sid);
+BOOL do_lsa_close(uint16 fnum, uint32 call_id,
+			LSA_POL_HND *hnd);
+
+/*The following definitions come from  ntclientnet.c  */
+
+BOOL do_lsa_req_chal(uint16 fnum, uint32 call_id,
+		char *desthost, char *myhostname,
+        DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
+BOOL do_lsa_auth2(uint16 fnum, uint32 call_id,
+		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
+        DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal);
+BOOL do_lsa_sam_logon(uint16 fnum, uint32 call_id,
+		uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
+		char *logon_srv, char *comp_name,
+        DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
+		LSA_USER_INFO *user_info,
+		DOM_CRED *srv_cred);
+BOOL do_lsa_sam_logoff(uint16 fnum, uint32 call_id,
+		uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
+		char *logon_srv, char *comp_name,
+        DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
+		DOM_CRED *srv_cred);
+
+/*The following definitions come from  ntclientpipe.c  */
+
+uint16 open_rpc_pipe(char *inbuf, char *outbuf, char *rname, int Client, int cnum);
+BOOL bind_rpc_pipe(char *pipe_name, uint16 fnum, uint32 call_id,
+				RPC_IFACE *abstract, RPC_IFACE *transfer);
+
 /*The following definitions come from  params.c  */
 
 BOOL pm_process( char *FileName,
