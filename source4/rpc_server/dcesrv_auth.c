@@ -149,6 +149,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
+	/* We can't work without an existing gensec state, and an new blob to feed it */
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security ||
 	    pkt->u.auth.auth_info.length == 0) {
@@ -163,6 +164,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 		return False;
 	}
 
+	/* Pass the extra data we got from the client down to gensec for processing */
 	status = gensec_update(dce_conn->auth_state.gensec_security,
 			       call->mem_ctx,
 			       dce_conn->auth_state.auth_info->credentials, 
