@@ -396,8 +396,11 @@ decode_type (char *name, Type *t)
   case TOctetString:
     decode_primitive ("octet_string", name);
     break;
-  case TBitString:
-    /* XXX */
+  case TBitString: {
+    Member *m;
+    int tag = -1;
+    int pos;
+
     fprintf (codefile,
 	     "l = der_match_tag (p, len, UNIV, PRIM, UT_BitString);\n"
 	     "if(l < 0)\n"
@@ -412,11 +415,24 @@ decode_type (char *name, Type *t)
 	     "len -= l;\n"
 	     "ret += l;\n"
 	     "if(len < reallen)\n"
-	     "return -1;\n"
-	     "p += reallen;\n"
-	     "len -= reallen;\n"
-	     "ret += reallen;\n");
+	     "return -1;\n");
+    pos = 0;
+    for (m = t->members; m && tag != m->val; m = m->next) {
+      while (m->val / 8 > pos / 8) {
+	fprintf (codefile,
+		 "p++; len--; reallen--; ret++;\n");
+	pos += 8;
+      }
+      fprintf (codefile,
+	       "%s->%s = (*p >> %d) & 1;\n",
+	       name, m->gen_name, m->val % 8);
+      if (tag == -1)
+	tag = m->val;
+    }
+    fprintf (codefile,
+	     "p += reallen; len -= reallen; ret += reallen;\n");
     break;
+  }
   case TSequence: {
     Member *m;
     int tag = -1;
