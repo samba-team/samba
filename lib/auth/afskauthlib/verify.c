@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -72,7 +72,7 @@ afs_verify(char *name,
     if (ret == KSUCCESS) {
       if (k_hasafs()) {
 	k_setpag ();
-	krb_afslog_uid (0, 0, pwd->pw_uid);
+	krb_afslog_uid_home (0, 0, pwd->pw_uid, pwd->pw_dir);
       }
     } else if (!quiet)
       printf ("%s\n", krb_get_err_text (ret));
