@@ -26,6 +26,42 @@
 
 
 /*
+ * fields_present flags meanings
+ * same names as found in samba4 idl files
+ */
+
+#define ACCT_USERNAME		0x00000001
+#define ACCT_FULL_NAME		0x00000002
+#define ACCT_RID		0x00000004
+#define ACCT_PRIMARY_GID	0x00000008
+#define ACCT_ADMIN_DESC		0x00000010
+#define ACCT_DESCRIPTION	0x00000020
+#define ACCT_HOME_DIR		0x00000040
+#define ACCT_HOME_DRIVE		0x00000080
+#define ACCT_LOGON_SCRIPT	0x00000100
+#define ACCT_PROFILE		0x00000200
+#define ACCT_WORKSTATIONS	0x00000400
+#define ACCT_LAST_LOGON		0x00000800
+#define ACCT_LAST_LOGOFF	0x00001000
+#define ACCT_LOGON_HOURS	0x00002000
+#define ACCT_BAD_PWD_COUNT	0x00004000
+#define ACCT_NUM_LOGONS		0x00008000
+#define ACCT_ALLOW_PWD_CHANGE	0x00010000
+#define ACCT_FORCE_PWD_CHANGE	0x00020000
+#define ACCT_LAST_PWD_CHANGE	0x00040000
+#define ACCT_EXPIRY		0x00080000
+#define ACCT_FLAGS		0x00100000
+#define ACCT_CALLBACK		0x00200001
+#define ACCT_COUNTRY_CODE	0x00400000
+#define ACCT_CODE_PAGE		0x00800000
+#define ACCT_NT_PWD_SET		0x01000000
+#define ACCT_LM_PWD_SET		0x02000000
+#define ACCT_PRIVATEDATA	0x04000000
+#define ACCT_EXPIRED_FLAG	0x08000000
+#define ACCT_SEC_DESC		0x10000000
+#define ACCT_OWF_PWD		0x20000000
+
+/*
  * bit flags representing initialized fields in SAM_ACCOUNT
  */
 enum pdb_elements {
@@ -56,7 +92,7 @@ enum pdb_elements {
 	PDB_UNKNOWNSTR,
 	PDB_MUNGEDDIAL,
 	PDB_HOURS,
-	PDB_UNKNOWN3,
+	PDB_FIELDS_PRESENT,
 	PDB_BAD_PASSWORD_COUNT,
 	PDB_LOGON_COUNT,
 	PDB_UNKNOWN6,
@@ -131,7 +167,7 @@ typedef struct sam_passwd
 		char* plaintext_pw; /* is Null if not available */
 		
 		uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-		uint32 unknown_3; /* 0x00ff ffff */
+		uint32 fields_present; /* 0x00ff ffff */
 		
 		uint16 logon_divs; /* 168 - number of hours in a week */
 		uint32 hours_len; /* normally 21 bytes */

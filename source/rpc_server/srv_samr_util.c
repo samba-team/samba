@@ -225,9 +225,9 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		pdb_set_acct_ctrl(to, from->acb_info, PDB_CHANGED);
 	}
 
-	DEBUG(10,("INFO_21 UNKNOWN_3: %08X -> %08X\n",pdb_get_unknown_3(to),from->unknown_3));
-	if (from->unknown_3 != pdb_get_unknown_3(to)) {
-		pdb_set_unknown_3(to, from->unknown_3, PDB_CHANGED);
+	DEBUG(10,("INFO_21 FIELDS_PRESENT: %08X -> %08X\n",pdb_get_fields_present(to),from->fields_present));
+	if (from->fields_present != pdb_get_fields_present(to)) {
+		pdb_set_fields_present(to, from->fields_present, PDB_CHANGED);
 	}
 
 	DEBUG(15,("INFO_21 LOGON_DIVS: %08X -> %08X\n",pdb_get_logon_divs(to),from->logon_divs));
@@ -441,9 +441,9 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 		pdb_set_acct_ctrl(to, from->acb_info, PDB_CHANGED);
 	}
 
-	DEBUG(10,("INFO_23 UNKOWN_3: %08X -> %08X\n",pdb_get_unknown_3(to),from->unknown_3));
-	if (from->unknown_3 != pdb_get_unknown_3(to)) {
-		pdb_set_unknown_3(to, from->unknown_3, PDB_CHANGED);
+	DEBUG(10,("INFO_23 FIELDS_PRESENT: %08X -> %08X\n",pdb_get_fields_present(to),from->fields_present));
+	if (from->fields_present != pdb_get_fields_present(to)) {
+		pdb_set_fields_present(to, from->fields_present, PDB_CHANGED);
 	}
 
 	DEBUG(15,("INFO_23 LOGON_DIVS: %08X -> %08X\n",pdb_get_logon_divs(to),from->logon_divs));

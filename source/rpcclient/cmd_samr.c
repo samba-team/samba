@@ -83,7 +83,7 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	printf("\tgroup_rid:\t0x%x\n"  , usr->group_rid); /* Group ID */
 	printf("\tacb_info :\t0x%04x\n", usr->acb_info ); /* Account Control Info */
 	
-	printf("\tunknown_3:\t0x%08x\n", usr->unknown_3); /* 0x00ff ffff */
+	printf("\tfields_present:\t0x%08x\n", usr->fields_present); /* 0x00ff ffff */
 	printf("\tlogon_divs:\t%d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
 	printf("\tbad_password_count:\t0x%08x\n", usr->bad_password_count);
 	printf("\tlogon_count:\t0x%08x\n", usr->logon_count);
