@@ -1,0 +1,6 @@
+                    WHATS NEW IN Samba 3 SVN
+                    ========================
+
+This file is NOT maintained but will be created during releases.
+See the SAMBA_3_0_RELEASE branch for the current WHATSNEW.
+
