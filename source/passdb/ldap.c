@@ -356,8 +356,8 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	user->logon_divs = 168; /* hours per week */
 	user->hours_len = 21; /* 21 times 8 bits = 168 */
 	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
-	user->unknown_5 = 0x00020000; /* don't know */
-	user->unknown_5 = 0x000004ec; /* don't know */
+	user->unknown_5 = 0x00000000; /* don't know */
+	user->unknown_6 = 0x000004ec; /* don't know */
 
 	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
 	{
