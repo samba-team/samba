@@ -1,3 +1,10 @@
+2000-05-05  Assar Westerlund  <assar@sics.se>
+
+	* telnet/externs.h (sourceroute): update prototype
+	* telnet/commands.c (tn): re-enable source routing
+	(sourceroute): make it work again based on the code from
+	itojun@kame.net
+
 2000-03-28  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (tn): clean-up a tiny little bit.  give-up if
