@@ -2338,7 +2338,7 @@ uint32 check_domain_security(char *orig_user, char *domain,
 				char *smb_apasswd, int smb_apasslen,
 				char *smb_ntpasswd, int smb_ntpasslen,
 				uchar user_sess_key[16],
-				char lm_pw[8]);
+				char lm_pw8[8]);
 
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 

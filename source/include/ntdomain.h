@@ -134,6 +134,7 @@ typedef struct srv_auth_fns
 	BOOL (*api_auth_chk)(rpcsrv_struct *);
 	BOOL (*api_auth_gen)(rpcsrv_struct *, prs_struct *, enum RPC_PKT_TYPE);
 	BOOL (*api_create_pdu)(rpcsrv_struct *, uint32, prs_struct *);
+	BOOL (*api_user_sess_key)(rpcsrv_struct *, uchar[16]);
 
 } srv_auth_fns;
 

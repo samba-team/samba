@@ -436,7 +436,7 @@ static int session_trust_account(connection_struct *conn,
 	                            last_chal, 
 	                            (uchar *)smb_passwd, smb_passlen,
 	                            (uchar *)smb_nt_passwd, smb_nt_passlen,
-	                            NULL);
+	                            NULL, NULL);
 	}
 	else
 	{
