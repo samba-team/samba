@@ -447,6 +447,15 @@ krb5_get_init_creds_password(krb5_context context,
 		goto out;
 	    password = buf;
 	    break;
+	case KRB5KDC_ERR_PREAUTH_REQUIRED :
+	    if (pre_auth_types)
+		free (pre_auth_types);
+	    pre_auth_types = malloc(2 * sizeof(*pre_auth_types));
+	    if (pre_auth_types == NULL)
+		goto out;
+	    pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
+	    pre_auth_types[1] = 0;
+	    break;
 	default:
 	    goto out;
 	}
