@@ -151,7 +151,7 @@ bin/.dummy:
 
 dynconfig.o: dynconfig.c Makefile
 	\@echo Compiling \$*.c
-	\@\$(CC) \$(CC_FLAGS) \$(PATH_FLAGS) -c \$< -o \$\@
+	\@\$(CC) \$(CC_FLAGS) \@PICFLAG\@ \$(PATH_FLAGS) -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
 
 ";
