@@ -17,8 +17,9 @@ manpagedescription()
 
 This program is part of the bf(Samba) suite.
 
-bf(smbcontrol) is a very small program, which sends messages to a url(bf(smbd))(smbd.8.html)
-or a url(bf(nmbd))(nmbd.8.html) daemon running on the system.
+bf(smbcontrol) is a very small program, which sends messages to an 
+url(bf(smbd))(smbd.8.html) or an url(bf(nmbd))(nmbd.8.html) daemon 
+running on the system.
 
 label(OPTIONS)
 manpageoptions()
@@ -28,7 +29,7 @@ startdit()
 label(minusi)
 dit(bf(-i)) Run interactively. Individual commands of the form
 link(destination)(destination) link(message-type)(messagetype) link(parameters)(parameters)
-can be entered on STDIN. An empty command line will quit the program.
+can be entered on STDIN. An empty command line or a "q" will quit the program.
 
 label(destination)
 dit(bf(destination)) is one of "nmbd", "smbd" or a process ID.
@@ -62,12 +63,11 @@ settings based on the parameter. The parameter can be "on" to turn on
 profile stats collection, "off" to turn off profile stats collection, "count"
 to enable only collection of count stats (time stats are disabled), and
 "flush" to zero the current profile stats.
-This can only be sent to a process ID.
+This can be sent to any of the destinations.
 
-The bf(debuglevel) message-type sends a "request debug level" message 
-to the specified PID.
+The bf(debuglevel) message-type sends a "request debug level" message.
 The current debug level setting is returned by a 
-"debuglevel" message. This can only be sent to a process ID.
+"debuglevel" message. This can be sent to any of the destinations.
 
 label(parameters)
 dit(bf(parameters)) is any parameters required for the message-type

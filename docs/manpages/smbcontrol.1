@@ -13,8 +13,9 @@ smbcontrol \- send messages to smbd or nmbd processes
 .PP 
 This program is part of the \fBSamba\fP suite\&.
 .PP 
-\fBsmbcontrol\fP is a very small program, which sends messages to a \fBsmbd\fP
-or a \fBnmbd\fP daemon running on the system\&.
+\fBsmbcontrol\fP is a very small program, which sends messages to an 
+\fBsmbd\fP or an \fBnmbd\fP daemon 
+running on the system\&.
 .PP 
 .SH "OPTIONS" 
 .PP 
@@ -22,7 +23,7 @@ or a \fBnmbd\fP daemon running on the system\&.
 .IP "\fB-i\fP" 
 Run interactively\&. Individual commands of the form
 destination message-type parameters
-can be entered on STDIN\&. An empty command line will quit the program\&.
+can be entered on STDIN\&. An empty command line or a "q" will quit the program\&.
 .IP 
 .IP "\fBdestination\fP" 
 is one of "nmbd", "smbd" or a process ID\&.
@@ -56,12 +57,11 @@ settings based on the parameter\&. The parameter can be "on" to turn on
 profile stats collection, "off" to turn off profile stats collection, "count"
 to enable only collection of count stats (time stats are disabled), and
 "flush" to zero the current profile stats\&.
-This can only be sent to a process ID\&.
+This can be sent to any of the destinations\&.
 .IP 
-The \fBdebuglevel\fP message-type sends a "request debug level" message 
-to the specified PID\&.
+The \fBdebuglevel\fP message-type sends a "request debug level" message\&.
 The current debug level setting is returned by a 
-"debuglevel" message\&. This can only be sent to a process ID\&.
+"debuglevel" message\&. This can be sent to any of the destinations\&.
 .IP 
 .IP "\fBparameters\fP" 
 is any parameters required for the message-type
