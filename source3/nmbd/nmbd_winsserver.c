@@ -241,7 +241,7 @@ BOOL initialise_wins(void)
 	}
 
 	if (tdb_fetch_int32(tdb, INFO_VERSION) != WINS_VERSION) {
-		DEBUG(0,("Discarding invalid wins.dat file\n"));
+		DEBUG(0,("Discarding invalid wins.tdb file\n"));
 		tdb_close(tdb);
 		return True;
 	}
