@@ -6316,6 +6316,9 @@ BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_st
 	if (!smb_io_buffer5("", &r_u->keys, ps, depth))
 		return False;
 	
+	if(!prs_align(ps))
+		return False;
+
 	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
 		return False;
 
