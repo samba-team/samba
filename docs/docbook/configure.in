@@ -1,8 +1,18 @@
 AC_INIT(global.ent)
 
+# Jade wrapper
 AC_PATH_PROG(JW, jw)
+if test "x$JW" = x; then
+   AC_MSG_ERROR("jw is required")
+fi
 AC_PATH_PROG(PERL, perl)
+if test "x$PERL" = x; then
+   AC_MSG_ERROR("perl is required")
+fi
 AC_PATH_PROG(HTMLDOC, htmldoc)
+if test "x$HTMLDOC" = x; then
+   AC_MSG_ERROR("htmldoc is required")
+fi
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
