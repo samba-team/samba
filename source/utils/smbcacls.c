@@ -710,14 +710,12 @@ struct cli_state *connect_one(char *share)
 	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		return NULL;
 	}
 
 	if (!cli_session_request(c, &calling, &called)) {
 		DEBUG(0,("session request to %s failed\n", called.name));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
@@ -730,7 +728,6 @@ struct cli_state *connect_one(char *share)
 	if (!cli_negprot(c)) {
 		DEBUG(0,("protocol negotiation failed\n"));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -747,7 +744,6 @@ struct cli_state *connect_one(char *share)
 			       lp_workgroup())) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -757,7 +753,6 @@ struct cli_state *connect_one(char *share)
 			    password, strlen(password)+1)) {
 		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		return NULL;
 	}
 

@@ -249,7 +249,6 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NS
 			}
 			cli_ulogoff(cli[server][conn]);
 			cli_shutdown(cli[server][conn]);
-			SAFE_FREE(cli[server][conn]);
 		}
 		cli[server][conn] = connect_one(share[server]);
 		if (!cli[server][conn]) {

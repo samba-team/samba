@@ -110,8 +110,6 @@ static void free_server_private_data(void **private_data_pointer)
 	struct cli_state **cli = (struct cli_state **)private_data_pointer;
 	if (*cli && (*cli)->initialised) {
 		cli_shutdown(*cli);
-		
-		SAFE_FREE(*cli);
 	}
 }
 
@@ -129,7 +127,6 @@ static void send_server_keepalive(void **private_data_pointer)
 		if (!send_keepalive((*cli)->fd)) {
 			DEBUG( 2, ( "password server keepalive failed.\n"));
 			cli_shutdown(*cli);
-			SAFE_FREE(*cli);
 		}
 	}
 }
@@ -346,7 +343,6 @@ use this machine as the password server.\n"));
 
 	if (locally_made_cli) {
 		cli_shutdown(cli);
-		SAFE_FREE(cli);
 	}
 
 	return(nt_status);

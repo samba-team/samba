@@ -162,7 +162,6 @@ static struct cli_state *get_ipc_connect(char *server,
         if (cli && cli->initialised)
                 cli_shutdown(cli);
 
-        SAFE_FREE(cli);
         return NULL;
 }
 

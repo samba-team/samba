@@ -1144,7 +1144,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			{
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown)
-                  cli_shutdown(cli);
+					cli_shutdown(cli);
 				return False;
 			}
 		}
@@ -1196,9 +1196,9 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
 
         DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER \
 with error %s.\n", desthost, cli_errstr(cli) ));
-	    cli_shutdown(cli);
-		return False;
-	}
+	cli_shutdown(cli);
+	return False;
+    }
 
     cli_shutdown(cli);
 
