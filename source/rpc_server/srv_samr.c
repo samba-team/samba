@@ -357,74 +357,28 @@ static void api_samr_enum_dom_groups( rpcsrv_struct *p, prs_struct *data, prs_st
 }
 
 /*******************************************************************
- samr_reply_enum_dom_aliases
+ api_samr_enum_dom_aliases
  ********************************************************************/
-static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
-				prs_struct *rdata)
+static void api_samr_enum_dom_aliases( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
+	SAMR_Q_ENUM_DOM_ALIASES q_e;
 	SAMR_R_ENUM_DOM_ALIASES r_e;
-	LOCAL_GRP *alss = NULL;
-	int num_entries = 0;
-	DOM_SID sid;
-	fstring sid_str;
 
+	uint32 num_entries = 0;
+
+	ZERO_STRUCT(q_e);
 	ZERO_STRUCT(r_e);
 
-	r_e.status = 0x0;
-	r_e.num_entries2 = 0;
+	samr_io_q_enum_dom_aliases("", &q_e, data, 0);
 
-	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->pol, &sid))
-	{
-		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
+	r_e.status = _samr_enum_dom_aliases(&q_e.pol, &q_e.start_idx,
+	                              q_e.max_size,
+	                              &r_e.sam, &r_e.uni_grp_name,
+	                              &num_entries);
 
-	sid_to_string(sid_str, &sid);
+	make_samr_r_enum_dom_aliases(&r_e, q_e.start_idx, num_entries);
 
-	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
-
-	/* well-known aliases */
-	if (sid_equal(&sid, &global_sid_S_1_5_20))
-	{
-		BOOL ret;
-		/* builtin aliases */
-
-		become_root(True);
-		ret = enumdombuiltins(&alss, &num_entries);
-		unbecome_root(True);
-		if (!ret)
-		{
-			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
-		}
-	}
-	else if (sid_equal(&sid, &global_sam_sid))
-	{
-		BOOL ret;
-		/* local aliases */
-
-		become_root(True);
-		ret = enumdomaliases(&alss, &num_entries);
-		unbecome_root(True);
-		if (!ret)
-		{
-			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
-		}
-	}
-		
-	if (r_e.status == 0x0)
-	{
-		make_samr_r_enum_dom_aliases(&r_e,
-		               q_u->start_idx + num_entries,
-		               num_entries, alss, r_e.status);
-	}
-
-	/* store the response in the SMB stream */
 	samr_io_r_enum_dom_aliases("", &r_e, rdata, 0);
-
-	if (alss != NULL)
-	{
-		free(alss);
-	}
 
 	if (r_e.sam != NULL)
 	{
@@ -435,23 +389,6 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	{
 		free(r_e.uni_grp_name);
 	}
-
-	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
- api_samr_enum_dom_aliases
- ********************************************************************/
-static void api_samr_enum_dom_aliases( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
-{
-	SAMR_Q_ENUM_DOM_ALIASES q_e;
-
-	/* grab the samr open */
-	samr_io_q_enum_dom_aliases("", &q_e, data, 0);
-
-	/* construct reply. */
-	samr_reply_enum_dom_aliases(&q_e, rdata);
 }
 
 

@@ -3256,7 +3256,7 @@ BOOL make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol,
 BOOL samr_io_q_enum_dom_aliases(char *desc,  SAMR_Q_ENUM_DOM_ALIASES *q_e, prs_struct *ps, int depth);
 BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		uint32 next_idx,
-		uint32 num_sam_entries, LOCAL_GRP *alss, uint32 status);
+		uint32 num_sam_entries);
 BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES *r_u, prs_struct *ps, int depth);
 BOOL make_samr_alias_info3(ALIAS_INFO3 *al3, const char *acct_desc);
 BOOL samr_io_alias_info3(char *desc,  ALIAS_INFO3 *al3, prs_struct *ps, int depth);
@@ -4253,8 +4253,11 @@ uint32 _samr_enum_dom_groups(POLICY_HND *pol,
 					SAM_ENTRY **sam,
 					UNISTR2 **uni_acct_name,
 					uint32 *num_sam_groups);
-uint32 _samr_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
-				prs_struct *rdata);
+uint32 _samr_enum_dom_aliases(POLICY_HND *pol,
+					uint32 *start_idx, uint32 size,
+					SAM_ENTRY **sam,
+					UNISTR2 **uni_acct_name,
+					uint32 *num_sam_aliases);
 uint32 _samr_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 				prs_struct *rdata);
 uint32 _samr_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,

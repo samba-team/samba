@@ -3035,17 +3035,13 @@ makes a SAMR_R_ENUM_DOM_ALIASES structure.
 ********************************************************************/
 BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		uint32 next_idx,
-		uint32 num_sam_entries, LOCAL_GRP *alss, uint32 status)
+		uint32 num_sam_entries)
 {
-	uint32 i;
-
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_enum_dom_aliases\n"));
 
 	r_u->next_idx = next_idx;
-	r_u->sam = NULL;
-	r_u->uni_grp_name = NULL;
 
 	if (num_sam_entries != 0)
 	{
@@ -3053,26 +3049,6 @@ BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
-
-		r_u->sam = (SAM_ENTRY*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
-		r_u->uni_grp_name = (UNISTR2*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_grp_name[0]));
-
-		if (r_u->sam == NULL || r_u->uni_grp_name == NULL)
-		{
-			DEBUG(0,("NULL pointers in SAMR_R_ENUM_DOM_ALIASES\n"));
-			return False;
-		}
-
-		for (i = 0; i < num_sam_entries; i++)
-		{
-			int acct_name_len = strlen(alss[i].name);
-
-			make_sam_entry(&(r_u->sam[i]),
-			                acct_name_len,
-			                alss[i].rid);
-
-			make_unistr2(&(r_u->uni_grp_name[i]), alss[i].name, acct_name_len);
-		}
 
 		r_u->num_entries4 = num_sam_entries;
 	}
@@ -3082,8 +3058,6 @@ BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		r_u->num_entries2 = num_sam_entries;
 		r_u->ptr_entries2 = 1;
 	}
-
-	r_u->status = status;
 
 	return True;
 }

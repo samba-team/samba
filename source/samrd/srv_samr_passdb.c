@@ -742,27 +742,60 @@ uint32 _samr_enum_dom_groups(POLICY_HND *pol,
 	return status;
 }
 
-#if 0
+/*******************************************************************
+makes a SAMR_R_ENUM_DOM_ALIASES structure.
+********************************************************************/
+static void make_samr_dom_aliases(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
+		uint32 num_sam_entries, LOCAL_GRP *alss)
+{
+	uint32 i;
+
+	DEBUG(5,("make_samr_r_enum_dom_aliases\n"));
+
+	(*sam) = NULL;
+	(*uni_grp_name) = NULL;
+
+	if (num_sam_entries == 0)
+	{
+		return;
+	}
+
+	(*sam) = (SAM_ENTRY*)Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
+	(*uni_grp_name) = (UNISTR2*)Realloc(NULL, num_sam_entries * sizeof((*uni_grp_name)[0]));
+
+	if ((*sam) == NULL || (*uni_grp_name) == NULL)
+	{
+		DEBUG(0,("NULL pointers in SAMR_R_ENUM_DOM_ALIASES\n"));
+		return;
+	}
+
+	for (i = 0; i < num_sam_entries; i++)
+	{
+		int len = strlen(alss[i].name);
+
+		make_sam_entry(&((*sam)[i]), len, alss[i].rid); 
+		make_unistr2(&((*uni_grp_name)[i]), alss[i].name, len);
+	}
+}
 
 /*******************************************************************
  samr_reply_enum_dom_aliases
  ********************************************************************/
-uint32 _samr_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
-				prs_struct *rdata)
+uint32 _samr_enum_dom_aliases(POLICY_HND *pol,
+					uint32 *start_idx, uint32 size,
+					SAM_ENTRY **sam,
+					UNISTR2 **uni_acct_name,
+					uint32 *num_sam_aliases)
 {
-	SAMR_R_ENUM_DOM_ALIASES r_e;
 	LOCAL_GRP *alss = NULL;
 	int num_entries = 0;
 	DOM_SID sid;
 	fstring sid_str;
 
-	ZERO_STRUCT(r_e);
-
-	status = 0x0;
-	num_entries2 = 0;
+	uint32 status = 0x0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &pol, &sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), pol, &sid))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -799,35 +832,23 @@ uint32 _samr_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		}
 	}
 		
+	(*start_idx) += num_entries;
+	(*num_sam_aliases) = num_entries;
+
 	if (status == 0x0)
 	{
-		make_samr_r_enum_dom_aliases(&r_e,
-		               start_idx + num_entries,
-		               num_entries, alss, status);
+		make_samr_dom_aliases(sam, uni_acct_name, num_entries, alss);
 	}
-
-	/* store the response in the SMB stream */
-	samr_io_r_enum_dom_aliases("", &r_e, rdata, 0);
 
 	if (alss != NULL)
 	{
 		free(alss);
 	}
 
-	if (sam != NULL)
-	{
-		free(sam);
-	}
-
-	if (uni_grp_name != NULL)
-	{
-		free(uni_grp_name);
-	}
-
-	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
-
+	return status;
 }
 
+#if 0
 
 /*******************************************************************
  samr_reply_query_dispinfo
