@@ -286,6 +286,8 @@ static NTSTATUS gums_getsampwrid (struct pdb_methods *methods,
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, rid);
 	gums_getsampwsid(methods, account, &sid);
+
+	return NT_STATUS_OK;
 }
 
 
