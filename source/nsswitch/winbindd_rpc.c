@@ -827,7 +827,6 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	SAM_UNK_CTR ctr;
 	uint16 switch_value = 2;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 seqnum = DOM_SEQUENCE_NONE;
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -837,10 +836,9 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	if (!(mem_ctx = talloc_init_named("sequence_number[rpc]")))
 		return NT_STATUS_NO_MEMORY;
-
+				
 	retry = 0;
 	do {
-
 
 #ifdef WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK
 		if ( domain->native_mode ) 
@@ -849,15 +847,13 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 			if ( get_ldap_sequence_number( domain->name, seq ) == 0 ) {			
 				result = NT_STATUS_OK;
-				seqnum = *seq;
 				DEBUG(10,("domain_sequence_number: LDAP for domain %s is %u\n",
-					domain->name, (unsigned)seqnum ));
+					domain->name, *seq));
 				goto done;
 			}
 
-		DEBUG(10,("domain_sequence_number: failed to get LDAP sequence number (%u) for domain %s\n",
-		(unsigned)seqnum, domain->name ));
-
+			DEBUG(10,("domain_sequence_number: failed to get LDAP sequence number for domain %s\n",
+			domain->name ));
 		}
 #endif /* WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK */
 
@@ -882,14 +878,17 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 					 switch_value, &ctr);
 
 	if (NT_STATUS_IS_OK(result)) {
+		uint32 seqnum;
+
 		seqnum = ctr.info.inf2.seq_num;
 		seqnum += ctr.info.inf2.num_domain_usrs;
 		seqnum += ctr.info.inf2.num_domain_grps;
 		seqnum += ctr.info.inf2.num_local_grps;
+		*seq = seqnum;
 		DEBUG(10,("domain_sequence_number: for domain %s is %u\n", domain->name, (unsigned)seqnum ));
 	} else {
-		DEBUG(10,("domain_sequence_number: failed to get sequence number (%u) for domain %s\n",
-			(unsigned)seqnum, domain->name ));
+		DEBUG(10,("domain_sequence_number: failed to get sequence number for domain %s\n",
+			domain->name ));
 	}
 
   done:
@@ -898,8 +897,6 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
 
 	talloc_destroy(mem_ctx);
-
-	*seq = seqnum;
 
 	return result;
 }
