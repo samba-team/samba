@@ -222,11 +222,13 @@ process_reply (krb5_context context,
 	if (ret) {
 	    warnx ("krb5_rd_priv: %s",
 		   krb5_get_err_text(context, ret));
+	    krb5_data_free (&result_data);
 	    return 1;
 	}
 
 	if (result_data.length < 2) {
 	    warnx ("bad length in result");
+	    krb5_data_free (&result_data);
 	    return 1;
 	}
 	p = result_data.data;
@@ -236,12 +238,14 @@ process_reply (krb5_context context,
 	    printf ("succeeded: %.*s\n",
 		    (int)result_data.length - 2,
 		    (char *)result_data.data + 2);
+	    krb5_data_free (&result_data);
 	    return 0;
 	} else {
 	    printf ("failed(%d): %.*s\n",
 		    result_code,
 		    (int)result_data.length - 2,
 		    (char *)result_data.data + 2);
+	    krb5_data_free (&result_data);
 	    return 1;
 	}
     } else {
@@ -303,8 +307,6 @@ change_password (krb5_context context,
 	      krb5_get_err_text(context, ret));
 
     memset(&cred, 0, sizeof(cred));
-    cred.client = principal;
-    cred.times.endtime = 0;
 
     ret = krb5_build_principal_ext (context,
 				    &server,
@@ -321,8 +323,8 @@ change_password (krb5_context context,
 
     server->name.name_type = KRB5_NT_SRV_INST;
 
-    krb5_copy_principal (context, principal, &cred.client);
-    krb5_copy_principal (context, server, &cred.server);
+    cred.client = principal;
+    cred.server = server;
     cred.times.endtime = time(NULL) + 300;
 
     {
@@ -360,14 +362,15 @@ change_password (krb5_context context,
 
     addr = get_kdc_address (context, principal->realm);
 
-    cred.server = server;
     cred.client = principal;
+    cred.server = server;
 
     ret = krb5_cc_retrieve_cred (context,
 				 ccache,
 				 0, /* ignored */
 				 &cred,
 				 &cred_out);
+    krb5_free_principal (context, server);
     if (ret)
 	errx (1, "krb5_cc_retrieve_cred: %s",
 	      krb5_get_err_text(context, ret));
@@ -404,6 +407,8 @@ change_password (krb5_context context,
     ret = process_reply (context,
 			 auth_context,
 			 sock);
+
+    krb5_auth_con_free (context, auth_context);
 
     krb5_cc_destroy (context, ccache);
 
