@@ -44,6 +44,7 @@
 
 #define set_bit(bit, v) (v) |= (1<<(bit))
 #define clear_bit(bit, v) (v) &= ~(1<<(bit))
+#define test_bit(bit, v) ((v) & (1<<(bit)))
 				   
 struct idr_layer {
 	uint32_t		 bitmap;
@@ -51,14 +52,14 @@ struct idr_layer {
 	int			 count;
 };
 
-struct idr {
+struct idr_context {
 	struct idr_layer *top;
 	struct idr_layer *id_free;
 	int		  layers;
 	int		  id_free_cnt;
 };
 
-static struct idr_layer *alloc_layer(struct idr *idp)
+static struct idr_layer *alloc_layer(struct idr_context *idp)
 {
 	struct idr_layer *p;
 
@@ -72,18 +73,18 @@ static struct idr_layer *alloc_layer(struct idr *idp)
 
 static int find_next_bit(uint32_t bm, int maxid, int n)
 {
-	while (n<maxid && ((bm & (1<<n)) == 0)) n++;
+	while (n<maxid && !test_bit(n, bm)) n++;
 	return n;
 }
 
-static void free_layer(struct idr *idp, struct idr_layer *p)
+static void free_layer(struct idr_context *idp, struct idr_layer *p)
 {
 	p->ary[0] = idp->id_free;
 	idp->id_free = p;
 	idp->id_free_cnt++;
 }
 
-static int idr_pre_get(struct idr *idp)
+static int idr_pre_get(struct idr_context *idp)
 {
 	while (idp->id_free_cnt < IDR_FREE_MAX) {
 		struct idr_layer *new = talloc_zero_p(idp, struct idr_layer);
@@ -94,7 +95,7 @@ static int idr_pre_get(struct idr *idp)
 	return 1;
 }
 
-static int sub_alloc(struct idr *idp, void *ptr, int *starting_id)
+static int sub_alloc(struct idr_context *idp, void *ptr, int *starting_id)
 {
 	int n, m, sh;
 	struct idr_layer *p, *new;
@@ -166,7 +167,7 @@ static int sub_alloc(struct idr *idp, void *ptr, int *starting_id)
 	return(id);
 }
 
-static int idr_get_new_above_int(struct idr *idp, void *ptr, int starting_id)
+static int idr_get_new_above_int(struct idr_context *idp, void *ptr, int starting_id)
 {
 	struct idr_layer *p, *new;
 	int layers, v, id;
@@ -217,24 +218,25 @@ build_up:
 	return(v);
 }
 
-static void sub_remove(struct idr *idp, int shift, int id)
+static int sub_remove(struct idr_context *idp, int shift, int id)
 {
 	struct idr_layer *p = idp->top;
 	struct idr_layer **pa[MAX_LEVEL];
 	struct idr_layer ***paa = &pa[0];
+	int n;
 
 	*paa = NULL;
 	*++paa = &idp->top;
 
 	while ((shift > 0) && p) {
-		int n = (id >> shift) & IDR_MASK;
+		n = (id >> shift) & IDR_MASK;
 		clear_bit(n, p->bitmap);
 		*++paa = &p->ary[n];
 		p = p->ary[n];
 		shift -= IDR_BITS;
 	}
-	if (p != NULL) {
-		int n = id & IDR_MASK;
+	n = id & IDR_MASK;
+	if (p != NULL && test_bit(n, p->bitmap)) {
 		clear_bit(n, p->bitmap);
 		p->ary[n] = NULL;
 		while(*paa && ! --((**paa)->count)){
@@ -243,10 +245,12 @@ static void sub_remove(struct idr *idp, int shift, int id)
 		}
 		if ( ! *paa )
 			idp->layers = 0;
+		return 0;
 	}
+	return -1;
 }
 
-static void *_idr_find(struct idr *idp, int id)
+static void *_idr_find(struct idr_context *idp, int id)
 {
 	int n;
 	struct idr_layer *p;
@@ -270,20 +274,17 @@ static void *_idr_find(struct idr *idp, int id)
 	return((void *)p);
 }
 
-static void _idr_remove(struct idr *idp, int id)
+static int _idr_remove(struct idr_context *idp, int id)
 {
 	struct idr_layer *p;
-
-	if (_idr_find(idp, id) == NULL) {
-		DEBUG(0,("WARNING: attempt to remove non-existant id %d in idtree\n",
-			 id));
-		return;
-	}
 
 	/* Mask off upper bits we don't use for the search. */
 	id &= MAX_ID_MASK;
 
-	sub_remove(idp, (idp->layers - 1) * IDR_BITS, id);
+	if (sub_remove(idp, (idp->layers - 1) * IDR_BITS, id) == -1) {
+		return -1;
+	}
+
 	if ( idp->top && idp->top->count == 1 && 
 	     (idp->layers > 1) &&
 	     idp->top->ary[0]) {
@@ -297,8 +298,8 @@ static void _idr_remove(struct idr *idp, int id)
 	while (idp->id_free_cnt >= IDR_FREE_MAX) {
 		p = alloc_layer(idp);
 		talloc_free(p);
-		return;
 	}
+	return 0;
 }
 
 /************************************************************************
@@ -310,18 +311,18 @@ static void _idr_remove(struct idr *idp, int id)
   all subsequent idr calls. To destroy the idr tree use talloc_free()
   on this context
  */
-void *idr_init(TALLOC_CTX *mem_ctx)
+struct idr_context *idr_init(TALLOC_CTX *mem_ctx)
 {
-	return talloc_zero_p(mem_ctx, struct idr);
+	return talloc_zero_p(mem_ctx, struct idr_context);
 }
 
 /*
   allocate the next available id, and assign 'ptr' into its slot.
   you can retrieve later this pointer using idr_find()
 */
-int idr_get_new(void *idp, void *ptr, int limit)
+int idr_get_new(struct idr_context *idp, void *ptr, int limit)
 {
-	int ret = idr_get_new_above_int((struct idr *)idp, ptr, 0);
+	int ret = idr_get_new_above_int(idp, ptr, 0);
 	if (ret > limit) {
 		idr_remove(idp, ret);
 		return -1;
@@ -333,9 +334,9 @@ int idr_get_new(void *idp, void *ptr, int limit)
    allocate a new id, giving the first available value greater than or
    equal to the given starting id
 */
-int idr_get_new_above(void *idp, void *ptr, int starting_id, int limit)
+int idr_get_new_above(struct idr_context *idp, void *ptr, int starting_id, int limit)
 {
-	int ret = idr_get_new_above_int((struct idr *)idp, ptr, starting_id);
+	int ret = idr_get_new_above_int(idp, ptr, starting_id);
 	if (ret > limit) {
 		idr_remove(idp, ret);
 		return -1;
@@ -346,15 +347,20 @@ int idr_get_new_above(void *idp, void *ptr, int starting_id, int limit)
 /*
   find a pointer value previously set with idr_get_new given an id
 */
-void *idr_find(void *idp, int id)
+void *idr_find(struct idr_context *idp, int id)
 {
-	return _idr_find((struct idr *)idp, id);
+	return _idr_find(idp, id);
 }
 
 /*
   remove an id from the idr tree
 */
-void idr_remove(void *idp, int id)
+int idr_remove(struct idr_context *idp, int id)
 {
-	return _idr_remove((struct idr *)idp, id);
+	int ret;
+	ret = _idr_remove((struct idr_context *)idp, id);
+	if (ret != 0) {
+		DEBUG(0,("WARNING: attempt to remove unset id %d in idtree\n", id));
+	}
+	return ret;
 }
