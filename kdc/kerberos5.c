@@ -117,7 +117,7 @@ as_rep(krb5_context context,
 	ret = hdb_etype2key(context, client, b->etype.val[i], &ckey);
 	if(ret)
 	    continue;
-	ret = hdb_etype2key(context, client, b->etype.val[i], &skey);
+	ret = hdb_etype2key(context, server, b->etype.val[i], &skey);
 	if(ret)
 	    continue;
 	break;
@@ -281,6 +281,9 @@ tgs_rep(krb5_context context,
     TGS_REP rep;
     EncTicketPart *et = calloc(1, sizeof(*et));
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
+    int i;
+    krb5_keyblock *skey;
+    krb5_enctype etype;
     
     if(req->padata == NULL || req->padata->len < 1)
 	return KRB5KDC_ERR_PREAUTH_REQUIRED; /* XXX ??? */
@@ -292,17 +295,17 @@ tgs_rep(krb5_context context,
 	krb5_principal princ;
 	krb5_flags ap_req_options;
 	krb5_ticket *ticket;
-	krb5_error_code err;
+	krb5_error_code ret;
 	hdb_entry *ent;
 
-	err = krb5_build_principal(context,
+	ret = krb5_build_principal(context,
 				   &princ,
 				   strlen(req->req_body.realm),
 				   req->req_body.realm,
 				   "krbtgt",
 				   req->req_body.realm,
 				   NULL);
-	if(err) return err;
+	if(ret) return ret;
 	
 	{
 	    PrincipalName p;
@@ -313,24 +316,42 @@ tgs_rep(krb5_context context,
 	    krbtgt = db_fetch(context, &p, req->req_body.realm);
 	    free(p.name_string.val);
 	}
-	if(ent == NULL) 
+	if(krbtgt == NULL) 
 	    return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
     
-	err = krb5_rd_req_with_keyblock(context, &ac,
+	ret = krb5_rd_req_with_keyblock(context, &ac,
 					&req->padata->val->padata_value,
 					princ,
 					&krbtgt->keyblock,
 					&ap_req_options,
 					&ticket);
-	if(err) 
-	    return err;
+	if(ret) 
+	    return ret;
 
-	/* XXX Check authenticator */
-
+	{
+	    krb5_authenticator auth;
+	    size_t len;
+	    unsigned char buf[1024];
+	    krb5_auth_getauthenticator(context, ac, &auth);
+	    if(auth->cksum == NULL)
+		return KRB5KRB_AP_ERR_INAPP_CKSUM;
+	    /* XXX check for keyed and collision-proof */
+	    /* XXX */
+	    encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
+				b, &len);
+	    ret = krb5_verify_checksum(context, buf + sizeof(buf) - len, len,
+				       auth->cksum);
+	    if(ret)
+		return ret;
+	    free_Authenticator(auth);
+	}
+	    
 	server = db_fetch(context, b->sname, b->realm);
 	
-	if(server == NULL)
+	if(server == NULL){
+	    /* do foreign realm stuff */
 	    return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+	}
 
 	tgt = &ticket->tkt;
 
@@ -338,6 +359,18 @@ tgs_rep(krb5_context context,
 	if(client == NULL)
 	    return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 
+	/* Find appropriate key */
+	for(i = 0; i < b->etype.len; i++){
+	    ret = hdb_etype2key(context, server, b->etype.val[i], &skey);
+	    if(ret == 0)
+		break;
+	}
+	
+	if(ret)
+	    return KRB5KDC_ERR_ETYPE_NOSUPP;
+	
+	etype = b->etype.val[i];
+    
 	memset(&rep, 0, sizeof(rep));
 	rep.pvno = 5;
 	rep.msg_type = krb_tgs_rep;
@@ -361,7 +394,8 @@ tgs_rep(krb5_context context,
 	    et->caddr = req->req_body.addresses;
 	    /* resp.caddr := req.addresses */
 	}
-	et->flags.forwarded = tgt->flags.forwarded;
+	if(tgt->flags.forwarded)
+	    et->flags.forwarded = 1;
 
 	if(f.proxiable){
 	    if(!tgt->flags.proxiable)
@@ -458,10 +492,11 @@ tgs_rep(krb5_context context,
 
 	
 	krb5_generate_random_keyblock(context,
-				      KEYTYPE_DES, /* XXX */
+				      skey->keytype,
 				      &et->key);
 	et->crealm = tgt->crealm;
 	et->cname = tgt->cname;
+	/* do cross realm stuff */
 	et->transited = tgt->transited;
 	
 
@@ -490,29 +525,34 @@ tgs_rep(krb5_context context,
 				     sizeof(buf), et, &len);
 	    if(e)
 		return e;
-	    rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
-	    rep.ticket.enc_part.kvno = NULL;
-	    krb5_encrypt(context, buf + sizeof(buf) - len, len,
-			 rep.ticket.enc_part.etype,
-			 &server->keyblock, 
-			 &rep.ticket.enc_part.cipher);
+	    krb5_encrypt_EncryptedData(context, buf + sizeof(buf) - len, len,
+				       etype,
+				       skey,
+				       &rep.ticket.enc_part);
 	    
 	    e = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
 				     sizeof(buf), ek, &len);
 	    if(e)
 		return e;
-	    rep.enc_part.etype = ETYPE_DES_CBC_CRC;
-	    rep.enc_part.kvno = NULL;
-	    {
-		krb5_keyblock kb;
-		kb.keytype = tgt->key.keytype;
-		kb.keyvalue = tgt->key.keyvalue;
-		krb5_encrypt(context, buf + sizeof(buf) - len, len,
-			     rep.enc_part.etype,
-			     &kb, 
-			     &rep.enc_part.cipher);
-	    }
 	    
+	    /* It is somewhat unclear where the etype in the following
+	       encryption should come from. What we have is a session
+	       key in the passed tgt, and a list of preferred etypes
+	       *for the new ticket*. Should we pick the best possible
+	       etype, given the keytype in the tgt, or should we look
+	       at the etype list here as well?  What if the tgt
+	       session key is DES3 and we want a ticket with a (say)
+	       CAST session key. Should the DES3 etype be added to the
+	       etype list, even if we don't want a session key with
+	       DES3? */
+
+
+	    krb5_encrypt_EncryptedData(context,
+				       buf + sizeof(buf) - len, len,
+				       ETYPE_DES_CBC_MD5, /* XXX */
+				       &tgt->key,
+				       &rep.enc_part);
+
 	    e = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
 	    if(e)
 		return e;
