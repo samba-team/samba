@@ -4,10 +4,18 @@ AUTOHEADER_FLAGS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include
 
-noinst_PROGRAMS = tcp_client tcp_server
+noinst_PROGRAMS = tcp_client tcp_server gssapi_server gssapi_client
 
 tcp_client_SOURCES = tcp_client.c
 
 tcp_server_SOURCES = tcp_server.c
+
+gssapi_server_SOURCES = gssapi_server.c
+
+gssapi_client_SOURCES = gssapi_client.c
+
+gssapi_server_LDADD = -L$(top_builddir)/lib/gssapi -lgssapi $(LDADD)
+
+gssapi_client_LDADD = -L$(top_builddir)/lib/gssapi -lgssapi $(LDADD)
 
 LDADD = -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/des -ldes -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/roken -lroken
