@@ -166,7 +166,9 @@ static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
 {
 	prs_struct ps;
 	fstring key;
-	SEC_DESC *psd;
+	SEC_DESC *psd = NULL;
+
+	*psize = 0;
 
 	/* Fetch security descriptor from tdb */
  
@@ -179,6 +181,9 @@ static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
  
         return get_share_security_default(ctx, snum, psize);
     }
+
+	if (psd)
+		*psize = sec_desc_size(psd);
 
 	prs_mem_free(&ps);
 	return psd;
@@ -1222,7 +1227,6 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	int ret;
 	char *ptr;
 	SEC_DESC *psd = NULL;
-	BOOL read_only = False;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
@@ -1252,7 +1256,6 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info2.info_2.type;
-		read_only = False; /* No SD means "Everyone full access. */
 		psd = NULL;
 		break;
 	case 502:
@@ -1261,7 +1264,6 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		type = q_u->info.share.info502.info_502.type;
 		psd = q_u->info.share.info502.info_502_str.sd;
 		map_generic_share_sd_bits(psd);
-		read_only = read_only_share_sd(psd);
 		break;
 	case 1005:
 		return ERROR_ACCESS_DENIED;
@@ -1270,7 +1272,6 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		fstrcpy(comment, lp_comment(snum));
 		psd = q_u->info.share.info1501.sdb->sec;
 		map_generic_share_sd_bits(psd);
-		read_only = read_only_share_sd(psd);
 		type = STYPE_DISKTREE;
 		break;
 	default:
@@ -1291,15 +1292,17 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	string_replace(ptr, '"', ' ');
 	string_replace(comment, '"', ' ');
 
+	DEBUG(10,("_srv_net_share_set_info: change share command = %s\n",
+		lp_change_share_cmd() ? lp_change_share_cmd() : "NULL" ));
+
 	/* Only call modify function if something changed. */
 
-	if (read_only != lp_readonly(snum) || strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
-		if (!lp_change_share_cmd())
+	if (strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
+		if (!lp_change_share_cmd() || !*lp_change_share_cmd())
 			return ERROR_ACCESS_DENIED;
 
-		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-				lp_change_share_cmd(), share_name, ptr, comment,
-				read_only ? "read only = yes" : "read only = no" );
+		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
+				lp_change_share_cmd(), share_name, ptr, comment);
 		dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
@@ -1360,7 +1363,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	if (user.uid != 0)
 		return ERROR_ACCESS_DENIED;
 
-	if (!lp_add_share_cmd())
+	if (!lp_add_share_cmd() || !*lp_add_share_cmd())
 		return ERROR_ACCESS_DENIED;
 
 	switch (q_u->info_level) {
@@ -1468,7 +1471,7 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	if (user.uid != 0)
 		return ERROR_ACCESS_DENIED;
 
-	if (!lp_delete_share_cmd())
+	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd())
 		return ERROR_ACCESS_DENIED;
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\"", lp_delete_share_cmd(), lp_servicename(snum));
