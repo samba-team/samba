@@ -283,6 +283,28 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+
+	if (!silent_mode) {
+		printf("Server role: ");
+		switch(lp_server_role()) {
+			case ROLE_STANDALONE:
+				printf("ROLE_STANDALONE\n");
+				break;
+			case ROLE_DOMAIN_MEMBER:
+				printf("ROLE_DOMAIN_MEMBER\n");
+				break;
+			case ROLE_DOMAIN_BDC:
+				printf("ROLE_DOMAIN_BDC\n");
+				break;
+			case ROLE_DOMAIN_PDC:
+				printf("ROLE_DOMAIN_PDC\n");
+				break;
+			default:
+				printf("Unknown -- internal error?\n");
+				break;
+		}
+	}
+
 	if (!cname) {
 		if (!silent_mode) {
 			printf("Press enter to see a dump of your service definitions\n");
