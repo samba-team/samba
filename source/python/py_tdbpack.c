@@ -23,9 +23,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
 #include "Python.h"
+
+/* This module is supposed to be standalone, however for portability
+   it would be good to use the FUNCTION_MACRO preprocessor define. */
+
+#include "config.h"
+
+#ifdef HAVE_FUNCTION_MACRO
+#define FUNCTION_MACRO  (__FUNCTION__)
+#else
+#define FUNCTION_MACRO  (__FILE__)
+#endif
 
 static PyObject * pytdbpack_number(char ch, PyObject *val_iter, PyObject *packed_list);
 static PyObject * pytdbpack_str(char ch,
@@ -247,7 +256,7 @@ pytdbpack_data(const char *format_str,
 		default:
 			PyErr_Format(PyExc_ValueError,
 				     "%s: format character '%c' is not supported",
-				     __FUNCTION__, ch);
+				     FUNCTION_MACRO, ch);
 			return NULL;
 		}
 	}
@@ -477,7 +486,7 @@ pytdbunpack(PyObject *self,
 		if (i == 0) {
 			PyErr_Format(PyExc_ValueError,
 				     "%s: '$' may not be first character in format",
-				     __FUNCTION__);
+				     FUNCTION_MACRO);
 			return NULL;
 		} 
 		while (packed_len > 0)
@@ -511,7 +520,7 @@ static void
 pytdbunpack_err_too_short(void)
 {
 	PyErr_Format(PyExc_IndexError,
-		     __FUNCTION__ ": data too short for unpack format");
+		     "%s: data too short for unpack format", FUNCTION_MACRO);
 }
 
 
@@ -598,7 +607,7 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 
 	if (slen < 0) { /* surely you jest */
 		PyErr_Format(PyExc_ValueError,
-			     __FUNCTION__ ": buffer seems to have negative length");
+			     "%s: buffer seems to have negative length", FUNCTION_MACRO);
 		return NULL;
 	}
 
@@ -608,8 +617,8 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 
 	if (*plen < slen) {
 		PyErr_Format(PyExc_IndexError,
-			     __FUNCTION__ ": not enough data to unpack buffer: "
-			     "need %d bytes, have %d",
+			     "%s: not enough data to unpack buffer: "
+			     "need %d bytes, have %d", FUNCTION_MACRO,
 			     (int) slen, *plen);
 		return NULL;
 	}
@@ -668,8 +677,8 @@ static PyObject *pytdbunpack_item(char ch,
 	}
 	else {
 		PyErr_Format(PyExc_ValueError,
-			     __FUNCTION__ ": format character '%c' is not supported",
-			     ch);
+			     "%s: format character '%c' is not supported", 
+                             FUNCTION_MACRO, ch);
 		
 		return NULL;
 	}
