@@ -27,24 +27,24 @@
 
 /* common privilege defines */
 
-#define SE_END				0x00000000
-#define SE_NONE				0x00000000
-#define SE_ALL_PRIVS                    0xFFFFFFFF
+#define SE_END				{ { 0x00000000, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_NONE				{ { 0x00000000, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_ALL_PRIVS                    { { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF } }
 
 
 /* 
  * We will use our own set of privileges since it makes no sense
  * to implement all of the Windows set when only a portion will
- * be used. 
+ * be used.  Use 128-bit mask to give room to grow.
  */
 
-#define SE_NETWORK_LOGON		0x00000001
-#define SE_INTERACTIVE_LOGON		0x00000002
-#define SE_BATCH_LOGON			0x00000004
-#define SE_SERVICE_LOGON		0x00000008
-#define SE_MACHINE_ACCOUNT		0x00000010
-#define SE_PRINT_OPERATOR		0x00000020
-#define SE_ADD_USERS			0x00000040
+#define SE_NETWORK_LOGON		{ { 0x00000001, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_INTERACTIVE_LOGON		{ { 0x00000002, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_BATCH_LOGON			{ { 0x00000004, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_SERVICE_LOGON		{ { 0x00000008, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_MACHINE_ACCOUNT		{ { 0x00000010, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_PRINT_OPERATOR		{ { 0x00000020, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_ADD_USERS			{ { 0x00000040, 0x00000000, 0x00000000, 0x00000000 } }
 
 #if 0	/* not needed currently */
 
@@ -113,8 +113,14 @@ typedef struct privilege_set
 	LUID_ATTR *set;
 } PRIVILEGE_SET;
 
+#define SE_PRIV_MASKSIZE 4
+
+typedef struct {
+	uint32 mask[SE_PRIV_MASKSIZE];
+} SE_PRIV;
+
 typedef struct _PRIVS {
-	uint32 se_priv;
+	SE_PRIV se_priv;
 	const char *name;
 	const char *description;
 } PRIVS;

@@ -5049,6 +5049,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
 	extern struct current_user current_user;
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	
 	/* If user is NULL then use the current_user structure */
 
@@ -5057,7 +5058,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if ( user->uid == 0 || user_has_privilege(user->nt_user_token, SE_PRINT_OPERATOR) ) {
+	if ( user->uid == 0 || user_has_privileges(user->nt_user_token, &se_printop ) ) {
 		return True;
 	}
 
