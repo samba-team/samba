@@ -101,8 +101,14 @@ struct ClearToken {
   int32_t EndTimestamp;
 };
 
+#ifdef __STDC__
 #ifndef __P
 #define __P(x) x
+#endif
+#else
+#ifndef __P
+#define __P(x) ()
+#endif
 #endif
 
 /* Use k_hasafs() to probe if the machine supports AFS syscalls.
