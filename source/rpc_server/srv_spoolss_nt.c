@@ -925,16 +925,6 @@ Can't find printer handle we created for printer %s\n", name ));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-/*
-	if (printer_default->datatype_ptr != NULL)
-	{
-		unistr2_to_ascii(datatype, printer_default->datatype, sizeof(datatype)-1);
-		set_printer_hnd_datatype(handle, datatype);
-	}
-	else
-		set_printer_hnd_datatype(handle, "");
-*/
-	
 	/*
 	   First case: the user is opening the print server:
 
@@ -5174,7 +5164,10 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		 * bound to the printer, simulating what happens in the Windows arch.
 		 */
 		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername)){
-			set_driver_init(printer, 2);
+			if (!set_driver_init(printer, 2)) {
+				DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
+					printer->info_2->drivername));
+			}
 			msg.flags |= PRINTER_MESSAGE_DRIVER;
 		}
 	}

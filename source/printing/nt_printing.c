@@ -2868,7 +2868,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
  Initialize printer devmode & data with previously saved driver init values.
 ****************************************************************************/
 
-static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
+static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 {
 	int                     len = 0;
 	pstring                 key;
@@ -2922,9 +2922,14 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	 * NT/2k does not change out the entire DeviceMode of a printer
 	 * when changing the driver.  Only the driverextra, private, & 
 	 * driverversion fields.   --jerry  (Thu Mar 14 08:58:43 CST 2002)
+	 *
+	 * Later e4xamination revealed that Windows NT/2k does reset the
+	 * the printer's device mode, bit **only** when you change a 
+	 * property of the device mode such as the page orientation.
+	 * --jerry
 	 */
 
-#if 0	/* JERRY */
+#if 1	/* JERRY */
 
 	/* 
 	 * 	Bind the saved DEVMODE to the new the printer.
@@ -2976,19 +2981,19 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
  is bound to the new printer.
 ****************************************************************************/
 
-uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
+BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
-	uint32 result;
+	BOOL result = False;
 	
-	switch (level)
+	switch (level) 
 	{
 		case 2:
-		{
-			result=set_driver_init_2(printer->info_2);
+			result = set_driver_init_2(printer->info_2);
 			break;
-		}
+			
 		default:
-			result=1;
+			DEBUG(0,("set_driver_init: Programmer's error!  Unknown driver_init level [%d]\n",
+				level));
 			break;
 	}
 	
