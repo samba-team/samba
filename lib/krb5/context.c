@@ -175,11 +175,8 @@ krb5_init_ets(krb5_context context)
 {
     if(context->et_list == NULL){
 	initialize_krb5_error_table(&context->et_list);
-#if 0
-	initialize_kv5m_error_table(&context->et_list);
-	initialize_kdb5_error_table(&context->et_list);
-#endif
 	initialize_asn1_error_table(&context->et_list);
 	initialize_hdb_error_table(&context->et_list);
+	initialize_heim_error_table(&context->et_list);
     }
 }
