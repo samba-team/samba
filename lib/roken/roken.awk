@@ -18,7 +18,7 @@ END {
 	print "puts(\"#define ROKEN_VERSION \" VERSION );"
 	print "puts(\"\");"
 	print "puts(\"#endif /* __ROKEN_H__ */\");"
-	print "exit(0);"
+	print "return 0;"
 	print "}"
 }
 
