@@ -91,6 +91,14 @@ int samdb_search(struct ldb_message ***res,
 
 	return count;
 }
+
+/*
+  free up a search result
+*/
+int samdb_search_free(struct ldb_message **res)
+{
+	return ldb_search_free(sam_db, res);
+}
 				 
 
 /*
@@ -121,7 +129,7 @@ const char *samdb_search_string(TALLOC_CTX *mem_ctx,
 	    res[0]->elements[0].values[0].data == NULL) {
 		DEBUG(1,("samdb: search for %s %s not single valued\n", 
 			 attr_name, format));
-		ldb_search_free(sam_db, res);
+		samdb_search_free(res);
 		return NULL;
 	}
 
@@ -129,7 +137,7 @@ const char *samdb_search_string(TALLOC_CTX *mem_ctx,
 			     res[0]->elements[0].values[0].data,
 			     res[0]->elements[0].values[0].length);
 
-	ldb_search_free(sam_db, res);
+	samdb_search_free(res);
 
 	return str;
 }
@@ -164,14 +172,14 @@ int samdb_search_string_multiple(TALLOC_CTX *mem_ctx,
 		    res[i]->elements[0].values[0].data == NULL) {
 			DEBUG(1,("samdb: search for %s %s not single valued\n", 
 				 attr_name, format));
-			ldb_search_free(sam_db, res);
+			samdb_search_free(res);
 			return -1;
 		}
 	}
 
 	*strs = talloc_array_p(mem_ctx, char *, count+1);
 	if (! *strs) {
-		ldb_search_free(sam_db, res);
+		samdb_search_free(res);
 		return -1;
 	}
 
@@ -182,8 +190,15 @@ int samdb_search_string_multiple(TALLOC_CTX *mem_ctx,
 	}
 	(*strs)[count] = NULL;
 
-	ldb_search_free(sam_db, res);
+	samdb_search_free(res);
 
 	return count;
 }
-				 
+
+/*
+  pull a uint from a result set. 
+*/
+uint_t samdb_result_uint(struct ldb_message *msg, const char *attr, uint_t default_value)
+{
+	return ldb_msg_find_uint(msg, attr, default_value);
+}

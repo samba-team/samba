@@ -43,6 +43,16 @@ struct samr_connect_state {
 	uint32 access_mask;
 };
 
+/*
+  state associated with a samr_OpenDomain() operation
+*/
+struct samr_domain_state {
+	TALLOC_CTX *mem_ctx;
+	uint32 access_mask;
+	const char *domain_sid;
+	const char *domain_name;
+};
+
 
 /*
   destroy an open connection. This closes the database connection
@@ -260,13 +270,68 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 }
 
 
+/*
+  destroy an open domain context
+*/
+static void samr_Domain_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
+{
+	struct samr_domain_state *state = h->data;
+	talloc_destroy(state->mem_ctx);
+}
+
 /* 
   samr_OpenDomain 
 */
 static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_OpenDomain *r)
+				struct samr_OpenDomain *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h_conn, *h_domain;
+	const char *sidstr, *domain_name;
+	struct samr_domain_state *state;
+	TALLOC_CTX *mem_ctx2;
+
+	h_conn = dcesrv_handle_fetch(dce_call->conn, r->in.handle, SAMR_HANDLE_CONNECT);
+	DCESRV_CHECK_HANDLE(h_conn);
+
+	sidstr = dom_sid_string(mem_ctx, r->in.sid);
+	if (sidstr == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	domain_name = samdb_search_string(mem_ctx, "name",
+					  "(&(objectSid=%s)(objectclass=domain))", 
+					  sidstr);
+	if (domain_name == NULL) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	mem_ctx2 = talloc_init("OpenDomain(%s)\n", domain_name);
+	if (!mem_ctx2) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state = talloc_p(mem_ctx2, struct samr_domain_state);
+	if (!state) {
+		talloc_destroy(mem_ctx2);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->mem_ctx = mem_ctx2;
+	state->domain_sid = talloc_steal(mem_ctx, mem_ctx2, sidstr);
+	state->domain_name = talloc_steal(mem_ctx, mem_ctx2, domain_name);
+	state->access_mask = r->in.access_mask;
+
+	h_domain = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_DOMAIN);
+	if (!h_domain) {
+		talloc_destroy(mem_ctx2);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	h_domain->data = state;
+	h_domain->destroy = samr_Domain_destroy;
+	*r->out.domain_handle = h_domain->wire_handle;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -752,11 +817,37 @@ static NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TAL
 
 /* 
   samr_GetDomPwInfo 
+
+  this fetches the default password properties for a domain
 */
 static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_GetDomPwInfo *r)
+				  struct samr_GetDomPwInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ldb_message **msgs;
+	int ret;
+	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
+
+	if (r->in.name == NULL || r->in.name->name == NULL) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	ret = samdb_search(&msgs, attrs, 
+			   "(&(name=%s)(objectclass=domain))",
+			   r->in.name->name);
+	if (ret <= 0) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+	if (ret > 1) {
+		samdb_search_free(msgs);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	r->out.info.min_pwd_len         = samdb_result_uint(msgs[0], "minPwdLength", 0);
+	r->out.info.password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
+
+	samdb_search_free(msgs);
+
+	return NT_STATUS_OK;
 }
 
 
