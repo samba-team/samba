@@ -1,5 +1,10 @@
 1999-12-12  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/principal.c (krb5_425_conv_principal_ext): be more
+ 	robust and handle extra dot at the beginning of default_domain
+
+1999-12-12  Assar Westerlund  <assar@sics.se>
+
 	* Release 0.2f
 
 1999-12-12  Assar Westerlund  <assar@sics.se>
