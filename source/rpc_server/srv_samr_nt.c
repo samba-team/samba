@@ -812,7 +812,6 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 		setgrent();
 
 		while (num_entries < max_entries && ((grp = getgrent()) != NULL)) {
-			int i;
 			uint32 trid;
 			
 			if(!get_group_from_gid(grp->gr_gid, &smap))
