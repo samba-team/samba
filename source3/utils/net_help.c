@@ -149,6 +149,15 @@ int net_help_file(int argc, const char **argv)
 	return -1;
 }
 
+int net_help_status(int argc, const char **argv)
+{
+	d_printf("  net status sessions [parseable]"
+		 "\t\t\tShow list of open sessions\n");
+	d_printf("  net status shares [parseable]"
+		 "\t\t\tShow list of open shares\n");
+	return -1;
+}
+
 static int net_usage(int argc, const char **argv)
 {
 	d_printf("  net time\t\tto view or set time information\n"\
@@ -162,6 +171,7 @@ static int net_usage(int argc, const char **argv)
 		 "  net setlocalsid SID\tto set the local domain SID\n"\
 		 "  net changesecretpw\tto change the machine password in the local secrets database only\n"\
 		 "                    \tthis requires the -f flag as a safety barrier\n"\
+		 "  net status\t\tShow server status\n"\
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\
