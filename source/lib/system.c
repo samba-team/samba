@@ -25,13 +25,17 @@ extern int DEBUGLEVEL;
 
 /*
    The idea is that this file will eventually have wrappers around all
-   important system calls in samba. The aim is twofold:
+   important system calls in samba. The aims are:
 
    - to enable easier porting by putting OS dependent stuff in here
 
    - to allow for hooks into other "pseudo-filesystems"
 
    - to allow easier integration of things like the japanese extensions
+
+   - to support the philosophy of Samba to expose the features of
+     the OS within the SMB model. In general whatever file/printer/variable
+     expansions/etc make sense to the OS should be acceptable to Samba.
 */
 
 

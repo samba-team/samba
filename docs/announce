@@ -4,19 +4,21 @@
 What is Samba?
 --------------
 
-Samba is a Unix based SMB file server. This allows a Unix host to
-act as a file and print server for SMB clients. This includes
+Samba is a SMB file server that runs on Unix and other operating systems. 
+It allows these operating systems (currently Unix, Netware, OS/2 and 
+AmigaDOS) to act as a file and print server for SMB clients. There are many
 Lan-Manager compatible clients such as LanManager for DOS, Windows for
 Workgroups, Windows NT, Windows 95, OS/2, Pathworks and many more.
 
-The package also includes a Unix SMB client and a netbios nameserver.
+The package also includes a SMB client for accessing other SMB servers 
+and a netbios nameserver for browsing support.
 
 What can it do for me?
 ----------------------
 
 If you have any PCs running SMB clients, such as a PC running Windows
-for Workgroups, then you can mount file space or printers from a unix
-host, so that directories, files and printers on the unix host are
+for Workgroups, then you can mount file space or printers on a Samba
+host, so that directories, files and printers on the host are
 available on the PC.
 
 The client part of the package will also allow you to attach to other
@@ -31,7 +33,7 @@ What are it's features?
 
 Samba supports many features that are not supported in other SMB
 implementations (all of which are commercial). Some of it's features
-include host as well as username/password security, a unix client,
+include host as well as username/password security, a client,
 automatic home directory exporting, automatic printer exporting, dead
 connection timeouts, umask support, guest connections, name mangling
 and hidden and system attribute mapping. Look at the man pages
@@ -66,7 +68,7 @@ Samba software is free software. It is available under the
 GNU Public licence in source code form at no cost. Please read the
 file COPYING that comes with the package for more information.
 
-What flavours of unix does it support?
+What operating systems does it support?
 ---------------------------------------
 
 The code has been written to be as portable as possible. It has been
@@ -79,7 +81,9 @@ Sequent, HP-UX, SGI, FreeBSD, NeXT, ISC, A/UX, SCO, Intergraph,
 Domain/OS and DGUX.
 
 Some of these have received more testing than others. If it doesn't
-work with your unix then it should be easy to fix.
+work with your unix then it should be easy to fix. It has also been ported
+to Netware, OS/2 and the Amiga. A VMS port is underway. See the web site
+for more details.
 
 Who wrote it?
 -------------
@@ -125,5 +129,5 @@ newsgroup comp.protocols.smb.
 A WWW site with lots of Samba info can be found at 
 http://samba.canberra.edu.au/pub/samba/
 
-Andrew Tridgell (Contact: samba-bugs@anu.edu.au)
-January 1995
+The Samba Team (Contact: samba-bugs@anu.edu.au)
+June 1996
