@@ -637,14 +637,6 @@ void process_smb(char *inbuf, char *outbuf)
     }
 #endif  /* WITH_SSL */
 
-#ifdef WITH_VTP
-  if(trans_num == 1 && VT_Check(inbuf)) 
-  {
-    VT_Process();
-    return;
-  }
-#endif
-
   if (msg_type == 0)
     show_msg(inbuf);
   else if(msg_type == 0x85)

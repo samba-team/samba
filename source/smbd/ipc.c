@@ -36,9 +36,7 @@ extern fstring local_machine;
 
 #define NERR_notsupported 50
 
-
 extern int smb_read_error;
-extern uint32 global_client_caps;
 
 /*******************************************************************
  copies parameters and data, as needed, into the smb buffer
@@ -55,6 +53,12 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 				       int param_len, int data_len)
 {
 	char *copy_into = smb_buf(outbuf) + 1;
+
+	if(param_len < 0)
+		param_len = 0;
+
+	if(data_len < 0)
+		data_len = 0;
 
 	DEBUG(5, ("copy_trans_params_and_data: params[%d..%d] data[%d..%d]\n",
 		  param_offset, param_offset + param_len,
@@ -110,6 +114,7 @@ void send_trans_reply(char *outbuf,
 
 	if (buffer_too_large || pipe_data_outstanding)
 	{
+		extern int global_client_caps;
 		if (global_client_caps & CAP_STATUS32)
 		{
 			/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
@@ -259,8 +264,8 @@ static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 	rparam.end = 4;
 
 	/* unsupported */
-	SSVAL(rparam.data, 0, NERR_notsupported);
-	SSVAL(rparam.data, 2, 0);	/* converter word */
+	SSVAL(rparam.data,0,NERR_notsupported);
+	SSVAL(rparam.data,2,0); /* converter word */
 
 	DEBUG(3, ("Unsupported API fd command\n"));
 
@@ -352,6 +357,7 @@ static int api_fd_reply(connection_struct * conn, uint16 vuid, char *outbuf,
 			break;
 		}
 	}
+
 	if (!reply)
 	{
 		return api_no_reply(outbuf, mdrcnt);
@@ -362,42 +368,31 @@ static int api_fd_reply(connection_struct * conn, uint16 vuid, char *outbuf,
 /****************************************************************************
   handle named pipe commands
   ****************************************************************************/
-static int named_pipe(connection_struct * conn, uint16 vuid,
-		      char *outbuf, char *name, uint16 *setup,
-		      char *data, char *params, int suwcnt,
-		      int tdscnt, int tpscnt, int msrcnt, int mdrcnt,
-		      int mprcnt)
+static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *name,
+		      uint16 *setup,char *data,char *params,
+		      int suwcnt,int tdscnt,int tpscnt,
+		      int msrcnt,int mdrcnt,int mprcnt)
 {
 	DEBUG(3, ("named pipe command on <%s> name\n", name));
 
 	if (strequal(name, "LANMAN"))
-		return api_reply(conn, vuid, outbuf, data, params,
-				 tdscnt, tpscnt, mdrcnt, mprcnt);
+		return api_reply(conn,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
 
 	if (strequal(name, "WKSSVC") ||
 	    strequal(name, "SRVSVC") ||
 	    strequal(name, "WINREG") ||
-	    strequal(name, "SAMR") || strequal(name, "LSARPC"))
+	    strequal(name,"SAMR") ||
+	    strequal(name,"LSARPC"))
 	{
 		DEBUG(4, ("named pipe command from Win95 (wow!)\n"));
-		return api_fd_reply(conn, vuid, outbuf, setup, data,
-				    params, suwcnt, tdscnt, tpscnt,
-				    mdrcnt, mprcnt);
+		return api_fd_reply(conn,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
 	}
 
 	if (strlen(name) < 1)
-	{
-		return api_fd_reply(conn, vuid, outbuf, setup, data,
-				    params, suwcnt, tdscnt, tpscnt,
-				    mdrcnt, mprcnt);
-	}
+		return api_fd_reply(conn,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
 
 	if (setup)
-	{
-		DEBUG(3,
-		      ("unknown named pipe: setup 0x%X setup1=%d\n",
-		       (int)setup[0], (int)setup[1]));
-	}
+		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n", (int)setup[0],(int)setup[1]));
 
 	return 0;
 }
@@ -407,8 +402,7 @@ static int named_pipe(connection_struct * conn, uint16 vuid,
  Reply to a SMBtrans.
   ****************************************************************************/
 
-int reply_trans(connection_struct * conn, char *inbuf, char *outbuf,
-		int size, int bufsize)
+int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize)
 {
 	fstring name;
 	int name_offset = 0;
@@ -478,22 +472,15 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf,
 
 		ret = receive_next_smb(inbuf, bufsize, SMB_SECONDARY_WAIT);
 
-		show_msg(inbuf);
 
 		if ((ret && (CVAL(inbuf, smb_com) != SMBtrans &&
 			     CVAL(inbuf, smb_com) != SMBtranss)) || !ret)
 		{
-			if (ret)
-			{
-				DEBUG(0,
-				      ("reply_trans: Invalid secondary trans packet\n"));
-			}
-			else
-			{
-				DEBUG(0,
-				      ("reply_trans: %s in getting secondary trans response.\n",
-				       (smb_read_error ==
-					READ_ERROR) ? "error" : "timeout"));
+			if(ret) {
+				DEBUG(0,("reply_trans: Invalid secondary trans packet\n"));
+			} else {
+				DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
+					 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 			}
 			if (params)
 				free(params);
@@ -504,6 +491,8 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf,
 			return (ERROR(ERRSRV, ERRerror));
 		}
 
+		show_msg(inbuf);
+      
 		tpscnt = SVAL(inbuf, smb_vwv0);
 		tdscnt = SVAL(inbuf, smb_vwv1);
 
@@ -518,8 +507,7 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf,
 		pscnt += pcnt;
 		dscnt += dcnt;
 
-		if (dscnt > tdscnt || pscnt > tpscnt)
-		{
+		if (dscnt > tdscnt || pscnt > tpscnt) {
 			exit_server("invalid trans parameters\n");
 		}
 
@@ -537,24 +525,16 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf,
 	 * WinCE wierdness....
 	 */
 
-	if (name[0] == '\\'
-	    &&
-	    (StrnCaseCmp
-	     (&name[1], local_machine, strlen(local_machine)) == 0)
-	    && (name[strlen(local_machine) + 1] == '\\'))
+	if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine, strlen(local_machine)) == 0) &&
+			(name[strlen(local_machine)+1] == '\\'))
 		name_offset = strlen(local_machine) + 1;
 
-	if (strncmp(&name[name_offset], "\\PIPE\\", strlen("\\PIPE\\")) == 0)
-	{
+	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
 		DEBUG(5, ("calling named_pipe\n"));
 		outsize = named_pipe(conn, vuid, outbuf,
-				     name + name_offset +
-				     strlen("\\PIPE\\"), setup, data,
-				     params, suwcnt, tdscnt, tpscnt,
-				     msrcnt, mdrcnt, mprcnt);
-	}
-	else
-	{
+				     name+name_offset+strlen("\\PIPE\\"),setup,data,params,
+				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
+	} else {
 		DEBUG(3, ("invalid pipe name\n"));
 		outsize = 0;
 	}

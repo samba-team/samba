@@ -93,7 +93,6 @@ char **my_netbios_names;
 
 char *daynames[] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
 char *daynames_short[] = { "M", "Tu", "W", "Th", "F", "Sa", "Su" };
-static char *filename_dos(char *path, char *buf);
 
 /*************************************************************
  initialise password databases, domain names, domain sid.
@@ -928,24 +927,6 @@ this is a version of setbuffer() for those machines that only have setvbuf
 }
 /* *INDENT-ON* */
 #endif
-
-
-/****************************************************************************
-parse out a filename from a path name. Assumes dos style filenames.
-****************************************************************************/
-static char *filename_dos(char *path, char *buf)
-{
-	char *p = strrchr(path, '\\');
-
-	if (!p)
-		pstrcpy(buf, path);
-	else
-		pstrcpy(buf, p + 1);
-
-	return (buf);
-}
-
-
 
 /****************************************************************************
 expand a pointer to be a particular size
