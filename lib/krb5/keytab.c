@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,44 +40,76 @@
 
 RCSID("$Id$");
 
+static struct krb5_keytab_data *kt_types;
+static int num_kt_types;
+
+static krb5_kt_ops fops; /* forward declaration */
+
+krb5_error_code
+krb5_kt_register(krb5_context context,
+		 krb5_kt_ops *ops)
+{
+    struct krb5_keytab_data *tmp;
+    tmp = realloc(kt_types, (num_kt_types + 1) * sizeof(*kt_types));
+    if(tmp == NULL)
+	return ENOMEM;
+    memcpy(&tmp[num_kt_types], ops, sizeof(tmp[num_kt_types]));
+    kt_types = tmp;
+    num_kt_types++;
+    return 0;
+}
+
 krb5_error_code
 krb5_kt_resolve(krb5_context context,
 		const char *name,
 		krb5_keytab *id)
 {
-  krb5_keytab k;
+    krb5_keytab k;
+    int i;
+    const char *p = strchr(name, ':');
+    krb5_error_code ret;
 
-  if (strncmp (name, "FILE:", 5) != 0)
-    return KRB5_KT_UNKNOWN_TYPE;
-
-  ALLOC(k, 1);
-  if (k == NULL)
-    return ENOMEM;
-  k->filename = strdup(name + 5);
-  if (k->filename == NULL) {
-    free(k);
-    return ENOMEM;
-  }
-  *id = k;
-  return 0;
+    if(p == NULL) 
+	return KRB5_KT_UNKNOWN_TYPE;
+    
+    if(num_kt_types == 0) {
+	ret = krb5_kt_register(context, &fops);
+	if(ret) return ret;
+    }
+    
+    for(i = 0; i < num_kt_types; i++) {
+	if(strncmp(name, kt_types[i].prefix, p - name) == 0)
+	    break;
+    }
+    if(i == num_kt_types)
+	return KRB5_KT_UNKNOWN_TYPE;
+    
+    ALLOC(k, 1);
+    memcpy(k, &kt_types[i], sizeof(*k));
+    k->data = NULL;
+    ret = (*k->resolve)(context, p + 1, k);
+    if(ret) {
+	free(k);
+	k = NULL;
+    }
+    *id = k;
+    return ret;
+    return 0;
 }
 
 #define KEYTAB_DEFAULT "FILE:/etc/v5srvtab"
 
 krb5_error_code
-krb5_kt_default_name(krb5_context context,
-		     char *name,
-		     int namesize)
+krb5_kt_default_name(krb5_context context, char *name, int namesize)
 {
-  strncpy (name, KEYTAB_DEFAULT, namesize);
-  return 0;
+    strncpy (name, KEYTAB_DEFAULT, namesize);
+    return 0;
 }
 
 krb5_error_code
-krb5_kt_default(krb5_context context,
-		krb5_keytab *id)
+krb5_kt_default(krb5_context context, krb5_keytab *id)
 {
-  return krb5_kt_resolve (context, KEYTAB_DEFAULT, id);
+    return krb5_kt_resolve (context, KEYTAB_DEFAULT, id);
 }
 
 krb5_error_code
@@ -88,59 +120,55 @@ krb5_kt_read_service_key(krb5_context context,
 			 krb5_keytype keytype,
 			 krb5_keyblock **key)
 {
-  krb5_keytab keytab;
-  krb5_keytab_entry entry;
-  krb5_error_code r;
+    krb5_keytab keytab;
+    krb5_keytab_entry entry;
+    krb5_error_code r;
 
-  if (keyprocarg)
-    r = krb5_kt_resolve (context, keyprocarg, &keytab);
-  else
-    r = krb5_kt_default (context, &keytab);
+    if (keyprocarg)
+	r = krb5_kt_resolve (context, keyprocarg, &keytab);
+    else
+	r = krb5_kt_default (context, &keytab);
 
-  if (r)
+    if (r)
+	return r;
+
+    r = krb5_kt_get_entry (context, keytab, principal, vno, keytype, &entry);
+    krb5_kt_close (context, keytab);
+    if (r)
+	return r;
+    r = krb5_copy_keyblock (context, &entry.keyblock, key);
+    krb5_kt_free_entry(context, &entry);
     return r;
-
-  r = krb5_kt_get_entry (context, keytab, principal, vno, keytype, &entry);
-  if (r)
-    return r;
-  *key = malloc(sizeof(**key));
-  (*key)->keytype = entry.keyblock.keytype;
-  (*key)->keyvalue.length = 0;
-  (*key)->keyvalue.data = NULL;
-  krb5_data_copy(&(*key)->keyvalue, entry.keyblock.keyvalue.data,
-		 entry.keyblock.keyvalue.length);
-
-  krb5_kt_close (context, keytab);
-  return r;
 }
 
-#if 0 /* not implemented */
 krb5_error_code
 krb5_kt_remove_entry(krb5_context context,
 		     krb5_keytab id,
 		     krb5_keytab_entry *entry)
 {
-    abort();
+    if(id->remove == NULL)
+	return KRB5_KT_NOWRITE;
+    return (*id->remove)(context, id, entry);
 }
-#endif
 
 krb5_error_code
-krb5_kt_get_name(krb5_context context,
+krb5_kt_get_name(krb5_context context, 
 		 krb5_keytab keytab,
 		 char *name,
-		 int namesize)
+		 size_t namesize)
 {
-  strncpy (name, keytab->filename, namesize);
-  return 0;
+    return (*keytab->get_name)(context, keytab, name, namesize);
 }
 
 krb5_error_code
-krb5_kt_close(krb5_context context,
+krb5_kt_close(krb5_context context, 
 	      krb5_keytab id)
 {
-  free (id->filename);
-  free (id);
-  return 0;
+    krb5_error_code ret;
+    ret = (*id->close)(context, id);
+    if(ret == 0)
+	free(id);
+    return ret;
 }
 
 krb5_error_code
@@ -154,6 +182,8 @@ krb5_kt_get_entry(krb5_context context,
     krb5_keytab_entry tmp;
     krb5_error_code r;
     krb5_kt_cursor cursor;
+
+    if(id->get) return (*id->get)(context, id, principal, kvno, keytype, entry);
 
     r = krb5_kt_start_seq_get (context, id, &cursor);
     if (r)
@@ -219,24 +249,49 @@ krb5_kt_free_entry(krb5_context context,
   return 0;
 }
 
+#if 0
+static int
+xxxlock(int fd, int write)
+{
+    if(flock(fd, (write ? LOCK_EX : LOCK_SH) | LOCK_NB) < 0) {
+	sleep(1);
+	if(flock(fd, (write ? LOCK_EX : LOCK_SH) | LOCK_NB) < 0) 
+	    return -1;
+    }
+    return 0;
+}
+
+static void
+xxxunlock(int fd)
+{
+    flock(fd, LOCK_UN);
+}
+#endif
+
 krb5_error_code
 krb5_kt_start_seq_get(krb5_context context,
 		      krb5_keytab id,
 		      krb5_kt_cursor *cursor)
 {
-  int16_t tag;
-  int ret;
+    return (*id->start_seq_get)(context, id, cursor);
+}
 
-  cursor->fd = open (id->filename, O_RDONLY);
-  if (cursor->fd < 0)
-    return errno;
-  cursor->sp = krb5_storage_from_fd(cursor->fd);
-  ret = krb5_ret_int16(cursor->sp, &tag);
-  if (ret)
-    return ret;
-  if (tag != 0x0502)
-    return KRB5_KT_UNKNOWN_TYPE;
-  return 0;
+krb5_error_code
+krb5_kt_next_entry(krb5_context context,
+		   krb5_keytab id,
+		   krb5_keytab_entry *entry,
+		   krb5_kt_cursor *cursor)
+{
+    return (*id->next_entry)(context, id, entry, cursor);
+}
+
+
+krb5_error_code
+krb5_kt_end_seq_get(krb5_context context,
+		    krb5_keytab id,
+		    krb5_kt_cursor *cursor)
+{
+    return (*id->end_seq_get)(context, id, cursor);
 }
 
 static krb5_error_code
@@ -388,88 +443,187 @@ krb5_kt_store_principal(krb5_storage *sp,
     return 0;
 }
 
-
 krb5_error_code
 krb5_kt_add_entry(krb5_context context,
 		  krb5_keytab id,
 		  krb5_keytab_entry *entry)
 {
+    return (*id->add)(context, id,entry);
+}
+
+
+/* file operations -------------------------------------------- */
+
+struct fkt_data {
+    char *filename;
+};
+
+static krb5_error_code
+fkt_resolve(krb5_context context, const char *name, krb5_keytab id)
+{
+    struct fkt_data *d;
+    d = malloc(sizeof(*d));
+    if(d == NULL)
+	return ENOMEM;
+    d->filename = strdup(name);
+    if(d->filename == NULL) {
+	return ENOMEM;
+	free(d);
+    }
+    id->data = d;
+    return 0;
+}
+
+static krb5_error_code
+fkt_close(krb5_context context, krb5_keytab id)
+{
+    struct fkt_data *d = id->data;
+    free(d->filename);
+    free(d);
+    return 0;
+}
+
+static krb5_error_code 
+fkt_get_name(krb5_context context, 
+	     krb5_keytab id, 
+	     char *name, 
+	     size_t namesize)
+{
+    /* This function is XXX */
+    struct fkt_data *d = id->data;
+    strncpy(name, d->filename, namesize);
+    return 0;
+}
+
+static krb5_error_code
+fkt_start_seq_get(krb5_context context, 
+		  krb5_keytab id, 
+		  krb5_kt_cursor *c)
+{
+    int16_t tag;
+    krb5_error_code ret;
+    struct fkt_data *d = id->data;
+    
+    c->fd = open (d->filename, O_RDONLY);
+    if (c->fd < 0)
+	return errno;
+    c->sp = krb5_storage_from_fd(c->fd);
+    ret = krb5_ret_int16(c->sp, &tag);
+    if (ret) {
+	close(c->fd);
+	return ret;
+    }
+    if (tag != 0x0502) {
+	return KRB5_KT_UNKNOWN_TYPE;
+	krb5_storage_free(c->sp);
+	close(c->fd);
+    }
+    return 0;
+}
+
+static krb5_error_code
+fkt_next_entry(krb5_context context, 
+	       krb5_keytab id, 
+	       krb5_keytab_entry *entry, 
+	       krb5_kt_cursor *cursor)
+{
+    u_int32_t len;
+    u_int32_t timestamp;
+    int ret;
+    int8_t tmp8;
+    int32_t tmp32;
+
+    ret = krb5_ret_int32(cursor->sp, &tmp32);
+    if (ret)
+	return ret;
+    len = tmp32;
+    ret = krb5_kt_ret_principal (cursor->sp, &entry->principal);
+    if (ret)
+	return ret;
+    ret = krb5_ret_int32(cursor->sp, &tmp32);
+    entry->principal->name.name_type = tmp32;
+    if (ret)
+	return ret;
+    ret = krb5_ret_int32(cursor->sp, &tmp32);
+    timestamp = tmp32;
+    if (ret)
+	return ret;
+    ret = krb5_ret_int8(cursor->sp, &tmp8);
+    if (ret)
+	return ret;
+    entry->vno = tmp8;
+    ret = krb5_kt_ret_keyblock (cursor->sp, &entry->keyblock);
+    if (ret)
+	return ret;
+    return 0;
+}
+
+static krb5_error_code
+fkt_end_seq_get(krb5_context context, 
+		krb5_keytab id,
+		krb5_kt_cursor *cursor)
+{
+    krb5_storage_free(cursor->sp);
+    close(cursor->fd);
+    return 0;
+}
+
+static krb5_error_code
+fkt_add_entry(krb5_context context,
+	      krb5_keytab id,
+	      krb5_keytab_entry *entry)
+{
     int ret;
     int fd;
     krb5_storage *sp;
-
-    fd = open (id->filename, O_WRONLY | O_APPEND);
+    struct fkt_data *d = id->data;
+    
+    fd = open (d->filename, O_WRONLY | O_APPEND);
     if (fd < 0) {
-	fd = open (id->filename, O_WRONLY | O_CREAT, 0600);
-	if (fd < 0)
+	fd = open (d->filename, O_WRONLY | O_CREAT, 0600);
+	if (d < 0)
 	    return errno;
 	sp = krb5_storage_from_fd(fd);
 	ret = krb5_store_int16 (sp, 0x0502);
-	if (ret) return ret;
+	if (ret) {
+	    close(fd);
+	    return ret;
+	}
     } else {
 	sp = krb5_storage_from_fd(fd);
     }
 
     ret = krb5_store_int32 (sp, 4711); /* XXX */
-    if (ret) return ret;
+    if (ret) goto out;
     ret = krb5_kt_store_principal (sp, entry->principal);
-    if (ret) return ret;
+    if (ret) goto out;
     ret = krb5_store_int32 (sp, entry->principal->name.name_type);
-    if (ret) return ret;
+    if (ret) goto out;
     ret = krb5_store_int32 (sp, time(NULL));
-    if (ret) return ret;
+    if (ret) goto out;
     ret = krb5_store_int8 (sp, entry->vno);
-    if (ret) return ret;
+    if (ret) goto out;
     ret = krb5_kt_store_keyblock (sp, &entry->keyblock);
-    if (ret) return ret;
+    if (ret) goto out;
     krb5_storage_free (sp);
+out:
     close (fd);
-    return 0;
+    return ret;
 }
 
-krb5_error_code
-krb5_kt_next_entry(krb5_context context,
-		   krb5_keytab id,
-		   krb5_keytab_entry *entry,
-		   krb5_kt_cursor *cursor)
-{
-  u_int32_t len;
-  u_int32_t timestamp;
-  int ret;
-  int8_t tmp8;
-  int32_t tmp32;
+static krb5_kt_ops fops = {
+    "FILE",
+    fkt_resolve,
+    fkt_get_name,
+    fkt_close,
+    NULL, /* get */
+    fkt_start_seq_get,
+    fkt_next_entry,
+    fkt_end_seq_get,
+    fkt_add_entry,
+    NULL /* remove */
+};
 
-  ret = krb5_ret_int32(cursor->sp, &tmp32);
-  if (ret)
-    return ret;
-  len = tmp32;
-  ret = krb5_kt_ret_principal (cursor->sp, &entry->principal);
-  if (ret)
-    return ret;
-  ret = krb5_ret_int32(cursor->sp, &tmp32);
-  entry->principal->name.name_type = tmp32;
-  if (ret)
-    return ret;
-  ret = krb5_ret_int32(cursor->sp, &tmp32);
-  timestamp = tmp32;
-  if (ret)
-    return ret;
-  ret = krb5_ret_int8(cursor->sp, &tmp8);
-  if (ret)
-    return ret;
-  entry->vno = tmp8;
-  ret = krb5_kt_ret_keyblock (cursor->sp, &entry->keyblock);
-  if (ret)
-    return ret;
-  return 0;
-}
 
-krb5_error_code
-krb5_kt_end_seq_get(krb5_context context,
-		    krb5_keytab id,
-		    krb5_kt_cursor *cursor)
-{
-    krb5_storage_free(cursor->sp);
-    close (cursor->fd);
-    return 0;
-}
+/* memory operations -------------------------------------------- */
+
