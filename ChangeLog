@@ -1,4 +1,15 @@
+2003-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/rd_req.c (krb5_rd_req): allow caller to pass in a key
+	in the auth_context, they way processes that doesn't use the
+	keytab can still pass in the key of the service (matches behavior
+	of MIT Kerberos).
+	
 2003-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c: collect all init_creds context into a
+	structure so it can easier be passed around, also, while here,
+	change nonce for every request
 
 	* lib/krb5/get_in_tkt.c (init_as_req): don't realloc data before
 	the loop, add_padata() will handle that itself
