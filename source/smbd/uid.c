@@ -393,9 +393,24 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 	memcpy(final_groups, *pp_groups, current_n_groups * sizeof(gid_t));
 	for (i = 0; i < ptok->num_sids; i++) {
 		enum SID_NAME_USE sid_type;
+		gid_t new_grp;
  
-		if (sid_to_gid(&ptok->user_sids[i], &final_groups[current_n_groups], &sid_type))
-			current_n_groups++;
+		if (sid_to_gid(&ptok->user_sids[i], &new_grp, &sid_type)) {
+			/*
+			 * Don't add the gid_t if it is already in the current group
+			 * list. Some UNIXen don't like the same group more than once.
+			 */
+			int j;
+
+			for (j = 0; j < current_n_groups; j++)
+				if (final_groups[j] == new_grp)
+					break;
+		
+			if ( j == current_n_groups) {
+				/* Group not already present. */
+				final_groups[current_n_groups++] = new_grp;
+			}
+		}
 	}
  
 	SAFE_FREE(*pp_groups);
