@@ -51,7 +51,6 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  clitar.c  */
 
-int strslashcmp(char *s1, char *s2);
 int padit(char *buf, int bufsize, int padsize);
 void cmd_block(void);
 void cmd_tarmode(void);
@@ -730,6 +729,9 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
+smb_shm_offset_t smb_shm_alloc(int size);
+smb_shm_offset_t smb_shm_addr2offset(void *addr);
+smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_create_hash_table( unsigned int size );
 BOOL smb_shm_open( char *file_name, int size);
 BOOL smb_shm_close( void );
