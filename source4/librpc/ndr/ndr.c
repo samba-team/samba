@@ -883,3 +883,24 @@ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push)
 	talloc_free(ndr);
 	return ret;
 }
+
+/*
+  generic ndr_size_*() handler for unions
+*/
+size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_union_fn_t push)
+{
+	struct ndr_push *ndr;
+	NTSTATUS status;
+	size_t ret;
+
+	ndr = ndr_push_init_ctx(NULL);
+	if (!ndr) return 0;
+	ndr->flags |= flags;
+	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, level, discard_const(p));
+	if (!NT_STATUS_IS_OK(status)) {
+		return 0;
+	}
+	ret = ndr->offset;
+	talloc_free(ndr);
+	return ret;
+}
