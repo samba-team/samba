@@ -225,10 +225,12 @@ main (int argc, char **argv)
 					"forwardable",
 					NULL);
 
+#ifdef KRB4
     get_v4_tgt = krb5_config_get_bool (context, NULL,
 				       "libdefaults",
 				       "krb4_get_tickets",
 				       NULL);
+#endif
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
