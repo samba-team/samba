@@ -753,10 +753,6 @@ extern int errno;
 
 #include "mangle.h"
 
-#ifndef MAXCODEPAGELINES
-#define MAXCODEPAGELINES 256
-#endif
-
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.

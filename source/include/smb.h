@@ -1366,30 +1366,6 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define UID_FIELD_INVALID 0
 #define VUID_OFFSET 100 /* Amount to bias returned vuid numbers */
 
-/* Defines needed for multi-codepage support. */
-#define MSDOS_LATIN_1_CODEPAGE 850
-#define KANJI_CODEPAGE 932
-#define HANGUL_CODEPAGE 949
-#define BIG5_CODEPAGE 950
-#define SIMPLIFIED_CHINESE_CODEPAGE 936
-
-#ifdef KANJI
-/* 
- * Default client code page - Japanese 
- */
-#define DEFAULT_CLIENT_CODE_PAGE KANJI_CODEPAGE
-#else /* KANJI */
-/* 
- * Default client code page - 850 - Western European 
- */
-#define DEFAULT_CLIENT_CODE_PAGE MSDOS_LATIN_1_CODEPAGE
-#endif /* KANJI */
-
-/* Global val set if multibyte codepage. */
-extern int global_is_multibyte_codepage;
-
-#define get_character_len(x) (global_is_multibyte_codepage ? skip_multibyte_char((x)) : 0)
-
 /* 
  * Size of buffer to use when moving files across filesystems. 
  */
