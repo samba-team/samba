@@ -48,14 +48,14 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	fstring sid;
 	char *new_passwd;
 	BOOL res = True;
-	char nt_newpass[516];
-	char nt_hshhash[16];
-	char nt_newhash[16];
-	char nt_oldhash[16];
-	char lm_newpass[516];
-	char lm_newhash[16];
-	char lm_hshhash[16];
-	char lm_oldhash[16];
+	uchar nt_newpass[516];
+	uchar nt_hshhash[16];
+	uchar nt_newhash[16];
+	uchar nt_oldhash[16];
+	uchar lm_newpass[516];
+	uchar lm_newhash[16];
+	uchar lm_hshhash[16];
+	uchar lm_oldhash[16];
 
 	fstrcpy(sid   , info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -79,8 +79,19 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	E_old_pw_hash(lm_newhash, lm_oldhash, lm_hshhash);
 	E_old_pw_hash(lm_newhash, nt_oldhash, nt_hshhash);
 
+	cli_nt_set_ntlmssp_flgs(smb_cli,
+		                    NTLMSSP_NEGOTIATE_UNICODE |
+		                    NTLMSSP_NEGOTIATE_OEM |
+		                    NTLMSSP_NEGOTIATE_SIGN |
+		                    NTLMSSP_NEGOTIATE_SEAL |
+		                    NTLMSSP_NEGOTIATE_LM_KEY |
+		                    NTLMSSP_NEGOTIATE_NTLM |
+		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+		                    NTLMSSP_NEGOTIATE_00001000 |
+		                    NTLMSSP_NEGOTIATE_00002000);
+
 	/* open SAMR session.  */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, True) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
 	/* establish a connection. */
 	res = res ? do_samr_unknown_38(smb_cli, srv_name) : False;
@@ -90,7 +101,6 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	                                   srv_name, smb_cli->user_name,
 	                                   nt_newpass, nt_hshhash,
 	                                   lm_newpass, lm_hshhash) : False;
-
 	/* close the session */
 	cli_nt_session_close(smb_cli);
 
@@ -132,7 +142,7 @@ void cmd_sam_test(struct client_info *info)
 	fprintf(out_hnd, "SAM Encryption Test\n");
 
 	/* open SAMR session.  */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, True) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
 	/* establish a connection. */
 	res = res ? do_samr_unknown_38(smb_cli, srv_name) : False;
@@ -231,7 +241,7 @@ void cmd_sam_enum_users(struct client_info *info)
 #endif
 
 	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
 	/* establish a connection. */
 	res = res ? do_samr_connect(smb_cli, 
@@ -373,7 +383,7 @@ void cmd_sam_query_user(struct client_info *info)
 	                  info->myhostname, srv_name, domain, sid);
 
 	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
 	/* establish a connection. */
 	res = res ? do_samr_connect(smb_cli,
@@ -461,7 +471,7 @@ void cmd_sam_query_groups(struct client_info *info)
 	                  info->myhostname, srv_name, domain, sid);
 
 	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
 	/* establish a connection. */
 	res = res ? do_samr_connect(smb_cli, 
@@ -550,7 +560,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	                  info->myhostname, srv_name, domain, sid);
 
 	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
 	/* establish a connection. */
 	res = res ? do_samr_connect(smb_cli,

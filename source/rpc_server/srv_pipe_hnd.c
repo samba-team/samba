@@ -159,7 +159,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
  SERIOUSLY ALPHA CODE!
  ****************************************************************************/
-int write_pipe(pipes_struct *p, char *data, int n)
+ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
 {
 	prs_struct pd;
 	struct mem_buf data_buf;
@@ -182,7 +182,7 @@ int write_pipe(pipes_struct *p, char *data, int n)
 	pd.io = True;
 	pd.offset = 0;
 
-	return rpc_command(p, &pd) ? n : -1;
+	return rpc_command(p, &pd) ? ((ssize_t)n) : -1;
 }
 
 

@@ -954,10 +954,20 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 }
 
 /****************************************************************************
+ set ntlmssp negotiation flags
+ ****************************************************************************/
+
+BOOL cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
+{
+	cli->ntlmssp_cli_flgs = ntlmssp_flgs;
+}
+
+
+/****************************************************************************
  open a session
  ****************************************************************************/
 
-BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
+BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name)
 {
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
@@ -998,25 +1008,6 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 	}
 
 	/******************* bind request on pipe *****************/
-
-	if (encrypted)
-	{
-		cli->ntlmssp_cli_flgs = 0xb2b3;
-/*		                    NTLMSSP_NEGOTIATE_UNICODE |
-		                    NTLMSSP_NEGOTIATE_OEM |
- 
-		                    NTLMSSP_NEGOTIATE_SIGN |
-		                    NTLMSSP_NEGOTIATE_SEAL |
-		                    NTLMSSP_NEGOTIATE_LM_KEY |
-		                    NTLMSSP_NEGOTIATE_NTLM |
-		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
-
-		                    NTLMSSP_NEGOTIATE_00001000 |
-		                    NTLMSSP_NEGOTIATE_00002000;
- */
-		DEBUG(5,("cli_nt_session_open: neg_flags: %x\n",
-		         cli->ntlmssp_cli_flgs));
-	}
 
 	if (!rpc_pipe_bind(cli, pipe_name,
 	                   &abstract, &transfer,
