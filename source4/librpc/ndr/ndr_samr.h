@@ -736,7 +736,8 @@ struct samr_UserInfo5 {
 	NTTIME last_logoff;
 	uint32 units_per_week;
 	uint8 *logon_hours;
-	uint32 unknown;
+	uint16 bad_pwd_count;
+	uint16 num_logons;
 	NTTIME last_pwd_change;
 	NTTIME acct_expiry;
 	uint32 acct_flags;

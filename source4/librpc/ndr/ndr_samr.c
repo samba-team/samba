@@ -1680,7 +1680,8 @@ NTSTATUS ndr_pull_samr_UserInfo5(struct ndr_pull *ndr, int ndr_flags, struct sam
 	} else {
 		r->logon_hours = NULL;
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->bad_pwd_count));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->num_logons));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_pwd_change));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->acct_expiry));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->acct_flags));
@@ -3743,7 +3744,8 @@ void ndr_print_samr_UserInfo5(struct ndr_print *ndr, const char *name, struct sa
 		ndr_print_array_uint8(ndr, "logon_hours", r->logon_hours, r->units_per_week/8);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr_print_uint16(ndr, "bad_pwd_count", r->bad_pwd_count);
+	ndr_print_uint16(ndr, "num_logons", r->num_logons);
 	ndr_print_NTTIME(ndr, "last_pwd_change", r->last_pwd_change);
 	ndr_print_NTTIME(ndr, "acct_expiry", r->acct_expiry);
 	ndr_print_uint32(ndr, "acct_flags", r->acct_flags);
