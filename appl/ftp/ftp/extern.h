@@ -107,7 +107,7 @@ void	pwd (int, char **);
 void	quit (int, char **);
 void	quote (int, char **);
 void	quote1 (char *, int, char **);
-void    recvrequest (char *, char *, char *, char *, int);
+void    recvrequest (char *, char *, char *, char *, int, int);
 void	reget (int, char **);
 char   *remglob (char **, int);
 void	removedir (int, char **);
