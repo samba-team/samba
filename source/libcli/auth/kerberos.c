@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/kerberos.h"
 
 #ifdef HAVE_KRB5
 

@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 /****************************************************************************
  *
@@ -1272,7 +1273,7 @@ struct ldap_connection *new_ldap_connection(void)
 BOOL ldap_connect(struct ldap_connection *conn, const char *url)
 {
 	struct hostent *hp;
-	struct in_addr ip;
+	struct ipv4_addr ip;
 
 	if (!ldap_parse_basic_url(conn->mem_ctx, url, &conn->host,
 				  &conn->port, &conn->ldaps))

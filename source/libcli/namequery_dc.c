@@ -28,9 +28,9 @@
 /*
   find the DC for a domain using methods appropriate for a RPC domain
 */
-BOOL rpc_find_dc(const char *domain, fstring srv_name, struct in_addr *ip_out)
+BOOL rpc_find_dc(const char *domain, fstring srv_name, struct ipv4_addr *ip_out)
 {
-	struct in_addr *ip_list = NULL, dc_ip, exclude_ip;
+	struct ipv4_addr *ip_list = NULL, dc_ip, exclude_ip;
 	int count, i;
 	BOOL list_ordered;
 	BOOL use_pdc_only;
@@ -69,7 +69,7 @@ BOOL rpc_find_dc(const char *domain, fstring srv_name, struct in_addr *ip_out)
 
 	/* Pick a nice close server, but only if the list was not ordered */
 	if (!list_ordered && (count > 1) ) {
-		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
+		qsort(ip_list, count, sizeof(struct ipv4_addr), QSORT_CAST ip_compare);
 	}
 
 	for (i = 0; i < count; i++) {

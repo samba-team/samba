@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 /**************************************************************************n
  Find a suitable temporary directory. The result should be copied immediately
@@ -421,7 +422,7 @@ uint32_t interpret_addr(const char *str)
 
 	/* if it's in the form of an IP address then get the lib to interpret it */
 	if (is_ipaddress(str)) {
-		res = inet_addr(str);
+		res = sys_inet_addr(str);
 	} else {
 		/* otherwise assume it's a network name of some sort and use 
 			sys_gethostbyname */
@@ -446,9 +447,9 @@ uint32_t interpret_addr(const char *str)
 /*******************************************************************
  A convenient addition to interpret_addr().
 ******************************************************************/
-struct in_addr interpret_addr2(const char *str)
+struct ipv4_addr interpret_addr2(const char *str)
 {
-	struct in_addr ret;
+	struct ipv4_addr ret;
 	uint32_t a = interpret_addr(str);
 	ret.s_addr = a;
 	return ret;
@@ -458,7 +459,7 @@ struct in_addr interpret_addr2(const char *str)
  Check if an IP is the 0.0.0.0.
 ******************************************************************/
 
-BOOL is_zero_ip(struct in_addr ip)
+BOOL is_zero_ip(struct ipv4_addr ip)
 {
 	uint32_t a;
 	putip((char *)&a,(char *)&ip);
@@ -469,9 +470,9 @@ BOOL is_zero_ip(struct in_addr ip)
  Set an IP to 0.0.0.0.
 ******************************************************************/
 
-void zero_ip(struct in_addr *ip)
+void zero_ip(struct ipv4_addr *ip)
 {
-	*ip = inet_makeaddr(0,0);
+	*ip = sys_inet_makeaddr(0,0);
 	return;
 }
 
@@ -480,7 +481,7 @@ void zero_ip(struct in_addr *ip)
  Are two IPs on the same subnet?
 ********************************************************************/
 
-BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
+BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
 {
 	uint32_t net1,net2,nmask;
 

@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
 
+   networking system include wrappers
+
    Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
@@ -18,34 +20,41 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#ifdef HAVE_UNIXSOCKET
+#include <sys/un.h>
+#endif
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+
 /*
-  this file contains pre-declarations of private structures to avoid the
-  "scope is only this definition or declaration" warning
-*/
+ * The next three defines are needed to access the IPTOS_* options
+ * on some systems.
+ */
 
-union spoolss_PrinterInfo;
-union spoolss_FormInfo;
-union spoolss_JobInfo;
-union spoolss_DriverInfo;
-union spoolss_PortInfo;
+#ifdef HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif
 
-struct MULTI_QI;
-struct COSERVERINFO;
+#ifdef HAVE_NETINET_IN_IP_H
+#include <netinet/in_ip.h>
+#endif
+
+#ifdef HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
+
+#ifdef HAVE_NET_IF_H
+#include <net/if.h>
+#endif
 
 
-struct epm_floor;
-struct epm_tower;
-
-struct drsuapi_DsCrackNames;
-
-struct samr_ChangePasswordUser;
-struct samr_OemChangePasswordUser2;
-struct samr_ChangePasswordUser3;
-struct samr_ChangePasswordUser2;
-struct samr_CryptPassword;
-struct samr_CryptPasswordEx;
-
-struct netr_SamInfo3;
-struct netr_Authenticator;
-
-struct iface_struct;

@@ -83,6 +83,7 @@
 #endif /* RELIANTUNIX */
 
 #include <sys/types.h>
+#include <stdint.h>
 
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
@@ -112,14 +113,6 @@
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-#ifdef HAVE_UNIXSOCKET
-#include <sys/un.h>
 #endif
 
 #ifdef HAVE_SYS_SYSCALL_H
@@ -213,10 +206,6 @@
 #include <varargs.h>
 #endif
 
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #else
@@ -226,27 +215,6 @@
 #endif
 
 #include <sys/file.h>
-
-#ifdef HAVE_NETINET_TCP_H
-#include <netinet/tcp.h>
-#endif
-
-/*
- * The next three defines are needed to access the IPTOS_* options
- * on some systems.
- */
-
-#ifdef HAVE_NETINET_IN_SYSTM_H
-#include <netinet/in_systm.h>
-#endif
-
-#ifdef HAVE_NETINET_IN_IP_H
-#include <netinet/in_ip.h>
-#endif
-
-#ifdef HAVE_NETINET_IP_H
-#include <netinet/ip.h>
-#endif
 
 #if defined(HAVE_TERMIOS_H)
 /* POSIX terminal handling. */
@@ -279,11 +247,6 @@
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
-
-#ifdef HAVE_NET_IF_H
-#include <net/if.h>
-#endif
-
 
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
@@ -374,28 +337,6 @@
 #endif
 #endif
 
-#ifdef HAVE_KRB5_H
-#include <krb5.h>
-#else
-#undef HAVE_KRB5
-#endif
-
-#ifdef HAVE_GSSAPI_H
-#include <gssapi.h>
-#endif
-
-#ifdef HAVE_GSSAPI_GSSAPI_H
-#include <gssapi/gssapi.h>
-#endif
-
-#ifdef HAVE_GSSAPI_GSSAPI_GENERIC_H
-#include <gssapi/gssapi_generic.h>
-#endif
-
-#ifdef HAVE_COM_ERR_H
-#include <com_err.h>
-#endif
-
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
@@ -466,6 +407,14 @@ typedef int socklen_t;
 #define uint64 uint64_t
 #endif
 
+/*
+  we use struct ipv4_addr to avoid having to include all the
+  system networking headers everywhere
+*/
+struct ipv4_addr {
+	uint32_t s_addr;
+};
+
 #ifndef UINT8_MAX
 #define UINT8_MAX 255
 #endif
@@ -518,7 +467,6 @@ extern int errno;
 #include "talloc.h"
 #include "db_wrap.h"
 #include "nt_status.h"
-#include "interfaces.h"
 #include "trans2.h"
 #include "ioctl.h"
 #include "nterr.h"
@@ -557,7 +505,6 @@ extern int errno;
 
 #include "libcli/auth/ntlmssp.h"
 #include "libcli/auth/credentials.h"
-#include "libcli/auth/kerberos.h"
 #include "libcli/auth/gensec.h"
 #include "libcli/auth/spnego.h"
 #include "auth/auth.h"
@@ -721,13 +668,6 @@ unsigned long strtoul(const char *nptr, char **endptr, int base);
 int setenv(const char *name, const char *value, int overwrite); 
 #endif
 
-#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
-/* stupid glibc */
-int setresuid(uid_t ruid, uid_t euid, uid_t suid);
-#endif
-#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
-int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
-#endif
 #ifndef HAVE_VASPRINTF_DECL
 int vasprintf(char **ptr, const char *format, va_list ap);
 #endif

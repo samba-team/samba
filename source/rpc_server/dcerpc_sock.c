@@ -123,15 +123,15 @@ static void add_socket_rpc_ncalrpc(struct server_service *service,
   add a socket address to the list of events, one event per dcerpc endpoint
 */
 static void add_socket_rpc_tcp_iface(struct server_service *service, 
-		       const struct model_ops *model_ops,
-		       struct dcesrv_context *dce_ctx, 
-			   struct dcesrv_endpoint *e,
-		       struct in_addr *ifip)
+				     const struct model_ops *model_ops,
+				     struct dcesrv_context *dce_ctx, 
+				     struct dcesrv_endpoint *e,
+				     struct ipv4_addr *ifip)
 {
 	struct server_socket *sock;
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 0;
-	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
+	char *ip_str = talloc_strdup(service, sys_inet_ntoa(*ifip));
 			
 	if (e->ep_description.endpoint) 
 		port = atoi(e->ep_description.endpoint);
@@ -173,14 +173,14 @@ static void add_socket_rpc_tcp(struct server_service *service,
 		int num_interfaces = iface_count();
 		int i;
 		for(i = 0; i < num_interfaces; i++) {
-			struct in_addr *ifip = iface_n_ip(i);
+			struct ipv4_addr *ifip = iface_n_ip(i);
 			if (ifip == NULL) {
 				continue;
 			}
 			add_socket_rpc_tcp_iface(service, model_ops, dce_ctx, e, ifip);
 		}
 	} else {
-		struct in_addr ifip;
+		struct ipv4_addr ifip;
 		ifip = interpret_addr2(lp_socket_address());
 		add_socket_rpc_tcp_iface(service, model_ops, dce_ctx, e, &ifip);
 	}

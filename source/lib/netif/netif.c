@@ -33,23 +33,18 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <net/if.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <net/if.h>
 
-#ifdef AUTOCONF_TEST
-struct iface_struct {
-	char name[16];
-	struct in_addr ip;
-	struct in_addr netmask;
-};
-#else
+#ifndef AUTOCONF_TEST
+#include "lib/netif/netif.h"
 #include "config.h"
-#include "interfaces.h"
 #endif
 
 #ifdef HAVE_SYS_TIME_H
@@ -385,8 +380,6 @@ int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 
 #ifdef AUTOCONF_TEST
 /* this is the autoconf driver to test get_interfaces() */
-
-#define MAX_INTERFACES 128
 
  int main()
 {
