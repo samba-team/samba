@@ -237,8 +237,6 @@ implemented */
 
 typedef char pstring[1024];
 typedef char fstring[128];
-/* typedef fstring string; */
-
 
 /* pipe strings */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
