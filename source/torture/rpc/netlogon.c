@@ -358,6 +358,42 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
+/*
+  try a netlogon AccountDeltas
+*/
+static BOOL test_AccountDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_AccountDeltas r;
+	struct netr_CredentialState creds;
+	BOOL ret = True;
+
+	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+		return False;
+	}
+
+	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computername = lp_netbios_name();
+	ZERO_STRUCT(r.in.return_authenticator);
+	creds_client_authenticator(&creds, &r.in.credential);
+	ZERO_STRUCT(r.in.uas);
+	r.in.count=10;
+	r.in.level=0;
+	r.in.buffersize=100;
+
+	printf("Testing AccountDeltas\n");
+
+	/* w2k3 returns "NOT IMPLEMENTED" for this call */
+	status = dcerpc_netr_AccountDeltas(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		printf("AccountDeltas - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+
 BOOL torture_rpc_netlogon(int dummy)
 {
         NTSTATUS status;
@@ -376,6 +412,11 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 	
 	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
+
+	if (!test_AccountDeltas(p, mem_ctx)) {
+		ret = False;
+	}
+	return ret;
 
 	if (!test_LogonUasLogon(p, mem_ctx)) {
 		ret = False;
