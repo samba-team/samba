@@ -457,7 +457,7 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
 	BOOL good;
 
 	if (smb_len(cli->inbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(1, ("Can't check signature on short packet! smb_len = %u\n", smb_len(cli->inbuf)));
+		DEBUG(cli->sign_info.doing_signing ? 1 : 10, ("Can't check signature on short packet! smb_len = %u\n", smb_len(cli->inbuf)));
 		good = False;
 	} else {
 		good = cli->sign_info.check_incoming_message(cli);
