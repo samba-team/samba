@@ -13,6 +13,32 @@
 <title>Unicode/Charsets</title>
 
 <sect1>
+<title>Features and Benefits</title>
+
+<para>
+Every industry eventually matures. One of the great areas of maturation is in
+the focus that has been given over the past decade to make it possible for anyone
+anywhere to use a computer. It has not always been that way, in fact, not so long
+ago it was common for software to be written for exclusive use in the country of
+origin.
+</para>
+
+<para>
+Of all the effort that has been brought to bear on providing native language support
+for all computer users, the efforts of the Openi18n organisation is deserving of
+special mention. For more information about Openi18n please refer to: 
+<link url="http://www.openi18n.org/">http://www.openi18n.org/</link>.
+</para>
+
+<para>
+Samba-2.x supported a single locale through a mechanism called 
+<emphasis>codepages</emphasis>. Samba-3 is destined to become a truely trans-global
+file and printer sharing platform.
+</para>
+
+</sect1>
+
+<sect1>
 <title>What are charsets and unicode?</title>
 
 <para>
