@@ -565,9 +565,9 @@ int print_job_start(int snum, char *jobname)
 
 	/* see if we have sufficient disk space */
 	if (lp_minprintspace(snum)) {
-		SMB_BIG_UINT dum1,dum2,dum3;
-		if (sys_disk_free(path,False,&dum1,&dum2,&dum3) < 
-		    (SMB_BIG_UINT)lp_minprintspace(snum)) {
+		SMB_BIG_UINT dspace, dsize;
+		if (sys_fsusage(path, &dspace, &dsize) == 0 &&
+		    dspace < 2*(SMB_BIG_UINT)lp_minprintspace(snum)) {
 			errno = ENOSPC;
 			return -1;
 		}

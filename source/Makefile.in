@@ -154,7 +154,7 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
 		lib/pidfile.o lib/replace.o \
 		lib/signal.o lib/getopt.o lib/slprintf.o \
-		lib/system.o lib/doscalls.o \
+		lib/fsusage.o lib/system.o lib/doscalls.o \
 		lib/time.o lib/ufc.o lib/util.o lib/substitute.o \
 		lib/genrand.o lib/username.o \
 		lib/access.o lib/smbrun.o \
