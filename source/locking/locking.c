@@ -155,12 +155,16 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 	int sleeptime = lp_lock_sleep_time();
 	NTSTATUS status;
 
+	if (maxj <= 0)
+		maxj = 1;
+
 	for (j = 0; j < maxj; j++) {
 		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
 				!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT))
 			break;
-		usleep(sleeptime);
+		if (sleeptime)
+			usleep(sleeptime);
 	}
 	return status;
 }
