@@ -5,18 +5,8 @@ from gtkdictbrowser import GtkDictBrowser, hex_string
 import gtk
 import spoolss
 import string
+import printerdata
 
-class printerdata:
-    def __init__(self, host):
-        host = string.replace(host, "/", "\\")
-        self.hnd = spoolss.openprinter(host)
-
-    def keys(self):
-        return self.hnd.enumprinterdata().keys()
-
-    def __getitem__(self, key):
-        return self.hnd.getprinterdata(key)['data']
-        
 # Initialise printerdata dictionary
 
 if len(sys.argv) != 2:
@@ -25,7 +15,8 @@ if len(sys.argv) != 2:
     sys.exit(1)
 
 try:
-    t = printerdata(sys.argv[1])
+    host = string.replace(sys.argv[1], "/", "\\")
+    t = printerdata.printerdata(host)
 except:
     print "gprinterdata: error opening %s" % sys.argv[1]
     sys.exit(1)
