@@ -2811,25 +2811,38 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
  open_file_shared. JRA.
 ****************************************************************************/
 
-NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
+NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, uint32 dosmode)
 {
-	/*
-	 * Only allow delete on close for writable shares.
-	 */
+	if (delete_on_close) {
+		/*
+		 * Only allow delete on close for writable files.
+		 */
 
-	if (delete_on_close && !CAN_WRITE(fsp->conn)) {
-		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
+		if (dosmode & aRONLY) {
+			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but file attribute is readonly.\n",
 				fsp->fsp_name ));
-				return NT_STATUS_ACCESS_DENIED;
-	}
-	/*
-	 * Only allow delete on close for files/directories opened with delete intent.
-	 */
+			return NT_STATUS_CANNOT_DELETE;
+		}
 
-	if (delete_on_close && !(fsp->desired_access & DELETE_ACCESS)) {
-		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
+		/*
+		 * Only allow delete on close for writable shares.
+		 */
+
+		if (!CAN_WRITE(fsp->conn)) {
+			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
 				fsp->fsp_name ));
-				return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		/*
+		 * Only allow delete on close for files/directories opened with delete intent.
+		 */
+
+		if (!(fsp->desired_access & DELETE_ACCESS)) {
+			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
+				fsp->fsp_name ));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if(fsp->is_directory) {
@@ -2866,7 +2879,7 @@ NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
-		DEBUG(0,("set_delete_on_close_internal: failed to change delete on close flag for file %s\n",
+		DEBUG(0,("set_delete_on_close_over_all: failed to change delete on close flag for file %s\n",
 			fsp->fsp_name ));
 		unlock_share_entry_fsp(fsp);
 		return NT_STATUS_ACCESS_DENIED;
@@ -3286,7 +3299,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			if (fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 
-			status = set_delete_on_close_internal(fsp, delete_on_close);
+			status = set_delete_on_close_internal(fsp, delete_on_close, dosmode);
  
 			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
 				return ERROR_NT(status);
