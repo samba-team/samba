@@ -2,14 +2,14 @@ Summary: SMB client and server
 Name: samba
 %define	version 1.9.17
 Version: %{version}
-Release: 5
+Release: 6
 Copyright: GPL
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-%{version}.tar.gz
 Patch: samba-make.patch
 Patch2: samba-axp.patch
 Packager: John H Terpstra [Samba-Team] <jht@aquasoft.com.au>
-Requires: pamconfig
+Requires: 
 BuildRoot: /tmp/samba
 
 %description
@@ -21,6 +21,9 @@ SMB filesystem in Linux.
 
 Samba uses NetBIOS over TCP/IP (NetBT) protocols and does NOT need
 NetBEUI (Microsoft Raw NetBIOS frame) protocol.
+
+This release provides enhanced browsing and protocol support and
+has been called - The BROWSE FIX release.
 
 %prep
 %setup
