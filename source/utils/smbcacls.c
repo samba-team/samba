@@ -276,7 +276,7 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 	int fnum;
 	SEC_DESC *sd;
 
-	fnum = cli_open(cli, filename, O_RDONLY, 0);
+	fnum = cli_nt_create(cli, filename);
 	if (fnum == -1) {
 		printf("Failed to open %s\n", filename);
 		return;
@@ -313,7 +313,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		return;
 	}
 
-	fnum = cli_open(cli, filename, O_RDONLY, 0);
+	fnum = cli_nt_create(cli, filename);
 	if (fnum == -1) {
 		printf("Failed to open %s\n", filename);
 		return;
