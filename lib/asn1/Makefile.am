@@ -125,7 +125,7 @@ libasn1_la_SOURCES = \
 	timegm.c \
 	$(BUILT_SOURCES)
 
-asn1_compile_LDADD = ../roken/libroken.a @LEXLIB@
+asn1_compile_LDADD = ../roken/libroken.la @LEXLIB@
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 
@@ -141,14 +141,14 @@ all-local: $(inc_DATA)
 		fi ; \
 	done
 
-lex.o: parse.h
+lex.lo: parse.h
 
 $(foo) asn1.h: asn1_files
 
 asn1_files: asn1_compile $(srcdir)/k5.asn1
 	./asn1_compile $(srcdir)/k5.asn1
 
-$(libasn1_a_OBJECTS): asn1.h asn1_err.h
+$(libasn1_la_OBJECTS): asn1.h asn1_err.h
 
 .x.c:
 	@cmp -s $< $@ 2> /dev/null || cp $< $@

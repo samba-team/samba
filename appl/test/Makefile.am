@@ -19,9 +19,9 @@ uu_server_SOURCES = uu_server.c common.c
 
 uu_client_SOURCES = uu_client.c common.c
 
-gssapi_server_LDADD = $(top_builddir)/lib/gssapi/libgssapi.a $(LDADD)
+gssapi_server_LDADD = $(top_builddir)/lib/gssapi/libgssapi.la $(LDADD)
 
-gssapi_client_LDADD = $(top_builddir)/lib/gssapi/libgssapi.a $(LDADD)
+gssapi_client_LDADD = $(top_builddir)/lib/gssapi/libgssapi.la $(LDADD)
 
 LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/des/libdes.la \

@@ -22,5 +22,5 @@ COMMON_LDADD = \
 	$(top_builddir)/lib/roken/libroken.la \
 	$(DBLIB)
 
-kadmind_LDADD = $(top_builddir)/lib/kadm5/libkadm5srv.a $(COMMON_LDADD)
-kadmin_LDADD = $(top_builddir)/lib/kadm5/libkadm5clnt.a $(COMMON_LDADD)
+kadmind_LDADD = $(top_builddir)/lib/kadm5/libkadm5srv.la $(COMMON_LDADD)
+kadmin_LDADD = $(top_builddir)/lib/kadm5/libkadm5clnt.la $(COMMON_LDADD)
