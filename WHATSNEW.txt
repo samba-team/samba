@@ -43,6 +43,8 @@ o   Gerald Carter <jerry@samba.org>
 
 
 o   Volker Lendecke <vl@samba.org>
+    * Implement wbinfo -k: Have winbind generate an AFS token after
+      authenticating the user
 
 
 o   Herb Lewis <herb@samba.org>
