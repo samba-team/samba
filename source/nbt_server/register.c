@@ -88,7 +88,7 @@ static void nbt_register_name_iface(struct nbt_interface *iface,
 	iname->ttl               = lp_parm_int(-1, "nbtd", "bcast_ttl", 300000);
 	iname->registration_time = timeval_zero();
 
-	DLIST_ADD(iface->names, iname);
+	DLIST_ADD_END(iface->names, iname, struct nbt_iface_name *);
 
 	if (nb_flags & NBT_NM_PERMANENT) {
 		/* permanent names are not announced and are immediately active */
@@ -145,8 +145,12 @@ void nbt_register_names(struct nbt_server *nbtsrv)
 	nbt_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_CLIENT, nb_flags);
 	nbt_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_USER,   nb_flags);
 	nbt_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_SERVER, nb_flags);
-	nbt_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_CLIENT, nb_flags | NBT_NM_GROUP);
-	nbt_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_SERVER, nb_flags | NBT_NM_GROUP);
-	nbt_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_CLIENT, nb_flags | NBT_NM_PERMANENT);
-	nbt_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_SERVER, nb_flags | NBT_NM_PERMANENT);
+
+	nb_flags |= NBT_NM_GROUP;
+	nbt_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_CLIENT, nb_flags);
+
+	nb_flags |= NBT_NM_PERMANENT;
+	nbt_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_CLIENT, nb_flags);
+	nbt_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_SERVER, nb_flags);
+	nbt_register_name(nbtsrv, "*",               NBT_NAME_CLIENT, nb_flags);
 }

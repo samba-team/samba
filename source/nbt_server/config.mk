@@ -9,6 +9,7 @@ ADD_OBJ_FILES = \
 		nbt_server/interfaces.o \
 		nbt_server/register.o \
 		nbt_server/query.o \
+		nbt_server/nodestatus.o \
 		nbt_server/winsserver.o \
 		nbt_server/packet.o
 REQUIRED_SUBSYSTEMS = \
