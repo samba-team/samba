@@ -107,23 +107,58 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	return True;
 }
 
-static void push_int_bigendian(ASN1_DATA *data, int i)
+static void push_positive_bigendian(ASN1_DATA *data, int i)
 {
 	uint8 lowest = i & 0xFF;
 
 	i = i >> 8;
 	if (i != 0)
-		push_int_bigendian(data, i);
+		push_positive_bigendian(data, i);
+
+	if (lowest & 0x80)
+		asn1_write_uint8(data, 0);
 
 	asn1_write_uint8(data, lowest);
 }
 
+/* "i" is the one's complement representation, as is the normal result of an
+ * implicit signed->unsigned conversion */
+
+static void push_negative_bigendian(ASN1_DATA *data, unsigned int i)
+{
+	uint8 lowest = i & 0xFF;
+
+	i = i >> 8;
+	if (i != 0)
+		push_negative_bigendian(data, i);
+
+	if (data->nesting->start+1 == data->ofs) {
+
+		/* We did not yet write anything yet. */
+
+		/* Don't write leading 0xff's */
+		if (lowest == 0xFF)
+			return;
+
+		/* The only exception for a leading 0xff is if the highest bit
+		 * is 0, which would indicate a positive value */
+		if ((lowest & 0x80) == 0)
+			asn1_write_uint8(data, 0xff);
+	}
+
+	asn1_write_uint8(data, lowest);
+}
 
 /* write an integer */
 BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 {
 	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
-	push_int_bigendian(data, i);
+
+	if (i >= 0)
+		push_positive_bigendian(data, i);
+	else
+		push_negative_bigendian(data, i);
+
 	return asn1_pop_tag(data);
 }
 
@@ -557,6 +592,9 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 	*i = 0;
 	
 	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
+	if (!asn1_peek_uint8(data, &b)) return False;
+	if (b & 0x80)
+		*i = -1;
 	while (asn1_tag_remaining(data)>0) {
 		asn1_read_uint8(data, &b);
 		*i = (*i << 8) + b;
