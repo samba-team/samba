@@ -6,9 +6,7 @@ SUFFIXES = .et .h
 
 INCLUDES = -I$(top_builddir)/include
 
-## bug/feature in Automake 1.4, CFLAGS isn't set until everything else
-## is done
-CFLAGS = @CFLAGS@ $(WFLAGS)
+AM_CFLAGS += $(WFLAGS)
 
 COMPILE_ET = $(top_builddir)/lib/com_err/compile_et
 
