@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release 1.9.18 08 Jan 1998
+!== Support.txt for Samba release 1.9.18p3 19 Feb 1998
 !==
 The Samba Consultants List
 ==========================
@@ -38,7 +38,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       39
+    EUROPE                                       40
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1200,6 +1200,23 @@ of about 50 PC's running WFWg and Win95.
 
 EUROPE
 ======
+
+------------------------------------------------------------------------------
+VIENNA - AUSTRIA
+
+Company: Peter-Paul Witta 
+Contact: Peter-Paul Witta, paul@ping.at 
+keywords: SAMBA, Unix, Linux, OS/2, WinNT, Win95, Support, Consulting, 
+          Installation, System Administration. 
+
+Experience: Domain Browsing, Logon-Scripts, SAMBA Integration into Domains, 
+            SAMBA as Domain Master, Printing, Faxing with IntraFax (our own Fax product), 
+            Sendfax and Samba. 
+
+Feel free to call: +43-1-6171288 
+
+Various ranges of consulting and maintenenace contracts available. 
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 BRUSSELS - BELGIUM

@@ -276,6 +276,9 @@ personality".
 your NIS auto.map entry.  If you have not compiled Samba with -DAUTOMOUNT
 then this value will be the same as %L.
 
+%p = the path of the service's home directory, obtained from your NIS
+auto.map entry. The NIS auto.map entry is split up as "%N:%p".
+
 %R = the selected protocol level after protocol negotiation. As of 
 Samba 1.9.18 it can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1.
 
@@ -1033,7 +1036,7 @@ directories.
 See
 .B create mask.
 
-.SS dead time (G)
+.SS deadtime (G)
 The value of the parameter (a decimal integer) represents the number of
 minutes of inactivity before a connection is considered dead, and it
 is disconnected. The deadtime only takes effect if the number of open files
@@ -1051,10 +1054,10 @@ for most systems.
 A deadtime of zero indicates that no auto-disconnection should be performed.
 
 .B Default:
- 	dead time = 0
+ 	deadtime = 0
 
 .B Example:
- 	dead time = 15
+ 	deadtime = 15
 .SS debug level (G)
 The value of the parameter (an integer) allows the debug level
 (logging level) to be specified in the
