@@ -25,6 +25,10 @@ int main(int argc, char *argv[])
 	fname = argv[2];
 
 	fd = open(fname,O_RDONLY);
+	if (fd == -1) {
+	  perror(fname);
+	  exit(1);
+	}
 	fstat(fd, &st);
 
 	prs_init(&ps, 0, 4, MARSHALL);

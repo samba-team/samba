@@ -55,13 +55,24 @@ struct LPWSTR {
 		}
 	} CHARDEV_ENUM;
 
-#	STATUS NetrCharDevEnum(    /* Function 0x00 */
-#	              [in,unique] LPWSTR        pszServer,
-#	                 [in,out] CHARDEV_ENUM* pCharDevEnum,
-#	                     [in] DWORD         dwMaxLen,
-#	                    [out] DWORD*        dwEntries,
-#	                 [in,out] DWORD*        hResume
-#						 );
+	struct Q_NetrCharDevEnum {
+		.trailer;
+	        LPWSTR        pszServer;
+	        CHARDEV_ENUM *pCharDevEnum;
+	        DWORD         dwMaxLen;
+                DWORD        *hResume;
+	};
+
+	struct R_NetrCharDevEnum {
+                CHARDEV_ENUM *pCharDevEnum;
+	        DWORD        *dwEntries;
+	        DWORD        *hResume;
+		.trailer;
+		STATUS status;
+	};
+
+
+
 
 #	STATUS NetrCharDevGetInfo(     /* Function 0x01 */
 #	              [in,unique] LPWSTR        pszServer,
@@ -76,3 +87,179 @@ struct LPWSTR {
 #	                     [in] DWORD  dwOpcode
 #	                      );
 
+
+	/* -- SHARE INFORMATION -- */
+
+	typedef struct _SHARE_INFO_0 {
+		LPWSTR  pszName;
+	} SHARE_INFO_0;
+
+	typedef struct _SHARE_INFO_1 {
+		LPWSTR  pszName;
+		DWORD   dwType;
+		LPWSTR  pszComment;
+	} SHARE_INFO_1;
+
+	typedef struct _SHARE_INFO_2 {
+		LPWSTR  pszName;
+		DWORD   dwType;
+		LPWSTR  pszComment;
+		DWORD   dwPermissions;
+		DWORD   dwMaxUses;
+		DWORD   dwCurrentUses;
+		LPWSTR  pszPath;
+		LPWSTR  pszPasswd;
+	} SHARE_INFO_2;
+
+	typedef struct _SHARE_INFO {
+		DWORD dwLevel;
+		union ctr[dwLevel] {
+				case 0 SHARE_INFO_0 *si0;
+				case 1 SHARE_INFO_1 *si1;
+				case 2 SHARE_INFO_2 *si2;
+		}
+	} SHARE_INFO;
+
+	typedef struct _SHARE_ENUM_0 {
+		DWORD   dwEntries;
+		SHARE_INFO_0 si0[dwEntries];
+	} SHARE_ENUM_0;
+
+	typedef struct _SHARE_ENUM_1 {
+		DWORD   dwEntries;
+		SHARE_INFO_1 si1[dwEntries];
+	} SHARE_ENUM_1;
+
+	typedef struct _SHARE_ENUM_2 {
+		DWORD   dwEntries;
+		SHARE_INFO_2 si2[dwEntries];
+	} SHARE_ENUM_2;
+
+	typedef struct _SHARE_ENUM {
+		DWORD dwLevel;
+		union ctr[dwLevel] {
+			case 0 SHARE_ENUM_0 *se0;
+			case 1 SHARE_ENUM_1 *se1;
+			case 2 SHARE_ENUM_2 *se2;
+		}
+	} SHARE_ENUM;
+
+	struct Q_NetrShareEnum {
+	       .trailer;
+	       LPWSTR       pszServer;
+	       uint32       level;
+	       SHARE_ENUM   pShareEnum;
+	       DWORD       *hResume;
+	       DWORD        dwMaxLen;
+	       DWORD dummy;
+	};
+
+	struct R_NetrShareEnum {
+	       DWORD level;
+	       SHARE_ENUM pShareEnum;
+	       DWORD *dwEntries;
+	       DWORD *hResume;
+	       .trailer;
+	       STATUS status;
+	};
+
+
+	/* --- SERVER INFORMATION --- */
+
+	typedef struct _SERVER_INFO_100 {
+		DWORD  dwPlatformID;
+		LPWSTR pszName;
+	} SERVER_INFO_100;
+
+	typedef struct _SERVER_INFO_101 {
+	    DWORD  dwPlatformID;
+	    LPWSTR pszName;
+	    DWORD  dwVerMajor;
+	    DWORD  dwVerMinor;
+	    DWORD  dwType;
+	    LPWSTR pszComment;
+	} SERVER_INFO_101;
+
+	typedef struct _SERVER_INFO_102 {
+	    DWORD  dwPlatformID;
+	    LPWSTR pszName;
+	    DWORD  dwVerMajor;
+	    DWORD  dwVerMinor;
+	    DWORD  dwType;
+	    LPWSTR pszComment;
+		DWORD  dwUsers;
+		LONG   lDisc;
+		BOOL   bHidden;
+		DWORD  dwAnnounce;
+		DWORD  dwAnnDelta;
+		DWORD  dwLicenses;
+		LPWSTR pszUserPath;
+	} SERVER_INFO_102;
+
+	typedef struct _SERVER_INFO {
+		DWORD dwLevel;
+		union ctr[dwLevel] {
+		      case 100 SERVER_INFO_100 *sv100;
+		      case 101 SERVER_INFO_101 *sv101;
+		      case 102 SERVER_INFO_102 *sv102;
+		}
+	} SERVER_INFO;
+
+	struct Q_NetrServerGetInfo {
+	       .trailer;
+	       LPWSTR  pszServerName;
+	       DWORD        dwLevel;
+	};
+
+	struct R_NetrServerGetInfo {
+               SERVER_INFO pServerInfo;
+	       .trailer;
+	       STATUS status;
+	};
+
+
+	typedef struct _TRANSPORT_INFO_0 {
+		LPWSTR  pszName;
+	} TRANSPORT_INFO_0;
+
+	typedef struct _TRANSPORT_INFO {
+		DWORD dwLevel;
+		union ctr[dwLevel] {
+			case 0 TRANSPORT_INFO_0 *ti0;
+		}
+	} TRANSPORT_INFO;
+
+	typedef struct _TRANSPORT_ENUM_0 {
+		DWORD level;
+		DWORD dwEntries;
+		TRANSPORT_INFO_0 ti0[dwEntries];
+	} TRANSPORT_ENUM_0;
+
+	typedef struct _TRANSPORT_ENUM {
+		DWORD dwLevel;
+		DWORD dummy;
+		union ctr[dwLevel] {
+			case 0 TRANSPORT_ENUM_0 *te0;
+		}
+	} TRANSPORT_ENUM;
+
+
+	struct Q_NetrServerTransportEnum {
+	        .trailer;
+	        LPWSTR          pszServer;
+	        TRANSPORT_ENUM  pTransportEnum;
+	        DWORD           dwMaxLen;
+	        LPWSTR          server2;
+	        DWORD          *hResume;
+		DWORD           preferred_length;
+		STATUS *status;
+	};
+
+	struct R_NetrServerTransportEnum {
+	       DWORD level;
+	       TRANSPORT_ENUM pTransportEnum;
+	       DWORD          *dwEntries;
+	       DWORD          *hResume;
+	       .trailer;
+	       STATUS status;
+	};
