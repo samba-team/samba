@@ -900,6 +900,16 @@ char *strrchr_m(const char *s, char c)
 ********************************************************************/
 void strlower_m(char *s)
 {
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+		*s++ = tolower((unsigned char)*s);
+	}
+
+	if (!*s) return;
+
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in UTF-8 encoding. (VIV) */
 	unix_strlower(s,strlen(s)+1,s,strlen(s)+1);	
@@ -910,6 +920,16 @@ void strlower_m(char *s)
 ********************************************************************/
 void strupper_m(char *s)
 {
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+		*s++ = toupper((unsigned char)*s);
+	}
+
+	if (!*s) return;
+
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
