@@ -83,8 +83,8 @@ update_client_creds(int s, kcm_client *peer)
 {
 #ifdef SO_PEERCRED
     {
-	socklen_t pclen;
 	struct ucred pc;
+	socklen_t pclen = sizeof(pc);
 
 	if (getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&pc,
 		       &pclen) != 0) {
