@@ -178,12 +178,12 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		ZERO_STRUCT(tmp_qt);
 
 		if (allready_in_quota_list((*qt_list),usr->pw_uid)) {
-			DEBUG(5,("record for uid[%d] allready in the list\n",usr->pw_uid));
+			DEBUG(5,("record for uid[%ld] allready in the list\n",(long)usr->pw_uid));
 			continue;
 		}
 
 		if (NT_STATUS_IS_ERR(uid_to_sid(&sid, usr->pw_uid))) {
-			DEBUG(0,("uid_to_sid failed for %d\n",usr->pw_uid));
+			DEBUG(0,("uid_to_sid failed for %ld\n",(long)usr->pw_uid));
 			continue;
 		}
 
