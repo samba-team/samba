@@ -1174,7 +1174,7 @@ if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
 fi
 
 AC_CACHE_CHECK([for __va_copy],samba_cv_HAVE_VA_COPY,[
-AC_TRY_COMPILE([#include <stdarg.h>
+AC_TRY_LINK([#include <stdarg.h>
 va_list ap1,ap2;], [__va_copy(ap1,ap2);],
 samba_cv_HAVE_VA_COPY=yes,samba_cv_HAVE_VA_COPY=no)])
 if test x"$samba_cv_HAVE_VA_COPY" = x"yes"; then
