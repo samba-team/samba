@@ -159,46 +159,6 @@ void init_valid_table(void)
 
 
 /*******************************************************************
- Convert a (little-endian) UNISTR2 structure to an ASCII string
-********************************************************************/
-static void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
-{
-	if (str == NULL) {
-		*dest='\0';
-		return;
-	}
-	pull_ucs2(NULL, dest, str->buffer, maxlen, str->uni_str_len*2, STR_NOALIGN);
-}
-
-/*******************************************************************
-give a static string for displaying a UNISTR2
-********************************************************************/
-const char *unistr2_static(TALLOC_CTX *mem_ctx, const UNISTR2 *str)
-{
-	pstring ret;
-	unistr2_to_ascii(ret, str, sizeof(ret));
-	return talloc_strdup(mem_ctx, ret);
-}
-
-
-/*******************************************************************
- duplicate a UNISTR2 string into a null terminated char*
- using a talloc context
-********************************************************************/
-char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
-{
-	char *s;
-	int maxlen = (str->uni_str_len+1)*4;
-	if (!str->buffer) return NULL;
-	s = (char *)talloc(ctx, maxlen); /* convervative */
-	if (!s) return NULL;
-	pull_ucs2(NULL, s, str->buffer, maxlen, str->uni_str_len*2, 
-		  STR_NOALIGN);
-	return s;
-}
-
-
-/*******************************************************************
  Convert a wchar to upper case.
 ********************************************************************/
 

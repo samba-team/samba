@@ -244,8 +244,6 @@ DEVEL_HELP_OBJ = modules/developer.o
 
 
 
-GROUPDB_OBJ = groupdb/mapping.o
-
 #PROFILE_OBJ = profile/profile.o
 
 # OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
