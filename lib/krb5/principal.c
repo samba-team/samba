@@ -547,9 +547,7 @@ struct v4_name_convert {
  */
 
 static const char*
-get_name_conversion(krb5_context context,
-		    const char *realm,
-		    const char *name)
+get_name_conversion(krb5_context context, const char *realm, const char *name)
 {
     struct v4_name_convert *q;
     const char *p;
@@ -605,7 +603,6 @@ krb5_425_conv_principal_ext(krb5_context context,
     krb5_error_code ret;
     krb5_principal pr;
     char host[128];
-    char *low_realm = NULL;
 
     /* do the following: if the name is found in the
        `v4_name_convert:host' part, is is assumed to be a `host' type
@@ -689,19 +686,14 @@ krb5_425_conv_principal_ext(krb5_context context,
     p = krb5_config_get_string(context, NULL, "realms", realm, 
 			       "default_domain", NULL);
     if(p == NULL){
-	low_realm = strdup (realm);
-	if (low_realm == NULL)
-	    return ENOMEM;
-	strlwr (low_realm);
-	p = low_realm;
+	/* this should be an error, just faking a name is not good */
+	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
 	
     if (*p == '.')
 	++p;
     snprintf(host, sizeof(host), "%s.%s", instance, p);
     ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
-    if (low_realm)
-	free (low_realm);
     if(func == NULL || (*func)(context, pr)){
 	*princ = pr;
 	return 0;
