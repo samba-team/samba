@@ -28,6 +28,9 @@ extern pstring debugf;
 extern BOOL append_log;
 extern int DEBUGLEVEL;
 
+/*************************************************************************
+ initialise an msrpc service
+ *************************************************************************/
 void msrpc_service_init(void)
 {
 	if (!pwdb_initialise(True))
@@ -122,10 +125,10 @@ BOOL reload_services(BOOL test)
 
 	TimeInit();
 
-	fstrcpy(pipe_name, "lsarpc");
 	setup_logging(argv[0],False);
+	fstrcpy(pipe_name, "NETLOGON");
 	slprintf(debugf, sizeof(debugf), "%s/log.%s", LOGFILEBASE, pipe_name);
-	add_msrpc_command_processor( pipe_name, argv[0], api_ntlsa_rpc );
+	add_msrpc_command_processor( pipe_name, argv[0], api_netlog_rpc );
 
 	return msrpc_main(argc, argv);
 }

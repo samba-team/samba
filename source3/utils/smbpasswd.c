@@ -794,8 +794,6 @@ int main(int argc, char **argv)
 
 	load_interfaces();
 
-	init_policy_hnd(64);
-
 	if(!pwdb_initialise(False))
 	{
 		fprintf(stderr, "Can't setup password database vectors.\n");

@@ -326,6 +326,7 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 {
 	BOOL res = True;
 	BOOL res1 = True;
+	BOOL res2 = True;
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
@@ -379,10 +380,10 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* query it */
-	res1 = res1 ? reg_query_info(&key_pol,
+	res2 = res1 ? reg_query_info(&key_pol,
 	                        val_name, &type, &buf) : False;
 
-	if (res1)
+	if (res2)
 	{
 		reg_display_val_info(full_keyname, val_name, type, &buf);
 	}
@@ -394,7 +395,7 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 	}
 	res  = res  ? reg_close(&pol_con) : False;
 
-	if (res && res1)
+	if (res2)
 	{
 		DEBUG(5,("cmd_reg_query: query succeeded\n"));
 	}

@@ -26,46 +26,12 @@ fstring pipe_name;
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
 extern BOOL append_log;
-extern int DEBUGLEVEL;
 
+/*************************************************************************
+ initialise an msrpc service
+ *************************************************************************/
 void msrpc_service_init(void)
 {
-	if (!pwdb_initialise(True))
-	{
-		exit(-1);
-	}
-
-	if(!initialise_sam_password_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_passgrp_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_group_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_alias_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_builtin_db())
-	{
-		exit(-1);
-	}
-
-	if (!get_member_domain_sid())
-	{
-		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",
-		          lp_passwordserver()));
-		exit(-1);
-	}
 }
 
 /****************************************************************************
@@ -122,10 +88,10 @@ BOOL reload_services(BOOL test)
 
 	TimeInit();
 
-	fstrcpy(pipe_name, "lsarpc");
 	setup_logging(argv[0],False);
+	fstrcpy(pipe_name, "winreg");
 	slprintf(debugf, sizeof(debugf), "%s/log.%s", LOGFILEBASE, pipe_name);
-	add_msrpc_command_processor( pipe_name, argv[0], api_ntlsa_rpc );
+	add_msrpc_command_processor( pipe_name, argv[0], api_reg_rpc );
 
 	return msrpc_main(argc, argv);
 }

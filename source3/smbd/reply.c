@@ -496,41 +496,6 @@ static BOOL check_server_security(char *orig_user, char *domain,
 }
 
 /****************************************************************************
- Check for a valid username and password in security=domain mode.
-****************************************************************************/
-
-static BOOL check_domain_security(char *orig_user, char *domain, 
-				char *smb_apasswd, int smb_apasslen,
-				char *smb_ntpasswd, int smb_ntpasslen,
-				uchar user_sess_key[16])
-{
-	fstring acct_name;
-	uint16 acct_type = 0;
-
-	if (lp_security() == SEC_SHARE || lp_security() == SEC_SERVER)
-	{
-		return False;
-	}
-		
-	if (lp_security() == SEC_DOMAIN && strequal(domain, global_myworkgroup))
-	{
-		fstrcpy(acct_name, global_myname);
-		acct_type = SEC_CHAN_WKSTA;
-	}
-	else
-	{
-		fstrcpy(acct_name, global_myworkgroup);
-		acct_type = SEC_CHAN_DOMAIN;
-	}
-
-	return domain_client_validate(orig_user, domain, 
-	                        acct_name, acct_type,
-	                        smb_apasswd, smb_apasslen,
-	                        smb_ntpasswd, smb_ntpasslen,
-	                        user_sess_key);
-}
-
-/****************************************************************************
 reply to a session setup command
 ****************************************************************************/
 
@@ -552,6 +517,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
+	uchar last_chal[8];
 
   *smb_apasswd = 0;
   *smb_ntpasswd = 0;
@@ -736,7 +702,9 @@ user %s attempted down-level SMB connection\n", user));
       !check_server_security(orig_user, domain,
                              smb_apasswd, smb_apasslen,
                              smb_ntpasswd, smb_ntpasslen) &&
+      !last_challenge(last_chal) &&
       !check_domain_security(orig_user, domain,
+                             last_chal,
                              smb_apasswd, smb_apasslen,
                              smb_ntpasswd, smb_ntpasslen, user_sess_key) &&
       !check_hosts_equiv(user)
