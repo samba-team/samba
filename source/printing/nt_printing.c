@@ -1664,11 +1664,13 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	snum = lp_servicenumber(sharename);
 
 	slprintf(info.servername, sizeof(info.servername), "\\\\%s", global_myname);
-	slprintf(info.printername, sizeof(info.printername), "\\\\%s\\%s", 
-		 global_myname, sharename);
 	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
+	if (*info.drivername == '\0')
+		fstrcpy(info.drivername, "NO DRIVER AVAILABLE");
+
+	slprintf(info.printername, sizeof(info.printername), "\\\\%s\\%s", global_myname, sharename);
 	pstrcpy(info.comment, "");
 	fstrcpy(info.printprocessor, "winprint");
 	fstrcpy(info.datatype, "RAW");
