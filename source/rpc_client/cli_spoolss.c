@@ -69,7 +69,7 @@ uint32 spoolss_enum_printerdrivers(const char *srv_name, const char *environment
 	        prs_set_offset(&buffer->prs, 0);
 	        r_o.buffer=buffer;
 
-	        if(new_spoolss_io_r_enumprinterdrivers("", &r_o, &rbuf, 0)) 
+	        if(spoolss_io_r_enumprinterdrivers("", &r_o, &rbuf, 0)) 
 		{
 			if (r_o.status != NT_STATUS_NOPROBLEMO)
 			{

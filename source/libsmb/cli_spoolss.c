@@ -308,6 +308,59 @@ static void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned,
         *info=inf;
 }
 
+static void decode_printer_driver_1(NEW_BUFFER *buffer, uint32 returned, 
+			 	    DRIVER_INFO_1 **info)
+{
+        uint32 i;
+        DRIVER_INFO_1 *inf;
+
+        inf=(DRIVER_INFO_1 *)malloc(returned*sizeof(DRIVER_INFO_1));
+
+        buffer->prs.data_offset=0;
+
+        for (i=0; i<returned; i++) {
+                new_smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0);
+        }
+
+        *info=inf;
+}
+
+static void decode_printer_driver_2(NEW_BUFFER *buffer, uint32 returned, 
+				    DRIVER_INFO_2 **info)
+{
+        uint32 i;
+        DRIVER_INFO_2 *inf;
+
+        inf=(DRIVER_INFO_2 *)malloc(returned*sizeof(DRIVER_INFO_2));
+
+        buffer->prs.data_offset=0;
+
+        for (i=0; i<returned; i++) {
+                new_smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0);
+        }
+
+        *info=inf;
+}
+
+static void decode_printer_driver_3(NEW_BUFFER *buffer, uint32 returned, 
+				    DRIVER_INFO_3 **info)
+{
+        uint32 i;
+        DRIVER_INFO_3 *inf;
+
+        inf=(DRIVER_INFO_3 *)malloc(returned*sizeof(DRIVER_INFO_3));
+
+        buffer->prs.data_offset=0;
+
+        for (i=0; i<returned; i++) {
+                new_smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0);
+        }
+
+        *info=inf;
+}
+
+
+
 /* Enumerate printers */
 
 uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
@@ -384,7 +437,6 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 }
 
 /* Enumerate printer ports */
-
 uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level, 
 			      int *returned, PORT_INFO_CTR *ctr)
 {
@@ -399,8 +451,8 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	fstrcpy (server, cli->desthost);
-	strupper (server);
+        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        strupper (server);
 
 	do {
 		/* Initialise input parameters */
@@ -410,10 +462,7 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
-		/* NT4 will return NT_STATUS_CTL_FILE_NOT_SUPPORTED is we
-		   set the servername here in the query.  Not sure why  \
-		   --jerry */
-		make_spoolss_q_enumports(&q, "", level, &buffer, needed);
+		make_spoolss_q_enumports(&q, server, level, &buffer, needed);
 
 		/* Marshall data and send request */
 
@@ -457,7 +506,6 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 }
 
 /* Get printer info */
-
 uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 			      uint32 level, PRINTER_INFO_CTR *ctr)
 {
@@ -528,3 +576,164 @@ uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 
 	return result;	
 }
+
+/**********************************************************************
+ * Get installed printer drivers for a given printer
+ */
+uint32 cli_spoolss_getprinterdriver (
+	struct cli_state 	*cli, 
+	POLICY_HND 		*pol, 
+	uint32 			level,
+	char* 			env,
+	PRINTER_DRIVER_CTR  	*ctr
+)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTERDRIVER2 q;
+        SPOOL_R_GETPRINTERDRIVER2 r;
+	NEW_BUFFER buffer;
+	uint32 needed = 1024;
+	uint32 result;
+	fstring server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	fstrcpy (server, cli->desthost);
+	strupper (server);
+
+	do 
+	{
+		/* Initialise input parameters */
+
+		init_buffer(&buffer, needed, cli->mem_ctx);
+
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+
+
+		/* write the request */
+		make_spoolss_q_getprinterdriver2(&q, pol, env, level, 2, 2, &buffer, needed);
+
+		/* Marshall data and send request */
+		if (!spoolss_io_q_getprinterdriver2 ("", &q, &qbuf, 0) ||
+		    !rpc_api_pipe_req (cli, SPOOLSS_GETPRINTERDRIVER2, &qbuf, &rbuf)) 
+		{
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		/* Unmarshall response */
+		if (spoolss_io_r_getprinterdriver2 ("", &r, &rbuf, 0)) 
+		{
+			needed = r.needed;
+		}
+		
+		/* Return output parameters */
+		if ((result = r.status) == NT_STATUS_NOPROBLEMO) 
+		{
+
+			switch (level) 
+			{
+			case 1:
+				decode_printer_driver_1(r.buffer, 1, &ctr->info1);
+				break;
+			case 2:
+				decode_printer_driver_2(r.buffer, 1, &ctr->info2);
+				break;
+			case 3:
+				decode_printer_driver_3(r.buffer, 1, &ctr->info3);
+				break;
+			}			
+		}
+
+	done:
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
+
+	} while (result == ERROR_INSUFFICIENT_BUFFER);
+
+	return result;	
+}
+
+/**********************************************************************
+ * Get installed printer drivers for a given printer
+ */
+uint32 cli_spoolss_enumprinterdrivers (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	char* 			env,
+	uint32			*returned,
+	PRINTER_DRIVER_CTR  	*ctr
+)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERDRIVERS 	q;
+        SPOOL_R_ENUMPRINTERDRIVERS 	r;
+	NEW_BUFFER 			buffer;
+	uint32 				needed = 0;
+	uint32 				result;
+	fstring 			server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        strupper (server);
+
+	do 
+	{
+		/* Initialise input parameters */
+		init_buffer(&buffer, needed, cli->mem_ctx);
+
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+
+
+		/* write the request */
+		make_spoolss_q_enumprinterdrivers(&q, server, env, level, &buffer, needed);
+
+		/* Marshall data and send request */
+		if (!spoolss_io_q_enumprinterdrivers ("", &q, &qbuf, 0) ||
+		    !rpc_api_pipe_req (cli, SPOOLSS_ENUMPRINTERDRIVERS, &qbuf, &rbuf)) 
+		{
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		/* Unmarshall response */
+		if (spoolss_io_r_enumprinterdrivers ("", &r, &rbuf, 0)) 
+		{
+			needed = r.needed;
+		}
+		
+		/* Return output parameters */
+		if (((result=r.status) == NT_STATUS_NOPROBLEMO) && 
+		    (r.returned != 0))
+		{
+			*returned = r.returned;
+
+			switch (level) 
+			{
+			case 1:
+				decode_printer_driver_1(r.buffer, r.returned, &ctr->info1);
+				break;
+			case 2:
+				decode_printer_driver_2(r.buffer, r.returned, &ctr->info2);
+				break;
+			case 3:
+				decode_printer_driver_3(r.buffer, r.returned, &ctr->info3);
+				break;
+			}			
+		}
+
+	done:
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
+
+	} while (result == ERROR_INSUFFICIENT_BUFFER);
+
+	return result;	
+}
+
+
