@@ -332,7 +332,7 @@ REGISTRY_VALUE* regval_ctr_getvalue( REGVAL_CTR *ctr, char *name )
 	/* search for the value */
 	
 	for ( i=0; i<ctr->num_values; i++ ) {
-		if ( strequal( ctr->values[i]->valuename, name ) == 0)
+		if ( strequal( ctr->values[i]->valuename, name ) )
 			return ctr->values[i];
 	}
 	

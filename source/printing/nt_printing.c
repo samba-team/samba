@@ -2626,7 +2626,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 		 * Should only be one '\' in the string returned.
 		 */	
 		 
-		str = strchr( string, '\\');
+		str = strrchr( string, '\\');
 		
 		/* Put in "PrinterDriverData" is no key specified */
 		
