@@ -278,7 +278,7 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				 "%s%s%s", dom_name, dom_name[0] ? 
 				 "\\" : "", name);
 
-			(*names)[i] = strdup(full_name);
+			(*names)[i] = talloc_strdup(mem_ctx, full_name);
 			(*types)[i] = t_names.name[i].sid_name_use;
 		} else {
 			(*names)[i] = NULL;
@@ -435,6 +435,9 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	/* Return output parameters */
+
+	ZERO_STRUCTP(domain_sid);
+	domain_name[0] = '\0';
 
 	switch (info_class) {
 
