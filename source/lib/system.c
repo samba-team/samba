@@ -75,6 +75,21 @@ int sys_usleep(long usecs)
 #endif /* HAVE_USLEEP */
 }
 
+
+/*******************************************************************
+ System wrapper for getwd
+********************************************************************/
+char *sys_getwd(char *s)
+{
+	char *wd;
+#ifdef HAVE_GETCWD
+	wd = (char *)getcwd(s, sizeof (pstring));
+#else
+	wd = (char *)getwd(s);
+#endif
+	return wd;
+}
+
 /*******************************************************************
 A read wrapper that will deal with EINTR.
 ********************************************************************/
@@ -103,63 +118,7 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 	return ret;
 }
 
-/*******************************************************************
-A send wrapper that will deal with EINTR.
-********************************************************************/
 
-ssize_t sys_send(int s, const void *msg, size_t len, int flags)
-{
-	ssize_t ret;
-
-	do {
-		ret = send(s, msg, len, flags);
-	} while (ret == -1 && errno == EINTR);
-	return ret;
-}
-
-/*******************************************************************
-A sendto wrapper that will deal with EINTR.
-********************************************************************/
-
-ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
-{
-	ssize_t ret;
-
-	do {
-		ret = sendto(s, msg, len, flags, to, tolen);
-	} while (ret == -1 && errno == EINTR);
-	return ret;
-}
-
-
-/*******************************************************************
- System wrapper for getwd
-********************************************************************/
-
-char *sys_getwd(char *s)
-{
-	char *wd;
-#ifdef HAVE_GETCWD
-	wd = (char *)getcwd(s, sizeof (pstring));
-#else
-	wd = (char *)getwd(s);
-#endif
-	return wd;
-}
-
-/*******************************************************************
-system wrapper for link
-********************************************************************/
-
-int sys_link(const char *oldpath, const char *newpath)
-{
-#ifndef HAVE_LINK
-	errno = ENOSYS;
-	return -1;
-#else
-	return link(oldpath, newpath);
-#endif
-}
 
 /*******************************************************************
 os/2 also doesn't have chroot
@@ -335,41 +294,6 @@ void sys_srandom(uint_t seed)
 #endif
 }
 
-struct passwd *sys_getpwent(void)
-{
-	return getpwent();
-}
-
-void sys_endpwent(void)
-{
-	endpwent();
-}
-
-/**************************************************************************
- Wrappers for getpwnam(), getpwuid(), getgrnam(), getgrgid()
-****************************************************************************/
-
-struct passwd *sys_getpwnam(const char *name)
-{
-	return getpwnam(name);
-}
-
-struct passwd *sys_getpwuid(uid_t uid)
-{
-	return getpwuid(uid);
-}
-
-struct group *sys_getgrnam(const char *name)
-{
-	return getgrnam(name);
-}
-
-struct group *sys_getgrgid(gid_t gid)
-{
-	return getgrgid(gid);
-}
-
-
 /**************************************************************************
  Wrappers for dlopen, dlsym, dlclose.
 ****************************************************************************/
@@ -392,15 +316,6 @@ void *sys_dlsym(void *handle, const char *symbol)
 #endif
 }
 
-int sys_dlclose (void *handle)
-{
-#if defined(HAVE_DLCLOSE)
-	return dlclose(handle);
-#else
-	return 0;
-#endif
-}
-
 const char *sys_dlerror(void)
 {
 #if defined(HAVE_DLERROR)
@@ -409,17 +324,6 @@ const char *sys_dlerror(void)
 	return NULL;
 #endif
 }
-
-int sys_dup2(int oldfd, int newfd) 
-{
-#if defined(HAVE_DUP2)
-	return dup2(oldfd, newfd);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
 
 const char *sys_inet_ntoa(struct ipv4_addr in)
 {
