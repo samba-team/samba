@@ -74,7 +74,7 @@ BOOL got_policy_hnd;
 
 /* Open cli connection and policy handle */
 
-static BOOL open_policy_hnd(void)
+static BOOL cacls_open_policy_hnd(void)
 {
 	creds.pwd.null_pwd = 1;
 
@@ -117,7 +117,7 @@ static void SidToString(fstring str, DOM_SID *sid)
 
 	/* Ask LSA to convert the sid to a name */
 
-	if (!open_policy_hnd() ||
+	if (!cacls_open_policy_hnd() ||
 	    cli_lsa_lookup_sids(&lsa_cli, &pol, 1, sid, &names, &types, 
 				&num_names) != NT_STATUS_NOPROBLEMO ||
 	    !names || !names[0]) {
@@ -145,7 +145,7 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 		return string_to_sid(sid, str);
 	}
 
-	if (!open_policy_hnd() ||
+	if (!cacls_open_policy_hnd() ||
 	    cli_lsa_lookup_names(&lsa_cli, &pol, 1, &str, &sids, &types, 
 				 &num_sids) != NT_STATUS_NOPROBLEMO) {
 		result = False;

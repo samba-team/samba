@@ -26,6 +26,7 @@ BOOL check_access(int sock, char *allow_list, char *deny_list);
 /*The following definitions come from  lib/bitmap.c  */
 
 struct bitmap *bitmap_allocate(int n);
+void bitmap_free(struct bitmap *bm);
 BOOL bitmap_set(struct bitmap *bm, unsigned i);
 BOOL bitmap_clear(struct bitmap *bm, unsigned i);
 BOOL bitmap_query(struct bitmap *bm, unsigned i);
@@ -3510,16 +3511,11 @@ BOOL api_ntlsa_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpc_server/srv_lsa_hnd.c  */
 
-void create_policy_handle(POLICY_HND *hnd, uint32 *hnd_low, uint32 *hnd_high);
-void init_lsa_policy_hnd(void);
-BOOL open_lsa_policy_hnd(POLICY_HND *hnd);
-int find_lsa_policy_by_hnd(POLICY_HND *hnd);
-BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
-BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
-BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
-uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd);
-BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
-BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
+void init_pipe_handles(pipes_struct *p);
+BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *), void *data_ptr);
+BOOL find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
+BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
+void close_policy_by_pipe(pipes_struct *p);
 
 /*The following definitions come from  rpc_server/srv_lsa_nt.c  */
 
@@ -3561,6 +3557,8 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
+pipes_struct *get_first_pipe(void);
+pipes_struct *get_next_pipe(pipes_struct *p);
 void set_pipe_handle_offset(int max_open_files);
 void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
@@ -3640,7 +3638,6 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpc_server/srv_spoolss_nt.c  */
 
-void init_printer_hnd(void);
 void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len);
 uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u);
 BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,

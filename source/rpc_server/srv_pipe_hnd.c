@@ -39,6 +39,20 @@ static int pipes_open;
 static pipes_struct *Pipes;
 static struct bitmap *bmap;
 
+/****************************************************************************
+ Pipe iterator functions.
+****************************************************************************/
+
+pipes_struct *get_first_pipe(void)
+{
+	return Pipes;
+}
+
+pipes_struct *get_next_pipe(pipes_struct *p)
+{
+	return p->next;
+}
+
 /* this must be larger than the sum of the open files and directories */
 static int pipe_handle_offset;
 
@@ -134,7 +148,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	next_pipe = (i+1) % MAX_OPEN_PIPES;
 
 	for (p = Pipes; p; p = p->next)
-		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+		DEBUG(5,("open_rpc_pipe_p: name %s pnum=%x\n", p->name, p->pnum));  
 
 	p = (pipes_struct *)malloc(sizeof(*p));
 
@@ -148,6 +162,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		free(p);
 		return NULL;
 	}
+
+	init_pipe_handles(p);
 
 	DLIST_ADD(Pipes, p);
 
@@ -831,6 +847,9 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 	if (p->mem_ctx)
 		talloc_destroy(p->mem_ctx);
+
+	/* Free the handles database. */
+	close_policy_by_pipe(p);
 
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 

@@ -39,6 +39,23 @@ extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
 extern rid_name builtin_alias_rids[];
 
+struct samr_info {
+    /* for use by the \PIPE\samr policy */
+    DOM_SID sid;
+    uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
+};
+
+/*******************************************************************
+ Function to free the per handle data.
+ ********************************************************************/
+
+static void free_samr_info(void *ptr)
+{
+	struct samr_info *samr = (struct samr_info *)ptr;
+
+	safe_free(samr);
+}
+
 /*******************************************************************
   This next function should be replaced with something that
   dynamically returns the correct user info..... JRA.
@@ -425,7 +442,7 @@ uint32 _samr_close_hnd(pipes_struct *p, SAMR_Q_CLOSE_HND *q_u, SAMR_R_CLOSE_HND 
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	/* close the policy handle */
-	if (!close_lsa_policy_hnd(&q_u->pol))
+	if (!close_policy_hnd(p, &q_u->pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
 	DEBUG(5,("samr_reply_close_hnd: %d\n", __LINE__));
@@ -439,25 +456,38 @@ uint32 _samr_close_hnd(pipes_struct *p, SAMR_Q_CLOSE_HND *q_u, SAMR_R_CLOSE_HND 
 
 uint32 _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN_DOMAIN *r_u)
 {
+	struct samr_info *info;
+
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	/* find the connection policy handle. */
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* get a (unique) handle.  open a policy on it. */
-	if (!open_lsa_policy_hnd(&r_u->domain_pol))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
 	/* associate the domain SID with the (unique) handle. */
-	if (!set_lsa_policy_samr_sid(&r_u->domain_pol, &q_u->dom_sid.sid)) {
-		close_lsa_policy_hnd(&r_u->domain_pol);
+	if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+	info->sid = q_u->dom_sid.sid;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->domain_pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 
 	DEBUG(5,("samr_open_domain: %d\n", __LINE__));
 
 	return r_u->status;
+}
+
+static uint32 get_lsa_policy_samr_rid(struct samr_info *info)
+{
+	if (!info) {
+    	DEBUG(3,("Error getting policy\n"));
+	    return 0xffffffff;
+	}
+
+	return info->sid.sub_auths[info->sid.num_auths-1];
 }
 
 /*******************************************************************
@@ -466,15 +496,17 @@ uint32 _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN_D
 
 uint32 _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u, SAMR_R_GET_USRDOM_PWINFO *r_u)
 {
+	struct samr_info *info = NULL;
+
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	/* find the policy handle.  open a policy on it. */
-	if (find_lsa_policy_by_hnd(&q_u->user_pol) == -1) {
+	if (!find_policy_by_hnd(p, &q_u->user_pol, (void **)&info)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* find the user's rid */
-	if (get_lsa_policy_samr_rid(&q_u->user_pol) == 0xffffffff) {
+	if (get_lsa_policy_samr_rid(info) == 0xffffffff) {
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
@@ -531,6 +563,21 @@ static uint32 samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC_BUF **buf, DOM_SID 
 	return NT_STATUS_NOPROBLEMO;
 }
 
+static BOOL get_lsa_policy_samr_sid(pipes_struct *p, POLICY_HND *pol, DOM_SID *sid)
+{
+	struct samr_info *info = NULL;
+
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, pol, (void **)&info))
+		return False;
+
+	if (!info)
+		return False;
+
+	*sid = info->sid;
+	return True;
+}
+
 /*******************************************************************
  _samr_query_sec_obj
  ********************************************************************/
@@ -541,13 +588,10 @@ uint32 _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_QU
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
-	/* find the policy handle.  open a policy on it. */
-	if ((find_lsa_policy_by_hnd(&q_u->user_pol)) == -1)
-		return NT_STATUS_INVALID_HANDLE;
-
 	/* Get the SID. */
-	if (!get_lsa_policy_samr_sid(&q_u->user_pol, &pol_sid))
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &pol_sid))
+		return NT_STATUS_INVALID_HANDLE;
 
 	r_u->status = samr_make_usr_obj_sd(p->mem_ctx, &r_u->buf, &pol_sid);
 
@@ -608,7 +652,7 @@ uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	/* find the policy handle.  open a policy on it. */
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
@@ -813,7 +857,7 @@ uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
-	if (!get_lsa_policy_samr_sid(&q_u->pol, &sid))
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
 
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
@@ -843,8 +887,7 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
 	
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
-	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(&q_u->pol, &sid))
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
 
 	sid_to_string(sid_str, &sid);
@@ -883,7 +926,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
-	if (!get_lsa_policy_samr_sid(&q_u->domain_pol, &sid))
+	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* decide how many entries to get depending on the max_entries
@@ -994,21 +1037,22 @@ uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_
 	fstring alias="";
 	enum SID_NAME_USE type;
 	uint32 alias_rid;
+	struct samr_info *info = NULL;
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	alias_rid = get_lsa_policy_samr_rid(&q_u->pol);
+	alias_rid = get_lsa_policy_samr_rid(info);
 	if(alias_rid == 0xffffffff)
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	if(!local_lookup_rid(alias_rid, alias, &type))
-	return NT_STATUS_NO_SUCH_ALIAS;
+		return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {
 	case 3:
@@ -1104,7 +1148,7 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
     ZERO_ARRAY(rid);
     ZERO_ARRAY(type);
 
-    if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid)) {
+    if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid)) {
         init_samr_r_lookup_names(p->mem_ctx, r_u, 0, NULL, NULL, NT_STATUS_OBJECT_TYPE_MISMATCH);
         return r_u->status;
     }
@@ -1227,7 +1271,7 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid))
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (num_rids > MAX_SAM_ENTRIES) {
@@ -1279,45 +1323,40 @@ uint32 _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_U
     POLICY_HND domain_pol = q_u->domain_pol;
     uint32 user_rid = q_u->user_rid;
     POLICY_HND *user_pol = &r_u->user_pol;
+	struct samr_info *info = NULL;
 
     r_u->status = NT_STATUS_NO_PROBLEMO;
 
     /* find the domain policy handle. */
-    if (find_lsa_policy_by_hnd(&domain_pol) == -1)
+    if (!find_policy_by_hnd(p, &domain_pol, NULL))
         return NT_STATUS_INVALID_HANDLE;
-
-    /* get a (unique) handle.  open a policy on it. */
-    if (!open_lsa_policy_hnd(user_pol))
-        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
     become_root();
     sam_pass = getsam21pwrid(user_rid);
     unbecome_root();
 
     /* check that the RID exists in our domain. */
-    if (sam_pass == NULL) {
-        close_lsa_policy_hnd(user_pol);
+    if (sam_pass == NULL)
         return NT_STATUS_NO_SUCH_USER;
-    }
 
     /* Get the domain SID stored in the domain policy */
-    if(!get_lsa_policy_samr_sid(&domain_pol, &sid)) {
-        close_lsa_policy_hnd(user_pol);
+    if(!get_lsa_policy_samr_sid(p, &domain_pol, &sid))
         return NT_STATUS_INVALID_HANDLE;
-    }
 
     /* append the user's RID to it */
-    if(!sid_append_rid(&sid, user_rid)) {
-        close_lsa_policy_hnd(user_pol);
+    if(!sid_append_rid(&sid, user_rid))
         return NT_STATUS_NO_SUCH_USER;
-    }
 
-    /* associate the user's SID with the handle. */
-    if (!set_lsa_policy_samr_sid(user_pol, &sid)) {
-        /* oh, whoops.  don't know what error message to return, here */
-        close_lsa_policy_hnd(user_pol);
+    /* associate the user's SID with the new handle. */
+    if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+        return NT_STATUS_NO_MEMORY;
+
+    ZERO_STRUCTP(info);
+    info->sid = sid;
+
+    /* get a (unique) handle.  open a policy on it. */
+    if (!create_policy_hnd(p, user_pol, free_samr_info, (void *)info))
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-    }
 
     return r_u->status;
 }
@@ -1458,15 +1497,16 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 {
 	SAM_USERINFO_CTR *ctr;
 	uint32 rid = 0;
+	struct samr_info *info = NULL;
 
 	r_u->status=NT_STATUS_NO_PROBLEMO;
 
 	/* search for the handle */
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* find the user's rid */
-	if ((rid = get_lsa_policy_samr_rid(&q_u->pol)) == 0xffffffff)
+	if ((rid = get_lsa_policy_samr_rid(info)) == 0xffffffff)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
 	DEBUG(5,("_samr_query_userinfo: rid:0x%x\n", rid));
@@ -1554,17 +1594,18 @@ uint32 _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAM
     int num_groups = 0;
     pstring groups;
     uint32 rid;
+	struct samr_info *info = NULL;
 
     r_u->status = NT_STATUS_NO_PROBLEMO;
 
     DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
 
     /* find the policy handle.  open a policy on it. */
-    if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+    if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
         return NT_STATUS_INVALID_HANDLE;
 
     /* find the user's rid */
-    if ((rid = get_lsa_policy_samr_rid(&q_u->pol)) == 0xffffffff)
+    if ((rid = get_lsa_policy_samr_rid(info)) == 0xffffffff)
         return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
     become_root();
@@ -1605,7 +1646,7 @@ uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR
     DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
 
     /* find the policy handle.  open a policy on it. */
-    if (find_lsa_policy_by_hnd(&q_u->domain_pol) == -1)
+    if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
         return NT_STATUS_INVALID_HANDLE;
 
     switch (q_u->switch_value) {
@@ -1663,9 +1704,10 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
     UNISTR2 user_account = q_u->uni_name;
     uint16 acb_info = q_u->acb_info;
     POLICY_HND *user_pol = &r_u->user_pol;
+	struct samr_info *info = NULL;
 
     /* find the policy handle.  open a policy on it. */
-    if (find_lsa_policy_by_hnd(&dom_pol) == -1)
+    if (!find_policy_by_hnd(p, &dom_pol, NULL))
         return NT_STATUS_INVALID_HANDLE;
 
     /* find the machine account: tell the caller if it exists.
@@ -1684,10 +1726,6 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
         /* machine account exists: say so */
         return NT_STATUS_USER_EXISTS;
     }
-
-    /* get a (unique) handle.  open a policy on it. */
-    if (!open_lsa_policy_hnd(user_pol))
-        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
     local_flags=LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_SET_NO_PASSWORD;
     local_flags|= (acb_info & ACB_WSTRUST) ? LOCAL_TRUST_ACCOUNT:0;
@@ -1720,7 +1758,7 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
          sizeof(err_str), msg_str, sizeof(msg_str)))
     {
         DEBUG(0, ("%s\n", err_str));
-        close_lsa_policy_hnd(user_pol);
+        close_policy_hnd(p, user_pol);
         return NT_STATUS_ACCESS_DENIED;
     }
 
@@ -1729,28 +1767,32 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
     unbecome_root();
     if (sam_pass == NULL) {
         /* account doesn't exist: say so */
-        close_lsa_policy_hnd(user_pol);
+        close_policy_hnd(p, user_pol);
         return NT_STATUS_ACCESS_DENIED;
     }
 
     /* Get the domain SID stored in the domain policy */
-    if(!get_lsa_policy_samr_sid(&dom_pol, &sid)) {
-        close_lsa_policy_hnd(user_pol);
+    if(!get_lsa_policy_samr_sid(p, &dom_pol, &sid)) {
+        close_policy_hnd(p, user_pol);
         return NT_STATUS_INVALID_HANDLE;
     }
 
     /* append the user's RID to it */
     if(!sid_append_rid(&sid, sam_pass->user_rid)) {
-        close_lsa_policy_hnd(user_pol);
+        close_policy_hnd(p, user_pol);
         return NT_STATUS_NO_SUCH_USER;
     }
 
-    /* associate the SID with the (unique) handle. */
-    if (!set_lsa_policy_samr_sid(user_pol, &sid)) {
-        /* oh, whoops.  don't know what error message to return, here */
-        close_lsa_policy_hnd(user_pol);
+    /* associate the user's SID with the new handle. */
+    if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+        return NT_STATUS_NO_MEMORY;
+
+    ZERO_STRUCTP(info);
+    info->sid = sid;
+
+    /* get a (unique) handle.  open a policy on it. */
+    if (!create_policy_hnd(p, user_pol, free_samr_info, (void *)info))
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-    }
 
     r_u->user_rid=sam_pass->user_rid;
     r_u->unknown_0 = 0x000703ff;
@@ -1764,19 +1806,22 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
 
 uint32 _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CONNECT_ANON *r_u)
 {
+	struct samr_info *info = NULL;
+
     /* set up the SAMR connect_anon response */
 
     r_u->status = NT_STATUS_NO_PROBLEMO;
 
-    /* get a (unique) handle.  open a policy on it. */
-    if (!open_lsa_policy_hnd(&r_u->connect_pol))
-        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+    /* associate the user's SID with the new handle. */
+    if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+        return NT_STATUS_NO_MEMORY;
 
-    /* associate the domain SID with the (unique) handle. */
-    if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->unknown_0)) {
-        close_lsa_policy_hnd(&r_u->connect_pol);
+    ZERO_STRUCTP(info);
+    info->status = q_u->unknown_0;
+
+    /* get a (unique) handle.  open a policy on it. */
+    if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-    }
 
     return r_u->status;
 }
@@ -1787,19 +1832,22 @@ uint32 _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CONN
 
 uint32 _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u)
 {
+	struct samr_info *info = NULL;
+
     DEBUG(5,("_samr_connect: %d\n", __LINE__));
 
     r_u->status = NT_STATUS_NO_PROBLEMO;
 
-    /* get a (unique) handle.  open a policy on it. */
-    if (!open_lsa_policy_hnd(&r_u->connect_pol))
-        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+    /* associate the user's SID with the new handle. */
+    if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+        return NT_STATUS_NO_MEMORY;
 
-    /* associate the domain SID with the (unique) handle. */
-    if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->access_mask)) {
-        close_lsa_policy_hnd(&r_u->connect_pol);
+    ZERO_STRUCTP(info);
+    info->status = q_u->access_mask;
+
+    /* get a (unique) handle.  open a policy on it. */
+    if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-    }
 
     DEBUG(5,("_samr_connect: %d\n", __LINE__));
 
@@ -1814,7 +1862,7 @@ uint32 _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_LO
 {
     r_u->status = NT_STATUS_NO_PROBLEMO;
 
-    if (find_lsa_policy_by_hnd(&q_u->connect_pol) == -1)
+    if (!find_policy_by_hnd(p, &q_u->connect_pol, NULL))
         return NT_STATUS_INVALID_HANDLE;
 
     /* assume the domain name sent is our global_myname and
@@ -1894,41 +1942,37 @@ uint32 _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN
 	POLICY_HND domain_pol = q_u->dom_pol;
 	uint32 alias_rid = q_u->rid_alias;
 	POLICY_HND *alias_pol = &r_u->pol;
+	struct samr_info *info = NULL;
 
 	r_u->status = NT_STATUS_NO_PROBLEMO;
 
 	/* get the domain policy. */
-	if (find_lsa_policy_by_hnd(&domain_pol) == -1)
+	if (!find_policy_by_hnd(p, &domain_pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!open_lsa_policy_hnd(alias_pol))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	/* Get the domain SID stored in the domain policy */
-	if(!get_lsa_policy_samr_sid(&domain_pol, &sid)) {
-		close_lsa_policy_hnd(alias_pol);
+	if(!get_lsa_policy_samr_sid(p, &domain_pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
-	}
+
+	/* append the alias' RID to it */
+	if(!sid_append_rid(&sid, alias_rid))
+		return NT_STATUS_NO_SUCH_USER;
 
 	/*
 	 * we should check if the rid really exist !!!
 	 * JFM.
 	 */
 
+    /* associate the user's SID with the new handle. */
+    if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+        return NT_STATUS_NO_MEMORY;
 
-	/* append the alias' RID to it */
-	if(!sid_append_rid(&sid, alias_rid)) {
-		close_lsa_policy_hnd(alias_pol);
-		return NT_STATUS_NO_SUCH_USER;
-	}
+    ZERO_STRUCTP(info);
+    info->sid = sid;
 
-	/* associate a SID with the (unique) handle. */
-	if (!set_lsa_policy_samr_sid(alias_pol, &sid)) {
-		/* oh, whoops.  don't know what error message to return, here */
-		close_lsa_policy_hnd(alias_pol);
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, alias_pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 
 	return r_u->status;
 }
@@ -2167,12 +2211,8 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 		memcpy(&user, &current_user, sizeof(user));
 	}
 
-	/* search for the handle */
-	if (find_lsa_policy_by_hnd(pol) == -1)
-		return NT_STATUS_INVALID_HANDLE;
-
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(pol, &sid))
+	if (!get_lsa_policy_samr_sid(p, pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
 
 	sid_split_rid(&sid, &rid);
@@ -2244,12 +2284,8 @@ uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SE
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
-	/* search for the handle */
-	if (find_lsa_policy_by_hnd(pol) == -1)
-		return NT_STATUS_INVALID_HANDLE;
-
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(pol, &sid))
+	if (!get_lsa_policy_samr_sid(p, pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
 
 	sid_split_rid(&sid, &rid);

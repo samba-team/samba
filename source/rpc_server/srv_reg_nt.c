@@ -29,6 +29,19 @@
 
 extern int DEBUGLEVEL;
 
+struct reg_info
+{
+    /* for use by \PIPE\winreg */
+    fstring name; /* name of registry key */
+};
+
+static void free_reg_info(void *ptr)
+{
+	struct reg_info *info = (struct reg_info *)ptr;
+
+	safe_free(info);
+}
+
 /*******************************************************************
  reg_reply_unknown_1
  ********************************************************************/
@@ -39,7 +52,7 @@ uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 	ZERO_STRUCT(r_u->pol);
 
 	/* close the policy handle */
-	if (!close_lsa_policy_hnd(&q_u->pol))
+	if (!close_policy_hnd(p, &q_u->pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
 	return NT_STATUS_NOPROBLEMO;
@@ -51,7 +64,7 @@ uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 
 uint32 _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
 {
-	if (!open_lsa_policy_hnd(&r_u->pol))
+	if (!create_policy_hnd(p, &r_u->pol, free_reg_info, NULL))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_NOPROBLEMO;
@@ -65,14 +78,12 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 {
 	POLICY_HND pol;
 	fstring name;
+	struct reg_info *info = NULL;
 
 	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
 
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
-
-	if (!open_lsa_policy_hnd(&pol))
-		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 
 	fstrcpy(name, dos_unistrn2(q_u->uni_name.buffer, q_u->uni_name.uni_str_len));
 
@@ -83,7 +94,13 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	    !strequal(name, "System\\CurrentControlSet\\services\\Netlogon\\parameters\\"))
 			return NT_STATUS_ACCESS_DENIED;
 
-	if (!set_lsa_policy_reg_name(&pol, name))
+	if ((info = (struct reg_info *)malloc(sizeof(struct reg_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+	fstrcpy(info->name, name);
+
+	if (!create_policy_hnd(p, &pol, free_reg_info, (void *)info))
 		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 
 	init_reg_r_open_entry(r_u, &pol, NT_STATUS_NOPROBLEMO);
@@ -109,7 +126,7 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	DEBUG(5,("_reg_info: %d\n", __LINE__));
 
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+	if (find_policy_by_hnd(p, &q_u->pol, NULL) == -1)
 		return NT_STATUS_INVALID_HANDLE;
 
 	fstrcpy(name, dos_unistrn2(q_u->uni_type.buffer, q_u->uni_type.uni_str_len));
