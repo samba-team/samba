@@ -700,14 +700,12 @@ static void dump_string(const char *field, struct berval **values)
 }
 
 /*
-  dump a record from LDAP on stdout
+  dump a field from LDAP on stdout
   used for debugging
 */
-void ads_dump(ADS_STRUCT *ads, void *res)
+
+static void ads_dump_field(char *field, void **values, void *data_area)
 {
-	char *field;
-	void *msg;
-	BerElement *b;
 	struct {
 		char *name;
 		void (*handler)(const char *, struct berval **);
@@ -717,34 +715,89 @@ void ads_dump(ADS_STRUCT *ads, void *res)
 		{"objectSid", dump_sid},
 		{NULL, NULL}
 	};
-    
-	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
+	int i;
+
+	if (!field) { /* must be end of an entry */
+		printf("\n");
+		return;
+	}
+
+	for (i=0; handlers[i].name; i++) {
+		if (StrCaseCmp(handlers[i].name, field) == 0) {
+			handlers[i].handler(field, (struct berval **) values);
+			break;
+		}
+	}
+	if (!handlers[i].name) {
+		dump_string(field, (struct berval **) values);
+	}
+}
+
+/*
+  dump a result from LDAP on stdout
+  used for debugging
+*/
+
+void ads_dump(ADS_STRUCT *ads, void *res)
+{
+	ads_process_results(ads, res, ads_dump_field, NULL);
+}
+
+/*
+  Walk through results, calling a function for each entry found.
+  The function receives a field name, a berval * array of values,
+  and a data area passed through from the start.  The function is
+  called once with null for field and values at the end of each
+  entry.
+*/
+void ads_process_results(ADS_STRUCT *ads, void *res,
+			 void(*fn)(char *, void **, void *),
+			 void *data_area)
+{
+	void *msg;
+
+	for (msg = ads_first_entry(ads, res); msg; 
+	     msg = ads_next_entry(ads, msg)) {
+		char *field;
+		BerElement *b;
+	
 		for (field = ldap_first_attribute(ads->ld, (LDAPMessage *)msg, &b); 
 		     field;
 		     field = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, b)) {
 			struct berval **values;
-			int i;
-
+			
 			values = ldap_get_values_len(ads->ld, (LDAPMessage *)msg, field);
+			fn(field, (void **) values, data_area);
 
-			for (i=0; handlers[i].name; i++) {
-				if (StrCaseCmp(handlers[i].name, field) == 0) {
-					handlers[i].handler(field, values);
-					break;
-				}
-			}
-			if (!handlers[i].name) {
-				dump_string(field, values);
-			}
 			ldap_value_free_len(values);
 			ldap_memfree(field);
 		}
+		ber_free(b, 0);
+		fn(NULL, NULL, data_area); /* completed an entry */
 
-		ber_free(b, 1);
-		printf("\n");
 	}
 }
 
+void ads_process_entry(ADS_STRUCT *ads, void *msg,
+		       void(*fn)(ADS_STRUCT *, char *, void **, void *),
+		       void *data_area)
+{
+	char *field;
+	BerElement *b;
+	
+	for (field = ldap_first_attribute(ads->ld, (LDAPMessage *)msg, &b); 
+	     field;
+	     field = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, b)) {
+		struct berval **values;
+
+		values = ldap_get_values_len(ads->ld, (LDAPMessage *)msg, field);
+		fn(ads, field, (void **) values, data_area);
+
+		ldap_value_free_len(values);
+		ldap_memfree(field);
+	}
+	ber_free(b, 0);
+}
 /*
   count how many replies are in a LDAPMessage
 */
