@@ -48,7 +48,7 @@ char *keyfile;
 static char *max_request_str;
 size_t max_request;
 time_t kdc_warn_pwexpire;
-char **databases;
+struct dbinfo *databases;
 HDB **db;
 int num_db;
 char *port_str;
@@ -85,10 +85,12 @@ static struct getargs args[] = {
 	"max-request",	0,	arg_string, &max_request, 
 	"max size for a kdc-request", "size"
     },
+#if 0
     {
 	"database",	'd', 	arg_string, &databases,
 	"location of database", "database"
     },
+#endif
     { "enable-http", 'H', arg_flag, &enable_http, "turn on HTTP support" },
 #ifdef KRB4
     { 
@@ -116,6 +118,80 @@ usage(int ret)
 {
     arg_printusage (args, num_args, NULL, "");
     exit (ret);
+}
+
+static void
+get_dbinfo(krb5_config_section *cf)
+{
+    krb5_config_binding *top_binding = NULL;
+    krb5_config_binding *db_binding;
+    krb5_config_binding *default_binding = NULL;
+    struct dbinfo *di, **dt;
+    const char *default_dbname = HDB_DEFAULT_DB;
+    const char *default_mkey = HDB_DB_DIR "/m-key";
+    const char *p;
+
+    databases = NULL;
+    dt = &databases;
+    while((db_binding = krb5_config_get_next(context, cf, &top_binding, 
+					     krb5_config_list, 
+					     "kdc", 
+					     "database",
+					     NULL))) {
+	p = krb5_config_get_string(context, db_binding, "realm", NULL);
+	if(p == NULL) {
+	    if(default_binding) {
+		krb5_warnx(context, "WARNING: more than one realm-less "
+			   "database specification");
+		krb5_warnx(context, "WARNING: using the first encountered");
+	    } else
+		default_binding = db_binding;
+	    continue;
+	}
+	di = calloc(1, sizeof(*di));
+	di->realm = strdup(p);
+	p = krb5_config_get_string(context, db_binding, "dbname", NULL);
+	if(p)
+	    di->dbname = strdup(p);
+	p = krb5_config_get_string(context, db_binding, "mkey_file", NULL);
+	if(p)
+	    di->mkey_file = strdup(p);
+	*dt = di;
+	dt = &di->next;
+    }
+    if(default_binding) {
+	di = calloc(1, sizeof(*di));
+	p = krb5_config_get_string(context, default_binding, "dbname", NULL);
+	if(p) {
+	    di->dbname = strdup(p);
+	    default_dbname = p;
+	}
+	p = krb5_config_get_string(context, default_binding, "mkey_file", NULL);
+	if(p) {
+	    di->mkey_file = strdup(p);
+	    default_mkey = p;
+	}
+	*dt = di;
+	dt = &di->next;
+    } else {
+	di = calloc(1, sizeof(*di));
+	di->dbname = strdup(default_dbname);
+	di->mkey_file = strdup(default_mkey);
+	*dt = di;
+	dt = &di->next;
+    }
+    for(di = databases; di; di = di->next) {
+	if(di->dbname == NULL)
+	    di->dbname = strdup(default_dbname);
+	if(di->mkey_file == NULL) {
+	    p = strrchr(di->dbname, '.');
+	    if(p == NULL || strchr(p, '/') != NULL)
+		asprintf(&di->mkey_file, "%s.mkey", di->dbname);
+	    else
+		asprintf(&di->mkey_file, "%.*s.mkey", 
+			 (int)(p - di->dbname), di->dbname);
+	}
+    }
 }
 
 void
@@ -158,8 +234,8 @@ configure(int argc, char **argv)
 	    keyfile = strdup(p);
     }
 
-    if(databases == NULL)
-	databases = krb5_config_get_strings (context, cf, "kdc", "database", NULL);
+
+    get_dbinfo(cf);
     
     if(max_request_str){
 	max_request = parse_bytes(max_request_str, NULL);

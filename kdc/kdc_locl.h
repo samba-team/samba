@@ -52,7 +52,12 @@ extern sig_atomic_t exit_flag;
 extern char *keyfile;
 extern size_t max_request;
 extern time_t kdc_warn_pwexpire;
-extern char **databases;
+extern struct dbinfo {
+    char *realm;
+    char *dbname;
+    char *mkey_file;
+    struct dbinfo *next;
+} *databases;
 extern HDB **db;
 extern int num_db;
 extern char *port_str;

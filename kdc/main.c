@@ -65,21 +65,24 @@ main(int argc, char **argv)
 	ret = hdb_create(context, &db[0], NULL);
 	if(ret)
 	    krb5_err(context, 1, ret, "hdb_create %s", HDB_DEFAULT_DB);
+	ret = hdb_set_master_keyfile(context, db[0], NULL);
+	if (ret)
+	    krb5_err(context, 1, ret, "hdb_set_master_keyfile");
     } else {
-	char **d;
+	struct dbinfo *d;
 	int i;
 	/* count databases */
-	for(d = databases, i = 0; *d; d++, i++);
+	for(d = databases, i = 0; d; d = d->next, i++);
 	db = malloc(i * sizeof(*db));
-	for(d = databases, num_db = 0; *d; d++) {
-	    ret = hdb_create(context, &db[num_db++], *d);
+	for(d = databases, num_db = 0; d; d = d->next, num_db++) {
+	    ret = hdb_create(context, &db[num_db], d->dbname);
 	    if(ret)
-		krb5_err(context, 1, ret, "hdb_create %s", *d);
-	}
-    }
-    ret = hdb_set_master_keyfile(context, db, keyfile);
+		krb5_err(context, 1, ret, "hdb_create %s", d->dbname);
+	    ret = hdb_set_master_keyfile(context, db[num_db], d->mkey_file);
     if (ret)
 	krb5_err(context, 1, ret, "hdb_set_master_keyfile");
+	}
+    }
 
 #ifdef HAVE_SIGACTION
     {
