@@ -51,7 +51,10 @@ void
 set_progname(char *argv0)
 {
 #ifndef HAVE___PROGNAME
-    char *p = strrchr(argv0, '/');
+    char *p;
+    if(argv == NULL)
+	return;
+    p = strrchr(argv0, '/');
     if(p == NULL)
 	p = argv0;
     else
