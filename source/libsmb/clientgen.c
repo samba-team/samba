@@ -120,7 +120,14 @@ void cli_setup_packet(struct cli_state *cli)
 	uint16 flgs2 = 0;
 	flgs2 |= FLAGS2_LONG_PATH_COMPONENTS;
 	flgs2 |= FLAGS2_32_BIT_ERROR_CODES;
+
+#if 0	/* Disabled because we do not get the
+	   user session key exactly correct and
+	   administrative pasword changes will fail
+	   -- jerry */
 	flgs2 |= FLAGS2_EXT_SEC;
+#endif 
+
 #if 0
 	flgs2 |= FLAGS2_UNICODE_STRINGS;
 #endif
