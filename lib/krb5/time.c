@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -99,7 +99,9 @@ krb5_format_time(krb5_context context, time_t t,
 	tm = gmtime (&t);
     else
 	tm = localtime(&t);
-    strftime(s, len, include_time ? context->time_fmt : context->date_fmt, tm);
+    if(tm == NULL ||
+       strftime(s, len, include_time ? context->time_fmt : context->date_fmt, tm) == 0)
+	snprintf(s, len, "%ld", (long)t);
     return 0;
 }
 
