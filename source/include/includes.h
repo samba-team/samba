@@ -77,8 +77,10 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef HAVE_GETOPT_H
+#ifdef HAVE_GETOPT_LONG
 #include <getopt.h>
+#else
+#include "lib/getopt.h"
 #endif
 
 #ifdef HAVE_SYS_UNISTD_H

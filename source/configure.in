@@ -1896,6 +1896,22 @@ else
     echo "no"
 fi
 
+# sometimes getopt_long cannot parse same arguments twice
+# e.g. on certain versions of CygWin32
+AC_CACHE_CHECK([for working getopt_long],samba_cv_HAVE_GETOPT_LONG,[
+AC_TRY_RUN([#include <getopt.h>
+main() {
+    int i, x = 0; char *argv[] = { "x", "--xx" };
+    struct option o[] = {{"xx", 0, 0, 1}, {0,0,0,0}};
+    getopt_long(2, argv, "x", o, &i) == 1 ? x++ : 0; optind = 0;
+    getopt_long(2, argv, "x", o, &i) == 1 ? x++ : 0;
+    exit(x == 2 ? 0 : 1);
+}], samba_cv_HAVE_GETOPT_LONG=yes,samba_cv_HAVE_GETOPT_LONG=no,
+    samba_cv_HAVE_GETOPT_LONG=cross)])
+if test x"$samba_cv_HAVE_GETOPT_LONG" = x"yes"; then
+    AC_DEFINE(HAVE_GETOPT_LONG)
+fi
+
 echo "checking configure summary"
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,

@@ -2549,13 +2549,13 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 			case 's':
 			{
 				set_acb_bits = True;
-				acb_set = get_number(optarg);
+				acb_set = (uint16)get_number(optarg);
 				break;
 			}
 			case 'c':
 			{
 				clr_acb_bits = True;
-				acb_clr = get_number(optarg);
+				acb_clr = (uint16)get_number(optarg);
 				break;
 			}
 		}
@@ -2611,7 +2611,8 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		{
 			SAM_USER_INFO_10 *p = g_new(SAM_USER_INFO_10, 1);
 			p->acb_info = ctr.info.id10->acb_info;
-			DEBUG(10, ("acb_info: %x\n", p->acb_info));
+			DEBUG(10, ("acb_info: %x set: %x clr: %x\n",
+			           p->acb_info, acb_set, acb_clr));
 			if (set_acb_bits)
 			{
 				p->acb_info |= acb_set;
@@ -2622,7 +2623,8 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 				p->acb_info &= (~acb_clr);
 			}
 
-			DEBUG(10, ("acb_info: %x\n", p->acb_info));
+			DEBUG(10, ("acb_info: %x set: %x clr: %x\n",
+			           p->acb_info, acb_set, acb_clr));
 
 			usr = (void *)p;
 			switch_value = 16;

@@ -137,14 +137,18 @@ gets either a hex number (0xNNN) or decimal integer (NNN).
 ****************************************************************************/
 uint32 get_number(const char *tmp)
 {
+	uint32 ret;
 	if (strnequal(tmp, "0x", 2))
 	{
-		return strtoul(tmp, (char **)NULL, 16);
+		ret = strtoul(tmp, (char **)NULL, 16);
+		DEBUG(10,("get_number: %s -> 0x%x\n", tmp, ret));
 	}
 	else
 	{
-		return strtoul(tmp, (char **)NULL, 10);
+		ret = strtoul(tmp, (char **)NULL, 10);
+		DEBUG(10,("get_number: %s -> %d\n", tmp, ret));
 	}
+	return ret;
 }
 
 /****************************************************************************
