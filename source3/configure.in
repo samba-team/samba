@@ -921,6 +921,10 @@ AC_CHECK_FUNCS(setlocale nl_langinfo)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
 
+# IRIX stack backtrace
+AC_CHECK_HEADERS(libexc.h)
+AC_CHECK_LIB(exc, trace_back_stack)
+
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
 
