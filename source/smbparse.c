@@ -513,7 +513,7 @@ char* smb_io_dom_name(BOOL io, DOM_NAME *name, char *q, char *base, int align)
 	/* don't know if len is specified by uni_str_len member... */
 	/* assume unicode string is unicode-null-terminated, instead */
 
-	q = smb_io_unistr(io, &(name->buffer), q, base, align);
+	q = smb_io_unistr(io, &(name->str), q, base, align);
 
 	return q;
 }
