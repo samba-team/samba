@@ -11,7 +11,8 @@ AC_CONFIG_FILES(lib/registry/winregistry.pc)
 
 SMB_BINARY_ENABLE(gregedit,NO)
 
-PKG_CHECK_MODULES(GTK, glib-2.0 gtk+-2.0, [ SMB_BINARY_ENABLE(gregedit,YES)
+#disable grpedit for now
+PKG_CHECK_MODULES(GTK, glib-2.0 gtk+-2.0, [ SMB_BINARY_ENABLE(gregedit,NO)
 				CFLAGS="$CFLAGS $GTK_CFLAGS"; ], [ AC_MSG_WARN([Will be unable to build gregedit])])
 
 SMB_MODULE(registry_nt4, REGISTRY, STATIC, lib/registry/reg_backend_nt4/reg_backend_nt4.o)
