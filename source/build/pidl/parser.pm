@@ -551,7 +551,7 @@ sub ParseElementPullScalar($$$)
 		pidl "\tif (_ptr_$e->{NAME}) {\n";
 		pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
 		if (util::has_property($e, "relative")) {
-			pidl "\t\tNDR_CHECK(ndr_pull_relative1(ndr, $var_prefix$e->{NAME}, _ptr_$e->{NAME}));";
+			pidl "\t\tNDR_CHECK(ndr_pull_relative1(ndr, $var_prefix$e->{NAME}, _ptr_$e->{NAME}));\n";
 		}
 		pidl "\t} else {\n";
 		pidl "\t\t$var_prefix$e->{NAME} = NULL;\n";
