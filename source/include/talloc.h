@@ -30,6 +30,27 @@
 /**
  * talloc allocation pool.  All allocated blocks can be freed in one go.
  **/
+
+struct talloc_chunk {
+	struct talloc_chunk *next;
+	size_t size;
+	void *ptr;
+};
+
+struct talloc_ctx {
+	struct talloc_chunk *list;
+	size_t total_alloc_size;
+
+	/** The name recorded for this pool, if any.  Should describe
+	 * the purpose for which it was allocated.  The string is
+	 * allocated within the pool. **/
+	char *name;
+
+	/** Pointer to the next allocate talloc pool, so that we can
+	 * summarize all talloc memory usage. **/
+	struct talloc_ctx *next_ctx;
+};
+
 typedef struct talloc_ctx TALLOC_CTX;
 
 TALLOC_CTX *talloc_init(char const *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
