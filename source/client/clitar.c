@@ -122,7 +122,7 @@ static void writetarheader(int f,  const char *aname, SMB_BIG_UINT size, time_t 
 static void do_atar(char *rname,char *lname,file_info *finfo1);
 static void do_tar(file_info *finfo);
 static void oct_it(SMB_BIG_UINT value, int ndgs, char *p);
-static void fixtarname(char *tptr, const char *fp, int l);
+static void fixtarname(char *tptr, const char *fp, size_t l);
 static int dotarbuf(int f, char *b, int n);
 static void dozerobuf(int f, int n);
 static void dotareof(int f);
@@ -171,7 +171,10 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 	memset(hb.dummy, 0, sizeof(hb.dummy));
   
 	l=strlen(aname);
-	if (l >= NAMSIZ - 1) {
+	/* We will be prepending a '.' in fixtarheader so use +2 to
+	 * take care of the . and terminating zero. JRA.
+	 */
+	if (l+2 >= NAMSIZ) {
 		/* write a GNU tar style long header */
 		char *b;
 		b = (char *)malloc(l+TBLOCK+100);
@@ -181,15 +184,14 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 		}
 		writetarheader(f, "/./@LongLink", l+2, 0, "     0 \0", 'L');
 		memset(b, 0, l+TBLOCK+100);
-		fixtarname(b, aname, l);
+		fixtarname(b, aname, l+2);
 		i = strlen(b)+1;
 		DEBUG(5, ("File name in tar file: %s, size=%d, \n", b, (int)strlen(b)));
 		dotarbuf(f, b, TBLOCK*(((i-1)/TBLOCK)+1));
 		SAFE_FREE(b);
 	}
 
-	/* use l + 1 to do the null too */
-	fixtarname(hb.dbuf.name, aname, (l >= NAMSIZ) ? NAMSIZ : l + 1);
+	fixtarname(hb.dbuf.name, aname, (l+2 >= NAMSIZ) ? NAMSIZ : l + 2);
 
 	if (lowercase)
 		strlower_m(hb.dbuf.name);
@@ -419,13 +421,14 @@ static void dotareof(int f)
 (Un)mangle DOS pathname, make nonabsolute
 ****************************************************************************/
 
-static void fixtarname(char *tptr, const char *fp, int l)
+static void fixtarname(char *tptr, const char *fp, size_t l)
 {
 	/* add a '.' to start of file name, convert from ugly dos \'s in path
 	 * to lovely unix /'s :-} */
 	*tptr++='.';
+	l--;
 
-	safe_strcpy(tptr, fp, l);
+	StrnCpy(tptr, fp, l-1);
 	string_replace(tptr, '\\', '/');
 }
 
