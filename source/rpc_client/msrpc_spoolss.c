@@ -391,7 +391,7 @@ uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
         init_buffer(buffer, size, mem_ctx);
 
         status = spoolss_getprinterdata(&hnd, &uni_val_name, size, type, &size,
-                        data, &needed);
+                        (unsigned char *)data, &needed);
 
         if (status == ERROR_INSUFFICIENT_BUFFER)
         {
@@ -400,7 +400,7 @@ uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
                 data = prs_data_p(&buffer->prs);
                 status = spoolss_getprinterdata(&hnd, &uni_val_name,
                                 size, type, &size,
-                                data, &needed);
+                                (unsigned char *)data, &needed);
         }
 	
 	if (mem_ctx)
