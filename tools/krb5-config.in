@@ -40,6 +40,12 @@ for i in $*; do
   gssapi)
     library=gssapi
     ;;
+  kadm-client)
+    library=kadm-client
+    ;;
+  kadm-server)
+    library=kadm-server
+    ;;
   *)
     echo "unknown option: $i"
     exit 1
@@ -50,7 +56,7 @@ done
 if test "$do_usage" = "yes"; then
     echo "usage: $0 [options] [libraries]"
     echo "options: [--prefix=dir] [--exec-prefix=dir] [--libs] [--cflags]"
-    echo "libraries: krb5 gssapi"
+    echo "libraries: krb5 gssapi kadm-client kadm-server"
     exit $usage_exit
 fi
 
@@ -69,6 +75,12 @@ if test "$do_libs" = "yes"; then
     case $library in
     gssapi)
 	echo -n " -lgssapi"
+	;;
+    kadm-client)
+	echo -n " -lkadm5clnt"
+	;;
+    kadm-server)
+	echo -n " -lkadm5srv"
 	;;
     esac
     echo " -lkrb5 -lasn1 -ldes -lroken @LIB_crypt@ @LIB_dbopen@ @LIBS@"
