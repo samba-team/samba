@@ -30,7 +30,7 @@ static int nprocs=1, numops=100;
 static pid_t master_pid;
 static struct cli_state current_cli;
 
-static double create_procs(void (*fn)(void));
+static double create_procs(void (*fn)(int ));
 
 
 static struct timeval tp1,tp2;
@@ -266,63 +266,102 @@ static void run_torture(void)
 	close_connection(&cli);
 }
 
-static int nbsize1, nbsize2, nbprob1;
+int line_count = 0;
 
 /* run a test that simulates an approximate netbench client load */
-static void run_netbench(void)
+static void run_netbench(int client)
 {
 	struct cli_state cli;
-	int fnum, i;
-	int pid = getpid();
-	size_t size;
-	char buf[8192];
+	int i;
 	fstring fname;
+	pstring line;
+	char cname[20];
+	FILE *f;
+	char *params[20];
 
 	cli = current_cli;
 
 	cli_sockopt(&cli, sockops);
 
-	slprintf(fname, sizeof(fname) - 1, "\\c%05d", pid);
+	nb_setup(&cli);
 
-	cli_mkdir(&cli, fname);
+	slprintf(cname,sizeof(fname), "CLIENT%d", client);
 
-	for (i=0;i<numops;i++) {
-		slprintf(fname, sizeof(fname) - 1, "\\c%05d\\%d.doc", pid, i);
+	f = fopen("client.txt", "r");
 
-		fnum = cli_open(&cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
-		if (fnum == -1) {
-			printf("open failed (%s)\n", cli_errstr(&cli));
-			break;
-		}
-
-		size = 0;
-		while (size < 256*1024) {
-			int s;
-			if (((unsigned)random()) % 100 > nbprob1) {
-				s = nbsize2;
-			} else {
-				s = nbsize1;
-			}
-
-			if (cli_smbwrite(&cli, fnum, buf, size, s) != s) {
-				printf("write failed (%s)\n", cli_errstr(&cli));
-				break;
-			}
-			size += s;
-		}
-		cli_close(&cli, fnum);
-		printf("."); fflush(stdout);
+	if (!f) {
+		perror("client.txt");
+		return;
 	}
 
-	printf("+"); fflush(stdout);
+	while (fgets(line, sizeof(line)-1, f)) {
+		line_count++;
 
-	for (i=0;i<numops;i++) {
-		slprintf(fname, sizeof(fname) - 1, "\\c%05d\\%d.doc", pid, i);
-		cli_unlink(&cli, fname);
+		line[strlen(line)-1] = 0;
+
+		all_string_sub(line,"CLIENT1", cname);
+		
+		for (i=0;i<20;i++) params[i] = "";
+
+		/* parse the command parameters */
+		params[0] = strtok(line," ");
+		i = 0;
+		while (params[i]) params[++i] = strtok(NULL," ");
+
+		params[i] = "";
+
+		if (i < 2) continue;
+
+		if (strcmp(params[1],"REQUEST") == 0) {
+			if (!strcmp(params[0],"SMBopenX")) {
+				fstrcpy(fname, params[5]);
+			} else if (!strcmp(params[0],"SMBclose")) {
+				nb_close(atoi(params[3]));
+			} else if (!strcmp(params[0],"SMBmkdir")) {
+				nb_mkdir(params[3]);
+			} else if (!strcmp(params[0],"CREATE")) {
+				nb_create(params[3], atoi(params[5]));
+			} else if (!strcmp(params[0],"SMBrmdir")) {
+				nb_rmdir(params[3]);
+			} else if (!strcmp(params[0],"SMBunlink")) {
+				fstrcpy(fname, params[3]);
+			} else if (!strcmp(params[0],"SMBmv")) {
+				nb_rename(params[3], params[5]);
+			} else if (!strcmp(params[0],"SMBgetatr")) {
+				fstrcpy(fname, params[3]);
+			} else if (!strcmp(params[0],"SMBwrite")) {
+				nb_write(atoi(params[3]), 
+					 atoi(params[5]), atoi(params[7]));
+			} else if (!strcmp(params[0],"SMBwritebraw")) {
+				nb_write(atoi(params[3]), 
+					 atoi(params[7]), atoi(params[5]));
+			} else if (!strcmp(params[0],"SMBreadbraw")) {
+				nb_read(atoi(params[3]), 
+					 atoi(params[7]), atoi(params[5]));
+			} else if (!strcmp(params[0],"SMBread")) {
+				nb_read(atoi(params[3]), 
+					 atoi(params[5]), atoi(params[7]));
+			}
+		} else {
+			if (!strcmp(params[0],"SMBopenX")) {
+				if (!strncmp(params[2], "ERR", 3)) continue;
+				nb_open(fname, atoi(params[3]), atoi(params[5]));
+			} else if (!strcmp(params[0],"SMBgetatr")) {
+				if (!strncmp(params[2], "ERR", 3)) continue;
+				nb_stat(fname, atoi(params[3]));
+			} else if (!strcmp(params[0],"SMBunlink")) {
+				if (!strncmp(params[2], "ERR", 3)) continue;
+				nb_unlink(fname);
+			}
+		}
 	}
+	fclose(f);
 
-	slprintf(fname, sizeof(fname) - 1, "\\c%05d", pid);
-	cli_rmdir(&cli, fname);
+	slprintf(fname,sizeof(fname), "CLIENTS/CLIENT%d", client);
+	rmdir(fname);
+	rmdir("CLIENTS");
+
+	printf("+");	
 
 	close_connection(&cli);
 }
@@ -332,22 +371,18 @@ static void run_netbench(void)
 static void run_nbw95(void)
 {
 	double t;
-	nbsize1 = 4096;
-	nbsize2 = 0;
-	nbprob1 = 100;
 	t = create_procs(run_netbench);
-	printf("Throughput %g MB/sec\n", nprocs*numops*256.0/(t*1024));
+	printf("Throughput %g MB/sec (NB=%g MB/sec  %g MBit/sec)\n", 
+	       132*nprocs/t, 0.5*0.5*nprocs*660/t, 2*nprocs*660/t);
 }
 
 /* run a test that simulates an approximate netbench wNT client load */
 static void run_nbwnt(void)
 {
 	double t;
-	nbsize1 = 4296;
-	nbsize2 = 0;
-	nbprob1 = 67;
 	t = create_procs(run_netbench);
-	printf("Throughput %g MB/sec\n", nprocs*numops*256.0/(t*1024));
+	printf("Throughput %g MB/sec (NB=%g MB/sec  %g MBit/sec)\n", 
+	       132*nprocs/t, 0.5*0.5*nprocs*660/t, 2*nprocs*660/t);
 }
 
 
@@ -1051,7 +1086,7 @@ static void run_trans2test(void)
 	printf("trans2 test finished\n");
 }
 
-static double create_procs(void (*fn)(void))
+static double create_procs(void (*fn)(int ))
 {
 	int i, status;
 	volatile int *child_status;
@@ -1090,7 +1125,7 @@ static double create_procs(void (*fn)(void))
 
 			while (child_status[i]) msleep(2);
 
-			fn();
+			fn(i);
 			_exit(0);
 		}
 	}

@@ -2735,6 +2735,23 @@ int smbw_stat_printjob(struct smbw_server *srv,char *path,
 int smbw_fstat(int fd, struct stat *st);
 int smbw_stat(const char *fname, struct stat *st);
 
+/*The following definitions come from  utils/nbio.c  */
+
+void nb_setup(struct cli_state *cli);
+void nb_unlink(char *fname);
+void nb_open(char *fname, int handle, int size);
+void nb_write(int handle, int size, int offset);
+void nb_read(int handle, int size, int offset);
+void nb_close(int handle);
+void nb_mkdir(char *fname);
+void nb_rmdir(char *fname);
+void nb_rename(char *old, char *new);
+void nb_stat(char *fname, int size);
+void nb_create(char *fname, int size);
+
+/*The following definitions come from  utils/torture.c  */
+
+
 /*The following definitions come from  web/cgi.c  */
 
 void cgi_load_variables(FILE *f1);

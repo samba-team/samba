@@ -27,7 +27,7 @@
 /* the client asks for a smaller buffer to save ram and also to get more
    overlap on the wire. This size gives us a nice read/write size, which
    will be a multiple of the page size on almost any system */
-#define CLI_BUFFER_SIZE (0x4400)
+#define CLI_BUFFER_SIZE (0xFFFF)
 
 /*
  * These definitions depend on smb.h
