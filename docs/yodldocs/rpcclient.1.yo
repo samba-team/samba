@@ -611,6 +611,26 @@ dit(NETLOGON)
 
 dit(SAM Database)
 
+	The SAM Database holds user, group and alias information.
+	The commands listed below allow operations such as adding
+	user accounts and changing their password; listing known
+	Domains; listing user, group and alias accounts; listing the
+	members of groups and aliases; adding or removing members
+	from groups and aliases.
+
+	The commands that make changes are protected by Access Control
+	permissions on the remote server.  You will therefore need to
+	be in the right NT group in order to perform certain operations.
+	If you find that a command fails with an NT_STATUS_ACCESS_DENIED
+	error and you think you should be able to perform that command,
+	talk to your Administrator: your username is probably not in the
+	correct NT alias or group (e.g Account Operators; Domain Admin).
+
+	The commands that view information usually require less
+	user privileges.  However, a particular remote server may be
+	configured with better security settings, so a command that
+	succeeds on one server may not succeed on another.
+
 	It is possible to use command-line completion (if you have
 	the GNU readline library) for user, group, alias and domain
 	names, by pressing the tab key.
@@ -777,18 +797,23 @@ reported) to be... a bit flakey in places.
 The development of Samba's implementation of these services is em(also)
 a bit rough, and as more of the services are understood, it can even result
 in versions of url(bf(smbd (8)))(smbd.8.html) and rpcclient that are
-incompatible for some commands or services.  Additionally, the developers
-are sending reports to Microsoft, and problems found by or reported to
-Microsoft are fixed in Service Packs, which may also result in
+backwards-incompatible for some commands or services.  Additionally, the
+developers are sending reports to Microsoft, and problems found by or
+reported to Microsoft are fixed in Service Packs, which may also result in
 incompatibilities.
 
 It is therefore not guaranteed that the execution of an rpcclient command will
 work.  It is also not guaranteed that the target server will continue to
 operate, i.e the execution of an MSRPC command may cause a remote service to
 fail, or even cause the remote server to fail.  Usual rules apply, of course:
-the developers bear absolutely no responsibility for the use, misuse, or
-lack of use of rpcclient, by any person or persons, whether legal,
+the developers bear absolutely no responsibility or liability for the use,
+misuse, or lack of use of rpcclient, by any person or persons, whether legal,
 illegal, accidental, deliberate, intentional, malicious, curious, etc.
+
+This em(particularly) applies to the registry and SAM database commands.
+As you are using a command-line tool not a mouse-clicky tool, you have
+already proven yourself to be savvy, however if you don't know what you're
+doing, then em(don't do it!).
 
 dit(Command Completion)
 Command-completion (available if you have the GNU readline library) used on
