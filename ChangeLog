@@ -1,3 +1,8 @@
+2001-04-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/get_host_realm.c (krb5_get_host_realm_int): add extra
+	parameter to request use of dns or not
+
 2001-04-25  Assar Westerlund  <assar@sics.se>
 
 	* admin/get.c (kt_get): allow specification of encryption types
