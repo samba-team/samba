@@ -373,10 +373,7 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	get_single_attribute(ldap_struct, entry, "uid", username);
 	DEBUG(2, ("Entry found for user: %s\n", username));
 
-	/* not sure about this for nt_username */
-	get_single_attribute (ldap_struct, entry, "sAMAccountName", nt_username);
-	if (!nt_username)
-		pstrcpy(nt_username, username);
+	pstrcpy(nt_username, username);
 
 	get_single_attribute(ldap_struct, entry, "sambaDomain", domain);
 	if (!domain)
@@ -414,10 +411,11 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	}
 
 	get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive);
+	get_single_attribute(ldap_struct, entry, "smbHome", homedir);
 	get_single_attribute(ldap_struct, entry, "scriptPath", logon_script);
 	get_single_attribute(ldap_struct, entry, "profilePath", profile_path);
 	get_single_attribute(ldap_struct, entry, "description", acct_desc);
-	get_single_attribute (ldap_struct, entry, "userWorkstations", workstations);
+	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
 
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 	user_rid = (uint32)strtol(temp, NULL, 16);
@@ -434,7 +432,6 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	sys_user = sys_getpwnam(username);
 	if (sys_user == NULL)
 		return False;
-	pstrcpy(homedir, sys_user->pw_dir);
 
 
 	/* FIXME: hours stuff should be cleaner */
@@ -518,7 +515,6 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * 
 	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
 
 	/* not sure about using this for the nt_username */
-	make_a_mod (mods, ldap_state, "sAMAccountName", pdb_get_nt_username(sampass));
 	make_a_mod(mods, ldap_state, "sambaDomain", pdb_get_domain(sampass));
 
 	slprintf(temp, sizeof(temp) - 1, "%i", pdb_get_uid(sampass));
