@@ -260,6 +260,28 @@ int socket_get_fd(struct socket_context *sock)
 	return sock->ops->get_fd(sock);
 }
 
+/*
+  call dup() on a socket, and close the old fd. This is used to change
+  the fd to the lowest available number, to make select() more
+  efficient (select speed depends on the maxiumum fd number passed to
+  it)
+*/
+NTSTATUS socket_dup(struct socket_context *sock)
+{
+	int fd;
+	if (sock->fd == -1) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	fd = dup(sock->fd);
+	if (fd == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	close(sock->fd);
+	sock->fd = fd;
+	return NT_STATUS_OK;
+	
+}
+
 const struct socket_ops *socket_getops_byname(const char *name, enum socket_type type)
 {
 	if (strcmp("ip", name) == 0 || 
