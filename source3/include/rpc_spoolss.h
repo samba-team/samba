@@ -94,7 +94,7 @@
 #define SPOOLSS_ENUMFORMS				0x22
 #define SPOOLSS_ENUMPORTS				0x23
 #define SPOOLSS_ENUMMONITORS				0x24
-#define SPOOLSS_ENUMPRINTPROCESSORDATATYPES		0x33
+#define SPOOLSS_ENUMPRINTPROCDATATYPES			0x33
 #define SPOOLSS_GETPRINTERDRIVER2			0x35
 /* find close printer notification */
 #define SPOOLSS_FCPN					0x38
@@ -1328,28 +1328,29 @@ typedef struct spool_r_enumprintprocessors
 	uint32 status;
 } SPOOL_R_ENUMPRINTPROCESSORS;
 
-typedef struct spool_q_enumprintprocessordatatypes
+typedef struct spool_q_enumprintprocdatatypes
 {
+	uint32 name_ptr;
 	UNISTR2 name;
-	UNISTR2 printprocessor;
+	uint32 processor_ptr;
+	UNISTR2 processor;
 	uint32 level;
 	NEW_BUFFER *buffer;
-	uint32 buf_size;
-} SPOOL_Q_ENUMPRINTPROCESSORDATATYPES;
+	uint32 offered;
+} SPOOL_Q_ENUMPRINTPROCDATATYPES;
 
 typedef struct ppdatatype_1
 {
 	UNISTR name;
-} PPDATATYPE_1;
+} PRINTPROCDATATYPE_1;
 
-typedef struct spool_r_enumprintprocessordatatypes
+typedef struct spool_r_enumprintprocdatatypes
 {
-	uint32 level;
-	PPDATATYPE_1 *info_1;
-	uint32 offered;
-	uint32 numofppdatatypes;
+	NEW_BUFFER *buffer;
+	uint32 needed;
+	uint32 returned;
 	uint32 status;
-} SPOOL_R_ENUMPRINTPROCESSORDATATYPES;
+} SPOOL_R_ENUMPRINTPROCDATATYPES;
 
 typedef struct printmonitor_1
 {
