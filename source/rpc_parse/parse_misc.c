@@ -61,7 +61,7 @@ void main_loop_talloc_free(void)
 TALLOC_CTX *main_loop_talloc_get(void)
 {
     if (!main_loop_talloc) {
-        main_loop_talloc = talloc_init();
+        main_loop_talloc = talloc_init_named("main loop talloc (mainly parse_misc)");
         if (!main_loop_talloc)
             smb_panic("main_loop_talloc: malloc fail\n");
     }
