@@ -190,6 +190,25 @@ DB_nextkey(krb5_context context, HDB *db, hdb_entry *entry)
 }
 
 static krb5_error_code
+DB_rename(krb5_context context, HDB *db, const char *new_name)
+{
+    int ret;
+    char *old, *new;
+
+    asprintf(&old, "%s.db", db->name);
+    asprintf(&new, "%s.db", new_name);
+    ret = rename(old, new);
+    free(old);
+    free(new);
+    if(ret)
+	return errno;
+    
+    free(db->name);
+    db->name = strdup(new_name);
+    return 0;
+}
+
+static krb5_error_code
 DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
 {
     DB *d = (DB*)db->db;
@@ -215,21 +234,26 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
 }
 
 static krb5_error_code
-DB_rename(krb5_context context, HDB *db, const char *new_name)
+DB__put(krb5_context context, HDB *db, int replace, 
+	krb5_data key, krb5_data value)
 {
-    int ret;
-    char *old, *new;
+    DB *d = (DB*)db->db;
+    DBT k, v;
+    int code;
 
-    asprintf(&old, "%s.db", db->name);
-    asprintf(&new, "%s.db", new_name);
-    ret = rename(old, new);
-    free(old);
-    free(new);
-    if(ret)
+    k.data = key.data;
+    k.size = key.length;
+    v.data = value.data;
+    v.size = value.length;
+    code = db->lock(context, db, HDB_WLOCK);
+    if(code)
+	return code;
+    code = d->put(d, &k, &v, replace ? 0 : R_NOOVERWRITE);
+    db->unlock(context, db);
+    if(code < 0)
 	return errno;
-    
-    free(db->name);
-    db->name = strdup(new_name);
+    if(code == 1)
+	return HDB_ERR_EXISTS;
     return 0;
 }
 
@@ -256,6 +280,8 @@ hdb_db_open(krb5_context context, HDB **db,
     (*db)->lock = DB_lock;
     (*db)->unlock = DB_unlock;
     (*db)->rename = DB_rename;
+    (*db)->_get = DB__get;
+    (*db)->_put = DB__put;
     return 0;
 }
 
