@@ -280,18 +280,19 @@ decrypt_tkt_with_subkey (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = decode_EncASRepPart(data.data,
-			      data.length,
-			      &dec_rep->enc_part, 
-			      &size);
-    if (ret)
-	ret = decode_EncTGSRepPart(data.data,
+    ret = krb5_decode_EncASRepPart(context,
+				   data.data,
 				   data.length,
 				   &dec_rep->enc_part, 
 				   &size);
+    if (ret)
+	ret = krb5_decode_EncTGSRepPart(context,
+					data.data,
+					data.length,
+					&dec_rep->enc_part, 
+					&size);
     krb5_data_free (&data);
-    if (ret) return ret;
-    return 0;
+    return ret;
 }
 
 static krb5_error_code

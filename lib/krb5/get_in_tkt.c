@@ -97,15 +97,17 @@ decrypt_tkt (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = decode_EncASRepPart(data.data,
-			      data.length,
-			      &dec_rep->enc_part, 
-			      &size);
-    if (ret)
-	ret = decode_EncTGSRepPart(data.data,
+    ret = krb5_decode_EncASRepPart(context,
+				   data.data,
 				   data.length,
 				   &dec_rep->enc_part, 
 				   &size);
+    if (ret)
+	ret = krb5_decode_EncTGSRepPart(context,
+					data.data,
+					data.length,
+					&dec_rep->enc_part, 
+					&size);
     krb5_data_free (&data);
     if (ret) return ret;
     return 0;
@@ -185,9 +187,12 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = krb5_convert_etype(context, &rep->enc_part.key.keytype);
+#if 0
+    /* XXX should this decode be here, or in the decrypt_proc? */
+    ret = krb5_decode_keyblock(context, &rep->enc_part.key, 1);
     if(ret)
 	goto out;
+#endif
 
     /* compare nonces */
 
