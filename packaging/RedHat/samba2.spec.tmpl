@@ -85,7 +85,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/{init.d,rc0.d,rc1.d,rc2.d,rc3.d,rc5.d,rc6.d}
 mkdir -p $RPM_BUILD_ROOT/home/samba
 mkdir -p $RPM_BUILD_ROOT/usr/{bin,sbin}
-mkdir -p $RPM_BUILD_ROOT/usr/share/swat/{images,help}
+mkdir -p $RPM_BUILD_ROOT/usr/share/swat/{images,help,include}
 mkdir -p $RPM_BUILD_ROOT/usr/man/{man1,man5,man7,man8}
 mkdir -p $RPM_BUILD_ROOT/var/lock/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
@@ -128,6 +128,10 @@ done
 for i in swat/images/*.{jpg,gif}
 do
 install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/images
+done
+for i in swat/include/*.html
+do
+install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/include
 done
 
 # Install the miscellany
@@ -229,8 +233,11 @@ mv $tmpfile services
 %attr(-,root,root) /usr/share/swat/images/home.gif
 %attr(-,root,root) /usr/share/swat/images/printers.gif
 %attr(-,root,root) /usr/share/swat/images/shares.gif
+%attr(-,root,root) /usr/share/swat/images/samba.gif
 %attr(-,root,root) /usr/share/swat/images/status.gif
 %attr(-,root,root) /usr/share/swat/images/viewconfig.gif
+%attr(-,root,root) /usr/share/swat/include/header.html
+%attr(-,root,root) /usr/share/swat/include/footer.html
 %attr(-,root,root) %config /etc/lmhosts
 %attr(-,root,root) %config /etc/smb.conf
 %attr(-,root,root) %config /etc/smbusers
