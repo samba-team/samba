@@ -38,10 +38,11 @@ typedef : 'typedef' <commit> type identifier array_len(?) ';'
         }}
         | <error?>
 
-struct: 'struct' <commit> '{' element_list1(?) '}' 
+struct: property_list(s?) 'struct' <commit> '{' element_list1(?) '}' 
         {{
                      "TYPE" => "STRUCT", 
-		     "ELEMENTS" => util::FlattenArray2($item[4])
+		     "PROPERTIES" => util::FlattenArray($item[1]),
+		     "ELEMENTS" => util::FlattenArray2($item[5])
         }}
       | <error?>
 
@@ -103,6 +104,7 @@ property: 'unique'
 	  | 'struct_len'
 	  | 'context_handle'
 	  | 'string'
+	  | 'public'
 	  | 'subcontext'
 	  | 'byte_count_pointer' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'size_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}

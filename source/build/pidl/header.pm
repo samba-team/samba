@@ -128,6 +128,8 @@ sub HeaderType($$$)
 	}
 	if ($data =~ "unistr") {
 		$res .= "const char";
+	} elsif ($data =~ "relstr") {
+		$res .= "const char *";
 	} elsif (util::is_scalar_type($data)) {
 		$res .= "$data";
 	} elsif (util::has_property($e, "switch_is")) {
