@@ -1,3 +1,7 @@
+Tue Mar 16 22:29:14 1999  Assar Westerlund  <assar@sics.se>
+
+	* xnlock.c: krb_verify_user_multiple -> krb_verify_user
+
 Thu Mar 11 14:59:20 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* xnlock.c: add some if-braces to keep gcc happy

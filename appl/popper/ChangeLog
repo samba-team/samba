@@ -1,3 +1,7 @@
+Tue Mar 16 22:28:52 1999  Assar Westerlund  <assar@sics.se>
+
+	* pop_pass.c: krb_verify_user_multiple -> krb_verify_user
+
 Sat Mar 13 22:17:29 1999  Assar Westerlund  <assar@sics.se>
 
 	* pop_parse.c (pop_parse): cast when calling is* to get rid of a
