@@ -49,8 +49,12 @@ static krb_principal pr;
 static int do_destroy_tickets = 1;
 
 static int
-save_tkt(char *user, char *instance, char *realm, void *arg, 
-	 int (*key_proc)(char*, char*, char*, void*, des_cblock*), KTEXT *cipp)
+save_tkt(const char *user,
+	 const char *instance,
+	 const char *realm,
+	 const void *arg, 
+	 key_proc_t key_proc,
+	 KTEXT *cipp)
 {
     local_time = time(0);
     memmove(&cip, *cipp, sizeof(cip));
