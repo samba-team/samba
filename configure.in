@@ -458,10 +458,6 @@ AC_FIND_FUNC_NO_LIBS(setsockopt,,
 dnl Cray stuff
 AC_CHECK_FUNCS(getudbnam setlim)
 
-rk_RETSIGTYPE
-
-rk_BROKEN_REALLOC
-
 dnl AC_KRB_FUNC_GETCWD_BROKEN
 
 dnl
@@ -520,9 +516,25 @@ AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
 #include <sys/socket.h>])
 
 
-AC_GROK_TYPES([int8_t int16_t int32_t int64_t \
-	u_int8_t u_int16_t u_int32_t u_int64_t \
-	uint8_t uint16_t uint32_t uint64_t])
+AC_CHECK_TYPES([int8_t, int16_t, int32_t, int64_t, 
+	u_int8_t, u_int16_t, u_int32_t, u_int64_t,
+	uint8_t, uint16_t, uint32_t, uint64_t],,,[
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
+#endif
+#ifdef HAVE_BIND_BITYPES_H
+#include <bind/bitypes.h>
+#endif
+#ifdef HAVE_NETINET_IN6_MACHTYPES_H
+#include <netinet/in6_machtypes.h>
+#endif
+])
 
 KRB_CRYPTO
 
