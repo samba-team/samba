@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -44,12 +44,20 @@
 #ifndef T_AFSDB
 #define T_AFSDB		18
 #endif
+#ifndef T_SIG
+#define T_SIG		24
+#endif
+#ifndef T_KEY
+#define T_KEY		25
+#endif
 #ifndef T_SRV
 #define T_SRV		33
 #endif
 #ifndef T_NAPTR
 #define T_NAPTR		35
 #endif
+
+
 
 struct dns_query{
     char *domain;
