@@ -100,7 +100,7 @@ static char **completion_fn(const char *text, int start, int end)
 
 static char* next_command (char** cmdstr)
 {
-	static char  		command[10000];
+	static pstring 		command;
 	char			*p;
 	
 	if (!cmdstr || !(*cmdstr))
@@ -109,7 +109,7 @@ static char* next_command (char** cmdstr)
 	p = strchr_m(*cmdstr, ';');
 	if (p)
 		*p = '\0';
-	strncpy(command, *cmdstr, sizeof(command));
+	pstrcpy(command, *cmdstr);
 	if (p)
 		*cmdstr = p + 1;
 	else
