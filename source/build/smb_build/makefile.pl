@@ -554,7 +554,7 @@ sub _prepare_proto_rules()
 # exist, not necessarily that they are up to date.  Since they're
 # removed by 'make clean' this will always be run when you do anything
 # afterwards.
-proto_exists: \$(builddir)/include/proto.h \$(builddir)/include/build_env.h
+proto_exists: include/proto.h include/build_env.h
 
 delheaders: pch_clean
 	-rm -f \$(builddir)/include/proto.h \$(builddir)/include/build_env.h:
@@ -571,7 +571,7 @@ include/build_env.h:
 # 'make headers' or 'make proto' calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
-headers: delheaders \$(builddir)/include/proto.h \$(builddir)/include/build_env.h
+headers: delheaders proto_exists
 
 proto: idl headers
 
