@@ -113,7 +113,8 @@ static void response_name_reg(struct nmb_name *ans_name,
   }
   else
   {
-    DEBUG(2,("name registration for %s rejected!\n", namestr(ans_name)));
+    DEBUG(2,("name registration for %s rejected by ip %s!\n", 
+              namestr(ans_name), inet_ntoa(p->ip)));
 
 	/* oh dear. we have problems. possibly unbecome a master browser. */
     name_unregister_work(d,name,type);

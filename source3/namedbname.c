@@ -421,6 +421,12 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 
   /* add the name to the WINS list if the name comes from a directed query */
   search |= wins ? FIND_WINS : FIND_LOCAL;
+
+  /* If it's a local search then we need to set the subnet
+     we are looking at. */
+  if(search & FIND_LOCAL)
+    found_subnet = d;
+
   /* search for SELF names only */
   search |= self ? FIND_SELF : 0;
 

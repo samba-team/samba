@@ -210,33 +210,33 @@ void expire_netbios_response_entries(time_t t)
 
     for (n = d->responselist; n; n = nextn)
     {
-	  nextn = n->next;
+      nextn = n->next;
 
       if (n->repeat_time <= t)
-	  {
-		  if (n->repeat_count > 0)
-		  {
-			/* resend the entry */
-  			initiate_netbios_packet(&n->response_id, n->fd, n->quest_type,
-						n->name.name, n->name.name_type,
-				      n->nb_flags, n->bcast, n->recurse, n->send_ip);
+      {
+        if (n->repeat_count > 0)
+        {
+          /* resend the entry */
+          initiate_netbios_packet(&n->response_id, n->fd, n->quest_type,
+                         n->name.name, n->name.name_type,
+                         n->nb_flags, n->bcast, n->recurse, n->send_ip);
 
-            n->repeat_time += n->repeat_interval; /* XXXX ms needed */
-            n->repeat_count--;
+          n->repeat_time += n->repeat_interval; /* XXXX ms needed */
+          n->repeat_count--;
 
-		  }
-		  else
-		  {
-              DEBUG(4,("timeout response %d for %s %s\n",
-						n->response_id, namestr(&n->name),
-                        inet_ntoa(n->send_ip)));
+        }
+        else
+        {
+          DEBUG(4,("timeout response %d for %s %s\n",
+                   n->response_id, namestr(&n->name),
+                   inet_ntoa(n->send_ip)));
 
-			  dead_netbios_entry    (d,n); /* process the non-response */
-              remove_response_record(d,n); /* remove the non-response */
+          dead_netbios_entry(d,n); /* process the non-response */
+          remove_response_record(d,n); /* remove the non-response */
 
-			  continue;
-		   }
-	  }
+          continue;
+        }
+      }
     }
   }
 }
