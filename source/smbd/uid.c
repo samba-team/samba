@@ -204,13 +204,13 @@ static BOOL check_user_ok(int cnum,user_struct *vuser,int snum)
 /****************************************************************************
   become the user of a connection number
 ****************************************************************************/
-BOOL become_user(int cnum, int uid)
+BOOL become_user(int cnum, uint16 vuid)
 {
-  user_struct *vuser;
+  user_struct *vuser = get_valid_user_struct(vuid);
   int snum,gid;
-  int id = uid;
+  int uid;
 
-  if (current_user.cnum == cnum && current_user.id == id) {
+  if (current_user.cnum == cnum && vuser != 0 && current_user.id == vuser->uid) {
     DEBUG(4,("Skipping become_user - already user\n"));
     return(True);
   }
@@ -226,7 +226,7 @@ BOOL become_user(int cnum, int uid)
 
   if (Connections[cnum].force_user || 
       lp_security() == SEC_SHARE ||
-      !(vuser = get_valid_user_struct(uid)) ||
+      !(vuser) || (vuser->guest) ||
       !check_user_ok(cnum,vuser,snum)) {
     uid = Connections[cnum].uid;
     gid = Connections[cnum].gid;
@@ -235,7 +235,7 @@ BOOL become_user(int cnum, int uid)
     current_user.ngroups = Connections[cnum].ngroups;
   } else {
     if (!vuser) {
-      DEBUG(2,("Invalid vuid used %d\n",uid));
+      DEBUG(2,("Invalid vuid used %d\n",vuid));
       return(False);
     }
     uid = vuser->uid;
@@ -266,7 +266,7 @@ BOOL become_user(int cnum, int uid)
     }
 
   current_user.cnum = cnum;
-  current_user.id = id;
+  current_user.id = uid;
   
   DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
 	   getuid(),geteuid(),getgid(),getegid()));
