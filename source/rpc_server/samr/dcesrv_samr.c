@@ -603,6 +603,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct dcesrv_handle *u_handle;
 	int ret;
 	NTSTATUS status;
+	const char *container;
 
 	ZERO_STRUCTP(r->out.acct_handle);
 	*r->out.access_granted = 0;
@@ -628,14 +629,55 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	ZERO_STRUCT(msg);
 
-	/* pull in all the template attributes */
-	ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
-				  "(&(name=TemplateUser)(objectclass=userTemplate))");
-	if (ret != 0) {
-		DEBUG(1,("Failed to load TemplateUser from samdb\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	/* This must be one of these values *only* */
+	if (r->in.acct_flags == ACB_NORMAL) {
+		/* pull in all the template attributes */
+		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
+					  "(&(name=TemplateUser)(objectclass=userTemplate))");
+		if (ret != 0) {
+			DEBUG(1,("Failed to load TemplateUser from samdb\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		container = "Users";
+
+	} else if (r->in.acct_flags == ACB_WSTRUST) {
+		/* pull in all the template attributes */
+		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
+					  "(&(name=TemplateMemberServer)(objectclass=userTemplate))");
+		if (ret != 0) {
+			DEBUG(1,("Failed to load TemplateMemberServer from samdb\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		container = "Computers";
+
+	} else if (r->in.acct_flags == ACB_SVRTRUST) {
+		/* pull in all the template attributes */
+		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
+					  "(&(name=TemplateDomainController)(objectclass=userTemplate))");
+		if (ret != 0) {
+			DEBUG(1,("Failed to load TemplateDomainController from samdb\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		container = "DomainControllers";
+
+	} else if (r->in.acct_flags == ACB_DOMTRUST) {
+		/* pull in all the template attributes */
+		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
+					  "(&(name=TemplateTrustingDomain)(objectclass=userTemplate))");
+		if (ret != 0) {
+			DEBUG(1,("Failed to load TemplateTrustingDomain from samdb\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		container = "ForeignDomains";  /* FIXME: Is this correct?*/
+
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	/* allocate a rid */
 	status = samdb_allocate_next_id(d_state->sam_ctx, mem_ctx, 
 					d_state->domain_dn, "nextRid", &rid);
@@ -650,7 +692,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* add core elements to the ldb_message for the user */
-	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", username, d_state->domain_dn);
+	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,%s", username, container, d_state->domain_dn);
 	if (!msg.dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
@@ -723,7 +765,7 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	/* a simple wrapper around samr_CreateUser2 works nicely */
 	r2.in.handle = r->in.handle;
 	r2.in.username = r->in.username;
-	r2.in.acct_flags = 1234;
+	r2.in.acct_flags = ACB_NORMAL;
 	r2.in.access_mask = r->in.access_mask;
 	r2.out.acct_handle = r->out.acct_handle;
 	r2.out.access_granted = &access_granted;
@@ -914,18 +956,9 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			continue;
 		}
 
-		switch (atype & 0xF0000000) {
-		case ATYPE_ACCOUNT:
-			rtype = SID_NAME_USER;
-			break;
-		case ATYPE_GLOBAL_GROUP:
-			rtype = SID_NAME_DOM_GRP;
-			break;
-		case ATYPE_LOCAL_GROUP:
-			rtype = SID_NAME_ALIAS;
-			break;
-		default:
-			DEBUG(1,("Unknown sAMAccountType 0x%08x\n", atype));
+		rtype = samdb_atype_map(atype);
+		
+		if (rtype == SID_NAME_UNKNOWN) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
@@ -1654,7 +1687,7 @@ static NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	   so the domain password policy can be used */
 	return samdb_set_password(a_state->sam_ctx, mem_ctx,
 				  a_state->account_dn, a_state->domain_state->domain_dn, 
-				  msg, new_pass);
+				  msg, new_pass, False /* This is a password set, not change */);
 }
 
 /* 

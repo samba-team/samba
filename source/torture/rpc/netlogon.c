@@ -27,14 +27,6 @@
 
 #define TEST_MACHINE_NAME "torturetest"
 
-/* for the timebeing, use the same neg flags as Samba3. */
-/* The 7 here seems to be required to get Win2k not to downgrade us
-   to NT4.  Actually, anything other than 1ff would seem to do... */
-#define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
-
-#define NETLOGON_NEG_SCHANNEL    0x40000000
-
-
 static struct {
 	struct dcerpc_pipe *p;
 	const char *machine_password;
@@ -51,6 +43,7 @@ static BOOL join_domain_bdc(TALLOC_CTX *mem_ctx)
 	struct samr_CreateUser2 r;
 	struct samr_OpenDomain o;
 	struct samr_LookupDomain l;
+	struct samr_GetUserPwInfo pwp;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	struct policy_handle handle;
@@ -60,6 +53,7 @@ static BOOL join_domain_bdc(TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	DATA_BLOB session_key;
 	struct samr_Name name;
+	int policy_min_pw_len = 0;
 
 	printf("Connecting to SAMR\n");
 
@@ -128,7 +122,14 @@ again:
 		return False;
 	}
 
-	join.machine_password = generate_random_str(8);
+	pwp.in.handle = &join.acct_handle;
+
+	status = dcerpc_samr_GetUserPwInfo(join.p, mem_ctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info.min_pwd_len;
+	}
+
+	join.machine_password = generate_random_str(mem_ctx, MAX(8, policy_min_pw_len));
 
 	printf("Setting machine account password '%s'\n", join.machine_password);
 
@@ -178,6 +179,8 @@ static BOOL leave_domain_bdc(TALLOC_CTX *mem_ctx)
 {
 	struct samr_DeleteUser d;
 	NTSTATUS status;
+
+	return True;
 
 	d.in.handle = &join.acct_handle;
 	d.out.handle = &join.acct_handle;
@@ -432,15 +435,16 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 	ZERO_STRUCT(samlogon_state->auth2);
 	creds_client_authenticator(&samlogon_state->creds, &samlogon_state->auth);
-	
+
+	r->out.authenticator = NULL;
 	status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (error_string) {
 			*error_string = strdup(nt_errstr(status));
 		}
 	}
-	
-	if (!creds_client_check(&samlogon_state->creds, &r->out.authenticator->cred)) {
+
+	if (!r->out.authenticator || !creds_client_check(&samlogon_state->creds, &r->out.authenticator->cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -1020,12 +1024,13 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = TEST_MACHINE_NAME;
 
-	password = generate_random_str(8);
+	password = generate_random_str(mem_ctx, 8);
 	E_md4hash(password, r.in.new_password.data);
 
 	creds_des_encrypt(&creds, &r.in.new_password);
 
 	printf("Testing ServerPasswordSet on machine account\n");
+	printf("Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(&creds, &r.in.credential);
 
@@ -1035,27 +1040,31 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	join.machine_password = password;
-
 	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
+
+	password = generate_random_str(mem_ctx, 8);
+	E_md4hash(password, r.in.new_password.data);
 
 	/* by changing the machine password twice we test the credentials
 	   chaining fully */
 	printf("Testing a second ServerPasswordSet on machine account\n");
+	printf("Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(&creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet - %s\n", nt_errstr(status));
+		printf("ServerPasswordSet (2) - %s\n", nt_errstr(status));
 		return False;
 	}
 
 	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
+
+	join.machine_password = password;
 
 	return True;
 }
