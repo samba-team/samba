@@ -125,7 +125,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->both_directory_info.alloc_size   = name->dos.alloc_size;
 		file->both_directory_info.attrib       = name->dos.attrib;
 		file->both_directory_info.ea_size      = name->dos.ea_size;
-		file->both_directory_info.short_name.s = pvfs_short_name(pvfs, name);
+		file->both_directory_info.short_name.s = pvfs_short_name(pvfs, file, name);
 		file->both_directory_info.name.s       = fname;
 		return NT_STATUS_OK;
 
@@ -154,7 +154,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->id_both_directory_info.attrib       = name->dos.attrib;
 		file->id_both_directory_info.ea_size      = name->dos.ea_size;
 		file->id_both_directory_info.file_id      = name->dos.file_id;
-		file->id_both_directory_info.short_name.s = pvfs_short_name(pvfs, name);
+		file->id_both_directory_info.short_name.s = pvfs_short_name(pvfs, file, name);
 		file->id_both_directory_info.name.s       = fname;
 		return NT_STATUS_OK;
 
