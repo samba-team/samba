@@ -205,7 +205,7 @@ static BOOL is_mangled_component(const char *name, size_t len)
 {
 	unsigned int i;
 
-	M_DEBUG(10,("is_mangled_component %s ?\n", name));
+	M_DEBUG(10,("is_mangled_component %s (len %u) ?\n", name, (unsigned int)len));
 
 	/* check the length */
 	if (len > 12 || len < 8)
