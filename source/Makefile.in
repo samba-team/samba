@@ -565,13 +565,13 @@ MASKTEST_OBJ = torture/masktest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
                  $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
 
 MSGTEST_OBJ = torture/msgtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
+                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 LOCKTEST_OBJ = torture/locktest.o $(PARAM_OBJ) $(LOCKING_OBJ) $(KRBCLIENT_OBJ) \
-               $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(DUMMYROOT_OBJ)
+               $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(DUMMYROOT_OBJ) $(SECRETS_OBJ)  
 
 NSSTEST_OBJ = torture/nsstest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
+                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
 
@@ -580,7 +580,7 @@ SMBICONV_OBJ = $(PARAM_OBJ) torture/smbiconv.o $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $
 LOG2PCAP_OBJ = utils/log2pcaphex.o
 
 LOCKTEST2_OBJ = torture/locktest2.o $(PARAM_OBJ) $(LOCKING_OBJ) $(LIBSMB_OBJ) \
-		$(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(DUMMYROOT_OBJ)
+		$(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(DUMMYROOT_OBJ) $(SECRETS_OBJ)
 
 SMBCACLS_OBJ = utils/smbcacls.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 			   $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
