@@ -266,7 +266,6 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n)
 {
-	int name_type = question->name_type;
 	char *qname = question->name;
 	struct in_addr dns_ip;
 
