@@ -35,7 +35,7 @@ static BOOL init_ldap_conn(void)
 	if (ldap_conn.initialized)
 		return True;
 
-	ldap_conn.mem_ctx = talloc_init("prldap");
+	ldap_conn.mem_ctx = talloc_init("prldap ldap_conn");
 
 	if (ldap_conn.mem_ctx == NULL) {
 		DEBUG(0, ("out of memory\n"));
@@ -778,15 +778,11 @@ static struct ldap_entry *prepare_printer_entry(const char *name)
 	return entry;
 }
 
-static void prldap_setvalues(struct ldap_entry *entry, NT_PRINTER_DATA *data)
+static void prldap_set_values(struct ldap_entry *entry, NT_PRINTER_DATA *data)
 {
 	int 		i, j;
-	TALLOC_CTX     *mem_ctx;
 
 	if (data == NULL)
-		return;
-
-	if ((mem_ctx = talloc_init("ldap_entry_setvalues")) == NULL)
 		return;
 
 	/* loop over all keys */
@@ -801,31 +797,27 @@ static void prldap_setvalues(struct ldap_entry *entry, NT_PRINTER_DATA *data)
 		/* loop over all values */
 		
 		for ( j=0; j<num_values; j++ ) {
-			char *path;
 			REGISTRY_VALUE	*val;
 			DATA_BLOB ldapval;
 
 			/* pathname should be stored as <key>\<value> */
 			
 			val = regval_ctr_specific_value( val_ctr, j );
-			path = talloc_asprintf(mem_ctx, "%s\\%s",
-					       data->keys[i].name,
-					       regval_name(val));
 
-			ldapval = data_blob_pack_talloc(mem_ctx, "pPdB",
-							val,
-							path,
-							regval_type(val),
-							regval_size(val),
-							regval_data_p(val) );
+			ldapval = data_blob_pack("PPdB",
+						 data->keys[i].name,
+						 regval_name(val),
+						 regval_type(val),
+						 regval_size(val),
+						 regval_data_p(val) );
 
 			ldap_entry_bin(entry, "sambaPrintData",
 				       ldapval.data, ldapval.length);
+
+			data_blob_free(&ldapval);
 		}
 	
 	}
-
-	talloc_destroy(mem_ctx);
 }
 
 BOOL prldap_set_printer(NT_PRINTER_INFO_LEVEL_2 *printer)
@@ -872,7 +864,7 @@ BOOL prldap_set_printer(NT_PRINTER_INFO_LEVEL_2 *printer)
 	ldap_entry_bin(entry, "sambaPrintDevMode", buf, len);
 	SAFE_FREE(buf);
 
-	prldap_setvalues(entry, &printer->data);
+	prldap_set_values(entry, &printer->data);
 
 	rc = ldap_entry_set(ldap_conn.smbldap_state, entry);
 
@@ -892,6 +884,69 @@ BOOL prldap_set_printer(NT_PRINTER_INFO_LEVEL_2 *printer)
 	return (rc == LDAP_SUCCESS);
 }
 
+static void prldap_get_values(struct ldap_entry *entry, NT_PRINTER_DATA *data)
+{
+	int i;
+	struct ldap_attribute *attrib;
+
+	if (data == NULL)
+		return;
+
+	attrib = ldap_entry_find_attrib(entry, "sambaPrintData");
+
+	if (attrib == NULL)
+		return;
+
+	/* add the "PrinterDriverData" key first for performance reasons */
+	
+	add_new_printer_key( data, SPOOL_PRINTERDATA_KEY );
+
+	for (i=0; i<attrib->num_values; i++) {
+
+		fstring keyname, valuename;
+		uint32 type;
+		int size, key_index;
+		uint8 *data_p = NULL;
+		size_t len;
+	
+		/* unpack the next regval */
+		
+		len = tdb_unpack(attrib->values[i].data,
+				 attrib->values[i].length,
+				 "ffdB", keyname, valuename, &type,
+				 &size, &data_p);
+
+		if (len != attrib->values[i].length) {
+			DEBUG(1, ("Could not parse printer data\n"));
+			SAFE_FREE(data_p);
+			continue;
+		}
+
+		/* see if we need a new key */
+
+		if ((key_index=lookup_printerkey(data, keyname)) == -1)
+			key_index = add_new_printer_key(data, keyname);
+			
+		if ( key_index == -1 ) {
+			DEBUG(0,("unpack_values: Failed to allocate a new key "
+				 "[%s]!\n", keyname));
+			break;
+		}
+		
+		/* add the new value */
+		
+		regval_ctr_addvalue( &data->keys[key_index].values,
+				     valuename, type, (const char *)data_p,
+				     size );
+
+		SAFE_FREE(data_p); /* 'B' option to tdbpack does a malloc() */
+
+		DEBUG(8,("specific: [%s:%s], len: %d\n", keyname,
+			 valuename, size));
+	}
+}
+			      
+
 NT_PRINTER_INFO_LEVEL_2 *prldap_get_printer(const char *sharename)
 {
 	struct ldap_entry *entry;
@@ -905,6 +960,8 @@ NT_PRINTER_INFO_LEVEL_2 *prldap_get_printer(const char *sharename)
 
 	if (printer == NULL)
 		return NULL;
+
+	ZERO_STRUCTP(printer);
 
 	if ((entry = prepare_printer_entry(sharename)) == NULL) {
 		free(printer);
@@ -946,8 +1003,9 @@ NT_PRINTER_INFO_LEVEL_2 *prldap_get_printer(const char *sharename)
 	value = ldap_fetch_bin(entry, "sambaPrintDevMode");
 	unpack_devicemode(&printer->devmode, value.data, value.length);
 
-	value = ldap_fetch_bin(entry, "sambaPrintData");
-	unpack_values(&printer->data, value.data, value.length);
+	prldap_get_values(entry, &printer->data);
+
+	talloc_destroy(entry->mem_ctx);
 
 	return printer;
 }
