@@ -618,72 +618,17 @@ static void api_samr_lookup_rids( rpcsrv_struct *p, prs_struct *data, prs_struct
 
 
 /*******************************************************************
- samr_reply_open_user
- ********************************************************************/
-static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
-				prs_struct *rdata,
-				int status)
-{
-	SAMR_R_OPEN_USER r_u;
-	struct sam_passwd *sam_pass;
-	BOOL pol_open = False;
-
-	/* set up the SAMR open_user response */
-	bzero(r_u.user_pol.data, POL_HND_SIZE);
-
-	r_u.status = 0x0;
-
-	/* find the policy handle.  open a policy on it. */
-	if (r_u.status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->domain_pol)) == -1))
-	{
-		r_u.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), &(r_u.user_pol))))
-	{
-		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	become_root(True);
-	sam_pass = getsam21pwrid(q_u->user_rid);
-	unbecome_root(True);
-
-	/* check that the RID exists in our domain. */
-	if (r_u.status == 0x0 && sam_pass == NULL)
-	{
-		r_u.status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
-	}
-
-	/* associate the RID with the (unique) handle. */
-	if (r_u.status == 0x0 && !set_policy_samr_rid(get_global_hnd_cache(), &(r_u.user_pol), q_u->user_rid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (r_u.status != 0 && pol_open)
-	{
-		close_policy_hnd(get_global_hnd_cache(), &(r_u.user_pol));
-	}
-
-	DEBUG(5,("samr_open_user: %d\n", __LINE__));
-
-	/* store the response in the SMB stream */
-	samr_io_r_open_user("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_open_user: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
  api_samr_open_user
  ********************************************************************/
 static void api_samr_open_user( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_OPEN_USER q_u;
+	SAMR_R_OPEN_USER r_u;
 	samr_io_q_open_user("", &q_u, data, 0);
-	samr_reply_open_user(&q_u, rdata, 0x0);
+	r_u.status = _samr_open_user(&q_u.domain_pol,
+	                                   q_u.unknown_0, q_u.user_rid,
+	                                  &r_u.user_pol);
+	samr_io_r_open_user("", &r_u, rdata, 0);
 }
 
 

@@ -4310,9 +4310,9 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
 					uint32 *num_names,
 					UNIHDR **hdr_name, UNISTR2** uni_name,
 					uint32 **types);
-uint32 _samr_open_user(SAMR_Q_OPEN_USER *q_u,
-				prs_struct *rdata,
-				int status);
+uint32 _samr_open_user(const POLICY_HND *domain_pol,
+					uint32 unk_0, uint32 rid, 
+					POLICY_HND *user_pol);
 uint32 _samr_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				prs_struct *rdata);
 uint32 _samr_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,

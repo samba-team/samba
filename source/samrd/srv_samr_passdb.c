@@ -17,9 +17,6 @@
 					uint32 *num_sam_users);
 	BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 					POLICY_HND *connect_pol);
-	BOOL samr_open_user(  const POLICY_HND *pol,
-					uint32 unk_0, uint32 rid, 
-					POLICY_HND *user_pol);
 	BOOL samr_open_alias(  const POLICY_HND *domain_pol,
 					uint32 flags, uint32 rid,
 					POLICY_HND *alias_pol);
@@ -1636,32 +1633,29 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
 	return status;
 }
 
-#if 0
-
 /*******************************************************************
  samr_reply_open_user
  ********************************************************************/
-uint32 _samr_open_user(SAMR_Q_OPEN_USER *q_u,
-				prs_struct *rdata,
-				int status)
+uint32 _samr_open_user(const POLICY_HND *domain_pol,
+					uint32 unk_0, uint32 user_rid, 
+					POLICY_HND *user_pol)
 {
-	SAMR_R_OPEN_USER r_u;
 	struct sam_passwd *sam_pass;
 	BOOL pol_open = False;
 
-	/* set up the SAMR open_user response */
-	bzero(user_pol.data, POL_HND_SIZE);
+	uint32 status = 0x0;
 
-	status = 0x0;
+	/* set up the SAMR open_user response */
+	bzero(user_pol->data, POL_HND_SIZE);
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(domain_pol)) == -1))
+	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), &(user_pol))))
+	if (status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), user_pol)))
 	{
 		status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -1677,7 +1671,7 @@ uint32 _samr_open_user(SAMR_Q_OPEN_USER *q_u,
 	}
 
 	/* associate the RID with the (unique) handle. */
-	if (status == 0x0 && !set_policy_samr_rid(get_global_hnd_cache(), &(user_pol), user_rid))
+	if (status == 0x0 && !set_policy_samr_rid(get_global_hnd_cache(), user_pol, user_rid))
 	{
 		/* oh, whoops.  don't know what error message to return, here */
 		status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -1685,17 +1679,15 @@ uint32 _samr_open_user(SAMR_Q_OPEN_USER *q_u,
 
 	if (status != 0 && pol_open)
 	{
-		close_policy_hnd(get_global_hnd_cache(), &(user_pol));
+		close_policy_hnd(get_global_hnd_cache(), user_pol);
 	}
 
 	DEBUG(5,("samr_open_user: %d\n", __LINE__));
 
-	/* store the response in the SMB stream */
-	samr_io_r_open_user("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_open_user: %d\n", __LINE__));
-
+	return status;
 }
+
+#if 0
 
 
 /*************************************************************************
