@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "lib/registry/common/registry.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
@@ -29,10 +28,12 @@ static struct reg_init_function_entry *backends = NULL;
 
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name);
 
+#define reg_make_path(mem_ctx, parent, name) (((parent)->hive->root == (parent))?talloc_strdup(mem_ctx, name):talloc_asprintf(mem_ctx, "%s\\%s", parent->path, name))
+
 /* Register new backend */
 NTSTATUS registry_register(const void *_function)  
 {
-	const struct registry_ops *functions = _function;
+	const struct registry_operations *functions = _function;
 	struct reg_init_function_entry *entry = backends;
 
 	if (!functions || !functions->name) {
@@ -91,13 +92,21 @@ BOOL reg_has_backend(const char *backend)
 	return reg_find_backend_entry(backend) != NULL?True:False;
 }
 
-/* Open a registry file/host/etc */
-WERROR reg_open(const char *backend, const char *location, const char *credentials, REG_HANDLE **h)
+WERROR reg_create(struct registry_context **_ret)
+{
+	TALLOC_CTX *mem_ctx;
+	struct registry_context *ret;
+	mem_ctx = talloc_init("registry handle");
+	ret = talloc(mem_ctx, sizeof(struct registry_context));
+	ret->mem_ctx = mem_ctx;
+	ZERO_STRUCTP(ret);	
+	*_ret = ret;
+	return WERR_OK;
+}
+
+WERROR reg_list_available_hives(TALLOC_CTX *mem_ctx, const char *backend, const char *location, const char *credentials, char ***hives)
 {
 	struct reg_init_function_entry *entry;
-	TALLOC_CTX *mem_ctx;
-	REG_HANDLE *ret;
-	WERROR werr;
 	
 	entry = reg_find_backend_entry(backend);
 	
@@ -105,76 +114,135 @@ WERROR reg_open(const char *backend, const char *location, const char *credentia
 		DEBUG(0, ("No such registry backend '%s' loaded!\n", backend));
 		return WERR_GENERAL_FAILURE;
 	}
+
+	if(!entry->functions->list_available_hives) {
+		return WERR_NOT_SUPPORTED;
+	}
+
+	return entry->functions->list_available_hives(mem_ctx, location, credentials, hives);
+}
+
+WERROR reg_open(struct registry_context **ret, const char *backend, const char *location, const char *credentials)
+{
+	WERROR error = reg_create(ret);
+	char **hives;
+	int i;
+	TALLOC_CTX *mem_ctx = talloc_init("reg_open");
+
+	if(!W_ERROR_IS_OK(error)) return error;
+
+	error = reg_list_available_hives(mem_ctx, backend, location, credentials, &hives);
+
+	if(W_ERROR_EQUAL(error, WERR_NOT_SUPPORTED)) {
+		return reg_import_hive(*ret, backend, location, credentials, NULL);
+	}
+	   
+	if(!W_ERROR_IS_OK(error)) return error;
+
+	for(i = 0; hives[i]; i++)
+	{
+		error = reg_import_hive(*ret, backend, location, credentials, hives[i]);
+		if(!W_ERROR_IS_OK(error)) return error;
+		(*ret)->hives[i]->name = talloc_strdup((*ret)->mem_ctx, hives[i]);
+	}
+
+	return WERR_OK;
+}
+
+/* Open a registry file/host/etc */
+WERROR reg_import_hive(struct registry_context *h, const char *backend, const char *location, const char *credentials, const char *hivename)
+{
+	struct registry_hive *ret;
+	TALLOC_CTX *mem_ctx;
+	struct reg_init_function_entry *entry;
+	WERROR werr;
+
+	entry = reg_find_backend_entry(backend);
 	
-	mem_ctx = talloc_init(backend);
-	ret = talloc(mem_ctx, sizeof(REG_HANDLE));
-	ZERO_STRUCTP(ret);	
+	if (!entry) {
+		DEBUG(0, ("No such registry backend '%s' loaded!\n", backend));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if(!entry->functions->open_hive) {
+		return WERR_NOT_SUPPORTED;
+	}
+	
+	
+	mem_ctx = h->mem_ctx;
+	ret = talloc_p(mem_ctx, struct registry_hive);
 	ret->location = location?talloc_strdup(mem_ctx, location):NULL;
+	ret->backend_hivename = hivename?talloc_strdup(mem_ctx, hivename):NULL;
 	ret->credentials = credentials?talloc_strdup(mem_ctx, credentials):NULL;
 	ret->functions = entry->functions;
 	ret->backend_data = NULL;
-	ret->mem_ctx = mem_ctx;
-	*h = ret;
+	ret->reg_ctx = h;
 
-	if(!entry->functions->open_registry) {
-		return WERR_OK;
-	}
+	werr = entry->functions->open_hive(mem_ctx, ret, &ret->root);
+
+	if(!W_ERROR_IS_OK(werr)) return werr;
 	
-	werr = entry->functions->open_registry(ret, location, credentials);
+	if(!ret->root) return WERR_GENERAL_FAILURE;
 
-	if(W_ERROR_IS_OK(werr)) 
-		return WERR_OK;
+	ret->root->hive = ret;
+	ret->root->name = NULL;
+	ret->root->path = "";
 
-	talloc_destroy(mem_ctx);
-	return werr;
+	/* Add hive to context */
+	h->num_hives++;
+	h->hives = talloc_realloc_p(h->hives, struct registry_hive *, h->num_hives);
+	h->hives[h->num_hives-1] = ret;
+
+	return WERR_OK;
 }
 
 /* Open a key by name (including the hive name!) */
-WERROR reg_open_key_abs(REG_HANDLE *handle, const char *name, REG_KEY **result)
+WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, const char *name, struct registry_key **result)
 {
-	REG_KEY *hive;
+	struct registry_key *hive;
 	WERROR error;
-	int i, hivelength;
+	int hivelength;
+	char *hivename;
 
 	if(strchr(name, '\\')) hivelength = strchr(name, '\\')-name;
 	else hivelength = strlen(name);
 
-	for(i = 0; W_ERROR_IS_OK(error); i++) {
-		error = reg_get_hive(handle, i, &hive);
-		if(W_ERROR_IS_OK(error) && !strncmp(reg_key_name(hive), name, hivelength)) {
-			return reg_open_key(hive, name, result);
-		}
+	hivename = strndup(name, hivelength);
+	error = reg_get_hive(handle, hivename, &hive);
+	SAFE_FREE(hivename);
+
+	if(!W_ERROR_IS_OK(error)) {
+		return error;
 	}
 
-	return error;
+	return reg_open_key(mem_ctx, hive, name, result);
 }
 
 /* Open a key 
  * First tries to use the open_key function from the backend
  * then falls back to get_subkey_by_name and later get_subkey_by_index 
  */
-WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
+WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, struct registry_key **result)
 {
 	char *fullname;
 	WERROR error;
-	TALLOC_CTX *mem_ctx;
 
 	if(!parent) {
 		DEBUG(0, ("Invalid parent key specified"));
 		return WERR_INVALID_PARAM;
 	}
 
-	if(!parent->handle->functions->open_key && 
-	   (parent->handle->functions->get_subkey_by_name || 
-	   parent->handle->functions->get_subkey_by_index)) {
+	if(!parent->hive->functions->open_key && 
+	   (parent->hive->functions->get_subkey_by_name || 
+	   parent->hive->functions->get_subkey_by_index)) {
 		char *orig = strdup(name), 
 			 *curbegin = orig, 
 			 *curend = strchr(orig, '\\');
-		REG_KEY *curkey = parent;
+		struct registry_key *curkey = parent;
 
 		while(curbegin && *curbegin) {
 			if(curend)*curend = '\0';
-			error = reg_key_get_subkey_by_name(curkey, curbegin, result);
+			error = reg_key_get_subkey_by_name(mem_ctx, curkey, curbegin, &curkey);
 			if(!W_ERROR_IS_OK(error)) {
 				SAFE_FREE(orig);
 				return error;
@@ -184,94 +252,63 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 			curend = strchr(curbegin, '\\');
 		}
 		SAFE_FREE(orig);
-		
+
 		*result = curkey;
+		
 		return WERR_OK;
 	}
 
-	if(!parent->handle->functions->open_key) {
+	if(!parent->hive->functions->open_key) {
 		DEBUG(0, ("Registry backend doesn't have get_subkey_by_name nor open_key!\n"));
 		return WERR_NOT_SUPPORTED;
 	}
 
-	mem_ctx = talloc_init("mem_ctx");
+	fullname = reg_make_path(mem_ctx, parent, name);
 
-	fullname = talloc_asprintf(mem_ctx, "%s%s%s", 
-						reg_key_get_path(parent), 
-						strlen(reg_key_get_path(parent))?"\\":"", 
-						name);
+	error = parent->hive->functions->open_key(mem_ctx, parent->hive, fullname, result);
 
-	error = parent->handle->functions->open_key(parent->handle, 
-												parent->hive, fullname, result);
-
-	if(!W_ERROR_IS_OK(error)) {
-		talloc_destroy(mem_ctx);
-		return error;
-	}
+	if(!W_ERROR_IS_OK(error)) return error;
 		
-	(*result)->handle = parent->handle;
-	(*result)->path = talloc_asprintf((*result)->mem_ctx, "%s\\%s", 
-								 reg_key_get_path_abs(parent), (*result)->name);
 	(*result)->hive = parent->hive;
-	talloc_steal((*result)->mem_ctx, fullname);
-
-	talloc_destroy(mem_ctx);
+	(*result)->path = fullname;
+	(*result)->hive = parent->hive;
 
 	return WERR_OK;
 }
 
-WERROR reg_key_get_value_by_index(REG_KEY *key, int idx, REG_VAL **val)
+WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key, int idx, struct registry_value **val)
 {
 	if(!key) return WERR_INVALID_PARAM;
 
-	if(key->handle->functions->get_value_by_index) {
-		WERROR status = key->handle->functions->get_value_by_index(key, idx, val);
+	if(key->hive->functions->get_value_by_index) {
+		WERROR status = key->hive->functions->get_value_by_index(mem_ctx, key, idx, val);
 		if(!W_ERROR_IS_OK(status)) 
 			return status;
-
-	} else if(key->handle->functions->fetch_values) {
-		if(!key->cache_values)
-			key->handle->functions->fetch_values(key, 
-								&key->cache_values_count, &key->cache_values);
-		
-		if(idx < key->cache_values_count && idx >= 0) {
-			*val = reg_val_dup(key->cache_values[idx]);
-		} else {
-			return WERR_NO_MORE_ITEMS;
-		}
 	} else {
 		return WERR_NOT_SUPPORTED;
 	}
 	
 	(*val)->parent = key;
-	(*val)->handle = key->handle;
+	(*val)->hive = key->hive;
 	return WERR_OK;
 }
 
-WERROR reg_key_num_subkeys(REG_KEY *key, int *count)
+WERROR reg_key_num_subkeys(struct registry_key *key, int *count)
 {
 	if(!key) return WERR_INVALID_PARAM;
 	
-	if(key->handle->functions->num_subkeys) {
-		return key->handle->functions->num_subkeys(key, count);
+	if(key->hive->functions->num_subkeys) {
+		return key->hive->functions->num_subkeys(key, count);
 	}
 
-	if(key->handle->functions->fetch_subkeys) {
-		if(!key->cache_subkeys) 
-			key->handle->functions->fetch_subkeys(key, 
-							&key->cache_subkeys_count, &key->cache_subkeys);
-
-		*count = key->cache_subkeys_count;
-		return WERR_OK;
-	}
-
-	if(key->handle->functions->get_subkey_by_index) {
+	if(key->hive->functions->get_subkey_by_index) {
 		int i;
 		WERROR error;
-		REG_KEY *dest;
-		for(i = 0; W_ERROR_IS_OK(error = key->handle->functions->get_subkey_by_index(key, i, &dest)); i++) {
-			reg_key_free(dest);
-		}
+		struct registry_key *dest;
+		TALLOC_CTX *mem_ctx = talloc_init("num_subkeys");
+		
+		for(i = 0; W_ERROR_IS_OK(error = key->hive->functions->get_subkey_by_index(mem_ctx, key, i, &dest)); i++);
+		talloc_destroy(mem_ctx);
 
 		*count = i;
 		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) return WERR_OK;
@@ -281,74 +318,49 @@ WERROR reg_key_num_subkeys(REG_KEY *key, int *count)
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR reg_key_num_values(REG_KEY *key, int *count)
+WERROR reg_key_num_values(struct registry_key *key, int *count)
 {
 	
 	if(!key) return WERR_INVALID_PARAM;
 	
-	if(!key->handle->functions->num_values) {
-		if(!key->handle->functions->fetch_values) {
-			DEBUG(1, ("Backend '%s' doesn't support enumerating values\n", key->handle->functions->name));
-			return WERR_NOT_SUPPORTED;
-		}
-		
-		if(!key->cache_values) 
-			key->handle->functions->fetch_values(key, &key->cache_values_count, &key->cache_values);
-
-		*count = key->cache_values_count;
-		return WERR_OK;
-	}
-
-	
-	return key->handle->functions->num_values(key, count);
+	return key->hive->functions->num_values(key, count);
 }
 
-WERROR reg_key_get_subkey_by_index(REG_KEY *key, int idx, REG_KEY **subkey)
+WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key, int idx, struct registry_key **subkey)
 {
 	if(!key) return WERR_INVALID_PARAM;
 
-	if(key->handle->functions->get_subkey_by_index) {
-		WERROR status = key->handle->functions->get_subkey_by_index(key, idx, subkey);
+	if(key->hive->functions->get_subkey_by_index) {
+		WERROR status = key->hive->functions->get_subkey_by_index(mem_ctx, key, idx, subkey);
 		if(!NT_STATUS_IS_OK(status)) return status;
-	} else if(key->handle->functions->fetch_subkeys) {
-		if(!key->cache_subkeys) 
-			key->handle->functions->fetch_subkeys(key, 
-								&key->cache_subkeys_count, &key->cache_subkeys);
-
-		if(idx < key->cache_subkeys_count) {
-			*subkey = reg_key_dup(key->cache_subkeys[idx]);
-		} else {
-			return WERR_NO_MORE_ITEMS;
-		}
 	} else {
 		return WERR_NOT_SUPPORTED;
 	}
 
-	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s\\%s", 
-									reg_key_get_path_abs(key), (*subkey)->name);
-	(*subkey)->handle = key->handle;
+	if(key->hive->root == key) 
+		(*subkey)->path = talloc_strdup(mem_ctx, (*subkey)->name);
+	else 
+		(*subkey)->path = talloc_asprintf(mem_ctx, "%s\\%s", key->path, (*subkey)->name);
+
 	(*subkey)->hive = key->hive;
-
-
 	return WERR_OK;;
 }
 
-WERROR reg_key_get_subkey_by_name(REG_KEY *key, const char *name, REG_KEY **subkey)
+WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key, const char *name, struct registry_key **subkey)
 {
 	int i;
 	WERROR error = WERR_OK;
 
 	if(!key) return WERR_INVALID_PARAM;
 
-	if(key->handle->functions->get_subkey_by_name) {
-		error = key->handle->functions->get_subkey_by_name(key,name,subkey);
-	} else if(key->handle->functions->get_subkey_by_index || key->handle->functions->fetch_subkeys) {
+	if(key->hive->functions->get_subkey_by_name) {
+		error = key->hive->functions->get_subkey_by_name(mem_ctx, key,name,subkey);
+	} else if(key->hive->functions->get_subkey_by_index) {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
-			error = reg_key_get_subkey_by_index(key, i, subkey);
+			error = reg_key_get_subkey_by_index(mem_ctx, key, i, subkey);
 			if(W_ERROR_IS_OK(error) && !strcmp((*subkey)->name, name)) {
 				return error;
 			}
-			reg_key_free(*subkey);
 		}
 	} else {
 		return WERR_NOT_SUPPORTED;
@@ -356,29 +368,27 @@ WERROR reg_key_get_subkey_by_name(REG_KEY *key, const char *name, REG_KEY **subk
 
 	if(!W_ERROR_IS_OK(error)) return error;
 
-	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s\\%s", reg_key_get_path_abs(key), (*subkey)->name);
-	(*subkey)->handle = key->handle;
+	(*subkey)->path = talloc_asprintf(mem_ctx, "%s\\%s", key->path, (*subkey)->name);
 	(*subkey)->hive = key->hive;
 
 	return WERR_OK; 
 }
 
-WERROR reg_key_get_value_by_name(REG_KEY *key, const char *name, REG_VAL **val)
+WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key, const char *name, struct registry_value **val)
 {
 	int i;
 	WERROR error = WERR_OK;
 
 	if(!key) return WERR_INVALID_PARAM;
 
-	if(key->handle->functions->get_value_by_name) {
-		error = key->handle->functions->get_value_by_name(key,name, val);
+	if(key->hive->functions->get_value_by_name) {
+		error = key->hive->functions->get_value_by_name(mem_ctx, key,name, val);
 	} else {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
-			error = reg_key_get_value_by_index(key, i, val);
+			error = reg_key_get_value_by_index(mem_ctx, key, i, val);
 			if(W_ERROR_IS_OK(error) && StrCaseCmp((*val)->name, name)) {
 				break;
 			}
-			reg_val_free(*val);
 		}
 	}
 
@@ -386,52 +396,49 @@ WERROR reg_key_get_value_by_name(REG_KEY *key, const char *name, REG_VAL **val)
 		return error;
 	
 	(*val)->parent = key;
-	(*val)->handle = key->handle;
+	(*val)->hive = key->hive;
 	
 	return WERR_OK;
 }
 
-WERROR reg_key_del(REG_KEY *key)
+WERROR reg_key_del(struct registry_key *key)
 {
 	WERROR error;
 	if(!key) return WERR_INVALID_PARAM;
 	
 	
-	if(!key->handle->functions->del_key)
+	if(!key->hive->functions->del_key)
 		return WERR_NOT_SUPPORTED;
 	
-	error = key->handle->functions->del_key(key);
+	error = key->hive->functions->del_key(key);
 	if(!W_ERROR_IS_OK(error)) return error;
 
-	/* Invalidate cache */
-	key->cache_subkeys = NULL;
-	key->cache_subkeys_count = 0;
 	return WERR_OK;
 }
 
-WERROR reg_sync(REG_KEY *h, const char *location)
-{
-	if(!h->handle->functions->sync_key)
-		return WERR_OK;
-
-	return h->handle->functions->sync_key(h, location);
-}
-
-WERROR reg_key_del_recursive(REG_KEY *key)
+WERROR reg_key_del_recursive(struct registry_key *key)
 {
 	WERROR error = WERR_OK;
 	int i;
+
+	TALLOC_CTX *mem_ctx = talloc_init("del_recursive");
 	
 	/* Delete all values for specified key */
 	for(i = 0; W_ERROR_IS_OK(error); i++) {
-		REG_VAL *val;
-		error = reg_key_get_value_by_index(key, i, &val);
+		struct registry_value *val;
+		error = reg_key_get_value_by_index(mem_ctx, key, i, &val);
 		if(!W_ERROR_IS_OK(error) && !W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) 
+		{
+			talloc_destroy(mem_ctx);			
 			return error;
+		}
 
 		if(W_ERROR_IS_OK(error)) {
-			error = reg_val_del(val);
-			if(!W_ERROR_IS_OK(error)) return error;
+			error = reg_del_value(val);
+			if(!W_ERROR_IS_OK(error)) {
+				talloc_destroy(mem_ctx);
+				return error;
+			}
 		}
 	}
 
@@ -439,204 +446,150 @@ WERROR reg_key_del_recursive(REG_KEY *key)
 
 	/* Delete all keys below this one */
 	for(i = 0; W_ERROR_IS_OK(error); i++) {
-		REG_KEY *subkey;
+		struct registry_key *subkey;
 
-		error = reg_key_get_subkey_by_index(key, i, &subkey);
-		if(!W_ERROR_IS_OK(error)) return error;
+		error = reg_key_get_subkey_by_index(mem_ctx, key, i, &subkey);
+		if(!W_ERROR_IS_OK(error)) { talloc_destroy(mem_ctx); return error; }
 
 		error = reg_key_del_recursive(subkey);
-		if(!W_ERROR_IS_OK(error)) return error;
+		if(!W_ERROR_IS_OK(error)) { talloc_destroy(mem_ctx); return error; }
 	}
 
+	talloc_destroy(mem_ctx);
 	return reg_key_del(key);
 }
 
-WERROR reg_val_del(REG_VAL *val)
+WERROR reg_key_add_name_recursive_abs(struct registry_context *handle, const char *name)
 {
+	struct registry_key *hive;
 	WERROR error;
-	if (!val) return WERR_INVALID_PARAM;
-
-	if (!val->handle->functions->del_value) {
-		DEBUG(1, ("Backend '%s' doesn't support method del_value\n", val->handle->functions->name));
-		return WERR_NOT_SUPPORTED;
-	}
-	
-	error = val->handle->functions->del_value(val);
-
-	if(!W_ERROR_IS_OK(error)) return error;
-
-	val->parent->cache_values = NULL;
-	val->parent->cache_values_count = 0;
-
-	return WERR_OK;
-}
-
-WERROR reg_key_add_name_recursive_abs(REG_HANDLE *handle, const char *name)
-{
-	REG_KEY *hive;
-	WERROR error;
-	int i, hivelength;
+	int hivelength;
+	char *hivename;
 
 	if(strchr(name, '\\')) hivelength = strchr(name, '\\')-name;
 	else hivelength = strlen(name);
 
-	for(i = 0; W_ERROR_IS_OK(error); i++) {
-		error = reg_get_hive(handle, i, &hive);
-		if(W_ERROR_IS_OK(error) && !strncmp(reg_key_name(hive), name, hivelength)) {
-			return reg_key_add_name_recursive(hive, name);
-		}
-	}
+	hivename = strndup(name, hivelength);
+	error = reg_get_hive(handle, hivename, &hive);
+	SAFE_FREE(hivename);
 
-	return error;
+	if(!W_ERROR_IS_OK(error)) return error;
+
+	return reg_key_add_name_recursive(hive, name);
 }
 
-WERROR reg_key_add_name_recursive(REG_KEY *parent, const char *path)
+WERROR reg_key_add_name_recursive(struct registry_key *parent, const char *path)
 {
-	REG_KEY *cur, *prevcur = parent;
-	WERROR error;
-	/* FIXME: we should never write to a 'const char *' !!! --metze */
-	char *begin = (char *)path, *end;
+	struct registry_key *cur, *prevcur = parent;
+	WERROR error = WERR_OK;
+	char *dup, *begin, *end;
+	TALLOC_CTX *mem_ctx = talloc_init("add_recursive");
+
+	begin = dup = strdup(path);
 
 	while(1) { 
 		end = strchr(begin, '\\');
 		if(end) *end = '\0';
 		
-		error = reg_key_get_subkey_by_name(prevcur, begin, &cur);
+		error = reg_key_get_subkey_by_name(mem_ctx, prevcur, begin, &cur);
 
 		/* Key is not there, add it */
 		if(W_ERROR_EQUAL(error, WERR_DEST_NOT_FOUND)) {
-			error = reg_key_add_name(prevcur, begin, 0, NULL, &cur);
-			if(!W_ERROR_IS_OK(error)) return error;
+			error = reg_key_add_name(mem_ctx, prevcur, begin, 0, NULL, &cur);
+			if(!W_ERROR_IS_OK(error)) break;
 		}
 
 		if(!W_ERROR_IS_OK(error)) {
 			if(end) *end = '\\';
-			return error;
+			break;
 		}
 		
-		if(!end) break;
+		if(!end) { 
+			error = WERR_OK; 
+			break; 
+		}
+
 		*end = '\\';
 		begin = end+1;
 		prevcur = cur;
 	}
-	return WERR_OK;
+	SAFE_FREE(dup);
+	talloc_destroy(mem_ctx);
+	return error;
 }
 
-WERROR reg_key_add_name(REG_KEY *parent, const char *name, uint32_t access_mask, SEC_DESC *desc, REG_KEY **newkey)
+WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, SEC_DESC *desc, struct registry_key **newkey)
 {
 	WERROR error;
 	
 	if (!parent) return WERR_INVALID_PARAM;
 	
-	if (!parent->handle->functions->add_key) {
-		DEBUG(1, ("Backend '%s' doesn't support method add_key\n", parent->handle->functions->name));
+	if (!parent->hive->functions->add_key) {
+		DEBUG(1, ("Backend '%s' doesn't support method add_key\n", parent->hive->functions->name));
 		return WERR_NOT_SUPPORTED;
 	}
 
-	error = parent->handle->functions->add_key(parent, name, access_mask, desc, newkey);
+	error = parent->hive->functions->add_key(mem_ctx, parent, name, access_mask, desc, newkey);
 
 	if(!W_ERROR_IS_OK(error)) return error;
 	
-	(*newkey)->handle = parent->handle;
-	(*newkey)->backend_data = talloc_asprintf((*newkey)->mem_ctx, "%s\\%s", reg_key_get_path(parent), name);
+	(*newkey)->hive = parent->hive;
+	(*newkey)->backend_data = talloc_asprintf(mem_ctx, "%s\\%s", parent->path, name);
 
-	parent->cache_subkeys = NULL;
-	parent->cache_subkeys_count = 0;
 	return WERR_OK;
 }
 
-WERROR reg_val_update(REG_VAL *val, int type, void *data, int len)
+WERROR reg_val_set(struct registry_key *key, const char *value, int type, void *data, int len)
 {
-	WERROR error;
-	
-	/* A 'real' update function has preference */
-	if (val->handle->functions->update_value) 
-		return val->handle->functions->update_value(val, type, data, len);
+	/* A 'real' set function has preference */
+	if (key->hive->functions->set_value) 
+		return key->hive->functions->set_value(key, value, type, data, len);
 
-	/* Otherwise, just remove and add again */
-	if (val->handle->functions->add_value && 
-		val->handle->functions->del_value) {
-		REG_VAL *new;
-		if(!W_ERROR_IS_OK(error = val->handle->functions->del_value(val))) 
-			return error;
-		
-		error = val->handle->functions->add_value(val->parent, val->name, type, data, len);
-		if(!W_ERROR_IS_OK(error)) return error;
-		memcpy(val, new, sizeof(REG_VAL));
-		val->parent->cache_values = NULL;
-		val->parent->cache_values_count = 0;
-		return WERR_OK;
-	}
-		
-	DEBUG(1, ("Backend '%s' doesn't support method update_value\n", val->handle->functions->name));
+	DEBUG(1, ("Backend '%s' doesn't support method set_value\n", key->hive->functions->name));
 	return WERR_NOT_SUPPORTED;
 }
 
-void reg_free(REG_HANDLE *h)
+WERROR reg_get_hive(struct registry_context *h, const char *name, struct registry_key **key) 
 {
-	if(!h->functions->close_registry) return;
-
-	h->functions->close_registry(h);
-}
-
-WERROR reg_get_hive(REG_HANDLE *h, int hivenum, REG_KEY **key) 
-{
-	WERROR ret;
-	
-	if(h->functions->get_hive) {
-		ret = h->functions->get_hive(h, hivenum, key);
-	} else if(h->functions->open_key) {
-		if(hivenum == 0) ret = h->functions->open_key(h, hivenum, "", key);
-		else ret = WERR_NO_MORE_ITEMS;
-	} else {
-		DEBUG(0, ("Backend '%s' has neither open_root_key nor open_key or get_hive method implemented\n", h->functions->name));
-		ret = WERR_NOT_SUPPORTED;
-	}
-
-	if(W_ERROR_IS_OK(ret)) {
-		(*key)->handle = h;
-		if(!(*key)->path) {
-			(*key)->path = talloc_strdup((*key)->mem_ctx, (*key)->name);
+	int i;
+	for(i = 0; i < h->num_hives; i++)
+	{
+		if(!strcmp(h->hives[i]->name, name)) {
+			*key = h->hives[i]->root;
+			return WERR_OK;
 		}
-		(*key)->hive = hivenum;
 	}
 
-	return ret;
+	return WERR_NO_MORE_ITEMS;
 }
 
-WERROR reg_key_add_value(REG_KEY *key, const char *name, int type, void *value, size_t vallen)
+WERROR reg_del_value(struct registry_value *val)
 {
 	WERROR ret = WERR_OK;
-	if(!key->handle->functions->add_value)
+	if(!val->hive->functions->del_value)
 		return WERR_NOT_SUPPORTED;
 
-	ret = key->handle->functions->add_value(key, name, type, value, vallen);
+	ret = val->hive->functions->del_value(val);
 
 	if(!W_ERROR_IS_OK(ret)) return ret;
 
-	/* Invalidate the cache */
-	key->cache_values = NULL;
-	key->cache_values_count = 0;
 	return ret;
 }
 
-WERROR reg_save(REG_HANDLE *h, const char *location)
+WERROR reg_save(struct registry_context *h, const char *location)
 {
 	/* FIXME */	
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR reg_key_get_parent(REG_KEY *key, REG_KEY **parent)
+WERROR reg_key_get_parent(TALLOC_CTX *mem_ctx, struct registry_key *key, struct registry_key **parent)
 {
 	char *parent_name;
 	char *last;
-	REG_KEY *root;
+	struct registry_key *root;
 	WERROR error;
 
-	error = reg_get_hive(key->handle, key->hive, &root);
-	if(!W_ERROR_IS_OK(error)) return error;
-
-	parent_name = strdup(reg_key_get_path(key));
+	parent_name = strdup(key->path);
 	last = strrchr(parent_name, '\\');
 
 	if(!last) {
@@ -645,7 +598,7 @@ WERROR reg_key_get_parent(REG_KEY *key, REG_KEY **parent)
 	}
 	*last = '\0';
 
-	error = reg_open_key(root, parent_name, parent);
+	error = reg_open_key(mem_ctx, root, parent_name, parent);
 	SAFE_FREE(parent_name);
 	return error;
 }

@@ -21,47 +21,57 @@
 
 #include "includes.h"
 
-static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
+static void writediff(struct registry_key *oldkey, struct registry_key *newkey, FILE *out)
 {
 	int i;
-	REG_KEY *t1, *t2;
-	REG_VAL *v1, *v2;
+	struct registry_key *t1, *t2;
+	struct registry_value *v1, *v2;
 	WERROR error1, error2;
+	TALLOC_CTX *mem_ctx = talloc_init("writediff");
 
-	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_subkey_by_index(oldkey, i, &t1)); i++) {
-		error2 = reg_key_get_subkey_by_name(newkey, reg_key_name(t1), &t2);
+	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_subkey_by_index(mem_ctx, oldkey, i, &t1)); i++) {
+		error2 = reg_key_get_subkey_by_name(mem_ctx, newkey, t1->name, &t2);
 		if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			fprintf(out, "-%s\n", reg_key_get_path(t1)+1);
+			fprintf(out, "-%s\n", t1->path+1);
 		} else if(!W_ERROR_IS_OK(error2)) {
 			DEBUG(0, ("Error occured while getting subkey by name: %d\n", W_ERROR_V(error2)));
 		}
 	}
+
+	talloc_destroy(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while getting subkey by index: %d\n", W_ERROR_V(error1)));
 		return;
 	}
 
-	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_subkey_by_index(newkey, i, &t1)); i++) {
-		error2 = reg_key_get_subkey_by_name(oldkey, reg_key_name(t1), &t2);
+	mem_ctx = talloc_init("writediff");
+
+	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_subkey_by_index(mem_ctx, newkey, i, &t1)); i++) {
+		error2 = reg_key_get_subkey_by_name(mem_ctx, oldkey, t1->name, &t2);
 		if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			fprintf(out, "\n[%s]\n", reg_key_get_path(t1)+1);
+			fprintf(out, "\n[%s]\n", t1->path+1);
 		} else if(!W_ERROR_IS_OK(error2)) {
 			DEBUG(0, ("Error occured while getting subkey by name: %d\n", W_ERROR_V(error2)));
 		}
 		writediff(t2, t1, out);
 	}
 
+	talloc_destroy(mem_ctx);
+
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while getting subkey by index: %d\n", W_ERROR_V(error1)));
 		return;
 	}
 
-	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(newkey, i, &v1)); i++) {
-		error2 = reg_key_get_value_by_name(oldkey, reg_val_name(v1), &v2);
-		if ((W_ERROR_IS_OK(error2) && (reg_val_size(v2) != reg_val_size(v1) || memcmp(reg_val_data_blk(v1), reg_val_data_blk(v2), reg_val_size(v1)))) 
+
+	mem_ctx = talloc_init("writediff");
+
+	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(mem_ctx, newkey, i, &v1)); i++) {
+		error2 = reg_key_get_value_by_name(mem_ctx, oldkey, v1->name, &v2);
+		if ((W_ERROR_IS_OK(error2) && (v2->data_len != v1->data_len || memcmp(v1->data_blk, v2->data_blk, v1->data_len))) 
 			|| W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			fprintf(out, "\"%s\"=%s:%s\n", reg_val_name(v1), str_regtype(reg_val_type(v1)), reg_val_data_string(v1));
+			fprintf(out, "\"%s\"=%s:%s\n", v1->name, str_regtype(v1->data_type), reg_val_data_string(mem_ctx, v1));
 		}
 
 		if(!W_ERROR_IS_OK(error2) && !W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
@@ -69,21 +79,26 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 		}
 	}
 
+	talloc_destroy(mem_ctx);
+
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while getting value by index: %d\n", W_ERROR_V(error1)));
 		return;
 	}
 
+	mem_ctx = talloc_init("writediff");
 
-	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(oldkey, i, &v1)); i++) {
-		error2 = reg_key_get_value_by_name(newkey, reg_val_name(v1), &v2);
+	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(mem_ctx, oldkey, i, &v1)); i++) {
+		error2 = reg_key_get_value_by_name(mem_ctx, newkey, v1->name, &v2);
 		if(W_ERROR_IS_OK(error2)) {
 		} else if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			fprintf(out, "\"%s\"=-\n", reg_val_name(v1));
+			fprintf(out, "\"%s\"=-\n", v1->name);
 		} else {
 			DEBUG(0, ("Error occured while getting value by name: %d\n", W_ERROR_V(error2)));
 		}
 	}
+
+	talloc_destroy(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while getting value by index: %d\n", W_ERROR_V(error1)));
@@ -100,8 +115,7 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	const char *credentials1= NULL, *credentials2 = NULL;
 	char *outputfile = NULL;
 	FILE *fd = stdout;
-	REG_HANDLE *h1, *h2;
-	REG_KEY *root1 = NULL, *root2;
+	struct registry_context *h1, *h2;
 	int from_null = 0;
 	int i;
 	WERROR error, error2;
@@ -113,6 +127,12 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 		{"null", 'n', POPT_ARG_NONE, &from_null, 'n', "Diff from NULL" },
 		POPT_TABLEEND
 	};
+
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+	}
+
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
@@ -140,7 +160,7 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 
 		if(!backend1) backend1 = "dir";
 
-		error = reg_open(backend1, location1, credentials1, &h1);
+		error = reg_open(&h1, backend1, location1, credentials1);
 		if(!W_ERROR_IS_OK(error)) {
 			fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location1, backend1);
 			return 1;
@@ -155,7 +175,7 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 
 	if(!backend2) backend2 = "dir";
 
-	error = reg_open(backend2, location2, credentials2, &h2);
+	error = reg_open(&h2, backend2, location2, credentials2);
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location2, backend2);
 		return 1;
@@ -176,20 +196,8 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 
 	error2 = error = WERR_OK; 
 
-	for(i = 0; ; i++) {
-		if(backend1) error = reg_get_hive(h1, i, &root1);
-		else root1 = NULL;
-
-		if(!W_ERROR_IS_OK(error)) break;
-
-		if(backend2) error2 = reg_get_hive(h2, i, &root2);
-		else root2 = NULL;
-
-		if(!W_ERROR_IS_OK(error2)) break;
-
-		writediff(root1, root2, fd); 
-
-		if(!root1 && !root2) break;
+	for(i = 0; i < h1->num_hives && i < h2->num_hives; i++) {
+		writediff(h1->hives[i]->root, h2->hives[i]->root, fd); 
 	}
 
 	fclose(fd);

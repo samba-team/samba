@@ -60,7 +60,6 @@ REQUIRED_SUBSYSTEMS = \
 INIT_OBJ_FILES = \
 		lib/registry/common/reg_interface.o
 ADD_OBJ_FILES = \
-		lib/registry/common/reg_objects.o \
 		lib/registry/common/reg_util.o
 REQUIRED_SUBSYSTEMS = \
 		LIBBASIC

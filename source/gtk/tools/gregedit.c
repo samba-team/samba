@@ -28,17 +28,18 @@ GtkTreeStore *store_keys;
 GtkListStore *store_vals;
 GtkWidget *tree_keys;
 GtkWidget *mainwin;
+TALLOC_CTX *mem_ctx; /* FIXME: Split up */
 
 GtkWidget *save;
 GtkWidget *save_as;
 static GtkWidget* create_openfilewin (void);
 static GtkWidget* create_savefilewin (void);
-REG_HANDLE *registry = NULL;
+struct registry_context *registry = NULL;
 
 static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *arg2)
 {
 	GtkTreeIter firstiter, iter, tmpiter;
-	REG_KEY *k, *sub;
+	struct registry_key *k, *sub;
 	char *name;
 	WERROR error;
 	int i;
@@ -55,7 +56,7 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 
 	g_assert(k);
 	
-	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(k, i, &sub)); i++) {
+	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, k, i, &sub)); i++) {
 		int count;
 		/* Replace the blank child with the first directory entry
            You may be tempted to remove the blank child node and then 
@@ -70,7 +71,7 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 		gtk_tree_store_set (store_keys,
 					    &iter, 
 						0,
-						reg_key_name(sub),
+						sub->name,
 						1, 
 						sub,
 						-1);
@@ -84,36 +85,28 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 
 static void registry_load_root() 
 {
-	REG_KEY *root;
+	struct registry_key *root;
 	GtkTreeIter iter, tmpiter;
-	WERROR error = WERR_OK;
 	int i = 0;
 	if(!registry) return;
 
 	gtk_tree_store_clear(store_keys);
 
-	while(1) {
-		error = reg_get_hive(registry, i, &root);
-		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-			return;
-		}
-		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(mainwin, error);
-			return;
-		}
+	for(i = 0; i < registry->num_hives; i++) 
+	{
+		root = registry->hives[i]->root;
 
 		/* Add the root */
 		gtk_tree_store_append(store_keys, &iter, NULL);
 		gtk_tree_store_set (store_keys,
 					    &iter, 
 						0,
-						reg_key_name(root),
+						root->hive->name,
 						1,
 						root,
 						-1);
 
 		gtk_tree_store_append(store_keys, &tmpiter, &iter);
-		i++;
 	}
 
   	gtk_widget_set_sensitive( save, True );
@@ -123,16 +116,20 @@ static void registry_load_root()
 static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	gint result = gtk_dialog_run(GTK_DIALOG(create_openfilewin()));
-	char *filename;
+	char *filename, *tmp;
 	WERROR error;
 	switch(result) {
 	case GTK_RESPONSE_OK:
 		filename = strdup(gtk_file_selection_get_filename(GTK_FILE_SELECTION(openfilewin)));
-		error = reg_open(user_data, filename, NULL, &registry);
+		error = reg_open(&registry, user_data, filename, NULL);
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(mainwin, error);
 			break;
 		}
+
+		tmp = g_strdup_printf("Registry Editor - %s", filename);
+		gtk_window_set_title (GTK_WINDOW (mainwin), tmp);
+		g_free(tmp);
 		registry_load_root();
 		break;
 	default:
@@ -145,11 +142,13 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 static void on_open_gconf_activate                       (GtkMenuItem     *menuitem,
   		                                      gpointer         user_data)
 {
-	WERROR error = reg_open("gconf", NULL, NULL, &registry);
+	WERROR error = reg_open(&registry, "gconf", NULL, NULL);
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, error);
 		return;
 	}
+
+	gtk_window_set_title (GTK_WINDOW (mainwin), "Registry Editor - GConf");
 
 	registry_load_root();
 }
@@ -158,31 +157,41 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	char *credentials;
 	const char *location;
+	char *tmp;
 	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(TRUE));
 	gint result = gtk_dialog_run(GTK_DIALOG(rpcwin));
 	WERROR error;
-	switch(result) {
-	case GTK_RESPONSE_ACCEPT:
-		location = gtk_rpc_binding_dialog_get_binding(GTK_RPC_BINDING_DIALOG(rpcwin), NULL);
-		asprintf(&credentials, "%s%%%s", gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)));
-		error = reg_open("rpc", location, credentials, &registry);
-		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(mainwin, error);
-			break;
-		}
-		free(credentials);
-		registry_load_root();
-		break;
-	default:
-		break;
+	
+	if(result != GTK_RESPONSE_ACCEPT)
+	{
+		gtk_widget_destroy(rpcwin);
+		return;
 	}
+
+	location = gtk_rpc_binding_dialog_get_binding(GTK_RPC_BINDING_DIALOG(rpcwin), NULL);
+	asprintf(&credentials, "%s%%%s", gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)));
+	error = reg_open(&registry, "rpc", location, credentials);
+
+	if(!W_ERROR_IS_OK(error)) {
+		gtk_show_werror(mainwin, error);
+		gtk_widget_destroy(rpcwin);
+		return;
+	}
+	free(credentials);
+
+	tmp = g_strdup_printf("Registry Editor - Remote Registry at %s", gtk_rpc_binding_dialog_get_host(GTK_RPC_BINDING_DIALOG(rpcwin)));
+	gtk_window_set_title (GTK_WINDOW (mainwin), tmp);
+	g_free(tmp);
+
+	registry_load_root();
+
 
 	gtk_widget_destroy(rpcwin);
 }
 
 
 static void on_save_activate                       (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+													gpointer         user_data)
 {
 	WERROR error = reg_save(registry, NULL);
 	if(!W_ERROR_IS_OK(error)) {
@@ -264,8 +273,8 @@ gboolean on_key_activate(GtkTreeSelection *selection,
                                              gpointer data)
 {
 	int i;
-	REG_KEY *k;
-	REG_VAL *val;
+	struct registry_key *k;
+	struct registry_value *val;
 	WERROR error;
 	GtkTreeIter parent;
 	if(path_currently_selected)return TRUE;
@@ -277,17 +286,17 @@ gboolean on_key_activate(GtkTreeSelection *selection,
 
 	gtk_list_store_clear(store_vals);
 
-	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(k, i, &val)); i++) {
+	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(mem_ctx, k, i, &val)); i++) {
 		GtkTreeIter iter;
 		gtk_list_store_append(store_vals, &iter);
 		gtk_list_store_set (store_vals,
 					    &iter, 
 						0,
-						reg_val_name(val),
+						val->name,
 						1,
-						str_regtype(reg_val_type(val)),
+						str_regtype(val->data_type),
 						2,
-						reg_val_data_string(val),
+						reg_val_data_string(mem_ctx, val),
 						3, 
 						val,
 						-1);
@@ -607,6 +616,7 @@ static GtkWidget* create_savefilewin (void)
 	load_interfaces();
 
 	gtk_init (&argc, &argv);
+	mem_ctx = talloc_init("gregedit");
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
@@ -623,7 +633,7 @@ static GtkWidget* create_savefilewin (void)
 			else backend = "nt4";
 		}
 
-		error = reg_open(backend, location, credentials, &registry);
+		error = reg_open(&registry, backend, location, credentials);
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(mainwin, error);
 			return -1;
@@ -638,6 +648,7 @@ static GtkWidget* create_savefilewin (void)
 
 	gtk_main ();
 
-	if(registry)reg_free(registry);
+	if(registry)talloc_destroy(registry->mem_ctx);
+	talloc_destroy(mem_ctx);
 	return 0;
 }

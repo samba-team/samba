@@ -39,13 +39,12 @@ void update_userlist(void)
 	struct samr_EnumDomainUsers r;
 	uint32_t resume_handle=0;
 	int i;
-	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
 	if(!sam_pipe) return;
 
 	mem_ctx = talloc_init("update_userlist");
-	r.in.handle = &domain_handle;
+	r.in.domain_handle = &domain_handle;
 	r.in.resume_handle = &resume_handle;
 	r.in.acct_flags = 0;
 	r.in.max_size = (uint32_t)-1;
@@ -87,7 +86,7 @@ on_select_domain_activate                       (GtkMenuItem     *menuitem,
 {
 	GtkSelectDomainDialog *d;
 	gint result;
-	d = gtk_select_domain_dialog_new(sam_pipe);
+	d = GTK_SELECT_DOMAIN_DIALOG(gtk_select_domain_dialog_new(sam_pipe));
 	result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
 	case GTK_RESPONSE_ACCEPT:
@@ -129,7 +128,7 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.out.handle = &sam_handle;
+	r.out.connect_handle = &sam_handle;
 
 	mem_ctx = talloc_init("connect");                                                                                                 
 	status = dcerpc_samr_Connect(sam_pipe, mem_ctx, &r);
@@ -218,13 +217,7 @@ create_mainwindow (void)
 	GtkWidget *new1;
 	GtkWidget *separatormenuitem1;
 	GtkWidget *quit;
-	GtkWidget *menuitem2;
 	GtkWidget *seldomain;
-	GtkWidget *menuitem2_menu;
-	GtkWidget *cut1;
-	GtkWidget *copy1;
-	GtkWidget *paste1;
-	GtkWidget *delete1;
 	GtkWidget *policies;
 	GtkWidget *policies_menu;
 	GtkWidget *account;
@@ -260,16 +253,12 @@ create_mainwindow (void)
 	gtk_widget_show (menubar);
 	gtk_box_pack_start (GTK_BOX (vbox1), menubar, FALSE, FALSE, 0);
 
-	menuitem1 = gtk_menu_item_new_with_mnemonic ("_User");
+	menuitem1 = gtk_menu_item_new_with_mnemonic ("_File");
 	gtk_widget_show (menuitem1);
 	gtk_container_add (GTK_CONTAINER (menubar), menuitem1);
 
 	menuitem1_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem1), menuitem1_menu);
-
-	new1 = gtk_image_menu_item_new_from_stock ("gtk-new", accel_group);
-	gtk_widget_show (new1);
-	gtk_container_add (GTK_CONTAINER (menuitem1_menu), new1);
 
 	connect = gtk_menu_item_new_with_mnemonic ("_Connect");
 	gtk_widget_show (connect);
@@ -277,6 +266,7 @@ create_mainwindow (void)
 
 	seldomain = gtk_menu_item_new_with_mnemonic("_Select Domain");
 	gtk_widget_show(seldomain);
+	gtk_widget_set_sensitive (seldomain, FALSE);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), seldomain);
 
 	separatormenuitem1 = gtk_separator_menu_item_new ();
@@ -288,9 +278,24 @@ create_mainwindow (void)
 	gtk_widget_show (quit);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), quit);
 
+	menuitem1 = gtk_menu_item_new_with_mnemonic ("_User");
+	gtk_widget_show (menuitem1);
+	gtk_container_add (GTK_CONTAINER (menubar), menuitem1);
+	gtk_widget_set_sensitive (menuitem1, FALSE);
+
+	menuitem1_menu = gtk_menu_new ();
+	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem1), menuitem1_menu);
+
+	new1 = gtk_image_menu_item_new_from_stock ("gtk-new", accel_group);
+	gtk_widget_show (new1);
+	gtk_container_add (GTK_CONTAINER (menuitem1_menu), new1);
+
+
+
 	policies = gtk_menu_item_new_with_mnemonic ("_Policies");
 	gtk_widget_show (policies);
 	gtk_container_add (GTK_CONTAINER (menubar), policies);
+	gtk_widget_set_sensitive (policies, FALSE);
 
 	policies_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (policies), policies_menu);
@@ -326,6 +331,7 @@ create_mainwindow (void)
 	refresh = gtk_image_menu_item_new_from_stock ("gtk-refresh", accel_group);
 	gtk_widget_show (refresh);
 	gtk_container_add (GTK_CONTAINER (menuitem3_menu), refresh);
+	gtk_widget_set_sensitive (refresh, FALSE);
 
 	menuitem4 = gtk_menu_item_new_with_mnemonic ("_Help");
 	gtk_widget_show (menuitem4);

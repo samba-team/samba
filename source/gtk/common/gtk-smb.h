@@ -38,6 +38,7 @@ struct _GtkRpcBindingDialog
 	GtkWidget *entry_host;
 	GtkWidget *entry_username;
 	GtkWidget *entry_password;
+	GtkWidget *krb5_chk_button;
 	TALLOC_CTX *mem_ctx;
 };
 

@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "lib/registry/common/registry.h"
 
 static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *add)
 {
@@ -55,40 +54,46 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *
 	return ret;
 }
 
+
+static int ldb_close_registry(void *data) 
+{
+	ldb_close((struct ldb_context *)data);
+	return 0;
+}
+
+
 /* 
  * Saves the dn as private_data for every key/val
  */
 
-static WERROR ldb_open_registry(REG_HANDLE *handle, const char *location, const char *credentials)
+static WERROR ldb_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *hive, struct registry_key **k)
 {
 	struct ldb_context *c;
 
-	if (!location) return WERR_INVALID_PARAM;
-	c = ldb_connect(location, 0, NULL);
+	if (!hive->location) return WERR_INVALID_PARAM;
+	c = ldb_connect(hive->location, 0, NULL);
 
 	ldb_set_debug_stderr(c);
 
+
 	if(!c) return WERR_FOOBAR;
 
-	handle->backend_data = c;
+	hive->backend_data = c;
+	talloc_set_destructor(c, ldb_close_registry);
 	
 	return WERR_OK;
 }
 
-static WERROR ldb_close_registry(REG_HANDLE *h) 
-{
-	ldb_close((struct ldb_context *)h->backend_data);
-	return WERR_OK;
-}
-
-static WERROR ldb_add_key(REG_KEY *p, const char *name, uint32_t access_mask, SEC_DESC *sec, REG_KEY **new)
+static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, struct registry_key *p, const char *name, uint32_t access_mask, SEC_DESC *sec, struct registry_key **new)
 {
 	return WERR_NOT_SUPPORTED;	
 }
 
-static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
+#if 0
+FIXME
+static WERROR ldb_fetch_subkeys(struct registry_key *k, int *count, struct registry_key ***subkeys)
 {
-	struct ldb_context *c = k->handle->backend_data;
+	struct ldb_context *c = k->hive->backend_data;
 	int ret, i, j;
 	struct ldb_message **msg;
 
@@ -99,7 +104,7 @@ static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 		return WERR_FOOBAR;
 	}
 
-	*subkeys = talloc_array_p(k->mem_ctx, REG_KEY *, ret);
+	*subkeys = talloc_array_p(k->mem_ctx, struct registry_key *, ret);
 	j = 0;
 	for(i = 0; i < ret; i++) {
 		struct ldb_message_element *el;
@@ -121,9 +126,9 @@ static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 	return WERR_OK;
 }
 
-static WERROR ldb_fetch_values(REG_KEY *k, int *count, REG_VAL ***values)
+static WERROR ldb_fetch_values(struct registry_key *k, int *count, REG_VAL ***values)
 {
-	struct ldb_context *c = k->handle->backend_data;
+	struct ldb_context *c = k->hive->backend_data;
 	int ret, i, j;
 	struct ldb_message **msg;
 
@@ -156,21 +161,14 @@ static WERROR ldb_fetch_values(REG_KEY *k, int *count, REG_VAL ***values)
 	return WERR_OK;
 }
 
-static WERROR ldb_get_hive(REG_HANDLE *h, int num, REG_KEY **key)
-{
-	if(num != 0) return WERR_NO_MORE_ITEMS;
-	*key = reg_key_new_abs("", h, NULL);
-	return WERR_OK;
-}
+#endif
 
-static WERROR ldb_open_key(REG_HANDLE *h, int num, const char *name, REG_KEY **key)
+static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const char *name, struct registry_key **key)
 {
 	struct ldb_context *c = h->backend_data;
 	struct ldb_message **msg;
 	char *ldap_path;
 	int ret;
-	TALLOC_CTX *mem_ctx = talloc_init("ldb_path");
-	if(num != 0) return WERR_NO_MORE_ITEMS;
 	ldap_path = reg_path_to_ldb(mem_ctx, name, NULL);
 	
 	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "*", NULL,&msg);
@@ -182,25 +180,20 @@ static WERROR ldb_open_key(REG_HANDLE *h, int num, const char *name, REG_KEY **k
 		return WERR_FOOBAR;
 	}
 
-	*key = reg_key_new_abs(name, h, ldap_path);
-	talloc_steal((*key)->mem_ctx, ldap_path);
-	printf("Got something!\n");
+	*key = talloc_p(mem_ctx, struct registry_key);
 	/* FIXME */
 
 	ldb_search_free(c, msg);
-	talloc_destroy(mem_ctx);
 
 	return WERR_OK;
 }
 
-static struct registry_ops reg_backend_ldb = {
+static struct registry_operations reg_backend_ldb = {
 	.name = "ldb",
-	.open_registry = ldb_open_registry,
-	.get_hive = ldb_get_hive,
-	.close_registry = ldb_close_registry,
+	.open_hive = ldb_open_hive,
 	.open_key = ldb_open_key,
-	.fetch_subkeys = ldb_fetch_subkeys,
-	.fetch_values = ldb_fetch_values,
+/*	.fetch_subkeys = ldb_fetch_subkeys,
+	.fetch_values = ldb_fetch_values,*/
 	.add_key = ldb_add_key,
 };
 

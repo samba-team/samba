@@ -304,9 +304,9 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 *************************************************************************/
 
 #include "includes.h"
-#include "lib/registry/common/registry.h"
 
 #define REG_KEY_LIST_SIZE 10
+#define FLAG_HAS_NAME	  0x01
 /*FIXME*/
 
 /*
@@ -514,7 +514,7 @@ static BOOL nt_create_ace(SEC_ACE *ace, int type, int flags, uint32_t perms, con
 /*
  * Create a default ACL
  */
-static SEC_ACL *nt_create_default_acl(REG_HANDLE *regf)
+static SEC_ACL *nt_create_default_acl(struct registry_hive *regf)
 {
   SEC_ACE aces[8];
 
@@ -534,7 +534,7 @@ static SEC_ACL *nt_create_default_acl(REG_HANDLE *regf)
  * Create a default security descriptor. We pull in things from env
  * if need be 
  */
-static SEC_DESC *nt_create_def_sec_desc(REG_HANDLE *regf)
+static SEC_DESC *nt_create_def_sec_desc(struct registry_hive *regf)
 {
   SEC_DESC *tmp;
 
@@ -559,7 +559,7 @@ static SEC_DESC *nt_create_def_sec_desc(REG_HANDLE *regf)
  * says, but the Owner and Group SIDs can be overwridden from the command line
  * and additional ACEs can be applied from the command line etc.
  */
-static KEY_SEC_DESC *nt_inherit_security(REG_KEY *key)
+static KEY_SEC_DESC *nt_inherit_security(struct registry_key *key)
 {
 
   if (!key) return NULL;
@@ -570,7 +570,7 @@ static KEY_SEC_DESC *nt_inherit_security(REG_KEY *key)
  * Create an initial security descriptor and init other structures, if needed
  * We assume that the initial security stuff is empty ...
  */
-static KEY_SEC_DESC *nt_create_init_sec(REG_HANDLE *h)
+static KEY_SEC_DESC *nt_create_init_sec(struct registry_hive *h)
 {
 	REGF *regf = h->backend_data;
 	KEY_SEC_DESC *tsec = NULL;
@@ -618,7 +618,7 @@ static KEY_SEC_DESC *nt_create_init_sec(REG_HANDLE *h)
 /* Get the header of the registry. Return a pointer to the structure 
  * If the mmap'd area has not been allocated, then mmap the input file
  */
-static REGF_HDR *nt_get_regf_hdr(REG_HANDLE *h)
+static REGF_HDR *nt_get_regf_hdr(struct registry_hive *h)
 {
 	REGF *regf = h->backend_data;
 	SMB_REG_ASSERT(regf);
@@ -676,7 +676,7 @@ static int valid_regf_hdr(REGF_HDR *regf_hdr)
 /*
  * Create a new entry in the map, and increase the size of the map if needed
  */
-static SK_MAP *alloc_sk_map_entry(REG_HANDLE *h, KEY_SEC_DESC *tmp, int sk_off)
+static SK_MAP *alloc_sk_map_entry(struct registry_hive *h, KEY_SEC_DESC *tmp, int sk_off)
 {
 	REGF *regf = h->backend_data;
 	if (!regf->sk_map) { /* Allocate a block of 10 */
@@ -731,7 +731,7 @@ KEY_SEC_DESC *lookup_sec_key(SK_MAP *sk_map, int count, int sk_off)
 /*
  * Allocate a KEY_SEC_DESC if we can't find one in the map
  */
-static KEY_SEC_DESC *lookup_create_sec_key(REG_HANDLE *h, SK_MAP *sk_map, int sk_off)
+static KEY_SEC_DESC *lookup_create_sec_key(struct registry_hive *h, SK_MAP *sk_map, int sk_off)
 {
 	REGF *regf = h->backend_data;
 	KEY_SEC_DESC *tmp = lookup_sec_key(regf->sk_map, regf->sk_count, sk_off);
@@ -750,7 +750,7 @@ static KEY_SEC_DESC *lookup_create_sec_key(REG_HANDLE *h, SK_MAP *sk_map, int sk
 	}
 }
 
-static SEC_DESC *process_sec_desc(REG_HANDLE *regf, SEC_DESC *sec_desc)
+static SEC_DESC *process_sec_desc(struct registry_hive *regf, SEC_DESC *sec_desc)
 {
 	SEC_DESC *tmp = NULL;
 
@@ -790,7 +790,7 @@ static SEC_DESC *process_sec_desc(REG_HANDLE *regf, SEC_DESC *sec_desc)
 	return tmp;
 }
 
-static KEY_SEC_DESC *process_sk(REG_HANDLE *regf, SK_HDR *sk_hdr, int sk_off, int size)
+static KEY_SEC_DESC *process_sk(struct registry_hive *regf, SK_HDR *sk_hdr, int sk_off, int size)
 {
 	KEY_SEC_DESC *tmp = NULL;
 	int sk_next_off, sk_prev_off, sk_size;
@@ -879,38 +879,34 @@ static KEY_SEC_DESC *process_sk(REG_HANDLE *regf, SK_HDR *sk_hdr, int sk_off, in
 /*
  * Process a VK header and return a value
  */
-static WERROR vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size, REG_VAL **value)
+static WERROR vk_to_val(TALLOC_CTX *mem_ctx, struct registry_key *parent, VK_HDR *vk_hdr, int size, struct registry_value **value)
 {
-	char val_name[1024];
-	REGF *regf = parent->handle->backend_data;
+	REGF *regf = parent->hive->backend_data;
 	int nam_len, dat_len, flag, dat_type, dat_off, vk_id;
-	REG_VAL *tmp = NULL; 
+	struct registry_value *tmp = NULL; 
 
 	if (!vk_hdr) return WERR_INVALID_PARAM;
 
 	if ((vk_id = SVAL(&vk_hdr->VK_ID,0)) != str_to_dword("vk")) {
 		DEBUG(0, ("Unrecognized VK header ID: %0X, block: %0X, %s\n",
-				  vk_id, (int)vk_hdr, parent->handle->location));
+				  vk_id, (int)vk_hdr, parent->hive->location));
 		return WERR_GENERAL_FAILURE;
 	}
 
 	nam_len = SVAL(&vk_hdr->nam_len,0);
-	val_name[nam_len] = '\0';
 	flag = SVAL(&vk_hdr->flag,0);
 	dat_type = IVAL(&vk_hdr->dat_type,0);
 	dat_len = IVAL(&vk_hdr->dat_len,0);  /* If top bit, offset contains data */
 	dat_off = IVAL(&vk_hdr->dat_off,0);
 
-	tmp = reg_val_new(parent, NULL);
-	tmp->has_name = flag;
+	tmp = talloc_p(mem_ctx, struct registry_value);
 	tmp->data_type = dat_type;
 
-	if (flag & 0x01) {
-		strncpy(val_name, vk_hdr->dat_name, nam_len);
-		tmp->name = strdup(val_name);
+	if (flag & FLAG_HAS_NAME) {
+		tmp->name = talloc_strndup(mem_ctx, vk_hdr->dat_name, nam_len);
+	} else {
+		tmp->name = NULL;
 	}
-	else
-		strncpy(val_name, "<No Name>", 10);
 
 	/*
 	 * Allocate space and copy the data as a BLOB
@@ -918,9 +914,7 @@ static WERROR vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size, REG_VAL **val
 
 	if (dat_len&0x7FFFFFFF) {
 
-		char *dtmp = (char *)talloc(tmp->mem_ctx, dat_len&0x7FFFFFFF);
-
-		tmp->data_blk = dtmp;
+		char *dtmp = (char *)talloc(mem_ctx, dat_len&0x7FFFFFFF);
 
 		if ((dat_len&0x80000000) == 0) { /* The data is pointed to by the offset */
 			char *dat_ptr = LOCN(regf->base, dat_off);
@@ -937,6 +931,15 @@ static WERROR vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size, REG_VAL **val
 			memcpy(dtmp, &dat_off, dat_len);
 		}
 
+
+		if(tmp->data_type == REG_SZ) {
+			char *ret;
+	    	dat_len = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, dtmp, dat_len, (const void **)&ret);
+			dtmp = ret;
+		}
+
+
+		tmp->data_blk = dtmp;
 		tmp->data_len = dat_len;
 	}
 
@@ -958,7 +961,7 @@ static BOOL vl_verify(VL_TYPE vl, int count, int size)
 
 #endif
 
-static WERROR lf_verify(REG_HANDLE *h, LF_HDR *lf_hdr, int size)
+static WERROR lf_verify(struct registry_hive *h, LF_HDR *lf_hdr, int size)
 {
 	int lf_id;
 	if ((lf_id = SVAL(&lf_hdr->LF_ID,0)) != str_to_dword("lf")) {
@@ -969,7 +972,7 @@ static WERROR lf_verify(REG_HANDLE *h, LF_HDR *lf_hdr, int size)
 	return WERR_OK;
 }
 
-static WERROR lf_num_entries(REG_HANDLE *h, LF_HDR *lf_hdr, int size, int *count)
+static WERROR lf_num_entries(struct registry_hive *h, LF_HDR *lf_hdr, int size, int *count)
 {
 	WERROR error;
 
@@ -986,23 +989,23 @@ static WERROR lf_num_entries(REG_HANDLE *h, LF_HDR *lf_hdr, int size, int *count
 }
 
 
-static WERROR nk_to_key(REG_HANDLE *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent, REG_KEY **);
+static WERROR nk_to_key(TALLOC_CTX *, struct registry_hive *regf, NK_HDR *nk_hdr, int size, struct registry_key *parent, struct registry_key **);
 
 
 
 /*
  * Process an LF Header and return a list of sub-keys
  */
-static WERROR lf_get_entry(REG_KEY *parent, LF_HDR *lf_hdr, int size, int n, REG_KEY **key)
+static WERROR lf_get_entry(TALLOC_CTX *mem_ctx, struct registry_key *parent, LF_HDR *lf_hdr, int size, int n, struct registry_key **key)
 {
-	REGF *regf = parent->handle->backend_data;
+	REGF *regf = parent->hive->backend_data;
 	int count, nk_off;
 	NK_HDR *nk_hdr;
 	WERROR error;
 
 	if (!lf_hdr) return WERR_INVALID_PARAM;
 
-	error = lf_verify(parent->handle, lf_hdr, size);
+	error = lf_verify(parent->hive, lf_hdr, size);
 	if(!W_ERROR_IS_OK(error)) return error;
 
 	SMB_REG_ASSERT(size < 0);
@@ -1015,13 +1018,13 @@ static WERROR lf_get_entry(REG_KEY *parent, LF_HDR *lf_hdr, int size, int n, REG
 	nk_off = IVAL(&lf_hdr->hr[n].nk_off,0);
 	DEBUG(2, ("NK Offset: %0X\n", nk_off));
 	nk_hdr = (NK_HDR *)LOCN(regf->base, nk_off);
-	return nk_to_key(parent->handle, nk_hdr, BLK_SIZE(nk_hdr), parent, key);
+	return nk_to_key(mem_ctx, parent->hive, nk_hdr, BLK_SIZE(nk_hdr), parent, key);
 }
 
-static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent, REG_KEY **key)
+static WERROR nk_to_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, NK_HDR *nk_hdr, int size, struct registry_key *parent, struct registry_key **key)
 {
 	REGF *regf = h->backend_data;
-	REG_KEY *tmp = NULL, *own;
+	struct registry_key *tmp = NULL, *own;
 	int namlen, clsname_len, sk_off, own_off;
 	uint_t nk_id;
 	SK_HDR *sk_hdr;
@@ -1032,7 +1035,7 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 
 	if ((nk_id = SVAL(&nk_hdr->NK_ID,0)) != str_to_dword("nk")) {
 		DEBUG(0, ("Unrecognized NK Header format: %08X, Block: %0X. %s\n", 
-				  nk_id, (int)nk_hdr, parent->handle->location));
+				  nk_id, (int)nk_hdr, parent->hive->location));
 		return WERR_INVALID_PARAM;
 	}
 
@@ -1071,8 +1074,9 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 		return WERR_GENERAL_FAILURE;
 	}
 
-	if(type == REG_ROOT_KEY) tmp = reg_key_new_abs(key_name, h, nk_hdr);
-	else tmp = reg_key_new_rel(key_name, parent, nk_hdr);
+	tmp = talloc_p(mem_ctx, struct registry_key);
+	tmp->name = talloc_strdup(mem_ctx, key_name);
+	tmp->backend_data = nk_hdr;
 
 	DEBUG(2, ("Key name: %s\n", key_name));
 
@@ -1089,7 +1093,7 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 		clsnamep = (smb_ucs2_t *)LOCN(regf->base, clsnam_off);
 		DEBUG(2, ("Class Name Offset: %0X\n", clsnam_off));
 
-		pull_ucs2_talloc(tmp->mem_ctx, &tmp->class_name, clsnamep);
+		pull_ucs2_talloc(mem_ctx, &tmp->class_name, clsnamep);
 
 		DEBUGADD(2,("  Class Name: %s\n", cls_name));
 
@@ -1100,7 +1104,7 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 	 */
 
 	own_off = IVAL(&nk_hdr->own_off,0);
-	own = (REG_KEY *)LOCN(regf->base, own_off);
+	own = (struct registry_key *)LOCN(regf->base, own_off);
 	DEBUG(2, ("Owner Offset: %0X\n", own_off));
 
 	DEBUGADD(2, ("  Owner locn: %0X, Our locn: %0X\n", 
@@ -1136,7 +1140,7 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 /*
  * Allocate a new hbin block, set up the header for the block etc 
  */
-static HBIN_BLK *nt_create_hbin_blk(REG_HANDLE *h, int size)
+static HBIN_BLK *nt_create_hbin_blk(struct registry_hive *h, int size)
 {
 	REGF *regf = h->backend_data;
 	HBIN_BLK *tmp;
@@ -1185,7 +1189,7 @@ static HBIN_BLK *nt_create_hbin_blk(REG_HANDLE *h, int size)
  * Allocate a unit of space ... and return a pointer as function param
  * and the block's offset as a side effect
  */
-static void *nt_alloc_regf_space(REG_HANDLE *h, int size, uint_t *off)
+static void *nt_alloc_regf_space(struct registry_hive *h, int size, uint_t *off)
 {
 	REGF *regf = h->backend_data;
 	int tmp = 0;
@@ -1268,7 +1272,7 @@ static void *nt_alloc_regf_space(REG_HANDLE *h, int size, uint_t *off)
 /*
  * Store a SID at the location provided
  */
-static int nt_store_SID(REG_HANDLE *regf, DOM_SID *sid, uint8_t *locn)
+static int nt_store_SID(struct registry_hive *regf, DOM_SID *sid, uint8_t *locn)
 {
 	int i;
 	uint8_t *p = locn;
@@ -1290,7 +1294,7 @@ static int nt_store_SID(REG_HANDLE *regf, DOM_SID *sid, uint8_t *locn)
 
 }
 
-static int nt_store_ace(REG_HANDLE *regf, SEC_ACE *ace, uint8_t *locn)
+static int nt_store_ace(struct registry_hive *regf, SEC_ACE *ace, uint8_t *locn)
 {
 	int size = 0;
 	SEC_ACE *reg_ace = (SEC_ACE *)locn;
@@ -1321,7 +1325,7 @@ static int nt_store_ace(REG_HANDLE *regf, SEC_ACE *ace, uint8_t *locn)
 /*
  * Store an ACL at the location provided
  */
-static int nt_store_acl(REG_HANDLE *regf, SEC_ACL *acl, uint8_t *locn) {
+static int nt_store_acl(struct registry_hive *regf, SEC_ACL *acl, uint8_t *locn) {
 	int size = 0, i;
 	uint8_t *p = locn, *s;
 
@@ -1357,7 +1361,7 @@ static int nt_store_acl(REG_HANDLE *regf, SEC_ACL *acl, uint8_t *locn) {
  * that first, then the owner, then the group SID. So, we do it that way
  * too.
  */
-static uint_t nt_store_sec_desc(REG_HANDLE *regf, SEC_DESC *sd, char *locn)
+static uint_t nt_store_sec_desc(struct registry_hive *regf, SEC_DESC *sd, char *locn)
 {
 	SEC_DESC *rsd = (SEC_DESC *)locn;
 	uint_t size = 0, off = 0;
@@ -1424,7 +1428,7 @@ static uint_t nt_store_sec_desc(REG_HANDLE *regf, SEC_DESC *sd, char *locn)
  * If it has already been stored, just get its offset from record
  * otherwise, store it and record its offset
  */
-static uint_t nt_store_security(REG_HANDLE *regf, KEY_SEC_DESC *sec)
+static uint_t nt_store_security(struct registry_hive *regf, KEY_SEC_DESC *sec)
 {
 	int size = 0;
 	uint_t sk_off;
@@ -1480,7 +1484,7 @@ static uint_t nt_store_security(REG_HANDLE *regf, KEY_SEC_DESC *sec)
  * We return the offset of the NK struct
  * FIXME, FIXME, FIXME: Convert to using SIVAL and SSVAL ...
  */
-static int nt_store_reg_key(REG_HANDLE *regf, REG_KEY *key)
+static int nt_store_reg_key(struct registry_hive *regf, struct registry_key *key)
 {
 	NK_HDR *nk_hdr; 
 	uint_t nk_off, sk_off, size;
@@ -1543,7 +1547,7 @@ error:
  * We actually create the registry header block and link it to the chain
  * of output blocks.
  */
-static REGF_HDR *nt_get_reg_header(REG_HANDLE *h) {
+static REGF_HDR *nt_get_reg_header(struct registry_hive *h) {
 	REGF *regf = h->backend_data;
 	HBIN_BLK *tmp = NULL;
 
@@ -1567,7 +1571,7 @@ error:
 
 #endif
 
-static WERROR nt_close_registry (REG_HANDLE *h) 
+static WERROR nt_close_registry (struct registry_hive *h) 
 {
 	REGF *regf = h->backend_data;
 	if (regf->base) munmap(regf->base, regf->sbuf.st_size);
@@ -1577,16 +1581,16 @@ static WERROR nt_close_registry (REG_HANDLE *h)
 	return WERR_OK;
 }
 
-static WERROR nt_open_registry (REG_HANDLE *h, const char *location, const char *credentials) 
+static WERROR nt_open_hive (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **key)
 {
 	REGF *regf;
 	REGF_HDR *regf_hdr;
 	uint_t regf_id, hbin_id;
 	HBIN_HDR *hbin_hdr;
 
-	regf = (REGF *)talloc_p(h->mem_ctx, REGF);
+	regf = (REGF *)talloc_p(mem_ctx, REGF);
 	memset(regf, 0, sizeof(REGF));
-	regf->owner_sid_str = credentials;
+	regf->owner_sid_str = h->credentials;
 	h->backend_data = regf;
 
 	DEBUG(5, ("Attempting to load registry file\n"));
@@ -1659,18 +1663,13 @@ static WERROR nt_open_registry (REG_HANDLE *h, const char *location, const char 
 
 	h->backend_data = regf;
 
-	return WERR_OK;
+	return nk_to_key(mem_ctx, h, ((REGF *)h->backend_data)->first_key, BLK_SIZE(((REGF *)h->backend_data)->first_key), NULL, key);
 }
 
-static WERROR nt_get_root_key(REG_HANDLE *h, int hive, REG_KEY **key) 
-{ 
-	if(hive != 0) return WERR_NO_MORE_ITEMS;
-	return nk_to_key(h, ((REGF *)h->backend_data)->first_key, BLK_SIZE(((REGF *)h->backend_data)->first_key), NULL, key);
-}
 
-static WERROR nt_num_subkeys(REG_KEY *k, int *num) 
+static WERROR nt_num_subkeys(struct registry_key *k, int *num) 
 {
-	REGF *regf = k->handle->backend_data;
+	REGF *regf = k->hive->backend_data;
 	LF_HDR *lf_hdr;
 	int lf_off;
 	NK_HDR *nk_hdr = k->backend_data;
@@ -1682,23 +1681,23 @@ static WERROR nt_num_subkeys(REG_KEY *k, int *num)
 	}
 	lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
 
-	return lf_num_entries(k->handle, lf_hdr, BLK_SIZE(lf_hdr), num);
+	return lf_num_entries(k->hive, lf_hdr, BLK_SIZE(lf_hdr), num);
 }
 
-static WERROR nt_num_values(REG_KEY *k, int *count)
+static WERROR nt_num_values(struct registry_key *k, int *count)
 {
 	NK_HDR *nk_hdr = k->backend_data;
 	*count = IVAL(&nk_hdr->val_cnt,0);
 	return WERR_OK;
 }
 
-static WERROR nt_value_by_index(REG_KEY *k, int n, REG_VAL **value)
+static WERROR nt_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, int n, struct registry_value **value)
 {
 	VL_TYPE *vl;
 	int val_off, vk_off;
 	int val_count;
 	VK_HDR *vk_hdr;
-	REGF *regf = k->handle->backend_data;
+	REGF *regf = k->hive->backend_data;
 	NK_HDR *nk_hdr = k->backend_data;
 	val_count = IVAL(&nk_hdr->val_cnt,0);
 	val_off = IVAL(&nk_hdr->val_off,0);
@@ -1709,12 +1708,12 @@ static WERROR nt_value_by_index(REG_KEY *k, int n, REG_VAL **value)
 
 	vk_off = IVAL(&vl[n],0);
 	vk_hdr = (VK_HDR *)LOCN(regf->base, vk_off);
-	return vk_to_val(k, vk_hdr, BLK_SIZE(vk_hdr), value);
+	return vk_to_val(mem_ctx, k, vk_hdr, BLK_SIZE(vk_hdr), value);
 }
 
-static WERROR nt_key_by_index(REG_KEY *k, int n, REG_KEY **subkey)
+static WERROR nt_key_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, int n, struct registry_key **subkey)
 {
-	REGF *regf = k->handle->backend_data;
+	REGF *regf = k->hive->backend_data;
 	int lf_off;
 	NK_HDR *nk_hdr = k->backend_data;
 	LF_HDR *lf_hdr;
@@ -1727,17 +1726,15 @@ static WERROR nt_key_by_index(REG_KEY *k, int n, REG_KEY **subkey)
 
 	if (lf_off != -1) {
 		lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
-		return lf_get_entry(k, lf_hdr, BLK_SIZE(lf_hdr), n, subkey);
+		return lf_get_entry(mem_ctx, k, lf_hdr, BLK_SIZE(lf_hdr), n, subkey);
 	}
 
 	return WERR_NO_MORE_ITEMS;
 }
 
-static struct registry_ops reg_backend_nt4 = {
+static struct registry_operations reg_backend_nt4 = {
 	.name = "nt4",
-	.open_registry = nt_open_registry,
-	.close_registry = nt_close_registry,
-	.get_hive = nt_get_root_key,
+	.open_hive = nt_open_hive,
 	.num_subkeys = nt_num_subkeys,
 	.num_values = nt_num_values,
 	.get_subkey_by_index = nt_key_by_index,
