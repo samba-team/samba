@@ -301,7 +301,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 
 	if (from->hdr_full_name.buffer) {
 		old_string = pdb_get_fullname(to);
-		new_string = pdb_unistr2_convert(&from->uni_user_name);
+		new_string = pdb_unistr2_convert(&from->uni_full_name);
 		DEBUG(10,("INFO_23 UNI_FULL_NAME: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_fullname(to      , new_string, PDB_CHANGED);
