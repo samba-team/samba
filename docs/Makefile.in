@@ -107,21 +107,21 @@ html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/S
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
-	&& cp -p $(HOWTODIR)/imagefiles/*png $(HTMLDIR)/images/
+	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
 
 html: $(HTMLDIR) CSS Samba-HOWTO-Collection.xml $(HTMLDIR)/Samba-Developers-Guide.html
 	$(XSLTPROC) -o "$(HTMLDIR)/" xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
-	&& cp -p $(GUIDEDOC)/imagefiles/*png $(HTMLDIR)/images/
+	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
 
 sg-html: $(HTMLDIR) CSS Samba-Guide.xml
 	$(XSLTPROC) -o "$(HTMLDIR)/" xslt/html-chunk.xsl Samba-Guide.xml
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
-	&& cp -p $(HOWTODIR)/images/*png $(HTMLDIR)/images/
+	&& cp -p $(IMAGEGUIDEDIR)/*png $(HTMLDIR)/images/
 
 manpages: $(MANDIR) $(MANPAGES)
 
