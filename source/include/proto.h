@@ -373,6 +373,7 @@ BOOL user_in_list(char *user,char *list);
 
 /*The following definitions come from  lib/util.c  */
 
+BOOL init_myworkgroup(void);
 char *tmpdir(void);
 BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups);
 uint32 get_number(const char *tmp);
@@ -487,7 +488,6 @@ void pwdb_set_must_change_time(char *p, int max_len, time_t t);
 void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd);
-BOOL pwdb_init_myworkgroup(void);
 BOOL pwdb_initialise(BOOL is_server);
 
 /*The following definitions come from  lib/util_sid.c  */
