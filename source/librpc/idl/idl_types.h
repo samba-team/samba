@@ -59,3 +59,7 @@
 #define boolean32 uint32
 #define unsigned32 uint32
 
+/*
+  this is used to control formatting of uint8 arrays
+*/
+#define NDR_PAHEX LIBNDR_PRINT_ARRAY_HEX

@@ -32,9 +32,59 @@ static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.username = lp_parm_string(-1, "torture", "username");
 	r.in.workstation = lp_netbios_name();
 
+	printf("Testing LogonUasLogon");
+
 	status = dcerpc_netr_LogonUasLogon(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LogonUasLogon - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+	
+}
+
+static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_LogonUasLogoff r;
+
+	r.in.server_name = NULL;
+	r.in.username = lp_parm_string(-1, "torture", "username");
+	r.in.workstation = lp_netbios_name();
+
+	printf("Testing LogonUasLogoff");
+
+	status = dcerpc_netr_LogonUasLogoff(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LogonUasLogoff - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+	
+}
+
+static BOOL test_Challenge(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_ServerReqChallenge r;
+	struct netr_Credential creds;
+
+	printf("Testing ServerReqChallenge");
+
+	ZERO_STRUCT(creds);
+
+	generate_random_buffer(creds.cred, sizeof(creds.cred), False);
+
+	r.in.server_name = NULL;
+	r.in.computer_name = lp_netbios_name();
+	r.in.credential = &creds;
+	r.out.credential = &creds;
+
+	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerReqChallenge - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -63,6 +113,14 @@ BOOL torture_rpc_netlogon(int dummy)
 	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_LogonUasLogon(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_LogonUasLogoff(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_Challenge(p, mem_ctx)) {
 		ret = False;
 	}
 

@@ -405,7 +405,9 @@ sub ParseElementPrintScalar($$)
 		return;
 	}
 
-	if (util::has_direct_buffers($e)) {
+	if (util::is_fixed_array($e)) {
+		ParseElementPrintBuffer($e, $var_prefix);
+	} elsif (util::has_direct_buffers($e)) {
 		pidl "\tndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});\n";
 		pidl "\tndr->depth++;\n";
 		ParseElementPrintBuffer($e, $var_prefix);
@@ -740,11 +742,15 @@ sub ParseStructPrint($)
 		return;
 	}
 
+	start_flags($struct);
+
 	pidl "\tndr->depth++;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPrintScalar($e, "r->");
 	}
 	pidl "\tndr->depth--;\n";
+
+	end_flags($struct);
 }
 
 #####################################################################
@@ -874,6 +880,8 @@ sub ParseUnionPrint($)
 	my $e = shift;
 	my $have_default = 0;
 
+	start_flags($e);
+
 	pidl "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		if ($el->{CASE} eq "default") {
@@ -891,6 +899,8 @@ sub ParseUnionPrint($)
 		pidl "\tdefault:\n\t\tndr_print_bad_level(ndr, name, level);\n";
 	}
 	pidl "\t}\n";
+
+	end_flags($e);
 }
 
 #####################################################################
