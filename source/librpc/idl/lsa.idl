@@ -8,7 +8,7 @@
   version(0.0),
   endpoint("ncacn_np:[\\pipe\\lsarpc]","ncacn_np:[\\pipe\\lsass]", "ncacn_ip_tcp:"),
   pointer_default(unique),
-  helpstring("Local Server Authentication(?)"),
+  helpstring("Local Security Authority"),
   depends(security)
 ] interface lsarpc
 {
