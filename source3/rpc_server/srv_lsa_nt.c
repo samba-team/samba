@@ -335,7 +335,7 @@ uint32 _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENU
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* set up the LSA QUERY INFO response */
-	init_r_enum_trust_dom(r_u, enum_context, dom_name, dom_sid,
+	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, dom_name, dom_sid,
 	      dom_name != NULL ? NT_STATUS_NOPROBLEMO : NT_STATUS_UNABLE_TO_FREE_VM);
 
 	return r_u->status;
