@@ -660,6 +660,11 @@ NTSTATUS ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t
 	return ndr_token_store(ndr, &ndr->switch_list, p, val);
 }
 
+NTSTATUS ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val)
+{
+	return ndr_token_store(ndr, &ndr->switch_list, p, val);
+}
+
 /*
   retrieve a switch value
  */
@@ -673,14 +678,6 @@ uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p)
 	return ndr_token_peek(&ndr->switch_list, p);
 }
 
-NTSTATUS ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val)
-{
-	return ndr_token_store(ndr, &ndr->switch_list, p, val);
-}
-
-/*
-  retrieve a switch value
- */
 uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p)
 {
 	return ndr_token_peek(&ndr->switch_list, p);
