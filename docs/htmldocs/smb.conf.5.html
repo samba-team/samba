@@ -1315,6 +1315,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#HIDEUNREADABLE"
+><TT
+CLASS="PARAMETER"
+><I
+>hide unreadable</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#HOMEDIRMAP"
 ><TT
 CLASS="PARAMETER"
@@ -1392,6 +1404,18 @@ HREF="#LANMANAUTH"
 CLASS="PARAMETER"
 ><I
 >lanman auth</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LARGEREADWRITE"
+><TT
+CLASS="PARAMETER"
+><I
+>large readwrite</I
 ></TT
 ></A
 ></P
@@ -2781,7 +2805,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN897"
+NAME="AEN905"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4200,7 +4224,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1369"
+NAME="AEN1377"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -8553,6 +8577,21 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="HIDEUNREADABLE"
+></A
+>hide unreadable(G)</DT
+><DD
+><P
+>This parameter prevents clients from seeing the
+		existance of files that cannot be read. Defaults to off.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>hide unreadable = no</B
+></P
+></DD
+><DT
+><A
 NAME="HOMEDIRMAP"
 ></A
 >homedir map (G)</DT
@@ -9330,6 +9369,31 @@ TARGET="_top"
 >Default : <B
 CLASS="COMMAND"
 >lanman auth = yes</B
+></P
+></DD
+><DT
+><A
+NAME="LARGEREADWRITE"
+></A
+>large readwrite(G)</DT
+><DD
+><P
+>This parameter determines whether or not <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+>
+		supports the new 64k streaming read and write varient SMB requests introduced
+		with Windows 2000. Note that due to Windows 2000 client redirector bugs
+		this requires Samba to be running on a 64-bit capable operating system such
+		as IRIX, Solaris or a Linux 2.4 kernel. Can improve performance by 10% with
+		Windows 2000 clients. Defaults to off. Not as tested as some other Samba
+		code paths.
+		</P
+><P
+>Default : <B
+CLASS="COMMAND"
+>large readwrite = no</B
 ></P
 ></DD
 ><DT
@@ -18466,7 +18530,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5830"
+NAME="AEN5853"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18496,7 +18560,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5836"
+NAME="AEN5859"
 ></A
 ><H2
 >VERSION</H2
@@ -18507,7 +18571,7 @@ NAME="AEN5836"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5839"
+NAME="AEN5862"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18586,7 +18650,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5859"
+NAME="AEN5882"
 ></A
 ><H2
 >AUTHOR</H2

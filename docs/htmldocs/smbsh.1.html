@@ -14,7 +14,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="FINDSMB"
+NAME="SMBSH"
 >smbsh</A
 ></H1
 ><DIV
@@ -80,7 +80,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >	smbsh</B
 > from the prompt and enter the username and password 
-	that authenticate you to the machine running the Windows NT 
+	that authenticates you to the machine running the Windows NT 
 	operating system.</P
 ><P
 ><TABLE
@@ -133,10 +133,15 @@ CLASS="FILENAME"
 CLASS="COMMAND"
 >ls /smb
 	</B
-> will show all the machines in your workgroup. The command 
+> will show a list of workgroups. The command 
 	<B
 CLASS="COMMAND"
->ls /smb/&#60;machine-name&#62;</B
+>ls /smb/MYGROUP </B
+> will show all the machines in 
+	the  workgroup MYGROUP. The command 
+	<B
+CLASS="COMMAND"
+>ls /smb/MYGROUP/&#60;machine-name&#62;</B
 > will show the share 
 	names for that machine. You could then, for example, use the <B
 CLASS="COMMAND"
@@ -153,7 +158,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN39"
+NAME="AEN40"
 ></A
 ><H2
 >VERSION</H2
@@ -164,7 +169,7 @@ NAME="AEN39"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN42"
+NAME="AEN43"
 ></A
 ><H2
 >BUGS</H2
@@ -197,7 +202,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN51"
+NAME="AEN52"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -220,7 +225,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN57"
+NAME="AEN58"
 ></A
 ><H2
 >AUTHOR</H2
