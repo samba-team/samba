@@ -21,7 +21,7 @@
 */
 
 #ifndef _RPC_NETSEC_H /* RPC_NETSEC_H */
-#define RPC_NETSEC_H 
+#define _RPC_NETSEC_H 
 
 #include "rpc_misc.h" /* this only pulls in STRHDR */
 
@@ -32,7 +32,6 @@ typedef struct rpc_auth_netsec_neg_info
 {
 	fstring domain; /* calling workstations's domain */
 	fstring myname; /* calling workstation's name */
-
 } RPC_AUTH_NETSEC_NEG;
 
 
@@ -40,7 +39,6 @@ typedef struct rpc_auth_netsec_neg_info
 typedef struct rpc_auth_netsec_resp_info
 {
 	uint32 flags; /* 0x0500 0000 */
-
 } RPC_AUTH_NETSEC_RESP;
 
 #define NETSEC_SIGNATURE \
@@ -54,8 +52,6 @@ typedef struct rpc_auth_netsec_chk_info
 	uint8 data1[8];
 	uint8 data3[8]; /* verifier, seq num */
 	uint8 data8[8]; /* random 8-byte nonce */
-
 } RPC_AUTH_NETSEC_CHK;
 
 #endif /* RPC_NETSEC_H */
-
