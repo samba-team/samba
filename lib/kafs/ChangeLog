@@ -2,3 +2,8 @@ Tue Jan  6 04:25:58 1998  Assar Westerlund  <assar@sics.se>
 
 	* afssysdefs.h (AFS_SYSCALL): add FreeBSD
 
+Fri Jan  2 17:08:24 1998  Assar Westerlund  <assar@sics.se>
+
+	* kafs.h: new VICEIOCTL's.  From <rb@stacken.kth.se>
+
+	* afssysdefs.h: Add OpenBSD
