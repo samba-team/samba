@@ -182,7 +182,8 @@ void standard_sub_basic(char *str)
 			string_sub(p,"%U",tmp_str,l);
 			break;
 		case 'G' :
-			if ((pass = Get_Pwnam(current_user_info.smb_name, False))!=NULL) {
+			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:current_user_info.smb_name);
+			if ((pass = Get_Pwnam(tmp_str, False))!=NULL) {
 				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
 			} else {
 				p += 2;
