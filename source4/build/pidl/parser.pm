@@ -86,9 +86,16 @@ sub ParseArrayPush($$$)
 
 	if (defined $e->{CONFORMANT_SIZE}) {
 		# the conformant size has already been pushed
-	} elsif (!util::is_constant($size)) {
+	} elsif (!util::is_fixed_array($e)) {
 		# we need to emit the array size
 		$res .= "\t\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
+	}
+
+	if (my $length = util::has_property($e, "length_is")) {
+		$length = find_size_var($e, $length);
+		$res .= "\t\tNDR_CHECK(ndr_push_uint32(ndr, 0));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push_uint32(ndr, $length));\n";
+		$size = $length;
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
@@ -105,6 +112,11 @@ sub ParseArrayPrint($$)
 	my $e = shift;
 	my $var_prefix = shift;
 	my $size = find_size_var($e, util::array_size($e));
+	my $length = util::has_property($e, "length_is");
+
+	if (defined $length) {
+		$size = find_size_var($e, $length);
+	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
 		$res .= "\t\tndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME}, $size);\n";
@@ -132,7 +144,7 @@ sub ParseArrayPull($$$)
 		$res .= "\tif ($size > $alloc_size) {\n";
 		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
 		$res .= "\t}\n";
-	} elsif (!util::is_constant($size)) {
+	} elsif (!util::is_fixed_array($e)) {
 		# non fixed arrays encode the size just before the array
 		$res .= "\t{\n";
 		$res .= "\t\tuint32 _array_size;\n";
@@ -143,12 +155,18 @@ sub ParseArrayPull($$$)
 		$res .= "\t}\n";
 	}
 
-	if (util::need_alloc($e) && !util::is_constant($size)) {
+	if (util::need_alloc($e) && !util::is_fixed_array($e)) {
 		$res .= "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $alloc_size, sizeof($var_prefix$e->{NAME}\[0]));\n";
 	}
 
-	if (util::has_property($e, "length_is")) {
-		die "we don't handle varying arrays yet";
+	if (my $length = util::has_property($e, "length_is")) {
+		$length = find_size_var($e, $length);
+		$res .= "\t\tuint32 _offset, _length;\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_offset));\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_length));\n";
+		$res .= "\t\tif (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, \"Bad array offset 0x%08x\", _offset);\n";
+		$res .= "\t\tif (_length > $size || _length != $length) return ndr_pull_error(ndr, NDR_ERR_LENGTH, \"Bad array length 0x%08x > size 0x%08x\", _offset, $size);\n";
+		$size = "_length";
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
