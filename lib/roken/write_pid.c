@@ -41,6 +41,8 @@ RCSID("$Id$");
 #include <unistd.h>
 #include <roken.h>
 
+#include "roken.h"
+
 char *
 pid_file_write (const char *progname)
 {
