@@ -283,6 +283,11 @@ int lstat(const char *path, struct stat *buf);
 int mkstemp(char *);
 #endif
 
+#ifndef HAVE_CGETENT
+int cgetent(char **buf, char **db_array, const char *name);
+int cgetstr(char *buf, const char *cap, char **str);
+#endif
+
 #ifndef HAVE_INITGROUPS
 int initgroups(const char *name, gid_t basegid);
 #endif
