@@ -73,7 +73,7 @@ void	domacro __P((int, char **));
 char   *domap __P((char *));
 void	doproxy __P((int, char **));
 char   *dotrans __P((char *));
-int     empty __P((struct fd_set *, int));
+int     empty __P((fd_set *, int));
 void	fatal __P((char *));
 void	get __P((int, char **));
 struct cmd *getcmd __P((char *));
