@@ -92,6 +92,7 @@ make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so debug2html
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba,xinetd.d}
+mkdir -p $RPM_BUILD_ROOT/etc/samba/security
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT/lib/security
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
