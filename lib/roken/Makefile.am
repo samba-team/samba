@@ -10,11 +10,23 @@ lib_LIBRARIES = libroken.a
 
 noinst_PROGRAMS = make-roken
 
-libroken_a_SOURCES = \
-	base64.c concat.c get_window_size.c getarg.c inaddr2str.c \
-	k_getpwnam.c	\
-	k_getpwuid.c mini_inetd.c parse_time.c parse_units.c signal.c	\
-	snprintf.c strcasecmp.c verify.c warnerr.c
+libroken_a_SOURCES =				\
+	base64.c				\
+	concat.c				\
+	get_window_size.c			\
+	getarg.c				\
+	inaddr2str.c				\
+	k_getpwnam.c				\
+	k_getpwuid.c				\
+	mini_inetd.c				\
+	parse_time.c				\
+	parse_units.c				\
+	resolve.c				\
+	signal.c				\
+	snprintf.c				\
+	strcasecmp.c				\
+	verify.c				\
+	warnerr.c
 
 libroken_a_LIBADD = @LIBOBJS@
 
