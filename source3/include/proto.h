@@ -198,7 +198,6 @@ void cmd_history(void);
 /*The following definitions come from  lib/replace.c  */
 
 char *rep_inet_ntoa(struct in_addr ip);
-void setlinebuf(FILE *stream);
 
 /*The following definitions come from  lib/select.c  */
 
@@ -3229,7 +3228,7 @@ BOOL make_spoolss_q_addprinterex(
 	const char* user_name,
 	uint32 level, 
 	PRINTER_INFO_CTR *ctr);
-BOOL make_spool_printer_info_2(
+BOOL make_spoolss_printer_info_2(
 	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
 	PRINTER_INFO_2 *info
 );
@@ -3321,8 +3320,20 @@ BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct
 BOOL spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth);
-BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u, const POLICY_HND *hnd, uint32 level, 
-				NEW_BUFFER *buffer, uint32 offered);
+BOOL make_spoolss_q_getprinter(
+	SPOOL_Q_GETPRINTER *q_u, 
+	const POLICY_HND *hnd, 
+	uint32 level, 
+	NEW_BUFFER *buffer, 
+	uint32 offered
+);
+BOOL make_spoolss_q_setprinter(
+	SPOOL_Q_SETPRINTER *q_u, 
+	const POLICY_HND *hnd, 
+	uint32 level, 
+	PRINTER_INFO_CTR *info, 
+	uint32 command
+);
 BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth);
@@ -3372,11 +3383,11 @@ BOOL make_spoolss_q_addprinterdriver(
 	const char* srv_name, 
 	uint32 level, 
 	PRINTER_DRIVER_CTR *info);
-BOOL make_spool_driver_info_3(
-	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+BOOL make_spoolss_driver_info_3(
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
 	DRIVER_INFO_3 *info3
 );
-BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src);
+BOOL make_spoolss_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
