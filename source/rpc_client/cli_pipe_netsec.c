@@ -29,8 +29,62 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-extern struct pipe_id_info pipe_names[];
-extern pstring global_myname;
+
+/****************************************************************************
+ decrypt data on an rpc pipe
+ ****************************************************************************/
+static BOOL decode_netsec_pdu(struct cli_connection *con,
+				prs_struct *rdata,
+				int len, int auth_len)
+{
+	RPC_AUTH_NETSEC_CHK chk;
+	RPC_HDR_AUTH auth_info;
+	int data_len = len - 0x18 - auth_len - 8;
+	char *reply_data = prs_data(rdata, 0x18);
+	uint32 old_offset;
+
+	netsec_auth_struct *a;
+	a = (netsec_auth_struct *)cli_conn_get_auth_info(con);
+
+	if (a == NULL)
+	{
+		return False;
+	}
+
+	DEBUG(5,("decode_netsec_pdu: len: %d auth_len: %d\n",
+	          len, auth_len));
+
+	if (reply_data == NULL) return False;
+
+	if (auth_len != 0x20 )
+	{
+		return False;
+	}
+
+	/*** skip the data, record the offset so we can restore it again */
+	old_offset = rdata->offset;
+
+	rdata->offset = data_len + 0x18;
+	smb_io_rpc_hdr_auth("hdr_auth", &auth_info, rdata, 0);
+	if (!rpc_hdr_netsec_auth_chk(&(auth_info)))
+	{
+		return False;
+	}
+
+	smb_io_rpc_auth_netsec_chk("auth_sign", &chk, rdata, 0);
+
+	if (!netsec_decode(a, &chk, reply_data, data_len))
+	{
+		return False;
+	}
+
+	a->seq_num++;
+
+	/* restore the [data, now decoded] offset */
+	rdata->offset = old_offset;
+
+	return True;
+}
 
 /****************************************************************************
  send a request on an rpc pipe.
@@ -289,5 +343,5 @@ cli_auth_fns cli_netsec_fns =
 	decode_netsec_bind_resp,
 	NULL,
 	create_netsec_pdu,
-	NULL /* decode_netsec_pdu */
+	decode_netsec_pdu
 };

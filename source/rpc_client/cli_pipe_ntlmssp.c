@@ -62,7 +62,6 @@ static void NTLMSSPcalc_ap( struct ntlmssp_auth_struct *a, unsigned char *data, 
 /****************************************************************************
  decrypt data on an rpc pipe
  ****************************************************************************/
-
 static BOOL decode_ntlmssp_pdu(struct cli_connection *con,
 				prs_struct *rdata,
 				int len, int auth_len)
