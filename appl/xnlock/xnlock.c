@@ -975,8 +975,13 @@ main (int argc, char **argv)
 
     if (appres.destroytickets) {
 #ifdef KRB4
+	int fd;
+
         dest_tkt();		/* Nuke old ticket file */
-	creat(TKT_FILE, 0600);	/* but keep a place holder */
+				/* but keep a place holder */
+	fd = open (TKT_FILE, O_WRONLY | O_CREAT | O_EXCL, 0600);
+	if (fd >= 0)
+	    close (fd);
 #endif
     }
 
