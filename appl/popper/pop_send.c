@@ -22,20 +22,24 @@ pop_sendline(POP *p, char *buffer)
     char        *   bp;
 
     /*  Byte stuff lines that begin with the temirnation octet */
-    if (*buffer == POP_TERMINATE) (void)fputc(POP_TERMINATE,p->output);
+    if (*buffer == POP_TERMINATE) 
+      fputc(POP_TERMINATE,p->output);
 
     /*  Look for a <NL> in the buffer */
-    if ((bp = strchr(buffer,NEWLINE))) *bp = 0;
+    if ((bp = strchr(buffer, '\n')))
+      *bp = 0;
 
     /*  Send the line to the client */
-    (void)fputs(buffer,p->output);
+    fputs(buffer,p->output);
 
 #ifdef DEBUG
-    if(p->debug)pop_log(p,POP_DEBUG,"Sending line \"%s\"",buffer);
+    if(p->debug)
+      pop_log(p,POP_DEBUG,"Sending line \"%s\"",buffer);
 #endif /* DEBUG */
 
     /*  Put a <CR><NL> if a newline was removed from the buffer */
-    if (bp) (void)fputs ("\r\n",p->output);
+    if (bp)
+      fputs ("\r\n",p->output);
 }
 
 /* 
