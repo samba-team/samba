@@ -1,3 +1,15 @@
+1999-10-28  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ls.c (lstat_file): new function for avoiding stating AFS
+ 	mount points.  From Love <lha@s3.kth.se>
+	(list_files): use `lstat_file'
+
+	* ftpd/ftpd.c: some const-poisoning
+
+	* ftpd/ftpd.c (args): add `-B' as an alias for `--builtin-ls' to
+ 	allow for stupid inetds that only support two arguments.  From
+ 	Love <lha@s3.kth.se>
+
 1999-10-26  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpcmd.y (help): it's unnecessary to interpret help strings
