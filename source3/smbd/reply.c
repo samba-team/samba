@@ -167,41 +167,6 @@ static int connection_error(char *inbuf,char *outbuf,int ecode)
 }
 
 
-
-/****************************************************************************
-  parse a share descriptor string
-****************************************************************************/
-static void parse_connect(char *p,char *service,char *user,
-			  char *password,int *pwlen,char *dev)
-{
-  char *p2;
-
-  DEBUG(4,("parsing connect string %s\n",p));
-    
-  p2 = strrchr(p,'\\');
-  if (p2 == NULL)
-    fstrcpy(service,p);
-  else
-    fstrcpy(service,p2+1);
-  
-  p += strlen(p) + 2;
-  
-  fstrcpy(password,p);
-  *pwlen = strlen(password);
-
-  p += strlen(p) + 2;
-
-  fstrcpy(dev,p);
-  
-  *user = 0;
-  p = strchr(service,'%');
-  if (p != NULL)
-    {
-      *p = 0;
-      fstrcpy(user,p+1);
-    }
-}
-
 /****************************************************************************
  Reply to a tcon.
 ****************************************************************************/
@@ -218,17 +183,34 @@ int reply_tcon(connection_struct *conn,
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int pwlen=0;
 	int ecode = -1;
+	char *p;
+
 	START_PROFILE(SMBtcon);
 
 	*service = *user = *password = *dev = 0;
 
-	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
+	p = smb_buf(inbuf)+1;
+	p += srvstr_pull(inbuf, service, p, sizeof(service), -1, STR_TERMINATE|STR_CONVERT) + 1;
+	p += srvstr_pull(inbuf, password, p, sizeof(password), -1, STR_TERMINATE|STR_CONVERT) + 1;
+	p += srvstr_pull(inbuf, dev, p, sizeof(dev), -1, STR_TERMINATE|STR_CONVERT) + 1;
 
-    /*
-     * Ensure the user and password names are in UNIX codepage format.
-     */
+	*user = 0;
+	p = strchr(service,'%');
+	if (p != NULL) {
+		*p = 0;
+		fstrcpy(user,p+1);
+	}
 
-    dos_to_unix(user,True);
+	p = strrchr(service,'\\');
+	if (p) {
+		pstrcpy(service, p+1);
+	}
+
+	/*
+	 * Ensure the user and password names are in UNIX codepage format.
+	 */
+	
+	dos_to_unix(user,True);
 	if (!doencrypt)
     	dos_to_unix(password,True);
 
