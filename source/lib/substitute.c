@@ -98,7 +98,7 @@ static char *automount_path(char *user_name)
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
 	/* pstrcpy() copes with get_user_home_dir() returning NULL */
-	pstrcpy(server_path, get_unixhome_dir(user_name));
+	pstrcpy(server_path, get_user_home_dir(user_name));
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -195,7 +195,7 @@ static void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t
 			break;
 		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
 		case 'H':
-			if ((home = get_unixhome_dir(user))) {
+			if ((home = get_user_home_dir(user))) {
 				string_sub(p,"%H",home, l);
 			} else {
 				p += 2;

@@ -142,6 +142,7 @@ uint32 map_lock_offset(uint32 high, uint32 low)
 /****************************************************************************
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
+
 SMB_BIG_UINT get_lock_count(char *data, int data_offset,
 			    BOOL large_file_format)
 {
@@ -267,7 +268,7 @@ SMB_BIG_UINT get_lock_offset(char *data, int data_offset,
 			(SMB_BIG_UINT) IVAL(data,
 					    SMB_LARGE_LKOFF_OFFSET_LOW
 					    (data_offset));
-#endif /* HAVE_LONG_LONG */
+#endif /* HAVE_LONGLONG */
 	}
 
 	return offset;

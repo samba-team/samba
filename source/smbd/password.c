@@ -557,7 +557,7 @@ BOOL check_hosts_equiv(char *user)
 
 	if (lp_use_rhosts())
 	{
-		char *home = get_unixhome_dir(user);
+		char *home = get_user_home_dir(user);
 		if (home)
 		{
 			slprintf(rhostsfile, sizeof(rhostsfile) - 1,

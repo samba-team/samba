@@ -320,7 +320,7 @@ BOOL msrpcd_init(int c, rpcsrv_struct ** l)
 		    lp_servicenumber(user) < 0)
 		{
 			int homes = lp_servicenumber(HOMES_NAME);
-			char *home = get_unixhome_dir(user);
+			char *home = get_user_home_dir(user);
 			if (homes >= 0 && home)
 			{
 				pstring home_dir;

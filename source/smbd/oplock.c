@@ -1305,11 +1305,11 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
   DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fsp->fsp_name));
 
   if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !fsp->sent_oplock_break && (fsp->fd != -1)) {
-    /* Try and break the oplock. */
+	  /* Try and break the oplock. */
 	  if (oplock_break(fsp->dev, fsp->inode, &fsp->open_time, True)) {
 		  if(file_find_fsp(fsp) == NULL) /* Did the oplock break close the file ? */
-        return True;
-    }
+			  return True;
+	  }
   }
 
   return False;

@@ -56,7 +56,6 @@ files_struct *print_fsp_open(connection_struct *conn,char *jobname)
 	fsp->vuid = current_user.key.vuid;
 	fsp->size = 0;
 	fsp->pos = -1;
-	fsp->open = True;
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = True;

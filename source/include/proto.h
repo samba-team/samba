@@ -544,7 +544,7 @@ void free_unix_grps(int ngroups, struct group *p_groups);
 char *gidtoname(gid_t gid);
 BOOL nametouid(const char *name, uid_t * uid);
 BOOL nametogid(const char *name, gid_t * gid);
-char *get_unixhome_dir(char *user);
+char *get_user_home_dir(char *user);
 BOOL map_username(char *user);
 const struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_ok(char *user,int snum);
@@ -4152,7 +4152,6 @@ int smbd_server_fd(void);
 void smbd_set_server_fd(int fd);
 BOOL reload_services(BOOL test);
 void exit_server(char *reason);
-int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
 /*The following definitions come from  smbd/service.c  */
 

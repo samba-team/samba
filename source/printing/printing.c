@@ -140,6 +140,11 @@ static int print_run_command(int snum,char *command,
 
 	if (!command || !*command) return -1;
 
+	if (!VALID_SNUM(snum)) {
+		DEBUG(0,("Invalid snum %d for command %s\n", snum, command));
+		return -1;
+	}
+
 	pstrcpy(syscmd, command);
 	if (a1) pstring_sub(syscmd, a1, v1);
 	if (a2) pstring_sub(syscmd, a2, v2);

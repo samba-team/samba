@@ -321,7 +321,7 @@ static int api_fd_reply(connection_struct * conn, uint16 vuid, char *outbuf,
 				 * much data we get back, but we *do*
 				 * need to know if there is more of it.
 				 */
-				reply = write_then_read_pipe(p, data, tdscnt,
+				reply = read_then_write_pipe(p, data, tdscnt,
 						       &rdata, &rlen,
 						       &pipe_outstanding);
 				if (reply)

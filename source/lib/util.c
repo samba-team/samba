@@ -3282,3 +3282,29 @@ const char *get_sid_name_use_str(uint32 sid_name_use)
 {
 	return enum_field_to_str(sid_name_use, sid_name_info, True);
 }
+
+#ifdef __INSURE__
+int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
+{
+	return enum_field_to_str(sid_name_use, sid_name_info, True);
+	static int (*fn)();
+	int ret;
+	char pidstr[10];
+	pstring cmd = "/usr/X11R6/bin/xterm -display :0 -T Panic -n Panic -e /bin/sh -c 'cat /tmp/ierrs.*.%d ; gdb /proc/%d/exe %d'";
+
+	slprintf(pidstr, sizeof(pidstr), "%d", getpid());
+	pstring_sub(cmd, "%d", pidstr);
+
+	if (!fn) {
+		static void *h;
+		h = dlopen("/usr/local/parasoft/insure++lite/lib.linux2/libinsure.so", RTLD_LAZY);
+		fn = dlsym(h, "_Insure_trap_error");
+	}
+
+	ret = fn(a1, a2, a3, a4, a5, a6);
+
+	system(cmd);
+
+	return ret;
+}
+#endif

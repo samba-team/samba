@@ -612,6 +612,34 @@ user %s attempted down-level SMB connection\n",
 				passlen2 = 0;
 		}
 
+		if (lp_restrict_anonymous())
+		{
+			/* there seems to be no reason behind the differences in MS clients formatting
+			 * various info like the domain, NativeOS, and NativeLanMan fields. Win95
+			 * in particular seems to have an extra null byte between the username and the
+			 * domain, or the password length calculation is wrong, which throws off the
+			 * string extraction routines below.  This makes the value of domain be the
+			 * empty string, which fails the restrict anonymous check further down.
+			 * This compensates for that, and allows browsing to work in mixed NT and
+			 * win95 environments even when restrict anonymous is true. AAB
+			 */
+			dump_data(100, p, 0x70);
+			DEBUG(9,
+			      ("passlen1=%d, passlen2=%d\n", passlen1,
+			       passlen2));
+			if (ra_type == RA_WIN95 && !passlen1 && !passlen2
+			    && p[0] == 0 && p[1] == 0)
+			{
+				DEBUG(0,
+				      ("restrict anonymous parameter used in a win95 environment!\n"));
+				DEBUG(0,
+				      ("client is win95 and broken passlen1 offset -- attempting fix\n"));
+				DEBUG(0,
+				      ("if win95 cilents are having difficulty browsing, you will be unable to use restrict anonymous\n"));
+				passlen1 = 1;
+			}
+		}
+
 		if (doencrypt
 		    || ((lp_security() == SEC_SERVER)
 			|| (lp_security() == SEC_DOMAIN)))
@@ -830,7 +858,7 @@ user %s attempted down-level SMB connection\n",
 	    lp_servicenumber(user) < 0)
 	{
 		int homes = lp_servicenumber(HOMES_NAME);
-		char *home = get_unixhome_dir(user);
+		char *home = get_user_home_dir(user);
 		if (homes >= 0 && home)
 		{
 			pstring home_dir;
@@ -1953,8 +1981,8 @@ int reply_unlink(connection_struct * conn, char *inbuf, char *outbuf,
 					 directory, dname);
 				if (!can_delete(fname, conn, dirtype))
 					continue;
-				if (!conn->
-				    vfs_ops.unlink(dos_to_unix(fname, False)))
+				if (!conn->vfs_ops.
+				    unlink(dos_to_unix(fname, False)))
 					count++;
 				DEBUG(3,
 				      ("reply_unlink : doing unlink on %s\n",
@@ -2837,7 +2865,7 @@ int reply_close(connection_struct * conn, char *inbuf, char *outbuf, int size,
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-	if (!fsp || !fsp->open || (fsp->conn != conn))
+	if (!fsp || (fsp->conn != conn))
 		return (ERROR(ERRDOS, ERRbadfid));
 
 	if (HAS_CACHED_ERROR(fsp))
@@ -3339,8 +3367,8 @@ static BOOL recursive_rmdir(connection_struct * conn, char *directory)
 				ret = True;
 				break;
 			}
-			if (conn->
-			    vfs_ops.rmdir(dos_to_unix(fullname, False)) != 0)
+			if (conn->vfs_ops.
+			    rmdir(dos_to_unix(fullname, False)) != 0)
 			{
 				ret = True;
 				break;
@@ -3417,9 +3445,9 @@ BOOL rmdir_internals(connection_struct * conn, char *directory)
 					pstrcat(fullname, "/");
 					pstrcat(fullname, dname);
 
-					if (conn->vfs_ops.lstat(dos_to_unix
-								(fullname,
-								 False),
+					if (conn->vfs_ops.
+					    lstat(dos_to_unix
+						  (fullname, False),
 								&st) != 0)
 						break;
 					if (st.st_mode & S_IFDIR)
@@ -3432,15 +3460,14 @@ BOOL rmdir_internals(connection_struct * conn, char *directory)
 							     fullname) != 0)
 								break;
 						}
-						if (conn->
-						    vfs_ops.rmdir(dos_to_unix
+						if (conn->vfs_ops.
+						    rmdir(dos_to_unix
 								  (fullname,
-								   False)) !=
-						    0)
+							   False)) != 0)
 							break;
 					}
-					else if (conn->
-						 vfs_ops.unlink(dos_to_unix
+					else if (conn->vfs_ops.
+						 unlink(dos_to_unix
 								(fullname,
 								 False)) != 0)
 						break;
@@ -3448,9 +3475,9 @@ BOOL rmdir_internals(connection_struct * conn, char *directory)
 				CloseDir(dirptr);
 				/* Retry the rmdir */
 				ok =
-					(conn->
-				      vfs_ops.rmdir(dos_to_unix
-						    (directory, False)) == 0);
+					(conn->vfs_ops.
+				      rmdir(dos_to_unix(directory, False)) ==
+					 0);
 			}
 			else
 				CloseDir(dirptr);
@@ -3830,10 +3857,9 @@ int rename_internals(connection_struct * conn,
 					continue;
 				}
 
-				if (!conn->
-				    vfs_ops.rename(dos_to_unix(fname, False),
-						   dos_to_unix(destname,
-							       False)))
+				if (!conn->vfs_ops.
+				    rename(dos_to_unix(fname, False),
+					   dos_to_unix(destname, False)))
 					count++;
 				DEBUG(3,
 				      ("rename_internals: doing rename on %s -> %s\n",

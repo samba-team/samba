@@ -494,7 +494,7 @@ BOOL nametogid(const char *name, gid_t * gid)
 /****************************************************************************
 get a users home directory.
 ****************************************************************************/
-char *get_unixhome_dir(char *user)
+char *get_user_home_dir(char *user)
 {
 	const struct passwd *pass;
 	static pstring home_dir;

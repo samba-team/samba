@@ -758,7 +758,7 @@ static int call_trans2findfirst(connection_struct *conn,
 
   for (i=0;(i<maxentries) && !finished && !out_of_space;i++)
   {
-    BOOL got_exact_match;
+    BOOL got_exact_match = False;
 
     /* this is a heuristic to avoid seeking the dirptr except when 
        absolutely necessary. It allows for a filename of about 40 chars */
@@ -1028,7 +1028,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
   for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++)
   {
-    BOOL got_exact_match;
+    BOOL got_exact_match = False;
 
     /* this is a heuristic to avoid seeking the dirptr except when 
        absolutely necessary. It allows for a filename of about 40 chars */
@@ -1296,7 +1296,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
     DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
-    if(fsp && fsp->open && (fsp->is_directory || fsp->stat_open)) {
+    if(fsp && (fsp->is_directory || fsp->stat_open)) {
       /*
        * This is actually a QFILEINFO on a directory
        * handle (returned from an NT SMB). NT5.0 seems
@@ -1579,7 +1579,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     fsp = file_fsp(params,0);
     info_level = SVAL(params,2);    
 
-    if(fsp && fsp->open && (fsp->is_directory || fsp->stat_open)) {
+    if(fsp && (fsp->is_directory || fsp->stat_open)) {
       /*
        * This is actually a SETFILEINFO on a directory
        * handle (returned from an NT SMB). NT5.0 seems
