@@ -54,33 +54,97 @@ BOOL change_to_guest(void)
 	return True;
 }
 
+/****************************************************************************
+ Readonly share for this user ?
+****************************************************************************/
+
+static BOOL is_share_read_only_for_user(connection_struct *conn, user_struct *vuser)
+{
+	char **list;
+	const char *service = lp_servicename(conn->service);
+	BOOL read_only_ret = lp_readonly(conn->service);
+
+	if (!service)
+		return read_only_ret;
+
+	str_list_copy(&list, lp_readlist(conn->service));
+	if (list) {
+		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: read list substitution failed\n"));
+		}
+		if (!str_list_substitute(list, "%S", service)) {
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: read list service substitution failed\n"));
+		}
+		if (user_in_list(vuser->user.unix_name, (const char **)list, vuser->groups, vuser->n_groups)) {
+			read_only_ret = True;
+		}
+		str_list_free(&list);
+	}
+
+	str_list_copy(&list, lp_writelist(conn->service));
+	if (list) {
+		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: write list substitution failed\n"));
+		}
+		if (!str_list_substitute(list, "%S", service)) {
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: write list service substitution failed\n"));
+		}
+		if (user_in_list(vuser->user.unix_name, (const char **)list, vuser->groups, vuser->n_groups)) {
+			read_only_ret = False;
+		}
+		str_list_free(&list);
+	}
+
+	DEBUG(10,("is_share_read_only_for_user: share %s is %s for unix user %s\n",
+		service, read_only_ret ? "read-only" : "read-write", vuser->user.unix_name ));
+
+	return read_only_ret;
+}
+
 /*******************************************************************
  Check if a username is OK.
 ********************************************************************/
 
 static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 {
-	unsigned i;
-	for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++)
-		if (conn->vuid_cache.list[i] == vuser->vuid)
-			return(True);
+	unsigned int i;
+	struct vuid_cache_entry *ent = NULL;
+	BOOL readonly_share;
 
-	if ((conn->force_user || conn->force_group) 
-	    && (conn->vuid != vuser->vuid)) {
-		return False;
+	for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
+		if (conn->vuid_cache.array[i].vuid == vuser->vuid) {
+			ent = &conn->vuid_cache.array[i];
+			conn->read_only = ent->read_only;
+			conn->admin_user = ent->admin_user;
+			return(True);
+		}
 	}
-	
+
 	if (!user_ok(vuser->user.unix_name,snum, vuser->groups, vuser->n_groups))
 		return(False);
 
-	if (!share_access_check(conn, snum, vuser, conn->read_only ? FILE_READ_DATA : FILE_WRITE_DATA)) {
+	readonly_share = is_share_read_only_for_user(conn, vuser);
+
+	if (!share_access_check(conn, snum, vuser, readonly_share ? FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
 	}
 
 	i = conn->vuid_cache.entries % VUID_CACHE_SIZE;
-	conn->vuid_cache.list[i] = vuser->vuid;
+	if (conn->vuid_cache.entries < VUID_CACHE_SIZE)
+		conn->vuid_cache.entries++;
 
-	conn->vuid_cache.entries++;
+	ent = &conn->vuid_cache.array[i];
+	ent->vuid = vuser->vuid;
+	ent->read_only = readonly_share;
+
+	if (user_in_list(vuser->user.unix_name ,lp_admin_users(conn->service), vuser->groups, vuser->n_groups)) {
+		ent->admin_user = True;
+	} else {
+		ent->admin_user = False;
+	}
+
+	conn->read_only = ent->read_only;
+	conn->admin_user = ent->admin_user;
 
 	return(True);
 }
@@ -132,7 +196,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		current_user.ngroups = conn->ngroups;
 		token = conn->nt_user_token;
 	} else if ((vuser) && check_user_ok(conn, vuser, snum)) {
-		uid = vuser->uid;
+		uid = conn->admin_user ? 0 : vuser->uid;
 		gid = vuser->gid;
 		current_user.ngroups = vuser->n_groups;
 		current_user.groups  = vuser->groups;
