@@ -490,11 +490,11 @@ Domain Guests (S-1-5-21-2547222302-1596225915-2414751004-514) -> domguest
 # Add the group using normal system groupadd tool.
 groupadd smbtmpgrp00
 
-thegid=`cat /etc/group | grep smbtmpgrp00 | cut -d ":" -f3`
+thegid=`cat /etc/group | grep ^smbtmpgrp00 | cut -d ":" -f3`
 
 # Now change the name to what we want for the MS Windows networking end
 cp /etc/group /etc/group.bak
-cat /etc/group.bak | sed "s/smbtmpgrp00/$1/g" > /etc/group
+cat /etc/group.bak | sed "s/^smbtmpgrp00/$1/g" > /etc/group
 
 # Now return the GID as would normally happen.
 echo $thegid
