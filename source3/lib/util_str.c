@@ -1116,7 +1116,7 @@ char *binary_string(char *buf, int len)
  Just a typesafety wrapper for snprintf into a pstring.
 ********************************************************************/
 
-int pstr_sprintf(pstring s, const char *fmt, ...)
+ int pstr_sprintf(pstring s, const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
@@ -1131,7 +1131,7 @@ int pstr_sprintf(pstring s, const char *fmt, ...)
  Just a typesafety wrapper for snprintf into a fstring.
 ********************************************************************/
 
-int fstr_sprintf(fstring s, const char *fmt, ...)
+ int fstr_sprintf(fstring s, const char *fmt, ...)
 {
 	va_list ap;
 	int ret;

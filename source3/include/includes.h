@@ -1160,6 +1160,15 @@ int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
+void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
+
+int pstr_sprintf(pstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+int fstr_sprintf(fstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+
+int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
+
+int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
+
 /* we used to use these fns, but now we have good replacements
    for snprintf and vsnprintf */
 #define slprintf snprintf

@@ -44,4 +44,6 @@ extern XFILE *x_stdin, *x_stdout, *x_stderr;
 
 #define x_getc(f) x_fgetc(f)
 
+int x_vfprintf(XFILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2, 0);
+int x_fprintf(XFILE *f, const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
 #endif /* _XFILE_H_ */
