@@ -25,14 +25,16 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 #define DATABASE_VERSION 1
 
 /****************************************************************************
-open the account policy tdb
+ Open the account policy tdb.
 ****************************************************************************/
+
 BOOL init_account_policy(void)
 {
 	static pid_t local_pid;
 	char *vstring = "INFO/version";
 
-	if (tdb && local_pid == sys_getpid()) return True;
+	if (tdb && local_pid == sys_getpid())
+		return True;
 	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open account policy database\n"));
@@ -43,9 +45,9 @@ BOOL init_account_policy(void)
 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, vstring);
-	if (tdb_fetch_int(tdb, vstring) != DATABASE_VERSION) {
+	if (tdb_fetch_int32(tdb, vstring) != DATABASE_VERSION) {
 		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_int(tdb, vstring, DATABASE_VERSION);
+		tdb_store_int32(tdb, vstring, DATABASE_VERSION);
 		
 		account_policy_set(AP_MIN_PASSWORD_LEN, MINPASSWDLENGTH);   /* 5 chars minimum             */
 		account_policy_set(AP_PASSWORD_HISTORY, 0);		    /* don't keep any old password */
@@ -58,7 +60,6 @@ BOOL init_account_policy(void)
 		account_policy_set(AP_TIME_TO_LOGOUT, -1);		    /* don't force logout          */
 	}
 	tdb_unlock_bystring(tdb, vstring);
-
 
 	return True;
 }
@@ -102,7 +103,7 @@ BOOL account_policy_get(int field, uint32 *value)
 	init_account_policy();
 
 	fstrcpy(name, decode_account_policy_name(field));
-	*value=tdb_fetch_int(tdb, name);
+	*value=tdb_fetch_int32(tdb, name);
 	DEBUG(10,("account_policy_get: %s:%d\n", name, *value));
 	return True;
 }
@@ -117,7 +118,7 @@ BOOL account_policy_set(int field, uint32 value)
 	init_account_policy();
 
 	fstrcpy(name, decode_account_policy_name(field));
-	if ( tdb_store_int(tdb, name, value)== -1)
+	if ( tdb_store_int32(tdb, name, value)== -1)
 		return False;
 	DEBUG(10,("account_policy_set: %s:%d\n", name, value));
 	

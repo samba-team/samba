@@ -144,11 +144,11 @@ BOOL lang_tdb_init(const char *lang)
 
 	free(path);
 
-	loadtime = tdb_fetch_int(tdb, "/LOADTIME/");
+	loadtime = tdb_fetch_int32(tdb, "/LOADTIME/");
 
 	if (loadtime == -1 || loadtime < st.st_mtime) {
 		load_msg(msg_path);
-		tdb_store_int(tdb, "/LOADTIME/", (int)time(NULL));
+		tdb_store_int32(tdb, "/LOADTIME/", (int)time(NULL));
 	}
 	free(msg_path);
 
