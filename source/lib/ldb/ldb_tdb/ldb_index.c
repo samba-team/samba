@@ -272,7 +272,7 @@ static int list_intersect(struct ldb_context *ldb,
 	list3.count = 0;
 
 	for (i=0;i<list->count;i++) {
-		if (list_find(list->dn[i], list2->dn, list2->count, 
+		if (ldb_list_find(list->dn[i], list2->dn, list2->count, 
 			      sizeof(char *), (comparison_fn_t)strcmp) != -1) {
 			list3.dn[list3.count] = list->dn[i];
 			list3.count++;
@@ -315,7 +315,7 @@ static int list_union(struct ldb_context *ldb,
 	list->dn = d;
 
 	for (i=0;i<list2->count;i++) {
-		if (list_find(list2->dn[i], list->dn, count, 
+		if (ldb_list_find(list2->dn[i], list->dn, count, 
 			      sizeof(char *), (comparison_fn_t)strcmp) == -1) {
 			list->dn[list->count] = ldb_strdup(ldb, list2->dn[i]);
 			if (!list->dn[list->count]) {
