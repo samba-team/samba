@@ -39,14 +39,19 @@ krb5_error_code krb5_data_alloc(krb5_data *, int);
 krb5_error_code krb5_data_realloc(krb5_data *, int);
 krb5_error_code krb5_data_copy(krb5_data *, void *, size_t);
 
-
-krb5_error_code krb5_get_lrealm(char ** realm);
+krb5_error_code
+krb5_set_default_realm(krb5_context context,
+		       char *realm);
 
 krb5_error_code
-krb5_parse_config_file(k5_cfile **cfile, const char *filename);
+krb5_get_default_realm(krb5_context context,
+		       char **realm);
 
-krb5_error_code
-krb5_get_config_tag(k5_cfile *cf, const char *tag, char **value);
+krb5_error_code krb5_config_parse_file (const char *fname,
+					krb5_config_section **res);
+char *krb5_config_get_string (krb5_config_section *c, char *section, ...);
+char *krb5_config_vget_string (krb5_config_section *c,
+			       char *section, va_list args);
 
 int
 krb5_getportbyname (const char *service,
