@@ -1259,7 +1259,7 @@ scrub_env(void)
 struct arg_val {
     int size;
     int argc;
-    char **argv;
+    const char **argv;
 };
 
 static void addarg(struct arg_val*, const char*);
@@ -1316,7 +1316,7 @@ start_login(const char *host, int autologin, char *name)
     /* init argv structure */ 
     argv.size=0;
     argv.argc=0;
-    argv.argv=(char**)malloc(0); /*so we can call realloc later */
+    argv.argv=malloc(0); /*so we can call realloc later */
     addarg(&argv, "login");
     addarg(&argv, "-h");
     addarg(&argv, host);
