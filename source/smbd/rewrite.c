@@ -80,3 +80,8 @@ BOOL gid_to_sid(DOM_SID *sid, gid_t gid)
 BOOL become_user_permanently(uid_t uid, gid_t gid)
 { return True; }
 
+
+int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *ngroups)
+{
+	return 0;
+}
