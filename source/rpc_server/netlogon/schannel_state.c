@@ -68,7 +68,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	asprintf(&s, "%u", (unsigned int)expiry);
+	s = talloc_asprintf(mem_ctx, "%u", (unsigned int)expiry);
 
 	if (s == NULL) {
 		talloc_free(ldb);
@@ -96,6 +96,8 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_delete(ldb->ldb, msg.dn);
 
 	ret = ldb_add(ldb->ldb, &msg);
+
+	talloc_free(s);
 
 	if (ret != 0) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n", 
