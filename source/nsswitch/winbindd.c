@@ -133,7 +133,6 @@ static void winbindd_status(void)
 static void print_winbindd_status(void)
 {
 	winbindd_status();
-	winbindd_cm_status();
 }
 
 /* Flush client cache */

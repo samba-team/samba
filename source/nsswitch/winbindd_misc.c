@@ -51,7 +51,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
         /* This call does a cli_nt_setup_creds() which implicitly checks
            the trust account password. */
 
-	invalidate_our_own_connection();
+	invalidate_cm_connection(&contact_domain->conn);
 
 	{
 		TALLOC_CTX *mem_ctx;

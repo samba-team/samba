@@ -729,10 +729,12 @@ do_query:
 
 		status = domain->backend->query_user_list(domain, mem_ctx, num_entries, info);
 		if (!NT_STATUS_IS_OK(status))
-			DEBUG(3, ("query_user_list: returned 0x%08x, retrying\n", NT_STATUS_V(status)));
-			if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL)) {
-				DEBUG(3, ("query_user_list: flushing connection cache\n"));
-				winbindd_cm_flush();
+			DEBUG(3, ("query_user_list: returned 0x%08x, "
+				  "retrying\n", NT_STATUS_V(status)));
+			if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL)) {
+				DEBUG(3, ("query_user_list: flushing "
+					  "connection cache\n"));
+				invalidate_cm_connection(&domain->conn);
 			}
 
 	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && 

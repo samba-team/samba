@@ -324,7 +324,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 				"password was changed and we didn't know it. "
 				 "Killing connections to domain %s\n",
 				name_domain));
-			winbindd_cm_flush();
+			invalidate_cm_connection(&contact_domain->conn);
 			retry = True;
 		} 
 		
@@ -580,7 +580,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 				"password was changed and we didn't know it. "
 				 "Killing connections to domain %s\n",
 				name_domain));
-			winbindd_cm_flush();
+			invalidate_cm_connection(&contact_domain->conn);
 			retry = True;
 		} 
 

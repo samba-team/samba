@@ -106,6 +106,26 @@ typedef struct {
 	DOM_SID *group_sid;
 } WINBIND_USERINFO;
 
+/* Our connection to the DC */
+
+struct winbindd_cm_conn {
+	struct cli_state *cli;
+
+	struct rpc_pipe_client *samr_pipe;
+	POLICY_HND sam_connect_handle, sam_domain_handle;
+
+	struct rpc_pipe_client *lsa_pipe;
+	POLICY_HND lsa_policy;
+
+	/* Auth2 pipe is the pipe used to setup the netlogon schannel key
+	 * using rpccli_net_auth2. It needs to be kept open. */
+
+	struct rpc_pipe_client *netlogon_auth2_pipe;
+	unsigned char sess_key[16];        /* Current session key. */
+	DOM_CRED clnt_cred;                /* Client NETLOGON credential. */
+	struct rpc_pipe_client *netlogon_pipe;
+};
+
 /* Structures to hold per domain information */
 
 struct winbindd_domain {
@@ -138,6 +158,10 @@ struct winbindd_domain {
 	time_t last_seq_check;
 	uint32 sequence_number;
 	NTSTATUS last_status;
+
+	/* The smb connection */
+
+	struct winbindd_cm_conn conn;
 
 	/* Linked list info */
 
