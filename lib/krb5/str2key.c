@@ -167,9 +167,14 @@ krb5_get_salt (krb5_principal princ,
 	return err;
     p = salt->data;
 #ifdef USE_ASN1_PRINCIPAL
-    strcpy (p, princ->realm);
-    for (i = 0; i < princ->name.name_string.len; ++i) 
-	strcat (p, princ->name.name_string.val[i]);
+    strncpy (p, princ->realm, strlen(princ->realm));
+    p += strlen(princ->realm);
+    for (i = 0; i < princ->name.name_string.len; ++i) {
+	strncpy (p,
+		 princ->name.name_string.val[i],
+		 strlen(princ->name.name_string.val[i]));
+	p += strlen(princ->name.name_string.val[i]);
+    }
 #else
     strncpy (p, princ->realm.data, princ->realm.length);
     p += princ->realm.length;
