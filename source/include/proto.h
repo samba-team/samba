@@ -158,7 +158,7 @@ void message_dispatch(void);
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len));
 void message_deregister(int msg_type);
-BOOL message_send_all(int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
+BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 
@@ -1881,17 +1881,18 @@ BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL do_lsa_open_policy(struct cli_state *cli,
 			char *system_name, POLICY_HND *hnd,
 			BOOL sec_qos);
-BOOL do_lsa_lookup_sids(struct cli_state *cli,
-			POLICY_HND *hnd,
-			int num_sids,
-			DOM_SID **sids,
-			char ***names,
-			int *num_names);
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
 BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
 BOOL cli_lsa_get_domain_sid(struct cli_state *cli, char *server);
+uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
+		       BOOL sec_qos, uint32 des_access);
+uint32 lsa_close(POLICY_HND *hnd);
+uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+		       char ***names, uint32 **types, int *num_names);
+uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
+			DOM_SID **sids, uint32 **types, int *num_sids);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
@@ -2249,6 +2250,7 @@ void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l,
 			POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 			uint16 level);
 BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
+void free_trans_names(LSA_TRANS_NAME_ENUM *trn);
 BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
 			 POLICY_HND *hnd, int num_names, char **names);
@@ -3351,6 +3353,12 @@ uint32 local_lookup_user_rid(char *user_name, uint32 *rid);
 BOOL api_wkssvc_rpc(pipes_struct *p);
 #endif
 
+/*The following definitions come from  rpcclient/cmd_lsarpc.c  */
+
+uint32 cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[]);
+void add_lsa_commands(void);
+
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
 uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
@@ -3462,6 +3470,7 @@ void conn_free(connection_struct *conn);
 
 /*The following definitions come from  smbd/connection.c  */
 
+TDB_CONTEXT *conn_tdb_ctx(void);
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections);
 BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear);
 

@@ -4,6 +4,7 @@
    Version 3.0
    
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) Tim Potter      2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -58,71 +59,83 @@ static struct perm_value standard_values[] = {
 	{ NULL, 0 },
 };
 
+struct cli_state lsa_cli;
+POLICY_HND pol;
+struct ntuser_creds creds;
+BOOL got_policy_hnd;
+
+/* Open cli connection and policy handle */
+
+static BOOL open_policy_hnd(void)
+{
+	creds.pwd.null_pwd = 1;
+
+	/* Initialise cli LSA connection */
+
+	if (!lsa_cli.initialised && 
+	    !cli_lsa_initialise(&lsa_cli, server, &creds)) {
+		return False;
+	}
+
+	/* Open policy handle */
+
+	if (!got_policy_hnd) {
+		if (cli_lsa_open_policy(&lsa_cli, True, 
+					SEC_RIGHTS_MAXIMUM_ALLOWED, &pol)
+		    != NT_STATUS_NOPROBLEMO) {
+			return False;
+		}
+
+		got_policy_hnd = True;
+	}
+	
+	return True;
+}
+
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(fstring str, DOM_SID *sid)
 {
-	struct cli_state cli;
-	POLICY_HND pol;
-	struct ntuser_creds creds;
-	char **names;
-	uint32 *types;
+	char **names = NULL;
+	uint32 *types = NULL;
 	int num_names;
 
-        ZERO_STRUCT(creds);             
-	ZERO_STRUCT(cli);
-	ZERO_STRUCT(pol);
+	sid_to_string(str, sid);
 
-        creds.pwd.null_pwd = 1;
+	if (numeric) return;
 
-	if (numeric || !cli_lsa_initialise(&cli, server, &creds) ||
-	    cli_lsa_open_policy(&cli, True, SEC_RIGHTS_MAXIMUM_ALLOWED,
-				&pol) != NT_STATUS_NOPROBLEMO ||
-	    cli_lsa_lookup_sids(&cli, &pol, 1, sid, &names, &types, 
-				&num_names) != NT_STATUS_NOPROBLEMO) {
-		sid_to_string(str, sid);
-		goto done;
-	}
+	/* Ask LSA to convert the sid to a name */
 
-	fstrcpy(str, names[0]);
+	if (open_policy_hnd() &&
+	    cli_lsa_lookup_sids(&lsa_cli, &pol, 1, sid, &names, &types, 
+				&num_names) == NT_STATUS_NOPROBLEMO) {
 
-	safe_free(names[0]);
-	safe_free(names);
-	safe_free(types);
+		/* Converted OK */
 
- done:
-	if (cli.initialised) {
-		cli_lsa_close(&cli, &pol);
-		cli_lsa_shutdown(&cli);
+		fstrcpy(str, names[0]);
+
+		safe_free(names[0]);
+		safe_free(names);
+		safe_free(types);
 	}
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static BOOL StringToSid(DOM_SID *sid, fstring str)
+static BOOL StringToSid(DOM_SID *sid, char *str)
 {
-	uint32 *types;
-	struct cli_state cli;
-	struct ntuser_creds creds;
-	POLICY_HND pol;
+	uint32 *types = NULL;
+	DOM_SID *sids = NULL;
 	int num_sids;
 	BOOL result = True;
-	DOM_SID *sids;
 	
 	/* Short cut */
 
 	if (strncmp(str, "S-", 2) == 0) {
-		return string_to_sid(sid, str);
+		result = string_to_sid(sid, str);
+		goto done;
 	}
 
-	ZERO_STRUCT(creds);
-	ZERO_STRUCT(cli);
-	ZERO_STRUCT(pol);
-
-	creds.pwd.null_pwd = 1;      
-
-	if (!cli_lsa_initialise(&cli, server, &creds) ||
-	    cli_lsa_open_policy(&cli, True, SEC_RIGHTS_MAXIMUM_ALLOWED,
-				&pol) != NT_STATUS_NOPROBLEMO ||
-	    cli_lsa_lookup_names(&cli, &pol, 1, &str, &sids, &types, 
+	if (open_policy_hnd() &&
+	    cli_lsa_lookup_names(&lsa_cli, &pol, 1, &str, &sids, &types, 
 				 &num_sids) != NT_STATUS_NOPROBLEMO) {
 		result = string_to_sid(sid, str);
 		goto done;
@@ -134,10 +147,6 @@ static BOOL StringToSid(DOM_SID *sid, fstring str)
 	safe_free(types);
 
  done:
-	if (cli.initialised) {
-		cli_lsa_close(&cli, &pol);
-		cli_lsa_shutdown(&cli);
-	}
 
 	return result;
 }
@@ -305,22 +314,22 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 }
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
-static BOOL add_ace(SEC_ACL **acl, SEC_ACE *ace)
+static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 {
 	SEC_ACL *new;
 	SEC_ACE *aces;
-	if (! *acl) {
-		(*acl) = make_sec_acl(3, 1, ace);
+	if (! *the_acl) {
+		(*the_acl) = make_sec_acl(3, 1, ace);
 		return True;
 	}
 
-	aces = calloc(1+(*acl)->num_aces,sizeof(SEC_ACE));
-	memcpy(aces, (*acl)->ace, (*acl)->num_aces * sizeof(SEC_ACE));
-	memcpy(aces+(*acl)->num_aces, ace, sizeof(SEC_ACE));
-	new = make_sec_acl((*acl)->revision,1+(*acl)->num_aces, aces);
-	free_sec_acl(acl);
+	aces = calloc(1+(*the_acl)->num_aces,sizeof(SEC_ACE));
+	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
+	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
+	new = make_sec_acl((*the_acl)->revision,1+(*the_acl)->num_aces, aces);
+	free_sec_acl(the_acl);
 	free(aces);
-	(*acl) = new;
+	(*the_acl) = new;
 	return True;
 }
 
@@ -364,9 +373,12 @@ static SEC_DESC *sec_desc_parse(char *str)
 
 		if (strncmp(tok,"ACL:", 4) == 0) {
 			SEC_ACE ace;
-			if (!parse_ace(&ace, tok+4) || 
-			    !add_ace(&dacl, &ace)) {
-				printf("Failed to parse ACL\n");
+			if (!parse_ace(&ace, tok+4)) {
+				printf("Failed to parse ACL %s\n", tok);
+				return NULL;
+			}
+			if(!add_ace(&dacl, &ace)) {
+				printf("Failed to add ACL %s\n", tok);
 				return NULL;
 			}
 			continue;
@@ -458,14 +470,14 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 set the ACLs on a file given an ascii description
 *******************************************************/
 static void cacl_set(struct cli_state *cli, char *filename, 
-		     char *acl, enum acl_mode mode)
+		     char *the_acl, enum acl_mode mode)
 {
 	int fnum;
 	SEC_DESC *sd, *old;
 	int i, j;
 	unsigned sd_size;
 
-	sd = sec_desc_parse(acl);
+	sd = sec_desc_parse(the_acl);
 
 	if (!sd) return;
 	if (test_args) return;
@@ -557,7 +569,6 @@ static void cacl_set(struct cli_state *cli, char *filename,
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
-		return;
 	}
 
 	free_sec_desc(&sd);
@@ -685,7 +696,7 @@ You can string acls together with spaces, commas or newlines\n\
 	static pstring servicesf = CONFIGFILE;
 	struct cli_state *cli;
 	enum acl_mode mode;
-	char *acl = NULL;
+	char *the_acl = NULL;
 
 	setlinebuf(stdout);
 
@@ -731,22 +742,22 @@ You can string acls together with spaces, commas or newlines\n\
 			break;
 
 		case 'S':
-			acl = optarg;
+			the_acl = optarg;
 			mode = ACL_SET;
 			break;
 
 		case 'D':
-			acl = optarg;
+			the_acl = optarg;
 			mode = ACL_DELETE;
 			break;
 
 		case 'M':
-			acl = optarg;
+			the_acl = optarg;
 			mode = ACL_MODIFY;
 			break;
 
 		case 'A':
-			acl = optarg;
+			the_acl = optarg;
 			mode = ACL_ADD;
 			break;
 
@@ -781,8 +792,8 @@ You can string acls together with spaces, commas or newlines\n\
 		if (!cli) exit(1);
 	}
 
-	if (acl) {
-		cacl_set(cli, filename, acl, mode);
+	if (the_acl) {
+		cacl_set(cli, filename, the_acl, mode);
 	} else {
 		cacl_dump(cli, filename);
 	}

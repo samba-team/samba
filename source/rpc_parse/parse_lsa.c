@@ -710,14 +710,14 @@ static BOOL lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen,
 	/* Mallocate memory if we're unpacking from the wire */
 
 	if (UNMARSHALLING(ps)) {
-		if ((sen->ptr_sid = (uint32 *)malloc(
+		if ((sen->ptr_sid = (uint32 *)prs_alloc_mem( ps,
 			sen->num_entries * sizeof(uint32))) == NULL) {
 			DEBUG(3, ("init_lsa_sid_enum(): out of memory for "
 				  "ptr_sid\n"));
 			return False;
 		}
 
-		if ((sen->sid = (DOM_SID2 *)malloc(
+		if ((sen->sid = (DOM_SID2 *)prs_alloc_mem( ps,
 			sen->num_entries * sizeof(DOM_SID2))) == NULL) {
 			DEBUG(3, ("init_lsa_sid_enum(): out of memory for "
 				  "sids\n"));
@@ -824,13 +824,13 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
 
 		if (UNMARSHALLING(ps)) {
 			if ((trn->name = (LSA_TRANS_NAME *)
-			     malloc(trn->num_entries * 
+			     prs_alloc_mem(ps, trn->num_entries * 
 				    sizeof(LSA_TRANS_NAME))) == NULL) {
 				return False;
 			}
 
 			if ((trn->uni_name = (UNISTR2 *)
-			     malloc(trn->num_entries *
+			     prs_alloc_mem(ps, trn->num_entries *
 				    sizeof(UNISTR2))) == NULL) {
 				return False;
 			}

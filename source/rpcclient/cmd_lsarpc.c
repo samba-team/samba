@@ -20,198 +20,229 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 
-extern int DEBUGLEVEL;
+extern FILE *out_hnd;
 
-#define DEBUG_TESTING
+/* Convert SID_NAME_USE values to strings */
 
-extern struct cli_state *smb_cli;
-extern int smb_tidx;
+struct sid_name {
+	enum SID_NAME_USE name_type;
+	char *name;
+} sid_name_type_str[] = {
+	{ SID_NAME_UNKNOWN, "UNKNOWN" },       
+	{ SID_NAME_USER,    "User" },
+	{ SID_NAME_DOM_GRP, "Domain Group" },
+	{ SID_NAME_DOMAIN,  "Domain" },
+	{ SID_NAME_ALIAS,   "Local Group"} ,
+	{ SID_NAME_WKN_GRP, "Well-known Group" },
+	{ SID_NAME_DELETED, "Deleted" },
+	{ SID_NAME_INVALID, "Invalid" },
+	{ 0, NULL }
+};
 
-extern FILE* out_hnd;
-
-
-/****************************************************************************
-nt lsa query
-****************************************************************************/
-void cmd_lsa_query_info(struct client_info *info)
+static char *get_sid_name_type_str(enum SID_NAME_USE name_type)
 {
-	fstring srv_name;
+	int i = 0;
 
-	BOOL res = True;
-
-	fstrcpy(info->dom.level3_dom, "");
-	fstrcpy(info->dom.level5_dom, "");
-	ZERO_STRUCT(info->dom.level3_sid);
-	ZERO_STRUCT(info->dom.level5_sid);
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
-	strupper(srv_name);
-
-	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
-
-	DEBUG(5, ("cmd_lsa_query_info: smb_cli->fd:%d\n", smb_cli->fd));
-
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
-
-	/* lookup domain controller; receive a policy handle */
-	res = res ? do_lsa_open_policy(smb_cli,
-				srv_name,
-				&info->dom.lsa_info_pol, False) : False;
-
-	/* send client info query, level 3.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(smb_cli, 
-	                                  &info->dom.lsa_info_pol, 0x03,
-	                                  info->dom.level3_dom,
-	                                  &info->dom.level3_sid) : False;
-
-	/* send client info query, level 5.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(smb_cli,
-	                        &info->dom.lsa_info_pol, 0x05,
-				info->dom.level5_dom,
-	                        &info->dom.level5_sid) : False;
-
-	res = res ? do_lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli);
-
-	if (res)
-	{
-		BOOL domain_something = False;
-		fstring sid;
-		DEBUG(5,("cmd_lsa_query_info: query succeeded\n"));
-
-		fprintf(out_hnd, "LSA Query Info Policy\n");
-
-		if (info->dom.level3_dom[0] != 0)
-		{
-			sid_to_string(sid, &info->dom.level3_sid);
-			fprintf(out_hnd, "Domain Member     - Domain: %s SID: %s\n",
-				info->dom.level3_dom, sid);
-			domain_something = True;
+	while(sid_name_type_str[i].name) {
+		if (name_type == sid_name_type_str[i].name_type) {
+			return sid_name_type_str[i].name;
 		}
-		if (info->dom.level5_dom[0] != 0)
-		{
-			sid_to_string(sid, &info->dom.level5_sid);
-			fprintf(out_hnd, "Domain Controller - Domain: %s SID: %s\n",
-				info->dom.level5_dom, sid);
-			domain_something = True;
-		}
-		if (!domain_something)
-		{
-			fprintf(out_hnd, "%s is not a Domain Member or Controller\n",
-			    info->dest_host);
-		}
+		i++;
 	}
-	else
-	{
-		DEBUG(5,("cmd_lsa_query_info: query failed\n"));
-	}
+
+	return NULL;
 }
 
-/****************************************************************************
-nt lsa query
-****************************************************************************/
-void cmd_lsa_lookup_sids(struct client_info *info)
-{
-	fstring temp;
-	int i;
-	fstring sid_name;
-	fstring srv_name;
-	DOM_SID sid[10];
-	DOM_SID *sids[10];
-	int num_sids = 0;
-	char **names = NULL;
-	int num_names = 0;
+/* Look up a list of sids */
 
-	BOOL res = True;
+uint32 cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
+{
+	POLICY_HND lsa_pol;
+	fstring srv_name;
+	char **names;
+	DOM_SID *sids;
+	int num_sids = 0, num_names, i;
+	uint32 *types, result;
+
+	/* Check command arguments */
+
+	if (argc == 1) {
+		fprintf(out_hnd, "lsa_lookupsids sid1 [sid2...]\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	sids = (DOM_SID *)malloc((argc - 1) * sizeof(DOM_SID));
+
+	for (i = 1; i < argc; i++) {
+		if (string_to_sid(&sids[num_sids], argv[i])) {
+			num_sids++;
+		} else {
+			fprintf(out_hnd, "could not parse sid %s\n", argv[i]);
+		}
+	}
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	DEBUG(4,("cmd_lsa_lookup_sids: server: %s\n", srv_name));
+	/* Lookup domain controller; receive a policy handle */
 
-	while (num_sids < 10 && next_token(NULL, temp, NULL, sizeof(temp)))
-	{
-		if (strnequal("S-", temp, 2))
-		{
-			fstrcpy(sid_name, temp);
-		}
-		else
-		{
-			sid_to_string(sid_name, &info->dom.level5_sid);
+	result = lsa_open_policy(srv_name, &lsa_pol, True,
+				 SEC_RIGHTS_MAXIMUM_ALLOWED);
 
-			if (sid_name[0] == 0)
-			{
-				fprintf(out_hnd, "please use lsaquery first or specify a complete SID\n");
-				return;
-			}
-				
-			fstrcat(sid_name, "-");
-			fstrcat(sid_name, temp);
-		}
-		init_dom_sid(&sid[num_sids], sid_name);
-		sids[num_sids] = &sid[num_sids];
-		num_sids++;
+	if (result != 0) {
+		report(out_hnd, "open policy failed: %s\n",
+		       get_nt_error_msg(result));
+		return result;
 	}
 
-	if (num_sids == 0)
-	{
-		fprintf(out_hnd, "lookupsid RID or SID\n");
-		return;
+	/* Send lsa lookup sids call */
+
+	result = lsa_lookup_sids(&lsa_pol, num_sids, sids, &names,
+				 &types, &num_names);
+
+	if (result != 0) {
+		report(out_hnd, "lookup names failed: %s\n",
+		       get_nt_error_msg(result));
+		return result;
 	}
 
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
+	result = lsa_close(&lsa_pol);
 
-	/* lookup domain controller; receive a policy handle */
-	res = res ? do_lsa_open_policy(smb_cli,
-				srv_name,
-				&info->dom.lsa_info_pol, True) : False;
-
-	/* send lsa lookup sids call */
-	res = res ? do_lsa_lookup_sids(smb_cli, 
-	                               &info->dom.lsa_info_pol,
-	                               num_sids, sids,
-	                               &names, &num_names) : False;
-
-	res = res ? do_lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli);
-
-	if (res)
-	{
-		DEBUG(5,("cmd_lsa_lookup_sids: query succeeded\n"));
+	if (result != 0) {
+		report(out_hnd, "lsa close failed: %s\n",
+		       get_nt_error_msg(result));
+		return result;
 	}
-	else
-	{
-		DEBUG(5,("cmd_lsa_lookup_sids: query failed\n"));
-	}
-	if (names != NULL)
-	{
-		fprintf(out_hnd,"Lookup SIDS:\n");
-		for (i = 0; i < num_names; i++)
-		{
-			sid_to_string(temp, sids[i]);
-			fprintf(out_hnd, "SID: %s -> %s\n", temp, names[i]);
-			if (names[i] != NULL)
-			{
+
+	/* Print output */
+
+	if (names != NULL) {
+		report(out_hnd, "Lookup SIDS:\n");
+
+		for (i = 0; i < num_names; i++) {
+			fstring temp;
+
+			sid_to_string(temp, &sids[i]);
+
+			report(out_hnd, "SID: %s -> %s (%d: %s)\n",
+			       temp, names[i] ? names[i] : "(null)", 
+			       types[i], get_sid_name_type_str(types[i]));
+
+			if (names[i] != NULL) {
 				free(names[i]);
 			}
 		}
+
 		free(names);
 	}
+
+	if (types) {
+		free(types);
+	}
+
+	return result;
 }
 
+/* Look up a list of names */
+
+uint32 cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
+{
+	POLICY_HND lsa_pol;
+	fstring srv_name;
+	int num_names, i, num_sids;
+	DOM_SID *sids;
+	char **names;
+	uint32 *types, result;
+
+	/* Check command arguments */
+
+	if (argc == 1) {
+		fprintf(out_hnd, "lsa_lookupnames name1 [name2...]\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	names = (char **)malloc((argc - 1) * sizeof(char *));
+	num_names = argc - 1;
+
+	for (i = 1; i < argc; i++) {
+		names[i - 1] = argv[i];
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	/* Lookup domain controller; receive a policy handle */
+
+	result = lsa_open_policy(srv_name, &lsa_pol, True,
+				 SEC_RIGHTS_MAXIMUM_ALLOWED);
+
+	if (result != 0) {
+		report(out_hnd, "open policy failed: %s\n",
+		       get_nt_error_msg(result));
+		return result;
+	}
+
+	/* Send lsa lookup names call */
+
+	result = lsa_lookup_names(&lsa_pol, num_names, names, &sids,
+				  &types, &num_sids);
+
+	if (result != 0) {
+		report(out_hnd, "lookup sids failed: %s\n",
+		       get_nt_error_msg(result));
+		return result;
+	}
+
+	result = lsa_close(&lsa_pol);
+
+	if (result != 0) {
+		report(out_hnd, "lsa close failed: %s\n",
+		       get_nt_error_msg(result));
+		return result;
+	}
+
+	/* Print output */
+
+	if (sids != NULL) {
+		fstring temp;
+
+		report(out_hnd, "Lookup Names:\n");
+		for (i = 0; i < num_sids; i++) {
+			sid_to_string(temp, &sids[i]);
+			report(out_hnd, "Name: %s -> %s (%d: %s)\n",
+			       names[i], temp, types[i],
+			       get_sid_name_type_str(types[i]));
+#if 0
+			if (sids[i] != NULL) {
+				free(sids[i]);
+			}
+#endif
+		}
+
+		free(sids);
+	}
+
+	return result;
+}
+
+/* rpcclient interface */
+
+static const struct command_set lsa_commands[] = {
+
+	{ "LSARPC", NULL, NULL, {NULL, NULL} },
+
+	{ "lsa_lookup_sids", cmd_lsa_lookup_sids },
+	{ "lsa_lookup_names", cmd_lsa_lookup_names },
+
+	{"", NULL, NULL, {NULL, NULL}}
+};
+
+
+void add_lsa_commands(void)
+{
+	add_command_set(lsa_commands);
+}

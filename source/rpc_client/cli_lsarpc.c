@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -23,15 +22,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-
 
 /****************************************************************************
 do a LSA Open Policy
@@ -100,114 +93,6 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 	prs_mem_free(&rbuf);
 
 	return True;
-}
-
-/****************************************************************************
-do a LSA Lookup SIDs
-****************************************************************************/
-
-BOOL do_lsa_lookup_sids(struct cli_state *cli,
-			POLICY_HND *hnd,
-			int num_sids,
-			DOM_SID **sids,
-			char ***names,
-			int *num_names)
-{
-	prs_struct rbuf;
-	prs_struct buf; 
-	LSA_Q_LOOKUP_SIDS q_l;
-	LSA_R_LOOKUP_SIDS r_l;
-	DOM_R_REF ref;
-	LSA_TRANS_NAME_ENUM t_names;
-	int i;
-	BOOL valid_response = False;
-
-	if (hnd == NULL || num_sids == 0 || sids == NULL)
-		return False;
-
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
-
-	/* create and send a MSRPC command with api LSA_LOOKUP_SIDS */
-
-	DEBUG(4,("LSA Lookup SIDs\n"));
-
-	/* store the parameters */
-	init_q_lookup_sids(cli->mem_ctx, &q_l, hnd, num_sids, sids, 1);
-
-	/* turn parameters into data stream */
-	if(!lsa_io_q_lookup_sids("", &q_l, &buf, 0)) {
-		prs_mem_free(&buf);
-		prs_mem_free(&rbuf);
-		return False;
-	}
-
-	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &buf, &rbuf)) {
-		prs_mem_free(&buf);
-		prs_mem_free(&rbuf);
-		return False;
-	}
-
-	prs_mem_free(&buf);
-
-	r_l.dom_ref = &ref;
-	r_l.names   = &t_names;
-
-	if(!lsa_io_r_lookup_sids("", &r_l, &rbuf, 0)) {
-		DEBUG(0,("do_lsa_lookup_sids: Failed to unmarshall LSA_R_LOOKUP_SIDS\n"));
-		prs_mem_free(&rbuf);
-		return False;
-	}
-
-		
-	if (r_l.status != 0) {
-		/* report error code */
-		DEBUG(0,("LSA_LOOKUP_SIDS: %s\n", get_nt_error_msg(r_l.status)));
-	} else {
-		if (t_names.ptr_trans_names != 0)
-			valid_response = True;
-	}
-
-	if(!valid_response) {
-		prs_mem_free(&rbuf);
-		return False;
-	}
-
-	if (num_names != NULL)
-		(*num_names) = t_names.num_entries;
-
-	for (i = 0; i < t_names.num_entries; i++) {
-		if (t_names.name[i].domain_idx >= ref.num_ref_doms_1) {
-			DEBUG(0,("LSA_LOOKUP_SIDS: domain index out of bounds\n"));
-			prs_mem_free(&rbuf);
-			return False;
-		}
-	}
-
-	if (names != NULL && t_names.num_entries != 0)
-		(*names) = (char**)malloc((*num_names) * sizeof(char*));
-
-	if (names != NULL && (*names) != NULL) {
-		/* take each name, construct a \DOMAIN\name string */
-		for (i = 0; i < (*num_names); i++) {
-			fstring name;
-			fstring dom_name;
-			fstring full_name;
-			uint32 dom_idx = t_names.name[i].domain_idx;
-			fstrcpy(dom_name, dos_unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
-			fstrcpy(name, dos_unistr2(t_names.uni_name[i].buffer));
-			
-			slprintf(full_name, sizeof(full_name)-1, "\\%s\\%s",
-			         dom_name, name);
-
-			(*names)[i] = strdup(full_name);
-		}
-	}
-
-	prs_mem_free(&rbuf);
-
-	return valid_response;
 }
 
 /****************************************************************************
@@ -401,4 +286,415 @@ BOOL cli_lsa_get_domain_sid(struct cli_state *cli, char *server)
 	cli_nt_session_close(cli);
 	
 	return res3;
+}
+
+/****************************************************************************
+do a LSA Open Policy
+****************************************************************************/
+uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
+		       BOOL sec_qos, uint32 des_access)
+{
+	prs_struct rbuf;
+	prs_struct buf;
+	LSA_Q_OPEN_POL q_o;
+	LSA_SEC_QOS qos;
+	struct cli_connection *con = NULL;
+	uint32 result;
+
+	if (!cli_connection_init(system_name, PIPE_LSARPC, &con)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (hnd == NULL) return NT_STATUS_UNSUCCESSFUL;
+
+	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, NULL, False);
+	prs_init(&rbuf, 0, 4, NULL, True);
+
+	/* create and send a MSRPC command with api LSA_OPENPOLICY */
+
+	DEBUG(4, ("LSA Open Policy\n"));
+
+	/* store the parameters */
+	if (sec_qos) {
+		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		init_q_open_pol(&q_o, '\\', 0, des_access, &qos);
+	} else {
+		init_q_open_pol(&q_o, '\\', 0, des_access, NULL);
+	}
+
+	/* turn parameters into data stream */
+	if (lsa_io_q_open_pol("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, LSA_OPENPOLICY, &buf, &rbuf)) {
+		LSA_R_OPEN_POL r_o;
+		BOOL p;
+
+		lsa_io_r_open_pol("", &r_o, &rbuf, 0);
+		p = rbuf.data_offset != 0;
+
+		result = r_o.status;
+
+		if (p && r_o.status != 0) {
+			/* report error code */
+			DEBUG(0,
+			      ("LSA_OPENPOLICY: %s\n",
+			       get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p) {
+
+			/* Return the policy handle */
+
+			*hnd = r_o.pol;
+
+                        if (!RpcHndList_set_connection(hnd, con)) {
+				result = NT_STATUS_NO_MEMORY;
+			}
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf);
+
+	return result;
+}
+
+/****************************************************************************
+do a LSA Close
+****************************************************************************/
+uint32 lsa_close(POLICY_HND *hnd)
+{
+        prs_struct rbuf;
+        prs_struct buf;
+        LSA_Q_CLOSE q_c;
+	uint32 result;
+
+        if (hnd == NULL) return False;
+
+        /* Create and send a MSRPC command with api LSA_OPENPOLICY */
+
+        prs_init(&buf, MAX_PDU_FRAG_LEN, 4, NULL, False);
+        prs_init(&rbuf, 0, 4, NULL, True);
+
+        DEBUG(4, ("LSA Close\n"));
+
+        /* Store the parameters */
+
+        init_lsa_q_close(&q_c, hnd);
+
+        /* Turn parameters into data stream */
+
+        if (lsa_io_q_close("", &q_c, &buf, 0) &&
+            rpc_hnd_pipe_req(hnd, LSA_CLOSE, &buf, &rbuf)) {
+                LSA_R_CLOSE r_c;
+                BOOL p;
+
+                lsa_io_r_close("", &r_c, &rbuf, 0);
+                p = rbuf.data_offset != 0;
+		result = r_c.status;
+
+                if (p && r_c.status != 0) {
+
+                        /* Report error code */
+
+                        DEBUG(0, ("LSA_CLOSE: %s\n",
+                                  get_nt_error_msg(r_c.status)));
+
+                        p = False;
+                }
+
+        }
+
+        prs_mem_free(&rbuf);
+        prs_mem_free(&buf);
+
+        return result;
+}
+
+/****************************************************************************
+do a LSA Lookup SIDs
+****************************************************************************/
+uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+		       char ***names, uint32 **types, int *num_names)
+{
+	prs_struct rbuf;
+	prs_struct buf;
+	LSA_Q_LOOKUP_SIDS q_l;
+	TALLOC_CTX *ctx = talloc_init();
+	uint32 result;
+
+	ZERO_STRUCT(q_l);
+
+	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
+
+	if (num_names != NULL) {
+		*num_names = 0;
+	}
+
+	if (types != NULL) {
+		*types = NULL;
+	}
+
+	if (names != NULL) {
+		*names = NULL;
+	}
+
+	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, ctx, False);
+	prs_init(&rbuf, 0, 4, ctx, True);
+
+	/* Create and send a MSRPC command with api LSA_LOOKUP_SIDS */
+
+	DEBUG(4, ("LSA Lookup SIDs\n"));
+
+	/* Store the parameters */
+
+	init_q_lookup_sids(ctx, &q_l, hnd, num_sids, sids, 1);
+
+	/* turn parameters into data stream */
+	if (lsa_io_q_lookup_sids("", &q_l, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_LOOKUPSIDS, &buf, &rbuf)) {
+		LSA_R_LOOKUP_SIDS r_l;
+		DOM_R_REF ref;
+		LSA_TRANS_NAME_ENUM t_names;
+		BOOL p, valid_response;
+
+		r_l.dom_ref = &ref;
+		r_l.names = &t_names;
+
+		lsa_io_r_lookup_sids("", &r_l, &rbuf, 0);
+		p = rbuf.data_offset != 0;
+		result = r_l.status;
+
+		if (p && r_l.status != 0 &&
+		    r_l.status != 0x107 &&
+		    r_l.status != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
+
+			/* Report error code */
+
+			DEBUG(1, ("LSA_LOOKUP_SIDS: %s\n",
+				  get_nt_error_msg(r_l.status)));
+
+			return r_l.status;
+		}
+
+		result = NT_STATUS_NOPROBLEMO;
+
+		if (p) {
+			if (t_names.ptr_trans_names != 0
+			    && r_l.ptr_dom_ref != 0) {
+				valid_response = True;
+			}
+		}
+
+		if (num_names != NULL && valid_response) {
+			(*num_names) = t_names.num_entries;
+		}
+
+		if (valid_response) {
+			uint32 i;
+
+			for (i = 0; i < t_names.num_entries; i++) {
+				if ((t_names.name[i].domain_idx >=
+				     ref.num_ref_doms_1)
+				    && (t_names.name[i].domain_idx !=
+					0xffffffff)) {
+					DEBUG(0,
+					      ("LSA_LOOKUP_SIDS: domain index out of bounds\n"));
+					valid_response = False;
+					break;
+				}
+			}
+		}
+
+		if (types != NULL && valid_response && (*num_names) != 0) {
+			(*types) = (uint32 *) malloc((*num_names) * 
+						     sizeof(uint32));
+		}
+
+		if (names != NULL && valid_response && (*num_names) != 0) {
+			(*names) = (char **)malloc((*num_names) * 
+						   sizeof(char *));
+		}
+
+		if (names != NULL && (*names) != NULL) {
+			int i;
+
+			/* Take each name, construct a \DOMAIN\name string */
+
+			for (i = 0; i < (*num_names); i++) {
+				fstring name;
+				fstring dom_name;
+				fstring full_name;
+				uint32 dom_idx = t_names.name[i].domain_idx;
+
+				if (dom_idx != 0xffffffff) {
+					unistr2_to_ascii(dom_name,
+							 &ref.
+							 ref_dom[dom_idx].
+							 uni_dom_name,
+							 sizeof(dom_name) -
+							 1);
+					unistr2_to_ascii(name,
+							 &t_names.uni_name[i],
+							 sizeof(name) - 1);
+
+					memset(full_name, 0,
+					       sizeof(full_name));
+
+					slprintf(full_name,
+						 sizeof(full_name) - 1,
+						 "%s\\%s", dom_name, name);
+
+					(*names)[i] = strdup(full_name);
+					if (types != NULL && 
+					    (*types) != NULL) {
+						(*types)[i] = t_names.name[i].sid_name_use;
+					}
+				} else {
+					(*names)[i] = NULL;
+					if (types != NULL && 
+					    (*types) != NULL) {
+						(*types)[i] = SID_NAME_UNKNOWN;
+					}
+				}
+			}
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf);
+
+	return result;
+}
+
+/****************************************************************************
+do a LSA Lookup Names
+****************************************************************************/
+uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
+			DOM_SID **sids, uint32 **types, int *num_sids)
+{
+	prs_struct rbuf;
+	prs_struct buf;
+	LSA_Q_LOOKUP_NAMES q_l;
+	BOOL valid_response = False;
+	TALLOC_CTX *ctx = talloc_init();
+	uint32 result;
+
+	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
+
+	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, ctx, False);
+	prs_init(&rbuf, 0, 4, ctx, True);
+
+	/* create and send a MSRPC command with api LSA_LOOKUP_NAMES */
+
+	DEBUG(4, ("LSA Lookup NAMEs\n"));
+
+	/* store the parameters */
+	init_q_lookup_names(ctx, &q_l, hnd, num_names, names);
+
+	/* turn parameters into data stream */
+	if (lsa_io_q_lookup_names("", &q_l, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_LOOKUPNAMES, &buf, &rbuf)) {
+		LSA_R_LOOKUP_NAMES r_l;
+		DOM_R_REF ref;
+		DOM_RID2 t_rids[MAX_LOOKUP_SIDS];
+		BOOL p;
+
+		ZERO_STRUCT(ref);
+		ZERO_STRUCT(t_rids);
+
+		r_l.dom_ref = &ref;
+		r_l.dom_rid = t_rids;
+
+		lsa_io_r_lookup_names(ctx, "", &r_l, &rbuf, 0);
+		p = rbuf.data_offset != 0;
+
+		if (p && r_l.status != 0) {
+			/* report error code */
+			DEBUG(1,
+			      ("LSA_LOOKUP_NAMES: %s\n",
+			       get_nt_error_msg(r_l.status)));
+			p = False;
+
+			return r_l.status;
+		}
+
+		result = r_l.status;
+
+		if (p) {
+			if (r_l.ptr_dom_ref != 0 && r_l.ptr_entries != 0) {
+				valid_response = True;
+			}
+		}
+
+		if (num_sids != NULL && valid_response) {
+			(*num_sids) = r_l.num_entries;
+		}
+
+		if (valid_response) {
+			uint32 i;
+
+			for (i = 0; i < r_l.num_entries; i++) {
+				if (t_rids[i].rid_idx >= ref.num_ref_doms_1 &&
+				    t_rids[i].rid_idx != 0xffffffff) {
+					DEBUG(0,
+					      ("LSA_LOOKUP_NAMES: domain index %d out of bounds\n",
+					       t_rids[i].rid_idx));
+					valid_response = False;
+					break;
+				}
+			}
+		}
+
+		if (types != NULL && valid_response && r_l.num_entries != 0) {
+			(*types) = (uint32 *) malloc((*num_sids) * 
+						     sizeof(uint32));
+		}
+
+		if (sids != NULL && valid_response && r_l.num_entries != 0) {
+			(*sids) = (DOM_SID *) malloc((*num_sids) * 
+						     sizeof(DOM_SID));
+		}
+
+		if (sids != NULL && (*sids) != NULL) {
+			int i;
+
+			/* Take each name, construct a SID */
+
+			for (i = 0; i < (*num_sids); i++) {
+				uint32 dom_idx = t_rids[i].rid_idx;
+				uint32 dom_rid = t_rids[i].rid;
+				DOM_SID *sid = &(*sids)[i];
+
+				if (dom_idx != 0xffffffff) {
+
+					sid_copy(sid,
+						 &ref.ref_dom[dom_idx].
+						 ref_dom.sid);
+
+					if (dom_rid != 0xffffffff) {
+						sid_append_rid(sid, dom_rid);
+					}
+
+					if (types != NULL && 
+					    (*types) != NULL) {
+						(*types)[i] = t_rids[i].type;
+					}
+
+				} else {
+					ZERO_STRUCTP(sid);
+
+					if (types != NULL && 
+					    (*types) != NULL) {
+						(*types)[i] = SID_NAME_UNKNOWN;
+					}
+				}
+			}
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf);
+
+	return result;
 }

@@ -156,7 +156,11 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_srvsvc.o   \
 		rpc_client/cli_samr.o  \
 		rpc_client/cli_reg.o \
-		rpc_client/cli_spoolss_notify.o
+		rpc_client/cli_spoolss_notify.o \
+		rpc_client/cli_connect.o \
+		rpc_client/cli_use.o \
+		rpc_client/ncacn_np_use.o \
+		lib/util_list.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -246,12 +250,10 @@ SMBPASSWD_OBJ = utils/smbpasswd.o lib/msrpc-client.o $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o \
-		lib/cmd_interp.o lib/util_list.o \
+		lib/cmd_interp.o \
 	   	lib/msrpc-client.o \
-		rpc_client/cli_connect.o \
-		rpc_client/cli_use.o \
-		rpc_client/ncacn_np_use.o \
 		rpcclient/spoolss_cmds.o rpcclient/cmd_spoolss.o \
+		rpcclient/cmd_lsarpc.o \
 		rpcclient/display_spool.o rpcclient/display_sec.o \
 		rpc_client/msrpc_spoolss.o rpc_client/cli_spoolss.o
 
