@@ -45,7 +45,7 @@ Samba-Developers-Guide/index.xml: $(subst Samba-Developers-Guide/index.xml,,$(wi
 
 # Pseudo targets 
 all: $(TARGETS)
-everything: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson verify
+everything: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson validate
 release: manpages htmlman html pdf 
 
 # Output format targets
@@ -181,7 +181,7 @@ $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
 # PDF thru Fo
 $(FOPDFDIR)/%.pdf: $(FODIR)/%.fo
 	mkdir -p $(@D)
-	$(FOP) $< $@
+	$(FOP) -q -d $< -pdf $@
 
 $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
 	-mkdir -p $@/images
@@ -232,7 +232,7 @@ $(VALIDATEDIR)/%.report.html: $(DOCBOOKDIR)/%.xml
 	mkdir -p $(@D)
 	$(XMLLINT) --valid --noout --htmlout $< 2> $@
 
-verify: $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
+validate: $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
 
 # Find undocumented parameters
 
