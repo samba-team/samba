@@ -195,6 +195,9 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 	fstring internal_username;
 	fstrcpy(internal_username, smb_name);
 	map_username(internal_username); 
+
+	DEBUG(5, ("make_user_info_map: Mapping user [%s]\\[%s] from workstation [%s]\n",
+	      client_domain, smb_name, wksta_name));
 	
 	if (lp_allow_trusted_domains() && *client_domain) {
 
@@ -216,14 +219,25 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 		domain = client_domain;
 
 		if ((smb_name) && (*smb_name)) { /* Don't do this for guests */
-			char *user;
-			asprintf(&user, "%s%s%s", 
+			char *user = NULL;
+			if (asprintf(&user, "%s%s%s", 
 				 client_domain, lp_winbind_separator(), 
-				 smb_name);
-			if (Get_Pwnam(user) == NULL) {
-				domain = lp_workgroup();
+				 smb_name) < 0) {
+				DEBUG(0, ("make_user_info_map: asprintf() failed!\n"));
+				return False;
 			}
-			free(user);
+
+			DEBUG(5, ("make_user_info_map: testing for user %s\n", user));
+			
+			if (Get_Pwnam(user) == NULL) {
+				DEBUG(5, ("make_user_info_map: test for user %s failed\n", user));
+				domain = lp_workgroup();
+				DEBUG(5, ("make_user_info_map: trusted domain %s doesn't appear to exist, using %s\n", 
+					  client_domain, domain));
+			} else {
+				DEBUG(5, ("make_user_info_map: using trusted domain %s\n", domain));
+			}
+			SAFE_FREE(user);
 		}
 	} else {
 		domain = lp_workgroup();
