@@ -237,7 +237,9 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	ctx = dcerpc_event_context(p);
 	while (total_done < ASYNC_COUNT) {
-		event_loop_once(ctx);
+		if (event_loop_once(ctx) != 0) {
+			return False;
+		}
 		for (i=0;i<ASYNC_COUNT;i++) {
 			if (done[i] == 0 && req[i]->state == RPC_REQUEST_DONE) {
 				total_done++;
