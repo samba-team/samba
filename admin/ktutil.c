@@ -146,7 +146,7 @@ main(int argc, char **argv)
 	ret = krb5_kt_resolve(context, keytab_string, &keytab);
     } else {
 	if(krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf)))
-	    strlcpy (keytab_buf, "unknown");
+	    strlcpy (keytab_buf, "unknown", sizeof(keytab_buf));
 	keytab_string = keytab_buf;
 
 	ret = krb5_kt_default(context, &keytab);
