@@ -508,5 +508,8 @@ time_t get_create_time(struct stat *st)
     
 time_t get_access_time(struct stat *st)
 {
-  return st->st_atime;
+  if (lp_win95_bug_compatibility())
+    return st->st_mtime;
+  else
+    return st->st_atime;
 }

@@ -1366,7 +1366,7 @@ struct cli_state {
 
 struct current_user
 {
-  int cnum, id;
+  int cnum, vuid;
   int uid, gid;
   int ngroups;
   gid_t *groups;
@@ -1424,7 +1424,7 @@ typedef struct
   int pos;
   uint32 size;
   int mode;
-  int uid;
+  int vuid;
   char *mmap_ptr;
   uint32 mmap_size;
   write_bmpx_struct *wbmpx_ptr;

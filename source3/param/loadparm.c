@@ -189,6 +189,7 @@ typedef struct
   BOOL bTimeServer;
   BOOL bBindInterfacesOnly;
   BOOL bNetWkstaUserLogon;
+  BOOL bWin95BugCompatibility;
 } global;
 
 static global Globals;
@@ -530,6 +531,7 @@ static struct parm_struct
   {"unix realname",    P_BOOL,    P_GLOBAL, &Globals.bUnixRealname,     NULL,   NULL},
   {"NIS homedir",      P_BOOL,    P_GLOBAL, &Globals.bNISHomeMap,       NULL,   NULL},
   {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL},
+  {"win95 bug compatibility", P_BOOL,    P_GLOBAL, &Globals.bWin95BugCompatibility,NULL,   NULL},
   {"printer driver file", P_STRING,  P_GLOBAL, &Globals.szDriverFile,   NULL,   NULL},
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL,   NULL},
   {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL},
@@ -723,6 +725,7 @@ static void init_globals(void)
   Globals.bTimeServer = False;
   Globals.bBindInterfacesOnly = False;
   Globals.bNetWkstaUserLogon = True;
+  Globals.bWin95BugCompatibility = False;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -939,6 +942,7 @@ FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
 FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_net_wksta_user_logon,&Globals.bNetWkstaUserLogon)
+FN_GLOBAL_BOOL(lp_win95_bug_compatibility,&Globals.bWin95BugCompatibility)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
