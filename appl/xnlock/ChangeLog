@@ -1,3 +1,8 @@
+2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* xnlock.c: get_v4_tgt only used when compileing with kerberos 4
+	support
+
 2004-09-08  Johan Danielsson  <joda@pdc.kth.se>
 
 	* xnlock.c: use krb5_appdefault_boolean instead of
