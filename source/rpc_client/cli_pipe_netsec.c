@@ -159,7 +159,7 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	DEBUG(5,("create_netsec_reply: data %d auth %d\n",
 		 data_len, auth_len));
 
-	make_rpc_hdr_auth(&auth_info, 0x44, 0x06, 0x08, 1);
+	make_rpc_hdr_auth(&auth_info, 0x44, 0x06, 0x0, 1);
 	smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &hdr_auth, 0);
 
 	memset(sign, 0, sizeof(sign));
