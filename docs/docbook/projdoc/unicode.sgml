@@ -1,0 +1,93 @@
+<chapter id="unicode">
+<chapterinfo>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>jelmer@samba.org</email></address>
+		</affiliation>
+	</author>
+	<pubdate>25 March 2003</pubdate>
+</chapterinfo>
+
+<title>Unicode/Charsets</title>
+
+<sect1>
+<title>What are charsets and unicode?</title>
+
+<para>
+Computers communicate in numbers. In texts, each number will be 
+translated to a corresponding letter. The meaning that will be assigned 
+to a certain number depends on the <emphasis>character set(charset)
+</emphasis> that is used. 
+A charset can be seen as a table that is used to translate numbers to 
+letters. Not all computers use the same charset (there are charsets 
+with German umlauts, Japanese characters, etc). Usually a charset contains 
+256 characters, which means that storing a character with it takes 
+exactly one byte. </para>
+
+<para>
+There are also charsets that support even more characters, 
+but those need twice(or even more) as much storage space. These 
+charsets can contain <command>256 * 256 = 65536</command> characters, which
+is more then all possible characters one could think of. They are called 
+multibyte charsets (because they use more then one byte to 
+store one character). 
+</para>
+
+<para>
+A standardised multibyte charset is unicode, info available at 
+<ulink url="http://www.unicode.org/">www.unicode.org</ulink>. 
+Big advantage of using a multibyte charset is that you only need one; no 
+need to make sure two computers use the same charset when they are 
+communicating.
+</para>
+
+<para>Old windows clients used to use single-byte charsets, named 
+'codepages' by microsoft. However, there is no support for 
+negotiating the charset to be used in the smb protocol. Thus, you 
+have to make sure you are using the same charset when talking to an old client.
+Newer clients (Windows NT, 2K, XP) talk unicode over the wire.
+</para>
+</sect1>
+
+<sect1>
+<title>Samba and charsets</title>
+
+<para>
+As of samba 3.0, samba can (and will) talk unicode over the wire. Internally, 
+samba knows of three kinds of character sets: 
+</para>
+
+<variablelist>
+	<varlistentry>
+		<term>unix charset</term>
+		<listitem><para>
+		This is the charset used internally by your operating system. 
+		The default is <emphasis>ASCII</emphasis>, which is fine for most 
+		systems.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>display charset</term>
+		<listitem><para>This is the charset samba will use to print messages
+		on your screen. It should generally be the same as the <command>unix charset</command>.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>dos charset</term>
+		<listitem><para>This is the charset samba uses when communicating with 
+		DOS and Windows 9x clients. It will talk unicode to all newer clients.
+		The default depends on the charsets you have installed on your system.
+		Run <command>testparm -v | grep "dos charset"</command> to see 
+		what the default is on your system. 
+		</para></listitem>
+	</varlistentry>
+</variablelist>
+
+<para>
+
+</sect1>
+</chapter>
