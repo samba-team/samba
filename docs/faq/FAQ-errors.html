@@ -1,5 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 5. Common errors</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"><link rel="home" href="samba-faq.html" title="Samba FAQ"><link rel="up" href="samba-faq.html" title="Samba FAQ"><link rel="previous" href="FAQ-ClientApp.html" title="Chapter 4. Specific client application problems"><link rel="next" href="FAQ-features.html" title="Chapter 6. Features"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 5. Common errors</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="FAQ-ClientApp.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="FAQ-features.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><h2 class="title"><a name="FAQ-errors"></a>Chapter 5. Common errors</h2></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="FAQ-errors.html#id2811288">Not listening for calling name</a></dt><dt><a href="FAQ-errors.html#id2811329">System Error 1240</a></dt><dt><a href="FAQ-errors.html#id2811215">smbclient ignores -N !</a></dt><dt><a href="FAQ-errors.html#id2811270">The data on the CD-Drive I've shared seems to be corrupted!</a></dt><dt><a href="FAQ-errors.html#id2874350">Why can users access home directories of other users?</a></dt><dt><a href="FAQ-errors.html#id2874436">Until a few minutes after samba has started, clients get the error &quot;Domain Controller Unavailable&quot;</a></dt><dt><a href="FAQ-errors.html#id2874451">I'm getting &quot;open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested&quot; in the logs</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2811288"></a>Not listening for calling name</h2></div></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 4. Common errors</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-faq.html" title="Samba FAQ"><link rel="up" href="samba-faq.html" title="Samba FAQ"><link rel="previous" href="FAQ-ClientApp.html" title="Chapter 3. Specific client application problems"><link rel="next" href="FAQ-features.html" title="Chapter 5. Features"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 4. Common errors</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="FAQ-ClientApp.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="FAQ-features.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="FAQ-errors"></a>Chapter 4. Common errors</h2></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="FAQ-errors.html#id2816075">Not listening for calling name</a></dt><dt><a href="FAQ-errors.html#id2815985">System Error 1240</a></dt><dt><a href="FAQ-errors.html#id2816025">smbclient ignores -N !</a></dt><dt><a href="FAQ-errors.html#id2814553">The data on the CD-Drive I've shared seems to be corrupted!</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816075"></a>Not listening for calling name</h2></div></div><div></div></div><p>
 </p><pre class="programlisting">
 Session request failed (131,129) with myname=HOBBES destname=CALVIN
 Not listening for calling name
@@ -15,85 +14,39 @@ global section of smb.conf.
 It can also be a problem with reverse DNS lookups not functioning 
 correctly, leading to the remote host identity not being able to
 be confirmed, but that is less likely.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2811329"></a>System Error 1240</h2></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2815985"></a>System Error 1240</h2></div></div><div></div></div><p>
 System error 1240 means that the client is refusing to talk
 to a non-encrypting server. Microsoft changed WinNT in service
 pack 3 to refuse to connect to servers that do not support
 SMB password encryption.
 </p><p>There are two main solutions:
 </p><table class="simplelist" border="0" summary="Simple list"><tr><td>enable SMB password encryption in Samba. See the encryption part of 
-the samba HOWTO Collection</td></tr><tr><td>disable this new behaviour in NT. See the section about 
+the samba HOWTO Collection</td></tr><tr><td>disable this behaviour in NT. See the section about 
 Windows NT in the chapter &quot;Portability&quot; of the samba HOWTO collection
 </td></tr></table><p>
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2811215"></a>smbclient ignores -N !</h2></div></div><p>
-&#8220;When getting the list of shares available on a host using the command
-<b>smbclient -N -L</b>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816025"></a>smbclient ignores -N !</h2></div></div><div></div></div><p>
+&#8220;<span class="quote">When getting the list of shares available on a host using the command
+<b class="command">smbclient -N -L</b>
 the program always prompts for the password if the server is a Samba server.
 It also ignores the &quot;-N&quot; argument when querying some (but not all) of our
 NT servers.
-&#8221;
+</span>&#8221;
 </p><p>
 No, it does not ignore -N, it is just that your server rejected the 
 null password in the connection, so smbclient prompts for a password
 to try again.
 </p><p>
-To get the behaviour that you probably want use <b>smbclient -L host -U%</b>
+To get the behaviour that you probably want use <b class="command">smbclient -L host -U%</b>
 </p><p>
 This will set both the username and password to null, which is
 an anonymous login for SMB. Using -N would only set the password
 to null, and this is not accepted as an anonymous login for most
 SMB servers.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2811270"></a>The data on the CD-Drive I've shared seems to be corrupted!</h2></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2814553"></a>The data on the CD-Drive I've shared seems to be corrupted!</h2></div></div><div></div></div><p>
 Some OSes (notably Linux) default to auto detection of file type on
 cdroms and do cr/lf translation. This is a very bad idea when use with
 Samba. It causes all sorts of stuff ups.
 </p><p>
 To overcome this problem use conv=binary when mounting the cdrom
 before exporting it with Samba.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2874350"></a>Why can users access home directories of other users?</h2></div></div><p>
-&#8220;
-We are unable to keep individual users from mapping to any other user's
-home directory once they have supplied a valid password! They only need
-to enter their own password. I have not found *any* method that I can
-use to configure samba to enforce that only a user may map their own
-home directory.
-&#8221;
-</p><p>&#8220;
-User xyzzy can map his home directory. Once mapped user xyzzy can also map
-*anyone* elses home directory!
-&#8221;</p><p>
-This is not a security flaw, it is by design. Samba allows
-users to have *exactly* the same access to the UNIX filesystem
-as they would if they were logged onto the UNIX box, except
-that it only allows such views onto the file system as are
-allowed by the defined shares.
-</p><p>
-This means that if your UNIX home directories are set up
-such that one user can happily cd into another users
-directory and do an ls, the UNIX security solution is to 
-change the UNIX file permissions on the users home directories
-such that the cd and ls would be denied.
-</p><p>
-Samba tries very hard not to second guess the UNIX administrators
-security policies, and trusts the UNIX admin to set
-the policies and permissions he or she desires.
-</p><p>
-Samba does allow the setup you require when you have set the
-&quot;only user = yes&quot; option on the share, is that you have not set the
-valid users list for the share.
-</p><p>
-Note that only user works in conjunction with the users= list,
-so to get the behavior you require, add the line :
-</p><pre class="programlisting">
-users = %S
-</pre><p>
-this is equivalent to:
-</p><pre class="programlisting">
-valid users = %S
-</pre><p>
-to the definition of the [homes] share, as recommended in
-the smb.conf man page.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2874436"></a>Until a few minutes after samba has started, clients get the error &quot;Domain Controller Unavailable&quot;</h2></div></div><p>
-A domain controller has to announce on the network who it is. This usually takes a while.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2874451"></a>I'm getting &quot;open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested&quot; in the logs</h2></div></div><p>Your loopback device isn't working correctly. Make sure it's running.
-</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="FAQ-ClientApp.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="samba-faq.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="FAQ-features.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 4. Specific client application problems </td><td width="20%" align="center"><a accesskey="h" href="samba-faq.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 6. Features</td></tr></table></div></body></html>
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="FAQ-ClientApp.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="samba-faq.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="FAQ-features.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 3. Specific client application problems </td><td width="20%" align="center"><a accesskey="h" href="samba-faq.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 5. Features</td></tr></table></div></body></html>
