@@ -938,7 +938,9 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 #include <rpc/rpc.h>
 #include <rpc/types.h>
 #include <rpcsvc/rquota.h>
+#ifdef HAVE_RPC_NETTYPE_H
 #include <rpc/nettype.h>
+#endif
 #include <rpc/xdr.h>
 
 static int quotastat;
