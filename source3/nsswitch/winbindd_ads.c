@@ -44,7 +44,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 		/* check for a valid structure */
 
-		DEBUG(7, ("Current tickets expire at %d\n, time is now %d\n",
+		DEBUG(7, ("Current tickets expire at %d, time is now %d\n",
 			  (uint32) ads->auth.expire, (uint32) time(NULL)));
 		if ( ads->config.realm && (ads->auth.expire > time(NULL))) {
 			return ads;
