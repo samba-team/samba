@@ -1,3 +1,24 @@
+1999-05-10  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (main): use getarg
+	(*): handle v4 and/or v5
+
+	* kx.h: update
+	
+	* kx.c (main): use getarg.
+	(*): handle v4 and/or v5
+
+	* common.c (do_enccopy, copy_encrypted): remove use
+	net_{read,write} instead of krb_net_{read,write}
+	(krb_get_int, krb_put_int): include fallback of these for when we
+	compile without krb4
+	
+	* Makefile.am (*_SOURCES): remove encdata, add krb[45].c,
+	context.c
+	(LDADD): add krb5
+
+	* krb4.c, krb5.c, context.c: new files
+
 1999-05-08  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c (doit_passive): handle error code from
