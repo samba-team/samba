@@ -178,6 +178,7 @@ typedef struct
 	int maxdisksize;
 	int lpqcachetime;
 	int iMaxSmbdProcesses;
+	BOOL bLanmanPrinting;
 	int iTotalPrintJobs;
 	int syslog;
 	int os_level;
@@ -822,6 +823,7 @@ static struct parm_struct parm_table[] = {
 	{"postscript", P_BOOL, P_LOCAL, &sDefault.bPostscript, NULL, NULL, FLAG_PRINT},
 	{"printing", P_ENUM, P_LOCAL, &sDefault.iPrinting, NULL, enum_printing, FLAG_PRINT | FLAG_GLOBAL},
 	{"print command", P_STRING, P_LOCAL, &sDefault.szPrintcommand, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
+	{"lanman printing only", P_BOOL, P_GLOBAL, &Globals.bLanmanPrinting, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
 	{"lpq command", P_STRING, P_LOCAL, &sDefault.szLpqcommand, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
 	{"lprm command", P_STRING, P_LOCAL, &sDefault.szLprmcommand, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
 	{"lppause command", P_STRING, P_LOCAL, &sDefault.szLppausecommand, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
@@ -1213,6 +1215,7 @@ static void init_globals(void)
 	Globals.max_xmit = 65535;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
 	Globals.lpqcachetime = 10;
+	Globals.bLanmanPrinting = False;
 	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
 	Globals.iTotalPrintJobs = 0;  /* no limit specified */
 	Globals.pwordlevel = 0;
@@ -1570,6 +1573,7 @@ FN_GLOBAL_INTEGER(lp_security, &Globals.security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, &Globals.iMaxSmbdProcesses)
+FN_GLOBAL_INTEGER(lp_lanman_printing_only, &Globals.bLanmanPrinting)
 FN_GLOBAL_INTEGER(lp_totalprintjobs, &Globals.iTotalPrintJobs)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
