@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 	extern fstring local_machine;
 	const char *config_file = dyn_CONFIGFILE;
 	int s;
-	BOOL silent_mode = False;
+	static BOOL silent_mode = False;
 	int ret = 0;
 	int opt;
 	poptContext pc;
