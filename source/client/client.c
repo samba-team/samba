@@ -1848,13 +1848,13 @@ static void process_stdin(void)
 
 	while (1) {
 		fstring tok;
-		fstring prompt;
+		fstring the_prompt;
 		char *line;
 		int i;
 		
 		/* display a prompt */
-		slprintf(prompt, sizeof(prompt)-1, "smb: %s> ", cur_dir);
-		line = smb_readline(prompt, readline_callback, completion_fn);
+		slprintf(the_prompt, sizeof(the_prompt)-1, "smb: %s> ", cur_dir);
+		line = smb_readline(the_prompt, readline_callback, completion_fn);
 
 		if (!line) break;
 

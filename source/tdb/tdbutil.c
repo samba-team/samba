@@ -127,7 +127,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 	uint32 d;
 	int i;
 	void *p;
-	int len;
+	int len=0;
 	char *s;
 	char c;
 	char *buf0 = buf;
@@ -212,7 +212,7 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 	va_list ap;
 	uint16 *w;
 	uint32 *d;
-	int len;
+	int len=0;
 	int *i;
 	void **p;
 	char *s, **b;
