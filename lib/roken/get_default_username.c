@@ -51,28 +51,35 @@ RCSID("$Id$");
 const char *
 get_default_username (void)
 {
-    const char *p;
+    const char *user;
 
-    p = getenv ("USER");
-    if (p != NULL)
-	return p;
-    p = getenv ("LOGNAME");
-    if (p != NULL)
-	return p;
-    p = getenv ("USERNAME");
-    if (p != NULL)
-	return p;
+    user = getenv ("USER");
+    if (user == NULL)
+	user = getenv ("LOGNAME");
+    if (user == NULL)
+	user = getenv ("USERNAME");
+
 #if defined(HAVE_GETLOGIN) && !defined(POSIX_GETLOGIN)
-    p = (const char *)getlogin ();
-    if (p != NULL)
-	return p;
+    if (user == NULL) {
+	user = (const char *)getlogin ();
+	if (user != NULL)
+	    return user;
+    }
 #endif
 #ifdef HAVE_PWD_H
     {
-	struct passwd *pwd = k_getpwuid (getuid ());
+	uid_t uid = getuid ();
+	struct passwd *pwd;
+
+	if (user != NULL) {
+	    pwd = k_getpwnam (user);
+	    if (pwd != NULL && pwd->pw_uid == uid)
+		return user;
+	}
+	pwd = k_getpwuid (uid);
 	if (pwd != NULL)
 	    return pwd->pw_name;
     }
 #endif
-    return NULL;
+    return user;
 }
