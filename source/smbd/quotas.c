@@ -30,6 +30,17 @@
 
 extern int DEBUGLEVEL;
 
+#if defined(VXFS_QUOTA)
+
+/*
+ * In addition to their native filesystems, some systems have Veritas VxFS.
+ * Declare here, define at end: reduces likely "include" interaction problems.
+ *	David Lee <T.D.Lee@durham.ac.uk>
+ */
+BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+
+#endif /* VXFS_QUOTA */
+
 #ifdef LINUX
 
 #include <sys/types.h>
@@ -251,7 +262,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 #if defined(SUNOS5)
   struct quotctl command;
   int file;
-  struct mnttab mnt;
+  static struct mnttab mnt;
   static pstring name;
 #else /* SunOS4 */
   struct mntent *mnt;
@@ -338,7 +349,18 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 
   if (ret < 0) {
     DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n", strerror(errno) ));
-    return(False);
+
+#if defined(SUNOS5) && defined(VXFS_QUOTA)
+    /* If normal quotactl() fails, try vxfs private calls */
+    set_effective_uid(euser_id);
+    DEBUG(5,("disk_quotas: mount type \"%s\"\n", mnt.mnt_fstype));
+    if ( 0 == strcmp ( mnt.mnt_fstype, "vxfs" )) {
+      ret = disk_quotas_vxfs(name, path, bsize, dfree, dsize);
+      return(ret);
+    }
+#else
+      return(False);
+#endif
   }
 
 
@@ -659,3 +681,124 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 }
 
 #endif
+
+#if defined(VXFS_QUOTA)
+
+/****************************************************************************
+Try to get the disk space from Veritas disk quotas.
+    David Lee <T.D.Lee@durham.ac.uk> August 1999.
+
+Background assumptions:
+    Potentially under many Operating Systems.  Initially Solaris 2.
+
+    My guess is that Veritas is largely, though not entirely,
+    independent of OS.  So I have separated it out.
+
+    There may be some details.  For example, OS-specific "include" files.
+
+    It is understood that HPUX 10 somehow gets Veritas quotas without
+    any special effort; if so, this routine need not be compiled in.
+        Dirk De Wachter <Dirk.DeWachter@rug.ac.be>
+
+Warning:
+    It is understood that Veritas do not publicly support this ioctl interface.
+    Rather their preference would be for the user (us) to call the native
+    OS and then for the OS itself to call through to the VxFS filesystem.
+    Presumably HPUX 10, see above, does this.
+
+Hints for porting:
+    Add your OS to "IFLIST" below.
+    Get it to compile successfully:
+        Almost certainly "include"s require attention: see SUNOS5.
+    In the main code above, arrange for it to be called: see SUNOS5.
+    Test!
+    
+****************************************************************************/
+
+/* "IFLIST"
+ * This "if" is a list of ports:
+ *	if defined(OS1) || defined(OS2) || ...
+ */
+#if defined(SUNOS5)
+
+#if defined(SUNOS5)
+#include <sys/fs/vx_solaris.h>
+#endif
+#include <sys/fs/vx_machdep.h>
+#include <sys/fs/vx_layout.h>
+#include <sys/fs/vx_quota.h>
+#include <sys/fs/vx_aioctl.h>
+#include <sys/fs/vx_ioctl.h>
+
+BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+{
+  uid_t user_id, euser_id;
+  int ret;
+  struct vx_dqblk D;
+  struct vx_quotctl quotabuf;
+  struct vx_genioctl genbuf;
+  pstring qfname;
+  int file;
+
+  /*
+   * "name" may or may not include a trailing "/quotas".
+   * Arranging consistency of calling here in "quotas.c" may not be easy and
+   * it might be easier to examine and adjust it here.
+   * Fortunately, VxFS seems not to mind at present.
+   */
+  pstrcpy(qfname, name) ;
+  /* pstrcat(qfname, "/quotas") ; */	/* possibly examine and adjust "name" */
+
+  euser_id = geteuid();
+  set_effective_uid(0);
+
+  DEBUG(5,("disk_quotas: looking for VxFS quotas file \"%s\"\n", qfname));
+  if((file=sys_open(qfname, O_RDONLY,0))<0) {
+    set_effective_uid(euser_id);
+    return(False);
+  }
+  genbuf.ioc_cmd = VX_QUOTACTL;
+  genbuf.ioc_up = (void *) &quotabuf;
+
+  quotabuf.cmd = VX_GETQUOTA;
+  quotabuf.uid = euser_id;
+  quotabuf.addr = (caddr_t) &D;
+  ret = ioctl(file, VX_ADMIN_IOCTL, &genbuf);
+  close(file);
+
+  set_effective_uid(euser_id);
+
+  if (ret < 0) {
+    DEBUG(5,("disk_quotas ioctl (VxFS) failed. Error = %s\n", strerror(errno) ));
+    return(False);
+  }
+
+  /* Use softlimit to determine disk space. A user exceeding the quota is told
+   * that there's no space left. Writes might actually work for a bit if the
+   * hardlimit is set higher than softlimit. Effectively the disk becomes
+   * made of rubber latex and begins to expand to accommodate the user :-)
+   */
+  DEBUG(5,("disk_quotas for path \"%s\" block c/s/h %ld/%ld/%ld; file c/s/h %ld/%ld/%ld\n",
+         path, D.dqb_curblocks, D.dqb_bsoftlimit, D.dqb_bhardlimit,
+         D.dqb_curfiles, D.dqb_fsoftlimit, D.dqb_fhardlimit));
+
+  if (D.dqb_bsoftlimit==0)
+    return(False);
+  *bsize = DEV_BSIZE;
+  *dsize = D.dqb_bsoftlimit;
+
+  if (D.dqb_curblocks > D.dqb_bsoftlimit) {
+     *dfree = 0;
+     *dsize = D.dqb_curblocks;
+  } else
+    *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
+      
+  DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",
+         path,(double)*bsize,(double)*dfree,(double)*dsize));
+
+  return(True);
+}
+
+#endif /* SUNOS5 || ... */
+
+#endif /* VXFS_QUOTA */
