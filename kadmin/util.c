@@ -60,10 +60,13 @@ struct units kdb_attrs[] = {
 };
 
 void
-timeval2str(time_t t, char *str, size_t len)
+timeval2str(time_t t, char *str, size_t len, int include_time)
 {
     if(t)
-	strftime(str, len, "%Y-%m-%d %H:%M:%S UTC", gmtime(&t));
+	if(include_time)
+	    strftime(str, len, "%Y-%m-%d %H:%M:%S UTC", gmtime(&t));
+	else
+	    strftime(str, len, "%Y-%m-%d", gmtime(&t));
     else
 	snprintf(str, len, "never");
 }
