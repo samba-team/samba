@@ -359,7 +359,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		guest = True;
 		pass = getpwnam_alloc(guestname);
 		if (!pass) {
-			DEBUG(0,("authorise_login: Invalid guest account %s??\n",guestname));
+			DEBUG(0,("make_conncection_snum: Invalid guest account %s??\n",guestname));
 			conn_free(conn);
 			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;

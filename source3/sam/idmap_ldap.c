@@ -474,9 +474,10 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 		char *ld_error = NULL;
 		ldap_get_option(ldap_state.smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
-		DEBUG(0,("ldap_set_mapping_internals: Failed to create mapping from %s to %u [%s]\n",
-			sid_string, (unsigned int)((id_type & ID_USERID) ? id.uid : id.gid), type));
-		DEBUG(0, ("ldap_set_mapping_internals: Error was: %s\n", ld_error ? ld_error : "(NULL)"));
+		DEBUG(0,("ldap_set_mapping_internals: Failed to %s mapping from %s to %u [%s]\n",
+			 (ldap_op == LDAP_MOD_ADD) ? "add" : "replace",
+			 sid_string, (unsigned int)((id_type & ID_USERID) ? id.uid : id.gid), type));
+		DEBUG(0, ("ldap_set_mapping_internals: Error was: %s (%s)\n", ld_error ? ld_error : "(NULL)", ldap_err2string (rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
