@@ -322,7 +322,7 @@ SAMSYNC_OBJ = $(SAMSYNC_OBJ1) \
              $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
              $(GROUPDB_OBJ)
 
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.o
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.po
 
 SMBW_OBJ = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
@@ -758,8 +758,7 @@ bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 install: installbin installman installscripts installswat 
 
 installdirs:
-	-$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
-	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(BASEDIR) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR)
 
 installservers: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
