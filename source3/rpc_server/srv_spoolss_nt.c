@@ -1308,7 +1308,7 @@ static void spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 }
 
 /*******************************************************************
- * fill a notify_info_data with 
+ * fill a notify_info_data with username
  ********************************************************************/
 static void spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
@@ -1317,7 +1317,7 @@ static void spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 }
 
 /*******************************************************************
- * fill a notify_info_data with 
+ * fill a notify_info_data with job status
  ********************************************************************/
 static void spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
@@ -1325,7 +1325,7 @@ static void spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 }
 
 /*******************************************************************
- * fill a notify_info_data with 
+ * fill a notify_info_data with job name
  ********************************************************************/
 static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
@@ -1334,7 +1334,7 @@ static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 }
 
 /*******************************************************************
- * fill a notify_info_data with 
+ * fill a notify_info_data with job status
  ********************************************************************/
 static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
@@ -1358,7 +1358,7 @@ static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *d
 }
 
 /*******************************************************************
- * fill a notify_info_data with 
+ * fill a notify_info_data with job time
  ********************************************************************/
 static void spoolss_notify_job_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
@@ -1366,7 +1366,7 @@ static void spoolss_notify_job_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 }
 
 /*******************************************************************
- * fill a notify_info_data with 
+ * fill a notify_info_data with job size
  ********************************************************************/
 static void spoolss_notify_job_size(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
@@ -1374,7 +1374,7 @@ static void spoolss_notify_job_size(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 }
 
 /*******************************************************************
- * fill a notify_info_data with 
+ * fill a notify_info_data with job position
  ********************************************************************/
 static void spoolss_notify_job_position(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
@@ -1382,7 +1382,7 @@ static void spoolss_notify_job_position(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 }
 
 /*******************************************************************
- * fill a notify_info_data with
+ * fill a notify_info_data with submitted time
  ********************************************************************/
 static void spoolss_notify_submitted_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
