@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-INCLUDES = -I$(top_builddir)/include 
+INCLUDES = $(WFLAGS) -I$(top_builddir)/include 
 
 man_MANS = kinit.1 klist.1 kdestroy.1
 
