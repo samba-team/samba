@@ -61,9 +61,9 @@ struct getargs getargs[] = {
       "Packet tracing", NULL},
 #ifdef KRB5
     { "gss-bindings", 0,  arg_negative_flag, &ftp_do_gss_bindings,
-      "Use GSS-API bindings", NULL},
+      "Don't use GSS-API bindings", NULL},
     { "gss-delegate", 0,  arg_negative_flag, &ftp_do_gss_delegate,
-      "Delegate GSS-API credential", NULL},
+      "Disable delegation of GSS-API credentials", NULL},
 #endif
     { NULL,	'v', arg_counter, &verbose,
       "verbosity", NULL},
