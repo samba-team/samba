@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "system/filesys.h"
 #include "auth/auth.h"
 #include "asn_1.h"
 #include "dlinklist.h"

@@ -47,7 +47,7 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 		int ret;
 		struct ldb_message **res;
 		enum dssetup_DsRole role = DS_ROLE_STANDALONE_SERVER;
-		uint32 flags = 0;
+		uint32_t flags = 0;
 		const char *domain = NULL;
 		const char *dns_domain = NULL;
 		const char *forest = NULL;

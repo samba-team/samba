@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "lib/ldb/include/ldb.h"
 #include "system/time.h"
+#include "system/filesys.h"
 
 /*
   connect to the SAM database
@@ -551,7 +552,7 @@ struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_
 	const int units_per_week = 168;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
 	ZERO_STRUCT(hours);
-	hours.bits = talloc_array(mem_ctx, uint8, units_per_week);
+	hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week);
 	if (!hours.bits) {
 		return hours;
 	}

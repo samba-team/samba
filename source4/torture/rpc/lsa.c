@@ -1141,7 +1141,7 @@ static BOOL test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	/* produce a reasonable range of language output without screwing up
 	   terminals */
-	uint16 language_id = (random() % 4) + 0x409;
+	uint16_t language_id = (random() % 4) + 0x409;
 
 	printf("testing LookupPrivDisplayName(%s)\n", priv_name->string);
 	

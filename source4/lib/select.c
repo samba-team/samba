@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 /* This is here because it allows us to avoid a nasty race in signal handling. 
    We need to guarantee that when we get a signal we get out of a select immediately

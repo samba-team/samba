@@ -120,7 +120,6 @@ extern int errno;
 #include "debug.h"
 #include "doserr.h"
 #include "enums.h"
-#include "pstring.h"
 #include "smb_macros.h"
 #include "smb.h"
 #include "lib/socket/socket.h"
@@ -137,7 +136,6 @@ extern int errno;
 #include "smb_interfaces.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
-#include "nsswitch/winbind_client.h"
 #include "ads.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))

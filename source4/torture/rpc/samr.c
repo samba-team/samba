@@ -433,7 +433,7 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_SetUserPass_23(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				struct policy_handle *handle, uint32 fields_present,
+				struct policy_handle *handle, uint32_t fields_present,
 				char **password)
 {
 	NTSTATUS status;
@@ -547,7 +547,7 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				struct policy_handle *handle, uint32 fields_present,
+				struct policy_handle *handle, uint32_t fields_present,
 				char **password)
 {
 	NTSTATUS status;
@@ -1546,7 +1546,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	char *password = NULL;
 
 	int i;
-	const uint32 password_fields[] = {
+	const uint32_t password_fields[] = {
 		SAMR_FIELD_PASSWORD,
 		SAMR_FIELD_PASSWORD2,
 		SAMR_FIELD_PASSWORD | SAMR_FIELD_PASSWORD2,

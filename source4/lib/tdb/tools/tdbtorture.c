@@ -24,6 +24,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "system/time.h"
 #include "system/wait.h"
+#include "system/filesys.h"
 
 #endif
 

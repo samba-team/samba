@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "dynconfig.h"
 #include "clilist.h"
 #include "libcli/raw/libcliraw.h"

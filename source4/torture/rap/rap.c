@@ -23,14 +23,14 @@
 #include "rap.h"
 
 struct rap_call {
-	uint16 callno;
+	uint16_t callno;
 	char *paramdesc;
 	const char *datadesc;
 
-	uint16 status;
-	uint16 convert;
+	uint16_t status;
+	uint16_t convert;
 	
-	uint16 rcv_paramlen, rcv_datalen;
+	uint16_t rcv_paramlen, rcv_datalen;
 
 	struct ndr_push *ndr_push_param;
 	struct ndr_push *ndr_push_data;
@@ -40,7 +40,7 @@ struct rap_call {
 
 #define RAPNDR_FLAGS (LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 
-static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16 callno)
+static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16_t callno)
 {
 	struct rap_call *call;
 
@@ -80,13 +80,13 @@ static void rap_cli_push_paramdesc(struct rap_call *call, char desc)
 	call->paramdesc[len+1] = '\0';
 }
 
-static void rap_cli_push_word(struct rap_call *call, uint16 val)
+static void rap_cli_push_word(struct rap_call *call, uint16_t val)
 {
 	rap_cli_push_paramdesc(call, 'W');
 	ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, val);
 }
 
-static void rap_cli_push_dword(struct rap_call *call, uint32 val)
+static void rap_cli_push_dword(struct rap_call *call, uint32_t val)
 {
 	rap_cli_push_paramdesc(call, 'D');
 	ndr_push_uint32(call->ndr_push_param, NDR_SCALARS, val);
@@ -104,7 +104,7 @@ static void rap_cli_expect_multiple_entries(struct rap_call *call)
 {
 	rap_cli_push_paramdesc(call, 'e');
 	rap_cli_push_paramdesc(call, 'h');
-	call->rcv_paramlen += 4; /* uint16 entry count, uint16 total */
+	call->rcv_paramlen += 4; /* uint16_t entry count, uint16_t total */
 }
 
 static void rap_cli_push_string(struct rap_call *call, const char *str)
@@ -123,10 +123,10 @@ static void rap_cli_expect_format(struct rap_call *call, const char *format)
 }
 
 static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
-				uint16 convert, char **dest)
+				uint16_t convert, char **dest)
 {
-	uint16 string_offset;
-	uint16 ignore;
+	uint16_t string_offset;
+	uint16_t ignore;
 	const char *p;
 	size_t len;
 

@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "system/iconv.h"
+#include "system/filesys.h"
 #include "asn_1.h"
 
 /****************************************************************************
@@ -697,7 +698,7 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 			       char **filter)
 {
-	uint8 filter_tag, tag_desc;
+	uint8_t filter_tag, tag_desc;
 
 	if (!asn1_peek_uint8(data, &filter_tag))
 		return False;
@@ -836,7 +837,7 @@ static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 
 BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 {
-	uint8 tag;
+	uint8_t tag;
 
 	asn1_start_tag(data, ASN1_SEQUENCE(0));
 	asn1_read_Integer(data, &msg->messageid);

@@ -33,7 +33,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uin
 	struct RemoteActivation r;
 	NTSTATUS status;
 	struct GUID iids[2];
-	uint16 protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
+	uint16_t protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
 
 	ZERO_STRUCT(r.in);
 	r.in.this.version.MajorVersion = 5;
@@ -147,7 +147,7 @@ static int test_ResolveOxid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t
 {
 	struct ResolveOxid r;
 	NTSTATUS status;
-	uint16 protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
+	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
 
 	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;
@@ -171,7 +171,7 @@ static int test_ResolveOxid2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_
 {
 	struct ResolveOxid2 r;
 	NTSTATUS status;
-	uint16 protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
+	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
 
 	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;

@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "dynconfig.h"
 #include "system/passwd.h"
+#include "system/filesys.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
@@ -145,7 +146,7 @@ static NTSTATUS local_pw_check_specified(const char *username,
 					 const DATA_BLOB *challenge, 
 					 const DATA_BLOB *lm_response, 
 					 const DATA_BLOB *nt_response, 
-					 uint32 flags, 
+					 uint32_t flags, 
 					 DATA_BLOB *lm_session_key, 
 					 DATA_BLOB *user_session_key, 
 					 char **error_string, 
@@ -564,7 +565,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			char *error_string = NULL;
 			DATA_BLOB lm_key;
 			DATA_BLOB user_session_key;
-			uint32 flags = 0;
+			uint32_t flags = 0;
 
 			if (full_username && !username) {
 				fstring fstr_user;

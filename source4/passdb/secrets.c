@@ -25,6 +25,8 @@
 #include "includes.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "secrets.h"
+#include "system/filesys.h"
+#include "pstring.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
