@@ -59,7 +59,7 @@
 .Sh DESCRIPTION
 The
 .Nm
-program forwards tickets to a remove host through an authenticated
+program forwards tickets to a remote host through an authenticated
 and encrypted stream.
 Options supported are:
 .Bl -tag -width indent
@@ -93,11 +93,11 @@ but want to have your tickets one for example AFS.
 In order for
 .Nm
 to work you will need to acquire your initial ticket with forwardable
-flag, ie
+flag, i.e.
 .Nm kinit Fl -forwardable .
 .Pp
 .Nm telnet
-is able to forward ticket by itself.
+is able to forward tickets by itself.
 .\".Sh ENVIRONMENT
 .\".Sh FILES
 .\".Sh EXAMPLES
