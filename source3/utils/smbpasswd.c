@@ -574,6 +574,8 @@ int main(int argc, char **argv)
 
 	codepage_initialise(lp_client_code_page());
 
+	load_interfaces();
+
 	if(!pwdb_initialise(False))
 	{
 		fprintf(stderr, "Can't setup password database vectors.\n");
