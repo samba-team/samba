@@ -71,7 +71,7 @@ BOOL (*is_multibyte_char_1)(char) = not_multibyte_char_1;
 
 static char *sj_to_sj(char *from, BOOL overwrite);
 static int skip_kanji_multibyte_char(char);
-static BOOL kanji_multibyte_char_1(char);
+static BOOL is_kanji_multibyte_char_1(char);
 
 char *(*_dos_to_unix)(char *, BOOL) = sj_to_sj;
 char *(*_unix_to_dos)(char *, BOOL) = sj_to_sj;
