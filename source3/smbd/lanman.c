@@ -2336,7 +2336,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-		pstrcpy(p2,((vuser != NULL) ? vuser->user.real_name : UserName));
+		pstrcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName));
 		p2 = skip_string(p2,1);
 	}
 
@@ -2395,7 +2395,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		{
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-   			pstrcpy(p2,((vuser != NULL) ? vuser->user.real_name : UserName));
+   			pstrcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName));
 			p2 = skip_string(p2,1);
 			SIVAL(p,68,0);		/* urs_comment */
 			SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */

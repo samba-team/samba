@@ -808,7 +808,7 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
                                 &dummy_time, /* pass_must_change_time */
                                 
                                 nt_username   , /* user_name */
-                                vuser->user.real_name, /* full_name */
+                                vuser->user.full_name, /* full_name */
                                 logon_script    , /* logon_script */
                                 profile_path    , /* profile_path */
                                 home_dir        , /* home_dir */

@@ -261,12 +261,12 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 
   DEBUG(3, ("Clearing default real name\n"));
-  fstrcpy(vuser->user.real_name, "<Full Name>");
+  fstrcpy(vuser->user.full_name, "<Full Name>");
   if (lp_unix_realname()) {
     if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL)
       {
       DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
-      fstrcpy(vuser->user.real_name, pwfile->pw_gecos);
+      fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
       }
   }
 
