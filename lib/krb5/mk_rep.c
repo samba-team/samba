@@ -97,6 +97,8 @@ krb5_mk_rep(krb5_context context,
 	return ret;
 
     ASN1_MALLOC_ENCODE(AP_REP, outbuf->data, outbuf->length, &ap, &len, ret);
+    if (ret == 0 && outbuf->length != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
     free_AP_REP (&ap);
     return ret;
 }
