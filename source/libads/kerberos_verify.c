@@ -110,7 +110,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 		ret = krb5_rd_req(context, &auth_context, p_packet, host_princ, keytab, NULL, pp_tkt);
 		krb5_free_principal(context, host_princ);
 		if (ret) {
-			DEBUG(0, ("krb5_rd_req(%s) failed: %s\n", host_princ_s[i], error_message(ret)));
+			DEBUG(10, ("krb5_rd_req(%s) failed: %s\n", host_princ_s[i], error_message(ret)));
 		} else {
 			DEBUG(10,("krb5_rd_req succeeded for principal %s\n", host_princ_s[i]));
 			auth_ok = True;
