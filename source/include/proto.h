@@ -2290,6 +2290,8 @@ BOOL parse_lpq_entry(int snum,char *line,
 /*The following definitions come from  printing/nt_printing.c  */
 
 BOOL nt_printing_init(void);
+uint32 update_c_setprinter(BOOL initialize);
+uint32 get_c_setprinter(void);
 int get_builtin_ntforms(nt_forms_struct **list);
 BOOL get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form);
 int get_ntforms(nt_forms_struct **list);
@@ -2315,6 +2317,7 @@ void get_printer_subst_params(int snum, fstring *printername, fstring *sharename
 WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 WERROR add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
+uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param);
 WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
@@ -3424,11 +3427,8 @@ BOOL make_spoolss_q_addprinterex(
 	const char* user_name,
 	uint32 level, 
 	PRINTER_INFO_CTR *ctr);
-BOOL make_spoolss_printer_info_2(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
-	PRINTER_INFO_2 *info
-);
+BOOL make_spoolss_printer_info_2(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+				PRINTER_INFO_2 *info);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_deleteprinterdriver(
 	TALLOC_CTX *mem_ctx,
@@ -3545,14 +3545,9 @@ BOOL make_spoolss_q_getprinter(
 	NEW_BUFFER *buffer, 
 	uint32 offered
 );
-BOOL make_spoolss_q_setprinter(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_Q_SETPRINTER *q_u, 
-	const POLICY_HND *hnd, 
-	uint32 level, 
-	PRINTER_INFO_CTR *info, 
-	uint32 command
-);
+BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u, 
+				const POLICY_HND *hnd, uint32 level, PRINTER_INFO_CTR *info, 
+				uint32 command);
 BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth);

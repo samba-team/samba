@@ -33,6 +33,7 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 #define DRIVER_INIT_PREFIX "DRIVER_INIT/"
 #define PRINTERS_PREFIX "PRINTERS/"
 #define SECDESC_PREFIX "SECDESC/"
+#define GLOBAL_C_SETPRINTER "GLOBALS/c_setprinter"
  
 #define NTDRIVERS_DATABASE_VERSION_1 1
 #define NTDRIVERS_DATABASE_VERSION_2 2
@@ -289,12 +290,81 @@ BOOL nt_printing_init(void)
 	}
 	tdb_unlock_bystring(tdb_drivers, vstring);
 
+	update_c_setprinter(True);
+
 	return True;
 }
 
+/*******************************************************************
+ tdb traversal function for counting printers.
+********************************************************************/
+
+static int traverse_counting_printers(TDB_CONTEXT *t, TDB_DATA key,
+                                      TDB_DATA data, void *context)
+{
+	int *printer_count = (int*)context;
+ 
+	if (memcmp(PRINTERS_PREFIX, key.dptr, sizeof(PRINTERS_PREFIX)-1) == 0) {
+		(*printer_count)++;
+		DEBUG(10,("traverse_counting_printers: printer = [%s]  printer_count = %d\n", key.dptr, *printer_count));
+	}
+ 
+	return 0;
+}
+ 
+/*******************************************************************
+ Update the spooler global c_setprinter. This variable is initialized
+ when the parent smbd starts whith the number of existing printers. It
+ is monotonically increased by the current number of printers *after*
+ each add or delete printer RPC. Only Microsoft knows why... JRR020119
+********************************************************************/
+
+uint32 update_c_setprinter(BOOL initialize)
+{
+	int32 c_setprinter;
+	int32 printer_count = 0;
+ 
+	tdb_lock_bystring(tdb_printers, GLOBAL_C_SETPRINTER);
+ 
+	/* Traverse the tdb, counting the printers */
+	tdb_traverse(tdb_printers, traverse_counting_printers, (void *)&printer_count);
+ 
+	/* If initializing, set c_setprinter to current printers count
+	 * otherwise, bump it by the current printer count
+	 */
+	if (!initialize)
+		c_setprinter = tdb_fetch_int32(tdb_printers, GLOBAL_C_SETPRINTER) + printer_count;
+	else
+		c_setprinter = printer_count;
+ 
+	DEBUG(10,("update_c_setprinter: c_setprinter = %u\n", (unsigned int)c_setprinter));
+	tdb_store_int32(tdb_printers, GLOBAL_C_SETPRINTER, c_setprinter);
+ 
+	tdb_unlock_bystring(tdb_printers, GLOBAL_C_SETPRINTER);
+ 
+	return (uint32)c_setprinter;
+}
+
+/*******************************************************************
+ Get the spooler global c_setprinter, accounting for initialization.
+********************************************************************/
+
+uint32 get_c_setprinter(void)
+{
+	int32 c_setprinter = tdb_fetch_int32(tdb_printers, GLOBAL_C_SETPRINTER);
+ 
+	if (c_setprinter == (int32)-1)
+		c_setprinter = update_c_setprinter(True);
+ 
+	DEBUG(10,("get_c_setprinter: c_setprinter = %d\n", c_setprinter));
+ 
+	return (uint32)c_setprinter;
+}
+
 /****************************************************************************
- get builtin form struct list
+ Get builtin form struct list.
 ****************************************************************************/
+
 int get_builtin_ntforms(nt_forms_struct **list)
 {
 	*list = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
@@ -2697,8 +2767,9 @@ static uint32 rev_changeid(void)
 	struct timeval tv;
 
 	get_process_uptime(&tv);
-	/* This value is in ms * 100 */
-	return (((tv.tv_sec * 1000000) + tv.tv_usec)/100);
+
+	/* Return changeid as msec since spooler restart */
+	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
 /*
@@ -2800,6 +2871,7 @@ WERROR add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 /****************************************************************************
  Initialize printer devmode & data with previously saved driver init values.
 ****************************************************************************/
+
 static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 {
 	int                     len = 0;
@@ -2807,6 +2879,17 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	TDB_DATA                kbuf, dbuf;
 	NT_PRINTER_PARAM        *current;
 	NT_PRINTER_INFO_LEVEL_2 info;
+
+	/*
+	 * Delete any printer data 'specifics' already set. When called for driver
+	 * replace, there will generally be some, but during an add printer, there
+	 * should not be any (if there are delete them).
+	 */
+	while ( (current=info_ptr->specific) != NULL ) {
+		info_ptr->specific=current->next;
+		SAFE_FREE(current->data);
+		SAFE_FREE(current);
+	}
 
 	ZERO_STRUCT(info);
 
@@ -2817,8 +2900,14 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
-	if (!dbuf.dptr)
+    if (!dbuf.dptr) {
+		/*
+		 * When changing to a driver that has no init info in the tdb, remove
+		 * the previous drivers init info and leave the new on blank.
+		 */
+		free_nt_devicemode(&info_ptr->devmode);
 		return False;
+	}
 
 	/*
 	 * Get the saved DEVMODE..
@@ -2840,16 +2929,6 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 
 	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
 			info_ptr->printername, info_ptr->drivername));
-
-	/* 
-	 * There should not be any printer data 'specifics' already set during the
-	 * add printer operation, if there are delete them. 
-	 */
-	while ( (current=info_ptr->specific) != NULL ) {
-		info_ptr->specific=current->next;
-		SAFE_FREE(current->data);
-		SAFE_FREE(current);
-	}
 
 	/* 
 	 * Add the printer data 'specifics' to the new printer
@@ -2894,6 +2973,7 @@ uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
  of whether it was installed from NT or 2K. Technically, they should be
  different, but they work out to the same struct.
 ****************************************************************************/
+
 static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
 	pstring key;
@@ -2950,7 +3030,7 @@ done:
  Update (i.e. save) the driver init info (DEVMODE and specifics) for a printer
 ****************************************************************************/
 
-static uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 {
 	uint32 result;
 	

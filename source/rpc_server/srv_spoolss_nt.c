@@ -32,6 +32,7 @@
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
 
+#define MAGIC_DISPLAY_FREQUENCY 0xfade2bad
 #define PHANTOM_DEVMODE_KEY "_p_f_a_n_t_0_m_"
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
@@ -242,7 +243,7 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 }
 
 /****************************************************************************
-  close printer index by handle
+ Close printer index by handle.
 ****************************************************************************/
 
 static BOOL close_printer_handle(pipes_struct *p, POLICY_HND *hnd)
@@ -260,8 +261,9 @@ static BOOL close_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 }	
 
 /****************************************************************************
-  delete a printer given a handle
+ Delete a printer given a handle.
 ****************************************************************************/
+
 static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
@@ -1114,6 +1116,8 @@ WERROR _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
 
 	result = delete_printer_handle(p, handle);
+
+	update_c_setprinter(FALSE);
 
 	if (W_ERROR_IS_OK(result)) {
 		srv_spoolss_sendnotify(p, handle);
@@ -2664,7 +2668,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 	printer->unknown18 =  0x0;
 	printer->status = nt_printq_status(status.status);
 	printer->unknown20 =  0x0;
-	printer->c_setprinter = ntprinter->info_2->c_setprinter; /* how many times setprinter has been called */
+	printer->c_setprinter = get_c_setprinter(); /* monotonically increasing sum of delta printer counts */
 	printer->unknown22 = 0x0;
 	printer->unknown23 = 0x6; 		/* 6  ???*/
 	printer->unknown24 = 0; 		/* unknown 24 to 26 are always 0 */
@@ -4676,8 +4680,8 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 }
 
 /********************************************************************
- * called by spoolss_api_setprinter
- * when updating a printer description
+ * Called by spoolss_api_setprinter
+ * when updating a printer description.
  ********************************************************************/
 
 static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
@@ -4694,7 +4698,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	result = WERR_OK;
 
 	if (level!=2) {
-		DEBUG(0,("Send a mail to samba@samba.org\n"));
+		DEBUG(0,("update_printer: Send a mail to samba@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
 		result = WERR_UNKNOWN_LEVEL;
 		goto done;
@@ -4733,7 +4737,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		/* we have a valid devmode
 		   convert it and link it*/
 
-		DEBUGADD(8,("Converting the devicemode struct\n"));
+		DEBUGADD(8,("update_printer: Converting the devicemode struct\n"));
 		if (!convert_devicemode(printer->info_2->printername, devmode,
 				&printer->info_2->devmode)) {
 			result =  WERR_NOMEM;
@@ -4753,7 +4757,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	   annoying permission denied dialog box. */
 
 	if (nt_printer_info_level_equal(printer, old_printer)) {
-		DEBUG(3, ("printer info has not changed\n"));
+		DEBUG(3, ("update_printer: printer info has not changed\n"));
 		result = WERR_OK;
 		goto done;
 	}
@@ -4761,19 +4765,10 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	/* Check calling user has permission to update printer description */
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("printer property change denied by security "
-			  "descriptor\n"));
+		DEBUG(3, ("update_printer: printer property change denied by security descriptor\n"));
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
-
-	/*
-	 * When a *new* driver is bound to a printer, the drivername is used to 
-	 * lookup previously saved driver initialization info, which is then 
-	 * bound to the printer, simulating what happens in the Windows arch.
-	 */
-	if (strequal(printer->info_2->drivername, old_printer->info_2->drivername))
-		set_driver_init(printer, 2);
 
 	/* Call addprinter hook */
 
@@ -4784,6 +4779,32 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		}
 	}
 	
+	/*
+	 * Set the DRIVER_INIT info in the tdb; trigger on magic value for the
+	 * DEVMODE.displayfrequency, which is not used for printer drivers. This
+	 * requires Win32 client code (see other notes elsewhere in the code).
+	 */
+	if (printer->info_2->devmode &&
+		printer->info_2->devmode->displayfrequency == MAGIC_DISPLAY_FREQUENCY) {
+ 
+		DEBUG(10,("update_printer: Save printer driver init data\n"));
+		printer->info_2->devmode->displayfrequency = 0;
+ 
+		if (update_driver_init(*printer, 2)!=0) {
+			DEBUG(10,("update_printer: error updating printer driver init DEVMODE\n"));
+			result = WERR_ACCESS_DENIED;
+			goto done;
+		}
+	} else {
+		/*
+		 * When a *new* driver is bound to a printer, the drivername is used to
+		 * lookup previously saved driver initialization info, which is then
+		 * bound to the printer, simulating what happens in the Windows arch.
+		 */
+		if (strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+			set_driver_init(printer, 2);
+	}
+
 	/* Update printer info */
 	result = add_a_printer(*printer, 2);
 
@@ -5976,6 +5997,8 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 	free_a_printer(&printer,2);
 
+	update_c_setprinter(False);
+
 	srv_spoolss_sendnotify(p, handle);
 
 	return WERR_OK;
@@ -6398,6 +6421,8 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (param)
 		free_nt_printer_param(&param);
 	SAFE_FREE(old_param.data);
+
+	srv_spoolss_sendnotify(p, handle);
 
 	return status;
 }
