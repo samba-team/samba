@@ -17,6 +17,8 @@ If you want to be added to the list, or want your entry modified then
 contact the address below. Please make sure to include a header line
 giving the region and country, eg CANBERRA - AUSTRALIA.
 
+The Samba Team reserves the right not to add support providers.
+
 You can contact the maintainers at samba-bugs@samba.anu.edu.au
 
 The support list has now been re-arranged into geographical areas
@@ -27,7 +29,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                32
+    AMERICA - USA                                33
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
@@ -299,7 +301,7 @@ Email:                          jay@wss.net
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-FORT COLLINS, CO - USA
+FORT COLLINS, COLORADO - USA
 
 Granite Computing Solutions
 ATTN: Brian Grossman
@@ -312,6 +314,23 @@ Email:  granite@SoftHome.Net	WWW:  http://www.SoftHome.Net/granite/
 Information services, including WfWG, NT, Apple <=> Unix interoperability.
 WWW solutions.  WWW education.  Unix education.  Custom software
 development - eg. http://www.SoftHome.Net/modsim/.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+COLORADO - USA
+
+Daylight Software
+1062 Lexington Lane
+Estes Park, CO  80517  USA
+(970) 586-6058
+
+We have experience with Samba under SunOS, Solaris and Linux,
+and also with Windows NT and Microsoft Lan Manager.
+
+Contact: daylight@frii.net
+
+Chris Howard                                     Daylight Software
+daylight@frii.net                                Estes Park, Colorado  USA
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
