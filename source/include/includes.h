@@ -211,6 +211,7 @@
 #include <netinet/tcp.h>
 #endif
 
+#ifndef SUNOS4
 #if defined(HAVE_TERMIOS_H)
 /* POSIX terminal handling. */
 #include <termios.h>
@@ -221,6 +222,7 @@
 /* Older SYSV terminal handling - don't use if we can avoid it. */
 #include <sys/termio.h>
 #endif
+#endif SUNOS4
 
 #if HAVE_DIRENT_H
 # include <dirent.h>
