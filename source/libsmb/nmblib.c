@@ -171,13 +171,14 @@ static BOOL handle_name_ptrs(uchar *ubuf,int *offset,int length,
   parse a nmb name from "compressed" format to something readable
   return the space taken by the name, or 0 if the name is invalid
   ******************************************************************/
-static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *name)
+static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 {
   int m,n=0;
   uchar *ubuf = (uchar *)inbuf;
   int ret = 0;
   BOOL got_pointer=False;
   int loop_count=0;
+  int offset = ofs;
 
   if (length - offset < 2)
     return(0);  
