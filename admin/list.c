@@ -56,14 +56,13 @@ struct key_info {
     struct key_info *next;
 };
 
-int
-kt_list(int argc, char **argv)
+static int
+do_list(const char *keytab_string)
 {
-    krb5_error_code ret = 0;
-    krb5_kt_cursor cursor;
+    krb5_error_code ret;
     krb5_keytab keytab;
     krb5_keytab_entry entry;
-    int optind = 0;
+    krb5_kt_cursor cursor;
     struct key_info *ki, **kie = &ki, *kp;
 
     int max_version = sizeof("Vno") - 1;
@@ -72,34 +71,13 @@ kt_list(int argc, char **argv)
     int max_timestamp = sizeof("Date") - 1;
     int max_key = sizeof("Key") - 1;
 
-    if(verbose_flag)
-	list_timestamp = 1;
-
-    if(getarg(args, num_args, argc, argv, &optind)){
-	arg_printusage(args, num_args, "ktutil list", "");
-	return 1;
-    }
-    if(help_flag){
-	arg_printusage(args, num_args, "ktutil list", "");
-	return 0;
-    }
-
-    if (keytab_string == NULL) {
-	ret = krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf));
-	if (ret) {
-	    krb5_warn(context, ret, "krb5_kt_default_name");
-	    return 1;
-	}
-	keytab_string = keytab_buf;
-    }
     ret = krb5_kt_resolve(context, keytab_string, &keytab);
     if (ret) {
 	krb5_warn(context, ret, "resolving keytab %s", keytab_string);
 	goto out;
     }
 
-    if (verbose_flag)
-	fprintf (stderr, "Using keytab %s\n", keytab_string);
+    fprintf (stderr, "%s:\n\n", keytab_string);
 	
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
@@ -113,7 +91,7 @@ kt_list(int argc, char **argv)
 	if (kp == NULL) {
 	    krb5_kt_free_entry(context, &entry);
 	    krb5_kt_end_seq_get(context, keytab, &cursor);
-	    krb5_warnx(context, ret, "malloc failed");
+	    krb5_warn(context, ret, "malloc failed");
 	    goto out;
 	}
 
@@ -185,5 +163,34 @@ kt_list(int argc, char **argv)
     }
 out:
     krb5_kt_close(context, keytab);
-    return ret != 0;
+    return 0;
+}
+
+int
+kt_list(int argc, char **argv)
+{
+    int optind = 0;
+
+    if(verbose_flag)
+	list_timestamp = 1;
+
+    if(getarg(args, num_args, argc, argv, &optind)){
+	arg_printusage(args, num_args, "ktutil list", "");
+	return 1;
+    }
+    if(help_flag){
+	arg_printusage(args, num_args, "ktutil list", "");
+	return 0;
+    }
+
+    if (keytab_string == NULL) {
+	do_list("FILE:/etc/krb5.keytab");
+#ifdef KRB4
+	printf ("\n");
+	do_list("krb4:/etc/srvtab");
+#endif
+    } else {
+	do_list(keytab_string);
+    }
+    return 0;
 }
