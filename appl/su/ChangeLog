@@ -1,5 +1,6 @@
 2000-07-10  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am: actually install su
 	* su.c (krb5_verify): try harder freeing.  do not get upset on
 	interrupted password read
 
