@@ -342,12 +342,42 @@ BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SA
 	DEBUG(0,("get_domain_user_groups: primary gid of user [%s] is not a Domain group !\n", user_name));
 	DEBUGADD(0,("get_domain_user_groups: You should fix it, NT doesn't like that\n"));
 
+
  done:
 	*pgids=gids;
 	*numgroups=cur_gid;
 	safe_free(map);
 
 	return True;
+}
+
+/*******************************************************************
+ gets a domain user's groups from their already-calculated NT_USER_TOKEN
+ ********************************************************************/
+NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid, 
+				const NT_USER_TOKEN *nt_token,
+				int *numgroups, DOM_GID **pgids) 
+{
+	DOM_GID *gids;
+	int i;
+
+	gids = (DOM_GID *)talloc(mem_ctx, sizeof(*gids) * nt_token->num_sids);
+
+	if (!gids) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*numgroups=0;
+
+	for (i=PRIMARY_GROUP_SID_INDEX; i < nt_token->num_sids; i++) {
+		if (sid_compare_domain(domain_sid, &nt_token->user_sids[i])==0) {
+			sid_peek_rid(&nt_token->user_sids[i], &(gids[*numgroups].g_rid));
+			gids[*numgroups].attr=7;
+			(*numgroups)++;
+		}
+	}
+	*pgids = gids; 
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
