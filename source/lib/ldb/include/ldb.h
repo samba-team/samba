@@ -128,7 +128,7 @@ struct ldb_backend_ops {
 	int (*search_free)(struct ldb_context *, struct ldb_message **);
 	int (*add)(struct ldb_context *, const struct ldb_message *);
 	int (*modify)(struct ldb_context *, const struct ldb_message *);
-	int (*delete)(struct ldb_context *, const char *);
+	int (*delete_record)(struct ldb_context *, const char *);
 	const char * (*errstring)(struct ldb_context *);
 };
 
@@ -137,7 +137,7 @@ struct ldb_backend_ops {
 */
 struct ldb_context {
 	/* a private pointer for the backend to use */
-	void *private;
+	void *private_data;
 
 	/* the operations provided by the backend */
 	const struct ldb_backend_ops *ops;

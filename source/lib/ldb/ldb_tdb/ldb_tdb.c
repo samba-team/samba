@@ -63,7 +63,7 @@ struct TDB_DATA ltdb_key(const char *dn)
 */
 static int ltdb_lock(struct ldb_context *ldb)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	TDB_DATA key;
 	int ret;
 
@@ -84,7 +84,7 @@ static int ltdb_lock(struct ldb_context *ldb)
 */
 static void ltdb_unlock(struct ldb_context *ldb)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	TDB_DATA key;
 
 	key = ltdb_key("LDBLOCK");
@@ -102,7 +102,7 @@ static void ltdb_unlock(struct ldb_context *ldb)
 */
 int ltdb_store(struct ldb_context *ldb, const struct ldb_message *msg, int flgs)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	TDB_DATA tdb_key, tdb_data;
 	int ret;
 
@@ -164,7 +164,7 @@ static int ltdb_add(struct ldb_context *ldb, const struct ldb_message *msg)
 */
 int ltdb_delete_noindex(struct ldb_context *ldb, const char *dn)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	TDB_DATA tdb_key;
 	int ret;
 
@@ -357,7 +357,7 @@ static int msg_delete_element(struct ldb_message *msg,
 */
 static int ltdb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_message msg2;
 	int ret, i, j;
@@ -465,7 +465,7 @@ unlock_fail:
 */
 static int ltdb_close(struct ldb_context *ldb)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
 	ret = tdb_close(ltdb->tdb);
 	free(ltdb);
@@ -479,7 +479,7 @@ static int ltdb_close(struct ldb_context *ldb)
 */
 static const char *ltdb_errstring(struct ldb_context *ldb)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	return tdb_errorstr(ltdb->tdb);
 }
 
@@ -548,7 +548,7 @@ struct ldb_context *ltdb_connect(const char *url,
 		return NULL;
 	}
 
-	ldb->private = ltdb;
+	ldb->private_data = ltdb;
 	ldb->ops = &ltdb_ops;
 
 	return ldb;
