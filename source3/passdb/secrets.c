@@ -616,8 +616,6 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		SAFE_FREE(k->node_key.dptr);
-				
 		packed_pass = secrets_fetch(secrets_key, &size);
 		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size, pass);
 		/* packed representation isn't needed anymore */

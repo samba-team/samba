@@ -821,6 +821,7 @@ void tdb_search_list_free(TDB_LIST_NODE* node)
 	
 	while (node) {
 		next_node = node->next;
+		SAFE_FREE(node->node_key.dptr);
 		SAFE_FREE(node);
 		node = next_node;
 	};
