@@ -1,3 +1,13 @@
+1999-09-13  Assar Westerlund  <assar@sics.se>
+
+	* kdc/hpropd.c (main): remove bogus error with `--print'.  remove
+ 	sysloging of number of principals transferred
+
+	* kdc/hprop.c (ka_convert): set flags correctly for krbtgt/CELL
+ 	principals
+	(main): get rid of bogus opening of hdb database when propagating
+	ka-server database
+
 1999-09-12  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5_locl.h (O_BINARY): add fallback definition
