@@ -436,60 +436,52 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
  Tries winbind first - then uses local lookup.
 *****************************************************************/  
 
-BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
+BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
 	fstring sid;
-	char *sep = lp_winbind_separator();
-
+	
 	*name_type = SID_NAME_UNKNOWN;
 
-	if (!winbind_lookup_name(name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
+	if (!winbind_lookup_name(domain, name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
 		BOOL ret = False;
 
-		DEBUG(10, ("lookup_name: winbind lookup for %s failed - trying local\n", name));
+		DEBUG(10, ("lookup_name: winbind lookup for [%s]\\[%s] failed - trying local\n", domain, name));
 
 		/* If we are looking up a domain user, make sure it is
 		   for the local machine only */
-
-		if (strchr_m(name, sep[0]) || strchr_m(name, '\\') || lp_winbind_use_default_domain()) {
-			fstring domain, username;
-
-			split_domain_name(name, domain, username);
-
-			switch (lp_server_role()) {
-				case ROLE_DOMAIN_PDC:
-				case ROLE_DOMAIN_BDC:
-					if (strequal(domain, global_myworkgroup)) {
-						fstrcpy(domain, global_myname);
-						ret = local_lookup_name(domain, username, psid, name_type);
-					}
-					/* No break is deliberate here. JRA. */
-				default:
-					if (strcasecmp(global_myname, domain) != 0) {
-						DEBUG(5, ("lookup_name: domain %s is not local\n", domain));
-						ret = local_lookup_name(global_myname, username, psid, name_type);
-					}
+		
+		switch (lp_server_role()) {
+		case ROLE_DOMAIN_PDC:
+		case ROLE_DOMAIN_BDC:
+			if (strequal(domain, global_myworkgroup)) {
+				ret = local_lookup_name(name, psid, name_type);
 			}
-		} else {
-			ret = local_lookup_name(global_myname, name, psid, name_type);
+			/* No break is deliberate here. JRA. */
+		default:
+			if (ret) {
+			} else if (strequal(global_myname, domain)) {
+				ret = local_lookup_name(name, psid, name_type);
+			} else {
+				DEBUG(5, ("lookup_name: domain %s is not local\n", domain));
+			}
 		}
 
 		if (ret) {
 			DEBUG(10,
-			      ("lookup_name: (local) %s -> SID %s (type %u)\n",
-			       name, sid_to_string(sid,psid),
+			      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %u)\n",
+			       domain, name, sid_to_string(sid,psid),
 			       (unsigned int)*name_type ));
 		} else {
-			DEBUG(10,("lookup name: (local) %s failed.\n", name));
+			DEBUG(10,("lookup name: (local) [%s]\\[%s] failed.\n", domain, name));
 		}
 
 		return ret;
 	}
 
-	DEBUG(10,("lookup_name (winbindd): %s -> SID %s (type %u)\n",
-		  name, sid_to_string(sid, psid), 
+	DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
+		  domain, name, sid_to_string(sid, psid), 
 		  (unsigned int)*name_type));
 	return True;
 }
@@ -702,3 +694,4 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 
 	return True;
 }
+
