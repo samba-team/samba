@@ -85,9 +85,14 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state
 						lmpw, sizeof(lmpw),
 						ntpw, sizeof(ntpw), &info3);
 
-	/* Secret is good if status code is NT_STATUS_NO_SUCH_USER */
+	/* Secret is good if status code is NT_STATUS_NO_SUCH_USER.  
+	   Pass back any other error code for clients to have fun with. */
 
-	state->response.data.num_entries = (status == NT_STATUS_NO_SUCH_USER);
+	if (status == NT_STATUS_NO_SUCH_USER) {
+		state->response.data.num_entries = 0;
+	} else {
+		state->response.data.num_entries = status;
+	}
 
 	return WINBINDD_OK;
 }
