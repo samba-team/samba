@@ -38,7 +38,6 @@ RCSID("$Id$");
 static char *check_library  = NULL;
 static char *check_function = NULL;
 static char *config_file;
-static char *keyfile;
 static char *keytab_str = "HDB:";
 static int help_flag;
 static int version_flag;
@@ -50,10 +49,6 @@ static struct getargs args[] = {
     { 
 	"config-file",	'c',	arg_string,	&config_file, 
 	"location of config file",	"file" 
-    },
-    {
-	"key-file",	'k',	arg_string, &keyfile, 
-	"location of master key file", "file"
     },
     {
 	"keytab",	0,	arg_string, &keytab_str,
@@ -136,13 +131,6 @@ main(int argc, char **argv)
     ret = krb5_set_warn_dest(context, logf);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_set_warn_dest");
-
-    {
-	const char *p = krb5_config_get_string (context, NULL, 
-						"kdc", "key-file", NULL);
-	if (p)
-	    keyfile = strdup(p);
-    }
 
     ret = krb5_kt_register(context, &hdb_kt_ops);
     if(ret)
