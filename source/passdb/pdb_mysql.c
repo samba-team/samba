@@ -446,7 +446,7 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 	}
 
 	asprintf(&query,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
+			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
 			 config_value_read(data, "logon time column",
 							   CONFIG_LOGON_TIME_DEFAULT),
 			 config_value_read(data, "logoff time column",
@@ -501,8 +501,10 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 							   CONFIG_LOGON_DIVS_DEFAULT),
 			 config_value_read(data, "hours len column",
 							   CONFIG_HOURS_LEN_DEFAULT),
-			 config_value_read(data, "unknown 5 column",
-							   CONFIG_UNKNOWN_5_DEFAULT),
+			 config_value_read(data, "bad password count column",
+							   CONFIG_BAD_PASSWORD_COUNT_DEFAULT),
+			 config_value_read(data, "logon count column",
+							   CONFIG_LOGON_COUNT_DEFAULT),
 			 config_value_read(data, "unknown 6 column",
 							   CONFIG_UNKNOWN_6_DEFAULT),
 			 config_value(data, "table", CONFIG_TABLE_DEFAULT), field,
