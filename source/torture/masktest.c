@@ -77,7 +77,9 @@ static struct smbcli_state *connect_one(char *share)
 	*share = 0;
 	share++;
 
-	status = smbcli_full_connection(NULL, &c, "masktest",
+	cli_credentials_set_workstation(credentials, "masktest", CRED_SPECIFIED);
+
+	status = smbcli_full_connection(NULL, &c,
 					server, 
 					share, NULL,
 					credentials);

@@ -147,13 +147,11 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io2.in.dest_host = lp_parm_string(-1, "torture", "host");
 	io2.in.port = 0;
 	io2.in.called_name = lp_parm_string(-1, "torture", "host");
-	io2.in.calling_name = lp_netbios_name();
 	io2.in.service = lp_parm_string(-1, "torture", "share");
 	io2.in.service_type = "A:";
 
-	io2.in.user = cli_credentials_get_username(cmdline_credentials);
-	io2.in.domain = cli_credentials_get_domain(cmdline_credentials);
-	io2.in.password = cli_credentials_get_password(cmdline_credentials);
+	io2.in.credentials = cmdline_credentials;
+	io2.in.workgroup  = lp_workgroup();
 	io2.in.filename = fname;
 
 	printf("testing parallel fetchfile with %d ops\n", torture_numops);

@@ -46,7 +46,8 @@ NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, const char *username, const char *domain, const char *password)
+NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, 
+				struct cli_credentials *creds)
 {
         NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int result;
@@ -56,7 +57,7 @@ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, const char *userna
 		return status;
 	}
 
-	result = ldap_bind_sasl(conn, username, domain, password);
+	result = ldap_bind_sasl(conn, creds);
 	if (result != LDAP_SUCCESS) {
 		printf("Failed to bind with provided credentials and SASL mechanism\n");
 		/* FIXME: what abut actually implementing an ldap_connection_free() function ?

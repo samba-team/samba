@@ -4,7 +4,7 @@
    Generic Authentication Interface
 
    Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,13 +28,6 @@
 #define GENSEC_OID_KERBEROS5_USER2USER "1 2 840 113554 1 2 2 3"
 
 struct gensec_security;
-struct gensec_user {
-	const char *workstation;
-	const char *domain;
-	const char *realm;
-	const char *name;
-	const char *password;
-};
 struct gensec_target {
 	const char *principal;
 	const char *hostname;
@@ -105,8 +98,7 @@ struct gensec_security {
 	void *password_callback_private;
 	const struct gensec_security_ops *ops;
 	void *private_data;
-	struct gensec_user user;
-	struct gensec_user default_user;
+	struct cli_credentials *credentials;
 	struct gensec_target target;
 	enum gensec_role gensec_role;
 	BOOL subcontext;

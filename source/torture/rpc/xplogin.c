@@ -118,10 +118,10 @@ static NTSTATUS anon_ipc(struct smbcli_transport *transport,
 	/* prepare a session setup to establish a security context */
 	setup.in.sesskey = transport->negotiate.sesskey;
 	setup.in.capabilities = transport->negotiate.capabilities;
-	setup.in.password = NULL;
-	setup.in.user = "";
-	setup.in.domain = "";
 	setup.in.capabilities &= ~CAP_EXTENDED_SECURITY;
+
+	setup.in.credentials = cli_credentials_init(mem_ctx);
+	cli_credentials_set_anonymous(setup.in.credentials);
 
 	status = smb_composite_sesssetup(session, &setup);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -479,9 +479,6 @@ static NTSTATUS setup_netlogon_creds(struct smbcli_transport *transport,
 	a.out.credentials = &credentials3;
 
 	creds_client_init(creds, &credentials1, &credentials2,
-			  machine_name, 
-			  domain,
-			  a.in.account_name, 
 			  &mach_password, &credentials3, 
 			  negotiate_flags);
 
@@ -978,6 +975,7 @@ static NTSTATUS test_remoteTOD(struct smbcli_transport *transport)
 	return status;
 }
 
+#if 0
 static BOOL xp_login(const char *dcname, const char *wksname,
 		     const char *domain, const char *wkspwd,
 		     const char *user1name, const char *user1pw,
@@ -1033,10 +1031,10 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 
 	netlogon_schannel_pipe->conn->flags |= DCERPC_SEAL;
 
-	status = dcerpc_bind_auth_schannel_withkey(netlogon_schannel_pipe,
-						   DCERPC_NETLOGON_UUID,
-						   DCERPC_NETLOGON_VERSION,
-						   netlogon_creds);
+	status = dcerpc_bind_auth_password(netlogon_schannel_pipe,
+					   DCERPC_NETLOGON_UUID,
+					   DCERPC_NETLOGON_VERSION,
+					   creds, NULL);
 
 	if (!NT_STATUS_IS_OK(status))
                 return False;
@@ -1096,6 +1094,8 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 	return True;
 }
 
+#endif
+
 struct user_pw {
 	const char *username;
 	const char *password;
@@ -1124,10 +1124,13 @@ BOOL torture_rpc_login(void)
 	       users[useridx1].username,
 	       users[useridx2].username);
 
+#if 0
 	return xp_login(pdcname, machines[machidx].username,
 			domainname, machines[machidx].password,
 			users[useridx1].username,
 			users[useridx1].password,
 			users[useridx2].username,
 			users[useridx2].password);
+#endif
+	return False;
 }

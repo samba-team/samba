@@ -177,8 +177,10 @@ static BOOL connect_servers(void)
 			       servers[i].server_name, servers[i].share_name, 
 			       servers[i].credentials->username, j);
 
+			cli_credentials_set_workstation(servers[i].credentials, 
+							"gentest", CRED_SPECIFIED);
+
 			status = smbcli_full_connection(NULL, &servers[i].cli[j],
-							"gentest",
 							servers[i].server_name, 
 							servers[i].share_name, NULL, 
 							servers[i].credentials);

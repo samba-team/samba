@@ -166,9 +166,8 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	/* prepare a session setup to establish a security context */
 	state->io_setup->in.sesskey      = state->transport->negotiate.sesskey;
 	state->io_setup->in.capabilities = state->transport->negotiate.capabilities;
-	state->io_setup->in.domain       = io->in.domain;
-	state->io_setup->in.user         = io->in.user;
-	state->io_setup->in.password     = io->in.password;
+	state->io_setup->in.credentials  = io->in.credentials;
+	state->io_setup->in.workgroup    = io->in.workgroup;
 
 	state->creq = smb_composite_sesssetup_send(state->session, state->io_setup);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
@@ -214,7 +213,7 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	state->transport = smbcli_transport_init(state->sock, state, True);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
-	calling.name = io->in.calling_name;
+	calling.name = cli_credentials_get_workstation(io->in.credentials);
 	calling.type = NBT_NAME_CLIENT;
 	calling.scope = NULL;
 
@@ -254,7 +253,7 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 	status = resolve_name_recv(state->creq, state, &address);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	state->creq = smbcli_sock_connect_send(state->sock, address, state->io->in.port);
+	state->creq = smbcli_sock_connect_send(state->sock, address, state->io->in.port, io->in.dest_host);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
 	state->stage = CONNECT_SOCKET;

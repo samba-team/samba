@@ -134,7 +134,7 @@ struct smbcli_request *smb_raw_session_setup_send(struct smbcli_session *session
 		smbcli_req_append_blob(req, &parms->spnego.in.secblob);
 		smbcli_req_append_string(req, parms->spnego.in.os, STR_TERMINATE);
 		smbcli_req_append_string(req, parms->spnego.in.lanman, STR_TERMINATE);
-		smbcli_req_append_string(req, parms->spnego.in.domain, STR_TERMINATE);
+		smbcli_req_append_string(req, parms->spnego.in.workgroup, STR_TERMINATE);
 		break;
 	}
 
@@ -210,7 +210,7 @@ NTSTATUS smb_raw_session_setup_recv(struct smbcli_request *req,
 		p += parms->spnego.out.secblob.length;
 		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.os, p, -1, STR_TERMINATE);
 		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.lanman, p, -1, STR_TERMINATE);
-		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.domain, p, -1, STR_TERMINATE);
+		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.workgroup, p, -1, STR_TERMINATE);
 		break;
 	}
 

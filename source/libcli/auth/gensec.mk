@@ -69,6 +69,18 @@ REQUIRED_SUBSYSTEMS = AUTH
 ################################################
 
 ################################################
+# Start MODULE gensec_schannel
+[MODULE::gensec_schannel]
+SUBSYSTEM = GENSEC
+INIT_FUNCTION = gensec_schannel_init
+INIT_OBJ_FILES = libcli/auth/schannel.o
+ADD_OBJ_FILES = \
+		libcli/auth/schannel_sign.o
+REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB
+# End MODULE gensec_ntlmssp
+################################################
+
+################################################
 # Start SUBSYSTEM SCHANNELDB
 [SUBSYSTEM::SCHANNELDB]
 INIT_OBJ_FILES = \
