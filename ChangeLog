@@ -1,3 +1,7 @@
+Sat Jun 13 04:14:01 1998  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.0r
+
 Sun Jun  7 04:13:14 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/addr_families.c: fall-back definition of
