@@ -1854,6 +1854,7 @@ static BOOL run_trans2test(int dummy)
 	char *fname = "\\trans2.tst";
 	char *dname = "\\trans2";
 	char *fname2 = "\\trans2\\trans2.tst";
+	pstring pname;
 	BOOL correct = True;
 
 	printf("starting trans2 test\n");
@@ -1870,6 +1871,18 @@ static BOOL run_trans2test(int dummy)
 		printf("ERROR: qfileinfo failed (%s)\n", cli_errstr(&cli));
 		correct = False;
 	}
+
+	if (!cli_qfilename(&cli, fnum, pname)) {
+		printf("ERROR: qfilename failed (%s)\n", cli_errstr(&cli));
+		correct = False;
+	}
+
+	if (strcmp(pname, fname)) {
+		printf("qfilename gave different name? [%s] [%s]\n",
+		       fname, pname);
+		correct = False;
+	}
+
 	cli_close(&cli, fnum);
 
 	sleep(2);
