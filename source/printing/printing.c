@@ -225,10 +225,33 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 	return p;
 }
 
+/***************************************************************************
+ Remove a reference count.
+****************************************************************************/
+
 static void release_print_db( struct tdb_print_db *pdb)
 {
 	pdb->ref_count--;
 	SMB_ASSERT(pdb->ref_count >= 0);
+}
+
+/***************************************************************************
+ Close all open print db entries.
+****************************************************************************/
+
+static void close_all_print_db(void)
+{
+	struct tdb_print_db *p = NULL, *next_p = NULL;
+
+	for (p = print_db_head; p; p = next_p) {
+		next_p = p->next;
+
+		if (p->tdb)
+			tdb_close(p->tdb);
+		DLIST_REMOVE(print_db_head, p);
+		ZERO_STRUCTP(p);
+		SAFE_FREE(p);
+	}
 }
 
 /****************************************************************************
@@ -264,6 +287,7 @@ BOOL print_backend_init(void)
 			continue;
 		if (tdb_lock_bystring(pdb->tdb, sversion, 0) == -1) {
 			DEBUG(0,("print_backend_init: Failed to open printer %s database\n", lp_const_servicename(snum) ));
+			release_print_db(pdb);
 			return False;
 		}
 		if (tdb_fetch_int32(pdb->tdb, sversion) != PRINT_DATABASE_VERSION) {
@@ -271,7 +295,10 @@ BOOL print_backend_init(void)
 			tdb_store_int32(pdb->tdb, sversion, PRINT_DATABASE_VERSION);
 		}
 		tdb_unlock_bystring(pdb->tdb, sversion);
+		release_print_db(pdb);
 	}
+
+	close_all_print_db(); /* Don't leave any open. */
 
 	/* select the appropriate printing interface... */
 #ifdef HAVE_CUPS
