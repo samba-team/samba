@@ -26,15 +26,7 @@
  Stat cache code used in unix_convert.
 *****************************************************************************/
 
-typedef struct {
-	char *original_path;
-	char *translated_path;
-	size_t translated_path_length;
-	char names[2]; /* This is extended via malloc... */
-} stat_cache_entry;
-
-#define INIT_STAT_CACHE_SIZE 512
-static hash_table stat_cache;
+static TDB_CONTEXT *tdb_stat_cache;
 
 /**
  * Add an entry into the stat cache.
@@ -50,18 +42,16 @@ static hash_table stat_cache;
 
 void stat_cache_add( const char *full_orig_name, const char *orig_translated_path, BOOL case_sensitive)
 {
-	stat_cache_entry *scp;
-	stat_cache_entry *found_scp;
 	char *translated_path;
 	size_t translated_path_length;
-
+	TDB_DATA data_val;
 	char *original_path;
 	size_t original_path_length;
 
-	hash_element *hash_elem;
-
 	if (!lp_stat_cache())
 		return;
+
+	ZERO_STRUCT(data_val);
 
 	/*
 	 * Don't cache trivial valid directory entries such as . and ..
@@ -124,7 +114,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 			return;
 		}
 
-		/* we only want to store the first part of original_path,
+		/* we only want to index by the first part of original_path,
 			up to the length of translated_path */
 
 		original_path[translated_path_length] = '\0';
@@ -132,54 +122,25 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	}
 
 	/*
-	 * Check this name doesn't exist in the cache before we 
-	 * add it.
+	 * New entry or replace old entry.
 	 */
+  
+	data_val.dsize = translated_path_length + 1;
+	data_val.dptr = translated_path;
 
-	if ((hash_elem = hash_lookup(&stat_cache, original_path))) {
-		found_scp = (stat_cache_entry *)(hash_elem->value);
-		if (strcmp((found_scp->translated_path), orig_translated_path) == 0) {
-			/* already in hash table */
-			SAFE_FREE(original_path);
-			SAFE_FREE(translated_path);
-			return;
-		}
-		/* hash collision - remove before we re-add */
-		hash_remove(&stat_cache, hash_elem);
-	}  
-  
-	/*
-	 * New entry.
-	 */
-  
-	if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)
-						+original_path_length
-						+translated_path_length)) == NULL) {
-		DEBUG(0,("stat_cache_add: Out of memory !\n"));
-		SAFE_FREE(original_path);
-		SAFE_FREE(translated_path);
-		return;
+	if (tdb_store_bystring(tdb_stat_cache, original_path, data_val, TDB_REPLACE) != 0) {
+		DEBUG(0,("stat_cache_add: Error storing entry %s -> %s\n", original_path, translated_path));
+	} else {
+		DEBUG(5,("stat_cache_add: Added entry (%x:size%x) %s -> %s\n",
+			(unsigned int)data_val.dptr, data_val.dsize, original_path, translated_path));
 	}
-
-	scp->original_path = scp->names;
-	/* pointer into the structure... */
-	scp->translated_path = scp->names + original_path_length + 1;
-	safe_strcpy(scp->original_path, original_path, original_path_length);
-	safe_strcpy(scp->translated_path, translated_path, translated_path_length);
-	scp->translated_path_length = translated_path_length;
-
-	hash_insert(&stat_cache, (char *)scp, original_path);
 
 	SAFE_FREE(original_path);
 	SAFE_FREE(translated_path);
-
-	DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->original_path, scp->translated_path));
 }
 
 /**
  * Look through the stat cache for an entry
- *
- * The hash-table's internals will promote it to the top if found.
  *
  * @param conn    A connection struct to do the stat() with.
  * @param name    The path we are attempting to cache, modified by this routine
@@ -195,11 +156,8 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath, 
 		       char **start, SMB_STRUCT_STAT *pst)
 {
-	stat_cache_entry *scp;
 	char *chk_name;
 	size_t namelen;
-	hash_element *hash_elem;
-	char *sp;
 	BOOL sizechanged = False;
 	unsigned int num_components = 0;
 
@@ -244,8 +202,11 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	}
 
 	while (1) {
-		hash_elem = hash_lookup(&stat_cache, chk_name);
-		if(hash_elem == NULL) {
+		TDB_DATA data_val;
+		char *sp;
+
+		data_val = tdb_fetch_bystring(tdb_stat_cache, chk_name);
+		if(data_val.dptr == NULL || data_val.dsize == 0) {
 			DEBUG(10,("stat_cache_lookup: lookup failed for name [%s]\n", chk_name ));
 			/*
 			 * Didn't find it - remove last component for next try.
@@ -275,42 +236,69 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 				return False;
 			}
 		} else {
-			scp = (stat_cache_entry *)(hash_elem->value);
-			DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] -> [%s]\n", chk_name, scp->translated_path ));
+			BOOL retval;
+			char *translated_path = data_val.dptr;
+			size_t translated_path_length = data_val.dsize - 1;
+
+			DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] -> [%s]\n", chk_name, translated_path ));
 			DO_PROFILE_INC(statcache_hits);
-			if(SMB_VFS_STAT(conn,scp->translated_path, pst) != 0) {
+			if(SMB_VFS_STAT(conn,translated_path, pst) != 0) {
 				/* Discard this entry - it doesn't exist in the filesystem.  */
-				hash_remove(&stat_cache, hash_elem);
+				tdb_delete_bystring(tdb_stat_cache, chk_name);
 				SAFE_FREE(chk_name);
+				SAFE_FREE(data_val.dptr);
 				return False;
 			}
 
 			if (!sizechanged) {
-				memcpy(name, scp->translated_path, MIN(sizeof(pstring)-1, scp->translated_path_length));
+				memcpy(name, translated_path, MIN(sizeof(pstring)-1, translated_path_length));
 			} else if (num_components == 0) {
-				pstrcpy(name, scp->translated_path);
+				pstrcpy(name, translated_path);
 			} else {
 				sp = strnrchr_m(name, '/', num_components);
 				if (sp) {
 					pstring last_component;
 					pstrcpy(last_component, sp);
-					pstrcpy(name, scp->translated_path);
+					pstrcpy(name, translated_path);
 					pstrcat(name, last_component);
 				} else {
-					pstrcpy(name, scp->translated_path);
+					pstrcpy(name, translated_path);
 				}
 			}
 
 			/* set pointer for 'where to start' on fixing the rest of the name */
-			*start = &name[scp->translated_path_length];
+			*start = &name[translated_path_length];
 			if(**start == '/')
 				++*start;
 
-			pstrcpy(dirpath, scp->translated_path);
+			pstrcpy(dirpath, translated_path);
+			retval = (namelen == translated_path_length) ? True : False;
 			SAFE_FREE(chk_name);
-			return (namelen == scp->translated_path_length);
+			SAFE_FREE(data_val.dptr);
+			return retval;
 		}
 	}
+}
+
+/*
+ **************************************************************
+ *      Compute a hash value based on a string key value.
+ *      Make the string key into an array of int's if possible.
+ *      For the last few chars that cannot be int'ed, use char instead.
+ *      The function returns the bucket index number for the hashed
+ *      key.
+ *      JRA. Use a djb-algorithm hash for speed.
+ **************************************************************
+ */
+                                                                                                     
+static u32 string_hash(TDB_DATA *key)
+{
+        u32 n = 0;
+        const char *p;
+        for (p = key->dptr; *p != '\0'; p++) {
+                n = ((n << 5) + n) ^ (u32)(*p);
+        }
+        return n;
 }
 
 /*************************************************************************** **
@@ -323,15 +311,17 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
  */
 BOOL reset_stat_cache( void )
 {
-	static BOOL initialised;
 	if (!lp_stat_cache())
 		return True;
 
-	if (initialised) {
-		hash_clear(&stat_cache);
+	if (tdb_stat_cache) {
+		tdb_close(tdb_stat_cache);
 	}
 
-	initialised = hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, 
-				       (compare_function)(strcmp));
-	return initialised;
+	/* Create the in-memory tdb. */
+	tdb_stat_cache = tdb_open_log("statcache", 0, TDB_INTERNAL, (O_RDWR|O_CREAT), 0644);
+	if (!tdb_stat_cache)
+		return False;
+	tdb_set_hash_function(tdb_stat_cache, string_hash);
+	return True;
 }

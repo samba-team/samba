@@ -102,11 +102,13 @@ typedef struct tdb_context {
 	dev_t device;	/* uniquely identifies this tdb */
 	ino_t inode;	/* uniquely identifies this tdb */
 	void (*log_fn)(struct tdb_context *tdb, int level, const char *, ...); /* logging function */
+	u32 (*hash_fn)(TDB_DATA *key);
 	int open_flags; /* flags used in the open - needed by reopen */
 } TDB_CONTEXT;
 
 typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
 typedef void (*tdb_log_func)(TDB_CONTEXT *, int , const char *, ...);
+typedef u32 (*tdb_hash_func)(TDB_DATA *key);
 
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
@@ -117,6 +119,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 int tdb_reopen(TDB_CONTEXT *tdb);
 int tdb_reopen_all(void);
 void tdb_logging_function(TDB_CONTEXT *tdb, tdb_log_func);
+void tdb_set_hash_function(TDB_CONTEXT *tdb, tdb_hash_func);
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
