@@ -342,3 +342,10 @@ const smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
 	return NULL;
 }
 
+size_t ucs2_align(const void *base_ptr, const void *p, int flags)
+{
+	if (flags & (STR_NOALIGN|STR_ASCII))
+		return 0;
+	return PTR_DIFF(p, base_ptr) & 1;
+}
+

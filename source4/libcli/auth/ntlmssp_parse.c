@@ -236,7 +236,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 					return False;
 
 				if (0 < len1) {
-					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+					pull_string(p, blob->data + ptr, sizeof(p), 
 						    len1, 
 						    STR_UNICODE|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
@@ -267,7 +267,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 					return False;	
 
 				if (0 < len1) {
-					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+					pull_string(p, blob->data + ptr, sizeof(p), 
 						    len1, 
 						    STR_ASCII|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
@@ -322,7 +322,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			if (blob->data + head_ofs < (uint8_t *)head_ofs || blob->data + head_ofs < blob->data)
 				return False;	
 	
-			head_ofs += pull_string(NULL, p, blob->data+head_ofs, sizeof(p), 
+			head_ofs += pull_string(p, blob->data+head_ofs, sizeof(p), 
 						blob->length - head_ofs, 
 						STR_ASCII|STR_TERMINATE);
 			if (strcmp(s, p) != 0) {

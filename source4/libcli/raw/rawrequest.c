@@ -369,12 +369,13 @@ size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uin
 
 	smbcli_req_grow_allocation(req, len + req->out.data_size);
 
-	len = push_string(NULL, req->out.data + req->out.data_size, str, len, flags);
+	len = push_string(req->out.data + req->out.data_size, str, len, flags);
 
 	smbcli_req_grow_data(req, len + req->out.data_size);
 
 	return len;
 }
+
 
 /*
   this is like smbcli_req_append_string but it also return the
@@ -528,7 +529,7 @@ static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_c
 		return 0;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)dest);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
@@ -570,7 +571,7 @@ size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)dest);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -696,6 +697,7 @@ static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
+	char *dest2;
 
 	if (src < (const char *)blob->data ||
 	    src >= (const char *)(blob->data + blob->length)) {
@@ -727,11 +729,12 @@ static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 		src_len2 += 2;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
 	}
+	*dest = dest2;
 
 	return src_len2 + alignment;
 }
@@ -755,6 +758,7 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 {
 	int src_len, src_len2;
 	ssize_t ret;
+	char *dest2;
 
 	src_len = blob->length - PTR_DIFF(src, blob->data);
 	if (src_len < 0) {
@@ -771,12 +775,13 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
 	}
+	*dest = dest2;
 
 	return ret;
 }
@@ -911,7 +916,7 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
 		return 0;
 	}
 
-	len = push_string(NULL, blob->data + blob->length, str, max_len, flags);
+	len = push_string(blob->data + blob->length, str, max_len, flags);
 
 	blob->length += len;
 
