@@ -649,7 +649,7 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS) bin/.dummy
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ) bin/.dummy
 	@echo Linking shared library $@
-	$(SHLD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc \
+	$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc \
 		@SONAMEFLAG@`basename $@`
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
