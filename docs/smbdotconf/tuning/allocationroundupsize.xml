@@ -8,6 +8,8 @@
     size of 1Mb generally results in improved Windows client
     performance.   However, rounding the allocation size may cause
     difficulties for some applications, e.g. MS Visual Studio.
+    If the MS Visual Studio compiler starts to crash with an
+    internal error, set this parameter to zero for this share.
     </para>
 
     <para>The integer parameter specifies the roundup size in bytes.</para>
