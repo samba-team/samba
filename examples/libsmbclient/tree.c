@@ -745,8 +745,6 @@ int main( int   argc,
 
   /* Now, get the items in smb:/// and add them to the tree */
 
-  dirp = (struct smbc_dirent *)dirbuf;
-
   while ((err = smbc_getdents(dh, (struct smbc_dirent *)dirbuf, 
 			      sizeof(dirbuf))) != 0) {
 
@@ -758,6 +756,8 @@ int main( int   argc,
       exit(1);
 
     }
+
+    dirp = (struct smbc_dirent *)dirbuf;
 
     fprintf(stdout, "Dir len: %u\n", err);
 
