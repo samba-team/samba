@@ -277,6 +277,7 @@ BOOL generate_sam_sid(char *domain_name)
 	int i;
 	char *p;
 	pstring sid_file;
+	pstring machine_sid_file;
 	fstring sid_string;
 	fstring file_name;
 	SMB_STRUCT_STAT st;
@@ -304,10 +305,29 @@ BOOL generate_sam_sid(char *domain_name)
 		}
 	}
 
+	pstrcpy(machine_sid_file, sid_file);
+	pstrcat(machine_sid_file, "MACHINE.SID");
+
 	slprintf(file_name, sizeof(file_name)-1, "%s.SID", domain_name);
 	strupper(file_name);
 	pstrcat(sid_file, file_name);
     
+	if (file_exists(machine_sid_file, NULL))
+	{
+		if (file_exists(machine_sid_file, NULL))
+		{
+			DEBUG(0,("both %s and %s exist when only one should, unable to continue\n",
+			          machine_sid_file, sid_file));
+			return False;
+		}
+		if (file_rename(machine_sid_file, sid_file))
+		{
+			DEBUG(0,("could not rename %s to %s.  Error was %s\n",
+			          machine_sid_file, sid_file, strerror(errno)));
+			return False;
+		}
+	}
+	
 	if ((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
 		DEBUG(0,("unable to open or create file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));

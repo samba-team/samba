@@ -678,8 +678,9 @@ static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_QUERY_ALIASINFO r_e;
+	ALIAS_INFO_CTR ctr;
+	uint32 status = 0x0;
 
-	r_e.status = 0x0;
 	r_e.ptr = 0;
 
 	/* find the policy handle.  open a policy on it. */
@@ -690,17 +691,21 @@ static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 
 	DEBUG(5,("samr_reply_query_aliasinfo: %d\n", __LINE__));
 
-	if (r_e.status == 0x0)
+	if (status == 0x0)
 	{
-		if (q_u->switch_level != 3)
+		if (q_u->switch_level == 3)
 		{
-			r_e.status = NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
+		}
+		else
+		{
+			r_e.ptr = 1;
+			ctr.switch_value = 3;
+			make_samr_alias_info3(&ctr.alias.info3, "<account description>");
 		}
 	}
 
-	make_samr_r_query_aliasinfo(&r_e, q_u->switch_level,
-	                    "<account description>",
-		                r_e.status);
+	make_samr_r_query_aliasinfo(&r_e, status == 0 ? &ctr : NULL, status);
 
 	/* store the response in the SMB stream */
 	samr_io_r_query_aliasinfo("", &r_e, rdata, 0);

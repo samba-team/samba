@@ -108,7 +108,6 @@ SamrTestPrivateFunctionsUser
 #define SAMR_ADD_ALIASMEM      0x20
 #define SAMR_QUERY_ALIASMEM    0x21
 
-#define SAMR_UNKNOWN_21        0x21
 #define SAMR_OPEN_USER         0x22
 
 #define SAMR_QUERY_USERINFO    0x24
@@ -794,7 +793,7 @@ typedef struct r_samr_set_group_info
 /* SAMR_Q_DELETE_DOM_ALIAS - delete domain alias */
 typedef struct q_samr_delete_dom_alias_info
 {
-    POLICY_HND pol;          /* policy handle */
+    POLICY_HND alias_pol;          /* policy handle */
 
 } SAMR_Q_DELETE_DOM_ALIAS;
 
@@ -811,7 +810,7 @@ typedef struct r_samr_delete_dom_alias_info
 /* SAMR_Q_CREATE_DOM_ALIAS - SAM create alias */
 typedef struct q_samr_create_dom_alias_info
 {
-	POLICY_HND pol;        /* policy handle */
+	POLICY_HND dom_pol;        /* policy handle */
 
 	UNIHDR hdr_acct_desc;
 	UNISTR2 uni_acct_desc;
@@ -824,7 +823,7 @@ typedef struct q_samr_create_dom_alias_info
 /* SAMR_R_CREATE_DOM_ALIAS - SAM create alias */
 typedef struct r_samr_create_dom_alias_info
 {
-	POLICY_HND pol;        /* policy handle */
+	POLICY_HND alias_pol;        /* policy handle */
 
 	uint32 rid;    
 	uint32 status;    
@@ -847,18 +846,24 @@ typedef struct samr_alias_info3
 
 } ALIAS_INFO3;
 
-/* SAMR_R_QUERY_ALIASINFO - SAM alias info */
-typedef struct r_samr_query_aliasinfo_info
+/* ALIAS_INFO_CTR */
+typedef struct alias_info_ctr
 {
-	uint32 ptr;        
-	uint16 switch_value;     /* 0x0003 */
-	/* uint8[2] padding */
+	uint16 switch_value;
 
 	union
  	{
 		ALIAS_INFO3 info3;
 
 	} alias;
+
+} ALIAS_INFO_CTR;
+
+/* SAMR_R_QUERY_ALIASINFO - SAM alias info */
+typedef struct r_samr_query_aliasinfo_info
+{
+	uint32 ptr;        
+	ALIAS_INFO_CTR *ctr;
 
 	uint32 status;
 
@@ -868,16 +873,8 @@ typedef struct r_samr_query_aliasinfo_info
 /* SAMR_Q_SET_ALIASINFO - SAM Alias Info */
 typedef struct q_samr_set_alias_info
 {
-	POLICY_HND pol;        /* policy handle */
-
-	uint16 switch_value1;     /* 0x0003 */
-	uint16 switch_value2;     /* 0x0003 */
-
-	union
- 	{
-		ALIAS_INFO3 info3;
-
-	} alias;
+	POLICY_HND alias_pol;        /* policy handle */
+	ALIAS_INFO_CTR *ctr;
 
 } SAMR_Q_SET_ALIASINFO;
 
@@ -1081,16 +1078,6 @@ typedef struct r_samr_open_user_info
 } SAMR_R_OPEN_USER;
 
 
-/* SAMR_Q_UNKNOWN_13 - probably an open alias in domain */
-typedef struct q_samr_unknown_13_info
-{
-    POLICY_HND alias_pol;        /* policy handle */
-
-	uint16 unknown_1;            /* 16 bit unknown - 0x0200 */
-	uint16 unknown_2;            /* 16 bit unknown - 0x0000 */
-
-} SAMR_Q_UNKNOWN_13;
-
 
 /* SAMR_Q_UNKNOWN_32 - probably a "create SAM entry" */
 typedef struct q_samr_unknown_32_info
@@ -1142,7 +1129,8 @@ typedef struct r_samr_add_group_mem_info
 /* SAMR_Q_OPEN_GROUP - probably an open */
 typedef struct q_samr_open_group_info
 {
-	uint32 unknown_0;         /* 0x0000 0001, 0x0000 0003, 0x0000 001f */
+	POLICY_HND domain_pol;       /* policy handle */
+	uint32 unknown;         /* 0x0000 0001, 0x0000 0003, 0x0000 001f */
 	uint32 rid_group;        /* rid */
 
 } SAMR_Q_OPEN_GROUP;
@@ -1171,7 +1159,7 @@ typedef struct q_samr_unknown_21_info
 /* SAMR_Q_UNK_ALIASMEM - don't know! */
 typedef struct q_samr_unk_alias_mem_info
 {
-	POLICY_HND pol;       /* policy handle */
+	POLICY_HND alias_pol;       /* policy handle */
 
 	DOM_SID sid; /* member sid to be "something"ed to do with the alias */
 
@@ -1189,7 +1177,7 @@ typedef struct r_samr_unk_alias_mem_info
 /* SAMR_Q_ADD_ALIASMEM - probably an add member */
 typedef struct q_samr_add_alias_mem_info
 {
-	POLICY_HND pol;       /* policy handle */
+	POLICY_HND alias_pol;       /* policy handle */
 
 	DOM_SID sid; /* member sid to be added to alias */
 

@@ -235,19 +235,11 @@ static int copy_reg(char *source, const char *dest)
 
 int dos_rename(char *from, char *to)
 {
-    int rcode;  
     pstring zfrom, zto;
 
     pstrcpy (zfrom, dos_to_unix (from, False));
     pstrcpy (zto, dos_to_unix (to, False));
-    rcode = rename (zfrom, zto);
-
-    if (errno == EXDEV) 
-    {
-      /* Rename across filesystems needed. */
-      rcode = copy_reg (zfrom, zto);        
-    }
-    return rcode;
+    return file_rename(zfrom, zto);
 }
 
 /*******************************************************************
