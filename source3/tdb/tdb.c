@@ -1419,7 +1419,7 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 	if (tdb->flags & TDB_INTERNAL) {
 		tdb->flags |= (TDB_NOLOCK | TDB_NOMMAP);
 		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
-		tdb_new_database(&tdb[0], hash_size);
+		tdb_new_database(tdb, hash_size);
 		goto internal;
 	}
 
@@ -1427,11 +1427,11 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		goto fail;	/* errno set by open(2) */
 
 	/* ensure there is only one process initialising at once */
-	if (tdb_brlock(&tdb[0], GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1)
+	if (tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1)
 		goto fail;	/* errno set by tdb_brlock */
 
 	/* we need to zero database if we are the only one with it open */
-	if ((locked = (tdb_brlock(&tdb[0], ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))
+	if ((locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))
 	    && (tdb_flags & TDB_CLEAR_IF_FIRST)) {
 		open_flags |= O_CREAT;
 		if (ftruncate(tdb->fd, 0) == -1)
@@ -1443,7 +1443,7 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 	    || (tdb->header.version != TDB_VERSION
 		&& !(rev = (tdb->header.version==TDB_BYTEREV(TDB_VERSION))))) {
 		/* its not a valid database - possibly initialise it */
-		if (!(open_flags & O_CREAT) || tdb_new_database(&tdb[0], hash_size) == -1) {
+		if (!(open_flags & O_CREAT) || tdb_new_database(tdb, hash_size) == -1) {
 			errno = EIO; /* ie bad format or something */
 			goto fail;
 		}
@@ -1481,24 +1481,24 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		errno = ENOMEM;
 		goto fail;
 	}
-	tdb_mmap(&tdb[0]);
+	tdb_mmap(tdb);
 	if (locked) {
 		if (!tdb->read_only)
-			tdb_clear_spinlocks(&tdb[0]);
-		if (tdb_brlock(&tdb[0], ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1)
+			tdb_clear_spinlocks(tdb);
+		if (tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1)
 			goto fail;
 	}
 	/* leave this lock in place to indicate it's in use */
-	if (tdb_brlock(&tdb[0], ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
+	if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
 		goto fail;
 
  internal:
-	if (!(ret = malloc(sizeof(tdb[0])))) {
+	if (!(ret = malloc(sizeof(*tdb)))) {
 		errno = ENOMEM;
 		goto fail;
 	}
-	*ret = tdb[0];
-	if (tdb_brlock(&tdb[0], GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
+	*ret = *tdb;
+	if (tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
 		goto fail;
 	ret->next = tdbs;
 	tdbs = ret;
@@ -1511,7 +1511,7 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		if (tdb->flags & TDB_INTERNAL)
 			free(tdb->map_ptr);
 		else
-			tdb_munmap(&tdb[0]);
+			tdb_munmap(tdb);
 	}
 	if (tdb->name)
 		free(tdb->name);
