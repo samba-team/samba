@@ -25,13 +25,6 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/dcom/dcom.h"
 
-
-static void register_dcom_class(void *_c)
-{
-	struct dcom_class *class = _c;
-	/* FIXME */
-}
-
 struct dcom_object *dcom_object_by_oid(struct GUID *oid)
 {
 	/* FIXME */
@@ -44,3 +37,15 @@ struct dcom_class *dcom_class_by_clsid(struct GUID *clsid)
 	return NULL;
 }
 
+struct dcom_object *dcom_call_get_object(struct dcesrv_call_state *call)
+{
+	struct GUID *object;
+
+	if (! (call->pkt.pfc_flags & DCERPC_PFC_FLAG_ORPC) ) {
+		return NULL;
+	}
+	
+	object = &call->pkt.u.request.object.object;
+	/* FIXME */
+	return NULL; 
+}
