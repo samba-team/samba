@@ -1,3 +1,8 @@
+2003-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/k5.asn1: make the aes and sha1 checksum types match
+	draft-ietf-krb-wg-crypto-05
+
 2003-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/aes-test.c: add a test for aes kcrypto encrypted data
