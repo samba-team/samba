@@ -62,7 +62,7 @@ NTSTATUS cli_ds_getprimarydominfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (ctr) {
+	if ( r.ptr && ctr ) {
 		ctr->basic = talloc(mem_ctx, sizeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC));
 		if (!ctr->basic)
 			goto done;
