@@ -1,17 +1,22 @@
-/* lib/des/destest.c */
-/* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
+/* crypto/des/destest.c */
+/* Copyright (C) 1995-1997 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
- * 
- * This file is part of an SSL implementation written
+ *
+ * This package is an SSL implementation written
  * by Eric Young (eay@mincom.oz.au).
- * The implementation was written so as to conform with Netscapes SSL
- * specification.  This library and applications are
- * FREE FOR COMMERCIAL AND NON-COMMERCIAL USE
- * as long as the following conditions are aheared to.
+ * The implementation was written so as to conform with Netscapes SSL.
+ * 
+ * This library is free for commercial and non-commercial use as long as
+ * the following conditions are aheared to.  The following conditions
+ * apply to all code found in this distribution, be it the RC4, RSA,
+ * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
+ * included with this distribution is covered by the same copyright terms
+ * except that the holder is Tim Hudson (tjh@mincom.oz.au).
  * 
  * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.  If this code is used in a product,
- * Eric Young should be given attribution as the author of the parts used.
+ * the code are not to be removed.
+ * If this package is used in a product, Eric Young should be given attribution
+ * as the author of the parts of the library used.
  * This can be in the form of a textual message at program startup or
  * in documentation (online or textual) provided with the package.
  * 
@@ -25,7 +30,13 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *    This product includes software developed by Eric Young (eay@mincom.oz.au)
+ *    "This product includes cryptographic software written by
+ *     Eric Young (eay@mincom.oz.au)"
+ *    The word 'cryptographic' can be left out if the rouines from the library
+ *    being used are not cryptographic related :-).
+ * 4. If you include any Windows specific code (or a derivative thereof) from 
+ *    the apps directory (application code) you must include an acknowledgement:
+ *    "This product includes software written by Tim Hudson (tjh@mincom.oz.au)"
  * 
  * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -47,6 +58,12 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+#if defined(WIN32) || defined(WIN16) || defined(WINDOWS)
+#ifndef MSDOS
+#define MSDOS
+#endif
 #endif
 
 #include <stdio.h>
@@ -219,6 +236,13 @@ static unsigned char cbc_ok[32]={
 	0x46,0x8e,0x91,0x15,0x78,0x88,0xba,0x68,
 	0x1d,0x26,0x93,0x97,0xf7,0xfe,0x62,0xb4};
 
+static unsigned char xcbc_ok[32]={
+	0x86,0x74,0x81,0x0D,0x61,0xA4,0xA5,0x48,
+	0xB9,0x93,0x03,0xE1,0xB8,0xBB,0xBD,0xBD,
+	0x64,0x30,0x0B,0xB9,0x06,0x65,0x81,0x76,
+	0x04,0x1D,0x77,0x62,0x17,0xCA,0x2B,0xD2,
+	};
+
 static unsigned char cbc3_ok[32]={
 	0x3F,0xE3,0x01,0xC9,0x62,0xAC,0x01,0xD0,
 	0x22,0x13,0x76,0x3C,0x1C,0xBD,0x4C,0xDC,
@@ -300,7 +324,7 @@ char *argv[];
 	printf("Doing ecb\n");
 	for (i=0; i<NUM_TESTS; i++)
 		{
-		if ((j=key_sched((C_Block *)(key_data[i]),ks)) != 0)
+		if ((j=des_key_sched((C_Block *)(key_data[i]),ks)) != 0)
 			{
 			printf("Key error %2d:%d\n",i+1,j);
 			err=1;
@@ -326,20 +350,21 @@ char *argv[];
 			}
 		}
 
+#ifndef LIBDES_LIT
 	printf("Doing ede ecb\n");
 	for (i=0; i<(NUM_TESTS-1); i++)
 		{
-		if ((j=key_sched((C_Block *)(key_data[i]),ks)) != 0)
+		if ((j=des_key_sched((C_Block *)(key_data[i]),ks)) != 0)
 			{
 			err=1;
 			printf("Key error %2d:%d\n",i+1,j);
 			}
-		if ((j=key_sched((C_Block *)(key_data[i+1]),ks2)) != 0)
+		if ((j=des_key_sched((C_Block *)(key_data[i+1]),ks2)) != 0)
 			{
 			printf("Key error %2d:%d\n",i+2,j);
 			err=1;
 			}
-		if ((j=key_sched((C_Block *)(key_data[i+2]),ks3)) != 0)
+		if ((j=des_key_sched((C_Block *)(key_data[i+2]),ks3)) != 0)
 			{
 			printf("Key error %2d:%d\n",i+3,j);
 			err=1;
@@ -366,9 +391,10 @@ char *argv[];
 			err=1;
 			}
 		}
+#endif
 
 	printf("Doing cbc\n");
-	if ((j=key_sched((C_Block *)cbc_key,ks)) != 0)
+	if ((j=des_key_sched((C_Block *)cbc_key,ks)) != 0)
 		{
 		printf("Key error %d\n",j);
 		err=1;
@@ -383,24 +409,54 @@ char *argv[];
 	des_cbc_encrypt((C_Block *)cbc_out,(C_Block *)cbc_in,
 		(long)strlen((char *)cbc_data)+1,ks,
 		(C_Block *)cbc_iv,DES_DECRYPT);
-	if (memcmp(cbc_in,cbc_data,32) != 0)
+	if (memcmp(cbc_in,cbc_data,strlen((char *)cbc_data)) != 0)
 		{
 		printf("cbc_encrypt decrypt error\n");
 		err=1;
 		}
 
+#ifndef LIBDES_LIT
+	printf("Doing desx cbc\n");
+	if ((j=des_key_sched((C_Block *)cbc_key,ks)) != 0)
+		{
+		printf("Key error %d\n",j);
+		err=1;
+		}
+	memset(cbc_out,0,40);
+	memset(cbc_in,0,40);
+	memcpy(iv3,cbc_iv,sizeof(cbc_iv));
+	des_xcbc_encrypt((C_Block *)cbc_data,(C_Block *)cbc_out,
+		(long)strlen((char *)cbc_data)+1,ks,
+		(C_Block *)iv3,
+		(C_Block *)cbc2_key, (C_Block *)cbc3_key, DES_ENCRYPT);
+	if (memcmp(cbc_out,xcbc_ok,32) != 0)
+		{
+		printf("des_xcbc_encrypt encrypt error\n");
+		}
+	memcpy(iv3,cbc_iv,sizeof(cbc_iv));
+	des_xcbc_encrypt((C_Block *)cbc_out,(C_Block *)cbc_in,
+		(long)strlen((char *)cbc_data)+1,ks,
+		(C_Block *)iv3,
+		(C_Block *)cbc2_key, (C_Block *)cbc3_key, DES_DECRYPT);
+	if (memcmp(cbc_in,cbc_data,32) != 0)
+		{
+		printf("des_xcbc_encrypt decrypt error\n");
+		err=1;
+		}
+#endif
+
 	printf("Doing ede cbc\n");
-	if ((j=key_sched((C_Block *)cbc_key,ks)) != 0)
+	if ((j=des_key_sched((C_Block *)cbc_key,ks)) != 0)
 		{
 		printf("Key error %d\n",j);
 		err=1;
 		}
-	if ((j=key_sched((C_Block *)cbc2_key,ks2)) != 0)
+	if ((j=des_key_sched((C_Block *)cbc2_key,ks2)) != 0)
 		{
 		printf("Key error %d\n",j);
 		err=1;
 		}
-	if ((j=key_sched((C_Block *)cbc3_key,ks3)) != 0)
+	if ((j=des_key_sched((C_Block *)cbc3_key,ks3)) != 0)
 		{
 		printf("Key error %d\n",j);
 		err=1;
@@ -432,8 +488,9 @@ char *argv[];
 		err=1;
 		}
 
+#ifndef LIBDES_LIT
 	printf("Doing pcbc\n");
-	if ((j=key_sched((C_Block *)cbc_key,ks)) != 0)
+	if ((j=des_key_sched((C_Block *)cbc_key,ks)) != 0)
 		{
 		printf("Key error %d\n",j);
 		err=1;
@@ -496,7 +553,7 @@ char *argv[];
 	printf("done\n");
 
 	printf("Doing ofb\n");
-	key_sched((C_Block *)ofb_key,ks);
+	des_key_sched((C_Block *)ofb_key,ks);
 	memcpy(ofb_tmp,ofb_iv,sizeof(ofb_iv));
 	des_ofb_encrypt(plain,ofb_buf1,64,(long)sizeof(plain)/8,ks,
 		(C_Block *)ofb_tmp);
@@ -515,7 +572,7 @@ char *argv[];
 		}
 
 	printf("Doing ofb64\n");
-	key_sched((C_Block *)ofb_key,ks);
+	des_key_sched((C_Block *)ofb_key,ks);
 	memcpy(ofb_tmp,ofb_iv,sizeof(ofb_iv));
 	memset(ofb_buf1,0,sizeof(ofb_buf1));
 	memset(ofb_buf2,0,sizeof(ofb_buf1));
@@ -541,7 +598,7 @@ char *argv[];
 		}
 
 	printf("Doing ede_ofb64\n");
-	key_sched((C_Block *)ofb_key,ks);
+	des_key_sched((C_Block *)ofb_key,ks);
 	memcpy(ofb_tmp,ofb_iv,sizeof(ofb_iv));
 	memset(ofb_buf1,0,sizeof(ofb_buf1));
 	memset(ofb_buf2,0,sizeof(ofb_buf1));
@@ -567,13 +624,13 @@ char *argv[];
 		}
 
 	printf("Doing cbc_cksum\n");
-	key_sched((C_Block *)cbc_key,ks);
-	cs=cbc_cksum((C_Block *)cbc_data,(C_Block *)cret,
+	des_key_sched((C_Block *)cbc_key,ks);
+	cs=des_cbc_cksum((C_Block *)cbc_data,(C_Block *)cret,
 		(long)strlen(cbc_data),ks,(C_Block *)cbc_iv);
 	if (cs != cbc_cksum_ret)
 		{
 		printf("bad return value (%08lX), should be %08lX\n",
-			cs,cbc_cksum_ret);
+			(unsigned long)cs,(unsigned long)cbc_cksum_ret);
 		err=1;
 		}
 	if (memcmp(cret,cbc_cksum_data,8) != 0)
@@ -587,33 +644,35 @@ char *argv[];
 		(long)strlen(cbc_data),2,(C_Block *)cbc_iv);
 	if (cs != 0x70d7a63aL)
 		{
-		printf("quad_cksum error, ret %08lx should be 70d7a63a\n",cs);
+		printf("quad_cksum error, ret %08lx should be 70d7a63a\n",
+			(unsigned long)cs);
 		err=1;
 		}
 	if (lqret[0] != 0x327eba8dL)
 		{
 		printf("quad_cksum error, out[0] %08lx is not %08lx\n",
-			lqret[0],0x327eba8dL);
+			(unsigned long)lqret[0],0x327eba8dL);
 		err=1;
 		}
 	if (lqret[1] != 0x201a49ccL)
 		{
 		printf("quad_cksum error, out[1] %08lx is not %08lx\n",
-			lqret[1],0x201a49ccL);
+			(unsigned long)lqret[1],0x201a49ccL);
 		err=1;
 		}
 	if (lqret[2] != 0x70d7a63aL)
 		{
 		printf("quad_cksum error, out[2] %08lx is not %08lx\n",
-			lqret[2],0x70d7a63aL);
+			(unsigned long)lqret[2],0x70d7a63aL);
 		err=1;
 		}
 	if (lqret[3] != 0x501c2c26L)
 		{
 		printf("quad_cksum error, out[3] %08lx is not %08lx\n",
-			lqret[3],0x501c2c26L);
+			(unsigned long)lqret[3],0x501c2c26L);
 		err=1;
 		}
+#endif
 
 	printf("input word alignment test");
 	for (i=0; i<4; i++)
@@ -647,9 +706,7 @@ char *argv[];
 		}
 	printf("\n");
 	exit(err);
-#ifdef LINT
 	return(0);
-#endif
 	}
 
 static char *pt(p)
@@ -672,6 +729,8 @@ unsigned char *p;
 	return(ret);
 	}
 
+#ifndef LIBDES_LIT
+
 static int cfb_test(bits, cfb_cipher)
 int bits;
 unsigned char *cfb_cipher;
@@ -679,7 +738,7 @@ unsigned char *cfb_cipher;
 	des_key_schedule ks;
 	int i,err=0;
 
-	key_sched((C_Block *)cfb_key,ks);
+	des_key_sched((C_Block *)cfb_key,ks);
 	memcpy(cfb_tmp,cfb_iv,sizeof(cfb_iv));
 	des_cfb_encrypt(plain,cfb_buf1,bits,(long)sizeof(plain),ks,
 		(C_Block *)cfb_tmp,DES_ENCRYPT);
@@ -709,7 +768,7 @@ unsigned char *cfb_cipher;
 	des_key_schedule ks;
 	int err=0,i,n;
 
-	key_sched((C_Block *)cfb_key,ks);
+	des_key_sched((C_Block *)cfb_key,ks);
 	memcpy(cfb_tmp,cfb_iv,sizeof(cfb_iv));
 	n=0;
 	des_cfb64_encrypt(plain,cfb_buf1,(long)12,ks,
@@ -747,7 +806,7 @@ unsigned char *cfb_cipher;
 	des_key_schedule ks;
 	int err=0,i,n;
 
-	key_sched((C_Block *)cfb_key,ks);
+	des_key_sched((C_Block *)cfb_key,ks);
 	memcpy(cfb_tmp,cfb_iv,sizeof(cfb_iv));
 	n=0;
 	des_ede3_cfb64_encrypt(plain,cfb_buf1,(long)12,ks,ks,ks,
@@ -778,3 +837,6 @@ unsigned char *cfb_cipher;
 		}
 	return(err);
 	}
+
+#endif
+

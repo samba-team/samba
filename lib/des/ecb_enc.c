@@ -1,17 +1,22 @@
-/* lib/des/ecb_enc.c */
-/* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
+/* crypto/des/ecb_enc.c */
+/* Copyright (C) 1995-1997 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
- * 
- * This file is part of an SSL implementation written
+ *
+ * This package is an SSL implementation written
  * by Eric Young (eay@mincom.oz.au).
- * The implementation was written so as to conform with Netscapes SSL
- * specification.  This library and applications are
- * FREE FOR COMMERCIAL AND NON-COMMERCIAL USE
- * as long as the following conditions are aheared to.
+ * The implementation was written so as to conform with Netscapes SSL.
+ * 
+ * This library is free for commercial and non-commercial use as long as
+ * the following conditions are aheared to.  The following conditions
+ * apply to all code found in this distribution, be it the RC4, RSA,
+ * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
+ * included with this distribution is covered by the same copyright terms
+ * except that the holder is Tim Hudson (tjh@mincom.oz.au).
  * 
  * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.  If this code is used in a product,
- * Eric Young should be given attribution as the author of the parts used.
+ * the code are not to be removed.
+ * If this package is used in a product, Eric Young should be given attribution
+ * as the author of the parts of the library used.
  * This can be in the form of a textual message at program startup or
  * in documentation (online or textual) provided with the package.
  * 
@@ -25,7 +30,13 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *    This product includes software developed by Eric Young (eay@mincom.oz.au)
+ *    "This product includes cryptographic software written by
+ *     Eric Young (eay@mincom.oz.au)"
+ *    The word 'cryptographic' can be left out if the rouines from the library
+ *    being used are not cryptographic related :-).
+ * 4. If you include any Windows specific code (or a derivative thereof) from 
+ *    the apps directory (application code) you must include an acknowledgement:
+ *    "This product includes software written by Tim Hudson (tjh@mincom.oz.au)"
  * 
  * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -48,7 +59,48 @@
 #include "des_locl.h"
 #include "spr.h"
 
-const char *DES_version="libdes v 3.22 - 95/11/29 - eay";
+char *libdes_version="libdes v 4.01 - 13-Jan-1997 - eay";
+char *DES_version="DES part of SSLeay 0.6.6 14-Jan-1997";
+
+char *des_options()
+	{
+	static int init=1;
+	static char buf[32];
+
+	if (init)
+		{
+		char *ptr,*unroll,*risc,*size;
+
+		init=0;
+#ifdef DES_PTR
+		ptr="ptr";
+#else
+		ptr="idx";
+#endif
+#if defined(DES_RISC1) || defined(DES_RISC2)
+#ifdef DES_RISC1
+		risc="risc1";
+#endif
+#ifdef DES_RISC2
+		risc="risc2";
+#endif
+#else
+		risc="cisc";
+#endif
+#ifdef DES_UNROLL
+		unroll="16";
+#else
+		unroll="4";
+#endif
+		if (sizeof(DES_LONG) != sizeof(long))
+			size="int";
+		else
+			size="long";
+		sprintf(buf,"des(%s,%s,%s,%s)",ptr,risc,unroll,size);
+		}
+	return(buf);
+	}
+		
 
 void des_ecb_encrypt(input, output, ks, encrypt)
 des_cblock (*input);
@@ -70,134 +122,3 @@ int encrypt;
 	l=ll[0]=ll[1]=0;
 	}
 
-void des_encrypt(data, ks, encrypt)
-DES_LONG *data;
-des_key_schedule ks;
-int encrypt;
-	{
-	register DES_LONG l,r,t,u;
-#ifdef DES_USE_PTR
-	register unsigned char *des_SP=(unsigned char *)des_SPtrans;
-#endif
-#ifdef MSDOS
-	union fudge {
-		DES_LONG  l;
-		unsigned short s[2];
-		unsigned char  c[4];
-		} U,T;
-#endif
-	register int i;
-	register DES_LONG *s;
-
-	u=data[0];
-	r=data[1];
-
-	IP(u,r);
-	/* Things have been modified so that the initial rotate is
-	 * done outside the loop.  This required the
-	 * des_SPtrans values in sp.h to be rotated 1 bit to the right.
-	 * One perl script later and things have a 5% speed up on a sparc2.
-	 * Thanks to Richard Outerbridge <71755.204@CompuServe.COM>
-	 * for pointing this out. */
-	l=(r<<1)|(r>>31);
-	r=(u<<1)|(u>>31);
-
-	/* clear the top bits on machines with 8byte longs */
-	l&=0xffffffffL;
-	r&=0xffffffffL;
-
-	s=(DES_LONG *)ks;
-	/* I don't know if it is worth the effort of loop unrolling the
-	 * inner loop */
-	if (encrypt)
-		{
-		for (i=0; i<32; i+=4)
-			{
-			D_ENCRYPT(l,r,i+0); /*  1 */
-			D_ENCRYPT(r,l,i+2); /*  2 */
-			}
-		}
-	else
-		{
-		for (i=30; i>0; i-=4)
-			{
-			D_ENCRYPT(l,r,i-0); /* 16 */
-			D_ENCRYPT(r,l,i-2); /* 15 */
-			}
-		}
-	l=(l>>1)|(l<<31);
-	r=(r>>1)|(r<<31);
-	/* clear the top bits on machines with 8byte longs */
-	l&=0xffffffffL;
-	r&=0xffffffffL;
-
-	FP(r,l);
-	data[0]=l;
-	data[1]=r;
-	l=r=t=u=0;
-	}
-
-void des_encrypt2(data, ks, encrypt)
-DES_LONG *data;
-des_key_schedule ks;
-int encrypt;
-	{
-	register DES_LONG l,r,t,u;
-#ifdef DES_USE_PTR
-	register unsigned char *des_SP=(unsigned char *)des_SPtrans;
-#endif
-#ifdef MSDOS
-	union fudge {
-		DES_LONG  l;
-		unsigned short s[2];
-		unsigned char  c[4];
-		} U,T;
-#endif
-	register int i;
-	register DES_LONG *s;
-
-	u=data[0];
-	r=data[1];
-
-	/* Things have been modified so that the initial rotate is
-	 * done outside the loop.  This required the
-	 * des_SPtrans values in sp.h to be rotated 1 bit to the right.
-	 * One perl script later and things have a 5% speed up on a sparc2.
-	 * Thanks to Richard Outerbridge <71755.204@CompuServe.COM>
-	 * for pointing this out. */
-	l=(r<<1)|(r>>31);
-	r=(u<<1)|(u>>31);
-
-	/* clear the top bits on machines with 8byte longs */
-	l&=0xffffffffL;
-	r&=0xffffffffL;
-
-	s=(DES_LONG *)ks;
-	/* I don't know if it is worth the effort of loop unrolling the
-	 * inner loop */
-	if (encrypt)
-		{
-		for (i=0; i<32; i+=4)
-			{
-			D_ENCRYPT(l,r,i+0); /*  1 */
-			D_ENCRYPT(r,l,i+2); /*  2 */
-			}
-		}
-	else
-		{
-		for (i=30; i>0; i-=4)
-			{
-			D_ENCRYPT(l,r,i-0); /* 16 */
-			D_ENCRYPT(r,l,i-2); /* 15 */
-			}
-		}
-	l=(l>>1)|(l<<31);
-	r=(r>>1)|(r<<31);
-	/* clear the top bits on machines with 8byte longs */
-	l&=0xffffffffL;
-	r&=0xffffffffL;
-
-	data[0]=l;
-	data[1]=r;
-	l=r=t=u=0;
-	}

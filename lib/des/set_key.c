@@ -1,17 +1,22 @@
-/* lib/des/set_key.c */
-/* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
+/* crypto/des/set_key.c */
+/* Copyright (C) 1995-1997 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
- * 
- * This file is part of an SSL implementation written
+ *
+ * This package is an SSL implementation written
  * by Eric Young (eay@mincom.oz.au).
- * The implementation was written so as to conform with Netscapes SSL
- * specification.  This library and applications are
- * FREE FOR COMMERCIAL AND NON-COMMERCIAL USE
- * as long as the following conditions are aheared to.
+ * The implementation was written so as to conform with Netscapes SSL.
+ * 
+ * This library is free for commercial and non-commercial use as long as
+ * the following conditions are aheared to.  The following conditions
+ * apply to all code found in this distribution, be it the RC4, RSA,
+ * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
+ * included with this distribution is covered by the same copyright terms
+ * except that the holder is Tim Hudson (tjh@mincom.oz.au).
  * 
  * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.  If this code is used in a product,
- * Eric Young should be given attribution as the author of the parts used.
+ * the code are not to be removed.
+ * If this package is used in a product, Eric Young should be given attribution
+ * as the author of the parts of the library used.
  * This can be in the form of a textual message at program startup or
  * in documentation (online or textual) provided with the package.
  * 
@@ -25,7 +30,13 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *    This product includes software developed by Eric Young (eay@mincom.oz.au)
+ *    "This product includes cryptographic software written by
+ *     Eric Young (eay@mincom.oz.au)"
+ *    The word 'cryptographic' can be left out if the rouines from the library
+ *    being used are not cryptographic related :-).
+ * 4. If you include any Windows specific code (or a derivative thereof) from 
+ *    the apps directory (application code) you must include an acknowledgement:
+ *    "This product includes software written by Tim Hudson (tjh@mincom.oz.au)"
  * 
  * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -140,8 +151,6 @@ des_cblock (*key);
 #define HPERM_OP(a,t,n,m) ((t)=((((a)<<(16-(n)))^(a))&(m)),\
 	(a)=(a)^(t)^(t>>(16-(n))))
 
-static int shifts2[16]={0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,0};
-
 /* return 0 if key parity is odd (correct),
  * return -1 if key parity error,
  * return -2 if illegal weak key.
@@ -150,7 +159,8 @@ int des_set_key(key, schedule)
 des_cblock (*key);
 des_key_schedule schedule;
 	{
-	register DES_LONG c,d,t,s;
+	static int shifts2[16]={0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,0};
+	register DES_LONG c,d,t,s,t2;
 	register unsigned char *in;
 	register DES_LONG *k;
 	register int i;
@@ -217,11 +227,11 @@ des_key_schedule schedule;
 			des_skb[7][((d>>21L)&0x0f)|((d>>22L)&0x30)];
 
 		/* table contained 0213 4657 */
-		*(k++)=((t<<16L)|(s&0x0000ffffL))&0xffffffffL;
-		s=     ((s>>16L)|(t&0xffff0000L));
-		
-		s=(s<<4L)|(s>>28L);
-		*(k++)=s&0xffffffffL;
+		t2=((t<<16L)|(s&0x0000ffffL))&0xffffffffL;
+		*(k++)=ROTATE(t2,30)&0xffffffffL;
+
+		t2=((s>>16L)|(t&0xffff0000L));
+		*(k++)=ROTATE(t2,26)&0xffffffffL;
 		}
 	return(0);
 	}

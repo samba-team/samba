@@ -1,17 +1,22 @@
-/* lib/des/speed.c */
-/* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
+/* crypto/des/speed.c */
+/* Copyright (C) 1995-1997 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
- * 
- * This file is part of an SSL implementation written
+ *
+ * This package is an SSL implementation written
  * by Eric Young (eay@mincom.oz.au).
- * The implementation was written so as to conform with Netscapes SSL
- * specification.  This library and applications are
- * FREE FOR COMMERCIAL AND NON-COMMERCIAL USE
- * as long as the following conditions are aheared to.
+ * The implementation was written so as to conform with Netscapes SSL.
+ * 
+ * This library is free for commercial and non-commercial use as long as
+ * the following conditions are aheared to.  The following conditions
+ * apply to all code found in this distribution, be it the RC4, RSA,
+ * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
+ * included with this distribution is covered by the same copyright terms
+ * except that the holder is Tim Hudson (tjh@mincom.oz.au).
  * 
  * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.  If this code is used in a product,
- * Eric Young should be given attribution as the author of the parts used.
+ * the code are not to be removed.
+ * If this package is used in a product, Eric Young should be given attribution
+ * as the author of the parts of the library used.
  * This can be in the form of a textual message at program startup or
  * in documentation (online or textual) provided with the package.
  * 
@@ -25,7 +30,13 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *    This product includes software developed by Eric Young (eay@mincom.oz.au)
+ *    "This product includes cryptographic software written by
+ *     Eric Young (eay@mincom.oz.au)"
+ *    The word 'cryptographic' can be left out if the rouines from the library
+ *    being used are not cryptographic related :-).
+ * 4. If you include any Windows specific code (or a derivative thereof) from 
+ *    the apps directory (application code) you must include an acknowledgement:
+ *    "This product includes software written by Tim Hudson (tjh@mincom.oz.au)"
  * 
  * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -105,7 +116,7 @@ struct tms {
 #endif
 #endif
 
-#define BUFSIZE	((long)1024*8)
+#define BUFSIZE	((long)1024)
 long run=0;
 
 #ifndef NOPROTO
@@ -189,7 +200,7 @@ char **argv;
 	static des_cblock key3={0x56,0x78,0x9a,0xbc,0xde,0xf0,0x12,0x34};
 	des_key_schedule sch,sch2,sch3;
 	double a,b,c,d,e;
-#ifndef SIGALARM
+#ifndef SIGALRM
 	long ca,cb,cc,cd,ce;
 #endif
 
@@ -202,17 +213,17 @@ char **argv;
 	des_set_key((C_Block *)key3,sch3);
 
 #ifndef SIGALRM
-	printf("First we calculate the aproximate speed ...\n");
+	printf("First we calculate the approximate speed ...\n");
 	des_set_key((C_Block *)key,sch);
 	count=10;
 	do	{
 		long i;
+		DES_LONG data[2];
 
 		count*=2;
 		Time_F(START);
 		for (i=count; i; i--)
-			des_ecb_encrypt((C_Block *)buf,(C_Block *)buf,
-				&(sch[0]),DES_ENCRYPT);
+			des_encrypt(data,&(sch[0]),DES_ENCRYPT);
 		d=Time_F(STOP);
 		} while (d < 3.0);
 	ca=count;
@@ -239,17 +250,20 @@ char **argv;
 	a=((double)COUNT(ca))/d;
 
 #ifdef SIGALRM
-	printf("Doing des_ecb_encrypt's for 10 seconds\n");
+	printf("Doing des_encrypt's for 10 seconds\n");
 	alarm(10);
 #else
-	printf("Doing des_ecb_encrypt %ld times\n",cb);
+	printf("Doing des_encrypt %ld times\n",cb);
 #endif
 	Time_F(START);
 	for (count=0,run=1; COND(cb); count++)
-		des_ecb_encrypt((C_Block *)buf,(C_Block *)buf,
-			&(sch[0]),DES_ENCRYPT);
+		{
+		DES_LONG data[2];
+
+		des_encrypt(data,&(sch[0]),DES_ENCRYPT);
+		}
 	d=Time_F(STOP);
-	printf("%ld des_ecb_encrypt's in %.2f second\n",count,d);
+	printf("%ld des_encrypt's in %.2f second\n",count,d);
 	b=((double)COUNT(cb)*8)/d;
 
 #ifdef SIGALRM
@@ -262,7 +276,7 @@ char **argv;
 #endif
 	Time_F(START);
 	for (count=0,run=1; COND(cc); count++)
-		des_cbc_encrypt((C_Block *)buf,(C_Block *)buf,BUFSIZE,&(sch[0]),
+		des_ncbc_encrypt((C_Block *)buf,(C_Block *)buf,BUFSIZE,&(sch[0]),
 			(C_Block *)&(key[0]),DES_ENCRYPT);
 	d=Time_F(STOP);
 	printf("%ld des_cbc_encrypt's of %ld byte blocks in %.2f second\n",
@@ -304,12 +318,12 @@ char **argv;
 	e=((double)COUNT(ce))/e;
 
 	printf("set_key            per sec = %12.2f (%5.1fuS)\n",a,1.0e6/a);
-	printf("DES ecb bytes      per sec = %12.2f (%5.1fuS)\n",b,8.0e6/b);
+	printf("DES raw ecb bytes  per sec = %12.2f (%5.1fuS)\n",b,8.0e6/b);
 	printf("DES cbc bytes      per sec = %12.2f (%5.1fuS)\n",c,8.0e6/c);
 	printf("DES ede cbc bytes  per sec = %12.2f (%5.1fuS)\n",d,8.0e6/d);
 	printf("crypt              per sec = %12.2f (%5.1fuS)\n",e,1.0e6/e);
 	exit(0);
-#ifdef LINT
+#if defined(LINT) || defined(MSDOS)
 	return(0);
 #endif
 	}
