@@ -150,6 +150,10 @@ struct acct_info
  * higher order functions for use with msrpc client code
  */
 
+#define ALIAS_FN(fn) void (*fn)(char*, DOM_SID*, uint32, char*)
+#define ALIAS_INFO_FN(fn) void (*fn)(char*, DOM_SID*, uint32, ALIAS_INFO_CTR *)
+#define ALIAS_MEM_FN(fn) void(*fn)(char*, DOM_SID*, uint32, char*, uint32, DOM_SID**, char**, uint8*)
+
 #define GROUP_FN(fn) void (*fn)(char*, DOM_SID*, uint32, char*)
 #define GROUP_INFO_FN(fn) void (*fn)(char*, DOM_SID*, uint32, GROUP_INFO_CTR *)
 #define GROUP_MEM_FN(fn) void(*fn)(char*, DOM_SID*, uint32, char*, uint32, uint32*, char**, uint32*)

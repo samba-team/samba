@@ -1201,7 +1201,8 @@ void display_name(FILE *out_hnd, enum action_type action,
  display alias members
  ****************************************************************************/
 void display_alias_members(FILE *out_hnd, enum action_type action,
-				uint32 num_mem, char **sid_mem)
+				uint32 num_mem, char **sid_mem,
+				uint8 *type)
 {
 	switch (action)
 	{
@@ -1226,7 +1227,9 @@ void display_alias_members(FILE *out_hnd, enum action_type action,
 			{
 				if (sid_mem[i] != NULL)
 				{
-					fprintf(out_hnd, "\tMember Name:\t%s\n", sid_mem[i]);
+					fprintf(out_hnd, "\tMember Name:\t%s\tType:\t%s\n",
+					sid_mem[i],
+					get_sid_name_use_str(type[i]));
 				}
 			}
 
@@ -1502,6 +1505,70 @@ void display_alias_name_info(FILE *out_hnd, enum action_type action,
 								  alias_name[i], num_als_usrs[i]);
 			}
 
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display alias info
+ ****************************************************************************/
+void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *info3)
+				
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring temp;
+
+			unistr2_to_ascii(temp, &info3->uni_acct_desc, sizeof(temp)-1);
+			fprintf(out_hnd, "\tDescription:\t%s\n", temp);
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display sam sync structure
+ ****************************************************************************/
+void display_alias_info_ctr(FILE *out_hnd, enum action_type action,
+				ALIAS_INFO_CTR *ctr)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tSAM Group Info\n"); 
+			fprintf(out_hnd, "\t--------------\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			switch (ctr->switch_value1)
+			{
+				case 3:
+				{
+					display_alias_info3(out_hnd, ACTION_HEADER   , &ctr->alias.info3);
+					display_alias_info3(out_hnd, ACTION_ENUMERATE, &ctr->alias.info3);
+					display_alias_info3(out_hnd, ACTION_FOOTER   , &ctr->alias.info3);
+					break;
+				}
+			}
 			break;
 		}
 		case ACTION_FOOTER:

@@ -37,6 +37,33 @@ extern struct cli_state *smb_cli;
 
 extern FILE* out_hnd;
 
+static void sam_display_alias_info(char *domain, DOM_SID *sid,
+				uint32 alias_rid, 
+				ALIAS_INFO_CTR *ctr)
+{
+	display_alias_info_ctr(out_hnd, ACTION_HEADER   , ctr);
+	display_alias_info_ctr(out_hnd, ACTION_ENUMERATE, ctr);
+	display_alias_info_ctr(out_hnd, ACTION_FOOTER   , ctr);
+}
+
+static void sam_display_alias(char *domain, DOM_SID *sid,
+				uint32 alias_rid, char *alias_name)
+{
+	report(out_hnd, "Alias RID: %8x  Alias Name: %s\n",
+			  alias_rid, alias_name);
+}
+
+static void sam_display_alias_members(char *domain, DOM_SID *sid,
+				uint32 alias_rid, char *alias_name,
+				uint32 num_names,
+				DOM_SID **sids,
+				char **name,
+				uint8 *type)
+{
+	display_alias_members(out_hnd, ACTION_HEADER   , num_names, name, type);
+	display_alias_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
+	display_alias_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+}
 
 static void sam_display_group_info(char *domain, DOM_SID *sid,
 				uint32 group_rid, 
@@ -474,41 +501,69 @@ BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
 }
 
 
-
-static void req_samr_aliasmem(struct cli_state *cli, uint16 fnum,
-				const char *srv_name,
-				POLICY_HND *pol_dom, uint32 alias_rid)
+static BOOL query_aliasinfo(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *pol_dom,
+				char *domain,
+				DOM_SID *sid,
+				uint32 alias_rid,
+				ALIAS_INFO_FN(grp_inf))
 {
-	uint32 num_aliases;
-	DOM_SID2 sid_mem[MAX_LOOKUP_SIDS];
+	ALIAS_INFO_CTR ctr;
 
-	/* send user aliases query */
-	if (get_samr_query_aliasmem(smb_cli, fnum, 
-		pol_dom,
-		alias_rid, &num_aliases, sid_mem))
+	/* send alias info query */
+	if (get_samr_query_aliasinfo(smb_cli, fnum,
+				      pol_dom,
+				      3, /* info level */
+	                              alias_rid, &ctr))
 	{
+		if (grp_inf != NULL)
+		{
+			grp_inf(domain, sid, alias_rid, &ctr);
+		}
+		return True;
+	}
+	return False;
+}
+
+BOOL sam_query_aliasmem(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *pol_dom,
+				uint32 alias_rid,
+				uint32 *num_names,
+				DOM_SID ***sids,
+				char ***name,
+				uint8 **type)
+{
+	BOOL res3 = True;
+	BOOL res4 = True;
+	DOM_SID2 sid_mem[MAX_LOOKUP_SIDS];
+	uint32 num_aliases = 0;
+
+	*sids = NULL;
+	*num_names = 0;
+	*name = NULL;
+	*type = NULL;
+
+	/* get alias members */
+	res3 = get_samr_query_aliasmem(smb_cli, fnum, 
+			pol_dom,
+			alias_rid, &num_aliases, sid_mem);
+
+	if (res3 && num_aliases != 0)
+	{
+		fstring srv_name;
 		uint16 fnum_lsa;
 		POLICY_HND lsa_pol;
 
-		BOOL res3 = True;
-		BOOL res4 = True;
-		char **names = NULL;
-		int num_names = 0;
-		DOM_SID **sids = NULL;
 		uint32 i;
+		uint32 numsids = 0;
 
-		if (num_aliases != 0)
-		{
-			sids = (DOM_SID**)malloc(num_aliases * sizeof(DOM_SID*));
-		}
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, cli->desthost);
+		strupper(srv_name);
 
-		res3 = sids != NULL;
-		if (res3)
+		for (i = 0; i < num_aliases; i++)
 		{
-			for (i = 0; i < num_aliases; i++)
-			{
-				sids[i] = &sid_mem[i].sid;
-			}
+			add_sid_to_array(&numsids, sids, &sid_mem[i].sid);
 		}
 
 		/* open LSARPC session. */
@@ -522,25 +577,67 @@ static void req_samr_aliasmem(struct cli_state *cli, uint16 fnum,
 		/* send lsa lookup sids call */
 		res4 = res3 ? lsa_lookup_sids(smb_cli, fnum_lsa, 
 					       &lsa_pol,
-					       num_aliases, sids, 
-					       &names, NULL, &num_names) : False;
+					       num_aliases, *sids, 
+					       name, type, num_names) : False;
 
 		res3 = res3 ? lsa_close(smb_cli, fnum_lsa, &lsa_pol) : False;
 
 		cli_nt_session_close(smb_cli, fnum_lsa);
+	}
 
-		if (res4 && names != NULL)
+	if (!res4)
+	{
+		free_char_array(*num_names, *name);
+		if ((*type) != NULL)
 		{
-			display_alias_members(out_hnd, ACTION_HEADER   , num_names, names);
-			display_alias_members(out_hnd, ACTION_ENUMERATE, num_names, names);
-			display_alias_members(out_hnd, ACTION_FOOTER   , num_names, names);
+			free(*type);
 		}
-		free_char_array(num_names, names);
+		if ((*sids) != NULL)
+		{
+			free_sid_array(num_aliases, *sids);
+		}
+		*num_names = 0;
+		*name = NULL;
+		*type = NULL;
+		*sids = NULL;
+	}
+
+	return res4;
+}
+
+static BOOL req_aliasmem_info(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *pol_dom,
+				char *domain,
+				DOM_SID *sid,
+				uint32 alias_rid,
+				char *alias_name,
+				ALIAS_MEM_FN(als_mem))
+{
+	uint32 num_names = 0;
+	char **name = NULL;
+	uint8 *type = NULL;
+	DOM_SID **sids = NULL;
+
+	if (sam_query_aliasmem(cli, fnum, pol_dom, alias_rid,
+					&num_names, &sids,
+					&name, &type))
+	{
+		als_mem(domain, sid,
+		       alias_rid, alias_name,
+		       num_names, sids, name, type);
+
+		free_char_array(num_names, name);
+		if (type != NULL)
+		{
+			free(type);
+		}
 		if (sids != NULL)
 		{
-			free(sids);
+			free_sid_array(num_names, sids);
 		}
+		return True;
 	}
+	return False;
 }
 
 BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
@@ -725,6 +822,7 @@ uint32 msrpc_sam_enum_groups(struct client_info *info,
 	            &pol_dom) : False;
 
 	(*sam) = NULL;
+	(*num_sam_entries) = 0;
 
 	if (res)
 	{
@@ -789,6 +887,133 @@ uint32 msrpc_sam_enum_groups(struct client_info *info,
 	{
 		DEBUG(5,("msrpc_sam_enum_groups: failed\n"));
 	}
+	return (*num_sam_entries);
+}
+
+/****************************************************************************
+SAM aliases query.
+****************************************************************************/
+uint32 msrpc_sam_enum_aliases(struct client_info *info,
+				struct acct_info **sam,
+				uint32 *num_sam_entries,
+				ALIAS_FN(als_fn),
+				ALIAS_INFO_FN(als_inf_fn),
+				ALIAS_MEM_FN(als_mem_fn))
+{
+	uint16 fnum;
+	fstring srv_name;
+	fstring domain;
+	fstring sid;
+	DOM_SID sid1;
+	BOOL res = True;
+	uint32 ace_perms = 0x02000000; /* access control permissions */
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+	uint32 status = 0x0;
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return 0;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	report(out_hnd, "SAM Enumerate Aliases\n");
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	                  info->myhostname, srv_name, domain, sid);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, fnum,
+				srv_name, 0x02000000,
+				&sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, fnum,
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
+
+	(*sam) = NULL;
+	(*num_sam_entries) = 0;
+
+	if (res)
+	{
+		uint32 alias_idx;
+		uint32 start_idx = 0;
+		/* read some groups */
+		do
+		{
+			status = samr_enum_dom_aliases(smb_cli, fnum, 
+			     &pol_dom,
+			     &start_idx, 0x100000,
+			     sam, num_sam_entries);
+
+		} while (status == STATUS_MORE_ENTRIES);
+
+		if ((*num_sam_entries) == 0)
+		{
+			report(out_hnd, "No aliases\n");
+		}
+
+		for (alias_idx = 0; alias_idx < (*num_sam_entries); alias_idx++)
+		{
+			uint32 alias_rid = (*sam)[alias_idx].rid;
+			char *alias_name = (*sam)[alias_idx].acct_name;
+
+			if (als_fn != NULL)
+			{
+				als_fn(domain, &sid1, alias_rid, alias_name);
+			}
+
+			if (als_inf_fn != NULL)
+			{
+				query_aliasinfo(smb_cli, fnum, &pol_dom,
+				                  domain, &sid1,
+				                  alias_rid, 
+				                  als_inf_fn);
+			}
+			if (als_mem_fn != NULL)
+			{
+				req_aliasmem_info(smb_cli, fnum, &pol_dom,
+				                  domain, &sid1,
+				                  alias_rid, alias_name,
+				                  als_mem_fn);
+			}
+		}
+	}
+
+	res = res ? samr_close(smb_cli, fnum, 
+	            &sam_pol) : False;
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &pol_dom) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (sam != NULL)
+	{
+		free(sam);
+	}
+
+	if (res)
+	{
+		DEBUG(5,("msrpc_sam_enum_aliases: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("msrpc_sam_enum_aliases: failed\n"));
+	}
+
 	return (*num_sam_entries);
 }
 
@@ -885,7 +1110,7 @@ void cmd_sam_test(struct client_info *info)
 	fstrcpy(domain, info->dom.level5_dom);
 
 /*
-	if (strlen(sid) == 0)
+	if (sid1.num_auths == 0)
 	{
 		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
@@ -2317,7 +2542,7 @@ void cmd_sam_query_dispinfo(struct client_info *info)
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
-	if (strlen(sid) == 0)
+	if (sid1.num_auths == 0)
 	{
 		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
@@ -2397,7 +2622,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
-	if (strlen(sid) == 0)
+	if (sid1.num_auths == 0)
 	{
 		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
@@ -2432,113 +2657,37 @@ SAM aliases query.
 ****************************************************************************/
 void cmd_sam_enum_aliases(struct client_info *info)
 {
-	uint16 fnum;
-	fstring srv_name;
-	fstring domain;
-	fstring sid;
-	DOM_SID sid1;
-	BOOL res = True;
 	BOOL request_member_info = False;
-	uint32 ace_perms = 0x02000000; /* access control permissions */
+	BOOL request_alias_info = False;
 	fstring tmp;
-	uint32 alias_idx;
-	struct acct_info *sam;
-	uint32 num_sam_entries;
-	POLICY_HND sam_pol;
-	POLICY_HND pol_dom;
+	int i;
+	struct acct_info *sam = NULL;
+	uint32 num_sam_entries = 0;
 
-	sid_to_string(sid, &info->dom.level5_sid);
-	fstrcpy(domain, info->dom.level5_dom);
-#if 0
-	fstrcpy(sid   , "S-1-5-20");
-#endif
-	if (strlen(sid) == 0)
+	for (i = 0; i < 2; i++)
 	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
-	}
-
-	string_to_sid(&sid1, sid);
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
-
-	/* a bad way to do token parsing... */
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		request_member_info |= strequal(tmp, "-m");
-	}
-
-	report(out_hnd, "SAM Enumerate Aliases\n");
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	                  info->myhostname, srv_name, domain, sid);
-
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
-	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum,
-				srv_name, 0x02000000,
-				&sam_pol) : False;
-
-	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum,
-	            &sam_pol, ace_perms, &sid1,
-	            &pol_dom) : False;
-
-	sam = NULL;
-
-	/* read some aliases */
-	res = res ? samr_enum_dom_aliases(smb_cli, fnum,
-	                        &pol_dom,
-	                        0x0, 0xffff,
-	                        &sam, &num_sam_entries) : False;
-
-	if (res && num_sam_entries == 0)
-	{
-		report(out_hnd, "No aliases\n");
-	}
-
-	if (res)
-	{
-		for (alias_idx = 0; alias_idx < num_sam_entries; alias_idx++)
+		/* a bad way to do token parsing... */
+		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 		{
-			uint32 alias_rid = sam[alias_idx].rid;
-
-			report(out_hnd, "Alias RID: %8x  Group Name: %s\n",
-					  alias_rid,
-					  sam[alias_idx].acct_name);
-
-			if (request_member_info)
-			{
-				req_samr_aliasmem(smb_cli, fnum,
-					srv_name, &pol_dom, alias_rid);
-			}
+			request_member_info |= strequal(tmp, "-m");
+			request_alias_info  |= strequal(tmp, "-a");
+		}
+		else
+		{
+			break;
 		}
 	}
 
-	res = res ? samr_close(smb_cli, fnum, 
-	            &sam_pol) : False;
+	report(out_hnd, "SAM Enumerate Aliases\n");
 
-	res = res ? samr_close(smb_cli, fnum,
-	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	msrpc_sam_enum_aliases(info, &sam, &num_sam_entries,
+	            sam_display_alias,
+	            request_alias_info  ? sam_display_alias_info    : NULL,
+	            request_member_info ? sam_display_alias_members : NULL);
 
 	if (sam != NULL)
 	{
 		free(sam);
-	}
-
-	if (res)
-	{
-		DEBUG(5,("cmd_sam_enum_aliases: succeeded\n"));
-	}
-	else
-	{
-		DEBUG(5,("cmd_sam_enum_aliases: failed\n"));
 	}
 }
 

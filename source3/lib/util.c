@@ -3261,3 +3261,38 @@ BOOL add_chars_to_array(uint32 *len, char ***array, const char *name)
 	}
 	return True;
 }
+
+BOOL add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid)
+{
+	if (len == NULL || array == NULL)
+	{
+		return False;
+	}
+
+	(*array) = (char**)Realloc((*array), ((*len)+1) * sizeof((*array)[0]));
+
+	if ((*array) != NULL)
+	{
+		(*array)[(*len)] = sid_dup(sid);
+		(*len)++;
+		return True;
+	}
+	return True;
+}
+
+void free_sid_array(uint32 num_entries, DOM_SID **entries)
+{
+	uint32 i;
+	if (entries != NULL)
+	{
+		for (i = 0; i < num_entries; i++)
+		{
+			if (entries[i] != NULL)
+			{
+				free(entries[i]);
+			}
+		}
+		free(entries);
+	}
+}
+
