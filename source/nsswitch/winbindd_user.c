@@ -209,8 +209,8 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	    (state->request.data.uid > server_state.uid_high))
 		return WINBINDD_ERROR;
 
-	DEBUG(3, ("[%5lu]: getpwuid %d\n", (unsigned long)state->pid, 
-		  state->request.data.uid));
+	DEBUG(3, ("[%5lu]: getpwuid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.uid));
 
 	/* always try local tdb first */
 	

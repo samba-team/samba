@@ -118,9 +118,10 @@ static int net_idmap_restore(int argc, const char **argv)
 		}
 
 		if (!NT_STATUS_IS_OK(idmap_set_mapping(&sid, id, type))) {
-			d_printf("Could not set mapping of %s %d to sid %s\n",
+			d_printf("Could not set mapping of %s %lu to sid %s\n",
 				 (type == ID_GROUPID) ? "GID" : "UID",
-				 (type == ID_GROUPID) ? id.gid : id.uid,
+				 (type == ID_GROUPID) ? (unsigned long)id.gid:
+				 (unsigned long)id.uid, 
 				 sid_string_static(&sid));
 			continue;
 		}

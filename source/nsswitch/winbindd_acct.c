@@ -1117,8 +1117,8 @@ enum winbindd_result winbindd_set_user_primary_group(struct winbindd_cli_state *
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5d]:  set_user_primary_grou:p group %s for user %s\n", state->pid, 
-		group, user));
+	DEBUG(3, ("[%5lu]:  set_user_primary_group: group %s for user %s\n", 
+		  (unsigned long)state->pid, group, user));
 	
 	/* make sure it is a valid user */
 	

@@ -232,7 +232,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
 
-	DEBUG(3, ("[%5d]: getgrnam %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: getgrnam %s\n", (unsigned long)state->pid,
 		  state->request.data.groupname));
 
 	/* Parse domain and groupname */
