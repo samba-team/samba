@@ -125,7 +125,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 
      inaddr2str (thataddr->sin_addr, remotehost, sizeof(remotehost));
 
-     k_getsockinst (sock, instance);
+     k_getsockinst (sock, instance, sizeof(instance));
      status = krb_recvauth (KOPT_DO_MUTUAL, sock, &ticket, "rcmd", instance,
 			    thataddr, thisaddr, &auth, "", schedule,
 			    version);

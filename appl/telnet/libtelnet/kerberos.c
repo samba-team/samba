@@ -290,7 +290,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    printd(auth.dat, auth.length);
 	    printf("\r\n");
 	}
-	k_getsockinst(0, instance); /* Telnetd uses socket 0 */
+	k_getsockinst(0, instance, sizeof(instance));
 	if (r = krb_rd_req(&auth, KRB_SERVICE_NAME,
 			   instance, 0, &adat, "")) {
 	    if (auth_debug_mode)

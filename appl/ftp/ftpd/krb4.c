@@ -94,10 +94,10 @@ int krb4_adat(char *auth)
     }
     tkt.length = len;
 
-    k_getsockinst(0, inst);
+    k_getsockinst(0, inst, sizeof(inst));
     kerror = krb_rd_req(&tkt, "ftp", inst, 0, &auth_dat, "");
     if(kerror == RD_AP_UNDEC){
-	k_getsockinst(0, inst);
+	k_getsockinst(0, inst, sizeof(inst));
 	kerror = krb_rd_req(&tkt, "rcmd", inst, 0, &auth_dat, "");
     }
 
