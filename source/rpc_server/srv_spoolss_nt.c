@@ -6480,4 +6480,314 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 		return ERROR_INVALID_LEVEL;
 	}
 }
+
+
+/********************************************************************
+ * spoolss_getprinterdataex
+ ********************************************************************/
+
+uint32 _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u, SPOOL_R_GETPRINTERDATAEX *r_u)
+{
+	POLICY_HND	*handle = &q_u->handle;
+	uint32 		in_size = q_u->size;
+	uint32 		*type = &r_u->type;
+	uint32 		*out_size = &r_u->size;
+	uint8 		**data = &r_u->data;
+	uint32 		*needed = &r_u->needed;
+
+	fstring 	key, value;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(handle);
+	BOOL 		found = False;
+
+	DEBUG(4,("_spoolss_getprinterdataex\n"));
+
+        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+        unistr2_to_ascii(value, &q_u->valuename, sizeof(value) - 1);
+
+	/* in case of problem, return some default values */
+	*needed=0;
+	*type=0;
+	*out_size=0;
+
+		
+	if (!Printer) {
+		if((*data=(uint8 *)talloc(p->mem_ctx, 4*sizeof(uint8))) == NULL)
+			return NT_STATUS_NO_MEMORY;
+		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		return ERROR_INVALID_HANDLE;
+	}
+
+		
+	/* Is the handle to a printer or to the server? */
+
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+	{
+		DEBUG(10,("_spoolss_getprinterdatex: Not implemented for server handles yet\n"));
+		return ERROR_INVALID_PARAMETER;
+	}
+	else
+	{
+	        /* 
+		 * From MSDN documentation of GetPrinterDataEx: pass request
+		 * to GetPrinterData if key is "PrinterDriverData". This is 
+		 * the only key we really support. Other keys to implement:
+		 * (a) DsDriver
+		 * (b) DsSpooler
+		 * (c) PnPData
+		 */
+	   
+		if (strcmp(key, "PrinterDriverData") != 0)
+			return ERROR_INVALID_PARAMETER;
+
+		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
+		found = getprinterdata_printer(handle, value, type, data, needed, in_size);
+		
+	}
+	 
+	if (!found) {
+		DEBUG(5, ("value not found, allocating %d\n", *out_size));
+		
+		/* reply this param doesn't exist */
+		if (*out_size) {
+			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
+				return NT_STATUS_NO_MEMORY;
+		} else {
+			*data = NULL;
+		}
+
+		return ERROR_INVALID_PARAMETER;
+	}
+	
+	if (*needed > *out_size)
+		return ERROR_MORE_DATA;
+	else
+		return NT_STATUS_NO_PROBLEMO;
+}
+
+/********************************************************************
+ * spoolss_setprinterdata
+ ********************************************************************/
+
+uint32 _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
+{
+        fstring key;
+
+	DEBUG(4,("_spoolss_setprinterdataex\n"));
+
+        /* From MSDN documentation of SetPrinterDataEx: pass request to
+           SetPrinterData if key is "PrinterDriverData" */
+
+        unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+
+        if (strcmp(key, "PrinterDriverData") == 0)
+	        return ERROR_INVALID_PARAMETER;
+		
+	
+	/* make a copy to call _spoolss_setprinterdata() */
+
+	return _spoolss_setprinterdata(&q_u->handle, &q_u->value, q_u->type,
+					q_u->max_len, q_u->data, q_u->real_len,
+					q_u->numeric_data);		
+}
+
+/********************************************************************
+ * spoolss_enumprinterkey
+ ********************************************************************/
+
+/* constants for EnumPrinterKey() */
+#define ENUMERATED_KEY_SIZE	19
+
+uint32 _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u)
+{
+	fstring key;
+	uint16  enumkeys[ENUMERATED_KEY_SIZE+1];
+	char*   ptr = NULL;
+	int     i;
+	char 	*PrinterKey = "PrinterDriverData";
+
+	DEBUG(4,("_spoolss_enumprinterkey\n"));
+
+	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+
+	/* 
+	 * we only support enumating all keys (key == "")
+	 * Of course, the only key we support is the "PrinterDriverData" 
+	 * key
+	 */	
+	if (strlen(key) == 0)
+	{
+		r_u->needed = ENUMERATED_KEY_SIZE *2;
+		if (q_u->size < r_u->needed)
+			return ERROR_MORE_DATA;
+	
+		ptr = PrinterKey;
+		for (i=0; i<ENUMERATED_KEY_SIZE-2; i++)
+		{
+			enumkeys[i] = (uint16)(*ptr);
+			ptr++;
+		}
+	
+		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, ENUMERATED_KEY_SIZE, enumkeys))
+			return ERRbadfile;
+			
+		return NT_STATUS_NO_PROBLEMO;
+	}
+	
+	/* The "PrinterDriverData" key should have no subkeys */
+	if (strcmp(key, PrinterKey) == 0)
+	{
+		r_u-> needed = 2;
+		if (q_u->size < r_u->needed)
+			return ERROR_MORE_DATA;
+		enumkeys[0] = 0x0;
+		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, 1, enumkeys))
+			return ERRbadfile;
+			
+		return NT_STATUS_NO_PROBLEMO;
+	}
+	
+
+	/* The return value for an unknown key is documented in MSDN
+	   EnumPrinterKey description */
+        return ERRbadfile;
+}
+
+/********************************************************************
+ * spoolss_enumprinterdataex
+ ********************************************************************/
+
+uint32 _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_u, SPOOL_R_ENUMPRINTERDATAEX *r_u)
+{
+	POLICY_HND	*handle = &q_u->handle; 
+	uint32 		in_size = q_u->size;
+	uint32 		num_entries, 
+			needed;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	PRINTER_ENUM_VALUES	*enum_values = NULL;
+	fstring 	key, value;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(handle);
+	int 		snum;
+	uint32 		param_index, 
+			data_len,
+			type;
+	uint32 		result;
+	uint8 		*data=NULL;
+	
+
+	DEBUG(4,("_spoolss_enumprinterdataex\n"));
+
+	if (!Printer) {
+		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		return ERROR_INVALID_HANDLE;
+	}
+
+		
+        /* 
+	 * The only key we support is "PrinterDriverData". This should return 
+	 > an array of all the key/value pairs returned by EnumPrinterDataSee 
+	 * _spoolss_getprinterdataex() for details    --jerry
+	 */
+   
+	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	if (strcmp(key, "PrinterDriverData") != 0)
+	{
+		DEBUG(10,("_spoolss_enumprinterdataex: Unknown keyname [%s]\n", key));
+		return ERROR_INVALID_PARAMETER;
+	}
+
+
+	if (!get_printer_snum(handle, &snum))
+		return ERRbadfid;
+	
+	ZERO_STRUCT(printer);
+	result = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (result)
+		return ERROR_ACCESS_DENIED;
+
+	
+	/* 
+	 * loop through all params and build the array to pass 
+	 * back to the  client 
+	 */
+	result 			= NT_STATUS_NO_PROBLEMO;
+	param_index		= 0;
+	needed 			= 0;
+	num_entries		= 0;
+	
+	while (get_specific_param_by_index(*printer, 2, param_index, value, &data, &type, &data_len)) 
+	{
+		PRINTER_ENUM_VALUES	*ptr;
+		uint32			add_len = 0;
+
+		DEBUG(10,("retrieved value number [%d] [%s]\n", num_entries, value));
+
+		if ((ptr=Realloc(enum_values, (num_entries+1) * sizeof(PRINTER_ENUM_VALUES))) == NULL)
+		{
+			DEBUG(0,("Ralloc failed to allocate more memory!\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		enum_values = ptr;
+
+		/* copy the data */
+		init_unistr(&enum_values[num_entries].valuename, value);
+		enum_values[num_entries].value_len = (strlen(value)+1) * 2;
+		enum_values[num_entries].type      = type;
+		
+		/* 
+		 * NULL terminate REG_SZ
+		 * FIXME!!!  We should not be correctly problems in the way
+		 * we store PrinterData here.  Need to investogate 
+		 * SetPrinterData[Ex]   --jerry
+		 */
+		
+		if (type == REG_SZ) {
+			/* fix alignment if the string was stored 
+			   in a bizarre fashion */
+			if ((data_len % 2) == 0)
+				add_len = 2;
+			else
+				add_len = data_len % 2;
+		}
+		
+		if (!(enum_values[num_entries].data=talloc_zero(p->mem_ctx, data_len+add_len))) {
+			DEBUG(0,("talloc_realloc failed to allocate more memory for data!\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		memcpy(enum_values[num_entries].data, data, data_len);
+		enum_values[num_entries].data_len = data_len + add_len;
+
+		/* keep track of the size of the array in bytes */
+		
+		needed += spoolss_size_printer_enum_values(&enum_values[num_entries]);
+		
+		num_entries++;
+		param_index++;
+	}
+	
+	r_u->needed 		= needed;
+	r_u->returned 		= num_entries;
+
+	if (needed > in_size) {
+		result = ERROR_MORE_DATA;
+		goto done;
+	}
+		
+	/* copy data into the reply */
+	
+	r_u->ctr.size        	= r_u->needed;
+	r_u->ctr.size_of_array 	= r_u->returned;
+	r_u->ctr.values 	= talloc_memdup(p->mem_ctx, enum_values, (num_entries+1)*sizeof(PRINTER_ENUM_VALUES));
+	
+	safe_free(enum_values);
+	
+		
+done:	
+	free_a_printer(&printer, 2);
+
+	return result;
+}
+
+
 #undef OLD_NTDOMAIN

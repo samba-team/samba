@@ -46,6 +46,11 @@
 #define HKEY_LOCAL_MACHINE 0x80000000
 #define HKEY_USERS         0x80000003
 
+#define REG_SZ		1
+#define REG_BINARY	3
+#define REG_DWORD	4
+#define REG_MULTI_SZ	7
+
 /* REG_Q_OPEN_HKLM   */
 typedef struct q_reg_open_policy_info
 {

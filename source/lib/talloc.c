@@ -117,3 +117,34 @@ void talloc_destroy(TALLOC_CTX *t)
 	talloc_destroy_pool(t);
 	free(t);
 }
+
+/* talloc and zero memory. */
+void *talloc_zero(TALLOC_CTX *t, size_t size)
+{
+	void *p = talloc(t, size);
+
+	if (p)
+		memset(p, '\0', size);
+
+	return p;
+}
+
+/* memdup with a talloc. */
+void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size)
+{
+	void *newp = talloc(t,size);
+
+	if (!newp)
+		return 0;
+
+	memcpy(newp, p, size);
+
+	return newp;
+}
+
+/* strdup with a talloc */
+char *talloc_strdup(TALLOC_CTX *t, char *p)
+{
+	return talloc_memdup(t, p, strlen(p) + 1);
+}
+

@@ -57,7 +57,9 @@
 #define SPOOLSS_SPOOLERINIT				0x3f
 #define SPOOLSS_RESETPRINTEREX				0x40
 #define SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION	0x42
-#define SPOOLSS_GETPRINTERDATAEX			0x4e
+#define SPOOLSS_DELETEPRINTERDATAEX			0x51
+#define SPOOLSS_DELETEPRINTERDRIVEREX			0x54
+#define SPOOLSS_ADDPRINTERDRIVEREX			0x59
 */
 
 /* those are implemented */
@@ -109,6 +111,10 @@
 #define SPOOLSS_ADDPRINTEREX				0x46
 #define SPOOLSS_ENUMPRINTERDATA				0x48
 #define SPOOLSS_DELETEPRINTERDATA			0x49
+#define SPOOLSS_SETPRINTERDATAEX			0x4d
+#define SPOOLSS_GETPRINTERDATAEX			0x4e
+#define SPOOLSS_ENUMPRINTERDATAEX			0x4f
+#define SPOOLSS_ENUMPRINTERKEY				0x50
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
 #define PRINTER_CONTROL_PAUSE		0x00000001
@@ -1862,6 +1868,100 @@ typedef struct spool_r_rrpcn
 	uint32 status;
 }
 SPOOL_R_REPLY_RRPCN;
+
+
+typedef struct spool_q_getprinterdataex
+{
+	POLICY_HND handle;
+	UNISTR2 keyname;
+        UNISTR2 valuename;
+	uint32 size;
+}
+SPOOL_Q_GETPRINTERDATAEX;
+
+typedef struct spool_r_getprinterdataex
+{
+	uint32 type;
+	uint32 size;
+	uint8 *data;
+	uint32 needed;
+	uint32 status;
+}
+SPOOL_R_GETPRINTERDATAEX;
+
+typedef struct spool_q_setprinterdataex
+{
+	POLICY_HND handle;
+	UNISTR2 key;
+	UNISTR2 value;
+	uint32 type;
+	uint32 max_len;
+	uint8 *data;
+	uint32 real_len;
+	uint32 numeric_data;
+}
+SPOOL_Q_SETPRINTERDATAEX;
+
+typedef struct spool_r_setprinterdataex
+{
+	uint32 status;
+}
+SPOOL_R_SETPRINTERDATAEX;
+
+
+typedef struct spool_q_enumprinterkey
+{
+	POLICY_HND handle;
+	UNISTR2 key;
+	uint32 size;
+}
+SPOOL_Q_ENUMPRINTERKEY;
+
+typedef struct spool_r_enumprinterkey
+{
+	BUFFER5 keys;
+	uint32 needed;	/* in bytes */
+	uint32 status;
+}
+SPOOL_R_ENUMPRINTERKEY;
+
+typedef struct printer_enum_values
+{
+	UNISTR valuename;
+	uint32 value_len;
+	uint32 type;
+	uint8  *data;
+	uint32 data_len; 
+	
+}
+PRINTER_ENUM_VALUES;
+
+typedef struct printer_enum_values_ctr
+{
+	uint32 size;
+	uint32 size_of_array;
+	PRINTER_ENUM_VALUES *values;
+}
+PRINTER_ENUM_VALUES_CTR;
+
+typedef struct spool_q_enumprinterdataex
+{
+	POLICY_HND handle;
+	UNISTR2 key;
+	uint32 size;
+}
+SPOOL_Q_ENUMPRINTERDATAEX;
+
+typedef struct spool_r_enumprinterdataex
+{
+	PRINTER_ENUM_VALUES_CTR ctr;
+	uint32 needed;
+	uint32 returned;
+	uint32 status;
+}
+SPOOL_R_ENUMPRINTERDATAEX;
+
+
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
