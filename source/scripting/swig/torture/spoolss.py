@@ -408,11 +408,12 @@ def test_EnumPrinterDrivers(pipe):
 
         result = ResizeBufferCall(dcerpc.spoolss_EnumPrinterDrivers, pipe, r)
 
-        for driver in dcerpc.unmarshall_spoolss_DriverInfo_array(
-            result['buffer'], r['level'], result['count']):
+        drivers = dcerpc.unmarshall_spoolss_DriverInfo_array(
+            result['buffer'], r['level'], result['count'])
 
-            print driver
-
+        if level == 1:
+            driver_names = map(lambda x: x['info1']['driver_name'], drivers)
+            
 
 def test_PrintServer(pipe):
     
