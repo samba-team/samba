@@ -1234,7 +1234,7 @@ struct arg_val {
     char **argv;
 };
 
-static int addarg(struct arg_val*, char*);
+static void addarg(struct arg_val*, char*);
 
 /*
  * start_login(host)
@@ -1349,19 +1349,17 @@ start_login(char *host, int autologin, char *name)
     /*NOTREACHED*/
 }
 
-
-
-static int addarg(struct arg_val *argv, char *val)
+static void
+addarg(struct arg_val *argv, char *val)
 {
-    if(argv->size <= argv->argc+1){
-	argv->argv = (char**)realloc(argv->argv, sizeof(char*) * (argv->size + 10));
-	if(argv->argv == NULL)
-	    return 1; /* this should probably be handled better */
+    if(argv->size <= argv->argc+1) {
+	argv->argv = realloc(argv->argv, sizeof(char*) * (argv->size + 10));
+	if (argv->argv == NULL)
+	    fatal (net, "realloc: out of memory");
 	argv->size+=10;
     }
-    argv->argv[argv->argc++]=val;
-    argv->argv[argv->argc]=NULL;
-    return 0;
+    argv->argv[argv->argc++] = val;
+    argv->argv[argv->argc]   = NULL;
 }
 
 
