@@ -159,4 +159,9 @@ kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
 void
 handle_v4(krb5_context context, int len, int fd);
 
+/* random_password.c */
+
+void
+random_password(char *pw, size_t len);
+
 #endif /* __ADMIN_LOCL_H__ */
