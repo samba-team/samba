@@ -340,7 +340,7 @@ WERROR reg_key_num_subkeys(struct registry_key *key, int *count)
 		talloc_destroy(mem_ctx);
 
 		*count = i;
-		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) return WERR_OK;
+		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) error = WERR_OK;
 		return error;
 	}
 
@@ -351,8 +351,26 @@ WERROR reg_key_num_values(struct registry_key *key, int *count)
 {
 	
 	if(!key) return WERR_INVALID_PARAM;
-	
-	return key->hive->functions->num_values(key, count);
+
+	if (key->hive->functions->num_values) {
+		return key->hive->functions->num_values(key, count);
+	}
+
+	if(key->hive->functions->get_value_by_index) {
+		int i;
+		WERROR error;
+		struct registry_value *dest;
+		TALLOC_CTX *mem_ctx = talloc_init("num_subkeys");
+		
+		for(i = 0; W_ERROR_IS_OK(error = key->hive->functions->get_value_by_index(mem_ctx, key, i, &dest)); i++);
+		talloc_destroy(mem_ctx);
+
+		*count = i;
+		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) error = WERR_OK;
+		return error;
+	}
+
+	return WERR_NOT_SUPPORTED;
 }
 
 WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key, int idx, struct registry_key **subkey)
@@ -644,5 +662,57 @@ WERROR reg_key_flush(struct registry_key *key)
 	}
 	
 	/* No need for flushing, apparently */
+	return WERR_OK;
+}
+
+WERROR reg_key_subkeysizes(struct registry_key *key, uint32 *max_subkeylen, uint32 *max_subkeysize)
+{
+	int i = 0; 
+	struct registry_key *subkey;
+	WERROR error;
+	TALLOC_CTX *mem_ctx = talloc_init("subkeysize");
+
+	*max_subkeylen = *max_subkeysize = 0;
+
+	do {
+		error = reg_key_get_subkey_by_index(mem_ctx, key, i, &subkey);
+
+		if (W_ERROR_IS_OK(error)) {
+			*max_subkeysize = MAX(*max_subkeysize, 0xFF);
+			*max_subkeylen = MAX(*max_subkeylen, strlen(subkey->name));
+		}
+
+		i++;
+	} while (W_ERROR_IS_OK(error));
+
+	talloc_destroy(mem_ctx);
+
+	return WERR_OK;
+}
+
+WERROR reg_key_valuesizes(struct registry_key *key, uint32 *max_valnamelen, uint32 *max_valbufsize)
+{
+	int i = 0; 
+	struct registry_value *value;
+	WERROR error;
+	TALLOC_CTX *mem_ctx = talloc_init("subkeysize");
+
+	*max_valnamelen = *max_valbufsize = 0;
+
+	do {
+		error = reg_key_get_value_by_index(mem_ctx, key, i, &value);
+
+		if (W_ERROR_IS_OK(error)) {
+			if (value->name) {
+				*max_valnamelen = MAX(*max_valnamelen, strlen(value->name));
+			}
+			*max_valbufsize = MAX(*max_valbufsize, value->data_len);
+		}
+
+		i++;
+	} while (W_ERROR_IS_OK(error));
+
+	talloc_destroy(mem_ctx);
+
 	return WERR_OK;
 }
