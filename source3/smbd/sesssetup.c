@@ -150,7 +150,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	DATA_BLOB auth_data;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
-	DATA_BLOB session_key;
+	DATA_BLOB session_key = data_blob(NULL, 0);
 	uint8 tok_id[2];
 	BOOL foreign = False;
 	DATA_BLOB nullblob = data_blob(NULL, 0);
@@ -183,6 +183,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (!p) {
 		DEBUG(3,("Doesn't look like a valid principal\n"));
 		data_blob_free(&ap_rep);
+		data_blob_free(&session_key);
 		SAFE_FREE(client);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
@@ -192,6 +193,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
 			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
 			SAFE_FREE(client);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
@@ -249,6 +251,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		SAFE_FREE(user);
 		SAFE_FREE(client);
 		data_blob_free(&ap_rep);
+		data_blob_free(&session_key);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -263,6 +266,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		SAFE_FREE(user);
 		SAFE_FREE(client);
 		data_blob_free(&ap_rep);
+		data_blob_free(&session_key);
 		return ERROR_NT(ret);
 	}
 
@@ -274,6 +278,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
         }
 
 	/* register_vuid keeps the server info */
+	/* register_vuid takes ownership of session_key, no need to free after this.
+ 	   A better interface would copy it.... */
 	sess_vuid = register_vuid(server_info, session_key, nullblob, client);
 
 	SAFE_FREE(user);

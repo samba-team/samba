@@ -114,12 +114,14 @@ BOOL trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
 {
 	char *key, *alt_key;
 	fstring sid_string;
+	BOOL ret;
 
 	/*
 	 * we use gecache call to avoid annoying debug messages
 	 * about initialised trustdom 
 	 */
-	if (!gencache_init()) return False;
+	if (!gencache_init())
+		return False;
 
 	DEBUG(5, ("trustdom_store: storing SID %s of domain %s\n",
 	          sid_string_static(sid), name));
@@ -134,11 +136,18 @@ BOOL trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
 	 * try to put the names in the cache
 	 */
 	if (alt_key) {
-		return (gencache_set(alt_key, sid_string, timeout)
-		        && gencache_set(key, sid_string, timeout));
+		ret = gencache_set(alt_key, sid_string, timeout);
+		if ( ret ) {
+			ret = gencache_set(key, sid_string, timeout);
+		}
+		SAFE_FREE(alt_key);
+		SAFE_FREE(key);
+		return ret;
 	}
-		 
-	return gencache_set(key, sid_string, timeout);
+
+	ret = gencache_set(key, sid_string, timeout);
+	SAFE_FREE(key);
+	return ret;
 }
 
 
@@ -155,22 +164,26 @@ BOOL trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
  
 BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
 {
-	char *key, *value;
+	char *key = NULL, *value = NULL;
 	time_t timeout;
 
 	/* init the cache */
-	if (!gencache_init()) return False;
+	if (!gencache_init())
+		return False;
 	
 	/* exit now if null pointers were passed as they're required further */
-	if (!sid) return False;
+	if (!sid)
+		return False;
 
 	/* prepare a key and get the value */
 	key = trustdom_cache_key(name);
-	if (!key) return False;
+	if (!key)
+		return False;
 	
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
 		SAFE_FREE(key);
+		SAFE_FREE(value);
 		return False;
 	} else {
 		SAFE_FREE(key);
@@ -180,9 +193,11 @@ BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
 	/* convert ip string representation into in_addr structure */
 	if(! string_to_sid(sid, value)) {
 		sid = NULL;
+		SAFE_FREE(value);
 		return False;
 	}
 	
+	SAFE_FREE(value);
 	return True;
 }
 
@@ -193,7 +208,7 @@ BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
 
 uint32 trustdom_cache_fetch_timestamp( void )
 {
-	char *value;
+	char *value = NULL;
 	time_t timeout;
 	uint32 timestamp;
 
@@ -203,11 +218,13 @@ uint32 trustdom_cache_fetch_timestamp( void )
 		
 	if (!gencache_get(TDOMTSKEY, &value, &timeout)) {
 		DEBUG(5, ("no timestamp for trusted domain cache located.\n"));
+		SAFE_FREE(value);
 		return 0;
 	} 
 
 	timestamp = atoi(value);
 		
+	SAFE_FREE(value);
 	return timestamp;
 }
 
