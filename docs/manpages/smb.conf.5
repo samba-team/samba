@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "01 October 2002" "" ""
+.TH "SMB.CONF" "5" "02 oktober 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -604,12 +604,6 @@ each parameter for details.  Note that some are synonyms.
 \fIdns proxy\fR
 .TP 0.2i
 \(bu
-\fIdomain admin group\fR
-.TP 0.2i
-\(bu
-\fIdomain guest group\fR
-.TP 0.2i
-\(bu
 \fIdomain logons\fR
 .TP 0.2i
 \(bu
@@ -994,9 +988,6 @@ each parameter for details.  Note that some are synonyms.
 \fIuse mmap\fR
 .TP 0.2i
 \(bu
-\fIuse rhosts\fR
-.TP 0.2i
-\(bu
 \fIusername level\fR
 .TP 0.2i
 \(bu
@@ -1365,9 +1356,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIshort preserve case\fR
-.TP 0.2i
-\(bu
-\fIstatus\fR
 .TP 0.2i
 \(bu
 \fIstrict allocate\fR
@@ -2483,40 +2471,6 @@ action.
 See also the parameter \fI  wins support\fR.
 
 Default: \fBdns proxy = yes\fR
-.TP
-\fBdomain admin group (G)\fR
-This parameter is intended as a temporary solution
-to enable users to be a member of the "Domain Admins" group when 
-a Samba host is acting as a PDC.  A complete solution will be provided
-by a system for mapping Windows NT/2000 groups onto UNIX groups.
-Please note that this parameter has a somewhat confusing name.  It 
-accepts a list of usernames and of group names in standard 
-\fIsmb.conf\fR notation.
-
-See also \fIdomain
-guest group\fR, \fIdomain
-logons\fR
-
-Default: \fBno domain administrators\fR
-
-Example: \fBdomain admin group = root @wheel\fR
-.TP
-\fBdomain guest group (G)\fR
-This parameter is intended as a temporary solution
-to enable users to be a member of the "Domain Guests" group when 
-a Samba host is acting as a PDC.  A complete solution will be provided
-by a system for mapping Windows NT/2000 groups onto UNIX groups.
-Please note that this parameter has a somewhat confusing name.  It 
-accepts a list of usernames and of group names in standard 
-\fIsmb.conf\fR notation.
-
-See also \fIdomain
-admin group\fR, \fIdomain
-logons\fR
-
-Default: \fBno domain guests\fR
-
-Example: \fBdomain guest group = nobody @guest\fR
 .TP
 \fBdomain logons (G)\fR
 If set to true, the Samba server will serve 
@@ -5285,7 +5239,7 @@ Default: \fBpreferred master = auto\fR
 \fBprefered master (G)\fR
 Synonym for \fI  preferred master\fR for people who cannot spell :-).
 .TP
-\fBpreload\fR
+\fBpreload (G)\fR
 This is a list of services that you want to be 
 automatically added to the browse lists. This is most useful 
 for homes and printers services that would otherwise not be 
@@ -6419,17 +6373,6 @@ never need to change this parameter.
 
 Default: \fBstat cache size = 50\fR
 .TP
-\fBstatus (G)\fR
-This enables or disables logging of connections 
-to a status file that smbstatus(1)
-can read.
-
-With this disabled \fBsmbstatus\fR won't be able
-to tell you what connections are active. You should never need to
-change this parameter.
-
-Default: \fBstatus = yes\fR
-.TP
 \fBstrict allocate (S)\fR
 This is a boolean that controls the handling of 
 disk space allocation in the server. When this is set to yes 
@@ -6688,20 +6631,6 @@ parameter is provided to help the Samba developers track down problems with
 the tdb internal code.
 
 Default: \fBuse mmap = yes\fR
-.TP
-\fBuse rhosts (G)\fR
-If this global parameter is true, it specifies 
-that the UNIX user's \fI.rhosts\fR file in their home directory 
-will be read to find the names of hosts and users who will be allowed 
-access without specifying a password.
-
-\fBNOTE:\fR The use of \fIuse rhosts
-\fR can be a major security hole. This is because you are 
-trusting the PC to supply the correct username. It is very easy to 
-get a PC to supply a false username. I recommend that the \fI  use rhosts\fR option be only used if you really know what 
-you are doing.
-
-Default: \fBuse rhosts = no\fR
 .TP
 \fBuser (S)\fR
 Synonym for \fI  username\fR.
@@ -7137,7 +7066,7 @@ Example: \fBwinbind uid = 10000-20000\fR
 .TP
 \fBwinbind use default domain\fR
 .TP
-\fBwinbind use default domain\fR
+\fBwinbind use default domain (G)\fR
 This parameter specifies whether the   winbindd(8)
 daemon should operate on users without domain component in their username.  
 Users without a domain component are treated as is part of the winbindd server's 
