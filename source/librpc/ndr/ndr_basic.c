@@ -57,7 +57,18 @@ void ndr_check_padding(struct ndr_pull *ndr, size_t n)
 }
 
 /*
-  parse a uint8
+  parse a int8_t
+*/
+NTSTATUS ndr_pull_int8(struct ndr_pull *ndr, int ndr_flags, int8_t *v)
+{
+	NDR_PULL_NEED_BYTES(ndr, 1);
+	*v = (int8_t)CVAL(ndr->data, ndr->offset);
+	ndr->offset += 1;
+	return NT_STATUS_OK;
+}
+
+/*
+  parse a uint8_t
 */
 NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *v)
 {
@@ -67,9 +78,20 @@ NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *v)
 	return NT_STATUS_OK;
 }
 
+/*
+  parse a int16_t
+*/
+NTSTATUS ndr_pull_int16(struct ndr_pull *ndr, int ndr_flags, int16_t *v)
+{
+	NDR_PULL_ALIGN(ndr, 2);
+	NDR_PULL_NEED_BYTES(ndr, 2);
+	*v = (uint16_t)NDR_SVAL(ndr, ndr->offset);
+	ndr->offset += 2;
+	return NT_STATUS_OK;
+}
 
 /*
-  parse a uint16
+  parse a uint16_t
 */
 NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v)
 {
@@ -77,19 +99,6 @@ NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v)
 	NDR_PULL_NEED_BYTES(ndr, 2);
 	*v = NDR_SVAL(ndr, ndr->offset);
 	ndr->offset += 2;
-	return NT_STATUS_OK;
-}
-
-
-/*
-  parse a uint32_t
-*/
-NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
-{
-	NDR_PULL_ALIGN(ndr, 4);
-	NDR_PULL_NEED_BYTES(ndr, 4);
-	*v = NDR_IVAL(ndr, ndr->offset);
-	ndr->offset += 4;
 	return NT_STATUS_OK;
 }
 
@@ -101,6 +110,18 @@ NTSTATUS ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, int32_t *v)
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
 	*v = NDR_IVALS(ndr, ndr->offset);
+	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
+
+/*
+  parse a uint32_t
+*/
+NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
+{
+	NDR_PULL_ALIGN(ndr, 4);
+	NDR_PULL_NEED_BYTES(ndr, 4);
+	*v = NDR_IVAL(ndr, ndr->offset);
 	ndr->offset += 4;
 	return NT_STATUS_OK;
 }
@@ -243,7 +264,6 @@ NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *data
 	return ndr_pull_bytes(ndr, data, n);
 }
 
-
 /*
   pull an array of uint16
 */
@@ -304,10 +324,19 @@ NTSTATUS ndr_pull_array_WERROR(struct ndr_pull *ndr, int ndr_flags, WERROR *data
 	return NT_STATUS_OK;
 }
 
-
+/*
+  push a int8_t
+*/
+NTSTATUS ndr_push_int8(struct ndr_push *ndr, int ndr_flags, int8_t v)
+{
+	NDR_PUSH_NEED_BYTES(ndr, 1);
+	SCVAL(ndr->data, ndr->offset, (uint8_t)v);
+	ndr->offset += 1;
+	return NT_STATUS_OK;
+}
 
 /*
-  push a uint8
+  push a uint8_t
 */
 NTSTATUS ndr_push_uint8(struct ndr_push *ndr, int ndr_flags, uint8_t v)
 {
@@ -318,7 +347,19 @@ NTSTATUS ndr_push_uint8(struct ndr_push *ndr, int ndr_flags, uint8_t v)
 }
 
 /*
-  push a uint16
+  push a int16_t
+*/
+NTSTATUS ndr_push_int16(struct ndr_push *ndr, int ndr_flags, int16_t v)
+{
+	NDR_PUSH_ALIGN(ndr, 2);
+	NDR_PUSH_NEED_BYTES(ndr, 2);
+	NDR_SSVAL(ndr, ndr->offset, (uint16_t)v);
+	ndr->offset += 2;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a uint16_t
 */
 NTSTATUS ndr_push_uint16(struct ndr_push *ndr, int ndr_flags, uint16_t v)
 {
@@ -330,18 +371,6 @@ NTSTATUS ndr_push_uint16(struct ndr_push *ndr, int ndr_flags, uint16_t v)
 }
 
 /*
-  push a uint32_t
-*/
-NTSTATUS ndr_push_uint32(struct ndr_push *ndr, int ndr_flags, uint32_t v)
-{
-	NDR_PUSH_ALIGN(ndr, 4);
-	NDR_PUSH_NEED_BYTES(ndr, 4);
-	NDR_SIVAL(ndr, ndr->offset, v);
-	ndr->offset += 4;
-	return NT_STATUS_OK;
-}
-
-/*
   push a int32_t
 */
 NTSTATUS ndr_push_int32(struct ndr_push *ndr, int ndr_flags, int32_t v)
@@ -349,6 +378,18 @@ NTSTATUS ndr_push_int32(struct ndr_push *ndr, int ndr_flags, int32_t v)
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
 	NDR_SIVALS(ndr, ndr->offset, v);
+	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a uint32_t
+*/
+NTSTATUS ndr_push_uint32(struct ndr_push *ndr, int ndr_flags, uint32_t v)
+{
+	NDR_PUSH_ALIGN(ndr, 4);
+	NDR_PUSH_NEED_BYTES(ndr, 4);
+	NDR_SIVAL(ndr, ndr->offset, v);
 	ndr->offset += 4;
 	return NT_STATUS_OK;
 }
@@ -380,7 +421,7 @@ NTSTATUS ndr_push_udlongr(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 }
 
 /*
-  push a int64
+  push a dlong
 */
 NTSTATUS ndr_push_dlong(struct ndr_push *ndr, int ndr_flags, int64_t v)
 {
@@ -1127,9 +1168,19 @@ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_
 	}
 }
 
+void ndr_print_int8(struct ndr_print *ndr, const char *name, int8_t v)
+{
+	ndr->print(ndr, "%-25s: %d", name, v);
+}
+
 void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%02x (%u)", name, v, v);
+}
+
+void ndr_print_int16(struct ndr_print *ndr, const char *name, int16_t v)
+{
+	ndr->print(ndr, "%-25s: %d", name, v);
 }
 
 void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16_t v)
@@ -1137,14 +1188,14 @@ void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16_t v)
 	ndr->print(ndr, "%-25s: 0x%04x (%u)", name, v, v);
 }
 
-void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
-{
-	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
-}
-
 void ndr_print_int32(struct ndr_print *ndr, const char *name, int32_t v)
 {
 	ndr->print(ndr, "%-25s: %d", name, v);
+}
+
+void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
+{
+	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
 }
 
 void ndr_print_udlong(struct ndr_print *ndr, const char *name, uint64_t v)
