@@ -2259,17 +2259,27 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	pw = Get_Pwnam(account);
 
 	/* determine which user right we need to check based on the acb_info */
-	if ( acb_info & (ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) {
-		se_priv_copy( &se_rights, &se_machine_account );
+	
+	if ( (acb_info & ACB_WSTRUST) == ACB_WSTRUST ) 
+	{
 		pstrcpy(add_script, lp_addmachine_script());
-	}
-	else {
-		se_priv_copy( &se_rights, &se_add_users );
+		se_priv_copy( &se_rights, &se_machine_account );
+		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+	} 
+	else if ( (acb_info & ACB_WSTRUST) == ACB_NORMAL ) 
+	{
 		pstrcpy(add_script, lp_adduser_script());
+		se_priv_copy( &se_rights, &se_add_users );
+		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+	} 
+	else if ( ((acb_info & ACB_SVRTRUST) == ACB_SVRTRUST) ||  ((acb_info & ACB_DOMTRUST) == ACB_DOMTRUST) ) 
+	{
+		pstrcpy(add_script, lp_addmachine_script());
+		/* only Domain Admins can add a BDC or domain trust */
+		se_priv_copy( &se_rights, &se_priv_none );
+		can_add_account = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
 	}
-		
-	can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
-
+	
 	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
 		p->pipe_user_name, can_add_account ? "True":"False" ));
 		
