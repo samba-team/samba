@@ -172,9 +172,10 @@ Version  Type             Principal
 
 @section Remote administration
 
-The administration server, @samp{kadmind}, is started by @samp{inetd}
-and you should add a line similar to the one below to your
-@file{/etc/inetd.conf}.
+The administration server, @samp{kadmind}, can be started by
+@samp{inetd} (which isn't recommended) or run as a normal daemon. If you
+want to start it from @samp{inetd} you should add a line similar to the
+one below to your @file{/etc/inetd.conf}.
 
 @example
 kerberos-adm stream     tcp     nowait  root /usr/heimdal/libexec/kadmind kadmind
