@@ -44,6 +44,8 @@ AC_MIPS_ABI
 CC="$CC $abi"
 libdir="$libdir$abilibdirext"
 
+AC_C___ATTRIBUTE__
+
 AM_DISABLE_SHARED
 AM_PROG_LIBTOOL
 
