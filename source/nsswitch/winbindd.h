@@ -65,6 +65,11 @@ struct winbindd_state {
 
     fstring controller;
 
+    /* User and group id pool */
+
+    uid_t uid_low, uid_high;               /* Range of uids to allocate */
+    gid_t gid_low, gid_high;               /* Range of gids to allocate */
+
     /* Cached handle to lsa pipe */
 
     POLICY_HND lsa_handle;
@@ -84,9 +89,6 @@ struct winbindd_domain {
 
     DOM_SID sid;                           /* SID for this domain */
     BOOL got_domain_info;                  /* Got controller and sid */
-
-    uid_t uid_low, uid_high;               /* Range of uids to allocate */
-    gid_t gid_low, gid_high;               /* Range of gids to allocate */
 
     /* Cached handles to samr pipe */
 
