@@ -97,6 +97,7 @@ libkrb5_la_SOURCES =				\
 	mk_req.c				\
 	mk_req_ext.c				\
 	mk_safe.c				\
+	mit_glue.c				\
 	net_read.c				\
 	net_write.c				\
 	n-fold.c				\
@@ -154,6 +155,7 @@ man_MANS =					\
 	krb5_appdefault.3			\
 	krb5_auth_context.3			\
 	krb5_build_principal.3			\
+	krb5_c_make_checksum.3			\
 	krb5_ccache.3				\
 	krb5_config.3				\
 	krb5_context.3				\
