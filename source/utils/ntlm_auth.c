@@ -1594,9 +1594,13 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helpe
 
 	/* this is not a typo - x_fgets doesn't work too well under squid */
 	if (fgets(buf, sizeof(buf)-1, stdin) == NULL) {
-		DEBUG(1, ("fgets() failed! dying..... errno=%d (%s)\n", ferror(stdin),
-			  strerror(ferror(stdin))));
-		exit(1);    /* BIIG buffer */
+		if (ferror(stdin)) {
+			DEBUG(1, ("fgets() failed! dying..... errno=%d (%s)\n", ferror(stdin),
+				  strerror(ferror(stdin))));
+			
+			exit(1);    /* BIIG buffer */
+		}
+		exit(0);
 	}
     
 	c=memchr(buf,'\n',sizeof(buf)-1);
