@@ -339,12 +339,12 @@ static BOOL api_spoolss_getprinter(pipes_struct *p)
 	return True;
 }
 
-
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
  *
  ********************************************************************/
+
 static BOOL api_spoolss_getprinterdriver2(pipes_struct *p)
 {
 	SPOOL_Q_GETPRINTERDRIVER2 q_u;
@@ -360,13 +360,7 @@ static BOOL api_spoolss_getprinterdriver2(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_getprinterdriver2(&q_u.handle, &q_u.architecture, q_u.level, 
-						q_u.clientmajorversion, q_u.clientminorversion,
-						r_u.buffer, q_u.offered,
-						&r_u.needed, &r_u.servermajorversion, &r_u.serverminorversion);
+	r_u.status = _spoolss_getprinterdriver2(p, &q_u, &r_u);
 	
 	if(!spoolss_io_r_getprinterdriver2("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getprinterdriver2: unable to marshall SPOOL_R_GETPRINTERDRIVER2.\n"));
@@ -381,6 +375,7 @@ static BOOL api_spoolss_getprinterdriver2(pipes_struct *p)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
+
 static BOOL api_spoolss_startpageprinter(pipes_struct *p)
 {
 	SPOOL_Q_STARTPAGEPRINTER q_u;
@@ -396,7 +391,7 @@ static BOOL api_spoolss_startpageprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_startpageprinter(&q_u.handle);
+	r_u.status = _spoolss_startpageprinter(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_startpageprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_startpageprinter: unable to marshall SPOOL_R_STARTPAGEPRINTER.\n"));
@@ -406,12 +401,12 @@ static BOOL api_spoolss_startpageprinter(pipes_struct *p)
 	return True;
 }
 
-
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
  *
  ********************************************************************/
+
 static BOOL api_spoolss_endpageprinter(pipes_struct *p)
 {
 	SPOOL_Q_ENDPAGEPRINTER q_u;
@@ -427,7 +422,7 @@ static BOOL api_spoolss_endpageprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_endpageprinter(&q_u.handle);
+	r_u.status = _spoolss_endpageprinter(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_endpageprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_endpageprinter: unable to marshall SPOOL_R_ENDPAGEPRINTER.\n"));
@@ -439,6 +434,7 @@ static BOOL api_spoolss_endpageprinter(pipes_struct *p)
 
 /********************************************************************
 ********************************************************************/
+
 static BOOL api_spoolss_startdocprinter(pipes_struct *p)
 {
 	SPOOL_Q_STARTDOCPRINTER q_u;
@@ -454,10 +450,7 @@ static BOOL api_spoolss_startdocprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_startdocprinter(&q_u.handle,
-  			          q_u.doc_info_container.level, p,
-	                          &q_u.doc_info_container.docinfo,
-	                          &r_u.jobid);
+	r_u.status = _spoolss_startdocprinter(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_startdocprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_startdocprinter: unable to marshall SPOOL_R_STARTDOCPRINTER.\n"));
@@ -466,7 +459,6 @@ static BOOL api_spoolss_startdocprinter(pipes_struct *p)
 
 	return True;
 }
-
 
 /********************************************************************
 ********************************************************************/
