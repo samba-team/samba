@@ -188,3 +188,69 @@ done:
 	return NT_STATUS_IS_OK(result);
 }
 
+
+/**
+ * Migrates trust passwords from previous location (secrets.tdb) to current pdb backend
+ * and puts a marker in secrets.tdb to avoid doing this again. This function should be
+ * called only once.
+ *
+ * @return number of passwords migrated
+ */
+
+int migrate_trust_passwords(void)
+{
+	int migrated = 0;
+	SAM_TRUST_PASSWD trust;
+	const size_t max_name_len = sizeof(trust.private.uni_name)/2;
+	/* nt workstation trust */
+	const char* dom_name = lp_workgroup();
+	uint8 wks_pass[16];
+	time_t lct;
+	uint32 chan = 0;
+	DOM_SID dom_sid;
+
+	/* Checking whether passwords have already been migrated */
+	if (secrets_passwords_migrated(False)) return migrated;
+
+	/* NT Workstation trust passwords */
+	if (secrets_fetch_trust_account_password(dom_name, wks_pass, &lct, &chan)) {
+		/* flags */
+		trust.private.flags = PASS_TRUST_NT;
+		switch (chan) {
+		case SEC_CHAN_WKSTA:
+			trust.private.flags |= PASS_TRUST_MACHINE;
+			break;
+		case SEC_CHAN_BDC:
+			trust.private.flags |= PASS_TRUST_SERVER;
+			break;
+		default:
+			return 0;
+		}
+
+		/* unicode name length */
+		trust.private.uni_name_len = strlen(dom_name);
+		/* unicode name */
+		push_ucs2(NULL, &trust.private.uni_name, dom_name, max_name_len, STR_UPPER);
+		/* password */
+		strncpy(trust.private.pass, wks_pass, sizeof(trust.private.pass));
+		/* last change time */
+		trust.private.mod_time = lct;
+		
+		/* domain sid */
+		if (secrets_fetch_domain_sid(dom_name, &dom_sid))
+			sid_copy(&trust.private.domain_sid, &dom_sid);
+		else
+			return 0;
+		
+		migrated++;
+	}
+
+	/* NT Domain trust passwords */
+
+	/* ADS Workstation trust passwords */
+
+	/* We're done with migration */
+	secrets_passwords_migrated(True);
+
+	return migrated;
+}
