@@ -232,7 +232,7 @@ msrpc code from Samba3", and while to some extent this is true there
 are extremely important differences in the approach that are worth
 pointing out.
 
-In the Samba3 msrpc code we used explicit parse strucrures for all
+In the Samba3 msrpc code we used explicit parse structures for all
 msrpc functions. The problem is that we didn't just put all of the
 real variables in these structures, we also put in all the artifacts
 as well. A good example is the security descriptor strucrure that
@@ -263,7 +263,7 @@ parser where to find the following four variables, but they should
 *NOT* be in the interface structure.
 
 In Samba3 there were unwritten rules about which variables in a
-strucrure a high level caller has to fill in and which ones are filled
+structure a high level caller has to fill in and which ones are filled
 in by the marshalling code. In Samba4 those rules are gone, because
 the redundent artifact variables are gone. The high level caller just
 sets up the real variables and the marshalling code worries about
