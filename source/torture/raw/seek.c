@@ -50,6 +50,7 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int fnum, fnum2;
 	const char *fname = BASEDIR "\\test.txt";
+	char c[2];
 
 	if (cli_deltree(cli, BASEDIR) == -1 ||
 	    !cli_mkdir(cli, BASEDIR)) {
@@ -121,6 +122,29 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.out.offset, 999);
 
+	printf("trying read to update offset\n");
+	ZERO_STRUCT(c);
+	if (cli_write(cli, fnum, 0, c, 0, 2) != 2) {
+		printf("Write failed - %s\n", cli_errstr(cli));
+		ret = False;
+		goto done;		
+	}
+	io.in.fnum = fnum;
+	io.in.mode = SEEK_MODE_CURRENT;
+	io.in.offset = 0;
+	status = smb_raw_seek(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(io.out.offset, 2);
+	
+	if (cli_read(cli, fnum, c, 0, 1) != 1) {
+		printf("Read failed - %s\n", cli_errstr(cli));
+		ret = False;
+		goto done;		
+	}
+	status = smb_raw_seek(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(io.out.offset, 1);
+
 	printf("Testing position information\n");
 	fnum2 = cli_open(cli, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
@@ -144,7 +168,7 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	finfo.position_information.in.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(finfo.position_information.out.position, 0);
+	CHECK_VALUE(finfo.position_information.out.position, 1);
 
 	printf("position_information via paths\n");
 
