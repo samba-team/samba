@@ -223,7 +223,7 @@ receive (krb5_context context,
 }
 
 static void
-receive_everything (krb5_context context, int *fd,
+receive_everything (krb5_context context, int fd,
 		    kadm5_server_context *server_context,
 		    krb5_auth_context auth_context)
 {
@@ -415,7 +415,7 @@ main(int argc, char **argv)
 		   server_context->log_context.version);
 	    break;
 	case TELL_YOU_EVERYTHING :
-	    receive_everything (context, &master_fd, server_context,
+	    receive_everything (context, master_fd, server_context,
 				auth_context);
 	    break;
 	case NOW_YOU_HAVE :
