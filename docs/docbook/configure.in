@@ -1,0 +1,18 @@
+AC_INIT(global.ent)
+
+## check for the necesary install tools
+AC_PATH_PROG(JADE,openjade)
+
+if test -z "$JADE"; then
+	AC_PATH_PROG(JADE,jade)
+fi
+
+AC_PATH_PROG(NSGMLS, nsgmls)
+AC_PATH_PROG(HTMLDOC, htmldoc)
+AC_PATH_PROG(ONSGMLS, onsgmls)
+AC_PATH_PROG(SGMLSPL, sgmlspl)
+
+DOC_BUILD_DATE=`date '+%d-%m-%Y'`
+AC_SUBST(DOC_BUILD_DATE)
+
+AC_OUTPUT( Makefile )
