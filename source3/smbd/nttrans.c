@@ -889,10 +889,8 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(conn, file_attributes);
-					SSVAL(outbuf, smb_flg2, 
-					      SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 					END_PROFILE(SMBntcreateX);
-					return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
+					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
 	
 				oplock_request = 0;
@@ -909,7 +907,6 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				END_PROFILE(SMBntcreateX);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
-					clear_cached_errors();
 					return -1;
 				}
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
@@ -1493,8 +1490,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(conn, file_attributes);
-					SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-					return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
+					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
 	
 				oplock_request = 0;
@@ -1510,7 +1506,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				restore_case_semantics(conn, file_attributes);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
-					clear_cached_errors();
 					return -1;
 				}
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
@@ -1782,12 +1777,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			&access_mode,&smb_action);
 
 	if (!fsp1) {
-		status = NT_STATUS_ACCESS_DENIED;
-		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
-			status = NT_STATUS_SHARING_VIOLATION;
-		unix_ERR_class = 0;
-		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
+		get_saved_error_triple(NULL, NULL, &status);
+		if (NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_ACCESS_DENIED;
+		}
+		set_saved_error_triple(0, 0, NT_STATUS_OK);
 		return status;
 	}
 
@@ -1796,12 +1790,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			&access_mode,&smb_action);
 
 	if (!fsp2) {
-		status = NT_STATUS_ACCESS_DENIED;
-		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
-			status = NT_STATUS_SHARING_VIOLATION;
-		unix_ERR_class = 0;
-		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
+		get_saved_error_triple(NULL, NULL, &status);
+		if (NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_ACCESS_DENIED;
+		}
+		set_saved_error_triple(0, 0, NT_STATUS_OK);
 		close_file(fsp1,False);
 		return status;
 	}
@@ -1907,7 +1900,6 @@ int reply_ntrename(connection_struct *conn,
 		END_PROFILE(SMBntrename);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
-			clear_cached_errors();
 			return -1;
 		}
 		return ERROR_NT(status);
