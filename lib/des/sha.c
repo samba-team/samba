@@ -71,7 +71,7 @@ sha_init (struct sha *m)
 }
 
 static inline u_int32_t
-cshift (u_int32_t x, unsigned n)
+cshift (u_int32_t x, unsigned int n)
 {
   return (x << n) | (x >> (32 - n));
 }
@@ -276,7 +276,7 @@ sha_finito (struct sha *m, void *res)
 {
   static unsigned char zeros[72];
   u_int32_t len;
-  unsigned dstart = (120 - m->offset - 1) % 64 + 1;
+  unsigned int dstart = (120 - m->offset - 1) % 64 + 1;
 
   *zeros = 0x80;
   memset (zeros + 1, 0, sizeof(zeros) - 1);

@@ -45,11 +45,15 @@
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
 #endif
+#ifdef KRB5
 #include <krb5-types.h>
+#elif defined(KRB4)
+#include <ktypes.h>
+#endif
 
 struct md4 {
-  unsigned offset;
-  unsigned sz;
+  unsigned int offset;
+  unsigned int sz;
   u_int32_t counter[4];
   unsigned char save[64];
 };

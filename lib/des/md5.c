@@ -69,7 +69,7 @@ md5_init (struct md5 *m)
 }
 
 static inline u_int32_t
-cshift (u_int32_t x, unsigned n)
+cshift (u_int32_t x, unsigned int n)
 {
   return (x << n) | (x >> (32 - n));
 }
@@ -250,9 +250,9 @@ md5_update (struct md5 *m, const void *v, size_t len)
 void
 md5_finito (struct md5 *m, void *res)
 {
-  static u_char zeros[72];
+  static unsigned char zeros[72];
   u_int32_t len;
-  unsigned dstart = (120 - m->offset - 1) % 64 + 1;
+  unsigned int dstart = (120 - m->offset - 1) % 64 + 1;
 
   *zeros = 0x80;
   memset (zeros + 1, 0, sizeof(zeros) - 1);
