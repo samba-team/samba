@@ -309,7 +309,7 @@ sub ParseArrayPull($$$)
 		}
 		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should be %u\", _array_size, $size);\n";
 		pidl "\t\t}\n";
-		if ($size =~ /r->/) {
+		if ($size =~ /r->in/) {
 			pidl "else { $size = _array_size; }\n";
 		}
 		pidl "\t}\n";

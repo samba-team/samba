@@ -258,11 +258,11 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = lp_netbios_name();
-	r.in.sync_context = 0;
 	r.in.preferredmaximumlength = (uint32)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
+		r.in.sync_context = 0;
 		r.in.database_id = database_ids[i];
 
 		printf("Testing DatabaseSync of id %d\n", r.in.database_id);

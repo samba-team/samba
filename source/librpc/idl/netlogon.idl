@@ -445,7 +445,7 @@ interface netlogon
 		NTTIME auditretentionperiod;
 		bool8 auditingmode;
 		uint32 maxauditeventcount;
-		[size_is(maxauditeventcount)] uint32 *eventauditoptions;
+		[size_is(maxauditeventcount+1)] uint32 *eventauditoptions;
 		netr_String primarydomainname;
 		dom_sid2 *sid;
 		QUOTA_LIMITS quota_limits;
@@ -485,6 +485,7 @@ interface netlogon
 		[size_is(privilege_entries)] uint32 *privilege_attrib;
 		[size_is(privilege_entries)] netr_String *privilege_name;
 		QUOTA_LIMITS quotalimits;
+		uint32 system_flags;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
 		netr_String unknown1;
