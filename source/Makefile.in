@@ -201,16 +201,6 @@ AUTH_OBJ = auth/auth.o auth/auth_sam.o \
 
 SMBD_OBJ_MAIN = smbd/server.o
 
-NTVFS_CSM_MAIN = ntvfs/tank/vfs_tank.o
-#we don't want these in main proto.h
-NTVFS_CSM_OBJ = ntvfs/tank/csm_init.o ntvfs/tank/csm_unlink.o \
-		ntvfs/tank/csm_util.o ntvfs/tank/csm_error.o ntvfs/tank/csm_lookup.o \
-		ntvfs/tank/csm_blockmap.o ntvfs/tank/csm_dir.o \
-		ntvfs/tank/csm_fcntl.o ntvfs/tank/csm_io.o ntvfs/tank/csm_mkdir.o \
-		ntvfs/tank/csm_open.o ntvfs/tank/csm_rename.o \
-		ntvfs/tank/csm_attr.o ntvfs/tank/csm_truncate.o \
-		ntvfs/tank/csm_fd.o
-
 NTVFS_CIFS_OBJ = ntvfs/cifs/vfs_cifs.o
 NTVFS_SIMPLE_OBJ = ntvfs/simple/vfs_simple.o ntvfs/simple/svfs_util.o
 NTVFS_IPC_OBJ = ntvfs/ipc/vfs_ipc.o

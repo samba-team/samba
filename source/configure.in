@@ -229,18 +229,6 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 
 DYNEXP=
 
-dnl Add modules that have to be built by default here
-dnl These have to be built static:
-default_static_modules="ntvfs_ipc ntvfs_simple ntvfs_print ntvfs_cifs dcerpc_rpcecho dcerpc_epmapper dcerpc_remote"
-
-dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules=""
-
-if test "x$developer" = xyes; then
-   default_static_modules="$default_static_modules"
-   default_shared_modules="$default_shared_modules"
-fi
-
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
@@ -2791,20 +2779,25 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
 sinclude(nsswitch/config.m4)
 sinclude(popt/config.m4)
 
-for i in `echo $default_static_modules | sed -e's/,/ /g'`
-do
-	eval MODULE_DEFAULT_$i=STATIC
-done
+dnl exclude these modules 
+AC_ARG_WITH(exclude-modules,
+[  --with-exclude-modules=MODULES Comma-seperated list of names of modules to exclude from build],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+		eval MODULE_$i=NOT
+	done
+fi ])
 
-for i in `echo $default_shared_modules | sed -e's/,/ /g'`
-do
-	dnl Fall back to static if dlopen() is not available
-	eval MODULE_DEFAULT_$i=STATIC
-
-	if test x"$ac_cv_func_dlopen" = xyes; then
-		eval MODULE_DEFAULT_$i=SHARED
-	fi
-done
+dnl Always built these modules shared
+AC_ARG_WITH(shared-modules,
+[  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+		eval MODULE_$i=SHARED
+	done
+fi ])
 
 dnl Always built these modules static
 AC_ARG_WITH(static-modules,
@@ -2813,15 +2806,6 @@ AC_ARG_WITH(static-modules,
 	for i in `echo $withval | sed -e's/,/ /g'`
 	do
 		eval MODULE_$i=STATIC
-	done
-fi ])
-
-AC_ARG_WITH(shared-modules,
-[  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
-[ if test $withval; then
-	for i in `echo $withval | sed -e's/,/ /g'`
-	do
-			eval MODULE_$i=SHARED
 	done
 fi ])
 

@@ -36,34 +36,55 @@ if test $ac_cv_dirent_d_off = yes; then
 fi
 ])
 
+dnl Specify the default build method of this module 
+dnl SMB_MODULE_DEFAULT(name,default_build)
+AC_DEFUN(SMB_MODULE_DEFAULT,
+[
+	dnl Fall back to static if dlopen() is not available
+	eval MODULE_DEFAULT_$1=$2
+
+	if test x"MODULE_DEFAULT_$1" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
+		eval MODULE_DEFAULT_$1=STATIC
+	fi
+])
+
 dnl Mark specified module as shared
-dnl SMB_MODULE(name,static_files,shared_files,subsystem,whatif-static,whatif-shared)
+dnl SMB_MODULE(name,default_build,static_files,shared_files,subsystem,whatif-static,whatif-shared,whatif-not)
 AC_DEFUN(SMB_MODULE,
 [
 	AC_MSG_CHECKING([how to build $1])
+	if test -z "$[MODULE_DEFAULT_][$1]"; then
+		eval MODULE_DEFAULT_$1=$2
+
+		if test x"MODULE_DEFAULT_$1" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
+			eval MODULE_DEFAULT_$1=STATIC
+		fi
+	fi
+
 	if test "$[MODULE_][$1]"; then
 		DEST=$[MODULE_][$1]
-	elif test "$[MODULE_]translit([$4], [A-Z], [a-z])" -a "$[MODULE_DEFAULT_][$1]"; then
-		DEST=$[MODULE_]translit([$4], [A-Z], [a-z])
+	elif test "$[MODULE_]translit([$5], [A-Z], [a-z])" -a "$[MODULE_DEFAULT_][$1]"; then
+		DEST=$[MODULE_]translit([$5], [A-Z], [a-z])
 	else
 		DEST=$[MODULE_DEFAULT_][$1]
 	fi
 	
 	if test x"$DEST" = xSHARED; then
 		AC_DEFINE([$1][_init], [init_module], [Whether to build $1 as shared module])
-		$4_MODULES="$$4_MODULES $3"
+		$5_MODULES="$$5_MODULES $4"
 		AC_MSG_RESULT([shared])
-		[$6]
+		[$7]
 		string_shared_modules="$string_shared_modules $1"
 	elif test x"$DEST" = xSTATIC; then
-		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z]) $1_init();"
+		[init_static_modules_]translit([$5], [A-Z], [a-z])="$[init_static_modules_]translit([$5], [A-Z], [a-z]) $1_init();"
 		string_static_modules="$string_static_modules $1"
-		$4_STATIC="$$4_STATIC $2"
-		AC_SUBST($4_STATIC)
-		[$5]
+		$5_STATIC="$$5_STATIC $3"
+		AC_SUBST($5_STATIC)
+		[$6]
 		AC_MSG_RESULT([static])
 	else
-	    string_ignored_modules="$string_ignored_modules $1"
+	    	string_ignored_modules="$string_ignored_modules $1"
+	    	[$8]
 		AC_MSG_RESULT([not])
 	fi
 ])
