@@ -108,6 +108,7 @@ static void addrec_db(void)
 #if DELETE_PROB
 	if (random() % DELETE_PROB == 0) {
 		tdb_delete(db, key);
+		goto next;
 	}
 #endif
 
@@ -116,6 +117,7 @@ static void addrec_db(void)
 		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
 			fatal("tdb_store failed");
 		}
+		goto next;
 	}
 #endif
 
@@ -128,18 +130,21 @@ static void addrec_db(void)
 		}
 		if (data.dptr) free(data.dptr);
 		tdb_chainunlock(db, lockkey);
+		goto next;
 	} 
 #endif
 
 #if TRAVERSE_PROB
 	if (random() % TRAVERSE_PROB == 0) {
 		tdb_traverse(db, cull_traverse, NULL);
+		goto next;
 	}
 #endif
 
 	data = tdb_fetch(db, key);
 	if (data.dptr) free(data.dptr);
 
+next:
 	free(k);
 	free(d);
 	free(s);
