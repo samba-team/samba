@@ -704,6 +704,11 @@ handle_tcp(struct descr *d, int index, int min_free)
     if(n < 0){
 	krb5_warn(context, errno, "recvfrom");
 	return;
+    } else if (n == 0) {
+	krb5_warnx(context, "connection closed before end of data after %d "
+		   "bytes from %s", d[index].len, d[index].addr_string);
+	clear_descr (d + index);
+	return;
     }
     if (grow_descr (&d[index], n))
 	return;
