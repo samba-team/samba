@@ -166,6 +166,9 @@
 /* Define if you have the __fstat function.  */
 #undef HAVE___FSTAT
 
+/* Define if you have the __fstat64 function.  */
+#undef HAVE___FSTAT64
+
 /* Define if you have the __fxstat function.  */
 #undef HAVE___FXSTAT
 
@@ -175,11 +178,17 @@
 /* Define if you have the __getdents function.  */
 #undef HAVE___GETDENTS
 
+/* Define if you have the __llseek function.  */
+#undef HAVE___LLSEEK
+
 /* Define if you have the __lseek function.  */
 #undef HAVE___LSEEK
 
 /* Define if you have the __lstat function.  */
 #undef HAVE___LSTAT
+
+/* Define if you have the __lstat64 function.  */
+#undef HAVE___LSTAT64
 
 /* Define if you have the __lxstat function.  */
 #undef HAVE___LXSTAT
@@ -201,6 +210,9 @@
 
 /* Define if you have the __stat function.  */
 #undef HAVE___STAT
+
+/* Define if you have the __stat64 function.  */
+#undef HAVE___STAT64
 
 /* Define if you have the __telldir function.  */
 #undef HAVE___TELLDIR
@@ -241,17 +253,26 @@
 /* Define if you have the _fstat function.  */
 #undef HAVE__FSTAT
 
+/* Define if you have the _fstat64 function.  */
+#undef HAVE__FSTAT64
+
 /* Define if you have the _getcwd function.  */
 #undef HAVE__GETCWD
 
 /* Define if you have the _getdents function.  */
 #undef HAVE__GETDENTS
 
+/* Define if you have the _llseek function.  */
+#undef HAVE__LLSEEK
+
 /* Define if you have the _lseek function.  */
 #undef HAVE__LSEEK
 
 /* Define if you have the _lstat function.  */
 #undef HAVE__LSTAT
+
+/* Define if you have the _lstat64 function.  */
+#undef HAVE__LSTAT64
 
 /* Define if you have the _open function.  */
 #undef HAVE__OPEN
@@ -270,6 +291,9 @@
 
 /* Define if you have the _stat function.  */
 #undef HAVE__STAT
+
+/* Define if you have the _stat64 function.  */
+#undef HAVE__STAT64
 
 /* Define if you have the _telldir function.  */
 #undef HAVE__TELLDIR
@@ -363,6 +387,9 @@
 
 /* Define if you have the innetgr function.  */
 #undef HAVE_INNETGR
+
+/* Define if you have the llseek function.  */
+#undef HAVE_LLSEEK
 
 /* Define if you have the lseek64 function.  */
 #undef HAVE_LSEEK64
