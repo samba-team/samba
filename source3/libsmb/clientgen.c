@@ -217,6 +217,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->nt_pipe_fnum = 0;
 
 	cli->initialised = 1;
+	cli->allocated = alloced_cli;
 
 	return cli;
 
@@ -238,6 +239,7 @@ shutdown a client structure
 ****************************************************************************/
 void cli_shutdown(struct cli_state *cli)
 {
+	BOOL allocated;
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
@@ -252,7 +254,11 @@ void cli_shutdown(struct cli_state *cli)
 #endif /* WITH_SSL */
 	if (cli->fd != -1) 
 		close(cli->fd);
-	memset(cli, 0, sizeof(*cli));
+	allocated = cli->allocated;
+	ZERO_STRUCTP(cli);
+	if (allocated) {
+		free(cli);
+	} 
 }
 
 
