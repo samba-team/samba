@@ -3225,15 +3225,7 @@ uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
 	size += (size_of_uint32(&p->data_len)*2) + p->data_len;
 	
 	size += size_of_uint32(&p->type);
-	
-#if 0
-	data_len = p->data_len;
-	/* account for alignment */
-	data_len += (data_len % 4);
-	/* add in 4 bytes for the offset */
-	size += data_len + 4;
-#endif
-	       
+		       
 	return size;
 }
 
@@ -6397,14 +6389,16 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	
 	}
 
-	/* loop #2 for writing the dynamically size objects */
+	/* loop #2 for writing the dynamically size objects
+	   while viewing oncversations between Win2k -> Win2k,
+	   4-byte alignment does not seem to matter here   --jerrty */
 	
 	for (i=0; i<ctr->size_of_array; i++) 
 	{
 	
 		if (!prs_unistr("valuename", ps, depth, &ctr->values[i].valuename))
 			return False;
-	
+		
 		if (!prs_uint8s(False, "data", ps, depth, ctr->values[i].data, ctr->values[i].data_len))
 			return False;
 	}
@@ -6430,6 +6424,9 @@ BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, 
 	if (!spoolss_io_printer_enum_values_ctr("", ps, &r_u->ctr, depth ))
 		return False;
 	
+	if(!prs_align(ps))
+		return False;
+
 	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
 		return False;
 		
