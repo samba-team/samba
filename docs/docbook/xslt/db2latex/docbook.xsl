@@ -101,9 +101,6 @@
 	<xsl:message> XSLT stylesheets DocBook - LaTeX 2e                                            </xsl:message>
 	<xsl:message> Reqs: LaTeX 2e installation common packages                                    </xsl:message>
 	<xsl:message>################################################################################</xsl:message>
-	<xsl:message> RELEASE : <xsl:value-of select="$VERSION"/>                                    </xsl:message>
-	<xsl:message> VERSION : <xsl:value-of select="$CVSVERSION"/>                                 </xsl:message>
-	<xsl:message>     TAG : <xsl:value-of select="$TAG"/>                                        </xsl:message>
 	<xsl:message>     WWW : http://db2latex.sourceforge.net                                      </xsl:message>
 	<xsl:message> SUMMARY : http://www.sourceforge.net/projects/db2latex                         </xsl:message>
 	<xsl:message>  AUTHOR : Ramon Casellas   casellas@infres.enst.fr                             </xsl:message>
