@@ -3152,33 +3152,28 @@ static BOOL can_rename(char *fname,int cnum)
 }
 
 /****************************************************************************
-  reply to a mv
+ The guts of the rename command, split out so it may be called by the NT SMB
+ code. 
 ****************************************************************************/
-int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int rename_internals(char *inbuf, char *outbuf, char *name, char *newname)
 {
-  int outsize = 0;
-  pstring name;
   int cnum;
   pstring directory;
-  pstring mask,newname;
+  pstring mask;
   pstring newname_last_component;
   char *p;
-  int count=0;
-  int error = ERRnoaccess;
   BOOL has_wild;
-  BOOL exists=False;
   BOOL bad_path1 = False;
   BOOL bad_path2 = False;
+  int count=0;
+  int error = ERRnoaccess;
+  BOOL exists=False;
+
+  cnum = SVAL(inbuf,smb_tid);
 
   *directory = *mask = 0;
 
-  cnum = SVAL(inbuf,smb_tid);
-  
-  pstrcpy(name,smb_buf(inbuf) + 1);
-  pstrcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
-   
-  DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
-   
   unix_convert(name,cnum,0,&bad_path1);
   unix_convert(newname,cnum,newname_last_component,&bad_path2);
 
@@ -3223,7 +3218,7 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
       pstrcpy(newname, tmpstr);
     }
   
-    DEBUG(3,("reply_mv : case_sensitive = %d, case_preserve = %d, short case preserve = %d, directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
+    DEBUG(3,("rename_internals: case_sensitive = %d, case_preserve = %d, short case preserve = %d, directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
             case_sensitive, case_preserve, short_case_preserve, directory, 
             newname, newname_last_component, is_short_name));
 
@@ -3249,21 +3244,22 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
       pstrcpy(newname_modified_last_component,p+1);
 
       if(strcsequal(newname_modified_last_component, 
-		    newname_last_component) == False) {
-	/*
-	 * Replace the modified last component with
-	 * the original.
-	 */
+                    newname_last_component) == False) {
+        /*
+         * Replace the modified last component with
+         * the original.
+         */
         pstrcpy(p+1, newname_last_component);
       }
     }
 
     if (resolve_wildcards(directory,newname) && 
-	can_rename(directory,cnum) && 
-	!file_exist(newname,NULL) &&
-	!sys_rename(directory,newname)) count++;
+                  can_rename(directory,cnum) && 
+                  !file_exist(newname,NULL) &&
+                  !sys_rename(directory,newname))
+      count++;
 
-    DEBUG(3,("reply_mv : %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
+    DEBUG(3,("rename_internals: %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
                          directory,newname));
 
     if (!count) exists = file_exist(directory,NULL);
@@ -3279,62 +3275,78 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
     if (check_name(directory,cnum))
       dirptr = OpenDir(cnum, directory, True);
 
-    if (dirptr)
-      {
-	error = ERRbadfile;
+    if (dirptr) {
+      error = ERRbadfile;
 
-	if (strequal(mask,"????????.???"))
-	  pstrcpy(mask,"*");
+      if (strequal(mask,"????????.???"))
+        pstrcpy(mask,"*");
 
-	while ((dname = ReadDirName(dirptr)))
-	  {
-	    pstring fname;
-	    pstrcpy(fname,dname);
+      while ((dname = ReadDirName(dirptr))) {
+        pstring fname;
+        pstrcpy(fname,dname);
 	    
-	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
+        if(!mask_match(fname, mask, case_sensitive, False))
+          continue;
 
-	    error = ERRnoaccess;
-	    slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
-	    if (!can_rename(fname,cnum)) {
-		    DEBUG(6,("rename %s refused\n", fname));
-		    continue;
-	    }
-	    pstrcpy(destname,newname);
+        error = ERRnoaccess;
+        slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
+        if (!can_rename(fname,cnum)) {
+          DEBUG(6,("rename %s refused\n", fname));
+          continue;
+        }
+        pstrcpy(destname,newname);
 
-	    if (!resolve_wildcards(fname,destname)) {
-		    DEBUG(6,("resolve_wildcards %s %s failed\n", 
-			     fname, destname));
-		    continue;
-	    }
+        if (!resolve_wildcards(fname,destname)) {
+          DEBUG(6,("resolve_wildcards %s %s failed\n", fname, destname));
+          continue;
+        }
 
-	    if (file_exist(destname,NULL)) {
-		    DEBUG(6,("file_exist %s\n", 
-			     destname));
-		    error = 183;
-		    continue;
-	    }
-	    if (!sys_rename(fname,destname)) count++;
-	    DEBUG(3,("reply_mv : doing rename on %s -> %s\n",fname,destname));
-	  }
-	CloseDir(dirptr);
+        if (file_exist(destname,NULL)) {
+          DEBUG(6,("file_exist %s\n", destname));
+          error = 183;
+          continue;
+        }
+        if (!sys_rename(fname,destname))
+          count++;
+        DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
       }
+      CloseDir(dirptr);
+    }
   }
-  
+
   if (count == 0) {
     if (exists)
       return(ERROR(ERRDOS,error));
-    else
-    {
-      if((errno == ENOENT) && (bad_path1 || bad_path2))
-      {
+    else {
+      if((errno == ENOENT) && (bad_path1 || bad_path2)) {
         unix_ERR_class = ERRDOS;
         unix_ERR_code = ERRbadpath;
       }
       return(UNIXERROR(ERRDOS,error));
     }
   }
-  
-  outsize = set_message(outbuf,0,0,True);
+
+  return 0;
+}
+
+/****************************************************************************
+ Reply to a mv.
+****************************************************************************/
+
+int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+{
+  int outsize = 0;
+  pstring name;
+  pstring newname;
+
+  pstrcpy(name,smb_buf(inbuf) + 1);
+  pstrcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
+   
+  DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
+
+  outsize = rename_internals(inbuf, outbuf, name, newname);
+  if(outsize == 0) 
+    outsize = set_message(outbuf,0,0,True);
   
   return(outsize);
 }
