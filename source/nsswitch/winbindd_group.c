@@ -271,7 +271,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
                         /* Create name */
 			slprintf(entry->name, sizeof(entry->name),
-				 "%s/%s", name_dom, name_user);
+				 "%s%s%s", name_dom, lp_winbind_separator(), name_user);
                         
                         /* Add to list */
 
@@ -562,7 +562,9 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
         return WINBINDD_ERROR;
     }
 
-    string_sub(group_name, "\\", "/", sizeof(fstring));
+    if (strcmp(lp_winbind_separator(),"\\")) {
+	    string_sub(group_name, "\\", lp_winbind_separator(), sizeof(fstring));
+    }
 
     if (!((name_type == SID_NAME_ALIAS) || (name_type == SID_NAME_DOM_GRP))) {
         DEBUG(1, ("from_gid: name '%s' is not a local or domain group: %d\n", 
@@ -716,7 +718,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
             /* Prepend domain to name */
 
 	    slprintf(domain_group_name, sizeof(domain_group_name),
-		     "%s/%s", ent->domain->name, group_name);
+		     "%s%s%s", ent->domain->name, lp_winbind_separator(), group_name);
    
             /* Get group entry from group name */
 

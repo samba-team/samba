@@ -303,7 +303,7 @@ static BOOL fetch_cache_entry(char *domain, char *cache_type, char *name, void *
 	data = tdb_fetch_by_string(cache_tdb, keystr);
     	if (!data.dptr) return False;
         
-        DEBUG(4, ("returning cached entry for %s/%s\n", domain, name));
+        DEBUG(4, ("returning cached entry for %s\\%s\n", domain, name));
 
         /* Copy found entry into buffer */        
         memcpy((char *)buf, data.dptr, len < data.dsize ? len : data.dsize);
