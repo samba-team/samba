@@ -490,14 +490,17 @@ sub Parse($)
     my($uuid_version) = "";
     my(@fns) = ();
 
-    foreach my $d (@$idl) {
+    my($d, $e);
+
+    foreach $d (@$idl) {
 
 	# Get data from interface definition
 
 	$module = $d->{NAME}, if $d->{TYPE} eq "INTERFACE";
 
 	if ($d->{TYPE} eq "MODULEHEADER") {
-	    $uuid = $d->{PROPERTIES}->{uuid};
+	    $uuid = $d->{PROPERTIES}->{uuid}, 
+ 	        if defined($d->{PROPERTIES}->{uuid});
 	    $uuid_version = $d->{PROPERTIES}->{version};
 	}
 
@@ -515,7 +518,7 @@ sub Parse($)
 
 		    # Register function fields (parameter names)
 
-		    foreach my $e (@{$d->{DATA}}) {
+		    foreach $e (@{$d->{DATA}}) {
 			AddField($e->{NAME}, $e->{TYPE});
 		    }
 		}
@@ -529,7 +532,7 @@ sub Parse($)
 		    # Register typedef fields (element names)
 
 		    if ($d->{DATA}->{TYPE} eq "STRUCT") {
-			foreach my $e (@{$d->{DATA}->{ELEMENTS}}) {
+			foreach $e (@{$d->{DATA}->{ELEMENTS}}) {
 			    AddField($e->{NAME}, $e->{TYPE});
 			}
 		    }
@@ -546,10 +549,10 @@ sub Parse($)
     $res .= EtherealFieldDefinitions();
     $res .= EtherealSubtreeDefinitions($module);
 
-    foreach my $d (@$idl) {
+    foreach $d (@$idl) {
 
 	if ($d->{TYPE} eq "INTERFACE") {
-	    foreach my $d (@{$d->{DATA}}) {
+	    foreach $d (@{$d->{DATA}}) {
 
 		# Generate function code fragments
 
@@ -565,10 +568,12 @@ sub Parse($)
 
     $res .= EtherealSubdissectorRegistration($module, \@fns);
 
-    $res .= EtherealUuidRegistration($module, $uuid, $uuid_version);
-    $res .= EtherealModuleRegistration($module,
-				       EtherealFieldInitialisation($module),
-				       EtherealSubtreeInitialisation());
+    if ($uuid ne "") {
+	$res .= EtherealUuidRegistration($module, $uuid, $uuid_version);
+	$res .= EtherealModuleRegistration
+	    ($module, EtherealFieldInitialisation($module),
+	     EtherealSubtreeInitialisation());
+    }
 
     return $res;
 }
