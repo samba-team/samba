@@ -1,3 +1,7 @@
+1999-04-11  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: don't run testit as a check
+
 Sat Apr 10 23:01:18 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* complete.c (rl_complete_filename): return if there were no

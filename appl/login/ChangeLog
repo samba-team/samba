@@ -1,3 +1,7 @@
+1999-04-11  Assar Westerlund  <assar@sics.se>
+
+	* login.c (main): use print_version
+
 Thu Apr  8 15:03:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* login.c: remove definition of KRB_VERIFY_USER et.al. (moved to

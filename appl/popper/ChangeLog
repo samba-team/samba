@@ -1,3 +1,7 @@
+1999-04-11  Assar Westerlund  <assar@sics.se>
+
+	* pop_debug.c (main): use print_version
+
 Thu Apr  8 15:07:11 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* pop_pass.c: remove definition of KRB_VERIFY_USER (moved to
