@@ -29,7 +29,21 @@ export PWD
 PS1='smbsh$ '
 export PS1
 
-LD_PRELOAD=$SMBW_LIBDIR/smbwrapper.so
-export LD_PRELOAD
+
+host_os=@HOST_OS@
+
+case "$host_os" in
+        *irix*)
+		_RLDN32_LIST=$SMBW_LIBDIR/smbwrapper.so:DEFAULT
+		_RLD_LIST=$SMBW_LIBDIR/smbwrapper.32.so:DEFAULT
+		export _RLDN32_LIST
+		export _RLD_LIST
+		;;
+	*) 
+		LD_PRELOAD=$SMBW_LIBDIR/smbwrapper.so
+		export LD_PRELOAD
+		;;
+esac
+
 
 exec ${SMBW_SHELL-${SHELL-/bin/sh}} ${1+"$@"}

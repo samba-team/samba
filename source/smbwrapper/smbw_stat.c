@@ -118,7 +118,7 @@ int smbw_fstat(int fd, struct stat *st)
 	struct smbw_file *file;
 	time_t c_time, a_time, m_time;
 	uint32 size;
-	int mode;
+	uint32 mode;
 
 	smbw_busy++;
 

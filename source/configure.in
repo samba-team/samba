@@ -8,7 +8,14 @@ AC_PROG_INSTALL
 AC_SUBST(SHELL)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
+AC_SUBST(HOST_OS)
+AC_SUBST(WRAP32)
+AC_SUBST(PICFLAG)
 AC_PROG_AWK
+
+
+PICFLAG="-fpic"
+HOST_OS="$host_os"
 
 AC_CANONICAL_SYSTEM
 case "$host_os" in
@@ -18,7 +25,10 @@ case "$host_os" in
                    LDSHFLAGS="-G";;
         *sunos*) AC_DEFINE(SUNOS4);;
         *irix*) AC_DEFINE(IRIX)
-                LDSHFLAGS="-shared";;
+                LDSHFLAGS="-shared"
+		WRAP32=smbwrapper/smbwrapper.32.so
+		PICFLAG="-KPIC"
+		;;
         *aix*) AC_DEFINE(AIX);;
         *hpux*) AC_DEFINE(HPUX);;
         *qnx*) AC_DEFINE(QNX);;

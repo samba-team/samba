@@ -387,7 +387,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 size_t cli_write(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
-		  int *attr, uint32 *size, 
+		  uint32 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time);
 BOOL cli_getatr(struct cli_state *cli, char *fname, 
 		uint32 *attr, size_t *size, time_t *t);
@@ -2276,6 +2276,11 @@ BOOL unbecome_user(void );
 void become_root(BOOL save_dir) ;
 void unbecome_root(BOOL restore_dir);
 
+/*The following definitions come from  smbwrapper/realcalls.c  */
+
+int real_utime(const char *name, struct utimbuf *buf);
+int real_utimes(const char *name, struct timeval tv[2]);
+
 /*The following definitions come from  smbwrapper/smbw.c  */
 
 void smbw_init(void);
@@ -2288,8 +2293,10 @@ int smbw_errno(struct cli_state *c);
 struct smbw_server *smbw_server(char *server, char *share);
 struct smbw_file *smbw_file(int fd);
 int smbw_open(const char *fname, int flags, mode_t mode);
+ssize_t smbw_pread(int fd, void *buf, size_t count, off_t ofs);
 ssize_t smbw_read(int fd, void *buf, size_t count);
 ssize_t smbw_write(int fd, void *buf, size_t count);
+ssize_t smbw_pwrite(int fd, void *buf, size_t count, off_t ofs);
 int smbw_close(int fd);
 int smbw_fcntl(int fd, int cmd, long arg);
 int smbw_access(const char *name, int mode);
@@ -2297,6 +2304,7 @@ int smbw_readlink(const char *path, char *buf, size_t bufsize);
 int smbw_unlink(const char *fname);
 int smbw_rename(const char *oldname, const char *newname);
 int smbw_utime(const char *fname, void *buf);
+int smbw_utimes(const char *fname, void *buf);
 int smbw_chown(const char *fname, uid_t owner, gid_t group);
 int smbw_chmod(const char *fname, mode_t newmode);
 off_t smbw_lseek(int fd, off_t offset, int whence);

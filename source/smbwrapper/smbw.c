@@ -500,7 +500,7 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	fstring server, share;
 	pstring path;
 	struct smbw_server *srv=NULL;
-	int eno, fd = -1;
+	int eno=0, fd = -1;
 	struct smbw_file *file=NULL;
 
 	smbw_init();
@@ -529,6 +529,7 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	}
 	if (fd == -1) {
 		/* it might be a directory. Maybe we should use chkpath? */
+		eno = smbw_error(&srv->cli);
 		fd = smbw_dir_open(fname);
 		smbw_busy--;
 		return fd;
@@ -1072,7 +1073,7 @@ a wrapper for lseek()
 off_t smbw_lseek(int fd, off_t offset, int whence)
 {
 	struct smbw_file *file;
-	uint32 size;
+	size_t size;
 
 	smbw_busy++;
 
