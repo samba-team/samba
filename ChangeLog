@@ -1,5 +1,39 @@
 2004-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c: add set_param for RC2
+	
+	* lib/krb5/pkinit.c: use krb5_oid_to_enctype and remove all oids
+	that are no longer needed
+
+	* kdc/pkinit.c: use krb5_enctype_to_oid
+	
+	* lib/krb5/crypto.c (krb5_oid_to_enctype): make sure oid exists
+	before we compare with it
+
+	* lib/krb5/crypto.c (krb5_crypto_get_params): check ivec length
+	before returning it add aes-oids
+	
+	* lib/krb5/crypto.c: add krb5_enctype_to_oid and
+	krb5_oid_to_enctype
+
+	* kdc/pkinit.c: use krb5_crypto_set_params
+	
+	* lib/krb5/crypto.c: add krb5_crypto_set_params, add aes-NNN-cbc-none
+
+	* lib/krb5/krb5.h: add KEYTYPE_AES192
+	
+	* lib/krb5/pkinit.c: use krb5_crypto_get_params to implement
+	kcrypto RC2 support
+
+	* lib/asn1/k5.asn1: add CMS symmetrical parameters here, enctype
+	rc2-cbc XXX RC2CBCParameter is wrong because the compiler is
+	broken
+
+	* lib/krb5/krb5.h: add KEYTYPE_RC2
+	
+	* lib/krb5/crypto.c: add partial CMS parameter handling, this is
+	needed for RC2
+	
 	* lib/asn1/der_cmp.c: add heim_oid_cmp and heim_octet_string_cmp
 	
 	* lib/asn1/Makefile.am (libasn1_la_SOURCES) += der_cmp.c
@@ -44,6 +78,8 @@
 	of second ticket is > 0
 
 2004-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/pkinit.c: use the right oid for pkauthdata
 	
 	* lib/krb5/pkinit.c: always send both win2k compat version and the
 	ietf draft one, this is possible since microsoft use
