@@ -183,13 +183,15 @@ info@eram.esi.com.au            Voice:+61-2-9063377
 ------------------------------------------------------------------------------
 CHANTILLY - USA
 
-Intelligent Decisions, Inc.
-ATTN: Richard Bullington
-14121 Parke Long Ct. #104
-Chantilly, VA 22021
+Richard Bullington
+ObjectLinks, Inc.
+11166 Main Street
+Suite 407
+Fairfax, VA 22030
 U.S.A.
-(703) 803-8070
-rbullington@intdec.com
+703-591-9797
+rbulling@objectlinks.com
+http://www.objectlinks.com/
 
 Samba experience: Linux, DEC ULTRIX <=> WFWG 3.11, Windows NT 3.5
 Specializing in World Wide Web related UNIX-to-PC connectivity.
