@@ -142,6 +142,8 @@ command line.
 31). Added more checking into testparm
 32). NetBench simulator added to smbtorture by Andrew.
 33). Fixed NIS+ option compile (was broken in 2.0.3).
+34). Recursive smbclient directory listing fix. Patch from E. Jay Berkenbilt
+(ejb@ql.org)
 
 Bugfixes added since 2.0.2
 --------------------------

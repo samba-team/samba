@@ -327,7 +327,7 @@ static void display_finfo(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
-		DEBUG(0,("  %-30s%7.7s%8.0f  %s",
+		DEBUG(0,("  %-30s%7.7s %8.0f  %s",
 			 CNV_LANG(finfo->name),
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
@@ -349,8 +349,125 @@ static void do_du(file_info *finfo)
 
 static BOOL do_list_recurse;
 static BOOL do_list_dirs;
-static int do_list_attr;
+static char *do_list_queue = 0;
+static long do_list_queue_size = 0;
+static long do_list_queue_start = 0;
+static long do_list_queue_end = 0;
 static void (*do_list_fn)(file_info *);
+
+/****************************************************************************
+functions for do_list_queue
+  ****************************************************************************/
+
+/*
+ * The do_list_queue is a NUL-separated list of strings stored in a
+ * char*.  Since this is a FIFO, we keep track of the beginning and
+ * ending locations of the data in the queue.  When we overflow, we
+ * double the size of the char*.  When the start of the data passes
+ * the midpoint, we move everything back.  This is logically more
+ * complex than a linked list, but easier from a memory management
+ * angle.  In any memory error condition, do_list_queue is reset.
+ * Functions check to ensure that do_list_queue is non-NULL before
+ * accessing it.
+ */
+static void reset_do_list_queue(void)
+{
+	if (do_list_queue)
+	{
+		free(do_list_queue);
+	}
+	do_list_queue = 0;
+	do_list_queue_size = 0;
+	do_list_queue_start = 0;
+	do_list_queue_end = 0;
+}
+
+static void init_do_list_queue(void)
+{
+	reset_do_list_queue();
+	do_list_queue_size = 1024;
+	do_list_queue = malloc(do_list_queue_size);
+	if (do_list_queue == 0) { 
+		DEBUG(0,("malloc fail for size %d\n",
+			 (int)do_list_queue_size));
+		reset_do_list_queue();
+	}
+	memset(do_list_queue, 0, do_list_queue_size);
+}
+
+static void adjust_do_list_queue(void)
+{
+	/*
+	 * If the starting point of the queue is more than half way through,
+	 * move everything toward the beginning.
+	 */
+	if (do_list_queue && (do_list_queue_start == do_list_queue_end))
+	{
+		DEBUG(4,("do_list_queue is empty\n"));
+		do_list_queue_start = do_list_queue_end = 0;
+		*do_list_queue = '\0';
+	}
+	else if (do_list_queue_start > (do_list_queue_size / 2))
+	{
+		DEBUG(4,("sliding do_list_queue backward\n"));
+		memmove(do_list_queue,
+			do_list_queue + do_list_queue_start,
+			do_list_queue_end - do_list_queue_start);
+		do_list_queue_end -= do_list_queue_start;
+		do_list_queue_start = 0;
+	}
+	   
+}
+
+static void add_to_do_list_queue(const char* entry)
+{
+	long new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
+	while (new_end > do_list_queue_size)
+	{
+		do_list_queue_size *= 2;
+		DEBUG(4,("enlarging do_list_queue to %d\n",
+			 (int)do_list_queue_size));
+		do_list_queue = Realloc(do_list_queue, do_list_queue_size);
+		if (! do_list_queue) {
+			DEBUG(0,("failure enlarging do_list_queue to %d bytes\n",
+				 (int)do_list_queue_size));
+			reset_do_list_queue();
+		}
+		else
+		{
+			memset(do_list_queue + do_list_queue_size / 2,
+			       0, do_list_queue_size / 2);
+		}
+	}
+	if (do_list_queue)
+	{
+		pstrcpy(do_list_queue + do_list_queue_end, entry);
+		do_list_queue_end = new_end;
+		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
+			 entry, (int)do_list_queue_start, (int)do_list_queue_end));
+	}
+}
+
+static char *do_list_queue_head(void)
+{
+	return do_list_queue + do_list_queue_start;
+}
+
+static void remove_do_list_queue_head(void)
+{
+	if (do_list_queue_end > do_list_queue_start)
+	{
+		do_list_queue_start += strlen(do_list_queue_head()) + 1;
+		adjust_do_list_queue();
+		DEBUG(4,("removed head of do_list_queue (start=%d, end=%d)\n",
+			 (int)do_list_queue_start, (int)do_list_queue_end));
+	}
+}
+
+static int do_list_queue_empty(void)
+{
+	return (! (do_list_queue && *do_list_queue));
+}
 
 /****************************************************************************
 a helper for do_list
@@ -372,11 +489,8 @@ static void do_list_helper(file_info *f, const char *mask)
 			if (!p) return;
 			p[1] = 0;
 			pstrcat(mask2, f->name);
-			if (do_list_fn == display_finfo) {
-				DEBUG(0,("\n%s\n",CNV_LANG(mask2)));
-			}
 			pstrcat(mask2,"\\*");
-			do_list(mask2, do_list_attr, do_list_fn, True, True);
+			add_to_do_list_queue(mask2);
 		}
 		return;
 	}
@@ -392,12 +506,57 @@ a wrapper around cli_list that adds recursion
   ****************************************************************************/
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
+	static int in_do_list = 0;
+
+	if (in_do_list && rec)
+	{
+		fprintf(stderr, "INTERNAL ERROR: do_list called recursively when the recursive flag is true\n");
+		exit(1);
+	}
+
+	in_do_list = 1;
+
 	do_list_recurse = rec;
 	do_list_dirs = dirs;
 	do_list_fn = fn;
-	do_list_attr = attribute;
 
-	cli_list(cli, mask, attribute, do_list_helper);
+	if (rec)
+	{
+		init_do_list_queue();
+		add_to_do_list_queue(mask);
+		
+		while (! do_list_queue_empty())
+		{
+			cli_list(cli, do_list_queue_head(), attribute,
+				 do_list_helper);
+			remove_do_list_queue_head();
+			if ((! do_list_queue_empty()) && (fn == display_finfo))
+			{
+				char* next_file = do_list_queue_head();
+				char* save_ch = 0;
+				if ((strlen(next_file) >= 2) &&
+				    (next_file[strlen(next_file) - 1] == '*') &&
+				    (next_file[strlen(next_file) - 2] == '\\'))
+				{
+					save_ch = next_file +
+						strlen(next_file) - 2;
+					*save_ch = '\0';
+				}
+				DEBUG(0,("\n%s\n",CNV_LANG(next_file)));
+				if (save_ch)
+				{
+					*save_ch = '\\';
+				}
+			}
+		}
+	}
+	else
+	{
+		cli_list(cli, mask, attribute, do_list_helper);
+	}
+
+	in_do_list = 0;
+	reset_do_list_queue();
 }
 
 /****************************************************************************
