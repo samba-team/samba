@@ -2228,7 +2228,7 @@ int tn(int argc, char **argv)
 	srp = 0;
 	temp = sourceroute(hostp, &srp, &srlen);
 	if (temp == 0) {
-	    herror(srp);
+	    fprintf (stderr, "%s: %s\n", srp ? srp : "", hstrerror(h_errno));
 	    setuid(getuid());
 	    return 0;
 	} else if (temp == -1) {
@@ -2261,7 +2261,8 @@ int tn(int argc, char **argv)
 		_hostname[sizeof(_hostname)-1] = '\0';
 		hostname = _hostname;
 	    } else {
-		herror(hostp);
+	        fprintf (stderr, "%s: %s\n", hostp ? hostp : "",
+			 hstrerror(h_errno));
 		setuid(getuid());
 		return 0;
 	    }
