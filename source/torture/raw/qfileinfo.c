@@ -655,7 +655,9 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 #define NAME_PATH_CHECK(sname, stype, field) do { \
 	s1 = fname_find(sname); s2 = fnum_find(sname); \
-	VAL_EQUAL(stype, field, stype, field); \
+        if (s1 && s2) { \
+		VAL_EQUAL(stype, field, stype, field); \
+	} \
 } while (0)
 
 	NAME_PATH_CHECK("INTERNAL_INFORMATION", internal_information, device);
