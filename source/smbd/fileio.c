@@ -533,7 +533,7 @@ void delete_write_cache(files_struct *fsp)
   SMB_ASSERT(wcp->data_size == 0);
 
   SAFE_FREE(wcp->data);
-  SAFE_FREE(wcp);
+  SAFE_FREE(fsp->wcp);
 
   DEBUG(10,("delete_write_cache: File %s deleted write cache\n", fsp->fsp_name ));
 
