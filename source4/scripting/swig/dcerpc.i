@@ -34,6 +34,7 @@
 #endif
 
 #include "includes.h"
+#include "dynconfig.h"
 
 #undef strcpy
 
