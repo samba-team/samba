@@ -6154,11 +6154,6 @@ uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 	 * ChangeID must always be set
 	 */
 	 
-	if (!get_printer_snum(p,handle, &snum)) {
-                result = ERROR_INVALID_HANDLE;
-		goto done;
-	}
-
 	if ((result = get_a_printer(&printer, 2, lp_servicename(snum))) != NT_STATUS_NO_PROBLEMO)
 		goto done;
 	
@@ -6216,11 +6211,6 @@ uint32 _spoolss_deleteform( pipes_struct *p, POLICY_HND *handle, UNISTR2 *form_n
 	 * ChangeID must always be set
 	 */
 	 
-	if (!get_printer_snum(p,handle, &snum)) {
-                result = ERROR_INVALID_HANDLE;
-		goto done;
-	}
-
 	if ((result = get_a_printer(&printer, 2, lp_servicename(snum))) != NT_STATUS_NO_PROBLEMO)
 		goto done;
 	
@@ -6267,6 +6257,7 @@ uint32 _spoolss_setform( pipes_struct *p, POLICY_HND *handle,
 		DEBUG(2,("_spoolss_setform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
+
 	/* can't set if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
 		return ERROR_INVALID_PARAMETER;
@@ -6280,11 +6271,6 @@ uint32 _spoolss_setform( pipes_struct *p, POLICY_HND *handle,
 	 * ChangeID must always be set
 	 */
 	 
-	if (!get_printer_snum(p,handle, &snum)) {
-                result = ERROR_INVALID_HANDLE;
-		goto done;
-	}
-
 	if ((result = get_a_printer(&printer, 2, lp_servicename(snum))) != NT_STATUS_NO_PROBLEMO)
 		goto done;
 	
