@@ -984,14 +984,14 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 #### Keep this as a shell script for future re-use
 			
 # First assign well known groups
-net groupmap modify ntgroup="Domain Admins" unixgroup=ntadmins rid=512
-net groupmap modify ntgroup="Domain Users"  unixgroup=users    rid=513
-net groupmap modify ntgroup="Domain Guests" unixgroup=nobody   rid=514
+net groupmap modify ntgroup="Domain Admins" unixgroup=ntadmins
+net groupmap modify ntgroup="Domain Users"  unixgroup=users
+net groupmap modify ntgroup="Domain Guests" unixgroup=nobody
 
 # Now for our added Domain Groups
-net groupmap add ntgroup="Designers" unixgroup=designers type=d rid=1112
-net groupmap add ntgroup="Engineers" unixgroup=engineers type=d rid=1113
-net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d rid=1114
+net groupmap add ntgroup="Designers" unixgroup=designers type=d
+net groupmap add ntgroup="Engineers" unixgroup=engineers type=d
+net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 </programlisting>
 </smbfile>
 			</para></step>
