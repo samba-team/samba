@@ -39,13 +39,19 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 /* Map generic permissions to printer object specific permissions */
 
-struct generic_mapping printer_generic_mapping = {
+GENERIC_MAPPING printer_generic_mapping = {
 	PRINTER_READ,
 	PRINTER_WRITE,
 	PRINTER_EXECUTE,
 	PRINTER_ALL_ACCESS
 };
 
+STANDARD_MAPPING printer_std_mapping = {
+	PRINTER_READ,
+	PRINTER_WRITE,
+	PRINTER_EXECUTE,
+	PRINTER_ALL_ACCESS
+};
 
 #define FORM_USER    0	/* Forms defined by user... unclear how this works */
 #define FORM_BUILTIN 1  /* Forms defined (built-in) in the spooler. */

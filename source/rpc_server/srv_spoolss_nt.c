@@ -95,6 +95,9 @@ static ubi_dlList counter_list;
 static struct cli_state cli;
 static uint32 smb_connections=0;
 
+/* in printing/nt_printing.c */
+extern STANDARD_MAPPING printer_std_mapping;
+
 #define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
 
@@ -744,6 +747,8 @@ Can't find printer handle we created for priunter %s\n", name ));
 
 		if (!get_printer_snum(p,handle, &snum))
 			return ERROR_INVALID_HANDLE;
+
+		se_map_standard(&printer_default->access_required, &printer_std_mapping);
 
 		/* map an empty access mask to the minimum access mask */
 		if (printer_default->access_required == 0x0)

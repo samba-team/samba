@@ -166,4 +166,11 @@ typedef struct generic_mapping {
 	uint32 generic_all;
 } GENERIC_MAPPING;
 
+typedef struct standard_mapping {
+	uint32 std_read;
+	uint32 std_write;
+	uint32 std_execute;
+	uint32 std_all;
+} STANDARD_MAPPING;
+
 #endif /* _RPC_SECDES_H */
