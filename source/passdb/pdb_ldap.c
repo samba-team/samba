@@ -2263,7 +2263,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	struct smbldap_state *conn = ldap_state->smbldap_state;
 	pstring filter;
 	char *attrs[] = { "gidNumber", "sambaSID", NULL };
-	char *escape_name = escape_ldap_string_alloc(username);
+	char *escape_name;
 	int rc;
 	LDAPMessage *msg = NULL;
 	LDAPMessage *entry;
@@ -2278,6 +2278,8 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	*sids = NULL;
 	num_sids = 0;
+
+	escape_name = escape_ldap_string_alloc(username);
 
 	if (escape_name == NULL)
 		return NT_STATUS_UNSUCCESSFUL;
