@@ -291,7 +291,6 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   char *rparam = NULL;
   char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
-  pstring dos_new_password;
 
   if (strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
@@ -317,10 +316,13 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    */
   E_deshash(old_password, old_pw_hash);
 
-  clistr_push(cli, dos_new_password, new_password, sizeof(dos_new_password), STR_TERMINATE|STR_ASCII);
-
-  if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
-    return False;
+  encode_pw_buffer(data, new_password, STR_ASCII);
+  
+#ifdef DEBUG_PASSWORD
+  DEBUG(100,("make_oem_passwd_hash\n"));
+  dump_data(100, data, 516);
+#endif
+  SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
 
   /* 
    * Now place the old password hash in the data.

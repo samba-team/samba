@@ -6954,7 +6954,7 @@ BOOL samr_io_r_get_dom_pwinfo(const char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 make a SAMR_ENC_PASSWD structure.
 ********************************************************************/
 
-void init_enc_passwd(SAMR_ENC_PASSWD * pwd, char pass[512])
+void init_enc_passwd(SAMR_ENC_PASSWD * pwd, const char pass[512])
 {
 	ZERO_STRUCTP(pwd);
 
@@ -6997,7 +6997,7 @@ BOOL samr_io_enc_passwd(const char *desc, SAMR_ENC_PASSWD * pwd,
 inits a SAMR_ENC_HASH structure.
 ********************************************************************/
 
-void init_enc_hash(SAMR_ENC_HASH * hsh, uchar hash[16])
+void init_enc_hash(SAMR_ENC_HASH * hsh, const uchar hash[16])
 {
 	ZERO_STRUCTP(hsh);
 
@@ -7040,11 +7040,11 @@ inits a SAMR_R_GET_DOM_PWINFO structure.
 ********************************************************************/
 
 void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER * q_u,
-				char *dest_host, char *user_name,
-				char nt_newpass[516],
-				uchar nt_oldhash[16],
-				char lm_newpass[516],
-				uchar lm_oldhash[16])
+				const char *dest_host, const char *user_name,
+				const char nt_newpass[516],
+				const uchar nt_oldhash[16],
+				const char lm_newpass[516],
+				const uchar lm_oldhash[16])
 {
 	DEBUG(5, ("init_samr_q_chgpasswd_user\n"));
 
