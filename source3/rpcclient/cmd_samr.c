@@ -170,6 +170,13 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Unknown 6:\t0x%x\n", info2->unknown_6);
 }
 
+static void display_sam_unk_info_12(SAM_UNK_INFO_12 *info12)
+{
+	printf("Bad password lockout duration:               %s\n", display_time(info12->duration));
+	printf("Reset Lockout after:                         %s\n", display_time(info12->reset_count));
+	printf("Lockout after bad attempts:                  %d\n", info12->bad_attempt_lockout);
+}
+
 static void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 {
 	fstring tmp;
@@ -1122,6 +1129,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 		break;
 	case 2:
 		display_sam_unk_info_2(&ctr.info.inf2);
+		break;
+	case 12:
+		display_sam_unk_info_12(&ctr.info.inf12);
 		break;
 	default:
 		printf("cannot display domain info for switch value %d\n",
