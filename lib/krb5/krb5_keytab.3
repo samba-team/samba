@@ -343,6 +343,8 @@ pointed to by
 .Fa cursor
 and advance the
 .Fa cursor .
+On success the returne entry must be freed with
+.Fn krb5_kt_free_entry .
 Returns 0 or an error.
 .Pp
 .Fn krb5_kt_end_seq_get
@@ -358,6 +360,8 @@ into
 .Fa entry
 from the keytab
 .Fa id .
+On success the returne entry must be freed with
+.Fn krb5_kt_free_entry .
 Returns 0 or an error.
 .Pp
 .Fn krb5_kt_read_service_key
@@ -369,6 +373,8 @@ from the keytab in
 .Fa keyprocarg
 (the default if == NULL) into
 .Fa *key .
+On success the returned key must be freed with
+.Fa krb5_free_keyblock .
 Returns 0 or an error.
 .Pp
 .Fn krb5_kt_remove_entry
