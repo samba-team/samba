@@ -1630,4 +1630,204 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Set job */
+
+WERROR cli_spoolss_setjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  POLICY_HND *hnd, uint32 jobid, uint32 level, 
+			  uint32 command)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETJOB q;
+	SPOOL_R_SETJOB r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setjob(&q, hnd, jobid, level, command);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setjob("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETJOB, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setjob("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Get job */
+
+WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  uint32 offered, uint32 *needed,
+			  POLICY_HND *hnd, uint32 jobid, uint32 level,
+			  JOB_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETJOB q;
+	SPOOL_R_GETJOB r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getjob(&q, hnd, jobid, level, &buffer, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getjob("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETJOB, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getjob("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	switch(level) {
+	case 1:
+		decode_jobs_1(mem_ctx, r.buffer, 1, &ctr->job.job_info_1);
+		break;
+	case 2:
+		decode_jobs_2(mem_ctx, r.buffer, 1, &ctr->job.job_info_2);
+		break;
+	default:
+		DEBUG(3, ("unsupported info level %d", level));
+		break;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Startpageprinter */
+
+WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_STARTPAGEPRINTER q;
+	SPOOL_R_STARTPAGEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_startpageprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_startpageprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_STARTPAGEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_startpageprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Endpageprinter */
+
+WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENDPAGEPRINTER q;
+	SPOOL_R_ENDPAGEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_endpageprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_endpageprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENDPAGEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_endpageprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /** @} **/

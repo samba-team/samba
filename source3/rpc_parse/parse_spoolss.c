@@ -7016,3 +7016,63 @@ BOOL make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle,
 
 	return True;
 }
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_setjob(SPOOL_Q_SETJOB *q_u, POLICY_HND *handle, 
+			   uint32 jobid, uint32 level, uint32 command)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	q_u->jobid = jobid;
+        q_u->level = level;
+
+	/* Hmm - the SPOOL_Q_SETJOB structure has a JOB_INFO ctr in it but
+	   the server side code has it marked as unused. */
+
+        q_u->command = command;
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_getjob(SPOOL_Q_GETJOB *q_u, POLICY_HND *handle, 
+			   uint32 jobid, uint32 level, NEW_BUFFER *buffer,
+			   uint32 offered)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+        q_u->jobid = jobid;
+        q_u->level = level;
+        q_u->buffer = buffer;
+        q_u->offered = offered;
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, 
+				     POLICY_HND *handle)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, 
+				   POLICY_HND *handle)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	return True;
+}
