@@ -1,13 +1,13 @@
                  ================================
-                 Release Notes for Samba 3.0.2rc2
-                         January XX, 2004
+                 Release Notes for Samba 3.0.3pre1
+                         February XX, 2004
                  ================================
 
-This is a release candidate snapshot of the Samba 3.0.2 code 
-base and should be considered for testing only.  A release 
-candidate (RC) means that we are close to the final, stable 
-release and in provided for Quality Assurance (QA) purposes.  
-This release is *not* intended for production servers.  Use 
+This is a release candidate snapshot of the Samba 3.0.2 code
+base and should be considered for testing only.  A release
+candidate (RC) means that we are close to the final, stable
+release and in provided for Quality Assurance (QA) purposes.
+This release is *not* intended for production servers.  Use
 at your own risk.
 
 There have been several bug fixes since the 3.0.1 release that
@@ -23,43 +23,43 @@ Common bugs fixed in this preview release include:
 ######################################################################
 Changes
 #######
-Changes since 3.0.2rc1
------------------------
+Changes since 3.0.2
+-------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details.  The list of changes per contributor are as follows:
 
 o   Jeremy Allison <jra@samba.org>
-    
-       
+
+
 o   Andrew Bartlet <abartlet@samba.org>
 
-    
+
 o   Alexander Bokovoy <ab@samba.org>
-      
-      
+
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Fix server connection code in rpcclient.
 
 
 o   Volker Lendecke <vl@samba.org>
-      
-      
+
+
 o   Herb Lewis <herb@samba.org>
-    
-    
+
+
+o   Jianliang Lu <j.lu@tiesse.com>
+
+
 o   Jim McDonough <jmcd@samba.org>
 
-
 o   Stefan Metzmacher <metze@samba.org>
-    * Add SIGABRT to fault handling
-      so we now got a backtrace, if we crash
-      in libldap with SIGABRT    
+
 
 o   Tim Potter <tpot@samba.org>
 
-    
+
 o   Jelmer Vernooij <jelmer@samba.org>
+
 
 
 Changes since 3.0.2pre1
@@ -68,8 +68,8 @@ Changes since 3.0.2pre1
 o   Jeremy Allison <jra@samba.org>
     * Revert change that broke Exchange clear text samlogons.
     * Fix gcc 3.4 warning in MS-DFS code.
-    
-       
+
+
 o   Andrew Bartlet <abartlet@samba.org>
     * Fix segfault when 'security = ads' but no realm is defined.
     * BUG 722: Allow winbindd to map machine accounts to uids.
@@ -79,17 +79,17 @@ o   Andrew Bartlet <abartlet@samba.org>
     * Increase separation between DNS queries for hosts and queries
       for AD domain controllers.
 
-    
+
 o   Justin Baugh <justin.baugh@request.com>
-    * BUG 948: Implement missing functions required for FreeBSD 
-      nss_winbind support. 
-      
-      
+    * BUG 948: Implement missing functions required for FreeBSD
+      nss_winbind support.
+
+
 o   Alexander Bokovoy <ab@samba.org>
-    * BUG 922: Make sure enable fast path for strlower_m() and 
+    * BUG 922: Make sure enable fast path for strlower_m() and
       strupper_m().
-      
-      
+
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix several warnings reported by the SUN Forte C compiler.
     * Fully control DNS queries for AD DC's using 'name resolve order'.
@@ -176,15 +176,15 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 815: Workaround NT4 bug to support plaintext
       password logins and UNICODE.
 
-    
+
 o   Petri Asikainen <paca@sci.fi>
-    * BUG 330, 387:Fix single valued attribute updates when 
+    * BUG 330, 387:Fix single valued attribute updates when
       working with Novell NDS.
-    
-       
+
+
 o   Andrew Bartlet <abartlet@samba.org>
     * Correctly handle per-pipe NTLMSSP inside a NULL session.
-    * Fix segfault in gencache 
+    * Fix segfault in gencache
     * Fix early free() of encrypted_session_key.
     * Change DC lookup routines to more carefully separate
       DNS names (realms) from NetBIOS domain names.
