@@ -105,6 +105,37 @@ if test "$ac_cv_lib_pam_pam_authenticate" = "yes"; then
 fi])
 fi
 
+# The following test taken from the cvs sources
+# If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
+# The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
+# libsocket.so which has a bad implementation of gethostbyname (it
+# only looks in /etc/hosts), so we only look for -lsocket if we need
+# it.
+AC_CHECK_FUNC(connect, :, 
+[case "$LIBS" in
+*-lnsl*) ;;
+*) AC_CHECK_LIB(nsl_s, printf) ;;
+esac
+case "$LIBS" in
+*-lnsl*) ;;
+*) AC_CHECK_LIB(nsl, printf) ;;
+esac
+case "$LIBS" in
+*-lsocket*) ;;
+*) AC_CHECK_LIB(socket, connect) ;;
+esac
+case "$LIBS" in
+*-linet*) ;;
+*) AC_CHECK_LIB(inet, connect) ;;
+esac
+dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
+dnl has been cached.
+if test "$ac_cv_lib_socket_connect" = "yes" || 
+   test "$ac_cv_lib_inet_connect" = "yes"; then
+  ac_cv_func_connect=yes
+  AC_DEFINE(HAVE_CONNECT)
+fi])
+
 
 AC_CHECK_FUNCS(waitpid getcwd strdup strerror chown chmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl)
@@ -190,37 +221,6 @@ echo $ac_n "checking for ftruncate extend ... $ac_c"
 AC_TRY_RUN([#include "tests/ftruncate.c"],
            echo yes;AC_DEFINE(HAVE_FTRUNCATE_EXTEND), 
 	   echo no)
-
-# The following test taken from the cvs sources
-# If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
-# The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
-# libsocket.so which has a bad implementation of gethostbyname (it
-# only looks in /etc/hosts), so we only look for -lsocket if we need
-# it.
-AC_CHECK_FUNC(connect, :, 
-[case "$LIBS" in
-*-lnsl*) ;;
-*) AC_CHECK_LIB(nsl_s, printf) ;;
-esac
-case "$LIBS" in
-*-lnsl*) ;;
-*) AC_CHECK_LIB(nsl, printf) ;;
-esac
-case "$LIBS" in
-*-lsocket*) ;;
-*) AC_CHECK_LIB(socket, connect) ;;
-esac
-case "$LIBS" in
-*-linet*) ;;
-*) AC_CHECK_LIB(inet, connect) ;;
-esac
-dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
-dnl has been cached.
-if test "$ac_cv_lib_socket_connect" = "yes" || 
-   test "$ac_cv_lib_inet_connect" = "yes"; then
-  ac_cv_func_connect=yes
-  AC_DEFINE(HAVE_CONNECT)
-fi])
 
 echo $ac_n "checking for broken getgroups ... $ac_c"
 AC_TRY_RUN([#include "tests/getgroups.c"],
