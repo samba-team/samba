@@ -80,6 +80,21 @@ static void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	memset(user->private.hours, 0xff, user->private.hours_len); /* available at all hours */
 	user->private.unknown_5 = 0x00000000; /* don't know */
 	user->private.unknown_6 = 0x000004ec; /* don't know */
+
+	/* Some parts of samba strlen their pdb_get...() returns, 
+	   so this keeps the interface unchanged for now. */
+	   
+	user->private.username = "";
+	user->private.domain = "";
+	user->private.nt_username = "";
+	user->private.full_name = "";
+	user->private.home_dir = "";
+	user->private.logon_script = "";
+	user->private.profile_path = "";
+	user->private.acct_desc = "";
+	user->private.workstations = "";
+	user->private.unknown_str = "";
+	user->private.munged_dial = "";
 }	
 
 static void destroy_pdb_talloc(SAM_ACCOUNT **user) 
