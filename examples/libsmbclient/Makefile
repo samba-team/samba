@@ -12,6 +12,10 @@ testsmbc: testsmbc.o
 	@echo Linking testsmbc
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lsmbclient
 
+testsmbc-static: testsmbc.o 
+	@echo Linking testsmbc
+	@$(CC) $(CFLAGS) -static $(LDFLAGS) -o $@ $< -lsmbclient -ldl -lnsl
+
 tree: tree.o
 	@echo Linking tree
 	@$(CC) `gtk-config --cflags` $(CFLAGS) $(LDFLAGS) -o $@ `gtk-config --libs` -lsmbclient $<
