@@ -32,7 +32,7 @@ extern int DEBUGLEVEL;
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
 extern pstring global_myname;
-extern DOM_SID global_machine_sid;
+extern DOM_SID global_sam_sid;
 
 /*************************************************************************
  make_net_r_req_chal:
@@ -790,7 +790,7 @@ static void api_net_sam_logon( uint16 vuid,
                           my_name     , /* char *logon_srv */
                           my_workgroup, /* char *logon_dom */
 
-                          &global_machine_sid,     /* DOM_SID *dom_sid */
+                          &global_sam_sid,     /* DOM_SID *dom_sid */
                           NULL); /* char *other_sids */
     }
     else

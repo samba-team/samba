@@ -228,12 +228,12 @@ void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void make_samr_q_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
+void make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value)
 {
 	if (q_u == NULL) return;
 
-	DEBUG(5,("samr_make_q_unknown_8\n"));
+	DEBUG(5,("samr_make_q_query_dom_info\n"));
 
 	memcpy(&q_u->domain_pol, domain_pol, sizeof(q_u->domain_pol));
 	q_u->switch_value = switch_value;
@@ -242,11 +242,11 @@ void make_samr_q_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void samr_io_q_unknown_8(char *desc,  SAMR_Q_UNKNOWN_8 *q_u, prs_struct *ps, int depth)
+void samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_8");
+	prs_debug(ps, depth, desc, "samr_io_q_query_dom_info");
 	depth++;
 
 	prs_align(ps);
@@ -276,16 +276,17 @@ void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server)
 	make_uni_hdr(&(u_2->hdr_domain), len_domain, len_domain, 1);
 	make_uni_hdr(&(u_2->hdr_server), len_server, len_server, 1);
 
-	u_2->unknown_4 = 0x10000000;
-	u_2->unknown_5 = 0x00000000;
+	u_2->seq_num = 0x10000000;
+	u_2->unknown_3 = 0x00000000;
 	
+	u_2->unknown_4  = 0x00000001;
+	u_2->unknown_5  = 0x00000003;
 	u_2->unknown_6  = 0x00000001;
-	u_2->unknown_7  = 0x00000003;
-	u_2->unknown_8  = 0x00000001;
-	u_2->unknown_9  = 0x00000008;
-	u_2->unknown_10 = 0x00000003;
+	u_2->num_domain_usrs  = 0x00000008;
+	u_2->num_domain_grps = 0x00000003;
+	u_2->num_local_grps = 0x00000003;
 
-	memset(u_2->padding, 0, sizeof(u_2->padding)); /* 16 bytes zeros */
+	memset(u_2->padding, 0, sizeof(u_2->padding)); /* 12 bytes zeros */
 
 	make_unistr2(&u_2->uni_domain, domain, len_domain);
 	make_unistr2(&u_2->uni_server, server, len_server);
@@ -313,16 +314,17 @@ void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth
 	   pointer is referring to
 	 */
 
-	prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4 ); /* 0x0000 0099 or 0x1000 0000 */
-	prs_uint32("unknown_5 ", ps, depth, &u_2->unknown_5 ); /* 0x0000 0000 */
+	prs_uint32("seq_num ", ps, depth, &u_2->seq_num ); /* 0x0000 0099 or 0x1000 0000 */
+	prs_uint32("unknown_3 ", ps, depth, &u_2->unknown_3 ); /* 0x0000 0000 */
 	
+	prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4 ); /* 0x0000 0001 */
+	prs_uint32("unknown_5 ", ps, depth, &u_2->unknown_5 ); /* 0x0000 0003 */
 	prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6 ); /* 0x0000 0001 */
-	prs_uint32("unknown_7 ", ps, depth, &u_2->unknown_7 ); /* 0x0000 0003 */
-	prs_uint32("unknown_8 ", ps, depth, &u_2->unknown_8 ); /* 0x0000 0001 */
-	prs_uint32("unknown_9 ", ps, depth, &u_2->unknown_9 ); /* 0x0000 0008 */
-	prs_uint32("unknown_10", ps, depth, &u_2->unknown_10); /* 0x0000 0003 */
+	prs_uint32("num_domain_usrs ", ps, depth, &u_2->num_domain_usrs ); /* 0x0000 0008 */
+	prs_uint32("num_domain_grps", ps, depth, &u_2->num_domain_grps); /* 0x0000 0003 */
+	prs_uint32("num_local_grps", ps, depth, &u_2->num_local_grps); /* 0x0000 0003 */
 
-	prs_uint8s(False, "padding", ps, depth, u_2->padding, sizeof(u_2->padding)); /* 16 bytes zeros */
+	prs_uint8s(False, "padding", ps, depth, u_2->padding, sizeof(u_2->padding)); /* 12 bytes zeros */
 
 	smb_io_unistr2( "uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer, ps, depth); /* domain name unicode string */
 	smb_io_unistr2( "uni_server", &u_2->uni_server, u_2->hdr_server.buffer, ps, depth); /* server name unicode string */
@@ -332,15 +334,15 @@ void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth
 }
 
 /*******************************************************************
-makes a SAMR_R_UNKNOWN_8 structure.
+makes a SAMR_R_QUERY_DOMAIN_INFO structure.
 ********************************************************************/
-void make_samr_r_unknown_8(SAMR_R_UNKNOWN_8 *r_u, 
+void make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
 				uint16 switch_value, SAM_UNK_CTR *ctr,
 				uint32 status)
 {
 	if (r_u == NULL || ctr == NULL) return;
 
-	DEBUG(5,("make_samr_r_unknown_8\n"));
+	DEBUG(5,("make_samr_r_query_dom_info\n"));
 
 	r_u->ptr_0 = 0;
 	r_u->switch_value = 0;
@@ -357,11 +359,11 @@ void make_samr_r_unknown_8(SAMR_R_UNKNOWN_8 *r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void samr_io_r_unknown_8(char *desc, SAMR_R_UNKNOWN_8 *r_u, prs_struct *ps, int depth)
+void samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "samr_io_r_unknown_8");
+	prs_debug(ps, depth, desc, "samr_io_r_query_dom_info");
 	depth++;
 
 	prs_align(ps);
@@ -381,7 +383,7 @@ void samr_io_r_unknown_8(char *desc, SAMR_R_UNKNOWN_8 *r_u, prs_struct *ps, int 
 			}
 			default:
 			{
-				DEBUG(3,("samr_io_r_unknown_8: unknown switch level 0x%x\n",
+				DEBUG(3,("samr_io_r_query_dom_info: unknown switch level 0x%x\n",
 				          r_u->switch_value));
 				return;
 			}

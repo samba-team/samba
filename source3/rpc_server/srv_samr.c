@@ -32,10 +32,11 @@ extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
 extern pstring global_myworkgroup;
 extern pstring global_myname;
-extern DOM_SID global_machine_sid;
+extern DOM_SID global_sam_sid;
 
 extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
+extern rid_name builtin_alias_rids[];
 
 /*******************************************************************
   This next function should be replaced with something that
@@ -295,7 +296,7 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 		DOM_SID user_sid;
 		DOM_SID everyone_sid;
 
-		user_sid = global_machine_sid;
+		user_sid = global_sam_sid;
 
 		SMB_ASSERT_ARRAY(user_sid.sub_auths, user_sid.num_auths+1);
 
@@ -457,29 +458,44 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	SAMR_R_ENUM_DOM_ALIASES r_e;
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
 	int num_entries;
-	BOOL got_aliases;
-	char *dummy_alias = "admins";
+	DOM_SID sid;
+	fstring sid_str;
+	fstring sam_sid_str;
 
 	r_e.status = 0x0;
 	r_e.num_entries = 0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
+	if (r_e.status == 0x0 && !get_lsa_policy_samr_sid(&q_u->pol, &sid))
 	{
 		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(5,("samr_reply_enum_dom_aliases: %d\n", __LINE__));
+	sid_to_string(sid_str, &sid);
+	sid_to_string(sam_sid_str, &global_sam_sid);
 
-	got_aliases = True;
-	num_entries = 1;
-	make_unistr2(&(pass[0].uni_user_name), dummy_alias, strlen(dummy_alias));
-	pass[0].user_rid = BUILTIN_ALIAS_RID_ADMINS;
+	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
-	if (r_e.status == 0 && got_aliases)
+	/* well-known aliases */
+	if (strequal(sid_str, "S-1-5-20"))
 	{
-		make_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
+		char *name;
+		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
+		{
+			make_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name));
+			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
+			num_entries++;
+		}
 	}
+	else if (strequal(sid_str, sam_sid_str))
+	{
+		/* local aliases */
+		/* oops!  there's no code to deal with this */
+		DEBUG(3,("samr_reply_enum_dom_aliases: enum of aliases in our domain not supported yet\n"));
+		num_entries = 0;
+	}
+		
+	make_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
 
 	/* store the response in the SMB stream */
 	samr_io_r_enum_dom_aliases("", &r_e, rdata, 0);
@@ -1276,12 +1292,12 @@ static void api_samr_query_usergroups( uint16 vuid, prs_struct *data, prs_struct
 
 
 /*******************************************************************
- samr_reply_unknown_8
+ samr_reply_query_dom_info
  ********************************************************************/
-static void samr_reply_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
+static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 				prs_struct *rdata)
 {
-	SAMR_R_UNKNOWN_8 r_u;
+	SAMR_R_QUERY_DOMAIN_INFO r_u;
 	SAM_UNK_CTR ctr;
 	uint16 switch_value = 0x0;
 	uint32 status = 0x0;
@@ -1291,13 +1307,13 @@ static void samr_reply_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
 
 	r_u.ctr = &ctr;
 
-	DEBUG(5,("samr_reply_unknown_8: %d\n", __LINE__));
+	DEBUG(5,("samr_reply_query_dom_info: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (r_u.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->domain_pol)) == -1))
 	{
 		r_u.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-		DEBUG(5,("samr_reply_unknown_8: invalid handle\n"));
+		DEBUG(5,("samr_reply_query_dom_info: invalid handle\n"));
 	}
 
 	if (status == 0x0)
@@ -1319,27 +1335,27 @@ static void samr_reply_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
 		}
 	}
 
-	make_samr_r_unknown_8(&r_u, switch_value, &ctr, status);
+	make_samr_r_query_dom_info(&r_u, switch_value, &ctr, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_unknown_8("", &r_u, rdata, 0);
+	samr_io_r_query_dom_info("", &r_u, rdata, 0);
 
-	DEBUG(5,("samr_unknown_8: %d\n", __LINE__));
+	DEBUG(5,("samr_query_dom_info: %d\n", __LINE__));
 
 }
 
 /*******************************************************************
- api_samr_unknown_8
+ api_samr_query_dom_info
  ********************************************************************/
-static void api_samr_unknown_8( uint16 vuid, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_dom_info( uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
-	SAMR_Q_UNKNOWN_8 q_e;
+	SAMR_Q_QUERY_DOMAIN_INFO q_e;
 
 	/* grab the samr unknown 8 command */
-	samr_io_q_unknown_8("", &q_e, data, 0);
+	samr_io_q_query_dom_info("", &q_e, data, 0);
 
 	/* construct reply. */
-	samr_reply_unknown_8(&q_e, rdata);
+	samr_reply_query_dom_info(&q_e, rdata);
 }
 
 
@@ -1595,7 +1611,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_LOOKUP_NAMES"     , SAMR_LOOKUP_NAMES     , api_samr_lookup_names     },
 	{ "SAMR_OPEN_USER"        , SAMR_OPEN_USER        , api_samr_open_user        },
 	{ "SAMR_QUERY_USERINFO"   , SAMR_QUERY_USERINFO   , api_samr_query_userinfo   },
-	{ "SAMR_UNKNOWN_8"        , SAMR_UNKNOWN_8        , api_samr_unknown_8        },
+	{ "SAMR_QUERY_DOMAIN_INFO", SAMR_QUERY_DOMAIN_INFO, api_samr_query_dom_info        },
 	{ "SAMR_QUERY_USERGROUPS" , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
 	{ "SAMR_QUERY_DISPINFO"   , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },

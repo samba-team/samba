@@ -209,13 +209,13 @@ BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name)
 /****************************************************************************
 do a SAMR unknown 0x8 command
 ****************************************************************************/
-BOOL do_samr_unknown_8(struct cli_state *cli, 
+BOOL do_samr_query_dom_info(struct cli_state *cli, 
 				POLICY_HND *domain_pol, uint16 switch_value)
 {
 	prs_struct data;
 	prs_struct rdata;
 
-	SAMR_Q_UNKNOWN_8 q_e;
+	SAMR_Q_QUERY_DOMAIN_INFO q_e;
 	BOOL valid_un8 = False;
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
@@ -228,25 +228,25 @@ BOOL do_samr_unknown_8(struct cli_state *cli,
 	if (domain_pol == NULL) return False;
 
 	/* store the parameters */
-	make_samr_q_unknown_8(&q_e, domain_pol, switch_value);
+	make_samr_q_query_dom_info(&q_e, domain_pol, switch_value);
 
 	/* turn parameters into data stream */
-	samr_io_q_unknown_8("", &q_e, &data, 0);
+	samr_io_q_query_dom_info("", &q_e, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, SAMR_UNKNOWN_8, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_QUERY_DOMAIN_INFO, &data, &rdata))
 	{
 #if 0
-		SAMR_R_UNKNOWN_8 r_e;
+		SAMR_R_QUERY_DOMAIN_INFO r_e;
 		BOOL p;
 
-		samr_io_r_unknown_8("", &r_e, &rdata, 0);
+		samr_io_r_query_dom_info("", &r_e, &rdata, 0);
 
 		p = rdata.offset != 0;
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_UNKNOWN_8: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(0,("SAMR_R_QUERY_DOMAIN_INFO: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 

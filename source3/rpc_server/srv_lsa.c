@@ -28,7 +28,7 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
-extern DOM_SID global_machine_sid;
+extern DOM_SID global_sam_sid;
 
 /***************************************************************************
 lsa_reply_open_policy2
@@ -373,7 +373,7 @@ static void api_lsa_query_info( uint16 vuid, prs_struct *data,
 	pstrcpy(dom_name, lp_workgroup());
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_query_info(&q_i, rdata, dom_name, &global_machine_sid);
+	lsa_reply_query_info(&q_i, rdata, dom_name, &global_sam_sid);
 }
 
 /***************************************************************************
@@ -406,7 +406,7 @@ static void api_lsa_lookup_sids( uint16 vuid, prs_struct *data,
         string_to_sid(&sid_S_1_5, "S-1-5");
 
 	dom_names[0] = dom_name;
-	sid_array[0] = &global_machine_sid;
+	sid_array[0] = &global_sam_sid;
 
 	dom_names[1] = "Everyone";
 	sid_array[1] = &sid_S_1_1;
@@ -458,7 +458,7 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
         string_to_sid(&sid_S_1_5, "S-1-5");
 
 	dom_names[0] = dom_name;
-	sid_array[0] = &global_machine_sid;
+	sid_array[0] = &global_sam_sid;
 
 	dom_names[1] = "Everyone";
 	sid_array[1] = &sid_S_1_1;

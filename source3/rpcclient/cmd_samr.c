@@ -495,7 +495,7 @@ void cmd_sam_query_groups(struct client_info *info)
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* send a samr 0x8 command */
-	res = res ? do_samr_unknown_8(smb_cli,
+	res = res ? do_samr_query_dom_info(smb_cli,
 	            &info->dom.samr_pol_open_domain, switch_value) : False;
 
 	res = res ? do_samr_close(smb_cli,

@@ -644,8 +644,8 @@ static void usage(char *pname)
 
 	pstrcpy(global_myworkgroup, lp_workgroup());
 
-	if(!pdb_generate_machine_sid()) {
-		DEBUG(0,("ERROR: Samba cannot get a machine SID.\n"));
+	if(!pdb_generate_sam_sid()) {
+		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
 		exit(1);
 	}
 

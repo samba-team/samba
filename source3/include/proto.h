@@ -1175,7 +1175,7 @@ void pdb_set_last_set_time(char *p, int max_len, time_t t);
 void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl);
 BOOL pdb_gethexpwd(char *p, char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
-BOOL pdb_generate_machine_sid(void);
+BOOL pdb_generate_sam_sid(void);
 uid_t pdb_user_rid_to_uid(uint32 user_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
 uint32 pdb_gid_to_group_rid(gid_t gid);
@@ -1283,7 +1283,7 @@ BOOL do_samr_chgpasswd_user(struct cli_state *cli,
 		char nt_newpass[516], uchar nt_oldhash[16],
 		char lm_newpass[516], uchar lm_oldhash[16]);
 BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name);
-BOOL do_samr_unknown_8(struct cli_state *cli, 
+BOOL do_samr_query_dom_info(struct cli_state *cli, 
 				POLICY_HND *domain_pol, uint16 switch_value);
 BOOL do_samr_enum_dom_users(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
@@ -1620,15 +1620,15 @@ void samr_io_r_unknown_2c(char *desc,  SAMR_R_UNKNOWN_2C *r_u, prs_struct *ps, i
 void make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 				POLICY_HND *user_pol, uint16 switch_value);
 void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int depth);
-void make_samr_q_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
+void make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value);
-void samr_io_q_unknown_8(char *desc,  SAMR_Q_UNKNOWN_8 *q_u, prs_struct *ps, int depth);
+void samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth);
 void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server);
 void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth);
-void make_samr_r_unknown_8(SAMR_R_UNKNOWN_8 *r_u, 
+void make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
 				uint16 switch_value, SAM_UNK_CTR *ctr,
 				uint32 status);
-void samr_io_r_unknown_8(char *desc, SAMR_R_UNKNOWN_8 *r_u, prs_struct *ps, int depth);
+void samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_struct *ps, int depth);
 void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, DOM_SID *sid);
 void make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
 				uint16 unknown_2, uint16 unknown_3,
@@ -1889,6 +1889,7 @@ int find_lsa_policy_by_hnd(POLICY_HND *hnd);
 BOOL set_lsa_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
 BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
 BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
+BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
 uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd);
 BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
 BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
