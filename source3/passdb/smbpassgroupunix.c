@@ -107,6 +107,7 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 	
 	if (als_rids == NULL && grp_rids == NULL)
 	{
+		/* they didn't want to know the members. */
 		return pwdb_sam_to_smb(pw_buf);
 	}
 
@@ -131,6 +132,17 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 		 * find the unix name for each user's group.
 		 * assume the unix group is an nt name (alias? group? user?)
 		 * (user or not our own domain will be an error).
+		 *
+		 * oh, oh, can anyone spot what's missing heeere?
+		 * you guessed it: built-in aliases.  those are in
+		 * Domain S-1-5-20, and NT Domain Users can only
+		 * have lists of RIDs as groups.
+		 *
+		 * doesn't stop you making NT Domain Users a member
+		 * of a BUILTIN Alias (e.g "Administrators" or "Power Users")
+		 * it's just that there's no way to tell that from this
+		 * API call: wrong domain, sorry.
+		 *
 		 */
 
 		DOM_NAME_MAP gmep;

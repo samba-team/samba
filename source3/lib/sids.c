@@ -268,22 +268,24 @@ void generate_wellknown_sids(void)
 }
 
 /****************************************************************************
- Generate the global machine sid. Look for the MACHINE.SID file first, if
- not found then look in smb.conf and use it to create the MACHINE.SID file.
+ Generate the global machine sid. Look for the DOMAINNAME.SID file first, if
+ not found then look in smb.conf and use it to create the DOMAINNAME.SID file.
 ****************************************************************************/
-BOOL generate_sam_sid(void)
+BOOL generate_sam_sid(char *domain_name)
 {
 	int fd;
 	int i;
 	char *p;
 	pstring sid_file;
 	fstring sid_string;
+	fstring file_name;
 	SMB_STRUCT_STAT st;
 	uchar raw_sid_data[12];
 
 	pstrcpy(sid_file, lp_smb_passwd_file());
 	p = strrchr(sid_file, '/');
-	if (p != NULL) {
+	if (p != NULL)
+	{
 		*++p = '\0';
 	}
 
@@ -295,7 +297,9 @@ BOOL generate_sam_sid(void)
 		}
 	}
 
-	pstrcat(sid_file, "MACHINE.SID");
+	slprintf(file_name, sizeof(file_name)-1, "%s.SID", domain_name);
+	strupper(file_name);
+	pstrcat(sid_file, file_name);
     
 	if ((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
 		DEBUG(0,("unable to open or create file %s. Error was %s\n",

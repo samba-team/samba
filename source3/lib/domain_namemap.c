@@ -273,8 +273,6 @@ static void delete_map_list(ubi_slList *map_list)
 ***************************************************************************/
 static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 {
-	DEBUG(10,("make_mydomain_sid\n"));
-
 	if (!map_domain_name_to_sid(&grp->sid, &(grp->nt_domain)))
 	{
 		DEBUG(0,("make_mydomain_sid: unknown domain %s\n",
@@ -287,8 +285,10 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 		/*
 		 * only builtin aliases are recognised in S-1-5-20
 		 */
+		DEBUG(10,("make_mydomain_sid: group %s in builtin domain\n",
+		           grp->nt_name));
 
-		if (!lookup_builtin_alias_name(grp->nt_name, "BUILTIN", &grp->sid, &grp->type))
+		if (lookup_builtin_alias_name(grp->nt_name, "BUILTIN", &grp->sid, &grp->type) != 0x0)
 		{
 			DEBUG(0,("unix group %s mapped to an unrecognised BUILTIN domain name %s\n",
 			          grp->unix_name, grp->nt_name));
@@ -584,9 +584,6 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 		if (!*unixname)
 			continue;
 
-		DEBUG(5,("unixname = %s, ntname = %s.\n",
-		          unixname, nt_name));
-
 		p = strchr(nt_name, '\\');
 
 		if (p == NULL)
@@ -602,9 +599,11 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 			fstrcpy(nt_group , p);
 		}
 
-		if (make_name_entry(&new_ep, nt_domain, nt_name, unixname, type))
+		if (make_name_entry(&new_ep, nt_domain, nt_group, unixname, type))
 		{
 			ubi_slAddTail(map_list, (ubi_slNode *)new_ep);
+			DEBUG(5,("unixname = %s, ntname = %s\\%s type = %d\n",
+				  unixname, nt_domain, nt_group, new_ep->grp.type));
 		}
 	}
 

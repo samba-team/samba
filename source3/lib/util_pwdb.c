@@ -176,8 +176,6 @@ uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
 		rid      = builtin_alias_rids[i].rid;
 		als_name = builtin_alias_rids[i].name;
 
-		i++;
-
 		if (strequal(als_name, alias_name))
 		{
 			if (sid != NULL)
@@ -193,6 +191,8 @@ uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
 			return 0x0;
 		}
 			
+		i++;
+
 	} while (als_name != NULL);
 
 	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
@@ -431,9 +431,10 @@ BOOL pwdb_initialise(void)
 
 	generate_wellknown_sids();
 
-	if (!generate_sam_sid())
+	if (!generate_sam_sid(global_sam_name))
 	{
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		DEBUG(0,("ERROR: Samba cannot create a SAM SID for its domain (%s).\n",
+		          global_sam_name));
 		return False;
 	}
 

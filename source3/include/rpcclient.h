@@ -77,6 +77,7 @@ struct nt_client_info
 
     POLICY_HND samr_pol_connect;
     POLICY_HND samr_pol_open_domain;
+    POLICY_HND samr_pol_open_builtindom;
     POLICY_HND samr_pol_open_user;
 
     struct acct_info *sam;

@@ -73,7 +73,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 {
 	/* Static buffers we will return. */
 	static struct smb_passwd pw_buf;
-	static pstring  nt_name;
+	static pstring  unix_name;
 	static unsigned char smbpwd[16];
 	static unsigned char smbntpwd[16];
 	char            linebuf[256];
@@ -115,7 +115,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 		 * As 256 is shorter than a pstring we don't need to check
 		 * length here - if this ever changes....
 		 */
-		p = strncpyn(nt_name, linebuf, sizeof(nt_name), ':');
+		p = strncpyn(unix_name, linebuf, sizeof(unix_name), ':');
 
 		/* Go past ':' */
 		p++;
@@ -124,7 +124,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 
 		p = Atoic( p, &uidval, ":");
 
-		pw_buf.nt_name = nt_name;
+		pw_buf.unix_name = unix_name;
 		pw_buf.unix_uid = uidval;
 
 		/*
@@ -139,7 +139,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 		if (*p == '*' || *p == 'X')
 		{
 			/* Password deliberately invalid - end here. */
-			DEBUG(10, ("getsmbfilepwent: entry invalidated for nt user %s\n", nt_name));
+			DEBUG(10, ("getsmbfilepwent: entry invalidated for unix user %s\n", unix_name));
 			pw_buf.smb_nt_passwd = NULL;
 			pw_buf.smb_passwd = NULL;
 			pw_buf.acct_ctrl |= ACB_DISABLED;
@@ -194,8 +194,8 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 			p += 33;
 		}
 
-		DEBUG(5,("getsmbfilepwent: returning passwd entry for nt user %s, unix uid %d\n",
-		          nt_name, uidval));
+		DEBUG(5,("getsmbfilepwent: returning passwd entry for unix user %s, unix uid %d\n",
+		          unix_name, uidval));
 
 		if (*p == '[')
 		{
@@ -226,7 +226,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 			 * password file as 'normal accounts'. If this changes
 			 * we will have to fix this code. JRA.
 			 */
-			if (pw_buf.nt_name[strlen(pw_buf.nt_name) - 1] == '$')	
+			if (pw_buf.unix_name[strlen(pw_buf.unix_name) - 1] == '$')	
 			{
 				pw_buf.acct_ctrl &= ~ACB_NORMAL;
 				pw_buf.acct_ctrl |= ACB_WSTRUST;
@@ -272,8 +272,8 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
    */
 
   while ((pwd = getsmbfilepwent(fp)) != NULL) {
-    if (strequal(newpwd->nt_name, pwd->nt_name)) {
-      DEBUG(0, ("add_smbfilepwd_entry: entry with nt name %s already exists\n", pwd->nt_name));
+    if (strequal(newpwd->unix_name, pwd->unix_name)) {
+      DEBUG(0, ("add_smbfilepwd_entry: entry with unix name %s already exists\n", pwd->unix_name));
       endsmbfilepwent(fp);
       return False;
     }
@@ -290,21 +290,21 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
 
   if((offpos = sys_lseek(fd, 0, SEEK_END)) == -1) {
     DEBUG(0, ("add_smbfilepwd_entry(sys_lseek): Failed to add entry for user %s to file %s. \
-Error was %s\n", newpwd->nt_name, pfile, strerror(errno)));
+Error was %s\n", newpwd->unix_name, pfile, strerror(errno)));
     endsmbfilepwent(fp);
     return False;
   }
 
-  new_entry_length = strlen(newpwd->nt_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + NEW_PW_FORMAT_SPACE_PADDED_LEN + 1 + 13 + 2;
+  new_entry_length = strlen(newpwd->unix_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + NEW_PW_FORMAT_SPACE_PADDED_LEN + 1 + 13 + 2;
 
   if((new_entry = (char *)malloc( new_entry_length )) == NULL) {
     DEBUG(0, ("add_smbfilepwd_entry(malloc): Failed to add entry for user %s to file %s. \
-Error was %s\n", newpwd->nt_name, pfile, strerror(errno)));
+Error was %s\n", newpwd->unix_name, pfile, strerror(errno)));
     endsmbfilepwent(fp);
     return False;
   }
 
-  slprintf(new_entry, new_entry_length - 1, "%s:%u:", newpwd->nt_name, (unsigned)newpwd->unix_uid);
+  slprintf(new_entry, new_entry_length - 1, "%s:%u:", newpwd->unix_name, (unsigned)newpwd->unix_uid);
   p = &new_entry[strlen(new_entry)];
 
   if(newpwd->smb_passwd != NULL) {
@@ -349,13 +349,13 @@ Error was %s\n", newpwd->nt_name, pfile, strerror(errno)));
 
   if ((wr_len = write(fd, new_entry, strlen(new_entry))) != strlen(new_entry)) {
     DEBUG(0, ("add_smbfilepwd_entry(write): %d Failed to add entry for user %s to file %s. \
-Error was %s\n", wr_len, newpwd->nt_name, pfile, strerror(errno)));
+Error was %s\n", wr_len, newpwd->unix_name, pfile, strerror(errno)));
 
     /* Remove the entry we just wrote. */
     if(sys_ftruncate(fd, offpos) == -1) {
       DEBUG(0, ("add_smbfilepwd_entry: ERROR failed to ftruncate file %s. \
 Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
-             newpwd->nt_name, strerror(errno)));
+             newpwd->unix_name, strerror(errno)));
     }
 
     endsmbfilepwent(fp);
@@ -380,7 +380,7 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 {
   /* Static buffers we will return. */
-  static pstring  nt_name;
+  static pstring  unix_name;
 
   char            linebuf[256];
   char            readbuf[1024];
@@ -498,9 +498,9 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
      * As 256 is shorter than a pstring we don't need to check
      * length here - if this ever changes....
      */
-    strncpy(nt_name, linebuf, PTR_DIFF(p, linebuf));
-    nt_name[PTR_DIFF(p, linebuf)] = '\0';
-    if (strequal(nt_name, pwd->nt_name)) {
+    strncpy(unix_name, linebuf, PTR_DIFF(p, linebuf));
+    unix_name[PTR_DIFF(p, linebuf)] = '\0';
+    if (strequal(unix_name, pwd->unix_name)) {
       found_entry = True;
       break;
     }
@@ -545,7 +545,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 
   if (!override && (*p == '*' || *p == 'X')) {
     /* Password deliberately invalid - end here. */
-    DEBUG(10, ("mod_smbfilepwd_entry: entry invalidated for nt user %s\n", nt_name));
+    DEBUG(10, ("mod_smbfilepwd_entry: entry invalidated for unix user %s\n", unix_name));
     file_unlock(lockfd, &pw_file_lock_depth);
     fclose(fp);
     return False;

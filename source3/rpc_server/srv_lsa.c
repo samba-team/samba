@@ -32,9 +32,7 @@ extern DOM_SID global_sam_sid;
 extern fstring global_sam_name;
 extern DOM_SID global_member_sid;
 extern fstring global_myworkgroup;
-extern DOM_SID global_sid_S_1_1;
-extern DOM_SID global_sid_S_1_3;
-extern DOM_SID global_sid_S_1_5;
+extern DOM_SID global_sid_S_1_5_20;
 
 /***************************************************************************
 lsa_reply_open_policy2
@@ -264,7 +262,8 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 		else if (sid_split_rid         (&find_sid, &rid) &&
 			 map_domain_sid_to_name(&find_sid, dom_name))
 		{
-			if (sid_equal(&find_sid, &global_sam_sid))
+			if (sid_equal(&find_sid, &global_sam_sid) ||
+			    sid_equal(&find_sid, &global_sid_S_1_5_20))
 			{
 				status = lookup_sid(&tmp_sid, name, &sid_name_use);
 			}

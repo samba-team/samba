@@ -150,9 +150,9 @@ RPC_CLIENT_OBJ = \
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
 
-GROUPDB_OBJ = groupdb/groupdb.o groupdb/groupfile.o \
-		groupdb/aliasdb.o groupdb/aliasfile.o \
-		groupdb/groupunix.o groupdb/aliasunix.o \
+GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
+		groupdb/groupfile.o groupdb/aliasfile.o \
+		groupdb/groupunix.o groupdb/aliasunix.o groupdb/builtinunix.o \
 		passdb/passgrp.o passdb/smbpassgroup.o \
 		passdb/smbpassgroupunix.o
 

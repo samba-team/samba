@@ -181,8 +181,10 @@ void cmd_sam_enum_users(struct client_info *info)
 	fstring domain;
 	fstring sid;
 	DOM_SID sid1;
+	DOM_SID sid_1_5_20;
 	int user_idx;
 	BOOL res = True;
+	BOOL res1 = True;
 	BOOL request_user_info  = False;
 	BOOL request_group_info = False;
 	BOOL request_alias_info = False;
@@ -218,6 +220,10 @@ void cmd_sam_enum_users(struct client_info *info)
 			request_group_info |= strequal(tmp, "-g");
 			request_alias_info |= strequal(tmp, "-a");
 		}
+		else
+		{
+			break;
+		}
 	}
 
 #ifdef DEBUG_TESTING
@@ -242,6 +248,8 @@ void cmd_sam_enum_users(struct client_info *info)
 	}
 #endif
 
+	string_to_sid(&sid_1_5_20, "S-1-5-32");
+
 	fprintf(out_hnd, "SAM Enumerate Users\n");
 	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid);
@@ -264,6 +272,11 @@ void cmd_sam_enum_users(struct client_info *info)
 	            &info->dom.samr_pol_connect, admin_rid, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
+	/* connect to the S-1-5-20 domain */
+	res1 = res ? do_samr_open_domain(smb_cli, 
+	            &info->dom.samr_pol_connect, admin_rid, &sid_1_5_20,
+	            &info->dom.samr_pol_open_builtindom) : False;
+
 	/* read some users */
 	res = res ? do_samr_enum_dom_users(smb_cli, 
 				&info->dom.samr_pol_open_domain,
@@ -275,12 +288,8 @@ void cmd_sam_enum_users(struct client_info *info)
 		fprintf(out_hnd, "No users\n");
 	}
 
-	if (request_user_info || request_group_info || request_alias_info)
-	{
 		/* query all the users */
-		user_idx = 0;
-
-		while (res && user_idx < info->dom.num_sam_entries)
+	for (user_idx = 0; res && user_idx < info->dom.num_sam_entries; user_idx++)
 		{
 			uint32 user_rid = info->dom.sam[user_idx].user_rid;
 			SAM_USER_INFO_21 usr;
@@ -332,15 +341,25 @@ void cmd_sam_enum_users(struct client_info *info)
 				                        &info->dom.samr_pol_open_domain,
 				                        &als_sid, &num_aliases, rid))
 				{
-					display_alias_rid_info(out_hnd, ACTION_HEADER   , &als_sid, num_aliases, rid);
-					display_alias_rid_info(out_hnd, ACTION_ENUMERATE, &als_sid, num_aliases, rid);
-					display_alias_rid_info(out_hnd, ACTION_FOOTER   , &als_sid, num_aliases, rid);
-				}
+				display_alias_rid_info(out_hnd, ACTION_HEADER   , &sid1, num_aliases, rid);
+				display_alias_rid_info(out_hnd, ACTION_ENUMERATE, &sid1, num_aliases, rid);
+				display_alias_rid_info(out_hnd, ACTION_FOOTER   , &sid1, num_aliases, rid);
 			}
 
-			user_idx++;
+			/* send user alias query */
+			if (res1 && do_samr_query_useraliases(smb_cli,
+						&info->dom.samr_pol_open_builtindom,
+						&als_sid, &num_aliases, rid))
+			{
+				display_alias_rid_info(out_hnd, ACTION_HEADER   , &sid_1_5_20, num_aliases, rid);
+				display_alias_rid_info(out_hnd, ACTION_ENUMERATE, &sid_1_5_20, num_aliases, rid);
+				display_alias_rid_info(out_hnd, ACTION_FOOTER   , &sid_1_5_20, num_aliases, rid);
+			}
 		}
 	}
+
+	res1 = res1 ? do_samr_close(smb_cli,
+	            &info->dom.samr_pol_open_builtindom) : False;
 
 	res = res ? do_samr_close(smb_cli,
 	            &info->dom.samr_pol_open_domain) : False;
