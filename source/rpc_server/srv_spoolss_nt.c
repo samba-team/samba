@@ -562,37 +562,51 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 /**********************************************************************
  Release the memory held by a SPOOL_NOTIFY_INFO_DATA
  *********************************************************************/
-
 static void free_notify_data(SPOOL_NOTIFY_INFO_DATA *data, uint32 len)
 {
-        uint32 i;
+	uint32 i;
 
-        if (!data)
-                return;
+	DEBUG(10,("free_notify_data: enter\n"));
 
-        for (i=0; i<len; i++) {
-                if (data[i].size == POINTER)
-                        SAFE_FREE(data[i].notify_data.data.string);
-        }
+	if (!data) {
+		DEBUG(10,("free_notify_data: NULL data pointer\n"));
+		return;
+	}
 
-        SAFE_FREE(data);
+	DEBUG(10,("free_notify_data: number of entries in array = [%d]\n", len));
+
+	for (i=0; i<len; i++)
+	{
+		if (data[i].size == POINTER && data[i].notify_data.data.length)
+		{
+			DEBUG(10,("free_notify_data: free string data of length [%d]\n",
+				data[i].notify_data.data.length));
+			SAFE_FREE(data[i].notify_data.data.string);
+		}
+
+	}
+
+	SAFE_FREE(data);
+
+	DEBUG(10,("free_notify_data: exit\n"));
 }
+
 
 /***************************************************************************
  Send a notify to the client.
 ****************************************************************************/
 
-static BOOL cli_spoolss_reply_rrpcn(struct cli_state *pcli, POLICY_HND *handle, 
-			     char* printername, uint32 change_low, uint32 change_high, 
+static BOOL cli_spoolss_reply_rrpcn(struct cli_state *pcli, POLICY_HND *handle,
+			     char* printername, uint32 change_low, uint32 change_high,
 			     WERROR *status)
 {
 	prs_struct rbuf;
-	prs_struct buf; 
-	
+	prs_struct buf;
+
 	SPOOL_NOTIFY_INFO 	notify_info;
 	SPOOL_NOTIFY_INFO_DATA	*notify_data = NULL, *data;
 	uint32 			idx = 0;
-	
+
 	WERROR result;
 
 	NT_PRINTER_INFO_LEVEL	*printer = NULL;
@@ -602,18 +616,18 @@ static BOOL cli_spoolss_reply_rrpcn(struct cli_state *pcli, POLICY_HND *handle,
 
 	prs_init(&buf, 1024, pcli->mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, pcli->mem_ctx, UNMARSHALL );
-	
+
 	ZERO_STRUCT(notify_info);
-	
+
 	/* lookup the printer if we have a name */
-	
+
 	if (*printername) {
 		result = get_a_printer(&printer, 2, printername);
 		if (! W_ERROR_IS_OK(result)) {
 			*status = result;
 			goto done;
 		}
-	}	
+	}
 
 	/*
 	 * See comments in _spoolss_setprinter() about PRINTER_CHANGE_XXX
@@ -633,17 +647,17 @@ static BOOL cli_spoolss_reply_rrpcn(struct cli_state *pcli, POLICY_HND *handle,
 			goto done;
 		}
 		notify_data = data;
-		
+
 		memset(notify_data+idx, 0x0, sizeof(SPOOL_NOTIFY_INFO_DATA));
-		
-		/* 
-		 * 'id' (last param here) is undefined when type == PRINTER_NOTIFY_TYPE 
+
+		/*
+		 * 'id' (last param here) is undefined when type == PRINTER_NOTIFY_TYPE
 		 * See PRINTER_NOTIFY_INFO_DATA entries in MSDN
 		 * --jerry
 		 */
 		construct_info_data(notify_data+idx, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME, 0x00);
 
-		spoolss_notify_driver_name(-1, notify_data+idx, NULL, printer, pcli->mem_ctx);	
+		spoolss_notify_driver_name(-1, notify_data+idx, NULL, printer, pcli->mem_ctx);
 		idx++;
 	}
 
@@ -655,13 +669,13 @@ static BOOL cli_spoolss_reply_rrpcn(struct cli_state *pcli, POLICY_HND *handle,
 #endif
 
 	/* create and send a MSRPC command with api  */
-	   
+
 	/* store the parameters */
-	
+
 	notify_info.flags = 0x00000200;
 	notify_info.count = idx;
 	notify_info.data  = notify_data;
-	
+
 	make_spoolss_q_reply_rrpcn(&q_s, handle, change_low, change_high, &notify_info);
 
 	/* turn parameters into data stream */
@@ -678,7 +692,7 @@ static BOOL cli_spoolss_reply_rrpcn(struct cli_state *pcli, POLICY_HND *handle,
 		goto done;
 	}
 
-	
+
 	/* turn data stream into parameters*/
 	if(!spoolss_io_r_reply_rrpcn("", &r_s, &rbuf, 0)) {
 		DEBUG(0,("cli_spoolss_reply_rrpcn: Error : failed to unmarshall SPOOL_R_REPLY_RRPCN struct.\n"));
@@ -692,7 +706,9 @@ done:
 	prs_mem_free(&buf);
 	prs_mem_free(&rbuf);
 	free_a_printer(&printer, 2);
+#if 0	/* JERRY */
 	free_notify_data(notify_data, idx);
+#endif
 
 	return W_ERROR_IS_OK(*status);
 }
@@ -4938,8 +4954,12 @@ done:
 	 * between 2k -> 2k.  Otherwise a PRINTER_CHANGE_SET_PRINTER
 	 * event is ok.    --jerry
 	 */
-	srv_spoolss_sendnotify(printer->info_2->printername, 0, notify_flag);
- 
+	if (notify_flag & ~PRINTER_CHANGE_SET_PRINTER) {
+		DEBUG(10,("update_printer: sending change notify for printer [%s]\n",
+			printer->info_2->printername));
+		srv_spoolss_sendnotify(printer->info_2->printername, 0, notify_flag);
+ 	}
+
 	free_a_printer(&printer, 2);
 	free_a_printer(&old_printer, 2);
 
