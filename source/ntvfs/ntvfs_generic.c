@@ -247,7 +247,8 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			io->openx.out.access = OPENX_MODE_ACCESS_RDWR;
 			break;
 		default:
-			return NT_STATUS_INVALID_LOCK_SEQUENCE;
+			status = NT_STATUS_INVALID_LOCK_SEQUENCE;
+			goto done;
 		}
 		
 		switch (io->openx.in.open_mode & OPENX_MODE_DENY_MASK) {
@@ -280,7 +281,8 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 			break;
 		default:
-			return NT_STATUS_INVALID_LOCK_SEQUENCE;
+			status = NT_STATUS_INVALID_LOCK_SEQUENCE;
+			goto done;
 		}
 	
 		switch (io->openx.in.open_func) {
@@ -306,7 +308,8 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 				io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
 				break;
 			}
-			return NT_STATUS_INVALID_LOCK_SEQUENCE;
+			status = NT_STATUS_INVALID_LOCK_SEQUENCE;
+			goto done;
 		}
 		
 		io2->generic.in.alloc_size = 0;
@@ -339,7 +342,8 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		default:
 			DEBUG(2,("ntvfs_map_open(OPEN): invalid mode 0x%x\n",
 				 io->openold.in.flags & OPEN_FLAGS_MODE_MASK));
-			return NT_STATUS_INVALID_PARAMETER;
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
 		}
 		
 		switch (io->openold.in.flags & OPEN_FLAGS_DENY_MASK) {
@@ -375,16 +379,19 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		default:
 			DEBUG(2,("ntvfs_map_open(OPEN): invalid DENY 0x%x\n",
 				 io->openold.in.flags & OPEN_FLAGS_DENY_MASK));
-			return NT_STATUS_INVALID_PARAMETER;
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
 		}
 
 		status = ntvfs->ops->openfile(ntvfs, req, io2);
 		break;
 
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		status = NT_STATUS_INVALID_LEVEL;
+		break;
 	}
 
+done:
 	return ntvfs_map_async_finish(req, status);
 }
 
@@ -1080,7 +1087,8 @@ NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd,
 
 		lck = talloc_p(rd2, union smb_lock);
 		if (lck == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 		lck->lock.level      = RAW_LOCK_LOCK;
 		lck->lock.in.fnum    = rd->lockread.in.fnum;
@@ -1102,6 +1110,7 @@ NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd,
 		break;
 	}
 
+done:
 	return ntvfs_map_async_finish(req, status);
 }
 
