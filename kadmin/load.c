@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -135,10 +135,11 @@ parse_keys(hdb_entry *ent, char *str)
 	    unsigned type;
 	    size_t p_len;
 	    if(sscanf(p, "%u/", &type) != 1){
-		
+		abort ();
 	    }
 	    p = strchr(p, '/');
-	    if(p == NULL);
+	    if(p == NULL)
+		abort ();
 	    p++;
 	    p_len = strlen(p);
 
