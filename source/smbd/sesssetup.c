@@ -3,7 +3,7 @@
    handle SMBsessionsetup
    Copyright (C) Andrew Tridgell 1998-2001
    Copyright (C) Andrew Bartlett      2001
-   Copyright (C) Jim McDonough        2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Luke Howard          2003
 
    This program is free software; you can redistribute it and/or modify

@@ -4,7 +4,7 @@
    idmap TDB backend
 
    Copyright (C) Tim Potter 2000
-   Copyright (C) Jim McDonough 2003
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Simo Sorce 2003
    
    This program is free software; you can redistribute it and/or modify

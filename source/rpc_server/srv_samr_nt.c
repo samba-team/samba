@@ -7,7 +7,7 @@
  *  Copyright (C) Marc Jacobsen			    1999,
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Jean François Micouleau      1998-2001,
- *  Copyright (C) Jim McDonough                     2002.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
