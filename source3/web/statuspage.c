@@ -177,7 +177,7 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 	
-	if (crec.cnum != -1 || !process_exists(crec.pid) || (crec.pid == smbd_pid))
+	if (crec.cnum == -1 || !process_exists(crec.pid) || (crec.pid == smbd_pid))
 		return 0;
 
 	addPid2Machine (crec.pid, crec.machine);
