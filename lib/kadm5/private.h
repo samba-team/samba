@@ -169,6 +169,12 @@ _kadm5_set_keys2 __P((
 	krb5_key_data *key_data));
 
 kadm5_ret_t
+_kadm5_set_keys_randomly __P((kadm5_server_context *context,
+			      hdb_entry *ent,
+			      krb5_keyblock **new_keys,
+			      int *n_keys));
+
+kadm5_ret_t
 _kadm5_set_modifier __P((
 	kadm5_server_context *context,
 	hdb_entry *ent));
@@ -212,7 +218,7 @@ kadm5_log_end (kadm5_server_context *context);
 
 kadm5_ret_t
 kadm5_log_foreach (kadm5_server_context *context,
-		   void (*func)(krb5_context context,
+		   void (*func)(kadm5_server_context *server_context,
 				u_int32_t ver,
 				time_t timestamp,
 				enum kadm_ops op,
