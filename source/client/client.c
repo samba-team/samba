@@ -1995,6 +1995,14 @@ static void process_command_string(char *cmd)
 	pstring line;
 	char *ptr;
 
+	/* establish the connection if not already */
+	
+	if (!cli) {
+		cli = do_connect(desthost, service);
+		if (!cli)
+			return;
+	}
+	
 	while (cmd[0] != '\0')    {
 		char *p;
 		fstring tok;
@@ -2394,9 +2402,13 @@ handle a tar operation
 static int do_tar_op(char *base_directory)
 {
 	int ret;
-	cli = do_connect(desthost, service);
-	if (!cli)
-		return 1;
+
+	/* do we already have a connection? */
+	if (!cli) {
+		cli = do_connect(desthost, service);	
+		if (!cli)
+			return 1;
+	}
 
 	recurse=True;
 
