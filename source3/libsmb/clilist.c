@@ -135,8 +135,8 @@ static int interpret_long_filename(struct cli_state *cli,
 				p += 2; 
 				clistr_pull(cli, finfo->short_name, p,
 					    sizeof(finfo->short_name),
-					    -1, 
-					    CLISTR_TERMINATE | CLISTR_CONVERT);
+					    24, 
+					    CLISTR_CONVERT);
 				p += 24; /* short name? */	  
 				clistr_pull(cli, finfo->name, p,
 					    sizeof(finfo->name),
@@ -155,8 +155,8 @@ static int interpret_long_filename(struct cli_state *cli,
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *, void *), void *state)
+int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
+		 void (*fn)(file_info *, const char *, void *), void *state)
 {
 	int max_matches = 512;
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
@@ -179,10 +179,6 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	uint16 setup;
 	pstring param;
 
-	if (cli->protocol <= PROTOCOL_LANMAN1) {
-		return cli_list_old(cli, Mask, attribute, fn, state);
-	}
-	
 	pstrcpy(mask,Mask);
 	
 	while (ff_eos == 0) {
@@ -465,4 +461,18 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	if (dirlist) free(dirlist);
 	return(num_received);
+}
+
+
+/****************************************************************************
+  do a directory listing, calling fn on each file found
+  this auto-switches between old and new style
+  ****************************************************************************/
+int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
+	     void (*fn)(file_info *, const char *, void *), void *state)
+{
+	if (cli->protocol <= PROTOCOL_LANMAN1) {
+		return cli_list_old(cli, Mask, attribute, fn, state);
+	}
+	return cli_list_new(cli, Mask, attribute, fn, state);
 }
