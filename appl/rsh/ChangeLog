@@ -1,3 +1,11 @@
+1999-10-26  Assar Westerlund  <assar@sics.se>
+
+	* rshd.c (main): ignore SIGPIPE
+
+	* common.c (do_read): the encoded length can be longer than the
+ 	buffer being used, allocate memory for it dynamically.  From Brian
+ 	A May <bmay@dgs.monash.edu.au>
+
 1999-10-14  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c (proto): be more careful and don't print errno when read()
