@@ -102,6 +102,7 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_BAD_PASSWORD_TIME,	"sambaBadPasswordTime" 	},
 	{ LDAP_ATTR_PWD_HISTORY,	"sambaPasswordHistory"  },
 	{ LDAP_ATTR_MOD_TIMESTAMP,	"modifyTimestamp"	},
+	{ LDAP_ATTR_LOGON_HOURS,	"sambaLogonHours"	},
 	{ LDAP_ATTR_LIST_END,		NULL 			}
 };
 
