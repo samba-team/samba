@@ -454,16 +454,20 @@ smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n)
 smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
 {
 	smb_ucs2_t *r;
-	size_t slen, inslen;
+	size_t inslen;
 
-	if (!s || !*s || !ins || !*ins) return NULL;
-	slen = strlen_w(s);
+	if (!s || !*s || !ins || !*ins) 
+		return NULL;
+
 	inslen = strlen_w(ins);
 	r = (smb_ucs2_t *)s;
+
 	while ((r = strchr_w(r, *ins))) {
-		if (strncmp_w(r, ins, inslen) == 0) return r;
+		if (strncmp_w(r, ins, inslen) == 0) 
+			return r;
 		r++;
 	}
+
 	return NULL;
 }
 
@@ -736,16 +740,20 @@ smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
 smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
 {
 	smb_ucs2_t *r;
-	size_t slen, inslen;
+	size_t inslen;
 
-	if (!s || !*s || !ins || !*ins) return NULL;
-	slen = strlen_w(s);
+	if (!s || !*s || !ins || !*ins) 
+		return NULL;
+
 	inslen = strlen(ins);
 	r = (smb_ucs2_t *)s;
+
 	while ((r = strchr_w(r, UCS2_CHAR(*ins)))) {
-		if (strncmp_wa(r, ins, inslen) == 0) return r;
+		if (strncmp_wa(r, ins, inslen) == 0) 
+			return r;
 		r++;
 	}
+
 	return NULL;
 }
 
