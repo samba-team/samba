@@ -490,6 +490,8 @@ int sys_chown(const char *fname,uid_t uid,gid_t gid)
 		DEBUG(1,("WARNING: no chown!\n"));
 		done=1;
 	}
+	errno = ENOSYS;
+	return -1;
 #else
 	return(chown(fname,uid,gid));
 #endif
