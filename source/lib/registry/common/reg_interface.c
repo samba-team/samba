@@ -37,6 +37,7 @@ NTSTATUS registry_register(const void *_function)
 	struct reg_init_function_entry *entry = backends;
 
 	if (!functions || !functions->name) {
+		DEBUG(0, ("Invalid arguments while registering registry backend\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -56,30 +57,37 @@ NTSTATUS registry_register(const void *_function)
 	return NT_STATUS_OK;
 }
 
+static BOOL registry_init(void)
+{
+	static BOOL initialised;
+	NTSTATUS status;
+	
+	if(initialised) {
+		return True;
+	}
+	
+	status = register_subsystem("registry", registry_register);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0, ("Error registering registry subsystem: %s\n", nt_errstr(status)));
+		return False;
+	}
+
+	initialised = True;
+	static_init_registry;
+	return True;
+}
+
 /* Find a backend in the list of available backends */
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 {
 	struct reg_init_function_entry *entry;
-	static BOOL reg_first_init = True;
-	NTSTATUS status;
 
-	if(reg_first_init) {
-		status = register_subsystem("registry", registry_register);
-		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(0, ("Error registering registry subsystem: %s\n", nt_errstr(status)));
-			/* Don't try the initialisation again */
-			reg_first_init = False;
-			return NULL;
-		}
-
-		static_init_registry;
-		reg_first_init = False;
-	}
+	if(registry_init() == False) return NULL;
 
 	entry = backends;
 
 	while(entry) {
-		if (strcmp(entry->functions->name, name)==0) return entry;
+		if (strcmp(entry->functions->name, name) == 0) return entry;
 		entry = entry->next;
 	}
 
@@ -186,7 +194,7 @@ WERROR reg_import_hive(struct registry_context *h, const char *backend, const ch
 
 	ret->root->hive = ret;
 	ret->root->name = NULL;
-	ret->root->path = "";
+	ret->root->path = talloc_strdup(mem_ctx, "");
 
 	/* Add hive to context */
 	h->num_hives++;
