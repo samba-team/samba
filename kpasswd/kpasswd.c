@@ -98,11 +98,10 @@ change_password(krb5_context context,
 	return 1;
     }
 
-    printf ("%s%s%.*s\n", krb5_passwd_result_to_string(context,
-						       result_code),
+    printf ("%s%s%.*s\n", krb5_passwd_result_to_string(context, result_code),
 	    result_string.length > 0 ? " : " : "",
 	    (int)result_string.length,
-	    (char *)result_string.data);
+	    result_string.length > 0 ? (char *)result_string.data : "");
 
     krb5_data_free (&result_code_string);
     krb5_data_free (&result_string);
