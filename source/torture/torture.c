@@ -1777,6 +1777,9 @@ static BOOL run_unlinktest(int dummy)
 	if (cli_unlink(&cli, fname)) {
 		printf("error: server allowed unlink on an open file\n");
 		correct = False;
+	} else {
+		correct = check_error(__LINE__, &cli, ERRDOS, ERRbadshare, 
+				      NT_STATUS_SHARING_VIOLATION);
 	}
 
 	cli_close(&cli, fnum);
@@ -1823,9 +1826,9 @@ static BOOL run_maxfidtest(int dummy)
 			printf("maximum fnum is %d\n", i);
 			break;
 		}
-		if (i % 100 == 0) printf("%d\r", i);
+		printf("%6d\r", i);
 	}
-	printf("%d\n", i);
+	printf("%6d\n", i);
 
 	printf("cleaning up\n");
 	for (;i>=0;i--) {
@@ -1836,7 +1839,9 @@ static BOOL run_maxfidtest(int dummy)
 			       fname, cli_errstr(&cli));
 			correct = False;
 		}
+		printf("%6d\r", i);
 	}
+	printf("%6d\n", 0);
 
 	printf("maxfid test finished\n");
 	if (!close_connection(&cli)) {
@@ -1891,6 +1896,7 @@ static BOOL run_randomipc(int dummy)
 	int api, param_len, i;
 	static struct cli_state cli;
 	BOOL correct = True;
+	int count = 50000;
 
 	printf("starting random ipc test\n");
 
@@ -1898,7 +1904,7 @@ static BOOL run_randomipc(int dummy)
 		return False;
 	}
 
-	for (i=0;i<50000;i++) {
+	for (i=0;i<count;i++) {
 		api = sys_random() % 500;
 		param_len = (sys_random() % 64);
 
@@ -1911,7 +1917,11 @@ static BOOL run_randomipc(int dummy)
 			NULL, 0, BUFFER_SIZE, 
 			&rparam, &rprcnt,     
 			&rdata, &rdrcnt);
+		if (i % 100 == 0) {
+			printf("%d/%d\r", i,count);
+		}
 	}
+	printf("%d/%d\n", i, count);
 
 	if (!close_connection(&cli)) {
 		correct = False;
@@ -2090,7 +2100,7 @@ static BOOL run_trans2test(int dummy)
 		}
 
 		if (abs(m_time - time(NULL)) > 60*60*24*7) {
-			printf("ERROR: totally incorrect times - maybe word reversed?\n");
+			printf("ERROR: totally incorrect times - maybe word reversed? mtime=%s", ctime(&m_time));
 			correct = False;
 		}
 	}
