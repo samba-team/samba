@@ -50,11 +50,13 @@ static BOOL rpc_read(struct cli_state *cli, uint16 nt_pipe_fnum,
                      prs_struct *rdata, uint32 data_to_read,
                      uint32 rdata_offset)
 {
-	int size = cli->max_recv_frag;
+	size_t size = cli->max_recv_frag;
 	int file_offset = 0;
 	int num_read;
 	char *data;
 	uint32 new_data_size = rdata_offset + data_to_read;
+	uint8 cls;
+	uint32 type;
 
 	DEBUG(5,("rpc_read: data_to_read: %d data offset: %d file offset: %d\n",
 	data_to_read, rdata_offset, file_offset));
@@ -81,7 +83,13 @@ static BOOL rpc_read(struct cli_state *cli, uint16 nt_pipe_fnum,
 		file_offset  += num_read;
 		data         += num_read;
 
-		if (cli_error(cli, NULL, NULL)) return False;
+		if (cli_error(cli, &cls, &type))
+		{
+			if (cls != ERRDOS || type != ERRmoredata)
+			{
+				return False;
+			}
+		}
 
 	} while (num_read > 0 && data_to_read > 0);
 
@@ -244,7 +252,8 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 cmd,
 	int len;
 
 	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	uint32 err;
+	uint8 cls;
+	uint32 type;
 	BOOL first = True;
 	BOOL last  = True;
 	RPC_HDR    rhdr;
@@ -366,7 +375,13 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 cmd,
 
 		prs_mem_free(&hps);
 
-		if (cli_error(cli, NULL, &err)) return False;
+		if (cli_error(cli, &cls, &type))
+		{
+			if (cls != ERRDOS || type != ERRmoredata)
+			{
+				return False;
+			}
+		}
 
 		if (first)
 		{
@@ -725,10 +740,10 @@ static BOOL valid_pipe_name(char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *tra
 	{
 		if (strequal(pipe_name, pipe_names[pipe_idx].client_pipe ))
 		{
-			DEBUG(5,("Bind Abstract Syntax: "));	
+			DEBUG(5,("Bind Abstract Syntax:\n"));	
 			dump_data(5, (char*)&(pipe_names[pipe_idx].abstr_syntax), 
 			          sizeof(pipe_names[pipe_idx].abstr_syntax));
-			DEBUG(5,("Bind Transfer Syntax: "));
+			DEBUG(5,("Bind Transfer Syntax:\n"));
 			dump_data(5, (char*)&(pipe_names[pipe_idx].trans_syntax),
 			          sizeof(pipe_names[pipe_idx].trans_syntax));
 

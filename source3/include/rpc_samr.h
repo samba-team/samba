@@ -1267,7 +1267,7 @@ typedef struct q_samr_lookup_rids_info
 	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
 	uint32 num_rids2;      /* number of rids being looked up */
 
-	uint32 rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
+	uint32 *rid; /* domain RIDs being looked up */
 
 } SAMR_Q_LOOKUP_RIDS;
 
@@ -1283,14 +1283,14 @@ typedef struct r_samr_lookup_rids_info
 	uint32 ptr_names;       /* pointer to aliases */
 	uint32 num_names2;      /* number of aliases being looked up */
 
-	UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
-	UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
+	UNIHDR  *hdr_name; /* unicode account name header */
+	UNISTR2 *uni_name; /* unicode account name string */
 
 	uint32 num_types1;      /* number of users in aliases being looked up */
 	uint32 ptr_types;       /* pointer to users in aliases */
 	uint32 num_types2;      /* number of users in aliases being looked up */
 
-	uint32 type[MAX_LOOKUP_SIDS]; /* SID_ENUM type */
+	uint32 *type; /* SID_ENUM type */
 
 	uint32 status;
 

@@ -3388,7 +3388,6 @@ BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 		POLICY_HND *pol, uint32 flags,
 		uint32 num_rids, uint32 *rid)
 {
-	int i;
 	if (q_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_unknwon_12\n"));
@@ -3399,11 +3398,7 @@ BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 	q_u->flags     = flags;
 	q_u->ptr       = 0;
 	q_u->num_rids2 = num_rids;
-
-	for (i = 0; i < num_rids; i++)
-	{
-		q_u->rid[i] = rid[i];
-	}
+	q_u->rid = rid;
 
 	return True;
 }
@@ -3468,7 +3463,25 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		r_u->ptr_types  = 1;
 		r_u->num_types2 = num_names;
 
-		SMB_ASSERT_ARRAY(r_u->hdr_name, num_names);
+		r_u->hdr_name = malloc(num_names * sizeof(r_u->hdr_name[0]));
+		if (r_u->hdr_name == NULL)
+		{
+			return False;
+		}
+		r_u->uni_name = malloc(num_names * sizeof(r_u->uni_name[0]));
+		if (r_u->uni_name == NULL)
+		{
+			free(r_u->hdr_name);
+			return False;
+		}
+		r_u->type = malloc(r_u->num_types2 * sizeof(r_u->type[0]));
+		if (r_u->type == NULL)
+		{
+			free(r_u->hdr_name);
+			free(r_u->uni_name);
+			return False;
+		}
+
 
 		for (i = 0; i < num_names; i++)
 		{
@@ -3497,7 +3510,7 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_r_lookup_rids(char *desc,  SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth)
+BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth)
 {
 	int i;
 	fstring tmp;
@@ -3514,8 +3527,20 @@ BOOL samr_io_r_lookup_rids(char *desc,  SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps,
 
 	if (r_u->ptr_names != 0 && r_u->num_names1 != 0)
 	{
-		SMB_ASSERT_ARRAY(r_u->hdr_name, r_u->num_names2);
+		r_u->hdr_name = Realloc(r_u->hdr_name, r_u->num_names2 *
+		                        sizeof(r_u->hdr_name[0]));
+		if (r_u->hdr_name == NULL)
+		{
+			return False;
+		}
 
+		r_u->uni_name = Realloc(r_u->uni_name, r_u->num_names2 *
+		                       sizeof(r_u->uni_name[0]));
+		if (r_u->uni_name == NULL)
+		{
+			free(r_u->hdr_name);
+			return False;
+		}
 		for (i = 0; i < r_u->num_names2; i++)
 		{
 			prs_grow(ps);
@@ -3538,6 +3563,21 @@ BOOL samr_io_r_lookup_rids(char *desc,  SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps,
 
 	if (r_u->ptr_types != 0 && r_u->num_types1 != 0)
 	{
+		r_u->type = Realloc(r_u->type, r_u->num_types2 *
+		                    sizeof(r_u->type[0]));
+		if (r_u->type == NULL)
+		{
+			if (r_u->uni_name != NULL)
+			{
+				free(r_u->uni_name);
+			}
+			if (r_u->hdr_name != NULL)
+			{
+				free(r_u->hdr_name);
+			}
+			return False;
+		}
+
 		for (i = 0; i < r_u->num_types2; i++)
 		{
 			prs_grow(ps);
@@ -3548,7 +3588,35 @@ BOOL samr_io_r_lookup_rids(char *desc,  SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps,
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
+	if (!ps->io)
+	{
+		/* storing.  don't need memory any more */
+		samr_free_r_lookup_rids(r_u);
+	}
+
 	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_free_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u)
+{
+	if (r_u->uni_name != NULL)
+	{
+		free(r_u->uni_name);
+		r_u->uni_name = NULL;
+	}
+	if (r_u->hdr_name != NULL)
+	{
+		free(r_u->hdr_name);
+		r_u->hdr_name = NULL;
+	}
+	if (r_u->type != NULL)
+	{
+		free(r_u->type);
+		r_u->type = NULL;
+	}
 }
 
 /*******************************************************************

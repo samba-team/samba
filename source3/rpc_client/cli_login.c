@@ -48,7 +48,7 @@ uint32 cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
   ret = cli_net_req_chal(cli, fnum, srv_name, &clnt_chal, &srv_chal);
   if (ret != 0)
   {
-    DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
+    DEBUG(1,("cli_nt_setup_creds: request challenge failed\n"));
     return ret;
   }
 
@@ -73,7 +73,7 @@ uint32 cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
                       sec_chan, 0x000001ff, &srv_chal);
   if (ret != 0x0)
   {
-    DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
+    DEBUG(1,("cli_nt_setup_creds: auth2 challenge failed.  status: %x\n", ret));
   }
 
   return ret;

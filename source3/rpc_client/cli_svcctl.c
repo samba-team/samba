@@ -72,7 +72,7 @@ BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SVC_OPEN_SC_MAN: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(1,("SVC_OPEN_SC_MAN: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -133,7 +133,7 @@ BOOL svc_open_service(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SVC_OPEN_SC_MAN: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(1,("SVC_OPEN_SC_MAN: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -201,11 +201,12 @@ BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 		{
 			fstring errmsg;
 
-			if (r_o.dos_status != ERRmoredata) {
-			    smb_safe_err_msg(ERRDOS, r_o.dos_status,
-					     errmsg, sizeof(errmsg));
-			    /* report error code */
-			    DEBUG(0,("SVC_ENUM_SVCS_STATUS: %s\n", errmsg));
+			if (r_o.dos_status != ERRmoredata)
+			{
+				smb_safe_err_msg(ERRDOS, r_o.dos_status,
+				                 errmsg, sizeof(errmsg));
+				/* report error code */
+				DEBUG(1,("SVC_ENUM_SVCS_STATUS: %s\n", errmsg));
 			}
 			p = r_o.dos_status == ERRmoredata;
 		}
@@ -273,7 +274,7 @@ BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
 		if (p && r_c.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SVC_QUERY_SVC_CONFIG: %s\n", get_nt_error_msg(r_c.status)));
+			DEBUG(1,("SVC_QUERY_SVC_CONFIG: %s\n", get_nt_error_msg(r_c.status)));
 			p = False;
 		}
 
@@ -329,7 +330,7 @@ BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 		if (p && r_c.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SVC_CLOSE: %s\n", get_nt_error_msg(r_c.status)));
+			DEBUG(1,("SVC_CLOSE: %s\n", get_nt_error_msg(r_c.status)));
 			p = False;
 		}
 
@@ -349,7 +350,7 @@ BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 			}	
 			if (!valid_close)
 			{
-				DEBUG(0,("SVC_CLOSE: non-zero handle returned\n"));
+				DEBUG(1,("SVC_CLOSE: non-zero handle returned\n"));
 			}
 		}
 	}
