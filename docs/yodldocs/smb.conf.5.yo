@@ -626,6 +626,8 @@ it() link(bf(netbios aliases))(netbiosaliases)
 
 it() link(bf(netbios name))(netbiosname)
 
+it() link(bf(netbios scope))(netbiosscope)
+
 it() link(bf(nis homedir))(nishomedir)
 
 it() link(bf(nt acl support))(ntaclsupport)
@@ -3961,6 +3963,12 @@ tt(	Machine DNS name.)
 
   bf(Example:)
 tt(	netbios name = MYNAME)
+
+label(netbiosscope)
+dit(bf(netbios scope (G)))
+
+This sets the NetBIOS scope that Samba will operate under. This should
+not be set unless every machine on your LAN also sets this value.
 
 label(nishomedir)
 dit(bf(nis homedir (G)))
