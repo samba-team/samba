@@ -638,7 +638,7 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 	RPC_HDR_AUTH hdr_auth;
 	int auth_len = 0;
 	int auth_type, auth_level;
-	size_t saved_hdr_offset;
+	size_t saved_hdr_offset = 0;
 
 	prs_struct auth_info;
 	prs_init(&auth_info, RPC_HDR_AUTH_LEN, /* we will need at least this much */
@@ -691,8 +691,7 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 
 		data_blob_free(&request);
 
-	} 
-	else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
+	} else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
 		RPC_AUTH_NETSEC_NEG netsec_neg;
 
 		/* Use lp_workgroup() if domain not specified */
@@ -718,7 +717,8 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 		/* Auth len in the rpc header doesn't include auth_header. */
 		auth_len = prs_offset(&auth_info) - saved_hdr_offset;
 	}
-	/* create the request RPC_HDR */
+
+	/* Create the request RPC_HDR */
 	init_rpc_hdr(&hdr, RPC_BIND, 0x3, rpc_call_id, 
 		RPC_HEADER_LEN + RPC_HDR_RB_LEN + prs_offset(&auth_info),
 		auth_len);
