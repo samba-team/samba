@@ -362,7 +362,7 @@ list_files(FILE *out, char **files, int n_files, int flags)
 
     fi = calloc(n_files, sizeof(*fi));
     if (fi == NULL) {
-	warnx("out of memory");
+	sec_fprintf2(out, "ouf of memory\n");
 	return;
     }
     for(i = 0; i < n_files; i++) {
@@ -483,7 +483,7 @@ list_dir(FILE *out, const char *directory, int flags)
     int n_files = 0;
 
     if(d == NULL) {
-	warn("%s", directory);
+	sec_fprintf2(out, "%s: %s\r\n", directory, strerror(errno));
 	return;
     }
     while((ent = readdir(d)) != NULL) {
@@ -499,7 +499,7 @@ list_dir(FILE *out, const char *directory, int flags)
 	}
 	tmp = realloc(files, (n_files + 1) * sizeof(*files));
 	if (tmp == NULL) {
-	    warnx("out of memory");
+	    sec_fprintf2(out, "%s: out of memory\r\n", directory);
 	    free_files (files, n_files);
 	    closedir (d);
 	    return;
@@ -507,7 +507,7 @@ list_dir(FILE *out, const char *directory, int flags)
 	files = tmp;
 	asprintf(&files[n_files], "%s/%s", directory, ent->d_name);
 	if (files[n_files] == NULL) {
-	    warnx("out of memory");
+	    sec_fprintf2(out, "%s: out of memory\r\n", directory);
 	    free_files (files, n_files);
 	    closedir (d);
 	    return;
