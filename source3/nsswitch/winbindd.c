@@ -649,13 +649,14 @@ struct winbindd_state server_state;   /* Server state information */
 
 int main(int argc, char **argv)
 {
+	extern BOOL AllowDebugChange;
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
 	extern BOOL append_log;
 	pstring logfile;
 	int accept_sock;
 	BOOL interactive = False;
-	int opt, new_debuglevel = -1;
+	int opt;
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
 	   SIGUSR2 is received before a handler is installed */
@@ -698,7 +699,8 @@ int main(int argc, char **argv)
 
 			/* Run with specified debug level */
 		case 'd':
-			new_debuglevel = atoi(optarg);
+			DEBUGLEVEL = atoi(optarg);
+			AllowDebugChange = False;
 			break;
 
 			/* Load a different smb.conf file */
@@ -739,9 +741,6 @@ int main(int argc, char **argv)
 	}
 
         fstrcpy(global_myworkgroup, lp_workgroup());
-
-	if (new_debuglevel != -1)
-		DEBUGLEVEL = new_debuglevel;
 
 	if (!interactive)
 		become_daemon();
