@@ -594,6 +594,10 @@ static void usage(char *pname)
     become_daemon();
   }
 
+  if (!directory_exist(lp_lockdir(), NULL)) {
+	  mkdir(lp_lockdir(), 0755);
+  }
+
   if (*pidFile)
     {
       int     fd;
