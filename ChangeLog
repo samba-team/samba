@@ -1,3 +1,12 @@
+Sun Nov 22 11:42:45 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kdc/kerberos5.c (as_rep): set keytype to sess_ktype if
+ 	ktype_is_etype
+
+	* lib/krb5/encrypt.c (krb5_keytype_to_etypes): zero terminate
+ 	etypes
+	(em): sort entries
+
 Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
 
 	* kdc/connect.c (handle_udp, handle_tcp): correct type of `n'
