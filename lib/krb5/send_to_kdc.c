@@ -195,7 +195,7 @@ krb5_sendto_kdc (krb5_context context,
 
      for (i = 0; i < context->max_retries; ++i)
 	 for (hp = hostlist; (p = *hp); ++hp) {
-	     char *addr;
+	     char **addr;
 	     char *colon;
 	     int http_flag = 0;
 	     int tcp_flag = 0;
@@ -273,7 +273,9 @@ krb5_sendto_kdc (krb5_context context,
 		 continue;
 	     if (colon)
 		 *colon++ = ':';
-	     while ((addr = *hostent->h_addr_list++)) {
+	     for (addr = hostent->h_addr_list;
+		  *addr;
+		  ++addr) {
 		 int family = hostent->h_addrtype;
 		    
 		 if(http_flag || tcp_flag)
@@ -286,7 +288,7 @@ krb5_sendto_kdc (krb5_context context,
 		     goto out;
 		 }
 		 ret = krb5_h_addr2sockaddr (family,
-					     addr,
+					     *addr,
 					     sa,
 					     &sa_size,
 					     init_port(colon, port));
