@@ -1575,4 +1575,81 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	return True;
 }
+
+/****************************************************************************
+ Do a chmod by setting the ACL USER_OBJ, GROUP_OBJ and OTHER bits in an ACL
+ and set the mask to rwx. Needed to preserve complex ACLs set by NT.
+****************************************************************************/
+
+static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
+{
+	int entry_id = SMB_ACL_FIRST_ENTRY;
+	SMB_ACL_ENTRY_T entry;
+	int num_entries = 0;
+
+#if 1
+	return -1;
+#else
+	while ( sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
+		SMB_ACL_TAG_T tagtype;
+		SMB_ACL_PERMSET_T permset;
+
+		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
+			return -1;
+
+		if (sys_acl_get_permset(entry, &permset) == -1)
+			return -1;
+
+		num_entries++;
+
+		switch(tagtype) {
+			case SMB_ACL_USER_OBJ:
+                break;
+			case SMB_ACL_USER:
+				break;
+			case SMB_ACL_GROUP_OBJ:
+				break;
+			case SMB_ACL_GROUP:
+				break;
+			case SMB_ACL_MASK:
+				break;
+			case SMB_ACL_OTHER:
+				break;
+		}
+
+	}
+#endif
+}
+
+/****************************************************************************
+ Do a chmod by setting the ACL USER_OBJ, GROUP_OBJ and OTHER bits in an ACL
+ and set the mask to rwx. Needed to preserve complex ACLs set by NT.
+ Note that name is in UNIX character set.
+****************************************************************************/
+
+int chmod_acl(char *name, mode_t mode)
+{
+	SMB_ACL_T posix_acl = NULL;
+
+	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL)
+		return -1;
+
+	return chmod_acl_internals(posix_acl, mode);
+}
+
+/****************************************************************************
+ Do an fchmod by setting the ACL USER_OBJ, GROUP_OBJ and OTHER bits in an ACL
+ and set the mask to rwx. Needed to preserve complex ACLs set by NT.
+****************************************************************************/
+
+int fchmod_acl(int fd, mode_t mode)
+{
+	SMB_ACL_T posix_acl = NULL;
+
+	if ((posix_acl = sys_acl_get_fd(fd)) == NULL)
+		return -1;
+
+	return chmod_acl_internals(posix_acl, mode);
+}
+
 #undef OLD_NTDOMAIN
