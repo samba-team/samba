@@ -1354,9 +1354,10 @@ static BOOL run_locktest4(int dummy)
 	      ((fnum1 = cli_open(&cli1, fname, O_RDWR, DENY_NONE)) != -1) &&
 	      cli_lock(&cli1, fnum1, 7, 1, 0, WRITE_LOCK);
         cli_close(&cli1, f);
+	cli_close(&cli1, fnum1);
 	EXPECTED(ret, True);
 	printf("the server %s have the NT byte range lock bug\n", !ret?"does":"doesn't");
-	
+
  fail:
 	cli_close(&cli1, fnum1);
 	cli_close(&cli2, fnum2);
@@ -1490,6 +1491,43 @@ static BOOL run_locktest5(int dummy)
 	printf("finished locktest5\n");
        
 	return correct;
+}
+
+/*
+  tries the unusual lockingX locktype bits
+*/
+static BOOL run_locktest6(int dummy)
+{
+	static struct cli_state cli;
+	char *fname = "\\lockt6.lck";
+	int fnum;
+	NTSTATUS status;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	cli_sockopt(&cli, sockops);
+
+	printf("starting locktest6\n");
+
+	cli_unlink(&cli, fname);
+
+	fnum = cli_open(&cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	status = cli_locktype(&cli, fnum, 0, 8, 0, LOCKING_ANDX_CHANGE_LOCKTYPE);
+        cli_close(&cli, fnum);
+	printf("CHANGE_LOCKTYPE gave %s\n", get_nt_error_msg(status));
+
+	fnum = cli_open(&cli, fname, O_RDWR, DENY_NONE);
+	status = cli_locktype(&cli, fnum, 0, 8, 0, LOCKING_ANDX_CANCEL_LOCK);
+        cli_close(&cli, fnum);
+	printf("CANCEL_LOCK gave %s\n", get_nt_error_msg(status));
+
+	cli_unlink(&cli, fname);
+	torture_close_connection(&cli);
+
+	printf("finished locktest6\n");
+	return True;
 }
 
 /*
@@ -3285,6 +3323,7 @@ static struct {
 	{"LOCK3",  run_locktest3,  0},
 	{"LOCK4",  run_locktest4,  0},
 	{"LOCK5",  run_locktest5,  0},
+	{"LOCK6",  run_locktest6,  0},
 	{"UNLINK", run_unlinktest, 0},
 	{"BROWSE", run_browsetest, 0},
 	{"ATTR",   run_attrtest,   0},
