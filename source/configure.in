@@ -2241,12 +2241,12 @@ if test x"$with_ldap_support" = x"yes"; then
   ##################################################################
   # we might need the lber lib on some systems. To avoid link errors
   # this test must be before the libldap test
-  AC_CHECK_LIB(lber, ber_scanf, [LIBS="$LIBS -llber"])
+  AC_CHECK_LIB(lber, ber_scanf, [LDAP_LIBS="$LIBS -llber"])
 
   ########################################################
   # now see if we can find the ldap libs in standard paths
   if test x$have_ldap != xyes; then
-  AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
+  AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LDAP_LIBS="$LIBS -lldap";
 	AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])])
 	AC_CHECK_HEADERS([ldap.h lber.h], [default_modules="$default_modules pdb_ldap"])
 
@@ -2260,19 +2260,21 @@ if test x"$with_ldap_support" = x"yes"; then
 	#include <ldap.h>], [ldap_set_rebind_proc(0, 0, 0);], [pam_ldap_cv_ldap_set_rebind_proc=3], [pam_ldap_cv_ldap_set_rebind_proc=2]) ])
 	AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $pam_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
   fi
+  
+	if test x"$with_ads_support" = x"yes"; then
+		LIBS="$LIBS $LDAP_LIBS"
+	fi
 fi
+
+AC_SUBST(LDAP_LIBS)
 
 ########################################################
 # Compile with MySQL support?
 AM_PATH_MYSQL([0.11.0],[default_modules="$default_modules pdb_mysql"],[])
-CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-LIBS="$LIBS $MYSQL_LIBS"
 
 ########################################################
 # Compile with XML support?
 AM_PATH_XML2([2.0.0],[default_modules="$default_modules pdb_xml"],[])
-CFLAGS="$CFLAGS $XML_CFLAGS"
-LIBS="$LIBS $XML_LIBS"
 
 #################################################
 # check for automount support
@@ -3349,9 +3351,12 @@ AC_ARG_WITH(shared-modules,
 	done
 fi ])
 
-SMB_MODULE(pdb_xml, modules/xml.o, bin/xml.so, PDB)
-SMB_MODULE(pdb_mysql, modules/mysql.o, bin/mysql.so, PDB)
-SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, bin/ldapsam.so, PDB)
+SMB_MODULE(pdb_xml, modules/xml.o, bin/xml.so, PDB,
+		  [ CFLAGS="$CFLAGS $XML_CFLAGS"; LIBS="$LIBS $XML_LIBS" ] )
+SMB_MODULE(pdb_mysql, modules/mysql.o, bin/mysql.so, PDB, 
+		   [ CFLAGS="$CFLAGS $MYSQL_CFLAGS"; LIBS="$LIBS $MYSQL_LIBS" ]	)
+SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, bin/ldapsam.so, PDB, 
+		   [ LIBS="$LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, bin/smbpasswd.so, PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, bin/tdbsam.so, PDB)
 SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, bin/nisplussam.so, PDB)
@@ -3389,6 +3394,8 @@ SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK), bin/netatalk.so, VFS)
 SMB_SUBSYSTEM(VFS)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
+
+AC_SUBST(MODULES_CLEAN)
 
 #################################################
 # do extra things if we are running insure
