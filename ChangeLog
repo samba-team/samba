@@ -1,3 +1,7 @@
+2003-02-16  Love  <lha@stacken.kth.se>
+
+	* **/*.[0-9]: add copyright/licenses on all manpages
+
 2003-14-16  Jacques Vidrine  <nectar@kth.se>
 
 	* lib/krb5/get_in_tkt.c (init_as_req): Send only a single
