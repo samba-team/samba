@@ -345,10 +345,12 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	id = idr_get_new_above(req->nbtsock->idr, req, 
 			       req->request->name_trn_id, UINT16_MAX);
 	if (id == -1) {
-		id = idr_get_new_above(req->nbtsock->idr, req, 1+(generate_random()%(UINT16_MAX/2)),
+		id = idr_get_new_above(req->nbtsock->idr, req, 
+				       1+(generate_random()%(UINT16_MAX/2)),
 				       UINT16_MAX);
 	}
 	if (id == -1) goto failed;
+	req->request->name_trn_id = id;
 
 	te.next_event = timeout;
 	te.handler = nbt_name_socket_timeout;
