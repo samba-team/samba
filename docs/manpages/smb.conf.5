@@ -335,6 +335,8 @@ default service
 
 dfree command
 
+domain master
+
 encrypt passwords
 
 getwd cache
@@ -916,6 +918,19 @@ path names on some systems.
 .SS directory (S)
 See
 .B path.
+
+.SS domain master (G)
+
+Enable WAN-wide browse list collation.  Local master browsers on 
+broadcast-isolated subnets will give samba their local browse lists, and 
+ask for a complete copy of the browse list for the whole wide area network.
+Browser clients will then contact their local master browser, and will
+receive the domain-wide browse list, instead of just the list for their
+broadcast-isolated subnet.
+
+.B Default:
+ 	domain master = no
+
 .SS dont descend (S)
 There are certain directories on some systems (eg., the /proc tree under
 Linux) that are either not of interest to clients or are infinitely deep
@@ -1891,11 +1906,17 @@ See also postexec
 
 .SS preferred master (G)
 This boolean parameter controls if Samba is a preferred master browser
-for its workgroup. Setting this gives it a slight edge in elections
-and also means it will automatically start an election when it starts
-up. 
+for its workgroup.
+On startup, samba will force an election, and it will have a slight
+advantage in winning the election.  It is recommended that this 
+parameter is used in conjunction with domain master = yes, so that samba 
+can guarantee becoming a domain master.  
 
-It is on by default.
+See
+.B os level = nn
+
+.B Default:
+ 	preferred master = yes
 
 .SS preload
 This is an alias for "auto services"
