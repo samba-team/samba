@@ -285,6 +285,7 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 			return nt_status;
 		}
 	} else {
+		DOM_SID g_sid;
 		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(new_sam_acct))) {
 			*new_sam_acct = NULL;
 			return nt_status;
@@ -293,6 +294,14 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 			pdb_free_sam(new_sam_acct);
 			return nt_status;
 		}
+
+		/* this is a hack this thing should not be set
+		   here --SSS */
+
+		/* set Domain Users by default ! */
+		sid_copy(&g_sid, get_global_sam_sid());
+		sid_append_rid(&g_sid,  DOMAIN_GROUP_RID_USERS);
+		pdb_set_group_sid(*new_sam_acct, &g_sid, PDB_SET);
 	}
 	return NT_STATUS_OK;
 }
@@ -377,9 +386,9 @@ NTSTATUS pdb_free_sam(SAM_ACCOUNT **user)
 NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 {
 	const char *guest_account = lp_guestaccount();
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	GROUP_MAP map;
 	
-	if (!account_data || (!pwd && !(pdb_get_free_rid_base() && lp_idmap_only()))) {
+	if (!account_data || !pwd) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -401,40 +410,22 @@ NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 		}
 	}
 
-	if (pwd) {
-		GROUP_MAP map;
-
-		if (!pdb_set_user_sid_from_rid(account_data, fallback_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
-			DEBUG(0,("Can't set User SID from RID!\n"));
+	if (!pdb_set_user_sid_from_rid(account_data, fallback_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
+		DEBUG(0,("Can't set User SID from RID!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	/* call the mapping code here */
+	if(pdb_getgrgid(&map, pwd->pw_gid, MAPPING_WITHOUT_PRIV)) {
+		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
+			DEBUG(0,("Can't set Group SID!\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
-		/* call the mapping code here */
-		if(pdb_getgrgid(&map, pwd->pw_gid, MAPPING_WITHOUT_PRIV)) {
-			if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
-				DEBUG(0,("Can't set Group SID!\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-		} 
-		else {
-			if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
-				DEBUG(0,("Can't set Group SID\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-		}
-	} else {
-		unid_t idval;
-		int idtype;
-
-		/* this is a hack this thing should not be set
-		   here --SSS */
-		if (pdb_get_init_flags(account_data, PDB_GROUPSID) == PDB_DEFAULT) {
-			DOM_SID g_sid;
-
-			/* set Domain Users by default ! */
-			sid_copy(&g_sid, get_global_sam_sid());
-			sid_append_rid(&g_sid,  DOMAIN_GROUP_RID_USERS);
-			pdb_set_group_sid(account_data, &g_sid, PDB_SET);
+	} 
+	else {
+		if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
+			DEBUG(0,("Can't set Group SID\n"));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 
