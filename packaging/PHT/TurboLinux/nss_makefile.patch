@@ -1,26 +1,6 @@
-diff -ruN /virgin/samba-2.0.7/packaging/PHT/TurboLinux/README.NSS /root/samba-2.0.7/packaging/PHT/TurboLinux/README.NSS
---- /virgin/samba-2.0.7/packaging/PHT/TurboLinux/README.NSS	Wed Dec 31 16:00:00 1969
-+++ /root/samba-2.0.7/packaging/PHT/TurboLinux/README.NSS	Fri Apr  7 16:20:57 2000
-@@ -0,0 +1,16 @@
-+Instructions:
-+
-+1) cd into the source directory for samba.
-+2) Extract nss_wins.tar.gz into the source directory of the samba
-+   distribution.  (It will create a directory called nsswitch)
-+3) Apply the Makefile.in patch
-+4) run configure
-+5) run "make nsswitch/libnss_wins.so"
-+6) cp nsswitch/libnss_wins.so /lib/libnss_wins.so.2
-+7) Add "wins" to the hosts entry in your nsswitch.conf
-+8) If you don't have a WINS server on your subnet, you'll need to
-+   add a line to your /etc/resolv.conf file of the form:
-+
-+        wins_server 123.45.56.78
-+
-+tridge@linuxcare.com
-diff -ruN /virgin/samba-2.0.7/source/Makefile.in /root/samba-2.0.7/source/Makefile.in
---- /virgin/samba-2.0.7/source/Makefile.in	Sun Apr  2 12:12:17 2000
-+++ /root/samba-2.0.7/source/Makefile.in	Fri Apr  7 16:22:19 2000
+diff -ruN /samba-2.0.7.orig/source/Makefile.in /samba-2.0.7/source/Makefile.in
+--- /samba-2.0.7.orig/source/Makefile.in	Sun Apr  2 12:12:17 2000
++++ /samba-2.0.7/source/Makefile.in	Fri Apr  7 16:22:19 2000
 @@ -268,6 +268,9 @@
  PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
  PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
@@ -42,9 +22,9 @@ diff -ruN /virgin/samba-2.0.7/source/Makefile.in /root/samba-2.0.7/source/Makefi
  
  install: installbin installman installscripts installcp installswat
  
-diff -ruN /virgin/samba-2.0.7/source/nsswitch/wins.c /root/samba-2.0.7/source/nsswitch/wins.c
---- /virgin/samba-2.0.7/source/nsswitch/wins.c	Wed Dec 31 16:00:00 1969
-+++ /root/samba-2.0.7/source/nsswitch/wins.c	Fri Apr  7 16:20:57 2000
+diff -ruN /samba-2.0.7.orig/source/nsswitch/wins.c /samba-2.0.7/source/nsswitch/wins.c
+--- /samba-2.0.7.orig/source/nsswitch/wins.c	Wed Dec 31 16:00:00 1969
++++ /samba-2.0.7/source/nsswitch/wins.c	Fri Apr  7 16:20:57 2000
 @@ -0,0 +1,129 @@
 +/* 
 +   Unix SMB/Netbios implementation.

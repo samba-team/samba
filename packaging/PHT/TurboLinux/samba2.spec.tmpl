@@ -5,8 +5,10 @@ Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
 Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
+Source2: ftp://samba.org/pub/samba/contrib/nss_wins.tar.gz
 Patch: makefile-path.patch
 Patch1: smbw.patch
+Patch2: nss_makefile.patch
 Requires: pam >= 0.64 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
@@ -48,7 +50,7 @@ docs directory for implementation details.
 
 NOTE: TurboLinux uses PAM which has integrated support
 for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
-enabled. PHT TurboLinux has built in support for quotas in PAM.
+enabled. TurboLinux has built in support for quotas in PAM.
 
 %description -n smbfs
 This package includes the tools necessary to mount filesystems from
@@ -145,14 +147,18 @@ install.
 
 %prep
 %setup
+cd source
+tar xzvf $RPM_SOURCE_DIR/nss_wins.tar.gz
+cd ..
 %patch -p1
 %patch1 -p1
+%patch2 -p0
 
 %build
 cd source
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
 CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-automount --with-quotas --with-smbmount --with-pam --with-profile --with-utmp --with-netatalk --with-sambabook=/usr/share/swat/using_samba
-make -j${NUMCPU} all smbtorture rpctorture smbfilter debug2html # smbwrapper 
+make -j${NUMCPU} all smbtorture rpctorture smbfilter debug2html nsswitch/libnss_wins.so
 
 
 %install
@@ -161,6 +167,7 @@ mkdir -p $RPM_BUILD_ROOT/sbin
 mkdir -p $RPM_BUILD_ROOT/etc/codepages/src
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
+mkdir -p $RPM_BUILD_ROOT/lib
 mkdir -p $RPM_BUILD_ROOT/home/samba
 mkdir -p $RPM_BUILD_ROOT/usr/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT/usr/share/swat/using_samba/{gifs,figs}
@@ -202,6 +209,10 @@ for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
 install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
 done
+
+# Install the nsswitch library extension file
+install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
+ln -s $RPM_BUILD_ROOT/lib/libnss_wins.so $RPM_BUILD_ROOT/lib/libnss_wins.so.2
 
 # Install SWAT helper files
 for i in swat/help/*.html
@@ -369,6 +380,7 @@ fi
 %attr(-,root,root) /usr/bin/smbadduser
 # %attr(0755,root,root) /usr/bin/smbsh
 # %attr(0755,root,root) /usr/bin/smbwrapper.so
+%attr(755,root,root) /lib/libnss_wins.s*
 %attr(-,root,root) /usr/share/swat/help/welcome.html
 %attr(-,root,root) /usr/share/swat/help/DOMAIN_MEMBER.html
 %attr(-,root,root) /usr/share/swat/help/lmhosts.5.html
