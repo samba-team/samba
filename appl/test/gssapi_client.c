@@ -95,6 +95,7 @@ proto (int sock, const char *hostname, const char *service)
     OM_uint32 maj_stat, min_stat;
     gss_name_t server;
     gss_buffer_desc name_token;
+    struct gss_channel_bindings_struct input_chan_bindings;
 
     name_token.length = asprintf ((char **)&name_token.value,
 				  "%s@%s", service, hostname);
@@ -120,6 +121,23 @@ proto (int sock, const char *hostname, const char *service)
     input_token->length = 0;
     output_token->length = 0;
 
+    input_chan_bindings.initiator_addrtype = GSS_C_AF_INET;
+    input_chan_bindings.initiator_address.length = 4;
+    input_chan_bindings.initiator_address.value = &local.sin_addr.s_addr;
+    input_chan_bindings.acceptor_addrtype = GSS_C_AF_INET;
+    input_chan_bindings.acceptor_address.length = 4;
+    input_chan_bindings.acceptor_address.value = &remote.sin_addr.s_addr;
+    
+#if 0
+    input_chan_bindings.application_data.value = malloc(4);
+    * (unsigned short*)input_chan_bindings.application_data.value = local.sin_port;
+    * ((unsigned short *)input_chan_bindings.application_data.value + 1) = remote.sin_port;
+    input_chan_bindings.application_data.length = 4;
+#else
+    input_chan_bindings.application_data.length = 0;
+    input_chan_bindings.application_data.value = NULL;
+#endif
+
     while(!context_established) {
 	maj_stat =
 	    gss_init_sec_context(&min_stat,
@@ -128,8 +146,9 @@ proto (int sock, const char *hostname, const char *service)
 				 server,
 				 GSS_C_NO_OID,
 				 GSS_C_MUTUAL_FLAG | GSS_C_SEQUENCE_FLAG,
+				 | GSS_C_DELEG_FLAG,
 				 0,
-				 GSS_C_NO_CHANNEL_BINDINGS,
+				 &input_chan_bindings,
 				 input_token,
 				 NULL,
 				 output_token,

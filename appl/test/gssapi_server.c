@@ -112,6 +112,9 @@ proto (int sock, const char *service)
 	output_token = &real_output_token;
     OM_uint32 maj_stat, min_stat;
     gss_name_t client_name;
+    struct gss_channel_bindings_struct input_chan_bindings;
+    gss_cred_id_t delegated_cred_handle = NULL;
+    krb5_ccache ccache;
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -123,6 +126,27 @@ proto (int sock, const char *service)
 	|| addrlen != sizeof(remote))
 	err (1, "getpeername");
 
+    input_chan_bindings.initiator_addrtype = GSS_C_AF_INET;
+    input_chan_bindings.initiator_address.length = 4;
+    input_chan_bindings.initiator_address.value = &remote.sin_addr.s_addr;
+    input_chan_bindings.acceptor_addrtype = GSS_C_AF_INET;
+    input_chan_bindings.acceptor_address.length = 4;
+    input_chan_bindings.acceptor_address.value = &local.sin_addr.s_addr;
+    input_chan_bindings.application_data.value = malloc(4);
+#if 0
+    * (unsigned short *)input_chan_bindings.application_data.value =
+                          remote.sin_port;
+    * ((unsigned short *)input_chan_bindings.application_data.value + 1) =
+                          local.sin_port;
+    input_chan_bindings.application_data.length = 4;
+#else
+    input_chan_bindings.application_data.length = 0;
+    input_chan_bindings.application_data.value = NULL;
+#endif
+    
+    delegated_cred_handle = malloc(sizeof(*delegated_cred_handle));
+    memset((char*)delegated_cred_handle, 0, sizeof(*delegated_cred_handle));
+    
     do {
 	read_token (sock, input_token);
 	maj_stat =
@@ -130,13 +154,13 @@ proto (int sock, const char *service)
 				    &context_hdl,
 				    GSS_C_NO_CREDENTIAL,
 				    input_token,
-				    GSS_C_NO_CHANNEL_BINDINGS,
+				    &input_chan_bindings,
 				    &client_name,
 				    NULL,
 				    output_token,
 				    NULL,
 				    NULL,
-				    NULL);
+				    /*&delegated_cred_handle*/ NULL);
 	if(GSS_ERROR(maj_stat))
 	    gss_err (1, min_stat, "gss_accept_sec_context");
 	if (output_token->length != 0)
@@ -149,6 +173,17 @@ proto (int sock, const char *service)
 	    break;
 	}
     } while(maj_stat & GSS_S_CONTINUE_NEEDED);
+    
+    if (delegated_cred_handle->ccache) {
+       krb5_context context;
+
+       maj_stat = krb5_init_context(&context);
+       maj_stat = krb5_cc_resolve(context, "FILE:/tmp/krb5cc_test", &ccache);
+       maj_stat = krb5_cc_copy_cache(context,
+                                      delegated_cred_handle->ccache, ccache);
+       krb5_cc_close(context, ccache);
+       krb5_cc_destroy(context, delegated_cred_handle->ccache);
+    }
 
     if (fork_flag) {
 	pid_t pid;
