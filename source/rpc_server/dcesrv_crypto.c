@@ -84,14 +84,6 @@ NTSTATUS dcesrv_crypto_update(struct dcesrv_auth *auth,
 }
 
 /*
-  get auth_session_info state
-*/
-NTSTATUS dcesrv_crypto_session_info(struct dcesrv_auth *auth, struct auth_session_info **session_info) 
-{
-	return auth->crypto_ctx.ops->session_info(auth, session_info);
-}
-
-/*
   seal a packet
 */
 NTSTATUS dcesrv_crypto_seal(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
