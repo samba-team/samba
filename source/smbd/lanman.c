@@ -933,7 +933,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	 * in order to support lanman style printing with Win NT/2k
 	 * clients       --jerry
 	 */
-	if (!mdrcnt && lp_lanman_printing_only())
+	if (!mdrcnt && lp_disable_spoolss())
 		desc.errcode = ERRbuftoosmall;
  
     *rdata_len = desc.usedlen;
