@@ -600,15 +600,42 @@ static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_GetDomPwInfo r;
 	BOOL ret = True;
 
-	printf("Testing GetDomPwInfo\n");
-
 	r.in.name = domain_name;
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetDomPwInfo failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
+
+	r.in.name->name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
+
+	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetDomPwInfo failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	r.in.name->name = "\\\\__NONAME__";
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
+
+	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetDomPwInfo failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	r.in.name->name = "\\\\Builtin";
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
+
+	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetDomPwInfo failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
 
 	return ret;
 }
