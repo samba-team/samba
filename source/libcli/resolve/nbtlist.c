@@ -129,6 +129,7 @@ struct composite_context *resolve_name_nbtlist_send(struct nbt_name *name,
 		state->io_queries[i].in.wins_lookup = wins_lookup;
 		state->io_queries[i].in.timeout = lp_parm_int(-1, "nbt", "timeout", 3);
 
+		state->io_queries[i].in.retries = 0;
 		state->queries[i] = nbt_name_query_send(state->nbtsock, &state->io_queries[i]);
 		if (!state->queries[i]) goto failed;
 
