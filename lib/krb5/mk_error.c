@@ -69,8 +69,12 @@ krb5_mk_error(krb5_context context,
 	msg.e_text = (general_string*)&e_text;
     if (e_data)
 	msg.e_data = (octet_string*)e_data;
-    msg.realm = server->realm;
-    msg.sname = server->name;
+    if(server){
+	msg.realm = server->realm;
+	msg.sname = server->name;
+    }else{
+	msg.realm = "<unspecified realm>";
+    }
     if(client){
 	msg.crealm = &client->realm;
 	msg.cname = &client->name;
