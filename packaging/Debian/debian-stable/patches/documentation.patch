@@ -18,7 +18,7 @@
  
  .TP 3
  \(bu
--/usr/local/samba/bin/swat
+-/usr/local/samba/sbin/swat
 +/usr/sbin/swat
  .TP
  \(bu
@@ -48,7 +48,7 @@
 +In \fI/etc/inetd\&.conf\fR you should add a line like this (not needed for Debian since the maintainer scripts do it. You need to uncomment the line, though, because it is added commented out for security reasons):
  
  .PP
--\fBswat stream tcp nowait\&.400 root /usr/local/samba/bin/swat swat\fR
+-\fBswat stream tcp nowait\&.400 root /usr/local/samba/sbin/swat swat\fR
 +\fBswat stream tcp nowait.400 root /usr/sbin/swat swat\fR
  
  .PP
