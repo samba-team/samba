@@ -9,10 +9,11 @@ CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
-CFLAGS = @CFLAGS@
+CFLAGS = @CFLAGS@ @SKEYINCLUDE@
 LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
 LIBS = @LIBS@
+SKEYLIB = @SKEYLIB@
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
 prefix = @prefix@
@@ -78,6 +79,6 @@ dist: $(DISTFILES)
 KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken
 
 popper: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(KLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(KLIB) $(LIBS) $(SKEYLIB)
 
 $(OBJECTS): ../../config.h
