@@ -65,6 +65,9 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		     wr->writex.in.count,
 		     wr->writex.in.offset);
 	if (ret == -1) {
+		if (errno == EFBIG) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		return map_nt_error_from_unix(errno);
 	}
 
