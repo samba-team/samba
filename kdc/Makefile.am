@@ -4,7 +4,9 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include 
 
-bin_PROGRAMS = string2key kdc
+bin_PROGRAMS = string2key
+
+libexec_PROGRAMS = kdc
 
 kdc_SOURCES = connect.c kerberos4.c kerberos5.c main.c misc.c
 
