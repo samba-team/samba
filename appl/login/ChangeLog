@@ -1,3 +1,10 @@
+2000-06-21  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (LDADD): add otp
+	* login.c: add reading of /etc/environment.  From Ake Sandgren
+	<ake@cs.umu.se>
+	add otp support. From Daniel Kouril <kouril@ics.muni.cz>
+
 2000-04-09  Assar Westerlund  <assar@sics.se>
 
 	* login.c: allow conversion of v5 -> v4 tickets when logging in
