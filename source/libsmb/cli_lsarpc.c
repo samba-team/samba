@@ -329,7 +329,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /** Lookup a list of names */
 
 NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              POLICY_HND *pol, int num_names, char **names, 
+                              POLICY_HND *pol, int num_names, const char **names, 
                               DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	prs_struct qbuf, rbuf;
