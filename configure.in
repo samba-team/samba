@@ -145,7 +145,7 @@ if test "$ac_cv_func_vsnprintf_working" = yes; then
 	AC_DEFINE_UNQUOTED($foo)
 fi
 
-AC_CHECK_FUNCS(_getpty asnprintf asprintf gethostname getmsg)
+AC_CHECK_FUNCS(_getpty asnprintf asprintf fcntl gethostname getmsg)
 AC_CHECK_FUNCS(grantpt logwtmp mktime ptsname rand random revoke)
 AC_CHECK_FUNCS(select setitimer setlogin setpcred setpgid setsid)
 AC_CHECK_FUNCS(setsid setsockopt strstr timegm ttyname umask)
@@ -163,7 +163,7 @@ AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
 #endif],
 17)
 
-AC_BROKEN(chown daemon err errx fchown getcwd getdtablesize)
+AC_BROKEN(chown daemon err errx fchown flock getcwd getdtablesize)
 AC_BROKEN(getusershell inet_aton initgroups lstat memmove)
 AC_BROKEN(mkstemp putenv rcmd setegid setenv seteuid)
 AC_BROKEN(strcasecmp strdup strerror strftime strlwr)
