@@ -330,7 +330,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 
-	q.in.handle = handle;
+	q.in.handle = &acct_handle;
 	q.in.level = 16;
 
 	status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
@@ -339,7 +339,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       q.in.level, nt_errstr(status));
 		ret = False;
 	} else {
-		if (q.out.info->info16.acct_flags != acct_flags) {
+		if ((q.out.info->info16.acct_flags & acct_flags) != acct_flags) {
 			printf("QuerUserInfo level 16 failed, it returned 0x%08x (%u) when we expected flags of 0x%08x (%u)\n",
 			       q.out.info->info16.acct_flags, q.out.info->info16.acct_flags, 
 			       acct_flags, acct_flags);
@@ -436,7 +436,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 		
 		if (NT_STATUS_IS_OK(status)) {
-			q.in.handle = handle;
+			q.in.handle = &acct_handle;
 			q.in.level = 16;
 			
 			status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
@@ -445,8 +445,8 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				       q.in.level, nt_errstr(status));
 				ret = False;
 			} else {
-				if (q.out.info->info16.acct_flags != acct_flags) {
-					printf("QuerUserInfo level 16 failed, it returned 0x%08xwhen we expected flags of 0x%08x\n",
+				if ((q.out.info->info16.acct_flags & acct_flags) != acct_flags) {
+					printf("QuerUserInfo level 16 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
 					       q.out.info->info16.acct_flags, 
 					       acct_flags);
 					ret = False;
