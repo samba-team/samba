@@ -49,12 +49,6 @@ printable_time(time_t t)
     return s;
 }
 
-void usage()
-{
-    fprintf(stderr, "Usage: %s [-v]\n", __progname);
-    exit(1);
-}
-
 void
 print_cred(krb5_context context, krb5_creds *cred)
 {
@@ -140,6 +134,28 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     printf("\n\n");
 }
 
+static int version_flag = 0;
+static int help_flag = 0;
+static int do_verbose = 0;
+
+static struct getargs args[] = {
+    { "verbose",		'v', arg_flag, &do_verbose,
+      "Verbose output", NULL },
+    { "version", 		0,   arg_flag, &version_flag, 
+      "print version", NULL },
+    { "help",			0,   arg_flag, &help_flag, 
+      NULL, NULL}
+};
+
+static int
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    "");
+    exit (ret);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -150,23 +166,26 @@ main (int argc, char **argv)
     krb5_cc_cursor cursor;
     krb5_creds creds;
     char *str;
-    int verbose = 0;
-    int c;
+    int optind = 0;
 
     set_progname (argv[0]);
 
-    while((c = getopt(argc, argv, "v")) != -1){
-	switch(c){
-	case 'v':
-	    verbose = 1;
-	    break;
-	default:
-	    usage();
-	}
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	exit(0);
     }
+
     argc -= optind;
     argv += optind;
-	
+
+    if (argc != 0)
+	usage (1);
 
     ret = krb5_init_context (&context);
     if (ret)
@@ -192,14 +211,14 @@ main (int argc, char **argv)
     if (ret)
 	errx (1, "krb5_cc_start_seq_get: %s", krb5_get_err_text(context,ret));
 
-    if(!verbose)
+    if(!do_verbose)
 	printf("  %-15s  %-15s  %s\n", "Issued", "Expires", "Principal");
 
     while (krb5_cc_next_cred (context,
 			      ccache,
 			      &creds,
 			      &cursor) == 0) {
-	if(verbose){
+	if(do_verbose){
 	    print_cred_verbose(context, &creds);
 	}else{
 	    print_cred(context, &creds);
