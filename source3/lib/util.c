@@ -74,6 +74,7 @@ pstring user_socket_options="";
 pstring sesssetup_user="";
 pstring myname = "";
 fstring myworkgroup = "";
+char **my_netbios_names;
 
 int smb_read_error = 0;
 
@@ -834,7 +835,7 @@ int StrnCaseCmp(const char *s, const char *t, int n)
 /*******************************************************************
   compare 2 strings 
 ********************************************************************/
-BOOL strequal(char *s1,char *s2)
+BOOL strequal(const char *s1, const char *s2)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2) return(False);
@@ -845,7 +846,7 @@ BOOL strequal(char *s1,char *s2)
 /*******************************************************************
   compare 2 strings up to and including the nth char.
   ******************************************************************/
-BOOL strnequal(char *s1,char *s2,int n)
+BOOL strnequal(const char *s1,const char *s2,int n)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2 || !n) return(False);
@@ -3740,4 +3741,21 @@ void file_unlock(int fd)
   fcntl_lock(fd,F_SETLK,0,1,F_UNLCK);
 #endif
   close(fd);
+}
+
+/*******************************************************************
+is the name specified one of my netbios names
+returns true is it is equal, false otherwise
+********************************************************************/
+BOOL is_myname(const char *s)
+{
+  int n;
+  BOOL ret = False;
+
+  for (n=0; my_netbios_names[n]; n++) {
+    if (strequal(my_netbios_names[n], s))
+      ret=True;
+  }
+  DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
+  return(ret);
 }

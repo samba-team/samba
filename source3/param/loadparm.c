@@ -136,6 +136,7 @@ typedef struct
   char *szSocketAddress;
   char *szNISHomeMapName;
   char *szAnnounceVersion; /* This is initialised in init_globals */
+  char *szNetbiosAliases;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -403,6 +404,7 @@ struct parm_struct
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL},
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
   {"netbios name",     P_UGSTRING,P_GLOBAL, myname,                     NULL},
+  {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL},
   {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL},
@@ -831,6 +833,7 @@ FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
 FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
+FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)

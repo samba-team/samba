@@ -39,6 +39,7 @@ extern struct in_addr ipzero;
 
 extern pstring myname;
 extern fstring myworkgroup;
+extern char **my_netbios_names;
 
 extern int ClientDGRAM;
 extern int ClientNMB;
@@ -202,7 +203,7 @@ void announce_my_servers_removed(void)
 			struct server_record *s;
 			for (s = work->serverlist; s; s = s->next)
 			{
-				if (!strequal(myname,s->serv.name)) continue;
+				if (!is_myname(s->serv.name)) continue;
 				announce_server(d, work, s->serv.name, s->serv.comment, 0, 0);
 			}
 		}
@@ -230,7 +231,9 @@ interface for workgroup %s, name %s\n", work->work_group, name));
       return;
     }
 
-	if (AM_MASTER(work))
+    /* Only do domain announcements if we are a master and it's
+       our name we're being asked to announce. */
+	if (AM_MASTER(work) && strequal(myname,name))
 	{
 		DEBUG(3,("sending local master announce to %s for %s(1e)\n",
 						inet_ntoa(d->bcast_ip),work->work_group));
@@ -289,7 +292,6 @@ void announce_host(time_t t)
 	{
 	  uint32 stype = work->ServerType;
 	  struct server_record *s;
-	  BOOL announce = False;
 	  
 	  /* must work on the code that does announcements at up to
 	     30 seconds later if a master browser sends us a request
@@ -315,15 +317,15 @@ void announce_host(time_t t)
 	  work->lastannounce_time = t;
 	  
 	  for (s = work->serverlist; s; s = s->next) {
-	    if (strequal(myname, s->serv.name)) { 
-	      announce = True; 
-	      break; 
-	    }
-	  }
-	  
-	  if (announce) {
-	    announce_server(d,work,my_name,comment,
+	    if (is_myname(s->serv.name)) { 
+              /* If we are any kind of browser or logon server, only 
+                 announce it for our primary name, not our aliases. */
+              if(!strequal(myname, s->serv.name))
+                stype &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_POTENTIAL_BROWSER|
+                           SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
+	      announce_server(d,work,s->serv.name,comment,
 			    work->announce_interval,stype);
+	    }
 	  }
 	  
 	  if (work->needannounce)
@@ -498,10 +500,12 @@ void announce_remote(time_t t)
   comment = lp_serverstring();
   workgroup = myworkgroup;
 
-  for (ptr=s; next_token(&ptr,s2,NULL); ) {
+  for (ptr=s; next_token(&ptr,s2,NULL); ) 
+  {
     /* the entries are of the form a.b.c.d/WORKGROUP with 
        WORKGROUP being optional */
     char *wgroup;
+    int n;
 
     wgroup = strchr(s2,'/');
     if (wgroup) *wgroup++ = 0;
@@ -510,10 +514,15 @@ void announce_remote(time_t t)
 
     addr = *interpret_addr2(s2);
     
-    do_announce_host(ANN_HostAnnouncement,myname,0x20,*iface_ip(addr),
+    /* Announce all our names including aliases */
+    for (n=0; my_netbios_names[n]; n++) 
+    {
+      char *name = my_netbios_names[n];
+      do_announce_host(ANN_HostAnnouncement,name,0x20,*iface_ip(addr),
 		     wgroup,0x1e,addr,
 		     REMOTE_ANNOUNCE_INTERVAL,
-		     myname,stype,comment);    
+		     name,stype,comment);    
+    }
   }
 
 }

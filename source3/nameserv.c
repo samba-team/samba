@@ -38,6 +38,7 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 extern pstring myname;
 extern fstring myworkgroup;
+extern char **my_netbios_names;
 extern struct in_addr ipzero;
 extern struct in_addr wins_ip;
 
@@ -366,11 +367,16 @@ void add_my_names(void)
 
   for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
   {
+    int n;
     BOOL wins = (lp_wins_support() && (d == wins_subnet));
 
-    add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
-    add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);
-    add_my_name_entry(d, myname,0x00,nb_type|NB_ACTIVE);
+    /* Add all our names including aliases. */
+    for (n=0; my_netbios_names[n]; n++) 
+    {
+      add_my_name_entry(d, my_netbios_names[n],0x20,nb_type|NB_ACTIVE);
+      add_my_name_entry(d, my_netbios_names[n],0x03,nb_type|NB_ACTIVE);
+      add_my_name_entry(d, my_netbios_names[n],0x00,nb_type|NB_ACTIVE);
+    }
     
     /* these names are added permanently (ttl of zero) and will NOT be
        refreshed with the WINS server  */
