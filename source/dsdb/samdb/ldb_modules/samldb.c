@@ -413,11 +413,11 @@ static struct ldb_message *samldb_manage_group_object(struct ldb_module *module,
 		return NULL;
 	}
 
-	if ( ! samldb_find_or_add_attribute(msg2, "sAMAccountType", NULL, "268435456")) {
+	if ( ! samldb_find_or_add_attribute(msg2, "sAMAccountType", NULL, "0x10000000")) {
 		return NULL;
 	}
 
-	if ( ! samldb_find_or_add_attribute(msg2, "groupType", NULL, "-2147483646")) {
+	if ( ! samldb_find_or_add_attribute(msg2, "groupType", NULL, "0x80000002")) {
 		return NULL;
 	}
 
@@ -539,7 +539,7 @@ static struct ldb_message *samldb_manage_user_object(struct ldb_module *module, 
 		return NULL;
 	}
 
-	if ( ! samldb_find_or_add_attribute(msg2, "sAMAccountType", NULL, "805306368")) {
+	if ( ! samldb_find_or_add_attribute(msg2, "sAMAccountType", NULL, "0x30000000")) {
 		talloc_free(msg2);
 		return NULL;
 	}
