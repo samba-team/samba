@@ -1819,6 +1819,17 @@ char *smb_xstrdup(const char *s)
 	return s1;
 }
 
+/**
+ strndup that aborts on malloc fail.
+**/
+char *smb_xstrndup(const char *s, size_t n)
+{
+	char *s1 = strndup(s, n);
+	if (!s1)
+		smb_panic("smb_xstrndup: malloc fail\n");
+	return s1;
+}
+
 /*
   vasprintf that aborts on malloc fail
 */
