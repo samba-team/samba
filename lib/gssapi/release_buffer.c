@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,6 +40,7 @@ OM_uint32 gss_release_buffer
             gss_buffer_t buffer
            )
 {
+  *minor_status = 0;
   free (buffer->value);
   buffer->value  = NULL;
   buffer->length = 0;
