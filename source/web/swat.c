@@ -254,8 +254,10 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 			continue;
 		}
 		if (parm->flags & FLAG_HIDE) continue;
-		if (printers & !(parm->flags & FLAG_PRINT)) continue;
-		if (!printers & !(parm->flags & FLAG_SHARE)) continue;
+		if (snum >= 0) {
+			if (printers & !(parm->flags & FLAG_PRINT)) continue;
+			if (!printers & !(parm->flags & FLAG_SHARE)) continue;
+		}
 		if (!advanced) {
 			if (!(parm->flags & FLAG_BASIC)) {
 				void *ptr = parm->ptr;
