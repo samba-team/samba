@@ -324,8 +324,8 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 
 /*The following definitions come from  lib/system.c  */
 
-int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
-int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval);
+int sys_select(int maxfd, fd_set *r_fds, fd_set *w_fds, struct timeval *tval);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf);
@@ -489,6 +489,9 @@ void free_void_array(uint32 num_entries, void **entries,
 void* add_copy_to_array(uint32 *len, void ***array, const void *item,
 	void*(item_dup)(const void*), BOOL alloc_anyway);
 void* add_item_to_array(uint32 *len, void ***array, void *item);
+void free_use_array(uint32 num_entries, struct use_info **entries);
+struct use_info* add_use_to_array(uint32 *len, struct use_info ***array,
+				const struct use_info *name);
 void free_char_array(uint32 num_entries, char **entries);
 char* add_chars_to_array(uint32 *len, char ***array, const char *name);
 void free_uint32_array(uint32 num_entries, uint32 **entries);
@@ -701,7 +704,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 				char *ntpass, int ntpasslen,
 				char *user_domain);
 BOOL cli_session_setup(struct cli_state *cli, 
-				char *user, 
+				char *myhostname, char *user,
 				char *pass, int passlen,
 				char *ntpass, int ntpasslen,
 				char *user_domain);
@@ -866,16 +869,16 @@ void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw);
 
 /*The following definitions come from  libsmb/smbencrypt.c  */
 
-void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
-void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
-void E_md4hash(uchar *passwd, uchar *p16);
+void SMBencrypt(uchar *pwrd, uchar *c8, uchar *p24);
+void SMBNTencrypt(uchar *pwrd, uchar *c8, uchar *p24);
+void E_md4hash(uchar *pwrd, uchar *p16);
 void lm_owf_genW(const UNISTR2 *pwd, uchar p16[16]);
 void lm_owf_gen(const char *pwd, uchar p16[16]);
 void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16]);
 void nt_owf_gen(const char *pwd, uchar nt_p16[16]);
 void nt_lm_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16], uchar lm_p16[16]);
 void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16]);
-void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
+void SMBOWFencrypt(uchar pwrd[16], uchar *c8, uchar p24[24]);
 void SMBOWFencrypt_ntv2(const uchar kr[16], 
 				const uchar *srv_chal, int srv_chal_len,
 				const uchar *cli_chal, int cli_chal_len,
@@ -893,15 +896,15 @@ void ntv2_owf_gen(const uchar owf[16],
 				const char *user_n,
 				const char *domain_n,
 				uchar kr_buf[16]);
-void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
-BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
+void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24]);
+BOOL make_oem_passwd_hash(char data[516], const char *pwrd, uchar old_pw_hash[16], BOOL unicode);
 BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
 void create_ntlmssp_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,
 				uint32 ntlmssp_cli_flgs,
                                 prs_struct *auth_resp);
-BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
-			int new_passwd_size, uint32 *new_pw_len);
+BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
+			int new_pwrd_size, uint32 *new_pw_len);
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 			int new_pw_len, BOOL nt_pass_set);
 
@@ -2173,6 +2176,7 @@ BOOL cli_net_use_del(const char* srv_name,
 				const struct user_credentials *usr_creds,
 				BOOL force_close,
 				BOOL *connection_closed);
+void cli_net_use_enum(uint32 *num_cons, struct use_info ***use);
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
@@ -3728,7 +3732,95 @@ void cmd_svc_set(struct client_info *info, int argc, char *argv[]);
 
 void cmd_wks_query_info(struct client_info *info, int argc, char *argv[]);
 
-/*The following definitions come from  rpcclient/display.c  */
+/*The following definitions come from  rpcclient/display_at.c  */
+
+void display_at_enum_info(FILE *out_hnd, enum action_type action, 
+				uint32 num_jobs, const AT_ENUM_INFO *const jobs,
+				char *const *const commands);
+void display_at_job_info(FILE *out_hnd, enum action_type action, 
+		     AT_JOB_INFO *const job, fstring command);
+
+/*The following definitions come from  rpcclient/display_event.c  */
+
+void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTLOGRECORD *const ev);
+
+/*The following definitions come from  rpcclient/display_reg.c  */
+
+char *get_reg_val_type_str(uint32 type);
+void display_reg_value_info(FILE *out_hnd, enum action_type action, 
+				const char *val_name, 
+				uint32 val_type, const BUFFER2 *value);
+void display_reg_key_info(FILE *out_hnd, enum action_type action, 
+				const char *key_name, time_t key_mod_time);
+
+/*The following definitions come from  rpcclient/display_sam.c  */
+
+void display_alias_members(FILE *out_hnd, enum action_type action, 
+				uint32 num_mem, char *const *const sid_mem, 
+				uint8 *const type);
+void display_alias_rid_info(FILE *out_hnd, enum action_type action, 
+				DOM_SID *const sid, 
+				uint32 num_rids, uint32 *const rid);
+void display_group_members(FILE *out_hnd, enum action_type action, 
+				uint32 num_mem, char *const *const name, uint32 *const type);
+void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *const info1);
+void display_group_info4(FILE *out_hnd, enum action_type action, GROUP_INFO4 *const info4);
+void display_group_info_ctr(FILE *out_hnd, enum action_type action, 
+				GROUP_INFO_CTR *const ctr);
+void display_group_rid_info(FILE *out_hnd, enum action_type action, 
+				uint32 num_gids, DOM_GID *const gid);
+void display_alias_name_info(FILE *out_hnd, enum action_type action, 
+				uint32 num_aliases, fstring *const alias_name, const uint32 *const num_als_usrs);
+void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *const info3);
+void display_alias_info_ctr(FILE *out_hnd, enum action_type action, 
+				ALIAS_INFO_CTR *const ctr);
+void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_INFO_21 *const usr);
+void display_sam_unk_info_2(FILE *out_hnd, enum action_type action, 
+				SAM_UNK_INFO_2 *const info2);
+void display_sam_unk_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 switch_value, SAM_UNK_CTR *const ctr);
+void display_sam_info_1(FILE *out_hnd, enum action_type action, 
+		SAM_ENTRY1 *const e1, SAM_STR1 *const s1);
+void display_sam_info_1_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, SAM_DISPINFO_1 *const ctr);
+void display_sam_disp_info_ctr(FILE *out_hnd, enum action_type action, 
+				uint16 level, uint32 count,
+				SAM_DISPINFO_CTR *const ctr);
+
+/*The following definitions come from  rpcclient/display_sec.c  */
+
+char *get_sec_mask_str(uint32 type);
+void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *const info);
+void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace);
+void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *const sec_acl);
+void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *const sec);
+
+/*The following definitions come from  rpcclient/display_spool.c  */
+
+void display_print_info_0(FILE *out_hnd, enum action_type action, 
+		PRINTER_INFO_0 *const i0);
+void display_print_info_1(FILE *out_hnd, enum action_type action, 
+		PRINTER_INFO_1 *const i1);
+void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, PRINTER_INFO_0 *const *const ctr);
+void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, PRINTER_INFO_1 *const *const ctr);
+void display_printer_info_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 level, uint32 count,
+				void *const *const ctr);
+void display_job_info_2(FILE *out_hnd, enum action_type action, 
+		JOB_INFO_2 *const i2);
+void display_job_info_1(FILE *out_hnd, enum action_type action, 
+		JOB_INFO_1 *const i1);
+void display_job_info_2_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, JOB_INFO_2 *const *const ctr);
+void display_job_info_1_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, JOB_INFO_1 *const *const ctr);
+void display_job_info_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 level, uint32 count,
+				void *const *const ctr);
+
+/*The following definitions come from  rpcclient/display_srv.c  */
 
 char *get_sid_name_use_str(uint8 sid_name_use);
 char *get_file_mode_str(uint32 share_mode);
@@ -3788,51 +3880,20 @@ void display_share(FILE *out_hnd, enum action_type action,
 void display_share2(FILE *out_hnd, enum action_type action, 
 				char *const sname, uint32 type, char *const comment, 
 				uint32 perms, uint32 max_uses, uint32 num_uses, 
-				char *const path, char *const passwd);
+				char *const path, char *const password);
 void display_name(FILE *out_hnd, enum action_type action, 
 				char *const sname);
-void display_alias_members(FILE *out_hnd, enum action_type action, 
-				uint32 num_mem, char *const *const sid_mem, 
-				uint8 *const type);
-void display_alias_rid_info(FILE *out_hnd, enum action_type action, 
-				DOM_SID *const sid, 
-				uint32 num_rids, uint32 *const rid);
-void display_group_members(FILE *out_hnd, enum action_type action, 
-				uint32 num_mem, char *const *const name, uint32 *const type);
-void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *const info1);
-void display_group_info4(FILE *out_hnd, enum action_type action, GROUP_INFO4 *const info4);
-void display_group_info_ctr(FILE *out_hnd, enum action_type action, 
-				GROUP_INFO_CTR *const ctr);
-void display_group_rid_info(FILE *out_hnd, enum action_type action, 
-				uint32 num_gids, DOM_GID *const gid);
-void display_alias_name_info(FILE *out_hnd, enum action_type action, 
-				uint32 num_aliases, fstring *const alias_name, const uint32 *const num_als_usrs);
-void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *const info3);
-void display_alias_info_ctr(FILE *out_hnd, enum action_type action, 
-				ALIAS_INFO_CTR *const ctr);
-void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_INFO_21 *const usr);
-char *get_sec_mask_str(uint32 type);
-void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *const info);
-void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace);
-void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *const sec_acl);
-void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *const sec);
-char *get_reg_val_type_str(uint32 type);
-void display_reg_value_info(FILE *out_hnd, enum action_type action, 
-				const char *val_name, 
-				uint32 val_type, const BUFFER2 *value);
-void display_reg_key_info(FILE *out_hnd, enum action_type action, 
-				const char *key_name, time_t key_mod_time);
+
+/*The following definitions come from  rpcclient/display_svc.c  */
+
 char *get_svc_start_type_str(uint32 type);
 void display_query_svc_cfg(FILE *out_hnd, enum action_type action, 
 				const QUERY_SERVICE_CONFIG *const cfg);
 void display_svc_info(FILE *out_hnd, enum action_type action,
 				const ENUM_SRVC_STATUS *const svc);
-void display_at_enum_info(FILE *out_hnd, enum action_type action, 
-				uint32 num_jobs, const AT_ENUM_INFO *const jobs,
-				char *const *const commands);
-void display_at_job_info(FILE *out_hnd, enum action_type action, 
-		     AT_JOB_INFO *const job, fstring command);
-void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTLOGRECORD *const ev);
+
+/*The following definitions come from  rpcclient/display_sync.c  */
+
 void display_sam_sync_ctr(FILE *out_hnd, enum action_type action, 
 				SAM_DELTA_HDR *const delta, 
 				SAM_DELTA_CTR *const ctr);
@@ -3840,39 +3901,6 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 				SAM_DELTA_HDR *const deltas, 
 				SAM_DELTA_CTR *const ctr, 
 				uint32 num);
-void display_sam_unk_info_2(FILE *out_hnd, enum action_type action, 
-				SAM_UNK_INFO_2 *const info2);
-void display_sam_unk_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 switch_value, SAM_UNK_CTR *const ctr);
-void display_sam_info_1(FILE *out_hnd, enum action_type action, 
-		SAM_ENTRY1 *const e1, SAM_STR1 *const s1);
-void display_sam_info_1_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, SAM_DISPINFO_1 *const ctr);
-void display_sam_disp_info_ctr(FILE *out_hnd, enum action_type action, 
-				uint16 level, uint32 count,
-				SAM_DISPINFO_CTR *const ctr);
-void display_print_info_0(FILE *out_hnd, enum action_type action, 
-		PRINTER_INFO_0 *const i0);
-void display_print_info_1(FILE *out_hnd, enum action_type action, 
-		PRINTER_INFO_1 *const i1);
-void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, PRINTER_INFO_0 *const *const ctr);
-void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, PRINTER_INFO_1 *const *const ctr);
-void display_printer_info_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 level, uint32 count,
-				void *const *const ctr);
-void display_job_info_2(FILE *out_hnd, enum action_type action, 
-		JOB_INFO_2 *const i2);
-void display_job_info_1(FILE *out_hnd, enum action_type action, 
-		JOB_INFO_1 *const i1);
-void display_job_info_2_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, JOB_INFO_2 *const *const ctr);
-void display_job_info_1_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, JOB_INFO_1 *const *const ctr);
-void display_job_info_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 level, uint32 count,
-				void *const *const ctr);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 

@@ -918,9 +918,11 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 }
 
 static BOOL cli_calc_session_pwds(struct cli_state *cli,
+				char *myhostname,
 				char *pword, char *ntpword,
 				char *pass, int *passlen,
 				char *ntpass, int *ntpasslen,
+				char *sess_key,
 				BOOL ntlmv2)
 {
 	BOOL ntpass_ok = ntpass != NULL && ntpasslen != NULL;
@@ -998,59 +1000,23 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 	}
 	else if (ntpasslen != NULL)
 	{
-		/* passlen != 0, ntpasslen != 0 && server supports encryption */
-		if (ntlmv2)
+		if (cli->use_ntlmv2 != False)
 		{
-			/* plain-text password requesting to be encrypted */
-			uchar *srv_key = (uchar *)cli->cryptkey;
-			uchar nt_owf[16];
-			uchar kr[16];
-			HMACMD5Context ctx;
-
-			SMBgenclientchals(cli->lm_cli_chal,
-			                  cli->nt_cli_chal,
-			                  &cli->nt_cli_chal_len,
-			                  cli->calling.name,
-			                  cli->usr.domain);
-			
-			nt_owf_gen(pword, nt_owf);
-			ntv2_owf_gen(nt_owf, cli->usr.user_name, cli->usr.domain, kr);
-
-			/* lm # */
-			memcpy(pword, cli->lm_cli_chal, 8);
-			SMBOWFencrypt_ntv2(kr,
-			                   srv_key, 8,
-			                   cli->lm_cli_chal, 8,
-			                   &pword[8]);
-			*passlen = 24;
-
-			/* nt # */
-			memcpy(ntpword, cli->lm_cli_chal, cli->nt_cli_chal_len);
-			SMBOWFencrypt_ntv2(kr,
-			               srv_key, 8,
-			               cli->nt_cli_chal, cli->nt_cli_chal_len,
-			               &ntpword[cli->nt_cli_chal_len]);
-			*ntpasslen = cli->nt_cli_chal_len + 16;
-
-			hmac_md5_init_limK_to_64(kr, 16, &ctx);
-			hmac_md5_update(cli->nt_cli_chal, cli->nt_cli_chal_len,
-			                &ctx);
-			hmac_md5_final(cli->sess_key, &ctx);
-#if DEBUG_PASSWORD
-			DEBUG(100,("session key:\n"));
-			dump_data(100, cli->sess_key, sizeof(cli->sess_key));
-#endif
-
+			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
+			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
+			           cli->usr.user_name, myhostname,
+			           cli->usr.domain);
 		}
 		else
 		{
-			/* plain-text password requesting to be encrypted */
-			uchar *key = (uchar *)cli->cryptkey;
-			SMBencrypt  ((uchar *)pass  , key,(uchar *)pword  );
-			SMBNTencrypt((uchar *)ntpass, key,(uchar *)ntpword);
-			*passlen = 24;
-			*ntpasslen = 24;
+			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
+			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
 		}
+
+		pwd_get_lm_nt_owf(&(cli->usr.pwd), pass, ntpass,
+		                  ntpasslen, sess_key);
+
+		*passlen = 24; 
 	}
 	return True;
 }
@@ -1059,7 +1025,7 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 send a session setup 
 ****************************************************************************/
 BOOL cli_session_setup(struct cli_state *cli, 
-				char *user, 
+				char *myhostname, char *user,
 				char *pass, int passlen,
 				char *ntpass, int ntpasslen,
 				char *user_domain)
@@ -1073,9 +1039,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	fstrcpy(cli->usr.user_name, user);
 
-	return cli_calc_session_pwds(cli, pword, ntpword,
+	return cli_calc_session_pwds(cli, myhostname, pword, ntpword,
 				pass, &passlen,
-				ntpass, &ntpasslen, cli->use_ntlmv2) &&
+				ntpass, &ntpasslen, cli->sess_key,
+	                        cli->use_ntlmv2) &&
 	       cli_session_setup_x(cli, user, pass, passlen, ntpass, ntpasslen,
 				user_domain);
 }
@@ -3238,7 +3205,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		}
 
 		/* attempt clear-text session */
-		if (!cli_session_setup(cli, cli->usr.user_name,
+		if (!cli_session_setup(cli, calling->name,
+		               cli->usr.user_name,
 	                       passwd, pass_len,
 	                       ntpasswd, ntpass_len,
 	                       cli->usr.domain))

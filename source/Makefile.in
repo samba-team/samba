@@ -256,7 +256,15 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ = rpcclient/rpcclient.o \
-		rpcclient/display.o \
+		rpcclient/display_at.o \
+		rpcclient/display_event.o \
+		rpcclient/display_reg.o \
+		rpcclient/display_sam.o \
+		rpcclient/display_sec.o \
+		rpcclient/display_spool.o \
+		rpcclient/display_srv.o \
+		rpcclient/display_svc.o \
+		rpcclient/display_sync.o \
 		rpcclient/cmd_lsarpc.o \
 		rpcclient/cmd_wkssvc.o \
 		rpcclient/cmd_brs.o \
@@ -293,6 +301,10 @@ NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ2)
 
 DEBUG2HTML_OBJ = utils/debug2html.o $(PARAM_OBJ) $(LIB_OBJ)
+
+SMB_AGENT_OBJ = smb-agent.o $(PARAM_OBJ) $(LIB_OBJ)
+
+SMB_CLIENT_OBJ = smb-client.o $(PARAM_OBJ) $(LIB_OBJ)
 
 SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)

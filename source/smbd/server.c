@@ -207,7 +207,7 @@ max can be %d\n",
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(256,&lfds,NULL);
+		num = sys_select(256,&lfds,NULL, NULL);
 		
 		if (num == -1 && errno == EINTR)
 			continue;

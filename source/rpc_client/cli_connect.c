@@ -23,7 +23,6 @@
 #define NO_SYSLOG
 
 #include "includes.h"
-#include "trans2.h"
 
 struct user_credentials *usr_creds = NULL;
 

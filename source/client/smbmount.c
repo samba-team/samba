@@ -609,7 +609,7 @@ static void wait_keyboard(char *buffer)
 
       timeout.tv_sec = 20;
       timeout.tv_usec = 0;
-      selrtn = sys_select(MAX(Client,fileno(stdin))+1,&fds,&timeout);
+      selrtn = sys_select(MAX(Client,fileno(stdin))+1,&fds,NULL, &timeout);
       
       if (FD_ISSET(fileno(stdin),&fds))
   	return;

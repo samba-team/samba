@@ -653,16 +653,16 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 			fstring remark  ;
 			fstring net_name;
 			fstring path    ;
-			fstring passwd  ;
+			fstring password;
 
 			unistr2_to_ascii(net_name, &str2->uni_netname, sizeof(net_name)-1);
 			unistr2_to_ascii(remark, &str2->uni_remark, sizeof(remark)-1);
 			unistr2_to_ascii(path, &str2->uni_path, sizeof(path)-1);
-			unistr2_to_ascii(passwd, &str2->uni_passwd, sizeof(passwd)-1);
+			unistr2_to_ascii(password, &str2->uni_passwd, sizeof(password)-1);
 
 			display_share2(out_hnd, action, net_name, info2->type, remark, 
 			                                      info2->perms, info2->max_uses, info2->num_uses, 
-			                                      path, passwd);
+			                                      path, password);
 
 			break;
 		}
@@ -1149,7 +1149,7 @@ print shares on a host, level 2
 void display_share2(FILE *out_hnd, enum action_type action, 
 				char *const sname, uint32 type, char *const comment, 
 				uint32 perms, uint32 max_uses, uint32 num_uses, 
-				char *const path, char *const passwd)
+				char *const path, char *const password)
 {
 	switch (action)
 	{
@@ -1161,7 +1161,7 @@ void display_share2(FILE *out_hnd, enum action_type action,
 		{
 			report(out_hnd, "\t%-15.15s%-10.10s%s %x %x %x %s %s\n", 
 			                 sname, get_share_type_str(type), comment, 
-			                 perms, max_uses, num_uses, path, passwd);
+			                 perms, max_uses, num_uses, path, password);
 			break;
 		}
 		case ACTION_FOOTER:

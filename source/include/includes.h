@@ -55,6 +55,7 @@
 #endif
 
 
+#include <sys/un.h>
 #include <sys/types.h>
 
 #ifdef TIME_WITH_SYS_TIME

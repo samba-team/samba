@@ -24,17 +24,15 @@
 
 extern int DEBUGLEVEL;
 
-#include "byteorder.h"
-
 /*
    This implements the X/Open SMB password encryption
    It takes a password, a 8 byte "crypt key" and puts 24 bytes of 
    encrypted password into p24 */
-void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24)
+void SMBencrypt(uchar *pwrd, uchar *c8, uchar *p24)
 {
 	uchar p21[21];
 
-	lm_owf_gen(passwd, p21);
+	lm_owf_gen(pwrd, p21);
 	SMBOWFencrypt(p21, c8, p24);
 
 #ifdef DEBUG_PASSWORD
@@ -45,13 +43,13 @@ void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24)
 #endif
 }
 
-void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
+void SMBNTencrypt(uchar *pwrd, uchar *c8, uchar *p24)
 {
 	uchar p21[21];
  
 	memset(p21,'\0',21);
  
-	nt_owf_gen(passwd, p21);    
+	nt_owf_gen(pwrd, p21);    
 	SMBOWFencrypt(p21, c8, p24);
 
 #ifdef DEBUG_PASSWORD
@@ -114,17 +112,17 @@ static int _my_mbstowcs(int16 *dst, const uchar *src, int len)
  * Creates the MD4 Hash of the users password in NT UNICODE.
  */
  
-void E_md4hash(uchar *passwd, uchar *p16)
+void E_md4hash(uchar *pwrd, uchar *p16)
 {
 	int len;
 	int16 wpwd[129];
 	
 	/* Password cannot be longer than 128 characters */
-	len = strlen((char *)passwd);
+	len = strlen((char *)pwrd);
 	if(len > 128)
 		len = 128;
 	/* Password must be converted to NT unicode */
-	_my_mbstowcs(wpwd, passwd, len);
+	_my_mbstowcs(wpwd, pwrd, len);
 	wpwd[len] = 0; /* Ensure string is null terminated */
 	/* Calculate length in bytes */
 	len = _my_wcslen(wpwd) * sizeof(int16);
@@ -135,107 +133,107 @@ void E_md4hash(uchar *passwd, uchar *p16)
 /* Does the LM owf of a user's password */
 void lm_owf_genW(const UNISTR2 *pwd, uchar p16[16])
 {
-	char passwd[15];
+	char pwrd[15];
 
-	memset(passwd,'\0',15);
+	memset(pwrd,'\0',15);
 	if (pwd != NULL)
 	{
-		unistr2_to_ascii( passwd, pwd, sizeof(passwd)-1);
+		unistr2_to_ascii( pwrd, pwd, sizeof(pwrd)-1);
 	}
 
 	/* Mangle the passwords into Lanman format */
-	passwd[14] = '\0';
-	strupper(passwd);
+	pwrd[14] = '\0';
+	strupper(pwrd);
 
 	/* Calculate the SMB (lanman) hash functions of the password */
 
 	memset(p16, '\0', 16);
-	E_P16((uchar *) passwd, (uchar *)p16);
+	E_P16((uchar *) pwrd, (uchar *)p16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
-	dump_data(120, passwd, strlen(passwd));
+	dump_data(120, pwrd, strlen(pwrd));
 	dump_data(100, p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	bzero(passwd, sizeof(passwd));
+	bzero(pwrd, sizeof(pwrd));
 }
 
 /* Does the LM owf of a user's password */
 void lm_owf_gen(const char *pwd, uchar p16[16])
 {
-	char passwd[15];
+	char pwrd[15];
 
-	memset(passwd,'\0',15);
+	memset(pwrd,'\0',15);
 	if (pwd != NULL)
 	{
-		safe_strcpy( passwd, pwd, sizeof(passwd)-1);
+		safe_strcpy( pwrd, pwd, sizeof(pwrd)-1);
 	}
 
 	/* Mangle the passwords into Lanman format */
-	passwd[14] = '\0';
-	strupper(passwd);
+	pwrd[14] = '\0';
+	strupper(pwrd);
 
 	/* Calculate the SMB (lanman) hash functions of the password */
 
 	memset(p16, '\0', 16);
-	E_P16((uchar *) passwd, (uchar *)p16);
+	E_P16((uchar *) pwrd, (uchar *)p16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
-	dump_data(120, passwd, strlen(passwd));
+	dump_data(120, pwrd, strlen(pwrd));
 	dump_data(100, p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	bzero(passwd, sizeof(passwd));
+	bzero(pwrd, sizeof(pwrd));
 }
 
 /* Does both the NT and LM owfs of a user's password */
 void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
 {
-	UNISTR2 passwd;
+	UNISTR2 pwrd;
 
-	memset(&passwd,'\0',sizeof(passwd));
+	memset(&pwrd,'\0',sizeof(pwrd));
 	if (pwd != NULL)
 	{
-		copy_unistr2(&passwd, pwd);
+		copy_unistr2(&pwrd, pwd);
 	}
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
-	mdfour(nt_p16, (unsigned char *)passwd.buffer, passwd.uni_str_len * 2);
+	mdfour(nt_p16, (unsigned char *)pwrd.buffer, pwrd.uni_str_len * 2);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_owf_gen: pwd, nt#\n"));
-	dump_data(120, (const char*)passwd.buffer, passwd.uni_str_len * 2);
+	dump_data(120, (const char*)pwrd.buffer, pwrd.uni_str_len * 2);
 	dump_data(100, nt_p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	memset(&passwd, 0, sizeof(passwd));
+	memset(&pwrd, 0, sizeof(pwrd));
 }
 
 /* Does both the NT and LM owfs of a user's password */
 void nt_owf_gen(const char *pwd, uchar nt_p16[16])
 {
-	char passwd[130];
+	char pwrd[130];
 
-	memset(passwd,'\0',130);
+	memset(pwrd,'\0',130);
 	if (pwd != NULL)
 	{
-		safe_strcpy( passwd, pwd, sizeof(passwd)-1);
+		safe_strcpy( pwrd, pwd, sizeof(pwrd)-1);
 	}
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
-	E_md4hash((uchar *)passwd, nt_p16);
+	E_md4hash((uchar *)pwrd, nt_p16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_owf_gen: pwd, nt#\n"));
-	dump_data(120, passwd, strlen(passwd));
+	dump_data(120, pwrd, strlen(pwrd));
 	dump_data(100, nt_p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	bzero(passwd, sizeof(passwd));
+	bzero(pwrd, sizeof(pwrd));
 }
 
 /* Does both the NT and LM owfs of a user's UNICODE password */
@@ -253,13 +251,13 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16])
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
-void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
+void SMBOWFencrypt(uchar pwrd[16], uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
  
 	memset(p21,'\0',21);
  
-	memcpy(p21, passwd, 16);    
+	memcpy(p21, pwrd, 16);    
 	E_P24(p21, c8, p24);
 }
 
@@ -391,12 +389,12 @@ void ntv2_owf_gen(const uchar owf[16],
 }
 
 /* Does the des encryption from the FIRST 8 BYTES of the NT or LM MD4 hash. */
-void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24])
+void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24])
 {
 	uchar p21[21];
  
 	memset(p21,'\0',21);
-	memcpy(p21, passwd, 8);    
+	memcpy(p21, pwrd, 8);    
 	memset(p21 + 8, 0xbd, 8);    
 
 	E_P24(p21, ntlmchalresp, p24);
@@ -408,13 +406,13 @@ void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24])
 #endif
 }
 
-BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode)
+BOOL make_oem_passwd_hash(char data[516], const char *pwrd, uchar old_pw_hash[16], BOOL unicode)
 {
-	int new_pw_len = strlen(passwd) * (unicode ? 2 : 1);
+	int new_pw_len = strlen(pwrd) * (unicode ? 2 : 1);
 
 	if (new_pw_len > 512)
 	{
-		DEBUG(0,("make_oem_passwd_hash: new password is too long.\n"));
+		DEBUG(0,("make_oem_pwrd_hash: new password is too long.\n"));
 		return False;
 	}
 
@@ -427,16 +425,16 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	generate_random_buffer((unsigned char *)data, 516, False);
 	if (unicode)
 	{
-		ascii_to_unibuf(&data[512 - new_pw_len], passwd, new_pw_len);
+		ascii_to_unibuf(&data[512 - new_pw_len], pwrd, new_pw_len);
 	}
 	else
 	{
-		fstrcpy( &data[512 - new_pw_len], passwd);
+		fstrcpy( &data[512 - new_pw_len], pwrd);
 	}
 	SIVAL(data, 512, new_pw_len);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("make_oem_passwd_hash\n"));
+	DEBUG(100,("make_oem_pwrd_hash\n"));
 	dump_data(100, data, 516);
 #endif
 	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, True);
@@ -518,8 +516,8 @@ void create_ntlmssp_resp(struct pwd_info *pwd,
 /***********************************************************
  decode a password buffer
 ************************************************************/
-BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
-			int new_passwd_size, uint32 *new_pw_len)
+BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
+			int new_pwrd_size, uint32 *new_pw_len)
 {
 	/* 
 	 * The length of the new password is in the last 4 bytes of
@@ -532,14 +530,14 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
 	dump_data(100, buffer, 516);
 #endif
 
-	if ((*new_pw_len) < 0 || (*new_pw_len) > new_passwd_size - 1)
+	if ((*new_pw_len) < 0 || (*new_pw_len) > new_pwrd_size - 1)
 	{
 		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", (*new_pw_len)));
 		return False;
 	}
 
-	memcpy(new_passwd, &buffer[512-(*new_pw_len)], (*new_pw_len));
-	new_passwd[(*new_pw_len)] = '\0';
+	memcpy(new_pwrd, &buffer[512-(*new_pw_len)], (*new_pw_len));
+	new_pwrd[(*new_pw_len)] = '\0';
 
 	return True;
 }
