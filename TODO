@@ -6,11 +6,23 @@ $Id$
 
 add some kind of remote admin protocol
 
-** kpasswd
+allow changing of all fields with kdb_edit
+
+* kpasswdd
+
+configuration control for password expiration
 
 * appl
 
 more programs here
+
+verify that all callers of krb5_rd_req set addresses in auth_context
+
+verify that all callers of krb5_rd_req and krb5_recvauth send in a `server'
+
+** appl/popper
+
+Implement RFC1731 and 1734, pop over GSS-API
 
 ** appl/rsh
 
@@ -18,6 +30,8 @@ perhaps rsh and rshd should be able to handle the `traditional'
   rsh-protocol as well.
 
 ** appl/telnet
+
+error messages when kerberos functions fail
 
 ** appl/test
 
@@ -29,13 +43,7 @@ there's some room for improvement here.
 
 * kdc
 
-* kuser
-
-** kinit
-
-misses lots of useful options.
-
-should try to give better error messages.
+should the KDC use keytabs to store its keys?  Then it could use krb5_rd_req.
 
 * lib
 
@@ -50,10 +58,6 @@ PAM and afskauthlib
 ** lib/des
 
 md4, md5, and sha doesn't work on Crays.
-
-** lib/editline
-
-** lib/error
 
 ** lib/gssapi
 
@@ -112,6 +116,16 @@ probably leaks memory when errors occur
 should the sequence numbers be XORed?
 
 encryption and checksum type is still hardcoded in some places.
+
+implement krb5_sname_sock_to_principal (or some better name)?
+
+krb5_recvauth: set addresses in auth_context if there aren't any
+
+wait for error before generating preauthentication
+
+pa-afs3-salt?
+
+OTP?
 
 ** lib/roken
 
