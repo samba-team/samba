@@ -6,7 +6,8 @@
 package IdlSwig;
 
 use strict;
-use Data::Dumper;
+
+eval("use Data::Dumper");
 
 my(%interfaces, %functions, %structs, %unions);
 my($res, $name);
