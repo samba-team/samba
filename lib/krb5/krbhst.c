@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,10 +41,15 @@
 
 RCSID("$Id$");
 
+/*
+ * assuming that `*res' contains `*count' strings, add a copy of `string'.
+ */
+
 static int
 add_string(char ***res, int *count, const char *string)
 {
     char **tmp = realloc(*res, (*count + 1) * sizeof(**res));
+
     if(tmp == NULL)
 	return ENOMEM;
     *res = tmp;
@@ -86,7 +91,12 @@ srv_find_realm(krb5_context context, char ***res, int *count,
     for(rr = r->head; rr; rr = rr->next){
 	if(rr->type == T_SRV){
 	    char buf[1024];
-	    *res = realloc(*res, (*count + 1) * sizeof(**res));
+	    char **tmp;
+
+	    tmp = realloc(*res, (*count + 1) * sizeof(**res));
+	    if (tmp == NULL)
+		return ENOMEM;
+	    *res = tmp;
 	    snprintf (buf, sizeof(buf),
 		      "%s/%s:%u",
 		      proto,
@@ -105,10 +115,17 @@ srv_find_realm(krb5_context context, char ***res, int *count,
     return 0;
 }
 
+/*
+ * lookup the servers for realm `realm', looking for the config string
+ * `conf_string' in krb5.conf or for `serv_string' in SRV records.
+ * return a malloc-ed list of servers in hostlist.
+ */
+
 static krb5_error_code
 get_krbhst (krb5_context context,
 	    const krb5_realm *realm,
 	    const char *conf_string,
+	    const char *serv_string,
 	    char ***hostlist)
 {
     char **res, **r;
@@ -122,7 +139,8 @@ get_krbhst (krb5_context context,
     if(context->srv_lookup) {
 	char *s[] = { "udp", "tcp", "http" }, **q;
 	for(q = s; q < s + sizeof(s) / sizeof(s[0]); q++) {
-	    ret = srv_find_realm(context, &res, &count, *realm, *q, "kerberos");
+	    ret = srv_find_realm(context, &res, &count, *realm, *q,
+				 serv_string);
 	    if(ret) {
 		krb5_config_free_strings(res);
 		return ret;
@@ -149,7 +167,8 @@ krb5_get_krb_admin_hst (krb5_context context,
 			const krb5_realm *realm,
 			char ***hostlist)
 {
-    return get_krbhst (context, realm, "admin_server", hostlist);
+    return get_krbhst (context, realm, "admin_server", "kerberos-adm",
+		       hostlist);
 }
 
 krb5_error_code
@@ -157,7 +176,7 @@ krb5_get_krbhst (krb5_context context,
 		 const krb5_realm *realm,
 		 char ***hostlist)
 {
-    return get_krbhst (context, realm, "kdc", hostlist);
+    return get_krbhst (context, realm, "kdc", "kerberos", hostlist);
 }
 
 krb5_error_code
