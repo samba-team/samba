@@ -629,6 +629,7 @@ void free_user_info(auth_usersupplied_info **user_info)
 		SAFE_FREE((*user_info)->internal_username.str);
 		SAFE_FREE((*user_info)->client_domain.str);
 		SAFE_FREE((*user_info)->domain.str);
+		SAFE_FREE((*user_info)->wksta_name.str);
 		data_blob_free(&(*user_info)->lm_resp);
 		data_blob_free(&(*user_info)->nt_resp);
 		SAFE_FREE((*user_info)->interactive_password);
