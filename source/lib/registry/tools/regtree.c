@@ -105,7 +105,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	setup_logging("regtree", True);
 
 	if (remote) {
-		error = reg_open_remote(&h, cmdline_get_username(), cmdline_get_userpassword(), remote);
+		error = reg_open_remote(&h, cli_credentials_get_username(cmdline_credentials), cli_credentials_get_password(cmdline_credentials), remote);
 	} else if (backend) {
 	    error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, &root);
 	} else {

@@ -38,10 +38,9 @@
  *		-i,--scope
  */
 
-
 enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL};
 
-static struct cmdline_auth_info cmdline_auth_info;
+struct cli_credentials *cmdline_credentials = NULL;
 
 static void popt_common_callback(poptContext con, 
 			   enum poptCallbackReason reason,
@@ -160,182 +159,34 @@ struct poptOption popt_common_version[] = {
 	POPT_TABLEEND
 };
 
-
-
-/****************************************************************************
- * get a password from a a file or file descriptor
- * exit on failure
- * ****************************************************************************/
-static void get_password_file(struct cmdline_auth_info *a)
-{
-	int fd = -1;
-	char *p;
-	BOOL close_it = False;
-	pstring spec;
-	char pass[128];
-
-	if ((p = getenv("PASSWD_FD")) != NULL) {
-		pstrcpy(spec, "descriptor ");
-		pstrcat(spec, p);
-		sscanf(p, "%d", &fd);
-		close_it = False;
-	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
-		fd = open(p, O_RDONLY, 0);
-		pstrcpy(spec, p);
-		if (fd < 0) {
-			fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",
-					spec, strerror(errno));
-			exit(1);
-		}
-		close_it = True;
-	}
-
-	for(p = pass, *p = '\0'; /* ensure that pass is null-terminated */
-		p && p - pass < sizeof(pass);) {
-		switch (read(fd, p, 1)) {
-		case 1:
-			if (*p != '\n' && *p != '\0') {
-				*++p = '\0'; /* advance p, and null-terminate pass */
-				break;
-			}
-		case 0:
-			if (p - pass) {
-				*p = '\0'; /* null-terminate it, just in case... */
-				p = NULL; /* then force the loop condition to become false */
-				break;
-			} else {
-				fprintf(stderr, "Error reading password from file %s: %s\n",
-						spec, "empty password\n");
-				exit(1);
-			}
-
-		default:
-			fprintf(stderr, "Error reading password from file %s: %s\n",
-					spec, strerror(errno));
-			exit(1);
-		}
-	}
-	pstrcpy(a->password, pass);
-	if (close_it)
-		close(fd);
-}
-
-static void get_credentials_file(const char *file, struct cmdline_auth_info *info) 
-{
-	XFILE *auth;
-	fstring buf;
-	uint16_t len = 0;
-	char *ptr, *val, *param;
-
-	if ((auth=x_fopen(file, O_RDONLY, 0)) == NULL)
-	{
-		/* fail if we can't open the credentials file */
-		d_printf("ERROR: Unable to open credentials file!\n");
-		exit(-1);
-	}
-
-	while (!x_feof(auth))
-	{
-		/* get a line from the file */
-		if (!x_fgets(buf, sizeof(buf), auth))
-			continue;
-		len = strlen(buf);
-
-		if ((len) && (buf[len-1]=='\n'))
-		{
-			buf[len-1] = '\0';
-			len--;
-		}
-		if (len == 0)
-			continue;
-
-		/* break up the line into parameter & value.
-		 * will need to eat a little whitespace possibly */
-		param = buf;
-		if (!(ptr = strchr_m (buf, '=')))
-			continue;
-
-		val = ptr+1;
-		*ptr = '\0';
-
-		/* eat leading white space */
-		while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
-			val++;
-
-		if (strwicmp("password", param) == 0) {
-			pstrcpy(info->password, val);
-			info->got_pass = True;
-		} else if (strwicmp("username", param) == 0) {
-			pstrcpy(info->username, val);
-		} else if (strwicmp("domain", param) == 0) {
-			pstrcpy(info->domain,val);
-			info->got_domain = True;
-		}
-		memset(buf, 0, sizeof(buf));
-	}
-	x_fclose(auth);
-}
-
 /* Handle command line options:
  *		-U,--user
  *		-A,--authentication-file
  *		-k,--use-kerberos
  *		-N,--no-pass
  *		-S,--signing
- *              -P --machine-pass
+ *      -P --machine-pass
  */
 
+
+static BOOL dont_ask = False;
 
 static void popt_common_credentials_callback(poptContext con, 
 						enum poptCallbackReason reason,
 						const struct poptOption *opt,
 						const char *arg, const void *data)
 {
-	char *p;
-
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		cmdline_auth_info.use_kerberos = False;
-		cmdline_auth_info.got_pass = False;
-		pstrcpy(cmdline_auth_info.username, "GUEST");	
+		cmdline_credentials = talloc_zero(talloc_autofree_context(), struct cli_credentials);
+		cli_credentials_guess(cmdline_credentials);
 
-		if (getenv("LOGNAME"))pstrcpy(cmdline_auth_info.username,getenv("LOGNAME"));
-
-		if (getenv("USER")) {
-			pstring tmp;
-
-			pstrcpy(cmdline_auth_info.username,getenv("USER"));
-
-			pstrcpy(tmp,cmdline_auth_info.username);
-			if ((p = strchr_m(tmp,'\\'))) {
-				*p = 0;
-				pstrcpy(cmdline_auth_info.domain,tmp);
-				cmdline_auth_info.got_domain = True;
-				pstrcpy(cmdline_auth_info.username,p+1);
-			}
-
-			if ((p = strchr_m(cmdline_auth_info.username,'%'))) {
-				*p = 0;
-				pstrcpy(cmdline_auth_info.password,p+1);
-				cmdline_auth_info.got_pass = True;
-				memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(cmdline_auth_info.password));
-			}
+		return;
+	}
+	
+	if (reason == POPT_CALLBACK_REASON_POST) {
+		if (!dont_ask) {
+			cli_credentials_set_cmdline_callbacks(cmdline_credentials);
 		}
-
-		if (getenv("DOMAIN")) {
-			pstrcpy(cmdline_auth_info.domain,getenv("DOMAIN"));
-			cmdline_auth_info.got_domain = True;
-		}
-
-		if (getenv("PASSWD")) {
-			pstrcpy(cmdline_auth_info.password,getenv("PASSWD"));
-			cmdline_auth_info.got_pass = True;
-		}
-
-		if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
-			get_password_file(&cmdline_auth_info);
-			cmdline_auth_info.got_pass = True;
-		}
-
 		return;
 	}
 
@@ -343,41 +194,18 @@ static void popt_common_credentials_callback(poptContext con,
 	case 'U':
 		{
 			char *lp;
-			pstring tmp;
 
-			pstrcpy(cmdline_auth_info.username,arg);
+			cli_credentials_parse_string(cmdline_credentials,arg, CRED_SPECIFIED);
 
-			pstrcpy(tmp,cmdline_auth_info.username);
-			if ((p = strchr_m(tmp,'\\'))) {
-				*p = 0;
-				pstrcpy(cmdline_auth_info.domain,tmp);
-				cmdline_auth_info.got_domain = True;
-				pstrcpy(cmdline_auth_info.username,p+1);
-			}
-
-			if ((lp=strchr_m(cmdline_auth_info.username,'%'))) {
+			if ((lp=strchr_m(arg,'%'))) {
 				*lp = 0;
-				pstrcpy(cmdline_auth_info.password,lp+1);
-				cmdline_auth_info.got_pass = True;
-				memset(strchr_m(arg,'%')+1,'X',strlen(cmdline_auth_info.password));
+				memset(strchr_m(arg,'%')+1,'X',strlen(cmdline_credentials->password));
 			}
 		}
 		break;
 
 	case 'A':
-		get_credentials_file(arg, &cmdline_auth_info);
-		break;
-
-	case 'k':
-#ifndef HAVE_KRB5
-		d_printf("No kerberos support compiled in\n");
-		exit(1);
-#else
-		cmdline_auth_info.use_kerberos = True;
-		cmdline_auth_info.got_pass = True;
-		lp_set_cmdline("gensec:krb5", "True");
-		lp_set_cmdline("gensec:ms_krb5", "True");
-#endif
+		cli_credentials_parse_file(cmdline_credentials, arg, CRED_SPECIFIED);
 		break;
 
 	case 'S':
@@ -401,97 +229,38 @@ static void popt_common_credentials_callback(poptContext con,
 				d_printf("ERROR: Unable to fetch machine password\n");
 				exit(1);
 			}
-			snprintf(cmdline_auth_info.username, sizeof(cmdline_auth_info.username), 
-				 "%s$", lp_netbios_name());
-			pstrcpy(cmdline_auth_info.password,opt_password);
+			cmdline_credentials->username = talloc_asprintf(cmdline_credentials, "%s$", lp_netbios_name());
+			cmdline_credentials->username_obtained = CRED_SPECIFIED;
+			cli_credentials_set_password(cmdline_credentials, opt_password, CRED_SPECIFIED);
 			free(opt_password);
-			cmdline_auth_info.got_pass = True;
 
-			pstrcpy(cmdline_auth_info.domain, lp_workgroup());
-			cmdline_auth_info.got_domain = True;
-			
-			/* machine accounts only work with kerberos */
-			cmdline_auth_info.use_kerberos = True;
+			cli_credentials_set_domain(cmdline_credentials, lp_workgroup(), CRED_SPECIFIED);
 		}
+		/* machine accounts only work with kerberos */
+
+	case 'k':
+#ifndef HAVE_KRB5
+		d_printf("No kerberos support compiled in\n");
+		exit(1);
+#else
+		lp_set_cmdline("gensec:krb5", "True");
+		lp_set_cmdline("gensec:ms_krb5", "True");
+#endif
 		break;
+
+
 	}
 }
 
 
 
 struct poptOption popt_common_credentials[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_credentials_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, popt_common_credentials_callback },
 	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "USERNAME" },
-	{ "no-pass", 'N', POPT_ARG_NONE, &cmdline_auth_info.got_pass, 0, "Don't ask for a password" },
-	{ "kerberos", 'k', POPT_ARG_NONE, &cmdline_auth_info.use_kerberos, 'k', "Use kerberos (active directory) authentication" },
+	{ "no-pass", 'N', POPT_ARG_NONE, &dont_ask, True, "Don't ask for a password" },
+	{ "kerberos", 'k', POPT_ARG_NONE, NULL, 'k', "Use kerberos (active directory) authentication" },
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
 	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
-	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password" },
+	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
 	POPT_TABLEEND
 };
-
-void cmdline_set_username(const char *name)
-{
-	pstrcpy(cmdline_auth_info.username, name);
-}
-
-const char *cmdline_get_username(void)
-{
-	return cmdline_auth_info.username;
-}
-
-void cmdline_set_userdomain(const char *domain)
-{
-	cmdline_auth_info.got_domain = True;
-	pstrcpy(cmdline_auth_info.domain, domain);
-}
-
-const char *cmdline_get_userdomain(void)
-{
-	if (cmdline_auth_info.got_domain) {
-		return cmdline_auth_info.domain;
-	}
-
-	/* I think this should be lp_netbios_name() 
-	 * instead of lp_workgroup(), because if you're logged in 
-	 * as domain user the getenv("USER") contains the domain
-	 * and this code path isn't used
-	 * --metze
-	 */
-	return lp_netbios_name();
-}
-
-const char *cmdline_get_userpassword(void)
-{
-	char *prompt;
-	char *ret;
-
-	if (cmdline_auth_info.got_pass) {
-		return cmdline_auth_info.password;
-	}
-
-	prompt = talloc_asprintf(NULL, "Password for [%s\\%s]:", 
-				 cmdline_get_userdomain(),
-				 cmdline_get_username());
-
-	ret = getpass(prompt);
-
-	talloc_free(prompt);
-	return ret;
-}
-
-void cmdline_set_userpassword(const char *pass)
-{
-	cmdline_auth_info.got_pass = True;
-	pstrcpy(cmdline_auth_info.password, pass);
-}
-
-void cmdline_set_use_kerberos(BOOL use_kerberos)
-{
-	cmdline_auth_info.use_kerberos = use_kerberos;
-}
-
-BOOL cmdline_get_use_kerberos(void)
-{
-	return cmdline_auth_info.use_kerberos;
-}

@@ -26,7 +26,7 @@
 /****************************************************************************
 start a message sequence
 ****************************************************************************/
-BOOL smbcli_message_start(struct smbcli_tree *tree, char *host, char *username, 
+BOOL smbcli_message_start(struct smbcli_tree *tree, char *host, const char *username, 
 		       int *grp)
 {
 	struct smbcli_request *req; 

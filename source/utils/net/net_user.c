@@ -47,9 +47,9 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 	lnet_ctx = libnet_context_init();
 	if (!lnet_ctx) return -1;
 
-	lnet_ctx->user.domain_name   = ctx->user.domain_name;
-	lnet_ctx->user.account_name  = ctx->user.account_name;
-	lnet_ctx->user.password      = ctx->user.password;
+	lnet_ctx->user.domain_name   = cli_credentials_get_domain(ctx->credentials);
+	lnet_ctx->user.account_name  = cli_credentials_get_username(ctx->credentials);
+	lnet_ctx->user.password      = cli_credentials_get_password(ctx->credentials);
 
 	/* calling CreateUser function */
 	r.generic.level              = LIBNET_CREATE_USER_GENERIC;
