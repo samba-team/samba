@@ -622,18 +622,24 @@ static BOOL test_ntlm(void)
 	DATA_BLOB nt_response = data_blob(NULL, 24);
 	DATA_BLOB session_key = data_blob(NULL, 16);
 
+	char lm_key[8];
 	char nt_key[16];
+	char lm_hash[16];
 	char nt_hash[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 	
+	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(nt_key);
 
+	flags |= WINBIND_PAM_LMKEY;
 	flags |= WINBIND_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 	E_md4hash(opt_password, nt_hash);
 	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+
+	E_deshash(opt_password, lm_hash); 
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -641,7 +647,7 @@ static BOOL test_ntlm(void)
 					      NULL,
 					      &nt_response,
 					      flags,
-					      NULL,
+					      lm_key,
 					      nt_key,
 					      &error_string);
 	
@@ -655,6 +661,15 @@ static BOOL test_ntlm(void)
 		return False;
 	}
 
+	if (memcmp(lm_hash, lm_key, 
+		   sizeof(lm_key)) != 0) {
+		DEBUG(1, ("LM Key does not match expectations!\n"));
+ 		DEBUG(1, ("lm_key:\n"));
+		dump_data(1, lm_key, 8);
+		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_hash, 8);
+		pass = False;
+	}
 	if (memcmp(session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
