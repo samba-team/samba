@@ -183,8 +183,6 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 							      machine_password, 
 							      domain))) {
 					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
-					if (NT_STATUS_IS_OK(result)) 
-						result = NT_STATUS_UNSUCCESSFUL;
 				}
 			}
 			new_conn->cli->use_kerberos = False;
