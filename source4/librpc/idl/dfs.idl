@@ -18,7 +18,7 @@
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS dfs_Add (
+	WERROR dfs_Add (
 		[in,ref]     unistr *path,
 		[in,ref]     unistr *server,
 		[in]         unistr *share,
@@ -28,7 +28,7 @@
 
 	/******************/
 	/* Function: 0x02 */
-	NTSTATUS dfs_Remove (
+	WERROR dfs_Remove (
 		[in,ref] unistr *path,
 		[in]     unistr *server,
 		[in]     unistr *share
@@ -36,7 +36,7 @@
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS dfs_SetInfo ();
+	WERROR dfs_SetInfo ();
 
 	/******************/
 	/* Function: 0x04 */
@@ -105,11 +105,10 @@
 		[case(100)] dfs_Info100 *info100;
 		[case(101)] dfs_Info101 *info101;
 		[case(102)] dfs_Info102 *info102;
-		[case(200)] dfs_Info200 *info200;
-		[case(300)] dfs_Info300 *info300;
+		[default] ;
 	} dfs_Info;
 
-	NTSTATUS dfs_GetInfo (
+	WERROR dfs_GetInfo (
 		[in,ref] unistr *path,
 		[in]     unistr *server,
 		[in]     unistr *share,
@@ -165,7 +164,7 @@
 		[switch_is(level)] dfs_EnumInfo e;
 	} dfs_EnumStruct;
 
-	NTSTATUS dfs_Enum (
+	WERROR dfs_Enum (
 		[in] uint32 level,
 		[in] uint32 bufsize,
 		[in,out] dfs_EnumStruct *info,
