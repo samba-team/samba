@@ -656,21 +656,21 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
    Returns a reference to None, or NULL for failure.
 */
 static PyObject *pytdbunpack_item(char ch,
-				       char **pbuf,
-				       int *plen,
-				       PyObject *val_list)
+				  char **pbuf,
+				  int *plen,
+				  PyObject *val_list)
 {
-	PyObject *result;
+	PyObject *unpacked;
 	
 	if (ch == 'w') {	/* 16-bit int */
-		result = pytdbunpack_int16(pbuf, plen);
+		unpacked = pytdbunpack_int16(pbuf, plen);
 	}
 	else if (ch == 'd' || ch == 'p') { /* 32-bit int */
 		/* pointers can just come through as integers */
-		result = pytdbunpack_uint32(pbuf, plen);
+		unpacked = pytdbunpack_uint32(pbuf, plen);
 	}
 	else if (ch == 'f' || ch == 'P') { /* nul-term string  */
-		result = pytdbunpack_string(pbuf, plen, pytdb_unix_encoding);
+		unpacked = pytdbunpack_string(pbuf, plen, pytdb_unix_encoding);
 	}
 	else if (ch == 'B') { /* length, buffer */
 		return pytdbunpack_buffer(pbuf, plen, val_list);
@@ -684,10 +684,15 @@ static PyObject *pytdbunpack_item(char ch,
 	}
 
 	/* otherwise OK */
-	if (!result)
+	if (!unpacked)
 		return NULL;
-	if (PyList_Append(val_list, result) == -1)
-		return NULL;
+
+	if (PyList_Append(val_list, unpacked) == -1)
+		val_list = NULL;
+
+	/* PyList_Append takes a new reference to the inserted object.
+	   Therefore, we no longer need the original reference. */
+	Py_DECREF(unpacked);
 	
 	return val_list;
 }
