@@ -34,9 +34,10 @@ extern fstring remote_machine;
 
 
 /****************************************************************************
-load parameters specific to a connection/service
+ Load parameters specific to a connection/service.
 ****************************************************************************/
-BOOL become_service(connection_struct *conn,BOOL do_chdir)
+
+BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 {
 	extern char magic_char;
 	static connection_struct *last_conn;
@@ -315,10 +316,10 @@ static void set_admin_user(connection_struct *conn)
 #endif
 }
 
-
 /****************************************************************************
-  make a connection to a service
+ Make a connection to a service.
 ****************************************************************************/
+
 connection_struct *make_connection(char *service,char *password, 
 				   int pwlen, char *dev,uint16 vuid, NTSTATUS *status)
 {
@@ -327,9 +328,16 @@ connection_struct *make_connection(char *service,char *password,
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
+	uid_t euid;
 
 	fstring user;
 	ZERO_STRUCT(user);
+
+	/* This must ONLY BE CALLED AS ROOT. As it exits this function as root. */
+	if ((euid = geteuid()) != 0) {
+		DEBUG(0,("make_connection: PANIC ERROR. Called as nonroot (%u)\n", (unsigned int)euid ));
+		smb_panic("make_connection: PANIC ERROR. Called as nonroot\n");
+	}
 
 	strlower(service);
 
@@ -519,7 +527,7 @@ connection_struct *make_connection(char *service,char *password,
 	conn->groups = NULL;
 	
 	/* Find all the groups this uid is in and
-	   store them. Used by become_user() */
+	   store them. Used by change_to_user() */
 	initialise_groups(conn->user, conn->uid, conn->gid); 
 	get_current_groups(&conn->ngroups,&conn->groups);
 		
@@ -557,16 +565,7 @@ connection_struct *make_connection(char *service,char *password,
 		return NULL;
 	}
 
-	if (!become_user(conn, conn->vuid)) {
-		/* No point continuing if they fail the basic checks */
-		DEBUG(0,("Can't become connected user!\n"));
-		conn_free(conn);
-		*status = NT_STATUS_LOGON_FAILURE;
-		return NULL;
-	}
-
 /* ROOT Activities: */	
-	become_root();
 	/* check number of connections */
 	if (!claim_connection(conn,
 			      lp_servicename(SNUM(conn)),
@@ -575,8 +574,6 @@ connection_struct *make_connection(char *service,char *password,
 		DEBUG(1,("too many connections - rejected\n"));
 		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		conn_free(conn);
-		unbecome_root();
-		unbecome_user();
 		return NULL;
 	}  
 
@@ -596,14 +593,19 @@ connection_struct *make_connection(char *service,char *password,
 					 lp_max_connections(SNUM(conn)));
 			conn_free(conn);
 			*status = NT_STATUS_UNSUCCESSFUL;
-			unbecome_root();
-			unbecome_user();
 			return NULL;
 		}
 	}
-	unbecome_root();
 
 /* USER Activites: */
+	if (!change_to_user(conn, conn->vuid)) {
+		/* No point continuing if they fail the basic checks */
+		DEBUG(0,("Can't become connected user!\n"));
+		conn_free(conn);
+		*status = NT_STATUS_LOGON_FAILURE;
+		return NULL;
+	}
+
 	/* Remember that a different vuid can connect later without these checks... */
 
 	/* Preexecs are done here as they might make the dir we are to ChDir to below */
@@ -616,7 +618,7 @@ connection_struct *make_connection(char *service,char *password,
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			unbecome_user();
+			change_to_root_user();
 			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
 			conn_free(conn);
 			*status = NT_STATUS_UNSUCCESSFUL;
@@ -628,7 +630,7 @@ connection_struct *make_connection(char *service,char *password,
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
 			 remote_machine, conn->client_address,
 			 conn->connectpath,strerror(errno)));
-		unbecome_user();
+		change_to_root_user();
 		yield_connection(conn,
 				 lp_servicename(SNUM(conn)),
 				 lp_max_connections(SNUM(conn)));
@@ -677,14 +679,14 @@ connection_struct *make_connection(char *service,char *password,
 		if (conn->vfs_ops.connect(conn, service, user) < 0) {
 			DEBUG(0,("make_connection: VFS make connection failed!\n"));
 			*status = NT_STATUS_UNSUCCESSFUL;
-			unbecome_user();
+			change_to_root_user();
 			conn_free(conn);
 			return NULL;
 		}
 	}
 
-	/* we've finished with the sensitive stuff */
-	unbecome_user();
+	/* we've finished with the user stuff - go back to root */
+	change_to_root_user();
             
 	return(conn);
 }
@@ -697,7 +699,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	DirCacheFlush(SNUM(conn));
 
-	unbecome_user();
+	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 remote_machine,conn->client_address,
@@ -720,15 +722,15 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(SNUM(conn)) && 
-	    become_user(conn, vuid))  {
+	    change_to_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
 		smbrun(cmd,NULL);
-		unbecome_user();
+		change_to_root_user();
 	}
 
-	unbecome_user();
+	change_to_root_user();
 	/* execute any "root postexec = " line */
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;

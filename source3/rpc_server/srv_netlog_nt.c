@@ -708,7 +708,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		usr_info->ptr_user_info = 0;
         
 		/* XXXX hack to get standard_sub_basic() to use sam logon username */
-		/* possibly a better way would be to do a become_user() call */
+		/* possibly a better way would be to do a change_to_user() call */
 		sam_logon_in_ssb = True;
 		pstrcpy(samlogon_user, nt_username);
 

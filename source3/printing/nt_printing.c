@@ -944,7 +944,10 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
+
+	become_root();
 	conn = make_connection("print$", null_pw, 0, "A:", user->vuid, &nt_status);
+	unbecome_root();
 
 	if (conn == NULL) {
 		DEBUG(0,("get_correct_cversion: Unable to connect\n"));
@@ -952,13 +955,9 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 		return -1;
 	}
 
-	/* Save who we are - we are temporarily becoming the connection user. */
-	push_sec_ctx();
-
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("get_correct_cversion: Can't become user!\n"));
 		*perr = WERR_ACCESS_DENIED;
-		pop_sec_ctx();
 		return -1;
 	}
 
@@ -1017,16 +1016,16 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	close_file(fsp, True);
 	close_cnum(conn, user->vuid);
-	pop_sec_ctx();
+	unbecome_user();
 	return cversion;
 
+  error_exit:
 
-	error_exit:
 	if(fsp)
 		close_file(fsp, True);
 	
 	close_cnum(conn, user->vuid);
-	pop_sec_ctx();
+	unbecome_user();
 	return -1;
 }
 

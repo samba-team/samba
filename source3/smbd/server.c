@@ -247,7 +247,7 @@ max can be %d\n",
 
 			/* check for sighup processing */
 			if (reload_after_sighup) {
-				unbecome_user();
+				change_to_root_user();
 				DEBUG(1,("Reloading services after SIGHUP\n"));
 				reload_services(False);
 				reload_after_sighup = False;
@@ -393,7 +393,7 @@ BOOL reload_services(BOOL test)
 	reset_stat_cache();
 
 	/* this forces service parameters to be flushed */
-	become_service(NULL,True);
+	set_current_service(NULL,True);
 
 	return(ret);
 }
@@ -479,10 +479,11 @@ void exit_server(char *reason)
 	extern char *last_inbuf;
 
 
-	if (!firsttime) exit(0);
+	if (!firsttime)
+		exit(0);
 	firsttime = 0;
 
-	unbecome_user();
+	change_to_root_user();
 	DEBUG(2,("Closing connections\n"));
 
 	conn_close_all();

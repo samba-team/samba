@@ -750,7 +750,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   saved_vuid = current_user.vuid;
   saved_fsp_conn = fsp->conn;
   vfs_GetWd(saved_fsp_conn,saved_dir);
-  unbecome_user();
+  change_to_root_user();
   /* Save the chain fnum. */
   file_chain_save();
 
@@ -823,7 +823,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
    * Go back to being the user who requested the oplock
    * break.
    */
-  if((saved_user_conn != NULL) && (saved_vuid != UID_FIELD_INVALID) && !become_user(saved_user_conn, saved_vuid))
+  if((saved_user_conn != NULL) && (saved_vuid != UID_FIELD_INVALID) && !change_to_user(saved_user_conn, saved_vuid))
   {
     DEBUG( 0, ( "oplock_break: unable to re-become user!" ) );
     DEBUGADD( 0, ( "Shutting down server\n" ) );

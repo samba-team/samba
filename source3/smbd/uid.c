@@ -25,10 +25,10 @@
 extern struct current_user current_user;
 
 /****************************************************************************
- Become the guest user.
+ Become the guest user without changing the security context stack.
 ****************************************************************************/
 
-BOOL become_guest(void)
+BOOL change_to_guest(void)
 {
 	static struct passwd *pass=NULL;
 	static uid_t guest_uid = (uid_t)-1;
@@ -82,10 +82,11 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 }
 
 /****************************************************************************
- Become the user of a connection number.
+ Become the user of a connection number without changing the security context
+ stack, but modify the currnet_user entries.
 ****************************************************************************/
 
-BOOL become_user(connection_struct *conn, uint16 vuid)
+BOOL change_to_user(connection_struct *conn, uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
 	int snum;
@@ -96,7 +97,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	NT_USER_TOKEN *token = NULL;
 
 	if (!conn) {
-		DEBUG(2,("Connection not open\n"));
+		DEBUG(2,("change_to_user: Connection not open\n"));
 		return(False);
 	}
 
@@ -109,12 +110,12 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 
 	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
 	   (current_user.uid == conn->uid)) {
-		DEBUG(4,("Skipping become_user - already user\n"));
+		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
 		return(True);
 	} else if ((current_user.conn == conn) && 
 		   (vuser != 0) && (current_user.vuid == vuid) && 
 		   (current_user.uid == vuser->uid)) {
-		DEBUG(4,("Skipping become_user - already user\n"));
+		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
 		return(True);
 	}
 
@@ -133,7 +134,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		token = conn->nt_user_token;
 	} else {
 		if (!vuser) {
-			DEBUG(2,("Invalid vuid used %d\n",vuid));
+			DEBUG(2,("change_to_user: Invalid vuid used %d\n",vuid));
 			return(False);
 		}
 		uid = vuser->uid;
@@ -196,21 +197,22 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	current_user.conn = conn;
 	current_user.vuid = vuid;
 
-	DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
+	DEBUG(5,("change_to_user uid=(%d,%d) gid=(%d,%d)\n",
 		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
   
 	return(True);
 }
 
 /****************************************************************************
- Unbecome the user of a connection number.
+ Go back to being root without changing the security context stack,
+ but modify the current_user entries.
 ****************************************************************************/
 
-BOOL unbecome_user(void )
+BOOL change_to_root_user(void)
 {
 	set_root_sec_ctx();
 
-	DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
+	DEBUG(5,("change_to_root_user: now uid=(%d,%d) gid=(%d,%d)\n",
 		(int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
 
 	current_user.conn = NULL;
@@ -222,16 +224,13 @@ BOOL unbecome_user(void )
 /****************************************************************************
  Become the user of an authenticated connected named pipe.
  When this is called we are currently running as the connection
- user.
+ user. Doesn't modify current_user.
 ****************************************************************************/
 
 BOOL become_authenticated_pipe_user(pipes_struct *p)
 {
-	BOOL res = push_sec_ctx();
-
-	if (!res) {
+	if (!push_sec_ctx())
 		return False;
-	}
 
 	set_sec_ctx(p->pipe_user.uid, p->pipe_user.gid, 
 		    p->pipe_user.ngroups, p->pipe_user.groups, p->pipe_user.nt_user_token);
@@ -242,19 +241,93 @@ BOOL become_authenticated_pipe_user(pipes_struct *p)
 /****************************************************************************
  Unbecome the user of an authenticated connected named pipe.
  When this is called we are running as the authenticated pipe
- user and need to go back to being the connection user.
+ user and need to go back to being the connection user. Doesn't modify
+ current_user.
 ****************************************************************************/
 
-BOOL unbecome_authenticated_pipe_user(pipes_struct *p)
+BOOL unbecome_authenticated_pipe_user(void)
 {
 	return pop_sec_ctx();
 }
 
-/* Temporarily become a root user.  Must match with unbecome_root(). */
+/****************************************************************************
+ Utility functions used by become_xxx/unbecome_xxx.
+****************************************************************************/
+
+struct conn_ctx {
+	connection_struct *conn;
+	uint16 vuid;
+};
+ 
+/* A stack of current_user connection contexts. */
+ 
+static struct conn_ctx conn_ctx_stack[MAX_SEC_CTX_DEPTH];
+static int conn_ctx_stack_ndx;
+
+static void push_conn_ctx(void)
+{
+	struct conn_ctx *ctx_p;
+ 
+	/* Check we don't overflow our stack */
+ 
+	if (conn_ctx_stack_ndx == MAX_SEC_CTX_DEPTH) {
+		DEBUG(0, ("Connection context stack overflow!\n"));
+		smb_panic("Connection context stack overflow!\n");
+	}
+ 
+	/* Store previous user context */
+	ctx_p = &conn_ctx_stack[conn_ctx_stack_ndx];
+ 
+	ctx_p->conn = current_user.conn;
+	ctx_p->vuid = current_user.vuid;
+ 
+	DEBUG(3, ("push_conn_ctx(%u) : conn_ctx_stack_ndx = %d\n",
+		(unsigned int)ctx_p->vuid, conn_ctx_stack_ndx ));
+
+	conn_ctx_stack_ndx++;
+}
+
+static void pop_conn_ctx(void)
+{
+	struct conn_ctx *ctx_p;
+ 
+	/* Check for stack underflow. */
+
+	if (conn_ctx_stack_ndx == 0) {
+		DEBUG(0, ("Connection context stack underflow!\n"));
+		smb_panic("Connection context stack underflow!\n");
+	}
+
+	conn_ctx_stack_ndx--;
+	ctx_p = &conn_ctx_stack[conn_ctx_stack_ndx];
+
+	current_user.conn = ctx_p->conn;
+	current_user.vuid = ctx_p->vuid;
+
+	ctx_p->conn = NULL;
+	ctx_p->vuid = UID_FIELD_INVALID;
+}
+
+void init_conn_ctx(void)
+{
+    int i;
+ 
+    /* Initialise connection context stack */
+	for (i = 0; i < MAX_SEC_CTX_DEPTH; i++) {
+		conn_ctx_stack[i].conn = NULL;
+		conn_ctx_stack[i].vuid = UID_FIELD_INVALID;
+    }
+}
+
+/****************************************************************************
+ Temporarily become a root user.  Must match with unbecome_root(). Saves and
+ restores the connection context.
+****************************************************************************/
 
 void become_root(void)
 {
 	push_sec_ctx();
+	push_conn_ctx();
 	set_root_sec_ctx();
 }
 
@@ -263,6 +336,35 @@ void become_root(void)
 void unbecome_root(void)
 {
 	pop_sec_ctx();
+	pop_conn_ctx();
+}
+
+/****************************************************************************
+ Push the current security context then force a change via change_to_user().
+ Saves and restores the connection context.
+****************************************************************************/
+
+BOOL become_user(connection_struct *conn, uint16 vuid)
+{
+	if (!push_sec_ctx())
+		return False;
+
+	push_conn_ctx();
+
+	if (!change_to_user(conn, vuid)) {
+		pop_sec_ctx();
+		pop_conn_ctx();
+		return False;
+	}
+
+	return True;
+}
+
+BOOL unbecome_user()
+{
+	pop_sec_ctx();
+	pop_conn_ctx();
+	return True;
 }
 
 /*****************************************************************
