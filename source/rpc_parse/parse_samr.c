@@ -880,6 +880,8 @@ static void init_sam_entry1(SAM_ENTRY1 * sam, uint32 user_idx,
 {
 	DEBUG(5, ("init_sam_entry1\n"));
 
+	ZERO_STRUCTP(sam);
+
 	sam->user_idx = user_idx;
 	sam->rid_user = rid_user;
 	sam->acb_info = acb_info;
@@ -1395,6 +1397,8 @@ void init_sam_dispinfo_1(SAM_DISPINFO_1 * sam, uint32 *num_entries,
 	uint32 dsize = 0;
 	uint32 i;
 
+	ZERO_STRUCTP(sam);
+
 	max_entries = *num_entries;
 	max_data_size = *data_size;
 
@@ -1474,6 +1478,8 @@ void init_sam_dispinfo_2(SAM_DISPINFO_2 * sam, uint32 *num_entries,
 
 	DEBUG(5, ("init_sam_dispinfo_2\n"));
 
+	ZERO_STRUCTP(sam);
+
 	max_entries = *num_entries;
 	max_data_size = *data_size;
 
@@ -1549,6 +1555,8 @@ void init_sam_dispinfo_3(SAM_DISPINFO_3 * sam, uint32 *num_entries,
 
 	DEBUG(5, ("init_sam_dispinfo_3\n"));
 
+	ZERO_STRUCTP(sam);
+
 	max_entries = *num_entries;
 	max_data_size = *data_size;
 
@@ -1621,6 +1629,8 @@ void init_sam_dispinfo_4(SAM_DISPINFO_4 * sam, uint32 *num_entries,
 	uint32 i;
 
 	DEBUG(5, ("init_sam_dispinfo_4\n"));
+
+	ZERO_STRUCTP(sam);
 
 	max_entries = *num_entries;
 	max_data_size = *data_size;
@@ -1695,6 +1705,8 @@ void init_sam_dispinfo_5(SAM_DISPINFO_5 * sam, uint32 *num_entries,
 	uint32 i;
 
 	DEBUG(5, ("init_sam_dispinfo_5\n"));
+
+	ZERO_STRUCTP(sam);
 
 	max_entries = *num_entries;
 	max_data_size = *data_size;
