@@ -73,6 +73,51 @@ int sys_usleep(long usecs)
 }
 
 /*******************************************************************
+A read wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_read(int fd, void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		errno = 0;
+		ret = read(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A write wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_write(int fd, const void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		errno = 0;
+		ret = write(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A send wrapper that will deal with EINTR.
+********************************************************************/
+
+int sys_send(int s, const void *msg, size_t len, int flags)
+{
+	ssize_t ret;
+
+	do {
+		errno = 0;
+		ret = send(s, msg, len, flags);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
 A stat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
