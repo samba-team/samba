@@ -769,8 +769,9 @@ extern int errno;
 #include "version.h"
 
 #include "smb.h"
-
+/*
 #include "smbw.h"
+*/
 
 #include "nameserv.h"
 
@@ -778,13 +779,25 @@ extern int errno;
 
 #include "byteorder.h"
 
+#include "privileges.h"
+
+#include "rpc_creds.h"
+
+#include "mapping.h"
+
+#include "passdb.h"
+
 #include "ntdomain.h"
+
+#include "rpc_misc.h"
+
+#include "rpc_secdes.h"
+
+#include "nt_printing.h"
 
 #include "msdfs.h"
 
 #include "smbprofile.h"
-
-#include "mapping.h"
 
 #include "rap.h"
 
@@ -795,14 +808,14 @@ extern int errno;
 
 #include "auth.h"
 
-#include "passdb.h"
-
 #include "sam.h"
 
 #include "gums.h"
 
 #include "idmap.h"
 
+#include "client.h"
+#include "smbw.h"
 #include "session.h"
 
 #include "asn_1.h"
