@@ -186,9 +186,6 @@ struct lsa_AuditLogInfo {
 	uint32 unknown;
 };
 
-struct lsa_AuditSettings {
-};
-
 struct lsa_AuditEventsInfo {
 	uint32 auditing_mode;
 	uint32 *settings;
