@@ -34,7 +34,7 @@ extern int optind;
 
 /* forced running in root-mode */
 static BOOL local_mode;
-static BOOL joining_domain = False, got_pass = False, got_username = False, changing_trust_pw = FALSE; 
+static BOOL joining_domain = False, got_pass = False, got_username = False, changing_trust_pw = False; 
 static int local_flags = 0;
 static BOOL stdin_passwd_get = False;
 static fstring user_name, user_password;
