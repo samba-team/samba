@@ -514,7 +514,7 @@ enum winbindd_result cache_sid_to_uid(struct winbindd_cli_state *state)
 	}
 	
 	if ( state->request.flags & WBFLAG_QUERY_ONLY ) 
-		flags = ID_QUERY_ONLY;
+		flags |= ID_QUERY_ONLY;
 	
 	/* Find uid for this sid and return it */
 
@@ -553,7 +553,7 @@ enum winbindd_result cache_sid_to_gid(struct winbindd_cli_state *state)
 	}
 	
 	if ( state->request.flags & WBFLAG_QUERY_ONLY ) 
-		flags = ID_QUERY_ONLY;
+		flags |= ID_QUERY_ONLY;
 	
 	/* Find uid for this sid and return it */
 
