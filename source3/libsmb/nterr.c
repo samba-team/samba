@@ -602,9 +602,9 @@ char *get_friendly_nt_error_msg(NTSTATUS nt_code)
         int idx = 0;
 
 	while (nt_err_desc[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == NT_STATUS_V(nt_code)) 
+		if (NT_STATUS_V(nt_err_desc[idx].nt_errcode) == NT_STATUS_V(nt_code)) 
 		{
-                        return nt_errs[idx].nt_errstr;
+                        return nt_err_desc[idx].nt_errstr;
 		}
 		idx++;
 	}
