@@ -61,6 +61,7 @@ typedef struct hdb_entry{
 	    unsigned allow_postdate:1; /* Ticket may be postdated */
 	    unsigned server:1;	/* Principal may be server */
 	    unsigned locked:1;	/* Principal is locked */
+	    unsigned v4:1;	/* Version 4 salted key */
 	}b;
     }flags;
 }hdb_entry;
