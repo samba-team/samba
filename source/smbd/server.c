@@ -446,8 +446,6 @@ void exit_server(char *reason)
 ****************************************************************************/
 static void init_structs(void)
 {
-	get_myname(myhostname,NULL);
-
 	conn_init();
 	file_init();
 	init_rpc_pipe_hnd(); /* for RPC pipes */
@@ -614,11 +612,13 @@ static void usage(char *pname)
 		exit(1);
 	}
 
-	init_structs();
-	
+	get_myname(myhostname,NULL);
+
 	if (!reload_services(False))
 		return(-1);	
 
+	init_structs();
+	
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file.
