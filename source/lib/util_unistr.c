@@ -417,7 +417,7 @@ UNISTR2 *unistr2_assign_ascii_str(UNISTR2 *str, const char *buf)
 void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
 {
 	BOOL found;
-	uint32 i = 0;
+	uint32 i;
 
 	if (from == NULL || from->buffer==NULL)
 	{
@@ -426,21 +426,10 @@ void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
 	}
 
 	/* get the length; UNISTR **are** NUL terminated */
-	found = False;
-	while (!found)
-	{
-		if ((from->buffer)[i]=='\0')
-			found = True;
-		else
-			i++;
-	}
+	i = 0;
+	while ((from->buffer)[i]!='\0')
+		i++;
 	i++;
-
-	if (!found)
-	{
-		DEBUG(0,("init_unistr2_from_unistr: non-null terminiated UNISTR!\n"));
-		return;
-	}
 
 	unistr2_assign(to, from->buffer, i);
 }
