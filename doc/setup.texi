@@ -736,7 +736,8 @@ local transport. For example:
 
 @example
 access to *
-        by dn="uid=heimdal,dc=services,dc=padl,dc=com" write
+        by dn.exact="uid=heimdal,dc=services,dc=padl,dc=com" write
+        ...
 
 sasl-regexp "uidNumber=0\\\+gidNumber=.*,cn=peercred,cn=external,cn=auth"
 	"uid=heimdal,dc=services,dc=padl,dc=com"
@@ -748,7 +749,8 @@ a tree.  The user that the key is mapped to should be have a
 krb5Principal aux object with krb5PrincipalName set so that the
 ``creator'' and ``modifier'' gets right in @file{kadmin}.
 
-Another option is to make an admins group and add the dn to that group.
+Another option is to create an admins group and add the dn to that
+group.
 
 You also needs to make sure its possible for the KDC to connect
 without encryption, the connection is already secure, its done over a
