@@ -757,8 +757,10 @@ krb5_parse_address(krb5_context context,
 
     ALLOC_SEQ(addresses, n);
 
-    for (a = ai, i = 0; a != NULL; a = a->ai_next, ++i) {
-	krb5_sockaddr2address (context, ai->ai_addr, &addresses->val[i]);
+    for (a = ai, i = 0; a != NULL; a = a->ai_next) {
+	if(krb5_sockaddr2address (context, ai->ai_addr, 
+				  &addresses->val[i]) == 0)
+	    i++;
     }
     freeaddrinfo (ai);
     return 0;

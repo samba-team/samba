@@ -439,12 +439,15 @@ write_stats(krb5_context context, slave *slaves, u_int32_t current_version)
     while (slaves) {
 	krb5_address addr;
 	rtbl_add_column_entry(tbl, SLAVE_NAME, slaves->name);
-	krb5_sockaddr2address (context, (struct sockaddr*)&slaves->addr, &addr);
-	krb5_print_address(&addr, str, sizeof(str), NULL);
-	krb5_free_address(context, &addr);
+	ret = krb5_sockaddr2address (context, 
+				     (struct sockaddr*)&slaves->addr, &addr);
+	if(ret == 0) {
+	    krb5_print_address(&addr, str, sizeof(str), NULL);
+	    krb5_free_address(context, &addr);
+	    rtbl_add_column_entry(tbl, SLAVE_ADDRESS, str);
+	} else
+	    rtbl_add_column_entry(tbl, SLAVE_ADDRESS, "<unknown>");
 	
-	rtbl_add_column_entry(tbl, SLAVE_ADDRESS, str);
-
 	snprintf(str, sizeof(str), "%u", (unsigned)slaves->version);
 	rtbl_add_column_entry(tbl, SLAVE_VERSION, str);
 
