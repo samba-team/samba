@@ -21,9 +21,11 @@ AC_MSG_RESULT(`eval echo \\$ac_cv_type_$cv`)
 if test `eval echo \\$ac_cv_type_$cv` = yes; then
   ac_tr_hdr=HAVE_`echo $1 | sed 'y%abcdefghijklmnopqrstuvwxyz./- %ABCDEFGHIJKLMNOPQRSTUVWXYZ____%'`
 dnl autoheader tricks *sigh*
+define(foo,translit($1, [ ], [_]))
 : << END
-@@@funcs="$funcs $1"@@@
+@@@funcs="$funcs foo"@@@
 END
+undef(foo)
   AC_DEFINE_UNQUOTED($ac_tr_hdr, 1)
 fi
 ])
