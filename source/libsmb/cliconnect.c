@@ -446,7 +446,7 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principal, c
 	DEBUG(2,("Doing kerberos session setup\n"));
 
 	/* generate the encapsulated kerberos5 ticket */
-	negTokenTarg = spnego_gen_negTokenTarg(cli, principal);
+	negTokenTarg = spnego_gen_negTokenTarg(principal);
 
 	if (!negTokenTarg.data) return False;
 
@@ -572,14 +572,14 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 {
 	char *principal;
 	char *OIDs[ASN1_MAX_OIDS];
-	uint8 guid[16];
 	int i;
 	BOOL got_kerberos_mechanism = False;
+	DATA_BLOB blob;
 
 	DEBUG(2,("Doing spnego session setup (blob length=%d)\n", cli->secblob.length));
 
 	/* the server might not even do spnego */
-	if (cli->secblob.length == 16) {
+	if (cli->secblob.length <= 16) {
 		DEBUG(3,("server didn't supply a full spnego negprot\n"));
 		goto ntlmssp;
 	}
@@ -588,11 +588,16 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	file_save("negprot.dat", cli->secblob.data, cli->secblob.length);
 #endif
 
+	/* there is 16 bytes of GUID before the real spnego packet starts */
+	blob = data_blob(cli->secblob.data+16, cli->secblob.length-16);
+
 	/* the server sent us the first part of the SPNEGO exchange in the negprot 
 	   reply */
-	if (!spnego_parse_negTokenInit(cli->secblob, guid, OIDs, &principal)) {
+	if (!spnego_parse_negTokenInit(blob, OIDs, &principal)) {
+		data_blob_free(&blob);
 		return False;
 	}
+	data_blob_free(&blob);
 
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {

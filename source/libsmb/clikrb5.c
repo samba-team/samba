@@ -20,6 +20,10 @@
 
 #include "includes.h"
 
+#ifndef ENCTYPE_ARCFOUR_HMAC
+#define ENCTYPE_ARCFOUR_HMAC	0x0017
+#endif
+
 #ifdef HAVE_KRB5
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
@@ -94,7 +98,9 @@ DATA_BLOB krb5_get_ticket(char *principal)
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
 	DATA_BLOB ret;
-	krb5_enctype enc_types[] = {ENCTYPE_DES_CBC_MD5, ENCTYPE_NULL};
+	krb5_enctype enc_types[] = {ENCTYPE_ARCFOUR_HMAC, 
+				    ENCTYPE_DES_CBC_MD5, 
+				    ENCTYPE_NULL};
 
 	retval = krb5_init_context(&context);
 	if (retval) {

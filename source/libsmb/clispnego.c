@@ -79,7 +79,6 @@ DATA_BLOB spnego_gen_negTokenInit(uint8 guid[16],
   OIDs (the mechanisms) and a principal name string 
 */
 BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
-			       uint8 guid[16], 
 			       char *OIDs[ASN1_MAX_OIDS], 
 			       char **principal)
 {
@@ -89,7 +88,6 @@ BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
 
 	asn1_load(&data, blob);
 
-	asn1_read(&data, guid, 16);
 	asn1_start_tag(&data,ASN1_APPLICATION(0));
 	asn1_check_OID(&data,OID_SPNEGO);
 	asn1_start_tag(&data,ASN1_CONTEXT(0));
@@ -279,7 +277,7 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
    generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
    kerberos session setup 
 */
-DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli, char *principal)
+DATA_BLOB spnego_gen_negTokenTarg(const char *principal)
 {
 	DATA_BLOB tkt, tkt_wrapped, targ;
 	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};

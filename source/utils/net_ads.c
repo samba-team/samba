@@ -653,6 +653,10 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
+	if (ads_kinit_password(ads)) {
+		return -1;
+	}
+
 	rc = ads_set_machine_password(ads, global_myname, password);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
