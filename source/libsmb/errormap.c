@@ -1513,6 +1513,9 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 #ifdef ENAMETOOLONG
 	{ ENAMETOOLONG, ERRDOS, 206, NT_STATUS_OBJECT_NAME_INVALID },
 #endif
+#ifdef EFBIG
+	{ EFBIG, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+#endif
 	{ 0, 0, 0, NT_STATUS_OK }
 };
 
