@@ -481,6 +481,12 @@ BOOL get_referred_path(char *pathname, struct junction_map *jucn,
 			return False;
 	}
 
+	if (!lp_msdfs_root(snum)) {
+		DEBUG(3,("get_referred_path: .%s. in dfs path %s is not a dfs root.\n",
+			 dp.servicename, pathname));
+		goto out;
+	}
+
 	/*
 	 * Self referrals are tested with a anonymous IPC connection and
 	 * a GET_DFS_REFERRAL call to \\server\share. (which means dp.reqpath[0] points
@@ -495,12 +501,6 @@ BOOL get_referred_path(char *pathname, struct junction_map *jucn,
 	pstrcpy(conn_path, lp_pathname(snum));
 	if (!create_conn_struct(conn, snum, conn_path))
 		return False;
-
-	if (!lp_msdfs_root(SNUM(conn))) {
-		DEBUG(3,("get_referred_path: .%s. in dfs path %s is not a dfs root.\n",
-			 dp.servicename, pathname));
-		goto out;
-	}
 
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		struct referral* ref;
