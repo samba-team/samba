@@ -281,7 +281,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOO
 	info->all_machines = all_machines;
 	info->disp_info.user_dbloaded=True;
 
-	DEBUG(12,("load_sampwd_entries: done\n"));
+	DEBUG(10,("load_sampwd_entries: done\n"));
 
 	return nt_status;
 }
@@ -333,7 +333,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 
 	info->disp_info.group_dbloaded=True;
 
-	DEBUG(12,("load_group_domain_entries: done\n"));
+	DEBUG(10,("load_group_domain_entries: done\n"));
 
 	return NT_STATUS_OK;
 }
