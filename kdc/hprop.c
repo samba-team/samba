@@ -236,7 +236,7 @@ v4_prop(void *arg, struct v4_principal *p)
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
     ent.keys.val[0].salt->type = KRB5_PADATA_PW_SALT;
     ent.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
-    krb5_data_alloc(&ent.keys.val[0].key.keyvalue, sizeof(des_cblock));
+    krb5_data_alloc(&ent.keys.val[0].key.keyvalue, DES_KEY_SZ);
     memcpy(ent.keys.val[0].key.keyvalue.data, p->key, 8);
 
     copy_Key(&ent.keys.val[0], &ent.keys.val[1]);
