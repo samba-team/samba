@@ -321,14 +321,14 @@ account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
   return True;
 }
 
-BOOL trust_get_passwd( unsigned char trust_passwd[16], char *myname, char *domain)
+BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *myname)
 {
   time_t lct;
 
   /*
    * Get the machine account password.
    */
-  if(!trust_password_lock( myname, domain, False)) {
+  if(!trust_password_lock( domain, myname, False)) {
     DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
 machine %s in domain %s.\n", myname, domain ));
     return False;
