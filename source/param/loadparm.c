@@ -979,7 +979,7 @@ static void init_globals(void)
   Globals.bStripDot = False;
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
-  Globals.bTimestampLogs = False;
+  Globals.bTimestampLogs = True;
   Globals.bDebugHiresTimestamp = False;
   Globals.bDebugPid = False;
   Globals.bDebugUid = False;

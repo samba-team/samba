@@ -252,19 +252,61 @@ static void my_wcstombs(char *dst, uint16 *src, size_t len)
     dst[i] = (char)SVAL(src,i*2);
 }
 
+/****************************************************************************
+ (Hopefully) temporary call to fix bugs in NT5.0beta2. This OS sends unicode
+ strings in NT calls AND DOESN'T SET THE UNICODE BIT !!!!!!!
+****************************************************************************/
+
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
   /*
    * We need various heuristics here to detect a unicode string... JRA.
    */
-  DEBUG(10,("data_offset = %d, data_len = %d, fname_len = %d\n", data_offset, data_len, fname_len ));
 
-  if((data_len - fname_len > 1) || (inbuf[data_offset] == '\0')) {
+  DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
+           data_offset, data_len, fname_len ));
+
+  if(data_len - fname_len > 1) {
     /*
-     * NT 5.0 Beta 2 or Windows 2000 final release (!) has kindly sent us a UNICODE string
+     * NT 5.0 Beta 2 has kindly sent us a UNICODE string
      * without bothering to set the unicode bit. How kind.
      *
      * Firstly - ensure that the data offset is aligned
+     * on a 2 byte boundary - add one if not.
+     */
+    fname_len = fname_len/2;
+    if(data_offset & 1)
+      data_offset++;
+    my_wcstombs( fname, (uint16 *)(inbuf+data_offset), fname_len);
+  } else {
+    StrnCpy(fname,inbuf+data_offset,fname_len);
+  }
+  fname[fname_len] = '\0';
+}
+
+/****************************************************************************
+ Fix bugs in Win2000 final release. In trans calls this OS sends unicode
+ strings AND DOESN'T SET THE UNICODE BIT !!!!!!!
+****************************************************************************/
+
+static void get_filename_transact( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
+{
+  /*
+   * We need various heuristics here to detect a unicode string... JRA.
+   */
+
+  DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
+           data_offset, data_len, fname_len ));
+
+  /*
+   * Win2K sends a unicode filename plus one extra alingment byte.
+   * WinNT4.x send an ascii string with multiple garbage bytes on
+   * the end here.
+   */
+
+  if((data_len - fname_len == 1) || (inbuf[data_offset] == '\0')) {
+    /*
+     * Ensure that the data offset is aligned
      * on a 2 byte boundary - add one if not.
      */
     fname_len = fname_len/2;
@@ -946,18 +988,6 @@ static int call_nt_transact_create(connection_struct *conn,
   pstring fname;
   char *params = *ppparams;
   int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
-  uint32 flags = IVAL(params,0);
-  uint32 desired_access = IVAL(params,8);
-  uint32 file_attributes = IVAL(params,20);
-  uint32 share_access = IVAL(params,24);
-  uint32 create_disposition = IVAL(params,28);
-  uint32 create_options = IVAL(params,32);
-  uint32 fname_len = MIN(((uint32)IVAL(params,44)),
-                         ((uint32)sizeof(fname)-1));
-  uint16 root_dir_fid = (uint16)IVAL(params,4);
-  int smb_ofun;
-  int smb_open_mode;
-  int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
   int oplock_request = 0;
@@ -971,6 +1001,38 @@ static int call_nt_transact_create(connection_struct *conn,
   files_struct *fsp = NULL;
   char *p = NULL;
   BOOL stat_open_only = False;
+  uint32 flags;
+  uint32 desired_access;
+  uint32 file_attributes;
+  uint32 share_access;
+  uint32 create_disposition;
+  uint32 create_options;
+  uint32 fname_len;
+  uint16 root_dir_fid;
+  int smb_ofun;
+  int smb_open_mode;
+  int smb_attr;
+
+  DEBUG(5,("call_nt_transact_create\n"));
+
+  /*
+   * Ensure minimum number of parameters sent.
+   */
+
+  if(total_parameter_count < 54) {
+    DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
+    return(ERROR(ERRDOS,ERRbadaccess));
+  }
+
+  flags = IVAL(params,0);
+  desired_access = IVAL(params,8);
+  file_attributes = IVAL(params,20);
+  share_access = IVAL(params,24);
+  create_disposition = IVAL(params,28);
+  create_options = IVAL(params,32);
+  fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
+  root_dir_fid = (uint16)IVAL(params,4);
+  smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 
   /* 
    * We need to construct the open_and_X ofun value from the
@@ -978,7 +1040,7 @@ static int call_nt_transact_create(connection_struct *conn,
    */    
 
   if((smb_ofun = map_create_disposition( create_disposition )) == -1)
-    return(ERROR(ERRDOS,ERRbadaccess));
+    return(ERROR(ERRDOS,ERRbadmem));
 
   /*
    * Get the file name.
@@ -1000,7 +1062,8 @@ static int call_nt_transact_create(connection_struct *conn,
        * Check to see if this is a mac fork of some kind.
        */
 
-      get_filename(&fname[0], params, 53, total_parameter_count - 53 - fname_len, fname_len);
+      get_filename_transact(&fname[0], params, 53,
+                            total_parameter_count - 53 - fname_len, fname_len);
 
       if( fname[0] == ':') {
           SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
@@ -1034,10 +1097,12 @@ static int call_nt_transact_create(connection_struct *conn,
     if(fname_len + dir_name_len >= sizeof(pstring))
       return(ERROR(ERRSRV,ERRfilespecs));
 
-    get_filename(&fname[dir_name_len], params, 53, total_parameter_count - 53 - fname_len, fname_len);
+    get_filename_transact(&fname[dir_name_len], params, 53,
+                 total_parameter_count - 53 - fname_len, fname_len);
 
   } else {
-    get_filename(&fname[0], params, 53, total_parameter_count - 53 - fname_len, fname_len);
+    get_filename_transact(&fname[0], params, 53,
+                 total_parameter_count - 53 - fname_len, fname_len);
   }
 
   /* If it's an IPC, use the pipe handler. */
