@@ -46,5 +46,13 @@ RCSID("$Id$");
 int
 issuid(void)
 {
-    return getuid() != geteuid() || getgid() != getegid();
+#if defined(HAVE_GETUID) && defined(HAVE_GETEUID)
+    if(getuid() != geteuid())
+	return 1;
+#endif
+#if defined(HAVE_GETGID) && defined(HAVE_GETEGID)
+    if(getgid() != getegid())
+	return 2;
+#endif
+    return 0;
 }
