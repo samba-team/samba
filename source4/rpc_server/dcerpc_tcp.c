@@ -38,7 +38,7 @@ static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde,
 	DATA_BLOB blob;
 	NTSTATUS status;
 
-	blob = data_blob(NULL, 0x4000);
+	blob = data_blob(NULL, 3);
 	if (!blob.data) {
 		smb_panic("out of memory in rpc write handler");
 	}
@@ -63,7 +63,7 @@ static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde,
 	DATA_BLOB blob;
 	ssize_t ret;
 
-	blob = data_blob(NULL, 0x4000);
+	blob = data_blob(NULL, 3);
 	if (!blob.data) {
 		smb_panic("out of memory in rpc read handler");
 	}
