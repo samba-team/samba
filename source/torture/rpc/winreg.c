@@ -293,11 +293,8 @@ static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct p
 {
 	struct winreg_QueryValue r;
 	NTSTATUS status;
-	struct EnumValueNameOut valname;
 	uint32 zero = 0;
 	uint32 offered = 0xfff;
-
-	valname.name = valuename;
 
 	printf("Testing QueryValue\n");
 
@@ -325,29 +322,23 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
 	struct winreg_EnumValue r;
-	struct EnumValueIn buf_name;
-	struct EnumValueIn buf_val;
 	uint32 type;
-	uint32 len1 = max_valbufsize, len2 = 0;
+	uint32 size = max_valbufsize, zero = 0;
 	BOOL ret = True;
+	uint8_t buf8;
+	uint16_t buf16;
 
 	printf("testing EnumValue\n");
 
 	r.in.handle = handle;
 	r.in.enum_index = 0;
-	r.in.name_in.len = 0;
-	r.in.name_in.max_len = max_valnamelen * 2;
-	buf_name.max_len = max_valnamelen;
-	buf_name.offset = 0;
-	buf_name.len = 0;
-	r.in.name_in.buffer = &buf_name;
+	r.in.name_in.length = 0;
+	r.in.name_in.size = 0x200;
+	r.in.name_in.name = &buf16;
 	r.in.type = &type;
-	buf_val.max_len = max_valbufsize;
-	buf_val.offset = 0;
-	buf_val.len = 0;
-	r.in.value_in = &buf_val;
-	r.in.value_len1 = &len1;
-	r.in.value_len2 = &len2;
+	r.in.value = &buf8;
+	r.in.length = &zero;
+	r.in.size = &size;
 	
 	do {
 		NTSTATUS status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);

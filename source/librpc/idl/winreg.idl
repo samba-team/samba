@@ -125,42 +125,30 @@
 		[in,out]    winreg_Time *last_changed_time
 	);
 
-        typedef struct {
-	        uint32 max_len;
-	        uint32 offset;
- 	        uint32 len;
-        } EnumValueIn;
-
-        typedef struct {
-                uint16 len;
-                uint16 max_len;
-                EnumValueIn *buffer;
-        } EnumValueNameIn;
-
-        typedef struct {
-	        uint32 max_len;
-	        uint32 offset;
-	        DATA_BLOB buffer;
-        } EnumValueOut;
-
-        typedef struct {
-                uint16 len;
-                uint16 max_len;
-                unistr *name;
-        } EnumValueNameOut;
-
 	/******************/
 	/* Function: 0x0a */
+
+	/* 
+	   this is equivalent IDL to a winreg_String, but we need to
+	   have absolute control over the length/size fields as the
+	   server looks at those to see what size buffer we have, so
+	   we can't use the automatic unistr handing in pidl.
+	*/
+	typedef struct {
+		uint16 length;
+		uint16 size;
+		[size_is(size/2),length_is(length/2)] uint16 *name;
+	} winreg_EnumValueString;
+
 	WERROR winreg_EnumValue(
 		[in,ref] policy_handle *handle,
-		[in] uint32 enum_index,
-		[in] EnumValueNameIn name_in,
-		[out] EnumValueNameOut name_out,
+		[in]     uint32 enum_index,
+		[in]     winreg_EnumValueString name_in,
+		[out]    winreg_String name_out,
 		[in,out] uint32 *type,
-		[in] EnumValueIn *value_in,
-		[out] EnumValueOut *value_out,
-		[in,out] uint32 *value_len1,
-		[in,out] uint32 *value_len2
+		[in,out,size_is(*size),length_is(*length)] uint8 *value,
+		[in,out] uint32 *size,
+		[in,out] uint32 *length
 	);
 
 	/******************/
