@@ -1,15 +1,16 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.17
-Release: 1
+%define	version 1.9.17
+Version: %{version}
+Release: 2
 Copyright: GPL
 Group: Networking
-Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.17.tar.gz
+Source: ftp://samba.anu.edu.au/pub/samba/samba-%{version}.tar.gz
 Patch: samba-make.patch
 Patch2: samba-axp.patch
 Packager: John H Terpstra [Samba-Team] <jht@aquasoft.com.au>
 Requires: pamconfig
-BuildRoot: /tmp/samba-root
+BuildRoot: /tmp/samba
 
 %description
 Samba provides an SMB server which can be used to provide network
