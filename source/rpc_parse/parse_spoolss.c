@@ -7628,7 +7628,7 @@ BOOL make_spoolss_q_deleteprinterdataex(SPOOL_Q_DELETEPRINTERDATAEX *q_u,
  ********************************************************************/
 
 BOOL make_spoolss_q_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, POLICY_HND *handle,
-			     uint32 flags, uint32 options, char *localmachine,
+			     uint32 flags, uint32 options, const char *localmachine,
 			     uint32 printerlocal, SPOOL_NOTIFY_OPTION *option)
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
