@@ -494,6 +494,8 @@ nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 wins : SHOWFLAGS nsswitch/libnss_wins.so
 
+everything: all libsmbclient debug2html smbfilter talloctort bin/samsync bin/make_printerdef
+
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
 
@@ -713,7 +715,7 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
 	-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS) 
 
-libsmbclient: bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
+libsmbclient: bin/libsmbclient.a bin/libsmbclient.@SHLIBEXT@
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
