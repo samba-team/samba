@@ -1,3 +1,12 @@
+1999-11-07  Assar Westerlund  <assar@sics.se>
+
+	* parse_bytes-test.c: new file
+
+	* Makefile.am: add parse_bytes-test
+
+	* parse_units.c (parse_something): try to handle the case of no
+ 	value specified a little bit better
+
 1999-11-04  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: bump version to 3:2:0
