@@ -85,7 +85,7 @@ static struct cli_use* add_cli_to_array(uint32 *len,
 /****************************************************************************
 initiate client array
 ****************************************************************************/
-void init_client_use(void)
+void init_cli_use(void)
 {
 	clis = NULL;
 	num_clis = 0;
@@ -97,7 +97,7 @@ terminate client array
 void free_cli_use(void)
 {
 	free_cli_array(num_clis, clis);
-	init_client_use();
+	init_cli_use();
 }
 
 /****************************************************************************

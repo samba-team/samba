@@ -150,7 +150,7 @@ void cli_connection_free(struct cli_connection *con)
 	BOOL closed;
 
 	cli_nt_session_close(con->cli, con->fnum);
-	cli_net_use_del(con->srv_name, con->usr_creds, False, NULL, &closed);
+	cli_net_use_del(con->srv_name, &con->usr_creds, False, &closed);
 
 	con->cli = NULL;
 
