@@ -775,6 +775,8 @@ extern int errno;
 
 #include "sam.h"
 
+#include "gums.h"
+
 #include "session.h"
 
 #include "asn_1.h"

@@ -21,8 +21,8 @@
 #ifndef _GUMS_H
 #define _GUMS_H
 
-#define GUMS_VERSION_MAJOR 0
-#define GUMS_VERSION_MINOR 1
+#define GUMS_VERSION_MAJOR	0
+#define GUMS_VERSION_MINOR	1
 #define GUMS_OBJECT_VERSION	1
 
 #define GUMS_OBJ_DOMAIN			1
@@ -74,10 +74,17 @@ typedef struct gums_group
 
 } GUMS_GROUP;
 
+typedef struct gums_domain
+{
+	uint32 next_rid;
+
+} GUMS_DOMAIN;
+
 union gums_obj_p {
-	gums_user *user;
-	gums_group *group;
-}
+	GUMS_USER *user;
+	GUMS_GROUP *group;
+	GUMS_DOMAIN *domain;
+};
 
 typedef struct gums_object
 {
@@ -112,6 +119,7 @@ typedef struct gums_commit_set
 	DOM_SID sid;			/* Object Sid */
 	uint32 count;			/* number of changes */
 	GUMS_DATA_SET **data;
+
 } GUMS_COMMIT_SET;
 
 typedef struct gums_privilege
@@ -145,7 +153,7 @@ typedef struct gums_functions
 	NTSTATUS (*delete_object) (const DOM_SID *sid);
 
 	NTSTATUS (*get_object_from_sid) (GUMS_OBJECT **object, const DOM_SID *sid, const int obj_type);
-	NTSTATUS (*get_sid_from_name) (GUMS_OBJECT **object, const char *name);
+	NTSTATUS (*get_object_from_name) (GUMS_OBJECT **object, const char *name, const int onj_type);
 	/* This function is used to get the list of all objects changed since b_time, it is
 	   used to support PDC<->BDC synchronization */
 	NTSTATUS (*get_updated_objects) (GUMS_OBJECT **objects, const NTTIME base_time);
@@ -159,10 +167,10 @@ typedef struct gums_functions
 	NTSTATUS (*set_object) (const GUMS_OBJECT *object);
 
 	/* set object values function */
-	NTSTATUS (*set_object_values) (DOM_SID *sid, uint32 count, GUMS_DATA_SET *data_set);
+	NTSTATUS (*set_object_values) (DOM_SID *sid, uint32 count, GUMS_DATA_SET **data_set);
 
 	/* Group related functions */
-	NTSTATUS (*add_memberss_to_group) (const DOM_SID *group, const DOM_SID **members);
+	NTSTATUS (*add_members_to_group) (const DOM_SID *group, const DOM_SID **members);
 	NTSTATUS (*delete_members_from_group) (const DOM_SID *group, const DOM_SID **members);
 	NTSTATUS (*enumerate_group_members) (DOM_SID **members, const DOM_SID *sid, const int type);
 
@@ -177,54 +185,56 @@ typedef struct gums_functions
 	NTSTATUS (*delete_members_from_privilege) (const LUID_ATTR *priv, const DOM_SID **members);
 	NTSTATUS (*enumerate_privilege_members) (DOM_SID **members, const LUID_ATTR *priv);
 	NTSTATUS (*get_sid_privileges) (DOM_SID **privs, const DOM_SID *sid);
+
 	/* warning!: set_privilege will overwrite a prior existing privilege if such exist */
 	NTSTATUS (*set_privilege) (GUMS_PRIVILEGE *priv);
 
 } GUMS_FUNCTIONS;
 
 /* define value types */
+#define GUMS_SET_PRIMARY_GROUP		0x1
+#define GUMS_SET_SEC_DESC		0x2
 
-#define GUMS_SET_PRIMARY_GROUP		1
-#define GUMS_SET_SEC_DESC		2
+#define GUMS_SET_NAME			0x10
+#define GUMS_SET_DESCRIPTION		0x11
+#define GUMS_SET_FULL_NAME		0x12
 
 /* user specific type values */
-#define GUMS_SET_LOGON_TIME		10  /* keep NTTIME consecutive */
-#define GUMS_SET_LOGOFF_TIME		11 /* too ease checking */
-#define GUMS_SET_KICKOFF_TIME		13
-#define GUMS_SET_PASS_LAST_SET_TIME	14
-#define GUMS_SET_PASS_CAN_CHANGE_TIME	15
-#define GUMS_SET_PASS_MUST_CHANGE_TIME	16 /* NTTIME end */
+#define GUMS_SET_LOGON_TIME		0x20
+#define GUMS_SET_LOGOFF_TIME		0x21
+#define GUMS_SET_KICKOFF_TIME		0x23
+#define GUMS_SET_PASS_LAST_SET_TIME	0x24
+#define GUMS_SET_PASS_CAN_CHANGE_TIME	0x25
+#define GUMS_SET_PASS_MUST_CHANGE_TIME	0x26
 
-#define GUMS_SET_NAME			20 /* keep strings consecutive */
-#define GUMS_SET_DESCRIPTION		21 /* too ease checking */
-#define GUMS_SET_FULL_NAME		22
-#define GUMS_SET_HOME_DIRECTORY		23
-#define GUMS_SET_DRIVE			24
-#define GUMS_SET_LOGON_SCRIPT		25
-#define GUMS_SET_PROFILE_PATH		26
-#define GUMS_SET_WORKSTATIONS		27
-#define GUMS_SET_UNKNOWN_STRING		28
-#define GUMS_SET_MUNGED_DIAL		29 /* strings end */
 
-#define GUMS_SET_LM_PASSWORD		40
-#define GUMS_SET_NT_PASSWORD		41
-#define GUMS_SET_PLAINTEXT_PASSWORD	42
-#define GUMS_SET_UNKNOWN_3		43
-#define GUMS_SET_LOGON_DIVS		44
-#define GUMS_SET_HOURS_LEN		45
-#define GUMS_SET_HOURS			46
-#define GUMS_SET_UNKNOWN_5		47
-#define GUMS_SET_UNKNOWN_6		48
+#define GUMS_SET_HOME_DIRECTORY		0x31
+#define GUMS_SET_DRIVE			0x32
+#define GUMS_SET_LOGON_SCRIPT		0x33
+#define GUMS_SET_PROFILE_PATH		0x34
+#define GUMS_SET_WORKSTATIONS		0x35
+#define GUMS_SET_UNKNOWN_STRING		0x36
+#define GUMS_SET_MUNGED_DIAL		0x37
 
-#define GUMS_SET_MUST_CHANGE_PASS	50
-#define GUMS_SET_CANNOT_CHANGE_PASS	51
-#define GUMS_SET_PASS_NEVER_EXPIRE	52
-#define GUMS_SET_ACCOUNT_DISABLED	53
-#define GUMS_SET_ACCOUNT_LOCKOUT	54
+#define GUMS_SET_LM_PASSWORD		0x40
+#define GUMS_SET_NT_PASSWORD		0x41
+#define GUMS_SET_PLAINTEXT_PASSWORD	0x42
+#define GUMS_SET_UNKNOWN_3		0x43
+#define GUMS_SET_LOGON_DIVS		0x44
+#define GUMS_SET_HOURS_LEN		0x45
+#define GUMS_SET_HOURS			0x46
+#define GUMS_SET_UNKNOWN_5		0x47
+#define GUMS_SET_UNKNOWN_6		0x48
+
+#define GUMS_SET_MUST_CHANGE_PASS	0x50
+#define GUMS_SET_CANNOT_CHANGE_PASS	0x51
+#define GUMS_SET_PASS_NEVER_EXPIRE	0x52
+#define GUMS_SET_ACCOUNT_DISABLED	0x53
+#define GUMS_SET_ACCOUNT_LOCKOUT	0x54
 
 /*group specific type values */
-#define GUMS_ADD_SID_LIST		60
-#define GUMS_DEL_SID_LIST		61
-#define GUMS_SET_SID_LIST		62
+#define GUMS_ADD_SID_LIST		0x60
+#define GUMS_DEL_SID_LIST		0x61
+#define GUMS_SET_SID_LIST		0x62
 
 #endif /* _GUMS_H */

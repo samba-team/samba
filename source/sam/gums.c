@@ -26,10 +26,40 @@
 #define GMV_MAJOR 0
 #define GMV_MINOR 1
 
+#define PRIV_NONE			0
+#define PRIV_CREATE_TOKEN		1
+#define PRIV_ASSIGNPRIMARYTOKEN		2
+#define PRIV_LOCK_MEMORY		3
+#define PRIV_INCREASE_QUOTA		4
+#define PRIV_MACHINE_ACCOUNT		5
+#define PRIV_TCB			6
+#define PRIV_SECURITY			7
+#define PRIV_TAKE_OWNERSHIP		8
+#define PRIV_LOAD_DRIVER		9
+#define PRIV_SYSTEM_PROFILE		10
+#define PRIV_SYSTEMTIME			11
+#define PRIV_PROF_SINGLE_PROCESS	12
+#define PRIV_INC_BASE_PRIORITY		13
+#define PRIV_CREATE_PAGEFILE		14
+#define PRIV_CREATE_PERMANENT		15
+#define PRIV_BACKUP			16
+#define PRIV_RESTORE			17
+#define PRIV_SHUTDOWN			18
+#define PRIV_DEBUG			19
+#define PRIV_AUDIT			20
+#define PRIV_SYSTEM_ENVIRONMENT		21
+#define PRIV_CHANGE_NOTIFY		22
+#define PRIV_REMOTE_SHUTDOWN		23
+#define PRIV_UNDOCK			24
+#define PRIV_SYNC_AGENT			25
+#define PRIV_ENABLE_DELEGATION		26
+#define PRIV_ALL			255
+
+
 GUMS_FUNCTIONS *gums_storage;
 static void *dl_handle;
 
-PRIVS privs[] = {
+static PRIVS gums_privs[] = {
 	{PRIV_NONE,			"no_privs",				"No privilege"}, /* this one MUST be first */
 	{PRIV_CREATE_TOKEN,		"SeCreateToken",			"Create Token"},
 	{PRIV_ASSIGNPRIMARYTOKEN,	"SeAssignPrimaryToken",			"Assign Primary Token"},
@@ -110,19 +140,19 @@ done:
 
 NTSTATUS gums_unload(void)
 {
-	NSTATUS ret;
+	NTSTATUS ret;
 	NTSTATUS (*module_finalize)();
 
 	if (!dl_handle)
 		return NT_STATUS_UNSUCCESSFUL;
 
-	module_close = sys_dlsym(dl_handle, "gumm_finalize");
+	module_finalize = sys_dlsym(dl_handle, "gumm_finalize");
 	if (!module_finalize) {
 		DEBUG(0, ("ERROR: Failed to find gums module's init function!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(5, ("Finalizing module %s\n", module_name));
+	DEBUG(5, ("Finalizing module"));
 
 	ret = module_finalize();
 	sys_dlclose(dl_handle);
