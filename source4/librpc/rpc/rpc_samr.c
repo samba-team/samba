@@ -269,12 +269,12 @@ NTSTATUS dcerpc_samr_LOOKUP_RIDS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, str
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_OPEN_GROUP(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_OPEN_GROUP *r)
+NTSTATUS dcerpc_samr_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_OpenGroup *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_OPEN_GROUP, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_OPEN_GROUP,
-				    (ndr_pull_fn_t) ndr_pull_samr_OPEN_GROUP,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_OPENGROUP, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_OpenGroup,
+				    (ndr_pull_fn_t) ndr_pull_samr_OpenGroup,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -283,12 +283,12 @@ NTSTATUS dcerpc_samr_OPEN_GROUP(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, stru
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_QUERY_GROUPINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_QUERY_GROUPINFO *r)
+NTSTATUS dcerpc_samr_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_QueryGroupInfo *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_QUERY_GROUPINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_QUERY_GROUPINFO,
-				    (ndr_pull_fn_t) ndr_pull_samr_QUERY_GROUPINFO,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_QUERYGROUPINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_QueryGroupInfo,
+				    (ndr_pull_fn_t) ndr_pull_samr_QueryGroupInfo,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

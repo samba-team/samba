@@ -21,6 +21,34 @@
 
 #include "includes.h"
 
+static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryGroupInfo r;
+	uint16 levels[] = {1, 2, 3, 4};
+	int i;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryGroupInfo level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+
+		status = dcerpc_samr_QueryGroupInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryGroupInfo level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+
+		NDR_PRINT_UNION_DEBUG(samr_GroupInfo, r.in.level, r.out.info);
+	}
+
+	return ret;
+}
+
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle)
 {
@@ -56,6 +84,7 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_OpenUser r;
 	struct policy_handle acct_handle;
+	BOOL ret = True;
 
 	printf("Testing OpenUser(%u)\n", rid);
 
@@ -71,10 +100,38 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryUserInfo(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
+
+static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			   struct policy_handle *handle, uint32 rid)
+{
+	NTSTATUS status;
+	struct samr_OpenGroup r;
+	struct policy_handle acct_handle;
+	BOOL ret = True;
+
+	printf("Testing OpenGroup(%u)\n", rid);
+
+	r.in.handle = handle;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.rid = rid;
+	r.out.acct_handle = &acct_handle;
+
+	status = dcerpc_samr_OpenGroup(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenGroup(%u) failed - %s\n", rid, nt_errstr(status));
 		return False;
 	}
-	
-	return True;
+
+	if (!test_QueryGroupInfo(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
+	return ret;
 }
 
 static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -121,6 +178,8 @@ static BOOL test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_EnumDomainGroups r;
 	uint32 resume_handle=0;
+	int i;
+	BOOL ret = True;
 
 	printf("Testing EnumDomainGroups\n");
 
@@ -137,7 +196,17 @@ static BOOL test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	NDR_PRINT_DEBUG(samr_SamArray, r.out.sam);
 
-	return True;	
+	if (!r.out.sam) {
+		return False;
+	}
+
+	for (i=0;i<r.out.sam->count;i++) {
+		if (!test_OpenGroup(p, mem_ctx, handle, r.out.sam->entries[i].idx)) {
+			ret = False;
+		}
+	}
+
+	return ret;
 }
 
 static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
