@@ -167,7 +167,8 @@ static int create_sock(void)
             return -1;
         }
         
-        if ((st.st_uid != 0) || ((st.st_mode & 0777) != 0755)) {
+        if ((st.st_uid != sec_initial_uid()) || 
+	    ((st.st_mode & 0777) != 0755)) {
             DEBUG(0, ("invalid permissions on socket directory %s\n",
                       WINBINDD_SOCKET_DIR));
             return -1;
@@ -645,12 +646,7 @@ int main(int argc, char **argv)
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
 
-	/* Must be root */
-
-	if(geteuid() != (uid_t)0) {
-		fprintf(stderr, "Must have effective user id of zero.\n");
-		exit(1);
-	}
+	sec_init();
 
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
