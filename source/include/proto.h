@@ -416,6 +416,7 @@ void talloc_destroy(TALLOC_CTX *t);
 size_t talloc_pool_size(TALLOC_CTX *t);
 void *talloc_zero(TALLOC_CTX *t, size_t size);
 void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size);
+char *talloc_strdup(TALLOC_CTX *t, char *p);
 
 /*The following definitions come from  lib/time.c  */
 
