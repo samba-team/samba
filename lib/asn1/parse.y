@@ -116,7 +116,7 @@ type		: INTEGER     { $$ = new_type(TInteger); }
 		| INTEGER '(' constant DOTDOT constant ')' {
 		    if($3 != 0)
 			error_message("Only 0 supported as low range");
-		    if($5 != INT_MIN && $5 != UINT_MAX)
+		    if($5 != INT_MIN && $5 != UINT_MAX && $5 != INT_MAX)
 			error_message("Only %u supported as high range",
 				      UINT_MAX);
 		    $$ = new_type(TUInteger);
