@@ -288,7 +288,7 @@ max can be %d\n",
 				/* Reset global variables in util.c so
 				   that client substitutions will be
 				   done correctly in the process.  */
-				reset_globals_after_sys_fork();
+				reset_globals_after_fork();
 
                 /*
                  * Ensure this child has kernel oplock
