@@ -849,12 +849,13 @@ void build_options(BOOL screen);
 	/* Setup the main smbd so that we can get messages. */
 	claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
 
-	/* 
-	   DO NOT ENABLE THIS TILL YOU COPE WITH KILLING THESE TASKS AND INETD
-	   THIS *killed* LOTS OF BUILD FARM MACHINES. IT CREATED HUNDREDS OF 
-	   smbd PROCESSES THAT NEVER DIE
-	   start_background_queue(); 
-	*/
+	/* only start the background queue daemon if we are 
+	   running as a daemon -- bad things will happen if
+	   smbd is launched via inetd and we fork a copy of 
+	   ourselves here */
+
+	if ( is_daemon )
+		start_background_queue(); 
 
 	if (!open_sockets_smbd(is_daemon, interactive, ports))
 		exit(1);
