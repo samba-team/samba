@@ -250,14 +250,11 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* if no domain or our local domain, then do a local tdb search */
 	
-	if ( !*name_domain || strequal(name_domain, get_global_sam_name()) ) {
+	if ( (!*name_domain || strequal(name_domain, get_global_sam_name())) &&
+	     ((grp = wb_getgrnam(name_group)) != NULL) ) {
+
 		char *buffer = NULL;
 		
-		if ( !(grp=wb_getgrnam(name_group)) ) {
-			DEBUG(5,("winbindd_getgrnam: lookup for %s\\%s failed\n",
-				name_domain, name_group));
-			return WINBINDD_ERROR;
-		}
 		memcpy( &state->response.data.gr, grp, sizeof(WINBINDD_GR) );
 
 		gr_mem_len = gr_mem_buffer( &buffer, grp->gr_mem, grp->num_gr_mem );
@@ -267,6 +264,13 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 		state->response.extra_data = buffer;	/* give the memory away */
 		
 		return WINBINDD_OK;
+	}
+
+	/* if no domain or our local domain and no local tdb group, default to
+	 * our local domain for aliases */
+
+	if ( !*name_domain || strequal(name_domain, get_global_sam_name()) ) {
+		fstrcpy(name_domain, get_global_sam_name());
 	}
 
 	/* Get info for the domain */
@@ -294,7 +298,8 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	}
 
 	if ( !((name_type==SID_NAME_DOM_GRP) ||
-		((name_type==SID_NAME_ALIAS) && domain->primary)) )
+	       ((name_type==SID_NAME_ALIAS) && domain->primary) ||
+	       ((name_type==SID_NAME_ALIAS) && domain->internal)) )
 	{
 		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
 			  name_group, name_type));
