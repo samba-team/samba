@@ -2403,10 +2403,9 @@ static char **completion_fn(const char *text, int start, int end)
 		return matches;
 
 cleanup:
-		while (i >= 0) {
+		for (i = 0; i < count; i++)
 			free(matches[i]);
-			i--;
-		}
+
 		free(matches);
 		return NULL;
 	}
