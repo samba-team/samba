@@ -33,7 +33,6 @@ extern pstring global_myname;
 
 BOOL synchronise_passdb(void)
 {
-	struct cli_state cli;
 	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
 	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
 	uint32 num;
@@ -46,22 +45,10 @@ BOOL synchronise_passdb(void)
 	uchar trust_passwd[16];
 	fstring trust_acct;
 
-	fstring srv_name;
 	char *mode;
 	BOOL success;
 	BOOL ret;
 	int i;
-
-	DEBUG(0,("cannot make connection to multi-list of servers yet!\n"));
-
-	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
-	{
-		return False;
-	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, lp_passwordserver()); /* LKCL XXXX oops! */
-	strupper(srv_name);
 
 	fstrcpy(trust_acct, global_myname);
 	fstrcat(trust_acct, "$");
@@ -71,7 +58,8 @@ BOOL synchronise_passdb(void)
 		return False;
 	}
 
-	ret = net_sam_sync(srv_name, global_myname, trust_acct, trust_passwd,
+	ret = net_sam_sync(lp_password_server(), global_myname, trust_acct,
+	                  trust_passwd,
 	                  hdr_deltas, deltas, &num);
 
 	if (ret)
@@ -112,7 +100,5 @@ BOOL synchronise_passdb(void)
 		}
 	}
 
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
 	return ret;
 }
