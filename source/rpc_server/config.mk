@@ -149,6 +149,17 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
+# Start MODULE dcerpc_drsuapi
+[MODULE::dcerpc_drsuapi]
+INIT_OBJ_FILES = \
+		rpc_server/drsuapi/dcesrv_drsuapi.o
+REQUIRED_SUBSYSTEMS = \
+		SAMDB \
+		DCERPC_COMMON
+# End MODULE dcerpc_drsuapi
+################################################
+
+################################################
 # Start SUBSYSTEM DCERPC
 [SUBSYSTEM::DCERPC]
 INIT_OBJ_FILES = \
