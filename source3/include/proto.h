@@ -4161,7 +4161,7 @@ struct cli_state *server_cryptkey(void);
 BOOL server_validate(char *user, char *domain, 
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen);
-BOOL domain_client_validate( char *user, char *domain, char *server_list,
+BOOL domain_client_validate( char *user, char *domain, 
 				char *acct_name, uint16 acct_type,
 				char *smb_apasswd, int smb_apasslen, 
 				char *smb_ntpasswd, int smb_ntpasslen,

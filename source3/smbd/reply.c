@@ -506,8 +506,6 @@ static BOOL check_domain_security(char *orig_user, char *domain,
 	fstring acct_name;
 	uint16 acct_type = 0;
 
-	char *server_list = NULL;
-
 	if (lp_security() == SEC_SHARE || lp_security() == SEC_SERVER)
 	{
 		return False;
@@ -524,14 +522,7 @@ static BOOL check_domain_security(char *orig_user, char *domain,
 		acct_type = SEC_CHAN_DOMAIN;
 	}
 
-	server_list = get_trusted_serverlist(domain);
-
-	if (server_list == NULL)
-	{
-		return False;
-	}
-
-	return domain_client_validate(orig_user, domain, server_list,
+	return domain_client_validate(orig_user, domain, 
 	                        acct_name, acct_type,
 	                        smb_apasswd, smb_apasslen,
 	                        smb_ntpasswd, smb_ntpasslen,

@@ -1112,7 +1112,7 @@ use this machine as the password server.\n"));
  key from the workstation trust account password.
 ************************************************************************/
 
-BOOL domain_client_validate( char *user, char *domain, char *server_list,
+BOOL domain_client_validate( char *user, char *domain, 
 				char *acct_name, uint16 acct_type,
 				char *smb_apasswd, int smb_apasslen, 
 				char *smb_ntpasswd, int smb_ntpasslen,
@@ -1140,6 +1140,13 @@ BOOL domain_client_validate( char *user, char *domain, char *server_list,
 	if(strequal( domain, global_myname))
 	{
 		DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
+		return False;
+	}
+
+	if (!get_any_dc_name(domain, srv_name))
+	{
+		DEBUG(3,("domain_client_validate: could not find domain %s\n",
+				domain));
 		return False;
 	}
 
@@ -1198,8 +1205,8 @@ BOOL domain_client_validate( char *user, char *domain, char *server_list,
 	* Now start the NT Domain stuff :-).
 	*/
 
-	if(cli_nt_setup_creds(server_list, global_myname, trust_acct,
-	                      trust_passwd, acct_type, srv_name) != 0x0)
+	if(cli_nt_setup_creds(srv_name, global_myname, trust_acct,
+	                      trust_passwd, acct_type) != 0x0)
 	{
 		DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 		%s.\n", srv_name));
