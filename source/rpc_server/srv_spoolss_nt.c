@@ -860,7 +860,7 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 				
 			if (printer && printer->info_2 && !strcmp(drivername, printer->info_2->drivername)) 
 			{
-				DEBUG(6,("Updating printer [%s]\n", printer->info_2->printername));
+				DEBUG(6,("Updating printer [%s] after driver update\n", printer->info_2->printername));
 				
 				/* all we care about currently is the change_id */
 				
