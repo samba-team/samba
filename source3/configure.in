@@ -3160,7 +3160,7 @@ AC_SUBST(builddir)
 # I added make files that are outside /source directory.
 # I know this is not a good solution, will work out a better
 # solution soon.			--simo
-AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/pdb/mysql/Makefile ../examples/pdb/xml/Makefile ../examples/sam/Makefile)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/sam/Makefile)
 
 #################################################
 # Print very concise instructions on building/use
