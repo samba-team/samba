@@ -51,15 +51,7 @@ static char *source_type;
 static char *afs_cell;
 static char *v4_realm;
 
-#ifdef KRB4
-static int v4_db;
-
-static des_cblock mkey4;
-static des_key_schedule msched4;
-
-#endif
 static int kaspecials_flag;
-static int ka_db;
 static int ka_use_null_salt;
 
 static char *local_realm=NULL;
@@ -158,13 +150,12 @@ kdb_prop(void *arg, Principal *p)
     strlcpy(pr.instance, p->instance, sizeof(pr.instance));
 
     copy_to_key(&p->key_low, &p->key_high, pr.key);
-    kdb_encrypt_key(&pr.key, &pr.key, &mkey4, msched4, DES_DECRYPT);
     pr.exp_date = p->exp_date;
     pr.mod_date = p->mod_date;
     strlcpy(pr.mod_name, p->mod_name, sizeof(pr.mod_name));
     strlcpy(pr.mod_instance, p->mod_instance, sizeof(pr.mod_instance));
     pr.max_life = p->max_life;
-    pr.mkvno = -1; /* p->kdc_key_ver; */
+    pr.mkvno = p->kdc_key_ver;
     pr.kvno = p->key_version;
     
     ret = v4_prop(arg, &pr);
@@ -239,11 +230,7 @@ v4_prop(void *arg, struct v4_principal *p)
     ent.keys.val = malloc(ent.keys.len * sizeof(*ent.keys.val));
     if(p->mkvno != -1) {
 	ent.keys.val[0].mkvno = malloc (sizeof(*ent.keys.val[0].mkvno));
-#if 0
-	*(ent.keys.val[0].mkvno) = p->mkvno; /* XXX */
-#else
-	*(ent.keys.val[0].mkvno) = 0;
-#endif
+	*(ent.keys.val[0].mkvno) = p->mkvno;
     } else
 	ent.keys.val[0].mkvno = NULL;
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
@@ -488,11 +475,7 @@ struct getargs args[] = {
       "|kaserver"
     },
       
-#ifdef KRB4
-    { "v4-db",    '4',	arg_flag, &v4_db },
     { "v4-realm", 'r',  arg_string, &v4_realm, "v4 realm to use" },
-#endif
-    { "ka-db",	  'K',  arg_flag, &ka_db },
     { "cell",	  'c',  arg_string, &afs_cell, "name of AFS cell" },
     { "kaspecials", 'S', arg_flag,   &kaspecials_flag, "dump KASPECIAL keys"},
     { "keytab",   'k',	arg_string, &ktname, "keytab to use for authentication", "keytab" },
@@ -740,28 +723,6 @@ propagate_database (krb5_context context, int type,
     return 0;
 }
 
-#ifdef KRB4
-
-static void
-v4_get_masterkey (krb5_context context, char *database)
-{
-    int e;
-
-    e = kerb_db_set_name (database);
-    if(e)
-	krb5_errx(context, 1, "kerb_db_set_name: %s",
-		  krb_get_err_text(e));
-    e = kdb_get_master_key(0, &mkey4, msched4);
-    if(e)
-	krb5_errx(context, 1, "kdb_get_master_key: %s",
-		  krb_get_err_text(e));
-    e = kdb_verify_master_key(&mkey4, msched4, NULL);
-    if (e < 0)
-	krb5_errx(context, 1, "kdb_verify_master_key failed");
-}
-
-#endif
-
 int
 main(int argc, char **argv)
 {
@@ -793,23 +754,23 @@ main(int argc, char **argv)
     if(local_realm)
 	krb5_set_default_realm(context, local_realm);
 
+    if(v4_realm == NULL) {
+	ret = krb5_get_default_realm(context, &v4_realm);
+	if(ret)
+	    krb5_err(context, 1, ret, "krb5_get_default_realm");
+    }
+
+    if(afs_cell == NULL) {
+	afs_cell = strdup(v4_realm);
+	if(afs_cell == NULL)
+	    krb5_errx(context, 1, "out of memory");
+	strlwr(afs_cell);
+    }
+
 
     if(encrypt_flag && decrypt_flag)
 	krb5_errx(context, 1, 
 		  "only one of `--encrypt' and `--decrypt' is meaningful");
-
-#ifdef KRB4
-    if(v4_db) {
-	if(type != 0)
-	    krb5_errx(context, 1, "more than one database type specified");
-	type = HPROP_KRB4_DB;
-    }
-#endif
-    if(ka_db) {
-	if(type != 0)
-	    krb5_errx(context, 1, "more than one database type specified");
-	type = HPROP_KASERVER;
-    }
 
     if(source_type != NULL) {
 	if(type != 0)
@@ -850,8 +811,8 @@ main(int argc, char **argv)
     case HPROP_KRB4_DB:
 	if (database == NULL)
 	    krb5_errx(context, 1, "no database specified");
-	v4_get_masterkey (context, database);
 	break;
+#endif
     case HPROP_KASERVER:
 	if (database == NULL)
 	    database = DEFAULT_DATABASE;
@@ -861,13 +822,10 @@ main(int argc, char **argv)
 							NULL);
 
 	break;
-#endif /* KRB4 */
     case HPROP_KRB4_DUMP:
 	if (database == NULL)
 	    krb5_errx(context, 1, "no dump file specified");
-#ifdef KRB4
-	v4_get_masterkey (context, database);
-#endif
+	
 	break;
     case HPROP_MIT_DUMP:
 	if (database == NULL)
