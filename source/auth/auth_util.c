@@ -641,34 +641,25 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
  * of groups.
  ******************************************************************************/
 
-static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid, 
+static NTSTATUS get_user_groups_from_local_sam(SAM_ACCOUNT *sampass,
 					       int *n_groups, DOM_SID **groups,	gid_t **unix_groups)
 {
 	uid_t             uid;
-	enum SID_NAME_USE snu;
-	fstring           str;
+	gid_t             gid;
 	int               n_unix_groups;
 	int               i;
 	struct passwd    *usr;	
-	
+
 	*n_groups = 0;
 	*groups   = NULL;
-	
-	if (!sid_to_uid(user_sid,  &uid, &snu)) {
-		DEBUG(2, ("get_user_groups_from_local_sam: Failed to convert user SID %s to a uid!\n", 
-			  sid_to_string(str, user_sid)));
-		/* This might be a non-unix account */
-		return NT_STATUS_OK;
+
+	if (!IS_SAM_UNIX_USER(sampass)) {
+		DEBUG(1, ("user %s does not have a unix identity!\n", pdb_get_username(sampass)));
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	/*
-	 * This is _essential_ to prevent occasional segfaults when
-	 * winbind can't find uid -> username mapping
-	 */
-	if (!(usr = getpwuid_alloc(uid))) {
-		DEBUG(0, ("Couldn't find passdb structure for UID = %d ! Aborting.\n", uid));
-		return NT_STATUS_NO_SUCH_USER;
-	};
+	uid = pdb_get_uid(sampass);
+	gid = pdb_get_gid(sampass);
 	
 	n_unix_groups = groups_max();
 	if ((*unix_groups = malloc( sizeof(gid_t) * n_unix_groups ) ) == NULL) {
@@ -677,7 +668,7 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
+	if (sys_getgrouplist(pdb_get_username(sampass), gid, *unix_groups, &n_unix_groups) == -1) {
 		gid_t *groups_tmp;
 		groups_tmp = Realloc(*unix_groups, sizeof(gid_t) * n_unix_groups);
 		if (!groups_tmp) {
@@ -687,7 +678,7 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 		}
 		*unix_groups = groups_tmp;
 
-		if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
+		if (sys_getgrouplist(pdb_get_username(sampass), gid, *unix_groups, &n_unix_groups) == -1) {
 			DEBUG(0, ("get_user_groups_from_local_sam: failed to get the unix group list\n"));
 			SAFE_FREE(*unix_groups);
 			passwd_free(&usr);
@@ -695,9 +686,7 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 		}
 	}
 
-	debug_unix_user_token(DBGC_CLASS, 5, usr->pw_uid, usr->pw_gid, n_unix_groups, *unix_groups);
-
-	passwd_free(&usr);
+	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, n_unix_groups, *unix_groups);
 	
 	if (n_unix_groups > 0) {
 		*groups   = malloc(sizeof(DOM_SID) * n_unix_groups);
@@ -763,7 +752,7 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status 
-			     = get_user_groups_from_local_sam(pdb_get_user_sid(sampass), 
+			     = get_user_groups_from_local_sam(sampass, 
 		&n_groupSIDs, &groupSIDs, &unix_groups)))
 	{
 		DEBUG(4,("get_user_groups_from_local_sam failed\n"));
@@ -998,7 +987,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	   returned to the caller. */
 	
 	if (!NT_STATUS_IS_OK(nt_status 
-			     = get_user_groups_from_local_sam(&user_sid, 
+			     = get_user_groups_from_local_sam(sam_account, 
 							      &n_lgroupSIDs, 
 							      &lgroupSIDs, 
 							      &unix_groups)))
