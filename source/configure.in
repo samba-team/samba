@@ -1611,6 +1611,52 @@ AC_ARG_WITH(msdfs,
 )
 
 #################################################
+# set samba configuration directory location
+
+if test "$sysconfdir" = '${prefix}/etc'
+then
+  # default sysconfdir, decide on prefix
+  case "$prefix" in
+    *samba*|NONE)
+      # if the prefix already contains the word samba,
+      # we don't need to use a subdir for smb.conf
+      sambaconfdir='${sysconfdir}'
+      ;;
+    *)
+      # otherwise, we use a separate dir
+      sambaconfdir='${sysconfdir}/samba'
+      ;;
+  esac
+else
+  # sysconfdir given, use that directly
+  sambaconfdir='${sysconfdir}'
+fi
+AC_ARG_WITH(sambaconfdir,
+[  --with-sambaconfdir=DIR  Where to put smb.conf etc. ($ac_default_prefix/lib)],
+[ case "$withval" in
+  yes)
+    # Just --with-sambaconfdir, use the new default
+    # (which has already been "calculated"
+    ;;
+  no)
+    # --without-sambaconfdir, use old default
+    sambaconfdir='${LIBDIR}'
+    ;;
+  * )
+    sambaconfdir="$withval"
+    ;;
+  esac
+  ],
+[ # No --with(out)-sambaconfdir, use old version for some time.
+  if test "$sysconfdir" = '${prefix}/etc'
+  then
+    # sysconfdir not given
+    sambaconfdir='${LIBDIR}']
+  fi
+)
+AC_SUBST(sambaconfdir)
+
+#################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
 [  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],
@@ -1896,3 +1942,18 @@ case " $CONFIG_FILES " in
   *" script/samba-init.d "*) chmod +x script/samba-init.d
 esac
 ])
+
+echo ""
+echo "prefix       : $prefix"
+echo "exec_prefix  : $exec_prefix"
+echo "bindir       : $bindir"
+echo "sbindir      : $sbindir"
+echo "libdir       : $libdir"
+echo "vardir       : $localstatedir"
+echo "sysconfdir   : $sysconfdir"
+echo ""
+echo "sambaconfdir : $sambaconfdir"
+echo "privatedir   : $privatedir"
+echo "lockdir      : $lockdir"
+echo "swatdir      : $swatdir"
+echo ""
