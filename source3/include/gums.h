@@ -24,13 +24,13 @@
 #define GUMS_VERSION_MAJOR	0
 #define GUMS_VERSION_MINOR	1
 #define GUMS_OBJECT_VERSION	1
+#define GUMS_PRIVILEGE_VERSION	1
 #define GUMS_INTERFACE_VERSION	1
 
 #define GUMS_OBJ_DOMAIN			0x10
 #define GUMS_OBJ_NORMAL_USER		0x20
 #define GUMS_OBJ_GROUP			0x30
 #define GUMS_OBJ_ALIAS			0x31
-#define GUMS_OBJ_PRIVILEGE		0x40
 
 /* define value types */
 #define GUMS_SET_PRIMARY_GROUP		0x1
@@ -79,7 +79,7 @@
 #define GUMS_DEL_SID_LIST		0x61
 #define GUMS_SET_SID_LIST		0x62
 
-typedef struct gums_user
+GENSTRUCT struct gums_user
 {
 	DOM_SID *group_sid;		/* Primary Group SID */
 
@@ -90,14 +90,14 @@ typedef struct gums_user
 	NTTIME pass_can_change_time;	/* password can change time */
 	NTTIME pass_must_change_time;	/* password must change time */
 
-	char *full_name;		/* user's full name string */
-	char *home_dir;			/* home directory string */
-	char *dir_drive;		/* home directory drive string */
-	char *logon_script;		/* logon script string */
-	char *profile_path;		/* profile path string */
-	char *workstations;		/* login from workstations string */
-	char *unknown_str;		/* don't know what this is, yet. */
-	char *munged_dial;		/* munged path name and dial-back tel number */
+	char *full_name; _NULLTERM	/* user's full name string */
+	char *home_dir; _NULLTERM	/* home directory string */
+	char *dir_drive; _NULLTERM	/* home directory drive string */
+	char *logon_script; _NULLTERM	/* logon script string */
+	char *profile_path; _NULLTERM	/* profile path string */
+	char *workstations; _NULLTERM	/* login from workstations string */
+	char *unknown_str; _NULLTERM	/* don't know what this is, yet. */
+	char *munged_dial; _NULLTERM	/* munged path name and dial-back tel number */
 
 	DATA_BLOB lm_pw; 		/* .data is Null if no password */
 	DATA_BLOB nt_pw; 		/* .data is Null if no password */
@@ -105,45 +105,29 @@ typedef struct gums_user
 	uint16 acct_ctrl;		/* account type & status flags */
 	uint16 logon_divs;		/* 168 - number of hours in a week */
 	uint32 hours_len;		/* normally 21 bytes */
-	uint8 *hours;
+	uint8 *hours; _LEN(hours_len)	/* normally 21 bytes (depends on hours_len) */
 
 	uint16 bad_password_count;	/* 0 */
 	uint16 logon_count;		/* 0 */
 	uint32 unknown_3;		/* 0x00ff ffff */
 	uint32 unknown_6;		/* 0x0000 04ec */
 
-} GUMS_USER;
+};
 
-typedef struct gums_group
+GENSTRUCT struct gums_group
 {
 	uint32 count;			/* Number of SIDs */
-	DOM_SID *members;		/* SID array */
+	DOM_SID *members; _LEN(count)	/* SID array */
 
-} GUMS_GROUP;
+};
 
-typedef struct gums_domain
+GENSTRUCT struct gums_domain
 {
 	uint32 next_rid;
 
-} GUMS_DOMAIN;
-
-typedef struct gums_privilege
-{
-	LUID_ATTR *privilege;		/* Privilege Type */
-
-	uint32 count;
-	DOM_SID *members;
-
-} GUMS_PRIVILEGE;
-
-union gums_obj_p {
-	GUMS_USER *user;
-	GUMS_GROUP *group;
-	GUMS_DOMAIN *domain;
-	GUMS_PRIVILEGE *priv;
 };
 
-typedef struct gums_object
+GENSTRUCT struct gums_object
 {
 	TALLOC_CTX *mem_ctx;
 
@@ -154,12 +138,37 @@ typedef struct gums_object
 	SEC_DESC *sec_desc;		/* Security Descriptor */
 
 	DOM_SID *sid;			/* Object Sid */
-	char *name;			/* Object Name */
-	char *description;		/* Object Description */
+	char *name; _NULLTERM		/* Object Name - it should be in DOMAIN\NAME format */
+	char *description; _NULLTERM	/* Object Description */
 
-	union gums_obj_p data;		/* Object Specific data */
+	struct gums_user *user;
+	struct gums_group *group;
+	struct gums_domain *domain;
 
-} GUMS_OBJECT;
+};
+
+GENSTRUCT struct gums_privilege
+{
+	TALLOC_CTX *mem_ctx;
+
+	uint32 version;			/* Object Version */
+	uint32 seq_num;			/* Object Sequence Number */
+
+	char *name; _NULLTERM		/* Object Name */
+	char *description; _NULLTERM	/* Object Description */
+
+	LUID_ATTR *privilege;		/* Privilege Type */
+
+	uint32 count;
+	DOM_SID *members; _LEN(count)
+
+};
+
+typedef struct gums_user GUMS_USER;
+typedef struct gums_group GUMS_GROUP;
+typedef struct gums_domain GUMS_DOMAIN;
+typedef struct gums_object GUMS_OBJECT;
+typedef struct gums_privilege GUMS_PRIVILEGE;
 
 typedef struct gums_data_set
 {
@@ -210,7 +219,7 @@ typedef struct gums_functions
 	NTSTATUS (*delete_object) (const DOM_SID *sid);
 
 	NTSTATUS (*get_object_from_sid) (GUMS_OBJECT **object, const DOM_SID *sid, const int obj_type);
-	NTSTATUS (*get_object_from_name) (GUMS_OBJECT **object, const char *name, const int obj_type);
+	NTSTATUS (*get_object_from_name) (GUMS_OBJECT **object, const char *domain, const char *name, const int obj_type);
 	/* This function is used to get the list of all objects changed since b_time, it is
 	   used to support PDC<->BDC synchronization */
 	NTSTATUS (*get_updated_objects) (GUMS_OBJECT **objects, const NTTIME base_time);
@@ -221,7 +230,7 @@ typedef struct gums_functions
 
 	/* This function MUST be used ONLY by PDC<->BDC replication code or recovery tools.
 	   Never use this function to update an object in the database, use set_object_values() */
-	NTSTATUS (*set_object) (const GUMS_OBJECT *object);
+	NTSTATUS (*set_object) (GUMS_OBJECT *object);
 
 	/* set object values function */
 	NTSTATUS (*set_object_values) (DOM_SID *sid, uint32 count, GUMS_DATA_SET *data_set);
@@ -238,10 +247,11 @@ typedef struct gums_functions
 
 	/* privileges related functions */
 
-	NTSTATUS (*add_members_to_privilege) (const LUID_ATTR *priv, const DOM_SID **members);
-	NTSTATUS (*delete_members_from_privilege) (const LUID_ATTR *priv, const DOM_SID **members);
-	NTSTATUS (*enumerate_privilege_members) (DOM_SID **members, const LUID_ATTR *priv);
-	NTSTATUS (*get_sid_privileges) (DOM_SID **privs, const DOM_SID *sid);
+	NTSTATUS (*get_privilege) (GUMS_OBJECT **object, const char *name);
+	NTSTATUS (*add_members_to_privilege) (const char *name, const DOM_SID **members);
+	NTSTATUS (*delete_members_from_privilege) (const char *name, const DOM_SID **members);
+	NTSTATUS (*enumerate_privilege_members) (const char *name, DOM_SID **members);
+	NTSTATUS (*get_sid_privileges) (const DOM_SID *sid, const char **privs);
 
 	/* warning!: set_privilege will overwrite a prior existing privilege if such exist */
 	NTSTATUS (*set_privilege) (GUMS_PRIVILEGE *priv);

@@ -211,7 +211,7 @@ NTSTATUS gums_make_alias(DOM_SID *sid, const char *name, const char *description
 	return ret;
 }
 
-NTSTATUS gums_init_domain(DOM_SID *sid, const char *name)
+NTSTATUS gums_init_domain(DOM_SID *sid, const char *name, const char * description)
 {
 	NTSTATUS ret;
 
@@ -219,7 +219,7 @@ NTSTATUS gums_init_domain(DOM_SID *sid, const char *name)
 	if (!NT_STATUS_IS_OK(ret = gums_make_domain(
 					sid,
 					name,
-					NULL
+					description
 					))) {
 		return ret;
 	}
@@ -331,7 +331,7 @@ NTSTATUS gums_init_builtin_domain(void)
 	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
 					&global_sid_Builtin_Backup_Operators,
 					"Backup Operators",
-					 "Members can bypass file security to backup files"
+					"Members can bypass file security to backup files"
 					))) {
 		return ret;
 	}

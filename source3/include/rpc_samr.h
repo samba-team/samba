@@ -183,7 +183,7 @@ typedef struct sam_user_info_23
 
 	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
 
-	uint32 unknown_3; /* 0x09f8 27fa */
+	uint32 fields_present; /* 0x09f8 27fa */
 
 	uint16 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
 	/* uint8 pad[2] */
@@ -308,7 +308,8 @@ typedef struct sam_user_info_21
 
 	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
 
-	uint32 unknown_3; /* 0x00ff ffff */
+	/* Was unknown_3 */
+	uint32 fields_present; /* 0x00ff ffff */
 
 	uint16 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
 	/* uint8 pad[2] */
