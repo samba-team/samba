@@ -251,8 +251,8 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 
         /* Skip domains other than WINBINDD_DOMAIN environment variable */
 
-        if ((strcmp(state->request.data.domain, "") != 0) &&
-            (strcmp(state->request.data.domain, tmp->name) != 0)) {
+        if ((strcmp(state->request.domain, "") != 0) &&
+            (strcmp(state->request.domain, tmp->name) != 0)) {
                 continue;
         }
 

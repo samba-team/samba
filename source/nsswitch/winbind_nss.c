@@ -42,7 +42,7 @@ static void init_request(struct winbindd_request *req,int rq_type)
 
 	req->cmd = rq_type;
 	req->pid = getpid();
-	req->data.domain[0] = '\0';
+	req->domain[0] = '\0';
 
 	if (!initialised) {
 		initialised = 1;
@@ -50,9 +50,9 @@ static void init_request(struct winbindd_request *req,int rq_type)
 	}
 
 	if (domain_env) {
-		strncpy(req->data.domain, domain_env,
-			sizeof(req->data.domain) - 1);
-		req->data.domain[sizeof(req->data.domain) - 1] = '\0';
+		strncpy(req->domain, domain_env,
+			sizeof(req->domain) - 1);
+		req->domain[sizeof(req->domain) - 1] = '\0';
 	}
 }
 

@@ -47,16 +47,16 @@ enum winbindd_cmd {
 /* Winbind request structure */
 
 struct winbindd_request {
-    enum winbindd_cmd cmd;   /* Winbindd command to execute */
-    pid_t pid;               /* pid of calling process */
+	enum winbindd_cmd cmd;   /* Winbindd command to execute */
+	pid_t pid;               /* pid of calling process */
 
-    union {
-        pstring username;    /* getpwnam() */
-        pstring groupname;   /* getgrnam() */
-        uid_t uid;           /* getpwuid() */
-        gid_t gid;           /* getgrgid() */
-        pstring domain;      /* {set,get,end}{pw,gr}ent() */
-    } data;
+	union {
+		fstring username;    /* getpwnam() */
+		fstring groupname;   /* getgrnam() */
+		uid_t uid;           /* getpwuid() */
+		gid_t gid;           /* getgrgid() */
+	} data;
+        fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };
 
 /* Response values */
@@ -82,21 +82,21 @@ struct winbindd_response {
         /* getpwnam, getpwuid, getpwent */
 
         struct winbindd_pw {
-            pstring pw_name;
-            pstring pw_passwd;
+            fstring pw_name;
+            fstring pw_passwd;
             uid_t pw_uid;
             gid_t pw_gid;
-            pstring pw_gecos;
-            pstring pw_dir;
-            pstring pw_shell;
+            fstring pw_gecos;
+            fstring pw_dir;
+            fstring pw_shell;
             int pwent_ndx;
         } pw;
 
         /* getgrnam, getgrgid, getgrent */
 
         struct winbindd_gr {
-            pstring gr_name;
-            pstring gr_passwd;
+            fstring gr_name;
+            fstring gr_passwd;
             gid_t gr_gid;
             int num_gr_mem;
             int grent_ndx;
