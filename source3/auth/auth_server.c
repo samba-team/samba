@@ -395,7 +395,7 @@ use this machine as the password server.\n"));
 	return(nt_status);
 }
 
-NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+static NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
