@@ -422,9 +422,7 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
                                           TALLOC_CTX *mem_ctx,
                                           int argc, char **argv) 
 {
-	POLICY_HND 		connect_pol, 
-				domain_pol, 
-				user_pol;
+	POLICY_HND 		connect_pol, domain_pol;
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
 	uint32 			user_rid, num_aliases, *alias_rids;
 	int 			i;
