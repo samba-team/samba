@@ -143,7 +143,7 @@ void do_dual_daemon(void)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
-
+	
 	if (pipe(fdpair) != 0) {
 		return;
 	}
@@ -160,7 +160,12 @@ void do_dual_daemon(void)
 	}
 	close(fdpair[1]);
 
-	if (winbind_setup_common() != 0) _exit(0);
+	
+	sleep (60);
+	DEBUG(0,("do_dual_daemon: Starting up....\n"));
+	
+	if (!winbind_setup_common()) 
+		_exit(0);
 
 	dual_daemon_pipe = -1;
 	opt_dual_daemon = False;
