@@ -567,6 +567,11 @@ copy_stream (FILE * from, FILE * to)
 #endif
 
     if (fstat (fileno (from), &st) == 0 && S_ISREG (st.st_mode)) {
+	/*
+	 * mmap zero bytes has potential of loosing, don't do it.
+	 */
+	if (st.st_size == 0)
+	    return 0;
 	chunk = mmap (0, st.st_size, PROT_READ, MAP_SHARED, fileno (from), 0);
 	if (chunk != (void *) MAP_FAILED) {
 	    int res;
