@@ -106,7 +106,7 @@ recv_loop (int fd,
  * of a datagram socket.  See `recv_loop'.
  */
 
-int
+static int
 send_and_recv_udp(int fd, 
 		  time_t tmout,
 		  const krb5_data *req,
@@ -400,6 +400,9 @@ krb5_sendto_kdc_flags(krb5_context context,
 	type = KRB5_KRBHST_ADMIN;
     else
 	type = KRB5_KRBHST_KDC;
+
+    if (send_data->length > context->large_msg_size)
+	flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
 
     ret = krb5_krbhst_init_flags(context, *realm, type, flags, &handle);
     if (ret)
