@@ -274,43 +274,43 @@ MAKEDIR = || exec false; \
 .c.o: @MAINT@ .deps/.dummy
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@MAINT@@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
-	@MAINT@ else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
-	@MAINT@      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
+@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
+@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@ \
-	@MAINT@ -Wp,-MD,.deps/$@ && \
-	@MAINT@sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
-	@MAINT@  <.deps/$@ >.deps/$@d && \
-	@MAINT@rm -f .deps/$@ && : >.deps/.stamp
+	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
+	  -o $@ @MAINT@ -Wp,-MD,.deps/$@ && \
+@MAINT@	sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
+@MAINT@	  <.deps/$@ >.deps/$@d && \
+@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 
 .c.po: @MAINT@ .deps/.dummy
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@MAINT@@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
-	@MAINT@ else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
-	@MAINT@      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
+@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
+@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@
-	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< -o $*.po.o \
-	@MAINT@ -Wp,-MD,.deps/$@ && \
-	@MAINT@sed 's|^'`echo $*\.po\.o | sed 's,.*/,,'`':|$@:|' \
-	@MAINT@  <.deps/$@ >.deps/$@d && \
-	@MAINT@rm -f .deps/$@ && : >.deps/.stamp
+	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
+	  -o $*.po.o @MAINT@ -Wp,-MD,.deps/$@ && \
+@MAINT@	sed 's|^'`echo $*\.po\.o | sed 's,.*/,,'`':|$@:|' \
+@MAINT@	  <.deps/$@ >.deps/$@d && \
+@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 	@mv $*.po.o $@
 
 # this is for IRIX
 .c.po32: @MAINT@ .deps/.dummy
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@MAINT@@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
-	@MAINT@ else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
-	@MAINT@      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
+@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
+@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@ and -32
-	@$(CC) -32 -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< -o $*.po32.o \
-	@MAINT@ -Wp,-MD,.deps/$@ && \
-	@MAINT@sed 's|^'`echo $*.po32.o | sed 's,.*/,,'`':|$@:|' \
-	@MAINT@  <.deps/$@ >.deps/$@d && \
-	@MAINT@rm -f .deps/$@ && : >.deps/.stamp
+	@$(CC) -32 -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
+	  -o $*.po32.o @MAINT@ -Wp,-MD,.deps/$@ && \
+@MAINT@	sed 's|^'`echo $*.po32.o | sed 's,.*/,,'`':|$@:|' \
+@MAINT@	  <.deps/$@ >.deps/$@d && \
+@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 	@mv $*.po32.o $@
 
 bin/.dummy:
