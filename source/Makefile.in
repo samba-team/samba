@@ -681,7 +681,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(GROUPDB_OBJ) $(PASSDB_OBJ) $(SAMPASSDB_OBJ) \
 		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
 		$(RPC_SRVUTIL_OBJ) \
-		$(RPC_PARSE_OBJ2) $(WINBINDD_OBJ)
+		$(RPC_PARSE_OBJ2) $(WINBINDD_OBJ1)
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
@@ -707,12 +707,14 @@ LIBSMB_LTOBJS = $(LIBSMB_OBJ:.o=.lo)
 
 LIBMSRPC_LTOBJS = $(RPC_CLIENT_OBJ:.o=.lo) $(RPC_PARSE_OBJ:.o=.lo)
 
-WINBINDD_OBJ = \
+WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
 		nsswitch/winbindd_user.o  \
 		nsswitch/winbindd_group.o \
 		nsswitch/winbindd_surs.o  \
-		nsswitch/winbindd_util.o  \
+		nsswitch/winbindd_util.o
+WINBINDD_OBJ = \
+		$(WINBINDD_OBJ1) \
 		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(STUB_UID_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSURS_OBJ) $(LIBSMB_OBJ) 
