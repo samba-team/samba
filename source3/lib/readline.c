@@ -73,13 +73,11 @@ char *smb_readline(char *prompt, void (*callback)(void),
                                                 completion_fn);
 
 	if (completion_fn) {
-		/* The cast is here because the callback prototype has
-		   changed slightly between different versions of
-		   Readline.  The same function works in all of them
-		   to date, but we get compiler warnings without the
-		   cast. */
-		rl_attempted_completion_function =
-			(rl_completion_func_t *) completion_fn;
+		/* The callback prototype has changed slightly between
+		   different versions of Readline, so the same
+		   function works in all of them to date, but we get
+		   compiler warnings in some. */
+		rl_attempted_completion_function = completion_fn;
 	}
 
 	if (callback) rl_event_hook = (Function *)callback;
