@@ -55,8 +55,8 @@ static const char *rdwr_string(enum rdwr_mode m)
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%d) Incorrect status %s - should be %s\n", \
-		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -64,7 +64,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 #define CREATE_FILE do { \
 	fnum = create_complex_file(cli, mem_ctx, fname); \
 	if (fnum == -1) { \
-		printf("(%d) Failed to create %s - %s\n", __LINE__, fname, smbcli_errstr(cli->tree)); \
+		printf("(%s) Failed to create %s - %s\n", __location__, fname, smbcli_errstr(cli->tree)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -72,8 +72,8 @@ static const char *rdwr_string(enum rdwr_mode m)
 #define CHECK_RDWR(fnum, correct) do { \
 	enum rdwr_mode m = check_rdwr(cli->tree, fnum); \
 	if (m != correct) { \
-		printf("(%d) Incorrect readwrite mode %s - expected %s\n", \
-		       __LINE__, rdwr_string(m), rdwr_string(correct)); \
+		printf("(%s) Incorrect readwrite mode %s - expected %s\n", \
+		       __location__, rdwr_string(m), rdwr_string(correct)); \
 		ret = False; \
 	}} while (0)
 
@@ -86,8 +86,8 @@ static const char *rdwr_string(enum rdwr_mode m)
 	t1 = t & ~1; \
 	t2 = nt_time_to_unix(finfo.all_info.out.field) & ~1; \
 	if (ABS(t1-t2) > 2) { \
-		printf("(%d) wrong time for field %s  %s - %s\n", \
-		       __LINE__, #field, \
+		printf("(%s) wrong time for field %s  %s - %s\n", \
+		       __location__, #field, \
 		       timestring(mem_ctx, t1), \
 		       timestring(mem_ctx, t2)); \
 		dump_all_info(mem_ctx, &finfo); \
@@ -102,8 +102,8 @@ static const char *rdwr_string(enum rdwr_mode m)
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	t2 = finfo.all_info.out.field; \
 	if (t != t2) { \
-		printf("(%d) wrong time for field %s  %s - %s\n", \
-		       __LINE__, #field, \
+		printf("(%s) wrong time for field %s  %s - %s\n", \
+		       __location__, #field, \
 		       nt_time_string(mem_ctx, t), \
 		       nt_time_string(mem_ctx, t2)); \
 		dump_all_info(mem_ctx, &finfo); \
@@ -116,16 +116,16 @@ static const char *rdwr_string(enum rdwr_mode m)
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	if ((v) != finfo.all_info.out.field) { \
-		printf("(%d) wrong value for field %s  0x%x - 0x%x\n", \
-		       __LINE__, #field, (int)v, (int)finfo.all_info.out.field); \
+		printf("(%s) wrong value for field %s  0x%x - 0x%x\n", \
+		       __location__, #field, (int)v, (int)finfo.all_info.out.field); \
 		dump_all_info(mem_ctx, &finfo); \
 		ret = False; \
 	}} while (0)
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%d) wrong value for %s  0x%x - 0x%x\n", \
-		       __LINE__, #v, (int)v, (int)correct); \
+		printf("(%s) wrong value for %s  0x%x - 0x%x\n", \
+		       __location__, #v, (int)v, (int)correct); \
 		ret = False; \
 	}} while (0)
 
@@ -137,8 +137,8 @@ static const char *rdwr_string(enum rdwr_mode m)
 	sfinfo.basic_info.in.attrib = sattrib; \
 	status = smb_raw_setpathinfo(cli->tree, &sfinfo); \
 	if (!NT_STATUS_IS_OK(status)) { \
-		printf("(%d) Failed to set attrib 0x%x on %s\n", \
-		       __LINE__, sattrib, fname); \
+		printf("(%s) Failed to set attrib 0x%x on %s\n", \
+		       __location__, sattrib, fname); \
 	}} while (0)
 
 /*
@@ -213,8 +213,8 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_RDWR(fnum, RDWR_RDWR);
 	
 	if (io.open.in.flags != io.open.out.rmode) {
-		printf("(%d) rmode should equal flags - 0x%x 0x%x\n",
-		       __LINE__, io.open.out.rmode, io.open.in.flags);
+		printf("(%s) rmode should equal flags - 0x%x 0x%x\n",
+		       __location__, io.open.out.rmode, io.open.in.flags);
 	}
 
 	io.open.in.flags = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_NONE;
@@ -310,8 +310,8 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io.openx.in.open_func = open_funcs[i].open_func;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
-			printf("(%d) incorrect status %s should be %s (i=%d with_file=%d open_func=0x%x)\n", 
-			       __LINE__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
+			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_func=0x%x)\n", 
+			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_func);
 			ret = False;
 		}
@@ -400,8 +400,8 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 	if (end_timer() > 3) {
-		printf("(%d) Incorrect timing in openx with timeout - waited %d seconds\n",
-		       __LINE__, (int)end_timer());
+		printf("(%s) Incorrect timing in openx with timeout - waited %d seconds\n",
+		       __location__, (int)end_timer());
 		ret = False;
 	}
 	smbcli_close(cli->tree, fnum);
@@ -505,8 +505,8 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io.t2open.in.open_func = open_funcs[i].open_func;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
-			printf("(%d) incorrect status %s should be %s (i=%d with_file=%d open_func=0x%x)\n", 
-			       __LINE__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
+			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_func=0x%x)\n", 
+			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_func);
 			ret = False;
 		}
@@ -633,8 +633,8 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io.ntcreatex.in.open_disposition = open_funcs[i].open_disp;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
-			printf("(%d) incorrect status %s should be %s (i=%d with_file=%d open_disp=%d)\n", 
-			       __LINE__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
+			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_disp=%d)\n", 
+			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_disp);
 			ret = False;
 		}
