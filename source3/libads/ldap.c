@@ -401,7 +401,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
  * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
- * @param exp Search expression - specified in local charset
+ * @param expr Search expression - specified in local charset
  * @param attrs Attributes to retrieve - specified in utf8 or ascii
  * @param res ** which will contain results - free res* with ads_msgfree()
  * @param count Number of entries retrieved on this page
@@ -409,12 +409,12 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
  * @return status of search
  **/
 ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
-			       int scope, const char *exp,
+			       int scope, const char *expr,
 			       const char **attrs, void **res, 
 			       int *count, void **cookie)
 {
 	int rc, i, version;
-	char *utf8_exp, *utf8_path, **search_attrs;
+	char *utf8_expr, *utf8_path, **search_attrs;
 	LDAPControl PagedResults, NoReferrals, *controls[3], **rcontrols; 
 	BerElement *cookie_be = NULL;
 	struct berval *cookie_bv= NULL;
@@ -428,7 +428,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's -1.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, &utf8_exp, exp) == (size_t)-1) ||
+	if ((push_utf8_talloc(ctx, &utf8_expr, expr) == (size_t)-1) ||
 	    (push_utf8_talloc(ctx, &utf8_path, bind_path) == (size_t)-1)) {
 		rc = LDAP_NO_MEMORY;
 		goto done;
@@ -489,7 +489,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	*/
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_exp, 
+	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_expr, 
 			       search_attrs, 0, controls,
 			       NULL, NULL, LDAP_NO_LIMIT, (LDAPMessage **)res);
 
@@ -497,7 +497,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	ber_bvfree(cookie_bv);
 
 	if (rc) {
-		DEBUG(3,("ldap_search_ext_s(%s) -> %s\n", exp, ldap_err2string(rc)));
+		DEBUG(3,("ldap_search_ext_s(%s) -> %s\n", expr, ldap_err2string(rc)));
 		goto done;
 	}
 
@@ -541,20 +541,20 @@ done:
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
  * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
- * @param exp Search expression
+ * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @param res ** which will contain results - free res* with ads_msgfree()
  * @return status of search
  **/
 ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
-			     int scope, const char *exp,
+			     int scope, const char *expr,
 			     const char **attrs, void **res)
 {
 	void *cookie = NULL;
 	int count = 0;
 	ADS_STATUS status;
 
-	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, res,
+	status = ads_do_paged_search(ads, bind_path, scope, expr, attrs, res,
 				     &count, &cookie);
 
 	if (!ADS_ERR_OK(status)) return status;
@@ -564,7 +564,7 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 		ADS_STATUS status2;
 		LDAPMessage *msg, *next;
 
-		status2 = ads_do_paged_search(ads, bind_path, scope, exp, 
+		status2 = ads_do_paged_search(ads, bind_path, scope, expr, 
 					      attrs, &res2, &count, &cookie);
 
 		if (!ADS_ERR_OK(status2)) break;
@@ -588,14 +588,14 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
  * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
- * @param exp Search expression - specified in local charset
+ * @param expr Search expression - specified in local charset
  * @param attrs Attributes to retrieve - specified in UTF-8 or ascii
  * @param fn Function which takes attr name, values list, and data_area
  * @param data_area Pointer which is passed to function on each call
  * @return status of search
  **/
 ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
-				int scope, const char *exp, const char **attrs,
+				int scope, const char *expr, const char **attrs,
 				BOOL(*fn)(char *, void **, void *), 
 				void *data_area)
 {
@@ -604,7 +604,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	ADS_STATUS status;
 	void *res;
 
-	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res,
+	status = ads_do_paged_search(ads, bind_path, scope, expr, attrs, &res,
 				     &count, &cookie);
 
 	if (!ADS_ERR_OK(status)) return status;
@@ -613,7 +613,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	ads_msgfree(ads, res);
 
 	while (cookie) {
-		status = ads_do_paged_search(ads, bind_path, scope, exp, attrs,
+		status = ads_do_paged_search(ads, bind_path, scope, expr, attrs,
 					     &res, &count, &cookie);
 
 		if (!ADS_ERR_OK(status)) break;
@@ -630,18 +630,18 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
  * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
- * @param exp Search expression
+ * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @param res ** which will contain results - free res* with ads_msgfree()
  * @return status of search
  **/
 ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope, 
-			 const char *exp,
+			 const char *expr,
 			 const char **attrs, void **res)
 {
 	struct timeval timeout;
 	int rc;
-	char *utf8_exp, *utf8_path, **search_attrs = NULL;
+	char *utf8_expr, *utf8_path, **search_attrs = NULL;
 	TALLOC_CTX *ctx;
 
 	if (!(ctx = talloc_init("ads_do_search"))) {
@@ -652,7 +652,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's negative.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, &utf8_exp, exp) == (size_t)-1) ||
+	if ((push_utf8_talloc(ctx, &utf8_expr, expr) == (size_t)-1) ||
 	    (push_utf8_talloc(ctx, &utf8_path, bind_path) == (size_t)-1)) {
 		DEBUG(1,("ads_do_search: push_utf8_talloc() failed!"));
 		rc = LDAP_NO_MEMORY;
@@ -679,7 +679,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	/* see the note in ads_do_paged_search - we *must* disable referrals */
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_exp,
+	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_expr,
 			       search_attrs, 0, NULL, NULL, 
 			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
 
@@ -698,16 +698,16 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
  * Do a general ADS search
  * @param ads connection to ads server
  * @param res ** which will contain results - free res* with ads_msgfree()
- * @param exp Search expression
+ * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @return status of search
  **/
 ADS_STATUS ads_search(ADS_STRUCT *ads, void **res, 
-		      const char *exp, 
+		      const char *expr, 
 		      const char **attrs)
 {
 	return ads_do_search(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE, 
-			     exp, attrs, res);
+			     expr, attrs, res);
 }
 
 /**
@@ -772,18 +772,18 @@ char *ads_get_dn(ADS_STRUCT *ads, void *res)
 ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 {
 	ADS_STATUS status;
-	char *exp;
+	char *expr;
 	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
 
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
-	if (asprintf(&exp, "(samAccountName=%s$)", host) == -1) {
+	if (asprintf(&expr, "(samAccountName=%s$)", host) == -1) {
 		DEBUG(1, ("asprintf failed!\n"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
-	status = ads_search(ads, res, exp, attrs);
-	free(exp);
+	status = ads_search(ads, res, expr, attrs);
+	free(expr);
 	return status;
 }
 
@@ -1424,7 +1424,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 {
 	const char     *attrs[] = {"nTSecurityDescriptor", "objectSid", 0};
-	char           *exp     = 0;
+	char           *expr     = 0;
 	size_t          sd_size = 0;
 	struct berval   bval = {0, NULL};
 	prs_struct      ps_wire;
@@ -1452,7 +1452,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
-	if (asprintf(&exp, "(samAccountName=%s$)", escaped_hostname) == -1) {
+	if (asprintf(&expr, "(samAccountName=%s$)", escaped_hostname) == -1) {
 		DEBUG(1, ("ads_set_machine_sd: asprintf failed!\n"));
 		SAFE_FREE(escaped_hostname);
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -1460,7 +1460,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 
 	SAFE_FREE(escaped_hostname);
 
-	ret = ads_search(ads, (void *) &res, exp, attrs);
+	ret = ads_search(ads, (void *) &res, expr, attrs);
 
 	if (!ADS_ERR_OK(ret)) return ret;
 
@@ -2036,7 +2036,7 @@ but you need to force the bind path to match the configurationNamingContext from
 */
 ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **workgroup)
 {
-	char *exp;
+	char *expr;
 	ADS_STATUS rc;
 	char **principles;
 	char *prefix;
@@ -2047,10 +2047,10 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **workg
 
 	(*workgroup) = NULL;
 
-	asprintf(&exp, "(&(objectclass=computer)(dnshostname=%s.%s))", 
+	asprintf(&expr, "(&(objectclass=computer)(dnshostname=%s.%s))", 
 		 ads->config.ldap_server_name, ads->config.realm);
-	rc = ads_search(ads, &res, exp, attrs);
-	free(exp);
+	rc = ads_search(ads, &res, expr, attrs);
+	free(expr);
 
 	if (!ADS_ERR_OK(rc)) {
 		return rc;
