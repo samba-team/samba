@@ -654,21 +654,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    
 	}
 
-        /* Close dlopen() handle */
-
-        if (conn->vfs_conn->dl_handle != NULL) {
-            dlclose(conn->vfs_conn->dl_handle);  /* should we check return val? */
-        }
-
-        /* Free vfs_connection_struct */
-	    
-        if (conn->vfs_conn != NULL) {
-            if (conn->vfs_conn->groups != NULL) {
-                free(conn->vfs_conn->groups);
-            }
-            free(conn->vfs_conn);
-        }
-
 	yield_connection(conn,
 			 lp_servicename(SNUM(conn)),
 			 lp_max_connections(SNUM(conn)));
@@ -697,6 +682,5 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		standard_sub_conn(conn,cmd);
 		smbrun(cmd,NULL,False);
 	}
-	
 	conn_free(conn);
 }
