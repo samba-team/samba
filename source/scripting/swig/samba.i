@@ -29,5 +29,5 @@
 		PyErr_SetString(PyExc_TypeError, "integer expected");
 		return NULL;
 	}
-	$1 = (uint32)PyInt_AsLong($input);
+	$1 = (uint32_t)PyInt_AsLong($input);
 }

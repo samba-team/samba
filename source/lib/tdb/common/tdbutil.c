@@ -191,7 +191,7 @@ int32_t tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
 	int32_t ret;
 
 	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(int32)) {
+	if (!data.dptr || data.dsize != sizeof(int32_t)) {
 		SAFE_FREE(data.dptr);
 		return -1;
 	}
@@ -224,7 +224,7 @@ int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int
 
 	SIVAL(&v_store,0,v);
 	data.dptr = (void *)&v_store;
-	data.dsize = sizeof(int32);
+	data.dsize = sizeof(int32_t);
 
 	return tdb_store(tdb, key, data, TDB_REPLACE);
 }
@@ -250,7 +250,7 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, u
 	TDB_DATA data;
 
 	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(uint32)) {
+	if (!data.dptr || data.dsize != sizeof(uint32_t)) {
 		SAFE_FREE(data.dptr);
 		return False;
 	}
@@ -284,7 +284,7 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, u
 
 	SIVAL(&v_store, 0, value);
 	data.dptr = (void *)&v_store;
-	data.dsize = sizeof(uint32);
+	data.dsize = sizeof(uint32_t);
 
 	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
 		ret = False;
@@ -457,7 +457,7 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 			break;
 		case 'd': /* signed 32-bit integer (standard int in most systems) */
 			len = 4;
-			d = va_arg(ap, uint32);
+			d = va_arg(ap, uint32_t);
 			if (bufsize && bufsize >= len)
 				SIVAL(buf, 0, d);
 			break;
