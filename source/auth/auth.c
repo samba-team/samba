@@ -57,7 +57,8 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 	TALLOC_CTX *mem_ctx;
 
 	if (auth_context->challenge.length) {
-		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge (normal)\n"));
+		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n", 
+			  auth_context->challenge_set_by));
 		return auth_context->challenge.data;
 	}
 
@@ -190,6 +191,12 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		  user_info->domain.str, user_info->internal_username.str, user_info->wksta_name.str));
+
+	if (auth_context->challenge.length != 8) {
+		DEBUG(0, ("check_ntlm_password:  Invalid challenge stored for this auth context - cannot continue\n"));
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
 	if (auth_context->challenge_set_by)
 		DEBUG(10, ("check_ntlm_password: auth_context challenge created by %s\n",
 					auth_context->challenge_set_by));
@@ -441,6 +448,7 @@ NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[
 	}
 	
 	(*auth_context)->challenge = data_blob(chal, 8);
+	(*auth_context)->challenge_set_by = "fixed";
 	return nt_status;
 }
 

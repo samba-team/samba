@@ -485,7 +485,7 @@ BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 /*
   generate a minimal SPNEGO NTLMSSP response packet.  Doesn't contain much.
 */
-DATA_BLOB spnego_gen_auth_response(void)
+DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply)
 {
 	ASN1_DATA data;
 	DATA_BLOB ret;
@@ -495,8 +495,13 @@ DATA_BLOB spnego_gen_auth_response(void)
 	asn1_push_tag(&data, ASN1_CONTEXT(1));
 	asn1_push_tag(&data, ASN1_SEQUENCE(0));
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_write_enumerated(&data, 0);	
+	asn1_write_enumerated(&data, ntlmssp_reply->length ? 1 : 0);
 	asn1_pop_tag(&data);
+	if (ntlmssp_reply->length) {
+		asn1_push_tag(&data,ASN1_CONTEXT(2));
+		asn1_write_OctetString(&data, ntlmssp_reply->data, ntlmssp_reply->length);
+		asn1_pop_tag(&data);
+	}
 	asn1_pop_tag(&data);
 	asn1_pop_tag(&data);
 
@@ -514,8 +519,9 @@ DATA_BLOB spnego_gen_auth_response(void)
   format specifiers are:
 
   U = unicode string (input is unix string)
-  a = address (1 byte type, 1 byte length, unicode string, all inline)
-  A = ASCII string (pointer + length) Actually same as B
+  a = address (input is BOOL unicode, char *unix_string)
+      (1 byte type, 1 byte length, unicode/ASCII string, all inline)
+  A = ASCII string (input is unix string)
   B = data blob (pointer + length)
   b = data blob in header (pointer + length)
   D
@@ -531,6 +537,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 	uint8 *b;
 	int head_size=0, data_size=0;
 	int head_ofs, data_ofs;
+	BOOL unicode;
 
 	/* first scan the format to work out the header and body size */
 	va_start(ap, format);
@@ -541,12 +548,21 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			head_size += 8;
 			data_size += str_charnum(s) * 2;
 			break;
+		case 'A':
+			s = va_arg(ap, char *);
+			head_size += 8;
+			data_size += str_ascii_charnum(s);
+			break;
 		case 'a':
+			unicode = va_arg(ap, BOOL);
 			n = va_arg(ap, int);
 			s = va_arg(ap, char *);
-			data_size += (str_charnum(s) * 2) + 4;
+			if (unicode) {
+				data_size += (str_charnum(s) * 2) + 4;
+			} else {
+				data_size += (str_ascii_charnum(s)) + 4;
+			}
 			break;
-		case 'A':
 		case 'B':
 			b = va_arg(ap, uint8 *);
 			head_size += 8;
@@ -586,20 +602,39 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			push_string(NULL, blob->data+data_ofs, s, n*2, STR_UNICODE|STR_NOALIGN);
 			data_ofs += n*2;
 			break;
+		case 'A':
+			s = va_arg(ap, char *);
+			n = str_ascii_charnum(s);
+			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
+			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
+			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
+			push_string(NULL, blob->data+data_ofs, s, n, STR_ASCII|STR_NOALIGN);
+			data_ofs += n;
+			break;
 		case 'a':
+			unicode = va_arg(ap, BOOL);
 			n = va_arg(ap, int);
 			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
 			s = va_arg(ap, char *);
-			n = str_charnum(s);
-			SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
-			if (0 < n) {
-				push_string(NULL, blob->data+data_ofs, s, n*2,
-					    STR_UNICODE|STR_NOALIGN);
+			if (unicode) {
+				n = str_charnum(s);
+				SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
+				if (0 < n) {
+					push_string(NULL, blob->data+data_ofs, s, n*2,
+						    STR_UNICODE|STR_NOALIGN);
+				}
+				data_ofs += n*2;
+			} else {
+				n = str_ascii_charnum(s);
+				SSVAL(blob->data, data_ofs, n); data_ofs += 2;
+				if (0 < n) {
+					push_string(NULL, blob->data+data_ofs, s, n,
+						    STR_ASCII|STR_NOALIGN);
+				}
+				data_ofs += n;
 			}
-			data_ofs += n*2;
 			break;
 
-		case 'A':
 		case 'B':
 			b = va_arg(ap, uint8 *);
 			n = va_arg(ap, int);
