@@ -1504,7 +1504,8 @@ struct cnotify_fns {
 
 #include "smb_macros.h"
 
-typedef char nstring[16];
+#define MAX_NETBIOSNAME_LEN 16
+typedef char nstring[MAX_NETBIOSNAME_LEN];
 
 /* A netbios name structure. */
 struct nmb_name {
