@@ -3103,6 +3103,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
      * characters.
      */
     char *fp, *rp, *cp2, *cp1;
+    BOOL last_wcard_was_star = False;
     matched = False;
     for( cp1 = ebase, cp2 = sbase; cp1;) {
       fp = strchr(cp2, '.');
@@ -3111,12 +3112,17 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
       rp = strchr(cp1, '.');
       if(rp)
         *rp = '\0';
+
+      if(cp1[strlen(cp1)-1] == '*')
+        last_wcard_was_star = True;
+      else
+        last_wcard_was_star = False;
       if(!do_match(cp2, cp1, case_sig))
         break;
       cp2 = fp ? fp + 1 : "";
       cp1 = rp ? rp + 1 : NULL;
     } 
-    if(cp1 == NULL)
+    if(cp1 == NULL && ((*cp2 == '\0') || last_wcard_was_star))
       matched = True;
   } else {
     matched = do_match(sbase,ebase,case_sig) && do_match(sext,eext,case_sig);

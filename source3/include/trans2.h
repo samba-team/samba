@@ -233,11 +233,6 @@ Byte offset   Type     name                description
 
 #define DIRLEN_GUESS (45+MAX(l1_achName,l2_achName))
 
-/* NT uses a FILE_ATTRIBUTE_NORMAL when no other attributes
-   are set. */
-
-#define NT_FILE_ATTRIBUTE_NORMAL        0x80
-
 #endif
 
 

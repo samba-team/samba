@@ -401,7 +401,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
   p = pdata;
   nameptr = p;
 
-  nt_extmode = mode ? mode : NT_FILE_ATTRIBUTE_NORMAL;
+  nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
 
   switch (info_level)
     {
@@ -693,13 +693,21 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
       p++;
     }
   }
-  
+
+#if 0 /* JRA */
+  /*
+   * Now we have a working mask_match in util.c, I believe
+   * we no longer need these hacks (in fact they break
+   * things). JRA. 
+   */
+
   /* a special case for 16 bit apps */
   if (strequal(mask,"????????.???")) pstrcpy(mask,"*");
 
   /* handle broken clients that send us old 8.3 format */
   string_sub(mask,"????????","*");
   string_sub(mask,".???",".*");
+#endif /* JRA */
 
   /* Save the wildcard match and attribs we are using on this directory - 
      needed as lanman2 assumes these are being saved between calls */
