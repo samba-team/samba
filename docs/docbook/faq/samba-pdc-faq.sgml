@@ -832,7 +832,7 @@ mess with my unix EOF</title>
     
     <para>
 	An SMB enabled version of tcpdump is available from 
-    <ulink url="http://www.tcpdump.org/">http://www.tcpdup.org/</ulink>.
+    <ulink url="http://www.tcpdump.org/">http://www.tcpdump.org/</ulink>.
 	Ethereal, another good packet sniffer for UNIX and Win32
 	hosts, can be downloaded from <ulink 
 	url="http://www.ethereal.com/">http://www.ethereal.com</ulink>.
