@@ -19,7 +19,7 @@
 ########################################################
 SAMBA_VERSION_MAJOR=3
 SAMBA_VERSION_MINOR=0
-SAMBA_VERSION_RELEASE=7
+SAMBA_VERSION_RELEASE=8
 
 ########################################################
 # For 'pre' releases the version will be               #
