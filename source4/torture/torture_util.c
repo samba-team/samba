@@ -35,6 +35,41 @@ double end_timer(void)
 	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
 }
 
+
+/*
+  create a directory, returning a handle to it
+*/
+int create_directory_handle(struct cli_state *cli, const char *dname)
+{
+	NTSTATUS status;
+	union smb_open io;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("create_directory_handle");
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_ALL_ACCESS;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = dname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
+
+	talloc_destroy(mem_ctx);
+	return io.ntcreatex.out.fnum;
+}
+
 /*
   sometimes we need a fairly complex file to work with, so we can test
   all possible attributes. 
