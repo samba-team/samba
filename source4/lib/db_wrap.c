@@ -31,6 +31,7 @@
 #include "dlinklist.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/ldb/include/ldb.h"
+#include "db_wrap.h"
 
 static struct ldb_wrap *ldb_list;
 static struct tdb_wrap *tdb_list;

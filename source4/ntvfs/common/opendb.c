@@ -43,6 +43,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "messages.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "db_wrap.h"
 
 struct odb_context {
 	struct tdb_wrap *w;

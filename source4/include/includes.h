@@ -113,7 +113,6 @@ extern int errno;
 #include "lib/talloc/talloc.h"
 #include "nt_status.h"
 #include "structs.h"
-#include "db_wrap.h"
 #include "trans2.h"
 #include "nterr.h"
 #include "charset.h"
