@@ -23,9 +23,8 @@ interface mgmt
 
 	/***********************/
 	/* Function 0x00       */
-	void mgmt_inq_if_ids (
-		[out]       rpc_if_id_vector_t      *if_id_vector,
-		[out]       error_status_t          status
+	WERROR mgmt_inq_if_ids (
+		[out]       rpc_if_id_vector_t      *if_id_vector
 		);
 
 
@@ -33,22 +32,23 @@ interface mgmt
 	/***********************/
 	/* Function 0x01       */
 
-	const int mgmt_stats_calls_in       = 0;
-	const int mgmt_stats_calls_out      = 1;
-	const int mgmt_stats_pkts_in        = 2;
-	const int mgmt_stats_pkts_out       = 3;
-	const int mgmt_stats_array_max_size = 4;
+
+	/* these are the array indexes in the statistics array */
+	const int MGMT_STATS_CALLS_IN       = 0;
+	const int MGMT_STATS_CALLS_OUT      = 1;
+	const int MGMT_STATS_PKTS_IN        = 2;
+	const int MGMT_STATS_PKTS_OUT       = 3;
+	const int MGMT_STATS_ARRAY_MAX_SIZE = 4;
 
 	typedef struct {
 		uint32 count;
 		[size_is(count)] uint32 statistics[*];
 	} mgmt_statistics;
 
-	void mgmt_inq_stats (
+	WERROR mgmt_inq_stats (
 		[in]        uint32             max_count,
 		[in]        uint32             unknown,
-		[out]       mgmt_statistics        statistics,
-		[out]       error_status_t         status
+		[out]       mgmt_statistics        statistics
 		);
 
 
@@ -61,17 +61,14 @@ interface mgmt
 
 	/***********************/
 	/* Function 0x03       */
-	void mgmt_stop_server_listening (
-		[out]       error_status_t          status
-		);
+	WERROR mgmt_stop_server_listening ();
 
 
 	/***********************/
 	/* Function 0x04       */
-	void mgmt_inq_princ_name (
-		[in]        unsigned32              authn_proto,
-		[in]        unsigned32              princ_name_size,
-		[out]       ascstr2                 princ_name,
-		[out]       error_status_t          status
+	WERROR mgmt_inq_princ_name (
+		[in]        uint32                  authn_proto,
+		[in]        uint32                  princ_name_size,
+		[out]       ascstr                  princ_name
 		);
 }
