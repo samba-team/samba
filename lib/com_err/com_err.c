@@ -57,8 +57,8 @@ error_message (long code)
     if (p == NULL)
 	p = strerror(code);
     if (p != NULL && *p != '\0') {
-	strncpy(msg, p, sizeof(msg));
-	msg[sizeof(msg)] = 0;
+	strncpy(msg, p, sizeof(msg) - 1);
+	msg[sizeof(msg) - 1] = 0;
     } else 
 	sprintf(msg, "Unknown error %ld", code);
     return msg;
