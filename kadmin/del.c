@@ -49,7 +49,7 @@ del_entry(void *opt, int argc, char **argv)
     krb5_error_code ret;
 
     if(argc == 0) {
-	printf("foo\n");
+	printf("usage: delete principal ...\n");
 	return 0;
     }
 
