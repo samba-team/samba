@@ -28,10 +28,19 @@ typedef unsigned short uint16;
 typedef unsigned short wchar;
 typedef unsigned uint32;
 
+#ifndef _PSTRING
+
+#define PSTRING_LEN 1024
+#define FSTRING_LEN 128
+
+typedef char pstring[PSTRING_LEN];
+typedef char fstring[FSTRING_LEN];
+
+#define _PSTRING
+
+#endif
 #define False 0
 #define True 1
-
-typedef char pstring[1024];
 
 /* zero a structure given a pointer to the structure */
 #define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
@@ -68,5 +77,7 @@ BOOL io_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, unsigned f
 BOOL io_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, unsigned flags);
 BOOL io_uint8(char *name, prs_struct *ps, int depth, uint8 *data8, unsigned flags);
 BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags);
+BOOL io_fstring(char *name, prs_struct *ps, int depth, fstring *str, unsigned flags);
 BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len, unsigned flags);
+BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 *data8s, int len, unsigned flags);
 
