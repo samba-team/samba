@@ -32,7 +32,7 @@ static char *prog_name;
 static void usage(char *name, BOOL is_root)
 {
 	if(is_root)
-		fprintf(stderr, "Usage is : %s [-D DEBUGLEVEL] [-a] [-d] [-m] [-n] [username] [password]\n\
+		fprintf(stderr, "Usage is : %s [-D DEBUGLEVEL] [-a] [-d] [-e] [-m] [-n] [username] [password]\n\
 %s: [-R <name resolve order>] [-D DEBUGLEVEL] [-j DOMAINNAME] [-r machine] [-U remote_username] [username] [password]\n%s: [-h]\n", name, name, name);
 	else
 		fprintf(stderr, "Usage is : %s [-h] [-D DEBUGLEVEL] [-r machine] [-U remote_username] [password]\n", name);
@@ -112,6 +112,56 @@ unable to join domain.\n", prog_name);
   return (int)ret;
 }
 
+/*************************************************************
+ Utility function to create password hashes.
+*************************************************************/
+
+static void create_new_hashes( char *new_passwd, uchar *new_p16, uchar *new_nt_p16)
+{
+  memset(new_nt_p16, '\0', 16);
+  E_md4hash((uchar *) new_passwd, new_nt_p16);
+  
+  /* Mangle the password into Lanman format */
+  new_passwd[14] = '\0';
+  strupper(new_passwd);
+  
+  /*
+   * Calculate the SMB (lanman) hash functions of the new password.
+   */
+  
+  memset(new_p16, '\0', 16);
+  E_P16((uchar *) new_passwd, new_p16);
+}
+
+/*************************************************************
+ Utility function to prompt for new password.
+*************************************************************/
+
+static void prompt_for_new_password(char *new_passwd)
+{
+  char *p;
+
+  new_passwd[0] = '\0';
+  
+  p = getpass("New SMB password:");
+
+  strncpy(new_passwd, p, sizeof(fstring));
+  new_passwd[sizeof(fstring)-1] = '\0';
+
+  p = getpass("Retype new SMB password:");
+
+  if (strncmp(p, new_passwd, sizeof(fstring)-1))
+  {
+    fprintf(stderr, "%s: Mismatch - password unchanged.\n", prog_name);
+    exit(1);
+  }
+
+  if (new_passwd[0] == '\0') {
+    printf("Password not set\n");
+    exit(0);
+  }
+}
+
 /*********************************************************
  Start here.
 **********************************************************/
@@ -140,6 +190,7 @@ int main(int argc, char **argv)
   BOOL got_new_pass = False;
   BOOL trust_account = False;
   BOOL disable_user = False;
+  BOOL enable_user = False;
   BOOL set_no_password = False;
   BOOL joining_domain = False;
   char *new_domain = NULL;
@@ -202,7 +253,7 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((ch = getopt(argc, argv, "adhmnj:r:R:D:U:")) != EOF) {
+  while ((ch = getopt(argc, argv, "adehmnj:r:R:D:U:")) != EOF) {
     switch(ch) {
     case 'a':
       if(is_root)
@@ -213,6 +264,14 @@ int main(int argc, char **argv)
     case 'd':
       if(is_root) {
         disable_user = True;
+        got_new_pass = True;
+        fstrcpy(new_passwd, "XXXXXX");
+      } else
+        usage(prog_name, is_root);
+      break;
+    case 'e':
+      if(is_root) {
+        enable_user = True;
         got_new_pass = True;
         fstrcpy(new_passwd, "XXXXXX");
       } else
@@ -337,7 +396,17 @@ int main(int argc, char **argv)
   } else {
 
     if(add_user) {
-      fprintf(stderr, "%s: Only root can set anothers password.\n", prog_name);
+      fprintf(stderr, "%s: Only root can add a user.\n", prog_name);
+      usage(prog_name, False);
+    }
+
+    if(disable_user) {
+      fprintf(stderr, "%s: Only root can disable a user.\n", prog_name);
+      usage(prog_name, False);
+    }
+
+    if(enable_user) {
+      fprintf(stderr, "%s: Only root can enable a user.\n", prog_name);
       usage(prog_name, False);
     }
 
@@ -392,22 +461,8 @@ int main(int argc, char **argv)
     fstrcpy(old_passwd, p);
   }
 
-  if (!got_new_pass) {
-    new_passwd[0] = '\0';
-
-    p = getpass("New SMB password:");
-
-    strncpy(new_passwd, p, sizeof(fstring));
-    new_passwd[sizeof(fstring)-1] = '\0';
-
-    p = getpass("Retype new SMB password:");
-
-    if (strncmp(p, new_passwd, sizeof(fstring)-1))
-    {
-      fprintf(stderr, "%s: Mismatch - password unchanged.\n", prog_name);
-      exit(1);
-    }
-  }
+  if (!got_new_pass)
+    prompt_for_new_password(new_passwd);
   
   if (new_passwd[0] == '\0') {
     printf("Password not set\n");
@@ -493,25 +548,14 @@ int main(int argc, char **argv)
 
   /* Calculate the MD4 hash (NT compatible) of the new password. */
   
-  memset(new_nt_p16, '\0', 16);
-  E_md4hash((uchar *) new_passwd, new_nt_p16);
-  
-  /* Mangle the password into Lanman format */
-  new_passwd[14] = '\0';
-  strupper(new_passwd);
-  
-  /*
-   * Calculate the SMB (lanman) hash functions of the new password.
-   */
-  
-  memset(new_p16, '\0', 16);
-  E_P16((uchar *) new_passwd, new_p16);
-  
+  create_new_hashes( new_passwd, new_p16, new_nt_p16);
+
   /*
    * Open the smbpaswd file.
    */
   vp = startsmbpwent(True);
   if (!vp && errno == ENOENT) {
+      fprintf(stderr,"%s: smbpasswd file did not exist - attempting to create it.\n", prog_name);
 	  fp = fopen(lp_smb_passwd_file(), "w");
 	  if (fp) {
 		  fprintf(fp, "# Samba SMB password file\n");
@@ -578,23 +622,19 @@ int main(int argc, char **argv)
    * and the valid last change time.
    */
 
-  if(disable_user) {
-    /*
-     * This currently won't work as it means changing
-     * the length of the record. JRA.
-     */
+  if(disable_user)
     smb_pwent->acct_ctrl |= ACB_DISABLED;
-    smb_pwent->smb_passwd = NULL;
-    smb_pwent->smb_nt_passwd = NULL;
-  } else if (set_no_password) {
-    /*
-     * This currently won't work as it means changing
-     * the length of the record. JRA.
-     */
+  else if (enable_user) {
+    if(smb_pwent->smb_passwd == NULL) {
+      prompt_for_new_password(new_passwd);
+      create_new_hashes( new_passwd, new_p16, new_nt_p16);
+      smb_pwent->smb_passwd = new_p16;
+      smb_pwent->smb_nt_passwd = new_nt_p16;
+    }
+    smb_pwent->acct_ctrl &= ~ACB_DISABLED;
+  } else if (set_no_password)
     smb_pwent->acct_ctrl |= ACB_PWNOTREQ;
-    smb_pwent->smb_passwd = NULL;
-    smb_pwent->smb_nt_passwd = NULL; 
-  } else {
+  else {
     smb_pwent->smb_passwd = new_p16;
     smb_pwent->smb_nt_passwd = new_nt_p16;
   }
@@ -609,6 +649,8 @@ int main(int argc, char **argv)
   endsmbpwent(vp);
   if(disable_user)
     printf("User %s disabled.\n", user_name);
+  else if(enable_user)
+    printf("User %s enabled.\n", user_name);
   else if (set_no_password)
     printf("User %s - set to no password.\n", user_name);
   else

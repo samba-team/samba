@@ -491,26 +491,35 @@ struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user)
 
 /**********************************************************
  Encode the account control bits into a string.
+ length = length of string to encode into (including terminating
+ null). length *MUST BE MORE THAN 2* !
  **********************************************************/
-char *pdb_encode_acct_ctrl(uint16 acct_ctrl)
+
+char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
 {
   static fstring acct_str;
-  char *p = acct_str;
- 
-  *p++ = '[';
+  size_t i = 0;
 
-  if (acct_ctrl & ACB_HOMDIRREQ) *p++ = 'H';
-  if (acct_ctrl & ACB_TEMPDUP  ) *p++ = 'T'; 
-  if (acct_ctrl & ACB_NORMAL   ) *p++ = 'U';
-  if (acct_ctrl & ACB_MNS      ) *p++ = 'M';
-  if (acct_ctrl & ACB_WSTRUST  ) *p++ = 'W';
-  if (acct_ctrl & ACB_SVRTRUST ) *p++ = 'S';
-  if (acct_ctrl & ACB_AUTOLOCK ) *p++ = 'L';
-  if (acct_ctrl & ACB_PWNOEXP  ) *p++ = 'X';
-  if (acct_ctrl & ACB_DOMTRUST ) *p++ = 'I';
-      
-  *p++ = ']';
-  *p = '\0';
+  acct_str[i++] = '[';
+
+  if (acct_ctrl & ACB_PWNOTREQ ) acct_str[i++] = 'N';
+  if (acct_ctrl & ACB_DISABLED ) acct_str[i++] = 'D';
+  if (acct_ctrl & ACB_HOMDIRREQ) acct_str[i++] = 'H';
+  if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
+  if (acct_ctrl & ACB_NORMAL   ) acct_str[i++] = 'U';
+  if (acct_ctrl & ACB_MNS      ) acct_str[i++] = 'M';
+  if (acct_ctrl & ACB_WSTRUST  ) acct_str[i++] = 'W';
+  if (acct_ctrl & ACB_SVRTRUST ) acct_str[i++] = 'S';
+  if (acct_ctrl & ACB_AUTOLOCK ) acct_str[i++] = 'L';
+  if (acct_ctrl & ACB_PWNOEXP  ) acct_str[i++] = 'X';
+  if (acct_ctrl & ACB_DOMTRUST ) acct_str[i++] = 'I';
+
+  for ( ; i < length - 2 ; i++ ) { acct_str[i] = ' '; }
+
+  i = length - 2;
+  acct_str[i++] = ']';
+  acct_str[i++] = '\0';
+
   return acct_str;
 }     
 
@@ -538,15 +547,8 @@ uint16 pdb_decode_acct_ctrl(char *p)
 	{
 		switch (*p)
 		{
-#if 0
-			/*
-			 * Hmmm. Don't allow these to be set/read independently
-			 * of the actual password fields. We don't want a mismatch.
-			 * JRA.
-			 */
 			case 'N': { acct_ctrl |= ACB_PWNOTREQ ; break; /* 'N'o password. */ }
 			case 'D': { acct_ctrl |= ACB_DISABLED ; break; /* 'D'isabled. */ }
-#endif 
 			case 'H': { acct_ctrl |= ACB_HOMDIRREQ; break; /* 'H'omedir required. */ }
 			case 'T': { acct_ctrl |= ACB_TEMPDUP  ; break; /* 'T'emp account. */ } 
 			case 'U': { acct_ctrl |= ACB_NORMAL   ; break; /* 'U'ser account (normal). */ } 
@@ -556,7 +558,7 @@ uint16 pdb_decode_acct_ctrl(char *p)
 			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ } 
 			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ } 
 			case 'I': { acct_ctrl |= ACB_DOMTRUST ; break; /* 'I'nterdomain trust account. */ }
-
+            case ' ':
 			case ':':
 			case '\n':
 			case '\0': 
