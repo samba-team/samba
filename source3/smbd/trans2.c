@@ -65,7 +65,7 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
   if(params_to_send == 0 && data_to_send == 0)
   {
     if (!send_smb(smbd_server_fd(),outbuf))
-      exit_server("send_trans2_replies: send_smb failed.\n");
+      exit_server("send_trans2_replies: send_smb failed.");
     return 0;
   }
 
@@ -161,7 +161,7 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
 
     /* Send the packet */
     if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_trans2_replies: send_smb failed.\n");
+		exit_server("send_trans2_replies: send_smb failed.");
 
     pp += params_sent_thistime;
     pd += data_sent_thistime;
@@ -2489,7 +2489,7 @@ int reply_trans2(connection_struct *conn,
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_trans2: send_smb failed.\n");
+			exit_server("reply_trans2: send_smb failed.");
 
 		while (num_data_sofar < total_data || 
 		       num_params_sofar < total_params) {

@@ -91,7 +91,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 
   if(params_to_send == 0 && data_to_send == 0) {
     if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_nt_replies: send_smb failed.\n");
+		exit_server("send_nt_replies: send_smb failed.");
     return 0;
   }
 
@@ -221,7 +221,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
     
     /* Send the packet */
     if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_nt_replies: send_smb failed.\n");
+		exit_server("send_nt_replies: send_smb failed.");
     
     pp += params_sent_thistime;
     pd += data_sent_thistime;
@@ -1734,7 +1734,7 @@ due to being in oplock break state.\n" ));
   num_data_sofar = data_count;
 
   if (parameter_count > total_parameter_count || data_count > total_data_count)
-    exit_server("reply_nttrans: invalid sizes in packet.\n");
+    exit_server("reply_nttrans: invalid sizes in packet.");
 
   if(setup) {
     memcpy( setup, &inbuf[smb_nt_SetupStart], setup_count);
@@ -1757,7 +1757,7 @@ due to being in oplock break state.\n" ));
        of the parameter/data bytes */
     outsize = set_message(outbuf,0,0,True);
     if (!send_smb(smbd_server_fd(),outbuf))
-      exit_server("reply_nttrans: send_smb failed.\n");
+      exit_server("reply_nttrans: send_smb failed.");
 
     while( num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
       BOOL ret;
@@ -1785,7 +1785,7 @@ due to being in oplock break state.\n" ));
       num_params_sofar += (parameter_count = IVAL(inbuf,smb_nts_ParameterCount));
       num_data_sofar += ( data_count = IVAL(inbuf, smb_nts_DataCount));
       if (num_params_sofar > total_parameter_count || num_data_sofar > total_data_count)
-        exit_server("reply_nttrans2: data overflow in secondary nttrans packet\n");
+        exit_server("reply_nttrans2: data overflow in secondary nttrans packet");
 
       memcpy( &params[ IVAL(inbuf, smb_nts_ParameterDisplacement)], 
               smb_base(inbuf) + IVAL(inbuf, smb_nts_ParameterOffset), parameter_count);

@@ -118,7 +118,7 @@ void send_trans_reply(char *outbuf,
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_trans_reply: send_smb failed.\n");
+		exit_server("send_trans_reply: send_smb failed.");
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -152,7 +152,7 @@ void send_trans_reply(char *outbuf,
 
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("send_trans_reply: send_smb failed.\n");
+			exit_server("send_trans_reply: send_smb failed.");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
@@ -377,7 +377,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	srvstr_pull(inbuf, name, smb_buf(inbuf), sizeof(name), -1, STR_TERMINATE);
 
 	if (dscnt > tdscnt || pscnt > tpscnt) {
-		exit_server("invalid trans parameters\n");
+		exit_server("invalid trans parameters");
 	}
   
 	if (tdscnt)  {
@@ -416,7 +416,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		outsize = set_message(outbuf,0,0,True);
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_trans: send_smb failed.\n");
+			exit_server("reply_trans: send_smb failed.");
 	}
 
 	/* receive the rest of the trans packet */
@@ -457,7 +457,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		dscnt += dcnt;
 		
 		if (dscnt > tdscnt || pscnt > tpscnt) {
-			exit_server("invalid trans parameters\n");
+			exit_server("invalid trans parameters");
 		}
 		
 		if (pcnt)

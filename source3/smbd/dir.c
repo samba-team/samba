@@ -58,7 +58,7 @@ void init_dptrs(void)
   dptr_bmap = bitmap_allocate(MAX_DIRECTORY_HANDLES);
 
   if (!dptr_bmap)
-    exit_server("out of memory in init_dptrs\n");
+    exit_server("out of memory in init_dptrs");
 
   dptrs_init = True;
 }
