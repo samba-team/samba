@@ -33,6 +33,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
 /* change this if the data format ever changes */
@@ -65,10 +67,11 @@ static unsigned int pull_uint32(uint8_t *p, int ofs)
 
   caller frees the data buffer after use
 */
-int ltdb_pack_data(struct ldb_context *ldb,
+int ltdb_pack_data(struct ldb_module *module,
 		   const struct ldb_message *message,
 		   struct TDB_DATA *data)
 {
+	struct ldb_context *ldb = module->ldb;
 	unsigned int i, j, real_elements=0;
 	size_t size;
 	char *p;
@@ -138,9 +141,10 @@ int ltdb_pack_data(struct ldb_context *ldb,
 /*
   free the memory allocated from a ltdb_unpack_data()
 */
-void ltdb_unpack_data_free(struct ldb_context *ldb,
+void ltdb_unpack_data_free(struct ldb_module *module,
 			   struct ldb_message *message)
 {
+	struct ldb_context *ldb = module->ldb;
 	unsigned int i;
 
 	for (i=0;i<message->num_elements;i++) {
@@ -160,10 +164,11 @@ void ltdb_unpack_data_free(struct ldb_context *ldb,
   TDB_DATA data. This means the caller only has to free the elements
   and values arrays. This can be done with ltdb_unpack_data_free()
 */
-int ltdb_unpack_data(struct ldb_context *ldb,
+int ltdb_unpack_data(struct ldb_module *module,
 		     const struct TDB_DATA *data,
 		     struct ldb_message *message)
 {
+	struct ldb_context *ldb = module->ldb;
 	char *p;
 	unsigned int remaining;
 	unsigned int i, j;
@@ -274,7 +279,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 	return 0;
 
 failed:
-	ltdb_unpack_data_free(ldb, message);
+	ltdb_unpack_data_free(module, message);
 
 	return -1;
 }

@@ -33,6 +33,7 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
 
 static int failures;
 

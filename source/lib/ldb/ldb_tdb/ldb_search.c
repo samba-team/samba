@@ -33,6 +33,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 #include "ldb/include/ldb_parse.h"
 
@@ -53,34 +55,6 @@ static void msg_free_all_parts(struct ldb_context *ldb, struct ldb_message *msg)
 	ldb_free(ldb, msg->elements);
 	ldb_free(ldb, msg);
 }
-
-
-/*
-  duplicate a ldb_val structure
-*/
-struct ldb_val ldb_val_dup(struct ldb_context *ldb,
-			   const struct ldb_val *v)
-{
-	struct ldb_val v2;
-	v2.length = v->length;
-	if (v->length == 0) {
-		v2.data = NULL;
-		return v2;
-	}
-
-	/* the +1 is to cope with buggy C library routines like strndup
-	   that look one byte beyond */
-	v2.data = ldb_malloc(ldb, v->length+1);
-	if (!v2.data) {
-		v2.length = 0;
-		return v2;
-	}
-
-	memcpy(v2.data, v->data, v->length);
-	((char *)v2.data)[v->length] = 0;
-	return v2;
-}
-
 
 
 /*
@@ -319,7 +293,7 @@ int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_messag
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = ltdb_unpack_data(ldb, &tdb_data2, msg);
+	ret = ltdb_unpack_data(module, &tdb_data2, msg);
 	if (ret == -1) {
 		ldb_free(ldb, tdb_data2.dptr);
 		return -1;		
@@ -439,7 +413,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* unpack the record */
-	ret = ltdb_unpack_data(sinfo->module->ldb, &data, &msg);
+	ret = ltdb_unpack_data(sinfo->module, &data, &msg);
 	if (ret == -1) {
 		sinfo->failures++;
 		return 0;
@@ -450,9 +424,9 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* see if it matches the given expression */
-	if (!ldb_message_match(sinfo->module, &msg, sinfo->tree, 
+	if (!ltdb_message_match(sinfo->module, &msg, sinfo->tree, 
 			       sinfo->base, sinfo->scope)) {
-		ltdb_unpack_data_free(sinfo->module->ldb, &msg);
+		ltdb_unpack_data_free(sinfo->module, &msg);
 		return 0;
 	}
 
@@ -462,7 +436,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		sinfo->failures++;
 	}
 
-	ltdb_unpack_data_free(sinfo->module->ldb, &msg);
+	ltdb_unpack_data_free(sinfo->module, &msg);
 
 	return ret;
 }

@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/ldb/include/ldb.h"
 
 /*
   search the sam for the specified attributes - va_list variant

@@ -42,6 +42,8 @@
 */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "ldb/include/ldb_parse.h"
 #include <ctype.h>
 

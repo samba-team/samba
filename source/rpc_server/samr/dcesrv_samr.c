@@ -26,7 +26,7 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
-
+#include "lib/ldb/include/ldb.h"
 
 
 /*

@@ -121,39 +121,7 @@ struct ldb_context;
 typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *);
 
 
-struct ldb_module_ops;
-
-/* basic module structure */
-struct ldb_module {
-	struct ldb_module *prev, *next;
-	struct ldb_context *ldb;
-	void *private_data;
-	const struct ldb_module_ops *ops;
-};
-
-/* 
-   these function pointers define the operations that a ldb module must perform
-   they correspond exactly to the ldb_*() interface 
-*/
-struct ldb_module_ops {
-	const char *name;
-	int (*close)(struct ldb_module *);
-	int (*search)(struct ldb_module *, const char *, enum ldb_scope,
-		      const char *, const char * const [], struct ldb_message ***);
-	int (*search_free)(struct ldb_module *, struct ldb_message **);
-	int (*add_record)(struct ldb_module *, const struct ldb_message *);
-	int (*modify_record)(struct ldb_module *, const struct ldb_message *);
-	int (*delete_record)(struct ldb_module *, const char *);
-	int (*rename_record)(struct ldb_module *, const char *, const char *);
-	const char * (*errstring)(struct ldb_module *);
-
-	/* this is called when the alloc ops changes to ensure we 
-	   don't have any old allocated data in the context */
-	void (*cache_free)(struct ldb_module *);
-};
-
-/* the modules init function */
-typedef struct ldb_module *(*init_ldb_module_function)(void);
+struct ldb_module;
 
 /*
   the user can optionally supply a allocator function. It is presumed
@@ -179,22 +147,6 @@ struct ldb_debug_ops {
 		      const char *fmt, va_list ap);
 	void *context;
 };
-
-
-/*
-  every ldb connection is started by establishing a ldb_context
-*/
-struct ldb_context {
-	/* the operations provided by the backend */
-	struct ldb_module *modules;
-
-	/* memory allocation info */
-	struct ldb_alloc_ops alloc_ops;
-
-	/* memory allocation info */
-	struct ldb_debug_ops debug_ops;
-};
-
 
 #define LDB_FLG_RDONLY 1
 
@@ -285,6 +237,9 @@ int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif 
 
 /* useful functions for ldb_message structure manipulation */
 
+int ldb_dn_cmp(const char *dn1, const char *dn2);
+int ldb_attr_cmp(const char *dn1, const char *dn2);
+
 /* find an element within an message */
 struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, 
 						 const char *attr_name);
@@ -305,6 +260,12 @@ int ldb_msg_add(struct ldb_context *ldb,
 		struct ldb_message *msg, 
 		const struct ldb_message_element *el, 
 		int flags);
+int ldb_msg_add_value(struct ldb_context *ldb,
+		      struct ldb_message *msg, 
+		      const char *attr_name,
+		      struct ldb_val *val);
+int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg, 
+		       const char *attr_name, char *str);
 
 /* compare two message elements - return 0 on match */
 int ldb_msg_element_compare(struct ldb_message_element *el1, 
@@ -313,19 +274,27 @@ int ldb_msg_element_compare(struct ldb_message_element *el1,
 /* find elements in a message and convert to a specific type, with
    a give default value if not found. Assumes that elements are
    single valued */
+const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, const char *attr_name);
 int ldb_msg_find_int(const struct ldb_message *msg, 
 		     const char *attr_name,
 		     int default_value);
 unsigned int ldb_msg_find_uint(const struct ldb_message *msg, 
 			       const char *attr_name,
 			       unsigned int default_value);
+int64_t ldb_msg_find_int64(const struct ldb_message *msg, 
+			   const char *attr_name,
+			   int64_t default_value);
+uint64_t ldb_msg_find_uint64(const struct ldb_message *msg, 
+			     const char *attr_name,
+			     uint64_t default_value);
 double ldb_msg_find_double(const struct ldb_message *msg, 
 			   const char *attr_name,
 			   double default_value);
 const char *ldb_msg_find_string(const struct ldb_message *msg, 
 				const char *attr_name,
 				const char *default_value);
-
+struct ldb_val ldb_val_dup(struct ldb_context *ldb,
+			   const struct ldb_val *v);
 
 /*
   this allows the user to choose their own allocation function
@@ -341,6 +310,24 @@ int ldb_set_alloc(struct ldb_context *ldb,
 		  void *(*alloc)(const void *context, void *ptr, size_t size),
 		  void *context);
 
+/* these are used as type safe versions of the ldb allocation functions */
+#define ldb_malloc_p(ldb, type) (type *)ldb_malloc(ldb, sizeof(type))
+#define ldb_malloc_array_p(ldb, type, count) (type *)ldb_realloc_array(ldb, NULL, sizeof(type), count)
+#define ldb_realloc_p(ldb, p, type, count) (type *)ldb_realloc_array(ldb, p, sizeof(type), count)
+
+void *ldb_realloc(struct ldb_context *ldb, void *ptr, size_t size);
+void *ldb_malloc(struct ldb_context *ldb, size_t size);
+void ldb_free(struct ldb_context *ldb, void *ptr);
+void *ldb_strndup(struct ldb_context *ldb, const char *str, size_t maxlen);
+void *ldb_strdup(struct ldb_context *ldb, const char *str);
+void *ldb_realloc_array(struct ldb_context *ldb,
+			void *ptr, size_t el_size, unsigned count);
+
+#ifndef PRINTF_ATTRIBUTE
+#define PRINTF_ATTRIBUTE(a,b)
+#endif
+int ldb_asprintf(struct ldb_context *ldb, char **strp, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+
 /*
   this allows the user to set a debug function for error reporting
 */
@@ -351,11 +338,5 @@ int ldb_set_debug(struct ldb_context *ldb,
 
 /* this sets up debug to print messages on stderr */
 int ldb_set_debug_stderr(struct ldb_context *ldb);
-
-
-/* these are used as type safe versions of the ldb allocation functions */
-#define ldb_malloc_p(ldb, type) (type *)ldb_malloc(ldb, sizeof(type))
-#define ldb_malloc_array_p(ldb, type, count) (type *)ldb_realloc_array(ldb, NULL, sizeof(type), count)
-#define ldb_realloc_p(ldb, p, type, count) (type *)ldb_realloc_array(ldb, p, sizeof(type), count)
 
 #endif

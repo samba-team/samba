@@ -33,6 +33,7 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
 
 static int ldb_delete_recursive(struct ldb_context *ldb, const char *dn)
 {
