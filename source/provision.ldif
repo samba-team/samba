@@ -923,4 +923,15 @@ objectClass: groupTemplate
 cn: TemplateGroup
 name: TemplateGroup
 instanceType: 4
+groupType: 0x80000004
+sAMAccountType: 0x10000000
+
+dn: CN=TemplateAlias,CN=Templates,${BASEDN}
+objectClass: top
+objectClass: Template
+objectClass: aliasTemplate
+cn: TemplateAlias
+name: TemplateAlias
+instanceType: 4
+groupType: 0x80000002
 sAMAccountType: 0x10000000
