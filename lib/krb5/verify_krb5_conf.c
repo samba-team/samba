@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -168,6 +168,7 @@ struct s2i {
 #define L(X) { #X, LOG_ ## X }
 
 static struct s2i syslogvals[] = {
+    /* severity */
     L(EMERG),
     L(ALERT),
     L(CRIT),
@@ -176,7 +177,7 @@ static struct s2i syslogvals[] = {
     L(NOTICE),
     L(INFO),
     L(DEBUG),
-
+    /* facility */
     L(AUTH),
 #ifdef LOG_AUTHPRIV
     L(AUTHPRIV),
@@ -263,12 +264,12 @@ check_log(krb5_context context, const char *path, char *data)
 	    strlcpy(severity, "ERR", sizeof(severity));
  	if(*facility == '\0')
 	    strlcpy(facility, "AUTH", sizeof(facility));
-	if(find_value(severity, syslogvals) == NULL) {
+	if(find_value(severity, syslogvals) == -1) {
 	    krb5_warnx(context, "%s: unknown syslog facility \"%s\"", 
 		       path, facility);
 	    ret++;
 	}
-	if(find_value(severity, syslogvals) == NULL) {
+	if(find_value(severity, syslogvals) == -1) {
 	    krb5_warnx(context, "%s: unknown syslog severity \"%s\"", 
 		       path, severity);
 	    ret++;
