@@ -32,6 +32,9 @@ static int got_pass;
    than going via LSA calls to resolve them */
 static int numeric;
 
+enum acl_mode {ACL_SET, ACL_DELETE, ACL_MODIFY, ACL_ADD};
+
+
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(fstring str, DOM_SID *sid)
 {
@@ -79,7 +82,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 		perm = "C";
 	} else if (ace->info.mask == 0x001200a9) {
 		perm = "R";
-	} else if (ace->info.mask == 0x00000000) {
+	} else if (ace->info.mask == 0x00080000) {
 		perm = "N";
 	} else {
 		perm = "?";
@@ -275,12 +278,14 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 /***************************************************** 
 set the ACLs on a file given an ascii description
 *******************************************************/
-static void cacl_set(struct cli_state *cli, char *filename, char *set_acl)
+static void cacl_set(struct cli_state *cli, char *filename, 
+		     char *acl, enum acl_mode mode)
 {
 	int fnum;
-	SEC_DESC *sd;
+	SEC_DESC *sd, *old;
+	int i, j;
 
-	sd = sec_desc_parse(set_acl);
+	sd = sec_desc_parse(acl);
 	if (!sd) {
 		printf("Failed to parse security descriptor\n");
 		return;
@@ -292,14 +297,89 @@ static void cacl_set(struct cli_state *cli, char *filename, char *set_acl)
 		return;
 	}
 
-	/* sec_desc_print(stdout, sd); */
+	old = cli_query_secdesc(cli, fnum);
 
-	if (!cli_set_secdesc(cli, fnum, sd)) {
+	/* the logic here is rather more complex than I would like */
+	switch (mode) {
+	case ACL_DELETE:
+		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
+			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
+				if (sec_ace_equal(&sd->dacl->ace[i],
+						  &old->dacl->ace[j])) {
+					if (j == old->dacl->num_aces-1) {
+						free(old->dacl->ace);
+						old->dacl->ace=NULL;
+						free(old->dacl);
+						old->dacl = NULL;
+					} else {
+						old->dacl->ace[j] = old->dacl->ace[j+1];
+						old->dacl->num_aces--;
+					}
+					j--;
+				}
+			}
+		}
+		for (i=0;sd->sacl && i<sd->sacl->num_aces;i++) {
+			for (j=0;old->sacl && j<old->sacl->num_aces;j++) {
+				if (sec_ace_equal(&sd->sacl->ace[i],
+						  &old->sacl->ace[j])) {
+					if (j == old->sacl->num_aces-1) {
+						free(old->sacl->ace);
+						old->sacl->ace=NULL;
+						free(old->sacl);
+						old->sacl = NULL;
+					} else {
+						old->sacl->ace[j] = old->sacl->ace[j+1];
+						old->sacl->num_aces--;
+					}
+					j--;
+				}
+			}
+		}
+		break;
+
+	case ACL_MODIFY:
+		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
+			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
+				if (sid_equal(&sd->dacl->ace[i].sid,
+					      &old->dacl->ace[j].sid)) {
+					old->dacl->ace[j] = sd->dacl->ace[i];
+				}
+			}
+		}
+		for (i=0;sd->sacl && i<sd->sacl->num_aces;i++) {
+			for (j=0;old->sacl && j<old->sacl->num_aces;j++) {
+				if (sid_equal(&sd->sacl->ace[i].sid,
+					      &old->sacl->ace[j].sid)) {
+					old->sacl->ace[j] = sd->sacl->ace[i];
+				}
+			}
+		}
+		break;
+
+	case ACL_ADD:
+		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
+			add_ace(&old->dacl, &sd->dacl->ace[i]);
+		}
+		for (i=0;sd->sacl && i<sd->sacl->num_aces;i++) {
+			add_ace(&old->sacl, &sd->sacl->ace[i]);
+		}
+		break;
+
+	case ACL_SET:
+		free_sec_desc(&old);
+		old = sd;
+		break;
+		
+	}
+
+	if (!cli_set_secdesc(cli, fnum, old)) {
 		printf("ERROR: secdesc set failed\n");
 		return;
 	}
 
 	free_sec_desc(&sd);
+	free_sec_desc(&old);
 
 	cli_close(cli, fnum);
 }
@@ -393,7 +473,16 @@ static void usage(void)
 {
 	printf(
 "Usage:\n\
-  smbcacls //server1/share1 filename\n\n");
+  smbcacls //server1/share1 filename [options]\n\n\
+\n\
+  -D <acls>               delete an acl\n\
+  -M <acls>               modify an acl\n\
+  -A <acls>               add an acl\n\
+  -S <acls>               set acls\n\
+\n\
+  an acl is of the form SID:type/flags/mask\n\
+  you can string acls together with spaces, commas or newlines\n\
+");
 }
 
 /****************************************************************************
@@ -411,7 +500,8 @@ static void usage(void)
 	int seed;
 	static pstring servicesf = CONFIGFILE;
 	struct cli_state *cli;
-	char *set_acl = NULL;
+	enum acl_mode mode;
+	char *acl = NULL;
 
 	setlinebuf(stdout);
 
@@ -444,7 +534,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:nhS:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -457,7 +547,23 @@ static void usage(void)
 			break;
 
 		case 'S':
-			set_acl = optarg;
+			acl = optarg;
+			mode = ACL_SET;
+			break;
+
+		case 'D':
+			acl = optarg;
+			mode = ACL_DELETE;
+			break;
+
+		case 'M':
+			acl = optarg;
+			mode = ACL_MODIFY;
+			break;
+
+		case 'A':
+			acl = optarg;
+			mode = ACL_ADD;
 			break;
 
 		case 'n':
@@ -479,8 +585,8 @@ static void usage(void)
 	cli = connect_one(share);
 	if (!cli) exit(1);
 
-	if (set_acl) {
-		cacl_set(cli, filename, set_acl);
+	if (acl) {
+		cacl_set(cli, filename, acl, mode);
 	} else {
 		cacl_dump(cli, filename);
 	}
