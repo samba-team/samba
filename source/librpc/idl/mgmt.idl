@@ -7,6 +7,7 @@
 [
   uuid("afa8bd80-7d8a-11c9-bef4-08002b102989"), 
   version(1.0),
+  endpoint("ncalrpc:", "ncacn_ip_tcp:[135]", "ncacn_np:[\\pipe\\epmapper]"),
   helpstring("DCE/RPC Remote Management")
 ] 
 interface mgmt

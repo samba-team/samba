@@ -10,7 +10,7 @@
 [
 	uuid("4d9f4ab8-7d1c-11cf-861e-0020af6e7c57"),
 	pointer_default(unique),
-	endpoint("ncalrpc:", "ncacn_ip_tcp:[135]"),
+	endpoint("ncalrpc:", "ncacn_ip_tcp:[135]", "ncacn_np:[\\pipe\\epmapper]"),
 	depends(dcom)
 ]
 interface IRemoteActivation

@@ -24,9 +24,6 @@
 #include "includes.h"
 #include "system/network.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
-#include "librpc/gen_ndr/ndr_remact.h"
-#include "librpc/gen_ndr/ndr_oxidresolver.h"
-#include "librpc/gen_ndr/ndr_mgmt.h"
 #include "librpc/gen_ndr/tables.h"
 
 /*
@@ -660,19 +657,25 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	struct GUID guid;
 	struct epm_twr_t twr, *twr_r;
 	struct dcerpc_binding epmapper_binding;
+	const struct dcerpc_interface_table *table = idl_iface_by_uuid(uuid);
+	int i;
 
+	/* First, check if there is a default endpoint specified in the IDL */
 
-	if (!strcmp(uuid, DCERPC_EPMAPPER_UUID) ||
-		!strcmp(uuid, DCERPC_MGMT_UUID) ||
-		!strcmp(uuid, DCERPC_IREMOTEACTIVATION_UUID) ||
-		!strcmp(uuid, DCERPC_IOXIDRESOLVER_UUID)) {
-		switch(binding->transport) {
-			case NCACN_IP_TCP: binding->endpoint = talloc_asprintf(mem_ctx, "%d", EPMAPPER_PORT); return NT_STATUS_OK;
-			case NCALRPC: binding->endpoint = EPMAPPER_IDENTIFIER; return NT_STATUS_OK;
-			default: return NT_STATUS_NOT_SUPPORTED;
+	if (table) {
+		struct dcerpc_binding default_binding;
+		
+		/* Find one of the default pipes for this interface */
+		for (i = 0; i < table->endpoints->count; i++) {
+			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
+
+			if (NT_STATUS_IS_OK(status) && default_binding.transport == binding->transport && default_binding.endpoint) {
+				binding->endpoint = talloc_strdup(mem_ctx, default_binding.endpoint);	
+				return NT_STATUS_OK;
+			}
 		}
 	}
-	
+
 
 	ZERO_STRUCT(epmapper_binding);
 	epmapper_binding.transport = binding->transport;
@@ -759,35 +762,19 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	const char *pipe_name = NULL;
 	TALLOC_CTX *mem_ctx = talloc_init("dcerpc_pipe_connect_ncacn_np");
 	
+	/* Look up identifier using the epmapper */
 	if (!binding->endpoint) {
-		const struct dcerpc_interface_table *table = idl_iface_by_uuid(pipe_uuid);
-		struct dcerpc_binding default_binding;
-		int i;
-
-		if (!table) {
-			DEBUG(0,("Unknown interface endpoint '%s'\n", pipe_uuid));
+		status = dcerpc_epm_map_binding(mem_ctx, binding, pipe_uuid, pipe_version);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
+				 pipe_uuid, nt_errstr(status)));
 			talloc_destroy(mem_ctx);
-			return NT_STATUS_INVALID_PARAMETER;
+			return status;
 		}
-
-		/* Find one of the default pipes for this interface */
-		for (i = 0; i < table->endpoints->count; i++) {
-			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
-
-			if (NT_STATUS_IS_OK(status) && default_binding.transport == NCACN_NP) {
-				pipe_name = default_binding.endpoint;	
-				break;
-				
-			}
-		}
-
-		if (pipe_name == NULL) {
-			DEBUG(0, ("No default named pipe specified for interface with UUID %s\n", pipe_uuid));
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-	} else {
-		pipe_name = binding->endpoint;
+		DEBUG(1,("Mapped to DCERPC/TCP pipe %s\n", binding->endpoint));
 	}
+
+	pipe_name = binding->endpoint;
 
 	if (!strncasecmp(pipe_name, "/pipe/", 6) || 
 		!strncasecmp(pipe_name, "\\pipe\\", 6)) {
