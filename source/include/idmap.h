@@ -5,7 +5,7 @@
 
    Idmap headers
 
-   Copyright (C) Jim McDonough 2003
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Simo Sorce 2003
    
    This library is free software; you can redistribute it and/or
