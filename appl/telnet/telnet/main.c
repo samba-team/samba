@@ -99,6 +99,16 @@ main(int argc, char **argv)
 	extern int forward_flags;
 #endif	/* FORWARD */
 
+#ifdef KRB5
+	{
+	    /* XXX ugly hack to setup dns-proxy stuff */
+	    krb5_context context;
+	    krb5_init_context(&context);
+	    krb5_free_context(context);
+		
+	}
+#endif
+
 	tninit();		/* Clear out things */
 
 	TerminalSaveState();
