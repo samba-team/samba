@@ -2403,6 +2403,8 @@ BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r,
 void init_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
+BOOL lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_c, prs_struct *ps, int depth);
+BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
@@ -3381,6 +3383,15 @@ pipes_struct *get_rpc_pipe(int pnum);
 
 #if OLD_NTDOMAIN
 BOOL api_reg_rpc(pipes_struct *p);
+#endif
+
+/*The following definitions come from  rpc_server/srv_reg_nt.c  */
+
+#if OLD_NTDOMAIN
+uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u);
+uint32 _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u);
+uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u);
+uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u);
 #endif
 
 /*The following definitions come from  rpc_server/srv_samr.c  */
