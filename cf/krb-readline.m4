@@ -5,7 +5,7 @@ dnl
 
 dnl el_init
 
-AC_DEFUN(KRB_READLINE,[
+AC_DEFUN([KRB_READLINE],[
 AC_FIND_FUNC_NO_LIBS(el_init, edit, [], [], [$LIB_tgetent])
 if test "$ac_cv_func_el_init" = yes ; then
 	AC_CACHE_CHECK(for four argument el_init, ac_cv_func_el_init_four,[

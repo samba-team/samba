@@ -4,7 +4,7 @@ dnl
 dnl Better test for ln -s, ln or cp
 dnl
 
-AC_DEFUN(AC_KRB_PROG_LN_S,
+AC_DEFUN([AC_KRB_PROG_LN_S],
 [AC_MSG_CHECKING(for ln -s or something else)
 AC_CACHE_VAL(ac_cv_prog_LN_S,
 [rm -f conftestdata

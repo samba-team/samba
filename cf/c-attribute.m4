@@ -6,7 +6,7 @@ dnl
 dnl Test for __attribute__
 dnl
 
-AC_DEFUN(AC_C___ATTRIBUTE__, [
+AC_DEFUN([AC_C___ATTRIBUTE__], [
 AC_MSG_CHECKING(for __attribute__)
 AC_CACHE_VAL(ac_cv___attribute__, [
 AC_TRY_COMPILE([

@@ -2,7 +2,7 @@ dnl $Id$
 dnl
 dnl enable OSF C2 stuff
 
-AC_DEFUN(AC_CHECK_OSFC2,[
+AC_DEFUN([AC_CHECK_OSFC2],[
 AC_ARG_ENABLE(osfc2,
 	AC_HELP_STRING([--enable-osfc2],[enable some OSF C2 support]))
 LIB_security=

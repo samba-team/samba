@@ -1,6 +1,6 @@
 dnl $Id$
 dnl
-AC_DEFUN(AC_HAVE_PRAGMA_WEAK, [
+AC_DEFUN([AC_HAVE_PRAGMA_WEAK], [
 if test "${enable_shared}" = "yes"; then
 AC_MSG_CHECKING(for pragma weak)
 AC_CACHE_VAL(ac_have_pragma_weak, [

@@ -5,7 +5,7 @@ dnl test for POSIX (broken) getlogin
 dnl
 
 
-AC_DEFUN(AC_FUNC_GETLOGIN, [
+AC_DEFUN([AC_FUNC_GETLOGIN], [
 AC_CHECK_FUNCS(getlogin setlogin)
 if test "$ac_cv_func_getlogin" = yes; then
 AC_CACHE_CHECK(if getlogin is posix, ac_cv_func_getlogin_posix, [

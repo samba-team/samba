@@ -4,7 +4,7 @@ dnl
 dnl Search for struct winsize
 dnl
 
-AC_DEFUN(AC_KRB_STRUCT_WINSIZE, [
+AC_DEFUN([AC_KRB_STRUCT_WINSIZE], [
 AC_MSG_CHECKING(for struct winsize)
 AC_CACHE_VAL(ac_cv_struct_winsize, [
 ac_cv_struct_winsize=no

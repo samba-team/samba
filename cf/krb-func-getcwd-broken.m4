@@ -4,7 +4,7 @@ dnl
 dnl test for broken getcwd in (SunOS braindamage)
 dnl
 
-AC_DEFUN(AC_KRB_FUNC_GETCWD_BROKEN, [
+AC_DEFUN([AC_KRB_FUNC_GETCWD_BROKEN], [
 if test "$ac_cv_func_getcwd" = yes; then
 AC_MSG_CHECKING(if getcwd is broken)
 AC_CACHE_VAL(ac_cv_func_getcwd_broken, [

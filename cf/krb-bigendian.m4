@@ -7,7 +7,7 @@ dnl if we can figure it out at compile-time then don't define the cpp symbol
 dnl otherwise test for it and define it.  also allow options for overriding
 dnl it when cross-compiling
 
-AC_DEFUN(KRB_C_BIGENDIAN, [
+AC_DEFUN([KRB_C_BIGENDIAN], [
 AC_ARG_ENABLE(bigendian,
 	AC_HELP_STRING([--enable-bigendian],[the target is big endian]),
 krb_cv_c_bigendian=yes)

@@ -3,7 +3,7 @@ dnl
 dnl check for existance of a type
 
 dnl AC_HAVE_TYPE(TYPE,INCLUDES)
-AC_DEFUN(AC_HAVE_TYPE, [
+AC_DEFUN([AC_HAVE_TYPE], [
 AC_REQUIRE([AC_HEADER_STDC])
 cv=`echo "$1" | sed 'y%./+- %__p__%'`
 AC_MSG_CHECKING(for $1)

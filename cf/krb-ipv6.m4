@@ -2,7 +2,7 @@ dnl $Id$
 dnl
 dnl test for IPv6
 dnl
-AC_DEFUN(AC_KRB_IPV6, [
+AC_DEFUN([AC_KRB_IPV6], [
 AC_ARG_WITH(ipv6,
 	AC_HELP_STRING([--without-ipv6],[do not enable IPv6 support]),[
 if test "$withval" = "no"; then

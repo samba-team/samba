@@ -7,7 +7,7 @@ dnl set DIR_roken to if the directory should be built
 dnl set CPPFLAGS_roken to stuff to add to CPPFLAGS
 
 dnl AC_ROKEN(version,directory-to-try,roken-dir,fallback-library,fallback-cppflags)
-AC_DEFUN(AC_ROKEN, [
+AC_DEFUN([AC_ROKEN], [
 
 AC_ARG_WITH(roken,
 	AC_HELP_STRING([--with-roken=dir],[use the roken library in dir]),

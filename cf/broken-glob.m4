@@ -2,7 +2,7 @@ dnl $Id$
 dnl
 dnl check for glob(3)
 dnl
-AC_DEFUN(AC_BROKEN_GLOB,[
+AC_DEFUN([AC_BROKEN_GLOB],[
 AC_CACHE_CHECK(for working glob, ac_cv_func_glob_working,
 ac_cv_func_glob_working=yes
 AC_TRY_LINK([

@@ -2,7 +2,7 @@ dnl $Id$
 dnl
 dnl check for Xau{Read,Write}Auth and XauFileName
 dnl
-AC_DEFUN(AC_CHECK_XAU,[
+AC_DEFUN([AC_CHECK_XAU],[
 save_CFLAGS="$CFLAGS"
 CFLAGS="$X_CFLAGS $CFLAGS"
 save_LIBS="$LIBS"

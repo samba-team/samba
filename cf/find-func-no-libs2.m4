@@ -5,7 +5,7 @@ dnl Look for function in any of the specified libraries
 dnl
 
 dnl AC_FIND_FUNC_NO_LIBS2(func, libraries, includes, arguments, extra libs, extra args)
-AC_DEFUN(AC_FIND_FUNC_NO_LIBS2, [
+AC_DEFUN([AC_FIND_FUNC_NO_LIBS2], [
 
 AC_MSG_CHECKING([for $1])
 AC_CACHE_VAL(ac_cv_funclib_$1,

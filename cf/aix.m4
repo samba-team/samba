@@ -2,7 +2,7 @@ dnl
 dnl $Id$
 dnl
 
-AC_DEFUN(rk_AIX,[
+AC_DEFUN([rk_AIX],[
 
 aix=no
 case "$host" in 

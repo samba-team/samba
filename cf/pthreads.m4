@@ -1,6 +1,6 @@
 dnl $Id$
 
-AC_DEFUN(KRB_PTHREADS, [
+AC_DEFUN([KRB_PTHREADS], [
 AC_MSG_CHECKING(if compiling threadsafe libraries)
 
 if test "$PTHREADS_LDFLAGS" = "" ; then

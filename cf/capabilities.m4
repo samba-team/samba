@@ -6,7 +6,7 @@ dnl
 dnl Test SGI capabilities
 dnl
 
-AC_DEFUN(KRB_CAPABILITIES,[
+AC_DEFUN([KRB_CAPABILITIES],[
 
 AC_CHECK_HEADERS(capability.h sys/capability.h)
 

@@ -2,7 +2,7 @@ dnl $Id$
 dnl
 dnl set WFLAGS
 
-AC_DEFUN(AC_WFLAGS,[
+AC_DEFUN([rk_WFLAGS],[
 WFLAGS_NOUNUSED=""
 WFLAGS_NOIMPLICITINT=""
 if test -z "$WFLAGS" -a "$GCC" = "yes"; then

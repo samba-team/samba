@@ -3,7 +3,7 @@ dnl
 dnl rk_TEST_PACKAGE(package,headers,libraries,extra libs,
 dnl			default locations, conditional, config-program)
 
-AC_DEFUN(rk_TEST_PACKAGE,[
+AC_DEFUN([rk_TEST_PACKAGE],[
 AC_ARG_WITH($1,
 	AC_HELP_STRING([--with-$1=dir],[use $1 in dir]))
 AC_ARG_WITH($1-lib,

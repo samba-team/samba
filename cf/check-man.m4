@@ -2,7 +2,7 @@ dnl $Id$
 dnl check how to format manual pages
 dnl
 
-AC_DEFUN(rk_CHECK_MAN,
+AC_DEFUN([rk_CHECK_MAN],
 [AC_PATH_PROG(NROFF, nroff)
 AC_PATH_PROG(GROFF, groff)
 AC_CACHE_CHECK(how to format man pages,ac_cv_sys_man_format,

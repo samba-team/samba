@@ -6,7 +6,7 @@ dnl
 
 dnl AC_NEED_PROTO(includes, function)
 
-AC_DEFUN(AC_NEED_PROTO, [
+AC_DEFUN([AC_NEED_PROTO], [
 if test "$ac_cv_func_$2+set" != set -o "$ac_cv_func_$2" = yes; then
 AC_CACHE_CHECK([if $2 needs a prototype], ac_cv_func_$2_noproto,
 AC_TRY_COMPILE([$1],

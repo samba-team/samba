@@ -5,7 +5,7 @@ dnl
 dnl extra magic check for netinet/{ip.h,tcp.h} because on irix 6.5.3
 dnl you have to include standards.h before including these files
 
-AC_DEFUN(CHECK_NETINET_IP_AND_TCP,
+AC_DEFUN([CHECK_NETINET_IP_AND_TCP],
 [
 AC_CHECK_HEADERS(standards.h)
 for i in netinet/ip.h netinet/tcp.h; do

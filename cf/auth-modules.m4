@@ -4,7 +4,7 @@ dnl Figure what authentication modules should be built
 dnl
 dnl rk_AUTH_MODULES(module-list)
 
-AC_DEFUN(rk_AUTH_MODULES,[
+AC_DEFUN([rk_AUTH_MODULES],[
 AC_MSG_CHECKING([which authentication modules should be built])
 
 z='m4_ifval([$1], $1, [sia pam afskauthlib])'

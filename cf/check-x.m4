@@ -3,7 +3,7 @@ dnl See if there is any X11 present
 dnl
 dnl $Id$
 
-AC_DEFUN(KRB_CHECK_X,[
+AC_DEFUN([KRB_CHECK_X],[
 AC_PATH_XTRA
 
 # try to figure out if we need any additional ld flags, like -R

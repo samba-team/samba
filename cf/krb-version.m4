@@ -4,7 +4,7 @@ dnl
 dnl output a C header-file with some version strings
 dnl
 
-AC_DEFUN(AC_KRB_VERSION,[
+AC_DEFUN([AC_KRB_VERSION],[
 cat > include/newversion.h.in <<FOOBAR
 const char *${PACKAGE_TARNAME}_long_version = "@(#)\$Version: $PACKAGE_STRING by @USER@ on @HOST@ ($host) @DATE@ \$";
 const char *${PACKAGE_TARNAME}_version = "$PACKAGE_STRING";

@@ -6,7 +6,7 @@ dnl
 dnl Test for __FUNCTION__
 dnl
 
-AC_DEFUN(AC_C___FUNCTION__, [
+AC_DEFUN([AC_C___FUNCTION__], [
 AC_MSG_CHECKING(for __FUNCTION__)
 AC_CACHE_VAL(ac_cv___function__, [
 AC_TRY_RUN([

@@ -2,7 +2,7 @@ dnl $Id$
 dnl
 dnl test if getaddrinfo can handle numeric services
 
-AC_DEFUN(rk_BROKEN_GETADDRINFO,[
+AC_DEFUN([rk_BROKEN_GETADDRINFO],[
 AC_CACHE_CHECK([if getaddrinfo handles numeric services], ac_cv_func_getaddrinfo_numserv,
 AC_TRY_RUN([[#include <stdio.h>
 #include <sys/types.h>

@@ -4,7 +4,7 @@ dnl some code to get roken working
 dnl
 dnl rk_ROKEN(subdir)
 dnl
-AC_DEFUN(rk_ROKEN, [
+AC_DEFUN([rk_ROKEN], [
 
 AC_REQUIRE([rk_CONFIG_HEADER])
 
