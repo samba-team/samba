@@ -382,9 +382,14 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 		x=data->notify_data.data.length+1;
 		if(!prs_uint32("string length", ps, depth, &x ))
 			return False;
-		/* These are already in little endian format. Don't byte swap. */
-		if(!prs_uint8s(True,"string",ps,depth,(uint8 *)data->notify_data.data.string,x*2))
-			return False;
+		if (MARSHALLING(ps)) {
+			/* These are already in little endian format. Don't byte swap. */
+			if(!prs_uint8s(True,"string",ps,depth,(uint8 *)data->notify_data.data.string,x*2))
+				return False;
+		} else {
+			if(!prs_uint16s(True,"string",ps,depth,data->notify_data.data.string,x))
+				return False;
+		}
 	}
 	if(!prs_align(ps))
 		return False;
@@ -4775,7 +4780,7 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
-	uniarray_2_dosarray(&(uni->dependentfiles), &(d->dependentfiles) );
+	uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles );
 
 	return True;
 }
@@ -5172,8 +5177,15 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 		return False;
 	if(!prs_uint32("valuesize", ps, depth, &r_u->valuesize))
 		return False;
-	if(!prs_uint16s(False, "value", ps, depth, r_u->value, r_u->valuesize))
-		return False;
+
+	if (MARSHALLING(ps)) {
+		/* "Value is actually a UNICODE string. It's already little-endian so don't reverse. */
+		if(!prs_uint8s(False, "value", ps, depth, (uint8 *)r_u->value, r_u->valuesize * 2))
+			return False;
+	} else {
+		if(!prs_uint16s(False, "value", ps, depth, r_u->value, r_u->valuesize ))
+			return False;
+	}
 
 	if(!prs_align(ps))
 		return False;
