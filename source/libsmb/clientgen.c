@@ -1879,7 +1879,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		/* attempt encrypted session */
 		if (!cli_session_setup(cli, cli->user_name,
 	                       (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
-	                              nt_sess_pwd, sizeof(nt_sess_pwd),
+	                       (char*)nt_sess_pwd, sizeof(nt_sess_pwd),
 	                       cli->domain))
 		{
 			DEBUG(1,("failed session setup\n"));

@@ -430,7 +430,7 @@ static void dozerobuf(int f, int n)
 /****************************************************************************
 Malloc tape buffer
 ****************************************************************************/
-static void initarbuf()
+static void initarbuf(void)
 {
   /* initialize tar buffer */
   tbufsiz=blocksize*TBLOCK;

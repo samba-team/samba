@@ -92,7 +92,6 @@ struct ShmBlockDesc
 #define	AlignedHeaderSize ((sizeof(struct ShmHeader)+7) & ~7)
 
 static struct ShmHeader *shm_header_p = NULL;
-static BOOL shm_initialize_called = False;
 
 static int read_only;
 
@@ -447,8 +446,6 @@ static BOOL shm_initialize(int size)
    
 	shm_header_p->consistent = True;
    
-	shm_initialize_called = True;
-
 	return True;
 }
    
@@ -533,7 +530,6 @@ static struct shmem_ops shmops = {
   ******************************************************************/
 struct shmem_ops *sysv_shm_open(int ronly)
 {
-	BOOL created_new = False;
 	BOOL other_processes;
 	struct shmid_ds shm_ds;
 	struct semid_ds sem_ds;
@@ -661,7 +657,6 @@ struct shmem_ops *sysv_shm_open(int ronly)
 			    (errno != EINVAL && errno != ENOSPC)) break;
 			shm_size *= 0.8;
 		}
-		created_new = (shm_id != -1);
 	}
 	
 	if (shm_id == -1) {

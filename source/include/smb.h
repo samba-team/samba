@@ -403,36 +403,6 @@ typedef struct cred_info
   UTIME timestamp;    /* credential time-stamp */
 } DOM_CRED;
 
-struct pwd_info
-{
-	BOOL null_pwd;
-	BOOL cleartext;
-	BOOL crypted;
-
-	fstring password;
-
-	uchar smb_lm_pwd[16];
-	uchar smb_nt_pwd[16];
-
-	uchar smb_lm_owf[24];
-	uchar smb_nt_owf[24];
-};
-
-typedef struct
-{
-  SMB_OFF_T size;
-  int mode;
-  uid_t uid;
-  gid_t gid;
-  /* these times are normally kept in GMT */
-  time_t mtime;
-  time_t atime;
-  time_t ctime;
-  pstring name;
-
-} file_info;
-
-
 /* Structure used when SMBwritebmpx is active */
 typedef struct
 {
@@ -538,7 +508,7 @@ typedef struct files_struct
 	file_fd_struct *fd_ptr;
 	SMB_OFF_T pos;
 	SMB_OFF_T size;
-	int mode;
+	mode_t mode;
 	int vuid;
 	char *mmap_ptr;
 	SMB_OFF_T mmap_size;

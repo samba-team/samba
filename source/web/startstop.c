@@ -71,7 +71,7 @@ void start_nmbd(void)
 /* stop smbd */
 void stop_smbd(void)
 {
-	unsigned pid = pidfile_pid("smbd");
+	pid_t pid = pidfile_pid("smbd");
 
 	if (geteuid() != 0) return;
 
@@ -83,7 +83,7 @@ void stop_smbd(void)
 /* stop nmbd */
 void stop_nmbd(void)
 {
-	unsigned pid = pidfile_pid("nmbd");
+	pid_t pid = pidfile_pid("nmbd");
 
 	if (geteuid() != 0) return;
 
@@ -93,7 +93,7 @@ void stop_nmbd(void)
 }
 
 /* kill a specified process */
-void kill_pid(int pid)
+void kill_pid(pid_t pid)
 {
 	if (geteuid() != 0) return;
 

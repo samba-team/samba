@@ -143,7 +143,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 {
   FILE *f;
   pstring fname;
-  int uid, c;
+  int c;
   static pstring servicesf = CONFIGFILE;
   extern char *optarg;
   int verbose = 0, brief =0;
@@ -221,8 +221,6 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   else if (verbose) {
     printf("Opened status file %s\n", fname);
   }
-
-  uid = getuid();
 
   if (!locks_only) {
 

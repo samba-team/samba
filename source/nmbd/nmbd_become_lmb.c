@@ -280,7 +280,6 @@ static void release_msbrowse_name_fail( struct subnet_record *subrec,
 void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work,
                                    BOOL force_new_election)
 {
-  struct server_record *servrec;
   struct name_record *namerec;
   struct nmb_name nmbname;
 
@@ -289,7 +288,7 @@ void unbecome_local_master_browser(struct subnet_record *subrec, struct work_rec
   DEBUG(2,("unbecome_local_master_browser: unbecoming local master for workgroup %s \
 on subnet %s\n",work->work_group, subrec->subnet_name));
   
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if(find_server_in_workgroup( work, global_myname) == NULL)
   {
     DEBUG(0,("unbecome_local_master_browser: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
@@ -489,7 +488,6 @@ static void become_local_master_fail1(struct subnet_record *subrec,
 {
   char *work_name = rrec->userdata->data;
   struct work_record *work = find_workgroup_on_subnet(subrec, work_name);
-  struct server_record *servrec;
 
   if(!work)
   {
@@ -498,7 +496,7 @@ workgroup %s on subnet %s\n", work_name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup(work, global_myname)) == NULL)
+  if(find_server_in_workgroup(work, global_myname) == NULL)
   {
     DEBUG(0,("become_local_master_fail1: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
@@ -524,7 +522,6 @@ workgroup %s on subnet %s. Couldn't register name %s.\n",
 
 void become_local_master_browser(struct subnet_record *subrec, struct work_record *work)
 {
-  struct server_record *servrec;
   struct userdata_struct *userdata;
   int size = sizeof(struct userdata_struct) + sizeof(fstring) + 1;
 
@@ -542,7 +539,7 @@ void become_local_master_browser(struct subnet_record *subrec, struct work_recor
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if(find_server_in_workgroup( work, global_myname) == NULL)
   {
     DEBUG(0,("become_local_master_browser: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",

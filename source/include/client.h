@@ -28,6 +28,34 @@
  * These definitions depend on smb.h
  */
 
+typedef struct
+{
+  SMB_OFF_T size;
+  int mode;
+  uid_t uid;
+  gid_t gid;
+  /* these times are normally kept in GMT */
+  time_t mtime;
+  time_t atime;
+  time_t ctime;
+  pstring name;
+} file_info;
+
+struct pwd_info
+{
+    BOOL null_pwd;
+    BOOL cleartext;
+    BOOL crypted;
+
+    fstring password;
+
+    uchar smb_lm_pwd[16];
+    uchar smb_nt_pwd[16];
+
+    uchar smb_lm_owf[24];
+    uchar smb_nt_owf[24];
+};
+
 struct cli_state {
   int fd;
   int cnum;
@@ -52,7 +80,7 @@ struct cli_state {
   struct in_addr dest_ip;
 
   struct pwd_info pwd;
-  char cryptkey[8];
+  unsigned char cryptkey[8];
   uint32 sesskey;
   int serverzone;
   uint32 servertime;

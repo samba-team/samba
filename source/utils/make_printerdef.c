@@ -357,14 +357,12 @@ static void scan_copyfiles(FILE *fichier, char *chaine)
 static void scan_short_desc(FILE *fichier, char *short_desc)
 {
   int i=0;
-  char *chaine;
   char *temp;
   char *copyfiles=0,*datasection=0;
  
   helpfile=0;
   languagemonitor=0;
   datatype="RAW";
-  chaine=(char *)malloc(sizeof(pstring));
   temp=(char *)malloc(sizeof(pstring));
   
   driverfile=short_desc;

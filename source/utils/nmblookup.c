@@ -185,7 +185,7 @@ int main(int argc,char *argv[])
 
   for (i=optind;i<argc;i++)
   {
-      int j, count, retries = 2;
+      int j, count;
       char *p;
       struct in_addr ip;
       struct in_addr *ip_list;
@@ -214,9 +214,8 @@ int main(int argc,char *argv[])
       p = strchr(lookup,'#');
 
       if (p) {
-	*p = 0;
-	sscanf(p+1,"%x",&lookup_type);
-	retries = 1;
+        *p = 0;
+        sscanf(p+1,"%x",&lookup_type);
       }
 
       if ((ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,recursion_desired,

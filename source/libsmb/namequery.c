@@ -102,8 +102,8 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 
   bzero((char *)&p,sizeof(p));
 
-  if (!name_trn_id) name_trn_id = (time(NULL)%(unsigned)0x7FFF) + 
-    (getpid()%(unsigned)100);
+  if (!name_trn_id) name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + 
+    ((unsigned)getpid()%(unsigned)100);
   name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
 
   nmb->header.name_trn_id = name_trn_id;
@@ -210,8 +210,8 @@ struct in_addr *name_query(int fd,char *name,int name_type, BOOL bcast,BOOL recu
   bzero((char *)&p,sizeof(p));
   (*count) = 0;
 
-  if (!name_trn_id) name_trn_id = (time(NULL)%(unsigned)0x7FFF) + 
-    (getpid()%(unsigned)100);
+  if (!name_trn_id) name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + 
+    ((unsigned)getpid()%(unsigned)100);
   name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
 
   nmb->header.name_trn_id = name_trn_id;

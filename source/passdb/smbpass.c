@@ -96,7 +96,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
   unsigned char   c;
   unsigned char  *p;
   long            uidval;
-  long            linebuf_len;
+  size_t            linebuf_len;
 
   if(fp == NULL) {
     DEBUG(0,("getsmbfilepwent: Bad password file pointer.\n"));
@@ -566,7 +566,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   fstring         ascii_p16;
   fstring         encode_bits;
   unsigned char  *p = NULL;
-  long            linebuf_len = 0;
+  size_t            linebuf_len = 0;
   FILE           *fp;
   int             lockfd;
   char           *pfile = lp_smb_passwd_file();

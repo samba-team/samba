@@ -384,7 +384,6 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    int nb_read;
    pid_t other_pid;
    SMB_OFF_T seek_back = -((SMB_OFF_T)sizeof(other_pid));
-   SMB_OFF_T erased_slot;
    BOOL found = False;
    
    
@@ -404,7 +403,12 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
         DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %.0f)\n",
                      (int)other_pid, (double)seek_back));
         other_pid = (pid_t)0;
-        erased_slot = sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
+        if(sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR) == -1)
+        {
+          DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file sys_lseek failed with code %s\n",strerror(errno)));
+          close(smb_shm_processes_fd);
+          return False;
+        }
         if(write(smb_shm_processes_fd, &other_pid, sizeof(other_pid)) < 0)
         {
           DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file write failed with code %s\n",strerror(errno)));

@@ -398,7 +398,6 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
   int *mode_array;
   unsigned int hash_entry;
   share_mode_record *file_scanner_p;
-  share_mode_record *file_prev_p;
   shm_share_mode_entry *new_entry_p;
   int new_entry_offset;
   BOOL found = False;
@@ -411,7 +410,6 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
   mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
 
   file_scanner_p = (share_mode_record *)shmops->offset2addr(mode_array[hash_entry]);
-  file_prev_p = file_scanner_p;
   
   while(file_scanner_p)
   {
@@ -422,7 +420,6 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
     }
     else
     {
-      file_prev_p = file_scanner_p ;
       file_scanner_p = (share_mode_record *)
                          shmops->offset2addr(file_scanner_p->next_offset);
     }
@@ -509,7 +506,6 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
   share_mode_record *file_scanner_p;
   share_mode_record *file_prev_p;
   shm_share_mode_entry *entry_scanner_p;
-  shm_share_mode_entry *entry_prev_p;
   BOOL found = False;
   int pid = getpid();
 
@@ -568,7 +564,6 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
   found = False;
   entry_scanner_p = (shm_share_mode_entry*)shmops->offset2addr(
                                          file_scanner_p->share_mode_entries);
-  entry_prev_p = entry_scanner_p;
   while(entry_scanner_p)
   {
     if( (pid == entry_scanner_p->e.pid) && 
@@ -584,7 +579,6 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
     }
     else
     {
-      entry_prev_p = entry_scanner_p;
       entry_scanner_p = (shm_share_mode_entry *)
                           shmops->offset2addr(entry_scanner_p->next_share_mode_entry);
     }

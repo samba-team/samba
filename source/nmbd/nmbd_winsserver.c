@@ -173,7 +173,6 @@ BOOL initialise_wins(void)
     int type = 0;
     int nb_flags;
     int ttl;
-    enum name_source source;
     char *ptr;
     char *p;
     BOOL got_token;
@@ -266,8 +265,6 @@ BOOL initialise_wins(void)
     {
       next_token(&ptr, ip_str, NULL, sizeof(ip_str));
       ip_list[i] = *interpret_addr2(ip_str);
-      if (ip_equal(ip_list[i], ipzero)) 
-         source = SELF_NAME;
     }
     next_token(&ptr,nb_flags_str,NULL, sizeof(nb_flags_str));
 
@@ -538,17 +535,9 @@ static void wins_register_query_fail(struct subnet_record *subrec,
 {
   struct userdata_struct *userdata = rrec->userdata;
   struct packet_struct *orig_reg_packet;
-  struct nmb_packet *nmb;
   struct name_record *namerec = NULL;
-  uint16 nb_flags;
-  BOOL group;
 
   memcpy((char *)&orig_reg_packet, userdata->data, sizeof(struct packet_struct *));
-
-  nmb = &orig_reg_packet->packet.nmb;
-
-  nb_flags = get_nb_flags(nmb->additional->rdata);
-  group = (nb_flags & NB_GROUP) ? True : False;
 
   /*
    * We want to just add the name, as we now know the original owner
@@ -1547,7 +1536,6 @@ void wins_write_database(BOOL background)
 {
   struct name_record *namerec;
   pstring fname, fnamenew;
-  static int child_pid;
 
   FILE *fp;
    
@@ -1558,7 +1546,7 @@ void wins_write_database(BOOL background)
      doesn't block while this is done */
   if (background) {
 	  CatchChild();
-	  if ((child_pid=fork())) {
+	  if (fork()) {
 		  return;
 	  }
   }

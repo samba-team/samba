@@ -1926,8 +1926,8 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
      select always returns true on disk files */
 
   /* Set initial timeout */
-  timeout.tv_sec = time_out / 1000;
-  timeout.tv_usec = 1000 * (time_out % 1000);
+  timeout.tv_sec = (time_t)(time_out / 1000);
+  timeout.tv_usec = (long)(1000 * (time_out % 1000));
 
   for (nread=0; nread < mincnt; ) 
   {      

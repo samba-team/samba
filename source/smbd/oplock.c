@@ -420,8 +420,8 @@ should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
 
         dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
 
-        tval.tv_sec = IVAL(msg_start, OPLOCK_BREAK_SEC_OFFSET);
-        tval.tv_usec = IVAL(msg_start, OPLOCK_BREAK_USEC_OFFSET);
+        tval.tv_sec = (time_t)IVAL(msg_start, OPLOCK_BREAK_SEC_OFFSET);
+        tval.tv_usec = (long)IVAL(msg_start, OPLOCK_BREAK_USEC_OFFSET);
 
         ptval = &tval;
 

@@ -92,7 +92,7 @@ extern BOOL tar_reset;
 /* clitar bits end */
  
 
-int myumask = 0755;
+mode_t myumask = 0755;
 
 extern pstring scope;
 
@@ -840,22 +840,22 @@ static BOOL do_this_one(file_info *finfo)
 *****************************************************************************/
 static char *fix_char_ptr(unsigned int datap, unsigned int converter, char *rdata, int rdrcnt)
 {
-if( datap == 0 )		/* turn NULL pointers */
+  if( datap == 0 )		/* turn NULL pointers */
   {				/* into zero length strings */
-  return "";
+    return "";
   }
-else
+  else
   {
-  unsigned int offset = datap - converter;
+    unsigned int offset = datap - converter;
 
-  if( offset >= rdrcnt )
+    if( offset >= rdrcnt )
     {
       DEBUG(1,("bad char ptr: datap=%u, converter=%u, rdata=%lu, rdrcnt=%d>", datap, converter, (unsigned long)rdata, rdrcnt));
-    return "<ERROR>";
+      return "<ERROR>";
     }
-  else
+    else
     {
-    return &rdata[offset];
+      return &rdata[offset];
     }
   }
 }
@@ -2407,8 +2407,8 @@ static void cmd_print(char *inbuf,char *outbuf )
 }
 
 /****************************************************************************
-show a print queue - this is deprecated as it uses the old smb that
-has limited support - the correct call is the cmd_p_queue_4() after this.
+ show a print queue - this is deprecated as it uses the old smb that
+ has limited support - the correct call is the cmd_p_queue_4() after this.
 ****************************************************************************/
 static void cmd_queue(char *inbuf,char *outbuf )
 {
@@ -3379,7 +3379,6 @@ wait for keyboard activity, swallowing network packets
 static void wait_keyboard(char *buffer)
 {
   fd_set fds;
-  int selrtn;
   struct timeval timeout;
   
   while (1) 
@@ -3391,7 +3390,7 @@ static void wait_keyboard(char *buffer)
 
       timeout.tv_sec = 20;
       timeout.tv_usec = 0;
-      selrtn = sys_select(MAX(Client,fileno(stdin))+1,&fds,&timeout);
+      sys_select(MAX(Client,fileno(stdin))+1,&fds,&timeout);
       
       if (FD_ISSET(fileno(stdin),&fds))
   	return;

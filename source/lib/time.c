@@ -470,7 +470,7 @@ time_t make_unix_date2(void *date_ptr)
   ******************************************************************/
 time_t make_unix_date3(void *date_ptr)
 {
-  time_t t = IVAL(date_ptr,0);
+  time_t t = (time_t)IVAL(date_ptr,0);
   if (!null_mtime(t))
     t += LocTimeDiff(t);
   return(t);

@@ -80,8 +80,26 @@ END {
   next;
 }
 
-!/^connection_struct|^pipes_struct|^file_fd_struct|^files_struct|^connection_struct|^uid_t|^gid_t|^unsigned|^mode_t|^DIR|^user|^int|^long|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT/ {
-  next;
+#
+# We have to split up the start
+# matching as we now have so many start
+# types that it can cause some versions
+# of nawk/awk to choke and fail on
+# the full match. JRA.
+#
+
+{
+  gotstart = 0;
+  if( $0 ~ /^connection_struct|^pipes_struct|^file_fd_struct|^files_struct|^connection_struct|^uid_t|^gid_t|^unsigned|^mode_t|^DIR|^user|^int|^pid_t/ ) {
+    gotstart = 1;
+  }
+
+  if( $0 ~ /^long|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT/ ) {
+    gotstart = 1;
+  }
+  if(!gotstart) {
+    next;
+  }
 }
 
 

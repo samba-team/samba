@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 
 /* return the pid in a pidfile. return 0 if the process (or pidfile)
    does not exist */
-int pidfile_pid(char *name)
+pid_t pidfile_pid(char *name)
 {
 	FILE *f;
 	unsigned ret;
@@ -51,7 +51,7 @@ int pidfile_pid(char *name)
 	
 	if (!process_exists(ret)) return 0;
 
-	return ret;
+	return (pid_t)ret;
 }
 
 /* create a pid file in the lock directory. open it and leave it locked */

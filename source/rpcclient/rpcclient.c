@@ -215,7 +215,6 @@ wait for keyboard activity, swallowing network packets
 static void wait_keyboard(struct cli_state *cli)
 {
   fd_set fds;
-  int selrtn;
   struct timeval timeout;
   
   while (1) 
@@ -226,7 +225,7 @@ static void wait_keyboard(struct cli_state *cli)
 
       timeout.tv_sec = 20;
       timeout.tv_usec = 0;
-      selrtn = sys_select(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
+      sys_select(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
       
       if (FD_ISSET(fileno(stdin),&fds))
   	return;
@@ -357,11 +356,10 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  fprintf(out_hnd, "Usage: %s service <password> [-p port] [-d debuglevel] [-l log] ",
+  fprintf(out_hnd, "Usage: %s service <password> [-d debuglevel] [-l log] ",
 	   pname);
 
   fprintf(out_hnd, "\nVersion %s\n",VERSION);
-  fprintf(out_hnd, "\t-p port               connect to the specified port\n");
   fprintf(out_hnd, "\t-d debuglevel         set the debuglevel\n");
   fprintf(out_hnd, "\t-l log basename.      Basename for log/debug files\n");
   fprintf(out_hnd, "\t-n netbios name.      Use this name as my netbios name\n");
@@ -389,7 +387,6 @@ enum client_action
  int main(int argc,char *argv[])
 {
 	char *pname = argv[0];
-	int port = SMB_PORT;
 	int opt;
 	extern FILE *dbf;
 	extern char *optarg;
@@ -399,9 +396,8 @@ enum client_action
 	char *p;
 	BOOL got_pass = False;
 	char *cmd_str="";
-	int myumask = 0755;
+	mode_t myumask = 0755;
 	enum client_action cli_action = CLIENT_NONE;
-	int ret = 0;
 
 	struct client_info cli_info;
 
@@ -540,7 +536,7 @@ enum client_action
 		cli_action = CLIENT_SVC;
 	}
 
-	while ((opt = getopt(argc, argv,"s:B:O:M:S:i:N:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	while ((opt = getopt(argc, argv,"s:B:O:M:S:i:N:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -635,12 +631,6 @@ enum client_action
 			{
 				slprintf(debugf, sizeof(debugf)-1,
 				         "%s.client",optarg);
-				break;
-			}
-
-			case 'p':
-			{
-				port = atoi(optarg);
 				break;
 			}
 
@@ -745,20 +735,17 @@ enum client_action
 		exit(-1);
 	}
 
-	ret = 0;
-
 	switch (cli_action)
 	{
 		case CLIENT_IPC:
 		{
-			ret = process(&cli_info, cmd_str) ? 0 : 1;
+			process(&cli_info, cmd_str) ? 0 : 1;
 			break;
 		}
 
 		default:
 		{
 			fprintf(stderr, "unknown client action requested\n");
-			ret = 1;
 			break;
 		}
 	}
