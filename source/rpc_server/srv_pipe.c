@@ -131,6 +131,8 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 
 	l->hdr_resp.alloc_hint = data_end - data_start; /* calculate remaining data to be sent */
 
+	DEBUG(10,("alloc_hint: %d\n", l->hdr_resp.alloc_hint));
+
 	if (l->hdr_resp.alloc_hint + 0x18 <= l->hdr_ba.bba.max_tsize)
 	{
 		l->hdr.flags |= RPC_FLG_LAST;
@@ -158,8 +160,10 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 	l->rhdr.data->offset.start = 0;
 	l->rhdr.data->offset.end   = 0x18;
 
+	DEBUG(10,("hdr flags: %x\n", l->hdr.flags));
+
 	/* store the header in the data stream */
-	smb_io_rpc_hdr     ("hdr" , &(l->hdr     ), &(l->rhdr), 0);
+	smb_io_rpc_hdr     ("rhdr", &(l->hdr     ), &(l->rhdr), 0);
 	smb_io_rpc_hdr_resp("resp", &(l->hdr_resp), &(l->rhdr), 0);
 
 	/* don't use rdata: use rdata_i instead, which moves... */
@@ -170,6 +174,7 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 	data = mem_data(&(l->rdata.data), data_start);
 	mem_create(l->rdata_i.data, data, 0, data_len, 0, False); 
 	l->rdata_i.offset = data_len;
+	l->rdata_offset += data_len;
 
 	if (auth_len > 0)
 	{
@@ -895,6 +900,7 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 	 */
 	/* process the rpc header */
 	req->offset = 0x0;
+	req->io = True;
 	smb_io_rpc_hdr("", &l->hdr, req, 0);
 
 	if (req->offset == 0) return False;
@@ -964,8 +970,18 @@ BOOL rpc_send_and_rcv_pdu(pipes_struct *p)
 	}
 	else if (p->l != NULL)
 	{
-		return rpc_redir_local(p->l, &p->smb_pdu, &p->rsmb_pdu,
+		if (p->smb_pdu.data == NULL || p->smb_pdu.data->data_used == 0)
+		{
+			BOOL ret = create_rpc_reply(p->l, p->l->rdata_offset);
+			/* flatten the data into a single pdu */
+			if (!ret) return False;
+			return prs_copy(&p->rsmb_pdu, &p->l->rhdr);
+		}
+		else
+		{
+			return rpc_redir_local(p->l, &p->smb_pdu, &p->rsmb_pdu,
 					p->name);
+		}
 	}
 	return False;
 }
@@ -977,16 +993,28 @@ BOOL rpc_send_and_rcv_pdu(pipes_struct *p)
  ********************************************************************/
 BOOL rpc_to_smb(pipes_struct *p, char *data, int len)
 {
-	BOOL reply = rpc_add_to_pdu(&p->smb_pdu, data, len);
+	BOOL reply = False;
 
-	if (reply && is_complete_pdu(&p->smb_pdu))
+	DEBUG(10,("rpc_to_smb: len %d\n", len));
+
+	if (len != 0)
 	{
-		p->smb_pdu.offset = p->smb_pdu.data->data_size;
-		prs_link(NULL, &p->smb_pdu, NULL);
-		reply = rpc_send_and_rcv_pdu(p);
+		reply = rpc_add_to_pdu(&p->smb_pdu, data, len);
+
+		if (reply && is_complete_pdu(&p->smb_pdu))
+		{
+			p->smb_pdu.offset = p->smb_pdu.data->data_size;
+			prs_link(NULL, &p->smb_pdu, NULL);
+			reply = rpc_send_and_rcv_pdu(p);
+			mem_free_data(p->smb_pdu.data);
+			prs_init(&p->smb_pdu, 0, 4, 0, True);
+		}
+	}
+	else
+	{
 		mem_free_data(p->smb_pdu.data);
 		prs_init(&p->smb_pdu, 0, 4, 0, True);
-
+		reply = rpc_send_and_rcv_pdu(p);
 	}
 	return reply;
 }
@@ -1053,6 +1081,8 @@ BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name, struct api_struct *api_rpc_cmd
 	{
 		return False;
 	}
+
+	l->rdata_offset = 0;
 
 	/* create the rpc header */
 	if (!create_rpc_reply(l, 0))

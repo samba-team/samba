@@ -246,6 +246,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	int pdu_data_sent; /* amount of current pdu already sent */
 	int data_pos; /* entire rpc data sent - no headers, no auth verifiers */
 	int this_pdu_data_pos;
+	RPC_HDR hdr;
 
 	DEBUG(6,("read_pipe: %x name: %s open: %s pos: %d len: %d",
 		 p->pnum, p->name, BOOLSTR(p->open),
@@ -264,6 +265,16 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		return 0;
 	}
 
+	p->rsmb_pdu.offset = 0;
+	p->rsmb_pdu.io = True;
+
+	if (!smb_io_rpc_hdr("hdr", &hdr, &p->rsmb_pdu, 0) ||
+             p->rsmb_pdu.offset != 0x10)
+	{
+		DEBUG(6,("read_pipe: rpc header invalid\n"));
+		return -1;
+	}
+
 	DEBUG(6,("read_pipe: p: %p file_offset: %d file_pos: %d\n",
 		 p, p->file_offset, n));
 
@@ -272,12 +283,12 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	pdu_data_sent = p->file_offset - p->prev_pdu_file_offset;
 	this_pdu_data_pos = (pdu_data_sent == 0) ? 0 : (pdu_data_sent - 0x18);
 
-	if (!IS_BITS_SET_ALL(p->l->hdr.flags, RPC_FLG_LAST))
+	if (!IS_BITS_SET_ALL(hdr.flags, RPC_FLG_LAST))
 	{
 		/* intermediate fragment - possibility of another header */
 		
 		DEBUG(5,("read_pipe: frag_len: %d data_pos: %d pdu_data_sent: %d\n",
-			 p->l->hdr.frag_len, data_pos, pdu_data_sent));
+			 hdr.frag_len, data_pos, pdu_data_sent));
 		
 		if (pdu_data_sent == 0)
 		{
@@ -288,8 +299,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 			p->hdr_offsets += 0x18;
 			data_pos -= 0x18;
 
-			/* create and copy in a new header. */
-			create_rpc_reply(p->l, data_pos);
+			rpc_send_and_rcv_pdu(p);
 		}			
 	}
 	
@@ -320,7 +330,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		DEBUG(6,("read_pipe: just header read\n"));
 	}
 
-	if (pdu_data_sent == p->l->hdr.frag_len)
+	if (pdu_data_sent == hdr.frag_len)
 	{
 		DEBUG(6,("read_pipe: next fragment expected\n"));
 		p->prev_pdu_file_offset = p->file_offset;

@@ -173,6 +173,9 @@ static void send_trans_reply(char *outbuf,
 
 	BOOL buffer_too_large = max_data_ret ? ldata > max_data_ret : False;
 
+	DEBUG(10,("send_trans_reply: max_data_ret: %d datalen: %d plen: %d\n",
+				max_data_ret, ldata, lparam));
+
 	if (buffer_too_large)
 	{
 		DEBUG(5,("send_trans_reply: buffer %d too large %d\n", ldata, max_data_ret));

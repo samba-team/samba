@@ -196,8 +196,11 @@ void cli_connection_free(struct cli_connection *con)
 			}
 			case MSRPC_SMB:
 			{
-				cli_nt_session_close(con->msrpc.smb->cli,
-				                     con->msrpc.smb->fnum);
+				if (con->msrpc.smb->cli != NULL)
+				{
+					cli_nt_session_close(con->msrpc.smb->cli,
+							     con->msrpc.smb->fnum);
+				}
 				cli_net_use_del(con->srv_name, &con->usr_creds.ntc, False, &closed);
 				break;
 			}
@@ -645,6 +648,7 @@ BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata)
 		case MSRPC_LOCAL:
 		{
 			BOOL ret;
+			ret = msrpc_send_prs(con->msrpc.local, NULL);
 			ret = msrpc_receive_prs(con->msrpc.local, rdata);
 			rdata->io = True;
 			rdata->offset = 0;

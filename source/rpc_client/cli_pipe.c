@@ -287,22 +287,29 @@ BOOL rpc_api_pipe(struct cli_connection *con, prs_struct *data, prs_struct *rdat
 		return False;
 	}
 
-	/* only one rpc fragment, and it has been read */
-	if (first && last)
 	{
 		char *d = mem_data(&rpdu.data, rpdu.offset);
 		int l = rhdr.frag_len - rpdu.offset;
-		DEBUG(6,("cli_pipe: fragment first and last both set\n"));
 		prs_append_data(rdata, d, l);
+		prs_mem_free(&rpdu);
+	}
+
+	/* only one rpc fragment, and it has been read */
+	if (first && last)
+	{
+		DEBUG(6,("cli_pipe: fragment first and last both set\n"));
 		return True;
 	}
 
-	prs_mem_free(&rpdu);
+	DEBUG(100,("first frag: %s", BOOLSTR(first)));
+	DEBUG(100,("last frag: %s\n", BOOLSTR(last)));
 
 	while (!last) /* read more fragments until we get the last one */
 	{
 		RPC_HDR_RESP rhdr_resp;
 		int num_read;
+
+		DEBUG(10,("rpc_api_pipe: another fragment expected\n"));
 
 		prs_init(&rpdu, 0x18, 4, 0, True);
 

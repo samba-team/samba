@@ -169,10 +169,13 @@ static int do_message(pipes_struct *p,
 		outsize = mem_buf_len(p->rsmb_pdu.data);
 		if (!mem_buf_copy(copy_into, p->rsmb_pdu.data, 0, outsize))
 		{
+			DEBUG(10,("do_message: %d bytes failed\n", outsize));
 			return -1;
 		}
 		mem_free_data(p->rsmb_pdu.data);
 	}
+
+	DEBUG(10,("do_message: returned %d bytes\n", outsize));
 
 	return outsize;
 }

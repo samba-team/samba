@@ -72,6 +72,8 @@ typedef struct rpcsrv_struct
 	prs_struct rverf; /* output verifier */
 	prs_struct rntlm; /* output ntlmssp */
 
+	uint32 rdata_offset;
+
 	RPC_HDR       hdr;
 	RPC_HDR_BA    hdr_ba;
 	RPC_HDR_RB    hdr_rb;

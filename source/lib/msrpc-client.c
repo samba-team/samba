@@ -39,13 +39,16 @@ BOOL msrpc_receive(struct msrpc_state *msrpc)
 ****************************************************************************/
 BOOL msrpc_send_prs(struct msrpc_state *msrpc, prs_struct *ps)
 {
-	size_t len = mem_buf_len(ps->data);
+	size_t len = ps != NULL ? mem_buf_len(ps->data) : 0;
 
 	DEBUG(10,("msrpc_send_prs: len %d\n", len));
 	dbgflush();
 
 	_smb_setlen(msrpc->outbuf, len);
-	mem_buf_copy(&msrpc->outbuf[4], ps->data, 0, len);
+	if (len != 0 && !mem_buf_copy(&msrpc->outbuf[4], ps->data, 0, len))
+	{
+		return False;
+	}
 
 	if (msrpc_send(msrpc, True))
 	{

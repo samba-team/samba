@@ -493,7 +493,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 	if (ps->error) return False;
 	start = (uint8*)mem_data(&(ps->data), ps->offset);
 
-	DEBUG(120,("_prs_string: string %s len %d max %d\n",
+	DEBUG(200,("_prs_string: string %s len %d max %d\n",
 			str, len, max_buf_size));
 
 	DEBUG(10,("%s%04x %s: ", tab_depth(depth), ps->offset, name != NULL ? name : ""));
@@ -524,7 +524,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 
 	} while (i < max_buf_size && (len == 0 ? str[i] != 0 : i < len) );
 
-	DEBUG(120,("_prs_string: string %s len %d max %d\n",
+	DEBUG(200,("_prs_string: string %s len %d max %d\n",
 			str, len, max_buf_size));
 
 	ps->offset += i+1;
