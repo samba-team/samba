@@ -719,7 +719,7 @@ bin/testprns: $(SAMBALIB) $(TESTPRNS_OBJ) bin/.dummy
 
 bin/smbstatus: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(STATUS_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
 
 bin/smbpasswd: $(SAMBA_LIBS) $(SMBPWLIB) $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -727,23 +727,23 @@ bin/smbpasswd: $(SAMBA_LIBS) $(SMBPWLIB) $(SMBPASSWD_OBJ) bin/.dummy
 
 bin/make_smbcodepage: $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(SAMBALIB) $(LIBS)
 
 bin/nmblookup: $(SAMBALIB) $(NMBLIB) $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(NMBLIB) $(SAMBALIB) $(NMBLOOKUP_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(NMBLOOKUP_OBJ) $(NMBLIB) $(SAMBALIB) $(LIBS)
 
 bin/make_printerdef: $(SAMBALIB) $(MAKE_PRINTERDEF_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBALIB) $(MAKE_PRINTERDEF_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(MAKE_PRINTERDEF_OBJ) $(SAMBALIB) $(LIBS)
 
 bin/smbtorture: $(SAMBA_LIBS) $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMBTORTURE_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(SMBTORTURE_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/rpctorture: $(SAMBA_LIBS) $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBA_LIBS) $(RPCTORTURE_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(RPCTORTURE_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/smb-client: $(SMB_CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -755,15 +755,15 @@ bin/nmb-agent: $(NMB_AGENT_OBJ) bin/.dummy
 
 bin/smb-agent: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(SMB_AGENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(SMB_AGENT_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(SMB_AGENT_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
 
 bin/smbfilter: $(SAMBA_LIBS) $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMBFILTER_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(SMBFILTER_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/debug2html: $(SAMBALIB) $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBALIB) $(DEBUG2HTML_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(DEBUG2HTML_OBJ) $(SAMBALIB) $(LIBS)
 
 bin/smbwrapper.so: $(SMBWRAPPERPICOBJS)
 	@echo Linking smbwrapper shared library $@
@@ -775,7 +775,7 @@ bin/smbwrapper.32.so: $(SMBWRAPPERPICOBJS32)
 
 bin/smbsh: $(SAMBA_LIBS) $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMBSH_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(SMBSH_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 install: install-libs installbin installman installscripts installcp installswat
 
