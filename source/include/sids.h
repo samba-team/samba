@@ -31,8 +31,7 @@ extern DOM_SID global_member_sid;
 
 extern DOM_SID global_sid_S_1_5_20; /* local well-known domain */
 extern DOM_SID global_sid_S_1_1;    /* Global Domain */
-extern DOM_SID global_sid_S_1_3;    /* Creator Owner */
-extern DOM_SID global_sid_S_1_5;    /* NT Authority */
+extern DOM_SID global_sid_S_1_3_0;  /* Creator Owner */
 extern DOM_SID global_sid_system;   /* SYSTEM */
 
 extern const DOM_SID *global_sid_everyone;

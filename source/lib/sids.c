@@ -68,7 +68,8 @@ extern fstring global_myworkgroup;
 DOM_SID global_sid_S_1_5_20; /* local well-known domain */
 DOM_SID global_sid_S_1_1;    /* Global Domain */
 static DOM_SID global_sid_S_1_3_0;  /* Creator Owner */
-DOM_SID global_sid_S_1_5;    /* NT Authority */
+static DOM_SID global_sid_S_1_5;    /* NT Authority */
+static DOM_SID global_sid_S_1_5_2;  /* NETWORK */
 DOM_SID global_sid_system;   /* NT System */
 static DOM_SID global_sid_S_1_1_0;  /* everyone */
 
@@ -89,6 +90,7 @@ static const struct sid_map static_sid_name_map[] =
 	{ &global_sid_S_1_1_0 , "Everyone",         SID_NAME_WKN_GRP },
 	{ &global_sid_S_1_3_0 , "Creator Owner",    SID_NAME_WKN_GRP },
 	{ &global_sid_S_1_5   , "NT Authority",     SID_NAME_DOMAIN },
+	{ &global_sid_S_1_5_2 , "NETWORK",          SID_NAME_WKN_GRP },
 	{ &global_sid_system  , "SYSTEM",           SID_NAME_WKN_GRP },
 	{ &global_sam_sid     , global_sam_name,    SID_NAME_DOMAIN },
 	{ &global_member_sid  , global_myworkgroup, SID_NAME_DOMAIN },
@@ -232,6 +234,7 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_S_1_1_0 , "S-1-1-0" );
 	string_to_sid(&global_sid_S_1_3_0 , "S-1-3-0" );
 	string_to_sid(&global_sid_S_1_5   , "S-1-5"   );
+	string_to_sid(&global_sid_S_1_5_2 , "S-1-5-2" );
 	string_to_sid(&global_sid_system  , "S-1-5-18");
 
 	global_sid_everyone = &global_sid_S_1_1_0;
@@ -461,6 +464,39 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
 
 	DEBUG(5,("map_domain_name_to_sid: mapping to %s not known\n",
 		  (*nt_domain)));
+	return False;
+}
+
+/**************************************************************************
+ turns a well known / domain SID into a name and type.
+***************************************************************************/
+BOOL map_wk_sid_to_name(const DOM_SID *sid, char *nt_domain, uint32 *type)
+{
+	fstring sid_str;
+	int i = 0;
+	sid_to_string(sid_str, sid);
+
+	DEBUG(5, ("map_wk_sid_to_name: %s\n", sid_str));
+
+	for (i = 0; i < num_maps; i++)
+	{
+		sid_to_string(sid_str, sid_name_map[i]->sid);
+		DEBUG(15, ("  compare: %s\n", sid_str));
+		if (sid_equal(sid_name_map[i]->sid, sid))
+		{
+			if (nt_domain)
+				fstrcpy(nt_domain, sid_name_map[i]->name);
+			if (type)
+				*type = sid_name_map[i]->type;
+			DEBUG(5, ("  found %s %d\n", sid_name_map[i]->name,
+				  sid_name_map[i]->type));
+			return True;
+		}
+	}
+
+	sid_to_string(sid_str, sid);
+	DEBUG(1, ("map_wk_sid_to_name: sid %s not found\n", sid_str));
+
 	return False;
 }
 

@@ -370,14 +370,18 @@ uint32 _lsa_lookup_sids(const POLICY_HND * hnd,
 		memset(dom_name, 0, sizeof(dom_name));
 		memset(name, 0, sizeof(name));
 
-		if (map_domain_sid_to_name(&find_sid, dom_name))
+		if (map_wk_sid_to_name(&find_sid, dom_name, &sid_name_use))
 		{
-			sid_name_use = SID_NAME_DOMAIN;
 			/*
 			 * it is currently better to put
 			 * the name also here
 			 */
 			fstrcpy(name, dom_name);
+			if (sid_name_use == SID_NAME_WKN_GRP)
+			{
+				sid_split_rid(&find_sid, &rid);
+				map_domain_sid_to_name(&find_sid, dom_name);
+			}
 		}
 		else if (sid_split_rid(&find_sid, &rid) &&
 			 map_domain_sid_to_name(&find_sid, dom_name))
