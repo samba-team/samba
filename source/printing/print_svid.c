@@ -79,9 +79,12 @@ static void populate_printers(void)
 			/* add it to the cache */
 			if ((ptmp = malloc(sizeof (*ptmp))) != NULL) {
 				ZERO_STRUCTP(ptmp);
-				ptmp->name = strdup(name);
+				if((ptmp->name = strdup(name)) == NULL)
+					DEBUG(0,("populate_printers: malloc fail in strdup !\n"));
 				ptmp->next = printers;
 				printers = ptmp;
+			} else {
+				DEBUG(0,("populate_printers: malloc fail for ptmp\n"));
 			}
 		}
 		pclose(fp);

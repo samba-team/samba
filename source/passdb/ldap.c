@@ -433,6 +433,11 @@ static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *valu
 		}
 		mods[ i ]->mod_values = (char **)realloc(mods[ i ]->mod_values,
 		                                          (j+2) * sizeof( char * ));
+		if ( mods[ i ]->mod_values == NULL)
+		{
+			DEBUG(0, "make_a_mod: Memory allocation failure!\n");
+			return;
+		}
 		mods[ i ]->mod_values[ j ] = strdup(value);	
 		mods[ i ]->mod_values[ j + 1 ] = NULL;		
 	}
