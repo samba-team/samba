@@ -89,7 +89,7 @@ hex_decode(const char *str, void *data, size_t len)
     if ((l + 1) / 2 > len)
 	return -1;
 
-    for (i = 0; i < len; i++)
+    for (i = 0; i < l / 2; i++)
 	p[i] = pos(str[i * 2]) << 4 | pos(str[(i * 2) + 1]);
     return i;
 }
