@@ -175,7 +175,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 			pdb_get_bad_password_count(sam_pwent));
 		
 		hours = pdb_get_hours(sam_pwent);
-		pdb_sethexhours(temp, (const char *)hours);
+		pdb_sethexhours(temp, hours);
 		printf ("Logon hours         : %s\n", temp);
 		
 	} else if (smbpwdstyle) {
