@@ -165,6 +165,7 @@ o   Robert Dahlem <Robert.Dahlem@gmx.net>
 o   Guenther Deschner <gd@suse.com>
     * Remove hard coded attribute name in the ads ranged retrieval
       code.
+    * Add --with-libdir and --with-mandir to autoconf script.
 
 
 o   Bostjan Golob <golob@gimb.org>
