@@ -1157,8 +1157,8 @@ static void dump_sd(const char *filed, struct berval **values)
 
 	/* prepare data */
 	prs_init(&ps, values[0]->bv_len, ctx, UNMARSHALL);
-	prs_append_data(&ps, values[0]->bv_val, values[0]->bv_len);
-	ps.data_offset = 0;
+	prs_copy_data_in(&ps, values[0]->bv_val, values[0]->bv_len);
+	prs_set_offset(&ps,0);
 
 	/* parse secdesc */
 	if (!sec_io_desc("sd", &psd, &ps, 1)) {
@@ -1478,7 +1478,13 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	if (!(mods = ads_init_mods(ctx))) return ADS_ERROR(LDAP_NO_MEMORY);
 
 	bval.bv_len = sd_size;
-	bval.bv_val = prs_data_p(&ps_wire);
+	bval.bv_val = talloc(ctx, sd_size);
+	if (!bval.bv_val) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto ads_set_sd_error;
+	}
+	prs_copy_all_data_out((char *)&bval.bv_val, &ps_wire);
+
 	ads_mod_ber(ctx, &mods, attrs[0], &bval);
 	ret = ads_gen_mod(ads, dn, mods);
 
@@ -1726,8 +1732,8 @@ BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 
 	if (values[0]) {
 		prs_init(&ps, values[0]->bv_len, mem_ctx, UNMARSHALL);
-		prs_append_data(&ps, values[0]->bv_val, values[0]->bv_len);
-		ps.data_offset = 0;
+		prs_copy_data_in(&ps, values[0]->bv_val, values[0]->bv_len);
+		prs_set_offset(&ps,0);
 
 		ret = sec_io_desc("sd", sd, &ps, 1);
 	}

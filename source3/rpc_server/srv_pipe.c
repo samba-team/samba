@@ -84,8 +84,6 @@ BOOL create_next_pdu(pipes_struct *p)
 	uint32 data_space_available;
 	uint32 data_len_left;
 	prs_struct outgoing_pdu;
-	char *data;
-	char *data_from;
 	uint32 data_pos;
 
 	/*
@@ -187,25 +185,25 @@ BOOL create_next_pdu(pipes_struct *p)
 	data_pos = prs_offset(&outgoing_pdu);
 
 	/* Copy the data into the PDU. */
-	data_from = prs_data_p(&p->out_data.rdata) + p->out_data.data_sent_length;
 
-	if(!prs_append_data(&outgoing_pdu, data_from, data_len)) {
+	if(!prs_append_some_prs_data(&outgoing_pdu, &p->out_data.rdata, p->out_data.data_sent_length, data_len)) {
 		DEBUG(0,("create_next_pdu: failed to copy %u bytes of data.\n", (unsigned int)data_len));
 		prs_mem_free(&outgoing_pdu);
 		return False;
 	}
 
-	/*
-	 * Set data to point to where we copied the data into.
-	 */
-
-	data = prs_data_p(&outgoing_pdu) + data_pos;
-
 	if (p->hdr.auth_len > 0) {
 		uint32 crc32 = 0;
+		char *data;
 
 		DEBUG(5,("create_next_pdu: sign: %s seal: %s data %d auth %d\n",
 			 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, p->hdr.auth_len));
+
+		/*
+		 * Set data to point to where we copied the data into.
+		 */
+
+		data = prs_data_p(&outgoing_pdu) + data_pos;
 
 		if (auth_seal) {
 			crc32 = crc32_calc_buffer(data, data_len);
@@ -1389,17 +1387,15 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 	/* Check for buffer underflow in rpc parsing */
 
 	if ((DEBUGLEVEL >= 10) && 
-	    (p->in_data.data.data_offset != p->in_data.data.buffer_size)) {
-		int data_len = p->in_data.data.buffer_size - 
-			p->in_data.data.data_offset;
+	    (prs_offset(&p->in_data.data) != prs_data_size(&p->in_data.data))) {
+		size_t data_len = prs_data_size(&p->in_data.data) - prs_offset(&p->in_data.data);
 		char *data;
 
 		data = malloc(data_len);
 
 		DEBUG(10, ("api_rpcTNP: rpc input buffer underflow (parse error?)\n"));
 		if (data) {
-			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data,
-				   data_len);
+			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data, (uint32)data_len);
 			SAFE_FREE(data);
 		}
 
