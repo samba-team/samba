@@ -207,7 +207,7 @@ sub is_scalar_type($)
     if ($type =~ /^u?int\d+/) {
 	    return 1;
     }
-    if ($type =~ /char|short|long|NTTIME|
+    if ($type =~ /char|short|long|NTTIME|NTTIME_1sec|
 	time_t|error_status_t|boolean32|unsigned32|
 	HYPER_T|wchar_t|DATA_BLOB|WERROR/x) {
 	    return 1;

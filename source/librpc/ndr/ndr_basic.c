@@ -951,6 +951,26 @@ NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, NTTIME *t)
 }
 
 /*
+  push a NTTIME
+*/
+NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, NTTIME t)
+{
+	t /= 10000000;
+	NDR_CHECK(ndr_push_uint64(ndr, t));
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a NTTIME
+*/
+NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, NTTIME *t)
+{
+	NDR_CHECK(ndr_pull_uint64(ndr, t));
+	(*t) *= 10000000;
+	return NT_STATUS_OK;
+}
+
+/*
   push a time_t
 */
 NTSTATUS ndr_push_time_t(struct ndr_push *ndr, time_t t)
@@ -997,7 +1017,10 @@ void ndr_print_int32(struct ndr_print *ndr, const char *name, int32_t v)
 
 void ndr_print_uint64(struct ndr_print *ndr, const char *name, uint64_t v)
 {
-	ndr->print(ndr, "%-25s: 0x%08x%08x", name, (uint32_t)(v >> 32), (uint32_t)(v & 0xFFFFFFFF));
+	ndr->print(ndr, "%-25s: 0x%08x%08x (%llu)", name,
+		   (uint32_t)(v >> 32),
+		   (uint32_t)(v & 0xFFFFFFFF),
+		   v);
 }
 
 void ndr_print_int64(struct ndr_print *ndr, const char *name, int64_t v)
@@ -1034,6 +1057,11 @@ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
 void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t)
 {
 	ndr->print(ndr, "%-25s: %s", name, nt_time_string(ndr, t));
+}
+
+void ndr_print_NTTIME_1sec(struct ndr_print *ndr, const char *name, NTTIME t)
+{
+	ndr_print_NTTIME(ndr, name, t);
 }
 
 void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t)

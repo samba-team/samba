@@ -215,6 +215,8 @@ typedef struct data_blob {
 
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30 */
 typedef uint64_t NTTIME;
+/* 64 bit time (1 sec) 1601 - in the NDR blob but mapped to NTTIME  */
+#define NTTIME_1sec NTTIME
 
 /* 8 byte aligned 'hyper' type from MS IDL */
 typedef uint64_t HYPER_T;
