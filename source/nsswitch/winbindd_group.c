@@ -115,11 +115,11 @@ static BOOL winbindd_fill_grent_mem(char *server_name, DOM_SID *domain_sid,
     if (rid_mem != NULL) { free(rid_mem); }
 
     if (names != NULL) { 
-        int i;
+        int j;
 
-        for (i = 0; i < num_names; i++) {
-            if (names[i] != NULL) {
-                free(names[i]);
+        for (j = 0; j < num_names; j++) {
+            if (names[j] != NULL) {
+                free(names[j]);
             }
         }
 
@@ -458,7 +458,7 @@ enum winbindd_result winbindd_getgrent(pid_t pid, struct winbindd_gr *gr)
 
                         status =
                             samr_enum_dom_aliases(&sam_pipe->sam_dom_handle,
-                                      &start_ndx, 0x10000,
+                                      &start_ndx, 0x100000,
                                       &sam_pipe->sam_entries,
                                       &sam_pipe->num_sam_entries);
                     } else {
@@ -467,7 +467,7 @@ enum winbindd_result winbindd_getgrent(pid_t pid, struct winbindd_gr *gr)
 
                         status =
                             samr_enum_dom_groups(&sam_pipe->sam_dom_handle,
-                                                 &start_ndx, 0x10000,
+                                                 &start_ndx, 0x100000,
                                                  &sam_pipe->sam_entries,
                                                  &sam_pipe->num_sam_entries);
                     }
