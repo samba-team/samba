@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -376,6 +376,13 @@ loop:
     ret = krb5_kt_ret_keyblock (context, cursor->sp, &entry->keyblock);
     if (ret)
 	goto out;
+    /* there might be a 32 bit kvno here
+     * if it's zero, assume that the 8bit one was right,
+     * otherwise trust the new value */
+    ret = krb5_ret_int32(cursor->sp, &tmp32);
+    if (ret == 0 && tmp32 != 0) {
+	entry->vno = tmp32;
+    }
     if(start) *start = pos;
     if(end) *end = *start + 4 + len;
  out:
@@ -482,7 +489,7 @@ fkt_add_entry(krb5_context context,
 	    krb5_storage_free(emem);
 	    goto out;
 	}
-	ret = krb5_store_int8 (emem, entry->vno);
+	ret = krb5_store_int8 (emem, entry->vno % 256);
 	if(ret) {
 	    krb5_storage_free(emem);
 	    goto out;
@@ -492,6 +499,12 @@ fkt_add_entry(krb5_context context,
 	    krb5_storage_free(emem);
 	    goto out;
 	}
+	ret = krb5_store_int32 (emem, entry->vno);
+	if (ret) {
+	    krb5_storage_free(emem);
+	    goto out;
+	}
+
 	ret = krb5_storage_to_data(emem, &keytab);
 	krb5_storage_free(emem);
 	if(ret)
