@@ -1,0 +1,79 @@
+Author:       John H Terpstra <samba-bugs@samba.anu.edu.au>
+	      Copyright (C) Jeremy Allison & John H Terpstra - 1997
+Date:         June 27, 1997
+Status:       Current
+
+Subject:      Outstanding Issues, Development Goals
+===============================================================================
+
+1) Samba-1.9.17 Release commitments:
+
+- Document HOWTO for RedHat Linux (JHT)
+  + Password Caching
+  + Roving Profiles
+  + WinNT Registry changes to restore plain text passwords to NT 4.0 SP3
+- Define build options for RedHat Linux RPMs (JHT)
+- Change smb.conf file and bring into line with current RedHat Linux smb.conf
+  file but preserving original standard file locations in /usr/local tree
+	++++ DONE ++++
+- Describe dependencies data for use by RedHat in preparation of their
+  web based and X based management tools
+  + Depends on Samba_Config system using dialog package (JRA / JHT)
+- Improved printing capabilities (print queue and print processor for MS
+  Windows related stuff)
+- Clean up smbprint (JHT)
+- Document desired capabilities flags and effects (JHT)
+- Add new parameters to [globals] section to define Samba capabilities (JRA)
+  + The following SV_TYPEs to be fixed in Samba:
+     WORKSTATION
+     SERVER
+     SERVER_UNIX
+     PRINTQ_SERVER, default = False, if printers defined set to True (Auto)
+  + The following parameterized:
+     TIME_SOURCE, default = False
+     DOMAIN_MEMBER, default = False if "domain logons = False"
+                    default = True if "domain logons = True"
+     NT, default = False
+         default = True if "domain logons = True"
+     SERVER_NT, default = False
+                default = True if "domain logons = True"
+     WFW, default = True if "security = share"
+          default = False if "security = user or server" ??????????
+     POTENTIAL_BROWSER, default = False
+     WIN95_PLUS, default = False if OS_MAJOR < 4, otherwise True
+     ALTERNATE_XPORT, default = False
+     LOCAL_LIST_ONLY, default = False
+- Add new parameters to [globals] section to define Samba Major and Minor
+  version settings (JRA)
+    + Add the following:
+     OS_MAJOR, default = 0x04
+     OS_MINOR, default = 0x02
+     BROWSE_ELECTION_VERSION, default = 0x010F
+     BROWSE_CONSTANT, default = 0xAA55
+
+
+2) Post release Samba-1.9.17
+
+- Develop Web based configuration tools for Samba (Portable)
+  + Contact Dave Fenton and liaise (JHT)
+  + find willing workers (JHT)
+- Revise documentation and produce SGML format files and Makefile to produce
+  text as well as HTML output files for placement on samba web server
+
+
+3) Samba-2.0 Project
+
+- Introduce directory structure to replace smb.conf file, or produce new
+  hashing method to improve speed of parsing settings in large smb.conf
+  file sites
+- Identify performance issues (c.f. Samba-1.9.16p2)
+- Password encryption capabilities - should be added to samba?
+- Packet signing?
+- Include DFS support to allow resharing and indirection
+- Implement real OpLock support
+- Win95 and WinNT authentication services (Luke)
+- Win95 / WinNT password synchronisation (JRA)
+  + PAM support?
+- User and Group Info --> Win95 / WinNT ACLs
+- Samba WINS replication?
+- SCRAP (Simple CIFS Remote Administration Protocol) support.

@@ -1,4 +1,6 @@
-Contributor:	Various
+Contributors:	Various
+		Password Section - Copyright (C) 1997 - John H Terpstra
+		Printing Section - Copyright (C) 1997 - Matthew Harrell
 Updated:	June 27, 1997
 Status:		Current
 
