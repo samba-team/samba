@@ -36,9 +36,8 @@ static NTSTATUS dcesrv_crypto_ntlmssp_start(struct dcesrv_auth *auth, DATA_BLOB 
 	struct auth_ntlmssp_state *ntlmssp = NULL;
 	NTSTATUS status;
 
-	/* TODO: we should parse the auth_blob and remember the client
-	   hostname and target domain, then check against the auth3
-	   bind packet */
+	/* the auth_blob is ignored here, and is handled in the call
+	   to auth_ntlmssp_update() */
 	
 	status = auth_ntlmssp_start(&ntlmssp);
 
