@@ -396,7 +396,7 @@ BOOL send_keepalive(int client)
 {
   unsigned char buf[4];
 
-  buf[0] = 0x85;
+  buf[0] = SMBkeepalive;
   buf[1] = buf[2] = buf[3] = 0;
 
   return(write_socket_data(client,(char *)buf,4) == 4);
@@ -592,7 +592,7 @@ static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int 
     len = smb_len(inbuf);
     msg_type = CVAL(inbuf,0);
 
-    if (msg_type == 0x85) 
+    if (msg_type == SMBkeepalive) 
       DEBUG(5,("Got keepalive packet\n"));
   }
 
@@ -620,7 +620,7 @@ ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
       return len;
 
     /* Ignore session keepalives. */
-    if(CVAL(inbuf,0) != 0x85)
+    if(CVAL(inbuf,0) != SMBkeepalive)
       break;
   }
 
@@ -702,7 +702,7 @@ BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
     }
 
     /* Ignore session keepalive packets. */
-    if(CVAL(buffer,0) != 0x85)
+    if(CVAL(buffer,0) != SMBkeepalive)
       break;
   }
   show_msg(buffer);
