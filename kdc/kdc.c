@@ -81,19 +81,26 @@ as_rep(krb5_context context,
     int use_etype;
     EncTicketPart *et = calloc(1, sizeof(*et));
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
+    krb5_principal client_princ;
 
-    /* PREAUTH */
+    client = db_fetch(context, b->cname, b->realm);
+    server = db_fetch(context, b->sname, b->realm);
 
-#ifdef PREAUTH_ENC_TIMESTAMP
+    if(client == NULL)
+	return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+    if(server == NULL)
+	return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+
+    principalname2krb5_principal (&client_princ, *(b->cname), b->realm);
+
+    /* XXX Check for pa_enc_timestamp */
+    
     if(req->padata == NULL || req->padata->len < 1 ||
        req->padata->val->padata_type != pa_enc_timestamp) {
 	PA_DATA foo;
 	u_char buf[16];
 	int len;
 	krb5_data foo_data;
-	krb5_principal princ;
-
-	principalname2krb5_principal (&princ, *(b->cname), b->realm);
 
 	foo.padata_type = pa_enc_timestamp;
 	foo.padata_value.length = 0;
@@ -105,26 +112,45 @@ as_rep(krb5_context context,
 	foo_data.length = len;
 	foo_data.data   = buf + sizeof(buf) - len;
 
-	krb5_mk_error (princ,
+	krb5_mk_error (client_princ,
 		       KRB5KDC_ERR_PREAUTH_REQUIRED,
 		       "Need to use PA-ENC-TIMESTAMP",
 		       &foo_data,
 		       data);
 
 	return 0;
+    } else {
+	krb5_data ts_data;
+	PA_ENC_TS_ENC p;
+	int len;
+
+	krb5_decrypt (context,
+		      req->padata->val->padata_value.data,
+		      req->padata->val->padata_value.length,
+		      &client->keyblock,
+		      &ts_data);
+	len = decode_PA_ENC_TS_ENC(ts_data.data,
+				   ts_data.length,
+				   &p);
+	if (len < 0) {
+	    krb5_mk_error (client_princ,
+			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
+			   "Couldn't decode",
+			   NULL,
+			   data);
+	    return 0;
+	}
+	if (kdc_time - p.patimestamp > 300) {
+	    krb5_mk_error (client_princ,
+			   KRB5KDC_ERR_PREAUTH_FAILED,
+			   "Too large time skew",
+			   NULL,
+			   data);
+	    return 0;
+	}
+
     }
-#endif /* PREAUTH_ENC_TIMESTAMP */
 
-    client = db_fetch(context, b->cname, b->realm);
-    server = db_fetch(context, b->sname, b->realm);
-
-    if(client == NULL)
-	return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-    if(server == NULL)
-	return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
-
-    /* XXX Check for pa_enc_timestamp */
-    
     if(b->etype.len == 0)
 	return KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
     use_etype = b->etype.val[0];
