@@ -3948,9 +3948,6 @@ static void process(void)
       {
         service_load_counter = counter;
 
-        /* remove all unused services.  reduce some of that memory overhead. */
-        lp_killunused(snum_used);
-
         /* reload services, if files have changed. */
 	    reload_services(True);
       }
