@@ -366,19 +366,17 @@ void *map_file(char *fname, size_t size)
 	size_t s2 = 0;
 	void *p = NULL;
 #ifdef HAVE_MMAP
-	if (lp_use_mmap()) {
-		int fd;
-		fd = open(fname, O_RDONLY, 0);
-		if (fd == -1) {
-			DEBUG(2,("Failed to load %s - %s\n", fname, strerror(errno)));
-			return NULL;
-		}
-		p = mmap(NULL, size, PROT_READ, MAP_SHARED|MAP_FILE, fd, 0);
-		close(fd);
-		if (p == MAP_FAILED) {
-			DEBUG(1,("Failed to mmap %s - %s\n", fname, strerror(errno)));
-			return NULL;
-		}
+	int fd;
+	fd = open(fname, O_RDONLY, 0);
+	if (fd == -1) {
+		DEBUG(2,("Failed to load %s - %s\n", fname, strerror(errno)));
+		return NULL;
+	}
+	p = mmap(NULL, size, PROT_READ, MAP_SHARED|MAP_FILE, fd, 0);
+	close(fd);
+	if (p == MAP_FAILED) {
+		DEBUG(1,("Failed to mmap %s - %s\n", fname, strerror(errno)));
+		return NULL;
 	}
 #endif
 	if (!p) {
