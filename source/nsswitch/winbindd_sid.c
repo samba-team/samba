@@ -505,8 +505,9 @@ struct uid2sid_state {
 
 static void uid2sid_uid2name_recv(void *private, BOOL success,
 				  const char *username);
-static void uid2sid_lookupsid_recv(void *private, BOOL success,
-				   const DOM_SID *sid, enum SID_NAME_USE type);
+static void uid2sid_lookupname_recv(void *private, BOOL success,
+				    const DOM_SID *sid,
+				    enum SID_NAME_USE type);
 static void uid2sid_idmap_set_mapping_recv(void *private, BOOL success);
 
 enum winbindd_result winbindd_uid_to_sid_async(struct winbindd_cli_state *state)
@@ -577,22 +578,16 @@ static void uid2sid_uid2name_recv(void *private, BOOL success,
 
 	winbindd_lookup_name_async(state->cli_state->mem_ctx,
 				   domain->name, username,
-				   uid2sid_lookupsid_recv, state);
+				   uid2sid_lookupname_recv, state);
 }
 
-static void uid2sid_lookupsid_recv(void *private, BOOL success,
-				   const DOM_SID *sid, enum SID_NAME_USE type)
+static void uid2sid_lookupname_recv(void *private, BOOL success,
+				    const DOM_SID *sid, enum SID_NAME_USE type)
 {
 	struct uid2sid_state *state = private;
 	unid_t id;
 
 	if ((!success) || (type != SID_NAME_USER)) {
-		state->cli_state->response.result = WINBINDD_ERROR;
-		request_finished(state->cli_state);
-		return;
-	}
-
-	if (type != SID_NAME_USER) {
 		state->cli_state->response.result = WINBINDD_ERROR;
 		request_finished(state->cli_state);
 		return;
@@ -619,23 +614,37 @@ static void uid2sid_idmap_set_mapping_recv(void *private, BOOL success)
 }
 
 /* Convert a gid to a sid */
-enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
+
+struct gid2sid_state {
+	struct winbindd_cli_state *cli_state;
+	gid_t gid;
+	fstring name;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+};
+
+static void gid2sid_gid2name_recv(void *private, BOOL success,
+				  const char *groupname);
+static void gid2sid_lookupname_recv(void *private, BOOL success,
+				    const DOM_SID *sid,
+				    enum SID_NAME_USE type);
+static void gid2sid_idmap_set_mapping_recv(void *private, BOOL success);
+
+enum winbindd_result winbindd_gid_to_sid_async(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS status;
-	struct group *grp = NULL;
-	enum SID_NAME_USE type;
-	unid_t id;
-	struct winbindd_domain *domain;
+	struct gid2sid_state *gid2sid_state;
 
 	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.gid));
 
-	status = idmap_gid_to_sid(&sid, state->request.data.gid, 0);
+	status = idmap_gid_to_sid(&sid, state->request.data.gid,
+				  ID_QUERY_ONLY | ID_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(status)) {
 		sid_to_string(state->response.data.sid.sid, &sid);
-		state->response.data.sid.type = SID_NAME_DOM_GRP;
+		state->response.data.sid.type = SID_NAME_USER;
 		return WINBINDD_OK;
 	}
 
@@ -646,42 +655,86 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	}
 
 	/* The only chance that this is correct is that winbind trusted
-	 * domains only = yes, and the group exists in nss and the domain. */
+	 * domains only = yes, and the user exists in nss and the domain. */
 
 	if (!lp_winbind_trusted_domains_only()) {
 		return WINBINDD_ERROR;
 	}
 
-	grp = getgrgid(state->request.data.gid);
-	if (grp == NULL)
-		return WINBINDD_ERROR;
+	/* The only chance that this is correct is that winbind trusted
+	 * domains only = yes, and the user exists in nss and the domain. */
 
-	domain = find_our_domain();
-	if (domain == NULL) {
-		DEBUG(0,("winbindd_gid_to_sid: can't find my own domain!\n"));
+	gid2sid_state = TALLOC_ZERO_P(state->mem_ctx, struct gid2sid_state);
+	if (gid2sid_state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
 		return WINBINDD_ERROR;
 	}
 
-	if ( !winbindd_lookup_sid_by_name(state->mem_ctx, domain,
-					  domain->name, grp->gr_name,
-					  &sid, &type) )
-		return WINBINDD_ERROR;
+	gid2sid_state->cli_state = state;
+	gid2sid_state->gid = state->request.data.gid;
 
-	if ( type!=SID_NAME_DOM_GRP && type!=SID_NAME_ALIAS )
-		return WINBINDD_ERROR;
+	return winbindd_gid2name_async(state->mem_ctx, state->request.data.gid,
+				       gid2sid_gid2name_recv, gid2sid_state);
+}
+
+static void gid2sid_gid2name_recv(void *private, BOOL success,
+				  const char *username)
+{
+	struct gid2sid_state *state = private;
+	struct winbindd_domain *domain;
+
+	DEBUG(10, ("gid2sid: gid %lu has name %s\n",
+		   (unsigned long)state->gid, username));
+
+	fstrcpy(state->name, username);
+
+	domain = find_our_domain();
+
+	if ((!success) || (domain == NULL)) {
+		state->cli_state->response.result = WINBINDD_ERROR;
+		request_finished(state->cli_state);
+		return;
+	}
+
+	winbindd_lookup_name_async(state->cli_state->mem_ctx,
+				   domain->name, username,
+				   gid2sid_lookupname_recv, state);
+}
+
+static void gid2sid_lookupname_recv(void *private, BOOL success,
+				    const DOM_SID *sid, enum SID_NAME_USE type)
+{
+	struct gid2sid_state *state = private;
+	unid_t id;
+
+	if ((!success) ||
+	    ((type != SID_NAME_DOM_GRP) && (type!=SID_NAME_ALIAS))) {
+		state->cli_state->response.result = WINBINDD_ERROR;
+		request_finished(state->cli_state);
+		return;
+	}
+
+	state->sid = *sid;
+	state->type = type;
+
+	id.gid = state->gid;
+	idmap_set_mapping_async(state->cli_state->mem_ctx, sid, id, ID_GROUPID,
+				gid2sid_idmap_set_mapping_recv, state );
+}
+
+static void gid2sid_idmap_set_mapping_recv(void *private, BOOL success)
+{
+	struct gid2sid_state *state = private;
 
 	/* don't fail if we can't store it */
 
-	id.gid = grp->gr_gid;
-	idmap_set_mapping( &sid, id, ID_GROUPID );
-
-	sid_to_string(state->response.data.sid.sid, &sid);
-	state->response.data.sid.type = SID_NAME_DOM_GRP;
-
-	return WINBINDD_OK;
+	sid_to_string(state->cli_state->response.data.sid.sid, &state->sid);
+	state->cli_state->response.data.sid.type = state->type;
+	state->cli_state->response.result = WINBINDD_OK;
+	request_finished(state->cli_state);
 }
 
-enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_allocate_rid_async(struct winbindd_cli_state *state)
 {
 	if ( !state->privileged ) {
 		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
@@ -689,6 +742,13 @@ enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
+	return async_request(state->mem_ctx, idmap_child(),
+			     &state->request, &state->response,
+			     request_finished_cont, state);
+}
+
+enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
+{
 	/* We tell idmap to always allocate a user RID. There might be a good
 	 * reason to keep RID allocation for users to even and groups to
 	 * odd. This needs discussion I think. For now only allocate user

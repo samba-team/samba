@@ -271,8 +271,8 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid_async, "SID_TO_UID" },
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid_async, "SID_TO_GID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid_async, "UID_TO_SID" },
-	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
-	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
+	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid_async, "GID_TO_SID" },
+	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid_async, "ALLOCATE_RID" },
 	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid_async,
 	  "ALLOCATE_RID_AND_GID" },
 
