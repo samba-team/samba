@@ -1077,7 +1077,7 @@ WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
  */
 WERROR cli_spoolss_deleteprinterdriverex(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx, const char *arch,
-                                         const char *driver, uint32 version)
+                                         const char *driver, int version)
 {
 	prs_struct    qbuf, rbuf;
 	SPOOL_Q_DELETEPRINTERDRIVEREX q;
