@@ -72,6 +72,7 @@ static const known_sid_users builtin_groups[] = {
 	{ BUILTIN_ALIAS_RID_ADMINS, SID_NAME_ALIAS, "Administrators" },
 	{ BUILTIN_ALIAS_RID_USERS, SID_NAME_ALIAS, "Users" },
 	{ BUILTIN_ALIAS_RID_GUESTS, SID_NAME_ALIAS, "Guests" },
+	{ BUILTIN_ALIAS_RID_POWER_USERS, SID_NAME_ALIAS, "Power Users" },
 	{ BUILTIN_ALIAS_RID_ACCOUNT_OPS, SID_NAME_ALIAS, "Account Operators" },
 	{ BUILTIN_ALIAS_RID_SYSTEM_OPS, SID_NAME_ALIAS, "Server Operators" },
 	{ BUILTIN_ALIAS_RID_PRINT_OPS, SID_NAME_ALIAS, "Print Operators" },
