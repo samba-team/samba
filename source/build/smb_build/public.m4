@@ -125,8 +125,7 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 	ADD_OBJ_FILES => ][STR2ARRAY([$3])][,
 	REQUIRED_LIBRARIES => ][STR2ARRAY([$4])][,
 	REQUIRED_SUBSYSTEMS => ][STR2ARRAY([$5])][,
-	ENABLE => \"$[SMB_SUBSYSTEM_ENABLE_][$1]\",
-	NOPROTO => \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\"
+	ENABLE => \"YES\"
 };
 # End Subsystem $1
 ###################################
@@ -139,9 +138,8 @@ dnl		2:default_build
 dnl		)
 AC_DEFUN([SMB_EXT_LIB_ENABLE],
 [
-	[SMB_EXT_LIB_ENABLE_][$1]="$2"
-
-SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
+[SMB_EXT_LIB_ENABLE_][$1]="$2"
+SMB_INFO_ENABLES="$SMB_INFO_ENABLES
 \$INPUT{EXT_LIB_$1}{ENABLE} = \"$2\";"
 ])
 
@@ -209,10 +207,6 @@ dnl		)
 AC_DEFUN([SMB_EXT_LIB],
 [
 
-	if test -z "$[SMB_EXT_LIB_ENABLE_][$1]"; then
-		[SMB_EXT_LIB_ENABLE_][$1]="NO";
-	fi
-
 SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
 ###################################
 # Start Ext Lib $1
@@ -222,8 +216,7 @@ SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
 	LIBS => ][STR2ARRAY([$2])][,
 	CFLAGS => ][STR2ARRAY([$3])][,
 	CPPFLAGS => ][STR2ARRAY([$4])][,
-	LDFLAGS => ][STR2ARRAY([$5])][,
-	ENABLE => \"$[SMB_EXT_LIB_ENABLE_][$1]\"
+	LDFLAGS => ][STR2ARRAY([$5])][
 };
 # End Ext Lib $1
 ###################################
@@ -237,9 +230,7 @@ dnl		2:default_build
 dnl		)
 AC_DEFUN([SMB_LIBRARY_ENABLE],
 [
-	[SMB_LIBRARY_ENABLE_][$1]="$2"
-
-SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
+SMB_INFO_ENABLES="$SMB_INFO_ENABLES
 \$INPUT{$1}{ENABLE} = \"$2\";"
 ])
 
@@ -251,7 +242,7 @@ AC_DEFUN([SMB_BINARY_ENABLE],
 [
 	[SMB_BINARY_ENABLE_][$1]="$2";
 
-SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
+SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 \$INPUT{$1}{ENABLE} = \"$2\";"
 ])
 
