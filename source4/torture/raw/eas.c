@@ -99,7 +99,7 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	const char *fname = BASEDIR "\\ea.txt";
 	BOOL ret = True;
-	int fnum;
+	int fnum = -1;
 
 	printf("TESTING SETFILEINFO EA_SET\n");
 

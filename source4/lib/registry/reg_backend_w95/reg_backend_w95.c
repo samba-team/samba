@@ -320,7 +320,7 @@ static WERROR w95_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	DWORD i;
 	DWORD offset = 0;
 	RGDB_KEY *rgdb_key = LOCN_RGDB_KEY((CREG *)k->hive->backend_data, rgkn_key->id.rgdb, rgkn_key->id.id);
-	RGDB_VALUE *curval;
+	RGDB_VALUE *curval = NULL;
 
 	if(!rgdb_key) return WERR_FOOBAR;
 	

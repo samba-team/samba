@@ -2671,7 +2671,7 @@ static char **completion_fn(const char *text, int start, int end)
 			return NULL;
 	} else {
 		char **matches;
-		int i, len, samelen, count=1;
+		int i, len, samelen = 0, count=1;
 
 		matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
 		if (!matches) return NULL;

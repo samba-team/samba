@@ -159,7 +159,7 @@ static int binary_net(int argc, const char **argv)
 	int argc_new;
 	const char **argv_new;
 	TALLOC_CTX *mem_ctx;
-	struct net_context *ctx;
+	struct net_context *ctx = NULL;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP

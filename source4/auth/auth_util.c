@@ -500,26 +500,28 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 					      union netr_Validation *validation) 
 {
 	NTSTATUS nt_status;
-	struct netr_SamBaseInfo *base;
+	struct netr_SamBaseInfo *base = NULL;
 	switch (validation_level) {
-		case 2:
-			if (!validation || !validation->sam2) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			base = &validation->sam2->base;
+	case 2:
+		if (!validation || !validation->sam2) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam2->base;
 		break;
-		case 3:
-			if (!validation || !validation->sam3) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			base = &validation->sam3->base;
+	case 3:
+		if (!validation || !validation->sam3) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam3->base;
 		break;
-		case 6:
-			if (!validation || !validation->sam6) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			base = &validation->sam6->base;
+	case 6:
+		if (!validation || !validation->sam6) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam6->base;
 		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	nt_status = make_server_info(mem_ctx, server_info, internal_username);

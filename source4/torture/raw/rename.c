@@ -46,7 +46,7 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_rename io;
 	NTSTATUS status;
 	BOOL ret = True;
-	int fnum;
+	int fnum = -1;
 	const char *fname1 = BASEDIR "\\test1.txt";
 	const char *fname2 = BASEDIR "\\test2.txt";
 	union smb_open op;

@@ -245,7 +245,7 @@ static char **reg_complete_command(const char *text, int end)
 {
 	/* Complete command */
 	char **matches;
-	int i, len, samelen, count=1;
+	int i, len, samelen=0, count=1;
 
 	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
 	if (!matches) return NULL;
