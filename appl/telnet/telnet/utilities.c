@@ -859,20 +859,20 @@ printsub(direction, pointer, length)
     void
 EmptyTerminal()
 {
-    fd_set	o;
+    fd_set	outs;
 
-    FD_ZERO(&o);
+    FD_ZERO(&outs);
 
     if (TTYBYTES() == 0) {
-	FD_SET(tout, &o);
-	(void) select(tout+1, (fd_set *) 0, &o, (fd_set *) 0,
-			(struct timeval *) 0);	/* wait for TTLOWAT */
+	FD_SET(tout, &outs);
+	(void) select(tout+1, 0, &outs, 0,
+		      (struct timeval *) 0); /* wait for TTLOWAT */
     } else {
 	while (TTYBYTES()) {
 	    (void) ttyflush(0);
-	    FD_SET(tout, &o);
-	    (void) select(tout+1, (fd_set *) 0, &o, (fd_set *) 0,
-				(struct timeval *) 0);	/* wait for TTLOWAT */
+	    FD_SET(tout, &outs);
+	    (void) select(tout+1, 0, &outs, 0,
+			  (struct timeval *) 0); /* wait for TTLOWAT */
 	}
     }
 }
