@@ -2707,9 +2707,12 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	            printer->info_2->sharename);
 
 	/* publish it */
-	ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
-	if (LDAP_ALREADY_EXISTS == ads_rc.err.rc)
-		ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx, &mods);
+	ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx, &mods);
+	if (ads_rc.err.rc == LDAP_NO_SUCH_OBJECT)
+		ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
+
+	if (!ADS_ERR_OK(ads_rc))
+		DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, ads_errstr(ads_rc)));
 	
 	talloc_destroy(ctx);
 
@@ -2831,11 +2834,9 @@ WERROR check_published_printers(void)
 {
 	ADS_STATUS ads_rc;
 	ADS_STRUCT *ads = NULL;
-	void *res = NULL;
 	int snum;
 	int n_services = lp_numservices();
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	WERROR win_rc;
 
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
@@ -2859,27 +2860,12 @@ WERROR check_published_printers(void)
 		if (!(lp_snum_ok(snum) && lp_print_ok(snum)))
 			continue;
 
-		if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2,
-		                                 lp_servicename(snum))) ||
-		    !(printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED))
-			goto next;
+		if (W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2,
+		                                lp_servicename(snum))) &&
+		    (printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED))
+			nt_printer_publish_ads(ads, printer);
 
-		DEBUG(5, ("checking directory for printer %s\n", printer->info_2->printername));
-		ads_rc = ads_find_printer_on_server(ads, &res,
-				printer->info_2->sharename, global_myname());
-		if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
-			DEBUG(5, ("printer %s is in directory\n", printer->info_2->printername));
-			goto next;
-		}
-
-		win_rc = nt_printer_publish_ads(ads, printer);
-		if (!W_ERROR_IS_OK(win_rc))
-			DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, dos_errstr(win_rc)));
-
-	next:
 		free_a_printer(&printer, 2);
-		ads_msgfree(ads, res);
-		res = NULL;
 	}
 
 	ads_destroy(&ads);
