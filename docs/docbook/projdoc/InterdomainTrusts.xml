@@ -101,9 +101,10 @@ security domains in similar manner to MS Windows NT4 style domains.
 <para>
 There are two steps to creating an interdomain trust relationship.  To effect a two-way trust
 relationship it is necessary for each domain administrator to create a trust account for the 
-other domain to use in verifying security credentials.</para>
+other domain to use in verifying security credentials.
 
 <indexterm><primary>Interdomain Trusts</primary><secondary>creating</secondary></indexterm>
+</para>
 
 <sect2>
 <title>Creating an NT4 Domain Trust</title>
@@ -123,12 +124,12 @@ The password needs to be typed twice (for standard confirmation).
 
 </sect2>
 
-<indexterm><primary>Interdomain Trusts</primary><secondary>Completing</secondary></indexterm>
 
 <sect2>
 <title>Completing an NT4 Domain Trust</title>
 
 <para>
+<indexterm><primary>Interdomain Trusts</primary><secondary>completing</secondary></indexterm>
 A trust relationship will work only when the other (trusting) domain makes the appropriate connections
 with the trusted domain. To consummate the trust relationship the administrator will launch the
 Domain User Manager, from the menu select Policies, then select Trust Relationships, then click on the

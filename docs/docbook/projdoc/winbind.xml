@@ -589,7 +589,7 @@ include the following entries in the [global] section:
 <para><smbconfexample>
 		<title>smb.conf for winbind set-up</title>
 <smbconfsection>[global]</smbconfsection>
-     &lt;...&gt;
+<member>...</member>
 <smbconfcomment> separate domain and username with '+', like DOMAIN+username</smbconfcomment>
 <smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
 <smbconfcomment> use uids from 10000 to 20000 for domain users</smbconfcomment>

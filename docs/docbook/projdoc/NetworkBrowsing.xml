@@ -761,9 +761,11 @@ where:
 <variablelist>
 <varlistentry><term><replaceable>a.b.c.d</replaceable> and 
 <replaceable>e.f.g.h</replaceable></term>
-<indexterm><primary>LMB</primary><see>Local Master Browser</see></indexterm>
+<listitem><para>
+		<indexterm><primary>LMB</primary><see>Local Master Browser</see></indexterm>
 <indexterm><primary>Local Master Browser</primary></indexterm>
-<listitem><para>is either the LMB (Local Master Browser) IP address
+
+		is either the LMB (Local Master Browser) IP address
 or the broadcast address of the remote network.
 ie: the LMB is at 192.168.1.10, or the address
 could be given as 192.168.1.255 where the netmask
@@ -1392,7 +1394,7 @@ are done the browse lists look like :
 	<tgroup	cols="3">
 		<colspec align="left"/>
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify"/>
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>
 	</thead>
@@ -1431,7 +1433,7 @@ the browse lists look like.
 	<tgroup cols="3" align="left">
 		<colspec align="left"/>
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify"/>
 
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>
@@ -1470,7 +1472,7 @@ are removed or shut off) the browse lists will look like :
 	<tgroup cols="3" align="left">
 		<colspec align="left"/>
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify"/>
 
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>

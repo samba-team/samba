@@ -1202,14 +1202,14 @@ The choices are:
 
 <variablelist>
 	<varlistentry>
-		<term>Local profiles:</term> <para>-</para>
+		<term>Local profiles:</term> 
 		<listitem><para>
 		I know of no registry keys that will allow auto-deletion of LOCAL profiles on log out
 		</para></listitem>
 	</varlistentry>
 	
 	<varlistentry>
-		<term>Roaming profiles:</term> <para>-</para>
+		<term>Roaming profiles:</term> 
 		<listitem><para>
 		As a user logs onto the network a centrally stored profile is copied to the workstation
 		to form a local profile. This local profile will persist (remain on the workstation disk)
@@ -1225,7 +1225,7 @@ The <emphasis>Roaming Profile</emphasis> choices are:
 
 <variablelist>
 	<varlistentry>
-		<term>Personal Roaming profiles</term> <para>-</para>
+		<term>Personal Roaming profiles</term> 
 		<listitem><para>
 		These are typically stored in a profile share on a central (or conveniently located
 		local) server.
@@ -1238,12 +1238,12 @@ The <emphasis>Roaming Profile</emphasis> choices are:
 	</varlistentry>
 
 	<varlistentry>
-		<term>Group profiles</term> <para>-</para>
+		<term>Group profiles</term> 
 		<listitem><para>These are loaded from a central profile server</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
-		<term>Mandatory profiles</term> <para>-</para>
+		<term>Mandatory profiles</term> 
 		<listitem><para>
 		Mandatory profiles can be created for a user as well as for any group that a user
 		is a member of. Mandatory profiles can NOT be changed by ordinary users. Only the administrator

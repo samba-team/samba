@@ -87,14 +87,14 @@
 	</xsl:element>
 </xsl:template>
 
-<xsl:template match="smbconfexample/smbconfcomment">
+<xsl:template match="smbconfexample/smbconfcomment|smbconfblock/smbconfcomment">
 	<xsl:element name="member">
 		<xsl:text># </xsl:text>
 		<xsl:apply-templates/>
 	</xsl:element>
 </xsl:template>
 
-<xsl:template match="smbconfexample/smbconfsection">
+<xsl:template match="smbconfexample/smbconfsection|smbconfblock/smbconfsection">
 	<xsl:element name="member">
 		<xsl:text> </xsl:text>
 	</xsl:element>

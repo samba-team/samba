@@ -157,9 +157,6 @@ related to printing are used in Samba. See also the
 &smb.conf; man page for detailed explanations:
 </para>
 
-<formalpara>
-	<title>List of printing related parameters in Samba 3</title>
-
 <para>Global level parameters: <smbconfoption><name>addprinter command</name></smbconfoption>, 
 <smbconfoption><name>deleteprinter command</name></smbconfoption>,
 <smbconfoption><name>disable spoolss</name></smbconfoption>,
@@ -190,7 +187,6 @@ related to printing are used in Samba. See also the
 <smbconfoption><name>queueresume command</name></smbconfoption>,
 <smbconfoption><name>total print jobs</name></smbconfoption>.
 </para>
-</formalpara>
 
 <para>
 Samba's printing support implements the Microsoft Remote Procedure

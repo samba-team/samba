@@ -99,12 +99,14 @@ as follows:
 
 </sect2>
 
+<sect2>
+	<title>New Backends</title>
+
 <para>
 Samba-3 introduces the following new password backend capabilities:
 </para>
 
-<sect2>
-	<title>New Backends</title>
+
 
 <variablelist>
 	<varlistentry><term>tdbsam:</term>
@@ -1140,7 +1142,7 @@ access to attrs=lmPassword,ntPassword
 				<title>Attributes in the sambaSamAccount objectclass (LDAP)</title>
 			<tgroup cols="2" align="justify">
 					<colspec align="left"/>
-					<colspec align="justify" width="1*"/>
+					<colspec align="justify"/>
 			<tbody>
 				<row><entry><constant>sambaLMPassword</constant></entry><entry>the LANMAN password 16-byte hash stored as a character
 representation of a hexadecimal string.</entry></row>
@@ -1377,7 +1379,7 @@ Refer to the <command>logon home</command> parameter in the &smb.conf; man page 
 				<title>Basic smb.conf options for MySQL passdb backend</title>
 				<tgroup cols="2">
 					<colspec align="left"/>
-					<colspec align="justify" width="1*"/>
+					<colspec align="justify"/>
 				<thead>
 					<row><entry>Field</entry><entry>Contents</entry></row>
 				</thead>
@@ -1410,7 +1412,7 @@ Refer to the <command>logon home</command> parameter in the &smb.conf; man page 
 				<tgroup cols="3" align="justify">
 					<colspec align="left"/>
 					<colspec align="left"/>
-					<colspec align="justify" width="1*"/>
+					<colspec align="justify"/>
 			<thead>		
 				<row><entry>Field</entry><entry>Type</entry><entry>Contents</entry></row>
 			</thead>
@@ -1559,10 +1561,10 @@ Refer to the <command>logon home</command> parameter in the &smb.conf; man page 
 
 	<para>
 		<smbconfblock>
-	[globals]
-		...
+			<smbconfsection>[globals]</smbconfsection>
+			<member>...</member>
 <smbconfoption><name>passdb backend</name><value>tdbsam, smbpasswd</value></smbconfoption>
-		...
+			<member>...</member>
 	</smbconfblock>
 	</para>
 

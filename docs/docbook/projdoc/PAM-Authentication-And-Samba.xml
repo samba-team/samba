@@ -685,7 +685,7 @@ Options recognized by this module are as follows:
 	<title>Options recognized by pam_smbpass</title>
 	<tgroup cols="2" align="left">
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify"/>
 	<tbody>
 		<row><entry>debug</entry><entry>log more debugging info</entry></row>
 		<row><entry>audit</entry><entry>like debug, but also logs unknown usernames</entry></row>

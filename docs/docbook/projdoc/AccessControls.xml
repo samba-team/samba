@@ -165,11 +165,11 @@ at how Samba helps to bridge the differences.
 			</listitem>
 		</varlistentry>
 
-		<indexterm><primary>8.3</primary><secondary>file names</secondary></indexterm>
 		<varlistentry>
 			<term>Case Sensitivity</term>
 			<listitem>
 		<para>
+		<indexterm><primary>8.3</primary><secondary>file names</secondary></indexterm>
 		MS Windows file names are generally upper case if made up of 8.3 (ie: 8 character file name
 		and 3 character extension. If longer than 8.3 file names are Case Preserving, and Case
 		Insensitive.
@@ -231,13 +231,14 @@ at how Samba helps to bridge the differences.
 			</listitem>
 		</varlistentry>
 
-		<indexterm><primary>Links</primary><secondary>hard</secondary></indexterm>
-		<indexterm><primary>Links</primary><secondary>soft</secondary></indexterm>
-		<indexterm><primary>Short-Cuts</primary></indexterm>
 		<varlistentry>
 			<term>Links and Short-Cuts</term>
 			<listitem>
 		<para>
+		<indexterm><primary>Links</primary><secondary>hard</secondary></indexterm>
+		<indexterm><primary>Links</primary><secondary>soft</secondary></indexterm>
+		<indexterm><primary>Short-Cuts</primary></indexterm>
+
 		MS Windows make use of "links and Short-Cuts" that are actually special types of files that will
 		redirect an attempt to execute the file to the real location of the file. UNIX knows of file and directory
 		links, but they are entirely different from what MS Windows users are used to.
@@ -404,7 +405,7 @@ Before using any of the following options please refer to the man page for &smb.
 	<table frame='all' pgwide='0'><title>User and Group Based Controls</title>
 	<tgroup cols='2'>
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify"/>
 		<thead>
 		<row>
 			<entry align="center">Control Parameter</entry>
@@ -498,7 +499,7 @@ Before using any of the following options please refer to the man page for &smb.
 	<table frame='all'><title>File and Directory Permission Based Controls</title>
 		<tgroup cols='2'>
 			<colspec align="left"/>
-			<colspec align="justify" width="1*"/>
+			<colspec align="justify"/>
 		<thead>
 		<row>
 			<entry align="center">Control Parameter</entry>
@@ -588,8 +589,8 @@ Before using any of the following options please refer to the man page for &smb.
 
 	<table frame='all'><title>Other Controls</title>
 	<tgroup cols='2'>
-		<colspec align="justify" width="1*"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify"/>
+		<colspec align="justify"/>
 		<thead>
 		<row>
 			<entry align="center">Control Parameter</entry>
@@ -1169,13 +1170,13 @@ are examples taken from the mailing list in recent times.
 </screen>
 			</para>
 
-			<note><para>
+			<note>
 				<para>This is the same as doing:</para>
 <screen>
 &prompt;<userinput>chown jack /foodbar</userinput>
 &prompt;<userinput>chgrp engr /foodbar</userinput>
 </screen>
-			</para></note>
+			</note>
 		</step>
 		<step>
 			<para>Now do: 

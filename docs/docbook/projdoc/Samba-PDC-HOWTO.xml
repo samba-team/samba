@@ -28,7 +28,7 @@ that in some magical way is expected to solve all ills.
 
 <figure id="domain-example"><title>An Example Domain</title>
 <mediaobject>
-<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/domain" width="4in" height="3in" scalefit="1"/></imageobject>
+<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/domain" scalefit="1"/></imageobject>
 <imageobject><imagedata fileref="projdoc/imagefiles/domain.png" scale="50" scalefit="1"/></imageobject>
 </mediaobject>
 </figure>
@@ -445,7 +445,7 @@ The basic options shown above are explained as follows:
 </para>
 
 <variablelist>
-	<varlistentry><term>passdb backend</term><para>:</para>
+	<varlistentry><term>passdb backend</term>
 		<listitem><para>
 		This contains all the user and group account information. Acceptable values for a PDC
 		are: <emphasis>smbpasswd, tdbsam, ldapsam</emphasis>. The 'guest' entry provides needed
@@ -457,7 +457,7 @@ The basic options shown above are explained as follows:
 		can not effectively be distributed and therefore should not be used.
 		</para></listitem>
 	</varlistentry>
-	<varlistentry><term>Domain Control Parameters</term><para>:</para>
+	<varlistentry><term>Domain Control Parameters</term>
 		<listitem><para>
 		The parameters <emphasis>os level, preferred master, domain master, security, 
 		encrypt passwords, domain logons</emphasis> play a central role in assuring domain
@@ -471,7 +471,7 @@ The basic options shown above are explained as follows:
 		to do this, refer to <link linkend="passdb"></link>.
 		</para></listitem>
 	</varlistentry>
-	<varlistentry><term>Environment Parameters</term><para>:</para>
+	<varlistentry><term>Environment Parameters</term>
 		<listitem><para>
 		The parameters <emphasis>logon path, logon home, logon drive, logon script</emphasis> are
 		environment support settings that help to facilitate client logon operations and that help
@@ -479,7 +479,7 @@ The basic options shown above are explained as follows:
 		to the man page information for these parameters.
 		</para></listitem>
 	</varlistentry>
-	<varlistentry><term>NETLOGON Share</term><para>:</para>
+	<varlistentry><term>NETLOGON Share</term>
 		<listitem><para>
 		The NETLOGON share plays a central role in domain logon and domain membership support.
 		This share is provided on all Microsoft domain controllers. It is used to provide logon
@@ -487,7 +487,7 @@ The basic options shown above are explained as follows:
 		tools that may be needed for logon processing. This is an essential share on a domain controller.
 		</para></listitem>
 	</varlistentry>
-	<varlistentry><term>PROFILE Share</term><para>:</para>
+	<varlistentry><term>PROFILE Share</term>
 		<listitem><para>
 		This share is used to store user desktop profiles. Eash user must have a directory at the root
 		of this share. This directory must be write enabled for the user and must be globally read enabled.

@@ -1680,7 +1680,7 @@ specific model supports):
 	<title>PPD's shipped with CUPS</title>
 	<tgroup cols="2" align="left">
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify"/>
 		<thead><row><entry>PPD file</entry><entry>Printer type</entry></row></thead>
 		<tbody>
 			<row><entry>deskjet.ppd</entry><entry>older HP inkjet printers and compatible</entry></row>
