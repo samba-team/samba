@@ -922,6 +922,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 	}
 
  done:
+ 
+ 	cli_samr_close(cli, mem_ctx, &domain_pol);
+ 	cli_samr_close(cli, mem_ctx, &connect_pol);
 	return result;
 }
 
