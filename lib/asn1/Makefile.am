@@ -103,8 +103,6 @@ check_der_LDADD = \
 
 asn1_print_LDADD = $(check_der_LDADD)
 
-TESTS = check-der
-
 CLEANFILES = lex.c parse.c parse.h krb5_asn1.h $(BUILT_SOURCES) \
 	$(gen_files) asn1_files
 
