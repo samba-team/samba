@@ -111,26 +111,6 @@ static unsigned sha1WithRSAEncryption_num[] =
     { 1, 2, 840, 113549, 1, 1, 5 };
 heim_oid heim_sha1WithRSAEncryption_oid =
 	oid_enc(sha1WithRSAEncryption_num);
-static unsigned rc2CBC_num[] =
-    { 1, 2, 840, 113549, 3, 2 };
-heim_oid heim_rc2CBC_oid =
-	oid_enc(rc2CBC_num);
-static unsigned des_ede3_cbc_num[] = 
-    { 1, 2, 840, 113549, 3, 7 };
-heim_oid heim_des_ede3_cbc_oid =
-	oid_enc(des_ede3_cbc_num);
-static unsigned des_aes_128_cbc_num[] = 
-    { 2, 16, 840, 1, 101, 3, 4, 1, 2 };
-heim_oid heim_aes_128_cbc_oid =
-	oid_enc(des_aes_128_cbc_num);
-static unsigned des_aes_192_cbc_num[] = 
-    { 2, 16, 840, 1, 101, 3, 4, 1, 22 };
-heim_oid heim_aes_192_cbc_oid =
-	oid_enc(des_aes_192_cbc_num);
-static unsigned des_aes_256_cbc_num[] = 
-    { 2, 16, 840, 1, 101, 3, 4, 1, 42 };
-heim_oid heim_aes_256_cbc_oid =
-	oid_enc(des_aes_256_cbc_num);
 static unsigned pkcs7_data_num[] = 
     { 1, 2, 840, 113549, 1, 7, 1 };
 heim_oid pkcs7_data_oid =
@@ -1344,24 +1324,17 @@ pk_rd_pa_reply_enckey(krb5_context context,
     params.data = ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data;
     params.length = ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length;
 
-    /* XXXX krb5_crypto_oid2enctype */
-    if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm, &heim_rc2CBC_oid) == 0) {
-	tmp_key.keytype = ETYPE_RC2_CBC_NONE;
-    } else if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm, &heim_des_ede3_cbc_oid) == 0) {
-	tmp_key.keytype = ETYPE_DES3_CBC_NONE;
-    } else {
-	krb5_set_error_string(context, "PKINIT no support for oid "
-			      "in contentEncryptionAlgorithm");
-	ret = KRB5KRB_AP_ERR_BADKEYVER; 
+    ret = krb5_oid_to_enctype(context,
+			      &ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
+			      &tmp_key.keytype);
+    if (ret)
 	goto out;
-    }
 
     ret = krb5_crypto_init(context, &tmp_key, 0, &crypto);
     if (ret)
 	goto out;
 
-    ret = krb5_crypto_get_params(context, crypto, &params,
-				 &ivec);
+    ret = krb5_crypto_get_params(context, crypto, &params, &ivec);
     if (ret)
 	goto out;
 
