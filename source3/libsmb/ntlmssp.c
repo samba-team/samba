@@ -340,7 +340,6 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
@@ -403,13 +402,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	
 	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, lp_lanman_auth());
 
-	chal_flags = ntlmssp_state->neg_flags;
-
-	target_name = ntlmssp_target_name(ntlmssp_state, 
-					  neg_flags, &chal_flags); 
-	if (target_name == NULL) 
-		return NT_STATUS_INVALID_PARAMETER;
-
 	/* Ask our caller what challenge they would like in the packet */
 	cryptkey = ntlmssp_state->get_challenge(ntlmssp_state);
 
@@ -417,6 +409,19 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	if (!ntlmssp_state->may_set_challenge(ntlmssp_state)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
+
+	/* The flags we send back are not just the negotiated flags,
+	 * they are also 'what is in this packet'.  Therfore, we
+	 * operate on 'chal_flags' from here on 
+	 */
+
+	chal_flags = ntlmssp_state->neg_flags;
+
+	/* get the right name to fill in as 'target' */
+	target_name = ntlmssp_target_name(ntlmssp_state, 
+					  neg_flags, &chal_flags); 
+	if (target_name == NULL) 
+		return NT_STATUS_INVALID_PARAMETER;
 
 	ntlmssp_state->chal = data_blob_talloc(ntlmssp_state->mem_ctx, cryptkey, 8);
 	ntlmssp_state->internal_chal = data_blob_talloc(ntlmssp_state->mem_ctx, cryptkey, 8);
