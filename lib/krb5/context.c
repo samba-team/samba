@@ -260,6 +260,12 @@ krb5_set_config_files(krb5_context context, char **filenames)
 	}
 	filenames++;
     }
+#if 0
+    /* with this enabled and if there are no config files, Kerberos is
+       considererd disabled */
+    if(tmp == NULL)
+	return ENOENT;
+#endif
     krb5_config_file_free(context, context->cf);
     context->cf = tmp;
     ret = init_context_from_config_file(context);
