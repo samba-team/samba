@@ -1,5 +1,65 @@
 Thu Apr  1 11:00:40 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* kpasswd/kpasswdd.c (doit): pass context to
+ 	krb5_get_all_client_addrs
+
+	* kdc/connect.c (init_sockets): pass context to
+ 	krb5_get_all_server_addrs
+
+	* lib/krb5/get_in_tkt.c (init_as_req): pass context to
+ 	krb5_get_all_client_addrs
+
+	* lib/krb5/get_cred.c (get_cred_kdc_la): pass context to
+ 	krb5_get_all_client_addrs
+
+	* lib/krb5/get_addrs.c (get_addrs_int): add extra host addresses
+
+	* lib/krb5/krb5.h: add support for adding an extra set of
+ 	addresses
+
+	* lib/krb5/context.c: add support for adding an extra set of
+ 	addresses
+
+	* lib/krb5/addr_families.c: add krb5_parse_address
+
+	* lib/krb5/address.c: krb5_append_addresses
+
+	* lib/krb5/config_file.c (parse_binding): don't zap everything
+ 	after first whitespace
+
+	* kuser/kinit.c (renew_validate): don't allocate out
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): don't
+ 	allocate out_creds
+
+	* lib/krb5/get_cred.c (get_cred_kdc, get_cred_kdc_la): make
+ 	out_creds pointer;
+	(krb5_get_kdc_cred): allocate out_creds; (get_cred_from_kdc_flags):
+	free more memory
+
+	* lib/krb5/crypto.c (encrypt_internal): free checksum
+
+	* lib/krb5/convert_creds.c (krb524_convert_creds_kdc): free reply,
+ 	and ticket
+
+	* kuser/Makefile.am: remove kfoo
+
+	* lib/Makefile.am: add auth
+
+	* lib/kadm5/iprop.h: getarg.h
+
+	* lib/kadm5/replay_log.c: use getarg
+
+	* lib/kadm5/ipropd_slave.c: use getarg
+
+	* lib/kadm5/ipropd_master.c: use getarg
+
+	* lib/kadm5/dump_log.c: use getarg
+
+	* kpasswd/kpasswdd.c: use getarg
+
+	* Makefile.am.common: make a more working check-local target
+
 	* lib/asn1/main.c: use getargs
 
 Mon Mar 29 20:19:57 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
