@@ -403,7 +403,6 @@ struct smbw_server *smbw_server(char *server, char *share)
 	pstring ipenv;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
-	char lm_24[24], nt_24[24];
 
 	ip = ipzero;
 	ZERO_STRUCT(c);
@@ -489,12 +488,9 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
-	SMBencrypt  ((uchar *)password,(uchar *)c.cryptkey,(uchar *)lm_24);
-	SMBNTencrypt((uchar *)password,(uchar *)c.cryptkey,(uchar *)nt_24);
-
 	if (!cli_session_setup(&c, username, 
-			       lm_24, 24,
-			       nt_24, 24,
+			       password, strlen(password),
+			       password, strlen(password),
 			       workgroup) &&
 	    /* try an anonymous login if it failed */
 	    !cli_session_setup(&c, "", "", 1,"", 0, workgroup)) {
