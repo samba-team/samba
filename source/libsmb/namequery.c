@@ -75,7 +75,7 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 do a NBT node status query on an open socket and return an array of
 structures holding the returned names or NULL if the query failed
 **************************************************************************/
-struct node_status *name_status_query(int fd,struct nmb_name *name,
+struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names)
 {
 	BOOL found=False;
@@ -173,7 +173,7 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 	if (sock == -1) return False;
 
 	make_nmb_name(&nname, "*", 0);
-	status = name_status_query(sock, &nname, to_ip, &count);
+	status = node_status_query(sock, &nname, to_ip, &count);
 	close(sock);
 	if (!status) return False;
 

@@ -113,7 +113,7 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 
 	printf("Looking up status of %s\n",inet_ntoa(ip));
 	make_nmb_name(&nname, name, type);
-	status = name_status_query(fd,&nname,ip, &count);
+	status = node_status_query(fd,&nname,ip, &count);
 	if (status) {
 		for (i=0;i<count;i++) {
 			fstrcpy(cleanname, status[i].name);
