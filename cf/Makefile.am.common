@@ -1,12 +1,14 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = foreign no-dependencies 1.4b
+AUTOMAKE_OPTIONS = foreign no-dependencies 1.6
 
 SUFFIXES = .et .h
 
 INCLUDES = -I$(top_builddir)/include $(INCLUDES_roken)
 
+if do_roken_rename
 ROKEN_RENAME = -DROKEN_RENAME
+endif
 
 AM_CFLAGS = $(WFLAGS)
 
