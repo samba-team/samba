@@ -275,6 +275,7 @@ AC_CHECK_TYPE(ino_t,unsigned)
 AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
+AC_CHECK_TYPE(intptr_t, void*)
 
 
 ############################################
