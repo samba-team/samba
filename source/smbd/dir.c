@@ -713,16 +713,11 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 	SMB_STRUCT_STAT sbuf;
 	pstring path;
 	pstring pathreal;
-	BOOL isrootdir;
 	pstring filename;
 	BOOL needslash;
 
 	*path = *pathreal = *filename = 0;
 
-	isrootdir = (strequal(conn->dirpath,"./") ||
-			strequal(conn->dirpath,".") ||
-			strequal(conn->dirpath,"/"));
-  
 	needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 
 	if (!conn->dirptr)
@@ -747,8 +742,6 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 		if ((strcmp(mask,"*.*") == 0) ||
 		    mask_match(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
-			if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
-				continue;
 
 			if (!mangle_is_8_3(filename, False))
 				mangle_map(filename,True,False,SNUM(conn));
