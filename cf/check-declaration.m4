@@ -21,5 +21,5 @@ AC_MSG_RESULT($ac_cv_var_$2_declaration)
 if eval "test \"\$ac_cv_var_$2_declaration\" = yes"; then
 	AC_DEFINE(foo, 1, [define if your system declares $2])
 fi
-undef(foo)
+undefine([foo])
 ])

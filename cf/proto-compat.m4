@@ -15,9 +15,8 @@ eval "ac_cv_func_$2_proto_compat=yes",
 eval "ac_cv_func_$2_proto_compat=no"))
 define([foo], translit($2, [a-z], [A-Z])[_PROTO_COMPATIBLE])
 if test "$ac_cv_func_$2_proto_compat" = yes; then
-	AC_DEFINE(foo, 1, [define if prototype of openlog is compatible with
+	AC_DEFINE(foo, 1, [define if prototype of $2 is compatible with
 	$3])
-)
 fi
 undefine([foo])
 ])
