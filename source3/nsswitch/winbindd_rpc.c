@@ -41,6 +41,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	unsigned int i, start_idx, retry;
+	uint32 loop_count;
 
 	DEBUG(3,("rpc: query_user_list\n"));
 
@@ -67,25 +68,36 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	got_dom_pol = True;
 
 	i = start_idx = 0;
+	loop_count = 0;
+
 	do {
 		TALLOC_CTX *ctx2;
-		char **dom_users;
-		uint32 num_dom_users, *dom_rids, j, size = 0xffff;
-		uint16 acb_mask = ACB_NORMAL;
+		uint32 num_dom_users, j;
+		uint32 max_entries, max_size;
+		SAM_DISPINFO_CTR ctr;
+		SAM_DISPINFO_1 info1;
 
+		ZERO_STRUCT( ctr );
+		ZERO_STRUCT( info1 );
+		ctr.sam.info1 = &info1;
+	
 		if (!(ctx2 = talloc_init("winbindd enum_users"))) {
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}		
 
-		result = cli_samr_enum_dom_users(
-			hnd->cli, ctx2, &dom_pol, &start_idx, acb_mask,
-			size, &dom_users, &dom_rids, &num_dom_users);
+		/* this next bit is copied from net_user_list_internal() */
+
+		get_query_dispinfo_params( loop_count, &max_entries, &max_size );
+
+		result = cli_samr_query_dispinfo(hnd->cli, mem_ctx, &dom_pol,
+			&start_idx, 1, &num_dom_users, max_entries, max_size, &ctr);
+
+		loop_count++;
 
 		*num_entries += num_dom_users;
 
-		*info = talloc_realloc(
-			mem_ctx, *info, 
+		*info = talloc_realloc( mem_ctx, *info, 
 			(*num_entries) * sizeof(WINBIND_USERINFO));
 
 		if (!(*info)) {
@@ -95,10 +107,16 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		for (j = 0; j < num_dom_users; i++, j++) {
-			(*info)[i].acct_name = 
-				talloc_strdup(mem_ctx, dom_users[j]);
-			(*info)[i].full_name = talloc_strdup(mem_ctx, "");
-			(*info)[i].user_sid = rid_to_talloced_sid(domain, mem_ctx, dom_rids[j]);
+			fstring username, fullname;
+			uint32 rid = ctr.sam.info1->sam[j].rid_user;
+			
+			unistr2_to_ascii( username, &(&ctr.sam.info1->str[j])->uni_acct_name, sizeof(username)-1);
+			unistr2_to_ascii( fullname, &(&ctr.sam.info1->str[j])->uni_full_name, sizeof(fullname)-1);
+			
+			(*info)[i].acct_name = talloc_strdup(mem_ctx, username );
+			(*info)[i].full_name = talloc_strdup(mem_ctx, fullname );
+			(*info)[i].user_sid = rid_to_talloced_sid(domain, mem_ctx, rid );
+			
 			/* For the moment we set the primary group for
 			   every user to be the Domain Users group.
 			   There are serious problems with determining
@@ -106,10 +124,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			   This should really be made into a 'winbind
 			   force group' smb.conf parameter or
 			   something like that. */
-			(*info)[i].group_sid 
-				= rid_to_talloced_sid(domain, 
-						      mem_ctx, 
-						      DOMAIN_GROUP_RID_USERS);
+			   
+			(*info)[i].group_sid = rid_to_talloced_sid(domain, 
+				mem_ctx, DOMAIN_GROUP_RID_USERS);
 		}
 
 		talloc_destroy(ctx2);
