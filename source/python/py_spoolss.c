@@ -128,6 +128,20 @@ architecture defaults to \"Windows NT x86\".
 	{ "get_debuglevel", (PyCFunction)get_debuglevel, METH_VARARGS, "" },
 	{ "set_debuglevel", (PyCFunction)set_debuglevel, METH_VARARGS, "" },
 
+	/* Printer driver routines */
+
+	{ "addprinterdriver", (PyCFunction)spoolss_addprinterdriver, 
+	  METH_VARARGS | METH_KEYWORDS, "" },
+
+	{ "addprinterdriverex", (PyCFunction)spoolss_addprinterdriverex, 
+	  METH_VARARGS | METH_KEYWORDS, "" },
+
+	{ "deleteprinterdriver", (PyCFunction)spoolss_deleteprinterdriver, 
+	  METH_VARARGS | METH_KEYWORDS, "" },
+
+	{ "deleteprinterdriverex", (PyCFunction)spoolss_deleteprinterdriverex, 
+	  METH_VARARGS | METH_KEYWORDS, "" },
+
 	{ NULL }
 };
 
@@ -242,6 +256,14 @@ Set the form given by the dictionary argument.
         { "enumprinterdata", (PyCFunction)spoolss_enumprinterdata,
            METH_VARARGS | METH_KEYWORDS,
           "Enumerate printer data." },
+
+        { "deleteprinterdata", (PyCFunction)spoolss_deleteprinterdata,
+           METH_VARARGS | METH_KEYWORDS,
+          "Delete printer data." },
+
+        { "deleteprinterdataex", (PyCFunction)spoolss_deleteprinterdataex,
+           METH_VARARGS | METH_KEYWORDS,
+          "Delete printer data." },
 
 	{ NULL }
 
