@@ -440,15 +440,15 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state 
                                                   *state)
 {
-    DOM_SID domain_group_sid;
+    DOM_SID group_sid;
     struct winbindd_domain *domain;
     enum SID_NAME_USE name_type;
     uint32 group_rid;
     fstring name_domain, name_group, name;
-    POSIX_ID surs_gid;
     char *tmp;
+    gid_t gid;
 
-    /* Look for group domain name */
+    /* Parse domain and groupname */
 
     memset(name_group, 0, sizeof(fstring));
 
@@ -475,9 +475,9 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
     fstrcat(name, "\\");
     fstrcat(name, name_group);
 
-    /* Get rid and name type from NT server */
+    /* Get rid and name type from name */
         
-    if (!winbindd_lookup_sid_by_name(domain, name, &domain_group_sid, 
+    if (!winbindd_lookup_sid_by_name(domain, name, &group_sid, 
                                      &name_type)) {
         DEBUG(1, ("group %s in domain %s does not exist\n", name_group,
                   name_domain));
@@ -492,17 +492,15 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 
     /* Fill in group structure */
 
-    if (!winbindd_surs_sam_sid_to_unixid(domain, &domain_group_sid, 
-                                         name_type, &surs_gid)) {
+    sid_split_rid(&group_sid, &group_rid);
+
+    if (!winbindd_idmap_get_gid_from_rid(domain->name, group_rid, &gid)) {
         DEBUG(1, ("error sursing unix gid for sid\n"));
         return WINBINDD_ERROR;
-
     }
 
     winbindd_fill_grent(&state->response.data.gr, 
-                        state->request.data.groupname, surs_gid.id);
-        
-    sid_split_rid(&domain_group_sid, &group_rid);
+                        state->request.data.groupname, gid);
         
     if (!winbindd_fill_grent_mem(domain, group_rid, name_type,
                                  &state->response)) {
@@ -518,41 +516,26 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
                                                 *state)
 {
     struct winbindd_domain *domain;
-    DOM_SID domain_group_sid;
+    DOM_SID group_sid;
     enum SID_NAME_USE name_type;
-    uint32 group_rid;
     fstring group_name;
-    POSIX_ID surs_gid;
+    uint32 group_rid;
 
-    /* Find domain controller and domain sid */
+    /* Get rid from gid */
 
-    if ((domain = find_domain_from_gid(state->request.data.gid)) == NULL) {
-        DEBUG(0, ("Could not find domain for gid %d\n", 
+    if (!winbindd_idmap_get_rid_from_gid(state->request.data.gid, &group_rid,
+                                         &domain)) {
+        DEBUG(1, ("Could not convert gid %d to rid\n", 
                   state->request.data.gid));
         return WINBINDD_ERROR;
     }
 
     /* Get sid from gid */
 
-    surs_gid.type = SURS_POSIX_GID_AS_GRP;
-    surs_gid.id = state->request.data.gid;
+    sid_copy(&group_sid, &domain->sid);
+    sid_append_rid(&group_sid, group_rid);
 
-    if (!winbindd_surs_unixid_to_sam_sid(domain, &surs_gid, 
-                                         &domain_group_sid)) {
-        
-        surs_gid.type = SURS_POSIX_GID_AS_ALS;
-
-        if (!winbindd_surs_unixid_to_sam_sid(domain, &surs_gid, 
-                                             &domain_group_sid)) {
-            DEBUG(1, ("Could not convert gid %d to domain or local sid\n",
-                      state->request.data.gid));
-            return WINBINDD_ERROR;
-        }
-    }
-
-    /* Get name and name type from sid */
-
-    if (!winbindd_lookup_name_by_sid(domain, &domain_group_sid, group_name, 
+    if (!winbindd_lookup_name_by_sid(domain, &group_sid, group_name, 
                                      &name_type)) {
         DEBUG(1, ("Could not lookup sid\n"));
         return WINBINDD_ERROR;
@@ -566,10 +549,9 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 
     /* Fill in group structure */
 
-    winbindd_fill_grent(&state->response.data.gr, group_name, surs_gid.id);
+    winbindd_fill_grent(&state->response.data.gr, group_name, 
+                        state->request.data.gid);
 
-    sid_split_rid(&domain_group_sid, &group_rid);
-        
     if (!winbindd_fill_grent_mem(domain, group_rid, name_type,
                                  &state->response)) {
         return WINBINDD_ERROR;

@@ -27,12 +27,11 @@
 
 static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
                                 uid_t unix_uid, gid_t unix_gid, 
-                                SAM_USERINFO_CTR *user_info)
+                                char *full_name)
 {
-    fstring temp;
     char *s;
 
-    if ((pw == NULL) || (username == NULL) || (user_info == NULL)) {
+    if (!pw || !username) {
         return;
     }
 
@@ -47,13 +46,10 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
     /* Full name (gecos) */
 
-    unistr2_to_ascii(temp, &user_info->info.id21->uni_full_name, 
-                     sizeof(temp) - 1);
+    strncpy(pw->pw_gecos, full_name, sizeof(pw->pw_gecos) - 1);
 
-
-    strncpy(pw->pw_gecos, temp, sizeof(pw->pw_gecos) - 1);
-
-    /* Home directory and shell - use template config parameters */
+    /* Home directory and shell - use template config parameters.  The
+       defaults are /tmp for the home directory and /bin/false for shell. */
 
     s = lp_template_homedir();
 
@@ -83,12 +79,13 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
                                                  *state) 
 {
-    uint32 name_type, user_rid;
+    uint32 name_type, user_rid, group_rid;
     SAM_USERINFO_CTR user_info;
-    DOM_SID user_sid, group_sid, tmp_sid;
-    fstring name_domain, name_user, name;
+    DOM_SID user_sid;
+    fstring name_domain, name_user, name, gecos_name;
     struct winbindd_domain *domain;
-    POSIX_ID uid, gid;
+    uid_t uid;
+    gid_t gid;
     char *tmp;
 
     /* Parse domain and username */
@@ -133,8 +130,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
        the winbind_lookup_by_name() call and use it in a
        winbind_lookup_userinfo() */
     
-    sid_copy(&tmp_sid, &user_sid);
-    sid_split_rid(&tmp_sid, &user_rid);
+    sid_split_rid(&user_sid, &user_rid);
 
     if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
         DEBUG(1, ("pwnam_from_user(): error getting user info for user '%s'\n",
@@ -142,24 +138,22 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
         return WINBINDD_ERROR;
     }
     
+    group_rid = user_info.info.id21->group_rid;
+    unistr2_to_ascii(gecos_name, &user_info.info.id21->uni_full_name,
+                     sizeof(gecos_name) - 1);
+
+    free_samr_userinfo_ctr(&user_info);
+
     /* Resolve the uid number */
 
-    sid_copy(&user_sid, &domain->sid);
-    sid_append_rid(&user_sid, user_info.info.id21->user_rid);
-
-    if (!winbindd_surs_sam_sid_to_unixid(domain, &user_sid, 
-                                         SID_NAME_USER, &uid)) {
-        DEBUG(1, ("error getting user id for user\n"));
+    if (!winbindd_idmap_get_uid_from_rid(domain->name, user_rid, &uid)) {
+        DEBUG(1, ("error getting user id for user %s\n", name_user));
         return WINBINDD_ERROR;
     }
 
-    /* Resolve the gid number */
+    /* Resolve the gid number */   
 
-    sid_copy(&group_sid, &domain->sid);
-    sid_append_rid(&group_sid, user_info.info.id21->group_rid);
-    
-    if (!winbindd_surs_sam_sid_to_unixid(domain, &group_sid, 
-                                         SID_NAME_DOM_GRP, &gid)) {
+    if (!winbindd_idmap_get_gid_from_rid(domain->name, group_rid, &gid)) {
         DEBUG(1, ("error getting group id for user %s\n", name_user));
         return WINBINDD_ERROR;
     }
@@ -167,13 +161,9 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
     /* Now take all this information and fill in a passwd structure */
             
     winbindd_fill_pwent(&state->response.data.pw, 
-                        state->request.data.username, uid.id, gid.id, 
-                        &user_info);
+                        state->request.data.username, uid, gid, 
+                        gecos_name);
             
-    /* Free user info */
-
-    free_samr_userinfo_ctr(&user_info);
-
     return WINBINDD_OK;
 }       
 
@@ -182,78 +172,62 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state 
                                                 *state)
 {
-    DOM_SID domain_user_sid, tmp_sid;
+    DOM_SID user_sid;
     struct winbindd_domain *domain;
-    uint32 user_rid;
-    fstring username;
+    uint32 user_rid, group_rid;
+    fstring user_name, gecos_name;
     enum SID_NAME_USE name_type;
     SAM_USERINFO_CTR user_info;
-    POSIX_ID surs_uid, surs_gid;
+    gid_t gid;
 
-    /* Find domain controller and domain sid */
+    /* Get rid from uid */
 
-    if ((domain = find_domain_from_uid(state->request.data.uid)) == NULL) {
-        DEBUG(0, ("Could not find domain for uid %d\n", 
-                  state->request.data.uid));
-        return WINBINDD_ERROR;
-    }
-
-    /* Get sid from uid */
-
-    surs_uid.id = state->request.data.uid;
-    surs_uid.type = SURS_POSIX_UID_AS_USR;
-
-    if (!winbindd_surs_unixid_to_sam_sid(domain, &surs_uid, 
-                                         &domain_user_sid)) {
-        DEBUG(1, ("Could not convert uid %d to domain sid\n", 
+    if (!winbindd_idmap_get_rid_from_uid(state->request.data.uid, &user_rid,
+                                         &domain)) {
+        DEBUG(1, ("Could not convert uid %d to rid\n", 
                   state->request.data.uid));
         return WINBINDD_ERROR;
     }
     
     /* Get name and name type from rid */
 
-    if (!winbindd_lookup_name_by_sid(domain, &domain_user_sid, username, 
+    sid_copy(&user_sid, &domain->sid);
+    sid_append_rid(&user_sid, user_rid);
+
+    if (!winbindd_lookup_name_by_sid(domain, &user_sid, user_name, 
                                      &name_type)) {
         fstring temp;
 
-        sid_to_string(temp, &domain_user_sid);
+        sid_to_string(temp, &user_sid);
         DEBUG(1, ("Could not lookup sid %s\n", temp));
         return WINBINDD_ERROR;
     }
 
     /* Get some user info */
     
-    sid_copy(&tmp_sid, &domain_user_sid);
-    sid_split_rid(&tmp_sid, &user_rid);
-
     if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
         DEBUG(1, ("pwnam_from_uid(): error getting user info for user '%s'\n",
-                  username));
+                  user_name));
         return WINBINDD_ERROR;
     }
 
-    if (!winbindd_surs_sam_sid_to_unixid(domain, &domain_user_sid, 
-                                         SID_NAME_USER, &surs_uid)) {
-        DEBUG(1, ("error sursing unix uid\n"));
-        return WINBINDD_ERROR;
-    }
+    group_rid = user_info.info.id21->group_rid;
+    unistr2_to_ascii(gecos_name, &user_info.info.id21->uni_full_name,
+                     sizeof(gecos_name) - 1);
 
-    /* ??? Should be domain_group_sid??? */
+    free_samr_userinfo_ctr(&user_info);
 
-    if (!winbindd_surs_sam_sid_to_unixid(domain, &domain_user_sid, 
-                                         SID_NAME_DOM_GRP, &surs_gid)) {
-        DEBUG(1, ("error sursing gid\n"));
+    /* Resolve gid number */
+
+    if (!winbindd_idmap_get_gid_from_rid(domain->name, group_rid, &gid)) {
+        DEBUG(1, ("error getting group id for user %s\n", user_name));
         return WINBINDD_ERROR;
     }
 
     /* Fill in password structure */
 
-    winbindd_fill_pwent(&state->response.data.pw, username, surs_uid.id, 
-                        surs_gid.id, &user_info);
-
-    /* Free user info */
-
-    free_samr_userinfo_ctr(&user_info);
+    winbindd_fill_pwent(&state->response.data.pw, user_name, 
+                        state->request.data.uid, gid, gecos_name);
 
     return WINBINDD_OK;
 }
