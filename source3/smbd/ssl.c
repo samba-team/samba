@@ -256,12 +256,14 @@ char            *reqHosts, *resignHosts;
         DEBUG( 0, ( "Client %s did not use session setup; access denied\n",
                      client_addr() ) );
         if (!send_smb(fd, (char *)buf))
-          exit_server("sslutil_negotiate_ssl: send_smb failed.\n");
+          DEBUG(0, ("sslutil_negotiate_ssl: send_smb failed.\n"));
         return -1;
     }
     buf[4] = 0x8e;  /* negative session response: use SSL */
-    if (!send_smb(fd, (char *)buf))
-		exit_server("sslutil_negotiate_ssl: send_smb failed.\n");
+    if (!send_smb(fd, (char *)buf)) {
+        DEBUG(0,("sslutil_negotiate_ssl: send_smb failed.\n"));
+        return -1;
+    }
     if(sslutil_accept(fd) != 0){
         DEBUG( 0, ( "Client %s failed SSL negotiation!\n", client_addr() ) );
         return -1;
