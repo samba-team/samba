@@ -641,7 +641,11 @@ case "$host_os" in
 			ATTEMPT_WRAP32_BUILD=yes
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
-			PICFLAG="-KPIC"
+			if test "${ac_cv_prog_CC}" = "gcc"; then
+				PICFLAG="-fPIC"
+			else 
+				PICFLAG="-KPIC"
+			fi
 		;;
 		*aix*) AC_DEFINE(AIX)
 			BLDSHARED="true"
