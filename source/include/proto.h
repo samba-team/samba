@@ -249,6 +249,7 @@ void cli_setup_packet(struct cli_state *cli);
 void cli_setup_bcc(struct cli_state *cli, void *p);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
+void cli_close_connection(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);

@@ -230,11 +230,11 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 }
 
 /****************************************************************************
-shutdown a client structure
+ Close a client connection and free the memory without destroying cli itself.
 ****************************************************************************/
-void cli_shutdown(struct cli_state *cli)
+
+void cli_close_connection(struct cli_state *cli)
 {
-	BOOL allocated;
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
@@ -247,7 +247,16 @@ void cli_shutdown(struct cli_state *cli)
 #endif /* WITH_SSL */
 	if (cli->fd != -1) 
 		close(cli->fd);
-	allocated = cli->allocated;
+}
+
+/****************************************************************************
+ Shutdown a client structure.
+****************************************************************************/
+
+void cli_shutdown(struct cli_state *cli)
+{
+	BOOL allocated = cli->allocated;
+	cli_close_connection(cli);
 	ZERO_STRUCTP(cli);
 	if (allocated) {
 		SAFE_FREE(cli);
