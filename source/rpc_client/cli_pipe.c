@@ -4,7 +4,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Elrond                            2000
+ *  Copyright (C) Elrond                            2000,
+ *  Copyright (C) Tim Potter                        2000
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -277,7 +278,8 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		DEBUG(10, ("rpc_api_pipe_req: start: %d off: %d\n",
 			   data_start, data->offset));
 
-		if (!auth->cli_create_pdu(con, opnum, data, data_start,
+		if ((auth->cli_create_pdu != NULL) &&
+                    !auth->cli_create_pdu(con, opnum, data, data_start,
 					  &data_end, &data_t, &flags))
 		{
 			return False;
@@ -354,9 +356,9 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, &rpdu, 0);
 	}
 
-	if (rhdr.auth_len != 0
-	    && !auth->cli_decode_pdu(con, &rpdu, rhdr.frag_len,
-				     rhdr.auth_len))
+	if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
+	    !auth->cli_decode_pdu(con, &rpdu, rhdr.frag_len,
+                                  rhdr.auth_len))
 	{
 		DEBUG(10, ("auth->cli_decode_pdu: failed\n"));
 		return False;
@@ -412,7 +414,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 			return False;
 		}
 
-		if (rhdr.auth_len != 0 &&
+		if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
 		    !auth->cli_decode_pdu(con, &rpdu, rhdr.frag_len,
 					  rhdr.auth_len))
 		{
@@ -576,7 +578,7 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 		{
 			return False;
 		}
-		if (rhdr.auth_len != 0 &&
+		if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
 		    !auth->cli_decode_pdu(con, rdata, rhdr.frag_len,
 					  rhdr.auth_len))
 		{
@@ -694,9 +696,9 @@ BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
 		}
 	}
 
-	if (rhdr.auth_len != 0
-	    && !auth->cli_decode_pdu(con, rdata, rhdr.frag_len,
-				     rhdr.auth_len))
+	if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
+	    !auth->cli_decode_pdu(con, rdata, rhdr.frag_len,
+                                  rhdr.auth_len))
 	{
 		return False;
 	}
@@ -759,7 +761,7 @@ BOOL cli_rcv_pdu(struct cli_connection *con,
 		return False;
 	}
 
-	if (rhdr.auth_len != 0 &&
+	if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
 	    !auth->cli_decode_pdu(con, rdata, rhdr.frag_len, rhdr.auth_len))
 	{
 		return False;
@@ -959,7 +961,8 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 
 	rpc_call_id = get_rpc_call_id();
 
-	if (!auth->create_bind_req(con, &data,
+	if ((auth->create_bind_req != NULL) &&
+            !auth->create_bind_req(con, &data,
 				   rpc_call_id, abstract, transfer))
 	{
 		return False;
