@@ -101,9 +101,15 @@ event2string(krb5_context context, Event *ev, char **str)
 	*str = strdup("-");
 	return (*str == NULL) ? ENOMEM : 0;
     }
-    ret = krb5_unparse_name(context, ev->principal, &pr);
-    if(ret)
-	return ret;
+    if (ev->principal == NULL) {
+       pr = strdup("UNKNOWN");
+       if (pr == NULL)
+	   return ENOMEM;
+    } else {
+       ret = krb5_unparse_name(context, ev->principal, &pr);
+       if(ret)
+           return ret;
+    }
     ret = asprintf(&p, "%s:%s", time2str(ev->time), pr);
     free(pr);
     if(ret < 0)
