@@ -3422,13 +3422,19 @@ static void lp_save_defaults(void)
 				break;
 			case P_STRING:
 			case P_USTRING:
-				parm_table[i].def.svalue =
-					strdup(*(char **)parm_table[i].ptr);
+				if (parm_table[i].ptr) {
+					parm_table[i].def.svalue = strdup(*(char **)parm_table[i].ptr);
+				} else {
+					parm_table[i].def.svalue = NULL;
+				}
 				break;
 			case P_GSTRING:
 			case P_UGSTRING:
-				parm_table[i].def.svalue =
-					strdup((char *)parm_table[i].ptr);
+				if (parm_table[i].ptr) {
+					parm_table[i].def.svalue = strdup((char *)parm_table[i].ptr);
+				} else {
+					parm_table[i].def.svalue = NULL;
+				}
 				break;
 			case P_BOOL:
 			case P_BOOLREV:
