@@ -65,16 +65,4 @@
 #include <hdb.h>
 #include <hdb-private.h>
 
-#if defined(HAVE_DB_185_H)
-#include <db_185.h>
-#elif defined(HAVE_DB_H)
-#include <db.h>
-#endif
-
-#if defined(HAVE_NDBM_H)
-#include <ndbm.h>
-#elif defined(HAVE_GDBM_NDBM_H)
-#include <gdbm/ndbm.h>
-#endif
-
 #endif /* __HDB_LOCL_H__ */

@@ -35,7 +35,10 @@
 
 RCSID("$Id$");
 
-#if defined(HAVE_DB_H) && DB_VERSION_MAJOR == 3
+#if HAVE_DB3
+
+#include <db.h>
+
 static krb5_error_code
 DB_close(krb5_context context, HDB *db)
 {
@@ -322,4 +325,4 @@ hdb_db_create(krb5_context context, HDB **db,
     (*db)->destroy = DB_destroy;
     return 0;
 }
-#endif
+#endif /* HAVE_DB3 */

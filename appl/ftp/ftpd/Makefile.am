@@ -52,5 +52,4 @@ LDADD = ../common/libcommon.a \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
 	$(LIB_des) \
-	$(LIB_roken) \
-	$(DBLIB)
+	$(LIB_roken)

@@ -35,7 +35,15 @@
 
 RCSID("$Id$");
 
-#if defined(HAVE_NDBM_H) || defined(HAVE_GDBM_NDBM_H)
+#if HAVE_NDBM
+
+#if defined(HAVE_GDBM_NDBM_H)
+#include <gdbm/ndbm.h>
+#elif defined(HAVE_DBM_H)
+#include <dbm.h>
+#elif defined(HAVE_NDBM_H)
+#include <ndbm.h>
+#endif
 
 struct ndbm_db {
     DBM *db;
@@ -350,4 +358,4 @@ hdb_ndbm_create(krb5_context context, HDB **db,
     return 0;
 }
 
-#endif
+#endif /* HAVE_NDBM */

@@ -251,20 +251,17 @@ AC_CHECK_HEADERS([\
 	bsdsetjmp.h				\
 	crypt.h					\
 	curses.h				\
-	dbm.h					\
 	dirent.h				\
 	dlfcn.h					\
 	err.h					\
 	errno.h					\
 	fcntl.h					\
 	fnmatch.h				\
-	gdbm/ndbm.h				\
 	grp.h					\
 	inttypes.h				\
 	io.h					\
 	limits.h				\
 	maillock.h				\
-	ndbm.h					\
 	net/if.h				\
 	netdb.h					\
 	netinet/in.h				\
@@ -279,7 +276,6 @@ AC_CHECK_HEADERS([\
 	pty.h					\
 	pwd.h					\
 	resolv.h				\
-	rpcsvc/dbm.h				\
 	sac.h					\
 	security/pam_modules.h			\
 	sgtty.h					\
