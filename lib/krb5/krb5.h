@@ -1,10 +1,6 @@
 #ifndef __KRB5_H__
 #define __KRB5_H__
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/time.h>
 #include <stdarg.h>
@@ -143,9 +139,6 @@ typedef struct krb5_ticket {
 } krb5_ticket;
 
 
-#define KRB5_PARSE_MALFORMED 17
-#define KRB5_PROG_ETYPE_NOSUPP 4711
-
 typedef struct krb5_creds {
     krb5_principal client;
     krb5_principal server;
@@ -203,7 +196,7 @@ typedef struct krb5_kt_cursor {
   int fd;
 } krb5_kt_cursor;
 
-typedef struct krb5_auth_context{
+typedef struct krb5_auth_context_data{
   int32_t flags;
   krb5_cksumtype cksumtype;
 
@@ -222,7 +215,7 @@ typedef struct krb5_auth_context{
   
   krb5_rcache rcache;
   
-}krb5_auth_context;
+}krb5_auth_context_data, *krb5_auth_context;
 
 
 typedef u_int32_t krb5_flags;
@@ -239,43 +232,43 @@ krb5_init_context(krb5_context *context);
 
 krb5_error_code
 krb5_auth_con_init(krb5_context context,
-		   krb5_auth_context **auth_context);
+		   krb5_auth_context *auth_context);
 
 krb5_error_code
 krb5_auth_con_free(krb5_context context,
-		   krb5_auth_context *auth_context,
+		   krb5_auth_context auth_context,
 		   krb5_flags flags);
 
 krb5_error_code
 krb5_auth_con_setflags(krb5_context context,
-		       krb5_auth_context *auth_context,
+		       krb5_auth_context auth_context,
 		       int32_t flags);
 
 krb5_error_code
 krb5_auth_con_getflags(krb5_context context,
-		       krb5_auth_context *auth_context,
+		       krb5_auth_context auth_context,
 		       int32_t *flags);
 
 krb5_error_code
 krb5_auth_con_setaddrs(krb5_context context,
-		       krb5_auth_context *auth_context,
+		       krb5_auth_context auth_context,
 		       krb5_address *local_addr,
 		       krb5_address *remote_addr);
 
 krb5_error_code
 krb5_auth_con_getaddrs(krb5_context context,
-		       krb5_auth_context *auth_context,
+		       krb5_auth_context auth_context,
 		       krb5_address **local_addr,
 		       krb5_address **remote_addr);
 
 krb5_error_code
 krb5_auth_con_setuserkey(krb5_context context,
-			 krb5_auth_context *auth_context,
+			 krb5_auth_context auth_context,
 			 krb5_keyblock *keyblock);
 
 krb5_error_code
 krb5_auth_con_getkey(krb5_context context,
-		     krb5_auth_context *auth_context,
+		     krb5_auth_context auth_context,
 		     krb5_keyblock **keyblock);
 
 void
@@ -283,22 +276,22 @@ krb5_free_keyblock(krb5_keyblock *keyblock);
 
 krb5_error_code
 krb5_auth_setcksumtype(krb5_context context,
-		       krb5_auth_context *auth_context,
+		       krb5_auth_context auth_context,
 		       krb5_cksumtype cksumtype);
 
 krb5_error_code
 krb5_auth_getlocalseqnumber(krb5_context context,
-			    krb5_auth_context *auth_context,
+			    krb5_auth_context auth_context,
 			    int32_t *seqnumber);
 
 krb5_error_code
 krb5_auth_getremoteseqnumber(krb5_context context,
-			     krb5_auth_context *auth_context,
+			     krb5_auth_context auth_context,
 			     int32_t *seqnumber);
 
 krb5_error_code
 krb5_auth_getauthenticator(krb5_context context,
-			   krb5_auth_context *auth_context,
+			   krb5_auth_context auth_context,
 			   krb5_authenticator **authenticator);
 
 void
@@ -306,16 +299,16 @@ krb5_free_authenticator(krb5_authenticator *authenticator);
 
 krb5_error_code
 krb5_auth_initvector(krb5_context context,
-		     krb5_auth_context *auth_context);
+		     krb5_auth_context auth_context);
 
 krb5_error_code
 krb5_set_initvector(krb5_context context,
-		    krb5_auth_context *auth_context,
+		    krb5_auth_context auth_context,
 		    krb5_pointer ivector);
 
 krb5_error_code
 krb5_set_rcache(krb5_context context,
-		krb5_auth_context *auth_context,
+		krb5_auth_context auth_context,
 		krb5_rcache rcache);
 
 krb5_error_code
@@ -370,7 +363,7 @@ krb5_get_in_tkt_with_password (krb5_context context,
 
 krb5_error_code
 krb5_mk_req(krb5_context context,
-	    krb5_auth_context **auth_context,
+	    krb5_auth_context *auth_context,
 	    const krb5_flags ap_req_options,
 	    char *service,
 	    char *hostname,
@@ -386,7 +379,7 @@ krb5_generate_subkey(krb5_context context,
 
 krb5_error_code
 krb5_rd_req(krb5_context context,
-	    krb5_auth_context **auth_context,
+	    krb5_auth_context *auth_context,
 	    const krb5_data *inbuf,
 	    krb5_const_principal server,
 	    krb5_keytab keytab,
@@ -397,7 +390,7 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 krb5_error_code
 krb5_rd_rep(krb5_context context,
-	    krb5_auth_context *auth_context,
+	    krb5_auth_context auth_context,
 	    const krb5_data *inbuf,
 	    krb5_ap_rep_enc_part **repl);
 
@@ -514,6 +507,19 @@ krb5_string_to_key (char *str,
 #include "cache.h"
 
 #include "keytab.h"
+
+struct error_table {
+    char const * const * msgs;
+    long base;
+    int n_msgs;
+};
+
+struct error_list {
+    struct error_list *next;
+    const struct error_table * table;
+};
+
+const char *krb5_get_err_text(krb5_context context, long code);
 
 #endif /* __KRB5_H__ */
 

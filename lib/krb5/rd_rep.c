@@ -3,7 +3,7 @@
 
 krb5_error_code
 krb5_rd_rep(krb5_context context,
-	    krb5_auth_context *auth_context,
+	    krb5_auth_context auth_context,
 	    const krb5_data *inbuf,
 	    krb5_ap_rep_enc_part **repl)
 {
@@ -21,7 +21,7 @@ krb5_rd_rep(krb5_context context,
   if (ap_rep.msg_type != krb_ap_rep)
     return KRB_AP_ERR_MSG_TYPE;
 
-  des_set_key (auth_context->key.contents.data, &schedule);
+  des_set_key (auth_context->key.contents.data, schedule);
   len = ap_rep.enc_part.cipher.length;
   buf = malloc (len);
   if (buf == NULL)
