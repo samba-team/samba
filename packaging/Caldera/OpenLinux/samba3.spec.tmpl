@@ -349,10 +349,10 @@ done
 %{fixUP} -vT $DESTDIR/%{EtcSamba} -e 's:\@samba_home\@:%{LSBservedir}:'
 
 %{fixManPages}
-cd $DESTDIR/usr/share/man/lang
-cp -a . $DESTDIR/usr/share/man/en
-cd ..
-rm -rf lang
+( cd $DESTDIR/usr/share/man/lang; \
+	cp -a . $DESTDIR/usr/share/man/en; \
+	cd ..; \
+	rm -rf lang )
 
 %{mkLists} -c samba
 cat << 'EOF' | %{mkLists} -d samba
