@@ -29,9 +29,30 @@ const int DCERPC_SAMR_VERSION = 1.0;
 		PyErr_SetString(PyExc_TypeError, "dict arg expected");
 		return NULL;
 	}
+	memset(&temp, 0, sizeof(temp));
 	temp.in.system_name = get_string_property($input, "system_name");
 	temp.in.access_mask = get_uint32_property($input, "access_mask");
 	$1 = &temp;
+}
+
+%typemap(argout) struct samr_Connect2 * {
+	long status = PyLong_AsLong(resultobj);
+	PyObject *dict;
+
+	/* Throw exception if result was not OK */
+
+	if (status != 0) {
+		set_ntstatus_exception(status);
+		return NULL;
+	}
+
+	dict = PyDict_New();
+
+	PyDict_SetItem(dict, PyString_FromString("handle"),
+		PyString_FromStringAndSize($1->out.handle, 
+					   sizeof(*($1->out.handle))));
+
+	resultobj = dict;
 }
 
 %rename(samr_Connect2) dcerpc_samr_Connect2;
