@@ -4,24 +4,39 @@
 #
 # $Id$
 
-heimdal_versions="0.5.2 0.6pre3"
+opt_n= #:
+make_f= #-j
+
+heimdal_versions="0.5.2 0.6pre4"
 krb4_versions="1.2.2"
 openssl_versions="0.9.6i 0.9.7a 0.9.7b"
-dont_build="openssl-0.9.7.*heimdal-0.5.* openssl-0.9.7.*krb4-.*"
+
+make_check_version=".*heimdal-0.6.*"
+
+# 0.5 dont eat 0.9.7
+dont_build="openssl-0.9.7.*heimdal-0.5.*"
+# 1.2 dont eat 0.9.7
+dont_build="openssl-0.9.7.*krb4-1.2.* ${dont_build}"
+#yacc problems
+dont_build="openssl-0.9.6.*heimdal-0.5.*osf4.* ${dont_build}"
+#local openssl 09.7 and broken kuser/Makefile.am
+dont_build="openssl-0.9.6.*heimdal-0.5.*freebsd4.8.* ${dont_build}" 
+#krb4-config broken test
+dont_build="openssl-*.*heimdal-0.5.*krb4-1.2.* ${dont_build}"
+failed=
 
 # Allow override
 for a in $HOME . /etc ; do 
-    test -f $a/.heimdal-build && . $a/.heimdal-build
+    [ -f $a/.heimdal-build ] && . $a/.heimdal-build
 done
 
 targetdir=${targetdir:-/scratch/heimdal-test}
 logfile="${targetdir}/buildlog"
 
-distdirs="${distdirs} /afs/e.kth.se/home/staff/lha/Public/openssl"
+distdirs="${distdirs} /afs/su.se/home/l/h/lha/Public/openssl"
 distdirs="${distdirs} /afs/pdc.kth.se/public/ftp/pub/heimdal/src"
 distdirs="${distdirs} /afs/pdc.kth.se/public/ftp/pub/heimdal/src/snapshots"
 distdirs="${distdirs} /afs/pdc.kth.se/public/ftp/pub/krb/src"
-opt_n= #:
 
 
 logprint () {
@@ -50,12 +65,26 @@ find_unzip_prog () {
 	    break
 	fi
     done
-    test "$unzip_prog" = "" && logerror failed to find unzip program
+    [ "$unzip_prog" = "" ] && logerror failed to find unzip program
 }
 
-do_build_p () {
-    for a in ${dont_build} ; do
-	expr "$1" : "${a}" > /dev/null 2>&1 && return 1
+find_canon_name () {
+    canon_name=
+    for a in ${distdirs} ; do
+	if [ -f $a/config.guess ] ; then
+	    canon_name=`$a/config.guess`
+	fi
+	if [ "${canon_name}" != "" ] ; then
+	    break
+	fi
+    done
+    [ "${canon_name}" = "" ] && logerror "cant find config.guess"
+}
+
+do_check_p () {
+    eval check_var=\$"$1"
+    for a in ${check_var} ; do
+	expr "$2${canon_name}" : "${a}" > /dev/null 2>&1 && return 1
     done
     return 0
 }
@@ -78,7 +107,7 @@ build () {
     pv=${prog}-${ver}
     mkdir tmp || logerror "failed to build tmpdir"
     cd tmp || logerror "failed to change dir to tmpdir"
-    do_build_p ${real_ver} || \
+    do_check_p dont_build ${real_ver} || \
 	{ cd .. ; rmdir tmp ; logprint "not building $1" && return 1 ; }
     cd .. || logerror "failed to change back from tmpdir"
     rmdir tmp || logerror "failed to remove tmpdir"
@@ -89,18 +118,25 @@ build () {
     ${opt_n} cd ${pv} || logerror directory ${pv} not there
     logprint "configure ${prog} ${ver} (${confprog})"
     ${opt_n} ./${confprog} \
-	--prefix=${targetdir}/${prog}-${ver} >> ${logfile} 2>&1 || \
-	    logerror failed to configure ${pv}
+	--prefix=${targetdir}/${pv} >> ${logfile} 2>&1 || \
+	    { logprint failed to configure ${pv} ; return 1 ; }
     logprint "make ${prog} ${ver}"
-    ${opt_n} make >> ${logfile} 2>&1 || logerror failed to make ${pv}
+    ${opt_n} make ${make_f} >> ${logfile} 2>&1 || \
+	{ logprint failed to make ${pv} ; return 1 ; }
     ${opt_n} make install >> ${logfile} 2>&1 || \
-	logerror failed to install ${pv}
+	{ logprint failed to install ${pv} ; return 1 ; }
+    do_check_p make_check_version ${real_ver} && \
+    	{ ${opt_n} make check >> ${logfile} 2>&1 || return 1 ; }
     ${opt_n} cd ..
     return 0
 }
 
+find_canon_name
+
 logprint using host `hostname`
 logprint `uname -a`
+logprint canonical name ${canon_name}
+
 logprint clearing logfile
 > ${logfile}
 
@@ -117,6 +153,7 @@ for vo in ${openssl_versions} ; do
 done
 
 wssl="--with-openssl=${targetdir}/openssl"
+wssli="--with-openssl-include=${targetdir}/openssl"	#this is a hack for broken heimdal 0.5.x autoconf test
 wossl="--without-openssl"
 wk4c="--with-krb4-config=${targetdir}/krb4"
 bk4c="/bin/krb4-config"
@@ -125,24 +162,32 @@ wok4="--without-krb4"
 logprint === building heimdal w/o krb4 versions
 for vo in ${openssl_versions} ; do
     for vh in ${heimdal_versions} ; do
-	build "openssl-${vo}-heimdal-${vh}" \
+	v="openssl-${vo}-heimdal-${vh}"
+	build "${v}" \
 	    heimdal ${vh} \
-	    "configure ${wok4} ${wssl}-${vo}" || continue
-	( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-	    grep lcrypto) >/dev/null 2>&1 || \
-	    logerror "failed to build with openssl"
+	    "configure ${wok4} ${wssl}-${vo} ${wssli}-${vo}/include" || \
+	    { failed="${failed} ${v}" ; continue ; }
+	if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
+	    grep lcrypto) >/dev/null 2>&1 ; then
+	    logprint "** failed to build with openssl"
+	    failed="${failed} ${v}"
+	fi
     done
 done
 
 logprint === building krb4
 for vo in ${openssl_versions} ; do
     for vk in ${krb4_versions} ; do
-	build "openssl-${vo}-krb4-${vk}" \
+	v="openssl-${vo}-krb4-${vk}"
+	build "${v}" \
 	    krb4 ${vk} \
-	    "configure ${wssl}-${vo}" || continue
-	( ${targetdir}/krb4-${vk}/bin/krb4-config --libs | \
-	    grep lcrypto) >/dev/null 2>&1 || \
-	    logerror "failed to build with openssl"
+	    "configure ${wssl}-${vo}" || \
+	    { failed="${failed} ${v}" ; continue ; }
+	if ! ( ${targetdir}/krb4-${vk}/bin/krb4-config --libs | \
+	    grep lcrypto) >/dev/null 2>&1 ; then
+	    logprint "*** failed to build with openssl"
+	    failed="${failed} ${v}"
+	fi
     done
 done
 
@@ -150,15 +195,22 @@ logprint === building heimdal with krb4 versions
 for vo in ${openssl_versions} ; do
     for vk in ${krb4_versions} ; do
 	for vh in ${heimdal_versions} ; do
-	    build "openssl-${vo}-krb4-${vk}-heimdal-${vh}" \
+	    v="openssl-${vo}-krb4-${vk}-heimdal-${vh}"
+	    build "${v}" \
 		heimdal ${vh} \
-		"configure ${wk4c}-${vk}${bk4c} ${wssl}-${vo}" || continue
-	    ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-		grep lcrypto) >/dev/null 2>&1 || \
-		logerror "failed to build with openssl"
-	    ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-		grep krb4) >/dev/null 2>&1 || \
-		logerror "failed to build with krb4"
+		"configure ${wk4c}-${vk}${bk4c} ${wssl}-${vo} ${wssli}-${vo}/include" || \
+		{ failed="${failed} ${v}" ; continue ; }
+	    if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
+		grep lcrypto) >/dev/null 2>&1 ; then
+		logprint "*** failed to build with openssl"
+	        failed="${failed} ${v}"
+		continue
+	    fi
+	    if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
+		grep krb4) >/dev/null 2>&1 ; then
+		logprint "*** failed to build with krb4"
+	        failed="${failed} ${v}"
+	    fi
 	done
     done
 done
@@ -167,13 +219,21 @@ logprint === building heimdal without krb4 and openssl versions
 for vh in ${heimdal_versions} ; do
     build "des-heimdal-${vh}" \
 	heimdal ${vh} \
-	"configure ${wok4} ${wossl}" || continue
-    ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-	grep lcrypto) >/dev/null 2>&1 && \
-	logerror "failed to build WITHOUT openssl"
-    ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-	grep krb4 ) >/dev/null 2>&1 && \
-	logerror "failed to build WITHOUT krb4"
+	"configure ${wok4} ${wossl}" || \
+	{ failed="${failed} ${v}" ; continue ; }
+    if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
+	grep lcrypto) >/dev/null 2>&1 ; then
+	logprint "*** failed to build WITHOUT openssl"
+        failed="${failed} ${v}"
+	continue
+    fi
+    if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
+	grep krb4 ) >/dev/null 2>&1 ; then
+	logprint "*** failed to build WITHOUT krb4"
+        failed="${failed} ${v}"
+    fi
 done
 
 logprint all done
+[ "${failed}" != "" ] && logprint "failed: ${failed}"
+exit 0
