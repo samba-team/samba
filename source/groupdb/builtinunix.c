@@ -234,7 +234,7 @@ static LOCAL_GRP *getbltunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 
 	{
 		pstring linebuf;
-		make_alias_line(linebuf, sizeof(linebuf), &gp_buf, mem, num_mem);
+		make_alias_line(linebuf, sizeof(pstring), &gp_buf, mem, num_mem);
 		DEBUG(10,("line: '%s'\n", linebuf));
 	}
 
