@@ -128,7 +128,7 @@ init (unsigned char *a, unsigned char *b)
 }
 
 static void
-DES_string_to_key(char *str, size_t len, des_cblock *key)
+DES_string_to_key(const unsigned char *str, size_t len, des_cblock *key)
 {
     int odd, i;
     des_key_schedule sched;
@@ -224,12 +224,13 @@ fold(const unsigned char *str, size_t len, unsigned char *out)
 }
 
 static void
-DES3_string_to_key(char *str, size_t len, des_cblock *keys)
+DES3_string_to_key(const unsigned char *str, size_t len, des_cblock *keys)
 {
     unsigned char tmp[24];
     des_cblock ivec;
     des_key_schedule s[3];
     int i;
+
     fold(str, len, tmp);
     for(i = 0; i < 3; i++){
 	memcpy(keys + i, tmp + 8 * i, 8);
@@ -253,14 +254,14 @@ DES3_string_to_key(char *str, size_t len, des_cblock *keys)
 
 
 static krb5_error_code
-string_to_key_internal (char *str,
+string_to_key_internal (const unsigned char *str,
 			size_t str_len,
 			krb5_data *salt,
 			krb5_keytype ktype,
 			krb5_keyblock *key)
 {
      size_t len;
-     char *s, *p;
+     unsigned char *s, *p;
      krb5_error_code ret;
 
      len = str_len + salt->length;
@@ -271,7 +272,7 @@ string_to_key_internal (char *str,
      if (p == NULL)
 	  return ENOMEM;
      memset (s, 0, len);
-     strncpy (p, str, str_len);
+     strncpy ((char *)p, (char *)str, str_len);
      p += str_len;
      memcpy (p, salt->data, salt->length);
 
@@ -308,7 +309,8 @@ krb5_string_to_key (char *str,
 		    krb5_keytype ktype,
 		    krb5_keyblock *key)
 {
-    return string_to_key_internal (str, strlen(str), salt, ktype, key);
+    return string_to_key_internal ((const unsigned char *)str,
+				   strlen(str), salt, ktype, key);
 }
 
 krb5_error_code

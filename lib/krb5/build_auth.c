@@ -49,7 +49,7 @@ krb5_build_authenticator (krb5_context context,
 			  krb5_data *result)
 {
   Authenticator *auth;
-  char buf[1024];
+  unsigned char buf[1024];
   size_t len;
   krb5_error_code ret;
   krb5_enctype enctype;

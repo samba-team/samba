@@ -72,7 +72,7 @@ emem_store(krb5_storage *sp, void *data, size_t size)
 	    return 0;
 	s->size = sz;
 	s->base = base;
-	s->ptr = (char*)base + off;
+	s->ptr = (unsigned char*)base + off;
     }
     memmove(s->ptr, data, size);
     sp->seek(sp, size, SEEK_CUR);

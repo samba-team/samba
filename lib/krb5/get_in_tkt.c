@@ -145,7 +145,7 @@ _krb5_extract_ticket(krb5_context context,
     
     /* extract ticket */
     {
-	char buf[1024];
+	unsigned char buf[1024];
 	size_t len;
 	encode_Ticket(buf + sizeof(buf) - 1, sizeof(buf), 
 			    &rep->part1.ticket, &len);

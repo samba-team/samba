@@ -170,7 +170,8 @@ krb5_ret_data(krb5_storage *sp,
 	      krb5_data *data)
 {
     int ret;
-    int size;
+    int32_t size;
+
     ret = krb5_ret_int32(sp, &size);
     if(ret)
 	return ret;
