@@ -1916,6 +1916,16 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
   fsp = file_fsp(inbuf,smb_vwv0);
 
+  if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
+	  /*
+	   * fsp could be NULL here so use the value from the packet. JRA.
+	   */
+	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",(int)SVAL(inbuf,smb_vwv0)));
+	  _smb_setlen(header,0);
+	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
+	  return(-1);
+  }
+
   startpos = IVAL(inbuf,smb_vwv1);
   if(CVAL(inbuf,smb_wct) == 10) {
     /*
@@ -1955,13 +1965,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   /* ensure we don't overrun the packet size */
   maxcount = MIN(65535,maxcount);
   maxcount = MAX(mincount,maxcount);
-
-  if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
-	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",fsp->fnum));
-	  _smb_setlen(header,0);
-	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
-	  return(-1);
-  }
 
   if (!is_locked(fsp,conn,maxcount,startpos, F_RDLCK))
   {
