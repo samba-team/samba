@@ -558,6 +558,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	int tried_reverse = 0;
         int port_try_first;
         int port_try_next;
+        const char *username_used;
   
 	zero_ip(&ip);
 	ZERO_STRUCT(c);
@@ -712,16 +713,26 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 		return NULL;
 	}
 
-	if (!cli_session_setup(&c, username, 
+        username_used = username;
+
+	if (!cli_session_setup(&c, username_used, 
 			       password, strlen(password),
 			       password, strlen(password),
-			       workgroup) &&
-			/* Try an anonymous login if it failed and this was allowed by flags. */
-			((context->flags & SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
-			!cli_session_setup(&c, "", "", 1,"", 0, workgroup))) {
-		cli_shutdown(&c);
-		errno = EPERM;
-		return NULL;
+			       workgroup)) {
+                
+                /* Failed.  Try an anonymous login, if allowed by flags. */
+                username_used = "";
+
+                if ((context->flags & SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
+                     !cli_session_setup(&c, username_used,
+                                        password, 1,
+                                        password, 0,
+                                        workgroup)) {
+
+                        cli_shutdown(&c);
+                        errno = EPERM;
+                        return NULL;
+                }
 	}
 
 	DEBUG(4,(" session setup ok\n"));
@@ -753,7 +764,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
-	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
+	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username_used)) {
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
 		errno = saved_errno;
