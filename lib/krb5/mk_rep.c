@@ -77,6 +77,8 @@ krb5_mk_rep(krb5_context context,
     free_EncAPRepPart (&body);
     if(ret)
 	return ret;
+    if (buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
     ret = krb5_crypto_init(context, auth_context->keyblock, 
 			   0 /* ap.enc_part.etype */, &crypto);
     if (ret) {
