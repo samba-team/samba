@@ -924,7 +924,7 @@ static void init_globals(void)
 
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg IOXIDResolver IRemoteActivation");
 	do_parameter("server services", "smb rpc");
-	do_parameter("auth methods", "guest sam_ignoredomain");
+	do_parameter("auth methods", "anonymous sam_ignoredomain");
 	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE);
 	do_parameter("private dir", dyn_PRIVATE_DIR);
 	do_parameter_var("sam database", "tdb://%s/sam.ldb", dyn_PRIVATE_DIR);
