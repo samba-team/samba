@@ -399,10 +399,10 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex);
 BOOL in_list(char *s,char *list,BOOL casesensitive);
 void string_free(char **s);
 BOOL string_set(char **dest,const char *src);
-void string_sub(char *s,const char *pattern,const char *insert, size_t len);
-void fstring_sub(char *s,const char *pattern,const char *insert);
-void pstring_sub(char *s,const char *pattern,const char *insert);
-void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
+BOOL string_sub(char *s,const char *pattern,const char *insert, size_t len);
+BOOL fstring_sub(char *s,const char *pattern,const char *insert);
+BOOL pstring_sub(char *s,const char *pattern,const char *insert);
+BOOL all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *octal_string(int i);
 char *string_truncate(char *s, int length);
@@ -530,7 +530,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
-                                            struct in_addr *pdest_ip);
+                                     struct in_addr *pdest_ip);
 
 /*The following definitions come from  libsmb/credentials.c  */
 

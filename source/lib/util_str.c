@@ -1101,21 +1101,25 @@ insert. It may do multiple replacements.
 
 any of " ; ' $ or ` in the insert string are replaced with _
 if len==0 then no length check is performed
+
+Return True if a change was made, False otherwise.
 ****************************************************************************/
-void string_sub(char *s,const char *pattern,const char *insert, size_t len)
+BOOL string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
+	BOOL changed = False;
 	char *p;
 	ssize_t ls,lp,li, i;
 
-	if (!insert || !pattern || !s) return;
+	if (!insert || !pattern || !s) return False;
 
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 
-	if (!*pattern) return;
+	if (!*pattern) return False;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
+		changed = True;
 		if (len && (ls + (li-lp) >= len)) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
@@ -1144,16 +1148,18 @@ void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 		s = p + li;
 		ls += (li-lp);
 	}
+
+	return changed;
 }
 
-void fstring_sub(char *s,const char *pattern,const char *insert)
+BOOL fstring_sub(char *s,const char *pattern,const char *insert)
 {
-	string_sub(s, pattern, insert, sizeof(fstring));
+	return string_sub(s, pattern, insert, sizeof(fstring));
 }
 
-void pstring_sub(char *s,const char *pattern,const char *insert)
+BOOL pstring_sub(char *s,const char *pattern,const char *insert)
 {
-	string_sub(s, pattern, insert, sizeof(pstring));
+	return string_sub(s, pattern, insert, sizeof(pstring));
 }
 
 /****************************************************************************
@@ -1161,20 +1167,22 @@ similar to string_sub() but allows for any character to be substituted.
 Use with caution!
 if len==0 then no length check is performed
 ****************************************************************************/
-void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
+BOOL all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
+	BOOL changed = False;
 	char *p;
 	ssize_t ls,lp,li;
 
-	if (!insert || !pattern || !s) return;
+	if (!insert || !pattern || !s) return False;
 
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 
-	if (!*pattern) return;
+	if (!*pattern) return False;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
+		changed = True;
 		if (len && (ls + (li-lp) >= len)) {
 			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
@@ -1188,6 +1196,8 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 		s = p + li;
 		ls += (li-lp);
 	}
+
+	return changed;
 }
 
 /****************************************************************************

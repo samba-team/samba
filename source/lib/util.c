@@ -1306,9 +1306,11 @@ BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
 #endif
 
   /* Remove any *? and ** as they are meaningless */
-  for(p = t_pattern; *p; p++)
-    while( *p == '*' && (p[1] == '?' || p[1] == '*'))
-      (void)pstrcpy( &p[1], &p[2]);
+  while(all_string_sub(t_pattern, "*?", "*", sizeof(pstring)))
+    ;
+
+  while(all_string_sub(t_pattern, "**", "*", sizeof(pstring)))
+    ;
 
   if (strequal(t_pattern,"*"))
     return(True);
@@ -1324,12 +1326,23 @@ BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
     BOOL last_wcard_was_star = False;
     int num_path_components, num_regexp_components;
 
+    if(strequal(t_pattern, "."))
+      return False; /* A dot pattern never matches... ???? */
+
+    /*
+     * NT *always* treats '.' and '..' as identical for a match.... why ?
+     */
+
+    if(strequal(t_filename, ".."))
+      pstrcpy(t_filename, ".");
+
     pstrcpy(te_pattern,t_pattern);
     pstrcpy(te_filename,t_filename);
     /*
      * Remove multiple "*." patterns.
      */
-    pstring_sub(te_pattern, "*.*.", "*.");
+    while(all_string_sub(te_pattern, "*.*.", "*.", sizeof(pstring)))
+      ;
     num_regexp_components = count_chars(te_pattern, '.');
     num_path_components = count_chars(te_filename, '.');
 
