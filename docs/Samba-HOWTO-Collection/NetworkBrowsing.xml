@@ -147,6 +147,8 @@ parameters is set, <filename>nmbd</filename> will still do its job.
 <title>Discussion</title>
 
 <para>
+<indexterm><primary>SMB-based messaging</primary></indexterm>
+<indexterm><primary>NetBIOS</primary></indexterm>
 All MS Windows networking uses SMB-based messaging.  SMB messaging may be implemented with or without NetBIOS.
 MS Windows 200x supports NetBIOS over TCP/IP for backwards compatibility. Microsoft appears intent on phasing
 out NetBIOS support.
@@ -156,10 +158,14 @@ out NetBIOS support.
 <title>NetBIOS over TCP/IP</title>
 
 <para>
+<indexterm><primary>encapsulating</primary></indexterm>
+<indexterm><primary>broadcast</primary></indexterm>
+<indexterm><primary>unicast</primary></indexterm>
+<indexterm><primary>UDP</primary></indexterm>
 Samba implements NetBIOS, as does MS Windows NT/200x/XP, by encapsulating it over TCP/IP.
 MS Windows products can do likewise. NetBIOS-based networking uses broadcast messaging to
 effect browse list management. When running NetBIOS over TCP/IP, this uses UDP-based messaging.
-UDP messages can be broadcast or uni-cast.
+UDP messages can be broadcast or unicast.
 </para>
 
 <para>
@@ -172,19 +178,48 @@ implements browse list collation using uni-cast UDP.
 </para>
 
 <para>
-The methods and order of methods used by MS Windows to perform name lookup requests (name resolution)
-is determined by a configuration parameter called the netbios node-type.
+The methods used by MS Windows to perform name lookup requests (name resolution) is determined by a 
+configuration parameter called the netbios node-type. There are four (4) basic NetBIOS node types:
+</para>
+
+<indexterm><primary>b-node</primary></indexterm>
+<indexterm><primary>p-node</primary></indexterm>
+<indexterm><primary>m-node</primary></indexterm>
+<indexterm><primary>h-node</primary></indexterm>
+<indexterm><primary>node-type</primary></indexterm>
+<indexterm><primary>WINS</primary></indexterm>
+<indexterm><primary>broadcast</primary></indexterm>
+<indexterm><primary>unicast</primary></indexterm>
+<itemizedlist>
+	<listitem><para><emphasis>b-node (type 0x01):</emphasis> The Windows client will use only
+	NetBIOS broadcast requests using UDP broadcast.</para></listitem>
+	<listitem><para><emphasis>p-node (type 0x02):</emphasis> The Windows client will use point-to-point
+	(NetBIOS unicast) requests using UDP unicast directed to a WINS server.</para></listitem>
+	<listitem><para><emphasis>m-node (type 0x04):</emphasis> The Windows client will first use
+	NetBIOS broadcast requests using UDP broadcast, then it will use (NetBIOS unicast) 
+	requests using UDP unicast directed to a WINS server.</para></listitem>
+	<listitem><para><emphasis>h-node (type 0x08):</emphasis> The Windows client will use 
+	(NetBIOS unicast) requests using UDP unicast directed to a WINS server, then it will use 
+	NetBIOS broadcast requests using UDP broadcast.</para></listitem>
+</itemizedlist>
+
+<para>
+<indexterm><primary>Hybrid</primary></indexterm>
+The default Windows network client (or server) network configuration enables NetBIOS over TCP/IP
+and b-node configuration. The use of WINS makes most sense with h-node (Hybid mode) operation so that
+in the event of a WINS breakdown or non-availability the client can use broadcast based name resolution.
 </para>
 
 <para>
-Secondly, in those networks where Samba is the only SMB server technology,
-wherever possible <filename>nmbd</filename> should be configured on one machine as the WINS
+<indexterm><primary>LMB</primary><see>Local Master Browser</see></indexterm>
+<indexterm><primary>Local Master Browser</primary></indexterm>
+In those networks where Samba is the only SMB server technology, wherever possible 
+<filename>nmbd</filename> should be configured on one machine as the WINS
 server. This makes it easy to manage the browsing environment. If each network
 segment is configured with its own Samba WINS server, then the only way to
 get cross-segment browsing to work is by using the 
-<indexterm><primary>LMB</primary><see>Local Master Browser</see></indexterm>
-<indexterm><primary>Local Master Browser</primary></indexterm>
-<smbconfoption><name>remote announce</name></smbconfoption> and the <smbconfoption><name>remote browse sync</name></smbconfoption>
+<smbconfoption><name>remote announce</name></smbconfoption> and the 
+<smbconfoption><name>remote browse sync</name></smbconfoption>
 parameters to your &smb.conf; file.
 </para>
 
@@ -290,6 +325,15 @@ consequently network services will be severely impaired.
 The use of Dynamic DNS is highly recommended with Active Directory, in which case
 the use of BIND9 is preferred for its ability to adequately support the SRV (service)
 records that are needed for Active Directory.
+</para>
+
+<para>
+Use of raw SMB over TCP/IP (No NetBIOS layer) can be done only with Active
+Directory domains. Samba is not an Active Directory Domain Controller: ergo,
+it is not possible run Samba as a domain controller and at the same time NOT use
+NetBIOS. Where Samba is used as an Active Directory Domain Member Server (DMS)
+it is possible to configure Samba to not use NetBIOS over TCP/IP. A Samba DMS
+can integrate fully into an Active Directory domain.
 </para>
 
 </sect2>
