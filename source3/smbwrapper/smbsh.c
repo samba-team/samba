@@ -30,6 +30,7 @@ static void smbsh_usage(void)
 	printf(" -R resolve order\n");
 	printf(" -d debug level\n");
 	printf(" -l logfile\n");
+	printf(" -L libdir\n");
 	exit(0);
 }
 
@@ -41,11 +42,17 @@ int main(int argc, char *argv[])
 	int opt;
 	extern char *optarg;
 	extern int optind;
+	extern FILE *dbf;
 
+	dbf = stdout;
+	charset_initialise();
 	smbw_setup_shared();
 
-	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:h")) != EOF) {
+	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:hL:")) != EOF) {
 		switch (opt) {
+		case 'L':
+			libd = optarg;
+			break;
 		case 'W':
 			smbw_setshared("WORKGROUP", optarg);
 			break;
@@ -76,7 +83,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	charset_initialise();
 
 	if (!smbw_getshared("USER")) {
 		printf("Username: ");
