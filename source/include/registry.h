@@ -73,7 +73,7 @@ struct registry_key {
 
 struct registry_value {
   char *name;
-  int data_type;
+  unsigned int data_type;
   int data_len;
   void *data_blk;    /* Might want a separate block */
   struct registry_hive *hive;
@@ -104,6 +104,7 @@ struct registry_operations {
 	
 	/* Implement this one */
 	WERROR (*open_hive) (TALLOC_CTX *, struct registry_hive *, struct registry_key **);
+	WERROR (*close_hive) (struct registry_hive *);
 
 	/* Or this one */
 	WERROR (*open_key) (TALLOC_CTX *, struct registry_hive *, const char *name, struct registry_key **);
@@ -131,6 +132,7 @@ struct registry_operations {
 	/* Key management */
 	WERROR (*add_key)(TALLOC_CTX *, struct registry_key *, const char *name, uint32_t access_mask, SEC_DESC *, struct registry_key **);
 	WERROR (*del_key)(struct registry_key *);
+	WERROR (*flush_key) (struct registry_key *);
 
 	/* Value management */
 	WERROR (*set_value)(struct registry_key *, const char *name, int type, void *data, int len); 
