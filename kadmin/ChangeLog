@@ -1,3 +1,14 @@
+2004-08-13  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* get.c: print keytypes on long format
+	
+2004-07-06  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* get.c (format_field): allow mod_name to be optional
+	
+	* ext.c (do_ext_keytab): if there isn't any keydata, try using
+	kadm5_randkey_principal
+
 2004-07-02  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* load.c: make merge/load work again
