@@ -98,7 +98,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	pipes_open++;
 
-	memset(p, 0, sizeof(*p));
+	ZERO_STRUCTP(p);
 	p->pnum = i;
 
 	p->open = True;
@@ -278,7 +278,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 	DLIST_REMOVE(Pipes, p);
 
-	memset(p, 0, sizeof(*p));
+	ZERO_STRUCTP(p);
 
 	free(p);
 	

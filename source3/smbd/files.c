@@ -91,7 +91,7 @@ files_struct *file_new(void )
 	fsp = (files_struct *)malloc(sizeof(*fsp));
 	if (!fsp) return NULL;
 
-	memset(fsp, 0, sizeof(*fsp));
+	ZERO_STRUCTP(fsp);
 
 	first_file = (i+1) % MAX_FNUMS;
 
@@ -166,7 +166,7 @@ file_fd_struct *fd_get_new(void)
 	fd_ptr = (file_fd_struct *)malloc(sizeof(*fd_ptr));
 	if (!fd_ptr) return NULL;
 	
-	memset(fd_ptr, 0, sizeof(*fd_ptr));
+	ZERO_STRUCTP(fd_ptr);
 	
 	fd_ptr->fdnum = i;
 	fd_ptr->dev = (SMB_DEV_T)-1;
@@ -327,7 +327,7 @@ void fd_ptr_free(file_fd_struct *fd_ptr)
 		 fd_ptr->fdnum, fd_ptr_used));
 
 	/* paranoia */
-	memset(fd_ptr, 0, sizeof(*fd_ptr));
+	ZERO_STRUCTP(fd_ptr);
 
 	free(fd_ptr);
 }
@@ -354,7 +354,7 @@ void file_free(files_struct *fsp)
 
 	/* this is paranoia, just in case someone tries to reuse the 
 	   information */
-	memset(fsp, 0, sizeof(*fsp));
+	ZERO_STRUCTP(fsp);
 
 	if (fsp == chain_fsp) chain_fsp = NULL;
 

@@ -76,7 +76,7 @@ void CatchSignal(int signum,void (*handler)(int ))
 #ifdef HAVE_SIGACTION
 	struct sigaction act;
 
-	memset(&act, 0, sizeof(act));
+	ZERO_STRUCT(act);
 
 	act.sa_handler = handler;
 #ifdef SA_RESTART

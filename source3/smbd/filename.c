@@ -334,8 +334,9 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 
   *dirpath = 0;
   *bad_path = False;
-  if(pst)
-    memset( (char *)pst, '\0', sizeof(SMB_STRUCT_STAT));
+  if(pst) {
+	  ZERO_STRUCTP(pst);
+  }
 
   if(saved_last_component)
     *saved_last_component = 0;

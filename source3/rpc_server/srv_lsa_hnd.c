@@ -114,7 +114,7 @@ BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 		return False;
 	}
 
-	memset(p, 0, sizeof(*p));
+	ZERO_STRUCTP(p);
 
 	p->open = True;				
 	p->pnum = i;
@@ -280,7 +280,7 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
 
 	bitmap_clear(bmap, p->pnum);
 
-	memset(p, 0, sizeof(*p));
+	ZERO_STRUCTP(p);
 
 	free(p);
 
