@@ -139,7 +139,11 @@ static BOOL afs_createtoken(const char *username, const char *cell,
 	SIVAL(p, 0, now);
 	ct->BeginTimestamp = now;
 
-	ct->EndTimestamp = now + (255*60*5);
+	if(lp_afs_token_lifetime() == 0)
+		ct->EndTimestamp = NEVERDATE;
+	else
+		ct->EndTimestamp = now + lp_afs_token_lifetime();
+
 	if (((ct->EndTimestamp - ct->BeginTimestamp) & 1) == 1) {
 		ct->BeginTimestamp += 1; /* Lifetime must be even */
 	}
