@@ -100,7 +100,8 @@ static void rpcclient_stop(void)
 }
 
 #define COMPL_NONE 0
-#define COMPL_REGLIST 1
+#define COMPL_REGKEY 1
+#define COMPL_REGVAL 2
 
 /****************************************************************************
  This defines the commands supported by this client
@@ -117,15 +118,15 @@ struct
   {"svcenum",    cmd_svc_enum,         "[-i] Lists Services Manager",{COMPL_NONE, COMPL_NONE}},
   {"at",         cmd_at,               "Scheduler control (at /? for syntax)",{COMPL_NONE, COMPL_NONE}},
   {"time",       cmd_time,             "Display remote time",{COMPL_NONE, COMPL_NONE}},
-  {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)",{COMPL_REGLIST, COMPL_NONE}},
-  {"regdeletekey",cmd_reg_delete_key,  "<keyname> Registry Key Delete",{COMPL_NONE, COMPL_NONE}},
-  {"regcreatekey",cmd_reg_create_key,  "<keyname> [keyclass] Registry Key Create",{COMPL_NONE, COMPL_NONE}},
+  {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)",{COMPL_REGKEY, COMPL_NONE}},
+  {"regdeletekey",cmd_reg_delete_key,  "<keyname> Registry Key Delete",{COMPL_REGKEY, COMPL_NONE}},
+  {"regcreatekey",cmd_reg_create_key,  "<keyname> [keyclass] Registry Key Create",{COMPL_REGKEY, COMPL_NONE}},
   {"shutdown",cmd_reg_shutdown,  "[-m message] [-t timeout] [-r or --reboot] Server Shutdown",{COMPL_NONE, COMPL_NONE}},
-  {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query",{COMPL_NONE, COMPL_NONE}},
-  {"regdeleteval",cmd_reg_delete_val,  "<valname> Registry Value Delete",{COMPL_NONE, COMPL_NONE}},
-  {"regcreateval",cmd_reg_create_val,  "<valname> <valtype> <value> Registry Key Create",{COMPL_NONE, COMPL_NONE}},
-  {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> Registry Key Security",{COMPL_NONE, COMPL_NONE}},
-  {"regtestsec", cmd_reg_test_key_sec, "<keyname> Test Registry Key Security",{COMPL_NONE, COMPL_NONE}},
+  {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query",{COMPL_REGKEY, COMPL_NONE}},
+  {"regdeleteval",cmd_reg_delete_val,  "<valname> Registry Value Delete",{COMPL_REGKEY, COMPL_REGVAL}},
+  {"regcreateval",cmd_reg_create_val,  "<valname> <valtype> <value> Registry Key Create",{COMPL_REGKEY, COMPL_NONE}},
+  {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> Registry Key Security",{COMPL_REGKEY, COMPL_NONE}},
+  {"regtestsec", cmd_reg_test_key_sec, "<keyname> Test Registry Key Security",{COMPL_REGKEY, COMPL_NONE}},
   {"ntlogin",    cmd_netlogon_login_test, "[username] [password] NT Domain login test",{COMPL_NONE, COMPL_NONE}},
   {"domtrust",    cmd_netlogon_domain_test, "<domain> NT Inter-Domain test",{COMPL_NONE, COMPL_NONE}},
   {"wksinfo",    cmd_wks_query_info,   "Workstation Query Info",{COMPL_NONE, COMPL_NONE}},
@@ -470,6 +471,7 @@ static void reg_init(int val, const char *full_keyname, int num)
 	}
 }
 
+static int key_val = 0;
 static void add_reg_name(const char *name)
 {
 	reg_name = (char**)Realloc(reg_name, (reg_list_len+1) *
@@ -484,8 +486,10 @@ static void add_reg_name(const char *name)
 static void reg_key_list(const char *full_name,
 				const char *name, time_t key_mod_time)
 {
-	DEBUG(10,("reg_key_list: %s\n", name));
-	add_reg_name(name);
+	if (IS_BITS_SET_ALL(key_val, 1))
+	{
+		add_reg_name(name);
+	}
 }
 
 static void reg_val_list(const char *full_name,
@@ -493,16 +497,20 @@ static void reg_val_list(const char *full_name,
 				uint32 type,
 				BUFFER2 *value)
 {
-	DEBUG(10,("reg_val_list: %s\n", name));
-	add_reg_name(name);
+	if (IS_BITS_SET_ALL(key_val, 2))
+	{
+		add_reg_name(name);
+	}
 }
 
-char *complete_remote_regenum(char *text, int state)
+static pstring last_full_keyname = "";
+
+char *complete_regenum(char *text, int state)
 {
 	pstring full_keyname;
 	static uint32 i = 0;
     
-	DEBUG(10,("complete_remote_regenum: %s (%d)\n", text, state));
+	DEBUG(10,("complete_regenum: %s (%d)\n", text, state));
 
 	if (state == 0)
 	{
@@ -521,14 +529,66 @@ char *complete_remote_regenum(char *text, int state)
 	for (; i < reg_list_len; i++)
 	{
 		DEBUG(10,("match: %s key: %s\n", text, reg_name[i]));
-		if (strnequal(text, reg_name[i], strlen(text)))
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, reg_name[i], strlen(text)))
 		{
+			pstring tmp_keyname;
+			char *name = strdup(reg_name[i]);
 			i++;
-			return strdup(reg_name[i-1]);
+
+			slprintf(tmp_keyname, sizeof(tmp_keyname)-1, "%s\\%s",
+				 cli_info.cur_dir, name);
+
+			/* Iterate all keys / values */
+			if (msrpc_reg_enum_key(smb_cli, tmp_keyname,
+				   NULL, NULL, NULL))
+			{
+				pstrcpy(last_full_keyname, tmp_keyname);
+			}
+			else
+			{
+				last_full_keyname[0] = 0;
+			}
+
+			return name;
 		}
 	}
 	
 	return NULL;
+}
+
+char *complete_end_reg(char *text, int state)
+{
+	pstring full_keyname;
+    
+	DEBUG(10,("complete_end_reg: %s (%d)\n", text, state));
+
+	if (state == 0)
+	{
+		slprintf(full_keyname, sizeof(full_keyname)-1, "%s\\%s",
+		         cli_info.cur_dir, text);
+
+		/* Iterate all keys / values */
+		if (msrpc_reg_enum_key(smb_cli, full_keyname,
+		                   reg_init, reg_key_list, reg_val_list))
+		{
+			pstrcpy(cli_info.cur_dir, full_keyname);
+		}
+    	}
+
+	return NULL;
+}
+
+char *complete_regenum_key(char *text, int state)
+{
+	key_val = 1;
+	return complete_regenum(text, state);
+}
+
+char *complete_regenum_val(char *text, int state)
+{
+	key_val = 2;
+	return complete_regenum(text, state);
 }
 
 /* Complete an rpcclient command */
@@ -559,7 +619,10 @@ char *complete_cmd(char *text, int state)
 
 char **completion_fn(char *text, int start, int end)
 {
-    int i, num_words, cmd_index;
+	int cmd_index;
+	int num_words;
+
+    int i;
     char lastch = ' ';
 
     /* Complete rpcclient command */
@@ -592,13 +655,16 @@ char **completion_fn(char *text, int start, int end)
 	    
 	    /* Call appropriate completion function */
 
-      if (num_words == 2)
+      if (num_words == 2 || num_words == 3)
       {
         switch (commands[cmd_index].compl_args[num_words - 2])
         {
 
-        case COMPL_REGLIST:
-          return completion_matches(text, complete_remote_regenum);
+        case COMPL_REGVAL:
+          return completion_matches(text, complete_regenum_val);
+
+        case COMPL_REGKEY:
+          return completion_matches(text, complete_regenum_key);
 
         default:
             /* An invalid completion type */
@@ -619,7 +685,15 @@ char **completion_fn(char *text, int start, int end)
 
 char *complete_cmd_null(char *text, int state)
 {
-    return NULL;
+	DEBUG(10,("complete_cmd_null: %s %d\n", text, state));
+
+	if (last_full_keyname[0] != 0)
+	{
+		DEBUG(10,("last_keyname: %s\n", last_full_keyname));
+		pstrcpy(cli_info.cur_dir, last_full_keyname);
+		
+	}
+	return NULL;
 }
 
 #endif /* HAVE_LIBREADLINE */
