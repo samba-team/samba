@@ -705,17 +705,18 @@ uint32 domain_sequence_number(char *domain_name)
    application. */
 
 BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
-			     uint16 info_level, 
+			     uint32 *start_ndx, uint16 info_level, 
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
-	BOOL res;
+	uint32 res;
 
 	if (!domain_handles_open(domain)) return False;
 
-	res = samr_query_dispinfo(&domain->sam_dom_handle,
+	res = samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
 				  info_level, num_entries, ctr);
 
-	return res;
+	return (res == NT_STATUS_NOPROBLEMO ||
+		res == STATUS_MORE_ENTRIES);
 }
 
 /* Check if a domain is present in a comma-separated list of domains */

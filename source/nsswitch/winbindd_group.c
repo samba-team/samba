@@ -677,6 +677,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 				samr_enum_dom_groups(&ent->domain->
 						     sam_dom_handle,
 						     &start_ndx, 0x100000,
+						     (struct acct_info **)
 						     &ent->sam_entries,
 						     &ent->num_sam_entries);
 		} while (status == STATUS_MORE_ENTRIES);
@@ -688,6 +689,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 				samr_enum_dom_aliases(&ent->domain->
 						      sam_dom_handle,
 						      &start_ndx2, 0x100000,
+						      (struct acct_info **)
 						      &ent->sam_entries,
 						      &ent->num_sam_entries);
 		} while (status == STATUS_MORE_ENTRIES);
@@ -724,7 +726,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
         while (ent->sam_entry_index < ent->num_sam_entries) {
             enum winbindd_result result;
             fstring domain_group_name;
-            char *group_name = (ent->sam_entries)
+            char *group_name = ((struct acct_info *)ent->sam_entries)
                 [ent->sam_entry_index].acct_name; 
    
             /* Prepend domain to name */
@@ -821,10 +823,9 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 		/* Pack user list into extra data fields */
 
-		DEBUG(0, ("got %d entries\n", groups.num_sam_entries));
-
 		for (i = 0; i < groups.num_sam_entries; i++) {
-			char *group_name = (groups.sam_entries)[i].acct_name; 
+			char *group_name = ((struct acct_info *)
+					    groups.sam_entries)[i].acct_name; 
 			fstring name;
 
 			/* Convert unistring to ascii */

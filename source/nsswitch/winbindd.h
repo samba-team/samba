@@ -51,7 +51,7 @@ struct winbindd_cli_state {
 
 struct getent_state {
     struct getent_state *prev, *next;
-    struct acct_info *sam_entries;
+    void *sam_entries;
     uint32 sam_entry_index, num_sam_entries;  
     struct winbindd_domain *domain;
     BOOL got_sam_entries;

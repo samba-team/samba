@@ -308,111 +308,148 @@ enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 
 /* Fetch next passwd entry from ntdom database */
 
+#define TPOT_DISPINFO 1
+
 enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 {
-    if (state == NULL) return WINBINDD_ERROR;
+	if (state == NULL) return WINBINDD_ERROR;
 
-    /* Process the current head of the getent_state list */
+	/* Process the current head of the getent_state list */
 
-    while(state->getpwent_state != NULL) {
-        struct getent_state *ent = state->getpwent_state;
+	while(state->getpwent_state != NULL) {
+		struct getent_state *ent = state->getpwent_state;
+		
+		/* Get list of user entries for this pipe */
+		
+		if (!ent->got_sam_entries) {
+			uint32 status, num_entries, start_ndx = 0;
+			SAM_DISPINFO_1 info1;
+			SAM_DISPINFO_CTR ctr;
+			fstring *name_list = NULL;
 
-        /* Get list of user entries for this pipe */
+			ctr.sam.info1 = &info1;
+			
+			/* Look in cache for entries, else get them direct */
+		    
+			if (winbindd_fetch_user_cache(ent->domain->name,
+						      &ent->sam_entries,
+						      &ent->num_sam_entries)) {
+				goto send_entry;
+			}
 
-        if (!ent->got_sam_entries) {
-            uint32 status, start_ndx = 0;
+			/* Fetch the user entries */
+				
+			if (!domain_handles_open(ent->domain)) {
+				goto cleanup;
+			}
+			
+				
+			do {
+				int i;
+					
+				status =
+					winbindd_query_dispinfo(ent->domain,
+								&start_ndx, 1,
+								&num_entries,
+								&ctr);
+					
+				name_list = Realloc(name_list,
+						    sizeof(fstring) *
+						    (ent->num_sam_entries + 
+						     num_entries));
+				
+				for (i = 0; i < num_entries; i++) {
+					unistr2_to_ascii(
+					name_list[ent->num_sam_entries + i], 
+						&info1.str[i].uni_acct_name, 
+						sizeof(fstring));
+				}
+					
+				ent->num_sam_entries += num_entries;
+					
+			} while (status == STATUS_MORE_ENTRIES);
+			
+				/* Fill cache with received entries */
+			
+			winbindd_fill_user_cache(ent->domain->name, 
+						 ent->sam_entries, 
+						 ent->num_sam_entries);
 
-            /* Look in cache for entries, else get them direct */
+			ent->sam_entries = name_list;
+			ent->got_sam_entries = True;
+		}
+		
+		/* Send back a user */
+	
+	send_entry:
 
-            if (!winbindd_fetch_user_cache(ent->domain->name, 
-                                           &ent->sam_entries,
-                                           &ent->num_sam_entries)) {
-
-                /* Fetch the user entries */
-
-                if (!domain_handles_open(ent->domain)) goto cleanup;
-
-                do {
-                    status =
-                        samr_enum_dom_users(
-                            &ent->domain->sam_dom_handle, &start_ndx, 0, 0, 
-                            0x10000, &ent->sam_entries, &ent->num_sam_entries);
-                } while (status == STATUS_MORE_ENTRIES);
-
-                /* Fill cache with received entries */
-            
-                winbindd_fill_user_cache(ent->domain->name, ent->sam_entries, 
-                                         ent->num_sam_entries);
-            }
-            
-            ent->got_sam_entries = True;
-        }
-        
-        /* Send back a user */
-
-        while (ent->sam_entry_index < ent->num_sam_entries) {
-            enum winbindd_result result;
-            fstring domain_user_name;
-            char *user_name = (ent->sam_entries)
-                [ent->sam_entry_index].acct_name; 
-                
-            /* Don't bother with machine accounts */
-
-            if (user_name[strlen(user_name) - 1] == '$') {
-                ent->sam_entry_index++;
-                continue;
-            }
-
-            /* Prepend domain to name */
-
-	    slprintf(domain_user_name, sizeof(domain_user_name),
-		     "%s%s%s", ent->domain->name, lp_winbind_separator(), 
-		     user_name);
-                
-            /* Get passwd entry from user name */
-                
-            fstrcpy(state->request.data.username, domain_user_name);
-            result = winbindd_getpwnam_from_user(state);
-
-            ent->sam_entry_index++;
-                
-            /* Return if user lookup worked */
-                
-            if (result == WINBINDD_OK) {
-                return result;
-            }
-                
-            /* Try next user */
-            
-            DEBUG(1, ("could not getpwnam_from_user for username %s\n",
-                      domain_user_name));
-        }
-
-        /* We've exhausted all users for this pipe - close it down and
-           start on the next one. */
-
-    cleanup:
-
-        /* Free mallocated memory for sam entries.  The data stored here
-           may have been allocated from the cache. */
-
-        if (ent->sam_entries != NULL) free(ent->sam_entries);
-        ent->sam_entries = NULL;
-
-        /* Free state information for this domain */
-
-        {
-            struct getent_state *old_ent;
-
-            old_ent = state->getpwent_state;
-            DLIST_REMOVE(state->getpwent_state, state->getpwent_state);
-            free(old_ent);
-        }
-    }
-
-    /* Out of pipes so we're done */
-
-    return WINBINDD_ERROR;
+		while (ent->sam_entry_index < ent->num_sam_entries) {
+			enum winbindd_result result;
+			fstring domain_user_name;
+			fstring *name_list = ent->sam_entries;
+			
+			/* Don't bother with machine accounts */
+			
+			if (name_list[ent->sam_entry_index]
+			    [strlen(name_list[ent->sam_entry_index]) - 1] 
+			    == '$') {
+				ent->sam_entry_index++;
+				continue;
+			}
+			
+			/* Prepend domain to name */
+			
+			slprintf(domain_user_name, sizeof(domain_user_name),
+				 "%s%s%s", ent->domain->name, 
+				 lp_winbind_separator(), 
+				 name_list[ent->sam_entry_index]);
+			
+			/* Get passwd entry from user name */
+			
+			fstrcpy(state->request.data.username, 
+				domain_user_name);
+			result = winbindd_getpwnam_from_user(state);
+			
+			ent->sam_entry_index++;
+			
+			/* Return if user lookup worked */
+			
+			if (result == WINBINDD_OK) {
+				return result;
+			}
+			
+			/* Try next user */
+			
+			DEBUG(1, ("could not getpwnam_from_user for "
+				  "username %s\n", domain_user_name));
+		}
+	
+		/* We've exhausted all users for this pipe - close it down and
+		   start on the next one. */
+		
+	cleanup:
+		
+		/* Free mallocated memory for sam entries.  The data stored
+		   here may have been allocated from the cache. */
+		
+		if (ent->sam_entries != NULL) free(ent->sam_entries);
+		ent->sam_entries = NULL;
+		
+		/* Free state information for this domain */
+		
+		{
+			struct getent_state *old_ent;
+			
+			old_ent = state->getpwent_state;
+			DLIST_REMOVE(state->getpwent_state, 
+				     state->getpwent_state);
+			free(old_ent);
+		}
+	}
+	
+	/* Out of pipes so we're done */
+	
+	return WINBINDD_ERROR;
 }
 
 /* List domain users without mapping to unix ids */
@@ -429,6 +466,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
         /* Enumerate over trusted domains */
 
         for (domain = domain_list; domain; domain = domain->next) {
+		uint32 start_ndx = 0;
 		int i;
 
 		ctr.sam.info1 = &info1;
@@ -443,7 +481,8 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
                 /* Query display info */
 
-                if (!winbindd_query_dispinfo(domain, 1, &num_entries, &ctr)) {
+                if (!winbindd_query_dispinfo(domain, &start_ndx, 1, 
+					     &num_entries, &ctr)) {
 			continue;
 		}
 

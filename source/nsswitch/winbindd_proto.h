@@ -11,8 +11,7 @@ int main(int argc, char **argv);
 /*The following definitions come from  nsswitch/winbindd_cache.c  */
 
 void winbindd_cache_init(void);
-void winbindd_fill_user_cache(char *domain_name, 
-                              struct acct_info *sam_entries,
+void winbindd_fill_user_cache(char *domain_name, fstring *sam_entries,
                               int num_sam_entries);
 void winbindd_fill_group_cache(char *domain_name,
                                struct acct_info *sam_entries,
@@ -28,10 +27,9 @@ void winbindd_fill_gid_cache_entry(char *domain, gid_t gid,
                                      struct winbindd_gr *gr, void *extra_data,
                                      int extra_data_len);
 BOOL winbindd_fetch_user_cache(char *domain_name,
-                               struct acct_info **sam_entries,
+                               fstring **sam_entries,
                                int *num_entries);
-BOOL winbindd_fetch_group_cache(char *domain_name,
-                                struct acct_info **sam_entries,
+BOOL winbindd_fetch_group_cache(char *domain_name, void **sam_entries,
                                 int *num_entries);
 BOOL winbindd_fetch_user_cache_entry(char *domain_name, char *user, 
                                      struct winbindd_pw *pw);
@@ -134,7 +132,7 @@ BOOL winbindd_param_init(void);
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
 uint32 domain_sequence_number(char *domain_name);
 BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
-			     uint16 info_level, 
+			     uint32 *start_ndx, uint16 info_level, 
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
 #endif /* _WINBINDD_PROTO_H_ */

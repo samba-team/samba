@@ -87,22 +87,29 @@ static BOOL cache_domain_expired(char *domain_name, uint32 seq_num)
 	return False;
 }
 
-static void set_cache_sequence_number(char *domain_name, char *cache_type, char *subkey)
+static void set_cache_sequence_number(char *domain_name, char *cache_type, 
+				      char *subkey)
 {
 	fstring keystr;
+
 	slprintf(keystr,sizeof(keystr),"CACHESEQ %s/%s/%s",
 		 domain_name, cache_type, subkey?subkey:"");
+
 	tdb_store_int(cache_tdb, keystr, cached_sequence_number(domain_name));
 }
 
-static uint32 get_cache_sequence_number(char *domain_name, char *cache_type, char *subkey)
+static uint32 get_cache_sequence_number(char *domain_name, char *cache_type, 
+					char *subkey)
 {
 	fstring keystr;
 	uint32 seq_num;
+
 	slprintf(keystr,sizeof(keystr),"CACHESEQ %s/%s/%s",
 		 domain_name, cache_type, subkey?subkey:"");
 	seq_num = (uint32)tdb_fetch_int(cache_tdb, keystr);
+
 	DEBUG(4,("%s is %u\n", keystr, (unsigned)seq_num));
+
 	return seq_num;
 }
 
@@ -125,8 +132,8 @@ static void fill_cache(char *domain_name, char *cache_type,
 	slprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
 		 domain_name);
 
-	tdb_store_by_string(cache_tdb, keystr, 
-			    sam_entries, sizeof(struct acct_info) * num_sam_entries);
+	tdb_store_by_string(cache_tdb, keystr, sam_entries, 
+			    sizeof(struct acct_info) * num_sam_entries);
 
 	/* Stamp cache with current seq number */
 	set_cache_sequence_number(domain_name, cache_type, NULL);
@@ -134,11 +141,28 @@ static void fill_cache(char *domain_name, char *cache_type,
 
 /* Fill the user cache with supplied data */
 
-void winbindd_fill_user_cache(char *domain_name, 
-                              struct acct_info *sam_entries,
+void winbindd_fill_user_cache(char *domain_name, fstring *sam_entries,
                               int num_sam_entries)
 {
-	fill_cache(domain_name, CACHE_TYPE_USER, sam_entries, num_sam_entries);
+	fstring keystr;
+
+	if (lp_winbind_cache_time() == 0) return;
+
+	/* Error check */
+
+	if (!sam_entries || (num_sam_entries == 0)) return;
+
+	DEBUG(4, ("filling USER cache for domain %s with %d entries\n",
+		  domain_name, num_sam_entries));
+
+	slprintf(keystr, sizeof(keystr), "USR CACHE DATA/%s", domain_name);
+
+	tdb_store_by_string(cache_tdb, keystr, sam_entries, 
+			    sizeof(fstring) * num_sam_entries);
+
+	set_cache_sequence_number(domain_name, CACHE_TYPE_USER, NULL);
+
+	return;
 }
 
 /* Fill the group cache with supplied data */
@@ -147,7 +171,8 @@ void winbindd_fill_group_cache(char *domain_name,
                                struct acct_info *sam_entries,
                                int num_sam_entries)
 {
-	fill_cache(domain_name, CACHE_TYPE_GROUP, sam_entries, num_sam_entries);
+	fill_cache(domain_name, CACHE_TYPE_GROUP, sam_entries, 
+		   num_sam_entries);
 }
 
 static void fill_cache_entry(char *domain, char *cache_type, char *name, void *buf, int len)
@@ -243,7 +268,9 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
 
 	/* Check cache data is current */
 	if (cache_domain_expired(domain_name, 
-				 get_cache_sequence_number(domain_name, cache_type, NULL))) {
+				 get_cache_sequence_number(domain_name, 
+							   cache_type, 
+							   NULL))) {
 		return False;
 	}
 	
@@ -273,25 +300,46 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
    entries, or the cached information has expired for the domain. */
 
 BOOL winbindd_fetch_user_cache(char *domain_name,
-                               struct acct_info **sam_entries,
+                               fstring **sam_entries,
                                int *num_entries)
 {
-	return fetch_cache(domain_name, CACHE_TYPE_USER, sam_entries,
-			   num_entries);
+	fstring keystr;
+	TDB_DATA data;
+
+	if (!domain_name || !sam_entries || !num_entries) return False;
+
+	if (lp_winbind_cache_time() == 0) return False;
+
+	slprintf(keystr, sizeof(keystr), "USR CACHE DATA/%s", domain_name);
+	data = tdb_fetch_by_string(cache_tdb, keystr);
+
+	if (!data.dptr) return False;
+
+	/* Copy across cached data.  We can save a memcpy() by directly
+	   assigning the data.dptr to the sam_entries pointer.  It will
+	   be freed by the end{pw,gr}ent() function. */
+	
+	*sam_entries = (fstring *)data.dptr;
+	*num_entries = data.dsize / sizeof(fstring);
+
+	DEBUG(4, ("fetched %d cached USR entries for domain %s\n",
+		  *num_entries, domain_name));
+
+	return True;
 }
 
 /* Return cached entries for a domain.  Return false if there are no cached
    entries, or the cached information has expired for the domain. */
 
-BOOL winbindd_fetch_group_cache(char *domain_name,
-                                struct acct_info **sam_entries,
+BOOL winbindd_fetch_group_cache(char *domain_name, void **sam_entries,
                                 int *num_entries)
 {
-	return fetch_cache(domain_name, CACHE_TYPE_GROUP, sam_entries,
-			   num_entries);
+	return fetch_cache(domain_name, CACHE_TYPE_GROUP, 
+			   (struct acct_info **)sam_entries, num_entries);
 }
 
-static BOOL fetch_cache_entry(char *domain, char *cache_type, char *name, void *buf, int len)
+static BOOL fetch_cache_entry(char *domain, char *cache_type, char *name, 
+			      void *buf, int len)
 {
 	TDB_DATA data;
 	fstring keystr;
