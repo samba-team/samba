@@ -52,19 +52,19 @@
 #endif
 
 #ifdef HAVE__OPENDIR
-#define real_opendir(fn)            	(_opendir(fn))
+#define real_opendir(fn)            	((DIR *)_opendir(fn))
 #elif SYS_opendir
 #define real_opendir(fn)		((DIR *)syscall(SYS_opendir,(fn)))
 #elif HAVE___OPENDIR
-#define real_opendir(fn)            	(__opendir(fn))
+#define real_opendir(fn)            	((DIR *)__opendir(fn))
 #endif
 
 #ifdef HAVE__READDIR
-#define real_readdir(d)            	(_readdir(d))
+#define real_readdir(d)            	((struct dirent *)_readdir(d))
 #elif HAVE___READDIR
-#define real_readdir(d)            	(__readdir(d))
+#define real_readdir(d)            	((struct dirent *)__readdir(d))
 #elif SYS_readdir
-#define real_readdir(d)		(syscall(SYS_readdir,(d)))
+#define real_readdir(d)		((struct dirent *)syscall(SYS_readdir,(d)))
 #endif
 
 #ifdef HAVE__CLOSEDIR
@@ -110,11 +110,11 @@
 #endif
 
 #ifdef HAVE__GETCWD
-#define real_getcwd(b,s)            	(_getcwd(b,s))
+#define real_getcwd(b,s)            	((char *)_getcwd(b,s))
 #elif SYS_getcwd
-#define real_getcwd(b,s)		(syscall(SYS_getcwd,(b),(s)))
+#define real_getcwd(b,s)		((char *)syscall(SYS_getcwd,(b),(s)))
 #elif HAVE___GETCWD
-#define real_getcwd(b,s)            	(__getcwd(b,s))
+#define real_getcwd(b,s)            	((char *)__getcwd(b,s))
 #endif
 
 #ifdef HAVE__STAT
@@ -181,9 +181,9 @@
 #endif
 
 #ifdef HAVE__READDIR64
-#define real_readdir64(d)            	(_readdir64(d))
+#define real_readdir64(d)            	((struct dirent64 *)_readdir64(d))
 #elif HAVE___READDIR64
-#define real_readdir64(d)            	(__readdir64(d))
+#define real_readdir64(d)            	((struct dirent64 *)__readdir64(d))
 #endif
 
 #ifdef HAVE__LLSEEK
