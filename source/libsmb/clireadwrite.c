@@ -122,7 +122,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 		}
 
 		size2 = SVAL(cli->inbuf, smb_vwv5);
-		size2 |= (SVAL(cli->inbuf, smb_vwv7) & 1);
+		size2 |= (((unsigned int)(SVAL(cli->inbuf, smb_vwv7) & 1)) << 16);
 
 		if (size2 > readsize) {
 			DEBUG(5,("server returned more than we wanted!\n"));
