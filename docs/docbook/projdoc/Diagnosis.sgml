@@ -82,7 +82,7 @@ best way to check this is with <userinput>testparm smb.conf</userinput>.
 
 <para>
 It is helpful to monitor the log files during testing by using the
-<command>tail -F <replaceable>log_file_name</replaceable> in a separate
+<command>tail -F <replaceable>log_file_name</replaceable></command> in a separate
 terminal console (use ctrl-alt-F1 through F6 or multiple terminals in X). 
 Relevant log files can be found (for default installations) in
 <filename>/usr/local/samba/var</filename>.  Also, connection logs from

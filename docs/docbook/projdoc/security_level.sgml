@@ -130,8 +130,8 @@ Windows NT server, the later natively capable of encrypted password support.
 
 <note><para>
 <emphasis>Server</emphasis> level security is incompatible with what is known 
-as </empahsis>schannel</emphasis> or "sign and seal" protocols. This means that
-if you want to use <empahsis>server</emphasis> level security you must disable
+as <emphasis>schannel</emphasis> or "sign and seal" protocols. This means that
+if you want to use <emphasis>server</emphasis> level security you must disable
 the use of "sign and seal" on all machines on your network.
 </para></note>
 
