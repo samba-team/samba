@@ -327,11 +327,13 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	void *res = NULL;
 	char *exp;
 	uint32 t;
-	fstring name2, dom2;
+	fstring name2, dom2, fullname2;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	/* sigh. Need to fix interface to give us a raw name */
-	if (!parse_domain_user(name, dom2, name2)) {
+	fstrcpy(fullname2, name);
+	fstring_sub(fullname2, "\\", lp_winbind_separator());
+	if (!parse_domain_user(fullname2, dom2, name2)) {
 		goto done;
 	}
 
