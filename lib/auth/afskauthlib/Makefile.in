@@ -1,0 +1,80 @@
+#
+# $Id$
+#
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+AR = ar
+LN_S = @LN_S@
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+
+INSTALL = @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
+
+prefix = @prefix@
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+
+PICFLAGS = @PICFLAGS@
+SHARED = @SHARED@
+SHLIBEXT = @SHLIBEXT@
+LD_FLAGS = @LD_FLAGS@
+ 
+LIB = afskauthlib.$(SHLIBEXT)
+
+SOURCES = verify.c
+
+OBJECTS = verify.o
+
+all: $(LIB)
+
+Wall:
+	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../.. -I../../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $<
+
+install: all
+	$(MKINSTALLDIRS) $(libdir)
+	-if test "$(LIB)" != ""; then \
+	  $(INSTALL) -m 0555 $(LIB) $(libdir) ; \
+	  $(LN_S) $(libdir)/$(LIB) /usr/afsws/lib/afskauthlib.so
+	fi
+
+uninstall:
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f $(LIB) *.o
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *.tab.c *~
+	rm -rf CVS
+
+realclean: distclean
+	rm -f TAGS
+
+dist: $(DISTFILES)
+	for file in $(DISTFILES); do \
+	  ln $$file ../`cat ../.fname`/lib \
+	    || cp -p $$file ../`cat ../.fname`/lib; \
+	done
+
+
+$(OBJECTS): ../../../config.h
+
+$(LIB): $(OBJECTS)
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) $(LD_FLAGS) -L../../kafs -L../../krb -L../../des -L../../roken -lkafs -lkrb -ldes -lroken
