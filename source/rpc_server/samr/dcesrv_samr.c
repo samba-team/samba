@@ -528,7 +528,6 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "distinguishedName", msg->dn);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "name", groupname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "cn", groupname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", groupname);
@@ -796,7 +795,6 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "distinguishedName", msg->dn);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "name", account_name);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "cn", account_name);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", account_name);
@@ -1016,7 +1014,6 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "distinguishedName", msg->dn);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "name", aliasname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "cn", aliasname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", aliasname);
@@ -2161,8 +2158,6 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 
 		memberdn = msg->dn;
 
-		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
-				     "distinguishedName", msg->dn);
 		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
 				     "name", sidstr);
 		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
