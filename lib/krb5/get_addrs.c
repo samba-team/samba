@@ -90,7 +90,7 @@ gethostname_fallback (krb5_addresses *res)
  *
  * Try to figure out the addresses of all configured interfaces with a
  * lot of magic ioctls.
- * Include loopback (lo*) interfaces iff loop.
+ * Include loopback interfaces iff loop.
  */
 
 static krb5_error_code
@@ -207,16 +207,8 @@ cleanup:
      return ret;
 }
 
-/*
- * Try to get all addresses, but return the one corresponding to
- * `hostname' if we fail.
- *
- * Don't include any loopback addresses (interfaces of name lo*).
- *
- */
-
-krb5_error_code
-krb5_get_all_client_addrs (krb5_addresses *res)
+static krb5_error_code
+get_addrs_int (krb5_addresses *res, int loop)
 {
     krb5_error_code ret = -1;
 #if defined(AF_INET6) && defined(SIOCGIF6CONF) && defined(SIOCGIF6FLAGS)
@@ -224,7 +216,7 @@ krb5_get_all_client_addrs (krb5_addresses *res)
 			      AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
 			      sizeof(struct in6_ifreq));
 #elif defined(AF_INET) && defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS)
-    ret = find_all_addresses (res, 0,
+    ret = find_all_addresses (res, loop,
 			      AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
 			      sizeof(struct ifreq));
 #endif
@@ -234,13 +226,26 @@ krb5_get_all_client_addrs (krb5_addresses *res)
 }
 
 /*
- * XXX
+ * Try to get all addresses, but return the one corresponding to
+ * `hostname' if we fail.
+ *
+ * Don't include any loopback addresses.
+ *
  */
 
-#if 0
 krb5_error_code
-krb5_get_all_server_addrs ()
+krb5_get_all_client_addrs (krb5_addresses *res)
 {
-    return 0;
+    return get_addrs_int (res, 0);
 }
-#endif
+
+/*
+ * Try to get all local addresses that a server should listen to.
+ * If that fails, we return the address corresponding to `hostname'.
+ */
+
+krb5_error_code
+krb5_get_all_server_addrs (krb5_addresses *res)
+{
+    return get_addrs_int (res, 1);
+}
