@@ -63,11 +63,6 @@ static int ldb_close_registry(void *data)
 	return 0;
 }
 
-static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, struct registry_key *p, const char *name, uint32_t access_mask, SEC_DESC *sec, struct registry_key **new)
-{
-	return WERR_NOT_SUPPORTED;	
-}
-
 static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_key **subkey)
 {
 	struct ldb_context *c = k->hive->backend_data;
@@ -93,13 +88,13 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 	ldb_search_free(c, msg);
 	return WERR_OK;
 }
-#if 0
 
-static WERROR ldb_fetch_values(struct registry_key *k, int *count, REG_VAL ***values)
+static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_value **value)
 {
 	struct ldb_context *c = k->hive->backend_data;
-	int ret, i, j;
+	int ret;
 	struct ldb_message **msg;
+	struct ldb_message_element *el;
 
 	ret = ldb_search(c, (char *)k->backend_data, LDB_SCOPE_ONELEVEL, "(value=*)", NULL,&msg);
 
@@ -108,29 +103,17 @@ static WERROR ldb_fetch_values(struct registry_key *k, int *count, REG_VAL ***va
 		return WERR_FOOBAR;
 	}
 
-	*values = talloc_array_p(k->mem_ctx, REG_VAL *, ret);
-	j = 0;
-	for(i = 0; i < ret; i++) {
-		struct ldb_message_element *el;
-		char *name;
-		el = ldb_msg_find_element(msg[i], "key");
-
-		name = el->values[0].data;
-
-		/* Dirty hack to circumvent ldb_tdb bug */
-		if(k->backend_data && !strcmp(msg[i]->dn, (char *)k->backend_data)) continue;
-			
-		(*values)[j] = reg_val_new(k, NULL);
-		(*values)[j]->backend_data = talloc_strdup((*values)[j]->mem_ctx, msg[i]->dn);
-		j++;
-	}
-	*count = j;
+	if(idx >= ret) return WERR_NO_MORE_ITEMS;
+	
+	el = ldb_msg_find_element(msg[idx], "value");
+	
+	*value = talloc_p(mem_ctx, struct registry_value);
+	(*value)->name = talloc_strdup(mem_ctx, el->values[0].data);
+	(*value)->backend_data = talloc_strdup(mem_ctx, msg[idx]->dn);
 
 	ldb_search_free(c, msg);
 	return WERR_OK;
 }
-
-#endif
 
 static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const char *name, struct registry_key **key)
 {
@@ -176,10 +159,8 @@ static struct registry_operations reg_backend_ldb = {
 	.name = "ldb",
 	.open_hive = ldb_open_hive,
 	.open_key = ldb_open_key,
-/*
-	.fetch_values = ldb_fetch_values,*/
+	.get_value_by_index = ldb_get_value_by_id,
 	.get_subkey_by_index = ldb_get_subkey_by_id,
-	.add_key = ldb_add_key,
 };
 
 NTSTATUS registry_ldb_init(void)
