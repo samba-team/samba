@@ -92,8 +92,6 @@ LOCKDIR = @lockdir@
 
 # the directory where pid files go
 PIDDIR = @piddir@
-# man pages language(s)
-man_langs = "@manlangs@"
 
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBCLIENT_MAJOR=0
@@ -1375,7 +1373,7 @@ revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(BIN_PROGS) $(SCRIPTS)
 
 installman: installdirs
-	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs) "@ROFF@"
+	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
 
 .PHONY: showlayout
 
@@ -1397,7 +1395,7 @@ showlayout:
 uninstall: uninstallman uninstallbin uninstallscripts uninstallmodules
 
 uninstallman:
-	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs)
+	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
 
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
