@@ -74,7 +74,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 		goto error;
 	}
 	
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+	result = cli_lsa_open_policy(cli, mem_ctx, False, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1933,7 +1933,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		return -1;
 	};
 
-	nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = cli_lsa_open_policy2(cli, mem_ctx, False, SEC_RIGHTS_QUERY_VALUE,
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
