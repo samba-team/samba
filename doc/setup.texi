@@ -884,14 +884,18 @@ service@@host$ kinit --cache=/var/run/service_krb5_cache \
        service-principal@@EXAMPLE.ORG
 @end example
 
-Long running services might need credentials longer then the expiration
-time of the tickets. kinit can run in a mode that refreshes the
-tickets before the expire. This is useful for services that write into
-AFS and other distributed file systems using Kerberos.
+Long running services might need credentials longer then the
+expiration time of the tickets. kinit can run in a mode that refreshes
+the tickets before they expire. This is useful for services that write
+into AFS and other distributed file systems using Kerberos. To run the
+long running script, just append the program and arguments (if any)
+after the principal. kinit will stop refreshing credentials and remove
+the credentials when the script-to-start-service exits.
 
 @example
 service@@host$ kinit --cache=/var/run/service_krb5_cache \
-               --keytab=/etc/krb5-service.keytab \
-       service-principal@@EXAMPLE.ORG script-to-start-service
+       --keytab=/etc/krb5-service.keytab \
+       service-principal@@EXAMPLE.ORG \
+       script-to-start-service argument1 argument2
 @end example
 
