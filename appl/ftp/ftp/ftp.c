@@ -544,32 +544,73 @@ abortsend(int sig)
 
 #define HASHBYTES 1024
 
+/*
+ * Allocate a buffer enough to handle st->st_blksize, if
+ * there is such a field, otherwise BUFSIZ.
+ */
+
+static void *
+alloc_buffer (void *oldbuf, size_t *sz, struct stat *st)
+{
+    size_t new_sz;
+
+    new_sz = BUFSIZ;
+#ifdef HAVE_ST_BLKSIZE
+    if (st)
+	new_sz = max(BUFSIZ, st->st_blksize);
+#endif
+    if(new_sz > *sz) {
+	if (oldbuf)
+	    free (oldbuf);
+	oldbuf = malloc (new_sz);
+	if (oldbuf == NULL) {
+	    warn ("malloc");
+	    *sz = 0;
+	    return NULL;
+	}
+	*sz = new_sz;
+    }
+    return oldbuf;
+}
 
 static int
 copy_stream(FILE *from, FILE *to)
 {
-    char buf[BUFSIZ];
+    static size_t bufsize;
+    static char *buf;
     int n;
     int bytes = 0;
     int werr;
     int hashbytes = HASHBYTES;
+    struct stat st;
     
 #ifdef HAVE_MMAP
-    struct stat st;
     void *chunk;
+
+#ifndef MAP_FAILED
+#define MAP_FAILED (-1)
+#endif
 
     if(fstat(fileno(from), &st) == 0 && S_ISREG(st.st_mode)){
 	chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fileno(from), 0);
-	if(chunk != NULL){
-	    sec_write(fileno(to), chunk, st.st_size);
-	    munmap(chunk, st.st_size);
+	if (chunk != (void *)MAP_FAILED) {
+	    int res;
+
+	    res = sec_write(fileno(to), chunk, st.st_size);
+	    if (munmap(chunk, st.st_size) < 0)
+		warn ("munmap");
 	    sec_fflush(to);
-	    return st.st_size;
+	    return res;
 	}
     }
 #endif
 
-    while((n = read(fileno(from), buf, sizeof(buf))) > 0){
+    buf = alloc_buffer (buf, &bufsize,
+			fstat(fileno(from), &st) >= 0 ? &st : NULL);
+    if (buf == NULL)
+	return -1;
+
+    while((n = read(fileno(from), buf, bufsize)) > 0){
 	werr = sec_write(fileno(to), buf, n);
 	if(werr < 0)
 	    break;
@@ -826,7 +867,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
     int (*closefunc) (FILE *);
     sighand oldintr, oldintp;
     int c, d, is_retr, tcrflag, bare_lfs = 0;
-    static int bufsize;
+    static size_t bufsize;
     static char *buf;
     long bytes = 0, hashbytes = HASHBYTES;
     struct timeval start, stop;
@@ -951,24 +992,11 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 	}
 	closefunc = fclose;
     }
-    {
-	size_t blocksize = BUFSIZ;
-#ifdef HAVE_ST_BLKSIZE
-	if (fstat(fileno(fout), &st) >= 0 && st.st_blksize > 0)
-	    blocksize = st.st_blksize;
-#endif
-	if (blocksize > bufsize) {
-	    if (buf)
-		free(buf);
-	    buf = malloc(blocksize);
-	    if (buf == NULL) {
-		warn("malloc");
-		bufsize = 0;
-		goto abort;
-	    }
-	    bufsize = blocksize;
-	}
-    }
+    buf = alloc_buffer (buf, &bufsize,
+			fstat(fileno(fout), &st) >= 0 ? &st : NULL);
+    if (buf == NULL)
+	goto abort;
+
     gettimeofday(&start, (struct timezone *)0);
     switch (curtype) {
 
