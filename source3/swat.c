@@ -219,6 +219,7 @@ static void show_main_buttons(void)
 {
 	printf("<H2 align=center>Samba Web Administration Tool</H2>\n");
 
+	image_link("Home", "", "images/home.gif", 50, 50);
 	image_link("Globals", "globals", "images/globals.gif", 50, 50);
 	image_link("Shares", "shares", "images/shares.gif", 50, 50);
 	image_link("Printers", "printers", "images/printers.gif", 50, 50);
