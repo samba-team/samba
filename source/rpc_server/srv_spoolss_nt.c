@@ -2766,7 +2766,7 @@ void spoolss_notify_server_name(int snum,
 	uint32 len;
 
 	fstrcpy( temp_name, "\\\\%L" );
-	standard_sub_basic( NULL, temp_name, sizeof(temp_name)-1 );
+	standard_sub_basic( "", temp_name, sizeof(temp_name)-1 );
 
 
 	len = rpcstr_push(temp, temp_name, sizeof(temp)-2, STR_TERMINATE);
@@ -6623,7 +6623,7 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 		return WERR_BADFID;
 	}
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(lp_const_servicename(snum), jobid)) {
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
@@ -8640,7 +8640,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	 *  a failure condition
 	 */
 	 
-	if ( !(nt_devmode=print_job_devmode( snum, jobid )) )
+	if ( !(nt_devmode=print_job_devmode( lp_const_servicename(snum), jobid )) )
 		devmode = construct_dev_mode(snum);
 	else {
 		if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) != NULL) {
