@@ -65,6 +65,9 @@ struct ndr_push {
 	uint32 offset;
 	TALLOC_CTX *mem_ctx;
 
+	/* this is used to ensure we generate unique reference IDs */
+	uint32 ptr_count;
+
 	/* this points at a list of offsets to the structures being processed.
 	   The first element in the list is the current structure */
 	struct ndr_ofs_list *ofs_list;

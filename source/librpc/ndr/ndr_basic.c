@@ -308,7 +308,15 @@ NTSTATUS ndr_push_length4_end(struct ndr_push *ndr, struct ndr_push_save *save)
 */
 NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
 {
-	return ndr_push_uint32(ndr, p?0xaabbccdd:0);
+	uint32 ptr = 0;
+	if (p) {
+		/* we do this to ensure that we generate unique ref ids,
+		   which means we can handle the case where a MS programmer
+		   forgot to mark a pointer as unique */
+		ndr->ptr_count++;
+		ptr = 0xaabbcc00 + ndr->ptr_count;
+	}
+	return ndr_push_uint32(ndr, ptr);
 }
 
 /*

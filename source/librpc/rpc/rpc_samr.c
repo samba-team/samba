@@ -360,21 +360,21 @@ NTSTATUS dcerpc_samr_GetAliasMembership(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	return status;
 }
 
-NTSTATUS dcerpc_samr_LOOKUP_NAMES(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_LOOKUP_NAMES *r)
+NTSTATUS dcerpc_samr_LookupNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_LookupNames *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(samr_LOOKUP_NAMES, r);		
+		NDR_PRINT_IN_DEBUG(samr_LookupNames, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_LOOKUP_NAMES, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_LOOKUP_NAMES,
-				    (ndr_pull_fn_t) ndr_pull_samr_LOOKUP_NAMES,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_LOOKUPNAMES, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_LookupNames,
+				    (ndr_pull_fn_t) ndr_pull_samr_LookupNames,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(samr_LOOKUP_NAMES, r);		
+		NDR_PRINT_OUT_DEBUG(samr_LookupNames, r);		
 	}
 	if (NT_STATUS_IS_OK(status)) status = r->out.result;
 

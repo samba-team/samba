@@ -22,6 +22,9 @@
 #include "includes.h"
 
 
+static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			       struct policy_handle *handle);
+
 /*
   this makes the debug code display the right thing
 */
@@ -69,6 +72,22 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			  struct policy_handle *handle)
+{
+	BOOL ret = True;
+
+	if (!test_QuerySecurity(p, mem_ctx, handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryUserInfo(p, mem_ctx, handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
+
 
 static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle)
@@ -79,6 +98,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle acct_handle;
 	uint32 rid;
 	struct samr_Name name;
+	BOOL ret = True;
 
 	init_samr_Name(&name, "samrtorturetest");
 
@@ -104,6 +124,10 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 
+	if (!test_user_ops(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
 	printf("Testing DeleteUser\n");
 
 	d.in.handle = &acct_handle;
@@ -112,10 +136,10 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteUser failed - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
 	}
 
-	return True;
+	return ret;
 }
 
 static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -313,6 +337,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint32 resume_handle=0;
 	int i;
 	BOOL ret = True;
+	struct samr_LookupNames n;
 
 	printf("Testing EnumDomainUsers\n");
 
@@ -332,10 +357,27 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (r.out.sam->count == 0) {
+		return True;
+	}
+
 	for (i=0;i<r.out.sam->count;i++) {
 		if (!test_OpenUser(p, mem_ctx, handle, r.out.sam->entries[i].idx)) {
 			ret = False;
 		}
+	}
+
+	printf("Testing LookupNames\n");
+	n.in.handle = handle;
+	n.in.num_names = r.out.sam->count;
+	n.in.names = talloc(mem_ctx, r.out.sam->count * sizeof(struct samr_Name));
+	for (i=0;i<r.out.sam->count;i++) {
+		n.in.names[i] = r.out.sam->entries[i].name;
+	}
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupNames failed - %s\n", nt_errstr(status));
+		return False;
 	}
 
 	return ret;	

@@ -264,18 +264,25 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] uint32 *rids;
-	} samr_Rids;
+		[size_is(count)] uint32 *ids;
+	} samr_Ids;
 
 	NTSTATUS samr_GetAliasMembership(
 		[in,ref]      policy_handle *handle,
 		[in]          samr_Sids *sids,
-		[out]         samr_Rids *rids
+		[out]         samr_Ids *rids
 		);
 
 	/************************/
 	/* Function    0x11     */
-	NTSTATUS samr_LOOKUP_NAMES();
+
+	NTSTATUS samr_LookupNames(
+		[in,ref]      policy_handle *handle,
+		[in]          uint32 num_names,
+		[in,ref,size_is(1000),length_is(num_names)] samr_Name *names,
+		[out]         samr_Ids rids,
+		[out]         samr_Ids types
+		);
 
 	/************************/
 	/* Function    0x12     */
