@@ -94,7 +94,8 @@ static int ms_fnmatch_lanman_core(const smb_ucs2_t *pattern,
 			break;
 
 		default:
-			if (c != *n) goto nomatch;
+			if (c != *n &&
+			    toupper_w(c) != toupper_w(*n)) goto nomatch;
 			n++;
 		}
 	}
@@ -198,7 +199,8 @@ static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string,
 			break;
 
 		default:
-			if (c != *n) return -1;
+			if (c != *n &&
+			    toupper_w(c) != toupper_w(*n)) return -1;
 			n++;
 		}
 	}
