@@ -1,6 +1,6 @@
 CC	=	gcc
-CFLAGS	=	-Wall -W -O2 -g
-LFLAGS	=	-L/root/samba-head-old/source/bin
+CFLAGS	=	-Wall -W -O2 -g -I../../../source/include
+LFLAGS	=	-L../../../source/bin
 
 LIBS=	-L/usr/lib -lsmbclient
 INCPATH= -I. -I/usr/include -I./include
@@ -10,6 +10,13 @@ SUB_DIRS=init fstat open unlink chown close opendir closedir rename lseek lseekd
 		getdents creat read readdir mkdir rmdir write chmod open_print_job list_print_jobs \
 		print_file telldir unlink_print_job
 
+MAKEDIR = || exec false; \
+	if test -d "$$dir"; then :; else \
+	echo mkdir "$$dir"; \
+	mkdir -p "$$dir" >/dev/null 2>&1 || \
+	test -d "$$dir" || \
+	mkdir "$$dir" || \
+	exec false; fi || exec false
 
 G_INIT		=	$(BIN_DIR)/init_1 \
 			$(BIN_DIR)/init_2 \
@@ -712,98 +719,122 @@ $(BIN_DIR)/read_13:	read/read_13.o
 
 $(BIN_DIR)/chmod_1:	chmod/chmod_1.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ chmod/chmod_1.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/telldir_1:	telldir/telldir_1.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ telldir/telldir_1.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/telldir_2:	telldir/telldir_2.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ telldir/telldir_2.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/telldir_3:	telldir/telldir_3.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ telldir/telldir_3.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/telldir_4:	telldir/telldir_4.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ telldir/telldir_4.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/telldir_5:	telldir/telldir_5.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ telldir/telldir_5.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/print_file_1:	print_file/print_file_1.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ print_file/print_file_1.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/print_file_2:	print_file/print_file_2.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ print_file/print_file_2.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/print_file_3:	print_file/print_file_3.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ print_file/print_file_3.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/print_file_4:	print_file/print_file_4.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ print_file/print_file_4.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/open_print_job_1:	open_print_job/open_print_job_1.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ open_print_job/open_print_job_1.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/open_print_job_2:	open_print_job/open_print_job_2.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ open_print_job/open_print_job_2.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/list_print_jobs_1:	list_print_jobs/list_print_jobs_1.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ list_print_jobs/list_print_jobs_1.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/list_print_jobs_2:	list_print_jobs/list_print_jobs_2.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ list_print_jobs/list_print_jobs_2.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/list_print_jobs_3:	list_print_jobs/list_print_jobs_3.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ list_print_jobs/list_print_jobs_3.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/list_print_jobs_4:	list_print_jobs/list_print_jobs_4.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ list_print_jobs/list_print_jobs_4.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/list_print_jobs_5:	list_print_jobs/list_print_jobs_5.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ list_print_jobs/list_print_jobs_5.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/list_print_jobs_6:	list_print_jobs/list_print_jobs_6.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ list_print_jobs/list_print_jobs_6.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/list_print_jobs_7:	list_print_jobs/list_print_jobs_7.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ list_print_jobs/list_print_jobs_7.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/unlink_print_job_1:	unlink_print_job/unlink_print_job_1.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ unlink_print_job/unlink_print_job_1.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/unlink_print_job_2:	unlink_print_job/unlink_print_job_2.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ unlink_print_job/unlink_print_job_2.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/unlink_print_job_3:	unlink_print_job/unlink_print_job_3.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ unlink_print_job/unlink_print_job_3.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/unlink_print_job_4:	unlink_print_job/unlink_print_job_4.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ unlink_print_job/unlink_print_job_4.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/unlink_print_job_5:	unlink_print_job/unlink_print_job_5.o
 	@echo Linking $@
+	@dir=$(BIN_DIR) $(MAKEDIR)@
 	@$(CC) $(LFLAGS) -o $@ unlink_print_job/unlink_print_job_5.o $(INCPATH) $(LIBS)
 
 
@@ -813,5 +844,6 @@ clean:
 	done
 
 	@rm -f $(GROUPS)
+	@rm -rf $(BIN_DIR)
 	@echo "Done"
 
