@@ -621,17 +621,19 @@ spnego_reply
     const u_char *p;
     size_t len, taglen;
 
+    output_token->length = 0;
+    output_token->value  = NULL;
+
+    /*
+     * SPNEGO doesn't include gss wrapping on SubsequentContextToken
+     * like the Kerberos 5 mech does. But lets check for it anyway.
+     */
+    
     mech_len = gssapi_krb5_get_mech (input_token->value,
 				     input_token->length,
 				     &p);
 
     if (mech_len < 0) {
-	/*
-	 * When using GSS-SPNEGO in LDAP, Microsoft ldap server sends
-	 * token that doesn't have GSS-API wrapping, so, if the
-	 * GSS-API header isn't there, just ignore it and hope that
-	 * whole token is a NegotiationToken->NegTokenTarg message.
-	 */
 	indata.data = input_token->value;
 	indata.length = input_token->length;
     } else if (mech_len == GSS_KRB5_MECHANISM->length
@@ -659,9 +661,6 @@ spnego_reply
 	    return ret;
     } else
 	return GSS_S_BAD_MECH;
-
-    output_token->length = 0;
-    output_token->value  = NULL;
 
     ret = der_match_tag_and_length((const char *)indata.data,
 				   indata.length - taglen,
