@@ -94,6 +94,8 @@ void smbw_init(void)
 
 	in_client = True;
 
+	load_interfaces();
+
 	if (!lp_load(servicesf,True,False,False)) {
 		exit(1);
 	}
