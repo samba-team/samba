@@ -347,7 +347,11 @@
 
 	/******************/
 	/* Function: 0x21 */
-	WERROR spoolss_21(
+	WERROR spoolss_SetForm(
+		[in,ref] policy_handle *handle,
+		[in] unistr form_name,
+		[in] uint32 level,
+		[in,switch_is(level)] spoolss_AddFormInfo info
 	);
 
 	typedef [nodiscriminant,public] union {

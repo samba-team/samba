@@ -216,6 +216,7 @@ BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct spoolss_AddFormInfo1 form;
 	NTSTATUS status;
 	char *formname = "testform3";
+	BOOL ret = True;
 
 	r.in.handle = handle;
 	r.in.level = 1;
@@ -238,15 +239,35 @@ BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("AddForm failed - %s\n", nt_errstr(status));
-		/* Fall through to delete form */
+		goto done;
 	}
 
+	{
+		struct spoolss_SetForm sf;
+
+		sf.in.handle = handle;
+		sf.in.form_name = formname;
+		sf.in.level = 1;
+		sf.in.info.info1 = &form;
+		form.width = 1234;
+
+		status = dcerpc_spoolss_SetForm(p, mem_ctx, &sf);
+
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+			printf("SetForm failed - %s/%s\n", 
+			       nt_errstr(status), win_errstr(r.out.result));
+			ret = False;
+			/* Fall through to delete */
+		}
+	}
+
+ done:
 	if (!test_DeleteForm(p, mem_ctx, handle, formname)) {
 		printf("DeleteForm failed\n");
-		return False;
+		ret = False;
 	}
 
-	return True;
+	return ret;
 }
 
 BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
