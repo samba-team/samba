@@ -500,7 +500,7 @@ int name_mangle( char *In, char *Out, char name_type )
 
   /* Safely copy the input string, In, into buf[]. */
   (void)memset( buf, 0, 20 );
-  if( '*' == In[0] )
+  if (strcmp(In,"*") == 0)
     buf[0] = '*';
   else
     (void)slprintf( buf, sizeof(buf) - 1, "%-15.15s%c", In, name_type );

@@ -2134,7 +2134,7 @@ BOOL cli_negprot(struct cli_state *cli)
   send a session request.  see rfc1002.txt 4.3 and 4.3.2
 ****************************************************************************/
 BOOL cli_session_request(struct cli_state *cli,
-			struct nmb_name *calling, struct nmb_name *called)
+			 struct nmb_name *calling, struct nmb_name *called)
 {
 	char *p;
 	int len = 4;

@@ -248,7 +248,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
   fstring buf1;
   char *p;
 
-  if (name->name[0] == '*') {
+  if (strcmp(name->name,"*") == 0) {
     /* special case for wildcard name */
     bzero(buf1,20);
     buf1[0] = '*';
