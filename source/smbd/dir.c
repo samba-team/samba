@@ -525,8 +525,15 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 	pstring pathreal;
 
 	ZERO_STRUCTP(pst);
+
 	if (dptr->has_wild) {
 		return dptr_normal_ReadDirName(dptr, poffset, pst);
+	}
+
+	/* If poffset is -1 then we know we returned this name before and we have
+	   no wildcards. We're at the end of the directory. */
+	if (*poffset == -1) {
+		return NULL;
 	}
 
 	/* We know the stored wcard contains no wildcard characters. See if we can match
@@ -540,6 +547,9 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 	}
 
 	if (VALID_STAT(*pst)) {
+		/* We need to set the underlying dir_hdn offset to -1 also as
+		   this function is usually called with the output from TellDir. */
+		dptr->dir_hnd->offset = *poffset = -1;
 		return dptr->wcard;
 	}
 
@@ -548,11 +558,17 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 	pstrcat(pathreal,dptr->wcard);
 
 	if (SMB_VFS_STAT(dptr->conn,pathreal,pst) == 0) {
+		/* We need to set the underlying dir_hdn offset to -1 also as
+		   this function is usually called with the output from TellDir. */
+		dptr->dir_hnd->offset = *poffset = -1;
 		return dptr->wcard;
 	} else {
 		/* If we get any other error than ENOENT or ENOTDIR
 		   then the file exists we just can't stat it. */
 		if (errno != ENOENT && errno != ENOTDIR) {
+			/* We need to set the underlying dir_hdn offset to -1 also as
+			   this function is usually called with the output from TellDir. */
+			dptr->dir_hnd->offset = *poffset = -1;
 			return dptr->wcard;
 		}
 	}
@@ -563,6 +579,9 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 	   with a stat we will fail. */
 
 	if (dptr->conn->case_sensitive) {
+		/* We need to set the underlying dir_hdn offset to -1 also as
+		   this function is usually called with the output from TellDir. */
+		dptr->dir_hnd->offset = *poffset = -1;
 		return NULL;
 	} else {
 		return dptr_normal_ReadDirName(dptr, poffset, pst);
@@ -1033,6 +1052,7 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 		*poffset = e->offset= dirp->offset;
 		return e->name;
 	}
+	dirp->offset = -1;
 	return NULL;
 }
 
