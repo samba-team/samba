@@ -17,6 +17,9 @@
 
 #include <bits.h>
 
+#include <des.h>
+#include <krb5_err.h>
+
 #include "config_file.h"
 
 /* simple constants */
@@ -628,6 +631,9 @@ krb5_string_to_key (char *str,
 		    krb5_data *salt,
 		    krb5_keyblock *key);
 
+krb5_error_code
+krb5_get_salt (krb5_principal princ,
+	       krb5_data *salt);
 
 #include "cache.h"
 
