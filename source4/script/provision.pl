@@ -137,6 +137,10 @@ sub substitute($)
 		return $opt_adminpass;
 	}
 
+	if ($var eq "RANDPASS") {
+	    return randpass();
+	}
+
 	if ($var eq "NTTIME") {
 		return "" . nttime();
 	}

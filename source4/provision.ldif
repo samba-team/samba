@@ -472,6 +472,8 @@ operatingSystemVersion: 4.0
 dNSHostName: ${DNSNAME}
 objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unicodePwd: ${RANDPASS}
+servicePrincipalName: HOST/${DNSNAME}
 
 dn: CN=krbtgt,CN=Users,${BASEDN}
 objectClass: top
@@ -506,6 +508,7 @@ sAMAccountType: 805306368
 servicePrincipalName: kadmin/changepw
 objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unicodePwd: ${RANDPASS}
 
 dn: CN=Domain Computers,CN=Users,${BASEDN}
 objectClass: top
