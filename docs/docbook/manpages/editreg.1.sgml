@@ -1,26 +1,25 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 <!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
-<refentry id="profiles.1">
+<refentry id="editreg.1">
 
 <refmeta>
-	<refentrytitle>profiles</refentrytitle>
+	<refentrytitle>editreg</refentrytitle>
 	<manvolnum>1</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>profiles</refname>
+	<refname>editreg</refname>
 	<refpurpose>A utility to report and change SIDs in registry files
 	</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>profiles</command>
+		<command>editreg</command>
 		<arg choice="opt">-v</arg>
-		<arg choice="opt">-c SID</arg>
-		<arg choice="opt">-n SID</arg>
+		<arg choice="opt">-c file</arg>
 		<arg choice="req">file</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -31,9 +30,9 @@
 	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para><command>profiles</command> is a utility that 
-	reports and changes SIDs in windows registry files. It currently only 
-	supports NT.
+	<para><command>editreg</command> is a utility that 
+	can visualize windows registry files (currently only NT4) and apply 
+	so-called commandfiles to them. 
 	</para>
 </refsect1>
 
@@ -43,7 +42,7 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>file</term>
+		<term>registry_file</term>
 		<listitem><para>Registry file to view or edit.  </para></listitem>
 		</varlistentry>
 
@@ -55,8 +54,8 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-c SID1 -n SID2</term>
-		<listitem><para>Change all occurences of SID1 in <filename>file</filename> by SID2.
+		<term>-c commandfile</term>
+		<listitem><para>Read commands to execute on <filename>registry_file</filename> from <filename>commandfile</filename>. Currently not yet supported!
 		</para></listitem>
 		</varlistentry>
 
@@ -80,7 +79,7 @@
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</para>
 	
-	<para>The profiles man page was written by Jelmer Vernooij. </para>
+	<para>The editreg man page was written by Jelmer Vernooij. </para>
 </refsect1>
 
 </refentry>
