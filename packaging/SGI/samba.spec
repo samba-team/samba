@@ -1,8 +1,8 @@
 product samba
-    id "Samba version 1.9.17"
+    id "Samba version 1.9.18alpha3"
     image sw
         id "Samba Execution Environment"
-        version 0109170006
+        version 0109180003
         order 0
         subsys base default
             id "Samba Execution Environment"
@@ -13,7 +13,7 @@ product samba
     endimage
     image man
         id "Samba Online Documentation"
-        version 0109170006
+        version 0109180003
         order 1
         subsys manpages default
             id "Samba Man Page"
@@ -34,7 +34,7 @@ product samba
     endimage
     image src
         id "Samba Source Code"
-        version 0109170006
+        version 0109180003
         order 2
         subsys samba
             id "Samba Source Code"

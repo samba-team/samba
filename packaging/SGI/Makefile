@@ -27,9 +27,6 @@ INSTALLPERMS = 0755
 
 # Add any optimisation or debugging flags here
 # add -DSYSLOG for syslog support
-# RPM_OPT_FLAGS is needed when building an RPM distribution package
-# for RedHat Linux.
-# FLAGS1 = $(RPM_OPT_FLAGS)
 FLAGS1 = -O
 LIBS1 = 
 
@@ -52,9 +49,16 @@ SMBLOGFILE = $(VARDIR)/log.smb
 NMBLOGFILE = $(VARDIR)/log.nmb
 CONFIGFILE = $(LIBDIR)/smb.conf
 LMHOSTSFILE = $(LIBDIR)/lmhosts
+SMB_PASSWD = $(BINDIR)/smbpasswd
+SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
 
 # the directory where lock files go
 LOCKDIR = $(VARDIR)/locks
+
+# The directory where code page definition files go
+CODEPAGEDIR = $(LIBDIR)/codepages
+# The current codepage definition list.
+CODEPAGELIST= 437 850 852 932
 
 # set this to the default group you want your machine to appear in
 # for browsing. This can also be set in nmbd (see nmbd(8))
@@ -101,7 +105,7 @@ SMBRUN = $(BINDIR)/smbrun
 # operate as an authenticated user identity to operate on files that
 # live in the DCE Distributed Filesystem.
 # DCE_BASE = /opt/dcelocal
-# DCE_FLAGS = -I$(DCE_BASE)/include
+# DCE_FLAGS = -DDFS_AUTH -I$(DCE_BASE)/include
 # DCE_LIBDIR = -L$(DCE_BASE)/lib
 # DCE_LIBS =
 
@@ -110,14 +114,6 @@ SMBRUN = $(BINDIR)/smbrun
 # KRB5_BASE = /usr/local/krb5
 # KRB5_FLAGS = -DKRB5_AUTH -I$(KRB5_BASE)/include
 # KRB5_LIBS = -L$(KRB5_BASE)/lib -ldes425 -lkrb5 -lcrypto -lcom_err
-
-# This is for SMB encrypted (lanman) passwords.
-# you may wish to add -DREPLACE_GETPASS if your getpass() is limited
-# to 8 chars
-# DES_BASE=/usr/local/libdes
-# DES_FLAGS= -I$(DES_BASE)
-# DES_LIB= -L$(DES_BASE) -ldes
-# PASSWD_FLAGS=-DUSE_LIBDES -DSMB_PASSWD=\"$(BINDIR)/smbpasswd\" -DSMB_PASSWD_FILE=\"$(BASEDIR)/private/smbpasswd\"
 
 ######################################
 # VTP-Support
@@ -189,21 +185,24 @@ AWK = awk
 # LIBSM =   
 # AWK = nawk 
 
-# Use this for Linux with shadow passwords
+# Use this for Linux with shadow passwords - but not using PAM!
 # contributed by Andrew.Tridgell@anu.edu.au
 # add -DLINUX_BIGCRYPT is you have shadow passwords but don't have the
 # right libraries and includes
 # FLAGSM = -DLINUX -DSHADOW_PWD -DFAST_SHARE_MODES
 # LIBSM = -lshadow
 
-# Use this for Linux without shadow passwords
-# contributed by Andrew.Tridgell@anu.edu.au
+# Use this for Linux without shadow passwords or for any Linux
+# system that uses PAM (eg: RedHat) in which case it handles ALL
+# authentication methods that are supported by the version of
+# PAM that is available on your system.
+# contributed by Andrew.Tridgell@anu.edu.au & John.Terpstra@aquasoft.com.au
 # AXPROC defines DEC Alpha Processor
 # FLAGSM = -DLINUX -DAXPROC -DFAST_SHARE_MODES
 # FLAGSM = -DLINUX -DFAST_SHARE_MODES
 # LIBSM = 
 
-# Use this for Linux with shadow passwords and quota
+# Use this for Linux with shadow passwords and quota - but not using PAM!
 # contributed by xeno@mix.hive.no
 # Tested on the 1.3.57 kernel and ext2fs filesystem.
 # Notes:
@@ -213,11 +212,21 @@ AWK = awk
 # FLAGSM = -O3 -m486 -DLINUX -DSHADOW_PWD -DQUOTAS -DFAST_SHARE_MODES
 # LIBSM = -lshadow
 
-# Use this for Linux with quota and glibc2
+# Use this for Linux with quota and glibc2 - not using PAM!
 # contributed by Thorvald Natvig <slicer@bimbo.hive.no>
 # Tested on the 2.0.30 kernel and ext2fs filesystem.
 # FLAGSM = -DLINUX -DQUOTAS -DNO_ASMSIGNALH -DGLIBC2 -DFAST_SHARE_MODES
 # LIBSM = -L/lib/libc5-compat -lcrypt
+
+# Use this for Linux with glibc2 (libc6)
+# contributed by Eloy Paris <peloy@ven.ra.rockwell.com>
+# FLAGSM = -DLINUX -DNETGROUP -DSHADOW_PWD -DALLOW_CHANGE_PASSWORD -DFAST_SHARE_MODES -DNO_ASMSIGNALH -DGLIBC2
+# LIBSM = -lnsl -lcrypt
+
+# Use this for Linux with glibc2 (libc6) - RedHat Linux v5.0 with PAM
+# contributed by John H Terpstra <jht@aquasoft.com.au>
+# FLAGSM = -DLINUX -DNETGROUP -DALLOW_CHANGE_PASSWORD -DFAST_SHARE_MODES -DNO_ASMSIGNALH -DGLIBC2
+# LIBSM = -lnsl -lcrypt
 
 # This is for SUNOS5.4 and later (also known as Solaris 2.4 and later)
 # contributed by Andrew.Tridgell@anu.edu.au
@@ -291,9 +300,9 @@ AWK = awk
 # LIBSM =
 
 
-# This is for OSF1 (Alpha) V2.0 Enhanced Security 
+# This is for OSF1 (Alpha) V2.0/V4.0 Enhanced Security 
 # contributed by Udo Linauer <ul@eacpc4.tuwien.ac.at>
-# FLAGSM = -DOSF1 -DOSF1_ENH_SEC
+# FLAGSM = -DOSF1 -DOSF1_ENH_SEC -DFAST_SHARE_MODES
 # LIBSM = -lsecurity
 
 
@@ -365,16 +374,18 @@ AWK = awk
 # This is for SGI.
 # contributed by lpc@solomon.technet.sg (Michael Chua)
 # FOR SGI IRIX 4.x.x, use the following line
-# FLAGSM = -DSGI -DHAVE_TIMEZONE 
+# FLAGSM = -DSGI4 -DHAVE_TIMEZONE 
 # LIBSM = -lsun
+# FLAGS1 = -O -g3
 
 # FOR SGI IRIX 5.x.x, use this line instead
 # FLAGSM = -DSGI5 -DSHADOW_PWD -DHAVE_TIMEZONE -DFAST_SHARE_MODES
 # LIBSM =
+# FLAGS1 = -O -g3
 
 # FOR SGI IRIX 6.2 using the system compiler (*NOT* gcc), use this line instead
 # Contributed by David.Billinghurst@restech.cra.com.au
-FLAGSM = -DSGI5 -DSHADOW_PWD -DHAVE_TIMEZONE -DFAST_SHARE_MODES
+FLAGSM = -DSGI6 -DSHADOW_PWD -DHAVE_TIMEZONE -DFAST_SHARE_MODES
 LIBSM = 
 FLAGS1 = -O -n32 -g3
 
@@ -601,16 +612,17 @@ FLAGS1 = -O -n32 -g3
 # DON'T EDIT BELOW THIS LINE
 ######################################################################
 
+PASSWD_FLAGS = -DSMB_PASSWD=\"$(SMB_PASSWD)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\"
 CFLAGS1 = $(FLAGS1) -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
 CFLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
-CFLAGS3 = -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\"
+CFLAGS3 = -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
 CFLAGS4 = -DWORKGROUP=\"$(WORKGROUP)\" -DGUEST_ACCOUNT=\"$(GUESTACCOUNT)\" 
-CFLAGS5 = $(CFLAGS1) $(CFLAGS2) $(CFLAGS3) $(CFLAGS4) $(FLAGSM) $(AFS_FLAGS) $(KRB5_FLAGS)
+CFLAGS5 = $(CFLAGS1) $(CFLAGS2) $(CFLAGS3) $(CFLAGS4) $(FLAGSM) $(AFS_FLAGS) $(KRB5_FLAGS) $(RPM_OPT_FLAGS)
 CFLAGS  = $(CFLAGS5) $(PAM_FLAGS) $(DCE_FLAGS) $(DES_FLAGS) $(PASSWD_FLAGS) $(VTP_FLAGS)
 LIBS = $(LIBS1) $(LIBSM) $(PAM_LIBS) $(DCE_LIBS) $(KRB5_LIBS) $(DES_LIB)
 
 SPROGS = smbd nmbd
-PROGS1 = smbclient testparm testprns smbrun smbstatus smbpasswd 
+PROGS1 = smbclient testparm testprns smbrun smbstatus smbpasswd make_smbcodepage
 PROGS = $(PROGS1) nmblookup
 SCRIPTS = smbtar addtosmbpass
 
@@ -622,20 +634,25 @@ CHECK :
 	@echo "Using LIBS = $(LIBS)"
 
 INCLUDES1 = version.h local.h includes.h smb.h 
-INCLUDES2 = trans2.h 
+INCLUDES2 = trans2.h ubi_dLinkList.h
 INCLUDES = $(INCLUDES1) $(INCLUDES2)
 
-UTILOBJ1 = util.o system.o charset.o kanji.o fault.o smbencrypt.o charcnv.o
+UTILOBJ1 = util.o system.o charset.o kanji.o fault.o smbencrypt.o smbdes.o charcnv.o
 UTILOBJ2 = $(UTILOBJ1) md4.o loadparm.o params.o pcap.o username.o time.o
-UTILOBJ = $(UTILOBJ2) interface.o replace.o
+UTILOBJ = $(UTILOBJ2) interface.o replace.o ubi_dLinkList.o
 PARAMOBJ = $(UTILOBJ) ufc.o smbpass.o access.o shmem.o
-SMBDOBJ1 = $(PARAMOBJ) trans2.o pipes.o message.o dir.o printing.o locking.o
+SMBDOBJ1 = $(PARAMOBJ) trans2.o pipes.o message.o dir.o printing.o 
 SMBDOBJ2 = ipc.o reply.o mangle.o chgpasswd.o password.o quotas.o uid.o
-SMBDOBJ = predict.o $(SMBDOBJ1) $(SMBDOBJ2) $(VTP_OBJ)
+SMBDOBJ3 = predict.o smbparse.o lsaparse.o credentials.o pipeutil.o pipentlsa.o pipenetlog.o
+SMBDOBJ4 = pipesrvsvc.o srvparse.o clientgen.o
+SMBDOBJ = $(SMBDOBJ1) $(SMBDOBJ2) $(SMBDOBJ3) $(SMBDOBJ4) $(VTP_OBJ)
+LOCKOBJ = locking_shm.o locking_slow.o locking.o
 NMBDOBJ1 = nmblib.o namepacket.o nameresp.o nmbsync.o nameannounce.o nameelect.o
 NMBDOBJ2 = namedbresp.o namedbwork.o namedbserver.o namedbsubnet.o namedbname.o 
-NMBDOBJ3 = nameservresp.o nameservreply.o namelogon.o namebrowse.o namework.o nameserv.o clientutil.o
+NMBDOBJ3 = nameservresp.o nameservreply.o namelogon.o namebrowse.o namework.o nameserv.o clientutil.o  smbpass.o
 NMBDOBJ = $(UTILOBJ) $(NMBDOBJ1) $(NMBDOBJ2) $(NMBDOBJ3)
+BINOBJS = server.o smbrun.o nmblookup.o namequery.o nmbd.o client.o clitar.o nmblib.o status.o testparm.o testprns.o smbpasswd.o getsmbpass.o
+
 .SUFFIXES:
 .SUFFIXES: .c .o .h
 
@@ -643,9 +660,9 @@ NMBDOBJ = $(UTILOBJ) $(NMBDOBJ1) $(NMBDOBJ2) $(NMBDOBJ3)
 	@echo Compiling $*.c
 	@$(CC) $(CFLAGS) -c $(srcdir)$*.c
 
-smbd: server.o $(SMBDOBJ)
+smbd: server.o $(SMBDOBJ) $(LOCKOBJ)
 	@echo Linking smbd
-	@$(CC) $(CFLAGS) -o smbd server.o $(SMBDOBJ) $(LIBS) $(AFS_LIBS)
+	@$(CC) $(CFLAGS) -o smbd server.o $(SMBDOBJ) $(LOCKOBJ) $(LIBS) $(AFS_LIBS)
 
 smbrun: smbrun.o
 	@echo Linking smbrun
@@ -663,9 +680,9 @@ smbclient: client.o clitar.o getsmbpass.o namequery.o nmblib.o $(UTILOBJ)
 	@echo Linking smbclient
 	@$(CC) $(CFLAGS) -o smbclient client.o clitar.o getsmbpass.o namequery.o nmblib.o $(UTILOBJ) $(LIBS)
 
-smbstatus: status.o $(PARAMOBJ) 
+smbstatus: status.o $(PARAMOBJ) $(LOCKOBJ)
 	@echo Linking smbstatus
-	@$(CC) $(CFLAGS) -o smbstatus status.o $(PARAMOBJ) $(LIBS)
+	@$(CC) $(CFLAGS) -o smbstatus status.o $(PARAMOBJ) $(LOCKOBJ) $(LIBS)
 
 testparm: testparm.o $(PARAMOBJ)
 	@echo Linking testparm
@@ -679,7 +696,19 @@ smbpasswd: smbpasswd.o getsmbpass.o $(PARAMOBJ)
 	@echo Linking smbpasswd
 	@$(CC) $(CFLAGS) -o smbpasswd smbpasswd.o getsmbpass.o $(PARAMOBJ) $(LIBS)
 
-install: installbin installman installscripts
+make_smbcodepage: make_smbcodepage.o $(PARAMOBJ)
+	@echo Linking make_smbcodepage
+	@$(CC) $(CFLAGS) -o make_smbcodepage make_smbcodepage.o $(PARAMOBJ) $(LIBS)
+
+wsmbstatus: wsmbstatus.o $(PARAMOBJ) 
+	@echo Linking wsmbstatus
+	@$(CC) $(CFLAGS) -o wsmbstatus wsmbstatus.o $(PARAMOBJ) $(LIBS)
+
+wsmbconf: wsmbconf.o $(PARAMOBJ) cgi.o
+	@echo Linking wsmbconf
+	@$(CC) $(CFLAGS) -o wsmbconf wsmbconf.o $(PARAMOBJ) cgi.o $(LIBS)
+
+install: installbin installman installscripts installcp
 
 installbin: all
 	@$(SHELL) $(srcdir)installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
@@ -687,6 +716,9 @@ installbin: all
 
 installscripts:
 	@$(SHELL) $(srcdir)installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
+
+installcp:
+	@$(SHELL) $(srcdir)installcp.sh $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
 
 # revert to the previously installed version
 revert:
@@ -696,7 +728,7 @@ revert:
 installman:
 	@$(SHELL) $(srcdir)installman.sh $(MANDIR) $(srcdir)
 
-uninstall: uninstallman uninstallbin uninstallscripts
+uninstall: uninstallman uninstallbin uninstallscripts uninstallcp
 
 uninstallman:
 	@$(SHELL) $(srcdir)uninstallman.sh $(MANDIR) $(srcdir)
@@ -708,6 +740,9 @@ uninstallbin:
 uninstallscripts:
 	@$(SHELL) $(srcdir)uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
+uninstallcp:
+	@$(SHELL) $(srcdir)uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
+
 clean:
 	rm -f core *.o *~ $(PROGS) $(SPROGS)
 
@@ -716,7 +751,7 @@ cleandir:  clean
 
 proto:
 	@$(SHELL) $(srcdir)checkos.sh $(FLAGSM)
-	$(AWK) -f mkproto.awk *.c > proto.h
+	$(AWK) -f mkproto.awk `echo $(BINOBJS) $(UTILOBJ) $(PARAMOBJ) $(SMBDOBJ) $(NMBDOBJ) $(LOCKOBJ) | sed -e 's/\.o/\.c/g' | tr ' ' '\n' | sort | uniq` > proto.h
 
 realclean: clean
 

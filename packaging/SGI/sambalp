@@ -7,15 +7,14 @@
 # printer type I configure on the Win95-side for printing with
 # Samba).
 #
-# the sed script fixes 3 different bugs. The first line removes
-# the JCL statements added by some HP printer drivers to the
-# beginning of the postscript output. The second line fixes a
-# bug in output from word files with long filenames. A non-printing
+# the perl script fixes 3 different bugs. 
+# 1. remove the JCL statements added by some HP printer drivers to the
+# beginning of the postscript output. 
+# 2. Fix a bug in output from word files with long filenames. A non-printing
 # character added to the end of the title comment by word is 
-# removed. The third and fourth lines are the VM fix described
-# above.
+# removed. 
+# 3. The VM fix described above.
 #
-TITLE="$3 on $4"
 
-sed -f /usr/samba/bin/psfixes.sed $2 | /usr/bin/lp -c -d$1 -t"$TITLE"
+/usr/samba/bin/psfixes.pl $2 | /usr/bin/lp -c -d$1 -t"$3 on $4"
 rm $2
