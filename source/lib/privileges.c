@@ -31,23 +31,23 @@ static SE_PRIV se_priv_all  = SE_ALL_PRIVS;
 static SE_PRIV se_priv_end  = SE_END;
 static SE_PRIV se_priv_none = SE_NONE;
 
-
-#define ALLOC_CHECK(ptr, err, label, str) do { if ((ptr) == NULL) \
-	{ DEBUG(0, ("%s: out of memory!\n", str)); err = NT_STATUS_NO_MEMORY; goto label; } } while(0)
-	
 PRIVS privs[] = {
-	{SE_NETWORK_LOGON,		"SeNetworkLogonRight",			"Access this computer from the network"},
+#if 0	/* usrmgr will display these twice if you include them.  We don't 
+	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
+	   
+	{SE_NETWORK_LOGON,		"SeNetworkLogonRight",			"Access this computer from network"},
 	{SE_INTERACTIVE_LOGON,		"SeInteractiveLogonRight",		"Log on locally"},
 	{SE_BATCH_LOGON,		"SeBatchLogonRight",			"Log on as a batch job"},
 	{SE_SERVICE_LOGON,		"SeServiceLogonRight",			"Log on as a service"},
-
+#endif
 	{SE_MACHINE_ACCOUNT,		"SeMachineAccountPrivilege",		"Add machines to domain"},
-	{SE_PRINT_OPERATOR,		"SePrintOperatorPrivilege",		"Printer Admin"},
+	{SE_PRINT_OPERATOR,		"SePrintOperatorPrivilege",		"Manage printers"},
 	{SE_ADD_USERS,			"SeAddUsersPrivilege",			"Add users and groups to the domain"},
+	{SE_REMOTE_SHUTDOWN,		"SeRemoteShutdownPrivilege",		"Force shutdown from a remote system"},
+	{SE_DISK_OPERATOR,		"SeDiskOperatorPrivilege",		"Manage disk shares"},
 
 	{SE_END,			"",					""}
 };
-	
 
 #if 0	/* not needed currently */
 PRIVS privs[] = {
@@ -74,12 +74,9 @@ PRIVS privs[] = {
 	{SE_AUDIT,			"SeAuditPrivilege",			"Audit"},
 	{SE_SYSTEM_ENVIRONMENT,		"SeSystemEnvironmentPrivilege",		"System Environment Privilege"},
 	{SE_CHANGE_NOTIFY,		"SeChangeNotifyPrivilege",		"Change Notify"},
-	{SE_REMOTE_SHUTDOWN,		"SeRemoteShutdownPrivilege",		"Remote Shutdown Privilege"},
 	{SE_UNDOCK,			"SeUndockPrivilege",			"Undock"},
 	{SE_SYNC_AGENT,			"SeSynchronizationAgentPrivilege",	"Synchronization Agent"},
 	{SE_ENABLE_DELEGATION,		"SeEnableDelegationPrivilege",		"Enable Delegation"},
-	{SE_PRINT_OPERATOR,		"SePrintOperatorPrivilege",		"Printer Operator"},
-	{SE_ADD_USERS,			"SeAddUsersPrivilege",			"Add Users"},
 	{SE_ALL_PRIVS,			"SeAllPrivileges",			"All Privileges"}
 	{SE_END,			"",					""}
 };
@@ -181,6 +178,12 @@ static BOOL get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	fstring keystr;
 	TDB_DATA key, data;
+
+	/* Fail if the admin has not enable privileges */
+	
+	if ( !lp_enable_privileges() ) {
+		return False;
+	}
 	
 	if ( !tdb )
 		return False;
@@ -202,6 +205,7 @@ static BOOL get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	SMB_ASSERT( data.dsize == sizeof( SE_PRIV ) );
 	
 	se_priv_copy( mask, (SE_PRIV*)data.dptr );
+	
 	
 	return True;
 }
@@ -427,29 +431,6 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 	return NT_STATUS_OK;
 }
 
-#if 0	/* JERRY - not used */
-/***************************************************************************
- Retrieve the SIDs assigned to a given privilege
-****************************************************************************/
-
- NTSTATUS priv_get_sids(const char *privname, DOM_SID **sids, int *num_sids)
-{
-	TDB_CONTEXT *tdb = get_account_pol_tdb();
-	PRIV_SID_LIST priv;
-	
-	ZERO_STRUCT(priv);	
-
-	tdb_traverse( tdb, priv_traverse_fn, &priv);
-
-	/* give the memory away; caller will free */
-	
-	*sids      = priv.sids.list;
-	*num_sids  = priv.sids.count;
-
-	return NT_STATUS_OK;
-}
-#endif
-
 /***************************************************************************
  Add privilege to sid
 ****************************************************************************/
@@ -563,20 +544,19 @@ NTSTATUS privilege_create_account(const DOM_SID *sid )
  ****************************************************************************/
 NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set)
 {
-	NTSTATUS ret;
 	TALLOC_CTX *mem_ctx;
 	
 	ZERO_STRUCTP( priv_set );
 
 	mem_ctx = talloc_init("privilege set");
-	ALLOC_CHECK(mem_ctx, ret, done, "init_privilege");
+	if ( !mem_ctx ) {
+		DEBUG(0,("privilege_set_init: failed to initialize talloc ctx!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	priv_set->mem_ctx = mem_ctx;
 
-	ret = NT_STATUS_OK;
-
-done:
-	return ret;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -614,7 +594,6 @@ void privilege_set_free(PRIVILEGE_SET *priv_set)
 
 NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_la, int count)
 {
-	NTSTATUS ret;
 	int i;
 
 	/* don't crash if the source pointer is NULL (since we don't
@@ -624,7 +603,10 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
 		return NT_STATUS_OK;
 
 	*new_la = TALLOC_ARRAY(mem_ctx, LUID_ATTR, count);
-	ALLOC_CHECK(new_la, ret, done, "dupalloc_luid_attr");
+	if ( !*new_la ) {
+		DEBUG(0,("dup_luid_attr: failed to alloc new LUID_ATTR array [%d]\n", count));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i<count; i++) {
 		(*new_la)[i].luid.high = old_la[i].luid.high;
@@ -632,38 +614,8 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
 		(*new_la)[i].attr = old_la[i].attr;
 	}
 	
-	ret = NT_STATUS_OK;
-
-done:
-	return ret;
+	return NT_STATUS_OK;
 }
-
-#if 0 /* not used */
-/****************************************************************************
- Performa deep copy of a PRIVILEGE_SET structure.  Assumes an initialized 
- destination structure.
-*****************************************************************************/
-
- BOOL dup_privilege_set( PRIVILEGE_SET *dest, PRIVILEGE_SET *src )
-{
-	NTSTATUS result;
-	
-	if ( !dest || !src )
-		return False;
-
-	result = dup_luid_attr( dest->mem_ctx, &dest->set, src->set, src->count );
-	if ( !NT_STATUS_IS_OK(result) ) {
-		DEBUG(0,("dup_privilege_set: Failed to dup LUID_ATTR array [%s]\n", 
-			nt_errstr(result) ));
-		return False;
-	}
-	
-	dest->control  = src->control;
-	dest->count    = src->count;
-
-	return True;
-}
-#endif
 
 /****************************************************************************
  Does the user have the specified privilege ?  We only deal with one privilege
@@ -731,21 +683,6 @@ int count_all_privileges( void )
 
 	return count;
 }
-
-#if 0	/* not used */
-/*******************************************************************
- return True is the SID has an entry in the account_pol.tdb
-*******************************************************************/
-
- BOOL is_privileged_sid( DOM_SID *sid ) 
-{
-	SE_PRIV mask;
-
-	/* check if the lookup succeeds */
-
-	return get_privileges( sid, &mask );
-}
-#endif
 
 /*******************************************************************
 *******************************************************************/
