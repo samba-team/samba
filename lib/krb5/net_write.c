@@ -5,7 +5,7 @@ RCSID("$Id$");
 ssize_t
 krb5_net_write (krb5_context context,
 		int fd,
-		void *buf,
+		const void *buf,
 		size_t len)
 {
   char *cbuf = (char *)buf;
