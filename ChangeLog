@@ -1,3 +1,22 @@
+2004-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/send_to_kdc.c: remove function krb5_sendto_kdc2, its no
+	longer used
+	
+	* kdc/kerberos5.c: s/krb5_get_host_realm_int/_&/
+	
+	* lib/krb5/get_host_realm.c: unexport krb5_get_host_realm_int to
+	external users by prefixing it with _
+
+	* lib/krb5/get_cred.c: s/krb5_mk_req_internal/_&/
+	
+	* lib/krb5/mk_req_ext.c: unexport krb5_mk_req_internal to external
+	users by prefixing it with _
+
+2004-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: add missing }
+	
 2004-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/pkinit.c: adapt to change of signature of
