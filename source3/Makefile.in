@@ -755,7 +755,7 @@ bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
 
-install: installbin installman installscripts installswat 
+install: installbin installman installscripts installdat installswat 
 
 installdirs:
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(BASEDIR) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR)
@@ -769,6 +769,9 @@ installbin: all installdirs
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
+
+installdat: installdirs
+        @$(SHELL) $(srcdir)/script/installdat.sh $(LIBDIR) $(srcdir)
 
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
