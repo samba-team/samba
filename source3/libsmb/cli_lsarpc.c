@@ -607,4 +607,86 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/** Enumerate privileges*/
+
+NTSTATUS cli_lsa_enum_privilege(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                POLICY_HND *pol, uint32 *enum_context, uint32 pref_max_length,
+				uint32 *count, char ***privs_name, uint32 **privs_high, uint32 **privs_low)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_ENUM_PRIVS q;
+	LSA_R_ENUM_PRIVS r;
+	NTSTATUS result;
+	int i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_enum_privs(&q, pol, *enum_context, pref_max_length);
+
+	if (!lsa_io_q_enum_privs("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_ENUM_PRIVS, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_enum_privs("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	*enum_context = r.enum_context;
+	*count = r.count;
+
+	if (!((*privs_name = (char **)talloc(mem_ctx, sizeof(char *) * r.count)))) {
+		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!((*privs_high = (uint32 *)talloc(mem_ctx, sizeof(uint32) * r.count)))) {
+		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!((*privs_low = (uint32 *)talloc(mem_ctx, sizeof(uint32) * r.count)))) {
+		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	for (i = 0; i < r.count; i++) {
+		fstring name;
+
+		rpcstr_pull_unistr2_fstring( name, &r.privs[i].name);
+
+		(*privs_name)[i] = talloc_strdup(mem_ctx, name);
+
+		(*privs_high)[i] = r.privs[i].luid_high;
+		(*privs_low)[i] = r.privs[i].luid_low;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /** @} **/
