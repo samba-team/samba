@@ -659,7 +659,7 @@ BOOL resolve_wins(const char *name, int name_type,
 			}
 
 			/* skip any that have been unresponsive lately */
-			if (wins_srv_is_dead(wins_ip, src_ip)) {
+			if (wins_srv_is_dead(wins_ip)) {
 				continue;
 			}
 
@@ -680,7 +680,7 @@ BOOL resolve_wins(const char *name, int name_type,
 
 			if (timed_out) {
 				/* Timed out wating for WINS server to respond.  Mark it dead. */
-				wins_srv_died(wins_ip, src_ip);
+				wins_srv_died(wins_ip);
 			} else {
 				/* The name definately isn't in this
 				   group of WINS servers. goto the next group  */

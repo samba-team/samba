@@ -67,14 +67,15 @@
    that are not routable to each other.
   */
 
-#define WINS_SRV_FMT "WINS_SRV_DEAD/%s,%s" /* wins_ip,src_ip */
+#define WINS_SRV_FMT "WINS_SRV_DEAD/%s" /* wins_ip */
 
-static char *wins_srv_keystr(struct in_addr wins_ip, struct in_addr src_ip)
+static char *wins_srv_keystr(struct in_addr wins_ip)
 {
 	char *keystr;
+	fstring wins_str;
 
-	if (asprintf(&keystr, WINS_SRV_FMT, inet_ntoa(wins_ip),
-		     inet_ntoa(src_ip)) == -1) {
+	fstrcpy( wins_str, inet_ntoa(wins_ip) );
+	if (asprintf(&keystr, WINS_SRV_FMT, wins_str) == -1) {
 		DEBUG(0, ("wins_srv_is_dead: malloc error\n"));
 		return NULL;
 	}
@@ -86,9 +87,9 @@ static char *wins_srv_keystr(struct in_addr wins_ip, struct in_addr src_ip)
   see if an ip is on the dead list
 */
 
-BOOL wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
+BOOL wins_srv_is_dead(struct in_addr wins_ip)
 {
-	char *keystr = wins_srv_keystr(wins_ip, src_ip);
+	char *keystr = wins_srv_keystr(wins_ip);
 	BOOL result;
 
 	/* If the key exists then the WINS server has been marked as dead */
@@ -106,9 +107,9 @@ BOOL wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
 /*
   mark a wins server as being alive (for the moment)
 */
-void wins_srv_alive(struct in_addr wins_ip, struct in_addr src_ip)
+void wins_srv_alive(struct in_addr wins_ip)
 {
-	char *keystr = wins_srv_keystr(wins_ip, src_ip);
+	char *keystr = wins_srv_keystr(wins_ip);
 
 	namecache_wins_del(keystr);
 	SAFE_FREE(keystr);
@@ -123,21 +124,21 @@ void wins_srv_alive(struct in_addr wins_ip, struct in_addr src_ip)
 /*
   mark a wins server as temporarily dead
 */
-void wins_srv_died(struct in_addr wins_ip, struct in_addr src_ip)
+void wins_srv_died(struct in_addr wins_ip)
 {
 	char *keystr;
 
-	if (is_zero_ip(wins_ip) || wins_srv_is_dead(wins_ip, src_ip))
+	if (is_zero_ip(wins_ip) || wins_srv_is_dead(wins_ip))
 		return;
 
-	keystr = wins_srv_keystr(wins_ip, src_ip);
+	keystr = wins_srv_keystr(wins_ip);
 
 	namecache_wins_set(keystr, time(NULL) + DEATH_TIME);
 
 	SAFE_FREE(keystr);
 
-	DEBUG(4,("Marking wins server %s dead for %u seconds from source %s\n",
-		 inet_ntoa(wins_ip), DEATH_TIME, inet_ntoa(src_ip)));
+	DEBUG(4,("Marking wins server %s dead for %u seconds \n",
+		 inet_ntoa(wins_ip), DEATH_TIME));
 
 	sys_adminlog(LOG_ERR, "Cannot communicate with wins server %s. Setting offline for %u seconds.\n",
 			inet_ntoa(wins_ip), DEATH_TIME );
@@ -293,7 +294,7 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 			/* not for the right tag. Move along */
 			continue;
 		}
-		if (!wins_srv_is_dead(t_ip.ip, src_ip)) {
+		if (!wins_srv_is_dead(t_ip.ip)) {
 			fstring src_name;
 			fstrcpy(src_name, inet_ntoa(src_ip));
 			DEBUG(6,("Current wins server for tag '%s' with source %s is %s\n", 

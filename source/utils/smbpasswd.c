@@ -926,6 +926,10 @@ static int process_root(void)
 {
 	struct passwd  *pwd;
 	int result = 0;
+	
+	/* enable the name cache for WINS and normal name lookups */
+	
+	namecache_enable( False );
 
 #ifdef WITH_LDAP_SAM
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW)

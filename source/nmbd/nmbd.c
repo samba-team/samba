@@ -855,6 +855,8 @@ static void usage(char *pname)
     exit(1);
   }
 
+  namecache_enable( False );
+
   /* Load in any static local names. */ 
   if ( *host_file )
   {
@@ -884,7 +886,7 @@ static void usage(char *pname)
     kill_async_dns_child();
     exit(1);
   }
-
+  
   /* We can only take signals in the select. */
   BlockSignals( True, SIGTERM );
 

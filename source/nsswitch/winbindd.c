@@ -775,7 +775,7 @@ BOOL winbind_setup_common(void)
 		return False;
 	}
 
-	namecache_enable();	/* Enable netbios namecache */
+	namecache_enable( True );	/* Enable netbios namecache */
 
 	/* Check winbindd parameters are valid */
 

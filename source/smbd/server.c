@@ -895,7 +895,7 @@ static void usage(char *pname)
 	 * Everything after this point is run after the fork().
 	 */ 
 
-	namecache_enable();
+	namecache_enable( True );
 
 	if (!locking_init(0))
 		exit(1);

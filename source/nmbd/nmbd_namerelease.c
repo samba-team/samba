@@ -117,7 +117,7 @@ static void release_name_timeout_response(struct subnet_record *subrec,
 
 	if (!bcast) {
 		/* mark the WINS server temporarily dead */
-		wins_srv_died(rrec->packet->ip, released_ip);
+		wins_srv_died(rrec->packet->ip);
 	}
 
 	DEBUG(5,("release_name_timeout_response: success in releasing name %s on subnet %s.\n",
@@ -182,7 +182,7 @@ void release_name(struct subnet_record *subrec, struct name_record *namerec,
 		  struct userdata_struct *userdata)
 {
 	int i;
-
+	
 	/* Ensure it's a SELF name, and in the ACTIVE state. */
 	if ((namerec->data.source != SELF_NAME) || !NAME_IS_ACTIVE(namerec)) {
 		DEBUG(0,("release_name: Cannot release name %s from subnet %s. Source was %d \n",

@@ -23,7 +23,8 @@
 #include "includes.h"
 
 static BOOL done_namecache_init;
-static BOOL enable_namecache;
+static BOOL enable_namecache;		/* full namecache enable; separate 
+					   from marking WINS servers that died */
 static TDB_CONTEXT *namecache_tdb;
 
 struct nc_value {
@@ -34,7 +35,7 @@ struct nc_value {
 
 /* Initialise namecache system */
 
-BOOL namecache_enable(void)
+BOOL namecache_enable( BOOL full_cache_enable )
 {
 	/* Check if we have been here before, or name caching disabled
            by setting the name cache timeout to zero. */ 
@@ -64,7 +65,7 @@ BOOL namecache_enable(void)
 	DEBUG(5, ("namecache_init: enabling netbios namecache, timeout %d "
 		  "seconds\n", lp_name_cache_timeout()));
 
-	enable_namecache = True;
+	enable_namecache = full_cache_enable;
 
 	return True;
 }
@@ -270,9 +271,9 @@ BOOL namecache_wins_get(char *keystr)
 	time_t *timeout, now;
 	BOOL result = False;
 
-	if (!enable_namecache)
+	if ( !done_namecache_init )
 		return False;
-
+		
 	/* Look up key */
 
 	key.dptr = keystr;
@@ -325,7 +326,7 @@ void namecache_wins_del(char *keystr)
 {
 	TDB_DATA key;
 
-	if (!enable_namecache)
+	if ( !done_namecache_init )
 		return;
 
 	key.dptr = keystr;
@@ -340,7 +341,7 @@ void namecache_wins_set(char *keystr, time_t timeout)
 {
 	TDB_DATA key, value;
 
-	if (!enable_namecache)
+	if ( !done_namecache_init )
 		return;
 
 	key.dptr = keystr;

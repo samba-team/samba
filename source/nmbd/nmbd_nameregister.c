@@ -56,7 +56,7 @@ static void register_name_response(struct subnet_record *subrec,
 	
 	if (subrec == unicast_subnet) {
 		/* we know that this wins server is definately alive - for the moment! */
-		wins_srv_alive(rrec->packet->ip, register_ip);
+		wins_srv_alive(rrec->packet->ip);
 	}
 
 	/* Sanity check. Ensure that the answer name in the incoming packet is the
@@ -182,7 +182,7 @@ static void wins_registration_timeout(struct subnet_record *subrec,
 		 inet_ntoa(rrec->packet->ip), src_addr));
 
 	/* mark it temporarily dead for this source address */
-	wins_srv_died(rrec->packet->ip, register_ip);
+	wins_srv_died(rrec->packet->ip);
 
 	/* if we have some userdata then use that to work out what
 	   wins server to try next */
@@ -198,7 +198,7 @@ static void wins_registration_timeout(struct subnet_record *subrec,
 	   must all have timed out. We treat this as *success*, not
 	   failure, and go into our standard name refresh mode. This
 	   copes with all the wins servers being down */
-	if (wins_srv_is_dead(rrec->packet->ip, register_ip)) {
+	if (wins_srv_is_dead(rrec->packet->ip)) {
 		uint16 nb_flags = get_nb_flags(sent_nmb->additional->rdata);
 		int ttl = sent_nmb->additional->ttl;
 
