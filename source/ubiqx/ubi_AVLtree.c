@@ -9,11 +9,9 @@
  *  This module provides an implementation of AVL height balanced binary
  *  trees.  (Adelson-Velskii, Landis 1962)
  *
- *  This header file contains the basic AVL structure and pointer typedefs
- *  as well as the prototypes needed to access the functions in the AVL
- *  module ubi_AVLtree.  The .c file implements the low-level height balancing
- *  routines that manage the AVL tree, plus all of the basic primops for
- *  adding, searching for, and deleting nodes.
+ *  This file implements the core of the height-balanced (AVL) tree management
+ *  routines.  The header file, ubi_AVLtree.h, contains function prototypes
+ *  for all "exported" functions.
  *
  * -------------------------------------------------------------------------- **
  *
@@ -34,22 +32,89 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_AVLtree.c,v
- * Revision 3.1  1997/12/18 06:26:51  crh
- * Fixed some comment bugs.
+ * Revision 2.5  1997/12/23 04:00:42  crh
+ * In this version, all constants & macros defined in the header file have
+ * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
+ * when run with '-pedantic -fsyntax-only -Wall'.
  *
- * Revision 3.0  1997/12/08 05:38:55  crh
- * This is a new major revision level.  The handling of the pointers in the
- * ubi_trNode structure was redesigned.  The result is that there are fewer
- * macros floating about, and fewer cases in which values have to be
- * incremented or decremented.  See ubi_BinTree for more information.
+ * Revision 2.4  1997/07/26 04:36:20  crh
+ * Andrew Leppard, aka "Grazgur", discovered that I still had my brains tied
+ * on backwards with respect to node deletion.  I did some more digging and
+ * discovered that I was not changing the balance values correctly in the
+ * single rotation functions.  Double rotation was working correctly because
+ * the formula for changing the balance values is the same for insertion or
+ * deletion.  Not so for single rotation.
  *
- * Revision 2; 1995/03/05 - 1997/12/07:
- * An overhaul to the node delete process.  I had gotten it wrong in a
- * couple of places, thought I'd fixed it, and then found that I'd missed
- * something more.  Thanks to Andrew Leppard for the bug report!
+ * I have tested the fix by loading the tree with over 44 thousand names,
+ * deleting 2,629 of them (all those in which the second character is 'u')
+ * and then walking the tree recursively to verify that the balance factor of
+ * each node is correct.  Passed.
  *
- * Revision 1;  93/10/15 - 95/03/05:
- * Added the ubi_tr defines.  See ubi_BinTree.h for more info.
+ * Thanks Andrew!
+ *
+ * Also:
+ * + Changed ubi_TRUE and ubi_FALSE to ubi_trTRUE and ubi_trFALSE.
+ * + Rewrote the ubi_tr<func> macros because they weren't doing what I'd
+ *   hoped they would do (see the bottom of the header file).  They work now.
+ *
+ * Revision 2.3  1997/06/03 04:41:35  crh
+ * Changed TRUE and FALSE to ubi_TRUE and ubi_FALSE to avoid causing
+ * problems.
+ *
+ * Revision 2.2  1995/10/03 22:16:01  CRH
+ * Ubisized!
+ *
+ * Revision 2.1  95/03/09  23:45:59  CRH
+ * Added the ModuleID static string and function.  These modules are now
+ * self-identifying.
+ * 
+ * Revision 2.0  95/03/05  14:10:51  CRH
+ * This revision of ubi_AVLtree coincides with revision 2.0 of ubi_BinTree,
+ * and so includes all of the changes to that module.  In addition, a bug in
+ * the node deletion process has been fixed.
+ *
+ * After rewriting the Locate() function in ubi_BinTree, I decided that it was
+ * time to overhaul this module.  In the process, I discovered a bug related
+ * to node deletion.  To fix the bug, I wrote function Debalance().  A quick
+ * glance will show that it is very similar to the Rebalance() function.  In
+ * previous versions of this module, I tried to include the functionality of
+ * Debalance() within Rebalance(), with poor results.
+ *
+ * Revision 1.0  93/10/15  22:58:56  CRH
+ * With this revision, I have added a set of #define's that provide a single,
+ * standard API to all existing tree modules.  Until now, each of the three
+ * existing modules had a different function and typedef prefix, as follows:
+ *
+ *       Module        Prefix
+ *     ubi_BinTree     ubi_bt
+ *     ubi_AVLtree     ubi_avl
+ *     ubi_SplayTree   ubi_spt
+ *
+ * To further complicate matters, only those portions of the base module
+ * (ubi_BinTree) that were superceeded in the new module had the new names.
+ * For example, if you were using ubi_AVLtree, the AVL node structure was
+ * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
+ * SplayTree, the locate function was called "ubi_sptLocate", but the next
+ * and previous functions remained "ubi_btNext" and "ubi_btPrev".
+ *
+ * This was not too terrible if you were familiar with the modules and knew
+ * exactly which tree model you wanted to use.  If you wanted to be able to
+ * change modules (for speed comparisons, etc), things could get messy very
+ * quickly.
+ *
+ * So, I have added a set of defined names that get redefined in any of the
+ * descendant modules.  To use this standardized interface in your code,
+ * simply replace all occurances of "ubi_bt", "ubi_avl", and "ubi_spt" with
+ * "ubi_tr".  The "ubi_tr" names will resolve to the correct function or
+ * datatype names for the module that you are using.  Just remember to
+ * include the header for that module in your program file.  Because these
+ * names are handled by the preprocessor, there is no added run-time
+ * overhead.
+ *
+ * Note that the original names do still exist, and can be used if you wish
+ * to write code directly to a specific module.  This should probably only be
+ * done if you are planning to implement a new descendant type, such as
+ * red/black trees.  CRH
  *
  *  V0.0 - May, 1990   -  Written by Christopher R. Hertel (CRH).
  *
@@ -64,8 +129,8 @@
  */
 
 static char ModuleID[] = "ubi_AVLtree\n\
-\tRevision: 3.1\n\
-\tDate: 1997/12/18 06:26:51 GMT\n\
+\tRevision: 2.5\n\
+\tDate: 1997/12/23 04:00:42\n\
 \tAuthor: crh\n";
 
 /* ========================================================================== **
@@ -101,7 +166,7 @@ static ubi_avlNodePtr L1( ubi_avlNodePtr p )
   tmp->Link[ubi_trPARENT]  = p->Link[ubi_trPARENT];
   tmp->gender              = p->gender;
   if(tmp->Link[ubi_trPARENT])
-    (tmp->Link[ubi_trPARENT])->Link[(tmp->gender)] = tmp;
+    (tmp->Link[ubi_trPARENT])->Link[(int)(tmp->gender)] = tmp;
   p->Link[ubi_trPARENT]    = tmp;
   p->gender                = ubi_trLEFT;
   if( p->Link[ubi_trRIGHT] )
@@ -109,7 +174,7 @@ static ubi_avlNodePtr L1( ubi_avlNodePtr p )
     p->Link[ubi_trRIGHT]->Link[ubi_trPARENT] = p;
     (p->Link[ubi_trRIGHT])->gender           = ubi_trRIGHT;
     }
-  p->balance -= tmp->balance;
+  p->balance -= ubi_trNormalize( tmp->balance );
   (tmp->balance)--;
   return( tmp );
   } /* L1 */
@@ -133,7 +198,7 @@ static ubi_avlNodePtr R1( ubi_avlNodePtr p )
   tmp->Link[ubi_trPARENT]  = p->Link[ubi_trPARENT];
   tmp->gender              = p->gender;
   if(tmp->Link[ubi_trPARENT])
-    (tmp->Link[ubi_trPARENT])->Link[(tmp->gender)] = tmp;
+    (tmp->Link[ubi_trPARENT])->Link[(int)(tmp->gender)] = tmp;
   p->Link[ubi_trPARENT]    = tmp;
   p->gender                = ubi_trRIGHT;
   if(p->Link[ubi_trLEFT])
@@ -141,7 +206,7 @@ static ubi_avlNodePtr R1( ubi_avlNodePtr p )
     p->Link[ubi_trLEFT]->Link[ubi_trPARENT]  = p;
     p->Link[ubi_trLEFT]->gender              = ubi_trLEFT;
     }
-  p->balance -= tmp->balance;
+  p->balance -= ubi_trNormalize( tmp->balance );
   (tmp->balance)++;
   return( tmp );
   } /* R1 */
@@ -183,7 +248,7 @@ static ubi_avlNodePtr L2( ubi_avlNodePtr tree )
     tmp->Link[ubi_trLEFT]->gender               = ubi_trLEFT;
     }
   if(newroot->Link[ubi_trPARENT])
-    newroot->Link[ubi_trPARENT]->Link[newroot->gender] = newroot;
+    newroot->Link[ubi_trPARENT]->Link[(int)(newroot->gender)] = newroot;
 
   switch( newroot->balance )
     {
@@ -235,7 +300,7 @@ static ubi_avlNodePtr R2( ubi_avlNodePtr tree )
     tmp->Link[ubi_trRIGHT]->gender              = ubi_trRIGHT;
     }
   if(newroot->Link[ubi_trPARENT])
-    newroot->Link[ubi_trPARENT]->Link[newroot->gender] = newroot;
+    newroot->Link[ubi_trPARENT]->Link[(int)(newroot->gender)] = newroot;
 
   switch( newroot->balance )
     {
@@ -251,7 +316,7 @@ static ubi_avlNodePtr R2( ubi_avlNodePtr tree )
   } /* R2 */
 
 
-static ubi_avlNodePtr Adjust( ubi_avlNodePtr p, signed char LorR )
+static ubi_avlNodePtr Adjust( ubi_avlNodePtr p, char LorR )
   /* ------------------------------------------------------------------------ **
    * Adjust the balance value at node *p.  If necessary, rotate the subtree
    * rooted at p.
@@ -270,12 +335,12 @@ static ubi_avlNodePtr Adjust( ubi_avlNodePtr p, signed char LorR )
    */
   {
   if( p->balance != LorR )
-    p->balance += LorR;
+    p->balance += ubi_trNormalize(LorR);
   else
     {
-    signed char tallerbal;  /* Balance of root of the taller subtree of p. */
+    char tallerbal;  /* Balance value of the root of the taller subtree of p. */
 
-    tallerbal = p->Link[LorR]->balance;
+    tallerbal = p->Link[(int)LorR]->balance;
     if( ( ubi_trEQUAL == tallerbal ) || ( p->balance == tallerbal ) )
       p = ( (ubi_trLEFT==LorR) ? R1(p) : L1(p) );   /* single rotation */
     else
@@ -286,7 +351,7 @@ static ubi_avlNodePtr Adjust( ubi_avlNodePtr p, signed char LorR )
 
 static ubi_avlNodePtr Rebalance( ubi_avlNodePtr Root,
                                  ubi_avlNodePtr subtree,
-                                 signed char    LorR )
+                                 char           LorR )
   /* ------------------------------------------------------------------------ **
    * Rebalance the tree following an insertion.
    *
@@ -324,7 +389,7 @@ static ubi_avlNodePtr Rebalance( ubi_avlNodePtr Root,
 
 static ubi_avlNodePtr Debalance( ubi_avlNodePtr Root,
                                  ubi_avlNodePtr subtree,
-                                 signed char    LorR )
+                                 char           LorR )
   /* ------------------------------------------------------------------------ **
    * Rebalance the tree following a deletion.
    *
@@ -431,19 +496,19 @@ static void SwapNodes( ubi_btRootPtr  RootPtr,
   ubi_avlNodePtr  dummy_p = &dummy;
 
   if( Node1->Link[ubi_trPARENT] )
-    Parent = &((Node1->Link[ubi_trPARENT])->Link[Node1->gender]);
+    Parent = &((Node1->Link[ubi_trPARENT])->Link[(int)(Node1->gender)]);
   else
     Parent = (ubi_avlNodePtr *)&(RootPtr->root);
   ReplaceNode( Parent, Node1, dummy_p );
 
   if( Node2->Link[ubi_trPARENT] )
-    Parent = &((Node2->Link[ubi_trPARENT])->Link[Node2->gender]);
+    Parent = &((Node2->Link[ubi_trPARENT])->Link[(int)(Node2->gender)]);
   else
     Parent = (ubi_avlNodePtr *)&(RootPtr->root);
   ReplaceNode( Parent, Node2, Node1 );
 
   if( dummy_p->Link[ubi_trPARENT] )
-    Parent = &((dummy_p->Link[ubi_trPARENT])->Link[dummy_p->gender]);
+    Parent = &((dummy_p->Link[ubi_trPARENT])->Link[(int)(dummy_p->gender)]);
   else
     Parent = (ubi_avlNodePtr *)&(RootPtr->root);
   ReplaceNode( Parent, dummy_p, Node2 );
@@ -575,7 +640,7 @@ ubi_avlNodePtr ubi_avlRemove( ubi_btRootPtr  RootPtr,
    */
   if( DeadNode->Link[ubi_trPARENT] )
     parentp = (ubi_btNodePtr *)
-              &((DeadNode->Link[ubi_trPARENT])->Link[(DeadNode->gender)]);
+              &((DeadNode->Link[ubi_trPARENT])->Link[(int)(DeadNode->gender)]);
   else
     parentp = &( RootPtr->root );
 
@@ -586,9 +651,9 @@ ubi_avlNodePtr ubi_avlRemove( ubi_btRootPtr  RootPtr,
     (*parentp) = NULL;
   else
     {
-    p = (ubi_btNodePtr)(DeadNode->Link[(DeadNode->balance)]);
-    p->Link[ubi_trPARENT]  = (ubi_btNodePtr)DeadNode->Link[ubi_trPARENT];
-    p->gender              = DeadNode->gender;
+    p = (ubi_btNodePtr)(DeadNode->Link[(int)(DeadNode->balance)]);
+    p->Link[ubi_trPARENT] = (ubi_btNodePtr)DeadNode->Link[ubi_trPARENT];
+    p->gender  = DeadNode->gender;
     (*parentp) = p;
     }
   RootPtr->root = (ubi_btNodePtr)Debalance( (ubi_avlNodePtr)RootPtr->root,
