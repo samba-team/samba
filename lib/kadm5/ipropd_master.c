@@ -579,7 +579,7 @@ main(int argc, char **argv)
     int signal_fd, listen_fd;
     int log_fd;
     slave *slaves = NULL;
-    u_int32_t current_version, old_version = 0;
+    u_int32_t current_version = 0, old_version = 0;
     krb5_keytab keytab;
     int optind;
     
