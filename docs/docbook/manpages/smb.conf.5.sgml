@@ -5555,14 +5555,6 @@
 
 
 		<varlistentry>
-		<term><anchor id="PIDDIR">pid dir (G)</term>
-		<listitem><para>Synonym for <link linkend="PIDDIRECTORY"><parameter>
-		pid directory</parameter></link>.</para></listitem>
-		</varlistentry>
-		
-		
-		
-		<varlistentry>
 		<term><anchor id="PIDDIRECTORY">pid directory (G)</term>
 		<listitem><para>This option specifies the directory where pid 
 		files will be placed.  </para>
