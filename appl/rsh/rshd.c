@@ -180,7 +180,7 @@ recv_krb5_auth (int s, u_char *buf,
     net_read (s, buf, 4);
 
     if(!krb5_kuserok (context,
-		     ticket->enc_part2.client,
+		     ticket->client,
 		     server_username))
 	fatal (s, "Permission denied");
 
