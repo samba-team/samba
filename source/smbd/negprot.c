@@ -411,7 +411,8 @@ int reply_negprot(connection_struct *conn,
     {
       p = smb_buf(inbuf)+1;
       Index = 0;
-      if (lp_maxprotocol() >= supported_protocols[protocol].protocol_level)
+      if ((supported_protocols[protocol].protocol_level <= lp_maxprotocol()) &&
+	  (supported_protocols[protocol].protocol_level >= lp_minprotocol()))
 	while (p < (smb_buf(inbuf) + bcc))
 	  { 
 	    if (strequal(p,supported_protocols[protocol].proto_name))
