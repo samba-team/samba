@@ -680,6 +680,8 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	struct lsa_QuerySecret r4;
 	struct lsa_SetSecret r5;
 	struct lsa_QuerySecret r6;
+	struct lsa_SetSecret r7;
+	struct lsa_QuerySecret r8;
 	struct policy_handle sec_handle, sec_handle2;
 	struct lsa_Delete d;
 	struct lsa_DATA_BUF buf1;
@@ -694,12 +696,15 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	char *secret2;
  	const char *secret3 = "ABCDEF12345699QWERTY";
 	char *secret4;
+ 	const char *secret5 = "NEW-SAMBA4-SECRET";
+	char *secret6;
 	char *secname[2];
 	int i;
+	const int LOCAL = 0;
+	const int GLOBAL = 1;
 
-
-	secname[0] = talloc_asprintf(mem_ctx, "torturesecret-%u", (uint_t)random());
-	secname[1] = talloc_asprintf(mem_ctx, "G$torturesecret-%u", (uint_t)random());
+	secname[LOCAL] = talloc_asprintf(mem_ctx, "torturesecret-%u", (uint_t)random());
+	secname[GLOBAL] = talloc_asprintf(mem_ctx, "G$torturesecret-%u", (uint_t)random());
 
 	for (i=0; i< 2; i++) {
 		printf("Testing CreateSecret of %s\n", secname[i]);
@@ -782,10 +787,9 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				
 				secret2 = sess_decrypt_string(&blob1, &session_key);
 				
-				printf("returned secret '%s'\n", secret2);
-				
 				if (strcmp(secret1, secret2) != 0) {
-					printf("Returned secret doesn't match\n");
+					printf("Returned secret '%s' doesn't match '%s'\n", 
+					       secret2, secret1);
 					ret = False;
 				}
 			}
@@ -800,7 +804,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		r5.in.new_val->length = enc_key.length;
 		r5.in.new_val->size = enc_key.length;
 		
-		printf("Testing SetSecret\n");
+		printf("Testing SetSecret (existing value should move to old)\n");
 		
 		status = dcerpc_lsa_SetSecret(p, mem_ctx, &r5);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -841,24 +845,20 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				
 				secret4 = sess_decrypt_string(&blob1, &session_key);
 				
-				printf("returned secret '%s'\n", secret4);
-				
 				if (strcmp(secret3, secret4) != 0) {
 					printf("Returned NEW secret %s doesn't match %s\n", secret4, secret3);
 					ret = False;
 				}
 
-				blob1.data = r6.out.new_val->buf->data;
-				blob1.length = r6.out.new_val->buf->length;
+				blob1.data = r6.out.old_val->buf->data;
+				blob1.length = r6.out.old_val->buf->length;
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
 				secret2 = sess_decrypt_string(&blob1, &session_key);
 				
-				printf("returned OLD secret '%s'\n", secret2);
-				
-				if (strcmp(secret3, secret4) != 0) {
-					printf("Returned secret %s doesn't match %s\n", secret2, secret1);
+				if (strcmp(secret1, secret2) != 0) {
+					printf("Returned OLD secret %s doesn't match %s\n", secret2, secret1);
 					ret = False;
 				}
 				
@@ -866,6 +866,94 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 					printf("Returned secret %s had same mtime for both secrets: %s\n", 
 					       secname[i],
 					       nt_time_string(mem_ctx, *r6.out.new_mtime));
+					ret = False;
+				}
+			}
+		}
+
+		enc_key = sess_encrypt_string(secret5, &session_key);
+		
+		r7.in.handle = &sec_handle;
+		r7.in.old_val = &buf1;
+		r7.in.old_val->data = enc_key.data;
+		r7.in.old_val->length = enc_key.length;
+		r7.in.old_val->size = enc_key.length;
+		r7.in.new_val = NULL;
+		
+		printf("Testing SetSecret of old Secret only\n");
+		
+		status = dcerpc_lsa_SetSecret(p, mem_ctx, &r7);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("SetSecret failed - %s\n", nt_errstr(status));
+			ret = False;
+		}
+		
+		data_blob_free(&enc_key);
+		
+		/* fetch the secret back again */
+		r8.in.handle = &sec_handle;
+		r8.in.new_val = &bufp1;
+		r8.in.new_mtime = &new_mtime;
+		r8.in.old_val = &bufp2;
+		r8.in.old_mtime = &old_mtime;
+		
+		bufp1.buf = NULL;
+		bufp2.buf = NULL;
+		
+		status = dcerpc_lsa_QuerySecret(p, mem_ctx, &r8);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QuerySecret failed - %s\n", nt_errstr(status));
+			ret = False;
+		} else {
+
+			if (r8.out.new_val->buf == NULL) {
+				if (i != LOCAL) { 
+					printf("NEW secret buffer not returned after OLD set\n");
+					ret = False;
+				}
+			} else if (r8.out.old_val->buf == NULL) {
+				printf("OLD secret buffer not returned after OLD set\n");
+				ret = False;
+			} else if (r8.out.new_mtime == NULL || r8.out.old_mtime == NULL) {
+				printf("Both times not returned after OLD set\n");
+				ret = False;
+			} else {
+				blob1.data = r8.out.new_val->buf->data;
+				blob1.length = r8.out.new_val->buf->length;
+				
+				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
+				
+				secret6 = sess_decrypt_string(&blob1, &session_key);
+				
+				if (strcmp(secret3, secret4) != 0) {
+					printf("Returned NEW secret '%s' doesn't match '%s'\n", secret4, secret3);
+					ret = False;
+				}
+
+				blob1.data = r8.out.old_val->buf->data;
+				blob1.length = r8.out.old_val->buf->length;
+				
+				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
+				
+				secret6 = sess_decrypt_string(&blob1, &session_key);
+				
+				if (strcmp(secret5, secret6) != 0) {
+					printf("Returned OLD secret %s doesn't match %s\n", secret5, secret6);
+					ret = False;
+				}
+				
+				if (*r8.out.new_mtime == *r8.out.old_mtime) {
+					if (i != GLOBAL) { 
+						printf("Returned secret %s had same mtime for both secrets: %s\n", 
+						       secname[i],
+						       nt_time_string(mem_ctx, *r8.out.new_mtime));
+						ret = False;
+					}
+				} else {
+					printf("Returned secret %s should have had same mtime for both secrets: %s != %s\n", 
+					       secname[i],
+					       nt_time_string(mem_ctx, *r8.out.old_mtime),
+					       nt_time_string(mem_ctx, *r8.out.new_mtime));
 					ret = False;
 				}
 			}
