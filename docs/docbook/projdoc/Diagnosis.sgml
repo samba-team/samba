@@ -20,13 +20,15 @@ then it is probably working fine.
 <para>
 You should do ALL the tests, in the order shown. We have tried to
 carefully choose them so later tests only use capabilities verified in
-the earlier tests.
+the earlier tests.  However, do not stop at the first error as there
+have been some instances when continuing with the tests has helped
+to solve a problem.
 </para>
 
 <para>
 If you send one of the samba mailing lists  an email saying "it doesn't work"
 and you have not followed this test procedure then you should not be surprised
-your email is ignored.
+if your email is ignored.
 </para>
 
 </sect1>
@@ -46,7 +48,7 @@ The procedure is similar for other types of clients.
 <para>
 It is also assumed you know the name of an available share in your
 &smb.conf;. I will assume this share is called <replaceable>tmp</replaceable>.
-You can add a <replaceable>tmp</replaceable> share like by adding the
+You can add a <replaceable>tmp</replaceable> share like this by adding the
 following to &smb.conf;:
 </para>
 
@@ -61,12 +63,13 @@ following to &smb.conf;:
 </para>
 
 <note><para>
-These tests assume version 3.0 or later of the samba suite. Some commands shown did not exist in earlier versions. 
+These tests assume version 3.0 or later of the samba suite.
+Some commands shown did not exist in earlier versions. 
 </para></note>
 
 <para>
 Please pay attention to the error messages you receive. If any error message
-reports that your server is being unfriendly you should first check that you
+reports that your server is being unfriendly you should first check that your
 IP name resolution is correctly set up. eg: Make sure your <filename>/etc/resolv.conf</filename>
 file points to name servers that really do exist.
 </para>
@@ -75,6 +78,21 @@ file points to name servers that really do exist.
 Also, if you do not have DNS server access for name resolution please check
 that the settings for your &smb.conf; file results in <command>dns proxy = no</command>. The
 best way to check this is with <userinput>testparm smb.conf</userinput>.
+</para>
+
+<para>
+It is helpful to monitor the log files during testing by using the
+<command>tail -F <replaceable>log_file_name</replaceable> in a separate
+terminal console (use ctrl-alt-F1 through F6 or multiple terminals in X). 
+Relevant log files can be found (for default installations) in
+<filename>/usr/local/samba/var</filename>.  Also, connection logs from
+machines can be found here or possibly in <filename>/var/log/samba</filename>
+depending on how or if you specified logging in your &smb.conf; file.
+</para>
+
+<para>
+If you make changes to your &smb.conf; file while going through these test,
+don't forget to restart &smbd; and &nmbd;.
 </para>
 
 </sect1>
@@ -124,6 +142,11 @@ software. You will need to relax the rules to let in the workstation
 in question, perhaps by allowing access from another subnet (on Linux
 this is done via the <application>ipfwadm</application> program.)
 </para>
+
+<para>
+Note: Modern Linux distributions install ipchains/iptables by default. 
+This is a common problem that is often overlooked.
+</para>
 </step>
 
 <step performance="required">
@@ -148,6 +171,13 @@ that file incorrectly. If you installed it as a daemon then check that
 it is running, and check that the netbios-ssn port is in a LISTEN
 state using <userinput>netstat -a</userinput>.
 </para>
+
+<note><para>
+Some Unix / Linux systems use <command>xinetd</command> in place of
+<command>inetd</command>. Check your system documentation for the location
+of the control file/s for your particular system implementation of
+this network super daemon.
+</para></note>
 
 <para>
 If you get a "session request failed" then the server refused the
@@ -265,7 +295,7 @@ hosts.
 <para>
 If this doesn't give a similar result to the previous test then
 nmblookup isn't correctly getting your broadcast address through its
-automatic mechanism. In this case you should experiment use the
+automatic mechanism. In this case you should experiment with the
 <command>interfaces</command> option in &smb.conf; to manually configure your IP
 address, broadcast and netmask. 
 </para>
@@ -358,7 +388,7 @@ when you type <command>dir</command>.
 <step performance="required">
 
 <para>
-On the PC type the command <userinput>net view \\BIGSERVER</userinput>. You will 
+On the PC, type the command <userinput>net view \\BIGSERVER</userinput>. You will 
 need to do this from within a "dos prompt" window. You should get back a 
 list of available shares on the server.
 </para>
@@ -463,7 +493,7 @@ an election is held at startup.
 <step performance="required">
 
 <para>
-From file manager try to browse the server. Your samba server should
+>From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
 specified in smb.conf). You should be able to double click on the name
 of the server and get a list of shares. If you get a "invalid

@@ -19,16 +19,16 @@ Windows2000 KDC.
 <para>You must use at least the following 3 options in smb.conf:</para>
 
 <para><programlisting>
-  realm = YOUR.KERBEROS.REALM
-  security = ADS
-  encrypt passwords = yes
+	realm = YOUR.KERBEROS.REALM
+	security = ADS
+	encrypt passwords = yes
 </programlisting></para>
 
 <para>
 In case samba can't figure out your ads server using your realm name, use the 
 <command>ads server</command> option in <filename>smb.conf</filename>:
 <programlisting>
-  ads server = your.kerberos.server
+	ads server = your.kerberos.server
 </programlisting>
 </para>
 
@@ -49,10 +49,10 @@ In case samba can't figure out your ads server using your realm name, use the
 <para>The minimal configuration for <filename>krb5.conf</filename> is:</para>
 
 <para><programlisting>
-[realms]
-    YOUR.KERBEROS.REALM = {
-	kdc = your.kerberos.server
-    }
+	[realms]
+	    YOUR.KERBEROS.REALM = {
+		kdc = your.kerberos.server
+	    }
 </programlisting></para>
 
 <para>Test your config by doing a <userinput>kinit
@@ -98,7 +98,9 @@ is only needed if you want kerberos support for &smbd; and &winbindd;.
 <para>
 As a user that has write permission on the Samba private directory
 (usually root) run:
-<userinput>net ads join</userinput>
+<programlisting>
+	<userinput>net join -U Administrator%password</userinput>
+</programlisting>
 </para>
 
 <sect2>
@@ -106,16 +108,16 @@ As a user that has write permission on the Samba private directory
 
 <para>
 <variablelist>
-<varlistentry><term>"ADS support not compiled in"</term>
-<listitem><para>Samba must be reconfigured (remove config.cache) and recompiled
-(make clean all install) after the kerberos libs and headers are installed.
-</para></listitem></varlistentry>
+	<varlistentry><term>"ADS support not compiled in"</term>
+	<listitem><para>Samba must be reconfigured (remove config.cache) and recompiled
+	(make clean all install) after the kerberos libs and headers are installed.
+	</para></listitem></varlistentry>
 
-<varlistentry><term>net ads join prompts for user name</term>
-<listitem><para>You need to login to the domain using <userinput>kinit
-<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput>.
-<replaceable>USERNAME</replaceable> must be a user who has rights to add a machine
-to the domain.  </para></listitem></varlistentry>
+	<varlistentry><term>net join prompts for user name</term>
+	<listitem><para>You need to login to the domain using <userinput>kinit
+	<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput>.
+	<replaceable>USERNAME</replaceable> must be a user who has rights to add a machine
+	to the domain.  </para></listitem></varlistentry>
 </variablelist>
 </para>
 
