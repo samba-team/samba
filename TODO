@@ -10,6 +10,8 @@ file.
 
 generate krb5-config
 
+handle readline hiding in readline/readline.h
+
 * appl
 
 ** appl/popper
