@@ -1,0 +1,71 @@
+Samba for Debian
+----------------
+
+This package was built by Eloy Paris <peloy@debian.org> and Steve
+Langasek <vorlon@debian.org>, current maintainers of the Samba packages
+for Debian, based on work from Bruce Perens <Bruce@Pixar.com>, Andrew
+Howell <andrew@it.com.au>, Klee Dienes <klee@debian.org> and Michael
+Meskes <meskes@topsystem.de>, all previous maintainers of the packages
+samba and sambades (now merged together - see below).
+
+As of Samba 2.0.6-1, the Debian version of Samba is compiled with
+Pluggable Authentication Modules (PAM) support. PAM support was 
+discontinued during the libc5 -> libc6 migration process and I never
+brought it back until 2.0.6-1.
+
+The smbfs package does not support the 2.0.x Linux kernels anymore.
+This has been the case since the very first packages of the CVS sources
+that eventually became Samba 2.2. To use the smbfs package you need to
+run a 2.2.x kernel or later.
+
+Starting with the Debian packages for Samba 2.2, the Samba log files (for
+nmbd and smbd) have been moved to a new location: /var/log/samba/. The
+files also have new names: log.nmbd and log.smbd. The old files
+(/var/log/{nmb,smb} were moved to the new location.
+
+As of Samba 2.2.2-11, the Samba sources produce the following binary
+packages:
+
+samba: A LanManager like file and printer server for Unix.
+samba-common: Samba common files used by both the server and the client.
+smbclient: A LanManager like simple client for Unix.
+swat: Samba Web Administration Tool
+samba-doc: Samba documentation.
+smbfs: Mount and umount commands for the smbfs (works with 2.2.x and
+	above kernels, not with 2.0.x kernels.)
+libpam-smbpass: pluggable authentication module for SMB password
+	database.
+libsmbclient: Shared library that allows applications to talk to SMB servers.
+libsmbclient-dev: libsmbclient shared libraries.
+
+
+Please note that the package smbwrapper (a shared library that provides
+SMB client services that existed between Samba 2.0.0-1 and Samba-2.0.5a-4
+does not exist any more. The reason is that starting with Samba 2.0.6-1, that
+code does not even compile, and the upstream author (Andrew Tridgell)
+recommended to disable the compilation of smbwrapper until some issues
+with glibc2.1 get cleared out (the problem is with glibc, not with Samba
+itself).
+
+Support for NT Domains
+----------------------
+
+Samba 2.2 includes preliminary support for NT domains. A Samba server
+can now be part of a Windows NT domain whose Primary Domain Controller
+is a Windows NT server. This feature is supposed to be stable although I
+haven't tried it myself. Read the documentation in the samba-doc package
+for help on how to do this (hint: "security = domain" in the smb.conf
+file).
+
+Samba 2.2 has also experimental support for Primary Domain
+Controller. This means that a Samba server can act now as a PDC. There
+are no special flags needed to compile Samba with NT domain PDC
+support. Please read the NTDOM PDC FAQ at www.samba.org (Documentation
+section).
+
+Please note that NT domain PDC support is far from complete and is still 
+experimental.
+
+Eloy A. Paris <peloy@debian.org>
+Steve Langasek <vorlon@debian.org>
+January 14, 2002

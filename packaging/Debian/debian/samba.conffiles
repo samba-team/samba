@@ -1,0 +1,3 @@
+/etc/cron.daily/samba
+/etc/init.d/samba
+/etc/logrotate.d/samba
