@@ -2,7 +2,11 @@
 
 # Run this script to build samba from CVS.
 
-if which autoconf > /dev/null
+## first try the default names
+AUTOHEADER="autoheader"
+AUTOCONF="autoconf"
+
+if which $AUTOCONF > /dev/null
 then
     :
 else
@@ -10,10 +14,23 @@ else
     exit 1
 fi
 
-echo "$0: running autoheader"
-autoheader || exit 1
+##
+## what version do we need?
+##
+if [ `$AUTOCONF --version | head -1 | cut -d.  -f 2` -lt 53 ]; then
 
-echo "$0: running autoconf"
-autoconf || exit 1
+	## maybe it's installed under a different name (e.g. RedHat 7.3)
+
+	AUTOCONF="autoconf-2.53"
+	AUTOHEADER="autoheader-2.53"
+
+fi
+
+echo "$0: running $AUTOHEADER"
+$AUTOHEADER || exit 1
+
+echo "$0: running $AUTOCONF"
+$AUTOCONF || exit 1
+
 echo "Now run ./configure and then make."
 exit 0
