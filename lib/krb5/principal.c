@@ -528,11 +528,41 @@ krb5_sname_to_principal (krb5_context context,
     if (ret)
 	return ret;
     
-    return krb5_build_principal (context,
-				 ret_princ,
-				 strlen(r[0]),
-				 r[0],
-				 sname,
-				 hostname,
-				 0);
+    if (type == KRB5_NT_SRV_HST) {
+	struct hostent *hostent;
+	char *h;
+
+	hostent = gethostbyname (hostname);
+	if (hostent != NULL)
+	    hostname = hostent->h_name;
+	h = strdup (hostname);
+	if (h == NULL) {
+	    krb5_free_host_realm (context, r);
+	    return ENOMEM;
+	}
+	strlwr (h);
+	ret = krb5_build_principal (context,
+				    ret_princ,
+				    strlen(r[0]),
+				    r[0],
+				    sname,
+				    h,
+				    NULL);
+	krb5_free_host_realm (context, r);
+	free (h);
+	return ret;
+    } else if (type == KRB5_NT_UNKNOWNN) {
+	ret = krb5_build_principal (context,
+				    ret_princ,
+				    strlen(r[0]),
+				    r[0],
+				    sname,
+				    hostname,
+				    NULL);
+	krb5_free_host_realm (context, r);
+	return ret;
+    } else {
+	krb5_free_host_realm (context, r);
+	return KRB5_SNAME_UNSUPP_NAMETYPE;
+    }
 }
