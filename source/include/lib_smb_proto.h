@@ -113,6 +113,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				struct nmb_name *calling, struct nmb_name *called,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon);
+BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+                                     struct in_addr *pdest_ip);
 
 /*The following definitions come from  libsmb/clidomain.c  */
 
@@ -122,7 +124,9 @@ BOOL cli_connect_servers_auth(struct cli_state *cli,
 				char *server,
 				const struct ntuser_creds *usr);
 BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
-BOOL get_any_dc_name(const char *domain, char *srv_name);
+BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+				 time_t *pass_last_set_time);
+BOOL get_any_dc_name(char *domain, fstring srv_name);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 

@@ -601,6 +601,7 @@ const char *get_sid_name_use_str(uint32 sid_name_use);
 BOOL ms_has_wild(char *s);
 BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive);
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
+BOOL is_ipaddress(const char *str);
 
 /*The following definitions come from  lib/util_array.c  */
 
