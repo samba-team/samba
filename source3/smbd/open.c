@@ -492,9 +492,24 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 }
 
 /****************************************************************************
+set a kernel flock on a file for NFS interoperability
+this requires a patch to Linux
+****************************************************************************/
+static void kernel_flock(files_struct *fsp, int deny_mode)
+{
+#if HAVE_KERNEL_SHARE_MODES
+	int kernel_mode = 0;
+	if (deny_mode == DENY_READ) kernel_mode = LOCK_MAND|LOCK_WRITE;
+	else if (deny_mode == DENY_WRITE) kernel_mode = LOCK_MAND|LOCK_READ;
+	else if (deny_mode == DENY_ALL) kernel_mode = LOCK_MAND;
+	if (kernel_mode) flock(fsp->fd, kernel_mode);
+#endif
+}
+
+
+/****************************************************************************
  Open a file with a share mode.
 ****************************************************************************/
-
 files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action)
 {
@@ -652,6 +667,14 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 		file_free(fsp);
 		return NULL;
 	}
+
+	/* not that we ignore failure for the following. It is
+           basically a hack for NFS, and NFS will never set one of
+           these only read them. Nobody but Samba can ever set a deny
+           mode and we have already checked our more authoritative
+           locking database for permission to set this deny mode. If
+           the kernel refuses the operations then the kernel is wrong */
+	kernel_flock(fsp, deny_mode);
 
 	/*
 	 * Deal with the race condition where two smbd's detect the file doesn't

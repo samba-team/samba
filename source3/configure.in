@@ -738,6 +738,25 @@ if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_CHANGE_NOTIFY)
 fi
 
+AC_CACHE_CHECK([for kernel share modes],samba_cv_HAVE_KERNEL_SHARE_MODES,[
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/file.h>
+#ifndef LOCK_MAND
+#define LOCK_MAND	32
+#define LOCK_READ	64
+#endif
+main() {
+       	exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
+}
+],
+samba_cv_HAVE_KERNEL_SHARE_MODES=yes,samba_cv_HAVE_KERNEL_SHARE_MODES=no,samba_cv_HAVE_KERNEL_SHARE_MODES=cross)])
+if test x"$samba_cv_HAVE_KERNEL_SHARE_MODES" = x"yes"; then
+    AC_DEFINE(HAVE_KERNEL_SHARE_MODES)
+fi
+
 
 
 
