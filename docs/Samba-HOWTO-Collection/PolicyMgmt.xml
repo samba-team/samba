@@ -214,7 +214,7 @@ here is incomplete &smbmdash; you are warned.
 	<para>
 <indexterm><primary>GPOs</primary></indexterm>
 	The older NT4-style registry-based policies are known as <emphasis>Administrative Templates</emphasis>
-	in MS Windows 2000/XP Group Policy Objects (GPOs). The later includes the ability to set various security
+	in MS Windows 2000/XP Group Policy Objects (GPOs). The latter includes the ability to set various security
 	configurations, enforce Internet Explorer browser settings, change and redirect aspects of the
 	users desktop (including the location of <filename>My Documents</filename> files (directory), as
 	well as intrinsics of where menu items will appear in the Start menu). An additional new
