@@ -507,6 +507,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	int chset = CH_UTF16;
 	unsigned byte_mul = 2;
 	unsigned flags = ndr->flags;
+	unsigned c_len_term = 0;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -529,7 +530,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	}
 
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
-	flags &= ~LIBNDR_FLAG_STR_CHARLEN;
+	if (flags & LIBNDR_FLAG_STR_CHARLEN) {
+		c_len_term = 1;
+		flags &= ~LIBNDR_FLAG_STR_CHARLEN;
+	}
 
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
@@ -550,25 +554,25 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 			*s = talloc_strdup(ndr, "");
 			break;
 		}
-		NDR_PULL_NEED_BYTES(ndr, len2*byte_mul);
+		NDR_PULL_NEED_BYTES(ndr, (len2 + c_len_term)*byte_mul);
 		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
-					    len2*byte_mul,
+					    (len2 + c_len_term)*byte_mul,
 					    (void **)&as);
 		if (ret == -1) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
-		NDR_CHECK(ndr_pull_advance(ndr, len2*byte_mul));
+		NDR_CHECK(ndr_pull_advance(ndr, (len2 + c_len_term)*byte_mul));
 
 		/* this is a way of detecting if a string is sent with the wrong
 		   termination */
 		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < len2) {
+			if (strlen(as) < (len2 + c_len_term)) {
 				DEBUG(6,("short string '%s'\n", as));
 			}
 		} else {
-			if (strlen(as) == len2) {
+			if (strlen(as) == (len2 + c_len_term)) {
 				DEBUG(6,("long string '%s'\n", as));
 			}
 		}
@@ -578,29 +582,29 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	case LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_pull_uint32(ndr, &len1));
-		NDR_PULL_NEED_BYTES(ndr, len1*byte_mul);
+		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
 		if (len1 == 0) {
 			*s = talloc_strdup(ndr, "");
 			break;
 		}
 		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
-					    len1*byte_mul,
+					    (len1 + c_len_term)*byte_mul,
 					    (void **)&as);
 		if (ret == -1) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
-		NDR_CHECK(ndr_pull_advance(ndr, len1*byte_mul));
+		NDR_CHECK(ndr_pull_advance(ndr, (len1 + c_len_term)*byte_mul));
 
 		/* this is a way of detecting if a string is sent with the wrong
 		   termination */
 		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < len1) {
+			if (strlen(as) < (len1 + c_len_term)) {
 				DEBUG(6,("short string '%s'\n", as));
 			}
 		} else {
-			if (strlen(as) == len1) {
+			if (strlen(as) == (len1 + c_len_term)) {
 				DEBUG(6,("long string '%s'\n", as));
 			}
 		}
@@ -615,29 +619,29 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, &len1));
-		NDR_PULL_NEED_BYTES(ndr, len1*byte_mul);
+		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
 		if (len1 == 0) {
 			*s = talloc_strdup(ndr, "");
 			break;
 		}
 		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
-					    len1*byte_mul,
+					    (len1 + c_len_term)*byte_mul,
 					    (void **)&as);
 		if (ret == -1) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
-		NDR_CHECK(ndr_pull_advance(ndr, len1*byte_mul));
+		NDR_CHECK(ndr_pull_advance(ndr, (len1 + c_len_term)*byte_mul));
 
 		/* this is a way of detecting if a string is sent with the wrong
 		   termination */
 		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < len1) {
+			if (strlen(as) < (len1 + c_len_term)) {
 				DEBUG(6,("short string '%s'\n", as));
 			}
 		} else {
-			if (strlen(as) == len1) {
+			if (strlen(as) == (len1 + c_len_term)) {
 				DEBUG(6,("long string '%s'\n", as));
 			}
 		}
@@ -648,29 +652,29 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	case LIBNDR_FLAG_STR_SIZE2:
 	case LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_pull_uint16(ndr, &len3));
-		NDR_PULL_NEED_BYTES(ndr, len3*byte_mul);
+		NDR_PULL_NEED_BYTES(ndr, (len3 + c_len_term)*byte_mul);
 		if (len3 == 0) {
 			*s = talloc_strdup(ndr, "");
 			break;
 		}
 		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
-					    len3*byte_mul,
+					    (len3 + c_len_term)*byte_mul,
 					    (void **)&as);
 		if (ret == -1) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
-		NDR_CHECK(ndr_pull_advance(ndr, len3*byte_mul));
+		NDR_CHECK(ndr_pull_advance(ndr, (len3 + c_len_term)*byte_mul));
 
 		/* this is a way of detecting if a string is sent with the wrong
 		   termination */
 		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < len3) {
+			if (strlen(as) < (len3 + c_len_term)) {
 				DEBUG(6,("short string '%s'\n", as));
 			}
 		} else {
-			if (strlen(as) == len3) {
+			if (strlen(as) == (len3 + c_len_term)) {
 				DEBUG(6,("long string '%s'\n", as));
 			}
 		}
