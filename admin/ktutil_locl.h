@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -59,6 +59,8 @@
 #include <roken.h>
 
 #include <krb5.h>
+#include <kadm5/admin.h>
+#include <kadm5/kadm5_err.h>
 
 #include <sl.h>
 #include <getarg.h>
