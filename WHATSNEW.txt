@@ -1,16 +1,25 @@
-            WHAT'S NEW IN Samba 2.2.6rc4  - 15th October 2002
-            =================================================
+            WHAT'S NEW IN Samba 2.2.6 - 16th October 2002
+            =============================================
 
-This is a preview snapshot of SAMBA_2_2 cvs branch.  This is a non-production
-release provided for testing purposes only.
+This is the latest stable release of Samba. This is the version that all
+production Samba servers should be running for all current bug-fixes.
+
+There have been several fixes and internal enhancements which include:
+
+ * Fixes for MS-RPC printing issues affecting Windows 2000 clients
+ * New support for smb.conf generation in SWAT
+ * Inclusion of several performance enhancements (See --with-sendfile
+   & and the modified smb.conf(5) parameters in these Release Notes)
+ * Fixes for several file locking bugs and returned status codes
+
 
 New Parameters
 --------------
 
 Refer to the smb.conf(5) man page for complete descriptions of new parameters.
 
-  * profile acls (S)
-
+  * profile acls (S)		workaround for issue with WinXP SP1
+				and roaming user profiles
 
 Removed Parameters
 ------------------
@@ -18,14 +27,14 @@ Removed Parameters
   * max packet (G)
   * packet size (G)
 
-
 Modified Parameters
 -------------------
 
-  * max xmit (G)
+  * max xmit (G) 		new default value
+  * large readwrite (G)		new default value
 
-
-The following options have been added to Samba's configure script
+New ./configure Options
+-----------------------
 
   --with-sendfile		Enable experimental sendfile support
   --with-winbind-ldap-hack	Enable winbindd_ldap_hack() functionality
@@ -34,6 +43,9 @@ The following options have been added to Samba's configure script
 
 Changes since 2.2.5
 --------------------
+
+See the cvs log for SAMBA_2_2 for more details
+
 1)  Fixed several compiler warnings caused by the use of const parameters
 2)  Fixed a hang in the main smbd process caused by an EINTR in the
     wrong place
@@ -61,9 +73,6 @@ Changes since 2.2.5
 18) Correcting check for ldap_start_tls()
 19) Fixed a problem with getgroups() where it could include our current
     effective gid
-
-( Changes since 2.2.6pre1 )
-
 20) fix incorrect semantics in the DeletePrinterDriver() spoolss rpc
     to only attempt to delete the architecture specified by the client
 21) Don't allow TEMP attribute on directory open
@@ -71,7 +80,7 @@ Changes since 2.2.5
 23) Added basic "Wizard" functionality to SWAT
 24) Fix initial "allocation size" in NTcreate&X call
 25) Fix for open fid, "nametoolong"
-26) Exit server on receipt of a non-SMB packet.  Ensure we have 
+26) Exit server on receipt of a non-SMB packet.  Ensure we have
     at least smb_size bytes before processing a packet
 27) Replace inet_aton with inet_addr() to correct compile problems on Solaris
 28) Include the "account" objectclass when adding a new account to --with-ldapsam
@@ -86,7 +95,7 @@ Changes since 2.2.5
 35) Add RESOLVE_DFSPATH to mkdir operations
 36) Fix longstanding bug in Win2k clients by clearing the shortname
     buffer before returning ASCII short name
-37) added -t option to smbpasswd for explicitly changing a trust 
+37) added -t option to smbpasswd for explicitly changing a trust
     account password when operating in security = domain
 38) installed -x option to testparm to eXclude printing all parameter
     values that are at default settings.
@@ -95,9 +104,6 @@ Changes since 2.2.5
 40) Added 1125 & KOI8-U to codepage list in Makefile.in
 41) Include separate configure checks for *openbsd* & *freebsd* when
     determining flags used to compile shared libraries.
-
-( Changes since 2.2.6pre2 )
-
 42) Merge in free list unlock on error fix
 43) Correctly fail opens with mismatching SYSTEM or HIDDEN attributes
     if we are mapping system or hidden
@@ -110,13 +116,13 @@ Changes since 2.2.5
 49) Merged Steve French's fix for OS/2 EA return error being removed
 50) Patch from Steve French to fix difference in responses to smbclient
     //server/share ls / on Samba and Windows 2000
-51) Print error and exit if smb.conf doesn't have security=domain and 
+51) Print error and exit if smb.conf doesn't have security=domain and
     encrypt passwords=yes when joining domain
-52) Added final Steve French patch for "required" attributes with old dir 
+52) Added final Steve French patch for "required" attributes with old dir
     listings
-53) Initialize user_rid value in WINBIND_USERINFO structure returned by 
+53) Initialize user_rid value in WINBIND_USERINFO structure returned by
     the rpc version of query_user()
-54) Ensure we've failed a lock with a lock denied message before automatically 
+54) Ensure we've failed a lock with a lock denied message before automatically
     pushing it onto the	blocking queue
 55) Add experimental --with-sendfile code
 56) alignment fix in printing code merged from HEAD
@@ -125,9 +131,9 @@ Changes since 2.2.5
 59) fix smbclient / Win98 off by one bug
 60) Never, *ever* hold a mutex lock in the message database where there may be
     traversals being attempted
-61) Add LDAP hack for retrieving the SAM sequence number when a member of a 
+61) Add LDAP hack for retrieving the SAM sequence number when a member of a
     Windows 2000 native mode domain
-62) Fix race condition when changing a machine account password as we were 
+62) Fix race condition when changing a machine account password as we were
     no longer locking the secrets entry
 63) Allow '@' as a valid character in domain names
 64) remove jobs from the spool directory when using cups
@@ -137,7 +143,7 @@ Changes since 2.2.5
 68) Delete printer security check was reversed
 69) Windows allows delete printer on a handle opened by an admin user, then
     used on a pipe handle created by an anonymous user...We do to now...
-70) Make explicit the difference between a tdb key with no data attached, and 
+70) Make explicit the difference between a tdb key with no data attached, and
     a non existent entry
 71) Ensure we register the 1c name on the unicast subnet.
 72) Fix inheritance problem when recursively setting ACLs on directories
@@ -148,19 +154,10 @@ Changes since 2.2.5
 77) Add version strings to the usage message for smbcacls and smbpasswd
 78) Fix bug in the write cache code
 79) make the default printed values for boolean the same for all parameters
-
-( Changes since 2.2.6rc1 )
-
 80) Default all LDAP connections to v3 with compiling with --with-ldapsam
-
-( Changes since 2.2.6rc2 )
-
 81) Fix memory leak in smbspool
 82) Fix bug in mangling code that resulted in Win9x clients not being
     able to execute batch files in deep, non 8.3  directory paths
-
-( Changes since 2.2.6rc3 )
-
 83) Fix infinite looping bug in winbindd_getgrent()
 84) Fix crash bug on 64-bit systems (merge from HEAD)
 85) Fix extended character bug when setting LanMan/NT password
