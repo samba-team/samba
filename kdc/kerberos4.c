@@ -107,18 +107,50 @@ db_fetch4(const char *name, const char *instance, const char *realm)
 }
 
 krb5_error_code
-get_des_key(hdb_entry *principal, Key **key)
+get_des_key(hdb_entry *principal, krb5_boolean prefer_afs_key, Key **ret_key)
 {
-    krb5_error_code ret;
+    Key *key = NULL;
+    Key *v5_key = NULL, *v4_key = NULL, *afs_key = NULL;
+    int i;
+    krb5_enctype etypes = { ETYPE_DES_CBC_MD5, 
+			    ETYPE_DES_CBC_MD4, 
+			    ETYPE_DES_CBC_CRC };
 
-    ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_MD5, key);
-    if(ret)
-	ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_MD4, key);
-    if(ret)
-	ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_CRC, key);
-    if(ret)
-	return ret;
-    if ((*key)->key.keyvalue.length == 0)
+    for(i = 0; i < 3; i++) {
+	key = NULL;
+	while(hdb_next_enctype2key(context, principal, etypes[i], &key) == 0) {
+	    if(key->salt == NULL) {
+		if(v5_key == NULL)
+		    v5_key = key;
+	    } else if(key->salt->type == hdb_pw_salt && 
+		      key->salt->length == 0) {
+		if(v4_key == NULL)
+		    v4_key = key;
+	    } else if(key->salt->salttype == hdb_afs3_salt) {
+		if(afs_key == NULL)
+		    afs_key = key;
+	    }
+	}
+	if(v5_key != NULL && v4_key != NULL && afs_key != NULL)
+	    break;
+    }
+
+    if(prefer_afs_key)
+	if(afs_key)
+	    *ret_key = afs_key;
+	else if(v4_key)
+	    *ret_key = v4_key;
+	else 
+	    *ret_key = v5_key;
+    else
+	if(v4_key)
+	    *ret_key = v4_key;
+	else if(afs_key)
+	    *ret_key = afs_key;
+	else 
+	    *ret_key = v5_key;
+
+    if((*ret_key)->key.keyvalue.length == 0)
 	return KERB_ERR_NULL_KEY;
     return 0;
 }
