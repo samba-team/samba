@@ -95,16 +95,6 @@ static canon_ace *dup_canon_ace( canon_ace *src_ace)
 }
 
 /****************************************************************************
- Function to create owner and group SIDs from a SMB_STRUCT_STAT.
-****************************************************************************/
-
-static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid)
-{
-	uid_to_sid( powner_sid, psbuf->st_uid );
-	gid_to_sid( pgroup_sid, psbuf->st_gid );
-}
-
-/****************************************************************************
  Print out a canon ace.
 ****************************************************************************/
 
@@ -158,6 +148,72 @@ static void print_canon_ace_list(const char *name, canon_ace *ace_list)
 		for (;ace_list; ace_list = ace_list->next, count++)
 			print_canon_ace(ace_list, count );
 	}
+}
+
+/****************************************************************************
+ Map POSIX ACL perms to canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits).
+****************************************************************************/
+
+static mode_t convert_permset_to_mode_t(SMB_ACL_PERMSET_T permset)
+{
+	mode_t ret = 0;
+
+	ret |= (sys_acl_get_perm(permset, SMB_ACL_READ) ? S_IRUSR : 0);
+	ret |= (sys_acl_get_perm(permset, SMB_ACL_WRITE) ? S_IWUSR : 0);
+	ret |= (sys_acl_get_perm(permset, SMB_ACL_EXECUTE) ? S_IXUSR : 0);
+
+	return ret;
+}
+
+/****************************************************************************
+ Map generic UNIX permissions to canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits).
+****************************************************************************/
+
+static mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
+{
+	mode_t ret = 0;
+
+	if (mode & r_mask)
+		ret |= S_IRUSR;
+	if (mode & w_mask)
+		ret |= S_IWUSR;
+	if (mode & x_mask)
+		ret |= S_IXUSR;
+
+	return ret;
+}
+
+/****************************************************************************
+ Map canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits) to
+ an SMB_ACL_PERMSET_T.
+****************************************************************************/
+
+static int map_acl_perms_to_permset(mode_t mode, SMB_ACL_PERMSET_T *p_permset)
+{
+	if (sys_acl_clear_perms(*p_permset) ==  -1)
+		return -1;
+	if (mode & S_IRUSR) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_READ) == -1)
+			return -1;
+	}
+	if (mode & S_IWUSR) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_WRITE) == -1)
+			return -1;
+	}
+	if (mode & S_IXUSR) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_EXECUTE) == -1)
+			return -1;
+	}
+	return 0;
+}
+/****************************************************************************
+ Function to create owner and group SIDs from a SMB_STRUCT_STAT.
+****************************************************************************/
+
+static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid)
+{
+	uid_to_sid( powner_sid, psbuf->st_uid );
+	gid_to_sid( pgroup_sid, psbuf->st_gid );
 }
 
 /****************************************************************************
@@ -403,51 +459,19 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 }
 
 /****************************************************************************
- Create a default mode for a directory default ACE.
-****************************************************************************/
-
-static mode_t get_default_ace_mode(files_struct *fsp, int type)
-{
-    mode_t force_mode = lp_force_dir_security_mode(SNUM(fsp->conn));
-	mode_t mode = 0;
-
-	DEBUG(10,("get_default_ace_mode: force_mode = 0%o\n", (int)force_mode ));
-
-	switch(type) {
-		case S_IRUSR:
-			mode |= (force_mode & S_IRUSR) ? S_IRUSR : 0;
-			mode |= (force_mode & S_IWUSR) ? S_IWUSR : 0;
-			mode |= (force_mode & S_IXUSR) ? S_IXUSR : 0;
-			break;
-		case S_IRGRP:
-			mode |= (force_mode & S_IRGRP) ? S_IRUSR : 0;
-			mode |= (force_mode & S_IWGRP) ? S_IWUSR : 0;
-			mode |= (force_mode & S_IXGRP) ? S_IXUSR : 0;
-			break;
-		case S_IROTH:
-			mode |= (force_mode & S_IROTH) ? S_IRUSR : 0;
-			mode |= (force_mode & S_IWOTH) ? S_IWUSR : 0;
-			mode |= (force_mode & S_IXOTH) ? S_IXUSR : 0;
-			break;
-	}
-
-	DEBUG(10,("get_default_ace_mode: returning mode = 0%o\n", (int)mode ));
-
-	return mode;
-}
-
-/****************************************************************************
  A well formed POSIX file or default ACL has at least 3 entries, a 
  SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER_OBJ.
  In addition, the owner must always have at least read access.
+ When using this call on get_acl, the pst struct is valid and contains
+ the mode of the file. When using this call on set_acl, the pst struct has
+ been modified to have a mode of r--------.
 ****************************************************************************/
 
 static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 							files_struct *fsp,
 							DOM_SID *pfile_owner_sid,
 							DOM_SID *pfile_grp_sid,
-							SMB_STRUCT_STAT *pst,
-							BOOL default_acl)
+							SMB_STRUCT_STAT *pst)
 {
 	extern DOM_SID global_sid_World;
 	canon_ace *pace;
@@ -479,7 +503,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.uid = pst->st_uid;
 		pace->sid = *pfile_owner_sid;
 		/* Ensure owner has read access. */
-		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRUSR) : S_IRUSR;
+		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
 		if (pace->perms == (mode_t)0)
 			pace->perms = S_IRUSR;
 		pace->attr = ALLOW_ACE;
@@ -498,7 +522,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->owner_type = GID_ACE;
 		pace->unix_ug.uid = pst->st_gid;
 		pace->sid = *pfile_grp_sid;
-		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRGRP): 0;
+		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
 		pace->attr = ALLOW_ACE;
 
 		DLIST_ADD(*pp_ace, pace);
@@ -515,7 +539,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->owner_type = WORLD_ACE;
 		pace->unix_ug.world = -1;
 		pace->sid = global_sid_World;
-		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IROTH): 0;
+		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
 		pace->attr = ALLOW_ACE;
 
 		DLIST_ADD(*pp_ace, pace);
@@ -1134,7 +1158,16 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	print_canon_ace_list( "file ace - before valid", file_ace);
 
-	if (!ensure_canon_entry_valid(&file_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, False)) {
+	/*
+	 * A default 3 element mode entry for a file should be r-- --- ---.
+	 * A default 3 element mode entry for a directory should be r-x --- ---.
+	 */
+
+	pst->st_mode = S_IRUSR;
+	if (fsp->is_directory)
+		pst->st_mode |= S_IXUSR;
+
+	if (!ensure_canon_entry_valid(&file_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -1142,7 +1175,17 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	print_canon_ace_list( "dir ace - before valid", dir_ace);
 
-	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
+	/*
+	 * A default inheritable 3 element mode entry for a directory should be the
+	 * mode Samba will use to create a file within. Ensure user x bit is set if
+	 * it's a directory.
+	 */
+
+	pst->st_mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
+	if (fsp->is_directory)
+		pst->st_mode |= S_IXUSR;
+
+	if (!ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -1157,62 +1200,6 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 }
 
-/****************************************************************************
- Map POSIX ACL perms to canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits).
-****************************************************************************/
-
-static mode_t convert_permset_to_mode_t(SMB_ACL_PERMSET_T permset)
-{
-	mode_t ret = 0;
-
-	ret |= (sys_acl_get_perm(permset, SMB_ACL_READ) ? S_IRUSR : 0);
-	ret |= (sys_acl_get_perm(permset, SMB_ACL_WRITE) ? S_IWUSR : 0);
-	ret |= (sys_acl_get_perm(permset, SMB_ACL_EXECUTE) ? S_IXUSR : 0);
-
-	return ret;
-}
-
-/****************************************************************************
- Map generic UNIX permissions to canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits).
-****************************************************************************/
-
-static mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
-{
-	mode_t ret = 0;
-
-	if (mode & r_mask)
-		ret |= S_IRUSR;
-	if (mode & w_mask)
-		ret |= S_IWUSR;
-	if (mode & x_mask)
-		ret |= S_IXUSR;
-
-	return ret;
-}
-
-/****************************************************************************
- Map canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits) to
- an SMB_ACL_PERMSET_T.
-****************************************************************************/
-
-static int map_acl_perms_to_permset(mode_t mode, SMB_ACL_PERMSET_T *p_permset)
-{
-	if (sys_acl_clear_perms(*p_permset) ==  -1)
-		return -1;
-	if (mode & S_IRUSR) {
-		if (sys_acl_add_perm(*p_permset, SMB_ACL_READ) == -1)
-			return -1;
-	}
-	if (mode & S_IWUSR) {
-		if (sys_acl_add_perm(*p_permset, SMB_ACL_WRITE) == -1)
-			return -1;
-	}
-	if (mode & S_IXUSR) {
-		if (sys_acl_add_perm(*p_permset, SMB_ACL_EXECUTE) == -1)
-			return -1;
-	}
-	return 0;
-}
 
 /******************************************************************************
  When returning permissions, try and fit NT display
@@ -1274,92 +1261,12 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 	*pp_list_head = list_head;
 }
 		
-/******************************************************************************
- Fall back to the generic 3 element UNIX permissions.
-********************************************************************************/
-
-static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbuf,
-										DOM_SID *powner, DOM_SID *pgroup, BOOL default_acl)
-{
-	extern DOM_SID global_sid_World;
-	canon_ace *list_head = NULL;
-	canon_ace *owner_ace = NULL;
-	canon_ace *group_ace = NULL;
-	canon_ace *other_ace = NULL;
-	mode_t mode;
-
-	if (default_acl)
-		return NULL;
-
-	/*
-	 * Create 3 linked list entries.
-	 */
-
-	if ((owner_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
-		goto fail;
-
-	if ((group_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
-		goto fail;
-
-	if ((other_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
-		goto fail;
-
-	ZERO_STRUCTP(owner_ace);
-	ZERO_STRUCTP(group_ace);
-	ZERO_STRUCTP(other_ace);
-
-	owner_ace->type = SMB_ACL_USER_OBJ;
-	owner_ace->sid = *powner;
-	owner_ace->unix_ug.uid = psbuf->st_uid;
-	owner_ace->owner_type = UID_ACE;
-	owner_ace->attr = ALLOW_ACE;
-
-	group_ace->type = SMB_ACL_GROUP_OBJ;
-	group_ace->sid = *pgroup;
-	group_ace->unix_ug.gid = psbuf->st_gid;
-	group_ace->owner_type = GID_ACE;
-	group_ace->attr = ALLOW_ACE;
-
-	other_ace->type = SMB_ACL_OTHER;
-	other_ace->sid = global_sid_World;
-	other_ace->unix_ug.world = -1;
-	other_ace->owner_type = WORLD_ACE;
-	other_ace->attr = ALLOW_ACE;
-
-	mode = psbuf->st_mode;
-
-	owner_ace->perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
-	owner_ace->attr = ALLOW_ACE;
-	
-	group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
-	group_ace->attr = ALLOW_ACE;
-
-	other_ace->perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
-	other_ace->attr = ALLOW_ACE;
-
-	DLIST_ADD(list_head, other_ace);
-	DLIST_ADD(list_head, group_ace);
-	DLIST_ADD(list_head, owner_ace);
-
-	arrange_posix_perms(fsp->fsp_name,&list_head );
-
-	return list_head;
-
-  fail:
-
-	safe_free(owner_ace);
-	safe_free(group_ace);
-	safe_free(other_ace);
-
-	return NULL;
-}
-
 /****************************************************************************
  Create a linked list of canonical ACE entries.
 ****************************************************************************/
 
 static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
-									DOM_SID *powner, DOM_SID *pgroup, BOOL default_acl)
+									DOM_SID *powner, DOM_SID *pgroup)
 {
 	extern DOM_SID global_sid_World;
 	mode_t acl_mask = (S_IRUSR|S_IWUSR|S_IXUSR);
@@ -1370,10 +1277,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 	SMB_ACL_ENTRY_T entry;
 	size_t ace_count;
 
-	if (posix_acl == NULL)
-		return unix_canonicalise_acl( fsp, psbuf, powner, pgroup, default_acl);
-
-	while ( sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
+	while ( posix_acl && (sys_acl_get_entry(posix_acl, entry_id, &entry) == 1)) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		DOM_SID sid;
@@ -1460,6 +1364,13 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 
 		DLIST_ADD(list_head, ace);
 	}
+
+	/*
+	 * This next call will ensure we have at least a user/group/world set.
+	 */
+
+	if (!ensure_canon_entry_valid(&list_head, fsp, powner, pgroup, psbuf))
+		goto fail;
 
 	arrange_posix_perms(fsp->fsp_name,&list_head );
 
@@ -1807,7 +1718,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	create_file_sids(&sbuf, &owner_sid, &group_sid);
 
 	/* Create the canon_ace lists. */
-	file_ace = canonicalise_acl( fsp, posix_acl, &sbuf,  &owner_sid, &group_sid, False);
+	file_ace = canonicalise_acl( fsp, posix_acl, &sbuf,  &owner_sid, &group_sid);
 	num_acls = count_canon_ace_list(file_ace);
 
 	/* We must have *some* ACLS. */
@@ -1818,7 +1729,12 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	}
 
 	if (fsp->is_directory) { 
-		dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf, &owner_sid, &group_sid, True);
+		/*
+		 * If we have to fake a default ACL then this is the mode to use.
+		 */
+		sbuf.st_mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
+
+		dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf, &owner_sid, &group_sid);
 		num_dir_acls = count_canon_ace_list(dir_ace);
 	}
 
