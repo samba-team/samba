@@ -645,7 +645,7 @@ static BOOL test_steal(void)
 
 	talloc_free(root);
 
-	p1 = talloc_new(NULL);
+	p1 = talloc_size(NULL, 3);
 	CHECK_SIZE(NULL, 3);
 	talloc_free(p1);
 
