@@ -6,12 +6,16 @@
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all
 current bug-fixes.  There have been several important issues
-fixes since the 3.0.7 release.  See the "Changes" section for
+fixes since the 3.0.8 release.  See the "Changes" section for
 details on exact updates.
 
 Common bugs fixed in 3.0.9 include:
 
-  o 
+  o Problem updating roaming user profiles.
+  o Crash in smbd when printing from a Windows 9x client.
+  o Unresolved symbols in libsmbclient which caused 
+    applications such as KDE's konqueror to fail when
+    accessing smb:// URLs.
 
 
 
@@ -70,6 +74,10 @@ o   Jim McDonough <jmcd@us.ibm.com>
 
 o   Luke Mewburn <lukem@NetBSD.org>
     BUG 1661: Fix KRB5_SETPW-defines
+
+
+o   Buchan Milne <bgmilne@mandrake.org> 
+    * BUG 2023: Mandrake packaging fixes for building 3.0.9.
 
 
 o   Lars Müller <lmuelle@suse.de>
