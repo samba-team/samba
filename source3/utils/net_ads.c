@@ -579,10 +579,7 @@ static int net_ads_leave(int argc, const char **argv)
 	}
 
 	if (!opt_password) {
-		char *user_name;
-		asprintf(&user_name, "%s$", global_myname());
-		opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
-		opt_user_name = user_name;
+		net_use_machine_password();
 	}
 
 	if (!(ads = ads_startup())) {
@@ -603,7 +600,6 @@ static int net_ads_leave(int argc, const char **argv)
 
 static int net_ads_join_ok(void)
 {
-	char *user_name;
 	ADS_STRUCT *ads = NULL;
 
 	if (!secrets_init()) {
@@ -611,9 +607,7 @@ static int net_ads_join_ok(void)
 		return -1;
 	}
 
-	asprintf(&user_name, "%s$", global_myname());
-	opt_user_name = user_name;
-	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+	net_use_machine_password();
 
 	if (!(ads = ads_startup())) {
 		return -1;
@@ -648,6 +642,7 @@ int net_ads_join(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	char *password;
+	char *machine_account = NULL;
 	char *tmp_password;
 	const char *org_unit = "Computers";
 	char *dn;
@@ -668,6 +663,16 @@ int net_ads_join(int argc, const char **argv)
 	password = strdup(tmp_password);
 
 	if (!(ads = ads_startup())) return -1;
+
+	if (!*lp_realm()) {
+		d_printf("realm must be set in in smb.conf for ADS join to succeed.\n");
+		return -1;
+	}
+
+	if (strcmp(ads->config.realm, lp_realm()) != 0) {
+		d_printf("realm of remote server (%s) and realm in smb.conf (%s) DO NOT match.  Aborting join\n", ads->config.realm, lp_realm());
+		return -1;
+	}
 
 	ou_str = ads_ou_string(org_unit);
 	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
@@ -696,11 +701,16 @@ int net_ads_join(int argc, const char **argv)
 
 	rc = ads_domain_sid(ads, &dom_sid);
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));
+		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));	
+	return -1;
+	}
+
+	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
+		d_printf("asprintf failed\n");
 		return -1;
 	}
 
-	rc = ads_set_machine_password(ads, global_myname(), password);
+	rc = ads_set_machine_password(ads, machine_account, password);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
 		return -1;
@@ -718,7 +728,8 @@ int net_ads_join(int argc, const char **argv)
 
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
 
-	free(password);
+	SAFE_FREE(password);
+	SAFE_FREE(machine_account);
 
 	return 0;
 }
@@ -1020,17 +1031,13 @@ int net_ads_changetrustpw(int argc, const char **argv)
     char *host_principal;
     char *hostname;
     ADS_STATUS ret;
-    char *user_name;
 
     if (!secrets_init()) {
 	    DEBUG(1,("Failed to initialise secrets database\n"));
 	    return -1;
     }
 
-    asprintf(&user_name, "%s$", global_myname());
-    opt_user_name = user_name;
-
-    opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+    net_use_machine_password();
 
     use_in_memory_ccache();
 
