@@ -34,7 +34,7 @@ int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user)
     return 0;    /* Return >= 0 for success */
 }
 
-void vfswrap_dummy_disconnect(void)
+void vfswrap_dummy_disconnect(connection_struct *conn)
 {
 }
 
@@ -63,6 +63,8 @@ DIR *vfswrap_opendir(connection_struct *conn, char *fname)
 {
     DIR *result;
 
+    START_PROFILE(syscall_opendir);
+
 #ifdef VFS_CHECK_NULL
     if (fname == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_opendir()\n");
@@ -70,12 +72,15 @@ DIR *vfswrap_opendir(connection_struct *conn, char *fname)
 #endif
 
     result = opendir(fname);
+    END_PROFILE(syscall_opendir);
     return result;
 }
 
 struct dirent *vfswrap_readdir(connection_struct *conn, DIR *dirp)
 {
     struct dirent *result;
+
+    START_PROFILE(syscall_readdir);
 
 #ifdef VFS_CHECK_NULL
     if (dirp == NULL) {
@@ -84,12 +89,15 @@ struct dirent *vfswrap_readdir(connection_struct *conn, DIR *dirp)
 #endif
 
     result = readdir(dirp);
+    END_PROFILE(syscall_readdir);
     return result;
 }
 
 int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
 {
     int result;
+
+    START_PROFILE(syscall_mkdir);
 
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
@@ -98,12 +106,15 @@ int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
 #endif
 
     result = mkdir(path, mode);
+    END_PROFILE(syscall_mkdir);
     return result;
 }
 
 int vfswrap_rmdir(connection_struct *conn, char *path)
 {
     int result;
+
+    START_PROFILE(syscall_rmdir);
 
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
@@ -112,12 +123,15 @@ int vfswrap_rmdir(connection_struct *conn, char *path)
 #endif
 
     result = rmdir(path);
+    END_PROFILE(syscall_rmdir);
     return result;
 }
 
 int vfswrap_closedir(connection_struct *conn, DIR *dirp)
 {
     int result;
+
+    START_PROFILE(syscall_closedir);
 
 #ifdef VFS_CHECK_NULL
     if (dirp == NULL) {
@@ -126,6 +140,7 @@ int vfswrap_closedir(connection_struct *conn, DIR *dirp)
 #endif
 
     result = closedir(dirp);
+    END_PROFILE(syscall_closedir);
     return result;
 }
 
@@ -135,6 +150,8 @@ int vfswrap_open(connection_struct *conn, char *fname, int flags, mode_t mode)
 {
     int result;
 
+    START_PROFILE(syscall_open);
+
 #ifdef VFS_CHECK_NULL
     if (fname == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_open()\n");
@@ -142,6 +159,7 @@ int vfswrap_open(connection_struct *conn, char *fname, int flags, mode_t mode)
 #endif
 
     result = sys_open(fname, flags, mode);
+    END_PROFILE(syscall_open);
     return result;
 }
 
@@ -149,13 +167,18 @@ int vfswrap_close(files_struct *fsp, int fd)
 {
     int result;
 
+    START_PROFILE(syscall_close);
+
     result = close(fd);
+    END_PROFILE(syscall_close);
     return result;
 }
 
 ssize_t vfswrap_read(files_struct *fsp, int fd, char *data, size_t n)
 {
     ssize_t result;
+
+    START_PROFILE_BYTES(syscall_read, n);
 
 #ifdef VFS_CHECK_NULL
     if (data == NULL) {
@@ -164,12 +187,15 @@ ssize_t vfswrap_read(files_struct *fsp, int fd, char *data, size_t n)
 #endif
 
     result = read(fd, data, n);
+    END_PROFILE(syscall_read);
     return result;
 }
 
 ssize_t vfswrap_write(files_struct *fsp, int fd, char *data, size_t n)
 {
     ssize_t result;
+
+    START_PROFILE_BYTES(syscall_write, n);
 
 #ifdef VFS_CHECK_NULL
     if (data == NULL) {
@@ -178,6 +204,7 @@ ssize_t vfswrap_write(files_struct *fsp, int fd, char *data, size_t n)
 #endif
 
     result = write(fd, data, n);
+    END_PROFILE(syscall_write);
     return result;
 }
 
@@ -185,13 +212,18 @@ SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int wh
 {
     SMB_OFF_T result;
 
+    START_PROFILE(syscall_lseek);
+
     result = sys_lseek(filedes, offset, whence);
+    END_PROFILE(syscall_lseek);
     return result;
 }
 
 int vfswrap_rename(connection_struct *conn, char *old, char *new)
 {
     int result;
+
+    START_PROFILE(syscall_rename);
 
 #ifdef VFS_CHECK_NULL
     if ((old == NULL) || (new == NULL)) {
@@ -200,13 +232,20 @@ int vfswrap_rename(connection_struct *conn, char *old, char *new)
 #endif
 
     result = rename(old, new);
+    END_PROFILE(syscall_rename);
     return result;
 }
 
 int vfswrap_fsync(files_struct *fsp, int fd)
 {
 #ifdef HAVE_FSYNC
-    return fsync(fd);
+    int result;
+
+    START_PROFILE(syscall_fsync);
+
+    result = fsync(fd);
+    END_PROFILE(syscall_fsync);
+    return result;
 #else
 	return 0;
 #endif
@@ -216,6 +255,8 @@ int vfswrap_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf)
 {
     int result;
 
+    START_PROFILE(syscall_stat);
+
 #ifdef VFS_CHECK_NULL
     if ((fname == NULL) || (sbuf == NULL)) {
 	smb_panic("NULL pointer passed to vfswrap_stat()\n");
@@ -223,12 +264,15 @@ int vfswrap_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf)
 #endif
 
     result = sys_stat(fname, sbuf);
+    END_PROFILE(syscall_stat);
     return result;
 }
 
 int vfswrap_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
 {
     int result;
+
+    START_PROFILE(syscall_fstat);
 
 #ifdef VFS_CHECK_NULL
     if (sbuf == NULL) {
@@ -237,12 +281,15 @@ int vfswrap_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
 #endif
 
     result = sys_fstat(fd, sbuf);
+    END_PROFILE(syscall_fstat);
     return result;
 }
 
 int vfswrap_lstat(connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf)
 {
     int result;
+
+    START_PROFILE(syscall_lstat);
 
 #ifdef VFS_CHECK_NULL
     if ((path == NULL) || (sbuf == NULL)) {
@@ -251,12 +298,15 @@ int vfswrap_lstat(connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf)
 #endif
 
     result = sys_lstat(path, sbuf);
+    END_PROFILE(syscall_lstat);
     return result;
 }
 
 int vfswrap_unlink(connection_struct *conn, char *path)
 {
     int result;
+
+    START_PROFILE(syscall_unlink);
 
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
@@ -265,12 +315,15 @@ int vfswrap_unlink(connection_struct *conn, char *path)
 #endif
 
     result = unlink(path);
+    END_PROFILE(syscall_unlink);
     return result;
 }
 
 int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode)
 {
     int result;
+
+    START_PROFILE(syscall_chmod);
 
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
@@ -279,12 +332,15 @@ int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode)
 #endif
 
     result = chmod(path, mode);
+    END_PROFILE(syscall_chmod);
     return result;
 }
 
 int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid)
 {
     int result;
+
+    START_PROFILE(syscall_chown);
 
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
@@ -293,34 +349,49 @@ int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid)
 #endif
 
     result = sys_chown(path, uid, gid);
+    END_PROFILE(syscall_chown);
     return result;
 }
 
 int vfswrap_chdir(connection_struct *conn, char *path)
 {
+    int result;
+
+    START_PROFILE(syscall_chdir);
+
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_chdir()\n");
     }
 #endif
 
-	return chdir(path);
+    result = chdir(path);
+    END_PROFILE(syscall_chdir);
+    return result;
 }
 
 char *vfswrap_getwd(connection_struct *conn, char *path)
 {
+    char *result;
+
+    START_PROFILE(syscall_getwd);
+
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_getwd()\n");
     }
 #endif
 
-	return sys_getwd(path);
+    result = sys_getwd(path);
+    END_PROFILE(syscall_getwd);
+    return result;
 }
 
 int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times)
 {
     int result;
+
+    START_PROFILE(syscall_utime);
 
 #ifdef VFS_CHECK_NULL
     if ((path == NULL) || (times == NULL)) {
@@ -329,6 +400,7 @@ int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times)
 #endif
 
     result = utime(path, times);
+    END_PROFILE(syscall_utime);
     return result;
 }
 
@@ -336,11 +408,40 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T offset)
 {
     int result;
 
+    START_PROFILE(syscall_ftruncate);
+
     result = sys_ftruncate(fd, offset);
+    END_PROFILE(syscall_ftruncate);
     return result;
 }
 
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	return fcntl_lock(fd, op, offset, count,type);
+    BOOL result;
+
+    START_PROFILE(syscall_fcntl_lock);
+
+    result =  fcntl_lock(fd, op, offset, count,type);
+    END_PROFILE(syscall_fcntl_lock);
+    return result;
+}
+
+size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)
+{
+	return get_nt_acl(fsp, ppdesc);
+}
+
+size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc)
+{
+	return get_nt_acl(fsp, ppdesc);
+}
+
+BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+{
+	return set_nt_acl(fsp, security_info_sent, psd);
+}
+
+BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
+{
+	return set_nt_acl(fsp, security_info_sent, psd);
 }

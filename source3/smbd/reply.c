@@ -1034,7 +1034,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL ok = False;
   BOOL bad_path = False;
   SMB_STRUCT_STAT st;
-  START_PROFILE(SMBchkpth_count);
+  START_PROFILE(SMBchkpth);
  
   pstrcpy(name,smb_buf(inbuf) + 1);
 

@@ -358,16 +358,14 @@ static BOOL set_printer_hnd_printertype(Printer_entry *Printer, char *handlename
 	if (!strchr(handlename+2, '\\')) {
 		DEBUGADD(4,("Printer is a print server\n"));
 		Printer->printer_type = PRINTER_HANDLE_IS_PRINTSERVER;		
-		return True;
 	}
 	/* it's a printer */
 	else {
 		DEBUGADD(4,("Printer is a printer\n"));
 		Printer->printer_type = PRINTER_HANDLE_IS_PRINTER;
-		return True;
 	}
 
-	return False;
+	return True;
 }
 
 /****************************************************************************
