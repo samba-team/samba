@@ -420,12 +420,12 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
 	
-	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, user_info, user_sess_key);
-
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
 		return nt_status;
 	}
+
+	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, user_info, user_sess_key);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
