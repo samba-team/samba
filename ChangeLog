@@ -1,3 +1,12 @@
+2003-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/v4_dump.c (v4_prop_dump): limit strings length, from openbsd
+	
+2003-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/aes-test.c: use _krb5_PKCS5_PBKDF2
+	* lib/krb5/crypto.c: unexport krb5_PKCS5_PBKDF2
+	
 2003-04-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/time.c (krb5_us_timeofday): make the sec parameter a
