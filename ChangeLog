@@ -1,3 +1,12 @@
+Mon Jul  7 02:46:31 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/decrypt.c: Implement des-cbc-crc, and des-cbc-md5 in
+ 	separate function.
+
+	* lib/krb5/krb5.h: Add more checksum and encryption types.
+
+	* lib/krb5/krb5_locl.h: Add etype to krb5_decrypt.
+
 Sun Jul  6 23:02:59 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/[gs]et_default_realm.c, kuserok.c: new files
