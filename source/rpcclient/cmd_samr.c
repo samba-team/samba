@@ -1910,11 +1910,11 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc,
 		}
 	}
 
-
-	if (argc < 2)
+	if ((argc < 2) || (argc > 3))
 	{
 		report(out_hnd,
 		       "creategroup: <acct name> [acct description]\n");
+                return;
 	}
 
 	acct_name = argv[1];
