@@ -196,6 +196,8 @@ krb5_get_kdc_cred(krb5_context context,
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
     krb5_data_free(&resp);
 out:
+    /* Don't free this part, it's from the caller */
+    req.req_body.addresses = NULL;
     free_TGS_REQ(&req);
     return ret;
 }
