@@ -11,20 +11,19 @@ docs/docbook/manpages/samba.7.sgml - Listing of samba programs is not complete
  - this is in hand by Jelmer
 docs/docbook/manpages/smb.conf.5.sgml - 'restrict anonymous' isn't documented properly
  - this should be updated
-docs/docbook/projdoc/Integrating-with-Windows.sgml - Should slowly go a way. Contains a little bit information about wins, a little bit about domain membership, a little about winbind, etc
- - Has been cleaned up now - more to go.
+docs/docbook/projdoc/Integrating-with-Windows.sgml - Updated and rearranged into the new HOWTO structure - jht
 docs/docbook/projdoc/PAM-Authentication-And-Samba.sgml
- - this should be updated
+ - this should be updated, partially updated by jht - more to be done.
 docs/docbook/projdoc/Printing.sgml - Cups is not documented, smbprint, printing /to/ a windows server... - Kurt Pfeifle
  - this is in hand by Kurt/jht
 docs/docbook/projdoc/Samba-BDC-HOWTO.sgml - Needs update to 3.0
- - still being worked on
+ - still being worked on (jht)
 docs/docbook/projdoc/passdb.sgml - LDAP part needs update to 3.0 ( http://www.unav.es/cti/ldap-smb/smb-ldap-3-howto.html )
  - this should be updated
 docs/docbook/projdoc/Speed.sgml - contains outdated and invalid information
  - this should be updated
 docs/docbook/projdoc/UNIX_INSTALL.sgml - Merge locking part with oplocks.sgml
- - this should be updated
+ - this should be updated (jht)
 docs/docbook/projdoc/printer_driver2.sgml - Needs integration with printing.sgml, still up to date?
  - still being worked on
 docs/docbook/projdoc/upgrading-to-3.0.sgml - not finished yet
@@ -54,7 +53,7 @@ Can someone please take ownership of the following. Thanks - jht
 Not release-critical:
 docs/docbook/devdoc/* - most of these docs are outdated and need updates...
 docs/docbook/projdoc/Diagnosis.sgml - Needs extension
- - I will look at this towards the end of updating the HOWTO
+ - I will look at this towards the end of updating the HOWTO (jht)
 docs/docbook/manpages/rpcclient.1.sgml - Some commands could be documented more extensively
 docs/history - needs updating (is current up to 1998 - merge with 10year.html ?)
 
