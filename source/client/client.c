@@ -1859,7 +1859,14 @@ static int cmd_acl(const char **cmd_ptr)
 	}
 	pstrcat(fname,buf);
 
-	fnum = smbcli_open(cli->tree, fname, O_RDONLY, DENY_NONE);
+	fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
+				     SEC_STD_READ_CONTROL,
+				     0,
+				     NTCREATEX_SHARE_ACCESS_DELETE|
+				     NTCREATEX_SHARE_ACCESS_READ|
+				     NTCREATEX_SHARE_ACCESS_WRITE, 
+				     NTCREATEX_DISP_OPEN,
+				     0, 0);
 	if (fnum == -1) {
 		d_printf("%s - %s\n", fname, smbcli_errstr(cli->tree));
 		return -1;
