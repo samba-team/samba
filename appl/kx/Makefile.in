@@ -22,6 +22,9 @@ LN_S = @LN_S@
 LIBS = $(XLIBS) @LIBS@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
+VERSION = @VERSION@
+PACKAGE = @PACKAGE@
+
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
@@ -101,15 +104,15 @@ kxd$(EXECSUFFIX): $(OBJECTS_KXD)
 	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 rxterm: rxterm.in
-	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxterm.in > $@
+	sed -e "s!%bindir%!$(bindir)!" -e "s!%VERSION%!$(VERSION)!" -e "s!%PACKAGE%!$(PACKAGE)!" $(srcdir)/rxterm.in > $@
 	chmod +x $@
 
 rxtelnet: rxtelnet.in
-	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxtelnet.in > $@
+	sed -e "s!%bindir%!$(bindir)!" -e "s!%VERSION%!$(VERSION)!" -e "s!%PACKAGE%!$(PACKAGE)!" $(srcdir)/rxtelnet.in > $@
 	chmod +x $@
 
 tenletxr: tenletxr.in
-	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/tenletxr.in > $@
+	sed -e "s!%bindir%!$(bindir)!" -e "s!%VERSION%!$(VERSION)!" -e "s!%PACKAGE%!$(PACKAGE)!" $(srcdir)/tenletxr.in > $@
 	chmod +x $@
 
 $(OBJECTS): ../../include/config.h
