@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -448,8 +448,11 @@ doit_active (kx_context *kc)
 	socklen_t zero = 0;
 
 	FD_ZERO(&fdset);
-	for (i = 0; i < nsockets; ++i)
+	for (i = 0; i < nsockets; ++i) {
+	    if (sockets[i].fd >= FD_SETSIZE) 
+		errx (1, "fd too large");
 	    FD_SET(sockets[i].fd, &fdset);
+	}
 	if (select(FD_SETSIZE, &fdset, NULL, NULL, NULL) <= 0)
 	    continue;
 	for (i = 0; i < nsockets; ++i)
