@@ -287,14 +287,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		
 		SSVAL(outbuf, smb_uid, sess_vuid);
 
-		if (!server_info->guest) {
+		if (!server_info->guest && !srv_signing_started()) {
 			/* We need to start the signing engine
 			 * here but a W2K client sends the old
 			 * "BSRSPYL " signature instead of the
 			 * correct one. Subsequent packets will
 			 * be correct.
 			 */
-		       	srv_check_sign_mac(inbuf);
+		       	srv_check_sign_mac(inbuf, False);
 		}
 	}
 
@@ -360,14 +360,15 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 			
 			SSVAL(outbuf,smb_uid,sess_vuid);
 
-			if (!server_info->guest) {
+			if (!server_info->guest && !srv_signing_started()) {
 				/* We need to start the signing engine
 				 * here but a W2K client sends the old
 				 * "BSRSPYL " signature instead of the
 				 * correct one. Subsequent packets will
 				 * be correct.
 				 */
-			       	srv_check_sign_mac(inbuf);
+
+				srv_check_sign_mac(inbuf, False);
 			}
 		}
 	}
@@ -907,7 +908,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
- 	if (!server_info->guest && !srv_check_sign_mac(inbuf)) {
+ 	if (!server_info->guest && !srv_signing_started() && !srv_check_sign_mac(inbuf, True)) {
 		exit_server("reply_sesssetup_and_X: bad smb signature");
 	}
 

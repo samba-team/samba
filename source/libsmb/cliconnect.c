@@ -325,7 +325,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			session_key = data_blob(NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 		}
-		cli_simple_set_signing(cli, session_key, nt_response, 0); 
+		cli_simple_set_signing(cli, session_key, nt_response); 
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
@@ -521,7 +521,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
 #endif
 
-	cli_simple_set_signing(cli, session_key_krb5, null_blob, 0); 
+	cli_simple_set_signing(cli, session_key_krb5, null_blob); 
 			
 	blob2 = cli_session_setup_blob(cli, negTokenTarg);
 
@@ -643,13 +643,16 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
 		cli_set_session_key(cli, ntlmssp_state->session_key);
 
-		/* Using NTLMSSP session setup, signing on the net only starts
-		 * after a successful authentication and the session key has
-		 * been determined, but with a sequence number of 2. This
-		 * assumes that NTLMSSP needs exactly 2 roundtrips, for any
-		 * other SPNEGO mechanism it needs adapting. */
-
-		cli_simple_set_signing(cli, key, null_blob, 2);
+		if (cli_simple_set_signing(cli, key, null_blob)) {
+			
+			/* 'resign' the last message, so we get the right sequence numbers
+			   for checking the first reply from the server */
+			cli_calculate_sign_mac(cli);
+			
+			if (!cli_check_sign_mac(cli, True)) {
+				nt_status = NT_STATUS_ACCESS_DENIED;
+			}
+		}
 	}
 
 	/* we have a reference conter on ntlmssp_state, if we are signing
@@ -1088,6 +1091,8 @@ BOOL cli_negprot(struct cli_state *cli)
 			}
 			cli->sign_info.negotiated_smb_signing = True;
 			cli->sign_info.mandatory_signing = True;
+		} else if (cli->sign_info.allow_smb_signing && cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
+			cli->sign_info.negotiated_smb_signing = True;
 		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
