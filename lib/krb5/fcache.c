@@ -193,7 +193,7 @@ fcc_destroy(krb5_context context,
 
     erase_file(f);
   
-    return fcc_close (context, id);
+    return 0;
 }
 
 static krb5_error_code
