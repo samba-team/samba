@@ -256,6 +256,12 @@ AC_TRY_COMPILE([#include <sys/types.h>
 echo yes;AC_DEFINE(HAVE_UTIMBUF), 
 echo no)
 
+
+echo $ac_n "checking for test routines ... $ac_c"
+AC_TRY_RUN([#include "tests/trivial.c"],
+           echo yes;,
+	   echo ERROR - cant find test code. Aborting config; exit 1)
+
 echo $ac_n "checking for ftruncate extend ... $ac_c"
 AC_TRY_RUN([#include "tests/ftruncate.c"],
            echo yes;AC_DEFINE(HAVE_FTRUNCATE_EXTEND), 
