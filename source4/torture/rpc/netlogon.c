@@ -393,6 +393,41 @@ static BOOL test_AccountDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
+/*
+  try a netlogon AccountSync
+*/
+static BOOL test_AccountSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_AccountSync r;
+	struct netr_CredentialState creds;
+	BOOL ret = True;
+
+	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+		return False;
+	}
+
+	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computername = lp_netbios_name();
+	ZERO_STRUCT(r.in.return_authenticator);
+	creds_client_authenticator(&creds, &r.in.credential);
+	ZERO_STRUCT(r.in.recordid);
+	r.in.reference=0;
+	r.in.level=0;
+	r.in.buffersize=100;
+
+	printf("Testing AccountSync\n");
+
+	/* w2k3 returns "NOT IMPLEMENTED" for this call */
+	status = dcerpc_netr_AccountSync(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		printf("AccountSync - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
 
 BOOL torture_rpc_netlogon(int dummy)
 {
@@ -413,7 +448,7 @@ BOOL torture_rpc_netlogon(int dummy)
 	
 	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
-	if (!test_AccountDeltas(p, mem_ctx)) {
+	if (!test_AccountSync(p, mem_ctx)) {
 		ret = False;
 	}
 	return ret;
@@ -439,6 +474,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_DatabaseDeltas(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_AccountDeltas(p, mem_ctx)) {
 		ret = False;
 	}
 
