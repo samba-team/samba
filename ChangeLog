@@ -1,5 +1,30 @@
 2003-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
 	
+	* lib/krb5/keyblock.c (krb5_keyblock_get_enctype): return enctype
+	of keyblock
+
+	* lib/krb5/Makefile.am (man_MANS): += krb5_keyblock.3
+
+	* lib/krb5/krb5_keyblock.3: some information about krb5_keyblock
+	and related functions
+
+	* lib/krb5/heim_threads.h: make the non-debug version of the mutex
+	macros "use" the "mutex" integer so the compile wont complain
+	about defined unused variables
+
+	* lib/krb5/heim_threads.h: make thread local storage macros take a
+	"return" argument so no functions need to be created for the
+	no-pthread case
+
+	* lib/krb5/heim_threads.h: adding RWLOCKS and [sg]etspecific
+	
+	* configure.in: use KRB_PTHREADS
+	
+	* lib/asn1/Makefile.am (gen_files): add asn1_KerberosString and
+	sort
+
+	* lib/asn1/k5.asn1 (ETYPE-INFO2-ENTRY): salt is a KerberosString
+	
 	* lib/krb5/krb5.3: add ticket access functions
 	* lib/krb5/krb5_ticket.3: ditto
 	* lib/krb5/ticket.c: ditto
