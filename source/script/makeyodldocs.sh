@@ -55,6 +55,14 @@ do
 				exit 1
 			fi
 			cp $bn.html ../htmldocs || echo "Cannot create $YODLDIR/../htmldocs/$bn.html"
+#
+# Copy to SWAT directory.
+#
+			if [ $bn = "smb.conf.5" ]; then
+				rm -f ../../swat/help/smb.conf.5.html || echo "Cannot remove ../../swat/help/smb.conf.5.html"
+
+				cp $bn.html ../../swat/help || echo "Cannot copy smb.conf.5.html to ../../swat/help/smb.conf.5.html"
+			fi
 			rm -f $bn.html
 			;;
 		*)
