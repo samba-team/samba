@@ -358,6 +358,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 
 NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO *r_u)
 {
+	extern DOM_SID global_sid_nonexistent;
 	LSA_INFO_UNION *info = &r_u->dom;
 	DOM_SID domain_sid;
 	fstring dos_domain;
@@ -382,13 +383,13 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			unsigned int i;
 			/* fake info: We audit everything. ;) */
 			info->id2.auditing_enabled = 1;
-            info->id2.count1 = 7;
-            info->id2.count2 = 7;
+			info->id2.count1 = 7;
+			info->id2.count2 = 7;
 			if ((info->id2.auditsettings = (uint32 *)talloc(p->mem_ctx,7*sizeof(uint32))) == NULL)
 				return NT_STATUS_NO_MEMORY;
-            for (i = 0; i < 7; i++)
-                info->id2.auditsettings[i] = 3;
-            break;
+			for (i = 0; i < 7; i++)
+				info->id2.auditsettings[i] = 3;
+			break;
 		}
 	case 0x03:
 		/* Request PolicyPrimaryDomainInformation. */
@@ -409,7 +410,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 				break;
 			case ROLE_STANDALONE:
 				name = dos_domain;
-				sid = NULL; /* Tell it we're not in a domain. */
+				sid = &global_sid_nonexistent;
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

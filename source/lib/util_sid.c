@@ -44,6 +44,7 @@ DOM_SID global_sid_Builtin_Guests;			/* Builtin guest users */
 DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
 DOM_SID global_sid_Network;					/* Network rids */
 DOM_SID global_sid_Anonymous;				/* Anonymous login */
+DOM_SID global_sid_nonexistent;     		/* S-0-0. Used in Lsa level 3. */
 
 const DOM_SID *global_sid_everyone = &global_sid_World;
 
@@ -186,6 +187,7 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
 	string_to_sid(&global_sid_Network, "S-1-5-2");
 	string_to_sid(&global_sid_Anonymous, "S-1-5-7");
+	string_to_sid(&global_sid_nonexistent, "S-0-0"); /* Used in Lsa level 3. */
 
 	/* Create the anon token. */
 	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);
