@@ -331,6 +331,12 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 				SAFE_FREE(conn);
 				conn = &conn_temp;  /* Just to keep the loop moving */
 			} else {
+				if (keep_mutex) {
+					if (!secrets_named_mutex(conn->controller,
+								WINBIND_SERVER_MUTEX_WAIT_TIME, &conn->mutex_ref_count))
+		                	        DEBUG(0,("get_connection_from_cache: mutex grab failed for %s\n",
+									conn->controller));
+				}
 				break;
 			}
 		}
@@ -343,7 +349,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 		ZERO_STRUCTP(conn);
 		
 		if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, get_pipe_index(pipe_name), conn, keep_mutex))) {
-			DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
+			DEBUG(3, ("get_connection_from_cache: Could not open a connection to %s for %s (%s)\n", 
 				  domain, pipe_name, nt_errstr(result)));
 		        SAFE_FREE(conn);
 			return result;
