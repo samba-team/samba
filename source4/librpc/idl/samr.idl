@@ -90,8 +90,92 @@
 		NTTIME min_passwordage;
 	} samr_DomInfo1;
 
+	typedef struct {
+		HYPER_T force_logoff_time;
+		samr_Name unknown_name;
+		samr_Name domain;  /* domain name */
+		samr_Name primary; /* PDC name if this is a BDC */
+		HYPER_T sequence_num;
+		uint32 unknown_2;
+		uint32 role;
+		uint32 unknown_3;
+		uint32 num_users;
+		uint32 num_groups;
+		uint32 num_aliases;
+	} samr_DomInfo2;
+
+	typedef struct {
+		HYPER_T force_logoff_time;
+	} samr_DomInfo3;
+
+	typedef struct {
+		samr_Name unknown_name;
+	} samr_DomInfo4;
+
+	typedef struct {
+		samr_Name domain;
+	} samr_DomInfo5;
+
+	typedef struct {
+		samr_Name primary;
+	} samr_DomInfo6;
+
+	typedef struct {
+		uint32 role;
+	} samr_DomInfo7;
+
+	typedef struct {
+		HYPER_T sequence_num;
+		NTTIME last_xxx_time;
+	} samr_DomInfo8;
+
+	typedef struct {
+		uint32 unknown;
+	} samr_DomInfo9;
+
+	typedef struct {
+		HYPER_T force_logoff_time;
+		samr_Name unknown_name;
+		samr_Name domain;
+		samr_Name primary;
+		HYPER_T sequence_num;
+		uint32 unknown_2;
+		uint32 role;
+		uint32 unknown_3;
+		uint32 num_users;
+		uint32 num_groups;
+		uint32 num_aliases;
+		HYPER_T lockout_duration;
+		HYPER_T lockout_window;
+		uint16 lockout_threshold;
+	} samr_DomInfo11;
+
+	typedef struct {
+		HYPER_T lockout_duration;
+		HYPER_T lockout_window;
+		uint16 lockout_threshold;
+	} samr_DomInfo12;
+
+	typedef struct {
+		HYPER_T sequence_num;
+		NTTIME last_xxx_time;
+		uint32 foo7;
+		uint32 foo8;
+	} samr_DomInfo13;
+
 	typedef union {
 		case(1) samr_DomInfo1 info1;
+		case(2) samr_DomInfo2 info2;
+		case(3) samr_DomInfo3 info3;
+		case(4) samr_DomInfo4 info4;
+		case(5) samr_DomInfo5 info5;
+		case(6) samr_DomInfo6 info6;
+		case(7) samr_DomInfo7 info7;
+		case(8) samr_DomInfo8 info8;
+		case(9) samr_DomInfo9 info9;
+		case(11) samr_DomInfo11 info11;
+		case(12) samr_DomInfo12 info12;
+		case(13) samr_DomInfo13 info13;
 	} samr_DomainInfo;
 
 	NTSTATUS samr_QueryDomainInfo(

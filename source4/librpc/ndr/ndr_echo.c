@@ -93,8 +93,8 @@ NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, struct echo_SourceData *
 static NTSTATUS ndr_pull_echo_Enum1(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum1 *r)
 {
 	uint32 _ptr_count;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_count));
 	if (_ptr_count) {
 		NDR_ALLOC(ndr, r->count);
@@ -113,8 +113,8 @@ done:
 static NTSTATUS ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum3 *r)
 {
 	uint32 _ptr_count;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_count));
 	if (_ptr_count) {
 		NDR_ALLOC(ndr, r->count);
@@ -166,8 +166,8 @@ done:
 
 static NTSTATUS ndr_pull_Struct1(struct ndr_pull *ndr, int ndr_flags, struct Struct1 *r)
 {
-	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
 	{ uint16 _level;
 	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_SCALARS, &_level, &r->e));

@@ -120,8 +120,93 @@ struct samr_DomInfo1 {
 	NTTIME min_passwordage;
 };
 
+struct samr_DomInfo2 {
+	HYPER_T force_logoff_time;
+	struct samr_Name unknown_name;
+	struct samr_Name domain;
+	struct samr_Name primary;
+	HYPER_T sequence_num;
+	uint32 unknown_2;
+	uint32 role;
+	uint32 unknown_3;
+	uint32 num_users;
+	uint32 num_groups;
+	uint32 num_aliases;
+};
+
+struct samr_DomInfo3 {
+	HYPER_T force_logoff_time;
+};
+
+struct samr_DomInfo4 {
+	struct samr_Name unknown_name;
+};
+
+struct samr_DomInfo5 {
+	struct samr_Name domain;
+};
+
+struct samr_DomInfo6 {
+	struct samr_Name primary;
+};
+
+struct samr_DomInfo7 {
+	uint32 role;
+};
+
+struct samr_DomInfo8 {
+	HYPER_T sequence_num;
+	NTTIME last_modify_time;
+};
+
+struct samr_DomInfo9 {
+	uint32 unknown;
+};
+
+struct samr_DomInfo11 {
+	HYPER_T force_logoff_time;
+	struct samr_Name unknown_name;
+	struct samr_Name domain;
+	struct samr_Name primary;
+	HYPER_T sequence_num;
+	uint32 unknown_2;
+	uint32 role;
+	uint32 unknown_3;
+	uint32 num_users;
+	uint32 num_groups;
+	uint32 num_aliases;
+	HYPER_T lockout_duration;
+	HYPER_T lockout_window;
+	uint16 lockout_threshold;
+};
+
+struct samr_DomInfo12 {
+	HYPER_T lockout_duration;
+	HYPER_T lockout_window;
+	uint16 lockout_threshold;
+};
+
+struct samr_DomInfo13 {
+	HYPER_T sequence_num;
+	NTTIME last_modify_time;
+	uint32 foo7;
+	uint32 foo8;
+};
+
 union samr_DomainInfo {
 /* [case(1)] */ struct samr_DomInfo1 info1;
+/* [case(2)] */ struct samr_DomInfo2 info2;
+/* [case(3)] */ struct samr_DomInfo3 info3;
+/* [case(4)] */ struct samr_DomInfo4 info4;
+/* [case(5)] */ struct samr_DomInfo5 info5;
+/* [case(6)] */ struct samr_DomInfo6 info6;
+/* [case(7)] */ struct samr_DomInfo7 info7;
+/* [case(8)] */ struct samr_DomInfo8 info8;
+/* [case(9)] */ struct samr_DomInfo9 info9;
+/* [case(10)] */ struct samr_DomInfo1 info10;
+/* [case(11)] */ struct samr_DomInfo11 info11;
+/* [case(12)] */ struct samr_DomInfo12 info12;
+/* [case(13)] */ struct samr_DomInfo13 info13;
 };
 
 struct samr_QueryDomainInfo {
