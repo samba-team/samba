@@ -725,7 +725,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 	    return(ERROR(ERRDOS,ERRbuftoosmall));
     }
 
-    srvstr_pull(inbuf, smb_apasswd, smb_buf(inbuf), sizeof(smb_apasswd), smb_apasslen, 0);
+    memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     srvstr_pull(inbuf, user, smb_buf(inbuf)+smb_apasslen, sizeof(user), -1, STR_TERMINATE);
   
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
