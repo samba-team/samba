@@ -233,6 +233,32 @@ uint_t samdb_search_uint(void *ctx,
 }
 
 /*
+  search the sam for a single signed 64 bit integer attribute in exactly 1 record
+*/
+int64_t samdb_search_int64(void *ctx,
+			   TALLOC_CTX *mem_ctx,
+			   int64_t default_value,
+			   const char *basedn,
+			   const char *attr_name,
+			   const char *format, ...)
+{
+	va_list ap;
+	int count;
+	struct ldb_message **res;
+	const char * const attrs[2] = { attr_name, NULL };
+
+	va_start(ap, format);
+	count = samdb_search_v(ctx, mem_ctx, basedn, &res, attrs, format, ap);
+	va_end(ap);
+
+	if (count != 1) {
+		return default_value;
+	}
+
+	return samdb_result_int64(res[0], attr_name, default_value);
+}
+
+/*
   search the sam for multipe records each giving a single string attribute
   return the number of matches, or -1 on error
 */
@@ -286,6 +312,14 @@ int samdb_search_string_multiple(void *ctx,
 uint_t samdb_result_uint(struct ldb_message *msg, const char *attr, uint_t default_value)
 {
 	return ldb_msg_find_uint(msg, attr, default_value);
+}
+
+/*
+  pull a (signed) int64 from a result set. 
+*/
+int64_t samdb_result_int64(struct ldb_message *msg, const char *attr, int64_t default_value)
+{
+	return ldb_msg_find_int64(msg, attr, default_value);
 }
 
 /*
@@ -350,11 +384,11 @@ NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, const char
 }
 
 /*
-  pull a double (really a large integer) from a result set. 
+  pull a uint64_t from a result set. 
 */
-double samdb_result_double(struct ldb_message *msg, const char *attr, double default_value)
+uint64_t samdb_result_uint64(struct ldb_message *msg, const char *attr, uint64_t default_value)
 {
-	return ldb_msg_find_double(msg, attr, default_value);
+	return ldb_msg_find_uint64(msg, attr, default_value);
 }
 
 
@@ -365,17 +399,20 @@ double samdb_result_double(struct ldb_message *msg, const char *attr, double def
 NTTIME samdb_result_allow_pwd_change(void *ctx, TALLOC_CTX *mem_ctx, 
 				     const char *domain_dn, struct ldb_message *msg, const char *attr)
 {
-	double attr_time = samdb_result_double(msg, attr, 0);
-	if (attr_time > 0) {
-		const char *minPwdAge = samdb_search_string(ctx, mem_ctx, NULL, "minPwdAge", 
-							    "dn=%s", domain_dn);
-		if (minPwdAge) {
-			/* yes, this is a -= not a += as minPwdAge is stored as the negative
-			   of the number of 100-nano-seconds */
-			attr_time -= strtod(minPwdAge, NULL);
-		}
+	uint64_t attr_time = samdb_result_uint64(msg, attr, 0);
+	int64_t minPwdAge;
+
+	if (attr_time == 0) {
+		return 0;
 	}
-	return nttime_from_double_nt(attr_time);
+
+	minPwdAge = samdb_search_int64(ctx, mem_ctx, 0, "minPwdAge", "dn=%s", domain_dn);
+
+	/* yes, this is a -= not a += as minPwdAge is stored as the negative
+	   of the number of 100-nano-seconds */
+	attr_time -= minPwdAge;
+
+	return attr_time;
 }
 
 /*
@@ -385,17 +422,21 @@ NTTIME samdb_result_allow_pwd_change(void *ctx, TALLOC_CTX *mem_ctx,
 NTTIME samdb_result_force_pwd_change(void *ctx, TALLOC_CTX *mem_ctx, 
 				     const char *domain_dn, struct ldb_message *msg, const char *attr)
 {
-	double attr_time = samdb_result_double(msg, attr, 0);
-	if (attr_time > 0) {
-		const char *maxPwdAge = samdb_search_string(ctx, mem_ctx, NULL, "maxPwdAge", 
-							    "dn=%s", domain_dn);
-		if (!maxPwdAge || strcmp(maxPwdAge, "0") == 0) {
-			attr_time = 0;
-		} else {
-			attr_time -= strtod(maxPwdAge, NULL);
-		}
+	uint64_t attr_time = samdb_result_uint64(msg, attr, 0);
+	int64_t maxPwdAge;
+
+	if (attr_time == 0) {
+		return 0;
 	}
-	return nttime_from_double_nt(attr_time);
+
+	maxPwdAge = samdb_search_int64(ctx, mem_ctx, 0, "maxPwdAge", "dn=%s", domain_dn);
+	if (maxPwdAge == 0) {
+		attr_time = 0;
+	} else {
+		attr_time -= maxPwdAge;
+	}
+
+	return attr_time;
 }
 
 /*
@@ -721,12 +762,22 @@ int samdb_msg_add_uint(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 }
 
 /*
-  add a double element to a message (actually a large integer)
+  add a (signed) int64_t element to a message
 */
-int samdb_msg_add_double(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			 const char *attr_name, double v)
+int samdb_msg_add_int64(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			const char *attr_name, int64_t v)
 {
-	const char *s = talloc_asprintf(mem_ctx, "%.0f", v);
+	const char *s = talloc_asprintf(mem_ctx, "%lld", v);
+	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, s);
+}
+
+/*
+  add a uint64_t element to a message
+*/
+int samdb_msg_add_uint64(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			const char *attr_name, uint64_t v)
+{
+	const char *s = talloc_asprintf(mem_ctx, "%llu", v);
 	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, s);
 }
 

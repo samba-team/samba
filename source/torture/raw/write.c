@@ -187,7 +187,7 @@ static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.write.out.nwritten, 4000);
-	CHECK_ALL_INFO(io.write.in.count + (SMB_BIG_UINT)io.write.in.offset, size);
+	CHECK_ALL_INFO(io.write.in.count + (uint64_t)io.write.in.offset, size);
 
 	memset(buf, 0, maxsize);
 	if (cli_read(cli->tree, fnum, buf, io.write.in.offset, 4000) != 4000) {
@@ -337,7 +337,7 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.writex.out.nwritten, 4000);
-	CHECK_ALL_INFO(io.writex.in.count + (SMB_BIG_UINT)io.writex.in.offset, size);
+	CHECK_ALL_INFO(io.writex.in.count + (uint64_t)io.writex.in.offset, size);
 
 	memset(buf, 0, maxsize);
 	if (cli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
@@ -352,12 +352,12 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		setup_buffer(buf, seed+1, maxsize);
 		io.writex.in.fnum = fnum;
 		io.writex.in.count = 4000;
-		io.writex.in.offset = ((SMB_BIG_UINT)1) << i;
+		io.writex.in.offset = ((uint64_t)1) << i;
 		io.writex.in.data = buf;
 		status = smb_raw_write(cli->tree, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_VALUE(io.writex.out.nwritten, 4000);
-		CHECK_ALL_INFO(io.writex.in.count + (SMB_BIG_UINT)io.writex.in.offset, size);
+		CHECK_ALL_INFO(io.writex.in.count + (uint64_t)io.writex.in.offset, size);
 
 		memset(buf, 0, maxsize);
 		if (cli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
@@ -500,7 +500,7 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.writeunlock.out.nwritten, 4000);
-	CHECK_ALL_INFO(io.writeunlock.in.count + (SMB_BIG_UINT)io.writeunlock.in.offset, size);
+	CHECK_ALL_INFO(io.writeunlock.in.count + (uint64_t)io.writeunlock.in.offset, size);
 
 	memset(buf, 0, maxsize);
 	if (cli_read(cli->tree, fnum, buf, io.writeunlock.in.offset, 4000) != 4000) {
@@ -650,7 +650,7 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.writeclose.out.nwritten, 4000);
-	CHECK_ALL_INFO(io.writeclose.in.count + (SMB_BIG_UINT)io.writeclose.in.offset, size);
+	CHECK_ALL_INFO(io.writeclose.in.count + (uint64_t)io.writeclose.in.offset, size);
 
 	fnum = cli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	io.writeclose.in.fnum = fnum;

@@ -61,10 +61,10 @@ static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		NEED_BLOB(40);
-		cli_push_nttime(blob->data,  0, &parms->basic_info.in.create_time);
-		cli_push_nttime(blob->data,  8, &parms->basic_info.in.access_time);
-		cli_push_nttime(blob->data, 16, &parms->basic_info.in.write_time);
-		cli_push_nttime(blob->data, 24, &parms->basic_info.in.change_time);
+		cli_push_nttime(blob->data,  0, parms->basic_info.in.create_time);
+		cli_push_nttime(blob->data,  8, parms->basic_info.in.access_time);
+		cli_push_nttime(blob->data, 16, parms->basic_info.in.write_time);
+		cli_push_nttime(blob->data, 24, parms->basic_info.in.change_time);
 		SIVAL(blob->data,           32, parms->basic_info.in.attrib);
 		SIVAL(blob->data,           36, 0); /* padding */
 		return True;
@@ -73,9 +73,9 @@ static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 		NEED_BLOB(92);
 		SBVAL(blob->data, 0, parms->unix_basic.in.end_of_file);
 		SBVAL(blob->data, 8, parms->unix_basic.in.num_bytes);
-		cli_push_nttime(blob->data, 16, &parms->unix_basic.in.status_change_time);
-		cli_push_nttime(blob->data, 24, &parms->unix_basic.in.access_time);
-		cli_push_nttime(blob->data, 32, &parms->unix_basic.in.change_time);
+		cli_push_nttime(blob->data, 16, parms->unix_basic.in.status_change_time);
+		cli_push_nttime(blob->data, 24, parms->unix_basic.in.access_time);
+		cli_push_nttime(blob->data, 32, parms->unix_basic.in.change_time);
 		SBVAL(blob->data, 40, parms->unix_basic.in.uid);
 		SBVAL(blob->data, 48, parms->unix_basic.in.gid);
 		SIVAL(blob->data, 56, parms->unix_basic.in.file_type);

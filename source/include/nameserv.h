@@ -213,7 +213,7 @@ struct nmb_data
   time_t death_time; /* The time the record must be removed (do not remove if 0). */
   time_t refresh_time; /* The time the record should be refreshed. */
   
-  SMB_BIG_UINT id;		/* unique id */
+  uint64_t id;		/* unique id */
   struct in_addr wins_ip;	/* the adress of the wins server this record comes from */
 
   int wins_flags;		/* similar to the netbios flags but different ! */
@@ -633,7 +633,7 @@ typedef struct _WINS_RECORD {
 	char type;
 	int nb_flags;
 	int wins_flags;
-	SMB_BIG_UINT id;
+	uint64_t id;
 	int num_ips;
 	struct in_addr ip[25];
 	struct in_addr wins_ip;

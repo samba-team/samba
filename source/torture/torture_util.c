@@ -217,7 +217,7 @@ BOOL wire_bad_flags(WIRE_STRING *str, int flags)
 */
 BOOL nt_time_equal(NTTIME *t1, NTTIME *t2)
 {
-	return t1->low == t2->low && t1->high == t2->high;
+	return *t1 == *t2;
 }
 
 /*
@@ -225,10 +225,10 @@ BOOL nt_time_equal(NTTIME *t1, NTTIME *t2)
 */
 void dump_all_info(TALLOC_CTX *mem_ctx, union smb_fileinfo *finfo)
 {
-	d_printf("\tcreate_time:    %s\n", nt_time_string(mem_ctx, &finfo->all_info.out.create_time));
-	d_printf("\taccess_time:    %s\n", nt_time_string(mem_ctx, &finfo->all_info.out.access_time));
-	d_printf("\twrite_time:     %s\n", nt_time_string(mem_ctx, &finfo->all_info.out.write_time));
-	d_printf("\tchange_time:    %s\n", nt_time_string(mem_ctx, &finfo->all_info.out.change_time));
+	d_printf("\tcreate_time:    %s\n", nt_time_string(mem_ctx, finfo->all_info.out.create_time));
+	d_printf("\taccess_time:    %s\n", nt_time_string(mem_ctx, finfo->all_info.out.access_time));
+	d_printf("\twrite_time:     %s\n", nt_time_string(mem_ctx, finfo->all_info.out.write_time));
+	d_printf("\tchange_time:    %s\n", nt_time_string(mem_ctx, finfo->all_info.out.change_time));
 	d_printf("\tattrib:         0x%x\n", finfo->all_info.out.attrib);
 	d_printf("\talloc_size:     %llu\n", (unsigned long long)finfo->all_info.out.alloc_size);
 	d_printf("\tsize:           %llu\n", (unsigned long long)finfo->all_info.out.size);

@@ -423,7 +423,8 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 				       msg_set_pw, 
 				       NULL, /* Don't have plaintext */
 				       NULL, &newNtHash,
-				       False /* This is not considered a password change */);
+				       False /* This is not considered a password change */,
+				       NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		samdb_close(sam_ctx);

@@ -66,7 +66,7 @@ static struct {
 /*
   compare a dos time (2 second resolution) to a nt time
 */
-static int dos_nt_time_cmp(time_t t, const NTTIME *nt)
+static int dos_nt_time_cmp(time_t t, NTTIME nt)
 {
 	time_t t2 = nt_time_to_unix(nt);
 	if (ABS(t2 - t) <= 2) return 0;
@@ -158,7 +158,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 	int fnum;
 	const char *fname = "\\torture_qfileinfo.txt";
 	NTTIME correct_time;
-	large_t correct_size;
+	uint64_t correct_size;
 	uint32 correct_attrib;
 	const char *correct_name;
 	BOOL skip_streams = False;
@@ -320,54 +320,54 @@ BOOL torture_raw_qfileinfo(int dummy)
 	s1 = fnum_find(sname); \
 	if (s1 && memcmp(&s1->stype.out.tfield, &correct_time, sizeof(correct_time)) != 0) { \
 		printf("(%d) handle %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
-		       nt_time_string(mem_ctx, &s1->stype.out.tfield), \
-		       nt_time_string(mem_ctx, &correct_time)); \
+		       nt_time_string(mem_ctx, s1->stype.out.tfield), \
+		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
 	if (s1 && memcmp(&s1->stype.out.tfield, &correct_time, sizeof(correct_time)) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
-		       nt_time_string(mem_ctx, &s1->stype.out.tfield), \
-		       nt_time_string(mem_ctx, &correct_time)); \
+		       nt_time_string(mem_ctx, s1->stype.out.tfield), \
+		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	}} while (0)
 
 #define TIME_CHECK_DOS(sname, stype, tfield) do { \
 	s1 = fnum_find(sname); \
-	if (s1 && dos_nt_time_cmp(s1->stype.out.tfield, &correct_time) != 0) { \
+	if (s1 && dos_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
 		printf("(%d) handle %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
-		       nt_time_string(mem_ctx, &correct_time)); \
+		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
-	if (s1 && dos_nt_time_cmp(s1->stype.out.tfield, &correct_time) != 0) { \
+	if (s1 && dos_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
-		       nt_time_string(mem_ctx, &correct_time)); \
+		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	}} while (0)
 
 #define TIME_CHECK_UNX(sname, stype, tfield) do { \
 	s1 = fnum_find(sname); \
-	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, &correct_time) != 0) { \
+	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
 		printf("(%d) handle %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
-		       nt_time_string(mem_ctx, &correct_time)); \
+		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
-	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, &correct_time) != 0) { \
+	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
-		       nt_time_string(mem_ctx, &correct_time)); \
+		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	}} while (0)
 
 	/* now check that all the times that are supposed to be equal are correct */
 	s1 = fnum_find("BASIC_INFO");
 	correct_time = s1->basic_info.out.create_time;
-	printf("create_time: %s\n", nt_time_string(mem_ctx, &correct_time));
+	printf("create_time: %s\n", nt_time_string(mem_ctx, correct_time));
 
 	TIME_CHECK_NT ("BASIC_INFO",               basic_info, create_time);
 	TIME_CHECK_NT ("BASIC_INFORMATION",        basic_info, create_time);
@@ -379,7 +379,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_time = s1->basic_info.out.access_time;
-	printf("access_time: %s\n", nt_time_string(mem_ctx, &correct_time));
+	printf("access_time: %s\n", nt_time_string(mem_ctx, correct_time));
 
 	TIME_CHECK_NT ("BASIC_INFO",               basic_info, access_time);
 	TIME_CHECK_NT ("BASIC_INFORMATION",        basic_info, access_time);
@@ -391,7 +391,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_time = s1->basic_info.out.write_time;
-	printf("write_time : %s\n", nt_time_string(mem_ctx, &correct_time));
+	printf("write_time : %s\n", nt_time_string(mem_ctx, correct_time));
 
 	TIME_CHECK_NT ("BASIC_INFO",               basic_info, write_time);
 	TIME_CHECK_NT ("BASIC_INFORMATION",        basic_info, write_time);
@@ -404,7 +404,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_time = s1->basic_info.out.change_time;
-	printf("change_time: %s\n", nt_time_string(mem_ctx, &correct_time));
+	printf("change_time: %s\n", nt_time_string(mem_ctx, correct_time));
 
 	TIME_CHECK_NT ("BASIC_INFO",               basic_info, change_time);
 	TIME_CHECK_NT ("BASIC_INFORMATION",        basic_info, change_time);

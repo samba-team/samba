@@ -831,11 +831,9 @@ BOOL cli_raw_pull_data(struct cli_request *req, const char *src, int len, char *
 /*
   put a NTTIME into a packet
 */
-
-void cli_push_nttime(void *base, uint16 offset, NTTIME *t)
+void cli_push_nttime(void *base, uint16 offset, NTTIME t)
 {
-	SIVAL(base, offset,   t->low);
-	SIVAL(base, offset+4, t->high);
+	SBVAL(base, offset, t);
 }
 
 /*
@@ -843,9 +841,7 @@ void cli_push_nttime(void *base, uint16 offset, NTTIME *t)
 */
 NTTIME cli_pull_nttime(void *base, uint16 offset)
 {
-	NTTIME ret;
-	ret.low = IVAL(base, offset);
-	ret.high = IVAL(base, offset+4);
+	NTTIME ret = BVAL(base, offset);
 	return ret;
 }
 

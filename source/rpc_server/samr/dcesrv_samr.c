@@ -1715,8 +1715,8 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 		/* the set password levels are handled separately */
 	case 24:
-		status = samr_set_password(a_state->sam_ctx,
-					   dce_call, 
+		status = samr_set_password(dce_call,
+					   a_state->sam_ctx,
 					   a_state->account_dn,
 					   a_state->domain_state->domain_dn,
 					   mem_ctx, msg, 

@@ -862,7 +862,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Hash nt_verifier, lm_verifier;
 	char *oldpass = *password;
-	char *newpass = samr_rand_pass(mem_ctx);
+	char *newpass = samr_rand_pass(mem_ctx);	
 	uint8 old_nt_hash[16], new_nt_hash[16];
 	uint8 old_lm_hash[16], new_lm_hash[16];
 
@@ -878,7 +878,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	E_deshash(newpass, new_lm_hash);
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_UNICODE);
-	SamOEMhash(lm_pass.data, old_lm_hash, 516);
+	SamOEMhash(lm_pass.data, old_nt_hash, 516);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
