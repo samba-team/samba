@@ -1048,8 +1048,11 @@ static BOOL is_owner(struct current_user *user, int snum, uint32 jobid)
 
 BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
 {
-	BOOL owner;
+	BOOL 	owner, deleted;
+	char 	*fname;
 
+	*errcode = WERR_OK;
+		
 	owner = is_owner(user, snum, jobid);
 	
 	/* Check access against security descriptor or whether the user
@@ -1062,15 +1065,40 @@ BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR 
 		return False;
 	}
 
-	if (!print_job_delete1(snum, jobid)) 
+	/* 
+	 * get the spooled filename of the print job
+	 * if this works, then the file has not been spooled
+	 * to the underlying print system.  Just delete the 
+	 * spool file & return.
+	 */
+	 
+	if ( (fname = print_job_fname( snum, jobid )) != NULL )
+	{
+		/* remove the spool file */
+		DEBUG(10,("print_job_delete: Removing spool file [%s]\n", fname ));
+		if ( unlink( fname ) == -1 ) {
+			*errcode = map_werror_from_unix(errno);
+			return False;
+		}
+		
+		return True;
+	}
+	
+	if (!print_job_delete1(snum, jobid)) {
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
+	}
 
 	/* force update the database and say the delete failed if the
            job still exists */
 
 	print_queue_update(snum);
+	
+	deleted = !print_job_exists(snum, jobid);
+	if ( !deleted )
+		*errcode = WERR_ACCESS_DENIED;
 
-	return !print_job_exists(snum, jobid);
+	return deleted;
 }
 
 /****************************************************************************

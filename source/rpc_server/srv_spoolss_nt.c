@@ -5417,13 +5417,31 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 
 /********************************************************************
  * api_spoolss_abortprinter
+ * From MSDN: "Deletes printer's spool file if printer is configured
+ * for spooling"
  ********************************************************************/
 
 WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R_ABORTPRINTER *r_u)
 {
-	POLICY_HND *handle = &q_u->handle;
-
-	return control_printer(handle, PRINTER_CONTROL_PURGE, p);
+	POLICY_HND	*handle = &q_u->handle;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	int		snum;
+	struct 		current_user user;
+	WERROR 		errcode = WERR_OK;
+	
+	if (!Printer) {
+		DEBUG(2,("_spoolss_abortprinter: Invalid handle (%s:%u:%u)\n",OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
+	
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+	
+	get_current_user( &user, p );	
+	
+	print_job_delete( &user, snum, Printer->jobid, &errcode );	
+	
+	return errcode;
 }
 
 /********************************************************************
