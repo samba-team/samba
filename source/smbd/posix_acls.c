@@ -1003,12 +1003,12 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 			if (nt4_compatible_acls())
 				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
-		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid, &sid_type)) {
-			current_ace->owner_type = UID_ACE;
-			current_ace->type = SMB_ACL_USER;
 		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid, &sid_type)) {
 			current_ace->owner_type = GID_ACE;
 			current_ace->type = SMB_ACL_GROUP;
+		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid, &sid_type)) {
+			current_ace->owner_type = UID_ACE;
+			current_ace->type = SMB_ACL_USER;
 		} else {
 			fstring str;
 
