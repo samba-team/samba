@@ -251,7 +251,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 		{ "domains", 'D', POPT_ARG_VAL, &level, LEV_WORKGROUP, "List only domains (workgroups) of tree" },
 		{ "servers", 'S', POPT_ARG_VAL, &level, LEV_SERVER, "List domains(workgroups) and servers of tree" },
 		POPT_COMMON_SAMBA
-		POPT_CREDENTIALS
+		POPT_COMMON_CREDENTIALS
 		POPT_TABLEEND
 	};
 	poptContext pc;
