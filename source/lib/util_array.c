@@ -125,13 +125,13 @@ static struct use_info *use_info_dup(const struct use_info *from)
 	return NULL;
 }
 
-void free_use_array(uint32 num_entries, struct use_info **entries)
+void free_use_info_array(uint32 num_entries, struct use_info **entries)
 {
 	void(*fn)(void*) = (void(*)(void*))&use_info_free;
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 
-struct use_info* add_use_to_array(uint32 *len, struct use_info ***array,
+struct use_info* add_use_info_to_array(uint32 *len, struct use_info ***array,
 				const struct use_info *name)
 {
 	void*(*fn)(const void*) = (void*(*)(const void*))&use_info_dup;
