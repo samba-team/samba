@@ -24,12 +24,6 @@
 #include "ldap_parse.h"
 #include "lib/ldb/include/ldb.h"
 
-/* TODO: samdb_context is not a pulblic struct */
-struct samdb_context {
-	struct ldb_context *ldb;
-	struct samdb_context **static_ptr;
-};
-
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\
 		return NT_STATUS_NO_MEMORY;\
@@ -50,7 +44,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct ldap_SearchResEntry *ent;
 	struct ldapsrv_reply *ent_r, *done_r;
 	int result = LDAP_SUCCESS;
-	struct samdb_context *samdb;
+	struct ldb_wrap *samdb;
 	struct ldb_message **res = NULL;
 	int i, j, y, count = 0;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
@@ -175,7 +169,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	struct ldap_Result *add_result;
 	struct ldapsrv_reply *add_reply;
 	int ldb_ret;
-	struct samdb_context *samdb;
+	struct ldb_wrap *samdb;
 	struct ldb_message *msg = NULL;
 	int result = LDAP_SUCCESS;
 	const char *errstr = NULL;
@@ -274,7 +268,7 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	struct ldap_Result *del_result;
 	struct ldapsrv_reply *del_reply;
 	int ldb_ret;
-	struct samdb_context *samdb;
+	struct ldb_wrap *samdb;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 
@@ -326,7 +320,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct ldap_Result *modify_result;
 	struct ldapsrv_reply *modify_reply;
 	int ldb_ret;
-	struct samdb_context *samdb;
+	struct ldb_wrap *samdb;
 	struct ldb_message *msg = NULL;
 	int result = LDAP_SUCCESS;
 	const char *errstr = NULL;
@@ -436,7 +430,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	struct ldap_Result *compare;
 	struct ldapsrv_reply *compare_r;
 	int result = LDAP_SUCCESS;
-	struct samdb_context *samdb;
+	struct ldb_wrap *samdb;
 	struct ldb_message **res = NULL;
 	const char *attrs[1];
 	const char *errstr = NULL;
@@ -504,7 +498,7 @@ static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	struct ldap_Result *modifydn;
 	struct ldapsrv_reply *modifydn_r;
 	int ldb_ret;
-	struct samdb_context *samdb;
+	struct ldb_wrap *samdb;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 	const char *newdn = NULL;
