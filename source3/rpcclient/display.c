@@ -192,8 +192,8 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 			fstring name;
 			fstring comment;
 
-			unistr2_to_ascii(name, &sv101->uni_name, sizeof(name));
-			unistr2_to_ascii(comment, &sv101->uni_comment, sizeof(comment));
+			unistr2_to_ascii(name, &sv101->uni_name, sizeof(name)-1);
+			unistr2_to_ascii(comment, &sv101->uni_comment, sizeof(comment)-1);
 
 			display_server(out_hnd, action, name, sv101->srv_type, comment);
 
@@ -234,10 +234,10 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *s
 			fstring comment;
 			fstring usr_path;
 
-			unistr2_to_ascii(name, &sv102->uni_name, sizeof(name));
-			unistr2_to_ascii(comment, &sv102->uni_comment, sizeof(comment));
+			unistr2_to_ascii(name, &sv102->uni_name, sizeof(name)-1);
+			unistr2_to_ascii(comment, &sv102->uni_comment, sizeof(comment)-1);
 			unistr2_to_ascii(usr_path, &sv102->uni_usr_path,
-					 sizeof(usr_path));
+					 sizeof(usr_path)-1);
 
 			display_server(out_hnd, action, name, sv102->srv_type, comment);
 
@@ -348,8 +348,8 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 			fstring usr_name;
 			fstring net_name;
 
-			unistr2_to_ascii(usr_name, &str1->uni_usr_name, sizeof(usr_name));
-			unistr2_to_ascii(net_name, &str1->uni_net_name, sizeof(net_name));
+			unistr2_to_ascii(usr_name, &str1->uni_usr_name, sizeof(usr_name)-1);
+			unistr2_to_ascii(net_name, &str1->uni_net_name, sizeof(net_name)-1);
 
 			fprintf(out_hnd, "\tid       :\t%d\n", info1->id);
 			fprintf(out_hnd, "\ttype     :\t%s\n", get_share_type_str(info1->type));
@@ -504,8 +504,8 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 			fstring remark  ;
 			fstring net_name;
 
-			unistr2_to_ascii(net_name, &str1->uni_netname, sizeof(net_name));
-			unistr2_to_ascii(remark, &str1->uni_remark, sizeof(remark));
+			unistr2_to_ascii(net_name, &str1->uni_netname, sizeof(net_name)-1);
+			unistr2_to_ascii(remark, &str1->uni_remark, sizeof(remark)-1);
 
 			display_share(out_hnd, action, net_name, info1->type, remark);
 
@@ -546,10 +546,10 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 			fstring path    ;
 			fstring passwd  ;
 
-			unistr2_to_ascii(net_name, &str2->uni_netname, sizeof(net_name));
-			unistr2_to_ascii(remark, &str2->uni_remark, sizeof(remark));
-			unistr2_to_ascii(path, &str2->uni_path, sizeof(path));
-			unistr2_to_ascii(passwd, &str2->uni_passwd, sizeof(passwd));
+			unistr2_to_ascii(net_name, &str2->uni_netname, sizeof(net_name)-1);
+			unistr2_to_ascii(remark, &str2->uni_remark, sizeof(remark)-1);
+			unistr2_to_ascii(path, &str2->uni_path, sizeof(path)-1);
+			unistr2_to_ascii(passwd, &str2->uni_passwd, sizeof(passwd)-1);
 
 			display_share2(out_hnd, action, net_name, info2->type, remark,
 			                                      info2->perms, info2->max_uses, info2->num_uses,
@@ -700,9 +700,9 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 			fstring user_name;
 
 			unistr2_to_ascii(path_name, &str3->uni_path_name,
-					 sizeof(path_name));
+					 sizeof(path_name)-1);
 			unistr2_to_ascii(user_name, &str3->uni_user_name,
-					 sizeof(user_name));
+					 sizeof(user_name)-1);
 
 			fprintf(out_hnd, "\tid       :\t%d\n", info3->id);
 			fprintf(out_hnd, "\tperms    :\t%s\n", get_file_mode_str(info3->perms));
@@ -1153,34 +1153,34 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 		{
 			fstring temp;
 
-			unistr2_to_ascii(temp, &usr->uni_user_name, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_user_name, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tUser Name   :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_full_name, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_full_name, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tFull Name   :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_home_dir, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_home_dir, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tHome Drive  :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_dir_drive, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_dir_drive, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tDir Drive   :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_profile_path, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_profile_path, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tProfile Path:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_logon_script, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_logon_script, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tLogon Script:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_acct_desc, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_acct_desc, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tDescription :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_workstations, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_workstations, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tWorkstations:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_unknown_str, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_unknown_str, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tUnknown Str :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &usr->uni_munged_dial, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_munged_dial, sizeof(temp)-1);
 			fprintf(out_hnd, "\t\tRemote Dial :\t%s\n", temp);
 
 			fprintf(out_hnd, "\t\tLogon Time               :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
@@ -1479,7 +1479,7 @@ static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFF
 		case 0x01: /* unistr */
 		{
 			unistr_to_ascii(valstr, value->buffer,
-					MIN(value->buf_len, sizeof(valstr)));
+					MIN(value->buf_len, sizeof(valstr)-1));
 			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, valstr);
 			break;
 		}
@@ -1508,7 +1508,7 @@ static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFF
 
 		case 0x07: /* multiunistr */
 		{
-			buffer2_to_multistr(valstr, value, sizeof(valstr));
+			buffer2_to_multistr(valstr, value, sizeof(valstr)-1);
 			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, valstr);
 			break;
 		}
@@ -1597,7 +1597,7 @@ void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 		{
 			fstring service;
 
-			unistr2_to_ascii(service, &cfg->uni_display_name, sizeof(service));
+			unistr2_to_ascii(service, &cfg->uni_display_name, sizeof(service)-1);
 			fprintf(out_hnd, "\tService:\t%s\n", service);
 			fprintf(out_hnd, "\t-------\n");
 			break;
@@ -1606,16 +1606,16 @@ void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 		{
 			fstring temp;
 
-			unistr2_to_ascii(temp, &cfg->uni_bin_path_name, sizeof(temp));
+			unistr2_to_ascii(temp, &cfg->uni_bin_path_name, sizeof(temp)-1);
 			fprintf(out_hnd, "\tPath:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &cfg->uni_load_order_grp, sizeof(temp));
+			unistr2_to_ascii(temp, &cfg->uni_load_order_grp, sizeof(temp)-1);
 			fprintf(out_hnd, "\tLoad Order:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &cfg->uni_dependencies, sizeof(temp));
+			unistr2_to_ascii(temp, &cfg->uni_dependencies, sizeof(temp)-1);
 			fprintf(out_hnd, "\tDependencies:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &cfg->uni_service_start_name, sizeof(temp));
+			unistr2_to_ascii(temp, &cfg->uni_service_start_name, sizeof(temp)-1);
 			fprintf(out_hnd, "\tService Start:\t%s\n", temp);
 
 			fprintf(out_hnd, "\tService Type:\t%d\n", cfg->service_type);
@@ -1649,11 +1649,11 @@ void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *
 			fstring name;
 
 			unistr_to_ascii(name, svc->uni_srvc_name.buffer,
-					sizeof(name)); /* service name */
+					sizeof(name)-1); /* service name */
 			fprintf(out_hnd, "\t%s:", name);
 
 			unistr_to_ascii(name, svc->uni_disp_name.buffer,
-					sizeof(name)); /* display name */
+					sizeof(name)-1); /* display name */
 			fprintf(out_hnd, "\t%s\n", name);
 			break;
 		}
