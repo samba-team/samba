@@ -119,12 +119,19 @@ PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 	int level = 1;
 	uint32 needed;
 	static char *kwlist[] = {"level", NULL};
-
+	
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "|i", kwlist, &level))
 		return NULL;
 	
+	if (level < 0 || level > 3) {
+		PyErr_SetString(spoolss_error, "Invalid info level");
+		return NULL;
+	}
+
+	ZERO_STRUCT(ctr);
+
 	/* Call rpc function */
 	
 	werror = cli_spoolss_getprinter(
