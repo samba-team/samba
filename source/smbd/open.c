@@ -599,7 +599,7 @@ static void mmap_open_file(files_struct *fsp)
   /* mmap it if read-only */
   if (!fsp->can_write) {
 	  fsp->mmap_size = dos_file_size(fsp->fsp_name);
-	  if (fsp->mmap_size < MAX_MMAP_SIZE) {
+	  if (fsp->mmap_size < MAX_MMAP_SIZE && fsp->mmap_size > 0) {
 		  fsp->mmap_ptr = (char *)sys_mmap(NULL,fsp->mmap_size,
 					       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,(SMB_OFF_T)0);
 

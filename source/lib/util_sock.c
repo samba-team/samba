@@ -145,7 +145,7 @@ void set_socket_options(int fd, char *options)
 		}
       
 		if (ret != 0)
-			DEBUG(0,("Failed to set socket option %s\n",tok));
+			DEBUG(0,("Failed to set socket option %s (Error %s)\n",tok, strerror(errno) ));
 	}
 }
 
