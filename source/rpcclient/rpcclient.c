@@ -268,12 +268,12 @@ static void wait_keyboard(void)
   
 	while (1) {
 		FD_ZERO(&fds);
-		FD_SET(cli->fd,&fds);
+		FD_SET(smb_cli->fd,&fds);
 		FD_SET(fileno(stdin),&fds);
 
 		timeout.tv_sec = 20;
 		timeout.tv_usec = 0;
-		sys_select(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
+		sys_select(MAX(smb_cli->fd,fileno(stdin))+1,&fds,&timeout);
       
 		if (FD_ISSET(fileno(stdin),&fds))
 			return;
@@ -282,8 +282,8 @@ static void wait_keyboard(void)
 		   client_receive_smb as we want to receive
 		   session keepalives and then drop them here.
 		*/
-		if (FD_ISSET(cli->fd,&fds))
-			receive_smb(cli->fd,cli->inbuf,0);
+		if (FD_ISSET(smb_cli->fd,&fds))
+			receive_smb(smb_cli->fd,smb_cli->inbuf,0);
 	}  
 }
 #endif
