@@ -960,8 +960,8 @@ static struct parm_struct parm_table[] = {
 	{"utmp",          P_BOOL, P_GLOBAL, &Globals.bUtmp, NULL, NULL, 0},
 #endif
 	
-	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
-	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
+	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_DOS_STRING},
+	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_DOS_STRING},
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, 0},
 	{"dfree command", P_STRING, P_GLOBAL, &Globals.szDfree, NULL, NULL, 0},
 	{"valid chars", P_STRING, P_GLOBAL, &Globals.szValidChars, handle_valid_chars, NULL, 0},
