@@ -157,6 +157,7 @@ AC_SUBST(ADSLIBS)
 AC_SUBST(PASSDBLIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(LDAP_LIBS)
+AC_SUBST(LDAP_OBJ)
 AC_SUBST(SHLIB_PROGS)
 AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
@@ -2246,6 +2247,7 @@ fi
 ########################################################
 # Compile with LDAP support?
 
+LDAP_OBJ=""
 with_ldap_support=yes
 AC_MSG_CHECKING([whether to use LDAP])
 
@@ -2272,6 +2274,7 @@ LIBS=""
   # now see if we can find the ldap libs in standard paths
   if test x$have_ldap != xyes; then
   AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
+	LDAP_OBJ=lib/ldap.o;
 	AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])])
 	AC_CHECK_HEADERS([ldap.h lber.h], [default_static_modules="$default_static_modules pdb_ldap"])
 

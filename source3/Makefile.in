@@ -275,7 +275,7 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/util_sam_sid.o passdb/pdb_compat.o \
-		passdb/privileges.o lib/ldap.o @PDB_STATIC@
+		passdb/privileges.o @LDAP_OBJ@ @PDB_STATIC@
 
 XML_OBJ = modules/xml.o
 MYSQL_OBJ = modules/mysql.o
@@ -598,8 +598,7 @@ WINBINDD_OBJ = \
 		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(UNIGRP_OBJ) $(IDMAP_OBJ) \
-		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
-		lib/ldap.o
+		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) @LDAP_OBJ@
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o $(POPT_LIB_OBJ)
 
