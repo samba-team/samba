@@ -693,6 +693,11 @@ static void usage(char *pname)
 		return(-1);	
 
 	init_structs();
+
+	/* don't call winbind for our domain if we are the DC */
+	if (lp_domain_logons()) {
+		winbind_exclude_domain(lp_workgroup());
+	}
 	
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
