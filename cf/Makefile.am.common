@@ -55,7 +55,7 @@ install-suid-programs:
 	@foo='$(bin_SUIDS)'; \
 	for file in $$foo; do \
 	x=$(DESTDIR)$(bindir)/$$file; \
-	if chown 0:0 $$x && chmod u+s $$x; then :; else\
+	if chown 0:0 $$x && chmod u+s $$x; then :; else \
 	chmod 0 $$x; fi; done
 
 install-exec-hook: install-suid-programs
