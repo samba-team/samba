@@ -1,0 +1,19 @@
+Copyright (C) 1997 - John H Terpstra
+Date:	August 19, 1997
+Updates:	First Release - 19970819
+===============================================================================
+Note:
+=====
+This directory is a public repository for platform specific files including
+build files for binary package distributions for specific operating systems
+as well as for source file distribution packages for those systems.
+
+As such, the files contained here are intended for use only by those wishing
+to build their own distribution packages and are NOT considered suitable
+material for anyone who wants to just install Samba from the pristine source
+files contained under the ~/source directory.
+
+All contributions / modifications / additions / etc. to the packaging files
+should be sent to samba-bugs@samba.anu.edu.au with the subject marked:
+	PACKAGING: [add|mod|contrib] Your subject.
+
