@@ -248,7 +248,7 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_join_oldstyle(int argc, const char **argv) 
+static int net_rpc_join_oldstyle(int argc, const char **argv) 
 {
 	return run_rpc_command(PIPE_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_join_oldstyle_internals,
 			       argc, argv);
@@ -263,8 +263,13 @@ static int rpc_join_oldstyle(int argc, const char **argv)
 
 static int rpc_join_usage(int argc, const char **argv) 
 {	
-	d_printf("  net rpc join \t to join a domain with admin username & password\n");
-	d_printf("  net rpc join oldstyle \t to join a domain created in server manager\n");
+	d_printf("net rpc join -U <username>[%%password] [options]\n"\
+		 "\t to join a domain with admin username & password\n"\
+		 "\t\t password will be prompted if none is specified\n");
+	d_printf("net rpc join [options except -U]\n"\
+		 "\t to join a domain created in server manager\n\n\n");
+
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
@@ -276,20 +281,16 @@ static int rpc_join_usage(int argc, const char **argv)
  *
  * Main 'net_rpc_join()' (where the admain username/password is used) is 
  * in net_rpc_join.c
+ * Assume if a -U is specified, it's the new style, otherwise it's the
+ * old style
  **/
 
-static int rpc_join(int argc, const char **argv) 
+int net_rpc_join(int argc, const char **argv) 
 {
-	struct functable func[] = {
-		{"oldstyle", rpc_join_oldstyle},
-		{NULL, NULL}
-	};
+	if ((net_rpc_join_oldstyle(argc, argv) == 0))
+		return 0;
 	
-	if (argc == 0) {
-		return net_rpc_join(argc, argv);
-	}
-
-	return net_run_function(argc, argv, func, rpc_join_usage);
+	return net_rpc_join_newstyle(argc, argv);
 }
 
 
@@ -963,7 +964,7 @@ int net_rpc_usage(int argc, const char **argv)
  *              stripped
  **/
 
-int rpc_help(int argc, const char **argv)
+int net_rpc_help(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"join", rpc_join_usage},
@@ -994,13 +995,13 @@ int rpc_help(int argc, const char **argv)
 int net_rpc(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"join", rpc_join},
+		{"join", net_rpc_join},
 		{"user", rpc_user},
 		{"changetrustpw", rpc_changetrustpw},
 		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},
 		{"shutdown", rpc_shutdown},
-		{"help", rpc_help},
+		{"help", net_rpc_help},
 		{NULL, NULL}
 	};
 	return net_run_function(argc, argv, func, net_rpc_usage);
