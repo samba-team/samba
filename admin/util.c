@@ -125,22 +125,33 @@ init_entry (HDB *db, hdb_entry *ent)
 			 NULL);
     def.principal = def_principal;
     if(db->fetch(context, db, &def)) {
-	/* XXX */
+	krb5_free_principal(context, def_principal);
+	krb5_make_principal(context, &def_principal, NULL, "default", NULL);
+	def.principal = def_principal;
+	if(db->fetch(context, db, &def)){
+	    krb5_warnx(context, "No `default' entry found. "
+		       "(have you initialised the database?)");
+	    memset(&def, 0, sizeof(def));
+	}else
+	    krb5_warnx(context, "No `default' principal found for %s, "
+		       "using local realms default.", *realm);
     }
     krb5_free_principal (context, def_principal);
-    memset(&ent->flags, 0, sizeof(ent->flags));
     ent->flags.client = 1;
     ent->flags.server = 1;
     ent->flags.forwardable = 1;
     ent->flags.proxiable = 1;
     ent->flags.renewable = 1;
     ent->flags.postdate = 1;
-    ent->max_life = malloc(sizeof(*ent->max_life));
-    *ent->max_life = *def.max_life;
-    ent->max_renew = malloc(sizeof(*ent->max_renew));
-    *ent->max_renew = *def.max_renew;
+    if(def.max_life){
+	ent->max_life = malloc(sizeof(*ent->max_life));
+	*ent->max_life = *def.max_life;
+    }
+    if(def.max_renew){
+	ent->max_renew = malloc(sizeof(*ent->max_renew));
+	*ent->max_renew = *def.max_renew;
+    }
     hdb_free_entry(context, &def);
-
 }
 
 static void
