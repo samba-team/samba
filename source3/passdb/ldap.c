@@ -145,10 +145,9 @@ BOOL ldap_get_attribute(char *attribute, char *value)
 
 
 /*******************************************************************
-  Contruct an smb_passwd structure
+  Construct an smb_passwd structure
  ******************************************************************/
-
-struct smb_passwd *ldap_getpw()
+struct smb_passwd *ldap_getpw(void)
 {
 	static struct smb_passwd smbpw;
 	static pstring unix_name;

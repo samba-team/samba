@@ -1378,7 +1378,7 @@ BOOL ldap_search_for(char *filter);
 BOOL ldap_search_by_name(const char *user);
 BOOL ldap_search_by_uid(int uid);
 BOOL ldap_get_attribute(char *attribute, char *value);
-struct smb_passwd *ldap_getpw();
+struct smb_passwd *ldap_getpw(void);
 struct smb_passdb_ops *ldap_initialise_password_db(void);
 
 /*The following definitions come from  passdb/nispass.c  */
