@@ -769,7 +769,7 @@ as_rep(KDC_REQ *req,
 	    if(client->max_renew)
 		t = start + min(t - start, *client->max_renew);
 	    if(server->max_renew)
-		t = start + min(t - start, *client->max_renew);
+		t = start + min(t - start, *server->max_renew);
 #if 0
 	    t = min(t, start + realm->max_renew);
 #endif
