@@ -165,19 +165,39 @@ BOOL cli_nt_login_network(struct cli_state *cli, uint16 fnum, char *domain, char
                           char nt_chal_resp[24],
                           NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
-  DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
+	uchar key[16];
+	BOOL ret;
+	DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
 
-  /* indicate a "network" login */
-  ctr->switch_value = NET_LOGON_TYPE;
+	/* indicate a "network" login */
+	ctr->switch_value = NET_LOGON_TYPE;
 
-  /* Create the structure needed for SAM logon. */
-  make_id_info2(&ctr->auth.id2, domain, 0, 
-                luid_low, 0,
-                username, cli->clnt_name_slash,
-                (uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
+	/* Create the structure needed for SAM logon. */
+	make_id_info2(&ctr->auth.id2, domain, 0, 
+		luid_low, 0,
+		username, cli->clnt_name_slash,
+		(uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
 
-  /* Send client sam-logon request - update credentials on success. */
-  return cli_net_sam_logon(cli, fnum, ctr, user_info3);
+	/* Send client sam-logon request - update credentials on success. */
+	ret = cli_net_sam_logon(cli, fnum, ctr, user_info3);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("cli sess key:"));
+	dump_data(100, cli->sess_key, 8);
+	DEBUG(100,("enc user sess key:"));
+	dump_data(100, user_info3->user_sess_key, 16);
+#endif
+
+	memset(key, 0, 16);
+	memcpy(key, (char*)cli->sess_key, 8);
+
+	SamOEMhash(user_info3->user_sess_key, key, False);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("dec user sess key:"));
+	dump_data(100, user_info3->user_sess_key, 16);
+#endif
+	return ret;
 }
 
 /****************************************************************************

@@ -499,8 +499,9 @@ static BOOL check_server_security(char *orig_user, char *domain,
 ****************************************************************************/
 
 static BOOL check_domain_security(char *orig_user, char *domain, 
-                                  char *smb_apasswd, int smb_apasslen,
-                                  char *smb_ntpasswd, int smb_ntpasslen)
+				char *smb_apasswd, int smb_apasslen,
+				char *smb_ntpasswd, int smb_ntpasslen,
+				uchar user_sess_key[16])
 {
 	fstring acct_name;
 	uint16 acct_type = 0;
@@ -557,7 +558,8 @@ static BOOL check_domain_security(char *orig_user, char *domain,
 	return domain_client_validate(orig_user, domain, server_list,
 	                        acct_name, acct_type,
 	                        smb_apasswd, smb_apasslen,
-	                        smb_ntpasswd, smb_ntpasslen);
+	                        smb_ntpasswd, smb_ntpasslen,
+	                        user_sess_key);
 }
 
 /****************************************************************************
@@ -768,7 +770,7 @@ user %s attempted down-level SMB connection\n", user));
                              smb_ntpasswd, smb_ntpasslen) &&
       !check_domain_security(orig_user, domain,
                              smb_apasswd, smb_apasslen,
-                             smb_ntpasswd, smb_ntpasslen) &&
+                             smb_ntpasswd, smb_ntpasslen, user_sess_key) &&
       !check_hosts_equiv(user)
      )
   {
