@@ -306,6 +306,8 @@ pop_init(POP *p,int argcount,char **argmessage)
 	    p->auth_level = AUTH_NONE;
 	else if(strcmp(auth_str, "otp") == 0)
 	    p->auth_level = AUTH_OTP;
+	else if(strcmp(auth_str, "sasl") == 0)
+	    p->auth_level = AUTH_SASL;
 	else
 	    warnx ("bad value for -a: %s", optarg);
     }
