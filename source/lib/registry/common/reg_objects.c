@@ -163,11 +163,14 @@ REG_KEY *reg_key_new_abs(const char *path, REG_HANDLE *h, void *data)
 REG_KEY *reg_key_new_rel(const char *name, REG_KEY *k, void *data)
 {
 	REG_KEY *r;
+	const char *parent_path = k?reg_key_get_path(k):"";
 	TALLOC_CTX *mem_ctx = talloc_init(name);
 	r = talloc(mem_ctx, sizeof(REG_KEY));
 	ZERO_STRUCTP(r);
 	r->handle = k->handle;
 	r->name = talloc_strdup(mem_ctx, name);
+	
+	r->path = talloc_asprintf(mem_ctx, "%s%s%s", parent_path, *parent_path && parent_path[strlen(parent_path)-1] != '\\'?"\\":"", name);
 	r->backend_data = data;
 	r->mem_ctx = mem_ctx;
 	r->ref = 1;

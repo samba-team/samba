@@ -187,7 +187,12 @@ WERROR reg_key_get_value_by_index(REG_KEY *key, int idx, REG_VAL **val)
 {
 	if(!key) return WERR_INVALID_PARAM;
 
-	if(!key->handle->functions->get_value_by_index) {
+	if(key->handle->functions->get_value_by_index) {
+		WERROR status = key->handle->functions->get_value_by_index(key, idx, val);
+		if(!W_ERROR_IS_OK(status)) 
+			return status;
+
+	} else if(key->handle->functions->fetch_values) {
 		if(!key->cache_values)
 			key->handle->functions->fetch_values(key, &key->cache_values_count, &key->cache_values);
 		
@@ -197,9 +202,7 @@ WERROR reg_key_get_value_by_index(REG_KEY *key, int idx, REG_VAL **val)
 			return WERR_NO_MORE_ITEMS;
 		}
 	} else {
-		WERROR status = key->handle->functions->get_value_by_index(key, idx, val);
-		if(!W_ERROR_IS_OK(status)) 
-			return status;
+		return WERR_NOT_SUPPORTED;
 	}
 	
 	(*val)->parent = key;
