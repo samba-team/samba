@@ -42,7 +42,7 @@ static NTSTATUS xattr_tdb_add_list(struct pvfs_state *pvfs, const char *attr_nam
 		return NT_STATUS_OK;
 	}
 
-	mem_ctx = talloc(pvfs, 0);
+	mem_ctx = talloc_new(pvfs);
 
 	status = pull_xattr_blob_tdb(pvfs, mem_ctx, XATTR_LIST_ATTR, 
 				     fname, fd, 100, &blob);
@@ -211,7 +211,7 @@ NTSTATUS delete_xattr_tdb(struct pvfs_state *pvfs, const char *attr_name,
 */
 NTSTATUS unlink_xattr_tdb(struct pvfs_state *pvfs, const char *fname)
 {
-	TALLOC_CTX *mem_ctx = talloc(pvfs, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(pvfs);
 	DATA_BLOB blob;
 	const char *s;
 	NTSTATUS status;

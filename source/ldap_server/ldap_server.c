@@ -206,7 +206,7 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 		return read_into_buf(sock, &conn->in_buffer);
 	}
 
-	mem_ctx = talloc(conn, 0);
+	mem_ctx = talloc_new(conn);
 	if (!mem_ctx) {
 		DEBUG(0,("no memory\n"));
 		return False;
@@ -315,7 +315,7 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 		return write_from_buf(sock, &conn->out_buffer);
 	}
 
-	mem_ctx = talloc(conn, 0);
+	mem_ctx = talloc_new(conn);
 	if (!mem_ctx) {
 		DEBUG(0,("no memory\n"));
 		return False;

@@ -31,7 +31,7 @@ BOOL torture_local_idtree(void)
 	BOOL ret = True;
 	extern int torture_numops;
 	int n = torture_numops;
-	void *ctx = talloc(NULL, 0);
+	void *ctx = talloc_new(NULL);
 
 	idr = idr_init(ctx);
 

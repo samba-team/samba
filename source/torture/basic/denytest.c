@@ -1812,7 +1812,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 	for (i=0;i<torture_numops;i++) {
 		NTSTATUS status1, status2, status2_p;
 		int64_t tdif;
-		TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+		TALLOC_CTX *mem_ctx = talloc_new(NULL);
 		enum deny_result res, res2;
 		int b_sa1 = random() & ((1<<nbits1)-1);
 		int b_am1 = random() & ((1<<nbits2)-1);
@@ -1977,7 +1977,7 @@ BOOL torture_denydos_sharing(void)
 		return False;
 	}
 
-	mem_ctx = talloc(cli, 0);
+	mem_ctx = talloc_new(cli);
 
 	printf("Checking DENY_DOS shared handle semantics\n");
 	smbcli_unlink(cli->tree, fname);
