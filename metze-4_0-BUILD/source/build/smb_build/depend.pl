@@ -6,6 +6,131 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+###########################################################
+# This function resolves the dependencies 
+# for the SUBSYSTEMS_LIST
+# @SUBSYSTEMS_LIST = _do_calc_subsystem_list($SMB_BUILD_CTX, \@SUBSYSTEMS_LIST);
+#
+# $SMB_BUILD_CTX -	the global SMB_BUILD context
+#
+# \@SUBSYSTEMS_LIST -	the reference to the SUBSYSTEMS_LIST
+#
+# @SUBSYSTEMS_LIST -	the expanded resulting SUBSYSTEMS_LIST
+#
+sub _do_calc_subsystem_list($$)
+{
+	my $CTX = shift;
+	my $subsys_list = shift;
+	my @SUBSYSTEMS_LIST = @$subsys_list;
+
+	#
+	# now try to resolve the dependencies for the library
+	#
+	my $i = 0;
+	my $count = $#SUBSYSTEMS_LIST;
+	for (;$i<$count;$i++) {			
+		#
+		# see if the current subsystem depends on other not listed subsystems
+		#
+		foreach my $elem (@{$CTX->{DEPEND}{SUBSYSTEMS}{$SUBSYSTEMS_LIST[$i]}{SUBSYSTEMS_LIST}}) {
+			my $seen = 0;
+			#
+			# check if it's already in the list
+			#
+			foreach my $elem2 (@SUBSYSTEMS_LIST) {
+				#
+				# check of the names matche
+				#
+				if ($elem eq $elem2) {
+					#
+					# mark it as already in the list
+					#
+					$seen = 1;
+					last;
+				}
+			}
+
+			#
+			# if it's already there skip it
+			#
+			if ($seen == 1) {
+				next;
+			}
+
+			#
+			# if it's not there add it
+			# and $count++
+			#
+			push(@SUBSYSTEMS_LIST,$elem);
+			$count++;
+		}
+	}
+
+	return @SUBSYSTEMS_LIST;
+}
+
+###########################################################
+# This function resolves the dependencies 
+# for the LIBRARIES_LIST based on the SUBSYSTEMS_LIST
+# @LIBRARIES_LIST = _do_calc_libraries_list($SMB_BUILD_CTX, \@SUBSYSTEMS_LIST, \@LIBRARIES_LIST);
+#
+# $SMB_BUILD_CTX -	the global SMB_BUILD context
+#
+# \@SUBSYSTEMS_LIST -	the reference to the SUBSYSTEMS_LIST
+#
+# \@LIBRARIES_LIST -	the reference to the LIBRARIES_LIST
+#
+# @LIBRARIES_LIST -	the expanded resulting LIBRARIES_LIST
+#
+sub _do_calc_libraries_list($$$)
+{
+	my $CTX = shift;
+	my $subsys_list = shift;
+	my @SUBSYSTEMS_LIST = @$subsys_list;
+	my $libs_list = shift;
+	my @LIBRARIES_LIST = @$libs_list;
+
+	#
+	# add the LIBARARIES of each subsysetm in the @SUBSYSTEMS_LIST
+	#
+	foreach my $elem (@SUBSYSTEMS_LIST) {			
+		#
+		# see if the subsystem depends on a not listed LIBRARY
+		#
+		foreach my $elem1 (@{$CTX->{DEPEND}{SUBSYSTEMS}{$elem}{LIBRARIES_LIST}}) {
+			my $seen = 0;
+			#
+			# check if it's already in the list
+			#
+			foreach my $elem2 (@LIBRARIES_LIST) {
+				#
+				# check of the names matche
+				#
+				if ($elem1 eq $elem2) {
+					#
+					# mark it as already in the list
+					#
+					$seen = 1;
+					last;
+				}
+			}
+
+			#
+			# if it's already there skip it
+			#
+			if ($seen == 1) {
+				next;
+			}
+
+			#
+			# if it's not there add it
+			#
+			push(@LIBRARIES_LIST,$elem1);
+		}
+	}
+
+	return @LIBRARIES_LIST;
+}
 
 ###########################################################
 # This function creates the dependencies for subsystems
@@ -145,45 +270,7 @@ sub _do_depend_shared_modules($)
 		#
 		# now try to resolve the dependencies for the shared module
 		#
-		$i = 0;
-		$count = $#SUBSYSTEMS_LIST;
-		for (;$i<$count;$i++) {			
-			#
-			# see if the current subsystem depends on other not listed subsystems
-			#
-			foreach my $elem (@{$CTX->{DEPEND}{SUBSYSTEMS}{$SUBSYSTEMS_LIST[$i]}{SUBSYSTEMS_LIST}}) {
-				my $seen = 0;
-				#
-				# check if it's already in the list
-				#
-				foreach my $elem2 (@SUBSYSTEMS_LIST) {
-					#
-					# check of the names matche
-					#
-					if ($elem eq $elem2) {
-						#
-						# mark it as already in the list
-						#
-						$seen = 1;
-						last;
-					}
-				}
-
-				#
-				# if it's already there skip it
-				#
-				if ($seen == 1) {
-					next;
-				}
-
-				#
-				# if it's not there add it
-				# and $count++
-				#
-				push(@SUBSYSTEMS_LIST,$elem);
-				$count++;
-			}
-		}
+		@SUBSYSTEMS_LIST = _do_calc_subsystem_list($CTX, \@SUBSYSTEMS_LIST);
 
 		#
 		# create the shared modules used LIBRARIES_LIST
@@ -196,41 +283,7 @@ sub _do_depend_shared_modules($)
 		#
 		# add the LIBARARIES of each subsysetm in the @SUBSYSTEMS_LIST
 		#
-		foreach my $elem (@SUBSYSTEMS_LIST) {			
-			#
-			# see if the subsystem depends on a not listed LIBRARY
-			#
-			foreach my $elem (@{$CTX->{DEPEND}{SUBSYSTEMS}{$SUBSYSTEMS_LIST[$i]}{LIBRARIES_LIST}}) {
-				my $seen = 0;
-				#
-				# check if it's already in the list
-				#
-				foreach my $elem2 (@LIBRARIES_LIST) {
-					#
-					# check of the names matche
-					#
-					if ($elem eq $elem2) {
-						#
-						# mark it as already in the list
-						#
-						$seen = 1;
-						last;
-					}
-				}
-
-				#
-				# if it's already there skip it
-				#
-				if ($seen == 1) {
-					next;
-				}
-
-				#
-				# if it's not there add it
-				#
-				push(@LIBRARIES_LIST,$elem);
-			}
-		}
+		@LIBRARIES_LIST = _do_calc_libraries_list($CTX, \@SUBSYSTEMS_LIST, \@LIBRARIES_LIST);
 
 		#
 		# set the lists
@@ -277,45 +330,7 @@ sub _do_depend_libraries($)
 		#
 		# now try to resolve the dependencies for the library
 		#
-		$i = 0;
-		$count = $#SUBSYSTEMS_LIST;
-		for (;$i<$count;$i++) {			
-			#
-			# see if the current subsystem depends on other not listed subsystems
-			#
-			foreach my $elem (@{$CTX->{DEPEND}{SUBSYSTEMS}{$SUBSYSTEMS_LIST[$i]}{SUBSYSTEMS_LIST}}) {
-				my $seen = 0;
-				#
-				# check if it's already in the list
-				#
-				foreach my $elem2 (@SUBSYSTEMS_LIST) {
-					#
-					# check of the names matche
-					#
-					if ($elem eq $elem2) {
-						#
-						# mark it as already in the list
-						#
-						$seen = 1;
-						last;
-					}
-				}
-
-				#
-				# if it's already there skip it
-				#
-				if ($seen == 1) {
-					next;
-				}
-
-				#
-				# if it's not there add it
-				# and $count++
-				#
-				push(@SUBSYSTEMS_LIST,$elem);
-				$count++;
-			}
-		}
+		@SUBSYSTEMS_LIST = _do_calc_subsystem_list($CTX, \@SUBSYSTEMS_LIST);
 
 		#
 		# create the libraries used LIBRARIES_LIST
@@ -328,41 +343,7 @@ sub _do_depend_libraries($)
 		#
 		# add the LIBARARIES of each subsysetm in the @SUBSYSTEMS_LIST
 		#
-		foreach my $elem (@SUBSYSTEMS_LIST) {			
-			#
-			# see if the subsystem depends on a not listed LIBRARY
-			#
-			foreach my $elem (@{$CTX->{DEPEND}{SUBSYSTEMS}{$SUBSYSTEMS_LIST[$i]}{LIBRARIES_LIST}}) {
-				my $seen = 0;
-				#
-				# check if it's already in the list
-				#
-				foreach my $elem2 (@LIBRARIES_LIST) {
-					#
-					# check of the names matche
-					#
-					if ($elem eq $elem2) {
-						#
-						# mark it as already in the list
-						#
-						$seen = 1;
-						last;
-					}
-				}
-
-				#
-				# if it's already there skip it
-				#
-				if ($seen == 1) {
-					next;
-				}
-
-				#
-				# if it's not there add it
-				#
-				push(@LIBRARIES_LIST,$elem);
-			}
-		}
+		@LIBRARIES_LIST = _do_calc_libraries_list($CTX, \@SUBSYSTEMS_LIST, \@LIBRARIES_LIST);
 
 		#
 		# set the lists
@@ -409,45 +390,7 @@ sub _do_depend_binaries($)
 		#
 		# now try to resolve the dependencies for the binary
 		#
-		$i = 0;
-		$count = $#SUBSYSTEMS_LIST;
-		for (;$i<$count;$i++) {			
-			#
-			# see if the current subsystem depends on other not listed subsystems
-			#
-			foreach my $elem (@{$CTX->{DEPEND}{SUBSYSTEMS}{$SUBSYSTEMS_LIST[$i]}{SUBSYSTEMS_LIST}}) {
-				my $seen = 0;
-				#
-				# check if it's already in the list
-				#
-				foreach my $elem2 (@SUBSYSTEMS_LIST) {
-					#
-					# check of the names matche
-					#
-					if ($elem eq $elem2) {
-						#
-						# mark it as already in the list
-						#
-						$seen = 1;
-						last;
-					}
-				}
-
-				#
-				# if it's already there skip it
-				#
-				if ($seen == 1) {
-					next;
-				}
-
-				#
-				# if it's not there add it
-				# and $count++
-				#
-				push(@SUBSYSTEMS_LIST,$elem);
-				$count++;
-			}
-		}
+		@SUBSYSTEMS_LIST = _do_calc_subsystem_list($CTX, \@SUBSYSTEMS_LIST);
 
 		#
 		# create the binaries used LIBRARIES_LIST
@@ -460,41 +403,7 @@ sub _do_depend_binaries($)
 		#
 		# add the LIBARARIES of each subsysetm in the @SUBSYSTEMS_LIST
 		#
-		foreach my $elem (@SUBSYSTEMS_LIST) {			
-			#
-			# see if the subsystem depends on a not listed LIBRARY
-			#
-			foreach my $elem (@{$CTX->{DEPEND}{SUBSYSTEMS}{$SUBSYSTEMS_LIST[$i]}{LIBRARIES_LIST}}) {
-				my $seen = 0;
-				#
-				# check if it's already in the list
-				#
-				foreach my $elem2 (@LIBRARIES_LIST) {
-					#
-					# check of the names matche
-					#
-					if ($elem eq $elem2) {
-						#
-						# mark it as already in the list
-						#
-						$seen = 1;
-						last;
-					}
-				}
-
-				#
-				# if it's already there skip it
-				#
-				if ($seen == 1) {
-					next;
-				}
-
-				#
-				# if it's not there add it
-				#
-				push(@LIBRARIES_LIST,$elem);
-			}
-		}
+		@LIBRARIES_LIST = _do_calc_libraries_list($CTX, \@SUBSYSTEMS_LIST, \@LIBRARIES_LIST);
 
 		#
 		# set the lists
