@@ -168,17 +168,17 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 
 		/* Actually do the open */
 		fsp->fd = fd_open(conn, fname, local_flags, mode);
-
-		/* Inherit the ACL if the file was created. */
-		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf))
-			inherit_access_acl(conn, fname, mode);
-
 		if (fsp->fd == -1)  {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) (flags=%d)\n",
 				 fname,strerror(errno),local_flags,flags));
 			check_for_pipe(fname);
 			return False;
 		}
+
+		/* Inherit the ACL if the file was created. */
+		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf))
+			inherit_access_acl(conn, fname, mode);
+
 	} else
 		fsp->fd = -1; /* What we used to call a stat open. */
 
