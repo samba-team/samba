@@ -5,9 +5,9 @@ use Getopt::Long;
 
 my $opt_hostname = `hostname`;
 chomp $opt_hostname;
+my $netbiosname;
 my $opt_realm;
 my $opt_domain;
-my $opt_netbiosname;
 my $dnsdomain;
 my $dnsname;
 my $basedn;
@@ -30,7 +30,11 @@ sub substitute($)
 	}
 
 	if ($var eq "NETBIOSNAME") {
-		return $opt_netbiosname;
+		return $netbiosname;
+	}
+
+	if ($var eq "DNSNAME") {
+		return $dnsname;
 	}
 
 	if ($var eq "DNSDOMAIN") {
@@ -78,7 +82,6 @@ rootdse.pl [options]
   --realm       REALM        set realm
   --domain      DOMAIN       set domain
   --hostname    HOSTNAME     set hostname
-  --netbiosname NETBIOSNAME  choose admin password (otherwise random)
 
 You must provide at least a realm and domain
 
@@ -93,28 +96,26 @@ GetOptions(
 	    'realm=s' => \$opt_realm,
 	    'domain=s' => \$opt_domain,
 	    'hostname=s' => \$opt_hostname,
-	    'netbiosname=s' => \$opt_netbiosname,
 	    );
 
 if ($opt_help || 
     !$opt_realm ||
     !$opt_domain ||
-    !$opt_hostname ||
-    !$opt_netbiosname) {
+    !$opt_hostname) {
 	ShowHelp();
 }
 
 $opt_realm=uc($opt_realm);
 $opt_domain=uc($opt_domain);
-$opt_hostname=uc($opt_hostname);
-$opt_netbiosname=uc($opt_netbiosname);
+$opt_hostname=lc($opt_hostname);
+$netbiosname=uc($opt_hostname);
 
-print "Provisioning host '$opt_hostname' with netbios name '$opt_netbiosname' for domain '$opt_domain' in realm '$opt_realm'\n";
+print "Provisioning host '$opt_hostname' with netbios name '$netbiosname' for domain '$opt_domain' in realm '$opt_realm'\n";
 
 print "generating ldif ...\n";
 
 $dnsdomain = lc($opt_realm);
-$dnsname = lc($opt_hostname).".".$dnsdomain;
+$dnsname = $opt_hostname.".".$dnsdomain;
 $basedn = "DC=" . join(",DC=", split(/\./, $opt_realm));
 
 my $data = FileLoad("rootdse.ldif") || die "Unable to load rootdse.ldif\n";
@@ -141,7 +142,7 @@ print "creating newrootdse.ldb ...\n";
 # allow provisioning to be run from the source directory
 $ENV{"PATH"} .= ":bin";
 
-system("ldbadd -H newrootdse.ldb newroodse.ldif");
+system("ldbadd -H newrootdse.ldb newrootdse.ldif");
 
 print "done
 

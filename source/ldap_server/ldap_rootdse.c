@@ -100,7 +100,7 @@ void *rootdse_db_connect(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	DEBUG(10, ("opening %s", db_path));
+	DEBUG(10, ("opening %s\n", db_path));
 	ctx->ldb = ldb_connect(db_path, 0, NULL);
 	if (ctx->ldb == NULL) {
 		talloc_free(ctx);
@@ -291,7 +291,6 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldap_attribute *attrs)
 	 * 2
 	 */
 
-def:
 	{
 		DATA_BLOB *x = talloc_array_p(mem_ctx, DATA_BLOB, 1);
 		x[0] = ATTR_BLOB_CONST("0");
@@ -312,7 +311,8 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	struct ldapsrv_reply *ent_r, *done_r;
 	struct	rootdse_db_context *rootdsedb;
 	const char *errstr = NULL;
-	int count, i, j, y;
+	int count, j, y;
+	const char **attrs = NULL;
 
 	if (r->scope != LDAP_SEARCH_SCOPE_BASE) {
 		count = -1;
@@ -325,10 +325,21 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	rootdsedb = rootdse_db_connect(local_ctx);
 	ALLOC_CHECK(rootdsedb);
 
-	ldb_set_alloc(rootdsedb->ldb, talloc_realloc_fn, rootdsedb);
-	count = ldb_search(rootdsedb->ldb, "", 0, "dn=rootDSE", NULL, &res);
+	if (r->num_attributes >= 1) {
+		attrs = talloc_array_p(rootdsedb, const char *, r->num_attributes+1);
+		ALLOC_CHECK(attrs);
 
-	for (i = 0; i < count; i++) {
+		for (j=0; j < r->num_attributes; j++) {
+			DEBUG(10,("rootDSE_Search: attrs: [%s]\n",r->attributes[j]));
+			attrs[j] = r->attributes[j];
+		}
+		attrs[j] = NULL;
+	}
+
+	ldb_set_alloc(rootdsedb->ldb, talloc_realloc_fn, rootdsedb);
+	count = ldb_search(rootdsedb->ldb, "", 0, "dn=cn=rootDSE", attrs, &res);
+
+	if (count == 1) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 		if (!ent_r) {
 			return NT_STATUS_NO_MEMORY;
@@ -338,19 +349,19 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		ent->dn = "";
 		ent->num_attributes = 0;
 		ent->attributes = NULL;
-		if (res[i]->num_elements == 0) {
+		if (res[0]->num_elements == 0) {
 			goto queue_reply;
 		}
-		ent->num_attributes = res[i]->num_elements;
+		ent->num_attributes = res[0]->num_elements;
 		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
 		ALLOC_CHECK(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
-			ent->attributes[j].name = talloc_steal(ent->attributes, res[i]->elements[j].name);
+			ent->attributes[j].name = talloc_steal(ent->attributes, res[0]->elements[j].name);
 			ent->attributes[j].num_values = 0;
 			ent->attributes[j].values = NULL;
-			ent->attributes[j].num_values = res[i]->elements[j].num_values;
+			ent->attributes[j].num_values = res[0]->elements[j].num_values;
 			if (ent->attributes[j].num_values == 1 &&
-				strncmp(res[i]->elements[j].values[0].data, "_DYNAMIC_", 9) == 0) {
+				strncmp(res[0]->elements[j].values[0].data, "_DYNAMIC_", 9) == 0) {
 				fill_dynamic_values(ent->attributes, &(ent->attributes[j]));
 				if (ent->attributes[j].values[0].data == NULL) {
 					DEBUG (10, ("ARRGHH!\n"));
@@ -360,9 +371,9 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 								DATA_BLOB, ent->attributes[j].num_values);
 				ALLOC_CHECK(ent->attributes[j].values);
 				for (y=0; y < ent->attributes[j].num_values; y++) {
-					ent->attributes[j].values[y].length = res[i]->elements[j].values[y].length;
+					ent->attributes[j].values[y].length = res[0]->elements[j].values[y].length;
 					ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
-										res[i]->elements[j].values[y].data);
+										res[0]->elements[j].values[y].data);
 				}
 			}
 		}
@@ -382,10 +393,14 @@ no_base_scope:
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (count > 0) {
+	if (count == 1) {
 		DEBUG(10,("rootdse_Search: results: [%d]\n",count));
 		result = 0;
 		errstr = NULL;
+	} else if (count > 1) {
+		DEBUG(10,("rootdse_Search: to many results[%d]\n", count));
+		result = 80; /* nosuchobject */
+		errstr = talloc_strdup(done_r, "internal error");	
 	} else if (count == 0) {
 		DEBUG(10,("rootdse_Search: no results\n"));
 		result = 32; /* nosuchobject */
@@ -395,7 +410,6 @@ no_base_scope:
 		result = 1;
 		errstr = talloc_strdup(done_r, ldb_errstring(rootdsedb->ldb));
 	}
-
 
 	done = &done_r->msg.r.SearchResultDone;
 	done->resultcode = result;
