@@ -91,6 +91,8 @@ names to be resolved as follows :
 startit()
 
 it() bf(lmhosts) : Lookup an IP address in the Samba lmhosts file.
+The lmhosts file is stored in the same directory as the
+url(bf(smb.conf))(smb.conf.5.html) file.
 
 it() bf(host) : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups. This method of name
@@ -198,12 +200,9 @@ level))(smb.conf.5.html#loglevel) parameter in the url(bf(smb.conf
 (5)))(smb.conf.5.html) file.
 
 label(minusP)
-dit(bf(-P)) If this option is specified, the service requested will be
-connected to as a printer service rather than as a normal filespace
-service. Operations such as put and get will not be applicable for
-such a connection.
-
-By default, services will be connected to as NON-printer services.
+dit(bf(-P)) This option is no longer used. The code in Samba2.0
+now lets the server decide the device type, so no printer specific
+flag is needed.
 
 label(minusp)
 dit(bf(-p port)) This number is the TCP port number that will be used
@@ -323,25 +322,11 @@ tt(junet), tt(hex), tt(cap). This is not a complete list, check the
 Samba source code for the complete list.
 
 label(minusm)
-dit(bf(-m max protocol level)) Normally, smbclient will negotiate with
-the server to use the most advanced version of the SMB/CIFS protocol
-that the server supports. Occasionaly it may be desirable to tell
-smbclient to negotiate a lower level of the protocol, hence this
-parameter. Valid options for the em(max protocol level) are :
-
-startit()
-
-it() CORE
-
-it() COREPLUS
-
-it() LANMAN1
-
-it() LANMAN2
-
-it() NT1
-
-endit()
+dit(bf(-m max protocol level)) With the new code in Samba2.0,
+bf(smbclient) allways attempts to connect at the maximum
+protocols level the server supports. This parameter is
+preserved for backwards compatibility, but any string
+following the bf(-m) will be ignored.
 
 label(minusW)
 dit(bf(-W WORKGROUP)) Override the default workgroup specified in the

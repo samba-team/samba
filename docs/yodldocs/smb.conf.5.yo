@@ -1475,9 +1475,9 @@ performed.
 
 label(debug timestamp (G))
 
-Samba2.0 debug log messages are timestamped by default. If you
-are running at a high debug level these timestamps can be
-distracting. This boolean parameter allows them to be turned
+Samba2.0 debug log messages are timestamped by default. If you are
+running at a high link(bf("debug level"))(debuglevel) these timestamps
+can be distracting. This boolean parameter allows them to be turned
 off.
 
   bf(Default:)
@@ -3513,244 +3513,332 @@ dit(bf(only guest (S)))
 
 A synonym for link(bf("guest only"))(guestonly).
 
-.SS only user (S)
+label(onlyuser)
+dit(bf(only user (S)))
+
 This is a boolean option that controls whether connections with
-usernames not in the user= list will be allowed. By default this
-option is disabled so a client can supply a username to be used by
-the server.
+usernames not in the link(bf(user=))(user) list will be allowed. By
+default this option is disabled so a client can supply a username to
+be used by the server.
 
 Note that this also means Samba won't try to deduce usernames from the
-service name. This can be annoying for the [homes] section. To get
-around this you could use "user = %S" which means your "user" list
+service name. This can be annoying for the link(bf([homes]))(homes)
+section. To get around this you could use "link(bf(user))(user) =
+link(bf(%S))(percentS)" which means your link(bf("user"))(user) list
 will be just the service name, which for home directories is the name
 of the user.
 
-.B Default: 
+See also the link(bf(user))(user) parameter.
+
+  bf(Default:)
 	only user = False
 
-.B Example: 
+  bf(Example:)
 	only user = True
 
-.SS oplocks (S)
+label(oplocks)
+dit(bf(oplocks (S)))
+
 This boolean option tells smbd whether to issue oplocks (opportunistic
-locks) to file open requests on this share. The oplock code was introduced in
-Samba 1.9.18 and can dramatically (approx 30% or more) improve the speed
-of access to files on Samba servers. It allows the clients to agressively
-cache files locally and you may want to disable this option for unreliable
-network environments (it is turned on by default in Windows NT Servers).
-For more information see the file Speed.txt in the Samba docs/ directory.
+locks) to file open requests on this share. The oplock code can
+dramatically (approx 30% or more) improve the speed of access to files
+on Samba servers. It allows the clients to agressively cache files
+locally and you may want to disable this option for unreliable network
+environments (it is turned on by default in Windows NT Servers).  For
+more information see the file Speed.txt in the Samba docs/ directory.
 
 Oplocks may be selectively turned off on certain files on a per share basis.
-See the 'veto oplock files' parameter.
+See the 'veto oplock files' parameter. On some systems oplocks are recognised
+by the underlying operating system. This allows data synchronisation between
+all access to oplocked files, whether it be via Samba or NFS or a local
+UNIX process. See the link(bf(kernel oplocks))(kerneloplocks) parameter
+for details.
 
-.B Default:
-    oplocks = True
+  bf(Default:)
+	oplocks = True
 
-.B Example:
-    oplocks = False
+  bf(Example:)
+	oplocks = False
 
+label(oslevel)
+dit(bf(os level (G)))
 
-.SS os level (G)
 This integer value controls what level Samba advertises itself as for
-browse elections. See BROWSING.txt for details.
+browse elections. The value of this parameter determines whether
+url(bf(nmbd))(nmbd.8.html) has a chance of becoming a local master
+browser for the link(bf(WORKGROUP))(workgroup) in the local broadcast
+area. The default is zero, which means url(bf(nmbd))(nmbd.8.html) will
+lose elections to Windows machines. See BROWSING.txt in the Samba
+docs/ directory for details.
 
-.SS packet size (G)
-The maximum transmit packet size during a raw read. This option is no
-longer implemented as of version 1.7.00, and is kept only so old
-configuration files do not become invalid.
+  bf(Default:)
+	os level = 0
 
-.SS passwd chat (G)
-This string controls the "chat" conversation that takes places
-between smbd and the local password changing program to change the
-users password. The string describes a sequence of response-receive
-pairs that smbd uses to determine what to send to the passwd program
+  bf(Example:)
+tt(	os level = 65    ; This will win against any NT Server)
+
+label(packetsize)
+dit(bf(packet size (G)))
+
+This is a deprecated parameter that how no effect on the current
+Samba code. It is left in the parameter list to prevent breaking
+old bf(smb.conf) files.
+
+label(panicaction)
+dit(bf(panic action (G))
+
+This is a Samba developer option that allows a system command to be
+called when either url(bf(smbd))(smbd.8.html) or
+url(bf(nmbd))(nmbd.8.html) crashes. This is usually used to draw
+attention to the fact that a problem occured.
+
+  bf(Default:)
+	panic action = <empty string>
+
+label(passwdchat)
+dit(bf(passwd chat (G)))
+
+This string controls the em("chat") conversation that takes places
+between url(bf(smbd))(smbd.8.html) and the local password changing
+program to change the users password. The string describes a sequence
+of response-receive pairs that url(bf(smbd))(smbd.8.html) uses to
+determine what to send to the link(bf(passwd))(passwdprogram) program
 and what to expect back. If the expected output is not received then
 the password is not changed.
 
 This chat sequence is often quite site specific, depending on what
-local methods are used for password control (such as NIS+ etc).
+local methods are used for password control (such as NIS etc).
 
-The string can contain the macros %o and %n which are substituted for
-the old and new passwords respectively. It can also contain the
-standard macros \en \er \et and \es to give line-feed, carriage-return,
-tab and space.
+The string can contain the macros tt("%o") and tt("%n") which are
+substituted for the old and new passwords respectively. It can also
+contain the standard macros tt("\n"), tt("\r"), tt("\t") and tt("\s")
+to give line-feed, carriage-return, tab and space.
 
-The string can also contain a * which matches any sequence of
+The string can also contain a tt('*') which matches any sequence of
 characters.
 
 Double quotes can be used to collect strings with spaces in them into
 a single string.
 
-If the send string in any part of the chat sequence is a fullstop "."
-then no string is sent. Similarly, is the expect string is a fullstop
-then no string is expected.
+If the send string in any part of the chat sequence is a fullstop
+tt(".")  then no string is sent. Similarly, is the expect string is a
+fullstop then no string is expected.
 
-Note that if the 'unix password sync' parameter is set to true,
-then this sequence is called *AS ROOT* when the SMB password in the
-smbpasswd file is being changed, without access to the old password
-cleartext. In this case the old password cleartext is set to ""
-(the empty string).
+Note that if the link(bf("unix password sync"))(unixpasswordsync)
+parameter is set to true, then this sequence is called em(*AS ROOT*)
+when the SMB password in the smbpasswd file is being changed, without
+access to the old password cleartext. In this case the old password
+cleartext is set to tt("") (the empty string).
 
-See also 'unix password sync' and 'passwd chat debug'
+See also link(bf("unix password sync"))(unixpasswordsync),
+link(bf("passwd program"))(passwdprogram) and link(bf("passwd chat
+debug"))(passwdchatdebug).
 
-.B Example:
-        passwd chat = "*Enter OLD password*" %o\en "*Enter NEW password*" %n\en \e
-                       "*Reenter NEW password*" %n\en "*Password changed*"
+  bf(Example:) 
+verb( passwd chat = "*Enter OLD password*" %o\n "*Enter NEW password*" %n\n \
+                       "*Reenter NEW password*" %n\n "*Password changed*"
+)
 
+  bf(Default:)
+verb(       passwd chat = *old*password* %o\n *new*password* %n\n *new*password* %n\n *changed*)
 
-.B Default:
-       passwd chat = *old*password* %o\en *new*password* %n\en *new*password* %n\en *changed*
+label(passwdchatdebug)
+dit(bf(passwd chat debug (G)))
 
-.SS passwd chat debug (G)
+This boolean specifies if the passwd chat script parameter is run in
+tt("debug") mode. In this mode the strings passed to and received from
+the passwd chat are printed in the url(bf(smbd))(smbd.8.html) log with
+a link(bf("debug level"))(debuglevel) of 100. This is a dangerous
+option as it will allow plaintext passwords to be seen in the
+url(bf(smbd))(smbd.8.html) log. It is available to help Samba admins
+debug their link(bf("passwd chat"))(passwdchat) scripts when calling
+the link(bf("passwd program"))(passwdprogram) and should be turned off
+after this has been done. This parameter is off by default.
 
-This boolean specifies if the passwd chat script parameter is run
-in 'debug' mode. In this mode the strings passed to and received
-from the passwd chat are printed in the smbd log with a debug level
-of 100. This is a dangerous option as it will allow plaintext passwords
-to be seen in the smbd log. It is available to help Samba admins
-debug their passwd chat scripts and should be turned off after
-this has been done. This parameter is off by default.
+See also link(bf("passwd chat"))(passwdchat"), link(bf("passwd
+program"))(passwdprogram).
 
-.B Example:
+  bf(Example:)
      passwd chat debug = True
 
-.B Default:
+  bf(Default:)
      passwd chat debug = False
 
-.SS passwd program (G)
-The name of a program that can be used to set user passwords.
+label(passwdprogram)
+dit(bf(passwd program (G)))
 
-This is only available if you have enabled remote password changing at
-compile time (see the comments in the Makefile for details). Any occurrences 
-of %u will be replaced with the user name. The user name is checked
-for existance before calling the password changing program.
+The name of a program that can be used to set user passwords.  Any
+occurrences of link(bf(%u))(percentu) will be replaced with the user
+name. The user name is checked for existance before calling the
+password changing program.
 
-Also note that many passwd programs insist in "reasonable" passwords,
-such as a minimum length, or the inclusion of mixed case chars and
-digits. This can pose a problem as some clients (such as Windows for
-Workgroups) uppercase the password before sending it. 
+Also note that many passwd programs insist in em("reasonable")
+passwords, such as a minimum length, or the inclusion of mixed case
+chars and digits. This can pose a problem as some clients (such as
+Windows for Workgroups) uppercase the password before sending it.
 
-Note that if the 'unix password sync' parameter is set to true,
-then this sequence is called *AS ROOT* when the SMB password in the
-smbpasswd file is being changed. If the 'unix passwd sync' parameter
-is set this parameter MUST USE ABSOLUTE PATHS for ALL programs called,
-and must be examined for security implications. Note that by default
-'unix password sync' is set to False.
+Note that if the link(bf("unix password sync"))(unixpasswordsync)
+parameter is set to true, then this sequence is called em(*AS ROOT*)
+when the SMB password in the smbpasswd file is being changed. If the
+link(bf("unix password sync"))(unixpasswordsync) parameter is set this
+parameter em(MUST USE ABSOLUTE PATHS) for em(ALL) programs called, and
+must be examined for security implications. Note that by default
+link(bf("unix password sync"))(unixpasswordsync) is set to False.
 
-See also 'unix password sync'
+See also link(bf("unix password sync"))(unixpasswordsync).
 
-.B Default:
-	passwd program = /bin/passwd
+  bf(Default:)
+tt(	passwd program = /bin/passwd)
 
-.B Example:
-	passwd program = /sbin/passwd %u
+  bf(Example:)
+tt(	passwd program = /sbin/passwd %u)
 
-.SS password level (G)
-Some client/server combinations have difficulty with mixed-case passwords.
-One offending client is Windows for Workgroups, which for some reason forces
-passwords to upper case when using the LANMAN1 protocol, but leaves them alone
-when using COREPLUS!
+label(passwordlevel)
+dit(bf(password level (G)))
 
-This parameter defines the maximum number of characters that may be upper case
-in passwords.
+Some client/server combinations have difficulty with mixed-case
+passwords.  One offending client is Windows for Workgroups, which for
+some reason forces passwords to upper case when using the LANMAN1
+protocol, but leaves them alone when using COREPLUS!
 
-For example, say the password given was "FRED". If
-.B password level
-is set to 1 (one), the following combinations would be tried if "FRED" failed:
-"Fred", "fred", "fRed", "frEd", "freD". If
-.B password level was set to 2 (two), the following combinations would also be
-tried: "FRed", "FrEd", "FreD", "fREd", "fReD", "frED". And so on.
+This parameter defines the maximum number of characters that may be
+upper case in passwords.
 
-The higher value this parameter is set to the more likely it is that a mixed
-case password will be matched against a single case password. However, you
-should be aware that use of this parameter reduces security and increases the
-time taken to process a new connection.
+For example, say the password given was tt("FRED"). If bf(password
+level) is set to 1, the following combinations would be tried if
+tt("FRED") failed:
 
-A value of zero will cause only two attempts to be made - the password as is
-and the password in all-lower case.
+tt("Fred"), tt("fred"), tt("fRed"), tt("frEd"), tt("freD")
 
-If you find the connections are taking too long with this option then
-you probably have a slow crypt() routine. Samba now comes with a fast
-"ufc crypt" that you can select in the Makefile. You should also make
-sure the PASSWORD_LENGTH option is correct for your system in local.h
-and includes.h. On most systems only the first 8 chars of a password
-are significant so PASSWORD_LENGTH should be 8, but on some longer
-passwords are significant. The includes.h file tries to select the
-right length for your system.
+If bf(password level) was set to 2, the following combinations would
+also be tried: 
 
-.B Default:
- 	password level = 0
+tt("FRed"), tt("FrEd"), tt("FreD"), tt("fREd"), tt("fReD"),
+tt("frED"), tt(..)
 
-.B Example:
+And so on.
+
+The higher value this parameter is set to the more likely it is that a
+mixed case password will be matched against a single case
+password. However, you should be aware that use of this parameter
+reduces security and increases the time taken to process a new
+connection.
+
+A value of zero will cause only two attempts to be made - the password
+as is and the password in all-lower case.
+
+  bf(Default:)
+	password level = 0
+
+  bf(Example:)
  	password level = 4
 
-.SS password server (G)
+label(passwordserver)
+dit(bf(password server (G)))
 
 By specifying the name of another SMB server (such as a WinNT box)
-with this option, and using "security = server" you can get Samba to
-do all its username/password validation via a remote server.
+with this option, and using link(bf("security = domain"))(security) or
+link(bf("security = server"))(security) you can get Samba to do all
+its username/password validation via a remote server.
 
 This options sets the name of the password server to use. It must be a
-netbios name, so if the machine's netbios name is different from its
-internet name then you may have to add its netbios name to
-/etc/hosts.
+NetBIOS name, so if the machine's NetBIOS name is different from its
+internet name then you may have to add its NetBIOS name to the lmhosts 
+file which is stored in the same directory as the bf(smb.conf) file.
 
-Note that with Samba 1.9.18p4 and above the name of the password
-server is looked up using the parameter "name resolve order=" and
-so may resolved by any method and order described in that parameter.
+The name of the password server is looked up using the parameter
+link(bf("name resolve order="))(nameresolveorder) and so may resolved
+by any method and order described in that parameter.
 
 The password server much be a machine capable of using the "LM1.2X002"
 or the "LM NT 0.12" protocol, and it must be in user level security
 mode. 
 
 NOTE: Using a password server means your UNIX box (running Samba) is
-only as secure as your password server. DO NOT CHOOSE A PASSWORD
-SERVER THAT YOU DON'T COMPLETELY TRUST.
+only as secure as your password server. em(DO NOT CHOOSE A PASSWORD
+SERVER THAT YOU DON'T COMPLETELY TRUST).
 
 Never point a Samba server at itself for password serving. This will
 cause a loop and could lock up your Samba server!
 
 The name of the password server takes the standard substitutions, but
-probably the only useful one is %m, which means the Samba server will
-use the incoming client as the password server. If you use this then
-you better trust your clients, and you better restrict them with hosts
-allow!
+probably the only useful one is link(bf(%m))(percentm), which means
+the Samba server will use the incoming client as the password
+server. If you use this then you better trust your clients, and you
+better restrict them with hosts allow!
 
-If you list several hosts in the "password server" option then smbd
-will try each in turn till it finds one that responds. This is useful
-in case your primary server goes down.
+If the link(bf("security"))(security) parameter is set to
+bf("domain"), then the list of machines in this option must be a list
+of Primary or Backup Domain controllers for the
+link(bf(Domain))(workgroup), as the Samba server is cryptographically
+in that domain, and will use crpytographically authenticated RPC calls
+to authenticate the user logging on. The advantage of using
+link(bf("security=domain"))(security) is that if you list several
+hosts in the bf("password server") option then
+url(bf(smbd))(smbd.8.html) will try each in turn till it finds one
+that responds. This is useful in case your primary server goes down.
 
-If you are using a WindowsNT server as your password server then you
-will have to ensure that your users are able to login from the Samba 
-server, as the network logon will appear to come from there rather
-than from the users workstation.
+If the link(bf("security"))(security) parameter is set to
+bf("server"), then there are different restrictions that
+link(bf("security=domain"))(security) doesn't suffer from:
 
-.SS path (S)
-A synonym for this parameter is 'directory'.
+startit()
 
-This parameter specifies a directory to which the user of the service is to
-be given access. In the case of printable services, this is where print data 
-will spool prior to being submitted to the host for printing.
+it() You may list several password servers in the bf("password server"
+parameter, however if an url(bf(smbd))(smbd.8.html) makes a connection
+to a password server, and then the password server fails, no more
+users will be able to be authenticated from this
+url(bf(smbd))(smbd.8.html).  This is a restriction of the SMB/CIFS
+protocol when in link(bf("security=server"))(security) mode and cannot
+be fixed.
 
-For a printable service offering guest access, the service should be readonly
-and the path should be world-writable and have the sticky bit set. This is not
-mandatory of course, but you probably won't get the results you expect if you
-do otherwise.
+it() If you are using a WindowsNT server as your password server then
+you will have to ensure that your users are able to login from the
+Samba server, as when in link(bf("security=server"))(security) mode
+the network logon will appear to come from there rather than from the
+users workstation.
 
-Any occurrences of %u in the path will be replaced with the username
-that the client is connecting as. Any occurrences of %m will be
-replaced by the name of the machine they are connecting from. These
+endit()
+
+See also the link(bf("security") parameter.
+
+  bf(Default:)
+	password server = <empty string>
+
+  bf(Example:)
+	password server = NT-PDC, NT-BDC1, NT-BDC2
+
+label(path)
+dit(bf(path (S)))
+
+This parameter specifies a directory to which the user of the service
+is to be given access. In the case of printable services, this is
+where print data will spool prior to being submitted to the host for
+printing.
+
+For a printable service offering guest access, the service should be
+readonly and the path should be world-writable and have the sticky bit
+set. This is not mandatory of course, but you probably won't get the
+results you expect if you do otherwise.
+
+Any occurrences of link(bf(%u))(percentu) in the path will be replaced
+with the UNIX username that the client is using on this
+connection. Any occurrences of link(bf(%m))(percentm) will be replaced
+by the NetBIOS name of the machine they are connecting from. These
 replacements are very useful for setting up pseudo home directories
 for users.
 
-Note that this path will be based on 'root dir' if one was specified.
-.B Default:
- 	none
+Note that this path will be based on link(bf("root dir"))(rootdir) if
+one was specified.
 
-.B Example:
- 	path = /home/fred+ 
+  bf(Default:)
+	none
 
-.SS postexec (S)
+  bf(Example:)
+	path = /home/fred
+
+label(postexec)
+dit(bf(postexec (S)))
 
 This option specifies a command to be run whenever the service is
 disconnected. It takes the usual substitutions. The command may be run
@@ -3758,31 +3846,34 @@ as the root on some systems.
 
 An interesting example may be do unmount server resources:
 
-postexec = /etc/umount /cdrom
+tt(postexec = /etc/umount /cdrom)
 
-See also preexec
+See also link(bf(preexec))(preexec).
 
-.B Default:
+  bf(Default:)
       none (no command executed)
 
-.B Example:
-      postexec = echo \e"%u disconnected from %S from %m (%I)\e" >> /tmp/log
+  bf(Example:)
+tt(      postexec = echo "%u disconnected from %S from %m (%I)" >> /tmp/log)
 
-.SS postscript (S)
+label(postscript)
+dit(bf(postscript (S)))
+
 This parameter forces a printer to interpret the print files as
-postscript. This is done by adding a %! to the start of print output. 
+postscript. This is done by adding a tt(%!) to the start of print output.
 
 This is most useful when you have lots of PCs that persist in putting
 a control-D at the start of print jobs, which then confuses your
 printer.
 
-.B Default: 
+  bf(Default:)
 	postscript = False
 
-.B Example: 
+  bf(Example:)
 	postscript = True
 
-.SS preexec (S)
+label(preexec)
+dit(bf(preexec (S)))
 
 This option specifies a command to be run whenever the service is
 connected to. It takes the usual substitutions.
@@ -3790,52 +3881,67 @@ connected to. It takes the usual substitutions.
 An interesting example is to send the users a welcome message every
 time they log in. Maybe a message of the day? Here is an example:
 
-preexec = csh -c 'echo \e"Welcome to %S!\e" | \e
-       /usr/local/samba/bin/smbclient -M %m -I %I' &
+verb(
+	preexec = csh -c 'echo "Welcome to %S!" | \
+		/usr/local/samba/bin/smbclient -M %m -I %I' &
+)
 
 Of course, this could get annoying after a while :-)
 
-See also postexec
+See also link(bf(postexec))(postexec).
 
-.B Default:
+  bf(Default:)
 	none (no command executed)
 
-.B Example:
-        preexec = echo \e"%u connected to %S from %m (%I)\e" >> /tmp/log
+  bf(Example:)
+tt(        preexec = echo "%u connected to %S from %m (%I)" >> /tmp/log)
 
-.SS preferred master (G)
-This boolean parameter controls if Samba is a preferred master browser
-for its workgroup.
-If this is set to true, on startup, samba will force an election, 
-and it will have a slight advantage in winning the election.  
-It is recommended that this parameter is used in conjunction 
-with domain master = yes, so that samba can guarantee becoming 
-a domain master.  
+label(preferredmaster)
+dit(bf(preferred master (G)))
+
+This boolean parameter controls if url(bf(nmbd))(nmbd.8.html) is a
+preferred master browser for its workgroup.
+
+If this is set to true, on startup, url(bf(nmbd))(nmbd.8.html) will
+force an election, and it will have a slight advantage in winning the
+election.  It is recommended that this parameter is used in
+conjunction with link(bf("domain master = yes"))(domainmaster), so
+that url(bf(nmbd))(nmbd.8.html) can guarantee becoming a domain
+master.
 
 Use this option with caution, because if there are several hosts
-(whether samba servers, Windows 95 or NT) that are preferred master
-browsers on the same subnet, they will each periodically and continuously
-attempt to become the local master browser.  This will result in
-unnecessary broadcast traffic and reduced browsing capabilities.
+(whether Samba servers, Windows 95 or NT) that are preferred master
+browsers on the same subnet, they will each periodically and
+continuously attempt to become the local master browser.  This will
+result in unnecessary broadcast traffic and reduced browsing
+capabilities.
 
-See
-.B os level = nn
+See also link(bf(os level))(oslevel).
 
-.B Default:
+  bf(Default:)
  	preferred master = no
 
-.SS preload
-This is an alias for "auto services"
+label(preferedmaster)
+dit(bf(prefered master (G)))
 
-.SS preserve case (S)
+Synonym for link(bf("preferred master"))(preferredmaster) for people
+who cannot spell :-).
+
+label(preload)
+dit(bf(preload))
+Synonym for link(bf("auto services"))(autoservices).
+
+label(preservecase)
+dit(bf(preserve case (S)))
 
 This controls if new filenames are created with the case that the
-client passes, or if they are forced to be the "default" case.
+client passes, or if they are forced to be the tt("default") case.
 
-.B Default:
-       preserve case = no
+  bf(Default:)
+       preserve case = yes
 
-See the section on "NAME MANGLING" for a fuller discussion.
+See the section on link(bf("NAME MANGLING"))(NAMEMANGLING) for a
+fuller discussion.
 
 .SS print command (S)
 After a print job has finished spooling to a service, this command will be
