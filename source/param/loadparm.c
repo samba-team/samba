@@ -118,9 +118,6 @@ typedef struct
 	char **szDomainAdminGroup;
 	char **szDomainGuestGroup;
 	char *szUsernameMap;
-#ifdef USING_GROUPNAME_MAP
-	char *szGroupnameMap;
-#endif				/* USING_GROUPNAME_MAP */
 	char *szLogonScript;
 	char *szLogonPath;
 	char *szLogonDrive;
@@ -886,10 +883,6 @@ static struct parm_struct parm_table[] = {
 	
 	{"domain admin group", P_LIST, P_GLOBAL, &Globals.szDomainAdminGroup, NULL, NULL, 0},
 	{"domain guest group", P_LIST, P_GLOBAL, &Globals.szDomainGuestGroup, NULL, NULL, 0},
-
-#ifdef USING_GROUPNAME_MAP
-	{"groupname map", P_STRING, P_GLOBAL, &Globals.szGroupnameMap, NULL, NULL, 0},
-#endif /* USING_GROUPNAME_MAP */
 	
 	{"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout, NULL, NULL, 0},
 
@@ -1465,9 +1458,6 @@ FN_GLOBAL_STRING(lp_workgroup, &Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
 FN_GLOBAL_STRING(lp_ads_server, &Globals.szADSserver)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
-#ifdef USING_GROUPNAME_MAP
-FN_GLOBAL_STRING(lp_groupname_map, &Globals.szGroupnameMap)
-#endif /* USING_GROUPNAME_MAP */
 FN_GLOBAL_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_STRING(lp_logon_path, &Globals.szLogonPath)
 FN_GLOBAL_STRING(lp_logon_drive, &Globals.szLogonDrive)
