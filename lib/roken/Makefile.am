@@ -160,7 +160,7 @@ EXTRA_libroken_la_SOURCES =	\
 
 EXTRA_DIST = roken.awk roken.h.in
 
-libroken_la_LIBADD = @LTLIBOBJS@
+libroken_la_LIBADD = @LTLIBOBJS@ $(DBLIB)
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): $(include_HEADERS) roken.h
 
