@@ -317,7 +317,7 @@ you can set this function pointer to NULL.</para></listitem>
 
 </variablelist>
 
-<para>Some usefull MACROS for handle private data.
+<para>Some useful MACROS for handle private data.
 </para>
 
 <programlisting>
@@ -439,7 +439,7 @@ e.g. example_connect(connection_struct *conn, const char *service, const char *u
 Replace &quot;default_vfs_ops.&quot; with &quot;smb_vfs_next_&quot;.
 e.g. default_vfs_ops.connect(conn, service, user);
 -&gt;   smb_vfs_next_connect(conn, service, user);
-</para>
+</para></listitem>
 
 <listitem><para>
 Uppercase all &quot;vfs_next_*&quot; functions.
@@ -562,33 +562,30 @@ NTSTATUS init_module(void)
 <listitem><para>
 Check if your vfs_init() function does more then just prepare the vfs_ops structs or
 remember the struct smb_vfs_handle_struct.
-- If NOT you can remove the vfs_init() function.
-- If YES decide if you want to move the code to the example_connect() operation or to the init_module().
-  And then remove vfs_init().
-  e.g. 
-  - a debug class registration should go into init_module().
-  - the allocation of private data should go to example_connect().
+<simplelist>
+<member>If NOT you can remove the vfs_init() function.</member>
+<member>If YES decide if you want to move the code to the example_connect() operation or to the init_module(). And then remove vfs_init().
+  e.g. a debug class registration should go into init_module() and the allocation of private data should go to example_connect().</member>
+</simplelist>
 </para></listitem>
 
 <listitem><para>
-(Only for 3.0aplha* modules) 
+(Only for 3.0alpha* modules) 
 Check if your vfs_done() function contains needed code.
-- If NOT you can remove the vfs_done() function.
-- If YES decide if you can move the code to the example_disconnect() operation.
-  Otherwise register a SMB_EXIT_EVENT with smb_register_exit_event();
-  (Described in the MODULES section of the Samba-Developer-HOWTO.)
-  And then remove vfs_done(). 
-  e.g. the freeing of private data should go to example_disconnect().
+<simplelist>
+<member>If NOT you can remove the vfs_done() function.</member>
+<member>If YES decide if you can move the code to the example_disconnect() operation. Otherwise register a SMB_EXIT_EVENT with smb_register_exit_event(); (Described in the <link linkend="modules">modules section</link>) And then remove vfs_done(). e.g. the freeing of private data should go to example_disconnect().
+</member>
+</simplelist>
 </para></listitem>
 
 <listitem><para>
 Check if you have any global variables left.
-- Decide if it wouldn't be better to have this data on a connection basis.
-  - If NOT leave them as they are.
-    (e.g. this could be the variable for the private debug class.)
-  - If YES pack all this data into a struct.
-    You can use handle-&gt;data to point to such a struct on a
-    per connection basis.
+Decide if it wouldn't be better to have this data on a connection basis.
+<simplelist>
+  <member>If NOT leave them as they are. (e.g. this could be the variable for the private debug class.)</member>
+  <member>If YES pack all this data into a struct. You can use handle-&gt;data to point to such a struct on a per connection basis.</member>
+</simplelist>
 
   e.g. if you have such a struct:
 <programlisting>    
@@ -597,7 +594,7 @@ struct example_privates {
 	int db_connection;
 };
 </programlisting>	
-1st way of doing it:
+first way of doing it:
 <programlisting>
 static int example_connect(vfs_handle_struct *handle,
 	connection_struct *conn, const char *service, 
@@ -646,7 +643,7 @@ static int example_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	return SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
 }
 </programlisting>
-2nd way of doing it:
+second way of doing it:
 <programlisting>
 static void free_example_privates(void **datap)
 {
@@ -712,22 +709,30 @@ static int example_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 To make it easy to build 3rd party modules it would be usefull to provide
 configure.in, (configure), install.sh and Makefile.in with the module.
 (Take a look at the example in <filename>examples/VFS</filename>.)
+</para>
 
-The configure script accept --with-samba-source to specify the path to
-the samba source tree.
-It also accept --enable-developer witch let the compiler give you more warnings.  
+<para>
+The configure script accepts <option>--with-samba-source</option> to specify 
+the path to the samba source tree.
+It also accept <option>--enable-developer</option> which lets the compiler 
+give you more warnings.  
+</para>
 
-The idea is that you can extend this configure.in and Makefile.in scripts
+<para>
+The idea is that you can extend this 
+<filename>configure.in</filename> and <filename>Makefile.in</filename> scripts
 for your module.
 </para></listitem>
 
 <listitem><para>
-Compiling & Testing...
-- configure --enable-developer ...
-- make
-- Try to fiy all compiler warnings
-- make
-- Testing, Testing, Testing ...
+Compiling &amp; Testing...
+<simplelist>
+<member><userinput>./configure <option>--enable-developer</option></userinput> ...</member>
+<member><userinput>make</userinput></member>
+<member>Try to fix all compiler warnings</member>
+<member><userinput>make</userinput></member>
+<member>Testing, Testing, Testing ...</member>
+</simplelist>
 </para></listitem>
 </orderedlist>
 </sect2>
@@ -741,7 +746,7 @@ Compiling & Testing...
 <title>Implement TRANSPARENT functions</title>
 
 <para>
-Avoid writting functions like this:
+Avoid writing functions like this:
 
 <programlisting>
 static int example_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
@@ -759,9 +764,9 @@ Overload only the functions you really need to!
 <title>Implement OPAQUE functions</title>
 
 <para>
-If you want just implement only a better version of a 
+If you want to just implement a better version of a 
 default samba opaque function
-(e.g. like a disk_free() function for a speciall filesystem) 
+(e.g. like a disk_free() function for a special filesystem) 
 it's ok to just overload that specific function.
 </para>
 
