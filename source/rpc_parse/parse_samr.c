@@ -1403,6 +1403,9 @@ uint32 init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_ent
 	DEBUG(5, ("init_sam_dispinfo_1: max_entries: %d max_dsize: 0x%x\n",
 		  max_entries, max_data_size));
 
+	if (max_entries==0)
+		return NT_STATUS_NO_PROBLEMO;
+
 	sam->sam=(SAM_ENTRY1 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY1));
 	if (!sam->sam)
 		return NT_STATUS_NO_MEMORY;
@@ -1511,6 +1514,9 @@ uint32 init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_ent
 	max_entries = *num_entries;
 	max_data_size = *data_size;
 
+	if (max_entries==0)
+		return NT_STATUS_NO_PROBLEMO;
+
 	if (!(sam->sam=(SAM_ENTRY2 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY2))))
 		return NT_STATUS_NO_MEMORY;
 
@@ -1615,6 +1621,9 @@ uint32 init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_ent
 	max_entries = *num_entries;
 	max_data_size = *data_size;
 
+	if (max_entries==0)
+		return NT_STATUS_NO_PROBLEMO;
+
 	if (!(sam->sam=(SAM_ENTRY3 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY3))))
 		return NT_STATUS_NO_MEMORY;
 
@@ -1716,6 +1725,9 @@ uint32 init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_ent
 	max_entries = *num_entries;
 	max_data_size = *data_size;
 
+	if (max_entries==0)
+		return NT_STATUS_NO_PROBLEMO;
+
 	if (!(sam->sam=(SAM_ENTRY4 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY4))))
 		return NT_STATUS_NO_MEMORY;
 
@@ -1814,6 +1826,9 @@ uint32 init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_ent
 
 	max_entries = *num_entries;
 	max_data_size = *data_size;
+
+	if (max_entries==0)
+		return NT_STATUS_NO_PROBLEMO;
 
 	if (!(sam->sam=(SAM_ENTRY5 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY5))))
 		return NT_STATUS_NO_MEMORY;
