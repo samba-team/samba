@@ -51,7 +51,7 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
-	for x in $(PROG_BIN); do \
+	PROG_BIN=$(PROG_BIN); for x in $$PROG_BIN; do \
 	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	$(MKINSTALLDIRS) $(mandir)/man1
@@ -61,7 +61,7 @@ install: all
 	done)
 
 uninstall:
-	for x in $(PROG_BIN); do \
+	PROG_BIN=$(PROG_BIN); for x in $$PROG_BIN; do \
 	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	for x in $(MAN1); do \
