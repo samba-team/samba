@@ -38,7 +38,8 @@ BOOL become_guest(void)
 	
 	if (!pass)
 		pass = Get_Pwnam(lp_guestaccount(-1),True);
-	if (!pass) return(False);
+	if (!pass)
+		return(False);
 	
 #ifdef AIX
 	/* MWW: From AIX FAQ patch to WU-ftpd: call initgroups before 
@@ -60,19 +61,21 @@ BOOL become_guest(void)
 
 static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 {
-  int i;
-  for (i=0;i<conn->uid_cache.entries;i++)
-    if (conn->uid_cache.list[i] == vuser->uid) return(True);
+	int i;
+	for (i=0;i<conn->uid_cache.entries;i++)
+		if (conn->uid_cache.list[i] == vuser->uid)
+			return(True);
 
-  if (!user_ok(vuser->user.unix_name,snum)) return(False);
+	if (!user_ok(vuser->user.unix_name,snum))
+		return(False);
 
-  i = conn->uid_cache.entries % UID_CACHE_SIZE;
-  conn->uid_cache.list[i] = vuser->uid;
+	i = conn->uid_cache.entries % UID_CACHE_SIZE;
+	conn->uid_cache.list[i] = vuser->uid;
 
-  if (conn->uid_cache.entries < UID_CACHE_SIZE)
-    conn->uid_cache.entries++;
+	if (conn->uid_cache.entries < UID_CACHE_SIZE)
+		conn->uid_cache.entries++;
 
-  return(True);
+	return(True);
 }
 
 /****************************************************************************

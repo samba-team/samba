@@ -511,8 +511,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (!IS_IPC(conn)) {
 		/* Find all the groups this uid is in and
 		   store them. Used by become_user() */
-		setup_groups(conn->user,validated_domain(vuid),conn->uid,conn->gid,
-			     &conn->ngroups,&conn->groups);
+		initialize_groups(conn->user, conn->uid, conn->gid); 
+		get_current_groups(&conn->ngroups,&conn->groups);
 		
 		/* check number of connections */
 		if (!claim_connection(conn,

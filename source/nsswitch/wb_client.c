@@ -29,7 +29,6 @@
 
 BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type)
 {
-	extern pstring global_myname;
 	struct winbindd_request request;
 	struct winbindd_response response;
 	enum nss_status result;
@@ -47,14 +46,6 @@ BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type)
 				       &response)) == NSS_STATUS_SUCCESS) {
 		string_to_sid(sid, response.data.sid.sid);
 		*name_type = response.data.sid.type;
-	} else {
-
-		/*
-		 * Try a local lookup - winbindd may not
-		 * be running.
-		 */
-
-		return lookup_local_name(global_myname, name, sid, name_type);
 	}
 
 	return result == NSS_STATUS_SUCCESS;
@@ -85,7 +76,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 		if (sid_equal(&global_sam_sid, &tmp_sid)) {
 
 		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-			lookup_local_rid(rid, name, name_type);
+			local_lookup_rid(rid, name, name_type);
 		}
 	}
 
@@ -106,15 +97,6 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 	if (result == NSS_STATUS_SUCCESS) {
 		parse_domain_user(response.data.name.name, dom_name, name);
 		*name_type = response.data.name.type;
-	} else {
-
-		DEBUG(10,("winbind_lookup_sid: winbind lookup for %s failed - trying builtin.\n",
-				sid_str));
-
-		sid_copy(&tmp_sid, sid);
-		sid_split_rid(&tmp_sid, &rid);
-		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-			lookup_known_rid(&tmp_sid, rid, name, name_type);
 	}
 
 	return (result == NSS_STATUS_SUCCESS);
@@ -122,13 +104,14 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 
 /* Call winbindd to convert uid to sid */
 
-BOOL winbind_uid_to_sid(uid_t uid, DOM_SID *sid)
+BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	int result;
 
-	if (!sid) return False;
+	if (!sid)
+		return False;
 
 	/* Initialise request */
 
@@ -154,13 +137,14 @@ BOOL winbind_uid_to_sid(uid_t uid, DOM_SID *sid)
 
 /* Call winbindd to convert uid to sid */
 
-BOOL winbind_gid_to_sid(gid_t gid, DOM_SID *sid)
+BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	int result;
 
-	if (!sid) return False;
+	if (!sid)
+		return False;
 
 	/* Initialise request */
 
@@ -182,4 +166,80 @@ BOOL winbind_gid_to_sid(gid_t gid, DOM_SID *sid)
 	}
 
 	return (result == NSS_STATUS_SUCCESS);
+}
+
+
+
+/*****************************************************************
+ *THE CANNONICAL* convert name to SID function.
+ Tries winbind first - then uses local lookup.
+*****************************************************************/  
+
+BOOL lookup_name(char *name, DOM_SID *psid, uint8 *name_type)
+{
+	extern pstring global_myname;
+
+	if (!winbind_lookup_name(name, psid, name_type)) {
+
+		DEBUG(10,("lookup_name: winbind lookup for %s failed - trying local\n", name ));
+
+		return local_lookup_name(global_myname, name, psid, name_type);
+	}
+	return True;
+}
+
+/*****************************************************************
+ *THE CANNONICAL* convert SID to name function.
+ Tries winbind first - then uses local lookup.
+*****************************************************************/  
+
+BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, uint8 *name_type)
+{
+	if (!winbind_lookup_sid(sid, dom_name, name, name_type)) {
+		fstring sid_str;
+		DOM_SID tmp_sid;
+		uint32 rid;
+
+		DEBUG(10,("lookup_sid: winbind lookup for SID %s failed - trying local.\n", sid_to_string(sid_str, sid) ));
+
+		sid_copy(&tmp_sid, sid);
+		sid_split_rid(&tmp_sid, &rid);
+		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
+				lookup_known_rid(&tmp_sid, rid, name, name_type);
+	}
+	return True;
+}
+
+/*****************************************************************
+ *THE CANNONICAL* convert uid_t to SID function.
+ Tries winbind first - then uses local lookup.
+ Returns SID pointer.
+*****************************************************************/  
+
+DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
+{
+	if (!winbind_uid_to_sid(psid, uid)) {
+		DEBUG(10,("uid_to_sid: winbind lookup for uid %u failed - trying local.\n", (unsigned int)uid ));
+
+		return local_uid_to_sid(psid, uid);
+	}
+
+	return psid;
+}
+
+/*****************************************************************
+ *THE CANNONICAL* convert gid_t to SID function.
+ Tries winbind first - then uses local lookup.
+ Returns SID pointer.
+*****************************************************************/  
+
+DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
+{
+	if (!winbind_gid_to_sid(psid, gid)) {
+		DEBUG(10,("gid_to_sid: winbind lookup for gid %u failed - trying local.\n", (unsigned int)gid ));
+
+		return local_gid_to_sid(psid, gid);
+	}
+
+	return psid;
 }

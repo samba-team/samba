@@ -978,7 +978,7 @@ static BOOL samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
   if(alias_rid == 0xffffffff)
       r_e.status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
 
-  if(!lookup_local_rid(alias_rid, alias, &type))
+  if(!local_lookup_rid(alias_rid, alias, &type))
     {
       r_e.status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
     }
@@ -1151,7 +1151,7 @@ static BOOL samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
     if(sid_equal(&pol_sid, &global_sam_sid)) 
     {
       DOM_SID sid;
-      if(lookup_local_name(global_myname, name, 
+      if(local_lookup_name(global_myname, name, 
 			   &sid, &type[i]))
 	{
 	  sid_split_rid( &sid, &rid[i]);

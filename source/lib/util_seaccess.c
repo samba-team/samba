@@ -99,12 +99,12 @@ static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid,
 		sid_to_string(sid_str, sid);
 		sid_to_string(ace_sid_str, &ace->sid);
 
-	        if (!winbind_lookup_sid(sid, name_dom, name, &name_type)) {
+	        if (!lookup_sid(sid, name_dom, name, &name_type)) {
 			fstrcpy(name_dom, "UNKNOWN");
 			fstrcpy(name, "UNKNOWN");
 		}
 
-		if (!winbind_lookup_sid(&ace->sid, ace_name_dom, ace_name, 
+		if (!lookup_sid(&ace->sid, ace_name_dom, ace_name, 
 					&name_type)) {
 			fstrcpy(ace_name_dom, "UNKNOWN");
 			fstrcpy(ace_name, "UNKNOWN");
@@ -208,6 +208,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status)
 {
 	DOM_SID user_sid, group_sid;
+	DOM_SID owner_sid;
 	DOM_SID **group_sids = NULL;
 	int i, j;
 	uint ngroup_sids = 0;
@@ -215,25 +216,30 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	uint8 check_ace_type;
 	fstring sid_str;
 
-	if (!status || !acc_granted) return False;
+	if (!status || !acc_granted)
+		return False;
 
 	*status = NT_STATUS_ACCESS_DENIED;
 	*acc_granted = 0;
 
-	/* No security descriptor allows all access */
+	/*
+	 * No security descriptor or security descriptor with no DACL
+	 * present allows all access.
+	 */
 
-	if (!sd) {
+	if (!sd || (sd && (!(sd->type & SEC_DESC_DACL_PRESENT) || sd->dacl == NULL))) {
 		*status = NT_STATUS_NOPROBLEMO;
 		*acc_granted = acc_desired;
 		acc_desired = 0;
-		DEBUG(3, ("no sd, access allowed\n"));
-
-                goto done;
+		DEBUG(3, ("se_access_check: no sd or blank DACL, access allowed\n"));
+		goto done;
 	}
 
 	/* If desired access mask is empty then no access is allowed */
 
 	if (acc_desired == 0) {
+		*status = NT_STATUS_ACCESS_DENIED;
+		*acc_granted = 0;
 		goto done;
 	}
 
@@ -246,12 +252,12 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
 	/* Create user sid */
 
-	if (!winbind_uid_to_sid(user->uid, &user_sid)) {
+	if (!uid_to_sid(&user_sid, user->uid)) {
 		DEBUG(3, ("could not lookup sid for uid %d\n", user->uid));
+		goto done;
 	}
 
-	sid_to_string(sid_str, &user_sid);
-	DEBUG(3, ("user sid is %s\n", sid_str));
+	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &user_sid) ));
 
 	/* If we're the owner, then we can do anything */
 
@@ -266,8 +272,9 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
 	/* Create group sid */
 
-	if (!winbind_gid_to_sid(user->gid, &group_sid)) {
+	if (!gid_to_sid(&group_sid, user->gid)) {
 		DEBUG(3, ("could not lookup sid for gid %d\n", user->gid));
+		goto done;
 	}
 
 	sid_to_string(sid_str, &group_sid);
@@ -279,7 +286,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
 	for (i = 0; i < user->ngroups; i++) {
 		if (user->groups[i] != user->gid) {
-			if (winbind_gid_to_sid(user->groups[i], &group_sid)) {
+			if (gid_to_sid(&group_sid, user->groups[i])) {
 
 				/* If we're a group member then we can also
 				   do anything */
@@ -310,18 +317,18 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
 	acl = sd->dacl;
 
-        if (acl == NULL || acl->ace == NULL || acl->num_aces == 0) {
+	if (acl == NULL || acl->ace == NULL || acl->num_aces == 0) {
 
 		/* Checks against a NULL ACL succeed and return access
-		   granted = access requested. */
+			granted = access requested. */
 
 		*status = NT_STATUS_NOPROBLEMO;
 		*acc_granted = acc_desired;
 		acc_desired = 0;
 		DEBUG(3, ("null ace, access allowed\n"));
 
-                goto done;
-        }
+		goto done;
+	}
 
 	/* Check each ACE in ACL.  We break out of the loop if an ACE is
 	   either explicitly denied or explicitly allowed by the
@@ -370,7 +377,8 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	}
 
  done:
-        free_sid_array(ngroup_sids, group_sids);
+
+	free_sid_array(ngroup_sids, group_sids);
 	
 	/* If any access desired bits are still on, return access denied
 	   and turn off any bits already granted. */
@@ -380,5 +388,5 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		*status = NT_STATUS_ACCESS_DENIED;
 	}
 
-        return *status == NT_STATUS_NOPROBLEMO;
+	return *status == NT_STATUS_NOPROBLEMO;
 }

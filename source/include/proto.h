@@ -1278,8 +1278,12 @@ void expire_workgroups_and_servers(time_t t);
 BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type);
 BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
 			uint8 *name_type);
-BOOL winbind_uid_to_sid(uid_t uid, DOM_SID *sid);
-BOOL winbind_gid_to_sid(gid_t gid, DOM_SID *sid);
+BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
+BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid);
+BOOL lookup_name(char *name, DOM_SID *psid, uint8 *name_type);
+BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, uint8 *name_type);
+DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
+DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
 
 /*The following definitions come from  nsswitch/wb_common.c  */
 
@@ -1622,9 +1626,10 @@ gid_t pdb_user_rid_to_gid(uint32 user_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
 uint32 pdb_gid_to_group_rid(gid_t gid);
 BOOL pdb_rid_is_user(uint32 rid);
-BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use);
-BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use);
-BOOL setup_user_sids(user_struct *vuser);
+BOOL local_lookup_rid(uint32 rid, char *name, uint8 *psid_name_use);
+BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use);
+DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid);
+DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid);
 
 /*The following definitions come from  passdb/secrets.c  */
 
@@ -3540,8 +3545,8 @@ user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
-int setup_groups(char *user, char *domain, 
-		 uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
+int initialize_groups(char *user, uid_t uid, gid_t gid);
+void setup_nt_token(NT_USER_TOKEN *token, uid_t uid, gid_t gid, int ngroups, gid_t *groups);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
 		     char *domain,BOOL guest);
 void add_session_user(char *user);
@@ -3667,6 +3672,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
 /*The following definitions come from  smbd/sec_ctx.c  */
 
+int get_current_groups(int *p_ngroups, gid_t **p_groups);
 BOOL push_sec_ctx(void);
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups);
 void set_root_sec_ctx(void);
