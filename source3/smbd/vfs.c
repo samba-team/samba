@@ -217,46 +217,6 @@ BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /****************************************************************************
-  read data from the client vfs, reading exactly N bytes. 
-****************************************************************************/
-ssize_t vfs_read_data(files_struct *fsp,char *buffer,size_t N)
-{
-  ssize_t  ret;
-  size_t total=0;  
-  int fd = fsp->fd_ptr->fd;
-  extern int smb_read_error;
- 
-  smb_read_error = 0;
-
-  while (total < N)
-  {
-#ifdef WITH_SSL
-      DEBUG(0, ("WARNING: read_data() called with SSL enabled\n"));
-    if(fd == sslFd){
-      ret = SSL_read(ssl, buffer + total, N - total);
-    }else{
-      ret = read(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
-    ret = fsp->conn->vfs_ops.read(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
-
-    if (ret == 0)
-    {
-      smb_read_error = READ_EOF;
-      return 0;
-    }
-    if (ret == -1)
-    {
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-    total += ret;
-  }
-  return (ssize_t)total;
-}
-
-/****************************************************************************
   write data to a fd on the vfs
 ****************************************************************************/
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
@@ -267,16 +227,7 @@ ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 
   while (total < N)
   {
-#ifdef WITH_SSL
-      DEBUG(0, ("WARNING: write_data called with SSL enabled\n"));
-    if(fd == sslFd){
-      ret = SSL_write(ssl,buffer + total,N - total);
-    }else{
-      ret = write(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
     ret = fsp->conn->vfs_ops.write(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
 
     if (ret == -1) return -1;
     if (ret == 0) return total;
