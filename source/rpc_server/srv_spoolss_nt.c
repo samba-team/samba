@@ -3832,6 +3832,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 
  done:
 	free_a_printer(&printer, 2);
+	free_a_printer(&old_printer, 2);
 
 	srv_spoolss_sendnotify(handle);
 
