@@ -24,7 +24,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_dLinkList.c,v
+ * Log: ubi_dLinkList.c,v 
+ * Revision 0.6  1998/05/20 04:38:05  crh
+ * The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ *
  * Revision 0.5  1998/03/10 02:55:00  crh
  * Simplified the code and added macros for stack & queue manipulations.
  *
@@ -52,8 +55,8 @@
  * ========================================================================== **
  */
 
-#include "../includes.h"
-#include "ubi_dLinkList.h"
+#include "ubi_null.h"       /* ubiqx NULL source.        */
+#include "ubi_dLinkList.h"  /* Header for *this* module. */
 
 /* ========================================================================== **
  * Functions...

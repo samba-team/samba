@@ -36,7 +36,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_SplayTree.c,v
+ * Log: ubi_SplayTree.c,v 
+ * Revision 4.1  1998/05/20 04:37:54  crh
+ * The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ *
  * Revision 4.0  1998/03/10 03:41:33  crh
  * Minor comment changes.  The revision number is now 4.0 to match the
  * BinTree and AVLtree modules.
@@ -123,17 +126,17 @@
  * ========================================================================== **
  */
 
-#include "../includes.h"
-#include "ubi_SplayTree.h" /* Header for THIS module.             */
+#include "ubi_null.h"       /* ubiqx NULL source.       */
+#include "ubi_SplayTree.h"  /* Header for THIS module.  */
 
 /* ========================================================================== **
  * Static data.
  */
 
 static char ModuleID[] = "ubi_SplayTree\n\
-\tRevision: 4.0\n\
-\tDate: 1998/03/10 03:41:33\n\
-\tAuthor: crh\n";
+\tRevision: 4.1 \n\
+\tDate: 1998/05/20 04:37:54 \n\
+\tAuthor: crh \n";
 
 
 /* ========================================================================== **

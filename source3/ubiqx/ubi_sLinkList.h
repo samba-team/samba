@@ -26,7 +26,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_sLinkList.h,v
+ * Log: ubi_sLinkList.h,v 
+ * Revision 0.5  1998/05/20 04:38:05  crh
+ * The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ *
  * Revision 0.4  1998/03/10 02:22:39  crh
  * Combined ubi_StackQueue and ubi_sLinkList into one module.  Redesigned
  * the functions and macros.  Not a complete rewrite but close to it.
@@ -73,8 +76,6 @@
  *
  * ========================================================================== **
  */
-
-#include <stdlib.h>
 
 
 /* ========================================================================== **

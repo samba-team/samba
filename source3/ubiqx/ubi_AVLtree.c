@@ -31,7 +31,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_AVLtree.c,v
+ * Log: ubi_AVLtree.c,v 
+ * Revision 4.1  1998/05/20 04:35:50  crh
+ * The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ *
  * Revision 4.0  1998/03/10 03:37:09  crh
  * Major changes.
  * By adding the AVL balance field to the base ubi_btNode structure, I no
@@ -128,17 +131,17 @@
  *  ========================================================================= **
  */
 
-#include "../includes.h"
-#include "ubi_AVLtree.h"            /* Header for THIS module.             */
+#include "ubi_null.h"     /* ubiqx NULL source.       */
+#include "ubi_AVLtree.h"  /* Header for THIS module.  */
 
 /* ========================================================================== **
  * Static data.
  */
 
 static char ModuleID[] = "ubi_AVLtree\n\
-\tRevision: 4.0\n\
-\tDate: 1998/03/10 03:37:09\n\
-\tAuthor: crh\n";
+\tRevision: 4.1 \n\
+\tDate: 1998/05/20 04:35:50 \n\
+\tAuthor: crh \n";
 
 /* ========================================================================== **
  * The next set of functions are the AVL balancing routines.  There are left

@@ -34,7 +34,10 @@
  *  Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * -------------------------------------------------------------------------- **
- * Log: ubi_AVLtree.h,v
+ * Log: ubi_AVLtree.h,v 
+ * Revision 4.1  1998/05/20 04:35:50  crh
+ * The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ *
  * Revision 4.0  1998/03/10 03:34:45  crh
  * Major changes.
  * By adding the AVL balance field to the base ubi_btNode structure, I no
