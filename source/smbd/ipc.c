@@ -3125,6 +3125,29 @@ static void api_rpc_trans_reply(char *outbuf,
 }
 
 /****************************************************************************
+ WaitNamedPipeHandleState 
+****************************************************************************/
+static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param)
+{
+	uint16 priority;
+
+	if (!param) return False;
+
+	priority = param[0] + (param[1] << 8);
+	DEBUG(4,("WaitNamedPipeHandleState priority %x\n", priority));
+
+	if (wait_rpc_pipe_hnd_state(p, priority))
+	{
+		/* now send the reply */
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->file_offset);
+
+		return True;
+	}
+	return False;
+}
+
+
+/****************************************************************************
  SetNamedPipeHandleState 
 ****************************************************************************/
 static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
@@ -3134,7 +3157,7 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
 	if (!param) return False;
 
 	id = param[0] + (param[1] << 8);
-	DEBUG(4,("lsarpc SetNamedPipeHandleState to code %x\n", id));
+	DEBUG(4,("SetNamedPipeHandleState to code %x\n", id));
 
 	if (set_rpc_pipe_hnd_state(p, id))
 	{
@@ -3235,6 +3258,12 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 				{
 					api_rpc_trans_reply(outbuf, p, &pd);
 				}
+				break;
+			}
+			case 0x53:
+			{
+				/* Wait Named Pipe Handle state */
+				reply = api_WNPHS(outbuf, p, params);
 				break;
 			}
 			case 0x01:
@@ -3432,6 +3461,16 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
 	if (strequal(name,"LANMAN"))
 	{
 		return api_reply(conn,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
+	}
+
+	if (strequal(name,"WKSSVC") ||
+	    strequal(name,"SRVSVC") ||
+	    strequal(name,"WINREG") ||
+	    strequal(name,"SAMR") ||
+	    strequal(name,"LSARPC"))
+	{
+		DEBUG(4,("named pipe command from Win95 (wow!)\n"));
+		return api_fd_reply(conn,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
 	}
 
 	if (strlen(name) < 1)

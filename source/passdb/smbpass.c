@@ -323,6 +323,8 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 	static pstring acct_desc;
 	static pstring workstations;
 	
+	DEBUG(5,("getsmbfile21pwent\n"));
+
 	if (pw_buf == NULL) return NULL;
 
 	pwfile = getpwnam(pw_buf->smb_name);

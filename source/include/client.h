@@ -126,6 +126,8 @@ struct cli_state {
 	fstring mach_acct;                 /* MYNAME$. */
 	fstring srv_name_slash;            /* \\remote server. */
 	fstring clnt_name_slash;           /* \\local client. */
+	uint16 max_xmit_frag;
+	uint16 max_recv_frag;
 };
 
 #endif /* _CLIENT_H */

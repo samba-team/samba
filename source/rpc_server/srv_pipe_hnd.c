@@ -123,6 +123,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	p->open = True;
 	p->device_state = 0;
+	p->priority = 0;
 	p->conn = conn;
 	p->vuid  = vuid;
 	
@@ -297,6 +298,29 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	p->file_offset  += num;
 	
 	return num;
+}
+
+
+/****************************************************************************
+  wait device state on a pipe.  exactly what this is for is unknown...
+****************************************************************************/
+BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority)
+{
+	if (p == NULL) return False;
+
+	if (p->open)
+	{
+		DEBUG(3,("%s Setting pipe wait state priority=%x on pipe (name=%s)\n",
+		         timestring(), priority, p->name));
+
+		p->priority = priority;
+		
+		return True;
+	} 
+
+	DEBUG(3,("%s Error setting pipe wait state priority=%x (name=%s)\n",
+		 timestring(), priority, p->name));
+	return False;
 }
 
 

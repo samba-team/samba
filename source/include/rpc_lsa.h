@@ -39,7 +39,8 @@ enum SID_NAME_USE
 #define LSA_ENUMTRUSTDOM       0x0d
 #define LSA_LOOKUPNAMES        0x0e
 #define LSA_LOOKUPSIDS         0x0f
-#define LSA_OPENPOLICY         0x2c
+#define LSA_OPENPOLICY         0x06
+#define LSA_OPENPOLICY2        0x2c
 #define LSA_OPENSECRET         0x1C
 
 /* XXXX these are here to get a compile! */
@@ -89,9 +90,9 @@ typedef struct obj_attr_info
 /* LSA_Q_OPEN_POL - LSA Query Open Policy */
 typedef struct lsa_q_open_pol_info
 {
-	uint32       ptr;             /* undocumented buffer pointer */
-	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
-	LSA_OBJ_ATTR attr           ; /* object attributes */
+	uint32 ptr;         /* undocumented buffer pointer */
+	uint16 system_name; /* 0x5c - system name */
+	LSA_OBJ_ATTR attr ; /* object attributes */
 
 	uint32 des_access; /* desired access attributes */
 
@@ -104,6 +105,25 @@ typedef struct lsa_r_open_pol_info
 	uint32 status; /* return code */
 
 } LSA_R_OPEN_POL;
+
+/* LSA_Q_OPEN_POL2 - LSA Query Open Policy */
+typedef struct lsa_q_open_pol2_info
+{
+	uint32       ptr;             /* undocumented buffer pointer */
+	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
+	LSA_OBJ_ATTR attr           ; /* object attributes */
+
+	uint32 des_access; /* desired access attributes */
+
+} LSA_Q_OPEN_POL2;
+
+/* LSA_R_OPEN_POL2 - response to LSA Open Policy */
+typedef struct lsa_r_open_pol2_info
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 status; /* return code */
+
+} LSA_R_OPEN_POL2;
 
 /* LSA_Q_QUERY_INFO - LSA query info policy */
 typedef struct lsa_query_info

@@ -51,7 +51,7 @@ static BOOL rpc_read(struct cli_state *cli,
                      prs_struct *rdata, uint32 data_to_read,
                      uint32 rdata_offset)
 {
-	int size = 0x1630;
+	int size = cli->max_recv_frag;
 	int file_offset = rdata_offset;
 	int num_read;
 	char *data = rdata->data->data;
@@ -249,6 +249,8 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 	setup[0] = cmd; 
 	setup[1] = cli->nt_pipe_fnum; /* pipe file handle.  got this from an SMBOpenX. */
 
+	DEBUG(5,("rpc_api_pipe: cmd:%x fnum:%x\n", cmd, cli->nt_pipe_fnum));
+
 	/* send the data: receive a response. */
 	if (!cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
 	          setup, 2, 0,                     /* Setup, length, max */
@@ -276,6 +278,16 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 	if (!rpc_check_hdr(rdata, &rhdr, &first, &last, &len))
 	{
 		return False;
+	}
+
+	if (rhdr.pkt_type == RPC_BINDACK)
+	{
+		if (!last && !first)
+		{
+			DEBUG(5,("rpc_api_pipe: bug in AS/U, setting fragment first/last ON\n"));
+			first = True;
+			last = True;
+		}
 	}
 
 	if (rhdr.pkt_type == RPC_RESPONSE)
@@ -731,7 +743,7 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *
 {
 	int i = 0;
 
-	while ((pipe_names[i].client_pipe != NULL))
+	while ((pipe_names[i].client_pipe != NULL) && hdr_ba->addr.len > 0)
 	{
 		DEBUG(6,("bind_rpc_pipe: searching pipe name: client:%s server:%s\n",
 		pipe_names[i].client_pipe , pipe_names[i].server_pipe ));
@@ -746,10 +758,10 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *
 			}
 			else
 			{
-				DEBUG(2,("bind_rpc_pipe: pipe_name %s != expected pipe %s\n",
+				DEBUG(4,("bind_rpc_pipe: pipe_name %s != expected pipe %s.  oh well!\n",
 				         pipe_names[i].server_pipe ,
 				         hdr_ba->addr.str));
-				return False;
+				break;
 			}
 		}
 		else
@@ -851,6 +863,12 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 		if (rdata.offset != 0)
 		{
 			valid_ack = check_bind_response(&hdr_ba, pipe_name, transfer);
+		}
+
+		if (valid_ack)
+		{
+			cli->max_xmit_frag = hdr_ba.bba.max_tsize;
+			cli->max_recv_frag = hdr_ba.bba.max_rsize;
 		}
 
 		if (valid_ack && ntlmssp_auth)
