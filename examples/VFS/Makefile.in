@@ -7,7 +7,7 @@ LIBTOOL=@LIBTOOL@
 CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
 
-VFS_OBJS=audit.so skel.so recycle.so
+VFS_OBJS=audit.so skel.so block/block.so recycle/recycle.so
 
 SHELL=/bin/sh
 
@@ -16,15 +16,16 @@ default: $(VFS_OBJS)
 # Pattern rules
 
 %.so: %.lo
-	$(LIBTOOL) --mode=link $(CC) -o $@ $< $(LDFLAGS)
+	@echo Linking $<
+	@$(LIBTOOL) --mode=link $(CC) -o $@ $< $(LDFLAGS)
 
 %.lo: %.c
-	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+	@echo Compiling $<
+	@$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Misc targets
 
 clean:
-	rm -rf .libs
-	rm -f core *~ *% *.bak \
-		$(VFS_OBJS) $(VFS_OBJS:.so=.o) $(VFS_OBJS:.so=.lo) 
+	rm -rf .libs */.libs
+	rm -f core *~ *% *.bak *.o */*.o *.lo $(VFS_OBJS)
 
