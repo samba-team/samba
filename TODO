@@ -38,6 +38,10 @@ prepend a prefix on all generated symbols
 
 ** lib/auth
 
+** lib/auth/sia
+
+make it build correctly against libcrypto
+
 PAM
 
 ** lib/com_err
