@@ -880,8 +880,7 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...)
 */
 void *talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name)
 {
-	if (count == 0 ||
-	    count >= MAX_TALLOC_SIZE/el_size) {
+	if (count >= MAX_TALLOC_SIZE/el_size) {
 		return NULL;
 	}
 	return talloc_named_const(ctx, el_size * count, name);
@@ -893,8 +892,7 @@ void *talloc_array(const void *ctx, size_t el_size, unsigned count, const char *
 */
 void *talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name)
 {
-	if (count == 0 ||
-	    count >= MAX_TALLOC_SIZE/el_size) {
+	if (count >= MAX_TALLOC_SIZE/el_size) {
 		return NULL;
 	}
 	ptr = talloc_realloc(ctx, ptr, el_size * count);
