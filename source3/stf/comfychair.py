@@ -170,7 +170,7 @@ Output:
             # Either we could not execute the command or the command
             # returned exit code 127.  According to system(3) we can't
             # tell the difference.
-            raise NotRunError, "could not execute %s" % cmd
+            raise NotRunError, "could not execute %s" % `cmd`
         return rc, output
 
     def explain_failure(self, exc_info = None):
@@ -213,7 +213,7 @@ def runtests(test_list, verbose = 0):
     import traceback
     ret = 0
     for test_class in test_list:
-        print "%-60s" % _test_name(test_class),
+        print "%-30s" % _test_name(test_class),
         # flush now so that long running tests are easier to follow
         sys.stdout.flush()
 
