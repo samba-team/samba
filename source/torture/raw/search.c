@@ -662,7 +662,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			      QSORT_CAST search_old_compare);
 		}
 
-		for (i=0;i<num_files;i++) {
+		for (i=0;i<result.count;i++) {
 			const char *s;
 			if (search_types[t].level == RAW_SEARCH_BOTH_DIRECTORY_INFO) {
 				s = result.list[i].both_directory_info.name.s;
@@ -761,7 +761,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		smbcli_close(cli->tree, fnum);
 	}
 
-	printf("pulling the first 2 files\n");
+	printf("pulling the first file\n");
 	ZERO_STRUCT(result);
 	result.mem_ctx = talloc(mem_ctx, 0);
 
@@ -777,6 +777,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 1);
 	
+	printf("pulling the second file\n");
 	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
 	io2.t2fnext.in.max_count = 1;
@@ -801,6 +802,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	torture_set_file_attribute(cli->tree, BASEDIR "\\T015-15.txt", FILE_ATTRIBUTE_HIDDEN);
 	torture_set_file_attribute(cli->tree, BASEDIR "\\T016-16.txt", FILE_ATTRIBUTE_NORMAL);
 	torture_set_file_attribute(cli->tree, BASEDIR "\\T017-17.txt", FILE_ATTRIBUTE_SYSTEM);	
+	torture_set_file_attribute(cli->tree, BASEDIR "\\T018-18.txt", 0);	
 	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
 	sfinfo.generic.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 1;
