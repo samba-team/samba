@@ -701,10 +701,11 @@ int main(int argc, char *argv[])
 		if (argc > optind) {
 			if (strncmp("//", argv[optind], 2) == 0 ||
 			    strncmp("\\\\", argv[optind], 2) == 0)
+			{
 				argv[optind] += 2;
+			}
 
 			pstrcpy(server, argv[optind]);
-
 			optind ++;
 		}
 	}
