@@ -298,6 +298,8 @@ int lp_lpqcachetime(void);
 int lp_syslog(void);
 int lp_client_code_page(void);
 int lp_announce_as(void);
+int lp_lm_announce(void);
+int lp_lm_interval(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
@@ -485,6 +487,7 @@ void unbecome_local_master_fail(struct subnet_record *subrec, struct response_re
 void release_1d_name( struct subnet_record *subrec, char *workgroup_name);
 void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work);
 void become_local_master_browser(struct subnet_record *subrec, struct work_record *work);
+void set_workgroup_local_master_browser_name( struct work_record *work, char *newname);
 
 /*The following definitions come from  nmbd_browserdb.c  */
 
@@ -517,11 +520,13 @@ void process_workgroup_announce(struct subnet_record *subrec, struct packet_stru
 void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
 void process_master_browser_announce(struct subnet_record *subrec, 
                                      struct packet_struct *p,char *buf);
+void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
 void process_get_backup_list_request(struct subnet_record *subrec,
                                      struct packet_struct *p,char *buf);
 void process_reset_browser(struct subnet_record *subrec,
                                   struct packet_struct *p,char *buf);
 void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf);
 
 /*The following definitions come from  nmbd_incomingrequests.c  */
 
@@ -670,6 +675,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
                           int ttl, char *data,int len);
 void queue_packet(struct packet_struct *packet);
 void process_browse_packet(struct packet_struct *p, char *buf,int len);
+void process_lanman_packet(struct packet_struct *p, char *buf,int len);
 BOOL validate_nmb_response_packet( struct nmb_packet *nmb );
 BOOL validate_nmb_packet( struct nmb_packet *nmb );
 void run_packet_queue();
@@ -706,6 +712,7 @@ struct response_record *find_response_record(struct subnet_record **ppsubrec,
 void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_addr to_ip);
 void broadcast_announce_request(struct subnet_record *subrec, struct work_record *work);
 void announce_my_server_names(time_t t);
+void announce_my_lm_server_names(time_t t);
 void reset_announce_timer();
 void announce_myself_to_domain_master_browser(time_t t);
 void announce_my_servers_removed(void);

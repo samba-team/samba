@@ -47,6 +47,9 @@ extern char **my_netbios_names;
 /* are we running as a daemon ? */
 static BOOL is_daemon = False;
 
+/* have we found LanMan clients yet? */
+BOOL found_lm_clients = False;
+
 /* what server type are we currently */
 
 time_t StartupTime = 0;
@@ -287,6 +290,13 @@ static void process(void)
      * (nmbd_sendannounce.c)
      */
     announce_my_server_names(t);
+
+    /*
+     * Send out any LanMan broadcast announcements
+     * of our server names.
+     * (nmbd_sendannounce.c)
+     */
+    announce_my_lm_server_names(t);
 
     /*
      * If we are a local master browser, periodically

@@ -115,7 +115,7 @@ in workgroup %s on subnet %s\n",
   /* Forget who the local master browser was for
      this workgroup. */
 
-  *work->local_master_browser_name = '\0';
+  set_workgroup_local_master_browser_name( work, "");
 
   /*
    * Ensure the IP address of this subnet is not registered as one
@@ -333,8 +333,7 @@ on subnet %s\n", work->work_group, subrec->subnet_name));
   subrec->work_changed = True;
 
   /* Add this name to the workgroup as local master browser. */
-  StrnCpy(work->local_master_browser_name, myname,
-            sizeof(work->local_master_browser_name)-1);
+  set_workgroup_local_master_browser_name( work, myname);
 
   /* Count the number of servers we have on our list. If it's
      less than 10 (just a heuristic) request the servers
@@ -531,4 +530,28 @@ in workgroup %s on subnet %s\n",
                 become_local_master_stage1,
                 become_local_master_fail1,
                 userdata);
+}
+
+/***************************************************************
+ Utility function to set the local master browser name. Does
+ some sanity checking as old versions of Samba seem to sometimes
+ say that the master browser name for a workgroup is the same
+ as the workgroup name.
+****************************************************************/
+
+void set_workgroup_local_master_browser_name( struct work_record *work, char *newname)
+{
+  DEBUG(5,("set_workgroup_local_master_browser_name: setting local master name to '%s' \
+for workgroup %s.\n", newname, work->work_group ));
+
+  if(strequal( work->work_group, newname))
+  {
+    DEBUG(5, ("set_workgroup_local_master_browser_name: Refusing to set \
+local_master_browser_name for workgroup %s to workgroup name.\n",
+         work->work_group ));
+    return;
+  }
+
+  StrnCpy(work->local_master_browser_name, newname,
+            sizeof(work->local_master_browser_name)-1);
 }

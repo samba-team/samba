@@ -63,7 +63,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
 
   if (!lp_domain_logons())
   {
-    DEBUG(3,("process_logon_packet: Logon packet received from IP %S and domain \
+    DEBUG(3,("process_logon_packet: Logon packet received from IP %s and domain \
 logons are not enabled.\n", inet_ntoa(p->ip) ));
     return;
   }

@@ -122,6 +122,7 @@ enum netbios_reply_type_code { NMB_QUERY, NMB_STATUS, NMB_REG, NMB_REG_REFRESH,
 #define BROWSE_MAILSLOT    "\\MAILSLOT\\BROWSE"
 #define NET_LOGON_MAILSLOT "\\MAILSLOT\\NET\\NETLOGON"
 #define NT_LOGON_MAILSLOT  "\\MAILSLOT\\NET\\NTLOGON"
+#define LANMAN_MAILSLOT    "\\MAILSLOT\\LANMAN"
 
 /* Samba definitions for find_name_on_subnet(). */
 #define FIND_ANY_NAME   0

@@ -160,6 +160,8 @@ typedef struct
   int max_wins_ttl;
   int min_wins_ttl;
   int ReadSize;
+  int lm_announce;
+  int lm_interval;
   int shmem_size;
   int client_code_page;
   int announce_as;   /* This is initialised in init_globals */
@@ -409,6 +411,8 @@ static struct enum_list enum_announce_as[] = {{ANNOUNCE_AS_NT, "NT"}, {ANNOUNCE_
 
 static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "upper"}, {-1, NULL}};
 
+static struct enum_list enum_lm_announce[] = {{0, "False"}, {1, "True"}, {2, "Auto"}};
+
 static struct parm_struct
 {
 	char *label;
@@ -507,6 +511,8 @@ static struct parm_struct
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL,   NULL},
   {"max wins ttl",     P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl,      NULL,   NULL},
   {"min wins ttl",     P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl,      NULL,   NULL},
+  {"lm announce",      P_ENUM,    P_GLOBAL, &Globals.lm_announce,       NULL,   enum_lm_announce},
+  {"lm interval",      P_INTEGER, P_GLOBAL, &Globals.lm_interval,       NULL,   NULL},
   {"dns proxy",        P_BOOL,    P_GLOBAL, &Globals.bDNSproxy,         NULL,   NULL},
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL},
   {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL,   NULL},
@@ -699,6 +705,8 @@ static void init_globals(void)
   Globals.max_wins_ttl = 60*60*24*3; /* 3 days default */
   Globals.min_wins_ttl = 60*60*6; /* 6 hours default */
   Globals.ReadSize = 16*1024;
+  Globals.lm_announce = 2;   /* = Auto: send only if LM clients found */
+  Globals.lm_interval = 60;
   Globals.shmem_size = SHMEM_SIZE;
   Globals.announce_as = ANNOUNCE_AS_NT;
   Globals.bUnixRealname = False;
@@ -947,6 +955,8 @@ FN_GLOBAL_INTEGER(lp_lpqcachetime,&Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_syslog,&Globals.syslog)
 FN_GLOBAL_INTEGER(lp_client_code_page,&Globals.client_code_page)
 FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
+FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
+FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
 
 FN_LOCAL_STRING(lp_preexec,szPreExec)
 FN_LOCAL_STRING(lp_postexec,szPostExec)
