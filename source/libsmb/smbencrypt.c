@@ -127,7 +127,9 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 
 /* Does both the NTLMv2 owfs of a user's password */
 BOOL ntv2_owf_gen(const uchar owf[16],
-		  const char *user_in, const char *domain_in, uchar kr_buf[16])
+		  const char *user_in, const char *domain_in,
+		  BOOL upper_case_domain, /* Transform the domain into UPPER case */
+		  uchar kr_buf[16])
 {
 	smb_ucs2_t *user;
 	smb_ucs2_t *domain;
@@ -150,7 +152,9 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 	}
 
 	strupper_w(user);
-	strupper_w(domain);
+
+	if (upper_case_domain)
+		strupper_w(domain);
 
 	SMB_ASSERT(user_byte_len >= 2);
 	SMB_ASSERT(domain_byte_len >= 2);
@@ -416,7 +420,7 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 		      const DATA_BLOB *server_chal, 
 		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *nt_session_key) 
+		      DATA_BLOB *user_session_key) 
 {
 	uchar nt_hash[16];
 	uchar ntlm_v2_hash[16];
@@ -426,19 +430,19 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 	   the username and domain.
 	   This prevents username swapping during the auth exchange
 	*/
-	if (!ntv2_owf_gen(nt_hash, user, domain, ntlm_v2_hash)) {
+	if (!ntv2_owf_gen(nt_hash, user, domain, True, ntlm_v2_hash)) {
 		return False;
 	}
 	
 	if (nt_response) {
 		*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal,
 							names_blob); 
-		if (nt_session_key) {
-			*nt_session_key = data_blob(NULL, 16);
+		if (user_session_key) {
+			*user_session_key = data_blob(NULL, 16);
 			
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of nt_response for session key */
-			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, nt_session_key->data);
+			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, user_session_key->data);
 		}
 	}
 	

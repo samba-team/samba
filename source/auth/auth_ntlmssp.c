@@ -75,23 +75,11 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
  * Return the session keys used on the connection.
  */
 
-static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key) 
+static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
-	uint32 auth_flags = AUTH_FLAG_NONE;
 	auth_usersupplied_info *user_info = NULL;
-	DATA_BLOB plaintext_password = data_blob(NULL, 0);
 	NTSTATUS nt_status;
-
-	if (auth_ntlmssp_state->ntlmssp_state->lm_resp.length) {
-		auth_flags |= AUTH_FLAG_LM_RESP;
-	}
-
-	if (auth_ntlmssp_state->ntlmssp_state->nt_resp.length == 24) {
-		auth_flags |= AUTH_FLAG_NTLM_RESP;
-	} else 	if (auth_ntlmssp_state->ntlmssp_state->nt_resp.length > 24) {
-		auth_flags |= AUTH_FLAG_NTLMv2_RESP;
-	}
 
 	/* the client has given us its machine name (which we otherwise would not get on port 445).
 	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
@@ -108,10 +96,10 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 				       auth_ntlmssp_state->ntlmssp_state->user, 
 				       auth_ntlmssp_state->ntlmssp_state->domain, 
 				       auth_ntlmssp_state->ntlmssp_state->workstation, 
-	                               auth_ntlmssp_state->ntlmssp_state->lm_resp, 
-				       auth_ntlmssp_state->ntlmssp_state->nt_resp, 
-				       plaintext_password, 
-	                               auth_flags, True);
+	                               auth_ntlmssp_state->ntlmssp_state->lm_resp.data ? &auth_ntlmssp_state->ntlmssp_state->lm_resp : NULL, 
+	                               auth_ntlmssp_state->ntlmssp_state->nt_resp.data ? &auth_ntlmssp_state->ntlmssp_state->nt_resp : NULL, 
+				       NULL, NULL, NULL,
+				       True);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -125,11 +113,11 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
-	if (auth_ntlmssp_state->server_info->nt_session_key.length) {
-		DEBUG(10, ("Got NT session key of length %u\n", auth_ntlmssp_state->server_info->nt_session_key.length));
-		*nt_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
-						   auth_ntlmssp_state->server_info->nt_session_key.data,
-						   auth_ntlmssp_state->server_info->nt_session_key.length);
+	if (auth_ntlmssp_state->server_info->user_session_key.length) {
+		DEBUG(10, ("Got NT session key of length %u\n", auth_ntlmssp_state->server_info->user_session_key.length));
+		*user_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
+						   auth_ntlmssp_state->server_info->user_session_key.data,
+						   auth_ntlmssp_state->server_info->user_session_key.length);
 	}
 	if (auth_ntlmssp_state->server_info->lm_session_key.length) {
 		DEBUG(10, ("Got LM session key of length %u\n", auth_ntlmssp_state->server_info->lm_session_key.length));

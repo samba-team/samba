@@ -464,8 +464,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 			state->response.length +=  strlen(state->response.extra_data)+1;
 		}
 		
-		if (state->request.flags & WBFLAG_PAM_NTKEY) {
-			memcpy(state->response.data.auth.nt_session_key, info3.user_sess_key, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
+		if (state->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {
+			memcpy(state->response.data.auth.user_session_key, info3.user_sess_key, sizeof(state->response.data.auth.user_session_key) /* 16 */);
 		}
 		if (state->request.flags & WBFLAG_PAM_LMKEY) {
 			memcpy(state->response.data.auth.first_8_lm_hash, info3.padding, sizeof(state->response.data.auth.first_8_lm_hash) /* 8 */);
