@@ -417,6 +417,8 @@ int file_get_forms(nt_forms_struct **list)
 			       &form.right, &form.bottom) < 0)
 			goto done;
 
+		fstrcpy(form.name, temp_list->file);
+
 		tl = SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1);
 		if (!tl) {
 			DEBUG(0,("file_get_forms: Realloc fail.\n"));
@@ -687,6 +689,8 @@ WERROR file_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 		   driver.helpfile,
 		   driver.monitorname,
 		   driver.defaultdatatype);
+
+	/* missing dependentfiles */
 
 	*info_ptr = (NT_PRINTER_DRIVER_INFO_LEVEL_3 *)memdup(&driver, sizeof(driver));
 
