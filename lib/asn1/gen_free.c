@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,6 +52,7 @@ free_type (const char *name, const Type *t)
       fprintf (codefile, "free_%s(%s);\n", t->symbol->gen_name, name);
       break;
   case TInteger:
+  case TUInteger:
       break;
   case TOctetString:
       free_primitive ("octet_string", name);
