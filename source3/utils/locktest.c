@@ -38,6 +38,8 @@ static BOOL analyze;
 #define LOCK_PCT 25
 #define UNLOCK_PCT 65
 #define RANGE_MULTIPLE 32
+#define NCONNECTIONS 2
+#define NFILES 2
 
 struct record {
 	char r1, r2;
@@ -47,16 +49,10 @@ struct record {
 };
 
 static struct record preset[] = {
-#if 0
-{36,  5, 1, 1,  1,  2, 1},
-{ 2,  6, 0, 1,  0,  2, 1},
-{53, 92, 1, 1,  0,  0, 1},
-{99, 11, 1, 1,  2,  1, 1},
-#endif
-{36, 5, 1, 1, 1888, 960, 1},
-{47, 23, 0, 1, 0, 2176, 1},
-{84, 95, 1, 1, 3072, 96, 1},
-{65, 14, 0, 0, 2752, 352, 1},
+{36,  5, 0, 0, 0,  8, 1},
+{ 2,  6, 0, 1, 0,  1, 1},
+{53, 92, 0, 0, 0,  0, 1},
+{99, 11, 0, 0, 7,  1, 1},
 };
 
 static struct record *recorded;
@@ -178,12 +174,10 @@ static void reconnect(struct cli_state *cli[2][2], int fnum[2][2][2],
 	share[0] = share1;
 	share[1] = share2;
 
-	
-
 	for (server=0;server<2;server++)
-	for (conn=0;conn<2;conn++) {
+	for (conn=0;conn<NCONNECTIONS;conn++) {
 		if (cli[server][conn]) {
-			for (f=0;f<2;f++) {
+			for (f=0;f<NFILES;f++) {
 				cli_close(cli[server][conn], fnum[server][conn][f]);
 			}
 			cli_ulogoff(cli[server][conn]);
@@ -283,8 +277,8 @@ static void close_files(struct cli_state *cli[2][2],
 	int server, conn, f; 
 
 	for (server=0;server<2;server++)
-	for (conn=0;conn<2;conn++)
-	for (f=0;f<2;f++) {
+	for (conn=0;conn<NCONNECTIONS;conn++)
+	for (f=0;f<NFILES;f++) {
 		if (fnum[server][conn][f] != -1) {
 			cli_close(cli[server][conn], fnum[server][conn][f]);
 			fnum[server][conn][f] = -1;
@@ -300,8 +294,8 @@ static void open_files(struct cli_state *cli[2][2],
 	int server, conn, f; 
 
 	for (server=0;server<2;server++)
-	for (conn=0;conn<2;conn++)
-	for (f=0;f<2;f++) {
+	for (conn=0;conn<NCONNECTIONS;conn++)
+	for (f=0;f<NFILES;f++) {
 		fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
 						 O_RDWR|O_CREAT,
 						 DENY_NONE);
@@ -353,8 +347,8 @@ static void test_locks(char *share1, char *share2)
 		if (n < sizeof(preset) / sizeof(preset[0])) {
 			recorded[n] = preset[n];
 		} else {
-			recorded[n].conn = random() % 2;
-			recorded[n].f = random() % 2;
+			recorded[n].conn = random() % NCONNECTIONS;
+			recorded[n].f = random() % NFILES;
 			recorded[n].start = random() % (LOCKRANGE-1);
 			recorded[n].len = 1 + random() % (LOCKRANGE-recorded[n].start);
 			recorded[n].start *= RANGE_MULTIPLE;
