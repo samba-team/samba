@@ -1041,7 +1041,7 @@ BOOL pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_add_aliasmem(pdb_context, alias, member));
+			       pdb_del_aliasmem(pdb_context, alias, member));
 }
 
 BOOL pdb_enum_aliasmem(const DOM_SID *alias,
