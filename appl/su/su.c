@@ -204,10 +204,12 @@ krb5_start_session(void)
 	     krb5_cc_get_name(context, ccache2));
     setenv("KRB5CCNAME", cc_name, 1);
             
+#ifdef KRB4
     if(k_hasafs()) {
 	if (k_setpag() == 0)
 	    krb5_afslog(context, ccache2, NULL, NULL);
     }
+#endif
             
     krb5_cc_close(context, ccache2);
     krb5_cc_destroy(context, ccache);
