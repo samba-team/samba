@@ -193,16 +193,7 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 #             rpcclient/cmd_netlogon.o \
 #             rpcclient/cmd_srvsvc.o
 
-SMBWRAPPER_OBJ = smbwrapper/open.o smbwrapper/stat.o \
-		smbwrapper/smbw.o smbwrapper/fstat.o smbwrapper/read.o \
-		smbwrapper/lstat.o smbwrapper/close.o smbwrapper/getdents.o \
-		smbwrapper/fcntl.o smbwrapper/access.o smbwrapper/chdir.o \
-		smbwrapper/write.o smbwrapper/readlink.o smbwrapper/unlink.o \
-		smbwrapper/rename.o smbwrapper/utime.o smbwrapper/chown.o \
-		smbwrapper/chmod.o smbwrapper/lseek.o smbwrapper/getcwd.o \
-		smbwrapper/mkdir.o smbwrapper/rmdir.o smbwrapper/fchdir.o \
-		smbwrapper/opendir.o smbwrapper/readdir.o smbwrapper/telldir.o \
-		smbwrapper/seekdir.o smbwrapper/closedir.o \
+SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		$(LIBSMB_OBJ) $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(LIB_OBJ)
 
