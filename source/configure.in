@@ -2464,23 +2464,6 @@ AC_ARG_WITH(ldapsam,
   AC_MSG_RESULT(no)
 )
 
-#################################################
-# check for a NISPLUS password database
-AC_MSG_CHECKING(whether to use NISPLUS SAM database)
-AC_ARG_WITH(nisplussam,
-[  --with-nisplussam       Include NISPLUS SAM support (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NISPLUS_SAM,1,[Whether to include nisplus SAM support])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
 ########################################################################################
 ##
 ## END OF TESTS FOR SAM BACKENDS.  
