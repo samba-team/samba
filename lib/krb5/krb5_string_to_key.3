@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd April 22, 2004
+.Dd August 13, 2004
 .Dt KRB5_STRING_TO_KEY 3
 .Os HEIMDAL
 .Sh NAME
@@ -42,7 +42,8 @@
 .Nm krb5_string_to_key_derived ,
 .Nm krb5_string_to_key_salt ,
 .Nm krb5_string_to_key_salt_opaque ,
-.Nm krb5_get_pw_salt
+.Nm krb5_get_pw_salt ,
+.Nm krb5_free_salt
 .Nd turns a string to to a Kerberos key
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -104,6 +105,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_const_principal principal"
 .Fa "krb5_salt *salt"
 .Fc
+.Ft krb5_error_code
+.Fo krb5_free_salt
+.Fa "krb5_context context"
+.Fa "krb5_salt salt"
+.Fc
 .Sh DESCRIPTION
 The string to key functions convert a string to a kerberos key.
 .Pp
@@ -133,11 +139,17 @@ should be freed with
 If one of the functions that doesn't take a
 .Li krb5_salt
 as it argument
-.Nm krb5_get_pw_salt
+.Fn krb5_get_pw_salt
 is used to get the salt value.
 .Pp
-.Nm krb5_get_pw_salt
-get the default password salt for a principal.
+.Fn krb5_get_pw_salt
+get the default password salt for a principal, use
+.Fn krb5_free_salt
+to free the salt when done.
+.Pp
+.Fn krb5_free_salt
+frees the content of
+.Fa salt .
 .Pp
 .Fn krb5_string_to_key_derived
 is deprecated, see the BUGS section below.
