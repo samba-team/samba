@@ -132,9 +132,9 @@ SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 #endif
 #endif
 
-int simple_execvp(const char*, char *const[]);
-int simple_execlp(const char*, ...);
+int ROKEN_LIB_FUNCTION simple_execvp(const char*, char *const[]);
+int ROKEN_LIB_FUNCTION simple_execlp(const char*, ...);
 
-void print_version(const char *);
+void ROKEN_LIB_FUNCTION print_version(const char *);
 
 #endif /* __ROKEN_COMMON_H__ */
