@@ -211,6 +211,9 @@ sub _generate_binaries($)
 			push(@LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
 		}
 
+		# Export all symbols...
+		push(@LINK_FLAGS,"\@DYNEXP\@");
+
 		#
 		# set the lists
 		#
