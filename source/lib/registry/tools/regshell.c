@@ -147,7 +147,21 @@ static REG_KEY *cmd_rmval(REG_KEY *cur, int argc, char **argv)
 
 static REG_KEY *cmd_hive(REG_KEY *cur, int argc, char **argv)
 {
-	/* FIXME */
+	int i;
+	WERROR error = WERR_OK;
+	for(i = 0; W_ERROR_IS_OK(error); i++) {
+		REG_KEY *hive;
+		error = reg_get_hive(reg_key_handle(cur), i, &hive);
+		if(!W_ERROR_IS_OK(error)) break;
+
+		if(argc == 1) {
+			printf("%s\n", reg_key_name(hive));
+		} else if(!strcmp(reg_key_name(hive), argv[1])) {
+			return hive;
+		} 
+		reg_key_free(hive);
+	}
+	return NULL;
 }
 
 static REG_KEY *cmd_exit(REG_KEY *cur, int argc, char **argv)

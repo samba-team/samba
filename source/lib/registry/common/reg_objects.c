@@ -93,6 +93,11 @@ uint32 reg_val_type( REG_VAL *val )
 /**********************************************************************
  *********************************************************************/
 
+REG_HANDLE *reg_key_handle (REG_KEY *key) 
+{
+	return key->handle;
+}
+
 char *reg_key_name( REG_KEY *key )
 {
 	return key->name;
