@@ -1222,3 +1222,23 @@ objectGUID: ${INVOCATIONID}
 invocationId: ${INVOCATIONID}
 msDS-Behavior-Version: 2
 
+###############################
+# Schema Naming Context
+###############################
+dn: CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: dMD
+cn: Schema
+instanceType: 13
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+name: Schema
+objectGUID: ${NEWGUID}
+objectCategory: CN=DMD,CN=Schema,CN=Configuration,${BASEDN}
+masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectVersion: 30
