@@ -361,7 +361,7 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent,
     /* XXX - AFS 3.4a creates krbtgt.REALMOFCELL as NOTGS+NOSEAL */
     if (strcmp(ent->name, "krbtgt") == 0 &&
 	(flags & (KAFNOTGS|KAFNOSEAL)) == (KAFNOTGS|KAFNOSEAL))
-	flags &= ~KAFNOTGS;
+	flags &= ~(KAFNOTGS|KAFNOSEAL);
 
     hdb.flags.client = (flags & KAFNOTGS) == 0;
     hdb.flags.server = (flags & KAFNOSEAL) == 0;
@@ -665,7 +665,12 @@ main(int argc, char **argv)
 	    krb5_errx(context, 1, "kdb_get_master_key: %s",
 		      krb_get_err_text(e));
     } else
+#ifdef KASERVER_DB
+	if (ka_db) {
+				/* no preparation required */
+	} else
 #endif
+#endif /* KRB4 */
 	{
 	    ret = hdb_create (context, &db, database);
 	    if(ret)
