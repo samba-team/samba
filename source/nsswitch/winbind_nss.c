@@ -1054,14 +1054,15 @@ _nss_winbind_endgrent(void)
 
 /* Get next entry from ntdom group database */
 
-NSS_STATUS
-_nss_winbind_getgrent_r(struct group *result,
-			char *buffer, size_t buflen, int *errnop)
+static NSS_STATUS
+winbind_getgrent(enum winbindd_cmd cmd,
+		 struct group *result,
+		 char *buffer, size_t buflen, int *errnop)
 {
 	NSS_STATUS ret;
 	static struct winbindd_request request;
 	static int called_again;
-	enum winbindd_cmd cmd;
+	
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrent\n", getpid());
@@ -1084,16 +1085,6 @@ _nss_winbind_getgrent_r(struct group *result,
 	ZERO_STRUCT(getgrent_response);
 
 	request.data.num_entries = MAX_GETGRENT_USERS;
-
-	/* this is a hack to work around the fact that posix doesn't
-	 define a 'list groups' call and listing all group members can
-	 be *very* expensive. We use an environment variable to give
-	 us a saner call (tridge) */
-	if (getenv("WINBIND_GETGRLST")) {
-		cmd = WINBINDD_GETGRLST;
-	} else {
-		cmd = WINBINDD_GETGRENT;
-	}
 
 	ret = winbindd_request(cmd, &request, 
 			       &getgrent_response);
@@ -1151,6 +1142,21 @@ _nss_winbind_getgrent_r(struct group *result,
 	}
 
 	return ret;
+}
+
+
+NSS_STATUS
+_nss_winbind_getgrent_r(struct group *result,
+			char *buffer, size_t buflen, int *errnop)
+{
+	return winbind_getgrent(WINBINDD_GETGRENT, result, buffer, buflen, errnop);
+}
+
+NSS_STATUS
+_nss_winbind_getgrlst_r(struct group *result,
+			char *buffer, size_t buflen, int *errnop)
+{
+	return winbind_getgrent(WINBINDD_GETGRLST, result, buffer, buflen, errnop);
 }
 
 /* Return group struct from group name */
