@@ -4912,7 +4912,9 @@ uint32 _spoolss_setprinter( const POLICY_HND *handle,
 				const char *sec_buf,
 				uint32 command);
 uint32 _spoolss_fcpn( const POLICY_HND *handle);
-uint32 _spoolss_addjob(SPOOL_Q_ADDJOB *q_u, prs_struct *rdata);
+uint32 _spoolss_addjob( const POLICY_HND *handle, uint32 level,
+				const BUFFER *buffer,
+				uint32 buf_size);
 uint32 _spoolss_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata);
 uint32 _spoolss_schedulejob(SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *rdata);
 uint32 _spoolss_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata);

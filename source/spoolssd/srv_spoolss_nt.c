@@ -2532,18 +2532,16 @@ uint32 _spoolss_fcpn( const POLICY_HND *handle)
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addjob(SPOOL_Q_ADDJOB *q_u, prs_struct *rdata)
+uint32 _spoolss_addjob( const POLICY_HND *handle, uint32 level,
+				const BUFFER *buffer,
+				uint32 buf_size)
 {
-	SPOOL_R_ADDJOB r_u;
-	
-	status=0x0;
-
-	spoolss_io_r_addjob("",&r_u,rdata,0);		
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

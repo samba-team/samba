@@ -850,16 +850,6 @@ static void api_spoolss_fcpn(rpcsrv_struct *p, prs_struct *data,
 	spoolss_io_r_fcpn("",&r_u,rdata,0);		
 }
 
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_addjob(SPOOL_Q_ADDJOB *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ADDJOB r_u;
-	
-	r_u.status=0x0;
-
-	spoolss_io_r_addjob("",&r_u,rdata,0);		
-}
 
 /****************************************************************************
 ****************************************************************************/
@@ -867,12 +857,18 @@ static void api_spoolss_addjob(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ADDJOB q_u;
+	SPOOL_R_ADDJOB r_u;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_addjob("", &q_u, data, 0);
 
-	spoolss_reply_addjob(&q_u, rdata);
+	r_u.status = _spoolss_addjob(&q_u.handle, q_u.level,
+	                             &q_u.buffer, q_u.buf_size);
 	
 	spoolss_io_free_buffer(&(q_u.buffer));
+	spoolss_io_r_addjob("",&r_u,rdata,0);		
 }
 
 /****************************************************************************
