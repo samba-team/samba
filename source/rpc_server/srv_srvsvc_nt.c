@@ -134,12 +134,16 @@ BOOL share_info_db_init(void)
 static SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, int snum, size_t *psize)
 {
 	extern DOM_SID global_sid_World;
+	extern struct generic_mapping file_generic_mapping;
 	SEC_ACCESS sa;
 	SEC_ACE ace;
 	SEC_ACL *psa = NULL;
 	SEC_DESC *psd = NULL;
+	uint32 def_access = GENERIC_ALL_ACCESS;
 
-    init_sec_access(&sa, GENERIC_ALL_ACCESS );
+	se_map_generic(&def_access, &file_generic_mapping);
+
+    init_sec_access(&sa, GENERIC_ALL_ACCESS | def_access );
     init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 0);
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 1, &ace)) != NULL) {
