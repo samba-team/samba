@@ -647,7 +647,7 @@ getit(int argc, char **argv, int restartit, char *mode)
 			int cmdret;
 			int yy, mo, day, hour, min, sec;
 			struct tm *tm;
-			time_t st_mtime = stbuf.st_mtime;
+			time_t mtime = stbuf.st_mtime;
 
 			overbose = verbose;
 			if (debug == 0)
@@ -666,7 +666,7 @@ getit(int argc, char **argv, int restartit, char *mode)
 				return (0);
 			}
 
-			tm = gmtime(&st_mtime);
+			tm = gmtime(&mtime);
 			tm->tm_mon++;
 			tm->tm_year += 1900;
 
