@@ -434,41 +434,41 @@ SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 
 SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(LIBSMB_OBJ) \
 	   $(LOCKING_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
-	   $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
+	   $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
 	   $(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_OBJ) \
            $(PASSCHANGE_OBJ) $(DUMMYROOT_OBJ) 
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
-            $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
+            $(PARAM_OBJ) $(LIB_NONSMBD_OBJ)
 
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
+             $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	     $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(DUMMYROOT_OBJ) $(ERRORMAP_OBJ) 
              
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
+	$(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	$(SECRETS_OBJ) $(LIBSAMBA_OBJ) \
 	$(PRINTBASE_OBJ) $(DUMMYROOT_OBJ) $(ERRORMAP_OBJ)
 
 SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) \
+             $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) \
 	     $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) 
 
 TESTPARM_OBJ = utils/testparm.o \
-               $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
+               $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	       $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
-TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
+TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) \
                $(LIB_NONSMBD_OBJ) libsmb/nterr.o
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
-                $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
+                $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
 		$(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_OBJ) $(DUMMYROOT_OBJ)
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
-		$(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
+		$(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
 		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(DUMMYROOT_OBJ)
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ)
@@ -481,7 +481,7 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_echo.o rpcclient/cmd_shutdown.o
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) \
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) \
              $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
              $(READLINE_OBJ) $(GROUPDB_OBJ) $(KRBCLIENT_OBJ) \
 	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
@@ -497,7 +497,7 @@ SMBW_OBJ1 = smbwrapper/smbw.o \
 		smbwrapper/smbw_cache.o
 
 SMBW_OBJ = $(SMBW_OBJ1) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) \
-                $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
+                $(LIB_NONSMBD_OBJ)
 
 SMBWRAPPER_OBJ1 = smbwrapper/wrapped.o
 
@@ -506,7 +506,7 @@ SMBWRAPPER_OBJ = $(SMBW_OBJ) $(SMBWRAPPER_OBJ1)
 LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   libsmb/libsmb_cache.o \
 		   $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) \
+	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		   $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
 		   $(SECRETS_OBJ) 
 
@@ -524,7 +524,7 @@ LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.@PICSUFFIX@)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o 
 
-CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
+CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
@@ -536,63 +536,63 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	  $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) \
+	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) \
 	  $(LIBMSRPC_OBJ) $(IDMAP_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(DUMMYROOT_OBJ) $(SERVER_MUTEX_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ)
 
-CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
+CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
 
 MOUNT_OBJ = client/smbmount.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) $(SNPRINTF_OBJ)
 
 UMOUNT_OBJ = client/smbumount.o
 
-NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBNMB_OBJ) \
+NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(LIBNMB_OBJ) \
                $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o torture/mangle_test.o 
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) \
-	$(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
+	$(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ)
 
 MASKTEST_OBJ = torture/masktest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
+                 $(LIB_NONSMBD_OBJ)
 
 MSGTEST_OBJ = torture/msgtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
+                 $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 LOCKTEST_OBJ = torture/locktest.o $(PARAM_OBJ) $(LOCKING_OBJ) $(KRBCLIENT_OBJ) \
-               $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(DUMMYROOT_OBJ) $(SECRETS_OBJ)  
+               $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(DUMMYROOT_OBJ) $(SECRETS_OBJ)  
 
 NSSTEST_OBJ = torture/nsstest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
+                 $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
 
-SMBICONV_OBJ = $(PARAM_OBJ) torture/smbiconv.o $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
+SMBICONV_OBJ = $(PARAM_OBJ) torture/smbiconv.o $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
 LOG2PCAP_OBJ = utils/log2pcaphex.o
 
 LOCKTEST2_OBJ = torture/locktest2.o $(PARAM_OBJ) $(LOCKING_OBJ) $(LIBSMB_OBJ) \
-		$(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(DUMMYROOT_OBJ) $(SECRETS_OBJ)
+		$(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(DUMMYROOT_OBJ) $(SECRETS_OBJ)
 
 SMBCACLS_OBJ = utils/smbcacls.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
-			   $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
+			   $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
 			   $(PASSDB_GET_SET_OBJ) $(LIBMSRPC_OBJ) $(SECRETS_OBJ) \
 			   $(POPT_LIB_OBJ) $(DCUTIL_OBJ) $(LIBADS_OBJ)
 
 SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(PARAM_OBJ) \
-		$(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
+		$(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
 		$(LIBMSRPC_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
-TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) libsmb/nterr.o
+TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) libsmb/nterr.o
 
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
@@ -601,13 +601,13 @@ RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/cmd_samr.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ)
 
 DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
 
 SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) 
+                 $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) 
 
 PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
@@ -623,7 +623,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ)
 
-WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) \
+WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
 
 WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
@@ -634,7 +634,7 @@ LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
                $(DUMMYROOT_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-               $(SECRETS_OBJ) $(UBIQX_OBJ) $(SMBLDAP_OBJ) $(LIBSAMBA_OBJ)
+               $(SECRETS_OBJ) $(SMBLDAP_OBJ) $(LIBSAMBA_OBJ)
 
 PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.@PICSUFFIX@)
 
@@ -659,7 +659,7 @@ WINBINDD_OBJ1 = \
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) \
+		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(SMBLDAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
@@ -667,7 +667,7 @@ WINBINDD_OBJ = \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-		$(UBIQX_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ)
+		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ)
 
 WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) lib/replace1.o @WINBIND_NSS_EXTRA_OBJS@
 
@@ -1235,10 +1235,10 @@ bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(WBINFO_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
+		@BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(NTLM_AUTH_OBJ) \
-		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $(LIBS) \
+		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBS) \
 		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
@@ -1336,7 +1336,7 @@ installclientlib: installdirs libsmbclient
 # Python extensions
 
 PYTHON_OBJS = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
-	$(UBIQX_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+	$(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	$(SECRETS_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) $(DUMMYROOT_OBJ)
 
 PYTHON_PICOBJS = $(PYTHON_OBJS:.o=.@PICSUFFIX@)

@@ -1217,7 +1217,7 @@ NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 */
 
 NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				     POLICY_HND *pol, DOM_SID sid,
+				     POLICY_HND *pol, DOM_SID *sid,
 				     uint32 *count, char ***privs_name)
 {
 	prs_struct qbuf, rbuf;
@@ -1225,6 +1225,7 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	LSA_R_ENUM_ACCT_RIGHTS r;
 	NTSTATUS result;
 	int i;
+	fstring *privileges;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -1235,7 +1236,7 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
-	init_q_enum_acct_rights(&q, pol, 2, &sid);
+	init_q_enum_acct_rights(&q, pol, 2, sid);
 
 	if (!lsa_io_q_enum_acct_rights("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ENUMACCTRIGHTS, &qbuf, &rbuf)) {
@@ -1257,9 +1258,16 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	
+	privileges = TALLOC_ARRAY(mem_ctx, fstring, *count);
 	*privs_name = TALLOC_ARRAY(mem_ctx, char *, *count);
-	for (i=0;i<*count;i++) {
-		pull_ucs2_talloc(mem_ctx, &(*privs_name)[i], r.rights.strings[i].string.buffer);
+	for ( i=0; i<*count; i++ ) {
+		/* ensure NULL termination ... what a hack */
+		pull_ucs2(NULL, privileges[i], r.rights.strings[i].string.buffer, 
+			sizeof(fstring), r.rights.strings[i].string.uni_str_len*2 , 0);
+			
+		/* now copy to the return array */
+		*privs_name[i] = talloc_strdup( mem_ctx, privileges[i] );
 	}
 
 done:

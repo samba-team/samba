@@ -23,11 +23,154 @@
 /********************************************************************
 ********************************************************************/
 
+static NTSTATUS name_to_sid(struct cli_state *cli, 
+			    TALLOC_CTX *mem_ctx,
+			    DOM_SID *sid, const char *name)
+{
+	POLICY_HND pol;
+	uint32 *sid_types;
+	NTSTATUS result;
+	DOM_SID *sids;
+
+	/* maybe its a raw SID */
+	if ( strncmp(name, "S-", 2) == 0 && string_to_sid(sid, name) ) 
+	{
+		return NT_STATUS_OK;
+	}
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
+		
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, &sids, &sid_types);
+	
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	sid_copy( sid, &sids[0] );
+
+done:
+	cli_lsa_close(cli, mem_ctx, &pol);
+	return result;
+}
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS enum_privileges( TALLOC_CTX *ctx, struct cli_state *cli, 
+                                 POLICY_HND *pol )
+{
+	NTSTATUS result;
+	uint32 enum_context = 0;
+	uint32 pref_max_length=0x1000;
+	uint32 count=0;
+	char   **privs_name;
+	uint32 *privs_high;
+	uint32 *privs_low;
+	int i;
+	uint16 lang_id=0;
+	uint16 lang_id_sys=0;
+	uint16 lang_id_desc;
+	fstring description;
+
+	result = cli_lsa_enum_privilege(cli, ctx, pol, &enum_context, 
+		pref_max_length, &count, &privs_name, &privs_high, &privs_low);
+
+	if ( !NT_STATUS_IS_OK(result) )
+		return result;
+
+	/* Print results */
+	
+	for (i = 0; i < count; i++) {
+		d_printf("%30s  ", privs_name[i] ? privs_name[i] : "*unknown*" );
+		
+		/* try to get the description */
+		
+		if ( !NT_STATUS_IS_OK(cli_lsa_get_dispname(cli, ctx, pol, 
+			privs_name[i], lang_id, lang_id_sys, description, &lang_id_desc)) )
+		{
+			d_printf("??????\n");
+			continue;
+		}
+		
+		d_printf("%s\n", description );		
+	}
+
+	return NT_STATUS_OK;
+
+}
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS enum_privileges_for_user( TALLOC_CTX *ctx, struct cli_state *cli,
+                                          POLICY_HND *pol, DOM_SID *sid )
+{
+	NTSTATUS result;
+	uint32 count;
+	char **rights;
+	int i;
+
+	result = cli_lsa_enum_account_rights(cli, ctx, pol, sid, &count, &rights);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+		
+	for (i = 0; i < count; i++) {
+		printf("%30s\n", rights[i]);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
 static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char *domain_name, 
                             struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                             int argc, const char **argv )
 {
-	return NT_STATUS_OK;
+	POLICY_HND pol;
+	NTSTATUS result;
+	DOM_SID sid;
+	
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
+
+	if ( !NT_STATUS_IS_OK(result) )
+		return result;
+		
+	switch (argc) {
+	case 0:
+		result = enum_privileges( mem_ctx, cli, &pol );
+		break;
+			
+	case 1:
+		/* TODO: add special name 'accounts' which lists all privileged
+		   SIDs and their associated rights */
+
+		result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
+		if (!NT_STATUS_IS_OK(result))
+			goto done;	
+		result = enum_privileges_for_user( mem_ctx, cli, &pol, &sid );
+		break;
+			
+	default:		
+		if ( argc > 1 ) {
+			d_printf("Usage: net rpc rights list [name|SID]\n");
+			result = NT_STATUS_OK;
+		}
+	}
+
+	
+
+
+done:
+	cli_lsa_close(cli, mem_ctx, &pol);
+
+	return result;
 }
 
 /********************************************************************
@@ -37,7 +180,44 @@ static NTSTATUS rpc_rights_grant_internal( const DOM_SID *domain_sid, const char
                             struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                             int argc, const char **argv )
 {
-	return NT_STATUS_OK;
+	POLICY_HND dom_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DOM_SID sid;
+
+	if (argc < 2 ) {
+		d_printf("Usage: net rpc rights grant <name|SID> <rights...>\n");
+		return NT_STATUS_OK;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
+	if (!NT_STATUS_IS_OK(result))
+		return result;	
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;	
+
+	result = cli_lsa_add_account_rights(cli, mem_ctx, &dom_pol, sid, 
+					    argc-1, argv+1);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+		
+	d_printf("Successfully granted rights.\n");
+
+ done:
+	if ( !NT_STATUS_IS_OK(result) ) {
+		d_printf("Failed to grant privileges for %s (%s)\n", 
+			argv[0], nt_errstr(result));
+	}
+		
+ 	cli_lsa_close(cli, mem_ctx, &dom_pol);
+	
+	return result;
 }
 
 /********************************************************************
@@ -47,8 +227,46 @@ static NTSTATUS rpc_rights_revoke_internal( const DOM_SID *domain_sid, const cha
                               struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                               int argc, const char **argv )
 {
-	return NT_STATUS_OK;
-}
+	POLICY_HND dom_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DOM_SID sid;
+
+	if (argc < 2 ) {
+		d_printf("Usage: net rpc rights revoke <name|SID> <rights...>\n");
+		return NT_STATUS_OK;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
+	if (!NT_STATUS_IS_OK(result))
+		return result;	
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;	
+
+	result = cli_lsa_remove_account_rights(cli, mem_ctx, &dom_pol, sid, 
+					       False, argc-1, argv+1);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	d_printf("Successfully revoked rights.\n");
+
+done:
+	if ( !NT_STATUS_IS_OK(result) ) {
+		d_printf("Failed to revoke privileges for %s (%s)", 
+			argv[0], nt_errstr(result));
+	}
+	
+	cli_lsa_close(cli, mem_ctx, &dom_pol);
+
+	return result;
+}	
+
 
 /********************************************************************
 ********************************************************************/
