@@ -1,0 +1,32 @@
+#!/bin/sh
+# $Id$
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+for i in $*; do
+  case $i in
+  --help)
+    echo "usage: $0 [--ldflags] [--cflags]"
+    exit 0
+    ;;
+  --version)
+    echo "@PACKAGE@ @VERSION@"
+    echo "$Id$"
+    exit 0
+    ;;
+  --ldflags)
+    echo "-L${libdir} -lkrb5 -lasn1 -ldes -lroken @LIB_crypt@ @LIB_dbopen@ @LIBS@"
+    exit 0
+    ;;
+  --cflags)
+    echo "-I${includedir}"
+    exit 0
+    ;;
+  *)
+    echo "unknown option: $i"
+    exit 1
+    ;;
+  esac
+done
+exit 0
