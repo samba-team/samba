@@ -236,8 +236,10 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
 		}
 		else if (strwicmp("username", param) == 0)
 			pstrcpy(info->username, val);
-		//else if (strwicmp("domain", param) == 0)
-		//	set_global_myworkgroup(val);
+#if 0
+		else if (strwicmp("domain", param) == 0)
+			set_global_myworkgroup(val);
+#endif
 		memset(buf, 0, sizeof(buf));
 	}
 	x_fclose(auth);
