@@ -112,3 +112,7 @@ int ltdb_message_match(struct ldb_module *module,
 		      struct ldb_parse_tree *tree,
 		      const char *base,
 		      enum ldb_scope scope);
+
+int ltdb_index_del_value(struct ldb_module *module, const char *dn, 
+			 struct ldb_message_element *el, int v_idx);
+
