@@ -1257,7 +1257,6 @@ struct pwd_info
 #include "rpc_creds.h"
 #include "rpc_misc.h"
 #include "rpc_secdes.h"
-#include "nt_printing.h"
 
 typedef struct user_struct
 {
