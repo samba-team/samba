@@ -627,6 +627,9 @@
 /* Define if you have the setgroups function.  */
 #undef HAVE_SETGROUPS
 
+/* Define if you have the setlinebuf function.  */
+#undef HAVE_SETLINEBUF
+
 /* Define if you have the setluid function.  */
 #undef HAVE_SETLUID
 

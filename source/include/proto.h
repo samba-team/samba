@@ -173,6 +173,7 @@ void cmd_history(void);
 /*The following definitions come from  lib/replace.c  */
 
 char *rep_inet_ntoa(struct in_addr ip);
+void setlinebuf(FILE *stream);
 
 /*The following definitions come from  lib/select.c  */
 

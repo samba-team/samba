@@ -963,7 +963,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 		/* the (len < alloc_len) test is to prevent us from overwriting
 		   memory that is not ours...if we get that far, we have a non-null
 		   terminated string in the buffer and have messed up somewhere */
-		while ((len < alloc_len) && (*q != '\0'))
+		while ((len < alloc_len) && (*(uint16 *)q != 0))
 		{
 			if(ps->bigendian_data) 
 			{
@@ -978,27 +978,6 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 				p[1] = (unsigned char)q[1];
 				p += 2;
 				q += 2;
-
-#if 0 /* INCORRECT CODE - JF PLEASE CHECK. */
-	/* JRA - the code below looked wrong to me. We're unmarshalling
-		here, and we know the RPC is in little endian format, and
-		we know that p should be also in little endian, so doing a
-		swap based on the autoconf WORDS_BIGENDIAN is incorrect (IMHO). */
-#if WORDS_BIGENDIAN
-				RW_CVAL(ps->io, q+1, *p, 0);
-				p++;
-				RW_CVAL(ps->io, q, *p, 0);
-				p++;
-				q+=2;
-#else
-				RW_CVAL(ps->io, q, *p, 0);
-				p++;
-				q++;
-				RW_CVAL(ps->io, q, *p, 0);
-				p++;
-				q++;
-#endif	/* WORDS_BIGENDIAN */
-#endif /* INCORRECT CODE ? */
 			}
 
 			len++;
