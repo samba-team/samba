@@ -2676,6 +2676,13 @@ AC_SUBST(BUILD_POPT)
 AC_SUBST(FLAGS1)
 
 #################################################
+# do extra things if we are running insure
+
+if test "${ac_cv_prog_CC}" = "insure"; then
+	CPPFLAGS="$CPPFLAGS -D__INSURE__"
+fi
+
+#################################################
 # final configure stuff
 
 AC_MSG_CHECKING([configure summary])
