@@ -280,8 +280,9 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 	int sock;
 	int ret;
 	struct cldap_netlogon_reply reply;
+	const char *target = opt_host ? opt_host : inet_ntoa(ads->ldap_ip);
 
-	sock = open_udp_socket(inet_ntoa(ads->ldap_ip), ads->ldap_port);
+	sock = open_udp_socket(target, ads->ldap_port);
 	if (sock == -1) {
 		d_printf("Failed to open udp socket to %s:%u\n", 
 			 inet_ntoa(ads->ldap_ip), 
