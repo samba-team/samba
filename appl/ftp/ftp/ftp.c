@@ -555,7 +555,7 @@ copy_stream(FILE *from, FILE *to)
     int hashbytes = HASHBYTES;
     struct stat st;
     
-#ifdef HAVE_MMAP
+#if defined(HAVE_MMAP) && !defined(NO_MMAP)
     void *chunk;
 
 #ifndef MAP_FAILED

@@ -1303,7 +1303,7 @@ send_data(FILE *instr, FILE *outstr)
 		
 	case TYPE_I:
 	case TYPE_L:
-#ifdef HAVE_MMAP
+#if defined(HAVE_MMAP) && !defined(NO_MMAP)
 #ifndef MAP_FAILED
 #define MAP_FAILED (-1)
 #endif
