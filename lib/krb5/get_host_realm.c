@@ -78,7 +78,7 @@ krb5_get_host_realm(krb5_context context,
     if (hostent == NULL && addr.s_addr != INADDR_NONE)
 	hostent = gethostbyaddr ((const char *)&addr, sizeof(addr), AF_INET);
     if (hostent != NULL)
-	host = hostent->h_addr;
+	host = hostent->h_name;
 
     *realms = malloc(2 * sizeof(char*));
     if (*realms == NULL)
