@@ -473,9 +473,11 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 {
 	int snum;
 	int n_services=lp_numservices();
-	char *aprinter;
+	char *aprinter, *printername;
 	fstring sname;
 	BOOL found=False;
+	NT_PRINTER_INFO_LEVEL *printer;
+	WERROR result;
 	
 	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename, (unsigned long)strlen(handlename)));
 
@@ -496,31 +498,56 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		aprinter=handlename;
 	}
 
-	DEBUGADD(5,("searching for [%s] (len=%lu)\n", aprinter, (unsigned long)strlen(aprinter)));
+	DEBUGADD(5, ("searching for [%s] (len=%lu)\n", aprinter, (unsigned long)strlen(aprinter)));
 
-	/*
-	 * The original code allowed smbd to store a printer name that
-	 * was different from the share name.  This is not possible 
-	 * anymore, so I've simplified this loop greatly.  Here
-	 * we are just verifying that the printer name is a valid
-	 * printer service defined in smb.conf
-	 *                          --jerry [Fri Feb 15 11:17:46 CST 2002]
-	 */
+	/* have to search on sharename and PRINTER_INFO2->printername */
 
 	for (snum=0; snum<n_services; snum++) {
 
 		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
 		
+		/* ------ sharename ------ */
+
 		fstrcpy(sname, lp_servicename(snum));
 
-		DEBUGADD(5,("share:%s\n",sname));
+		DEBUGADD(10, ("share: %s\n",sname));
 		
-		if (! StrCaseCmp(sname, aprinter)) {
+		if ( strequal(sname, aprinter) ) {
 			found = True;
 			break;
 		}
+		
+		/* ------ printername ------ */
 
+		printer = NULL;
+		result = get_a_printer( NULL, &printer, 2, sname );
+		if ( !W_ERROR_IS_OK(result) ) {
+			DEBUG(0,("set_printer_hnd_name: failed to lookup printer [%s] -- result [%s]\n",
+				sname, dos_errstr(result)));
+			continue;
+		}
+		
+		/* printername is always returned as \\server\printername */
+		if ( !(printername = strchr_m(&printer->info_2->printername[2], '\\')) ) {
+			DEBUG(0,("set_printer_hnd_name: info2->printername in wrong format! [%s]\n",
+				printer->info_2->printername));
+			free_a_printer( &printer, 2);
+			continue;
+		}
+		
+		printername++;
+			
+		if ( strequal(printername, aprinter) ) {
+			found = True;
+		}
+		
+		DEBUGADD(10, ("printername: %s\n", printername));
+		
+		free_a_printer( &printer, 2);
+		
+		if ( found )
+			break;
 	}
 
 		
@@ -5854,14 +5881,28 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 
 static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 {
+	fstring printername;
+	const char *p;
+	
 	DEBUG(5,("check_printer_ok: servername=%s printername=%s sharename=%s portname=%s drivername=%s comment=%s location=%s\n",
 		 info->servername, info->printername, info->sharename, info->portname, info->drivername, info->comment, info->location));
 
 	/* we force some elements to "correct" values */
 	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", get_called_name());
 	fstrcpy(info->sharename, lp_servicename(snum));
+	
+	/* make sure printername is in \\server\printername format */
+	
+	fstrcpy( printername, info->printername );
+	p = printername;
+	if ( printername[0] == '\\' && printername[1] == '\\' ) {
+		if ( (p = strchr_m( &printername[2], '\\' )) != NULL )
+			p++;
+	}
+	
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
-		 get_called_name(), info->sharename);
+		 get_called_name(), p );
+		 
 	info->attributes = PRINTER_ATTRIBUTE_SAMBA;
 	
 	
@@ -6057,14 +6098,28 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename)) {
 		init_unistr2( &buffer, printer->info_2->sharename, UNI_STR_TERMINATE);
-		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "printerName",
-			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shareName",
 			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 
 		notify_printer_sharename(snum, printer->info_2->sharename);
 	}
 
+	if (!strequal(printer->info_2->printername, old_printer->info_2->printername)) {
+		char *pname;
+		
+		if ( (pname = strchr_m( printer->info_2->printername+2, '\\' )) != NULL )
+			pname++;
+		else
+			pname = printer->info_2->printername;
+			
+
+		init_unistr2( &buffer, pname, UNI_STR_TERMINATE);
+		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "printerName",
+			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
+
+		notify_printer_printername( snum, pname );
+	}
+	
 	if (!strequal(printer->info_2->portname, old_printer->info_2->portname)) {
 		init_unistr2( &buffer, printer->info_2->portname, UNI_STR_TERMINATE);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "portName",
@@ -8750,19 +8805,19 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	{
 		/* save the OID if one was specified */
 		if ( oid_string ) {
-		fstrcat( keyname, "\\" );
-		fstrcat( keyname, SPOOL_OID_KEY );
+			fstrcat( keyname, "\\" );
+			fstrcat( keyname, SPOOL_OID_KEY );
 		
-		/* 
-		 * I'm not checking the status here on purpose.  Don't know 
-		 * if this is right, but I'm returning the status from the 
-		 * previous set_printer_dataex() call.  I have no idea if 
-		 * this is right.    --jerry
-		 */
+			/* 
+			 * I'm not checking the status here on purpose.  Don't know 
+			 * if this is right, but I'm returning the status from the 
+			 * previous set_printer_dataex() call.  I have no idea if 
+			 * this is right.    --jerry
+			 */
 		 
-		set_printer_dataex( printer, keyname, valuename, 
-		                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
-	}
+			set_printer_dataex( printer, keyname, valuename, 
+			                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
+		}
 	
 		status = mod_a_printer(*printer, 2);
 	}
