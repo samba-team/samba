@@ -121,7 +121,9 @@ deletes in a directory. Samba now returns zero as resume
 keys (as does NT) and uses the resume filename instead.
 16). Fix for systems that have a broken implementation
 of isalnum() - was causing gethostbyname to fail.
-
+17). Fix for 'hide files' bug not working correctly (bug
+in is_in_path function - fix from Steven Hartland 
+<steven_hartland@pa.press.net>.
 
 Bugfixes added since 1.9.18p2
 -----------------------------
