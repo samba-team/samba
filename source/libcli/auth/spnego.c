@@ -375,23 +375,26 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 	spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
 	spnego_out.negTokenTarg.responseToken = unwrapped_out;
 	spnego_out.negTokenTarg.mechListMIC = null_data_blob;
-	
+	spnego_out.negTokenTarg.supportedMech = NULL;
+
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		spnego_out.negTokenTarg.supportedMech 
+		spnego_out.negTokenTarg.supportedMech
 			= spnego_state->sub_sec_security->ops->oid;
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
 		spnego_state->state_position = SPNEGO_SERVER_TARG;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		spnego_out.negTokenTarg.supportedMech = NULL;
+		if (unwrapped_out.data) {
+			spnego_out.negTokenTarg.supportedMech
+				= spnego_state->sub_sec_security->ops->oid;
+		}
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
 		spnego_state->state_position = SPNEGO_DONE;
 	} else {
-		spnego_out.negTokenTarg.supportedMech = NULL;
 		spnego_out.negTokenTarg.negResult = SPNEGO_REJECT;
 		DEBUG(1, ("SPNEGO login failed: %s\n", nt_errstr(nt_status)));
 		spnego_state->state_position = SPNEGO_DONE;
 	}
-	
+
 	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 		DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_TARG\n"));
 		return NT_STATUS_INVALID_PARAMETER;
