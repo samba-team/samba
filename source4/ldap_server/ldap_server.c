@@ -122,7 +122,7 @@ static void ldapsrv_init(struct server_service *service,
    that a read(2) holds a complete request that is then thrown away
    completely. */
 
-static void consumed_from_buf(struct rw_buffer *buf,
+void ldapsrv_consumed_from_buf(struct rw_buffer *buf,
 				   size_t length)
 {
 	memcpy(buf->data, buf->data+length, buf->length-length);
@@ -136,7 +136,7 @@ static void peek_into_read_buf(struct rw_buffer *buf, uint8_t **out,
 	*out_length = buf->length;
 }
 
-static BOOL append_to_buf(struct rw_buffer *buf, uint8_t *data, size_t length)
+BOOL ldapsrv_append_to_buf(struct rw_buffer *buf, uint8_t *data, size_t length)
 {
 	buf->data = realloc(buf->data, buf->length+length);
 
@@ -161,7 +161,7 @@ static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
 		return False;
 	}
 
-	ret = append_to_buf(buf, tmp_blob.data, tmp_blob.length);
+	ret = ldapsrv_append_to_buf(buf, tmp_blob.data, tmp_blob.length);
 
 	talloc_free(tmp_blob.data);
 
@@ -179,7 +179,7 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	struct socket_context *sock = conn->connection->socket;
 	TALLOC_CTX *mem_ctx;
 
-	if (!conn->gensec ||
+	if (!conn->gensec || !conn->session_info ||
 	   !(gensec_have_feature(conn->gensec, GENSEC_WANT_SIGN) &&
 	     gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL))) {
 		return read_into_buf(sock, &conn->in_buffer);
@@ -198,7 +198,7 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 		return False;
 	}
 
-	ret = append_to_buf(&conn->sasl_in_buffer, tmp_blob.data, tmp_blob.length);
+	ret = ldapsrv_append_to_buf(&conn->sasl_in_buffer, tmp_blob.data, tmp_blob.length);
 	if (!ret) {
 		talloc_free(mem_ctx);
 		return False;
@@ -254,13 +254,13 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 		}
 	}
 
-	ret = append_to_buf(&conn->in_buffer, tmp_blob.data, tmp_blob.length);
+	ret = ldapsrv_append_to_buf(&conn->in_buffer, tmp_blob.data, tmp_blob.length);
 	if (!ret) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 
-	consumed_from_buf(&conn->sasl_in_buffer, 4 + sasl_length);
+	ldapsrv_consumed_from_buf(&conn->sasl_in_buffer, 4 + sasl_length);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -281,7 +281,7 @@ static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 		return False;
 	}
 
-	consumed_from_buf(buf, sendlen);
+	ldapsrv_consumed_from_buf(buf, sendlen);
 
 	return True;
 }
@@ -297,7 +297,7 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 	struct socket_context *sock = conn->connection->socket;
 	TALLOC_CTX *mem_ctx;
 
-	if (!conn->gensec ||
+	if (!conn->gensec || !conn->session_info ||
 	   !(gensec_have_feature(conn->gensec, GENSEC_WANT_SIGN) &&
 	     gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL))) {
 		return write_from_buf(sock, &conn->out_buffer);
@@ -311,6 +311,10 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 
 	tmp_blob.data = conn->out_buffer.data;
 	tmp_blob.length = conn->out_buffer.length;
+
+	if (tmp_blob.length == 0) {
+		goto nodata;
+	}
 
 	if (gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL)) {
 		status = gensec_seal_packet(conn->gensec, mem_ctx,
@@ -345,12 +349,15 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 	memcpy(sasl.data + 4, creds.data, creds.length);
 	memcpy(sasl.data + 4 + creds.length, tmp_blob.data, tmp_blob.length);
 
-	ret = append_to_buf(&conn->sasl_out_buffer, sasl.data, sasl.length);
+	ret = ldapsrv_append_to_buf(&conn->sasl_out_buffer, sasl.data, sasl.length);
 	if (!ret) {
 		talloc_free(mem_ctx);
 		return False;
 	}
-	consumed_from_buf(&conn->out_buffer, tmp_blob.length);
+	ldapsrv_consumed_from_buf(&conn->out_buffer, tmp_blob.length);
+nodata:
+	tmp_blob.data = conn->sasl_out_buffer.data;
+	tmp_blob.length = conn->sasl_out_buffer.length;
 
 	status = socket_send(sock, mem_ctx, &tmp_blob, &sendlen, 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -359,14 +366,14 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 		return False;
 	}
 
-	consumed_from_buf(&conn->sasl_out_buffer, sendlen);
+	ldapsrv_consumed_from_buf(&conn->sasl_out_buffer, sendlen);
 
 	talloc_free(mem_ctx);
 
 	return True;
 }
 
-static BOOL ldap_append_to_buf(struct ldap_message *msg, struct rw_buffer *buf)
+static BOOL ldap_encode_to_buf(struct ldap_message *msg, struct rw_buffer *buf)
 {
 	DATA_BLOB blob;
 	BOOL res;
@@ -374,20 +381,20 @@ static BOOL ldap_append_to_buf(struct ldap_message *msg, struct rw_buffer *buf)
 	if (!ldap_encode(msg, &blob))
 		return False;
 
-	res = append_to_buf(buf, blob.data, blob.length);
+	res = ldapsrv_append_to_buf(buf, blob.data, blob.length);
 
 	data_blob_free(&blob);
 	return res;
 }
 
-static NTSTATUS ldapsrv_do_responses(struct ldapsrv_connection *conn)
+NTSTATUS ldapsrv_do_responses(struct ldapsrv_connection *conn)
 {
 	struct ldapsrv_call *call, *next_call = NULL;
 	struct ldapsrv_reply *reply, *next_reply = NULL;
 
 	for (call=conn->calls; call; call=next_call) {
 		for (reply=call->replies; reply; reply=next_reply) {
-			if (!ldap_append_to_buf(&reply->msg, &conn->out_buffer)) {
+			if (!ldap_encode_to_buf(&reply->msg, &conn->out_buffer)) {
 				return NT_STATUS_FOOBAR;
 			}
 			next_reply = reply->next;
@@ -401,6 +408,11 @@ static NTSTATUS ldapsrv_do_responses(struct ldapsrv_connection *conn)
 		talloc_free(call);
 	}
 
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ldapsrv_flush_responses(struct ldapsrv_connection *conn)
+{
 	return NT_STATUS_OK;
 }
 
@@ -462,8 +474,6 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 		ZERO_STRUCTP(call);
 		call->state = LDAPSRV_CALL_STATE_NEW;
 		call->conn = ldap_conn;
-		/* TODO: we should use talloc_reference() here */
-		call->session_info = ldap_conn->session_info;
 		call->request.mem_ctx = call;
 
 		if (!ldap_decode(&data, &call->request)) {
@@ -478,7 +488,7 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 		DLIST_ADD_END(ldap_conn->calls, call,
 			      struct ldapsrv_call *);
 
-		consumed_from_buf(&ldap_conn->in_buffer, msg_length);
+		ldapsrv_consumed_from_buf(&ldap_conn->in_buffer, msg_length);
 
 		status = ldapsrv_do_call(call);
 		if (!NT_STATUS_IS_OK(status)) {
