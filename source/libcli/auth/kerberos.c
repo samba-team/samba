@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "system/time.h"
 
 #ifdef HAVE_KRB5
 
