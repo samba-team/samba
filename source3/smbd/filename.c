@@ -248,6 +248,16 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				return(False);
 			}
 
+			if (!end) {
+				/*
+				 * We just scanned for, and found the end of the path.
+				 * We must return the valid stat struct.
+				 * JRA.
+				 */
+
+				*pst = st;
+			}
+
 		} else {
 			pstring rest;
 
@@ -373,7 +383,8 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 
 	/*
 	 * If we ended up resolving the entire path then return a valid
-	 * stat struct if we got one.
+	 * stat struct if we got one. Note this doesn't catch mangled paths,
+	 * but the check in the for loop above will do that. JRA.
 	 */
 
 	if (VALID_STAT(st) && (strlen(orig_path) == strlen(name)))
