@@ -254,7 +254,7 @@
 					<xsl:attribute name="role"><xsl:text>latex</xsl:text></xsl:attribute>
 					<xsl:element name="imagedata">
 						<xsl:attribute name="fileref">
-							<xsl:text>projdoc/imagefiles/</xsl:text><xsl:value-of select="imagefile"/></xsl:attribute>
+							<xsl:text>howto/imagefiles/</xsl:text><xsl:value-of select="imagefile"/></xsl:attribute>
 						<xsl:attribute name="scale">
 							<xsl:choose>
 								<xsl:when test="@scale != ''">
@@ -272,7 +272,7 @@
 				<xsl:element name="imageobject">
 					<xsl:element name="imagedata">
 						<xsl:attribute name="fileref">
-							<xsl:text>projdoc/imagefiles/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
+							<xsl:text>howto/imagefiles/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
 						<xsl:attribute name="scale"><xsl:text>50</xsl:text></xsl:attribute>
 						<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
 					</xsl:element>
