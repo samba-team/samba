@@ -288,7 +288,7 @@ krb5_rd_req(krb5_context context,
 
     ret = krb5_kt_get_entry(context,
 			    real_keytab,
-			    (krb5_principal)server,
+			    server,
 			    0,
 			    KEYTYPE_DES,
 			    &entry);
