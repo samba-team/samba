@@ -3141,10 +3141,13 @@ void lp_add_one_printer(char *name, char *comment)
 		if ((i = lp_servicenumber(name)) >= 0)
 		{
 			string_set(&ServicePtrs[i]->comment, comment);
-            unix_to_dos(ServicePtrs[i]->comment, True);
+			unix_to_dos(ServicePtrs[i]->comment, True);
 			ServicePtrs[i]->autoloaded = True;
 		}
 	}
+
+	/* free up temporary memory */
+	lp_talloc_free();
 }
 
 /***************************************************************************
