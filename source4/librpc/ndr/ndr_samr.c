@@ -176,8 +176,16 @@ NTSTATUS ndr_push_samr_GetAliasMembership(struct ndr_push *ndr, struct samr_GetA
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_LOOKUP_NAMES(struct ndr_push *ndr, struct samr_LOOKUP_NAMES *r)
+NTSTATUS ndr_push_samr_LookupNames(struct ndr_push *ndr, struct samr_LookupNames *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.num_names));
+	if (r->in.names) {
+		NDR_CHECK(ndr_push_uint32(ndr, 1000));
+		NDR_CHECK(ndr_push_uint32(ndr, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, r->in.num_names));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names, sizeof(r->in.names[0]), r->in.num_names, (ndr_push_flags_fn_t)ndr_push_samr_Name));
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1110,23 +1118,23 @@ NTSTATUS ndr_pull_samr_EnumDomainAliases(struct ndr_pull *ndr, struct samr_EnumD
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_Rids(struct ndr_pull *ndr, int ndr_flags, struct samr_Rids *r)
+NTSTATUS ndr_pull_samr_Ids(struct ndr_pull *ndr, int ndr_flags, struct samr_Ids *r)
 {
-	uint32 _ptr_rids;
+	uint32 _ptr_ids;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_rids));
-	if (_ptr_rids) {
-		NDR_ALLOC(ndr, r->rids);
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_ids));
+	if (_ptr_ids) {
+		NDR_ALLOC(ndr, r->ids);
 	} else {
-		r->rids = NULL;
+		r->ids = NULL;
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->rids) {
+	if (r->ids) {
 	{
 		uint32 _array_size;
 		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
@@ -1134,8 +1142,8 @@ buffers:
 			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
 		}
 	}
-		NDR_ALLOC_N_SIZE(ndr, r->rids, r->count, sizeof(r->rids[0]));
-		NDR_CHECK(ndr_pull_array_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->rids, r->count));
+		NDR_ALLOC_N_SIZE(ndr, r->ids, r->count, sizeof(r->ids[0]));
+		NDR_CHECK(ndr_pull_array_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->ids, r->count));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1151,15 +1159,17 @@ NTSTATUS ndr_pull_samr_GetAliasMembership(struct ndr_pull *ndr, struct samr_GetA
 		r->out.rids = NULL;
 	}
 	if (r->out.rids) {
-		NDR_CHECK(ndr_pull_samr_Rids(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.rids));
+		NDR_CHECK(ndr_pull_samr_Ids(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.rids));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_LOOKUP_NAMES(struct ndr_pull *ndr, struct samr_LOOKUP_NAMES *r)
+NTSTATUS ndr_pull_samr_LookupNames(struct ndr_pull *ndr, struct samr_LookupNames *r)
 {
+	NDR_CHECK(ndr_pull_samr_Ids(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.rids));
+	NDR_CHECK(ndr_pull_samr_Ids(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.types));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -3099,15 +3109,15 @@ void ndr_print_samr_Sids(struct ndr_print *ndr, const char *name, struct samr_Si
 	ndr->depth--;
 }
 
-void ndr_print_samr_Rids(struct ndr_print *ndr, const char *name, struct samr_Rids *r)
+void ndr_print_samr_Ids(struct ndr_print *ndr, const char *name, struct samr_Ids *r)
 {
-	ndr_print_struct(ndr, name, "samr_Rids");
+	ndr_print_struct(ndr, name, "samr_Ids");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_ptr(ndr, "rids", r->rids);
+	ndr_print_ptr(ndr, "ids", r->ids);
 	ndr->depth++;
-	if (r->rids) {
-		ndr_print_array_uint32(ndr, "rids", r->rids, r->count);
+	if (r->ids) {
+		ndr_print_array_uint32(ndr, "ids", r->ids, r->count);
 	}
 	ndr->depth--;
 	ndr->depth--;
@@ -3138,7 +3148,7 @@ void ndr_print_samr_GetAliasMembership(struct ndr_print *ndr, const char *name, 
 	ndr_print_ptr(ndr, "rids", r->out.rids);
 	ndr->depth++;
 	if (r->out.rids) {
-		ndr_print_samr_Rids(ndr, "rids", r->out.rids);
+		ndr_print_samr_Ids(ndr, "rids", r->out.rids);
 	}
 	ndr->depth--;
 	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
@@ -3147,18 +3157,29 @@ void ndr_print_samr_GetAliasMembership(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-void ndr_print_samr_LOOKUP_NAMES(struct ndr_print *ndr, const char *name, int flags, struct samr_LOOKUP_NAMES *r)
+void ndr_print_samr_LookupNames(struct ndr_print *ndr, const char *name, int flags, struct samr_LookupNames *r)
 {
-	ndr_print_struct(ndr, name, "samr_LOOKUP_NAMES");
+	ndr_print_struct(ndr, name, "samr_LookupNames");
 	ndr->depth++;
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "samr_LOOKUP_NAMES");
+		ndr_print_struct(ndr, "in", "samr_LookupNames");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "num_names", r->in.num_names);
+	ndr_print_ptr(ndr, "names", r->in.names);
+	ndr->depth++;
+		ndr_print_array(ndr, "names", r->in.names, sizeof(r->in.names[0]), r->in.num_names, (ndr_print_fn_t)ndr_print_samr_Name);
+	ndr->depth--;
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "samr_LOOKUP_NAMES");
+		ndr_print_struct(ndr, "out", "samr_LookupNames");
 	ndr->depth++;
+	ndr_print_samr_Ids(ndr, "rids", &r->out.rids);
+	ndr_print_samr_Ids(ndr, "types", &r->out.types);
 	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}

@@ -1064,8 +1064,6 @@ done:
 
 NTSTATUS ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo2 *r)
 {
-	uint32 _ptr_devmode;
-	uint32 _ptr_secdesc;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));

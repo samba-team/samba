@@ -151,6 +151,7 @@ struct ndr_push *ndr_push_init(void)
 		return NULL;
 	}
 	ndr->offset = 0;
+	ndr->ptr_count = 0;
 	
 	return ndr;
 }

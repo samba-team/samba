@@ -138,10 +138,6 @@ done:
 
 NTSTATUS ndr_pull_security_descriptor(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor *r)
 {
-	uint32 _ptr_owner_sid;
-	uint32 _ptr_group_sid;
-	uint32 _ptr_sacl;
-	uint32 _ptr_dacl;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));

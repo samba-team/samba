@@ -21,7 +21,7 @@
 #define DCERPC_SAMR_CREATE_DOM_ALIAS 14
 #define DCERPC_SAMR_ENUMDOMAINALIASES 15
 #define DCERPC_SAMR_GETALIASMEMBERSHIP 16
-#define DCERPC_SAMR_LOOKUP_NAMES 17
+#define DCERPC_SAMR_LOOKUPNAMES 17
 #define DCERPC_SAMR_LOOKUP_RIDS 18
 #define DCERPC_SAMR_OPENGROUP 19
 #define DCERPC_SAMR_QUERYGROUPINFO 20
@@ -404,9 +404,9 @@ struct samr_Sids {
 	struct dom_sid2 *sids;
 };
 
-struct samr_Rids {
+struct samr_Ids {
 	uint32 count;
-	uint32 *rids;
+	uint32 *ids;
 };
 
 struct samr_GetAliasMembership {
@@ -416,17 +416,22 @@ struct samr_GetAliasMembership {
 	} in;
 
 	struct {
-		struct samr_Rids *rids;
+		struct samr_Ids *rids;
 		NTSTATUS result;
 	} out;
 
 };
 
-struct samr_LOOKUP_NAMES {
+struct samr_LookupNames {
 	struct {
+		struct policy_handle *handle;
+		uint32 num_names;
+		struct samr_Name *names;
 	} in;
 
 	struct {
+		struct samr_Ids rids;
+		struct samr_Ids types;
 		NTSTATUS result;
 	} out;
 
