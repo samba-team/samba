@@ -156,7 +156,7 @@ main(int argc, char **argv)
 	    else
 		debug_port = htons(atoi(port_str));
 	    mini_inetd(debug_port);
-	} else if(getsockname(STDIN_FILENO, &sa, &sa_size) < 0 && 
+	} else if(roken_getsockname(STDIN_FILENO, &sa, &sa_size) < 0 && 
 		   errno == ENOTSOCK) {
 	    parse_ports(context, port_str ? port_str : "+");
 	    pidfile(NULL);
