@@ -1,0 +1,70 @@
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+AR = ar
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+
+prefix = /usr/local
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+
+LIB = libdes.a
+
+SOURCES = cbc_cksm.c cbc_enc.c ecb_enc.c pcbc_enc.c \
+        qud_cksm.c rand_key.c read_pwd.c set_key.c str2key.c \
+        enc_read.c cfb_enc.c \
+	3ecb_enc.c ofb_enc.c 3cbc_enc.c rnd_keys.c \
+	enc_read.c enc_writ.c
+
+OBJECTS = cbc_cksm.o cbc_enc.o ecb_enc.o pcbc_enc.o \
+        qud_cksm.o rand_key.o read_pwd.o set_key.o str2key.o \
+        enc_read.o cfb_enc.o \
+	3ecb_enc.o ofb_enc.o 3cbc_enc.o rnd_keys.o \
+	enc_read.o enc_writ.o
+
+all: $(LIB)
+
+Wall:
+	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+		
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+
+install: all
+
+uninstall:
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f *.a *.o
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *.tab.c
+
+realclean: distclean
+	rm -f TAGS
+
+dist: $(DISTFILES)
+	for file in $(DISTFILES); do \
+	  ln $$file ../`cat ../.fname`/lib \
+	    || cp -p $$file ../`cat ../.fname`/lib; \
+	done
+
+$(LIB): $(OBJECTS)
+	rm -f $@
+	$(AR) cr $@ $(OBJECTS)
+	-$(RANLIB) $@
+
+$(OBJECTS): ../../config.h
