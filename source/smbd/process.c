@@ -609,7 +609,9 @@ static void smb_dump(char *name, int type, char *data, ssize_t len)
 		if (fd != -1 || errno != EEXIST) break;
 	}
 	if (fd != -1) {
-		write(fd, data, len);
+		ssize_t ret = write(fd, data, len);
+		if (ret != len)
+			DEBUG(0,("smb_dump: problem: write returned %d\n", (int)ret ));
 		close(fd);
 		DEBUG(0,("created %s len %d\n", fname, len));
 	}
