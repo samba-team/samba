@@ -1903,7 +1903,7 @@ BOOL samr_query_lookup_names(struct cli_state *cli, uint16 fnum,
 		{
 			/* report error code */
 			DEBUG(4,("SAMR_R_LOOKUP_NAMES: %s\n", get_nt_error_msg(r_o.status)));
-			p = False;
+			p = r_o.status == 0x107;
 		}
 
 		if (p)
@@ -1998,19 +1998,23 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 			    r_o.num_types1 == r_o.num_names1)
 			{
 				uint32 i;
-
 				valid_query = True;
-				*num_names = r_o.num_names1;
 
-				(*names) = (char**)malloc((*num_names) * sizeof(**names));
-				for (i = 0; (*names) != NULL && i < r_o.num_names1; i++)
+				(*num_names) = 0;
+				(*names) = NULL;
+
+				for (i = 0; i < r_o.num_names1; i++)
 				{
 					fstring tmp;
 					unistr2_to_ascii(tmp, &r_o.uni_name[i], sizeof(tmp)-1);
-					(*names)[i] = strdup(tmp);
+					add_chars_to_array(num_names, names, tmp);
 				}
 
-				(*type) = (uint32*)malloc((*num_names) * sizeof(**type));
+				if ((*num_names) != 0)
+				{
+					(*type) = (uint32*)malloc((*num_names) * sizeof(**type));
+				}
+
 				for (i = 0; (*type) != NULL && i < r_o.num_types1; i++)
 				{
 					(*type)[i] = r_o.type[i];

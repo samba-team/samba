@@ -155,7 +155,7 @@ BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 
 	uint32 unk_1a_response;
 
-	DEBUG(5, ("reg_enum_key: cli->fd:%d\n", cli->fd));
+	DEBUG(5, ("reg_enum_key: %s\n", full_keyname));
 
 	/* open WINREG session. */
 	res = res ? cli_nt_session_open(cli, PIPE_WINREG, &fnum) : False;
