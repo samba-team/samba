@@ -40,12 +40,17 @@ static void gotalarm_sig(void)
  Make a TDB_DATA and keep the const warning in one place
 ****************************************************************/
 
-static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
+TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 {
 	TDB_DATA ret;
 	ret.dptr = dptr;
 	ret.dsize = dsize;
 	return ret;
+}
+
+TDB_DATA string_tdb_data(const char *string)
+{
+	return make_tdb_data(string, strlen(string));
 }
 
 /****************************************************************************
