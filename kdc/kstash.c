@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,12 +43,19 @@ int convert_flag;
 int help_flag;
 int version_flag;
 
+int master_key_fd = -1;
+
+char *enctype_str = "des3-cbc-sha1";
+
 struct getargs args[] = {
+    { "enctype", 'e', arg_string, &enctype_str, "encryption type" },
     { "key-file", 'k', arg_string, &keyfile, "master key file", "file" },
     { "version4-key-file", '4', arg_string, &v4_keyfile, 
       "kerberos 4 master key file", "file" },
     { "convert-file", 0, arg_flag, &convert_flag, 
       "convert keytype of keyfile" },
+    { "master-key-fd", 0, arg_integer, &master_key_fd, 
+      "filedescriptor to read passphrase from", "fd" },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
 };
@@ -147,8 +154,12 @@ int
 main(int argc, char **argv)
 {
     char buf[1024];
-    EncryptionKey key;
-    FILE *f;
+    krb5_keyblock key;
+    krb5_error_code ret;
+    
+    krb5_enctype enctype;
+
+    hdb_master_key mkey;
     
     krb5_program_setup(&context, argc, argv, args, num_args, NULL);
 
@@ -162,27 +173,56 @@ main(int argc, char **argv)
     if(convert_flag)
 	exit(convert_file());
 
-    key.keytype = ETYPE_DES_CBC_MD5; /* XXX */
-    if(v4_keyfile) {
-	f = fopen(v4_keyfile, "r");
-	if(f == NULL)
-	    krb5_err(context, 1, errno, "fopen(%s)", v4_keyfile);
-	key.keyvalue.length = sizeof(des_cblock);
-	key.keyvalue.data = malloc(key.keyvalue.length);
-	fread(key.keyvalue.data, 1, key.keyvalue.length, f);
-	fclose(f);
-    } else {
+    ret = krb5_string_to_enctype(context, enctype_str, &enctype);
+    if(ret)
+	krb5_err(context, 1, ret, "krb5_string_to_enctype");
+
+    ret = hdb_read_master_key(context, keyfile, &mkey);
+    if(ret)
+	krb5_err(context, 1, ret, "reading master key");
+
+    {
 	krb5_salt salt;
 	salt.salttype = KRB5_PW_SALT;
 	/* XXX better value? */
 	salt.saltvalue.data = NULL;
 	salt.saltvalue.length = 0;
-	if(des_read_pw_string(buf, sizeof(buf), "Master key: ", 1))
-	    exit(1);
-	krb5_string_to_key_salt(context, key.keytype, buf, salt, &key);
+	if(master_key_fd != -1) {
+	    ssize_t n;
+	    n = read(master_key_fd, buf, sizeof(buf));
+	    if(n <= 0)
+		krb5_err(context, 1, errno, "failed to read passphrase");
+	    buf[n] = '\0';
+	    buf[strcspn(buf, "\r\n")] = '\0';
+	} else {
+	    if(des_read_pw_string(buf, sizeof(buf), "Master key: ", 1))
+		exit(1);
+	}
+	krb5_string_to_key_salt(context, enctype, buf, salt, &key);
     }
     
-    write_keyfile(key);
+    ret = hdb_add_master_key(context, &key, &mkey);
+    
     krb5_free_keyblock_contents(context, &key);
+
+    {
+	char *new, *old;
+	asprintf(&old, "%s.old", keyfile);
+	asprintf(&new, "%s.new", keyfile);
+	ret = hdb_write_master_key(context, new, mkey);
+	if(ret)
+	    unlink(new);
+	else {
+	    if(link(keyfile, old) < 0)
+		ret = errno;
+	    else if(rename(new, keyfile) < 0)
+		ret = errno;
+	}
+	free(old);
+	free(new);
+    }
+
+    hdb_free_master_key(context, mkey);
+
     exit(0);
 }
