@@ -99,7 +99,10 @@ void init_des_key(hdb_entry *ent);
 void set_keys(hdb_entry *ent, char *password);
 char *time2str(time_t t);
 void event2string(Event *ev, char **str);
-int flags2int(HDBFlags *f);
+int flags2int(HDBFlags);
+HDBFlags int2flags(int);
+void print_hdbflags (FILE *fp, HDBFlags flags);
+int parse_hdbflags (const char *s, HDBFlags *flags);
 
 void init_entry (HDB *db, hdb_entry *ent);
 void set_created_by (hdb_entry *ent);
