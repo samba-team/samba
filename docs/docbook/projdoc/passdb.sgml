@@ -450,9 +450,7 @@ include	           /etc/openldap/schema/core.schema
 include            /etc/openldap/schema/cosine.schema
 include            /etc/openldap/schema/inetorgperson.schema
 include            /etc/openldap/schema/samba.schema
-
-## uncomment this line if you want to support the RFC2307 (NIS) schema
-## include         /etc/openldap/schema/nis.schema
+include            /etc/openldap/schema/nis.schema
 
 ....
 </programlisting></para>

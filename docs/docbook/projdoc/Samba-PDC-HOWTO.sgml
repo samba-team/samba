@@ -501,7 +501,7 @@ version of Windows.
 	prompted).</para>
 </listitem>
 
-<listitem><para><emphasis>Samba</emphasis</para>
+<listitem><para><emphasis>Samba</emphasis></para>
 	<para>Joining a samba client to a domain is documented in 
 	the <link linkend="domain-member">Domain Member</link> chapter.
 </para></listitem>
