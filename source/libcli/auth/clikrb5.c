@@ -300,7 +300,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	krb5_data in_data;
 	BOOL creds_ready = False;
 	
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 
 	retval = krb5_parse_name(context, principal, &server);
 	if (retval) {
@@ -352,7 +352,6 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		  http_timestring(mem_ctx, (unsigned)credsp->times.endtime), 
 		  (unsigned)credsp->times.endtime));
 	
-
 	in_data.length = 0;
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
 				      &in_data, credsp, outbuf);
@@ -369,6 +368,9 @@ cleanup_creds:
 cleanup_princ:
 	krb5_free_principal(context, server);
 
+	if (mem_ctx) {
+		talloc_destory(mem_ctx);
+	}
 	return retval;
 }
 
