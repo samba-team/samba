@@ -256,6 +256,14 @@
 		mount CIFS/SMB shares on Linux.
 		</para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term><citerefentry><refentrytitle>smbcquotas</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>smbcquotas</command> is a tool that 
+		can set remote QUOTA's on server with NTFS 5. </para>
+		</listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 

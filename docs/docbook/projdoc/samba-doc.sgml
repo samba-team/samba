@@ -10,8 +10,8 @@
 		<othername>SAMBA Team</othername>
 		<affiliation><address><email>samba@samba.org</email></address></affiliation>
 	</author>
-	<editor>&person.jht;</editor>
 	<editor>&person.jelmer;</editor>
+	<editor>&person.jht;</editor>
 	<editor>&person.jerry;</editor>
 
 	<pubdate>Sunday 6 April</pubdate>
@@ -106,5 +106,6 @@ for various environments.
 &Diagnosis;
 &problems;
 &BUGS;
+&MANUALPAGES;
 </part>
 </book>
