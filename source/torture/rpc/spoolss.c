@@ -55,10 +55,15 @@ static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
 		}
 		
-		if (!NT_STATUS_IS_OK(status) ||
-		    !W_ERROR_IS_OK(r.out.result)) {
-			printf("GetPrinter failed - %s/%s\n", 
-			       nt_errstr(status), win_errstr(r.out.result));
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("GetPrinter failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("GetPrinter failed - %s\n", 
+			       win_errstr(r.out.result));
 			ret = False;
 			continue;
 		}
@@ -174,9 +179,13 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("EnumForms failed - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumForms failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("EnumForms failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
@@ -195,9 +204,13 @@ static BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_spoolss_DeleteForm(p, mem_ctx, &r);
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("DeleteForm failed - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteForm failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DeleteForm failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
@@ -248,11 +261,17 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		status = dcerpc_spoolss_SetForm(p, mem_ctx, &sf);
 
-		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-			printf("SetForm failed - %s/%s\n", 
-			       nt_errstr(status), win_errstr(r.out.result));
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("SetForm failed - %s\n", nt_errstr(status));
 			ret = False;
-			/* Fall through to delete */
+			goto done;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("SetForm failed - %s\n", 
+			       win_errstr(r.out.result));
+			ret = False;
+			goto done;
 		}
 	}
 
@@ -454,9 +473,15 @@ static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		status = dcerpc_spoolss_GetPrinterData(p, mem_ctx, &r);
 
-		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-			printf("GetPrinterData failed - %s/%s\n", 
-			       nt_errstr(status), win_errstr(r.out.result));
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("GetPrinterData failed - %s\n", 
+			       nt_errstr(status));
+			return False;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("GetPrinterData failed - %s\n", 
+			       win_errstr(r.out.result));
 			return False;
 		}
 	}
@@ -496,9 +521,15 @@ static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		status = dcerpc_spoolss_GetPrinterDataEx(p, mem_ctx, &r);
 
-		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-			printf("GetPrinterDataEx failed - %s/%s\n", 
-			       nt_errstr(status), win_errstr(r.out.result));
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("GetPrinterDataEx failed - %s\n", 
+			       nt_errstr(status));
+			return False;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("GetPrinterDataEx failed - %s\n", 
+			       win_errstr(r.out.result));
 			return False;
 		}
 	}
@@ -743,9 +774,14 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("\nTesting OpenPrinter(%s)\n", r.in.printername);
 
 	status = dcerpc_spoolss_OpenPrinter(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("OpenPrinter failed - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenPrinter failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("OpenPrinter failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
@@ -893,10 +929,15 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
 		}
 
-		if (!NT_STATUS_IS_OK(status) ||
-		    !W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumPrinters failed - %s/%s\n", 
-			       nt_errstr(status), win_errstr(r.out.result));
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumPrinters failed - %s\n", 
+			       nt_errstr(status));
+			continue;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("EnumPrinters failed - %s\n", 
+			       win_errstr(r.out.result));
 			continue;
 		}
 
@@ -957,10 +998,15 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		status = dcerpc_spoolss_GetPrinterDriver2(p, mem_ctx, &r);
 	}
 		
-	if (!NT_STATUS_IS_OK(status) ||
-	    !W_ERROR_IS_OK(r.out.result)) {
-		printf("GetPrinterDriver2 failed - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetPrinterDriver2 failed - %s\n", 
+		       nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("GetPrinterDriver2 failed - %s\n", 
+		       win_errstr(r.out.result));
 		return False;
 	}
 
@@ -1007,10 +1053,16 @@ static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			status = dcerpc_spoolss_EnumPrinterDrivers(p, mem_ctx, &r);
 		}
 		
-		if (!NT_STATUS_IS_OK(status) ||
-		    !W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumPrinterDrivers failed - %s/%s\n", 
-			       nt_errstr(status), win_errstr(r.out.result));
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumPrinterDrivers failed - %s\n", 
+			       nt_errstr(status));
+			ret = False;
+			break;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("EnumPrinterDrivers failed - %s\n", 
+			       win_errstr(r.out.result));
 			ret = False;
 			break;
 		}
