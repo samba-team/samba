@@ -235,8 +235,8 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 
     p = output_message_buffer->value;
     token = (gss_cfx_wrap_token)p;
-    token->TOK_ID[0] = 0x04;
-    token->TOK_ID[1] = 0x05;
+    token->TOK_ID[0] = 0x05;
+    token->TOK_ID[1] = 0x04;
     token->Flags     = 0;
     token->Filler    = 0xFF;
     if ((context_handle->more_flags & LOCAL) == 0)
@@ -436,7 +436,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 
     token = (gss_cfx_wrap_token)p;
 
-    if (token->TOK_ID[0] != 0x04 || token->TOK_ID[1] != 0x05) {
+    if (token->TOK_ID[0] != 0x05 || token->TOK_ID[1] != 0x04) {
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
