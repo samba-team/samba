@@ -180,6 +180,11 @@ str2time_t (const char *str, time_t *time)
 	return 0;
     }
 
+    if(strcasecmp(str, "now") == 0) {
+	*time = time(NULL);
+	return 0;
+    }
+
     p = strptime (str, "%Y-%m-%d", &tm);
 
     if (p == NULL)
@@ -542,7 +547,7 @@ hex2n (char c)
 
 /*
  * convert a key in a readable format into a keyblock.
- * return 0 iff succesful.
+ * return 0 iff succesful, otherwise `err' should point to an error message
  */
 
 int
