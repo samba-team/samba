@@ -1,13 +1,29 @@
-            WHAT'S NEW IN Samba 2.2.6rc3  - 11th October 2002
+            WHAT'S NEW IN Samba 2.2.6rc4  - 15th October 2002
             =================================================
 
-This is a prelease snapshot of SAMBA_2_2 cvs branch.  This is a non-production
+This is a preview snapshot of SAMBA_2_2 cvs branch.  This is a non-production
 release provided for testing purposes only.
 
-The following new new smb.conf(5) options have been added in this preview
-release:
+New Parameters
+--------------
 
-	* profiles acls (S)
+Refer to the smb.conf(5) man page for complete descriptions of new parameters.
+
+  * profile acls (S)
+
+
+Removed Parameters
+------------------
+
+  * max packet (G)
+  * packet size (G)
+
+
+Modified Parameters
+-------------------
+
+  * max xmit (G)
+
 
 The following options have been added to Samba's configure script
 
@@ -30,7 +46,7 @@ Changes since 2.2.5
 8)  Parsing fix for PRINTER_INFO_2 structure which was causing viewing
     printer properties to fail
 9)  Fix for printer change notification and Windows NT clients which caused
-    the client to go into an infinite loop of refeshing the local printers
+    the client to go into an infinite loop of refreshing the local printers
     folder
 10) Allow trans2 and nttrans messages to be processed in oplock break state
     which fixes a problem with oplock break requests and Win2k clients
@@ -39,8 +55,8 @@ Changes since 2.2.5
 13) Updates to stop spurious error message in tdb
 14) Fix silly logic bug in 'make smbd processes' and 'status = no' check
 15) Fix compilation of pam_smbpass and --with-ldap
-16) Fix compilation of samwrapper on Solaris hosts
-17) fix logic error in a check for enableing the winbind_pam_auth_crap() code
+16) Fix compilation of smbwrapper on Solaris hosts
+17) fix logic error in a check for enabling the winbind_pam_auth_crap() code
     & fix formatting typo in --with-winbind-auth-challenge
 18) Correcting check for ldap_start_tls()
 19) Fixed a problem with getgroups() where it could include our current
@@ -137,11 +153,19 @@ Changes since 2.2.5
 
 80) Default all LDAP connections to v3 with compiling with --with-ldapsam
 
-( Changes since 2.2.6rc1 )
+( Changes since 2.2.6rc2 )
 
 81) Fix memory leak in smbspool
 82) Fix bug in mangling code that resulted in Win9x clients not being
     able to execute batch files in deep, non 8.3  directory paths
+
+( Changes since 2.2.6rc3 )
+
+83) Fix infinite looping bug in winbindd_getgrent()
+84) Fix crash bug on 64-bit systems (merge from HEAD)
+85) Fix extended character bug when setting LanMan/NT password
+86) Negotiate same SMB read size as a Windows 2000 file server
+    to fix performance bug with NT4 clients
 
 
               =========================================
