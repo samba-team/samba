@@ -39,11 +39,7 @@
 #include "test_locl.h"
 RCSID("$Id$");
 
-static void
-usage (void)
-{
-    errx (1, "Usage: %s [-p port] [-s service]", __progname);
-}
+krb5_context context;
 
 static int
 proto (int sock, const char *service)
@@ -51,7 +47,6 @@ proto (int sock, const char *service)
     struct sockaddr_in remote, local;
     int addrlen;
     krb5_address remote_addr, local_addr;
-    krb5_context context;
     krb5_ccache ccache;
     krb5_auth_context auth_context;
     krb5_error_code status;
@@ -72,11 +67,6 @@ proto (int sock, const char *service)
     if (getpeername (sock, (struct sockaddr *)&remote, &addrlen) < 0
 	|| addrlen != sizeof(remote))
 	err (1, "getpeername");
-
-    status = krb5_init_context(&context);
-    if (status)
-	errx (1, "krb5_init_context: %s",
-	      krb5_get_err_text(context, status));
 
     status = krb5_auth_con_init (context, &auth_context);
     if (status)
@@ -216,45 +206,6 @@ doit (int port, const char *service)
 int
 main(int argc, char **argv)
 {
-    int c;
-    int port = 0;
-    char *service = SERVICE;
-
-    set_progname (argv[0]);
-
-    while ((c = getopt (argc, argv, "p:s:")) != EOF) {
-	switch (c) {
-	case 'p': {
-	    struct servent *s = getservbyname (optarg, "tcp");
-
-	    if (s)
-		port = s->s_port;
-	    else {
-		char *ptr;
-
-		port = strtol (optarg, &ptr, 10);
-		if (port == 0 && ptr == optarg)
-		    errx (1, "Bad port `%s'", optarg);
-		port = htons(port);
-	    }
-	    break;
-	}
-	case 's':
-	    service = optarg;
-	    break;
-	default:
-	    usage ();
-	    break;
-	}
-    }
-    argc -= optind;
-    argv += optind;
-
-    if (argc != 0)
-	usage ();
-
-    if (port == 0)
-	port = krb5_getportbyname (PORT, "tcp", htons(4711));
-
+    int port = server_setup(&context, argc, argv);
     return doit (port, service);
 }

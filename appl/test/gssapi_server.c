@@ -40,12 +40,6 @@
 #include <gssapi.h>
 RCSID("$Id$");
 
-static void
-usage (void)
-{
-    errx (1, "Usage: %s [-p port] [-s service]", __progname);
-}
-
 static int
 proto (int sock, const char *service)
 {
@@ -176,45 +170,7 @@ doit (int port, const char *service)
 int
 main(int argc, char **argv)
 {
-    int c;
-    int port = 0;
-    char *service = SERVICE;
-
-    set_progname (argv[0]);
-
-    while ((c = getopt (argc, argv, "p:s:")) != EOF) {
-	switch (c) {
-	case 'p': {
-	    struct servent *s = getservbyname (optarg, "tcp");
-
-	    if (s)
-		port = s->s_port;
-	    else {
-		char *ptr;
-
-		port = strtol (optarg, &ptr, 10);
-		if (port == 0 && ptr == optarg)
-		    errx (1, "Bad port `%s'", optarg);
-		port = htons(port);
-	    }
-	    break;
-	}
-	case 's':
-	    service = optarg;
-	    break;
-	default:
-	    usage ();
-	    break;
-	}
-    }
-    argc -= optind;
-    argv += optind;
-
-    if (argc != 0)
-	usage ();
-
-    if (port == 0)
-	port = krb5_getportbyname (PORT, "tcp", htons(4711));
-
+    krb5_context context = NULL; /* XXX */
+    int port = server_setup(&context, argc, argv);
     return doit (port, service);
 }
