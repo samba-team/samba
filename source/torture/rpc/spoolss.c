@@ -709,9 +709,10 @@ static BOOL test_OpenPrinter_badnames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 	char *name;
 
 	ret &= test_OpenPrinter_badname(p, mem_ctx, "__INVALID_PRINTER__");
-	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\127.0.0.1");
-	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\localhost");
+	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\__INVALID_HOST__");
 	ret &= test_OpenPrinter_badname(p, mem_ctx, "");
+	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\\\");
+	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\\\__INVALID_PRINTER__");
 
 	name = talloc_asprintf(mem_ctx, "\\\\%s\\", dcerpc_server_name(p));
 	ret &= test_OpenPrinter_badname(p, mem_ctx, name);
