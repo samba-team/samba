@@ -224,11 +224,6 @@ krb524_convert_creds_kdc_ccache(krb5_context context,
 				struct credentials *v4creds)
 {
     krb5_error_code ret;
-    krb5_data reply;
-    krb5_storage *sp;
-    int32_t tmp;
-    krb5_data ticket;
-    char realm[REALM_SZ];
     krb5_creds *v5_creds = in_cred;
     krb5_keytype keytype;
 
