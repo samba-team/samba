@@ -1,5 +1,16 @@
-              WHATS NEW IN Samba 3.0 alpha0
+              WHATS NEW IN Samba 3.0 alphaX
               =============================
+
+Changes in alpha1
+
+ - winbindd now uses LDAP and works correctly with an ADS server in
+   native mode
+ - XFS quotas code on Linux
+ - group mapping code from JFM
+ - "net rpc join" command replaces smbpasswd -j
+ - fixed winbind initgroups
+
+--------------
 
 This is a pre-release of Samba 3.0 alpha0. This is NOT a stable
 release. Use at your own risk.
