@@ -131,12 +131,8 @@ ldap_tsasl_bind_s(LDAP *ld,
     char **vals;
     int ret, rc;
 
-    ret = tsasl_peer_init(TSASL_FLAGS_INITIATOR |
-			  TSASL_FLAGS_CONFIDENTIALITY | 
-			  TSASL_FLAGS_INTEGRITY,
-			  "ldap",
-			  host,
-			  &peer);
+    ret = tsasl_peer_init(TSASL_FLAGS_INITIATOR | TSASL_FLAGS_CLEAR,
+			  "ldap", host, &peer);
     if (ret != TSASL_DONE) {
 	rc = LDAP_LOCAL_ERROR;
 	goto out;
@@ -577,9 +573,9 @@ kadm5_ad_create_principal(void *server_handle,
      */
 
 #ifdef OPENLDAP
-    LDAPMod *attrs[7], rattrs[6], *a;
+    LDAPMod *attrs[8], rattrs[7], *a;
     char *useraccvals[2] = { NULL, NULL }, 
-	*samvals[2], *dnsvals[2], *spnvals[5], *tv[2];
+	*samvals[2], *dnsvals[2], *spnvals[5], *upnvals[2], *tv[2];
     char *ocvals_spn[] = { "top", "person", "organizationalPerson", 
 			   "user", "computer", NULL}; 
     char *p, *realmless_p, *p_msrealm = NULL, *dn = NULL;
@@ -722,9 +718,16 @@ kadm5_ad_create_principal(void *server_handle,
 	a++;
 
 	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "userPrincipalName";
+	a->mod_values = upnvals;
+	upnvals[0] = p;
+	upnvals[1] = NULL;
+	a++;
+
+	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "accountExpires";
 	a->mod_values = tv;
-	tv[0] = "116444736000000000"; /* "never" */
+	tv[0] = "9223372036854775807"; /* "never" */
 	tv[1] = NULL;
 	a++;
 
@@ -750,15 +753,15 @@ kadm5_ad_create_principal(void *server_handle,
 
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "userPrincipalName";
-	a->mod_values = spnvals;
-	spnvals[0] = p;
-	spnvals[1] = NULL;
+	a->mod_values = upnvals;
+	upnvals[0] = p;
+	upnvals[1] = NULL;
 	a++;
 
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "accountExpires";
 	a->mod_values = tv;
-	tv[0] = "116444736000000000"; /* "never" */
+	tv[0] = "9223372036854775807"; /* "never" */
 	tv[1] = NULL;
 	a++;
     }
@@ -1001,7 +1004,6 @@ kadm5_ad_get_principal(void *server_handle,
 	}
 	ldap_msgfree(m);
     } else {
-	printf("no entry\n");
 	return KADM5_UNK_PRINC;
     }
 
