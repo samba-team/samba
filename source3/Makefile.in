@@ -135,7 +135,8 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
 	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_dfs.o \
-	       rpc_client/cli_pipe.o nsswitch/winbindd_glue.o
+	       rpc_client/cli_pipe.o nsswitch/winbindd_glue.o \
+	       libsmb/cli_pipe_util.o
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
@@ -258,7 +259,7 @@ TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ) \
-		libsmb/cli_lsarpc.o libsmb/cli_samr.o
+		libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_pipe_util.o
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
 		$(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ)
