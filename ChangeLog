@@ -1,3 +1,14 @@
+Sun Jul 13 02:46:27 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/connect.c: Check filedescriptor in select.
+
+	* kdc/kerberos5.c: Remove most of the most common memory leaks.
+
+	* lib/krb5/rd_req.c: Free allocated data.
+
+	* lib/krb5/auth_context.c (krb5_auth_con_free): Free a lot of
+ 	fields.
+
 Sun Jul 13 00:32:16 1997  Assar Westerlund  <assar@sics.se>
 
 	* appl/telnet, appl/rsh: Conditionalize the krb4-support.
