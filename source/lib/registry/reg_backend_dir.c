@@ -34,9 +34,16 @@ static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, 
 	return WERR_INVALID_PARAM;
 }
 
-static WERROR reg_dir_del_key(struct registry_key *k)
+static WERROR reg_dir_del_key(struct registry_key *k, const char *name)
 {
-	return (rmdir((char *)k->backend_data) == 0)?WERR_OK:WERR_GENERAL_FAILURE;
+	char *child = talloc_asprintf(NULL, "%s/%s", (char *)k->backend_data, name);
+	WERROR ret;
+
+	if (rmdir(child) == 0) ret = WERR_OK; else ret = WERR_GENERAL_FAILURE;
+
+	talloc_destroy(child);
+
+	return ret;
 }
 
 static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, struct registry_key *p, const char *name, struct registry_key **subkey)
