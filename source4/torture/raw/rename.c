@@ -268,6 +268,7 @@ static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
 
 	printf("Checking copy\n");
 	io.ntrename.in.old_name = fname1;
@@ -276,6 +277,13 @@ static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntrename.in.flags = RENAME_FLAG_COPY;
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.fname = fname1;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 1);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
 
 	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_SYSTEM);
 
