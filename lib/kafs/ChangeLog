@@ -1,3 +1,8 @@
+Sun Sep  6 20:16:27 1998  Assar Westerlund  <assar@sics.se>
+
+	* add new functionality for specifying the homedir to krb_afslog
+ 	et al
+
 Thu Jul 16 01:27:19 1998  Assar Westerlund  <assar@sics.se>
 
 	* afssys.c: reorganize order of definitions.
