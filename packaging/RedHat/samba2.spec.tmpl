@@ -373,7 +373,7 @@ fi
 
 # Create winbind nss client symlink
 
-if [ -e /lib/libnss_winbind.so ]
+if [ -e /lib/libnss_winbind.so ]; then
 	ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2
 fi
 
