@@ -343,6 +343,36 @@ typedef struct {
   EncKDCRepPart part2;
 } krb5_kdc_rep;
 
+
+typedef struct krb5_log_facility{
+    int len;
+    struct facility *val;
+} krb5_log_facility;
+
+krb5_error_code
+krb5_openlog(krb5_context context,
+	     const char *program,
+	     krb5_log_facility **fac);
+
+krb5_error_code
+krb5_closelog(krb5_context context,
+	      krb5_log_facility *fac);
+
+krb5_error_code
+krb5_vlog(krb5_context context,
+	  krb5_log_facility *fac,
+	  const char *fmt,
+	  va_list ap);
+
+krb5_error_code
+krb5_log(krb5_context context,
+	 krb5_log_facility *fac,
+	 const char *fmt,
+	 ...);
+
+
+
+
 krb5_error_code
 krb5_init_context(krb5_context *context);
 
