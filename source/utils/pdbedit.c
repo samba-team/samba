@@ -32,6 +32,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
+extern BOOL AllowDebugChange;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -680,6 +681,9 @@ int main (int argc, char **argv)
 		return 0;
 	}
 	
+	DEBUGLEVEL = 0;
+	AllowDebugChange = False;
+
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			servicesf);
