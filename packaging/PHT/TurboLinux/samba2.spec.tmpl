@@ -5,7 +5,6 @@ Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
 Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
-Source2: ftp://samba.org/pub/samba/contrib/nss_wins.tar.gz
 Patch: makefile-path.patch
 Patch1: smbw.patch
 Patch2: nss_makefile.patch
@@ -147,12 +146,9 @@ install.
 
 %prep
 %setup
-cd source
-tar xzvf $RPM_SOURCE_DIR/nss_wins.tar.gz
-cd ..
 %patch -p1
 %patch1 -p1
-%patch2 -p0
+%patch2 -p2
 
 %build
 cd source
