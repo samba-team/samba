@@ -3994,7 +3994,7 @@ void lp_set_logfile(const char *name)
 }
 
 /*******************************************************************
- Return the NetBIOS called name.
+ Return the NetBIOS called name, or my IP - but never global_myname().
 ********************************************************************/
 
 const char *get_called_name(void)
@@ -4002,22 +4002,11 @@ const char *get_called_name(void)
 	extern fstring local_machine;
 	static fstring called_name;
 
-	if (! *local_machine)
-		return global_myname();
-
-	/*
-	 * Windows NT/2k uses "*SMBSERVER" and XP uses "*SMBSERV"
-	 * arrggg!!! but we've already rewritten the client's
-	 * netbios name at this point...
-	 */
-
-	if (*local_machine) {
-		if (!StrCaseCmp(local_machine, "_SMBSERVER") || !StrCaseCmp(local_machine, "_SMBSERV")) {
-			fstrcpy(called_name, get_my_primary_ip());
-			DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
-				called_name));
-			return called_name;
-		}
+	if (!*local_machine) {
+		fstrcpy(called_name, get_my_primary_ip());
+		DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
+			 called_name));
+		return called_name;
 	}
 
 	return local_machine;
