@@ -37,7 +37,7 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_mk_rep(krb5_context context,
-	    krb5_auth_context *auth_context,
+	    krb5_auth_context auth_context,
 	    krb5_data *outbuf)
 {
   krb5_error_code ret;
@@ -53,21 +53,21 @@ krb5_mk_rep(krb5_context context,
 
   memset (&body, 0, sizeof(body));
 
-  body.ctime = (*auth_context)->authenticator->ctime;
-  body.cusec = (*auth_context)->authenticator->cusec;
+  body.ctime = auth_context->authenticator->ctime;
+  body.cusec = auth_context->authenticator->cusec;
   body.subkey = NULL;
-  if ((*auth_context)->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     krb5_generate_seq_number (context,
-			      (*auth_context)->keyblock,
-			      &(*auth_context)->local_seqnumber);
+			      auth_context->keyblock,
+			      &auth_context->local_seqnumber);
     body.seq_number = malloc (sizeof(*body.seq_number));
     if (body.seq_number == NULL)
 	return ENOMEM;
-    *(body.seq_number) = (*auth_context)->local_seqnumber;
+    *(body.seq_number) = auth_context->local_seqnumber;
   } else
     body.seq_number = NULL;
 
-  ap.enc_part.etype = (*auth_context)->keyblock->keytype;
+  ap.enc_part.etype = auth_context->keyblock->keytype;
   ap.enc_part.kvno  = NULL;
 
   buf_size = length_EncAPRepPart(&body);
@@ -84,7 +84,7 @@ krb5_mk_rep(krb5_context context,
 				  &len);
 
   free_EncAPRepPart (&body);
-  ret = krb5_crypto_init(context, (*auth_context)->keyblock, 
+  ret = krb5_crypto_init(context, auth_context->keyblock, 
 			 0 /* ap.enc_part.etype */, &crypto);
   if (ret) {
       free (buf);
