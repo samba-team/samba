@@ -143,17 +143,17 @@ int ldb_should_b64_encode(const struct ldb_val *val)
 /*
   write a line folded string onto a file
 */
-static int fold_string(int (*fprintf_fn)(void *, const char *, ...), void *private,
+static int fold_string(int (*fprintf_fn)(void *, const char *, ...), void *private_data,
 			const char *buf, size_t length, int start_pos)
 {
 	int i;
 	int total=0, ret;
 
 	for (i=0;i<length;i++) {
-		ret = fprintf_fn(private, "%c", buf[i]);
+		ret = fprintf_fn(private_data, "%c", buf[i]);
 		CHECK_RET;
 		if (i != (length-1) && (i + start_pos) % 77 == 0) {
-			ret = fprintf_fn(private, "\n ");
+			ret = fprintf_fn(private_data, "\n ");
 			CHECK_RET;
 		}
 	}
@@ -164,7 +164,7 @@ static int fold_string(int (*fprintf_fn)(void *, const char *, ...), void *priva
 /*
   encode as base64 to a file
 */
-static int base64_encode_f(int (*fprintf_fn)(void *, const char *, ...), void *private,
+static int base64_encode_f(int (*fprintf_fn)(void *, const char *, ...), void *private_data,
 			   const char *buf, int len, int start_pos)
 {
 	char *b = ldb_base64_encode(buf, len);
@@ -174,7 +174,7 @@ static int base64_encode_f(int (*fprintf_fn)(void *, const char *, ...), void *p
 		return -1;
 	}
 
-	ret = fold_string(fprintf_fn, private, b, strlen(b), start_pos);
+	ret = fold_string(fprintf_fn, private_data, b, strlen(b), start_pos);
 
 	free(b);
 	return ret;
@@ -195,7 +195,7 @@ static const struct {
   write to ldif, using a caller supplied write method
 */
 int ldif_write(int (*fprintf_fn)(void *, const char *, ...), 
-	       void *private,
+	       void *private_data,
 	       const struct ldb_ldif *ldif)
 {
 	int i, j;
@@ -204,7 +204,7 @@ int ldif_write(int (*fprintf_fn)(void *, const char *, ...),
 
 	msg = &ldif->msg;
 
-	ret = fprintf_fn(private, "dn: %s\n", msg->dn);
+	ret = fprintf_fn(private_data, "dn: %s\n", msg->dn);
 	CHECK_RET;
 
 	if (ldif->changetype != LDB_CHANGETYPE_NONE) {
@@ -217,7 +217,7 @@ int ldif_write(int (*fprintf_fn)(void *, const char *, ...),
 			fprintf(stderr,"Invalid changetype\n");
 			return -1;
 		}
-		ret = fprintf_fn(private, "changetype: %s\n", ldb_changetypes[i].name);
+		ret = fprintf_fn(private_data, "changetype: %s\n", ldb_changetypes[i].name);
 		CHECK_RET;
 	}
 
@@ -225,15 +225,15 @@ int ldif_write(int (*fprintf_fn)(void *, const char *, ...),
 		if (ldif->changetype == LDB_CHANGETYPE_MODIFY) {
 			switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 			case LDB_FLAG_MOD_ADD:
-				fprintf_fn(private, "add: %s\n", 
+				fprintf_fn(private_data, "add: %s\n", 
 					   msg->elements[i].name);
 				break;
 			case LDB_FLAG_MOD_DELETE:
-				fprintf_fn(private, "delete: %s\n", 
+				fprintf_fn(private_data, "delete: %s\n", 
 					   msg->elements[i].name);
 				break;
 			case LDB_FLAG_MOD_REPLACE:
-				fprintf_fn(private, "replace: %s\n", 
+				fprintf_fn(private_data, "replace: %s\n", 
 					   msg->elements[i].name);
 				break;
 			}
@@ -241,33 +241,33 @@ int ldif_write(int (*fprintf_fn)(void *, const char *, ...),
 
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			if (ldb_should_b64_encode(&msg->elements[i].values[j])) {
-				ret = fprintf_fn(private, "%s:: ", 
+				ret = fprintf_fn(private_data, "%s:: ", 
 						 msg->elements[i].name);
 				CHECK_RET;
-				ret = base64_encode_f(fprintf_fn, private, 
+				ret = base64_encode_f(fprintf_fn, private_data, 
 						      msg->elements[i].values[j].data, 
 						      msg->elements[i].values[j].length,
 						      strlen(msg->elements[i].name)+3);
 				CHECK_RET;
-				ret = fprintf_fn(private, "\n");
+				ret = fprintf_fn(private_data, "\n");
 				CHECK_RET;
 			} else {
-				ret = fprintf_fn(private, "%s: ", msg->elements[i].name);
+				ret = fprintf_fn(private_data, "%s: ", msg->elements[i].name);
 				CHECK_RET;
-				ret = fold_string(fprintf_fn, private,
+				ret = fold_string(fprintf_fn, private_data,
 						  msg->elements[i].values[j].data,
 						  msg->elements[i].values[j].length,
 						  strlen(msg->elements[i].name)+2);
 				CHECK_RET;
-				ret = fprintf_fn(private, "\n");
+				ret = fprintf_fn(private_data, "\n");
 				CHECK_RET;
 			}
 		}
 		if (ldif->changetype == LDB_CHANGETYPE_MODIFY) {
-			fprintf_fn(private, "-\n");
+			fprintf_fn(private_data, "-\n");
 		}
 	}
-	ret = fprintf_fn(private,"\n");
+	ret = fprintf_fn(private_data,"\n");
 	CHECK_RET;
 
 	return total;
@@ -282,14 +282,14 @@ int ldif_write(int (*fprintf_fn)(void *, const char *, ...),
 
   caller frees
 */
-static char *next_chunk(int (*fgetc_fn)(void *), void *private)
+static char *next_chunk(int (*fgetc_fn)(void *), void *private_data)
 {
 	size_t alloc_size=0, chunk_size = 0;
 	char *chunk = NULL;
 	int c;
 	int in_comment = 0;
 
-	while ((c = fgetc_fn(private)) != EOF) {
+	while ((c = fgetc_fn(private_data)) != EOF) {
 		if (chunk_size+1 >= alloc_size) {
 			char *c2;
 			alloc_size += 1024;
@@ -578,9 +578,9 @@ struct ldif_read_file_state {
 	FILE *f;
 };
 
-static int fgetc_file(void *private)
+static int fgetc_file(void *private_data)
 {
-	struct ldif_read_file_state *state = private;
+	struct ldif_read_file_state *state = private_data;
 	return fgetc(state->f);
 }
 
@@ -599,9 +599,9 @@ struct ldif_read_string_state {
 	const char *s;
 };
 
-static int fgetc_string(void *private)
+static int fgetc_string(void *private_data)
 {
-	struct ldif_read_string_state *state = private;
+	struct ldif_read_string_state *state = private_data;
 	if (state->s[0] != 0) {
 		return *state->s++;
 	}
@@ -623,9 +623,9 @@ struct ldif_write_file_state {
 	FILE *f;
 };
 
-static int fprintf_file(void *private, const char *fmt, ...)
+static int fprintf_file(void *private_data, const char *fmt, ...)
 {
-	struct ldif_write_file_state *state = private;
+	struct ldif_write_file_state *state = private_data;
 	int ret;
 	va_list ap;
 
