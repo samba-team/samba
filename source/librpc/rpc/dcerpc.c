@@ -24,6 +24,12 @@
 #include "dlinklist.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 
+NTSTATUS librpc_init(void)
+{
+	/* FIXME: Register module registration function here */
+	return NT_STATUS_OK;
+}
+
 /* initialise a dcerpc pipe. */
 struct dcerpc_pipe *dcerpc_pipe_init(void)
 {

@@ -1165,20 +1165,19 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 /*
   initialise the DCERPC subsystem
 */
-BOOL subsystem_dcerpc_init(void)
+NTSTATUS dcerpc_server_init(void)
 {
 	NTSTATUS status;
 
 	status = register_subsystem("dcerpc", dcerpc_register_ep_server); 
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return status;
 	}
 
-	/* FIXME: Perhaps panic if a basic endpoint server, such as EPMAPPER, fails to initialise? */
-	static_init_dcerpc;
+	dcerpc_init_static_modules;
 
 	DEBUG(3,("DCERPC subsystem version %d initialised\n", DCERPC_MODULE_VERSION));
-	return True;
+	return NT_STATUS_OK;
 }
 
 static const struct server_service_ops dcesrv_ops = {

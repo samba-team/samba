@@ -61,6 +61,8 @@ static void setntacl(char *filename, struct security_descriptor *sd)
 	TALLOC_CTX *mem_ctx;
 	struct security_acl *acl;
 
+	static_init_ntacl;
+
 	setup_logging("setntacl", DEBUG_STDOUT);
 
 	mem_ctx = talloc_init("setntacl");

@@ -120,11 +120,6 @@ const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip)
 */
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security) 
 {
-	/* awaiting a correct fix from metze */
-	if (!gensec_init()) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	(*gensec_security) = talloc_p(mem_ctx, struct gensec_security);
 	if (!(*gensec_security)) {
 		return NT_STATUS_NO_MEMORY;
@@ -806,25 +801,17 @@ const struct gensec_critical_sizes *gensec_interface_version(void)
 /*
   initialise the GENSEC subsystem
 */
-BOOL gensec_init(void)
+NTSTATUS gensec_init(void)
 {
-	static BOOL initialised;
-	NTSTATUS status;
-
-	/* this is *completely* the wrong way to do this */
-	if (initialised) {
-		return True;
-	}
-
-	status = register_subsystem("gensec", gensec_register); 
+	NTSTATUS status = register_subsystem("gensec", gensec_register); 
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return status;
 	}
 
-	static_init_gensec;
+	gensec_init_static_modules;
+
 	gensec_dcerpc_schannel_init();
 
-	initialised = True;
 	DEBUG(3,("GENSEC subsystem version %d initialised\n", GENSEC_INTERFACE_VERSION));
-	return True;
+	return NT_STATUS_OK;
 }

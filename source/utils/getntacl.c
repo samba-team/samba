@@ -99,6 +99,8 @@ int main(int argc, char **argv)
 	struct ndr_pull *ndr;
 	NTSTATUS result;
 
+	static_init_getntacl;
+
 	mem_ctx = talloc_init("getntacl");
 
 	/* Fetch ACL data */

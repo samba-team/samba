@@ -480,28 +480,19 @@ const struct auth_critical_sizes *auth_interface_version(void)
 /*
   initialise the AUTH subsystem
 */
-BOOL auth_init(void)
+NTSTATUS auth_init(void)
 {
 	NTSTATUS status;
 	
-	/* ugly cludge, to go away */
-	static BOOL initialised;
-
-	if (initialised) {
-		return True;
-	}
-
 	status = register_subsystem("auth", auth_register); 
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return status;
 	}
 
-	/* FIXME: Perhaps panic if a basic backend, such as SAM, fails to initialise? */
-	static_init_auth;
-
-	initialised = True;
+	auth_init_static_modules;
+	
 	DEBUG(3,("AUTH subsystem version %d initialised\n", AUTH_INTERFACE_VERSION));
-	return True;
+	return status;
 }
 
 NTSTATUS server_service_auth_init(void)

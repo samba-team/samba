@@ -59,32 +59,25 @@ NTSTATUS registry_register(const void *_function)
 	return NT_STATUS_OK;
 }
 
-static BOOL registry_init(void)
+NTSTATUS registry_init(void)
 {
-	static BOOL initialised;
 	NTSTATUS status;
-	
-	if(initialised) {
-		return True;
-	}
 	
 	status = register_subsystem("registry", registry_register);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("Error registering registry subsystem: %s\n", nt_errstr(status)));
-		return False;
+		return status;
 	}
 
-	initialised = True;
-	static_init_registry;
-	return True;
+	registry_init_static_modules;
+
+	return NT_STATUS_OK;
 }
 
 /* Find a backend in the list of available backends */
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 {
 	struct reg_init_function_entry *entry;
-
-	if(registry_init() == False) return NULL;
 
 	entry = backends;
 

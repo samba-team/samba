@@ -277,6 +277,8 @@ static void usage(void)
 	char *p;
 	int seed;
 
+	masktest_init_subsystems;
+
 	setlinebuf(stdout);
 
 	setup_logging("masktest", DEBUG_STDOUT);

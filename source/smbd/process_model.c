@@ -118,18 +118,17 @@ const struct process_model_critical_sizes *process_model_version(void)
 /*
   initialise the PROCESS_MODEL subsystem
 */
-BOOL process_model_init(void)
+NTSTATUS process_model_init(void)
 {
 	NTSTATUS status;
 
 	status = register_subsystem("process_model", register_process_model); 
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return status;
 	}
 
-	/* FIXME: Perhaps panic if a basic process model, such as simple, fails to initialise? */
-	static_init_process_model;
+	process_model_init_static_modules;
 
 	DEBUG(3,("PROCESS subsystem version %d initialised\n", PROCESS_MODEL_VERSION));
-	return True;
+	return NT_STATUS_OK; 
 }

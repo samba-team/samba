@@ -771,6 +771,7 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 		POPT_TABLEEND
 	};
 
+	regpatch_init_subsystems;
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);

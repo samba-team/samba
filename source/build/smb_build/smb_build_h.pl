@@ -36,15 +36,40 @@ sub _prepare_smb_build_h($)
 		# Static modules
 		# 
 		$DEFINE->{COMMENT} = "SUBSYSTEM $NAME INIT";
-		$DEFINE->{KEY} = "static_init_$name";
+		$DEFINE->{KEY} = $name . "_init_static_modules";
 		$DEFINE->{VAL} = "do { \\\n";
-		foreach my $subkey (@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{STATIC_MODULES_LIST}}) {
-			$DEFINE->{VAL} .= "\t\t$subkey\_init(); \\\n";
+		foreach my $subkey (@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{INIT_FUNCTIONS}}) {
+			$DEFINE->{VAL} .= "\t\textern NTSTATUS $subkey(void); \\\n";
+		}
+		
+		foreach my $subkey (@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{INIT_FUNCTIONS}}) {
+			$DEFINE->{VAL} .= "\t\t$subkey(); \\\n";
 		}
 		$DEFINE->{VAL} .= "\t} while(0)";
 		
 		push(@{$CTX->{OUTPUT}{SMB_BUILD_H}},$DEFINE);
+	}
 
+	#
+	# loop over all binaries
+	#
+	foreach my $key (sort keys %{$CTX->{DEPEND}{BINARIES}}) {
+		my $NAME = $CTX->{INPUT}{BINARIES}{$key}{NAME};
+		my $DEFINE = ();
+		my $name = lc($NAME);
+
+		#
+		# Static modules
+		# 
+		$DEFINE->{COMMENT} = "BINARY $NAME INIT";
+		$DEFINE->{KEY} = $name . "_init_subsystems";
+		$DEFINE->{VAL} = "do { \\\n";
+		foreach my $subkey (@{$CTX->{DEPEND}{BINARIES}{$key}{INIT_FUNCTIONS}}) {
+			$DEFINE->{VAL} .= "\t\tif (NT_STATUS_IS_ERR($subkey())) exit(1); \\\n";
+		}
+		$DEFINE->{VAL} .= "\t} while(0)";
+		
+		push(@{$CTX->{OUTPUT}{SMB_BUILD_H}},$DEFINE);
 	}
 
 	#
@@ -54,10 +79,13 @@ sub _prepare_smb_build_h($)
 		next if ($CTX->{INPUT}{MODULES}{$key}{BUILD} ne "SHARED");
 
 		my $name = $CTX->{INPUT}{MODULES}{$key}{NAME};
+		my $func = $CTX->{INPUT}{MODULES}{$key}{INIT_FUNCTION};
+		next if $func eq "";
+
 		my $DEFINE = ();
 		
 		$DEFINE->{COMMENT} = "$name is built shared";
-		$DEFINE->{KEY} = "$name\_init";
+		$DEFINE->{KEY} = $func;
 		$DEFINE->{VAL} = "init_module";
 
 		push(@{$CTX->{OUTPUT}{SMB_BUILD_H}},$DEFINE);

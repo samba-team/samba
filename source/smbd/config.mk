@@ -3,6 +3,7 @@
 ################################################
 # Start MODULE server_service_auth
 [MODULE::server_service_auth]
+INIT_FUNCTION = server_service_auth_init
 REQUIRED_SUBSYSTEMS = \
 		AUTH
 # End MODULE server_auth
@@ -11,6 +12,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start MODULE server_service_smb
 [MODULE::server_service_smb]
+INIT_FUNCTION = server_service_smb_init
 REQUIRED_SUBSYSTEMS = \
 		SMB
 # End MODULE server_smb
@@ -19,6 +21,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start MODULE server_service_rpc
 [MODULE::server_service_rpc]
+INIT_FUNCTION = server_service_rpc_init
 REQUIRED_SUBSYSTEMS = \
 		DCERPC
 # End MODULE server_rpc
@@ -27,6 +30,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start MODULE server_service_ldap
 [MODULE::server_service_ldap]
+INIT_FUNCTION = server_service_ldap_init
 REQUIRED_SUBSYSTEMS = \
 		LDAP
 # End MODULE server_ldap
@@ -35,6 +39,7 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
+INIT_FUNCTION = server_service_init
 INIT_OBJ_FILES = \
 		smbd/service.o
 REQUIRED_SUBSYSTEMS = \

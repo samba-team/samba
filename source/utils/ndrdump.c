@@ -109,6 +109,8 @@ static void show_functions(const struct dcerpc_interface_table *p)
 		POPT_TABLEEND
 	};
 
+	ndrdump_init_subsystems;
+
 	DEBUGLEVEL = 10;
 
 	setup_logging("ndrdump", DEBUG_STDOUT);

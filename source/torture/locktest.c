@@ -459,6 +459,8 @@ static void usage(void)
 	int opt;
 	int seed, server, i;
 
+	locktest_init_subsystems;
+
 	setlinebuf(stdout);
 
 	setup_logging("locktest", DEBUG_STDOUT);

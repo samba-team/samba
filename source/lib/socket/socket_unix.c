@@ -273,8 +273,3 @@ const struct socket_ops *socket_unixdom_ops(void)
 {
 	return &unixdom_ops;
 }
-
-NTSTATUS socket_unixdom_init(void)
-{
-	return NT_STATUS_OK;
-}

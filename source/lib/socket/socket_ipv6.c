@@ -354,8 +354,3 @@ const struct socket_ops *socket_ipv6_ops(void)
 {
 	return &ipv6_tcp_ops;
 }
-
-NTSTATUS socket_ipv6_init(void)
-{
-	return NT_STATUS_OK;
-}

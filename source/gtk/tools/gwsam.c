@@ -412,6 +412,7 @@ create_mainwindow (void)
 
  int main(int argc, char **argv)
 {
+	gwsam_init_subsystems;
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 	setup_logging("gwsam", True);

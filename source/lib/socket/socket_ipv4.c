@@ -336,8 +336,3 @@ const struct socket_ops *socket_ipv4_ops(void)
 {
 	return &ipv4_tcp_ops;
 }
-
-NTSTATUS socket_ipv4_init(void)
-{
-	return NT_STATUS_OK;
-}

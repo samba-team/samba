@@ -183,7 +183,7 @@ static BOOL remote_op_interface_by_name(struct dcesrv_interface *iface, const ch
 	return False;	
 }
 
-NTSTATUS dcerpc_remote_init(void)
+NTSTATUS dcerpc_server_remote_init(void)
 {
 	NTSTATUS ret;
 	struct dcesrv_endpoint_server ep_server;

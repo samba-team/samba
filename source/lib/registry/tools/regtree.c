@@ -88,6 +88,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 		POPT_TABLEEND
 	};
 
+	regtree_init_subsystems;
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
