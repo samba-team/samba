@@ -9,6 +9,7 @@ SMB_SUBSYSTEM(LIBLDB,[lib/ldb/common/ldb.o],
 		lib/ldb/common/util.o \
 		lib/ldb/common/ldb_utf8.o \
 		lib/ldb/common/ldb_alloc.o \
+		lib/ldb/common/ldb_debug.o \
 		lib/ldb/ldb_tdb/ldb_search.o \
 		lib/ldb/ldb_tdb/ldb_tdb.o \
 		lib/ldb/ldb_tdb/ldb_pack.o \

@@ -117,6 +117,8 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 		exit(1);
 	}
 
+	ldb_set_debug_stderr(ldb);
+
 	if (argc == 0) {
 		usage();
 		exit(1);

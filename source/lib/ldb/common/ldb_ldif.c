@@ -217,7 +217,8 @@ int ldif_write(struct ldb_context *ldb,
 			}
 		}
 		if (!ldb_changetypes[i].name) {
-			fprintf(stderr,"Invalid changetype\n");
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Invalid ldif changetype %d\n",
+				  ldif->changetype);
 			return -1;
 		}
 		ret = fprintf_fn(private_data, "changetype: %s\n", ldb_changetypes[i].name);
@@ -493,7 +494,8 @@ struct ldb_ldif *ldif_read(struct ldb_context *ldb,
 	
 	/* first line must be a dn */
 	if (ldb_attr_cmp(attr, "dn") != 0) {
-		fprintf(stderr, "First line must be a dn not '%s'\n", attr);
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: First line of ldif must be a dn not '%s'\n", 
+			  attr);
 		goto failed;
 	}
 
@@ -512,8 +514,8 @@ struct ldb_ldif *ldif_read(struct ldb_context *ldb,
 				}
 			}
 			if (!ldb_changetypes[i].name) {
-				fprintf(stderr,"Bad changetype '%s'\n",
-					(char *)value.data);
+				ldb_debug(ldb, LDB_DEBUG_ERROR, 
+					  "Error: Bad ldif changetype '%s'\n",(char *)value.data);
 			}
 			flags = 0;
 			continue;
