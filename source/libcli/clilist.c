@@ -20,11 +20,11 @@
 */
 
 #include "includes.h"
-#include "client.h"
+#include "clilist.h"
 #include "libcli/raw/libcliraw.h"
 
 struct search_private {
-	struct file_info *dirlist;
+	struct clilist_file_info *dirlist;
 	TALLOC_CTX *mem_ctx;
 	int dirlist_len;
 	int ff_searchcount;  /* total received in 1 server trip */
@@ -40,9 +40,9 @@ struct search_private {
 ****************************************************************************/
 static BOOL interpret_long_filename(enum smb_search_level level,
 				    union smb_search_data *info,
-				    struct file_info *finfo)
+				    struct clilist_file_info *finfo)
 {
-	struct file_info finfo2;
+	struct clilist_file_info finfo2;
 
 	if (!finfo) finfo = &finfo2;
 	ZERO_STRUCTP(finfo);
@@ -50,23 +50,17 @@ static BOOL interpret_long_filename(enum smb_search_level level,
 	switch (level) {
 	case RAW_SEARCH_STANDARD:
 		finfo->size = info->standard.size;
-		finfo->ctime = info->standard.create_time;
-		finfo->atime = info->standard.access_time;
 		finfo->mtime = info->standard.write_time;
-		finfo->mode = info->standard.attrib;
+		finfo->attrib = info->standard.attrib;
 		finfo->name = info->standard.name.s;
+		finfo->short_name = info->standard.name.s;
 		break;
 
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
 		finfo->size = info->both_directory_info.size;
-		finfo->ctime = nt_time_to_unix(info->both_directory_info.create_time);
-		finfo->atime = nt_time_to_unix(info->both_directory_info.access_time);
 		finfo->mtime = nt_time_to_unix(info->both_directory_info.write_time);
-		finfo->mode = info->both_directory_info.attrib; /* 32 bit->16 bit attrib */
-		if (info->both_directory_info.short_name.s) {
-			strncpy(finfo->short_name, info->both_directory_info.short_name.s, 
-				sizeof(finfo->short_name)-1);
-		}
+		finfo->attrib = info->both_directory_info.attrib;
+		finfo->short_name = info->both_directory_info.short_name.s;
 		finfo->name = info->both_directory_info.name.s;
 		break;
 
@@ -82,18 +76,18 @@ static BOOL interpret_long_filename(enum smb_search_level level,
 static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
-	struct file_info *tdl;
+	struct clilist_file_info *tdl;
  
 	/* add file info to the dirlist pool */
 	tdl = talloc_realloc(state, 
 			     state->dirlist,
-			     state->dirlist_len + sizeof(struct file_info));
+			     state->dirlist_len + sizeof(struct clilist_file_info));
 
 	if (!tdl) {
 		return False;
 	}
 	state->dirlist = tdl;
-	state->dirlist_len += sizeof(struct file_info);
+	state->dirlist_len += sizeof(struct clilist_file_info);
 
 	interpret_long_filename(state->info_level, file, &state->dirlist[state->total_received]);
 
@@ -106,7 +100,7 @@ static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 
 int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
 		    enum smb_search_level level,
-		    void (*fn)(struct file_info *, const char *, void *), 
+		    void (*fn)(struct clilist_file_info *, const char *, void *), 
 		    void *caller_state)
 {
 	union smb_search_first first_parms;
@@ -209,19 +203,18 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 ****************************************************************************/
 static BOOL interpret_short_filename(int level,
 				union smb_search_data *info,
-				struct file_info *finfo)
+				struct clilist_file_info *finfo)
 {
-	struct file_info finfo2;
+	struct clilist_file_info finfo2;
 
 	if (!finfo) finfo = &finfo2;
 	ZERO_STRUCTP(finfo);
 	
-	finfo->ctime = info->search.write_time;
-	finfo->atime = info->search.write_time;
 	finfo->mtime = info->search.write_time;
 	finfo->size = info->search.size;
-	finfo->mode = info->search.attrib;
+	finfo->attrib = info->search.attrib;
 	finfo->name = info->search.name;
+	finfo->short_name = info->search.name;
 	return True;
 }
 
@@ -229,18 +222,18 @@ static BOOL interpret_short_filename(int level,
 static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
-	struct file_info *tdl;
+	struct clilist_file_info *tdl;
 	
 	/* add file info to the dirlist pool */
 	tdl = talloc_realloc(state,
 			     state->dirlist,
-			     state->dirlist_len + sizeof(struct file_info));
+			     state->dirlist_len + sizeof(struct clilist_file_info));
 
 	if (!tdl) {
 		return False;
 	}
 	state->dirlist = tdl;
-	state->dirlist_len += sizeof(struct file_info);
+	state->dirlist_len += sizeof(struct clilist_file_info);
 
 	interpret_short_filename(state->info_level, file, &state->dirlist[state->total_received]);
 
@@ -252,7 +245,7 @@ static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 }
 
 int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
-		 void (*fn)(struct file_info *, const char *, void *), 
+		 void (*fn)(struct clilist_file_info *, const char *, void *), 
 		 void *caller_state)
 {
 	union smb_search_first first_parms;
@@ -338,7 +331,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 ****************************************************************************/
 
 int smbcli_list(struct smbcli_tree *tree, const char *Mask,uint16_t attribute, 
-	     void (*fn)(struct file_info *, const char *, void *), void *state)
+		void (*fn)(struct clilist_file_info *, const char *, void *), void *state)
 {
 	if (tree->session->transport->negotiate.protocol <= PROTOCOL_LANMAN1)
 		return smbcli_list_old(tree, Mask, attribute, fn, state);

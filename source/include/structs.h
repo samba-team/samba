@@ -108,7 +108,7 @@ union libnet_RemoteTOD;
 struct net_functable;
 struct net_context;
 
-struct file_info;
+struct clilist_file_info;
 
 struct xattr_DosEAs;
 struct xattr_DosStreams;
