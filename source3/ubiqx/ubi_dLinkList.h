@@ -27,10 +27,17 @@
  * -------------------------------------------------------------------------- **
  *
  * $Log: ubi_dLinkList.h,v $
- * Revision 1.1  1997/10/10 14:46:43  crh
- * This is the ubiqx binary tree and linked list library.
- * This library is being included as part of the Samba distribution.
- * (Hurray!)
+ * Revision 1.2  1997/10/15 03:11:46  crh
+ * These are the ubiqx modules, as included with the Samba distribution.
+ * Updated the linked list module, which has new and changed macros.
+ *
+ * Revision 0.3  1997/10/15 03:04:31  crh
+ * Added some handy type casting to the macros.  Added AddHere and RemThis
+ * macros.
+ *
+ * Revision 0.2  1997/10/08 03:08:16  crh
+ * Fixed a few forgotten link-ups in Insert(), and fixed the AddHead()
+ * macro, which was passing the wrong value for <After> to Insert().
  *
  * Revision 0.1  1997/10/07 04:34:38  crh
  * Initial Revision.
@@ -74,29 +81,50 @@ typedef ubi_dlList *ubi_dlListPtr;
  * 
  *  ubi_dlAddHead - Add a new node at the head of the list.
  *  ubi_dlAddTail - Add a new node at the tail of the list.
+ *  ubi_dlAddHere - Add a node following the given node.
  *  ubi_dlRemHead - Remove the node at the head of the list, if any.
  *  ubi_dlRemTail - Remove the node at the tail of the list, if any.
+ *  ubi_dlRemThis - Remove the indicated node.
  *  ubi_dlFirst   - Return a pointer to the first node in the list, if any.
  *  ubi_dlLast    - Return a pointer to the last node in the list, if any.
  *  ubi_dlNext    - Given a node, return a pointer to the next node.
  *  ubi_dlPrev    - Given a node, return a pointer to the previous node.
+ *
+ *  Note that all of these provide type casting of the parameters.  The
+ *  Add and Rem macros are nothing more than nice front-ends to the
+ *  Insert and Remove operations.
+ *
  */
 
-#define ubi_dlAddHead( L, N ) ubi_dlInsert( (L), (N), NULL )
+#define ubi_dlAddHead( L, N ) \
+        ubi_dlInsert( (ubi_dlListPtr)(L), (ubi_dlNodePtr)(N), NULL )
 
-#define ubi_dlAddTail( L, N ) ubi_dlInsert( (L), (N), ((L)->Tail) )
+#define ubi_dlAddTail( L, N ) \
+        ubi_dlInsert( (ubi_dlListPtr)(L), \
+                      (ubi_dlNodePtr)(N), \
+                    (((ubi_dlListPtr)(L))->Tail) )
 
-#define ubi_dlRemHead( L ) ubi_dlRemove( (L), ((L)->Head) )
+#define ubi_dlAddHere( L, N, P ) \
+        ubi_dlInsert( (ubi_dlListPtr)(L), \
+                      (ubi_dlNodePtr)(N), \
+                      (ubi_dlNodePtr)(P) )
 
-#define ubi_dlRemTail( L ) ubi_dlRemove( (L), ((L)->Tail) )
+#define ubi_dlRemHead( L ) ubi_dlRemove( (ubi_dlListPtr)(L), \
+                                         (((ubi_dlListPtr)(L))->Head) )
 
-#define ubi_dlFirst( L ) ((L)->Head)
+#define ubi_dlRemTail( L ) ubi_dlRemove( (ubi_dlListPtr)(L), \
+                                         (((ubi_dlListPtr)(L))->Tail) )
 
-#define ubi_dlLast( L )  ((L)->Tail)
+#define ubi_dlRemThis( L, N ) ubi_dlRemove( (ubi_dlListPtr)(L), \
+                                            (ubi_dlNodePtr)(N) )
 
-#define ubi_dlNext( N )  ((N)->Next)
+#define ubi_dlFirst( L ) (((ubi_dlListPtr)(L))->Head)
 
-#define ubi_dlPrev( N )  ((N)->Prev)
+#define ubi_dlLast( L )  (((ubi_dlListPtr)(L))->Tail)
+
+#define ubi_dlNext( N )  (((ubi_dlNodePtr)(N))->Next)
+
+#define ubi_dlPrev( N )  (((ubi_dlNodePtr)(N))->Prev)
 
 
 /* ========================================================================== **

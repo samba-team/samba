@@ -25,10 +25,17 @@
  * -------------------------------------------------------------------------- **
  *
  * $Log: ubi_dLinkList.c,v $
- * Revision 1.1  1997/10/10 14:46:43  crh
- * This is the ubiqx binary tree and linked list library.
- * This library is being included as part of the Samba distribution.
- * (Hurray!)
+ * Revision 1.2  1997/10/15 03:11:46  crh
+ * These are the ubiqx modules, as included with the Samba distribution.
+ * Updated the linked list module, which has new and changed macros.
+ *
+ * Revision 0.3  1997/10/15 03:05:39  crh
+ * Added some handy type casting to the macros.  Added AddHere and RemThis
+ * macros.
+ *
+ * Revision 0.2  1997/10/08 03:07:21  crh
+ * Fixed a few forgotten link-ups in Insert(), and fixed the AddHead()
+ * macro, which was passing the wrong value for <After> to Insert().
  *
  * Revision 0.1  1997/10/07 04:34:07  crh
  * Initial Revision.
