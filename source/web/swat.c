@@ -344,13 +344,18 @@ static void write_config(FILE *f, BOOL show_defaults, char *(*dos_to_ext)(char *
 static int save_reload(int snum)
 {
 	FILE *f;
-
-	umask(022);
+	struct stat st;
 
 	f = sys_fopen(servicesf,"w");
 	if (!f) {
 		printf("failed to open %s for writing\n", servicesf);
 		return 0;
+	}
+
+	/* just in case they have used the buggy xinetd to create the file */
+	if (fstat(fileno(f), &st) == 0 &&
+	    (st.st_mode & S_IWOTH)) {
+		fchmod(fileno(f), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 	}
 
 	write_config(f, False, _dos_to_unix);
@@ -421,7 +426,7 @@ static void commit_parameters(int snum)
 ****************************************************************************/
 static void image_link(char *name,char *hlink, char *src)
 {
-	printf("<A HREF=\"%s/%s\"><img src=\"/swat/%s\" alt=\"%s\"></A>\n", 
+	printf("<A HREF=\"%s/%s\"><img border=\"0\" src=\"/swat/%s\" alt=\"%s\"></A>\n", 
 	       cgi_baseurl(), hlink, src, name);
 }
 
@@ -986,6 +991,7 @@ static void printers_page(void)
 	char *page;
 
 	fault_setup(NULL);
+	umask(S_IWGRP | S_IWOTH);
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
 	set_auth_parameters(argc, argv);
