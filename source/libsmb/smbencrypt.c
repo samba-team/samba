@@ -226,3 +226,48 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	return True;
 }
 
+int nt_decrypt_string2(STRING2 *out, STRING2 *in, char nt_hash[16])
+{
+	uchar bufhdr[8];
+	int datalen;
+
+	uchar key[16];
+	uchar *keyptr = key;
+	uchar *keyend = key + sizeof(key);
+
+	uchar *outbuf = (uchar *)out->buffer;
+	uchar *inbuf = (uchar *)in->buffer;
+	uchar *inbufend;
+
+
+	mdfour(key, nt_hash, 16);
+
+	smbhash(bufhdr, inbuf, keyptr, 0);
+	datalen = IVAL(bufhdr, 0);
+
+	if ((datalen > in->str_str_len) || (datalen > MAX_STRINGLEN))
+	{
+		DEBUG(0, ("nt_decrypt_string2: failed\n"));
+		return False;
+	}
+
+	out->str_max_len = out->str_str_len = datalen;
+	inbuf += 8;
+	inbufend = inbuf + datalen;
+
+	while (inbuf < inbufend)
+	{
+		keyptr += 7;
+		if (keyptr + 7 > keyend)
+		{
+			keyptr = (keyend - keyptr) + key;
+		}
+
+		smbhash(outbuf, inbuf, keyptr, 0);
+
+		inbuf += 8;
+		outbuf += 8;
+	}
+
+	return True;
+}

@@ -739,6 +739,7 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24], uchar nt_owf[24])
 
 /*The following definitions come from  libsmb/smbdes.c  */
 
+void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, int forw);
 void E_P16(unsigned char *p14,unsigned char *p16);
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
 void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out);
@@ -757,6 +758,7 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
+int nt_decrypt_string2(STRING2 *out, STRING2 *in, char nt_hash[16]);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
@@ -1568,8 +1570,8 @@ BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
 		     POLICY_HND *hnd_pol, char *secret_name, uint32 des_access,
 		     POLICY_HND *hnd_secret);
 BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
-		      POLICY_HND *pol, unsigned char secret[24],
-		      NTTIME *lastupdate);
+		      POLICY_HND *pol, STRING2 *enc_secret,
+		      NTTIME *last_update);
 BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_names,
